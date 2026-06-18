@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Beam RN Sample",
+    "slug": "beam-rn-sample",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "beamrnsample",
+    "ios": {
+      "bundleIdentifier": "com.beamable.rnsample",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.beamable.rnsample"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-dev-client",
+      [
+        "expo-notifications",
+        {
+          "color": "#5A31F4"
+        }
+      ],
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.24"
+          }
+        }
+      ],
+      [
+        "./plugins/withBeamableNotifications",
+        {
+          "appGroup": "group.com.beamable.rnsample",
+          "enableServiceExtension": true
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
