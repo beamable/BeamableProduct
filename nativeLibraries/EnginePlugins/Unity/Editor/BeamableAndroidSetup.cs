@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using System.Xml;
 using UnityEditor;
 using UnityEngine;
 
@@ -28,6 +30,13 @@ public static class BeamableAndroidSetup
     public const string HandlerMetaKey = "com.beamable.push.notification_received_handler";
     public const string DeepLinkScheme = "beamable";
     public const int RequiredMinSdk = 24;
+
+    // Receive-time handler class names: the placeholder a fresh scaffold points at, and the one the
+    // NativeDemo sample ships (wired by the "Set Up Native Sample" menu).
+    public const string PlaceholderHandlerClass = "com.companyname.app.MyPushReceivedHandler";
+    public const string SampleHandlerClass = "com.beamable.sample.DiscordWebhookPushHandler";
+
+    private const string AndroidNs = "http://schemas.android.com/apk/res/android";
 
     // ProjectSettings toggles that must be OFF now that gradle config is injected at build.
     private static readonly string[] StaleGradleToggles =
@@ -120,12 +129,17 @@ public static class BeamableAndroidSetup
 
     // ---- Auto-apply ---------------------------------------------------------
 
-    /// <summary>Applies the settings the tool can fix automatically. Returns what changed.</summary>
-    public static List<string> ApplySettings()
+    /// <summary>
+    /// Applies the settings the tool can fix automatically. Returns what changed.
+    /// <paramref name="handlerClass"/>, when given, wires the receive-time handler meta-data to that
+    /// class (the NativeDemo sample passes its own handler); when null an existing handler value is
+    /// left untouched and a missing one gets the placeholder.
+    /// </summary>
+    public static List<string> ApplySettings(string handlerClass = null)
     {
         var changes = new List<string>();
 
-        EnsureManifest(changes);
+        ConfigureManifest(changes, handlerClass);
 
         if ((int)PlayerSettings.Android.minSdkVersion < RequiredMinSdk)
         {
@@ -167,32 +181,142 @@ public static class BeamableAndroidSetup
         return changes;
     }
 
-    // ---- Manifest scaffold --------------------------------------------------
+    // ---- Manifest scaffold / patch ------------------------------------------
 
     /// <summary>
-    /// Ensures a custom main <c>AndroidManifest.xml</c> exists in the consuming project. If absent,
-    /// writes a working default wired for Beamable notifications + deep links (the app edits the
-    /// package id, scheme, and handler class). Never overwrites an existing manifest.
+    /// Ensures the consuming project's custom main <c>AndroidManifest.xml</c> is wired for Beamable
+    /// notifications + deep links. If absent, writes a working default. If present, **patches it
+    /// idempotently** — adding the <c>beamable://</c> VIEW intent-filter, the push permissions, and
+    /// the receive-handler meta-data only where missing. <paramref name="handlerClass"/>, when given,
+    /// sets/updates the handler meta-data value (the placeholder is used otherwise, and an existing
+    /// value is never overwritten when null).
     /// </summary>
-    public static void EnsureManifest(List<string> changes)
+    public static void ConfigureManifest(List<string> changes, string handlerClass = null)
     {
-        if (File.Exists(ManifestPath))
+        if (!File.Exists(ManifestPath))
+        {
+            Directory.CreateDirectory(PluginsAndroidDir);
+            File.WriteAllText(ManifestPath, DefaultManifestXml(handlerClass));
+            AssetDatabase.ImportAsset(ManifestPath);
+            changes?.Add("Created default AndroidManifest.xml at " + ManifestPath +
+                         " (edit the package id as needed).");
+            return;
+        }
+
+        try
+        {
+            PatchManifest(changes, handlerClass);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning("[BeamableAndroid] could not patch " + ManifestPath + " (" + e.Message +
+                "). Add the " + DeepLinkScheme + ":// filter, the '" + HandlerMetaKey +
+                "' meta-data, and POST_NOTIFICATIONS / SCHEDULE_EXACT_ALARM by hand.");
+        }
+    }
+
+    // Idempotently inject the Beamable bits into an existing manifest. Only saves when something
+    // actually changed, so re-running produces no churn (beyond a one-time reformat).
+    private static void PatchManifest(List<string> changes, string handlerClass)
+    {
+        var doc = new XmlDocument { PreserveWhitespace = false };
+        doc.Load(ManifestPath);
+
+        var root = doc.DocumentElement;
+        if (root == null || root.Name != "manifest")
+            throw new System.Exception("root <manifest> element not found");
+
+        bool dirty = false;
+
+        // 1. Permissions.
+        string[] perms =
+        {
+            "android.permission.INTERNET",
+            "android.permission.POST_NOTIFICATIONS",
+            "android.permission.SCHEDULE_EXACT_ALARM",
+        };
+        foreach (var perm in perms)
+        {
+            if (HasUsesPermission(root, perm)) continue;
+            var el = doc.CreateElement("uses-permission");
+            SetAndroidAttr(doc, el, "name", perm);
+            root.AppendChild(el);
+            changes?.Add("Added uses-permission " + perm);
+            dirty = true;
+        }
+
+        // 2. <application>.
+        var app = root.SelectSingleNode("application") as XmlElement;
+        if (app == null)
+        {
+            app = doc.CreateElement("application");
+            root.AppendChild(app);
+            dirty = true;
+        }
+
+        // 3. Launcher activity: deep-link filter + launchMode/exported.
+        var activity = FindLauncherActivity(app);
+        if (activity != null)
+        {
+            if (GetAndroidAttr(activity, "launchMode") != "singleTask")
+            {
+                SetAndroidAttr(doc, activity, "launchMode", "singleTask");
+                changes?.Add("Set launchMode=singleTask on the launcher activity");
+                dirty = true;
+            }
+            if (GetAndroidAttr(activity, "exported") != "true")
+            {
+                SetAndroidAttr(doc, activity, "exported", "true");
+                changes?.Add("Set exported=true on the launcher activity");
+                dirty = true;
+            }
+            if (!HasDeepLinkFilter(activity))
+            {
+                activity.AppendChild(CreateDeepLinkFilter(doc));
+                changes?.Add("Added " + DeepLinkScheme + ":// VIEW intent-filter");
+                dirty = true;
+            }
+        }
+
+        // 4. Receive-handler meta-data.
+        var meta = FindMetaData(app, HandlerMetaKey);
+        if (meta == null)
+        {
+            var el = doc.CreateElement("meta-data");
+            SetAndroidAttr(doc, el, "name", HandlerMetaKey);
+            SetAndroidAttr(doc, el, "value", handlerClass ?? PlaceholderHandlerClass);
+            app.AppendChild(el);
+            changes?.Add("Added receive-handler meta-data (" + (handlerClass ?? PlaceholderHandlerClass) + ")");
+            dirty = true;
+        }
+        else if (handlerClass != null && GetAndroidAttr(meta, "value") != handlerClass)
+        {
+            SetAndroidAttr(doc, meta, "value", handlerClass);
+            changes?.Add("Wired receive-handler to " + handlerClass);
+            dirty = true;
+        }
+
+        if (!dirty)
             return;
 
-        Directory.CreateDirectory(PluginsAndroidDir);
-        File.WriteAllText(ManifestPath, DefaultManifestXml());
+        var settings = new XmlWriterSettings
+        {
+            Indent = true,
+            IndentChars = "  ",
+            Encoding = new UTF8Encoding(false),
+        };
+        using (var w = XmlWriter.Create(ManifestPath, settings))
+            doc.Save(w);
         AssetDatabase.ImportAsset(ManifestPath);
-        changes?.Add("Created default AndroidManifest.xml at " + ManifestPath +
-                     " (edit the package id / deep-link scheme / handler class).");
     }
 
     /// <summary>
     /// A ready-to-build manifest: launcher + <c>beamable://</c> deep-link intent-filter on
-    /// UnityPlayerActivity, the receive-time handler meta-data placeholder, and the push permissions
+    /// UnityPlayerActivity, the receive-time handler meta-data, and the push permissions
     /// (POST_NOTIFICATIONS + SCHEDULE_EXACT_ALARM + INTERNET). The push service/receiver come from
     /// the library's own merged manifest, so they are not repeated here.
     /// </summary>
-    public static string DefaultManifestXml()
+    public static string DefaultManifestXml(string handlerClass = null)
     {
         return
 @"<?xml version=""1.0"" encoding=""utf-8""?>
@@ -228,11 +352,79 @@ public static class BeamableAndroidSetup
          Point this at your PushNotificationReceivedHandler implementation; the NativeDemo
          sample ships com.beamable.sample.DiscordWebhookPushHandler as an example. -->
     <meta-data android:name=""" + HandlerMetaKey + @"""
-               android:value=""com.companyname.app.MyPushReceivedHandler"" />
+               android:value=""" + (handlerClass ?? PlaceholderHandlerClass) + @""" />
   </application>
 
 </manifest>
 ";
+    }
+
+    // ---- Manifest XML helpers ----------------------------------------------
+
+    private static bool HasUsesPermission(XmlElement root, string name)
+    {
+        foreach (XmlElement el in root.SelectNodes("uses-permission"))
+            if (GetAndroidAttr(el, "name") == name) return true;
+        return false;
+    }
+
+    // The launcher activity (preferring UnityPlayerActivity by name, else whatever declares the
+    // LAUNCHER category) — that's where the deep-link filter belongs.
+    private static XmlElement FindLauncherActivity(XmlElement app)
+    {
+        XmlElement byName = null;
+        foreach (XmlElement act in app.SelectNodes("activity"))
+        {
+            if (GetAndroidAttr(act, "name") == "com.unity3d.player.UnityPlayerActivity")
+                byName = act;
+            foreach (XmlElement cat in act.SelectNodes("intent-filter/category"))
+                if (GetAndroidAttr(cat, "name") == "android.intent.category.LAUNCHER")
+                    return act;
+        }
+        return byName;
+    }
+
+    private static bool HasDeepLinkFilter(XmlElement activity)
+    {
+        foreach (XmlElement data in activity.SelectNodes("intent-filter/data"))
+            if (GetAndroidAttr(data, "scheme") == DeepLinkScheme) return true;
+        return false;
+    }
+
+    private static XmlElement CreateDeepLinkFilter(XmlDocument doc)
+    {
+        var f = doc.CreateElement("intent-filter");
+        f.AppendChild(MakeNamedChild(doc, "action", "android.intent.action.VIEW"));
+        f.AppendChild(MakeNamedChild(doc, "category", "android.intent.category.DEFAULT"));
+        f.AppendChild(MakeNamedChild(doc, "category", "android.intent.category.BROWSABLE"));
+        var data = doc.CreateElement("data");
+        SetAndroidAttr(doc, data, "scheme", DeepLinkScheme);
+        f.AppendChild(data);
+        return f;
+    }
+
+    private static XmlElement MakeNamedChild(XmlDocument doc, string tag, string androidName)
+    {
+        var el = doc.CreateElement(tag);
+        SetAndroidAttr(doc, el, "name", androidName);
+        return el;
+    }
+
+    private static XmlElement FindMetaData(XmlElement app, string name)
+    {
+        foreach (XmlElement el in app.SelectNodes("meta-data"))
+            if (GetAndroidAttr(el, "name") == name) return el;
+        return null;
+    }
+
+    private static string GetAndroidAttr(XmlElement el, string localName) =>
+        el.GetAttribute(localName, AndroidNs);
+
+    private static void SetAndroidAttr(XmlDocument doc, XmlElement el, string localName, string value)
+    {
+        var attr = doc.CreateAttribute("android", localName, AndroidNs);
+        attr.Value = value;
+        el.SetAttributeNode(attr);
     }
 
     // ---- Helpers ------------------------------------------------------------

@@ -9,7 +9,7 @@ using UnityEngine.Networking;
 /// <summary>
 /// IMGUI test harness for the cross-platform <see cref="BeamableNotifications"/> API (same code on
 /// iOS + Android) plus the Android-only <see cref="DeepLinkManager"/> (beamable:// VIEW capture).
-/// Create the scene via Tools/Beamable/Android/Create Native Sample Scene.
+/// Set up the project + boot scene via Tools/Beamable/Android/Set Up Native Sample.
 /// </summary>
 public class BeamableNativeSample : MonoBehaviour
 {

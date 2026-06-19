@@ -51,7 +51,7 @@ consuming Unity project gets it automatically via the package reference — noth
    implementation platform('com.google.firebase:firebase-bom:33.7.0')
    implementation 'com.google.firebase:firebase-messaging-ktx'
    ```
-   Run **Tools/Beamable/Android/Setup & Validation** to auto-apply settings (and scaffold a default
+   Run **Tools/Beamable/Android/Setup and Validation** to auto-apply settings (and scaffold a default
    `AndroidManifest.xml` if the project has none). A pre-build processor re-checks on every Android build.
 3. Game code uses the shared `Beamable.Notifications` C# API (same as iOS); on Android it routes to
    the `@JvmStatic` facade `com.beamable.push.unity.UnityNotifications` (deep links via

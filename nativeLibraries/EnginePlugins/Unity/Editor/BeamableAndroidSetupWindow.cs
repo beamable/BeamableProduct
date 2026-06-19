@@ -4,7 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// Editor window that sets up and validates the Beamable native Android libraries.
-/// Menu: Tools/Beamable/Android/Setup &amp; Validation.
+/// Menu: Tools/Beamable/Android/Setup and Validation.
 ///
 /// The same checks/fixes run automatically at build via BeamableAndroidBuildProcessor; this
 /// window lets you run them on demand and see a readable report.
@@ -15,7 +15,7 @@ public class BeamableAndroidSetupWindow : EditorWindow
     private Vector2 _scroll;
     private string _lastSetupSummary;
 
-    [MenuItem("Tools/Beamable/Android/Setup & Validation")]
+    [MenuItem("Tools/Beamable/Android/Setup and Validation")]
     public static void Open()
     {
         var w = GetWindow<BeamableAndroidSetupWindow>(true, "Beamable Android", true);
@@ -64,9 +64,11 @@ public class BeamableAndroidSetupWindow : EditorWindow
 
         EditorGUILayout.Space();
         EditorGUILayout.HelpBox(
-            "AARs are built from D:\\Repositories\\BeamableProduct\\nativeLibraries\\Android (assembleRelease) and " +
-            "dropped into Assets/Plugins/Android. Gradle config (deps, AndroidX, Firebase) is " +
-            "injected automatically at build — no custom gradle templates required. Add " +
+            "The unified beamable-notifications-release.aar ships inside this package " +
+            "(Plugins/Android, refreshed by ./dev-native.sh). 'Run Setup' scaffolds a default " +
+            "AndroidManifest.xml — or patches an existing one — adding the beamable:// deep-link " +
+            "filter, the receive-handler meta-data, and the push permissions, then applies min SDK " +
+            "and disables stale gradle templates (deps/AndroidX/Firebase are injected at build). Add " +
             "google-services.json to enable remote (FCM) push; omit it for local-only.",
             MessageType.None);
     }
