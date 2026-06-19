@@ -149,7 +149,7 @@ namespace Beamable.PushNotificationService
 		/// Portal extension to pick a recipient for <see cref="SendPushToPlayer"/>.
 		///
 		/// Private per-player stats aren't enumerable, so we find the roster by searching the
-		/// public marker stat (<c>push_devices &gt; 0</c>) that <see cref="SaveDevices"/> keeps
+		/// public marker stat (<c>push_devices != 0</c>) that <see cref="SaveDevices"/> keeps
 		/// in sync, then load each player's private device list for the summary. Tokens are
 		/// never returned.
 		/// </summary>
@@ -161,9 +161,12 @@ namespace Beamable.PushNotificationService
 			if (Services.Stats is not AbsStatsApi search)
 				return new RegisteredPlayerList { message = "Stats search is unavailable in this runtime." };
 
+			// Stat search compares values as STRINGS, so a numeric "gt 0" never matches the
+			// string-stored count. Use a string "neq 0" to select every player whose marker
+			// is a non-zero count (the "0" markers left by a full unregister are excluded).
 			var response = await search.SearchStats(
 				PushStatDomain, PushStatPublicAccess, PushStatPlayerType,
-				new List<Criteria> { new Criteria(PublicMarkerStatKey, "gt", 0) });
+				new List<Criteria> { new Criteria(PublicMarkerStatKey, "neq", "0") });
 
 			var ids = response?.ids ?? Array.Empty<long>();
 			var result = new RegisteredPlayerList();

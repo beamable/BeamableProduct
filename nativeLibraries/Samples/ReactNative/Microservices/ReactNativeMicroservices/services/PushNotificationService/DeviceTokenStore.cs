@@ -28,7 +28,7 @@ namespace Beamable.PushNotificationService
 		/// <i>count</i>. The token list itself lives in a <b>private</b> stat, and private
 		/// per-player stats can't be enumerated across players — so this public marker is what
 		/// lets the admin tool find everyone who has registered (via <c>SearchStats</c> for
-		/// <c>push_devices &gt; 0</c>). It exposes only a count, never a token.
+		/// <c>push_devices != 0</c> — stat search is string-based). It exposes only a count, never a token.
 		/// </summary>
 		private const string PublicMarkerStatKey = "push_devices";
 
