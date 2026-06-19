@@ -1,3 +1,4 @@
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
@@ -340,6 +341,202 @@ namespace Beamable.Editor.Content
 				}
 
 				Property.serializedObject.Update();
+				EditorUtility.SetDirty(Object);
+
+				foreach (var targetObject in Property.serializedObject.targetObjects)
+				{
+					if (targetObject is ContentObject contentObject)
+					{
+						contentObject.ForceValidate();
+					}
+				}
+
+				Close();
+			}
+
+			Property.serializedObject.UpdateIfRequiredOrScript();
+			Repaint(); // make gui reactive
+
+			foreach (var act in delayedActions)
+			{
+				act?.Invoke();
+			}
+			delayedActions.Clear();
+		}
+
+		public void AddDelayedAction(Action act)
+		{
+			delayedActions.Add(act);
+		}
+	}
+
+	/// <summary>
+	/// Searchable dropdown popup for plain <see cref="string"/> content-id fields decorated with
+	/// <see cref="Beamable.Common.Content.Validation.MustReferenceContent"/>. Mirrors
+	/// <see cref="ContentRefSearchWindow"/> but writes the selected id straight into the string
+	/// <see cref="SerializedProperty"/> instead of going through a <see cref="BaseContentRef"/>.
+	/// </summary>
+	public class ContentStringSearchWindow : EditorWindow, IDelayedActionWindow
+	{
+		struct Option
+		{
+			public string DisplayName;
+			public string DisplayNameLower;
+			public string Id;
+		}
+
+		public SerializedProperty Property { get; set; }
+		public Object Object { get; set; }
+		public Type[] AllowedTypes { get; set; }
+		public bool AllowNull { get; set; }
+
+		private Vector2 _scrollPos;
+		private string _searchString;
+		private SearchData _searchData = new SearchData();
+		private bool _initialized;
+		private GUIStyle _normalStyle, _activeStyle;
+		private List<Option> _options;
+		private int _selectedIndex;
+		private Texture2D _highlightTexture;
+		private Texture2D _activeTexture;
+		public List<Action> delayedActions = new List<Action>();
+		private const string SearchControlName = "contentStringSearchBar";
+
+		public async void Init()
+		{
+			var de = BeamEditorContext.Default;
+			await de.InitializePromise;
+
+			// Collect candidate manifest entries: union of AllowedTypes (incl. sub-types), or
+			// all content when no type constraint is supplied.
+			var entries = new List<LocalContentManifestEntry>();
+			if (AllowedTypes != null && AllowedTypes.Length > 0)
+			{
+				foreach (var type in AllowedTypes)
+				{
+					entries.AddRange(de.CliContentService.GetContentsFromType(type, true));
+				}
+			}
+			else
+			{
+				entries.AddRange(de.CliContentService.EntriesCache.Values);
+			}
+
+			_options = new List<Option>();
+			var seen = new HashSet<string>();
+			foreach (var content in entries)
+			{
+				if (string.IsNullOrEmpty(content.FullId) || !seen.Add(content.FullId))
+				{
+					continue;
+				}
+
+				_options.Add(new Option
+				{
+					Id = content.FullId,
+					DisplayName = content.FullId,
+					DisplayNameLower = content.FullId.ToLower()
+				});
+			}
+
+			_options.Sort((a, b) => string.CompareOrdinal(a.DisplayNameLower, b.DisplayNameLower));
+
+			if (AllowNull)
+			{
+				_options.Insert(0, new Option
+				{
+					DisplayName = "<none>",
+					DisplayNameLower = "none",
+					Id = string.Empty
+				});
+			}
+
+			var currId = Property.stringValue;
+			_selectedIndex = 0;
+			if (!string.IsNullOrEmpty(currId))
+			{
+				_selectedIndex = _options.FindIndex(o => currId.Equals(o.Id));
+			}
+
+			_highlightTexture = MakeTex(1, 1, new Color(0, 0, 0, .1f));
+			_activeTexture = MakeTex(1, 1, new Color(0, .5f, 1, .2f));
+
+			_activeStyle = new GUIStyle(GUI.skin.label)
+			{
+				normal = { background = _activeTexture },
+				hover = { background = _highlightTexture },
+				wordWrap = true
+			};
+
+			_normalStyle = new GUIStyle(GUI.skin.label)
+			{
+				hover = { background = _highlightTexture },
+				wordWrap = true
+			};
+			_initialized = true;
+		}
+
+		private Texture2D MakeTex(int width, int height, Color col)
+		{
+			Color[] pix = new Color[width * height];
+
+			for (int i = 0; i < pix.Length; i++)
+				pix[i] = col;
+
+			Texture2D result = new Texture2D(width, height);
+			result.SetPixels(pix);
+			result.Apply();
+
+			return result;
+		}
+
+		protected void OnGUI()
+		{
+			if (!_initialized)
+			{
+				EditorGUILayout.PrefixLabel("...fetching");
+				return;
+			}
+
+			GUILayout.BeginHorizontal(GUI.skin.FindStyle("Toolbar"), GUILayout.Height(30));
+			this.DrawSearchBar(_searchData, textFieldName: SearchControlName);
+			_searchString = _searchData.searchText;
+			GUI.FocusControl(SearchControlName);
+			GUILayout.EndHorizontal();
+
+			_scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, GUILayout.Height(this.position.height - 30));
+			var searchLower = _searchString?.ToLower() ?? "";
+
+			var filteredOptions = _options.Where(option =>
+			   string.IsNullOrEmpty(_searchString) || option.DisplayNameLower.Contains(searchLower)).ToArray();
+			var contents = filteredOptions.Select(option => new GUIContent(option.DisplayName)).ToList();
+
+			var index = -1;
+
+			EditorGUI.BeginChangeCheck();
+
+			for (var i = 0; i < contents.Count; i++)
+			{
+				var c = contents[i];
+				var isSelected = _selectedIndex == i;
+				var style = isSelected ? _activeStyle : _normalStyle;
+
+				var clicked = GUILayout.Button(c, style, GUILayout.MaxWidth(position.width - 20));
+				if (clicked)
+				{
+					index = i;
+				}
+			}
+
+			EditorGUILayout.EndScrollView();
+
+			if (EditorGUI.EndChangeCheck())
+			{
+				Undo.RecordObject(Object, "Change Content Reference");
+				var selected = filteredOptions[index];
+
+				Property.stringValue = selected.Id;
+				Property.serializedObject.ApplyModifiedProperties();
 				EditorUtility.SetDirty(Object);
 
 				foreach (var targetObject in Property.serializedObject.targetObjects)
