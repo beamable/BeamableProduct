@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -35,9 +36,11 @@ export default function Home() {
   const router = useRouter();
   const [beam, setBeam] = useState<BeamStatus>({ state: 'idle' });
   const [log, setLog] = useState<string[]>([]);
-  // The APNs device token from the native SDK's `tokenReceived` event. Needed to
-  // register this device with the PushNotificationService microservice.
+  // The device push token (APNs on iOS, FCM on Android) from the native SDK's
+  // `tokenReceived` event. Needed to register this device with the microservice.
   const [apnsToken, setApnsToken] = useState<string | null>(null);
+  const platformLabel = Platform.OS === 'ios' ? 'iOS' : 'Android';
+  const remoteProvider = Platform.OS === 'ios' ? 'APNs' : 'FCM';
 
   const append = (msg: string) =>
     setLog((prev) => [`${time()}  ${msg}`, ...prev].slice(0, 40));
@@ -54,7 +57,7 @@ export default function Home() {
       ),
       addBeamableListener('tokenReceived', async ({ token }) => {
         setApnsToken(token);
-        append(`APNs token: ${token.slice(0, 12)}…`);
+        append(`Push token: ${token.slice(0, 12)}…`);
         if (!getPushService()) return append('Token not registered — connect to Beamable first');
         try {
           const res = await registerDevice(token);
@@ -63,7 +66,7 @@ export default function Home() {
           append(`Token register error: ${e instanceof Error ? e.message : String(e)}`);
         }
       }),
-      addBeamableListener('tokenError', ({ error }) => append(`APNs token error: ${error}`)),
+      addBeamableListener('tokenError', ({ error }) => append(`Push token error: ${error}`)),
       addBeamableListener('notificationReceived', (n) =>
         append(`Beamable received: ${n.title ?? n.id}`),
       ),
@@ -150,7 +153,7 @@ export default function Home() {
 
   const beamRegisterRemote = () => {
     registerForRemote();
-    append('Beamable: registered for remote (APNs). Token on event (real device only).');
+    append(`Beamable: registered for remote (${remoteProvider}). Token on event (real device only).`);
   };
 
   // 2c) Remote push via the PushNotificationService microservice ----------
@@ -158,7 +161,7 @@ export default function Home() {
   // ask the microservice to deliver a real APNs push and to list registrations.
   const registerThisDevice = async () => {
     if (!getPushService()) return append('Register: connect to Beamable first');
-    if (!apnsToken) return append('No APNs token yet — tap "Register for remote (APNs)" in 2b first (physical device).');
+    if (!apnsToken) return append(`No push token yet — tap "Register for remote (${remoteProvider})" in 2b first (physical device).`);
     append('RegisterDeviceToken …');
     try {
       const res = await registerDevice(apnsToken);
@@ -174,7 +177,7 @@ export default function Home() {
     try {
       const res = await sendToSelf(
         'Hello from Beamable 👋',
-        'This remote push came from your APNs microservice.',
+        `This remote push came from your ${remoteProvider} microservice.`,
         detailsUrl(999),
       );
       append(`Push: attempted ${res.attempted}, sent ${res.succeeded}, failed ${res.failed}`);
@@ -189,7 +192,9 @@ export default function Home() {
     try {
       const res = await listDevices();
       append(`Registered devices: ${res.devices.length}`);
-      res.devices.forEach((d) => append(`  · ${d.token} (${d.environment ?? 'default'})`));
+      res.devices.forEach((d) =>
+        append(`  · ${d.token} [${d.platform ?? 'apns'}]${d.environment ? ` (${d.environment})` : ''}`),
+      );
     } catch (e) {
       append(`List error: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -261,22 +266,33 @@ export default function Home() {
         />
       </Section>
 
-      {/* Beamable Notifications — native iOS SDK */}
-      <Section title="2b · Beamable Notifications (native iOS)">
+      {/* Beamable Notifications — native SDK (iOS Swift core / Android .aar) */}
+      <Section title={`2b · Beamable Notifications (native ${platformLabel})`}>
         {isBeamableNotificationsSupported ? (
           <>
-            <Text style={styles.hint}>
-              The native `beamable-notifications` SDK. Same deep-link routing as
-              above, but through the Swift core. Remote push needs a physical
-              device + APNs configured on your realm.
-            </Text>
+            {Platform.OS === 'android' ? (
+              <Text style={styles.hint}>
+                The native `beamable-notifications-android` SDK (the .aar's RN
+                bridges). Same deep-link routing as above. The local notification
+                also triggers the native receive-time handler
+                (PushNotificationReceivedHandler → Discord webhook) — which runs
+                even when the app is killed. Remote push needs a data-only FCM
+                message.
+              </Text>
+            ) : (
+              <Text style={styles.hint}>
+                The native `beamable-notifications-ios` SDK. Same deep-link
+                routing as above, but through the Swift core. Remote push needs a
+                physical device + APNs configured on your realm.
+              </Text>
+            )}
             <Button label="Request permission (native)" onPress={beamAskPermission} />
             <Button label="Fire now → Details #777" onPress={beamFireNow} />
             <Button
               label="Fire in 10s (background & tap) → #888"
               onPress={beamFireDelayed}
             />
-            <Button label="Register for remote (APNs)" onPress={beamRegisterRemote} />
+            <Button label={`Register for remote (${remoteProvider})`} onPress={beamRegisterRemote} />
             <Button
               label="Test all callbacks →"
               onPress={() => router.push('/callbacks' as never)}
@@ -284,24 +300,34 @@ export default function Home() {
           </>
         ) : (
           <Text style={styles.hint}>
-            iOS only — the native module is not available on this platform.
+            Native module not available on this platform.
           </Text>
         )}
       </Section>
 
       {/* Remote push via the PushNotificationService microservice */}
-      <Section title="2c · Remote push (APNs microservice)">
+      <Section title="2c · Remote push (microservice)">
         {isBeamableNotificationsSupported ? (
           <>
+            {Platform.OS === 'android' ? (
+              <Text style={styles.hint}>
+                Registers this device's FCM token with the PushNotificationService
+                microservice, then has the server send a real remote push back to
+                you via Firebase. Needs a physical device + FCM credentials
+                (`fcm_push`) in your realm config. Steps: Connect to Beamable →
+                Register for remote (2b) → Register this device → Send.
+              </Text>
+            ) : (
+              <Text style={styles.hint}>
+                Registers this device's APNs token with the{' '}
+                PushNotificationService microservice, then has the server send a
+                real remote push back to you via Apple. Needs a physical device +
+                APNs credentials in your realm config. Steps: Connect to Beamable →
+                Register for remote (2b) → Register this device → Send.
+              </Text>
+            )}
             <Text style={styles.hint}>
-              Registers this device's APNs token with the{' '}
-              PushNotificationService microservice, then has the server send a
-              real remote push back to you via Apple. Needs a physical device +
-              APNs credentials in your realm config. Steps: Connect to Beamable →
-              Register for remote (2b) → Register this device → Send.
-            </Text>
-            <Text style={styles.hint}>
-              APNs token: {apnsToken ? `${apnsToken.slice(0, 12)}…` : 'none yet (Register for remote in 2b)'}
+              {remoteProvider} token: {apnsToken ? `${apnsToken.slice(0, 12)}…` : 'none yet (Register for remote in 2b)'}
             </Text>
             <Button label="Register this device (microservice)" onPress={registerThisDevice} />
             <Button label="Send remote push to myself" onPress={sendPushToMyself} />
@@ -309,7 +335,7 @@ export default function Home() {
           </>
         ) : (
           <Text style={styles.hint}>
-            iOS only — APNs remote push is not available on this platform.
+            Remote push is not available on this platform.
           </Text>
         )}
       </Section>

@@ -3,16 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Common;
+using Beamable.Common.Api.Stats;
 using Beamable.Server;
 
 namespace Beamable.PushNotificationService
 {
 	/// <summary>
 	/// A self-contained microservice that demonstrates remote push notifications
-	/// through Apple's APNs, end to end:
+	/// through both Apple's APNs (iOS) and Firebase Cloud Messaging (Android), end to end:
 	///
-	///   1. <see cref="RegisterDeviceToken"/> — a player registers the APNs device
-	///      token their app received from iOS (one token per physical device).
+	///   1. <see cref="RegisterDeviceToken"/> — a player registers the device token their
+	///      app received from the OS, tagged with the platform (one token per device).
 	///   2. <see cref="SendPushToSelf"/>       — a player sends a real remote push to
 	///      their own registered device(s) — the simplest thing to demo from the app.
 	///   3. <see cref="SendPushToPlayer"/>      — an admin/back-office tool sends a push
@@ -20,35 +21,40 @@ namespace Beamable.PushNotificationService
 	///
 	/// Device tokens are stored as a <b>private</b> per-player stat (see
 	/// <see cref="DeviceTokenStore"/>) — no MongoDB needed for this key/value data.
-	/// The actual delivery is handled by <see cref="ApnsClient"/>, which talks to
-	/// Apple over HTTP/2 using token-based (JWT / .p8) authentication. The APNs
-	/// credentials live in Realm Config (Portal → Realm → Config) under the
-	/// "<c>apns_push</c>" namespace — see <see cref="ApnsSettings"/>.
+	/// Each stored device carries a <see cref="DeviceInfo.platform"/> ("apns" or "fcm");
+	/// <see cref="DeliverToPlayer"/> routes each one to the right client:
+	/// <see cref="ApnsClient"/> (Apple, HTTP/2 + .p8 JWT) or <see cref="FcmClient"/>
+	/// (Firebase HTTP v1 + service-account OAuth). The per-provider credentials live in
+	/// Realm Config (Portal → Realm → Config) under the "<c>apns_push</c>" and
+	/// "<c>fcm_push</c>" namespaces — see <see cref="ApnsSettings"/> and <see cref="FcmSettings"/>.
 	/// </summary>
 	public partial class PushNotificationService : Microservice
 	{
 		// --- Registration ---------------------------------------------------
 
 		/// <summary>
-		/// Registers (or refreshes) the calling player's APNs device token. iOS hands
-		/// the app a token via the native SDK's <c>tokenReceived</c> event; the app
-		/// forwards it here. Safe to call repeatedly — the same token is de-duplicated
-		/// and its timestamp refreshed.
+		/// Registers (or refreshes) the calling player's device token. The OS hands the
+		/// app a token (iOS via the native SDK's <c>tokenReceived</c> event, Android via
+		/// FCM); the app forwards it here. Safe to call repeatedly — the same token is
+		/// de-duplicated and its timestamp refreshed.
 		/// </summary>
-		/// <param name="token">The hex APNs device token from iOS.</param>
-		/// <param name="environment">"sandbox" (dev/TestFlight builds) or "production" (App Store). Defaults to the realm's configured default.</param>
+		/// <param name="token">The device token from the OS (APNs hex token, or FCM registration token).</param>
+		/// <param name="environment">APNs only: "sandbox" (dev/TestFlight) or "production" (App Store). Defaults to the realm's configured default. Ignored for FCM.</param>
+		/// <param name="platform">"apns" (default, iOS) or "fcm" (Android). Empty → "apns".</param>
 		[ClientCallable]
-		public async Task<RegisterResult> RegisterDeviceToken(string token, string environment)
+		public async Task<RegisterResult> RegisterDeviceToken(string token, string environment, string platform)
 		{
 			if (string.IsNullOrWhiteSpace(token))
 				return new RegisterResult { success = false, message = "A non-empty device token is required.", deviceCount = 0 };
 
+			var plat = NormalizePlatform(platform);
 			var env = NormalizeEnvironment(environment);
 			var devices = await LoadDevices(Context.UserId);
 
 			var existing = devices.FirstOrDefault(d => d.token == token);
 			if (existing != null)
 			{
+				existing.platform = plat;
 				existing.environment = env;
 				existing.updatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 			}
@@ -57,6 +63,7 @@ namespace Beamable.PushNotificationService
 				devices.Add(new DeviceInfo
 				{
 					token = token,
+					platform = plat,
 					environment = env,
 					updatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
 				});
@@ -92,6 +99,7 @@ namespace Beamable.PushNotificationService
 				devices = devices.Select(d => new DeviceInfo
 				{
 					token = Mask(d.token),
+					platform = NormalizePlatform(d.platform),
 					environment = d.environment,
 					updatedAt = d.updatedAt,
 				}).ToList(),
@@ -133,23 +141,90 @@ namespace Beamable.PushNotificationService
 			};
 		}
 
+		/// <summary>
+		/// Admin/back-office endpoint: lists every player who has at least one registered
+		/// device, with a small summary (device count, platforms, last-updated). Used by the
+		/// Portal extension to pick a recipient for <see cref="SendPushToPlayer"/>.
+		///
+		/// Private per-player stats aren't enumerable, so we find the roster by searching the
+		/// public marker stat (<c>push_devices &gt; 0</c>) that <see cref="SaveDevices"/> keeps
+		/// in sync, then load each player's private device list for the summary. Tokens are
+		/// never returned.
+		/// </summary>
+		[AdminOnlyCallable]
+		public async Task<RegisteredPlayerList> ListRegisteredPlayers()
+		{
+			// SearchStats lives on the concrete AbsStatsApi (admin-only), not the IStatsApi
+			// interface that Services.Stats is typed as — so cast to reach it.
+			if (Services.Stats is not AbsStatsApi search)
+				return new RegisteredPlayerList { message = "Stats search is unavailable in this runtime." };
+
+			var response = await search.SearchStats(
+				PushStatDomain, PushStatPublicAccess, PushStatPlayerType,
+				new List<Criteria> { new Criteria(PublicMarkerStatKey, "gt", 0) });
+
+			var ids = response?.ids ?? Array.Empty<long>();
+			var result = new RegisteredPlayerList();
+
+			foreach (var id in ids)
+			{
+				var devices = await LoadDevices(id);
+				if (devices.Count == 0) continue; // marker lagged behind a prune — skip
+
+				result.players.Add(new RegisteredPlayer
+				{
+					playerId = id,
+					deviceCount = devices.Count,
+					platforms = devices.Select(d => NormalizePlatform(d.platform)).Distinct().ToList(),
+					lastUpdated = devices.Max(d => d.updatedAt),
+				});
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// Admin/diagnostic endpoint: verifies that <c>fcm_push.service_account_json</c> in Realm
+		/// Config parses and that the private key actually loads — handy right after pasting the
+		/// JSON into the Portal, since a mangled <c>private_key</c> is the usual failure. Returns a
+		/// secret-free summary and never echoes the key. Also logs the same summary server-side.
+		/// </summary>
+		[AdminOnlyCallable]
+		public async Task<FcmConfigStatus> CheckFcmConfig()
+		{
+			try
+			{
+				var settings = await LoadFcmSettings(); // also logs the safe summary
+				FcmClient.EnsureKeyLoads(settings);     // throws if the RSA key can't be parsed
+				return new FcmConfigStatus
+				{
+					configured = true,
+					privateKeyLoaded = true,
+					projectId = settings.ProjectId,
+					clientEmail = settings.ClientEmail,
+					tokenUri = settings.TokenUri,
+					message = "fcm_push.service_account_json parsed and the private key loaded successfully.",
+				};
+			}
+			catch (Exception ex)
+			{
+				BeamableLogger.LogWarning("FCM config check failed: {msg}", ex.Message);
+				return new FcmConfigStatus { configured = false, privateKeyLoaded = false, message = ex.Message };
+			}
+		}
+
+		// "game"/"public"/"player" — the domain/access/objectType the public marker is stored under
+		// (matches StatsDomainType.Game + StatsAccessType.Public + the "player" object type).
+		private const string PushStatDomain = "game";
+		private const string PushStatPublicAccess = "public";
+		private const string PushStatPlayerType = "player";
+
 		// --- Internals ------------------------------------------------------
 
 		private async Task<SendResult> DeliverToPlayer(long playerId, string title, string body, string deepLink)
 		{
 			if (string.IsNullOrWhiteSpace(title) && string.IsNullOrWhiteSpace(body))
 				return new SendResult { success = false, attempted = 0, succeeded = 0, failed = 0, messages = { "title or body is required." } };
-
-			ApnsSettings settings;
-			try
-			{
-				settings = await LoadApnsSettings();
-			}
-			catch (Exception ex)
-			{
-				BeamableLogger.LogError("APNs config error: {msg}", ex.Message);
-				return new SendResult { success = false, attempted = 0, succeeded = 0, failed = 0, messages = { $"APNs not configured: {ex.Message}" } };
-			}
 
 			var devices = await LoadDevices(playerId);
 			var result = new SendResult { attempted = devices.Count };
@@ -162,12 +237,55 @@ namespace Beamable.PushNotificationService
 			}
 
 			var apns = new ApnsClient();
+			var fcm = new FcmClient();
 			var message = new PushMessage { title = title, body = body, deepLink = deepLink };
 			var stale = new List<string>();
 
+			// Provider settings are resolved lazily and cached for this call, so a player with
+			// only FCM devices never fails on a missing apns_push config (and vice versa). A
+			// missing config for one provider surfaces as a per-device message, not a hard abort.
+			var apnsLoaded = false; ApnsSettings apnsSettings = null; string apnsError = null;
+			async Task<(ApnsSettings settings, string error)> GetApns()
+			{
+				if (!apnsLoaded)
+				{
+					apnsLoaded = true;
+					try { apnsSettings = await LoadApnsSettings(); }
+					catch (Exception ex) { apnsError = $"APNs not configured: {ex.Message}"; }
+				}
+				return (apnsSettings, apnsError);
+			}
+
+			var fcmLoaded = false; FcmSettings fcmSettings = null; string fcmError = null;
+			async Task<(FcmSettings settings, string error)> GetFcm()
+			{
+				if (!fcmLoaded)
+				{
+					fcmLoaded = true;
+					try { fcmSettings = await LoadFcmSettings(); }
+					catch (Exception ex) { fcmError = $"FCM not configured: {ex.Message}"; }
+				}
+				return (fcmSettings, fcmError);
+			}
+
 			foreach (var device in devices)
 			{
-				var outcome = await apns.Send(settings, device, message);
+				PushSendOutcome outcome;
+				if (NormalizePlatform(device.platform) == PushPlatform.Fcm)
+				{
+					var (settings, error) = await GetFcm();
+					outcome = settings != null
+						? await fcm.Send(settings, device, message)
+						: new PushSendOutcome { ok = false, reason = error };
+				}
+				else
+				{
+					var (settings, error) = await GetApns();
+					outcome = settings != null
+						? await apns.Send(settings, device, message)
+						: new PushSendOutcome { ok = false, reason = error };
+				}
+
 				if (outcome.ok)
 				{
 					result.succeeded++;
@@ -180,8 +298,8 @@ namespace Beamable.PushNotificationService
 				}
 			}
 
-			// APNs told us these tokens are dead (Unregistered / BadDeviceToken) —
-			// prune them so we stop trying to deliver to them.
+			// The provider told us these tokens are dead (APNs Unregistered/BadDeviceToken,
+			// FCM UNREGISTERED/INVALID_ARGUMENT) — prune them so we stop delivering to them.
 			if (stale.Count > 0)
 			{
 				devices.RemoveAll(d => stale.Contains(d.token));
@@ -201,11 +319,30 @@ namespace Beamable.PushNotificationService
 			return ApnsSettings.FromGetter(key => ns.GetSetting(key));
 		}
 
+		/// <summary>Reads the FCM credentials from this realm's config (the "fcm_push" namespace).</summary>
+		private async Task<FcmSettings> LoadFcmSettings()
+		{
+			var config = await Services.RealmConfig.GetRealmConfigSettings();
+			var ns = config.GetNamespace(FcmSettings.Namespace);
+			var settings = FcmSettings.FromGetter(key => ns.GetSetting(key));
+			// Secret-free confirmation that the pasted JSON parsed (no private key in the log).
+			BeamableLogger.Log("FCM config loaded from Realm Config: {summary}", settings.DescribeSafely());
+			return settings;
+		}
+
 		private static string NormalizeEnvironment(string environment)
 		{
 			if (string.IsNullOrWhiteSpace(environment)) return null; // resolved against the realm default at send time
 			var e = environment.Trim().ToLowerInvariant();
 			return e is "sandbox" or "dev" or "development" ? ApnsEnvironment.Sandbox : ApnsEnvironment.Production;
+		}
+
+		/// <summary>Normalizes a platform tag; null/empty/unknown defaults to APNs for backward compatibility.</summary>
+		private static string NormalizePlatform(string platform)
+		{
+			if (string.IsNullOrWhiteSpace(platform)) return PushPlatform.Apns;
+			var p = platform.Trim().ToLowerInvariant();
+			return p is "fcm" or "android" or "firebase" ? PushPlatform.Fcm : PushPlatform.Apns;
 		}
 
 		private static string Mask(string token)
@@ -238,11 +375,19 @@ namespace Beamable.PushNotificationService
 		public string message;
 	}
 
+	/// <summary>Which push provider a device's token belongs to.</summary>
+	public static class PushPlatform
+	{
+		public const string Apns = "apns"; // iOS
+		public const string Fcm = "fcm";   // Android (and any FCM client)
+	}
+
 	/// <summary>A registered device. In responses the <see cref="token"/> is masked.</summary>
 	[Serializable]
 	public class DeviceInfo
 	{
 		public string token;
+		public string platform; // "apns" (default, iOS) or "fcm" (Android). Empty/null treated as APNs.
 		public string environment;
 		public long updatedAt;
 	}
@@ -278,5 +423,39 @@ namespace Beamable.PushNotificationService
 		public int succeeded;
 		public int failed;
 		public List<string> messages = new();
+	}
+
+	/// <summary>A player who has at least one registered device (no token is exposed).</summary>
+	[Serializable]
+	public class RegisteredPlayer
+	{
+		public long playerId;
+		public int deviceCount;
+		public List<string> platforms = new(); // distinct: "apns" and/or "fcm"
+		public long lastUpdated;               // newest device's updatedAt (unix seconds)
+	}
+
+	/// <summary>The roster of players with registered devices, for the admin Portal tool.</summary>
+	[Serializable]
+	public class RegisteredPlayerList
+	{
+		public List<RegisteredPlayer> players = new();
+		public string message; // set only when the roster couldn't be produced
+	}
+
+	/// <summary>
+	/// Secret-free result of <c>CheckFcmConfig</c>. Confirms the pasted service-account JSON
+	/// parsed and the private key loaded; <see cref="message"/> carries the reason on failure.
+	/// The private key is never included.
+	/// </summary>
+	[Serializable]
+	public class FcmConfigStatus
+	{
+		public bool configured;
+		public bool privateKeyLoaded;
+		public string projectId;
+		public string clientEmail;
+		public string tokenUri;
+		public string message;
 	}
 }

@@ -3,6 +3,27 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
+export type AddRequestArgs = { 
+  a: number; 
+  b: number; 
+};
+
+export type GreetRequestArgs = { 
+  name: string; 
+};
+
+export type WhoAmIResult = { 
+  userId: bigint | string; 
+  cid: string; 
+  pid: string; 
+  isAdmin: boolean; 
+};
+
+export type VisitResult = { 
+  userId: bigint | string; 
+  visits: number; 
+};
+
 export type RegisterResult = { 
   success: boolean; 
   deviceCount: number; 
@@ -12,6 +33,7 @@ export type RegisterResult = {
 export type RegisterDeviceTokenRequestArgs = { 
   token: string; 
   environment: string; 
+  platform: string; 
 };
 
 export type UnregisterResult = { 
@@ -26,6 +48,7 @@ export type UnregisterDeviceTokenRequestArgs = {
 
 export type DeviceInfo = { 
   token: string; 
+  platform: string; 
   environment: string; 
   updatedAt: bigint | string; 
 };
@@ -61,25 +84,4 @@ export type SendPushToPlayerRequestArgs = {
   title: string; 
   body: string; 
   deepLink: string; 
-};
-
-export type AddRequestArgs = { 
-  a: number; 
-  b: number; 
-};
-
-export type GreetRequestArgs = { 
-  name: string; 
-};
-
-export type WhoAmIResult = { 
-  userId: bigint | string; 
-  cid: string; 
-  pid: string; 
-  isAdmin: boolean; 
-};
-
-export type VisitResult = { 
-  userId: bigint | string; 
-  visits: number; 
 };

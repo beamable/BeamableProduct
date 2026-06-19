@@ -166,6 +166,35 @@ put it behind a link in Notes/Messages, to confirm real external entry points.
 tap that **cold-launches** the app still routes correctly. Use **Fire in 3s**,
 background the app, then tap the notification to exercise that path.
 
+### D. Beamable native notifications (iOS + Android)
+
+Sections **2b** and **2c** on the Home screen exercise the **native** Beamable
+Notifications SDK (not expo-notifications): iOS via `beamable-notifications-ios`
+(Swift core) and Android via `beamable-notifications-android` (the prebuilt
+`.aar`'s `BeamablePush` / `BeamableDeeplink` bridges). One façade
+(`src/notifications/beamableNotifications.ts`) routes per platform, so the same
+buttons work on both.
+
+**Android-only — receive-time handler (runs even when the app is killed).**
+`plugins/android/BeamablePushReceivedHandler.java` implements
+`com.beamable.push.PushNotificationReceivedHandler` and POSTs to a Slack
+webhook the instant a push arrives. The Expo plugin registers it via manifest
+meta-data. Exercise it two ways:
+
+- **Local (no Firebase):** tap **Fire now** in section 2b — the local
+  notification fires the handler.
+- **Remote, killed app:** fully close the app, then send a **data-only,
+  high-priority** FCM message (Firebase console or `curl`) to this device's FCM
+  token. The handler fires from a fresh process and posts to Slack.
+
+**Remote push (section 2c) works on Android just like iOS.** `registerForRemote`
+(2b) yields an FCM token, which auto-registers with the `PushNotificationService`
+microservice tagged `platform: "fcm"`; "Send remote push to myself" then has the
+server deliver a real push via Firebase (the service routes each device to APNs
+or FCM by its stored platform). Needs `google-services.json` at the project root
+(already wired via `app.json` → `expo.android.googleServicesFile`) and FCM
+credentials in the realm config (`fcm_push` namespace).
+
 ---
 
 ## The sample microservice

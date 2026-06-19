@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@beamable/sdk": "1.2.0",
-    "beamable-notifications": "file:../../iOS/BeamableNotifications/reactnative",
+    "beamable-notifications-ios": "file:../../iOS/BeamableNotifications/reactnative",
+    "beamable-notifications-android": "file:../../Android/BeamableNotifications/reactnative",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@ungap/structured-clone": "^1.3.1",
     "expo": "~52.0.0",

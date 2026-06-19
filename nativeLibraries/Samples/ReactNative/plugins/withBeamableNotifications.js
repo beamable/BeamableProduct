@@ -1,9 +1,15 @@
 /**
- * Expo config plugin — Beamable Notifications (iOS native SDK).
+ * Expo config plugin — Beamable Notifications (iOS + Android native SDK).
  *
- * `expo prebuild` regenerates the native iOS project from scratch, wiping any
- * capability/target you add by hand in Xcode. This plugin re-applies, on every
- * prebuild, everything the `beamable-notifications` package needs on iOS:
+ * `expo prebuild` regenerates the native projects from scratch, wiping anything
+ * you add by hand. This plugin re-applies the native setup on every prebuild.
+ *
+ * Android: copies `BeamablePushReceivedHandler.java` into the app package and adds
+ * the `com.beamable.push.notification_received_handler` manifest meta-data (see the
+ * Android section near the bottom).
+ *
+ * iOS (wiping any capability/target you add by hand in Xcode), what the
+ * `beamable-notifications-ios` package needs:
  *
  *   1. Push Notifications      → `aps-environment` entitlement on the app.
  *   2. Background Modes         → `remote-notification` in UIBackgroundModes.
@@ -30,9 +36,14 @@ const {
   withInfoPlist,
   withXcodeProject,
   withDangerousMod,
+  withAndroidManifest,
 } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
+
+// Manifest meta-data key the push library reads to resolve the receive-time handler.
+const RECEIVED_HANDLER_META = 'com.beamable.push.notification_received_handler';
+const RECEIVED_HANDLER_CLASS = 'BeamablePushReceivedHandler';
 
 const NSE_TARGET_NAME = 'BeamableNotificationServiceExtension';
 // Where the prebuilt SDK lives, relative to this project root.
@@ -234,10 +245,72 @@ function withNSETarget(config, appGroup) {
   });
 }
 
+// === Android ================================================================
+//
+// `expo prebuild` regenerates `android/` from scratch, so the receive-time handler must be
+// (re)applied as a plugin. The FCM service + POST_NOTIFICATIONS permission come from the
+// `.aar`'s manifest merge; the deep-link VIEW intent-filter comes from Expo's `scheme`;
+// google-services.json is wired via `expo.android.googleServicesFile` in app.json. The two
+// things left for us:
+//   1. Copy the native `BeamablePushReceivedHandler.java` into the app's package, and
+//   2. Register it via the `com.beamable.push.notification_received_handler` meta-data.
+// Both derive the package from `android.package` so they stay in sync if you rename it.
+
+function withReceivedHandlerSource(config) {
+  return withDangerousMod(config, [
+    'android',
+    (cfg) => {
+      const pkg = (cfg.android && cfg.android.package) || 'com.beamable.rnsample';
+      const srcFile = path.join(__dirname, 'android', `${RECEIVED_HANDLER_CLASS}.java`);
+      const destDir = path.join(
+        cfg.modRequest.platformProjectRoot,
+        'app',
+        'src',
+        'main',
+        'java',
+        ...pkg.split('.'),
+      );
+      fs.mkdirSync(destDir, { recursive: true });
+      // Rewrite the package declaration so the file always matches `android.package`.
+      const src = fs
+        .readFileSync(srcFile, 'utf8')
+        .replace(/^package\s+[^;]+;/m, `package ${pkg};`);
+      fs.writeFileSync(path.join(destDir, `${RECEIVED_HANDLER_CLASS}.java`), src);
+      return cfg;
+    },
+  ]);
+}
+
+function withReceivedHandlerManifest(config) {
+  return withAndroidManifest(config, (cfg) => {
+    const pkg = (cfg.android && cfg.android.package) || 'com.beamable.rnsample';
+    const app = cfg.modResults.manifest.application && cfg.modResults.manifest.application[0];
+    if (app) {
+      app['meta-data'] = app['meta-data'] || [];
+      const exists = app['meta-data'].some(
+        (m) => m.$ && m.$['android:name'] === RECEIVED_HANDLER_META,
+      );
+      if (!exists) {
+        app['meta-data'].push({
+          $: {
+            'android:name': RECEIVED_HANDLER_META,
+            'android:value': `${pkg}.${RECEIVED_HANDLER_CLASS}`,
+          },
+        });
+      }
+    }
+    return cfg;
+  });
+}
+
 module.exports = function withBeamableNotifications(config, props) {
   const appGroup = resolveAppGroup(config, props);
   config = withAppEntitlements(config, appGroup);
   config = withAppInfoPlist(config, appGroup);
+
+  // Android: register the receive-time handler (runs even when the app is killed).
+  config = withReceivedHandlerSource(config);
+  config = withReceivedHandlerManifest(config);
 
   // The Notification Service Extension (rich media + closed-app analytics) is
   // opt-in: `{ "enableServiceExtension": true }`. It requires a physical device

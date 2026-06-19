@@ -23,6 +23,15 @@ namespace Beamable.PushNotificationService
 		/// <summary>Stat domain/access for the stored token list.</summary>
 		private const string DeviceStatKey = "apns_devices";
 
+		/// <summary>
+		/// A <b>public</b>, searchable companion stat holding the player's registered device
+		/// <i>count</i>. The token list itself lives in a <b>private</b> stat, and private
+		/// per-player stats can't be enumerated across players — so this public marker is what
+		/// lets the admin tool find everyone who has registered (via <c>SearchStats</c> for
+		/// <c>push_devices &gt; 0</c>). It exposes only a count, never a token.
+		/// </summary>
+		private const string PublicMarkerStatKey = "push_devices";
+
 		private static readonly JsonSerializerOptions JsonOptions = new()
 		{
 			IncludeFields = true, // DeviceInfo uses public fields, not properties
@@ -47,12 +56,20 @@ namespace Beamable.PushNotificationService
 			}
 		}
 
-		/// <summary>Persists the device list for a player.</summary>
+		/// <summary>
+		/// Persists the device list for a player, and refreshes the public searchable marker
+		/// (<see cref="PublicMarkerStatKey"/>) with the new device count. This is the single
+		/// choke point for every mutation (register, unregister, prune), so the marker always
+		/// stays in sync — a count of 0 simply drops the player out of the roster search.
+		/// </summary>
 		private async Task SaveDevices(long playerId, List<DeviceInfo> devices)
 		{
 			var json = JsonSerializer.Serialize(devices, JsonOptions);
 			await Services.Stats.SetStat(
 				StatsDomainType.Game, StatsAccessType.Private, playerId, DeviceStatKey, json);
+
+			await Services.Stats.SetStat(
+				StatsDomainType.Game, StatsAccessType.Public, playerId, PublicMarkerStatKey, devices.Count.ToString());
 		}
 	}
 }

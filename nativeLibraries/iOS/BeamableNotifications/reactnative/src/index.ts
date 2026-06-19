@@ -1,7 +1,7 @@
 import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 
 const LINKING_ERROR =
-  `The package 'beamable-notifications' doesn't seem to be linked. Make sure:\n` +
+  `The package 'beamable-notifications-ios' doesn't seem to be linked. Make sure:\n` +
   Platform.select({ ios: "- You have run 'pod install'\n", default: '' }) +
   '- This package only supports iOS.';
 

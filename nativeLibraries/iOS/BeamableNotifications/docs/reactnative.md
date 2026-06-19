@@ -6,7 +6,7 @@
 2. Copy it into the package: `cp -R build/BeamableNotifications.xcframework reactnative/ios/Frameworks/`.
 3. Add the dependency (local path or published):
    ```json
-   "dependencies": { "beamable-notifications": "file:../reactnative" }
+   "dependencies": { "beamable-notifications-ios": "file:../reactnative" }
    ```
 4. `cd ios && pod install`.
 
@@ -20,7 +20,7 @@
 ## Usage
 
 ```ts
-import BeamableNotifications from 'beamable-notifications';
+import BeamableNotifications from 'beamable-notifications-ios';
 
 BeamableNotifications.addListener('tokenReceived', ({ token }) => sendToBackend(token));
 BeamableNotifications.addListener('notificationTapped', n => router.open(n.deepLink));

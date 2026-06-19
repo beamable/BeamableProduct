@@ -7,6 +7,7 @@ import * as Notifications from 'expo-notifications';
 import * as Linking from 'expo-linking';
 
 import {
+  addBeamableDeepLinkListener,
   addBeamableListener,
   configureClosedAppAnalytics,
   deepLinkFromNotification,
@@ -82,9 +83,19 @@ export default function RootLayout() {
       }
     });
 
+    // Android-only: the native deeplink module captures URL-scheme VIEW intents. We just
+    // log it here — expo-router already performs the actual navigation for VIEW intents, so
+    // routing again would double-navigate. No-op on iOS (the listener is a stub there).
+    const deepLinkSub = addBeamableDeepLinkListener((e) => {
+      console.log(
+        `[Beamable] native deep link captured: ${e.url} (coldStart=${e.isColdStart})`,
+      );
+    });
+
     return () => {
       presentedSub.remove();
       tapSub.remove();
+      deepLinkSub.remove();
     };
   }, []);
 

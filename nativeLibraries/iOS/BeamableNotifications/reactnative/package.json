@@ -1,5 +1,5 @@
 {
-  "name": "beamable-notifications",
+  "name": "beamable-notifications-ios",
   "version": "1.0.0",
   "description": "Cross-engine iOS notifications SDK for React Native (local + remote push, deep links, templates, action buttons, rich media, closed-app analytics).",
   "main": "lib/index.js",
@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "prepare": "tsc || echo 'beamable-notifications: tsc unavailable — using prebuilt lib/'"
+    "prepare": "tsc || echo 'beamable-notifications-ios: tsc unavailable — using prebuilt lib/'"
   },
   "keywords": [
     "react-native",

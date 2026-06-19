@@ -10,6 +10,7 @@ import {
   AnnouncementsService,
   AuthService,
   Beam,
+  BeamEnvironment,
   ContentService,
   LeaderboardsService,
   StatsService,
@@ -68,6 +69,18 @@ export async function initBeam(): Promise<Beam> {
       throw new Error(
         'Beamable cid/pid not set. Edit src/beam/config.ts with your realm credentials.',
       );
+    }
+
+    // If env.local provided an API base URL, register it as the `local` environment so the
+    // SDK points its requests at that host (Beam.init has no direct apiUrl option — it
+    // resolves the base URL from the named environment).
+    if (BEAM_CONFIG.apiBase) {
+      BeamEnvironment.register(BEAM_CONFIG.environment, {
+        apiUrl: BEAM_CONFIG.apiBase,
+        portalUrl: '',
+        beamMongoExpressUrl: '',
+        dockerRegistryUrl: '',
+      });
     }
 
     const storage = await RNTokenStorage.create(BEAM_CONFIG.pid);

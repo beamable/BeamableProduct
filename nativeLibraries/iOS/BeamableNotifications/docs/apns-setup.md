@@ -102,7 +102,7 @@ and read the token from the callback:
 
 **React Native**
 ```ts
-import BeamableNotifications from 'beamable-notifications';
+import BeamableNotifications from 'beamable-notifications-ios';
 BeamableNotifications.addListener('tokenReceived', ({ token }) => sendToBackend(token));
 BeamableNotifications.addListener('tokenError', ({ error }) => console.warn(error));
 BeamableNotifications.requestPermission();   // user must allow first

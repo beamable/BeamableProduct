@@ -19,12 +19,12 @@ namespace Beamable.PushNotificationService
 		public string deepLink;
 	}
 
-	/// <summary>Outcome of a single device delivery.</summary>
-	public class ApnsSendOutcome
+	/// <summary>Outcome of a single device delivery (shared by every push provider).</summary>
+	public class PushSendOutcome
 	{
 		public bool ok;
 		public string reason;
-		public bool tokenIsInvalid; // APNs says this token is dead → prune it
+		public bool tokenIsInvalid; // the provider says this token is dead → prune it
 	}
 
 	/// <summary>
@@ -58,7 +58,7 @@ namespace Beamable.PushNotificationService
 		private static readonly TimeSpan JwtLifetime = TimeSpan.FromMinutes(50);
 
 		/// <summary>Sends one push to one device.</summary>
-		public async Task<ApnsSendOutcome> Send(ApnsSettings settings, DeviceInfo device, PushMessage message)
+		public async Task<PushSendOutcome> Send(ApnsSettings settings, DeviceInfo device, PushMessage message)
 		{
 			string jwt;
 			try
@@ -67,7 +67,7 @@ namespace Beamable.PushNotificationService
 			}
 			catch (Exception ex)
 			{
-				return new ApnsSendOutcome { ok = false, reason = $"failed to sign provider token: {ex.Message}" };
+				return new PushSendOutcome { ok = false, reason = $"failed to sign provider token: {ex.Message}" };
 			}
 
 			var environment = settings.ResolveEnvironment(device.environment);
@@ -89,7 +89,7 @@ namespace Beamable.PushNotificationService
 			{
 				using var response = await Http.SendAsync(request);
 				if (response.StatusCode == HttpStatusCode.OK)
-					return new ApnsSendOutcome { ok = true };
+					return new PushSendOutcome { ok = true };
 
 				var bodyText = await response.Content.ReadAsStringAsync();
 				var reason = ExtractReason(bodyText) ?? response.StatusCode.ToString();
@@ -97,11 +97,11 @@ namespace Beamable.PushNotificationService
 					|| reason is "BadDeviceToken" or "Unregistered" or "DeviceTokenNotForTopic";
 
 				BeamableLogger.LogWarning("APNs rejected push ({status}): {reason}", (int)response.StatusCode, reason);
-				return new ApnsSendOutcome { ok = false, reason = reason, tokenIsInvalid = dead };
+				return new PushSendOutcome { ok = false, reason = reason, tokenIsInvalid = dead };
 			}
 			catch (Exception ex)
 			{
-				return new ApnsSendOutcome { ok = false, reason = $"transport error: {ex.Message}" };
+				return new PushSendOutcome { ok = false, reason = $"transport error: {ex.Message}" };
 			}
 		}
 
