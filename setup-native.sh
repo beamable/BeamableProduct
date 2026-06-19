@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script should be run ONCE before building the native Android libraries,
+# This script should be run ONCE before building the native Android library,
 # or any time you want to re-discover/re-install the toolchain.
 #
 # It will:
@@ -10,10 +10,10 @@
 #      an existing Android Studio SDK when present, instead of re-downloading).
 #   3. Persist the resolved JAVA_HOME / ANDROID_SDK_ROOT to
 #      nativeLibraries/Android/.native-build-env and write a local.properties
-#      (sdk.dir) into each Gradle project.
+#      (sdk.dir) into the Gradle project.
 #   4. Bootstrap the Gradle wrapper (the wrapper .jar is not committed).
 #
-# Why JDK 17 specifically: the libraries pin AGP 8.1.4 (requires JDK 17 to run)
+# Why JDK 17 specifically: the library pins AGP 8.1.4 (requires JDK 17 to run)
 # and Gradle 8.2 (which cannot run on JDK 21 — Android Studio's bundled JBR).
 
 set -e
@@ -22,12 +22,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/Android"
 ENV_FILE="$ANDROID_DIR/.native-build-env"
 
-PUSH_PROJ="$ANDROID_DIR/PushNotifications"
-DEEPLINK_PROJ="$ANDROID_DIR/Deeplink"
+NOTIF_PROJ="$ANDROID_DIR/BeamableNotifications"
 
 GRADLE_VERSION=8.2
 
-echo "=== Beamable Native Android Libraries — Setup ==="
+echo "=== Beamable Native Android Library — Setup ==="
 
 # ---------------------------------------------------------------------------
 # Detect OS
@@ -179,7 +178,7 @@ EOF
 echo "  Wrote $ENV_FILE"
 
 SDK_NATIVE_PATH="$(to_native_path "$ANDROID_SDK_RESOLVED")"
-for proj in "$PUSH_PROJ" "$DEEPLINK_PROJ" ; do
+for proj in "$NOTIF_PROJ" ; do
   echo "sdk.dir=$SDK_NATIVE_PATH" > "$proj/local.properties"
   echo "  Wrote $proj/local.properties"
 done
@@ -208,7 +207,7 @@ ensure_gradle() {
 }
 
 GRADLE_BIN="$(ensure_gradle)"
-for proj in "$PUSH_PROJ" "$DEEPLINK_PROJ" ; do
+for proj in "$NOTIF_PROJ" ; do
   if [ -f "$proj/gradlew" ] && [ -f "$proj/gradle/wrapper/gradle-wrapper.jar" ]; then
     echo "  Wrapper already present in $(basename "$proj")"
   else

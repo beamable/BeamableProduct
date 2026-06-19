@@ -1,0 +1,49 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    // Unified module hosting both com.beamable.push.* and com.beamable.deeplink.*.
+    // The namespace only sets the R class / default manifest package; the source
+    // packages keep their original names.
+    namespace 'com.beamable.notifications'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 24
+        consumerProguardFiles 'proguard-rules.pro'
+    }
+
+    buildTypes {
+        release {
+            // Libraries ship unminified; the consuming app shrinks using our
+            // consumerProguardFiles. This keeps the .aar's classes intact.
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.12.0'
+    // FCM. The library always links against firebase-messaging so PushFirebaseService
+    // resolves; remote only activates when a google-services.json is present in the app.
+    // (Deep-link-only consumers simply never call the push API — firebase is dead weight then.)
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')
+    implementation 'com.google.firebase:firebase-messaging-ktx'
+
+    // The React Native adapters (com.beamable.push.react / com.beamable.deeplink.react) ship in
+    // this .aar. React is compileOnly: linked at build time, NOT bundled or transitive — in a
+    // Unity/Unreal app the RN classes are simply never loaded. The unreal/ bridges use JNI
+    // `external` funcs (no dependency).
+    compileOnly 'com.facebook.react:react-android:0.73.4'
+}

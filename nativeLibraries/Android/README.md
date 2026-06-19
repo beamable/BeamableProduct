@@ -1,62 +1,62 @@
-# Beamable Native Android Libraries
+# Beamable Native Android Library
 
-Two reusable, **engine-agnostic** Kotlin Android libraries, each a standalone Gradle
-project that builds a `.aar`. Currently consumed by **Unity** (React Native / Unreal later).
+One reusable, **engine-agnostic** Kotlin Android library (one Gradle module → one `.aar`) holding
+**both** push notifications and deep-link capture — mirroring the single iOS `BeamableNotifications`
+framework. Consumed by **Unity** today (React Native / Unreal later).
 
 ```
-nativeLibraries/Android/
-  PushNotifications/   → com.beamable.push     — local + optional remote (FCM) push
-  Deeplink/            → com.beamable.deeplink  — native deeplink (VIEW intent) capture
+nativeLibraries/Android/BeamableNotifications/   (Gradle project; module: notifications)
+  notifications/src/main/java/com/beamable/
+    push/       → com.beamable.push      — local + optional remote (FCM) push
+    deeplink/   → com.beamable.deeplink  — native deeplink (VIEW intent) capture
+  → builds notifications-release.aar
 ```
 
-Each project = **engine-agnostic core** + a thin **Unity adapter** (in `unity/`). The core
-never references any engine; the Unity adapter forwards events via
-`UnityPlayer.UnitySendMessage` using reflection. A future Unreal/RN adapter would call the same
-core (see "Engine adapter" below).
+The two halves keep their original package names but compile into one module (namespace
+`com.beamable.notifications`). Each half = **engine-agnostic core** + thin per-engine adapters (in
+`unity/`, `unreal/`, `react/`). The cores never reference any engine; adapters forward events via
+`UnityPlayer.UnitySendMessage` (Unity), `RCTDeviceEventEmitter` (RN), or JNI (Unreal). See the engine
+guide below.
 
-## Building the AARs
+## Building the AAR
 
-These are plain Android library projects. Gradle **8.2**, AGP **8.1.4**, Kotlin **1.9.22**,
-`compileSdk 34`, `minSdk 24`, Java 11.
-
-The Gradle wrapper `.jar` is not committed. Generate the wrapper once (or open each project
-in Android Studio, which does it automatically):
+Plain Android library project. Gradle **8.2**, AGP **8.1.4**, Kotlin **1.9.22**, `compileSdk 34`,
+`minSdk 24`, Java 11. The Gradle wrapper `.jar` is not committed (run `./setup-native.sh` once, or
+open the project in Android Studio, to generate it).
 
 ```bash
-cd PushNotifications && gradle wrapper --gradle-version 8.2
-cd ../Deeplink       && gradle wrapper --gradle-version 8.2
+cd BeamableNotifications && ./gradlew :notifications:assembleRelease
+# → notifications/build/outputs/aar/notifications-release.aar
 ```
 
-Then build:
-
-```bash
-cd PushNotifications && ./gradlew :pushnotifications:assembleRelease
-cd ../Deeplink       && ./gradlew :deeplink:assembleRelease
-```
-
-Artifacts:
-- `PushNotifications/pushnotifications/build/outputs/aar/pushnotifications-release.aar`
-- `Deeplink/deeplink/build/outputs/aar/deeplink-release.aar`
+Normally you don't run this directly — **`./dev-native.sh`** (repo root) builds the AAR and copies
+it into the shared Unity package at
+`nativeLibraries/EnginePlugins/Unity/Plugins/Android/beamable-notifications-release.aar`.
 
 ## Consuming from Unity
 
-1. Copy both `.aar` into the Unity project's `Assets/Plugins/Android/`.
-2. **Editor tool does the gradle setup automatically** — there are no committed gradle template
-   files. The consuming Unity project (`BeamableProduct/client`) ships
-   `Assets/Scripts/Editor/BeamableAndroidBuildProcessor.cs`, which at build time injects the
-   libraries' **transitive Maven dependencies** (Unity does NOT resolve a loose `.aar`'s POM),
-   enables AndroidX, and wires Firebase only when a `google-services.json` is present:
+The AAR **ships inside the shared `Beamable.Notifications` package** (`Plugins/Android/`), so a
+consuming Unity project gets it automatically via the package reference — nothing to copy into
+`Assets/`.
+
+1. Reference the package in `Packages/manifest.json`:
+   `"com.beamable.notifications": "file:../../nativeLibraries/EnginePlugins/Unity"`.
+2. **Editor tooling (shipped in the package) does the gradle setup automatically** — no committed
+   gradle template files. `Editor/BeamableAndroidBuildProcessor.cs` injects the library's
+   **transitive Maven dependencies** at build (Unity does NOT resolve a loose `.aar`'s POM), enables
+   AndroidX, and wires Firebase only when a `google-services.json` is present:
    ```gradle
    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'
    implementation 'androidx.core:core-ktx:1.12.0'
    implementation platform('com.google.firebase:firebase-bom:33.7.0')
    implementation 'com.google.firebase:firebase-messaging-ktx'
    ```
-   Run **Tools/Beamable/Android/Setup & Validation** in Unity to auto-apply settings and verify
-   the AARs/manifest/SDK. A pre-build processor re-checks and auto-applies on every Android build.
-3. Call the `@JvmStatic` Unity facades from C# via `AndroidJavaClass`:
-   `com.beamable.push.unity.UnityPush` and `com.beamable.deeplink.unity.UnityDeepLink`.
-   Native → C# events arrive via `UnitySendMessage` to a named GameObject.
+   Run **Tools/Beamable/Android/Setup and Validation** to auto-apply settings (and scaffold a default
+   `AndroidManifest.xml` if the project has none). A pre-build processor re-checks on every Android build.
+3. Game code uses the shared `Beamable.Notifications` C# API (same as iOS); on Android it routes to
+   the `@JvmStatic` facade `com.beamable.push.unity.UnityNotifications` (deep links via
+   `DeepLinkManager.cs` → `com.beamable.deeplink.unity.UnityDeepLink`). Native → C# events arrive via
+   `UnitySendMessage` to an auto-spawned GameObject.
 
 ## Local vs remote (push)
 
@@ -82,8 +82,9 @@ Register via app-manifest meta-data (required for the closed-app case):
 <meta-data android:name="com.beamable.push.notification_received_handler"
            android:value="your.fully.Qualified.HandlerClass" />
 ```
-or programmatically with `PushManager.setNotificationReceivedHandler(...)`. Working example:
-`client/Assets/Plugins/Android/DiscordWebhookPushHandler.java`.
+or programmatically with `PushManager.setNotificationReceivedHandler(...)`. Working example: the
+`DiscordWebhookPushHandler.java` in the package's **Native Demo** sample
+(`nativeLibraries/EnginePlugins/Unity/Samples~/NativeDemo/`).
 
 **Requirements & caveats:** send **data-only, high-priority** FCM messages (a `notification`
 block is auto-displayed and bypasses the hook while closed — only fires on tap). A
@@ -94,7 +95,7 @@ background thread (~10s budget); a short blocking call is fine, otherwise enqueu
 
 ### The model: one shared core, two directions
 
-The libraries are an **engine-agnostic core** that any code calls:
+Each half of the library is an **engine-agnostic core** that any code calls:
 `PushManager` / `DeepLinkManager` (facades) + `PushListener` / `DeepLinkListener` (callbacks).
 
 An engine adapter only handles two things, and **only the second is engine-specific**:
@@ -124,11 +125,12 @@ listener callback ──> [shared] ListenerToBridge ──> EngineBridge.emit(me
 Implement `EngineBridge` once per engine; the listener-to-event serialization stays shared.
 
 ### Unity — implemented (in this `.aar`, `unity/`)
-- **Inbound:** `UnityPush` / `UnityDeepLink` — `@JvmStatic` facades. Needed because Unity's
-  `AndroidJavaClass` can't cleanly call Kotlin `object` instance methods or pass the activity
-  across JNI; the facades take only strings/primitives and resolve the activity natively.
-- **Outbound:** `UnityPushBridge` / `UnityDeepLinkBridge` implement the core listeners and call
-  `UnitySendMessage(gameObject, method, json)` via reflection (no Unity dependency at build).
+- **Inbound:** `UnityNotifications` / `UnityDeepLink` — `@JvmStatic` facades (matching the iOS
+  `BeamableNotifications` API). Needed because Unity's `AndroidJavaClass` can't cleanly call Kotlin
+  `object` instance methods or pass the activity across JNI; the facades take only strings/primitives
+  and resolve the activity natively.
+- **Outbound:** `UnityNotificationsBridge` / `UnityDeepLinkBridge` implement the core listeners and
+  call `UnitySendMessage(gameObject, method, json)` via reflection (no Unity dependency at build).
 - Must ship precompiled in the `.aar` — Unity does not compile Kotlin from `Assets/`.
 
 ### Unreal — Kotlin adapter shipped in the `.aar` (`unreal/`); C++/UPL glue still to do
@@ -145,7 +147,7 @@ Implement `EngineBridge` once per engine; the listener-to-event serialization st
 - **Shipped (`react/`):** `ReactPushModule`/`ReactDeepLinkModule`
   (`ReactContextBaseJavaModule`, inbound `@ReactMethod` + outbound `RCTDeviceEventEmitter`;
   deeplink also registers an `ActivityEventListener`) + their `ReactPackage`s. Compiled against a
-  `compileOnly` `com.facebook.react` (not bundled — see ProGuard note in each library README).
+  `compileOnly` `com.facebook.react` (not bundled — see the ProGuard note in `BeamableNotifications/README.md`).
 - **Still to do (in an RN package):** the JS/TS API and `react-native.config.js` that registers
   the `ReactPackage` with autolinking; depend on this `.aar`.
 

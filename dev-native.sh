@@ -3,24 +3,23 @@
 # PREREQ:
 #   Run ./setup-native.sh at least once before running this script.
 #
-# This script will be run many times as you develop the native Android libraries.
+# This script will be run many times as you develop the native Android library.
 # Each run:
-#   1. Builds both AARs (pushnotifications-release.aar, deeplink-release.aar)
+#   1. Builds the unified AAR (beamable-notifications-release.aar — push + deep links)
 #      using the JDK 17 + Android SDK resolved by setup-native.sh.
-#   2. Copies them into the Unity client at client/Assets/Plugins/Android/.
-#   3. Opens that folder so you can see the packages.
+#   2. Copies it into the shared Unity package at
+#      nativeLibraries/EnginePlugins/Unity/Plugins/Android/ (the package ships the binary;
+#      the Unity client consumes it via its local UPM reference).
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/Android"
 ENV_FILE="$ANDROID_DIR/.native-build-env"
-CLIENT_ANDROID_DIR="$SCRIPT_DIR/client/Assets/Plugins/Android"
+PACKAGE_ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/Unity/Plugins/Android"
 
-PUSH_PROJ="$ANDROID_DIR/PushNotifications"
-DEEPLINK_PROJ="$ANDROID_DIR/Deeplink"
-PUSH_AAR="$PUSH_PROJ/pushnotifications/build/outputs/aar/pushnotifications-release.aar"
-DEEPLINK_AAR="$DEEPLINK_PROJ/deeplink/build/outputs/aar/deeplink-release.aar"
+NOTIF_PROJ="$ANDROID_DIR/BeamableNotifications"
+NOTIF_AAR="$NOTIF_PROJ/notifications/build/outputs/aar/notifications-release.aar"
 
 GRADLE_VERSION=8.2
 
@@ -43,7 +42,7 @@ source "$ENV_FILE"
 export JAVA_HOME="$JAVA_HOME_NATIVE"
 export ANDROID_SDK_ROOT="$ANDROID_SDK_ROOT_NATIVE"
 
-echo "=== Beamable Native Android Libraries — Build ==="
+echo "=== Beamable Native Android Library — Build ==="
 echo "JAVA_HOME        = $JAVA_HOME"
 echo "ANDROID_SDK_ROOT = $ANDROID_SDK_ROOT"
 
@@ -67,34 +66,27 @@ run_gradlew() { # $1=project dir, remaining args = gradle tasks/flags
 }
 
 # ---------------------------------------------------------------------------
-# 1. Build both AARs
+# 1. Build the unified AAR
 # ---------------------------------------------------------------------------
 echo ""
-echo "--- Building com.beamable.push ---"
-run_gradlew "$PUSH_PROJ" :pushnotifications:assembleRelease
+echo "--- Building com.beamable.notifications (push + deeplink) ---"
+run_gradlew "$NOTIF_PROJ" :notifications:assembleRelease
 
-echo ""
-echo "--- Building com.beamable.deeplink ---"
-run_gradlew "$DEEPLINK_PROJ" :deeplink:assembleRelease
-
-for aar in "$PUSH_AAR" "$DEEPLINK_AAR" ; do
-  [ -f "$aar" ] || { echo "ERROR: expected artifact not produced: $aar"; exit 1; }
-done
+[ -f "$NOTIF_AAR" ] || { echo "ERROR: expected artifact not produced: $NOTIF_AAR"; exit 1; }
 
 # ---------------------------------------------------------------------------
-# 2. Copy AARs into the Unity client
+# 2. Copy the AAR into the shared Unity package
+#    (Only the binary is overwritten; the committed .aar.meta persists.)
 # ---------------------------------------------------------------------------
 echo ""
-echo "--- Copying AARs into the client ---"
-mkdir -p "$CLIENT_ANDROID_DIR"
-cp "$PUSH_AAR"     "$CLIENT_ANDROID_DIR/pushnotifications-release.aar"
-cp "$DEEPLINK_AAR" "$CLIENT_ANDROID_DIR/deeplink-release.aar"
-echo "  pushnotifications-release.aar → $CLIENT_ANDROID_DIR"
-echo "  deeplink-release.aar          → $CLIENT_ANDROID_DIR"
+echo "--- Copying AAR into the shared Unity package ---"
+mkdir -p "$PACKAGE_ANDROID_DIR"
+cp "$NOTIF_AAR" "$PACKAGE_ANDROID_DIR/beamable-notifications-release.aar"
+echo "  beamable-notifications-release.aar → $PACKAGE_ANDROID_DIR"
 
 # ---------------------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------------------
 echo ""
 echo "Done. Next: open the client in Unity 2021.3.45f2 and run"
-echo "Tools/Beamable/Android/Setup & Validation to verify the AARs."
+echo "Tools/Beamable/Android/Setup & Validation to verify the setup."

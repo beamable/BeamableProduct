@@ -1,0 +1,28 @@
+{
+  "name": "com.beamable.notifications",
+  "version": "1.0.0",
+  "displayName": "Beamable Notifications",
+  "description": "Cross-platform Beamable notifications SDK for Unity (iOS + Android): local + remote push, deep links, templates, action buttons, rich media, closed-app analytics.",
+  "unity": "2021.3",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  },
+  "keywords": [
+    "ios",
+    "android",
+    "notifications",
+    "push",
+    "fcm",
+    "apns"
+  ],
+  "samples": [
+    {
+      "displayName": "Native Demo",
+      "description": "IMGUI test harness exercising local/remote notifications + deep links, plus a sample native receive-time handler (DiscordWebhookPushHandler) that posts a webhook while the app is closed.",
+      "path": "Samples~/NativeDemo"
+    }
+  ],
+  "author": {
+    "name": "Beamable"
+  }
+}
