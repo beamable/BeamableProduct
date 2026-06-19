@@ -80,24 +80,31 @@ namespace Beamable.PushNotificationService
 		}
 
 		/// <summary>
-		/// Builds the FCM HTTP v1 message. Note that <c>data</c> values must be strings,
-		/// so the optional deep link is carried as a string just like in the APNs payload.
+		/// Builds the FCM HTTP v1 message as a DATA-ONLY, high-priority message (no
+		/// <c>notification</c> block).
+		///
+		/// Why data-only: a message WITH a <c>notification</c> block is displayed by the OS
+		/// directly and does NOT invoke <c>FirebaseMessagingService.onMessageReceived</c> when
+		/// the app is backgrounded/killed — so the Beamable receive-time handler
+		/// (PushNotificationReceivedHandler) never runs in that state. A data-only message DOES
+		/// invoke <c>onMessageReceived</c> in every state (foreground, background, killed), so the
+		/// handler fires; the Beamable library then builds the tray notification itself
+		/// (PushFirebaseService.displayDataMessage). Keys must match what the library reads:
+		/// <c>title</c>, <c>body</c>, <c>deeplink</c> (lowercase). FCM data values must be strings.
 		/// </summary>
 		private static string BuildPayload(string deviceToken, PushMessage message)
 		{
-			var notification = new Dictionary<string, object>();
-			if (!string.IsNullOrWhiteSpace(message.title)) notification["title"] = message.title;
-			if (!string.IsNullOrWhiteSpace(message.body)) notification["body"] = message.body;
+			var data = new Dictionary<string, object>();
+			if (!string.IsNullOrWhiteSpace(message.title)) data["title"] = message.title;
+			if (!string.IsNullOrWhiteSpace(message.body)) data["body"] = message.body;
+			if (!string.IsNullOrWhiteSpace(message.deepLink)) data["deeplink"] = message.deepLink;
 
 			var msg = new Dictionary<string, object>
 			{
 				["token"] = deviceToken,
-				["notification"] = notification,
+				["data"] = data,
 				["android"] = new Dictionary<string, object> { ["priority"] = "high" },
 			};
-
-			if (!string.IsNullOrWhiteSpace(message.deepLink))
-				msg["data"] = new Dictionary<string, object> { ["deepLink"] = message.deepLink };
 
 			var root = new Dictionary<string, object> { ["message"] = msg };
 			return JsonSerializer.Serialize(root);

@@ -116,6 +116,11 @@ namespace Beamable.PushNotificationService
 			{
 				["alert"] = alert,
 				["sound"] = "default",
+				// Wake the Notification Service Extension on delivery — even when the app is
+				// backgrounded/killed — so it can run closed-app analytics (the webhook POST).
+				// Without "mutable-content": 1 the NSE never runs and the closed-app POST won't
+				// fire (the alert still displays). Requires apns-push-type: alert (set above).
+				["mutable-content"] = 1,
 			};
 
 			var root = new Dictionary<string, object> { ["aps"] = aps };
