@@ -124,10 +124,12 @@ namespace Beamable.PushNotificationService
 		}
 
 		/// <summary>
-		/// Admin/back-office endpoint: send a remote push to a specific player by id.
-		/// Only callable with an admin/developer token.
+		/// Back-office endpoint: send a remote push to a specific player by id. Exposed as
+		/// <c>[ServerCallable]</c> so the Portal extension can call it — that still requires the
+		/// "<c>*</c>" (admin) scope, but unlike <c>[AdminOnlyCallable]</c> it does not require a
+		/// logged-in player, which a Portal extension's session does not carry.
 		/// </summary>
-		[AdminOnlyCallable]
+		[ServerCallable]
 		public async Task<AdminSendResult> SendPushToPlayer(long playerId, string title, string body, string deepLink)
 		{
 			var r = await DeliverToPlayer(playerId, title, body, deepLink);
@@ -151,7 +153,7 @@ namespace Beamable.PushNotificationService
 		/// in sync, then load each player's private device list for the summary. Tokens are
 		/// never returned.
 		/// </summary>
-		[AdminOnlyCallable]
+		[ServerCallable]
 		public async Task<RegisteredPlayerList> ListRegisteredPlayers()
 		{
 			// SearchStats lives on the concrete AbsStatsApi (admin-only), not the IStatsApi
@@ -189,7 +191,7 @@ namespace Beamable.PushNotificationService
 		/// JSON into the Portal, since a mangled <c>private_key</c> is the usual failure. Returns a
 		/// secret-free summary and never echoes the key. Also logs the same summary server-side.
 		/// </summary>
-		[AdminOnlyCallable]
+		[ServerCallable]
 		public async Task<FcmConfigStatus> CheckFcmConfig()
 		{
 			try
