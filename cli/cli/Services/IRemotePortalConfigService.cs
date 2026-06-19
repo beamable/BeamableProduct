@@ -11,7 +11,7 @@ public class RemotePortalConfigService : IRemotePortalConfigService
 {
 	public async Task<RemotePortalConfiguration> GetRemotePortalConfig(CommandArgs args)
 	{
-		var url = PortalCommand.GetPortalBaseUrl(args) + "/extension-pages.json";
+		var url = PortalCommand.GetPortalBaseUrl(args, true) + "/extension-pages.json";
 
 		var client = new HttpClient();
 		var json = await client.GetStringAsync(url);

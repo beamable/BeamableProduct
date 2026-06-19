@@ -26,13 +26,21 @@ public class PortalCommand : AppCommand<PortalCommandArgs>
 		MachineHelper.OpenBrowser($"{realmUrl}/{qb}");
 	}
 
-	public static string GetPortalBaseUrl(CommandArgs args)
+	public static string GetPortalBaseUrl(CommandArgs args, bool isNewPortal = false)
 	{
 		var binding = args.DependencyProvider.GetService<BindingContext>();
 		var portalUrl = binding.ParseResult.GetValueForOption(args.DependencyProvider.GetService<PortalUrlOption>());
 		if (string.IsNullOrEmpty(portalUrl))
 		{
-			portalUrl = args.AppContext.Host.Replace("dev.", "dev-").Replace("api", "portal");
+			if (isNewPortal)
+			{
+				portalUrl = args.AppContext.Host.Replace("api", "console");
+			}
+			else
+			{
+				portalUrl = args.AppContext.Host.Replace("dev.", "dev-").Replace("api", "portal");
+			}
+			
 		}
 		else
 		{
