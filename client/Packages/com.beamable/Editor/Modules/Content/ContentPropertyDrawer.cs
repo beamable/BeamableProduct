@@ -189,75 +189,71 @@ namespace Beamable.Editor.Content
 		}
 	}
 
-	public class ContentRefSearchWindow : EditorWindow, IDelayedActionWindow
+	/// <summary>
+	/// One selectable row in a content search popup.
+	/// </summary>
+	public struct ContentSearchOption
 	{
-		struct Option
-		{
-			public string DisplayName;
-			public string DisplayNameLower;
-			public string Id;
-		}
+		public string DisplayName;
+		public string DisplayNameLower;
+		public string Id;
+	}
 
-		public BaseContentRef FieldValue { get; set; }
+	/// <summary>
+	/// Base class for the searchable content-id dropdown popups. Owns the shared search bar, the
+	/// virtualized scroll list (only the rows intersecting the viewport are drawn, so it scales to
+	/// thousands of entries) and the selection/validation plumbing. Subclasses only supply the option
+	/// list and how a pick is written back. The windowing approach mirrors
+	/// <c>ContentWindow_ItemsPanel</c>.
+	/// </summary>
+	public abstract class ContentSearchWindowBase : EditorWindow, IDelayedActionWindow
+	{
 		public SerializedProperty Property { get; set; }
-		public FieldInfo FieldInfo { get; set; }
 		public Object Object { get; set; }
-		public GUIContent Label { get; set; }
+
+		protected readonly SearchData _searchData = new SearchData();
 
 		private Vector2 _scrollPos;
 		private string _searchString;
-		private SearchData _searchData = new SearchData();
 		private bool _initialized;
-		private string _typeName;
 		private GUIStyle _normalStyle, _activeStyle;
-		private List<Option> _options;
-		private Dictionary<string, Option> _idToOption;
+		private List<ContentSearchOption> _options;
+		private List<ContentSearchOption> _filtered;
+		private string _filterKey;
+		private bool _filterKeyValid;
 		private int _selectedIndex;
 		private Texture2D _highlightTexture;
 		private Texture2D _activeTexture;
 		public List<Action> delayedActions = new List<Action>();
-		private const string SearchControlName = "contentRefSearchBar";
+
+		private const float ScrollBarWidth = 18f;
+		private const float ToolbarHeight = 30f;
+
+		/// <summary>Search field control name; unique per window type so focus is not shared.</summary>
+		protected abstract string SearchControlName { get; }
+
+		/// <summary>The full, unfiltered option list. Called once after Beamable is initialized.</summary>
+		protected abstract List<ContentSearchOption> BuildOptions();
+
+		/// <summary>The current value, used to pre-select / scroll a row into view on open.</summary>
+		protected abstract string CurrentId { get; }
+
+		/// <summary>Writes the chosen option into the backing property/object.</summary>
+		protected abstract void ApplySelection(ContentSearchOption option);
 
 		public async void Init()
 		{
-			var referenceType = FieldValue.GetReferencedBaseType();
-			var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
-			_typeName = contentTypeReflectionCache.TypeToName(referenceType);
-			var de = BeamEditorContext.Default;
-			await de.InitializePromise;
-			
-			var contentEntries = de.CliContentService.GetContentsFromType(referenceType, true);
-			_options = new List<Option>();
-			_idToOption = new Dictionary<string, Option>();
-			foreach (var content in contentEntries)
-			{
-				var displayName = content.FullId.Substring(_typeName.Length + 1);
-				var option = new Option
-				{
-					Id = content.FullId,
-					DisplayName = displayName,
-					DisplayNameLower = displayName.ToLower()
-				};
-				_options.Add(option);
-				_idToOption.Add(content.FullId, option);
-			}
+			await BeamEditorContext.Default.InitializePromise;
 
-			var nullOption = new Option
-			{
-				DisplayName = "<none>",
-				DisplayNameLower = "none",
-				Id = null
-			};
-			_options.Insert(0, nullOption);
-			_idToOption.Add("", nullOption);
+			_options = BuildOptions();
 
-
-			var currId = FieldValue.GetId();
+			var currId = CurrentId;
 			_selectedIndex = 0;
 			if (!string.IsNullOrEmpty(currId))
 			{
-				_selectedIndex = _options.FindIndex(o => currId.Equals(o.Id));
+				_selectedIndex = Mathf.Max(0, _options.FindIndex(o => currId.Equals(o.Id)));
 			}
+			_scrollPos = new Vector2(0, _selectedIndex * EditorGUIUtility.singleLineHeight);
 
 			_highlightTexture = MakeTex(1, 1, new Color(0, 0, 0, .1f));
 			_activeTexture = MakeTex(1, 1, new Color(0, .5f, 1, .2f));
@@ -266,30 +262,36 @@ namespace Beamable.Editor.Content
 			{
 				normal = { background = _activeTexture },
 				hover = { background = _highlightTexture },
-				wordWrap = true
+				wordWrap = false
 			};
 
 			_normalStyle = new GUIStyle(GUI.skin.label)
 			{
 				hover = { background = _highlightTexture },
-				wordWrap = true
+				wordWrap = false
 			};
+
+			// Repaint when the search text changes instead of every frame.
+			_searchData.onEndCheck = Repaint;
+
+			wantsMouseMove = true;
 			_initialized = true;
-
+			Repaint();
 		}
-		private Texture2D MakeTex(int width, int height, Color col)
-		{
-			Color[] pix = new Color[width * height];
 
-			for (int i = 0; i < pix.Length; i++)
+		private static Texture2D MakeTex(int width, int height, Color col)
+		{
+			var pix = new Color[width * height];
+			for (var i = 0; i < pix.Length; i++)
 				pix[i] = col;
 
-			Texture2D result = new Texture2D(width, height);
+			var result = new Texture2D(width, height);
 			result.SetPixels(pix);
 			result.Apply();
 
 			return result;
 		}
+
 		protected void OnGUI()
 		{
 			if (!_initialized)
@@ -298,49 +300,65 @@ namespace Beamable.Editor.Content
 				return;
 			}
 
-			GUILayout.BeginHorizontal(GUI.skin.FindStyle("Toolbar"), GUILayout.Height(30));
+			GUILayout.BeginHorizontal(GUI.skin.FindStyle("Toolbar"), GUILayout.Height(ToolbarHeight));
 			this.DrawSearchBar(_searchData, textFieldName: SearchControlName);
 			_searchString = _searchData.searchText;
 			GUI.FocusControl(SearchControlName);
 			GUILayout.EndHorizontal();
 
-			_scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, GUILayout.Height(this.position.height - 30));
-			var searchLower = _searchString?.ToLower() ?? "";
-
-			var filteredOptions = _options.Where(option =>
-			   string.IsNullOrEmpty(_searchString) || option.DisplayNameLower.Contains(searchLower)).ToArray();
-			var contents = filteredOptions.Select(option => new GUIContent(option.DisplayName)).ToList();
-
-			var index = -1;
-
-			EditorGUI.BeginChangeCheck();
-
-			for (var i = 0; i < contents.Count; i++)
+			// Re-filter only when the search text actually changes, not on every repaint.
+			if (!_filterKeyValid || !string.Equals(_filterKey, _searchString, StringComparison.Ordinal))
 			{
-				var c = contents[i];
-				var isSelected = _selectedIndex == i;
-				var style = isSelected ? _activeStyle : _normalStyle;
-
-				var clicked = GUILayout.Button(c, style, GUILayout.MaxWidth(position.width - 20));
-				if (clicked)
+				_filterKey = _searchString;
+				_filterKeyValid = true;
+				if (string.IsNullOrEmpty(_searchString))
 				{
-					index = i;
+					_filtered = _options;
+				}
+				else
+				{
+					var searchLower = _searchString.ToLower();
+					_filtered = _options.Where(o => o.DisplayNameLower.Contains(searchLower)).ToList();
 				}
 			}
 
-			EditorGUILayout.EndScrollView();
+			var rowHeight = EditorGUIUtility.singleLineHeight;
+			var areaRect = GUILayoutUtility.GetRect(position.width, position.height - ToolbarHeight);
+			var totalHeight = _filtered.Count * rowHeight;
+			var contentRect = new Rect(0, 0, areaRect.width - ScrollBarWidth, totalHeight);
 
-			if (EditorGUI.EndChangeCheck())
+			// Handle the scroll wheel manually so the popup does not reuse a stale scroll id.
+			if (Event.current.type == EventType.ScrollWheel && areaRect.Contains(Event.current.mousePosition))
 			{
-				Undo.RecordObject(Object, "Change Content Ref");
-				var selected = filteredOptions[index];
-				var fieldValues = ContentRefPropertyDrawer.GetTargetObjectsOfProperty(Property);
-				foreach (BaseContentRef fieldValue in fieldValues)
-				{
-					fieldValue.SetId(selected.Id);
-				}
+				_scrollPos.y = Mathf.Clamp(_scrollPos.y + Event.current.delta.y * 10f, 0,
+				   Mathf.Max(0, totalHeight - areaRect.height));
+				Event.current.Use();
+				Repaint();
+			}
 
-				Property.serializedObject.Update();
+			_scrollPos = GUI.BeginScrollView(areaRect, _scrollPos, contentRect, false, true);
+
+			// Only draw the rows intersecting the viewport -> O(visible) instead of O(all options).
+			var first = Mathf.Max(0, Mathf.FloorToInt(_scrollPos.y / rowHeight));
+			var last = Mathf.Min(_filtered.Count - 1, first + Mathf.CeilToInt(areaRect.height / rowHeight) + 1);
+
+			var clicked = -1;
+			for (var i = first; i <= last; i++)
+			{
+				var rowRect = new Rect(0, i * rowHeight, contentRect.width, rowHeight);
+				var style = i == _selectedIndex ? _activeStyle : _normalStyle;
+				if (GUI.Button(rowRect, _filtered[i].DisplayName, style))
+				{
+					clicked = i;
+				}
+			}
+
+			GUI.EndScrollView();
+
+			if (clicked >= 0)
+			{
+				Undo.RecordObject(Object, "Change Content Reference");
+				ApplySelection(_filtered[clicked]);
 				EditorUtility.SetDirty(Object);
 
 				foreach (var targetObject in Property.serializedObject.targetObjects)
@@ -355,7 +373,12 @@ namespace Beamable.Editor.Content
 			}
 
 			Property.serializedObject.UpdateIfRequiredOrScript();
-			Repaint(); // make gui reactive
+
+			// Reactive hover/selection without burning a repaint every frame.
+			if (Event.current.type == EventType.MouseMove)
+			{
+				Repaint();
+			}
 
 			foreach (var act in delayedActions)
 			{
@@ -371,41 +394,74 @@ namespace Beamable.Editor.Content
 	}
 
 	/// <summary>
-	/// Searchable dropdown popup for plain <see cref="string"/> content-id fields decorated with
-	/// <see cref="Beamable.Common.Content.Validation.MustReferenceContent"/>. Mirrors
-	/// <see cref="ContentRefSearchWindow"/> but writes the selected id straight into the string
-	/// <see cref="SerializedProperty"/> instead of going through a <see cref="BaseContentRef"/>.
+	/// Searchable dropdown popup for <see cref="BaseContentRef"/> fields.
 	/// </summary>
-	public class ContentStringSearchWindow : EditorWindow, IDelayedActionWindow
+	public class ContentRefSearchWindow : ContentSearchWindowBase
 	{
-		struct Option
+		public BaseContentRef FieldValue { get; set; }
+		public FieldInfo FieldInfo { get; set; }
+		public GUIContent Label { get; set; }
+
+		protected override string SearchControlName => "contentRefSearchBar";
+
+		protected override string CurrentId => FieldValue.GetId();
+
+		protected override List<ContentSearchOption> BuildOptions()
 		{
-			public string DisplayName;
-			public string DisplayNameLower;
-			public string Id;
+			var referenceType = FieldValue.GetReferencedBaseType();
+			var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+			var typeName = contentTypeReflectionCache.TypeToName(referenceType);
+
+			var contentEntries = BeamEditorContext.Default.CliContentService.GetContentsFromType(referenceType, true);
+
+			var options = new List<ContentSearchOption>
+			{
+				new ContentSearchOption { DisplayName = "<none>", DisplayNameLower = "none", Id = null }
+			};
+			foreach (var content in contentEntries)
+			{
+				var displayName = content.FullId.Substring(typeName.Length + 1);
+				options.Add(new ContentSearchOption
+				{
+					Id = content.FullId,
+					DisplayName = displayName,
+					DisplayNameLower = displayName.ToLower()
+				});
+			}
+
+			return options;
 		}
 
-		public SerializedProperty Property { get; set; }
-		public Object Object { get; set; }
+		protected override void ApplySelection(ContentSearchOption option)
+		{
+			var fieldValues = ContentRefPropertyDrawer.GetTargetObjectsOfProperty(Property);
+			foreach (BaseContentRef fieldValue in fieldValues)
+			{
+				fieldValue.SetId(option.Id);
+			}
+
+			Property.serializedObject.Update();
+		}
+	}
+
+	/// <summary>
+	/// Searchable dropdown popup for plain <see cref="string"/> content-id fields decorated with
+	/// <see cref="Beamable.Common.Content.Validation.MustReferenceContent"/>. Writes the selected id
+	/// straight into the string <see cref="SerializedProperty"/> instead of going through a
+	/// <see cref="BaseContentRef"/>.
+	/// </summary>
+	public class ContentStringSearchWindow : ContentSearchWindowBase
+	{
 		public Type[] AllowedTypes { get; set; }
 		public bool AllowNull { get; set; }
 
-		private Vector2 _scrollPos;
-		private string _searchString;
-		private SearchData _searchData = new SearchData();
-		private bool _initialized;
-		private GUIStyle _normalStyle, _activeStyle;
-		private List<Option> _options;
-		private int _selectedIndex;
-		private Texture2D _highlightTexture;
-		private Texture2D _activeTexture;
-		public List<Action> delayedActions = new List<Action>();
-		private const string SearchControlName = "contentStringSearchBar";
+		protected override string SearchControlName => "contentStringSearchBar";
 
-		public async void Init()
+		protected override string CurrentId => Property.stringValue;
+
+		protected override List<ContentSearchOption> BuildOptions()
 		{
 			var de = BeamEditorContext.Default;
-			await de.InitializePromise;
 
 			// Collect candidate manifest entries: union of AllowedTypes (incl. sub-types), or
 			// all content when no type constraint is supplied.
@@ -422,7 +478,7 @@ namespace Beamable.Editor.Content
 				entries.AddRange(de.CliContentService.EntriesCache.Values);
 			}
 
-			_options = new List<Option>();
+			var options = new List<ContentSearchOption>();
 			var seen = new HashSet<string>();
 			foreach (var content in entries)
 			{
@@ -431,7 +487,7 @@ namespace Beamable.Editor.Content
 					continue;
 				}
 
-				_options.Add(new Option
+				options.Add(new ContentSearchOption
 				{
 					Id = content.FullId,
 					DisplayName = content.FullId,
@@ -439,11 +495,11 @@ namespace Beamable.Editor.Content
 				});
 			}
 
-			_options.Sort((a, b) => string.CompareOrdinal(a.DisplayNameLower, b.DisplayNameLower));
+			options.Sort((a, b) => string.CompareOrdinal(a.DisplayNameLower, b.DisplayNameLower));
 
 			if (AllowNull)
 			{
-				_options.Insert(0, new Option
+				options.Insert(0, new ContentSearchOption
 				{
 					DisplayName = "<none>",
 					DisplayNameLower = "none",
@@ -451,118 +507,13 @@ namespace Beamable.Editor.Content
 				});
 			}
 
-			var currId = Property.stringValue;
-			_selectedIndex = 0;
-			if (!string.IsNullOrEmpty(currId))
-			{
-				_selectedIndex = _options.FindIndex(o => currId.Equals(o.Id));
-			}
-
-			_highlightTexture = MakeTex(1, 1, new Color(0, 0, 0, .1f));
-			_activeTexture = MakeTex(1, 1, new Color(0, .5f, 1, .2f));
-
-			_activeStyle = new GUIStyle(GUI.skin.label)
-			{
-				normal = { background = _activeTexture },
-				hover = { background = _highlightTexture },
-				wordWrap = true
-			};
-
-			_normalStyle = new GUIStyle(GUI.skin.label)
-			{
-				hover = { background = _highlightTexture },
-				wordWrap = true
-			};
-			_initialized = true;
+			return options;
 		}
 
-		private Texture2D MakeTex(int width, int height, Color col)
+		protected override void ApplySelection(ContentSearchOption option)
 		{
-			Color[] pix = new Color[width * height];
-
-			for (int i = 0; i < pix.Length; i++)
-				pix[i] = col;
-
-			Texture2D result = new Texture2D(width, height);
-			result.SetPixels(pix);
-			result.Apply();
-
-			return result;
-		}
-
-		protected void OnGUI()
-		{
-			if (!_initialized)
-			{
-				EditorGUILayout.PrefixLabel("...fetching");
-				return;
-			}
-
-			GUILayout.BeginHorizontal(GUI.skin.FindStyle("Toolbar"), GUILayout.Height(30));
-			this.DrawSearchBar(_searchData, textFieldName: SearchControlName);
-			_searchString = _searchData.searchText;
-			GUI.FocusControl(SearchControlName);
-			GUILayout.EndHorizontal();
-
-			_scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, GUILayout.Height(this.position.height - 30));
-			var searchLower = _searchString?.ToLower() ?? "";
-
-			var filteredOptions = _options.Where(option =>
-			   string.IsNullOrEmpty(_searchString) || option.DisplayNameLower.Contains(searchLower)).ToArray();
-			var contents = filteredOptions.Select(option => new GUIContent(option.DisplayName)).ToList();
-
-			var index = -1;
-
-			EditorGUI.BeginChangeCheck();
-
-			for (var i = 0; i < contents.Count; i++)
-			{
-				var c = contents[i];
-				var isSelected = _selectedIndex == i;
-				var style = isSelected ? _activeStyle : _normalStyle;
-
-				var clicked = GUILayout.Button(c, style, GUILayout.MaxWidth(position.width - 20));
-				if (clicked)
-				{
-					index = i;
-				}
-			}
-
-			EditorGUILayout.EndScrollView();
-
-			if (EditorGUI.EndChangeCheck())
-			{
-				Undo.RecordObject(Object, "Change Content Reference");
-				var selected = filteredOptions[index];
-
-				Property.stringValue = selected.Id;
-				Property.serializedObject.ApplyModifiedProperties();
-				EditorUtility.SetDirty(Object);
-
-				foreach (var targetObject in Property.serializedObject.targetObjects)
-				{
-					if (targetObject is ContentObject contentObject)
-					{
-						contentObject.ForceValidate();
-					}
-				}
-
-				Close();
-			}
-
-			Property.serializedObject.UpdateIfRequiredOrScript();
-			Repaint(); // make gui reactive
-
-			foreach (var act in delayedActions)
-			{
-				act?.Invoke();
-			}
-			delayedActions.Clear();
-		}
-
-		public void AddDelayedAction(Action act)
-		{
-			delayedActions.Add(act);
+			Property.stringValue = option.Id;
+			Property.serializedObject.ApplyModifiedProperties();
 		}
 	}
 
