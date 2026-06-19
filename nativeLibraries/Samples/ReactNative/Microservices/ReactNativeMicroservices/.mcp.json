@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "beamable": {
+      "command": "dotnet",
+      "args": [
+        "beam",
+        "mcp",
+        "serve"
+      ]
+    }
+  }
+}

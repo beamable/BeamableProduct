@@ -3,6 +3,66 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
+export type RegisterResult = { 
+  success: boolean; 
+  deviceCount: number; 
+  message: string; 
+};
+
+export type RegisterDeviceTokenRequestArgs = { 
+  token: string; 
+  environment: string; 
+};
+
+export type UnregisterResult = { 
+  success: boolean; 
+  deviceCount: number; 
+  message: string; 
+};
+
+export type UnregisterDeviceTokenRequestArgs = { 
+  token: string; 
+};
+
+export type DeviceInfo = { 
+  token: string; 
+  environment: string; 
+  updatedAt: bigint | string; 
+};
+
+export type DeviceList = { 
+  devices: DeviceInfo[]; 
+};
+
+export type SendResult = { 
+  success: boolean; 
+  attempted: number; 
+  succeeded: number; 
+  failed: number; 
+  messages: string[]; 
+};
+
+export type SendPushToSelfRequestArgs = { 
+  title: string; 
+  body: string; 
+  deepLink: string; 
+};
+
+export type AdminSendResult = { 
+  success: boolean; 
+  attempted: number; 
+  succeeded: number; 
+  failed: number; 
+  messages: string[]; 
+};
+
+export type SendPushToPlayerRequestArgs = { 
+  playerId: bigint | string; 
+  title: string; 
+  body: string; 
+  deepLink: string; 
+};
+
 export type AddRequestArgs = { 
   a: number; 
   b: number; 

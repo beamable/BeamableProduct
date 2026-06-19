@@ -196,6 +196,38 @@ dotnet beam deploy release -q  # ship to the cloud realm
 
 ---
 
+## The microservice (`PushNotificationService`) — remote push via APNs
+
+A second C# service that registers APNs device tokens and sends **remote** push
+notifications through Apple (token-based `.p8` auth over HTTP/2). This is the
+server side of the "2c · Remote push (APNs microservice)" panel in `app/index.tsx`.
+
+| Endpoint | Attr | Purpose |
+|---|---|---|
+| `RegisterDeviceToken(token, environment)` | `[ClientCallable]` | store the caller's APNs token (de-duplicated) |
+| `UnregisterDeviceToken(token)` | `[ClientCallable]` | remove a token |
+| `ListMyDevices()` | `[ClientCallable]` | list the caller's devices (masked) |
+| `SendPushToSelf(title, body, deepLink)` | `[ClientCallable]` | push to the caller's own device(s) |
+| `SendPushToPlayer(playerId, …)` | `[AdminOnlyCallable]` | back-office: push to any player |
+
+Source: `Microservices/.../services/PushNotificationService/` — see its `README.md`
+for the **Realm Config** keys you must set (`apns_push` namespace: `auth_key`,
+`key_id`, `team_id`, `bundle_id`=`com.beamable.rnsample`, `default_environment`).
+
+- **Storage:** device tokens live in a *private per-player stat* (`apns_devices`,
+  a JSON array) — no MongoDB. The privileged service identity can read any
+  player's tokens, which powers the admin endpoint.
+- **Delivery:** `ApnsClient` signs an ES256 provider JWT (cached ~50 min) and
+  POSTs to `api.sandbox.push.apple.com` / `api.push.apple.com`. Dead tokens
+  (`BadDeviceToken`/`Unregistered`) are pruned automatically.
+- **App flow:** the native `tokenReceived` event → `registerDevice(token)` (in
+  `src/beam/pushNotifications.ts`) → server stores it. This **replaces** the old
+  built-in PushApi call (`src/beam/push.ts` is now unused by the app).
+- **Caveat:** remote push needs a **physical iOS device** (APNs never delivers to
+  the Simulator) and the realm config above.
+
+---
+
 ## Client generation — important workflow
 
 The TypeScript client is **CLI-generated, not hand-written**. Regenerate it

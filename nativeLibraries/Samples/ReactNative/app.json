@@ -8,7 +8,7 @@
     "newArchEnabled": true,
     "scheme": "beamrnsample",
     "ios": {
-      "bundleIdentifier": "com.beamable.rnsample",
+      "bundleIdentifier": "com.beamble.samples.beamfarmrn",
       "supportsTablet": true
     },
     "android": {
@@ -35,7 +35,7 @@
       [
         "./plugins/withBeamableNotifications",
         {
-          "appGroup": "group.com.beamable.rnsample",
+          "appGroup": "group.com.beamable.mobiletest",
           "enableServiceExtension": true
         }
       ]

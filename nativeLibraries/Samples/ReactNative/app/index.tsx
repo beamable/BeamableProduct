@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 
 import { BEAM_CONFIG, isConfigured } from '../src/beam/config';
 import {
-  getBeam,
+  getPushService,
   getSampleService,
   initBeam,
   type BeamStatus,
@@ -28,13 +28,16 @@ import {
   requestBeamablePermission,
   scheduleBeamableDeepLink,
 } from '../src/notifications/beamableNotifications';
-import { registerPushToken } from '../src/beam/push';
+import { listDevices, registerDevice, sendToSelf } from '../src/beam/pushNotifications';
 import { detailsPath, detailsUrl, openUrl } from '../src/linking/links';
 
 export default function Home() {
   const router = useRouter();
   const [beam, setBeam] = useState<BeamStatus>({ state: 'idle' });
   const [log, setLog] = useState<string[]>([]);
+  // The APNs device token from the native SDK's `tokenReceived` event. Needed to
+  // register this device with the PushNotificationService microservice.
+  const [apnsToken, setApnsToken] = useState<string | null>(null);
 
   const append = (msg: string) =>
     setLog((prev) => [`${time()}  ${msg}`, ...prev].slice(0, 40));
@@ -50,12 +53,12 @@ export default function Home() {
         append(`Beamable permission: ${r.granted ? 'granted' : 'denied'} (${r.status})`),
       ),
       addBeamableListener('tokenReceived', async ({ token }) => {
+        setApnsToken(token);
         append(`APNs token: ${token.slice(0, 12)}…`);
-        const beam = getBeam();
-        if (!beam) return append('Token not registered — connect to Beamable first');
+        if (!getPushService()) return append('Token not registered — connect to Beamable first');
         try {
-          await registerPushToken(beam, 'apns', token);
-          append('APNs token registered with Beamable');
+          const res = await registerDevice(token);
+          append(`Device registered with PushNotificationService (${res.deviceCount} total)`);
         } catch (e) {
           append(`Token register error: ${e instanceof Error ? e.message : String(e)}`);
         }
@@ -150,6 +153,48 @@ export default function Home() {
     append('Beamable: registered for remote (APNs). Token on event (real device only).');
   };
 
+  // 2c) Remote push via the PushNotificationService microservice ----------
+  // Devices auto-register on the `tokenReceived` event above. These actions
+  // ask the microservice to deliver a real APNs push and to list registrations.
+  const registerThisDevice = async () => {
+    if (!getPushService()) return append('Register: connect to Beamable first');
+    if (!apnsToken) return append('No APNs token yet — tap "Register for remote (APNs)" in 2b first (physical device).');
+    append('RegisterDeviceToken …');
+    try {
+      const res = await registerDevice(apnsToken);
+      append(`RegisterDeviceToken → ${res.success ? 'ok' : 'failed'}: ${res.message} (${res.deviceCount} device(s))`);
+    } catch (e) {
+      append(`Register error: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const sendPushToMyself = async () => {
+    if (!getPushService()) return append('Remote push: connect to Beamable first');
+    append('Sending remote push to myself …');
+    try {
+      const res = await sendToSelf(
+        'Hello from Beamable 👋',
+        'This remote push came from your APNs microservice.',
+        detailsUrl(999),
+      );
+      append(`Push: attempted ${res.attempted}, sent ${res.succeeded}, failed ${res.failed}`);
+      res.messages?.forEach((m) => append(`  · ${m}`));
+    } catch (e) {
+      append(`Send error: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const showMyDevices = async () => {
+    if (!getPushService()) return append('Remote push: connect to Beamable first');
+    try {
+      const res = await listDevices();
+      append(`Registered devices: ${res.devices.length}`);
+      res.devices.forEach((d) => append(`  · ${d.token} (${d.environment ?? 'default'})`));
+    } catch (e) {
+      append(`List error: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
   // 3) Deep links ---------------------------------------------------------
   const simulateDeepLink = async () => {
     const url = detailsUrl(123);
@@ -240,6 +285,31 @@ export default function Home() {
         ) : (
           <Text style={styles.hint}>
             iOS only — the native module is not available on this platform.
+          </Text>
+        )}
+      </Section>
+
+      {/* Remote push via the PushNotificationService microservice */}
+      <Section title="2c · Remote push (APNs microservice)">
+        {isBeamableNotificationsSupported ? (
+          <>
+            <Text style={styles.hint}>
+              Registers this device's APNs token with the{' '}
+              PushNotificationService microservice, then has the server send a
+              real remote push back to you via Apple. Needs a physical device +
+              APNs credentials in your realm config. Steps: Connect to Beamable →
+              Register for remote (2b) → Register this device → Send.
+            </Text>
+            <Text style={styles.hint}>
+              APNs token: {apnsToken ? `${apnsToken.slice(0, 12)}…` : 'none yet (Register for remote in 2b)'}
+            </Text>
+            <Button label="Register this device (microservice)" onPress={registerThisDevice} />
+            <Button label="Send remote push to myself" onPress={sendPushToMyself} />
+            <Button label="List my registered devices" onPress={showMyDevices} />
+          </>
+        ) : (
+          <Text style={styles.hint}>
+            iOS only — APNs remote push is not available on this platform.
           </Text>
         )}
       </Section>

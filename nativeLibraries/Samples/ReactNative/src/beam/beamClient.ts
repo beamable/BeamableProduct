@@ -18,6 +18,7 @@ import type { TokenStorage } from '@beamable/sdk';
 import { BEAM_CONFIG, isConfigured } from './config';
 import { RNTokenStorage } from './RNTokenStorage';
 import { SampleServiceClient } from './beamable/clients/SampleServiceClient';
+import { PushNotificationServiceClient } from './beamable/clients/PushNotificationServiceClient';
 
 export type BeamStatus =
   | { state: 'idle' }
@@ -41,6 +42,15 @@ export function getBeam(): Beam | null {
  */
 export function getSampleService(): SampleServiceClient | null {
   return beamInstance?.sampleServiceClient ?? null;
+}
+
+/**
+ * The typed client for the `PushNotificationService` microservice, or null until
+ * `initBeam()` has resolved. Use it to register this device's APNs token and to
+ * send remote pushes — e.g. `getPushService()?.sendPushToSelf({ title, body })`.
+ */
+export function getPushService(): PushNotificationServiceClient | null {
+  return beamInstance?.pushNotificationServiceClient ?? null;
 }
 
 /**
@@ -86,6 +96,9 @@ export async function initBeam(): Promise<Beam> {
     // Auto-generated client for the SampleService microservice. Registering
     // it adds the typed `beam.sampleServiceClient` accessor.
     beam.use(SampleServiceClient);
+    // Auto-generated client for the PushNotificationService microservice
+    // (adds the typed `beam.pushNotificationServiceClient` accessor).
+    beam.use(PushNotificationServiceClient);
     beamInstance = beam;
   
     return beam;
