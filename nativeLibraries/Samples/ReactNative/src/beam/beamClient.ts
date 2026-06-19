@@ -1,5 +1,6 @@
 // Polyfills MUST load before fake-indexeddb and the SDK are imported.
 import '../polyfills';
+import { hydrateLocalStorage } from '../polyfills';
 // IndexedDB polyfill for the SDK's content-manifest cache. Imported here (not
 // in polyfills.ts) so it loads AFTER the DOMException/structuredClone shims it
 // depends on.
@@ -82,6 +83,12 @@ export async function initBeam(): Promise<Beam> {
         dockerRegistryUrl: '',
       });
     }
+
+    // Load the persisted localStorage entries (the SDK's `beam_cid`/`beam_pid`
+    // realm marker) before Beam.init() reads them synchronously. Without this,
+    // the SDK treats every cold start as a realm change and clears our tokens,
+    // creating a new guest player each launch.
+    await hydrateLocalStorage();
 
     const storage = await RNTokenStorage.create(BEAM_CONFIG.pid);
 
