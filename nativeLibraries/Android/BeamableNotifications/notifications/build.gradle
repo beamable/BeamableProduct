@@ -31,6 +31,13 @@ android {
     kotlinOptions {
         jvmTarget = '11'
     }
+
+    testOptions {
+        unitTests {
+            // Robolectric needs the merged resources/manifest available to the JVM tests.
+            includeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -46,4 +53,12 @@ dependencies {
     // Unity/Unreal app the RN classes are simply never loaded. The unreal/ bridges use JNI
     // `external` funcs (no dependency).
     compileOnly 'com.facebook.react:react-android:0.73.4'
+
+    // Host-run unit tests (mirror of the iOS swift-test suite). Robolectric provides
+    // real org.json / Intent / Bundle / Activity implementations on the JVM, so the
+    // pure-logic units can be tested without an emulator via
+    // `./gradlew :notifications:testDebugUnitTest`.
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.11.1'
+    testImplementation 'androidx.test:core:1.5.0'
 }
