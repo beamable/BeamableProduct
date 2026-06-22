@@ -1,8 +1,12 @@
 using Beamable.Api;
+using Beamable.Api.Analytics;
 using Beamable.Common.Api.Auth;
+using Beamable.Player;
+using Beamable.Serialization;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 
 namespace Beamable.Platform.Tests
@@ -152,7 +156,7 @@ namespace Beamable.Platform.Tests
 		}
 
 		[Test]
-		public void CanRemove_MalformedTokenWithoutRefreshToken()
+		public void DoesNotRemove_MalformedTokenWithoutRefreshToken()
 		{
 			PlayerPrefs.SetString(DeviceTokensKey, "token1|test1,bad_access_token,token3|test3");
 			_storage.RemoveDeviceRefreshToken(_cid, _pid, new TokenResponse
@@ -161,7 +165,44 @@ namespace Beamable.Platform.Tests
 				refresh_token = ""
 			});
 			var value = PlayerPrefs.GetString(DeviceTokensKey);
-			Assert.AreEqual("token1|test1,token3|test3", value);
+			Assert.AreEqual("token1|test1,bad_access_token,token3|test3", value);
+		}
+	}
+
+	public class RememberedTokenDiagnosticTests
+	{
+		[Test]
+		public void RememberedTokenFailure_OnlySerializesTokenSuffixes()
+		{
+			var method = typeof(PlayerAccounts).GetMethod(
+				"CreateRememberedTokenFailureEvent",
+				BindingFlags.Static | BindingFlags.NonPublic);
+
+			Assert.NotNull(method);
+			var tokenEvent = (CoreEvent)method.Invoke(null, new object[]
+			{
+				123L,
+				new TokenResponse
+				{
+					access_token = "access-token-secret-1234",
+					refresh_token = "refresh-token-secret-5678"
+				},
+				"InvalidTokenError",
+				"removed",
+				"get-user",
+				401L
+			});
+			var json = JsonSerializable.ToJson(tokenEvent);
+
+			StringAssert.Contains("remembered_token_failure", json);
+			StringAssert.Contains("InvalidTokenError", json);
+			StringAssert.Contains("removed", json);
+			StringAssert.Contains("get-user", json);
+			StringAssert.Contains("401", json);
+			StringAssert.Contains("1234", json);
+			StringAssert.Contains("5678", json);
+			StringAssert.DoesNotContain("access-token-secret", json);
+			StringAssert.DoesNotContain("refresh-token-secret", json);
 		}
 	}
 }
