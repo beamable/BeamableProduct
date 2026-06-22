@@ -4,37 +4,59 @@ const path = require('path');
 
 const projectRoot = __dirname;
 
-// The Beamable Web SDK lives OUTSIDE this project (a `file:` dependency).
-// Metro only watches the project root by default, so add the SDK folder to
-// watchFolders and to the module resolution paths.
+// The repo root (BeamableProduct), three levels up from this project.
 //
-// This project lives at BeamableProduct/nativeLibraries/Samples/ReactNative, so
-// the Web SDK (BeamableProduct/web) is three levels up. Update if you move it.
-const beamSdkRoot = path.resolve(projectRoot, '../../../web');
+// On Windows the repo's deep path overflows the 260-char MAX_PATH limit during the
+// New-Architecture C++ build, so the app is built from a short `subst` drive (e.g.
+// `subst B: <this folder>`). A drive root can't resolve `../../..` to the real
+// siblings (the web SDK + native modules live OUTSIDE this folder), so allow the real
+// repo root to be passed explicitly via BEAM_REPO_ROOT; otherwise use the relative path.
+const repoRoot = process.env.BEAM_REPO_ROOT
+  ? path.resolve(process.env.BEAM_REPO_ROOT)
+  : path.resolve(projectRoot, '../../..');
+
+// The Beamable Web SDK lives OUTSIDE this project (a `file:` dependency) at
+// BeamableProduct/web. Metro only watches the project root by default, so add the
+// SDK folder to watchFolders and to the module resolution paths.
+const beamSdkRoot = path.resolve(repoRoot, 'web');
 
 // Resolve the SDK's ESM *browser* build explicitly. Its package `exports` list
 // `require` (an IIFE global-script build) before `import`, so condition-based
 // resolution would otherwise pick the wrong, non-importable file. The browser
 // build is fetch-based and works in RN together with src/polyfills.ts.
-const beamMain = path.resolve(beamSdkRoot, 'dist/browser/index.mjs');
-const beamApi = path.resolve(beamSdkRoot, 'dist/api.mjs');
+// Resolve through the node_modules symlink (`@beamable/sdk` is a `file:` dep → symlinked
+// to the web SDK). Metro indexes files under this in-tree path; pointing at the symlink's
+// real out-of-tree target instead makes Metro's SHA-1 lookup miss (the file map keys the
+// crawled file under the node_modules path).
+const beamPkg = path.resolve(projectRoot, 'node_modules/@beamable/sdk');
+const beamMain = path.resolve(beamPkg, 'dist/browser/index.mjs');
+const beamApi = path.resolve(beamPkg, 'dist/api.mjs');
 
 // The Beamable Notifications native SDKs are also `file:` dependencies living outside the
 // project root (under nativeLibraries/iOS|Android/BeamableNotifications). npm symlinks them
 // into node_modules, but their real source is here — Metro must watch them to resolve
 // `beamable-notifications-ios` / `beamable-notifications-android`.
 const beamNotificationsIosRoot = path.resolve(
-  projectRoot,
-  '../../iOS/BeamableNotifications/reactnative',
+  repoRoot,
+  'nativeLibraries/iOS/BeamableNotifications/reactnative',
 );
 const beamNotificationsAndroidRoot = path.resolve(
-  projectRoot,
-  '../../Android/BeamableNotifications/reactnative',
+  repoRoot,
+  'nativeLibraries/Android/BeamableNotifications/reactnative',
 );
 
 const config = getDefaultConfig(projectRoot);
 
+// Watchman isn't required and, when it's absent on Windows, Metro's fallback only
+// reliably crawls the projectRoot — leaving the external watchFolders below (the web
+// SDK in particular) out of the file map, which breaks SHA-1 lookups for the SDK's
+// browser build. Force Metro's Node crawler so every watchFolder is indexed.
+config.resolver.useWatchman = false;
+
+// Keep the projectRoot AND the external `file:`/SDK roots watched (these live outside
+// the project root). Replacing the list drops the default projectRoot entry, so re-add it.
 config.watchFolders = [
+  projectRoot,
   beamSdkRoot,
   beamNotificationsIosRoot,
   beamNotificationsAndroidRoot,

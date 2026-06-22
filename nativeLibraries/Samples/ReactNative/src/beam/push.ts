@@ -6,8 +6,8 @@
  * registered with Beamable via the SDK's PushApi.
  *
  * To actually receive server-sent pushes you must also configure an FCM/APNS
- * provider in your Beamable realm. Get the device token from the native SDK's
- * `tokenReceived` event after `registerForRemote()` (see
+ * provider in your Beamable realm. Get the device token from the Beamable
+ * Notifications SDK's `tokenReceived` event (call `registerForRemote()` in
  * src/notifications/beamableNotifications.ts; requires a real device + a dev
  * build, not Expo Go), then call `registerPushToken`.
  */

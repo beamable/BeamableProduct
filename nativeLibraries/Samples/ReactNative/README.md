@@ -57,8 +57,8 @@ regardless.
 
 ## 3. Run (dev client build)
 
-This app uses native modules (`expo-notifications`, `expo-dev-client`), so it
-runs as a **dev build**, not Expo Go:
+This app uses native modules (the Beamable Notifications SDK, `expo-dev-client`),
+so it runs as a **dev build**, not Expo Go:
 
 ```bash
 npx expo run:ios       # builds + launches on the iOS simulator
@@ -161,17 +161,18 @@ put it behind a link in Notes/Messages, to confirm real external entry points.
 
 ### C. Notification → deep-link routing
 
-`app/_layout.tsx` listens for notification taps and reads `data.path`, then
-`router.push(path)`. It also calls `getLastNotificationResponseAsync()` so a
-tap that **cold-launches** the app still routes correctly. Use **Fire in 3s**,
-background the app, then tap the notification to exercise that path.
+`app/_layout.tsx` listens for Beamable notification taps (`notificationTapped`)
+and opens the payload's `deepLink` URL via `Linking.openURL`. It also calls
+`getLaunchNotification()` so a tap that **cold-launches** the app still routes
+correctly. Background the app, then tap a notification to exercise that path.
 
 ### D. Beamable native notifications (iOS + Android)
 
-Sections **2b** and **2c** on the Home screen exercise the **native** Beamable
-Notifications SDK (not expo-notifications): iOS via `beamable-notifications-ios`
-(Swift core) and Android via `beamable-notifications-android` (the prebuilt
-`.aar`'s `BeamablePush` / `BeamableDeeplink` bridges). One façade
+Sections **2** and **3** on the Home screen exercise the **native** Beamable
+Notifications SDK (the app's only notification system): iOS via
+`beamable-notifications-ios` (Swift core) and Android via
+`beamable-notifications-android` (the prebuilt `.aar`'s `BeamablePush` /
+`BeamableDeeplink` bridges). One façade
 (`src/notifications/beamableNotifications.ts`) routes per platform, so the same
 buttons work on both.
 
@@ -181,14 +182,14 @@ buttons work on both.
 webhook the instant a push arrives. The Expo plugin registers it via manifest
 meta-data. Exercise it two ways:
 
-- **Local (no Firebase):** tap **Fire now** in section 2b — the local
+- **Local (no Firebase):** tap **Fire now** in section 2 — the local
   notification fires the handler.
 - **Remote, killed app:** fully close the app, then send a **data-only,
   high-priority** FCM message (Firebase console or `curl`) to this device's FCM
   token. The handler fires from a fresh process and posts to Slack.
 
-**Remote push (section 2c) works on Android just like iOS.** `registerForRemote`
-(2b) yields an FCM token, which auto-registers with the `PushNotificationService`
+**Remote push (section 3) works on Android just like iOS.** `registerForRemote`
+(section 2) yields an FCM token, which auto-registers with the `PushNotificationService`
 microservice tagged `platform: "fcm"`; "Send remote push to myself" then has the
 server deliver a real push via Firebase (the service routes each device to APNs
 or FCM by its stored platform). Needs `google-services.json` at the project root
@@ -284,12 +285,13 @@ beam.player.id; // authenticated guest player
 
 ### Optional: register a native push token with Beamable
 
-See `src/beam/push.ts` and `getDevicePushToken()` in
-`src/notifications/notifications.ts`. On a **physical device** with a **dev
-build**:
+See `src/beam/push.ts`. The device token comes from the Beamable Notifications
+SDK's `tokenReceived` event — call `registerForRemote()` (see
+`src/notifications/beamableNotifications.ts`) on a **physical device** with a
+**dev build**, then register it:
 ```ts
-const token = await getDevicePushToken();          // FCM (Android) / APNS (iOS)
-if (token) await registerPushToken(beam, 'fcm', token);
+// In the `tokenReceived` listener (FCM on Android / APNS on iOS):
+await registerPushToken(beam, Platform.OS === 'android' ? 'fcm' : 'apns', token);
 ```
 
 ---

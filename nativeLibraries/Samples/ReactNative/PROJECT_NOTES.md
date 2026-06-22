@@ -11,10 +11,9 @@ gotchas worth remembering. The user-facing setup/run instructions live in
 An **Expo / React Native** app that exercises the **Beamable Web SDK** end to
 end: guest login, the high-level services (auth, account, content, stats,
 announcements, leaderboards), local notifications, deep links, and a **custom
-C# microservice** (`SampleService`). It also integrates the **Beamable
-Notifications** native SDK — iOS via `beamable-notifications-ios`, Android via
-`beamable-notifications-android` — alongside expo-notifications. See the section
-below.
+C# microservice** (`SampleService`). Notifications are handled solely by the
+**Beamable Notifications** native SDK — iOS via `beamable-notifications-ios`,
+Android via `beamable-notifications-android`. See the section below.
 
 - **App** — `app/` (expo-router): `index.tsx` is the test panel, `sdk.tsx` is
   the full SDK explorer, `details/[id].tsx` is a deep-link target.
@@ -64,8 +63,8 @@ leans on a few shims:
 
 ## Beamable Notifications — native SDK (iOS + Android)
 
-Alongside the cross-platform `expo-notifications` path, the app integrates the
-**Beamable Notifications** native SDK on **both platforms**. Both packages live
+Notifications are handled solely by the **Beamable Notifications** native SDK on
+**both platforms** (the app does not use `expo-notifications`). Both packages live
 in-repo and are wired in as `file:` dependencies:
 
 - **iOS** — `beamable-notifications-ios`
@@ -89,7 +88,7 @@ web.
 | JS façade | `src/notifications/beamableNotifications.ts` — platform-routes the lazy `require`; iOS-only methods are no-ops on Android |
 | Tap/launch routing | `app/_layout.tsx` — `notificationTapped` + `getLaunchNotification()` open the payload's `deepLink` URL; Android also logs native VIEW-intent capture via `addBeamableDeepLinkListener` |
 | Token → backend | `app/index.tsx` `tokenReceived` listener → `registerDevice(token)` (`src/beam/pushNotifications.ts`) — APNs token (iOS) / FCM token (Android) |
-| UI | `app/index.tsx` sections **2b** (native SDK) and **2c** (remote push microservice) |
+| UI | `app/index.tsx` sections **2** (native SDK) and **3** (remote push microservice) |
 | Native setup | `plugins/withBeamableNotifications.js` (Expo config plugin) — iOS entitlements/NSE **and** the Android receive-time handler; registered in `app.json` |
 
 ### The native module is event-driven
@@ -104,8 +103,10 @@ result arrives later on an event (`permissionResult`, `tokenReceived`,
 `scheduleBeamableDeepLink(...)` stashes a full `beamrnsample://details/<id>` URL
 under `userInfo.deepLink`. On tap, `_layout.tsx` opens it via `Linking.openURL`,
 which expo-router resolves — the same path a real server push carrying a deep
-link would take. (The expo-notifications path instead routes a `path` string
-through `router.push`; both demonstrate notification → route.)
+link takes. Remote pushes carry the deep link the same way: APNs at the payload
+root (`deepLink`), FCM in `data` (`deeplink`); the native SDK normalizes both to
+`deepLink` and the same `notificationTapped` / `getLaunchNotification` routing
+applies.
 
 On **Android**, URL-scheme VIEW intents are also captured natively by the
 deeplink module and surfaced via `addBeamableDeepLinkListener`. expo-router

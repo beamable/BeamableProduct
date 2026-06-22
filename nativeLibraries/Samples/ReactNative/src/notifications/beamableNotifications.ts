@@ -1,8 +1,8 @@
 /**
  * Beamable Notifications — cross-platform native SDK façade.
  *
- * This is the only notification path the app uses (no expo-notifications). It routes to the
- * right native package per platform:
+ * This is the app's single notification path. It routes to the right native package per
+ * platform:
  *   - iOS     → `beamable-notifications-ios`     (Swift core, compiled into the pod)
  *   - Android → `beamable-notifications-android`  (the prebuilt `.aar`'s RN bridges)
  *

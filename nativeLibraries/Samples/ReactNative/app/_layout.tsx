@@ -17,11 +17,11 @@ import {
 } from '../src/notifications/beamableNotifications';
 
 export default function RootLayout() {
-  // ── Beamable Notifications (native SDK) ────────────────────────────────────
-  // This app uses the Beamable native notification SDK exclusively (no
-  // expo-notifications): it owns the notification-center delegate and routes
-  // deep links from its own payloads. Its payload carries the deep link, which
-  // we open through the OS exactly like a real server push would.
+  // ── Beamable Notifications (native iOS + Android SDK) ──────────────────────
+  // The sole notification → deep-link path. A tapped notification carries a full
+  // URL deep link, which we open through the OS exactly like a real server push
+  // would. Covers local + remote, foreground/background/cold-start, on both
+  // platforms (iOS via the Swift core, Android via the .aar's RN bridges).
   useEffect(() => {
     if (!isBeamableNotificationsSupported) return;
 
