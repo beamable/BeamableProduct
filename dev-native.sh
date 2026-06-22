@@ -3,13 +3,16 @@
 # PREREQ:
 #   Run ./setup-native.sh at least once before running this script.
 #
-# This script will be run many times as you develop the native Android library.
+# This script will be run many times as you develop the native libraries.
 # Each run:
 #   1. Builds the unified AAR (beamable-notifications-release.aar — push + deep links)
 #      using the JDK 17 + Android SDK resolved by setup-native.sh.
 #   2. Copies it into the shared Unity package at
 #      nativeLibraries/EnginePlugins/Unity/Plugins/Android/ (the package ships the binary;
 #      the Unity client consumes it via its local UPM reference).
+#   3. On macOS (and only if setup-native.sh found Xcode), builds the iOS
+#      BeamableNotifications.xcframework via the inner build-xcframework.sh script
+#      and replaces the copy under nativeLibraries/EnginePlugins/Unity/Plugins/iOS/.
 
 set -e
 
@@ -17,9 +20,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/Android"
 ENV_FILE="$ANDROID_DIR/.native-build-env"
 PACKAGE_ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/Unity/Plugins/Android"
+PACKAGE_IOS_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/Unity/Plugins/iOS"
 
 NOTIF_PROJ="$ANDROID_DIR/BeamableNotifications"
 NOTIF_AAR="$NOTIF_PROJ/notifications/build/outputs/aar/notifications-release.aar"
+
+IOS_PROJ="$SCRIPT_DIR/nativeLibraries/iOS/BeamableNotifications"
+IOS_BUILD_SCRIPT="$IOS_PROJ/scripts/build-xcframework.sh"
+IOS_XCFRAMEWORK="$IOS_PROJ/build/BeamableNotifications.xcframework"
 
 GRADLE_VERSION=8.2
 
@@ -42,7 +50,7 @@ source "$ENV_FILE"
 export JAVA_HOME="$JAVA_HOME_NATIVE"
 export ANDROID_SDK_ROOT="$ANDROID_SDK_ROOT_NATIVE"
 
-echo "=== Beamable Native Android Library — Build ==="
+echo "=== Beamable Native Libraries — Build ==="
 echo "JAVA_HOME        = $JAVA_HOME"
 echo "ANDROID_SDK_ROOT = $ANDROID_SDK_ROOT"
 
@@ -85,8 +93,37 @@ cp "$NOTIF_AAR" "$PACKAGE_ANDROID_DIR/beamable-notifications-release.aar"
 echo "  beamable-notifications-release.aar → $PACKAGE_ANDROID_DIR"
 
 # ---------------------------------------------------------------------------
+# 3. iOS xcframework (macOS only). Builds BeamableNotifications.xcframework via the
+#    existing nativeLibraries/iOS script and replaces the copy under Plugins/iOS so
+#    Unity picks up the fresh slices. We only swap the binary directory; any
+#    committed .xcframework.meta files persist.
+# ---------------------------------------------------------------------------
+if [ "$OS" = macos ] && [ "${IOS_SUPPORTED_NATIVE:-false}" = true ]; then
+  echo ""
+  echo "--- Building com.beamable.notifications iOS xcframework ---"
+  bash "$IOS_BUILD_SCRIPT"
+
+  [ -d "$IOS_XCFRAMEWORK" ] || { echo "ERROR: expected artifact not produced: $IOS_XCFRAMEWORK"; exit 1; }
+
+  echo ""
+  echo "--- Copying xcframework into the shared Unity package ---"
+  mkdir -p "$PACKAGE_IOS_DIR"
+  rm -rf "$PACKAGE_IOS_DIR/BeamableNotifications.xcframework"
+  cp -R "$IOS_XCFRAMEWORK" "$PACKAGE_IOS_DIR/BeamableNotifications.xcframework"
+  echo "  BeamableNotifications.xcframework → $PACKAGE_IOS_DIR"
+elif [ "$OS" = macos ]; then
+  echo ""
+  echo "  Skipping iOS build (IOS_SUPPORTED_NATIVE=false in $ENV_FILE)."
+  echo "  Re-run ./setup-native.sh after installing Xcode to enable iOS."
+fi
+
+# ---------------------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------------------
 echo ""
 echo "Done. Next: open the client in Unity 2021.3.45f2 and run"
-echo "Tools/Beamable/Android/Setup & Validation to verify the setup."
+echo "Tools/Beamable/Android/Setup & Validation to verify the Android setup."
+if [ "$OS" = macos ] && [ "${IOS_SUPPORTED_NATIVE:-false}" = true ]; then
+  echo "The iOS xcframework is installed under nativeLibraries/EnginePlugins/Unity/Plugins/iOS/"
+  echo "and will be picked up next time Unity builds for iOS."
+fi
