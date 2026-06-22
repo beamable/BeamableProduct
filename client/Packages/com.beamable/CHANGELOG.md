@@ -5,12 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [UnReleased]
+
 - Fixed BeamContext infinite retry handling so retry attempts past the configured retry-delay array do not overflow the
 tracked error buffer.
 
-## [5.1.0] - 2026-06-11
-
+## [5.1.0] - 2026-06-16
 ### Added
 - Added `OmitContentManifestTags` option to `ContentConfiguration` to opt out of content tag download in the public manifest. Tag-based `ContentQuery` filters (e.g. `tag:weapon`) return no results when this is enabled. [4597](https://github.com/beamable/BeamableProduct/issues/4597)
 - Added in-window Content Manager progress for sync and revert operations.
@@ -20,6 +19,7 @@ tracked error buffer.
 ### Fixed
 - Improved content sync resilience for transient SSL/socket reset download failures.
 - Fixed first-run Account window build config setup when `config-defaults.txt` is missing or has no PID.
+- Fixed intermittent Account login `TaskCanceledException` from overlapping Unity editor CLI refreshes.
 - Deserialization issue with `properties` field in Score Items of Events
 - Fixed an issue where the Unity Editor would not detect changes to Icon subObject (for Sprites in Multiple Mode) and thus not saving it correctly
 - Fixed CLI web command spamming `ObjectDisposedException` when the local CLI server is unreachable [4581](https://github.com/beamable/BeamableProduct/issues/4581)

@@ -1555,6 +1555,9 @@ public class App
 
 	private static void WarnIfAIEnvironmentWithoutMcp(string[] args)
 	{
+		// Disabled while the Beamable MCP is internal-only (see feature/beam-mcp-public).
+		return;
+
 		if (IsRunningInMcpServer) return;
 		var joined = string.Join(" ", args).ToLowerInvariant();
 		if (joined.Contains("mcp serve") || joined.Contains("mcp setup")) return;
