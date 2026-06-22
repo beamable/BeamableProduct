@@ -75,6 +75,53 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(data.userInfo["deepLink"]?.stringValue, "game://reward/42")
     }
 
+    /// Remote pushes from the backend (and Android) send `deeplink` (lowercase); local
+    /// notifications use `deepLink`. The lift must accept either spelling — this is the
+    /// fix for "remote notification deep link not working".
+    func testDeepLinkExtractionToleratesKeyVariants() {
+        let camel: [String: JSONValue] = ["deepLink": .string("game://a")]
+        let lower: [String: JSONValue] = ["deeplink": .string("game://b")]
+        let snake: [String: JSONValue] = ["deep_link": .string("game://c")]
+        let none: [String: JSONValue] = ["other": .string("x")]
+        XCTAssertEqual(camel.bmnDeepLink, "game://a")
+        XCTAssertEqual(lower.bmnDeepLink, "game://b")
+        XCTAssertEqual(snake.bmnDeepLink, "game://c")
+        XCTAssertNil(none.bmnDeepLink)
+        // Empty strings are ignored so callers fall through to the next source.
+        XCTAssertNil((["deeplink": .string("")] as [String: JSONValue]).bmnDeepLink)
+    }
+
+    // MARK: Analytics payload (feature 8)
+
+    func testAnalyticsPayloadHasRichContextAndComposedMessage() {
+        let config = AnalyticsConfig(enabled: true,
+                                     endpoint: "https://example.com",
+                                     commonParams: ["message": .string("📬 label")])
+        let payload = AnalyticsPayload.make(
+            event: "received",
+            source: "nse",
+            notificationId: "promo-42",
+            title: "Oi Gabriel",
+            body: "Fala ai Gabriel",
+            deepLink: "123",
+            wasForeground: false,
+            receivedAtMillis: 1782134720704,
+            data: ["deeplink": .string("123")],
+            config: config
+        )
+        XCTAssertEqual(payload["notificationId"]?.stringValue, "promo-42")
+        XCTAssertEqual(payload["deepLink"]?.stringValue, "123")
+        XCTAssertEqual(payload["wasForeground"], .bool(false))
+        XCTAssertEqual(payload["title"]?.stringValue, "Oi Gabriel")
+        // The composed `message` carries the label header plus the per-notification context.
+        let message = payload["message"]?.stringValue ?? ""
+        XCTAssertTrue(message.hasPrefix("📬 label"))
+        XCTAssertTrue(message.contains("messageId: promo-42"))
+        XCTAssertTrue(message.contains("deepLink: 123"))
+        XCTAssertTrue(message.contains("wasForeground: false"))
+        XCTAssertTrue(message.contains("receivedAt: 1782134720704"))
+    }
+
     // MARK: LocalRequest decoding from engine JSON
 
     func testLocalRequestDecodesFromEngineJSON() {

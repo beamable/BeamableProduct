@@ -56,7 +56,9 @@ const NSE_SOURCE_DIR = path.join(SDK_ROOT, 'extension');
 // NotificationManager.swift / RemotePush.swift use UIApplication (forbidden in an
 // app extension), so they're excluded; the NSE plugins only need these two.
 const CORE_SOURCE_DIR = path.join(SDK_ROOT, 'core/Sources/BeamableNotifications');
-const CORE_NSE_FILES = ['Models.swift', 'SharedConfig.swift'];
+// AnalyticsPayload.swift is Foundation-only (extension-safe) and is required by
+// AnalyticsServicePlugin.swift to build the enriched analytics body / webhook message.
+const CORE_NSE_FILES = ['Models.swift', 'SharedConfig.swift', 'AnalyticsPayload.swift'];
 
 // The exact set of .swift basenames the NSE target compiles: every extension
 // source plus the extension-safe core subset. Derived straight from the SDK

@@ -72,7 +72,7 @@ public final class RemotePush: NSObject {
             ?? UUID().uuidString
         let data = NotificationData(
             id: id,
-            deepLink: obj["deepLink"]?.stringValue,
+            deepLink: obj.bmnDeepLink,
             userInfo: obj
         )
         PluginRegistry.shared.dispatchNotificationReceived(data)

@@ -33,6 +33,19 @@ final class BeamableNotificationsModule: RCTEventEmitter {
 
     // MARK: Lifecycle
 
+    /// Claim the `UNUserNotificationCenter` delegate during app launch.
+    ///
+    /// iOS only guarantees that a *cold-start* notification tap (the app launched by
+    /// tapping a push) is delivered to a delegate that was assigned while the app was
+    /// launching. The JS `initialize()` below runs from a React `useEffect`, which is far
+    /// too late — by then the launch tap is already gone. So `BMNLaunchInstaller` (an ObjC
+    /// `+load` shim) calls this on `UIApplicationDidFinishLaunchingNotification`, before the
+    /// run loop delivers that tap. `NotificationManager` then captures it into
+    /// `LaunchTracker`, and the JS `initialize()` flushes it once the callbacks are wired.
+    @objc static func bmnInstallAtLaunch() {
+        NotificationManager.shared.initialize()
+    }
+
     @objc func initialize() {
         let m = NotificationManager.shared
         m.onPermissionResult = { [weak self] in self?.emit("permissionResult", Self.object($0)) }

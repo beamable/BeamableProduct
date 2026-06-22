@@ -318,7 +318,7 @@ extension NotificationData {
     init(fromContent content: UNNotificationContent, id: String) {
         var info: [String: JSONValue] = [:]
         for (k, v) in content.userInfo { info["\(k)"] = JSONValue(any: v) }
-        let deepLink = info["deepLink"]?.stringValue
+        let deepLink = info.bmnDeepLink
         self.init(
             id: id,
             title: content.title.isEmpty ? nil : content.title,

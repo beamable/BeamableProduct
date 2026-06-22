@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /// Reference plugin: reports notifications received *while the app is alive* to the
 /// analytics endpoint configured via `bmn_configureAnalytics`. The closed-app case is
@@ -27,25 +28,42 @@ public final class AnalyticsPlugin: NSObject, NotificationPlugin {
     }
 
     public func onNotificationReceived(_ note: NotificationData) {
-        send(event: "received", note: note)
+        send(event: "received", note: note, wasForeground: isAppForeground)
     }
 
     public func onNotificationTapped(_ note: NotificationData, actionId: String?) {
-        send(event: "opened", note: note)
+        // A tap means the app was backgrounded/closed when the notification arrived.
+        send(event: "opened", note: note, wasForeground: false)
     }
 
-    private func send(event: String, note: NotificationData) {
+    /// Best-effort foreground check. Reads `applicationState` on the main thread (where
+    /// these callbacks fire); falls back to `false` if ever invoked off-main.
+    private var isAppForeground: Bool {
+        guard Thread.isMainThread else { return false }
+        return UIApplication.shared.applicationState == .active
+    }
+
+    private func send(event: String, note: NotificationData, wasForeground: Bool) {
         guard let config = configProvider(), config.enabled,
               let url = URL(string: config.endpoint) else { return }
 
-        var payload: [String: JSONValue] = [
-            "event": .string(event),
-            "notificationId": .string(note.id),
-            "source": .string("app")
-        ]
-        if let deepLink = note.deepLink { payload["deepLink"] = .string(deepLink) }
+        // Raw payload, minus the APNs envelope, to mirror Android's `data` field.
+        var data = note.userInfo
+        data.removeValue(forKey: "aps")
+
+        var payload = AnalyticsPayload.make(
+            event: event,
+            source: "app",
+            notificationId: note.id,
+            title: note.title,
+            body: note.body,
+            deepLink: note.deepLink ?? note.userInfo.bmnDeepLink,
+            wasForeground: wasForeground,
+            receivedAtMillis: Int64(Date().timeIntervalSince1970 * 1000),
+            data: data,
+            config: config
+        )
         if let actionId = note.actionId { payload["actionId"] = .string(actionId) }
-        if let common = config.commonParams { for (k, v) in common { payload[k] = v } }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"

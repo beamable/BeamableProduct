@@ -35,18 +35,31 @@ public final class AnalyticsServicePlugin: NotificationServicePlugin {
             return
         }
 
-        var payload: [String: JSONValue] = [
-            "event": .string("received"),
-            "notificationId": .string(id),
-            "source": .string("nse")
-        ]
-        if let common = config.commonParams { for (k, v) in common { payload[k] = v } }
+        // Strip the APNs envelope so `data` mirrors Android's FCM data payload, and pull
+        // the deep link tolerant of key spelling (`deeplink` from the backend, etc.).
+        var data = info
+        data.removeValue(forKey: "aps")
+
+        let payload = AnalyticsPayload.make(
+            event: "received",
+            source: "nse",
+            notificationId: id,
+            title: content.title.isEmpty ? nil : content.title,
+            body: content.body.isEmpty ? nil : content.body,
+            deepLink: info.bmnDeepLink,
+            // The NSE only runs for remote pushes delivered while the app is not in the
+            // foreground (terminated or background), so this is always false.
+            wasForeground: false,
+            receivedAtMillis: Int64(now() * 1000),
+            data: data,
+            config: config
+        )
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         config.headers?.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
-        request.httpBody = try? JSONEncoder().encode(payload)
+        request.httpBody = try? JSON.encoder.encode(payload)
 
         // Forward content immediately; let the request run in the background.
         URLSession.shared.dataTask(with: request).resume()

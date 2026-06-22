@@ -19,10 +19,6 @@ import {
   type BeamStatus,
 } from '../src/beam/beamClient';
 import {
-  fireLocalNotification,
-  requestNotificationPermission,
-} from '../src/notifications/notifications';
-import {
   addBeamableListener,
   isBeamableNotificationsSupported,
   registerForRemote,
@@ -95,36 +91,7 @@ export default function Home() {
     }
   };
 
-  // 2) Notifications ------------------------------------------------------
-  const askPermission = async () => {
-    const granted = await requestNotificationPermission();
-    append(`Notification permission: ${granted ? 'granted' : 'denied'}`);
-  };
-
-  const fireNow = async () => {
-    const granted = await requestNotificationPermission();
-    if (!granted) return append('Cannot fire — permission denied');
-    await fireLocalNotification({
-      title: 'Beamable',
-      body: 'Tap me to deep-link into Details #777',
-      path: detailsPath(777),
-    });
-    append('Local notification posted (immediate). Tap it!');
-  };
-
-  const fireDelayed = async () => {
-    const granted = await requestNotificationPermission();
-    if (!granted) return append('Cannot fire — permission denied');
-    await fireLocalNotification({
-      title: 'Beamable (delayed)',
-      body: 'Background the app — tap this in 10s to deep-link to Details #888',
-      path: detailsPath(888),
-      seconds: 10,
-    });
-    append('Local notification scheduled in 10s. Background the app & tap it.');
-  };
-
-  // 2b) Beamable Notifications (native iOS SDK) ---------------------------
+  // 2) Beamable Notifications (native SDK) --------------------------------
   const beamAskPermission = () => {
     requestBeamablePermission();
     append('Beamable: requested permission (result on event)');
@@ -256,18 +223,8 @@ export default function Home() {
         />
       </Section>
 
-      {/* Notifications */}
-      <Section title="2 · Local notifications">
-        <Button label="Request permission" onPress={askPermission} />
-        <Button label="Fire now → Details #777" onPress={fireNow} />
-        <Button
-          label="Fire in 10s (background & tap) → #888"
-          onPress={fireDelayed}
-        />
-      </Section>
-
       {/* Beamable Notifications — native SDK (iOS Swift core / Android .aar) */}
-      <Section title={`2b · Beamable Notifications (native ${platformLabel})`}>
+      <Section title={`2 · Beamable Notifications (native ${platformLabel})`}>
         {isBeamableNotificationsSupported ? (
           <>
             {Platform.OS === 'android' ? (

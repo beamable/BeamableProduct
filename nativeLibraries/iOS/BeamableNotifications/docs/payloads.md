@@ -113,3 +113,30 @@ media URL and (optionally) a stable id:
   "bmnId": "promo-42"
 }
 ```
+
+The deep-link key is matched tolerant of spelling: `deepLink`, `deeplink`, and `deep_link`
+are all lifted onto `NotificationData.deepLink`. (The Beamable back-office sends `deeplink`.)
+
+## Analytics event payload (POSTed to `AnalyticsConfig.endpoint`)
+
+Both the in-app `AnalyticsPlugin` and the closed-app NSE `AnalyticsServicePlugin` POST this
+shape on each delivery/tap. It mirrors the Android receive-time handler, and includes a
+ready-to-render multi-line `message` so a single-field webhook (e.g. Slack/Discord) shows
+the full context.
+
+```jsonc
+{
+  "event": "received",          // received | opened
+  "source": "nse",              // nse (closed app) | app (in-app)
+  "notificationId": "promo-42",
+  "messageId": "promo-42",
+  "title": "Oi Gabriel",
+  "body": "Fala ai Gabriel",
+  "deepLink": "123",
+  "wasForeground": false,
+  "receivedAt": 1782134720704,  // ms since epoch
+  "data": { "deeplink": "123" },// raw payload minus the `aps` envelope
+  // ...any AnalyticsConfig.commonParams (except `message`, which becomes the header line)
+  "message": "📬 label\nevent: received\nsource: nse\nmessageId: promo-42\n..."
+}
+```

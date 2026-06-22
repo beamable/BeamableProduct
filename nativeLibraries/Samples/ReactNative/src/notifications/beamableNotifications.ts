@@ -1,9 +1,8 @@
 /**
  * Beamable Notifications — cross-platform native SDK façade.
  *
- * This is the *native* notification path (shown alongside the expo-notifications path in
- * `notifications.ts` so you can compare them). It routes to the right native package per
- * platform:
+ * This is the only notification path the app uses (no expo-notifications). It routes to the
+ * right native package per platform:
  *   - iOS     → `beamable-notifications-ios`     (Swift core, compiled into the pod)
  *   - Android → `beamable-notifications-android`  (the prebuilt `.aar`'s RN bridges)
  *
@@ -23,7 +22,7 @@
  *     native URL-scheme deep-link capture surfaced via `addBeamableDeepLinkListener`.
  */
 import { Platform } from 'react-native';
-import { detailsUrl } from '../linking/links';
+import { detailsUrl, normalizeDeepLink } from '../linking/links';
 
 // Types are identical across both packages; import them from the iOS package as canonical.
 import type {
@@ -311,16 +310,27 @@ export async function getLaunchNotification() {
 }
 
 /**
- * Pull a routable deep-link URL out of a notification's payload. The SDK exposes it as
- * `deepLink`, but a raw push may instead carry it under `userInfo`.
+ * Pull a routable deep-link URL out of a notification's payload.
+ *
+ * The native SDK lifts the deep link onto `deepLink` (tolerant of `deepLink` / `deeplink`
+ * / `deep_link` on the wire), so that's the primary source. We still fall back to scanning
+ * `userInfo` for those same key spellings in case a raw payload carries it there. The
+ * extracted value is normalized into a routable URL (a bare value like "123" becomes a
+ * details URL) — see {@link normalizeDeepLink}.
  */
 export function deepLinkFromNotification(n: {
   deepLink?: string;
   userInfo?: Record<string, unknown>;
 }): string | null {
-  if (typeof n.deepLink === 'string' && n.deepLink.length > 0) return n.deepLink;
-  const fromUserInfo = n.userInfo?.deepLink;
-  return typeof fromUserInfo === 'string' && fromUserInfo.length > 0
-    ? fromUserInfo
-    : null;
+  if (typeof n.deepLink === 'string' && n.deepLink.length > 0) {
+    return normalizeDeepLink(n.deepLink);
+  }
+  const info = n.userInfo ?? {};
+  for (const key of ['deepLink', 'deeplink', 'deep_link']) {
+    const value = info[key];
+    if (typeof value === 'string' && value.length > 0) {
+      return normalizeDeepLink(value);
+    }
+  }
+  return null;
 }

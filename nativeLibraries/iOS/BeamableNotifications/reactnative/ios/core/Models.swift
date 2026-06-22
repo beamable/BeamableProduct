@@ -100,6 +100,21 @@ public indirect enum JSONValue: Codable, Equatable {
     }
 }
 
+// MARK: - Deep link extraction
+
+public extension Dictionary where Key == String, Value == JSONValue {
+    /// Pull the deep link out of a payload, tolerant of key spelling. Remote pushes from
+    /// the backend (and the Android SDK) send `deeplink` (lowercase); locally scheduled
+    /// notifications use `deepLink` (camelCase). We accept either, plus `deep_link`, so a
+    /// server-sent deep link is surfaced the same as a local one.
+    var bmnDeepLink: String? {
+        for variant in ["deepLink", "deeplink", "deep_link"] {
+            if let value = self[variant]?.stringValue, !value.isEmpty { return value }
+        }
+        return nil
+    }
+}
+
 // MARK: - Inbound payload (callbacks / get-intent)
 
 /// A normalized view of a notification, delivered to engine code as JSON.
@@ -108,7 +123,8 @@ public struct NotificationData: Codable, Equatable {
     public var title: String?
     public var body: String?
     public var subtitle: String?
-    /// Convenience field lifted out of `userInfo["deepLink"]` when present.
+    /// Convenience field lifted out of `userInfo` when present (see `bmnDeepLink` — accepts
+    /// `deepLink` / `deeplink` / `deep_link`).
     public var deepLink: String?
     /// The action button identifier, when the event originated from a tap on an action.
     public var actionId: String?
