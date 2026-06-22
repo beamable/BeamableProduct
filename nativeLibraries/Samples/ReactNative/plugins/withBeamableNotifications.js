@@ -49,7 +49,7 @@ const NSE_TARGET_NAME = 'BeamableNotificationServiceExtension';
 // Where the prebuilt SDK lives, relative to this project root.
 const SDK_ROOT = path.resolve(
   __dirname,
-  '../../ClaudeProjects/BeamableNotifications',
+  '../../../iOS/BeamableNotifications',
 );
 const NSE_SOURCE_DIR = path.join(SDK_ROOT, 'extension');
 // The NSE compiles the core FROM SOURCE too — but only the extension-SAFE subset.
@@ -57,6 +57,25 @@ const NSE_SOURCE_DIR = path.join(SDK_ROOT, 'extension');
 // app extension), so they're excluded; the NSE plugins only need these two.
 const CORE_SOURCE_DIR = path.join(SDK_ROOT, 'core/Sources/BeamableNotifications');
 const CORE_NSE_FILES = ['Models.swift', 'SharedConfig.swift'];
+
+// The exact set of .swift basenames the NSE target compiles: every extension
+// source plus the extension-safe core subset. Derived straight from the SDK
+// dirs (which exist at config-eval time, before any mod runs), so it can be
+// shared by BOTH the file-copy mod and the Xcode-project mod without relying on
+// cross-mod state — `cfg.modRequest` is recreated per mod, so anything stashed
+// on it in one mod is gone by the next.
+function nseSwiftFileNames() {
+  const names = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith('.swift')) names.push(entry.name);
+    }
+  };
+  walk(NSE_SOURCE_DIR);
+  return [...names, ...CORE_NSE_FILES];
+}
 
 function resolveAppGroup(config, props) {
   if (props && props.appGroup) return props.appGroup;
@@ -182,17 +201,65 @@ function withNSEFiles(config, appGroup) {
         entitlements,
       );
 
-      cfg.modRequest._bmnSwiftFiles = swiftFiles; // hand off to the pbxproj mod
+      return cfg;
+    },
+  ]);
+}
+
+// --- Xcode 16/26: disable Explicitly Built Modules --------------------------
+// Xcode 16+/iOS 26 SDK enables "Explicitly Built Modules" by default. Its
+// Clang/Swift dependency scanner expects every CocoaPods/Expo module's
+// .modulemap to already exist in DerivedData before it scans — but those module
+// maps are produced by a later build phase. The result is a wall of
+// "module map file ... not found" / "Clang dependency scanner failure" errors
+// before any code compiles. Force the legacy implicit-module path instead.
+//
+// Two halves: the app project (app + NSE + project-level configs) here, and the
+// Pods project via a Podfile post_install injection below.
+function withDisableExplicitModulesApp(config) {
+  return withXcodeProject(config, (cfg) => {
+    const proj = cfg.modResults;
+    const configs = proj.pbxXCBuildConfigurationSection();
+    for (const key in configs) {
+      const bs = configs[key] && configs[key].buildSettings;
+      if (!bs) continue; // skip the *_comment string entries
+      bs.CLANG_ENABLE_EXPLICIT_MODULES = 'NO';
+      bs.SWIFT_ENABLE_EXPLICIT_MODULES = 'NO';
+    }
+    return cfg;
+  });
+}
+
+function withDisableExplicitModulesPods(config) {
+  return withDangerousMod(config, [
+    'ios',
+    (cfg) => {
+      const podfile = path.join(cfg.modRequest.platformProjectRoot, 'Podfile');
+      let contents = fs.readFileSync(podfile, 'utf8');
+      if (!contents.includes('CLANG_ENABLE_EXPLICIT_MODULES')) {
+        const snippet =
+          "\n    installer.pods_project.targets.each do |bmn_target|\n" +
+          "      bmn_target.build_configurations.each do |bmn_config|\n" +
+          "        bmn_config.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'\n" +
+          "        bmn_config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'\n" +
+          "      end\n" +
+          "    end\n";
+        // Inject at the top of the existing post_install block.
+        contents = contents.replace(
+          /post_install do \|installer\|\n/,
+          (m) => m + snippet,
+        );
+        fs.writeFileSync(podfile, contents);
+      }
       return cfg;
     },
   ]);
 }
 
 // --- 5b: register the NSE target in the Xcode project -----------------------
-function withNSETarget(config, appGroup) {
+function withNSETarget(config, appGroup, swiftFiles) {
   return withXcodeProject(config, (cfg) => {
     const proj = cfg.modResults;
-    const swiftFiles = cfg.modRequest._bmnSwiftFiles || [];
 
     // Idempotent: prebuild --clean starts fresh, but guard re-runs anyway.
     if (proj.pbxTargetByName(NSE_TARGET_NAME)) return cfg;
@@ -308,6 +375,11 @@ module.exports = function withBeamableNotifications(config, props) {
   config = withAppEntitlements(config, appGroup);
   config = withAppInfoPlist(config, appGroup);
 
+  // Xcode 16+/iOS 26: disable Explicitly Built Modules (see notes above). Applies
+  // to every iOS build, NSE or not — the base app's Expo/RN pods hit it too.
+  config = withDisableExplicitModulesApp(config);
+  config = withDisableExplicitModulesPods(config);
+
   // Android: register the receive-time handler (runs even when the app is killed).
   config = withReceivedHandlerSource(config);
   config = withReceivedHandlerManifest(config);
@@ -319,8 +391,9 @@ module.exports = function withBeamableNotifications(config, props) {
   // building out of the box. Local + remote-registration notifications work
   // without it.
   if (props && props.enableServiceExtension) {
+    const swiftFiles = nseSwiftFileNames();
     config = withNSEFiles(config, appGroup);
-    config = withNSETarget(config, appGroup);
+    config = withNSETarget(config, appGroup, swiftFiles);
   }
   return config;
 };
