@@ -6,7 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [UnReleased]
-- - Fixed `Accounts.OnReady` failing when stale or invalid remembered device tokens are present, while preserving strict validation for the active player token.
+- Fixed `Accounts.OnReady` failing when stale or invalid remembered device tokens are present, while preserving strict validation for the active player token.
+- Fixed BeamContext infinite retry handling so retry attempts past the configured retry-delay array do not overflow the
+tracked error buffer.
 
 ## [5.1.0] - 2026-06-16
 ### Added
