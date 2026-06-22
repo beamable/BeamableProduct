@@ -19,10 +19,6 @@ import {
   type BeamStatus,
 } from '../src/beam/beamClient';
 import {
-  fireLocalNotification,
-  requestNotificationPermission,
-} from '../src/notifications/notifications';
-import {
   addBeamableListener,
   isBeamableNotificationsSupported,
   registerForRemote,
@@ -95,36 +91,7 @@ export default function Home() {
     }
   };
 
-  // 2) Notifications ------------------------------------------------------
-  const askPermission = async () => {
-    const granted = await requestNotificationPermission();
-    append(`Notification permission: ${granted ? 'granted' : 'denied'}`);
-  };
-
-  const fireNow = async () => {
-    const granted = await requestNotificationPermission();
-    if (!granted) return append('Cannot fire — permission denied');
-    await fireLocalNotification({
-      title: 'Beamable',
-      body: 'Tap me to deep-link into Details #777',
-      path: detailsPath(777),
-    });
-    append('Local notification posted (immediate). Tap it!');
-  };
-
-  const fireDelayed = async () => {
-    const granted = await requestNotificationPermission();
-    if (!granted) return append('Cannot fire — permission denied');
-    await fireLocalNotification({
-      title: 'Beamable (delayed)',
-      body: 'Background the app — tap this in 10s to deep-link to Details #888',
-      path: detailsPath(888),
-      seconds: 10,
-    });
-    append('Local notification scheduled in 10s. Background the app & tap it.');
-  };
-
-  // 2b) Beamable Notifications (native iOS SDK) ---------------------------
+  // 2) Beamable Notifications (native iOS + Android SDK) ------------------
   const beamAskPermission = () => {
     requestBeamablePermission();
     append('Beamable: requested permission (result on event)');
@@ -156,12 +123,12 @@ export default function Home() {
     append(`Beamable: registered for remote (${remoteProvider}). Token on event (real device only).`);
   };
 
-  // 2c) Remote push via the PushNotificationService microservice ----------
+  // 3) Remote push via the PushNotificationService microservice -----------
   // Devices auto-register on the `tokenReceived` event above. These actions
   // ask the microservice to deliver a real APNs push and to list registrations.
   const registerThisDevice = async () => {
     if (!getPushService()) return append('Register: connect to Beamable first');
-    if (!apnsToken) return append(`No push token yet — tap "Register for remote (${remoteProvider})" in 2b first (physical device).`);
+    if (!apnsToken) return append(`No push token yet — tap "Register for remote (${remoteProvider})" in section 2 first (physical device).`);
     append('RegisterDeviceToken …');
     try {
       const res = await registerDevice(apnsToken);
@@ -200,7 +167,7 @@ export default function Home() {
     }
   };
 
-  // 3) Deep links ---------------------------------------------------------
+  // 4) Deep links ---------------------------------------------------------
   const simulateDeepLink = async () => {
     const url = detailsUrl(123);
     append(`Opening URL: ${url}`);
@@ -209,7 +176,7 @@ export default function Home() {
 
   const navigateDirect = () => router.push(detailsPath(55) as never);
 
-  // 4) Sample microservice ------------------------------------------------
+  // 5) Sample microservice ------------------------------------------------
   // Each calls a [ClientCallable] on the SampleService C# microservice via the
   // typed SampleServiceClient. Requires "Connect to Beamable" to have run first.
   const callMicroservice = async (
@@ -256,33 +223,23 @@ export default function Home() {
         />
       </Section>
 
-      {/* Notifications */}
-      <Section title="2 · Local notifications">
-        <Button label="Request permission" onPress={askPermission} />
-        <Button label="Fire now → Details #777" onPress={fireNow} />
-        <Button
-          label="Fire in 10s (background & tap) → #888"
-          onPress={fireDelayed}
-        />
-      </Section>
-
       {/* Beamable Notifications — native SDK (iOS Swift core / Android .aar) */}
-      <Section title={`2b · Beamable Notifications (native ${platformLabel})`}>
+      <Section title={`2 · Beamable Notifications (native ${platformLabel})`}>
         {isBeamableNotificationsSupported ? (
           <>
             {Platform.OS === 'android' ? (
               <Text style={styles.hint}>
                 The native `beamable-notifications-android` SDK (the .aar's RN
-                bridges). Same deep-link routing as above. The local notification
-                also triggers the native receive-time handler
+                bridges). Tap a notification to deep-link into the app. The local
+                notification also triggers the native receive-time handler
                 (PushNotificationReceivedHandler → Discord webhook) — which runs
                 even when the app is killed. Remote push needs a data-only FCM
                 message.
               </Text>
             ) : (
               <Text style={styles.hint}>
-                The native `beamable-notifications-ios` SDK. Same deep-link
-                routing as above, but through the Swift core. Remote push needs a
+                The native `beamable-notifications-ios` SDK (Swift core). Tap a
+                notification to deep-link into the app. Remote push needs a
                 physical device + APNs configured on your realm.
               </Text>
             )}
@@ -306,7 +263,7 @@ export default function Home() {
       </Section>
 
       {/* Remote push via the PushNotificationService microservice */}
-      <Section title="2c · Remote push (microservice)">
+      <Section title="3 · Remote push (microservice)">
         {isBeamableNotificationsSupported ? (
           <>
             {Platform.OS === 'android' ? (
@@ -315,7 +272,7 @@ export default function Home() {
                 microservice, then has the server send a real remote push back to
                 you via Firebase. Needs a physical device + FCM credentials
                 (`fcm_push`) in your realm config. Steps: Connect to Beamable →
-                Register for remote (2b) → Register this device → Send.
+                Register for remote (section 2) → Register this device → Send.
               </Text>
             ) : (
               <Text style={styles.hint}>
@@ -323,11 +280,11 @@ export default function Home() {
                 PushNotificationService microservice, then has the server send a
                 real remote push back to you via Apple. Needs a physical device +
                 APNs credentials in your realm config. Steps: Connect to Beamable →
-                Register for remote (2b) → Register this device → Send.
+                Register for remote (section 2) → Register this device → Send.
               </Text>
             )}
             <Text style={styles.hint}>
-              {remoteProvider} token: {apnsToken ? `${apnsToken.slice(0, 12)}…` : 'none yet (Register for remote in 2b)'}
+              {remoteProvider} token: {apnsToken ? `${apnsToken.slice(0, 12)}…` : 'none yet (Register for remote in section 2)'}
             </Text>
             <Button label="Register this device (microservice)" onPress={registerThisDevice} />
             <Button label="Send remote push to myself" onPress={sendPushToMyself} />
@@ -341,7 +298,7 @@ export default function Home() {
       </Section>
 
       {/* Deep links */}
-      <Section title="3 · Deep links">
+      <Section title="4 · Deep links">
         <Button label="Simulate deep link → Details #123" onPress={simulateDeepLink} />
         <Button label="Navigate directly → Details #55" onPress={navigateDirect} />
         <Text style={styles.hint}>
@@ -353,7 +310,7 @@ export default function Home() {
       </Section>
 
       {/* Sample microservice */}
-      <Section title="4 · Sample microservice">
+      <Section title="5 · Sample microservice">
         <Text style={styles.hint}>
           Calls the SampleService C# microservice. Connect to Beamable first;
           results appear in the activity log.

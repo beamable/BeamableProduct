@@ -1,7 +1,11 @@
 package com.beamable.push.react
 
+import android.app.Activity
+import android.content.Intent
+import com.beamable.push.IntentDataReader
 import com.beamable.push.PushListener
 import com.beamable.push.PushManager
+import com.facebook.react.bridge.ActivityEventListener
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -12,12 +16,21 @@ import com.facebook.react.modules.core.DeviceEventManagerModule
  * INBOUND + OUTBOUND React Native bridge. `@ReactMethod` functions are the inbound API the JS
  * layer calls; the implemented [PushListener] forwards results to JS via DeviceEventEmitter.
  *
+ * Also an [ActivityEventListener] so RN forwards `onNewIntent` here: a notification tapped while
+ * the app is alive (backgrounded) re-launches the activity with the payload, which we consume to
+ * emit `onNotificationOpened`. Cold-start taps are recovered instead via [getLaunchNotification].
+ *
  * Compiled against a `compileOnly` `com.facebook.react` dependency — react is provided by the
  * host RN app and is never present (or loaded) in a Unity/Unreal app.
  */
 class ReactPushModule(
     private val reactContext: ReactApplicationContext
-) : ReactContextBaseJavaModule(reactContext), PushListener {
+) : ReactContextBaseJavaModule(reactContext), PushListener, ActivityEventListener {
+
+    init {
+        // Receive `onNewIntent` for warm-start notification taps.
+        reactContext.addActivityEventListener(this)
+    }
 
     override fun getName() = "BeamablePush"
 
@@ -78,9 +91,30 @@ class ReactPushModule(
     @ReactMethod fun cancel(id: Double) = PushManager.cancel(id.toInt())
     @ReactMethod fun cancelAll() = PushManager.cancelAll()
 
+    /**
+     * Cold-start "get intent": if the app was launched by tapping a notification, resolves its
+     * payload JSON (deep link + data); otherwise null. Read-only — consumes the launch intent
+     * once without re-emitting `onNotificationOpened` (the JS side pulls it on boot).
+     */
+    @ReactMethod
+    fun getLaunchNotification(promise: Promise) {
+        val activity = currentActivity
+        promise.resolve(if (activity != null) IntentDataReader.readLaunchIntent(activity) else null)
+    }
+
     // Keep NativeEventEmitter happy on RN >= 0.65.
     @ReactMethod fun addListener(eventName: String) {}
     @ReactMethod fun removeListeners(count: Double) {}
+
+    // ---- ActivityEventListener (warm-start notification taps) ----
+    override fun onNewIntent(intent: Intent?) {
+        // App was alive (backgrounded) and the user tapped a notification: emit onNotificationOpened.
+        PushManager.consumeIntent(intent)
+    }
+
+    override fun onActivityResult(activity: Activity?, requestCode: Int, resultCode: Int, data: Intent?) {
+        // Not used.
+    }
 
     private fun emit(event: String, data: Any?) {
         reactContext

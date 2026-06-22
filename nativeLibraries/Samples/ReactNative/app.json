@@ -5,7 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "scheme": "beamrnsample",
     "ios": {
       "bundleIdentifier": "com.beamble.samples.beamfarmrn",
@@ -18,22 +17,7 @@
     "plugins": [
       "expo-router",
       "expo-dev-client",
-      [
-        "expo-notifications",
-        {
-          "color": "#5A31F4"
-        }
-      ],
       "expo-asset",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "kotlinVersion": "1.9.24",
-            "newArchEnabled": false
-          }
-        }
-      ],
       [
         "./plugins/withBeamableNotifications",
         {

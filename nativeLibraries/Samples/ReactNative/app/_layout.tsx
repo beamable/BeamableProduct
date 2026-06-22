@@ -1,9 +1,8 @@
 // Load SDK polyfills as early as possible.
 import '../src/polyfills';
 
-import { useEffect, useRef } from 'react';
-import { Stack, useRouter } from 'expo-router';
-import * as Notifications from 'expo-notifications';
+import { useEffect } from 'react';
+import { Stack } from 'expo-router';
 import * as Linking from 'expo-linking';
 
 import {
@@ -18,36 +17,11 @@ import {
 } from '../src/notifications/beamableNotifications';
 
 export default function RootLayout() {
-  const router = useRouter();
-  const responseListener = useRef<Notifications.EventSubscription | null>(null);
-
-  useEffect(() => {
-    // Route a path embedded in a notification into the app.
-    const routeFromData = (data: unknown) => {
-      const path = (data as { path?: string } | undefined)?.path;
-      if (typeof path === 'string' && path.length > 0) {
-        router.push(path as never);
-      }
-    };
-
-    // 1) App already running (foreground/background): user taps a notification.
-    responseListener.current =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        routeFromData(response.notification.request.content.data);
-      });
-
-    // 2) App was launched cold by tapping a notification.
-    Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response) routeFromData(response.notification.request.content.data);
-    });
-
-    return () => responseListener.current?.remove();
-  }, [router]);
-
-  // ── Beamable Notifications (native iOS SDK) ────────────────────────────────
-  // The same notification → deep-link routing, but via the native module. Its
-  // payload carries a full URL deep link, which we open through the OS exactly
-  // like a real server push would. No-op on Android.
+  // ── Beamable Notifications (native iOS + Android SDK) ──────────────────────
+  // The sole notification → deep-link path. A tapped notification carries a full
+  // URL deep link, which we open through the OS exactly like a real server push
+  // would. Covers local + remote, foreground/background/cold-start, on both
+  // platforms (iOS via the Swift core, Android via the .aar's RN bridges).
   useEffect(() => {
     if (!isBeamableNotificationsSupported) return;
 

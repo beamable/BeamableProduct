@@ -374,9 +374,10 @@ export const BeamableNotifications = {
   clearDelivered(): void {},
 
   /**
-   * Cold-start "get launch notification". The Android `.aar` only exposes this if the
-   * optional `getLaunchNotification` @ReactMethod was added to ReactPushModule; otherwise
-   * resolves null. VIEW-intent deep links are delivered via `addDeepLinkListener` instead.
+   * Cold-start "get launch notification": if the app was launched by tapping a notification,
+   * resolves its payload (with `deepLink`); otherwise null. Backed by ReactPushModule's
+   * `getLaunchNotification` @ReactMethod. Warm-start taps arrive via `notificationTapped`
+   * (ReactPushModule's `onNewIntent` → `onNotificationOpened`) instead.
    */
   getLaunchNotification(): Promise<NotificationData | null> {
     if (typeof BeamablePush.getLaunchNotification === 'function') {

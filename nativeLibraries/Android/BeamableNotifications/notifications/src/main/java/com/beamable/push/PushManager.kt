@@ -346,6 +346,18 @@ object PushManager {
         return data
     }
 
+    /**
+     * Warm-start variant of [consumeLaunchIntent]: consumes a freshly-delivered [intent]
+     * (e.g. from `Activity.onNewIntent`, which does not update the activity's current intent)
+     * and dispatches [onNotificationOpened] if it carries a notification payload. Returns the
+     * payload JSON, or null when [intent] is not a notification tap.
+     */
+    fun consumeIntent(intent: Intent?): String? {
+        val data = IntentDataReader.readIntent(intent) ?: return null
+        dispatchNotificationOpened(data)
+        return data
+    }
+
     // ---- Internal dispatch helpers (all guarded) ----------------------------
 
     internal fun dispatchToken(token: String) {
