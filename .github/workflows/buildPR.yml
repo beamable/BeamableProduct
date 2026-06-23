@@ -326,6 +326,24 @@ jobs:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
 
+      # A license/seat activation failure aborts before any tests run, so it produces
+      # no result XML. If the shard failed and no XML exists, surface a plain-language
+      # annotation naming license contention so the red build is self-explanatory and
+      # nobody has to scroll the editor log to find "No valid Unity Editor license
+      # found". (Artifact presence is used rather than parsing the editor stdout, which
+      # a later step cannot read back.) ~Claude
+      - name: Annotate Unity license contention
+        if: failure()
+        shell: bash
+        env:
+          ARTIFACTS: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
+        run: |
+          if find "$ARTIFACTS" -name '*.xml' 2>/dev/null | grep -q .; then
+            echo "Test result XML present: this is a genuine test failure, not license contention."
+          else
+            echo "::error title=Unity license contention::${{ matrix.unityVersion }} ${{ matrix.testMode }} produced no test results -- the editor exited before tests ran, the signature of a Unity license/seat activation failure (serial contention), not a test failure."
+          fi
+
   # Second Unity-test shard, pinned to the UNITY_SERIAL_BUILD seat (see the comment
   # above testGroupDefault for the seat-budget rationale). ~Claude
   testGroupBuild:
@@ -464,6 +482,19 @@ jobs:
           artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
+
+      # See the annotation rationale above testGroupDefault's matching step. ~Claude
+      - name: Annotate Unity license contention
+        if: failure()
+        shell: bash
+        env:
+          ARTIFACTS: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
+        run: |
+          if find "$ARTIFACTS" -name '*.xml' 2>/dev/null | grep -q .; then
+            echo "Test result XML present: this is a genuine test failure, not license contention."
+          else
+            echo "::error title=Unity license contention::${{ matrix.unityVersion }} ${{ matrix.testMode }} produced no test results -- the editor exited before tests ran, the signature of a Unity license/seat activation failure (serial contention), not a test failure."
+          fi
 
   build:
     name: Build for ${{ matrix.targetPlatform }}
