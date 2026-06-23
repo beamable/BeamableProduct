@@ -1,20 +1,24 @@
 #!/bin/bash
 
-# This script should be run ONCE before building the native Android library,
+# This script should be run ONCE before building the native libraries,
 # or any time you want to re-discover/re-install the toolchain.
 #
 # It will:
 #   1. Install Android Studio + JDK 17 + Gradle via the OS package manager
 #      (winget/choco on Windows, Homebrew on macOS).
 #   2. Locate a usable JDK 17 and an Android SDK (reusing Unity's bundled SDK or
-#      an existing Android Studio SDK when present, instead of re-downloading).
-#   3. Persist the resolved JAVA_HOME / ANDROID_SDK_ROOT to
-#      nativeLibraries/Android/.native-build-env and write a local.properties
+#      an existing Android Studio SDK when present, instead of re-downloading);
+#      accept SDK licenses idempotently. On macOS, also verify Xcode + the iOS SDK
+#      so dev-native.sh can build the BeamableNotifications xcframework.
+#   3. Persist the resolved JAVA_HOME / ANDROID_SDK_ROOT / IOS_SUPPORTED_NATIVE
+#      to nativeLibraries/Android/.native-build-env and write a local.properties
 #      (sdk.dir) into the Gradle project.
 #   4. Bootstrap the Gradle wrapper (the wrapper .jar is not committed).
 #
 # Why JDK 17 specifically: the library pins AGP 8.1.4 (requires JDK 17 to run)
 # and Gradle 8.2 (which cannot run on JDK 21 — Android Studio's bundled JBR).
+# Why Xcode (macOS): the iOS xcframework is built via xcodebuild + SPM — no Pods,
+# no XcodeGen, just a full Xcode install with the iOS SDK available.
 
 set -e
 
@@ -23,10 +27,11 @@ ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/Android"
 ENV_FILE="$ANDROID_DIR/.native-build-env"
 
 NOTIF_PROJ="$ANDROID_DIR/BeamableNotifications"
+IOS_PROJ="$SCRIPT_DIR/nativeLibraries/iOS/BeamableNotifications"
 
 GRADLE_VERSION=8.2
 
-echo "=== Beamable Native Android Library — Setup ==="
+echo "=== Beamable Native Libraries — Setup ==="
 
 # ---------------------------------------------------------------------------
 # Detect OS
@@ -157,11 +162,48 @@ for c in "$ANDROID_SDK_RESOLVED/cmdline-tools/latest/bin/sdkmanager"* \
          "$ANDROID_SDK_RESOLVED/tools/bin/sdkmanager"* ; do
   [ -x "$c" ] && { SDKMGR="$c"; break; }
 done
-if [ -n "$SDKMGR" ] && ! [ -d "$ANDROID_SDK_RESOLVED/platforms/android-34" ]; then
-  echo "  Installing platform-34 + build-tools via sdkmanager..."
+if [ -n "$SDKMGR" ]; then
+  # Always accept licenses — Unity's bundled SDK ships with an empty licenses/ dir,
+  # so even if platforms/android-34 + build-tools/34.0.0 are already present, Gradle
+  # will refuse to use them until the license files are written.
+  echo "  Accepting SDK licenses (idempotent) via $(basename "$SDKMGR")..."
   JAVA_HOME="$JAVA_HOME_RESOLVED" yes | "$SDKMGR" --sdk_root="$ANDROID_SDK_RESOLVED" --licenses >/dev/null 2>&1 || true
-  JAVA_HOME="$JAVA_HOME_RESOLVED" "$SDKMGR" --sdk_root="$ANDROID_SDK_RESOLVED" \
-    "platform-tools" "platforms;android-34" "build-tools;34.0.0" || true
+  if ! [ -d "$ANDROID_SDK_RESOLVED/platforms/android-34" ] || ! [ -d "$ANDROID_SDK_RESOLVED/build-tools/34.0.0" ]; then
+    echo "  Installing platform-tools, platforms;android-34, build-tools;34.0.0..."
+    JAVA_HOME="$JAVA_HOME_RESOLVED" "$SDKMGR" --sdk_root="$ANDROID_SDK_RESOLVED" \
+      "platform-tools" "platforms;android-34" "build-tools;34.0.0" || true
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# 2c. iOS toolchain (macOS only — Windows is a no-op)
+# ---------------------------------------------------------------------------
+IOS_SUPPORTED=false
+if [ "$OS" = macos ]; then
+  echo ""
+  echo "--- Verifying iOS toolchain (Xcode) ---"
+
+  XCODE_DEV_DIR="$(xcode-select -p 2>/dev/null || true)"
+  if [ -z "$XCODE_DEV_DIR" ] || [ ! -d "$XCODE_DEV_DIR" ]; then
+    echo "  WARNING: xcode-select did not return a developer dir."
+    echo "  Install Xcode from the App Store, then run: sudo xcode-select -s /Applications/Xcode.app"
+    echo "  Skipping iOS — Android setup will still complete."
+  elif ! printf '%s\n' "$XCODE_DEV_DIR" | grep -q 'Xcode'; then
+    echo "  WARNING: Command Line Tools are selected, not full Xcode (got: $XCODE_DEV_DIR)."
+    echo "  Install Xcode from the App Store, then run: sudo xcode-select -s /Applications/Xcode.app"
+    echo "  Skipping iOS — Android setup will still complete."
+  elif ! xcodebuild -showsdks 2>/dev/null | grep -q 'iphoneos'; then
+    echo "  WARNING: xcodebuild found but no iOS SDK is installed."
+    echo "  Open Xcode once to finish first-launch setup, then re-run this script."
+    echo "  Skipping iOS — Android setup will still complete."
+  else
+    XCODE_VERSION="$(xcodebuild -version 2>/dev/null | head -1 || true)"
+    echo "  $XCODE_VERSION"
+    echo "  Developer dir = $XCODE_DEV_DIR"
+    # Ensure the iOS build scripts are executable (committed without +x on Windows checkouts).
+    chmod +x "$IOS_PROJ/scripts/"*.sh 2>/dev/null || true
+    IOS_SUPPORTED=true
+  fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -174,6 +216,7 @@ cat > "$ENV_FILE" <<EOF
 # Generated by setup-native.sh — sourced by dev-native.sh. Do not edit by hand.
 JAVA_HOME_NATIVE="$JAVA_HOME_RESOLVED"
 ANDROID_SDK_ROOT_NATIVE="$ANDROID_SDK_RESOLVED"
+IOS_SUPPORTED_NATIVE="${IOS_SUPPORTED:-false}"
 EOF
 echo "  Wrote $ENV_FILE"
 
@@ -220,4 +263,4 @@ done
 # Done
 # ---------------------------------------------------------------------------
 echo ""
-echo "Setup complete. Run ./dev-native.sh to build the AARs and copy them into the client."
+echo "Setup complete. Run ./dev-native.sh to build native artifacts (Android AAR + iOS xcframework on macOS) and copy them into the client."

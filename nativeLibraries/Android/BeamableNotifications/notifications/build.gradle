@@ -9,6 +9,10 @@ android {
     // packages keep their original names.
     namespace 'com.beamable.notifications'
     compileSdk 34
+    // Pinned to match what Unity 2022.3.x ships under PlaybackEngines/AndroidPlayer/SDK/build-tools/.
+    // Without this, AGP 8.1.4 defaults to 33.0.1 and triggers an online license/install path that
+    // fails against Unity's bundled SDK (which has an empty licenses/ dir).
+    buildToolsVersion '34.0.0'
 
     defaultConfig {
         minSdk 24
