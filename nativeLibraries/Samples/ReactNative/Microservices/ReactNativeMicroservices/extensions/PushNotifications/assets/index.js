@@ -37,6 +37,10 @@
     return react.createElement(t(`BeamPageHeader`), n);
   }
   q.displayName = `BeamPageHeader`;
+  function ee(n) {
+    return react.createElement(t(`BeamCheckbox`), n);
+  }
+  ee.displayName = `BeamCheckbox`;
   function te(n) {
     return react.createElement(t(`BeamInput`), n);
   }
@@ -118,6 +122,7 @@
     const [rosterLoading, setRosterLoading] = react.useState(false);
     const [rosterError, setRosterError] = react.useState(null);
     const [rosterNote, setRosterNote] = react.useState(null);
+    const [selected, setSelected] = react.useState(/* @__PURE__ */ new Set());
     const [playerId, setPlayerId] = react.useState("");
     const [title, setTitle] = react.useState("");
     const [body, setBody] = react.useState("");
@@ -153,10 +158,27 @@
     react.useEffect(() => {
       if (beam) void loadRoster();
     }, [beam, loadRoster]);
+    const toggle = react.useCallback((id) => {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    }, []);
+    const selectAll = react.useCallback(() => {
+      setSelected(new Set(players.map((p2) => String(p2.playerId))));
+    }, [players]);
+    const clearSelection = react.useCallback(() => setSelected(/* @__PURE__ */ new Set()), []);
+    const targets = react.useMemo(() => {
+      const t2 = new Set(selected);
+      if (playerId.trim()) t2.add(playerId.trim());
+      return t2;
+    }, [selected, playerId]);
     async function sendPush() {
       if (!beam) return;
-      if (!playerId.trim()) {
-        setSendError("A player ID is required.");
+      if (targets.size === 0) {
+        setSendError("Select at least one player (or type a player ID).");
         return;
       }
       if (!title.trim() && !body.trim()) {
@@ -166,22 +188,36 @@
       setSending(true);
       setSendError(null);
       setSendResult(null);
-      try {
-        const client2 = new PushNotificationServiceClient(beam);
-        const result = await client2.sendPushToPlayer({
-          playerId: playerId.trim(),
-          title: title.trim(),
-          body: body.trim(),
-          deepLink: deepLink.trim()
-        });
-        setSendResult(result);
-        void loadRoster();
-      } catch (err) {
-        setSendError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setSending(false);
+      const client2 = new PushNotificationServiceClient(beam);
+      const payload = { title: title.trim(), body: body.trim(), deepLink: deepLink.trim() };
+      const outcomes = await Promise.all(
+        [...targets].map(
+          (id) => client2.sendPushToPlayer({ playerId: id, ...payload }).then((r2) => ({ id, r: r2 })).catch((e2) => ({ id, err: e2 instanceof Error ? e2.message : String(e2) }))
+        )
+      );
+      const agg = {
+        playersAttempted: targets.size,
+        playersOk: 0,
+        devicesDelivered: 0,
+        devicesFailed: 0,
+        messages: []
+      };
+      for (const o of outcomes) {
+        if ("err" in o) {
+          agg.messages.push(`${o.id}: ${o.err}`);
+          continue;
+        }
+        const r2 = o.r;
+        if (r2.success) agg.playersOk++;
+        agg.devicesDelivered += r2.succeeded;
+        agg.devicesFailed += r2.failed;
+        for (const m of r2.messages ?? []) agg.messages.push(`${o.id}: ${m}`);
       }
+      setSendResult(agg);
+      setSending(false);
+      void loadRoster();
     }
+    const targetCount = targets.size;
     return /* @__PURE__ */ jsxRuntime.jsxs(G, { children: [
       /* @__PURE__ */ jsxRuntime.jsx(q, { children: "Push Notifications" }),
       /* @__PURE__ */ jsxRuntime.jsxs(p, { style: { marginBottom: 20 }, children: [
@@ -190,8 +226,8 @@
           /* @__PURE__ */ jsxRuntime.jsx(
             te,
             {
-              label: "Player ID",
-              placeholder: "Select a player below, or paste an ID",
+              label: "Player ID (optional)",
+              placeholder: "Tick players below, and/or paste a specific ID",
               value: playerId,
               onValueChange: setPlayerId
             }
@@ -213,23 +249,27 @@
               {
                 variant: "brand",
                 onClick: sendPush,
-                disabled: !beam || sending,
+                disabled: !beam || sending || targetCount === 0,
                 loading: sending,
-                children: sending ? "Sending…" : "Send push"
+                children: sending ? "Sending…" : `Send to ${targetCount} player${targetCount === 1 ? "" : "s"}`
               }
             ),
             sendError && /* @__PURE__ */ jsxRuntime.jsx("span", { style: { marginLeft: 12, color: "var(--beam-color-danger-600, #c0392b)" }, children: sendError })
           ] }),
           sendResult && /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { marginTop: 4 }, children: [
-            /* @__PURE__ */ jsxRuntime.jsx(c, { variant: sendResult.success ? "success" : "danger", children: sendResult.success ? "Sent" : "Failed" }),
+            /* @__PURE__ */ jsxRuntime.jsx(c, { variant: sendResult.playersOk === sendResult.playersAttempted ? "success" : "danger", children: sendResult.playersOk === sendResult.playersAttempted ? "Sent" : "Partial" }),
             /* @__PURE__ */ jsxRuntime.jsxs("span", { style: { marginLeft: 10 }, children: [
-              sendResult.succeeded,
+              "Sent to ",
+              sendResult.playersOk,
               "/",
-              sendResult.attempted,
+              sendResult.playersAttempted,
+              " player(s) —",
+              " ",
+              sendResult.devicesDelivered,
               " device(s) delivered",
-              sendResult.failed > 0 ? `, ${sendResult.failed} failed` : ""
+              sendResult.devicesFailed > 0 ? `, ${sendResult.devicesFailed} failed` : ""
             ] }),
-            sendResult.messages?.length > 0 && /* @__PURE__ */ jsxRuntime.jsx(
+            sendResult.messages.length > 0 && /* @__PURE__ */ jsxRuntime.jsx(
               "pre",
               {
                 style: {
@@ -253,10 +293,16 @@
           rosterLoading && /* @__PURE__ */ jsxRuntime.jsx(r, { style: { marginLeft: 8 } })
         ] }),
         /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { padding: 18 }, children: [
-          /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { marginBottom: 12 }, children: [
+          /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { marginBottom: 12, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }, children: [
             /* @__PURE__ */ jsxRuntime.jsx(a, { onClick: loadRoster, disabled: !beam || rosterLoading, children: "Refresh" }),
-            rosterError && /* @__PURE__ */ jsxRuntime.jsx("span", { style: { marginLeft: 12, color: "var(--beam-color-danger-600, #c0392b)" }, children: rosterError }),
-            rosterNote && /* @__PURE__ */ jsxRuntime.jsx("span", { style: { marginLeft: 12, fontStyle: "italic" }, children: rosterNote })
+            /* @__PURE__ */ jsxRuntime.jsx(a, { appearance: "outlined", onClick: selectAll, disabled: players.length === 0, children: "Select all" }),
+            /* @__PURE__ */ jsxRuntime.jsx(a, { appearance: "outlined", onClick: clearSelection, disabled: selected.size === 0, children: "Clear" }),
+            /* @__PURE__ */ jsxRuntime.jsxs("span", { style: { fontWeight: 600 }, children: [
+              "Selected: ",
+              selected.size
+            ] }),
+            rosterError && /* @__PURE__ */ jsxRuntime.jsx("span", { style: { color: "var(--beam-color-danger-600, #c0392b)" }, children: rosterError }),
+            rosterNote && /* @__PURE__ */ jsxRuntime.jsx("span", { style: { fontStyle: "italic" }, children: rosterNote })
           ] }),
           /* @__PURE__ */ jsxRuntime.jsxs(
             pe,
@@ -270,6 +316,20 @@
                 /* @__PURE__ */ jsxRuntime.jsx(
                   ue,
                   {
+                    header: "",
+                    width: "44px",
+                    children: (row) => /* @__PURE__ */ jsxRuntime.jsx(
+                      ee,
+                      {
+                        checked: selected.has(String(row.playerId)),
+                        onCheckedChange: () => toggle(String(row.playerId))
+                      }
+                    )
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntime.jsx(
+                  ue,
+                  {
                     field: "playerId",
                     header: "Player ID",
                     sortable: true,
@@ -280,8 +340,26 @@
                 /* @__PURE__ */ jsxRuntime.jsx(
                   ue,
                   {
-                    header: "Platforms",
+                    header: "Push platforms",
                     children: (row) => /* @__PURE__ */ jsxRuntime.jsx("span", { style: { display: "inline-flex", gap: 6 }, children: row.platforms.map((p2) => /* @__PURE__ */ jsxRuntime.jsx(O, { children: p2 }, p2)) })
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntime.jsx(
+                  ue,
+                  {
+                    field: "gamePlatform",
+                    header: "Game platform",
+                    sortable: true,
+                    format: (value) => value ? String(value) : "—"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntime.jsx(
+                  ue,
+                  {
+                    field: "gameDevice",
+                    header: "Device",
+                    sortable: true,
+                    format: (value) => value ? String(value) : "—"
                   }
                 ),
                 /* @__PURE__ */ jsxRuntime.jsx(
@@ -291,14 +369,6 @@
                     header: "Last updated",
                     sortable: true,
                     format: (value) => formatUnixSeconds(value)
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntime.jsx(
-                  ue,
-                  {
-                    header: "",
-                    align: "right",
-                    children: (row) => /* @__PURE__ */ jsxRuntime.jsx(a, { size: "small", onClick: () => setPlayerId(String(row.playerId)), children: "Select" })
                   }
                 )
               ]

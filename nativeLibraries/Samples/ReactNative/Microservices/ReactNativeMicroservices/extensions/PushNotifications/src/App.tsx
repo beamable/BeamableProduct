@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { type Beam, type ExtensionContext } from '@beamable/portal-toolkit'
 import {
   BeamPage,
@@ -12,12 +12,22 @@ import {
   BeamTable,
   BeamColumn,
   BeamTag,
+  BeamCheckbox,
 } from '@beamable/portal-toolkit/react'
 import { PushNotificationServiceClient } from '../beamable/clients/PushNotificationServiceClient'
-import type { RegisteredPlayer, AdminSendResult } from '../beamable/clients/types'
+import type { RegisteredPlayer } from '../beamable/clients/types'
 
 interface AppProps {
   context: ExtensionContext
+}
+
+/** Aggregate of a bulk send across multiple players. */
+interface BulkSendResult {
+  playersAttempted: number
+  playersOk: number
+  devicesDelivered: number
+  devicesFailed: number
+  messages: string[]
 }
 
 function formatUnixSeconds(value: bigint | string): string {
@@ -35,13 +45,16 @@ export default function App({ context }: AppProps) {
   const [rosterError, setRosterError] = useState<string | null>(null)
   const [rosterNote, setRosterNote] = useState<string | null>(null)
 
+  // Selection state (keyed by stringified playerId — playerId is bigint|string)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+
   // Send form state
-  const [playerId, setPlayerId] = useState('')
+  const [playerId, setPlayerId] = useState('') // optional ad-hoc single target
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [deepLink, setDeepLink] = useState('')
   const [sending, setSending] = useState(false)
-  const [sendResult, setSendResult] = useState<AdminSendResult | null>(null)
+  const [sendResult, setSendResult] = useState<BulkSendResult | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -76,10 +89,34 @@ export default function App({ context }: AppProps) {
     if (beam) void loadRoster()
   }, [beam, loadRoster])
 
+  // --- Selection helpers ---------------------------------------------
+  const toggle = useCallback((id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const selectAll = useCallback(() => {
+    setSelected(new Set(players.map((p) => String(p.playerId))))
+  }, [players])
+
+  const clearSelection = useCallback(() => setSelected(new Set()), [])
+
+  // The set of player IDs a send will target: every checked row, plus the
+  // optional manually-typed ID.
+  const targets = useMemo(() => {
+    const t = new Set(selected)
+    if (playerId.trim()) t.add(playerId.trim())
+    return t
+  }, [selected, playerId])
+
   async function sendPush() {
     if (!beam) return
-    if (!playerId.trim()) {
-      setSendError('A player ID is required.')
+    if (targets.size === 0) {
+      setSendError('Select at least one player (or type a player ID).')
       return
     }
     if (!title.trim() && !body.trim()) {
@@ -89,23 +126,45 @@ export default function App({ context }: AppProps) {
     setSending(true)
     setSendError(null)
     setSendResult(null)
-    try {
-      const client = new PushNotificationServiceClient(beam)
-      const result = await client.sendPushToPlayer({
-        playerId: playerId.trim(),
-        title: title.trim(),
-        body: body.trim(),
-        deepLink: deepLink.trim(),
-      })
-      setSendResult(result)
-      // Refresh the roster — a send may have pruned dead tokens.
-      void loadRoster()
-    } catch (err) {
-      setSendError(err instanceof Error ? err.message : String(err))
-    } finally {
-      setSending(false)
+
+    const client = new PushNotificationServiceClient(beam)
+    const payload = { title: title.trim(), body: body.trim(), deepLink: deepLink.trim() }
+
+    const outcomes = await Promise.all(
+      [...targets].map((id) =>
+        client
+          .sendPushToPlayer({ playerId: id, ...payload })
+          .then((r) => ({ id, r }))
+          .catch((e) => ({ id, err: e instanceof Error ? e.message : String(e) })),
+      ),
+    )
+
+    const agg: BulkSendResult = {
+      playersAttempted: targets.size,
+      playersOk: 0,
+      devicesDelivered: 0,
+      devicesFailed: 0,
+      messages: [],
     }
+    for (const o of outcomes) {
+      if ('err' in o) {
+        agg.messages.push(`${o.id}: ${o.err}`)
+        continue
+      }
+      const r = o.r
+      if (r.success) agg.playersOk++
+      agg.devicesDelivered += r.succeeded
+      agg.devicesFailed += r.failed
+      for (const m of r.messages ?? []) agg.messages.push(`${o.id}: ${m}`)
+    }
+
+    setSendResult(agg)
+    setSending(false)
+    // Refresh the roster — a send may have pruned dead tokens.
+    void loadRoster()
   }
+
+  const targetCount = targets.size
 
   return (
     <BeamPage>
@@ -116,8 +175,8 @@ export default function App({ context }: AppProps) {
         <h3 slot="header">Send a notification</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 18 }}>
           <BeamInput
-            label="Player ID"
-            placeholder="Select a player below, or paste an ID"
+            label="Player ID (optional)"
+            placeholder="Tick players below, and/or paste a specific ID"
             value={playerId}
             onValueChange={setPlayerId}
           />
@@ -133,10 +192,10 @@ export default function App({ context }: AppProps) {
             <BeamButton
               variant="brand"
               onClick={sendPush}
-              disabled={!beam || sending}
+              disabled={!beam || sending || targetCount === 0}
               loading={sending}
             >
-              {sending ? 'Sending…' : 'Send push'}
+              {sending ? 'Sending…' : `Send to ${targetCount} player${targetCount === 1 ? '' : 's'}`}
             </BeamButton>
             {sendError && (
               <span style={{ marginLeft: 12, color: 'var(--beam-color-danger-600, #c0392b)' }}>{sendError}</span>
@@ -145,14 +204,15 @@ export default function App({ context }: AppProps) {
 
           {sendResult && (
             <div style={{ marginTop: 4 }}>
-              <BeamBadge variant={sendResult.success ? 'success' : 'danger'}>
-                {sendResult.success ? 'Sent' : 'Failed'}
+              <BeamBadge variant={sendResult.playersOk === sendResult.playersAttempted ? 'success' : 'danger'}>
+                {sendResult.playersOk === sendResult.playersAttempted ? 'Sent' : 'Partial'}
               </BeamBadge>
               <span style={{ marginLeft: 10 }}>
-                {sendResult.succeeded}/{sendResult.attempted} device(s) delivered
-                {sendResult.failed > 0 ? `, ${sendResult.failed} failed` : ''}
+                Sent to {sendResult.playersOk}/{sendResult.playersAttempted} player(s) —{' '}
+                {sendResult.devicesDelivered} device(s) delivered
+                {sendResult.devicesFailed > 0 ? `, ${sendResult.devicesFailed} failed` : ''}
               </span>
-              {sendResult.messages?.length > 0 && (
+              {sendResult.messages.length > 0 && (
                 <pre
                   style={{
                     marginTop: 10,
@@ -178,14 +238,21 @@ export default function App({ context }: AppProps) {
           {rosterLoading && <BeamSpinner style={{ marginLeft: 8 }} />}
         </h3>
         <div style={{ padding: 18 }}>
-          <div style={{ marginBottom: 12 }}>
+          <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <BeamButton onClick={loadRoster} disabled={!beam || rosterLoading}>
               Refresh
             </BeamButton>
+            <BeamButton appearance="outlined" onClick={selectAll} disabled={players.length === 0}>
+              Select all
+            </BeamButton>
+            <BeamButton appearance="outlined" onClick={clearSelection} disabled={selected.size === 0}>
+              Clear
+            </BeamButton>
+            <span style={{ fontWeight: 600 }}>Selected: {selected.size}</span>
             {rosterError && (
-              <span style={{ marginLeft: 12, color: 'var(--beam-color-danger-600, #c0392b)' }}>{rosterError}</span>
+              <span style={{ color: 'var(--beam-color-danger-600, #c0392b)' }}>{rosterError}</span>
             )}
-            {rosterNote && <span style={{ marginLeft: 12, fontStyle: 'italic' }}>{rosterNote}</span>}
+            {rosterNote && <span style={{ fontStyle: 'italic' }}>{rosterNote}</span>}
           </div>
 
           <BeamTable<RegisteredPlayer>
@@ -196,6 +263,16 @@ export default function App({ context }: AppProps) {
             loadingMessage="Loading roster…"
           >
             <BeamColumn<RegisteredPlayer>
+              header=""
+              width="44px"
+              children={(row) => (
+                <BeamCheckbox
+                  checked={selected.has(String(row.playerId))}
+                  onCheckedChange={() => toggle(String(row.playerId))}
+                />
+              )}
+            />
+            <BeamColumn<RegisteredPlayer>
               field="playerId"
               header="Player ID"
               sortable
@@ -203,7 +280,7 @@ export default function App({ context }: AppProps) {
             />
             <BeamColumn<RegisteredPlayer> field="deviceCount" header="Devices" sortable align="center" />
             <BeamColumn<RegisteredPlayer>
-              header="Platforms"
+              header="Push platforms"
               children={(row) => (
                 <span style={{ display: 'inline-flex', gap: 6 }}>
                   {row.platforms.map((p) => (
@@ -213,19 +290,22 @@ export default function App({ context }: AppProps) {
               )}
             />
             <BeamColumn<RegisteredPlayer>
+              field="gamePlatform"
+              header="Game platform"
+              sortable
+              format={(value) => (value ? String(value) : '—')}
+            />
+            <BeamColumn<RegisteredPlayer>
+              field="gameDevice"
+              header="Device"
+              sortable
+              format={(value) => (value ? String(value) : '—')}
+            />
+            <BeamColumn<RegisteredPlayer>
               field="lastUpdated"
               header="Last updated"
               sortable
               format={(value) => formatUnixSeconds(value as bigint | string)}
-            />
-            <BeamColumn<RegisteredPlayer>
-              header=""
-              align="right"
-              children={(row) => (
-                <BeamButton size="small" onClick={() => setPlayerId(String(row.playerId))}>
-                  Select
-                </BeamButton>
-              )}
             />
           </BeamTable>
         </div>

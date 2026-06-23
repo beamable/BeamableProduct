@@ -75,10 +75,22 @@ export type RegisteredPlayer = {
   deviceCount: number;
   platforms: string[]; // distinct: "apns" and/or "fcm"
   lastUpdated: bigint | string; // newest device's updatedAt (unix seconds)
+  gamePlatform?: string; // THORIUM_GAME_PLATFORM (e.g. "Web")
+  gameDevice?: string; // THORIUM_GAME_DEVICE (e.g. "Desktop")
 };
 
 /** Roster returned by ListRegisteredPlayers. */
 export type RegisteredPlayerList = {
   players: RegisteredPlayer[];
   message?: string; // set only when the roster couldn't be produced
+};
+
+/** Secret-free result of CheckFcmConfig. */
+export type FcmConfigStatus = {
+  configured: boolean;
+  privateKeyLoaded: boolean;
+  projectId: string;
+  clientEmail: string;
+  tokenUri: string;
+  message: string;
 };

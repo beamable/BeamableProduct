@@ -176,12 +176,20 @@ namespace Beamable.PushNotificationService
 				var devices = await LoadDevices(id);
 				if (devices.Count == 0) continue; // marker lagged behind a prune — skip
 
+				// The player's game platform/device come from their private profile stats
+				// (set by the game), not from push registration. Missing → empty string.
+				var profile = await Services.Stats.GetFilteredStats(
+					StatsDomainType.Game, StatsAccessType.Private, id,
+					new[] { GamePlatformStatKey, GameDeviceStatKey });
+
 				result.players.Add(new RegisteredPlayer
 				{
 					playerId = id,
 					deviceCount = devices.Count,
 					platforms = devices.Select(d => NormalizePlatform(d.platform)).Distinct().ToList(),
 					lastUpdated = devices.Max(d => d.updatedAt),
+					gamePlatform = profile.GetValueOrDefault(GamePlatformStatKey, ""),
+					gameDevice = profile.GetValueOrDefault(GameDeviceStatKey, ""),
 				});
 			}
 
@@ -223,6 +231,10 @@ namespace Beamable.PushNotificationService
 		private const string PushStatDomain = "game";
 		private const string PushStatPublicAccess = "public";
 		private const string PushStatPlayerType = "player";
+
+		// Player profile stats (game.private), set by the game — surfaced in the admin roster.
+		private const string GamePlatformStatKey = "THORIUM_GAME_PLATFORM";
+		private const string GameDeviceStatKey = "THORIUM_GAME_DEVICE";
 
 		// --- Internals ------------------------------------------------------
 
@@ -438,6 +450,8 @@ namespace Beamable.PushNotificationService
 		public int deviceCount;
 		public List<string> platforms = new(); // distinct: "apns" and/or "fcm"
 		public long lastUpdated;               // newest device's updatedAt (unix seconds)
+		public string gamePlatform;            // THORIUM_GAME_PLATFORM (e.g. "Web"), "" if unset
+		public string gameDevice;              // THORIUM_GAME_DEVICE (e.g. "Desktop"), "" if unset
 	}
 
 	/// <summary>The roster of players with registered devices, for the admin Portal tool.</summary>
