@@ -36,7 +36,7 @@ If you have the `beam` CLI installed (via `dotnet tool install`), run:
 ```
 beam mcp setup
 ```
-This writes a `.mcp.json` file in the project directory. MCP-compatible editors (Cursor, Windsurf, VS Code with MCP extension) auto-discover this file and connect to the Beamable MCP server.
+This enables the Beamable MCP server by writing a `.mcp.json` file, and offers to also generate this `AGENTS.md` guide in your project (or pass `--agents-file` to generate it non-interactively). MCP-compatible editors (Cursor, Windsurf, VS Code with MCP extension) auto-discover the `.mcp.json` file and connect to the Beamable MCP server.
 
 **Prerequisites:** .NET 8+ SDK and `beam` CLI installed via `.config/dotnet-tools.json` (created by `beam init`).
 

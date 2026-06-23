@@ -1,11 +1,53 @@
+using cli.Services;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
 namespace cli;
 
 /// <summary>
-/// Shared helper for creating or updating the <c>AGENTS.md</c> AI-agent guide in a Beamable workspace.
-/// Used by <c>beam init</c> (opt-in) and <c>beam ai setup</c>.
+/// Shared helpers for writing the AI-integration files into a Beamable workspace:
+/// the MCP server config (<c>.mcp.json</c>) and the <c>AGENTS.md</c> AI-agent guide.
+/// Used by <c>beam mcp setup</c> and <c>beam init</c> (opt-in).
 /// </summary>
-public static class AgentsFileWriter
+public static class AiFileWriter
 {
+	// --- .mcp.json ---
+
+	public const string ConfigFileName = ".mcp.json";
+	public const string ServerKey = "beamable";
+
+	/// <summary>
+	/// Ensures the <c>beamable</c> MCP server is registered in <c>.mcp.json</c> inside
+	/// <paramref name="targetDir"/>, creating or merging the file as needed. Idempotent.
+	/// </summary>
+	/// <returns>The config path and whether the entry was newly added (false if it already existed).</returns>
+	public static (string configPath, bool added) EnsureBeamableServer(string targetDir)
+	{
+		ConfigService.EnsureDotNetToolsManifest(targetDir);
+
+		var configPath = Path.Combine(targetDir, ConfigFileName);
+
+		var root = File.Exists(configPath)
+			? JObject.Parse(File.ReadAllText(configPath))
+			: new JObject();
+
+		var servers = root["mcpServers"] as JObject ?? new JObject();
+		var alreadyPresent = servers[ServerKey] != null;
+
+		servers[ServerKey] = JObject.FromObject(new
+		{
+			command = "dotnet",
+			args = new[] { "beam", "mcp", "serve" }
+		});
+		root["mcpServers"] = servers;
+
+		File.WriteAllText(configPath, root.ToString(Formatting.Indented));
+
+		return (configPath, !alreadyPresent);
+	}
+
+	// --- AGENTS.md ---
+
 	public const string AgentsFileName = "AGENTS.md";
 
 	private const string EmbeddedResourceName = "cli.Docs.AGENTS.md";
@@ -58,7 +100,7 @@ public static class AgentsFileWriter
 
 	private static string ReadEmbeddedGuide()
 	{
-		var asm = typeof(AgentsFileWriter).Assembly;
+		var asm = typeof(AiFileWriter).Assembly;
 		using var stream = asm.GetManifestResourceStream(EmbeddedResourceName);
 		if (stream == null)
 			return null;
