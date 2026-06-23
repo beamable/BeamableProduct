@@ -189,7 +189,8 @@ jobs:
   # cross-run contention (a second concurrent run on the same serial); raise toward the
   # seat count only behind a license server that gives blocking seat acquisition. ~Claude
   testGroupDefault:
-    timeout-minutes: 30
+    # Raised from 30 to cover up to 3 license-retry attempts plus jittered backoff. ~Claude
+    timeout-minutes: 75
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
     concurrency:
@@ -309,27 +310,20 @@ jobs:
       # Container-action stdout scope is unconfirmed; verify on a real run. ~Claude
       - name: Register Unity license problem matcher
         run: echo "::add-matcher::.github/matchers/unity-license.json"
-      - uses: game-ci/unity-test-runner@v4
-        id: tests
-        timeout-minutes: 30
-        env:
-          DOTNET_CLI_UI_LANGUAGE: en
-          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
-          LANG: en_US.UTF-8
-          LC_ALL: en_US.UTF-8
-          BEAM_UNITY_TEST_CI: "true"
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+      - name: Unity tests (license-contention retry)
+        uses: ./.github/actions/unity-test-with-retry
         with:
+          unityVersion: ${{ matrix.unityVersion }}
+          testMode: ${{ matrix.testMode }}
+          projectPath: ${{ matrix.projectPath }}
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ env.GAME_CI_VERSION }}
           customParameters: -warnaserror+ -executeMethod Beamable.Editor.BeamCli.BeamCliUtil.InstallToolFromLocalPackageSource
-          projectPath: ${{ matrix.projectPath }}
-          testMode: ${{ matrix.testMode }}
-          unityVersion: ${{ matrix.unityVersion }}
           artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
+          unityEmail: ${{ secrets.UNITY_EMAIL }}
+          unityPassword: ${{ secrets.UNITY_PASSWORD }}
+          unitySerial: ${{ secrets.UNITY_SERIAL }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
 
       # A license/seat activation failure aborts before any tests run, so it produces
       # no result XML. If the shard failed and no XML exists, surface a plain-language
@@ -352,7 +346,8 @@ jobs:
   # Second Unity-test shard, pinned to the UNITY_SERIAL_BUILD seat (see the comment
   # above testGroupDefault for the seat-budget rationale). ~Claude
   testGroupBuild:
-    timeout-minutes: 30
+    # Raised from 30 to cover up to 3 license-retry attempts plus jittered backoff. ~Claude
+    timeout-minutes: 75
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
     concurrency:
@@ -469,27 +464,20 @@ jobs:
       # See the registration rationale above testGroupDefault's matching step. ~Claude
       - name: Register Unity license problem matcher
         run: echo "::add-matcher::.github/matchers/unity-license.json"
-      - uses: game-ci/unity-test-runner@v4
-        id: tests
-        timeout-minutes: 30
-        env:
-          DOTNET_CLI_UI_LANGUAGE: en
-          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
-          LANG: en_US.UTF-8
-          LC_ALL: en_US.UTF-8
-          BEAM_UNITY_TEST_CI: "true"
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL_BUILD }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD_BUILD }}
-          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL_BUILD }}
+      - name: Unity tests (license-contention retry)
+        uses: ./.github/actions/unity-test-with-retry
         with:
+          unityVersion: ${{ matrix.unityVersion }}
+          testMode: ${{ matrix.testMode }}
+          projectPath: ${{ matrix.projectPath }}
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ env.GAME_CI_VERSION }}
           customParameters: -warnaserror+ -executeMethod Beamable.Editor.BeamCli.BeamCliUtil.InstallToolFromLocalPackageSource
-          projectPath: ${{ matrix.projectPath }}
-          testMode: ${{ matrix.testMode }}
-          unityVersion: ${{ matrix.unityVersion }}
           artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
+          unityEmail: ${{ secrets.UNITY_EMAIL_BUILD }}
+          unityPassword: ${{ secrets.UNITY_PASSWORD_BUILD }}
+          unitySerial: ${{ secrets.UNITY_SERIAL_BUILD }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
 
       # See the annotation rationale above testGroupDefault's matching step. ~Claude
       - name: Annotate Unity license contention
