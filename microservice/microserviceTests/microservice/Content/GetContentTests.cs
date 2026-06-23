@@ -115,7 +115,101 @@ namespace microserviceTests.microservice.Content
          Assert.IsTrue(testSocket.AllMocksCalled());
       }
 
-      
+      [Test]
+      public async Task FirstManifestBreaksWith503_RecoversOnNextRequest()
+      {
+         // A 503 while fetching the manifest leaves the cached manifest promise in a failed
+         // state. The next content request must discard that poisoned promise and refetch,
+         // rather than re-awaiting the failure forever (which previously required a restart).
+         var args = new TestArgs();
+         var reqCtx = new RequestContext(args.CustomerID, args.ProjectName, 1, 200, 1, "path", "GET", "");
+         var contentResolver = new TestContentResolver(async (uri) =>
+         {
+            var content = new ItemContent();
+            content.SetContentName("foo");
+
+            var serializer = new MicroserviceContentSerializer();
+            var json = serializer.Serialize(content);
+            return json;
+         });
+
+         TestSocket testSocket = null;
+         var socketProvider = new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+
+            // first manifest fetch fails with a 503 (non-gateway), which is NOT auto-recovered
+            // by the requester, so the cached manifest promise settles in a failed state.
+            socket.AddMessageHandler(
+               MessageMatcher
+                  .WithRouteContains("basic/content/manifest")
+                  .WithReqId(-1)
+                  .WithGet(),
+               MessageResponder.Custom(req => new WebsocketResponse
+               {
+                  id = req.id,
+                  from = 0,
+                  status = 503,
+                  body = new WebsocketErrorResponse
+                  {
+                     status = 503,
+                     service = "content",
+                     error = "ServiceUnavailable",
+                     message = "503"
+                  }
+               }),
+               MessageFrequency.OnlyOnce()
+            );
+
+            // the second manifest fetch (triggered by the next content request) succeeds.
+            socket.AddInitialContentMessageHandler(-2, new ContentReference
+            {
+               id = "items.foo",
+               version = "123",
+               uri = "items.foo",
+               visibility = "public"
+            });
+            socket.SetAuthentication(true);
+         });
+
+         var socket = socketProvider.Create("test", args);
+         var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
+
+         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false, new NoopActivityProvider());
+         (_, socketCtx.Daemon) =
+            MicroserviceAuthenticationDaemon.Start(args, requester, new CancellationTokenSource());
+
+         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
+
+         testSocket.Connect();
+
+         testSocket.OnMessage((_, data, id) =>
+         {
+            data.TryBuildRequestContext(args, out var rc);
+            socketCtx.HandleMessage(null, rc).Wait();
+         });
+
+         await contentService.Init();
+
+         // first request fails because of the 503 manifest fetch.
+         var firstPromise = contentService.GetContent("items.foo");
+         var firstTask = Task.Run(async () => await firstPromise);
+         try { firstTask.Wait(1000); } catch { /* expected: the 503 propagates */ }
+         Assert.IsTrue(firstPromise.IsFailed, "first content request should fail due to the 503 manifest fetch");
+
+         // second request must refetch the manifest and succeed (proves the poisoned promise was discarded).
+         var secondPromise = contentService.GetContent("items.foo");
+         var secondTask = Task.Run(async () => await secondPromise);
+         secondTask.Wait(1000);
+         Assert.IsTrue(secondPromise.IsCompleted, "second content request should complete after refetch");
+         Assert.IsFalse(secondPromise.IsFailed, "second content request should succeed after refetch");
+         Assert.AreEqual("items.foo", secondPromise.GetResult().Id);
+
+         socketCtx.Daemon.KillAuthThread();
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+
+
       [Test]
       public void Simple()
       {

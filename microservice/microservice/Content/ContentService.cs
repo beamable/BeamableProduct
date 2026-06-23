@@ -145,11 +145,12 @@ namespace Beamable.Server.Content
 	   
 	   public Promise<ClientManifest> WaitForManifest()
 	   {
-		   var hasNoManifest = true;
 		   lock (_manifestLock)
 		   {
-			   hasNoManifest = _waitForManifest == null;
-			   if (hasNoManifest)
+			   // Refetch when there is no manifest yet, or when the cached promise settled in a
+			   // failed state (e.g. a 503 during a refresh). Without the IsFailed check the failed
+			   // promise would be re-awaited forever, breaking all content resolution until restart.
+			   if (_waitForManifest == null || _waitForManifest.IsFailed)
 			   {
 				   RefreshManifest();
 			   }
