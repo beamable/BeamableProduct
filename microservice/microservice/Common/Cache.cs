@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace microservice.Common
@@ -10,8 +11,8 @@ namespace microservice.Common
    {
       public delegate Task<TValue> Resolver(TKey key);
 
-      private ConcurrentDictionary<TKey, Task<TValue>> _data = new ConcurrentDictionary<TKey, Task<TValue>>();
-      private Resolver _resolver;
+      private readonly ConcurrentDictionary<TKey, Lazy<Task<TValue>>> _data = new();
+      private readonly Resolver _resolver;
 
       public Cache(Resolver resolver)
       {
@@ -39,17 +40,34 @@ namespace microservice.Common
          _data.TryRemove(key, out _);
       }
 
+      /// <summary>
+      /// Shares an in-flight resolver task and caches successful results. Faulted or canceled
+      /// tasks are removed so a later request can retry the resolver.
+      /// </summary>
       public Task<TValue> Get(TKey key)
       {
-         if (_data.TryGetValue(key, out var existing))
+         Lazy<Task<TValue>> candidate = null;
+         candidate = new Lazy<Task<TValue>>(
+            () => ResolveAndEvictOnFailure(key, candidate),
+            LazyThreadSafetyMode.ExecutionAndPublication);
+
+         var entry = _data.GetOrAdd(key, candidate);
+         return entry.Value;
+      }
+
+      private async Task<TValue> ResolveAndEvictOnFailure(TKey key, Lazy<Task<TValue>> entry)
+      {
+         try
          {
-            return existing;
+            return await _resolver(key);
          }
-
-         var task = _resolver(key);
-         _data.AddOrUpdate(key, task, (_, oldValue) => task);
-
-         return task;
+         catch
+         {
+            // Remove only this failed entry. A newer value may have replaced it after a purge.
+            ((ICollection<KeyValuePair<TKey, Lazy<Task<TValue>>>>)_data)
+               .Remove(new KeyValuePair<TKey, Lazy<Task<TValue>>>(key, entry));
+            throw;
+         }
       }
    }
 }

@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- C# microservice content resolution now retries transient HTTP failures and no longer caches failed content resolution tasks [#4599](https://github.com/beamable/BeamableProduct/issues/4599)
+
 ## [7.2.0] - 2026-05-23
 
 ### Changed
