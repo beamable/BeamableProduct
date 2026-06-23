@@ -179,12 +179,15 @@ jobs:
         run: dotnet build --configuration Release --no-restore templates/SourceGen/MicroserviceSourceGen.Tests
       - name: Test
         run: dotnet test --configuration Release --no-build templates/SourceGen/MicroserviceSourceGen.Tests
-  # Unity Pro serials allow 2 concurrent activations each. We own 3 serials
-  # (UNITY_SERIAL, UNITY_SERIAL_BUILD, UNITY_SERIAL_DEVOPS = 6 seats total), so the
-  # Unity workload is sharded into one job per serial, each capped at max-parallel: 2.
-  # Each serial is used by exactly one job, so concurrent activations on a serial can
-  # never exceed its 2 seats and we stop tripping spurious "0 entitlement groups"
-  # license-activation failures. Bump max-parallel if a serial's seat count changes. ~Claude
+  # Unity Pro serials allow 2 concurrent activations each, and we own 3 serials
+  # (UNITY_SERIAL, UNITY_SERIAL_BUILD, UNITY_SERIAL_DEVOPS), so the Unity workload is
+  # sharded into one job per serial. Each shard runs max-parallel: 1. Although a serial
+  # has 2 seats, the license return of a finishing leg overlaps the activation of the
+  # next, momentarily demanding a third seat and tripping spurious "No valid Unity Editor
+  # license found" failures (observed on run 27972570615). Capping at 1 leaves a full
+  # seat of headroom for that return/activate transition. This does not guard against
+  # cross-run contention (a second concurrent run on the same serial); raise toward the
+  # seat count only behind a license server that gives blocking seat acquisition. ~Claude
   testGroupDefault:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
@@ -194,7 +197,7 @@ jobs:
       cancel-in-progress: true
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         projectPath:
           - client
@@ -334,7 +337,7 @@ jobs:
       cancel-in-progress: true
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         projectPath:
           - client
@@ -472,8 +475,9 @@ jobs:
     strategy:
       fail-fast: false
       # All device builds share the UNITY_SERIAL_DEVOPS seat (see the comment above
-      # testGroupDefault). max-parallel: 2 keeps activations within that serial's 2 seats. ~Claude
-      max-parallel: 2
+      # testGroupDefault). max-parallel: 1 leaves a seat of headroom for the license
+      # return/activate transition. ~Claude
+      max-parallel: 1
       matrix:
         targetPlatform:
           - Android
