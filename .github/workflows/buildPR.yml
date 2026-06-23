@@ -304,6 +304,11 @@ jobs:
           large-packages: true
           docker-images: true
           swap-storage: true
+      # Surface the literal Unity license-contention lines as annotations live, mid-run.
+      # Complements the post-failure XML check below, which controls the job's outcome.
+      # Container-action stdout scope is unconfirmed; verify on a real run. ~Claude
+      - name: Register Unity license problem matcher
+        run: echo "::add-matcher::.github/matchers/unity-license.json"
       - uses: game-ci/unity-test-runner@v4
         id: tests
         timeout-minutes: 30
@@ -461,6 +466,9 @@ jobs:
           large-packages: true
           docker-images: true
           swap-storage: true
+      # See the registration rationale above testGroupDefault's matching step. ~Claude
+      - name: Register Unity license problem matcher
+        run: echo "::add-matcher::.github/matchers/unity-license.json"
       - uses: game-ci/unity-test-runner@v4
         id: tests
         timeout-minutes: 30
