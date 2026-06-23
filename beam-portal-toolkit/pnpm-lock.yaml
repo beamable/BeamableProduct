@@ -16,8 +16,8 @@ importers:
         version: 19.2.6(react@19.2.6)
     devDependencies:
       '@beamable/sdk':
-        specifier: 0.0.123-local17
-        version: 0.0.123-local17
+        specifier: 1.2.1
+        version: 1.2.1
       tsdown:
         specifier: ^0.16.5
         version: 0.16.8(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(typescript@5.9.3)
@@ -48,8 +48,8 @@ packages:
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
 
-  '@beamable/sdk@0.0.123-local17':
-    resolution: {integrity: sha512-DaUGXiCrRYQTANfsjt6aR7BvwEiLZ0wVvNiv1qaEz/4p26dHXPLQPdJI/C0E/l5D+Gt0qG99wfN/BDD+8CoeNA==}
+  '@beamable/sdk@1.2.1':
+    resolution: {integrity: sha512-wFwpjT0dNdAMlMHyfLyjAbgqGQsoktImbXKqmvWi8MIsBkbuPMhuf+WqkLbajFcaMkdwp7jdNL5NkMpgW8vbjQ==}
     engines: {node: '>=22.14.0'}
 
   '@emnapi/core@1.10.0':
@@ -302,8 +302,8 @@ packages:
       oxc-resolver:
         optional: true
 
-  empathic@2.0.1:
-    resolution: {integrity: sha512-YGRs8knHhKHVShLkFET/rWAU8kmHbOV5LwN938RHI0pljAJ1Gf6SzXsSmRaEzcXTtOOmVqJ5+WtQPL5uigY50Q==}
+  empathic@2.0.0:
+    resolution: {integrity: sha512-i6UzDscO/XfAcNYD75CfICkmfLedpyPDdozrLMmQc5ORaQcdMoc21OnlEylMIqI7U8eniKrPMxxtj8k0vhmJhA==}
     engines: {node: '>=14'}
 
   fdir@6.5.0:
@@ -476,7 +476,7 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@beamable/sdk@0.0.123-local17': {}
+  '@beamable/sdk@1.2.1': {}
 
   '@emnapi/core@1.10.0':
     dependencies:
@@ -512,7 +512,7 @@ snapshots:
     dependencies:
       '@emnapi/core': 1.10.0
       '@emnapi/runtime': 1.10.0
-      '@tybys/wasm-util': 0.10.2
+      '@tybys/wasm-util': 0.10.1
     optional: true
 
   '@oxc-project/types@0.127.0': {}
@@ -760,18 +760,18 @@ snapshots:
 
   tsdown@0.16.8(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(typescript@5.9.3):
     dependencies:
-      ansis: 4.3.0
+      ansis: 4.2.0
       cac: 6.7.14
       chokidar: 5.0.0
       diff: 8.0.4
-      empathic: 2.0.1
+      empathic: 2.0.0
       hookable: 5.5.3
       obug: 2.1.1
       rolldown: 1.0.0-beta.52(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
       rolldown-plugin-dts: 0.18.4(rolldown@1.0.0-beta.52(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0))(typescript@5.9.3)
       semver: 7.8.0
-      tinyexec: 1.1.2
-      tinyglobby: 0.2.16
+      tinyexec: 1.0.4
+      tinyglobby: 0.2.15
       tree-kill: 1.2.2
       unconfig-core: 7.5.0
       unrun: 0.2.39
@@ -798,4 +798,4 @@ snapshots:
 
   unrun@0.2.39:
     dependencies:
-      rolldown: 1.0.0-rc.11
+      rolldown: 1.0.0-rc.17
