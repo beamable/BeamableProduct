@@ -1,0 +1,182 @@
+# Wrap game-ci/unity-test-runner with patient, jittered retries that fire ONLY on
+# license-activation failures. A license/seat failure aborts before any test results
+# are written, so "no result XML was produced" is used as the signal to retry; a run
+# that produced result XML (pass OR fail) is a genuine outcome and surfaces immediately
+# without masking. Up to 3 attempts with exponential backoff plus jitter. ~Claude
+name: Unity test runner with license-contention retry
+description: Run game-ci/unity-test-runner, retrying only on license-activation failures with jittered backoff.
+
+inputs:
+  unityVersion:
+    required: true
+    description: Unity editor version.
+  testMode:
+    required: true
+    description: playmode or editmode.
+  projectPath:
+    required: true
+    description: Path to the Unity project.
+  customImage:
+    required: true
+    description: Editor container image.
+  customParameters:
+    required: false
+    default: ""
+    description: Extra parameters forwarded to the editor.
+  artifactsPath:
+    required: true
+    description: Where unity-test-runner writes result XML. Used to classify failures.
+  checkName:
+    required: true
+    description: Name for the published Test Results check.
+  unityEmail:
+    required: true
+    description: Unity account email (passed in; composite actions cannot read secrets directly).
+  unityPassword:
+    required: true
+    description: Unity account password.
+  unitySerial:
+    required: true
+    description: Unity serial whose seats this shard activates.
+  githubToken:
+    required: true
+    description: Token for publishing the Test Results check.
+  backoffSeconds:
+    required: false
+    default: "30"
+    description: Base backoff; attempt N waits backoff*2^(N-1) plus jitter.
+  jitterSeconds:
+    required: false
+    default: "45"
+    description: Upper bound of the random jitter added to each backoff.
+
+runs:
+  using: composite
+  steps:
+    - name: Unity tests (attempt 1)
+      id: a1
+      continue-on-error: true
+      uses: game-ci/unity-test-runner@v4
+      env:
+        DOTNET_CLI_UI_LANGUAGE: en
+        DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
+        LANG: en_US.UTF-8
+        LC_ALL: en_US.UTF-8
+        BEAM_UNITY_TEST_CI: "true"
+        UNITY_EMAIL: ${{ inputs.unityEmail }}
+        UNITY_PASSWORD: ${{ inputs.unityPassword }}
+        UNITY_SERIAL: ${{ inputs.unitySerial }}
+      with:
+        customImage: ${{ inputs.customImage }}
+        customParameters: ${{ inputs.customParameters }}
+        projectPath: ${{ inputs.projectPath }}
+        testMode: ${{ inputs.testMode }}
+        unityVersion: ${{ inputs.unityVersion }}
+        artifactsPath: ${{ inputs.artifactsPath }}
+        githubToken: ${{ inputs.githubToken }}
+        checkName: ${{ inputs.checkName }}
+
+    - name: Classify attempt 1 and back off
+      id: g1
+      if: steps.a1.outcome == 'failure'
+      shell: bash
+      env:
+        ARTIFACTS: ${{ inputs.artifactsPath }}
+        BACKOFF: ${{ inputs.backoffSeconds }}
+        JITTER: ${{ inputs.jitterSeconds }}
+        ATTEMPT: "1"
+      run: |
+        set -uo pipefail
+        if find "$ARTIFACTS" -name '*.xml' 2>/dev/null | grep -q .; then
+          echo "Result XML present -> genuine test outcome; not retrying."
+          echo "retry=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        echo "No result XML -> license/activation failure suspected; will retry."
+        rm -rf "$ARTIFACTS" 2>/dev/null || true
+        delay=$(( BACKOFF * (2 ** (ATTEMPT - 1)) + (RANDOM % (JITTER + 1)) ))
+        echo "Backing off ${delay}s (jittered) before attempt $((ATTEMPT + 1))."
+        sleep "$delay"
+        echo "retry=true" >> "$GITHUB_OUTPUT"
+
+    - name: Unity tests (attempt 2)
+      id: a2
+      if: steps.a1.outcome == 'failure' && steps.g1.outputs.retry == 'true'
+      continue-on-error: true
+      uses: game-ci/unity-test-runner@v4
+      env:
+        DOTNET_CLI_UI_LANGUAGE: en
+        DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
+        LANG: en_US.UTF-8
+        LC_ALL: en_US.UTF-8
+        BEAM_UNITY_TEST_CI: "true"
+        UNITY_EMAIL: ${{ inputs.unityEmail }}
+        UNITY_PASSWORD: ${{ inputs.unityPassword }}
+        UNITY_SERIAL: ${{ inputs.unitySerial }}
+      with:
+        customImage: ${{ inputs.customImage }}
+        customParameters: ${{ inputs.customParameters }}
+        projectPath: ${{ inputs.projectPath }}
+        testMode: ${{ inputs.testMode }}
+        unityVersion: ${{ inputs.unityVersion }}
+        artifactsPath: ${{ inputs.artifactsPath }}
+        githubToken: ${{ inputs.githubToken }}
+        checkName: ${{ inputs.checkName }}
+
+    - name: Classify attempt 2 and back off
+      id: g2
+      if: steps.a2.outcome == 'failure' && steps.g1.outputs.retry == 'true'
+      shell: bash
+      env:
+        ARTIFACTS: ${{ inputs.artifactsPath }}
+        BACKOFF: ${{ inputs.backoffSeconds }}
+        JITTER: ${{ inputs.jitterSeconds }}
+        ATTEMPT: "2"
+      run: |
+        set -uo pipefail
+        if find "$ARTIFACTS" -name '*.xml' 2>/dev/null | grep -q .; then
+          echo "Result XML present -> genuine test outcome; not retrying."
+          echo "retry=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        echo "No result XML -> license/activation failure suspected; will retry."
+        rm -rf "$ARTIFACTS" 2>/dev/null || true
+        delay=$(( BACKOFF * (2 ** (ATTEMPT - 1)) + (RANDOM % (JITTER + 1)) ))
+        echo "Backing off ${delay}s (jittered) before attempt $((ATTEMPT + 1))."
+        sleep "$delay"
+        echo "retry=true" >> "$GITHUB_OUTPUT"
+
+    # Final attempt: NOT continue-on-error, so an exhausted-retry failure fails the job.
+    - name: Unity tests (attempt 3, final)
+      id: a3
+      if: steps.a2.outcome == 'failure' && steps.g2.outputs.retry == 'true'
+      uses: game-ci/unity-test-runner@v4
+      env:
+        DOTNET_CLI_UI_LANGUAGE: en
+        DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
+        LANG: en_US.UTF-8
+        LC_ALL: en_US.UTF-8
+        BEAM_UNITY_TEST_CI: "true"
+        UNITY_EMAIL: ${{ inputs.unityEmail }}
+        UNITY_PASSWORD: ${{ inputs.unityPassword }}
+        UNITY_SERIAL: ${{ inputs.unitySerial }}
+      with:
+        customImage: ${{ inputs.customImage }}
+        customParameters: ${{ inputs.customParameters }}
+        projectPath: ${{ inputs.projectPath }}
+        testMode: ${{ inputs.testMode }}
+        unityVersion: ${{ inputs.unityVersion }}
+        artifactsPath: ${{ inputs.artifactsPath }}
+        githubToken: ${{ inputs.githubToken }}
+        checkName: ${{ inputs.checkName }}
+
+    # A continue-on-error attempt that failed with produced results is a genuine
+    # failure the loop deliberately did not retry; re-surface it as a job failure.
+    - name: Surface genuine test failure
+      if: >-
+        (steps.a1.outcome == 'failure' && steps.g1.outputs.retry == 'false') ||
+        (steps.a2.outcome == 'failure' && steps.g2.outputs.retry == 'false')
+      shell: bash
+      run: |
+        echo "::error::Unity tests failed with produced results (genuine failure, not a license flake)."
+        exit 1
