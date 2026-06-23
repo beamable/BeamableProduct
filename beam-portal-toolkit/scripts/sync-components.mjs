@@ -478,7 +478,14 @@ console.log(`✓ Generated   →  src/generated/react-elements.ts`);
 // so migrating to `<BeamFoo …>` is a name change only.
 
 /** Components that have hand-written wrappers in `react-custom.ts`. */
-const REACT_HANDWRITTEN = new Set(['beam-table']);
+const REACT_HANDWRITTEN = new Set([
+  'beam-table',
+  // `beam-change-bar` carries Lit `@property({ attribute: false })` fields
+  // (`changes`, `errors`) and custom events (`wa-save`, `wa-discard`) that
+  // the auto-gen can't see — it pulls only from CEM attributes. The
+  // hand-written forwarder surfaces those as typed React props.
+  'beam-change-bar',
+]);
 
 /** Bindable components — input-like components whose React wrappers
  *  surface typed `onValueChange` / `onCheckedChange` callbacks for ergonomic
@@ -507,6 +514,7 @@ function toReactName(tagName) {
 const reactComponentDeclarations = declarations.filter(
   (d) => !REACT_HANDWRITTEN.has(d.tagName) && !REACT_BINDABLE_TAGS.has(d.tagName),
 );
+console.log('react components to generate', reactComponentDeclarations.map(x => x.tagName))
 const reactBindableDeclarations = declarations.filter((d) => REACT_BINDABLE_TAGS.has(d.tagName));
 
 const reactComponentEntries = reactComponentDeclarations.map((decl) => {
@@ -550,7 +558,7 @@ const reactComponentsTs = `// AUTO-GENERATED — do not edit manually.
 // each component to \`any\`.
 
 import { createElement, type DetailedHTMLProps, type HTMLAttributes, type ReactElement, type Ref } from 'react';
-import { hostComponent } from './react-host';
+import { hostComponent } from '../react-host';
 
 ${reactComponentEntries.join('\n\n')}
 `;
@@ -633,7 +641,7 @@ const reactBindableTs = `// AUTO-GENERATED — do not edit manually.
 // these callbacks are purely additive.
 
 import { createElement, type DetailedHTMLProps, type HTMLAttributes, type ReactElement, type Ref } from 'react';
-import { hostComponent } from './react-host';
+import { hostComponent } from '../react-host';
 
 ${reactBindableEntries.join('\n\n')}
 `;

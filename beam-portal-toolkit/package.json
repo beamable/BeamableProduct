@@ -57,7 +57,7 @@
     "./web-types.json": "./src/generated/web-types.json"
   },
   "peerDependencies": {
-    "@beamable/sdk": "1.2.1",
+    "@beamable/sdk": "0.0.123-local17",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -70,7 +70,7 @@
     }
   },
   "devDependencies": {
-    "@beamable/sdk": "1.2.1",
+    "@beamable/sdk": "0.0.123-local17",
     "tsdown": "^0.16.5",
     "typescript": "^5.8.3"
   }

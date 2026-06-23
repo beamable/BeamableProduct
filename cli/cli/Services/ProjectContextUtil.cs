@@ -298,14 +298,6 @@ public static class ProjectContextUtil
 		
 		foreach (var definition in definitions)
 		{
-			//TODO: need to implement this for portal extensions
-			{
-				if (definition.Protocol == BeamoProtocolType.PortalExtension)
-				{
-					continue;
-				}
-			}
-			
 			// add all the groups for this definition
 			foreach (var group in definition.ServiceGroupTags)
 			{
@@ -849,6 +841,7 @@ public static class ProjectContextUtil
 		definition.ProjectPath = def.AbsolutePackageJsonPath;
 		definition.AbsoluteProjectPath = def.AbsolutePath;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.TypescriptReact;
+		definition.ServiceGroupTags = def.Properties?.ServiceGroups?.ToArray() ?? Array.Empty<string>();
 
 		return definition;
 	}

@@ -1,22 +1,12 @@
-import { useEffect, useState } from 'react'
-import { type Beam, type ExtensionContext } from '@beamable/portal-toolkit'
+import { useBeam } from '@beamable/portal-toolkit/react'
+import { type ExtensionContext } from '@beamable/portal-toolkit'
 
 interface AppProps {
   context: ExtensionContext
 }
 
 export default function App({ context }: AppProps) {
-  const [beam, setBeam] = useState<Beam | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    context.beam.then((b) => {
-      if (!cancelled) setBeam(b)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [context])
+  const beam = useBeam(context)
 
   return (
     <beam-card style={{ marginBottom: 20 }}>
