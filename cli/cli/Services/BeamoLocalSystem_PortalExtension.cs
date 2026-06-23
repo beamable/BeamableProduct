@@ -338,6 +338,14 @@ public class PortalExtensionPackageProperties
 	public List<string> MicroserviceDependencies;
 
 	/// <summary>
+	/// The service-group tags this extension belongs to. Mirrors the BeamServiceGroup
+	/// (PROP_BEAM_SERVICE_GROUP) property used by microservices, letting extensions be
+	/// included/excluded via --with-group/--without-group.
+	/// </summary>
+	[JsonProperty("serviceGroups")]
+	public List<string> ServiceGroups;
+
+	/// <summary>
 	/// Mount declarations. An extension binds to every entry independently —
 	/// each match triggers its own mount call with a distinct shadow root.
 	/// A single bundle can contribute both a sidebar widget and a full page,
