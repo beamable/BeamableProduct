@@ -14,8 +14,12 @@ public final class SharedConfig {
 
     private static let analyticsKey = "bmn.analyticsConfig"
     private static let receiptsKey = "bmn.deliveryReceipts"
+    private static let authKey = "bmn.authConfig"
+    private static let pendingFunnelKey = "bmn.pendingFunnelEvents"
     /// Cap so a long offline streak can't grow the store unbounded.
     private static let maxReceipts = 200
+    /// Cap on persisted-for-replay funnel events (NSE fallback path, §4.3).
+    private static let maxPendingFunnel = 200
 
     private let defaults: UserDefaults?
     public let appGroupId: String?
@@ -47,6 +51,77 @@ public final class SharedConfig {
             return nil
         }
         return config
+    }
+
+    // MARK: Auth config (§4.3) — player bearer token + realm routing for the funnel POST.
+
+    public func saveAuthConfig(_ config: AuthConfig) {
+        guard let defaults = defaults,
+              let data = try? JSON.encoder.encode(config) else { return }
+        defaults.set(data, forKey: Self.authKey)
+    }
+
+    public func loadAuthConfig() -> AuthConfig? {
+        guard let defaults = defaults,
+              let data = defaults.data(forKey: Self.authKey),
+              let config = try? JSON.decoder.decode(AuthConfig.self, from: data) else {
+            return nil
+        }
+        return config
+    }
+
+    /// Update the persisted tokens after a refresh (called by the native auth helper), so a
+    /// freshly-minted access token survives back into shared storage. Other fields are kept.
+    public func updateTokens(accessToken: String, refreshToken: String?, expiresAt: Double?) {
+        var config = loadAuthConfig() ?? AuthConfig()
+        config.accessToken = accessToken
+        if let refreshToken = refreshToken { config.refreshToken = refreshToken }
+        // Only overwrite the expiry when the refresh response carried a valid new one. A nil
+        // (or non-positive) `expiresAt` means `expires_in` was absent/<=0 — keep the prior
+        // stored expiry rather than wiping it (matches Android's `if (expiresInMs > 0)`).
+        if let expiresAt = expiresAt, expiresAt > 0 {
+            config.accessTokenExpiresAt = expiresAt
+        }
+        saveAuthConfig(config)
+    }
+
+    public func clearAuthConfig() {
+        defaults?.removeObject(forKey: Self.authKey)
+    }
+
+    // MARK: Pending funnel events (§4.3 NSE fallback / persist-and-replay)
+
+    /// Append a funnel event to be flushed (authenticated) on next app open. Used when a
+    /// closed-app POST can't complete inside the NSE's ~30s budget.
+    public func appendPendingFunnel(_ event: FunnelEvent) {
+        guard let defaults = defaults else { return }
+        var events = loadPendingFunnel()
+        // Dedup by stable key so the NSE safety-timer persist and `emit`'s persist-on-failure
+        // can't enqueue (and later replay) the SAME funnel stage twice (mirrors appendReceipt).
+        guard !events.contains(where: { $0.dedupKey == event.dedupKey }) else { return }
+        events.append(event)
+        if events.count > Self.maxPendingFunnel {
+            events.removeFirst(events.count - Self.maxPendingFunnel)
+        }
+        if let data = try? JSON.encoder.encode(events) {
+            defaults.set(data, forKey: Self.pendingFunnelKey)
+        }
+    }
+
+    public func loadPendingFunnel() -> [FunnelEvent] {
+        guard let defaults = defaults,
+              let data = defaults.data(forKey: Self.pendingFunnelKey),
+              let events = try? JSON.decoder.decode([FunnelEvent].self, from: data) else {
+            return []
+        }
+        return events
+    }
+
+    /// Return and clear all pending funnel events. Called by the app on launch to replay them.
+    public func drainPendingFunnel() -> [FunnelEvent] {
+        let events = loadPendingFunnel()
+        defaults?.removeObject(forKey: Self.pendingFunnelKey)
+        return events
     }
 
     // MARK: Delivery receipts

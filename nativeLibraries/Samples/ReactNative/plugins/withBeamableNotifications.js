@@ -9,7 +9,7 @@
  * Android section near the bottom).
  *
  * iOS (wiping any capability/target you add by hand in Xcode), what the
- * `beamable-notifications-ios` package needs:
+ * `@beamable/notifications-react-native` package needs on iOS:
  *
  *   1. Push Notifications      → `aps-environment` entitlement on the app.
  *   2. Background Modes         → `remote-notification` in UIBackgroundModes.

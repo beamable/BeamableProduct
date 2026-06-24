@@ -52,25 +52,43 @@ class NotificationActionReceiver : BroadcastReceiver() {
             // best-effort; not fatal to delivery
         }
 
-        val handler = PushManager.resolveNotificationReceivedHandler(appContext) ?: return
+        val handlers = PushManager.resolveHandlers(appContext)
+        val payload = template.effectivePayload()
+        val intentData = NotificationIntentData.fromDataMap(payload)
 
-        // Run the handler off the main thread; goAsync() keeps the (possibly killed-app)
-        // process alive for the ~10s background-work budget.
+        // Native funnel "Received" — local notifications are part of the same funnel as remote.
+        try {
+            BeamableAnalytics.trackFunnel(
+                appContext, intentData, BeamableAnalytics.FunnelType.Received
+            )
+        } catch (_: Throwable) { /* best-effort */ }
+
+        if (handlers.isEmpty()) return
+
+        // Run the handlers off the main thread; goAsync() keeps the (possibly killed-app)
+        // process alive for the ~10s background-work budget. Each handler's failure is isolated.
         val pending = goAsync()
         Thread {
             try {
                 val now = System.currentTimeMillis()
                 val event = PushReceivedEvent(
                     messageId = template.id.toString(),
-                    dataJson = JSONObject(template.effectivePayload() as Map<*, *>).toString(),
+                    dataJson = JSONObject(payload as Map<*, *>).toString(),
                     sentTimeMillis = now,
                     receivedTimeMillis = now,
                     wasForeground = PushManager.isForeground,
-                    deepLink = template.deepLinkUrl
+                    deepLink = template.deepLinkUrl,
+                    intentData = intentData
                 )
-                handler.onNotificationReceived(appContext, event)
-            } catch (t: Throwable) {
-                PushManager.dispatchError("local_notification_received", t.message ?: t.toString())
+                for (handler in handlers) {
+                    try {
+                        handler.onNotificationReceived(appContext, event)
+                    } catch (t: Throwable) {
+                        PushManager.dispatchError(
+                            "local_notification_received", t.message ?: t.toString()
+                        )
+                    }
+                }
             } finally {
                 pending.finish()
             }

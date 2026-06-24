@@ -21,6 +21,8 @@ ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/Android"
 ENV_FILE="$ANDROID_DIR/.native-build-env"
 PACKAGE_ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/Unity/Plugins/Android"
 PACKAGE_IOS_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/Unity/Plugins/iOS"
+PACKAGE_RN_ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/ReactNative/android/libs"
+PACKAGE_RN_IOS_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/ReactNative/ios"
 
 NOTIF_PROJ="$ANDROID_DIR/BeamableNotifications"
 NOTIF_AAR="$NOTIF_PROJ/notifications/build/outputs/aar/notifications-release.aar"
@@ -92,6 +94,12 @@ mkdir -p "$PACKAGE_ANDROID_DIR"
 cp "$NOTIF_AAR" "$PACKAGE_ANDROID_DIR/beamable-notifications-release.aar"
 echo "  beamable-notifications-release.aar → $PACKAGE_ANDROID_DIR"
 
+echo ""
+echo "--- Copying AAR into the unified React Native package ---"
+mkdir -p "$PACKAGE_RN_ANDROID_DIR"
+cp "$NOTIF_AAR" "$PACKAGE_RN_ANDROID_DIR/beamable-notifications-release.aar"
+echo "  beamable-notifications-release.aar → $PACKAGE_RN_ANDROID_DIR"
+
 # ---------------------------------------------------------------------------
 # 3. iOS xcframework (macOS only). Builds BeamableNotifications.xcframework via the
 #    existing nativeLibraries/iOS script and replaces the copy under Plugins/iOS so
@@ -111,6 +119,13 @@ if [ "$OS" = macos ] && [ "${IOS_SUPPORTED_NATIVE:-false}" = true ]; then
   rm -rf "$PACKAGE_IOS_DIR/BeamableNotifications.xcframework"
   cp -R "$IOS_XCFRAMEWORK" "$PACKAGE_IOS_DIR/BeamableNotifications.xcframework"
   echo "  BeamableNotifications.xcframework → $PACKAGE_IOS_DIR"
+
+  echo ""
+  echo "--- Copying xcframework into the unified React Native package ---"
+  mkdir -p "$PACKAGE_RN_IOS_DIR"
+  rm -rf "$PACKAGE_RN_IOS_DIR/BeamableNotifications.xcframework"
+  cp -R "$IOS_XCFRAMEWORK" "$PACKAGE_RN_IOS_DIR/BeamableNotifications.xcframework"
+  echo "  BeamableNotifications.xcframework → $PACKAGE_RN_IOS_DIR"
 elif [ "$OS" = macos ]; then
   echo ""
   echo "  Skipping iOS build (IOS_SUPPORTED_NATIVE=false in $ENV_FILE)."

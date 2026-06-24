@@ -19,6 +19,16 @@
         android:name="com.beamable.push.NotificationActionReceiver"
         android:exported="false" />
 
+    <!-- Receive-time handlers (§1.1): apps declare ONE OR MORE handler classes via repeated
+         <meta-data> entries in their OWN manifest. Because the manifest merger rejects duplicate
+         exact names, use the shared key as a PREFIX:
+           <meta-data android:name="com.beamable.push.notification_received_handler"
+                      android:value="your.first.HandlerClass" />
+           <meta-data android:name="com.beamable.push.notification_received_handler.1"
+                      android:value="your.second.HandlerClass" />
+         PushManager.resolveHandlers() scans every meta-data with this prefix and instantiates each
+         via a no-arg constructor. The library itself declares none. -->
+
     <!-- Default channel for FCM-displayed notifications when none is specified. -->
     <meta-data
         android:name="com.google.firebase.messaging.default_notification_channel_id"

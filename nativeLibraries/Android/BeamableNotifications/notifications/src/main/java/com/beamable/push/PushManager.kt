@@ -9,6 +9,7 @@ import android.provider.Settings
 import android.util.Log
 import java.util.Calendar
 import java.util.TimeZone
+import java.util.concurrent.CopyOnWriteArrayList
 import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging
 
@@ -48,21 +49,54 @@ object PushManager {
     private var appContext: Context? = null
 
     /**
-     * Optional programmatically-set receive-time handler. Note: this only helps while the
+     * Programmatically-registered receive-time handlers (§1.1). Note: these only help while the
      * app process is alive — when a push arrives with the app fully closed, the FCM process
-     * starts fresh and this is null, so the handler is resolved from manifest meta-data
-     * instead (see [resolveNotificationReceivedHandler]).
+     * starts fresh and this list is empty, so handlers are resolved from manifest meta-data
+     * instead (see [resolveHandlers]). Multiple handlers are supported, mirroring iOS's
+     * PluginRegistry.
+     */
+    private val programmaticHandlers = CopyOnWriteArrayList<PushNotificationReceivedHandler>()
+
+    /**
+     * Handler registered via the DEPRECATED legacy [setNotificationReceivedHandler]. Held in its
+     * own slot (separate from [programmaticHandlers]) so a legacy set does not drop handlers that
+     * were added via [addNotificationReceivedHandler], and vice-versa. When non-null it implies
+     * [legacyOverride] is true (manifest handlers are suppressed — original "override the manifest"
+     * semantics).
      */
     @Volatile
-    var notificationReceivedHandler: PushNotificationReceivedHandler? = null
-        private set
+    private var legacyHandler: PushNotificationReceivedHandler? = null
 
-    // Cache of the manifest-declared handler so we reflect/instantiate only once per process.
+    /**
+     * True once the legacy [setNotificationReceivedHandler] has been used (even with null). Legacy
+     * use SUPPRESSES manifest handlers; handlers added via [addNotificationReceivedHandler] are
+     * additive and never suppress the manifest.
+     */
     @Volatile
-    private var manifestHandler: PushNotificationReceivedHandler? = null
-    @Volatile
-    private var manifestHandlerResolved = false
+    private var legacyOverride = false
 
+    // Cache of the manifest-declared handlers so we reflect/instantiate only once per process.
+    @Volatile
+    private var manifestHandlers: List<PushNotificationReceivedHandler> = emptyList()
+    @Volatile
+    private var manifestHandlersResolved = false
+
+    /**
+     * Cache of the COMBINED handler list (legacy + programmatic + manifest) so [resolveHandlers] —
+     * called on every incoming notification — does not rebuild a LinkedHashSet per push. Null means
+     * "not yet computed / invalidated"; recomputed lazily under [this]'s monitor. Invalidated
+     * whenever the handler set changes (add/remove/legacy-set) or after manifest resolution.
+     */
+    @Volatile
+    private var combinedHandlersCache: List<PushNotificationReceivedHandler>? = null
+
+    /** Drops the combined-handler cache so the next [resolveHandlers] recomputes it. */
+    private fun invalidateHandlerCache() {
+        combinedHandlersCache = null
+    }
+
+    // Shared meta-data key used as a PREFIX: handlers are declared as this exact key plus
+    // `.1`, `.2`, … because the manifest merger rejects duplicate exact <meta-data> names.
     private const val NOTIFICATION_RECEIVED_HANDLER_META =
         "com.beamable.push.notification_received_handler"
 
@@ -94,47 +128,154 @@ object PushManager {
     // setter to Java/JNI/C# callers, so no explicit setter method is needed (an
     // explicit one would clash with the property's generated setter signature).
 
-    /** Sets the receive-time handler programmatically (app-alive only). */
-    fun setNotificationReceivedHandler(handler: PushNotificationReceivedHandler?) {
-        this.notificationReceivedHandler = handler
+    /** Adds a receive-time handler programmatically (app-alive only). Duplicates are ignored. */
+    fun addNotificationReceivedHandler(handler: PushNotificationReceivedHandler) {
+        if (!programmaticHandlers.contains(handler)) {
+            programmaticHandlers.add(handler)
+            invalidateHandlerCache()
+        }
+    }
+
+    /** Removes a previously-added programmatic receive-time handler. */
+    fun removeNotificationReceivedHandler(handler: PushNotificationReceivedHandler) {
+        if (programmaticHandlers.remove(handler)) invalidateHandlerCache()
     }
 
     /**
-     * Resolves the receive-time handler for the current process: a programmatically-set
-     * [notificationReceivedHandler] takes precedence; otherwise the class named by the
-     * `com.beamable.push.notification_received_handler` manifest meta-data is instantiated by
-     * reflection (no-arg constructor) and cached. Returns null if none is configured.
+     * Back-compat: sets the single legacy receive-time handler (clear-and-set), restoring the
+     * original "override the manifest" semantics — while a legacy handler is set, manifest-declared
+     * handlers are SUPPRESSED (see [resolveHandlers]).
      *
-     * Uses the supplied [context] (the FCM service) rather than [appContext], which is
-     * null in a freshly-spawned closed-app process.
+     * Clear-and-set applies ONLY to the legacy slot: handlers added via
+     * [addNotificationReceivedHandler] are kept in a separate list and are NEVER dropped by a later
+     * legacy set call (and survive a legacy clear). Passing null clears the legacy slot, but the
+     * override flag stays set for this process so manifest handlers remain suppressed once the
+     * legacy API has been used at all.
+     *
+     * Prefer [addNotificationReceivedHandler] now that multiple additive handlers are supported.
      */
-    internal fun resolveNotificationReceivedHandler(
-        context: Context
-    ): PushNotificationReceivedHandler? {
-        notificationReceivedHandler?.let { return it }
-        if (manifestHandlerResolved) return manifestHandler
-
-        synchronized(this) {
-            if (manifestHandlerResolved) return manifestHandler
-            manifestHandler = instantiateManifestHandler(context)
-            manifestHandlerResolved = true
-        }
-        return manifestHandler
+    @Deprecated(
+        "Multiple handlers are now supported; use addNotificationReceivedHandler.",
+        ReplaceWith("addNotificationReceivedHandler(handler)")
+    )
+    fun setNotificationReceivedHandler(handler: PushNotificationReceivedHandler?) {
+        legacyOverride = true
+        legacyHandler = handler
+        invalidateHandlerCache()
     }
 
-    private fun instantiateManifestHandler(context: Context): PushNotificationReceivedHandler? {
+    /**
+     * Resolves ALL receive-time handlers for the current process (§1.1), in priority order:
+     * the legacy handler (if any) first, then the additive [addNotificationReceivedHandler] ones,
+     * then — UNLESS the legacy API has been used ([legacyOverride]) — every class named by a
+     * manifest meta-data (see [instantiateManifestHandlers]). The combined list is deduped.
+     *
+     * Precedence: use of the DEPRECATED [setNotificationReceivedHandler] restores the original
+     * "override the manifest" behaviour and SUPPRESSES manifest handlers. Handlers added via
+     * [addNotificationReceivedHandler] are additive and do NOT suppress the manifest.
+     *
+     * Uses the supplied [context] (the FCM service) rather than [appContext], which is null in a
+     * freshly-spawned closed-app process.
+     */
+    internal fun resolveHandlers(context: Context): List<PushNotificationReceivedHandler> {
+        if (!manifestHandlersResolved) {
+            synchronized(this) {
+                if (!manifestHandlersResolved) {
+                    manifestHandlers = instantiateManifestHandlers(context)
+                    manifestHandlersResolved = true
+                    // Manifest set just changed; drop any stale combined cache built before it.
+                    invalidateHandlerCache()
+                }
+            }
+        }
+        // Fast path: serve the cached combined list (set on this hot path, called per push).
+        combinedHandlersCache?.let { return it }
+        synchronized(this) {
+            // Re-check under lock: another thread may have populated the cache meanwhile.
+            combinedHandlersCache?.let { return it }
+            // Legacy handler first (own slot), then additive handlers, deduped.
+            val combined = LinkedHashSet<PushNotificationReceivedHandler>()
+            legacyHandler?.let { combined.add(it) }
+            combined.addAll(programmaticHandlers)
+            // Manifest handlers are suppressed once the legacy override API has been used.
+            if (!legacyOverride) combined.addAll(manifestHandlers)
+            val list = combined.toList()
+            combinedHandlersCache = list
+            return list
+        }
+    }
+
+    /** Resets all in-process handler/override state. Test seam only. */
+    internal fun resetHandlersForTest() {
+        programmaticHandlers.clear()
+        legacyHandler = null
+        legacyOverride = false
+        manifestHandlers = emptyList()
+        manifestHandlersResolved = false
+        invalidateHandlerCache()
+    }
+
+    /**
+     * Dispatches [event] to every resolved handler, isolating each handler's failure so one
+     * throwing handler does not block the others (failures route to [dispatchError]).
+     */
+    internal fun dispatchNotificationReceived(context: Context, event: PushReceivedEvent) {
+        for (handler in resolveHandlers(context)) {
+            try {
+                handler.onNotificationReceived(context, event)
+            } catch (t: Throwable) {
+                dispatchError("notification_received", t.message ?: t.toString())
+            }
+        }
+    }
+
+    private fun instantiateManifestHandlers(
+        context: Context
+    ): List<PushNotificationReceivedHandler> {
         return try {
             val ai = context.packageManager.getApplicationInfo(
                 context.packageName,
                 PackageManager.GET_META_DATA
             )
-            val className = ai.metaData?.getString(NOTIFICATION_RECEIVED_HANDLER_META)
-                ?: return null
-            val instance = Class.forName(className).getDeclaredConstructor().newInstance()
-            instance as? PushNotificationReceivedHandler
+            val meta = ai.metaData ?: return emptyList()
+            // Collect (index, className) for the exact base key (index -1, sorts first) and any
+            // key whose suffix after "<BASE>." is a NON-NEGATIVE INTEGER (.1, .2, …). Keys with a
+            // non-numeric suffix (e.g. ".enabled") are silently ignored — no dispatchError.
+            val suffixPrefix = "$NOTIFICATION_RECEIVED_HANDLER_META."
+            val entries = ArrayList<Pair<Int, String>>()
+            val seen = HashSet<Int>() // dedup so the base key isn't processed twice
+            for (key in meta.keySet()) {
+                val index: Int = when {
+                    key == NOTIFICATION_RECEIVED_HANDLER_META -> -1
+                    key.startsWith(suffixPrefix) -> {
+                        val suffix = key.substring(suffixPrefix.length)
+                        suffix.toIntOrNull()?.takeIf { it >= 0 } ?: continue
+                    }
+                    else -> continue
+                }
+                if (!seen.add(index)) continue
+                val className = meta.getString(key) ?: continue
+                entries.add(index to className)
+            }
+            // Deterministic order: base key (-1) first, then ascending numeric index.
+            entries.sortBy { it.first }
+            val handlers = ArrayList<PushNotificationReceivedHandler>()
+            for ((_, className) in entries) {
+                try {
+                    val instance = Class.forName(className)
+                        .getDeclaredConstructor().newInstance()
+                    (instance as? PushNotificationReceivedHandler)?.let { handlers.add(it) }
+                } catch (t: Throwable) {
+                    dispatchError(
+                        "notification_received_handler_resolve",
+                        "$className: ${t.message ?: t.toString()}"
+                    )
+                }
+            }
+            handlers
         } catch (t: Throwable) {
             dispatchError("notification_received_handler_resolve", t.message ?: t.toString())
-            null
+            emptyList()
         }
     }
 
@@ -358,6 +499,55 @@ object PushManager {
         return data
     }
 
+    // ---- Auth credential writer (§4 / Decision Q5) --------------------------
+
+    /**
+     * Persists the player's auth credentials into the `beamable_notifications_auth` prefs that
+     * [BeamableAnalytics] reads when firing the native funnel (the funnel is inert until these are
+     * written). The native side is otherwise a pure reader, so the SDK must call this whenever the
+     * player's token/scope changes.
+     *
+     * [authJson] is the canonical credential object:
+     * `{ "accessToken": string, "refreshToken": string, "accessTokenExpiresAt": number(epoch ms),
+     *    "cid": string, "pid": string, "host": string }`.
+     * Keys are optional individually; present ones overwrite, absent ones are left untouched.
+     * Malformed JSON routes to [dispatchError] and writes nothing (never crashes).
+     */
+    fun configureAuth(context: Context, authJson: String) {
+        try {
+            val obj = org.json.JSONObject(authJson)
+            val prefs = context.applicationContext
+                .getSharedPreferences(BeamableAnalytics.PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().apply {
+                if (obj.has("accessToken"))
+                    putString(BeamableAnalytics.KEY_ACCESS_TOKEN, obj.optString("accessToken"))
+                if (obj.has("refreshToken"))
+                    putString(BeamableAnalytics.KEY_REFRESH_TOKEN, obj.optString("refreshToken"))
+                if (obj.has("accessTokenExpiresAt"))
+                    putLong(
+                        BeamableAnalytics.KEY_ACCESS_TOKEN_EXPIRES_AT,
+                        obj.optLong("accessTokenExpiresAt")
+                    )
+                if (obj.has("cid")) putString(BeamableAnalytics.KEY_CID, obj.optString("cid"))
+                if (obj.has("pid")) putString(BeamableAnalytics.KEY_PID, obj.optString("pid"))
+                if (obj.has("host")) putString(BeamableAnalytics.KEY_HOST, obj.optString("host"))
+            }.apply()
+        } catch (t: Throwable) {
+            dispatchError("configure_auth", t.message ?: t.toString())
+        }
+    }
+
+    /** Clears all persisted auth credentials (e.g. on sign-out). The funnel goes inert afterward. */
+    fun clearAuth(context: Context) {
+        try {
+            context.applicationContext
+                .getSharedPreferences(BeamableAnalytics.PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().clear().apply()
+        } catch (t: Throwable) {
+            dispatchError("clear_auth", t.message ?: t.toString())
+        }
+    }
+
     // ---- Internal dispatch helpers (all guarded) ----------------------------
 
     internal fun dispatchToken(token: String) {
@@ -369,7 +559,50 @@ object PushManager {
     }
 
     internal fun dispatchNotificationOpened(json: String) {
+        // Funnel: a notification tap is an "Opened" event (§4.5). Fired natively, gated on a
+        // tracked campaign + scope/gamerTag inside trackFunnel.
+        appContext?.let { ctx ->
+            try {
+                BeamableAnalytics.trackFunnel(
+                    ctx, NotificationIntentData.fromJson(json), BeamableAnalytics.FunnelType.Opened
+                )
+            } catch (_: Throwable) { /* analytics is best-effort */ }
+        }
         listener?.let { safe("notification_opened") { it.onNotificationOpened(json) } }
+    }
+
+    // ---- Offer / conversion funnel helpers (§4.7) ---------------------------
+
+    /**
+     * Emits a **Clicked** funnel event for an in-app offer click, attributed to the campaign that
+     * arrived in the originating notification (§4.7). [intentDataJson] is the notification's
+     * intent-data JSON (as delivered to the engine); [offerJson] is the single clicked offer.
+     * No-op unless campaignId + nodeId + scope + gamerTag are present.
+     */
+    fun trackOfferClicked(intentDataJson: String, offerJson: String?) {
+        trackOffer(intentDataJson, offerJson, BeamableAnalytics.FunnelType.Clicked)
+    }
+
+    /** Emits a **Converted** funnel event for an offer conversion (§4.7). See [trackOfferClicked]. */
+    fun trackOfferConverted(intentDataJson: String, offerJson: String?) {
+        trackOffer(intentDataJson, offerJson, BeamableAnalytics.FunnelType.Converted)
+    }
+
+    private fun trackOffer(
+        intentDataJson: String,
+        offerJson: String?,
+        type: BeamableAnalytics.FunnelType
+    ) {
+        val ctx = appContext ?: return
+        try {
+            val intent = NotificationIntentData.fromJson(intentDataJson)
+            val offer = offerJson?.takeIf { it.isNotEmpty() }?.let {
+                NotificationOffer.fromJson(org.json.JSONObject(it))
+            }
+            BeamableAnalytics.trackFunnel(ctx, intent, type, offer)
+        } catch (t: Throwable) {
+            dispatchError("analytics_offer", t.message ?: t.toString())
+        }
     }
 
     internal fun dispatchPermissionResult(granted: Boolean) {

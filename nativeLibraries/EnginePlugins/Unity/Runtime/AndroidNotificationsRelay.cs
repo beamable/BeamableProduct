@@ -10,8 +10,8 @@
 //
 // The whole file is Android-player-only; iOS/editor use the other branches in BeamableNotifications.
 #if UNITY_ANDROID && !UNITY_EDITOR
-using System.Collections.Generic;
 using UnityEngine;
+using Beamable.Serialization;
 
 namespace Beamable.Notifications
 {
@@ -53,31 +53,40 @@ namespace Beamable.Notifications
         // ---- UnitySendMessage targets (called from the Kotlin UnityNotificationsBridge) ----
 
         public void OnPermissionResult(string json)
-            => BeamableNotifications.RaisePermissionResult(Json.Deserialize<PermissionResult>(json));
+            => BeamableNotifications.RaisePermissionResult(JsonSerializable.FromJson<PermissionResult>(json));
 
         public void OnTokenReceived(string json)
-            => BeamableNotifications.RaiseTokenReceived(Json.Deserialize<TokenMsg>(json)?.token);
+            => BeamableNotifications.RaiseTokenReceived(JsonSerializable.FromJson<TokenMsg>(json)?.token);
 
         public void OnTokenError(string json)
-            => BeamableNotifications.RaiseTokenError(Json.Deserialize<ErrorMsg>(json)?.error);
+            => BeamableNotifications.RaiseTokenError(JsonSerializable.FromJson<ErrorMsg>(json)?.error);
 
         public void OnNotificationPresented(string json)
-            => BeamableNotifications.RaiseNotificationPresented(Json.Deserialize<NotificationData>(json));
+            => BeamableNotifications.RaiseNotificationPresented(JsonSerializable.FromJson<NotificationData>(json));
 
         public void OnNotificationReceived(string json)
-            => BeamableNotifications.RaiseNotificationReceived(Json.Deserialize<NotificationData>(json));
+            => BeamableNotifications.RaiseNotificationReceived(JsonSerializable.FromJson<NotificationData>(json));
 
         public void OnNotificationTapped(string json)
-            => BeamableNotifications.RaiseNotificationTapped(Json.Deserialize<NotificationData>(json));
+            => BeamableNotifications.RaiseNotificationTapped(JsonSerializable.FromJson<NotificationData>(json));
 
         public void OnPendingNotifications(string json)
-            => BeamableNotifications.RaisePendingNotifications(Json.Deserialize<List<NotificationData>>(json));
+            => BeamableNotifications.RaisePendingNotifications(NotificationJson.FromJsonArray<NotificationData>(json));
 
         public void OnDeliveryReceipts(string json)
-            => BeamableNotifications.RaiseDeliveryReceipts(Json.Deserialize<List<DeliveryReceipt>>(json));
+            => BeamableNotifications.RaiseDeliveryReceipts(NotificationJson.FromJsonArray<DeliveryReceipt>(json));
 
-        private class TokenMsg { public string token; }
-        private class ErrorMsg { public string error; }
+        private class TokenMsg : JsonSerializable.ISerializable
+        {
+            public string token;
+            public void Serialize(JsonSerializable.IStreamSerializer s) => s.Serialize("token", ref token);
+        }
+
+        private class ErrorMsg : JsonSerializable.ISerializable
+        {
+            public string error;
+            public void Serialize(JsonSerializable.IStreamSerializer s) => s.Serialize("error", ref error);
+        }
     }
 }
 #endif

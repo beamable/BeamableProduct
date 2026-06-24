@@ -13,11 +13,10 @@
     "deeplink:android": "npx uri-scheme open \"beamrnsample://details/42\" --android"
   },
   "dependencies": {
+    "@beamable/notifications-react-native": "file:../../EnginePlugins/ReactNative",
     "@beamable/sdk": "file:../../../web",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@ungap/structured-clone": "^1.3.1",
-    "beamable-notifications-android": "file:../../Android/BeamableNotifications/reactnative",
-    "beamable-notifications-ios": "file:../../iOS/BeamableNotifications/reactnative",
     "expo": "^56",
     "expo-asset": "~56.0.17",
     "expo-build-properties": "~56.0.19",

@@ -7,7 +7,7 @@ using UnityEngine;
 
 /// <summary>
 /// Shared edit-time logic for the Beamable native Android library. Single source of truth
-/// used by both <c>BeamableAndroidSetupWindow</c> (manual) and the pre-build processor in
+/// used by both <c>BeamableNotificationsWindow</c> (manual) and the pre-build processor in
 /// <c>BeamableAndroidBuildProcessor</c> (automatic). Editor-only; ships inside the
 /// <c>com.beamable.notifications</c> package.
 ///
@@ -31,10 +31,12 @@ public static class BeamableAndroidSetup
     public const string DeepLinkScheme = "beamable";
     public const int RequiredMinSdk = 24;
 
-    // Receive-time handler class names: the placeholder a fresh scaffold points at, and the one the
-    // NativeDemo sample ships (wired by the "Set Up Native Sample" menu).
+    // Receive-time handler wiring is NO LONGER auto-applied (Decision Q8 / §5.2): receive-time
+    // analytics moved native, so the package no longer owns/scaffolds a push-received handler.
+    // The editor window can GENERATE a sample handler file for the user to customize; wiring its
+    // <meta-data> into the manifest is then an explicit, opt-in action (pass handlerClass to
+    // ApplySettings/ConfigureManifest). Kept public for callers that opt in.
     public const string PlaceholderHandlerClass = "com.companyname.app.MyPushReceivedHandler";
-    public const string SampleHandlerClass = "com.beamable.sample.DiscordWebhookPushHandler";
 
     private const string AndroidNs = "http://schemas.android.com/apk/res/android";
 
@@ -86,10 +88,14 @@ public static class BeamableAndroidSetup
                 : new CheckResult(Level.Warn, "Deeplink scheme missing",
                     "Add a VIEW intent-filter with scheme '" + DeepLinkScheme + "' to " + ManifestPath));
 
+            // Receive-handler meta-data is optional and no longer auto-wired (Decision Q8). Both
+            // states are OK: report it as info, not a warning.
             results.Add(manifest.Contains(HandlerMetaKey)
-                ? new CheckResult(Level.Ok, "Receive handler registered", HandlerMetaKey + " meta-data found")
-                : new CheckResult(Level.Warn, "Receive handler not registered",
-                    "Optional: add <meta-data> '" + HandlerMetaKey + "' to fire native code on push receipt while closed."));
+                ? new CheckResult(Level.Ok, "Receive handler wired (optional)", HandlerMetaKey + " meta-data found")
+                : new CheckResult(Level.Ok, "No custom receive handler",
+                    "Optional: generate a sample PushNotificationReceivedHandler from the Beamable " +
+                    "Notifications window and add its <meta-data> '" + HandlerMetaKey +
+                    "' to run native code on push receipt while the app is closed."));
         }
         else
         {
@@ -131,9 +137,9 @@ public static class BeamableAndroidSetup
 
     /// <summary>
     /// Applies the settings the tool can fix automatically. Returns what changed.
-    /// <paramref name="handlerClass"/>, when given, wires the receive-time handler meta-data to that
-    /// class (the NativeDemo sample passes its own handler); when null an existing handler value is
-    /// left untouched and a missing one gets the placeholder.
+    /// <paramref name="handlerClass"/> is an OPT-IN: when given, wires the receive-time handler
+    /// meta-data to that class; when null (the default) no receive handler is wired or scaffolded
+    /// (Decision Q8 / §5.2) and any existing handler value is left untouched.
     /// </summary>
     public static List<string> ApplySettings(string handlerClass = null)
     {
@@ -179,6 +185,161 @@ public static class BeamableAndroidSetup
             changes.Add("Nothing to change — already configured.");
 
         return changes;
+    }
+
+    // ---- Individually-runnable setup steps (§5.4) ---------------------------
+
+    /// <summary>A single, named, individually-runnable setup step for the editor window.</summary>
+    public class SetupStep
+    {
+        public string Title;
+        public string Description;
+        public System.Func<List<string>> Run; // returns a per-step change log
+
+        public SetupStep(string title, string description, System.Func<List<string>> run)
+        {
+            Title = title;
+            Description = description;
+            Run = run;
+        }
+    }
+
+    /// <summary>
+    /// The post-build setup decomposed into individually-runnable items (§5.4), covering BOTH
+    /// Android and iOS. Each step wraps a slice of <see cref="ApplySettings"/> so the window can run
+    /// them one at a time or all together ("Run Setup (All)"). iOS steps are advisory here: the
+    /// heavy iOS Xcode wiring runs automatically in the post-build processor (NotificationsPostProcess).
+    /// </summary>
+    public static List<SetupStep> GetSetupSteps()
+    {
+        return new List<SetupStep>
+        {
+            new SetupStep(
+                "Android: AndroidManifest",
+                "Scaffold or idempotently patch Assets/Plugins/Android/AndroidManifest.xml — the " +
+                DeepLinkScheme + ":// deep-link VIEW filter, push permissions, launcher launchMode/exported.",
+                () =>
+                {
+                    var changes = new List<string>();
+                    ConfigureManifest(changes); // no handler (opt-in only)
+                    if (changes.Count == 0) changes.Add("Manifest already configured.");
+                    return changes;
+                }),
+            new SetupStep(
+                "Android: Min SDK",
+                "Ensure PlayerSettings minSdkVersion is at least " + RequiredMinSdk + ".",
+                () =>
+                {
+                    var changes = new List<string>();
+                    if ((int)PlayerSettings.Android.minSdkVersion < RequiredMinSdk)
+                    {
+                        PlayerSettings.Android.minSdkVersion = (AndroidSdkVersions)RequiredMinSdk;
+                        changes.Add("Set Android minSdkVersion to " + RequiredMinSdk);
+                    }
+                    else changes.Add("Min SDK already >= " + RequiredMinSdk + ".");
+                    return changes;
+                }),
+            new SetupStep(
+                "Android: Project Settings",
+                "Enable custom main manifest and disable stale custom-gradle-template toggles " +
+                "(gradle config is injected at build).",
+                ApplyProjectSettingsToggles),
+            new SetupStep(
+                "iOS: Post-build wiring (auto)",
+                "iOS Push capability, App Group, Notification Service Extension, remote-notification " +
+                "background mode and Swift runtime are wired automatically at build by " +
+                "NotificationsPostProcess. Set the AppGroupId / bundle ids there for your team.",
+                () => new List<string>
+                {
+                    "No action needed in the editor — iOS setup runs in the post-build processor.",
+                    "Verify the App Group + Push entitlements are enabled in your Apple provisioning profiles."
+                }),
+        };
+    }
+
+    /// <summary>Applies just the ProjectSettings toggles slice of <see cref="ApplySettings"/>.</summary>
+    public static List<string> ApplyProjectSettingsToggles()
+    {
+        var changes = new List<string>();
+        var so = LoadProjectSettings();
+        if (so == null)
+        {
+            changes.Add("Could not load ProjectSettings.asset.");
+            return changes;
+        }
+
+        bool dirty = false;
+        var customMain = so.FindProperty("useCustomMainManifest");
+        if (customMain != null && !customMain.boolValue)
+        {
+            customMain.boolValue = true;
+            dirty = true;
+            changes.Add("Enabled custom main AndroidManifest");
+        }
+        foreach (var t in StaleGradleToggles)
+        {
+            var p = so.FindProperty(t);
+            if (p != null && p.boolValue)
+            {
+                p.boolValue = false;
+                dirty = true;
+                changes.Add("Disabled " + t + " (gradle is injected at build now)");
+            }
+        }
+        if (dirty) so.ApplyModifiedPropertiesWithoutUndo();
+        if (changes.Count == 0) changes.Add("Project settings already correct.");
+        return changes;
+    }
+
+    // ---- Push-received handler SAMPLE generation (§5.2 / §5.4) --------------
+
+    /// <summary>
+    /// Generates a SAMPLE Android <c>PushNotificationReceivedHandler</c> Kotlin file for the user to
+    /// customize (Decision Q8: no auto-wire). Returns the asset path written. Does NOT add the
+    /// <c>&lt;meta-data&gt;</c> to the manifest — wiring is a deliberate follow-up step (call
+    /// <see cref="ConfigureManifest"/> with the handler's fully-qualified class name once edited).
+    /// </summary>
+    public static string GenerateSampleReceivedHandler()
+    {
+        const string dir = "Assets/Plugins/Android/src/com/companyname/app";
+        const string path = dir + "/MyPushReceivedHandler.kt";
+        Directory.CreateDirectory(dir);
+        if (!File.Exists(path))
+            File.WriteAllText(path, SampleReceivedHandlerKotlin());
+        AssetDatabase.ImportAsset(path);
+        return path;
+    }
+
+    /// <summary>The sample handler source — a documented, no-op-by-default starting point.</summary>
+    public static string SampleReceivedHandlerKotlin()
+    {
+        return
+@"package com.companyname.app
+
+import android.content.Context
+import com.beamable.push.PushReceivedEvent
+import com.beamable.push.PushNotificationReceivedHandler
+
+/**
+ * SAMPLE Beamable push-received handler (generated; safe to edit).
+ *
+ * Runs natively on the device the moment a push arrives — including when the app is killed
+ * (data-only FCM). Use it for closed-app side effects; campaign funnel analytics
+ * (Sent/Received/Opened) are already emitted natively by the Beamable library, so you do NOT
+ * need to post analytics here.
+ *
+ * To activate this handler, add its fully-qualified class name to your AndroidManifest under the
+ * '" + HandlerMetaKey + @"' <meta-data> key
+ * (the Beamable Notifications editor window can wire it for you), or register it programmatically
+ * via PushManager.addNotificationReceivedHandler(MyPushReceivedHandler()).
+ */
+class MyPushReceivedHandler : PushNotificationReceivedHandler {
+    override fun onNotificationReceived(context: Context, event: PushReceivedEvent) {
+        // TODO: your closed-app logic here. `event` carries the title/body/data payload and the
+        // 3.3 campaign intent-data (campaignId, nodeId, offers, deeplink, ...).
+    }
+}
+";
     }
 
     // ---- Manifest scaffold / patch ------------------------------------------
@@ -278,22 +439,27 @@ public static class BeamableAndroidSetup
             }
         }
 
-        // 4. Receive-handler meta-data.
-        var meta = FindMetaData(app, HandlerMetaKey);
-        if (meta == null)
+        // 4. Receive-handler meta-data — ONLY when explicitly opting in (handlerClass != null).
+        //    Decision Q8 / §5.2: the package no longer auto-wires a placeholder handler. When a
+        //    handler class is given (user wired their generated sample), set/update its meta-data.
+        if (handlerClass != null)
         {
-            var el = doc.CreateElement("meta-data");
-            SetAndroidAttr(doc, el, "name", HandlerMetaKey);
-            SetAndroidAttr(doc, el, "value", handlerClass ?? PlaceholderHandlerClass);
-            app.AppendChild(el);
-            changes?.Add("Added receive-handler meta-data (" + (handlerClass ?? PlaceholderHandlerClass) + ")");
-            dirty = true;
-        }
-        else if (handlerClass != null && GetAndroidAttr(meta, "value") != handlerClass)
-        {
-            SetAndroidAttr(doc, meta, "value", handlerClass);
-            changes?.Add("Wired receive-handler to " + handlerClass);
-            dirty = true;
+            var meta = FindMetaData(app, HandlerMetaKey);
+            if (meta == null)
+            {
+                var el = doc.CreateElement("meta-data");
+                SetAndroidAttr(doc, el, "name", HandlerMetaKey);
+                SetAndroidAttr(doc, el, "value", handlerClass);
+                app.AppendChild(el);
+                changes?.Add("Added receive-handler meta-data (" + handlerClass + ")");
+                dirty = true;
+            }
+            else if (GetAndroidAttr(meta, "value") != handlerClass)
+            {
+                SetAndroidAttr(doc, meta, "value", handlerClass);
+                changes?.Add("Wired receive-handler to " + handlerClass);
+                dirty = true;
+            }
         }
 
         if (!dirty)
@@ -318,6 +484,16 @@ public static class BeamableAndroidSetup
     /// </summary>
     public static string DefaultManifestXml(string handlerClass = null)
     {
+        // Receive-handler meta-data is opt-in (Decision Q8): only emit it when a handler class is
+        // explicitly supplied. A default scaffold no longer points at a placeholder handler.
+        string handlerMeta = handlerClass == null
+            ? ""
+            : @"
+    <!-- Native receive-time handler (runs even when the app is killed, data-only FCM).
+         Points at your generated PushNotificationReceivedHandler implementation. -->
+    <meta-data android:name=""" + HandlerMetaKey + @"""
+               android:value=""" + handlerClass + @""" />";
+
         return
 @"<?xml version=""1.0"" encoding=""utf-8""?>
 <manifest xmlns:android=""http://schemas.android.com/apk/res/android""
@@ -346,13 +522,7 @@ public static class BeamableAndroidSetup
         <data android:scheme=""" + DeepLinkScheme + @""" />
       </intent-filter>
       <meta-data android:name=""unityplayer.UnityActivity"" android:value=""true"" />
-    </activity>
-
-    <!-- Native receive-time handler (runs even when the app is killed, data-only FCM).
-         Point this at your PushNotificationReceivedHandler implementation; the NativeDemo
-         sample ships com.beamable.sample.DiscordWebhookPushHandler as an example. -->
-    <meta-data android:name=""" + HandlerMetaKey + @"""
-               android:value=""" + (handlerClass ?? PlaceholderHandlerClass) + @""" />
+    </activity>" + handlerMeta + @"
   </application>
 
 </manifest>

@@ -8,12 +8,10 @@ import * as Linking from 'expo-linking';
 import {
   addBeamableDeepLinkListener,
   addBeamableListener,
-  configureClosedAppAnalytics,
   deepLinkFromNotification,
   getLaunchNotification,
   initBeamableNotifications,
   isBeamableNotificationsSupported,
-  reportDelivery,
 } from '../src/notifications/beamableNotifications';
 
 export default function RootLayout() {
@@ -27,25 +25,16 @@ export default function RootLayout() {
 
     initBeamableNotifications();
 
-    // Point closed-app analytics at the configured endpoint (Discord webhook).
-    // Writes the config into the App Group; the NSE POSTs to it on delivery.
-    configureClosedAppAnalytics();
-
     const routeFromUrl = (url: string | null) => {
       if (url) Linking.openURL(url).catch(() => {});
     };
 
-    // App-side delivery reporting (covers LOCAL notifications, which the NSE
-    // can't). Fires the webhook in the only moments iOS runs our code:
-    //  - presented: a notification arrives while the app is in the FOREGROUND
-    //  - tapped: the user taps one (app was backgrounded/closed → launches now)
-    const presentedSub = addBeamableListener('notificationPresented', (n) =>
-      reportDelivery('delivered (foreground)', n),
-    );
+    // Foreground delivery — a notification arrives while the app is foregrounded.
+    // (Funnel analytics for delivery now happen natively; nothing to report here.)
+    const presentedSub = addBeamableListener('notificationPresented', () => {});
 
-    // App already running: user taps a Beamable notification → route + report.
-    const tapSub = addBeamableListener('notificationTapped', (n) => {
-      reportDelivery('tapped', n);
+    // App already running: user taps a Beamable notification → route to its deep link.
+    const tapSub = addBeamableListener('notificationOpened', (n) => {
       routeFromUrl(deepLinkFromNotification(n as never));
     });
 
@@ -54,9 +43,7 @@ export default function RootLayout() {
     // BMNLaunchInstaller), so the launch tap is captured and surfaced here.
     getLaunchNotification().then((launch) => {
       if (launch) {
-        const url = deepLinkFromNotification(launch);
-        reportDelivery('tapped (cold start)', launch);
-        routeFromUrl(url);
+        routeFromUrl(deepLinkFromNotification(launch));
       }
     });
 

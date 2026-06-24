@@ -37,6 +37,16 @@ void bmn_unregisterForRemote(void);
 void bmn_configureAnalytics(const char *configJson);
 void bmn_getDeliveryReceipts(void);                    // -> onDeliveryReceipts
 
+// Beamable funnel analytics auth + offer helpers (spec §4).
+// configJson: AuthConfig {"accessToken":"","refreshToken":"","accessTokenExpiresAt":<sec>,
+//                         "cid":"","pid":"","host":"https://..."} — persisted to App Group.
+void bmn_configureAuth(const char *configJson);        // call on login/refresh
+void bmn_clearAuth(void);                              // call on logout
+// requestJson: OfferTrackRequest {"campaignId":"","nodeId":"","gamerTag":"","accountId":"",
+//                                 "cidPid":"","deeplink":"","offer":{...}}
+void bmn_trackOfferClicked(const char *requestJson);   // emits a "Clicked" funnel event
+void bmn_trackOfferConverted(const char *requestJson); // emits a "Converted" funnel event
+
 // Templates (feature 4) & action-button categories (feature 7).
 void bmn_registerTemplate(const char *templateJson);
 void bmn_registerCategory(const char *categoryJson);

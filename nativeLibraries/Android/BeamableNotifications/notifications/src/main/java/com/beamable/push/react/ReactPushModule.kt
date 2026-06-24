@@ -92,6 +92,33 @@ class ReactPushModule(
     @ReactMethod fun cancelAll() = PushManager.cancelAll()
 
     /**
+     * Offer / conversion funnel tracking (§4.7). Emits a **Clicked** funnel event for an
+     * in-app offer click, attributed to the originating notification's intent data.
+     * [intentDataJson] is the notification's intent-data JSON; [offerJson] the single clicked
+     * offer (nullable). No-op unless campaignId + nodeId + scope + gamerTag are present.
+     */
+    @ReactMethod
+    fun trackOfferClicked(intentDataJson: String, offerJson: String?) =
+        PushManager.trackOfferClicked(intentDataJson, offerJson)
+
+    /** Emits a **Converted** funnel event for an offer conversion (§4.7). See [trackOfferClicked]. */
+    @ReactMethod
+    fun trackOfferConverted(intentDataJson: String, offerJson: String?) =
+        PushManager.trackOfferConverted(intentDataJson, offerJson)
+
+    /**
+     * Persists the player's auth credentials so the native funnel can POST (see
+     * [PushManager.configureAuth]). [authJson] is the canonical credential object.
+     */
+    @ReactMethod
+    fun configureAuth(authJson: String) =
+        PushManager.configureAuth(reactApplicationContext, authJson)
+
+    /** Clears persisted auth credentials (see [PushManager.clearAuth]). */
+    @ReactMethod
+    fun clearAuth() = PushManager.clearAuth(reactApplicationContext)
+
+    /**
      * Cold-start "get intent": if the app was launched by tapping a notification, resolves its
      * payload JSON (deep link + data); otherwise null. Read-only — consumes the launch intent
      * once without re-emitting `onNotificationOpened` (the JS side pulls it on boot).

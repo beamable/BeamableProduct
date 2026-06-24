@@ -2,7 +2,9 @@
   "name": "Beamable.Notifications",
   "rootNamespace": "Beamable.Notifications",
   "references": [
-    "Unity.Nuget.Newtonsoft-Json"
+    "Beamable.SmallerJSON",
+    "Unity.Beamable.Runtime.Common",
+    "Unity.Beamable"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

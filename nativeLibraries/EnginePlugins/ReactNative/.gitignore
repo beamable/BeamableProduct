@@ -1,0 +1,10 @@
+node_modules/
+lib/
+*.log
+.DS_Store
+
+# Android gradle build output (the prebuilt AAR under android/libs/ IS committed).
+android/build/
+
+# iOS prebuilt core binary — copied in by dev-native.sh (Decision Q2), not committed.
+ios/BeamableNotifications.xcframework/

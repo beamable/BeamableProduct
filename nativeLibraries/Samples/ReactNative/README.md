@@ -7,11 +7,9 @@ A minimal **Expo (dev client)** React Native app that:
 - handles **local push notifications** whose taps **deep-link** into the app;
 - ships an in-app **test panel** plus CLI recipes so you can test everything.
 
-> Push notifications here are **local** (on-device). The SDK's server-push
-> registration (`PushApi`) is included as an optional, documented helper
-> (`src/beam/push.ts`) but is not wired into the default flow — sending real
-> server pushes would require an FCM/APNS provider configured in your Beamable
-> realm.
+> Push notifications here are both **local** (on-device) and **remote** (via the
+> `PushNotificationService` microservice). Remote delivery requires an FCM/APNs
+> provider configured in your Beamable realm and a physical device.
 
 ---
 
@@ -161,32 +159,34 @@ put it behind a link in Notes/Messages, to confirm real external entry points.
 
 ### C. Notification → deep-link routing
 
-`app/_layout.tsx` listens for Beamable notification taps (`notificationTapped`)
-and opens the payload's `deepLink` URL via `Linking.openURL`. It also calls
+`app/_layout.tsx` listens for Beamable notification taps (`notificationOpened`)
+and opens the payload's `deeplink` URL via `Linking.openURL`. It also calls
 `getLaunchNotification()` so a tap that **cold-launches** the app still routes
 correctly. Background the app, then tap a notification to exercise that path.
 
 ### D. Beamable native notifications (iOS + Android)
 
 Sections **2** and **3** on the Home screen exercise the **native** Beamable
-Notifications SDK (the app's only notification system): iOS via
-`beamable-notifications-ios` (Swift core) and Android via
-`beamable-notifications-android` (the prebuilt `.aar`'s `BeamablePush` /
-`BeamableDeeplink` bridges). One façade
-(`src/notifications/beamableNotifications.ts`) routes per platform, so the same
-buttons work on both.
+Notifications SDK (the app's only notification system) via the single unified
+package `@beamable/notifications-react-native`. Autolinking selects the correct
+native code per platform (iOS Swift core via the xcframework / Android via the
+prebuilt `.aar`'s `BeamablePush` + `BeamableDeeplink` bridges). The thin app
+façade (`src/notifications/beamableNotifications.ts`) just re-exports the
+package's helpers and adds the app's deep-link glue, so the same buttons work on
+both platforms.
 
 **Android-only — receive-time handler (runs even when the app is killed).**
 `plugins/android/BeamablePushReceivedHandler.java` implements
-`com.beamable.push.PushNotificationReceivedHandler` and POSTs to a Slack
-webhook the instant a push arrives. The Expo plugin registers it via manifest
-meta-data. Exercise it two ways:
+`com.beamable.push.PushNotificationReceivedHandler` and runs the instant a push
+arrives (it just logs in this sample — funnel analytics are emitted natively by
+the SDK, so there is no demo webhook anymore). The Expo plugin registers it via
+manifest meta-data. Exercise it two ways:
 
 - **Local (no Firebase):** tap **Fire now** in section 2 — the local
   notification fires the handler.
 - **Remote, killed app:** fully close the app, then send a **data-only,
   high-priority** FCM message (Firebase console or `curl`) to this device's FCM
-  token. The handler fires from a fresh process and posts to Slack.
+  token. The handler fires from a fresh process.
 
 **Remote push (section 3) works on Android just like iOS.** `registerForRemote`
 (section 2) yields an FCM token, which auto-registers with the `PushNotificationService`
@@ -253,7 +253,8 @@ Under the hood each call POSTs to
 The Beamable Web SDK targets **browser/node**, not React Native, so three small
 adaptations make it work here:
 
-1. **Custom token storage** — `src/beam/RNTokenStorage.ts` implements the SDK's
+1. **Custom token storage** — `RNTokenStorage` (now exported from the
+   `@beamable/notifications-react-native` package) implements the SDK's
    `TokenStorage` over `AsyncStorage` (the SDK's officially supported extension
    point). Passed via `Beam.init({ tokenStorage })`.
 2. **Browser build resolution** — `metro.config.js` forces Metro to resolve the
@@ -273,6 +274,7 @@ adaptations make it work here:
 
 Consuming the SDK (`src/beam/beamClient.ts`):
 ```ts
+// RNTokenStorage now comes from @beamable/notifications-react-native.
 const tokenStorage = await RNTokenStorage.create(BEAM_CONFIG.pid);
 const beam = await Beam.init({ cid, pid, environment, tokenStorage, gameEngine: 'react-native' });
 beam.use([AuthService, AccountService]);
@@ -283,15 +285,16 @@ beam.player.id; // authenticated guest player
 > what make `Beam.init()` succeed in RN; treat them as a sample integration, not
 > a Beamable-supported configuration.
 
-### Optional: register a native push token with Beamable
+### Register a native push token with Beamable
 
-See `src/beam/push.ts`. The device token comes from the Beamable Notifications
-SDK's `tokenReceived` event — call `registerForRemote()` (see
+See `src/beam/pushNotifications.ts` (a thin binding over the package's
+`createPushDevice` helper). The device token comes from the Beamable
+Notifications SDK's `tokenReceived` event — call `registerForRemote()` (see
 `src/notifications/beamableNotifications.ts`) on a **physical device** with a
-**dev build**, then register it:
+**dev build**, then register it with the `PushNotificationService` microservice:
 ```ts
-// In the `tokenReceived` listener (FCM on Android / APNS on iOS):
-await registerPushToken(beam, Platform.OS === 'android' ? 'fcm' : 'apns', token);
+// In the `tokenReceived` listener (FCM on Android / APNs on iOS):
+await registerDevice(token); // platform is auto-resolved (fcm / apns)
 ```
 
 ---
@@ -322,12 +325,11 @@ src/
   polyfills.ts       # localStorage / IndexedDB / BroadcastChannel shims
   beam/
     config.ts        # cid / pid / environment (EDIT THIS)
-    RNTokenStorage.ts# AsyncStorage-backed TokenStorage
     beamClient.ts    # Beam.init() singleton + getSampleService()
     beamable/clients/# CLI-generated microservice clients (SampleServiceClient)
-    push.ts          # OPTIONAL Beamable native-push registration
+    pushNotifications.ts # binds the package's createPushDevice to PushNotificationServiceClient
   notifications/
-    notifications.ts # permissions, channel, local notifications, device token
+    beamableNotifications.ts # app glue over @beamable/notifications-react-native (deep-link helpers)
   linking/
     links.ts         # scheme + URL/path helpers
 metro.config.js      # resolves the external @beamable/sdk + browser build
