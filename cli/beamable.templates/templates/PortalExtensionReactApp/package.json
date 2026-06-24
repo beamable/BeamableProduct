@@ -7,11 +7,13 @@
     "version": "1.0.0",
     "portalExtension": true,
     "microserviceDependencies": [],
-    "mount": {
-      "page": "players/",
-      "selector": "#root",
-      "args": {}
-    }
+    "mounts": [
+      {
+        "page": "players/",
+        "selector": "#root",
+        "args": {}
+      }
+    ]
   },
   "scripts": {
     "dev": "vite",

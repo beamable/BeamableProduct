@@ -1,6 +1,7 @@
 using System.CommandLine;
 using cli.Portal;
 using cli.Services;
+using cli.Services.PortalExtension;
 using cli.Utils;
 using Newtonsoft.Json.Linq;
 using Spectre.Console;
@@ -103,6 +104,13 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		if (!hasExplicitPage && args.Quiet)
 			throw new CliException("Must provide --mount-page when running with -q / --quiet. Run 'portal extension list-extension-options' to discover valid pages and selectors.");
 
+		// Validate the chosen name against existing local microservices, storages, and portal extensions
+		// up front — before any interactive prompts or the remote portal config fetch — so the user
+		// isn't asked for mount details only to have creation fail. The manifest is already initialized
+		// by the framework before Handle runs; deployed names are checked at deploy time.
+		if (PortalExtensionNameValidator.TryGetConflictForNewName(args.BeamoLocalSystem.BeamoManifest, args.ProjectName.Value, out var nameConflict))
+			throw new CliException(nameConflict);
+
 		if (!PortalExtensionCheckCommand.CheckPortalExtensionsDependencies())
 			throw new CliException("Not all required dependencies exist. Aborting.");
 
@@ -158,7 +166,10 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		var packageJson = File.ReadAllText(def.AbsolutePackageJsonPath);
 		var jObj = JObject.Parse(packageJson);
 
-		foreach (var mount in jObj.SelectTokens("$..beamable.mount").OfType<JObject>().ToList())
+		// The template writes a single-entry `mounts` array; the scaffold-time
+		// CLI flags patch entry [0] of that array. If multi-mount scaffolding
+		// is ever needed, add an explicit --mount-index flag or accept JSON.
+		foreach (var mount in jObj.SelectTokens("$..beamable.mounts[0]").OfType<JObject>().ToList())
 		{
 			mount[PortalExtensionMountProperties.KEY_PAGE] = args.mountPage;
 			mount[PortalExtensionMountProperties.KEY_SELECTOR] = args.mountSelector;

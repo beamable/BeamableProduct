@@ -24,7 +24,56 @@ public class VersionService
 		public string originalVersion;
 		public string packageVersion;
 	}
-	
+
+	/// <summary>
+	/// The subset of an npm "packument" (the JSON returned by GET {registry}/{package}) that we care
+	/// about: the dist-tags (e.g. "latest", "local") and the set of published versions.
+	/// </summary>
+	public class NpmPackument
+	{
+		[JsonProperty("dist-tags")] public Dictionary<string, string> DistTags;
+		[JsonProperty("versions")] public Dictionary<string, object> Versions;
+	}
+
+	/// <summary>
+	/// Fetches the npm packument for a package from an npm-compatible registry (npmjs.org or a local
+	/// verdaccio). The package name's "/" is URL-encoded as required by the registry API.
+	/// When <paramref name="throwOnError"/> is false, an unreachable registry or non-success response
+	/// returns null instead of throwing — used to probe verdaccio as a fallback.
+	/// </summary>
+	public async Task<NpmPackument> GetNpmPackument(string packageName, string registryBaseUrl, bool throwOnError = true)
+	{
+		var url = $"{registryBaseUrl.TrimEnd('/')}/{packageName.Replace("/", "%2F")}";
+		try
+		{
+			var message = await _httpClient.GetAsync(url);
+			var rawBody = await message.Content.ReadAsStringAsync();
+
+			if (!message.IsSuccessStatusCode)
+			{
+				if (!throwOnError)
+				{
+					return null;
+				}
+
+				var errorMessage = $"Unable to query registry for package [{packageName}]. url=[{url}] status=[{message.StatusCode}] message=[{rawBody}]";
+				Log.Error(errorMessage);
+				throw new CliException(errorMessage);
+			}
+
+			return JsonConvert.DeserializeObject<NpmPackument>(rawBody);
+		}
+		catch (Exception e) when (e is not CliException)
+		{
+			if (!throwOnError)
+			{
+				return null;
+			}
+
+			throw new CliException($"Unable to query registry for package [{packageName}]. url=[{url}] message=[{e.Message}]");
+		}
+	}
+
 	public async Task<NugetPackages[]> GetBeamableToolPackageVersions(bool replaceDashWithDot = true,
 		string packageName = "beamable.tools")
 	{

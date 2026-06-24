@@ -666,6 +666,9 @@ public class App
 			.AddSubCommandWithHandler<PortalExtensionAddLibraryCommand, PortalExtensionAddLibraryCommandArgs,
 				PortalExtensionCommand>();
 		Commands
+			.AddSubCommandWithHandler<PortalExtensionUpdateToolkitCommand, PortalExtensionUpdateToolkitCommandArgs,
+				PortalExtensionCommand>();
+		Commands
 			.AddSubCommandWithHandler<SetPortalExtensionConfigCommand, SetPortalExtensionConfigCommandArgs,
 				PortalExtensionCommand>();
 		Commands.AddSubCommandWithHandler<ListMountSitesCommand, ListMountSitesCommandArgs, PortalExtensionCommand>();

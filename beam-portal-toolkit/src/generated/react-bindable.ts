@@ -14,7 +14,7 @@
 // these callbacks are purely additive.
 
 import { createElement, type DetailedHTMLProps, type HTMLAttributes, type ReactElement, type Ref } from 'react';
-import { hostComponent } from './react-host';
+import { hostComponent } from '../react-host';
 
 /**
  * @slot (default) - The checkbox's label.
