@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - C# microservice content manifest fetches now use bounded retries for transient failures, avoiding unbounded refetch loops after failed manifest requests [#4704](https://github.com/beamable/BeamableProduct/pull/4704)
+- C# microservice content resolution now retries transient HTTP failures and no longer caches failed content resolution tasks [#4599](https://github.com/beamable/BeamableProduct/issues/4599)
 
 ## [7.2.0] - 2026-05-23
 
