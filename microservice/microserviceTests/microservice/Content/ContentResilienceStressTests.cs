@@ -39,7 +39,6 @@ public class ContentResilienceStressTests
    }
 
    [Test]
-   [Ignore("Socket-harness integration test relies on platform request/retry plumbing that differs on the 2.4.x release line; does not port from main. Core fix is covered by CacheTests and ContentResolverRetryTests.")]
    public async Task ConcurrentContentRequestsShareBoundedManifestRetryAndResolvedContentCache()
    {
       var manifestAttempts = 0;
@@ -79,7 +78,6 @@ public class ContentResilienceStressTests
    }
 
    [Test]
-   [Ignore("Socket-harness integration test relies on platform request/retry plumbing that differs on the 2.4.x release line; does not port from main. Core fix is covered by CacheTests and ContentResolverRetryTests.")]
    public async Task ConcurrentContentRequestsShareOneBoundedResolvedContentDownloadRetry()
    {
       var content = SerializeItemContent("foo");

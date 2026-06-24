@@ -111,7 +111,6 @@ namespace microserviceTests.microservice.Content
       }
 
       [Test]
-      [Ignore("Socket-harness integration test relies on platform request/retry plumbing that differs on the 2.4.x release line; does not port from main. Core fix is covered by CacheTests and ContentResolverRetryTests.")]
       public async Task FirstManifestBreaksWith503_RetriesAndSucceedsOnSameRequest()
       {
          // A transient 503 while fetching the manifest should be retried inside the same
@@ -212,7 +211,6 @@ namespace microserviceTests.microservice.Content
       }
 
       [Test]
-      [Ignore("Socket-harness integration test relies on platform request/retry plumbing that differs on the 2.4.x release line; does not port from main. Core fix is covered by CacheTests and ContentResolverRetryTests.")]
       public async Task Manifest503StopsAfterThreeAttemptsAndNextRequestStartsNewAttemptGroup()
       {
          var args = new TestArgs();
@@ -296,7 +294,6 @@ namespace microserviceTests.microservice.Content
       }
 
       [Test]
-      [Ignore("Socket-harness integration test relies on platform request/retry plumbing that differs on the 2.4.x release line; does not port from main. Core fix is covered by CacheTests and ContentResolverRetryTests.")]
       public async Task Manifest400DoesNotRetry()
       {
          var args = new TestArgs();
@@ -364,7 +361,6 @@ namespace microserviceTests.microservice.Content
       }
 
       [Test]
-      [Ignore("Socket-harness integration test relies on platform request/retry plumbing that differs on the 2.4.x release line; does not port from main. Core fix is covered by CacheTests and ContentResolverRetryTests.")]
       public async Task Manifest404RecoversAsEmptyManifestAndDoesNotRetry()
       {
          var args = new TestArgs();
