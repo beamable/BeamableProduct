@@ -234,24 +234,28 @@ namespace Beamable.Server.Content
 
 	   private async Task<ContentManifest> RequestManifestWithRetriesAsync()
 	   {
-		   for (var attempt = 1; attempt <= MaxManifestAttempts; attempt++)
+		   for (var attempt = 1; attempt < MaxManifestAttempts; attempt++)
 		   {
 			   try
 			   {
-				   return await _requester.Request<ContentManifest>(Method.GET, $"/basic/content/manifest?id={_name}")
-					   .RecoverFrom404(ex => new ContentManifest
-					   {
-						   id = _name, created = 0, references = new List<ContentReference>()
-					   });
+				   return await RequestManifestOnceAsync();
 			   }
-			   catch (RequesterException ex) when (IsTransientManifestFailure(ex.Status) && attempt < MaxManifestAttempts)
+			   catch (RequesterException ex) when (IsTransientManifestFailure(ex.Status))
 			   {
 				   await Task.Delay(GetManifestRetryDelay(attempt));
 			   }
 		   }
 
-		   // The loop either returns or rethrows the original final/non-transient exception.
-		   throw new InvalidOperationException("Unreachable manifest retry state.");
+		   return await RequestManifestOnceAsync();
+	   }
+
+	   private async Task<ContentManifest> RequestManifestOnceAsync()
+	   {
+		   return await _requester.Request<ContentManifest>(Method.GET, $"/basic/content/manifest?id={_name}")
+			   .RecoverFrom404(ex => new ContentManifest
+			   {
+				   id = _name, created = 0, references = new List<ContentReference>()
+			   });
 	   }
 
 	   private static bool IsTransientManifestFailure(long status)
@@ -261,7 +265,7 @@ namespace Beamable.Server.Content
 
 	   private static TimeSpan GetManifestRetryDelay(int attempt)
 	   {
-		   var backoffMilliseconds = 200 * (1 << (attempt - 1));
+		   var backoffMilliseconds = 200 * Math.Pow(2, attempt - 1);
 		   var delay = TimeSpan.FromMilliseconds(backoffMilliseconds + Random.Shared.Next(0, 101));
 		   return delay > MaxManifestRetryDelay ? MaxManifestRetryDelay : delay;
 	   }
