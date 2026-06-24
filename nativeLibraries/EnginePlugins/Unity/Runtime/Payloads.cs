@@ -16,7 +16,7 @@ namespace Beamable.Notifications
         {
             var result = new List<T>();
             if (string.IsNullOrEmpty(json)) return result;
-            if (!(SmallerJSON.Json.Deserialize(json) is IList<object> list)) return result;
+            if (!(Beamable.Serialization.SmallerJSON.Json.Deserialize(json) is IList<object> list)) return result;
             foreach (var item in list)
             {
                 if (item is IDictionary<string, object> map)
@@ -531,7 +531,7 @@ namespace Beamable.Notifications
             if (raw is string str)
             {
                 if (string.IsNullOrEmpty(str)) return null;
-                var decoded = SmallerJSON.Json.Deserialize(str);
+                var decoded = Beamable.Serialization.SmallerJSON.Json.Deserialize(str);
                 return OffersFromList(decoded as IList<object>);
             }
             // Defensive: an already-decoded list of dicts.
@@ -561,7 +561,7 @@ namespace Beamable.Notifications
             if (raw is string str)
             {
                 if (string.IsNullOrEmpty(str)) return null;
-                raw = SmallerJSON.Json.Deserialize(str);
+                raw = Beamable.Serialization.SmallerJSON.Json.Deserialize(str);
             }
             if (raw is Dictionary<string, object> dict) return dict;
             if (raw is IDictionary<string, object> idict) return new Dictionary<string, object>(idict);

@@ -4,7 +4,8 @@
   "references": [
     "Beamable.SmallerJSON",
     "Unity.Beamable.Runtime.Common",
-    "Unity.Beamable"
+    "Unity.Beamable",
+    "Beamable.Platform"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
