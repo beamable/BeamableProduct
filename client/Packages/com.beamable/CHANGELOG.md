@@ -131,6 +131,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BeamEditorContext.Microservices` property allows access to Microservice clients at editor time. [4102](https://github.com/beamable/BeamableProduct/issues/4102)
 - New Validation for Cron Schedule Definition
 
+## [2.4.7] - 2026-06-24
+
+### Changed
+
+- Upgrade CLI to 4.3.8
+
+### Fixed
+
+- Backported microservice content resilience: manifest and content-entry fetches now retry transient failures with bounded exponential backoff and jitter, and a failed fetch no longer poisons the in-memory content cache.
+
 ## [2.4.6] - 2026-04-10
 
 ### Changed
