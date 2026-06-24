@@ -50,7 +50,6 @@ Notif->ScheduleLocalNotification(
     TEXT("daily"), TEXT("Come back!"), TEXT("Your energy is full"),
     /*DelaySeconds*/ 3600.f, /*DeepLink*/ TEXT("game://home"));
 
-Notif->ConfigureAnalyticsJson(TEXT("{\"enabled\":true,\"endpoint\":\"https://api.example.com/e\"}"));
 Notif->RegisterForRemote();
 
 FBMNNotificationData Launch;

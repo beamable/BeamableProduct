@@ -78,9 +78,9 @@ interface PushListener {
  *                android:value="your.second.HandlerClass" />
  *     Implementations registered this way MUST have a public no-arg constructor.
  *  2. Programmatically while the app is alive:
- *     [PushManager.addNotificationReceivedHandler] (or the deprecated
- *     [PushManager.setNotificationReceivedHandler] for back-compat).
+ *     [PushManager.addNotificationReceivedHandler].
  *
+ * Manifest-declared and programmatic handlers are additive — both sets always participate.
  * Every registered handler is invoked for each event; one handler throwing must not block
  * the others (failures are isolated and routed to [PushManager.dispatchError]).
  */

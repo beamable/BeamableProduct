@@ -339,31 +339,6 @@ namespace Beamable.Notifications
         }
     }
 
-    public class AnalyticsConfig : JsonSerializable.ISerializable
-    {
-        public bool Enabled = true;
-        public string Endpoint;
-        public Dictionary<string, string> Headers;
-        public Dictionary<string, object> CommonParams;
-
-        public void Serialize(JsonSerializable.IStreamSerializer s)
-        {
-            s.Serialize("enabled", ref Enabled);
-            if (s.isSaving)
-            {
-                if (Endpoint != null) s.Serialize("endpoint", ref Endpoint);
-                if (Headers != null) s.SerializeDictionary("headers", ref Headers);
-                if (CommonParams != null) LocalRequest.SerializeFreeFormDict(s, "commonParams", ref CommonParams);
-            }
-            else
-            {
-                s.Serialize("endpoint", ref Endpoint);
-                s.SerializeDictionary("headers", ref Headers);
-                LocalRequest.SerializeFreeFormDict(s, "commonParams", ref CommonParams);
-            }
-        }
-    }
-
     public class PermissionResult : JsonSerializable.ISerializable
     {
         public string Status;

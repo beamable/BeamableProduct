@@ -1,8 +1,8 @@
 import Foundation
 
 /// Shared storage backed by an App Group, readable from both the main app and the
-/// Notification Service Extension (separate processes). Holds the analytics config
-/// written by `bmn_configureAnalytics` and the delivery receipts logged by the NSE
+/// Notification Service Extension (separate processes). Holds the player auth config,
+/// pending funnel events queued for replay, and the delivery receipts logged by the NSE
 /// when the app is closed.
 ///
 /// The App Group identifier is resolved at runtime from the `BMNAppGroup` key in the
@@ -12,7 +12,6 @@ public final class SharedConfig {
 
     public static let shared = SharedConfig()
 
-    private static let analyticsKey = "bmn.analyticsConfig"
     private static let receiptsKey = "bmn.deliveryReceipts"
     private static let authKey = "bmn.authConfig"
     private static let pendingFunnelKey = "bmn.pendingFunnelEvents"
@@ -35,23 +34,6 @@ public final class SharedConfig {
     }
 
     public var isAvailable: Bool { defaults != nil }
-
-    // MARK: Analytics config
-
-    public func saveAnalyticsConfig(_ config: AnalyticsConfig) {
-        guard let defaults = defaults,
-              let data = try? JSON.encoder.encode(config) else { return }
-        defaults.set(data, forKey: Self.analyticsKey)
-    }
-
-    public func loadAnalyticsConfig() -> AnalyticsConfig? {
-        guard let defaults = defaults,
-              let data = defaults.data(forKey: Self.analyticsKey),
-              let config = try? JSON.decoder.decode(AnalyticsConfig.self, from: data) else {
-            return nil
-        }
-        return config
-    }
 
     // MARK: Auth config (§4.3) — player bearer token + realm routing for the funnel POST.
 

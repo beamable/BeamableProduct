@@ -22,7 +22,6 @@ extern "C" {
     void bmn_getPending();
     void bmn_registerForRemote();
     void bmn_unregisterForRemote();
-    void bmn_configureAnalytics(const char* configJson);
     void bmn_getDeliveryReceipts();
     void bmn_registerTemplate(const char* templateJson);
     void bmn_registerCategory(const char* categoryJson);
@@ -165,7 +164,6 @@ void UBeamableNotificationsSubsystem::UnregisterForRemote() { BMN_CALL(bmn_unreg
 
 void UBeamableNotificationsSubsystem::RegisterTemplateJson(const FString& TemplateJson) { BMN_CALL(bmn_registerTemplate(BMN_CSTR(TemplateJson))); }
 void UBeamableNotificationsSubsystem::RegisterCategoryJson(const FString& CategoryJson) { BMN_CALL(bmn_registerCategory(BMN_CSTR(CategoryJson))); }
-void UBeamableNotificationsSubsystem::ConfigureAnalyticsJson(const FString& ConfigJson) { BMN_CALL(bmn_configureAnalytics(BMN_CSTR(ConfigJson))); }
 void UBeamableNotificationsSubsystem::GetDeliveryReceipts() { BMN_CALL(bmn_getDeliveryReceipts()); }
 
 void UBeamableNotificationsSubsystem::SetBadge(int32 Count) { BMN_CALL(bmn_setBadge((int)Count)); }

@@ -28,9 +28,10 @@ export {
   DEFAULT_APNS_ENVIRONMENT as APNS_ENVIRONMENT,
 } from '@beamable/notifications-react-native';
 
-// Bind the generic helper to this app's microservice client. The typed return values
-// (RegisterResult / DeviceList / SendResult) flow through because the client's methods are
-// typed; we re-declare the narrow surface below for the screens.
+// Bind the generic helper directly to this app's auto-generated microservice client. The
+// shared `createPushDevice` helper drives the standard register/unregister/list methods plus
+// the campaign-aware `sendCampaignPushToSelf` (its `sendToSelf` maps to it with empty campaign
+// fields) — all of which the generated client exposes, so no adapter is needed.
 const device = createPushDevice(getPushService, {
   notConnectedMessage:
     'Not connected — call initBeam() (Connect to Beamable) first.',
@@ -49,7 +50,14 @@ export const unregisterDevice = device.unregisterDevice;
 /** Lists the player's registered devices (tokens come back masked). */
 export const listDevices = device.listDevices as () => Promise<DeviceList>;
 
-/** Sends a remote push to every device the current player has registered. */
+/**
+ * Sends a remote push to every device the current player has registered.
+ *
+ * The package helper maps this to the campaign-aware `sendCampaignPushToSelf` with the
+ * campaign fields left empty — an "untracked" send is just a campaign request carrying only
+ * title/body/deepLink (no funnel "Sent" event is emitted server-side without campaignId +
+ * nodeId).
+ */
 export const sendToSelf = device.sendToSelf as (
   title: string,
   body: string,

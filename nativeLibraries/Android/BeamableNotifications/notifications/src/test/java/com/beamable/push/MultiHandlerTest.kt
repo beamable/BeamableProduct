@@ -12,8 +12,8 @@ import org.robolectric.RobolectricTestRunner
 
 /**
  * Covers §1.1 multi-handler dispatch: every registered [PushNotificationReceivedHandler]
- * receives the event, a throwing handler does not block the others, and add/remove /
- * deprecated set semantics behave as specified.
+ * receives the event, a throwing handler does not block the others, and add/remove semantics
+ * behave as specified.
  */
 @RunWith(RobolectricTestRunner::class)
 class MultiHandlerTest {
@@ -94,51 +94,25 @@ class MultiHandlerTest {
     }
 
     @Test
-    fun deprecatedSet_doesNotDropAddedHandlers() {
-        // FIX 1(b): a legacy set must NOT drop handlers previously added via add*. Both run.
-        val a = RecordingHandler("a")
-        val b = RecordingHandler("b")
-        PushManager.addNotificationReceivedHandler(a)
-        @Suppress("DEPRECATION")
-        PushManager.setNotificationReceivedHandler(b)
-
-        PushManager.dispatchNotificationReceived(context, event())
-
-        assertEquals(listOf("m1"), a.received)
-        assertEquals(listOf("m1"), b.received)
-    }
-
-    @Test
-    fun deprecatedSet_clearAndSetAffectsOnlyLegacySlot() {
-        // Clear-and-set applies only to the legacy slot: replacing the legacy handler keeps the
-        // additive one, and the previous legacy handler stops receiving.
-        val added = RecordingHandler("added")
-        val legacy1 = RecordingHandler("legacy1")
-        val legacy2 = RecordingHandler("legacy2")
-        PushManager.addNotificationReceivedHandler(added)
-        @Suppress("DEPRECATION")
-        PushManager.setNotificationReceivedHandler(legacy1)
-        @Suppress("DEPRECATION")
-        PushManager.setNotificationReceivedHandler(legacy2)
-
-        PushManager.dispatchNotificationReceived(context, event())
-
-        assertEquals(listOf("m1"), added.received)
-        assertTrue(legacy1.received.isEmpty())
-        assertEquals(listOf("m1"), legacy2.received)
-    }
-
-    @Test
-    fun legacyNullClear_keepsAddedHandler() {
-        // Clearing the legacy slot with null must not drop additive handlers.
-        val added = RecordingHandler("added")
-        PushManager.addNotificationReceivedHandler(added)
-        @Suppress("DEPRECATION")
-        PushManager.setNotificationReceivedHandler(null)
-
-        PushManager.dispatchNotificationReceived(context, event())
-
-        assertEquals(listOf("m1"), added.received)
+    fun dispatchUsesProvidedStage_forThrowingHandler() {
+        // TASK A: the dispatch loop routes a throwing handler's failure to the supplied stage.
+        val errors = mutableListOf<Pair<String, String>>()
+        val previous = PushManager.listener
+        PushManager.listener = object : NoopListener() {
+            override fun onError(stage: String, message: String) {
+                errors += stage to message
+            }
+        }
+        try {
+            PushManager.addNotificationReceivedHandler(RecordingHandler("a", throwOnReceive = true))
+            PushManager.dispatchNotificationReceived(
+                context, event(), stage = "local_notification_received"
+            )
+            assertEquals(1, errors.size)
+            assertEquals("local_notification_received", errors.first().first)
+        } finally {
+            PushManager.listener = previous
+        }
     }
 
     // ---- Combined-handler cache invalidation (efficiency fix) ----------------
@@ -183,24 +157,6 @@ class MultiHandlerTest {
     }
 
     @Test
-    fun cacheInvalidates_whenLegacySetAfterFirstDispatch() {
-        val added = RecordingHandler("added")
-        PushManager.addNotificationReceivedHandler(added)
-        // Prime the cache with {added}.
-        PushManager.dispatchNotificationReceived(context, event())
-        assertEquals(1, added.received.size)
-
-        // Legacy set AFTER the cache was built; the next dispatch must include the legacy handler.
-        val legacy = RecordingHandler("legacy")
-        @Suppress("DEPRECATION")
-        PushManager.setNotificationReceivedHandler(legacy)
-        PushManager.dispatchNotificationReceived(context, event())
-
-        assertEquals(2, added.received.size)
-        assertEquals(1, legacy.received.size)
-    }
-
-    @Test
     fun cachedResult_isStableWhenSetUnchanged() {
         // Repeated dispatches with no set change must hit every handler each time (cache reuse
         // must not drop or duplicate handlers).
@@ -213,5 +169,16 @@ class MultiHandlerTest {
 
         assertEquals(3, a.received.size)
         assertEquals(3, b.received.size)
+    }
+
+    /** No-op [PushListener] base so tests can override only the callbacks they care about. */
+    private open class NoopListener : PushListener {
+        override fun onTokenReceived(token: String) {}
+        override fun onTokenRefreshError(error: String) {}
+        override fun onMessageReceivedForeground(messageJson: String) {}
+        override fun onNotificationOpened(dataJson: String) {}
+        override fun onPermissionResult(granted: Boolean) {}
+        override fun onLocalNotificationScheduled(id: Int) {}
+        override fun onError(stage: String, message: String) {}
     }
 }

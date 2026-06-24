@@ -25,7 +25,6 @@ import {
   addDeepLinkListener,
 } from './index';
 import type {
-  AnalyticsConfig,
   ConfigureAuthOptions,
   DeepLinkEvent,
   EventMap,
@@ -38,7 +37,6 @@ export const isBeamableNotificationsSupported =
 
 /**
  * Every event the SDK can emit. Subscribe to any of them via `addBeamableListener`.
- * `notificationTapped` is the legacy alias of `notificationOpened`.
  */
 export const BEAMABLE_EVENTS = [
   'permissionResult', //   requestPermission() / getPermissionStatus()
@@ -135,15 +133,6 @@ export function unregisterForRemote(): void {
 export function getDeliveryReceipts(): void {
   if (isBeamableNotificationsSupported)
     BeamableNotifications.getDeliveryReceipts();
-}
-
-/**
- * Configure closed-app analytics (iOS). Persists the config into the App Group; the
- * Notification Service Extension reads it on each push delivery. No-op on Android.
- */
-export function configureAnalytics(config: AnalyticsConfig): void {
-  if (isBeamableNotificationsSupported)
-    BeamableNotifications.configureAnalytics(config);
 }
 
 /**

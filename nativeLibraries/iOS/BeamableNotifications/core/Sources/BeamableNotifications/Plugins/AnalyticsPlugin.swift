@@ -47,7 +47,9 @@ public final class AnalyticsPlugin: NSObject, NotificationPlugin {
     private func emit(_ type: FunnelType, note: NotificationData) {
         let intent = note.campaignIntent
         guard let event = BeamableAnalytics.makeEvent(type, intent: intent) else { return }
-        // App is alive: fire-and-forget, no persist-on-failure (no NSE deadline here).
-        BeamableAnalytics.emit(event, shared: shared, session: session, persistOnFailure: false)
+        // App is alive: fire-and-forget, but persist on failure so an app-path auth/transport
+        // failure also queues for authenticated replay (mirrors the NSE fallback). The replay
+        // path itself (NotificationManager.flushPendingFunnel) uses persistOnFailure: false.
+        BeamableAnalytics.emit(event, shared: shared, session: session, persistOnFailure: true)
     }
 }

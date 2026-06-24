@@ -40,7 +40,6 @@ export {
   registerForRemote,
   unregisterForRemote,
   getDeliveryReceipts,
-  configureAnalytics,
   setBadge,
   clearDelivered,
   getLaunchNotification,
@@ -51,7 +50,6 @@ export type {
   PermissionResult,
   LocalRequest,
   DeliveryReceipt,
-  AnalyticsConfig,
 } from '@beamable/notifications-react-native';
 
 /**

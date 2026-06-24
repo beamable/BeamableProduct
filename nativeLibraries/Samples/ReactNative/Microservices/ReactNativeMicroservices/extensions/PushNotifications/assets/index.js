@@ -84,16 +84,16 @@
         withAuth: true
       });
     }
-    async sendPushToSelf(params) {
+    async sendCampaignPushToSelf(params) {
       return this.request({
-        endpoint: "SendPushToSelf",
+        endpoint: "SendCampaignPushToSelf",
         payload: params,
         withAuth: true
       });
     }
-    async sendPushToPlayer(params) {
+    async sendCampaignPushToPlayer(params) {
       return this.request({
-        endpoint: "SendPushToPlayer",
+        endpoint: "SendCampaignPushToPlayer",
         payload: params,
         withAuth: true
       });
@@ -110,6 +110,17 @@
         withAuth: true
       });
     }
+  }
+  function kvRowsToJson(rows) {
+    const obj = {};
+    let any = false;
+    for (const r2 of rows) {
+      const k = r2.key.trim();
+      if (!k) continue;
+      obj[k] = r2.value;
+      any = true;
+    }
+    return any ? JSON.stringify(obj) : "";
   }
   function formatUnixSeconds(value) {
     const seconds = Number(value);
@@ -130,6 +141,12 @@
     const [sending, setSending] = react.useState(false);
     const [sendResult, setSendResult] = react.useState(null);
     const [sendError, setSendError] = react.useState(null);
+    const [campaignId, setCampaignId] = react.useState("");
+    const [nodeId, setNodeId] = react.useState("");
+    const [accountId, setAccountId] = react.useState("");
+    const [cidPid, setCidPid] = react.useState("");
+    const [offers, setOffers] = react.useState([]);
+    const [campaignData, setCampaignData] = react.useState([]);
     react.useEffect(() => {
       let cancelled = false;
       context.beam.then((b) => {
@@ -170,11 +187,49 @@
       setSelected(new Set(players.map((p2) => String(p2.playerId))));
     }, [players]);
     const clearSelection = react.useCallback(() => setSelected(/* @__PURE__ */ new Set()), []);
+    const addOffer = react.useCallback(
+      () => setOffers((prev) => [...prev, { itemId: "", value: "", customData: "" }]),
+      []
+    );
+    const removeOffer = react.useCallback(
+      (i) => setOffers((prev) => prev.filter((_, idx) => idx !== i)),
+      []
+    );
+    const updateOffer = react.useCallback(
+      (i, field, value) => setOffers((prev) => prev.map((o, idx) => idx === i ? { ...o, [field]: value } : o)),
+      []
+    );
+    const addKv = react.useCallback(
+      () => setCampaignData((prev) => [...prev, { key: "", value: "" }]),
+      []
+    );
+    const removeKv = react.useCallback(
+      (i) => setCampaignData((prev) => prev.filter((_, idx) => idx !== i)),
+      []
+    );
+    const updateKv = react.useCallback(
+      (i, field, value) => setCampaignData((prev) => prev.map((r2, idx) => idx === i ? { ...r2, [field]: value } : r2)),
+      []
+    );
     const targets = react.useMemo(() => {
       const t2 = new Set(selected);
       if (playerId.trim()) t2.add(playerId.trim());
       return t2;
     }, [selected, playerId]);
+    const invalidCustomDataIdx = react.useMemo(() => {
+      const bad = /* @__PURE__ */ new Set();
+      offers.forEach((o, i) => {
+        const custom = o.customData.trim();
+        if (!custom) return;
+        try {
+          JSON.parse(custom);
+        } catch {
+          bad.add(i);
+        }
+      });
+      return bad;
+    }, [offers]);
+    const hasInvalidCustomData = invalidCustomDataIdx.size > 0;
     async function sendPush() {
       if (!beam) return;
       if (targets.size === 0) {
@@ -185,14 +240,35 @@
         setSendError("A title or body is required.");
         return;
       }
+      if (hasInvalidCustomData) {
+        setSendError("One or more offers have invalid JSON in Custom data.");
+        return;
+      }
       setSending(true);
       setSendError(null);
       setSendResult(null);
       const client2 = new PushNotificationServiceClient(beam);
-      const payload = { title: title.trim(), body: body.trim(), deepLink: deepLink.trim() };
+      const builtOffers = offers.filter((o) => o.itemId.trim() || o.value.trim() || o.customData.trim()).map((o) => {
+        const offer = { itemId: o.itemId.trim(), value: o.value.trim() };
+        const custom = o.customData.trim();
+        if (custom) offer.customData = custom;
+        return offer;
+      });
+      const campaignDataJson = kvRowsToJson(campaignData);
+      const campaignRequest = {
+        title: title.trim(),
+        body: body.trim(),
+        deepLink: deepLink.trim()
+      };
+      if (campaignId.trim()) campaignRequest.campaignId = campaignId.trim();
+      if (nodeId.trim()) campaignRequest.nodeId = nodeId.trim();
+      if (accountId.trim()) campaignRequest.accountId = accountId.trim();
+      if (cidPid.trim()) campaignRequest.cidPid = cidPid.trim();
+      if (builtOffers.length > 0) campaignRequest.offers = builtOffers;
+      if (campaignDataJson) campaignRequest.campaignData = campaignDataJson;
       const outcomes = await Promise.all(
         [...targets].map(
-          (id) => client2.sendPushToPlayer({ playerId: id, ...payload }).then((r2) => ({ id, r: r2 })).catch((e2) => ({ id, err: e2 instanceof Error ? e2.message : String(e2) }))
+          (id) => client2.sendCampaignPushToPlayer({ playerId: id, ...campaignRequest }).then((r2) => ({ id, r: r2 })).catch((e2) => ({ id, err: e2 instanceof Error ? e2.message : String(e2) }))
         )
       );
       const agg = {
@@ -243,13 +319,118 @@
               onValueChange: setDeepLink
             }
           ),
+          /* @__PURE__ */ jsxRuntime.jsxs(
+            "div",
+            {
+              style: {
+                borderTop: "1px solid var(--beam-color-neutral-200, #e4e4e7)",
+                paddingTop: 12,
+                display: "flex",
+                flexDirection: "column",
+                gap: 12
+              },
+              children: [
+                /* @__PURE__ */ jsxRuntime.jsx("span", { style: { fontWeight: 600 }, children: "Campaign coordinates (optional)" }),
+                /* @__PURE__ */ jsxRuntime.jsxs(
+                  "div",
+                  {
+                    style: {
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 12
+                    },
+                    children: [
+                      /* @__PURE__ */ jsxRuntime.jsx(te, { label: "Campaign ID", placeholder: "campaignId", value: campaignId, onValueChange: setCampaignId }),
+                      /* @__PURE__ */ jsxRuntime.jsx(te, { label: "Node ID", placeholder: "nodeId", value: nodeId, onValueChange: setNodeId }),
+                      /* @__PURE__ */ jsxRuntime.jsx(te, { label: "Account ID", placeholder: "accountId", value: accountId, onValueChange: setAccountId }),
+                      /* @__PURE__ */ jsxRuntime.jsx(te, { label: "cid.pid", placeholder: "<cid>.<pid> (defaults to MS realm)", value: cidPid, onValueChange: setCidPid })
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
+                  /* @__PURE__ */ jsxRuntime.jsx("span", { style: { fontWeight: 600 }, children: "Offers" }),
+                  /* @__PURE__ */ jsxRuntime.jsx(a, { appearance: "outlined", onClick: addOffer, children: "Add offer" })
+                ] }),
+                offers.length === 0 ? /* @__PURE__ */ jsxRuntime.jsx("span", { style: { fontStyle: "italic", color: "var(--beam-color-neutral-500, #71717a)" }, children: "No offers." }) : offers.map((o, i) => /* @__PURE__ */ jsxRuntime.jsxs(
+                  "div",
+                  {
+                    style: { display: "grid", gridTemplateColumns: "1fr 1fr 2fr auto", gap: 8, alignItems: "end" },
+                    children: [
+                      /* @__PURE__ */ jsxRuntime.jsx(
+                        te,
+                        {
+                          label: i === 0 ? "Item ID" : void 0,
+                          placeholder: "itemId",
+                          value: o.itemId,
+                          onValueChange: (v) => updateOffer(i, "itemId", v)
+                        }
+                      ),
+                      /* @__PURE__ */ jsxRuntime.jsx(
+                        te,
+                        {
+                          label: i === 0 ? "Value" : void 0,
+                          placeholder: "value",
+                          value: o.value,
+                          onValueChange: (v) => updateOffer(i, "value", v)
+                        }
+                      ),
+                      /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 4 }, children: [
+                        /* @__PURE__ */ jsxRuntime.jsx(
+                          te,
+                          {
+                            label: i === 0 ? "Custom data (JSON)" : void 0,
+                            placeholder: 'e.g. {"tier":"gold"}',
+                            value: o.customData,
+                            onValueChange: (v) => updateOffer(i, "customData", v),
+                            "custom-error": invalidCustomDataIdx.has(i) ? "Invalid JSON" : void 0
+                          }
+                        ),
+                        invalidCustomDataIdx.has(i) && /* @__PURE__ */ jsxRuntime.jsxs("span", { style: { fontSize: 12, color: "var(--beam-color-danger-600, #c0392b)" }, children: [
+                          "Custom data must be valid JSON (e.g. ",
+                          '{"tier":"gold"}',
+                          ")."
+                        ] })
+                      ] }),
+                      /* @__PURE__ */ jsxRuntime.jsx(a, { appearance: "outlined", onClick: () => removeOffer(i), children: "Remove" })
+                    ]
+                  },
+                  i
+                )),
+                /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
+                  /* @__PURE__ */ jsxRuntime.jsx("span", { style: { fontWeight: 600 }, children: "Campaign data (key → value)" }),
+                  /* @__PURE__ */ jsxRuntime.jsx(a, { appearance: "outlined", onClick: addKv, children: "Add field" })
+                ] }),
+                campaignData.length === 0 ? /* @__PURE__ */ jsxRuntime.jsx("span", { style: { fontStyle: "italic", color: "var(--beam-color-neutral-500, #71717a)" }, children: "No campaign data fields." }) : campaignData.map((r2, i) => /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr 2fr auto", gap: 8, alignItems: "end" }, children: [
+                  /* @__PURE__ */ jsxRuntime.jsx(
+                    te,
+                    {
+                      label: i === 0 ? "Key" : void 0,
+                      placeholder: "key",
+                      value: r2.key,
+                      onValueChange: (v) => updateKv(i, "key", v)
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntime.jsx(
+                    te,
+                    {
+                      label: i === 0 ? "Value" : void 0,
+                      placeholder: "value",
+                      value: r2.value,
+                      onValueChange: (v) => updateKv(i, "value", v)
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntime.jsx(a, { appearance: "outlined", onClick: () => removeKv(i), children: "Remove" })
+                ] }, i))
+              ]
+            }
+          ),
           /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
             /* @__PURE__ */ jsxRuntime.jsx(
               a,
               {
                 variant: "brand",
                 onClick: sendPush,
-                disabled: !beam || sending || targetCount === 0,
+                disabled: !beam || sending || targetCount === 0 || hasInvalidCustomData,
                 loading: sending,
                 children: sending ? "Sending…" : `Send to ${targetCount} player${targetCount === 1 ? "" : "s"}`
               }

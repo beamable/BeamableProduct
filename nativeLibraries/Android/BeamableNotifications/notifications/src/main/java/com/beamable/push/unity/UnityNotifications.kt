@@ -128,7 +128,6 @@ object UnityNotifications {
     }
 
     // Best-effort / no-op on Android (no direct equivalent).
-    @JvmStatic fun configureAnalytics(configJson: String) {}
     @JvmStatic fun registerTemplate(templateJson: String) {}
     @JvmStatic fun registerCategory(categoryJson: String) {}
     @JvmStatic fun setBadge(count: Int) {}

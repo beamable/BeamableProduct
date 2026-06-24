@@ -49,7 +49,7 @@ export function getSampleService(): SampleServiceClient | null {
 /**
  * The typed client for the `PushNotificationService` microservice, or null until
  * `initBeam()` has resolved. Use it to register this device's APNs token and to
- * send remote pushes — e.g. `getPushService()?.sendPushToSelf({ title, body })`.
+ * send remote pushes — e.g. `getPushService()?.sendCampaignPushToSelf({ title, body, deepLink })`.
  */
 export function getPushService(): PushNotificationServiceClient | null {
   return beamInstance?.pushNotificationServiceClient ?? null;

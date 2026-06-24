@@ -20,8 +20,8 @@
  *       iOS native event `notificationPresented`; Android native event `onMessageForeground`.
  *   - `notificationOpened`    — the user tapped/opened the notification.
  *       iOS native event `notificationTapped`; Android native event `onNotificationOpened`.
- *       (The legacy alias `notificationTapped` is still accepted as an event key for
- *       back-compat; both map to the same source.)
+ *       (The iOS-native `notificationTapped` event is mapped to `notificationOpened` at this
+ *       TS layer; `notificationTapped` is not a public unified event name.)
  *   - `notificationReceived`, `permissionResult`, `tokenReceived`, `tokenError`,
  *     `pendingNotifications`, `deliveryReceipts` — unchanged across platforms.
  * Deeplink canonical key is `deeplink`; reads stay tolerant (`deeplink`/`deepLink`/`deep_link`).
@@ -128,13 +128,6 @@ export interface CategorySpec {
   hiddenPreviewsBodyPlaceholder?: string;
 }
 
-export interface AnalyticsConfig {
-  enabled: boolean;
-  endpoint: string;
-  headers?: Record<string, string>;
-  commonParams?: Record<string, unknown>;
-}
-
 /**
  * Player auth written into native shared storage so the CLOSED-APP analytics funnel can
  * authenticate when the JS runtime is not running. Canonical camelCase contract the natives
@@ -238,8 +231,6 @@ export type EventMap = {
   notificationReceived: NotificationData;
   /** User tapped/opened the notification. Canonical name (was `notificationTapped`). */
   notificationOpened: NotificationData;
-  /** @deprecated legacy alias of `notificationOpened`. */
-  notificationTapped: NotificationData;
   pendingNotifications: NotificationData[];
   deliveryReceipts: DeliveryReceipt[];
 };
@@ -428,7 +419,6 @@ export function addListener<K extends keyof EventMap>(
       // distinct (handled in the IS_IOS branch above).
       return { remove: () => {} };
     case 'notificationOpened':
-    case 'notificationTapped':
       return on('onNotificationOpened', (json: string) =>
         toNotificationData(json, true),
       );
@@ -594,9 +584,6 @@ export const BeamableNotifications = {
   registerCategory(category: CategorySpec): void {
     if (IS_IOS) IosNative.registerCategory(category);
   },
-  configureAnalytics(config: AnalyticsConfig): void {
-    if (IS_IOS) IosNative.configureAnalytics(config);
-  },
 
   /**
    * Write the player's Beamable tokens into native shared storage so the closed-app
@@ -711,7 +698,6 @@ export {
   registerForRemote,
   unregisterForRemote,
   getDeliveryReceipts,
-  configureAnalytics,
   configureAuth,
   clearAuth,
   setBadge,

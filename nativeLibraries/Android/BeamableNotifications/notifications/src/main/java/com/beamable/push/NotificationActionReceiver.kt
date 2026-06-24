@@ -52,7 +52,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
             // best-effort; not fatal to delivery
         }
 
-        val handlers = PushManager.resolveHandlers(appContext)
         val payload = template.effectivePayload()
         val intentData = NotificationIntentData.fromDataMap(payload)
 
@@ -63,10 +62,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
             )
         } catch (_: Throwable) { /* best-effort */ }
 
-        if (handlers.isEmpty()) return
-
         // Run the handlers off the main thread; goAsync() keeps the (possibly killed-app)
-        // process alive for the ~10s background-work budget. Each handler's failure is isolated.
+        // process alive for the ~10s background-work budget. Each handler's failure is isolated by
+        // the shared dispatch loop (mirrors the FCM path).
         val pending = goAsync()
         Thread {
             try {
@@ -80,15 +78,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     deepLink = template.deepLinkUrl,
                     intentData = intentData
                 )
-                for (handler in handlers) {
-                    try {
-                        handler.onNotificationReceived(appContext, event)
-                    } catch (t: Throwable) {
-                        PushManager.dispatchError(
-                            "local_notification_received", t.message ?: t.toString()
-                        )
-                    }
-                }
+                PushManager.dispatchNotificationReceived(
+                    appContext, event, stage = "local_notification_received"
+                )
             } finally {
                 pending.finish()
             }

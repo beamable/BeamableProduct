@@ -185,6 +185,9 @@ public final class NotificationManager: NSObject {
     /// SDK calls this on login/refresh; `clearAuth()` on logout.
     public func configureAuth(_ config: AuthConfig) {
         SharedConfig.shared.saveAuthConfig(config)
+        // Creds just arrived — replay any funnel events the NSE (or a prior app-path failure)
+        // persisted because they couldn't authenticate, now that we can.
+        flushPendingFunnel()
     }
 
     /// Convenience overload taking the canonical `AuthConfig` JSON string. Used by the React

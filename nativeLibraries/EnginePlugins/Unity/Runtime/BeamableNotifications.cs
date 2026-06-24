@@ -135,16 +135,6 @@ namespace Beamable.Notifications
 #endif
         }
 
-        public static void ConfigureAnalytics(AnalyticsConfig config)
-        {
-            string json = JsonSerializable.ToJson(config);
-#if UNITY_IOS && !UNITY_EDITOR
-            Native.bmn_configureAnalytics(json);
-#elif UNITY_ANDROID && !UNITY_EDITOR
-            AndroidBackend.Call("configureAnalytics", json);
-#endif
-        }
-
         // MARK: Auth credentials (§4 closed-app campaign funnel)
 
         /// <summary>

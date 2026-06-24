@@ -57,24 +57,6 @@ object PushManager {
      */
     private val programmaticHandlers = CopyOnWriteArrayList<PushNotificationReceivedHandler>()
 
-    /**
-     * Handler registered via the DEPRECATED legacy [setNotificationReceivedHandler]. Held in its
-     * own slot (separate from [programmaticHandlers]) so a legacy set does not drop handlers that
-     * were added via [addNotificationReceivedHandler], and vice-versa. When non-null it implies
-     * [legacyOverride] is true (manifest handlers are suppressed — original "override the manifest"
-     * semantics).
-     */
-    @Volatile
-    private var legacyHandler: PushNotificationReceivedHandler? = null
-
-    /**
-     * True once the legacy [setNotificationReceivedHandler] has been used (even with null). Legacy
-     * use SUPPRESSES manifest handlers; handlers added via [addNotificationReceivedHandler] are
-     * additive and never suppress the manifest.
-     */
-    @Volatile
-    private var legacyOverride = false
-
     // Cache of the manifest-declared handlers so we reflect/instantiate only once per process.
     @Volatile
     private var manifestHandlers: List<PushNotificationReceivedHandler> = emptyList()
@@ -82,10 +64,10 @@ object PushManager {
     private var manifestHandlersResolved = false
 
     /**
-     * Cache of the COMBINED handler list (legacy + programmatic + manifest) so [resolveHandlers] —
-     * called on every incoming notification — does not rebuild a LinkedHashSet per push. Null means
-     * "not yet computed / invalidated"; recomputed lazily under [this]'s monitor. Invalidated
-     * whenever the handler set changes (add/remove/legacy-set) or after manifest resolution.
+     * Cache of the COMBINED handler list (programmatic + manifest) so [resolveHandlers] — called on
+     * every incoming notification — does not rebuild a LinkedHashSet per push. Null means "not yet
+     * computed / invalidated"; recomputed lazily under [this]'s monitor. Invalidated whenever the
+     * handler set changes (add/remove) or after manifest resolution.
      */
     @Volatile
     private var combinedHandlersCache: List<PushNotificationReceivedHandler>? = null
@@ -113,6 +95,11 @@ object PushManager {
         this.listener = listener
         this.remoteEnabled = enableRemote && isFirebaseAvailable(context)
         Log.i(TAG, "initialized (remoteEnabled=$remoteEnabled, requested=$enableRemote)")
+        // Best-effort: if creds are already persisted (returning player), replay any funnel events
+        // that were persisted while offline / unauthenticated.
+        try {
+            BeamableAnalytics.flushPendingFunnel(context.applicationContext)
+        } catch (_: Throwable) { /* analytics is best-effort */ }
     }
 
     /** True if a Firebase app/config is present in this process (google-services.json). */
@@ -142,37 +129,10 @@ object PushManager {
     }
 
     /**
-     * Back-compat: sets the single legacy receive-time handler (clear-and-set), restoring the
-     * original "override the manifest" semantics — while a legacy handler is set, manifest-declared
-     * handlers are SUPPRESSED (see [resolveHandlers]).
-     *
-     * Clear-and-set applies ONLY to the legacy slot: handlers added via
-     * [addNotificationReceivedHandler] are kept in a separate list and are NEVER dropped by a later
-     * legacy set call (and survive a legacy clear). Passing null clears the legacy slot, but the
-     * override flag stays set for this process so manifest handlers remain suppressed once the
-     * legacy API has been used at all.
-     *
-     * Prefer [addNotificationReceivedHandler] now that multiple additive handlers are supported.
-     */
-    @Deprecated(
-        "Multiple handlers are now supported; use addNotificationReceivedHandler.",
-        ReplaceWith("addNotificationReceivedHandler(handler)")
-    )
-    fun setNotificationReceivedHandler(handler: PushNotificationReceivedHandler?) {
-        legacyOverride = true
-        legacyHandler = handler
-        invalidateHandlerCache()
-    }
-
-    /**
-     * Resolves ALL receive-time handlers for the current process (§1.1), in priority order:
-     * the legacy handler (if any) first, then the additive [addNotificationReceivedHandler] ones,
-     * then — UNLESS the legacy API has been used ([legacyOverride]) — every class named by a
-     * manifest meta-data (see [instantiateManifestHandlers]). The combined list is deduped.
-     *
-     * Precedence: use of the DEPRECATED [setNotificationReceivedHandler] restores the original
-     * "override the manifest" behaviour and SUPPRESSES manifest handlers. Handlers added via
-     * [addNotificationReceivedHandler] are additive and do NOT suppress the manifest.
+     * Resolves ALL receive-time handlers for the current process (§1.1): the additive
+     * [addNotificationReceivedHandler] ones (insertion order), then every class named by a manifest
+     * meta-data (numeric-suffix sorted — see [instantiateManifestHandlers]). The combined list is
+     * deduped. Manifest handlers ALWAYS participate.
      *
      * Uses the supplied [context] (the FCM service) rather than [appContext], which is null in a
      * freshly-spawned closed-app process.
@@ -193,23 +153,19 @@ object PushManager {
         synchronized(this) {
             // Re-check under lock: another thread may have populated the cache meanwhile.
             combinedHandlersCache?.let { return it }
-            // Legacy handler first (own slot), then additive handlers, deduped.
+            // Programmatic handlers (insertion order), then manifest handlers, deduped.
             val combined = LinkedHashSet<PushNotificationReceivedHandler>()
-            legacyHandler?.let { combined.add(it) }
             combined.addAll(programmaticHandlers)
-            // Manifest handlers are suppressed once the legacy override API has been used.
-            if (!legacyOverride) combined.addAll(manifestHandlers)
+            combined.addAll(manifestHandlers)
             val list = combined.toList()
             combinedHandlersCache = list
             return list
         }
     }
 
-    /** Resets all in-process handler/override state. Test seam only. */
+    /** Resets all in-process handler state. Test seam only. */
     internal fun resetHandlersForTest() {
         programmaticHandlers.clear()
-        legacyHandler = null
-        legacyOverride = false
         manifestHandlers = emptyList()
         manifestHandlersResolved = false
         invalidateHandlerCache()
@@ -217,14 +173,18 @@ object PushManager {
 
     /**
      * Dispatches [event] to every resolved handler, isolating each handler's failure so one
-     * throwing handler does not block the others (failures route to [dispatchError]).
+     * throwing handler does not block the others (failures route to [dispatchError] under [stage]).
      */
-    internal fun dispatchNotificationReceived(context: Context, event: PushReceivedEvent) {
+    internal fun dispatchNotificationReceived(
+        context: Context,
+        event: PushReceivedEvent,
+        stage: String = "notification_received"
+    ) {
         for (handler in resolveHandlers(context)) {
             try {
                 handler.onNotificationReceived(context, event)
             } catch (t: Throwable) {
-                dispatchError("notification_received", t.message ?: t.toString())
+                dispatchError(stage, t.message ?: t.toString())
             }
         }
     }
@@ -532,6 +492,9 @@ object PushManager {
                 if (obj.has("pid")) putString(BeamableAnalytics.KEY_PID, obj.optString("pid"))
                 if (obj.has("host")) putString(BeamableAnalytics.KEY_HOST, obj.optString("host"))
             }.apply()
+            // "Connected to Beamable" trigger: now that creds are persisted, replay any funnel
+            // events that were stored while offline / unauthenticated. Best-effort.
+            BeamableAnalytics.flushPendingFunnel(context.applicationContext)
         } catch (t: Throwable) {
             dispatchError("configure_auth", t.message ?: t.toString())
         }

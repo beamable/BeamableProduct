@@ -72,10 +72,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Notifications") void RegisterForRemote();
     UFUNCTION(BlueprintCallable, Category = "Notifications") void UnregisterForRemote();
 
-    // Templates / categories / analytics (features 4, 7, 8)
+    // Templates / categories / delivery receipts (features 4, 7)
     UFUNCTION(BlueprintCallable, Category = "Notifications") void RegisterTemplateJson(const FString& TemplateJson);
     UFUNCTION(BlueprintCallable, Category = "Notifications") void RegisterCategoryJson(const FString& CategoryJson);
-    UFUNCTION(BlueprintCallable, Category = "Notifications") void ConfigureAnalyticsJson(const FString& ConfigJson);
     UFUNCTION(BlueprintCallable, Category = "Notifications") void GetDeliveryReceipts();
 
     // Badge

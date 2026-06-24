@@ -49,13 +49,15 @@ void ScheduleReminder()
     });
 }
 
-// Remote + closed-app analytics
+// Remote + closed-app funnel analytics
 void EnableRemote()
 {
-    BeamableNotifications.ConfigureAnalytics(new AnalyticsConfig {
-        Endpoint = "https://api.example.com/notif-events",
-        CommonParams = new() { ["playerId"] = PlayerId }
-    });
+    // Persist the player's auth so the native funnel can POST even when the app is killed.
+    // See docs/notifications-feature.md §4.3.
+    BeamableNotifications.ConfigureAuth(accessToken, refreshToken, accessTokenExpiresAtMs,
+        cid, pid, "https://api.beamable.com");
+    // Or, to pull the token straight from BeamContext.Default:
+    // BeamableNotifications.ConfigureAuthFromContext("https://api.beamable.com");
     BeamableNotifications.RegisterForRemote();
 }
 ```

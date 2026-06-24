@@ -20,7 +20,6 @@ RCT_EXTERN_METHOD(unregisterForRemote)
 
 RCT_EXTERN_METHOD(registerTemplate:(NSDictionary *)template)
 RCT_EXTERN_METHOD(registerCategory:(NSDictionary *)category)
-RCT_EXTERN_METHOD(configureAnalytics:(NSDictionary *)config)
 RCT_EXTERN_METHOD(getDeliveryReceipts)
 
 RCT_EXTERN_METHOD(setBadge:(nonnull NSNumber *)count)

@@ -143,14 +143,16 @@ import { pushPostRegisterBasic } from '@beamable/sdk/api';
 await pushPostRegisterBasic(beam.requester, { provider: 'apns', token });
 ```
 
-For closed-app analytics, also configure the analytics endpoint so the NSE can POST on
-delivery:
+For closed-app funnel analytics, persist the player's auth so the NSE can authenticate the
+funnel POST (no webhook/endpoint config — see `docs/notifications-feature.md` §4.3):
 
 ```ts
-BeamableNotifications.configureAnalytics({
-  enabled: true,
-  endpoint: 'https://your-server.example.com/notif-events',
-  commonParams: { playerId },
+BeamableNotifications.configureAuth({
+  accessToken,
+  refreshToken,
+  accessTokenExpiresAt,   // absolute epoch ms
+  cid, pid,
+  host: 'https://api.beamable.com',
 });
 ```
 
@@ -239,7 +241,7 @@ A `200` means APNs accepted it. For a `content-available` silent push, set
 | `tokenError` fires | No network at registration, or the App ID lacks Push Notifications. |
 | Token arrives, push never delivered | **Wrong APNs environment** (sandbox vs prod mismatch with the build), wrong `apns-topic` (must be the bundle id), bad/expired key, or the device toggled notifications off. |
 | Push delivered but NSE doesn't run | `mutable-content: 1` missing from `aps`; or the user force-quit the app (swiped up) — iOS suppresses the NSE then; or the NSE target isn't in the build. |
-| Closed-app analytics POST never arrives | NSE not enabled/built, App Group not enabled on **both** targets, or `configureAnalytics({ enabled: true })` was never called. |
+| Closed-app funnel POST never arrives | NSE not enabled/built, App Group not enabled on **both** targets, `configureAuth({...})` was never called (no bearer token persisted), or the notification isn't a tracked campaign (missing `campaignId`/`nodeId`/scope/`gamerTag`). Events that can't POST are persisted and replayed on next connect. |
 | Local notification while app closed sends nothing | Expected — iOS runs no code for local delivery while closed; only remote pushes (via the NSE) can. |
 
 ---

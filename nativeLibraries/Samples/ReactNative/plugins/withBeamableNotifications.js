@@ -56,9 +56,32 @@ const NSE_SOURCE_DIR = path.join(SDK_ROOT, 'extension');
 // NotificationManager.swift / RemotePush.swift use UIApplication (forbidden in an
 // app extension), so they're excluded; the NSE plugins only need these two.
 const CORE_SOURCE_DIR = path.join(SDK_ROOT, 'core/Sources/BeamableNotifications');
-// AnalyticsPayload.swift is Foundation-only (extension-safe) and is required by
-// AnalyticsServicePlugin.swift to build the enriched analytics body / webhook message.
-const CORE_NSE_FILES = ['Models.swift', 'SharedConfig.swift', 'AnalyticsPayload.swift'];
+// Extension-safe core subset the NSE compiles. All Foundation-only (no UIApplication),
+// required by AnalyticsServicePlugin.swift to log delivery receipts and fire the funnel
+// "Received" event: Models.swift (JSONValue/DeliveryReceipt/FunnelEvent/AuthConfig +
+// bmnCampaignIntent), SharedConfig.swift (App Group store), and the funnel itself
+// (BeamableAnalytics.makeEvent/emit). Listed by basename — `copyCoreFile`/`nseSwiftFileNames`
+// resolve each one recursively under CORE_SOURCE_DIR (BeamableAnalytics.swift is nested in
+// the Analytics/ subdir).
+const CORE_NSE_FILES = ['Models.swift', 'SharedConfig.swift', 'BeamableAnalytics.swift'];
+
+// Resolve a core source by basename anywhere under CORE_SOURCE_DIR (the subset spans
+// the dir root and the Analytics/ subdir). Returns the absolute path or null if missing.
+function findCoreFile(name) {
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        const hit = walk(full);
+        if (hit) return hit;
+      } else if (entry.name === name) {
+        return full;
+      }
+    }
+    return null;
+  };
+  return walk(CORE_SOURCE_DIR);
+}
 
 // The exact set of .swift basenames the NSE target compiles: every extension
 // source plus the extension-safe core subset. Derived straight from the SDK
@@ -139,9 +162,12 @@ function withNSEFiles(config, appGroup) {
       };
       collectExt(NSE_SOURCE_DIR);
 
-      // 2) Extension-safe core subset (Models + SharedConfig). Foundation-only.
+      // 2) Extension-safe core subset (Models + SharedConfig + the funnel). Foundation-only.
+      //    Resolved by basename so nested sources (Analytics/BeamableAnalytics.swift) are found.
       for (const name of CORE_NSE_FILES) {
-        fs.copyFileSync(path.join(CORE_SOURCE_DIR, name), path.join(nseDir, name));
+        const src = findCoreFile(name);
+        if (!src) throw new Error(`[withBeamableNotifications] core NSE source not found: ${name}`);
+        fs.copyFileSync(src, path.join(nseDir, name));
         swiftFiles.push(name);
       }
 

@@ -91,37 +91,6 @@ final class CoreTests: XCTestCase {
         XCTAssertNil((["deeplink": .string("")] as [String: JSONValue]).bmnDeepLink)
     }
 
-    // MARK: Analytics payload (feature 8)
-
-    func testAnalyticsPayloadHasRichContextAndComposedMessage() {
-        let config = AnalyticsConfig(enabled: true,
-                                     endpoint: "https://example.com",
-                                     commonParams: ["message": .string("📬 label")])
-        let payload = AnalyticsPayload.make(
-            event: "received",
-            source: "nse",
-            notificationId: "promo-42",
-            title: "Oi Gabriel",
-            body: "Fala ai Gabriel",
-            deepLink: "123",
-            wasForeground: false,
-            receivedAtMillis: 1782134720704,
-            data: ["deeplink": .string("123")],
-            config: config
-        )
-        XCTAssertEqual(payload["notificationId"]?.stringValue, "promo-42")
-        XCTAssertEqual(payload["deepLink"]?.stringValue, "123")
-        XCTAssertEqual(payload["wasForeground"], .bool(false))
-        XCTAssertEqual(payload["title"]?.stringValue, "Oi Gabriel")
-        // The composed `message` carries the label header plus the per-notification context.
-        let message = payload["message"]?.stringValue ?? ""
-        XCTAssertTrue(message.hasPrefix("📬 label"))
-        XCTAssertTrue(message.contains("messageId: promo-42"))
-        XCTAssertTrue(message.contains("deepLink: 123"))
-        XCTAssertTrue(message.contains("wasForeground: false"))
-        XCTAssertTrue(message.contains("receivedAt: 1782134720704"))
-    }
-
     // MARK: LocalRequest decoding from engine JSON
 
     func testLocalRequestDecodesFromEngineJSON() {
@@ -306,6 +275,14 @@ final class CoreTests: XCTestCase {
         let clickGem = FunnelEvent(funnelType: "Clicked", campaignId: "c", nodeId: "n",
                                    offerData: NotificationOffer(itemId: "gem"), timestamp: 0)
         XCTAssertNotEqual(clickGold.dedupKey, clickGem.dedupKey, "different offer must differ")
+
+        // Two players' events on a shared device (offline account-switch) differ ONLY by
+        // gamerTag — they must NOT collapse into one dedup key.
+        let playerA = FunnelEvent(funnelType: "Received", campaignId: "c", nodeId: "n",
+                                  gamerTag: "11111", timestamp: 0)
+        let playerB = FunnelEvent(funnelType: "Received", campaignId: "c", nodeId: "n",
+                                  gamerTag: "22222", timestamp: 0)
+        XCTAssertNotEqual(playerA.dedupKey, playerB.dedupKey, "different gamerTag must differ")
     }
 
     // MARK: Plugin transform chain

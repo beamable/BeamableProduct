@@ -13,11 +13,11 @@ namespace Beamable.PushNotificationService
 	/// A self-contained microservice that demonstrates remote push notifications
 	/// through both Apple's APNs (iOS) and Firebase Cloud Messaging (Android), end to end:
 	///
-	///   1. <see cref="RegisterDeviceToken"/> — a player registers the device token their
+	///   1. <see cref="RegisterDeviceToken"/>      — a player registers the device token their
 	///      app received from the OS, tagged with the platform (one token per device).
-	///   2. <see cref="SendPushToSelf"/>       — a player sends a real remote push to
+	///   2. <see cref="SendCampaignPushToSelf"/>   — a player sends a real remote push to
 	///      their own registered device(s) — the simplest thing to demo from the app.
-	///   3. <see cref="SendPushToPlayer"/>      — an admin/back-office tool sends a push
+	///   3. <see cref="SendCampaignPushToPlayer"/> — an admin/back-office tool sends a push
 	///      to any player by id.
 	///
 	/// Device tokens are stored as a <b>private</b> per-player stat (see
@@ -110,27 +110,13 @@ namespace Beamable.PushNotificationService
 		// --- Sending --------------------------------------------------------
 
 		/// <summary>
-		/// Sends a remote push to every device the calling player has registered.
-		/// The easiest end-to-end demo: register on a device, then call this from the
-		/// same device. Requires a physical iOS device (APNs does not deliver to the
-		/// Simulator) and valid APNs credentials in Realm Config.
-		/// </summary>
-		/// <param name="title">Notification title.</param>
-		/// <param name="body">Notification body.</param>
-		/// <param name="deepLink">Optional deep-link URL carried in the payload (the app opens it on tap).</param>
-		[ClientCallable]
-		public Task<SendResult> SendPushToSelf(string title, string body, string deepLink)
-		{
-			return DeliverToPlayer(Context.UserId, title, body, deepLink);
-		}
-
-		/// <summary>
-		/// Campaign-aware variant of <see cref="SendPushToSelf"/>: sends a push to the calling
-		/// player's device(s) carrying the §3.3 Notification Intent Data (campaign/node/offers/
-		/// campaignData). When <c>campaignId</c> and <c>nodeId</c> are both present the
-		/// microservice also emits a funnel "Sent" analytics event per successful provider send
-		/// (§4.4). A new callable (rather than extra params on <see cref="SendPushToSelf"/>) keeps
-		/// the original signature backward-compatible.
+		/// Sends a remote push to every device the calling player has registered, carrying the
+		/// §3.3 Notification Intent Data (campaign/node/offers/campaignData). The easiest
+		/// end-to-end demo: register on a device, then call this from the same device. Requires a
+		/// physical iOS device (APNs does not deliver to the Simulator) and valid APNs credentials
+		/// in Realm Config. All campaign fields are optional — an empty request reduces to a plain
+		/// title/body/deepLink push. When <c>campaignId</c> and <c>nodeId</c> are both present the
+		/// microservice also emits a funnel "Sent" analytics event (§4.4).
 		/// </summary>
 		[ClientCallable]
 		public Task<SendResult> SendCampaignPushToSelf(PushCampaignRequest request)
@@ -140,31 +126,14 @@ namespace Beamable.PushNotificationService
 		}
 
 		/// <summary>
-		/// Back-office endpoint: send a remote push to a specific player by id. Exposed as
-		/// <c>[ServerCallable]</c> so the Portal extension can call it — that still requires the
-		/// "<c>*</c>" (admin) scope, but unlike <c>[AdminOnlyCallable]</c> it does not require a
-		/// logged-in player, which a Portal extension's session does not carry.
-		/// </summary>
-		[ServerCallable]
-		public async Task<AdminSendResult> SendPushToPlayer(long playerId, string title, string body, string deepLink)
-		{
-			var r = await DeliverToPlayer(playerId, title, body, deepLink);
-			return new AdminSendResult
-			{
-				success = r.success,
-				attempted = r.attempted,
-				succeeded = r.succeeded,
-				failed = r.failed,
-				messages = r.messages,
-			};
-		}
-
-		/// <summary>
-		/// Campaign-aware variant of <see cref="SendPushToPlayer"/>: back-office endpoint that
-		/// sends a push to a specific player carrying the §3.3 Notification Intent Data, and (when
-		/// <c>campaignId</c> + <c>nodeId</c> are present) emits a funnel "Sent" event per successful
-		/// send (§4.4). The target player id is supplied separately; the rest of the campaign
-		/// context rides in <paramref name="request"/>.
+		/// Back-office endpoint: send a remote push to a specific player by id, carrying the §3.3
+		/// Notification Intent Data. Exposed as <c>[ServerCallable]</c> so the Portal extension can
+		/// call it — that still requires the "<c>*</c>" (admin) scope, but unlike
+		/// <c>[AdminOnlyCallable]</c> it does not require a logged-in player, which a Portal
+		/// extension's session does not carry. The target player id is supplied separately; the
+		/// rest of the campaign context rides in <paramref name="request"/>. All campaign fields
+		/// are optional; when <c>campaignId</c> + <c>nodeId</c> are present a funnel "Sent" event
+		/// is emitted (§4.4).
 		/// </summary>
 		[ServerCallable]
 		public async Task<AdminSendResult> SendCampaignPushToPlayer(long playerId, PushCampaignRequest request)
@@ -184,7 +153,7 @@ namespace Beamable.PushNotificationService
 		/// <summary>
 		/// Admin/back-office endpoint: lists every player who has at least one registered
 		/// device, with a small summary (device count, platforms, last-updated). Used by the
-		/// Portal extension to pick a recipient for <see cref="SendPushToPlayer"/>.
+		/// Portal extension to pick a recipient for <see cref="SendCampaignPushToPlayer"/>.
 		///
 		/// Private per-player stats aren't enumerable, so we find the roster by searching the
 		/// public marker stat (<c>push_devices != 0</c>) that <see cref="SaveDevices"/> keeps

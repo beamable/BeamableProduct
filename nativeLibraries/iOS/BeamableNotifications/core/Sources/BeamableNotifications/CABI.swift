@@ -95,13 +95,7 @@ public func bmn_unregisterForRemote() {
     RemotePush.shared.unregister()
 }
 
-// MARK: - Analytics / delivery receipts (feature 8)
-
-@_cdecl("bmn_configureAnalytics")
-public func bmn_configureAnalytics(_ configJson: UnsafePointer<CChar>?) {
-    guard let config = JSON.decode(AnalyticsConfig.self, from: cString(configJson)) else { return }
-    SharedConfig.shared.saveAnalyticsConfig(config)
-}
+// MARK: - Delivery receipts (feature 8)
 
 @_cdecl("bmn_getDeliveryReceipts")
 public func bmn_getDeliveryReceipts() {

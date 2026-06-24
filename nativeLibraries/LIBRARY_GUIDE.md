@@ -17,6 +17,9 @@ iOS: Swift 5, iOS 14+ deployment target (the core is a Swift Package; ships as a
 > **Reading order:** most Unity consumers only need §1 (mental map), §3 (parity), and §13 (the shared
 > Unity package). §4–§11 explain each feature per platform; §12 is the per-platform class/file
 > reference; §14–§15 cover other engines and building.
+>
+> **Feature reference:** for the design behind the multi-handler model, intent-data schema, and the
+> analytics funnel (auth + persist-and-replay), see [`docs/notifications-feature.md`](docs/notifications-feature.md).
 
 ---
 
@@ -141,7 +144,7 @@ native equivalent on a platform (mostly iOS-only features on Android), the metho
 | `GetPending()` | `bmn_getPending` | `getPending` → emits empty list | ≈ Android empty |
 | `RegisterForRemote()` | `bmn_registerForRemote` | `registerForRemote` (`fetchToken`) | ✓ both |
 | `UnregisterForRemote()` | `bmn_unregisterForRemote` | `unregisterForRemote` (no-op; FCM self-manages) | ≈ Android no-op |
-| `ConfigureAnalytics(AnalyticsConfig)` | `bmn_configureAnalytics` | no-op | ≈ iOS-only |
+| `ConfigureAuth(accessToken, refreshToken, expiresAtMs, cid, pid, host)` | `bmn_configureAuth(json)` | `configureAuth(json)` | ✓ both — persists the player bearer token for the native funnel (`docs/notifications-feature.md` §4.3) |
 | `GetDeliveryReceipts()` | `bmn_getDeliveryReceipts` | `getDeliveryReceipts` → emits empty list | ≈ iOS-only |
 | `RegisterTemplate(TemplateSpec)` | `bmn_registerTemplate` | no-op | ≈ iOS-only |
 | `RegisterCategory(CategorySpec)` | `bmn_registerCategory` | no-op | ≈ iOS-only |
@@ -186,7 +189,7 @@ Identical names on both platforms (raised on the Unity main thread). iOS feeds t
 (`Id`/`Title`/`Body`/`Subtitle`/`DeepLink`/`ActionId`/`WasLaunch`/`UserInfo`), `LocalRequest`,
 `TriggerSpec` (`Type` = `immediate`/`timeInterval`/`calendar`, plus `TriggerSpec.After(seconds)`),
 `PermissionOptions`/`PermissionResult`, `TemplateSpec`, `ActionSpec`/`CategorySpec`,
-`AnalyticsConfig`, `DeliveryReceipt`.
+`AuthCredentials` (§4.3), `NotificationIntentData`/`NotificationOffer` (§3.3), `DeliveryReceipt`.
 
 ---
 
@@ -301,21 +304,29 @@ runtime** — kept on Android as no-ops for a uniform surface (§3).
 
 ---
 
-## 9. Analytics & delivery receipts (closed-app)
+## 9. Analytics funnel & delivery receipts (closed-app)
 
-`ConfigureAnalytics(AnalyticsConfig)` + `GetDeliveryReceipts()` (→ `OnDeliveryReceipts`). The point
-is tracking delivery even when the app is **killed**. **iOS-only at runtime.**
+Campaign notifications report a five-stage funnel (Sent / Received / Opened / Clicked / Converted) by
+POSTing Beamable `CoreEvent`s directly from native code — so events fire even when the engine VM is
+dead. There is **no** `configureAnalytics`/webhook surface; the funnel authenticates with the
+player's persisted bearer token written via `ConfigureAuth(AuthConfig)` / `bmn_configureAuth` and
+POSTs to `/report/custom_batch/{cid}/{pid}/{gamerTag}`. On an unrecoverable auth/transport failure the
+event is persisted and auto-replayed on the next connect. See `docs/notifications-feature.md` §4 for
+the full model (gating, auth, persist-and-replay, payloads, offer helpers).
 
 ### Android
-- No-op / empty list. The equivalent "ran while killed" capability on Android is the **receive-time
-  handler** (§10), which can post analytics itself from a background thread.
+- The funnel runs natively (received from `PushFirebaseService`, opened from
+  `NotificationActionReceiver`). Auth is persisted via `PushManager.configureAuth` into the
+  `beamable_notifications_auth` prefs and read by `BeamableAnalytics`. Delivery receipts are no-op /
+  empty list on Android; the "ran while killed" capability is the **receive-time handler** (§10).
 
 ### iOS
 - A **Notification Service Extension** runs in a separate process on **every** remote push (including
-  app-killed), attaches rich media, and writes **delivery receipts** into an **App Group**
-  (`SharedConfig`). `bmn_configureAnalytics` stores config in that App Group (read by both app + NSE);
-  the app replays receipts via `bmn_getDeliveryReceipts` → `OnDeliveryReceipts`. Reference
-  `AnalyticsPlugin`/`AnalyticsServicePlugin` post events to an endpoint.
+  app-killed), attaches rich media, fires the **Received** funnel event (`AnalyticsServicePlugin`),
+  and writes **delivery receipts** into an **App Group** (`SharedConfig`). Auth (`AuthConfig`) is
+  persisted in the same App Group via `bmn_configureAuth` (read by both app + NSE); the app replays
+  receipts via `bmn_getDeliveryReceipts` → `OnDeliveryReceipts`, and pending funnel events are flushed
+  on connect.
 
 ---
 
@@ -327,11 +338,18 @@ cover the **app-open** case; this is the only hook that also runs killed.
 
 ### Android
 Implement `com.beamable.push.PushNotificationReceivedHandler` and register it via app-manifest
-meta-data (instantiated by **reflection**, so it runs in a freshly spawned process when killed):
+meta-data (instantiated by **reflection**, so it runs in a freshly spawned process when killed).
+**Multiple handlers are supported** (`docs/notifications-feature.md` §1.1): declare each with the
+shared key used as a prefix (`…notification_received_handler`, `…notification_received_handler.1`,
+`….2`), and/or register at runtime via `PushManager.addNotificationReceivedHandler(...)` /
+`removeNotificationReceivedHandler(...)`. Manifest handlers always participate; each handler's failure
+is isolated.
 
 ```xml
 <meta-data android:name="com.beamable.push.notification_received_handler"
            android:value="your.fully.Qualified.Handler" />
+<meta-data android:name="com.beamable.push.notification_received_handler.1"
+           android:value="your.fully.Qualified.SecondHandler" />
 ```
 ```kotlin
 interface PushNotificationReceivedHandler {
@@ -340,12 +358,12 @@ interface PushNotificationReceivedHandler {
 ```
 - Fires for **local** (no Firebase needed, via `NotificationActionReceiver`) and **remote** FCM;
   `event.wasForeground` distinguishes app-open from background/killed.
-- Runs on a **background thread (~10s budget)** — a short blocking call (e.g. an HTTP webhook) is
-  fine; otherwise enqueue WorkManager. Requires the no-arg public constructor.
+- Runs on a **background thread (~10s budget)** — a short blocking call is fine; otherwise enqueue
+  WorkManager. Requires the no-arg public constructor.
 - For remote **background/killed**, send **data-only, high-priority** FCM messages (a
   `notification`-block message is auto-shown by the OS and only reaches the app on tap).
-- Working example: `DiscordWebhookPushHandler.java` in the package's **Native Demo** sample
-  (`EnginePlugins/Unity/Samples~/NativeDemo/`).
+- The Unity package generates a sample handler file for you to customize (it no longer auto-wires a
+  demo handler — see `docs/notifications-feature.md` §5.2 / §5.4).
 
 ### iOS
 The closed-app equivalent is the **Notification Service Extension** (§9): it runs per remote push even
@@ -383,7 +401,7 @@ on `OnNotificationReceived` / `OnNotificationTapped`.
 
 | File | Type | Purpose / key API |
 |---|---|---|
-| `PushManager.kt` | `object` | Public facade. `initialize`, `registerChannel(spec)` / `registerChannel(id, name, description, importance)`, `requestPermission`, `hasPermission`, `scheduleLocal(template/json, delayMillis)→id`, `scheduleLocalExact(...)→id` (exact alarm), `scheduleLocalAt(..., year, month, dayOfMonth, hourOfDay, minute, second, useUtc, exact)→id` (absolute, local/UTC), `canScheduleExactAlarms()`, `requestExactAlarmPermission(activity)`, `cancel(id)`, `cancelAll`, `fetchToken`, `subscribeTopic`/`unsubscribeTopic`, `consumeLaunchIntent`, `setNotificationReceivedHandler`, `resolveNotificationReceivedHandler`; state: `listener`, `isForeground`, `remoteEnabled`. |
+| `PushManager.kt` | `object` | Public facade. `initialize`, `registerChannel(spec)` / `registerChannel(id, name, description, importance)`, `requestPermission`, `hasPermission`, `scheduleLocal(template/json, delayMillis)→id`, `scheduleLocalExact(...)→id` (exact alarm), `scheduleLocalAt(..., year, month, dayOfMonth, hourOfDay, minute, second, useUtc, exact)→id` (absolute, local/UTC), `canScheduleExactAlarms()`, `requestExactAlarmPermission(activity)`, `cancel(id)`, `cancelAll`, `fetchToken`, `subscribeTopic`/`unsubscribeTopic`, `consumeLaunchIntent`, `addNotificationReceivedHandler`/`removeNotificationReceivedHandler`, `resolveHandlers`, `configureAuth`/`clearAuth`; state: `listener`, `isForeground`, `remoteEnabled`. |
 | `PushListener.kt` | `interface` | App-alive callbacks: `onTokenReceived`, `onTokenRefreshError`, `onMessageReceivedForeground`, `onNotificationOpened`, `onPermissionResult`, `onLocalNotificationScheduled`, `onError(stage,message)`. |
 | `PushNotificationReceivedHandler.kt` | `interface` | **The receive-time hook.** `onNotificationReceived(context, event)` — runs for local+remote, all states (incl. killed). |
 | `PushReceivedEvent.kt` | `data class` | Snapshot: `messageId?`, `dataJson`, `sentTimeMillis`, `receivedTimeMillis`, `wasForeground`, `deepLink?`. |
@@ -446,14 +464,15 @@ rich media + closed-app analytics.
 | `CABI.swift` | `@_cdecl` funcs | The C ABI (`bmn_*`): wires C function pointers into `NotificationManager` closures; JSON in/out. |
 | `NotificationManager.swift` | `NotificationManager` (singleton) | Center delegate; `initialize`, `requestPermission`, `scheduleLocal`, `cancel*`, `getPending`, `setBadge`, `clearDelivered`; the `on*` event closures. |
 | `RemotePush.swift` | `RemotePush` (singleton) | APNs `register`/`unregister`; AppDelegate swizzling; token → hex; silent-push handling. |
-| `Models.swift` | structs/enums | `NotificationData`, `LocalRequest`, `TriggerSpec`, `AttachmentSpec`, `TemplateSpec`, `ActionSpec`, `CategorySpec`, `PermissionOptions`, `PermissionResult`, `AnalyticsConfig`, `DeliveryReceipt`, `JSONValue` (all `Codable`). |
+| `Models.swift` | structs/enums | `NotificationData`, `LocalRequest`, `TriggerSpec`, `AttachmentSpec`, `TemplateSpec`, `ActionSpec`, `CategorySpec`, `PermissionOptions`, `PermissionResult`, `DeliveryReceipt`, `CampaignIntentData`/`NotificationOffer` (§3.3), `AuthConfig`/`FunnelEvent`/`OfferTrackRequest` (§4), `JSONValue` (all `Codable`). |
 | `PluginRegistry.swift` | `PluginRegistry` + `NotificationPlugin` | Observe + transform hooks (`willSchedule`/`willPresent`/`provideRemoteToken`); auto-discovers plugins from Info.plist (`BMNPlugins`). |
 | `LaunchTracker.swift` | `LaunchTracker` | Stores the launch notification + queues cold-start taps until a callback exists. |
 | `TemplateStore.swift` | `TemplateStore` | Registers templates; resolves `templateId`/`templateValues` into title/body/etc. |
 | `CategoryStore.swift` | `CategoryStore` | Registers `UNNotificationCategory` action buttons. |
-| `SharedConfig.swift` | `SharedConfig` | App-Group store shared with the NSE: analytics config + delivery receipts. |
+| `SharedConfig.swift` | `SharedConfig` | App-Group store shared with the NSE: player `AuthConfig` (§4.3), pending funnel events for replay, + delivery receipts. |
 | `Plugins/APNsTokenPlugin.swift` | plugin | Reference: surfaces the APNs token as the remote token. |
-| `Plugins/AnalyticsPlugin.swift` | plugin | Reference: posts received/tapped events to an analytics endpoint. |
+| `Plugins/AnalyticsPlugin.swift` | plugin | Fires the in-app funnel events (Received on delivery, Opened on tap) to Beamable (§4). |
+| `Analytics/BeamableAnalytics.swift` | helper | Builds the funnel `CoreEvent` and POSTs it to `/report/custom_batch/...` with the persisted bearer token; refresh-on-expiry + persist-and-replay (§4.3). |
 | `include/BeamableNotifications.h` | C header | Informational C ABI declaration for C/C++ callers. |
 
 **Notification Service Extension — `extension/`:** `NotificationService.swift` +
@@ -465,7 +484,7 @@ receipt to the App Group. The Unity editor post-process wires it into the Xcode 
 `void(*)(const char *json)`. By feature: `bmn_initialize`; **permission**
 `bmn_requestPermission(optionsJson)` / `bmn_getPermissionStatus`; **local** `bmn_scheduleLocal` /
 `bmn_cancelLocal(id)` / `bmn_cancelAllLocal` / `bmn_getPending`; **remote** `bmn_registerForRemote` /
-`bmn_unregisterForRemote`; **analytics** `bmn_configureAnalytics(json)` / `bmn_getDeliveryReceipts`;
+`bmn_unregisterForRemote`; **funnel auth** `bmn_configureAuth(json)` (persists the player bearer token, §4.3) / **receipts** `bmn_getDeliveryReceipts`;
 **templates/categories** `bmn_registerTemplate(json)` / `bmn_registerCategory(json)`;
 **badge/delivered** `bmn_setBadge(int)` / `bmn_clearDelivered`; **launch**
 `bmn_getLaunchNotification()` (malloc'd JSON, free with `bmn_free`). Callback registration:

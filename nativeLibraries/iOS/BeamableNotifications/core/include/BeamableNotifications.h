@@ -32,9 +32,7 @@ void bmn_getPending(void);                             // -> onPendingNotificati
 void bmn_registerForRemote(void);                      // -> onTokenReceived / onTokenError
 void bmn_unregisterForRemote(void);
 
-// Closed-app analytics config (feature 8). Stored in the App Group, read by app + NSE.
-// configJson: {"enabled":true,"endpoint":"https://...","headers":{...},"commonParams":{...}}
-void bmn_configureAnalytics(const char *configJson);
+// Delivery receipts (feature 8). Replayed from the App Group (logged by the NSE).
 void bmn_getDeliveryReceipts(void);                    // -> onDeliveryReceipts
 
 // Beamable funnel analytics auth + offer helpers (spec §4).

@@ -412,24 +412,7 @@ public struct PermissionResult: Codable, Equatable {
     public var sound: Bool?
 }
 
-// MARK: - Analytics / delivery receipts (feature 8)
-
-public struct AnalyticsConfig: Codable, Equatable {
-    public var enabled: Bool
-    public var endpoint: String
-    public var headers: [String: String]?
-    public var commonParams: [String: JSONValue]?
-
-    public init(enabled: Bool = false,
-                endpoint: String = "",
-                headers: [String: String]? = nil,
-                commonParams: [String: JSONValue]? = nil) {
-        self.enabled = enabled
-        self.endpoint = endpoint
-        self.headers = headers
-        self.commonParams = commonParams
-    }
-}
+// MARK: - Delivery receipts (feature 8)
 
 public struct DeliveryReceipt: Codable, Equatable {
     public var id: String
@@ -529,11 +512,13 @@ public struct FunnelEvent: Codable, Equatable {
     /// Stable identity for replay dedup (§4.3). The same Received event can be enqueued twice
     /// — once by the NSE safety-timer persist and once by `emit`'s own persist-on-failure —
     /// which would otherwise replay (and double-count) the same funnel stage. Keyed on the
-    /// campaign coordinates + funnel stage + the specific offer it concerns (so distinct
-    /// Clicked/Converted events for different offers of the same campaign are NOT collapsed).
+    /// campaign coordinates + funnel stage + gamerTag + the specific offer it concerns (so
+    /// distinct Clicked/Converted events for different offers of the same campaign are NOT
+    /// collapsed). `gamerTag` is included so an offline account-switch on a shared device
+    /// doesn't collapse two players' otherwise-identical events.
     /// Deliberately excludes `timestamp`, which differs between the two enqueue paths.
     public var dedupKey: String {
-        [funnelType, campaignId, nodeId, offerData?.itemId ?? ""].joined(separator: "|")
+        [funnelType, campaignId, nodeId, gamerTag ?? "", offerData?.itemId ?? ""].joined(separator: "|")
     }
 }
 

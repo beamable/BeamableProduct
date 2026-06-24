@@ -48,6 +48,12 @@ object BeamableAnalytics {
     /** Refresh if the token expires within this skew window. */
     private const val EXPIRY_SKEW_MS = 60_000L
 
+    /** SharedPreferences key holding the JSON array of persisted-for-replay funnel events (§4.3). */
+    const val KEY_PENDING_FUNNEL = "pending_funnel"
+
+    /** Cap on persisted-for-replay funnel events so a long offline streak can't grow unbounded. */
+    private const val MAX_PENDING_FUNNEL = 200
+
     private val executor = Executors.newSingleThreadExecutor { r ->
         Thread(r, "beamable-analytics").apply { isDaemon = true }
     }
@@ -69,12 +75,33 @@ object BeamableAnalytics {
     ) {
         if (!intent.isTrackedCampaign() || !intent.hasFunnelCredentials()) return
         val appContext = context.applicationContext
+        val event = PendingFunnel.from(intent, type, offer)
         executor.execute {
             try {
-                postFunnel(appContext, intent, type, offer)
+                postFunnel(appContext, event, persistOnFailure = true)
             } catch (t: Throwable) {
                 Log.w(TAG, "funnel post failed: ${t.message}")
                 PushManager.dispatchError("analytics_funnel", t.message ?: t.toString())
+                appendPendingFunnel(appContext, event)
+            }
+        }
+    }
+
+    /**
+     * Drains all persisted funnel events and re-POSTs each on the background executor (the
+     * "connected to Beamable" replay trigger). Replay failures are NOT re-persisted
+     * ([persistOnFailure]=false) to avoid an unbounded retry loop. Best-effort.
+     */
+    fun flushPendingFunnel(context: Context) {
+        val appContext = context.applicationContext
+        executor.execute {
+            val pending = drainPendingFunnel(appContext)
+            for (event in pending) {
+                try {
+                    postFunnel(appContext, event, persistOnFailure = false)
+                } catch (t: Throwable) {
+                    Log.w(TAG, "funnel replay failed: ${t.message}")
+                }
             }
         }
     }
@@ -83,10 +110,10 @@ object BeamableAnalytics {
 
     private fun postFunnel(
         context: Context,
-        intent: NotificationIntentData,
-        type: FunnelType,
-        offer: NotificationOffer?
+        event: PendingFunnel,
+        persistOnFailure: Boolean
     ) {
+        val intent = event.toIntentData()
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
         // Scope comes from the intent's cidPid ("<cid>.<pid>"); fall back to stored cid/pid.
@@ -96,7 +123,9 @@ object BeamableAnalytics {
         }
         val gamerTag = intent.gamerTag ?: return
         val host = prefs.getString(KEY_HOST, null)?.trimEnd('/') ?: run {
-            Log.i(TAG, "skip funnel: no host in prefs")
+            // Unrecoverable for now (not connected to Beamable yet): persist for replay.
+            Log.i(TAG, "no host in prefs; persisting funnel for replay")
+            if (persistOnFailure) appendPendingFunnel(context, event)
             return
         }
 
@@ -105,28 +134,39 @@ object BeamableAnalytics {
         // path below must NOT refresh again — a second round-trip is redundant and risks blowing
         // the ~10s FCM budget.
         val auth = currentAccessToken(prefs, host, cid, pid) ?: run {
-            Log.i(TAG, "skip funnel: no access token")
+            // No usable token (and refresh failed/absent): persist for replay once connected.
+            Log.i(TAG, "no access token; persisting funnel for replay")
+            if (persistOnFailure) appendPendingFunnel(context, event)
             return
         }
         var accessToken = auth.token
         val alreadyRefreshed = auth.refreshed
 
-        val body = buildBatch(intent, type, offer).toString()
+        val body = buildBatch(intent, event.funnelType, event.offer).toString()
         val url = "$host/report/custom_batch/$cid/$pid/$gamerTag"
         val scope = "$cid.$pid"
 
-        val code = doPost(url, body, accessToken, scope)
+        var code = doPost(url, body, accessToken, scope)
         if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN) {
             if (alreadyRefreshed) {
                 // A proactive refresh already happened this send; a freshly-refreshed token still
-                // got rejected, so refreshing again would not help. Fail/persist (the new token is
-                // already persisted by refreshAccessToken) — drop the event.
-                Log.w(TAG, "funnel POST rejected after proactive refresh; dropping event")
+                // got rejected, so refreshing again would not help. Persist for replay.
+                Log.w(TAG, "funnel POST rejected after proactive refresh; persisting for replay")
+                if (persistOnFailure) appendPendingFunnel(context, event)
                 return
             }
             // Token looked valid but the server rejected it; refresh ONCE and retry the POST ONCE.
-            accessToken = refreshAccessToken(prefs, host, cid, pid) ?: return
-            doPost(url, body, accessToken, scope)
+            val refreshed = refreshAccessToken(prefs, host, cid, pid) ?: run {
+                if (persistOnFailure) appendPendingFunnel(context, event)
+                return
+            }
+            accessToken = refreshed
+            code = doPost(url, body, accessToken, scope)
+        }
+        // Transport failure (-1) or any non-2xx after the single retry: persist for replay.
+        if (code !in 200..299) {
+            Log.w(TAG, "funnel POST unrecoverable (HTTP $code); persisting for replay")
+            if (persistOnFailure) appendPendingFunnel(context, event)
         }
     }
 
@@ -291,4 +331,151 @@ object BeamableAnalytics {
     }
 
     private fun OutputStream.writeBytesUtf8(s: String) = write(s.toByteArray(Charsets.UTF_8))
+
+    // ---- Persist-and-replay (§4.3, mirrors iOS SharedConfig/FunnelEvent) ----
+
+    /**
+     * Serializable snapshot of a funnel event persisted for later replay (mirrors iOS's
+     * `FunnelEvent`). Captures the campaign coordinates, the single offer it concerns, and a
+     * timestamp. [dedupKey] keys on `funnelType|campaignId|nodeId|gamerTag|offerItemId` (excludes
+     * the timestamp) so the same stage is never enqueued/replayed twice. `gamerTag` is included so
+     * an offline account-switch on a shared device doesn't collapse two players' events.
+     */
+    internal data class PendingFunnel(
+        val funnelType: FunnelType,
+        val campaignId: String?,
+        val nodeId: String?,
+        val gamerTag: String?,
+        val accountId: String?,
+        val cidPid: String?,
+        val deeplink: String?,
+        val offer: NotificationOffer?,
+        val timestamp: Long
+    ) {
+        /**
+         * Stable identity for replay dedup — campaign coordinates + stage + gamerTag + offer (no
+         * timestamp). `gamerTag` is included so an offline account-switch on a shared device
+         * doesn't collapse two players' otherwise-identical events.
+         */
+        val dedupKey: String
+            get() = listOf(
+                funnelType.name, campaignId ?: "", nodeId ?: "", gamerTag ?: "", offer?.itemId ?: ""
+            ).joinToString("|")
+
+        /** Rebuilds a [NotificationIntentData] from the persisted scalar fields (for the POST body). */
+        fun toIntentData(): NotificationIntentData = NotificationIntentData(
+            campaignId = campaignId,
+            nodeId = nodeId,
+            gamerTag = gamerTag,
+            accountId = accountId,
+            cidPid = cidPid,
+            deeplink = deeplink
+        )
+
+        fun toJson(): JSONObject {
+            val obj = JSONObject()
+            obj.put("funnelType", funnelType.name)
+            campaignId?.let { obj.put("campaignId", it) }
+            nodeId?.let { obj.put("nodeId", it) }
+            gamerTag?.let { obj.put("gamerTag", it) }
+            accountId?.let { obj.put("accountId", it) }
+            cidPid?.let { obj.put("cidPid", it) }
+            deeplink?.let { obj.put("deeplink", it) }
+            offer?.let { obj.put("offerData", it.toJson()) }
+            obj.put("timestamp", timestamp)
+            return obj
+        }
+
+        companion object {
+            fun from(
+                intent: NotificationIntentData,
+                type: FunnelType,
+                offer: NotificationOffer?
+            ): PendingFunnel = PendingFunnel(
+                funnelType = type,
+                campaignId = intent.campaignId,
+                nodeId = intent.nodeId,
+                gamerTag = intent.gamerTag,
+                accountId = intent.accountId,
+                cidPid = intent.cidPid,
+                deeplink = intent.deeplink,
+                offer = offer,
+                timestamp = System.currentTimeMillis()
+            )
+
+            fun fromJson(obj: JSONObject): PendingFunnel {
+                val typeName = obj.optString("funnelType")
+                val type = FunnelType.values().firstOrNull { it.name == typeName }
+                    ?: FunnelType.Received
+                val offer = obj.optJSONObject("offerData")?.let { NotificationOffer.fromJson(it) }
+                return PendingFunnel(
+                    funnelType = type,
+                    campaignId = obj.optStringOrNull("campaignId"),
+                    nodeId = obj.optStringOrNull("nodeId"),
+                    gamerTag = obj.optStringOrNull("gamerTag"),
+                    accountId = obj.optStringOrNull("accountId"),
+                    cidPid = obj.optStringOrNull("cidPid"),
+                    deeplink = obj.optStringOrNull("deeplink"),
+                    offer = offer,
+                    timestamp = obj.optLong("timestamp")
+                )
+            }
+
+            private fun JSONObject.optStringOrNull(key: String): String? {
+                if (!has(key) || isNull(key)) return null
+                return optString(key).ifEmpty { null }
+            }
+        }
+    }
+
+    /**
+     * Appends [event] to the persisted-funnel store for replay once connected. Deduped by
+     * [PendingFunnel.dedupKey] and capped at [MAX_PENDING_FUNNEL] (oldest trimmed). Best-effort.
+     */
+    internal fun appendPendingFunnel(context: Context, event: PendingFunnel) {
+        val prefs = context.applicationContext
+            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        synchronized(this) {
+            val existing = loadPendingFunnel(prefs).toMutableList()
+            if (existing.any { it.dedupKey == event.dedupKey }) return
+            existing.add(event)
+            while (existing.size > MAX_PENDING_FUNNEL) existing.removeAt(0)
+            writePendingFunnel(prefs, existing)
+        }
+    }
+
+    /** Returns (without clearing) the persisted funnel events. */
+    internal fun loadPendingFunnel(context: Context): List<PendingFunnel> =
+        loadPendingFunnel(
+            context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        )
+
+    /** Returns and CLEARS all persisted funnel events (for replay on launch / connect). */
+    internal fun drainPendingFunnel(context: Context): List<PendingFunnel> {
+        val prefs = context.applicationContext
+            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        synchronized(this) {
+            val events = loadPendingFunnel(prefs)
+            prefs.edit().remove(KEY_PENDING_FUNNEL).apply()
+            return events
+        }
+    }
+
+    private fun loadPendingFunnel(prefs: SharedPreferences): List<PendingFunnel> {
+        val raw = prefs.getString(KEY_PENDING_FUNNEL, null) ?: return emptyList()
+        return try {
+            val arr = JSONArray(raw)
+            (0 until arr.length()).mapNotNull { i ->
+                arr.optJSONObject(i)?.let { PendingFunnel.fromJson(it) }
+            }
+        } catch (_: Throwable) {
+            emptyList()
+        }
+    }
+
+    private fun writePendingFunnel(prefs: SharedPreferences, events: List<PendingFunnel>) {
+        val arr = JSONArray()
+        for (e in events) arr.put(e.toJson())
+        prefs.edit().putString(KEY_PENDING_FUNNEL, arr.toString()).apply()
+    }
 }

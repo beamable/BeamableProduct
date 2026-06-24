@@ -90,7 +90,7 @@ final class BeamableNotificationsModule: RCTEventEmitter {
     @objc func registerForRemote() { RemotePush.shared.register() }
     @objc func unregisterForRemote() { RemotePush.shared.unregister() }
 
-    // MARK: Templates / categories / analytics (4, 7, 8)
+    // MARK: Templates / categories (4, 7)
 
     @objc(registerTemplate:)
     func registerTemplate(_ template: NSDictionary) {
@@ -102,12 +102,6 @@ final class BeamableNotificationsModule: RCTEventEmitter {
     func registerCategory(_ category: NSDictionary) {
         guard let spec = decode(CategorySpec.self, category) else { return }
         CategoryStore.shared.register(spec)
-    }
-
-    @objc(configureAnalytics:)
-    func configureAnalytics(_ config: NSDictionary) {
-        guard let cfg = decode(AnalyticsConfig.self, config) else { return }
-        SharedConfig.shared.saveAnalyticsConfig(cfg)
     }
 
     @objc func getDeliveryReceipts() { NotificationManager.shared.emitDeliveryReceipts() }

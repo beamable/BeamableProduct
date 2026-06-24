@@ -11,8 +11,8 @@
  * The microservice client itself is app-specific (its typed proxy is auto-generated per
  * game), so this module does NOT import it. Instead `createPushDevice(getClient)` adapts to
  * any client exposing the standard `registerDeviceToken` / `unregisterDeviceToken` /
- * `listMyDevices` / `sendPushToSelf` methods. The app supplies the binding (see the sample's
- * `src/beam/pushNotifications.ts`).
+ * `listMyDevices` / `sendCampaignPushToSelf` methods. The app supplies the binding (see the
+ * sample's `src/beam/pushNotifications.ts`).
  *
  * Remote delivery needs a physical device (neither APNs nor FCM deliver reliably to a
  * simulator/emulator for the push token) and the matching provider credentials in the realm
@@ -46,10 +46,22 @@ export interface PushDeviceServiceClient {
   }): Promise<unknown>;
   unregisterDeviceToken(params: { token: string }): Promise<unknown>;
   listMyDevices(): Promise<unknown>;
-  sendPushToSelf(params: {
-    title: string;
-    body: string;
-    deepLink: string;
+  /**
+   * Campaign-aware self-send. `sendToSelf` calls this with the campaign fields left
+   * empty (an "untracked" send carrying only title/body/deepLink); the app can also call
+   * it directly with campaign metadata for a tracked funnel send.
+   */
+  sendCampaignPushToSelf(request: {
+    title?: string;
+    body?: string;
+    deepLink?: string;
+    campaignId?: string;
+    nodeId?: string;
+    gamerTag?: string;
+    accountId?: string;
+    cidPid?: string;
+    offers?: unknown;
+    campaignData?: unknown;
   }): Promise<unknown>;
 }
 
@@ -79,7 +91,7 @@ export interface PushDevice<C extends PushDeviceServiceClient> {
     title: string,
     body: string,
     deepLink?: string,
-  ): ReturnType<C['sendPushToSelf']>;
+  ): ReturnType<C['sendCampaignPushToSelf']>;
 }
 
 /**
@@ -120,11 +132,11 @@ export function createPushDevice<C extends PushDeviceServiceClient>(
       return client().listMyDevices() as ReturnType<C['listMyDevices']>;
     },
     sendToSelf(title, body, deepLink) {
-      return client().sendPushToSelf({
+      return client().sendCampaignPushToSelf({
         title,
         body,
         deepLink: deepLink ?? '',
-      }) as ReturnType<C['sendPushToSelf']>;
+      }) as ReturnType<C['sendCampaignPushToSelf']>;
     },
   };
 }

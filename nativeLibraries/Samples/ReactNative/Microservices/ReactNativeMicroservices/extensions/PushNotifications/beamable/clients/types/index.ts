@@ -48,12 +48,6 @@ export type SendResult = {
   messages: string[];
 };
 
-export type SendPushToSelfRequestArgs = {
-  title: string;
-  body: string;
-  deepLink: string;
-};
-
 export type AdminSendResult = {
   success: boolean;
   attempted: number;
@@ -62,12 +56,38 @@ export type AdminSendResult = {
   messages: string[];
 };
 
-export type SendPushToPlayerRequestArgs = {
-  playerId: bigint | string;
+/** A single offer carried by a campaign push (§3.3). */
+export type PushOffer = {
+  itemId: string;
+  value: string;
+  customData?: string; // free-form JSON object, as a string
+};
+
+/**
+ * §3.3 Notification Intent Data + the notification content. All campaign fields
+ * are optional — supplying none reduces to a plain title/body/deepLink push.
+ */
+export type PushCampaignRequest = {
   title: string;
   body: string;
-  deepLink: string;
+  deepLink: string; // canonical key on the wire: "deeplink"
+
+  campaignId?: string;
+  nodeId?: string;
+  gamerTag?: string; // Beamable dbid; defaults to the target player id when unset
+  accountId?: string; // Beamable account id
+  cidPid?: string; // "<cid>.<pid>" realm scope
+  offers?: PushOffer[]; // optional offers array
+  campaignData?: string; // free-form JSON object, as a string
 };
+
+/** Args for SendCampaignPushToSelf — the campaign request (no playerId; the caller is the target). */
+export type SendCampaignPushToSelfRequestArgs = PushCampaignRequest;
+
+/** Args for SendCampaignPushToPlayer — the target playerId plus the campaign request fields. */
+export type SendCampaignPushToPlayerRequestArgs = {
+  playerId: bigint | string;
+} & PushCampaignRequest;
 
 /** A player with at least one registered device (no token is exposed). */
 export type RegisteredPlayer = {
