@@ -1,23 +1,28 @@
 # Unreal setup
 
-## Install
+The Unreal integration ships as the **`BeamPlatformNotifications`** plugin (master copy:
+`iOS/BeamableNotifications/unreal/`). It supports **iOS and Android**, includes an editor
+toolbar button that packages + deploys to a device, and is project-agnostic (all
+project-specific values are read from the target project's `DefaultEngine.ini`).
 
-UE's `PublicAdditionalFrameworks` does **not** consume an `.xcframework`; it expects a
-single **dynamic** `.framework` zipped as `<Name>.embeddedframework/<Name>.framework`.
+> Note: the UE plugin/module is named `BeamPlatformNotifications`, but the iOS **framework**
+> binary is still `BeamableNotifications.framework` (matches its `@rpath` install name), and the
+> native C-ABI (`bmn_*`) / Android JNI exports (`Java_com_beamable_…`) are unchanged.
 
-1. Build the dynamic framework: `./scripts/build-xcframework-dynamic.sh`
-   (produces `build/BeamableNotifications.embeddedframework.zip`, device arm64).
-2. Copy it where `Build.cs` expects it:
-   ```
-   cp build/BeamableNotifications.embeddedframework.zip unreal/ThirdParty/
-   ```
-3. Copy the `unreal/` folder into your project's `Plugins/BeamableNotifications/`, enable
-   the plugin, and add `BeamableNotifications` to your game module's `Build.cs` deps.
-4. Copy the NSE sources into `<plugin>/Extension/` (`extension/*.swift` +
-   `extension/ServicePlugins/*.swift`); add them to a Notification Service Extension
-   target in Xcode (see step 3 of the manual steps below).
+## Install (recommended)
 
-> The embedded framework is device-only. For an iOS Simulator build, repackage the
+From your UE project, run the installer with the path to this `nativeLibraries` checkout:
+```
+./install-beamplatformnotifications.sh --source <path/to/nativeLibraries>
+```
+It generates a self-contained plugin (sources + staged **dynamic** iOS framework
+[`build/BeamableNotifications.embeddedframework.zip`, build it first with
+`./scripts/build-xcframework-dynamic.sh`] + the Android `.aar` as a local maven repo + bundled
+`Scripts/`), installs it into `Plugins/BeamPlatformNotifications/`, enables it, and **prompts** for
+the project values (App Group, deep-link scheme, analytics endpoint, FCM on/off). Use
+`--generate-only <dir>` to just emit the plugin for sharing.
+
+> The embedded framework is device-only (arm64). For an iOS Simulator build, repackage the
 > simulator slice from `build/BeamableNotifications.xcframework` in the same layout.
 
 ## One-time Xcode / Project Settings steps (UPL can't do these)
@@ -35,11 +40,11 @@ The UPL automatically adds the `remote-notification` background mode and the
 
 ## Usage (Blueprint or C++)
 
-Get the subsystem via **Get Game Instance Subsystem → BeamableNotificationsSubsystem**,
+Get the subsystem via **Get Game Instance Subsystem → BeamPlatformNotificationsSubsystem**,
 bind the event dispatchers, then call the functions. In C++:
 
 ```cpp
-auto* Notif = GetGameInstance()->GetSubsystem<UBeamableNotificationsSubsystem>();
+auto* Notif = GetGameInstance()->GetSubsystem<UBeamPlatformNotificationsSubsystem>();
 
 Notif->OnTokenReceived.AddDynamic(this, &AMyActor::HandleToken);
 Notif->OnNotificationTapped.AddDynamic(this, &AMyActor::HandleTap);
