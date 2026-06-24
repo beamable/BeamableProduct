@@ -13,7 +13,7 @@
 // each component to `any`.
 
 import { createElement, type DetailedHTMLProps, type HTMLAttributes, type ReactElement, type Ref } from 'react';
-import { hostComponent } from './react-host';
+import { hostComponent } from '../react-host';
 
 /**
  * @csspart svg - The internal SVG element.
@@ -1805,8 +1805,8 @@ BeamJson.displayName = 'BeamJson';
  * @csspart title - The H1 title element.
  * @csspart description - The description paragraph element.
  * @csspart actions - Container wrapping the `actions` slot.
- * @cssproperty --beam-page-header-title-size - Title font size. [default: 1.5rem]
- * @cssproperty --beam-page-header-spacing - Bottom margin reserved below the header. [default: 1.5rem]
+ * @cssproperty --beam-page-header-title-size - Title font size. Default `1.25rem` (20px) matches the mockups every news-agent extension was rolling by hand. [default: 1.25rem]
+ * @cssproperty --beam-page-header-spacing - Bottom margin reserved below the header. Defaults to `0` so the header composes naturally inside a flex/grid parent that already has `gap`. Set to `1.5rem` explicitly when used inside a legacy block-layout page. [default: 0]
  * @cssproperty --beam-page-header-gap - Gap between the text block and the actions slot. [default: 1rem]
  */
 export interface BeamPageHeaderProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
@@ -1980,72 +1980,125 @@ export function BeamCodeSnippet(props: BeamCodeSnippetProps & { ref?: Ref<HTMLEl
 BeamCodeSnippet.displayName = 'BeamCodeSnippet';
 
 /**
- * @csspart bar - The fixed-position sticky bar at the bottom of the viewport.
- * @csspart bar-content - The max-width container inside the bar.
- * @csspart summary - The summary text and pulsing indicator block.
- * @csspart indicator - The pulsing colored dot.
- * @csspart actions - The right-side actions cluster (discard / review / save).
- * @csspart discard-button - The discard button.
- * @csspart review-button - The review button.
- * @csspart save-button - The primary save button rendered in the bar.
- * @csspart dialog - The dialog overlay backdrop.
- * @csspart dialog-panel - The dialog panel.
- * @csspart dialog-header - The dialog header row (title + summary count).
- * @csspart dialog-body - The scrollable dialog body containing the three change sections.
- * @csspart dialog-footer - The dialog footer row (close + save-all).
- * @csspart section - Each modified / added / deleted section wrapper inside the dialog.
- * @csspart entry - Each individual change entry card in the dialog.
- * @cssproperty --beam-change-bar-z-index - Stacking context for the bar. [default: 30]
- * @cssproperty --beam-change-bar-dialog-z-index - Stacking context for the review dialog. [default: 40]
- * @cssproperty --beam-change-bar-bg - Background of the sticky bar. [default: var(--color-beam-sidebar)]
- * @cssproperty --beam-change-bar-border - Top border color of the bar. [default: var(--color-beam-border)]
- * @cssproperty --beam-change-bar-max-width - Max width of the inner bar content. [default: 80rem]
- * @event wa-review-show - Fired when the review dialog opens.
- * @event wa-review-hide - Fired when the review dialog closes for any reason.
- * @event wa-state-change - Fired when the bar transitions between high-level states. Consumers can use this to drive per-field status UI (e.g., spinners, status dots) without polling. Bubbles, composed.
- * @event wa-save - Fired when the user clicks Save (either in the bar or the dialog footer). Also fired automatically when `auto-save` is enabled and the debounce window elapses. Bubbles, composed.
- * @event wa-discard - Fired when the user clicks Discard. Bubbles, composed.
+ * @slot icon - Top-left icon. Pass a `<beam-icon>`, emoji, or any inline-sized element. Falls back to empty if no icon is provided. Shortcut: set the `icon` attribute to a Font Awesome name (e.g. `"bolt"`) and the card renders a softly-tinted `<beam-icon>` for you. Anything in the slot wins over the shortcut.
+ * @slot (default) - Default slot rendered below the standard fields. Useful for sparklines or auxiliary content.
+ * @csspart base - The card's outer container.
+ * @csspart header - Row containing the icon and change indicator.
+ * @csspart icon - Wrapper around the icon slot.
+ * @csspart change - The delta indicator span.
+ * @csspart value - The big value text.
+ * @csspart label - The label text.
+ * @csspart sub - The subtitle text.
+ * @cssproperty --beam-kpi-card-padding - Inner padding of the card. [default: 1rem]
+ * @cssproperty --beam-kpi-card-radius - Outer corner radius. [default: 0.5rem]
+ * @cssproperty --beam-kpi-card-value-size - Font size of the value. [default: 1.5rem]
+ * @cssproperty --beam-kpi-card-background - Card background. Defaults to `var(--wa-color-surface-raised)` so it matches the host's `.card` look.
+ * @cssproperty --beam-kpi-card-border-color - Card border color. Defaults to `var(--color-beam-border)`.
  */
-export interface BeamChangeBarProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+export interface BeamKpiCardProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  /** The big primary value, e.g. "23" or "$306" or "892K". @default '' */
+  value?: string;
+  /** Short label rendered below the value. @default '' */
+  label?: string;
+  /** Optional secondary line below the label. @default '' */
+  sub?: string;
+  /** Delta indicator string, e.g. "+12%" or "-5.2%". Omit to hide. @default '' */
+  change?: string;
   /**
-   * Reflects the current high-level state (`idle` | `pending` | `saving` | `paused-errors`). Useful as a CSS hook (e.g., `beam-change-bar[data-state="saving"] ~ .field { opacity: 0.7 }`).
+   * Coloring for the change text. `positive` → success green, `negative` → error red, `neutral` → muted gray. Defaults to `neutral`.
+   * @default 'neutral'
    */
-  'data-state'?: unknown;
-  /** Show the Save button as "Saving…" and disable it while a save is in flight. @default false */
-  saving?: boolean;
-  /** Override the auto-derived summary text (e.g. "2 added, 1 modified"). @default '' */
-  'summary-text'?: string;
-  /** Label of the Save button. @default 'Save' */
-  'save-label'?: string;
-  /** Label of the Save button while saving. @default 'Saving...' */
-  'saving-label'?: string;
-  /** Label of the Discard button. @default 'Discard' */
-  'discard-label'?: string;
-  /** Label of the Review button. @default 'Review' */
-  'review-label'?: string;
-  /** Title of the review dialog. @default 'Review Changes' */
-  'review-title'?: string;
-  /** Hide the Review button + dialog entirely. @default false */
-  'no-review'?: boolean;
+  tone?: 'positive' | 'negative' | 'neutral';
   /**
-   * Render the bar inline at the host's normal flow position instead of fixed to the bottom of the viewport. Useful for in-page docs/previews and for embedding the bar inside a settings panel.
-   * @default false
+   * Shortcut for the `icon` slot — set this to a Font Awesome name (e.g. `"bolt"`, `"file-lines"`) and the card renders a softly-tinted `<beam-icon>` for you. Slotted content always wins.
+   * @default ''
    */
-  inline?: boolean;
-  /**
-   * Auto-save mode. When enabled, the bar dispatches `wa-save` automatically (debounced by `auto-save-debounce`) whenever `changes` is dirty AND `errors` is empty, and the visible bar UI is hidden. If validation errors appear, the bar falls back to its normal interactive state so the user can fix them. The consumer still owns the actual save logic via the `wa-save` handler — the bar only schedules the dispatch.
-   * @default false
-   */
-  'auto-save'?: boolean;
-  /**
-   * Debounce window in milliseconds before auto-save dispatches `wa-save`. Resets every time `changes` updates so rapid edits collapse into one save.
-   * @default 800
-   */
-  'auto-save-debounce'?: number;
+  icon?: string;
 }
 
-/** React forwarder for `<beam-change-bar>`. */
-export function BeamChangeBar(props: BeamChangeBarProps & { ref?: Ref<HTMLElement> }): ReactElement {
-  return createElement(hostComponent('BeamChangeBar'), props);
+/** React forwarder for `<beam-kpi-card>`. */
+export function BeamKpiCard(props: BeamKpiCardProps & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('BeamKpiCard'), props);
 }
-BeamChangeBar.displayName = 'BeamChangeBar';
+BeamKpiCard.displayName = 'BeamKpiCard';
+
+/**
+ * @slot (default) - The label text. Plain string is typical; rich content works too.
+ * @slot action - Right-aligned action element (button, link, etc).
+ * @csspart base - The outer flex container.
+ * @csspart label - The label text span.
+ * @cssproperty --beam-section-label-margin-bottom - Bottom margin reserved below the label. Set to 0 if the label sits inline. [default: 1rem]
+ */
+export interface BeamSectionLabelProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  // No attributes defined in CEM.
+}
+
+/** React forwarder for `<beam-section-label>`. */
+export function BeamSectionLabel(props: BeamSectionLabelProps & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('BeamSectionLabel'), props);
+}
+BeamSectionLabel.displayName = 'BeamSectionLabel';
+
+/**
+ * @slot (default) - The pill label (usually a short string like "Enabled" or "Live").
+ * @csspart base - The pill element itself.
+ * @cssproperty --beam-status-pill-padding - Inner padding. [default: 0.125rem 0.5rem]
+ * @cssproperty --beam-status-pill-radius - Corner radius. [default: 4px]
+ * @cssproperty --beam-status-pill-font-size - Font size. [default: 0.6875rem]
+ */
+export interface BeamStatusPillProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  /**
+   * Color treatment. `neutral` (default) uses the muted text color. `success` / `warning` / `error` / `info` / `accent` use the matching semantic palette.
+   * @default 'neutral'
+   */
+  tone?: 'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral';
+}
+
+/** React forwarder for `<beam-status-pill>`. */
+export function BeamStatusPill(props: BeamStatusPillProps & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('BeamStatusPill'), props);
+}
+BeamStatusPill.displayName = 'BeamStatusPill';
+
+/**
+ * @slot (default) - Anything inline-sized. Overrides the `icon` attribute shortcut.
+ * @csspart base - The tile element.
+ * @cssproperty --beam-icon-tile-size - Width and height of the tile. [default: 2rem]
+ * @cssproperty --beam-icon-tile-radius - Corner radius (50% = circle). [default: 50%]
+ * @cssproperty --beam-icon-tile-font-size - Icon font size. [default: 0.875rem]
+ */
+export interface BeamIconTileProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  /** Tone — defaults to `neutral` (muted gray surface). @default 'neutral' */
+  tone?: 'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral';
+  /** Shape — defaults to `circle`. Use `rounded` for a 6px-radius square. @default 'circle' */
+  shape?: 'circle' | 'rounded';
+  /** Size — defaults to `medium` (2rem). @default 'medium' */
+  size?: 'small' | 'medium' | 'large';
+  /**
+   * Font Awesome icon-name shortcut. If set and nothing is slotted, renders a `<beam-icon name=...>` inside the tile. Slotted content wins.
+   * @default ''
+   */
+  icon?: string;
+}
+
+/** React forwarder for `<beam-icon-tile>`. */
+export function BeamIconTile(props: BeamIconTileProps & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('BeamIconTile'), props);
+}
+BeamIconTile.displayName = 'BeamIconTile';
+
+/**
+ * @slot (default) - Tile content. Typically `<beam-kpi-card>` children, but any block-level child works.
+ * @csspart base - The grid container.
+ * @cssproperty --beam-kpi-row-min - Minimum column width before the grid reflows. [default: 11rem]
+ * @cssproperty --beam-kpi-row-gap - Gap between tiles. [default: 1rem]
+ */
+export interface BeamKpiRowProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  // No attributes defined in CEM.
+}
+
+/** React forwarder for `<beam-kpi-row>`. */
+export function BeamKpiRow(props: BeamKpiRowProps & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('BeamKpiRow'), props);
+}
+BeamKpiRow.displayName = 'BeamKpiRow';

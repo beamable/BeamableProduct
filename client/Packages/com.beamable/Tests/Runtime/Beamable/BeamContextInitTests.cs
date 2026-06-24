@@ -98,6 +98,88 @@ namespace Tests.Runtime.Beamable
 			Assert.AreEqual(Context, beamException.Ctx);
 
 		}
+
+		[UnityTest]
+		public IEnumerator InfiniteRetriesDoNotOverflowErrorBuffer()
+		{
+			PromiseBase.SetPotentialUncaughtErrorHandler((promise, err) => { });
+			LogAssert.ignoreFailingMessages = true;
+
+			var sawIndexOutOfRange = false;
+			void TrackLog(string condition, string stackTrace, LogType type)
+			{
+				if ((condition?.Contains(nameof(IndexOutOfRangeException)) ?? false) ||
+				    (stackTrace?.Contains(nameof(IndexOutOfRangeException)) ?? false))
+				{
+					sawIndexOutOfRange = true;
+				}
+			}
+
+			Application.logMessageReceived += TrackLog;
+			try
+			{
+				MockPlatformRoute<User> failingMockRequest = null;
+				var config = ScriptableObject.CreateInstance<CoreConfiguration>();
+				config.ContextRetryDelays = new double[] { .01, .01 };
+				config.EnableInfiniteContextRetries = true;
+
+				TriggerContextInit(builder =>
+				{
+					OnRegister(builder);
+					builder.RemoveIfExists<CoreConfiguration>();
+					builder.AddSingleton(config);
+				}, context =>
+				{
+					context.Requester.MockRequest<TokenResponse>(Method.POST, "/basic/auth/token")
+						   .WithNoAuthHeader()
+						   .WithJsonFieldMatch("grant_type", "guest")
+						   .WithResponse(new TokenResponse
+						   {
+							   access_token = MockBeamContext.ACCESS_TOKEN,
+							   refresh_token = "test_refresh",
+							   expires_in = 10000,
+							   token_type = "test_token"
+						   });
+
+					context.Requester.MockRequest<TokenResponse>(Method.POST, "/basic/auth/token")
+						   .WithNoAuthHeader()
+						   .WithJsonFieldMatch("grant_type", "refresh_token")
+						   .WithResponse(new TokenResponse
+						   {
+							   access_token = MockBeamContext.ACCESS_TOKEN,
+							   refresh_token = "refresh_test"
+						   });
+
+					failingMockRequest = context.Requester.MockRequest<User>(Method.GET, "/basic/accounts/me")
+											 .WithResponse(new RequesterException("", "GET", "url", 401, ""))
+											 .WithToken(MockBeamContext.ACCESS_TOKEN);
+
+					context.AddPubnubRequests()
+						   .AddSessionRequests();
+				});
+
+				// The old bug appears only after attempts exceed ContextRetryDelays.Length.
+				var requiredAttempts = config.ContextRetryDelays.Length + 3;
+				var timeout = Time.realtimeSinceStartup + 2f;
+				while (failingMockRequest.CallCount < requiredAttempts &&
+				       Time.realtimeSinceStartup < timeout)
+				{
+					yield return null;
+				}
+
+				Assert.GreaterOrEqual(failingMockRequest.CallCount, requiredAttempts,
+									  "The retry loop must run past the configured retry-delay array length.");
+				Assert.IsFalse(sawIndexOutOfRange,
+							   "Infinite BeamContext retries must not overflow the fixed-size error buffer.");
+				Assert.IsFalse(Context.OnReady.IsCompleted,
+							   "A persistently failing infinite retry should keep OnReady pending.");
+			}
+			finally
+			{
+				Application.logMessageReceived -= TrackLog;
+				LogAssert.ignoreFailingMessages = false;
+			}
+		}
 	}
 
 }

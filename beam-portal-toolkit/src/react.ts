@@ -14,6 +14,19 @@
 //     `BeamGroupHeader`). These ship as real (tiny) code so identity-based
 //     children walks in the host can recognize them by `displayName`.
 
+// Pull in the JSX.IntrinsicElements augmentation so raw `<beam-*>` tags in
+// `.tsx` files type-check (and autocomplete). The file is types-only —
+// `declare module 'react'` + `export {}` — so it adds nothing to the runtime
+// bundle. Without this side-effect import, consumers would have to add a
+// `/// <reference types="@beamable/portal-toolkit/react-elements" />` line
+// in their project, which is easy to forget.
+import './generated/react-elements';
+
 export * from './generated/react-components';
 export * from './generated/react-bindable';
-export * from './generated/react-custom';
+export * from './react-custom';
+// React-flavored runtime helpers: `useBeam`, `registerReactExtension`,
+// `useChangeTracker`. Co-located with the components so extension authors
+// get them from a single import path instead of remembering a separate
+// subpath.
+export * from './react-helpers';

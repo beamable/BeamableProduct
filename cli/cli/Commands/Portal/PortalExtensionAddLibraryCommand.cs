@@ -126,15 +126,26 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 	}
 
 	/// <summary>
-	/// Scans the workspace for any "package.json" marked as a portal extension library (via the
-	/// "beamable": { "portalExtensionLib": true } property) whose name matches the given library name.
-	/// Returns the library's absolute directory, or null if no matching library exists.
+	/// The location of a portal extension library discovered in the workspace.
 	/// </summary>
-	public static string LocateLibrary(string workspace, string libName)
+	public class PortalExtensionLibraryLocation
 	{
+		public string Name;
+		public string Directory;
+		public string PackageJsonPath;
+	}
+
+	/// <summary>
+	/// Scans the workspace for every "package.json" marked as a portal extension library (via the
+	/// "beamable": { "portalExtensionLib": true } property) and returns each one's name, absolute
+	/// directory, and absolute package.json path.
+	/// </summary>
+	public static List<PortalExtensionLibraryLocation> LocateAllLibraries(string workspace)
+	{
+		var results = new List<PortalExtensionLibraryLocation>();
 		if (string.IsNullOrEmpty(workspace))
 		{
-			return null;
+			return results;
 		}
 
 		foreach (var packagePath in Directory.EnumerateFiles(workspace, "package.json", SearchOption.AllDirectories))
@@ -142,10 +153,14 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 			try
 			{
 				var info = JsonConvert.DeserializeObject<BeamoLocalSystem.PortalExtensionPackageInfo>(File.ReadAllText(packagePath));
-				if (info?.BeamableProperties?.IsPortalExtensionLib == true &&
-				    string.Equals(info.Name, libName, StringComparison.Ordinal))
+				if (info?.BeamableProperties?.IsPortalExtensionLib == true)
 				{
-					return Path.GetFullPath(Path.GetDirectoryName(packagePath));
+					results.Add(new PortalExtensionLibraryLocation
+					{
+						Name = info.Name,
+						Directory = Path.GetFullPath(Path.GetDirectoryName(packagePath)),
+						PackageJsonPath = Path.GetFullPath(packagePath),
+					});
 				}
 			}
 			catch
@@ -154,7 +169,19 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 			}
 		}
 
-		return null;
+		return results;
+	}
+
+	/// <summary>
+	/// Scans the workspace for any "package.json" marked as a portal extension library (via the
+	/// "beamable": { "portalExtensionLib": true } property) whose name matches the given library name.
+	/// Returns the library's absolute directory, or null if no matching library exists.
+	/// </summary>
+	public static string LocateLibrary(string workspace, string libName)
+	{
+		return LocateAllLibraries(workspace)
+			.FirstOrDefault(l => string.Equals(l.Name, libName, StringComparison.Ordinal))
+			?.Directory;
 	}
 
 	/// <summary>
