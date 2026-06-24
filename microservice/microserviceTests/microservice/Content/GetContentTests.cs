@@ -116,11 +116,10 @@ namespace microserviceTests.microservice.Content
       }
 
       [Test]
-      public async Task FirstManifestBreaksWith503_RecoversOnNextRequest()
+      public async Task FirstManifestBreaksWith503_RetriesAndSucceedsOnSameRequest()
       {
-         // A 503 while fetching the manifest leaves the cached manifest promise in a failed
-         // state. The next content request must discard that poisoned promise and refetch,
-         // rather than re-awaiting the failure forever (which previously required a restart).
+         // A transient 503 while fetching the manifest should be retried inside the same
+         // content request. Otherwise caller traffic becomes the retry policy.
          var args = new TestArgs();
          var reqCtx = new RequestContext(args.CustomerID, args.ProjectName, 1, 200, 1, "path", "GET", "");
          var contentResolver = new TestContentResolver(async (uri) =>
@@ -134,41 +133,53 @@ namespace microserviceTests.microservice.Content
          });
 
          TestSocket testSocket = null;
+         var manifestAttempts = 0;
+         var manifestFrequency = MessageFrequency.Exactly(2);
          var socketProvider = new TestSocketProvider(socket =>
          {
             testSocket = socket;
 
-            // first manifest fetch fails with a 503 (non-gateway), which is NOT auto-recovered
-            // by the requester, so the cached manifest promise settles in a failed state.
             socket.AddMessageHandler(
                MessageMatcher
                   .WithRouteContains("basic/content/manifest")
-                  .WithReqId(-1)
                   .WithGet(),
-               MessageResponder.Custom(req => new WebsocketResponse
+               MessageResponder.Custom(req =>
                {
-                  id = req.id,
-                  from = 0,
-                  status = 503,
-                  body = new WebsocketErrorResponse
+                  manifestAttempts++;
+                  if (manifestAttempts == 1)
                   {
-                     status = 503,
-                     service = "content",
-                     error = "ServiceUnavailable",
-                     message = "503"
+                     return new WebsocketResponse
+                     {
+                        id = req.id,
+                        from = 0,
+                        status = 503,
+                        body = new WebsocketErrorResponse
+                        {
+                           status = 503,
+                           service = "content",
+                           error = "ServiceUnavailable",
+                           message = "503"
+                        }
+                     };
                   }
-               }),
-               MessageFrequency.OnlyOnce()
-            );
 
-            // the second manifest fetch (triggered by the next content request) succeeds.
-            socket.AddInitialContentMessageHandler(-2, new ContentReference
-            {
-               id = "items.foo",
-               version = "123",
-               uri = "items.foo",
-               visibility = "public"
-            });
+                  return req.Succeed(new ContentManifest
+                  {
+                     id = "global",
+                     created = 1,
+                     references = new List<ContentReference>
+                     {
+                        new ContentReference
+                        {
+                           id = "items.foo",
+                           version = "123",
+                           uri = "items.foo",
+                           visibility = "public"
+                        }
+                     }
+                  });
+               }),
+               manifestFrequency);
             socket.SetAuthentication(true);
          });
 
@@ -191,19 +202,231 @@ namespace microserviceTests.microservice.Content
 
          await contentService.Init();
 
-         // first request fails because of the 503 manifest fetch.
-         var firstPromise = contentService.GetContent("items.foo");
-         var firstTask = Task.Run(async () => await firstPromise);
-         try { firstTask.Wait(1000); } catch { /* expected: the 503 propagates */ }
-         Assert.IsTrue(firstPromise.IsFailed, "first content request should fail due to the 503 manifest fetch");
+         var fetchPromise = contentService.GetContent("items.foo");
+         var fetchTask = Task.Run(async () => await fetchPromise);
+         fetchTask.Wait(1500);
+         Assert.IsTrue(fetchPromise.IsCompleted, "content request should complete after one transient manifest retry");
+         Assert.IsFalse(fetchPromise.IsFailed, "content request should succeed after transient manifest retry");
+         Assert.AreEqual("items.foo", fetchPromise.GetResult().Id);
+         Assert.AreEqual(2, manifestAttempts);
+         Assert.AreEqual(2, manifestFrequency.CallCount);
 
-         // second request must refetch the manifest and succeed (proves the poisoned promise was discarded).
-         var secondPromise = contentService.GetContent("items.foo");
-         var secondTask = Task.Run(async () => await secondPromise);
-         secondTask.Wait(1000);
-         Assert.IsTrue(secondPromise.IsCompleted, "second content request should complete after refetch");
-         Assert.IsFalse(secondPromise.IsFailed, "second content request should succeed after refetch");
-         Assert.AreEqual("items.foo", secondPromise.GetResult().Id);
+         socketCtx.Daemon.KillAuthThread();
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+
+      [Test]
+      public async Task Manifest503StopsAfterThreeAttemptsAndNextRequestStartsNewAttemptGroup()
+      {
+         var args = new TestArgs();
+         var reqCtx = new RequestContext(args.CustomerID, args.ProjectName, 1, 200, 1, "path", "GET", "");
+         var contentResolver = new TestContentResolver(async _ => "{}");
+
+         TestSocket testSocket = null;
+         var manifestAttempts = 0;
+         var manifestFrequency = MessageFrequency.Exactly(4);
+         var socketProvider = new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.AddMessageHandler(
+               MessageMatcher
+                  .WithRouteContains("basic/content/manifest")
+                  .WithGet(),
+               MessageResponder.Custom(req =>
+               {
+                  manifestAttempts++;
+                  if (manifestAttempts <= 3)
+                  {
+                     return new WebsocketResponse
+                     {
+                        id = req.id,
+                        from = 0,
+                        status = 503,
+                        body = new WebsocketErrorResponse
+                        {
+                           status = 503,
+                           service = "content",
+                           error = "ServiceUnavailable",
+                           message = "503"
+                        }
+                     };
+                  }
+
+                  return req.Succeed(new ContentManifest
+                  {
+                     id = "global",
+                     created = 1,
+                     references = new List<ContentReference>()
+                  });
+               }),
+               manifestFrequency);
+            socket.SetAuthentication(true);
+         });
+
+         var socket = socketProvider.Create("test", args);
+         var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
+
+         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false, new NoopActivityProvider());
+         (_, socketCtx.Daemon) =
+            MicroserviceAuthenticationDaemon.Start(args, requester, new CancellationTokenSource());
+
+         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
+
+         testSocket.Connect();
+         testSocket.OnMessage((_, data, id) =>
+         {
+            data.TryBuildRequestContext(args, out var rc);
+            socketCtx.HandleMessage(null, rc).Wait();
+         });
+
+         await contentService.Init();
+
+         var failedPromise = contentService.GetContent("items.foo");
+         var failedTask = Task.Run(async () => await failedPromise);
+         try { failedTask.Wait(2000); } catch { /* expected: the 503 propagates after bounded attempts */ }
+         Assert.IsTrue(failedPromise.IsFailed, "content request should fail after bounded manifest retries are exhausted");
+         Assert.AreEqual(3, manifestAttempts);
+
+         var nextPromise = contentService.GetContent("items.foo");
+         var nextTask = Task.Run(async () => await nextPromise);
+         try { nextTask.Wait(1500); } catch { /* expected: manifest succeeded but content id is absent */ }
+         Assert.IsTrue(nextPromise.IsFailed, "second request should use a new manifest attempt group and then fail because content is absent");
+         Assert.AreEqual(4, manifestAttempts);
+         Assert.AreEqual(4, manifestFrequency.CallCount);
+
+         socketCtx.Daemon.KillAuthThread();
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+
+      [Test]
+      public async Task Manifest400DoesNotRetry()
+      {
+         var args = new TestArgs();
+         var reqCtx = new RequestContext(args.CustomerID, args.ProjectName, 1, 200, 1, "path", "GET", "");
+         var contentResolver = new TestContentResolver(async _ => "{}");
+
+         TestSocket testSocket = null;
+         var manifestAttempts = 0;
+         var manifestFrequency = MessageFrequency.Exactly(1);
+         var socketProvider = new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.AddMessageHandler(
+               MessageMatcher
+                  .WithRouteContains("basic/content/manifest")
+                  .WithGet(),
+               MessageResponder.Custom(req =>
+               {
+                  manifestAttempts++;
+                  return new WebsocketResponse
+                  {
+                     id = req.id,
+                     from = 0,
+                     status = 400,
+                     body = new WebsocketErrorResponse
+                     {
+                        status = 400,
+                        service = "content",
+                        error = "BadRequest",
+                        message = "400"
+                     }
+                  };
+               }),
+               manifestFrequency);
+            socket.SetAuthentication(true);
+         });
+
+         var socket = socketProvider.Create("test", args);
+         var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
+
+         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false, new NoopActivityProvider());
+         (_, socketCtx.Daemon) =
+            MicroserviceAuthenticationDaemon.Start(args, requester, new CancellationTokenSource());
+
+         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
+
+         testSocket.Connect();
+         testSocket.OnMessage((_, data, id) =>
+         {
+            data.TryBuildRequestContext(args, out var rc);
+            socketCtx.HandleMessage(null, rc).Wait();
+         });
+
+         await contentService.Init();
+
+         var fetchPromise = contentService.GetContent("items.foo");
+         var fetchTask = Task.Run(async () => await fetchPromise);
+         try { fetchTask.Wait(1000); } catch { /* expected: 400 propagates */ }
+         Assert.IsTrue(fetchPromise.IsFailed, "non-transient manifest failure should fail fast");
+         Assert.AreEqual(1, manifestAttempts);
+         Assert.AreEqual(1, manifestFrequency.CallCount);
+
+         socketCtx.Daemon.KillAuthThread();
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+
+      [Test]
+      public async Task Manifest404RecoversAsEmptyManifestAndDoesNotRetry()
+      {
+         var args = new TestArgs();
+         var reqCtx = new RequestContext(args.CustomerID, args.ProjectName, 1, 200, 1, "path", "GET", "");
+         var contentResolver = new TestContentResolver(async _ => "{}");
+
+         TestSocket testSocket = null;
+         var manifestAttempts = 0;
+         var manifestFrequency = MessageFrequency.Exactly(1);
+         var socketProvider = new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.AddMessageHandler(
+               MessageMatcher
+                  .WithRouteContains("basic/content/manifest")
+                  .WithGet(),
+               MessageResponder.Custom(req =>
+               {
+                  manifestAttempts++;
+                  return new WebsocketResponse
+                  {
+                     id = req.id,
+                     from = 0,
+                     status = 404,
+                     body = new WebsocketErrorResponse
+                     {
+                        status = 404,
+                        service = "content",
+                        error = "NotFound",
+                        message = "404"
+                     }
+                  };
+               }),
+               manifestFrequency);
+            socket.SetAuthentication(true);
+         });
+
+         var socket = socketProvider.Create("test", args);
+         var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
+
+         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false, new NoopActivityProvider());
+         (_, socketCtx.Daemon) =
+            MicroserviceAuthenticationDaemon.Start(args, requester, new CancellationTokenSource());
+
+         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
+
+         testSocket.Connect();
+         testSocket.OnMessage((_, data, id) =>
+         {
+            data.TryBuildRequestContext(args, out var rc);
+            socketCtx.HandleMessage(null, rc).Wait();
+         });
+
+         await contentService.Init();
+
+         var fetchPromise = contentService.GetContent("items.foo");
+         var fetchTask = Task.Run(async () => await fetchPromise);
+         try { fetchTask.Wait(1000); } catch { /* expected: empty manifest has no requested content */ }
+         Assert.IsTrue(fetchPromise.IsFailed, "404 manifest recovery should produce an empty manifest, not retry");
+         Assert.AreEqual(1, manifestAttempts);
+         Assert.AreEqual(1, manifestFrequency.CallCount);
 
          socketCtx.Daemon.KillAuthThread();
          Assert.IsTrue(testSocket.AllMocksCalled());

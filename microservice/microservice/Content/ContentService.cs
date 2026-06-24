@@ -115,6 +115,9 @@ namespace Beamable.Server.Content
 
    public class CachedContentManifest
    {
+	   private const int MaxManifestAttempts = 3;
+	   private static readonly TimeSpan MaxManifestRetryDelay = TimeSpan.FromSeconds(2);
+
 	   public string _name;
 	   private readonly MicroserviceRequester _requester;
 	   private readonly ConcurrentDictionary<string, ContentReference> _idToContentReference = new ConcurrentDictionary<string, ContentReference>();
@@ -173,17 +176,13 @@ namespace Beamable.Server.Content
 	   }
 
 	   
-      public void RefreshManifest()
+	   public void RefreshManifest()
       {
          lock (_manifestLock)
          {
             var oldPromise = _waitForManifest;
             // reset the manifest promise, so that if a content request comes while a manifest is being retrieved, we wait for the updated content to be served
-            _waitForManifest = _requester.Request<ContentManifest>(Method.GET, $"/basic/content/manifest?id={_name}")
-	            .RecoverFrom404(ex => new ContentManifest
-	            {
-		            id = _name, created = 0, references = new List<ContentReference>()
-	            })
+            _waitForManifest = RequestManifestWithRetries()
 	            .Map(manifest =>
                {
                   _idToContentReference.Clear();
@@ -227,6 +226,45 @@ namespace Beamable.Server.Content
             }
          }
       }
+
+	   private Promise<ContentManifest> RequestManifestWithRetries()
+	   {
+		   return RequestManifestWithRetriesAsync().ToPromise();
+	   }
+
+	   private async Task<ContentManifest> RequestManifestWithRetriesAsync()
+	   {
+		   for (var attempt = 1; attempt <= MaxManifestAttempts; attempt++)
+		   {
+			   try
+			   {
+				   return await _requester.Request<ContentManifest>(Method.GET, $"/basic/content/manifest?id={_name}")
+					   .RecoverFrom404(ex => new ContentManifest
+					   {
+						   id = _name, created = 0, references = new List<ContentReference>()
+					   });
+			   }
+			   catch (RequesterException ex) when (IsTransientManifestFailure(ex.Status) && attempt < MaxManifestAttempts)
+			   {
+				   await Task.Delay(GetManifestRetryDelay(attempt));
+			   }
+		   }
+
+		   // The loop either returns or rethrows the original final/non-transient exception.
+		   throw new InvalidOperationException("Unreachable manifest retry state.");
+	   }
+
+	   private static bool IsTransientManifestFailure(long status)
+	   {
+		   return status is 0 or 408 or 429 or 500 or 502 or 503 or 504;
+	   }
+
+	   private static TimeSpan GetManifestRetryDelay(int attempt)
+	   {
+		   var backoffMilliseconds = 200 * (1 << (attempt - 1));
+		   var delay = TimeSpan.FromMilliseconds(backoffMilliseconds + Random.Shared.Next(0, 101));
+		   return delay > MaxManifestRetryDelay ? MaxManifestRetryDelay : delay;
+	   }
    }
 
    public class ContentService : IMicroserviceContentApi
