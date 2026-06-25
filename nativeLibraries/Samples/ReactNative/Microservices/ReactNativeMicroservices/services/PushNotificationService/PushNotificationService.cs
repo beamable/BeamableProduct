@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Beamable.Api.Analytics;
 using Beamable.Common;
 using Beamable.Common.Api.Stats;
+using Beamable.Common.Content;
 using Beamable.Server;
 
 namespace Beamable.PushNotificationService
@@ -526,19 +527,27 @@ namespace Beamable.PushNotificationService
 	[Serializable]
 	public class PushCampaignRequest
 	{
+		// title/body/deepLink are the required notification content. The §3.3 campaign metadata
+		// below is all optional — modeled with Beamable Optional* types so the generated web client
+		// marks them optional (the schema generator unwraps Optional<T> to its inner type, so the
+		// wire shape stays e.g. `campaignId?: string`, never an Optional wrapper).
 		public string title;
 		public string body;
-		public string deepLink;          // canonical key on the wire: "deeplink"
+		public string deepLink;              // canonical key on the wire: "deeplink"
 
-		public string campaignId;        // NEW concept (§3.3)
-		public string nodeId;            // NEW concept (§3.3)
-		public string gamerTag;          // Beamable dbid; defaults to the target player id when unset
-		public string accountId;         // Beamable account id
-		public string cidPid;            // "<cid>.<pid>" realm scope
-		public List<PushOffer> offers;   // optional offers array
-		public string campaignData;      // free-form JSON object, as a string
+		public OptionalString campaignId;    // NEW concept (§3.3)
+		public OptionalString nodeId;        // NEW concept (§3.3)
+		public OptionalString gamerTag;      // Beamable dbid; defaults to the target player id when unset
+		public OptionalString accountId;     // Beamable account id
+		public OptionalString cidPid;        // "<cid>.<pid>" realm scope
+		public OptionalList<PushOffer> offers; // optional offers array
+		public OptionalString campaignData;  // free-form JSON object, as a string
 
-		/// <summary>Projects the schema fields (sans title/body/deepLink) into the internal context.</summary>
+		/// <summary>
+		/// Projects the schema fields (sans title/body/deepLink) into the internal context. The
+		/// scalar Optional* fields convert implicitly to their inner value (null when absent); the
+		/// offers DTOs are copied into their plain internal twin so no Optional reaches the device.
+		/// </summary>
 		public PushCampaignContext ToContext() => new PushCampaignContext
 		{
 			campaignId = campaignId,
@@ -546,7 +555,9 @@ namespace Beamable.PushNotificationService
 			gamerTag = gamerTag,
 			accountId = accountId,
 			cidPid = cidPid,
-			offers = offers,
+			offers = ((List<PushOffer>)offers)?
+				.Select(o => new PushOfferData { itemId = o.itemId, value = o.value, customData = o.customData })
+				.ToList(),
 			campaignData = campaignData,
 		};
 	}
@@ -563,7 +574,7 @@ namespace Beamable.PushNotificationService
 		public string gamerTag;
 		public string accountId;
 		public string cidPid;
-		public List<PushOffer> offers;
+		public List<PushOfferData> offers;
 		public string campaignData;
 	}
 
