@@ -7,11 +7,13 @@
     "version": "1.0.0",
     "portalExtension": true,
     "microserviceDependencies": [],
-    "mount": {
-      "page": "players/",
-      "selector": "#root",
-      "args": {}
-    }
+    "mounts": [
+      {
+        "page": "players/",
+        "selector": "#root",
+        "args": {}
+      }
+    ]
   },
   "scripts": {
     "dev": "vite",
@@ -25,7 +27,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.6.3",
     "vite": "^7.2.2",
-    "@beamable/portal-toolkit": "0.1.6"
+    "@beamable/portal-toolkit": "0.2.0"
   },
   "peerDependencies": {
     "react": "^19.0.0",

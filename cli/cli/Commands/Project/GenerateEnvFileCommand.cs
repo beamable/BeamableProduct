@@ -151,7 +151,30 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		Promise<OtelAuthConfig> otelAuthReq = null;
 		if (!args.excludeOtelCreds)
 		{
-			otelAuthReq = beamoApi.GetOtelAuthWriterConfig();
+			// The otel auth writer endpoint is flaky when many services call it concurrently
+			// (e.g. `beam project run` with ~30 services), so retry on 5xx with a small backoff.
+			int otelAttempt = 0;
+			otelAuthReq = Promise.RetryPromise(
+				() =>
+				{
+					var current = otelAttempt++;
+					if (current == 0)
+					{
+						return beamoApi.GetOtelAuthWriterConfig();
+					}
+					return Task.Delay(TimeSpan.FromMilliseconds(250 * current)).ToPromise()
+						.FlatMap(_ => beamoApi.GetOtelAuthWriterConfig());
+				},
+				ex =>
+				{
+					if (ex is RequesterException re && re.Status >= 500 && re.Status < 600)
+					{
+						BeamableLogger.LogWarning($"Otel auth writer config failed with status=[{re.Status}], retrying...");
+						return true;
+					}
+					return false;
+				},
+				maxAttempts: 5);
 		}
 		
 		var user = await userReq;

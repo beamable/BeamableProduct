@@ -74,6 +74,11 @@ declare global {
     'beam-toast-stack': BeamToastStackElement;
     'beam-code-snippet': BeamCodeSnippetElement;
     'beam-change-bar': BeamChangeBarElement;
+    'beam-kpi-card': BeamKpiCardElement;
+    'beam-section-label': BeamSectionLabelElement;
+    'beam-status-pill': BeamStatusPillElement;
+    'beam-icon-tile': BeamIconTileElement;
+    'beam-kpi-row': BeamKpiRowElement;
   }
 
   // ---------------------------------------------------------------------------
@@ -2443,6 +2448,8 @@ declare global {
    * @cssproperty --wa-font-size-s - Body cell font size. [default: 0.875rem]
    * @cssproperty --wa-font-size-xs - Header label font size. [default: 0.75rem]
    * @cssproperty --wa-shadow-s - Drop shadow for the card variant.
+   * @cssproperty --cell-padding-y - Vertical padding for header, body, and title-bar cells. Default is the "compact" density that every dashboard mockup in this codebase reaches for. Use the `density` attribute below for the named presets; this variable is for fine-grained overrides. [default: 0.5rem]
+   * @cssproperty --cell-padding-x - Horizontal padding for header, body, and title-bar cells. [default: 1rem]
    */
   interface BeamTableElement extends HTMLElement {
     /** @default [] */
@@ -2466,6 +2473,11 @@ declare global {
     /** @default false */
     defaultCollapsed?: boolean;
     tableTitle?: string | undefined;
+    /**
+     * Cell density preset — `compact` (default, 0.5rem vertical) or `comfortable` (0.75rem vertical). Setting `--cell-padding-y` / `--cell-padding-x` inline overrides this.
+     * @default 'compact'
+     */
+    density?: 'compact' | 'comfortable';
     /**
      * Slots for an external owner (e.g. the React wrapper) to portal content into. When set, the table emits a placeholder with `data-beam-portal-id` — `__top-row__` for the top row, `__group-header__:{groupKey}` for each group's header — and the owner is expected to mount its own DOM there. If unset, the table renders its built-in defaults.
      * @default false
@@ -2508,8 +2520,8 @@ declare global {
    * @csspart title - The H1 title element.
    * @csspart description - The description paragraph element.
    * @csspart actions - Container wrapping the `actions` slot.
-   * @cssproperty --beam-page-header-title-size - Title font size. [default: 1.5rem]
-   * @cssproperty --beam-page-header-spacing - Bottom margin reserved below the header. [default: 1.5rem]
+   * @cssproperty --beam-page-header-title-size - Title font size. Default `1.25rem` (20px) matches the mockups every news-agent extension was rolling by hand. [default: 1.25rem]
+   * @cssproperty --beam-page-header-spacing - Bottom margin reserved below the header. Defaults to `0` so the header composes naturally inside a flex/grid parent that already has `gap`. Set to `1.5rem` explicitly when used inside a legacy block-layout page. [default: 0]
    * @cssproperty --beam-page-header-gap - Gap between the text block and the actions slot. [default: 1rem]
    */
   interface BeamPageHeaderElement extends HTMLElement {
@@ -2719,5 +2731,99 @@ declare global {
      * Public read-only view of the bar's high-level state. Useful for consumers that want to drive per-field UI (spinners, status dots) from the bar's internal phase. Also reflected onto the host as `data-state` for CSS.
      */
     state?: 'idle' | 'pending' | 'saving' | 'paused-errors';
+  }
+
+  /**
+   * @slot icon - Top-left icon. Pass a `<beam-icon>`, emoji, or any inline-sized element. Falls back to empty if no icon is provided. Shortcut: set the `icon` attribute to a Font Awesome name (e.g. `"bolt"`) and the card renders a softly-tinted `<beam-icon>` for you. Anything in the slot wins over the shortcut.
+   * @slot (default) - Default slot rendered below the standard fields. Useful for sparklines or auxiliary content.
+   * @csspart base - The card's outer container.
+   * @csspart header - Row containing the icon and change indicator.
+   * @csspart icon - Wrapper around the icon slot.
+   * @csspart change - The delta indicator span.
+   * @csspart value - The big value text.
+   * @csspart label - The label text.
+   * @csspart sub - The subtitle text.
+   * @cssproperty --beam-kpi-card-padding - Inner padding of the card. [default: 1rem]
+   * @cssproperty --beam-kpi-card-radius - Outer corner radius. [default: 0.5rem]
+   * @cssproperty --beam-kpi-card-value-size - Font size of the value. [default: 1.5rem]
+   * @cssproperty --beam-kpi-card-background - Card background. Defaults to `var(--wa-color-surface-raised)` so it matches the host's `.card` look.
+   * @cssproperty --beam-kpi-card-border-color - Card border color. Defaults to `var(--color-beam-border)`.
+   */
+  interface BeamKpiCardElement extends HTMLElement {
+    /** The big primary value, e.g. "23" or "$306" or "892K". @default '' */
+    value?: string;
+    /** Short label rendered below the value. @default '' */
+    label?: string;
+    /** Optional secondary line below the label. @default '' */
+    sub?: string;
+    /** Delta indicator string, e.g. "+12%" or "-5.2%". Omit to hide. @default '' */
+    change?: string;
+    /**
+     * Coloring for the change text. `positive` → success green, `negative` → error red, `neutral` → muted gray. Defaults to `neutral`.
+     * @default 'neutral'
+     */
+    tone?: 'positive' | 'negative' | 'neutral';
+    /**
+     * Shortcut for the `icon` slot — set this to a Font Awesome name (e.g. `"bolt"`, `"file-lines"`) and the card renders a softly-tinted `<beam-icon>` for you. Slotted content always wins.
+     * @default ''
+     */
+    icon?: string;
+  }
+
+  /**
+   * @slot (default) - The label text. Plain string is typical; rich content works too.
+   * @slot action - Right-aligned action element (button, link, etc).
+   * @csspart base - The outer flex container.
+   * @csspart label - The label text span.
+   * @cssproperty --beam-section-label-margin-bottom - Bottom margin reserved below the label. Set to 0 if the label sits inline. [default: 1rem]
+   */
+  interface BeamSectionLabelElement extends HTMLElement {
+    // No public properties defined in CEM.
+  }
+
+  /**
+   * @slot (default) - The pill label (usually a short string like "Enabled" or "Live").
+   * @csspart base - The pill element itself.
+   * @cssproperty --beam-status-pill-padding - Inner padding. [default: 0.125rem 0.5rem]
+   * @cssproperty --beam-status-pill-radius - Corner radius. [default: 4px]
+   * @cssproperty --beam-status-pill-font-size - Font size. [default: 0.6875rem]
+   */
+  interface BeamStatusPillElement extends HTMLElement {
+    /**
+     * Color treatment. `neutral` (default) uses the muted text color. `success` / `warning` / `error` / `info` / `accent` use the matching semantic palette.
+     * @default 'neutral'
+     */
+    tone?: 'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral';
+  }
+
+  /**
+   * @slot (default) - Anything inline-sized. Overrides the `icon` attribute shortcut.
+   * @csspart base - The tile element.
+   * @cssproperty --beam-icon-tile-size - Width and height of the tile. [default: 2rem]
+   * @cssproperty --beam-icon-tile-radius - Corner radius (50% = circle). [default: 50%]
+   * @cssproperty --beam-icon-tile-font-size - Icon font size. [default: 0.875rem]
+   */
+  interface BeamIconTileElement extends HTMLElement {
+    /** Tone — defaults to `neutral` (muted gray surface). @default 'neutral' */
+    tone?: 'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral';
+    /** Shape — defaults to `circle`. Use `rounded` for a 6px-radius square. @default 'circle' */
+    shape?: 'circle' | 'rounded';
+    /** Size — defaults to `medium` (2rem). @default 'medium' */
+    size?: 'small' | 'medium' | 'large';
+    /**
+     * Font Awesome icon-name shortcut. If set and nothing is slotted, renders a `<beam-icon name=...>` inside the tile. Slotted content wins.
+     * @default ''
+     */
+    icon?: string;
+  }
+
+  /**
+   * @slot (default) - Tile content. Typically `<beam-kpi-card>` children, but any block-level child works.
+   * @csspart base - The grid container.
+   * @cssproperty --beam-kpi-row-min - Minimum column width before the grid reflows. [default: 11rem]
+   * @cssproperty --beam-kpi-row-gap - Gap between tiles. [default: 1rem]
+   */
+  interface BeamKpiRowElement extends HTMLElement {
+    // No public properties defined in CEM.
   }
 }

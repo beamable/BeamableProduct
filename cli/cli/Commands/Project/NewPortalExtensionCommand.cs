@@ -165,7 +165,10 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		var packageJson = File.ReadAllText(def.AbsolutePackageJsonPath);
 		var jObj = JObject.Parse(packageJson);
 
-		foreach (var mount in jObj.SelectTokens("$..beamable.mount").OfType<JObject>().ToList())
+		// The template writes a single-entry `mounts` array; the scaffold-time
+		// CLI flags patch entry [0] of that array. If multi-mount scaffolding
+		// is ever needed, add an explicit --mount-index flag or accept JSON.
+		foreach (var mount in jObj.SelectTokens("$..beamable.mounts[0]").OfType<JObject>().ToList())
 		{
 			mount[PortalExtensionMountProperties.KEY_PAGE] = args.mountPage;
 			mount[PortalExtensionMountProperties.KEY_SELECTOR] = args.mountSelector;
