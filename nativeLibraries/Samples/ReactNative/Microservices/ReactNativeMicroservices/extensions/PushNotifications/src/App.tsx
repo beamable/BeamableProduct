@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { type Beam, type ExtensionContext } from '@beamable/portal-toolkit'
+import { type ExtensionContext } from '@beamable/portal-toolkit'
 import {
+  useBeam,
   BeamPage,
   BeamPageHeader,
   BeamCard,
@@ -70,7 +71,9 @@ function formatUnixSeconds(value: bigint | string): string {
 }
 
 export default function App({ context }: AppProps) {
-  const [beam, setBeam] = useState<Beam | null>(null)
+  // Resolves context.beam into the SDK instance, re-rendering once it lands
+  // (null until ready). Replaces the manual useState + context.beam.then effect.
+  const beam = useBeam(context)
 
   // Roster state
   const [players, setPlayers] = useState<RegisteredPlayer[]>([])
@@ -99,16 +102,6 @@ export default function App({ context }: AppProps) {
   const [cidPid, setCidPid] = useState('')
   const [offers, setOffers] = useState<OfferRow[]>([])
   const [campaignData, setCampaignData] = useState<KvRow[]>([])
-
-  useEffect(() => {
-    let cancelled = false
-    context.beam.then((b) => {
-      if (!cancelled) setBeam(b)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [context])
 
   const loadRoster = useCallback(async () => {
     if (!beam) return

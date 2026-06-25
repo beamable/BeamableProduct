@@ -1,62 +1,84 @@
-(function(jsxRuntime, react, client, sdk) {
+(function(react, client, jsxRuntime, sdk) {
   "use strict";
   function e(e2) {
-    window[e2.beamId] = { mount: (t2, n) => e2.onMount(t2, n), unmount: (t2) => e2.onUnmount(t2) };
+    let t2 = { mount: (t3, n) => e2.onMount(t3, n), unmount: (t3) => e2.onUnmount(t3), ...e2.getBadge ? { getBadge: e2.getBadge } : {} };
+    window[e2.beamId] = t2;
   }
-  const t$1 = { registerExtension: e };
-  function t(e2) {
+  const t = { registerExtension: e };
+  function l(e2) {
     let t2 = ((typeof globalThis < `u` ? globalThis.__beamPortal?.react : void 0) ?? {})[e2];
     if (!t2) throw Error(`Beam React component "${e2}" is not provided by the host portal. Extensions must run inside the Beamable portal — see https://help.beamable.com/ for the extension setup guide.`);
     return t2;
   }
-  function r(n) {
-    return react.createElement(t(`BeamSpinner`), n);
+  function d(e2) {
+    return react.createElement(l(`BeamSpinner`), e2);
   }
-  r.displayName = `BeamSpinner`;
-  function a(n) {
-    return react.createElement(t(`BeamButton`), n);
+  d.displayName = `BeamSpinner`;
+  function p(e2) {
+    return react.createElement(l(`BeamButton`), e2);
   }
-  a.displayName = `BeamButton`;
-  function c(n) {
-    return react.createElement(t(`BeamBadge`), n);
+  p.displayName = `BeamButton`;
+  function g(e2) {
+    return react.createElement(l(`BeamBadge`), e2);
   }
-  c.displayName = `BeamBadge`;
-  function p(n) {
-    return react.createElement(t(`BeamCard`), n);
+  g.displayName = `BeamBadge`;
+  function b(e2) {
+    return react.createElement(l(`BeamCard`), e2);
   }
-  p.displayName = `BeamCard`;
-  function O(n) {
-    return react.createElement(t(`BeamTag`), n);
+  b.displayName = `BeamCard`;
+  function F(e2) {
+    return react.createElement(l(`BeamTag`), e2);
   }
-  O.displayName = `BeamTag`;
-  function G(n) {
-    return react.createElement(t(`BeamPage`), n);
+  F.displayName = `BeamTag`;
+  function Q(e2) {
+    return react.createElement(l(`BeamPage`), e2);
   }
-  G.displayName = `BeamPage`;
-  function q(n) {
-    return react.createElement(t(`BeamPageHeader`), n);
+  Q.displayName = `BeamPage`;
+  function ne(e2) {
+    return react.createElement(l(`BeamPageHeader`), e2);
   }
-  q.displayName = `BeamPageHeader`;
-  function ee(n) {
-    return react.createElement(t(`BeamCheckbox`), n);
+  ne.displayName = `BeamPageHeader`;
+  function pe(e2) {
+    return react.createElement(l(`BeamCheckbox`), e2);
   }
-  ee.displayName = `BeamCheckbox`;
-  function te(n) {
-    return react.createElement(t(`BeamInput`), n);
+  pe.displayName = `BeamCheckbox`;
+  function me(e2) {
+    return react.createElement(l(`BeamInput`), e2);
   }
-  te.displayName = `BeamInput`;
-  function le(n) {
-    return react.createElement(t(`BeamTextarea`), n);
+  me.displayName = `BeamInput`;
+  function xe(e2) {
+    return react.createElement(l(`BeamTextarea`), e2);
   }
-  le.displayName = `BeamTextarea`;
-  function ue(e2) {
+  xe.displayName = `BeamTextarea`;
+  function Se(e2) {
     return null;
   }
-  ue.displayName = `BeamColumn`;
-  function pe(n) {
-    return react.createElement(t(`BeamTable`), n);
+  Se.displayName = `BeamColumn`;
+  function Te(e2) {
+    return react.createElement(l(`BeamTable`), e2);
   }
-  pe.displayName = `BeamTable`;
+  Te.displayName = `BeamTable`;
+  function ke(e2) {
+    let [t2, n] = react.useState(null);
+    return react.useEffect(() => {
+      let t3 = false;
+      return e2.beam.then((e3) => {
+        t3 || n(e3);
+      }), () => {
+        t3 = true;
+      };
+    }, [e2.beam]), t2;
+  }
+  function Ae(r) {
+    let { beamId: i, App: a, disableStrictMode: o, wrapper: s, getBadge: l2 } = r;
+    t.registerExtension({ beamId: i, onMount: (e2, r2) => {
+      let i2 = client.createRoot(e2), l3 = react.createElement(a, { context: r2 }), u = s ? s({ context: r2, children: l3 }) : l3;
+      return i2.render(o ? u : react.createElement(react.StrictMode, null, u)), i2;
+    }, onUnmount: (e2) => {
+      e2.unmount();
+    }, ...l2 ? { getBadge: l2 } : {} });
+  }
+  const name = "PushNotifications";
   class PushNotificationServiceClient extends sdk.BeamMicroServiceClient {
     constructor(beam) {
       super(beam);
@@ -114,10 +136,10 @@
   function kvRowsToJson(rows) {
     const obj = {};
     let any = false;
-    for (const r2 of rows) {
-      const k = r2.key.trim();
+    for (const r of rows) {
+      const k = r.key.trim();
       if (!k) continue;
-      obj[k] = r2.value;
+      obj[k] = r.value;
       any = true;
     }
     return any ? JSON.stringify(obj) : "";
@@ -128,7 +150,7 @@
     return new Date(seconds * 1e3).toLocaleString();
   }
   function App({ context }) {
-    const [beam, setBeam] = react.useState(null);
+    const beam = ke(context);
     const [players, setPlayers] = react.useState([]);
     const [rosterLoading, setRosterLoading] = react.useState(false);
     const [rosterError, setRosterError] = react.useState(null);
@@ -147,15 +169,6 @@
     const [cidPid, setCidPid] = react.useState("");
     const [offers, setOffers] = react.useState([]);
     const [campaignData, setCampaignData] = react.useState([]);
-    react.useEffect(() => {
-      let cancelled = false;
-      context.beam.then((b) => {
-        if (!cancelled) setBeam(b);
-      });
-      return () => {
-        cancelled = true;
-      };
-    }, [context]);
     const loadRoster = react.useCallback(async () => {
       if (!beam) return;
       setRosterLoading(true);
@@ -208,7 +221,7 @@
       []
     );
     const updateKv = react.useCallback(
-      (i, field, value) => setCampaignData((prev) => prev.map((r2, idx) => idx === i ? { ...r2, [field]: value } : r2)),
+      (i, field, value) => setCampaignData((prev) => prev.map((r, idx) => idx === i ? { ...r, [field]: value } : r)),
       []
     );
     const targets = react.useMemo(() => {
@@ -268,7 +281,7 @@
       if (campaignDataJson) campaignRequest.campaignData = campaignDataJson;
       const outcomes = await Promise.all(
         [...targets].map(
-          (id) => client2.sendCampaignPushToPlayer({ playerId: id, ...campaignRequest }).then((r2) => ({ id, r: r2 })).catch((e2) => ({ id, err: e2 instanceof Error ? e2.message : String(e2) }))
+          (id) => client2.sendCampaignPushToPlayer({ playerId: id, ...campaignRequest }).then((r) => ({ id, r })).catch((e2) => ({ id, err: e2 instanceof Error ? e2.message : String(e2) }))
         )
       );
       const agg = {
@@ -283,24 +296,24 @@
           agg.messages.push(`${o.id}: ${o.err}`);
           continue;
         }
-        const r2 = o.r;
-        if (r2.success) agg.playersOk++;
-        agg.devicesDelivered += r2.succeeded;
-        agg.devicesFailed += r2.failed;
-        for (const m of r2.messages ?? []) agg.messages.push(`${o.id}: ${m}`);
+        const r = o.r;
+        if (r.success) agg.playersOk++;
+        agg.devicesDelivered += r.succeeded;
+        agg.devicesFailed += r.failed;
+        for (const m of r.messages ?? []) agg.messages.push(`${o.id}: ${m}`);
       }
       setSendResult(agg);
       setSending(false);
       void loadRoster();
     }
     const targetCount = targets.size;
-    return /* @__PURE__ */ jsxRuntime.jsxs(G, { children: [
-      /* @__PURE__ */ jsxRuntime.jsx(q, { children: "Push Notifications" }),
-      /* @__PURE__ */ jsxRuntime.jsxs(p, { style: { marginBottom: 20 }, children: [
+    return /* @__PURE__ */ jsxRuntime.jsxs(Q, { children: [
+      /* @__PURE__ */ jsxRuntime.jsx(ne, { children: "Push Notifications" }),
+      /* @__PURE__ */ jsxRuntime.jsxs(b, { style: { marginBottom: 20 }, children: [
         /* @__PURE__ */ jsxRuntime.jsx("h3", { slot: "header", children: "Send a notification" }),
         /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 12, padding: 18 }, children: [
           /* @__PURE__ */ jsxRuntime.jsx(
-            te,
+            me,
             {
               label: "Player ID (optional)",
               placeholder: "Tick players below, and/or paste a specific ID",
@@ -308,10 +321,10 @@
               onValueChange: setPlayerId
             }
           ),
-          /* @__PURE__ */ jsxRuntime.jsx(te, { label: "Title", placeholder: "Notification title", value: title, onValueChange: setTitle }),
-          /* @__PURE__ */ jsxRuntime.jsx(le, { label: "Body", placeholder: "Notification body", rows: 3, value: body, onValueChange: setBody }),
+          /* @__PURE__ */ jsxRuntime.jsx(me, { label: "Title", placeholder: "Notification title", value: title, onValueChange: setTitle }),
+          /* @__PURE__ */ jsxRuntime.jsx(xe, { label: "Body", placeholder: "Notification body", rows: 3, value: body, onValueChange: setBody }),
           /* @__PURE__ */ jsxRuntime.jsx(
-            te,
+            me,
             {
               label: "Deep link (optional)",
               placeholder: "e.g. myapp://inbox/42",
@@ -340,16 +353,16 @@
                       gap: 12
                     },
                     children: [
-                      /* @__PURE__ */ jsxRuntime.jsx(te, { label: "Campaign ID", placeholder: "campaignId", value: campaignId, onValueChange: setCampaignId }),
-                      /* @__PURE__ */ jsxRuntime.jsx(te, { label: "Node ID", placeholder: "nodeId", value: nodeId, onValueChange: setNodeId }),
-                      /* @__PURE__ */ jsxRuntime.jsx(te, { label: "Account ID", placeholder: "accountId", value: accountId, onValueChange: setAccountId }),
-                      /* @__PURE__ */ jsxRuntime.jsx(te, { label: "cid.pid", placeholder: "<cid>.<pid> (defaults to MS realm)", value: cidPid, onValueChange: setCidPid })
+                      /* @__PURE__ */ jsxRuntime.jsx(me, { label: "Campaign ID", placeholder: "campaignId", value: campaignId, onValueChange: setCampaignId }),
+                      /* @__PURE__ */ jsxRuntime.jsx(me, { label: "Node ID", placeholder: "nodeId", value: nodeId, onValueChange: setNodeId }),
+                      /* @__PURE__ */ jsxRuntime.jsx(me, { label: "Account ID", placeholder: "accountId", value: accountId, onValueChange: setAccountId }),
+                      /* @__PURE__ */ jsxRuntime.jsx(me, { label: "cid.pid", placeholder: "<cid>.<pid> (defaults to MS realm)", value: cidPid, onValueChange: setCidPid })
                     ]
                   }
                 ),
                 /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
                   /* @__PURE__ */ jsxRuntime.jsx("span", { style: { fontWeight: 600 }, children: "Offers" }),
-                  /* @__PURE__ */ jsxRuntime.jsx(a, { appearance: "outlined", onClick: addOffer, children: "Add offer" })
+                  /* @__PURE__ */ jsxRuntime.jsx(p, { appearance: "outlined", onClick: addOffer, children: "Add offer" })
                 ] }),
                 offers.length === 0 ? /* @__PURE__ */ jsxRuntime.jsx("span", { style: { fontStyle: "italic", color: "var(--beam-color-neutral-500, #71717a)" }, children: "No offers." }) : offers.map((o, i) => /* @__PURE__ */ jsxRuntime.jsxs(
                   "div",
@@ -357,7 +370,7 @@
                     style: { display: "grid", gridTemplateColumns: "1fr 1fr 2fr auto", gap: 8, alignItems: "end" },
                     children: [
                       /* @__PURE__ */ jsxRuntime.jsx(
-                        te,
+                        me,
                         {
                           label: i === 0 ? "Item ID" : void 0,
                           placeholder: "itemId",
@@ -366,7 +379,7 @@
                         }
                       ),
                       /* @__PURE__ */ jsxRuntime.jsx(
-                        te,
+                        me,
                         {
                           label: i === 0 ? "Value" : void 0,
                           placeholder: "value",
@@ -376,7 +389,7 @@
                       ),
                       /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 4 }, children: [
                         /* @__PURE__ */ jsxRuntime.jsx(
-                          te,
+                          me,
                           {
                             label: i === 0 ? "Custom data (JSON)" : void 0,
                             placeholder: 'e.g. {"tier":"gold"}',
@@ -391,42 +404,42 @@
                           ")."
                         ] })
                       ] }),
-                      /* @__PURE__ */ jsxRuntime.jsx(a, { appearance: "outlined", onClick: () => removeOffer(i), children: "Remove" })
+                      /* @__PURE__ */ jsxRuntime.jsx(p, { appearance: "outlined", onClick: () => removeOffer(i), children: "Remove" })
                     ]
                   },
                   i
                 )),
                 /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
                   /* @__PURE__ */ jsxRuntime.jsx("span", { style: { fontWeight: 600 }, children: "Campaign data (key → value)" }),
-                  /* @__PURE__ */ jsxRuntime.jsx(a, { appearance: "outlined", onClick: addKv, children: "Add field" })
+                  /* @__PURE__ */ jsxRuntime.jsx(p, { appearance: "outlined", onClick: addKv, children: "Add field" })
                 ] }),
-                campaignData.length === 0 ? /* @__PURE__ */ jsxRuntime.jsx("span", { style: { fontStyle: "italic", color: "var(--beam-color-neutral-500, #71717a)" }, children: "No campaign data fields." }) : campaignData.map((r2, i) => /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr 2fr auto", gap: 8, alignItems: "end" }, children: [
+                campaignData.length === 0 ? /* @__PURE__ */ jsxRuntime.jsx("span", { style: { fontStyle: "italic", color: "var(--beam-color-neutral-500, #71717a)" }, children: "No campaign data fields." }) : campaignData.map((r, i) => /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr 2fr auto", gap: 8, alignItems: "end" }, children: [
                   /* @__PURE__ */ jsxRuntime.jsx(
-                    te,
+                    me,
                     {
                       label: i === 0 ? "Key" : void 0,
                       placeholder: "key",
-                      value: r2.key,
+                      value: r.key,
                       onValueChange: (v) => updateKv(i, "key", v)
                     }
                   ),
                   /* @__PURE__ */ jsxRuntime.jsx(
-                    te,
+                    me,
                     {
                       label: i === 0 ? "Value" : void 0,
                       placeholder: "value",
-                      value: r2.value,
+                      value: r.value,
                       onValueChange: (v) => updateKv(i, "value", v)
                     }
                   ),
-                  /* @__PURE__ */ jsxRuntime.jsx(a, { appearance: "outlined", onClick: () => removeKv(i), children: "Remove" })
+                  /* @__PURE__ */ jsxRuntime.jsx(p, { appearance: "outlined", onClick: () => removeKv(i), children: "Remove" })
                 ] }, i))
               ]
             }
           ),
           /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
             /* @__PURE__ */ jsxRuntime.jsx(
-              a,
+              p,
               {
                 variant: "brand",
                 onClick: sendPush,
@@ -438,7 +451,7 @@
             sendError && /* @__PURE__ */ jsxRuntime.jsx("span", { style: { marginLeft: 12, color: "var(--beam-color-danger-600, #c0392b)" }, children: sendError })
           ] }),
           sendResult && /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { marginTop: 4 }, children: [
-            /* @__PURE__ */ jsxRuntime.jsx(c, { variant: sendResult.playersOk === sendResult.playersAttempted ? "success" : "danger", children: sendResult.playersOk === sendResult.playersAttempted ? "Sent" : "Partial" }),
+            /* @__PURE__ */ jsxRuntime.jsx(g, { variant: sendResult.playersOk === sendResult.playersAttempted ? "success" : "danger", children: sendResult.playersOk === sendResult.playersAttempted ? "Sent" : "Partial" }),
             /* @__PURE__ */ jsxRuntime.jsxs("span", { style: { marginLeft: 10 }, children: [
               "Sent to ",
               sendResult.playersOk,
@@ -467,17 +480,17 @@
           ] })
         ] })
       ] }),
-      /* @__PURE__ */ jsxRuntime.jsxs(p, { children: [
+      /* @__PURE__ */ jsxRuntime.jsxs(b, { children: [
         /* @__PURE__ */ jsxRuntime.jsxs("h3", { slot: "header", children: [
           "Registered players",
           " ",
-          rosterLoading && /* @__PURE__ */ jsxRuntime.jsx(r, { style: { marginLeft: 8 } })
+          rosterLoading && /* @__PURE__ */ jsxRuntime.jsx(d, { style: { marginLeft: 8 } })
         ] }),
         /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { padding: 18 }, children: [
           /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { marginBottom: 12, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }, children: [
-            /* @__PURE__ */ jsxRuntime.jsx(a, { onClick: loadRoster, disabled: !beam || rosterLoading, children: "Refresh" }),
-            /* @__PURE__ */ jsxRuntime.jsx(a, { appearance: "outlined", onClick: selectAll, disabled: players.length === 0, children: "Select all" }),
-            /* @__PURE__ */ jsxRuntime.jsx(a, { appearance: "outlined", onClick: clearSelection, disabled: selected.size === 0, children: "Clear" }),
+            /* @__PURE__ */ jsxRuntime.jsx(p, { onClick: loadRoster, disabled: !beam || rosterLoading, children: "Refresh" }),
+            /* @__PURE__ */ jsxRuntime.jsx(p, { appearance: "outlined", onClick: selectAll, disabled: players.length === 0, children: "Select all" }),
+            /* @__PURE__ */ jsxRuntime.jsx(p, { appearance: "outlined", onClick: clearSelection, disabled: selected.size === 0, children: "Clear" }),
             /* @__PURE__ */ jsxRuntime.jsxs("span", { style: { fontWeight: 600 }, children: [
               "Selected: ",
               selected.size
@@ -486,7 +499,7 @@
             rosterNote && /* @__PURE__ */ jsxRuntime.jsx("span", { style: { fontStyle: "italic" }, children: rosterNote })
           ] }),
           /* @__PURE__ */ jsxRuntime.jsxs(
-            pe,
+            Te,
             {
               data: players,
               rowKey: (row) => String(row.playerId),
@@ -495,12 +508,12 @@
               loadingMessage: "Loading roster…",
               children: [
                 /* @__PURE__ */ jsxRuntime.jsx(
-                  ue,
+                  Se,
                   {
                     header: "",
                     width: "44px",
                     children: (row) => /* @__PURE__ */ jsxRuntime.jsx(
-                      ee,
+                      pe,
                       {
                         checked: selected.has(String(row.playerId)),
                         onCheckedChange: () => toggle(String(row.playerId))
@@ -509,7 +522,7 @@
                   }
                 ),
                 /* @__PURE__ */ jsxRuntime.jsx(
-                  ue,
+                  Se,
                   {
                     field: "playerId",
                     header: "Player ID",
@@ -517,16 +530,16 @@
                     format: (value) => String(value)
                   }
                 ),
-                /* @__PURE__ */ jsxRuntime.jsx(ue, { field: "deviceCount", header: "Devices", sortable: true, align: "center" }),
+                /* @__PURE__ */ jsxRuntime.jsx(Se, { field: "deviceCount", header: "Devices", sortable: true, align: "center" }),
                 /* @__PURE__ */ jsxRuntime.jsx(
-                  ue,
+                  Se,
                   {
                     header: "Push platforms",
-                    children: (row) => /* @__PURE__ */ jsxRuntime.jsx("span", { style: { display: "inline-flex", gap: 6 }, children: row.platforms.map((p2) => /* @__PURE__ */ jsxRuntime.jsx(O, { children: p2 }, p2)) })
+                    children: (row) => /* @__PURE__ */ jsxRuntime.jsx("span", { style: { display: "inline-flex", gap: 6 }, children: row.platforms.map((p2) => /* @__PURE__ */ jsxRuntime.jsx(F, { children: p2 }, p2)) })
                   }
                 ),
                 /* @__PURE__ */ jsxRuntime.jsx(
-                  ue,
+                  Se,
                   {
                     field: "gamePlatform",
                     header: "Game platform",
@@ -535,7 +548,7 @@
                   }
                 ),
                 /* @__PURE__ */ jsxRuntime.jsx(
-                  ue,
+                  Se,
                   {
                     field: "gameDevice",
                     header: "Device",
@@ -544,7 +557,7 @@
                   }
                 ),
                 /* @__PURE__ */ jsxRuntime.jsx(
-                  ue,
+                  Se,
                   {
                     field: "lastUpdated",
                     header: "Last updated",
@@ -559,17 +572,5 @@
       ] })
     ] });
   }
-  t$1.registerExtension({
-    beamId: "PushNotifications",
-    onMount: (container, context) => {
-      const root = client.createRoot(container);
-      root.render(
-        /* @__PURE__ */ jsxRuntime.jsx(react.StrictMode, { children: /* @__PURE__ */ jsxRuntime.jsx(App, { context }) })
-      );
-      return root;
-    },
-    onUnmount: (instance) => {
-      instance.unmount();
-    }
-  });
-})(window["@beamable/react-jsx-runtime-19"], window["@beamable/react-19"], window["@beamable/react-dom-client-19"], window["@beamable/sdk-1.1.1"]);
+  Ae({ beamId: name, App });
+})(window["@beamable/react-19"], window["@beamable/react-dom-client-19"], window["@beamable/react-jsx-runtime-19"], window["@beamable/sdk-1.2.1"]);
