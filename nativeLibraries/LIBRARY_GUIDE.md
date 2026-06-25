@@ -10,6 +10,7 @@ side by side, and §3 lists the API/feature parity in full.
 | Android BeamableNotifications | `Android/BeamableNotifications` — one module `notifications`, one `.aar` | **Push** (`com.beamable.push`): local notifications (AlarmManager) + optional remote push (FCM), channels/templates, permission, launch-intent reading, and a **receive-time handler** that runs even when the app is killed. **Deep links** (`com.beamable.deeplink`): native `VIEW`-intent capture (cold + warm start). |
 | iOS BeamableNotifications | `iOS/BeamableNotifications` (Swift) | Local + remote (APNs) notifications, permission, templates, action categories, rich media + closed-app analytics via a Notification Service Extension, plus a plugin system. Exposes a C ABI (`bmn_*`). |
 | Shared Unity package | `EnginePlugins/Unity` (`Beamable.Notifications`, C#) | **One API for both platforms** — `BeamableNotifications` + DTOs; routes to the iOS C ABI or the Android facade under the hood. **This is what Unity game code uses.** |
+| Unreal plugin | `EnginePlugins/Unreal` (`BeamPlatformNotifications`, C++) | Cross-platform UE plugin wrapping the same iOS C ABI / Android facade; native binaries ship under `ThirdParty/` (staged by `dev-native.sh`). Installed into a UE project via `install-beamplatformnotifications.sh`. |
 
 Toolchains — Android: AGP 8.1.4 / Gradle 8.2 / Kotlin 1.9.22 / compileSdk 34 / minSdk 24 / Java 11.
 iOS: Swift 5, iOS 14+ deployment target (the core is a Swift Package; ships as an xcframework).

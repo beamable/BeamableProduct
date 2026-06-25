@@ -1,7 +1,7 @@
 # Unreal setup
 
 The Unreal integration ships as the **`BeamPlatformNotifications`** plugin (master copy:
-`iOS/BeamableNotifications/unreal/`). It supports **iOS and Android**, includes an editor
+`EnginePlugins/Unreal/`). It supports **iOS and Android**, includes an editor
 toolbar button that packages + deploys to a device, and is project-agnostic (all
 project-specific values are read from the target project's `DefaultEngine.ini`).
 
@@ -15,12 +15,16 @@ From your UE project, run the installer with the path to this `nativeLibraries` 
 ```
 ./install-beamplatformnotifications.sh --source <path/to/nativeLibraries>
 ```
-It generates a self-contained plugin (sources + staged **dynamic** iOS framework
-[`build/BeamableNotifications.embeddedframework.zip`, build it first with
-`./scripts/build-xcframework-dynamic.sh`] + the Android `.aar` as a local maven repo + bundled
-`Scripts/`), installs it into `Plugins/BeamPlatformNotifications/`, enables it, and **prompts** for
-the project values (App Group, deep-link scheme, analytics endpoint, FCM on/off). Use
-`--generate-only <dir>` to just emit the plugin for sharing.
+It generates a self-contained plugin by copying `EnginePlugins/Unreal/` — sources, bundled
+`Scripts/`, and the native binaries already committed under `ThirdParty/` (the **dynamic** iOS
+`BeamableNotifications.embeddedframework.zip` and the flat Android
+`beamable-notifications-release.aar`, both staged by the repo's `dev-native.sh`). It installs into
+`Plugins/BeamPlatformNotifications/`, enables it, and **prompts** for the project values (App Group,
+deep-link scheme, analytics endpoint, FCM on/off). Use `--generate-only <dir>` to just emit the
+plugin for sharing.
+
+> If `ThirdParty/` is empty, run `./dev-native.sh` from the repo root first (on macOS with Xcode
+> for the iOS framework) to stage the binaries.
 
 > The embedded framework is device-only (arm64). For an iOS Simulator build, repackage the
 > simulator slice from `build/BeamableNotifications.xcframework` in the same layout.

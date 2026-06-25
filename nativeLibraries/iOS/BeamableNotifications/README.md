@@ -43,7 +43,9 @@ extension/ (Swift)  Notification Service Extension (rich media + closed-app anal
 
 Then place it per engine:
 - **Unity** — copy into `unity/Plugins/iOS/`
-- **Unreal** — zip it to `unreal/ThirdParty/BeamableNotifications.embeddedframework.zip`
+- **Unreal** — the plugin lives at `EnginePlugins/Unreal/` and needs the **dynamic** variant; the
+  repo's `dev-native.sh` builds it via `scripts/build-xcframework-dynamic.sh` and stages it into
+  `EnginePlugins/Unreal/ThirdParty/BeamableNotifications.embeddedframework.zip`.
 - **React Native** — copy into `reactnative/ios/Frameworks/`
 
 ## Per-engine setup
@@ -75,8 +77,10 @@ Then place it per engine:
 core/         Swift package — the native core, C ABI, plugin system, reference plugins
 extension/    Notification Service Extension host + service plugins
 unity/        UPM package: C# bindings, events, editor post-build
-unreal/       UE plugin: subsystem, Blueprint API, Build.cs, UPL
 reactnative/  npm package: Swift module, ObjC bridge, TS API, podspec
-scripts/      build-xcframework.sh
+scripts/      build-xcframework.sh, build-xcframework-dynamic.sh (UE dynamic framework)
 docs/         per-engine setup + payload schemas + plugin authoring
+
+(The UE plugin BeamPlatformNotifications now lives alongside the other engine plugins at
+ EnginePlugins/Unreal/, no longer under this iOS folder.)
 ```

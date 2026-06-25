@@ -69,5 +69,6 @@ rm -rf "$BUILD"/dd-* "$BUILD"/*.xcarchive "$BUILD"/headers-*
 echo ""
 echo "==> Done: $BUILD/BeamableNotifications.xcframework"
 echo "    Unity : copy into unity/Plugins/iOS/"
-echo "    Unreal: zip it -> unreal/ThirdParty/BeamableNotifications.embeddedframework.zip"
+echo "    Unreal: needs the DYNAMIC variant — run build-xcframework-dynamic.sh; the repo's"
+echo "            dev-native.sh stages it to EnginePlugins/Unreal/ThirdParty/BeamableNotifications.embeddedframework.zip"
 echo "    RN    : copy into reactnative/ios/Frameworks/"

@@ -24,6 +24,7 @@ under `EnginePlugins/Unity`.
 | iOS Notification Service Extension (NSE) | `iOS/BeamableNotifications/extension/` |
 | Unity package (`Beamable.Notifications`) | `EnginePlugins/Unity/` |
 | Unified React Native package | `EnginePlugins/ReactNative/` |
+| Unreal plugin (`BeamPlatformNotifications`) | `EnginePlugins/Unreal/` |
 | Sample microservice (push delivery + Sent event) | `Samples/ReactNative/Microservices/ReactNativeMicroservices/services/PushNotificationService/` |
 | React Native sample app | `Samples/ReactNative/` |
 
@@ -143,7 +144,10 @@ consumes the **built binaries**, not source copies:
 - **Android** — the built **AAR** (`beamable-notifications-release.aar`).
 
 `dev-native.sh` copies the AAR into `EnginePlugins/ReactNative/android/` and the xcframework into
-`EnginePlugins/ReactNative/ios/` (the iOS copy is macOS-only, matching the Unity copy steps).
+`EnginePlugins/ReactNative/ios/` (the iOS copy is macOS-only, matching the Unity copy steps). It
+also stages the Unreal plugin's binaries into `EnginePlugins/Unreal/ThirdParty/`: the AAR under
+`ThirdParty/Android/`, and (macOS-only) the **dynamic** `BeamableNotifications.embeddedframework.zip`
+built via `iOS/BeamableNotifications/scripts/build-xcframework-dynamic.sh`.
 
 ### 3.3 Notification Intent Data — JSON schema
 

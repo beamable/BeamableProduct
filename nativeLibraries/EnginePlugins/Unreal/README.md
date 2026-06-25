@@ -18,14 +18,21 @@ notification callbacks/events, deep links, and closed-app delivery analytics.
   while running.
 
 ## Install (into any UE project)
+The installer ships in this folder (`install-beamplatformnotifications.sh`) — copy it into your UE
+project (or run it in place) and point `--source` at your `nativeLibraries` checkout:
 ```
 ./install-beamplatformnotifications.sh --source <path/to/nativeLibraries>
 ```
-Generates a self-contained copy (sources + staged native binaries + bundled `Scripts/`), installs
-it into the project, enables it, and **prompts** for the project-specific values (App Group,
-deep-link scheme, analytics endpoint, FCM on/off) — writing them to `DefaultEngine.ini`. Use
-`--generate-only <dir>` to just emit the plugin folder for sharing. Nothing project-specific is
-baked into the plugin; everything is read from config at runtime/build time.
+Generates a self-contained copy (sources + the native binaries committed under `ThirdParty/` +
+bundled `Scripts/`), installs it into the project, enables it, and **prompts** for the
+project-specific values (App Group, deep-link scheme, analytics endpoint, FCM on/off) — writing them
+to `DefaultEngine.ini`. Use `--generate-only <dir>` to just emit the plugin folder for sharing.
+Nothing project-specific is baked into the plugin; everything is read from config at runtime/build
+time.
+
+> The binaries under `ThirdParty/` (iOS `BeamableNotifications.embeddedframework.zip`, Android
+> `beamable-notifications-release.aar`) are staged by the repo's `dev-native.sh`. If `ThirdParty/`
+> is empty, run `./dev-native.sh` from the repo root first (macOS + Xcode for the iOS framework).
 
 ## Funnel analytics
 Campaign funnel events (Sent/Received/Opened/Clicked/Converted) are POSTed natively to Beamable.

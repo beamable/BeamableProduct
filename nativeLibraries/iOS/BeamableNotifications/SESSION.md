@@ -47,8 +47,8 @@ core/        Swift package: NotificationManager, Models (JSONValue), TemplateSto
 extension/   NotificationService.swift (NSE host) + ServicePlugins/ (protocol, RichMedia, Analytics)
 unity/       Runtime/{Native,BeamableNotifications,Payloads,Dispatcher}.cs, Editor/NotificationsPostProcess.cs,
              package.json, asmdefs, Plugins/iOS/
-unreal/      BeamableNotifications.uplugin, Source/BeamableNotifications/{Public,Private}/,
-             Build.cs, IOS/BeamableNotifications_UPL.xml
+             (UE plugin moved to EnginePlugins/Unreal/ — BeamPlatformNotifications.uplugin,
+              Source/BeamPlatformNotifications/{Public,Private}/, Build.cs, IOS/Android UPL/APL)
 reactnative/ ios/BeamableNotificationsModule.{swift,m}, BeamableNotificationsRN.podspec,
              src/index.ts, package.json, tsconfig.json
 scripts/     build-xcframework.sh
@@ -91,7 +91,8 @@ xcodebuild -scheme BeamableNotifications -destination "platform=iOS Simulator,id
 
 After building the xcframework, place it per engine:
 - Unity → `unity/Plugins/iOS/`
-- Unreal → zip to `unreal/ThirdParty/BeamableNotifications.embeddedframework.zip`
+- Unreal → dynamic variant only; `dev-native.sh` runs `scripts/build-xcframework-dynamic.sh` and
+  stages it to `EnginePlugins/Unreal/ThirdParty/BeamableNotifications.embeddedframework.zip`
 - RN → `reactnative/ios/Frameworks/`
 
 ## Open items / caveats (likely next-session topics)
