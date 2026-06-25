@@ -611,6 +611,11 @@ jobs:
           large-packages: true
           docker-images: true
           swap-storage: true
+      # Surface the literal Unity license-contention lines as annotations live, mid-run.
+      # Complements the post-failure output check below. Container-action stdout scope is
+      # unconfirmed; verify on a real run. ~Claude
+      - name: Register Unity license problem matcher
+        run: echo "::add-matcher::.github/matchers/unity-license.json"
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
         env:
@@ -629,3 +634,20 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
           buildMethod: BuildSampleProject.Development
+
+      # A license/seat activation failure aborts before the player is built, so dist/
+      # stays empty. If the job failed and produced no build output, the license problem
+      # matcher annotations above (if container stdout was in scope) pin the cause; this
+      # step adds a plain-language annotation so the red build is self-explanatory either
+      # way. Unlike the test shards' XML check, empty dist/ also describes a genuine build
+      # break, so the message points back at the matcher rather than asserting contention
+      # outright. ~Claude
+      - name: Annotate Unity license contention
+        if: failure()
+        shell: bash
+        run: |
+          if find dist -type f 2>/dev/null | grep -q .; then
+            echo "Build output present in dist/: this is a genuine build failure, not license contention."
+          else
+            echo "::error title=Possible Unity license contention::Build for ${{ matrix.targetPlatform }} produced no output in dist/ -- the editor may have exited before the build ran. Check the license annotations above for serial-contention errors; absent those, treat this as a genuine build failure."
+          fi

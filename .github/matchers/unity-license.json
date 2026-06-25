@@ -13,6 +13,20 @@
       "pattern": [
         { "regexp": "^.*(Serial number unavailable for ULF return.*)$", "message": 1 }
       ]
+    },
+    {
+      "owner": "unity-license-no-entitlements",
+      "severity": "error",
+      "pattern": [
+        { "regexp": "^.*(Found 0 entitlement groups and 0 free entitlements.*)$", "message": 1 }
+      ]
+    },
+    {
+      "owner": "unity-license-access-token-unavailable",
+      "severity": "error",
+      "pattern": [
+        { "regexp": "^.*(Access token is unavailable; failed to update.*)$", "message": 1 }
+      ]
     }
   ]
 }
