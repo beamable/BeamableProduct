@@ -9,7 +9,7 @@ public class BeamPlatformNotifications : ModuleRules
 
         PublicDependencyModuleNames.AddRange(new string[]
         {
-            "Core", "CoreUObject", "Engine", "Json", "HTTP"
+            "Core", "CoreUObject", "Engine", "Json"
         });
 
         if (Target.Platform == UnrealTargetPlatform.IOS)

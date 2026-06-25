@@ -98,6 +98,52 @@ object UnrealPush {
         PushManager.clearAuth(act.applicationContext)
     }
 
+    /**
+     * Emits a **Clicked** funnel event for an offer the player acted on (§4.7).
+     *
+     * The Unreal C++ side passes ONE canonical `OfferTrackRequest` JSON (matching iOS
+     * `bmn_trackOfferClicked`), a FLAT object:
+     *
+     *   {"campaignId","nodeId","gamerTag","accountId","cidPid","deeplink","offer":{...}}
+     *
+     * [PushManager.trackOfferClicked] instead expects TWO strings: the intent-data JSON
+     * (the campaign scalars) and the offer JSON. We therefore split the request: the
+     * `offer` sub-object becomes `offerJson`, and the remaining top-level scalars
+     * (campaignId/nodeId/gamerTag/accountId/cidPid/deeplink) are the intent-data JSON.
+     * [com.beamable.push.NotificationIntentData.fromJson] reads only those scalar keys, so
+     * passing the request object minus `offer` is safe.
+     */
+    @JvmStatic
+    fun trackOfferClicked(requestJson: String) {
+        val (intentDataJson, offerJson) = splitOfferTrackRequest(requestJson)
+        PushManager.trackOfferClicked(intentDataJson, offerJson)
+    }
+
+    /** Emits a **Converted** funnel event for an offer conversion (§4.7). See [trackOfferClicked]. */
+    @JvmStatic
+    fun trackOfferConverted(requestJson: String) {
+        val (intentDataJson, offerJson) = splitOfferTrackRequest(requestJson)
+        PushManager.trackOfferConverted(intentDataJson, offerJson)
+    }
+
+    /**
+     * Splits a canonical [OfferTrackRequest] JSON into the (intentDataJson, offerJson) pair
+     * [PushManager.trackOfferClicked] / [PushManager.trackOfferConverted] expect. Returns the
+     * request object (sans `offer`) as the intent data and the `offer` sub-object (or null)
+     * as the offer JSON. On a parse failure, falls back to the raw request as intent data.
+     */
+    private fun splitOfferTrackRequest(requestJson: String): Pair<String, String?> {
+        return try {
+            val root = org.json.JSONObject(requestJson)
+            val offer = root.optJSONObject("offer")
+            val offerJson = offer?.toString()
+            root.remove("offer")
+            Pair(root.toString(), offerJson)
+        } catch (_: Throwable) {
+            Pair(requestJson, null)
+        }
+    }
+
     @JvmStatic
     fun setForeground(foreground: Boolean) {
         PushManager.isForeground = foreground

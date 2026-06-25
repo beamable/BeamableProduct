@@ -4,10 +4,6 @@
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "BeamPlatformNotificationsNative.h"
-#include "HttpModule.h"
-#include "Interfaces/IHttpRequest.h"
-#include "Interfaces/IHttpResponse.h"
-#include "Misc/ConfigCacheIni.h"
 
 UBeamPlatformNotificationsSubsystem* UBeamPlatformNotificationsSubsystem::Active = nullptr;
 
@@ -27,7 +23,10 @@ extern "C" {
     void bmn_getPending();
     void bmn_registerForRemote();
     void bmn_unregisterForRemote();
-    void bmn_configureAnalytics(const char* configJson);
+    void bmn_configureAuth(const char* configJson);
+    void bmn_clearAuth();
+    void bmn_trackOfferClicked(const char* requestJson);
+    void bmn_trackOfferConverted(const char* requestJson);
     void bmn_getDeliveryReceipts();
     void bmn_registerTemplate(const char* templateJson);
     void bmn_registerCategory(const char* categoryJson);
@@ -110,16 +109,6 @@ void UBeamPlatformNotificationsSubsystem::Initialize(FSubsystemCollectionBase& C
     }
 #endif
 
-    // Auto-configure delivery analytics from project config so a packaged game reports deliveries
-    // with no Blueprint wiring (mirrors the RN sample calling configureClosedAppAnalytics() once at
-    // startup). One endpoint drives iOS NSE, the Android closed-app handler, and app-side reporting.
-    FString ConfiguredEndpoint;
-    GConfig->GetString(TEXT("BeamPlatformNotifications"), TEXT("AnalyticsEndpoint"), ConfiguredEndpoint, GEngineIni);
-    if (!ConfiguredEndpoint.IsEmpty())
-    {
-        ConfigureAnalytics(ConfiguredEndpoint, /*bEnabled*/ true);
-    }
-
     // Capture a deep link from the notification/intent that launched the app (closed-app tap),
     // so it survives until the UI is up and can be drained via ConsumePendingDeepLink.
     FBMNNotificationData Launch;
@@ -129,8 +118,6 @@ void UBeamPlatformNotificationsSubsystem::Initialize(FSubsystemCollectionBase& C
         {
             PendingDeepLink = Launch.DeepLink;
         }
-        // App-side cold-start delivery report (the app was launched by tapping a notification).
-        ReportDelivery(TEXT("tapped (cold start)"), Launch);
     }
 }
 
@@ -282,7 +269,46 @@ void UBeamPlatformNotificationsSubsystem::UnregisterForRemote()
 
 void UBeamPlatformNotificationsSubsystem::RegisterTemplateJson(const FString& TemplateJson) { BMN_CALL(bmn_registerTemplate(BMN_CSTR(TemplateJson))); }
 void UBeamPlatformNotificationsSubsystem::RegisterCategoryJson(const FString& CategoryJson) { BMN_CALL(bmn_registerCategory(BMN_CSTR(CategoryJson))); }
-void UBeamPlatformNotificationsSubsystem::ConfigureAnalyticsJson(const FString& ConfigJson) { BMN_CALL(bmn_configureAnalytics(BMN_CSTR(ConfigJson))); }
+
+// Beamable funnel analytics (auth + offer tracking) — dispatched per platform (iOS C ABI /
+// Android JNI). The single `RequestJson` follows the canonical OfferTrackRequest shape, which
+// the Android bridge splits into its (intentData, offer) pair (see UnrealPush.trackOffer*).
+void UBeamPlatformNotificationsSubsystem::ConfigureAuth(const FString& AuthJson)
+{
+#if PLATFORM_IOS
+    bmn_configureAuth(BMN_CSTR(AuthJson));
+#elif PLATFORM_ANDROID
+    BeamNotif::Android_ConfigureAuth(AuthJson);
+#endif
+}
+
+void UBeamPlatformNotificationsSubsystem::ClearAuth()
+{
+#if PLATFORM_IOS
+    bmn_clearAuth();
+#elif PLATFORM_ANDROID
+    BeamNotif::Android_ClearAuth();
+#endif
+}
+
+void UBeamPlatformNotificationsSubsystem::TrackOfferClicked(const FString& RequestJson)
+{
+#if PLATFORM_IOS
+    bmn_trackOfferClicked(BMN_CSTR(RequestJson));
+#elif PLATFORM_ANDROID
+    BeamNotif::Android_TrackOfferClicked(RequestJson);
+#endif
+}
+
+void UBeamPlatformNotificationsSubsystem::TrackOfferConverted(const FString& RequestJson)
+{
+#if PLATFORM_IOS
+    bmn_trackOfferConverted(BMN_CSTR(RequestJson));
+#elif PLATFORM_ANDROID
+    BeamNotif::Android_TrackOfferConverted(RequestJson);
+#endif
+}
+
 void UBeamPlatformNotificationsSubsystem::GetDeliveryReceipts()
 {
 #if PLATFORM_IOS
@@ -370,20 +396,14 @@ void UBeamPlatformNotificationsSubsystem::HandlePresented(const FString& Json)
 {
     const FBMNNotificationData Data = ParseNotification(Json);
     OnNotificationPresented.Broadcast(Data);
-    // App-side report for a foreground delivery — covers local notifications the closed-app
-    // handlers (iOS NSE / Android BeamUnrealPushReceivedHandler) never see.
-    ReportDelivery(TEXT("delivered (foreground)"), Data);
 }
 
-// `Received` (background/killed) is intentionally not reported here: that path is covered by the
-// iOS NSE and the Android closed-app handler, so reporting it again would double-count.
 void UBeamPlatformNotificationsSubsystem::HandleReceived(const FString& Json)  { OnNotificationReceived.Broadcast(ParseNotification(Json)); }
 
 void UBeamPlatformNotificationsSubsystem::HandleTapped(const FString& Json)
 {
     const FBMNNotificationData Data = ParseNotification(Json);
     OnNotificationTapped.Broadcast(Data);
-    ReportDelivery(TEXT("tapped"), Data);
     // A tapped notification with a deep link is also surfaced on OnDeepLink so the UI
     // can route it through a single path.
     if (!Data.DeepLink.IsEmpty())
@@ -415,69 +435,6 @@ bool UBeamPlatformNotificationsSubsystem::ConsumePendingDeepLink(FString& OutUrl
     OutUrl = PendingDeepLink;
     PendingDeepLink.Reset();
     return true;
-}
-
-void UBeamPlatformNotificationsSubsystem::ConfigureAnalytics(const FString& Endpoint, bool bEnabled)
-{
-    AnalyticsEndpoint = Endpoint;
-    bAnalyticsEnabled = bEnabled;
-
-    // App-side reporting (present/tap/cold-start) is on by default whenever analytics is enabled
-    // with a real endpoint; the [BeamPlatformNotifications] bAppSideAnalytics flag is an opt-out.
-    bool bAppSideAnalytics = true;
-    GConfig->GetBool(TEXT("BeamPlatformNotifications"), TEXT("bAppSideAnalytics"), bAppSideAnalytics, GEngineIni);
-    bAppSideReporting = bEnabled && bAppSideAnalytics && !Endpoint.IsEmpty();
-
-    // iOS: forward to the Swift core so the NSE can read the endpoint. No-op on Android (its
-    // closed-app reporting is handled natively by BeamUnrealPushReceivedHandler).
-    TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
-    Root->SetBoolField(TEXT("enabled"), bEnabled);
-    Root->SetStringField(TEXT("endpoint"), Endpoint);
-    Root->SetObjectField(TEXT("commonParams"), MakeShared<FJsonObject>());
-
-    FString Out;
-    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Out);
-    FJsonSerializer::Serialize(Root, Writer);
-    ConfigureAnalyticsJson(Out);
-}
-
-void UBeamPlatformNotificationsSubsystem::ReportDelivery(const FString& Label, const FBMNNotificationData& Notification)
-{
-    if (!bAppSideReporting || AnalyticsEndpoint.IsEmpty())
-    {
-        return;
-    }
-
-    // Match the RN sample's reportDelivery body: a single "message" field, titled by the
-    // notification's title, then id, then a placeholder.
-    FString Subject = Notification.Title;
-    if (Subject.IsEmpty()) Subject = Notification.Id;
-    if (Subject.IsEmpty()) Subject = TEXT("(untitled)");
-
-    TSharedRef<FJsonObject> Body = MakeShared<FJsonObject>();
-    Body->SetStringField(TEXT("message"), FString::Printf(TEXT("\U0001F4EC %s: %s"), *Label, *Subject));
-
-    FString BodyStr;
-    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&BodyStr);
-    FJsonSerializer::Serialize(Body, Writer);
-
-    const FString CapturedLabel = Label;
-    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
-    Request->SetURL(AnalyticsEndpoint);
-    Request->SetVerb(TEXT("POST"));
-    Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-    Request->SetContentAsString(BodyStr);
-    Request->OnProcessRequestComplete().BindLambda(
-        [CapturedLabel](FHttpRequestPtr Req, FHttpResponsePtr Resp, bool bSucceeded)
-        {
-            const int32 Code = (bSucceeded && Resp.IsValid()) ? Resp->GetResponseCode() : 0;
-            const bool bOk = bSucceeded && Resp.IsValid() && EHttpResponseCodes::IsOk(Code);
-            if (UBeamPlatformNotificationsSubsystem::Active)
-            {
-                UBeamPlatformNotificationsSubsystem::Active->OnDeliveryReported.Broadcast(bOk, Code, CapturedLabel);
-            }
-        });
-    Request->ProcessRequest();
 }
 
 void UBeamPlatformNotificationsSubsystem::HandleError(const FString& Stage, const FString& Message)

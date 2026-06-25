@@ -9,7 +9,9 @@ notification callbacks/events, deep links, and closed-app delivery analytics.
   (`UGameInstanceSubsystem`). iOS calls the Swift core's C ABI (`bmn_*`); Android calls the Kotlin
   core via JNI. No-op on editor/desktop so it always compiles. Blueprint-assignable delegates:
   `OnPermissionResult`, `OnTokenReceived/Error`, `OnNotificationPresented/Received/Tapped`,
-  `OnPendingNotifications`, `OnDeliveryReceipts`, `OnDeepLink`, `OnDeliveryReported`.
+  `OnPendingNotifications`, `OnDeliveryReceipts`, `OnDeepLink`. Funnel analytics:
+  `ConfigureAuth`/`ClearAuth` (persist/clear the player bearer token for native funnel POSTs) and
+  `TrackOfferClicked`/`TrackOfferConverted` (emit offer funnel events).
 - **`BeamPlatformNotificationsEditor`** (Editor) — adds the **"iOS + NSE → Device"** toolbar
   button: pick a device, package iOS, graft + sign the closed-app Notification Service Extension,
   install. Runs as a child process streaming to the Output Log (`LogBeamNotif`); flips to Cancel
@@ -25,18 +27,19 @@ deep-link scheme, analytics endpoint, FCM on/off) — writing them to `DefaultEn
 `--generate-only <dir>` to just emit the plugin folder for sharing. Nothing project-specific is
 baked into the plugin; everything is read from config at runtime/build time.
 
-## Delivery analytics
-A single endpoint drives delivery reporting across every state, on both platforms:
-- **iOS closed-app** — Notification Service Extension (see `NSE-SETUP.md`).
-- **Android closed-app** — the bundled `BeamUnrealPushReceivedHandler` (registered via the APL),
-  which fires on receipt even when the app is killed.
-- **App-side (both platforms)** — the subsystem POSTs on foreground-present / tap / cold-start,
-  covering local notifications the closed-app handlers can't see.
+## Funnel analytics
+Campaign funnel events (Sent/Received/Opened/Clicked/Converted) are POSTed natively to Beamable.
+The native code (iOS Swift core + NSE, Android Kotlin core + `BeamUnrealPushReceivedHandler`)
+authenticates and POSTs even when the engine VM is asleep, using credentials the app supplies:
+- **`ConfigureAuth(AuthJson)`** — persist the player bearer token + realm routing (`cid`/`pid`/
+  `host`) so native funnel POSTs can authenticate. Call on login/refresh. **`ClearAuth()`** on logout.
+- **`TrackOfferClicked(RequestJson)` / `TrackOfferConverted(RequestJson)`** — emit a Clicked /
+  Converted funnel event for an in-app offer, attributed back to the originating campaign via the
+  notification's intent data. `RequestJson` is the canonical `OfferTrackRequest`
+  (`{campaignId,nodeId,gamerTag,accountId,cidPid,deeplink,offer:{...}}`).
 
-All three read `[BeamPlatformNotifications] AnalyticsEndpoint`; nothing fires until it's set.
-`ConfigureAnalytics` is auto-called from that value at startup, so no Blueprint wiring is needed.
-App-side reporting is on by default — opt out with `bAppSideAnalytics=False`. Each app-side POST
-result is surfaced on the `OnDeliveryReported(bSuccess, StatusCode, Label)` event.
+Closed-app receipt funnel events are emitted natively: the **iOS** Notification Service Extension
+(see `NSE-SETUP.md`) and the **Android** `BeamUnrealPushReceivedHandler` (registered via the APL).
 
 ## Settings (written to the project's `DefaultEngine.ini`)
 - `[/Script/BeamPlatformNotifications.Settings] AppGroup` — iOS App Group id (UPL/Info.plist).
