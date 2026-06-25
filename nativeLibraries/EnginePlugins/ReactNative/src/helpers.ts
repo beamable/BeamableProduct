@@ -47,6 +47,7 @@ export const BEAMABLE_EVENTS = [
   'notificationOpened', //    user taps/opens a notification (canonical)
   'pendingNotifications', //  getPending()
   'deliveryReceipts', //      getDeliveryReceipts()
+  'funnelResult', //          native analytics funnel send result (Android; iOS follow-up)
 ] as const;
 
 export type BeamableEvent = (typeof BEAMABLE_EVENTS)[number];

@@ -6,6 +6,7 @@ import com.beamable.push.IntentDataReader
 import com.beamable.push.PushListener
 import com.beamable.push.PushManager
 import com.facebook.react.bridge.ActivityEventListener
+import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -157,4 +158,15 @@ class ReactPushModule(
     override fun onPermissionResult(granted: Boolean) = emit("onPermissionResult", granted)
     override fun onLocalNotificationScheduled(id: Int) = emit("onLocalScheduled", id)
     override fun onError(stage: String, message: String) = emit("onError", "$stage|$message")
+
+    override fun onFunnelResult(funnelType: String, ok: Boolean, statusCode: Int, message: String) {
+        android.util.Log.i("BeamablePush", "RN emit onFunnelResult: $funnelType ok=$ok code=$statusCode")
+        val map = Arguments.createMap().apply {
+            putString("funnelType", funnelType)
+            putBoolean("ok", ok)
+            putInt("statusCode", statusCode)
+            putString("message", message)
+        }
+        emit("onFunnelResult", map)
+    }
 }

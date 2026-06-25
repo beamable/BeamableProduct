@@ -48,6 +48,7 @@ const EVENT_COLOR: Record<LogEvent, string> = {
   notificationOpened: '#ea580c',
   pendingNotifications: '#ca8a04',
   deliveryReceipts: '#0d9488',
+  funnelResult: '#db2777',
 };
 
 export default function Callbacks() {

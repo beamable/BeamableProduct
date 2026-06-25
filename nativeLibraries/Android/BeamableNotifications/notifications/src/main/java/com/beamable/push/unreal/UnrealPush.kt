@@ -1,6 +1,7 @@
 package com.beamable.push.unreal
 
 import android.app.Activity
+import android.content.Context
 import com.beamable.push.PushManager
 
 /**
@@ -22,9 +23,26 @@ object UnrealPush {
         }
     }
 
+    /**
+     * The application context, cached the first time any Activity is resolved. Methods that only
+     * need an app-scoped Context (e.g. [configureAuth]/[clearAuth], which just write shared prefs)
+     * use this so they keep working when the app is backgrounded and [currentActivity] is null —
+     * a foreground Activity is not required to persist auth.
+     */
+    @Volatile
+    private var cachedAppContext: Context? = null
+
+    private fun appContext(): Context? {
+        cachedAppContext?.let { return it }
+        val ctx = currentActivity()?.applicationContext
+        if (ctx != null) cachedAppContext = ctx
+        return ctx
+    }
+
     @JvmStatic
     fun initialize(enableRemote: Boolean) {
         val act = currentActivity() ?: return
+        cachedAppContext = act.applicationContext
         PushManager.isForeground = true
         PushManager.initialize(act.applicationContext, UnrealPushBridge, enableRemote)
     }
@@ -87,15 +105,15 @@ object UnrealPush {
      */
     @JvmStatic
     fun configureAuth(authJson: String) {
-        val act = currentActivity() ?: return
-        PushManager.configureAuth(act.applicationContext, authJson)
+        val ctx = appContext() ?: return
+        PushManager.configureAuth(ctx, authJson)
     }
 
     /** Clears persisted auth credentials (see [PushManager.clearAuth]). */
     @JvmStatic
     fun clearAuth() {
-        val act = currentActivity() ?: return
-        PushManager.clearAuth(act.applicationContext)
+        val ctx = appContext() ?: return
+        PushManager.clearAuth(ctx)
     }
 
     /**

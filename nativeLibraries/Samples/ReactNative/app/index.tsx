@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 
 import { BEAM_CONFIG, isConfigured } from '../src/beam/config';
 import {
+  getBeam,
   getPushService,
   getSampleService,
   initBeam,
@@ -25,6 +26,11 @@ import {
   requestBeamablePermission,
   scheduleBeamableDeepLink,
 } from '../src/notifications/beamableNotifications';
+import {
+  BeamableNotifications,
+  type NotificationIntentData,
+  type NotificationOffer,
+} from '@beamable/notifications-react-native';
 import { listDevices, registerDevice, sendToSelf } from '../src/beam/pushNotifications';
 import { detailsPath, detailsUrl, openUrl } from '../src/linking/links';
 
@@ -68,6 +74,11 @@ export default function Home() {
       ),
       addBeamableListener('notificationOpened', (n) =>
         append(`Beamable opened → ${n.deeplink ?? n.id}`),
+      ),
+      addBeamableListener('funnelResult', (r) =>
+        append(
+          `Funnel ${r.funnelType}: ${r.ok ? 'OK' : 'FAILED'} (HTTP ${r.statusCode})${r.message ? ' — ' + r.message : ''}`,
+        ),
       ),
     ];
 
@@ -195,6 +206,52 @@ export default function Home() {
       append(`${label} → ${text}`);
     } catch (e) {
       append(`${label} error: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  // 6) Analytics (funnel) test -------------------------------------------
+  // Emits native Clicked/Converted funnel analytics. Auth (cid.pid scope) is
+  // configured automatically on Connect; these just fire the events.
+  const buildFunnelIntent = (): NotificationIntentData => ({
+    campaignId: 'test_campaign',
+    nodeId: 'test_node',
+    gamerTag: String(getBeam()!.player.id),
+    cidPid: `${BEAM_CONFIG.cid}.${BEAM_CONFIG.pid}`,
+    deeplink: detailsUrl(777),
+  });
+
+  const funnelOffer: NotificationOffer = {
+    itemId: 'test_offer',
+    value: 100,
+    customData: { tier: 'gold' },
+  };
+
+  const trackOfferClickedTest = () => {
+    if (!getBeam()) return append('Funnel: connect to Beamable first');
+    try {
+      BeamableNotifications.trackOfferClicked(buildFunnelIntent(), funnelOffer);
+      append('Funnel: trackOfferClicked emitted (test_campaign/test_node)');
+    } catch (e) {
+      append(`Funnel error: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const trackOfferConvertedTest = () => {
+    if (!getBeam()) return append('Funnel: connect to Beamable first');
+    try {
+      BeamableNotifications.trackOfferConverted(buildFunnelIntent(), funnelOffer);
+      append('Funnel: trackOfferConverted emitted (test_campaign/test_node)');
+    } catch (e) {
+      append(`Funnel error: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const clearFunnelAuth = () => {
+    try {
+      BeamableNotifications.clearAuth();
+      append('Native funnel auth cleared');
+    } catch (e) {
+      append(`Funnel error: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
@@ -333,6 +390,18 @@ export default function Home() {
           label="Visit (server-authoritative counter)"
           onPress={() => callMicroservice('Visit', (s) => s.visit())}
         />
+      </Section>
+
+      {/* Analytics (funnel) test */}
+      <Section title="6 · Analytics (funnel) test">
+        <Text style={styles.hint}>
+          Emits native Clicked / Converted funnel analytics for a test offer.
+          Auth (cid.pid scope) is configured automatically on Connect. Connect to
+          Beamable first; events appear in the activity log.
+        </Text>
+        <Button label="Track offer clicked" onPress={trackOfferClickedTest} />
+        <Button label="Track offer converted" onPress={trackOfferConvertedTest} />
+        <Button label="Clear native auth" onPress={clearFunnelAuth} />
       </Section>
 
       {/* Activity log */}

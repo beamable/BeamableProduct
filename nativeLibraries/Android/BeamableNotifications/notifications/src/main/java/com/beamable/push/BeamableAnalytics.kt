@@ -64,8 +64,11 @@ object BeamableAnalytics {
 
     /**
      * Fires a funnel event for [intent] of [type], fire-and-forget. No-op unless the intent is a
-     * tracked campaign (campaignId + nodeId) AND carries scope + gamerTag (§4.2). [offer] is the
-     * single offer this event concerns (Clicked/Converted), omitted otherwise.
+     * tracked campaign (campaignId + nodeId) AND carries a gamerTag (§4.2). The realm scope comes
+     * from the intent's cidPid or, failing that, the stored auth cid/pid (mirroring iOS, which
+     * fills cidPid from persisted auth); if neither is known yet the event is persisted for replay
+     * once the SDK calls configureAuth. [offer] is the single offer this event concerns
+     * (Clicked/Converted), omitted otherwise.
      */
     fun trackFunnel(
         context: Context,
@@ -73,7 +76,21 @@ object BeamableAnalytics {
         type: FunnelType,
         offer: NotificationOffer? = null
     ) {
-        if (!intent.isTrackedCampaign() || !intent.hasFunnelCredentials()) return
+        // gamerTag is intent-only (no stored fallback); cidPid is resolved later from the intent
+        // OR stored auth (see resolveScope), so don't hard-require it here — that would drop
+        // events that iOS sends via its auth-config scope fallback.
+        if (!intent.isTrackedCampaign() || intent.gamerTag.isNullOrEmpty()) {
+            Log.i(
+                TAG,
+                "funnel ${type.name} skipped: not a tracked campaign or missing gamerTag " +
+                    "(campaignId=${intent.campaignId}, nodeId=${intent.nodeId}, gamerTag=${intent.gamerTag})"
+            )
+            PushManager.dispatchFunnelResult(
+                type.name, false, 0, "skipped: not a tracked campaign or missing gamerTag"
+            )
+            return
+        }
+        Log.i(TAG, "funnel ${type.name}: queuing POST (campaign=${intent.campaignId}/${intent.nodeId})")
         val appContext = context.applicationContext
         val event = PendingFunnel.from(intent, type, offer)
         executor.execute {
@@ -114,11 +131,16 @@ object BeamableAnalytics {
         persistOnFailure: Boolean
     ) {
         val intent = event.toIntentData()
+        Log.i(TAG, "postFunnel ${event.funnelType.name}: start (gamerTag=${intent.gamerTag}, cidPid=${intent.cidPid})")
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
         // Scope comes from the intent's cidPid ("<cid>.<pid>"); fall back to stored cid/pid.
         val (cid, pid) = resolveScope(intent, prefs) ?: run {
-            Log.i(TAG, "skip funnel: no cid/pid scope")
+            // Scope not known yet (no cidPid on the intent and no stored cid/pid). It may become
+            // resolvable once the SDK calls configureAuth, so persist for replay rather than drop.
+            Log.i(TAG, "no cid/pid scope yet; persisting funnel for replay")
+            if (persistOnFailure) appendPendingFunnel(context, event)
+            PushManager.dispatchFunnelResult(event.funnelType.name, false, 0, "no scope; queued for replay")
             return
         }
         val gamerTag = intent.gamerTag ?: return
@@ -126,6 +148,7 @@ object BeamableAnalytics {
             // Unrecoverable for now (not connected to Beamable yet): persist for replay.
             Log.i(TAG, "no host in prefs; persisting funnel for replay")
             if (persistOnFailure) appendPendingFunnel(context, event)
+            PushManager.dispatchFunnelResult(event.funnelType.name, false, 0, "no host; queued for replay")
             return
         }
 
@@ -137,6 +160,7 @@ object BeamableAnalytics {
             // No usable token (and refresh failed/absent): persist for replay once connected.
             Log.i(TAG, "no access token; persisting funnel for replay")
             if (persistOnFailure) appendPendingFunnel(context, event)
+            PushManager.dispatchFunnelResult(event.funnelType.name, false, 0, "no token; queued for replay")
             return
         }
         var accessToken = auth.token
@@ -153,11 +177,13 @@ object BeamableAnalytics {
                 // got rejected, so refreshing again would not help. Persist for replay.
                 Log.w(TAG, "funnel POST rejected after proactive refresh; persisting for replay")
                 if (persistOnFailure) appendPendingFunnel(context, event)
+                PushManager.dispatchFunnelResult(event.funnelType.name, false, code, "auth rejected; queued for replay")
                 return
             }
             // Token looked valid but the server rejected it; refresh ONCE and retry the POST ONCE.
             val refreshed = refreshAccessToken(prefs, host, cid, pid) ?: run {
                 if (persistOnFailure) appendPendingFunnel(context, event)
+                PushManager.dispatchFunnelResult(event.funnelType.name, false, code, "token refresh failed; queued for replay")
                 return
             }
             accessToken = refreshed
@@ -167,6 +193,9 @@ object BeamableAnalytics {
         if (code !in 200..299) {
             Log.w(TAG, "funnel POST unrecoverable (HTTP $code); persisting for replay")
             if (persistOnFailure) appendPendingFunnel(context, event)
+            PushManager.dispatchFunnelResult(event.funnelType.name, false, code, "HTTP $code; queued for replay")
+        } else {
+            PushManager.dispatchFunnelResult(event.funnelType.name, true, code, "ok")
         }
     }
 
@@ -287,7 +316,7 @@ object BeamableAnalytics {
             try { conn.inputStream.use { it.readBytes() } } catch (_: Throwable) {
                 try { conn.errorStream?.use { it.readBytes() } } catch (_: Throwable) {}
             }
-            if (code !in 200..299) Log.w(TAG, "funnel POST $url -> HTTP $code")
+            Log.i(TAG, "funnel POST $url -> HTTP $code")
             code
         } catch (t: Throwable) {
             Log.w(TAG, "funnel POST error: ${t.message}")

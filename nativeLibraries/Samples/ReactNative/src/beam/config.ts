@@ -21,7 +21,7 @@ export const BEAM_CONFIG = {
   /** Beamable Customer ID (CID). */
   cid: '1731504735486980',
   /** Beamable Project ID (PID). */
-  pid: 'DE_83664985048047616',
+  pid: 'DE_84577179820462080',
   /** 'prod' | 'stg' | 'dev' (or a custom environment name). */
   environment: (apiBase ? 'local' : 'dev') as
     | 'prod'
