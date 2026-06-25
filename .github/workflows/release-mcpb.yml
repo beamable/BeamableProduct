@@ -1,0 +1,52 @@
+name: Release MCPB Bundles
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        type: string
+        description: Commit hash to build from
+        default: main
+      version:
+        type: string
+        description: Version of the existing CLI release; bundles upload to the cli-<version> release (e.g. 1.2.3)
+        required: true
+
+run-name: Release MCPB ${{ inputs.version }} by @${{ github.actor }}
+jobs:
+  mcpb:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-mcpb
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.commit }}
+
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install mcpb CLI
+        run: npm install -g @anthropic-ai/mcpb
+
+      - name: Build mcpb bundles
+        working-directory: ./cli/mcpb
+        run: bash build-mcpb.sh
+        env:
+          VERSION: ${{ inputs.version }}
+
+      - name: Upload mcpb bundles to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for f in cli/mcpb/output/*.mcpb; do
+            gh release upload "cli-${{ inputs.version }}" "$f" --clobber
+          done
