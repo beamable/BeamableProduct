@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { type Beam, type ExtensionContext } from '@beamable/portal-toolkit'
+import { type ExtensionContext } from '@beamable/portal-toolkit'
 import {
+  useBeam,
   BeamPage,
   BeamPageHeader,
   BeamCard,
@@ -15,7 +16,11 @@ import {
   BeamCheckbox,
 } from '@beamable/portal-toolkit/react'
 import { PushNotificationServiceClient } from '../beamable/clients/PushNotificationServiceClient'
-import type { RegisteredPlayer } from '../beamable/clients/types'
+import type {
+  RegisteredPlayer,
+  PushOffer,
+  PushCampaignRequest,
+} from '../beamable/clients/types'
 
 interface AppProps {
   context: ExtensionContext
@@ -30,6 +35,35 @@ interface BulkSendResult {
   messages: string[]
 }
 
+/** One editable offer row in the structured editor. */
+interface OfferRow {
+  itemId: string
+  value: string
+  customData: string // free-form; serialized to a JSON string on send if non-empty
+}
+
+/** One editable campaignData key→value row. */
+interface KvRow {
+  key: string
+  value: string
+}
+
+/**
+ * Build a JSON object string from key→value rows, skipping rows with an empty key.
+ * Returns '' when there are no usable rows so the field can stay omitted.
+ */
+function kvRowsToJson(rows: KvRow[]): string {
+  const obj: Record<string, string> = {}
+  let any = false
+  for (const r of rows) {
+    const k = r.key.trim()
+    if (!k) continue
+    obj[k] = r.value
+    any = true
+  }
+  return any ? JSON.stringify(obj) : ''
+}
+
 function formatUnixSeconds(value: bigint | string): string {
   const seconds = Number(value)
   if (!seconds || Number.isNaN(seconds)) return '—'
@@ -37,7 +71,9 @@ function formatUnixSeconds(value: bigint | string): string {
 }
 
 export default function App({ context }: AppProps) {
-  const [beam, setBeam] = useState<Beam | null>(null)
+  // Resolves context.beam into the SDK instance, re-rendering once it lands
+  // (null until ready). Replaces the manual useState + context.beam.then effect.
+  const beam = useBeam(context)
 
   // Roster state
   const [players, setPlayers] = useState<RegisteredPlayer[]>([])
@@ -57,15 +93,15 @@ export default function App({ context }: AppProps) {
   const [sendResult, setSendResult] = useState<BulkSendResult | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
-    context.beam.then((b) => {
-      if (!cancelled) setBeam(b)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [context])
+  // --- Structured campaign editor (§3.3 Notification Intent Data) -----
+  // All scalar fields below are optional: leaving them blank sends an "untracked" push
+  // (no campaignId + nodeId → no funnel "Sent" event server-side).
+  const [campaignId, setCampaignId] = useState('')
+  const [nodeId, setNodeId] = useState('')
+  const [accountId, setAccountId] = useState('')
+  const [cidPid, setCidPid] = useState('')
+  const [offers, setOffers] = useState<OfferRow[]>([])
+  const [campaignData, setCampaignData] = useState<KvRow[]>([])
 
   const loadRoster = useCallback(async () => {
     if (!beam) return
@@ -105,6 +141,36 @@ export default function App({ context }: AppProps) {
 
   const clearSelection = useCallback(() => setSelected(new Set()), [])
 
+  // --- Offers editor helpers -----------------------------------------
+  const addOffer = useCallback(
+    () => setOffers((prev) => [...prev, { itemId: '', value: '', customData: '' }]),
+    [],
+  )
+  const removeOffer = useCallback(
+    (i: number) => setOffers((prev) => prev.filter((_, idx) => idx !== i)),
+    [],
+  )
+  const updateOffer = useCallback(
+    (i: number, field: keyof OfferRow, value: string) =>
+      setOffers((prev) => prev.map((o, idx) => (idx === i ? { ...o, [field]: value } : o))),
+    [],
+  )
+
+  // --- campaignData (key→value) editor helpers -----------------------
+  const addKv = useCallback(
+    () => setCampaignData((prev) => [...prev, { key: '', value: '' }]),
+    [],
+  )
+  const removeKv = useCallback(
+    (i: number) => setCampaignData((prev) => prev.filter((_, idx) => idx !== i)),
+    [],
+  )
+  const updateKv = useCallback(
+    (i: number, field: keyof KvRow, value: string) =>
+      setCampaignData((prev) => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r))),
+    [],
+  )
+
   // The set of player IDs a send will target: every checked row, plus the
   // optional manually-typed ID.
   const targets = useMemo(() => {
@@ -112,6 +178,24 @@ export default function App({ context }: AppProps) {
     if (playerId.trim()) t.add(playerId.trim())
     return t
   }, [selected, playerId])
+
+  // Author-time validation: each offer's customData, when non-empty, must be valid
+  // JSON (it is shipped verbatim as a JSON string). Returns the indices of offers
+  // whose customData fails to parse so we can flag them inline and block the send.
+  const invalidCustomDataIdx = useMemo(() => {
+    const bad = new Set<number>()
+    offers.forEach((o, i) => {
+      const custom = o.customData.trim()
+      if (!custom) return
+      try {
+        JSON.parse(custom)
+      } catch {
+        bad.add(i)
+      }
+    })
+    return bad
+  }, [offers])
+  const hasInvalidCustomData = invalidCustomDataIdx.size > 0
 
   async function sendPush() {
     if (!beam) return
@@ -123,17 +207,45 @@ export default function App({ context }: AppProps) {
       setSendError('A title or body is required.')
       return
     }
+    if (hasInvalidCustomData) {
+      setSendError('One or more offers have invalid JSON in Custom data.')
+      return
+    }
     setSending(true)
     setSendError(null)
     setSendResult(null)
 
     const client = new PushNotificationServiceClient(beam)
-    const payload = { title: title.trim(), body: body.trim(), deepLink: deepLink.trim() }
+
+    // Build the §3.3 campaign request. Scalar campaign fields are included only when set;
+    // each offer's free-form customData (entered as a JSON object string) and the campaignData
+    // key→value rows are serialized to JSON strings on the wire.
+    const builtOffers: PushOffer[] = offers
+      .filter((o) => o.itemId.trim() || o.value.trim() || o.customData.trim())
+      .map((o) => {
+        const offer: PushOffer = { itemId: o.itemId.trim(), value: o.value.trim() }
+        const custom = o.customData.trim()
+        if (custom) offer.customData = custom
+        return offer
+      })
+    const campaignDataJson = kvRowsToJson(campaignData)
+
+    const campaignRequest: PushCampaignRequest = {
+      title: title.trim(),
+      body: body.trim(),
+      deepLink: deepLink.trim(),
+    }
+    if (campaignId.trim()) campaignRequest.campaignId = campaignId.trim()
+    if (nodeId.trim()) campaignRequest.nodeId = nodeId.trim()
+    if (accountId.trim()) campaignRequest.accountId = accountId.trim()
+    if (cidPid.trim()) campaignRequest.cidPid = cidPid.trim()
+    if (builtOffers.length > 0) campaignRequest.offers = builtOffers
+    if (campaignDataJson) campaignRequest.campaignData = campaignDataJson
 
     const outcomes = await Promise.all(
       [...targets].map((id) =>
         client
-          .sendPushToPlayer({ playerId: id, ...payload })
+          .sendCampaignPushToPlayer({ playerId: id, ...campaignRequest })
           .then((r) => ({ id, r }))
           .catch((e) => ({ id, err: e instanceof Error ? e.message : String(e) })),
       ),
@@ -188,11 +300,122 @@ export default function App({ context }: AppProps) {
             value={deepLink}
             onValueChange={setDeepLink}
           />
+
+          {/* --- Structured campaign editor (§3.3 Notification Intent Data) ----
+              All fields below are optional. Leave them blank for an untracked push;
+              fill campaignId + nodeId to have the microservice emit a funnel "Sent" event. */}
+          <div
+            style={{
+              borderTop: '1px solid var(--beam-color-neutral-200, #e4e4e7)',
+              paddingTop: 12,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+            }}
+          >
+            <span style={{ fontWeight: 600 }}>Campaign coordinates (optional)</span>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 12,
+              }}
+            >
+              <BeamInput label="Campaign ID" placeholder="campaignId" value={campaignId} onValueChange={setCampaignId} />
+              <BeamInput label="Node ID" placeholder="nodeId" value={nodeId} onValueChange={setNodeId} />
+              <BeamInput label="Account ID" placeholder="accountId" value={accountId} onValueChange={setAccountId} />
+              <BeamInput label="cid.pid" placeholder="<cid>.<pid> (defaults to MS realm)" value={cidPid} onValueChange={setCidPid} />
+            </div>
+
+            {/* Offers — repeatable {itemId, value, customData} rows */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontWeight: 600 }}>Offers</span>
+              <BeamButton appearance="outlined" onClick={addOffer}>
+                Add offer
+              </BeamButton>
+            </div>
+            {offers.length === 0 ? (
+              <span style={{ fontStyle: 'italic', color: 'var(--beam-color-neutral-500, #71717a)' }}>
+                No offers.
+              </span>
+            ) : (
+              offers.map((o, i) => (
+                <div
+                  key={i}
+                  style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: 8, alignItems: 'end' }}
+                >
+                  <BeamInput
+                    label={i === 0 ? 'Item ID' : undefined}
+                    placeholder="itemId"
+                    value={o.itemId}
+                    onValueChange={(v: string) => updateOffer(i, 'itemId', v)}
+                  />
+                  <BeamInput
+                    label={i === 0 ? 'Value' : undefined}
+                    placeholder="value"
+                    value={o.value}
+                    onValueChange={(v: string) => updateOffer(i, 'value', v)}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <BeamInput
+                      label={i === 0 ? 'Custom data (JSON)' : undefined}
+                      placeholder='e.g. {"tier":"gold"}'
+                      value={o.customData}
+                      onValueChange={(v: string) => updateOffer(i, 'customData', v)}
+                      custom-error={invalidCustomDataIdx.has(i) ? 'Invalid JSON' : undefined}
+                    />
+                    {invalidCustomDataIdx.has(i) && (
+                      <span style={{ fontSize: 12, color: 'var(--beam-color-danger-600, #c0392b)' }}>
+                        Custom data must be valid JSON (e.g. {'{"tier":"gold"}'}).
+                      </span>
+                    )}
+                  </div>
+                  <BeamButton appearance="outlined" onClick={() => removeOffer(i)}>
+                    Remove
+                  </BeamButton>
+                </div>
+              ))
+            )}
+
+            {/* campaignData — repeatable key→value rows, serialized to a JSON object */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontWeight: 600 }}>Campaign data (key → value)</span>
+              <BeamButton appearance="outlined" onClick={addKv}>
+                Add field
+              </BeamButton>
+            </div>
+            {campaignData.length === 0 ? (
+              <span style={{ fontStyle: 'italic', color: 'var(--beam-color-neutral-500, #71717a)' }}>
+                No campaign data fields.
+              </span>
+            ) : (
+              campaignData.map((r, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: 8, alignItems: 'end' }}>
+                  <BeamInput
+                    label={i === 0 ? 'Key' : undefined}
+                    placeholder="key"
+                    value={r.key}
+                    onValueChange={(v: string) => updateKv(i, 'key', v)}
+                  />
+                  <BeamInput
+                    label={i === 0 ? 'Value' : undefined}
+                    placeholder="value"
+                    value={r.value}
+                    onValueChange={(v: string) => updateKv(i, 'value', v)}
+                  />
+                  <BeamButton appearance="outlined" onClick={() => removeKv(i)}>
+                    Remove
+                  </BeamButton>
+                </div>
+              ))
+            )}
+          </div>
+
           <div>
             <BeamButton
               variant="brand"
               onClick={sendPush}
-              disabled={!beam || sending || targetCount === 0}
+              disabled={!beam || sending || targetCount === 0 || hasInvalidCustomData}
               loading={sending}
             >
               {sending ? 'Sending…' : `Send to ${targetCount} player${targetCount === 1 ? '' : 's'}`}

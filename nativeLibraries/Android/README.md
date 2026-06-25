@@ -82,7 +82,7 @@ Register via app-manifest meta-data (required for the closed-app case):
 <meta-data android:name="com.beamable.push.notification_received_handler"
            android:value="your.fully.Qualified.HandlerClass" />
 ```
-or programmatically with `PushManager.setNotificationReceivedHandler(...)`. Working example: the
+or programmatically with `PushManager.addNotificationReceivedHandler(...)`. Working example: the
 `DiscordWebhookPushHandler.java` in the package's **Native Demo** sample
 (`nativeLibraries/EnginePlugins/Unity/Samples~/NativeDemo/`).
 

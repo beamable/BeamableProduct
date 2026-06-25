@@ -66,8 +66,8 @@ export default function Home() {
       addBeamableListener('notificationReceived', (n) =>
         append(`Beamable received: ${n.title ?? n.id}`),
       ),
-      addBeamableListener('notificationTapped', (n) =>
-        append(`Beamable tapped → ${n.deepLink ?? n.id}`),
+      addBeamableListener('notificationOpened', (n) =>
+        append(`Beamable opened → ${n.deeplink ?? n.id}`),
       ),
     ];
 
@@ -229,18 +229,18 @@ export default function Home() {
           <>
             {Platform.OS === 'android' ? (
               <Text style={styles.hint}>
-                The native `beamable-notifications-android` SDK (the .aar's RN
-                bridges). Tap a notification to deep-link into the app. The local
-                notification also triggers the native receive-time handler
-                (PushNotificationReceivedHandler → Discord webhook) — which runs
-                even when the app is killed. Remote push needs a data-only FCM
-                message.
+                The unified `@beamable/notifications-react-native` SDK (Android
+                AAR via autolinking). Tap a notification to deep-link into the
+                app. The local notification also triggers the native receive-time
+                handler (PushNotificationReceivedHandler) — which runs even when
+                the app is killed. Remote push needs a data-only FCM message.
               </Text>
             ) : (
               <Text style={styles.hint}>
-                The native `beamable-notifications-ios` SDK (Swift core). Tap a
-                notification to deep-link into the app. Remote push needs a
-                physical device + APNs configured on your realm.
+                The unified `@beamable/notifications-react-native` SDK (iOS Swift
+                core via the xcframework). Tap a notification to deep-link into
+                the app. Remote push needs a physical device + APNs configured on
+                your realm.
               </Text>
             )}
             <Button label="Request permission (native)" onPress={beamAskPermission} />

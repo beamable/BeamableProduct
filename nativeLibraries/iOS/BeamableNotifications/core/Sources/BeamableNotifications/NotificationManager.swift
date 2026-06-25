@@ -46,6 +46,18 @@ public final class NotificationManager: NSObject {
         PluginRegistry.shared.discoverAndRegisterFromInfoPlist()
         PluginRegistry.shared.dispatchInitialize(PluginContext(manager: self))
         RemotePush.shared.installSwizzlingIfNeeded()
+        flushPendingFunnel()
+    }
+
+    /// Replay funnel events the NSE persisted because it couldn't authenticate/send them in
+    /// its budget (§4.3 fallback). Drained and POSTed (authenticated) now that the app is alive.
+    private func flushPendingFunnel() {
+        let pending = SharedConfig.shared.drainPendingFunnel()
+        guard !pending.isEmpty else { return }
+        for event in pending {
+            // No persist-on-failure: a second failure just drops it (already a best-effort replay).
+            BeamableAnalytics.emit(event, persistOnFailure: false)
+        }
     }
 
     /// Make sure we are the notification-center delegate. Host engines (notably Unreal's
@@ -165,6 +177,54 @@ public final class NotificationManager: NSObject {
 
     public func clearDelivered() {
         center.removeAllDeliveredNotifications()
+    }
+
+    // MARK: Beamable analytics auth + offer funnel (§4.7)
+
+    /// Persist the player bearer token + realm routing for native funnel POSTs. The engine
+    /// SDK calls this on login/refresh; `clearAuth()` on logout.
+    public func configureAuth(_ config: AuthConfig) {
+        SharedConfig.shared.saveAuthConfig(config)
+        // Creds just arrived — replay any funnel events the NSE (or a prior app-path failure)
+        // persisted because they couldn't authenticate, now that we can.
+        flushPendingFunnel()
+    }
+
+    /// Convenience overload taking the canonical `AuthConfig` JSON string. Used by the React
+    /// Native bridge (which talks to this manager directly in Swift) and mirrors the C ABI
+    /// `bmn_configureAuth` decode path. A malformed/undecodable string is logged and ignored
+    /// (no-op, never crashes), matching Android's `configureAuth(_, json)` lenient behavior.
+    public func configureAuth(_ json: String) {
+        guard let config = JSON.decode(AuthConfig.self, from: json) else {
+            NSLog("[BeamableNotifications] configureAuth: ignoring malformed AuthConfig JSON")
+            return
+        }
+        configureAuth(config)
+    }
+
+    public func clearAuth() {
+        SharedConfig.shared.clearAuthConfig()
+    }
+
+    /// Emit a **Clicked** funnel event for an in-app offer click (§4.7), attributed to the
+    /// originating campaign.
+    public func trackOfferClicked(_ request: OfferTrackRequest) {
+        emitOfferFunnel(.clicked, request: request)
+    }
+
+    /// Emit a **Converted** funnel event when an offer click results in a conversion (§4.7).
+    public func trackOfferConverted(_ request: OfferTrackRequest) {
+        emitOfferFunnel(.converted, request: request)
+    }
+
+    private func emitOfferFunnel(_ type: FunnelType, request: OfferTrackRequest) {
+        let auth = SharedConfig.shared.loadAuthConfig()
+        let intent = request.intent(fallbackAuth: auth)
+        guard let event = BeamableAnalytics.makeEvent(type, intent: intent, offer: request.offer) else {
+            NSLog("[BeamableNotifications] trackOffer %@ skipped: missing campaign/scope", type.rawValue)
+            return
+        }
+        BeamableAnalytics.emit(event, persistOnFailure: false)
     }
 
     // MARK: Delivery receipts (feature 8)
@@ -319,12 +379,22 @@ extension NotificationData {
         var info: [String: JSONValue] = [:]
         for (k, v) in content.userInfo { info["\(k)"] = JSONValue(any: v) }
         let deepLink = info.bmnDeepLink
+        // Lift the campaign intent-data schema (§3.3) so engines get the full context, not
+        // just the deep link. Parsing here means cold-start launch payloads carry it too.
+        let intent = info.bmnCampaignIntent
         self.init(
             id: id,
             title: content.title.isEmpty ? nil : content.title,
             body: content.body.isEmpty ? nil : content.body,
             subtitle: content.subtitle.isEmpty ? nil : content.subtitle,
             deepLink: deepLink,
+            campaignId: intent.campaignId,
+            nodeId: intent.nodeId,
+            gamerTag: intent.gamerTag,
+            accountId: intent.accountId,
+            cidPid: intent.cidPid,
+            offers: intent.offers,
+            campaignData: intent.campaignData,
             userInfo: info
         )
     }

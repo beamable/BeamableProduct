@@ -32,17 +32,13 @@ const beamPkg = path.resolve(projectRoot, 'node_modules/@beamable/sdk');
 const beamMain = path.resolve(beamPkg, 'dist/browser/index.mjs');
 const beamApi = path.resolve(beamPkg, 'dist/api.mjs');
 
-// The Beamable Notifications native SDKs are also `file:` dependencies living outside the
-// project root (under nativeLibraries/iOS|Android/BeamableNotifications). npm symlinks them
-// into node_modules, but their real source is here — Metro must watch them to resolve
-// `beamable-notifications-ios` / `beamable-notifications-android`.
-const beamNotificationsIosRoot = path.resolve(
+// The unified Beamable Notifications RN package is also a `file:` dependency living outside
+// the project root (under nativeLibraries/EnginePlugins/ReactNative). npm symlinks it into
+// node_modules, but its real source is here — Metro must watch it to resolve
+// `@beamable/notifications-react-native`.
+const beamNotificationsRoot = path.resolve(
   repoRoot,
-  'nativeLibraries/iOS/BeamableNotifications/reactnative',
-);
-const beamNotificationsAndroidRoot = path.resolve(
-  repoRoot,
-  'nativeLibraries/Android/BeamableNotifications/reactnative',
+  'nativeLibraries/EnginePlugins/ReactNative',
 );
 
 const config = getDefaultConfig(projectRoot);
@@ -58,8 +54,7 @@ config.resolver.useWatchman = false;
 config.watchFolders = [
   projectRoot,
   beamSdkRoot,
-  beamNotificationsIosRoot,
-  beamNotificationsAndroidRoot,
+  beamNotificationsRoot,
 ];
 
 config.resolver.nodeModulesPaths = [

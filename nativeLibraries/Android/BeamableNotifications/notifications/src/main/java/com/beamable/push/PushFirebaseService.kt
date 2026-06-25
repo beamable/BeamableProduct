@@ -44,20 +44,27 @@ class PushFirebaseService : FirebaseMessagingService() {
         }
     }
 
-    /** Resolves and invokes the receive-time handler, swallowing any failure. */
+    /**
+     * Builds the receive event, fires the native **Received** funnel event (§4.5), then dispatches
+     * to EVERY registered handler with each handler's failure isolated. Never throws out.
+     */
     private fun invokeNotificationReceived(remoteMessage: RemoteMessage, dataJson: String) {
         try {
-            val handler =
-                PushManager.resolveNotificationReceivedHandler(applicationContext) ?: return
+            val intentData = NotificationIntentData.fromDataMap(remoteMessage.data)
+            // Native funnel "Received" — works in foreground AND closed-app data path.
+            BeamableAnalytics.trackFunnel(
+                applicationContext, intentData, BeamableAnalytics.FunnelType.Received
+            )
             val event = PushReceivedEvent(
                 messageId = remoteMessage.messageId,
                 dataJson = dataJson,
                 sentTimeMillis = remoteMessage.sentTime,
                 receivedTimeMillis = System.currentTimeMillis(),
                 wasForeground = PushManager.isForeground,
-                deepLink = remoteMessage.data["deeplink"]
+                deepLink = remoteMessage.data[NotificationIntentData.KEY_DEEPLINK],
+                intentData = intentData
             )
-            handler.onNotificationReceived(applicationContext, event)
+            PushManager.dispatchNotificationReceived(applicationContext, event)
         } catch (t: Throwable) {
             PushManager.dispatchError("notification_received", t.message ?: t.toString())
         }

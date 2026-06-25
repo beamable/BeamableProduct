@@ -6,7 +6,6 @@ import {
   BEAMABLE_EVENTS,
   type BeamableEvent,
   addBeamableListener,
-  addWebhookListener,
   cancelAllLocal,
   cancelLocal,
   clearDelivered,
@@ -22,11 +21,9 @@ import {
   unregisterForRemote,
 } from '../src/notifications/beamableNotifications';
 
-// A synthetic log entry for the app-side webhook POST (not a native SDK event).
-const WEBHOOK_EVENT = 'webhookPost';
-type LogEvent = BeamableEvent | typeof WEBHOOK_EVENT;
+type LogEvent = BeamableEvent;
 
-/** One captured callback firing (or an app-side webhook POST result). */
+/** One captured callback firing. */
 type EventEntry = {
   key: number;
   time: string;
@@ -48,10 +45,9 @@ const EVENT_COLOR: Record<LogEvent, string> = {
   tokenError: '#dc2626',
   notificationPresented: '#7c3aed',
   notificationReceived: '#0891b2',
-  notificationTapped: '#ea580c',
+  notificationOpened: '#ea580c',
   pendingNotifications: '#ca8a04',
   deliveryReceipts: '#0d9488',
-  [WEBHOOK_EVENT]: '#db2777',
 };
 
 export default function Callbacks() {
@@ -76,12 +72,8 @@ export default function Callbacks() {
       subscribe(event, (data) => push(event, data)),
     );
 
-    // App-side webhook POST outcomes (fired for local notifications etc.).
-    const webhookSub = addWebhookListener((r) => push(WEBHOOK_EVENT, r));
-
     return () => {
       subs.forEach((s) => s.remove());
-      webhookSub.remove();
     };
   }, []);
 
@@ -115,10 +107,10 @@ export default function Callbacks() {
         </Row>
       </Section>
 
-      <Section title="Local → presented / received / tapped">
+      <Section title="Local → presented / received / opened">
         <Text style={styles.hint}>
           Keep the app in the FOREGROUND to see notificationPresented; tap the
-          banner to see notificationTapped.
+          banner to see notificationOpened.
         </Text>
         <Row>
           <Button

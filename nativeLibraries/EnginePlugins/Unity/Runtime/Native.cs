@@ -24,7 +24,8 @@ namespace Beamable.Notifications
         [DllImport(LIB)] internal static extern void bmn_getPending();
         [DllImport(LIB)] internal static extern void bmn_registerForRemote();
         [DllImport(LIB)] internal static extern void bmn_unregisterForRemote();
-        [DllImport(LIB)] internal static extern void bmn_configureAnalytics(string configJson);
+        [DllImport(LIB)] internal static extern void bmn_configureAuth(string json);
+        [DllImport(LIB)] internal static extern void bmn_clearAuth();
         [DllImport(LIB)] internal static extern void bmn_getDeliveryReceipts();
         [DllImport(LIB)] internal static extern void bmn_registerTemplate(string templateJson);
         [DllImport(LIB)] internal static extern void bmn_registerCategory(string categoryJson);
@@ -52,7 +53,8 @@ namespace Beamable.Notifications
         internal static void bmn_getPending() { }
         internal static void bmn_registerForRemote() { }
         internal static void bmn_unregisterForRemote() { }
-        internal static void bmn_configureAnalytics(string configJson) { }
+        internal static void bmn_configureAuth(string json) { }
+        internal static void bmn_clearAuth() { }
         internal static void bmn_getDeliveryReceipts() { }
         internal static void bmn_registerTemplate(string templateJson) { }
         internal static void bmn_registerCategory(string categoryJson) { }

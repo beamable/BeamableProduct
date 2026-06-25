@@ -93,7 +93,6 @@ public:
     // Templates / categories / analytics (features 4, 7, 8) — iOS only; Android no-ops.
     UFUNCTION(BlueprintCallable, Category = "Notifications") void RegisterTemplateJson(const FString& TemplateJson);
     UFUNCTION(BlueprintCallable, Category = "Notifications") void RegisterCategoryJson(const FString& CategoryJson);
-    UFUNCTION(BlueprintCallable, Category = "Notifications") void ConfigureAnalyticsJson(const FString& ConfigJson);
     UFUNCTION(BlueprintCallable, Category = "Notifications") void GetDeliveryReceipts();
 
     // Badge — iOS only; Android no-ops.

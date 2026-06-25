@@ -59,17 +59,17 @@ export class PushNotificationServiceClient extends BeamMicroServiceClient {
     });
   }
   
-  async sendPushToSelf(params: Types.SendPushToSelfRequestArgs): Promise<Types.SendResult> {
+  async sendCampaignPushToSelf(params: Types.SendCampaignPushToSelfRequestArgs): Promise<Types.SendResult> {
     return this.request({
-      endpoint: "SendPushToSelf",
+      endpoint: "SendCampaignPushToSelf",
       payload: params,
       withAuth: true
     });
   }
   
-  async sendPushToPlayer(params: Types.SendPushToPlayerRequestArgs): Promise<Types.AdminSendResult> {
+  async sendCampaignPushToPlayer(params: Types.SendCampaignPushToPlayerRequestArgs): Promise<Types.AdminSendResult> {
     return this.request({
-      endpoint: "SendPushToPlayer",
+      endpoint: "SendCampaignPushToPlayer",
       payload: params,
       withAuth: true
     });

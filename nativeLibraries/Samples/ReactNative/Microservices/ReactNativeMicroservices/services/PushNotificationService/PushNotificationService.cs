@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Beamable.Api.Analytics;
 using Beamable.Common;
 using Beamable.Common.Api.Stats;
 using Beamable.Server;
@@ -12,11 +13,11 @@ namespace Beamable.PushNotificationService
 	/// A self-contained microservice that demonstrates remote push notifications
 	/// through both Apple's APNs (iOS) and Firebase Cloud Messaging (Android), end to end:
 	///
-	///   1. <see cref="RegisterDeviceToken"/> — a player registers the device token their
+	///   1. <see cref="RegisterDeviceToken"/>      — a player registers the device token their
 	///      app received from the OS, tagged with the platform (one token per device).
-	///   2. <see cref="SendPushToSelf"/>       — a player sends a real remote push to
+	///   2. <see cref="SendCampaignPushToSelf"/>   — a player sends a real remote push to
 	///      their own registered device(s) — the simplest thing to demo from the app.
-	///   3. <see cref="SendPushToPlayer"/>      — an admin/back-office tool sends a push
+	///   3. <see cref="SendCampaignPushToPlayer"/> — an admin/back-office tool sends a push
 	///      to any player by id.
 	///
 	/// Device tokens are stored as a <b>private</b> per-player stat (see
@@ -109,30 +110,36 @@ namespace Beamable.PushNotificationService
 		// --- Sending --------------------------------------------------------
 
 		/// <summary>
-		/// Sends a remote push to every device the calling player has registered.
-		/// The easiest end-to-end demo: register on a device, then call this from the
-		/// same device. Requires a physical iOS device (APNs does not deliver to the
-		/// Simulator) and valid APNs credentials in Realm Config.
+		/// Sends a remote push to every device the calling player has registered, carrying the
+		/// §3.3 Notification Intent Data (campaign/node/offers/campaignData). The easiest
+		/// end-to-end demo: register on a device, then call this from the same device. Requires a
+		/// physical iOS device (APNs does not deliver to the Simulator) and valid APNs credentials
+		/// in Realm Config. All campaign fields are optional — an empty request reduces to a plain
+		/// title/body/deepLink push. When <c>campaignId</c> and <c>nodeId</c> are both present the
+		/// microservice also emits a funnel "Sent" analytics event (§4.4).
 		/// </summary>
-		/// <param name="title">Notification title.</param>
-		/// <param name="body">Notification body.</param>
-		/// <param name="deepLink">Optional deep-link URL carried in the payload (the app opens it on tap).</param>
 		[ClientCallable]
-		public Task<SendResult> SendPushToSelf(string title, string body, string deepLink)
+		public Task<SendResult> SendCampaignPushToSelf(PushCampaignRequest request)
 		{
-			return DeliverToPlayer(Context.UserId, title, body, deepLink);
+			request ??= new PushCampaignRequest();
+			return DeliverToPlayer(Context.UserId, request.title, request.body, request.deepLink, request.ToContext());
 		}
 
 		/// <summary>
-		/// Back-office endpoint: send a remote push to a specific player by id. Exposed as
-		/// <c>[ServerCallable]</c> so the Portal extension can call it — that still requires the
-		/// "<c>*</c>" (admin) scope, but unlike <c>[AdminOnlyCallable]</c> it does not require a
-		/// logged-in player, which a Portal extension's session does not carry.
+		/// Back-office endpoint: send a remote push to a specific player by id, carrying the §3.3
+		/// Notification Intent Data. Exposed as <c>[ServerCallable]</c> so the Portal extension can
+		/// call it — that still requires the "<c>*</c>" (admin) scope, but unlike
+		/// <c>[AdminOnlyCallable]</c> it does not require a logged-in player, which a Portal
+		/// extension's session does not carry. The target player id is supplied separately; the
+		/// rest of the campaign context rides in <paramref name="request"/>. All campaign fields
+		/// are optional; when <c>campaignId</c> + <c>nodeId</c> are present a funnel "Sent" event
+		/// is emitted (§4.4).
 		/// </summary>
 		[ServerCallable]
-		public async Task<AdminSendResult> SendPushToPlayer(long playerId, string title, string body, string deepLink)
+		public async Task<AdminSendResult> SendCampaignPushToPlayer(long playerId, PushCampaignRequest request)
 		{
-			var r = await DeliverToPlayer(playerId, title, body, deepLink);
+			request ??= new PushCampaignRequest();
+			var r = await DeliverToPlayer(playerId, request.title, request.body, request.deepLink, request.ToContext());
 			return new AdminSendResult
 			{
 				success = r.success,
@@ -146,7 +153,7 @@ namespace Beamable.PushNotificationService
 		/// <summary>
 		/// Admin/back-office endpoint: lists every player who has at least one registered
 		/// device, with a small summary (device count, platforms, last-updated). Used by the
-		/// Portal extension to pick a recipient for <see cref="SendPushToPlayer"/>.
+		/// Portal extension to pick a recipient for <see cref="SendCampaignPushToPlayer"/>.
 		///
 		/// Private per-player stats aren't enumerable, so we find the roster by searching the
 		/// public marker stat (<c>push_devices != 0</c>) that <see cref="SaveDevices"/> keeps
@@ -238,7 +245,7 @@ namespace Beamable.PushNotificationService
 
 		// --- Internals ------------------------------------------------------
 
-		private async Task<SendResult> DeliverToPlayer(long playerId, string title, string body, string deepLink)
+		private async Task<SendResult> DeliverToPlayer(long playerId, string title, string body, string deepLink, PushCampaignContext campaign = null)
 		{
 			if (string.IsNullOrWhiteSpace(title) && string.IsNullOrWhiteSpace(body))
 				return new SendResult { success = false, attempted = 0, succeeded = 0, failed = 0, messages = { "title or body is required." } };
@@ -255,7 +262,26 @@ namespace Beamable.PushNotificationService
 
 			var apns = new ApnsClient();
 			var fcm = new FcmClient();
-			var message = new PushMessage { title = title, body = body, deepLink = deepLink };
+
+			// The §3.3 Notification Intent Data, embedded in the provider payload (FCM data / APNs
+			// userInfo). gamerTag defaults to the target player id when the caller didn't set it,
+			// and cidPid defaults to this microservice's own realm scope ("<cid>.<pid>") so the
+			// funnel "Sent" event always carries the cidPid the device-side Received/Opened stages
+			// join on (they require it). The caller may still override it.
+			campaign ??= new PushCampaignContext();
+			var message = new PushMessage
+			{
+				title = title,
+				body = body,
+				deepLink = deepLink,
+				campaignId = campaign.campaignId,
+				nodeId = campaign.nodeId,
+				gamerTag = string.IsNullOrWhiteSpace(campaign.gamerTag) ? playerId.ToString() : campaign.gamerTag,
+				accountId = campaign.accountId,
+				cidPid = string.IsNullOrWhiteSpace(campaign.cidPid) ? $"{Context.Cid}.{Context.Pid}" : campaign.cidPid,
+				offers = campaign.offers,
+				campaignData = campaign.campaignData,
+			};
 			var stale = new List<string>();
 
 			// Provider settings are resolved lazily and cached for this call, so a player with
@@ -315,6 +341,13 @@ namespace Beamable.PushNotificationService
 				}
 			}
 
+			// §4.4 — funnel "Sent" event, emitted ONCE per (player, send) once at least one device
+			// send succeeded — not once per device. Only fires when the message carries both
+			// campaignId and nodeId (§4.2 tracked-campaign rule); otherwise the push is untracked
+			// and we skip silently.
+			if (result.succeeded > 0)
+				EmitSentEvent(playerId, message);
+
 			// The provider told us these tokens are dead (APNs Unregistered/BadDeviceToken,
 			// FCM UNREGISTERED/INVALID_ARGUMENT) — prune them so we stop delivering to them.
 			if (stale.Count > 0)
@@ -326,6 +359,71 @@ namespace Beamable.PushNotificationService
 
 			result.success = result.succeeded > 0;
 			return result;
+		}
+
+		/// <summary>
+		/// §4.4 / §4.6 — emits a funnel "Sent" <see cref="CoreEvent"/> via
+		/// <c>Services.Analytics</c> (<see cref="Beamable.Server.Api.Analytics.IMicroserviceAnalyticsService"/>),
+		/// once per logical send (once at least one of the player's devices accepted the push) —
+		/// not once per device. Fires only when the message carries both <c>campaignId</c> and
+		/// <c>nodeId</c> (§4.2); an untracked push is skipped silently.
+		///
+		/// The event is a <c>CoreEvent</c> (category "notification_funnel", eventName "Sent")
+		/// whose params follow §4.6: campaignId, nodeId, gamerTag (the target player), accountId,
+		/// cidPid, offerData (the SINGLE relevant offer — the first one this message carried, if
+		/// any), deeplink, funnelType="Sent". Empty fields are omitted to keep the payload flat.
+		///
+		/// Note: <c>SendAnalyticsEventBatch</c> routes the underlying POST to the request context's
+		/// user (the caller). For <see cref="SendCampaignPushToSelf"/> that is the target player;
+		/// for the admin <see cref="SendCampaignPushToPlayer"/> the target may differ, so the
+		/// authoritative gamerTag is always carried in the event params (the path id is only
+		/// routing, per §4.3). The send is fire-and-forget (the analytics service queues it).
+		/// </summary>
+		private void EmitSentEvent(long playerId, PushMessage message)
+		{
+			// §4.2 — only track campaigns that carry both ids.
+			if (string.IsNullOrWhiteSpace(message.campaignId) || string.IsNullOrWhiteSpace(message.nodeId))
+				return;
+
+			var gamerTag = string.IsNullOrWhiteSpace(message.gamerTag) ? playerId.ToString() : message.gamerTag;
+
+			var p = new Dictionary<string, object>
+			{
+				["campaignId"] = message.campaignId,
+				["nodeId"] = message.nodeId,
+				["gamerTag"] = gamerTag,
+				["funnelType"] = "Sent",
+			};
+			if (!string.IsNullOrWhiteSpace(message.accountId)) p["accountId"] = message.accountId;
+			if (!string.IsNullOrWhiteSpace(message.cidPid)) p["cidPid"] = message.cidPid;
+			if (!string.IsNullOrWhiteSpace(message.deepLink)) p["deeplink"] = message.deepLink;
+
+			// §4.6 offerData is a SINGLE offer. A push can carry several; we report the first one
+			// as the offer this Sent event concerns (one Sent per logical send, not per device).
+			// Omitted entirely when the message has no offers.
+			var offer = message.offers?.FirstOrDefault();
+			if (offer != null)
+			{
+				// Match the device-side funnel builders (Android NotificationOffer.toJson, iOS
+				// Codable offer encoding): OMIT absent fields rather than emit explicit nulls.
+				var offerData = new Dictionary<string, object>();
+				if (!string.IsNullOrWhiteSpace(offer.itemId)) offerData["itemId"] = offer.itemId;
+				if (!string.IsNullOrWhiteSpace(offer.value)) offerData["value"] = offer.value;
+				if (!string.IsNullOrWhiteSpace(offer.customData)) offerData["customData"] = offer.customData;
+				p["offerData"] = offerData;
+			}
+
+			try
+			{
+				var ev = new CoreEvent("notification_funnel", "Sent", p);
+				Services.Analytics.SendAnalyticsEvent(Services.Analytics.BuildRequest(ev));
+			}
+			catch (Exception ex)
+			{
+				// Analytics is best-effort — never fail a successful push because the funnel
+				// event couldn't be queued.
+				BeamableLogger.LogWarning("Failed to emit 'Sent' funnel event for player {player}: {msg}", playerId, ex.Message);
+			}
 		}
 
 		/// <summary>Reads the APNs credentials from this realm's config (the "apns_push" namespace).</summary>
@@ -414,6 +512,59 @@ namespace Beamable.PushNotificationService
 	public class DeviceList
 	{
 		public List<DeviceInfo> devices = new();
+	}
+
+	/// <summary>
+	/// §3.3 Notification Intent Data carried by a campaign push, plus the notification content.
+	/// This is the request object for <see cref="PushNotificationService.SendCampaignPushToSelf"/>
+	/// and <see cref="PushNotificationService.SendCampaignPushToPlayer"/>. All campaign fields are
+	/// optional — supplying none reduces to a plain title/body/deepLink push (no funnel event).
+	/// Embedded into the provider payload as the flat stringified §3.3 map; when
+	/// <c>campaignId</c> + <c>nodeId</c> are present the microservice also emits a "Sent" funnel
+	/// event (§4.4).
+	/// </summary>
+	[Serializable]
+	public class PushCampaignRequest
+	{
+		public string title;
+		public string body;
+		public string deepLink;          // canonical key on the wire: "deeplink"
+
+		public string campaignId;        // NEW concept (§3.3)
+		public string nodeId;            // NEW concept (§3.3)
+		public string gamerTag;          // Beamable dbid; defaults to the target player id when unset
+		public string accountId;         // Beamable account id
+		public string cidPid;            // "<cid>.<pid>" realm scope
+		public List<PushOffer> offers;   // optional offers array
+		public string campaignData;      // free-form JSON object, as a string
+
+		/// <summary>Projects the schema fields (sans title/body/deepLink) into the internal context.</summary>
+		public PushCampaignContext ToContext() => new PushCampaignContext
+		{
+			campaignId = campaignId,
+			nodeId = nodeId,
+			gamerTag = gamerTag,
+			accountId = accountId,
+			cidPid = cidPid,
+			offers = offers,
+			campaignData = campaignData,
+		};
+	}
+
+	/// <summary>
+	/// Internal carrier for the §3.3 campaign context handed to
+	/// <c>DeliverToPlayer</c> (not a callable surface). Mirrors the schema fields of
+	/// <see cref="PushCampaignRequest"/> minus the notification content.
+	/// </summary>
+	public class PushCampaignContext
+	{
+		public string campaignId;
+		public string nodeId;
+		public string gamerTag;
+		public string accountId;
+		public string cidPid;
+		public List<PushOffer> offers;
+		public string campaignData;
 	}
 
 	/// <summary>Aggregated outcome of a send across one player's device(s).</summary>

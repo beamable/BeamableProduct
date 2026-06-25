@@ -11,12 +11,66 @@ using Beamable.Server;
 
 namespace Beamable.PushNotificationService
 {
-	/// <summary>The notification content to deliver.</summary>
+	/// <summary>
+	/// A single offer carried by a campaign push (§3.3 <c>offers[]</c>). <see cref="customData"/>
+	/// is free-form (typed <c>T</c> at the SDK layer) and travels as opaque JSON across the
+	/// native bridge, so it is modeled here as a JSON object string.
+	/// </summary>
+	[Serializable]
+	public class PushOffer
+	{
+		public string itemId;
+		public string value;        // "string|number" in the schema — carried as a string on the wire
+		public string customData;   // free-form JSON object, as a string (e.g. {"k":"v"})
+	}
+
+	/// <summary>
+	/// The notification content to deliver, plus the optional §3.3 Notification Intent Data
+	/// (campaign context). All campaign fields are additive/optional — a plain
+	/// title/body/deepLink message (the original shape) keeps working unchanged.
+	///
+	/// On the wire the schema is embedded as a FLAT string→string map (Decision Q3 "stringify"):
+	/// scalars as plain strings, <see cref="offers"/> and <see cref="campaignData"/> as
+	/// JSON-encoded strings — into FCM <c>data</c> and APNs <c>userInfo</c> identically.
+	/// </summary>
 	public class PushMessage
 	{
 		public string title;
 		public string body;
-		public string deepLink;
+		public string deepLink;     // canonical key: "deeplink"
+
+		// --- §3.3 Notification Intent Data (all optional) ---
+		public string campaignId;
+		public string nodeId;
+		public string gamerTag;     // Beamable dbid (the target player)
+		public string accountId;
+		public string cidPid;       // "<cid>.<pid>" realm scope
+		public List<PushOffer> offers;          // optional array
+		public string campaignData; // free-form JSON object, as a string
+
+		/// <summary>
+		/// Builds the §3.3 Notification Intent Data as a flat string→string map (Decision Q3):
+		/// scalar fields as plain strings; <see cref="offers"/> and <see cref="campaignData"/> as
+		/// JSON-encoded strings. The canonical deeplink key is <c>deeplink</c>. Empty/null fields
+		/// are omitted so an un-tagged message produces an empty map (and a plain message stays
+		/// byte-identical to the old payload aside from the existing deeplink key).
+		/// Used for both FCM <c>data</c> and APNs <c>userInfo</c> so engine code is identical.
+		/// </summary>
+		public void WriteIntentData(IDictionary<string, object> map)
+		{
+			if (!string.IsNullOrWhiteSpace(campaignId)) map["campaignId"] = campaignId;
+			if (!string.IsNullOrWhiteSpace(nodeId)) map["nodeId"] = nodeId;
+			if (!string.IsNullOrWhiteSpace(gamerTag)) map["gamerTag"] = gamerTag;
+			if (!string.IsNullOrWhiteSpace(accountId)) map["accountId"] = accountId;
+			if (!string.IsNullOrWhiteSpace(cidPid)) map["cidPid"] = cidPid;
+			if (!string.IsNullOrWhiteSpace(deepLink)) map["deeplink"] = deepLink;
+
+			if (offers != null && offers.Count > 0)
+				map["offers"] = JsonSerializer.Serialize(offers);
+
+			// campaignData is already a JSON object string — passed through verbatim.
+			if (!string.IsNullOrWhiteSpace(campaignData)) map["campaignData"] = campaignData;
+		}
 	}
 
 	/// <summary>Outcome of a single device delivery (shared by every push provider).</summary>
@@ -124,6 +178,13 @@ namespace Beamable.PushNotificationService
 			};
 
 			var root = new Dictionary<string, object> { ["aps"] = aps };
+
+			// §3.3 Notification Intent Data goes in userInfo (the top-level keys alongside "aps"),
+			// stringified to match Android's FCM data map exactly (Decision Q3). This writes the
+			// canonical "deeplink" key (the app already reads it tolerantly: deepLink/deeplink/deep_link).
+			message.WriteIntentData(root);
+
+			// Back-compat: keep the legacy "deepLink" key the original payload emitted.
 			if (!string.IsNullOrWhiteSpace(message.deepLink))
 				root["deepLink"] = message.deepLink; // the app reads this on tap to route
 

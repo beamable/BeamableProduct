@@ -95,17 +95,42 @@ public func bmn_unregisterForRemote() {
     RemotePush.shared.unregister()
 }
 
-// MARK: - Analytics / delivery receipts (feature 8)
-
-@_cdecl("bmn_configureAnalytics")
-public func bmn_configureAnalytics(_ configJson: UnsafePointer<CChar>?) {
-    guard let config = JSON.decode(AnalyticsConfig.self, from: cString(configJson)) else { return }
-    SharedConfig.shared.saveAnalyticsConfig(config)
-}
+// MARK: - Delivery receipts (feature 8)
 
 @_cdecl("bmn_getDeliveryReceipts")
 public func bmn_getDeliveryReceipts() {
     NotificationManager.shared.emitDeliveryReceipts()
+}
+
+// MARK: - Beamable funnel analytics auth + offer helpers (§4)
+
+/// Persist the player bearer token + realm routing (AuthConfig JSON) into the App Group so
+/// native funnel POSTs can authenticate even with the engine VM dead. Call on login/refresh.
+@_cdecl("bmn_configureAuth")
+public func bmn_configureAuth(_ configJson: UnsafePointer<CChar>?) {
+    // Reuse the String overload so the decode path is shared with the React Native bridge.
+    NotificationManager.shared.configureAuth(cString(configJson))
+}
+
+/// Clear the persisted auth config (call on logout).
+@_cdecl("bmn_clearAuth")
+public func bmn_clearAuth() {
+    NotificationManager.shared.clearAuth()
+}
+
+/// Emit a **Clicked** funnel event for an in-app offer click (§4.7). Arg is an
+/// `OfferTrackRequest` JSON carrying the campaign context + the clicked offer.
+@_cdecl("bmn_trackOfferClicked")
+public func bmn_trackOfferClicked(_ requestJson: UnsafePointer<CChar>?) {
+    guard let request = JSON.decode(OfferTrackRequest.self, from: cString(requestJson)) else { return }
+    NotificationManager.shared.trackOfferClicked(request)
+}
+
+/// Emit a **Converted** funnel event when an offer click converts (§4.7).
+@_cdecl("bmn_trackOfferConverted")
+public func bmn_trackOfferConverted(_ requestJson: UnsafePointer<CChar>?) {
+    guard let request = JSON.decode(OfferTrackRequest.self, from: cString(requestJson)) else { return }
+    NotificationManager.shared.trackOfferConverted(request)
 }
 
 // MARK: - Templates & categories (feature 4, 7)

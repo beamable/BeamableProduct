@@ -1,0 +1,51 @@
+{
+  "name": "@beamable/notifications-react-native",
+  "version": "1.0.0",
+  "description": "Cross-platform Beamable notifications SDK for React Native (local + remote push via FCM/APNs, deep links, templates, action buttons, rich media, closed-app analytics, and campaign offer funnel tracking). One package — autolinking selects the Android AAR or the iOS xcframework per platform.",
+  "main": "src/index.ts",
+  "react-native": "src/index.ts",
+  "types": "src/index.ts",
+  "files": [
+    "src",
+    "android",
+    "ios",
+    "BeamableNotificationsRN.podspec",
+    "react-native.config.js",
+    "!android/build",
+    "!ios/BeamableNotifications.xcframework/**/*.bcsymbolmap"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "keywords": [
+    "react-native",
+    "android",
+    "ios",
+    "notifications",
+    "push",
+    "fcm",
+    "apns",
+    "deeplink",
+    "beamable"
+  ],
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "@beamable/sdk": "*",
+    "@react-native-async-storage/async-storage": "*"
+  },
+  "peerDependenciesMeta": {
+    "@beamable/sdk": {
+      "optional": true
+    },
+    "@react-native-async-storage/async-storage": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "react-native": "*"
+  },
+  "license": "MIT"
+}

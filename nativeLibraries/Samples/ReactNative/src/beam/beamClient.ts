@@ -18,7 +18,7 @@ import {
 } from '@beamable/sdk';
 import type { TokenStorage } from '@beamable/sdk';
 import { BEAM_CONFIG, isConfigured } from './config';
-import { RNTokenStorage } from './RNTokenStorage';
+import { RNTokenStorage, configureAuth } from '@beamable/notifications-react-native';
 import { SampleServiceClient } from './beamable/clients/SampleServiceClient';
 import { PushNotificationServiceClient } from './beamable/clients/PushNotificationServiceClient';
 
@@ -49,7 +49,7 @@ export function getSampleService(): SampleServiceClient | null {
 /**
  * The typed client for the `PushNotificationService` microservice, or null until
  * `initBeam()` has resolved. Use it to register this device's APNs token and to
- * send remote pushes — e.g. `getPushService()?.sendPushToSelf({ title, body })`.
+ * send remote pushes — e.g. `getPushService()?.sendCampaignPushToSelf({ title, body, deepLink })`.
  */
 export function getPushService(): PushNotificationServiceClient | null {
   return beamInstance?.pushNotificationServiceClient ?? null;
@@ -120,7 +120,33 @@ export async function initBeam(): Promise<Beam> {
     // (adds the typed `beam.pushNotificationServiceClient` accessor).
     beam.use(PushNotificationServiceClient);
     beamInstance = beam;
-  
+
+    // Best-effort: hand the player's tokens to the native side so the CLOSED-APP analytics
+    // funnel can authenticate when the JS runtime is not running. Wrapped so a failure here
+    // never breaks init. The host is the API base URL the SDK is pointed at (the explicit
+    // env.local override, otherwise the named environment's apiUrl). RNTokenStorage already
+    // stores `expiresIn` as an absolute epoch-MILLISECONDS timestamp (see its `isExpired`),
+    // so it maps straight onto `accessTokenExpiresAt`.
+    try {
+      const { accessToken, refreshToken, expiresIn } =
+        await storage.getTokenData();
+      const host =
+        BEAM_CONFIG.apiBase ??
+        BeamEnvironment.get(BEAM_CONFIG.environment).apiUrl;
+      if (accessToken && refreshToken && host) {
+        configureAuth({
+          accessToken,
+          refreshToken,
+          accessTokenExpiresAt: expiresIn ?? 0,
+          cid: BEAM_CONFIG.cid,
+          pid: BEAM_CONFIG.pid,
+          host,
+        });
+      }
+    } catch {
+      // Native funnel auth is best-effort; never block init on it.
+    }
+
     return beam;
   })();
 

@@ -110,8 +110,24 @@ object UnityNotifications {
     @JvmStatic fun registerForRemote() = PushManager.fetchToken()
     @JvmStatic fun unregisterForRemote() { /* FCM manages registration; no-op */ }
 
+    /**
+     * Persists the player's auth credentials so the native funnel can POST (see
+     * [PushManager.configureAuth]). [authJson] is the canonical credential object.
+     */
+    @JvmStatic
+    fun configureAuth(authJson: String) {
+        val act = currentActivity() ?: return
+        PushManager.configureAuth(act.applicationContext, authJson)
+    }
+
+    /** Clears persisted auth credentials (see [PushManager.clearAuth]). */
+    @JvmStatic
+    fun clearAuth() {
+        val act = currentActivity() ?: return
+        PushManager.clearAuth(act.applicationContext)
+    }
+
     // Best-effort / no-op on Android (no direct equivalent).
-    @JvmStatic fun configureAnalytics(configJson: String) {}
     @JvmStatic fun registerTemplate(templateJson: String) {}
     @JvmStatic fun registerCategory(categoryJson: String) {}
     @JvmStatic fun setBadge(count: Int) {}

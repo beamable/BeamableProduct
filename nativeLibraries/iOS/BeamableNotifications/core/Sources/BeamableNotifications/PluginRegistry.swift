@@ -13,7 +13,7 @@ public final class PluginContext {
     public func log(_ message: String) { NSLog("[BeamableNotifications] %@", message) }
 }
 
-/// The native extension point (see plan §Extensibility). Implement this protocol in a
+/// The native extension point (the iOS plugin registry, §2). Implement this protocol in a
 /// new file to add behavior — custom token providers, analytics, payload transforms,
 /// logging — without touching the SDK core. All methods have default no-op
 /// implementations, so a plugin only overrides what it needs.

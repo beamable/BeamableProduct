@@ -3,6 +3,10 @@
 Home for **all native libraries used by Beamable**, organized by platform. Each platform lives
 in its own folder.
 
+> **Feature reference:** [`docs/notifications-feature.md`](docs/notifications-feature.md) is the
+> authoritative design doc for BeamableNotifications (multi-handler model, intent-data schema,
+> analytics funnel). See also [`LIBRARY_GUIDE.md`](LIBRARY_GUIDE.md) for the per-platform walkthrough.
+
 ```
 nativeLibraries/
   Android/   # Kotlin libraries built as .aar

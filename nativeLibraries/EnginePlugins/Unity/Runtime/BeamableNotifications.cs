@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using AOT;
 using UnityEngine;
+using Beamable.Serialization;
+using Beamable.Api.Analytics;
+using Beamable.Common.Dependencies;
 
 namespace Beamable.Notifications
 {
@@ -60,7 +63,7 @@ namespace Beamable.Notifications
 
         public static void RequestPermission(PermissionOptions options = null)
         {
-            string json = Json.Serialize(options ?? new PermissionOptions());
+            string json = JsonSerializable.ToJson(options ?? new PermissionOptions());
 #if UNITY_IOS && !UNITY_EDITOR
             Native.bmn_requestPermission(json);
 #elif UNITY_ANDROID && !UNITY_EDITOR
@@ -79,7 +82,7 @@ namespace Beamable.Notifications
 
         public static void ScheduleLocal(LocalRequest request)
         {
-            string json = Json.Serialize(request);
+            string json = JsonSerializable.ToJson(request);
 #if UNITY_IOS && !UNITY_EDITOR
             Native.bmn_scheduleLocal(json);
 #elif UNITY_ANDROID && !UNITY_EDITOR
@@ -132,13 +135,65 @@ namespace Beamable.Notifications
 #endif
         }
 
-        public static void ConfigureAnalytics(AnalyticsConfig config)
+        // MARK: Auth credentials (§4 closed-app campaign funnel)
+
+        /// <summary>
+        /// Push the player's auth credentials to the native layer so the native push/campaign
+        /// pipeline can attribute conversions while the app is closed/backgrounded. The game should
+        /// call this on login and again whenever the token is refreshed; call <see cref="ClearAuth"/>
+        /// on logout. Field names are sent as the canonical camelCase contract both natives expect
+        /// (<c>accessToken</c>, <c>refreshToken</c>, <c>accessTokenExpiresAt</c>, <c>cid</c>,
+        /// <c>pid</c>, <c>host</c>).
+        /// </summary>
+        /// <param name="accessTokenExpiresAtMs">Absolute token expiry as epoch time in MILLISECONDS.</param>
+        public static void ConfigureAuth(string accessToken, string refreshToken,
+            long accessTokenExpiresAtMs, string cid, string pid, string host)
         {
-            string json = Json.Serialize(config);
+            var creds = new AuthCredentials
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                AccessTokenExpiresAt = accessTokenExpiresAtMs,
+                Cid = cid,
+                Pid = pid,
+                Host = host,
+            };
+            string json = JsonSerializable.ToJson(creds);
 #if UNITY_IOS && !UNITY_EDITOR
-            Native.bmn_configureAnalytics(json);
+            Native.bmn_configureAuth(json);
 #elif UNITY_ANDROID && !UNITY_EDITOR
-            AndroidBackend.Call("configureAnalytics", json);
+            AndroidBackend.Call("configureAuth", json);
+#endif
+        }
+
+        /// <summary>
+        /// Convenience that pulls the current player's token from <see cref="BeamContext.Default"/>
+        /// and forwards it to <see cref="ConfigureAuth(string,string,long,string,string,string)"/>.
+        /// <paramref name="host"/> must be supplied by the integrator because it is the Beamable API
+        /// host (from the game's environment config), not part of the access token. Call on login and
+        /// on every token refresh; call <see cref="ClearAuth"/> on logout. No-op if no token exists.
+        /// </summary>
+        public static void ConfigureAuthFromContext(string host)
+        {
+            var token = BeamContext.Default?.AccessToken;
+            if (token == null || string.IsNullOrEmpty(token.Token))
+            {
+                Debug.LogWarning("[BeamableNotifications] ConfigureAuthFromContext: no access token on the default context.");
+                return;
+            }
+            long expiresAtMs = (long)(token.ExpiresAt.ToUniversalTime() - DateTime.UnixEpoch).TotalMilliseconds;
+            ConfigureAuth(token.Token, token.RefreshToken, expiresAtMs, token.Cid, token.Pid, host);
+        }
+
+        /// <summary>
+        /// Clear any auth credentials previously pushed via <see cref="ConfigureAuth"/>. Call on logout.
+        /// </summary>
+        public static void ClearAuth()
+        {
+#if UNITY_IOS && !UNITY_EDITOR
+            Native.bmn_clearAuth();
+#elif UNITY_ANDROID && !UNITY_EDITOR
+            AndroidBackend.Call("clearAuth");
 #endif
         }
 
@@ -153,7 +208,7 @@ namespace Beamable.Notifications
 
         public static void RegisterTemplate(TemplateSpec template)
         {
-            string json = Json.Serialize(template);
+            string json = JsonSerializable.ToJson(template);
 #if UNITY_IOS && !UNITY_EDITOR
             Native.bmn_registerTemplate(json);
 #elif UNITY_ANDROID && !UNITY_EDITOR
@@ -163,7 +218,7 @@ namespace Beamable.Notifications
 
         public static void RegisterCategory(CategorySpec category)
         {
-            string json = Json.Serialize(category);
+            string json = JsonSerializable.ToJson(category);
 #if UNITY_IOS && !UNITY_EDITOR
             Native.bmn_registerCategory(json);
 #elif UNITY_ANDROID && !UNITY_EDITOR
@@ -198,7 +253,7 @@ namespace Beamable.Notifications
             try
             {
                 string json = Marshal.PtrToStringAnsi(ptr);
-                return string.IsNullOrEmpty(json) ? null : Json.Deserialize<NotificationData>(json);
+                return string.IsNullOrEmpty(json) ? null : JsonSerializable.FromJson<NotificationData>(json);
             }
             finally
             {
@@ -206,10 +261,102 @@ namespace Beamable.Notifications
             }
 #elif UNITY_ANDROID && !UNITY_EDITOR
             string json = AndroidBackend.CallStr("getLaunchNotification");
-            return string.IsNullOrEmpty(json) ? null : Json.Deserialize<NotificationData>(json);
+            return string.IsNullOrEmpty(json) ? null : JsonSerializable.FromJson<NotificationData>(json);
 #else
             return null;
 #endif
+        }
+
+        // MARK: Offer / conversion analytics helpers (§4.7)
+
+        /// <summary>Funnel stage names matching the §4.6 shared contract.</summary>
+        private const string FunnelCategory = "notification_funnel";
+
+        /// <summary>
+        /// Record that the player clicked an offer that came from a campaign notification (§4.7).
+        /// Emits a <c>Clicked</c> funnel <see cref="CoreEvent"/> via the player's Beamable
+        /// analytics service. <paramref name="campaign"/> carries the context that arrived in the
+        /// notification's intent data (see <see cref="NotificationData.CampaignIntent"/>) so the
+        /// conversion attributes back to the originating notification. No-op when the campaign is
+        /// not tracked (missing campaignId/nodeId, §4.2).
+        /// </summary>
+        /// <param name="campaign">The campaign intent data the notification carried.</param>
+        /// <param name="offer">The single offer that was clicked (optional).</param>
+        public static void TrackOfferClicked(NotificationIntentData campaign, Offer offer = null) =>
+            TrackOfferFunnel("Clicked", campaign, offer);
+
+        /// <summary>
+        /// Record that an offer click resulted in a conversion (§4.7). Emits a <c>Converted</c>
+        /// funnel <see cref="CoreEvent"/>. See <see cref="TrackOfferClicked"/> for attribution rules.
+        /// </summary>
+        public static void TrackOfferConverted(NotificationIntentData campaign, Offer offer = null) =>
+            TrackOfferFunnel("Converted", campaign, offer);
+
+        /// <summary>
+        /// Convenience overload taking the raw campaign/node ids plus the optional offer, for callers
+        /// that only kept the ids from the originating notification.
+        /// </summary>
+        public static void TrackOfferClicked(string campaignId, string nodeId, Offer offer = null) =>
+            TrackOfferFunnel("Clicked", BuildIntent(campaignId, nodeId), offer);
+
+        /// <summary>Convenience overload for conversions (see <see cref="TrackOfferClicked(string,string,Offer)"/>).</summary>
+        public static void TrackOfferConverted(string campaignId, string nodeId, Offer offer = null) =>
+            TrackOfferFunnel("Converted", BuildIntent(campaignId, nodeId), offer);
+
+        private static NotificationIntentData BuildIntent(string campaignId, string nodeId) =>
+            new NotificationIntentData { CampaignId = campaignId, NodeId = nodeId };
+
+        // Builds the §4.6 funnel CoreEvent and sends it through the player's analytics service.
+        private static void TrackOfferFunnel(string funnelType, NotificationIntentData campaign, Offer offer)
+        {
+            if (campaign == null || !campaign.IsTrackedCampaign)
+            {
+                Debug.LogWarning("[BeamableNotifications] TrackOffer" + funnelType +
+                                 " ignored: intent data is not a tracked campaign (campaignId + nodeId required).");
+                return;
+            }
+
+            // Single offer relevant to this event (§4.6): the explicit one, else the first carried.
+            Offer effectiveOffer = offer;
+            if (effectiveOffer == null && campaign.Offers != null && campaign.Offers.Count > 0)
+                effectiveOffer = campaign.Offers[0];
+
+            var p = new Dictionary<string, object>();
+            if (campaign.CampaignId != null) p["campaignId"] = campaign.CampaignId;
+            if (campaign.NodeId != null) p["nodeId"] = campaign.NodeId;
+            if (campaign.GamerTag != null) p["gamerTag"] = campaign.GamerTag;
+            if (campaign.AccountId != null) p["accountId"] = campaign.AccountId;
+            if (campaign.CidPid != null) p["cidPid"] = campaign.CidPid;
+            if (effectiveOffer != null) p["offerData"] = JsonSerializable.Serialize(effectiveOffer);
+            if (campaign.Deeplink != null) p["deeplink"] = campaign.Deeplink;
+            p["funnelType"] = funnelType;
+
+            try
+            {
+                var analytics = ResolveAnalyticsService();
+                if (analytics == null)
+                {
+                    Debug.LogWarning("[BeamableNotifications] No IBeamAnalyticsService on the Beamable context; " +
+                                     "offer " + funnelType + " event was not sent.");
+                    return;
+                }
+                var coreEvent = new CoreEvent(FunnelCategory, funnelType, p);
+                analytics.SendAnalyticsEvent(analytics.BuildRequest(coreEvent));
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[BeamableNotifications] Failed to send offer " + funnelType +
+                                 " analytics event: " + e.Message);
+            }
+        }
+
+        // Pulls the analytics service off the default Beamable context. Lives in Unity.Beamable
+        // (BeamContext) + Unity.Beamable.Runtime.Common (IBeamAnalyticsService); both are referenced
+        // by this assembly (see Beamable.Notifications.asmdef).
+        private static IBeamAnalyticsService ResolveAnalyticsService()
+        {
+            var ctx = BeamContext.Default;
+            return ctx?.ServiceProvider?.GetService<IBeamAnalyticsService>();
         }
 
         // MARK: Event raisers (used by the Android relay; iOS uses the trampolines below)
@@ -237,60 +384,69 @@ namespace Beamable.Notifications
         [MonoPInvokeCallback(typeof(Native.BMNCallback))]
         private static void Permission(string json)
         {
-            var data = Json.Deserialize<PermissionResult>(json);
+            var data = JsonSerializable.FromJson<PermissionResult>(json);
             Dispatcher.Run(() => RaisePermissionResult(data));
         }
 
         [MonoPInvokeCallback(typeof(Native.BMNCallback))]
         private static void TokenReceived(string json)
         {
-            var token = Json.Deserialize<TokenWrapper>(json)?.token;
+            var token = JsonSerializable.FromJson<TokenWrapper>(json)?.token;
             Dispatcher.Run(() => RaiseTokenReceived(token));
         }
 
         [MonoPInvokeCallback(typeof(Native.BMNCallback))]
         private static void TokenError(string json)
         {
-            var error = Json.Deserialize<ErrorWrapper>(json)?.error;
+            var error = JsonSerializable.FromJson<ErrorWrapper>(json)?.error;
             Dispatcher.Run(() => RaiseTokenError(error));
         }
 
         [MonoPInvokeCallback(typeof(Native.BMNCallback))]
         private static void Presented(string json)
         {
-            var data = Json.Deserialize<NotificationData>(json);
+            var data = JsonSerializable.FromJson<NotificationData>(json);
             Dispatcher.Run(() => RaiseNotificationPresented(data));
         }
 
         [MonoPInvokeCallback(typeof(Native.BMNCallback))]
         private static void Received(string json)
         {
-            var data = Json.Deserialize<NotificationData>(json);
+            var data = JsonSerializable.FromJson<NotificationData>(json);
             Dispatcher.Run(() => RaiseNotificationReceived(data));
         }
 
         [MonoPInvokeCallback(typeof(Native.BMNCallback))]
         private static void Tapped(string json)
         {
-            var data = Json.Deserialize<NotificationData>(json);
+            var data = JsonSerializable.FromJson<NotificationData>(json);
             Dispatcher.Run(() => RaiseNotificationTapped(data));
         }
 
         [MonoPInvokeCallback(typeof(Native.BMNCallback))]
         private static void Pending(string json)
         {
-            var list = Json.Deserialize<List<NotificationData>>(json);
+            var list = NotificationJson.FromJsonArray<NotificationData>(json);
             Dispatcher.Run(() => RaisePendingNotifications(list));
         }
 
         [MonoPInvokeCallback(typeof(Native.BMNCallback))]
         private static void Receipts(string json)
         {
-            var list = Json.Deserialize<List<DeliveryReceipt>>(json);
+            var list = NotificationJson.FromJsonArray<DeliveryReceipt>(json);
             Dispatcher.Run(() => RaiseDeliveryReceipts(list));
         }
 
-        [Serializable] private class TokenWrapper { public string token; }
-        [Serializable] private class ErrorWrapper { public string error; }
+        private class TokenWrapper : JsonSerializable.ISerializable
+        {
+            public string token;
+            public void Serialize(JsonSerializable.IStreamSerializer s) => s.Serialize("token", ref token);
+        }
+
+        private class ErrorWrapper : JsonSerializable.ISerializable
+        {
+            public string error;
+            public void Serialize(JsonSerializable.IStreamSerializer s) => s.Serialize("error", ref error);
+        }
     }
 }

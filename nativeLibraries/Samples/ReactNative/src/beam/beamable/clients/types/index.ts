@@ -65,23 +65,35 @@ export type SendResult = {
   messages: string[]; 
 };
 
-export type SendPushToSelfRequestArgs = { 
-  title: string; 
-  body: string; 
-  deepLink: string; 
+export type AdminSendResult = {
+  success: boolean;
+  attempted: number;
+  succeeded: number;
+  failed: number;
+  messages: string[];
 };
 
-export type AdminSendResult = { 
-  success: boolean; 
-  attempted: number; 
-  succeeded: number; 
-  failed: number; 
-  messages: string[]; 
+export type PushOffer = {
+  itemId: string;
+  value: string;
+  customData?: string;
 };
 
-export type SendPushToPlayerRequestArgs = { 
-  playerId: bigint | string; 
-  title: string; 
-  body: string; 
-  deepLink: string; 
+export type PushCampaignRequest = {
+  title: string;
+  body: string;
+  deepLink: string;
+  campaignId?: string;
+  nodeId?: string;
+  gamerTag?: string;
+  accountId?: string;
+  cidPid?: string;
+  offers?: PushOffer[];
+  campaignData?: string;
 };
+
+export type SendCampaignPushToSelfRequestArgs = PushCampaignRequest;
+
+export type SendCampaignPushToPlayerRequestArgs = {
+  playerId: bigint | string;
+} & PushCampaignRequest;

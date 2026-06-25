@@ -81,6 +81,23 @@ object UnrealPush {
     @JvmStatic fun cancel(id: Int) = PushManager.cancel(id)
     @JvmStatic fun cancelAll() = PushManager.cancelAll()
 
+    /**
+     * Persists the player's auth credentials so the native funnel can POST (see
+     * [PushManager.configureAuth]). [authJson] is the canonical credential object.
+     */
+    @JvmStatic
+    fun configureAuth(authJson: String) {
+        val act = currentActivity() ?: return
+        PushManager.configureAuth(act.applicationContext, authJson)
+    }
+
+    /** Clears persisted auth credentials (see [PushManager.clearAuth]). */
+    @JvmStatic
+    fun clearAuth() {
+        val act = currentActivity() ?: return
+        PushManager.clearAuth(act.applicationContext)
+    }
+
     @JvmStatic
     fun setForeground(foreground: Boolean) {
         PushManager.isForeground = foreground

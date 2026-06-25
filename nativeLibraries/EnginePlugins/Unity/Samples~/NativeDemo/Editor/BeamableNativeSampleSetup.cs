@@ -4,10 +4,14 @@ using UnityEngine;
 
 /// <summary>
 /// One-click setup for the Native Demo sample. Runs the Android setup (scaffolds/patches the
-/// AndroidManifest — wiring the sample's <c>DiscordWebhookPushHandler</c> — sets min SDK, disables
-/// stale gradle toggles) and registers the sample's shipped <c>NativeDemo.unity</c> as the first
-/// (boot) scene in Build Settings, so an Android build launches straight into the test harness.
-/// The scene ships with the sample (no generation); this only configures the project. Idempotent.
+/// AndroidManifest, sets min SDK, disables stale gradle toggles) and registers the sample's shipped
+/// <c>NativeDemo.unity</c> as the first (boot) scene in Build Settings, so an Android build launches
+/// straight into the test harness. The scene ships with the sample (no generation); this only
+/// configures the project. Idempotent.
+///
+/// Decision Q8 / §5.2: this no longer auto-wires a Discord-webhook receive handler. Receive-time
+/// analytics moved native; if you want a custom receive handler, generate the sample
+/// PushNotificationReceivedHandler from the Beamable Notifications window and wire it yourself.
 /// </summary>
 public static class BeamableNativeSampleSetup
 {
@@ -17,7 +21,8 @@ public static class BeamableNativeSampleSetup
     [MenuItem("Tools/Beamable/Android/Set Up Native Sample")]
     public static void SetUp()
     {
-        var setupChanges = BeamableAndroidSetup.ApplySettings(BeamableAndroidSetup.SampleHandlerClass);
+        // No handler class: do NOT auto-wire a receive handler (Decision Q8).
+        var setupChanges = BeamableAndroidSetup.ApplySettings();
 
         string scenePath = AssetDatabase.GUIDToAssetPath(SceneGuid);
         if (string.IsNullOrEmpty(scenePath))

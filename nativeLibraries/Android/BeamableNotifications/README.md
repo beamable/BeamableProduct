@@ -223,7 +223,7 @@ instantiated by **reflection**, so it runs even in a freshly spawned process whe
 <meta-data android:name="com.beamable.push.notification_received_handler"
            android:value="your.Handler" />
 ```
-(Or set it at runtime via `PushManager.setNotificationReceivedHandler(...)` — app-alive only.)
+(Or add one at runtime via `PushManager.addNotificationReceivedHandler(...)` — app-alive only.)
 
 ```kotlin
 interface PushNotificationReceivedHandler {

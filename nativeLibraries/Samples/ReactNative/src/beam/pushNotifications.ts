@@ -1,23 +1,17 @@
 /**
- * Helpers for the `PushNotificationService` microservice — registering this
- * device's push token and sending remote pushes through it. Thin wrappers over
- * the auto-generated `PushNotificationServiceClient` (see beamClient.ts).
+ * App-specific binding for the `PushNotificationService` microservice.
  *
- * Flow:
- *   1. The native SDK gives the app a device token (the `tokenReceived` event
- *      after `registerForRemote()`): an APNs token on iOS, an FCM token on Android.
- *   2. `registerDevice(token)` forwards it to the microservice tagged with the
- *      platform ("apns" / "fcm"), which stores it against the authenticated player.
- *   3. `sendToSelf(...)` asks the microservice to deliver a real remote push to
- *      every device the player has registered — the server routes each device to
- *      Apple (APNs) or Firebase (FCM) by its stored platform.
+ * The generic device push-token logic (platform/env resolution + the
+ * register/unregister/list/sendToSelf wrappers) now lives in the shared package
+ * `@beamable/notifications-react-native` (`createPushDevice`). This file only binds that
+ * helper to THIS app's auto-generated `PushNotificationServiceClient` (resolved via
+ * `getPushService()` in beamClient.ts) and re-exports the typed surface the screens use.
  *
- * Remote delivery needs a physical device (neither APNs nor FCM deliver reliably
- * to a stock simulator/emulator for the push token) and the matching provider
- * credentials in the realm config: APNs (`ApnsSettings`, `apns_push`) for iOS,
- * FCM (`FcmSettings`, `fcm_push`) for Android.
+ * Remote delivery needs a physical device (neither APNs nor FCM deliver reliably to a
+ * simulator/emulator for the push token) and the matching provider credentials in the realm
+ * config: APNs (`apns_push`) for iOS, FCM (`fcm_push`) for Android.
  */
-import { Platform } from 'react-native';
+import { createPushDevice } from '@beamable/notifications-react-native';
 import { getPushService } from './beamClient';
 import type {
   DeviceList,
@@ -25,53 +19,47 @@ import type {
   SendResult,
 } from './beamable/clients/types';
 
-/** Push provider for a device token — matches the microservice's PushPlatform. */
-export type PushPlatform = 'apns' | 'fcm';
+export type {
+  PushPlatform,
+  ApnsEnvironment,
+} from '@beamable/notifications-react-native';
+export {
+  DEVICE_PLATFORM,
+  DEFAULT_APNS_ENVIRONMENT as APNS_ENVIRONMENT,
+} from '@beamable/notifications-react-native';
 
-/** The provider for tokens produced by this platform's native SDK. */
-export const DEVICE_PLATFORM: PushPlatform =
-  Platform.OS === 'android' ? 'fcm' : 'apns';
+// Bind the generic helper directly to this app's auto-generated microservice client. The
+// shared `createPushDevice` helper drives the standard register/unregister/list methods plus
+// the campaign-aware `sendCampaignPushToSelf` (its `sendToSelf` maps to it with empty campaign
+// fields) — all of which the generated client exposes, so no adapter is needed.
+const device = createPushDevice(getPushService, {
+  notConnectedMessage:
+    'Not connected — call initBeam() (Connect to Beamable) first.',
+});
 
-/**
- * Which APNs environment this build's tokens belong to (iOS only; ignored for FCM).
- * Dev builds (`expo run:ios`) and TestFlight use Apple's **sandbox**; only App Store
- * builds use **production**. Override per build if you ship to the App Store.
- */
-export const APNS_ENVIRONMENT: 'sandbox' | 'production' = 'sandbox';
-
-function service() {
-  const svc = getPushService();
-  if (!svc) throw new Error('Not connected — call initBeam() (Connect to Beamable) first.');
-  return svc;
-}
-
-/**
- * Registers (or refreshes) this device's push token with the microservice.
- * `platform` defaults to this device's provider (FCM on Android, APNs on iOS).
- */
-export function registerDevice(
+/** Registers (or refreshes) this device's push token with the microservice. */
+export const registerDevice = device.registerDevice as (
   token: string,
-  platform: PushPlatform = DEVICE_PLATFORM,
-  environment: 'sandbox' | 'production' = APNS_ENVIRONMENT,
-): Promise<RegisterResult> {
-  return service().registerDeviceToken({ token, environment, platform });
-}
+  platform?: import('@beamable/notifications-react-native').PushPlatform,
+  environment?: import('@beamable/notifications-react-native').ApnsEnvironment,
+) => Promise<RegisterResult>;
 
 /** Removes a device token from the player's registrations (e.g. on logout). */
-export function unregisterDevice(token: string) {
-  return service().unregisterDeviceToken({ token });
-}
+export const unregisterDevice = device.unregisterDevice;
 
 /** Lists the player's registered devices (tokens come back masked). */
-export function listDevices(): Promise<DeviceList> {
-  return service().listMyDevices();
-}
+export const listDevices = device.listDevices as () => Promise<DeviceList>;
 
-/** Sends a remote push to every device the current player has registered. */
-export function sendToSelf(
+/**
+ * Sends a remote push to every device the current player has registered.
+ *
+ * The package helper maps this to the campaign-aware `sendCampaignPushToSelf` with the
+ * campaign fields left empty — an "untracked" send is just a campaign request carrying only
+ * title/body/deepLink (no funnel "Sent" event is emitted server-side without campaignId +
+ * nodeId).
+ */
+export const sendToSelf = device.sendToSelf as (
   title: string,
   body: string,
   deepLink?: string,
-): Promise<SendResult> {
-  return service().sendPushToSelf({ title, body, deepLink: deepLink ?? '' });
-}
+) => Promise<SendResult>;

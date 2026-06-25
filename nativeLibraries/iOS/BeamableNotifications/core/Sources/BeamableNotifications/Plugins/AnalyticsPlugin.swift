@@ -1,76 +1,55 @@
 import Foundation
 import UIKit
 
-/// Reference plugin: reports notifications received *while the app is alive* to the
-/// analytics endpoint configured via `bmn_configureAnalytics`. The closed-app case is
-/// handled separately by the NSE (see extension/). Together they give full receipt
-/// coverage. Opt in by listing `AnalyticsPlugin` in the app's `BMNPlugins` Info.plist
-/// array, or by `PluginRegistry.shared.register(AnalyticsPlugin())`.
+/// Reference plugin: emits Beamable funnel analytics for notifications observed *while the
+/// app is alive* (§4). The closed-app case is handled by the NSE
+/// (`AnalyticsServicePlugin`); together they give full funnel coverage.
 ///
-/// This ships as a plugin on purpose: teams can replace it with their own analytics
-/// backend by writing a different plugin, with no change to the SDK core.
+/// - **Received** — fired when a notification is presented in the foreground.
+/// - **Opened** — fired when the user taps the notification (or an action button).
+///
+/// Events are only emitted when the notification carries a tracked campaign
+/// (`campaignId` + `nodeId`) plus the scope/gamerTag needed to authenticate (§4.2/§4.3);
+/// otherwise the notification isn't part of a tracked campaign and is ignored. The POST is
+/// authenticated with the player bearer token persisted in the App Group via `SharedConfig`.
+///
+/// Opt in by listing `AnalyticsPlugin` in the app's `BMNPlugins` Info.plist array, or by
+/// `PluginRegistry.shared.register(AnalyticsPlugin())`. Teams can replace it with their own
+/// analytics plugin without changing the SDK core.
 public final class AnalyticsPlugin: NSObject, NotificationPlugin {
 
     public var id: String { "com.beamable.notifications.analytics" }
 
     private let session: URLSession
-    private let configProvider: () -> AnalyticsConfig?
+    private let shared: SharedConfig
 
     public override convenience init() {
-        self.init(session: .shared, configProvider: { SharedConfig.shared.loadAnalyticsConfig() })
+        self.init(session: .shared, shared: .shared)
     }
 
-    public init(session: URLSession = .shared,
-                configProvider: @escaping () -> AnalyticsConfig?) {
+    public init(session: URLSession = .shared, shared: SharedConfig = .shared) {
         self.session = session
-        self.configProvider = configProvider
+        self.shared = shared
         super.init()
     }
 
     public func onNotificationReceived(_ note: NotificationData) {
-        send(event: "received", note: note, wasForeground: isAppForeground)
+        // Foreground receipt while the app is alive.
+        emit(.received, note: note)
     }
 
     public func onNotificationTapped(_ note: NotificationData, actionId: String?) {
-        // A tap means the app was backgrounded/closed when the notification arrived.
-        send(event: "opened", note: note, wasForeground: false)
+        // A tap on the notification itself is the "Opened" funnel stage (§4.5). In-app offer
+        // clicks ("Clicked"/"Converted") are emitted separately by the offer-tracking helpers.
+        emit(.opened, note: note)
     }
 
-    /// Best-effort foreground check. Reads `applicationState` on the main thread (where
-    /// these callbacks fire); falls back to `false` if ever invoked off-main.
-    private var isAppForeground: Bool {
-        guard Thread.isMainThread else { return false }
-        return UIApplication.shared.applicationState == .active
-    }
-
-    private func send(event: String, note: NotificationData, wasForeground: Bool) {
-        guard let config = configProvider(), config.enabled,
-              let url = URL(string: config.endpoint) else { return }
-
-        // Raw payload, minus the APNs envelope, to mirror Android's `data` field.
-        var data = note.userInfo
-        data.removeValue(forKey: "aps")
-
-        var payload = AnalyticsPayload.make(
-            event: event,
-            source: "app",
-            notificationId: note.id,
-            title: note.title,
-            body: note.body,
-            deepLink: note.deepLink ?? note.userInfo.bmnDeepLink,
-            wasForeground: wasForeground,
-            receivedAtMillis: Int64(Date().timeIntervalSince1970 * 1000),
-            data: data,
-            config: config
-        )
-        if let actionId = note.actionId { payload["actionId"] = .string(actionId) }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        config.headers?.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
-        request.httpBody = try? JSON.encoder.encode(payload)
-
-        session.dataTask(with: request).resume()
+    private func emit(_ type: FunnelType, note: NotificationData) {
+        let intent = note.campaignIntent
+        guard let event = BeamableAnalytics.makeEvent(type, intent: intent) else { return }
+        // App is alive: fire-and-forget, but persist on failure so an app-path auth/transport
+        // failure also queues for authenticated replay (mirrors the NSE fallback). The replay
+        // path itself (NotificationManager.flushPendingFunnel) uses persistOnFailure: false.
+        BeamableAnalytics.emit(event, shared: shared, session: session, persistOnFailure: true)
     }
 }

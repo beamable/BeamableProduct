@@ -32,10 +32,18 @@ void bmn_getPending(void);                             // -> onPendingNotificati
 void bmn_registerForRemote(void);                      // -> onTokenReceived / onTokenError
 void bmn_unregisterForRemote(void);
 
-// Closed-app analytics config (feature 8). Stored in the App Group, read by app + NSE.
-// configJson: {"enabled":true,"endpoint":"https://...","headers":{...},"commonParams":{...}}
-void bmn_configureAnalytics(const char *configJson);
+// Delivery receipts (feature 8). Replayed from the App Group (logged by the NSE).
 void bmn_getDeliveryReceipts(void);                    // -> onDeliveryReceipts
+
+// Beamable funnel analytics auth + offer helpers (spec §4).
+// configJson: AuthConfig {"accessToken":"","refreshToken":"","accessTokenExpiresAt":<sec>,
+//                         "cid":"","pid":"","host":"https://..."} — persisted to App Group.
+void bmn_configureAuth(const char *configJson);        // call on login/refresh
+void bmn_clearAuth(void);                              // call on logout
+// requestJson: OfferTrackRequest {"campaignId":"","nodeId":"","gamerTag":"","accountId":"",
+//                                 "cidPid":"","deeplink":"","offer":{...}}
+void bmn_trackOfferClicked(const char *requestJson);   // emits a "Clicked" funnel event
+void bmn_trackOfferConverted(const char *requestJson); // emits a "Converted" funnel event
 
 // Templates (feature 4) & action-button categories (feature 7).
 void bmn_registerTemplate(const char *templateJson);

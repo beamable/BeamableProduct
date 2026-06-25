@@ -23,7 +23,7 @@
 import BeamableNotifications from 'beamable-notifications-ios';
 
 BeamableNotifications.addListener('tokenReceived', ({ token }) => sendToBackend(token));
-BeamableNotifications.addListener('notificationTapped', n => router.open(n.deepLink));
+BeamableNotifications.addListener('notificationOpened', n => router.open(n.deepLink));
 BeamableNotifications.addListener('permissionResult', r => console.log(r.granted));
 
 BeamableNotifications.initialize();
@@ -42,11 +42,14 @@ BeamableNotifications.scheduleLocal({
   userInfo: { deepLink: 'app://home' },
 });
 
-// Remote + closed-app analytics
-BeamableNotifications.configureAnalytics({
-  enabled: true,
-  endpoint: 'https://api.example.com/notif-events',
-  commonParams: { playerId },
+// Remote + closed-app funnel analytics — persist the player's auth so the native funnel
+// can POST even when the app is killed (see docs/notifications-feature.md §4.3).
+BeamableNotifications.configureAuth({
+  accessToken,
+  refreshToken,
+  accessTokenExpiresAt,   // absolute epoch ms
+  cid, pid,
+  host: 'https://api.beamable.com',
 });
 BeamableNotifications.registerForRemote();
 ```

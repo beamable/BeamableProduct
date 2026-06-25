@@ -89,7 +89,7 @@ Either way requires **no core edits**:
 
 2. **Explicit (when you need constructor arguments).**
    ```swift
-   PluginRegistry.shared.register(AnalyticsPlugin(session: mySession, configProvider: { … }))
+   PluginRegistry.shared.register(AnalyticsPlugin(session: mySession, shared: .shared))
    ```
    Call before / during `bmn_initialize`.
 
