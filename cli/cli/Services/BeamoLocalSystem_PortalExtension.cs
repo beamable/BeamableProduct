@@ -73,8 +73,9 @@ public partial class BeamoLocalSystem
 
 						observer.InstallDeps();
 
-						// Fail fast if the extension and any of its libraries disagree on the @beamable/portal-toolkit
-						// version. Uses npm's own resolver (a dry-run install) rather than comparing versions by hand.
+						// Fail fast if the extension and any of its libraries disagree on a shared package version
+						// (@beamable/portal-toolkit, react) by comparing the installed versions against each library's
+						// declared peerDependency ranges.
 						PortalExtensionAddLibraryCommand.ValidateLibraryPeerDependencies(extension);
 
 						observer.BuildExtension();
