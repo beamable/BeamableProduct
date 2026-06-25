@@ -24,6 +24,7 @@ struct FBMNNotificationData
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBMNOnPermissionResult, bool, bGranted, const FString&, Status);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBMNOnString, const FString&, Value);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBMNOnNotification, const FBMNNotificationData&, Notification);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FBMNOnDeliveryReported, bool, bSuccess, int32, StatusCode, const FString&, Label);
 
 /// Blueprint-facing API and event hub for BeamableNotifications. As a
 /// UGameInstanceSubsystem it has a clear lifetime and is easy to reach from Blueprints
@@ -58,6 +59,10 @@ public:
     /// an Android cold/warm-start launch). Notification-tap deep links arrive on
     /// `OnNotificationTapped` (see `FBMNNotificationData::DeepLink`).
     UPROPERTY(BlueprintAssignable, Category = "Notifications") FBMNOnString OnDeepLink;
+
+    /// Fired after an app-side delivery report POST completes (see ReportDelivery / ConfigureAnalytics).
+    /// `bSuccess` is the HTTP success flag, `StatusCode` the response code (0 on connection failure).
+    UPROPERTY(BlueprintAssignable, Category = "Notifications") FBMNOnDeliveryReported OnDeliveryReported;
 
     // Permission (feature 5)
     UFUNCTION(BlueprintCallable, Category = "Notifications")
@@ -105,10 +110,18 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Notifications")
     bool ConsumePendingDeepLink(FString& OutUrl);
 
-    /// Convenience: enable closed-app delivery analytics, POSTing each delivery to Endpoint.
-    /// (iOS: written to the App Group so the Notification Service Extension can read it.)
+    /// Enable delivery analytics, POSTing each delivery to Endpoint. Drives three paths from one
+    /// endpoint: iOS closed-app (NSE), Android closed-app (BeamUnrealPushReceivedHandler), and
+    /// app-side reporting on foreground-present / tap / cold-start (covers local notifications the
+    /// closed-app handlers can't see). Auto-called at startup from
+    /// [BeamPlatformNotifications] AnalyticsEndpoint, so Blueprint wiring is optional.
     UFUNCTION(BlueprintCallable, Category = "Notifications")
     void ConfigureAnalytics(const FString& Endpoint, bool bEnabled = true);
+
+    /// Manually POST a delivery report to the configured analytics endpoint. No-op unless analytics
+    /// is enabled and an endpoint is set. Fires OnDeliveryReported when the POST completes.
+    UFUNCTION(BlueprintCallable, Category = "Notifications")
+    void ReportDelivery(const FString& Label, const FBMNNotificationData& Notification);
 
     /// True on platforms with a real native backend (iOS / Android). Useful so the UI can
     /// show "native calls are no-ops in the editor".
@@ -139,4 +152,11 @@ private:
     /// A deep link captured before any OnDeepLink listener existed (cold-start tap). Drained
     /// by ConsumePendingDeepLink.
     FString PendingDeepLink;
+
+    /// App-side delivery analytics config (set by ConfigureAnalytics / auto-read from DefaultEngine.ini).
+    FString AnalyticsEndpoint;
+    bool bAnalyticsEnabled = false;
+    /// Whether to POST app-side delivery reports (present/tap/cold-start). Gated by the
+    /// [BeamPlatformNotifications] bAppSideAnalytics opt-out and an enabled, non-empty endpoint.
+    bool bAppSideReporting = false;
 };
