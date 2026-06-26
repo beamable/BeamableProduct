@@ -6,18 +6,6 @@ public class PortalExtensionOptionsResult
 {
     public List<PageExtensionOption> pageExtensions;
     public List<ComponentExtensionOption> componentExtensions;
-    public List<ExtensionMountSiteOption> extensionMountSites;
-}
-
-/// <summary>
-/// Represents a mount slot exposed by another local extension via <c>&lt;BeamExtensionSite&gt;</c>.
-/// Set --mount-page to extensionName and --mount-selector to one of the entries in selectors;
-/// the child extension then renders inside the host extension wherever it is mounted.
-/// </summary>
-public class ExtensionMountSiteOption
-{
-    public string extensionName;
-    public List<ComponentSelectorOption> selectors;
 }
 
 /// <summary>
@@ -31,7 +19,9 @@ public class PageExtensionOption
 }
 
 /// <summary>
-/// Represents a component slot inside an existing Portal page.
+/// Represents a component slot on an existing Portal page. Slots contributed by other running
+/// extensions (their <c>&lt;BeamExtensionSite&gt;</c> declarations) also appear here — they are just
+/// additional uniquely-named selectors on the site at the URL where that extension renders.
 /// Set --mount-page to path and --mount-selector to one of the entries in selectors.
 /// </summary>
 public class ComponentExtensionOption
@@ -64,7 +54,6 @@ public class ListPortalExtensionOptionsCommand
         const string pathMatchSuffix = "!pathMatch";
         var pageExtensions = new List<PageExtensionOption>();
         var componentExtensions = new List<ComponentExtensionOption>();
-        var extensionMountSites = new List<ExtensionMountSiteOption>();
 
         foreach (var site in config.mountSites)
         {
@@ -75,18 +64,6 @@ public class ListPortalExtensionOptionsCommand
                 {
                     routePrefix = prefix,
                     autoSelector = site.selectors.Count > 0 ? site.selectors[0].selector : string.Empty
-                });
-            }
-            else if (site.selectors.Any(s => s.type == RemotePortalConfigService.ExtensionMountType))
-            {
-                // Slots contributed by a local extension's BeamExtensionSite declarations; keyed by
-                // the host extension's name rather than a Portal route.
-                extensionMountSites.Add(new ExtensionMountSiteOption
-                {
-                    extensionName = site.path,
-                    selectors = site.selectors
-                        .Select(s => new ComponentSelectorOption { selector = s.selector, type = s.type })
-                        .ToList()
                 });
             }
             else
@@ -104,8 +81,7 @@ public class ListPortalExtensionOptionsCommand
         return new PortalExtensionOptionsResult
         {
             pageExtensions = pageExtensions,
-            componentExtensions = componentExtensions,
-            extensionMountSites = extensionMountSites
+            componentExtensions = componentExtensions
         };
     }
 }

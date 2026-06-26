@@ -123,18 +123,17 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		BuildMountSiteIndex(config,
 			out var customPagePrefixes,
 			out var customPageConfigs,
-			out var componentPages,
-			out var extensionSites);
+			out var componentPages);
 
 		RemotePortalConfiguration.MountSiteSelector resolvedSelector;
 
 		if (hasExplicitPage)
 		{
-			resolvedSelector = ValidateMountArgs(args, customPagePrefixes, customPageConfigs, componentPages, extensionSites);
+			resolvedSelector = ValidateMountArgs(args, customPagePrefixes, customPageConfigs, componentPages);
 		}
 		else
 		{
-			resolvedSelector = RunMountWizard(args, customPagePrefixes, customPageConfigs, componentPages, extensionSites);
+			resolvedSelector = RunMountWizard(args, customPagePrefixes, customPageConfigs, componentPages);
 		}
 
 		if (resolvedSelector.type == "page")
@@ -193,14 +192,12 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		RemotePortalConfiguration config,
 		out List<string> customPagePrefixes,
 		out Dictionary<string, RemotePortalConfiguration.MountSiteConfig> customPageConfigs,
-		out Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages,
-		out Dictionary<string, RemotePortalConfiguration.MountSiteConfig> extensionSites)
+		out Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages)
 	{
 		const string pathMatchSuffix = "!pathMatch";
 		customPagePrefixes = new List<string>();
 		customPageConfigs = new Dictionary<string, RemotePortalConfiguration.MountSiteConfig>();
 		componentPages = new Dictionary<string, RemotePortalConfiguration.MountSiteConfig>();
-		extensionSites = new Dictionary<string, RemotePortalConfiguration.MountSiteConfig>();
 
 		foreach (var site in config.mountSites)
 		{
@@ -210,14 +207,10 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 				customPagePrefixes.Add(prefix);
 				customPageConfigs[prefix] = site;
 			}
-			else if (site.selectors.Any(s => s.type == RemotePortalConfigService.ExtensionMountType))
-			{
-				// Slots exposed by another local extension's BeamExtensionSite declarations, keyed
-				// by the host extension's name (what a child sets as its own mount.page).
-				extensionSites[site.path] = site;
-			}
 			else
 			{
+				// Includes slots contributed by other running extensions' BeamExtensionSite
+				// declarations — they are ordinary, uniquely-named component selectors at a URL.
 				componentPages[site.path] = site;
 			}
 		}
@@ -227,24 +220,8 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		NewPortalExtensionCommandArgs args,
 		List<string> customPagePrefixes,
 		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> customPageConfigs,
-		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages,
-		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> extensionSites)
+		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages)
 	{
-		// --mount-page may name another local extension that exposes BeamExtensionSite slots.
-		if (extensionSites.TryGetValue(args.mountPage, out var extensionConfig))
-		{
-			if (string.IsNullOrEmpty(args.mountSelector))
-				throw new CliException(
-					$"--mount-selector is required when mounting into extension '{args.mountPage}'. " +
-					$"Valid selectors: {string.Join(", ", extensionConfig.selectors.Select(s => s.selector))}");
-			var extensionSelector = extensionConfig.selectors.FirstOrDefault(s => s.selector == args.mountSelector);
-			if (extensionSelector == null)
-				throw new CliException(
-					$"Invalid --mount-selector '{args.mountSelector}' for extension '{args.mountPage}'. " +
-					$"Valid selectors: {string.Join(", ", extensionConfig.selectors.Select(s => s.selector))}");
-			return extensionSelector;
-		}
-
 		// Check if --mount-page is a custom page extension (starts with a known prefix + has extra path)
 		var matchingPrefix = customPagePrefixes.FirstOrDefault(prefix =>
 			args.mountPage.StartsWith(prefix) && args.mountPage.Length > prefix.Length);
@@ -282,31 +259,23 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 			return selector;
 		}
 
-		var extensionHint = extensionSites.Count > 0
-			? $" Or an extension exposing mount sites: {string.Join(", ", extensionSites.Keys)}."
-			: string.Empty;
 		throw new CliException(
 			$"Invalid --mount-page '{args.mountPage}'. " +
 			$"Must be a known component page or a custom route under: " +
-			string.Join(", ", customPagePrefixes.Select(p => $"{p}<route>")) + "." +
-			extensionHint);
+			string.Join(", ", customPagePrefixes.Select(p => $"{p}<route>")) + ".");
 	}
 
 	private static RemotePortalConfiguration.MountSiteSelector RunMountWizard(
 		NewPortalExtensionCommandArgs args,
 		List<string> customPagePrefixes,
 		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> customPageConfigs,
-		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages,
-		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> extensionSites)
+		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages)
 	{
 		const string back = "<-- (back)";
-		const string extensionChoice = "Extension";
 
 		while (true)
 		{
 			var typeChoices = new List<string> { "Page", "Component" };
-			// Only offer mounting into another extension when one actually exposes slots.
-			if (extensionSites.Count > 0) typeChoices.Add(extensionChoice);
 
 			var extensionType = AnsiConsole.Prompt(
 				new SelectionPrompt<string>()
@@ -349,7 +318,7 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 				args.mountSelector = selector.selector;
 				return selector;
 			}
-			else if (extensionType == "Component")
+			else // Component
 			{
 				while (true)
 				{
@@ -384,39 +353,6 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 							.AddBeamHightlight());
 
 					if (selectorChoice == back) continue; // back to page selection
-
-					var chosenSelector = siteConfig.selectors[selectorDisplays.IndexOf(selectorChoice)];
-					args.mountSelector = chosenSelector.selector;
-					return chosenSelector;
-				}
-			}
-			else // Extension — mount inside another local extension's BeamExtensionSite slot
-			{
-				while (true)
-				{
-					var hostChoice = AnsiConsole.Prompt(
-						new SelectionPrompt<string>()
-							.Title("Which [green]extension[/] are you mounting into?")
-							.AddChoices(extensionSites.Keys.Prepend(back))
-							.AddBeamHightlight());
-
-					if (hostChoice == back) break; // back to type selection
-
-					var siteConfig = extensionSites[hostChoice];
-					args.mountPage = hostChoice;
-
-					// Always prompt for the site, even when there is only one available.
-					var selectorDisplays = siteConfig.selectors
-						.Select(s => s.selector)
-						.ToList();
-
-					var selectorChoice = AnsiConsole.Prompt(
-						new SelectionPrompt<string>()
-							.Title("Which [green]site[/] inside the extension?")
-							.AddChoices(selectorDisplays.Prepend(back))
-							.AddBeamHightlight());
-
-					if (selectorChoice == back) continue; // back to extension selection
 
 					var chosenSelector = siteConfig.selectors[selectorDisplays.IndexOf(selectorChoice)];
 					args.mountSelector = chosenSelector.selector;
