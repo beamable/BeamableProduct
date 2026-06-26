@@ -27,5 +27,13 @@ Pod::Spec.new do |s|
   # single-level glob, not "ios/**".
   s.source_files = "ios/*.{h,m,mm,swift}"
 
+  # The core is a STATIC-library xcframework: CocoaPods copies its staged headers (which
+  # include the BeamableNotifications.swiftmodule) into PODS_XCFRAMEWORKS_BUILD_DIR and adds
+  # them to HEADER_SEARCH_PATHS (clang) only. For the bridge's `import BeamableNotifications`
+  # to resolve, the Swift compiler also needs that dir on its module import path.
+  s.pod_target_xcconfig = {
+    "SWIFT_INCLUDE_PATHS" => '$(inherited) "${PODS_XCFRAMEWORKS_BUILD_DIR}/BeamableNotificationsRN/Headers"'
+  }
+
   s.dependency "React-Core"
 end

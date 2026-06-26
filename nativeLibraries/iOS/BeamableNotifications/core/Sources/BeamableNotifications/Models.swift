@@ -401,6 +401,22 @@ public struct PermissionOptions: Codable, Equatable {
     public var provisional: Bool?
     public var criticalAlert: Bool?
     public var carPlay: Bool?
+
+    // A struct's memberwise/empty init is implicitly `internal`, so cross-module callers (the
+    // RN bridge) can't write `PermissionOptions()`. Declare a public init so they can.
+    public init(alert: Bool? = nil,
+                badge: Bool? = nil,
+                sound: Bool? = nil,
+                provisional: Bool? = nil,
+                criticalAlert: Bool? = nil,
+                carPlay: Bool? = nil) {
+        self.alert = alert
+        self.badge = badge
+        self.sound = sound
+        self.provisional = provisional
+        self.criticalAlert = criticalAlert
+        self.carPlay = carPlay
+    }
 }
 
 public struct PermissionResult: Codable, Equatable {
