@@ -145,7 +145,13 @@ campaign (`campaignId` + `nodeId`) that also carries scope + `gamerTag`. See
       "accountId":  "acct_42",
       "cidPid":     "1657892323.DE_1657892324",
       "deeplink":   "game://store",
-      "offerData":  { "itemId": "gems_100", "value": "4.99" }, // single offer, omitted when none
+      // offerData: a SINGLE flat column = stringified JSON array of offer objects (customData is
+      // itself a stringified JSON string — Athena takes no objects). Stage events (Sent/Received/
+      // Opened) carry every offer the push held; Clicked/Converted carry a one-element array of the
+      // concerned offer. Omitted when no offers.
+      "offerData":  "[{\"itemId\":\"gems_100\",\"value\":\"4.99\",\"customData\":\"{\\\"sku\\\":\\\"g100\\\"}\"}]",
+      // campaignData: free-form campaign object, stringified, on every stage. Omitted when absent.
+      "campaignData": "{\"theme\":\"summer\"}",
       "funnelType": "Received"
     }
   }

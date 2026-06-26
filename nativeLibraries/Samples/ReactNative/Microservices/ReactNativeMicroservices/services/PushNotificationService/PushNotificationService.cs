@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Beamable.Api.Analytics;
@@ -107,6 +110,64 @@ namespace Beamable.PushNotificationService
 					updatedAt = d.updatedAt,
 				}).ToList(),
 			};
+		}
+
+		// --- Analytics funnel webhook ---------------------------------------
+
+		private const string SlackWebhookUrl =
+			"https://hooks.slack.com/triggers/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";
+
+		// Reused across invocations (SocketsHttpHandler mirrors ApnsClient/FcmClient).
+		private static readonly HttpClient WebhookHttp = new(new SocketsHttpHandler
+		{
+			PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+		});
+
+		// Funnel payloads nest stringified JSON (offerData/campaignData are JSON-object strings).
+		// The relaxed encoder renders their inner quotes as \" rather than System.Text.Json's default
+		// " escaping, so the webhook/analytics payload stays human-readable.
+		private static readonly JsonSerializerOptions FunnelJson = new()
+		{
+			Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+		};
+
+		/// <summary>
+		/// Receives analytics funnel data as a single stringified-JSON payload and forwards it to a
+		/// Slack webhook as <c>{"message": &lt;payload&gt;}</c>. Exposed as <c>[Callable]</c> so it does
+		/// NOT require admin auth — any caller (e.g. the app's analytics layer) can post funnel data.
+		/// </summary>
+		/// <param name="funnelData">The funnel payload — a stringified JSON object.</param>
+		[Callable]
+		public Task<WebhookResult> ForwardFunnelToSlack(string funnelData) => PostFunnelToSlack(funnelData);
+
+		/// <summary>
+		/// POSTs <paramref name="funnelData"/> to the Slack webhook as <c>{"message": &lt;payload&gt;}</c>.
+		/// Best-effort: returns the outcome instead of throwing. Shared by the <see cref="ForwardFunnelToSlack"/>
+		/// endpoint and the server-side "Sent" funnel emission (<see cref="EmitSentEvent"/>).
+		/// </summary>
+		private static async Task<WebhookResult> PostFunnelToSlack(string funnelData)
+		{
+			// Slack trigger expects a flat object whose values are strings — wrap the (already
+			// stringified) funnel JSON as the "message" value rather than embedding a nested object.
+			var body = JsonSerializer.Serialize(new { message = funnelData ?? string.Empty }, FunnelJson);
+			using var request = new HttpRequestMessage(HttpMethod.Post, SlackWebhookUrl)
+			{
+				Content = new StringContent(body, Encoding.UTF8, "application/json"),
+			};
+			try
+			{
+				using var response = await WebhookHttp.SendAsync(request);
+				var ok = response.IsSuccessStatusCode;
+				if (!ok)
+					BeamableLogger.LogWarning("Slack funnel webhook returned HTTP {code}", (int)response.StatusCode);
+				return new WebhookResult { success = ok, statusCode = (int)response.StatusCode };
+			}
+			catch (Exception ex)
+			{
+				// Best-effort — never throw back to the caller for a webhook failure.
+				BeamableLogger.LogWarning("Slack funnel webhook POST failed: {msg}", ex.Message);
+				return new WebhookResult { success = false, statusCode = 0, message = ex.Message };
+			}
 		}
 
 		// --- Sending --------------------------------------------------------
@@ -372,8 +433,10 @@ namespace Beamable.PushNotificationService
 		///
 		/// The event is a <c>CoreEvent</c> (category "notification_funnel", eventName "Sent")
 		/// whose params follow §4.6: campaignId, nodeId, gamerTag (the target player), accountId,
-		/// cidPid, offerData (the SINGLE relevant offer — the first one this message carried, if
-		/// any), deeplink, funnelType="Sent". Empty fields are omitted to keep the payload flat.
+		/// cidPid, offerData (a stringified JSON array of every offer this message carried —
+		/// byte-identical to the wire `offers` field, so all funnel stages share one shape),
+		/// campaignData (free-form JSON object string), deeplink, funnelType="Sent". Empty fields
+		/// are omitted to keep the payload flat.
 		///
 		/// Note: <c>SendAnalyticsEventBatch</c> routes the underlying POST to the request context's
 		/// user (the caller). For <see cref="SendCampaignPushToSelf"/> that is the target player;
@@ -401,27 +464,46 @@ namespace Beamable.PushNotificationService
 			if (!string.IsNullOrWhiteSpace(message.cidPid)) p["cidPid"] = message.cidPid;
 			if (!string.IsNullOrWhiteSpace(message.deepLink)) p["deeplink"] = message.deepLink;
 
-			// §4.6 offerData is a SINGLE offer. A push can carry several; we report the first one
-			// as the offer this Sent event concerns (one Sent per logical send, not per device).
-			// Omitted entirely when the message has no offers.
-			var offer = message.offers?.FirstOrDefault();
-			if (offer != null)
+			// §4.6 offerData: the offers this Sent event concerns, as a SINGLE flat column holding a
+			// stringified JSON array of {itemId, value, customData} — the SAME per-offer shape the
+			// native libraries emit (empties omitted, customData kept as a stringified JSON string so
+			// every level stays Athena-safe). Project each offer explicitly: PushOfferData uses public
+			// FIELDS, which System.Text.Json skips by default, so a bare Serialize(message.offers)
+			// would emit empty objects (`[{}]`) with no itemId/value/customData.
+			if (message.offers != null && message.offers.Count > 0)
 			{
-				// Analytics params must be FLAT — Athena has no nested-object column type, so a
-				// nested `offerData` object breaks ingestion (the table is never created). Emit each
-				// offer field as a dotted flat key; customData is free-form so it stays a JSON string.
-				if (!string.IsNullOrWhiteSpace(offer.itemId)) p["offerData.itemId"] = offer.itemId;
-				if (!string.IsNullOrWhiteSpace(offer.value)) p["offerData.value"] = offer.value;
-				if (!string.IsNullOrWhiteSpace(offer.customData)) p["offerData.customData"] = offer.customData;
+				var offerData = message.offers.Select(o =>
+				{
+					// SortedDictionary → keys serialize alphabetically (customData, itemId, value),
+					// matching the native libraries (iOS encodes with .sortedKeys; Android sorts too).
+					var od = new SortedDictionary<string, object>(StringComparer.Ordinal);
+					if (!string.IsNullOrWhiteSpace(o.itemId)) od["itemId"] = o.itemId;
+					if (!string.IsNullOrWhiteSpace(o.value)) od["value"] = o.value;
+					if (!string.IsNullOrWhiteSpace(o.customData)) od["customData"] = o.customData;
+					return od;
+				}).ToList();
+				p["offerData"] = JsonSerializer.Serialize(offerData, FunnelJson);
 			}
+
+			// Free-form campaign metadata, carried verbatim (already a JSON object string), same flat-
+			// column rule as offerData. Present on every stage when the message carried it.
+			if (!string.IsNullOrWhiteSpace(message.campaignData)) p["campaignData"] = message.campaignData;
 
 			try
 			{
+				// Serialize a key-sorted copy so the Slack/debug payload has alphabetical top-level
+				// keys — identical order to the native libraries (the analytics CoreEvent `p` itself
+				// is key-addressed in Athena, so its order is irrelevant).
+				var payloadJson = JsonSerializer.Serialize(
+					new SortedDictionary<string, object>(p, StringComparer.Ordinal), FunnelJson);
 				var ev = new CoreEvent("notification_funnel", "Sent", p);
 				// DEBUG: full funnel payload as emitted (op=g.core, c=notification_funnel, e=Sent).
 				BeamableLogger.Log("[funnel] emit op=g.core c=notification_funnel e=Sent player={player} payload={payload}",
-					playerId, JsonSerializer.Serialize(p));
+					playerId, payloadJson);
 				Services.Analytics.SendAnalyticsEvent(Services.Analytics.BuildRequest(ev));
+				// Also forward the same analytics payload to the Slack webhook (fire-and-forget,
+				// best-effort — mirrors the analytics send; never blocks or fails the push).
+				_ = PostFunnelToSlack(payloadJson);
 			}
 			catch (Exception ex)
 			{
@@ -517,6 +599,15 @@ namespace Beamable.PushNotificationService
 	public class DeviceList
 	{
 		public List<DeviceInfo> devices = new();
+	}
+
+	/// <summary>Result of forwarding funnel data to the Slack webhook.</summary>
+	[Serializable]
+	public class WebhookResult
+	{
+		public bool success;
+		public int statusCode;
+		public string message;
 	}
 
 	/// <summary>

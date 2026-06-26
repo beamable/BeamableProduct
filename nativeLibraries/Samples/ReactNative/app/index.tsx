@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -21,6 +22,8 @@ import {
 } from '../src/beam/beamClient';
 import {
   addBeamableListener,
+  campaignCoordsFromNotification,
+  getLaunchNotification,
   isBeamableNotificationsSupported,
   registerForRemote,
   requestBeamablePermission,
@@ -28,6 +31,7 @@ import {
 } from '../src/notifications/beamableNotifications';
 import {
   BeamableNotifications,
+  type NotificationData,
   type NotificationIntentData,
   type NotificationOffer,
 } from '@beamable/notifications-react-native';
@@ -41,11 +45,29 @@ export default function Home() {
   // The device push token (APNs on iOS, FCM on Android) from the native SDK's
   // `tokenReceived` event. Needed to register this device with the microservice.
   const [apnsToken, setApnsToken] = useState<string | null>(null);
+  // §6 funnel coordinates. Editable by the user; auto-filled from the campaign push that
+  // opened (or was tapped in) the app — see `applyCampaignCoords`.
+  const [campaignId, setCampaignId] = useState('');
+  const [nodeId, setNodeId] = useState('');
   const platformLabel = Platform.OS === 'ios' ? 'iOS' : 'Android';
   const remoteProvider = Platform.OS === 'ios' ? 'APNs' : 'FCM';
 
   const append = (msg: string) =>
     setLog((prev) => [`${time()}  ${msg}`, ...prev].slice(0, 40));
+
+  // Override the §6 funnel coordinates from a notification that carries them. Notifications
+  // without campaignId/nodeId (e.g. the local test notifications) leave the user's typed
+  // values untouched.
+  const applyCampaignCoords = (n: NotificationData) => {
+    const coords = campaignCoordsFromNotification(n);
+    if (coords.campaignId) setCampaignId(coords.campaignId);
+    if (coords.nodeId) setNodeId(coords.nodeId);
+    if (coords.campaignId || coords.nodeId) {
+      append(
+        `Funnel coords from notification: campaignId=${coords.campaignId ?? '—'} nodeId=${coords.nodeId ?? '—'}`,
+      );
+    }
+  };
 
   // Beamable Notifications events (native iOS SDK). The native methods are
   // fire-and-forget; their results land here. We log them, and forward the APNs
@@ -72,9 +94,11 @@ export default function Home() {
       addBeamableListener('notificationReceived', (n) =>
         append(`Beamable received: ${n.title ?? n.id}`),
       ),
-      addBeamableListener('notificationOpened', (n) =>
-        append(`Beamable opened → ${n.deeplink ?? n.id}`),
-      ),
+      addBeamableListener('notificationOpened', (n) => {
+        append(`Beamable opened → ${n.deeplink ?? n.id}`);
+        // App already running: a tapped campaign push replaces the funnel coordinates.
+        applyCampaignCoords(n);
+      }),
       addBeamableListener('funnelResult', (r) =>
         append(
           `Funnel ${r.funnelType}: ${r.ok ? 'OK' : 'FAILED'} (HTTP ${r.statusCode})${r.message ? ' — ' + r.message : ''}`,
@@ -83,6 +107,17 @@ export default function Home() {
     ];
 
     return () => subs.forEach((s) => s.remove());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Cold start: if the app was launched by tapping a campaign push, seed §6's funnel
+  // coordinates from its payload. `getLaunchNotification()` reads the cached launch payload
+  // (also consumed for routing in app/_layout.tsx), so reading it here has no side effect.
+  useEffect(() => {
+    if (!isBeamableNotificationsSupported) return;
+    getLaunchNotification().then((launch) => {
+      if (launch) applyCampaignCoords(launch);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -213,8 +248,8 @@ export default function Home() {
   // Emits native Clicked/Converted funnel analytics. Auth (cid.pid scope) is
   // configured automatically on Connect; these just fire the events.
   const buildFunnelIntent = (): NotificationIntentData => ({
-    campaignId: 'test_campaign',
-    nodeId: 'test_node',
+    campaignId: campaignId.trim(),
+    nodeId: nodeId.trim(),
     gamerTag: String(getBeam()!.player.id),
     cidPid: `${BEAM_CONFIG.cid}.${BEAM_CONFIG.pid}`,
     deeplink: detailsUrl(777),
@@ -226,12 +261,24 @@ export default function Home() {
     customData: { tier: 'gold' },
   };
 
+  // Mirror how native serializes the offer for the analytics POST so the log matches the wire:
+  // `offerData` is a stringified JSON ARRAY of offers, and each `customData` is itself a stringified
+  // JSON string (Athena has no nested-object column type). The native module does this internally;
+  // we replicate it here only so this debug log reflects what's actually sent.
+  const offerDataForLog = JSON.stringify([
+    {
+      itemId: funnelOffer.itemId,
+      value: funnelOffer.value,
+      customData: funnelOffer.customData != null ? JSON.stringify(funnelOffer.customData) : undefined,
+    },
+  ]);
+
   const trackOfferClickedTest = () => {
     if (!getBeam()) return append('Funnel: connect to Beamable first');
     try {
       const intent = buildFunnelIntent();
       BeamableNotifications.trackOfferClicked(intent, funnelOffer);
-      append(`Funnel: trackOfferClicked → ${JSON.stringify({ funnelType: 'Clicked', ...intent, offerData: funnelOffer })}`);
+      append(`Funnel: trackOfferClicked → ${JSON.stringify({ funnelType: 'Clicked', ...intent, offerData: offerDataForLog })}`);
     } catch (e) {
       append(`Funnel error: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -242,7 +289,7 @@ export default function Home() {
     try {
       const intent = buildFunnelIntent();
       BeamableNotifications.trackOfferConverted(intent, funnelOffer);
-      append(`Funnel: trackOfferConverted → ${JSON.stringify({ funnelType: 'Converted', ...intent, offerData: funnelOffer })}`);
+      append(`Funnel: trackOfferConverted → ${JSON.stringify({ funnelType: 'Converted', ...intent, offerData: offerDataForLog })}`);
     } catch (e) {
       append(`Funnel error: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -399,8 +446,26 @@ export default function Home() {
         <Text style={styles.hint}>
           Emits native Clicked / Converted funnel analytics for a test offer.
           Auth (cid.pid scope) is configured automatically on Connect. Connect to
-          Beamable first; events appear in the activity log.
+          Beamable first; events appear in the activity log.{'\n'}
+          Type any Campaign / Node ID below — or open the app from a campaign push
+          and these fields auto-fill from its payload (even while running).
         </Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Campaign ID (e.g. test_campaign)"
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={campaignId}
+          onChangeText={setCampaignId}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Node ID (e.g. test_node)"
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={nodeId}
+          onChangeText={setNodeId}
+        />
         <Button label="Track offer clicked" onPress={trackOfferClickedTest} />
         <Button label="Track offer converted" onPress={trackOfferConvertedTest} />
         <Button label="Clear native auth" onPress={clearFunnelAuth} />
@@ -498,6 +563,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   buttonPressed: { opacity: 0.7 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    fontSize: 14,
+    color: '#111827',
+    backgroundColor: 'white',
+  },
   buttonText: { color: 'white', fontWeight: '600', textAlign: 'center' },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 10, height: 10, borderRadius: 5 },

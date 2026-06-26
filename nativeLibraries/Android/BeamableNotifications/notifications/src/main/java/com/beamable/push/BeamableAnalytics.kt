@@ -41,6 +41,16 @@ object BeamableAnalytics {
     private const val CORE_OP = "g.core"
     private const val FUNNEL_CATEGORY = "notification_funnel"
 
+    /**
+     * Microservice that exposes the `ForwardFunnelToSlack` [Callable] used as a debug mirror of the
+     * funnel. After a successful analytics POST we also forward the same funnel params to it so the
+     * device-side stages (Received/Opened/Clicked/Converted) show up in Slack alongside the
+     * server-emitted "Sent" event. Invoked via the standard microservice route
+     * `/basic/<cid>.<pid>.micro_<service>/<endpoint>` with the player's bearer + realm scope.
+     */
+    private const val SLACK_MICROSERVICE = "PushNotificationService"
+    private const val SLACK_ENDPOINT = "ForwardFunnelToSlack"
+
     /** Short fire-and-forget timeouts (ms) — must stay well within the FCM ~10s budget. */
     private const val CONNECT_TIMEOUT_MS = 4_000
     private const val READ_TIMEOUT_MS = 4_000
@@ -166,7 +176,7 @@ object BeamableAnalytics {
         var accessToken = auth.token
         val alreadyRefreshed = auth.refreshed
 
-        val body = buildBatch(intent, event.funnelType, event.offer).toString()
+        val body = buildBatch(intent, event.funnelType).toString()
         val url = "$host/report/custom_batch/$cid/$pid/$gamerTag"
         val scope = "$cid.$pid"
 
@@ -196,6 +206,48 @@ object BeamableAnalytics {
             PushManager.dispatchFunnelResult(event.funnelType.name, false, code, "HTTP $code; queued for replay")
         } else {
             PushManager.dispatchFunnelResult(event.funnelType.name, true, code, "ok")
+            // Best-effort debug mirror: forward the same funnel params to the microservice's
+            // ForwardFunnelToSlack endpoint so device-side stages appear in Slack too. Never affects
+            // the analytics result — failures are logged and swallowed.
+            forwardFunnelToSlack(host, cid, pid, accessToken, buildParams(intent, event.funnelType).toString())
+        }
+    }
+
+    /**
+     * Forwards [funnelData] (the CoreEvent params JSON) to the microservice's `ForwardFunnelToSlack`
+     * [Callable] via the standard microservice route `/basic/<cid>.<pid>.micro_<service>/<endpoint>`,
+     * authenticated with the player bearer + realm scope. Fire-and-forget, best-effort: any failure
+     * is logged and never propagates (the microservice may be undeployed, etc.).
+     */
+    private fun forwardFunnelToSlack(
+        host: String,
+        cid: String,
+        pid: String,
+        accessToken: String,
+        funnelData: String
+    ) {
+        try {
+            val url = "$host/basic/$cid.$pid.micro_$SLACK_MICROSERVICE/$SLACK_ENDPOINT"
+            val scope = "$cid.$pid"
+            // Callable args bind by parameter name: ForwardFunnelToSlack(string funnelData).
+            val body = JSONObject().put("funnelData", funnelData).toString()
+            val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                connectTimeout = CONNECT_TIMEOUT_MS
+                readTimeout = READ_TIMEOUT_MS
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("Authorization", "Bearer $accessToken")
+                setRequestProperty("X-BEAM-SCOPE", scope)
+            }
+            conn.outputStream.use { it.writeBytesUtf8(body) }
+            val code = conn.responseCode
+            try { conn.inputStream.use { it.readBytes() } } catch (_: Throwable) {
+                try { conn.errorStream?.use { it.readBytes() } } catch (_: Throwable) {}
+            }
+            Log.i(TAG, "funnel→slack microservice POST -> HTTP $code")
+        } catch (t: Throwable) {
+            Log.w(TAG, "funnel→slack microservice error: ${t.message}")
         }
     }
 
@@ -330,42 +382,52 @@ object BeamableAnalytics {
     /** Builds the POST body: a JSON array of one CoreEvent (`/report/custom_batch` accepts a batch). */
     internal fun buildBatch(
         intent: NotificationIntentData,
-        type: FunnelType,
-        offer: NotificationOffer?
-    ): JSONArray = JSONArray().put(buildCoreEvent(intent, type, offer))
+        type: FunnelType
+    ): JSONArray = JSONArray().put(buildCoreEvent(intent, type))
 
     /** Builds one CoreEvent: {"op":"g.core","e":<funnelType>,"c":"notification_funnel","p":{...}}. */
     internal fun buildCoreEvent(
         intent: NotificationIntentData,
-        type: FunnelType,
-        offer: NotificationOffer?
+        type: FunnelType
+    ): JSONObject = JSONObject()
+        .put("op", CORE_OP)
+        .put("e", type.name)
+        .put("c", FUNNEL_CATEGORY)
+        .put("p", buildParams(intent, type))
+
+    /** Builds the funnel event params bag (the CoreEvent `p`). Shared by the analytics POST and the
+     *  `ForwardFunnelToSlack` debug mirror, so both carry an identical payload. Keys are emitted in
+     *  alphabetical (ordinal) order to match the microservice and iOS (which encodes with
+     *  `.sortedKeys`), so every platform's funnel JSON has the same field order. */
+    internal fun buildParams(
+        intent: NotificationIntentData,
+        type: FunnelType
     ): JSONObject {
-        val params = JSONObject()
-        intent.campaignId?.let { params.put("campaignId", it) }
-        intent.nodeId?.let { params.put("nodeId", it) }
-        intent.gamerTag?.let { params.put("gamerTag", it) }
+        // Collect into a sorted map first; JSONObject preserves insertion order, so inserting in
+        // sorted-key order yields alphabetically-ordered JSON.
+        val sorted = sortedMapOf<String, Any>()
+        intent.campaignId?.let { sorted["campaignId"] = it }
+        intent.nodeId?.let { sorted["nodeId"] = it }
+        intent.gamerTag?.let { sorted["gamerTag"] = it }
         // accountId is auto-set to the user's gamerTag (the SDK-known player id); callers need
         // not send it. Falls back to an explicitly-provided accountId if one is present.
-        (intent.accountId ?: intent.gamerTag)?.let { params.put("accountId", it) }
-        intent.cidPid?.let { params.put("cidPid", it) }
-        // Single offer relevant to this event (§4.6): attached ONLY when explicitly passed
-        // (Clicked/Converted). Received/Opened/Sent (offer=null) emit NO offerData.
-        // Analytics params must be FLAT — Athena has no nested-object column type, so a nested
-        // object breaks ingestion. Emit each offer field as a dotted flat key; customData is
-        // free-form, so it stays a JSON string rather than fixed columns.
-        offer?.let { o ->
-            o.itemId?.let { params.put("offerData.itemId", it) }
-            o.rawValue?.let { params.put("offerData.value", it) }
-            o.customDataJson?.let { params.put("offerData.customData", it) }
-        }
-        intent.deeplink?.let { params.put("deeplink", it) }
-        params.put("funnelType", type.name)
+        (intent.accountId ?: intent.gamerTag)?.let { sorted["accountId"] = it }
+        intent.cidPid?.let { sorted["cidPid"] = it }
+        // Offers relevant to this event (§4.6) as a SINGLE flat column holding a stringified JSON
+        // array of offer objects (`[{customData,itemId,value}, ...]`). Athena has no nested-object
+        // column type, so the whole array is carried as one string the reader JSON-parses — this
+        // lets any offer shape (incl. free-form customData) survive intact. Stage events carry every
+        // offer the push held; Clicked/Converted carry a one-element array (set in PendingFunnel.from).
+        intent.offersJson?.let { sorted["offerData"] = it }
+        // Free-form campaign metadata, carried verbatim as a stringified JSON object (same flat-
+        // column rule as offerData). Present on every stage when the push carried it.
+        intent.campaignDataJson?.let { sorted["campaignData"] = it }
+        intent.deeplink?.let { sorted["deeplink"] = it }
+        sorted["funnelType"] = type.name
 
-        return JSONObject()
-            .put("op", CORE_OP)
-            .put("e", type.name)
-            .put("c", FUNNEL_CATEGORY)
-            .put("p", params)
+        val params = JSONObject()
+        for ((k, v) in sorted) params.put(k, v)
+        return params
     }
 
     private fun OutputStream.writeBytesUtf8(s: String) = write(s.toByteArray(Charsets.UTF_8))
@@ -374,10 +436,12 @@ object BeamableAnalytics {
 
     /**
      * Serializable snapshot of a funnel event persisted for later replay (mirrors iOS's
-     * `FunnelEvent`). Captures the campaign coordinates, the single offer it concerns, and a
-     * timestamp. [dedupKey] keys on `funnelType|campaignId|nodeId|gamerTag|offerItemId` (excludes
-     * the timestamp) so the same stage is never enqueued/replayed twice. `gamerTag` is included so
-     * an offline account-switch on a shared device doesn't collapse two players' events.
+     * `FunnelEvent`). Captures the campaign coordinates, the offers it concerns (as the wire JSON
+     * array string), the free-form campaignData, and a timestamp. [dedupKey] keys on
+     * `funnelType|campaignId|nodeId|gamerTag|offersJson` (excludes the timestamp) so the same
+     * stage is never enqueued/replayed twice, while distinct Clicked/Converted events for
+     * different offers stay separate. `gamerTag` is included so an offline account-switch on a
+     * shared device doesn't collapse two players' events.
      */
     internal data class PendingFunnel(
         val funnelType: FunnelType,
@@ -387,26 +451,32 @@ object BeamableAnalytics {
         val accountId: String?,
         val cidPid: String?,
         val deeplink: String?,
-        val offer: NotificationOffer?,
+        /** Stringified JSON array of the offer(s) this event concerns (null when none). */
+        val offersJson: String?,
+        /** Stringified JSON object of the free-form campaign metadata (null when absent). */
+        val campaignDataJson: String?,
         val timestamp: Long
     ) {
         /**
-         * Stable identity for replay dedup — campaign coordinates + stage + gamerTag + offer (no
+         * Stable identity for replay dedup — campaign coordinates + stage + gamerTag + offers (no
          * timestamp). `gamerTag` is included so an offline account-switch on a shared device
-         * doesn't collapse two players' otherwise-identical events.
+         * doesn't collapse two players' otherwise-identical events; `offersJson` keeps distinct
+         * Clicked/Converted events for different offers from collapsing.
          */
         val dedupKey: String
             get() = listOf(
-                funnelType.name, campaignId ?: "", nodeId ?: "", gamerTag ?: "", offer?.itemId ?: ""
+                funnelType.name, campaignId ?: "", nodeId ?: "", gamerTag ?: "", offersJson ?: ""
             ).joinToString("|")
 
-        /** Rebuilds a [NotificationIntentData] from the persisted scalar fields (for the POST body). */
+        /** Rebuilds a [NotificationIntentData] from the persisted fields (for the POST body). */
         fun toIntentData(): NotificationIntentData = NotificationIntentData(
             campaignId = campaignId,
             nodeId = nodeId,
             gamerTag = gamerTag,
             accountId = accountId,
             cidPid = cidPid,
+            offersJson = offersJson,
+            campaignDataJson = campaignDataJson,
             deeplink = deeplink
         )
 
@@ -419,7 +489,8 @@ object BeamableAnalytics {
             accountId?.let { obj.put("accountId", it) }
             cidPid?.let { obj.put("cidPid", it) }
             deeplink?.let { obj.put("deeplink", it) }
-            offer?.let { obj.put("offerData", it.toJson()) }
+            offersJson?.let { obj.put("offersJson", it) }
+            campaignDataJson?.let { obj.put("campaignDataJson", it) }
             obj.put("timestamp", timestamp)
             return obj
         }
@@ -437,15 +508,40 @@ object BeamableAnalytics {
                 accountId = intent.accountId,
                 cidPid = intent.cidPid,
                 deeplink = intent.deeplink,
-                offer = offer,
+                // Stage events (offer == null) carry every offer the push held; Clicked/Converted
+                // carry just the single concerned offer. Either way the offers are re-serialized
+                // through [toAnalyticsArray] so customData is guaranteed to be a stringified JSON
+                // string (Athena-safe), regardless of how the sender shaped the wire payload.
+                offersJson = if (offer != null) toAnalyticsArray(listOf(offer))
+                             else intent.offers().takeIf { it.isNotEmpty() }?.let { toAnalyticsArray(it) },
+                campaignDataJson = intent.campaignDataJson,
                 timestamp = System.currentTimeMillis()
             )
+
+            /**
+             * Serializes [offers] for the analytics `offerData` column: a JSON array of
+             * `{itemId, value, customData}` where customData stays a STRINGIFIED JSON string.
+             * Athena has no nested-object column type, so customData must never be an embedded
+             * object — `customDataJson` is already the string form (see NotificationOffer.fromJson).
+             */
+            private fun toAnalyticsArray(offers: List<NotificationOffer>): String {
+                val arr = JSONArray()
+                for (o in offers) {
+                    // Insert keys in alphabetical order (customData, itemId, value) — JSONObject keeps
+                    // insertion order, so this matches the microservice + iOS (.sortedKeys) per-offer shape.
+                    val obj = JSONObject()
+                    o.customDataJson?.let { obj.put("customData", it) }
+                    o.itemId?.let { obj.put("itemId", it) }
+                    o.rawValue?.let { obj.put("value", it) }
+                    arr.put(obj)
+                }
+                return arr.toString()
+            }
 
             fun fromJson(obj: JSONObject): PendingFunnel {
                 val typeName = obj.optString("funnelType")
                 val type = FunnelType.values().firstOrNull { it.name == typeName }
                     ?: FunnelType.Received
-                val offer = obj.optJSONObject("offerData")?.let { NotificationOffer.fromJson(it) }
                 return PendingFunnel(
                     funnelType = type,
                     campaignId = obj.optStringOrNull("campaignId"),
@@ -454,7 +550,8 @@ object BeamableAnalytics {
                     accountId = obj.optStringOrNull("accountId"),
                     cidPid = obj.optStringOrNull("cidPid"),
                     deeplink = obj.optStringOrNull("deeplink"),
-                    offer = offer,
+                    offersJson = obj.optStringOrNull("offersJson"),
+                    campaignDataJson = obj.optStringOrNull("campaignDataJson"),
                     timestamp = obj.optLong("timestamp")
                 )
             }

@@ -297,8 +297,8 @@ The sample microservice `PushNotificationService.DeliverToPlayer(...)` emits a f
 via `IMicroserviceAnalyticsService` once per logical send (once at least one of the player's devices
 accepts the push), gated on `campaignId` + `nodeId` (§4.2). It is a `CoreEvent`
 (`category = "notification_funnel"`, `eventName = "Sent"`) whose params follow §4.6, with `offerData`
-set to the first offer the message carried (if any). The authoritative `gamerTag` is always in the
-params because the path id is routing only.
+set to the offers the message carried (the same JSON array carried on the wire). The authoritative
+`gamerTag` is always in the params because the path id is routing only.
 
 ### 4.5 Funnel stages
 
@@ -324,20 +324,24 @@ bag:
   "gamerTag":   "string",
   "accountId":  "string",
   "cidPid":     "string",
-  "offerData":  {                    // optional — the SINGLE offer this event concerns
-    "itemId":     "string",
-    "value":      "string|number",
-    "customData": { }
-  },
+  "offerData":  "[{\"itemId\":\"...\",\"value\":\"string|number\",\"customData\":\"{...}\"}]",  // optional — stringified JSON array
+  "campaignData": "{ }",             // optional — stringified JSON object (free-form)
   "deeplink":   "string",
   "funnelType": "Sent|Received|Opened|Clicked|Converted"
 }
 ```
 
-`offerData` is the single offer relevant to this event (the one clicked/converted), drawn from the
-§3.3 `offers` array — never the whole array. It is omitted for events with no offer context
-(Received/Opened emit no `offerData` to avoid mis-attributing a carried offer). Empty fields are
-omitted rather than serialized as explicit nulls, on every platform.
+`offerData` is a **single flat column** carrying a **stringified JSON array** of offer objects
+(`[{itemId, value, customData}, …]`). Athena has no nested-object column type, so the whole array
+travels as one string the reader JSON-parses. Within each offer, the free-form `customData` is
+**itself a stringified JSON string** (never an embedded object) so every level stays Athena-safe;
+the reader parses it on demand. Stage events (Sent/Received/Opened) carry **every** offer the push
+held; Clicked/Converted carry a **one-element** array of the single concerned offer. It is omitted
+entirely when the push carried no offers.
+
+`campaignData` is the §3.3 free-form campaign object, carried verbatim as a stringified JSON object
+on **every** stage (same flat-column rule), omitted when absent. Empty fields are omitted rather than
+serialized as explicit nulls, on every platform.
 
 Full envelope as POSTed:
 

@@ -14,6 +14,7 @@ is tagged with a `platform` and the send loop routes it to the matching provider
 | `ListMyDevices()` | `[ClientCallable]` | Any player | List the caller's registered devices (tokens masked). |
 | `SendPushToSelf(title, body, deepLink)` | `[ClientCallable]` | Any player | Send a real APNs push to the caller's own device(s) — the easiest end-to-end demo. |
 | `SendPushToPlayer(playerId, title, body, deepLink)` | `[AdminOnlyCallable]` | Admin/dev token | Send a push to any player by id (back-office). |
+| `ForwardFunnelToSlack(funnelData)` | `[Callable]` | Any caller (no admin auth) | Receive analytics funnel data as a stringified-JSON string and forward it to a Slack webhook as `{"message": <funnelData>}`. The server-side "Sent" funnel event also fires this webhook automatically with its analytics payload. |
 
 ## How it works
 

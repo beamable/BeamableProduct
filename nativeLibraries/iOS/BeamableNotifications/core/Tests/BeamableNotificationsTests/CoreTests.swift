@@ -195,7 +195,7 @@ final class CoreTests: XCTestCase {
                                 campaignId: "camp-1", nodeId: "node-1",
                                 gamerTag: "123", accountId: "acct-1", cidPid: "CID.PID",
                                 deeplink: "game://x",
-                                offerData: NotificationOffer(itemId: "gold", value: .number(5)),
+                                offers: [NotificationOffer(itemId: "gold", value: .number(5))],
                                 timestamp: 0)
         let core = BeamableAnalytics.makeCoreEvent(for: event)
         XCTAssertEqual(core["op"]?.stringValue, "g.core")
@@ -207,7 +207,9 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(p?["gamerTag"]?.stringValue, "123")
         XCTAssertEqual(p?["cidPid"]?.stringValue, "CID.PID")
         XCTAssertEqual(p?["funnelType"]?.stringValue, "Received")
-        XCTAssertEqual(p?["offerData"]?["itemId"]?.stringValue, "gold")
+        // offerData is a single column: a stringified JSON array of offer objects.
+        let offers = p?["offerData"]?.stringValue.flatMap { JSON.decode([NotificationOffer].self, from: $0) }
+        XCTAssertEqual(offers?.first?.itemId, "gold")
         // Body is a JSON array of one CoreEvent.
         let body = BeamableAnalytics.makeBody(for: [event])
         XCTAssertNotNil(body)
@@ -221,19 +223,57 @@ final class CoreTests: XCTestCase {
         XCTAssertNil(BeamableAnalytics.makeEvent(.received, intent: intent))
     }
 
-    func testMakeEventDoesNotAttributeCarriedOfferForStageEvents() {
-        // A campaign carries an offer, but Received/Opened must NOT attach it as offerData —
-        // only an explicitly-passed offer (Clicked/Converted) is attributed.
+    func testMakeEventCarriesOffersForStagesAndSingleOfferForActions() {
+        // Stage events (Received/Opened) carry every offer the push held, so the funnel rows are
+        // consistent with the microservice "Sent" event.
         let intent = CampaignIntentData(campaignId: "c", nodeId: "n", gamerTag: "1",
                                         cidPid: "CID.PID",
-                                        offers: [NotificationOffer(itemId: "gold")])
+                                        offers: [NotificationOffer(itemId: "gold"),
+                                                 NotificationOffer(itemId: "gem")])
         let received = BeamableAnalytics.makeEvent(.received, intent: intent)
         XCTAssertNotNil(received)
-        XCTAssertNil(received?.offerData, "Received must not attribute a carried campaign offer")
+        XCTAssertEqual(received?.offers?.count, 2, "Received carries all carried offers")
+        XCTAssertEqual(received?.offers?.first?.itemId, "gold")
 
+        // Clicked/Converted attach ONLY the explicitly-passed offer, not the carried list.
         let clicked = BeamableAnalytics.makeEvent(.clicked, intent: intent,
-                                                  offer: NotificationOffer(itemId: "gold"))
-        XCTAssertEqual(clicked?.offerData?.itemId, "gold", "Explicit offer must be attached")
+                                                  offer: NotificationOffer(itemId: "silver"))
+        XCTAssertEqual(clicked?.offers?.count, 1)
+        XCTAssertEqual(clicked?.offers?.first?.itemId, "silver", "Explicit offer wins over carried")
+    }
+
+    func testMakeParamsEmitsOfferArrayAndCampaignData() {
+        let event = FunnelEvent(funnelType: "Received", campaignId: "c", nodeId: "n",
+                                gamerTag: "g", cidPid: "CID.PID",
+                                offers: [NotificationOffer(itemId: "gold", value: .number(5),
+                                                           customData: ["k": .string("v")]),
+                                         NotificationOffer(itemId: "gem")],
+                                campaignData: ["season": .string("summer")],
+                                timestamp: 0)
+        let p = BeamableAnalytics.makeParams(for: event)
+        // offerData: single stringified JSON array. Decode generically because customData is itself
+        // a stringified JSON string (Athena-safe), not a nested object.
+        guard case .array(let arr)? = p["offerData"]?.stringValue.flatMap({ JSON.decode(JSONValue.self, from: $0) }) else {
+            return XCTFail("offerData should be a stringified JSON array")
+        }
+        XCTAssertEqual(arr.count, 2)
+        XCTAssertEqual(arr.first?["itemId"]?.stringValue, "gold")
+        // customData is a stringified JSON string — parse the inner string to read its fields.
+        let cdInner = arr.first?["customData"]?.stringValue.flatMap { JSON.decode(JSONValue.self, from: $0) }
+        XCTAssertEqual(cdInner?["k"]?.stringValue, "v")
+        // campaignData: single stringified JSON object.
+        let cd = p["campaignData"]?.stringValue.flatMap { JSON.decode(JSONValue.self, from: $0) }
+        XCTAssertEqual(cd?["season"]?.stringValue, "summer")
+    }
+
+    func testFunnelEventCodableRoundTripsOffersAndCampaignData() {
+        let event = FunnelEvent(funnelType: "Received", campaignId: "c", nodeId: "n",
+                                offers: [NotificationOffer(itemId: "gold")],
+                                campaignData: ["season": .string("summer")],
+                                timestamp: 0)
+        let decoded = JSON.decode(FunnelEvent.self, from: JSON.encode(event))
+        XCTAssertEqual(decoded?.offers?.first?.itemId, "gold")
+        XCTAssertEqual(decoded?.campaignData?["season"]?.stringValue, "summer")
     }
 
     func testAccessTokenStaleness() {
@@ -271,9 +311,9 @@ final class CoreTests: XCTestCase {
         XCTAssertNotEqual(a.dedupKey, opened.dedupKey, "different funnel stage must differ")
 
         let clickGold = FunnelEvent(funnelType: "Clicked", campaignId: "c", nodeId: "n",
-                                    offerData: NotificationOffer(itemId: "gold"), timestamp: 0)
+                                    offers: [NotificationOffer(itemId: "gold")], timestamp: 0)
         let clickGem = FunnelEvent(funnelType: "Clicked", campaignId: "c", nodeId: "n",
-                                   offerData: NotificationOffer(itemId: "gem"), timestamp: 0)
+                                   offers: [NotificationOffer(itemId: "gem")], timestamp: 0)
         XCTAssertNotEqual(clickGold.dedupKey, clickGem.dedupKey, "different offer must differ")
 
         // Two players' events on a shared device (offline account-switch) differ ONLY by
