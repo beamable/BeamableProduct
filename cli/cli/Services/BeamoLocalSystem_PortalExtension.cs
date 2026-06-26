@@ -16,9 +16,8 @@ namespace cli.Services;
 public partial class BeamoLocalSystem
 {
 	public static string GetBeamIdAsPortalExtension(string beamoId) => $"{beamoId}_portalExtension";
-	
+
 	public static readonly Regex PORTAL_EXTENSION_SERVICE_REGEX = new(@"^BeamPortalExtension_(?<serviceName>.+?)_(?<randomGuid>[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})$", RegexOptions.Compiled);
-	private string _computedMicroserviceName;
 
 	public class PortalExtensionPackageInfo
 	{
@@ -49,10 +48,11 @@ public partial class BeamoLocalSystem
 	{
 		var extension = definition.PortalExtensionDefinition;
 		beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(extension.Name));
-		
-		// Reset so each run gets a fresh sink.
-		_portalExtensionSink = null;
-		
+
+		// Per-call state so concurrent extensions in one `beam project run` invocation
+		// don't share microservice names or log sinks.
+		var runtime = new PortalExtensionRuntime(extension.Name);
+
 		try
 		{
 			Environment.SetEnvironmentVariable("BEAM_ALLOW_STARTUP_WITHOUT_ATTRIBUTES_RESOURCE", "true");
@@ -73,8 +73,9 @@ public partial class BeamoLocalSystem
 
 						observer.InstallDeps();
 
-						// Fail fast if the extension and any of its libraries disagree on the @beamable/portal-toolkit
-						// version. Uses npm's own resolver (a dry-run install) rather than comparing versions by hand.
+						// Fail fast if the extension and any of its libraries disagree on a shared package version
+						// (@beamable/portal-toolkit, react) by comparing the installed versions against each library's
+						// declared peerDependency ranges.
 						PortalExtensionAddLibraryCommand.ValidateLibraryPeerDependencies(extension);
 
 						observer.BuildExtension();
@@ -120,14 +121,14 @@ public partial class BeamoLocalSystem
 				.IncludeRoutes<PortalExtensionDiscoveryService>(routePrefix: "")
 				.OverrideConfig((microserviceConfig) =>
 				{
-					var microserviceName = GetMicroName(extension.Name);
 					microserviceConfig.Attributes = new DefaultMicroserviceAttributes()
 					{
-						MicroserviceName = microserviceName,
+						MicroserviceName = runtime.MicroserviceName,
 						ServiceType = GetServiceType(BeamoProtocolType.PortalExtension)
 					};
-					
-					microserviceConfig.AddLoggerProvider = (builder, debugLogProcessor) => AddPortalExtensionProvider(builder, appContext, debugLogProcessor, extension, microserviceName, onProgress);
+
+					microserviceConfig.AddLoggerProvider = (builder, debugLogProcessor) =>
+						runtime.AddLoggerProvider(builder, appContext, debugLogProcessor, extension, onProgress);
 				})
 				.RunForever();
 			
@@ -140,50 +141,68 @@ public partial class BeamoLocalSystem
 		}
 	}
 
-	// The stable sink from the first ConfigureLogging call, shared across both calls so
-	// that pre-flight logs and first-logger messages all reach ContainerDiagnosticService.
-	private DebugLogProcessor _portalExtensionSink;
-
 	/// <summary>
-	/// Called by <see cref="MicroserviceStartupUtil.ConfigureLogging"/> via
-	/// <see cref="IBeamServiceConfig.AddLoggerProvider"/> for each of the two
-	/// <c>ConfigureLogging</c> invocations.
-	/// <list type="bullet">
-	///   <item><b>First call</b> — registers <see cref="ExtensionAppLogProvider"/> with the
-	///     provided <paramref name="debugLogProcessor"/> as the sink, pre-subscribes the
-	///     <paramref name="microserviceName"/> channel, and returns the same sink.</item>
-	///   <item><b>Second call</b> — registers a new <see cref="ExtensionAppLogProvider"/>
-	///     pointing at the first (stable) sink, drains any messages buffered in the second
-	///     temporary sink, and returns the first sink so <see cref="ContainerDiagnosticService"/>
-	///     keeps using it.</item>
-	/// </list>
+	/// Per-extension runtime state. One instance is created for each call to
+	/// <see cref="RunMicroserviceForever"/> so that concurrent extensions hosted by a single
+	/// `beam project run` invocation each get a unique microservice name and an independent
+	/// log sink. The sink in particular must be per-extension because
+	/// <see cref="MicroserviceStartupUtil.ConfigureLogging"/> calls back twice and the second
+	/// call has to drain into the first call's stable sink.
 	/// </summary>
-	private DebugLogProcessor AddPortalExtensionProvider(ILoggingBuilder builder, IAppContext appContext, DebugLogProcessor debugLogProcessor, PortalExtensionDef extension, string microserviceName, Action<float, string> onProgress = null)
+	private sealed class PortalExtensionRuntime
 	{
-		builder.ClearProviders();
-		if (_portalExtensionSink == null)
+		public string MicroserviceName { get; }
+
+		// The stable sink from the first ConfigureLogging call. Both calls land on this
+		// instance so the second one can drain its buffered messages into the first sink.
+		private DebugLogProcessor _sink;
+
+		public PortalExtensionRuntime(string appName)
 		{
-			// First ConfigureLogging call: this is the stable sink. Pre-subscribe using the
-			// microservice name so messages produced before ContainerDiagnosticService
-			// construction are buffered rather than dropped.
-			_portalExtensionSink = debugLogProcessor;
-			_portalExtensionSink.GetMessageSubscription(microserviceName);
-			builder.AddProvider(new ExtensionAppLogProvider(_portalExtensionSink, appContext, extension, onProgress));
-			// Return the same sink; ctx.debugLogProcessor stays as-is.
-			return debugLogProcessor;
+			MicroserviceName = $"BeamPortalExtension_{appName}_{Guid.NewGuid()}";
 		}
 
-		// Second ConfigureLogging call: point the new builder at the stable first sink.
-		builder.AddProvider(new ExtensionAppLogProvider(_portalExtensionSink, appContext, extension, onProgress));
-		// Drain any messages that landed in the temporary second sink into the channel
-		// of the stable first sink, then discard the temporary subscription.
-		var tmpEarly = debugLogProcessor.GetMessageSubscription(microserviceName);
-		var earlyChannel = _portalExtensionSink.GetMessageSubscription(microserviceName);
-		while (tmpEarly.Reader.TryRead(out var msg))
-			earlyChannel.Writer.TryWrite(msg);
-		debugLogProcessor.ReleaseSubscription(microserviceName);
-		// Return the stable first sink so ctx.debugLogProcessor is updated to point at it.
-		return _portalExtensionSink;
+		/// <summary>
+		/// Called by <see cref="MicroserviceStartupUtil.ConfigureLogging"/> via
+		/// <see cref="IBeamServiceConfig.AddLoggerProvider"/> for each of the two
+		/// <c>ConfigureLogging</c> invocations.
+		/// <list type="bullet">
+		///   <item><b>First call</b> — registers <see cref="ExtensionAppLogProvider"/> with the
+		///     provided <paramref name="debugLogProcessor"/> as the sink, pre-subscribes the
+		///     microservice-name channel, and returns the same sink.</item>
+		///   <item><b>Second call</b> — registers a new <see cref="ExtensionAppLogProvider"/>
+		///     pointing at the first (stable) sink, drains any messages buffered in the second
+		///     temporary sink, and returns the first sink so <see cref="ContainerDiagnosticService"/>
+		///     keeps using it.</item>
+		/// </list>
+		/// </summary>
+		public DebugLogProcessor AddLoggerProvider(ILoggingBuilder builder, IAppContext appContext, DebugLogProcessor debugLogProcessor, PortalExtensionDef extension, Action<float, string> onProgress = null)
+		{
+			builder.ClearProviders();
+			if (_sink == null)
+			{
+				// First ConfigureLogging call: this is the stable sink. Pre-subscribe using the
+				// microservice name so messages produced before ContainerDiagnosticService
+				// construction are buffered rather than dropped.
+				_sink = debugLogProcessor;
+				_sink.GetMessageSubscription(MicroserviceName);
+				builder.AddProvider(new ExtensionAppLogProvider(_sink, appContext, extension, onProgress));
+				// Return the same sink; ctx.debugLogProcessor stays as-is.
+				return debugLogProcessor;
+			}
+
+			// Second ConfigureLogging call: point the new builder at the stable first sink.
+			builder.AddProvider(new ExtensionAppLogProvider(_sink, appContext, extension, onProgress));
+			// Drain any messages that landed in the temporary second sink into the channel
+			// of the stable first sink, then discard the temporary subscription.
+			var tmpEarly = debugLogProcessor.GetMessageSubscription(MicroserviceName);
+			var earlyChannel = _sink.GetMessageSubscription(MicroserviceName);
+			while (tmpEarly.Reader.TryRead(out var msg))
+				earlyChannel.Writer.TryWrite(msg);
+			debugLogProcessor.ReleaseSubscription(MicroserviceName);
+			// Return the stable first sink so ctx.debugLogProcessor is updated to point at it.
+			return _sink;
+		}
 	}
 
 	public static string BuildPortalExtensionUrl(IAppContext context, PortalExtensionDef extension)
@@ -200,7 +219,13 @@ public partial class BeamoLocalSystem
 		}
 
 		var baseUrl = $"{treatedHost}/{context.Cid}/games/{context.Pid}/realms/{context.Pid}";
-		var mountPath = NormalizePortalExtensionMountPage(extension?.Properties?.Mount?.Page);
+		// An extension can declare multiple mounts; pick the first one with a
+		// non-empty page to use as the "open in browser" landing target. If a
+		// future iteration adds explicit selection (e.g. a --mount flag), this
+		// is where to plumb it.
+		var mountPath = extension?.Properties?.Mounts?
+			.Select(m => NormalizePortalExtensionMountPage(m?.Page))
+			.FirstOrDefault(p => !string.IsNullOrEmpty(p));
 		if (!string.IsNullOrEmpty(mountPath))
 		{
 			return $"{baseUrl}/{mountPath}?refresh_token={context.RefreshToken}";
@@ -239,18 +264,6 @@ public partial class BeamoLocalSystem
 	}
 	
 
-	private string GetMicroName(string appName)
-	{
-		if (!string.IsNullOrEmpty(_computedMicroserviceName))
-		{
-			return _computedMicroserviceName;
-		}
-
-		_computedMicroserviceName = $"BeamPortalExtension_{appName}_{Guid.NewGuid()}";
-
-		return _computedMicroserviceName;
-	}
-	
 	public static bool IsMatchingPortalExtensionService(string service, string expectedServiceName)
 	{
 		if (service == expectedServiceName)
@@ -269,9 +282,11 @@ public class PortalExtensionMountProperties
 	public const string KEY_NAV_GROUP = "navGroup";
 	public const string KEY_NAV_LABEL = "navLabel";
 	public const string KEY_NAV_ICON = "navIcon";
+	public const string KEY_NAV_DESCRIPTION = "navDescription";
+	public const string KEY_NAV_COLOR = "navColor";
 	public const string KEY_NAV_GROUP_ORDER = "navGroupOrder";
 	public const string KEY_NAV_LABEL_ORDER = "navLabelOrder";
-	
+
 	[JsonProperty(KEY_PAGE)] public string Page;
 
 	[JsonProperty(KEY_SELECTOR)] public string Selector;
@@ -287,6 +302,18 @@ public class PortalExtensionMountProperties
 	[JsonProperty(KEY_NAV_ICON)]
 	[JsonConverter(typeof(OptionalConverter))]
 	public OptionalString NavIcon;
+
+	// Short tagline used by the portal hub picker as the dropdown subtitle.
+	// Only consumed for hub-declaration mounts (single-segment `Page`).
+	[JsonProperty(KEY_NAV_DESCRIPTION)]
+	[JsonConverter(typeof(OptionalConverter))]
+	public OptionalString NavDescription;
+
+	// CSS color for the hub-picker badge background — hex, CSS variable, or
+	// gradient. Only consumed for hub-declaration mounts.
+	[JsonProperty(KEY_NAV_COLOR)]
+	[JsonConverter(typeof(OptionalConverter))]
+	public OptionalString NavColor;
 
 	[JsonProperty(KEY_NAV_GROUP_ORDER)]
 	[JsonConverter(typeof(OptionalConverter))]
@@ -311,7 +338,21 @@ public class PortalExtensionPackageProperties
 	[JsonProperty("microserviceDependencies")]
 	public List<string> MicroserviceDependencies;
 
-	[JsonProperty("mount")] public PortalExtensionMountProperties Mount;
+	/// <summary>
+	/// The service-group tags this extension belongs to. Mirrors the BeamServiceGroup
+	/// (PROP_BEAM_SERVICE_GROUP) property used by microservices, letting extensions be
+	/// included/excluded via --with-group/--without-group.
+	/// </summary>
+	[JsonProperty("serviceGroups")]
+	public List<string> ServiceGroups;
+
+	/// <summary>
+	/// Mount declarations. An extension binds to every entry independently —
+	/// each match triggers its own mount call with a distinct shadow root.
+	/// A single bundle can contribute both a sidebar widget and a full page,
+	/// or a hub-declaration extension can also seed a default nav item.
+	/// </summary>
+	[JsonProperty("mounts")] public List<PortalExtensionMountProperties> Mounts;
 }
 
 public class ExtensionAppLogProvider : ILoggerProvider

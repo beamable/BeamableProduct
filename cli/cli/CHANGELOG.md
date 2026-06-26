@@ -281,6 +281,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
 - Fixed `useLocal: true` in Scheduler Microservice invocation when the C#MS is remotely deployed.
 
+## [4.3.8] - 2026-06-24
+
+### Fixed
+- Backported microservice content resilience: manifest and content-entry fetches now retry transient failures (timeouts, 429, 5xx, transport errors) with bounded exponential backoff and jitter, and a failed fetch no longer poisons the in-memory content cache.
+
+## [4.3.7] - 2026-04-10
+
+### Fixed
+- Backported possible `IndexOutOfBounds` error when running `beam project ps` due to nameless docker containers
+
 ## [4.3.6] - 2026-03-13
 
 ### Fixed

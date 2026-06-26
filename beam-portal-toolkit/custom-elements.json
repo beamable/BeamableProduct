@@ -29644,6 +29644,16 @@
             {
               "description": "Drop shadow for the card variant.",
               "name": "--wa-shadow-s"
+            },
+            {
+              "description": "Vertical padding for header, body, and title-bar cells. Default is the \"compact\" density that every dashboard mockup in this codebase reaches for. Use the `density` attribute below for the named presets; this variable is for fine-grained overrides.",
+              "name": "--cell-padding-y",
+              "default": "0.5rem"
+            },
+            {
+              "description": "Horizontal padding for header, body, and title-bar cells.",
+              "name": "--cell-padding-x",
+              "default": "1rem"
             }
           ],
           "members": [
@@ -29746,6 +29756,17 @@
                 "text": "string | undefined"
               },
               "attribute": "table-title"
+            },
+            {
+              "kind": "field",
+              "name": "density",
+              "type": {
+                "text": "'compact' | 'comfortable'"
+              },
+              "description": "Cell density preset — `compact` (default, 0.5rem vertical) or\n`comfortable` (0.75rem vertical). Setting `--cell-padding-y` /\n`--cell-padding-x` inline overrides this.",
+              "default": "'compact'",
+              "attribute": "density",
+              "reflects": true
             },
             {
               "kind": "field",
@@ -30140,6 +30161,15 @@
           ],
           "attributes": [
             {
+              "type": {
+                "text": "'compact' | 'comfortable'"
+              },
+              "description": "Cell density preset — `compact` (default, 0.5rem vertical) or\n`comfortable` (0.75rem vertical). Setting `--cell-padding-y` /\n`--cell-padding-x` inline overrides this.",
+              "name": "density",
+              "default": "'compact'",
+              "fieldName": "density"
+            },
+            {
               "name": "columns",
               "type": {
                 "text": "BeamTableColumn[]"
@@ -30472,14 +30502,14 @@
           "name": "BeamPageHeader",
           "cssProperties": [
             {
-              "description": "Title font size.",
+              "description": "Title font size. Default `1.25rem` (20px) matches the mockups every news-agent extension was rolling by hand.",
               "name": "--beam-page-header-title-size",
-              "default": "1.5rem"
+              "default": "1.25rem"
             },
             {
-              "description": "Bottom margin reserved below the header.",
+              "description": "Bottom margin reserved below the header. Defaults to `0` so the header composes naturally inside a flex/grid parent that already has `gap`. Set to `1.5rem` explicitly when used inside a legacy block-layout page.",
               "name": "--beam-page-header-spacing",
-              "default": "1.5rem"
+              "default": "0"
             },
             {
               "description": "Gap between the text block and the actions slot.",
@@ -32611,6 +32641,587 @@
           "declaration": {
             "name": "BeamChangeBar",
             "module": "src/beam-components/beam-change-bar.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/beam-components/beam-kpi-card.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamKpiCard",
+          "cssProperties": [
+            {
+              "description": "Inner padding of the card.",
+              "name": "--beam-kpi-card-padding",
+              "default": "1rem"
+            },
+            {
+              "description": "Outer corner radius.",
+              "name": "--beam-kpi-card-radius",
+              "default": "0.5rem"
+            },
+            {
+              "description": "Font size of the value.",
+              "name": "--beam-kpi-card-value-size",
+              "default": "1.5rem"
+            },
+            {
+              "description": "Card background. Defaults to `var(--wa-color-surface-raised)` so it matches the host's `.card` look.",
+              "name": "--beam-kpi-card-background"
+            },
+            {
+              "description": "Card border color. Defaults to `var(--color-beam-border)`.",
+              "name": "--beam-kpi-card-border-color"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The card's outer container.",
+              "name": "base"
+            },
+            {
+              "description": "Row containing the icon and change indicator.",
+              "name": "header"
+            },
+            {
+              "description": "Wrapper around the icon slot.",
+              "name": "icon"
+            },
+            {
+              "description": "The delta indicator span.",
+              "name": "change"
+            },
+            {
+              "description": "The big value text.",
+              "name": "value"
+            },
+            {
+              "description": "The label text.",
+              "name": "label"
+            },
+            {
+              "description": "The subtitle text.",
+              "name": "sub"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Top-left icon. Pass a `<beam-icon>`, emoji, or any inline-sized element. Falls back to empty if no icon is provided. Shortcut: set the `icon` attribute to a Font Awesome name (e.g. `\"bolt\"`) and the card renders a softly-tinted `<beam-icon>` for you. Anything in the slot wins over the shortcut.",
+              "name": "icon"
+            },
+            {
+              "description": "Default slot rendered below the standard fields. Useful for sparklines or auxiliary content.",
+              "name": ""
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "description": "The big primary value, e.g. \"23\" or \"$306\" or \"892K\".",
+              "default": "''",
+              "attribute": "value"
+            },
+            {
+              "kind": "field",
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "description": "Short label rendered below the value.",
+              "default": "''",
+              "attribute": "label"
+            },
+            {
+              "kind": "field",
+              "name": "sub",
+              "type": {
+                "text": "string"
+              },
+              "description": "Optional secondary line below the label.",
+              "default": "''",
+              "attribute": "sub"
+            },
+            {
+              "kind": "field",
+              "name": "change",
+              "type": {
+                "text": "string"
+              },
+              "description": "Delta indicator string, e.g. \"+12%\" or \"-5.2%\". Omit to hide.",
+              "default": "''",
+              "attribute": "change"
+            },
+            {
+              "kind": "field",
+              "name": "tone",
+              "type": {
+                "text": "'positive' | 'negative' | 'neutral'"
+              },
+              "description": "Coloring for the change text. `positive` → success green,\n`negative` → error red, `neutral` → muted gray. Defaults to\n`neutral`.",
+              "default": "'neutral'",
+              "attribute": "tone"
+            },
+            {
+              "kind": "field",
+              "name": "icon",
+              "type": {
+                "text": "string"
+              },
+              "description": "Shortcut for the `icon` slot — set this to a Font Awesome name\n(e.g. `\"bolt\"`, `\"file-lines\"`) and the card renders a softly-tinted\n`<beam-icon>` for you. Slotted content always wins.",
+              "default": "''",
+              "attribute": "icon"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "description": "The big primary value, e.g. \"23\" or \"$306\" or \"892K\".",
+              "default": "''",
+              "fieldName": "value"
+            },
+            {
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "description": "Short label rendered below the value.",
+              "default": "''",
+              "fieldName": "label"
+            },
+            {
+              "name": "sub",
+              "type": {
+                "text": "string"
+              },
+              "description": "Optional secondary line below the label.",
+              "default": "''",
+              "fieldName": "sub"
+            },
+            {
+              "name": "change",
+              "type": {
+                "text": "string"
+              },
+              "description": "Delta indicator string, e.g. \"+12%\" or \"-5.2%\". Omit to hide.",
+              "default": "''",
+              "fieldName": "change"
+            },
+            {
+              "name": "tone",
+              "type": {
+                "text": "'positive' | 'negative' | 'neutral'"
+              },
+              "description": "Coloring for the change text. `positive` → success green,\n`negative` → error red, `neutral` → muted gray. Defaults to\n`neutral`.",
+              "default": "'neutral'",
+              "fieldName": "tone"
+            },
+            {
+              "name": "icon",
+              "type": {
+                "text": "string"
+              },
+              "description": "Shortcut for the `icon` slot — set this to a Font Awesome name\n(e.g. `\"bolt\"`, `\"file-lines\"`) and the card renders a softly-tinted\n`<beam-icon>` for you. Slotted content always wins.",
+              "default": "''",
+              "fieldName": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "beam-kpi-card",
+          "customElement": true,
+          "summary": "Compact card showing a single key performance indicator — a\nbig value, a short label, an optional subtitle, an icon in the top-left,\nand a delta indicator in the top-right."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BeamKpiCard",
+          "declaration": {
+            "name": "BeamKpiCard",
+            "module": "src/beam-components/beam-kpi-card.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-kpi-card",
+          "declaration": {
+            "name": "BeamKpiCard",
+            "module": "src/beam-components/beam-kpi-card.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/beam-components/beam-section-label.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamSectionLabel",
+          "cssProperties": [
+            {
+              "description": "Bottom margin reserved below the label. Set to 0 if the label sits inline.",
+              "name": "--beam-section-label-margin-bottom",
+              "default": "1rem"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The outer flex container.",
+              "name": "base"
+            },
+            {
+              "description": "The label text span.",
+              "name": "label"
+            }
+          ],
+          "slots": [
+            {
+              "description": "The label text. Plain string is typical; rich content works too.",
+              "name": ""
+            },
+            {
+              "description": "Right-aligned action element (button, link, etc).",
+              "name": "action"
+            }
+          ],
+          "members": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "beam-section-label",
+          "customElement": true,
+          "summary": "Small uppercase muted heading for sections inside cards or\npanels, with an optional trailing action slot."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BeamSectionLabel",
+          "declaration": {
+            "name": "BeamSectionLabel",
+            "module": "src/beam-components/beam-section-label.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-section-label",
+          "declaration": {
+            "name": "BeamSectionLabel",
+            "module": "src/beam-components/beam-section-label.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/beam-components/beam-status-pill.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamStatusPill",
+          "cssProperties": [
+            {
+              "description": "Inner padding.",
+              "name": "--beam-status-pill-padding",
+              "default": "0.125rem 0.5rem"
+            },
+            {
+              "description": "Corner radius.",
+              "name": "--beam-status-pill-radius",
+              "default": "4px"
+            },
+            {
+              "description": "Font size.",
+              "name": "--beam-status-pill-font-size",
+              "default": "0.6875rem"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The pill element itself.",
+              "name": "base"
+            }
+          ],
+          "slots": [
+            {
+              "description": "The pill label (usually a short string like \"Enabled\" or \"Live\").",
+              "name": ""
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "tone",
+              "type": {
+                "text": "'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral'"
+              },
+              "description": "Color treatment. `neutral` (default) uses the muted text color.\n`success` / `warning` / `error` / `info` / `accent` use the matching\nsemantic palette.",
+              "default": "'neutral'",
+              "attribute": "tone",
+              "reflects": true
+            }
+          ],
+          "attributes": [
+            {
+              "name": "tone",
+              "type": {
+                "text": "'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral'"
+              },
+              "description": "Color treatment. `neutral` (default) uses the muted text color.\n`success` / `warning` / `error` / `info` / `accent` use the matching\nsemantic palette.",
+              "default": "'neutral'",
+              "fieldName": "tone"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "beam-status-pill",
+          "customElement": true,
+          "summary": "Compact rounded pill with a soft tinted background and\nmatching foreground — for status badges that need a softer look\nthan `beam-badge` provides."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BeamStatusPill",
+          "declaration": {
+            "name": "BeamStatusPill",
+            "module": "src/beam-components/beam-status-pill.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-status-pill",
+          "declaration": {
+            "name": "BeamStatusPill",
+            "module": "src/beam-components/beam-status-pill.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/beam-components/beam-icon-tile.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamIconTile",
+          "cssProperties": [
+            {
+              "description": "Width and height of the tile.",
+              "name": "--beam-icon-tile-size",
+              "default": "2rem"
+            },
+            {
+              "description": "Corner radius (50% = circle).",
+              "name": "--beam-icon-tile-radius",
+              "default": "50%"
+            },
+            {
+              "description": "Icon font size.",
+              "name": "--beam-icon-tile-font-size",
+              "default": "0.875rem"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The tile element.",
+              "name": "base"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Anything inline-sized. Overrides the `icon` attribute shortcut.",
+              "name": ""
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "tone",
+              "type": {
+                "text": "'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral'"
+              },
+              "description": "Tone — defaults to `neutral` (muted gray surface).",
+              "default": "'neutral'",
+              "attribute": "tone",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "shape",
+              "type": {
+                "text": "'circle' | 'rounded'"
+              },
+              "description": "Shape — defaults to `circle`. Use `rounded` for a 6px-radius square.",
+              "default": "'circle'",
+              "attribute": "shape",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "size",
+              "type": {
+                "text": "'small' | 'medium' | 'large'"
+              },
+              "description": "Size — defaults to `medium` (2rem).",
+              "default": "'medium'",
+              "attribute": "size",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "icon",
+              "type": {
+                "text": "string"
+              },
+              "description": "Font Awesome icon-name shortcut. If set and nothing is slotted,\nrenders a `<beam-icon name=...>` inside the tile. Slotted content\nwins.",
+              "default": "''",
+              "attribute": "icon"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "tone",
+              "type": {
+                "text": "'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral'"
+              },
+              "description": "Tone — defaults to `neutral` (muted gray surface).",
+              "default": "'neutral'",
+              "fieldName": "tone"
+            },
+            {
+              "name": "shape",
+              "type": {
+                "text": "'circle' | 'rounded'"
+              },
+              "description": "Shape — defaults to `circle`. Use `rounded` for a 6px-radius square.",
+              "default": "'circle'",
+              "fieldName": "shape"
+            },
+            {
+              "name": "size",
+              "type": {
+                "text": "'small' | 'medium' | 'large'"
+              },
+              "description": "Size — defaults to `medium` (2rem).",
+              "default": "'medium'",
+              "fieldName": "size"
+            },
+            {
+              "name": "icon",
+              "type": {
+                "text": "string"
+              },
+              "description": "Font Awesome icon-name shortcut. If set and nothing is slotted,\nrenders a `<beam-icon name=...>` inside the tile. Slotted content\nwins.",
+              "default": "''",
+              "fieldName": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "beam-icon-tile",
+          "customElement": true,
+          "summary": "Small rounded tile that holds an icon — the colored\ncircle/rounded-square used in feed lists, timelines, and activity\nstreams to give an item a visual anchor."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BeamIconTile",
+          "declaration": {
+            "name": "BeamIconTile",
+            "module": "src/beam-components/beam-icon-tile.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-icon-tile",
+          "declaration": {
+            "name": "BeamIconTile",
+            "module": "src/beam-components/beam-icon-tile.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/beam-components/beam-kpi-row.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamKpiRow",
+          "cssProperties": [
+            {
+              "description": "Minimum column width before the grid reflows.",
+              "name": "--beam-kpi-row-min",
+              "default": "11rem"
+            },
+            {
+              "description": "Gap between tiles.",
+              "name": "--beam-kpi-row-gap",
+              "default": "1rem"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The grid container.",
+              "name": "base"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Tile content. Typically `<beam-kpi-card>` children, but any block-level child works.",
+              "name": ""
+            }
+          ],
+          "members": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "beam-kpi-row",
+          "customElement": true,
+          "summary": "Responsive grid that lays out a row of KPI cards (or any\nfixed-width tile content) with auto-fit columns."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BeamKpiRow",
+          "declaration": {
+            "name": "BeamKpiRow",
+            "module": "src/beam-components/beam-kpi-row.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-kpi-row",
+          "declaration": {
+            "name": "BeamKpiRow",
+            "module": "src/beam-components/beam-kpi-row.ts"
           }
         }
       ]

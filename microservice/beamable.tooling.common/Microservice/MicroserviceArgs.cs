@@ -172,7 +172,7 @@ namespace Beamable.Server
 		public string ProjectName => Environment.GetEnvironmentVariable("PID");
 		public IDependencyProviderScope ServiceScope { get; }
 
-		private static int? _freeHealthPort = null;
+		private int? _freeHealthPort = null;
 		public int HealthPort
 		{
 			get
@@ -181,10 +181,9 @@ namespace Beamable.Server
 				var defaultPort = Constants.Features.Services.HEALTH_PORT;
 				if (!inDocker)
 				{
-					// if we aren't in docker, then we can't use a constant default port, because
-					//  it is very likely that there will be a port collision.
-					//  So, get a fresh port number, and store it in a static variable, so 
-					//  it doesn't get re-generated for later calls. 
+					// Per-instance cache: multiple BeamServers in the same process (e.g. several portal
+					// extensions hosted by one `beam project run`) must each bind a distinct port, or
+					// EmbedIO throws "Prefix already in use".
 					_freeHealthPort ??= PortUtil.FreeTcpPort();
 					defaultPort = _freeHealthPort.Value;
 				}

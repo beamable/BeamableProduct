@@ -89,6 +89,9 @@ This regenerates:
 
 Commit all generated files after syncing.
 
+### Never hand author files in the generated folder
+The `src/generated` folder is exclusively for generated files created by running the sync-components script. 
+
 ### Building locally
 
 ```bash

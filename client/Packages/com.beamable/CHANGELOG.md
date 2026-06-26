@@ -11,9 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Content fields with attribute `MustReferenceContent` will have display content picker inspector in Editor
 
+### Fixed
+
+- Fixed `Accounts.OnReady` failing when stale or invalid remembered device tokens are present, while preserving strict validation for the active player token.
+- Fixed BeamContext infinite retry handling so retry attempts past the configured retry-delay array do not overflow the
+tracked error buffer.
+
 ### Changed
 
 - Validation of the content no longer can automatically try to update the content value
+
+
 
 ## [5.1.0] - 2026-06-16
 ### Added

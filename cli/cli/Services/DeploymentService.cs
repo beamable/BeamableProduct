@@ -1321,6 +1321,20 @@ public partial class DeployUtil
 			.Select(d => d.PortalExtensionDefinition)
 			.ToList();
 
+		// Fail fast (before the expensive build loop below) if any portal extension name collides with
+		// another portal extension or with a microservice/storage, across both local and deployed names.
+		{
+			var serviceAndStorageNames = next.manifest.Select(s => s.serviceName)
+				.Concat(next.storageReference.GetOrElse(Array.Empty<ServiceStorageReference>()).Select(s => s.id))
+				.ToList();
+			var peConflicts = PortalExtensionNameValidator.FindConflicts(
+				localPeDefs.Select(d => d.Name).ToList(),
+				remotePortalRefs.Select(r => r.name.GetOrElse(string.Empty)).ToList(),
+				serviceAndStorageNames);
+			if (peConflicts.Count > 0)
+				throw new CliException("Cannot deploy due to portal extension name conflicts:\n - " + string.Join("\n - ", peConflicts));
+		}
+
 		var portalExtensionsToUpload = new List<PortalExtensionUploadInfo>();
 		var portalExtensionReferences = new List<PortalExtensionPlanReference>();
 		var localPeNames = new HashSet<string>();

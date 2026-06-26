@@ -337,4 +337,63 @@ public class PortalExtensionCommandTests : CLITestExtensions
 	}
 
 	#endregion
+
+	#region project new portal-extension (name conflicts)
+
+	[Test]
+	public void NewPortalExtension_Fails_WhenNameConflictsWithExistingExtension()
+	{
+		InitWorkspace();
+
+		SetupBeamoServiceMock();
+		MockRemotePortalConfig();
+		Run("project", "new", "portal-extension", "DupExt", "--quiet",
+			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react");
+		_mockObjects.Clear();
+		ResetConfigurator();
+
+		// The name check runs before the remote portal config fetch and any prompts, so only the
+		// pre-Handle manifest init (BeamoService) needs to be mocked here.
+		SetupBeamoServiceMock();
+		var exitCode = RunFull(new[]
+		{
+			"project", "new", "portal-extension", "DupExt", "--quiet",
+			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react"
+		});
+
+		Assert.That(exitCode, Is.EqualTo(1),
+			"creating a portal extension whose name duplicates an existing extension must fail");
+	}
+
+	[Test]
+	public void NewPortalExtension_Fails_WhenNameConflictsWithMicroservice()
+	{
+		InitWorkspace();
+
+		SetupBeamoServiceMock();
+		Run("project", "new", "service", "Collide", "--quiet");
+		_mockObjects.Clear();
+		ResetConfigurator();
+
+		SetupBeamoServiceMock();
+		var exitCode = RunFull(new[]
+		{
+			"project", "new", "portal-extension", "Collide", "--quiet",
+			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react"
+		});
+
+		Assert.That(exitCode, Is.EqualTo(1),
+			"creating a portal extension whose name collides with a microservice must fail");
+	}
+
+	#endregion
 }
