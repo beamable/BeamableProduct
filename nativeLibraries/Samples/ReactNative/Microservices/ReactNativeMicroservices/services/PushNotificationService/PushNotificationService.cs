@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Beamable.Api.Analytics;
 using Beamable.Common;
 using Beamable.Common.Api.Stats;
+using Beamable.Common.Content;
 using Beamable.Server;
 
 namespace Beamable.PushNotificationService
@@ -394,7 +396,8 @@ namespace Beamable.PushNotificationService
 				["gamerTag"] = gamerTag,
 				["funnelType"] = "Sent",
 			};
-			if (!string.IsNullOrWhiteSpace(message.accountId)) p["accountId"] = message.accountId;
+			// accountId is auto-set to the target player's gamerTag; callers need not send it.
+			p["accountId"] = string.IsNullOrWhiteSpace(message.accountId) ? gamerTag : message.accountId;
 			if (!string.IsNullOrWhiteSpace(message.cidPid)) p["cidPid"] = message.cidPid;
 			if (!string.IsNullOrWhiteSpace(message.deepLink)) p["deeplink"] = message.deepLink;
 
@@ -404,18 +407,20 @@ namespace Beamable.PushNotificationService
 			var offer = message.offers?.FirstOrDefault();
 			if (offer != null)
 			{
-				// Match the device-side funnel builders (Android NotificationOffer.toJson, iOS
-				// Codable offer encoding): OMIT absent fields rather than emit explicit nulls.
-				var offerData = new Dictionary<string, object>();
-				if (!string.IsNullOrWhiteSpace(offer.itemId)) offerData["itemId"] = offer.itemId;
-				if (!string.IsNullOrWhiteSpace(offer.value)) offerData["value"] = offer.value;
-				if (!string.IsNullOrWhiteSpace(offer.customData)) offerData["customData"] = offer.customData;
-				p["offerData"] = offerData;
+				// Analytics params must be FLAT — Athena has no nested-object column type, so a
+				// nested `offerData` object breaks ingestion (the table is never created). Emit each
+				// offer field as a dotted flat key; customData is free-form so it stays a JSON string.
+				if (!string.IsNullOrWhiteSpace(offer.itemId)) p["offerData.itemId"] = offer.itemId;
+				if (!string.IsNullOrWhiteSpace(offer.value)) p["offerData.value"] = offer.value;
+				if (!string.IsNullOrWhiteSpace(offer.customData)) p["offerData.customData"] = offer.customData;
 			}
 
 			try
 			{
 				var ev = new CoreEvent("notification_funnel", "Sent", p);
+				// DEBUG: full funnel payload as emitted (op=g.core, c=notification_funnel, e=Sent).
+				BeamableLogger.Log("[funnel] emit op=g.core c=notification_funnel e=Sent player={player} payload={payload}",
+					playerId, JsonSerializer.Serialize(p));
 				Services.Analytics.SendAnalyticsEvent(Services.Analytics.BuildRequest(ev));
 			}
 			catch (Exception ex)
@@ -526,19 +531,27 @@ namespace Beamable.PushNotificationService
 	[Serializable]
 	public class PushCampaignRequest
 	{
+		// title/body/deepLink are the required notification content. The §3.3 campaign metadata
+		// below is all optional — modeled with Beamable Optional* types so the generated web client
+		// marks them optional (the schema generator unwraps Optional<T> to its inner type, so the
+		// wire shape stays e.g. `campaignId?: string`, never an Optional wrapper).
 		public string title;
 		public string body;
-		public string deepLink;          // canonical key on the wire: "deeplink"
+		public string deepLink;              // canonical key on the wire: "deeplink"
 
-		public string campaignId;        // NEW concept (§3.3)
-		public string nodeId;            // NEW concept (§3.3)
-		public string gamerTag;          // Beamable dbid; defaults to the target player id when unset
-		public string accountId;         // Beamable account id
-		public string cidPid;            // "<cid>.<pid>" realm scope
-		public List<PushOffer> offers;   // optional offers array
-		public string campaignData;      // free-form JSON object, as a string
+		public OptionalString campaignId;    // NEW concept (§3.3)
+		public OptionalString nodeId;        // NEW concept (§3.3)
+		public OptionalString gamerTag;      // Beamable dbid; defaults to the target player id when unset
+		public OptionalString accountId;     // Beamable account id
+		public OptionalString cidPid;        // "<cid>.<pid>" realm scope
+		public OptionalList<PushOffer> offers; // optional offers array
+		public OptionalString campaignData;  // free-form JSON object, as a string
 
-		/// <summary>Projects the schema fields (sans title/body/deepLink) into the internal context.</summary>
+		/// <summary>
+		/// Projects the schema fields (sans title/body/deepLink) into the internal context. The
+		/// scalar Optional* fields convert implicitly to their inner value (null when absent); the
+		/// offers DTOs are copied into their plain internal twin so no Optional reaches the device.
+		/// </summary>
 		public PushCampaignContext ToContext() => new PushCampaignContext
 		{
 			campaignId = campaignId,
@@ -546,7 +559,9 @@ namespace Beamable.PushNotificationService
 			gamerTag = gamerTag,
 			accountId = accountId,
 			cidPid = cidPid,
-			offers = offers,
+			offers = ((List<PushOffer>)offers)?
+				.Select(o => new PushOfferData { itemId = o.itemId, value = o.value, customData = o.customData })
+				.ToList(),
 			campaignData = campaignData,
 		};
 	}
@@ -563,7 +578,7 @@ namespace Beamable.PushNotificationService
 		public string gamerTag;
 		public string accountId;
 		public string cidPid;
-		public List<PushOffer> offers;
+		public List<PushOfferData> offers;
 		public string campaignData;
 	}
 

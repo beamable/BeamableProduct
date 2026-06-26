@@ -311,12 +311,28 @@ public class WebClientCodeGenerator
 			return string.Empty;
 
 		var tsClientTypeFile = new TsFile("index");
+
+		// A type reachable from more than one endpoint (e.g. a request/response DTO shared by two
+		// callables) is added to ClientTypes once per referencing endpoint — the set keys by
+		// reference, not by type name — which would emit duplicate `export type` declarations that
+		// fail to compile. Collapse by type name, keeping the first occurrence.
+		var seenTypeNames = new HashSet<string>();
 		foreach (var clientType in ClientTypes)
+		{
+			if (!seenTypeNames.Add(clientType.Name))
+				continue;
 			tsClientTypeFile.AddDeclaration(clientType);
+		}
 
 		Directory.CreateDirectory(typesOutputDirectory);
 		var clientTypeFilePath = Path.Combine(typesOutputDirectory, $"{tsClientTypeFile.FileName}.ts");
 		File.WriteAllText(clientTypeFilePath, tsClientTypeFile.Render());
+
+		// ModuleTypes/ClientTypes are static, so without clearing they leak types across repeated
+		// generations within a long-lived process (e.g. the MCP server) and across microservices.
+		ModuleTypes.Clear();
+		ClientTypes.Clear();
+
 		return clientTypeFilePath;
 	}
 

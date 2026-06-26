@@ -281,7 +281,7 @@
       if (campaignDataJson) campaignRequest.campaignData = campaignDataJson;
       const outcomes = await Promise.all(
         [...targets].map(
-          (id) => client2.sendCampaignPushToPlayer({ playerId: id, ...campaignRequest }).then((r) => ({ id, r })).catch((e2) => ({ id, err: e2 instanceof Error ? e2.message : String(e2) }))
+          (id) => client2.sendCampaignPushToPlayer({ playerId: id, request: campaignRequest }).then((r) => ({ id, r })).catch((e2) => ({ id, err: e2 instanceof Error ? e2.message : String(e2) }))
         )
       );
       const agg = {

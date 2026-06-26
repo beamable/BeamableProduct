@@ -32,6 +32,18 @@ namespace Beamable.Notifications
 
         private static bool _initialized;
 
+        /// <summary>
+        /// When true (the default), <see cref="Initialize"/> auto-wires the closed-app campaign funnel
+        /// auth to the default <see cref="BeamContext"/>: the player's token is pushed to the native
+        /// layer on context-ready / login / token-refresh and cleared on logout, so game code never has
+        /// to call <see cref="ConfigureAuthFromContext()"/> itself. Set to <c>false</c> before calling
+        /// <see cref="Initialize"/> for local-notifications-only games that don't use Beamable auth (or
+        /// that want to drive auth manually / from a non-default context).
+        /// </summary>
+        public static bool AutoConfigureAuth = true;
+
+        private static bool _autoAuthWired;
+
         public static void Initialize()
         {
             if (_initialized) return;
@@ -57,6 +69,32 @@ namespace Beamable.Notifications
             AndroidNotificationsRelay.Ensure();
             AndroidBackend.Initialize();
 #endif
+
+            if (AutoConfigureAuth) WireAutoAuth();
+        }
+
+        /// <summary>
+        /// Best-effort one-time wiring of the funnel auth to the default <see cref="BeamContext"/>
+        /// (see <see cref="AutoConfigureAuth"/>). Pushes the player's token on context-ready, login and
+        /// reload (token-refresh), and clears it on logout. Wrapped in try/catch and never throws — a
+        /// game without Beamable configured must still receive local notifications.
+        /// </summary>
+        private static void WireAutoAuth()
+        {
+            if (_autoAuthWired) return;
+            _autoAuthWired = true;
+            try
+            {
+                var ctx = BeamContext.Default;
+                ctx.OnReady.Then(_ => ConfigureAuthFromContext());
+                ctx.OnUserLoggedIn += _ => ConfigureAuthFromContext();
+                ctx.OnReloadUser += () => ConfigureAuthFromContext();
+                ctx.OnUserLoggingOut += _ => ClearAuth();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[BeamableNotifications] Auto auth wiring skipped (Beamable context unavailable): " + e.Message);
+            }
         }
 
         // MARK: API
@@ -139,11 +177,14 @@ namespace Beamable.Notifications
 
         /// <summary>
         /// Push the player's auth credentials to the native layer so the native push/campaign
-        /// pipeline can attribute conversions while the app is closed/backgrounded. The game should
-        /// call this on login and again whenever the token is refreshed; call <see cref="ClearAuth"/>
-        /// on logout. Field names are sent as the canonical camelCase contract both natives expect
-        /// (<c>accessToken</c>, <c>refreshToken</c>, <c>accessTokenExpiresAt</c>, <c>cid</c>,
-        /// <c>pid</c>, <c>host</c>).
+        /// pipeline can attribute conversions while the app is closed/backgrounded. Field names are
+        /// sent as the canonical camelCase contract both natives expect (<c>accessToken</c>,
+        /// <c>refreshToken</c>, <c>accessTokenExpiresAt</c>, <c>cid</c>, <c>pid</c>, <c>host</c>).
+        ///
+        /// As of the auto-configure change, <see cref="Initialize"/> wires this up automatically from
+        /// the default <see cref="BeamContext"/> (see <see cref="AutoConfigureAuth"/>), so most games
+        /// never need to call it directly. Call this overload manually only to push credentials from a
+        /// source other than the default context, or when <see cref="AutoConfigureAuth"/> is disabled.
         /// </summary>
         /// <param name="accessTokenExpiresAtMs">Absolute token expiry as epoch time in MILLISECONDS.</param>
         public static void ConfigureAuth(string accessToken, string refreshToken,
@@ -168,10 +209,23 @@ namespace Beamable.Notifications
 
         /// <summary>
         /// Convenience that pulls the current player's token from <see cref="BeamContext.Default"/>
+        /// and forwards it to <see cref="ConfigureAuth(string,string,long,string,string,string)"/>,
+        /// resolving the Beamable API host automatically from <see cref="BeamableEnvironment.ApiUrl"/>.
+        ///
+        /// This is wired automatically on <see cref="Initialize"/> (context-ready / login / refresh;
+        /// see <see cref="AutoConfigureAuth"/>), so games typically don't call it. Call it manually
+        /// only as an override or when auto-configuration is disabled. No-op if no token exists yet.
+        /// </summary>
+        public static void ConfigureAuthFromContext() =>
+            ConfigureAuthFromContext(BeamableEnvironment.ApiUrl);
+
+        /// <summary>
+        /// Convenience that pulls the current player's token from <see cref="BeamContext.Default"/>
         /// and forwards it to <see cref="ConfigureAuth(string,string,long,string,string,string)"/>.
-        /// <paramref name="host"/> must be supplied by the integrator because it is the Beamable API
-        /// host (from the game's environment config), not part of the access token. Call on login and
-        /// on every token refresh; call <see cref="ClearAuth"/> on logout. No-op if no token exists.
+        /// <paramref name="host"/> is the Beamable API host (from the game's environment config), not
+        /// part of the access token. No-op if no token exists. Prefer the parameterless
+        /// <see cref="ConfigureAuthFromContext()"/> overload, which resolves the host automatically and
+        /// is what <see cref="Initialize"/> wires up by default (see <see cref="AutoConfigureAuth"/>).
         /// </summary>
         public static void ConfigureAuthFromContext(string host)
         {

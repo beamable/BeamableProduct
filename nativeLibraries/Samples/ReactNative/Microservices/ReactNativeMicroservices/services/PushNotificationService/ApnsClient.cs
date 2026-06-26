@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Beamable.Common;
+using Beamable.Common.Content;
 using Beamable.Server;
 
 namespace Beamable.PushNotificationService
@@ -20,8 +21,21 @@ namespace Beamable.PushNotificationService
 	public class PushOffer
 	{
 		public string itemId;
-		public string value;        // "string|number" in the schema — carried as a string on the wire
-		public string customData;   // free-form JSON object, as a string (e.g. {"k":"v"})
+		public string value;             // "string|number" in the schema — carried as a string on the wire
+		public OptionalString customData; // free-form JSON object, as a string (e.g. {"k":"v"}); optional
+	}
+
+	/// <summary>
+	/// Internal, plain (non-<see cref="Optional"/>) twin of <see cref="PushOffer"/> used on the
+	/// delivery path (<see cref="PushMessage.offers"/>). Kept separate from the callable DTO so an
+	/// <see cref="Optional"/> wrapper never leaks into the JSON written to the device payload
+	/// (<see cref="PushMessage.WriteIntentData"/> serializes this verbatim).
+	/// </summary>
+	public class PushOfferData
+	{
+		public string itemId;
+		public string value;
+		public string customData;
 	}
 
 	/// <summary>
@@ -45,7 +59,7 @@ namespace Beamable.PushNotificationService
 		public string gamerTag;     // Beamable dbid (the target player)
 		public string accountId;
 		public string cidPid;       // "<cid>.<pid>" realm scope
-		public List<PushOffer> offers;          // optional array
+		public List<PushOfferData> offers;      // optional array (plain internal twin of PushOffer)
 		public string campaignData; // free-form JSON object, as a string
 
 		/// <summary>

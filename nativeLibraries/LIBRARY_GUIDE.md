@@ -522,7 +522,8 @@ events `OnNotificationReceived/Tapped/Presented` (`NotificationData`),
 `OnTokenReceived`/`OnTokenError` (`string`), `OnPermissionResult` (`PermissionResult`),
 `OnPendingNotifications`/`OnDeliveryReceipts` (lists); methods `Initialize`, `RequestPermission`,
 `GetPermissionStatus`, `ScheduleLocal`, `CancelLocal`/`CancelAllLocal`, `GetPending`,
-`RegisterForRemote`/`UnregisterForRemote`, `ConfigureAnalytics`, `GetDeliveryReceipts`,
+`RegisterForRemote`/`UnregisterForRemote`, `ConfigureAuth`/`ClearAuth`,
+`TrackOfferClicked`/`TrackOfferConverted`, `GetDeliveryReceipts`,
 `RegisterTemplate`/`RegisterCategory`, `SetBadge`, `ClearDelivered`, `GetLaunchNotification`.
 
 ### How it routes (per platform)

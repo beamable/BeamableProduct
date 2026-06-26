@@ -233,6 +233,16 @@ export type EventMap = {
   notificationOpened: NotificationData;
   pendingNotifications: NotificationData[];
   deliveryReceipts: DeliveryReceipt[];
+  /**
+   * Result of a native analytics funnel send (Received/Opened/Sent/Clicked/Converted).
+   * Android emits the native `onFunnelResult` event; iOS is a follow-up (inert for now).
+   */
+  funnelResult: {
+    funnelType: string;
+    ok: boolean;
+    statusCode: number;
+    message: string;
+  };
 };
 
 const DEFAULT_CHANNEL = 'deeplink_channel';
@@ -375,6 +385,9 @@ export function addListener<K extends keyof EventMap>(
   handler: (payload: EventMap[K]) => void,
 ): Subscription {
   if (IS_IOS) {
+    // iOS funnel-result is a follow-up: the native side doesn't emit `onFunnelResult` yet,
+    // so return an inert subscription rather than binding to a non-existent native event.
+    if (event === 'funnelResult') return { remove: () => {} };
     // iOS native already emits the unified vocabulary, except `notificationOpened`,
     // whose native event name is `notificationTapped`.
     const nativeName =
@@ -422,6 +435,17 @@ export function addListener<K extends keyof EventMap>(
       return on('onNotificationOpened', (json: string) =>
         toNotificationData(json, true),
       );
+    case 'funnelResult':
+      // Android emits the native `onFunnelResult` event with the funnel-send outcome.
+      return on('onFunnelResult', (raw: any) => {
+        const o = asObject(raw);
+        return {
+          funnelType: String(o.funnelType ?? ''),
+          ok: Boolean(o.ok),
+          statusCode: Number(o.statusCode ?? 0),
+          message: String(o.message ?? ''),
+        };
+      });
     // Not supported on Android — return an inert subscription.
     case 'pendingNotifications':
     case 'deliveryReceipts':

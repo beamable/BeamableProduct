@@ -586,6 +586,25 @@ object PushManager {
         }
     }
 
+    /**
+     * Reports the outcome of a native funnel-analytics POST to the listener. [funnelType] is the
+     * funnel stage name, [ok] whether it succeeded, [statusCode] the HTTP code (0 when no network
+     * attempt), [message] a short human description. Mirrors [dispatchError]'s guarded direct call.
+     */
+    internal fun dispatchFunnelResult(funnelType: String, ok: Boolean, statusCode: Int, message: String) {
+        val l = listener
+        Log.i(
+            TAG,
+            "dispatchFunnelResult $funnelType ok=$ok code=$statusCode msg='$message' " +
+                "listener=${l?.javaClass?.simpleName ?: "null"}"
+        )
+        try {
+            l?.onFunnelResult(funnelType, ok, statusCode, message)
+        } catch (t: Throwable) {
+            Log.w(TAG, "onFunnelResult dispatch failed: ${t.message}")
+        }
+    }
+
     /** Runs [block], routing any thrown error to [onError] instead of crashing. */
     private inline fun safe(stage: String, block: () -> Unit) {
         try {

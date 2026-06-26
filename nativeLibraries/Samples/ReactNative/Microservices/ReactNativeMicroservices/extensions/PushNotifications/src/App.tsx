@@ -245,7 +245,7 @@ export default function App({ context }: AppProps) {
     const outcomes = await Promise.all(
       [...targets].map((id) =>
         client
-          .sendCampaignPushToPlayer({ playerId: id, ...campaignRequest })
+          .sendCampaignPushToPlayer({ playerId: id, request: campaignRequest })
           .then((r) => ({ id, r }))
           .catch((e) => ({ id, err: e instanceof Error ? e.message : String(e) })),
       ),
