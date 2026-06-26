@@ -40,7 +40,7 @@ namespace Beamable.Server.Api.RealmConfig
       public void UpdateLogLevel()
       {
 	      var level = GetLogLevel();
-	      MicroserviceBootstrapper.ContextLogLevel.Value = level;
+	      MicroserviceLogLevelContext.CurrentLogLevel.Value = level;
       }
 
       private LogLevel GetLogLevel()
