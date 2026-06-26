@@ -14,6 +14,15 @@ import BeamableNotifications
 final class BeamableNotificationsModule: RCTEventEmitter {
 
     private var hasListenersFlag = false
+    // Events emitted before JS attaches its first listener are buffered here and
+    // replayed in `startObserving`, rather than dropped. This is what lets a cold-start
+    // notification tap reach JS: the OS delivers the tap during launch and the core
+    // flushes it from `LaunchTracker` the instant `initialize()` wires the callback —
+    // which is before the React `useEffect` finishes calling `addListener`. Without the
+    // buffer that `notificationTapped` would be lost (the iOS-only gap vs Android).
+    private var pendingEvents: [(String, Any?)] = []
+    private let eventLock = NSLock()
+    private static let maxBufferedEvents = 32   // safety cap if a host never subscribes
 
     override static func requiresMainQueueSetup() -> Bool { true }
 
@@ -25,11 +34,32 @@ final class BeamableNotificationsModule: RCTEventEmitter {
         ]
     }
 
-    override func startObserving() { hasListenersFlag = true }
-    override func stopObserving() { hasListenersFlag = false }
+    override func startObserving() {
+        eventLock.lock()
+        hasListenersFlag = true
+        let buffered = pendingEvents
+        pendingEvents.removeAll()
+        eventLock.unlock()
+        // Replay events that arrived before JS attached its first listener. sendEvent
+        // delivers asynchronously on the next JS tick, by which point every addListener
+        // in the mounting effect (incl. notificationOpened) is registered.
+        for (name, body) in buffered { sendEvent(withName: name, body: body) }
+    }
+
+    override func stopObserving() {
+        eventLock.lock(); hasListenersFlag = false; eventLock.unlock()
+    }
 
     private func emit(_ name: String, _ body: Any?) {
-        guard hasListenersFlag else { return }
+        eventLock.lock()
+        if !hasListenersFlag {
+            if pendingEvents.count < Self.maxBufferedEvents {
+                pendingEvents.append((name, body))
+            }
+            eventLock.unlock()
+            return
+        }
+        eventLock.unlock()
         sendEvent(withName: name, body: body)
     }
 
@@ -45,11 +75,20 @@ final class BeamableNotificationsModule: RCTEventEmitter {
     /// run loop delivers that tap. `NotificationManager` then captures it into
     /// `LaunchTracker`, and the JS `initialize()` flushes it once the callbacks are wired.
     @objc static func bmnInstallAtLaunch() {
+        // Register the default app-side funnel analytics plugin BEFORE initialize(), so a
+        // tapped notification emits the "Opened" funnel stage. This mirrors the NSE, which
+        // hardcodes AnalyticsServicePlugin for "Received": without an app-side counterpart
+        // the funnel is only half-wired (Received reports, Opened never does). Registration
+        // dedupes by plugin id, so calling it here and in `initialize()` is safe.
+        PluginRegistry.shared.register(AnalyticsPlugin())
         NotificationManager.shared.initialize()
     }
 
     @objc func initialize() {
         let m = NotificationManager.shared
+        // Belt-and-suspenders: also register on the warm/JS-driven path in case the launch
+        // shim didn't run. Deduped by plugin id (no double-emit).
+        PluginRegistry.shared.register(AnalyticsPlugin())
         m.onPermissionResult = { [weak self] in self?.emit("permissionResult", Self.object($0)) }
         m.onTokenReceived = { [weak self] in self?.emit("tokenReceived", ["token": $0]) }
         m.onTokenError = { [weak self] in self?.emit("tokenError", ["error": $0]) }
