@@ -32,6 +32,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool realmScoped;
         /// <summary>Prints out login request response to console</summary>
         public bool printToConsole;
+        /// <summary>INTERNAL Generate an AGENTS.md AI-agent guide for this workspace</summary>
+        public bool generateAgentsFile;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -109,6 +111,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.printToConsole != default(bool)))
             {
                 genBeamCommandArgs.Add(("--print-to-console=" + this.printToConsole));
+            }
+            // If the generateAgentsFile value was not default, then add it to the list of args.
+            if ((this.generateAgentsFile != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--generate-agents-file=" + this.generateAgentsFile));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
