@@ -310,6 +310,7 @@ object BeamableAnalytics {
                 setRequestProperty("Authorization", "Bearer $accessToken")
                 setRequestProperty("X-BEAM-SCOPE", scope)
             }
+            Log.i(TAG, "funnel POST $url scope=$scope body=$body")
             conn.outputStream.use { it.writeBytesUtf8(body) }
             val code = conn.responseCode
             // Drain so the connection can be reused/closed cleanly.
@@ -343,12 +344,20 @@ object BeamableAnalytics {
         intent.campaignId?.let { params.put("campaignId", it) }
         intent.nodeId?.let { params.put("nodeId", it) }
         intent.gamerTag?.let { params.put("gamerTag", it) }
-        intent.accountId?.let { params.put("accountId", it) }
+        // accountId is auto-set to the user's gamerTag (the SDK-known player id); callers need
+        // not send it. Falls back to an explicitly-provided accountId if one is present.
+        (intent.accountId ?: intent.gamerTag)?.let { params.put("accountId", it) }
         intent.cidPid?.let { params.put("cidPid", it) }
         // Single offer relevant to this event (§4.6): attached ONLY when explicitly passed
-        // (Clicked/Converted). Received/Opened/Sent (offer=null) emit NO offerData to avoid
-        // mis-attributing the first carried offer.
-        offer?.let { params.put("offerData", it.toJson()) }
+        // (Clicked/Converted). Received/Opened/Sent (offer=null) emit NO offerData.
+        // Analytics params must be FLAT — Athena has no nested-object column type, so a nested
+        // object breaks ingestion. Emit each offer field as a dotted flat key; customData is
+        // free-form, so it stays a JSON string rather than fixed columns.
+        offer?.let { o ->
+            o.itemId?.let { params.put("offerData.itemId", it) }
+            o.rawValue?.let { params.put("offerData.value", it) }
+            o.customDataJson?.let { params.put("offerData.customData", it) }
+        }
         intent.deeplink?.let { params.put("deeplink", it) }
         params.put("funnelType", type.name)
 

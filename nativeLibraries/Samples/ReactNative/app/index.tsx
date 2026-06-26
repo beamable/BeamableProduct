@@ -229,8 +229,9 @@ export default function Home() {
   const trackOfferClickedTest = () => {
     if (!getBeam()) return append('Funnel: connect to Beamable first');
     try {
-      BeamableNotifications.trackOfferClicked(buildFunnelIntent(), funnelOffer);
-      append('Funnel: trackOfferClicked emitted (test_campaign/test_node)');
+      const intent = buildFunnelIntent();
+      BeamableNotifications.trackOfferClicked(intent, funnelOffer);
+      append(`Funnel: trackOfferClicked → ${JSON.stringify({ funnelType: 'Clicked', ...intent, offerData: funnelOffer })}`);
     } catch (e) {
       append(`Funnel error: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -239,8 +240,9 @@ export default function Home() {
   const trackOfferConvertedTest = () => {
     if (!getBeam()) return append('Funnel: connect to Beamable first');
     try {
-      BeamableNotifications.trackOfferConverted(buildFunnelIntent(), funnelOffer);
-      append('Funnel: trackOfferConverted emitted (test_campaign/test_node)');
+      const intent = buildFunnelIntent();
+      BeamableNotifications.trackOfferConverted(intent, funnelOffer);
+      append(`Funnel: trackOfferConverted → ${JSON.stringify({ funnelType: 'Converted', ...intent, offerData: funnelOffer })}`);
     } catch (e) {
       append(`Funnel error: ${e instanceof Error ? e.message : String(e)}`);
     }

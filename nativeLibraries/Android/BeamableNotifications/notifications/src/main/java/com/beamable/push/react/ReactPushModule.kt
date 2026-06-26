@@ -2,7 +2,9 @@ package com.beamable.push.react
 
 import android.app.Activity
 import android.content.Intent
+import com.beamable.push.BeamableAnalytics
 import com.beamable.push.IntentDataReader
+import com.beamable.push.NotificationIntentData
 import com.beamable.push.PushListener
 import com.beamable.push.PushManager
 import com.facebook.react.bridge.ActivityEventListener
@@ -127,7 +129,21 @@ class ReactPushModule(
     @ReactMethod
     fun getLaunchNotification(promise: Promise) {
         val activity = currentActivity
-        promise.resolve(if (activity != null) IntentDataReader.readLaunchIntent(activity) else null)
+        val payload = if (activity != null) IntentDataReader.readLaunchIntent(activity) else null
+        // Cold-start opens were detected but never funnel-tracked (only warm-start fires Opened,
+        // via onNewIntent -> consumeIntent). Fire the Opened funnel here too — analytics ONLY, not
+        // a listener re-emit, since JS pulls the payload from this method's return value on boot.
+        // trackFunnel is a no-op unless campaignId + nodeId + scope + gamerTag are present.
+        if (payload != null) {
+            try {
+                BeamableAnalytics.trackFunnel(
+                    reactContext,
+                    NotificationIntentData.fromJson(payload),
+                    BeamableAnalytics.FunnelType.Opened,
+                )
+            } catch (_: Throwable) { /* analytics is best-effort */ }
+        }
+        promise.resolve(payload)
     }
 
     // Keep NativeEventEmitter happy on RN >= 0.65.

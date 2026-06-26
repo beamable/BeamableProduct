@@ -24,11 +24,20 @@ public enum BeamableAnalytics {
             "funnelType": .string(event.funnelType)
         ]
         if let v = event.gamerTag { p["gamerTag"] = .string(v) }
-        if let v = event.accountId { p["accountId"] = .string(v) }
+        // accountId is auto-set to the user's gamerTag (the SDK-known player id); callers need
+        // not send it. Falls back to an explicitly-provided accountId if one is present.
+        if let v = event.accountId ?? event.gamerTag { p["accountId"] = .string(v) }
         if let v = event.cidPid { p["cidPid"] = .string(v) }
         if let v = event.deeplink { p["deeplink"] = .string(v) }
         if let offer = event.offerData {
-            p["offerData"] = offerJSON(offer)
+            // Flat keys only — Athena has no nested-object column type, so a nested object
+            // breaks ingestion (the table is never created). customData is free-form, so it's
+            // serialized to a JSON string rather than fixed columns.
+            if let itemId = offer.itemId { p["offerData.itemId"] = .string(itemId) }
+            if let value = offer.value { p["offerData.value"] = .string(scalarString(value)) }
+            if let customData = offer.customData {
+                p["offerData.customData"] = .string(jsonString(.object(customData)))
+            }
         }
         return p
     }
@@ -51,12 +60,22 @@ public enum BeamableAnalytics {
 
     public static let funnelCategory = "notification_funnel"
 
-    private static func offerJSON(_ offer: NotificationOffer) -> JSONValue {
-        var o: [String: JSONValue] = [:]
-        if let itemId = offer.itemId { o["itemId"] = .string(itemId) }
-        if let value = offer.value { o["value"] = value }
-        if let customData = offer.customData { o["customData"] = .object(customData) }
-        return .object(o)
+    /// Compact JSON string for a `JSONValue` — carries free-form customData as a flat string.
+    private static func jsonString(_ value: JSONValue) -> String {
+        guard let data = try? JSON.encoder.encode(value),
+              let s = String(data: data, encoding: .utf8) else { return "{}" }
+        return s
+    }
+
+    /// Render an offer `value` (string|number on the wire) as a flat string, so the analytics
+    /// column has one stable type across platforms (matches Android / the microservice).
+    private static func scalarString(_ value: JSONValue) -> String {
+        switch value {
+        case .string(let s): return s
+        case .number(let n): return n == n.rounded() ? String(Int64(n)) : String(n)
+        case .bool(let b): return b ? "true" : "false"
+        default: return jsonString(value)
+        }
     }
 
     // MARK: Build a FunnelEvent from campaign intent + a chosen offer

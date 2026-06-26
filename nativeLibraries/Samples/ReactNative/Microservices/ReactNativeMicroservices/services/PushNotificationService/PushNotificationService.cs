@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Beamable.Api.Analytics;
 using Beamable.Common;
@@ -395,7 +396,8 @@ namespace Beamable.PushNotificationService
 				["gamerTag"] = gamerTag,
 				["funnelType"] = "Sent",
 			};
-			if (!string.IsNullOrWhiteSpace(message.accountId)) p["accountId"] = message.accountId;
+			// accountId is auto-set to the target player's gamerTag; callers need not send it.
+			p["accountId"] = string.IsNullOrWhiteSpace(message.accountId) ? gamerTag : message.accountId;
 			if (!string.IsNullOrWhiteSpace(message.cidPid)) p["cidPid"] = message.cidPid;
 			if (!string.IsNullOrWhiteSpace(message.deepLink)) p["deeplink"] = message.deepLink;
 
@@ -405,18 +407,20 @@ namespace Beamable.PushNotificationService
 			var offer = message.offers?.FirstOrDefault();
 			if (offer != null)
 			{
-				// Match the device-side funnel builders (Android NotificationOffer.toJson, iOS
-				// Codable offer encoding): OMIT absent fields rather than emit explicit nulls.
-				var offerData = new Dictionary<string, object>();
-				if (!string.IsNullOrWhiteSpace(offer.itemId)) offerData["itemId"] = offer.itemId;
-				if (!string.IsNullOrWhiteSpace(offer.value)) offerData["value"] = offer.value;
-				if (!string.IsNullOrWhiteSpace(offer.customData)) offerData["customData"] = offer.customData;
-				p["offerData"] = offerData;
+				// Analytics params must be FLAT — Athena has no nested-object column type, so a
+				// nested `offerData` object breaks ingestion (the table is never created). Emit each
+				// offer field as a dotted flat key; customData is free-form so it stays a JSON string.
+				if (!string.IsNullOrWhiteSpace(offer.itemId)) p["offerData.itemId"] = offer.itemId;
+				if (!string.IsNullOrWhiteSpace(offer.value)) p["offerData.value"] = offer.value;
+				if (!string.IsNullOrWhiteSpace(offer.customData)) p["offerData.customData"] = offer.customData;
 			}
 
 			try
 			{
 				var ev = new CoreEvent("notification_funnel", "Sent", p);
+				// DEBUG: full funnel payload as emitted (op=g.core, c=notification_funnel, e=Sent).
+				BeamableLogger.Log("[funnel] emit op=g.core c=notification_funnel e=Sent player={player} payload={payload}",
+					playerId, JsonSerializer.Serialize(p));
 				Services.Analytics.SendAnalyticsEvent(Services.Analytics.BuildRequest(ev));
 			}
 			catch (Exception ex)

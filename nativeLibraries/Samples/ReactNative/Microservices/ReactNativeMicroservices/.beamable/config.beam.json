@@ -3,7 +3,7 @@
   "ignoredProjectPaths": [],
   "host": "https://dev.api.beamable.com",
   "cid": "1731504735486980",
-  "pid": "DE_84577179820462080",
+  "pid": "DE_83664985048047616",
   "otelConfig": {
     "BeamCliAllowTelemetry": true,
     "BeamCliTelemetryLogLevel": "Warning",
