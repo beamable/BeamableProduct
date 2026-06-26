@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.1] - 2026-06-29
+
+### Added
+
+- Content fields with attribute `MustReferenceContent` will have display content picker inspector in Editor
+
+### Changed
+
+- Validation of the content no longer can automatically try to update the content value
+
 ## [5.1.0] - 2026-06-16
 ### Added
 - Added `OmitContentManifestTags` option to `ContentConfiguration` to opt out of content tag download in the public manifest. Tag-based `ContentQuery` filters (e.g. `tag:weapon`) return no results when this is enabled. [4597](https://github.com/beamable/BeamableProduct/issues/4597)
