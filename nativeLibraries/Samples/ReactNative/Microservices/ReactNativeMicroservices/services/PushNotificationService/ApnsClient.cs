@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -79,11 +80,38 @@ namespace Beamable.PushNotificationService
 			if (!string.IsNullOrWhiteSpace(cidPid)) map["cidPid"] = cidPid;
 			if (!string.IsNullOrWhiteSpace(deepLink)) map["deeplink"] = deepLink;
 
+			// Project each offer explicitly: PushOfferData uses public FIELDS, which System.Text.Json
+			// skips by default — a bare Serialize(offers) emits `[{}]` (empty objects) on the wire, so
+			// the device receives offers with no itemId/value/customData. customData is embedded as a
+			// nested JSON OBJECT (when it parses) so it round-trips on both platforms: iOS decodes it
+			// into a typed object, Android reads it back as an opaque JSON string.
 			if (offers != null && offers.Count > 0)
-				map["offers"] = JsonSerializer.Serialize(offers);
+			{
+				var wire = offers.Select(o =>
+				{
+					var od = new Dictionary<string, object>();
+					if (!string.IsNullOrWhiteSpace(o.itemId)) od["itemId"] = o.itemId;
+					if (!string.IsNullOrWhiteSpace(o.value)) od["value"] = o.value;
+					if (!string.IsNullOrWhiteSpace(o.customData)) od["customData"] = ParseJsonOrString(o.customData);
+					return od;
+				}).ToList();
+				map["offers"] = JsonSerializer.Serialize(wire);
+			}
 
 			// campaignData is already a JSON object string — passed through verbatim.
 			if (!string.IsNullOrWhiteSpace(campaignData)) map["campaignData"] = campaignData;
+		}
+
+		/// <summary>
+		/// Parses <paramref name="s"/> into a <see cref="JsonElement"/> so it serializes as a nested
+		/// JSON value (object/array/number/…); falls back to the raw string when it isn't valid JSON.
+		/// Lets free-form <c>customData</c> travel as a real object on the wire rather than a
+		/// double-encoded string.
+		/// </summary>
+		private static object ParseJsonOrString(string s)
+		{
+			try { return JsonSerializer.Deserialize<JsonElement>(s); }
+			catch { return s; }
 		}
 	}
 

@@ -102,14 +102,73 @@ public indirect enum JSONValue: Codable, Equatable {
 
 // MARK: - Deep link extraction
 
+/// Completes a remote push's deep-link value into a full, openable URL before it is surfaced
+/// to engine code, so every consumer receives a ready-to-route link rather than a schemeless
+/// fragment. Remote campaigns often carry the link as a schemeless value (`"details/55"`) or
+/// with the app scheme prepended to the *key* (`"myapp://deeplink": "details/55"`); both should
+/// resolve to `myapp://details/55`. The scheme is taken from the key when present, else from the
+/// app's first `CFBundleURLSchemes` entry in `Info.plist`; when neither is available the value is
+/// passed through unchanged.
+enum BMNDeepLink {
+    // "<scheme>://<rest>" where scheme follows RFC 3986 (letter, then letters/digits/+-.).
+    static let schemePrefix = try! NSRegularExpression(pattern: "^([a-zA-Z][a-zA-Z0-9+.-]*)://(.*)$")
+    static let deepLinkKeys: Set<String> = ["deeplink", "deep_link"]
+
+    /// (scheme, rest) when [key] begins with "<scheme>://", else nil.
+    static func splitSchemePrefix(_ key: String) -> (scheme: String, rest: String)? {
+        let range = NSRange(key.startIndex..., in: key)
+        guard let m = schemePrefix.firstMatch(in: key, range: range),
+              let sr = Range(m.range(at: 1), in: key),
+              let rr = Range(m.range(at: 2), in: key) else { return nil }
+        return (String(key[sr]), String(key[rr]))
+    }
+
+    /// Prepends [scheme] to a schemeless [value]; returns values that already carry a scheme
+    /// (or when [scheme] is nil) unchanged. Scheme-only by design — mapping a bare id to an app
+    /// route is app-specific and stays in the consuming app.
+    static func normalize(_ value: String, scheme: String?) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return trimmed }
+        if splitSchemePrefix(trimmed) != nil { return trimmed }
+        guard let scheme = scheme, !scheme.isEmpty else { return trimmed }
+        let rest = trimmed.drop { $0 == "/" }
+        return "\(scheme)://\(rest)"
+    }
+
+    /// The app's primary custom URL scheme from `Info.plist` (CFBundleURLTypes → CFBundleURLSchemes).
+    static var appURLScheme: String? = {
+        guard let types = Bundle.main.object(forInfoDictionaryKey: "CFBundleURLTypes") as? [[String: Any]] else {
+            return nil
+        }
+        for type in types {
+            if let schemes = type["CFBundleURLSchemes"] as? [String], let first = schemes.first, !first.isEmpty {
+                return first
+            }
+        }
+        return nil
+    }()
+}
+
 public extension Dictionary where Key == String, Value == JSONValue {
-    /// Pull the deep link out of a payload, tolerant of key spelling. Remote pushes from
-    /// the backend (and the Android SDK) send `deeplink` (lowercase); locally scheduled
-    /// notifications use `deepLink` (camelCase). We accept either, plus `deep_link`, so a
-    /// server-sent deep link is surfaced the same as a local one.
+    /// Pull the deep link out of a payload, tolerant of key spelling, and complete it into a
+    /// full scheme URL (see `BMNDeepLink`). Remote pushes from the backend (and the Android SDK)
+    /// send `deeplink` (lowercase); locally scheduled notifications use `deepLink` (camelCase).
+    /// We accept either, plus `deep_link`, and also recover the link when the tooling prepends
+    /// the app scheme to the key itself (e.g. `"myapp://deeplink"`).
     var bmnDeepLink: String? {
+        // 1) Canonical key spellings (value may already be a full URL — kept as-is).
         for variant in ["deepLink", "deeplink", "deep_link"] {
-            if let value = self[variant]?.stringValue, !value.isEmpty { return value }
+            if let value = self[variant]?.stringValue, !value.isEmpty {
+                return BMNDeepLink.normalize(value, scheme: BMNDeepLink.appURLScheme)
+            }
+        }
+        // 2) Scheme-prefixed key (e.g. `"myapp://deeplink": "details/55"`): the scheme on the
+        //    key identifies the app scheme, so use it directly to complete the value.
+        for (key, value) in self {
+            guard let v = value.stringValue, !v.isEmpty,
+                  let (scheme, rest) = BMNDeepLink.splitSchemePrefix(key),
+                  BMNDeepLink.deepLinkKeys.contains(rest.lowercased()) else { continue }
+            return BMNDeepLink.normalize(v, scheme: scheme)
         }
         return nil
     }
@@ -484,8 +543,13 @@ public struct FunnelEvent: Codable, Equatable {
     public var accountId: String?
     public var cidPid: String?
     public var deeplink: String?
-    /// The single offer this event concerns (omitted when none).
-    public var offerData: NotificationOffer?
+    /// The offer(s) this event concerns (omitted when none). Stage events (Sent/Received/Opened)
+    /// carry every offer the push held; Clicked/Converted carry only the concerned offer. Emitted
+    /// as a single `offerData` JSON-array column so any offer shape survives intact.
+    public var offers: [NotificationOffer]?
+    /// Free-form campaign metadata carried by the push (omitted when absent). Emitted on every
+    /// stage as a stringified-JSON `campaignData` column.
+    public var campaignData: [String: JSONValue]?
     /// Timestamp the event was observed (seconds since 1970).
     public var timestamp: Double
 
@@ -496,7 +560,8 @@ public struct FunnelEvent: Codable, Equatable {
                 accountId: String? = nil,
                 cidPid: String? = nil,
                 deeplink: String? = nil,
-                offerData: NotificationOffer? = nil,
+                offers: [NotificationOffer]? = nil,
+                campaignData: [String: JSONValue]? = nil,
                 timestamp: Double = Date().timeIntervalSince1970) {
         self.funnelType = funnelType
         self.campaignId = campaignId
@@ -505,7 +570,8 @@ public struct FunnelEvent: Codable, Equatable {
         self.accountId = accountId
         self.cidPid = cidPid
         self.deeplink = deeplink
-        self.offerData = offerData
+        self.offers = offers
+        self.campaignData = campaignData
         self.timestamp = timestamp
     }
 
@@ -518,7 +584,7 @@ public struct FunnelEvent: Codable, Equatable {
     /// doesn't collapse two players' otherwise-identical events.
     /// Deliberately excludes `timestamp`, which differs between the two enqueue paths.
     public var dedupKey: String {
-        [funnelType, campaignId, nodeId, gamerTag ?? "", offerData?.itemId ?? ""].joined(separator: "|")
+        [funnelType, campaignId, nodeId, gamerTag ?? "", offers?.first?.itemId ?? ""].joined(separator: "|")
     }
 }
 

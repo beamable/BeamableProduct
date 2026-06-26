@@ -98,7 +98,6 @@ export default function App({ context }: AppProps) {
   // (no campaignId + nodeId → no funnel "Sent" event server-side).
   const [campaignId, setCampaignId] = useState('')
   const [nodeId, setNodeId] = useState('')
-  const [accountId, setAccountId] = useState('')
   const [cidPid, setCidPid] = useState('')
   const [offers, setOffers] = useState<OfferRow[]>([])
   const [campaignData, setCampaignData] = useState<KvRow[]>([])
@@ -237,7 +236,6 @@ export default function App({ context }: AppProps) {
     }
     if (campaignId.trim()) campaignRequest.campaignId = campaignId.trim()
     if (nodeId.trim()) campaignRequest.nodeId = nodeId.trim()
-    if (accountId.trim()) campaignRequest.accountId = accountId.trim()
     if (cidPid.trim()) campaignRequest.cidPid = cidPid.trim()
     if (builtOffers.length > 0) campaignRequest.offers = builtOffers
     if (campaignDataJson) campaignRequest.campaignData = campaignDataJson
@@ -323,7 +321,6 @@ export default function App({ context }: AppProps) {
             >
               <BeamInput label="Campaign ID" placeholder="campaignId" value={campaignId} onValueChange={setCampaignId} />
               <BeamInput label="Node ID" placeholder="nodeId" value={nodeId} onValueChange={setNodeId} />
-              <BeamInput label="Account ID" placeholder="accountId" value={accountId} onValueChange={setAccountId} />
               <BeamInput label="cid.pid" placeholder="<cid>.<pid> (defaults to MS realm)" value={cidPid} onValueChange={setCidPid} />
             </div>
 

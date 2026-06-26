@@ -84,10 +84,11 @@ export function scheduleBeamableDeepLink(opts: {
  * Pull a routable deep-link URL out of a notification's payload.
  *
  * The native SDK lifts the deep link onto `deeplink` (tolerant of `deeplink` / `deepLink`
- * / `deep_link` on the wire), so that's the primary source. We still fall back to scanning
- * `userInfo` for those same key spellings in case a raw payload carries it there. The
- * extracted value is normalized into a routable URL (a bare value like "123" becomes a
- * details URL) — see {@link normalizeDeepLink}.
+ * / `deep_link` on the wire) and — for remote pushes — completes it into a full
+ * `<scheme>://…` URL, including the case where the campaign tooling prepends the scheme to the
+ * key itself (e.g. `"beamrnsample://deeplink": "details/55"`). So `deeplink` is the primary
+ * source; we still fall back to scanning `userInfo` for the same key spellings. The extracted
+ * value is normalized (a bare id like "123" becomes a details URL) — see {@link normalizeDeepLink}.
  */
 export function deepLinkFromNotification(n: {
   deeplink?: string;
@@ -106,4 +107,27 @@ export function deepLinkFromNotification(n: {
     }
   }
   return null;
+}
+
+/**
+ * Pull campaign coordinates (campaignId / nodeId) out of a notification payload.
+ *
+ * The native SDK lifts these onto top-level fields for tracked campaign pushes; we still
+ * fall back to scanning `userInfo` in case a raw payload carries them there (mirroring the
+ * tolerance of {@link deepLinkFromNotification}). Returns only the keys that are actually
+ * present, so callers can override fields selectively and leave the rest of the user's input
+ * alone.
+ */
+export function campaignCoordsFromNotification(n: {
+  campaignId?: string;
+  nodeId?: string;
+  userInfo?: Record<string, unknown>;
+}): { campaignId?: string; nodeId?: string } {
+  const out: { campaignId?: string; nodeId?: string } = {};
+  const info = n.userInfo ?? {};
+  const campaignId = n.campaignId ?? (info.campaignId as string | undefined);
+  const nodeId = n.nodeId ?? (info.nodeId as string | undefined);
+  if (typeof campaignId === 'string' && campaignId.length > 0) out.campaignId = campaignId;
+  if (typeof nodeId === 'string' && nodeId.length > 0) out.nodeId = nodeId;
+  return out;
 }

@@ -20,10 +20,10 @@ export function detailsUrl(id: string | number): string {
  * Turn a notification's raw deep-link value into a routable URL.
  *
  * Local notifications (and rich server pushes) carry a full URL like
- * `beamrnsample://details/42`, which we open as-is. But a remote push may carry a *bare*
- * value — e.g. Beamable's back-office sends `deeplink: "123"` — which has no scheme and
- * can't be opened directly. We treat such a value as a details id and build the URL for
- * it, so remote deep links route to the same screen as local ones.
+ * `beamrnsample://details/42`, which we open as-is. The native SDK now completes schemeless
+ * remote deep links into full `beamrnsample://…` URLs before they reach us (see the Android
+ * `DeepLinkNormalizer` / iOS `bmnDeepLink`), so by here a value normally already has a scheme.
+ * As a back-stop we still treat a bare value (e.g. `deeplink: "123"`) as a details id.
  *
  * Returns null for empty input.
  */

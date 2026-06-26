@@ -43,6 +43,21 @@ const beamNotificationsRoot = path.resolve(
 
 const config = getDefaultConfig(projectRoot);
 
+// The C# microservice + its portal extensions live under this project dir but are NOT part of
+// the RN bundle. Their nested node_modules carry platform-specific optional binaries (e.g.
+// rollup's linux-riscv64-musl build) that aren't installed on Windows; Metro's fallback watcher
+// (used because Watchman is disabled) crashes trying to `fs.watch` those dangling entries. Exclude
+// the whole subtree from the file map + watcher — the app never imports from it.
+const defaultBlockList = config.resolver.blockList;
+config.resolver.blockList = [
+  ...(Array.isArray(defaultBlockList)
+    ? defaultBlockList
+    : defaultBlockList
+      ? [defaultBlockList]
+      : []),
+  /[\\/]Microservices[\\/]/,
+];
+
 // Watchman isn't required and, when it's absent on Windows, Metro's fallback only
 // reliably crawls the projectRoot — leaving the external watchFolders below (the web
 // SDK in particular) out of the file map, which breaks SHA-1 lookups for the SDK's

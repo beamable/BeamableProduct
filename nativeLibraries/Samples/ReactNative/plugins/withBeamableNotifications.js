@@ -45,6 +45,12 @@ const path = require('path');
 const RECEIVED_HANDLER_META = 'com.beamable.push.notification_received_handler';
 const RECEIVED_HANDLER_CLASS = 'BeamablePushReceivedHandler';
 
+// Manifest meta-data key the push library reads to complete schemeless remote deep links
+// into full `<scheme>://…` URLs. Android can't introspect its own intent-filter schemes, so
+// we hand it the app's `scheme` (from app.json) explicitly. iOS reads this from Info.plist's
+// CFBundleURLSchemes automatically, so there's no iOS counterpart here.
+const DEEPLINK_SCHEME_META = 'com.beamable.push.deeplink_scheme';
+
 const NSE_TARGET_NAME = 'BeamableNotificationServiceExtension';
 // Where the prebuilt SDK lives, relative to this project root.
 const SDK_ROOT = path.resolve(
@@ -398,6 +404,30 @@ function withReceivedHandlerManifest(config) {
   });
 }
 
+// Inject the app's deep-link scheme as manifest meta-data so the push library can
+// complete schemeless remote deep links (e.g. "details/55" → "beamrnsample://details/55").
+function withDeeplinkSchemeManifest(config) {
+  return withAndroidManifest(config, (cfg) => {
+    const scheme = Array.isArray(config.scheme) ? config.scheme[0] : config.scheme;
+    if (!scheme) return cfg;
+    const app = cfg.modResults.manifest.application && cfg.modResults.manifest.application[0];
+    if (app) {
+      app['meta-data'] = app['meta-data'] || [];
+      const existing = app['meta-data'].find(
+        (m) => m.$ && m.$['android:name'] === DEEPLINK_SCHEME_META,
+      );
+      if (existing) {
+        existing.$['android:value'] = scheme;
+      } else {
+        app['meta-data'].push({
+          $: { 'android:name': DEEPLINK_SCHEME_META, 'android:value': scheme },
+        });
+      }
+    }
+    return cfg;
+  });
+}
+
 module.exports = function withBeamableNotifications(config, props) {
   const appGroup = resolveAppGroup(config, props);
   config = withAppEntitlements(config, appGroup);
@@ -411,6 +441,8 @@ module.exports = function withBeamableNotifications(config, props) {
   // Android: register the receive-time handler (runs even when the app is killed).
   config = withReceivedHandlerSource(config);
   config = withReceivedHandlerManifest(config);
+  // Android: hand the SDK our deep-link scheme so it can complete schemeless remote links.
+  config = withDeeplinkSchemeManifest(config);
 
   // The Notification Service Extension (rich media + closed-app analytics) is
   // opt-in: `{ "enableServiceExtension": true }`. It requires a physical device

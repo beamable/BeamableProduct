@@ -1,5 +1,6 @@
 package com.beamable.push
 
+import com.beamable.deeplink.DeepLinkNormalizer
 // R is generated under the module namespace (com.beamable.notifications), not this package.
 import com.beamable.notifications.R
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -21,13 +22,18 @@ class PushFirebaseService : FirebaseMessagingService() {
 
     /** Called for every incoming FCM message (data and/or notification payload). */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        // Flatten the data map plus any notification title/body into one JSON blob.
-        val json = buildMessageJson(remoteMessage)
+        // Complete the deep link to a full scheme URL up front, so every downstream consumer
+        // (foreground dispatch, receive hook, tap intent / cold-start launch) sees the same
+        // ready-to-route value rather than a schemeless fragment.
+        val data = DeepLinkNormalizer.normalizeDataMap(applicationContext, remoteMessage.data)
+
+        // Flatten the (normalized) data map plus any notification title/body into one JSON blob.
+        val json = buildMessageJson(data, remoteMessage.notification)
 
         // Receive-time hook — fires in foreground, background, AND killed states
         // (data-only messages). Runs before any display/dispatch branching, and must never
         // throw out of here.
-        invokeNotificationReceived(remoteMessage, json)
+        invokeNotificationReceived(remoteMessage, data, json)
 
         if (PushManager.isForeground) {
             // App is visible: hand the raw message to the engine to decide how to
@@ -40,7 +46,7 @@ class PushFirebaseService : FirebaseMessagingService() {
         // "notification" block; we explicitly display *data-only* messages here so
         // they still produce a tappable, deep-link-carrying notification.
         if (remoteMessage.notification == null) {
-            displayDataMessage(remoteMessage)
+            displayDataMessage(remoteMessage, data)
         }
     }
 
@@ -48,9 +54,13 @@ class PushFirebaseService : FirebaseMessagingService() {
      * Builds the receive event, fires the native **Received** funnel event (§4.5), then dispatches
      * to EVERY registered handler with each handler's failure isolated. Never throws out.
      */
-    private fun invokeNotificationReceived(remoteMessage: RemoteMessage, dataJson: String) {
+    private fun invokeNotificationReceived(
+        remoteMessage: RemoteMessage,
+        data: Map<String, String>,
+        dataJson: String,
+    ) {
         try {
-            val intentData = NotificationIntentData.fromDataMap(remoteMessage.data)
+            val intentData = NotificationIntentData.fromDataMap(data)
             // Native funnel "Received" — works in foreground AND closed-app data path.
             BeamableAnalytics.trackFunnel(
                 applicationContext, intentData, BeamableAnalytics.FunnelType.Received
@@ -61,7 +71,7 @@ class PushFirebaseService : FirebaseMessagingService() {
                 sentTimeMillis = remoteMessage.sentTime,
                 receivedTimeMillis = System.currentTimeMillis(),
                 wasForeground = PushManager.isForeground,
-                deepLink = remoteMessage.data[NotificationIntentData.KEY_DEEPLINK],
+                deepLink = data[NotificationIntentData.KEY_DEEPLINK],
                 intentData = intentData
             )
             PushManager.dispatchNotificationReceived(applicationContext, event)
@@ -71,10 +81,13 @@ class PushFirebaseService : FirebaseMessagingService() {
     }
 
     /** Builds a JSON object from the data map and (optional) notification fields. */
-    private fun buildMessageJson(remoteMessage: RemoteMessage): String {
+    private fun buildMessageJson(
+        data: Map<String, String>,
+        notification: RemoteMessage.Notification?,
+    ): String {
         val obj = JSONObject()
-        for ((k, v) in remoteMessage.data) obj.put(k, v)
-        remoteMessage.notification?.let { n ->
+        for ((k, v) in data) obj.put(k, v)
+        notification?.let { n ->
             n.title?.let { obj.put("title", it) }
             n.body?.let { obj.put("body", it) }
         }
@@ -82,8 +95,7 @@ class PushFirebaseService : FirebaseMessagingService() {
     }
 
     /** Constructs a [NotificationTemplate] from the data payload and displays it. */
-    private fun displayDataMessage(remoteMessage: RemoteMessage) {
-        val data = remoteMessage.data
+    private fun displayDataMessage(remoteMessage: RemoteMessage, data: Map<String, String>) {
         val title = data["title"] ?: remoteMessage.notification?.title ?: ""
         val body = data["body"] ?: remoteMessage.notification?.body ?: ""
         val channelId = data["channelId"]

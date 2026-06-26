@@ -30,6 +30,10 @@
     return react.createElement(l(`BeamCard`), e2);
   }
   b.displayName = `BeamCard`;
+  function w(e2) {
+    return react.createElement(l(`BeamDetails`), e2);
+  }
+  w.displayName = `BeamDetails`;
   function I(e2) {
     return react.createElement(l(`BeamOption`), e2);
   }
@@ -133,6 +137,82 @@
   }
   const sqlStr = (v) => `'${v.replace(/'/g, "''")}'`;
   const dash = (v) => v && v.length ? v : "—";
+  function pickCol(r, name2) {
+    const target = name2.toLowerCase().replace(/[^a-z0-9]/g, "");
+    for (const k of Object.keys(r)) {
+      const norm = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (norm === target || norm === "e" + target) {
+        const v = r[k];
+        if (v != null && v !== "") return v;
+      }
+    }
+    return "";
+  }
+  function OffersCell({ offers }) {
+    if (offers.length === 0) return /* @__PURE__ */ jsxRuntime.jsx("span", { style: { color: "var(--color-beam-text-muted)" }, children: "—" });
+    const summary = offers.length === 1 ? "1 offer" : `${offers.length} offers`;
+    return /* @__PURE__ */ jsxRuntime.jsx(w, { summary, appearance: "plain", children: /* @__PURE__ */ jsxRuntime.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 8, padding: "4px 2px", minWidth: 220 }, children: offers.map((o, i) => /* @__PURE__ */ jsxRuntime.jsxs(
+      "div",
+      {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          fontSize: 12,
+          paddingTop: i === 0 ? 0 : 8,
+          borderTop: i === 0 ? "none" : "1px solid var(--color-beam-border, rgba(127,127,127,0.25))"
+        },
+        children: [
+          offers.length > 1 && /* @__PURE__ */ jsxRuntime.jsxs("span", { style: { color: "var(--color-beam-text-muted)", fontWeight: 600 }, children: [
+            "Offer ",
+            i + 1
+          ] }),
+          /* @__PURE__ */ jsxRuntime.jsxs("span", { children: [
+            /* @__PURE__ */ jsxRuntime.jsx("strong", { children: "item:" }),
+            " ",
+            dash(o.itemId)
+          ] }),
+          /* @__PURE__ */ jsxRuntime.jsxs("span", { children: [
+            /* @__PURE__ */ jsxRuntime.jsx("strong", { children: "value:" }),
+            " ",
+            dash(o.value)
+          ] }),
+          /* @__PURE__ */ jsxRuntime.jsxs("span", { children: [
+            /* @__PURE__ */ jsxRuntime.jsx("strong", { children: "customData:" }),
+            " ",
+            dash(o.customData)
+          ] })
+        ]
+      },
+      i
+    )) }) });
+  }
+  function toOfferView(o) {
+    const cd = o?.customData;
+    return {
+      itemId: o?.itemId != null ? String(o.itemId) : "",
+      value: o?.value != null ? String(o.value) : "",
+      customData: cd == null ? "" : typeof cd === "string" ? cd : JSON.stringify(cd)
+    };
+  }
+  function parseOffers(r) {
+    const raw = r["e.offerData"];
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        const arr = Array.isArray(parsed) ? parsed : [parsed];
+        const views = arr.filter((o) => o != null).map(toOfferView);
+        if (views.length) return views;
+      } catch {
+      }
+    }
+    const legacy = toOfferView({
+      itemId: r["e.offerData.itemId"],
+      value: r["e.offerData.value"],
+      customData: r["e.offerData.customData"]
+    });
+    return legacy.itemId || legacy.value || legacy.customData ? [legacy] : [];
+  }
   function App({ context }) {
     const beam = ke(context);
     const [tables, setTables] = react.useState([]);
@@ -170,10 +250,9 @@
               funnelType: r["e.funnelType"] || "",
               player,
               deeplink: r["e.deeplink"] || "",
-              offerItem: r["e.offerData.itemId"] || "",
-              offerValue: r["e.offerData.value"] || "",
-              offerCustomData: r["e.offerData.customData"] || "",
-              accountId: r["e.accountId"] || "",
+              offers: parseOffers(r),
+              campaignData: pickCol(r, "campaignData"),
+              cidPid: pickCol(r, "cidPid"),
               time: r["act_time"] || r["act_date"] || ""
             });
           }
@@ -310,10 +389,9 @@
                 /* @__PURE__ */ jsxRuntime.jsx(Se, { field: "funnelType", header: "Step" }),
                 /* @__PURE__ */ jsxRuntime.jsx(Se, { field: "player", header: "Player" }),
                 /* @__PURE__ */ jsxRuntime.jsx(Se, { header: "Deeplink", children: (r) => dash(r.deeplink) }),
-                /* @__PURE__ */ jsxRuntime.jsx(Se, { header: "Offer item", children: (r) => dash(r.offerItem) }),
-                /* @__PURE__ */ jsxRuntime.jsx(Se, { header: "Offer value", children: (r) => dash(r.offerValue) }),
-                /* @__PURE__ */ jsxRuntime.jsx(Se, { header: "Offer customData", children: (r) => dash(r.offerCustomData) }),
-                /* @__PURE__ */ jsxRuntime.jsx(Se, { header: "Account", children: (r) => dash(r.accountId) }),
+                /* @__PURE__ */ jsxRuntime.jsx(Se, { header: "Offers", children: (r) => /* @__PURE__ */ jsxRuntime.jsx(OffersCell, { offers: r.offers }) }),
+                /* @__PURE__ */ jsxRuntime.jsx(Se, { header: "Campaign data", children: (r) => dash(r.campaignData) }),
+                /* @__PURE__ */ jsxRuntime.jsx(Se, { header: "cid.pid", width: "300px", children: (r) => /* @__PURE__ */ jsxRuntime.jsx("span", { style: { whiteSpace: "nowrap" }, children: dash(r.cidPid) }) }),
                 /* @__PURE__ */ jsxRuntime.jsx(Se, { header: "Time", children: (r) => dash(r.time) })
               ]
             }

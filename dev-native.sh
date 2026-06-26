@@ -171,8 +171,13 @@ fi
 # Done
 # ---------------------------------------------------------------------------
 echo ""
-echo "Done. Next: open the client in Unity 2021.3.45f2 and run"
-echo "Tools/Beamable/Android/Setup & Validation to verify the Android setup."
+echo "Done."
+echo "The Unity plugin's native binaries are staged under"
+echo "nativeLibraries/EnginePlugins/Unity/Plugins/ (Android .aar always; iOS"
+echo "xcframework on macOS with Xcode)."
+echo "To install the Unity package, open the client in Unity, then use"
+echo "Window > Package Manager > + > Add package from disk... and select"
+echo "nativeLibraries/EnginePlugins/Unity/package.json."
 echo "The Unreal plugin's native binaries are staged under"
 echo "nativeLibraries/EnginePlugins/Unreal/ThirdParty/ (Android .aar always; iOS"
 echo "embeddedframework.zip on macOS with Xcode)."

@@ -29,15 +29,25 @@ public enum BeamableAnalytics {
         if let v = event.accountId ?? event.gamerTag { p["accountId"] = .string(v) }
         if let v = event.cidPid { p["cidPid"] = .string(v) }
         if let v = event.deeplink { p["deeplink"] = .string(v) }
-        if let offer = event.offerData {
-            // Flat keys only — Athena has no nested-object column type, so a nested object
-            // breaks ingestion (the table is never created). customData is free-form, so it's
-            // serialized to a JSON string rather than fixed columns.
-            if let itemId = offer.itemId { p["offerData.itemId"] = .string(itemId) }
-            if let value = offer.value { p["offerData.value"] = .string(scalarString(value)) }
-            if let customData = offer.customData {
-                p["offerData.customData"] = .string(jsonString(.object(customData)))
-            }
+        // Offers as a SINGLE flat column holding a stringified JSON array of offer objects
+        // (`[{itemId,value,customData}, ...]`). Athena has no nested-object column type, so the
+        // whole array travels as one string the reader JSON-parses. customData is itself free-form,
+        // so it is nested as a STRINGIFIED JSON string (never an object) — keeping every level
+        // Athena-safe and matching the wire / microservice shape.
+        if let offers = event.offers, !offers.isEmpty {
+            let arr = JSONValue.array(offers.map { offer in
+                var o: [String: JSONValue] = [:]
+                if let itemId = offer.itemId { o["itemId"] = .string(itemId) }
+                if let value = offer.value { o["value"] = value }
+                if let customData = offer.customData { o["customData"] = .string(jsonString(.object(customData))) }
+                return .object(o)
+            })
+            p["offerData"] = .string(jsonString(arr))
+        }
+        // Free-form campaign metadata, carried verbatim as a stringified JSON object (same flat-
+        // column rule as offerData). Present on every stage when the push carried it.
+        if let cd = event.campaignData, !cd.isEmpty {
+            p["campaignData"] = .string(jsonString(.object(cd)))
         }
         return p
     }
@@ -60,6 +70,40 @@ public enum BeamableAnalytics {
 
     public static let funnelCategory = "notification_funnel"
 
+    /// Microservice + endpoint exposing the `ForwardFunnelToSlack` [Callable] used as a debug mirror
+    /// of the funnel (so device-side stages show up in Slack alongside the server-emitted "Sent").
+    public static let funnelSlackMicroservice = "PushNotificationService"
+    public static let funnelSlackEndpoint = "ForwardFunnelToSlack"
+
+    /// Forward the funnel params (the CoreEvent `p`) to the microservice's `ForwardFunnelToSlack`
+    /// [Callable] via the standard microservice route `/basic/<cid>.<pid>.micro_<service>/<endpoint>`,
+    /// authenticated with the player bearer + realm scope. Fire-and-forget, best-effort: failures are
+    /// ignored (the microservice may be undeployed) and never affect the analytics POST.
+    public static func forwardFunnelToSlack(_ event: FunnelEvent,
+                                            host: String,
+                                            cidPid: String,
+                                            accessToken: String,
+                                            session: URLSession = .shared) {
+        let base = host.hasSuffix("/") ? String(host.dropLast()) : host
+        guard cidPid.contains("."),
+              let url = URL(string: "\(base)/basic/\(cidPid).micro_\(funnelSlackMicroservice)/\(funnelSlackEndpoint)")
+        else { return }
+        // Callable args bind by parameter name: ForwardFunnelToSlack(string funnelData). funnelData is
+        // the funnel params JSON (matches the microservice's own Slack payload shape).
+        let funnelData = jsonString(.object(makeParams(for: event)))
+        let bodyValue: JSONValue = .object(["funnelData": .string(funnelData)])
+        guard let body = try? JSON.encoder.encode(bodyValue) else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 15
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue(cidPid, forHTTPHeaderField: "X-BEAM-SCOPE")
+        request.httpBody = body
+        session.dataTask(with: request) { _, _, _ in }.resume()
+    }
+
     /// Compact JSON string for a `JSONValue` — carries free-form customData as a flat string.
     private static func jsonString(_ value: JSONValue) -> String {
         guard let data = try? JSON.encoder.encode(value),
@@ -67,24 +111,12 @@ public enum BeamableAnalytics {
         return s
     }
 
-    /// Render an offer `value` (string|number on the wire) as a flat string, so the analytics
-    /// column has one stable type across platforms (matches Android / the microservice).
-    private static func scalarString(_ value: JSONValue) -> String {
-        switch value {
-        case .string(let s): return s
-        case .number(let n): return n == n.rounded() ? String(Int64(n)) : String(n)
-        case .bool(let b): return b ? "true" : "false"
-        default: return jsonString(value)
-        }
-    }
-
     // MARK: Build a FunnelEvent from campaign intent + a chosen offer
 
-    /// Compose a `FunnelEvent` from the campaign intent data of a notification. `offer` is
-    /// the single offer this event concerns and is attached as `offerData` **only when
-    /// explicitly passed** by the caller (Clicked/Converted via `trackOffer*`). Stage events
-    /// with no specific offer (Sent/Received/Opened) must NOT attribute a carried campaign
-    /// offer, so there is no `offers.first` fallback here. Returns nil if the intent isn't a
+    /// Compose a `FunnelEvent` from the campaign intent data of a notification. When `offer` is
+    /// explicitly passed (Clicked/Converted via `trackOffer*`) only that single offer is attached;
+    /// stage events (Sent/Received/Opened) carry every offer the push held (`intent.offers`). The
+    /// free-form `campaignData` is carried on every stage. Returns nil if the intent isn't a
     /// tracked campaign (§4.2) — caller can rely on that to gate emission.
     public static func makeEvent(_ type: FunnelType,
                                  intent: CampaignIntentData,
@@ -98,7 +130,8 @@ public enum BeamableAnalytics {
                            accountId: intent.accountId,
                            cidPid: intent.cidPid,
                            deeplink: intent.deeplink,
-                           offerData: offer)
+                           offers: offer.map { [$0] } ?? intent.offers,
+                           campaignData: intent.campaignData)
     }
 
     // MARK: Emit (auth + POST + fallback)
@@ -145,6 +178,10 @@ public enum BeamableAnalytics {
             postFunnelStatus(events: [event], host: host, cidPid: cidPid, gamerTag: gamerTag,
                              accessToken: token, session: session) { status in
                 if (200..<300).contains(status) {
+                    // Best-effort debug mirror: forward the same funnel params to the microservice's
+                    // ForwardFunnelToSlack endpoint so device-side stages appear in Slack too. Never
+                    // affects the analytics result.
+                    forwardFunnelToSlack(event, host: host, cidPid: cidPid, accessToken: token, session: session)
                     completion?()
                     return
                 }

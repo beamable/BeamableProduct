@@ -59,6 +59,14 @@ export class PushNotificationServiceClient extends BeamMicroServiceClient {
     });
   }
   
+  async forwardFunnelToSlack(params: Types.ForwardFunnelToSlackRequestArgs): Promise<Types.WebhookResult> {
+    return this.request({
+      endpoint: "ForwardFunnelToSlack",
+      payload: params,
+      withAuth: true
+    });
+  }
+  
   async sendCampaignPushToSelf(params: Types.SendCampaignPushToSelfRequestArgs): Promise<Types.SendResult> {
     return this.request({
       endpoint: "SendCampaignPushToSelf",

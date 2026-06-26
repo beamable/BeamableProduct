@@ -106,6 +106,13 @@
         withAuth: true
       });
     }
+    async forwardFunnelToSlack(params) {
+      return this.request({
+        endpoint: "ForwardFunnelToSlack",
+        payload: params,
+        withAuth: true
+      });
+    }
     async sendCampaignPushToSelf(params) {
       return this.request({
         endpoint: "SendCampaignPushToSelf",
@@ -165,7 +172,6 @@
     const [sendError, setSendError] = react.useState(null);
     const [campaignId, setCampaignId] = react.useState("");
     const [nodeId, setNodeId] = react.useState("");
-    const [accountId, setAccountId] = react.useState("");
     const [cidPid, setCidPid] = react.useState("");
     const [offers, setOffers] = react.useState([]);
     const [campaignData, setCampaignData] = react.useState([]);
@@ -275,7 +281,6 @@
       };
       if (campaignId.trim()) campaignRequest.campaignId = campaignId.trim();
       if (nodeId.trim()) campaignRequest.nodeId = nodeId.trim();
-      if (accountId.trim()) campaignRequest.accountId = accountId.trim();
       if (cidPid.trim()) campaignRequest.cidPid = cidPid.trim();
       if (builtOffers.length > 0) campaignRequest.offers = builtOffers;
       if (campaignDataJson) campaignRequest.campaignData = campaignDataJson;
@@ -355,7 +360,6 @@
                     children: [
                       /* @__PURE__ */ jsxRuntime.jsx(me, { label: "Campaign ID", placeholder: "campaignId", value: campaignId, onValueChange: setCampaignId }),
                       /* @__PURE__ */ jsxRuntime.jsx(me, { label: "Node ID", placeholder: "nodeId", value: nodeId, onValueChange: setNodeId }),
-                      /* @__PURE__ */ jsxRuntime.jsx(me, { label: "Account ID", placeholder: "accountId", value: accountId, onValueChange: setAccountId }),
                       /* @__PURE__ */ jsxRuntime.jsx(me, { label: "cid.pid", placeholder: "<cid>.<pid> (defaults to MS realm)", value: cidPid, onValueChange: setCidPid })
                     ]
                   }

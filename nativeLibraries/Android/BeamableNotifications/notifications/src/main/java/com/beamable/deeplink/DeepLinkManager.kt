@@ -2,7 +2,9 @@ package com.beamable.deeplink
 
 import android.app.Activity
 import android.app.Application
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import com.beamable.deeplink.unity.UnityDeepLinkBridge
 
@@ -176,4 +178,114 @@ class ActivityIntentObserver(
     override fun onActivityStopped(activity: Activity) {}
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
     override fun onActivityDestroyed(activity: Activity) {}
+}
+
+// ---------------------------------------------------------------------------
+// DeepLinkNormalizer (folded in from DeepLinkNormalizer.kt)
+// ---------------------------------------------------------------------------
+
+/**
+ * Turns a remote push's deep-link value into a complete, openable URL **before** it is handed
+ * to the engine, so every consumer (RN / Unity / Unreal) receives a ready-to-route deep link
+ * rather than a schemeless fragment.
+ *
+ * Remote campaigns from the Beamable back-office often carry the deep link in one of two
+ * incomplete shapes:
+ *   1. a schemeless value under the canonical key — `{"deeplink": "details/55"}`; or
+ *   2. the app scheme prepended to the *key* itself — `{"myapp://deeplink": "details/55"}`.
+ * Both should resolve to the full `myapp://details/55`.
+ *
+ * The app scheme is resolved (in priority order) from:
+ *   1. a scheme embedded in the deep-link key (shape 2 above — no app config needed); else
+ *   2. the `com.beamable.push.deeplink_scheme` manifest `<meta-data>` the host app declares
+ *      (Android can't introspect its own `<intent-filter>` schemes via PackageManager).
+ * When neither yields a scheme, the value is passed through verbatim (current behavior) so a
+ * misconfigured app is never worse off than before.
+ */
+object DeepLinkNormalizer {
+
+    /** Canonical flat-map key for the deep link (matches `NotificationIntentData.KEY_DEEPLINK`). */
+    const val KEY_DEEPLINK = "deeplink"
+
+    /** Manifest `<meta-data>` key the host app sets to its deep-link URL scheme (e.g. "myapp"). */
+    const val META_DEEPLINK_SCHEME = "com.beamable.push.deeplink_scheme"
+
+    // "<scheme>://<rest>" where scheme follows RFC 3986 (letter, then letters/digits/+-.).
+    private val SCHEME_PREFIX = Regex("^([a-zA-Z][a-zA-Z0-9+.-]*)://(.*)$")
+    private val DEEPLINK_KEYS = setOf("deeplink", "deep_link")
+
+    // Resolved once per process; the app scheme does not change at runtime.
+    @Volatile
+    private var cachedScheme: String? = null
+    @Volatile
+    private var schemeResolved = false
+
+    /**
+     * Returns a copy of [data] in which the canonical `deeplink` key holds a complete URL. When
+     * there is no deep link, or it cannot be completed, [data] is returned unchanged.
+     */
+    fun normalizeDataMap(context: Context, data: Map<String, String>): Map<String, String> {
+        // Find the deep-link value and any scheme hint carried on its key.
+        var rawValue: String? = data[KEY_DEEPLINK]?.ifEmpty { null }
+        var schemeFromKey: String? = null
+        if (rawValue == null) {
+            for ((key, value) in data) {
+                if (value.isEmpty()) continue
+                val match = SCHEME_PREFIX.matchEntire(key) ?: continue
+                if (match.groupValues[2].lowercase() in DEEPLINK_KEYS) {
+                    rawValue = value
+                    schemeFromKey = match.groupValues[1]
+                    break
+                }
+            }
+        }
+        if (rawValue == null) return data
+
+        val scheme = schemeFromKey ?: appScheme(context)
+        val normalized = normalize(rawValue, scheme)
+        if (normalized == data[KEY_DEEPLINK]) return data
+
+        val out = LinkedHashMap(data)
+        // Drop any scheme-prefixed deeplink key so only the canonical one remains.
+        out.keys.toList().forEach { key ->
+            val match = SCHEME_PREFIX.matchEntire(key)
+            if (match != null && match.groupValues[2].lowercase() in DEEPLINK_KEYS) out.remove(key)
+        }
+        out[KEY_DEEPLINK] = normalized
+        return out
+    }
+
+    /**
+     * Prepends [scheme] to a schemeless [value]; returns values that already carry a scheme (or
+     * when [scheme] is null) unchanged. Intentionally scheme-only: mapping a bare id like "123"
+     * to an app route (e.g. "details/123") is app-specific and stays in the consuming app.
+     */
+    fun normalize(value: String, scheme: String?): String {
+        val trimmed = value.trim()
+        if (trimmed.isEmpty()) return trimmed
+        if (SCHEME_PREFIX.matches(trimmed)) return trimmed
+        if (scheme.isNullOrEmpty()) return trimmed
+        return "$scheme://${trimmed.trimStart('/')}"
+    }
+
+    /** Reads the host app's declared deep-link scheme from the manifest `<meta-data>` (cached). */
+    private fun appScheme(context: Context): String? {
+        if (schemeResolved) return cachedScheme
+        cachedScheme = try {
+            val ai = context.packageManager.getApplicationInfo(
+                context.packageName, PackageManager.GET_META_DATA
+            )
+            ai.metaData?.getString(META_DEEPLINK_SCHEME)?.ifEmpty { null }
+        } catch (_: Throwable) {
+            null
+        }
+        schemeResolved = true
+        return cachedScheme
+    }
+
+    /** Test seam: forget the cached app scheme so a test can re-resolve it from a fresh manifest. */
+    internal fun resetSchemeCacheForTest() {
+        cachedScheme = null
+        schemeResolved = false
+    }
 }
