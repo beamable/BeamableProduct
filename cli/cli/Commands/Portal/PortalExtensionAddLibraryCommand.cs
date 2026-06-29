@@ -4,7 +4,6 @@ using cli.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.CommandLine;
-using System.Text.RegularExpressions;
 using static Beamable.Common.Constants.Features.PortalExtension;
 
 namespace cli.Portal;
@@ -148,7 +147,7 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 			return results;
 		}
 
-		foreach (var packagePath in Directory.EnumerateFiles(workspace, "package.json", SearchOption.AllDirectories))
+		foreach (var packagePath in EnumeratePackageJsonExcludingNodeModules(workspace))
 		{
 			try
 			{
@@ -170,6 +169,55 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 		}
 
 		return results;
+	}
+
+	/// <summary>
+	/// Enumerates every "package.json" under <paramref name="root"/>, skipping "node_modules" (and ".git")
+	/// trees.
+	///
+	/// Skipping node_modules is essential, not just an optimization: a file:-linked library is symlinked into
+	/// every consuming extension's node_modules, and .NET's recursive directory enumeration follows those
+	/// symlinks. Walking into node_modules would therefore discover the same library once per consumer (under
+	/// distinct symlink paths that Path.GetFullPath does not collapse), so callers would process — and rewrite,
+	/// and npm-install — the one real library many times over.
+	/// </summary>
+	private static IEnumerable<string> EnumeratePackageJsonExcludingNodeModules(string root)
+	{
+		var pending = new Stack<string>();
+		pending.Push(root);
+
+		while (pending.Count > 0)
+		{
+			var directory = pending.Pop();
+
+			var packageJson = Path.Combine(directory, "package.json");
+			if (File.Exists(packageJson))
+			{
+				yield return packageJson;
+			}
+
+			string[] subdirectories;
+			try
+			{
+				subdirectories = Directory.GetDirectories(directory);
+			}
+			catch
+			{
+				continue; // unreadable directory (permissions, broken link) — nothing to recurse into
+			}
+
+			foreach (var subdirectory in subdirectories)
+			{
+				var name = Path.GetFileName(subdirectory);
+				if (string.Equals(name, "node_modules", StringComparison.OrdinalIgnoreCase)
+					|| string.Equals(name, ".git", StringComparison.OrdinalIgnoreCase))
+				{
+					continue;
+				}
+
+				pending.Push(subdirectory);
+			}
+		}
 	}
 
 	/// <summary>
@@ -256,101 +304,190 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 	private const string TOOLKIT_PACKAGE = "@beamable/portal-toolkit";
 	private const string REACT_PACKAGE = "react";
 
+	// The packages a library and its host extension must agree on: a library is compiled against these as
+	// peerDependencies, so the extension has to supply a version that satisfies the library's declared range.
+	private static readonly string[] SHARED_PEER_PACKAGES = { TOOLKIT_PACKAGE, REACT_PACKAGE };
+
 	/// <summary>
-	/// Validates that the extension and its file:-linked libraries agree on the versions of the packages
-	/// they share as peers (@beamable/portal-toolkit and react), using npm's own dependency resolver
-	/// rather than comparing strings ourselves.
+	/// The peerDependency ranges a single file:-linked library declares for the packages it shares with its
+	/// host extension.
+	/// </summary>
+	public class LibraryPeerRequirements
+	{
+		public string LibraryName;
+		public Dictionary<string, string> PeerRanges = new(StringComparer.Ordinal);
+	}
+
+	/// <summary>
+	/// Validates that the extension supplies a version of every shared package (@beamable/portal-toolkit and
+	/// react) that satisfies the peerDependency range each of its file:-linked libraries declares.
 	///
-	/// npm does not evaluate a symlinked file: package's peerDependencies against the consumer, so a plain
-	/// install never catches this. We therefore run a NON-mutating dry-run with `--install-links`
-	/// (which makes npm resolve the library as a real package, evaluating its peers) and
-	/// `--strict-peer-deps` (which turns an incompatible peer into an ERESOLVE failure). The dry-run does
-	/// not touch node_modules, so the real symlinked install — and the live-reload dev loop — is unaffected.
-	///
-	/// The strict resolver also reports unrelated peer noise, so we only fail when the dependency npm could
-	/// not resolve is actually one of the packages we care about.
+	/// We compare versions directly rather than delegating to an npm dry-run. npm only evaluates a symlinked
+	/// file: library's peerDependencies under `--install-links`, and that flag is broken for this case: it
+	/// reports the satisfying package's version as `undefined`, producing a false ERESOLVE even when the
+	/// versions match (the regression that motivated rewriting this method). Reading the versions ourselves is
+	/// deterministic and immune to that bug. The check fails open — anything the matcher can't parse is treated
+	/// as "no conflict" so users are never blocked on a range it doesn't understand.
 	/// </summary>
 	public static void ValidateLibraryPeerDependencies(PortalExtensionDef extension)
 	{
-		var result = StartProcessUtil.Run(
-			"npm",
-			"install --install-links --strict-peer-deps --dry-run --no-audit --no-fund",
-			useShell: true,
-			workingDirectoryPath: extension.AbsolutePath).WaitForResult();
-
-		var output = $"{result.stdout}\n{result.stderr}";
-
-		var conflicts = new List<string>();
-		if (HasToolkitVersionConflict(result.exit, output))
+		var packagePath = extension.AbsolutePackageJsonPath;
+		if (!File.Exists(packagePath))
 		{
-			conflicts.Add(TOOLKIT_PACKAGE);
+			return;
 		}
 
-		if (HasReactVersionConflict(result.exit, output))
+		JObject root = JObject.Parse(File.ReadAllText(packagePath));
+
+		var libraries = ReadFileLibraryPeerRequirements(extension.AbsolutePath, root);
+		if (libraries.Count == 0)
 		{
-			conflicts.Add(REACT_PACKAGE);
+			return;
 		}
 
+		// The concrete versions the extension actually provides, read from node_modules — i.e. what the build
+		// will really use. Dependencies are installed (InstallDeps) before this validation runs.
+		var providedVersions = new Dictionary<string, string>(StringComparer.Ordinal);
+		foreach (var package in SHARED_PEER_PACKAGES)
+		{
+			var version = ReadInstalledPackageVersion(extension.AbsolutePath, package);
+			if (version != null)
+			{
+				providedVersions[package] = version;
+			}
+		}
+
+		var conflicts = DetectPeerVersionConflicts(providedVersions, libraries, SHARED_PEER_PACKAGES);
 		if (conflicts.Count > 0)
 		{
-			var packages = string.Join(" and ", conflicts);
 			throw new CliException(
-				$"Dependency version conflict detected by npm for Portal Extension [{extension.Name}] ({packages}). " +
-				$"An extension and one of its libraries require incompatible versions of {packages}; " +
-				$"align them so both use the same version.\n\nnpm reported:\n{output.Trim()}");
+				$"Dependency version conflict detected for Portal Extension [{extension.Name}]. " +
+				$"An extension and one of its libraries require incompatible versions of a shared package; " +
+				$"align them so both use the same version.\n\n" +
+				string.Join("\n", conflicts.Select(c => $"  - {c}")));
 		}
 	}
 
 	/// <summary>
-	/// True when npm's dependency resolution failed (non-zero exit) AND the dependency it could not resolve
-	/// is the toolkit package. Kept pure so the scoping logic can be unit-tested without invoking npm.
+	/// Reads the peerDependency ranges every file:-linked library in the extension's "dependencies" declares.
+	/// Libraries whose package.json is missing or unparseable are skipped — the path-repair step already
+	/// surfaces broken file: links, and an unreadable library can't be checked anyway.
 	/// </summary>
-	public static bool HasToolkitVersionConflict(int npmExitCode, string npmOutput)
+	public static List<LibraryPeerRequirements> ReadFileLibraryPeerRequirements(string extensionDir, JObject extensionPackageJson)
 	{
-		return ConflictConcernsPackage(npmExitCode, npmOutput, TOOLKIT_PACKAGE);
-	}
-
-	/// <summary>
-	/// True when npm's dependency resolution failed (non-zero exit) AND the dependency it could not resolve
-	/// is react. Kept pure so the scoping logic can be unit-tested without invoking npm.
-	/// </summary>
-	public static bool HasReactVersionConflict(int npmExitCode, string npmOutput)
-	{
-		return ConflictConcernsPackage(npmExitCode, npmOutput, REACT_PACKAGE);
-	}
-
-	/// <summary>
-	/// True when npm failed to resolve dependencies (non-zero exit) and the package it names as unresolvable
-	/// is <paramref name="package"/>. npm scatters transitive peer relationships (e.g. react/react-dom)
-	/// throughout its output as noise, so a bare substring match yields false positives. The dependency that
-	/// actually conflicts is the one npm names on the "peer &lt;pkg&gt;@..." line directly under its
-	/// "Could not resolve dependency:" header — we only trust that.
-	/// </summary>
-	public static bool ConflictConcernsPackage(int npmExitCode, string npmOutput, string package)
-	{
-		if (npmExitCode == 0 || string.IsNullOrEmpty(npmOutput))
+		var results = new List<LibraryPeerRequirements>();
+		var dependencies = extensionPackageJson[EXTENSION_NPM_DEPENDENCIES_PROPERTY_NAME] as JObject;
+		if (dependencies == null)
 		{
-			return false;
+			return results;
 		}
 
-		return string.Equals(GetUnresolvedPeerPackage(npmOutput), package, StringComparison.Ordinal);
+		foreach (var (depName, token) in dependencies)
+		{
+			var value = token?.ToString();
+			if (string.IsNullOrEmpty(value) || !value.StartsWith("file:"))
+			{
+				continue;
+			}
+
+			var libDir = Path.GetFullPath(Path.Combine(extensionDir, value.Substring("file:".Length)));
+			var libPackagePath = Path.Combine(libDir, "package.json");
+			if (!File.Exists(libPackagePath))
+			{
+				continue;
+			}
+
+			try
+			{
+				var libRoot = JObject.Parse(File.ReadAllText(libPackagePath));
+				var requirement = new LibraryPeerRequirements { LibraryName = depName };
+				if (libRoot["peerDependencies"] is JObject peers)
+				{
+					foreach (var (peerName, peerToken) in peers)
+					{
+						var peerRange = peerToken?.ToString();
+						if (!string.IsNullOrEmpty(peerRange))
+						{
+							requirement.PeerRanges[peerName] = peerRange;
+						}
+					}
+				}
+
+				results.Add(requirement);
+			}
+			catch
+			{
+				// A library whose package.json can't be parsed can't be checked; skip it rather than fail.
+			}
+		}
+
+		return results;
 	}
 
 	/// <summary>
-	/// Extracts the package name npm reports as the unresolvable peer dependency — the "peer &lt;pkg&gt;@..."
-	/// line that follows npm's "Could not resolve dependency:" header. Returns null if npm's output has no
-	/// such block.
+	/// Reads the concrete "version" of a package installed under the extension's node_modules, or null if the
+	/// package isn't installed or has no version field.
 	/// </summary>
-	public static string GetUnresolvedPeerPackage(string npmOutput)
+	public static string ReadInstalledPackageVersion(string extensionDir, string packageName)
 	{
-		var headerIndex = npmOutput.IndexOf("Could not resolve dependency:", StringComparison.Ordinal);
-		if (headerIndex < 0)
+		try
+		{
+			var parts = new List<string> { extensionDir, "node_modules" };
+			parts.AddRange(packageName.Split('/')); // scoped names like @beamable/portal-toolkit nest two dirs deep
+			parts.Add("package.json");
+
+			var packageJsonPath = Path.Combine(parts.ToArray());
+			if (!File.Exists(packageJsonPath))
+			{
+				return null;
+			}
+
+			var root = JObject.Parse(File.ReadAllText(packageJsonPath));
+			return root["version"]?.ToString();
+		}
+		catch
 		{
 			return null;
 		}
+	}
 
-		var block = npmOutput.Substring(headerIndex);
-		var match = Regex.Match(block, @"peer\s+(?<pkg>@?[^@\s]+)@");
-		return match.Success ? match.Groups["pkg"].Value : null;
+	/// <summary>
+	/// Pure conflict detection: for each library and each shared package, flags a conflict when the version
+	/// the extension provides does NOT satisfy the library's declared peer range. Fails open — an unknown
+	/// provided version, or a range/version <see cref="NpmSemver"/> can't decide, is treated as "no conflict".
+	/// Kept pure so it can be unit-tested without touching the filesystem or npm.
+	/// </summary>
+	public static List<string> DetectPeerVersionConflicts(
+		IReadOnlyDictionary<string, string> providedVersions,
+		IReadOnlyList<LibraryPeerRequirements> libraries,
+		IReadOnlyList<string> packagesToCheck)
+	{
+		var conflicts = new List<string>();
+		foreach (var library in libraries)
+		{
+			foreach (var package in packagesToCheck)
+			{
+				if (library.PeerRanges == null
+					|| !library.PeerRanges.TryGetValue(package, out var range)
+					|| string.IsNullOrWhiteSpace(range))
+				{
+					continue;
+				}
+
+				if (!providedVersions.TryGetValue(package, out var version) || string.IsNullOrWhiteSpace(version))
+				{
+					continue; // can't tell what the extension provides -> don't block
+				}
+
+				if (NpmSemver.TrySatisfies(version, range, out var satisfied) && !satisfied)
+				{
+					conflicts.Add(
+						$"library [{library.LibraryName}] requires {package}@\"{range}\", " +
+						$"but the extension provides {package}@{version}");
+				}
+			}
+		}
+
+		return conflicts;
 	}
 }

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [7.2.1] - 2026-06-29
+
+### Changed
+
+- Validation of the content no longer can automatically try to update the content value
+
 ## [7.2.0] - 2026-06-16
 
 ### Added
@@ -273,6 +280,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
 - Fixed `useLocal: true` in Scheduler Microservice invocation when the C#MS is remotely deployed.
+
+## [4.3.8] - 2026-06-24
+
+### Fixed
+- Backported microservice content resilience: manifest and content-entry fetches now retry transient failures (timeouts, 429, 5xx, transport errors) with bounded exponential backoff and jitter, and a failed fetch no longer poisons the in-memory content cache.
+
+## [4.3.7] - 2026-04-10
+
+### Fixed
+- Backported possible `IndexOutOfBounds` error when running `beam project ps` due to nameless docker containers
 
 ## [4.3.6] - 2026-03-13
 

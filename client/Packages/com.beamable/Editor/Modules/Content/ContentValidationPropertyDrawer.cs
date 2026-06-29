@@ -62,6 +62,61 @@ namespace Beamable.Editor.Content
 			return baseHeight + EditorGUIUtility.singleLineHeight * newlineCount;
 		}
 
+		/// <summary>
+		/// For <see cref="string"/> fields (including <c>List&lt;string&gt;</c> elements) decorated with
+		/// <see cref="MustReferenceContent"/>, draws an editable text field with a dropdown button that opens a
+		/// searchable list of valid content ids. Returns <c>false</c> for anything else so the caller falls back
+		/// to the default property field.
+		/// </summary>
+		private bool TryDrawContentDropdown(Rect position, SerializedProperty property, GUIContent label)
+		{
+			if (property.propertyType != SerializedPropertyType.String)
+			{
+				return false;
+			}
+
+			// Catches MustReferenceContent and its MustBe* subclasses, which preset AllowedTypes.
+			var mustReference = fieldInfo.GetCustomAttribute<MustReferenceContent>();
+			if (mustReference == null)
+			{
+				return false;
+			}
+
+			var lineHeight = EditorGUIUtility.singleLineHeight;
+			var labelRect = new Rect(position.x, position.y, EditorGUIUtility.labelWidth, lineHeight);
+			var fieldX = position.x + EditorGUIUtility.labelWidth;
+			var fieldWidth = position.width - EditorGUIUtility.labelWidth;
+			const float buttonWidth = 22f;
+			var textRect = new Rect(fieldX, position.y, Mathf.Max(0, fieldWidth - buttonWidth), lineHeight);
+			var buttonRect = new Rect(fieldX + textRect.width, position.y, buttonWidth, lineHeight);
+
+			EditorGUI.PrefixLabel(labelRect, label);
+
+			EditorGUI.BeginChangeCheck();
+			var newValue = EditorGUI.DelayedTextField(textRect, property.stringValue);
+			if (EditorGUI.EndChangeCheck())
+			{
+				property.stringValue = newValue;
+				property.serializedObject.ApplyModifiedProperties();
+			}
+
+			if (EditorGUI.DropdownButton(buttonRect, new GUIContent(string.Empty, label.tooltip), FocusType.Keyboard, EditorStyles.popup))
+			{
+				var wnd = ScriptableObject.CreateInstance<ContentStringSearchWindow>();
+				wnd.Property = property;
+				wnd.Object = property.serializedObject.targetObject;
+				wnd.AllowedTypes = mustReference.AllowedTypes;
+				wnd.AllowNull = mustReference.AllowNull;
+				wnd.Init();
+
+				var xy = EditorGUIUtility.GUIToScreenPoint(new Vector2(textRect.x, textRect.y));
+				wnd.ShowAsDropDown(new Rect((int)xy.x, (int)xy.y + (int)lineHeight, 0, 0),
+				   new Vector2(fieldWidth, 300));
+			}
+
+			return true;
+		}
+
 		protected bool TryGetArrayIndex(SerializedProperty property, out int arrayIndex)
 		{
 			arrayIndex = 0;
@@ -140,7 +195,10 @@ namespace Beamable.Editor.Content
 				}
 			}
 
-			RefEditorGUI.DefaultPropertyField(position, property, label);
+			if (!TryDrawContentDropdown(position, property, label))
+			{
+				RefEditorGUI.DefaultPropertyField(position, property, label);
+			}
 
 			if (exceptions.Count > 0)
 			{
