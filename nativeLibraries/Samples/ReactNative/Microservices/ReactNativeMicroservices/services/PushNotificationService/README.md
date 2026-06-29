@@ -1,5 +1,11 @@
 # PushNotificationService
 
+> ⚠️ **Deprecated.** This sample microservice has been superseded by **CampaignService**
+> (in the `agentic-portal` repo), which consolidates device registration, push delivery, the
+> analytics funnel, and the `ForwardFunnelToSlack` webhook. New work — including the native
+> libraries' funnel→Slack mirror and the Portal extensions — targets CampaignService. This
+> service is kept for reference only; prefer CampaignService for anything new.
+
 A Beamable microservice that **registers** device tokens and **sends remote push
 notifications** to players through both **Apple's APNs** (iOS, token-based / `.p8` auth)
 and **Firebase Cloud Messaging** (Android, HTTP v1 / service-account OAuth). Each device

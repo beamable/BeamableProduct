@@ -19,8 +19,7 @@ import {
 import type { TokenStorage } from '@beamable/sdk';
 import { BEAM_CONFIG, isConfigured } from './config';
 import { RNTokenStorage, configureAuth } from '@beamable/notifications-react-native';
-import { SampleServiceClient } from './beamable/clients/SampleServiceClient';
-import { PushNotificationServiceClient } from './beamable/clients/PushNotificationServiceClient';
+import { CampaignServiceClient } from './beamable/clients/CampaignServiceClient';
 
 export type BeamStatus =
   | { state: 'idle' }
@@ -37,22 +36,13 @@ export function getBeam(): Beam | null {
 }
  
 /**
- * The typed client for the `SampleService` microservice, or null until
- * `initBeam()` has resolved. Registered below via `beam.use(...)`, which adds
- * the typed `beam.sampleServiceClient` accessor. Call e.g.
- * `getSampleService()?.add({ a: 2, b: 3 })`.
+ * The typed client for the `CampaignService` microservice, or null until
+ * `initBeam()` has resolved. Use it to register this device's APNs/FCM token and
+ * to list the player's registered devices — e.g. `getPushService()?.listMyDevices()`.
+ * (Push delivery itself is driven server-side / from the Portal Campaign Builder.)
  */
-export function getSampleService(): SampleServiceClient | null {
-  return beamInstance?.sampleServiceClient ?? null;
-}
-
-/**
- * The typed client for the `PushNotificationService` microservice, or null until
- * `initBeam()` has resolved. Use it to register this device's APNs token and to
- * send remote pushes — e.g. `getPushService()?.sendCampaignPushToSelf({ title, body, deepLink })`.
- */
-export function getPushService(): PushNotificationServiceClient | null {
-  return beamInstance?.pushNotificationServiceClient ?? null;
+export function getPushService(): CampaignServiceClient | null {
+  return beamInstance?.campaignServiceClient ?? null;
 }
 
 /**
@@ -113,12 +103,9 @@ export async function initBeam(): Promise<Beam> {
       AnnouncementsService,
       LeaderboardsService
     ]);
-    // Auto-generated client for the SampleService microservice. Registering
-    // it adds the typed `beam.sampleServiceClient` accessor.
-    beam.use(SampleServiceClient);
-    // Auto-generated client for the PushNotificationService microservice
-    // (adds the typed `beam.pushNotificationServiceClient` accessor).
-    beam.use(PushNotificationServiceClient);
+    // Auto-generated client for the CampaignService microservice
+    // (adds the typed `beam.campaignServiceClient` accessor).
+    beam.use(CampaignServiceClient);
     beamInstance = beam;
 
     // Best-effort: hand the player's tokens to the native side so the CLOSED-APP analytics

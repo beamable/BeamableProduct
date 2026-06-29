@@ -9,59 +9,52 @@ import type * as Types from './types';
 declare module '@beamable/sdk' {
   interface BeamBase {
     /**
-     * Access the SampleService microservice.
+     * Access the CampaignService microservice.
      * @remarks Before accessing this property, register it first via the `use` method.
      * @example
      * ```ts
      * // client-side:
-     * beam.use(SampleServiceClient);
-     * beam.sampleServiceClient.serviceName;
+     * beam.use(CampaignServiceClient);
+     * beam.campaignServiceClient.serviceName;
      * // server-side:
-     * beamServer.use(SampleServiceClient);
-     * beamServer.sampleServiceClient.serviceName;
+     * beamServer.use(CampaignServiceClient);
+     * beamServer.campaignServiceClient.serviceName;
      * ```
      */
-    sampleServiceClient: SampleServiceClient;
+    campaignServiceClient: CampaignServiceClient;
   }
 }
 
-export class SampleServiceClient extends BeamMicroServiceClient {
+export class CampaignServiceClient extends BeamMicroServiceClient {
   constructor(
     beam: BeamBase
   ) {
     super(beam);
   }
-  
+
   get serviceName(): string {
-    return "SampleService";
+    return "CampaignService";
   }
-  
-  async add(params: Types.AddRequestArgs): Promise<number> {
+
+  async registerDeviceToken(params: Types.RegisterDeviceTokenRequestArgs): Promise<Types.RegisterResult> {
     return this.request({
-      endpoint: "Add",
+      endpoint: "RegisterDeviceToken",
       payload: params,
       withAuth: true
     });
   }
-  
-  async greet(params: Types.GreetRequestArgs): Promise<string> {
+
+  async unregisterDeviceToken(params: Types.UnregisterDeviceTokenRequestArgs): Promise<Types.UnregisterResult> {
     return this.request({
-      endpoint: "Greet",
+      endpoint: "UnregisterDeviceToken",
       payload: params,
       withAuth: true
     });
   }
-  
-  async whoAmI(): Promise<Types.WhoAmIResult> {
+
+  async listMyDevices(): Promise<Types.DeviceList> {
     return this.request({
-      endpoint: "WhoAmI",
-      withAuth: true
-    });
-  }
-  
-  async visit(): Promise<Types.VisitResult> {
-    return this.request({
-      endpoint: "Visit",
+      endpoint: "ListMyDevices",
       withAuth: true
     });
   }

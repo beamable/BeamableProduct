@@ -15,6 +15,10 @@ using Beamable.Server;
 namespace Beamable.PushNotificationService
 {
 	/// <summary>
+	/// <b>Deprecated</b> — superseded by <c>CampaignService</c> (in the agentic-portal repo), which
+	/// consolidates device registration, push delivery, the analytics funnel, and the
+	/// <c>ForwardFunnelToSlack</c> webhook. Kept for reference only; prefer CampaignService for new work.
+	///
 	/// A self-contained microservice that demonstrates remote push notifications
 	/// through both Apple's APNs (iOS) and Firebase Cloud Messaging (Android), end to end:
 	///

@@ -53,8 +53,18 @@ export type DeviceInfo = {
   updatedAt: bigint | string; 
 };
 
-export type DeviceList = { 
-  devices: DeviceInfo[]; 
+export type DeviceList = {
+  devices: DeviceInfo[];
+};
+
+export type WebhookResult = {
+  success: boolean;
+  statusCode: number;
+  message: string;
+};
+
+export type ForwardFunnelToSlackRequestArgs = {
+  funnelData: string;
 };
 
 export type SendResult = { 

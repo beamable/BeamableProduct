@@ -72,7 +72,8 @@ public enum BeamableAnalytics {
 
     /// Microservice + endpoint exposing the `ForwardFunnelToSlack` [Callable] used as a debug mirror
     /// of the funnel (so device-side stages show up in Slack alongside the server-emitted "Sent").
-    public static let funnelSlackMicroservice = "PushNotificationService"
+    /// Hosted by the portal's CampaignService.
+    public static let funnelSlackMicroservice = "CampaignService"
     public static let funnelSlackEndpoint = "ForwardFunnelToSlack"
 
     /// Forward the funnel params (the CoreEvent `p`) to the microservice's `ForwardFunnelToSlack`

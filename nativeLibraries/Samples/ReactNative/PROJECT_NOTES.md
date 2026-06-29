@@ -10,8 +10,8 @@ gotchas worth remembering. The user-facing setup/run instructions live in
 
 An **Expo / React Native** app that exercises the **Beamable Web SDK** end to
 end: guest login, the high-level services (auth, account, content, stats,
-announcements, leaderboards), local notifications, deep links, and a **custom
-C# microservice** (`SampleService`). Notifications are handled solely by the
+announcements, leaderboards), local notifications, deep links, and device
+registration with a **custom C# microservice** (`CampaignService`). Notifications are handled solely by the
 **Beamable Notifications** native SDK, consumed through the single unified
 package `@beamable/notifications-react-native` (autolinking selects the iOS
 xcframework or the Android AAR). See the section below.
@@ -20,7 +20,9 @@ xcframework or the Android AAR). See the section below.
   the full SDK explorer, `details/[id].tsx` is a deep-link target.
 - **Beamable glue** — `src/beam/`.
 - **Microservice workspace** — `Microservices/ReactNativeMicroservices/`
-  (a `beam` CLI workspace; the C# service lives under `services/SampleService`).
+  (a `beam` CLI workspace; holds the deprecated `PushNotificationService` sample +
+  the `PushNotifications` Portal extension). The app targets `CampaignService`
+  (in the `agentic-portal` repo) for device registration.
 
 ---
 
@@ -31,12 +33,12 @@ React Native app (Expo)
   └─ src/beam/beamClient.ts        Beam.init() singleton + service registration
        ├─ config.ts                cid / pid / environment
        ├─ RNTokenStorage            (from @beamable/notifications-react-native)
-       └─ beamable/clients/        CLI-generated microservice clients
-                                     SampleServiceClient.ts + types/
+       └─ beamable/clients/        microservice clients (hand-maintained)
+                                     CampaignServiceClient.ts + types/
                                           │  HTTPS
                                           ▼
-Beamable platform  ──routes──▶  SampleService (C# microservice)
-                                  services/SampleService/SampleService.cs
+Beamable platform  ──routes──▶  CampaignService (C# microservice, agentic-portal repo)
+                                  RegisterDeviceToken / ListMyDevices / …
 ```
 
 ---
@@ -152,9 +154,9 @@ the JS glue:
   `app.json`'s `expo.android.googleServicesFile` points at `./google-services.json`;
   the plugin applies the google-services Gradle plugin. `registerForRemote()`
   fetches the FCM token; `registerDevice` (`src/beam/pushNotifications.ts`) tags it
-  `platform: "fcm"` (vs `"apns"` on iOS) so the `PushNotificationService` routes it
-  to `FcmClient`. "Send to myself" then delivers a real FCM push (an FCM
-  `notification` message → shows in the tray, opens the app on tap). Requires FCM
+  `platform: "fcm"` (vs `"apns"` on iOS) so `CampaignService` routes it
+  to `FcmClient`. A campaign launched from the Portal Campaign Builder then delivers a
+  real FCM push (an FCM `notification` message → shows in the tray, opens the app on tap). Requires FCM
   credentials in the realm config (`fcm_push` namespace).
 - **Killed-app handler over the air** — the microservice sends a `notification`
   message, which the OS auto-displays in background/killed (so `onMessageReceived`
@@ -225,19 +227,20 @@ fails with "Unable to find module dependency"). Instead the RN pod
 
 ---
 
-## The microservice (`SampleService`)
+## The device-registration microservice (`CampaignService`)
 
-A small C# Beamable service demonstrating the three things almost every service
-does, one `[ClientCallable]` endpoint each:
+The app registers each device's push token with `CampaignService` (in the
+`agentic-portal` repo). The player-facing endpoints it calls:
 
-| Endpoint     | Demonstrates                                                        |
-|--------------|---------------------------------------------------------------------|
-| `Add(a,b)`   | plain server-side compute                                           |
-| `Greet(name)`| string args + a server-built response                               |
-| `WhoAmI()`   | reading the authenticated caller from `Context` (trustworthy id)    |
-| `Visit()`    | server-authoritative state — a *protected* stat only the server writes |
+| Endpoint                                            | Demonstrates                                              |
+|-----------------------------------------------------|-----------------------------------------------------------|
+| `RegisterDeviceToken(token, environment, platform)` | store the caller's APNs/FCM token (de-duplicated)         |
+| `UnregisterDeviceToken(token)`                      | remove a token                                            |
+| `ListMyDevices()`                                   | list the caller's devices, tokens masked                 |
 
-Source: `Microservices/ReactNativeMicroservices/services/SampleService/SampleService.cs`
+Source: `agentic-portal/services/CampaignService/`. The original
+`Microservices/ReactNativeMicroservices/services/SampleService` (Add/Greet/WhoAmI/Visit)
+and `PushNotificationService` samples are **deprecated/removed** — CampaignService consolidates the push surface.
 
 ### Server-side API facts (verified against runtime 7.2.0)
 
@@ -265,11 +268,18 @@ dotnet beam deploy release -q  # ship to the cloud realm
 
 ---
 
-## The microservice (`PushNotificationService`) — remote push via APNs
+## The microservice (`CampaignService`) — device registration + remote push
 
-A second C# service that registers APNs device tokens and sends **remote** push
-notifications through Apple (token-based `.p8` auth over HTTP/2). This is the
-server side of the "2c · Remote push (APNs microservice)" panel in `app/index.tsx`.
+> The app now targets **`CampaignService`** (in the `agentic-portal` repo), which
+> consolidates device registration, push delivery, the analytics funnel, and the
+> `ForwardFunnelToSlack` webhook. The original `PushNotificationService` sample is
+> **deprecated** and kept for reference only. The endpoint table below reflects that
+> sample; CampaignService mirrors it minus the player-facing `SendPushToSelf` (delivery
+> is driven from the Portal Campaign Builder).
+
+A C# service that registers APNs/FCM device tokens and sends **remote** push
+notifications through Apple (token-based `.p8` auth over HTTP/2) and Firebase. This is the
+server side of the "3 · Device registration (microservice)" panel in `app/index.tsx`.
 
 | Endpoint | Attr | Purpose |
 |---|---|---|
@@ -299,37 +309,38 @@ for the **Realm Config** keys you must set (`apns_push` namespace: `auth_key`,
 
 ## Client generation — important workflow
 
-The TypeScript client is **CLI-generated, not hand-written**. Regenerate it
-after changing the service; don't edit the files (they carry a
-"DO NOT EDIT" header and are overwritten):
+The TypeScript client is normally **CLI-generated**. The remote portal-config
+codegen endpoint 404s on this realm, so `src/beam/beamable/clients/CampaignServiceClient.ts`
++ `types/` are **hand-maintained** to mirror the generator's output. When the endpoint is
+reachable, regenerate rather than hand-editing:
 
 ```bash
 cd Microservices/ReactNativeMicroservices
 dotnet beam project generate web-client --output-dir "../../src/beam"
 # writes into a beamable/clients/ subfolder of --output-dir:
-#   src/beam/beamable/clients/SampleServiceClient.ts
+#   src/beam/beamable/clients/CampaignServiceClient.ts
 #   src/beam/beamable/clients/types/index.ts
 ```
 
 ### How the generated client looks / behaves
 
-- Extends `BeamMicroServiceClient`, declares `serviceName = "SampleService"`.
-- **Args are objects, not positional**: `add({ a, b })`, `greet({ name })`.
+- Extends `BeamMicroServiceClient`, declares `serviceName = "CampaignService"`.
+- **Args are objects, not positional**: `registerDeviceToken({ token, environment, platform })`.
 - It augments the SDK via `declare module '@beamable/sdk'` to add a typed
-  `beam.sampleServiceClient` accessor — available **after**
-  `beam.use(SampleServiceClient)`.
+  `beam.campaignServiceClient` accessor — available **after**
+  `beam.use(CampaignServiceClient)`.
 - The constructor is **public** (unlike the abstract base, whose constructor is
-  `protected`), so `beam.use(SampleServiceClient)` type-checks and registers it.
+  `protected`), so `beam.use(CampaignServiceClient)` type-checks and registers it.
 
 ### Wiring in the app (`src/beam/beamClient.ts`)
 
 ```ts
 beam.use([AuthService, AccountService, ContentService, StatsService,
           AnnouncementsService, LeaderboardsService]);
-beam.use(SampleServiceClient);   // adds beam.sampleServiceClient
+beam.use(CampaignServiceClient);   // adds beam.campaignServiceClient
 
-export function getSampleService() {
-  return beamInstance?.sampleServiceClient ?? null;
+export function getPushService() {
+  return beamInstance?.campaignServiceClient ?? null;
 }
 ```
 
@@ -370,7 +381,7 @@ behave identically.
 ## Quick verification
 
 - App TypeScript: `npx tsc --noEmit` → clean.
-- Service: `cd Microservices/ReactNativeMicroservices/services/SampleService &&
-  dotnet build` → 0 errors (NU19xx package-vulnerability warnings are noise).
+- Service: `cd agentic-portal/services/CampaignService && dotnet build` → 0 errors
+  (NU19xx package-vulnerability warnings are noise).
 - Manual: launch the app → **Connect to Beamable** → use the
-  **4 · Sample microservice** buttons; results appear in the activity log.
+  **3 · Device registration** buttons; results appear in the activity log.

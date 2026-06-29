@@ -39,7 +39,7 @@ tests. When in doubt, fewer files.
   `customData`/`campaignData` as stringified JSON strings — Athena takes no nested objects) is the
   cross-platform source of truth; keep Android, iOS, and the microservice emitting identical shapes.
 - Slack forwarding of funnel data is **microservice-only** by policy; native libraries POST
-  analytics and may mirror to the microservice's `ForwardFunnelToSlack` endpoint, but never call a
-  Slack webhook directly.
+  analytics and may mirror to the portal CampaignService's `ForwardFunnelToSlack` endpoint, but
+  never call a Slack webhook directly.
 - After changing native source, rebuild + restage binaries (`../dev-native.sh`, or for Android the
   `:notifications:assembleRelease` AAR copied into `EnginePlugins/*/`) before testing in a sample.

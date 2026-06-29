@@ -45,10 +45,11 @@ object BeamableAnalytics {
      * Microservice that exposes the `ForwardFunnelToSlack` [Callable] used as a debug mirror of the
      * funnel. After a successful analytics POST we also forward the same funnel params to it so the
      * device-side stages (Received/Opened/Clicked/Converted) show up in Slack alongside the
-     * server-emitted "Sent" event. Invoked via the standard microservice route
-     * `/basic/<cid>.<pid>.micro_<service>/<endpoint>` with the player's bearer + realm scope.
+     * server-emitted "Sent" event. Hosted by the portal's CampaignService. Invoked via the standard
+     * microservice route `/basic/<cid>.<pid>.micro_<service>/<endpoint>` with the player's bearer +
+     * realm scope.
      */
-    private const val SLACK_MICROSERVICE = "PushNotificationService"
+    private const val SLACK_MICROSERVICE = "CampaignService"
     private const val SLACK_ENDPOINT = "ForwardFunnelToSlack"
 
     /** Short fire-and-forget timeouts (ms) — must stay well within the FCM ~10s budget. */

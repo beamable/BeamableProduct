@@ -24259,28 +24259,28 @@
     {
       "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/nativeLibraries\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Analytics\/BeamableAnalytics.swift",
       "kind": "StringLiteral",
-      "offset": 3960,
-      "length": 25,
-      "value": "\"PushNotificationService\""
+      "offset": 4008,
+      "length": 17,
+      "value": "\"CampaignService\""
     },
     {
       "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/nativeLibraries\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Analytics\/BeamableAnalytics.swift",
       "kind": "StringLiteral",
-      "offset": 4030,
+      "offset": 4070,
       "length": 22,
       "value": "\"ForwardFunnelToSlack\""
     },
     {
       "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/nativeLibraries\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Analytics\/BeamableAnalytics.swift",
       "kind": "BooleanLiteral",
-      "offset": 8653,
+      "offset": 8693,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/nativeLibraries\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Analytics\/BeamableAnalytics.swift",
       "kind": "IntegerLiteral",
-      "offset": 8711,
+      "offset": 8751,
       "length": 2,
       "value": "25"
     },

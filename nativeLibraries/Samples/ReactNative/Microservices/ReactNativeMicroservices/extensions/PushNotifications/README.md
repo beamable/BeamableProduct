@@ -1,7 +1,11 @@
 # PushNotifications (Portal extension)
 
-An admin Portal page for the **PushNotificationService** microservice. It lists every
+An admin Portal page for the **CampaignService** microservice. It lists every
 player who has registered a push device and lets you send a remote push to any one of them.
+
+> Previously backed by the now-deprecated `PushNotificationService` sample. The push
+> functionality has been consolidated into `CampaignService` (in the `agentic-portal` repo),
+> which this extension now targets.
 
 ## What it does
 
@@ -42,9 +46,10 @@ convention (`beam project ps` lists it as a `portalExtension`), so this only aff
 not use.
 
 Consequences:
-- `beamable/clients/PushNotificationServiceClient.ts` + `beamable/clients/types/` are hand-written
+- `beamable/clients/CampaignServiceClient.ts` + `beamable/clients/types/` are hand-written
   to mirror the generator's output. If the service's endpoint signatures change, re-run
-  `beam portal extension add-microservice PushNotifications PushNotificationService` (once the
-  endpoint is reachable) to regenerate them.
+  `beam portal extension add-microservice PushNotifications CampaignService` (once the
+  endpoint is reachable) to regenerate them. (`PushNotificationServiceClient.ts` remains for the
+  deprecated service and is no longer used by this page.)
 - The mount config in `package.json` (`page`, `selector`) mirrors the working `SampleOneHealthCheck`
   example and was not validated against remote mount options.

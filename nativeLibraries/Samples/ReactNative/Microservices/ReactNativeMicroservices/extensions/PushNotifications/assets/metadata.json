@@ -6,7 +6,7 @@
     "portalExtension": true,
     "portalExtensionLib": false,
     "microserviceDependencies": [
-      "PushNotificationService"
+      "CampaignService"
     ],
     "serviceGroups": null,
     "mounts": [

@@ -15,7 +15,7 @@ import {
   BeamTag,
   BeamCheckbox,
 } from '@beamable/portal-toolkit/react'
-import { PushNotificationServiceClient } from '../beamable/clients/PushNotificationServiceClient'
+import { CampaignServiceClient } from '../beamable/clients/CampaignServiceClient'
 import type {
   RegisteredPlayer,
   PushOffer,
@@ -108,7 +108,7 @@ export default function App({ context }: AppProps) {
     setRosterError(null)
     setRosterNote(null)
     try {
-      const client = new PushNotificationServiceClient(beam)
+      const client = new CampaignServiceClient(beam)
       const result = await client.listRegisteredPlayers()
       setPlayers(result.players ?? [])
       setRosterNote(result.message ?? null)
@@ -214,7 +214,7 @@ export default function App({ context }: AppProps) {
     setSendError(null)
     setSendResult(null)
 
-    const client = new PushNotificationServiceClient(beam)
+    const client = new CampaignServiceClient(beam)
 
     // Build the §3.3 campaign request. Scalar campaign fields are included only when set;
     // each offer's free-form customData (entered as a JSON object string) and the campaignData

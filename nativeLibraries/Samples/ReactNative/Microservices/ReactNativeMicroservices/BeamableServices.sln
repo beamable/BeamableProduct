@@ -5,8 +5,6 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "services", "services", "{5854FF58-B8C5-05C6-5BF2-ACE42193F22B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleService", "services\SampleService\SampleService.csproj", "{01FE56A0-2A18-4A8F-BBD2-D7D112CA3BF3}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushNotificationService", "services\PushNotificationService\PushNotificationService.csproj", "{BB5A10CD-B177-4ABD-B367-C04C8290AABD}"
 EndProject
 Global
@@ -19,18 +17,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{01FE56A0-2A18-4A8F-BBD2-D7D112CA3BF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{01FE56A0-2A18-4A8F-BBD2-D7D112CA3BF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{01FE56A0-2A18-4A8F-BBD2-D7D112CA3BF3}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{01FE56A0-2A18-4A8F-BBD2-D7D112CA3BF3}.Debug|x64.Build.0 = Debug|Any CPU
-		{01FE56A0-2A18-4A8F-BBD2-D7D112CA3BF3}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{01FE56A0-2A18-4A8F-BBD2-D7D112CA3BF3}.Debug|x86.Build.0 = Debug|Any CPU
-		{01FE56A0-2A18-4A8F-BBD2-D7D112CA3BF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{01FE56A0-2A18-4A8F-BBD2-D7D112CA3BF3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{01FE56A0-2A18-4A8F-BBD2-D7D112CA3BF3}.Release|x64.ActiveCfg = Release|Any CPU
-		{01FE56A0-2A18-4A8F-BBD2-D7D112CA3BF3}.Release|x64.Build.0 = Release|Any CPU
-		{01FE56A0-2A18-4A8F-BBD2-D7D112CA3BF3}.Release|x86.ActiveCfg = Release|Any CPU
-		{01FE56A0-2A18-4A8F-BBD2-D7D112CA3BF3}.Release|x86.Build.0 = Release|Any CPU
 		{BB5A10CD-B177-4ABD-B367-C04C8290AABD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BB5A10CD-B177-4ABD-B367-C04C8290AABD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BB5A10CD-B177-4ABD-B367-C04C8290AABD}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -48,7 +34,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{01FE56A0-2A18-4A8F-BBD2-D7D112CA3BF3} = {5854FF58-B8C5-05C6-5BF2-ACE42193F22B}
 		{BB5A10CD-B177-4ABD-B367-C04C8290AABD} = {5854FF58-B8C5-05C6-5BF2-ACE42193F22B}
 	EndGlobalSection
 EndGlobal

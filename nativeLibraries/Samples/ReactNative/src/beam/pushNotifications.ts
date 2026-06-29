@@ -1,22 +1,29 @@
 /**
- * App-specific binding for the `PushNotificationService` microservice.
+ * App-specific binding for the `CampaignService` microservice's device endpoints.
  *
- * The generic device push-token logic (platform/env resolution + the
- * register/unregister/list/sendToSelf wrappers) now lives in the shared package
- * `@beamable/notifications-react-native` (`createPushDevice`). This file only binds that
- * helper to THIS app's auto-generated `PushNotificationServiceClient` (resolved via
- * `getPushService()` in beamClient.ts) and re-exports the typed surface the screens use.
+ * The native SDK hands the app a device token via the `tokenReceived` event
+ * (`registerForRemote()`): an APNs token on iOS, an FCM token on Android. These helpers
+ * forward that token to `CampaignService`, which stores it against the authenticated player.
+ *
+ * Device registration/listing is player-facing (`[ClientCallable]`). Actual push *delivery*
+ * is driven server-side / from the Portal Campaign Builder (CampaignService exposes only the
+ * admin `SendCampaignPushToPlayer`), so this app no longer sends a push to itself.
  *
  * Remote delivery needs a physical device (neither APNs nor FCM deliver reliably to a
  * simulator/emulator for the push token) and the matching provider credentials in the realm
  * config: APNs (`apns_push`) for iOS, FCM (`fcm_push`) for Android.
  */
-import { createPushDevice } from '@beamable/notifications-react-native';
+import {
+  DEVICE_PLATFORM,
+  DEFAULT_APNS_ENVIRONMENT,
+  type PushPlatform,
+  type ApnsEnvironment,
+} from '@beamable/notifications-react-native';
 import { getPushService } from './beamClient';
 import type {
   DeviceList,
   RegisterResult,
-  SendResult,
+  UnregisterResult,
 } from './beamable/clients/types';
 
 export type {
@@ -28,38 +35,31 @@ export {
   DEFAULT_APNS_ENVIRONMENT as APNS_ENVIRONMENT,
 } from '@beamable/notifications-react-native';
 
-// Bind the generic helper directly to this app's auto-generated microservice client. The
-// shared `createPushDevice` helper drives the standard register/unregister/list methods plus
-// the campaign-aware `sendCampaignPushToSelf` (its `sendToSelf` maps to it with empty campaign
-// fields) — all of which the generated client exposes, so no adapter is needed.
-const device = createPushDevice(getPushService, {
-  notConnectedMessage:
-    'Not connected — call initBeam() (Connect to Beamable) first.',
-});
+const NOT_CONNECTED =
+  'Not connected — call initBeam() (Connect to Beamable) first.';
+
+/** Resolve the CampaignService client, or throw a friendly error if not connected yet. */
+function service() {
+  const svc = getPushService();
+  if (!svc) throw new Error(NOT_CONNECTED);
+  return svc;
+}
 
 /** Registers (or refreshes) this device's push token with the microservice. */
-export const registerDevice = device.registerDevice as (
+export function registerDevice(
   token: string,
-  platform?: import('@beamable/notifications-react-native').PushPlatform,
-  environment?: import('@beamable/notifications-react-native').ApnsEnvironment,
-) => Promise<RegisterResult>;
+  platform: PushPlatform = DEVICE_PLATFORM,
+  environment: ApnsEnvironment = DEFAULT_APNS_ENVIRONMENT,
+): Promise<RegisterResult> {
+  return service().registerDeviceToken({ token, environment, platform });
+}
 
 /** Removes a device token from the player's registrations (e.g. on logout). */
-export const unregisterDevice = device.unregisterDevice;
+export function unregisterDevice(token: string): Promise<UnregisterResult> {
+  return service().unregisterDeviceToken({ token });
+}
 
 /** Lists the player's registered devices (tokens come back masked). */
-export const listDevices = device.listDevices as () => Promise<DeviceList>;
-
-/**
- * Sends a remote push to every device the current player has registered.
- *
- * The package helper maps this to the campaign-aware `sendCampaignPushToSelf` with the
- * campaign fields left empty — an "untracked" send is just a campaign request carrying only
- * title/body/deepLink (no funnel "Sent" event is emitted server-side without campaignId +
- * nodeId).
- */
-export const sendToSelf = device.sendToSelf as (
-  title: string,
-  body: string,
-  deepLink?: string,
-) => Promise<SendResult>;
+export function listDevices(): Promise<DeviceList> {
+  return service().listMyDevices();
+}

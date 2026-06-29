@@ -16,7 +16,6 @@ import { BEAM_CONFIG, isConfigured } from '../src/beam/config';
 import {
   getBeam,
   getPushService,
-  getSampleService,
   initBeam,
   type BeamStatus,
 } from '../src/beam/beamClient';
@@ -35,7 +34,7 @@ import {
   type NotificationIntentData,
   type NotificationOffer,
 } from '@beamable/notifications-react-native';
-import { listDevices, registerDevice, sendToSelf } from '../src/beam/pushNotifications';
+import { listDevices, registerDevice } from '../src/beam/pushNotifications';
 import { detailsPath, detailsUrl, openUrl } from '../src/linking/links';
 
 export default function Home() {
@@ -85,7 +84,7 @@ export default function Home() {
         if (!getPushService()) return append('Token not registered — connect to Beamable first');
         try {
           const res = await registerDevice(token);
-          append(`Device registered with PushNotificationService (${res.deviceCount} total)`);
+          append(`Device registered with CampaignService (${res.deviceCount} total)`);
         } catch (e) {
           append(`Token register error: ${e instanceof Error ? e.message : String(e)}`);
         }
@@ -169,9 +168,10 @@ export default function Home() {
     append(`Beamable: registered for remote (${remoteProvider}). Token on event (real device only).`);
   };
 
-  // 3) Remote push via the PushNotificationService microservice -----------
+  // 3) Device registration via the CampaignService microservice ----------
   // Devices auto-register on the `tokenReceived` event above. These actions
-  // ask the microservice to deliver a real APNs push and to list registrations.
+  // register this device and list the player's registrations. (Push delivery
+  // is driven server-side / from the Portal Campaign Builder.)
   const registerThisDevice = async () => {
     if (!getPushService()) return append('Register: connect to Beamable first');
     if (!apnsToken) return append(`No push token yet — tap "Register for remote (${remoteProvider})" in section 2 first (physical device).`);
@@ -181,22 +181,6 @@ export default function Home() {
       append(`RegisterDeviceToken → ${res.success ? 'ok' : 'failed'}: ${res.message} (${res.deviceCount} device(s))`);
     } catch (e) {
       append(`Register error: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  };
-
-  const sendPushToMyself = async () => {
-    if (!getPushService()) return append('Remote push: connect to Beamable first');
-    append('Sending remote push to myself …');
-    try {
-      const res = await sendToSelf(
-        'Hello from Beamable 👋',
-        `This remote push came from your ${remoteProvider} microservice.`,
-        detailsUrl(999),
-      );
-      append(`Push: attempted ${res.attempted}, sent ${res.succeeded}, failed ${res.failed}`);
-      res.messages?.forEach((m) => append(`  · ${m}`));
-    } catch (e) {
-      append(`Send error: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
@@ -222,29 +206,7 @@ export default function Home() {
 
   const navigateDirect = () => router.push(detailsPath(55) as never);
 
-  // 5) Sample microservice ------------------------------------------------
-  // Each calls a [ClientCallable] on the SampleService C# microservice via the
-  // typed SampleServiceClient. Requires "Connect to Beamable" to have run first.
-  const callMicroservice = async (
-    label: string,
-    run: (svc: NonNullable<ReturnType<typeof getSampleService>>) => Promise<unknown>,
-  ) => {
-    const svc = getSampleService();
-    if (!svc) return append('Microservice: connect to Beamable first');
-    append(`${label} …`);
-    try {
-      const result = await run(svc);
-      // Some results carry bigint ids; JSON.stringify throws on those.
-      const text = JSON.stringify(result, (_k, v) =>
-        typeof v === 'bigint' ? `${v}n` : v,
-      );
-      append(`${label} → ${text}`);
-    } catch (e) {
-      append(`${label} error: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  };
-
-  // 6) Analytics (funnel) test -------------------------------------------
+  // 5) Analytics (funnel) test -------------------------------------------
   // Emits native Clicked/Converted funnel analytics. Auth (cid.pid scope) is
   // configured automatically on Connect; these just fire the events.
   const buildFunnelIntent = (): NotificationIntentData => ({
@@ -368,37 +330,36 @@ export default function Home() {
         )}
       </Section>
 
-      {/* Remote push via the PushNotificationService microservice */}
-      <Section title="3 · Remote push (microservice)">
+      {/* Device registration via the CampaignService microservice */}
+      <Section title="3 · Device registration (microservice)">
         {isBeamableNotificationsSupported ? (
           <>
             {Platform.OS === 'android' ? (
               <Text style={styles.hint}>
-                Registers this device's FCM token with the PushNotificationService
-                microservice, then has the server send a real remote push back to
-                you via Firebase. Needs a physical device + FCM credentials
-                (`fcm_push`) in your realm config. Steps: Connect to Beamable →
-                Register for remote (section 2) → Register this device → Send.
+                Registers this device's FCM token with the CampaignService
+                microservice so the realm can target it. Needs a physical device +
+                FCM credentials (`fcm_push`) in your realm config. Steps: Connect to
+                Beamable → Register for remote (section 2) → Register this device.
+                Delivery is driven from the Portal Campaign Builder.
               </Text>
             ) : (
               <Text style={styles.hint}>
                 Registers this device's APNs token with the{' '}
-                PushNotificationService microservice, then has the server send a
-                real remote push back to you via Apple. Needs a physical device +
-                APNs credentials in your realm config. Steps: Connect to Beamable →
-                Register for remote (section 2) → Register this device → Send.
+                CampaignService microservice so the realm can target it. Needs a
+                physical device + APNs credentials in your realm config. Steps:
+                Connect to Beamable → Register for remote (section 2) → Register
+                this device. Delivery is driven from the Portal Campaign Builder.
               </Text>
             )}
             <Text style={styles.hint}>
               {remoteProvider} token: {apnsToken ? `${apnsToken.slice(0, 12)}…` : 'none yet (Register for remote in section 2)'}
             </Text>
             <Button label="Register this device (microservice)" onPress={registerThisDevice} />
-            <Button label="Send remote push to myself" onPress={sendPushToMyself} />
             <Button label="List my registered devices" onPress={showMyDevices} />
           </>
         ) : (
           <Text style={styles.hint}>
-            Remote push is not available on this platform.
+            Device registration is not available on this platform.
           </Text>
         )}
       </Section>
@@ -415,34 +376,8 @@ export default function Home() {
         </Text>
       </Section>
 
-      {/* Sample microservice */}
-      <Section title="5 · Sample microservice">
-        <Text style={styles.hint}>
-          Calls the SampleService C# microservice. Connect to Beamable first;
-          results appear in the activity log.
-        </Text>
-        <Button
-          label="Add → 2 + 3"
-          onPress={() => callMicroservice('Add(2,3)', (s) => s.add({ a: 2, b: 3 }))}
-        />
-        <Button
-          label="Greet → 'React Native'"
-          onPress={() =>
-            callMicroservice('Greet', (s) => s.greet({ name: 'React Native' }))
-          }
-        />
-        <Button
-          label="WhoAmI (server-verified identity)"
-          onPress={() => callMicroservice('WhoAmI', (s) => s.whoAmI())}
-        />
-        <Button
-          label="Visit (server-authoritative counter)"
-          onPress={() => callMicroservice('Visit', (s) => s.visit())}
-        />
-      </Section>
-
       {/* Analytics (funnel) test */}
-      <Section title="6 · Analytics (funnel) test">
+      <Section title="5 · Analytics (funnel) test">
         <Text style={styles.hint}>
           Emits native Clicked / Converted funnel analytics for a test offer.
           Auth (cid.pid scope) is configured automatically on Connect. Connect to
