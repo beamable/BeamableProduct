@@ -168,7 +168,9 @@ function toOfferView(o: { itemId?: unknown; value?: unknown; customData?: unknow
 // array. Falls back to the old single dotted-key columns for rows ingested before the schema
 // changed, so historical events still display.
 function parseOffers(r: Row): OfferView[] {
-  const raw = r['e.offerData']
+  // Loose column match (like campaignData) so naming variants — `e.offerData`, `e.offer_data`,
+  // `offerData` — all resolve to the stringified JSON array.
+  const raw = pickCol(r, 'offerData')
   if (raw) {
     try {
       const parsed = JSON.parse(raw)
