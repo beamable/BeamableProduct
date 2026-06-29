@@ -196,7 +196,7 @@
     };
   }
   function parseOffers(r) {
-    const raw = r["e.offerData"];
+    const raw = pickCol(r, "offerData");
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
