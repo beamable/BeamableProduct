@@ -20,6 +20,7 @@ tracked error buffer.
 ### Changed
 
 - Validation of the content no longer can automatically try to update the content value
+- Update CLI to 7.2.1
 
 
 
@@ -49,6 +50,7 @@ tracked error buffer.
 - AdminFlow prefab (ConsoleFlow) was removed from the Beam Samples Window and is now considered Deprecated
 - Now Renamed content entries will be shown as Modified Renamed in the Content Manager Window rather than a New and Deleted entries.
 - Default assets and content are imported manually on first visit to Content Manager
+- Update CLI to 7.2.0
 
 ## [5.0.1] - 2026-04-02
 ### Fixed
