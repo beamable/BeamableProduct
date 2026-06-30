@@ -101,6 +101,30 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		});
 	}
 
+	// A catalog whose page slot uses the "!hub/!pathMatch" form — the page path a user supplies must
+	// be stored verbatim, never prefixed with "!hub/".
+	private void MockRemotePortalConfigHubPage()
+	{
+		Mock<IRemotePortalConfigService>(mock =>
+		{
+			mock.Setup(x => x.GetRemotePortalConfig(It.IsAny<CommandArgs>()))
+				.ReturnsAsync(new RemotePortalConfiguration
+				{
+					mountSites = new List<RemotePortalConfiguration.MountSiteConfig>
+					{
+						new()
+						{
+							path = "!hub/!pathMatch",
+							selectors = new List<RemotePortalConfiguration.MountSiteSelector>
+							{
+								new() { selector = "#extension-page", type = "page" }
+							}
+						}
+					}
+				});
+		});
+	}
+
 	private void InitWorkspace()
 	{
 		SetupMocks(mockBeamoManifest: false, mockAdminMe: false);
@@ -198,7 +222,6 @@ public class PortalExtensionCommandTests : CLITestExtensions
 
 		Run("project", "new", "portal-extension", "TestPageExt", "--quiet",
 			"--mount-page", "my-custom-page",
-			"--mount-group", "TestGroup",
 			"--mount-label", "TestLabel",
 			"--template", template);
 
@@ -210,10 +233,29 @@ public class PortalExtensionCommandTests : CLITestExtensions
 			"package.json must contain the mount page");
 		Assert.That(packageJson, Does.Contain("#extension-page"),
 			"package.json must contain the auto-assigned selector for page extensions");
-		Assert.That(packageJson, Does.Contain("TestGroup"),
-			"package.json must contain the nav group");
 		Assert.That(packageJson, Does.Contain("TestLabel"),
 			"package.json must contain the nav label");
+	}
+
+	[Test]
+	public void NewPortalExtension_PageExtension_PassesThroughHubPath()
+	{
+		InitWorkspace();
+		SetupBeamoServiceMock();
+		MockRemotePortalConfigHubPage();
+
+		Run("project", "new", "portal-extension", "FerrariExt", "--quiet",
+			"--mount-page", "cars/ferrari",
+			"--mount-label", "Ferrari",
+			"--template", "react");
+
+		var packageJson = BFile.ReadAllText("extensions/FerrariExt/package.json");
+		Assert.That(packageJson, Does.Contain("cars/ferrari"),
+			"the page path must be stored verbatim");
+		Assert.That(packageJson, Does.Not.Contain("!hub"),
+			"the !hub/!pathMatch prefix must not leak into the stored page path");
+		Assert.That(packageJson, Does.Contain("#extension-page"),
+			"the page slot selector must be auto-assigned");
 	}
 
 	#endregion
@@ -260,7 +302,6 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		MockRemotePortalConfig();
 		Run("project", "new", "portal-extension", "TestExt", "--quiet",
 			"--mount-page", "my-ext-page",
-			"--mount-group", "TestGroup",
 			"--mount-label", "TestLabel",
 			"--template", "react");
 		_mockObjects.Clear();
@@ -318,7 +359,6 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		MockRemotePortalConfig();
 		Run("project", "new", "portal-extension", "TestExt", "--quiet",
 			"--mount-page", "my-ext-page",
-			"--mount-group", "TestGroup",
 			"--mount-label", "TestLabel",
 			"--template", "react");
 		_mockObjects.Clear();
@@ -349,7 +389,6 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		MockRemotePortalConfig();
 		Run("project", "new", "portal-extension", "DupExt", "--quiet",
 			"--mount-page", "my-ext-page",
-			"--mount-group", "TestGroup",
 			"--mount-label", "TestLabel",
 			"--template", "react");
 		_mockObjects.Clear();
@@ -362,7 +401,6 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		{
 			"project", "new", "portal-extension", "DupExt", "--quiet",
 			"--mount-page", "my-ext-page",
-			"--mount-group", "TestGroup",
 			"--mount-label", "TestLabel",
 			"--template", "react"
 		});
@@ -386,7 +424,6 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		{
 			"project", "new", "portal-extension", "Collide", "--quiet",
 			"--mount-page", "my-ext-page",
-			"--mount-group", "TestGroup",
 			"--mount-label", "TestLabel",
 			"--template", "react"
 		});
