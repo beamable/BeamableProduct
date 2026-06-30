@@ -29,18 +29,23 @@ public class PortalCommand : AppCommand<PortalCommandArgs>
 	public static string GetPortalBaseUrl(CommandArgs args, bool isNewPortal = false)
 	{
 		var binding = args.DependencyProvider.GetService<BindingContext>();
-		var portalUrl = binding.ParseResult.GetValueForOption(args.DependencyProvider.GetService<PortalUrlOption>());
+		return GetPortalBaseUrl(binding, args.AppContext, isNewPortal);
+	}
+
+	public static string GetPortalBaseUrl(BindingContext binding, IAppContext appContext, bool isNewPortal = false)
+	{
+		var portalUrl = binding.ParseResult.GetValueForOption(PortalUrlOption.Instance);
 		if (string.IsNullOrEmpty(portalUrl))
 		{
 			if (isNewPortal)
 			{
-				portalUrl = args.AppContext.Host.Replace("api", "console");
+				portalUrl = appContext.Host.Replace("api", "console");
 			}
 			else
 			{
-				portalUrl = args.AppContext.Host.Replace("dev.", "dev-").Replace("api", "portal");
+				portalUrl = appContext.Host.Replace("dev.", "dev-").Replace("api", "portal");
 			}
-			
+
 		}
 		else
 		{
