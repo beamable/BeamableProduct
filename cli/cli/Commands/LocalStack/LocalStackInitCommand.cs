@@ -17,6 +17,7 @@ public class LocalStackInitCommandArgs : CommandArgs
 	public string scalaServices;
 	public string services;
 	public string extensions;
+	public bool updateServices;
 }
 
 public class LocalStackInitCommandResult
@@ -63,6 +64,8 @@ public class LocalStackInitCommand
 			(args, v) => args.services = v);
 		AddOption(new Option<string>("--extensions", "Comma/space separated portal extension ids to run"),
 			(args, v) => args.extensions = v);
+		AddOption(new Option<bool>("--update-services", "Only update the microservice/extension steps of an existing manifest, leaving everything else untouched"),
+			(args, v) => args.updateServices = v);
 	}
 
 	private static List<string> Split(string value) =>
@@ -78,7 +81,9 @@ public class LocalStackInitCommand
 	/// </summary>
 	private static string Ask(string title, string passed, string def, bool quiet, bool allowEmpty)
 	{
-		if (!string.IsNullOrWhiteSpace(passed)) return passed;
+		// A non-null value was explicitly provided on the command line (even ""), so honor it verbatim —
+		// this lets `--extensions ""` clear the list rather than falling back to the default.
+		if (passed != null) return passed;
 		if (quiet) return def ?? string.Empty;
 
 		var prompt = new TextPrompt<string>(title).PromptStyle("green");
@@ -93,10 +98,14 @@ public class LocalStackInitCommand
 		var quiet = args.Quiet || !AnsiConsole.Profile.Capabilities.Interactive;
 		var defaults = new LocalStackTemplate.Options();
 
-		// Where to write the manifest.
+		// Where the manifest lives.
 		var defaultPath = LocalStackCommand.ResolveManifestPath(args.ConfigService, args.configPath);
-		var path = Path.GetFullPath(Ask("Where should the manifest be [green]written[/]?",
+		var path = Path.GetFullPath(Ask("Where is the manifest?",
 			args.configPath, defaultPath, quiet, allowEmpty: false));
+
+		// Update-only mode: rewrite just the microservice/extension steps of an existing manifest.
+		if (args.updateServices)
+			return Task.FromResult(UpdateServices(args, path, quiet));
 
 		if (File.Exists(path) && !args.force)
 		{
@@ -121,10 +130,10 @@ public class LocalStackInitCommand
 		// Service lists (defaults — Enter accepts).
 		var scalaServices = Ask("[green]Scala[/] services to run [grey](space separated)[/]:",
 			args.scalaServices, string.Join(" ", LocalStackTemplate.DefaultScalaServices), quiet, allowEmpty: false);
-		var services = Ask("[green]Microservice[/] ids to run [grey](space separated)[/]:",
-			args.services, "CampaignService", quiet, allowEmpty: false);
-		var extensions = Ask("[green]Portal extension[/] ids to run [grey](space separated)[/]:",
-			args.extensions, "sample", quiet, allowEmpty: false);
+		var services = Ask("[green]Microservice[/] ids to run [grey](space separated, empty = none)[/]:",
+			args.services, "", quiet, allowEmpty: true);
+		var extensions = Ask("[green]Portal extension[/] ids to run [grey](space separated, empty = none)[/]:",
+			args.extensions, "", quiet, allowEmpty: true);
 
 		var options = new LocalStackTemplate.Options
 		{
@@ -150,5 +159,49 @@ public class LocalStackInitCommand
 			stepCount = config.steps.Count,
 			created = true
 		});
+	}
+
+	/// <summary>
+	/// Rewrites only the microservice/extension steps of an existing manifest, leaving every other step
+	/// (docker, gateway, Scala, portal) and all edits untouched. Current ids are offered as the prompt
+	/// defaults; an empty answer removes all steps of that kind.
+	/// </summary>
+	private LocalStackInitCommandResult UpdateServices(LocalStackInitCommandArgs args, string path, bool quiet)
+	{
+		if (!File.Exists(path))
+			throw new CliException($"No manifest at {path} to update. Run `beam local init` first.");
+
+		var config = LocalStackConfigIO.Load(path);
+
+		bool IsMicroservice(LocalStackStep s) => s.name?.StartsWith(LocalStackTemplate.MicroservicePrefix) == true;
+		bool IsExtension(LocalStackStep s) => s.name?.StartsWith(LocalStackTemplate.ExtensionPrefix) == true;
+
+		var currentServices = string.Join(" ", config.steps.Where(IsMicroservice)
+			.Select(s => s.name.Substring(LocalStackTemplate.MicroservicePrefix.Length)));
+		var currentExtensions = string.Join(" ", config.steps.Where(IsExtension)
+			.Select(s => s.name.Substring(LocalStackTemplate.ExtensionPrefix.Length)));
+
+		var services = Ask("[green]Microservice[/] ids to run [grey](space separated, empty = none)[/]:",
+			args.services, currentServices, quiet, allowEmpty: true);
+		var extensions = Ask("[green]Portal extension[/] ids to run [grey](space separated, empty = none)[/]:",
+			args.extensions, currentExtensions, quiet, allowEmpty: true);
+
+		// Drop the old beam steps and append the new set (microservices before extensions).
+		config.steps.RemoveAll(s => IsMicroservice(s) || IsExtension(s));
+		foreach (var svc in Split(services) ?? new List<string>())
+			config.steps.Add(LocalStackTemplate.MicroserviceStep(svc));
+		foreach (var ext in Split(extensions) ?? new List<string>())
+			config.steps.Add(LocalStackTemplate.ExtensionStep(ext));
+
+		LocalStackConfigIO.Save(path, config);
+
+		Log.Information($"Updated microservice/extension steps in {path} ({config.steps.Count} steps total).");
+
+		return new LocalStackInitCommandResult
+		{
+			manifestPath = path,
+			stepCount = config.steps.Count,
+			created = false
+		};
 	}
 }

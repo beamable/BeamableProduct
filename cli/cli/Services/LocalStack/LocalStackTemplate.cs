@@ -40,8 +40,9 @@ public static class LocalStackTemplate
 		var scalaDir = Dir(o.scalaDir, "BeamableBackend (Scala repo)");
 		var portalDir = Dir(o.portalDir, "portal frontend repo");
 		var scalaServices = o.scalaServices is { Count: > 0 } ? o.scalaServices : DefaultScalaServices.ToList();
-		var services = o.services is { Count: > 0 } ? o.services : new List<string> { "" };
-		var extensions = o.extensions is { Count: > 0 } ? o.extensions : new List<string> { "" };
+		// Microservices and extensions default to empty — the user opts in per project.
+		var services = o.services ?? new List<string>();
+		var extensions = o.extensions ?? new List<string>();
 
 		var config = new LocalStackConfig { host = o.host, portalUrl = o.portalUrl };
 
@@ -110,31 +111,39 @@ public static class LocalStackTemplate
 
 		// 4. Microservices — via the current beam CLI (exe auto-resolved).
 		foreach (var svc in services)
-		{
-			config.steps.Add(new LocalStackStep
-			{
-				// No workingDirectory: beam steps run from the .beamable workspace `beam local up` is
-				// invoked in (set one explicitly here only if the service lives in a different workspace).
-				name = $"microservice: {svc}",
-				beam = true,
-				arguments = $"project run --ids {svc} --host ${{host}} --logs v --no-log-file"
-			});
-		}
+			config.steps.Add(MicroserviceStep(svc));
 
 		// 5. Portal extensions — beam run with --portal-url so the landing URL points at the local portal.
 		foreach (var ext in extensions)
-		{
-			config.steps.Add(new LocalStackStep
-			{
-				// No workingDirectory: runs from the .beamable workspace `beam local up` is invoked in.
-				name = $"portal extension: {ext}",
-				beam = true,
-				arguments = $"project run --ids {ext} --host ${{host}} --portal-url ${{portalUrl}} --logs v --no-log-file"
-			});
-		}
+			config.steps.Add(ExtensionStep(ext));
 
 		return config;
 	}
+
+	/// <summary>Name prefix identifying microservice steps (used by the "update services" flow).</summary>
+	public const string MicroservicePrefix = "microservice: ";
+
+	/// <summary>Name prefix identifying portal-extension steps (used by the "update services" flow).</summary>
+	public const string ExtensionPrefix = "portal extension: ";
+
+	/// <summary>Builds the beam step that runs a microservice against the local backend.</summary>
+	public static LocalStackStep MicroserviceStep(string svc) => new LocalStackStep
+	{
+		// No workingDirectory: beam steps run from the .beamable workspace `beam local up` is
+		// invoked in (set one explicitly here only if the service lives in a different workspace).
+		name = $"{MicroservicePrefix}{svc}",
+		beam = true,
+		arguments = $"project run --ids {svc} --host ${{host}} --logs v --no-log-file"
+	};
+
+	/// <summary>Builds the beam step that runs a portal extension, pointing its landing URL at the local portal.</summary>
+	public static LocalStackStep ExtensionStep(string ext) => new LocalStackStep
+	{
+		// No workingDirectory: runs from the .beamable workspace `beam local up` is invoked in.
+		name = $"{ExtensionPrefix}{ext}",
+		beam = true,
+		arguments = $"project run --ids {ext} --host ${{host}} --portal-url ${{portalUrl}} --logs v --no-log-file"
+	};
 
 	/// <summary>
 	/// The inline shell used to launch one Scala tools/* service as a host JVM, matching
