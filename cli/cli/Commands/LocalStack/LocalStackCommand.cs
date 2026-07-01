@@ -10,6 +10,8 @@ namespace cli.Commands.LocalStack;
 /// </summary>
 public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 {
+	public override bool IsForInternalUse { get; } = true;
+
 	public LocalStackCommand() : base("local", "Orchestrate a full local Beamable stack from a manifest")
 	{
 	}
