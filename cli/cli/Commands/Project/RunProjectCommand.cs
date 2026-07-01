@@ -247,8 +247,13 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 						}
 
 						var beamActivity = args.Provider.GetService<BeamActivity>();
+						// Resolve the portal base url here (where CommandArgs is in scope) so the
+						// "open in browser" landing URL honors the --portal-url override. This is the
+						// same resolver the portal command and remote-config service use.
+						var portalBaseUrl = cli.Portal.PortalCommand.GetPortalBaseUrl(args);
 						runTasks.Add(args.BeamoLocalSystem.RunLocalPortalExtension(
 							serviceDef, args.BeamoLocalSystem, portalExtensionConfig, args.AppContext, beamActivity,
+							portalBaseUrl: portalBaseUrl,
 							onProgress: (progress, message) => SendUpdate(name, message, progress),
 							token: cToken.Token));
 					}

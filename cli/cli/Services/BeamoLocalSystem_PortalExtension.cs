@@ -32,8 +32,9 @@ public partial class BeamoLocalSystem
 	/// Runs a portal extension locally
 	/// </summary>
 	/// <param name="serviceDefinition"></param>
+	/// <param name="portalBaseUrl">The resolved portal base url (already honoring the <c>--portal-url</c> override). Used to build the "open in browser" landing URL. When null/empty, the URL is derived from <paramref name="appContext"/>.Host.</param>
 	/// <param name="onProgress">Optional callback invoked with (progressRatio, message) as the service starts. A ratio of 1 means the service is ready for traffic.</param>
-	public async Task RunLocalPortalExtension(BeamoServiceDefinition serviceDefinition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, BeamActivity beamActivity, Action<float, string> onProgress = null, CancellationToken token = default)
+	public async Task RunLocalPortalExtension(BeamoServiceDefinition serviceDefinition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, BeamActivity beamActivity, string portalBaseUrl = null, Action<float, string> onProgress = null, CancellationToken token = default)
 	{
 		// Check for dependencies
 		if (!PortalExtensionCheckCommand.CheckPortalExtensionsDependencies())
@@ -41,10 +42,10 @@ public partial class BeamoLocalSystem
 			throw new CliException("Portal Extension dependencies are missing");
 		}
 
-		await RunMicroserviceForever(serviceDefinition, localSystem, config, appContext, beamActivity, onProgress, token);
+		await RunMicroserviceForever(serviceDefinition, localSystem, config, appContext, beamActivity, portalBaseUrl, onProgress, token);
 	}
 
-	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, BeamActivity beamActivity, Action<float, string> onProgress = null, CancellationToken token = default)
+	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, BeamActivity beamActivity, string portalBaseUrl = null, Action<float, string> onProgress = null, CancellationToken token = default)
 	{
 		var extension = definition.PortalExtensionDefinition;
 		beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(extension.Name));
@@ -127,7 +128,7 @@ public partial class BeamoLocalSystem
 					};
 
 					microserviceConfig.AddLoggerProvider = (builder, debugLogProcessor) =>
-						runtime.AddLoggerProvider(builder, appContext, debugLogProcessor, extension, onProgress);
+						runtime.AddLoggerProvider(builder, appContext, debugLogProcessor, extension, portalBaseUrl, onProgress);
 				})
 				.RunForever();
 			
@@ -175,7 +176,7 @@ public partial class BeamoLocalSystem
 		///     keeps using it.</item>
 		/// </list>
 		/// </summary>
-		public DebugLogProcessor AddLoggerProvider(ILoggingBuilder builder, IAppContext appContext, DebugLogProcessor debugLogProcessor, PortalExtensionDef extension, Action<float, string> onProgress = null)
+		public DebugLogProcessor AddLoggerProvider(ILoggingBuilder builder, IAppContext appContext, DebugLogProcessor debugLogProcessor, PortalExtensionDef extension, string portalBaseUrl = null, Action<float, string> onProgress = null)
 		{
 			builder.ClearProviders();
 			if (_sink == null)
@@ -185,13 +186,13 @@ public partial class BeamoLocalSystem
 				// construction are buffered rather than dropped.
 				_sink = debugLogProcessor;
 				_sink.GetMessageSubscription(MicroserviceName);
-				builder.AddProvider(new ExtensionAppLogProvider(_sink, appContext, extension, onProgress));
+				builder.AddProvider(new ExtensionAppLogProvider(_sink, appContext, extension, portalBaseUrl, onProgress));
 				// Return the same sink; ctx.debugLogProcessor stays as-is.
 				return debugLogProcessor;
 			}
 
 			// Second ConfigureLogging call: point the new builder at the stable first sink.
-			builder.AddProvider(new ExtensionAppLogProvider(_sink, appContext, extension, onProgress));
+			builder.AddProvider(new ExtensionAppLogProvider(_sink, appContext, extension, portalBaseUrl, onProgress));
 			// Drain any messages that landed in the temporary second sink into the channel
 			// of the stable first sink, then discard the temporary subscription.
 			var tmpEarly = debugLogProcessor.GetMessageSubscription(MicroserviceName);
@@ -204,14 +205,18 @@ public partial class BeamoLocalSystem
 		}
 	}
 
-	public static string BuildPortalExtensionUrl(IAppContext context, PortalExtensionDef extension)
+	public static string BuildPortalExtensionUrl(IAppContext context, PortalExtensionDef extension, string portalBaseUrl = null)
 	{
 		if (context == null)
 		{
 			return null;
 		}
 
-		var treatedHost = GetPortalExtensionBaseUrl(context.Host);
+		// Prefer the resolved portal base url (which already honors the --portal-url override).
+		// Fall back to deriving it from the API host for the cloud case where no override is set.
+		var treatedHost = string.IsNullOrEmpty(portalBaseUrl)
+			? GetPortalExtensionBaseUrl(context.Host)
+			: portalBaseUrl;
 		if (string.IsNullOrEmpty(treatedHost) || string.IsNullOrEmpty(context.Cid) || string.IsNullOrEmpty(context.Pid))
 		{
 			return null;
@@ -233,9 +238,9 @@ public partial class BeamoLocalSystem
 		return $"Invalid Mount Path for Extension {extension.Name}";
 	}
 
-	public static string BuildPortalExtensionReadyMessage(IAppContext context, PortalExtensionDef extension)
+	public static string BuildPortalExtensionReadyMessage(IAppContext context, PortalExtensionDef extension, string portalBaseUrl = null)
 	{
-		var portalUrl = BuildPortalExtensionUrl(context, extension);
+		var portalUrl = BuildPortalExtensionUrl(context, extension, portalBaseUrl);
 		if (string.IsNullOrEmpty(portalUrl))
 		{
 			return ServiceLogs.PORTAL_EXTENSION_RUNNING;
@@ -359,17 +364,19 @@ public class ExtensionAppLogProvider : ILoggerProvider
 	private readonly DebugLogProcessor _sink;
 	private readonly IAppContext _appContext;
 	private readonly PortalExtensionDef _extension;
+	private readonly string _portalBaseUrl;
 	private readonly Action<float, string> _onProgress;
 
-	public ExtensionAppLogProvider(DebugLogProcessor sink, IAppContext appContext, PortalExtensionDef extension, Action<float, string> onProgress = null)
+	public ExtensionAppLogProvider(DebugLogProcessor sink, IAppContext appContext, PortalExtensionDef extension, string portalBaseUrl = null, Action<float, string> onProgress = null)
 	{
 		_sink = sink;
 		_appContext = appContext;
 		_extension = extension;
+		_portalBaseUrl = portalBaseUrl;
 		_onProgress = onProgress;
 	}
 
-	public ILogger CreateLogger(string categoryName) => new ExtensionLogger(_sink, _appContext, _extension, _onProgress);
+	public ILogger CreateLogger(string categoryName) => new ExtensionLogger(_sink, _appContext, _extension, _portalBaseUrl, _onProgress);
 
 	public void Dispose() { }
 }
@@ -379,13 +386,15 @@ public class ExtensionLogger : ILogger
 	private readonly DebugLogProcessor _debugLogProcessor;
 	private readonly IAppContext _appContext;
 	private readonly PortalExtensionDef _extension;
+	private readonly string _portalBaseUrl;
 	private readonly Action<float, string> _onProgress;
 
-	public ExtensionLogger(DebugLogProcessor debugLogProcessor, IAppContext appContext, PortalExtensionDef extension, Action<float, string> onProgress = null)
+	public ExtensionLogger(DebugLogProcessor debugLogProcessor, IAppContext appContext, PortalExtensionDef extension, string portalBaseUrl = null, Action<float, string> onProgress = null)
 	{
 		_debugLogProcessor = debugLogProcessor;
 		_appContext = appContext;
 		_extension = extension;
+		_portalBaseUrl = portalBaseUrl;
 		_onProgress = onProgress;
 	}
 	
@@ -445,7 +454,7 @@ public class ExtensionLogger : ILogger
 		switch (logMessage)
 		{
 			case var _ when logMessage.StartsWith(ServiceLogs.READY_FOR_TRAFFIC_PREFIX):
-				return BeamoLocalSystem.BuildPortalExtensionReadyMessage(_appContext, _extension);
+				return BeamoLocalSystem.BuildPortalExtensionReadyMessage(_appContext, _extension, _portalBaseUrl);
 			case var _ when logMessage.StartsWith(ServiceLogs.STARTING_PREFIX):
 			case var _ when logMessage.StartsWith(ServiceLogs.SCANNING_CLIENT_PREFIX):
 			case var _ when logMessage.StartsWith(ServiceLogs.REGISTERING_STANDARD_SERVICES):
