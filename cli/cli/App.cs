@@ -13,6 +13,7 @@ using Beamable.Common.Util;
 using beamable.otel.exporter;
 using cli.CliServerCommand;
 using cli.Commands;
+using cli.Commands.LocalStack;
 using cli.Commands.Project;
 using cli.Commands.Project.Deps;
 using cli.Commands.Project.StorageData;
@@ -561,6 +562,10 @@ public class App
 		Commands.AddSubCommand<StartGrafanaCommand, StartGrafanaCommandArgs, GrafanaCommand>();
 		Commands.AddSubCommand<CheckGrafanaCommand, CheckGrafanaCommandArgs, GrafanaCommand>();
 		Commands.AddSubCommand<StopGrafanaCommand, StopGrafanaCommandArgs, GrafanaCommand>();
+
+		Commands.AddRootCommand<LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackInitCommand, LocalStackInitCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackUpCommand, LocalStackUpCommandArgs, LocalStackCommand>();
 
 
 		Commands.AddRootCommand<ProjectCommand>();
