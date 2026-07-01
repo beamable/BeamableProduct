@@ -181,9 +181,8 @@
         <Delete Files="$(BeamSettingsFile)"/>
 
         <WriteLinesToFile File="$(BeamSettingsFile)" Overwrite="false" Lines="BeamId=$(BeamId)"/>
-<!--        TODO: add more settings?   -->
-<!--        <WriteLinesToFile File="$(BeamSettingsFile)" Overwrite="false" Lines="BeamId=$(BeamId)"/>-->
-        
+        <WriteLinesToFile File="$(BeamSettingsFile)" Overwrite="false" Lines="BeamServiceScope=$(BeamServiceScope)"/>
+
         <ItemGroup>
             <EmbeddedResource Include="$(BeamSettingsFile)" Type="Non-Resx" WithCulture="false" LogicalName="Beamable.settings"/>
         </ItemGroup>
