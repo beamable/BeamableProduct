@@ -78,6 +78,55 @@ public class LocalStackInitCommand
 	private static string NullIfEmpty(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
 	/// <summary>
+	/// Looks for a folder named <paramref name="name"/> in <paramref name="startDir"/> and its ancestors (up to
+	/// <paramref name="maxLevels"/> levels up), returning the first match — used to auto-fill the repo paths
+	/// (BeamableAPI / BeamableBackend / agentic-portal) that typically sit as siblings a level or two up.
+	/// </summary>
+	private static string FindRepoDir(string startDir, string name, int maxLevels = 3)
+	{
+		try
+		{
+			var dir = new DirectoryInfo(string.IsNullOrEmpty(startDir) ? Directory.GetCurrentDirectory() : startDir);
+			for (var i = 0; i <= maxLevels && dir != null; i++)
+			{
+				var candidate = Path.Combine(dir.FullName, name);
+				if (Directory.Exists(candidate)) return candidate;
+				dir = dir.Parent;
+			}
+		}
+		catch { /* best-effort discovery */ }
+
+		return null;
+	}
+
+	/// <summary>Ensures the manifest directory's <c>.gitignore</c> ignores the generated run-state + logs.</summary>
+	private static void EnsureGitignore(string dir)
+	{
+		try
+		{
+			if (string.IsNullOrEmpty(dir)) return;
+			var gitignorePath = Path.Combine(dir, ".gitignore");
+			var wanted = new[] { LocalStackRunStateIO.LogsDirName + "/", LocalStackRunStateIO.RunStateFileName };
+
+			var existing = File.Exists(gitignorePath)
+				? File.ReadAllLines(gitignorePath).Select(l => l.Trim()).ToHashSet()
+				: new HashSet<string>();
+
+			var toAdd = wanted.Where(e => !existing.Contains(e)).ToList();
+			if (toAdd.Count == 0) return;
+
+			var block = new List<string> { "", "# Beamable local-stack generated artifacts" };
+			block.AddRange(toAdd);
+			File.AppendAllText(gitignorePath, string.Join(Environment.NewLine, block) + Environment.NewLine);
+			Log.Information($"Added local-stack artifacts to {gitignorePath}.");
+		}
+		catch (Exception e)
+		{
+			Log.Verbose($"could not update .gitignore: {e.Message}");
+		}
+	}
+
+	/// <summary>
 	/// The default Scala selection: discovered tools whose names are in the curated <see cref="LocalStackTemplate.DefaultScalaServices"/>
 	/// (so we keep the known-good set but with resolved main classes); all discovered tools if that intersection
 	/// is empty; and the static curated list when nothing was discovered.
@@ -93,33 +142,38 @@ public class LocalStackInitCommand
 	}
 
 	/// <summary>
-	/// Discovers the local microservice and portal-extension ids in the current <c>.beamable</c> workspace by
-	/// loading the beamo manifest (no network). Best-effort: returns empty lists when run outside a workspace or
-	/// if the manifest can't be read, so <c>init</c> stays usable anywhere.
+	/// Discovers the local microservice/portal-extension ids and service groups in the current <c>.beamable</c>
+	/// workspace by loading the beamo manifest (no network). Best-effort: returns empty results when run outside
+	/// a workspace or if the manifest can't be read, so <c>init</c> stays usable anywhere.
 	/// </summary>
-	private static async Task<(List<string> services, List<string> extensions)> DiscoverWorkspaceServices(LocalStackInitCommandArgs args)
+	private static async Task<(List<string> services, List<string> extensions, Dictionary<string, string[]> groups)> DiscoverWorkspaceServices(LocalStackInitCommandArgs args)
 	{
 		var services = new List<string>();
 		var extensions = new List<string>();
+		var groups = new Dictionary<string, string[]>();
 		try
 		{
 			if (args.ConfigService?.DirectoryExists != true)
-				return (services, extensions);
+				return (services, extensions, groups);
 
 			await args.BeamoLocalSystem.InitManifest(useManifestCache: true, fetchServerManifest: false);
-			var defs = args.BeamoLocalSystem.BeamoManifest?.ServiceDefinitions ?? new List<BeamoServiceDefinition>();
+			var manifest = args.BeamoLocalSystem.BeamoManifest;
+			var defs = manifest?.ServiceDefinitions ?? new List<BeamoServiceDefinition>();
 
 			services = defs.Where(d => d.Protocol == BeamoProtocolType.HttpMicroservice)
 				.Select(d => d.BeamoId).OrderBy(x => x).ToList();
 			extensions = defs.Where(d => d.Protocol == BeamoProtocolType.PortalExtension)
 				.Select(d => d.BeamoId).OrderBy(x => x).ToList();
+			groups = manifest?.ServiceGroupToBeamoIds != null
+				? new Dictionary<string, string[]>(manifest.ServiceGroupToBeamoIds, StringComparer.OrdinalIgnoreCase)
+				: new Dictionary<string, string[]>();
 		}
 		catch (Exception e)
 		{
 			Log.Verbose($"local init: could not discover workspace services/extensions: {e.Message}");
 		}
 
-		return (services, extensions);
+		return (services, extensions, groups);
 	}
 
 	/// <summary>Maps the selected Scala service names to <see cref="LocalStackTemplate.ScalaToolInfo"/>, attaching
@@ -182,6 +236,64 @@ public class LocalStackInitCommand
 		return string.Join(" ", AnsiConsole.Prompt(prompt));
 	}
 
+	/// <summary>Display prefix for service-group entries in the extension multi-select (per the "GROUP name" ask).</summary>
+	private const string GroupDisplayPrefix = "GROUP ";
+
+	/// <summary>
+	/// Portal-extension picker that also lists service groups (prefixed "GROUP ") at the top. Returns the
+	/// selected group names and individual extension ids separately. A passed <c>--extensions</c> value wins
+	/// (extensions only, no groups); in quiet mode / nothing to show, returns the quiet defaults.
+	/// </summary>
+	private static (List<string> groups, List<string> extensions) AskExtensionSelection(
+		string title, string passed, Dictionary<string, string[]> groupsMap, List<string> extensionChoices,
+		IEnumerable<string> preselectedGroups, IEnumerable<string> preselectedExtensions,
+		bool quiet, List<string> quietGroups, List<string> quietExtensions)
+	{
+		if (passed != null)
+			return (new List<string>(), Split(passed) ?? new List<string>());
+
+		var groupNames = groupsMap?.Keys.OrderBy(x => x).ToList() ?? new List<string>();
+		extensionChoices ??= new List<string>();
+		if (quiet || (groupNames.Count == 0 && extensionChoices.Count == 0))
+			return (quietGroups ?? new List<string>(), quietExtensions ?? new List<string>());
+
+		var choices = groupNames.Select(g => GroupDisplayPrefix + g).Concat(extensionChoices).ToList();
+		var prompt = new MultiSelectionPrompt<string>()
+			.Title(title)
+			.PageSize(15)
+			.MoreChoicesText("[grey](move up/down to reveal more)[/]")
+			.InstructionsText("[grey](press [blue]<space>[/] to toggle, [green]<enter>[/] to accept; select none to skip)[/]")
+			.AddChoices(choices)
+			.AddBeamHightlight()
+			.NotRequired();
+
+		var pre = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var g in preselectedGroups ?? Enumerable.Empty<string>()) pre.Add(GroupDisplayPrefix + g);
+		foreach (var e in preselectedExtensions ?? Enumerable.Empty<string>()) pre.Add(e);
+		foreach (var c in choices)
+			if (pre.Contains(c))
+				prompt.Select(c);
+
+		var selected = AnsiConsole.Prompt(prompt);
+		var groups = selected.Where(s => s.StartsWith(GroupDisplayPrefix, StringComparison.Ordinal))
+			.Select(s => s.Substring(GroupDisplayPrefix.Length)).ToList();
+		var extensions = selected.Where(s => !s.StartsWith(GroupDisplayPrefix, StringComparison.Ordinal)).ToList();
+		return (groups, extensions);
+	}
+
+	/// <summary>Removes ids that are already covered by a selected group (so we don't run them twice).</summary>
+	private static List<string> ExcludeGroupMembers(IEnumerable<string> ids, IEnumerable<string> selectedGroups,
+		Dictionary<string, string[]> groupsMap)
+	{
+		var members = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var g in selectedGroups ?? Enumerable.Empty<string>())
+			if (groupsMap != null && groupsMap.TryGetValue(g, out var ids2) && ids2 != null)
+				foreach (var id in ids2)
+					members.Add(id);
+
+		return (ids ?? Enumerable.Empty<string>()).Where(id => !members.Contains(id)).ToList();
+	}
+
 	/// <summary>Logs the discovered ids so scripted (quiet) users can see what's available to pass explicitly.</summary>
 	private static void LogDiscovered(string label, List<string> ids)
 	{
@@ -203,13 +315,13 @@ public class LocalStackInitCommand
 		var path = Path.GetFullPath(Ask("Where is the manifest?",
 			args.configPath, defaultPath, quiet, allowEmpty: false));
 
-		// Discover the microservices/portal extensions in the current .beamable workspace so they can be
-		// offered as defaults (empty when run outside a workspace).
-		var (discoveredServices, discoveredExtensions) = await DiscoverWorkspaceServices(args);
+		// Discover the microservices/portal extensions/service groups in the current .beamable workspace so they
+		// can be offered as defaults (empty when run outside a workspace).
+		var (discoveredServices, discoveredExtensions, discoveredGroups) = await DiscoverWorkspaceServices(args);
 
-		// Update-only mode: rewrite just the microservice/extension steps of an existing manifest.
+		// Update-only mode: rewrite just the microservice/extension/group steps of an existing manifest.
 		if (args.updateServices)
-			return UpdateServices(args, path, quiet, discoveredServices, discoveredExtensions);
+			return UpdateServices(args, path, quiet, discoveredServices, discoveredExtensions, discoveredGroups);
 
 		if (File.Exists(path) && !args.force)
 		{
@@ -219,13 +331,15 @@ public class LocalStackInitCommand
 				throw new CliException("Aborted — a manifest already exists.");
 		}
 
-		// Repo paths (no default — leaving empty writes an <EDIT: ...> placeholder).
+		// Repo paths — auto-detected by searching parent folders (up to 3 levels) for the well-known repo names,
+		// shown as the default; leaving empty writes an <EDIT: ...> placeholder.
+		var startDir = args.ConfigService?.WorkingDirectory ?? Directory.GetCurrentDirectory();
 		var apiDir = Ask("Absolute path to the [green]BeamableAPI[/] (C# gateway) repo [grey](empty = placeholder)[/]:",
-			args.apiDir, null, quiet, allowEmpty: true);
+			args.apiDir, FindRepoDir(startDir, "BeamableAPI"), quiet, allowEmpty: true);
 		var scalaDir = Ask("Absolute path to the [green]BeamableBackend[/] (Scala) repo [grey](empty = placeholder)[/]:",
-			args.scalaDir, null, quiet, allowEmpty: true);
+			args.scalaDir, FindRepoDir(startDir, "BeamableBackend"), quiet, allowEmpty: true);
 		var portalDir = Ask("Absolute path to the [green]portal frontend[/] repo [grey](empty = placeholder)[/]:",
-			args.portalDir, null, quiet, allowEmpty: true);
+			args.portalDir, FindRepoDir(startDir, "agentic-portal"), quiet, allowEmpty: true);
 
 		// Endpoints (defaults — Enter accepts).
 		var host = Ask("Backend API [green]host[/]:", args.host, defaults.host, quiet, allowEmpty: false);
@@ -240,17 +354,21 @@ public class LocalStackInitCommand
 
 		LogDiscovered("microservice", discoveredServices);
 		LogDiscovered("portal extension", discoveredExtensions);
+		LogDiscovered("group", discoveredGroups.Keys.OrderBy(x => x).ToList());
 
 		// Scala services default to the curated/discovered set (small, known-good). Microservices and extensions
 		// are opt-in: discovered ids are offered to pick from, but nothing is selected by default (a workspace can
 		// have dozens of extensions — running them all is rarely what you want).
 		var scalaServices = Ask("[green]Scala[/] services to run [grey](space separated)[/]:",
 			args.scalaServices, string.Join(" ", defaultScalaNames), quiet, allowEmpty: false);
-		var services = AskServiceSelection("Select the [green]microservices[/] to run:",
-			args.services, discoveredServices, preselected: null, quiet, quietDefault: string.Empty);
-		var extensions = AskServiceSelection("Select the [green]portal extensions[/] to run:",
-			args.extensions, discoveredExtensions, preselected: null, quiet, quietDefault: string.Empty);
+		var selectedServices = Split(AskServiceSelection("Select the [green]microservices[/] to run:",
+			args.services, discoveredServices, preselected: null, quiet, quietDefault: string.Empty)) ?? new List<string>();
+		// The extension picker also lists service groups (prefixed "GROUP "); selecting a group runs all its members.
+		var (selectedGroups, selectedExtensions) = AskExtensionSelection("Select the [green]portal extensions / groups[/] to run:",
+			args.extensions, discoveredGroups, discoveredExtensions,
+			preselectedGroups: null, preselectedExtensions: null, quiet, quietGroups: null, quietExtensions: null);
 
+		// Don't run an id individually if a selected group already covers it.
 		var options = new LocalStackTemplate.Options
 		{
 			host = host,
@@ -259,12 +377,14 @@ public class LocalStackInitCommand
 			scalaDir = NullIfEmpty(scalaDir),
 			portalDir = NullIfEmpty(portalDir),
 			scalaTools = ToScalaTools(Split(scalaServices), discovered),
-			services = Split(services),
-			extensions = Split(extensions),
+			services = ExcludeGroupMembers(selectedServices, selectedGroups, discoveredGroups),
+			extensions = ExcludeGroupMembers(selectedExtensions, selectedGroups, discoveredGroups),
+			groups = selectedGroups,
 		};
 
 		var config = LocalStackTemplate.Create(options);
 		LocalStackConfigIO.Save(path, config);
+		EnsureGitignore(Path.GetDirectoryName(path));
 
 		Log.Information($"Wrote local-stack manifest to {path} ({config.steps.Count} steps).");
 		Log.Information("Edit any <EDIT: ...> paths, then run: beam local up");
@@ -278,13 +398,13 @@ public class LocalStackInitCommand
 	}
 
 	/// <summary>
-	/// Rewrites only the microservice/extension steps of an existing manifest, leaving every other step
-	/// (docker, gateway, Scala, portal) and all edits untouched. The prompt defaults to the manifest's current
-	/// ids, or — when it has none — the ids discovered in the workspace. An empty answer removes all steps of
-	/// that kind.
+	/// Rewrites only the microservice/extension/group steps of an existing manifest, leaving every other step
+	/// (docker, gateway, Scala, portal) and all edits untouched. The prompts default to the manifest's current
+	/// selection, or — when it has none — the ids discovered in the workspace. An empty answer removes all steps
+	/// of that kind.
 	/// </summary>
 	private LocalStackInitCommandResult UpdateServices(LocalStackInitCommandArgs args, string path, bool quiet,
-		List<string> discoveredServices, List<string> discoveredExtensions)
+		List<string> discoveredServices, List<string> discoveredExtensions, Dictionary<string, string[]> discoveredGroups)
 	{
 		if (!File.Exists(path))
 			throw new CliException($"No manifest at {path} to update. Run `beam local init` first.");
@@ -293,34 +413,46 @@ public class LocalStackInitCommand
 
 		bool IsMicroservice(LocalStackStep s) => s.name?.StartsWith(LocalStackTemplate.MicroservicePrefix) == true;
 		bool IsExtension(LocalStackStep s) => s.name?.StartsWith(LocalStackTemplate.ExtensionPrefix) == true;
+		bool IsGroup(LocalStackStep s) => s.name?.StartsWith(LocalStackTemplate.GroupPrefix) == true;
 
-		var currentServices = string.Join(" ", config.steps.Where(IsMicroservice)
-			.Select(s => s.name.Substring(LocalStackTemplate.MicroservicePrefix.Length)));
-		var currentExtensions = string.Join(" ", config.steps.Where(IsExtension)
-			.Select(s => s.name.Substring(LocalStackTemplate.ExtensionPrefix.Length)));
+		var currentServiceList = config.steps.Where(IsMicroservice)
+			.Select(s => s.name.Substring(LocalStackTemplate.MicroservicePrefix.Length)).ToList();
+		var currentExtensionList = config.steps.Where(IsExtension)
+			.Select(s => s.name.Substring(LocalStackTemplate.ExtensionPrefix.Length)).ToList();
+		var currentGroupList = config.steps.Where(IsGroup)
+			.Select(s => s.name.Substring(LocalStackTemplate.GroupPrefix.Length)).ToList();
 
 		// Offer the manifest's current ids plus anything discovered in the workspace; preselect what's already in
 		// the manifest so an empty answer keeps the current set (in quiet mode it is kept verbatim).
-		var currentServiceList = Split(currentServices) ?? new List<string>();
-		var currentExtensionList = Split(currentExtensions) ?? new List<string>();
 		var serviceChoices = currentServiceList.Union(discoveredServices, StringComparer.OrdinalIgnoreCase).ToList();
 		var extensionChoices = currentExtensionList.Union(discoveredExtensions, StringComparer.OrdinalIgnoreCase).ToList();
+		// Groups offered = discovered ∪ current (so an already-configured group stays selectable even if not discovered).
+		var groupChoices = new Dictionary<string, string[]>(discoveredGroups ?? new Dictionary<string, string[]>(), StringComparer.OrdinalIgnoreCase);
+		foreach (var g in currentGroupList) groupChoices.TryAdd(g, Array.Empty<string>());
 
-		var services = AskServiceSelection("Select the [green]microservices[/] to run:",
-			args.services, serviceChoices, preselected: currentServiceList, quiet, quietDefault: currentServices);
-		var extensions = AskServiceSelection("Select the [green]portal extensions[/] to run:",
-			args.extensions, extensionChoices, preselected: currentExtensionList, quiet, quietDefault: currentExtensions);
+		var services = Split(AskServiceSelection("Select the [green]microservices[/] to run:",
+			args.services, serviceChoices, preselected: currentServiceList, quiet,
+			quietDefault: string.Join(" ", currentServiceList))) ?? new List<string>();
+		var (selectedGroups, selectedExtensions) = AskExtensionSelection("Select the [green]portal extensions / groups[/] to run:",
+			args.extensions, groupChoices, extensionChoices,
+			preselectedGroups: currentGroupList, preselectedExtensions: currentExtensionList,
+			quiet, quietGroups: currentGroupList, quietExtensions: currentExtensionList);
 
-		// Drop the old beam steps and append the new set (microservices before extensions).
-		config.steps.RemoveAll(s => IsMicroservice(s) || IsExtension(s));
-		foreach (var svc in Split(services) ?? new List<string>())
+		var finalServices = ExcludeGroupMembers(services, selectedGroups, discoveredGroups);
+		var finalExtensions = ExcludeGroupMembers(selectedExtensions, selectedGroups, discoveredGroups);
+
+		// Drop the old beam steps and append the new set (microservices, then extensions, then groups).
+		config.steps.RemoveAll(s => IsMicroservice(s) || IsExtension(s) || IsGroup(s));
+		foreach (var svc in finalServices)
 			config.steps.Add(LocalStackTemplate.MicroserviceStep(svc));
-		foreach (var ext in Split(extensions) ?? new List<string>())
+		foreach (var ext in finalExtensions)
 			config.steps.Add(LocalStackTemplate.ExtensionStep(ext));
+		foreach (var group in selectedGroups)
+			config.steps.Add(LocalStackTemplate.GroupStep(group));
 
 		LocalStackConfigIO.Save(path, config);
 
-		Log.Information($"Updated microservice/extension steps in {path} ({config.steps.Count} steps total).");
+		Log.Information($"Updated microservice/extension/group steps in {path} ({config.steps.Count} steps total).");
 
 		return new LocalStackInitCommandResult
 		{

@@ -15,7 +15,7 @@ public class LocalStackUpCommandArgs : CommandArgs
 	public string only;
 	public string skip;
 	public bool detach;
-	public bool createRealm;
+	public bool noCreateRealm;
 	public string realmCustomer;
 	public string realmProject;
 	public string realmEmail;
@@ -71,8 +71,8 @@ public class LocalStackUpCommand
 		detach.AddAlias("-d");
 		AddOption(detach, (args, v) => args.detach = v);
 
-		AddOption(new Option<bool>("--create-realm", "Create a fresh local customer/realm via the backend and write it to the workspace config (use after a docker cleanup)"),
-			(args, v) => args.createRealm = v);
+		AddOption(new Option<bool>("--no-create-realm", "Do not auto-create a local realm when the saved login is invalid — just warn (by default `up` creates one after a docker cleanup)"),
+			(args, v) => args.noCreateRealm = v);
 		AddOption(new Option<string>("--realm-customer", () => "beam", "Customer name to use when creating the local realm"),
 			(args, v) => args.realmCustomer = v);
 		AddOption(new Option<string>("--realm-project", () => "beam-project", "Project name to use when creating the local realm"),
@@ -294,28 +294,33 @@ public class LocalStackUpCommand
 	{
 		try
 		{
-			if (args.createRealm)
-			{
-				var opts = new RealmSeedOptions
-				{
-					customerName = args.realmCustomer ?? "beam",
-					projectName = args.realmProject ?? "beam-project",
-					email = args.realmEmail ?? "beam@beamable.com",
-					alias = args.realmAlias ?? "beam-project",
-					password = args.realmPassword ?? "123456",
-				};
-				var realm = await LocalRealmService.CreateRealmAsync(args, config.host, opts);
-				Send(string.Empty, "running", $"created local realm cid={realm.cid} pid={realm.pid}", 1f);
-			}
-			else if (await LocalRealmService.IsLoginValidAsync(args))
+			// Reuse the existing login if it still resolves against the local backend.
+			if (await LocalRealmService.IsLoginValidAsync(args))
 			{
 				Log.Information("Local login OK.");
+				return;
 			}
-			else
+
+			// Invalid (e.g. the realm was wiped by a docker cleanup). By default, bootstrap a fresh realm so
+			// the microservices/extensions can authenticate; --no-create-realm turns this into a warning.
+			if (args.noCreateRealm)
 			{
-				Log.Warning("Local login is invalid (the realm may have been wiped). Re-run `beam local up --create-realm` to bootstrap a fresh realm, or run `beam init`.");
-				Send(string.Empty, "running", "local login invalid — re-run with `--create-realm`", 1f);
+				Log.Warning("Local login is invalid (the realm may have been wiped). Run `beam init`, or drop --no-create-realm to auto-create one.");
+				Send(string.Empty, "running", "local login invalid — create skipped (--no-create-realm)", 1f);
+				return;
 			}
+
+			Log.Information("Local login is invalid — ensuring the local realm (create if missing, else log in)...");
+			var opts = new RealmSeedOptions
+			{
+				customerName = args.realmCustomer ?? "beam",
+				projectName = args.realmProject ?? "beam-project",
+				email = args.realmEmail ?? "beam@beamable.com",
+				alias = args.realmAlias ?? "beam-project",
+				password = args.realmPassword ?? "123456",
+			};
+			var realm = await LocalRealmService.EnsureRealmAsync(args, config.host, opts);
+			Send(string.Empty, "running", $"local realm ready cid={realm.cid} pid={realm.pid}", 1f);
 		}
 		catch (Exception e)
 		{

@@ -1,4 +1,5 @@
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Api.Realms;
 using Beamable.Server;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -34,10 +35,29 @@ public class CreatedRealm
 public static class LocalRealmService
 {
 	/// <summary>
-	/// Creates a local customer/realm/account via the backend and persists cid/pid/host + the returned token
-	/// into the workspace config. Throws <see cref="CliException"/> if the backend call fails.
+	/// Ensures the local realm exists and the workspace is logged into it. Tries to create the customer/realm
+	/// first; if it already exists (the backend returns 400 <c>InvalidAliasError</c>), logs into the existing
+	/// realm with the same credentials instead. Either way, cid/pid/host + a valid token are written to config.
 	/// </summary>
-	public static async Task<CreatedRealm> CreateRealmAsync(CommandArgs args, string host, RealmSeedOptions o)
+	public static async Task<CreatedRealm> EnsureRealmAsync(CommandArgs args, string host, RealmSeedOptions o)
+	{
+		var created = await TryCreateRealmAsync(args, host, o);
+		if (created != null)
+		{
+			Log.Information($"Created local realm cid={created.cid} pid={created.pid} alias={created.alias} and wrote it to the workspace config.");
+			return created;
+		}
+
+		Log.Information($"Local realm '{o.alias}' already exists — logging in with the local credentials.");
+		return await LoginToExistingRealmAsync(args, host, o);
+	}
+
+	/// <summary>
+	/// POSTs to create the customer/realm. On success, persists cid/pid/host + token and returns the realm.
+	/// Returns null when the realm already exists (400 <c>InvalidAliasError</c>) so the caller can log in
+	/// instead. Throws on any other failure.
+	/// </summary>
+	private static async Task<CreatedRealm> TryCreateRealmAsync(CommandArgs args, string host, RealmSeedOptions o)
 	{
 		var url = $"{host.TrimEnd('/')}/basic/realms/customer";
 		var body = JsonConvert.SerializeObject(new
@@ -65,7 +85,14 @@ public static class LocalRealmService
 
 		var payload = await res.Content.ReadAsStringAsync();
 		if (!res.IsSuccessStatusCode)
+		{
+			// Already created by a previous run — not an error; the caller will log in to it.
+			if ((int)res.StatusCode == 400 &&
+			    (payload.Contains("InvalidAliasError") || payload.Contains("already being used")))
+				return null;
+
 			throw new CliException($"Realm creation failed ({(int)res.StatusCode}) at {url}: {Trim(payload)}");
+		}
 
 		JObject json;
 		try { json = JObject.Parse(payload); }
@@ -86,8 +113,60 @@ public static class LocalRealmService
 		config.WriteConfigString(ConfigService.CFG_JSON_FIELD_PID, pid);
 		config.SaveTokenToFile(new CliToken(accessToken, refreshToken, cid, pid));
 
-		Log.Information($"Created local realm cid={cid} pid={pid} alias={alias} and wrote it to the workspace config.");
 		return new CreatedRealm { cid = cid, pid = pid, alias = alias };
+	}
+
+	/// <summary>
+	/// Logs into an already-existing local realm: resolves the alias to a cid (scoping the requester at
+	/// <paramref name="host"/>), logs in with the credentials, picks the realm, and persists cid/pid/host + token.
+	/// </summary>
+	private static async Task<CreatedRealm> LoginToExistingRealmAsync(CommandArgs args, string host, RealmSeedOptions o)
+	{
+		// Point the requester at the local host and resolve the alias → cid.
+		try
+		{
+			await args.AppContext.Set(o.alias, string.Empty, host);
+		}
+		catch (Exception e)
+		{
+			throw new CliException($"Could not resolve local realm alias '{o.alias}' at {host}: {e.Message}");
+		}
+
+		TokenResponse resp;
+		try
+		{
+			// customer-scoped (so we can then list the realms under the customer)
+			resp = await args.AuthApi.Login(o.email, o.password, false, true);
+		}
+		catch (Exception e)
+		{
+			throw new CliException($"Could not log in to local realm '{o.alias}' as {o.email}: {e.Message}");
+		}
+
+		args.AppContext.SetToken(resp);
+		var cid = args.AppContext.Cid;
+
+		// Pick a realm under the customer — prefer a dev realm, else the first non-archived one.
+		var games = await args.RealmsApi.GetGames();
+		if (games == null || games.Count == 0)
+			throw new CliException($"Local customer '{o.alias}' has no games/realms to select.");
+		var realms = await args.RealmsApi.GetRealms(games[0]);
+		var realm = realms?.FirstOrDefault(r => r.IsDev && !r.Archived)
+		            ?? realms?.FirstOrDefault(r => !r.Archived)
+		            ?? realms?.FirstOrDefault();
+		if (realm == null)
+			throw new CliException($"Local customer '{o.alias}' has no realms to select.");
+
+		// Re-scope to the chosen realm and persist cid/pid/host + token.
+		await args.AppContext.Set(cid, realm.Pid, host);
+		var config = args.ConfigService;
+		config.WriteConfigString(ConfigService.CFG_JSON_FIELD_HOST, host);
+		config.WriteConfigString(ConfigService.CFG_JSON_FIELD_CID, cid);
+		config.WriteConfigString(ConfigService.CFG_JSON_FIELD_PID, realm.Pid);
+		config.SaveTokenToFile(new CliToken(resp.access_token, resp.refresh_token, cid, realm.Pid));
+
+		Log.Information($"Logged in to local realm cid={cid} pid={realm.Pid} ({realm.ProjectName}).");
+		return new CreatedRealm { cid = cid, pid = realm.Pid, alias = o.alias };
 	}
 
 	/// <summary>

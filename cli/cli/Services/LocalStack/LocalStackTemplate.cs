@@ -31,6 +31,8 @@ public static class LocalStackTemplate
 		public List<ScalaToolInfo> scalaTools;
 		public List<string> services;
 		public List<string> extensions;
+		/// <summary>Service-group names to run as a whole via <c>project run --with-group</c>.</summary>
+		public List<string> groups;
 	}
 
 	/// <summary>A discovered Scala <c>tools/*</c> service: its folder name, resolved main class, and metadata.</summary>
@@ -216,6 +218,10 @@ public static class LocalStackTemplate
 		foreach (var ext in extensions)
 			config.steps.Add(ExtensionStep(ext));
 
+		// 6. Service groups — run every member (microservices + extensions) of the group in one beam invocation.
+		foreach (var group in o.groups ?? new List<string>())
+			config.steps.Add(GroupStep(group));
+
 		return config;
 	}
 
@@ -224,6 +230,9 @@ public static class LocalStackTemplate
 
 	/// <summary>Name prefix identifying portal-extension steps (used by the "update services" flow).</summary>
 	public const string ExtensionPrefix = "portal extension: ";
+
+	/// <summary>Name prefix identifying service-group steps (used by the "update services" flow).</summary>
+	public const string GroupPrefix = "group: ";
 
 	/// <summary>Builds the beam step that runs a microservice against the local backend.</summary>
 	public static LocalStackStep MicroserviceStep(string svc) => new LocalStackStep
@@ -242,6 +251,15 @@ public static class LocalStackTemplate
 		name = $"{ExtensionPrefix}{ext}",
 		beam = true,
 		arguments = $"project run --ids {ext} --host ${{host}} --portal-url ${{portalUrl}} --logs v --no-log-file"
+	};
+
+	/// <summary>Builds the beam step that runs a whole service group (all its microservices + extensions).</summary>
+	public static LocalStackStep GroupStep(string group) => new LocalStackStep
+	{
+		// Groups can contain portal extensions, so pass --portal-url too; harmless for microservice-only groups.
+		name = $"{GroupPrefix}{group}",
+		beam = true,
+		arguments = $"project run --with-group {group} --host ${{host}} --portal-url ${{portalUrl}} --logs v --no-log-file"
 	};
 
 	/// <summary>
