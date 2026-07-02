@@ -26,6 +26,13 @@ public class LocalStackConfig
 	public string portalUrl = "http://localhost:4950";
 
 	/// <summary>
+	/// The Java 8 <c>JAVA_HOME</c> the Scala backend runs under. Substituted via the <c>${java}</c> token
+	/// (e.g. <c>${java}/bin/java</c>). Resolved by <c>beam local up</c> from <c>--java-path</c> /
+	/// <c>BEAM_JAVA_HOME</c> / auto-detection when left null, so a shared manifest stays machine-agnostic.
+	/// </summary>
+	public string javaHome;
+
+	/// <summary>
 	/// The ordered set of processes to launch. Order matters — earlier steps that declare a
 	/// readiness gate are fully up before later steps start.
 	/// </summary>
@@ -89,11 +96,38 @@ public class LocalStackStep
 	/// <summary>If set, the step is "ready" once this URL responds to a GET with any HTTP status.</summary>
 	public string readyWhenHttpOk;
 
-	/// <summary>If set, the step is "ready" once a stdout/stderr line contains this substring.</summary>
+	/// <summary>
+	/// If set, the step is "ready" once this URL returns HTTP 200 — a stronger gate than
+	/// <see cref="readyWhenHttpOk"/> (which accepts any response). Used for the C# gateway's
+	/// <c>/health</c> endpoint and the Scala gateway's <c>${host}/metadata</c> route.
+	/// </summary>
+	public string readyWhenHttp200;
+
+	/// <summary>If set, the step is "ready" once a line in its log file contains this substring.</summary>
 	public string readyWhenLogContains;
+
+	/// <summary>
+	/// The fully-qualified Scala <c>main</c> class for a backing service, discovered at <c>init</c> time so
+	/// <c>up</c> need not grep <c>pom.xml</c> at runtime. Substituted into the launch shell via <c>${mainClass}</c>.
+	/// </summary>
+	public string mainClass;
+
+	/// <summary>
+	/// Optional arguments used by <c>beam local stop</c> to reverse a run-to-completion step (e.g.
+	/// <c>compose down</c> for a <c>docker compose up -d</c> step); run as <c>command stopArguments</c> in
+	/// <see cref="workingDirectory"/>.
+	/// </summary>
+	public string stopArguments;
 
 	/// <summary>How long to wait for the readiness gate before giving up and continuing anyway.</summary>
 	public int readyTimeoutSeconds = 120;
+
+	/// <summary>
+	/// If a readiness-gated step exits before becoming ready, relaunch it up to this many times (with a short
+	/// delay) before giving up. Use for services that can lose a startup race with a dependency — e.g. the C#
+	/// gateway crashing because Mongo hasn't finished initializing its users yet.
+	/// </summary>
+	public int readyRetries = 0;
 }
 
 /// <summary>Loads/saves <see cref="LocalStackConfig"/> and applies <c>${...}</c> token substitution.</summary>
@@ -126,12 +160,13 @@ public static class LocalStackConfigIO
 		File.WriteAllText(path, JsonConvert.SerializeObject(config, Settings));
 	}
 
-	/// <summary>Replaces <c>${host}</c> / <c>${portalUrl}</c> tokens in a value.</summary>
+	/// <summary>Replaces <c>${host}</c> / <c>${portalUrl}</c> / <c>${java}</c> tokens in a value.</summary>
 	public static string Substitute(string value, LocalStackConfig config)
 	{
 		if (string.IsNullOrEmpty(value)) return value;
 		return value
 			.Replace("${host}", config.host ?? string.Empty)
-			.Replace("${portalUrl}", config.portalUrl ?? string.Empty);
+			.Replace("${portalUrl}", config.portalUrl ?? string.Empty)
+			.Replace("${java}", config.javaHome ?? string.Empty);
 	}
 }

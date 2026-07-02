@@ -26,6 +26,7 @@ public class ConfigService
 	public const string ENV_VAR_DOCKER_URI = "BEAM_DOCKER_URI";
 	public const string ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND = "BEAM_CLI_IS_REDIRECTED_COMMAND";
 	public const string ENV_VAR_DOCKER_EXE = "BEAM_DOCKER_EXE";
+	public const string ENV_VAR_JAVA_HOME = "BEAM_JAVA_HOME";
 
 	public const string CFG_FOLDER = ".beamable";
 	public const string BEAM_ROOT_FILE = ".beamroot";
@@ -1379,6 +1380,12 @@ public class ConfigService
 	/// will make a guess where Docker's exe is, but it can be specified and overwritten with this env var
 	/// </summary>
 	public static string CustomDockerExe => Environment.GetEnvironmentVariable(ENV_VAR_DOCKER_EXE);
+
+	/// <summary>
+	/// The local Scala backend requires a Java 8 <c>JAVA_HOME</c>. By default the CLI guesses it; this env
+	/// var (or the <c>--java-path</c> option) overrides that guess.
+	/// </summary>
+	public static string CustomJavaHome => Environment.GetEnvironmentVariable(ENV_VAR_JAVA_HOME);
 
 
 	public string GetPathFromRelativeToService(string path, string servicePath)

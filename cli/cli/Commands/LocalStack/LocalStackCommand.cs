@@ -31,4 +31,8 @@ public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 
 		return Path.GetFullPath(LocalStackConfigIO.DefaultFileName);
 	}
+
+	/// <summary>Resolves the run-state path that sits alongside the resolved manifest.</summary>
+	public static string ResolveRunStatePath(ConfigService configService, string overridePath) =>
+		LocalStackRunStateIO.ResolveRunStatePath(ResolveManifestPath(configService, overridePath));
 }

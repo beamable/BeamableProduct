@@ -33,6 +33,7 @@ public interface IAppContext : IRealmInfo, IRequesterInfo
 	public bool ShowRawOutput { get; }
 	public bool ShowPrettyOutput { get; }
 	public string DotnetPath { get; }
+	public string JavaPath { get; }
 	public HashSet<string> IgnoreBeamoIds { get; }
 	public string WorkingDirectory { get; }
 	public string RefreshToken { get; }
@@ -101,7 +102,8 @@ public class DefaultAppContext : IAppContext
 	public bool ShowPrettyOutput { get; private set; }
 
 	public string DotnetPath { get; private set; }
-	public string DockerPath { get; private set; }
+	public string JavaPath { get; private set; }
+		public string DockerPath { get; private set; }
 	public HashSet<string> IgnoreBeamoIds { get; private set; }
 
 
@@ -200,6 +202,9 @@ public class DefaultAppContext : IAppContext
 		_skipValidationOption = skipValidationOption;
 		_dotnetPathOption = dotnetPathOption;
 		DockerPath = consoleContext.ParseResult.GetValueForOption(dockerPathOption);
+			JavaPath = consoleContext.ParseResult.GetValueForOption(JavaPathOption.Instance);
+			if (string.IsNullOrEmpty(JavaPath) && JavaPathOption.TryGetJavaHome(out var resolvedJavaHome, out _))
+				JavaPath = resolvedJavaHome;
 		IgnoreBeamoIds =
 			new HashSet<string>(consoleContext.ParseResult.GetValueForOption(IgnoreBeamoIdsOption.Instance));
 	}
