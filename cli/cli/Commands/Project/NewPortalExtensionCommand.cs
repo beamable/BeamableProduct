@@ -17,6 +17,7 @@ public class NewPortalExtensionCommandArgs : SolutionCommandArgs
 	public int mountGroupOrder;
 	public int mountLabelOrder;
 	public string template;
+	public string[] filters;
 }
 
 public static class PortalExtensionTemplates
@@ -83,6 +84,47 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 				getDefaultValue: () => PortalExtensionTemplates.React,
 				description: "UI framework template to scaffold the extension with. Allowed values: react"),
 			binder: (args, i) => args.template = i);
+
+		AddOption(new Option<string[]>(
+				aliases: new string[] { "--filters" },
+				getDefaultValue: Array.Empty<string>,
+				description: "Conditional mount filters as key=value pairs (e.g. --filters account.role=developer|admin account.tier=default). Values are regex-matched by the portal against the viewer's context, so | alternation is valid; quote entries containing | so your shell doesn't interpret it. Merged over the template defaults, so unspecified keys keep their defaults")
+			{
+				AllowMultipleArgumentsPerToken = true
+			},
+			binder: (args, i) => args.filters = i);
+	}
+
+	// Parse --filters "key=value" entries. Split on the first '=' only so regex
+	// values (which may contain '=' or '|') survive verbatim; the portal treats
+	// each value as a regex, so the CLI must not interpret it.
+	private static Dictionary<string, string> ParseFilterOverrides(string[] filters)
+	{
+		var result = new Dictionary<string, string>();
+		if (filters == null)
+		{
+			return result;
+		}
+
+		foreach (var entry in filters)
+		{
+			var separatorIndex = entry.IndexOf('=');
+			if (separatorIndex <= 0)
+			{
+				throw new CliException($"Invalid --filters entry '{entry}'. Expected format key=value, e.g. account.role=developer|admin");
+			}
+
+			var key = entry.Substring(0, separatorIndex).Trim();
+			var value = entry.Substring(separatorIndex + 1);
+			if (string.IsNullOrEmpty(key))
+			{
+				throw new CliException($"Invalid --filters entry '{entry}'. The key must not be empty, e.g. account.role=developer|admin");
+			}
+
+			result[key] = value;
+		}
+
+		return result;
 	}
 
 	public override async Task Handle(NewPortalExtensionCommandArgs args)
@@ -97,6 +139,9 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 		if (!hasExplicitPage && args.Quiet)
 			throw new CliException("Must provide --mount-page when running with -q / --quiet. Run 'portal extension list-extension-options' to discover valid pages and selectors.");
+
+		// Validate --filters formatting up front so a typo fails before scaffolding.
+		var filterOverrides = ParseFilterOverrides(args.filters);
 
 		// Validate the chosen name against existing local microservices, storages, and portal extensions
 		// up front — before any interactive prompts or the remote portal config fetch — so the user
@@ -171,6 +216,18 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 				mount[PortalExtensionMountProperties.KEY_NAV_GROUP_ORDER] = args.mountGroupOrder;
 			if (args.mountLabelOrder > 0)
 				mount[PortalExtensionMountProperties.KEY_NAV_LABEL_ORDER] = args.mountLabelOrder;
+
+			// Merge over the template's default filters so unspecified keys keep
+			// their defaults (e.g. supplying only account.role leaves account.tier intact).
+			if (filterOverrides.Count > 0)
+			{
+				var filtersObj = mount[PortalExtensionMountProperties.KEY_FILTERS] as JObject ?? new JObject();
+				foreach (var kvp in filterOverrides)
+				{
+					filtersObj[kvp.Key] = kvp.Value;
+				}
+				mount[PortalExtensionMountProperties.KEY_FILTERS] = filtersObj;
+			}
 		}
 
 		File.WriteAllText(def.AbsolutePackageJsonPath, jObj.ToString(Newtonsoft.Json.Formatting.Indented));

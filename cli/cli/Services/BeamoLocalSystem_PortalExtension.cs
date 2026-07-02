@@ -294,6 +294,7 @@ public class PortalExtensionMountProperties
 	public const string KEY_NAV_COLOR = "navColor";
 	public const string KEY_NAV_GROUP_ORDER = "navGroupOrder";
 	public const string KEY_NAV_LABEL_ORDER = "navLabelOrder";
+	public const string KEY_FILTERS = "filters";
 
 	// For #extension-page mounts the page path defines the hub hierarchy: a single segment
 	// declares a hub that is a full page of its own, and a nested path
@@ -332,6 +333,12 @@ public class PortalExtensionMountProperties
 	public OptionalInt NavLabelOrder;
 
 	[JsonProperty("args")] public Dictionary<string, string> Args = new Dictionary<string, string>();
+
+	// Conditions the portal evaluates before mounting the extension into the
+	// agentic portal. Keys are dotted paths (e.g. "account.role", "account.tier")
+	// matched against the viewer's context; the CLI scaffolds these with default
+	// values so the extension mounts everywhere until the author narrows them.
+	[JsonProperty(KEY_FILTERS)] public Dictionary<string, string> Filters = new Dictionary<string, string>();
 }
 
 [Serializable]
