@@ -9,11 +9,14 @@ using Beamable.Coroutines;
 using System;
 using System.Collections;
 using UnityEngine;
+#if !BEAMABLE_PURCHASING_IMPLEMENTATION_DISABLED
 using UnityEngine.Purchasing;
 using UnityEngine.Purchasing.Extension;
+#endif
 
 namespace Beamable.Purchasing
 {
+#if !BEAMABLE_PURCHASING_IMPLEMENTATION_DISABLED
 	/// <summary>
 	/// Implementation of Unity IAP for Beamable purchasing.
 	/// </summary>
@@ -719,7 +722,7 @@ namespace Beamable.Purchasing
 #endif
 		}
 	}
-
+#endif
 	public struct SkuIdPair
 	{
 		/// <summary>
@@ -740,7 +743,9 @@ namespace Beamable.Purchasing
 		public static void RegisterServices(IDependencyBuilder builder)
 		{
 			builder.RemoveIfExists<IBeamablePurchaser>();
+#if !BEAMABLE_PURCHASING_IMPLEMENTATION_DISABLED
 			builder.AddSingleton<IBeamablePurchaser, UnityBeamablePurchaser>();
+#endif
 		}
 	}
 
