@@ -231,7 +231,7 @@ public partial class BeamoLocalSystem
 			return null;
 		}
 
-		var treatedHost = PortalCommand.GetPortalBaseUrl(binding, context, isNewPortal: true);
+		var treatedHost = PortalCommand.GetPortalBaseUrl(binding, context, PortalType.Console);
 		if (string.IsNullOrEmpty(treatedHost) || string.IsNullOrEmpty(context.Cid) || string.IsNullOrEmpty(context.Pid))
 		{
 			return null;
