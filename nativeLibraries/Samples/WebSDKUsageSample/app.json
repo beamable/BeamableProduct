@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Beam Web SDK Sample",
+    "slug": "beam-websdk-sample",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "beamwebsdksample",
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "ios": {
+      "bundleIdentifier": "com.beamable.samples.websdk",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.beamable.websdksample"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-dev-client",
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

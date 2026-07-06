@@ -6,6 +6,10 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "scheme": "beamrnsample",
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
     "ios": {
       "bundleIdentifier": "com.beamble.samples.beamfarmrn",
       "supportsTablet": true
@@ -19,7 +23,7 @@
       "expo-dev-client",
       "expo-asset",
       [
-        "./plugins/withBeamableNotifications",
+        "@beamable/notifications-react-native",
         {
           "appGroup": "group.com.beamable.mobiletest",
           "enableServiceExtension": true

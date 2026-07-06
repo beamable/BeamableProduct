@@ -27,3 +27,17 @@ native build tooling:
 Unity copy step). It is listed in the package `.gitignore`. If you open this package without
 running `dev-native.sh`, `pod install` will fail to find the framework — build the natives
 first.
+
+## Config-plugin NSE sources (`../plugin/ios/`)
+
+The Expo config plugin (`../app.plugin.js` → `../plugin/withBeamableNotifications.js`) copies
+the Notification Service Extension + extension-safe core Swift into the app at `expo prebuild`
+time. Those sources live canonically in `nativeLibraries/iOS/BeamableNotifications/`
+(`extension/` + `core/Sources/BeamableNotifications/`).
+
+- **In the monorepo** the plugin reads them directly from that sibling dir (always fresh) — no
+  action needed.
+- **For a published package** they must be self-contained: `dev-native.sh` should also copy
+  `extension/` and `core/` into `EnginePlugins/ReactNative/plugin/ios/` (same subpath layout).
+  The plugin prefers `plugin/ios/` when present and falls back to the sibling dir otherwise.
+  `plugin/ios/` is gitignored (generated), like the xcframework.

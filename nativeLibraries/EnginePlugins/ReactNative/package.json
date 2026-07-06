@@ -9,6 +9,8 @@
     "src",
     "android",
     "ios",
+    "app.plugin.js",
+    "plugin",
     "BeamableNotificationsRN.podspec",
     "react-native.config.js",
     "!android/build",
@@ -31,17 +33,7 @@
   ],
   "peerDependencies": {
     "react": "*",
-    "react-native": "*",
-    "@beamable/sdk": "*",
-    "@react-native-async-storage/async-storage": "*"
-  },
-  "peerDependenciesMeta": {
-    "@beamable/sdk": {
-      "optional": true
-    },
-    "@react-native-async-storage/async-storage": {
-      "optional": true
-    }
+    "react-native": "*"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

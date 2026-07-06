@@ -8,3 +8,8 @@ android/build/
 
 # iOS prebuilt core binary — copied in by dev-native.sh (Decision Q2), not committed.
 ios/BeamableNotifications.xcframework/
+
+# Config-plugin iOS NSE/core Swift sources — vendored for publish by dev-native.sh,
+# not committed. The plugin falls back to the monorepo-canonical iOS/BeamableNotifications
+# dir when this is absent (see plugin/withBeamableNotifications.js).
+plugin/ios/

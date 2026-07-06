@@ -1,0 +1,46 @@
+{
+  "name": "@beamable/sdk-react-native",
+  "version": "1.0.0",
+  "description": "React Native adapter for the Beamable Web SDK (@beamable/sdk): browser-global polyfills, an AsyncStorage-backed TokenStorage, and a Metro config helper that resolves the SDK's browser build. Ships raw TS — the consumer's Metro/babel compile it.",
+  "main": "src/index.ts",
+  "react-native": "src/index.ts",
+  "types": "src/index.ts",
+  "files": [
+    "src",
+    "polyfills.ts",
+    "polyfills.web.ts",
+    "metro.js"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "beamable",
+    "sdk",
+    "metro",
+    "polyfills",
+    "tokenstorage"
+  ],
+  "dependencies": {
+    "@ungap/structured-clone": "^1.3.1",
+    "fake-indexeddb": "^6.0.0",
+    "react-native-url-polyfill": "^3.0.0"
+  },
+  "peerDependencies": {
+    "@beamable/sdk": "*",
+    "@react-native-async-storage/async-storage": "*",
+    "react-native": "*"
+  },
+  "peerDependenciesMeta": {
+    "@react-native-async-storage/async-storage": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "react-native": "*"
+  },
+  "license": "MIT"
+}

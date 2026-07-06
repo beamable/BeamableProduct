@@ -17,15 +17,6 @@ import {
 import type { TokenStorage } from '@beamable/sdk';
 import { BEAM_CONFIG, isConfigured } from './config';
 import { RNTokenStorage } from '@beamable/sdk-react-native';
-// Platform-split: native → the package façade, web → the Unity host bridge.
-import { BeamNotifications } from '../notifications/beamableNotifications';
-import { CampaignServiceClient } from './beamable/clients/CampaignServiceClient';
-
-export type BeamStatus =
-  | { state: 'idle' }
-  | { state: 'connecting' }
-  | { state: 'ready'; playerId: string }
-  | { state: 'error'; message: string };
 
 let beamInstance: Beam | null = null;
 let initPromise: Promise<Beam> | null = null;
@@ -33,16 +24,6 @@ let initPromise: Promise<Beam> | null = null;
 /** The current Beam instance, or null if not yet initialized. */
 export function getBeam(): Beam | null {
   return beamInstance;
-}
- 
-/**
- * The typed client for the `CampaignService` microservice, or null until
- * `initBeam()` has resolved. Use it to register this device's APNs/FCM token and
- * to list the player's registered devices — e.g. `getPushService()?.listMyDevices()`.
- * (Push delivery itself is driven server-side / from the Portal Campaign Builder.)
- */
-export function getPushService(): CampaignServiceClient | null {
-  return beamInstance?.campaignServiceClient ?? null;
 }
 
 /**
@@ -91,48 +72,19 @@ export async function initBeam(): Promise<Beam> {
       gameEngine: 'react-native',
     });
 
-    // Register every high-level service the app uses. Accessors like
+    // Register every high-level service the Explorer uses. Accessors like
     // `beam.announcements` / `beam.content` / `beam.stats` / `beam.leaderboards`
     // throw "Call beam.use(...)" until their service is registered here.
     // (beam.player is built in and always available.)
-     beam.use([
+    beam.use([
       AuthService,
       AccountService,
       ContentService,
       StatsService,
       AnnouncementsService,
-      LeaderboardsService
+      LeaderboardsService,
     ]);
-    // Auto-generated client for the CampaignService microservice
-    // (adds the typed `beam.campaignServiceClient` accessor).
-    beam.use(CampaignServiceClient);
     beamInstance = beam;
-
-    // Best-effort: hand the player's tokens to the native side so the CLOSED-APP analytics
-    // funnel can authenticate when the JS runtime is not running. Wrapped so a failure here
-    // never breaks init. The host is the API base URL the SDK is pointed at (the explicit
-    // env.local override, otherwise the named environment's apiUrl). RNTokenStorage already
-    // stores `expiresIn` as an absolute epoch-MILLISECONDS timestamp (see its `isExpired`),
-    // so it maps straight onto `accessTokenExpiresAt`.
-    try {
-      const { accessToken, refreshToken, expiresIn } =
-        await storage.getTokenData();
-      const host =
-        BEAM_CONFIG.apiBase ??
-        BeamEnvironment.get(BEAM_CONFIG.environment).apiUrl;
-      if (accessToken && refreshToken && host) {
-        BeamNotifications.configureAuth({
-          accessToken,
-          refreshToken,
-          accessTokenExpiresAt: expiresIn ?? 0,
-          cid: BEAM_CONFIG.cid,
-          pid: BEAM_CONFIG.pid,
-          host,
-        });
-      }
-    } catch {
-      // Native funnel auth is best-effort; never block init on it.
-    }
 
     return beam;
   })();
@@ -144,4 +96,3 @@ export async function initBeam(): Promise<Beam> {
 
   return initPromise;
 }
-

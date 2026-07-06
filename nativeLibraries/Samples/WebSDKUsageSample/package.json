@@ -1,5 +1,5 @@
 {
-  "name": "beam-rn-sample",
+  "name": "beam-websdk-sample",
   "version": "1.0.0",
   "private": true,
   "main": "expo-router/entry",
@@ -11,12 +11,11 @@
     "ios": "expo run:ios",
     "android": "expo run:android",
     "prebuild": "expo prebuild --clean",
-    "fix-deps": "expo install --fix",
-    "deeplink:ios": "npx uri-scheme open \"beamrnsample://details/42\" --ios",
-    "deeplink:android": "npx uri-scheme open \"beamrnsample://details/42\" --android"
+    "fix-deps": "expo install --fix"
   },
   "dependencies": {
     "@beamable/sdk": "file:../../../web",
+    "@beamable/sdk-react-native": "file:../../EnginePlugins/ReactNativeSDK",
     "@expo/metro-runtime": "~56.0.16",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "^56",

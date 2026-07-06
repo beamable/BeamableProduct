@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -19,46 +19,76 @@ import {
   initBeam,
   type BeamStatus,
 } from '../src/beam/beamClient';
-import {
-  addBeamableListener,
-  campaignCoordsFromNotification,
-  getLaunchNotification,
-  isBeamableNotificationsSupported,
-  registerForRemote,
-  requestBeamablePermission,
-  scheduleBeamableDeepLink,
-} from '../src/notifications/beamableNotifications';
-import {
-  BeamableNotifications,
-  type NotificationData,
-  type NotificationIntentData,
-  type NotificationOffer,
+import { BeamNotifications } from '../src/notifications/beamableNotifications';
+import type {
+  BeamableEvent,
+  NotificationData,
+  NotificationIntentData,
+  NotificationOffer,
 } from '@beamable/notifications-react-native';
 import { listDevices, registerDevice } from '../src/beam/pushNotifications';
 import { detailsPath, detailsUrl, openUrl } from '../src/linking/links';
+import UnityBridgeSection from '../src/unity/UnityBridgeSection';
+
+// A colour per native event so firings are easy to tell apart in the event log.
+const EVENT_COLOR: Record<BeamableEvent, string> = {
+  permissionResult: '#2563eb',
+  tokenReceived: '#16a34a',
+  tokenError: '#dc2626',
+  notificationPresented: '#7c3aed',
+  notificationReceived: '#0891b2',
+  notificationOpened: '#ea580c',
+  pendingNotifications: '#ca8a04',
+  deliveryReceipts: '#0d9488',
+  funnelResult: '#db2777',
+};
+
+// One captured native-event firing.
+type EventEntry = { key: number; time: string; event: BeamableEvent; data: unknown };
+
+// Loose signature for subscribing in a loop (the typed `addListener`
+// correlates payload to event name, which a generic loop can't express).
+const subscribe = BeamNotifications.addListener as unknown as (
+  event: BeamableEvent,
+  handler: (data: unknown) => void,
+) => { remove: () => void };
 
 export default function Home() {
   const router = useRouter();
   const [beam, setBeam] = useState<BeamStatus>({ state: 'idle' });
+  // Free-text feedback from button presses (connect, register, list, funnel).
   const [log, setLog] = useState<string[]>([]);
+  // Every native SDK event, captured raw with its payload (the merged callbacks view).
+  const [events, setEvents] = useState<EventEntry[]>([]);
+  const eventCounter = useRef(0);
   // The device push token (APNs on iOS, FCM on Android) from the native SDK's
   // `tokenReceived` event. Needed to register this device with the microservice.
-  const [apnsToken, setApnsToken] = useState<string | null>(null);
-  // §6 funnel coordinates. Editable by the user; auto-filled from the campaign push that
+  const [pushToken, setPushToken] = useState<string | null>(null);
+  // §4 funnel coordinates. Editable by the user; auto-filled from the campaign push that
   // opened (or was tapped in) the app — see `applyCampaignCoords`.
   const [campaignId, setCampaignId] = useState('');
   const [nodeId, setNodeId] = useState('');
-  const platformLabel = Platform.OS === 'ios' ? 'iOS' : 'Android';
-  const remoteProvider = Platform.OS === 'ios' ? 'APNs' : 'FCM';
+  // Native support is static on iOS/Android but DYNAMIC on web: it flips to
+  // true once a Unity WebView host reports a native-capable platform.
+  const [nativeSupported, setNativeSupported] = useState(
+    BeamNotifications.isSupported,
+  );
+  useEffect(() => {
+    const sub = BeamNotifications.addSupportListener(setNativeSupported);
+    return () => sub.remove();
+  }, []);
+  const platformLabel = BeamNotifications.hostPlatformLabel();
+  const isAndroidHost = BeamNotifications.devicePushPlatform() === 'fcm';
+  const remoteProvider = isAndroidHost ? 'FCM' : 'APNs';
 
   const append = (msg: string) =>
     setLog((prev) => [`${time()}  ${msg}`, ...prev].slice(0, 40));
 
-  // Override the §6 funnel coordinates from a notification that carries them. Notifications
+  // Override the §4 funnel coordinates from a notification that carries them. Notifications
   // without campaignId/nodeId (e.g. the local test notifications) leave the user's typed
   // values untouched.
   const applyCampaignCoords = (n: NotificationData) => {
-    const coords = campaignCoordsFromNotification(n);
+    const coords = BeamNotifications.campaignCoordsFromNotification(n);
     if (coords.campaignId) setCampaignId(coords.campaignId);
     if (coords.nodeId) setNodeId(coords.nodeId);
     if (coords.campaignId || coords.nodeId) {
@@ -68,59 +98,63 @@ export default function Home() {
     }
   };
 
-  // Beamable Notifications events (native iOS SDK). The native methods are
-  // fire-and-forget; their results land here. We log them, and forward the APNs
-  // token to the Beamable backend so the realm can send this device pushes.
+  // ── Native events → the color-coded event log ─────────────────────────────
+  // Subscribe to EVERY event the SDK emits and capture each firing with its full
+  // payload. This is the raw view of the native library at work (permission,
+  // token, opened/received/presented, delivery receipts, funnel results).
   useEffect(() => {
-    if (!isBeamableNotificationsSupported) return;
-
-    const subs = [
-      addBeamableListener('permissionResult', (r) =>
-        append(`Beamable permission: ${r.granted ? 'granted' : 'denied'} (${r.status})`),
+    if (!nativeSupported) return;
+    BeamNotifications.initialize();
+    const subs = BeamNotifications.events.map((event) =>
+      subscribe(event, (data) =>
+        setEvents((prev) =>
+          [
+            { key: (eventCounter.current += 1), time: time(), event, data },
+            ...prev,
+          ].slice(0, 100),
+        ),
       ),
-      addBeamableListener('tokenReceived', async ({ token }) => {
-        setApnsToken(token);
-        append(`Push token: ${token.slice(0, 12)}…`);
+    );
+    return () => subs.forEach((s) => s.remove());
+  }, [nativeSupported]);
+
+  // ── Native events → app side effects ──────────────────────────────────────
+  // The token registration flow and campaign-coordinate capture. (Display of the
+  // raw events happens in the effect above; here we only react to them.)
+  useEffect(() => {
+    if (!nativeSupported) return;
+    const subs = [
+      // Push token arrived → remember it and register this device with Beamable
+      // so the realm can target it. This is the core token-registration flow.
+      BeamNotifications.addListener('tokenReceived', async ({ token }) => {
+        setPushToken(token);
         if (!getPushService()) return append('Token not registered — connect to Beamable first');
         try {
-          const res = await registerDevice(token);
+          const res = await registerDevice(token, BeamNotifications.devicePushPlatform());
           append(`Device registered with CampaignService (${res.deviceCount} total)`);
         } catch (e) {
           append(`Token register error: ${e instanceof Error ? e.message : String(e)}`);
         }
       }),
-      addBeamableListener('tokenError', ({ error }) => append(`Push token error: ${error}`)),
-      addBeamableListener('notificationReceived', (n) =>
-        append(`Beamable received: ${n.title ?? n.id}`),
-      ),
-      addBeamableListener('notificationOpened', (n) => {
-        append(`Beamable opened → ${n.deeplink ?? n.id}`);
-        // App already running: a tapped campaign push replaces the funnel coordinates.
-        applyCampaignCoords(n);
-      }),
-      addBeamableListener('funnelResult', (r) =>
-        append(
-          `Funnel ${r.funnelType}: ${r.ok ? 'OK' : 'FAILED'} (HTTP ${r.statusCode})${r.message ? ' — ' + r.message : ''}`,
-        ),
-      ),
+      // App already running: a tapped campaign push replaces the funnel coordinates.
+      BeamNotifications.addListener('notificationOpened', (n) => applyCampaignCoords(n)),
     ];
-
     return () => subs.forEach((s) => s.remove());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [nativeSupported]);
 
-  // Cold start: if the app was launched by tapping a campaign push, seed §6's funnel
+  // Cold start: if the app was launched by tapping a campaign push, seed §4's funnel
   // coordinates from its payload. `getLaunchNotification()` reads the cached launch payload
   // (also consumed for routing in app/_layout.tsx), so reading it here has no side effect.
   useEffect(() => {
-    if (!isBeamableNotificationsSupported) return;
-    getLaunchNotification().then((launch) => {
+    if (!nativeSupported) return;
+    BeamNotifications.getLaunchNotification().then((launch) => {
       if (launch) applyCampaignCoords(launch);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [nativeSupported]);
 
-  // 1) Beamable -----------------------------------------------------------
+  // 1) Web SDK ------------------------------------------------------------
   const connectBeam = async () => {
     setBeam({ state: 'connecting' });
     append('Beam.init() …');
@@ -136,48 +170,47 @@ export default function Home() {
     }
   };
 
-  // 2) Beamable Notifications (native iOS + Android SDK) ------------------
+  // 2) Permission & remote registration ----------------------------------
   const beamAskPermission = () => {
-    requestBeamablePermission();
-    append('Beamable: requested permission (result on event)');
-  };
-
-  const beamFireNow = () => {
-    scheduleBeamableDeepLink({
-      id: 'beam-now',
-      title: 'Beamable (native)',
-      body: 'Tap me to deep-link into Details #777',
-      detailsId: 777,
-    });
-    append('Beamable local notification posted (immediate). Tap it!');
-  };
-
-  const beamFireDelayed = () => {
-    scheduleBeamableDeepLink({
-      id: 'beam-delayed',
-      title: 'Beamable (native, delayed)',
-      body: 'Background the app — tap this in 10s to deep-link to Details #888',
-      detailsId: 888,
-      seconds: 10,
-    });
-    append('Beamable local notification scheduled in 10s. Background the app & tap it.');
+    BeamNotifications.requestPermission();
+    append('Requested notification permission (result on permissionResult event)');
   };
 
   const beamRegisterRemote = () => {
-    registerForRemote();
-    append(`Beamable: registered for remote (${remoteProvider}). Token on event (real device only).`);
+    BeamNotifications.registerForRemote();
+    append(`Registered for remote (${remoteProvider}). Token arrives on the tokenReceived event (physical device only).`);
+  };
+
+  const beamFireLocal = () => {
+    BeamNotifications.scheduleLocalWithDeepLink({
+      id: 'beam-local',
+      title: 'Beamable (local)',
+      body: 'Tap me to deep-link into Details #777',
+      url: detailsUrl(777),
+    });
+    append('Local notification posted (immediate). Tap it to see notificationOpened + deep link.');
+  };
+
+  const beamFireDelayed = () => {
+    BeamNotifications.scheduleLocalWithDeepLink({
+      id: 'beam-delayed',
+      title: 'Beamable (local, delayed)',
+      body: 'Background the app — tap this in 10s to deep-link to Details #888',
+      url: detailsUrl(888),
+      seconds: 10,
+    });
+    append('Local notification scheduled in 10s. Background the app & tap it.');
   };
 
   // 3) Device registration via the CampaignService microservice ----------
   // Devices auto-register on the `tokenReceived` event above. These actions
-  // register this device and list the player's registrations. (Push delivery
-  // is driven server-side / from the Portal Campaign Builder.)
+  // register this device manually and list the player's registrations.
   const registerThisDevice = async () => {
     if (!getPushService()) return append('Register: connect to Beamable first');
-    if (!apnsToken) return append(`No push token yet — tap "Register for remote (${remoteProvider})" in section 2 first (physical device).`);
+    if (!pushToken) return append(`No push token yet — tap "Register for remote (${remoteProvider})" first (physical device).`);
     append('RegisterDeviceToken …');
     try {
-      const res = await registerDevice(apnsToken);
+      const res = await registerDevice(pushToken, BeamNotifications.devicePushPlatform());
       append(`RegisterDeviceToken → ${res.success ? 'ok' : 'failed'}: ${res.message} (${res.deviceCount} device(s))`);
     } catch (e) {
       append(`Register error: ${e instanceof Error ? e.message : String(e)}`);
@@ -185,7 +218,7 @@ export default function Home() {
   };
 
   const showMyDevices = async () => {
-    if (!getPushService()) return append('Remote push: connect to Beamable first');
+    if (!getPushService()) return append('List devices: connect to Beamable first');
     try {
       const res = await listDevices();
       append(`Registered devices: ${res.devices.length}`);
@@ -197,16 +230,7 @@ export default function Home() {
     }
   };
 
-  // 4) Deep links ---------------------------------------------------------
-  const simulateDeepLink = async () => {
-    const url = detailsUrl(123);
-    append(`Opening URL: ${url}`);
-    await openUrl(url); // routed by the OS, like an external link/push
-  };
-
-  const navigateDirect = () => router.push(detailsPath(55) as never);
-
-  // 5) Analytics (funnel) test -------------------------------------------
+  // 4) Analytics (funnel) ------------------------------------------------
   // Emits native Clicked/Converted funnel analytics. Auth (cid.pid scope) is
   // configured automatically on Connect; these just fire the events.
   const buildFunnelIntent = (): NotificationIntentData => ({
@@ -223,24 +247,11 @@ export default function Home() {
     customData: { tier: 'gold' },
   };
 
-  // Mirror how native serializes the offer for the analytics POST so the log matches the wire:
-  // `offerData` is a stringified JSON ARRAY of offers, and each `customData` is itself a stringified
-  // JSON string (Athena has no nested-object column type). The native module does this internally;
-  // we replicate it here only so this debug log reflects what's actually sent.
-  const offerDataForLog = JSON.stringify([
-    {
-      itemId: funnelOffer.itemId,
-      value: funnelOffer.value,
-      customData: funnelOffer.customData != null ? JSON.stringify(funnelOffer.customData) : undefined,
-    },
-  ]);
-
   const trackOfferClickedTest = () => {
     if (!getBeam()) return append('Funnel: connect to Beamable first');
     try {
-      const intent = buildFunnelIntent();
-      BeamableNotifications.trackOfferClicked(intent, funnelOffer);
-      append(`Funnel: trackOfferClicked → ${JSON.stringify({ funnelType: 'Clicked', ...intent, offerData: offerDataForLog })}`);
+      BeamNotifications.trackOfferClicked(buildFunnelIntent(), funnelOffer);
+      append('Funnel: trackOfferClicked emitted (result on funnelResult event)');
     } catch (e) {
       append(`Funnel error: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -249,22 +260,30 @@ export default function Home() {
   const trackOfferConvertedTest = () => {
     if (!getBeam()) return append('Funnel: connect to Beamable first');
     try {
-      const intent = buildFunnelIntent();
-      BeamableNotifications.trackOfferConverted(intent, funnelOffer);
-      append(`Funnel: trackOfferConverted → ${JSON.stringify({ funnelType: 'Converted', ...intent, offerData: offerDataForLog })}`);
+      BeamNotifications.trackOfferConverted(buildFunnelIntent(), funnelOffer);
+      append('Funnel: trackOfferConverted emitted (result on funnelResult event)');
     } catch (e) {
       append(`Funnel error: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
-  const clearFunnelAuth = () => {
+  const clearNativeFunnelAuth = () => {
     try {
-      BeamableNotifications.clearAuth();
+      BeamNotifications.clearAuth();
       append('Native funnel auth cleared');
     } catch (e) {
       append(`Funnel error: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
+
+  // 5) Deep links ---------------------------------------------------------
+  const simulateDeepLink = async () => {
+    const url = detailsUrl(123);
+    append(`Opening URL: ${url}`);
+    await openUrl(url); // routed by the OS, like an external link/push
+  };
+
+  const navigateDirect = () => router.push(detailsPath(55) as never);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -272,10 +291,10 @@ export default function Home() {
 
       <Text style={styles.h1}>Beamable · React Native</Text>
       <Text style={styles.subtitle}>
-        Test panel for the Web SDK, deep links & local notifications
+        Push notifications: token registration, devices, analytics & native events
       </Text>
 
-      {/* Beamable status */}
+      {/* 1 · Web SDK connect */}
       <Section title="1 · Beamable Web SDK">
         <StatusRow status={beam} />
         {!isConfigured() && (
@@ -285,105 +304,59 @@ export default function Home() {
           </Text>
         )}
         <Button label="Connect to Beamable" onPress={connectBeam} />
-        <Button
-          label="Explore all SDK features →"
-          onPress={() => router.push('/sdk' as never)}
-        />
       </Section>
 
-      {/* Beamable Notifications — native SDK (iOS Swift core / Android .aar) */}
-      <Section title={`2 · Beamable Notifications (native ${platformLabel})`}>
-        {isBeamableNotificationsSupported ? (
+      {/* 2 · Permission & remote registration (native SDK) */}
+      <Section title={`2 · Permission & remote registration (native ${platformLabel})`}>
+        {nativeSupported ? (
           <>
-            {Platform.OS === 'android' ? (
-              <Text style={styles.hint}>
-                The unified `@beamable/notifications-react-native` SDK (Android
-                AAR via autolinking). Tap a notification to deep-link into the
-                app. The local notification also triggers the native receive-time
-                handler (PushNotificationReceivedHandler) — which runs even when
-                the app is killed. Remote push needs a data-only FCM message.
-              </Text>
-            ) : (
-              <Text style={styles.hint}>
-                The unified `@beamable/notifications-react-native` SDK (iOS Swift
-                core via the xcframework). Tap a notification to deep-link into
-                the app. Remote push needs a physical device + APNs configured on
-                your realm.
-              </Text>
-            )}
-            <Button label="Request permission (native)" onPress={beamAskPermission} />
-            <Button label="Fire now → Details #777" onPress={beamFireNow} />
-            <Button
-              label="Fire in 10s (background & tap) → #888"
-              onPress={beamFireDelayed}
-            />
+            <Text style={styles.hint}>
+              The unified `@beamable/notifications-react-native` SDK (
+              {isAndroidHost ? 'Android AAR' : 'iOS xcframework'} via autolinking).
+              Request permission, then register for remote push — the device token
+              arrives on the tokenReceived event and is auto-registered with the
+              CampaignService microservice below. Remote push needs a physical device
+              + {remoteProvider} credentials on your realm.
+            </Text>
+            <Button label="Request permission" onPress={beamAskPermission} />
             <Button label={`Register for remote (${remoteProvider})`} onPress={beamRegisterRemote} />
-            <Button
-              label="Test all callbacks →"
-              onPress={() => router.push('/callbacks' as never)}
-            />
+            <Button label="Fire local now → Details #777" onPress={beamFireLocal} />
+            <Button label="Fire local in 10s (background & tap) → #888" onPress={beamFireDelayed} />
           </>
         ) : (
-          <Text style={styles.hint}>
-            Native module not available on this platform.
-          </Text>
+          <Text style={styles.hint}>Native module not available on this platform.</Text>
         )}
       </Section>
 
-      {/* Device registration via the CampaignService microservice */}
+      {/* 3 · Device registration via the CampaignService microservice */}
       <Section title="3 · Device registration (microservice)">
-        {isBeamableNotificationsSupported ? (
+        {nativeSupported ? (
           <>
-            {Platform.OS === 'android' ? (
-              <Text style={styles.hint}>
-                Registers this device's FCM token with the CampaignService
-                microservice so the realm can target it. Needs a physical device +
-                FCM credentials (`fcm_push`) in your realm config. Steps: Connect to
-                Beamable → Register for remote (section 2) → Register this device.
-                Delivery is driven from the Portal Campaign Builder.
-              </Text>
-            ) : (
-              <Text style={styles.hint}>
-                Registers this device's APNs token with the{' '}
-                CampaignService microservice so the realm can target it. Needs a
-                physical device + APNs credentials in your realm config. Steps:
-                Connect to Beamable → Register for remote (section 2) → Register
-                this device. Delivery is driven from the Portal Campaign Builder.
-              </Text>
-            )}
             <Text style={styles.hint}>
-              {remoteProvider} token: {apnsToken ? `${apnsToken.slice(0, 12)}…` : 'none yet (Register for remote in section 2)'}
+              Registers this device's {remoteProvider} token with the CampaignService
+              microservice so the realm can target it. Steps: Connect to Beamable →
+              Register for remote (section 2) → Register this device. Delivery is driven
+              from the Portal Campaign Builder.
+            </Text>
+            <Text style={styles.hint}>
+              {remoteProvider} token: {pushToken ? `${pushToken.slice(0, 12)}…` : 'none yet (Register for remote in section 2)'}
             </Text>
             <Button label="Register this device (microservice)" onPress={registerThisDevice} />
             <Button label="List my registered devices" onPress={showMyDevices} />
           </>
         ) : (
-          <Text style={styles.hint}>
-            Device registration is not available on this platform.
-          </Text>
+          <Text style={styles.hint}>Device registration is not available on this platform.</Text>
         )}
       </Section>
 
-      {/* Deep links */}
-      <Section title="4 · Deep links">
-        <Button label="Simulate deep link → Details #123" onPress={simulateDeepLink} />
-        <Button label="Navigate directly → Details #55" onPress={navigateDirect} />
+      {/* 4 · Analytics (funnel) */}
+      <Section title="4 · Analytics (funnel): clicked / converted">
         <Text style={styles.hint}>
-          Or from a terminal:{'\n'}
-          xcrun simctl openurl booted "beamrnsample://details/42"{'\n'}
-          adb shell am start -a android.intent.action.VIEW -d
-          "beamrnsample://details/42" com.beamable.rnsample
-        </Text>
-      </Section>
-
-      {/* Analytics (funnel) test */}
-      <Section title="5 · Analytics (funnel) test">
-        <Text style={styles.hint}>
-          Emits native Clicked / Converted funnel analytics for a test offer.
-          Auth (cid.pid scope) is configured automatically on Connect. Connect to
-          Beamable first; events appear in the activity log.{'\n'}
-          Type any Campaign / Node ID below — or open the app from a campaign push
-          and these fields auto-fill from its payload (even while running).
+          Emits native Clicked / Converted funnel analytics for a test offer (iOS &
+          Android). Auth is configured automatically on Connect; the result lands on
+          the funnelResult event.{'\n'}
+          Type any Campaign / Node ID below — or open the app from a campaign push and
+          these fields auto-fill from its payload.
         </Text>
         <TextInput
           style={styles.input}
@@ -403,13 +376,55 @@ export default function Home() {
         />
         <Button label="Track offer clicked" onPress={trackOfferClickedTest} />
         <Button label="Track offer converted" onPress={trackOfferConvertedTest} />
-        <Button label="Clear native auth" onPress={clearFunnelAuth} />
+        <Button label="Clear native auth" onPress={clearNativeFunnelAuth} />
       </Section>
 
-      {/* Activity log */}
+      {/* 5 · Deep links */}
+      <Section title="5 · Deep links">
+        <Button label="Simulate deep link → Details #123" onPress={simulateDeepLink} />
+        <Button label="Navigate directly → Details #55" onPress={navigateDirect} />
+        <Text style={styles.hint}>
+          Or from a terminal:{'\n'}
+          xcrun simctl openurl booted "beamrnsample://details/42"{'\n'}
+          adb shell am start -a android.intent.action.VIEW -d "beamrnsample://details/42" com.beamable.rnsample
+        </Text>
+      </Section>
+
+      {/* Unity ↔ React bridge (web build hosted inside a Unity WebView) */}
+      {Platform.OS === 'web' && <UnityBridgeSection />}
+
+      {/* Native events — the raw SDK event stream */}
+      <View style={styles.logHeader}>
+        <Text style={styles.sectionTitle}>Native events ({events.length})</Text>
+        {events.length > 0 && (
+          <Pressable onPress={() => setEvents([])}>
+            <Text style={styles.clear}>Clear</Text>
+          </Pressable>
+        )}
+      </View>
+      {events.length === 0 ? (
+        <Text style={styles.hint}>
+          No native events yet. Trigger an action above (permission, remote register,
+          fire a local notification and tap it).
+        </Text>
+      ) : (
+        events.map((e) => (
+          <View key={e.key} style={styles.eventCard}>
+            <View style={styles.eventTop}>
+              <View style={[styles.badge, { backgroundColor: EVENT_COLOR[e.event] }]}>
+                <Text style={styles.badgeText}>{e.event}</Text>
+              </View>
+              <Text style={styles.eventTime}>{e.time}</Text>
+            </View>
+            <Text style={styles.json}>{pretty(e.data)}</Text>
+          </View>
+        ))
+      )}
+
+      {/* Activity log — outcomes of button presses */}
       <Section title="Activity log">
         {log.length === 0 ? (
-          <Text style={styles.hint}>No events yet.</Text>
+          <Text style={styles.hint}>No activity yet.</Text>
         ) : (
           log.map((line, i) => (
             <Text key={i} style={styles.logLine}>
@@ -423,8 +438,15 @@ export default function Home() {
 }
 
 function time(): string {
-  const d = new Date();
-  return d.toLocaleTimeString();
+  return new Date().toLocaleTimeString();
+}
+
+function pretty(data: unknown): string {
+  try {
+    return JSON.stringify(data, null, 2);
+  } catch {
+    return String(data);
+  }
 }
 
 function Section(props: { title: string; children: React.ReactNode }) {
@@ -515,4 +537,17 @@ const styles = StyleSheet.create({
   warn: { color: '#b45309', fontSize: 12 },
   hint: { color: '#6b7280', fontSize: 12, fontFamily: 'Courier' },
   logLine: { fontSize: 12, color: '#374151', fontFamily: 'Courier' },
+  logHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+  clear: { color: '#dc2626', fontWeight: '600', fontSize: 13 },
+  eventCard: { backgroundColor: '#0b1021', borderRadius: 10, padding: 12, gap: 8 },
+  eventTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  badge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  badgeText: { color: 'white', fontWeight: '700', fontSize: 12 },
+  eventTime: { color: '#9ca3af', fontSize: 12, fontFamily: 'Courier' },
+  json: { color: '#e5e7eb', fontSize: 12, fontFamily: 'Courier' },
 });

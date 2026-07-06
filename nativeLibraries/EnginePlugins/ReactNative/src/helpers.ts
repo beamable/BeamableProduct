@@ -18,11 +18,11 @@
  * removed. Funnel analytics (Received/Opened/Sent/Clicked/Converted) are emitted natively
  * via the Beamable analytics endpoint; the sample no longer POSTs a webhook.
  */
-import { Platform } from 'react-native';
 import {
   BeamableNotifications,
   addListener,
   addDeepLinkListener,
+  isBeamableNotificationsSupported,
 } from './index';
 import type {
   ConfigureAuthOptions,
@@ -31,26 +31,9 @@ import type {
   LocalRequest,
 } from './index';
 
-/** True on iOS/Android (where a native module exists); false on web. */
-export const isBeamableNotificationsSupported =
-  Platform.OS === 'ios' || Platform.OS === 'android';
-
-/**
- * Every event the SDK can emit. Subscribe to any of them via `addBeamableListener`.
- */
-export const BEAMABLE_EVENTS = [
-  'permissionResult', //   requestPermission() / getPermissionStatus()
-  'tokenReceived', //      registerForRemote() succeeds (real device)
-  'tokenError', //         registerForRemote() fails
-  'notificationPresented', // a notification arrives while app is FOREGROUND
-  'notificationReceived', //  a notification is delivered (received)
-  'notificationOpened', //    user taps/opens a notification (canonical)
-  'pendingNotifications', //  getPending()
-  'deliveryReceipts', //      getDeliveryReceipts()
-  'funnelResult', //          native analytics funnel send result (Android; iOS follow-up)
-] as const;
-
-export type BeamableEvent = (typeof BEAMABLE_EVENTS)[number];
+// `isBeamableNotificationsSupported`, `BEAMABLE_EVENTS`, and `BeamableEvent` now live in
+// ./index (single source, shared with the BeamNotifications façade). These wrappers just add
+// the same platform gate the façade already applies, kept for back-compat.
 
 /**
  * Subscribe to a Beamable notification event. Same per-event typing as the façade's own

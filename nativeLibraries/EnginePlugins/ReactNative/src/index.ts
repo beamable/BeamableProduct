@@ -27,8 +27,22 @@
  * Deeplink canonical key is `deeplink`; reads stay tolerant (`deeplink`/`deepLink`/`deep_link`).
  */
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
+import { DEVICE_PLATFORM } from './pushDevice';
+import type { PushPlatform } from './pushDevice';
+import {
+  deepLinkFromNotification,
+  campaignCoordsFromNotification,
+} from './parsing';
 
 const IS_IOS = Platform.OS === 'ios';
+const IS_ANDROID = Platform.OS === 'android';
+
+/**
+ * True on iOS/Android (where a native module exists); false on web / unsupported.
+ * Every `BeamNotifications` method is gated on this, so calling the façade on an
+ * unsupported platform is a safe no-op.
+ */
+export const isBeamableNotificationsSupported = IS_IOS || IS_ANDROID;
 
 const LINKING_ERROR =
   `The package '@beamable/notifications-react-native' doesn't seem to be linked. Make sure:\n` +
@@ -245,6 +259,21 @@ export type EventMap = {
   };
 };
 
+/** Every event the SDK can emit — the runtime list matching `keyof EventMap`. */
+export const BEAMABLE_EVENTS = [
+  'permissionResult',
+  'tokenReceived',
+  'tokenError',
+  'notificationPresented',
+  'notificationReceived',
+  'notificationOpened',
+  'pendingNotifications',
+  'deliveryReceipts',
+  'funnelResult',
+] as const;
+
+export type BeamableEvent = (typeof BEAMABLE_EVENTS)[number];
+
 const DEFAULT_CHANNEL = 'deeplink_channel';
 
 // ---------------------------------------------------------------------------
@@ -384,6 +413,7 @@ export function addListener<K extends keyof EventMap>(
   event: K,
   handler: (payload: EventMap[K]) => void,
 ): Subscription {
+  if (!isBeamableNotificationsSupported) return { remove: () => {} };
   if (IS_IOS) {
     // iOS funnel-result is a follow-up: the native side doesn't emit `onFunnelResult` yet,
     // so return an inert subscription rather than binding to a non-existent native event.
@@ -462,6 +492,7 @@ export function addListener<K extends keyof EventMap>(
 export function addDeepLinkListener(
   handler: (event: DeepLinkEvent) => void,
 ): Subscription {
+  if (!isBeamableNotificationsSupported) return { remove: () => {} };
   if (IS_IOS) return { remove: () => {} };
   return getDeepLinkEmitter()!.addListener('onDeepLink', (e: DeepLinkEvent) =>
     handler(e),
@@ -515,8 +546,40 @@ function trackOffer(
 // ---------------------------------------------------------------------------
 
 export const BeamableNotifications = {
+  // ── Support / platform info (safe on every platform) ─────────────────────
+  /** True on iOS/Android; false on web / unsupported. */
+  get isSupported(): boolean {
+    return isBeamableNotificationsSupported;
+  },
+  /** Every event name the SDK can emit (subscribe via `addListener`). */
+  events: BEAMABLE_EVENTS,
+  /**
+   * Subscribe to native-support changes. On iOS/Android support is static, so the
+   * listener fires once with the current value and never again; returned handle's
+   * `remove()` is a no-op. (A reactive shape screens can use uniformly.)
+   */
+  addSupportListener(
+    listener: (supported: boolean) => void,
+  ): { remove: () => void } {
+    listener(isBeamableNotificationsSupported);
+    return { remove: () => {} };
+  },
+  /** Human label for where the native library runs ('iOS' / 'Android'). */
+  hostPlatformLabel(): string {
+    return IS_IOS ? 'iOS' : 'Android';
+  },
+  /** Which push provider this device's token belongs to ('apns' | 'fcm'). */
+  devicePushPlatform(): PushPlatform {
+    return DEVICE_PLATFORM;
+  },
+
+  // ── Pure payload parsers (safe on every platform) ────────────────────────
+  deepLinkFromNotification,
+  campaignCoordsFromNotification,
+
   /** Initialize push + deeplink. Call once at app start. */
   initialize(): void {
+    if (!isBeamableNotificationsSupported) return;
     if (IS_IOS) {
       IosNative.initialize();
       return;
@@ -532,7 +595,10 @@ export const BeamableNotifications = {
   },
 
   // Permission
-  requestPermission(options: PermissionOptions = {}): void {
+  requestPermission(
+    options: PermissionOptions = { alert: true, badge: true, sound: true },
+  ): void {
+    if (!isBeamableNotificationsSupported) return;
     if (IS_IOS) {
       IosNative.requestPermission(options);
       return;
@@ -540,12 +606,14 @@ export const BeamableNotifications = {
     BeamablePush.requestPermission();
   },
   getPermissionStatus(): void {
+    if (!isBeamableNotificationsSupported) return;
     if (IS_IOS) IosNative.getPermissionStatus();
     // Android: no bridged status query; result arrives via requestPermission.
   },
 
   // Local notifications
   scheduleLocal(request: LocalRequest): void {
+    if (!isBeamableNotificationsSupported) return;
     if (IS_IOS) {
       IosNative.scheduleLocal(request);
       return;
@@ -570,6 +638,7 @@ export const BeamableNotifications = {
     ).catch(() => {});
   },
   cancelLocal(id: string): void {
+    if (!isBeamableNotificationsSupported) return;
     if (IS_IOS) {
       IosNative.cancelLocal(id);
       return;
@@ -577,6 +646,7 @@ export const BeamableNotifications = {
     BeamablePush.cancel(stableIntId(id));
   },
   cancelAllLocal(): void {
+    if (!isBeamableNotificationsSupported) return;
     if (IS_IOS) {
       IosNative.cancelAllLocal();
       return;
@@ -584,12 +654,14 @@ export const BeamableNotifications = {
     BeamablePush.cancelAll();
   },
   getPending(): void {
+    if (!isBeamableNotificationsSupported) return;
     if (IS_IOS) IosNative.getPending();
     // Not supported on Android.
   },
 
   // Remote (FCM/APNs).
   registerForRemote(): void {
+    if (!isBeamableNotificationsSupported) return;
     if (IS_IOS) {
       IosNative.registerForRemote();
       return;
@@ -597,6 +669,7 @@ export const BeamableNotifications = {
     BeamablePush.fetchToken();
   },
   unregisterForRemote(): void {
+    if (!isBeamableNotificationsSupported) return;
     if (IS_IOS) IosNative.unregisterForRemote();
     // No-op on Android (FCM tokens are not explicitly unregistered here).
   },
@@ -617,12 +690,14 @@ export const BeamableNotifications = {
    * a missing native method is a no-op.
    */
   configureAuth(auth: ConfigureAuthOptions): void {
+    if (!isBeamableNotificationsSupported) return;
     const json = JSON.stringify(auth);
     const mod = IS_IOS ? IosNative : BeamablePush;
     if (mod && typeof mod.configureAuth === 'function') mod.configureAuth(json);
   },
   /** Clear the player auth previously written via {@link configureAuth}. */
   clearAuth(): void {
+    if (!isBeamableNotificationsSupported) return;
     const mod = IS_IOS ? IosNative : BeamablePush;
     if (mod && typeof mod.clearAuth === 'function') mod.clearAuth();
   },
@@ -642,6 +717,7 @@ export const BeamableNotifications = {
    * `notificationOpened` event instead.
    */
   getLaunchNotification(): Promise<NotificationData | null> {
+    if (!isBeamableNotificationsSupported) return Promise.resolve(null);
     if (IS_IOS) {
       return Promise.resolve(IosNative.getLaunchNotification()).then(
         (data: unknown) =>
@@ -667,6 +743,7 @@ export const BeamableNotifications = {
     intent: NotificationIntentData,
     offer?: NotificationOffer,
   ): void {
+    if (!isBeamableNotificationsSupported) return;
     trackOffer('clicked', intent, offer);
   },
   /** §4.7 — record that an offer click converted. Emits a `Converted` funnel event. */
@@ -674,7 +751,34 @@ export const BeamableNotifications = {
     intent: NotificationIntentData,
     offer?: NotificationOffer,
   ): void {
+    if (!isBeamableNotificationsSupported) return;
     trackOffer('converted', intent, offer);
+  },
+
+  /**
+   * Schedule a local notification whose tap carries a deep link. Generic: pass the
+   * full URL to open (the app owns its scheme/routes) — it's stored under
+   * `userInfo.deepLink`, which `deepLinkFromNotification` and the tap handler read.
+   * Omit/zero `seconds` to fire immediately.
+   */
+  scheduleLocalWithDeepLink(opts: {
+    id: string;
+    title: string;
+    body: string;
+    url: string;
+    seconds?: number;
+  }): void {
+    if (!isBeamableNotificationsSupported) return;
+    this.scheduleLocal({
+      id: opts.id,
+      title: opts.title,
+      body: opts.body,
+      trigger:
+        opts.seconds && opts.seconds > 0
+          ? { type: 'timeInterval', seconds: opts.seconds }
+          : { type: 'immediate' },
+      userInfo: { deepLink: opts.url },
+    });
   },
 
   addListener,
@@ -683,14 +787,21 @@ export const BeamableNotifications = {
 
 export default BeamableNotifications;
 
+/**
+ * The recommended single entry point. `BeamNotifications.<method>()` covers the whole
+ * notifications surface — lifecycle, permission, remote registration, scheduling, events,
+ * funnel analytics, support/platform info, and the pure payload parsers — with the
+ * platform gate baked in. (`BeamableNotifications` and the `default` export are aliases.)
+ */
+export const BeamNotifications = BeamableNotifications;
+
 // ---------------------------------------------------------------------------
 // Generic, app-agnostic extras (relocated from the RN sample, §6).
 // ---------------------------------------------------------------------------
-
-// AsyncStorage-backed `TokenStorage` for the Beamable Web SDK (generic RN session
-// persistence). Requires the `@beamable/sdk` and `@react-native-async-storage/async-storage`
-// peer dependencies.
-export { RNTokenStorage } from './RNTokenStorage';
+//
+// NOTE: the AsyncStorage-backed `RNTokenStorage` for the Beamable Web SDK moved to
+// its own package, `@beamable/sdk-react-native` — it is an SDK concern, not a
+// notifications one. Import it from there.
 
 // Device push-token helpers over a `PushNotificationService`-style microservice client.
 export {
@@ -706,10 +817,13 @@ export type {
   PushDeviceServiceClient,
 } from './pushDevice';
 
-// Convenience wrappers + platform gate over the unified façade.
+// Pure payload parsers (also available on the BeamNotifications façade).
+export { deepLinkFromNotification, campaignCoordsFromNotification } from './parsing';
+
+// Back-compat convenience wrappers (the BeamNotifications façade is the recommended API).
+// `isBeamableNotificationsSupported`, `BEAMABLE_EVENTS`, and `BeamableEvent` are defined in
+// this module (above) — the façade and the flat wrappers share that single source.
 export {
-  isBeamableNotificationsSupported,
-  BEAMABLE_EVENTS,
   addBeamableListener,
   addBeamableDeepLinkListener,
   initBeamableNotifications,
@@ -728,4 +842,3 @@ export {
   clearDelivered,
   getLaunchNotification,
 } from './helpers';
-export type { BeamableEvent } from './helpers';
