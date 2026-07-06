@@ -222,6 +222,7 @@ public class PortalExtensionCommandTests : CLITestExtensions
 
 		Run("project", "new", "portal-extension", "TestPageExt", "--quiet",
 			"--mount-page", "my-custom-page",
+			"--mount-group", "TestGroup",
 			"--mount-label", "TestLabel",
 			"--template", template);
 
@@ -233,6 +234,8 @@ public class PortalExtensionCommandTests : CLITestExtensions
 			"package.json must contain the mount page");
 		Assert.That(packageJson, Does.Contain("#extension-page"),
 			"package.json must contain the auto-assigned selector for page extensions");
+		Assert.That(packageJson, Does.Contain("TestGroup"),
+			"package.json must contain the nav group");
 		Assert.That(packageJson, Does.Contain("TestLabel"),
 			"package.json must contain the nav label");
 	}
@@ -246,6 +249,7 @@ public class PortalExtensionCommandTests : CLITestExtensions
 
 		Run("project", "new", "portal-extension", "FerrariExt", "--quiet",
 			"--mount-page", "cars/ferrari",
+			"--mount-group", "Cars",
 			"--mount-label", "Ferrari",
 			"--template", "react");
 
@@ -302,6 +306,7 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		MockRemotePortalConfig();
 		Run("project", "new", "portal-extension", "TestExt", "--quiet",
 			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
 			"--mount-label", "TestLabel",
 			"--template", "react");
 		_mockObjects.Clear();
@@ -359,6 +364,7 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		MockRemotePortalConfig();
 		Run("project", "new", "portal-extension", "TestExt", "--quiet",
 			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
 			"--mount-label", "TestLabel",
 			"--template", "react");
 		_mockObjects.Clear();
@@ -389,6 +395,7 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		MockRemotePortalConfig();
 		Run("project", "new", "portal-extension", "DupExt", "--quiet",
 			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
 			"--mount-label", "TestLabel",
 			"--template", "react");
 		_mockObjects.Clear();
@@ -401,6 +408,7 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		{
 			"project", "new", "portal-extension", "DupExt", "--quiet",
 			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
 			"--mount-label", "TestLabel",
 			"--template", "react"
 		});
@@ -424,6 +432,7 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		{
 			"project", "new", "portal-extension", "Collide", "--quiet",
 			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
 			"--mount-label", "TestLabel",
 			"--template", "react"
 		});

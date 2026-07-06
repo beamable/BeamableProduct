@@ -297,6 +297,7 @@ public class RemotePortalConfigService : IRemotePortalConfigService
 					metadata.Properties.Mounts.Add(new PortalExtensionMountProperties
 					{
 						Page = (string)mount["page"],
+						NavGroup = OptionalStringFromToken(mount["navGroup"]),
 						NavLabel = OptionalStringFromToken(mount["navLabel"]),
 					});
 				}
@@ -373,9 +374,9 @@ public class RemotePortalConfigService : IRemotePortalConfigService
 	/// extension's <c>mounts</c> (an extension can render in more than one place). Each site's
 	/// <c>path</c> is the URL that mount renders at (its <c>page</c>); selectors are the extension's
 	/// declared <c>BeamExtensionSite</c>s as <c>#&lt;name&gt;</c> component slots (the same for every
-	/// mount); navContext is that mount's navLabel (the hub hierarchy lives in the page path itself).
-	/// Returns empty when the extension declares no slots, has no name, or has no mount with a
-	/// resolvable page.
+	/// mount); navContext is that mount's navGroup/navLabel (the hub hierarchy itself lives in the page
+	/// path, and the nav group is an additional grouping within a hub). Returns empty when the extension
+	/// declares no slots, has no name, or has no mount with a resolvable page.
 	/// </summary>
 	public static List<RemotePortalConfiguration.MountSiteConfig> BuildMountSitesFromMetadata(ExtensionBuildMetaData metadata)
 	{
@@ -404,7 +405,10 @@ public class RemotePortalConfigService : IRemotePortalConfigService
 			if (string.IsNullOrEmpty(path)) continue;
 
 			var navContext = new List<string>();
+			var navGroup = mount.NavGroup;
 			var navLabel = mount.NavLabel;
+			if (navGroup != null && navGroup.HasValue && !string.IsNullOrEmpty(navGroup.Value))
+				navContext.Add(navGroup.Value);
 			if (navLabel != null && navLabel.HasValue && !string.IsNullOrEmpty(navLabel.Value))
 				navContext.Add(navLabel.Value);
 

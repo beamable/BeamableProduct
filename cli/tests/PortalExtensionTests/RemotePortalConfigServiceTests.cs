@@ -35,7 +35,7 @@ public class RemotePortalConfigServiceTests
 	}
 
 	private static ExtensionBuildMetaData MakeMetadata(
-		string name, string page, string navLabel, params string[] extensionSites) => new()
+		string name, string page, string navGroup, string navLabel, params string[] extensionSites) => new()
 	{
 		Name = name,
 		ExtensionSites = extensionSites.ToList(),
@@ -47,6 +47,7 @@ public class RemotePortalConfigServiceTests
 				new()
 				{
 					Page = page,
+					NavGroup = navGroup == null ? null : new OptionalString { HasValue = true, Value = navGroup },
 					NavLabel = navLabel == null ? null : new OptionalString { HasValue = true, Value = navLabel },
 				}
 			}
@@ -183,7 +184,7 @@ public class RemotePortalConfigServiceTests
 	[Test]
 	public void BuildMountSitesFromMetadata_PageExtension_PathIsRoute_ComponentSelectors_WithNav()
 	{
-		var metadata = MakeMetadata("A", "ARoute", "ALabel", "top", "bottom");
+		var metadata = MakeMetadata("A", "ARoute", "AGroup", "ALabel", "top", "bottom");
 
 		var sites = RemotePortalConfigService.BuildMountSitesFromMetadata(metadata);
 
@@ -192,15 +193,15 @@ public class RemotePortalConfigServiceTests
 		Assert.That(site.path, Is.EqualTo("ARoute"));
 		Assert.That(site.selectors.Select(s => s.selector), Is.EqualTo(new[] { "#top", "#bottom" }));
 		Assert.That(site.selectors.All(s => s.type == "component"), Is.True);
-		// navContext is just the label now — the hub hierarchy lives in the page path.
-		Assert.That(site.navContext, Is.EqualTo(new[] { "ALabel" }));
+		// navContext carries the nav group then the label — the hub hierarchy lives in the page path.
+		Assert.That(site.navContext, Is.EqualTo(new[] { "AGroup", "ALabel" }));
 	}
 
 	[Test]
 	public void BuildMountSitesFromMetadata_ComponentExtension_PathIsHostPage()
 	{
 		// B is mounted at the players page; its slot lives there.
-		var metadata = MakeMetadata("B", "players", null, "B-top");
+		var metadata = MakeMetadata("B", "players", null, null, "B-top");
 
 		var sites = RemotePortalConfigService.BuildMountSitesFromMetadata(metadata);
 
@@ -213,7 +214,7 @@ public class RemotePortalConfigServiceTests
 	[Test]
 	public void BuildMountSitesFromMetadata_NormalizesLeadingAndTrailingSlashes()
 	{
-		var metadata = MakeMetadata("A", "/ARoute/", null, "top");
+		var metadata = MakeMetadata("A", "/ARoute/", null, null, "top");
 
 		var sites = RemotePortalConfigService.BuildMountSitesFromMetadata(metadata);
 
@@ -223,7 +224,7 @@ public class RemotePortalConfigServiceTests
 	[Test]
 	public void BuildMountSitesFromMetadata_OneSitePerMount()
 	{
-		var metadata = MakeMetadata("A", "ARoute", null, "top");
+		var metadata = MakeMetadata("A", "ARoute", null, null, "top");
 		metadata.Properties.Mounts.Add(new PortalExtensionMountProperties { Page = "players" });
 
 		var sites = RemotePortalConfigService.BuildMountSitesFromMetadata(metadata);
@@ -235,7 +236,7 @@ public class RemotePortalConfigServiceTests
 	[Test]
 	public void BuildMountSitesFromMetadata_PreservesAlreadyHashedSelector()
 	{
-		var metadata = MakeMetadata("A", "ARoute", null, "#top");
+		var metadata = MakeMetadata("A", "ARoute", null, null, "#top");
 
 		var sites = RemotePortalConfigService.BuildMountSitesFromMetadata(metadata);
 
@@ -245,7 +246,7 @@ public class RemotePortalConfigServiceTests
 	[Test]
 	public void BuildMountSitesFromMetadata_Empty_WhenNoExtensionSites()
 	{
-		var metadata = MakeMetadata("A", "ARoute", "ALabel");
+		var metadata = MakeMetadata("A", "ARoute", null, "ALabel");
 
 		var sites = RemotePortalConfigService.BuildMountSitesFromMetadata(metadata);
 
@@ -255,7 +256,7 @@ public class RemotePortalConfigServiceTests
 	[Test]
 	public void BuildMountSitesFromMetadata_Empty_WhenNoName()
 	{
-		var metadata = MakeMetadata(null, "ARoute", null, "top");
+		var metadata = MakeMetadata(null, "ARoute", null, null, "top");
 
 		var sites = RemotePortalConfigService.BuildMountSitesFromMetadata(metadata);
 
@@ -265,7 +266,7 @@ public class RemotePortalConfigServiceTests
 	[Test]
 	public void BuildMountSitesFromMetadata_Empty_WhenNoResolvableMountPage()
 	{
-		var metadata = MakeMetadata("A", "   ", null, "top");
+		var metadata = MakeMetadata("A", "   ", null, null, "top");
 
 		var sites = RemotePortalConfigService.BuildMountSitesFromMetadata(metadata);
 

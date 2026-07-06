@@ -288,6 +288,7 @@ public class PortalExtensionMountProperties
 {
 	public const string KEY_PAGE = "page";
 	public const string KEY_SELECTOR = "selector";
+	public const string KEY_NAV_GROUP = "navGroup";
 	public const string KEY_NAV_LABEL = "navLabel";
 	public const string KEY_NAV_ICON = "navIcon";
 	public const string KEY_NAV_DESCRIPTION = "navDescription";
@@ -297,11 +298,16 @@ public class PortalExtensionMountProperties
 
 	// For #extension-page mounts the page path defines the hub hierarchy: a single segment
 	// declares a hub that is a full page of its own, and a nested path
-	// places that extension inside the "cars" hub. There is no separate
-	// nav group — the hierarchy is the page path.
+	// places that extension inside the "cars" hub. The nav group is a separate,
+	// additional way to organize extensions inside a given hub.
 	[JsonProperty(KEY_PAGE)] public string Page;
 
 	[JsonProperty(KEY_SELECTOR)] public string Selector;
+
+	// Optional grouping used to organize extensions within a hub's navigation.
+	[JsonProperty(KEY_NAV_GROUP)]
+	[JsonConverter(typeof(OptionalConverter))]
+	public OptionalString NavGroup;
 
 	[JsonProperty(KEY_NAV_LABEL)]
 	[JsonConverter(typeof(OptionalConverter))]

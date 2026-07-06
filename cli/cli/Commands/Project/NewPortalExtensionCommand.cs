@@ -13,6 +13,7 @@ public class NewPortalExtensionCommandArgs : SolutionCommandArgs
 	public string mountPage;
 	public string mountSelector;
 	public string mountIcon;
+	public string mountGroup;
 	public string mountLabel;
 	public int mountGroupOrder;
 	public int mountLabelOrder;
@@ -57,7 +58,12 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 				aliases: new string[] { "--mount-selector" },
 				description: "The mount slot on the page. Required for component extensions; omit for page extensions (auto-assigned). Run 'portal extension list-extension-options' to see valid selectors per page"),
 			binder: (args, i) => args.mountSelector = i);
-		
+
+		AddOption(new Option<string>(
+				aliases: new string[] { "--mount-group" },
+				description: "Specify the navigation group of the extension, used to organize extensions within a hub. This is required when the extension is a full page"),
+			binder: (args, i) => args.mountGroup = i);
+
 		AddOption(new Option<string>(
 				aliases: new string[] { "--mount-label" },
 				description: "Specify the navigation label of the extension. This is only valid when the extension is a full page"),
@@ -131,8 +137,14 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 		if (resolvedSelector.type == "page")
 		{
-			// Full-page (hub) extensions need a display label; the hub hierarchy comes from the
-			// page path itself (e.g. "cars" vs "cars/ferrari"), so there is no separate nav group.
+			// Full-page (hub) extensions need a nav group and a display label. The hub hierarchy comes
+			// from the page path itself (e.g. "cars" vs "cars/ferrari"); the nav group is a separate way
+			// to organize extensions within a hub, and is required for page extensions.
+			if (string.IsNullOrEmpty(args.mountGroup))
+			{
+				if (args.Quiet) throw new CliException("Must provide --mount-group when in quiet mode.");
+				args.mountGroup = AnsiConsole.Ask<string>("Nav Group:");
+			}
 			if (string.IsNullOrEmpty(args.mountLabel))
 			{
 				if (args.Quiet) throw new CliException("Must provide --mount-label when in quiet mode.");
@@ -163,6 +175,8 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 			mount[PortalExtensionMountProperties.KEY_PAGE] = args.mountPage;
 			mount[PortalExtensionMountProperties.KEY_SELECTOR] = args.mountSelector;
 
+			if (!string.IsNullOrEmpty(args.mountGroup))
+				mount[PortalExtensionMountProperties.KEY_NAV_GROUP] = args.mountGroup;
 			if (!string.IsNullOrEmpty(args.mountLabel))
 				mount[PortalExtensionMountProperties.KEY_NAV_LABEL] = args.mountLabel;
 			if (!string.IsNullOrEmpty(args.mountIcon))
