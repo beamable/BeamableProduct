@@ -58,12 +58,12 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 				aliases: new string[] { "--mount-selector" },
 				description: "The mount slot on the page. Required for component extensions; omit for page extensions (auto-assigned). Run 'portal extension list-extension-options' to see valid selectors per page"),
 			binder: (args, i) => args.mountSelector = i);
-		
+
 		AddOption(new Option<string>(
 				aliases: new string[] { "--mount-group" },
-				description: "Specify the navigation group of the extension. This is only valid when the extension is a full page"),
+				description: "Specify the navigation group of the extension, used to organize extensions within a hub. This is required when the extension is a full page"),
 			binder: (args, i) => args.mountGroup = i);
-		
+
 		AddOption(new Option<string>(
 				aliases: new string[] { "--mount-label" },
 				description: "Specify the navigation label of the extension. This is only valid when the extension is a full page"),
@@ -121,23 +121,25 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		var configService = args.DependencyProvider.GetService<IRemotePortalConfigService>();
 		var config = await configService.GetRemotePortalConfig(args);
 		BuildMountSiteIndex(config,
-			out var customPagePrefixes,
-			out var customPageConfigs,
+			out var pageSelector,
 			out var componentPages);
 
 		RemotePortalConfiguration.MountSiteSelector resolvedSelector;
 
 		if (hasExplicitPage)
 		{
-			resolvedSelector = ValidateMountArgs(args, customPagePrefixes, customPageConfigs, componentPages);
+			resolvedSelector = ValidateMountArgs(args, pageSelector, componentPages);
 		}
 		else
 		{
-			resolvedSelector = RunMountWizard(args, customPagePrefixes, customPageConfigs, componentPages);
+			resolvedSelector = RunMountWizard(args, pageSelector, componentPages);
 		}
 
 		if (resolvedSelector.type == "page")
 		{
+			// Full-page (hub) extensions need a nav group and a display label. The hub hierarchy comes
+			// from the page path itself (e.g. "cars" vs "cars/ferrari"); the nav group is a separate way
+			// to organize extensions within a hub, and is required for page extensions.
 			if (string.IsNullOrEmpty(args.mountGroup))
 			{
 				if (args.Quiet) throw new CliException("Must provide --mount-group when in quiet mode.");
@@ -190,25 +192,28 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 	private static void BuildMountSiteIndex(
 		RemotePortalConfiguration config,
-		out List<string> customPagePrefixes,
-		out Dictionary<string, RemotePortalConfiguration.MountSiteConfig> customPageConfigs,
+		out RemotePortalConfiguration.MountSiteSelector pageSelector,
 		out Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages)
 	{
 		const string pathMatchSuffix = "!pathMatch";
-		customPagePrefixes = new List<string>();
-		customPageConfigs = new Dictionary<string, RemotePortalConfiguration.MountSiteConfig>();
+		pageSelector = null;
 		componentPages = new Dictionary<string, RemotePortalConfiguration.MountSiteConfig>();
 
 		foreach (var site in config.mountSites)
 		{
 			if (site.path.EndsWith(pathMatchSuffix))
 			{
-				var prefix = site.path[..^pathMatchSuffix.Length];
-				customPagePrefixes.Add(prefix);
-				customPageConfigs[prefix] = site;
+				// The full-page slot (e.g. "!hub/!pathMatch" -> "#extension-page"). The page path a
+				// user supplies is passed through verbatim — the Portal parses the hub hierarchy from
+				// it (e.g. "cars" is a hub, "cars/ferrari" nests under it) — so we only need this entry
+				// to source the page selector to auto-assign. Every such slot uses the same selector.
+				if (pageSelector == null && site.selectors.Count > 0)
+					pageSelector = site.selectors[0];
 			}
 			else
 			{
+				// Includes slots contributed by other running extensions' BeamExtensionSite
+				// declarations — they are ordinary, uniquely-named component selectors at a URL.
 				componentPages[site.path] = site;
 			}
 		}
@@ -216,33 +221,10 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 	private static RemotePortalConfiguration.MountSiteSelector ValidateMountArgs(
 		NewPortalExtensionCommandArgs args,
-		List<string> customPagePrefixes,
-		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> customPageConfigs,
+		RemotePortalConfiguration.MountSiteSelector pageSelector,
 		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages)
 	{
-		// Check if --mount-page is a custom page extension (starts with a known prefix + has extra path)
-		var matchingPrefix = customPagePrefixes.FirstOrDefault(prefix =>
-			args.mountPage.StartsWith(prefix) && args.mountPage.Length > prefix.Length);
-
-		if (matchingPrefix != null)
-		{
-			// Page extensions don't require --mount-selector; auto-assign from the first available selector.
-			var siteConfig = customPageConfigs[matchingPrefix];
-			if (string.IsNullOrEmpty(args.mountSelector))
-			{
-				var first = siteConfig.selectors[0];
-				args.mountSelector = first.selector;
-				return first;
-			}
-			var selector = siteConfig.selectors.FirstOrDefault(s => s.selector == args.mountSelector);
-			if (selector == null)
-				throw new CliException(
-					$"Invalid --mount-selector '{args.mountSelector}' for page '{args.mountPage}'. " +
-					$"Valid selectors: {string.Join(", ", siteConfig.selectors.Select(s => s.selector))}");
-			return selector;
-		}
-
-		// Check if --mount-page is a component page
+		// A known component page → mount as a component into one of its slots (selector required).
 		if (componentPages.TryGetValue(args.mountPage, out var componentConfig))
 		{
 			if (string.IsNullOrEmpty(args.mountSelector))
@@ -257,62 +239,52 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 			return selector;
 		}
 
-		throw new CliException(
-			$"Invalid --mount-page '{args.mountPage}'. " +
-			$"Must be a known component page or a custom route under: " +
-			string.Join(", ", customPagePrefixes.Select(p => $"{p}<route>")));
+		// Anything else is a full-page extension. The page path is passed through verbatim — the
+		// Portal parses the hub hierarchy from it ("cars" is a hub; "cars/ferrari" nests under the
+		// "cars" hub) — and the page slot selector is auto-assigned.
+		if (pageSelector == null)
+			throw new CliException(
+				"No page mount slot is available from the Portal config, so a full-page extension cannot be created. " +
+				"Run 'portal extension list-extension-options' to see valid component pages and selectors.");
+		args.mountSelector = pageSelector.selector;
+		return pageSelector;
 	}
 
 	private static RemotePortalConfiguration.MountSiteSelector RunMountWizard(
 		NewPortalExtensionCommandArgs args,
-		List<string> customPagePrefixes,
-		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> customPageConfigs,
+		RemotePortalConfiguration.MountSiteSelector pageSelector,
 		Dictionary<string, RemotePortalConfiguration.MountSiteConfig> componentPages)
 	{
 		const string back = "<-- (back)";
 
 		while (true)
 		{
+			var typeChoices = new List<string>();
+			// Only offer a full page when the Portal actually exposes a page slot.
+			if (pageSelector != null) typeChoices.Add("Page");
+			typeChoices.Add("Component");
+
 			var extensionType = AnsiConsole.Prompt(
 				new SelectionPrompt<string>()
 					.Title("What [green]type[/] of extension do you need?")
-					.AddChoices("Page", "Component")
+					.AddChoices(typeChoices)
 					.AddBeamHightlight());
 
 			if (extensionType == "Page")
 			{
-				// Build display list: empty-string prefix shown as "/"
-				const string rootDisplay = "/";
-				var prefixDisplays = customPagePrefixes
-					.Select(p => string.IsNullOrEmpty(p) ? rootDisplay : p)
-					.ToList();
+				// The page path is passed through verbatim — the Portal parses the hub hierarchy
+				var pagePath = AnsiConsole.Ask<string>(
+					"What is the [green]page path[/]?");
 
-				var prefixDisplayChoice = AnsiConsole.Prompt(
-					new SelectionPrompt<string>()
-						.Title("Which [green]page[/] on the Portal are you extending?")
-						.AddChoices(prefixDisplays.Prepend(back))
-						.AddBeamHightlight());
-
-				if (prefixDisplayChoice == back) continue;
-
-				var prefixChoice = prefixDisplayChoice == rootDisplay ? string.Empty : prefixDisplayChoice;
-
-				// Ask for the custom route segment to append
-				var customRoute = AnsiConsole.Ask<string>("What is the new route for your page?");
-
-				if (string.IsNullOrWhiteSpace(customRoute))
+				if (string.IsNullOrWhiteSpace(pagePath))
 				{
-					AnsiConsole.MarkupLine("[red]Route cannot be empty.[/]");
+					AnsiConsole.MarkupLine("[red]Page path cannot be empty.[/]");
 					continue;
 				}
 
-				args.mountPage = prefixChoice + customRoute.TrimStart('/');
-
-				// Use the first selector from the !pathMatch config entry
-				var siteConfig = customPageConfigs[prefixChoice];
-				var selector = siteConfig.selectors[0];
-				args.mountSelector = selector.selector;
-				return selector;
+				args.mountPage = pagePath.Trim().TrimStart('/');
+				args.mountSelector = pageSelector.selector;
+				return pageSelector;
 			}
 			else // Component
 			{
