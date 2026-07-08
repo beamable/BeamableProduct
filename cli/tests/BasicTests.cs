@@ -145,15 +145,14 @@ public class Tests : CLITest
 			builder.AddZLoggerConsole();
 		}).CreateLogger<Tests>();
 		
-		var gen = new ServiceDocGenerator();
-		
 		var builder = new DependencyBuilder();
 		
 		builder.AddSingleton<BeamStandardTelemetryAttributeProvider>();
 		builder.AddSingleton<SingletonDependencyList<ITelemetryAttributeProvider>>();
 		builder.AddSingleton<IMicroserviceArgs>(new MicroserviceArgs());
+		builder.AddSingleton<IServiceOpenApiDocsCache, ServiceOpenApiDocsCache>();
 		var provider = builder.Build();
-		var doc = gen.Generate<TroublesomeService>(provider);
+		var doc = provider.GetService<IServiceOpenApiDocsCache>().GetServiceDocument(typeof(TroublesomeService));
 
 		UnrealSourceGenerator.exportMacro = "TROUBLESOMEPROJECT_API";
 		UnrealSourceGenerator.blueprintExportMacro = "TROUBLESOMEPROJECTBLUEPRINTNODES_API";
