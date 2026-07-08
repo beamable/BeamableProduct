@@ -170,18 +170,27 @@ public static class LocalRealmService
 	}
 
 	/// <summary>
-	/// Returns true if the saved login still resolves against the local backend. Reuses the existing
-	/// cid/pid + saved refresh token and refreshes it via <see cref="IAuthApi.LoginRefreshToken"/> (the same
-	/// path the CLI uses at startup); a refreshed token is saved back. Returns false when there is nothing to
-	/// reuse or the refresh fails (e.g. the realm was wiped).
+	/// Returns true only if the workspace is a valid login <b>against the local backend</b>. It must already be
+	/// pointed at <paramref name="localHost"/> (not a dev/prod server — otherwise the microservices would run
+	/// with the wrong cid/pid) and its saved refresh token must still resolve. A refreshed token is saved back.
+	/// Returns false when the config points elsewhere, has no cid/pid/token, or the refresh fails.
 	/// </summary>
-	public static async Task<bool> IsLoginValidAsync(CommandArgs args)
+	public static async Task<bool> IsLoginValidAsync(CommandArgs args, string localHost)
 	{
 		var config = args.ConfigService;
+		var host = config.GetConfigString(ConfigService.CFG_JSON_FIELD_HOST);
 		var cid = config.GetConfigString(ConfigService.CFG_JSON_FIELD_CID);
 		var pid = config.GetConfigString(ConfigService.CFG_JSON_FIELD_PID);
 		if (string.IsNullOrEmpty(cid) || string.IsNullOrEmpty(pid))
 			return false;
+
+		// The workspace is configured against a different server (e.g. dev) — not a valid LOCAL login, and
+		// running the microservices/extensions against it would use the wrong cid/pid.
+		if (!SameHost(host, localHost))
+		{
+			Log.Verbose($"local login invalid: config host '{host}' != local host '{localHost}'.");
+			return false;
+		}
 
 		if (!config.ReadTokenFromFile(out var token) || string.IsNullOrEmpty(token?.RefreshToken))
 			return false;
@@ -198,6 +207,9 @@ public static class LocalRealmService
 			return false;
 		}
 	}
+
+	private static bool SameHost(string a, string b) =>
+		string.Equals((a ?? string.Empty).TrimEnd('/'), (b ?? string.Empty).TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
 
 	private static string Trim(string s) => string.IsNullOrEmpty(s) || s.Length <= 300 ? s : s.Substring(0, 300);
 }

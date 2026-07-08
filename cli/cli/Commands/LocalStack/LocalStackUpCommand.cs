@@ -115,6 +115,10 @@ public class LocalStackUpCommand
 		if (steps.Count == 0)
 			throw new CliException("No steps to run (all disabled or filtered out).");
 
+		// Fail fast if the stack needs Docker but its daemon isn't running — otherwise the first docker step
+		// dies mid-bring-up with a cryptic daemon error.
+		EnsureDockerRunning(steps);
+
 		// Resolve how to invoke this same beam CLI for `beam: true` steps, and the workspace to run them from.
 		var (beamExe, beamLeading) = ResolveBeam(args);
 		var beamWorkspaceFallback = args.ConfigService?.BeamableWorkspace
@@ -294,8 +298,9 @@ public class LocalStackUpCommand
 	{
 		try
 		{
-			// Reuse the existing login if it still resolves against the local backend.
-			if (await LocalRealmService.IsLoginValidAsync(args))
+			// Reuse the existing login only if the workspace is already pointed at the local backend and its
+			// token still resolves — otherwise (e.g. config points at a dev server) fall through and re-point it.
+			if (await LocalRealmService.IsLoginValidAsync(args, config.host))
 			{
 				Log.Information("Local login OK.");
 				return;
@@ -326,6 +331,59 @@ public class LocalStackUpCommand
 		{
 			// Don't tear down an otherwise-healthy stack over a realm/login problem — surface it and continue.
 			Log.Warning($"Realm/login setup issue: {e.Message}");
+		}
+	}
+
+	/// <summary>
+	/// If any step launches docker, verify the Docker <b>daemon</b> is actually running (not just that the CLI
+	/// binary exists) before we start anything, so bring-up fails fast with a clear message instead of the
+	/// first `docker compose up` dying on a daemon-connection error mid-run.
+	/// </summary>
+	private static void EnsureDockerRunning(List<LocalStackStep> steps)
+	{
+		var needsDocker = steps.Any(s => string.Equals(s.command, "docker", StringComparison.OrdinalIgnoreCase));
+		if (!needsDocker) return;
+
+		if (!DockerPathOption.TryGetDockerPath(out var dockerPath, out var err))
+			throw new CliException($"This stack needs Docker, but the Docker CLI wasn't found: {err}");
+
+		var psi = new ProcessStartInfo
+		{
+			FileName = dockerPath,
+			UseShellExecute = false,
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			CreateNoWindow = true,
+		};
+		// `docker info` talks to the daemon (unlike `docker --version`, which only checks the CLI binary).
+		psi.ArgumentList.Add("info");
+		psi.ArgumentList.Add("--format");
+		psi.ArgumentList.Add("{{.ServerVersion}}");
+
+		try
+		{
+			var proc = Process.Start(psi);
+			if (proc == null)
+				throw new CliException("Could not run docker to check whether the daemon is running.");
+
+			if (!proc.WaitForExit(15000))
+			{
+				try { proc.Kill(entireProcessTree: true); } catch { /* ignore */ }
+				throw new CliException("Docker did not respond within 15s — is Docker Desktop (the daemon) running?");
+			}
+
+			if (proc.ExitCode != 0)
+				throw new CliException("Docker does not appear to be running. Start Docker Desktop (or the Docker daemon), then re-run `beam local up`.");
+
+			Log.Information("Docker daemon is running.");
+		}
+		catch (CliException)
+		{
+			throw;
+		}
+		catch (Exception e)
+		{
+			throw new CliException($"Failed to verify Docker is running ({dockerPath}): {e.Message}. Start Docker and re-run `beam local up`.");
 		}
 	}
 

@@ -346,20 +346,69 @@ public class DefaultAppContext : IAppContext
 
 		_token = new CliToken(accessToken, _refreshToken, cid, pid);;
 		
-		await Set(cid, pid, host);
-		
-		// if the token we got from the config file is expired, try to refresh it with the refresh token.
+		// Resolve cid + point at the host — time-bounded so an unreachable/half-up host (e.g. Caddy is up but
+		// the gateway is down, so the TCP connect succeeds but the request never responds) can't hang startup.
+		try
+		{
+			if (!await CompletesWithin(Set(cid, pid, host), StartupNetworkTimeout))
+			{
+				Log.Warning($"Resolving cid/host against {host} timed out after {StartupNetworkTimeout.TotalSeconds}s — continuing offline.");
+				_host = host; _cid = cid; _pid = pid; _token.Cid = cid; _token.Pid = pid;
+			}
+		}
+		catch (Exception e)
+		{
+			Log.Warning($"Could not resolve cid/host against {host}: {e.Message} — continuing offline.");
+			_host = host; _cid = cid; _pid = pid; _token.Cid = cid; _token.Pid = pid;
+		}
+
+		// if the token we got from the config file is expired, try to refresh it — again time-bounded and
+		// non-fatal, so a down/unreachable backend can't hang or crash every command. Standalone/offline
+		// commands (e.g. `beam local init`) don't need auth; commands that do will surface a clear error later.
 		if (isExpiredToken)
 		{
-			TokenResponse tokenResponse = await _provider.GetService<IAuthApi>().LoginRefreshToken(response.RefreshToken);
-			
-			Log.Debug(
-				$"Got new token: access=[{tokenResponse.access_token}] refresh=[{tokenResponse.refresh_token}] type=[{tokenResponse.token_type}] ");
-			
-			_token = new CliToken(tokenResponse.access_token, _refreshToken, cid, pid);
-			
-			_configService.SaveTokenToFile(_token);
+			try
+			{
+				var refreshTask = RefreshTokenAsync(response.RefreshToken);
+				if (await CompletesWithin(refreshTask, StartupNetworkTimeout))
+				{
+					var tokenResponse = await refreshTask;
+					Log.Debug($"Got new token: type=[{tokenResponse.token_type}]");
+					_token = new CliToken(tokenResponse.access_token, _refreshToken, cid, pid);
+					_configService.SaveTokenToFile(_token);
+				}
+				else
+				{
+					Log.Warning($"Token refresh against {host} timed out after {StartupNetworkTimeout.TotalSeconds}s — continuing with the existing token.");
+				}
+			}
+			catch (Exception e)
+			{
+				Log.Warning($"Could not refresh the access token against {host}: {e.Message}. Continuing with the existing token.");
+			}
 		}
+	}
+
+	/// <summary>How long a startup network call (alias resolve / token refresh) may take before we give up and
+	/// proceed offline — so an unreachable or half-up backend can't hang every command.</summary>
+	private static readonly TimeSpan StartupNetworkTimeout = TimeSpan.FromSeconds(8);
+
+	private async Task<TokenResponse> RefreshTokenAsync(string refreshToken) =>
+		await _provider.GetService<IAuthApi>().LoginRefreshToken(refreshToken);
+
+	/// <summary>Awaits <paramref name="task"/> but returns false if it doesn't finish within
+	/// <paramref name="timeout"/> (the task keeps running in the background; its exception is observed).</summary>
+	private static async Task<bool> CompletesWithin(Task task, TimeSpan timeout)
+	{
+		if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
+		{
+			await task; // surface any exception to the caller
+			return true;
+		}
+
+		// Timed out — observe the eventual exception so it doesn't become an UnobservedTaskException.
+		_ = task.ContinueWith(t => { _ = t.Exception; }, TaskScheduler.Default);
+		return false;
 	}
 
 	public async Task Set(string cid, string pid, string host)

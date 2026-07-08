@@ -128,6 +128,14 @@ public class CliRequester : IRequester
 		Func<string, T> parser = null,
 		bool useCache = false, int retryCount = 0)
 	{
+		// A request to the auth-token endpoint must never itself trigger a token refresh:
+		// GetTokenAndRetry -> LoginRefreshToken -> POST /basic/auth/token, so if that POST
+		// fails (e.g. auth host down -> 401/502/timeout) and re-entered the refresh path it
+		// would mutually recurse (token POST -> refresh -> token POST -> ...) into a
+		// StackOverflow. Fail such requests fast instead of refreshing.
+		var isAuthTokenRequest = !string.IsNullOrEmpty(uri) &&
+		                         uri.ToLowerInvariant().Contains("auth/token");
+
 		return CustomRequest(method, uri, body, includeAuthHeader, parser, false).RecoverWith(error =>
 		{
 			switch (error)
@@ -136,13 +144,18 @@ public class CliRequester : IRequester
 					Log.Warning(
 						$"Unauthorized access with token: [{AccessToken.Token}], please make sure you're logged in");
 
-					if (retryCount >= 1 || string.IsNullOrEmpty(AccessToken.RefreshToken))
+					if (retryCount >= 1 || string.IsNullOrEmpty(AccessToken.RefreshToken) || isAuthTokenRequest)
 					{
 						break;
 					}
 
 					return GetTokenAndRetry<T>(method, uri, body, includeAuthHeader, parser, useCache, retryCount);
 				case RequesterException { RequestError.error: "TimeOutError" }:
+					if (isAuthTokenRequest)
+					{
+						break;
+					}
+
 					BeamableLogger.LogWarning("Timeout error, retrying in few seconds... ");
 					return Task.Delay(TimeSpan.FromSeconds(ProgressiveDelayIncreaser * (retryCount + 1))).ToPromise().FlatMap(_ =>
 						Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
@@ -153,7 +166,7 @@ public class CliRequester : IRequester
 					Log.Debug(
 						"Got failure for token " + AccessToken.Token + " because " + e.RequestError?.error);
 
-					if (retryCount >= 1 || string.IsNullOrEmpty(AccessToken.RefreshToken))
+					if (retryCount >= 1 || string.IsNullOrEmpty(AccessToken.RefreshToken) || isAuthTokenRequest)
 					{
 						break;
 					}
@@ -162,7 +175,7 @@ public class CliRequester : IRequester
 				case RequesterException e when e.Status == 502:
 					BeamableLogger.LogWarning(
 						$"Problems with host {_requesterInfo.Host}. Got a [{e.Status}] and Message = [{e.Message}]");
-					if (retryCount >= 5 || string.IsNullOrEmpty(AccessToken.RefreshToken))
+					if (retryCount >= 5 || string.IsNullOrEmpty(AccessToken.RefreshToken) || isAuthTokenRequest)
 					{
 						break;
 					}
