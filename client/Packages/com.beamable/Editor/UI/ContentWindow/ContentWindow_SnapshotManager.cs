@@ -609,13 +609,13 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			finally
 			{
-				// Always clear the flag, otherwise the window is stuck on "Loading snapshots". ~Claude
+				// Always clear the flag, otherwise the window is stuck on "Loading snapshots".
 				_gatheringSnapshots = false;
 			}
 		}
 
 		// Snapshots in different realm folders can share a file name (auto snapshots are
-		// always named "LastPublished-<manifestId>"), so the lookup must key by path. ~Claude
+		// always named "LastPublished-<manifestId>"), so the lookup must key by path.
 		public static Dictionary<string, BeamManifestSnapshotItem> BuildSnapshotLookup(IEnumerable<BeamManifestSnapshotItem> snapshots)
 		{
 			return snapshots.ToDictionary(item => item.Path, item => item);

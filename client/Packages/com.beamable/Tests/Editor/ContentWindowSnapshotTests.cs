@@ -15,7 +15,7 @@ namespace Beamable.Editor.Tests
 		[Test]
 		public void BuildSnapshotLookup_DuplicateNamesAcrossRealms_KeepsAllSnapshots()
 		{
-			// Auto snapshots share the name "LastPublished-<manifestId>" across realm folders. ~Claude
+			// Auto snapshots share the name "LastPublished-<manifestId>" across realm folders.
 			var snapshots = new[]
 			{
 				Snapshot("LastPublished-global", ".beamable/content-snapshots/DE_111/LastPublished-global.json"),
