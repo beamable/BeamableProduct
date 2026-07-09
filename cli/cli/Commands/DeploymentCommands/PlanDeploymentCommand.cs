@@ -123,13 +123,14 @@ public static class PlanCommandExtensions {
 		}
 	}
 	
-	public static async Task<(DeployablePlan, string)> InteractivePlan<T, TArgs>(this T self, 
-		IDependencyProvider provider, 
-		TArgs args
+	public static async Task<(DeployablePlan, string)> InteractivePlan<T, TArgs>(this T self,
+		IDependencyProvider provider,
+		TArgs args,
+		bool excludeAuthoredBundleComponents = true
 		)
 		where T : AppCommand<TArgs>
 				, IResultSteam<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>
-				, IResultSteam<PlanReleaseProgressChannel, PlanReleaseProgress> 
+				, IResultSteam<PlanReleaseProgressChannel, PlanReleaseProgress>
 		where TArgs : CommandArgs, IHasDeployPlanArgs
 	{
 		
@@ -143,8 +144,9 @@ public static class PlanCommandExtensions {
 					var progressTasks = new Dictionary<string, ProgressTask>();
 
 					(plan, buildResults) = await DeployUtil.Plan(
-						provider, 
+						provider,
 						args,
+						excludeAuthoredBundleComponents: excludeAuthoredBundleComponents,
 						progressHandler:
 						(name, progress, isKnownLength, serviceName) =>
 						{

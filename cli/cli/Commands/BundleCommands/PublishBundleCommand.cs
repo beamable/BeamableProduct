@@ -7,6 +7,7 @@ using cli.Deployment.Services;
 using cli.DeploymentCommands;
 using cli.Services;
 using cli.Services.Bundles;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -45,6 +46,7 @@ public class PublishBundleCommandOutput
 	public string name;
 	public string checksum;
 	public bool isNew;
+	public BundleDiffResult diff;
 }
 
 public class PublishBundleCommand
@@ -75,47 +77,55 @@ public class PublishBundleCommand
 	{
 		var provider = args.DependencyProvider;
 		var bundle = BundleWorkspace.Require(args.ConfigService, args.bundleName);
-		var componentSet = new HashSet<string>(bundle.components);
+		var (ns, name) = BundleWorkspace.SplitBundleName(bundle.name);
+		var bundleApi = provider.GetService<IBeamBeamobundleApi>();
 
 		Log.Information($"Generating publish plan for bundle=[{bundle.name}]...");
-		var (plan, _) = await this.InteractivePlan(provider, args);
+		// Don't exclude bundle components here — this command operates on exactly those components.
+		var (plan, _) = await this.InteractivePlan(provider, args, excludeAuthoredBundleComponents: false);
+		var (services, storages, extensions) = BundleBuild.SelectComponents(plan, bundle);
 
-		// Portal extensions inside a bundle need the realm-deploy asset-upload path; not supported yet.
-		var bundledExtensions = plan.portalExtensionReferences
-			.Where(pe => componentSet.Contains(pe.name)).Select(pe => pe.name).ToList();
-		if (bundledExtensions.Count > 0)
+		// Diff against the currently-published @latest and show what would change (like `release`).
+		var published = await BundleBuild.FetchLatestPublished(bundleApi, ns, name);
+		var diff = BundleDiff.Compute(services, storages, extensions, published);
+		BundleDiff.Print(diff, bundle.name);
+
+		if (diff.isNoOp)
 		{
-			throw new CliException(
-				$"Publishing portal extensions inside a bundle is not yet supported (bundle=[{bundle.name}], extensions=[{string.Join(", ", bundledExtensions)}]).");
+			Log.Information("Nothing to publish.");
+			this.SendResults<DefaultStreamResultChannel, PublishBundleCommandOutput>(new PublishBundleCommandOutput
+			{
+				name = bundle.name, checksum = diff.publishedChecksum, isNew = false, diff = diff,
+			});
+			return;
 		}
 
-		var services = (plan.manifest.manifest ?? Array.Empty<BeamoBasicServiceReference>())
-			.Where(s => componentSet.Contains(s.serviceName)).ToArray();
-		var storages = plan.manifest.storageReference.GetOrElse(Array.Empty<BeamoBasicServiceStorageReference>())
-			.Where(st => componentSet.Contains(st.id)).ToArray();
-
-		var found = new HashSet<string>(services.Select(s => s.serviceName).Concat(storages.Select(s => s.id)));
-		var missing = bundle.components.Where(c => !found.Contains(c)).ToList();
-		if (missing.Count > 0)
+		// Confirm before mutating the catalog (mirrors `deploy release`). --quiet skips the prompt.
+		var confirm = args.Quiet || string.Equals("yes",
+			AnsiConsole.Prompt(new TextPrompt<string>($"Are you sure you want to publish these changes to {Markup.Escape(bundle.name)}?\nType 'yes' to continue.")),
+			StringComparison.InvariantCultureIgnoreCase);
+		if (!confirm)
 		{
-			throw new CliException(
-				$"Bundle=[{bundle.name}] lists components not built as local services/storages: {string.Join(", ", missing)}");
+			Log.Information("Publish cancelled.");
+			return;
 		}
 
-		// Upload images for the bundle's services that changed (same registry the realm deploy uses).
+		// Upload the bundle's changed service images (shared with the realm deploy path).
 		var servicesToUpload = new HashSet<string>(plan.servicesToUpload);
-		var uploads = services.Where(s => servicesToUpload.Contains(s.serviceName)).ToList();
-		if (uploads.Count > 0)
+		if (services.Any(s => servicesToUpload.Contains(s.serviceName)))
 		{
 			var gamePid = (await args.RealmsApi.GetRealm()).FindRoot().Pid;
 			var dockerRegistryUrl = await args.BeamoService.GetDockerImageRegistryUri();
-			var cts = args.Lifecycle.Source;
-			foreach (var service in uploads)
-			{
-				Log.Information($"Uploading image for service=[{service.serviceName}]...");
-				await ServiceUploadUtil.Upload(provider, service.serviceName, service.imageId, gamePid,
-					dockerRegistryUrl, cts, _ => { });
-			}
+			await DeployUtil.UploadServiceImages(services, servicesToUpload, provider, gamePid,
+				dockerRegistryUrl, args.Lifecycle.Source, null);
+		}
+
+		// Upload the bundle's portal-extension assets; this fills each extension's file contentIds
+		// on the plan references (which `extensions` points into) before we build the request.
+		if (extensions.Count > 0)
+		{
+			await DeployUtil.UploadPortalExtensionBinaries(plan, provider, null,
+				new HashSet<string>(extensions.Select(e => e.name)));
 		}
 
 		var request = new PublishBundleRequest
@@ -129,6 +139,13 @@ public class PublishBundleCommand
 				HasValue = true, Value = storages.ConvertToBundleReference()
 			},
 		};
+		if (extensions.Count > 0)
+		{
+			request.portalExtensionReferences = new OptionalArrayOfPortalExtensionReference
+			{
+				HasValue = true, Value = extensions.Select(PortalExtensionPlanReference.ToBundleReference).ToArray()
+			};
+		}
 		if (!string.IsNullOrEmpty(args.tag))
 		{
 			request.tag = args.tag;
@@ -145,25 +162,28 @@ public class PublishBundleCommand
 			request.peerDependencies = new OptionalMapOfBundlePeerDep { HasValue = true, Value = map };
 		}
 
-		var (ns, name) = BundleWorkspace.SplitBundleName(bundle.name);
-		var bundleApi = provider.GetService<IBeamBeamobundleApi>();
 		var response = await bundleApi.PostBundlesPublish(name, ns, request);
 
-		Log.Information($"Published bundle=[{response.name}] checksum=[{response.checksum}] isNew=[{response.isNew}]");
+		// Response fields are Optional* wrappers — unwrap to their values (don't interpolate the wrapper).
+		var publishedName = response.name.GetOrElse(bundle.name);
+		var publishedChecksum = response.checksum.GetOrElse("");
+		var isNew = response.isNew.GetOrElse(false);
+		Log.Information($"Published bundle=[{publishedName}] checksum=[{publishedChecksum}] isNew=[{isNew}]");
 
 		// Optionally widen the freshly-published checksum's ACL (publish always defaults to <cid>.<pid>).
 		if (!string.IsNullOrEmpty(args.scope))
 		{
 			var scope = BundleAclScope.Resolve(args.scope, args.AppContext);
-			await bundleApi.PatchBundlesChecksumsAcl(name, response.checksum, ns, new UpdateBundleAclRequest { scope = scope });
-			Log.Information($"Widened ACL for checksum=[{response.checksum}] to scope=[{scope}]");
+			await bundleApi.PatchBundlesChecksumsAcl(name, publishedChecksum, ns, new UpdateBundleAclRequest { scope = scope });
+			Log.Information($"Widened ACL for checksum=[{publishedChecksum}] to scope=[{scope}]");
 		}
 
 		this.SendResults<DefaultStreamResultChannel, PublishBundleCommandOutput>(new PublishBundleCommandOutput
 		{
-			name = response.name,
-			checksum = response.checksum,
-			isNew = response.isNew,
+			name = publishedName,
+			checksum = publishedChecksum,
+			isNew = isNew,
+			diff = diff,
 		});
 	}
 }

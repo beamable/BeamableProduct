@@ -148,6 +148,27 @@ public class PortalExtensionPlanReference : JsonSerializable.ISerializable
 				}).ToArray(),
 			},
 	};
+
+	// Canonical (bundle-catalog) PortalExtensionReference, for PublishBundleRequest.
+	public static PortalExtensionReference ToBundleReference(PortalExtensionPlanReference r) => new PortalExtensionReference
+	{
+		name = new OptionalString { Value = r.name, HasValue = true },
+		checksum = new OptionalString { Value = r.checksum, HasValue = true },
+		enabled = new OptionalBool { Value = r.enabled, HasValue = true },
+		archived = new OptionalBool { Value = r.archived, HasValue = true },
+		files = r.files.Count == 0
+			? new OptionalArrayOfExtensionContentReference()
+			: new OptionalArrayOfExtensionContentReference
+			{
+				HasValue = true,
+				Value = r.files.Select(f => new ExtensionContentReference
+				{
+					contentId = new OptionalString { Value = f.contentId, HasValue = true },
+					name = new OptionalString { Value = f.name, HasValue = true },
+					version = new OptionalString { Value = f.version, HasValue = true },
+				}).ToArray(),
+			},
+	};
 }
 
 public class PortalExtensionPlanFileReference : JsonSerializable.ISerializable
@@ -1148,18 +1169,31 @@ public partial class DeployUtil
 	}
 	
 	public static async Task<(DeployablePlan, List<BuildImageOutput>)> Plan<TArgs>(
-		IDependencyProvider provider, 
+		IDependencyProvider provider,
 		TArgs args,
-		ProgressHandler progressHandler)
+		ProgressHandler progressHandler,
+		bool excludeAuthoredBundleComponents = true)
 	where TArgs : CommandArgs, IHasDeployPlanArgs
 	{
 		const string FetchManifestProgressName = "fetching latest";
 		const string MergingManifestProgressName = "calculating plan";
 
-		
+
 		var api = provider.GetService<IBeamoApi>();
 		var beamo = provider.GetService<BeamoLocalSystem>();
 		var beamoApi = provider.GetService<IBeamBeamoApi>();
+
+		// Components that belong to an authored bundle (*.beam.bundle.json) are NOT part of the root/
+		// inline manifest — they reach the realm via a bundle reference. Exclude them from this realm
+		// plan. Bundle publish/plan pass excludeAuthoredBundleComponents=false, since they operate on
+		// those components. No bundle files → empty set → behavior unchanged.
+		var bundleComponentIds = new HashSet<string>();
+		if (excludeAuthoredBundleComponents)
+		{
+			foreach (var b in BundleWorkspace.DiscoverAndValidate(provider.GetService<ConfigService>()))
+				foreach (var c in b.components)
+					bundleComponentIds.Add(c);
+		}
 
 		var isLoadingManifestFile = !string.IsNullOrEmpty(args.FromManifestFile);
 		var isLoadingManifestId = !string.IsNullOrEmpty(args.ManifestId);
@@ -1282,6 +1316,16 @@ public partial class DeployUtil
 			}
 		}
 
+		// Drop authored-bundle services/storages from the intended manifest so they aren't planned as
+		// inline components (they reach the realm via the bundle reference instead).
+		if (bundleComponentIds.Count > 0)
+		{
+			next.manifest = next.manifest.Where(s => !bundleComponentIds.Contains(s.serviceName)).ToArray();
+			if (next.storageReference.HasValue)
+				next.storageReference.Value = next.storageReference.Value
+					.Where(st => !bundleComponentIds.Contains(st.id)).ToArray();
+		}
+
 		progressHandler?.Invoke(MergingManifestProgressName, .5f);
 		diff = FindChanges(remote, next);
 		
@@ -1344,6 +1388,8 @@ public partial class DeployUtil
 		var localPeDefs = beamo.BeamoManifest.ServiceDefinitions
 			.Where(d => d.Protocol == BeamoProtocolType.PortalExtension && d.IsLocal)
 			.Select(d => d.PortalExtensionDefinition)
+			// Portal extensions that belong to an authored bundle are excluded from the root manifest.
+			.Where(d => !bundleComponentIds.Contains(d.Name))
 			.ToList();
 
 		// Fail fast (before the expensive build loop below) if any portal extension name collides with
@@ -1421,6 +1467,14 @@ public partial class DeployUtil
 					name = peDef.Name,
 					checksum = localChecksum,
 					enabled = true,
+					// Populate file versions (per-file MD5) now so change-detection can compare them
+					// before upload. contentIds are filled in later by UploadPortalExtensionBinaries.
+					files = assetFileNames.Select((fileName, i) => new PortalExtensionPlanFileReference
+					{
+						name = fileName,
+						version = assetMd5Hexes[i],
+						contentId = remoteFileRefs[i]?.contentId.GetOrElse("") ?? "",
+					}).ToList(),
 				});
 			}
 			else
@@ -1617,142 +1671,24 @@ public partial class DeployUtil
 				"The given deployment plan was created with a different configuration of remote services than exists now. Please create a new plan and try again.");
 		}
 		
-		// identity the services we need to upload.
-		var uploadTasks = new List<Task>();
-
+		// identify and upload the services that need it (shared with bundle publish).
 		var servicesToUpload = new HashSet<string>(plan.servicesToUpload);
 
-		if (servicesToUpload.Count > 0)
-		{
-			var dockerStatus = await DockerStatusCommand.CheckDocker(provider);
-			if (!dockerStatus.isDaemonRunning)
-			{
-				throw CliExceptions.DOCKER_NOT_RUNNING;
-			}
-		}
-
-		using var uploadSemaphore = new SemaphoreSlim(maxConcurrentUploads, maxConcurrentUploads);
-
-		foreach (var service in plan.manifest.manifest)
-		{
-			var needsUpload = servicesToUpload.Contains(service.serviceName);
-			if (!needsUpload)
-				continue;
-
-			var serviceName = service.serviceName;
-			var progressTaskName = $"upload {serviceName}";
-			var uploadTask = Task.Run(async () =>
-			{
-				await uploadSemaphore.WaitAsync(cts.Token);
-				try
-				{
-					await ServiceUploadUtil.Upload(
-						provider: provider,
-						beamoId: service.serviceName,
-						imageId: service.imageId,
-						gamePid: gamePid,
-						dockerRegistryUrl: dockerRegistryUrl,
-						cts: cts,
-						onProgressCallback: progressRatio =>
-						{
-							progressHandler?.Invoke(progressTaskName, progressRatio, serviceName: serviceName);
-						});
-				}
-				finally
-				{
-					uploadSemaphore.Release();
-				}
-			});
-
-			uploadTasks.Add(uploadTask);
-		}
-
 		progressHandler?.Invoke("publish", 0);
-		await Task.WhenAll(uploadTasks);
+		await UploadServiceImages(plan.manifest.manifest, servicesToUpload,
+			provider, gamePid, dockerRegistryUrl, cts, progressHandler, maxConcurrentUploads);
 
 		// ── Portal Extension binary uploads ───────────────────────────────────────
 		// Must happen before building BeamoV2PostManifestRequest so files[] are populated.
-		if (plan.portalExtensionsToUpload.Count > 0)
-		{
-			var contentApi = provider.GetService<IContentApi>();
-			using var httpClient = new HttpClient();
-
-			await Task.WhenAll(plan.portalExtensionsToUpload.Select(async pe =>
-			{
-				var progressName = $"upload portal extension {pe.name}";
-				progressHandler?.Invoke(progressName, 0f);
-
-				// Build binary definitions in parallel for files that changed
-				var filesToUpload = pe.files.Where(f => f.needsUpload).ToList();
-				var binDefs = await Task.WhenAll(filesToUpload.Select(async file =>
-				{
-					var filePath = Path.Combine(pe.absolutePath, "assets", file.fileName);
-					return await GetBinaryDefinitionFromFile(filePath, $"{pe.name}/{file.fileName}", file.contentType);
-				}));
-
-				// Get signed upload URLs for files that need uploading
-				var uploadedRefs = new Dictionary<string, BinaryReference>();
-				if (binDefs.Length > 0)
-				{
-					var binaryResp = await contentApi.PostBinary(new SaveBinaryRequest { binary = binDefs });
-					foreach (var file in filesToUpload)
-					{
-						uploadedRefs[file.fileName] = binaryResp.binary.First(b => b.id == $"{pe.name}/{file.fileName}");
-					}
-				}
-				progressHandler?.Invoke(progressName, 0.33f);
-
-				// Upload files in parallel
-				await Task.WhenAll(filesToUpload.Select(async file =>
-				{
-					var bytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", file.fileName));
-					await PutToSignedUrl(httpClient, uploadedRefs[file.fileName].uploadUri, bytes, file.contentType, MD5.HashData(bytes));
-				}));
-				progressHandler?.Invoke(progressName, 0.66f);
-
-				// Fill in contentIds on the matching reference before manifest is built below
-				var peRef = plan.portalExtensionReferences.First(r => r.name == pe.name);
-				peRef.files = pe.files.Select(f => new PortalExtensionPlanFileReference
-				{
-					contentId = f.needsUpload ? uploadedRefs[f.fileName].id : f.existingContentId,
-					name = f.fileName,
-					version = f.checksum,
-				}).ToList();
-
-				progressHandler?.Invoke(progressName, 1f);
-			}));
-		}
+		await UploadPortalExtensionBinaries(plan, provider, progressHandler);
 		// ── End Portal Extension binary uploads ───────────────────────────────────
 
 		cts.Token.ThrowIfCancellationRequested();
 
-		// v2: if the workspace opts into the bundle-references schema (.beamable/manifest.beam.json),
-		// the server resolves + assembles the referenced bundles. Components that belong to a bundle
-		// REFERENCED here are excluded from the inline arrays — they reach the realm via the reference.
-		// Absent file → left as-is → server treats this as a legacy v1 manifest (unchanged behavior).
+		// v2: load bundle references so schemaVersion + references can be attached below — the server
+		// resolves + assembles them. Components in authored bundles are already excluded from the inline
+		// arrays at plan time (see DeployUtil.Plan). Absent file → v1 manifest (unchanged behavior).
 		var manifestReferences = provider.GetService<ConfigService>().LoadManifestReferences();
-		if (manifestReferences?.references is { Count: > 0 })
-		{
-			var referencedBundleComponents = new HashSet<string>();
-			foreach (var bundle in BundleWorkspace.DiscoverAndValidate(provider.GetService<ConfigService>()))
-			{
-				if (!manifestReferences.references.ContainsKey(bundle.name)) continue;
-				foreach (var component in bundle.components) referencedBundleComponents.Add(component);
-			}
-
-			if (referencedBundleComponents.Count > 0)
-			{
-				plan.manifest.manifest = plan.manifest.manifest
-					.Where(s => !referencedBundleComponents.Contains(s.serviceName)).ToArray();
-				if (plan.manifest.storageReference.HasValue)
-				{
-					plan.manifest.storageReference.Value = plan.manifest.storageReference.Value
-						.Where(st => !referencedBundleComponents.Contains(st.id)).ToArray();
-				}
-				plan.portalExtensionReferences = plan.portalExtensionReferences
-					.Where(pe => !referencedBundleComponents.Contains(pe.name)).ToList();
-			}
-		}
 
 		// publish manifest.
 		// ConvertToBeamoV2 will change the Legacy DTO to the BeamoV2 DTO.
@@ -1798,6 +1734,119 @@ public partial class DeployUtil
 
 		progressHandler?.Invoke("publish", 1, false);
 
+	}
+
+	/// <summary>
+	/// Upload the container images for <paramref name="services"/> whose beamoId is in
+	/// <paramref name="servicesToUpload"/>, in parallel (bounded by <paramref name="maxConcurrentUploads"/>).
+	/// Verifies Docker is running first. Shared by realm release and bundle publish.
+	/// </summary>
+	public static async Task UploadServiceImages(
+		IEnumerable<ServiceReference> services,
+		ISet<string> servicesToUpload,
+		IDependencyProvider provider,
+		string gamePid,
+		string dockerRegistryUrl,
+		CancellationTokenSource cts,
+		ProgressHandler progressHandler,
+		int maxConcurrentUploads = 6)
+	{
+		var toUpload = services.Where(s => servicesToUpload.Contains(s.serviceName)).ToList();
+		if (toUpload.Count == 0) return;
+
+		var dockerStatus = await DockerStatusCommand.CheckDocker(provider);
+		if (!dockerStatus.isDaemonRunning)
+		{
+			throw CliExceptions.DOCKER_NOT_RUNNING;
+		}
+
+		using var uploadSemaphore = new SemaphoreSlim(maxConcurrentUploads, maxConcurrentUploads);
+		var uploadTasks = toUpload.Select(service => Task.Run(async () =>
+		{
+			await uploadSemaphore.WaitAsync(cts.Token);
+			try
+			{
+				var progressTaskName = $"upload {service.serviceName}";
+				await ServiceUploadUtil.Upload(
+					provider: provider,
+					beamoId: service.serviceName,
+					imageId: service.imageId,
+					gamePid: gamePid,
+					dockerRegistryUrl: dockerRegistryUrl,
+					cts: cts,
+					onProgressCallback: progressRatio =>
+					{
+						progressHandler?.Invoke(progressTaskName, progressRatio, serviceName: service.serviceName);
+					});
+			}
+			finally
+			{
+				uploadSemaphore.Release();
+			}
+		})).ToList();
+
+		await Task.WhenAll(uploadTasks);
+	}
+
+	/// <summary>
+	/// Upload the changed asset binaries for the portal extensions in <paramref name="plan"/> (via
+	/// PostBinary + signed-URL PUT) and fill each matching <c>portalExtensionReferences</c> entry's
+	/// <c>files[]</c> with the resulting contentIds. Shared by realm release and bundle publish.
+	/// When <paramref name="onlyNames"/> is non-null, only those extensions are uploaded.
+	/// </summary>
+	public static async Task UploadPortalExtensionBinaries(DeployablePlan plan, IDependencyProvider provider, ProgressHandler progressHandler, HashSet<string> onlyNames = null)
+	{
+		var toUpload = plan.portalExtensionsToUpload
+			.Where(pe => onlyNames == null || onlyNames.Contains(pe.name)).ToList();
+		if (toUpload.Count == 0) return;
+
+		var contentApi = provider.GetService<IContentApi>();
+		using var httpClient = new HttpClient();
+
+		await Task.WhenAll(toUpload.Select(async pe =>
+		{
+			var progressName = $"upload portal extension {pe.name}";
+			progressHandler?.Invoke(progressName, 0f);
+
+			// Build binary definitions in parallel for files that changed
+			var filesToUpload = pe.files.Where(f => f.needsUpload).ToList();
+			var binDefs = await Task.WhenAll(filesToUpload.Select(async file =>
+			{
+				var filePath = Path.Combine(pe.absolutePath, "assets", file.fileName);
+				return await GetBinaryDefinitionFromFile(filePath, $"{pe.name}/{file.fileName}", file.contentType);
+			}));
+
+			// Get signed upload URLs for files that need uploading
+			var uploadedRefs = new Dictionary<string, BinaryReference>();
+			if (binDefs.Length > 0)
+			{
+				var binaryResp = await contentApi.PostBinary(new SaveBinaryRequest { binary = binDefs });
+				foreach (var file in filesToUpload)
+				{
+					uploadedRefs[file.fileName] = binaryResp.binary.First(b => b.id == $"{pe.name}/{file.fileName}");
+				}
+			}
+			progressHandler?.Invoke(progressName, 0.33f);
+
+			// Upload files in parallel
+			await Task.WhenAll(filesToUpload.Select(async file =>
+			{
+				var bytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", file.fileName));
+				await PutToSignedUrl(httpClient, uploadedRefs[file.fileName].uploadUri, bytes, file.contentType, MD5.HashData(bytes));
+			}));
+			progressHandler?.Invoke(progressName, 0.66f);
+
+			// Fill in contentIds on the matching reference
+			var peRef = plan.portalExtensionReferences.First(r => r.name == pe.name);
+			peRef.files = pe.files.Select(f => new PortalExtensionPlanFileReference
+			{
+				contentId = f.needsUpload ? uploadedRefs[f.fileName].id : f.existingContentId,
+				name = f.fileName,
+				version = f.checksum,
+			}).ToList();
+
+			progressHandler?.Invoke(progressName, 1f);
+		}));
 	}
 
 	private static async Task<BinaryDefinition> GetBinaryDefinitionFromFile(string filePath, string contentId, string contentType)
