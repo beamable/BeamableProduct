@@ -33,6 +33,22 @@ public class PortalExtensionDiscoveryService : Microservice
 	}
 }
 
+/// <summary>
+/// Zone (cid.zid) variant of <see cref="PortalExtensionDiscoveryService"/>. Used as the route source when a
+/// portal extension declares <c>beamable.serviceScope: "zone"</c>, so its backing service boots as a
+/// <see cref="ZoneMicroservice"/> (no realm SDK). The route body is identical — it only needs
+/// <see cref="ZoneMicroservice.Provider"/> to reach the neutral <see cref="PortalExtensionObserver"/>.
+/// </summary>
+public class PortalExtensionDiscoveryZoneService : ZoneMicroservice
+{
+	[Callable]
+	public ExtensionBuildData RequestPortalExtensionData(string currentHash = "")
+	{
+		var observer = Provider.GetService<PortalExtensionObserver>();
+		return observer.GetAppBuild(currentHash);
+	}
+}
+
 [Serializable]
 public class ExtensionBuildData
 {
@@ -442,7 +458,10 @@ public class PortalExtensionObserver
 		BuildExtension();
 
 		//TODO: check this back once event subscriptions change
-		_notificationsApi.NotifyServer(true, "notify-portalextension",
+		// TODO(zones): NotifyServer is realm-scoped (IMicroserviceNotificationsApi). A zone extension has no
+		// realm notification channel, so _notificationsApi is null for zone today — hot-reload push is
+		// skipped. Wire up a zone-appropriate notification once the zone event channel exists.
+		_notificationsApi?.NotifyServer(true, "notify-portalextension",
 			new PortalExtensionNotifyPayload()
 			{
 				serviceName = _attributes.MicroserviceName ,

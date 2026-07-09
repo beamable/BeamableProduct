@@ -171,6 +171,7 @@ public class NewMicroserviceArgs : SolutionCommandArgs
 {
 	public bool GenerateCommon;
 	public string TargetFramework;
+	public bool IsZone;
 }
 
 public class RegenerateSolutionFilesCommandArgs : SolutionCommandArgs
@@ -231,6 +232,10 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 				name: "--generate-common",
 				description: "If passed, will create a common library for this project"),
 			(args, i) => args.GenerateCommon = i);
+		AddOption(new Option<bool>(
+				name: "--zone",
+				description: "If passed, creates a zone-scoped microservice (ZoneMicroservice, deployed per cid.zid) instead of a realm-scoped one"),
+			(args, i) => args.IsZone = i);
 
 
 		{ // saved for legacy reasons. I don't want the old commands to CRASH

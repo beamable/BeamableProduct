@@ -16,6 +16,8 @@ namespace Beamable.Server.Api.Commerce
 	/// ![img beamable-logo]
 	/// 
 	/// </summary>
+
+	[RealmScoped]
 	public interface IMicroserviceCommerceApi : ICommerceApi
 	{
 		Promise<Unit> AccelerateListingCooldown(long gamerTag, List<CooldownReductionRequest> cooldownReductions);

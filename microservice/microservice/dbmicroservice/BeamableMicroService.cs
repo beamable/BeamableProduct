@@ -202,22 +202,30 @@ namespace Beamable.Server
             Log.Error("Service failed to initialize {message} {stack}", ex.Message, ex.StackTrace);
          });
          
-         // the first time this runs, it'll complete, but due to how promises work, all of the next times, it'll no-op.
-         var contentService = Provider.GetService<ContentService>();
-         ContentApi.Instance.CompleteSuccess(contentService);
+         // Realm content and storage are not registered for a zone-scoped service; skip that setup.
+         // TODO(zones): wire up zone-scoped content/storage equivalents when they exist.
+         var isRealmScope = _serviceAttribute.GetServiceScope() == BeamServiceScope.Realm;
 
-         
+         // the first time this runs, it'll complete, but due to how promises work, all of the next times, it'll no-op.
+         ContentService contentService = null;
+         if (isRealmScope)
+         {
+            contentService = Provider.GetService<ContentService>();
+            ContentApi.Instance.CompleteSuccess(contentService);
+         }
+
+
          // Connect and Run
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
-         
-         if (!InstanceArgs.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
+
+         if (isRealmScope && !InstanceArgs.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
          {
 	         await SetupStorage();
          }
 
          await SetupWebsocket(socket, _serviceAttribute.EnableEagerContentLoading);
-         if (!_serviceAttribute.EnableEagerContentLoading)
+         if (isRealmScope && !_serviceAttribute.EnableEagerContentLoading)
          {
 	         _ = contentService.Init();
          }
@@ -395,6 +403,9 @@ namespace Beamable.Server
       
       private bool TryBuildPortalUrl(out string portalUrl)
       {
+	      // TODO(zones): this portal URL is realm-shaped (/{cid}/games/{pid}/realms/{pid}/microservices/...).
+	      // A zone-scoped service has no realm; it should either build a zone-shaped portal URL or skip this
+	      // entirely. Left realm-only for now.
 	      var cid = InstanceArgs.CustomerID;
 	      var pid = InstanceArgs.ProjectName;
 	      var microName = QualifiedName;

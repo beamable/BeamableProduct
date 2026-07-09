@@ -16,6 +16,8 @@ namespace Beamable.Server.Api.Content
 	/// ![img beamable-logo]
 	/// 
 	/// </summary>
+
+	[RealmScoped]
 	public interface IMicroserviceContentApi : IContentApi
 	{
 		Promise<TContent> Resolve<TContent>(IContentRef<TContent> reference) where TContent : IContentObject, new();

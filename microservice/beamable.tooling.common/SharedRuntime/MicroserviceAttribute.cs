@@ -146,13 +146,14 @@ namespace Beamable.Server
 		{
 			// Guaranteed to be a type, due to AttributeUsage attribute being set to Class.
 
-			if (!typeof(Microservice).IsAssignableFrom((Type)member))
+			var type = (Type)member;
+			if (!typeof(Microservice).IsAssignableFrom(type) && !typeof(ZoneMicroservice).IsAssignableFrom(type))
 			{
 				return new AttributeValidationResult(this,
 																			member,
 																			ReflectionCache.ValidationResultType.Error,
 																			$"Microservice Attribute [{MicroserviceName}] cannot be over type [{member.Name}] " +
-																			$"since [{member.Name}] does not inherit from [{nameof(Microservice)}].");
+																			$"since [{member.Name}] does not inherit from [{nameof(Microservice)}] or [{nameof(ZoneMicroservice)}].");
 			}
 
 			return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, "");

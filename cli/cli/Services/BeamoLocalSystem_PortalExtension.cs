@@ -53,17 +53,28 @@ public partial class BeamoLocalSystem
 		// don't share microservice names or log sinks.
 		var runtime = new PortalExtensionRuntime(extension.Name);
 
+			// TODO(zones): a zone extension boots its backing service as a ZoneMicroservice (cid.zid). The zid
+			// should come from the .beamable workspace zone config (default "prod") and be passed via the ZID
+			// env var (read by EnvironmentArgs.Zid); that config does not exist yet, so any ZID already in the
+			// environment is honored for now.
+			var isZone = string.Equals(extension.Properties?.ServiceScope?.Trim(), "zone",
+				StringComparison.OrdinalIgnoreCase);
+
 		try
 		{
 			Environment.SetEnvironmentVariable("BEAM_ALLOW_STARTUP_WITHOUT_ATTRIBUTES_RESOURCE", "true");
-			await BeamServer
+			var beamServer = BeamServer
 				.Create()
 				.InitializeServices((provider) =>
 				{
 					try
 					{
 						var observer = provider.GetService<PortalExtensionObserver>();
-						var notification = provider.GetService<IMicroserviceNotificationsApi>();
+						// TODO(zones): IMicroserviceNotificationsApi is realm-scoped and is not registered in a zone
+						// container; a zone extension has no realm notification channel yet.
+						var notification = isZone
+							? null
+							: provider.GetService<IMicroserviceNotificationsApi>();
 						var attributes = provider.GetService<MicroserviceAttribute>();
 						observer.ConfigureServiceData(notification, attributes, beamActivity, localSystem.BeamoManifest);
 
@@ -117,14 +128,23 @@ public partial class BeamoLocalSystem
 					}
 					
 					dependency.AddSingleton(observer);
-				})
-				.IncludeRoutes<PortalExtensionDiscoveryService>(routePrefix: "")
+				});
+
+			// A zone extension's backing service must boot as a ZoneMicroservice (no realm SDK), so route
+			// through the zone variant of the discovery service.
+			beamServer = isZone
+				? beamServer.IncludeRoutes<PortalExtensionDiscoveryZoneService>(routePrefix: "")
+				: beamServer.IncludeRoutes<PortalExtensionDiscoveryService>(routePrefix: "");
+
+			await beamServer
 				.OverrideConfig((microserviceConfig) =>
 				{
 					microserviceConfig.Attributes = new DefaultMicroserviceAttributes()
 					{
 						MicroserviceName = runtime.MicroserviceName,
-						ServiceType = GetServiceType(BeamoProtocolType.PortalExtension)
+						ServiceType = GetServiceType(BeamoProtocolType.PortalExtension),
+						// null/realm for a normal extension; "zone" boots the backing service as a ZoneMicroservice.
+						ServiceScope = isZone ? "zone" : null
 					};
 
 					microserviceConfig.AddLoggerProvider = (builder, debugLogProcessor) =>
@@ -337,6 +357,15 @@ public class PortalExtensionPackageProperties
 
 	[JsonProperty("microserviceDependencies")]
 	public List<string> MicroserviceDependencies;
+
+	/// <summary>
+	/// The deployment scope of this extension's backing service — "zone" for a zone (cid.zid) extension that
+	/// runs above realms, or null/"realm" (default) for a realm (cid.pid) extension. Mirrors the C#MS
+	/// <c>BeamServiceScope</c> csproj property. A zone extension boots its backing service as a
+	/// <c>ZoneMicroservice</c>.
+	/// </summary>
+	[JsonProperty("serviceScope")]
+	public string ServiceScope;
 
 	/// <summary>
 	/// The service-group tags this extension belongs to. Mirrors the BeamServiceGroup

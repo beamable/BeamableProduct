@@ -293,6 +293,13 @@ public class ProjectService
 			root[Beamable.Common.Constants.Features.PortalExtension.EXTENSION_NAME_PROPERTY_NAME] =
 				JToken.FromObject(args.ProjectName.Value);
 
+			// A zone extension marks its backing service as zone-scoped via beamable.serviceScope; the run
+			// path (BeamoLocalSystem_PortalExtension) reads this and boots the service as a ZoneMicroservice.
+			if (args.IsZone && root["beamable"] is JObject beamable)
+			{
+				beamable["serviceScope"] = "zone";
+			}
+
 			File.WriteAllText(packagePath, root.ToString(Newtonsoft.Json.Formatting.Indented));
 		}
 
@@ -406,7 +413,7 @@ public class ProjectService
 				$"Solution file({microserviceInfo.SolutionPath}) should not exists outside beamable directory({_configService.ConfigDirectoryPath}) or its subdirectories.");
 		}
 
-		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName, args.ServicesBaseFolderPath, usedVersion, args.GenerateCommon, args.TargetFramework);
+		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName, args.ServicesBaseFolderPath, usedVersion, args.GenerateCommon, args.TargetFramework, args.IsZone);
 		return microserviceInfo;
 	}
 
@@ -542,7 +549,7 @@ public class ProjectService
 		// }
 	}
 
-	public async Task<string> CreateNewService(string solutionPath, string projectName, string rootServicesPath, string version, bool generateCommon, string targetFramework)
+	public async Task<string> CreateNewService(string solutionPath, string projectName, string rootServicesPath, string version, bool generateCommon, string targetFramework, bool isZone = false)
 	{
 		if (!File.Exists(solutionPath))
 		{
@@ -551,8 +558,10 @@ public class ProjectService
 
 		var projectPath = Path.Combine(rootServicesPath, projectName);
 
-		// create the beam microservice project
-		await RunDotnetCommand($"new beamservice -n {projectName.EnquotePath()} -o {projectPath.EnquotePath()} --no-update-check --TargetFrameworkOverride {targetFramework}");
+		// create the beam microservice project (zone services use a separate template that inherits
+		// ZoneMicroservice and sets <BeamServiceScope>zone</BeamServiceScope>).
+		var templateShortName = isZone ? "beamservice-zone" : "beamservice";
+		await RunDotnetCommand($"new {templateShortName} -n {projectName.EnquotePath()} -o {projectPath.EnquotePath()} --no-update-check --TargetFrameworkOverride {targetFramework}");
 
 		// restore the microservice tools
 		await RunDotnetCommand(

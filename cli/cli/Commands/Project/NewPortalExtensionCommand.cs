@@ -18,6 +18,7 @@ public class NewPortalExtensionCommandArgs : SolutionCommandArgs
 	public int mountGroupOrder;
 	public int mountLabelOrder;
 	public string template;
+	public bool IsZone;
 }
 
 public static class PortalExtensionTemplates
@@ -89,6 +90,11 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 				getDefaultValue: () => PortalExtensionTemplates.React,
 				description: "UI framework template to scaffold the extension with. Allowed values: react"),
 			binder: (args, i) => args.template = i);
+
+		AddOption(new Option<bool>(
+				name: "--zone",
+				description: "If passed, creates a zone-scoped portal extension (its backing service runs as a ZoneMicroservice, per cid.zid) instead of a realm-scoped one"),
+			(args, i) => args.IsZone = i);
 	}
 
 	public override async Task Handle(NewPortalExtensionCommandArgs args)
