@@ -60,13 +60,19 @@ export function useBeam(context: ExtensionContext): Beam | null {
 
 /**
  * `useState` backed by an {@link ExtensionStore}. Reads the stored value on
- * mount (falling back to `initialValue` until it lands), re-renders when the
- * stored value changes — including writes from another live mount of the same
+ * mount (showing `initialValue` until it lands), re-renders when the stored
+ * value changes — including writes/deletes from another live mount of the same
  * extension in the same scope, via the store's `subscribe` — and persists on
  * every setter call.
  *
- * Pass a scoped store (e.g. `context.storage.local.scope({ partition: 'org' })`)
- * to control partition / mount scope, and `opts.ttl` to expire the value.
+ * `initialValue` is the fallback whenever the key is absent: an unset key, a
+ * value deleted elsewhere (the store emits `null`), or after `store`/`key`
+ * changes to a key with no value. Note TTL expiry is lazy in the store and
+ * emits no event, so a value that expires while mounted is only reflected on
+ * the next read, not pushed here.
+ *
+ * Pass a scoped store (e.g. `context.storage.local.scope({ scope: 'cid' })`)
+ * to control scope / mount policy, and `opts.ttl` to expire the value.
  *
  * The setter is fire-and-forget (optimistic): it updates React state
  * immediately and lets the write settle in the background. For explicit
@@ -88,21 +94,31 @@ export function useStoredState<T>(
   const [loading, setLoading] = useState(true);
   const ttl = opts?.ttl;
 
+  // Track the latest `initialValue` without making the load effect depend on
+  // its identity — an inline literal/object would otherwise re-run the effect
+  // (and refetch) on every render.
+  const initialRef = useRef(initialValue);
+  initialRef.current = initialValue;
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    // Reset to the fallback so a `store`/`key` change never leaves the previous
+    // key's value on screen while the new read is in flight.
+    setValue(initialRef.current);
     store
       .get<T>(key)
       .then((stored) => {
         if (cancelled) return;
-        if (stored !== null) setValue(stored);
+        setValue(stored !== null ? stored : initialRef.current);
         setLoading(false);
       })
       .catch(() => {
         if (!cancelled) setLoading(false);
       });
     const unsubscribe = store.subscribe<T>(key, (next) => {
-      if (!cancelled && next !== null) setValue(next);
+      // `null` means deleted/absent — fall back to the initial value.
+      if (!cancelled) setValue(next !== null ? next : initialRef.current);
     });
     return () => {
       cancelled = true;
