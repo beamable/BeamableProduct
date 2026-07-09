@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 
-namespace cli.DeploymentCommands.Bundles;
+namespace cli.BundleCommands;
 
 public class BundlePlanCommandArgs : CommandArgs
 {

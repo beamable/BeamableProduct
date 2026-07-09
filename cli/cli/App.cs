@@ -18,9 +18,9 @@ using cli.Commands.Project.Deps;
 using cli.Commands.Project.StorageData;
 using cli.Content;
 using cli.Content.Tag;
+using cli.BundleCommands;
 using cli.DeploymentCommands;
 using cli.DeploymentCommands.Admin;
-using cli.DeploymentCommands.Bundles;
 using cli.DockerCommands;
 using cli.Commands.Docs;
 using cli.Docs;
@@ -769,7 +769,11 @@ public class App
 		Commands.AddSubCommandWithHandler<PlanDeploymentCommand, PlanDeploymentCommandArgs, DeploymentCommand>();
 		Commands.AddSubCommandWithHandler<ReleaseDeploymentCommand, ReleaseDeploymentCommandArgs, DeploymentCommand>();
 
-		Commands.AddSubCommand<BundlesCommand, CommandGroupArgs, DeploymentCommand>();
+		Commands.AddSubCommand<AdminCommand, CommandGroupArgs, DeploymentCommand>();
+		Commands.AddSubCommandWithHandler<ForceInjectBundleCommand, ForceInjectBundleCommandArgs, AdminCommand>();
+
+		// `bundles` is its own top-level command group: `beam bundles <cmd>`
+		Commands.AddRootCommand<BundlesCommand>();
 		Commands.AddSubCommandWithHandler<NewBundleCommand, NewBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<ListBundlesCommand, ListBundlesCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<GetBundleCommand, GetBundleCommandArgs, BundlesCommand>();
@@ -782,9 +786,6 @@ public class App
 		Commands.AddSubCommandWithHandler<PruneYankedCommand, PruneYankedCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<PublishBundleCommand, PublishBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<BundlePlanCommand, BundlePlanCommandArgs, BundlesCommand>();
-
-		Commands.AddSubCommand<AdminCommand, CommandGroupArgs, DeploymentCommand>();
-		Commands.AddSubCommandWithHandler<ForceInjectBundleCommand, ForceInjectBundleCommandArgs, AdminCommand>();
 
 		Commands.AddRootCommand<ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentPsCommand, ContentPsCommandArgs, ContentCommand>();
@@ -1333,6 +1334,16 @@ public class App
 			}
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
+		// Bundle names are namespaced with a leading '@' (e.g. @acme/social), which collides with
+		// System.CommandLine's default '@file' response-file expansion (UseDefaults enables it).
+		// Install a no-op token replacer so '@'-prefixed arguments are always treated as literal
+		// values, never as response files.
+		commandLineBuilder.UseTokenReplacer((string _, out IReadOnlyList<string> replacementTokens, out string errorMessage) =>
+		{
+			replacementTokens = null;
+			errorMessage = null;
+			return false;
+		});
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
 		commandLineBuilder.UseHelpBuilder(_ => helpBuilder);

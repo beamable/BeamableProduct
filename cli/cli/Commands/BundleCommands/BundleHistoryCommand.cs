@@ -6,7 +6,7 @@ using System;
 using System.CommandLine;
 using System.Linq;
 
-namespace cli.DeploymentCommands.Bundles;
+namespace cli.BundleCommands;
 
 public class BundleHistoryCommandArgs : CommandArgs
 {

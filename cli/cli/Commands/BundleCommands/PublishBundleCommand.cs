@@ -4,6 +4,7 @@ using Beamable.Common.Content;
 using Beamable.Server;
 using cli.Commands.Project;
 using cli.Deployment.Services;
+using cli.DeploymentCommands;
 using cli.Services;
 using cli.Services.Bundles;
 using System;
@@ -11,7 +12,7 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 
-namespace cli.DeploymentCommands.Bundles;
+namespace cli.BundleCommands;
 
 public class PublishBundleCommandArgs : CommandArgs, IHasDeployPlanArgs
 {

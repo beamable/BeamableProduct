@@ -4,7 +4,7 @@ using Beamable.Server;
 using cli.Services.Bundles;
 using System.CommandLine;
 
-namespace cli.DeploymentCommands.Bundles;
+namespace cli.BundleCommands;
 
 public class BundleTagsCommandArgs : CommandArgs
 {

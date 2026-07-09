@@ -6,7 +6,7 @@ using cli.Services.Bundles;
 using System.Collections.Generic;
 using System.CommandLine;
 
-namespace cli.DeploymentCommands.Bundles;
+namespace cli.BundleCommands;
 
 public class PruneYankedCommandArgs : CommandArgs
 {

@@ -4,7 +4,7 @@ using Beamable.Server;
 using cli.Services.Bundles;
 using System.CommandLine;
 
-namespace cli.DeploymentCommands.Bundles;
+namespace cli.BundleCommands;
 
 public class YankBundleCommandArgs : CommandArgs
 {
@@ -42,7 +42,7 @@ public class YankBundleCommand : AtomicCommand<YankBundleCommandArgs, YankBundle
 		if (manifest != null && manifest.references.TryGetValue(fullName, out var pinned) && pinned == checksum)
 		{
 			Log.Warning($"[{fullName}] is pinned to this yanked checksum in {ConfigService.MANIFEST_FILE_NAME}. " +
-			            $"Existing deploys keep working, but you can't newly reference it. Run `beam deploy bundles prune-yanked` to review/clear.");
+			            $"Existing deploys keep working, but you can't newly reference it. Run `beam bundles prune-yanked` to review/clear.");
 		}
 
 		return new YankBundleCommandOutput { name = response.name, checksum = response.checksum };

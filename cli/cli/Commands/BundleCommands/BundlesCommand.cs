@@ -1,6 +1,6 @@
 using cli.Services;
 
-namespace cli.DeploymentCommands.Bundles;
+namespace cli.BundleCommands;
 
 public class BundlesCommand : CommandGroup
 {
