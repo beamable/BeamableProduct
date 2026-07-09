@@ -1267,12 +1267,7 @@ public class SwaggerService
 				{
 					if (onPath.Contains(child))
 					{
-						var cyclePath = new List<string>(path) { propName };
-						throw new CliException(
-							$"Cannot process schema '{key}': its property graph forms a cycle. " +
-							$"Property path [{string.Join(" -> ", cyclePath)}] references schema " +
-							$"'{child.Reference?.Id ?? "(inline)"}', which is already on the traversal path. " +
-							$"This would cause an infinite loop during self-reference detection.");
+						break;
 					}
 
 					stack.Push(new TraversalFrame(child, propName, isExit: false));
