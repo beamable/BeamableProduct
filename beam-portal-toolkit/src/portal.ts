@@ -2,6 +2,7 @@
 // Import via:  import { Portal } from '@beamable/portal-toolkit';
 
 import { Beam, BeamBase } from "@beamable/sdk";
+import type { ExtensionStorage } from "./storage";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -190,6 +191,22 @@ export interface ExtensionContext extends Map<any, any> {
    * the badge must appear even when the user hasn't visited the page yet.
    */
   updateBadge: (value: BadgeValue | null) => void;
+  /**
+   * Per-extension persistent storage across three tiers (`session`, `local`,
+   * and the deferred `user`) — see {@link ExtensionStorage}. Every value is
+   * isolated by this extension and the signed-in account; the author picks a
+   * `scope` (`pid`/`cid`) and `mount` policy (`all`/`instance`), and may
+   * attach a TTL.
+   *
+   * @example
+   *   // per-realm, this device, survives reloads:
+   *   await context.storage.local.set('lastFilter', filter);
+   *   const filter = await context.storage.local.get<Filter>('lastFilter');
+   *
+   *   // one value for the whole org, on this device:
+   *   await context.storage.local.scope({ scope: 'cid' }).set('compact', true);
+   */
+  storage: ExtensionStorage;
 }
 
 /**
