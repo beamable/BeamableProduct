@@ -192,6 +192,23 @@ export interface ExtensionContext extends Map<any, any> {
    */
   updateBadge: (value: BadgeValue | null) => void;
   /**
+   * Data supplied by the parent that mounted this extension, if any. Value
+   * comes from the `siteData` prop on the parent's `<BeamExtensionSite>` or
+   * `<BeamChildExtension>`. Snapshot at mount time — mutating the parent's
+   * value after mount does NOT update this field for existing mounts (a
+   * remount picks up the new value). For live-in-sync scenarios, the parent
+   * should pass a store (writable/readable) through `siteData` and the
+   * child subscribes to it.
+   *
+   * Typed as `unknown` — the mount site is a generic primitive and the
+   * type system can't know a given site's contract. Validate at the receive
+   * site with a companion type, a schema, or a defensive cast.
+   *
+   * Top-level (rather than nested under `mount`) because the value is
+   * supplied by the parent, not by this extension's own manifest.
+   */
+  siteData?: unknown;
+  /**
    * Per-extension persistent storage across three tiers (`session`, `local`,
    * and the deferred `user`) — see {@link ExtensionStorage}. Every value is
    * isolated by this extension and the signed-in account; the author picks a

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - shared storage layer for extensions
+- context site data for arbitrary data sharing between extensions
 
 ## [0.2.0] - 2026-06-23
 
