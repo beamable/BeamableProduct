@@ -89,7 +89,7 @@ namespace Beamable.Purchasing
 					return _initPromise;
 				}
 
-				
+
 #if UNITY_PURCHASING_5_OR_NEWER
 #if USE_STEAMWORKS && (!UNITY_EDITOR || BEAMABLE_STEAM_IN_EDITOR) && !!BEAMABLE_STEAM_IMPLEMENTATION_DISABLED
 				// Register the Steam custom store with the SDK, then target it by name.
@@ -432,7 +432,7 @@ namespace Beamable.Purchasing
 		{
 			var product = GetOrderProduct(order);
 
-			string rawReceipt;
+			string rawReceipt = string.Empty;
 			var receiptString = order.Info?.Receipt;
 			if (!string.IsNullOrEmpty(receiptString))
 			{
@@ -440,10 +440,6 @@ namespace Beamable.Purchasing
 				rawReceipt = receipt != null && !string.IsNullOrEmpty(receipt.Payload) ? receipt.Payload : receiptString;
 				InAppPurchaseLogger.Log($"UnityIAP Payload: {rawReceipt}");
 				InAppPurchaseLogger.Log($"UnityIAP Raw Receipt: {receiptString}");
-			}
-			else
-			{
-				rawReceipt = receiptString;
 			}
 
 			var transaction = new CompletedTransaction(
@@ -729,7 +725,7 @@ namespace Beamable.Purchasing
 		/// The product id from Beamable's SKU content. <see cref="SKU.productIds"/>
 		/// </summary>
 		public string skuProductId;
-		
+
 		/// <summary>
 		/// The IAP store id
 		/// </summary>
