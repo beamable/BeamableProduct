@@ -189,14 +189,22 @@ public static class LocalStackTemplate
 		foreach (var tool in scalaTools)
 		{
 			var isGateway = tool.name.Contains("gateway", StringComparison.OrdinalIgnoreCase);
+			// Emit the launch script in the shell that matches THIS machine's OS: PowerShell on Windows
+			// (cmd.exe can't run the POSIX-sh script), sh on macOS/Linux. `up` reads `shellKind` to pick
+			// the interpreter. The manifest already holds absolute machine-specific paths, so being
+			// OS-specific here is not a new portability constraint — re-run `init` per machine.
+			var onWindows = OperatingSystem.IsWindows();
 			var step = new LocalStackStep
 			{
 				name = $"scala: {tool.name}",
 				group = "scala", // launch all Scala services in parallel (they're independent backing services)
 				workingDirectory = scalaDir,
 				shell = true,
+				shellKind = onWindows ? "powershell" : "sh",
 				mainClass = tool.mainClass,
-				arguments = ScalaLaunchShell(tool.name, tool.mainClass),
+				arguments = onWindows
+					? ScalaLaunchPowerShell(tool.name, tool.mainClass)
+					: ScalaLaunchShell(tool.name, tool.mainClass),
 				// BASIC/OBJECT service providers log "<type> Service Started: <name>" when they register.
 				// HTTP gateway apps (com.*.gateway.App) never do — they log "Serving traffic at ..." on bind.
 				readyWhenLogContains = isGateway ? "Serving traffic" : "Service Started",
@@ -282,5 +290,37 @@ public static class LocalStackTemplate
 			"[ -s \"$CPF\" ] || JAVA_HOME=\"$JHOME\" mvn -q -pl tools/$SVC dependency:build-classpath -Dmdep.outputFile=\"$CPF\"; " +
 			"CP=\"tools/$SVC/target/classes:core/target/classes:$JAR:$(cat \"$CPF\")\"; " +
 			"exec \"$JHOME/bin/java\" -cp \"$CP\" \"$MAIN\"";
+	}
+
+	/// <summary>
+	/// The Windows/PowerShell equivalent of <see cref="ScalaLaunchShell"/>: it performs the same steps
+	/// (resolve the service jar excluding the <c>-sources</c> jar, fall back to the <c>pom.xml</c>
+	/// <c>&lt;mainClass&gt;</c>, build+cache the mvn classpath, then run a Temurin-8 host JVM) but with
+	/// PowerShell cmdlets and the Windows classpath separator (<c>;</c>). Relative <c>tools/…</c> paths
+	/// resolve against the step's <c>workingDirectory</c> (the Scala repo), exactly like the sh version.
+	/// <c>${java}</c> is substituted to the resolved Java 8 home by <c>up</c>.
+	/// </summary>
+	private static string ScalaLaunchPowerShell(string svc, string mainClass)
+	{
+		// Written verbatim to a .launch.ps1 and run via `powershell -File`. Keep it dependency-free
+		// (only cmdlets + mvn/java on PATH) so it works on stock Windows PowerShell 5.1.
+		return string.Join("\n", new[]
+		{
+			"$ErrorActionPreference = 'Stop'",
+			$"$svc = '{svc}'",
+			"$jhome = '${java}'",
+			"$jar = Get-ChildItem -Path \"tools/$svc/target\" -Filter '*-1.0-SNAPSHOT.jar' -ErrorAction SilentlyContinue |",
+			"       Where-Object { $_.Name -notlike '*sources*' } | Select-Object -First 1 -ExpandProperty FullName",
+			$"$main = '{mainClass ?? string.Empty}'",
+			"if (-not $main) { $main = (Select-String -Path \"tools/$svc/pom.xml\" -Pattern '<mainClass>([^<]+)</mainClass>' |",
+			"                  Select-Object -First 1).Matches.Groups[1].Value }",
+			"$cpf = Join-Path $env:TEMP \"beam-scala-cp/cp-$svc.txt\"",
+			"New-Item -ItemType Directory -Force -Path (Split-Path $cpf) | Out-Null",
+			"if (-not (Test-Path $cpf) -or (Get-Item $cpf).Length -eq 0) {",
+			"  $env:JAVA_HOME = $jhome; mvn -q -pl \"tools/$svc\" dependency:build-classpath \"-Dmdep.outputFile=$cpf\" }",
+			"$cp = \"tools/$svc/target/classes;core/target/classes;$jar;\" + ((Get-Content $cpf -Raw).Trim())",
+			"& \"$jhome\\bin\\java.exe\" -cp $cp $main",
+			"exit $LASTEXITCODE",
+		});
 	}
 }

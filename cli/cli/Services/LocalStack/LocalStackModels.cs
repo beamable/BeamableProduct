@@ -68,11 +68,19 @@ public class LocalStackStep
 	public bool beam = false;
 
 	/// <summary>
-	/// When true (and <see cref="beam"/> is false), <see cref="arguments"/> is run through the
-	/// platform shell (<c>/bin/sh -c</c> on unix, <c>cmd /c</c> on Windows), so shell features
-	/// like command substitution work. Useful for complex launches (e.g. a Scala <c>java -cp $(...)</c>).
+	/// When true (and <see cref="beam"/> is false), <see cref="arguments"/> is run through a shell,
+	/// so shell features like command substitution work. Which shell is chosen by <see cref="shellKind"/>
+	/// (see below). Useful for complex launches (e.g. a Scala <c>java -cp $(...)</c>).
 	/// </summary>
 	public bool shell = false;
+
+	/// <summary>
+	/// For a shell step, which shell the <see cref="arguments"/> script targets: <c>"sh"</c> (the
+	/// default when null/empty — POSIX sh, used on macOS/Linux) or <c>"powershell"</c> (Windows).
+	/// Set by <c>beam local init</c> to the generating OS so <c>up</c> runs the script with the right
+	/// interpreter. A POSIX-sh script cannot be run by <c>cmd.exe</c>, so this must match the script.
+	/// </summary>
+	public string shellKind;
 
 	/// <summary>Executable to run. Ignored when <see cref="beam"/> or <see cref="shell"/> is true.</summary>
 	public string command;

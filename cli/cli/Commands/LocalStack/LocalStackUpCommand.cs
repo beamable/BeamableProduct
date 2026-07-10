@@ -471,7 +471,21 @@ public class LocalStackUpCommand
 		else
 		{
 			var launcher = Path.Combine(logsDir, safe + ".launch.cmd");
-			File.WriteAllText(launcher, inner + "\r\n");
+			if (step.shell && string.Equals(step.shellKind, "powershell", StringComparison.OrdinalIgnoreCase))
+			{
+				// A PowerShell shell step (e.g. the Scala services on Windows): cmd.exe can't run the script,
+				// so write it to a .launch.ps1 and have the .cmd shim invoke powershell on it. We still go through
+				// the cmd redirection wrapper below (proven for the non-shell steps), which captures powershell's
+				// — and the java child's inherited — stdout/stderr to the log files.
+				var ps1 = Path.Combine(logsDir, safe + ".launch.ps1");
+				File.WriteAllText(ps1, argsText + "\r\n");
+				File.WriteAllText(launcher, $"@powershell -NoProfile -ExecutionPolicy Bypass -File \"{ps1}\"\r\n");
+			}
+			else
+			{
+				File.WriteAllText(launcher, inner + "\r\n");
+			}
+
 			psi.FileName = "cmd.exe";
 			// Windows: best-effort — not fully detached (dies with the console), but still logs to files and
 			// detaches stdin from the console so the child doesn't block on / read it.
@@ -556,8 +570,11 @@ public class LocalStackUpCommand
 		if (string.IsNullOrWhiteSpace(command))
 			throw new CliException("A non-beam/non-shell step must define a 'command'.");
 
-		if (!string.IsNullOrEmpty(workDir) &&
-		    (command.StartsWith("./") || command.StartsWith(".\\") || command.Contains('/') || command.Contains('\\')))
+		// Prefer the executable inside the working directory when it exists there. This covers an explicit
+		// relative path (./BeamableGateway) AND a bare exe name (BeamableGateway.exe): resolving the latter to
+		// a full path lets it launch even when cmd.exe won't search the cwd (NoDefaultCurrentDirectoryInExePath).
+		// Commands not present in workDir (docker, npm.cmd) fall through and resolve via PATH as before.
+		if (!string.IsNullOrEmpty(workDir))
 		{
 			var combined = Path.GetFullPath(Path.Combine(workDir, command));
 			if (File.Exists(combined))
