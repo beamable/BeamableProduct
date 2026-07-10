@@ -45,6 +45,9 @@ namespace Beamable.Editor.BeamCli.Commands
         /// <summary>a custom location for docker. By default, the CLI will attempt to resolve docker through its usual install locations. You can also use the BEAM_DOCKER_EXE environment variable to specify. 
         ///Currently, a docker path has been automatically identified.</summary>
         public string dockerCliPath;
+        /// <summary>a custom location for the Java 8 home used to run the local Scala backend. By default, the CLI will attempt to resolve Java through its usual install locations. You can also use the BEAM_JAVA_HOME environment variable to specify.
+        ///Currently, a Java 8 home has been automatically identified.</summary>
+        public string javaPath;
         /// <summary>Out all log messages as data payloads in addition to however they are logged</summary>
         public bool emitLogStreams;
         /// <summary>additional file paths to be included when building a local project manifest. </summary>
@@ -164,6 +167,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.dockerCliPath != default(string)))
             {
                 genBeamCommandArgs.Add(("--docker-cli-path=" + this.dockerCliPath));
+            }
+            // If the javaPath value was not default, then add it to the list of args.
+            if ((this.javaPath != default(string)))
+            {
+                genBeamCommandArgs.Add(("--java-path=" + this.javaPath));
             }
             // If the emitLogStreams value was not default, then add it to the list of args.
             if ((this.emitLogStreams != default(bool)))
