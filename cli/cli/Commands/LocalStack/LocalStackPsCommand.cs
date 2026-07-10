@@ -81,13 +81,21 @@ public class LocalStackPsCommand
 
 		foreach (var s in state.steps)
 		{
+			// The recorded pid works once `up` has resolved it to the service leaf. For stacks brought up by
+			// an older CLI (which recorded the Windows wrapper pid that has since died), fall back to matching
+			// the service on a live JVM's command line so it isn't misreported as "stopped".
+			var running = !s.waitForExit && IsRunning(s.pid);
+			if (!running && !s.waitForExit)
+				running = LocalStackProcess.FindByCommandLine(
+					LocalStackStopCommand.BuildKillTokens(s), LocalStackProcess.ServiceImages).Count > 0;
+
 			result.steps.Add(new LocalStackPsEntry
 			{
 				name = s.name,
 				group = s.group,
 				pid = s.pid,
 				kind = s.kind,
-				running = !s.waitForExit && IsRunning(s.pid),
+				running = running,
 				logPath = s.stdoutLog,
 			});
 		}

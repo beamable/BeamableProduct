@@ -15,6 +15,7 @@ public class LocalStackUpCommandArgs : CommandArgs
 	public string only;
 	public string skip;
 	public bool detach;
+	public bool build;
 	public bool noCreateRealm;
 	public string realmCustomer;
 	public string realmProject;
@@ -71,6 +72,9 @@ public class LocalStackUpCommand
 		detach.AddAlias("-d");
 		AddOption(detach, (args, v) => args.detach = v);
 
+		AddOption(new Option<bool>("--build", "Build the C# gateway, Scala services, and portal deps before launching (microservices/extensions always build via project run)"),
+			(args, v) => args.build = v);
+
 		AddOption(new Option<bool>("--no-create-realm", "Do not auto-create a local realm when the saved login is invalid — just warn (by default `up` creates one after a docker cleanup)"),
 			(args, v) => args.noCreateRealm = v);
 		AddOption(new Option<string>("--realm-customer", () => "beam", "Customer name to use when creating the local realm"),
@@ -108,12 +112,17 @@ public class LocalStackUpCommand
 
 		bool Included(LocalStackStep s) =>
 			s.enabled
+			&& (!s.build || args.build) // build steps run only under --build
 			&& (only == null || only.Contains(s.name))
 			&& (skip == null || !skip.Contains(s.name));
 
 		var steps = config.steps.Where(Included).ToList();
 		if (steps.Count == 0)
 			throw new CliException("No steps to run (all disabled or filtered out).");
+
+		// Manifests generated before build steps existed won't have any — tell the user how to get them.
+		if (args.build && !config.steps.Any(s => s.build))
+			Log.Warning("--build was passed but this manifest has no build steps. Re-run `beam local init` to regenerate it with build steps (or add them by hand).");
 
 		// Fail fast if the stack needs Docker but its daemon isn't running — otherwise the first docker step
 		// dies mid-bring-up with a cryptic daemon error.
@@ -157,6 +166,15 @@ public class LocalStackUpCommand
 			lock (_launchedLock)
 			{
 				launched.Add(l);
+
+				// Build steps compile a component and exit; they are not a running service, so they are not
+				// recorded in the run-state (nothing for ps/stop to track). AwaitStep still waits on completion.
+				if (step.build)
+				{
+					Log.Information($"[{step.name}] building (pid={SafePid(l)}), logs: {l.StdoutLog}");
+					return l;
+				}
+
 				var entry = runState.steps.FirstOrDefault(e => e.name == step.name);
 				if (entry == null)
 				{
@@ -166,6 +184,7 @@ public class LocalStackUpCommand
 
 				entry.group = step.group;
 				entry.pid = SafePid(l);
+				entry.matchToken = LocalStackConfigIO.Substitute(step.mainClass, config);
 				entry.kind = l.Kind;
 				entry.stdoutLog = l.StdoutLog;
 				entry.stderrLog = l.StderrLog;
@@ -244,6 +263,11 @@ public class LocalStackUpCommand
 
 				await Task.WhenAll(awaits);
 			}
+
+			// On Windows the tracked pid is the cmd.exe wrapper, not the service (cmd → powershell → java).
+			// Now that every step is up, rewrite each recorded pid to the real service leaf so `ps`/`stop`
+			// (and the next `up`'s idempotency check) act on the JVM instead of a wrapper that will die.
+			ReconcileLeafPids(runState, runStatePath);
 
 			// No beam steps ran the hook above — still ensure/validate the realm once the backend is up.
 			if (!realmEnsured)
@@ -911,8 +935,15 @@ public class LocalStackUpCommand
 			var l = snapshot[i];
 			try
 			{
-				if (l.Process.HasExited) continue;
-				l.Process.Kill(entireProcessTree: true);
+				if (!l.Process.HasExited)
+					l.Process.Kill(entireProcessTree: true);
+
+				// Windows: the wrapper tree-kill can miss a runtime grandchild that already detached from it, so
+				// also kill by a stack-specific token on its command line (no-op on unix / when nothing matches).
+				var tokens = new[] { l.Step.mainClass, l.WorkingDirectory };
+				foreach (var pid in LocalStackProcess.FindByCommandLine(tokens, LocalStackProcess.ServiceImages))
+					KillPid(pid);
+
 				Log.Information($"[{l.Step.name}] stopped");
 			}
 			catch (Exception e)
@@ -922,9 +953,50 @@ public class LocalStackUpCommand
 		}
 	}
 
+	private static void KillPid(int pid)
+	{
+		try { Process.GetProcessById(pid).Kill(entireProcessTree: true); }
+		catch { /* already gone */ }
+	}
+
 	private static int SafePid(Launched l)
 	{
 		try { return l.Process.Id; }
 		catch { return 0; }
+	}
+
+	/// <summary>
+	/// Windows only: rewrites each long-running step's recorded pid from the <c>cmd.exe</c> wrapper to the
+	/// real service process (the topmost non-wrapper descendant — the JVM, node, dotnet runner, or gateway
+	/// exe), so <c>ps</c>/<c>stop</c> and the next <c>up</c>'s idempotency check track the process that
+	/// actually survives (and whose tree-kill takes the whole step down) rather than a wrapper that exits.
+	/// No-op on unix (the launcher <c>exec</c>s the service, so the tracked pid already is the service) and
+	/// for run-to-completion (docker) steps.
+	/// </summary>
+	private void ReconcileLeafPids(LocalStackRunState runState, string runStatePath)
+	{
+		if (!OperatingSystem.IsWindows())
+			return;
+
+		var changed = false;
+		lock (_launchedLock)
+		{
+			foreach (var entry in runState.steps)
+			{
+				if (entry.waitForExit || entry.pid <= 0)
+					continue;
+
+				var service = LocalStackProcess.ResolveServiceRootPid(entry.pid);
+				if (service != entry.pid && service > 0)
+				{
+					Log.Verbose($"[{entry.name}] tracking service pid={service} (was wrapper pid={entry.pid})");
+					entry.pid = service;
+					changed = true;
+				}
+			}
+
+			if (changed)
+				LocalStackRunStateIO.Save(runStatePath, runState);
+		}
 	}
 }

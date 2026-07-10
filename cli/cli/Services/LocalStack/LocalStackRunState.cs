@@ -23,8 +23,16 @@ public class LocalStackRunEntry
 	public string name;
 	public string group;
 
-	/// <summary>OS process id of the launched service (the exec'd leaf on unix).</summary>
+	/// <summary>OS process id of the launched service. On unix this is the exec'd leaf; on Windows <c>up</c>
+	/// resolves it to the real service grandchild (the JVM) once the step is ready — see
+	/// <see cref="LocalStackProcess.ResolveLeafPid"/>.</summary>
 	public int pid;
+
+	/// <summary>Identity string present on the launched service's command line (e.g. the Scala
+	/// <c>mainClass</c>). Used by <c>stop</c> as a fallback to find and kill a service whose recorded
+	/// <see cref="pid"/> is stale — the Windows wrapper chain (<c>cmd → powershell → java</c>) dies when
+	/// <c>up</c> returns and orphans the JVM.</summary>
+	public string matchToken;
 
 	/// <summary>process | beam | shell | docker — for display and stop semantics.</summary>
 	public string kind;
