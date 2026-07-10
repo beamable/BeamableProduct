@@ -6,18 +6,17 @@
 // the context: `navigate`, `config`, `beam`, etc. are all host-provided; the
 // toolkit only types them). See the portal's `extensionStorage.ts`.
 //
-// The store has three tiers:
+// The store has two tiers:
 //   - `session` — sessionStorage; lives for the tab/session.
 //   - `local`   — localStorage / IndexedDB; per-device, survives reloads.
-//   - `user`    — durable, server-backed. DEFERRED — rejects until it ships.
 //
 // Every value is isolated by the extension and the signed-in account (applied
 // by the host, never author-controllable). On top of that the author chooses a
 // `scope` (`pid` per realm, default, or `cid` across the whole org) and a
 // `mount` policy (`all` — shared by every mount of this extension, default —
 // or `instance` — per mount site). Values may carry a TTL, evaluated lazily at
-// read time. All tiers are asynchronous so code written against `local` today
-// is a drop-in for `user` when it lands.
+// read time. Both tiers are asynchronous so the same call site can move
+// between them without code changes.
 //
 // Import via:  import type { ExtensionStorage } from '@beamable/portal-toolkit';
 // (or use `context.storage` directly, and the `useStoredState` React hook.)
@@ -94,9 +93,4 @@ export interface TierStore extends ExtensionStore {
 export interface ExtensionStorage {
   session: TierStore;
   local: TierStore;
-  /**
-   * Durable, server-backed tier. Deferred — designed for a drop-in landing.
-   * Until the host ships it, its operations reject.
-   */
-  user: TierStore;
 }

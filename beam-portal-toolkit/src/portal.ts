@@ -209,11 +209,10 @@ export interface ExtensionContext extends Map<any, any> {
    */
   siteData?: unknown;
   /**
-   * Per-extension persistent storage across three tiers (`session`, `local`,
-   * and the deferred `user`) — see {@link ExtensionStorage}. Every value is
-   * isolated by this extension and the signed-in account; the author picks a
-   * `scope` (`pid`/`cid`) and `mount` policy (`all`/`instance`), and may
-   * attach a TTL.
+   * Per-extension persistent storage across two tiers (`session`, `local`) —
+   * see {@link ExtensionStorage}. Every value is isolated by this extension
+   * and the signed-in account; the author picks a `scope` (`pid`/`cid`) and
+   * `mount` policy (`all`/`instance`), and may attach a TTL.
    *
    * @example
    *   // per-realm, this device, survives reloads:
