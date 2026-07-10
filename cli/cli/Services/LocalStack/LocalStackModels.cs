@@ -54,6 +54,13 @@ public class LocalStackStep
 	public bool enabled = true;
 
 	/// <summary>
+	/// When true, this is a build/compile step: it only runs when <c>beam local up --build</c> is passed
+	/// (skipped otherwise). Build steps are run-to-completion (<see cref="waitForExit"/>) and are not tracked
+	/// in the run-state — they compile a component before its run step, they are not a running service.
+	/// </summary>
+	public bool build = false;
+
+	/// <summary>
 	/// Optional parallel-group label. Consecutive steps that share the same non-empty group are
 	/// launched together and their readiness gates awaited concurrently (e.g. all Scala services),
 	/// instead of one-at-a-time. Ordering between different groups (and ungrouped steps) is preserved.

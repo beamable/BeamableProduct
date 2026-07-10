@@ -147,6 +147,17 @@ public static class LocalStackTemplate
 			waitForExit = true,
 			readyTimeoutSeconds = 300
 		});
+		// Build the C# gateway before running its binary — only when `beam local up --build` is passed.
+		config.steps.Add(new LocalStackStep
+		{
+			name = "build: c# gateway",
+			workingDirectory = apiDir,
+			command = "dotnet",
+			arguments = "build BeamableGateway -c Debug",
+			build = true,
+			waitForExit = true,
+			readyTimeoutSeconds = 300
+		});
 		config.steps.Add(new LocalStackStep
 		{
 			name = "c# gateway",
@@ -165,6 +176,17 @@ public static class LocalStackTemplate
 		// 2. Portal frontend (Vite dev server). Placed BEFORE the Scala group because it only serves the
 		//    frontend (the browser talks to the backend at runtime) — so it comes up in ~1s instead of waiting
 		//    behind the Scala services' readiness.
+		// Install the portal's node deps before `npm run dev` — only when `beam local up --build` is passed.
+		config.steps.Add(new LocalStackStep
+		{
+			name = "build: portal deps",
+			workingDirectory = portalDir,
+			command = OperatingSystem.IsWindows() ? "npm.cmd" : "npm",
+			arguments = "install",
+			build = true,
+			waitForExit = true,
+			readyTimeoutSeconds = 600
+		});
 		config.steps.Add(new LocalStackStep
 		{
 			name = "portal frontend",
@@ -188,6 +210,25 @@ public static class LocalStackTemplate
 			waitForExit = true,
 			readyTimeoutSeconds = 120
 		});
+		// Compile the selected Scala services (and their intra-repo `core` via -am) so target/classes + jars
+		// exist before the JVMs launch — only when `beam local up --build` is passed.
+		if (scalaTools.Count > 0)
+		{
+			var scalaModules = string.Join(",", scalaTools.Select(t => $"tools/{t.name}"));
+			config.steps.Add(new LocalStackStep
+			{
+				name = "build: scala",
+				workingDirectory = scalaDir,
+				command = OperatingSystem.IsWindows() ? "mvn.cmd" : "mvn",
+				arguments = $"-q -pl {scalaModules} -am package -DskipTests",
+				// Scala runs under Java 8; ${java} is substituted to that JAVA_HOME by `up` (as for the launch shells).
+				environment = new Dictionary<string, string> { ["JAVA_HOME"] = "${java}" },
+				build = true,
+				waitForExit = true,
+				readyTimeoutSeconds = 900
+			});
+		}
+
 		foreach (var tool in scalaTools)
 		{
 			var isGateway = tool.name.Contains("gateway", StringComparison.OrdinalIgnoreCase);
