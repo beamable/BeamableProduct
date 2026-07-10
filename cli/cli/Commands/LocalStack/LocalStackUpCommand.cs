@@ -389,10 +389,20 @@ public class LocalStackUpCommand
 
 	private static string ResolveJavaHome(CommandArgs args, LocalStackConfig config)
 	{
-		var fromOption = args.AppContext?.JavaPath;
-		if (!string.IsNullOrWhiteSpace(fromOption)) return fromOption;
+		// 1. Explicit --java-path CLI option (user wants this exact path for this invocation)
+		var explicitPath = args.AppContext?.ExplicitJavaPath;
+		if (!string.IsNullOrWhiteSpace(explicitPath)) return explicitPath;
+
+		// 2. BEAM_JAVA_HOME env var (machine-level explicit override)
+		var envHome = ConfigService.CustomJavaHome;
+		if (!string.IsNullOrWhiteSpace(envHome)) return envHome;
+
+		// 3. Manifest-pinned path (stored by beam local init — the user's chosen version)
+		if (!string.IsNullOrWhiteSpace(config.javaHome)) return config.javaHome;
+
+		// 4. Auto-detection as last resort (JAVA_HOME, macOS java_home, common install dirs)
 		if (JavaPathOption.TryGetJavaHome(out var home, out _)) return home;
-		return config.javaHome; // may be null; the Scala launch shell will fail clearly if a JDK is needed and missing
+		return null; // Scala launch shell will fail clearly if a JDK is needed and missing
 	}
 
 	// ----------------------------------------------------------------------------------

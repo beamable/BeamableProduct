@@ -33,6 +33,8 @@ public static class LocalStackTemplate
 		public List<string> extensions;
 		/// <summary>Service-group names to run as a whole via <c>project run --with-group</c>.</summary>
 		public List<string> groups;
+		/// <summary>Java 8 JAVA_HOME to bake into the manifest (stored in <see cref="LocalStackConfig.javaHome"/>). Null = omit from manifest and resolve at run time.</summary>
+		public string javaHome;
 	}
 
 	/// <summary>A discovered Scala <c>tools/*</c> service: its folder name, resolved main class, and metadata.</summary>
@@ -129,7 +131,7 @@ public static class LocalStackTemplate
 		var services = o.services ?? new List<string>();
 		var extensions = o.extensions ?? new List<string>();
 
-		var config = new LocalStackConfig { host = o.host, portalUrl = o.portalUrl };
+		var config = new LocalStackConfig { host = o.host, portalUrl = o.portalUrl, javaHome = o.javaHome };
 
 		// 1. C# stack FIRST — docker deps + Caddy, then the built Gateway binary. The C# stack hosts
 		//    the service-discovery the Scala services resolve against, so it must be up before them.

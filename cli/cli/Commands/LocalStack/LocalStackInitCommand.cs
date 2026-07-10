@@ -345,6 +345,13 @@ public class LocalStackInitCommand
 		var host = Ask("Backend API [green]host[/]:", args.host, defaults.host, quiet, allowEmpty: false);
 		var portalUrl = Ask("[green]Portal[/] frontend URL:", args.portalUrl, defaults.portalUrl, quiet, allowEmpty: false);
 
+		// Java 8 home — auto-detect (or use --java-path if explicitly provided) and prompt to confirm.
+		// Empty answer = omit from manifest; beam local up will auto-detect at run time.
+		var javaDefault = args.AppContext?.JavaPath;
+		var javaHome = NullIfEmpty(Ask(
+			"Java 8 home for the Scala backend [grey](empty = resolve at run time)[/]:",
+			null, javaDefault, quiet, allowEmpty: true));
+
 		// Scala services: auto-discover the tools/* services from the repo (name + main class) and default to
 		// the curated set that's actually present; fall back to the static list when nothing is discovered.
 		var discovered = LocalStackTemplate.DiscoverScalaTools(NullIfEmpty(scalaDir));
@@ -380,6 +387,7 @@ public class LocalStackInitCommand
 			services = ExcludeGroupMembers(selectedServices, selectedGroups, discoveredGroups),
 			extensions = ExcludeGroupMembers(selectedExtensions, selectedGroups, discoveredGroups),
 			groups = selectedGroups,
+			javaHome = javaHome,
 		};
 
 		var config = LocalStackTemplate.Create(options);
