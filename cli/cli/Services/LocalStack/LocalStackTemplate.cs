@@ -287,7 +287,11 @@ public static class LocalStackTemplate
 			$"MAIN='{mainClass ?? string.Empty}'; " +
 			"[ -n \"$MAIN\" ] || MAIN=$(grep -m1 -oE '<mainClass>[^<]+</mainClass>' tools/$SVC/pom.xml | sed -E 's#</?mainClass>##g'); " +
 			"CPF=\"${TMPDIR:-/tmp}/beam-scala-cp/cp-$SVC.txt\"; mkdir -p \"$(dirname \"$CPF\")\"; " +
-			"[ -s \"$CPF\" ] || JAVA_HOME=\"$JHOME\" mvn -q -pl tools/$SVC dependency:build-classpath -Dmdep.outputFile=\"$CPF\"; " +
+			// Rebuild the cached classpath when it is missing/empty OR older than core/pom.xml (so a dep newly
+			// added to core lands on it). `-am` builds `core` in the reactor and resolves its transitive deps
+			// from the CURRENT source pom instead of a possibly-stale ~/.m2 install — otherwise a dep added to
+			// core (e.g. zstd-jni) is silently dropped and the service dies with NoClassDefFoundError at runtime.
+			"{ [ -s \"$CPF\" ] && [ \"$CPF\" -nt core/pom.xml ]; } || JAVA_HOME=\"$JHOME\" mvn -q -pl tools/$SVC -am dependency:build-classpath -Dmdep.outputFile=\"$CPF\"; " +
 			"CP=\"tools/$SVC/target/classes:core/target/classes:$JAR:$(cat \"$CPF\")\"; " +
 			"exec \"$JHOME/bin/java\" -cp \"$CP\" \"$MAIN\"";
 	}
@@ -316,8 +320,12 @@ public static class LocalStackTemplate
 			"                  Select-Object -First 1).Matches.Groups[1].Value }",
 			"$cpf = Join-Path $env:TEMP \"beam-scala-cp/cp-$svc.txt\"",
 			"New-Item -ItemType Directory -Force -Path (Split-Path $cpf) | Out-Null",
-			"if (-not (Test-Path $cpf) -or (Get-Item $cpf).Length -eq 0) {",
-			"  $env:JAVA_HOME = $jhome; mvn -q -pl \"tools/$svc\" dependency:build-classpath \"-Dmdep.outputFile=$cpf\" }",
+			// Rebuild the cached classpath when missing/empty OR older than core/pom.xml. `-am` resolves the
+			// intra-repo `core` from the reactor's CURRENT pom instead of a possibly-stale ~/.m2 install, so a
+			// dep newly added to core (e.g. zstd-jni) is included rather than dropped (NoClassDefFoundError).
+			"$stale = (-not (Test-Path $cpf)) -or ((Get-Item $cpf).Length -eq 0) -or ((Get-Item 'core/pom.xml').LastWriteTime -gt (Get-Item $cpf).LastWriteTime)",
+			"if ($stale) {",
+			"  $env:JAVA_HOME = $jhome; mvn -q -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\" }",
 			"$cp = \"tools/$svc/target/classes;core/target/classes;$jar;\" + ((Get-Content $cpf -Raw).Trim())",
 			"& \"$jhome\\bin\\java.exe\" -cp $cp $main",
 			"exit $LASTEXITCODE",
