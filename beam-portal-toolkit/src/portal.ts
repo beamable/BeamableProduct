@@ -2,6 +2,7 @@
 // Import via:  import { Portal } from '@beamable/portal-toolkit';
 
 import { Beam, BeamBase } from "@beamable/sdk";
+import type { ExtensionStorage } from "./storage";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -190,6 +191,38 @@ export interface ExtensionContext extends Map<any, any> {
    * the badge must appear even when the user hasn't visited the page yet.
    */
   updateBadge: (value: BadgeValue | null) => void;
+  /**
+   * Data supplied by the parent that mounted this extension, if any. Value
+   * comes from the `siteData` prop on the parent's `<BeamExtensionSite>` or
+   * `<BeamChildExtension>`. Snapshot at mount time — mutating the parent's
+   * value after mount does NOT update this field for existing mounts (a
+   * remount picks up the new value). For live-in-sync scenarios, the parent
+   * should pass a store (writable/readable) through `siteData` and the
+   * child subscribes to it.
+   *
+   * Typed as `unknown` — the mount site is a generic primitive and the
+   * type system can't know a given site's contract. Validate at the receive
+   * site with a companion type, a schema, or a defensive cast.
+   *
+   * Top-level (rather than nested under `mount`) because the value is
+   * supplied by the parent, not by this extension's own manifest.
+   */
+  siteData?: unknown;
+  /**
+   * Per-extension persistent storage across two tiers (`session`, `local`) —
+   * see {@link ExtensionStorage}. Every value is isolated by this extension
+   * and the signed-in account; the author picks a `scope` (`pid`/`cid`) and
+   * `mount` policy (`all`/`instance`), and may attach a TTL.
+   *
+   * @example
+   *   // per-realm, this device, survives reloads:
+   *   await context.storage.local.set('lastFilter', filter);
+   *   const filter = await context.storage.local.get<Filter>('lastFilter');
+   *
+   *   // one value for the whole org, on this device:
+   *   await context.storage.local.scope({ scope: 'cid' }).set('compact', true);
+   */
+  storage: ExtensionStorage;
 }
 
 /**

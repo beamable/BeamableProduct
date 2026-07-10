@@ -14,6 +14,7 @@
 import { createElement, useCallback, useEffect, useMemo, useRef, useState, StrictMode, type ComponentType, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { Portal, type BadgeContext, type BadgeValue, type ExtensionContext } from './portal';
+import type { ExtensionStore, SetOptions } from './storage';
 import type { Beam } from '@beamable/sdk';
 
 // ---------------------------------------------------------------------------
@@ -51,6 +52,92 @@ export function useBeam(context: ExtensionContext): Beam | null {
     // render but keep the promise stable.
   }, [context.beam]);
   return beam;
+}
+
+// ---------------------------------------------------------------------------
+// useStoredState
+// ---------------------------------------------------------------------------
+
+/**
+ * `useState` backed by an {@link ExtensionStore}. Reads the stored value on
+ * mount (showing `initialValue` until it lands), re-renders when the stored
+ * value changes — including writes/deletes from another live mount of the same
+ * extension in the same scope, via the store's `subscribe` — and persists on
+ * every setter call.
+ *
+ * `initialValue` is the fallback whenever the key is absent: an unset key, a
+ * value deleted elsewhere (the store emits `null`), or after `store`/`key`
+ * changes to a key with no value. Note TTL expiry is lazy in the store and
+ * emits no event, so a value that expires while mounted is only reflected on
+ * the next read, not pushed here.
+ *
+ * Pass a scoped store (e.g. `context.storage.local.scope({ scope: 'cid' })`)
+ * to control scope / mount policy, and `opts.ttl` to expire the value.
+ *
+ * The setter is fire-and-forget (optimistic): it updates React state
+ * immediately and lets the write settle in the background. For explicit
+ * error handling, call the store's `set` directly.
+ *
+ * @example
+ *   export default function App({ context }: { context: ExtensionContext }) {
+ *     const [filter, setFilter] = useStoredState(context.storage.local, 'filter', 'all');
+ *     return <FilterBar value={filter} onChange={setFilter} />;
+ *   }
+ */
+export function useStoredState<T>(
+  store: ExtensionStore,
+  key: string,
+  initialValue: T,
+  opts?: SetOptions,
+): [T, (next: T | ((prev: T) => T)) => void, boolean] {
+  const [value, setValue] = useState<T>(initialValue);
+  const [loading, setLoading] = useState(true);
+  const ttl = opts?.ttl;
+
+  // Track the latest `initialValue` without making the load effect depend on
+  // its identity — an inline literal/object would otherwise re-run the effect
+  // (and refetch) on every render.
+  const initialRef = useRef(initialValue);
+  initialRef.current = initialValue;
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    // Reset to the fallback so a `store`/`key` change never leaves the previous
+    // key's value on screen while the new read is in flight.
+    setValue(initialRef.current);
+    store
+      .get<T>(key)
+      .then((stored) => {
+        if (cancelled) return;
+        setValue(stored !== null ? stored : initialRef.current);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+    const unsubscribe = store.subscribe<T>(key, (next) => {
+      // `null` means deleted/absent — fall back to the initial value.
+      if (!cancelled) setValue(next !== null ? next : initialRef.current);
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [store, key]);
+
+  const set = useCallback(
+    (next: T | ((prev: T) => T)) => {
+      setValue((prev) => {
+        const resolved = typeof next === 'function' ? (next as (p: T) => T)(prev) : next;
+        void store.set(key, resolved, ttl != null ? { ttl } : undefined);
+        return resolved;
+      });
+    },
+    [store, key, ttl],
+  );
+
+  return [value, set, loading];
 }
 
 // ---------------------------------------------------------------------------
