@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `useMountSiteCandidates` function can query available extensions for a given mount site
-- `BeamExtensionSite` accepts `include` and `resolve` attributes for filtering and ordering available extensions 
+- `BeamExtensionSite` accepts `include` and `resolve` props for filtering and ordering available extensions
 
 ## [0.3.0] - 2026-07-10
 

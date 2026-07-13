@@ -148,8 +148,8 @@ export interface BadgeContext {
 /**
  * A handle to one of this extension's own mount sites, accepted by
  * {@link ExtensionContext.getMountSiteCandidates}: either the site's
- * `selector` string, or the mount-site element itself (e.g. a React ref to
- * the `<BeamExtensionSite>`).
+ * `selector` string, or the mount-site element itself — the
+ * `<BeamExtensionSite>`'s DOM element, e.g. a React ref's `.current`.
  */
 export type MountSiteHandle = string | HTMLElement;
 

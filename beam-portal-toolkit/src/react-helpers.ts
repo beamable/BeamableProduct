@@ -151,7 +151,8 @@ export function useStoredState<T>(
  * compute an `include` list for the matching `<BeamExtensionSite>`.
  *
  * @param context - The extension's runtime context.
- * @param site    - The site's `selector`, or the mount-site element (a ref).
+ * @param site    - The site's `selector`, or the mount-site element itself
+ *                  (e.g. a `<BeamExtensionSite>` ref's `.current`).
  *
  * @example
  *   const candidates = useMountSiteCandidates(context, 'detail-tabs');
