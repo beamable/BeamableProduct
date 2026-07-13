@@ -146,6 +146,32 @@ export interface BadgeContext {
 }
 
 /**
+ * A handle to one of this extension's own mount sites, accepted by
+ * {@link ExtensionContext.getMountSiteCandidates}: either the site's
+ * `selector` string, or the mount-site element itself (e.g. a React ref to
+ * the `<BeamExtensionSite>`).
+ */
+export type MountSiteHandle = string | HTMLElement;
+
+/**
+ * What the portal knows about an extension that could mount at a site.
+ * Returned by {@link ExtensionContext.getMountSiteCandidates} and passed to a
+ * `<BeamExtensionSite>`'s `resolve` function.
+ */
+export interface CandidateMetadata {
+  /** The candidate extension's name / beam id. */
+  beamId: string;
+  /** The mount entry that matched this site — `selector`, `args`, nav*, … */
+  mount: ExtensionMountPoint;
+  /** The `@beamable/portal-toolkit` version the candidate was built against. */
+  toolkitVersion: string;
+  /** `true` for a locally-running dev build, `false` for a deployed one. */
+  isLocal: boolean;
+  /** Selectors this candidate itself exposes via `<BeamExtensionSite>`. */
+  sites: string[];
+}
+
+/**
  * Runtime context provided by the Beamable portal to every extension on mount.
  */
 export interface ExtensionContext extends Map<any, any> {
@@ -223,6 +249,19 @@ export interface ExtensionContext extends Map<any, any> {
    *   await context.storage.local.scope({ scope: 'cid' }).set('compact', true);
    */
   storage: ExtensionStorage;
+  /**
+   * Discover the extensions that could mount at one of THIS extension's own
+   * mount sites — pass the site's `selector` (or the site element) and get a
+   * reactive list of candidates with their metadata. Use it to build UI (e.g.
+   * a "which view" dropdown) or to compute an `include` list for the matching
+   * `<BeamExtensionSite>`. Reactive: `subscribe` to react as extensions
+   * deploy, enable, or disable. See {@link CandidateMetadata}.
+   *
+   * @example
+   *   const obs = context.getMountSiteCandidates('detail-tabs');
+   *   const ids = obs.get().map((c) => c.beamId);   // e.g. to seed `include`
+   */
+  getMountSiteCandidates(site: MountSiteHandle): ExtensionObservable<CandidateMetadata[]>;
 }
 
 /**

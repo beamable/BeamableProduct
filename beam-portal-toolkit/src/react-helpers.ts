@@ -13,7 +13,7 @@
 
 import { createElement, useCallback, useEffect, useMemo, useRef, useState, StrictMode, type ComponentType, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { Portal, type BadgeContext, type BadgeValue, type ExtensionContext } from './portal';
+import { Portal, type BadgeContext, type BadgeValue, type CandidateMetadata, type ExtensionContext, type MountSiteHandle } from './portal';
 import type { ExtensionStore, SetOptions } from './storage';
 import type { Beam } from '@beamable/sdk';
 
@@ -138,6 +138,38 @@ export function useStoredState<T>(
   );
 
   return [value, set, loading];
+}
+
+// ---------------------------------------------------------------------------
+// useMountSiteCandidates
+// ---------------------------------------------------------------------------
+
+/**
+ * Reactive candidate list for one of this extension's own mount sites. Wraps
+ * `context.getMountSiteCandidates(site)` and re-renders as extensions deploy,
+ * enable, or disable. Use it to build UI (e.g. a "which view" dropdown) or to
+ * compute an `include` list for the matching `<BeamExtensionSite>`.
+ *
+ * @param context - The extension's runtime context.
+ * @param site    - The site's `selector`, or the mount-site element (a ref).
+ *
+ * @example
+ *   const candidates = useMountSiteCandidates(context, 'detail-tabs');
+ *   // render a <select> of candidates (beamId + mount.navLabel), then:
+ *   <BeamExtensionSite selector="detail-tabs" include={chosen ? [chosen] : []} />
+ */
+export function useMountSiteCandidates(
+  context: ExtensionContext,
+  site: MountSiteHandle,
+): CandidateMetadata[] {
+  const [candidates, setCandidates] = useState<CandidateMetadata[]>([]);
+  useEffect(() => {
+    const observable = context.getMountSiteCandidates(site);
+    setCandidates(observable.get());
+    return observable.subscribe(setCandidates);
+    // Re-subscribe when the host swaps context or the site handle changes.
+  }, [context, site]);
+  return candidates;
 }
 
 // ---------------------------------------------------------------------------
