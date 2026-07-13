@@ -14,6 +14,7 @@
 
 import { createElement, type CSSProperties, type ComponentType, type ReactElement, type ReactNode, type Ref } from 'react';
 import { hostComponent } from './react-host';
+import type { CandidateMetadata } from './portal';
 
 export interface BeamTableProps<T = unknown> {
   data: T[];
@@ -146,6 +147,33 @@ export interface BeamExtensionSiteProps {
    * their own. `useMemo` the value if that's not what you want.
    */
   siteData?: unknown;
+  /**
+   * Curate which candidates mount and in what order. `resolve` is the full
+   * mechanism; `include` is sugar over it.
+   *
+   * `resolve` receives the site's live candidate set (each with metadata) and
+   * returns the subset to mount, **in the returned order** — so it filters
+   * **and** reorders. Return either the {@link CandidateMetadata} objects or
+   * their beam ids. It re-runs whenever the candidate set changes, so it MUST
+   * be pure: do not mutate the argument (it is `readonly`) or reach for side
+   * effects. If it throws, the error surfaces on this extension's own error
+   * page.
+   *
+   * @example
+   *   resolve={(c) => [...c].filter(x => !x.isLocal)
+   *                         .sort((a, b) => (a.mount.navLabelOrder ?? 0) - (b.mount.navLabelOrder ?? 0))}
+   */
+  resolve?: (candidates: readonly CandidateMetadata[]) => CandidateMetadata[] | string[];
+  /**
+   * Allowlist of beam ids — sugar over {@link resolve}. Only listed candidates
+   * mount; **membership only, no reordering** — survivors keep the site's
+   * existing order. An id that matches no candidate is a no-op (logged as a
+   * console warning). Ignored when `resolve` is also provided.
+   *
+   * To learn which beam ids are valid, read
+   * {@link ExtensionContext.getMountSiteCandidates} (or `useMountSiteCandidates`).
+   */
+  include?: string[];
 }
 
 export function BeamExtensionSite(
