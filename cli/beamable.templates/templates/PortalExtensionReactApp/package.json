@@ -16,7 +16,11 @@
         "navIcon": "robot",
         "navDescription": "",
         "navColor": "linear-gradient(135deg, #826CCF, #04C6F1)",
-        "navGroupOrder": 0
+        "navGroupOrder": 0,
+        "filters": {
+          "account.role": "developer",
+          "account.tier": "default"
+        }
       }
     ]
   },
