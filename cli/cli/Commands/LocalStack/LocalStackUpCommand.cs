@@ -181,11 +181,16 @@ public class LocalStackUpCommand
 		var token = args.Lifecycle.CancellationToken;
 		var realmEnsured = false;
 
+		// Attached: put every launched process in a kill-on-close job so the whole stack dies with the CLI —
+		// even on a terminal close / IDE stop / hard kill that skips the graceful teardown (Windows only; no-op
+		// elsewhere). Held for the command's lifetime; disposed in the teardown paths below.
+		var job = attached ? LocalStackJobObject.CreateKillOnClose() : null;
+
 		// Launch a step and record it in the run-state (upsert by name, so a retry replaces the dead entry
 		// rather than duplicating it). Returned as a local function so readiness can relaunch on early exit.
 		Launched LaunchAndRegister(LocalStackStep step)
 		{
-			var l = StartStep(step, config, beamExe, beamLeading, beamWorkspaceFallback, logsDir, attached, args.saveLogs);
+			var l = StartStep(step, config, beamExe, beamLeading, beamWorkspaceFallback, logsDir, attached, args.saveLogs, job);
 			lock (_launchedLock)
 			{
 				launched.Add(l);
@@ -350,6 +355,12 @@ public class LocalStackUpCommand
 			// Don't leave an empty temp log dir behind for a run that never came up.
 			if (!args.saveLogs) TryDeleteDir(logsDir);
 			throw;
+		}
+		finally
+		{
+			// Closing the job kills anything still assigned (attached only) — belt-and-suspenders on top of the
+			// OS's own kill-on-close when the process exits.
+			job?.Dispose();
 		}
 	}
 
@@ -575,7 +586,7 @@ public class LocalStackUpCommand
 	}
 
 	private Launched StartStep(LocalStackStep step, LocalStackConfig config, string beamExe, string[] beamLeading,
-		string beamWorkspaceFallback, string logsDir, bool attached, bool saveLogs)
+		string beamWorkspaceFallback, string logsDir, bool attached, bool saveLogs, LocalStackJobObject job)
 	{
 		var workDir = LocalStackConfigIO.Substitute(step.workingDirectory, config);
 		var argsText = LocalStackConfigIO.Substitute(step.arguments, config) ?? string.Empty;
@@ -662,6 +673,10 @@ public class LocalStackUpCommand
 
 		if (proc == null)
 			throw new CliException($"Failed to start step '{step.name}' ({psi.FileName}).");
+
+		// Attached: enroll in the kill-on-close job immediately — before the child spawns grandchildren, so the
+		// whole subtree (powershell → java, etc.) inherits membership and is reaped when the CLI exits.
+		job?.Assign(proc);
 
 		var exitTcs = new TaskCompletionSource();
 		proc.EnableRaisingEvents = true;
@@ -1091,8 +1106,17 @@ public class LocalStackUpCommand
 
 				// Windows: the wrapper tree-kill can miss a runtime grandchild that already detached from it, so
 				// also kill by a stack-specific token on its command line (no-op on unix / when nothing matches).
-				var tokens = new[] { l.Step.mainClass, l.WorkingDirectory };
-				foreach (var pid in LocalStackProcess.FindByCommandLine(tokens, LocalStackProcess.ServiceImages))
+				// Reuse `stop`'s per-kind token derivation (scala mainClass + tools/<svc>/, gateway/portal work
+				// dir, beam service id) so a JVM is reaped even when its mainClass wasn't discovered.
+				var probe = new LocalStackRunEntry
+				{
+					name = l.Step.name,
+					kind = l.Kind,
+					matchToken = l.Step.mainClass,
+					workingDirectory = l.WorkingDirectory,
+				};
+				foreach (var pid in LocalStackProcess.FindByCommandLine(
+					         LocalStackStopCommand.BuildKillTokens(probe), LocalStackProcess.ServiceImages))
 					KillPid(pid);
 
 				Log.Information($"[{l.Step.name}] stopped");
