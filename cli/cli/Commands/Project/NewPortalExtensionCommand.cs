@@ -222,6 +222,8 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 			if (!string.IsNullOrEmpty(args.mountLabel))
 				mount[PortalExtensionMountProperties.KEY_NAV_LABEL] = args.mountLabel;
+			if (!string.IsNullOrEmpty(args.mountGroup))
+				mount[PortalExtensionMountProperties.KEY_NAV_GROUP] = args.mountGroup;
 			if (!string.IsNullOrEmpty(args.mountIcon))
 				mount[PortalExtensionMountProperties.KEY_NAV_ICON] = args.mountIcon;
 			if (args.mountGroupOrder > 0)
