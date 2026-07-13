@@ -25,15 +25,16 @@ public class YankBundleCommand : AtomicCommand<YankBundleCommandArgs, YankBundle
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("bundle-ref", "The bundle checksum reference, e.g. <namespace>/<bundle-name>@sha256:<checksum>"),
+		AddArgument(new Argument<string>("bundle-ref", "The bundle checksum reference, e.g. <bundle-name>@sha256:<checksum>"),
 			(args, i) => args.bundleRef = i);
 	}
 
 	public override async Task<YankBundleCommandOutput> GetResult(YankBundleCommandArgs args)
 	{
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
-		var (fullName, checksum) = BundleRef.RequireChecksum(args.bundleRef);
-		var (ns, name) = BundleWorkspace.SplitBundleName(fullName);
+		var (name, checksum) = BundleRef.RequireChecksum(args.bundleRef);
+		var ns = await BundleNamespace.Get(args);
+		var fullName = BundleNamespace.Qualify(ns, name);
 		var response = await api.PostBundlesChecksumsYank(name, checksum, ns);
 
 		// Yank only blocks *new* references — an already-pinned checksum still redeploys. Warn if this

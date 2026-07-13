@@ -16,10 +16,21 @@ namespace cli.BundleCommands;
 public class BundleInfo
 {
 	public string name;
-	public string checksum;
-	public string acl;
+
+	/// <summary>
+	/// Content checksum. Empty for a local bundle that hasn't been published: the checksum is
+	/// content-addressed and computed by the server at publish time (over the built component
+	/// checksums), so it isn't known from the authored config alone.
+	/// </summary>
+	public string checksum = "";
+
+	public string acl = "";
 	public bool yanked;
 	public long publishedAt;
+
+	/// <summary>Absolute path of the authored config file. Empty for a published catalog bundle.</summary>
+	public string filePath = "";
+
 	public string[] serviceNames = Array.Empty<string>();
 	public string[] storageIds = Array.Empty<string>();
 	public string[] portalExtensionNames = Array.Empty<string>();

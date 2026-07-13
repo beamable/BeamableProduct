@@ -126,7 +126,9 @@ public static class PlanCommandExtensions {
 	public static async Task<(DeployablePlan, string)> InteractivePlan<T, TArgs>(this T self,
 		IDependencyProvider provider,
 		TArgs args,
-		bool excludeAuthoredBundleComponents = true
+		bool excludeAuthoredBundleComponents = true,
+		bool savePlanToTemp = true,
+		HashSet<string> includeOnlyBeamoIds = null
 		)
 		where T : AppCommand<TArgs>
 				, IResultSteam<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>
@@ -147,6 +149,7 @@ public static class PlanCommandExtensions {
 						provider,
 						args,
 						excludeAuthoredBundleComponents: excludeAuthoredBundleComponents,
+						includeOnlyBeamoIds: includeOnlyBeamoIds,
 						progressHandler:
 						(name, progress, isKnownLength, serviceName) =>
 						{
@@ -195,7 +198,9 @@ public static class PlanCommandExtensions {
 		}
 		else
 		{
-			var planPath = await DeployUtil.SavePlanToTempFolder(args.DependencyProvider, plan);
+			// bundle plan/publish save their own BundlePlanFile in temp/bundles-plans instead, so a
+			// bundle build never becomes `deploy release --from-latest-plan`'s most recent plan.
+			var planPath = savePlanToTemp ? await DeployUtil.SavePlanToTempFolder(args.DependencyProvider, plan) : null;
 			return (plan, planPath);
 		}
 	}

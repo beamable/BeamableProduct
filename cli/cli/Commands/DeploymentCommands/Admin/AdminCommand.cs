@@ -16,6 +16,7 @@ public class AdminCommand : CommandGroup
 public class ForceInjectBundleCommandArgs : CommandArgs
 {
 	public string bundleName;
+	public string ns;
 	public string realmId;
 	public string checksum;
 	public bool unset;
@@ -45,8 +46,10 @@ public class ForceInjectBundleCommand : AtomicCommand<ForceInjectBundleCommandAr
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("bundle-name", "The namespaced bundle name, e.g. <namespace>/<bundle-name>"),
+		AddArgument(new Argument<string>("bundle-name", "The bundle name"),
 			(args, i) => args.bundleName = i);
+		AddOption(new Option<string>(new[] { "--namespace", "-ns" }, "The bundle's namespace (a customer alias). Defaults to the current context's customer alias; pass it to force-inject a bundle owned by a different customer"),
+			(args, i) => args.ns = i);
 		AddOption(new Option<string>(new[] { "--realm", "-r" }, "The target realm id to force the bundle onto"),
 			(args, i) => args.realmId = i);
 		AddOption(new Option<string>(new[] { "--checksum", "-c" }, "The bundle content checksum to force (sha256:<checksum>)"),
@@ -60,7 +63,10 @@ public class ForceInjectBundleCommand : AtomicCommand<ForceInjectBundleCommandAr
 		if (string.IsNullOrEmpty(args.realmId))
 			throw new CliException("--realm is required.");
 
-		var (ns, name) = BundleWorkspace.SplitBundleName(args.bundleName);
+		BundleWorkspace.ValidateName(args.bundleName);
+		var name = args.bundleName;
+		var ns = string.IsNullOrEmpty(args.ns) ? await BundleNamespace.Get(args) : BundleNamespace.FromAlias(args.ns);
+		var fullName = BundleNamespace.Qualify(ns, name);
 		var cid = args.AppContext.Cid;
 		var api = args.Provider.GetService<IBeamBeamoforcedbundleApi>();
 
@@ -69,7 +75,7 @@ public class ForceInjectBundleCommand : AtomicCommand<ForceInjectBundleCommandAr
 			await api.DeleteRealmsForcedBundles(name, cid, ns, args.realmId);
 			return new ForceInjectBundleCommandOutput
 			{
-				bundleName = args.bundleName, realmId = args.realmId, removed = true
+				bundleName = fullName, realmId = args.realmId, removed = true
 			};
 		}
 
@@ -79,7 +85,7 @@ public class ForceInjectBundleCommand : AtomicCommand<ForceInjectBundleCommandAr
 		await api.PutRealmsForcedBundles(name, cid, ns, args.realmId, new SetForcedBundleRequest { checksum = args.checksum });
 		return new ForceInjectBundleCommandOutput
 		{
-			bundleName = args.bundleName, realmId = args.realmId, checksum = args.checksum, removed = false
+			bundleName = fullName, realmId = args.realmId, checksum = args.checksum, removed = false
 		};
 	}
 }

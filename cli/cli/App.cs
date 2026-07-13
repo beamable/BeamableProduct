@@ -1334,16 +1334,6 @@ public class App
 			}
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
-		// Bundle names are namespaced with a leading '@' (e.g. @acme/social), which collides with
-		// System.CommandLine's default '@file' response-file expansion (UseDefaults enables it).
-		// Install a no-op token replacer so '@'-prefixed arguments are always treated as literal
-		// values, never as response files.
-		commandLineBuilder.UseTokenReplacer((string _, out IReadOnlyList<string> replacementTokens, out string errorMessage) =>
-		{
-			replacementTokens = null;
-			errorMessage = null;
-			return false;
-		});
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
 		commandLineBuilder.UseHelpBuilder(_ => helpBuilder);

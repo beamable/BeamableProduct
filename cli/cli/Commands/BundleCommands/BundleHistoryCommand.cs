@@ -26,15 +26,16 @@ public class BundleHistoryCommand : AtomicCommand<BundleHistoryCommandArgs, Bund
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("bundle-name", "The namespaced bundle name, e.g. <namespace>/<bundle-name>"),
+		AddArgument(new Argument<string>("bundle-name", "The bundle name"),
 			(args, i) => args.bundleName = i);
 	}
 
 	public override async Task<BundleHistoryCommandOutput> GetResult(BundleHistoryCommandArgs args)
 	{
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
-		var (ns, name) = BundleWorkspace.SplitBundleName(args.bundleName);
-		var response = await api.GetBundlesHistory(name, ns);
+		BundleWorkspace.ValidateName(args.bundleName);
+		var ns = await BundleNamespace.Get(args);
+		var response = await api.GetBundlesHistory(args.bundleName, ns);
 		return new BundleHistoryCommandOutput
 		{
 			history = (response.bundles ?? Array.Empty<Bundle>()).Select(BundleInfo.FromBundle).ToArray()

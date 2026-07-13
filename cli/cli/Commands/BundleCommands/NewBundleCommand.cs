@@ -29,7 +29,7 @@ public class NewBundleCommand : AtomicCommand<NewBundleCommandArgs, NewBundleCom
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("bundle-name", "The namespaced bundle name, e.g. <namespace>/<bundle-name>"),
+		AddArgument(new Argument<string>("bundle-name", "The bundle name; the config file will be named <bundle-name>.beam.bundle.json"),
 			(args, i) => args.bundleName = i);
 		AddOption(new Option<List<string>>(new[] { "--component", "-c" }, "A beamoId to include in the bundle (repeatable)")
 		{
@@ -37,30 +37,34 @@ public class NewBundleCommand : AtomicCommand<NewBundleCommandArgs, NewBundleCom
 		}, (args, i) => args.components = i ?? new List<string>());
 	}
 
-	public override Task<NewBundleCommandOutput> GetResult(NewBundleCommandArgs args)
+	public override async Task<NewBundleCommandOutput> GetResult(NewBundleCommandArgs args)
 	{
-		// validate the name splits into a namespace + short name.
-		BundleWorkspace.SplitBundleName(args.bundleName);
+		BundleWorkspace.ValidateName(args.bundleName);
+
+		// The logical bundle name is @<alias>/<bundle-name>; resolved best-effort so scaffolding
+		// still works when the namespace can't be resolved (e.g. offline).
+		var ns = await BundleNamespace.TryGet(args);
+		var fullName = ns == null ? args.bundleName : BundleNamespace.Qualify(ns, args.bundleName);
 
 		var existing = BundleWorkspace.Discover(args.ConfigService).FirstOrDefault(b => b.name == args.bundleName);
 		if (existing != null)
 		{
-			Log.Warning($"A bundle named [{args.bundleName}] already exists at [{existing.filePath}]. Not overwriting.");
-			return Task.FromResult(new NewBundleCommandOutput { name = args.bundleName, filePath = existing.filePath });
+			Log.Warning($"A bundle named [{fullName}] already exists at [{existing.filePath}]. Not overwriting.");
+			return new NewBundleCommandOutput { name = fullName, filePath = existing.filePath };
 		}
 
-		var fileName = args.bundleName.Replace("@", "").Replace('/', '-') + BundleWorkspace.BUNDLE_FILE_SUFFIX;
+		var fileName = args.bundleName + BundleWorkspace.BUNDLE_FILE_SUFFIX;
 		var fullPath = Path.Combine(args.ConfigService.BeamableWorkspace, fileName);
 
+		// the bundle's name is the file name itself; it is not stored inside the file.
 		var json = new JObject
 		{
-			["name"] = args.bundleName,
 			["components"] = new JArray(args.components),
 			["peerDependencies"] = new JObject()
 		};
 		File.WriteAllText(fullPath, json.ToString(Formatting.Indented));
-		Log.Information($"Created bundle config [{args.bundleName}] at [{fullPath}]");
+		Log.Information($"Created bundle config [{fullName}] at [{fullPath}]");
 
-		return Task.FromResult(new NewBundleCommandOutput { name = args.bundleName, filePath = fullPath });
+		return new NewBundleCommandOutput { name = fullName, filePath = fullPath };
 	}
 }

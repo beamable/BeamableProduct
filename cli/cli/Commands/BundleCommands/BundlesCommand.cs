@@ -1,4 +1,5 @@
 using cli.Services;
+using cli.Services.Bundles;
 
 namespace cli.BundleCommands;
 
@@ -48,32 +49,34 @@ public static class BundleAclScope
 }
 
 /// <summary>
-/// Helpers for parsing a bundle reference of the form <c>&lt;namespace&gt;/&lt;bundle-name&gt;</c> or
-/// <c>&lt;namespace&gt;/&lt;bundle-name&gt;@&lt;selector&gt;</c> (where <c>selector</c> is a tag or a
-/// <c>sha256:&lt;checksum&gt;</c>).
+/// Helpers for parsing a bundle reference of the form <c>&lt;bundle-name&gt;</c> or
+/// <c>&lt;bundle-name&gt;@&lt;selector&gt;</c> (where <c>selector</c> is a tag or a
+/// <c>sha256:&lt;checksum&gt;</c>). Bundle names are short — the namespace is derived at runtime
+/// (see <see cref="cli.Services.Bundles.BundleNamespace"/>), never part of a reference.
 /// </summary>
 public static class BundleRef
 {
 	/// <summary>
-	/// Split <c>&lt;namespace&gt;/&lt;bundle-name&gt;@&lt;selector&gt;</c> into its full bundle name and the trailing selector. When there
-	/// is no trailing <c>@selector</c>, <c>selector</c> is null. The leading <c>@</c> of the namespace
-	/// is not treated as a separator.
+	/// Split <c>&lt;bundle-name&gt;@&lt;selector&gt;</c> into its short bundle name and the trailing
+	/// selector. When there is no trailing <c>@selector</c>, <c>selector</c> is null.
 	/// </summary>
-	public static (string fullName, string selector) Split(string raw)
+	public static (string name, string selector) Split(string raw)
 	{
 		if (string.IsNullOrWhiteSpace(raw))
-			throw new CliException("A bundle reference is required, e.g. <namespace>/<bundle-name> or <namespace>/<bundle-name>@sha256:<checksum>");
+			throw new CliException("A bundle reference is required, e.g. <bundle-name> or <bundle-name>@sha256:<checksum>");
 
 		var at = raw.LastIndexOf('@');
-		return at > 0 ? (raw.Substring(0, at), raw.Substring(at + 1)) : (raw, null);
+		var (name, selector) = at > 0 ? (raw.Substring(0, at), raw.Substring(at + 1)) : (raw, null);
+		BundleWorkspace.ValidateName(name);
+		return (name, selector);
 	}
 
 	/// <summary>Require a <c>sha256:</c> checksum selector on the reference, throwing otherwise.</summary>
-	public static (string fullName, string checksum) RequireChecksum(string raw)
+	public static (string name, string checksum) RequireChecksum(string raw)
 	{
-		var (fullName, selector) = Split(raw);
+		var (name, selector) = Split(raw);
 		if (string.IsNullOrEmpty(selector) || !selector.StartsWith("sha256:"))
-			throw new CliException($"Reference=[{raw}] must include a content checksum, e.g. <namespace>/<bundle-name>@sha256:<checksum>");
-		return (fullName, selector);
+			throw new CliException($"Reference=[{raw}] must include a content checksum, e.g. <bundle-name>@sha256:<checksum>");
+		return (name, selector);
 	}
 }

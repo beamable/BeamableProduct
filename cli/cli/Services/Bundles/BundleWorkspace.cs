@@ -8,13 +8,17 @@ using System.Linq;
 namespace cli.Services.Bundles;
 
 /// <summary>
-/// In-memory model of an authored bundle config file (<c>*.beam.bundle.json</c>). Declares one
-/// bundle: its namespaced name, the beamoIds of its components, and optional peer dependencies.
+/// In-memory model of an authored bundle config file (<c>&lt;bundle-name&gt;.beam.bundle.json</c>).
+/// Declares one bundle: the beamoIds of its components and optional peer dependencies. The bundle's
+/// (short) name is the file name itself — it is not stored inside the file. The namespace is never
+/// authored either; it is the customer's cid alias, derived at runtime (see <see cref="BundleNamespace"/>).
 /// See <c>DesignDocs/infra/beamo-manifest/beamo-manifest-redesign.md</c> (Workspace organization).
 /// </summary>
 public class BundleConfigFile
 {
-	public string name;
+	/// <summary>Short bundle name, derived from the file name (not serialized).</summary>
+	[JsonIgnore] public string name;
+
 	public List<string> components = new List<string>();
 	public Dictionary<string, BundlePeerDependencyConfig> peerDependencies = new Dictionary<string, BundlePeerDependencyConfig>();
 
@@ -28,8 +32,7 @@ public class BundlePeerDependencyConfig
 }
 
 /// <summary>
-/// Discovers and validates authored bundle config files across the workspace, and provides the
-/// bundle-name ↔ (namespace, name) split the generated API requires.
+/// Discovers and validates authored bundle config files across the workspace.
 /// </summary>
 public static class BundleWorkspace
 {
@@ -41,9 +44,21 @@ public static class BundleWorkspace
 	};
 
 	/// <summary>
-	/// Split a namespaced bundle name (e.g. <c>&lt;namespace&gt;/&lt;bundle-name&gt;</c>) into its namespace
-	/// (the <c>&lt;namespace&gt;</c> segment) and short name (the <c>&lt;bundle-name&gt;</c> segment) for the
-	/// generated <c>(bundleName, ns)</c> API parameters.
+	/// Validate a short bundle name (a file name stem, and a path segment in catalog routes).
+	/// </summary>
+	public static void ValidateName(string name)
+	{
+		if (string.IsNullOrWhiteSpace(name))
+			throw new CliException("Bundle name is required.");
+		if (name.Contains('/') || name.Contains('\\') || name.Contains('@'))
+			throw new CliException($"Bundle name=[{name}] must be a plain name without '/', '\\' or '@'. The namespace is derived from your customer alias and must not be included.");
+		if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+			throw new CliException($"Bundle name=[{name}] contains characters that are not valid in a file name.");
+	}
+
+	/// <summary>
+	/// Split a fully-qualified bundle name (<c>&lt;namespace&gt;/&lt;bundle-name&gt;</c>, the form stored in
+	/// <c>manifest.beam.json</c> reference keys) into its namespace and short name.
 	/// </summary>
 	public static (string ns, string name) SplitBundleName(string fullName)
 	{
@@ -71,7 +86,7 @@ public static class BundleWorkspace
 			var config = new BundleConfigFile
 			{
 				filePath = file,
-				name = obj.Value<string>("name"),
+				name = Path.GetFileName(file).Substring(0, Path.GetFileName(file).Length - BUNDLE_FILE_SUFFIX.Length),
 				components = (obj["components"] as JArray)?.Select(t => t.Value<string>()).ToList() ?? new List<string>(),
 				peerDependencies = new Dictionary<string, BundlePeerDependencyConfig>()
 			};
@@ -93,8 +108,8 @@ public static class BundleWorkspace
 	}
 
 	/// <summary>
-	/// Discover bundles and validate the partitioning rules: unique bundle names, and each beamoId
-	/// belongs to at most one bundle. Throws <see cref="CliException"/> on violation.
+	/// Discover bundles and validate the partitioning rules: valid unique bundle names, and each
+	/// beamoId belongs to at most one bundle. Throws <see cref="CliException"/> on violation.
 	/// </summary>
 	public static List<BundleConfigFile> DiscoverAndValidate(ConfigService configService)
 	{
@@ -104,8 +119,7 @@ public static class BundleWorkspace
 		var componentToBundle = new Dictionary<string, string>();
 		foreach (var bundle in bundles)
 		{
-			if (string.IsNullOrWhiteSpace(bundle.name))
-				throw new CliException($"Bundle config file=[{bundle.filePath}] is missing a 'name'.");
+			ValidateName(bundle.name);
 			if (!seenNames.Add(bundle.name))
 				throw new CliException($"Bundle name=[{bundle.name}] is declared by more than one *{BUNDLE_FILE_SUFFIX} file.");
 
@@ -120,12 +134,13 @@ public static class BundleWorkspace
 		return bundles;
 	}
 
-	/// <summary>Find a single authored bundle by name, or throw if it isn't declared in the workspace.</summary>
+	/// <summary>Find a single authored bundle by short name, or throw if it isn't declared in the workspace.</summary>
 	public static BundleConfigFile Require(ConfigService configService, string bundleName)
 	{
+		ValidateName(bundleName);
 		var match = DiscoverAndValidate(configService).FirstOrDefault(b => b.name == bundleName);
 		if (match == null)
-			throw new CliException($"No {BUNDLE_FILE_SUFFIX} file declares a bundle named [{bundleName}] in this workspace.");
+			throw new CliException($"No {bundleName}{BUNDLE_FILE_SUFFIX} file exists in this workspace.");
 		return match;
 	}
 

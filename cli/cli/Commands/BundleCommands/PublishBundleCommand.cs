@@ -20,6 +20,8 @@ public class PublishBundleCommandArgs : CommandArgs, IHasDeployPlanArgs
 	public string bundleName;
 	public string tag;
 	public string scope;
+	public string fromPlanFile;
+	public bool fromLastPlan;
 
 	// IHasDeployPlanArgs (mirrors ReleaseDeploymentCommandArgs)
 	public string Comment { get; set; }
@@ -65,8 +67,12 @@ public class PublishBundleCommand
 	{
 		DeployArgs.AddPlanOptions(this);
 		SolutionCommandArgs.ConfigureSolutionFlag(this, _ => throw new CliException("Must have a valid .beamable folder"));
-		AddArgument(new Argument<string>("bundle-name", "The namespaced bundle name to publish, e.g. <namespace>/<bundle-name>"),
+		AddArgument(new Argument<string>("bundle-name", "The bundle name to publish"),
 			(args, i) => args.bundleName = i);
+		AddOption(new Option<string>(new[] { "--from-plan", "--plan", "-p" }, "The file path to a pre-generated bundle plan file using the `bundles plan` command"),
+			(args, i) => args.fromPlanFile = i);
+		AddOption(new Option<bool>(new[] { "--from-latest-plan", "--latest-plan", "--last-plan", "-lp" }, "Use the most recent plan generated for this bundle from the `bundles plan` command"),
+			(args, i) => args.fromLastPlan = i);
 		AddOption(new Option<string>(new[] { "--tag" }, "An additional tag to advance to the published checksum"),
 			(args, i) => args.tag = i);
 		AddOption(new Option<string>(new[] { "--scope" }, "Widen the published checksum's visibility tier (each tier is a superset of the previous, not a list of realms): 'realm' = only this realm; 'org' = every realm in your customer; 'public' = every realm in every customer. A literal <cid>.<pid> / <cid> / * is also accepted"),
@@ -77,32 +83,92 @@ public class PublishBundleCommand
 	{
 		var provider = args.DependencyProvider;
 		var bundle = BundleWorkspace.Require(args.ConfigService, args.bundleName);
-		var (ns, name) = BundleWorkspace.SplitBundleName(bundle.name);
+		BundleBuild.ValidateComponentsExist(args.BeamoLocalSystem.BeamoManifest, bundle);
+		var ns = await BundleNamespace.Get(args);
+		var fullName = BundleNamespace.Qualify(ns, bundle.name);
 		var bundleApi = provider.GetService<IBeamBeamobundleApi>();
 
-		Log.Information($"Generating publish plan for bundle=[{bundle.name}]...");
-		// Don't exclude bundle components here — this command operates on exactly those components.
-		var (plan, _) = await this.InteractivePlan(provider, args, excludeAuthoredBundleComponents: false);
+		var isLoadingPlan = !string.IsNullOrEmpty(args.fromPlanFile);
+		if (args.fromLastPlan)
+		{
+			if (isLoadingPlan)
+			{
+				throw new CliException("cannot specify both --from-latest-plan and --plan");
+			}
+			args.fromPlanFile = BundlePlanUtil.GetLatestBundlePlanFilePath(provider, bundle.name);
+			if (args.fromPlanFile == null)
+			{
+				throw new CliException(
+					$"cannot use --from-latest-plan, because there are no plan files for bundle=[{bundle.name}]. Please run `dotnet beam bundles plan {bundle.name}`");
+			}
+
+			isLoadingPlan = true;
+		}
+
+		DeployablePlan plan;
+		BundleDiffResult diff;
+		string plannedAgainstChecksum;
+		if (isLoadingPlan)
+		{
+			Log.Information($"Loading bundle plan from file=[{args.fromPlanFile}]");
+			var planFile = await BundlePlanUtil.LoadBundlePlanFile(args.fromPlanFile, bundle.name);
+			plan = planFile.plan;
+			diff = planFile.diff;
+			plannedAgainstChecksum = planFile.publishedChecksum;
+		}
+		else
+		{
+			Log.Information($"Generating publish plan for bundle=[{fullName}]...");
+			// Don't exclude bundle components here — this command operates on exactly those components.
+			// Restrict the build to them, so an unrelated local service can't fail (or slow down) the publish.
+			(plan, _) = await this.InteractivePlan(provider, args, excludeAuthoredBundleComponents: false, savePlanToTemp: false,
+				includeOnlyBeamoIds: new HashSet<string>(bundle.components));
+			diff = null;
+			plannedAgainstChecksum = null;
+		}
+
 		var (services, storages, extensions) = BundleBuild.SelectComponents(plan, bundle);
 
 		// Diff against the currently-published @latest and show what would change (like `release`).
-		var published = await BundleBuild.FetchLatestPublished(bundleApi, ns, name);
-		var diff = BundleDiff.Compute(services, storages, extensions, published);
-		BundleDiff.Print(diff, bundle.name);
+		var published = await BundleBuild.FetchLatestPublished(bundleApi, ns, bundle.name);
+		if (isLoadingPlan)
+		{
+			// The stored diff is only meaningful against the catalog state it was computed from.
+			var currentChecksum = published?.checksum.GetOrElse("") ?? "";
+			if (currentChecksum != plannedAgainstChecksum)
+			{
+				throw new CliException(
+					"The given bundle plan was created against a different published version of the bundle than exists now. Please create a new plan and try again.");
+			}
+		}
+		else
+		{
+			diff = BundleDiff.Compute(services, storages, extensions, published);
+			var planPath = await BundlePlanUtil.SaveBundlePlanToTempFolder(provider, new BundlePlanFile
+			{
+				bundleName = bundle.name,
+				publishedChecksum = diff.publishedChecksum,
+				plan = plan,
+				diff = diff,
+			});
+			Log.Information("Saved plan: " + planPath);
+		}
+
+		BundleDiff.Print(diff, fullName);
 
 		if (diff.isNoOp)
 		{
 			Log.Information("Nothing to publish.");
 			this.SendResults<DefaultStreamResultChannel, PublishBundleCommandOutput>(new PublishBundleCommandOutput
 			{
-				name = bundle.name, checksum = diff.publishedChecksum, isNew = false, diff = diff,
+				name = fullName, checksum = diff.publishedChecksum, isNew = false, diff = diff,
 			});
 			return;
 		}
 
 		// Confirm before mutating the catalog (mirrors `deploy release`). --quiet skips the prompt.
 		var confirm = args.Quiet || string.Equals("yes",
-			AnsiConsole.Prompt(new TextPrompt<string>($"Are you sure you want to publish these changes to {Markup.Escape(bundle.name)}?\nType 'yes' to continue.")),
+			AnsiConsole.Prompt(new TextPrompt<string>($"Are you sure you want to publish these changes to {Markup.Escape(fullName)}?\nType 'yes' to continue.")),
 			StringComparison.InvariantCultureIgnoreCase);
 		if (!confirm)
 		{
@@ -162,10 +228,10 @@ public class PublishBundleCommand
 			request.peerDependencies = new OptionalMapOfBundlePeerDep { HasValue = true, Value = map };
 		}
 
-		var response = await bundleApi.PostBundlesPublish(name, ns, request);
+		var response = await bundleApi.PostBundlesPublish(bundle.name, ns, request);
 
 		// Response fields are Optional* wrappers — unwrap to their values (don't interpolate the wrapper).
-		var publishedName = response.name.GetOrElse(bundle.name);
+		var publishedName = response.name.GetOrElse(fullName);
 		var publishedChecksum = response.checksum.GetOrElse("");
 		var isNew = response.isNew.GetOrElse(false);
 		Log.Information($"Published bundle=[{publishedName}] checksum=[{publishedChecksum}] isNew=[{isNew}]");
@@ -174,7 +240,7 @@ public class PublishBundleCommand
 		if (!string.IsNullOrEmpty(args.scope))
 		{
 			var scope = BundleAclScope.Resolve(args.scope, args.AppContext);
-			await bundleApi.PatchBundlesChecksumsAcl(name, publishedChecksum, ns, new UpdateBundleAclRequest { scope = scope });
+			await bundleApi.PatchBundlesChecksumsAcl(bundle.name, publishedChecksum, ns, new UpdateBundleAclRequest { scope = scope });
 			Log.Information($"Widened ACL for checksum=[{publishedChecksum}] to scope=[{scope}]");
 		}
 

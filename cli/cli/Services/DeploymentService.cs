@@ -285,6 +285,11 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 	public List<string> changedPortalExtensions = new List<string>();
 	public List<string> removedPortalExtensions = new List<string>();
 
+	// pinned bundle references (manifest.beam.json) vs the realm's current v2 manifest references.
+	public List<BundleReferenceChange> addedBundleReferences = new List<BundleReferenceChange>();
+	public List<BundleReferenceChange> changedBundleReferences = new List<BundleReferenceChange>();
+	public List<BundleReferenceChange> removedBundleReferences = new List<BundleReferenceChange>();
+
 	public void Serialize(JsonSerializable.IStreamSerializer s)
 	{
 		s.SerializeList(nameof(jsonChanges), ref jsonChanges);
@@ -303,6 +308,9 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 		s.SerializeList(nameof(addedPortalExtensions), ref addedPortalExtensions);
 		s.SerializeList(nameof(changedPortalExtensions), ref changedPortalExtensions);
 		s.SerializeList(nameof(removedPortalExtensions), ref removedPortalExtensions);
+		s.SerializeList(nameof(addedBundleReferences), ref addedBundleReferences);
+		s.SerializeList(nameof(changedBundleReferences), ref changedBundleReferences);
+		s.SerializeList(nameof(removedBundleReferences), ref removedBundleReferences);
 	}
 }
 
@@ -346,6 +354,27 @@ public struct ServiceImageIdChange : IServiceChangeDisplay, JsonSerializable.ISe
 		s.Serialize(nameof(service), ref service);
 		s.Serialize(nameof(oldImageId), ref oldImageId);
 		s.Serialize(nameof(nextImageId), ref nextImageId);
+	}
+}
+
+public struct BundleReferenceChange : IServiceChangeDisplay, JsonSerializable.ISerializable
+{
+	public string bundle;
+	public string oldChecksum;
+	public string nextChecksum;
+
+	public string ToChangeString()
+	{
+		if (string.IsNullOrEmpty(oldChecksum)) return $"{bundle} [{nextChecksum}]";
+		if (string.IsNullOrEmpty(nextChecksum)) return $"{bundle} [{oldChecksum}]";
+		return $"{bundle} [{oldChecksum}]->[{nextChecksum}]";
+	}
+
+	public void Serialize(JsonSerializable.IStreamSerializer s)
+	{
+		s.Serialize(nameof(bundle), ref bundle);
+		s.Serialize(nameof(oldChecksum), ref oldChecksum);
+		s.Serialize(nameof(nextChecksum), ref nextChecksum);
 	}
 }
 
@@ -1054,8 +1083,14 @@ public partial class DeployUtil
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.addedPortalExtensions, "Adding", "portal extension");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.changedPortalExtensions, "Updating", "portal extension");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.removedPortalExtensions, "Removing", "portal extension");
+		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.addedBundleReferences, "Pinning", "bundle");
+		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.changedBundleReferences, "Updating", "bundle pin");
+		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.removedBundleReferences, "Unpinning", "bundle");
 
-		hasChanges = plan.diff.jsonChanges.Count > 0 || plan.portalExtensionsToUpload.Count > 0;
+		var bundleReferenceChangeCount = plan.diff.addedBundleReferences.Count
+		                                 + plan.diff.changedBundleReferences.Count
+		                                 + plan.diff.removedBundleReferences.Count;
+		hasChanges = plan.diff.jsonChanges.Count > 0 || plan.portalExtensionsToUpload.Count > 0 || bundleReferenceChangeCount > 0;
 		var hasDetectedChanges = detectedChangeCount > 0;
 		if (hasChanges)
 		{
@@ -1168,11 +1203,18 @@ public partial class DeployUtil
 			;
 	}
 	
+	/// <param name="includeOnlyBeamoIds">
+	/// When non-null, only local components (services/storages/portal extensions) in this set are
+	/// built and included in the local manifest. Bundle plan/publish pass the bundle's components so
+	/// an unrelated service's build can't fail the command (and a bundle with no service components
+	/// needs neither the solution build nor Docker). Null (realm deploys) builds everything.
+	/// </param>
 	public static async Task<(DeployablePlan, List<BuildImageOutput>)> Plan<TArgs>(
 		IDependencyProvider provider,
 		TArgs args,
 		ProgressHandler progressHandler,
-		bool excludeAuthoredBundleComponents = true)
+		bool excludeAuthoredBundleComponents = true,
+		HashSet<string> includeOnlyBeamoIds = null)
 	where TArgs : CommandArgs, IHasDeployPlanArgs
 	{
 		const string FetchManifestProgressName = "fetching latest";
@@ -1244,13 +1286,20 @@ public partial class DeployUtil
 		}
 		else
 		{
-			var dockerStatus = await DockerStatusCommand.CheckDocker(provider);
-			if (!dockerStatus.isDaemonRunning)
+			// Docker is only needed to build service images. A filtered plan whose set contains no
+			// local microservice (e.g. a portal-extension-only bundle) can run without the daemon.
+			var needsServiceBuild = includeOnlyBeamoIds == null || beamo.BeamoManifest.ServiceDefinitions.Any(d =>
+				d.IsLocal && d.Protocol == BeamoProtocolType.HttpMicroservice && includeOnlyBeamoIds.Contains(d.BeamoId));
+			if (needsServiceBuild)
 			{
-				throw CliExceptions.DOCKER_NOT_RUNNING;
+				var dockerStatus = await DockerStatusCommand.CheckDocker(provider);
+				if (!dockerStatus.isDaemonRunning)
+				{
+					throw CliExceptions.DOCKER_NOT_RUNNING;
+				}
 			}
 
-			localTask = CreateReleaseManifestFromLocal(args, provider, beamo.BeamoManifest, progressHandler, args.MaxParallelTask, useSequentialBuild: args.UseSequentialBuild);
+			localTask = CreateReleaseManifestFromLocal(args, provider, beamo.BeamoManifest, progressHandler, args.MaxParallelTask, useSequentialBuild: args.UseSequentialBuild, includeOnlyBeamoIds: includeOnlyBeamoIds);
 		}
 		progressHandler?.Invoke(MergingManifestProgressName, 0);
 		remote = await remoteTask;
@@ -1381,6 +1430,37 @@ public partial class DeployUtil
 			diff.servicesSwitchingLogProvider = logProviderChanges;
 		}
 
+		// ── Pinned bundle references ──────────────────────────────────────────────
+		// Diff the locally-authored pins (manifest.beam.json) against the realm's current v2
+		// manifest references. Legacy workspaces without the file skip the diff entirely (release
+		// won't send references either, so nothing changes for them).
+		var configService = provider.GetService<ConfigService>();
+		var localBundleReferences = configService.LoadManifestReferences()?.references
+		                            ?? new Dictionary<string, string>();
+		if (configService.ExistsManifestReferences())
+		{
+			var remoteBundleReferences = beamoV2Manifest?.references.GetOrElse(new MapOfString()) ?? new MapOfString();
+			foreach (var kvp in localBundleReferences)
+			{
+				if (!remoteBundleReferences.TryGetValue(kvp.Key, out var remoteChecksum))
+				{
+					diff.addedBundleReferences.Add(new BundleReferenceChange { bundle = kvp.Key, nextChecksum = kvp.Value });
+				}
+				else if (remoteChecksum != kvp.Value)
+				{
+					diff.changedBundleReferences.Add(new BundleReferenceChange { bundle = kvp.Key, oldChecksum = remoteChecksum, nextChecksum = kvp.Value });
+				}
+			}
+
+			foreach (var kvp in remoteBundleReferences)
+			{
+				if (!localBundleReferences.ContainsKey(kvp.Key))
+				{
+					diff.removedBundleReferences.Add(new BundleReferenceChange { bundle = kvp.Key, oldChecksum = kvp.Value });
+				}
+			}
+		}
+
 		// ── Portal Extensions ─────────────────────────────────────────────────────
 		var remotePortalRefs = beamoV2Manifest.portalExtensionReferences
 			.GetOrElse(Array.Empty<BeamoV2PortalExtensionReference>());
@@ -1390,6 +1470,8 @@ public partial class DeployUtil
 			.Select(d => d.PortalExtensionDefinition)
 			// Portal extensions that belong to an authored bundle are excluded from the root manifest.
 			.Where(d => !bundleComponentIds.Contains(d.Name))
+			// On a filtered plan, only build the requested extensions.
+			.Where(d => includeOnlyBeamoIds == null || includeOnlyBeamoIds.Contains(d.Name))
 			.ToList();
 
 		// Fail fast (before the expensive build loop below) if any portal extension name collides with
@@ -1579,8 +1661,7 @@ public partial class DeployUtil
 			portalExtensionsToUpload = portalExtensionsToUpload,
 			portalExtensionReferences = portalExtensionReferences,
 			// v2 bundle references authored in .beamable/manifest.beam.json (empty for legacy v1).
-			references = provider.GetService<ConfigService>().LoadManifestReferences()?.references
-			             ?? new Dictionary<string, string>(),
+			references = localBundleReferences,
 			changeCount = diff.addedStorage.Count
 			              + diff.removedStorage.Count
 			              + diff.disabledStorages.Count
@@ -1595,6 +1676,9 @@ public partial class DeployUtil
 			              + diff.addedPortalExtensions.Count
 			              + diff.changedPortalExtensions.Count
 			              + diff.removedPortalExtensions.Count
+			              + diff.addedBundleReferences.Count
+			              + diff.changedBundleReferences.Count
+			              + diff.removedBundleReferences.Count
 		}, localBuildReports);
 	}
 
@@ -1986,7 +2070,7 @@ public partial class DeployUtil
 		return (localManifest, new List<BuildImageOutput>());
 	}
 	
-	public static async Task<(ManifestView, List<BuildImageOutput>)> CreateReleaseManifestFromLocal<TArg>(TArg slnArg, IDependencyProvider provider, BeamoLocalManifest localManifest, ProgressHandler progressHandler, int maxParallelTask, bool useSequentialBuild=false)
+	public static async Task<(ManifestView, List<BuildImageOutput>)> CreateReleaseManifestFromLocal<TArg>(TArg slnArg, IDependencyProvider provider, BeamoLocalManifest localManifest, ProgressHandler progressHandler, int maxParallelTask, bool useSequentialBuild=false, HashSet<string> includeOnlyBeamoIds = null)
 		where TArg : CommandArgs, IHasSolutionFileArg
 	{
 		var services = new ServiceReference[localManifest.HttpMicroserviceLocalProtocols.Count];
@@ -1996,10 +2080,13 @@ public partial class DeployUtil
 		var storageIndex = 0;
 		var pendingTasks = new List<Task<(ServiceReference, BuildImageOutput, int)>>();
 		var buildReports = new List<BuildImageOutput>();
-		
-		// build all the local services first as a solution level build.
+
+		// build all the local services first as a solution level build. On a filtered plan with no
+		// microservice in the set (e.g. a portal-extension-only bundle), skip the solution build.
+		var anyIncludedService = includeOnlyBeamoIds == null || localManifest.ServiceDefinitions.Any(d =>
+			d.IsLocal && d.Protocol == BeamoProtocolType.HttpMicroservice && includeOnlyBeamoIds.Contains(d.BeamoId));
 		var beamoIdToReport = new Dictionary<string, BuildImageSourceOutput>();
-		if (!useSequentialBuild)
+		if (!useSequentialBuild && anyIncludedService)
 		{
 			// when using a sequential build; we'll fall back to one at a time
 			beamoIdToReport = await BuildSolutionCommand.Build(slnArg, forDeployment: true, forceCpu: true);
@@ -2011,7 +2098,10 @@ public partial class DeployUtil
 			if (!definition.IsLocal)
 				// this function is explicitly about creating services from local source code.
 				continue;
-			
+			if (includeOnlyBeamoIds != null && !includeOnlyBeamoIds.Contains(definition.BeamoId))
+				// a filtered plan only builds/includes the requested components.
+				continue;
+
 			switch (definition.Protocol)
 			{
 				case BeamoProtocolType.HttpMicroservice:
@@ -2073,8 +2163,9 @@ public partial class DeployUtil
 
 		return (new ManifestView
 		{
-			manifest = services,
-			storageReference = new OptionalArrayOfServiceStorageReference(storages)
+			// slice: on a filtered plan, fewer components were built than the arrays were sized for.
+			manifest = services.Take(serviceIndex).ToArray(),
+			storageReference = new OptionalArrayOfServiceStorageReference(storages.Take(storageIndex).ToArray())
 		}, buildReports);
 	}
 

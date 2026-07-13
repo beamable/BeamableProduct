@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using cli.Deployment.Services;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -16,6 +17,34 @@ namespace cli.Services.Bundles;
 /// </summary>
 public static class BundleBuild
 {
+	/// <summary>
+	/// Validate that every component the bundle lists exists as a local component, before the
+	/// (potentially expensive) build. BeamoIds are case-sensitive, so a mis-cased component would
+	/// otherwise fail late and without a hint — this suggests the case-insensitive near match.
+	/// </summary>
+	public static void ValidateComponentsExist(BeamoLocalManifest localManifest, BundleConfigFile bundle)
+	{
+		var localIds = localManifest.ServiceDefinitions.Where(d => d.IsLocal).Select(d => d.BeamoId).ToList();
+		var localSet = new HashSet<string>(localIds);
+
+		var problems = new List<string>();
+		foreach (var component in bundle.components)
+		{
+			if (localSet.Contains(component)) continue;
+			var nearMiss = localIds.FirstOrDefault(id => string.Equals(id, component, StringComparison.OrdinalIgnoreCase));
+			problems.Add(nearMiss != null
+				? $"[{component}] does not match any local component exactly; beamoIds are case-sensitive — did you mean [{nearMiss}]?"
+				: $"[{component}] is not a local service/storage/portal extension");
+		}
+
+		if (problems.Count > 0)
+		{
+			throw new CliException(
+				$"Bundle=[{bundle.name}] lists unknown components. Fix {Path.GetFileName(bundle.filePath)}:\n - " +
+				string.Join("\n - ", problems));
+		}
+	}
+
 	/// <summary>
 	/// Select the built services/storages/portal-extensions belonging to <paramref name="bundle"/>
 	/// from a deploy plan. Throws if the bundle lists a component that wasn't built as a local

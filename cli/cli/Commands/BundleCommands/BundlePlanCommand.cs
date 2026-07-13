@@ -39,6 +39,9 @@ public class BundlePlanCommandOutput
 	public bool isNoOp;
 	public string publishedChecksum;
 	public List<BundleComponentChange> changes = new List<BundleComponentChange>();
+
+	/// <summary>Path of the saved plan file, usable with `bundles publish --from-plan`.</summary>
+	public string planPath;
 }
 
 public class BundlePlanCommand
@@ -57,7 +60,7 @@ public class BundlePlanCommand
 	{
 		DeployArgs.AddPlanOptions(this);
 		SolutionCommandArgs.ConfigureSolutionFlag(this, _ => throw new CliException("Must have a valid .beamable folder"));
-		AddArgument(new Argument<string>("bundle-name", "The namespaced bundle name, e.g. <namespace>/<bundle-name>"),
+		AddArgument(new Argument<string>("bundle-name", "The bundle name"),
 			(args, i) => args.bundleName = i);
 	}
 
@@ -65,23 +68,38 @@ public class BundlePlanCommand
 	{
 		var provider = args.DependencyProvider;
 		var bundle = BundleWorkspace.Require(args.ConfigService, args.bundleName);
-		var (ns, name) = BundleWorkspace.SplitBundleName(bundle.name);
+		BundleBuild.ValidateComponentsExist(args.BeamoLocalSystem.BeamoManifest, bundle);
+		var ns = await BundleNamespace.Get(args);
+		var fullName = BundleNamespace.Qualify(ns, bundle.name);
 
-		Log.Information($"Building bundle=[{bundle.name}] to compute its diff...");
+		Log.Information($"Building bundle=[{fullName}] to compute its diff...");
 		// Don't exclude bundle components here — this command operates on exactly those components.
-		var (plan, _) = await this.InteractivePlan(provider, args, excludeAuthoredBundleComponents: false);
+		// Restrict the build to them, so an unrelated local service can't fail (or slow down) the plan.
+		var (plan, _) = await this.InteractivePlan(provider, args, excludeAuthoredBundleComponents: false, savePlanToTemp: false,
+			includeOnlyBeamoIds: new HashSet<string>(bundle.components));
 		var (services, storages, extensions) = BundleBuild.SelectComponents(plan, bundle);
 
-		var published = await BundleBuild.FetchLatestPublished(provider.GetService<IBeamBeamobundleApi>(), ns, name);
+		var published = await BundleBuild.FetchLatestPublished(provider.GetService<IBeamBeamobundleApi>(), ns, bundle.name);
 		var diff = BundleDiff.Compute(services, storages, extensions, published);
-		BundleDiff.Print(diff, bundle.name);
+		BundleDiff.Print(diff, fullName);
+
+		var planPath = await BundlePlanUtil.SaveBundlePlanToTempFolder(provider, new BundlePlanFile
+		{
+			bundleName = bundle.name,
+			publishedChecksum = diff.publishedChecksum,
+			plan = plan,
+			diff = diff,
+		});
+		BundlePlanUtil.PrintBundlePlanNextSteps(planPath, bundle.name, hasChanges: !diff.isNoOp);
+		Log.Information("Saved plan: " + planPath);
 
 		this.SendResults<DefaultStreamResultChannel, BundlePlanCommandOutput>(new BundlePlanCommandOutput
 		{
-			name = bundle.name,
+			name = fullName,
 			isNoOp = diff.isNoOp,
 			publishedChecksum = diff.publishedChecksum,
 			changes = diff.changes,
+			planPath = planPath,
 		});
 	}
 }
