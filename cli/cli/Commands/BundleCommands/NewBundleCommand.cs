@@ -31,10 +31,10 @@ public class NewBundleCommand : AtomicCommand<NewBundleCommandArgs, NewBundleCom
 	{
 		AddArgument(new Argument<string>("bundle-name", "The bundle name; the config file will be named <bundle-name>.beam.bundle.json"),
 			(args, i) => args.bundleName = i);
-		AddOption(new Option<List<string>>(new[] { "--component", "-c" }, "A beamoId to include in the bundle (repeatable)")
+		AddOption(new Option<List<string>>(new[] { "--component", "-c" }, () => new List<string>(), "A beamoId to include in the bundle (repeatable)")
 		{
 			AllowMultipleArgumentsPerToken = true
-		}, (args, i) => args.components = i ?? new List<string>());
+		}, (args, i) => args.components = i);
 	}
 
 	public override async Task<NewBundleCommandOutput> GetResult(NewBundleCommandArgs args)
