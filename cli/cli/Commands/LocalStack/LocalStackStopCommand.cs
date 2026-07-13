@@ -66,7 +66,15 @@ public class LocalStackStopCommand
 		var stoppedSet = new HashSet<string>(targeting.Select(s => s.name));
 		state.steps.RemoveAll(s => stoppedSet.Contains(s.name));
 		if (state.steps.Count == 0)
+		{
 			LocalStackRunStateIO.Clear(runStatePath);
+			// Whole stack down — remove this run's temp log dir (kept when the user passed --save-logs).
+			if (state.ephemeralLogs && !string.IsNullOrEmpty(state.logsDir))
+			{
+				try { if (Directory.Exists(state.logsDir)) Directory.Delete(state.logsDir, recursive: true); }
+				catch (Exception e) { Log.Verbose($"could not delete temp log dir {state.logsDir}: {e.Message}"); }
+			}
+		}
 		else
 			LocalStackRunStateIO.Save(runStatePath, state);
 

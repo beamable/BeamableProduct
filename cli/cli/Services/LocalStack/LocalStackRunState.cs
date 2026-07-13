@@ -1,4 +1,6 @@
 using Newtonsoft.Json;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace cli.Services.LocalStack;
 
@@ -12,6 +14,14 @@ public class LocalStackRunState
 {
 	public string host;
 	public string portalUrl;
+
+	/// <summary>The per-run directory holding this run's step logs (temp or workspace — see
+	/// <see cref="LocalStackRunStateIO.ResolveRunLogsDir"/>). Recorded so <c>stop</c> can clean it up.</summary>
+	public string logsDir;
+
+	/// <summary>True when <see cref="logsDir"/> is a temp folder that <c>stop</c> should delete once the whole
+	/// stack is down; false when the user passed <c>--save-logs</c> and the logs are kept under the workspace.</summary>
+	public bool ephemeralLogs;
 
 	/// <summary>The launched steps, in start order.</summary>
 	public List<LocalStackRunEntry> steps = new List<LocalStackRunEntry>();
@@ -73,11 +83,52 @@ public static class LocalStackRunStateIO
 		return Path.Combine(dir ?? ".", RunStateFileName);
 	}
 
-	/// <summary>The per-run log directory that sits alongside the given manifest path.</summary>
+	/// <summary>The workspace log directory base that sits alongside the given manifest path (parent of the
+	/// per-run subfolders). Retained for back-compat; prefer <see cref="ResolveRunLogsDir"/>.</summary>
 	public static string ResolveLogsDir(string manifestPath)
 	{
 		var dir = Path.GetDirectoryName(Path.GetFullPath(manifestPath));
 		return Path.Combine(dir ?? ".", LogsDirName);
+	}
+
+	/// <summary>
+	/// Resolves a <b>unique per-run</b> log directory. With <paramref name="save"/> the logs live under the
+	/// workspace (<c>&lt;manifestDir&gt;/local-stack-logs/run-&lt;runId&gt;</c>) and are kept; without it they
+	/// live under the OS temp dir (<c>&lt;temp&gt;/beam-local-stack/&lt;workspaceHash&gt;/run-&lt;runId&gt;</c>)
+	/// and <c>stop</c> deletes them. Every call returns a distinct <c>run-&lt;runId&gt;</c> leaf (timestamp +
+	/// pid + random), so concurrent runs, same-second reruns, and separate projects never share a folder or
+	/// file — the fixed-path collision that used to crash <c>up</c> when a leftover wrapper held a log.
+	/// </summary>
+	public static string ResolveRunLogsDir(string manifestPath, bool save)
+	{
+		var guid8 = Guid.NewGuid().ToString("N").Substring(0, 8);
+		var runId = $"run-{DateTime.Now:yyyyMMdd-HHmmss}-{Environment.ProcessId}-{guid8}";
+
+		if (save)
+		{
+			var dir = Path.GetDirectoryName(Path.GetFullPath(manifestPath)) ?? ".";
+			return Path.Combine(dir, LogsDirName, runId);
+		}
+
+		// Temp: hash the FULL manifest path so two projects that share a folder name don't collide under the
+		// shared temp root. The unique run leaf makes actual files collision-proof even if two hashes matched.
+		return Path.Combine(ResolveTempLogsBase(manifestPath), runId);
+	}
+
+	/// <summary>The temp base holding this workspace's ephemeral per-run log dirs
+	/// (<c>&lt;temp&gt;/beam-local-stack/&lt;workspaceHash&gt;</c>). <c>up</c> prunes stale <c>run-*</c>
+	/// subfolders here so temp logs from crashed/detached runs don't accumulate.</summary>
+	public static string ResolveTempLogsBase(string manifestPath) =>
+		Path.Combine(Path.GetTempPath(), "beam-local-stack", WorkspaceHash(manifestPath));
+
+	/// <summary>Short stable hash (12 hex chars) of the full manifest path, for the temp log root segment.</summary>
+	private static string WorkspaceHash(string manifestPath)
+	{
+		var full = Path.GetFullPath(manifestPath);
+		// Windows paths are case-insensitive — normalize so the same manifest always hashes the same.
+		var normalized = OperatingSystem.IsWindows() ? full.ToLowerInvariant() : full;
+		var hash = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
+		return Convert.ToHexString(hash, 0, 6).ToLowerInvariant();
 	}
 
 	public static LocalStackRunState Load(string path)

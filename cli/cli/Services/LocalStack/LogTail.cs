@@ -1,6 +1,48 @@
+using System.Collections.Concurrent;
 using System.Text;
 
 namespace cli.Services.LocalStack;
+
+/// <summary>
+/// A source of newly-available complete lines, polled repeatedly by the readiness gates. Implemented by
+/// <see cref="LineTailer"/> (a detached step's log file) and <see cref="StreamLineBuffer"/> (an attached
+/// step's piped stdout/stderr), so readiness logic is identical in both run modes.
+/// </summary>
+public interface ILineSource : IDisposable
+{
+	/// <summary>Returns the complete lines that have become available since the last call.</summary>
+	IEnumerable<string> ReadAvailableLines();
+}
+
+/// <summary>
+/// A thread-safe, bounded in-memory line buffer fed by an attached child's piped stdout/stderr reader
+/// tasks and drained by the readiness gate. Bounded so a chatty long-running service that nothing drains
+/// (e.g. after it's already "ready") can't grow without limit — oldest lines are dropped past the cap.
+/// </summary>
+public sealed class StreamLineBuffer : ILineSource
+{
+	private readonly ConcurrentQueue<string> _lines = new();
+	private readonly int _cap;
+
+	public StreamLineBuffer(int cap = 2000) => _cap = cap;
+
+	/// <summary>Enqueue one complete line (called by the reader tasks; thread-safe).</summary>
+	public void Append(string line)
+	{
+		if (line == null) return;
+		_lines.Enqueue(line);
+		while (_lines.Count > _cap && _lines.TryDequeue(out _)) { }
+	}
+
+	public IEnumerable<string> ReadAvailableLines()
+	{
+		while (_lines.TryDequeue(out var line))
+			yield return line;
+	}
+
+	// The buffer outlives any single readiness reader (the reader keeps producing) — nothing to dispose.
+	public void Dispose() { }
+}
 
 /// <summary>
 /// Helpers for reading append-only child log files: seek to the last N lines, and follow a growing file
@@ -51,7 +93,7 @@ public static class LogTail
 /// Follows an append-only text file line-by-line. Handles partial (not-yet-terminated) trailing lines by
 /// buffering them until their newline arrives. Tolerates the writer holding the file open (shared read).
 /// </summary>
-public sealed class LineTailer : IDisposable
+public sealed class LineTailer : ILineSource
 {
 	private readonly FileStream _fs;
 	private string _partial = "";

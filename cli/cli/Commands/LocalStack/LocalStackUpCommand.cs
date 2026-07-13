@@ -14,8 +14,9 @@ public class LocalStackUpCommandArgs : CommandArgs
 	public string portalUrl;
 	public string only;
 	public string skip;
-	public bool detach;
+	public bool runDetached;
 	public bool build;
+	public bool saveLogs;
 	public bool noCreateRealm;
 	public string realmCustomer;
 	public string realmProject;
@@ -68,12 +69,16 @@ public class LocalStackUpCommand
 			(args, v) => args.only = v);
 		AddOption(new Option<string>("--skip", "Skip these steps (comma/space separated names)"),
 			(args, v) => args.skip = v);
-		var detach = new Option<bool>("--detach", "Return immediately after bring-up instead of tailing (the stack keeps running; manage it with ps/logs/stop)");
+		var detach = new Option<bool>("--run-detached", "Run the stack detached: services keep running after `up` returns; manage with `beam local ps`/`logs`/`stop`. Default runs attached — logs stream live and the stack stops when `up` exits (Ctrl+C)");
+		detach.AddAlias("--detach");
 		detach.AddAlias("-d");
-		AddOption(detach, (args, v) => args.detach = v);
+		AddOption(detach, (args, v) => args.runDetached = v);
 
 		AddOption(new Option<bool>("--build", "Build the C# gateway, Scala services, and portal deps before launching (microservices/extensions always build via project run)"),
 			(args, v) => args.build = v);
+
+		AddOption(new Option<bool>("--save-logs", "Persist per-run logs under the workspace (.beamable/local-stack-logs/run-<id>); without it logs go to a temp folder and are removed on `beam local stop`"),
+			(args, v) => args.saveLogs = v);
 
 		AddOption(new Option<bool>("--no-create-realm", "Do not auto-create a local realm when the saved login is invalid — just warn (by default `up` creates one after a docker cleanup)"),
 			(args, v) => args.noCreateRealm = v);
@@ -134,25 +139,43 @@ public class LocalStackUpCommand
 		                            ?? args.ConfigService?.WorkingDirectory
 		                            ?? Directory.GetCurrentDirectory();
 
+		// Default is attached: stream each step's output live and stop the stack when `up` exits. --run-detached
+		// keeps the file-based model (services survive `up`, managed via ps/logs/stop).
+		var attached = !args.runDetached;
+
 		var runStatePath = LocalStackRunStateIO.ResolveRunStatePath(path);
-		var logsDir = LocalStackRunStateIO.ResolveLogsDir(path);
+		// A unique per-run dir (temp by default, workspace under --save-logs) holding launcher scripts and — in
+		// detached or --save-logs runs — the log files. Unique paths mean a fresh run never collides with a log a
+		// leftover wrapper from a crashed run still holds open.
+		var logsDir = LocalStackRunStateIO.ResolveRunLogsDir(path, args.saveLogs);
 		Directory.CreateDirectory(logsDir);
 
-		// Idempotency: carry over any steps from a previous `up` that are still running (alive pid), and skip
-		// re-launching them below. This is what lets you re-run `up` (e.g. to add the portal) without restarting
-		// the Scala backend — and avoids duplicate processes fighting over the same ports.
-		var existing = LocalStackRunStateIO.Load(runStatePath);
+		// Idempotency + run-state are only meaningful for detached stacks (they outlive `up`). Attached runs are
+		// always fresh and torn down on exit, so they carry nothing over and write no run-state.
 		var aliveByName = new Dictionary<string, LocalStackRunEntry>(StringComparer.OrdinalIgnoreCase);
-		if (existing?.steps != null)
-			foreach (var e in existing.steps)
-				if (!e.waitForExit && IsPidAlive(e.pid))
-					aliveByName[e.name] = e;
-		var runState = new LocalStackRunState
+		LocalStackRunState runState = null;
+		if (args.runDetached)
 		{
-			host = config.host, portalUrl = config.portalUrl,
-			steps = aliveByName.Values.ToList()
-		};
-		LocalStackRunStateIO.Save(runStatePath, runState);
+			// Carry over any steps from a previous detached `up` that are still running (alive pid), and skip
+			// re-launching them below — lets you re-run `up` (e.g. to add the portal) without restarting the
+			// Scala backend, and avoids duplicate processes fighting over the same ports.
+			var existing = LocalStackRunStateIO.Load(runStatePath);
+			if (existing?.steps != null)
+				foreach (var e in existing.steps)
+					if (!e.waitForExit && IsPidAlive(e.pid))
+						aliveByName[e.name] = e;
+			runState = new LocalStackRunState
+			{
+				host = config.host, portalUrl = config.portalUrl,
+				logsDir = logsDir, ephemeralLogs = !args.saveLogs,
+				steps = aliveByName.Values.ToList()
+			};
+			LocalStackRunStateIO.Save(runStatePath, runState);
+		}
+
+		// Clear temp launcher/log dirs left by previous (crashed/detached) runs, keeping this run's dir and any
+		// dir a carried-over live service still logs to. Keeps the temp folder from growing across runs.
+		PruneStaleTempLogs(path, logsDir, aliveByName.Values.Select(e => Path.GetDirectoryName(e.stdoutLog)));
 
 		var launched = new List<Launched>();
 		var token = args.Lifecycle.CancellationToken;
@@ -162,7 +185,7 @@ public class LocalStackUpCommand
 		// rather than duplicating it). Returned as a local function so readiness can relaunch on early exit.
 		Launched LaunchAndRegister(LocalStackStep step)
 		{
-			var l = StartStep(step, config, beamExe, beamLeading, beamWorkspaceFallback, logsDir);
+			var l = StartStep(step, config, beamExe, beamLeading, beamWorkspaceFallback, logsDir, attached, args.saveLogs);
 			lock (_launchedLock)
 			{
 				launched.Add(l);
@@ -171,7 +194,14 @@ public class LocalStackUpCommand
 				// recorded in the run-state (nothing for ps/stop to track). AwaitStep still waits on completion.
 				if (step.build)
 				{
-					Log.Information($"[{step.name}] building (pid={SafePid(l)}), logs: {l.StdoutLog}");
+					Log.Information($"[{step.name}] building (pid={SafePid(l)})");
+					return l;
+				}
+
+				// Attached runs keep nothing across invocations — no run-state to write.
+				if (attached)
+				{
+					Log.Information($"[{step.name}] started (pid={SafePid(l)})");
 					return l;
 				}
 
@@ -264,10 +294,11 @@ public class LocalStackUpCommand
 				await Task.WhenAll(awaits);
 			}
 
-			// On Windows the tracked pid is the cmd.exe wrapper, not the service (cmd → powershell → java).
-			// Now that every step is up, rewrite each recorded pid to the real service leaf so `ps`/`stop`
-			// (and the next `up`'s idempotency check) act on the JVM instead of a wrapper that will die.
-			ReconcileLeafPids(runState, runStatePath);
+			// Detached only: on Windows the tracked pid is the cmd.exe wrapper, not the service (cmd → powershell
+			// → java). Rewrite each recorded pid to the real service leaf so `ps`/`stop` (and the next `up`'s
+			// idempotency check) act on the JVM instead of a wrapper that will die. Attached keeps no run-state.
+			if (args.runDetached)
+				ReconcileLeafPids(runState, runStatePath);
 
 			// No beam steps ran the hook above — still ensure/validate the realm once the backend is up.
 			if (!realmEnsured)
@@ -277,7 +308,7 @@ public class LocalStackUpCommand
 				$"Stack is up. Backend={config.host} Portal={config.portalUrl}.", 1f);
 			Log.Information($"Stack is up. Backend={config.host}  Portal={config.portalUrl}");
 
-			if (args.detach)
+			if (args.runDetached)
 			{
 				// Fire-and-return (docker compose up -d style). NOTE: don't use this from an IDE run-config —
 				// when this process exits the IDE ends the run session and kills the child process tree.
@@ -285,26 +316,97 @@ public class LocalStackUpCommand
 			}
 			else
 			{
-				// Default: stay in the foreground and tail. This keeps this process alive so the children stay
-				// running (and, under an IDE run-config, the run session stays alive instead of reaping them).
-				Log.Information("Tailing child logs — press Ctrl+C to stop tailing. The stack keeps running; use `beam local stop` to bring it down.");
-				await TailToConsole(runState, token);
+				// Attached (default): logs already stream live from each child. Hold the foreground until the
+				// user stops (Ctrl+C) or all long-running services exit, then tear the whole stack down.
+				Log.Information("Attached — streaming logs. Press Ctrl+C to stop the stack.");
+				try { await WaitAttached(launched, token); }
+				catch (OperationCanceledException) { /* Ctrl+C — fall through to teardown */ }
+				Log.Information("Stopping the local stack...");
+				TearDown(launched);
+				if (!args.saveLogs) TryDeleteDir(logsDir);
 			}
 		}
 		catch (OperationCanceledException)
 		{
-			// Cancellation (Ctrl+C while attached, or during bring-up): leave the stack running, per the
-			// detached model. The run-state remains so `beam local stop` can bring it down.
-			Send(string.Empty, "running", "detached — stack left running (use `beam local stop`)", 1f);
-			Log.Information("Detached — stack left running. Use `beam local stop` to bring it down.");
+			if (args.runDetached)
+			{
+				// Detached: cancellation during bring-up leaves the stack running; run-state lets `stop` bring it down.
+				Send(string.Empty, "running", "detached — stack left running (use `beam local stop`)", 1f);
+				Log.Information("Detached — stack left running. Use `beam local stop` to bring it down.");
+			}
+			else
+			{
+				// Attached: Ctrl+C during bring-up tears down what started so nothing is left orphaned.
+				Log.Information("Stopping the local stack...");
+				TearDown(launched);
+				if (!args.saveLogs) TryDeleteDir(logsDir);
+			}
 		}
 		catch (Exception)
 		{
-			// A genuine bring-up failure: tear down what we started to avoid orphans, and clear the run-state.
+			// A genuine bring-up failure: tear down what we started to avoid orphans, and clear detached run-state.
 			TearDown(launched);
-			LocalStackRunStateIO.Clear(runStatePath);
+			if (args.runDetached) LocalStackRunStateIO.Clear(runStatePath);
+			// Don't leave an empty temp log dir behind for a run that never came up.
+			if (!args.saveLogs) TryDeleteDir(logsDir);
 			throw;
 		}
+	}
+
+	/// <summary>
+	/// Attached mode: hold the foreground while logs stream, until the user cancels (Ctrl+C) or every
+	/// long-running service has exited on its own. Throws <see cref="OperationCanceledException"/> on cancel
+	/// so the caller tears the stack down.
+	/// </summary>
+	private async Task WaitAttached(List<Launched> launched, CancellationToken token)
+	{
+		List<Task> longRunning;
+		lock (_launchedLock)
+			longRunning = launched.Where(l => !l.Step.waitForExit).Select(l => l.ExitedTask).ToList();
+
+		if (longRunning.Count == 0)
+		{
+			// No long-running services to hold the foreground — just wait for Ctrl+C.
+			await Task.Delay(Timeout.Infinite, token);
+			return;
+		}
+
+		await Task.WhenAny(Task.WhenAll(longRunning), Task.Delay(Timeout.Infinite, token));
+		token.ThrowIfCancellationRequested();
+	}
+
+	/// <summary>Best-effort recursive delete of a directory (used to clean up ephemeral temp log dirs).</summary>
+	private static void TryDeleteDir(string dir)
+	{
+		try { if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
+		catch { /* best-effort */ }
+	}
+
+	/// <summary>
+	/// Deletes stale <c>run-*</c> temp log dirs for this workspace, so temp logs from previous crashed or
+	/// detached runs don't accumulate. Keeps <paramref name="currentLogsDir"/> and any dir in
+	/// <paramref name="keepDirs"/> (the log dirs of carried-over live services). Best-effort — a dir still
+	/// held open by a leftover wrapper is skipped rather than failing the run.
+	/// </summary>
+	private static void PruneStaleTempLogs(string manifestPath, string currentLogsDir, IEnumerable<string> keepDirs)
+	{
+		try
+		{
+			var baseDir = LocalStackRunStateIO.ResolveTempLogsBase(manifestPath);
+			if (!Directory.Exists(baseDir)) return;
+
+			var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { Path.GetFullPath(currentLogsDir) };
+			foreach (var d in keepDirs)
+				if (!string.IsNullOrEmpty(d)) keep.Add(Path.GetFullPath(d));
+
+			foreach (var d in Directory.GetDirectories(baseDir))
+			{
+				if (keep.Contains(Path.GetFullPath(d))) continue;
+				try { Directory.Delete(d, recursive: true); }
+				catch { /* a live run or leftover wrapper may still hold a handle — skip it */ }
+			}
+		}
+		catch { /* best-effort — never fail bring-up over log cleanup */ }
 	}
 
 	private void Send(string step, string status, string message, float progress) =>
@@ -442,6 +544,16 @@ public class LocalStackUpCommand
 		public string StderrLog;
 		public string WorkingDirectory;
 		public string Kind;
+		/// <summary>Attached mode: the live stdout/stderr buffer feeding readiness. Null in detached mode
+		/// (readiness tails the log files instead).</summary>
+		public StreamLineBuffer LineBuffer;
+
+		/// <summary>The line source(s) the readiness gate should poll: the in-memory stream buffer (attached)
+		/// or fresh tailers over the stdout/stderr log files (detached).</summary>
+		public IReadOnlyList<ILineSource> OpenLineSources() =>
+			LineBuffer != null
+				? new ILineSource[] { LineBuffer }
+				: new ILineSource[] { new LineTailer(StdoutLog, -1), new LineTailer(StderrLog, -1) };
 	}
 
 	private (string exe, string[] leading) ResolveBeam(CommandArgs args)
@@ -463,7 +575,7 @@ public class LocalStackUpCommand
 	}
 
 	private Launched StartStep(LocalStackStep step, LocalStackConfig config, string beamExe, string[] beamLeading,
-		string beamWorkspaceFallback, string logsDir)
+		string beamWorkspaceFallback, string logsDir, bool attached, bool saveLogs)
 	{
 		var workDir = LocalStackConfigIO.Substitute(step.workingDirectory, config);
 		var argsText = LocalStackConfigIO.Substitute(step.arguments, config) ?? string.Empty;
@@ -475,9 +587,13 @@ public class LocalStackUpCommand
 		var safe = SafeName(step.name);
 		var stdoutLog = Path.Combine(logsDir, safe + ".log");
 		var stderrLog = Path.Combine(logsDir, safe + ".err.log");
-		// Fresh log files for this run so readiness reads only the current lifetime.
-		File.WriteAllText(stdoutLog, string.Empty);
-		File.WriteAllText(stderrLog, string.Empty);
+		// Detached (and attached --save-logs) redirect/tee to log files, so reset them for this run's lifetime.
+		// Attached without --save-logs pipes straight to the console and writes no log files.
+		if (!attached || saveLogs)
+		{
+			ResetLog(stdoutLog);
+			ResetLog(stderrLog);
+		}
 
 		var kind = step.beam ? "beam"
 			: string.Equals(step.command, "docker", StringComparison.OrdinalIgnoreCase) ? "docker"
@@ -485,45 +601,36 @@ public class LocalStackUpCommand
 			: "process";
 
 		var inner = BuildInnerScript(step, beamExe, beamLeading, argsText, workDir);
+		var launcher = WriteLauncher(step, logsDir, safe, inner, argsText);
 		var psi = new ProcessStartInfo { UseShellExecute = false, CreateNoWindow = true };
 
 		if (!OperatingSystem.IsWindows())
 		{
-			var launcher = Path.Combine(logsDir, safe + ".launch.sh");
-			File.WriteAllText(launcher, inner + "\n");
 			psi.FileName = "/bin/sh";
 			psi.ArgumentList.Add("-c");
-			// Daemonize the child so it survives `up` returning (detached, foreground terminal):
-			//   exec  → the tracked pid stays == the service
-			//   nohup → immune to terminal SIGHUP
-			//   < /dev/null → detach stdin so the backgrounded child never reads the terminal (macOS nohup,
-			//                 unlike Linux, does NOT redirect stdin — without this, npm/vite/dotnet get SIGTTIN
-			//                 or an interactive-stdin surprise and die shortly after `up` exits)
-			//   > log 2> err → logs persist after this CLI process exits
-			psi.ArgumentList.Add($"exec nohup sh {Sq(launcher)} < /dev/null > {Sq(stdoutLog)} 2> {Sq(stderrLog)}");
+			// Attached: run the launcher as a normal foreground child (dies with `up`); pipe its output to us.
+			// Detached: daemonize so it survives `up` returning —
+			//   exec → tracked pid stays == the service; nohup → immune to SIGHUP; < /dev/null → detach stdin
+			//   (macOS nohup doesn't redirect stdin); > log 2> err → logs persist after this CLI exits.
+			psi.ArgumentList.Add(attached
+				? $"exec sh {Sq(launcher)}"
+				: $"exec nohup sh {Sq(launcher)} < /dev/null > {Sq(stdoutLog)} 2> {Sq(stderrLog)}");
 		}
 		else
 		{
-			var launcher = Path.Combine(logsDir, safe + ".launch.cmd");
-			if (step.shell && string.Equals(step.shellKind, "powershell", StringComparison.OrdinalIgnoreCase))
-			{
-				// A PowerShell shell step (e.g. the Scala services on Windows): cmd.exe can't run the script,
-				// so write it to a .launch.ps1 and have the .cmd shim invoke powershell on it. We still go through
-				// the cmd redirection wrapper below (proven for the non-shell steps), which captures powershell's
-				// — and the java child's inherited — stdout/stderr to the log files.
-				var ps1 = Path.Combine(logsDir, safe + ".launch.ps1");
-				File.WriteAllText(ps1, argsText + "\r\n");
-				File.WriteAllText(launcher, $"@powershell -NoProfile -ExecutionPolicy Bypass -File \"{ps1}\"\r\n");
-			}
-			else
-			{
-				File.WriteAllText(launcher, inner + "\r\n");
-			}
-
 			psi.FileName = "cmd.exe";
-			// Windows: best-effort — not fully detached (dies with the console), but still logs to files and
-			// detaches stdin from the console so the child doesn't block on / read it.
-			psi.Arguments = $"/c \"\"{launcher}\" < NUL > \"{stdoutLog}\" 2> \"{stderrLog}\"\"";
+			// Attached: run the launcher and pipe stdout/stderr back (redirected below). Detached: redirect to
+			// the log files and detach stdin from the console.
+			psi.Arguments = attached
+				? $"/c \"\"{launcher}\"\""
+				: $"/c \"\"{launcher}\" < NUL > \"{stdoutLog}\" 2> \"{stderrLog}\"\"";
+		}
+
+		if (attached)
+		{
+			psi.RedirectStandardOutput = true;
+			psi.RedirectStandardError = true;
+			psi.RedirectStandardInput = true; // closed after start so children never block reading the console
 		}
 
 		if (!string.IsNullOrEmpty(workDir) && Directory.Exists(workDir))
@@ -560,11 +667,78 @@ public class LocalStackUpCommand
 		proc.EnableRaisingEvents = true;
 		proc.Exited += (_, _) => exitTcs.TrySetResult();
 
+		StreamLineBuffer buffer = null;
+		if (attached)
+		{
+			// Detach stdin so the child never blocks reading the console.
+			try { proc.StandardInput.Close(); } catch { /* some children don't open stdin */ }
+
+			// Pipe stdout/stderr live: to the console (prefixed), to the readiness buffer, and — under
+			// --save-logs — tee to the log files. No file is required for the stack to run.
+			buffer = new StreamLineBuffer();
+			_ = PumpAsync(proc.StandardOutput, step.name, isError: false, buffer, saveLogs ? stdoutLog : null);
+			_ = PumpAsync(proc.StandardError, step.name, isError: true, buffer, saveLogs ? stderrLog : null);
+		}
+
 		return new Launched
 		{
 			Step = step, Process = proc, ExitedTask = exitTcs.Task,
-			StdoutLog = stdoutLog, StderrLog = stderrLog, WorkingDirectory = workDir, Kind = kind
+			StdoutLog = stdoutLog, StderrLog = stderrLog, WorkingDirectory = workDir, Kind = kind,
+			LineBuffer = buffer
 		};
+	}
+
+	/// <summary>Writes the per-step launcher script to <paramref name="logsDir"/> and returns its path. On
+	/// Windows a PowerShell shell step gets a <c>.launch.ps1</c> plus a <c>.cmd</c> shim that invokes it; every
+	/// other case writes the inner command directly.</summary>
+	private static string WriteLauncher(LocalStackStep step, string logsDir, string safe, string inner, string argsText)
+	{
+		if (!OperatingSystem.IsWindows())
+		{
+			var sh = Path.Combine(logsDir, safe + ".launch.sh");
+			File.WriteAllText(sh, inner + "\n");
+			return sh;
+		}
+
+		var cmd = Path.Combine(logsDir, safe + ".launch.cmd");
+		if (step.shell && string.Equals(step.shellKind, "powershell", StringComparison.OrdinalIgnoreCase))
+		{
+			// cmd.exe can't run the POSIX/PowerShell script directly — write it to a .launch.ps1 and have the
+			// .cmd shim run powershell on it (captures powershell's + the java child's inherited output).
+			var ps1 = Path.Combine(logsDir, safe + ".launch.ps1");
+			File.WriteAllText(ps1, argsText + "\r\n");
+			File.WriteAllText(cmd, $"@powershell -NoProfile -ExecutionPolicy Bypass -File \"{ps1}\"\r\n");
+		}
+		else
+		{
+			File.WriteAllText(cmd, inner + "\r\n");
+		}
+
+		return cmd;
+	}
+
+	/// <summary>Attached mode: streams one of a child's piped readers to the console (prefixed with the step
+	/// name), feeds the readiness buffer, and — when <paramref name="teePath"/> is set (--save-logs) — appends
+	/// each line to the log file.</summary>
+	private static async Task PumpAsync(StreamReader reader, string name, bool isError, StreamLineBuffer buffer,
+		string teePath)
+	{
+		try
+		{
+			string line;
+			while ((line = await reader.ReadLineAsync()) != null)
+			{
+				if (isError) Log.Warning($"[{name}] {line}");
+				else Log.Information($"[{name}] {line}");
+				buffer.Append(line);
+				if (teePath != null)
+				{
+					try { File.AppendAllText(teePath, line + Environment.NewLine); }
+					catch { /* best-effort tee */ }
+				}
+			}
+		}
+		catch { /* reader closes when the child exits or is killed */ }
 	}
 
 	/// <summary>Builds the shell body written to the per-step launcher file (its last command is exec'd so the
@@ -591,6 +765,25 @@ public class LocalStackUpCommand
 	{
 		var cleaned = Regex.Replace(name ?? "step", @"[^A-Za-z0-9._-]+", "_").Trim('_');
 		return string.IsNullOrEmpty(cleaned) ? "step" : cleaned;
+	}
+
+	/// <summary>Creates/truncates a per-step log file for a fresh run. Opens with shared read/write so the
+	/// tailer and the launched child can both hold it; a genuine lock (non-writable dir, or a concurrent
+	/// second `up`) surfaces as an actionable <see cref="CliException"/> rather than a raw IOException.</summary>
+	private static void ResetLog(string path)
+	{
+		try
+		{
+			using var _ = new FileStream(path, FileMode.Create, FileAccess.Write,
+				FileShare.ReadWrite | FileShare.Delete);
+		}
+		catch (IOException e)
+		{
+			throw new CliException(
+				$"Could not reset log '{path}': {e.Message}. It may be held by another process — a previous " +
+				"`beam local up` that is still running or was interrupted. Run `beam local stop`, close any other " +
+				"`beam local up`, or kill the leftover process, then retry.");
+		}
 	}
 
 	/// <summary>Single-quotes a value for <c>/bin/sh</c>.</summary>
@@ -697,8 +890,8 @@ public class LocalStackUpCommand
 		await WarnIfForeignServer(!string.IsNullOrEmpty(http200Url) ? http200Url : httpUrl, step.name, token);
 
 		using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
-		var outTail = new LineTailer(l.StdoutLog, -1);
-		var errTail = new LineTailer(l.StderrLog, -1);
+		// Attached: read readiness from the live stream buffer; detached: tail the log files. Same scan either way.
+		var sources = l.OpenLineSources();
 		try
 		{
 			var lastLine = "";
@@ -720,12 +913,11 @@ public class LocalStackUpCommand
 						try { await Task.Delay(3000, token); }
 						catch (OperationCanceledException) { return; }
 
-						// Relaunch and re-watch the fresh log files (StartStep truncates them).
+						// Relaunch and re-watch the fresh source (new stream buffer, or new tailers over the
+						// truncated log files).
 						l = relaunch();
-						outTail.Dispose();
-						errTail.Dispose();
-						outTail = new LineTailer(l.StdoutLog, -1);
-						errTail = new LineTailer(l.StderrLog, -1);
+						foreach (var s in sources) s.Dispose();
+						sources = l.OpenLineSources();
 						lastLine = "";
 						waited = 0;
 						nextBeat = 10;
@@ -740,7 +932,7 @@ public class LocalStackUpCommand
 				// Log-substring gate: scan any lines that appeared since the last poll (in either stream).
 				if (!string.IsNullOrEmpty(step.readyWhenLogContains))
 				{
-					foreach (var line in outTail.ReadAvailableLines().Concat(errTail.ReadAvailableLines()))
+					foreach (var line in sources.SelectMany(s => s.ReadAvailableLines()))
 					{
 						lastLine = line;
 						if (line.Contains(step.readyWhenLogContains))
@@ -783,8 +975,7 @@ public class LocalStackUpCommand
 		}
 		finally
 		{
-			outTail.Dispose();
-			errTail.Dispose();
+			foreach (var s in sources) s.Dispose();
 		}
 	}
 
@@ -873,26 +1064,6 @@ public class LocalStackUpCommand
 
 	private static string Trim(string s, int max) => s.Length <= max ? s : s.Substring(0, max);
 
-	// ----------------------------------------------------------------------------------
-	// Attach (foreground tail)
-	// ----------------------------------------------------------------------------------
-
-	private async Task TailToConsole(LocalStackRunState runState, CancellationToken token)
-	{
-		List<LocalStackRunEntry> snapshot;
-		lock (_launchedLock) snapshot = runState.steps.ToList();
-
-		var tasks = new List<Task>();
-		foreach (var e in snapshot)
-		{
-			if (!string.IsNullOrEmpty(e.stdoutLog)) tasks.Add(FollowFile(e.stdoutLog, e.name, isError: false, token));
-			if (!string.IsNullOrEmpty(e.stderrLog)) tasks.Add(FollowFile(e.stderrLog, e.name, isError: true, token));
-		}
-
-		try { await Task.WhenAll(tasks); }
-		catch (OperationCanceledException) { /* expected on detach */ }
-	}
-
 	private static bool IsPidAlive(int pid)
 	{
 		if (pid <= 0) return false;
@@ -900,28 +1071,8 @@ public class LocalStackUpCommand
 		catch { return false; }
 	}
 
-	private static async Task FollowFile(string path, string name, bool isError, CancellationToken token)
-	{
-		try
-		{
-			using var tailer = new LineTailer(path, 0); // start at end: only new lines while attached
-			while (!token.IsCancellationRequested)
-			{
-				foreach (var line in tailer.ReadAvailableLines())
-				{
-					if (isError) Log.Warning($"[{name}] {line}");
-					else Log.Information($"[{name}] {line}");
-				}
-
-				await Task.Delay(400, token);
-			}
-		}
-		catch (OperationCanceledException) { /* expected */ }
-		catch (Exception e) { Log.Verbose($"[{name}] tail stopped: {e.Message}"); }
-	}
-
 	// ----------------------------------------------------------------------------------
-	// Teardown (failure path only — normal/cancelled exit leaves the stack running)
+	// Teardown (attached exit/Ctrl-C, and the detached bring-up failure path)
 	// ----------------------------------------------------------------------------------
 
 	private void TearDown(List<Launched> launched)
