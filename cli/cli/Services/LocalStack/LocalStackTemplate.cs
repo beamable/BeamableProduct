@@ -220,7 +220,8 @@ public static class LocalStackTemplate
 				name = "build: scala",
 				workingDirectory = scalaDir,
 				command = OperatingSystem.IsWindows() ? "mvn.cmd" : "mvn",
-				arguments = $"-q -pl {scalaModules} -am package -DskipTests",
+				// `clean` so a shared-module API change can't leave cross-module classes skewed (NoSuchMethodError).
+				arguments = $"-q -pl {scalaModules} -am clean package -DskipTests",
 				// Scala runs under Java 8; ${java} is substituted to that JAVA_HOME by `up` (as for the launch shells).
 				environment = new Dictionary<string, string> { ["JAVA_HOME"] = "${java}" },
 				build = true,

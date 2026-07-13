@@ -129,6 +129,11 @@ public class LocalStackUpCommand
 		if (args.build && !config.steps.Any(s => s.build))
 			Log.Warning("--build was passed but this manifest has no build steps. Re-run `beam local init` to regenerate it with build steps (or add them by hand).");
 
+		// A clean build should re-resolve deps too: drop the shared Scala classpath cache so each service's
+		// launch rebuilds it (the cache otherwise only refreshes when core/pom.xml changes).
+		if (args.build)
+			TryDeleteDir(Path.Combine(Path.GetTempPath(), "beam-scala-cp"));
+
 		// Fail fast if the stack needs Docker but its daemon isn't running — otherwise the first docker step
 		// dies mid-bring-up with a cryptic daemon error.
 		EnsureDockerRunning(steps);
@@ -591,6 +596,12 @@ public class LocalStackUpCommand
 		var workDir = LocalStackConfigIO.Substitute(step.workingDirectory, config);
 		var argsText = LocalStackConfigIO.Substitute(step.arguments, config) ?? string.Empty;
 
+		// `--build` always does a CLEAN Scala build: an incremental `mvn package` can leave cross-module classes
+		// skewed (the NoSuchMethodError class of failure). Inject `clean` for manifests generated before this
+		// whose mvn build step only says `package`; new manifests already include it.
+		if (step.build && IsMvn(step.command) && !argsText.Contains("clean"))
+			argsText = InsertCleanBeforeMavenGoal(argsText);
+
 		// beam sub-commands need to run inside a .beamable workspace to see the local service manifest.
 		if (step.beam && (string.IsNullOrEmpty(workDir) || !Directory.Exists(workDir)))
 			workDir = beamWorkspaceFallback;
@@ -780,6 +791,23 @@ public class LocalStackUpCommand
 	{
 		var cleaned = Regex.Replace(name ?? "step", @"[^A-Za-z0-9._-]+", "_").Trim('_');
 		return string.IsNullOrEmpty(cleaned) ? "step" : cleaned;
+	}
+
+	public static bool IsMvn(string command) =>
+		command != null && (command.Equals("mvn", StringComparison.OrdinalIgnoreCase)
+		                    || command.Equals("mvn.cmd", StringComparison.OrdinalIgnoreCase));
+
+	/// <summary>Inserts a <c>clean</c> goal before the first build phase in an mvn argument string. Maven runs
+	/// goals in command-line order, so <c>clean</c> must precede <c>package</c>/<c>install</c>/etc.</summary>
+	public static string InsertCleanBeforeMavenGoal(string args)
+	{
+		foreach (var goal in new[] { "package", "install", "verify", "test", "compile" })
+		{
+			var token = " " + goal;
+			var idx = args.IndexOf(token, StringComparison.Ordinal);
+			if (idx >= 0) return args.Substring(0, idx) + " clean" + args.Substring(idx);
+		}
+		return "clean " + args;
 	}
 
 	/// <summary>Creates/truncates a per-step log file for a fresh run. Opens with shared read/write so the
