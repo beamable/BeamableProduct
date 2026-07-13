@@ -14,6 +14,7 @@ public class NewPortalExtensionCommandArgs : SolutionCommandArgs
 	public string mountSelector;
 	public string mountIcon;
 	public string mountLabel;
+	public string mountGroup;
 	public int mountGroupOrder;
 	public int mountLabelOrder;
 	public string template;

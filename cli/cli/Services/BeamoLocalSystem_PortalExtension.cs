@@ -288,6 +288,7 @@ public class PortalExtensionMountProperties
 {
 	public const string KEY_PAGE = "page";
 	public const string KEY_SELECTOR = "selector";
+	public const string KEY_NAV_GROUP = "navGroup";
 	public const string KEY_NAV_LABEL = "navLabel";
 	public const string KEY_NAV_ICON = "navIcon";
 	public const string KEY_NAV_DESCRIPTION = "navDescription";
