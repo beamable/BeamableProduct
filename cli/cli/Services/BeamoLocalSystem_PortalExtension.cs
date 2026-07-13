@@ -231,7 +231,7 @@ public partial class BeamoLocalSystem
 			return null;
 		}
 
-		var treatedHost = PortalCommand.GetPortalBaseUrl(binding, context, isNewPortal: true);
+		var treatedHost = PortalCommand.GetPortalBaseUrl(binding, context, PortalType.Console);
 		if (string.IsNullOrEmpty(treatedHost) || string.IsNullOrEmpty(context.Cid) || string.IsNullOrEmpty(context.Pid))
 		{
 			return null;
@@ -298,11 +298,16 @@ public class PortalExtensionMountProperties
 
 	// For #extension-page mounts the page path defines the hub hierarchy: a single segment
 	// declares a hub that is a full page of its own, and a nested path
-	// places that extension inside the "cars" hub. There is no separate
-	// nav group — the hierarchy is the page path.
+	// places that extension inside the "cars" hub. The nav group is a separate,
+	// additional way to organize extensions inside a given hub.
 	[JsonProperty(KEY_PAGE)] public string Page;
 
 	[JsonProperty(KEY_SELECTOR)] public string Selector;
+
+	// Optional grouping used to organize extensions within a hub's navigation.
+	[JsonProperty(KEY_NAV_GROUP)]
+	[JsonConverter(typeof(OptionalConverter))]
+	public OptionalString NavGroup;
 
 	[JsonProperty(KEY_NAV_LABEL)]
 	[JsonConverter(typeof(OptionalConverter))]

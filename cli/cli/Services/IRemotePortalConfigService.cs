@@ -297,6 +297,7 @@ public class RemotePortalConfigService : IRemotePortalConfigService
 					metadata.Properties.Mounts.Add(new PortalExtensionMountProperties
 					{
 						Page = (string)mount["page"],
+						NavGroup = OptionalStringFromToken(mount["navGroup"]),
 						NavLabel = OptionalStringFromToken(mount["navLabel"]),
 					});
 				}
@@ -373,9 +374,9 @@ public class RemotePortalConfigService : IRemotePortalConfigService
 	/// extension's <c>mounts</c> (an extension can render in more than one place). Each site's
 	/// <c>path</c> is the URL that mount renders at (its <c>page</c>); selectors are the extension's
 	/// declared <c>BeamExtensionSite</c>s as <c>#&lt;name&gt;</c> component slots (the same for every
-	/// mount); navContext is that mount's navLabel (the hub hierarchy lives in the page path itself).
-	/// Returns empty when the extension declares no slots, has no name, or has no mount with a
-	/// resolvable page.
+	/// mount); navContext is that mount's navGroup/navLabel (the hub hierarchy itself lives in the page
+	/// path, and the nav group is an additional grouping within a hub). Returns empty when the extension
+	/// declares no slots, has no name, or has no mount with a resolvable page.
 	/// </summary>
 	public static List<RemotePortalConfiguration.MountSiteConfig> BuildMountSitesFromMetadata(ExtensionBuildMetaData metadata)
 	{
@@ -404,7 +405,10 @@ public class RemotePortalConfigService : IRemotePortalConfigService
 			if (string.IsNullOrEmpty(path)) continue;
 
 			var navContext = new List<string>();
+			var navGroup = mount.NavGroup;
 			var navLabel = mount.NavLabel;
+			if (navGroup != null && navGroup.HasValue && !string.IsNullOrEmpty(navGroup.Value))
+				navContext.Add(navGroup.Value);
 			if (navLabel != null && navLabel.HasValue && !string.IsNullOrEmpty(navLabel.Value))
 				navContext.Add(navLabel.Value);
 
@@ -490,6 +494,21 @@ public class RemotePortalConfigService : IRemotePortalConfigService
 	/// build time; the result is persisted into metadata.json. I/O wrapper around
 	/// <see cref="ParseExtensionSiteSelectors"/>.
 	/// </summary>
+	// Source-file extensions that can declare a <BeamExtensionSite>.
+	private static readonly HashSet<string> ExtensionSiteSourceExtensions =
+		new(StringComparer.OrdinalIgnoreCase) { ".tsx", ".jsx", ".ts" };
+
+	// Directories that never hold first-party extension source. These are pruned DURING the
+	// traversal in EnumerateExtensionSourceFiles rather than post-filtered. Pruning
+	// node_modules is essential, not cosmetic: a file:-linked shared library is symlinked
+	// into node_modules, and a recursive walk that descended into it would follow that
+	// symlink into the library's own tree — walking unrelated files and, on a symlink loop,
+	// throwing mid-enumeration. That throw would abort CreateMetaDataFile before the build's
+	// error is even recorded (and is swallowed entirely on the file-watcher path), so a
+	// library-referencing extension would silently never register with the portal.
+	private static readonly HashSet<string> ExtensionSiteExcludedDirs =
+		new(StringComparer.OrdinalIgnoreCase) { "node_modules", "dist", "assets", "build", ".git" };
+
 	public static List<string> ScanExtensionSiteSelectors(string extAbsolutePath)
 	{
 		var found = new List<string>();
@@ -497,17 +516,7 @@ public class RemotePortalConfigService : IRemotePortalConfigService
 
 		if (!string.IsNullOrEmpty(extAbsolutePath) && Directory.Exists(extAbsolutePath))
 		{
-			var excludedDirs = new[] { "node_modules", "dist", "assets", "build", ".git" };
-			var files = Directory.EnumerateFiles(extAbsolutePath, "*.*", SearchOption.AllDirectories)
-				.Where(f => Path.GetExtension(f) is ".tsx" or ".jsx" or ".ts")
-				.Where(f =>
-				{
-					var rel = Path.GetRelativePath(extAbsolutePath, f);
-					var segments = rel.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-					return !segments.Any(s => excludedDirs.Contains(s));
-				});
-
-			foreach (var file in files)
+			foreach (var file in EnumerateExtensionSourceFiles(extAbsolutePath))
 			{
 				string text;
 				try { text = File.ReadAllText(file); }
@@ -520,6 +529,45 @@ public class RemotePortalConfigService : IRemotePortalConfigService
 		}
 
 		return found;
+	}
+
+	/// <summary>
+	/// Depth-first walk of an extension's own source tree, pruning non-source directories
+	/// (see <see cref="ExtensionSiteExcludedDirs"/>) and skipping symlinks/junctions so a
+	/// file:-linked shared library under node_modules is never traversed. Yields only source
+	/// files that can contain a <c>&lt;BeamExtensionSite&gt;</c>.
+	/// </summary>
+	private static IEnumerable<string> EnumerateExtensionSourceFiles(string root)
+	{
+		var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var stack = new Stack<string>();
+		stack.Push(Path.GetFullPath(root));
+
+		while (stack.Count > 0)
+		{
+			var dir = stack.Pop();
+			if (!visited.Add(dir)) continue;
+
+			IEnumerable<FileSystemInfo> entries;
+			try { entries = new DirectoryInfo(dir).EnumerateFileSystemInfos(); }
+			catch { continue; } // unreadable directory — skip
+
+			foreach (var entry in entries)
+			{
+				// Never follow symlinks/junctions — a file:-linked library lives behind one.
+				if ((entry.Attributes & FileAttributes.ReparsePoint) != 0) continue;
+
+				if ((entry.Attributes & FileAttributes.Directory) != 0)
+				{
+					if (!ExtensionSiteExcludedDirs.Contains(entry.Name))
+						stack.Push(entry.FullName);
+					continue;
+				}
+
+				if (ExtensionSiteSourceExtensions.Contains(entry.Extension))
+					yield return entry.FullName;
+			}
+		}
 	}
 
 	/// <summary>
