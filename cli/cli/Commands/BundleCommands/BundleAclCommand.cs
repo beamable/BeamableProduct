@@ -52,7 +52,7 @@ public class BundleAclCommand : AtomicCommand<BundleAclCommandArgs, BundleAclCom
 			// a bare name or a tag selector — resolve the tag to its checksum via the tag map.
 			var tag = string.IsNullOrEmpty(selector) ? "latest" : selector;
 			var response = await api.GetBundles(name, ns);
-			var match = (response.tags ?? System.Array.Empty<BundleTag>()).FirstOrDefault(t => t.tag == tag);
+			var match = response.tags.ToTagInfos().FirstOrDefault(t => t.tag == tag);
 			if (match == null)
 				throw new CliException($"Bundle [{name}] has no tag [{tag}]. Use <bundle-name>@sha256:<checksum> for an exact checksum.");
 			checksum = match.checksum;
