@@ -128,7 +128,7 @@ public class DocService
 	public string GetUsage(BeamCommandDescriptor desc)
 	{
 		var sb = new StringBuilder();
-		sb.Append("```shell\n");
+		sb.Append("```bash\n");
 		sb.Append(desc.executionPath);
 		foreach (var arg in desc.command.Arguments)
 		{
