@@ -10,18 +10,65 @@ package; autolinking selects the Android AAR or the iOS xcframework per platform
 npm install @beamable/notifications-react-native
 ```
 
-## Usage — one object, `BeamNotifications`
+## Usage — React hooks (recommended)
 
-Import the single façade and call its methods; there's no per-app wrapper to write. Every
-method is platform-gated (a safe no-op on web / unsupported), so you can call it anywhere.
+The idiomatic way to consume the SDK from components. The hooks own subscription lifecycle
+(subscribe on mount, remove on unmount) and expose push state as reactive React state — no
+manual `useEffect` + `addListener` + `useState` dance.
+
+```tsx
+import {
+  BeamNotifications,
+  BeamPushNotifications,
+  BeamNotificationEvent,
+  BeamLaunchNotification,
+} from '@beamable/notifications-react-native';
+
+function Screen() {
+  // Initializes on mount; tracks support / permission / token / lastOpened as state,
+  // and returns the Promise-returning actions.
+  const push = BeamPushNotifications();
+
+  // Subscribe to any event for the component's lifetime (handler needn't be memoized):
+  BeamNotificationEvent('notificationOpened', (n) => {
+    const url = BeamNotifications.deepLinkFromNotification(n);
+    // …route…
+  });
+
+  // Cold-start launch notification (resolved once, as state):
+  const launch = BeamLaunchNotification();
+
+  return (
+    <Button
+      title="Enable push"
+      onPress={async () => {
+        const perm = await push.requestPermission();     // resolves with the outcome
+        if (perm.granted) {
+          const { token } = await push.registerForRemote(); // resolves with the token
+          // …register `token` with your microservice…
+        }
+      }}
+    />
+  );
+  // push.permission, push.token, push.lastOpened update reactively.
+}
+```
+
+## Usage — one object, `BeamNotifications` (non-React / imperative)
+
+Import the single façade and call its methods; every method is platform-gated (a safe no-op
+on web / unsupported), so you can call it anywhere. **Solicited calls now return Promises**
+(the corresponding event still fires too, for unsolicited pushes):
 
 ```ts
 import { BeamNotifications } from '@beamable/notifications-react-native';
 import type { NotificationData } from '@beamable/notifications-react-native';
 
 BeamNotifications.initialize();
-BeamNotifications.requestPermission();          // result on the 'permissionResult' event
-BeamNotifications.registerForRemote();          // token on the 'tokenReceived' event
+
+const perm = await BeamNotifications.requestPermission();   // Promise<PermissionResult>
+const { token } = await BeamNotifications.registerForRemote(); // Promise<{ token }>
+// getPermissionStatus(), getPending(), getDeliveryReceipts() are Promises too.
 
 const sub = BeamNotifications.addListener('notificationOpened', (n) => {
   const url = BeamNotifications.deepLinkFromNotification(n); // full deep-link URL, or null
@@ -43,10 +90,54 @@ BeamNotifications.hostPlatformLabel();           // 'iOS' | 'Android'
 BeamNotifications.devicePushPlatform();          // 'apns' | 'fcm'
 ```
 
+> **Promise semantics.** `requestPermission()` never times out (the OS dialog waits on the
+> user). `registerForRemote()` rejects on `tokenError` and times out (default 30s) — a token
+> never arrives on a simulator/emulator or without realm push credentials; pass
+> `registerForRemote({ timeoutMs })` to tune it. `getPending()` / `getDeliveryReceipts()` are
+> iOS-only and resolve `[]` on Android.
+
 `BeamableNotifications` and the default export are aliases of `BeamNotifications`. The
 individual flat helpers (`requestBeamablePermission`, `addBeamableListener`, …) remain
 exported for back-compat. The full runtime flow is documented in the reference sample's
 `INTEGRATION.md` (`nativeLibraries/Samples/ReactNative`).
+
+## Web build (built-in) — Unity WebView & custom hosts
+
+The package ships a **platform-resolved web build** (`src/index.web.ts`), so the same import
+works on every platform — Metro auto-selects the native module on iOS/Android and the web build
+on web. **There is no per-app `.web.ts` to write.**
+
+```ts
+// identical import on iOS, Android, and web:
+import { BeamNotifications, BeamPushNotifications } from '@beamable/notifications-react-native';
+```
+
+On web, façade calls route over a pluggable **`WebTransport`**. The bundled default is the
+**gree/unity-webview** bridge: when your web build runs inside a Unity WebView whose host has the
+Beamable notifications plugin, calls reach the real iOS/Android library; in a plain browser the web
+build is inert (`BeamNotifications.isSupported` stays `false`). Support is dynamic — it flips `true`
+once the host handshake reports native support, and `BeamPushNotifications().isSupported` /
+`addSupportListener` reflect that reactively.
+
+To target a **different host**, supply your own transport:
+
+```ts
+import { BeamNotifications, type WebTransport } from '@beamable/notifications-react-native';
+
+const myTransport: WebTransport = {
+  isSupported: () => /* … */ true,
+  getHost: () => ({ os: 'ios', isEditor: false, nativeSupported: true }),
+  addSupportListener: (cb) => { cb(true); return { remove() {} }; },
+  call: (method, args) => { /* fire-and-forget to your host */ },
+  request: (method, args) => Promise.resolve(/* reply */ null as any),
+  addEventListener: (name, cb) => { /* forward host events */ return { remove() {} }; },
+};
+BeamNotifications.setWebTransport(myTransport); // pass null to restore the Unity default
+```
+
+The raw gree bridge helpers (`isUnityWebView`, `getUnityHostPlatform`, `sendToUnity`,
+`addUnityMessageListener`, `addUnityPlatformListener`, `unityTransport`) are also exported for
+diagnostics. On native iOS/Android these are inert. (`setWebTransport` is a no-op on native.)
 
 ## Expo config plugin
 

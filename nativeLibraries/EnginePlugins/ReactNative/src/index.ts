@@ -33,6 +33,29 @@ import {
   deepLinkFromNotification,
   campaignCoordsFromNotification,
 } from './parsing';
+import { BEAMABLE_EVENTS } from './types';
+import type {
+  CategorySpec,
+  ConfigureAuthOptions,
+  DeepLinkEvent,
+  DeliveryReceipt,
+  EventMap,
+  LocalRequest,
+  NotificationData,
+  NotificationIntentData,
+  NotificationOffer,
+  PermissionOptions,
+  PermissionResult,
+  Subscription,
+  TemplateSpec,
+  TriggerSpec,
+  WebTransport,
+} from './types';
+
+// Re-export the whole shared surface so consumers keep importing types + BEAMABLE_EVENTS
+// from the package root. (`index.web.ts` re-exports the same, so the surface is identical
+// on every platform even though only `index.ts`'s declarations back the published `types`.)
+export * from './types';
 
 const IS_IOS = Platform.OS === 'ios';
 const IS_ANDROID = Platform.OS === 'android';
@@ -68,211 +91,8 @@ const IosNative = IS_IOS ? requireModule('BeamableNotificationsModule') : null;
 const BeamablePush = IS_IOS ? null : requireModule('BeamablePush');
 const BeamableDeeplink = IS_IOS ? null : requireModule('BeamableDeeplink');
 
-// ---------------------------------------------------------------------------
-// Types — shared by both platforms.
-// ---------------------------------------------------------------------------
-
-export interface PermissionOptions {
-  alert?: boolean;
-  badge?: boolean;
-  sound?: boolean;
-  provisional?: boolean;
-  criticalAlert?: boolean;
-  carPlay?: boolean;
-}
-
-export interface TriggerSpec {
-  type: 'immediate' | 'timeInterval' | 'calendar';
-  seconds?: number;
-  repeats?: boolean;
-  year?: number;
-  month?: number;
-  day?: number;
-  hour?: number;
-  minute?: number;
-  second?: number;
-  weekday?: number;
-}
-
-export interface AttachmentSpec {
-  identifier?: string;
-  url: string;
-  typeHint?: string;
-}
-
-export interface LocalRequest {
-  id: string;
-  title?: string;
-  body?: string;
-  subtitle?: string;
-  badge?: number;
-  sound?: string;
-  categoryId?: string;
-  threadId?: string;
-  interruptionLevel?: 'passive' | 'active' | 'timeSensitive' | 'critical';
-  trigger?: TriggerSpec;
-  attachments?: AttachmentSpec[];
-  userInfo?: Record<string, unknown>;
-  templateId?: string;
-  templateValues?: Record<string, string>;
-}
-
-export interface TemplateSpec {
-  id: string;
-  titleFormat?: string;
-  bodyFormat?: string;
-  subtitleFormat?: string;
-  sound?: string;
-  categoryId?: string;
-  badge?: number;
-  defaultAttachments?: AttachmentSpec[];
-}
-
-export interface ActionSpec {
-  id: string;
-  title: string;
-  foreground?: boolean;
-  destructive?: boolean;
-  authenticationRequired?: boolean;
-}
-
-export interface CategorySpec {
-  id: string;
-  actions: ActionSpec[];
-  hiddenPreviewsBodyPlaceholder?: string;
-}
-
-/**
- * Player auth written into native shared storage so the CLOSED-APP analytics funnel can
- * authenticate when the JS runtime is not running. Canonical camelCase contract the natives
- * expect; passed to the native bridge as a single JSON string.
- */
-export interface ConfigureAuthOptions {
-  accessToken: string;
-  refreshToken: string;
-  /** Absolute expiry, epoch MILLISECONDS. */
-  accessTokenExpiresAt: number;
-  cid: string;
-  pid: string;
-  /** Beamable API base URL. */
-  host: string;
-}
-
-export interface PermissionResult {
-  status:
-    | 'notDetermined'
-    | 'denied'
-    | 'authorized'
-    | 'provisional'
-    | 'ephemeral'
-    | string;
-  granted: boolean;
-  alert?: boolean;
-  badge?: boolean;
-  sound?: boolean;
-}
-
-// ---------------------------------------------------------------------------
-// §3.3 — Notification Intent Data schema (shared by Android, iOS and the engines).
-// Free-form fields (`offers[].customData`, `campaignData`) are typed `T` only at this
-// layer; on the wire they travel stringified inside a flat string→string map (Decision Q3).
-// ---------------------------------------------------------------------------
-
-export interface NotificationOffer<TCustom = Record<string, unknown>> {
-  itemId?: string;
-  value?: string | number;
-  customData?: TCustom;
-}
-
-export interface NotificationIntentData<
-  TCampaign = Record<string, unknown>,
-  TOfferCustom = Record<string, unknown>,
-> {
-  campaignId?: string;
-  nodeId?: string;
-  gamerTag?: string;
-  accountId?: string;
-  cidPid?: string;
-  offers?: NotificationOffer<TOfferCustom>[];
-  campaignData?: TCampaign;
-  /** Raw deeplink — intentionally schema-less, passed through verbatim. */
-  deeplink?: string;
-}
-
-export interface NotificationData {
-  id: string;
-  title?: string;
-  body?: string;
-  subtitle?: string;
-  /** Canonical deeplink (read tolerantly from `deeplink`/`deepLink`/`deep_link`). */
-  deeplink?: string;
-  actionId?: string;
-  wasLaunch?: boolean;
-  // §3.3 campaign intent-data (all optional; present only for tracked campaigns).
-  campaignId?: string;
-  nodeId?: string;
-  gamerTag?: string;
-  accountId?: string;
-  cidPid?: string;
-  offers?: NotificationOffer[];
-  campaignData?: Record<string, unknown>;
-  userInfo?: Record<string, unknown>;
-}
-
-export interface DeliveryReceipt {
-  id: string;
-  timestamp: number;
-  source: string;
-  userInfo?: Record<string, unknown>;
-}
-
-/** Android-only: payload of the native `onDeepLink` event (URL-scheme VIEW intents). */
-export interface DeepLinkEvent {
-  url: string;
-  isColdStart: boolean;
-}
-
-// ---------------------------------------------------------------------------
-// Events — unified vocabulary (§3.1).
-// ---------------------------------------------------------------------------
-
-export type EventMap = {
-  permissionResult: PermissionResult;
-  tokenReceived: { token: string };
-  tokenError: { error: string };
-  /** Foreground delivery. */
-  notificationPresented: NotificationData;
-  notificationReceived: NotificationData;
-  /** User tapped/opened the notification. Canonical name (was `notificationTapped`). */
-  notificationOpened: NotificationData;
-  pendingNotifications: NotificationData[];
-  deliveryReceipts: DeliveryReceipt[];
-  /**
-   * Result of a native analytics funnel send (Received/Opened/Sent/Clicked/Converted).
-   * Android emits the native `onFunnelResult` event; iOS is a follow-up (inert for now).
-   */
-  funnelResult: {
-    funnelType: string;
-    ok: boolean;
-    statusCode: number;
-    message: string;
-  };
-};
-
-/** Every event the SDK can emit — the runtime list matching `keyof EventMap`. */
-export const BEAMABLE_EVENTS = [
-  'permissionResult',
-  'tokenReceived',
-  'tokenError',
-  'notificationPresented',
-  'notificationReceived',
-  'notificationOpened',
-  'pendingNotifications',
-  'deliveryReceipts',
-  'funnelResult',
-] as const;
-
-export type BeamableEvent = (typeof BEAMABLE_EVENTS)[number];
+// All shared type declarations + the `BEAMABLE_EVENTS` constant now live in `./types`
+// (imported above, re-exported via `export * from './types'`).
 
 const DEFAULT_CHANNEL = 'deeplink_channel';
 
@@ -374,8 +194,6 @@ function toStringMap(obj?: Record<string, unknown>): Record<string, string> {
 // ---------------------------------------------------------------------------
 // addListener — unified event names, dispatched onto each platform's native events.
 // ---------------------------------------------------------------------------
-
-type Subscription = { remove: () => void };
 
 // Emitters are constructed LAZILY (on first use), never at module load. On some RN versions
 // `new NativeEventEmitter(mod)` dereferences `mod` in its constructor; since the unlinked
@@ -500,6 +318,75 @@ export function addDeepLinkListener(
 }
 
 // ---------------------------------------------------------------------------
+// Promise adapter for solicited calls (P0 ergonomics).
+//
+// Historically every solicited action (requestPermission, registerForRemote, getPending,
+// …) was fire-and-forget and the caller had to pre-subscribe to a separate event and
+// correlate the result by hand. `awaitEvent` wraps that pattern: subscribe to the result
+// event FIRST, fire the native call, then resolve with the next matching payload. The
+// event still fires for any standalone `addListener` subscriber, so this is purely
+// additive — unsolicited pushes keep arriving on the events as before.
+// ---------------------------------------------------------------------------
+
+function awaitEvent<K extends keyof EventMap>(
+  event: K,
+  fire: () => void,
+  opts: { rejectOn?: keyof EventMap; timeoutMs?: number } = {},
+): Promise<EventMap[K]> {
+  return new Promise<EventMap[K]>((resolve, reject) => {
+    let settled = false;
+    const subs: Subscription[] = [];
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const cleanup = () => {
+      subs.forEach((s) => s.remove());
+      if (timer !== undefined) clearTimeout(timer);
+    };
+    // Subscribe BEFORE firing so a fast synchronous native emit is never missed.
+    subs.push(
+      addListener(event, (payload) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(payload);
+      }),
+    );
+    if (opts.rejectOn) {
+      subs.push(
+        addListener(opts.rejectOn, (payload) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          const message =
+            (payload as { error?: string })?.error ??
+            `Received '${String(opts.rejectOn)}'`;
+          reject(new Error(String(message)));
+        }),
+      );
+    }
+    if (opts.timeoutMs && opts.timeoutMs > 0) {
+      timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(
+          new Error(
+            `Timed out after ${opts.timeoutMs}ms waiting for '${String(event)}'.`,
+          ),
+        );
+      }, opts.timeoutMs);
+    }
+    try {
+      fire();
+    } catch (error) {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(error instanceof Error ? error : new Error(String(error)));
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Offer tracking (§4.7) — unified TS API over the two native bridge shapes.
 //
 // iOS native takes ONE OfferTrackRequest JSON (campaign fields + the single offer
@@ -595,20 +482,36 @@ export const BeamableNotifications = {
   },
 
   // Permission
+  /**
+   * Request notification permission and RESOLVE with the outcome — no need to pre-subscribe
+   * to `permissionResult` (that event still fires too). No timeout: the OS dialog waits on
+   * the user. Resolves `{ granted: false }` on unsupported platforms.
+   */
   requestPermission(
     options: PermissionOptions = { alert: true, badge: true, sound: true },
-  ): void {
-    if (!isBeamableNotificationsSupported) return;
-    if (IS_IOS) {
-      IosNative.requestPermission(options);
-      return;
+  ): Promise<PermissionResult> {
+    if (!isBeamableNotificationsSupported) {
+      return Promise.resolve({ status: 'denied', granted: false });
     }
-    BeamablePush.requestPermission();
+    return awaitEvent('permissionResult', () => {
+      if (IS_IOS) IosNative.requestPermission(options);
+      else BeamablePush.requestPermission();
+    });
   },
-  getPermissionStatus(): void {
-    if (!isBeamableNotificationsSupported) return;
-    if (IS_IOS) IosNative.getPermissionStatus();
-    // Android: no bridged status query; result arrives via requestPermission.
+  /**
+   * Read the current permission status. Resolves with the status (iOS). Android has no
+   * bridged status query — the status only arrives via {@link requestPermission} — so this
+   * resolves `{ status: 'notDetermined' }` there.
+   */
+  getPermissionStatus(): Promise<PermissionResult> {
+    if (IS_IOS) {
+      return awaitEvent(
+        'permissionResult',
+        () => IosNative.getPermissionStatus(),
+        { timeoutMs: 5000 },
+      );
+    }
+    return Promise.resolve({ status: 'notDetermined', granted: false });
   },
 
   // Local notifications
@@ -653,20 +556,42 @@ export const BeamableNotifications = {
     }
     BeamablePush.cancelAll();
   },
-  getPending(): void {
-    if (!isBeamableNotificationsSupported) return;
-    if (IS_IOS) IosNative.getPending();
-    // Not supported on Android.
+  /**
+   * Resolve the pending (scheduled, not-yet-delivered) local notifications. iOS only;
+   * resolves `[]` on Android. The `pendingNotifications` event still fires too (iOS).
+   */
+  getPending(): Promise<NotificationData[]> {
+    if (IS_IOS) {
+      return awaitEvent('pendingNotifications', () => IosNative.getPending(), {
+        timeoutMs: 5000,
+      });
+    }
+    return Promise.resolve([]);
   },
 
   // Remote (FCM/APNs).
-  registerForRemote(): void {
-    if (!isBeamableNotificationsSupported) return;
-    if (IS_IOS) {
-      IosNative.registerForRemote();
-      return;
+  /**
+   * Register for remote push and RESOLVE with the device token — no need to pre-subscribe
+   * to `tokenReceived` (that event still fires too). Rejects on `tokenError`, and times out
+   * (default 30s) because a token never arrives on a simulator/emulator or without realm
+   * push credentials. Rejects on unsupported platforms.
+   */
+  registerForRemote(
+    options: { timeoutMs?: number } = {},
+  ): Promise<{ token: string }> {
+    if (!isBeamableNotificationsSupported) {
+      return Promise.reject(
+        new Error('Remote push is not supported on this platform.'),
+      );
     }
-    BeamablePush.fetchToken();
+    return awaitEvent(
+      'tokenReceived',
+      () => {
+        if (IS_IOS) IosNative.registerForRemote();
+        else BeamablePush.fetchToken();
+      },
+      { rejectOn: 'tokenError', timeoutMs: options.timeoutMs ?? 30000 },
+    );
   },
   unregisterForRemote(): void {
     if (!isBeamableNotificationsSupported) return;
@@ -701,8 +626,19 @@ export const BeamableNotifications = {
     const mod = IS_IOS ? IosNative : BeamablePush;
     if (mod && typeof mod.clearAuth === 'function') mod.clearAuth();
   },
-  getDeliveryReceipts(): void {
-    if (IS_IOS) IosNative.getDeliveryReceipts();
+  /**
+   * Resolve stored delivery receipts. iOS only; resolves `[]` on Android. The
+   * `deliveryReceipts` event still fires too (iOS).
+   */
+  getDeliveryReceipts(): Promise<DeliveryReceipt[]> {
+    if (IS_IOS) {
+      return awaitEvent(
+        'deliveryReceipts',
+        () => IosNative.getDeliveryReceipts(),
+        { timeoutMs: 5000 },
+      );
+    }
+    return Promise.resolve([]);
   },
   setBadge(count: number): void {
     if (IS_IOS) IosNative.setBadge(count);
@@ -781,6 +717,15 @@ export const BeamableNotifications = {
     });
   },
 
+  /**
+   * Web-only escape hatch: swap the transport the WEB build uses to reach a native host
+   * (default is the bundled gree/unity-webview bridge). No-op on native iOS/Android, where
+   * the real native module is used directly — present only for cross-platform parity.
+   */
+  setWebTransport(_transport: WebTransport | null): void {
+    // intentional no-op on native
+  },
+
   addListener,
   addDeepLinkListener,
 };
@@ -820,6 +765,27 @@ export type {
 
 // Pure payload parsers (also available on the BeamNotifications façade).
 export { deepLinkFromNotification, campaignCoordsFromNotification } from './parsing';
+
+// React hooks (P0 ergonomics) — the idiomatic way to consume the SDK from components.
+// (`BeamNotificationsState` is re-exported via `export * from './types'` above.)
+export {
+  BeamNotificationEvent,
+  BeamLaunchNotification,
+  BeamPushNotifications,
+} from './hooks';
+
+// Web/Unity transport surface. Inert on native iOS/Android (the helpers no-op there);
+// functional when the WEB build runs inside a Unity WebView. Exposed so a host app can build
+// diagnostics UI or supply a custom transport to `BeamNotifications.setWebTransport(...)`.
+export {
+  unityTransport,
+  isUnityWebView,
+  sendToUnity,
+  addUnityMessageListener,
+  addUnityPlatformListener,
+  getUnityHostPlatform,
+} from './unity/unityBridge';
+export type { UnityHostPlatform } from './unity/unityBridge';
 
 // Back-compat convenience wrappers (the BeamNotifications façade is the recommended API).
 // `isBeamableNotificationsSupported`, `BEAMABLE_EVENTS`, and `BeamableEvent` are defined in

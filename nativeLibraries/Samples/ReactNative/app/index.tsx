@@ -19,7 +19,12 @@ import {
   initBeam,
   type BeamStatus,
 } from '../src/beam/beamClient';
-import { BeamNotifications } from '../src/notifications/beamableNotifications';
+import {
+  BeamNotifications,
+  BeamPushNotifications,
+  BeamNotificationEvent,
+  BeamLaunchNotification,
+} from '@beamable/notifications-react-native';
 import type {
   BeamableEvent,
   NotificationData,
@@ -61,22 +66,20 @@ export default function Home() {
   // Every native SDK event, captured raw with its payload (the merged callbacks view).
   const [events, setEvents] = useState<EventEntry[]>([]);
   const eventCounter = useRef(0);
-  // The device push token (APNs on iOS, FCM on Android) from the native SDK's
-  // `tokenReceived` event. Needed to register this device with the microservice.
-  const [pushToken, setPushToken] = useState<string | null>(null);
   // §4 funnel coordinates. Editable by the user; auto-filled from the campaign push that
   // opened (or was tapped in) the app — see `applyCampaignCoords`.
   const [campaignId, setCampaignId] = useState('');
   const [nodeId, setNodeId] = useState('');
-  // Native support is static on iOS/Android but DYNAMIC on web: it flips to
-  // true once a Unity WebView host reports a native-capable platform.
-  const [nativeSupported, setNativeSupported] = useState(
-    BeamNotifications.isSupported,
-  );
-  useEffect(() => {
-    const sub = BeamNotifications.addSupportListener(setNativeSupported);
-    return () => sub.remove();
-  }, []);
+
+  // One P0 hook replaces the old nativeSupported/pushToken state and their effects: it
+  // initializes on mount and tracks support (DYNAMIC on web — flips true once a Unity
+  // WebView host reports native support), permission, the device push token, and the last
+  // opened notification, all as reactive state. It also hands back the Promise-returning
+  // actions used by the buttons below.
+  const push = BeamPushNotifications();
+  const nativeSupported = push.isSupported;
+  const pushToken = push.token;
+
   const platformLabel = BeamNotifications.hostPlatformLabel();
   const isAndroidHost = BeamNotifications.devicePushPlatform() === 'fcm';
   const remoteProvider = isAndroidHost ? 'FCM' : 'APNs';
@@ -99,12 +102,12 @@ export default function Home() {
   };
 
   // ── Native events → the color-coded event log ─────────────────────────────
-  // Subscribe to EVERY event the SDK emits and capture each firing with its full
-  // payload. This is the raw view of the native library at work (permission,
-  // token, opened/received/presented, delivery receipts, funnel results).
+  // Subscribe to EVERY event the SDK emits and capture each firing with its full payload —
+  // the raw view of the native library at work. This debug panel intentionally subscribes
+  // to the whole vocabulary in a loop (see the `subscribe` cast above; a loop-safe listener
+  // is a planned follow-up), so it stays a plain effect rather than a per-event hook.
   useEffect(() => {
     if (!nativeSupported) return;
-    BeamNotifications.initialize();
     const subs = BeamNotifications.events.map((event) =>
       subscribe(event, (data) =>
         setEvents((prev) =>
@@ -118,41 +121,31 @@ export default function Home() {
     return () => subs.forEach((s) => s.remove());
   }, [nativeSupported]);
 
-  // ── Native events → app side effects ──────────────────────────────────────
-  // The token registration flow and campaign-coordinate capture. (Display of the
-  // raw events happens in the effect above; here we only react to them.)
-  useEffect(() => {
-    if (!nativeSupported) return;
-    const subs = [
-      // Push token arrived → remember it and register this device with Beamable
-      // so the realm can target it. This is the core token-registration flow.
-      BeamNotifications.addListener('tokenReceived', async ({ token }) => {
-        setPushToken(token);
-        if (!getPushService()) return append('Token not registered — connect to Beamable first');
-        try {
-          const res = await registerDevice(token, BeamNotifications.devicePushPlatform());
-          append(`Device registered with CampaignService (${res.deviceCount} total)`);
-        } catch (e) {
-          append(`Token register error: ${e instanceof Error ? e.message : String(e)}`);
-        }
-      }),
-      // App already running: a tapped campaign push replaces the funnel coordinates.
-      BeamNotifications.addListener('notificationOpened', (n) => applyCampaignCoords(n)),
-    ];
-    return () => subs.forEach((s) => s.remove());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nativeSupported]);
+  // ── Native events → app side effects (via the P0 event hook) ──────────────
+  // Push token arrived → register this device with Beamable so the realm can target it.
+  // (`push.token` reflects the token too; here we run the registration side effect.) The
+  // hook owns subscribe/unsubscribe — no manual effect, no exhaustive-deps disable.
+  BeamNotificationEvent('tokenReceived', async ({ token }) => {
+    if (!getPushService()) return append('Token not registered — connect to Beamable first');
+    try {
+      const res = await registerDevice(token, BeamNotifications.devicePushPlatform());
+      append(`Device registered with CampaignService (${res.deviceCount} total)`);
+    } catch (e) {
+      append(`Token register error: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  });
+
+  // App already running: a tapped campaign push replaces the funnel coordinates.
+  BeamNotificationEvent('notificationOpened', (n) => applyCampaignCoords(n));
 
   // Cold start: if the app was launched by tapping a campaign push, seed §4's funnel
-  // coordinates from its payload. `getLaunchNotification()` reads the cached launch payload
+  // coordinates from its payload. `BeamLaunchNotification` resolves the cached launch payload
   // (also consumed for routing in app/_layout.tsx), so reading it here has no side effect.
+  const launch = BeamLaunchNotification();
   useEffect(() => {
-    if (!nativeSupported) return;
-    BeamNotifications.getLaunchNotification().then((launch) => {
-      if (launch) applyCampaignCoords(launch);
-    });
+    if (launch) applyCampaignCoords(launch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nativeSupported]);
+  }, [launch]);
 
   // 1) Web SDK ------------------------------------------------------------
   const connectBeam = async () => {
@@ -171,14 +164,24 @@ export default function Home() {
   };
 
   // 2) Permission & remote registration ----------------------------------
-  const beamAskPermission = () => {
-    BeamNotifications.requestPermission();
-    append('Requested notification permission (result on permissionResult event)');
+  // Both calls now RESOLVE with their result (the events still fire too, feeding the log
+  // and `push` state) — no need to correlate a separate event by hand.
+  const beamAskPermission = async () => {
+    append('Requesting notification permission…');
+    const result = await push.requestPermission();
+    append(`Permission: ${result.status}${result.granted ? ' (granted)' : ''}`);
   };
 
-  const beamRegisterRemote = () => {
-    BeamNotifications.registerForRemote();
-    append(`Registered for remote (${remoteProvider}). Token arrives on the tokenReceived event (physical device only).`);
+  const beamRegisterRemote = async () => {
+    append(`Registering for remote (${remoteProvider})…`);
+    try {
+      const { token } = await push.registerForRemote();
+      append(`Token received: ${token.slice(0, 12)}… (auto-registering with CampaignService)`);
+    } catch (e) {
+      append(
+        `Remote register failed: ${e instanceof Error ? e.message : String(e)} — needs a physical device + ${remoteProvider} credentials on your realm.`,
+      );
+    }
   };
 
   const beamFireLocal = () => {
@@ -318,6 +321,12 @@ export default function Home() {
               CampaignService microservice below. Remote push needs a physical device
               + {remoteProvider} credentials on your realm.
             </Text>
+            {push.permission && (
+              <Text style={styles.hint}>
+                Permission status: {push.permission.status}
+                {push.permission.granted ? ' · granted' : ''}
+              </Text>
+            )}
             <Button label="Request permission" onPress={beamAskPermission} />
             <Button label={`Register for remote (${remoteProvider})`} onPress={beamRegisterRemote} />
             <Button label="Fire local now → Details #777" onPress={beamFireLocal} />

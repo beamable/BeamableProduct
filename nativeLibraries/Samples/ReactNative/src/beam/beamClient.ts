@@ -14,8 +14,9 @@ import {
   StatsService,
 } from '@beamable/sdk';
 import { BEAM_CONFIG, isConfigured } from './config';
-// Platform-split: native → the package façade, web → the Unity host bridge.
-import { BeamNotifications } from '../notifications/beamableNotifications';
+// The package façade is platform-resolved: native → the native module, web → the built-in
+// Unity-WebView bridge (its `index.web.ts`). No per-app web file needed.
+import { BeamNotifications } from '@beamable/notifications-react-native';
 import { CampaignServiceClient } from './beamable/clients/CampaignServiceClient';
 
 export type BeamStatus =

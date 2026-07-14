@@ -99,9 +99,22 @@ npx uri-scheme open "beamrnsample://details/42" --ios   # or --android
 
 ### Notification → deep-link routing
 
-`app/_layout.tsx` listens for `notificationOpened` and opens the payload's deep link via
-`Linking.openURL`, and reads `getLaunchNotification()` so a tap that **cold-launches**
-the app still routes correctly. Background the app, then tap a notification to test it.
+`app/_layout.tsx` uses the package's React hooks: `BeamNotificationEvent('notificationOpened', …)`
+opens the payload's deep link via `Linking.openURL`, and `BeamLaunchNotification()` covers a tap
+that **cold-launches** the app so it still routes correctly. Background the app, then tap a
+notification to test it.
+
+### React hooks (the ergonomic API)
+
+Both screens consume the package's hooks rather than hand-wiring `addListener`/`useEffect`:
+
+- `BeamPushNotifications()` — initializes on mount and returns reactive `{ isSupported, permission,
+  token, lastOpened }` plus the Promise-returning `requestPermission` / `registerForRemote`.
+- `BeamNotificationEvent(event, handler)` — a lifecycle-managed subscription to any event.
+- `BeamLaunchNotification()` — the cold-start payload, as state.
+
+Permission and remote registration `await` their result (`await push.requestPermission()`,
+`await push.registerForRemote()`); the matching events still fire too and feed the live event log.
 
 ### Android receive-time handler (runs even when killed)
 
@@ -144,17 +157,18 @@ src/
     beamClient.ts    # Beam.init() singleton + getPushService()
     beamable/clients/# generated microservice client (CampaignServiceClient)
     pushNotifications.ts # binds device register/list to CampaignServiceClient
-  notifications/
-    beamableNotifications.ts      # app glue over @beamable/notifications-react-native
-    beamableNotifications.web.ts  # web variant → Unity WebView bridge (optional)
-    notificationParsing.ts        # shared payload parsers
   linking/links.ts   # scheme + URL/path helpers
-  unity/             # Unity WebView bridge (optional; only for the web build)
+  unity/UnityBridgeSection.tsx  # demo panel over the package's Unity-bridge helpers (web only)
 app.json             # registers the "@beamable/notifications-react-native" config plugin
 metro.config.js      # withBeamableSdk() from @beamable/notifications-react-native/metro
 ```
 
-> The Expo config plugin (iOS NSE + Android setup) now ships **inside**
+> Screens import `BeamNotifications` + the hooks **directly from
+> `@beamable/notifications-react-native`** on every platform — there is no app-side notifications
+> wrapper or `.web.ts` file. The package ships its own platform-resolved web build (its
+> `index.web.ts`, routed over the built-in Unity-WebView bridge), which Metro auto-selects on web.
+
+> The Expo config plugin (iOS NSE + Android setup) also ships **inside**
 > `@beamable/notifications-react-native` (its `app.plugin.js`) — referenced by name in
 > `app.json`, no local `plugins/` folder needed.
 

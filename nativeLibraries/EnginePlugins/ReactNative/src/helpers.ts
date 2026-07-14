@@ -18,6 +18,8 @@
  * removed. Funnel analytics (Received/Opened/Sent/Clicked/Converted) are emitted natively
  * via the Beamable analytics endpoint; the sample no longer POSTs a webhook.
  */
+// Values from `./index` (Metro platform-swaps to `./index.web.ts` on web); types from
+// `./types` (shared, platform-agnostic).
 import {
   BeamableNotifications,
   addListener,
@@ -27,9 +29,12 @@ import {
 import type {
   ConfigureAuthOptions,
   DeepLinkEvent,
+  DeliveryReceipt,
   EventMap,
   LocalRequest,
-} from './index';
+  NotificationData,
+  PermissionResult,
+} from './types';
 
 // `isBeamableNotificationsSupported`, `BEAMABLE_EVENTS`, and `BeamableEvent` now live in
 // ./index (single source, shared with the BeamNotifications façade). These wrappers just add
@@ -64,20 +69,21 @@ export function initBeamableNotifications(): void {
   if (isBeamableNotificationsSupported) BeamableNotifications.initialize();
 }
 
-/** Ask for notification permission. Result arrives on the `permissionResult` event. */
-export function requestBeamablePermission(): void {
-  if (isBeamableNotificationsSupported)
-    BeamableNotifications.requestPermission({
-      alert: true,
-      badge: true,
-      sound: true,
-    });
+/**
+ * Ask for notification permission. Resolves with the outcome (the `permissionResult` event
+ * still fires too). Resolves `{ granted: false }` on unsupported platforms.
+ */
+export function requestBeamablePermission(): Promise<PermissionResult> {
+  return BeamableNotifications.requestPermission({
+    alert: true,
+    badge: true,
+    sound: true,
+  });
 }
 
-/** Re-read the current permission status. Result arrives on `permissionResult` (iOS). */
-export function getPermissionStatus(): void {
-  if (isBeamableNotificationsSupported)
-    BeamableNotifications.getPermissionStatus();
+/** Re-read the current permission status. Resolves with it (iOS; `notDetermined` on Android). */
+export function getPermissionStatus(): Promise<PermissionResult> {
+  return BeamableNotifications.getPermissionStatus();
 }
 
 /** Schedule a local notification with a full request (passthrough to the SDK). */
@@ -96,15 +102,23 @@ export function cancelAllLocal(): void {
   if (isBeamableNotificationsSupported) BeamableNotifications.cancelAllLocal();
 }
 
-/** Request the pending notifications. Result arrives on `pendingNotifications` (iOS). */
-export function getPending(): void {
-  if (isBeamableNotificationsSupported) BeamableNotifications.getPending();
+/**
+ * Resolve the pending (scheduled, not-yet-delivered) local notifications. iOS only;
+ * resolves `[]` on Android / unsupported platforms. The `pendingNotifications` event still
+ * fires too (iOS).
+ */
+export function getPending(): Promise<NotificationData[]> {
+  return BeamableNotifications.getPending();
 }
 
-/** Register for remote push. Token arrives on the `tokenReceived` event (APNs / FCM). */
-export function registerForRemote(): void {
-  if (isBeamableNotificationsSupported)
-    BeamableNotifications.registerForRemote();
+/**
+ * Register for remote push and resolve with the device token (the `tokenReceived` event
+ * still fires too). Rejects on `tokenError`/timeout and on unsupported platforms.
+ */
+export function registerForRemote(options?: {
+  timeoutMs?: number;
+}): Promise<{ token: string }> {
+  return BeamableNotifications.registerForRemote(options);
 }
 
 /** Stop receiving remote push (iOS). */
@@ -113,10 +127,12 @@ export function unregisterForRemote(): void {
     BeamableNotifications.unregisterForRemote();
 }
 
-/** Request stored delivery receipts. Result arrives on `deliveryReceipts` (iOS). */
-export function getDeliveryReceipts(): void {
-  if (isBeamableNotificationsSupported)
-    BeamableNotifications.getDeliveryReceipts();
+/**
+ * Resolve stored delivery receipts. iOS only; resolves `[]` on Android / unsupported
+ * platforms. The `deliveryReceipts` event still fires too (iOS).
+ */
+export function getDeliveryReceipts(): Promise<DeliveryReceipt[]> {
+  return BeamableNotifications.getDeliveryReceipts();
 }
 
 /**

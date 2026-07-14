@@ -1,8 +1,16 @@
 import { Platform } from 'react-native';
 
+import type { Subscription, WebTransport } from '../types';
+
 /**
- * Bridge to gree/unity-webview (https://github.com/gree/unity-webview) when
- * this app's web build runs inside a Unity WebView.
+ * Bridge to gree/unity-webview (https://github.com/gree/unity-webview) when a React web
+ * build runs inside a Unity WebView. This is the DEFAULT web transport for
+ * `@beamable/notifications-react-native` (see `index.web.ts`); it exports both the
+ * `WebTransport` implementation (`unityTransport`) and the raw helpers a host app's demo /
+ * diagnostics UI may want.
+ *
+ * Inert off-web (native builds import this too via the shared re-exports; `isWeb` is false
+ * there so nothing runs).
  *
  * Transport:
  *  - Page → Unity: `window.Unity.call(msg)`. On Android gree exposes this
@@ -34,7 +42,7 @@ declare global {
 
 const isWeb = Platform.OS === 'web' && typeof window !== 'undefined';
 
-/** What the Unity host reports about itself in the handshake. */
+/** What the Unity host reports about itself in the handshake (a `WebHostInfo`). */
 export type UnityHostPlatform = {
   /** e.g. 'ios', 'android', 'osx-editor', 'windows-editor', 'osx' */
   os: string;
@@ -68,7 +76,7 @@ export function getUnityHostPlatform(): UnityHostPlatform | null {
 /** Subscribe to the host-platform handshake. Fires immediately if already known. */
 export function addUnityPlatformListener(
   listener: Listener<UnityHostPlatform>,
-): { remove: () => void } {
+): Subscription {
   platformListeners.add(listener);
   if (hostPlatform) listener(hostPlatform);
   return { remove: () => platformListeners.delete(listener) };
@@ -125,7 +133,7 @@ export function requestUnity<T>(
 export function addUnityEventListener(
   name: string,
   listener: Listener<unknown>,
-): { remove: () => void } {
+): Subscription {
   let set = eventListeners.get(name);
   if (!set) {
     set = new Set();
@@ -136,9 +144,7 @@ export function addUnityEventListener(
 }
 
 /** Subscribe to raw (non-protocol) messages from Unity. Returns { remove }. */
-export function addUnityMessageListener(listener: Listener<string>): {
-  remove: () => void;
-} {
+export function addUnityMessageListener(listener: Listener<string>): Subscription {
   rawListeners.add(listener);
   return { remove: () => rawListeners.delete(listener) };
 }
@@ -196,3 +202,27 @@ if (isWeb) {
     }
   }, 500);
 }
+
+/**
+ * The default web `WebTransport` — routes façade calls to a Unity WebView host over the
+ * gree bridge above. Support is dynamic: false until the Unity handshake reports a
+ * native-capable host.
+ */
+export const unityTransport: WebTransport = {
+  isSupported: () => getUnityHostPlatform()?.nativeSupported ?? false,
+  getHost: () => {
+    const h = getUnityHostPlatform();
+    return h
+      ? { os: h.os, isEditor: h.isEditor, nativeSupported: h.nativeSupported }
+      : null;
+  },
+  addSupportListener: (listener) => {
+    listener(getUnityHostPlatform()?.nativeSupported ?? false);
+    return addUnityPlatformListener((p) => listener(p.nativeSupported));
+  },
+  call: (method, args) => {
+    callUnity(method, args);
+  },
+  request: (method, args, timeoutMs) => requestUnity(method, args, timeoutMs),
+  addEventListener: (name, listener) => addUnityEventListener(name, listener),
+};

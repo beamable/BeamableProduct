@@ -1,70 +1,53 @@
 // Load SDK polyfills as early as possible (from the Beamable Web SDK's RN build).
 import '@beamable/sdk/react-native/polyfills';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import * as Linking from 'expo-linking';
 
-import { BeamNotifications } from '../src/notifications/beamableNotifications';
+import {
+  BeamNotifications,
+  BeamNotificationEvent,
+  BeamLaunchNotification,
+} from '@beamable/notifications-react-native';
 
 export default function RootLayout() {
-  // Static on iOS/Android; on web it flips to true once a Unity WebView host
-  // reports a native-capable platform (see beamableNotifications.web.ts).
-  const [nativeSupported, setNativeSupported] = useState(
-    BeamNotifications.isSupported,
-  );
+  // Initialize the native SDK once at app start (idempotent, safe no-op on web).
   useEffect(() => {
-    const sub = BeamNotifications.addSupportListener(setNativeSupported);
-    return () => sub.remove();
+    BeamNotifications.initialize();
   }, []);
 
-  // ── Beamable Notifications (native iOS + Android SDK) ──────────────────────
-  // The sole notification → deep-link path. A tapped notification carries a full
-  // URL deep link, which we open through the OS exactly like a real server push
-  // would. Covers local + remote, foreground/background/cold-start, on both
-  // platforms (iOS via the Swift core, Android via the .aar's RN bridges).
+  // ── Beamable Notifications → deep-link routing ────────────────────────────
+  // A tapped notification carries a full URL deep link, which we open through the OS
+  // exactly like a real server push would. The two P0 hooks own subscription lifecycle
+  // and cold-start resolution — no manual addListener/getLaunchNotification effects, no
+  // nativeSupported gate, no exhaustive-deps disables.
+
+  // Warm start: user taps a Beamable notification while the app is running.
+  BeamNotificationEvent('notificationOpened', (n) => {
+    const url = BeamNotifications.deepLinkFromNotification(n);
+    if (url) Linking.openURL(url).catch(() => {});
+  });
+
+  // Cold start: app launched by tapping a notification (local OR remote).
+  const launch = BeamLaunchNotification();
   useEffect(() => {
-    if (!nativeSupported) return;
+    if (!launch) return;
+    const url = BeamNotifications.deepLinkFromNotification(launch);
+    if (url) Linking.openURL(url).catch(() => {});
+  }, [launch]);
 
-    BeamNotifications.initialize();
-
-    const routeFromUrl = (url: string | null) => {
-      if (url) Linking.openURL(url).catch(() => {});
-    };
-
-    // Foreground delivery — a notification arrives while the app is foregrounded.
-    // (Funnel analytics for delivery now happen natively; nothing to report here.)
-    const presentedSub = BeamNotifications.addListener('notificationPresented', () => {});
-
-    // App already running: user taps a Beamable notification → route to its deep link.
-    const tapSub = BeamNotifications.addListener('notificationOpened', (n) => {
-      routeFromUrl(BeamNotifications.deepLinkFromNotification(n));
-    });
-
-    // Cold start: app launched by tapping a notification (local OR remote). The
-    // native SDK claims the notification-center delegate during app launch (see
-    // BMNLaunchInstaller), so the launch tap is captured and surfaced here.
-    BeamNotifications.getLaunchNotification().then((launch) => {
-      if (launch) {
-        routeFromUrl(BeamNotifications.deepLinkFromNotification(launch));
-      }
-    });
-
-    // Android-only: the native deeplink module captures URL-scheme VIEW intents. We just
-    // log it here — expo-router already performs the actual navigation for VIEW intents, so
-    // routing again would double-navigate. No-op on iOS (the listener is a stub there).
-    const deepLinkSub = BeamNotifications.addDeepLinkListener((e) => {
+  // Android-only: the native deeplink module captures URL-scheme VIEW intents. expo-router
+  // already navigates for these, so we only log (routing again would double-navigate).
+  // Inert stub on iOS / web.
+  useEffect(() => {
+    const sub = BeamNotifications.addDeepLinkListener((e) =>
       console.log(
         `[Beamable] native deep link captured: ${e.url} (coldStart=${e.isColdStart})`,
-      );
-    });
-
-    return () => {
-      presentedSub.remove();
-      tapSub.remove();
-      deepLinkSub.remove();
-    };
-  }, [nativeSupported]);
+      ),
+    );
+    return () => sub.remove();
+  }, []);
 
   return (
     <Stack>

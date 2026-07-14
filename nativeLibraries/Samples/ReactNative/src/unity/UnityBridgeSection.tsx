@@ -8,7 +8,7 @@ import {
   isUnityWebView,
   sendToUnity,
   type UnityHostPlatform,
-} from './unityBridge';
+} from '@beamable/notifications-react-native';
 
 /**
  * Demo panel for the Unity ↔ React bridge. Rendered only on web

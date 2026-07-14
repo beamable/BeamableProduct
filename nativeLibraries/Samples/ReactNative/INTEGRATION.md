@@ -186,23 +186,46 @@ Because these are native changes, the app runs as a **dev build** (`expo run:ios
 
 ## B3. Runtime flow
 
-### Initialize + request permission + register for remote
+### React hooks (recommended) — how this sample wires it
 
-```ts
-import { BeamNotifications } from '@beamable/notifications-react-native';
+The package ships three hooks; this sample uses all three (see `app/index.tsx` and
+`app/_layout.tsx`). They own subscription lifecycle and expose push state as React state:
 
-BeamNotifications.initialize();        // idempotent; also called in app/_layout.tsx
-BeamNotifications.requestPermission(); // result arrives on the permissionResult event
-BeamNotifications.registerForRemote(); // APNs (iOS) / FCM (Android); token on tokenReceived
+```tsx
+import {
+  BeamNotifications,
+  BeamPushNotifications,
+  BeamNotificationEvent,
+  BeamLaunchNotification,
+} from '@beamable/notifications-react-native';
+
+// One hook initializes on mount and tracks support / permission / token / lastOpened:
+const push = BeamPushNotifications();
+
+// Both actions RESOLVE with their result (the events still fire too):
+const perm = await push.requestPermission();          // PermissionResult
+const { token } = await push.registerForRemote();     // APNs (iOS) / FCM (Android)
+
+// Subscribe to any event for the component's lifetime — no manual effect/cleanup:
+BeamNotificationEvent('notificationOpened', (n) => { /* route */ });
+
+// Cold-start launch notification, resolved once as state:
+const launch = BeamLaunchNotification();
 ```
+
+> The **same import works on web** — the package ships a platform-resolved web build
+> (`@beamable/notifications-react-native`'s `index.web.ts`) that Metro auto-selects, routing
+> calls over the built-in Unity-WebView bridge. No per-app `.web.ts` file, and the hooks behave
+> identically on native and web.
 
 ### Token registration flow (the core loop)
 
-`registerForRemote()` is fire-and-forget; the token arrives on the **`tokenReceived`**
-event. Forward it to `CampaignService`:
+`registerForRemote()` resolves with the token **and** fires the `tokenReceived` event. The
+sample forwards the token to `CampaignService` from a `BeamNotificationEvent` handler so
+it also covers tokens that arrive unsolicited (e.g. FCM refresh):
 
-```ts
-BeamNotifications.addListener('tokenReceived', async ({ token }) => {
+```tsx
+BeamNotificationEvent('tokenReceived', async ({ token }) => {
   await registerDevice(token, BeamNotifications.devicePushPlatform()); // → campaignServiceClient.registerDeviceToken
 });
 ```
@@ -214,15 +237,23 @@ List the player's devices any time with `listDevices()` (→ `listMyDevices()`).
 A tapped notification carries a deep link. Route it through the OS both while running
 and on cold start (see `app/_layout.tsx`):
 
-```ts
-BeamNotifications.addListener('notificationOpened', (n) => {
+```tsx
+BeamNotificationEvent('notificationOpened', (n) => {
   const url = BeamNotifications.deepLinkFromNotification(n);   // full deep-link URL, or null
   if (url) Linking.openURL(url);
 });
-BeamNotifications.getLaunchNotification().then(
-  (n) => n && Linking.openURL(BeamNotifications.deepLinkFromNotification(n)!),
-);
+
+const launch = BeamLaunchNotification();
+useEffect(() => {
+  if (!launch) return;
+  const url = BeamNotifications.deepLinkFromNotification(launch);
+  if (url) Linking.openURL(url);
+}, [launch]);
 ```
+
+> **Imperative (non-React) equivalent.** Outside components, call the façade directly:
+> `await BeamNotifications.requestPermission()`, `await BeamNotifications.registerForRemote()`,
+> and `BeamNotifications.addListener('notificationOpened', …)` / `getLaunchNotification()`.
 
 ### Track Clicked / Converted (funnel analytics)
 
@@ -283,8 +314,9 @@ On a **physical device** with a **dev build**:
    and the app deep-links into `details/<id>`.
 6. Track clicked / converted → `funnelResult` reports the send.
 
-> Optional: this sample's web build can also run inside a **Unity WebView** (see
-> `src/unity/` + `src/notifications/beamableNotifications.web.ts`), where the same calls
-> are routed to the Unity `com.beamable.notifications` plugin. That path is optional and
-> lives entirely in the app/Unity project — the notifications library itself contains no
-> Unity code.
+> Optional: the web build can also run inside a **Unity WebView**, where the same calls route
+> to the Unity `com.beamable.notifications` plugin. This is now **built into the package** — its
+> `index.web.ts` ships the gree/unity-webview transport, so no app-side web file is required.
+> Point a different host at it with `BeamNotifications.setWebTransport(...)`. The sample's
+> `src/unity/UnityBridgeSection.tsx` is just a demo panel over the bridge helpers the package
+> re-exports.
