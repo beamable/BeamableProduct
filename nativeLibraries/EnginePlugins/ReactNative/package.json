@@ -11,6 +11,7 @@
     "ios",
     "app.plugin.js",
     "plugin",
+    "metro.js",
     "BeamableNotificationsRN.podspec",
     "react-native.config.js",
     "!android/build",

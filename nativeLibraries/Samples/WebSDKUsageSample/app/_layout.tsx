@@ -1,5 +1,5 @@
-// Load SDK polyfills as early as possible (from the RN SDK adapter package).
-import '@beamable/sdk-react-native/polyfills';
+// Load SDK polyfills as early as possible (from the Beamable Web SDK's RN build).
+import '@beamable/sdk/react-native/polyfills';
 
 import { Stack } from 'expo-router';
 

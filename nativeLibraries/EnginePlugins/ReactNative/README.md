@@ -92,4 +92,27 @@ APNs credentials on your realm.
 
 ## Web SDK in React Native
 
-Token storage / SDK polyfills are a separate concern — see **`@beamable/sdk-react-native`**.
+Running the Beamable Web SDK (`@beamable/sdk`) in React Native is a separate concern from
+notifications, and the SDK now handles it natively: it ships a `react-native` build target
+with AsyncStorage-backed token/config/content storage, selected automatically by Metro via
+the package `exports` `"react-native"` condition.
+
+This package ships one small piece of that story — a Metro config helper that turns on
+package-exports resolution and watches the linked `file:` SDK source during local
+development:
+
+```js
+// metro.config.js
+const { getDefaultConfig } = require('expo/metro-config');
+const { withBeamableSdk } = require('@beamable/notifications-react-native/metro');
+module.exports = withBeamableSdk(getDefaultConfig(__dirname));
+```
+
+Then, once, before importing the SDK (e.g. top of `app/_layout.tsx`):
+
+```ts
+import '@beamable/sdk/react-native/polyfills';
+```
+
+No explicit token storage is needed — `Beam.init({ ... })` defaults to the AsyncStorage
+store. See the samples under `nativeLibraries/Samples/`.

@@ -55,63 +55,54 @@ For **remote** delivery, configure push provider credentials on the realm:
 Remote push also requires a **physical device** — neither APNs nor FCM issue a usable
 token on a simulator/emulator.
 
-## A2. The Web SDK in React Native — via `@beamable/sdk-react-native`
+## A2. The Web SDK in React Native — native `react-native` build
 
-The Web SDK (`@beamable/sdk`) ships only `browser` and `node` builds — it has **no
-`react-native` export condition**. So RN needs three adaptations: force Metro onto the
-browser build, polyfill the browser globals it assumes, and give it an `AsyncStorage`
-token store. Rather than hand-roll these in every app, they're packaged in
-**`@beamable/sdk-react-native`** (this sample depends on it). Three one-liners:
+The Web SDK (`@beamable/sdk`) ships a first-class **`react-native` build target** with
+AsyncStorage-backed token, config, and content storage. Metro selects it automatically via
+the package `exports` `"react-native"` condition — `import { Beam } from '@beamable/sdk'`
+just works, no adapter package. Two small pieces of wiring remain:
 
 **1. Install:**
 ```bash
-npm install @beamable/sdk @beamable/sdk-react-native @react-native-async-storage/async-storage
+npm install @beamable/sdk @react-native-async-storage/async-storage react-native-url-polyfill
 ```
 
-**2. `metro.config.js`** — resolve the browser build + watch the external `file:` sources:
+**2. `metro.config.js`** — enable package-exports resolution + watch the external `file:`
+sources. The helper lives in the notifications plugin:
 ```js
 const { getDefaultConfig } = require('expo/metro-config');
-const { withBeamableSdk } = require('@beamable/sdk-react-native/metro');
+const { withBeamableSdk } = require('@beamable/notifications-react-native/metro');
 module.exports = withBeamableSdk(getDefaultConfig(__dirname));
 ```
 
-**3. Entry + init** — import the polyfills before any SDK import, then use the adapter's
-token storage:
+**3. Entry + init** — import the polyfills once before any SDK import; no explicit token
+storage needed:
 ```ts
-// app/_layout.tsx — very first line
-import '@beamable/sdk-react-native/polyfills';
+// app/_layout.tsx — very first line (installs the URL polyfill Hermes lacks)
+import '@beamable/sdk/react-native/polyfills';
 
 // src/beam/beamClient.ts (abridged)
-import { RNTokenStorage } from '@beamable/sdk-react-native';
-import { hydrateLocalStorage } from '@beamable/sdk-react-native/polyfills';
-
-await hydrateLocalStorage();       // load the realm marker before Beam.init reads it
-const storage = await RNTokenStorage.create(BEAM_CONFIG.pid);
 const beam = await Beam.init({
   cid, pid, environment,
-  tokenStorage: storage as unknown as TokenStorage,
-  gameEngine: 'react-native',
+  gameEngine: 'react-native',   // defaults to the AsyncStorage token store
 });
 beam.use([AuthService, AccountService, /* … */]);
 beam.use(CampaignServiceClient);   // adds beam.campaignServiceClient
 ```
 
-> Ordering matters: `hydrateLocalStorage()` must be awaited before `Beam.init()` so the
-> SDK's `beam_cid`/`beam_pid` realm marker is readable synchronously — otherwise every
-> cold start looks like a realm change and the SDK wipes the guest tokens.
+> The guest session persists across app launches automatically: tokens and the
+> `beam_cid`/`beam_pid` realm marker both live in AsyncStorage, and the SDK loads them
+> (via `TokenStorage.hydrate()` + the async `readConfig`) before `Beam.init()` decides
+> whether to reuse or refresh the session — so a cold start no longer looks like a realm
+> change.
 
-**The one step a package can't do for you** — the SDK's browser build ships ES2022 static
-class blocks Hermes can't parse, so add the babel transform in **`babel.config.js`**:
-```js
-plugins: ['@babel/plugin-transform-class-static-block']
-```
+> The RN build is compiled to ES2021, so Hermes parses it directly — no
+> `@babel/plugin-transform-class-static-block` needed.
 
-> **Why an adapter (not the SDK or the notifications plugin)?** The clean long-term fix is
-> a `react-native` export condition + RN build *inside* `@beamable/sdk` — then Metro would
-> resolve it automatically and most of this would disappear. `@beamable/sdk-react-native`
-> is the no-SDK-build-change version. The notifications plugin
-> (`@beamable/notifications-react-native`) is about push, not the SDK, so token storage /
-> polyfills don't belong there.
+> **Why here?** Token storage and polyfills are an SDK concern, so they live *inside*
+> `@beamable/sdk` (its `react-native` build). The notifications plugin
+> (`@beamable/notifications-react-native`) is about push, not the SDK — it only carries the
+> `withBeamableSdk` Metro helper, which is build tooling.
 
 ## A3. The `CampaignService` microservice
 

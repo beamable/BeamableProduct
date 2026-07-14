@@ -1,8 +1,7 @@
-// Polyfills MUST load before the SDK is imported. The RN SDK adapter installs the
-// browser-global shims + fake-indexeddb (in the required order) and exposes
-// hydrateLocalStorage. On web the adapter's `.web` entry is a no-op.
-import '@beamable/sdk-react-native/polyfills';
-import { hydrateLocalStorage } from '@beamable/sdk-react-native/polyfills';
+// Polyfills MUST load before the SDK is imported. The Beamable Web SDK's native
+// react-native build installs the browser-global URL polyfill it needs; token,
+// config, and content storage all use AsyncStorage. On web this is a no-op.
+import '@beamable/sdk/react-native/polyfills';
 
 import {
   AccountService,
@@ -14,9 +13,7 @@ import {
   LeaderboardsService,
   StatsService,
 } from '@beamable/sdk';
-import type { TokenStorage } from '@beamable/sdk';
 import { BEAM_CONFIG, isConfigured } from './config';
-import { RNTokenStorage } from '@beamable/sdk-react-native';
 
 let beamInstance: Beam | null = null;
 let initPromise: Promise<Beam> | null = null;
@@ -55,20 +52,13 @@ export async function initBeam(): Promise<Beam> {
       });
     }
 
-    // Load the persisted localStorage entries (the SDK's `beam_cid`/`beam_pid`
-    // realm marker) before Beam.init() reads them synchronously. Without this,
-    // the SDK treats every cold start as a realm change and clears our tokens,
-    // creating a new guest player each launch.
-    await hydrateLocalStorage();
-
-    const storage = await RNTokenStorage.create(BEAM_CONFIG.pid);
-
+    // No explicit token storage: the SDK's react-native build defaults to an
+    // AsyncStorage-backed store that persists the guest session across app
+    // launches (config marker `beam_cid`/`beam_pid` + tokens all in AsyncStorage).
     const beam = await Beam.init({
       cid: BEAM_CONFIG.cid,
       pid: BEAM_CONFIG.pid,
       environment: BEAM_CONFIG.environment,
-      // RNTokenStorage replicates TokenStorage's public shape; see that file.
-      tokenStorage: storage as unknown as TokenStorage,
       gameEngine: 'react-native',
     });
 

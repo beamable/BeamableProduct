@@ -129,6 +129,12 @@ export class Beam extends ClientServicesMixin(BeamBase) {
   /** Connects the client SDK to the Beamable platform. This method is called automatically during `Beam.init()`. */
   private async connect(): Promise<void> {
     try {
+      // Load any persisted tokens before the synchronous `isExpired` read below.
+      // No-op for the synchronous browser/Node storages; the React Native
+      // (AsyncStorage) storage loads its tokens here. Optional-chained so
+      // custom token storages that predate this hook keep working.
+      await this.tokenStorage.hydrate?.();
+
       const savedConfig = await readConfig();
       // If the saved config cid does not match the current one, clear the token storage
       if (this.cid !== savedConfig.cid) this.tokenStorage.clear();

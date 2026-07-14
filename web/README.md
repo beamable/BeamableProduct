@@ -1,6 +1,6 @@
 # Beam Web SDK
 
-Beam Web SDK is a library built with TypeScript that can be used in both Node.js and browser environments.
+Beam Web SDK is a library built with TypeScript that can be used in Node.js, browser, and React Native environments.
 It is distributed in multiple module formats (ESM, CommonJS, IIFE) and provides full TypeScript declarations.
 
 ## Table of Contents
@@ -62,6 +62,39 @@ console.log(beam.player.id);
   console.log(beam.player.id);
 </script>
 ```
+
+#### React Native
+
+The SDK ships a native `react-native` build target that persists tokens, config, and content
+in [`@react-native-async-storage/async-storage`](https://react-native-async-storage.github.io/async-storage/).
+Metro selects it automatically via the package `exports` `"react-native"` condition, so the
+import is identical to every other platform:
+
+```ts
+// app entry (e.g. app/_layout.tsx) — once, before importing the SDK.
+// Installs the URL polyfill Hermes lacks; no other browser globals are needed.
+import '@beamable/sdk/react-native/polyfills';
+
+import { Beam } from '@beamable/sdk';
+
+// No explicit tokenStorage — Beam.init defaults to the AsyncStorage-backed store,
+// which persists the session across app launches.
+const beam = await Beam.init({
+  cid: 'YOUR_CUSTOMER_ID',
+  pid: 'YOUR_PROJECT_ID',
+  gameEngine: 'react-native',
+});
+```
+
+Install the peer dependencies alongside the SDK:
+
+```bash
+npm install @beamable/sdk @react-native-async-storage/async-storage react-native-url-polyfill
+```
+
+The RN build is compiled to ES2021, so Hermes parses it directly (no Babel static-block
+transform required). For a full Expo/Metro setup — including the `withBeamableSdk` Metro
+helper — see the samples under `nativeLibraries/Samples/`.
 
 ## Documentation
 

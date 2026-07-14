@@ -799,9 +799,10 @@ export const BeamNotifications = BeamableNotifications;
 // Generic, app-agnostic extras (relocated from the RN sample, §6).
 // ---------------------------------------------------------------------------
 //
-// NOTE: the AsyncStorage-backed `RNTokenStorage` for the Beamable Web SDK moved to
-// its own package, `@beamable/sdk-react-native` — it is an SDK concern, not a
-// notifications one. Import it from there.
+// NOTE: AsyncStorage-backed token storage for the Beamable Web SDK is now built
+// into `@beamable/sdk` itself (its native `react-native` build target) — it is an
+// SDK concern, not a notifications one, so it lives there. This package only adds
+// the Metro helper, `@beamable/notifications-react-native/metro`.
 
 // Device push-token helpers over a `PushNotificationService`-style microservice client.
 export {

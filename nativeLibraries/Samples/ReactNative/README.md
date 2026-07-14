@@ -151,7 +151,7 @@ src/
   linking/links.ts   # scheme + URL/path helpers
   unity/             # Unity WebView bridge (optional; only for the web build)
 app.json             # registers the "@beamable/notifications-react-native" config plugin
-metro.config.js      # withBeamableSdk() from @beamable/sdk-react-native/metro
+metro.config.js      # withBeamableSdk() from @beamable/notifications-react-native/metro
 ```
 
 > The Expo config plugin (iOS NSE + Android setup) now ships **inside**
@@ -160,11 +160,13 @@ metro.config.js      # withBeamableSdk() from @beamable/sdk-react-native/metro
 
 ## Web SDK caveats (short version)
 
-The Web SDK targets browser/node, so running it in RN needs an `AsyncStorage` token
-store, browser-global polyfills, and Metro resolution of the SDK's `browser` build. Those
-are packaged in **`@beamable/sdk-react-native`** — this sample just imports its polyfills,
-`RNTokenStorage`, and `withBeamableSdk` metro helper. Full details and the ordering rules
-are in [`INTEGRATION.md`](./INTEGRATION.md) § A2.
+The Web SDK now ships a native `react-native` build target (AsyncStorage-backed token,
+config, and content storage), selected automatically by Metro via the package `exports`
+`"react-native"` condition. This sample only: (1) imports `@beamable/sdk/react-native/polyfills`
+once before the SDK (installs the URL polyfill Hermes lacks), and (2) applies the
+`withBeamableSdk` Metro helper from `@beamable/notifications-react-native/metro`. No explicit
+token storage — `Beam.init()` defaults to the AsyncStorage store. Full details and the
+ordering rules are in [`INTEGRATION.md`](./INTEGRATION.md) § A2.
 
 ## Troubleshooting
 

@@ -10,6 +10,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const alias = { '@': path.resolve(__dirname, 'src') };
 const nodeDefaultsEntry = path.resolve(__dirname, 'src/defaults.ts');
 const browserDefaultsEntry = path.resolve(__dirname, 'src/defaults.browser.ts');
+const reactNativeDefaultsEntry = path.resolve(
+  __dirname,
+  'src/defaults.reactnative.ts',
+);
 const nodeCreateHashEntry = path.resolve(__dirname, 'src/utils/createHash.ts');
 const browserCreateHashEntry = path.resolve(
   __dirname,
@@ -23,7 +27,23 @@ const browserAlias = {
   [nodeCreateHashEntry]: browserCreateHashEntry,
   ...alias,
 };
+// React Native uses the AsyncStorage-backed defaults and the browser createHash
+// stub (RN lacks node `crypto`; the client never signs requests).
+const reactNativeAlias = {
+  '@/defaults': reactNativeDefaultsEntry,
+  '@/utils/createHash': browserCreateHashEntry,
+  [nodeDefaultsEntry]: reactNativeDefaultsEntry,
+  [nodeCreateHashEntry]: browserCreateHashEntry,
+  ...alias,
+};
 const nodeBuiltins = ['fs', 'os', 'path', 'crypto'];
+// Peer-provided native modules that must stay as bare imports in the RN build
+// (never bundled — AsyncStorage is autolinked, the URL polyfill is app-supplied).
+const reactNativeExternals = [
+  '@react-native-async-storage/async-storage',
+  'react-native-url-polyfill',
+  'react-native-url-polyfill/auto',
+];
 
 const baseConfig = {
   sourcemap: false, // Generate source maps for debugging
@@ -82,6 +102,27 @@ export default defineConfig([
     dts: false, // Do not generate TypeScript declaration files for IIFE build
     clean: false, // Do not clean, as this is part of a multi-format build
     alias: browserAlias,
+  }),
+  // React Native Build
+  // Native target: AsyncStorage-backed storage (via reactNativeAlias), ESM only,
+  // ES2021 to lower ES2022 static blocks for Hermes, and AsyncStorage / the URL
+  // polyfill kept external so Metro/autolinking resolve them from the app.
+  withSharedConfig({
+    // Object form so output basenames are flat (dist/react-native/{index,api,polyfills}.mjs)
+    // regardless of each source file's subdirectory.
+    entry: {
+      index: 'src/index.ts',
+      api: 'src/api.ts',
+      polyfills: 'src/react-native/polyfills.ts',
+    }, // Entry files for the react-native build
+    format: ['esm'], // Output format: ES modules (Metro consumes ESM)
+    outDir: 'dist/react-native', // Output directory for the build
+    platform: 'neutral', // Neither node nor browser globals injected
+    target: 'es2021', // Lower ES2022 static blocks/fields for Hermes
+    dts: false, // Types are platform-agnostic; the RN condition reuses dist/types
+    clean: true, // Clean the react-native output directory before building
+    external: reactNativeExternals, // Keep native/peer modules as bare imports
+    alias: reactNativeAlias,
   }),
   // Type declarations (first cleans, rest re-use existing artifacts)
   ...typeEntries.map((entry, index) => ({

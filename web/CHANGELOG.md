@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Native **React Native** build target (`dist/react-native`), selected automatically by Metro
+  via the package `exports` `"react-native"` condition. Ships AsyncStorage-backed token,
+  config, and content storage (`ReactNativeTokenStorage`, `ReactNativeConfigStorage`,
+  `ReactNativeContentStorage`) as the built-in default — no explicit `tokenStorage` needed on
+  React Native. Adds the `@beamable/sdk/react-native/polyfills` side-effect entry (installs the
+  URL polyfill Hermes lacks) and optional peer deps `@react-native-async-storage/async-storage`
+  and `react-native-url-polyfill`. Replaces the standalone `@beamable/sdk-react-native` adapter.
+- `TokenStorage.hydrate()` — a concrete no-op hook (overridden by the React Native storage) the
+  SDK awaits at the start of `connect()` so asynchronously-persisted tokens are loaded before
+  the synchronous `isExpired` check.
+
 ## [1.2.1] - 2026-06-03
 
 ### Fixed

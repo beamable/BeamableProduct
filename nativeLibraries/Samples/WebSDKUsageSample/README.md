@@ -90,35 +90,27 @@ importable from `@beamable/sdk/api` for server / Microservice use.
 
 ## How the SDK integration works (and RN caveats)
 
-The Beamable Web SDK targets **browser/node**, not React Native. The adaptations that
-make it run here — an `AsyncStorage` token store, browser-global polyfills, and Metro
-resolution of the SDK's `browser` build — are packaged in **`@beamable/sdk-react-native`**
-(same as the `ReactNative` sample), so this sample just consumes them:
+The Beamable Web SDK ships a native **`react-native` build target** (AsyncStorage-backed
+token, config, and content storage), selected automatically by Metro via the package
+`exports` `"react-native"` condition — so `import { Beam } from '@beamable/sdk'` just works.
+This sample only wires two things:
 
-1. **Metro** (`metro.config.js`): `withBeamableSdk(getDefaultConfig(__dirname))` resolves
-   the SDK's browser build and watches the external `file:` sources.
-2. **Polyfills**: `app/_layout.tsx` does `import '@beamable/sdk-react-native/polyfills'`
-   before any SDK import (URL / localStorage / structuredClone / DOMException /
-   BroadcastChannel + fake-indexeddb; no-op on web).
-3. **Token storage**: `RNTokenStorage` (from `@beamable/sdk-react-native`) + `Beam.init({
-   tokenStorage })`.
+1. **Metro** (`metro.config.js`): `withBeamableSdk(getDefaultConfig(__dirname))` (from
+   `@beamable/notifications-react-native/metro`) enables package-exports resolution so Metro
+   picks the RN build, and watches the external `file:` sources.
+2. **Polyfills**: `app/_layout.tsx` does `import '@beamable/sdk/react-native/polyfills'`
+   before any SDK import (installs the URL polyfill Hermes lacks; no-op on web).
 
 ```ts
 // src/beam/beamClient.ts
-import { RNTokenStorage } from '@beamable/sdk-react-native';
-import { hydrateLocalStorage } from '@beamable/sdk-react-native/polyfills';
-
-await hydrateLocalStorage();
-const tokenStorage = await RNTokenStorage.create(BEAM_CONFIG.pid);
-const beam = await Beam.init({ cid, pid, environment, tokenStorage, gameEngine: 'react-native' });
+const beam = await Beam.init({ cid, pid, environment, gameEngine: 'react-native' });
 beam.use([AuthService, AccountService, /* … */]);
-beam.player.id; // authenticated guest player
+beam.player.id; // authenticated guest player (persisted in AsyncStorage across launches)
 ```
 
-> The SDK has no official `react-native` export condition — the adapter package is what
-> makes `Beam.init()` succeed in RN. You still add
-> `@babel/plugin-transform-class-static-block` to `babel.config.js` (a package can't edit
-> your babel config). Treat this as a sample integration, not a Beamable-supported config.
+> No explicit token storage — `Beam.init()` defaults to the AsyncStorage store. The RN build
+> is compiled to ES2021, so Hermes parses it directly (no
+> `@babel/plugin-transform-class-static-block` needed).
 
 ---
 
@@ -126,7 +118,7 @@ beam.player.id; // authenticated guest player
 
 ```
 app/
-  _layout.tsx        # Stack(index) + @beamable/sdk-react-native/polyfills import
+  _layout.tsx        # Stack(index) + @beamable/sdk/react-native/polyfills import
   index.tsx          # the SDK Explorer
 src/
   beam/
