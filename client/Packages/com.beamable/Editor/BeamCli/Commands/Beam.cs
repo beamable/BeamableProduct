@@ -46,7 +46,7 @@ namespace Beamable.Editor.BeamCli.Commands
         ///Currently, a docker path has been automatically identified.</summary>
         public string dockerCliPath;
         /// <summary>a custom location for the Java 8 home used to run the local Scala backend. By default, the CLI will attempt to resolve Java through its usual install locations. You can also use the BEAM_JAVA_HOME environment variable to specify.
-        ///Currently, a Java 8 home has been automatically identified.</summary>
+        ///Currently, no Java 8 home is available; set this option (or install a JDK 8) to run the Scala backend.</summary>
         public string javaPath;
         /// <summary>Out all log messages as data payloads in addition to however they are logged</summary>
         public bool emitLogStreams;

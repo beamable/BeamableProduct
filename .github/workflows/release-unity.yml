@@ -51,8 +51,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-      contents: write   
+      contents: write
       packages: read
+      issues: write
     concurrency:
       group: release-unity-sdk
       cancel-in-progress: true
@@ -335,6 +336,23 @@ jobs:
             Unity SDK Release ${{ steps.version.outputs.VERSION }}
           draft: false
           prerelease: ${{ inputs.releaseType != 'production' }}
+
+      # Close the matching "Unity X.Y.Z" milestone once a production release ships.
+      # Warns (does not fail) when no open milestone matches, so it never blocks a release. ~Claude
+      - name: Close shipped milestone
+        if: ${{ inputs.dryRun == false && inputs.releaseType == 'production' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title="Unity ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}"
+          num=$(gh api "repos/${{ github.repository }}/milestones?state=open&per_page=100" \
+                --jq ".[] | select(.title==\"$title\") | .number")
+          if [ -n "$num" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/milestones/$num" -f state=closed
+            echo "Closed milestone $title (#$num)"
+          else
+            echo "::warning::No open milestone titled '$title' to close"
+          fi
 
   lightbeam:
     needs: nuget

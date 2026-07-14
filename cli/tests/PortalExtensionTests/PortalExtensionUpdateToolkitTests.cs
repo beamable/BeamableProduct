@@ -129,4 +129,32 @@ public class PortalExtensionUpdateToolkitTests
 		Assert.That(libs.Select(l => l.Name), Is.EquivalentTo(new[] { "MyLib" }));
 		Assert.That(libs.Single().PackageJsonPath, Is.EqualTo(Path.GetFullPath(Path.Combine(libDir, "package.json"))));
 	}
+
+	[Test]
+	public void LocateAllLibraries_IgnoresCopiesInsideNodeModules()
+	{
+		var libDir = Path.Combine(_root, "extensions-libs", "MyLib");
+		Directory.CreateDirectory(libDir);
+		File.WriteAllText(Path.Combine(libDir, "package.json"), new JObject
+		{
+			["name"] = "MyLib",
+			["beamable"] = new JObject { ["portalExtensionLib"] = true }
+		}.ToString());
+
+		// A file:-linked library is symlinked/copied into each consuming extension's node_modules. Those copies
+		// carry the same portalExtensionLib marker and must NOT be discovered as additional libraries, or the
+		// one real library would be processed once per consumer.
+		var linkedCopyDir = Path.Combine(_root, "extensions", "MyExt", "node_modules", "MyLib");
+		Directory.CreateDirectory(linkedCopyDir);
+		File.WriteAllText(Path.Combine(linkedCopyDir, "package.json"), new JObject
+		{
+			["name"] = "MyLib",
+			["beamable"] = new JObject { ["portalExtensionLib"] = true }
+		}.ToString());
+
+		var libs = PortalExtensionAddLibraryCommand.LocateAllLibraries(_root);
+
+		Assert.That(libs, Has.Count.EqualTo(1), "a library copy inside node_modules must not be counted again");
+		Assert.That(libs.Single().PackageJsonPath, Is.EqualTo(Path.GetFullPath(Path.Combine(libDir, "package.json"))));
+	}
 }

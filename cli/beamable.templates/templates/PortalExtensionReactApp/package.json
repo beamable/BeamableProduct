@@ -9,9 +9,18 @@
     "microserviceDependencies": [],
     "mounts": [
       {
-        "page": "players/",
-        "selector": "#root",
-        "args": {}
+        "page": "page-path",
+        "selector": "#extension-page",
+        "args": {},
+        "navLabel": "",
+        "navIcon": "robot",
+        "navDescription": "",
+        "navColor": "linear-gradient(135deg, #826CCF, #04C6F1)",
+        "navGroupOrder": 0,
+        "filters": {
+          "account.role": "developer",
+          "account.tier": "default"
+        }
       }
     ]
   },
@@ -27,7 +36,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.6.3",
     "vite": "^7.2.2",
-    "@beamable/portal-toolkit": "0.1.6"
+    "@beamable/portal-toolkit": "0.2.0"
   },
   "peerDependencies": {
     "react": "^19.0.0",

@@ -69,20 +69,99 @@ public class PortalExtensionUpdateToolkitCommand : AtomicCommand<PortalExtension
 			targets[lib.PackageJsonPath] = lib.Name;
 		}
 
+		// Phase 1: rewrite every package.json (fast, local file writes). Collect the directories whose toolkit
+		// version actually changed so we only reinstall those.
+		var directoriesToInstall = new List<(string name, string directory)>();
 		foreach (var (packageJsonPath, name) in targets)
 		{
-			if (UpdateToolkitVersion(name, packageJsonPath, targetVersion))
+			string previousVersion;
+			bool found;
+			try
 			{
-				result.updated.Add(name);
+				found = RewriteToolkitVersion(packageJsonPath, targetVersion, out previousVersion);
 			}
-			else
+			catch (Exception e)
 			{
+				throw new CliException(
+					$"Could not update {TOOLKIT_PACKAGE} in [{name}]. Message = [{e.Message}] Stacktrace = [{e.StackTrace}]");
+			}
+
+			if (!found)
+			{
+				Log.Trace($"Skipping [{name}] - no {TOOLKIT_PACKAGE} dependency found in its package.json");
 				result.skipped.Add(name);
+				continue;
 			}
+
+			if (string.Equals(previousVersion, targetVersion, StringComparison.Ordinal))
+			{
+				// package.json already pointed at the target version; node_modules is already in sync, so there
+				// is nothing for npm to do. This makes a re-run with the same version effectively instant.
+				Log.Trace($"[{name}] already on {TOOLKIT_PACKAGE} [{targetVersion}] - skipping install");
+				result.skipped.Add(name);
+				continue;
+			}
+
+			Log.Trace($"Updated [{name}]: {TOOLKIT_PACKAGE} [{previousVersion}] -> [{targetVersion}]");
+			result.updated.Add(name);
+			directoriesToInstall.Add((name, Path.GetDirectoryName(packageJsonPath)));
 		}
 
-		Log.Information($"Updated {result.updated.Count} project(s); skipped {result.skipped.Count} project(s) without a {TOOLKIT_PACKAGE} dependency");
+		// Phase 2: refresh node_modules. Each target has its own node_modules, so the installs are independent
+		// and run concurrently; only the global npm cache is shared, which npm locks. Best-effort: package.json
+		// is the source of truth and the run flow installs again before building, so a failed install only warns.
+		await RunInstallsConcurrently(directoriesToInstall);
+
+		Log.Information($"Updated {result.updated.Count} project(s); skipped {result.skipped.Count} project(s) that were already on the target version or had no {TOOLKIT_PACKAGE} dependency");
 		return result;
+	}
+
+	/// <summary>
+	/// Runs <c>npm install</c> in each given directory with a bounded degree of concurrency. The audit and
+	/// funding steps are disabled and the cache is preferred, since neither is needed to refresh a single
+	/// dependency and both add hundreds of milliseconds per call.
+	/// </summary>
+	private async Task RunInstallsConcurrently(List<(string name, string directory)> directories)
+	{
+		if (directories.Count == 0)
+		{
+			return;
+		}
+
+		using var gate = new SemaphoreSlim(Math.Max(1, Environment.ProcessorCount));
+
+		var installs = directories.Select(async target =>
+		{
+			await gate.WaitAsync();
+			try
+			{
+				var handle = StartProcessUtil.Run(
+					"npm",
+					"install --no-audit --no-fund --prefer-offline",
+					useShell: true,
+					workingDirectoryPath: target.directory);
+
+				await handle.ExitedTask;
+				var result = handle.WaitForResult();
+				if (result.exit != 0)
+				{
+					Log.Warning($"Updated {TOOLKIT_PACKAGE} in [{target.name}], but 'npm install' failed. " +
+						$"Run it manually in the project directory to resolve packages. Errors: \n{result.stderr}");
+				}
+			}
+			catch (Exception e)
+			{
+				// Best-effort: a failure to spawn/await npm must not fail the whole update.
+				Log.Warning($"Updated {TOOLKIT_PACKAGE} in [{target.name}], but 'npm install' could not be run. " +
+					$"Run it manually in the project directory to resolve packages. Message = [{e.Message}]");
+			}
+			finally
+			{
+				gate.Release();
+			}
+		});
+
+		await Task.WhenAll(installs);
 	}
 
 	/// <summary>
@@ -137,47 +216,6 @@ public class PortalExtensionUpdateToolkitCommand : AtomicCommand<PortalExtension
 		}
 
 		return latestVersion;
-	}
-
-	/// <summary>
-	/// Rewrites the @beamable/portal-toolkit reference in every dependency block of the given
-	/// package.json that already contains it, then runs a best-effort npm install. Returns false
-	/// (and logs) when no toolkit dependency is present, leaving the file untouched.
-	/// </summary>
-	private bool UpdateToolkitVersion(string name, string packageJsonPath, string targetVersion)
-	{
-		try
-		{
-			if (!RewriteToolkitVersion(packageJsonPath, targetVersion, out var previousVersion))
-			{
-				Log.Information($"Skipping [{name}] - no {TOOLKIT_PACKAGE} dependency found in its package.json");
-				return false;
-			}
-
-			Log.Information($"Updated [{name}]: {TOOLKIT_PACKAGE} [{previousVersion}] -> [{targetVersion}]");
-
-			// Best-effort install so node_modules reflects the new version. package.json is the source of
-			// truth and the extension run flow installs again before building, so a failed/offline install
-			// here must not fail the command.
-			var directory = Path.GetDirectoryName(packageJsonPath);
-			var result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: directory).WaitForResult();
-			if (result.exit != 0)
-			{
-				Log.Warning($"Updated {TOOLKIT_PACKAGE} in [{name}], but 'npm install' failed. " +
-					$"Run it manually in the project directory to resolve packages. Errors: \n{result.stderr}");
-			}
-
-			return true;
-		}
-		catch (CliException)
-		{
-			throw;
-		}
-		catch (Exception e)
-		{
-			throw new CliException(
-				$"Could not update {TOOLKIT_PACKAGE} in [{name}]. Message = [{e.Message}] Stacktrace = [{e.StackTrace}]");
-		}
 	}
 
 	/// <summary>

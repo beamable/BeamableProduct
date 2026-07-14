@@ -119,6 +119,22 @@ Key config fields: `cid`, `pid`, `host`, `cliVersion`.
 - Descriptions: **start with uppercase**, **do not end with a period**
 - Each command must have a **unique description**
 
+### Code style
+
+- **Always brace control-flow statements.** Every `if`, `else`, `for`, `foreach`, `while`, and `do` must use `{ }` braces, even for a single-line body. Do not omit the braces for one-line statements.
+
+  ```csharp
+  // Do this
+  if (isReady)
+  {
+      Start();
+  }
+
+  // Not this
+  if (isReady)
+      Start();
+  ```
+
 ### Testing
 
 Tests extend `CLITest` (in `tests/Examples/CLITest.cs`), which:

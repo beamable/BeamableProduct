@@ -66,8 +66,12 @@ public class GenerateMkDocsCommand
                 }
 
                 if (shouldExist)
-                {                
-                    summarySb.AppendLine($"- [{command.command.Name}]({subPath})");
+                {
+                    // SUMMARY.md links are mkdocs URL paths, not OS paths: normalize the
+                    // native separator from ExecutionPathAsFilePath so Windows-generated
+                    // docs use forward slashes and the mkdocs resolver can follow them.
+                    var linkPath = subPath.Replace('\\', '/');
+                    summarySb.AppendLine($"- [{command.command.Name}]({linkPath})");
                 }
                 else
                 {
