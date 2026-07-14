@@ -384,7 +384,6 @@ public class ExtensionAppLogProvider : ILoggerProvider
 	private readonly BindingContext _binding;
 	private readonly string _alias;
 	private readonly PortalExtensionDef _extension;
-	private readonly string _portalBaseUrl;
 	private readonly Action<float, string> _onProgress;
 
 	public ExtensionAppLogProvider(DebugLogProcessor sink, IAppContext appContext, BindingContext binding, string alias, PortalExtensionDef extension, Action<float, string> onProgress = null)
@@ -394,7 +393,6 @@ public class ExtensionAppLogProvider : ILoggerProvider
 		_binding = binding;
 		_alias = alias;
 		_extension = extension;
-		_portalBaseUrl = portalBaseUrl;
 		_onProgress = onProgress;
 	}
 
@@ -420,7 +418,6 @@ public class ExtensionLogger : ILogger
 		_binding = binding;
 		_alias = alias;
 		_extension = extension;
-		_portalBaseUrl = portalBaseUrl;
 		_onProgress = onProgress;
 	}
 	

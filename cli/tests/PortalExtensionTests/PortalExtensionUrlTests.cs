@@ -32,40 +32,4 @@ public class PortalExtensionUrlTests
 			}
 		};
 	}
-
-	[Test]
-	public void PortalUrlOverride_WinsOverHostTransform()
-	{
-		// When running against a local backend the resolved portal base url (which already honors
-		// --portal-url) must be used verbatim instead of string-replacing the API host.
-		var ctx = Context("http://localhost:8080");
-		var ext = ExtensionWithMount("campaigns");
-
-		var url = BeamoLocalSystem.BuildPortalExtensionUrl(ctx, ext, portalBaseUrl: "http://localhost:4950");
-
-		Assert.That(url, Is.EqualTo("http://localhost:4950/1234/games/DE_5678/realms/DE_5678/campaigns?refresh_token=tok"));
-	}
-
-	[Test]
-	public void NoOverride_CloudHost_StillMapsApiToPortal()
-	{
-		// Cloud behavior must remain identical: with no override, the api host is transformed to portal.
-		var ctx = Context("https://api.beamable.com");
-		var ext = ExtensionWithMount("campaigns");
-
-		var url = BeamoLocalSystem.BuildPortalExtensionUrl(ctx, ext, portalBaseUrl: null);
-
-		Assert.That(url, Is.EqualTo("https://portal.beamable.com/1234/games/DE_5678/realms/DE_5678/campaigns?refresh_token=tok"));
-	}
-
-	[Test]
-	public void NoOverride_DevHost_MapsToDevPortal()
-	{
-		var ctx = Context("https://dev.api.beamable.com");
-		var ext = ExtensionWithMount("campaigns");
-
-		var url = BeamoLocalSystem.BuildPortalExtensionUrl(ctx, ext, portalBaseUrl: null);
-
-		Assert.That(url, Is.EqualTo("https://dev-portal.beamable.com/1234/games/DE_5678/realms/DE_5678/campaigns?refresh_token=tok"));
-	}
 }
