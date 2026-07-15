@@ -182,6 +182,7 @@ export class Beam extends ClientServicesMixin(BeamBase) {
       cid: this.cid,
       pid: this.pid,
       refreshToken,
+      apiUrl: this.envConfig.apiUrl,
     });
   }
 

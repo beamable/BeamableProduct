@@ -31,11 +31,11 @@ export class CampaignServiceClient extends BeamMicroServiceClient {
   ) {
     super(beam);
   }
-
+  
   get serviceName(): string {
     return "CampaignService";
   }
-
+  
   async registerDeviceToken(params: Types.RegisterDeviceTokenRequestArgs): Promise<Types.RegisterResult> {
     return this.request({
       endpoint: "RegisterDeviceToken",
@@ -43,7 +43,7 @@ export class CampaignServiceClient extends BeamMicroServiceClient {
       withAuth: true
     });
   }
-
+  
   async unregisterDeviceToken(params: Types.UnregisterDeviceTokenRequestArgs): Promise<Types.UnregisterResult> {
     return this.request({
       endpoint: "UnregisterDeviceToken",
@@ -51,10 +51,56 @@ export class CampaignServiceClient extends BeamMicroServiceClient {
       withAuth: true
     });
   }
-
+  
   async listMyDevices(): Promise<Types.DeviceList> {
     return this.request({
       endpoint: "ListMyDevices",
+      withAuth: true
+    });
+  }
+  
+  async forwardFunnelToSlack(params: Types.ForwardFunnelToSlackRequestArgs): Promise<Types.WebhookResult> {
+    return this.request({
+      endpoint: "ForwardFunnelToSlack",
+      payload: params,
+      withAuth: true
+    });
+  }
+  
+  async listRegisteredPlayers(): Promise<Types.RegisteredPlayerList> {
+    return this.request({
+      endpoint: "ListRegisteredPlayers",
+      withAuth: true
+    });
+  }
+  
+  async sendCampaignPushToPlayer(params: Types.SendCampaignPushToPlayerRequestArgs): Promise<Types.AdminSendResult> {
+    return this.request({
+      endpoint: "SendCampaignPushToPlayer",
+      payload: params,
+      withAuth: true
+    });
+  }
+  
+  async launchCampaign(params: Types.LaunchCampaignRequestArgs): Promise<Types.LaunchResult> {
+    return this.request({
+      endpoint: "LaunchCampaign",
+      payload: params,
+      withAuth: true
+    });
+  }
+  
+  async estimateAudience(params: Types.EstimateAudienceRequestArgs): Promise<Types.AudienceEstimate> {
+    return this.request({
+      endpoint: "EstimateAudience",
+      payload: params,
+      withAuth: true
+    });
+  }
+  
+  async checkFcmConfig(): Promise<Types.FcmConfigStatus> {
+    return this.request({
+      endpoint: "CheckFcmConfig",
       withAuth: true
     });
   }

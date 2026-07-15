@@ -94,8 +94,11 @@ export async function initBeam(): Promise<Beam> {
       AnnouncementsService,
       LeaderboardsService
     ]);
-    // Auto-generated client for the CampaignService microservice
-    // (adds the typed `beam.campaignServiceClient` accessor).
+    // CampaignService is the only microservice the client talks to directly, and only for
+    // reading the player's registered devices (`listMyDevices`). Device/email/in-game
+    // registration goes through the backend `/message-rail` endpoint (see src/beam/messageRail.ts)
+    // — the rail microservices (push/email/ingame/messagerail) are backend-only and are never
+    // referenced from the client.
     beam.use(CampaignServiceClient);
     beamInstance = beam;
 
