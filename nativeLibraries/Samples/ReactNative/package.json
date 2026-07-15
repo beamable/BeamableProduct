@@ -10,9 +10,9 @@
     "serve:web": "npx serve dist -l 3000 --single",
     "ios": "expo run:ios",
     "android": "expo run:android",
-    "ios:local": "cross-env APP_VARIANT=local expo run:ios",
-    "android:local": "cross-env APP_VARIANT=local expo run:android",
-    "android:local:release": "cross-env APP_VARIANT=local expo run:android --variant release",
+    "ios:local": "node scripts/with-local.js run:ios",
+    "android:local": "node scripts/with-local.js run:android",
+    "android:local:release": "node scripts/with-local.js run:android --variant release",
     "prebuild": "expo prebuild --clean",
     "fix-deps": "expo install --fix",
     "deeplink:ios": "npx uri-scheme open \"beamrnsample://details/42\" --ios",
@@ -43,7 +43,6 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.2.14",
-    "cross-env": "^7.0.3",
     "typescript": "~6.0.3"
   }
 }
