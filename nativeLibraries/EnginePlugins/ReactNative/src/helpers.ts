@@ -1,22 +1,8 @@
 /**
- * Convenience helpers over the unified `BeamableNotifications` façade.
- *
- * These are the generic, app-agnostic wrappers that used to live in the React Native
- * sample's `src/notifications/beamableNotifications.ts`. They add:
- *   - `isBeamableNotificationsSupported` — a platform gate for UI.
- *   - named function wrappers (`requestBeamablePermission`, `registerForRemote`, …) that
- *     no-op on unsupported platforms instead of throwing.
- *   - `BEAMABLE_EVENTS` — the list of every event the SDK can emit.
- *   - `addBeamableListener` / `addBeamableDeepLinkListener` — listeners that are inert
- *     stubs on unsupported platforms.
- *
- * Autolinking selects the per-platform native code, so there is no longer any runtime
- * `Platform.OS` branch to pick a package — the single `BeamableNotifications` object below
- * already routes per platform internally.
- *
- * NOTE: the demo Slack/Discord webhook that previously lived in the sample façade has been
- * removed. Funnel analytics (Received/Opened/Sent/Clicked/Converted) are emitted natively
- * via the Beamable analytics endpoint; the sample no longer POSTs a webhook.
+ * @deprecated Back-compat flat wrappers. **Prefer the single `BeamNotifications` façade** (and
+ * the React hooks) — `BeamNotifications.<method>()` is already platform-gated, so these add
+ * nothing but a second name for each call. They remain exported so existing code keeps working;
+ * new code should not use them. Each is annotated with its `BeamNotifications` equivalent.
  */
 // Values from `./index` (Metro platform-swaps to `./index.web.ts` on web); types from
 // `./types` (shared, platform-agnostic).
@@ -41,9 +27,8 @@ import type {
 // the same platform gate the façade already applies, kept for back-compat.
 
 /**
- * Subscribe to a Beamable notification event. Same per-event typing as the façade's own
- * `addListener` (handler payload inferred from the event name). Returns a subscription with
- * `.remove()`. Inert stub on unsupported platforms.
+ * @deprecated Use `BeamNotifications.addListener`.
+ * Subscribe to a Beamable notification event. Inert stub on unsupported platforms.
  */
 export const addBeamableListener: typeof addListener = ((
   event: keyof EventMap,
@@ -54,8 +39,8 @@ export const addBeamableListener: typeof addListener = ((
 }) as typeof addListener;
 
 /**
- * Android-only: subscribe to native URL-scheme deep links (VIEW intents). No-op on iOS
- * (which routes deep links via notification payloads) and on web.
+ * @deprecated Use `BeamNotifications.addDeepLinkListener`.
+ * Android-only: subscribe to native URL-scheme deep links (VIEW intents). No-op on iOS / web.
  */
 export function addBeamableDeepLinkListener(
   handler: (event: DeepLinkEvent) => void,
@@ -64,14 +49,14 @@ export function addBeamableDeepLinkListener(
   return addDeepLinkListener(handler);
 }
 
-/** Initialize push + deeplink. Call once at app start. No-op on unsupported platforms. */
+/** @deprecated Use `BeamNotifications.initialize()`. Initialize push + deeplink once at app start. */
 export function initBeamableNotifications(): void {
   if (isBeamableNotificationsSupported) BeamableNotifications.initialize();
 }
 
 /**
- * Ask for notification permission. Resolves with the outcome (the `permissionResult` event
- * still fires too). Resolves `{ granted: false }` on unsupported platforms.
+ * @deprecated Use `BeamNotifications.requestPermission()`.
+ * Ask for notification permission. Resolves with the outcome.
  */
 export function requestBeamablePermission(): Promise<PermissionResult> {
   return BeamableNotifications.requestPermission({
@@ -81,63 +66,52 @@ export function requestBeamablePermission(): Promise<PermissionResult> {
   });
 }
 
-/** Re-read the current permission status. Resolves with it (iOS; `notDetermined` on Android). */
+/** @deprecated Use `BeamNotifications.getPermissionStatus()`. Resolves the permission status. */
 export function getPermissionStatus(): Promise<PermissionResult> {
   return BeamableNotifications.getPermissionStatus();
 }
 
-/** Schedule a local notification with a full request (passthrough to the SDK). */
+/** @deprecated Use `BeamNotifications.scheduleLocal()`. */
 export function scheduleLocal(request: LocalRequest): void {
   if (isBeamableNotificationsSupported)
     BeamableNotifications.scheduleLocal(request);
 }
 
-/** Cancel a pending local notification by id. */
+/** @deprecated Use `BeamNotifications.cancelLocal()`. */
 export function cancelLocal(id: string): void {
   if (isBeamableNotificationsSupported) BeamableNotifications.cancelLocal(id);
 }
 
-/** Cancel all pending local notifications. */
+/** @deprecated Use `BeamNotifications.cancelAllLocal()`. */
 export function cancelAllLocal(): void {
   if (isBeamableNotificationsSupported) BeamableNotifications.cancelAllLocal();
 }
 
-/**
- * Resolve the pending (scheduled, not-yet-delivered) local notifications. iOS only;
- * resolves `[]` on Android / unsupported platforms. The `pendingNotifications` event still
- * fires too (iOS).
- */
+/** @deprecated Use `BeamNotifications.getPending()`. Resolves pending locals (iOS; `[]` else). */
 export function getPending(): Promise<NotificationData[]> {
   return BeamableNotifications.getPending();
 }
 
-/**
- * Register for remote push and resolve with the device token (the `tokenReceived` event
- * still fires too). Rejects on `tokenError`/timeout and on unsupported platforms.
- */
+/** @deprecated Use `BeamNotifications.registerForRemote()`. Resolves the device token. */
 export function registerForRemote(options?: {
   timeoutMs?: number;
 }): Promise<{ token: string }> {
   return BeamableNotifications.registerForRemote(options);
 }
 
-/** Stop receiving remote push (iOS). */
+/** @deprecated Use `BeamNotifications.unregisterForRemote()`. */
 export function unregisterForRemote(): void {
   if (isBeamableNotificationsSupported)
     BeamableNotifications.unregisterForRemote();
 }
 
-/**
- * Resolve stored delivery receipts. iOS only; resolves `[]` on Android / unsupported
- * platforms. The `deliveryReceipts` event still fires too (iOS).
- */
+/** @deprecated Use `BeamNotifications.getDeliveryReceipts()`. Resolves receipts (iOS; `[]` else). */
 export function getDeliveryReceipts(): Promise<DeliveryReceipt[]> {
   return BeamableNotifications.getDeliveryReceipts();
 }
 
 /**
- * Write the player's Beamable tokens into native shared storage so the closed-app analytics
- * funnel can authenticate while the JS runtime is not running. No-op on unsupported platforms.
+ * @deprecated Use `BeamNotifications.configureAuth()`.
  * `accessTokenExpiresAt` is an absolute epoch-MILLISECONDS timestamp.
  */
 export function configureAuth(auth: ConfigureAuthOptions): void {
@@ -145,25 +119,22 @@ export function configureAuth(auth: ConfigureAuthOptions): void {
     BeamableNotifications.configureAuth(auth);
 }
 
-/** Clear the player auth previously written via {@link configureAuth}. */
+/** @deprecated Use `BeamNotifications.clearAuth()`. */
 export function clearAuth(): void {
   if (isBeamableNotificationsSupported) BeamableNotifications.clearAuth();
 }
 
-/** Set the app icon badge count (iOS). */
+/** @deprecated Use `BeamNotifications.setBadge()`. */
 export function setBadge(count: number): void {
   if (isBeamableNotificationsSupported) BeamableNotifications.setBadge(count);
 }
 
-/** Clear delivered notifications from Notification Center (iOS). */
+/** @deprecated Use `BeamNotifications.clearDelivered()`. */
 export function clearDelivered(): void {
   if (isBeamableNotificationsSupported) BeamableNotifications.clearDelivered();
 }
 
-/**
- * Cold-start "get launch notification": resolves the payload (with `deeplink`) if the app
- * was launched by tapping a notification, else null. null on unsupported platforms.
- */
+/** @deprecated Use `BeamNotifications.getLaunchNotification()`. Resolves the cold-start payload. */
 export function getLaunchNotification() {
   if (!isBeamableNotificationsSupported) return Promise.resolve(null);
   return BeamableNotifications.getLaunchNotification();

@@ -35,6 +35,7 @@ import {
 } from './parsing';
 import { BEAMABLE_EVENTS } from './types';
 import type {
+  BeamableEvent,
   CategorySpec,
   ConfigureAuthOptions,
   DeepLinkEvent,
@@ -726,10 +727,27 @@ export const BeamableNotifications = {
     // intentional no-op on native
   },
 
+  /**
+   * Subscribe to EVERY event at once with one call — a loop-safe alternative to calling
+   * `addListener` per event (handy for logging / telemetry). The handler receives the event
+   * name and its payload; the returned subscription removes all of them.
+   */
+  addAllListeners(
+    handler: (event: BeamableEvent, payload: EventMap[BeamableEvent]) => void,
+  ): Subscription {
+    const subs = BEAMABLE_EVENTS.map((event) =>
+      addListener(event, (payload) =>
+        handler(event, payload as EventMap[BeamableEvent]),
+      ),
+    );
+    return { remove: () => subs.forEach((s) => s.remove()) };
+  },
+
   addListener,
   addDeepLinkListener,
 };
 
+/** @deprecated Prefer the named `BeamNotifications` export. */
 export default BeamableNotifications;
 
 /**

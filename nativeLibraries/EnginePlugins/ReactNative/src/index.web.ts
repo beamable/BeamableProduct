@@ -16,6 +16,7 @@
 import { campaignCoordsFromNotification, deepLinkFromNotification } from './parsing';
 import { BEAMABLE_EVENTS } from './types';
 import type {
+  BeamableEvent,
   CategorySpec,
   ConfigureAuthOptions,
   DeepLinkEvent,
@@ -288,10 +289,22 @@ export const BeamableNotifications = {
     emitSupport(activeTransport.isSupported());
   },
 
+  addAllListeners(
+    handler: (event: BeamableEvent, payload: EventMap[BeamableEvent]) => void,
+  ): Subscription {
+    const subs = BEAMABLE_EVENTS.map((event) =>
+      addListener(event, (payload) =>
+        handler(event, payload as EventMap[BeamableEvent]),
+      ),
+    );
+    return { remove: () => subs.forEach((s) => s.remove()) };
+  },
+
   addListener,
   addDeepLinkListener,
 } satisfies NativeFacade;
 
+/** @deprecated Prefer the named `BeamNotifications` export. */
 export default BeamableNotifications;
 
 /** The recommended single entry point (alias of `BeamableNotifications`). */

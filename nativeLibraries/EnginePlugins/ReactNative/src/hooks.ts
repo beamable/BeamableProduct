@@ -125,3 +125,4 @@ export function BeamPushNotifications(): BeamNotificationsState {
     registerForRemote,
   };
 }
+

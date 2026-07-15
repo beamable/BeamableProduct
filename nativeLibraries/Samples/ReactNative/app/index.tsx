@@ -51,13 +51,6 @@ const EVENT_COLOR: Record<BeamableEvent, string> = {
 // One captured native-event firing.
 type EventEntry = { key: number; time: string; event: BeamableEvent; data: unknown };
 
-// Loose signature for subscribing in a loop (the typed `addListener`
-// correlates payload to event name, which a generic loop can't express).
-const subscribe = BeamNotifications.addListener as unknown as (
-  event: BeamableEvent,
-  handler: (data: unknown) => void,
-) => { remove: () => void };
-
 export default function Home() {
   const router = useRouter();
   const [beam, setBeam] = useState<BeamStatus>({ state: 'idle' });
@@ -102,23 +95,19 @@ export default function Home() {
   };
 
   // ── Native events → the color-coded event log ─────────────────────────────
-  // Subscribe to EVERY event the SDK emits and capture each firing with its full payload —
-  // the raw view of the native library at work. This debug panel intentionally subscribes
-  // to the whole vocabulary in a loop (see the `subscribe` cast above; a loop-safe listener
-  // is a planned follow-up), so it stays a plain effect rather than a per-event hook.
+  // `addAllListeners` (P1) subscribes to the whole event vocabulary in one typed call and
+  // returns a single subscription — no per-event loop, no `addListener` cast.
   useEffect(() => {
     if (!nativeSupported) return;
-    const subs = BeamNotifications.events.map((event) =>
-      subscribe(event, (data) =>
-        setEvents((prev) =>
-          [
-            { key: (eventCounter.current += 1), time: time(), event, data },
-            ...prev,
-          ].slice(0, 100),
-        ),
+    const sub = BeamNotifications.addAllListeners((event, data) =>
+      setEvents((prev) =>
+        [
+          { key: (eventCounter.current += 1), time: time(), event, data },
+          ...prev,
+        ].slice(0, 100),
       ),
     );
-    return () => subs.forEach((s) => s.remove());
+    return () => sub.remove();
   }, [nativeSupported]);
 
   // ── Native events → app side effects (via the P0 event hook) ──────────────
