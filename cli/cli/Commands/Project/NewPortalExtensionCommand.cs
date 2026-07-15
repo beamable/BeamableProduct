@@ -17,6 +17,7 @@ public class NewPortalExtensionCommandArgs : SolutionCommandArgs
 	public int mountGroupOrder;
 	public int mountLabelOrder;
 	public string template;
+	public bool ignoreValidation;
 }
 
 public static class PortalExtensionTemplates
@@ -89,6 +90,12 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 				getDefaultValue: () => PortalExtensionTemplates.React,
 				description: "UI framework template to scaffold the extension with. Allowed values: svelte, react"),
 			binder: (args, i) => args.template = i);
+
+		AddOption(new Option<bool>(
+				aliases: new string[] { "--ignore-validation" },
+				getDefaultValue: () => false,
+				description: "Skip the remote-portal check that the --mount-page / --mount-selector combination is registered. Useful when scaffolding against a Portal that runs the new mount site locally (e.g. via the in-browser sandbox authoring flow)"),
+			binder: (args, i) => args.ignoreValidation = i);
 	}
 
 	public override async Task Handle(NewPortalExtensionCommandArgs args)
@@ -102,29 +109,56 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		if (!PortalExtensionTemplates.All.Contains(args.template))
 			throw new CliException($"Invalid --template value '{args.template}'. Allowed values: {string.Join(", ", PortalExtensionTemplates.All)}");
 
-		var config = await ListMountSitesCommand.GetRemotePortalConfig(args);
-		BuildMountSiteIndex(config,
-			out var customPagePrefixes,
-			out var customPageConfigs,
-			out var componentPages);
-
-		RemotePortalConfiguration.MountSiteSelector resolvedSelector;
+		// Input hygiene: callers (especially the in-browser sandbox flow) often
+		// pass the selector without its leading '#' because that's how it's
+		// shown in the UI. Prepend one so the value matches package.json's
+		// canonical form ("#extension-page") downstream.
+		if (!string.IsNullOrEmpty(args.mountSelector) && !args.mountSelector.StartsWith('#'))
+			args.mountSelector = "#" + args.mountSelector;
 
 		var hasExplicitPage = !string.IsNullOrEmpty(args.mountPage);
 		var hasExplicitSelector = !string.IsNullOrEmpty(args.mountSelector);
 
-		if (hasExplicitPage && hasExplicitSelector)
+		RemotePortalConfiguration.MountSiteSelector resolvedSelector;
+
+		if (args.ignoreValidation)
 		{
-			resolvedSelector = ValidateMountArgs(args, customPagePrefixes, customPageConfigs, componentPages);
-		}
-		else if (hasExplicitPage || hasExplicitSelector)
-		{
-			throw new CliException("--mount-page and --mount-selector must both be provided together, or neither.");
+			// Skip both the remote fetch and the validation. The caller is
+			// fully responsible for the page/selector combination — typical
+			// use case: scaffolding against a local sandbox where the mount
+			// site only exists in the developer's running Portal build.
+			if (!hasExplicitPage || !hasExplicitSelector)
+				throw new CliException("--mount-page and --mount-selector are required when --ignore-validation is set.");
+
+			// Component-typed (no nav prompts). Nav group/label/icon still
+			// propagate to package.json if the caller passed them explicitly.
+			resolvedSelector = new RemotePortalConfiguration.MountSiteSelector
+			{
+				type = "component",
+				selector = args.mountSelector,
+			};
 		}
 		else
 		{
-			if (args.Quiet) throw new CliException("Must provide --mount-page and --mount-selector when in quiet mode.");
-			resolvedSelector = RunMountWizard(args, customPagePrefixes, customPageConfigs, componentPages);
+			var config = await ListMountSitesCommand.GetRemotePortalConfig(args);
+			BuildMountSiteIndex(config,
+				out var customPagePrefixes,
+				out var customPageConfigs,
+				out var componentPages);
+
+			if (hasExplicitPage && hasExplicitSelector)
+			{
+				resolvedSelector = ValidateMountArgs(args, customPagePrefixes, customPageConfigs, componentPages);
+			}
+			else if (hasExplicitPage || hasExplicitSelector)
+			{
+				throw new CliException("--mount-page and --mount-selector must both be provided together, or neither.");
+			}
+			else
+			{
+				if (args.Quiet) throw new CliException("Must provide --mount-page and --mount-selector when in quiet mode.");
+				resolvedSelector = RunMountWizard(args, customPagePrefixes, customPageConfigs, componentPages);
+			}
 		}
 
 		if (resolvedSelector.type == "page")

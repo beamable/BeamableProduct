@@ -234,6 +234,7 @@ public class App
 		services.AddSingleton<SwaggerService.SourceGeneratorListProvider>();
 		services.AddSingleton<UnityCliGenerator>();
 		services.AddSingleton<UnrealCliGenerator>();
+		services.AddSingleton<TypeScriptCliGenerator>();
 		services.AddTransient<DiscoveryService>();
 		services.AddSingleton<DocService>();
 		services.AddSingleton<CliGenerator>();
@@ -516,6 +517,7 @@ public class App
 
 		// add commands
 		Commands.AddRootCommand<CliInterfaceGeneratorCommand, CliInterfaceGeneratorCommandArgs>();
+		Commands.AddRootCommand<CliSchemaGeneratorCommand, CliSchemaGeneratorCommandArgs>();
 		Commands.AddRootCommand<ServerGroupCommand>();
 		Commands.AddSubCommand<ServeCliCommand, ServeCliCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<RequestCliCommand, RequestCliCommandArgs, ServerGroupCommand>();
@@ -647,6 +649,12 @@ public class App
 			.AddSubCommandWithHandler<SetPortalExtensionConfigCommand, SetPortalExtensionConfigCommandArgs,
 				PortalExtensionCommand>();
 		Commands.AddSubCommandWithHandler<ListMountSitesCommand, ListMountSitesCommandArgs, PortalExtensionCommand>();
+
+		Commands.AddRootCommand<cli.Sandbox.SandboxCommand>();
+		Commands.AddSubCommand<cli.Sandbox.SandboxStartCommand, cli.Sandbox.SandboxStartCommandArgs, cli.Sandbox.SandboxCommand>();
+		Commands.AddSubCommand<cli.Sandbox.SandboxStopCommand, cli.Sandbox.SandboxStopCommandArgs, cli.Sandbox.SandboxCommand>();
+		Commands.AddSubCommand<cli.Sandbox.SandboxPsCommand, cli.Sandbox.SandboxPsCommandArgs, cli.Sandbox.SandboxCommand>();
+		Commands.AddSubCommand<cli.Sandbox.SandboxLogsCommand, cli.Sandbox.SandboxLogsCommandArgs, cli.Sandbox.SandboxCommand>();
 
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();

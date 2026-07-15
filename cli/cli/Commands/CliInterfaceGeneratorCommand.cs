@@ -39,7 +39,7 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 			(args, val) => args.OutputPath = val);
 
 		AddOption(new Option<string>("--engine", () => "",
-				"Filter which engine code we should generate (unity | unreal). An empty string matches everything"),
+				"Filter which engine code we should generate (unity | unreal | ts). An empty string matches everything"),
 			(args, val) => args.Engine = val);
 
 	}
@@ -52,13 +52,14 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 		// proxy out to a generator... for now, its unity... but someday it'll be unity or unreal.
 		args.Engine = string.IsNullOrEmpty(args.Engine)
 			? AnsiConsole.Ask<SelectionPrompt<string>>("")
-				.AddChoices("unity", "unreal")
+				.AddChoices("unity", "unreal", "ts")
 				.AddBeamHightlight().Show(AnsiConsole.Console)
 			: args.Engine;
 		ICliGenerator generator = args.Engine.ToLower() switch
 		{
 			"unity" => args.DependencyProvider.GetService<UnityCliGenerator>(),
 			"unreal" => args.DependencyProvider.GetService<UnrealCliGenerator>(),
+			"ts" or "typescript" => args.DependencyProvider.GetService<TypeScriptCliGenerator>(),
 			// ReSharper disable once NotResolvedInText
 			_ => throw new ArgumentOutOfRangeException("Should be impossible!")
 		};
@@ -69,13 +70,13 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 		var outputData = !string.IsNullOrEmpty(args.OutputPath);
 		if (outputData)
 		{
-			var isFile = args.OutputPath.EndsWith(".cs");
+			var isFile = args.OutputPath.EndsWith(".cs") || args.OutputPath.EndsWith(".ts");
 			if (args.Concat)
 			{
 				// the output path needs to be a file.
 				if (!isFile)
 				{
-					throw new CliException("when concat is enabled, output path must end in .cs");
+					throw new CliException("when concat is enabled, output path must end in .cs or .ts");
 				}
 			}
 			else
