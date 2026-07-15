@@ -32,6 +32,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private Vector2 _horizontalScrollPosition;
 		private int _lastManifestChangedCount;
 		private int _lastProgressUpdateVersion;
+		private int _lastContentHistoryVersion;
 		private EditorGUISplitView _mainSplitter;
 		private bool _importingDefaultContent;
 
@@ -100,6 +101,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void OnDisable()
 		{
 			EditorApplication.update -= OnEditorUpdate;
+			_contentService?.StopContentHistory();
 		}
 
 		private void OnEditorUpdate()
@@ -117,6 +119,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				_lastProgressUpdateVersion = _contentService.ProgressUpdateVersion;
 				Repaint();
 			}
+
+			if (_contentService != null && _contentService.ContentHistoryVersion != _lastContentHistoryVersion)
+			{
+				_lastContentHistoryVersion = _contentService.ContentHistoryVersion;
+				Repaint();
+			}
 		}
 
 		private void ReloadData()
@@ -125,7 +133,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			_allTags = _contentService.TagsCache;
 			SetEditorSelection();
 			
-			if(!_contentService.HasChangedContents && _windowStatus != ContentWindowStatus.SnapshotManager)
+			if(!_contentService.HasChangedContents && _windowStatus != ContentWindowStatus.SnapshotManager && _windowStatus != ContentWindowStatus.History)
 			{
 				ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 			}
@@ -202,6 +210,9 @@ namespace Beamable.Editor.UI.ContentWindow
 					break;
 				case ContentWindowStatus.SnapshotManager:
 					DrawSnapshotManager();
+					break;
+				case ContentWindowStatus.History:
+					DrawContentHistory();
 					break;
 			}
 			
@@ -482,8 +493,9 @@ namespace Beamable.Editor.UI.ContentWindow
 		Publish,
 		Building,
 		Revert,
-		Validate,
-		SnapshotManager,
-	}
+			Validate,
+			SnapshotManager,
+			History,
+		}
 	
 }

@@ -89,6 +89,11 @@ namespace Beamable.Content
 		[Header("Content Editor")]
 		[Tooltip("This option will change the Max size of Content Items before showing it as a list.")]
 		public int MaxContentVisibleItems = 15;
+
+		[Tooltip("Controls how many published content history entries are shown per page in the Content Manager. Values are clamped between 10 and 50.")]
+		[Range(10, 50)]
+		public int HistoryEntriesPerPage = 10;
+
 		public ContentTextureConfiguration ContentTextureConfiguration;
 
 		public ContentParameterProvider ParameterProvider
@@ -112,6 +117,10 @@ namespace Beamable.Content
 
 		private void OnValidate()
 		{
+#if UNITY_EDITOR
+			HistoryEntriesPerPage = Mathf.Clamp(HistoryEntriesPerPage, 10, 50);
+#endif
+
 #if UNITY_EDITOR
             if (!IsValidManifestID(EditorManifestID, out var message))
             {

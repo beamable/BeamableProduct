@@ -180,6 +180,12 @@ namespace Beamable.Editor.UI.ContentWindow
 					ChangeToSnapshotManager();
 				}
 
+				if (BeamGUI.HeaderButton("History", BeamGUI.iconRefresh, width: HEADER_BUTTON_WIDTH, iconPadding: 2,
+				                         tooltip: "View published content history"))
+				{
+					ChangeToHistory();
+				}
+
 				if (_windowStatus != ContentWindowStatus.Validate)
 				{
 					EditorGUILayout.Space(5, false);
@@ -225,12 +231,26 @@ namespace Beamable.Editor.UI.ContentWindow
 			});
 		}
 
+		private void ChangeToHistory()
+		{
+			AddDelayedAction(() => ChangeWindowStatus(ContentWindowStatus.History));
+		}
+
 		private void ChangeWindowStatus(ContentWindowStatus windowStatus, bool shouldRepaint = true)
 		{
 			if(_windowStatus == windowStatus)
 				return;
 			
 			_windowStatus = windowStatus;
+			if (_windowStatus == ContentWindowStatus.History)
+			{
+				ResetHistorySelection();
+				_contentService?.StartContentHistory();
+			}
+			else
+			{
+				_contentService?.StopContentHistory();
+			}
 			if (_windowStatus is ContentWindowStatus.Normal)
 			{
 				var selection = new List<Object> { };
