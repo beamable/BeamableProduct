@@ -45,6 +45,13 @@ Set your realm's `cid` / `pid` (Beamable Portal → realm settings). In this sam
 live in `src/beam/config.ts`; `environment` is `prod` | `stg` | `dev` (or a custom
 name pointing at a local API base via `env.local`).
 
+> **Local stack:** put `VITE_API_BASE=http://<lan-ip>:8080` in an uncommitted `env.local`
+> to choose the backend URL, then build with the local variant (`npm run android:local`).
+> That variant (`APP_VARIANT=local`) is the single switch that enables Android cleartext
+> HTTP via `app.config.js`; it is never committed and never inferred from the URL, so
+> plain and remote/release builds always stay TLS-only. See the README's "Pointing at a
+> local stack" section.
+
 For **remote** delivery, configure push provider credentials on the realm:
 
 | Platform | Credential namespace | Needed for |

@@ -57,6 +57,43 @@ For **remote** push you also need provider credentials on your realm — `apns_p
 (iOS) / `fcm_push` (Android) — plus `google-services.json` at the project root for FCM
 (already wired via `app.json` → `expo.android.googleServicesFile`).
 
+### Pointing at a local stack
+
+To run against a local Beamable backend (e.g. `beam local up` over your LAN), do two things.
+
+**1. Point at the backend** — create an uncommitted `env.local` at the project root:
+
+```
+# env.local — git-ignored, never committed
+VITE_API_BASE=http://192.168.x.x:8080
+```
+
+`app.config.js` reads it and surfaces the URL to the app (`src/beam/config.ts` flips
+`environment` to `local`). `env.local` only chooses *which* URL to target — it works for
+`http://` or `https://` and does not by itself change any native setting.
+
+**2. Build with the local variant** — a LAN backend is plain HTTP, which Android blocks by
+default, so use the **`:local`** scripts:
+
+```bash
+npm run android:local            # dev build against the local stack
+npm run android:local:release    # release APK against the local stack
+npm run ios:local
+```
+
+These set `APP_VARIANT=local`, which is the **single switch** that makes `app.config.js`
+inject `expo-build-properties` `usesCleartextTraffic`. It is **not** committed to `app.json`
+and is **not** inferred from the URL — so the build *variant*, not a config value, decides
+the native security posture. A plain `npm run android` (no `:local`) always stays TLS-only,
+and cleartext never reaches remote/release builds.
+
+> If you set an `http://` `env.local` but forget `:local`, the app builds fine but Android
+> blocks the traffic — run the `:local` variant instead.
+
+Re-run `expo prebuild --clean` (or a fresh `expo run:*`) when switching variants so the
+regenerated Android manifest picks up the change. (iOS uses ATS and is unaffected by the
+cleartext flag.)
+
 ## 3. Run (dev build)
 
 This app uses native modules, so it runs as a **dev build**, not Expo Go:
@@ -191,5 +228,6 @@ ordering rules are in [`INTEGRATION.md`](./INTEGRATION.md) § A2.
 - **"Register for remote" never yields a token** — remote push needs a **physical
   device** + realm push credentials (`apns_push` / `fcm_push`); on Android the package
   name must match a client entry in `google-services.json`.
-- **Android `compileDebugKotlin` Compose/Kotlin version mismatch** — Kotlin is pinned to
-  1.9.24 via `expo-build-properties` in `app.json`; adjust if you change Expo/RN versions.
+- **Android `compileDebugKotlin` Compose/Kotlin version mismatch** — pin a `kotlinVersion`
+  on the `expo-build-properties` plugin (now injected by `app.config.js`, see "Pointing at
+  a local stack") if you hit this after changing Expo/RN versions.
