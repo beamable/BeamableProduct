@@ -15,6 +15,10 @@ object IntentDataReader {
     private const val MARKER_KEY = "beamable_notification"
     private const val PAYLOAD_JSON_KEY = "beamable_payload_json"
 
+    // Kept in sync with NotificationBuilder.EXTRA_ACTION_ID: present when the app was opened by
+    // tapping an action button (vs the notification body). Surfaced as "actionId" in the payload.
+    private const val EXTRA_ACTION_ID = "beamable_action_id"
+
     /**
      * If [activity]'s current intent was produced by this library, returns its payload JSON
      * (and clears the marker so it is consumed only once). Returns null when the launch was
@@ -35,16 +39,31 @@ object IntentDataReader {
         if (marker != "1") return null
 
         val payloadJson = intent.getStringExtra(PAYLOAD_JSON_KEY)
-        val result = if (!payloadJson.isNullOrEmpty()) {
+        var result = if (!payloadJson.isNullOrEmpty()) {
             payloadJson
         } else {
             buildJsonFromExtras(intent)
         }
 
+        // If an action button (not the body) was tapped, merge its id in as "actionId" so the
+        // engine/app learns which button fired. Body taps leave the extra absent → no actionId.
+        val actionId = intent.getStringExtra(EXTRA_ACTION_ID)
+        if (!actionId.isNullOrEmpty()) {
+            result = withActionId(result, actionId)
+        }
+
         // Clear the markers so a later resume does not re-consume the same intent.
         intent.removeExtra(MARKER_KEY)
         intent.removeExtra(PAYLOAD_JSON_KEY)
+        intent.removeExtra(EXTRA_ACTION_ID)
         return result
+    }
+
+    /** Returns [json] with an "actionId" field set, tolerating a malformed/empty input. */
+    private fun withActionId(json: String, actionId: String): String = try {
+        JSONObject(json).put("actionId", actionId).toString()
+    } catch (_: Throwable) {
+        JSONObject().put("actionId", actionId).toString()
     }
 
     /** Assembles a JSON object from all string extras on [intent]. */

@@ -1,5 +1,6 @@
 package com.beamable.push
 
+import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -22,6 +23,17 @@ import org.json.JSONObject
 class NotificationActionReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        // Action-button path (the "actions" style's Dismiss button): cancel the target
+        // notification and return before the AlarmManager fire path below.
+        if (intent.action == ACTION_DISMISS) {
+            val id = intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1)
+            if (id != -1) {
+                val mgr = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                mgr.cancel(id)
+            }
+            return
+        }
+
         val json = intent.getStringExtra(LocalNotificationScheduler.EXTRA_TEMPLATE_JSON)
             ?: return
         val appContext = context.applicationContext
@@ -85,5 +97,13 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 pending.finish()
             }
         }.start()
+    }
+
+    companion object {
+        /** Intent action for the "actions" style's Dismiss button (see [NotificationBuilder]). */
+        const val ACTION_DISMISS = "com.beamable.push.action.DISMISS"
+
+        /** Int extra carrying the notification id to cancel for [ACTION_DISMISS]. */
+        const val EXTRA_NOTIFICATION_ID = "notification_id"
     }
 }

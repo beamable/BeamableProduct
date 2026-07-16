@@ -15,6 +15,18 @@ export default function RootLayout() {
   // Initialize the native SDK once at app start (idempotent, safe no-op on web).
   useEffect(() => {
     BeamNotifications.initialize();
+
+    // Register a demo action-button category. A push carrying `category: "beam_actions"` then
+    // renders these buttons; tapping one opens the app and fires `notificationOpened` with
+    // `actionId` = 'accept' | 'decline' (handled below). Categories are persisted natively, so
+    // this also works for pushes that arrive while the app is killed.
+    BeamNotifications.registerCategory({
+      id: 'beam_actions',
+      actions: [
+        { id: 'accept', title: 'Accept', foreground: true },
+        { id: 'decline', title: 'Decline', foreground: true },
+      ],
+    });
   }, []);
 
   // ── Beamable Notifications → deep-link routing ────────────────────────────
@@ -23,8 +35,11 @@ export default function RootLayout() {
   // and cold-start resolution — no manual addListener/getLaunchNotification effects, no
   // nativeSupported gate, no exhaustive-deps disables.
 
-  // Warm start: user taps a Beamable notification while the app is running.
+  // Warm start: user taps a Beamable notification (body OR an action button) while running.
   BeamNotificationEvent('notificationOpened', (n) => {
+    // `actionId` is set only when an action button was tapped (vs the body) — the app decides
+    // what each button does. Here we just log it so the behavior is visible on-device.
+    if (n.actionId) console.log(`[Beamable] action button tapped: ${n.actionId}`);
     const url = BeamNotifications.deepLinkFromNotification(n);
     if (url) Linking.openURL(url).catch(() => {});
   });
