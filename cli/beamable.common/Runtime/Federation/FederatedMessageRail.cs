@@ -7,7 +7,7 @@ namespace Beamable.Common
 	/// Federation for the Message Rail "last-mile" delivery. A microservice implements this to
 	/// deliver a batch of messages (push / email / in-game) and report a per-player funnel result.
 	/// </summary>
-	public interface IMessageCampaignFederation<in T> : IFederation where T : IFederationId, new()
+	public interface IMessageRailFederation<in T> : IFederation where T : IFederationId, new()
 	{
 		Promise<MessageRailSendResponse> SendMessage(MessageRailRecipient recipient, MessageRailPayload payload);
 		Promise<MessageRailSendResponse> SendMessageBatch(List<MessageRailRecipient> recipients, MessageRailPayload payload);

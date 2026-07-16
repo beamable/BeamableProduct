@@ -15,7 +15,12 @@ public static class LocalStackTemplate
 	public static readonly string[] DefaultScalaServices =
 	{
 		"dbflake", "gateway", "auth", "account", "session", "content", "stats", "beamo",
-		"realms", "announcements", "events", "groups", "history", "leaderboards", "cloud-saving"
+		"realms", "announcements", "events", "groups", "history", "leaderboards", "cloud-saving",
+		// Message rails: "mail" serves /basic/mail/bulk (in-game inbox); "messaging" serves
+		// email.basic (/basic/email/direct). Required by the player-engagement In-Game and Email rails.
+		// "notification" serves notification.basic, which the content service broadcasts to when
+		// committing a manifest — without it `content publish` fails server-side.
+		"mail", "messaging", "notification"
 	};
 
 	public class Options

@@ -31,7 +31,10 @@ import type {
   NotificationIntentData,
   NotificationOffer,
 } from '@beamable/notifications-react-native';
-import { listDevices, registerDevice } from '../src/beam/pushNotifications';
+import { listDevices, registerDevice, unregisterDevice } from '../src/beam/pushNotifications';
+import { addEmail } from '../src/beam/account';
+import { listInGameMessages } from '../src/beam/ingameMessages';
+import { registerRail, unregisterRail } from '../src/beam/messageRail';
 import { detailsPath, detailsUrl, openUrl } from '../src/linking/links';
 import UnityBridgeSection from '../src/unity/UnityBridgeSection';
 
@@ -55,7 +58,11 @@ export default function Home() {
   const router = useRouter();
   const [beam, setBeam] = useState<BeamStatus>({ state: 'idle' });
   // Free-text feedback from button presses (connect, register, list, funnel).
-  const [log, setLog] = useState<string[]>([]);
+  // Each entry carries a stable id so prepending a new line MOUNTS one <Text> instead of
+  // mutating every existing line's content (index keys would re-write them all on each append,
+  // and heavy text re-serialization can trip a New-Architecture text-layout crash).
+  const [log, setLog] = useState<{ id: number; text: string }[]>([]);
+  const logCounter = useRef(0);
   // Every native SDK event, captured raw with its payload (the merged callbacks view).
   const [events, setEvents] = useState<EventEntry[]>([]);
   const eventCounter = useRef(0);
@@ -63,6 +70,15 @@ export default function Home() {
   // opened (or was tapped in) the app — see `applyCampaignCoords`.
   const [campaignId, setCampaignId] = useState('');
   const [nodeId, setNodeId] = useState('');
+  // Account · add-email inputs.
+  const [accountEmail, setAccountEmail] = useState('');
+  const [accountPassword, setAccountPassword] = useState('');
+  // In-game messages (the player's Beamable mailbox — see InGameRailService).
+  const [messages, setMessages] = useState<
+    Awaited<ReturnType<typeof listInGameMessages>>
+  >([]);
+  // Quake-style activity console: always pinned to the bottom, expand/collapse on tap.
+  const [logOpen, setLogOpen] = useState(false);
 
   // One P0 hook replaces the old nativeSupported/pushToken state and their effects: it
   // initializes on mount and tracks support (DYNAMIC on web — flips true once a Unity
@@ -72,13 +88,17 @@ export default function Home() {
   const push = BeamPushNotifications();
   const nativeSupported = push.isSupported;
   const pushToken = push.token;
-
   const platformLabel = BeamNotifications.hostPlatformLabel();
   const isAndroidHost = BeamNotifications.devicePushPlatform() === 'fcm';
   const remoteProvider = isAndroidHost ? 'FCM' : 'APNs';
 
   const append = (msg: string) =>
-    setLog((prev) => [`${time()}  ${msg}`, ...prev].slice(0, 40));
+    setLog((prev) =>
+      [
+        { id: (logCounter.current += 1), text: `${time()}  ${msg}` },
+        ...prev,
+      ].slice(0, 40),
+    );
 
   // Override the §4 funnel coordinates from a notification that carries them. Notifications
   // without campaignId/nodeId (e.g. the local test notifications) leave the user's typed
@@ -111,14 +131,15 @@ export default function Home() {
   }, [nativeSupported]);
 
   // ── Native events → app side effects (via the P0 event hook) ──────────────
-  // Push token arrived → register this device with Beamable so the realm can target it.
-  // (`push.token` reflects the token too; here we run the registration side effect.) The
-  // hook owns subscribe/unsubscribe — no manual effect, no exhaustive-deps disable.
+  // Push token arrived → register this device with Beamable (the backend `push` message
+  // rail) so the realm can target it. (`push.token` reflects the token too; here we run the
+  // registration side effect.) The hook owns subscribe/unsubscribe — no manual effect, no
+  // exhaustive-deps disable.
   BeamNotificationEvent('tokenReceived', async ({ token }) => {
-    if (!getPushService()) return append('Token not registered — connect to Beamable first');
+    if (!getBeam()) return append('Token not registered — connect to Beamable first');
     try {
       const res = await registerDevice(token, BeamNotifications.devicePushPlatform());
-      append(`Device registered with CampaignService (${res.deviceCount} total)`);
+      append(`Device registered via message-rail (push): ${res.success ? 'ok' : 'failed'}${res.message ? ` — ${res.message}` : ''}`);
     } catch (e) {
       append(`Token register error: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -194,18 +215,32 @@ export default function Home() {
     append('Local notification scheduled in 10s. Background the app & tap it.');
   };
 
-  // 3) Device registration via the CampaignService microservice ----------
+  // 3) Device registration via the backend `push` message rail ----------
   // Devices auto-register on the `tokenReceived` event above. These actions
   // register this device manually and list the player's registrations.
   const registerThisDevice = async () => {
-    if (!getPushService()) return append('Register: connect to Beamable first');
+    if (!getBeam()) return append('Register: connect to Beamable first');
     if (!pushToken) return append(`No push token yet — tap "Register for remote (${remoteProvider})" first (physical device).`);
-    append('RegisterDeviceToken …');
+    append('message-rail/register (push) …');
     try {
       const res = await registerDevice(pushToken, BeamNotifications.devicePushPlatform());
-      append(`RegisterDeviceToken → ${res.success ? 'ok' : 'failed'}: ${res.message} (${res.deviceCount} device(s))`);
+      append(`Register push → ${res.success ? 'ok' : 'failed'}${res.message ? `: ${res.message}` : ''}`);
     } catch (e) {
       append(`Register error: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  // Opt out of the push rail: removes this player's push registration (mirrors the
+  // email / in-game opt-out). Unlike opt-in, no token is needed — the backend unregisters
+  // the player from the `push` federation by playerId.
+  const optOutOfPush = async () => {
+    if (!getBeam()) return append('Opt out of push: connect to Beamable first');
+    append('message-rail/unregister (push) …');
+    try {
+      const res = await unregisterDevice();
+      append(`Push opt-out → ${res.success ? 'ok' : 'failed'}${res.message ? `: ${res.message}` : ''}`);
+    } catch (e) {
+      append(`Push opt-out error: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
@@ -219,6 +254,53 @@ export default function Home() {
       );
     } catch (e) {
       append(`List error: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  // 3b) Account: attach an email/password to the guest account -----------
+  const addEmailToAccount = async () => {
+    if (!getBeam()) return append('Add email: connect to Beamable first');
+    const email = accountEmail.trim();
+    if (!email || !accountPassword)
+      return append('Add email: enter an email and a password first');
+    append('addCredentials …');
+    try {
+      const acct = await addEmail(email, accountPassword);
+      append(`Email attached to account: ${acct.email ?? email}`);
+    } catch (e) {
+      append(`Add email error: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  // 3b-ii) Opt in / out of a message rail (email / in-game) via the backend endpoint.
+  const setRailOptIn = async (
+    federationId: 'email' | 'ingame',
+    optIn: boolean,
+  ) => {
+    if (!getBeam()) return append(`${federationId}: connect to Beamable first`);
+    append(`message-rail/${optIn ? 'register' : 'unregister'} (${federationId}) …`);
+    try {
+      const res = optIn
+        ? await registerRail(federationId)
+        : await unregisterRail(federationId);
+      append(
+        `${federationId} ${optIn ? 'opt-in' : 'opt-out'} → ${res.success ? 'ok' : 'failed'}${res.message ? `: ${res.message}` : ''}`,
+      );
+    } catch (e) {
+      append(`${federationId} error: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  // 3c) In-game messages: read the player's mailbox (InGameRailService delivers here) --
+  const refreshInbox = async () => {
+    if (!getBeam()) return append('In-game messages: connect to Beamable first');
+    append('Loading in-game messages …');
+    try {
+      const msgs = await listInGameMessages();
+      setMessages(msgs);
+      append(`In-game messages: ${msgs.length}`);
+    } catch (e) {
+      append(`Inbox error: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
@@ -278,7 +360,8 @@ export default function Home() {
   const navigateDirect = () => router.push(detailsPath(55) as never);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <View style={styles.root}>
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <StatusBar style="auto" />
 
       <Text style={styles.h1}>Beamable · React Native</Text>
@@ -298,6 +381,41 @@ export default function Home() {
         <Button label="Connect to Beamable" onPress={connectBeam} />
       </Section>
 
+      {/* Account · add email (attach a login to the guest account) */}
+      <Section title="Account · add email">
+        <Text style={styles.hint}>
+          Connect first (guest login), then attach an email + password so the account can be
+          recovered / logged into later. Calls beam.account.addCredentials → POST
+          /basic/accounts/register.
+        </Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Email (e.g. rn-demo@example.com)"
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+          value={accountEmail}
+          onChangeText={setAccountEmail}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          autoCapitalize="none"
+          autoCorrect={false}
+          secureTextEntry
+          value={accountPassword}
+          onChangeText={setAccountPassword}
+        />
+        <Button label="Add email to account" onPress={addEmailToAccount} />
+        <Text style={styles.hint}>
+          Email delivery is opt-in. Add an email above first, then opt in — the backend routes
+          campaigns to the `email` rail (POST /message-rail/register), which resolves your
+          address server-side at send time.
+        </Text>
+        <Button label="Opt in to email" onPress={() => setRailOptIn('email', true)} />
+        <Button label="Opt out of email" onPress={() => setRailOptIn('email', false)} />
+      </Section>
+
       {/* 2 · Permission & remote registration (native SDK) */}
       <Section title={`2 · Permission & remote registration (native ${platformLabel})`}>
         {nativeSupported ? (
@@ -306,8 +424,8 @@ export default function Home() {
               The unified `@beamable/notifications-react-native` SDK (
               {isAndroidHost ? 'Android AAR' : 'iOS xcframework'} via autolinking).
               Request permission, then register for remote push — the device token
-              arrives on the tokenReceived event and is auto-registered with the
-              CampaignService microservice below. Remote push needs a physical device
+              arrives on the tokenReceived event and is auto-registered with the backend
+              `push` message rail below. Remote push needs a physical device
               + {remoteProvider} credentials on your realm.
             </Text>
             {push.permission && (
@@ -326,20 +444,22 @@ export default function Home() {
         )}
       </Section>
 
-      {/* 3 · Device registration via the CampaignService microservice */}
-      <Section title="3 · Device registration (microservice)">
+      {/* 3 · Device registration via the backend `push` message rail */}
+      <Section title="3 · Device registration (push rail)">
         {nativeSupported ? (
           <>
             <Text style={styles.hint}>
-              Registers this device's {remoteProvider} token with the CampaignService
-              microservice so the realm can target it. Steps: Connect to Beamable →
-              Register for remote (section 2) → Register this device. Delivery is driven
+              Opt in registers this device's {remoteProvider} token with the backend `push`
+              message rail (POST /message-rail/register) so the realm can target it; opt out
+              unregisters the player (POST /message-rail/unregister). Steps: Connect to
+              Beamable → Register for remote (section 2) → Opt in to push. Delivery is driven
               from the Portal Campaign Builder.
             </Text>
             <Text style={styles.hint}>
               {remoteProvider} token: {pushToken ? `${pushToken.slice(0, 12)}…` : 'none yet (Register for remote in section 2)'}
             </Text>
-            <Button label="Register this device (microservice)" onPress={registerThisDevice} />
+            <Button label="Opt in to push (register this device)" onPress={registerThisDevice} />
+            <Button label="Opt out of push (unregister this device)" onPress={optOutOfPush} />
             <Button label="List my registered devices" onPress={showMyDevices} />
           </>
         ) : (
@@ -388,6 +508,38 @@ export default function Home() {
         </Text>
       </Section>
 
+      {/* In-game messages — the player's Beamable mailbox (InGameRailService rail) */}
+      <Section title="In-game messages">
+        <Text style={styles.hint}>
+          Reads this player's Beamable mailbox. Campaigns that target the in-game rail are
+          delivered here by the InGameRailService (POST /basic/mail/bulk). Connect first, then
+          refresh — send a message from the Portal Campaign Builder to see it appear.
+        </Text>
+        <Text style={styles.hint}>
+          In-game delivery is opt-in — opt in so campaigns targeting the `ingame` rail reach
+          your mailbox (POST /message-rail/register).
+        </Text>
+        <Button label="Opt in to in-game delivery" onPress={() => setRailOptIn('ingame', true)} />
+        <Button label="Opt out of in-game delivery" onPress={() => setRailOptIn('ingame', false)} />
+        <Button label="Refresh inbox" onPress={refreshInbox} />
+        {messages.length === 0 ? (
+          <Text style={styles.hint}>No in-game messages.</Text>
+        ) : (
+          messages.map((m) => (
+            <View key={String(m.id)} style={styles.messageCard}>
+              <Text style={styles.messageSubject}>
+                {m.subject || '(no subject)'}
+              </Text>
+              {!!m.body && <Text style={styles.messageBody}>{m.body}</Text>}
+              <Text style={styles.messageMeta}>
+                {m.state}
+                {m.category ? ` · ${m.category}` : ''}
+              </Text>
+            </View>
+          ))
+        )}
+      </Section>
+
       {/* Unity ↔ React bridge (web build hosted inside a Unity WebView) */}
       {Platform.OS === 'web' && <UnityBridgeSection />}
 
@@ -419,19 +571,44 @@ export default function Home() {
         ))
       )}
 
-      {/* Activity log — outcomes of button presses */}
-      <Section title="Activity log">
-        {log.length === 0 ? (
-          <Text style={styles.hint}>No activity yet.</Text>
-        ) : (
-          log.map((line, i) => (
-            <Text key={i} style={styles.logLine}>
-              {line}
-            </Text>
-          ))
-        )}
-      </Section>
     </ScrollView>
+
+      {/* Activity console — pinned to the bottom by flex order (below the flex:1 ScrollView),
+          collapsible. Because it's a flow sibling, the scroll area shrinks when it opens
+          instead of the panel overlapping content. */}
+      <View style={styles.console}>
+        {logOpen && (
+          <View style={styles.consolePanel}>
+            <ScrollView contentContainerStyle={styles.consolePanelContent}>
+              {log.length === 0 ? (
+                <Text style={styles.consoleEmpty}>No activity yet.</Text>
+              ) : (
+                log.map((entry) => (
+                  <Text key={entry.id} style={styles.consoleLine}>
+                    {entry.text}
+                  </Text>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        )}
+        <View style={styles.consoleBar}>
+          <Pressable
+            style={styles.consoleBarToggle}
+            onPress={() => setLogOpen((v) => !v)}
+          >
+            <Text style={styles.consoleBarText}>
+              {logOpen ? '▾' : '▸'}  Activity log ({log.length})
+            </Text>
+          </Pressable>
+          {log.length > 0 && (
+            <Pressable onPress={() => setLog([])} hitSlop={8}>
+              <Text style={styles.consoleClear}>Clear</Text>
+            </Pressable>
+          )}
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -499,6 +676,10 @@ function StatusRow({ status }: { status: BeamStatus }) {
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
+  // The scroll view fills all space above the console; the console takes its natural height
+  // below it. Opening the log panel shrinks this viewport rather than covering content.
+  scroll: { flex: 1 },
   container: { padding: 20, paddingTop: 24, gap: 16 },
   h1: { fontSize: 24, fontWeight: '700' },
   subtitle: { fontSize: 14, color: '#6b7280', marginTop: -8 },
@@ -548,4 +729,40 @@ const styles = StyleSheet.create({
   badgeText: { color: 'white', fontWeight: '700', fontSize: 12 },
   eventTime: { color: '#9ca3af', fontSize: 12, fontFamily: 'Courier' },
   json: { color: '#e5e7eb', fontSize: 12, fontFamily: 'Courier' },
+  messageCard: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 12,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  messageSubject: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  messageBody: { fontSize: 13, color: '#374151' },
+  messageMeta: { fontSize: 11, color: '#9ca3af', fontFamily: 'Courier' },
+  // Console pinned to the bottom by flex order (a flow sibling after the flex:1 ScrollView),
+  // so it never overlaps the scroll content.
+  console: {},
+  consolePanel: {
+    maxHeight: 260,
+    backgroundColor: '#0b1021',
+    borderTopWidth: 1,
+    borderTopColor: '#1f2937',
+  },
+  consolePanelContent: { padding: 12, gap: 4 },
+  consoleEmpty: { color: '#6b7280', fontSize: 12, fontFamily: 'Courier' },
+  consoleLine: { color: '#e5e7eb', fontSize: 12, fontFamily: 'Courier' },
+  consoleBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#111827',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#374151',
+  },
+  consoleBarToggle: { flex: 1 },
+  consoleBarText: { color: '#e5e7eb', fontSize: 13, fontWeight: '700' },
+  consoleClear: { color: '#f87171', fontWeight: '700', fontSize: 13 },
 });
