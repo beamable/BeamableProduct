@@ -1,6 +1,7 @@
 using Beamable.Editor.UI.ContentWindow;
 using Beamable.Editor.ContentService;
 using Beamable.Editor.BeamCli.Commands;
+using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
@@ -178,6 +179,41 @@ namespace Beamable.Editor.Tests
 			};
 
 			Assert.That(ContentHistoryChangesSearch.Filter(changes, "  "), Is.SameAs(changes));
+		}
+
+		[Test]
+		public void ContentHistoryFilterCache_DoesNotReuseRowsAfterTheEmptySearchCacheIsInvalidated()
+		{
+			Assert.That(ContentHistoryFilterCache.CanReuse(
+				hasCachedRows: false,
+				sourceMatches: true,
+				cachedSearch: null,
+				currentSearch: null), Is.False);
+		}
+
+		[Test]
+		public void SearchBarClearInteraction_ClearsSearchAndNotifiesTheView()
+		{
+			var callbackCount = 0;
+			var searchData = new SearchData
+			{
+				searchText = "manifest-198",
+				onEndCheck = () => callbackCount++
+			};
+
+			SearchBarClearInteraction.Clear(searchData);
+
+			Assert.That(searchData.searchText, Is.Null);
+			Assert.That(callbackCount, Is.EqualTo(1));
+		}
+
+		[TestCase(EventType.MouseDown, true, true)]
+		[TestCase(EventType.MouseUp, true, false)]
+		[TestCase(EventType.MouseDown, false, false)]
+		public void SearchBarClearInteraction_RecognizesOnlyClearGlyphMouseDown(EventType eventType, bool isPointerOverClearGlyph,
+			bool expected)
+		{
+			Assert.That(SearchBarClearInteraction.IsClearClick(eventType, isPointerOverClearGlyph), Is.EqualTo(expected));
 		}
 
 		[Test]

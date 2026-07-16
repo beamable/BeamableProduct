@@ -48,12 +48,15 @@ namespace Beamable.Editor.UI.ContentWindow
 		private string _historyChangesFilterKey;
 		private IReadOnlyList<BeamContentHistoryChangelistEntry> _historyChangesFilterSource;
 		private IReadOnlyList<BeamContentHistoryChangelistEntry> _filteredHistoryChanges = Array.Empty<BeamContentHistoryChangelistEntry>();
+		private bool _hasFilteredHistoryChanges;
 		private int _historySelectionRequestVersion;
 		private int _historyPreviewRequestVersion;
 		private int _filteredHistoryVersion = -1;
 		private string _historyFilterKey;
 		private IReadOnlyList<BeamContentHistoryEntry> _filteredHistoryEntries = Array.Empty<BeamContentHistoryEntry>();
+		private bool _hasFilteredHistoryEntries;
 		private IReadOnlyList<ContentHistoryTimeBucket> _historyBuckets = Array.Empty<ContentHistoryTimeBucket>();
+		private bool _hasHistoryBuckets;
 		private readonly HashSet<string> _expandedHistoryBucketKeys = new();
 		private int _historyBucketVersion = -1;
 		private string _historyBucketFilterKey;
@@ -127,7 +130,8 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					_historyPageIndex = 0;
 					_historyEntriesScroll = Vector2.zero;
-					_historyFilterKey = null;
+					_hasFilteredHistoryEntries = false;
+					_hasHistoryBuckets = false;
 					_historyBucketAutoExpandKey = null;
 					_historyDisplayRowsDirty = true;
 				}
@@ -147,7 +151,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					_historyChangesPageIndex = 0;
 					_historyChangesScroll = Vector2.zero;
-					_historyChangesFilterKey = null;
+					_hasFilteredHistoryChanges = false;
 				}
 			};
 		}
@@ -228,7 +232,11 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			var search = _historySearchData?.searchText?.Trim();
 			var historyVersion = _contentService.ContentHistoryVersion;
-			if (_filteredHistoryVersion == historyVersion && string.Equals(_historyFilterKey, search, StringComparison.Ordinal))
+			if (ContentHistoryFilterCache.CanReuse(
+				_hasFilteredHistoryEntries,
+				_filteredHistoryVersion == historyVersion,
+				_historyFilterKey,
+				search))
 			{
 				return _filteredHistoryEntries;
 			}
@@ -243,6 +251,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					.ToList();
 			_filteredHistoryVersion = historyVersion;
 			_historyFilterKey = search;
+			_hasFilteredHistoryEntries = true;
 			return _filteredHistoryEntries;
 		}
 
@@ -251,7 +260,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			var search = _historySearchData?.searchText?.Trim();
 			var historyVersion = _contentService.ContentHistoryVersion;
 			var localNow = DateTime.Now;
-			if (_historyBucketVersion == historyVersion && _historyBucketLocalDate == localNow.Date &&
+			if (_hasHistoryBuckets && _historyBucketVersion == historyVersion && _historyBucketLocalDate == localNow.Date &&
 			    string.Equals(_historyBucketFilterKey, search, StringComparison.Ordinal))
 			{
 				return _historyBuckets;
@@ -269,6 +278,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			_historyBucketLocalDate = localNow.Date;
 			_historyBucketAutoExpandKey = null;
 			_historyDisplayRowsDirty = true;
+			_hasHistoryBuckets = true;
 			if (resetExpansion)
 			{
 				_expandedHistoryBucketKeys.UnionWith(ContentHistoryTimeBuckets.GetDefaultExpandedKeys(_historyBuckets));
@@ -611,8 +621,11 @@ namespace Beamable.Editor.UI.ContentWindow
 		private IReadOnlyList<BeamContentHistoryChangelistEntry> GetFilteredHistoryChanges()
 		{
 			var search = _historyChangesSearchData?.searchText?.Trim();
-			if (ReferenceEquals(_historyChangesFilterSource, _selectedHistoryChanges) &&
-				string.Equals(_historyChangesFilterKey, search, StringComparison.Ordinal))
+			if (ContentHistoryFilterCache.CanReuse(
+				_hasFilteredHistoryChanges,
+				ReferenceEquals(_historyChangesFilterSource, _selectedHistoryChanges),
+				_historyChangesFilterKey,
+				search))
 			{
 				return _filteredHistoryChanges;
 			}
@@ -620,6 +633,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			_historyChangesFilterSource = _selectedHistoryChanges;
 			_historyChangesFilterKey = search;
 			_filteredHistoryChanges = ContentHistoryChangesSearch.Filter(_selectedHistoryChanges, search);
+			_hasFilteredHistoryChanges = true;
 			return _filteredHistoryChanges;
 		}
 
@@ -639,6 +653,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			_historyChangesFilterKey = null;
 			_historyChangesFilterSource = null;
 			_filteredHistoryChanges = Array.Empty<BeamContentHistoryChangelistEntry>();
+			_hasFilteredHistoryChanges = false;
 		}
 
 		private void DrawVirtualHistoryChanges(IReadOnlyList<BeamContentHistoryChangelistEntry> changes, int firstChangeIndex,
@@ -1106,6 +1121,14 @@ namespace Beamable.Editor.UI.ContentWindow
 		private static bool Matches(string value, string search)
 		{
 			return !string.IsNullOrEmpty(value) && value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+		}
+	}
+
+	internal static class ContentHistoryFilterCache
+	{
+		public static bool CanReuse(bool hasCachedRows, bool sourceMatches, string cachedSearch, string currentSearch)
+		{
+			return hasCachedRows && sourceMatches && string.Equals(cachedSearch, currentSearch, StringComparison.Ordinal);
 		}
 	}
 
