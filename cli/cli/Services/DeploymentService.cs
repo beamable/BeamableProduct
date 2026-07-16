@@ -114,6 +114,20 @@ public class PortalExtensionPlanReference : JsonSerializable.ISerializable
 		s.SerializeList(nameof(files), ref files);
 	}
 
+	public PortalExtensionPlanReference Copy() => new PortalExtensionPlanReference
+	{
+		name = name,
+		checksum = checksum,
+		enabled = enabled,
+		archived = archived,
+		files = files.Select(f => new PortalExtensionPlanFileReference
+		{
+			contentId = f.contentId,
+			name = f.name,
+			version = f.version,
+		}).ToList(),
+	};
+
 	public static PortalExtensionPlanReference FromBeamoV2(BeamoV2PortalExtensionReference r) => new PortalExtensionPlanReference
 	{
 		name = r.name.GetOrElse(""),
@@ -211,8 +225,10 @@ public class DeployablePlan : JsonSerializable.ISerializable
 	public int changeCount;
 
 	/// <summary>
-	/// v2 bundle references (bundle name → sha256 checksum) authored in <c>.beamable/manifest.beam.json</c>.
-	/// Empty for legacy v1 workspaces. Passed through to the server on release; the server resolves them.
+	/// v2 bundle references (bundle name → sha256 checksum) that the realm should have after release:
+	/// the pins authored in <c>.beamable/manifest.beam.json</c> merged with the realm's current pins
+	/// per the deploy mode (additive keeps remote-only pins, replace drops them). Empty for legacy v1
+	/// workspaces. Passed to the server on release; the server resolves them.
 	/// </summary>
 	public Dictionary<string, string> references = new Dictionary<string, string>();
 
@@ -800,8 +816,90 @@ public partial class DeployUtil
 				storage.enabled = false;
 			}
 		}
-		
+
 		return additive;
+	}
+
+	/// <summary>
+	/// Additive merge for portal extension references: every remote extension is kept, and each local
+	/// extension adds to or overwrites the remote entry with the same name. Mirrors
+	/// <see cref="MergeAdditive(ManifestView, ManifestView)"/> for services/storages.
+	/// </summary>
+	public static List<PortalExtensionPlanReference> MergeAdditive(
+		List<PortalExtensionPlanReference> remote,
+		List<PortalExtensionPlanReference> local)
+	{
+		// clone the remote entries so mode-specific adjustments can't mutate the remote view.
+		var final = remote.Select(r => r.Copy()).ToList();
+		foreach (var nextExtension in local)
+		{
+			var index = final.FindIndex(r => string.Equals(r.name, nextExtension.name));
+			if (index >= 0)
+			{
+				// this extension already exists in the final set; overwrite it!
+				final[index] = nextExtension;
+			}
+			else
+			{
+				final.Add(nextExtension);
+			}
+		}
+
+		return final;
+	}
+
+	/// <summary>
+	/// Replacement merge for portal extension references: like the additive merge, but every remote
+	/// extension that does not exist locally is archived and disabled (unless it is locally ignored),
+	/// mirroring <see cref="MergeReplacement(ManifestView, ManifestView, HashSet{string})"/>.
+	/// </summary>
+	public static List<PortalExtensionPlanReference> MergeReplacement(
+		List<PortalExtensionPlanReference> remote,
+		List<PortalExtensionPlanReference> local,
+		HashSet<string> ignoredBeamoIds)
+	{
+		var final = MergeAdditive(remote, local);
+		foreach (var extension in final)
+		{
+			var existsInLocal = local.Any(x => x.name == extension.name);
+			if (existsInLocal) continue;
+
+			var ignored = ignoredBeamoIds.Contains(extension.name);
+			if (ignored) continue;
+
+			extension.archived = true;
+			extension.enabled = false;
+		}
+
+		return final;
+	}
+
+	/// <summary>
+	/// Additive merge for pinned bundle references: remote pins are kept, and local pins add to or
+	/// overwrite them by bundle name.
+	/// </summary>
+	public static Dictionary<string, string> MergeAdditive(
+		IDictionary<string, string> remote,
+		IDictionary<string, string> local)
+	{
+		var final = new Dictionary<string, string>(remote);
+		foreach (var kvp in local)
+		{
+			final[kvp.Key] = kvp.Value;
+		}
+
+		return final;
+	}
+
+	/// <summary>
+	/// Replacement merge for pinned bundle references: only the local pins survive — any bundle that
+	/// is pinned remotely but not locally gets unpinned.
+	/// </summary>
+	public static Dictionary<string, string> MergeReplacement(
+		IDictionary<string, string> remote,
+		IDictionary<string, string> local)
+	{
+		return new Dictionary<string, string>(local);
 	}
 
 	public static bool TryValidate(ManifestView current, out List<string> errors)
@@ -1090,7 +1188,13 @@ public partial class DeployUtil
 		var bundleReferenceChangeCount = plan.diff.addedBundleReferences.Count
 		                                 + plan.diff.changedBundleReferences.Count
 		                                 + plan.diff.removedBundleReferences.Count;
-		hasChanges = plan.diff.jsonChanges.Count > 0 || plan.portalExtensionsToUpload.Count > 0 || bundleReferenceChangeCount > 0;
+		var portalExtensionChangeCount = plan.diff.addedPortalExtensions.Count
+		                                 + plan.diff.changedPortalExtensions.Count
+		                                 + plan.diff.removedPortalExtensions.Count;
+		hasChanges = plan.diff.jsonChanges.Count > 0
+		             || plan.portalExtensionsToUpload.Count > 0
+		             || portalExtensionChangeCount > 0
+		             || bundleReferenceChangeCount > 0;
 		var hasDetectedChanges = detectedChangeCount > 0;
 		if (hasChanges)
 		{
@@ -1116,7 +1220,7 @@ public partial class DeployUtil
 
 		if (plan.references?.Count > 0)
 		{
-			Log.Information("Referenced bundles (from manifest.beam.json):");
+			Log.Information("Referenced bundles after this release:");
 			foreach (var kvp in plan.references)
 			{
 				Log.Information($"   {kvp.Key} → {kvp.Value}");
@@ -1316,14 +1420,137 @@ public partial class DeployUtil
 		
 		ManifestView next = null;
 		DeploymentDiffSummary diff = null;
-		
+
+		// the v2 manifest carries the realm's current portal extension references and pinned bundle
+		// references; both participate in the additive/replace merge below, alongside services/storages.
+		var beamoV2Manifest = await beamoV2ManifestTask;
+
+		// ── Portal Extensions (build local references) ────────────────────────────
+		var remotePortalRefs = beamoV2Manifest.portalExtensionReferences
+			.GetOrElse(Array.Empty<BeamoV2PortalExtensionReference>());
+		var remotePortalExtensionRefs = remotePortalRefs.Select(PortalExtensionPlanReference.FromBeamoV2).ToList();
+
+		var localPeDefs = beamo.BeamoManifest.ServiceDefinitions
+			.Where(d => d.Protocol == BeamoProtocolType.PortalExtension && d.IsLocal)
+			.Select(d => d.PortalExtensionDefinition)
+			// Portal extensions that belong to an authored bundle are excluded from the root manifest.
+			.Where(d => !bundleComponentIds.Contains(d.Name))
+			// On a filtered plan, only build the requested extensions.
+			.Where(d => includeOnlyBeamoIds == null || includeOnlyBeamoIds.Contains(d.Name))
+			.ToList();
+
+		// Fail fast (before the expensive build loop below) if any portal extension name collides with
+		// another portal extension or with a microservice/storage, across both local and deployed names.
+		// The merged manifest doesn't exist yet, so validate against the union of local and remote names,
+		// which is exactly what the merge produces.
+		{
+			var serviceAndStorageNames = localManifest.manifest.Select(s => s.serviceName)
+				.Concat(localManifest.storageReference.GetOrElse(Array.Empty<ServiceStorageReference>()).Select(s => s.id))
+				.Concat(remote.manifest.Select(s => s.serviceName))
+				.Concat(remote.storageReference.GetOrElse(Array.Empty<ServiceStorageReference>()).Select(s => s.id))
+				.Where(name => !bundleComponentIds.Contains(name))
+				.Distinct()
+				.ToList();
+			var peConflicts = PortalExtensionNameValidator.FindConflicts(
+				localPeDefs.Select(d => d.Name).ToList(),
+				remotePortalRefs.Select(r => r.name.GetOrElse(string.Empty)).ToList(),
+				serviceAndStorageNames);
+			if (peConflicts.Count > 0)
+				throw new CliException("Cannot deploy due to portal extension name conflicts:\n - " + string.Join("\n - ", peConflicts));
+		}
+
+		var portalExtensionsToUpload = new List<PortalExtensionUploadInfo>();
+		var localPortalExtensionRefs = new List<PortalExtensionPlanReference>();
+
+		foreach (var peDef in localPeDefs)
+		{
+			var newCliProvider = DefaultActivityProvider.CreateCliServiceProvider();
+			using var beamActivity = newCliProvider.Create($"Planning Portal Extension: {peDef.Name}");
+
+			beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(peDef.Name));
+
+			var observer = new PortalExtensionObserver { ExtensionMetaData = peDef, RootActivity = beamActivity };
+			observer.InstallDeps();
+			observer.BuildExtension();
+
+			var assetFileNames = new[] { "index.js", "style.css", "metadata.json" };
+			var assetContentTypes = new[] { "application/javascript", "text/css", "application/json" };
+			var assetFilePaths = assetFileNames.Select(n => Path.Combine(peDef.AbsolutePath, "assets", n)).ToArray();
+			var assetFileLines = assetFilePaths.Select(p => File.ReadLines(p).ToArray()).ToArray();
+			var assetMd5Hexes = assetFilePaths.Select(p => BitConverter.ToString(MD5.HashData(File.ReadAllBytes(p))).Replace("-", "")).ToArray();
+			var localChecksum = PortalExtensionObserver.GetBuildHash(assetFileLines[0], assetFileLines[1], assetFileLines[2]);
+
+			var remoteRef = remotePortalRefs.FirstOrDefault(r => r.name.GetOrElse("") == peDef.Name);
+			var remoteFiles = remoteRef?.files.GetOrElse(Array.Empty<BeamoV2ExtensionContentReference>()) ?? Array.Empty<BeamoV2ExtensionContentReference>();
+			var remoteFileRefs = assetFileNames.Select(name => remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == name)).ToArray();
+			var uploadFlags = remoteFileRefs.Select((r, i) => r == null || r.version.GetOrElse("") != assetMd5Hexes[i]).ToArray();
+			var needsUpload = uploadFlags.Any(u => u);
+
+			if (needsUpload)
+			{
+				portalExtensionsToUpload.Add(new PortalExtensionUploadInfo
+				{
+					name = peDef.Name,
+					absolutePath = peDef.AbsolutePath,
+					checksum = localChecksum,
+					files = assetFileNames.Select((fileName, i) => new PortalExtensionFileUploadInfo
+					{
+						fileName = fileName,
+						contentType = assetContentTypes[i],
+						checksum = assetMd5Hexes[i],
+						needsUpload = uploadFlags[i],
+						existingContentId = remoteFileRefs[i]?.contentId.GetOrElse(""),
+					}).ToList(),
+				});
+
+				localPortalExtensionRefs.Add(new PortalExtensionPlanReference
+				{
+					name = peDef.Name,
+					checksum = localChecksum,
+					enabled = true,
+					// Populate file versions (per-file MD5) now so change-detection can compare them
+					// before upload. contentIds are filled in later by UploadPortalExtensionBinaries.
+					files = assetFileNames.Select((fileName, i) => new PortalExtensionPlanFileReference
+					{
+						name = fileName,
+						version = assetMd5Hexes[i],
+						contentId = remoteFileRefs[i]?.contentId.GetOrElse("") ?? "",
+					}).ToList(),
+				});
+			}
+			else
+			{
+				localPortalExtensionRefs.Add(PortalExtensionPlanReference.FromBeamoV2(remoteRef));
+			}
+		}
+		// ── End Portal Extensions ─────────────────────────────────────────────────
+
+		// ── Pinned bundle references ──────────────────────────────────────────────
+		// The locally-authored pins live in .beamable/manifest.beam.json. Legacy workspaces without the
+		// file skip the merge entirely (release won't send references either, so nothing changes for them).
+		var configService = provider.GetService<ConfigService>();
+		var hasManifestReferences = configService.ExistsManifestReferences();
+		var localBundleReferences = hasManifestReferences
+			? configService.LoadManifestReferences()?.references ?? new Dictionary<string, string>()
+			: new Dictionary<string, string>();
+		IDictionary<string, string> remoteBundleReferences = hasManifestReferences
+			? beamoV2Manifest?.references.GetOrElse(new MapOfString()) ?? new MapOfString()
+			: new Dictionary<string, string>();
+
+		List<PortalExtensionPlanReference> nextPortalExtensionRefs = null;
+		Dictionary<string, string> nextBundleReferences = null;
+
 		switch (args.DeployMode)
 		{
 			case DeployMode.Additive:
 				next = MergeAdditive(remote, localManifest);
+				nextPortalExtensionRefs = MergeAdditive(remotePortalExtensionRefs, localPortalExtensionRefs);
+				nextBundleReferences = MergeAdditive(remoteBundleReferences, localBundleReferences);
 				break;
 			case DeployMode.Replace:
 				next = MergeReplacement(remote, localManifest, beamo.BeamoManifest.LocallyIgnoredBeamoIds);
+				nextPortalExtensionRefs = MergeReplacement(remotePortalExtensionRefs, localPortalExtensionRefs, beamo.BeamoManifest.LocallyIgnoredBeamoIds);
+				nextBundleReferences = MergeReplacement(remoteBundleReferences, localBundleReferences);
 				break;
 			default:
 				throw new NotImplementedException(
@@ -1365,19 +1592,71 @@ public partial class DeployUtil
 			}
 		}
 
-		// Drop authored-bundle services/storages from the intended manifest so they aren't planned as
-		// inline components (they reach the realm via the bundle reference instead).
+		// Drop authored-bundle services/storages/portal-extensions from the intended manifest so they
+		// aren't planned as inline components (they reach the realm via the bundle reference instead).
 		if (bundleComponentIds.Count > 0)
 		{
 			next.manifest = next.manifest.Where(s => !bundleComponentIds.Contains(s.serviceName)).ToArray();
 			if (next.storageReference.HasValue)
 				next.storageReference.Value = next.storageReference.Value
 					.Where(st => !bundleComponentIds.Contains(st.id)).ToArray();
+			nextPortalExtensionRefs = nextPortalExtensionRefs
+				.Where(pe => !bundleComponentIds.Contains(pe.name)).ToList();
 		}
 
 		progressHandler?.Invoke(MergingManifestProgressName, .5f);
 		diff = FindChanges(remote, next);
-		
+
+		// Portal extensions and bundle references aren't part of the v1 ManifestView, so FindChanges
+		// can't see them — diff the merged results against the remote v2 state here.
+		{
+			foreach (var nextRef in nextPortalExtensionRefs)
+			{
+				var remoteRef = remotePortalExtensionRefs.FirstOrDefault(r => r.name == nextRef.name);
+				if (remoteRef == null)
+				{
+					diff.addedPortalExtensions.Add(nextRef.name);
+				}
+				else if (nextRef.archived && !remoteRef.archived)
+				{
+					diff.removedPortalExtensions.Add(nextRef.name);
+				}
+				else if (nextRef.checksum != remoteRef.checksum)
+				{
+					diff.changedPortalExtensions.Add(nextRef.name);
+				}
+			}
+
+			// a remote extension can drop out of the merged set entirely when it became part of an
+			// authored bundle (see the bundleComponentIds filter above).
+			foreach (var remoteRef in remotePortalExtensionRefs)
+			{
+				if (remoteRef.archived) continue;
+				if (nextPortalExtensionRefs.Any(r => r.name == remoteRef.name)) continue;
+				diff.removedPortalExtensions.Add(remoteRef.name);
+			}
+
+			foreach (var kvp in nextBundleReferences)
+			{
+				if (!remoteBundleReferences.TryGetValue(kvp.Key, out var remoteChecksum))
+				{
+					diff.addedBundleReferences.Add(new BundleReferenceChange { bundle = kvp.Key, nextChecksum = kvp.Value });
+				}
+				else if (remoteChecksum != kvp.Value)
+				{
+					diff.changedBundleReferences.Add(new BundleReferenceChange { bundle = kvp.Key, oldChecksum = remoteChecksum, nextChecksum = kvp.Value });
+				}
+			}
+
+			foreach (var kvp in remoteBundleReferences)
+			{
+				if (!nextBundleReferences.ContainsKey(kvp.Key))
+				{
+					diff.removedBundleReferences.Add(new BundleReferenceChange { bundle = kvp.Key, oldChecksum = kvp.Value });
+				}
+			}
+		}
+
 		if (!TryValidate(next, out var validationErrors))
 		{
 			throw new CliException($"The plan is invalid.\n{string.Join("\n -", validationErrors)}");
@@ -1400,8 +1679,6 @@ public partial class DeployUtil
 			}
 		}
 		
-		
-		var beamoV2Manifest = await beamoV2ManifestTask;
 		
 		BeamoV2ServiceReference[] beamoV2ServiceReferences = beamoV2Manifest.serviceReferences.GetOrElse(Array.Empty<BeamoV2ServiceReference>());
 		// Get Which services are going to upgrade to the new version
@@ -1429,168 +1706,6 @@ public partial class DeployUtil
 
 			diff.servicesSwitchingLogProvider = logProviderChanges;
 		}
-
-		// ── Pinned bundle references ──────────────────────────────────────────────
-		// Diff the locally-authored pins (manifest.beam.json) against the realm's current v2
-		// manifest references. Legacy workspaces without the file skip the diff entirely (release
-		// won't send references either, so nothing changes for them).
-		var configService = provider.GetService<ConfigService>();
-		var localBundleReferences = configService.LoadManifestReferences()?.references
-		                            ?? new Dictionary<string, string>();
-		if (configService.ExistsManifestReferences())
-		{
-			var remoteBundleReferences = beamoV2Manifest?.references.GetOrElse(new MapOfString()) ?? new MapOfString();
-			foreach (var kvp in localBundleReferences)
-			{
-				if (!remoteBundleReferences.TryGetValue(kvp.Key, out var remoteChecksum))
-				{
-					diff.addedBundleReferences.Add(new BundleReferenceChange { bundle = kvp.Key, nextChecksum = kvp.Value });
-				}
-				else if (remoteChecksum != kvp.Value)
-				{
-					diff.changedBundleReferences.Add(new BundleReferenceChange { bundle = kvp.Key, oldChecksum = remoteChecksum, nextChecksum = kvp.Value });
-				}
-			}
-
-			foreach (var kvp in remoteBundleReferences)
-			{
-				if (!localBundleReferences.ContainsKey(kvp.Key))
-				{
-					diff.removedBundleReferences.Add(new BundleReferenceChange { bundle = kvp.Key, oldChecksum = kvp.Value });
-				}
-			}
-		}
-
-		// ── Portal Extensions ─────────────────────────────────────────────────────
-		var remotePortalRefs = beamoV2Manifest.portalExtensionReferences
-			.GetOrElse(Array.Empty<BeamoV2PortalExtensionReference>());
-
-		var localPeDefs = beamo.BeamoManifest.ServiceDefinitions
-			.Where(d => d.Protocol == BeamoProtocolType.PortalExtension && d.IsLocal)
-			.Select(d => d.PortalExtensionDefinition)
-			// Portal extensions that belong to an authored bundle are excluded from the root manifest.
-			.Where(d => !bundleComponentIds.Contains(d.Name))
-			// On a filtered plan, only build the requested extensions.
-			.Where(d => includeOnlyBeamoIds == null || includeOnlyBeamoIds.Contains(d.Name))
-			.ToList();
-
-		// Fail fast (before the expensive build loop below) if any portal extension name collides with
-		// another portal extension or with a microservice/storage, across both local and deployed names.
-		{
-			var serviceAndStorageNames = next.manifest.Select(s => s.serviceName)
-				.Concat(next.storageReference.GetOrElse(Array.Empty<ServiceStorageReference>()).Select(s => s.id))
-				.ToList();
-			var peConflicts = PortalExtensionNameValidator.FindConflicts(
-				localPeDefs.Select(d => d.Name).ToList(),
-				remotePortalRefs.Select(r => r.name.GetOrElse(string.Empty)).ToList(),
-				serviceAndStorageNames);
-			if (peConflicts.Count > 0)
-				throw new CliException("Cannot deploy due to portal extension name conflicts:\n - " + string.Join("\n - ", peConflicts));
-		}
-
-		var portalExtensionsToUpload = new List<PortalExtensionUploadInfo>();
-		var portalExtensionReferences = new List<PortalExtensionPlanReference>();
-		var localPeNames = new HashSet<string>();
-
-		foreach (var peDef in localPeDefs)
-		{
-			var newCliProvider = DefaultActivityProvider.CreateCliServiceProvider();
-			using var beamActivity = newCliProvider.Create($"Planning Portal Extension: {peDef.Name}");
-
-			beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(peDef.Name));
-
-			localPeNames.Add(peDef.Name);
-
-			var observer = new PortalExtensionObserver { ExtensionMetaData = peDef, RootActivity = beamActivity };
-			observer.InstallDeps();
-			observer.BuildExtension();
-
-			var assetFileNames = new[] { "index.js", "style.css", "metadata.json" };
-			var assetContentTypes = new[] { "application/javascript", "text/css", "application/json" };
-			var assetFilePaths = assetFileNames.Select(n => Path.Combine(peDef.AbsolutePath, "assets", n)).ToArray();
-			var assetFileLines = assetFilePaths.Select(p => File.ReadLines(p).ToArray()).ToArray();
-			var assetMd5Hexes = assetFilePaths.Select(p => BitConverter.ToString(MD5.HashData(File.ReadAllBytes(p))).Replace("-", "")).ToArray();
-			var localChecksum = PortalExtensionObserver.GetBuildHash(assetFileLines[0], assetFileLines[1], assetFileLines[2]);
-
-			var remoteRef = remotePortalRefs.FirstOrDefault(r => r.name.GetOrElse("") == peDef.Name);
-			var remoteFiles = remoteRef?.files.GetOrElse(Array.Empty<BeamoV2ExtensionContentReference>()) ?? Array.Empty<BeamoV2ExtensionContentReference>();
-			var remoteFileRefs = assetFileNames.Select(name => remoteFiles.FirstOrDefault(f => f.name.GetOrElse("") == name)).ToArray();
-			var uploadFlags = remoteFileRefs.Select((r, i) => r == null || r.version.GetOrElse("") != assetMd5Hexes[i]).ToArray();
-			var needsUpload = uploadFlags.Any(u => u);
-
-			if (needsUpload)
-			{
-				if (remoteRef == null)
-				{
-					diff.addedPortalExtensions.Add(peDef.Name);
-				}
-				else
-				{
-					diff.changedPortalExtensions.Add(peDef.Name);
-				}
-
-				portalExtensionsToUpload.Add(new PortalExtensionUploadInfo
-				{
-					name = peDef.Name,
-					absolutePath = peDef.AbsolutePath,
-					checksum = localChecksum,
-					files = assetFileNames.Select((fileName, i) => new PortalExtensionFileUploadInfo
-					{
-						fileName = fileName,
-						contentType = assetContentTypes[i],
-						checksum = assetMd5Hexes[i],
-						needsUpload = uploadFlags[i],
-						existingContentId = remoteFileRefs[i]?.contentId.GetOrElse(""),
-					}).ToList(),
-				});
-
-				portalExtensionReferences.Add(new PortalExtensionPlanReference
-				{
-					name = peDef.Name,
-					checksum = localChecksum,
-					enabled = true,
-					// Populate file versions (per-file MD5) now so change-detection can compare them
-					// before upload. contentIds are filled in later by UploadPortalExtensionBinaries.
-					files = assetFileNames.Select((fileName, i) => new PortalExtensionPlanFileReference
-					{
-						name = fileName,
-						version = assetMd5Hexes[i],
-						contentId = remoteFileRefs[i]?.contentId.GetOrElse("") ?? "",
-					}).ToList(),
-				});
-			}
-			else
-			{
-				portalExtensionReferences.Add(PortalExtensionPlanReference.FromBeamoV2(remoteRef));
-			}
-		}
-
-		if (args.DeployMode == DeployMode.Replace)
-		{
-			foreach (var remoteRef in remotePortalRefs)
-			{
-				var name = remoteRef.name.GetOrElse("");
-				if (localPeNames.Contains(name)) continue;
-				if (remoteRef.archived.GetOrElse(false)) continue;
-
-				diff.removedPortalExtensions.Add(name);
-				portalExtensionReferences.Add(new PortalExtensionPlanReference
-				{
-					name = name,
-					checksum = remoteRef.checksum.GetOrElse(""),
-					files = remoteRef.files.GetOrElse(Array.Empty<BeamoV2ExtensionContentReference>())
-						.Select(f => new PortalExtensionPlanFileReference
-						{
-							contentId = f.contentId.GetOrElse(""),
-							name = f.name.GetOrElse(""),
-							version = f.version.GetOrElse(""),
-						}).ToList(),
-					archived = true,
-					enabled = false,
-				});
-			}
-		}
-		// ── End Portal Extensions ──────────────────────────────────────────────────
 
 		if (args.RunHealthChecks)
 		{
@@ -1659,9 +1774,10 @@ public partial class DeployUtil
 			notes = notes,
 			servicesToUpload = servicesToUpload,
 			portalExtensionsToUpload = portalExtensionsToUpload,
-			portalExtensionReferences = portalExtensionReferences,
-			// v2 bundle references authored in .beamable/manifest.beam.json (empty for legacy v1).
-			references = localBundleReferences,
+			portalExtensionReferences = nextPortalExtensionRefs,
+			// v2 bundle references, merged per deploy mode from the remote pins and the pins authored
+			// in .beamable/manifest.beam.json (empty for legacy v1).
+			references = nextBundleReferences,
 			changeCount = diff.addedStorage.Count
 			              + diff.removedStorage.Count
 			              + diff.disabledStorages.Count
@@ -1769,9 +1885,11 @@ public partial class DeployUtil
 
 		cts.Token.ThrowIfCancellationRequested();
 
-		// v2: load bundle references so schemaVersion + references can be attached below — the server
-		// resolves + assembles them. Components in authored bundles are already excluded from the inline
-		// arrays at plan time (see DeployUtil.Plan). Absent file → v1 manifest (unchanged behavior).
+		// v2: the file's presence opts the workspace into the bundle-references schema and provides the
+		// schemaVersion; the reference map itself comes from the plan, where it was merged per deploy
+		// mode (additive keeps remote-only pins, replace drops them). The server resolves + assembles
+		// them. Components in authored bundles are already excluded from the inline arrays at plan time
+		// (see DeployUtil.Plan). Absent file → v1 manifest (unchanged behavior).
 		var manifestReferences = provider.GetService<ConfigService>().LoadManifestReferences();
 
 		// publish manifest.
@@ -1804,12 +1922,12 @@ public partial class DeployUtil
 			comments = plan.manifest.comments,
 		};
 
-		// attach schemaVersion + references (loaded above) so the server assembles referenced bundles.
+		// attach schemaVersion + the plan's merged references so the server assembles referenced bundles.
 		if (manifestReferences != null)
 		{
 			beamoV2PostManifestRequest.schemaVersion = manifestReferences.schemaVersion;
 			beamoV2PostManifestRequest.references =
-				new OptionalMapOfString(manifestReferences.references ?? new Dictionary<string, string>());
+				new OptionalMapOfString(plan.references ?? new Dictionary<string, string>());
 		}
 
 		progressHandler?.Invoke("publish", .1f, false);
