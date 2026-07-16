@@ -64,6 +64,59 @@ namespace Beamable.Editor.Tests
 		}
 
 		[Test]
+		public void ContentHistoryEntryCache_ReusesSortedSnapshotUntilEntriesChange()
+		{
+			var cache = new ContentHistoryEntryCache();
+			cache.Apply(new[] { new BeamContentHistoryEntry { ManifestUid = "first", CreatedDate = 1 } });
+
+			var initialSnapshot = cache.Entries;
+			Assert.That(cache.Entries, Is.SameAs(initialSnapshot));
+
+			cache.Apply(new[] { new BeamContentHistoryEntry { ManifestUid = "second", CreatedDate = 2 } });
+
+			var updatedSnapshot = cache.Entries;
+			Assert.That(updatedSnapshot, Is.Not.SameAs(initialSnapshot));
+			Assert.That(updatedSnapshot.Select(entry => entry.ManifestUid), Is.EqualTo(new[] { "second", "first" }));
+
+			cache.Apply(null, new[] { "second" });
+			var removedSnapshot = cache.Entries;
+			Assert.That(removedSnapshot, Is.Not.SameAs(updatedSnapshot));
+			Assert.That(removedSnapshot.Select(entry => entry.ManifestUid), Is.EqualTo(new[] { "first" }));
+
+			cache.Clear();
+			Assert.That(cache.Entries, Is.Empty);
+		}
+
+		[TestCase(0, 0f, 100f, 20f, 0, 0)]
+		[TestCase(10, 0f, 40f, 20f, 0, 3)]
+		[TestCase(10, 40f, 40f, 20f, 2, 5)]
+		[TestCase(10, 180f, 40f, 20f, 9, 10)]
+		[TestCase(2, 0f, 200f, 20f, 0, 2)]
+		public void GetVisibleRange_ReturnsOnlyRowsIntersectingTheViewport(int itemCount, float scrollPosition, float viewportHeight,
+			float rowHeight, int expectedFirstIndex, int expectedLastExclusive)
+		{
+			var range = ContentHistoryPagination.GetVisibleRange(itemCount, scrollPosition, viewportHeight, rowHeight);
+
+			Assert.That(range.FirstIndex, Is.EqualTo(expectedFirstIndex));
+			Assert.That(range.LastExclusive, Is.EqualTo(expectedLastExclusive));
+		}
+
+		[Test]
+		public void ContentHistoryOperationException_FormatsFullCopyableDiagnostic()
+		{
+			var error = new ContentHistoryOperationException(
+				"Load publish changes",
+				"Unable to load changes for this publish. Check your connection and try again.",
+				"manifest-123",
+				new InvalidOperationException("Network connection was lost."));
+
+			Assert.That(error.Diagnostic, Does.Contain("Load publish changes"));
+			Assert.That(error.Diagnostic, Does.Contain("manifest-123"));
+			Assert.That(error.Diagnostic, Does.Contain("InvalidOperationException"));
+			Assert.That(error.Diagnostic, Does.Contain("Network connection was lost."));
+		}
+
+		[Test]
 		public void ContentHistoryStreamParser_ParsesCamelCaseEntryFields()
 		{
 			var entries = string.Join(",", Enumerable.Range(1, 21).Select(index =>
@@ -102,6 +155,15 @@ namespace Beamable.Editor.Tests
 			Assert.That(streamEntries, Has.Length.EqualTo(1));
 			Assert.That(ContentHistoryStreamParser.TryParseChanges(terminalJson, out _), Is.False);
 			Assert.That(streamEntries[0].FullId, Is.EqualTo("stores.Store_Coin"));
+		}
+
+		[Test]
+		public void ContentHistoryStreamParser_TryParseChanges_RejectsStreamWithoutChangeEntries()
+		{
+			const string streamJson = "{\"ts\":1,\"type\":\"stream\",\"data\":{}}";
+
+			Assert.That(ContentHistoryStreamParser.TryParseChanges(streamJson, out var entries), Is.False);
+			Assert.That(entries, Is.Empty);
 		}
 
 		[Test]

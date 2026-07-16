@@ -26,6 +26,10 @@ namespace Beamable.Editor.ContentService
 		/// </summary>
 		public bool IsContentHistoryWatching => _contentHistoryWatcher != null;
 		/// <summary>
+		/// Gets the last watcher failure so the History window can display a recoverable error state.
+		/// </summary>
+		public ContentHistoryOperationException ContentHistoryWatcherError { get; private set; }
+		/// <summary>
 		/// True after the watcher has delivered its first valid history event, including an empty history.
 		/// </summary>
 		public bool HasReceivedInitialContentHistory { get; private set; }
@@ -43,6 +47,7 @@ namespace Beamable.Editor.ContentService
 
 			_contentHistoryEntryCache.Clear();
 			HasReceivedInitialContentHistory = false;
+			ContentHistoryWatcherError = null;
 			ContentHistoryVersion++;
 			_contentHistoryWatcher = _cli.ContentHistory(new ContentHistoryArgs
 			{
@@ -51,7 +56,16 @@ namespace Beamable.Editor.ContentService
 				requireProcessId = Process.GetCurrentProcess().Id
 			});
 			_contentHistoryWatcher.Command.On(report => OnContentHistoryEvent(report.json));
-			_ = _contentHistoryWatcher.Run();
+			_ = RunContentHistoryWatcher(_contentHistoryWatcher);
+		}
+
+		/// <summary>
+		/// Stops a failed watcher, if any, and starts a new watcher with a fresh editor-side cache.
+		/// </summary>
+		public void RestartContentHistory()
+		{
+			StopContentHistory();
+			StartContentHistory();
 		}
 
 		/// <summary>
@@ -75,7 +89,6 @@ namespace Beamable.Editor.ContentService
 		/// <param name="manifestUid">The historical manifest UID to inspect.</param>
 		public async Task<BeamContentHistoryChangelistEntry[]> GetContentHistoryChanges(string manifestUid)
 		{
-			var changesWaiter = new TaskCompletionSource<BeamContentHistoryChangelistEntry[]>();
 			var wrapper = _cli.ContentHistorySyncContent(new ContentHistoryArgs
 			{
 				manifestIds = GetSelectedManifestIdsCliOption()
@@ -83,16 +96,33 @@ namespace Beamable.Editor.ContentService
 			{
 				manifestUid = manifestUid
 			});
-			wrapper.Command.On(report =>
+			BeamContentHistoryChangelistEntry[] changes = null;
+			try
 			{
-				if (ContentHistoryStreamParser.TryParseChanges(report.json, out var entries))
+				wrapper.Command.On(report =>
 				{
-					changesWaiter.TrySetResult(entries);
-				}
-			});
+					if (ContentHistoryStreamParser.TryParseChanges(report.json, out var entries))
+					{
+						changes = entries;
+					}
+				});
 
-			await wrapper.Run();
-			return await changesWaiter.Task;
+				await wrapper.Run();
+				if (changes == null)
+				{
+					throw new InvalidOperationException("The CLI completed without delivering a usable content-history changelist stream response.");
+				}
+
+				return changes;
+			}
+			catch (Exception exception)
+			{
+				throw new ContentHistoryOperationException(
+					"Load publish changes",
+					"Unable to load changes for this publish. Check your connection and try again.",
+					manifestUid,
+					exception);
+			}
 		}
 
 		/// <summary>
@@ -102,16 +132,34 @@ namespace Beamable.Editor.ContentService
 		/// <param name="contentId">The full content ID to preview.</param>
 		public async Task<string> GetContentHistoryJson(string manifestUid, string contentId)
 		{
-			var entries = await GetContentHistoryChanges(manifestUid);
-			foreach (var entry in entries)
+			try
 			{
-				if (entry.FullId == contentId && !string.IsNullOrEmpty(entry.JsonFilePath) && File.Exists(entry.JsonFilePath))
+				var entries = await GetContentHistoryChanges(manifestUid);
+				foreach (var entry in entries)
 				{
+					if (entry.FullId != contentId)
+					{
+						continue;
+					}
+
+					if (string.IsNullOrEmpty(entry.JsonFilePath) || !File.Exists(entry.JsonFilePath))
+					{
+						throw new FileNotFoundException("The CLI did not provide a readable cached historical content file.", entry.JsonFilePath);
+					}
+
 					return await File.ReadAllTextAsync(entry.JsonFilePath);
 				}
-			}
 
-			return string.Empty;
+				throw new FileNotFoundException($"The selected content entry '{contentId}' was not included in the historical changelist.");
+			}
+			catch (Exception exception)
+			{
+				throw new ContentHistoryOperationException(
+					"Preview historical content",
+					"Unable to load this historical content file. Check your connection and try again.",
+					manifestUid,
+					exception);
+			}
 		}
 
 		/// <summary>
@@ -121,29 +169,131 @@ namespace Beamable.Editor.ContentService
 		/// <param name="manifestUid">The historical manifest UID to restore.</param>
 		public async Task RestoreContentHistory(string manifestUid)
 		{
-			var wrapper = _cli.ContentHistoryRestoreContent(new ContentHistoryArgs
+			try
 			{
-				manifestIds = GetSelectedManifestIdsCliOption()
-			}, new ContentHistoryRestoreContentArgs
-			{
-				manifestUid = manifestUid
-			});
+				var wrapper = _cli.ContentHistoryRestoreContent(new ContentHistoryArgs
+				{
+					manifestIds = GetSelectedManifestIdsCliOption()
+				}, new ContentHistoryRestoreContentArgs
+				{
+					manifestUid = manifestUid
+				});
 
-			await wrapper.Run();
-			await Reload();
+				await wrapper.Run();
+				await Reload();
+			}
+			catch (ContentHistoryOperationException)
+			{
+				throw;
+			}
+			catch (Exception exception)
+			{
+				throw new ContentHistoryOperationException(
+					"Restore changed files",
+					"Unable to restore changed files. Check your connection and try again.",
+					manifestUid,
+					exception);
+			}
+		}
+
+		private async Task RunContentHistoryWatcher(ContentHistoryWrapper watcher)
+		{
+			try
+			{
+				await watcher.Run();
+				if (ReferenceEquals(_contentHistoryWatcher, watcher))
+				{
+					SetContentHistoryWatcherError(new ContentHistoryOperationException(
+						"Watch publish history",
+						HasReceivedInitialContentHistory
+							? "History updates stopped. Showing the history already loaded. Retry to resume updates."
+							: "Unable to load published history. Check your connection and try again.",
+						null,
+						new InvalidOperationException("The CLI history watcher ended unexpectedly.")));
+				}
+			}
+			catch (Exception exception)
+			{
+				if (ReferenceEquals(_contentHistoryWatcher, watcher))
+				{
+					SetContentHistoryWatcherError(new ContentHistoryOperationException(
+						"Watch publish history",
+						HasReceivedInitialContentHistory
+							? "History updates stopped. Showing the history already loaded. Retry to resume updates."
+							: "Unable to load published history. Check your connection and try again.",
+						null,
+						exception));
+				}
+			}
+		}
+
+		private void SetContentHistoryWatcherError(ContentHistoryOperationException error)
+		{
+			_contentHistoryWatcher = null;
+			ContentHistoryWatcherError = error;
+			ContentHistoryVersion++;
+			UnityEngine.Debug.LogError(error.Diagnostic);
 		}
 
 		private void OnContentHistoryEvent(string streamJson)
 		{
-			var historyUpdate = ContentHistoryStreamParser.Parse(streamJson);
-			if (historyUpdate == null)
+			try
 			{
-				return;
-			}
+				var historyUpdate = ContentHistoryStreamParser.Parse(streamJson);
+				if (historyUpdate == null)
+				{
+					return;
+				}
 
-			_contentHistoryEntryCache.Apply(historyUpdate.Entries, historyUpdate.EntriesToRemove);
-			HasReceivedInitialContentHistory = true;
-			ContentHistoryVersion++;
+				_contentHistoryEntryCache.Apply(historyUpdate.Entries, historyUpdate.EntriesToRemove);
+				HasReceivedInitialContentHistory = true;
+				ContentHistoryVersion++;
+			}
+			catch (Exception exception)
+			{
+				if (_contentHistoryWatcher == null)
+				{
+					return;
+				}
+
+				_contentHistoryWatcher.Cancel();
+				SetContentHistoryWatcherError(new ContentHistoryOperationException(
+					"Watch publish history",
+					"Unable to load published history. Check your connection and try again.",
+					null,
+					exception));
+			}
+		}
+	}
+
+	public class ContentHistoryOperationException : Exception
+	{
+		public string Operation { get; }
+		public string UserMessage { get; }
+		public string ManifestUid { get; }
+		public DateTimeOffset TimestampUtc { get; }
+
+		public string Diagnostic =>
+			$"Content History operation failed\n" +
+			$"Timestamp (UTC): {TimestampUtc:O}\n" +
+			$"Operation: {Operation}\n" +
+			$"Manifest UID: {ManifestUid ?? "(not applicable)"}\n" +
+			$"Exception:\n{InnerException}";
+
+		public ContentHistoryOperationException(string operation, string userMessage, string manifestUid, Exception innerException)
+			: base(userMessage, innerException)
+		{
+			Operation = operation;
+			UserMessage = userMessage;
+			ManifestUid = manifestUid;
+			TimestampUtc = DateTimeOffset.UtcNow;
+		}
+
+		public static ContentHistoryOperationException FromException(string operation, string userMessage, string manifestUid,
+			Exception exception)
+		{
+			return exception as ContentHistoryOperationException ??
+			       new ContentHistoryOperationException(operation, userMessage, manifestUid, exception);
 		}
 	}
 }

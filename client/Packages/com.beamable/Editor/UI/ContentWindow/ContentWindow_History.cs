@@ -1,6 +1,7 @@
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
+using Beamable.Editor.ContentService;
 using Beamable.Editor.ThirdParty.Splitter;
 using Beamable.Editor.Util;
 using System;
@@ -16,6 +17,8 @@ namespace Beamable.Editor.UI.ContentWindow
 	{
 		private static readonly int[] HistoryPageSizes = { 10, 20, 30, 40, 50 };
 		private const int HistoryChangesPageSize = 25;
+		private const float HistoryEntryRowHeight = 42f;
+		private const float HistoryChangeRowHeight = 22f;
 		private EditorGUISplitView _historySplitter;
 		private SearchData _historySearchData;
 		private Vector2 _historyEntriesScroll;
@@ -27,14 +30,27 @@ namespace Beamable.Editor.UI.ContentWindow
 		private int _historyPageIndex;
 		private int _historyChangesPageIndex;
 		private int _historySelectionRequestVersion;
+		private int _historyPreviewRequestVersion;
+		private int _filteredHistoryVersion = -1;
+		private string _historyFilterKey;
+		private IReadOnlyList<BeamContentHistoryEntry> _filteredHistoryEntries = Array.Empty<BeamContentHistoryEntry>();
 		private bool _isLoadingHistoryChanges;
 		private bool _isLoadingHistoryPreview;
 		private bool _isRestoringHistory;
-		private string _historyRestoreError;
+		private string _historyPreviewContentId;
+		private ContentHistoryOperationException _historyChangesError;
+		private ContentHistoryOperationException _historyPreviewError;
+		private ContentHistoryOperationException _historyRestoreError;
+		private GUIStyle _historyAddedChangeStyle;
+		private GUIStyle _historyModifiedChangeStyle;
+		private GUIStyle _historyRemovedChangeStyle;
+		private GUIStyle _historyDefaultChangeStyle;
+		private GUIStyle _historyRestoreButtonStyle;
 
 		private void DrawContentHistory()
 		{
 			EnsureHistorySearchData();
+			EnsureHistoryStyles();
 			if (IsContentHistoryLoading() || _isRestoringHistory)
 			{
 				Repaint();
@@ -61,7 +77,15 @@ namespace Beamable.Editor.UI.ContentWindow
 				return;
 			}
 
-			_historySearchData = new SearchData { onEndCheck = () => _historyPageIndex = 0 };
+			_historySearchData = new SearchData
+			{
+				onEndCheck = () =>
+				{
+					_historyPageIndex = 0;
+					_historyEntriesScroll = Vector2.zero;
+					_historyFilterKey = null;
+				}
+			};
 		}
 
 		private void DrawHistoryEntries()
@@ -80,21 +104,25 @@ namespace Beamable.Editor.UI.ContentWindow
 			var pageSize = ContentHistoryPagination.ClampPageSize(_contentConfiguration.HistoryEntriesPerPage);
 			var pageCount = ContentHistoryPagination.GetPageCount(filteredEntries.Count, pageSize);
 			_historyPageIndex = ContentHistoryPagination.ClampPageIndex(_historyPageIndex, pageCount);
-			var currentEntries = filteredEntries.Skip(_historyPageIndex * pageSize).Take(pageSize).ToList();
+			var firstEntryIndex = _historyPageIndex * pageSize;
+			var currentEntryCount = Math.Min(pageSize, Math.Max(0, filteredEntries.Count - firstEntryIndex));
 
-			_historyEntriesScroll = EditorGUILayout.BeginScrollView(_historyEntriesScroll, GUILayout.ExpandHeight(true));
-			if (currentEntries.Count == 0)
+			if (_contentService.ContentHistoryWatcherError != null)
 			{
-				EditorGUILayout.HelpBox("No published content history matches this search.", MessageType.Info);
+				DrawHistoryOperationError(_contentService.ContentHistoryWatcherError, RetryContentHistory);
+			}
+
+			if (currentEntryCount == 0)
+			{
+				if (_contentService.ContentHistoryWatcherError == null)
+				{
+					EditorGUILayout.HelpBox("No published content history matches this search.", MessageType.Info);
+				}
 			}
 			else
 			{
-				foreach (var entry in currentEntries)
-				{
-					DrawHistoryEntry(entry);
-				}
+				DrawVirtualHistoryEntries(filteredEntries, firstEntryIndex, currentEntryCount);
 			}
-			EditorGUILayout.EndScrollView();
 
 			DrawHistoryPagination(filteredEntries.Count, pageSize, pageCount);
 			EditorGUILayout.EndVertical();
@@ -121,26 +149,44 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.EndVertical();
 		}
 
-		private List<BeamContentHistoryEntry> GetFilteredHistoryEntries()
+		private IReadOnlyList<BeamContentHistoryEntry> GetFilteredHistoryEntries()
 		{
 			var search = _historySearchData?.searchText?.Trim();
-			var entries = _contentService.ContentHistoryEntries;
-			if (string.IsNullOrEmpty(search))
+			var historyVersion = _contentService.ContentHistoryVersion;
+			if (_filteredHistoryVersion == historyVersion && string.Equals(_historyFilterKey, search, StringComparison.Ordinal))
 			{
-				return entries.ToList();
+				return _filteredHistoryEntries;
 			}
 
-			return entries.Where(entry =>
-				(entry.ManifestUid?.IndexOf(search, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
-				(entry.PublishedBy?.IndexOf(search, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
-				(entry.PublishedByName?.IndexOf(search, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0)
-				.ToList();
+			var entries = _contentService.ContentHistoryEntries;
+			_filteredHistoryEntries = string.IsNullOrEmpty(search)
+				? entries
+				: entries.Where(entry =>
+					(entry.ManifestUid?.IndexOf(search, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
+					(entry.PublishedBy?.IndexOf(search, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
+					(entry.PublishedByName?.IndexOf(search, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0)
+					.ToList();
+			_filteredHistoryVersion = historyVersion;
+			_historyFilterKey = search;
+			return _filteredHistoryEntries;
 		}
 
-		private void DrawHistoryEntry(BeamContentHistoryEntry entry)
+		private void DrawVirtualHistoryEntries(IReadOnlyList<BeamContentHistoryEntry> entries, int firstEntryIndex, int entryCount)
 		{
+			var areaRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+			var contentRect = new Rect(0, 0, Math.Max(0, areaRect.width - 16), entryCount * HistoryEntryRowHeight);
+			_historyEntriesScroll = GUI.BeginScrollView(areaRect, _historyEntriesScroll, contentRect, false, true);
+			var visibleRange = ContentHistoryPagination.GetVisibleRange(entryCount, _historyEntriesScroll.y, areaRect.height, HistoryEntryRowHeight);
+			for (var index = visibleRange.FirstIndex; index < visibleRange.LastExclusive; index++)
+			{
+				DrawHistoryEntry(entries[firstEntryIndex + index], new Rect(0, index * HistoryEntryRowHeight, contentRect.width, HistoryEntryRowHeight));
+			}
+			GUI.EndScrollView();
+		}
+
+		private void DrawHistoryEntry(BeamContentHistoryEntry entry, Rect rowRect)
+			{
 			var isSelected = entry.ManifestUid == _selectedHistoryManifestUid;
-			var rowRect = EditorGUILayout.GetControlRect(false, 42);
 			if (isSelected)
 			{
 				GUI.Box(rowRect, GUIContent.none, EditorStyles.selectionRect);
@@ -219,6 +265,10 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				EditorGUILayout.HelpBox("Loading historical content changes...", MessageType.Info);
 			}
+			else if (_historyChangesError != null)
+			{
+				DrawHistoryOperationError(_historyChangesError, RetryHistoryChanges);
+			}
 			else
 			{
 				DrawHistoryChangesTable();
@@ -231,7 +281,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void DrawHistoryChangesTable()
 		{
 			EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-			EditorGUILayout.LabelField("Change", GUILayout.Width(88));
+			EditorGUILayout.LabelField("Change", GUILayout.Width(110));
 			EditorGUILayout.LabelField("Content", GUILayout.ExpandWidth(true));
 			EditorGUILayout.LabelField("Type", GUILayout.Width(110));
 			EditorGUILayout.LabelField("Preview", GUILayout.Width(55));
@@ -239,27 +289,25 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			var pageCount = ContentHistoryPagination.GetPageCount(_selectedHistoryChanges.Length, HistoryChangesPageSize);
 			_historyChangesPageIndex = ContentHistoryPagination.ClampPageIndex(_historyChangesPageIndex, pageCount);
-			var currentChanges = _selectedHistoryChanges
-				.Skip(_historyChangesPageIndex * HistoryChangesPageSize)
-				.Take(HistoryChangesPageSize);
+			var firstChangeIndex = _historyChangesPageIndex * HistoryChangesPageSize;
+			var currentChangeCount = Math.Min(HistoryChangesPageSize, Math.Max(0, _selectedHistoryChanges.Length - firstChangeIndex));
 
 			using (new EditorGUI.DisabledScope(IsHistoryRightPaneLocked()))
 			{
-				_historyChangesScroll = EditorGUILayout.BeginScrollView(_historyChangesScroll, GUILayout.ExpandHeight(true));
-				foreach (var entry in currentChanges)
+				if (currentChangeCount == 0)
 				{
-					EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
-					DrawHistoryChangeStatus(entry.ChangeStatus);
-					EditorGUILayout.LabelField(entry.FullId, GUILayout.ExpandWidth(true));
-					EditorGUILayout.LabelField(entry.TypeName, GUILayout.Width(110));
-					using (new EditorGUI.DisabledScope(_isLoadingHistoryPreview || string.IsNullOrEmpty(entry.JsonFilePath)))
-					{
-						if (GUILayout.Button("View", GUILayout.Width(55))) _ = LoadHistoryPreview(entry.FullId);
-					}
-					EditorGUILayout.EndHorizontal();
+					EditorGUILayout.HelpBox("This publish has no changed content items.", MessageType.Info);
 				}
-				EditorGUILayout.EndScrollView();
+				else
+				{
+					DrawVirtualHistoryChanges(firstChangeIndex, currentChangeCount);
+				}
 				DrawHistoryChangesPagination(_selectedHistoryChanges.Length, pageCount);
+			}
+
+			if (_historyPreviewError != null)
+			{
+				DrawHistoryOperationError(_historyPreviewError, RetryHistoryPreview);
 			}
 
 			if (!string.IsNullOrEmpty(_selectedHistoryJson))
@@ -268,6 +316,36 @@ namespace Beamable.Editor.UI.ContentWindow
 				_historyPreviewScroll = EditorGUILayout.BeginScrollView(_historyPreviewScroll, GUILayout.Height(120));
 				EditorGUILayout.TextArea(_selectedHistoryJson, GUILayout.ExpandHeight(true));
 				EditorGUILayout.EndScrollView();
+			}
+		}
+
+		private void DrawVirtualHistoryChanges(int firstChangeIndex, int changeCount)
+		{
+			var areaRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+			var contentRect = new Rect(0, 0, Math.Max(0, areaRect.width - 16), changeCount * HistoryChangeRowHeight);
+			_historyChangesScroll = GUI.BeginScrollView(areaRect, _historyChangesScroll, contentRect, false, true);
+			var visibleRange = ContentHistoryPagination.GetVisibleRange(changeCount, _historyChangesScroll.y, areaRect.height, HistoryChangeRowHeight);
+			for (var index = visibleRange.FirstIndex; index < visibleRange.LastExclusive; index++)
+			{
+				DrawHistoryChange(_selectedHistoryChanges[firstChangeIndex + index],
+					new Rect(0, index * HistoryChangeRowHeight, contentRect.width, HistoryChangeRowHeight));
+			}
+			GUI.EndScrollView();
+		}
+
+		private void DrawHistoryChange(BeamContentHistoryChangelistEntry entry, Rect rowRect)
+		{
+			GUI.Box(rowRect, GUIContent.none, EditorStyles.helpBox);
+			var statusRect = new Rect(rowRect.x, rowRect.y, 110, rowRect.height);
+			var previewRect = new Rect(rowRect.xMax - 55, rowRect.y + 1, 55, rowRect.height - 2);
+			var typeRect = new Rect(previewRect.x - 110, rowRect.y, 110, rowRect.height);
+			var contentRect = new Rect(statusRect.xMax, rowRect.y, Math.Max(0, typeRect.x - statusRect.xMax), rowRect.height);
+			DrawHistoryChangeStatus(entry.ChangeStatus, statusRect);
+			GUI.Label(contentRect, entry.FullId);
+			GUI.Label(typeRect, entry.TypeName);
+			using (new EditorGUI.DisabledScope(_isLoadingHistoryPreview || string.IsNullOrEmpty(entry.JsonFilePath)))
+			{
+				if (GUI.Button(previewRect, "View")) _ = LoadHistoryPreview(entry.FullId);
 			}
 		}
 
@@ -295,22 +373,19 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.EndHorizontal();
 		}
 
-		private static void DrawHistoryChangeStatus(int changeStatus)
+		private void DrawHistoryChangeStatus(int changeStatus, Rect rect)
 		{
-			var (label, icon, color) = ((ContentStatus)changeStatus) switch
+			var (label, icon, style) = ((ContentStatus)changeStatus) switch
 			{
-				ContentStatus.Created => ("Added", BeamGUI.iconStatusAdded, new Color(.45f, .8f, .3f)),
-				ContentStatus.Modified => ("Modified", BeamGUI.iconStatusModified, new Color(1f, .65f, .15f)),
-				ContentStatus.Deleted => ("Removed", BeamGUI.iconStatusDeleted, new Color(1f, .35f, .3f)),
-				_ => ("Changed", BeamGUI.iconStatusModified, EditorStyles.label.normal.textColor)
+				ContentStatus.Created => ("Added", BeamGUI.iconStatusAdded, _historyAddedChangeStyle),
+				ContentStatus.Modified => ("Modified", BeamGUI.iconStatusModified, _historyModifiedChangeStyle),
+				ContentStatus.Deleted => ("Removed", BeamGUI.iconStatusDeleted, _historyRemovedChangeStyle),
+				_ => ("Changed", BeamGUI.iconStatusModified, _historyDefaultChangeStyle)
 			};
 
-			var rect = GUILayoutUtility.GetRect(110, EditorGUIUtility.singleLineHeight, GUILayout.Width(110));
 			var iconRect = new Rect(rect.x + 2, rect.y + 1, 16, 16);
 			GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
-			var labelStyle = new GUIStyle(EditorStyles.label);
-			labelStyle.normal.textColor = color;
-			GUI.Label(new Rect(iconRect.xMax + 5, rect.y, rect.width - 23, rect.height), label, labelStyle);
+			GUI.Label(new Rect(iconRect.xMax + 5, rect.y, rect.width - 23, rect.height), label, style);
 		}
 
 		private void DrawHistoryActions()
@@ -331,14 +406,13 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.LabelField("Restores local files only — review and publish to update the realm.", EditorStyles.miniLabel);
-			if (!string.IsNullOrEmpty(_historyRestoreError))
+			if (_historyRestoreError != null)
 			{
-				EditorGUILayout.HelpBox(_historyRestoreError, MessageType.Error);
-				if (GUILayout.Button("Dismiss error")) _historyRestoreError = string.Empty;
+				DrawHistoryOperationError(_historyRestoreError, RestoreSelectedHistory, () => _historyRestoreError = null);
 			}
 		}
 
-		private static bool DrawHistoryRestoreButton(bool isEnabled)
+		private bool DrawHistoryRestoreButton(bool isEnabled)
 		{
 			var content = new GUIContent("Restore changed files...");
 			var rect = GUILayoutUtility.GetRect(content, GUI.skin.button, GUILayout.Width(172));
@@ -353,12 +427,68 @@ namespace Beamable.Editor.UI.ContentWindow
 				EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, 1), new Color(1f, 1f, 1f, .45f));
 			}
 			if (isEnabled) EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
-			GUI.Label(rect, content, new GUIStyle(EditorStyles.label)
+			GUI.Label(rect, content, _historyRestoreButtonStyle);
+			return isEnabled && GUI.Button(rect, GUIContent.none, GUIStyle.none);
+		}
+
+		private void DrawHistoryOperationError(ContentHistoryOperationException error, Action retry, Action dismiss = null)
+		{
+			EditorGUILayout.HelpBox(error.UserMessage, MessageType.Error);
+			EditorGUILayout.BeginHorizontal();
+			if (GUILayout.Button("Retry")) retry?.Invoke();
+			if (GUILayout.Button("Copy details")) EditorGUIUtility.systemCopyBuffer = error.Diagnostic;
+			if (dismiss != null && GUILayout.Button("Dismiss")) dismiss();
+			EditorGUILayout.EndHorizontal();
+		}
+
+		private void RetryContentHistory()
+		{
+			_contentService.RestartContentHistory();
+			Repaint();
+		}
+
+		private void RetryHistoryChanges()
+		{
+			if (string.IsNullOrEmpty(_selectedHistoryManifestUid))
+			{
+				return;
+			}
+
+			var requestVersion = ++_historySelectionRequestVersion;
+			_ = LoadHistoryChanges(_selectedHistoryManifestUid, requestVersion);
+		}
+
+		private void RetryHistoryPreview()
+		{
+			if (!string.IsNullOrEmpty(_historyPreviewContentId))
+			{
+				_ = LoadHistoryPreview(_historyPreviewContentId);
+			}
+		}
+
+		private void EnsureHistoryStyles()
+		{
+			if (_historyAddedChangeStyle != null)
+			{
+				return;
+			}
+
+			_historyAddedChangeStyle = CreateHistoryChangeStyle(new Color(.45f, .8f, .3f));
+			_historyModifiedChangeStyle = CreateHistoryChangeStyle(new Color(1f, .65f, .15f));
+			_historyRemovedChangeStyle = CreateHistoryChangeStyle(new Color(1f, .35f, .3f));
+			_historyDefaultChangeStyle = new GUIStyle(EditorStyles.label);
+			_historyRestoreButtonStyle = new GUIStyle(EditorStyles.label)
 			{
 				alignment = TextAnchor.MiddleCenter,
 				normal = { textColor = Color.white }
-			});
-			return isEnabled && GUI.Button(rect, GUIContent.none, GUIStyle.none);
+			};
+		}
+
+		private static GUIStyle CreateHistoryChangeStyle(Color color)
+		{
+			var style = new GUIStyle(EditorStyles.label);
+			style.normal.textColor = color;
+			return style;
 		}
 
 		private static void DrawHistoryRestoreProgress()
@@ -380,6 +510,12 @@ namespace Beamable.Editor.UI.ContentWindow
 			_selectedHistoryChanges = Array.Empty<BeamContentHistoryChangelistEntry>();
 			_selectedHistoryJson = string.Empty;
 			_historyChangesPageIndex = 0;
+			_historyChangesError = null;
+			_historyPreviewError = null;
+			_historyPreviewContentId = string.Empty;
+			_historyPreviewRequestVersion++;
+			_isLoadingHistoryPreview = false;
+			_historyPreviewScroll = Vector2.zero;
 			var requestVersion = ++_historySelectionRequestVersion;
 			_ = LoadHistoryChanges(manifestUid, requestVersion);
 		}
@@ -387,6 +523,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void ResetHistorySelection()
 		{
 			_historySelectionRequestVersion++;
+			_historyPreviewRequestVersion++;
 			_selectedHistoryManifestUid = string.Empty;
 			_selectedHistoryChanges = Array.Empty<BeamContentHistoryChangelistEntry>();
 			_selectedHistoryJson = string.Empty;
@@ -396,12 +533,16 @@ namespace Beamable.Editor.UI.ContentWindow
 			_isLoadingHistoryChanges = false;
 			_isLoadingHistoryPreview = false;
 			_isRestoringHistory = false;
-			_historyRestoreError = string.Empty;
+			_historyPreviewContentId = string.Empty;
+			_historyChangesError = null;
+			_historyPreviewError = null;
+			_historyRestoreError = null;
 		}
 
 		private async Task LoadHistoryChanges(string manifestUid, int requestVersion)
 		{
 			_isLoadingHistoryChanges = true;
+			_historyChangesError = null;
 			Repaint();
 			try
 			{
@@ -409,6 +550,18 @@ namespace Beamable.Editor.UI.ContentWindow
 				if (requestVersion == _historySelectionRequestVersion)
 				{
 					_selectedHistoryChanges = changes;
+				}
+			}
+			catch (Exception exception)
+			{
+				if (requestVersion == _historySelectionRequestVersion)
+				{
+					_historyChangesError = ContentHistoryOperationException.FromException(
+						"Load publish changes",
+						"Unable to load changes for this publish. Check your connection and try again.",
+						manifestUid,
+						exception);
+					Debug.LogError(_historyChangesError.Diagnostic);
 				}
 			}
 			finally
@@ -423,15 +576,39 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private async Task LoadHistoryPreview(string contentId)
 		{
+			var manifestUid = _selectedHistoryManifestUid;
+			var selectionRequestVersion = _historySelectionRequestVersion;
+			var previewRequestVersion = ++_historyPreviewRequestVersion;
 			_isLoadingHistoryPreview = true;
+			_historyPreviewError = null;
+			_historyPreviewContentId = contentId;
 			Repaint();
 			try
 			{
-				_selectedHistoryJson = await _contentService.GetContentHistoryJson(_selectedHistoryManifestUid, contentId);
+				var historyJson = await _contentService.GetContentHistoryJson(manifestUid, contentId);
+				if (selectionRequestVersion == _historySelectionRequestVersion && previewRequestVersion == _historyPreviewRequestVersion)
+				{
+					_selectedHistoryJson = historyJson;
+				}
+			}
+			catch (Exception exception)
+			{
+				if (selectionRequestVersion == _historySelectionRequestVersion && previewRequestVersion == _historyPreviewRequestVersion)
+				{
+					_historyPreviewError = ContentHistoryOperationException.FromException(
+						"Preview historical content",
+						"Unable to load this historical content file. Check your connection and try again.",
+						manifestUid,
+						exception);
+					Debug.LogError(_historyPreviewError.Diagnostic);
+				}
 			}
 			finally
 			{
-				_isLoadingHistoryPreview = false;
+				if (previewRequestVersion == _historyPreviewRequestVersion)
+				{
+					_isLoadingHistoryPreview = false;
+				}
 				Repaint();
 			}
 		}
@@ -456,7 +633,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private async Task RestoreSelectedHistoryAsync()
 		{
 			_isRestoringHistory = true;
-			_historyRestoreError = string.Empty;
+			_historyRestoreError = null;
 			Repaint();
 			try
 			{
@@ -465,8 +642,12 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			catch (Exception exception)
 			{
-				Debug.LogException(exception);
-				_historyRestoreError = $"Restore failed. Check your connection and try again. {exception.Message}";
+				_historyRestoreError = ContentHistoryOperationException.FromException(
+					"Restore changed files",
+					"Unable to restore changed files. Check your connection and try again.",
+					_selectedHistoryManifestUid,
+					exception);
+				Debug.LogError(_historyRestoreError.Diagnostic);
 			}
 			finally
 			{
@@ -475,15 +656,5 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 
-		private static string GetChangeLabel(int changeStatus)
-		{
-			return ((ContentStatus)changeStatus) switch
-			{
-				ContentStatus.Created => "Added",
-				ContentStatus.Modified => "Modified",
-				ContentStatus.Deleted => "Removed",
-				_ => "Changed"
-			};
-		}
 	}
 }
