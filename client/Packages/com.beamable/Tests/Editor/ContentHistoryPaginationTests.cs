@@ -182,6 +182,85 @@ namespace Beamable.Editor.Tests
 		}
 
 		[Test]
+		public void ContentHistoryPublishSearch_UsesCaseInsensitiveExactAffectedContentIdMatches()
+		{
+			var firstMatch = new BeamContentHistoryEntry
+			{
+				ManifestUid = "manifest-first",
+				AffectedContentIds = new[] { "currency.New_currency_0" }
+			};
+			var nonMatch = new BeamContentHistoryEntry
+			{
+				ManifestUid = "manifest-other",
+				AffectedContentIds = new[] { "currency.coins" }
+			};
+			var secondMatch = new BeamContentHistoryEntry
+			{
+				ManifestUid = "manifest-second",
+				AffectedContentIds = new[] { "items.sword", "currency.New_currency_0" }
+			};
+
+			var result = ContentHistoryPublishSearch.Filter(
+				new[] { firstMatch, nonMatch, secondMatch }, "CURRENCY.NEW_CURRENCY_0");
+
+			Assert.That(result.Entries, Is.EqualTo(new[] { firstMatch, secondMatch }));
+			Assert.That(result.ShowNoExactIdHint, Is.False);
+		}
+
+		[Test]
+		public void ContentHistoryPublishSearch_FallsBackToNormalSearchForAnUnmatchedContentIdPrefix()
+		{
+			var exactPrefixOnly = new BeamContentHistoryEntry
+			{
+				ManifestUid = "currency.New_currency_0-candidate",
+				AffectedContentIds = new[] { "items.sword" }
+			};
+			var unrelated = new BeamContentHistoryEntry
+			{
+				ManifestUid = "manifest-other",
+				AffectedContentIds = new[] { "currency.New_currency_0" }
+			};
+
+			var result = ContentHistoryPublishSearch.Filter(
+				new[] { exactPrefixOnly, unrelated }, "currency.New_currency");
+
+			Assert.That(result.Entries, Is.EqualTo(new[] { exactPrefixOnly }));
+			Assert.That(result.ShowNoExactIdHint, Is.True);
+		}
+
+		[Test]
+		public void ContentHistoryPublishSearch_PreservesNormalAuthorSearchWithoutAnAuditHint()
+		{
+			var matchingAuthor = new BeamContentHistoryEntry
+			{
+				ManifestUid = "manifest-first",
+				PublishedBy = "dev@beamable.com",
+				PublishedByName = "Moe Developer"
+			};
+			var unrelated = new BeamContentHistoryEntry { ManifestUid = "manifest-second" };
+
+			var result = ContentHistoryPublishSearch.Filter(new[] { matchingAuthor, unrelated }, "moe");
+
+			Assert.That(result.Entries, Is.EqualTo(new[] { matchingAuthor }));
+			Assert.That(result.ShowNoExactIdHint, Is.False);
+		}
+
+		[Test]
+		public void ContentHistoryPublishSearch_HandlesEmptySearchAndMissingAffectedContentIds()
+		{
+			var entryWithoutAffectedIds = new BeamContentHistoryEntry { ManifestUid = "manifest-first" };
+			var entries = new[] { entryWithoutAffectedIds };
+
+			var emptySearch = ContentHistoryPublishSearch.Filter(entries, "  ");
+			var unmatchedId = ContentHistoryPublishSearch.Filter(entries, "currency.missing");
+
+			Assert.That(emptySearch.Entries, Is.SameAs(entries));
+			Assert.That(emptySearch.ShowNoExactIdHint, Is.False);
+			Assert.That(unmatchedId.Entries, Is.Empty);
+			Assert.That(unmatchedId.ShowNoExactIdHint, Is.True);
+		}
+
+		[Test]
 		public void ContentHistoryFilterCache_DoesNotReuseRowsAfterTheEmptySearchCacheIsInvalidated()
 		{
 			Assert.That(ContentHistoryFilterCache.CanReuse(

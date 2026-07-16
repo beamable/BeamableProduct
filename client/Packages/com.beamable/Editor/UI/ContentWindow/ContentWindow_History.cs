@@ -55,6 +55,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private string _historyFilterKey;
 		private IReadOnlyList<BeamContentHistoryEntry> _filteredHistoryEntries = Array.Empty<BeamContentHistoryEntry>();
 		private bool _hasFilteredHistoryEntries;
+		private bool _showHistoryNoExactIdHint;
 		private IReadOnlyList<ContentHistoryTimeBucket> _historyBuckets = Array.Empty<ContentHistoryTimeBucket>();
 		private bool _hasHistoryBuckets;
 		private readonly HashSet<string> _expandedHistoryBucketKeys = new();
@@ -132,6 +133,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					_historyEntriesScroll = Vector2.zero;
 					_hasFilteredHistoryEntries = false;
 					_hasHistoryBuckets = false;
+					_showHistoryNoExactIdHint = false;
 					_historyBucketAutoExpandKey = null;
 					_historyDisplayRowsDirty = true;
 				}
@@ -169,6 +171,10 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 
 			var filteredEntries = GetFilteredHistoryEntries();
+			if (_showHistoryNoExactIdHint)
+			{
+				EditorGUILayout.HelpBox("No Manifest ID or Content Id found.", MessageType.Info);
+			}
 			var historyBuckets = GetHistoryBuckets(filteredEntries);
 			AutoExpandHistoryBucketsForSearch(historyBuckets, _historySearchData?.searchText?.Trim());
 
@@ -241,14 +247,9 @@ namespace Beamable.Editor.UI.ContentWindow
 				return _filteredHistoryEntries;
 			}
 
-			var entries = _contentService.ContentHistoryEntries;
-			_filteredHistoryEntries = string.IsNullOrEmpty(search)
-				? entries
-				: entries.Where(entry =>
-					(entry.ManifestUid?.IndexOf(search, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
-					(entry.PublishedBy?.IndexOf(search, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
-					(entry.PublishedByName?.IndexOf(search, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0)
-					.ToList();
+			var searchResult = ContentHistoryPublishSearch.Filter(_contentService.ContentHistoryEntries, search);
+			_filteredHistoryEntries = searchResult.Entries;
+			_showHistoryNoExactIdHint = searchResult.ShowNoExactIdHint;
 			_filteredHistoryVersion = historyVersion;
 			_historyFilterKey = search;
 			_hasFilteredHistoryEntries = true;
@@ -895,6 +896,10 @@ namespace Beamable.Editor.UI.ContentWindow
 			_historyPreviewError = null;
 			_historyPreviewRenderError = null;
 			_historyRestoreError = null;
+			_showHistoryNoExactIdHint = false;
+			_hasFilteredHistoryEntries = false;
+			_hasHistoryBuckets = false;
+			_historyDisplayRowsDirty = true;
 		}
 
 		private async Task LoadHistoryChanges(string manifestUid, int requestVersion)
@@ -1121,6 +1126,54 @@ namespace Beamable.Editor.UI.ContentWindow
 		private static bool Matches(string value, string search)
 		{
 			return !string.IsNullOrEmpty(value) && value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+		}
+	}
+
+	internal readonly struct ContentHistoryPublishSearchResult
+	{
+		public IReadOnlyList<BeamContentHistoryEntry> Entries { get; }
+		public bool ShowNoExactIdHint { get; }
+
+		public ContentHistoryPublishSearchResult(IReadOnlyList<BeamContentHistoryEntry> entries, bool showNoExactIdHint)
+		{
+			Entries = entries;
+			ShowNoExactIdHint = showNoExactIdHint;
+		}
+	}
+
+	internal static class ContentHistoryPublishSearch
+	{
+		public static ContentHistoryPublishSearchResult Filter(IReadOnlyList<BeamContentHistoryEntry> entries, string search)
+		{
+			var normalizedSearch = search?.Trim();
+			if (string.IsNullOrEmpty(normalizedSearch))
+			{
+				return new ContentHistoryPublishSearchResult(entries ?? Array.Empty<BeamContentHistoryEntry>(), false);
+			}
+
+			var sourceEntries = entries ?? Array.Empty<BeamContentHistoryEntry>();
+			var exactContentIdMatches = sourceEntries.Where(entry => entry?.AffectedContentIds?.Any(contentId =>
+				string.Equals(contentId, normalizedSearch, StringComparison.OrdinalIgnoreCase)) == true).ToArray();
+			if (exactContentIdMatches.Length > 0)
+			{
+				return new ContentHistoryPublishSearchResult(exactContentIdMatches, false);
+			}
+
+			var normalMatches = sourceEntries.Where(entry => entry != null &&
+				(Matches(entry.ManifestUid, normalizedSearch) ||
+				 Matches(entry.PublishedBy, normalizedSearch) ||
+				 Matches(entry.PublishedByName, normalizedSearch))).ToArray();
+			return new ContentHistoryPublishSearchResult(normalMatches, IsContentIdShaped(normalizedSearch));
+		}
+
+		private static bool Matches(string value, string search)
+		{
+			return !string.IsNullOrEmpty(value) && value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+		}
+
+		private static bool IsContentIdShaped(string search)
+		{
+			return search.IndexOf('.') >= 0 && search.IndexOf('@') < 0 && !search.Any(char.IsWhiteSpace);
 		}
 	}
 
