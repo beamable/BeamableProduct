@@ -96,6 +96,47 @@ The RN build is compiled to ES2021, so Hermes parses it directly (no Babel stati
 transform required). For a full Expo/Metro setup — including the `withBeamableSdk` Metro
 helper — see the samples under `nativeLibraries/Samples/`.
 
+## Configuring the connection
+
+`Beam.init` accepts `cid` and `pid` plus an optional target for the Beamable platform. You can
+name a built-in environment or pass a `host` URL directly:
+
+```ts
+// Named environment ('prod' | 'stg' | 'dev'; defaults to 'prod')
+await Beam.init({ cid: 'YOUR_CUSTOMER_ID', pid: 'YOUR_PROJECT_ID', environment: 'dev' });
+
+// …or a host URL. A built-in URL (https://api.beamable.com, https://staging.api.beamable.com,
+// https://dev.api.beamable.com) resolves to the matching environment; any other URL is treated
+// as a custom host. `host` takes precedence over `environment`.
+await Beam.init({ cid: 'YOUR_CUSTOMER_ID', pid: 'YOUR_PROJECT_ID', host: 'http://localhost:9000' });
+```
+
+`host` and `environment` are both optional; resolution precedence is **`host` → `environment` →
+`prod`**. So for a manual setup you can just name an environment and skip the host entirely.
+
+### Reuse the CLI's `.beamable/config.beam.json`
+
+If you have run the Beamable CLI's `beam init`, it writes `.beamable/config.beam.json`
+(`{ cid, pid, host }`). Because that shape matches what `Beam.init` accepts, the recommended
+pattern is a tiny wrapper module that imports the JSON and re-exports it, then passes it to
+`Beam.init` — no hand-written config, and one place to swap the source:
+
+```ts
+// src/beam/config.ts
+import BEAM_CONFIG from '.beamable/config.beam.json'; // requires "resolveJsonModule": true
+export { BEAM_CONFIG };
+
+// where you initialize
+import { BEAM_CONFIG } from './beam/config';
+const beam = await Beam.init(BEAM_CONFIG);
+// React Native adds the engine:
+// const beam = await Beam.init({ ...BEAM_CONFIG, gameEngine: 'react-native' });
+```
+
+For manual setup, the JSON can omit `host` and use `{ "cid": "...", "pid": "...", "environment": "dev" }`
+instead. And the plain `Beam.init({ cid, pid })` usage above keeps working unchanged — the JSON is
+never required.
+
 ## Documentation
 
 Find detailed API references, usage examples, and integration guides for the Beam Web SDK:

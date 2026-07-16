@@ -96,10 +96,16 @@ BeamNotifications.devicePushPlatform();          // 'apns' | 'fcm'
 > `registerForRemote({ timeoutMs })` to tune it. `getPending()` / `getDeliveryReceipts()` are
 > iOS-only and resolve `[]` on Android.
 
-`BeamableNotifications` and the default export are aliases of `BeamNotifications`. The
-individual flat helpers (`requestBeamablePermission`, `addBeamableListener`, …) remain
-exported for back-compat. The full runtime flow is documented in the reference sample's
-`INTEGRATION.md` (`nativeLibraries/Samples/ReactNative`).
+> **`addAllListeners`** subscribes to every event in one typed call (handy for logging), returning
+> one subscription that removes them all — no per-event loop or cast:
+> ```ts
+> const sub = BeamNotifications.addAllListeners((event, payload) => log(event, payload));
+> ```
+
+`BeamNotifications` is the one blessed name. The `BeamableNotifications` alias, the default export,
+and the flat helper functions (`requestBeamablePermission`, `addBeamableListener`, …) are
+**`@deprecated`** — kept only for back-compat. The full runtime flow is documented in the reference
+sample's `INTEGRATION.md` (`nativeLibraries/Samples/ReactNative`).
 
 ## Web build (built-in) — Unity WebView & custom hosts
 

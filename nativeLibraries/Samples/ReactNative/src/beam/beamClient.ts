@@ -8,7 +8,6 @@ import {
   AnnouncementsService,
   AuthService,
   Beam,
-  BeamEnvironment,
   ContentService,
   LeaderboardsService,
   StatsService,
@@ -60,27 +59,11 @@ export async function initBeam(): Promise<Beam> {
       );
     }
 
-    // If env.local provided an API base URL, register it as the `local` environment so the
-    // SDK points its requests at that host (Beam.init has no direct apiUrl option — it
-    // resolves the base URL from the named environment).
-    if (BEAM_CONFIG.apiBase) {
-      BeamEnvironment.register(BEAM_CONFIG.environment, {
-        apiUrl: BEAM_CONFIG.apiBase,
-        portalUrl: '',
-        beamMongoExpressUrl: '',
-        dockerRegistryUrl: '',
-      });
-    }
-
     // No explicit token storage: the SDK's react-native build defaults to an
     // AsyncStorage-backed store that persists the guest session across app
     // launches (config marker `beam_cid`/`beam_pid` + tokens all in AsyncStorage).
-    const beam = await Beam.init({
-      cid: BEAM_CONFIG.cid,
-      pid: BEAM_CONFIG.pid,
-      environment: BEAM_CONFIG.environment,
-      gameEngine: 'react-native',
-    });
+    // cid/pid/host come from `.beamable/config.beam.json` (re-exported by ./config).
+    const beam = await Beam.init({ ...BEAM_CONFIG, gameEngine: 'react-native' });
 
     // Register every high-level service the app uses. Accessors like
     // `beam.announcements` / `beam.content` / `beam.stats` / `beam.leaderboards`
@@ -101,16 +84,13 @@ export async function initBeam(): Promise<Beam> {
 
     // Best-effort: hand the player's tokens to the native side so the CLOSED-APP analytics
     // funnel can authenticate when the JS runtime is not running. Wrapped so a failure here
-    // never breaks init. The host is the API base URL the SDK is pointed at (the explicit
-    // env.local override, otherwise the named environment's apiUrl). The SDK stores
+    // never breaks init. The host is the platform URL the SDK is pointed at. The SDK stores
     // `expiresIn` as an absolute epoch-MILLISECONDS timestamp, so it maps straight
     // onto `accessTokenExpiresAt`.
     try {
       const { accessToken, refreshToken, expiresIn } =
         await beam.tokenStorage.getTokenData();
-      const host =
-        BEAM_CONFIG.apiBase ??
-        BeamEnvironment.get(BEAM_CONFIG.environment).apiUrl;
+      const host = BEAM_CONFIG.host;
       if (accessToken && refreshToken && host) {
         BeamNotifications.configureAuth({
           accessToken,

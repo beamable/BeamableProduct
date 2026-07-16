@@ -1,36 +1,19 @@
 /**
  * Beamable connection configuration.
  *
- * 👉 Replace the placeholder cid / pid with values from your Beamable realm
- *    (Beamable Portal -> realm settings). Until you do, the app still runs and
- *    the notification + deep-link demos work; only the "Connect to Beamable"
- *    action will report that it is not configured.
+ * The values come from `.beamable/config.beam.json`, written by the Beamable CLI's `beam init`
+ * (`{ cid, pid, host }`). A committed seed file lives at the project root so this sample builds
+ * out of the box; run `beam init` to regenerate it with your own realm, and edit the cid/pid
+ * there rather than here.
  *
- * The API target comes from `env.local` (`VITE_API_BASE`), surfaced via
- * `app.config.js` → `expo-constants`. When set, the SDK connects to that base URL
- * (see beamClient.ts, which registers it as the `local` environment); otherwise it
- * falls back to the built-in `environment` below.
+ * `host` is the platform URL — a built-in URL (https://api.beamable.com,
+ * https://staging.api.beamable.com, https://dev.api.beamable.com) resolves to the matching
+ * environment; any other URL is treated as a custom host. For manual setup you can instead omit
+ * `host` and set `"environment": "dev"` in the JSON (the SDK resolves host → environment → prod).
  */
-import Constants from 'expo-constants';
+import BEAM_CONFIG from '../../.beamable/config.beam.json';
 
-const apiBase = (
-  Constants.expoConfig?.extra as { apiBase?: string } | undefined
-)?.apiBase;
-
-export const BEAM_CONFIG = {
-  /** Beamable Customer ID (CID). */
-  cid: '1731504735486980',
-  /** Beamable Project ID (PID). */
-  pid: 'DE_83664985048047616',
-  /** 'prod' | 'stg' | 'dev' (or a custom environment name). */
-  environment: (apiBase ? 'local' : 'dev') as
-    | 'prod'
-    | 'stg'
-    | 'dev'
-    | (string & {}),
-  /** API base URL from env.local (undefined → use the named `environment` above). */
-  apiBase,
-};
+export { BEAM_CONFIG };
 
 /** True once real credentials have been filled in. */
 export function isConfigured(): boolean {

@@ -2,7 +2,8 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true
   },
   "include": [
     "**/*.ts",

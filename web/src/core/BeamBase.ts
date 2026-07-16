@@ -109,7 +109,9 @@ export abstract class BeamBase {
   protected constructor(config: BeamBaseConfig) {
     this.cid = config.cid;
     this.pid = config.pid;
-    this.envConfig = BeamEnvironment.get(this.getConfigEnvironment(config));
+    this.envConfig = config.host
+      ? BeamEnvironment.fromHost(config.host)
+      : BeamEnvironment.get(this.getConfigEnvironment(config));
     this.tokenStorage =
       config.tokenStorage ??
       defaultTokenStorage({ pid: config.pid, tag: config.instanceTag });

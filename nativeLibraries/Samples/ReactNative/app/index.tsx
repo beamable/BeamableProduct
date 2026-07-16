@@ -291,8 +291,8 @@ export default function Home() {
         <StatusRow status={beam} />
         {!isConfigured() && (
           <Text style={styles.warn}>
-            cid/pid not set — edit src/beam/config.ts. (env:{' '}
-            {String(BEAM_CONFIG.environment)})
+            cid/pid not set — edit src/beam/config.ts. (host:{' '}
+            {String(BEAM_CONFIG.host)})
           </Text>
         )}
         <Button label="Connect to Beamable" onPress={connectBeam} />
