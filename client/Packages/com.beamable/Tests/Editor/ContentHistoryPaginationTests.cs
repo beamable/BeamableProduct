@@ -9,6 +9,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 
 namespace Beamable.Editor.Tests
@@ -177,6 +178,31 @@ namespace Beamable.Editor.Tests
 			};
 
 			Assert.That(ContentHistoryChangesSearch.Filter(changes, "  "), Is.SameAs(changes));
+		}
+
+		[Test]
+		public void ContentHistoryManifestCopyLayout_PlacesCopyButtonBeforeManifestText()
+		{
+			var rowRect = new Rect(0, 10, 400, 24);
+			const float lineHeight = 18f;
+			var changesRect = new Rect(74, 13, 82, lineHeight);
+
+			var layout = ContentHistoryManifestCopyLayout.Create(rowRect, changesRect, 112, 20,
+				lineHeight);
+
+			Assert.That(layout.CopyButtonRect.x, Is.EqualTo(changesRect.xMax));
+			Assert.That(layout.ManifestRect.x, Is.EqualTo(layout.CopyButtonRect.xMax + 2));
+			Assert.That(layout.AuthorRect.x, Is.EqualTo(rowRect.xMax - 112));
+		}
+
+		[Test]
+		public void ContentWindow_DoesNotStoreStaticGuiContent()
+		{
+			var staticGuiContentFields = typeof(ContentWindow).GetFields(
+				BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+				.Where(field => field.FieldType == typeof(GUIContent));
+
+			Assert.That(staticGuiContentFields, Is.Empty);
 		}
 
 		[Test]

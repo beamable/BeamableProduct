@@ -95,6 +95,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		public override void OnEnable()
 		{
 			base.OnEnable();
+			EnsureHistoryCopyManifestContent();
 			EditorApplication.update += OnEditorUpdate;
 		}
 

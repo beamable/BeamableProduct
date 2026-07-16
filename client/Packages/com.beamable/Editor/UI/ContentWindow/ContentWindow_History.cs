@@ -78,8 +78,18 @@ namespace Beamable.Editor.UI.ContentWindow
 		private GUIStyle _historyDefaultChangeStyle;
 		private GUIStyle _historyRestoreButtonStyle;
 		private GUIStyle _historyEllipsisLabelStyle;
+		private GUIStyle _historyManifestCopyButtonStyle;
 		private readonly GUIContent _historyEllipsisMeasureContent = new();
-		private static readonly GUIContent HistoryCopyManifestContent = new(EditorGUIUtility.FindTexture("Clipboard"), "Copy manifest ID");
+		private readonly GUIContent _historyCopyManifestTooltipContent = new(string.Empty, "Copy manifest ID");
+		private GUIContent _historyCopyManifestContent;
+
+		private void EnsureHistoryCopyManifestContent()
+		{
+			if (_historyCopyManifestContent == null)
+			{
+				_historyCopyManifestContent = new GUIContent(EditorGUIUtility.FindTexture("Clipboard"), "Copy manifest ID");
+			}
+		}
 
 		private void DrawContentHistory()
 		{
@@ -427,11 +437,11 @@ namespace Beamable.Editor.UI.ContentWindow
 			var date = DateTimeOffset.FromUnixTimeMilliseconds(entry.CreatedDate).LocalDateTime;
 			var timeRect = new Rect(rowRect.x + 6, rowRect.y + 3, HistoryTimeColumnWidth - 6, EditorGUIUtility.singleLineHeight);
 			var changesRect = new Rect(timeRect.xMax, rowRect.y + 3, HistoryChangesColumnWidth, EditorGUIUtility.singleLineHeight);
-			var authorRect = new Rect(rowRect.xMax - HistoryAuthorColumnWidth, rowRect.y + 3, HistoryAuthorColumnWidth - 6, EditorGUIUtility.singleLineHeight);
-			var copyManifestRect = new Rect(authorRect.x - HistoryManifestCopyButtonWidth, rowRect.y + 2,
-				HistoryManifestCopyButtonWidth, EditorGUIUtility.singleLineHeight + 2);
-			var manifestRect = new Rect(changesRect.xMax, rowRect.y + 3,
-				Math.Max(0, copyManifestRect.x - changesRect.xMax), EditorGUIUtility.singleLineHeight);
+			var manifestLayout = ContentHistoryManifestCopyLayout.Create(rowRect, changesRect,
+				HistoryAuthorColumnWidth, HistoryManifestCopyButtonWidth, EditorGUIUtility.singleLineHeight);
+			var authorRect = manifestLayout.AuthorRect;
+			var copyManifestRect = manifestLayout.CopyButtonRect;
+			var manifestRect = manifestLayout.ManifestRect;
 
 			using (new EditorGUI.DisabledScope(_isRestoringHistory))
 			{
@@ -449,10 +459,11 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUI.Label(changesRect, $"{entry.AffectedContentIds?.Length ?? 0} changed", EditorStyles.miniLabel);
 			DrawHistoryTruncatedLabel(manifestRect, entry.ManifestUid);
 			DrawHistoryTruncatedLabel(authorRect, string.IsNullOrEmpty(entry.PublishedByName) ? entry.PublishedBy : entry.PublishedByName);
-			if (GUI.Button(copyManifestRect, HistoryCopyManifestContent, EditorStyles.iconButton))
+			if (GUI.Button(copyManifestRect, _historyCopyManifestContent, _historyManifestCopyButtonStyle))
 			{
 				EditorGUIUtility.systemCopyBuffer = entry.ManifestUid;
 			}
+			GUI.Label(copyManifestRect, _historyCopyManifestTooltipContent, GUIStyle.none);
 		}
 
 		private void DrawHistoryPagination(int entryCount, int pageSize, int pageCount)
@@ -798,6 +809,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				clipping = TextClipping.Ellipsis,
 				wordWrap = false
 			};
+			_historyManifestCopyButtonStyle = new GUIStyle(EditorStyles.iconButton)
+			{
+				alignment = TextAnchor.MiddleCenter,
+				imagePosition = ImagePosition.ImageOnly,
+				padding = new RectOffset(0, 0, 0, 0)
+			};
 		}
 
 		private static GUIStyle CreateHistoryChangeStyle(Color color)
@@ -1089,6 +1106,31 @@ namespace Beamable.Editor.UI.ContentWindow
 		private static bool Matches(string value, string search)
 		{
 			return !string.IsNullOrEmpty(value) && value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+		}
+	}
+
+	internal readonly struct ContentHistoryManifestCopyLayout
+	{
+		public Rect ManifestRect { get; }
+		public Rect CopyButtonRect { get; }
+		public Rect AuthorRect { get; }
+
+		private ContentHistoryManifestCopyLayout(Rect manifestRect, Rect copyButtonRect, Rect authorRect)
+		{
+			ManifestRect = manifestRect;
+			CopyButtonRect = copyButtonRect;
+			AuthorRect = authorRect;
+		}
+
+		public static ContentHistoryManifestCopyLayout Create(Rect rowRect, Rect changesRect, float authorColumnWidth,
+			float copyButtonWidth, float lineHeight)
+		{
+			var authorRect = new Rect(rowRect.xMax - authorColumnWidth, rowRect.y + 3,
+				authorColumnWidth - 6, lineHeight);
+			var copyButtonRect = new Rect(changesRect.xMax, rowRect.y + 2, copyButtonWidth, lineHeight + 2);
+			var manifestRect = new Rect(copyButtonRect.xMax + 2, rowRect.y + 3,
+				Math.Max(0, authorRect.x - copyButtonRect.xMax - 2), lineHeight);
+			return new ContentHistoryManifestCopyLayout(manifestRect, copyButtonRect, authorRect);
 		}
 	}
 
