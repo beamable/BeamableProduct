@@ -101,6 +101,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void OnDisable()
 		{
 			EditorApplication.update -= OnEditorUpdate;
+			ResetHistorySelection();
 			_contentService?.StopContentHistory();
 		}
 

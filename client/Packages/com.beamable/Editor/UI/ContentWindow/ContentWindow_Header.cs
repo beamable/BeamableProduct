@@ -241,7 +241,12 @@ namespace Beamable.Editor.UI.ContentWindow
 			if(_windowStatus == windowStatus)
 				return;
 			
+			var previousWindowStatus = _windowStatus;
 			_windowStatus = windowStatus;
+			if (previousWindowStatus == ContentWindowStatus.History && _windowStatus != ContentWindowStatus.History)
+			{
+				ResetHistorySelection();
+			}
 			if (_windowStatus == ContentWindowStatus.History)
 			{
 				ResetHistorySelection();

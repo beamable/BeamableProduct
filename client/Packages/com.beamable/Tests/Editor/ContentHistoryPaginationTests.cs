@@ -1,6 +1,8 @@
 using Beamable.Editor.UI.ContentWindow;
 using Beamable.Editor.ContentService;
 using Beamable.Editor.BeamCli.Commands;
+using Beamable.Common.Content;
+using Beamable.Common.Inventory;
 using Beamable.Content;
 using NUnit.Framework;
 using System;
@@ -274,6 +276,99 @@ namespace Beamable.Editor.Tests
 			string nextRowKey, bool shouldRepaint)
 		{
 			Assert.That(ContentHistoryRowInteraction.ShouldRepaint(currentRowKey, nextRowKey), Is.EqualTo(shouldRepaint));
+		}
+
+		[Test]
+		public void ContentHistoryInspectorPreview_MarksOnlyRegisteredPreviewAsReadOnly()
+		{
+			var preview = ScriptableObject.CreateInstance<ContentObject>();
+			var ordinaryContent = ScriptableObject.CreateInstance<ContentObject>();
+			try
+			{
+				ContentHistoryInspectorPreview.Register(preview);
+
+				Assert.That(ContentHistoryInspectorPreview.IsReadOnly(preview), Is.True);
+				Assert.That(ContentHistoryInspectorPreview.IsReadOnly(ordinaryContent), Is.False);
+
+				ContentHistoryInspectorPreview.Release(preview);
+				Assert.That(ContentHistoryInspectorPreview.IsReadOnly(preview), Is.False);
+			}
+			finally
+			{
+				ContentHistoryInspectorPreview.Release(preview);
+				UnityEngine.Object.DestroyImmediate(preview);
+				UnityEngine.Object.DestroyImmediate(ordinaryContent);
+			}
+		}
+
+		[Test]
+		public void ContentHistoryInspectorPreview_ClearsOnlyItsOwnSelection()
+		{
+			var preview = ScriptableObject.CreateInstance<ContentObject>();
+			var unrelatedSelection = ScriptableObject.CreateInstance<ContentObject>();
+			try
+			{
+				Assert.That(ContentHistoryInspectorPreview.ShouldClearSelection(preview, preview), Is.True);
+				Assert.That(ContentHistoryInspectorPreview.ShouldClearSelection(preview, unrelatedSelection), Is.False);
+			}
+			finally
+			{
+				UnityEngine.Object.DestroyImmediate(preview);
+				UnityEngine.Object.DestroyImmediate(unrelatedSelection);
+			}
+		}
+
+		[TestCase(4, 4, 9, 9, true)]
+		[TestCase(5, 4, 9, 9, false)]
+		[TestCase(4, 4, 10, 9, false)]
+		public void ContentHistoryPreviewRequest_RequiresBothRequestVersionsToMatch(int currentSelectionVersion,
+			int requestSelectionVersion, int currentPreviewVersion, int requestPreviewVersion, bool expectedCurrent)
+		{
+			Assert.That(ContentHistoryPreviewRequest.IsCurrent(currentSelectionVersion, requestSelectionVersion,
+				currentPreviewVersion, requestPreviewVersion), Is.EqualTo(expectedCurrent));
+		}
+
+		[Test]
+		public void ContentHistoryInspectorPreview_CreatesTypedPreviewFromCliJson()
+		{
+			const string json = "{\"id\":\"currency.gems\",\"version\":\"123\",\"properties\":{\"clientPermission\":{\"data\":{\"write_self\":false}},\"icon\":{\"data\":{\"referenceKey\":\"f819a6beb22c04c8d9f8222f930252b5\",\"subObjectName\":\"\"}},\"startingAmount\":{\"data\":0}}}";
+			ContentObject preview = null;
+			try
+			{
+				var created = ContentHistoryInspectorPreview.TryCreate(json, "currency.gems", typeof(CurrencyContent),
+					out preview, out var exception);
+
+				Assert.That(created, Is.True, exception?.ToString());
+				Assert.That(preview, Is.TypeOf<CurrencyContent>());
+				Assert.That(preview.Id, Is.EqualTo("currency.gems"));
+				Assert.That(((CurrencyContent)preview).startingAmount, Is.EqualTo(0));
+			}
+			finally
+			{
+				UnityEngine.Object.DestroyImmediate(preview);
+			}
+		}
+
+		[Test]
+		public void ContentHistoryInspectorPreview_RejectsMalformedJson()
+		{
+			var created = ContentHistoryInspectorPreview.TryCreate("{", "currency.gems", typeof(CurrencyContent),
+				out var preview, out var exception);
+
+			Assert.That(created, Is.False);
+			Assert.That(preview, Is.Null);
+			Assert.That(exception, Is.Not.Null);
+		}
+
+		[Test]
+		public void ContentHistoryInspectorPreview_RejectsNonContentObjectType()
+		{
+			var created = ContentHistoryInspectorPreview.TryCreate("{}", "currency.gems", typeof(ScriptableObject),
+				out var preview, out var exception);
+
+			Assert.That(created, Is.False);
+			Assert.That(preview, Is.Null);
+			Assert.That(exception, Is.Not.Null);
 		}
 
 		private static BeamContentHistoryEntry HistoryEntry(string manifestUid, DateTime createdAt)

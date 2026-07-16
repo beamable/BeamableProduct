@@ -1,4 +1,6 @@
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Content;
+using Beamable.Common.Content.Serialization;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.ContentService;
@@ -7,9 +9,12 @@ using Beamable.Editor.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
+
+[assembly: InternalsVisibleTo("Unity.Beamable.Tests.Editor")]
 
 namespace Beamable.Editor.UI.ContentWindow
 {
@@ -56,8 +61,11 @@ namespace Beamable.Editor.UI.ContentWindow
 		private bool _isLoadingHistoryPreview;
 		private bool _isRestoringHistory;
 		private string _historyPreviewContentId;
+		private string _historyPreviewContentType;
+		private ContentObject _historyInspectorPreview;
 		private ContentHistoryOperationException _historyChangesError;
 		private ContentHistoryOperationException _historyPreviewError;
+		private ContentHistoryOperationException _historyPreviewRenderError;
 		private ContentHistoryOperationException _historyRestoreError;
 		private GUIStyle _historyAddedChangeStyle;
 		private GUIStyle _historyModifiedChangeStyle;
@@ -521,6 +529,10 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				DrawHistoryOperationError(_historyPreviewError, RetryHistoryPreview);
 			}
+			if (_historyPreviewRenderError != null)
+			{
+				DrawHistoryOperationError(_historyPreviewRenderError, RetryHistoryPreview);
+			}
 
 			if (!string.IsNullOrEmpty(_selectedHistoryJson))
 			{
@@ -571,7 +583,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUI.Label(typeRect, entry.TypeName);
 			using (new EditorGUI.DisabledScope(_isLoadingHistoryPreview || string.IsNullOrEmpty(entry.JsonFilePath)))
 			{
-				if (GUI.Button(previewRect, "View")) _ = LoadHistoryPreview(entry.FullId);
+				if (GUI.Button(previewRect, "View")) _ = LoadHistoryPreview(entry.FullId, entry.TypeName);
 			}
 		}
 
@@ -685,9 +697,9 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void RetryHistoryPreview()
 		{
-			if (!string.IsNullOrEmpty(_historyPreviewContentId))
+			if (!string.IsNullOrEmpty(_historyPreviewContentId) && !string.IsNullOrEmpty(_historyPreviewContentType))
 			{
-				_ = LoadHistoryPreview(_historyPreviewContentId);
+				_ = LoadHistoryPreview(_historyPreviewContentId, _historyPreviewContentType);
 			}
 		}
 
@@ -737,12 +749,15 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 
 			_selectedHistoryManifestUid = manifestUid;
+			ClearHistoryInspectorPreview();
 			_selectedHistoryChanges = Array.Empty<BeamContentHistoryChangelistEntry>();
 			_selectedHistoryJson = string.Empty;
 			_historyChangesPageIndex = 0;
 			_historyChangesError = null;
 			_historyPreviewError = null;
+			_historyPreviewRenderError = null;
 			_historyPreviewContentId = string.Empty;
+			_historyPreviewContentType = string.Empty;
 			_historyPreviewRequestVersion++;
 			_isLoadingHistoryPreview = false;
 			_historyPreviewScroll = Vector2.zero;
@@ -752,6 +767,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void ResetHistorySelection()
 		{
+			ClearHistoryInspectorPreview();
 			_historySelectionRequestVersion++;
 			_historyPreviewRequestVersion++;
 			_selectedHistoryManifestUid = string.Empty;
@@ -764,8 +780,10 @@ namespace Beamable.Editor.UI.ContentWindow
 			_isLoadingHistoryPreview = false;
 			_isRestoringHistory = false;
 			_historyPreviewContentId = string.Empty;
+			_historyPreviewContentType = string.Empty;
 			_historyChangesError = null;
 			_historyPreviewError = null;
+			_historyPreviewRenderError = null;
 			_historyRestoreError = null;
 		}
 
@@ -804,26 +822,33 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 
-		private async Task LoadHistoryPreview(string contentId)
+		private async Task LoadHistoryPreview(string contentId, string contentType)
 		{
 			var manifestUid = _selectedHistoryManifestUid;
 			var selectionRequestVersion = _historySelectionRequestVersion;
 			var previewRequestVersion = ++_historyPreviewRequestVersion;
 			_isLoadingHistoryPreview = true;
 			_historyPreviewError = null;
+			_historyPreviewRenderError = null;
 			_historyPreviewContentId = contentId;
+			_historyPreviewContentType = contentType;
+			_selectedHistoryJson = string.Empty;
+			ClearHistoryInspectorPreview();
 			Repaint();
 			try
 			{
 				var historyJson = await _contentService.GetContentHistoryJson(manifestUid, contentId);
-				if (selectionRequestVersion == _historySelectionRequestVersion && previewRequestVersion == _historyPreviewRequestVersion)
+				if (ContentHistoryPreviewRequest.IsCurrent(_historySelectionRequestVersion, selectionRequestVersion,
+					_historyPreviewRequestVersion, previewRequestVersion))
 				{
 					_selectedHistoryJson = historyJson;
+					TryShowHistoryInspectorPreview(historyJson, contentId, contentType, manifestUid);
 				}
 			}
 			catch (Exception exception)
 			{
-				if (selectionRequestVersion == _historySelectionRequestVersion && previewRequestVersion == _historyPreviewRequestVersion)
+				if (ContentHistoryPreviewRequest.IsCurrent(_historySelectionRequestVersion, selectionRequestVersion,
+					_historyPreviewRequestVersion, previewRequestVersion))
 				{
 					_historyPreviewError = ContentHistoryOperationException.FromException(
 						"Preview historical content",
@@ -835,12 +860,64 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			finally
 			{
-				if (previewRequestVersion == _historyPreviewRequestVersion)
+				if (ContentHistoryPreviewRequest.IsCurrent(_historySelectionRequestVersion, selectionRequestVersion,
+					_historyPreviewRequestVersion, previewRequestVersion))
 				{
 					_isLoadingHistoryPreview = false;
 				}
 				Repaint();
 			}
+		}
+
+		private void TryShowHistoryInspectorPreview(string historyJson, string contentId, string contentType, string manifestUid)
+		{
+			ContentObject preview = null;
+			try
+			{
+				if (string.IsNullOrWhiteSpace(contentType) || !_contentTypeReflectionCache.TryGetType(contentType, out var type))
+				{
+					throw new InvalidOperationException($"No local content type is registered for historical type '{contentType}'.");
+				}
+				if (!ContentHistoryInspectorPreview.TryCreate(historyJson, contentId, type, out preview, out var createException))
+				{
+					throw createException;
+				}
+
+				ContentHistoryInspectorPreview.Register(preview);
+				Selection.activeObject = preview;
+				_historyInspectorPreview = preview;
+			}
+			catch (Exception exception)
+			{
+				if (preview != null)
+				{
+					ContentHistoryInspectorPreview.Release(preview);
+					DestroyImmediate(preview);
+				}
+
+				_historyPreviewRenderError = ContentHistoryOperationException.FromException(
+					"Render historical content in Inspector",
+					"Unable to render this historical content in the Inspector. Raw JSON is shown below.",
+					manifestUid,
+					exception);
+				Debug.LogError(_historyPreviewRenderError.Diagnostic);
+			}
+		}
+
+		private void ClearHistoryInspectorPreview()
+		{
+			if (_historyInspectorPreview == null)
+			{
+				return;
+			}
+
+			if (ContentHistoryInspectorPreview.ShouldClearSelection(_historyInspectorPreview, Selection.activeObject))
+			{
+				Selection.activeObject = null;
+			}
+			ContentHistoryInspectorPreview.Release(_historyInspectorPreview);
+			DestroyImmediate(_historyInspectorPreview);
+			_historyInspectorPreview = null;
 		}
 
 		private void RestoreSelectedHistory()
@@ -907,6 +984,94 @@ namespace Beamable.Editor.UI.ContentWindow
 		public static bool ShouldRepaint(string currentHoveredRowKey, string nextHoveredRowKey)
 		{
 			return !string.Equals(currentHoveredRowKey, nextHoveredRowKey, StringComparison.Ordinal);
+		}
+	}
+
+	internal static class ContentHistoryInspectorPreview
+	{
+		private static readonly HashSet<int> PreviewInstanceIds = new();
+
+		public static void Register(ContentObject content)
+		{
+			if (content != null)
+			{
+				PreviewInstanceIds.Add(content.GetInstanceID());
+			}
+		}
+
+		public static bool IsReadOnly(ContentObject content)
+		{
+			return content != null && PreviewInstanceIds.Contains(content.GetInstanceID());
+		}
+
+		public static void Release(ContentObject content)
+		{
+			if (content != null)
+			{
+				PreviewInstanceIds.Remove(content.GetInstanceID());
+			}
+		}
+
+		public static bool ShouldClearSelection(ContentObject preview, UnityEngine.Object currentSelection)
+		{
+			return preview != null && currentSelection == preview;
+		}
+
+		public static bool TryCreate(string json, string contentId, Type contentType, out ContentObject preview,
+			out Exception exception)
+		{
+			preview = null;
+			exception = null;
+			ContentObject candidate = null;
+			if (contentType == null || !typeof(ContentObject).IsAssignableFrom(contentType))
+			{
+				exception = new InvalidOperationException($"Historical type '{contentType?.FullName ?? "(missing)"}' is not a ContentObject.");
+				return false;
+			}
+
+			try
+			{
+				candidate = ScriptableObject.CreateInstance(contentType) as ContentObject;
+				if (candidate == null)
+				{
+					throw new InvalidOperationException($"Unable to create a historical preview for content type '{contentType.FullName}'.");
+				}
+
+				preview = ClientContentSerializer.DeserializeContentFromCli(json, candidate, contentId,
+					out _, disableExceptions: false) as ContentObject;
+				if (preview == null)
+				{
+					throw new InvalidOperationException($"Historical JSON for '{contentId}' did not deserialize to a ContentObject.");
+				}
+				if (preview != candidate)
+				{
+					UnityEngine.Object.DestroyImmediate(candidate);
+				}
+				return true;
+			}
+			catch (Exception caughtException)
+			{
+				if (preview != null)
+				{
+					UnityEngine.Object.DestroyImmediate(preview);
+				}
+				if (candidate != null && candidate != preview)
+				{
+					UnityEngine.Object.DestroyImmediate(candidate);
+				}
+				preview = null;
+				exception = caughtException;
+				return false;
+			}
+		}
+	}
+
+	internal static class ContentHistoryPreviewRequest
+	{
+		public static bool IsCurrent(int currentSelectionVersion, int requestSelectionVersion,
+			int currentPreviewVersion, int requestPreviewVersion)
+		{
+			return currentSelectionVersion == requestSelectionVersion && currentPreviewVersion == requestPreviewVersion;
 		}
 	}
 }
