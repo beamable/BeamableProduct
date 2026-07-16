@@ -1079,7 +1079,7 @@ namespace Beamable.Serialization.SmallerJSON
 			}
 		}
 		
-		private static class ObjectMapper
+		internal static class ObjectMapper
 		{
 			private static readonly Type SerializeFieldType = typeof(SerializeField);
 
@@ -1091,6 +1091,24 @@ namespace Beamable.Serialization.SmallerJSON
 			{
 				if (targetType == null) throw new ArgumentNullException(nameof(targetType));
 
+				// Unwrap nullable (must happen before the null check below so a missing/null semantic
+				// or Nullable<T> field is defaulted against its real underlying type).
+				var unwrappedType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+				// Semantic types: construct from primitive JSON tokens. Checked before the null-handling
+				// branch because semantic types usually only expose ctor(string)/ctor(long), not a
+				// parameterless ctor, so CreateJsonUtilityDefault would otherwise silently return null
+				// for a missing/null semantic-typed field.
+				if (TryGetSemanticPrimitiveType(unwrappedType, out var primitiveType))
+				{
+					if (node == null)
+					{
+						return ConstructSemantic(unwrappedType, primitiveType, primitiveType == typeof(string) ? "" : (object)0L);
+					}
+
+					return ConstructSemantic(unwrappedType, primitiveType, node);
+				}
+
 				// Null handling — mirror Unity JsonUtility, which never leaves reference fields null
 				// (missing string => "", missing array/list => empty, missing [Serializable] class => instance).
 				if (node == null)
@@ -1098,14 +1116,7 @@ namespace Beamable.Serialization.SmallerJSON
 					return CreateJsonUtilityDefault(targetType, 0);
 				}
 
-				// Unwrap nullable
-				targetType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-
-				// Semantic types: construct from primitive JSON tokens
-				if (TryGetSemanticPrimitiveType(targetType, out var primitiveType))
-				{
-					return ConstructSemantic(targetType, primitiveType, node);
-				}
+				targetType = unwrappedType;
 
 				// Direct assign
 				if (targetType.IsInstanceOfType(node))
@@ -1217,18 +1228,31 @@ namespace Beamable.Serialization.SmallerJSON
 			/// <summary>
 			/// Produces the same non-null default Unity's JsonUtility.FromJson would materialize for a
 			/// field that is absent (or explicitly null) in the JSON:
-			/// string => "", array => empty array, List/Dictionary => empty collection,
-			/// nested [Serializable] class => default-constructed instance with its own fields defaulted,
-			/// value types => their zero value. Anything without a usable parameterless ctor => null.
+			/// string => "", array => empty array, List/Dictionary (concrete or interface-typed) => empty
+			/// collection, nested [Serializable] class/struct => default-constructed instance with its own
+			/// fields defaulted, other value types => their zero value. A bare `object`-typed field, or a
+			/// type without a usable parameterless ctor (e.g. most semantic types, handled separately above),
+			/// has no safe non-null default and stays null.
 			/// </summary>
-			private static object CreateJsonUtilityDefault(Type type, int depth)
+			internal static object CreateJsonUtilityDefault(Type type, int depth)
 			{
 				if (type == null) return null;
 				type = Nullable.GetUnderlyingType(type) ?? type;
 
+				// A plain `object`-typed field has no meaningful non-null default; `new object()` would
+				// just break `== null` checks downstream without providing any real value.
+				if (type == typeof(object)) return null;
+
 				if (type == typeof(string)) return "";
-				if (type.IsValueType) return Activator.CreateInstance(type);
+				if (type.IsValueType) return CreateDefaultValueTypeInstance(type, depth);
 				if (type.IsArray) return Array.CreateInstance(type.GetElementType()!, 0);
+
+				// Interface-typed collection fields (IList<T>, IDictionary<K,V>, ICollection<T>,
+				// IEnumerable<T>): materialize a concrete List<>/Dictionary<> so the field isn't left null.
+				if (type.IsInterface && TryGetConcreteCollectionType(type, out var concreteCollectionType))
+				{
+					return Activator.CreateInstance(concreteCollectionType);
+				}
 
 				// Concrete generic List<T> / Dictionary<,> => empty collection.
 				if (type.IsGenericType && !type.IsInterface && !type.IsAbstract &&
@@ -1242,19 +1266,60 @@ namespace Beamable.Serialization.SmallerJSON
 				    type.GetConstructor(Type.EmptyTypes) != null)
 				{
 					var instance = Activator.CreateInstance(type);
-					var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-					for (int i = 0; i < fields.Length; i++)
-					{
-						var field = fields[i];
-						var hasSerializeField = field.GetCustomAttribute(SerializeFieldType) != null;
-						var canBeSerialized = (hasSerializeField || !field.IsNotSerialized);
-						if (!canBeSerialized) continue;
-						field.SetValue(instance, CreateJsonUtilityDefault(field.FieldType, depth + 1));
-					}
+					DefaultSerializableFields(instance, type, depth);
 					return instance;
 				}
 
 				return null;
+			}
+
+			// Structs get the same field-level defaulting as classes (e.g. a struct with a string/list
+			// field should get "" / empty, not null) - only skipped past the depth guard for safety.
+			private static object CreateDefaultValueTypeInstance(Type type, int depth)
+			{
+				var instance = Activator.CreateInstance(type);
+				if (depth < MaxDefaultDepth)
+				{
+					DefaultSerializableFields(instance, type, depth);
+				}
+				return instance;
+			}
+
+			private static void DefaultSerializableFields(object instance, Type type, int depth)
+			{
+				var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+				for (int i = 0; i < fields.Length; i++)
+				{
+					var field = fields[i];
+					var hasSerializeField = field.GetCustomAttribute(SerializeFieldType) != null;
+					var canBeSerialized = (hasSerializeField || !field.IsNotSerialized);
+					if (!canBeSerialized) continue;
+					field.SetValue(instance, CreateJsonUtilityDefault(field.FieldType, depth + 1));
+				}
+			}
+
+			private static bool TryGetConcreteCollectionType(Type interfaceType, out Type concreteType)
+			{
+				concreteType = null;
+				if (!interfaceType.IsGenericType) return false;
+
+				var genericDef = interfaceType.GetGenericTypeDefinition();
+				var genArgs = interfaceType.GetGenericArguments();
+
+				if (genericDef == typeof(IDictionary<,>) && genArgs.Length == 2)
+				{
+					concreteType = typeof(Dictionary<,>).MakeGenericType(genArgs);
+					return true;
+				}
+
+				if ((genericDef == typeof(IList<>) || genericDef == typeof(ICollection<>) || genericDef == typeof(IEnumerable<>))
+				    && genArgs.Length == 1)
+				{
+					concreteType = typeof(List<>).MakeGenericType(genArgs);
+					return true;
+				}
+
+				return false;
 			}
 
 			private static bool TryGetSemanticPrimitiveType(Type semanticType, out Type primitiveType)

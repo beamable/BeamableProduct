@@ -211,6 +211,12 @@ namespace Beamable.Common.Content
 
 			if (preParsedValue == null)
 			{
+				// NOTE: an explicit JSON `null` on a *present* key is intentionally preserved as C# `null`
+				// here (existing, tested behavior - e.g. DeserializeTests.Primitives_WithNullString and
+				// ListStringWithNull rely on a null string / null array element staying null). Only a
+				// *missing* key (see the two field-defaulting call sites below) gets JsonUtility-parity
+				// defaulting, since that's the schema-drift scenario that actually risks a stale
+				// NullReferenceException in code written before a field existed.
 				return null;
 			}
 
@@ -375,10 +381,15 @@ namespace Beamable.Common.Content
 								var optional = Activator.CreateInstance(field.FieldType);
 								field.TrySetValue(instance, optional);
 							}
+							else
+							{
+								field.TrySetValue(instance, CreateContentDefault(field.FieldType));
+							}
 							continue;
 						}
 						if (!dict.TryGetValue(key, out var dictValue))
 						{
+							field.TrySetValue(instance, CreateContentDefault(field.FieldType));
 							continue;
 						}
 						object fieldValue = DeserializeResult(dictValue, field.FieldType, stringBuilder);
@@ -389,6 +400,48 @@ namespace Beamable.Common.Content
 				default:
 					throw new Exception($"Cannot deserialize type [{type.Name}]");
 			}
+		}
+
+		/// <summary>
+		/// Produces the same non-null default Unity's JsonUtility.FromJson would materialize for a
+		/// content field that is absent (or explicitly null) in the JSON, so that missing/legacy schema
+		/// fields never leave a reference-type field null and cause a NullReferenceException downstream.
+		/// Content-specific reference types (<see cref="IContentRef"/>, <see cref="IContentLink"/>,
+		/// <see cref="IDictionaryWithValue"/>, <see cref="AssetReference"/>) are defaulted the same way a
+		/// present value of that type would be constructed; everything else delegates to the shared
+		/// SmallerJSON default logic (string => "", array/list/dict => empty, nested [Serializable]
+		/// class/struct => instance with its own fields defaulted, other value types => zero value).
+		/// </summary>
+		private object CreateContentDefault(Type type)
+		{
+			type = Nullable.GetUnderlyingType(type) ?? type;
+
+			if (typeof(IContentLink).IsAssignableFrom(type))
+			{
+				var contentLink = (IContentLink)Activator.CreateInstance(type);
+				contentLink.SetId("");
+				contentLink.OnCreated();
+				return contentLink;
+			}
+
+			if (typeof(IContentRef).IsAssignableFrom(type))
+			{
+				var contentRef = (IContentRef)Activator.CreateInstance(type);
+				contentRef.SetId("");
+				return contentRef;
+			}
+
+			if (typeof(IDictionaryWithValue).IsAssignableFrom(type))
+			{
+				return Activator.CreateInstance(type);
+			}
+
+			if (typeof(AssetReference).IsAssignableFrom(type))
+			{
+				return Activator.CreateInstance(type, "");
+			}
+
+			return Json.ObjectMapper.CreateJsonUtilityDefault(type, 0);
 		}
 
 		[Obsolete("content serializer options are no longer supported.")]
@@ -622,6 +675,7 @@ namespace Beamable.Common.Content
 					if (!isOptional && !isIgnored)
 					{
 						schemaIsDifferent |= SchemaDifference.MissingFieldsInJson;
+						field.TrySetValue(instance, CreateContentDefault(field.FieldType));
 					}
 					continue;
 				}
