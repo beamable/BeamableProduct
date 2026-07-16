@@ -4,6 +4,7 @@ using Beamable.Editor.BeamCli.Commands;
 using Beamable.Content;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -170,6 +171,119 @@ namespace Beamable.Editor.Tests
 		public void ContentWindowStatus_ContainsHistoryMode()
 		{
 			Assert.That(Enum.IsDefined(typeof(ContentWindowStatus), "History"), Is.True);
+		}
+
+		[Test]
+		public void ContentHistoryTimeBuckets_GroupsRecentPublishesAndArchivesOlderMonths()
+		{
+			var now = new DateTime(2026, 7, 15, 12, 0, 0, DateTimeKind.Local);
+			var buckets = ContentHistoryTimeBuckets.Create(new[]
+			{
+				HistoryEntry("today", now.AddHours(-1)),
+				HistoryEntry("this-week", now.Date.AddDays(-1)),
+				HistoryEntry("earlier-this-month", now.Date.AddDays(-8)),
+				HistoryEntry("june", new DateTime(2026, 6, 30, 12, 0, 0, DateTimeKind.Local)),
+				HistoryEntry("may", new DateTime(2026, 5, 31, 12, 0, 0, DateTimeKind.Local)),
+				HistoryEntry("april", new DateTime(2026, 4, 30, 12, 0, 0, DateTimeKind.Local)),
+				HistoryEntry("last-year", new DateTime(2025, 12, 31, 12, 0, 0, DateTimeKind.Local))
+			}, now);
+
+			Assert.That(buckets.Select(bucket => bucket.Label), Is.EqualTo(new[]
+			{
+				"Today", "This week", "Earlier this month", "June 2026", "May 2026", "2026", "2025"
+			}));
+			Assert.That(buckets.Take(3).All(bucket => bucket.IsExpandedByDefault), Is.True);
+			Assert.That(buckets[3].IsExpandedByDefault, Is.False);
+			Assert.That(buckets[5].Children.Select(bucket => bucket.Label), Is.EqualTo(new[] { "April 2026" }));
+			Assert.That(buckets[6].Children.Select(bucket => bucket.Label), Is.EqualTo(new[] { "December 2025" }));
+		}
+
+		[Test]
+		public void ContentHistoryTimeBuckets_ReturnsAncestorKeysForOlderPublish()
+		{
+			var now = new DateTime(2026, 7, 15, 12, 0, 0, DateTimeKind.Local);
+			var entry = HistoryEntry("april", new DateTime(2026, 4, 30, 12, 0, 0, DateTimeKind.Local));
+			var buckets = ContentHistoryTimeBuckets.Create(new[] { entry }, now);
+
+			Assert.That(ContentHistoryTimeBuckets.GetAncestorKeys(buckets, entry.ManifestUid),
+				Is.EqualTo(new[] { "year:2026", "month:2026-04" }));
+		}
+
+		[Test]
+		public void ContentHistoryTimeBuckets_UsesMondayAsTheStartOfThisWeek()
+		{
+			var monday = new DateTime(2026, 7, 6, 12, 0, 0, DateTimeKind.Local);
+			var buckets = ContentHistoryTimeBuckets.Create(new[]
+			{
+				HistoryEntry("sunday", monday.AddDays(-1)),
+				HistoryEntry("saturday", monday.AddDays(-2))
+			}, monday);
+
+			Assert.That(buckets.Select(bucket => bucket.Label), Is.EqualTo(new[] { "Earlier this month" }));
+			Assert.That(buckets[0].EntryCount, Is.EqualTo(2));
+		}
+
+		[Test]
+		public void ContentHistoryTimeBuckets_ExpandingMonthShowsEveryPublishInThatMonth()
+		{
+			var now = new DateTime(2026, 7, 15, 12, 0, 0, DateTimeKind.Local);
+			var buckets = ContentHistoryTimeBuckets.Create(Enumerable.Range(1, 12)
+				.Select(day => HistoryEntry($"may-{day}", new DateTime(2026, 5, day, 12, 0, 0, DateTimeKind.Local)))
+				.ToArray(), now);
+			var mayBucket = buckets.Single(bucket => bucket.Label == "May 2026");
+
+			var rows = ContentHistoryTimeBuckets.BuildVisibleRows(buckets, new HashSet<string> { mayBucket.Key });
+
+			Assert.That(rows.Count(row => row.Entry != null), Is.EqualTo(12));
+		}
+
+		[Test]
+		public void ContentHistoryTimeBuckets_DefaultWeekCanBeCollapsed()
+		{
+			var now = new DateTime(2026, 7, 15, 12, 0, 0, DateTimeKind.Local);
+			var buckets = ContentHistoryTimeBuckets.Create(new[]
+			{
+				HistoryEntry("today", now.AddHours(-1)),
+				HistoryEntry("this-week", now.Date.AddDays(-1))
+			}, now);
+			var expandedKeys = ContentHistoryTimeBuckets.GetDefaultExpandedKeys(buckets).ToHashSet();
+
+			expandedKeys.Remove("this-week");
+			var rows = ContentHistoryTimeBuckets.BuildVisibleRows(buckets, expandedKeys);
+
+			Assert.That(rows.Any(row => row.Entry?.ManifestUid == "today"), Is.True);
+			Assert.That(rows.Any(row => row.Entry?.ManifestUid == "this-week"), Is.False);
+		}
+
+		[TestCase(false, false, ContentHistoryRowVisualState.Normal)]
+		[TestCase(false, true, ContentHistoryRowVisualState.Hovered)]
+		[TestCase(true, false, ContentHistoryRowVisualState.Selected)]
+		[TestCase(true, true, ContentHistoryRowVisualState.Selected)]
+		public void ContentHistoryRowInteraction_PrioritizesSelectionOverHover(bool isSelected, bool isHovered,
+			ContentHistoryRowVisualState expectedState)
+		{
+			Assert.That(ContentHistoryRowInteraction.GetVisualState(isSelected, isHovered), Is.EqualTo(expectedState));
+		}
+
+		[TestCase(null, null, false)]
+		[TestCase("entry:one", "entry:one", false)]
+		[TestCase(null, "entry:one", true)]
+		[TestCase("entry:one", "bucket:this-week", true)]
+		[TestCase("entry:one", null, true)]
+		public void ContentHistoryRowInteraction_RepaintsOnlyWhenTheHoveredRowChanges(string currentRowKey,
+			string nextRowKey, bool shouldRepaint)
+		{
+			Assert.That(ContentHistoryRowInteraction.ShouldRepaint(currentRowKey, nextRowKey), Is.EqualTo(shouldRepaint));
+		}
+
+		private static BeamContentHistoryEntry HistoryEntry(string manifestUid, DateTime createdAt)
+		{
+			return new BeamContentHistoryEntry
+			{
+				ManifestUid = manifestUid,
+				CreatedDate = new DateTimeOffset(createdAt).ToUnixTimeMilliseconds(),
+				AffectedContentIds = Array.Empty<string>()
+			};
 		}
 	}
 }

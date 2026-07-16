@@ -17,8 +17,17 @@ namespace Beamable.Editor.UI.ContentWindow
 	{
 		private static readonly int[] HistoryPageSizes = { 10, 20, 30, 40, 50 };
 		private const int HistoryChangesPageSize = 25;
-		private const float HistoryEntryRowHeight = 42f;
+		private const float HistoryEntryRowHeight = 24f;
 		private const float HistoryChangeRowHeight = 22f;
+		private const float HistoryTimeColumnWidth = 74f;
+		private const float HistoryChangesColumnWidth = 82f;
+		private const float HistoryAuthorColumnWidth = 112f;
+		private static readonly Color HistoryEntryColor = new(.18f, .18f, .18f, 1f);
+		private static readonly Color HistoryEntryHoverColor = new(.25f, .28f, .31f, 1f);
+		private static readonly Color HistoryExpandedBucketColor = new(.20f, .21f, .23f, 1f);
+		private static readonly Color HistoryCollapsedBucketColor = new(.12f, .13f, .15f, 1f);
+		private static readonly Color HistoryExpandedBucketHoverColor = new(.27f, .30f, .34f, 1f);
+		private static readonly Color HistoryCollapsedBucketHoverColor = new(.20f, .23f, .27f, 1f);
 		private EditorGUISplitView _historySplitter;
 		private SearchData _historySearchData;
 		private Vector2 _historyEntriesScroll;
@@ -34,6 +43,15 @@ namespace Beamable.Editor.UI.ContentWindow
 		private int _filteredHistoryVersion = -1;
 		private string _historyFilterKey;
 		private IReadOnlyList<BeamContentHistoryEntry> _filteredHistoryEntries = Array.Empty<BeamContentHistoryEntry>();
+		private IReadOnlyList<ContentHistoryTimeBucket> _historyBuckets = Array.Empty<ContentHistoryTimeBucket>();
+		private readonly HashSet<string> _expandedHistoryBucketKeys = new();
+		private int _historyBucketVersion = -1;
+		private string _historyBucketFilterKey;
+		private DateTime _historyBucketLocalDate;
+		private string _historyBucketAutoExpandKey;
+		private IReadOnlyList<ContentHistoryTimeBucketRow> _historyDisplayRows = Array.Empty<ContentHistoryTimeBucketRow>();
+		private bool _historyDisplayRowsDirty = true;
+		private string _hoveredHistoryRowKey;
 		private bool _isLoadingHistoryChanges;
 		private bool _isLoadingHistoryPreview;
 		private bool _isRestoringHistory;
@@ -46,6 +64,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		private GUIStyle _historyRemovedChangeStyle;
 		private GUIStyle _historyDefaultChangeStyle;
 		private GUIStyle _historyRestoreButtonStyle;
+		private GUIStyle _historyEllipsisLabelStyle;
+		private readonly GUIContent _historyEllipsisMeasureContent = new();
 
 		private void DrawContentHistory()
 		{
@@ -84,6 +104,8 @@ namespace Beamable.Editor.UI.ContentWindow
 					_historyPageIndex = 0;
 					_historyEntriesScroll = Vector2.zero;
 					_historyFilterKey = null;
+					_historyBucketAutoExpandKey = null;
+					_historyDisplayRowsDirty = true;
 				}
 			};
 		}
@@ -101,18 +123,28 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 
 			var filteredEntries = GetFilteredHistoryEntries();
+			var historyBuckets = GetHistoryBuckets(filteredEntries);
+			AutoExpandHistoryBucketsForSearch(historyBuckets, _historySearchData?.searchText?.Trim());
+
+			/*
+			 * Publish pagination is intentionally disabled while Smart Time Buckets are enabled.
+			 * Paging entries before flattening the expandable hierarchy made a bucket header describe
+			 * history that was not actually visible on that page. Keep the existing pagination code
+			 * below for a future non-hierarchical view, but use one virtualized hierarchy here.
+			 *
 			var pageSize = ContentHistoryPagination.ClampPageSize(_contentConfiguration.HistoryEntriesPerPage);
 			var pageCount = ContentHistoryPagination.GetPageCount(filteredEntries.Count, pageSize);
 			_historyPageIndex = ContentHistoryPagination.ClampPageIndex(_historyPageIndex, pageCount);
 			var firstEntryIndex = _historyPageIndex * pageSize;
 			var currentEntryCount = Math.Min(pageSize, Math.Max(0, filteredEntries.Count - firstEntryIndex));
+			*/
 
 			if (_contentService.ContentHistoryWatcherError != null)
 			{
 				DrawHistoryOperationError(_contentService.ContentHistoryWatcherError, RetryContentHistory);
 			}
 
-			if (currentEntryCount == 0)
+			if (filteredEntries.Count == 0)
 			{
 				if (_contentService.ContentHistoryWatcherError == null)
 				{
@@ -121,10 +153,11 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			else
 			{
-				DrawVirtualHistoryEntries(filteredEntries, firstEntryIndex, currentEntryCount);
+				DrawHistoryTableHeader();
+				DrawVirtualHistoryEntries(historyBuckets);
 			}
 
-			DrawHistoryPagination(filteredEntries.Count, pageSize, pageCount);
+			// DrawHistoryPagination(filteredEntries.Count, pageSize, pageCount);
 			EditorGUILayout.EndVertical();
 		}
 
@@ -171,36 +204,199 @@ namespace Beamable.Editor.UI.ContentWindow
 			return _filteredHistoryEntries;
 		}
 
-		private void DrawVirtualHistoryEntries(IReadOnlyList<BeamContentHistoryEntry> entries, int firstEntryIndex, int entryCount)
+		private IReadOnlyList<ContentHistoryTimeBucket> GetHistoryBuckets(IReadOnlyList<BeamContentHistoryEntry> entries)
 		{
+			var search = _historySearchData?.searchText?.Trim();
+			var historyVersion = _contentService.ContentHistoryVersion;
+			var localNow = DateTime.Now;
+			if (_historyBucketVersion == historyVersion && _historyBucketLocalDate == localNow.Date &&
+			    string.Equals(_historyBucketFilterKey, search, StringComparison.Ordinal))
+			{
+				return _historyBuckets;
+			}
+
+			var resetExpansion = _historyBucketVersion < 0 || !string.Equals(_historyBucketFilterKey, search, StringComparison.Ordinal);
+			if (resetExpansion)
+			{
+				_expandedHistoryBucketKeys.Clear();
+			}
+
+			_historyBuckets = ContentHistoryTimeBuckets.Create(entries, localNow);
+			_historyBucketVersion = historyVersion;
+			_historyBucketFilterKey = search;
+			_historyBucketLocalDate = localNow.Date;
+			_historyBucketAutoExpandKey = null;
+			_historyDisplayRowsDirty = true;
+			if (resetExpansion)
+			{
+				_expandedHistoryBucketKeys.UnionWith(ContentHistoryTimeBuckets.GetDefaultExpandedKeys(_historyBuckets));
+			}
+			return _historyBuckets;
+		}
+
+		private void AutoExpandHistoryBucketsForSearch(IReadOnlyList<ContentHistoryTimeBucket> buckets, string search)
+		{
+			if (string.IsNullOrEmpty(search))
+			{
+				return;
+			}
+
+			var key = $"{_historyBucketVersion}|{search}";
+			if (string.Equals(_historyBucketAutoExpandKey, key, StringComparison.Ordinal))
+			{
+				return;
+			}
+
+			var didExpandBucket = false;
+			foreach (var entry in _filteredHistoryEntries)
+			{
+				foreach (var ancestorKey in ContentHistoryTimeBuckets.GetAncestorKeys(buckets, entry.ManifestUid))
+				{
+					didExpandBucket |= _expandedHistoryBucketKeys.Add(ancestorKey);
+				}
+			}
+
+			_historyBucketAutoExpandKey = key;
+			_historyDisplayRowsDirty |= didExpandBucket;
+		}
+
+		private void DrawHistoryTableHeader()
+		{
+			EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+			EditorGUILayout.LabelField("Time", EditorStyles.miniLabel, GUILayout.Width(HistoryTimeColumnWidth));
+			EditorGUILayout.LabelField("Changes", EditorStyles.miniLabel, GUILayout.Width(HistoryChangesColumnWidth));
+			EditorGUILayout.LabelField("Manifest ID", EditorStyles.miniLabel, GUILayout.ExpandWidth(true));
+			EditorGUILayout.LabelField("Author", EditorStyles.miniLabel, GUILayout.Width(HistoryAuthorColumnWidth));
+			EditorGUILayout.EndHorizontal();
+		}
+
+		private void DrawVirtualHistoryEntries(IReadOnlyList<ContentHistoryTimeBucket> buckets)
+		{
+			var rows = GetHistoryDisplayRows(buckets);
 			var areaRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-			var contentRect = new Rect(0, 0, Math.Max(0, areaRect.width - 16), entryCount * HistoryEntryRowHeight);
+			var contentRect = new Rect(0, 0, Math.Max(0, areaRect.width - 16), rows.Count * HistoryEntryRowHeight);
 			_historyEntriesScroll = GUI.BeginScrollView(areaRect, _historyEntriesScroll, contentRect, false, true);
-			var visibleRange = ContentHistoryPagination.GetVisibleRange(entryCount, _historyEntriesScroll.y, areaRect.height, HistoryEntryRowHeight);
+			var visibleRange = ContentHistoryPagination.GetVisibleRange(rows.Count, _historyEntriesScroll.y, areaRect.height, HistoryEntryRowHeight);
+			UpdateHistoryHover(rows, visibleRange, contentRect.width);
 			for (var index = visibleRange.FirstIndex; index < visibleRange.LastExclusive; index++)
 			{
-				DrawHistoryEntry(entries[firstEntryIndex + index], new Rect(0, index * HistoryEntryRowHeight, contentRect.width, HistoryEntryRowHeight));
+				DrawHistoryDisplayRow(rows[index], new Rect(0, index * HistoryEntryRowHeight, contentRect.width, HistoryEntryRowHeight));
 			}
 			GUI.EndScrollView();
 		}
 
-		private void DrawHistoryEntry(BeamContentHistoryEntry entry, Rect rowRect)
+		private void UpdateHistoryHover(IReadOnlyList<ContentHistoryTimeBucketRow> rows, ContentHistoryVisibleRange visibleRange,
+			float contentWidth)
+		{
+			if (Event.current.type != EventType.MouseMove && Event.current.type != EventType.MouseLeaveWindow)
 			{
+				return;
+			}
+
+			string nextHoveredRowKey = null;
+			if (Event.current.type == EventType.MouseMove)
+			{
+				for (var index = visibleRange.FirstIndex; index < visibleRange.LastExclusive; index++)
+				{
+					var rowRect = new Rect(0, index * HistoryEntryRowHeight, contentWidth, HistoryEntryRowHeight);
+					if (rowRect.Contains(Event.current.mousePosition))
+					{
+						nextHoveredRowKey = GetHistoryRowKey(rows[index]);
+						break;
+					}
+				}
+			}
+
+			if (!ContentHistoryRowInteraction.ShouldRepaint(_hoveredHistoryRowKey, nextHoveredRowKey))
+			{
+				return;
+			}
+
+			_hoveredHistoryRowKey = nextHoveredRowKey;
+			Repaint();
+		}
+
+		private IReadOnlyList<ContentHistoryTimeBucketRow> GetHistoryDisplayRows(IReadOnlyList<ContentHistoryTimeBucket> buckets)
+		{
+			if (_historyDisplayRowsDirty)
+			{
+				_historyDisplayRows = ContentHistoryTimeBuckets.BuildVisibleRows(buckets, _expandedHistoryBucketKeys);
+				_historyDisplayRowsDirty = false;
+			}
+
+			return _historyDisplayRows;
+		}
+
+		private void DrawHistoryDisplayRow(ContentHistoryTimeBucketRow row, Rect rowRect)
+		{
+			if (row.Bucket != null)
+			{
+				DrawHistoryBucket(row.Bucket, rowRect, GetHistoryRowKey(row));
+				return;
+			}
+
+			DrawHistoryEntry(row.Entry, rowRect, GetHistoryRowKey(row));
+		}
+
+		private static string GetHistoryRowKey(ContentHistoryTimeBucketRow row)
+		{
+			return row.Bucket != null ? row.Bucket.Key : row.Entry.ManifestUid;
+		}
+
+		private bool IsHistoryBucketExpanded(ContentHistoryTimeBucket bucket)
+		{
+			return _expandedHistoryBucketKeys.Contains(bucket.Key);
+		}
+
+		private void DrawHistoryBucket(ContentHistoryTimeBucket bucket, Rect rowRect, string rowKey)
+		{
+			var isExpanded = IsHistoryBucketExpanded(bucket);
+			var isHovering = string.Equals(_hoveredHistoryRowKey, rowKey, StringComparison.Ordinal);
+			var backgroundColor = isExpanded
+				? (isHovering ? HistoryExpandedBucketHoverColor : HistoryExpandedBucketColor)
+				: (isHovering ? HistoryCollapsedBucketHoverColor : HistoryCollapsedBucketColor);
+			EditorGUI.DrawRect(rowRect, backgroundColor);
+			EditorGUI.DrawRect(new Rect(rowRect.x, rowRect.yMax - 1, rowRect.width, 1), new Color(0f, 0f, 0f, .35f));
+			var chevron = isExpanded ? "v" : ">";
+			GUI.Label(new Rect(rowRect.x + 6, rowRect.y + 3, rowRect.width - 12, EditorGUIUtility.singleLineHeight),
+				$"{chevron} {bucket.Label} ({bucket.EntryCount})", EditorStyles.boldLabel);
+
+			if (GUI.Button(rowRect, GUIContent.none, GUIStyle.none))
+			{
+				if (isExpanded)
+				{
+					_expandedHistoryBucketKeys.Remove(bucket.Key);
+					_historyDisplayRowsDirty = true;
+				}
+				else
+				{
+					_expandedHistoryBucketKeys.Add(bucket.Key);
+					_historyDisplayRowsDirty = true;
+				}
+			}
+		}
+
+		private void DrawHistoryEntry(BeamContentHistoryEntry entry, Rect rowRect, string rowKey)
+		{
 			var isSelected = entry.ManifestUid == _selectedHistoryManifestUid;
-			if (isSelected)
+			var visualState = ContentHistoryRowInteraction.GetVisualState(isSelected,
+				string.Equals(_hoveredHistoryRowKey, rowKey, StringComparison.Ordinal));
+			if (visualState == ContentHistoryRowVisualState.Selected)
 			{
 				GUI.Box(rowRect, GUIContent.none, EditorStyles.selectionRect);
 			}
 			else
 			{
-				GUI.Box(rowRect, GUIContent.none, EditorStyles.helpBox);
+				EditorGUI.DrawRect(rowRect, visualState == ContentHistoryRowVisualState.Hovered
+					? HistoryEntryHoverColor
+					: HistoryEntryColor);
 			}
 
 			var date = DateTimeOffset.FromUnixTimeMilliseconds(entry.CreatedDate).LocalDateTime;
-			var primaryRect = new Rect(rowRect.x + 6, rowRect.y + 3, rowRect.width - 12, EditorGUIUtility.singleLineHeight);
-			var secondaryRect = new Rect(primaryRect.x, primaryRect.yMax, primaryRect.width, EditorGUIUtility.singleLineHeight);
-			GUI.Label(primaryRect, $"{date:g}   {entry.ManifestUid}   {entry.PublishedByName}");
-			GUI.Label(secondaryRect, $"{entry.AffectedContentIds?.Length ?? 0} changed content item(s)", EditorStyles.miniLabel);
+			var timeRect = new Rect(rowRect.x + 6, rowRect.y + 3, HistoryTimeColumnWidth - 6, EditorGUIUtility.singleLineHeight);
+			var changesRect = new Rect(timeRect.xMax, rowRect.y + 3, HistoryChangesColumnWidth, EditorGUIUtility.singleLineHeight);
+			var authorRect = new Rect(rowRect.xMax - HistoryAuthorColumnWidth, rowRect.y + 3, HistoryAuthorColumnWidth - 6, EditorGUIUtility.singleLineHeight);
+			var manifestRect = new Rect(changesRect.xMax, rowRect.y + 3, Math.Max(0, authorRect.x - changesRect.xMax), EditorGUIUtility.singleLineHeight);
 
 			using (new EditorGUI.DisabledScope(_isRestoringHistory))
 			{
@@ -209,6 +405,11 @@ namespace Beamable.Editor.UI.ContentWindow
 					SelectHistoryEntry(entry.ManifestUid);
 				}
 			}
+
+			GUI.Label(timeRect, date.ToString("h:mm tt"), EditorStyles.miniLabel);
+			GUI.Label(changesRect, $"{entry.AffectedContentIds?.Length ?? 0} changed", EditorStyles.miniLabel);
+			DrawHistoryTruncatedLabel(manifestRect, entry.ManifestUid);
+			DrawHistoryTruncatedLabel(authorRect, string.IsNullOrEmpty(entry.PublishedByName) ? entry.PublishedBy : entry.PublishedByName);
 		}
 
 		private void DrawHistoryPagination(int entryCount, int pageSize, int pageCount)
@@ -220,12 +421,12 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			using (new EditorGUI.DisabledScope(_historyPageIndex == 0))
 			{
-				if (GUILayout.Button("<", GUILayout.Width(24))) _historyPageIndex--;
+				if (GUILayout.Button("<", GUILayout.Width(24))) SetHistoryPage(_historyPageIndex - 1);
 			}
 			EditorGUILayout.LabelField($"{_historyPageIndex + 1}/{Math.Max(pageCount, 1)}", GUILayout.Width(48));
 			using (new EditorGUI.DisabledScope(_historyPageIndex >= pageCount - 1))
 			{
-				if (GUILayout.Button(">", GUILayout.Width(24))) _historyPageIndex++;
+				if (GUILayout.Button(">", GUILayout.Width(24))) SetHistoryPage(_historyPageIndex + 1);
 			}
 
 			if (GUILayout.Button($"Per page: {pageSize}", EditorStyles.toolbarDropDown, GUILayout.Width(92)))
@@ -246,7 +447,18 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorUtility.SetDirty(_contentConfiguration);
 			AssetDatabase.SaveAssets();
 			_historyPageIndex = 0;
+			_historyEntriesScroll = Vector2.zero;
+			_historyBucketAutoExpandKey = null;
+			_historyDisplayRowsDirty = true;
 			Repaint();
+		}
+
+		private void SetHistoryPage(int pageIndex)
+		{
+			_historyPageIndex = pageIndex;
+			_historyEntriesScroll = Vector2.zero;
+			_historyBucketAutoExpandKey = null;
+			_historyDisplayRowsDirty = true;
 		}
 
 		private void DrawHistoryChanges()
@@ -317,6 +529,20 @@ namespace Beamable.Editor.UI.ContentWindow
 				EditorGUILayout.TextArea(_selectedHistoryJson, GUILayout.ExpandHeight(true));
 				EditorGUILayout.EndScrollView();
 			}
+		}
+
+		private void DrawHistoryTruncatedLabel(Rect rect, string value)
+		{
+			value ??= string.Empty;
+			GUI.Label(rect, value, _historyEllipsisLabelStyle);
+			_historyEllipsisMeasureContent.text = value;
+			if (!rect.Contains(Event.current.mousePosition) ||
+				_historyEllipsisLabelStyle.CalcSize(_historyEllipsisMeasureContent).x <= rect.width)
+			{
+				return;
+			}
+
+			GUI.Label(rect, new GUIContent(string.Empty, value), GUIStyle.none);
 		}
 
 		private void DrawVirtualHistoryChanges(int firstChangeIndex, int changeCount)
@@ -426,7 +652,6 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, 1), new Color(1f, 1f, 1f, .45f));
 			}
-			if (isEnabled) EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
 			GUI.Label(rect, content, _historyRestoreButtonStyle);
 			return isEnabled && GUI.Button(rect, GUIContent.none, GUIStyle.none);
 		}
@@ -481,6 +706,11 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				alignment = TextAnchor.MiddleCenter,
 				normal = { textColor = Color.white }
+			};
+			_historyEllipsisLabelStyle = new GUIStyle(EditorStyles.miniLabel)
+			{
+				clipping = TextClipping.Ellipsis,
+				wordWrap = false
 			};
 		}
 
@@ -656,5 +886,27 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 
+	}
+
+	public enum ContentHistoryRowVisualState
+	{
+		Normal,
+		Hovered,
+		Selected
+	}
+
+	public static class ContentHistoryRowInteraction
+	{
+		public static ContentHistoryRowVisualState GetVisualState(bool isSelected, bool isHovered)
+		{
+			return isSelected
+				? ContentHistoryRowVisualState.Selected
+				: isHovered ? ContentHistoryRowVisualState.Hovered : ContentHistoryRowVisualState.Normal;
+		}
+
+		public static bool ShouldRepaint(string currentHoveredRowKey, string nextHoveredRowKey)
+		{
+			return !string.Equals(currentHoveredRowKey, nextHoveredRowKey, StringComparison.Ordinal);
+		}
 	}
 }
