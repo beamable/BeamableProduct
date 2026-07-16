@@ -53,6 +53,49 @@ Portal.registerExtension({
 });
 ```
 
+### Persisting data (`context.storage`)
+
+The portal hands every extension a `context.storage` object with three tiers. Values are isolated by your extension **and** the signed-in account automatically, so you never manage global `localStorage` keys or worry about collisions.
+
+| Tier | Lives | Backed by |
+|---|---|---|
+| `session` | The tab/session | `sessionStorage` |
+| `local` | This device, across reloads | `localStorage` |
+| `user` | Durable, follows the user across devices | server (**deferred** — rejects until it ships) |
+
+Every tier shares one **async** API, so `local` code is a drop-in for `user` later:
+
+```ts
+// per-realm (default), this device, survives reloads
+await context.storage.local.set('lastFilter', { seg: 'whales' });
+const filter = await context.storage.local.get<Filter>('lastFilter'); // null if unset
+
+// expire a value: TTL in ms, evaluated lazily at read time
+await context.storage.local.set('dismissedBanner', true, { ttl: 7 * 864e5 });
+
+// one value shared across every realm in the org (still this account, this device)
+await context.storage.local.scope({ scope: 'cid' }).set('compactMode', true);
+
+// keep separate state per mount site when the same bundle mounts in two places
+await context.storage.local.scope({ mount: 'instance' }).set('lastFilter', filter);
+
+// react to changes (also fires for another live mount of this extension)
+const unsub = context.storage.local.subscribe('lastFilter', (v) => render(v));
+```
+
+React authors can use the `useStoredState` hook from `@beamable/portal-toolkit/react`:
+
+```tsx
+import { useStoredState } from '@beamable/portal-toolkit/react';
+
+function App({ context }: { context: ExtensionContext }) {
+  const [filter, setFilter] = useStoredState(context.storage.local, 'filter', 'all');
+  return <FilterBar value={filter} onChange={setFilter} />;
+}
+```
+
+> **Interface vs. implementation.** This package only *defines* `context.storage` (the `ExtensionStorage` types + the `useStoredState` hook). The portal host *implements* it and builds the object at mount — the same split as the rest of the context (`beam`, `config`, `navigate`). Extension authors just use `context.storage`.
+
 ## Development
 
 ### Syncing web components from agentic-portal

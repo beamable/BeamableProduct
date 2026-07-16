@@ -2,6 +2,7 @@
 // Import via:  import { Portal } from '@beamable/portal-toolkit';
 
 import { Beam, BeamBase } from "@beamable/sdk";
+import type { ExtensionStorage } from "./storage";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -145,6 +146,32 @@ export interface BadgeContext {
 }
 
 /**
+ * A handle to one of this extension's own mount sites, accepted by
+ * {@link ExtensionContext.getMountSiteCandidates}: either the site's
+ * `selector` string, or the mount-site element itself — the
+ * `<BeamExtensionSite>`'s DOM element, e.g. a React ref's `.current`.
+ */
+export type MountSiteHandle = string | HTMLElement;
+
+/**
+ * What the portal knows about an extension that could mount at a site.
+ * Returned by {@link ExtensionContext.getMountSiteCandidates} and passed to a
+ * `<BeamExtensionSite>`'s `resolve` function.
+ */
+export interface CandidateMetadata {
+  /** The candidate extension's name / beam id. */
+  beamId: string;
+  /** The mount entry that matched this site — `selector`, `args`, nav*, … */
+  mount: ExtensionMountPoint;
+  /** The `@beamable/portal-toolkit` version the candidate was built against. */
+  toolkitVersion: string;
+  /** `true` for a locally-running dev build, `false` for a deployed one. */
+  isLocal: boolean;
+  /** Selectors this candidate itself exposes via `<BeamExtensionSite>`. */
+  sites: string[];
+}
+
+/**
  * Runtime context provided by the Beamable portal to every extension on mount.
  */
 export interface ExtensionContext extends Map<any, any> {
@@ -190,6 +217,51 @@ export interface ExtensionContext extends Map<any, any> {
    * the badge must appear even when the user hasn't visited the page yet.
    */
   updateBadge: (value: BadgeValue | null) => void;
+  /**
+   * Data supplied by the parent that mounted this extension, if any. Value
+   * comes from the `siteData` prop on the parent's `<BeamExtensionSite>` or
+   * `<BeamChildExtension>`. Snapshot at mount time — mutating the parent's
+   * value after mount does NOT update this field for existing mounts (a
+   * remount picks up the new value). For live-in-sync scenarios, the parent
+   * should pass a store (writable/readable) through `siteData` and the
+   * child subscribes to it.
+   *
+   * Typed as `unknown` — the mount site is a generic primitive and the
+   * type system can't know a given site's contract. Validate at the receive
+   * site with a companion type, a schema, or a defensive cast.
+   *
+   * Top-level (rather than nested under `mount`) because the value is
+   * supplied by the parent, not by this extension's own manifest.
+   */
+  siteData?: unknown;
+  /**
+   * Per-extension persistent storage across two tiers (`session`, `local`) —
+   * see {@link ExtensionStorage}. Every value is isolated by this extension
+   * and the signed-in account; the author picks a `scope` (`pid`/`cid`) and
+   * `mount` policy (`all`/`instance`), and may attach a TTL.
+   *
+   * @example
+   *   // per-realm, this device, survives reloads:
+   *   await context.storage.local.set('lastFilter', filter);
+   *   const filter = await context.storage.local.get<Filter>('lastFilter');
+   *
+   *   // one value for the whole org, on this device:
+   *   await context.storage.local.scope({ scope: 'cid' }).set('compact', true);
+   */
+  storage: ExtensionStorage;
+  /**
+   * Discover the extensions that could mount at one of THIS extension's own
+   * mount sites — pass the site's `selector` (or the site element) and get a
+   * reactive list of candidates with their metadata. Use it to build UI (e.g.
+   * a "which view" dropdown) or to compute an `include` list for the matching
+   * `<BeamExtensionSite>`. Reactive: `subscribe` to react as extensions
+   * deploy, enable, or disable. See {@link CandidateMetadata}.
+   *
+   * @example
+   *   const obs = context.getMountSiteCandidates('detail-tabs');
+   *   const ids = obs.get().map((c) => c.beamId);   // e.g. to seed `include`
+   */
+  getMountSiteCandidates(site: MountSiteHandle): ExtensionObservable<CandidateMetadata[]>;
 }
 
 /**
