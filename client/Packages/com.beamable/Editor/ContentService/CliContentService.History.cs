@@ -10,6 +10,10 @@ namespace Beamable.Editor.ContentService
 	public partial class CliContentService
 	{
 		private ContentHistoryWrapper _contentHistoryWatcher;
+		private readonly ContentHistoryRequestSlot<ContentHistorySyncChangelistWrapper> _contentHistoryChangesRequest =
+			new(request => request.Cancel());
+		private readonly ContentHistoryRequestSlot<ContentHistorySyncContentWrapper> _contentHistoryPreviewRequest =
+			new(request => request.Cancel());
 		private readonly ContentHistoryEntryCache _contentHistoryEntryCache = new();
 
 		/// <summary>
@@ -73,6 +77,7 @@ namespace Beamable.Editor.ContentService
 		/// </summary>
 		public void StopContentHistory()
 		{
+			CancelContentHistoryRequests();
 			if (_contentHistoryWatcher == null)
 			{
 				return;
@@ -89,31 +94,42 @@ namespace Beamable.Editor.ContentService
 		/// <param name="manifestUid">The historical manifest UID to inspect.</param>
 		public async Task<BeamContentHistoryChangelistEntry[]> GetContentHistoryChanges(string manifestUid)
 		{
-			var wrapper = _cli.ContentHistorySyncContent(new ContentHistoryArgs
+			var wrapper = _cli.ContentHistorySyncChangelist(new ContentHistoryArgs
 			{
 				manifestIds = GetSelectedManifestIdsCliOption()
-			}, new ContentHistorySyncContentArgs
+			}, new ContentHistorySyncChangelistArgs
 			{
 				manifestUid = manifestUid
 			});
-			BeamContentHistoryChangelistEntry[] changes = null;
+			_contentHistoryChangesRequest.Replace(wrapper);
+			string changelistStreamJson = null;
 			try
 			{
 				wrapper.Command.On(report =>
 				{
-					if (ContentHistoryStreamParser.TryParseChanges(report.json, out var entries))
+					if (_contentHistoryChangesRequest.IsCurrent(wrapper) && report.type == "stream")
 					{
-						changes = entries;
+						changelistStreamJson = report.json;
 					}
 				});
 
 				await wrapper.Run();
-				if (changes == null)
+				if (!_contentHistoryChangesRequest.IsCurrent(wrapper))
+				{
+					throw new OperationCanceledException();
+				}
+
+				var parseResult = await Task.Run(() =>
+				{
+					var wasParsed = ContentHistoryStreamParser.TryParseChangelist(changelistStreamJson, out var entries);
+					return (wasParsed, entries);
+				});
+				if (!parseResult.wasParsed)
 				{
 					throw new InvalidOperationException("The CLI completed without delivering a usable content-history changelist stream response.");
 				}
 
-				return changes;
+				return parseResult.entries;
 			}
 			catch (Exception exception)
 			{
@@ -122,6 +138,10 @@ namespace Beamable.Editor.ContentService
 					"Unable to load changes for this publish. Check your connection and try again.",
 					manifestUid,
 					exception);
+			}
+			finally
+			{
+				_contentHistoryChangesRequest.Release(wrapper);
 			}
 		}
 
@@ -132,9 +152,33 @@ namespace Beamable.Editor.ContentService
 		/// <param name="contentId">The full content ID to preview.</param>
 		public async Task<string> GetContentHistoryJson(string manifestUid, string contentId)
 		{
+			var wrapper = _cli.ContentHistorySyncContent(new ContentHistoryArgs
+			{
+				manifestIds = GetSelectedManifestIdsCliOption()
+			}, ContentHistoryRequestFactory.CreateContentSync(manifestUid, contentId));
+			_contentHistoryPreviewRequest.Replace(wrapper);
+			BeamContentHistoryChangelistEntry[] entries = null;
 			try
 			{
-				var entries = await GetContentHistoryChanges(manifestUid);
+				wrapper.Command.On(report =>
+				{
+					if (_contentHistoryPreviewRequest.IsCurrent(wrapper) &&
+						ContentHistoryStreamParser.TryParseChanges(report.json, out var parsedEntries))
+					{
+						entries = parsedEntries;
+					}
+				});
+
+				await wrapper.Run();
+				if (!_contentHistoryPreviewRequest.IsCurrent(wrapper))
+				{
+					throw new OperationCanceledException();
+				}
+				if (entries == null)
+				{
+					throw new InvalidOperationException("The CLI completed without delivering a usable historical content response.");
+				}
+
 				foreach (var entry in entries)
 				{
 					if (entry.FullId != contentId)
@@ -160,6 +204,16 @@ namespace Beamable.Editor.ContentService
 					manifestUid,
 					exception);
 			}
+			finally
+			{
+				_contentHistoryPreviewRequest.Release(wrapper);
+			}
+		}
+
+		internal void CancelContentHistoryRequests()
+		{
+			_contentHistoryChangesRequest.CancelActive();
+			_contentHistoryPreviewRequest.CancelActive();
 		}
 
 		/// <summary>
@@ -263,6 +317,60 @@ namespace Beamable.Editor.ContentService
 					null,
 					exception));
 			}
+		}
+	}
+
+	internal static class ContentHistoryRequestFactory
+	{
+		public static ContentHistorySyncContentArgs CreateContentSync(string manifestUid, string contentId)
+		{
+			return new ContentHistorySyncContentArgs
+			{
+				manifestUid = manifestUid,
+				contentIds = new[] { contentId }
+			};
+		}
+	}
+
+	internal sealed class ContentHistoryRequestSlot<TRequest> where TRequest : class
+	{
+		private readonly Action<TRequest> _cancel;
+		private TRequest _activeRequest;
+
+		public ContentHistoryRequestSlot(Action<TRequest> cancel)
+		{
+			_cancel = cancel;
+		}
+
+		public void Replace(TRequest request)
+		{
+			CancelActive();
+			_activeRequest = request;
+		}
+
+		public bool IsCurrent(TRequest request)
+		{
+			return ReferenceEquals(_activeRequest, request);
+		}
+
+		public void Release(TRequest request)
+		{
+			if (IsCurrent(request))
+			{
+				_activeRequest = null;
+			}
+		}
+
+		public void CancelActive()
+		{
+			if (_activeRequest == null)
+			{
+				return;
+			}
+
+			var request = _activeRequest;
+			_activeRequest = null;
+			_cancel?.Invoke(request);
 		}
 	}
 

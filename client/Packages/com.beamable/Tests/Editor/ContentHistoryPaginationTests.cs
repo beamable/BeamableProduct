@@ -1,6 +1,7 @@
 using Beamable.Editor.UI.ContentWindow;
 using Beamable.Editor.ContentService;
 using Beamable.Editor.BeamCli.Commands;
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
 using Beamable.Content;
@@ -149,6 +150,36 @@ namespace Beamable.Editor.Tests
 		}
 
 		[Test]
+		public void ContentHistoryChangesSearch_FiltersByContentIdNameAndType()
+		{
+			var changes = new[]
+			{
+				new BeamContentHistoryChangelistEntry { FullId = "currency.gems", Name = "gems", TypeName = "economy" },
+				new BeamContentHistoryChangelistEntry { FullId = "items.sword", Name = "Bronze Sword", TypeName = "items" },
+				new BeamContentHistoryChangelistEntry { FullId = "stores.shop", Name = "Starter Shop", TypeName = "stores" }
+			};
+
+			Assert.That(ContentHistoryChangesSearch.Filter(changes, "currency"),
+				Is.EqualTo(new[] { changes[0] }));
+			Assert.That(ContentHistoryChangesSearch.Filter(changes, "ECONOMY"),
+				Is.EqualTo(new[] { changes[0] }));
+			Assert.That(ContentHistoryChangesSearch.Filter(changes, " starter "),
+				Is.EqualTo(new[] { changes[2] }));
+		}
+
+		[Test]
+		public void ContentHistoryChangesSearch_ReturnsEveryEntryForAnEmptySearch()
+		{
+			var changes = new[]
+			{
+				new BeamContentHistoryChangelistEntry { FullId = "currency.gems" },
+				new BeamContentHistoryChangelistEntry { FullId = "items.sword" }
+			};
+
+			Assert.That(ContentHistoryChangesSearch.Filter(changes, "  "), Is.SameAs(changes));
+		}
+
+		[Test]
 		public void ContentHistoryStreamParser_TryParseChanges_RejectsTerminalReportsWithoutReplacingStreamEntries()
 		{
 			const string streamJson = "{\"ts\":1,\"type\":\"stream\",\"data\":{\"ContentEntries\":[{\"fullId\":\"stores.Store_Coin\",\"typeName\":\"stores\",\"changeStatus\":4,\"jsonFilePath\":\"content.json\"}]}}";
@@ -167,6 +198,86 @@ namespace Beamable.Editor.Tests
 
 			Assert.That(ContentHistoryStreamParser.TryParseChanges(streamJson, out var entries), Is.False);
 			Assert.That(entries, Is.Empty);
+		}
+
+		[Test]
+		public void ContentHistoryStreamParser_ParsesMetadataOnlyChangelistEntries()
+		{
+			const string streamJson = "{\"type\":\"stream\",\"data\":{\"Changelist\":{\"publishedAt\":1234,\"added\":{\"currency.gems\":{\"newVersion\":\"1\",\"newChecksum\":\"new\",\"newTags\":[\"currency\"]}},\"modified\":{\"items.sword\":{\"oldVersion\":\"1\",\"newVersion\":\"2\",\"oldTags\":[\"old\"],\"newTags\":[\"new\"]}},\"removed\":{\"stores.shop\":{\"oldVersion\":\"3\",\"oldChecksum\":\"old\",\"oldTags\":[\"store\"]}}}}}";
+
+			var parsed = ContentHistoryStreamParser.TryParseChangelist(streamJson, out var entries);
+
+			Assert.That(parsed, Is.True);
+			Assert.That(entries, Has.Length.EqualTo(3));
+			Assert.That(entries.Select(entry => entry.FullId), Is.EqualTo(new[] { "currency.gems", "items.sword", "stores.shop" }));
+			Assert.That(entries.Select(entry => entry.TypeName), Is.EqualTo(new[] { "currency", "items", "stores" }));
+			Assert.That(entries.Select(entry => entry.Name), Is.EqualTo(new[] { "gems", "sword", "shop" }));
+			Assert.That(entries.Select(entry => entry.ChangeStatus), Is.EqualTo(new[]
+			{
+				(int)ContentStatus.Created,
+				(int)ContentStatus.Modified,
+				(int)ContentStatus.Deleted
+			}));
+			Assert.That(entries.All(entry => entry.ChangeDate == 1234), Is.True);
+			Assert.That(entries.All(entry => string.IsNullOrEmpty(entry.JsonFilePath)), Is.True);
+			Assert.That(entries[0].NewTags, Is.EqualTo(new[] { "currency" }));
+			Assert.That(entries[1].OldTags, Is.EqualTo(new[] { "old" }));
+			Assert.That(entries[1].NewTags, Is.EqualTo(new[] { "new" }));
+			Assert.That(entries[2].OldTags, Is.EqualTo(new[] { "store" }));
+		}
+
+		[Test]
+		public void ContentHistoryStreamParser_LeavesMalformedContentIdsListable()
+		{
+			const string streamJson = "{\"type\":\"stream\",\"data\":{\"Changelist\":{\"publishedAt\":1,\"added\":{\"malformed\":{\"newVersion\":\"1\"}}}}}";
+
+			var parsed = ContentHistoryStreamParser.TryParseChangelist(streamJson, out var entries);
+
+			Assert.That(parsed, Is.True);
+			Assert.That(entries, Has.Length.EqualTo(1));
+			Assert.That(entries[0].FullId, Is.EqualTo("malformed"));
+			Assert.That(entries[0].TypeName, Is.Empty);
+			Assert.That(entries[0].Name, Is.EqualTo("malformed"));
+		}
+
+		[TestCase("{\"type\":\"eof\",\"data\":{}}")]
+		[TestCase("{\"type\":\"stream\",\"data\":{}}")]
+		public void ContentHistoryStreamParser_RejectsInvalidChangelistStream(string streamJson)
+		{
+			var parsed = ContentHistoryStreamParser.TryParseChangelist(streamJson, out var entries);
+
+			Assert.That(parsed, Is.False);
+			Assert.That(entries, Is.Empty);
+		}
+
+		[Test]
+		public void ContentHistoryRequestFactory_CreatesSingleContentSyncRequest()
+		{
+			var request = ContentHistoryRequestFactory.CreateContentSync("manifest-123", "currency.gems");
+
+			Assert.That(request.manifestUid, Is.EqualTo("manifest-123"));
+			Assert.That(request.contentIds, Is.EqualTo(new[] { "currency.gems" }));
+		}
+
+		[Test]
+		public void ContentHistoryRequestSlot_CancelsReplacedRequestAndKeepsTheNewestCurrent()
+		{
+			var cancelled = new List<object>();
+			var slot = new ContentHistoryRequestSlot<object>(cancelled.Add);
+			var first = new object();
+			var second = new object();
+
+			slot.Replace(first);
+			slot.Replace(second);
+			slot.Release(first);
+
+			Assert.That(cancelled, Is.EqualTo(new[] { first }));
+			Assert.That(slot.IsCurrent(second), Is.True);
+
+			slot.CancelActive();
+
+			Assert.That(cancelled, Is.EqualTo(new[] { first, second }));
+			Assert.That(slot.IsCurrent(second), Is.False);
 		}
 
 		[Test]

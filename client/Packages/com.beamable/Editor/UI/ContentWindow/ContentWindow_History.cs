@@ -27,6 +27,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private const float HistoryTimeColumnWidth = 74f;
 		private const float HistoryChangesColumnWidth = 82f;
 		private const float HistoryAuthorColumnWidth = 112f;
+		private const float HistoryManifestCopyButtonWidth = 20f;
 		private static readonly Color HistoryEntryColor = new(.18f, .18f, .18f, 1f);
 		private static readonly Color HistoryEntryHoverColor = new(.25f, .28f, .31f, 1f);
 		private static readonly Color HistoryExpandedBucketColor = new(.20f, .21f, .23f, 1f);
@@ -35,6 +36,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private static readonly Color HistoryCollapsedBucketHoverColor = new(.20f, .23f, .27f, 1f);
 		private EditorGUISplitView _historySplitter;
 		private SearchData _historySearchData;
+		private SearchData _historyChangesSearchData;
 		private Vector2 _historyEntriesScroll;
 		private Vector2 _historyChangesScroll;
 		private Vector2 _historyPreviewScroll;
@@ -43,6 +45,9 @@ namespace Beamable.Editor.UI.ContentWindow
 		private string _selectedHistoryJson = string.Empty;
 		private int _historyPageIndex;
 		private int _historyChangesPageIndex;
+		private string _historyChangesFilterKey;
+		private IReadOnlyList<BeamContentHistoryChangelistEntry> _historyChangesFilterSource;
+		private IReadOnlyList<BeamContentHistoryChangelistEntry> _filteredHistoryChanges = Array.Empty<BeamContentHistoryChangelistEntry>();
 		private int _historySelectionRequestVersion;
 		private int _historyPreviewRequestVersion;
 		private int _filteredHistoryVersion = -1;
@@ -74,6 +79,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private GUIStyle _historyRestoreButtonStyle;
 		private GUIStyle _historyEllipsisLabelStyle;
 		private readonly GUIContent _historyEllipsisMeasureContent = new();
+		private static readonly GUIContent HistoryCopyManifestContent = new(EditorGUIUtility.FindTexture("Clipboard"), "Copy manifest ID");
 
 		private void DrawContentHistory()
 		{
@@ -114,6 +120,24 @@ namespace Beamable.Editor.UI.ContentWindow
 					_historyFilterKey = null;
 					_historyBucketAutoExpandKey = null;
 					_historyDisplayRowsDirty = true;
+				}
+			};
+		}
+
+		private void EnsureHistoryChangesSearchData()
+		{
+			if (_historyChangesSearchData != null)
+			{
+				return;
+			}
+
+			_historyChangesSearchData = new SearchData
+			{
+				onEndCheck = () =>
+				{
+					_historyChangesPageIndex = 0;
+					_historyChangesScroll = Vector2.zero;
+					_historyChangesFilterKey = null;
 				}
 			};
 		}
@@ -404,11 +428,18 @@ namespace Beamable.Editor.UI.ContentWindow
 			var timeRect = new Rect(rowRect.x + 6, rowRect.y + 3, HistoryTimeColumnWidth - 6, EditorGUIUtility.singleLineHeight);
 			var changesRect = new Rect(timeRect.xMax, rowRect.y + 3, HistoryChangesColumnWidth, EditorGUIUtility.singleLineHeight);
 			var authorRect = new Rect(rowRect.xMax - HistoryAuthorColumnWidth, rowRect.y + 3, HistoryAuthorColumnWidth - 6, EditorGUIUtility.singleLineHeight);
-			var manifestRect = new Rect(changesRect.xMax, rowRect.y + 3, Math.Max(0, authorRect.x - changesRect.xMax), EditorGUIUtility.singleLineHeight);
+			var copyManifestRect = new Rect(authorRect.x - HistoryManifestCopyButtonWidth, rowRect.y + 2,
+				HistoryManifestCopyButtonWidth, EditorGUIUtility.singleLineHeight + 2);
+			var manifestRect = new Rect(changesRect.xMax, rowRect.y + 3,
+				Math.Max(0, copyManifestRect.x - changesRect.xMax), EditorGUIUtility.singleLineHeight);
 
 			using (new EditorGUI.DisabledScope(_isRestoringHistory))
 			{
-				if (GUI.Button(rowRect, GUIContent.none, GUIStyle.none))
+				var selectLeftRect = new Rect(rowRect.x, rowRect.y, Math.Max(0, copyManifestRect.x - rowRect.x), rowRect.height);
+				var selectRightRect = new Rect(copyManifestRect.xMax, rowRect.y,
+					Math.Max(0, rowRect.xMax - copyManifestRect.xMax), rowRect.height);
+				if ((selectLeftRect.width > 0 && GUI.Button(selectLeftRect, GUIContent.none, GUIStyle.none)) ||
+					(selectRightRect.width > 0 && GUI.Button(selectRightRect, GUIContent.none, GUIStyle.none)))
 				{
 					SelectHistoryEntry(entry.ManifestUid);
 				}
@@ -418,6 +449,10 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUI.Label(changesRect, $"{entry.AffectedContentIds?.Length ?? 0} changed", EditorStyles.miniLabel);
 			DrawHistoryTruncatedLabel(manifestRect, entry.ManifestUid);
 			DrawHistoryTruncatedLabel(authorRect, string.IsNullOrEmpty(entry.PublishedByName) ? entry.PublishedBy : entry.PublishedByName);
+			if (GUI.Button(copyManifestRect, HistoryCopyManifestContent, EditorStyles.iconButton))
+			{
+				EditorGUIUtility.systemCopyBuffer = entry.ManifestUid;
+			}
 		}
 
 		private void DrawHistoryPagination(int entryCount, int pageSize, int pageCount)
@@ -481,6 +516,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 
 			EditorGUILayout.LabelField($"Manifest UID: {_selectedHistoryManifestUid}", EditorStyles.miniLabel);
+			EnsureHistoryChangesSearchData();
+			this.DrawSearchBar(_historyChangesSearchData);
 			if (_isLoadingHistoryChanges)
 			{
 				EditorGUILayout.HelpBox("Loading historical content changes...", MessageType.Info);
@@ -500,6 +537,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void DrawHistoryChangesTable()
 		{
+			var filteredChanges = GetFilteredHistoryChanges();
 			EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 			EditorGUILayout.LabelField("Change", GUILayout.Width(110));
 			EditorGUILayout.LabelField("Content", GUILayout.ExpandWidth(true));
@@ -507,22 +545,24 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.LabelField("Preview", GUILayout.Width(55));
 			EditorGUILayout.EndHorizontal();
 
-			var pageCount = ContentHistoryPagination.GetPageCount(_selectedHistoryChanges.Length, HistoryChangesPageSize);
+			var pageCount = ContentHistoryPagination.GetPageCount(filteredChanges.Count, HistoryChangesPageSize);
 			_historyChangesPageIndex = ContentHistoryPagination.ClampPageIndex(_historyChangesPageIndex, pageCount);
 			var firstChangeIndex = _historyChangesPageIndex * HistoryChangesPageSize;
-			var currentChangeCount = Math.Min(HistoryChangesPageSize, Math.Max(0, _selectedHistoryChanges.Length - firstChangeIndex));
+			var currentChangeCount = Math.Min(HistoryChangesPageSize, Math.Max(0, filteredChanges.Count - firstChangeIndex));
 
 			using (new EditorGUI.DisabledScope(IsHistoryRightPaneLocked()))
 			{
 				if (currentChangeCount == 0)
 				{
-					EditorGUILayout.HelpBox("This publish has no changed content items.", MessageType.Info);
+					EditorGUILayout.HelpBox(HasHistoryChangesSearch()
+						? "No changed content items match this search."
+						: "This publish has no changed content items.", MessageType.Info);
 				}
 				else
 				{
-					DrawVirtualHistoryChanges(firstChangeIndex, currentChangeCount);
+					DrawVirtualHistoryChanges(filteredChanges, firstChangeIndex, currentChangeCount);
 				}
-				DrawHistoryChangesPagination(_selectedHistoryChanges.Length, pageCount);
+				DrawHistoryChangesPagination(filteredChanges.Count, pageCount);
 			}
 
 			if (_historyPreviewError != null)
@@ -557,7 +597,41 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUI.Label(rect, new GUIContent(string.Empty, value), GUIStyle.none);
 		}
 
-		private void DrawVirtualHistoryChanges(int firstChangeIndex, int changeCount)
+		private IReadOnlyList<BeamContentHistoryChangelistEntry> GetFilteredHistoryChanges()
+		{
+			var search = _historyChangesSearchData?.searchText?.Trim();
+			if (ReferenceEquals(_historyChangesFilterSource, _selectedHistoryChanges) &&
+				string.Equals(_historyChangesFilterKey, search, StringComparison.Ordinal))
+			{
+				return _filteredHistoryChanges;
+			}
+
+			_historyChangesFilterSource = _selectedHistoryChanges;
+			_historyChangesFilterKey = search;
+			_filteredHistoryChanges = ContentHistoryChangesSearch.Filter(_selectedHistoryChanges, search);
+			return _filteredHistoryChanges;
+		}
+
+		private bool HasHistoryChangesSearch()
+		{
+			return !string.IsNullOrWhiteSpace(_historyChangesSearchData?.searchText);
+		}
+
+		private void ClearHistoryChangesSearch()
+		{
+			if (_historyChangesSearchData != null)
+			{
+				_historyChangesSearchData.searchText = null;
+			}
+			_historyChangesPageIndex = 0;
+			_historyChangesScroll = Vector2.zero;
+			_historyChangesFilterKey = null;
+			_historyChangesFilterSource = null;
+			_filteredHistoryChanges = Array.Empty<BeamContentHistoryChangelistEntry>();
+		}
+
+		private void DrawVirtualHistoryChanges(IReadOnlyList<BeamContentHistoryChangelistEntry> changes, int firstChangeIndex,
+			int changeCount)
 		{
 			var areaRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
 			var contentRect = new Rect(0, 0, Math.Max(0, areaRect.width - 16), changeCount * HistoryChangeRowHeight);
@@ -565,7 +639,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			var visibleRange = ContentHistoryPagination.GetVisibleRange(changeCount, _historyChangesScroll.y, areaRect.height, HistoryChangeRowHeight);
 			for (var index = visibleRange.FirstIndex; index < visibleRange.LastExclusive; index++)
 			{
-				DrawHistoryChange(_selectedHistoryChanges[firstChangeIndex + index],
+				DrawHistoryChange(changes[firstChangeIndex + index],
 					new Rect(0, index * HistoryChangeRowHeight, contentRect.width, HistoryChangeRowHeight));
 			}
 			GUI.EndScrollView();
@@ -581,7 +655,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			DrawHistoryChangeStatus(entry.ChangeStatus, statusRect);
 			GUI.Label(contentRect, entry.FullId);
 			GUI.Label(typeRect, entry.TypeName);
-			using (new EditorGUI.DisabledScope(_isLoadingHistoryPreview || string.IsNullOrEmpty(entry.JsonFilePath)))
+			using (new EditorGUI.DisabledScope(_isLoadingHistoryPreview || string.IsNullOrEmpty(entry.FullId)))
 			{
 				if (GUI.Button(previewRect, "View")) _ = LoadHistoryPreview(entry.FullId, entry.TypeName);
 			}
@@ -749,7 +823,9 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 
 			_selectedHistoryManifestUid = manifestUid;
+			_contentService.CancelContentHistoryRequests();
 			ClearHistoryInspectorPreview();
+			ClearHistoryChangesSearch();
 			_selectedHistoryChanges = Array.Empty<BeamContentHistoryChangelistEntry>();
 			_selectedHistoryJson = string.Empty;
 			_historyChangesPageIndex = 0;
@@ -767,7 +843,9 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void ResetHistorySelection()
 		{
+			_contentService?.CancelContentHistoryRequests();
 			ClearHistoryInspectorPreview();
+			ClearHistoryChangesSearch();
 			_historySelectionRequestVersion++;
 			_historyPreviewRequestVersion++;
 			_selectedHistoryManifestUid = string.Empty;
@@ -984,6 +1062,33 @@ namespace Beamable.Editor.UI.ContentWindow
 		public static bool ShouldRepaint(string currentHoveredRowKey, string nextHoveredRowKey)
 		{
 			return !string.Equals(currentHoveredRowKey, nextHoveredRowKey, StringComparison.Ordinal);
+		}
+	}
+
+	internal static class ContentHistoryChangesSearch
+	{
+		public static IReadOnlyList<BeamContentHistoryChangelistEntry> Filter(
+			IReadOnlyList<BeamContentHistoryChangelistEntry> changes, string search)
+		{
+			if (changes == null || changes.Count == 0)
+			{
+				return Array.Empty<BeamContentHistoryChangelistEntry>();
+			}
+
+			var normalizedSearch = search?.Trim();
+			if (string.IsNullOrEmpty(normalizedSearch))
+			{
+				return changes;
+			}
+
+			return changes.Where(change => change != null &&
+				(Matches(change.FullId, normalizedSearch) || Matches(change.Name, normalizedSearch) ||
+				 Matches(change.TypeName, normalizedSearch))).ToArray();
+		}
+
+		private static bool Matches(string value, string search)
+		{
+			return !string.IsNullOrEmpty(value) && value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
 		}
 	}
 

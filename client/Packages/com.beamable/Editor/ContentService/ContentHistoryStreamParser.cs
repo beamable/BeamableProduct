@@ -1,4 +1,6 @@
 using Beamable.Editor.BeamCli.Commands;
+using Beamable.Common.BeamCli.Contracts;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,6 +58,34 @@ namespace Beamable.Editor.ContentService
 			return true;
 		}
 
+		public static bool TryParseChangelist(string streamJson, out BeamContentHistoryChangelistEntry[] entries)
+		{
+			entries = Array.Empty<BeamContentHistoryChangelistEntry>();
+			try
+			{
+				if (Json.Deserialize(streamJson) is not ArrayDict report ||
+					!TryGetString(report, "type", out var reportType) || reportType != "stream" ||
+					!TryGetObject(report, "data", out var data) ||
+					!TryGetObject(data, "Changelist", out var changelist))
+				{
+					return false;
+				}
+
+				var publishedAt = TryGetLong(changelist, "publishedAt", out var timestamp) ? timestamp : 0;
+				var parsedEntries = new List<BeamContentHistoryChangelistEntry>();
+				AddChangelistEntries(changelist, "added", ContentStatus.Created, publishedAt, parsedEntries);
+				AddChangelistEntries(changelist, "modified", ContentStatus.Modified, publishedAt, parsedEntries);
+				AddChangelistEntries(changelist, "removed", ContentStatus.Deleted, publishedAt, parsedEntries);
+				entries = parsedEntries.ToArray();
+				return true;
+			}
+			catch (Exception)
+			{
+				entries = Array.Empty<BeamContentHistoryChangelistEntry>();
+				return false;
+			}
+		}
+
 		public static ContentHistoryStreamUpdate Parse(string streamJson)
 		{
 			var report = JsonUtility.FromJson<ContentHistoryStreamReport>(streamJson);
@@ -77,6 +107,83 @@ namespace Beamable.Editor.ContentService
 				.ToArray() ?? Array.Empty<BeamContentHistoryEntry>();
 
 			return new ContentHistoryStreamUpdate(entries, report.data.EntriesToRemove);
+		}
+
+		private static void AddChangelistEntries(ArrayDict changelist, string key, ContentStatus status, long publishedAt,
+			ICollection<BeamContentHistoryChangelistEntry> entries)
+		{
+			if (!TryGetObject(changelist, key, out var category))
+			{
+				return;
+			}
+
+			foreach (var pair in category)
+			{
+				if (string.IsNullOrEmpty(pair.Key) || pair.Value is not ArrayDict entry)
+				{
+					continue;
+				}
+
+				var separatorIndex = pair.Key.IndexOf('.', StringComparison.Ordinal);
+				var typeName = separatorIndex > 0 ? pair.Key.Substring(0, separatorIndex) : string.Empty;
+				var name = separatorIndex >= 0 && separatorIndex < pair.Key.Length - 1
+					? pair.Key.Substring(separatorIndex + 1)
+					: pair.Key;
+				entries.Add(new BeamContentHistoryChangelistEntry
+				{
+					OldVersion = GetString(entry, "oldVersion"),
+					OldChecksum = GetString(entry, "oldChecksum"),
+					OldTags = GetStringArray(entry, "oldTags"),
+					NewVersion = GetString(entry, "newVersion"),
+					NewChecksum = GetString(entry, "newChecksum"),
+					NewTags = GetStringArray(entry, "newTags"),
+					FullId = pair.Key,
+					TypeName = typeName,
+					Name = name,
+					ChangeStatus = (int)status,
+					ChangeDate = publishedAt
+				});
+			}
+		}
+
+		private static bool TryGetObject(ArrayDict source, string key, out ArrayDict value)
+		{
+			if (source != null && source.TryGetValue(key, out var rawValue) && rawValue is ArrayDict dictionary)
+			{
+				value = dictionary;
+				return true;
+			}
+
+			value = null;
+			return false;
+		}
+
+		private static bool TryGetString(ArrayDict source, string key, out string value)
+		{
+			value = GetString(source, key);
+			return value != null;
+		}
+
+		private static string GetString(ArrayDict source, string key)
+		{
+			return source != null && source.TryGetValue(key, out var value) ? value?.ToString() : null;
+		}
+
+		private static string[] GetStringArray(ArrayDict source, string key)
+		{
+			if (source == null || !source.TryGetValue(key, out var value) || value is not List<object> values)
+			{
+				return null;
+			}
+
+			return values.Select(item => item?.ToString()).ToArray();
+		}
+
+		private static bool TryGetLong(ArrayDict source, string key, out long value)
+		{
+			value = 0;
+			return source != null && source.TryGetValue(key, out var rawValue) &&
+				long.TryParse(rawValue?.ToString(), out value);
 		}
 
 		[Serializable]
