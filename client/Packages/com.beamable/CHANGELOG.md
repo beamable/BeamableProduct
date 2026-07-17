@@ -5,9 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleasd
+## [Unreleased]
+
+### Added
 
 - Added Content Manager publish history with diff inspection, pagination, preview, and local file restoration.
+
+### Fixed
+
+- Fixed the Content window Snapshot tab hanging at "Loading snapshots" when snapshots in different realm folders share a name (e.g. `LastPublished-global.json` auto snapshots from publishing to multiple realms)
 
 ## [5.1.1] - 2026-06-29
 
