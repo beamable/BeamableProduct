@@ -569,7 +569,7 @@ public class DiscoveryService
 				var processIdToEntry = new Dictionary<(int processId, string serviceName), HostServiceDescriptor>();
 				var socketListener = new Socket(SocketType.Dgram, ProtocolType.Udp);
 
-				var ed = new IPEndPoint(IPAddress.Any, Beamable.Common.Constants.Features.Services.DISCOVERY_PORT);
+				var ed = new IPEndPoint(System.Net.IPAddress.Any, Beamable.Common.Constants.Features.Services.DISCOVERY_PORT);
 
 				// by setting the receive timeout to a millisecond, this allows the ReceiveAsync function
 				//  to only block for a single millisecond, which means the Task code below can also
