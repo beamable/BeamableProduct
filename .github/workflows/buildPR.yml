@@ -266,7 +266,7 @@ jobs:
       - name: Apply Nuget Version to Unity SDK
         working-directory: ./cli/beamable.common
         run: |
-          dotnet build -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true -v:n
+          dotnet build -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true -p:BeamCopyCommonFlags="--no-build -c Release" -v:n
       
       - name: Apply CLI Versions 
         run: jq --arg nextVersion 0.0.123.1 '.nugetPackageVersion = $nextVersion' ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json > localtmpfile && mv localtmpfile ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
@@ -429,7 +429,7 @@ jobs:
       - name: Apply Nuget Version to Unity SDK
         working-directory: ./cli/beamable.common
         run: |
-          dotnet build -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true -v:n
+          dotnet build -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true -p:BeamCopyCommonFlags="--no-build -c Release" -v:n
 
       - name: Apply CLI Versions
         run: jq --arg nextVersion 0.0.123.1 '.nugetPackageVersion = $nextVersion' ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json > localtmpfile && mv localtmpfile ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
@@ -577,7 +577,7 @@ jobs:
       - name: Apply Nuget Version to Unity SDK
         working-directory: ./cli/beamable.common
         run: |
-          dotnet build -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true -v:n
+          dotnet build -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true -p:BeamCopyCommonFlags="--no-build -c Release" -v:n
       
       - name: Prepare Config-Defaults
         run: |
