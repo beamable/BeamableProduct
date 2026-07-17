@@ -593,6 +593,7 @@ public class App
 		Commands.AddSubCommand<ListCommand, ListCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<NewStorageCommand, NewStorageCommandArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<NewPortalExtensionCommand, NewPortalExtensionCommandArgs, ProjectNewCommand>();
+		Commands.AddSubCommand<NewPortalExtensionLibCommand, NewPortalExtensionLibCommandArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateIgnoreFileCommand, GenerateIgnoreFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
@@ -616,6 +617,7 @@ public class App
 		Commands.AddSubCommand<RemoveReplacementTypeCommand, RemoveReplacementTypeCommandArgs, ProjectCommand>();
 		
 		Commands.AddSubCommand<GenerateWebClientCommand, GenerateWebClientCommandArgs, ProjectGenerateCommand>();
+		Commands.AddSubCommand<GeneratePortalExtensionClientsCommand, GeneratePortalExtensionClientsCommandArgs, ProjectGenerateCommand>();
 
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
@@ -659,6 +661,12 @@ public class App
 				PortalExtensionCommand>();
 		Commands
 			.AddSubCommandWithHandler<PortalExtensionAddDependencyCommand, PortalExtensionAddDependencyCommandArgs,
+				PortalExtensionCommand>();
+		Commands
+			.AddSubCommandWithHandler<PortalExtensionAddLibraryCommand, PortalExtensionAddLibraryCommandArgs,
+				PortalExtensionCommand>();
+		Commands
+			.AddSubCommandWithHandler<PortalExtensionUpdateToolkitCommand, PortalExtensionUpdateToolkitCommandArgs,
 				PortalExtensionCommand>();
 		Commands
 			.AddSubCommandWithHandler<SetPortalExtensionConfigCommand, SetPortalExtensionConfigCommandArgs,
@@ -1550,6 +1558,9 @@ public class App
 
 	private static void WarnIfAIEnvironmentWithoutMcp(string[] args)
 	{
+		// Disabled while the Beamable MCP is internal-only (see feature/beam-mcp-public).
+		return;
+
 		if (IsRunningInMcpServer) return;
 		var joined = string.Join(" ", args).ToLowerInvariant();
 		if (joined.Contains("mcp serve") || joined.Contains("mcp setup")) return;

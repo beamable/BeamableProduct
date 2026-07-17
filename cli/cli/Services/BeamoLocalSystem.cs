@@ -4,6 +4,7 @@ using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
 using Beamable.Server;
 using cli.Commands.Project;
+using cli.Services.PortalExtension;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Newtonsoft.Json;
@@ -116,6 +117,13 @@ public partial class BeamoLocalSystem
 		
 		
 		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_ctx.DotnetPath, _beamo, _configService, _ctx.IgnoreBeamoIds, _provider.GetService<BeamActivity>(), useCache: useManifestCache, fetchServerManifest);
+
+		// Surface portal extension name collisions (e.g. after a rename) as warnings. This is a purely
+		// local, non-fatal check; the hard failure for conflicts happens during `beam deploy`.
+		foreach (var conflict in PortalExtensionNameValidator.FindLocalConflicts(BeamoManifest))
+		{
+			Log.Warning(conflict);
+		}
 	}
 	
 	private static Uri GetLocalDockerEndpoint(ConfigService config)
@@ -327,33 +335,72 @@ public partial class BeamoLocalSystem
 				continue;
 			}
 
-			var relativeProjectPath = definition.AbsoluteProjectPath;
-			var projectFile = File.ReadAllText(relativeProjectPath);
-			XDocument doc = XDocument.Parse(projectFile);
-
-			// Find the BeamServiceGroup element
-			XElement beamServiceGroupElement = doc.Descendants("BeamServiceGroup").FirstOrDefault();
-			var newGroupValue = string.Join(';',groups);
-			if (beamServiceGroupElement != null)
+			// Portal extensions store their groups in package.json; microservices/storages in the csproj.
+			if (definition.Protocol == BeamoProtocolType.PortalExtension)
 			{
-				beamServiceGroupElement.Value = newGroupValue;
+				SetPortalExtensionGroups(definition, groups);
 			}
 			else
 			{
-				// Find the PropertyGroup element with Label="Beamable Settings"
-				XElement propertyGroupElement = doc.Descendants("PropertyGroup")
-					.FirstOrDefault(e => (string)e.Attribute("Label") == "Beamable Settings");
-				if (propertyGroupElement == null)
-				{
-					throw new CliException("Beamable Settings not found in project file.");
-				}
-				propertyGroupElement.Add(new XElement("BeamServiceGroup", newGroupValue));
+				SetCsprojGroups(definition, groups);
 			}
 
-			var result = doc.ToString().Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>",string.Empty);
-			File.WriteAllText(relativeProjectPath, result);
-			
+			// Keep the in-memory manifest in sync so multiple args targeting the same service,
+			// or any later read in this process, observe the updated groups.
+			definition.ServiceGroupTags = groups;
 		}
+	}
+
+	private static void SetCsprojGroups(BeamoServiceDefinition definition, string[] groups)
+	{
+		var relativeProjectPath = definition.AbsoluteProjectPath;
+		var projectFile = File.ReadAllText(relativeProjectPath);
+		XDocument doc = XDocument.Parse(projectFile);
+
+		// Find the BeamServiceGroup element
+		XElement beamServiceGroupElement = doc.Descendants("BeamServiceGroup").FirstOrDefault();
+		var newGroupValue = string.Join(';', groups);
+		if (beamServiceGroupElement != null)
+		{
+			beamServiceGroupElement.Value = newGroupValue;
+		}
+		else
+		{
+			// Find the PropertyGroup element with Label="Beamable Settings"
+			XElement propertyGroupElement = doc.Descendants("PropertyGroup")
+				.FirstOrDefault(e => (string)e.Attribute("Label") == "Beamable Settings");
+			if (propertyGroupElement == null)
+			{
+				throw new CliException("Beamable Settings not found in project file.");
+			}
+			propertyGroupElement.Add(new XElement("BeamServiceGroup", newGroupValue));
+		}
+
+		var result = doc.ToString().Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>", string.Empty);
+		File.WriteAllText(relativeProjectPath, result);
+	}
+
+	private static void SetPortalExtensionGroups(BeamoServiceDefinition definition, string[] groups)
+	{
+		var packageJsonPath = definition.PortalExtensionDefinition?.AbsolutePackageJsonPath;
+		if (string.IsNullOrEmpty(packageJsonPath) || !File.Exists(packageJsonPath))
+		{
+			throw new CliException($"Could not find package.json for portal extension '{definition.BeamoId}'.");
+		}
+
+		var root = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(packageJsonPath));
+
+		// A discovered extension always has a "beamable" block (it's where portalExtension lives),
+		// but create it defensively so the command never fails on a hand-edited file.
+		if (root["beamable"] is not Newtonsoft.Json.Linq.JObject beamable)
+		{
+			beamable = new Newtonsoft.Json.Linq.JObject();
+			root["beamable"] = beamable;
+		}
+
+		beamable["serviceGroups"] = new Newtonsoft.Json.Linq.JArray(groups);
+
+		File.WriteAllText(packageJsonPath, root.ToString(Formatting.Indented));
 	}
 
 	public Promise UpdateDockerFile(BeamoServiceDefinition serviceDefinition)
@@ -586,29 +633,40 @@ public class BeamoServiceDefinition
 		// create a default instance so that downstream callers don't need to check for isLocal over and over again. 
 		= new MicroserviceFederationsConfig();
 
+	public static async Task<(bool, OpenApiDocument)> TryGetOpenApiDocument(string openApiPath)
+	{
+		if (!File.Exists(openApiPath))
+		{
+			return (false, null);
+		}
+
+		var openApiStringReader = new OpenApiStringReader();
+		var fileContent = await File.ReadAllTextAsync(openApiPath);
+		var document = openApiStringReader.Read(fileContent, out var diagnostic);
+		foreach (var warning in diagnostic.Warnings)
+		{
+			Log.Warning("found warning for {path}. {message} . from {pointer}", openApiPath, warning.Message,
+				warning.Pointer);
+			throw new OpenApiException($"invalid document {openApiPath} - {warning.Message} - {warning.Pointer}");
+		}
+
+		foreach (var error in diagnostic.Errors)
+		{
+			Log.Error("found ERROR for {path}. {message} . from {pointer}", openApiPath, error.Message,
+				error.Pointer);
+			throw new OpenApiException($"invalid document {openApiPath} - {error.Message} - {error.Pointer}");
+		}
+
+		return (true, document);
+	}
+
 	public static async Task<MicroserviceFederationsConfig> ReloadFederationsData(string openApiPath)
 	{
 		// string openApiPath = definition.OpenApiPath;
-		if (File.Exists(openApiPath))
+		(bool hasOpenApiDocument, OpenApiDocument document) = await TryGetOpenApiDocument(openApiPath);
+		if (hasOpenApiDocument)
 		{
-			var openApiStringReader = new OpenApiStringReader();
-			var fileContent = await File.ReadAllTextAsync(openApiPath);
-			var openApiDocument = openApiStringReader.Read(fileContent, out var diagnostic);
-			foreach (var warning in diagnostic.Warnings)
-			{
-				Log.Warning("found warning for {path}. {message} . from {pointer}", openApiPath, warning.Message,
-					warning.Pointer);
-				throw new OpenApiException($"invalid document {openApiPath} - {warning.Message} - {warning.Pointer}");
-			}
-
-			foreach (var error in diagnostic.Errors)
-			{
-				Log.Error("found ERROR for {path}. {message} . from {pointer}", openApiPath, error.Message,
-					error.Pointer);
-				throw new OpenApiException($"invalid document {openApiPath} - {error.Message} - {error.Pointer}");
-			}
-
-			if (!openApiDocument.Extensions.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY,
+			if (!document.Extensions.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY,
 				    out var ext) ||
 			    ext is not OpenApiArray { Count: > 0 } federationIds)
 			{

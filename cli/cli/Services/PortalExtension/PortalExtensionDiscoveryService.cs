@@ -16,6 +16,14 @@ public class ExtensionBuildMetaData
 	public string Name;
 	public string ToolkitVersion;
 	public PortalExtensionPackageProperties Properties;
+
+	/// <summary>
+	/// The selector names this extension exposes via <c>&lt;BeamExtensionSite selector="..." /&gt;</c>
+	/// (e.g. <c>top</c>, <c>bottom</c>, <c>B-top</c>), scanned once at build time. Combined with
+	/// <see cref="Properties"/>'s <c>mount.page</c>, this tells the CLI/Portal which selectors live at
+	/// which URL. May be null/empty (or absent entirely in metadata built before this field existed).
+	/// </summary>
+	public List<string> ExtensionSites;
 }
 
 public class PortalExtensionDiscoveryService : Microservice
@@ -190,7 +198,9 @@ public class PortalExtensionObserver
 		{
 			Name = ExtensionMetaData.Name,
 			ToolkitVersion = ExtensionMetaData.GetToolkitVersion(),
-			Properties = ExtensionMetaData.Properties
+			Properties = ExtensionMetaData.Properties,
+			// Scan the source once, at build, so listing/creating extensions later never has to.
+			ExtensionSites = RemotePortalConfigService.ScanExtensionSiteSelectors(ExtensionMetaData.AbsolutePath)
 		};
 
 		string metaDataDir = Path.GetDirectoryName(MetadataPath);
@@ -310,33 +320,98 @@ public class PortalExtensionObserver
 
 		_alreadyStarted = true;
 
-		using var watcher = new FileSystemWatcher(AppFilesPath);
-
-		watcher.Filters.Clear();
-
 		var fileExtensions = _defaultFilesExtensionsToObserve.ToList();
 		fileExtensions.AddRange(FileExtensions);
 		fileExtensions = fileExtensions.Distinct().ToList();
 
-		foreach (var ext in fileExtensions)
+		// Watch the extension itself plus any shared libraries it depends on, so editing a linked
+		// library rebuilds the extension that consumes it.
+		var watchPaths = new List<string> { AppFilesPath };
+		watchPaths.AddRange(GetLinkedLibraryPaths());
+
+		var watchers = new List<FileSystemWatcher>();
+		try
 		{
-			watcher.Filters.Add($"*.{ext}");
+			foreach (var watchPath in watchPaths)
+			{
+				var watcher = new FileSystemWatcher(watchPath);
+				watcher.Filters.Clear();
+
+				foreach (var ext in fileExtensions)
+				{
+					watcher.Filters.Add($"*.{ext}");
+				}
+
+				watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
+
+				watcher.IncludeSubdirectories = true;
+				watcher.EnableRaisingEvents = true;
+
+				watcher.Changed += OnChanged;
+				watcher.Created += OnChanged;
+				watcher.Deleted += OnChanged;
+				watcher.Renamed += OnChanged;
+
+				watchers.Add(watcher);
+			}
+
+			while (!token.IsCancellationRequested)
+			{
+				await Task.Delay(250, token);
+			}
+		}
+		finally
+		{
+			foreach (var watcher in watchers)
+			{
+				watcher.Dispose();
+			}
+		}
+	}
+
+	/// <summary>
+	/// Resolves the real source directories of any "file:" library dependencies declared in the
+	/// extension's package.json, so they can be watched for live-rebuild alongside the extension.
+	/// </summary>
+	private List<string> GetLinkedLibraryPaths()
+	{
+		var paths = new List<string>();
+		try
+		{
+			var packagePath = ExtensionMetaData.AbsolutePackageJsonPath;
+			if (!File.Exists(packagePath))
+			{
+				return paths;
+			}
+
+			var root = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(packagePath));
+			if (root["dependencies"] is not Newtonsoft.Json.Linq.JObject dependencies)
+			{
+				return paths;
+			}
+
+			foreach (var (_, token) in dependencies)
+			{
+				var value = token?.ToString();
+				if (string.IsNullOrEmpty(value) || !value.StartsWith("file:"))
+				{
+					continue;
+				}
+
+				var relPath = value.Substring("file:".Length);
+				var resolved = Path.GetFullPath(Path.Combine(AppFilesPath, relPath));
+				if (Directory.Exists(resolved))
+				{
+					paths.Add(resolved);
+				}
+			}
+		}
+		catch
+		{
+			// If the package.json can't be read we simply don't add extra watchers.
 		}
 
-		watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
-
-		watcher.IncludeSubdirectories = true;
-		watcher.EnableRaisingEvents = true;
-
-		watcher.Changed += OnChanged;
-		watcher.Created += OnChanged;
-		watcher.Deleted += OnChanged;
-		watcher.Renamed += OnChanged;
-
-		while (!token.IsCancellationRequested)
-		{
-			await Task.Delay(250, token);
-		}
+		return paths;
 	}
 
 	private string ConvertBuiltFiles(string[] paths)
@@ -372,9 +447,6 @@ public class PortalExtensionObserver
 		{
 			return; // this case we ignore because these are the build files
 		}
-
-		// generate microservice client files, in case a manually change happened to the package.json adding a new dep
-		PortalExtensionAddDependencyCommand.GenerateDependenciesClients(AppFilesPath, _manifest);
 
 		// build the app since there are new changes in the src files
 		BuildExtension();

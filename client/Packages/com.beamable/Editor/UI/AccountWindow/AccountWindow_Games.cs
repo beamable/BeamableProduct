@@ -10,6 +10,8 @@ namespace Beamable.Editor.Accounts
 {
 	public partial class AccountWindow
 	{
+		private bool _isSelectingRealm;
+		
 		public bool needsGameSelection;
 		public int gameSelectionIndex = 0;
 		public int realmSelectionIndex = 0;
@@ -104,14 +106,28 @@ namespace Beamable.Editor.Accounts
 				EditorGUILayout.Space(24);
 
 				{
-					GUI.enabled = realmSelectionIndex >= 0;
+					GUI.enabled = realmSelectionIndex >= 0 && !_isSelectingRealm;
 					var wasClicked = BeamGUI.PrimaryButton(new GUIContent("Continue"), allowEnterKeyToClick: true);
 					GUI.enabled = true;
 					
 					if (wasClicked)
 					{
-						var _ = context.SwitchRealm(availableRealms[realmSelectionIndex].Pid);
-						needsGameSelection = false;
+						_isSelectingRealm = true;
+						
+						var selectedPid = availableRealms[realmSelectionIndex].Pid;
+						var switchPromise = context.SwitchRealm(selectedPid);
+						switchPromise.Then(_ =>
+						{
+							context.CommitProductionBuildConfigDefaultsIfMissing();
+							needsGameSelection = false;
+							_isSelectingRealm = false;
+						});
+
+						switchPromise.Error(ex =>
+						{
+							_isSelectingRealm = false;
+							Debug.LogError($"[AccountWindow_Games] Failed to switch realm: {ex}");
+						});
 					}
 				}
 				

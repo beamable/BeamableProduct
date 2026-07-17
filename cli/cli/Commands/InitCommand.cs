@@ -23,6 +23,7 @@ public class InitCommandArgs : LoginCommandArgs
 	public List<string> addExtraPathsToFile = new List<string>();
 	public List<string> pathsToIgnore = new List<string>();
 	public bool ignoreExistingPid;
+	public bool generateAgentsFile;
 }
 
 [Serializable]
@@ -97,6 +98,12 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		SaveToFileOption.Bind(this);
 		AddOption(new RealmScopedOption(), (args, b) => args.realmScoped = b);
 		AddOption(new PrintToConsoleOption(), (args, b) => args.printToConsole = b);
+
+		// The AGENTS.md AI-agent guide points at the Beamable MCP, which is internal-only for now.
+		// Keep this opt-in and hidden until the MCP integration is public (see feature/beam-mcp-public).
+		var agentsOption = new Option<bool>("--generate-agents-file", () => false,
+			"INTERNAL Generate an AGENTS.md AI-agent guide for this workspace") { IsHidden = true };
+		AddOption(agentsOption, (args, v) => args.generateAgentsFile = v);
 	}
 
 
@@ -287,17 +294,11 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			Log.Information("The beamable project has been initialized in the current folder.");
 		}
 
-		var agentsPath = Path.Combine(args.ConfigService.BeamableWorkspace, "AGENTS.md");
-		if (!File.Exists(agentsPath))
+		if (args.generateAgentsFile)
 		{
-			var asm = typeof(InitCommand).Assembly;
-			using var agentsStream = asm.GetManifestResourceStream("cli.Docs.AGENTS.md");
-			if (agentsStream != null)
-			{
-				using var reader = new StreamReader(agentsStream);
-				File.WriteAllText(agentsPath, reader.ReadToEnd());
+			var (_, outcome) = AgentsFileWriter.EnsureAgentsFile(args.ConfigService.BeamableWorkspace);
+			if (outcome is AgentsFileWriter.AgentsFileOutcome.Created or AgentsFileWriter.AgentsFileOutcome.Appended)
 				Log.Information("Created AGENTS.md for AI agent discovery");
-			}
 		}
 
 		return new InitCommandResult()

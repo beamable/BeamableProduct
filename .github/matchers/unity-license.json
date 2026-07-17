@@ -1,0 +1,18 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "unity-license-no-valid-license",
+      "severity": "error",
+      "pattern": [
+        { "regexp": "^.*(No valid Unity Editor license found.*)$", "message": 1 }
+      ]
+    },
+    {
+      "owner": "unity-license-ulf-return-failed",
+      "severity": "error",
+      "pattern": [
+        { "regexp": "^.*(Serial number unavailable for ULF return.*)$", "message": 1 }
+      ]
+    }
+  ]
+}

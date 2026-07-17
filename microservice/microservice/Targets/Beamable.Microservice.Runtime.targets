@@ -117,6 +117,17 @@
     </Target>
 
     <!--
+        Generate client .ts files for portal extensions that are dependant of this service
+    -->
+    <Target Name="GeneratePortalExtensionClients"
+            DependsOnTargets="generate-oapi"
+            AfterTargets="AfterBuild">
+        <Exec EchoOff="true"
+              EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
+              Command="dotnet beam project generate pe-client --ids $(BeamId)" />
+    </Target>
+
+    <!--
         Generate client .cs files from upstream OAPI specs into this project's own
         $(BeamClientGenOutputDir).  MSBuild incremental: re-runs only for OAPI files
         that are newer than their corresponding stamp file.

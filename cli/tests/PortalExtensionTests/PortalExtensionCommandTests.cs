@@ -101,6 +101,30 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		});
 	}
 
+	// A catalog whose page slot uses the "!hub/!pathMatch" form — the page path a user supplies must
+	// be stored verbatim, never prefixed with "!hub/".
+	private void MockRemotePortalConfigHubPage()
+	{
+		Mock<IRemotePortalConfigService>(mock =>
+		{
+			mock.Setup(x => x.GetRemotePortalConfig(It.IsAny<CommandArgs>()))
+				.ReturnsAsync(new RemotePortalConfiguration
+				{
+					mountSites = new List<RemotePortalConfiguration.MountSiteConfig>
+					{
+						new()
+						{
+							path = "!hub/!pathMatch",
+							selectors = new List<RemotePortalConfiguration.MountSiteSelector>
+							{
+								new() { selector = "#extension-page", type = "page" }
+							}
+						}
+					}
+				});
+		});
+	}
+
 	private void InitWorkspace()
 	{
 		SetupMocks(mockBeamoManifest: false, mockAdminMe: false);
@@ -216,6 +240,28 @@ public class PortalExtensionCommandTests : CLITestExtensions
 			"package.json must contain the nav label");
 	}
 
+	[Test]
+	public void NewPortalExtension_PageExtension_PassesThroughHubPath()
+	{
+		InitWorkspace();
+		SetupBeamoServiceMock();
+		MockRemotePortalConfigHubPage();
+
+		Run("project", "new", "portal-extension", "FerrariExt", "--quiet",
+			"--mount-page", "cars/ferrari",
+			"--mount-group", "Cars",
+			"--mount-label", "Ferrari",
+			"--template", "react");
+
+		var packageJson = BFile.ReadAllText("extensions/FerrariExt/package.json");
+		Assert.That(packageJson, Does.Contain("cars/ferrari"),
+			"the page path must be stored verbatim");
+		Assert.That(packageJson, Does.Not.Contain("!hub"),
+			"the !hub/!pathMatch prefix must not leak into the stored page path");
+		Assert.That(packageJson, Does.Contain("#extension-page"),
+			"the page slot selector must be auto-assigned");
+	}
+
 	#endregion
 
 	#region project new portal-extension (component)
@@ -272,6 +318,127 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		var packageJson = BFile.ReadAllText("extensions/TestExt/package.json");
 		Assert.That(packageJson, Does.Contain("TestMs"),
 			"package.json must list TestMs as a microservice dependency");
+	}
+
+	#endregion
+
+	#region project new portal-extension-lib
+
+	[Test]
+	public void NewPortalExtensionLib_CreatesFiles()
+	{
+		InitWorkspace();
+		SetupBeamoServiceMock();
+
+		Run("project", "new", "portal-extension-lib", "TestLib", "--quiet");
+
+		Assert.That(BFile.Exists("extensions-libs/TestLib/package.json"),
+			"package.json must exist after scaffolding the library");
+		Assert.That(BFile.Exists("extensions-libs/TestLib/src/index.ts"),
+			"src/index.ts must exist after scaffolding the library");
+
+		var packageJson = BFile.ReadAllText("extensions-libs/TestLib/package.json");
+		Assert.That(packageJson, Does.Contain("TestLib"),
+			"package.json name must match the provided library name");
+		Assert.That(packageJson, Does.Contain("portalExtensionLib"),
+			"package.json must mark the project as a portal extension library");
+		Assert.That(packageJson, Does.Contain("./src/index.ts"),
+			"package.json must expose its TypeScript source as the entry point");
+	}
+
+	#endregion
+
+	#region portal extension add-library
+
+	[Test]
+	public void AddLibrary_AddsFileDependencyToPackageJson()
+	{
+		InitWorkspace();
+
+		SetupBeamoServiceMock();
+		Run("project", "new", "portal-extension-lib", "TestLib", "--quiet");
+		_mockObjects.Clear();
+		ResetConfigurator();
+
+		SetupBeamoServiceMock();
+		MockRemotePortalConfig();
+		Run("project", "new", "portal-extension", "TestExt", "--quiet",
+			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react");
+		_mockObjects.Clear();
+		ResetConfigurator();
+
+		SetupBeamoServiceMock();
+		Run("portal", "extension", "add-library", "TestLib", "--extensions", "TestExt", "--quiet");
+
+		var packageJson = BFile.ReadAllText("extensions/TestExt/package.json");
+		Assert.That(packageJson, Does.Contain("TestLib"),
+			"package.json must list TestLib as a dependency");
+		Assert.That(packageJson, Does.Contain("file:"),
+			"package.json must reference the library via a file: specifier");
+		Assert.That(packageJson, Does.Contain("extensions-libs/TestLib"),
+			"the file: specifier must point at the library directory");
+	}
+
+	#endregion
+
+	#region project new portal-extension (name conflicts)
+
+	[Test]
+	public void NewPortalExtension_Fails_WhenNameConflictsWithExistingExtension()
+	{
+		InitWorkspace();
+
+		SetupBeamoServiceMock();
+		MockRemotePortalConfig();
+		Run("project", "new", "portal-extension", "DupExt", "--quiet",
+			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react");
+		_mockObjects.Clear();
+		ResetConfigurator();
+
+		// The name check runs before the remote portal config fetch and any prompts, so only the
+		// pre-Handle manifest init (BeamoService) needs to be mocked here.
+		SetupBeamoServiceMock();
+		var exitCode = RunFull(new[]
+		{
+			"project", "new", "portal-extension", "DupExt", "--quiet",
+			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react"
+		});
+
+		Assert.That(exitCode, Is.EqualTo(1),
+			"creating a portal extension whose name duplicates an existing extension must fail");
+	}
+
+	[Test]
+	public void NewPortalExtension_Fails_WhenNameConflictsWithMicroservice()
+	{
+		InitWorkspace();
+
+		SetupBeamoServiceMock();
+		Run("project", "new", "service", "Collide", "--quiet");
+		_mockObjects.Clear();
+		ResetConfigurator();
+
+		SetupBeamoServiceMock();
+		var exitCode = RunFull(new[]
+		{
+			"project", "new", "portal-extension", "Collide", "--quiet",
+			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react"
+		});
+
+		Assert.That(exitCode, Is.EqualTo(1),
+			"creating a portal extension whose name collides with a microservice must fail");
 	}
 
 	#endregion

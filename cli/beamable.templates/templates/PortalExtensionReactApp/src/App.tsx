@@ -1,30 +1,28 @@
-import { useEffect, useState } from 'react'
-import { type Beam, type ExtensionContext } from '@beamable/portal-toolkit'
+import { useBeam, BeamPageHeader, BeamCard, BeamButton } from '@beamable/portal-toolkit/react'
+import { type ExtensionContext } from '@beamable/portal-toolkit'
 
 interface AppProps {
   context: ExtensionContext
 }
 
 export default function App({ context }: AppProps) {
-  const [beam, setBeam] = useState<Beam | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    context.beam.then((b) => {
-      if (!cancelled) setBeam(b)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [context])
+  const beam = useBeam(context)
 
   return (
-    <beam-card style={{ marginBottom: 20 }}>
-      <h3 slot="header">PortalExtensionReactApp</h3>
-      <div style={{ padding: 18 }}>
-        <div>Player ID {beam?.player.id ?? '...'}</div>
-        <beam-button variant="brand">Click</beam-button>
-      </div>
-    </beam-card>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <BeamPageHeader
+        label="PortalExtensionReactApp"
+        description="A Beamable Portal Extension page."
+      />
+
+      <BeamCard>
+        <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>Player ID {beam?.player.id ?? '...'}</div>
+          <div>
+            <BeamButton variant="brand">Click</BeamButton>
+          </div>
+        </div>
+      </BeamCard>
+    </div>
   )
 }
