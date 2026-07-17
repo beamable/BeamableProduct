@@ -1,7 +1,9 @@
 ﻿using Beamable;
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Content;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
+using Beamable.Editor.ContentService;
 using Beamable.Editor.Util;
 using Beamable.Editor.UI2.Utils;
 using System.Collections.Generic;
@@ -119,7 +121,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				if (BeamGUI.HeaderButton("Content Editor", BeamGUI.iconContentEditorIcon, width: 90, iconPadding: 2))
 				{
-					ChangeWindowStatus(ContentWindowStatus.Normal);
+					ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 				}
 			}
 			if (_windowStatus is ContentWindowStatus.Normal || _windowStatus is ContentWindowStatus.Validate)
@@ -258,6 +260,17 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			if(shouldRepaint)
 				Repaint();
+		}
+
+		/// <summary>
+		/// Defers Content Manager state changes until the current IMGUI event has finished.
+		/// </summary>
+		/// <remarks>
+		/// Some state transitions remove or add controls. Deferring them avoids mismatched layout groups during repaint.
+		/// </remarks>
+		private void ChangeWindowStatusDelayed(ContentWindowStatus windowStatus)
+		{
+			EditorApplication.delayCall += () => ChangeWindowStatus(windowStatus);
 		}
 
 		private void DrawLowBarHeader(Rect rect)
@@ -420,27 +433,38 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private async Promise RevertAllContents()
 		{
-			await _contentService.SyncContentsWithProgress(true, true, true, true);
+			await _contentService.SyncContentsWithProgress(true, true, true, true, showUnityModalProgress: false);
 		}
 
 		private async Promise RevertModifiedContents()
 		{
-			await _contentService.SyncContentsWithProgress(true, false, false, false);
+			// Capture renames before the first sync clears the registry via Reload()
+			var renames = _contentService.GetAllRenames();
+
+			await _contentService.SyncContentsWithProgress(true, false, false, false, showUnityModalProgress: false);
+
+			if (renames.Count > 0)
+			{
+				var renameIds = string.Join(",",
+					renames.SelectMany(r => new[] { r.CreatedFullId, r.DeletedFullId }));
+				await _contentService.SyncContentsWithProgress(
+					true, true, true, true, renameIds, ContentFilterType.ExactIds);
+			}
 		}
 
 		private async Promise RevertConflictedContents()
 		{
-			await _contentService.SyncContentsWithProgress(false, false, true, false);
+			await _contentService.SyncContentsWithProgress(false, false, true, false, showUnityModalProgress: false);
 		}
 
 		private async Promise RevertDeletedContents()
 		{
-			await _contentService.SyncContentsWithProgress(false, false, false, true);
+			await _contentService.SyncContentsWithProgress(false, false, false, true, showUnityModalProgress: false);
 		}
 
 		private async Promise RevertAllNewContents()
 		{
-			await _contentService.SyncContentsWithProgress(false, true, false, false);
+			await _contentService.SyncContentsWithProgress(false, true, false, false, showUnityModalProgress: false);
 		}
 
 		

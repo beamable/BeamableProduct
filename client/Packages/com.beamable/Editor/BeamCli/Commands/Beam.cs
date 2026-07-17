@@ -22,6 +22,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool quiet;
         /// <summary>This option defines the target Beamable environment. Needed for private cloud customers to target their exclusive Beamable environment. Ignorable by everyone else. Stored in '.beamable/config.beam.json'</summary>
         public string host;
+        /// <summary>Overrides the default portal url.</summary>
+        public string portalUrl;
         /// <summary>The access token to use for the requests. It overwrites the logged in user stored in auth.beam.json for THIS INVOCATION ONLY</summary>
         public string accessToken;
         /// <summary>A Refresh Token to use for the requests. It overwrites the logged in user stored in auth.beam.json for THIS INVOCATION ONLY</summary>
@@ -103,6 +105,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.host != default(string)))
             {
                 genBeamCommandArgs.Add(("--host=" + this.host));
+            }
+            // If the portalUrl value was not default, then add it to the list of args.
+            if ((this.portalUrl != default(string)))
+            {
+                genBeamCommandArgs.Add(("--portal-url=" + this.portalUrl));
             }
             // If the accessToken value was not default, then add it to the list of args.
             if ((this.accessToken != default(string)))

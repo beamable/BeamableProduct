@@ -209,6 +209,10 @@ namespace Beamable.Server
 
 		public bool IsEvent => Path?.StartsWith("event/") ?? false;
 
+		public string EventName => IsEvent 
+			? Path?.Substring("event/".Length)
+			: null ;
+
 		/// <summary>
 		/// Informs us whether or not this request context is pointing to any valid user (userId >= 0). If it isn't, customer must call <see cref="Microservice.AssumeUser"/> in
 		/// custom Microservice's code before making requests that access player-specific data.
@@ -252,7 +256,7 @@ namespace Beamable.Server
 
 	public class RequestHeaders : ReadOnlyDictionary<string, string>
 	{
-		public RequestHeaders(IDictionary<string, string> dictionary = null) : base(dictionary ?? new Dictionary<string, string>())
+		public RequestHeaders(IDictionary<string, string> dictionary = null) : base(new Dictionary<string, string>(dictionary ?? new Dictionary<string, string>(), StringComparer.OrdinalIgnoreCase))
 		{
 		}
 

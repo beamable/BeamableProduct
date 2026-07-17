@@ -42,10 +42,15 @@ namespace Beamable.Editor.Content.UI
 			var isInConflict = contentObject.IsInConflict;
 
 			var headerHeight = (isModified || isInConflict) && !isEditingMultiple ? BUTTONS_HEADER_HEIGHT : HEADER_HEIGHT;
+
+			ContentNameValidationException.HasNameValidationErrors(contentObject, contentObject.ContentName,
+			                                                       out var nameErrors);
+			headerHeight += (nameErrors?.Count ?? 0) * 5;
+			var topPadding = ((nameErrors?.Count ?? 0) + 1) * 5;
 			
 			GUIStyle headerStyle = new GUIStyle(GUI.skin.box)
 			{
-				padding = new RectOffset(10, 10, 0, 10), 
+				padding = new RectOffset(10, 10, topPadding, 10), 
 				margin = new RectOffset(0, 0, 5, 5)
 			};
 			GUILayout.BeginVertical(headerStyle);
@@ -328,8 +333,8 @@ namespace Beamable.Editor.Content.UI
 					
 				var redStyle = new GUIStyle(GUI.skin.label);
 				redStyle.normal.textColor = Color.red;
-				redStyle.fontSize = 8;
-				EditorGUI.LabelField(new Rect(headerRect.x, headerRect.y - 8, headerRect.width, 12), $"({errorText})", redStyle);
+				redStyle.fontSize = 10;
+				EditorGUI.LabelField(new Rect(headerRect.x, headerRect.y-5, headerRect.width, 12), $"({errorText})", redStyle);
 					
 			}
 		}
@@ -369,10 +374,11 @@ namespace Beamable.Editor.Content.UI
 				rect = new Rect(rect.x, rect.y - 6, rect.width, rect.height);
 				GUI.Box(new Rect(0, rect.y, contextWidth, rect.height), "", "In BigTitle Post");
 
-				EditorGUI.SelectableLabel(rect, $"Checksum: {ContentUtils.ComputeChecksum(contentObject)}", checksumStyle);
+				EditorGUI.SelectableLabel(rect, $"Checksum: {contentObject.GetEditorDataChecksum()}", checksumStyle);
 			}
-
+			
 			base.OnInspectorGUI();
+			contentObject.CheckForNonDetectedChanges();
 		}
 
 		public string GetTagString(string[] tags)

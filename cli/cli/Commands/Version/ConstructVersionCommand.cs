@@ -29,7 +29,7 @@ public class ConstructVersionCommand : AtomicCommand<ConstructVersionCommandArgs
 {
 	public override bool IsForInternalUse => true;
 
-	public ConstructVersionCommand() : base("construct", "constructs a beamable version string with the given configuration")
+	public ConstructVersionCommand() : base("construct", "Construct a Beamable version string with the given configuration")
 	{
 	}
 

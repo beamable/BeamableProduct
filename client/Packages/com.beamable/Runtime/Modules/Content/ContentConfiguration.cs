@@ -32,6 +32,12 @@ namespace Beamable.Content
 
         [Tooltip("In editor, when downloading content, this controls the batch size of the download. By default, it is 100.")]
         public OptionalInt EditorDownloadBatchSize;
+
+        /// <summary>
+        /// Controls the maximum parallel content-file downloads used by editor content sync. Leave unset to use the CLI default; use 0 for unbounded parallelism.
+        /// </summary>
+        [Tooltip("In editor, when syncing content from the realm, this controls how many content files can be downloaded in parallel. Leave unset to use the CLI default. Use 0 for unbounded parallelism.")]
+        public OptionalInt EditorSyncDownloadMaxParallelCount;
 #endif
 
 		[Tooltip("When enabled, content checksum will be calculated based on default object property order.")]
@@ -57,6 +63,9 @@ namespace Beamable.Content
 		
 		[Tooltip("When enabled, the Beamable SDK will validate that the content schema is the same between the C# Definition and JSON data.")]
 		public bool validateSchemaDifference = true;
+
+		[Tooltip("When enabled, the SDK asks the backend to omit content tags from the public manifest. This reduces manifest download size for games that use tags only for backend organization. Note: client-side tag-based ContentQuery filtering (e.g. \"tag:weapon\") will return no results when this is enabled, because the manifest does not carry tag data.")]
+		public bool OmitContentManifestTags = false;
 
 		[Header("Baking")]
 		[Tooltip("Create zip archive of content upon baking. Makes first content resolve call longer due to decompression.")]
@@ -95,7 +104,8 @@ namespace Beamable.Content
 				return new ContentParameterProvider()
 				{
 					manifestID = manifestID,
-					EnableLocalContentInEditor = EnableLocalContentInEditor
+					EnableLocalContentInEditor = EnableLocalContentInEditor,
+					OmitContentManifestTags = OmitContentManifestTags
 				};
 			}
 		}

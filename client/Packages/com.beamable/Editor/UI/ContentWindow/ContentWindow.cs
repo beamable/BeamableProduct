@@ -31,7 +31,9 @@ namespace Beamable.Editor.UI.ContentWindow
 		private ContentConfiguration _contentConfiguration;
 		private Vector2 _horizontalScrollPosition;
 		private int _lastManifestChangedCount;
+		private int _lastProgressUpdateVersion;
 		private EditorGUISplitView _mainSplitter;
+		private bool _importingDefaultContent;
 
 		static ContentWindow()
 		{
@@ -64,7 +66,11 @@ namespace Beamable.Editor.UI.ContentWindow
 				_contentService = Scope.GetService<CliContentService>();
 				_ = _contentService.Reload().Then(_ =>
 				{
-					ChangeWindowStatus(ContentWindowStatus.Normal, false);
+					if (_windowStatus == ContentWindowStatus.Building)
+					{
+						ChangeWindowStatus(ContentWindowStatus.Normal, false);
+					}
+
 					Build();
 				});
 				return;
@@ -105,6 +111,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				ReloadData();
 				Repaint(); 
 			}
+
+			if (_contentService != null && _contentService.ProgressUpdateVersion != _lastProgressUpdateVersion)
+			{
+				_lastProgressUpdateVersion = _contentService.ProgressUpdateVersion;
+				Repaint();
+			}
 		}
 
 		private void ReloadData()
@@ -113,9 +125,9 @@ namespace Beamable.Editor.UI.ContentWindow
 			_allTags = _contentService.TagsCache;
 			SetEditorSelection();
 			
-			if(!_contentService.HasChangedContents)
+			if(!_contentService.HasChangedContents && _windowStatus != ContentWindowStatus.SnapshotManager)
 			{
-				ChangeWindowStatus(ContentWindowStatus.Normal);
+				ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 			}
 		}
 
@@ -204,8 +216,20 @@ namespace Beamable.Editor.UI.ContentWindow
 				return;
 			}
 
-			
-			
+			if (_importingDefaultContent)
+			{
+				DrawBlockLoading("Importing default content...");
+				return;
+			}
+
+			if (ShouldShowDefaultContentPrompt())
+			{
+				DrawDefaultContentPrompt();
+				return;
+			}
+
+
+
 			EditorGUILayout.BeginVertical();
 			_horizontalScrollPosition = EditorGUILayout.BeginScrollView(_horizontalScrollPosition);
 			
@@ -244,21 +268,28 @@ namespace Beamable.Editor.UI.ContentWindow
 			
 			var bottomRectController = new EditorGUIRectController(bottomRect);
 
-			var createdContents = _contentService.GetAllContentFromStatus(ContentStatus.Created);
+			var allRenames = _contentService.GetAllRenames();
+			var renamedCreatedIds = new HashSet<string>(allRenames.Select(r => r.CreatedFullId));
+			var renamedDeletedIds = new HashSet<string>(allRenames.Select(r => r.DeletedFullId));
+
+			var createdContents = _contentService.GetAllContentFromStatus(ContentStatus.Created)
+				.Where(e => !renamedCreatedIds.Contains(e.FullId)).ToList();
 			if (createdContents.Count > 0)
 			{
 				DrawFooterButton($"{createdContents.Count}  created", BeamGUI.iconStatusAdded, ContentFilterStatus.Created);
 				bottomRectController.ReserveWidth(BASE_PADDING);
 			}
-			
+
 			var modifiedContents = _contentService.GetAllContentFromStatus(ContentStatus.Modified);
-			if (modifiedContents.Count > 0)
+			int modifiedCount = modifiedContents.Count + allRenames.Count;
+			if (modifiedCount > 0)
 			{
-				DrawFooterButton($"{modifiedContents.Count}  modified", BeamGUI.iconStatusModified, ContentFilterStatus.Modified);
+				DrawFooterButton($"{modifiedCount}  modified", BeamGUI.iconStatusModified, ContentFilterStatus.Modified);
 				bottomRectController.ReserveWidth(BASE_PADDING);
 			}
-			
-			var deletedContents = _contentService.GetAllContentFromStatus(ContentStatus.Deleted);
+
+			var deletedContents = _contentService.GetAllContentFromStatus(ContentStatus.Deleted)
+				.Where(e => !renamedDeletedIds.Contains(e.FullId)).ToList();
 			if (deletedContents.Count > 0)
 			{
 				DrawFooterButton($"{deletedContents.Count}  deleted", BeamGUI.iconStatusDeleted, ContentFilterStatus.Deleted);
@@ -338,6 +369,91 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 		
+		/// <summary>
+		/// Whether to offer the opt-in default-content import. Only shown when the realm's remote
+		/// manifest is confirmed empty (not merely still loading or errored), there is no content
+		/// at all yet, and the user hasn't dismissed the prompt for this realm.
+		/// </summary>
+		private bool ShouldShowDefaultContentPrompt()
+		{
+			if (_contentService == null)
+				return false;
+			if (!_contentService.RemoteManifestsLoaded || _contentService.RemoteManifestsErrored)
+				return false;
+			if (_contentService.RemoteManifestCount > 0)
+				return false;
+			if (_contentService.EntriesCache.Count > 0)
+				return false;
+
+			var cid = _cli?.CurrentRealm?.Cid;
+			var pid = _cli?.CurrentRealm?.Pid;
+			if (string.IsNullOrEmpty(cid) || string.IsNullOrEmpty(pid))
+				return false;
+
+			return !DefaultContentImporter.IsDismissed(cid, pid);
+		}
+
+		private void DrawDefaultContentPrompt()
+		{
+			EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox)
+			{
+				padding = new RectOffset(12, 12, 12, 12),
+				margin = new RectOffset(10, 10, 10, 10)
+			});
+
+			EditorGUILayout.TextArea(
+				"This realm doesn't have any content yet. " +
+				"\n\n" +
+				"Would you like to import Beamable's default content? This creates the gems and coins " +
+				"currencies and copies their icon sprites into Assets/Beamable/DefaultAssets, " +
+				"registering them as Addressables. The content is added locally so you can review and " +
+				"publish it yourself.",
+				new GUIStyle(EditorStyles.label) { wordWrap = true });
+
+			EditorGUILayout.BeginHorizontal(new GUIStyle
+			{
+				margin = new RectOffset(0, 0, 12, 12)
+			});
+
+			EditorGUILayout.Space(5, true);
+			EditorGUILayout.Space(5, true);
+
+			var clickedNotNow = BeamGUI.CancelButton("Not now");
+			var clickedImport = BeamGUI.PrimaryButton(new GUIContent("Import"));
+
+			EditorGUILayout.EndHorizontal();
+			EditorGUILayout.EndVertical();
+
+			if (clickedNotNow)
+			{
+				DefaultContentImporter.SetDismissed(_cli?.CurrentRealm?.Cid, _cli?.CurrentRealm?.Pid);
+				Repaint();
+			}
+			else if (clickedImport)
+			{
+				StartDefaultContentImport();
+			}
+		}
+
+		private async void StartDefaultContentImport()
+		{
+			if (_importingDefaultContent)
+				return;
+
+			_importingDefaultContent = true;
+			Repaint();
+			try
+			{
+				// Awaited continuations resume on Unity's main-thread synchronization context.
+				await DefaultContentImporter.ImportDefaultContent();
+			}
+			finally
+			{
+				_importingDefaultContent = false;
+				Repaint();
+			}
+		}
+
 		private List<LocalContentManifestEntry> GetCachedManifestEntries()
 		{
 			var localContentManifestEntries = new List<LocalContentManifestEntry>();

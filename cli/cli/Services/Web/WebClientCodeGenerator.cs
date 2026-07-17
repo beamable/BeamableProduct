@@ -1,4 +1,4 @@
-﻿using Beamable.Server;
+using Beamable.Server;
 using cli.Services.Web.CodeGen;
 using cli.Services.Web.Helpers;
 using Microsoft.OpenApi.Any;
@@ -62,7 +62,7 @@ public class WebClientCodeGenerator
 
 		_clientFile.AddDeclaration(tsClass);
 
-		var tsBeamSdkImport = new TsImport("beamable-sdk");
+		var tsBeamSdkImport = new TsImport("@beamable/sdk");
 		tsBeamSdkImport.AddNamedImport("BeamMicroServiceClient");
 		_clientFile.AddImport(tsBeamSdkImport);
 
@@ -74,7 +74,7 @@ public class WebClientCodeGenerator
 		if (_schemas.Count > 0)
 		{
 			var tsBeamSchemaImport =
-				new TsImport("beamable-sdk/schema", defaultImport: "* as Schemas", typeImportOnly: true);
+				new TsImport("@beamable/sdk/schema", defaultImport: "* as Schemas", typeImportOnly: true);
 			_clientFile.AddImport(tsBeamSchemaImport);
 		}
 
@@ -283,7 +283,7 @@ public class WebClientCodeGenerator
 		var className = tsClass.Name;
 		var camelCaseClassName = StringHelper.ToCamelCaseIdentifier(className);
 		var serviceName = tsClass.Name.Replace("Client", string.Empty);
-		var tsModule = new TsModule("beamable-sdk");
+		var tsModule = new TsModule("@beamable/sdk");
 		var tsInterface = new TsInterface("BeamBase");
 		var tsProperty = new TsProperty(camelCaseClassName, TsType.Of(className));
 		var tsComment = new TsComment(

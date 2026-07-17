@@ -21,7 +21,7 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Runs a service locally, enforcing the <see cref="BeamoProtocolType.EmbeddedMongoDb"/> protocol.
 	/// </summary>
-	public async Task RunLocalEmbeddedMongoDb(BeamoServiceDefinition serviceDefinition, EmbeddedMongoDbLocalProtocol localProtocol)
+	public async Task RunLocalEmbeddedMongoDb(BeamoServiceDefinition serviceDefinition, EmbeddedMongoDbLocalProtocol localProtocol, Action onFinish = null)
 	{
 		const string ENV_MONGO_ROOT_USERNAME = "MONGO_INITDB_ROOT_USERNAME";
 		const string ENV_MONGO_ROOT_PASSWORD = "MONGO_INITDB_ROOT_PASSWORD";
@@ -52,6 +52,7 @@ public partial class BeamoLocalSystem
 			// TODO: Make the auto destruction optional to help CS identify issues in the wild.
 			await CreateAndRunContainer(imageId, containerName, cmdStr, true, portBindings, volumes, bindMounts,
 				environmentVariables);
+			onFinish?.Invoke();
 		}
 		catch (Exception e)
 		{

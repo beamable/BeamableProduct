@@ -3,7 +3,7 @@
 public class ProjectGenerateCommand : CommandGroup
 {
 	public ProjectGenerateCommand()
-		: base("generate", "Commands that allows generating various clients for Beamable services")
+		: base("generate", "Commands for generating client code for Beamable services")
 	{
 	}
 }

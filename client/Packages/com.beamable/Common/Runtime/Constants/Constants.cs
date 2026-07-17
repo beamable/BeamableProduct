@@ -23,7 +23,7 @@ namespace Beamable.Common
 		public const string BEAM_STAGE_PORTAL_URI = "https://staging-portal.beamable.com";
 		public const string BEAM_DEV_PORTAL_URI = "https://dev-portal.beamable.com";
 		
-		public const string CLI_CURRENT_DOCS_VERSION = "6.1";
+		public const string CLI_CURRENT_DOCS_VERSION = "7.0";
 		
 		public const string OPEN_API_FILE_NAME = "beam_openApi.json";
 		public const string OPEN_API_DIR_PROPERTY_KEY = "OutDir";
@@ -65,6 +65,15 @@ namespace Beamable.Common
 
 			public const string ASSET_DIR = BEAMABLE_ASSETS + "/DefaultAssets";
 			public const string DEFAULT_DATA_DIR = BEAMABLE_PACKAGE_EDITOR + "/Modules/Content/DefaultContent";
+
+			/// <summary>
+			/// Unity-ignored ("~"-suffixed) folder shipping the seed sprites + their pinned-GUID
+			/// meta files for default content. These are copied into <see cref="ASSET_DIR"/> in the
+			/// consuming project (and registered as addressables) when the user imports default
+			/// content. The "~" suffix keeps Unity from importing the source copies, so the pinned
+			/// GUIDs only ever register once they land under Assets/ — avoiding a GUID collision.
+			/// </summary>
+			public const string DEFAULT_ASSET_SOURCE_DIR = BEAMABLE_PACKAGE_EDITOR + "/Modules/Content/DefaultAssets~";
 
 			/// <summary>
 			/// Path for dlls compiled from SAMS common code. Relative to Assets directory. 

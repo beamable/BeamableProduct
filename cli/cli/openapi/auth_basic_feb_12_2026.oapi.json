@@ -1,0 +1,593 @@
+{
+  "info": {
+    "title": "auth basic",
+    "version": "1.0",
+    "contact": {
+      "name": "Beamable Support",
+      "url": "https://api.beamable.com",
+      "email": "support@beamable.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.beamable.com"
+    }
+  ],
+  "paths": {
+    "/basic/auth/token/list": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        },
+        "parameters": [
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "required": true
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "required": true
+          },
+          {
+            "name": "cid",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "x-beamable-semantic-type": "Cid"
+            },
+            "required": false
+          },
+          {
+            "name": "pid",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "x-beamable-semantic-type": "Pid"
+            },
+            "required": false
+          },
+          {
+            "name": "gamerTagOrAccountId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "user": [
+              "developer"
+            ]
+          },
+          {
+            "server": []
+          }
+        ]
+      },
+      "parameters": [
+        {
+          "name": "X-BEAM-SCOPE",
+          "in": "header",
+          "schema": {
+            "type": "string"
+          },
+          "description": "Customer and project scope. This should be in the form of '<customer-id>.<project-id>'.",
+          "required": true
+        },
+        {
+          "name": "X-BEAM-GAMERTAG",
+          "in": "header",
+          "schema": {
+            "type": "string"
+          },
+          "description": "Override the Gamer Tag of the player. This is generally inferred by the auth token.",
+          "required": false
+        }
+      ]
+    },
+    "/basic/auth/token": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "security": [
+          {}
+        ]
+      },
+      "post": {
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRequestWrapper"
+              }
+            }
+          }
+        },
+        "security": [
+          {}
+        ]
+      },
+      "parameters": [
+        {
+          "name": "X-BEAM-SCOPE",
+          "in": "header",
+          "schema": {
+            "type": "string"
+          },
+          "description": "Customer and project scope. This should be in the form of '<customer-id>.<project-id>'.",
+          "required": true
+        },
+        {
+          "name": "X-BEAM-GAMERTAG",
+          "in": "header",
+          "schema": {
+            "type": "string"
+          },
+          "description": "Override the Gamer Tag of the player. This is generally inferred by the auth token.",
+          "required": false
+        }
+      ]
+    },
+    "/basic/auth/token/revoke": {
+      "put": {
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeTokenRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "user": [
+              "developer"
+            ]
+          },
+          {
+            "server": []
+          }
+        ]
+      },
+      "parameters": [
+        {
+          "name": "X-BEAM-SCOPE",
+          "in": "header",
+          "schema": {
+            "type": "string"
+          },
+          "description": "Customer and project scope. This should be in the form of '<customer-id>.<project-id>'.",
+          "required": true
+        },
+        {
+          "name": "X-BEAM-GAMERTAG",
+          "in": "header",
+          "schema": {
+            "type": "string"
+          },
+          "description": "Override the Gamer Tag of the player. This is generally inferred by the auth token.",
+          "required": false
+        }
+      ]
+    }
+  },
+  "components": {
+    "schemas": {
+      "RevokeTokenRequest": {
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "title": "Revoke Token Request",
+        "type": "object",
+        "required": [
+          "token"
+        ]
+      },
+      "CommonResponse": {
+        "properties": {
+          "result": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "title": "Common Response",
+        "type": "object",
+        "required": [
+          "result",
+          "data"
+        ]
+      },
+      "ListTokensRequest": {
+        "properties": {
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cid": {
+            "type": "integer",
+            "format": "int64",
+            "x-beamable-semantic-type": "Cid"
+          },
+          "pid": {
+            "type": "string",
+            "x-beamable-semantic-type": "Pid"
+          },
+          "gamerTagOrAccountId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false,
+        "title": "List Tokens Request",
+        "type": "object",
+        "required": [
+          "gamerTagOrAccountId",
+          "page",
+          "pageSize"
+        ]
+      },
+      "ContextInfo": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "platform": {
+            "type": "string"
+          },
+          "device": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "platform",
+          "device"
+        ]
+      },
+      "GetTokenRequest": {
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "title": "Get Token Request",
+        "type": "object",
+        "required": [
+          "token"
+        ]
+      },
+      "TokenRequestWrapper": {
+        "properties": {
+          "device_id": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "refresh_token": {
+            "type": "string"
+          },
+          "context": {
+            "$ref": "#/components/schemas/ContextInfo"
+          },
+          "third_party": {
+            "type": "string"
+          },
+          "redirect_uri": {
+            "type": "string"
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "provider_namespace": {
+            "type": "string"
+          },
+          "challenge_solution": {
+            "$ref": "#/components/schemas/ChallengeSolution"
+          },
+          "external_token": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "initProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "customerScoped": {
+            "type": "boolean"
+          },
+          "provider_service": {
+            "type": "string"
+          },
+          "grant_type": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "title": "Token Request Wrapper",
+        "type": "object",
+        "required": [
+          "grant_type"
+        ]
+      },
+      "ListTokenResponseItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "device": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "platform",
+          "device",
+          "created"
+        ]
+      },
+      "ChallengeSolution": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "challenge_token": {
+            "type": "string"
+          },
+          "solution": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "challenge_token",
+          "solution"
+        ]
+      },
+      "ListTokenResponse": {
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListTokenResponseItem"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "title": "List Token Response",
+        "type": "object",
+        "required": [
+          "items"
+        ]
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "expires_in": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "refresh_token": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "token_type": {
+            "type": "string"
+          },
+          "challenge_token": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "title": "Token Response",
+        "type": "object",
+        "required": [
+          "expires_in",
+          "token_type"
+        ]
+      },
+      "Token": {
+        "properties": {
+          "revoked": {
+            "type": "boolean"
+          },
+          "gamerTag": {
+            "type": "integer",
+            "format": "int64",
+            "x-beamable-semantic-type": "Gamertag"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "accountId": {
+            "type": "integer",
+            "format": "int64",
+            "x-beamable-semantic-type": "AccountId"
+          },
+          "cid": {
+            "type": "integer",
+            "format": "int64",
+            "x-beamable-semantic-type": "Cid"
+          },
+          "pid": {
+            "type": "string",
+            "x-beamable-semantic-type": "Pid"
+          },
+          "expiresMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "token": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "device": {
+            "type": "string"
+          },
+          "created": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false,
+        "title": "Token",
+        "type": "object",
+        "required": [
+          "token",
+          "type",
+          "created",
+          "cid"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "server": {
+        "type": "apiKey",
+        "name": "X-DE-SIGNATURE",
+        "in": "header",
+        "description": "Signed Request authentication using project secret key."
+      },
+      "user": {
+        "type": "http",
+        "description": "Bearer authentication with a player access token in the Authorization header.",
+        "scheme": "bearer",
+        "bearerFormat": "Bearer <Access Token>"
+      }
+    }
+  },
+  "security": [],
+  "externalDocs": {
+    "description": "Beamable Documentation",
+    "url": "https://docs.beamable.com"
+  },
+  "openapi": "3.0.2"
+}

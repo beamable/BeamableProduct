@@ -51,8 +51,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-      contents: write   
+      contents: write
       packages: read
+      issues: write
     concurrency:
       group: release-unity-sdk
       cancel-in-progress: true
@@ -62,6 +63,8 @@ jobs:
           - 6000.3.0f1
         gameCiVersion:
           - 3.2.1
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
     steps:
       - name: review options
         run: |
@@ -95,7 +98,10 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
             
       - name: Update npm
-        run: npm install -g npm@latest
+        # Pinned to 11.16.0 (last-known-good): npm 11.17.0 attempts OIDC trusted
+        # publishing, which Nexus 2 rejects (token-exchange 404 then PUT 400),
+        # breaking the UPM publish to nexus.beamable.com. ~Claude
+        run: npm install -g npm@11.16.0
       - name: Check Npm version
         run: npm --version
 
@@ -212,6 +218,10 @@ jobs:
         env:
           NPM_REGISTRY: https://registry.npmjs.org
 
+      - name: Normalize line endings
+        shell: bash
+        run: ./build/bin/fix-line-endings.sh client/Packages/com.beamable
+
       - name: Review Unity SDK Files
         run: |
           ls ./client/Packages/com.beamable/Runtime/Environment/Resources
@@ -326,3 +336,33 @@ jobs:
             Unity SDK Release ${{ steps.version.outputs.VERSION }}
           draft: false
           prerelease: ${{ inputs.releaseType != 'production' }}
+
+      # Close the matching "Unity X.Y.Z" milestone once a production release ships.
+      # Warns (does not fail) when no open milestone matches, so it never blocks a release. ~Claude
+      - name: Close shipped milestone
+        if: ${{ inputs.dryRun == false && inputs.releaseType == 'production' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title="Unity ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}"
+          num=$(gh api "repos/${{ github.repository }}/milestones?state=open&per_page=100" \
+                --jq ".[] | select(.title==\"$title\") | .number")
+          if [ -n "$num" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/milestones/$num" -f state=closed
+            echo "Closed milestone $title (#$num)"
+          else
+            echo "::warning::No open milestone titled '$title' to close"
+          fi
+
+  lightbeam:
+    needs: nuget
+    uses: ./.github/workflows/lightBeamRelease.yml
+    with:
+      customTag: unity-sdk-${{ needs.nuget.outputs.version }}
+    secrets:
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL_DEVOPS }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD_DEVOPS }}
+      UNITY_SERIAL: ${{ secrets.UNITY_SERIAL_DEVOPS }}
+      AWS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_LIGHTBEAM_S3_BUCKET: ${{ secrets.AWS_LIGHTBEAM_S3_BUCKET }}

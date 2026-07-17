@@ -1,4 +1,5 @@
 using Beamable.Api.Analytics;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Scheduler;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Analytics;
@@ -46,5 +47,7 @@ namespace Beamable.Server
 		public IMicroservicePaymentsApi Payments { get; set; }
 		public BeamScheduler Scheduler { get; set; }
 		public IMicroservicePushApi Push { get; set; }
+
+		public IDependencyProviderScope Scope { get; set; }
 	}
 }

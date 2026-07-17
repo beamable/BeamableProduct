@@ -1,0 +1,135 @@
+---
+name: beam-content-history
+description: Content version management — snapshots, history, restore from backups
+---
+
+# Content History and Snapshots
+
+## Prerequisites
+- A `.beamable` workspace must exist (run `beam init` first)
+- Authenticated with `beam login` or saved credentials
+
+## Snapshots
+
+Snapshots are point-in-time backups of your content. Use them to restore content if a bad publish occurs.
+
+### Create a snapshot
+```
+beam_exec("content snapshot -q")
+```
+Saves the current local content state as a named snapshot.
+{{ if commands["content snapshot"] }}
+#### `beam content snapshot` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["content snapshot"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
+{{ end }}{{ end }}
+
+### List snapshots
+```
+beam_exec("content snapshot-list -q")
+```
+Lists all available snapshots with their timestamps and diff status against the current content.
+{{ if commands["content snapshot-list"] }}
+#### `beam content snapshot-list` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["content snapshot-list"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
+{{ end }}{{ end }}
+
+### Restore from a snapshot
+```
+beam_exec("content restore --snapshot-id <id> -q")
+```
+Restores content from a previously saved snapshot. This can be additive (merge new items) or a full replacement depending on flags.
+{{ if commands["content restore"] }}
+#### `beam content restore` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["content restore"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
+{{ end }}{{ end }}
+
+### Auto-snapshot on publish
+When publishing, you can automatically create a snapshot for rollback safety:
+```
+beam_exec("content publish --manifest-ids global --auto-snapshot-type LocalOnly -q")
+```
+Snapshot types:
+- `LocalOnly` — saved under `.beamable/temp/content-snapshots/[PID]`
+- `SharedOnly` — saved under `.beamable/content-snapshots/[PID]` (version-controlled)
+- `Both` — saves to both local and shared folders
+- `None` — no snapshot (default)
+
+Use `--max-local-snapshots` to limit how many local snapshots are kept. Older snapshots are automatically deleted when the limit is hit.
+
+## Publish history
+
+The history commands let you browse and restore from previously published content versions.
+
+### View publish history
+```
+beam_exec("content history -q")
+```
+Returns a timeline of all publishes for the realm, including timestamps and who published.
+{{ if commands["content history"] }}
+#### `beam content history` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["content history"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
+{{ end }}{{ end }}
+
+### Get diff for a specific publish
+```
+beam_exec("content history sync-changelist --version <version-id> -q")
+```
+Returns what changed in a specific publish — which content items were added, modified, or removed.
+{{ if commands["content history sync-changelist"] }}
+#### `beam content history sync-changelist` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["content history sync-changelist"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
+{{ end }}{{ end }}
+
+### Download content for a specific version
+```
+beam_exec("content history sync-content --version <version-id> -q")
+```
+Downloads the full content payload for a historical version to local files.
+{{ if commands["content history sync-content"] }}
+#### `beam content history sync-content` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["content history sync-content"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
+{{ end }}{{ end }}
+
+### Restore from historical version
+```
+beam_exec("content history restore-content --version <version-id> -q")
+```
+Restores content from a historical publish version. After restoring, run `content publish` to make the restored content live.
+{{ if commands["content history restore-content"] }}
+#### `beam content history restore-content` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["content history restore-content"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
+{{ end }}{{ end }}
+
+## Typical recovery workflow
+1. Run `content history` to find the version before the bad publish
+2. Run `content history sync-changelist --version <id>` to confirm what changed
+3. Run `content history restore-content --version <id>` to restore locally
+4. Run `content status` to verify the restored state
+5. Run `content publish --manifest-ids global -q` to push the restored content live
+
+## Common pitfalls
+- **Restoring only updates local files.** You must `content publish` afterwards to make changes live.
+- **Snapshots are separate from publish history.** Snapshots are local backups you create; history is the server-side publish log.
+- **Auto-snapshot with `LocalOnly` is not version-controlled.** Use `SharedOnly` or `Both` if the team needs access to snapshots.
+- **Always pass `-q`** when executing from MCP to avoid interactive prompts.
+
+## Wrap-up
+After completing a restore or history operation, summarize what version was restored, how many items changed, and remind the user to run `content publish` if they want changes to go live.
+
+## CLI Version Awareness
+
+If the CLI version has changed (check `.config/dotnet-tools.json`), re-run `beam_list_commands()` and `beam_get_help()` to get up-to-date command information. Command options and behavior may have changed between versions.

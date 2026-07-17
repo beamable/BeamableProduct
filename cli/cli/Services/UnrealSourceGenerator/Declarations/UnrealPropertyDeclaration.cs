@@ -42,6 +42,7 @@ public struct UnrealPropertyDeclaration
 	public static string GetSanitizedPropertyName(string n)
 	{
 		var escaped = n.StartsWith('$') ? n[1..] : n;
+		escaped = escaped.Replace("#", "");
 		return escaped;
 	}
 
@@ -68,7 +69,12 @@ public struct UnrealPropertyDeclaration
 	/// Helper function to help deal with the fact that our schemas sometimes get a '$' on their fields because scala is a funny language.
 	/// Funny does not mean funny here.
 	/// </summary>
-	public static string GetSanitizedPropertyDisplayName(string n) => n.StartsWith('$') ? n[1..] : n;
+	public static string GetSanitizedPropertyDisplayName(string n)
+	{
+		var escaped = n.StartsWith('$') ? n[1..] : n;
+		escaped = escaped.Replace("#", "");
+		return escaped;
+	}
 
 	public void IntoProcessMap(Dictionary<string, string> helperDict)
 	{

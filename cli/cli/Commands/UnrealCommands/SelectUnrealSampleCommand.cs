@@ -93,7 +93,6 @@ public class SelectUnrealSampleCommand : AppCommand<SelectUnrealSampleCommandArg
 		args.ConfigService.DeleteLocalOverride(ConfigService.CFG_JSON_FIELD_HOST);
 		args.ConfigService.DeleteLocalOverride(ConfigService.CFG_JSON_FIELD_PID);
 		args.ConfigService.DeleteLocalOverride(ConfigService.CFG_JSON_FIELD_CID);
-		args.ConfigService.FlushLocalOverrides();
 
 		return Task.CompletedTask;
 	}

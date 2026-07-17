@@ -66,7 +66,7 @@ public struct ChangedContentFile
 	public bool WasChanged() => !WasCreated() && !WasDeleted() && FullFilePath == OldFullFilePath;
 }
 
-public class ContentService
+public partial class ContentService
 {
 	/// <summary>
 	/// <see cref="PublishContent"/>
@@ -74,9 +74,57 @@ public class ContentService
 	private const int ERR_CODE_PUBLISH_FAILED_INVALID_REFERENCE_MANIFEST = 3;
 
 	/// <summary>
+	/// Target POST body size for each content-publish batch.
+	/// Set to 1 MiB — 12.5 % of the gateway's 8 MiB hard limit — to keep
+	/// individual requests well within the rejection threshold for catalogs of
+	/// large content items, while still consolidating many small items into
+	/// fewer requests than the old fixed-count approach.
+	/// </summary>
+	private const long CONTENT_PUBLISH_TARGET_BATCH_BYTES = 1 * 1024 * 1024; // 1 MiB
+
+	/// <summary>
+	/// Maximum number of content items per batch POST, regardless of their
+	/// serialized byte size.  Caps the amount of server-side work in a single
+	/// request so that the content service does not time out while processing
+	/// a batch of many tiny items that would otherwise be well under the byte
+	/// limit.  Both <see cref="CONTENT_PUBLISH_TARGET_BATCH_BYTES"/> and this
+	/// constant must be satisfied simultaneously: a batch is flushed as soon
+	/// as either threshold is reached.
+	/// </summary>
+	private const int CONTENT_PUBLISH_MAX_ITEMS_PER_BATCH = 50;
+
+	/// <summary>
+	/// Maximum number of content-publish POST requests that may be in flight
+	/// at the same time.  Limits connection-pool pressure and gateway load
+	/// regardless of how many batches the size-aware splitter produces.
+	/// </summary>
+	private const int CONTENT_PUBLISH_MAX_CONCURRENCY = 8;
+
+	/// <summary>
+	/// How many times a single batch POST may be retried after a transient
+	/// gateway error (429, 502, 503, 504) before the whole publish is aborted.
+	/// Delays follow an exponential back-off of 2^(attempt+1) seconds
+	/// (2 s → 4 s → 8 s) with ±20 % random jitter.
+	/// </summary>
+	private const int CONTENT_PUBLISH_MAX_RETRIES = 3;
+
+	/// <summary>
 	/// <see cref="CreateFakeEmptyManifest"/> and <see cref="GetManifest"/>.
 	/// </summary>
 	private const string FAKE_EMPTY_MANIFEST_UID = "EmptyManifest";
+
+	private const int CONTENT_DOWNLOAD_MAX_ATTEMPTS = 4;
+	private const int DEFAULT_CONTENT_DOWNLOAD_MAX_CONCURRENCY = 64;
+	private const int CONTENT_DOWNLOAD_RETRY_BASE_DELAY_MS = 250;
+	private const int CONTENT_DOWNLOAD_RETRY_JITTER_MS = 250;
+
+	/// <summary>
+	/// Shared client for CDN content-file downloads during sync.
+	/// </summary>
+	/// <remarks>
+	/// This intentionally bypasses the generic CLI requester to avoid per-file verbose request/response logging while preserving connection reuse.
+	/// </remarks>
+	private static readonly HttpClient _contentDownloadClient = new(CreateContentDownloadHandler());
 
 	private readonly CliRequester _requester;
 	private readonly ConfigService _config;
@@ -84,6 +132,7 @@ public class ContentService
 	private readonly IAccountsApi _accountsApi;
 	private readonly IRealmsApi _realmsApi;
 	private readonly IAuthApi _authApi;
+	private readonly IAppContext _appContext;
 
 	/// <summary>
 	/// We use this to ensure only one thread is ever running the <see cref="GetAllContentFiles"/> function as well as any other group of file system operations:
@@ -104,7 +153,7 @@ public class ContentService
 	/// </summary>
 	public static readonly HashSet<ContentFilterType> UNSUPPORTED_FILTERS_BEFORE_LOADING = new() { ContentFilterType.Tags };
 
-	public ContentService(CliRequester requester, ConfigService config, IContentApi api, IAccountsApi accountsApi, IRealmsApi realmsApi, IAuthApi authApi)
+	public ContentService(CliRequester requester, ConfigService config, IContentApi api, IAccountsApi accountsApi, IRealmsApi realmsApi, IAuthApi authApi, IAppContext appContext)
 	{
 		_requester = requester;
 		_config = config;
@@ -112,9 +161,14 @@ public class ContentService
 		_accountsApi = accountsApi;
 		_realmsApi = realmsApi;
 		_authApi = authApi;
+		_appContext = appContext;
 
 		_channelChangedContentFiles = Channel.CreateUnbounded<ChangedContentFile>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true, });
 		_channelRemoteContentPublishes = Channel.CreateUnbounded<RemoteContentPublished>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true, });
+		
+		// Initialize local content-history channels used by the History partial class
+		_channelContentHistoryEntries = Channel.CreateUnbounded<ChangedContentHistoryEntryFile>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true });
+		_channelContentHistoryChangelists = Channel.CreateUnbounded<ChangedContentHistoryChangelistFile>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true });
 	}
 
 	private string RootContentPath => _config.GetConfigPath(ConfigService.CONTENT_DIR);
@@ -637,26 +691,15 @@ public class ContentService
 					if (latestManifestFromContent != null)
 					{
 						var diffChanges = await _contentApi.GetManifestDiffs(manifestId, fromUid: latestManifestFromContent.uid, toUid: latestManifest.uid);
-						var getDiffTasks = diffChanges.diffs.Select(async diff => await _requester.CustomRequest(Method.GET, diff.diffUrl, parser: JObject.Parse));
+						var getDiffTasks = diffChanges.diffs.Select(async diff => await _requester.CustomRequest<ContentHistoryChangelist>(Method.GET, GetContentHistoryChangelistUrl(_requester.Cid, _requester.Pid, diff),
+							parser: (jsonString) => JsonSerializer.Deserialize<ContentHistoryChangelist>(jsonString, GetContentFileSerializationOptions())));
 						var parsedDiffs = await Task.WhenAll(getDiffTasks);
 
-						foreach (JObject parsedDiff in parsedDiffs)
+						foreach (ContentHistoryChangelist parsedDiff in parsedDiffs)
 						{
-							// check if 'changes' child exists before continuing
-							// 'changes' contain all diff changes for each changed manifest
-							if (parsedDiff["changes"] is not JObject changes)
-							{
-								continue;
-							}
 							// Check each content changed individually, checking for any that the changeType is 'added'
-							foreach (JProperty contentItem in changes.Properties())
-							{
-								string changeType = contentItem.Value["changeType"]?.ToString();
-								if (changeType == "added")
-								{
-									newItemsOnRemote.Add(contentItem.Name);
-								}
-							}
+							if (parsedDiff.Added == null) continue;
+							foreach (var contentItem in parsedDiff.Added.Keys) newItemsOnRemote.Add(contentItem);
 						}
 					}
 				}
@@ -757,6 +800,99 @@ public class ContentService
 	/// <summary>
 	/// Publishes the local changes made to the given <paramref name="manifestId"/> to the current <see cref="IAppContext.Pid"/>.
 	///
+	/// Returns true for HTTP status codes that indicate a transient server-side
+	/// condition that is worth retrying: rate-limit (429) and gateway errors
+	/// (502, 503, 504).  Client errors (4xx except 429) and definitive server
+	/// errors are not retried.
+	private static bool IsTransientHttpStatus(long status) =>
+		status is 429 or 502 or 503 or 504;
+
+	/// <summary>
+	/// Posts a single content batch, automatically retrying up to
+	/// <see cref="CONTENT_PUBLISH_MAX_RETRIES"/> times on transient gateway
+	/// errors.  Delays follow an exponential back-off schedule (2 s, 4 s, 8 s)
+	/// with ±20 % random jitter to prevent thundering-herd retries when many
+	/// batches fail at the same moment.
+	/// </summary>
+	private static async Task<SaveContentResponse> PostBatchWithRetryAsync(
+		IContentApi contentApi, SaveContentRequest request)
+	{
+		var rng = new Random();
+		for (var attempt = 0; ; attempt++)
+		{
+			try
+			{
+				return await contentApi.Post(request);
+			}
+			catch (RequesterException ex)
+				when (IsTransientHttpStatus(ex.Status) && attempt < CONTENT_PUBLISH_MAX_RETRIES)
+			{
+				// 2^(attempt+1) seconds: 2 s, 4 s, 8 s — with ±20 % jitter.
+				var baseDelayMs = (int)Math.Pow(2, attempt + 1) * 1000;
+				var jitterMs    = rng.Next(-baseDelayMs / 5, baseDelayMs / 5);
+				var delayMs     = Math.Max(500, baseDelayMs + jitterMs);
+				Log.Warning(
+					"Content publish batch received HTTP {Status} (attempt {Attempt}/{MaxRetries}) — " +
+					"retrying in {Delay} ms.  Server: {Error}",
+					ex.Status, attempt + 1, CONTENT_PUBLISH_MAX_RETRIES, delayMs,
+					ex.RequestError?.message ?? ex.Message);
+				await Task.Delay(delayMs);
+			}
+			// Any non-transient exception (e.g. 413, 401) propagates immediately.
+		}
+	}
+
+	/// <summary>
+	/// Partitions <paramref name="items"/> into batches whose estimated serialized
+	/// JSON byte length stays at or below <paramref name="targetBytes"/>.
+	///
+	/// Each item is serialised individually to measure its contribution to the
+	/// request body.  Batches are built greedily: items are appended to the
+	/// current batch until the next item would push the total past
+	/// <paramref name="targetBytes"/>, at which point the batch is flushed and a
+	/// new one is started.  An item that is larger than
+	/// <paramref name="targetBytes"/> on its own is always emitted as a
+	/// single-item batch rather than being dropped.
+	/// </summary>
+	private static IEnumerable<ContentDefinition[]> BuildSizeAwareBatches(
+		IEnumerable<ContentDefinition> items, long targetBytes, int maxItemsPerBatch)
+	{
+ 		var batch = new List<ContentDefinition>();
+		long batchBytes = 0;
+
+		foreach (var item in items)
+		{
+			// Serialise the item in isolation to get a byte-accurate estimate.
+			var itemJson = JsonSerializable.ToJson(item);
+			var itemBytes = Encoding.UTF8.GetByteCount(itemJson);
+			// Each item after the first is preceded by a comma separator.
+			var separatorBytes = batch.Count > 0 ? 1 : 0;
+
+			var projectedTotal = batchBytes + separatorBytes + itemBytes;
+
+			// Flush when either constraint would be violated: byte budget or item count.
+			// The item-count cap prevents server-side processing timeouts for catalogs
+			// of many tiny items that would otherwise be well under the byte limit.
+			var byteLimitReached = batch.Count > 0 && projectedTotal > targetBytes;
+			var itemLimitReached = batch.Count >= maxItemsPerBatch;
+
+			if (byteLimitReached || itemLimitReached)
+			{
+				yield return batch.ToArray();
+				batch.Clear();
+				batchBytes = 0;
+			}
+
+			batch.Add(item);
+			// separatorBytes for this item become 0 when it is the first in a
+			// fresh batch, but the next item will pay a comma.
+			batchBytes += (batch.Count == 1 ? 0 : 1) + itemBytes;
+		}
+
+		if (batch.Count > 0)
+			yield return batch.ToArray();
+	}
+
 	/// First, this checks if the last manifest we pulled is the same as the last manifest anyone published to that realm.
 	/// If it isn't we error out with <see cref="ERR_CODE_PUBLISH_FAILED_INVALID_REFERENCE_MANIFEST"/>.
 	///
@@ -830,56 +966,73 @@ public class ContentService
 			}).ToArray();
 
 		
-		var batches = changedContentDefinitions.Chunk(CliConstants.CONTENT_PUBLISH_BATCH_SIZE);
+		// Split into size-aware batches targeting ~1 MiB each.
+		// This keeps individual requests well within the
+		// rejection threshold for both large-item and small-item catalogs, while
+		// producing far fewer requests than the old fixed-count (20 items) approach did for
+		// small items.
+		var batches = BuildSizeAwareBatches(changedContentDefinitions, CONTENT_PUBLISH_TARGET_BATCH_BYTES, CONTENT_PUBLISH_MAX_ITEMS_PER_BATCH);
+
+		// Throttle concurrent POSTs to avoid overwhelming the connection pool
+		// and the gateway, regardless of how many batches were produced.
+		var semaphore = new SemaphoreSlim(CONTENT_PUBLISH_MAX_CONCURRENCY);
+
 		// Then we save them to S3
 		Task<SaveContentResponse>[] saveContentRequestsTasks = batches.Select(async contentDefinitions =>
 			{
-				var contentProgressUpdateData = new ContentProgressUpdateData()
-				{
-					contentName = string.Join(", ", contentDefinitions.Select(item => item.id)),
-					totalItems = changedContentDefinitions.Length,
-				};
-			
-				var saveRequest = new SaveContentRequest() { content = contentDefinitions };
-				SaveContentResponse saveResponse;
+				await semaphore.WaitAsync();
 				try
 				{
-					saveResponse = await _contentApi.Post(saveRequest);
-				}
-				catch (Exception exception)
-				{
-					contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_SyncError;
-					contentProgressUpdateData.errorMessage = exception.Message;
+					var contentProgressUpdateData = new ContentProgressUpdateData()
+					{
+						contentName = string.Join(", ", contentDefinitions.Select(item => item.id)),
+						totalItems = changedContentDefinitions.Length,
+					};
+
+					var saveRequest = new SaveContentRequest() { content = contentDefinitions };
+					SaveContentResponse saveResponse;
+					try
+					{
+						saveResponse = await PostBatchWithRetryAsync(_contentApi, saveRequest);
+					}
+					catch (Exception exception)
+					{
+						contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_SyncError;
+						contentProgressUpdateData.errorMessage = exception.Message;
+						onProgressUpdateAction?.Invoke(contentProgressUpdateData);
+						throw;
+					}
+
+					contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_PublishComplete;
 					onProgressUpdateAction?.Invoke(contentProgressUpdateData);
-					throw;
+
+					// Use actual batch item count, not the old fixed constant.
+					Interlocked.Add(ref _publishProcessedCount, contentDefinitions.Length);
+
+					contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_UpdateProcessedItemCount;
+					contentProgressUpdateData.processedItems = _publishProcessedCount;
+					onProgressUpdateAction?.Invoke(contentProgressUpdateData);
+
+					return saveResponse;
 				}
-			
-
-				contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_PublishComplete;
-				onProgressUpdateAction?.Invoke(contentProgressUpdateData);
-
-				Interlocked.Add(ref _publishProcessedCount, CliConstants.CONTENT_PUBLISH_BATCH_SIZE);
-				
-				contentProgressUpdateData.EventType = ContentProgressUpdateData.EVT_TYPE_UpdateProcessedItemCount;
-				contentProgressUpdateData.processedItems = _publishProcessedCount;
-				onProgressUpdateAction?.Invoke(contentProgressUpdateData);
-			
-				return saveResponse;
+				finally
+				{
+					semaphore.Release();
+				}
 			}).ToArray();
 
-		SaveContentResponse[] saveContentResponses = Array.Empty<SaveContentResponse>();
+		SaveContentResponse[] saveContentResponses;
 		try
 		{
-			for (int index = 0; index < saveContentRequestsTasks.Length; index++)
-			{
-				saveContentResponses = await Task.WhenAll(saveContentRequestsTasks);
-			}
+			saveContentResponses = await Task.WhenAll(saveContentRequestsTasks);
 		}
 		catch (Exception e)
 		{
-			// Handle failure case by just stopping here and erroring out
-			throw new CliException($"Failed to save the local content. Please try again. EXCEPTION={e.Data}");
-			
+			// Unwrap AggregateException so the message contains the real failure.
+			var inner = e is AggregateException agg ? (agg.InnerException ?? e) : e;
+			throw new CliException(
+				$"Failed to save the local content after {CONTENT_PUBLISH_MAX_RETRIES} retries. " +
+				$"Please try again. {inner.GetType().Name}: {inner.Message}");
 		}
 		
 		// Prepare the save manifest request using the response from the save content request.
@@ -897,7 +1050,7 @@ public class ContentService
 					checksum = c.checksum,
 					type = c.type.ToString().ToLower(),
 					tags = new OptionalArrayOfString(c.tags),
-					uri = c.id,
+					uri = c.uri,
 					visibility = c.visibility.ToString().ToLower()
 				}).ToArray()
 		};
@@ -950,10 +1103,11 @@ public class ContentService
 	public async Task<ContentSyncReport> SyncLocalContent(AppLifecycle lifecycle, string manifestId,
 		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
 		bool deleteCreated = true, bool syncModified = true, bool forceSyncConflicts = true, bool syncDeleted = true,
-		string referenceManifestUid = "", Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null)
+		string referenceManifestUid = "", Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null,
+		int downloadMaxParallelCount = DEFAULT_CONTENT_DOWNLOAD_MAX_CONCURRENCY)
 	{
 		var targetManifest = await GetManifest(manifestId, referenceManifestUid, replaceLatest: string.IsNullOrEmpty(referenceManifestUid));
-		return await SyncLocalContent(targetManifest, manifestId, filterType, filters, deleteCreated, syncModified, forceSyncConflicts, syncDeleted, onContentSyncProgressUpdate, lifecycle.CancellationToken);
+		return await SyncLocalContent(targetManifest, manifestId, filterType, filters, deleteCreated, syncModified, forceSyncConflicts, syncDeleted, onContentSyncProgressUpdate, lifecycle.CancellationToken, downloadMaxParallelCount);
 	}
 
 	/// <summary>
@@ -962,7 +1116,8 @@ public class ContentService
 	public async Task<ContentSyncReport> SyncLocalContent(ClientManifestJsonResponse targetManifest, string manifestId,
 		ContentFilterType filterType = ContentFilterType.ExactIds, string[] filters = null,
 		bool syncCreated = true, bool syncModified = true, bool forceSyncConflicts = true, bool syncDeleted = true,
-		Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null, CancellationToken cancellationToken = default)
+		Action<ContentProgressUpdateData> onContentSyncProgressUpdate = null, CancellationToken cancellationToken = default,
+		int downloadMaxParallelCount = DEFAULT_CONTENT_DOWNLOAD_MAX_CONCURRENCY)
 	{
 		// Reset processed count when calling SyncLocalContent method
 		_syncProcessedCount = 0;
@@ -1003,10 +1158,14 @@ public class ContentService
 		
 		// Download and overwrite the local content for things that have changed based on the hash or don't exist.
 		int totalItems = contentToDownload.Length + contentToDelete.Length;
+		using var contentDownloadSemaphore = downloadMaxParallelCount > 0 ? new SemaphoreSlim(downloadMaxParallelCount) : null;
 		var downloadPromises = contentToDownload.Select(async c => 
 		{
-			Log.Verbose("Downloading content with id. ID={Id}", c.Id);
-			
+			if (contentDownloadSemaphore != null)
+			{
+				await contentDownloadSemaphore.WaitAsync(cancellationToken);
+			}
+
 			ContentProgressUpdateData contentProgress = new ContentProgressUpdateData
 			{
 				totalItems = totalItems, 
@@ -1016,8 +1175,7 @@ public class ContentService
 			JsonElement customRequest;
 			try
 			{
-				customRequest = await _requester.CustomRequest(Method.GET, c.ReferenceContent.uri,
-					parser: s => JsonSerializer.Deserialize<JsonElement>(s));
+				customRequest = await DownloadContentFile(c, cancellationToken);
 			}
 			catch (HttpRequesterException exception)
 			{
@@ -1025,6 +1183,17 @@ public class ContentService
 				contentProgress.errorMessage = exception.Message;
 				onContentSyncProgressUpdate?.Invoke(contentProgress);
 				throw;
+			}
+			catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+			{
+				contentProgress.EventType = ContentProgressUpdateData.EVT_TYPE_SyncError;
+				contentProgress.errorMessage = exception.Message;
+				onContentSyncProgressUpdate?.Invoke(contentProgress);
+				throw;
+			}
+			finally
+			{
+				contentDownloadSemaphore?.Release();
 			}
 
 			contentProgress.EventType = ContentProgressUpdateData.EVT_TYPE_SyncComplete;
@@ -1169,6 +1338,95 @@ public class ContentService
 		{
 			_fileSystemOperationSemaphore.Release();
 		}
+	}
+
+	/// <summary>
+	/// Downloads a single content file from its remote content URI with transient retry handling.
+	/// </summary>
+	/// <remarks>
+	/// Content sync may download hundreds or thousands of small files. This path keeps those downloads off the generic requester so Unity does not receive a verbose log event for every response body.
+	/// </remarks>
+	private async Task<JsonElement> DownloadContentFile(ContentFile contentFile, CancellationToken cancellationToken)
+	{
+		for (var attempt = 1; attempt <= CONTENT_DOWNLOAD_MAX_ATTEMPTS; attempt++)
+		{
+			try
+			{
+				using var response = await _contentDownloadClient.GetAsync(contentFile.ReferenceContent.uri, cancellationToken);
+				await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+				using var reader = new StreamReader(stream, Encoding.UTF8);
+				var rawResponse = await reader.ReadToEndAsync();
+
+				if (!response.IsSuccessStatusCode)
+				{
+					throw new RequesterException("Cli", Method.GET.ToReadableString(), contentFile.ReferenceContent.uri, (int)response.StatusCode, rawResponse);
+				}
+
+				return JsonSerializer.Deserialize<JsonElement>(rawResponse);
+			}
+			catch (Exception exception) when (!cancellationToken.IsCancellationRequested && IsTransientContentDownloadException(exception) && attempt < CONTENT_DOWNLOAD_MAX_ATTEMPTS)
+			{
+				var delay = GetContentDownloadRetryDelay(attempt);
+				Log.Warning($"Transient content download failure. Retrying content-id=[{contentFile.Id}] attempt=[{attempt + 1}/{CONTENT_DOWNLOAD_MAX_ATTEMPTS}] delay-ms=[{delay.TotalMilliseconds}] error=[{exception.GetType().Name}] message=[{exception.Message}]");
+				await Task.Delay(delay, cancellationToken);
+			}
+		}
+
+		throw new InvalidOperationException($"Content download retry loop exited unexpectedly. content-id=[{contentFile.Id}]");
+	}
+
+	/// <summary>
+	/// Creates the HTTP handler used by the shared content download client.
+	/// </summary>
+	/// <remarks>
+	/// The sync command owns concurrency limits separately, so the handler allows a high per-server connection ceiling.
+	/// </remarks>
+	private static HttpClientHandler CreateContentDownloadHandler()
+	{
+		return new HttpClientHandler
+		{
+			MaxConnectionsPerServer = int.MaxValue,
+			UseCookies = false
+		};
+	}
+
+	/// <summary>
+	/// Calculates exponential retry delay with jitter for a failed content download attempt.
+	/// </summary>
+	private static TimeSpan GetContentDownloadRetryDelay(int failedAttempt)
+	{
+		var exponentialDelayMs = CONTENT_DOWNLOAD_RETRY_BASE_DELAY_MS * (1 << (failedAttempt - 1));
+		var jitterMs = Random.Shared.Next(0, CONTENT_DOWNLOAD_RETRY_JITTER_MS);
+		return TimeSpan.FromMilliseconds(exponentialDelayMs + jitterMs);
+	}
+
+	/// <summary>
+	/// Determines whether a content download failure is likely caused by temporary transport or service pressure
+	/// and should be retried instead of failing the entire sync operation.
+	/// </summary>
+	/// <remarks>
+	/// Content sync can download hundreds or thousands of small files in parallel. In that scenario, occasional
+	/// TLS/socket resets, timeouts, rate limits, or temporary server errors can happen even when the content is valid.
+	/// Retrying only those transient failures prevents one short-lived network issue from aborting the full sync.
+	/// </remarks>
+	private static bool IsTransientContentDownloadException(Exception exception)
+	{
+		if (exception is RequesterException requesterException)
+		{
+			return requesterException.Status is 408 or 429 || requesterException.Status >= 500 && requesterException.Status < 600;
+		}
+
+		if (exception is HttpRequestException || exception is TimeoutException)
+		{
+			return true;
+		}
+
+		if (exception is TaskCanceledException)
+		{
+			return true;
+		}
+
+		return exception.InnerException != null && IsTransientContentDownloadException(exception.InnerException);
 	}
 
 
@@ -1647,7 +1905,15 @@ public class ContentService
 	/// </summary>
 	public static JsonSerializerOptions GetContentFileSerializationOptions(bool indent = true)
 	{
-		return new JsonSerializerOptions() { WriteIndented = indent, IncludeFields = true, Converters = { new SortedJsonElementConverter(), new SortedSnapshotConverter() } };
+		return new JsonSerializerOptions()
+		{
+			WriteIndented = indent,
+			IncludeFields = true,
+			Converters =
+			{
+				new SortedJsonElementConverter(), new SortedSnapshotConverter()
+			},
+		};
 	}
 
 	public async Task<bool> ContentExistByIds(string[] contentIds)

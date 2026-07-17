@@ -161,6 +161,7 @@ namespace Beamable.Common
 		/// <param name="val"></param>
 		public void CompleteSuccess(T val)
 		{
+			Action<T> copyCallbacks;
 			lock (_lock)
 			{
 				if (done)
@@ -170,17 +171,18 @@ namespace Beamable.Common
 
 				_val = val;
 				done = true;
-				try
-				{
-					_callbacks?.Invoke(val);
-				}
-				catch (Exception e)
-				{
-					BeamableLogger.LogException(e);
-				}
-
+				copyCallbacks = _callbacks;
 				_callbacks = null;
 				errbacks = null;
+			}
+			
+			try
+			{
+				copyCallbacks?.Invoke(_val);
+			}
+			catch (Exception e)
+			{
+				BeamableLogger.LogException(e);
 			}
 		}
 
@@ -190,6 +192,8 @@ namespace Beamable.Common
 		/// <param name="ex">exception to complete Promise with</param>
 		public void CompleteError(Exception ex)
 		{
+			Action<Exception> copyErrBacks = null;
+			var copyHadAnyErrBacks = false;
 			lock (_lock)
 			{
 				if (done)
@@ -204,25 +208,28 @@ namespace Beamable.Common
 				}
 				done = true;
 				errInfo = ExceptionDispatchInfo.Capture(err);
-
-				try
-				{
-					if (!HadAnyErrbacks)
-					{
-						InvokeUncaughtPromise();
-					}
-					else
-					{
-						errbacks?.Invoke(ex);
-					}
-				}
-				catch (Exception e)
-				{
-					BeamableLogger.LogException(e);
-				}
+				
+				copyErrBacks = errbacks;
+				copyHadAnyErrBacks = HadAnyErrbacks;
 
 				_callbacks = null;
 				errbacks = null;
+			}
+			
+			try
+			{
+				if (!copyHadAnyErrBacks)
+				{
+					InvokeUncaughtPromise();
+				}
+				else
+				{
+					copyErrBacks?.Invoke(err);
+				}
+			}
+			catch (Exception e)
+			{
+				BeamableLogger.LogException(e);
 			}
 		}
 
@@ -232,20 +239,14 @@ namespace Beamable.Common
 		/// <param name="callback"></param>
 		public Promise<T> Then(Action<T> callback)
 		{
+			var shouldInvokeRightNow = false;
 			lock (_lock)
 			{
 				if (done)
 				{
 					if (err == null)
 					{
-						try
-						{
-							callback(_val);
-						}
-						catch (Exception e)
-						{
-							BeamableLogger.LogException(e);
-						}
+						shouldInvokeRightNow = true;
 					}
 					else
 					{
@@ -259,6 +260,18 @@ namespace Beamable.Common
 				else
 				{
 					_callbacks += callback;
+				}
+			}
+
+			if (shouldInvokeRightNow)
+			{
+				try
+				{
+					callback.Invoke(_val);
+				}
+				catch (Exception e)
+				{
+					BeamableLogger.LogException(e);
 				}
 			}
 
@@ -292,6 +305,7 @@ namespace Beamable.Common
 		/// <param name="errback"></param>
 		public Promise<T> Error(Action<Exception> errback)
 		{
+			var shouldRunRightNow = false;
 			lock (_lock)
 			{
 				HadAnyErrbacks = true;
@@ -299,19 +313,24 @@ namespace Beamable.Common
 				{
 					if (err != null)
 					{
-						try
-						{
-							errback(err);
-						}
-						catch (Exception e)
-						{
-							BeamableLogger.LogException(e);
-						}
+						shouldRunRightNow = true;
 					}
 				}
 				else
 				{
 					errbacks += errback;
+				}
+			}
+
+			if (shouldRunRightNow)
+			{
+				try
+				{
+					errback?.Invoke(err);
+				}
+				catch (Exception e)
+				{
+					BeamableLogger.LogException(e);
 				}
 			}
 
@@ -1055,12 +1074,16 @@ namespace Beamable.Common
 		public static Promise<T> RecoverWith<T>(this Promise<T> promise, Func<Exception, Promise<T>> callback)
 		{
 			var result = new Promise<T>();
-			promise.Then(value => result.CompleteSuccess(value)).Error(err =>
+			promise
+				.Then(value => result.CompleteSuccess(value))
+				.Error(err =>
 			{
 				try
 				{
 					var nextPromise = callback(err);
-					nextPromise.Then(value => result.CompleteSuccess(value)).Error(errInner =>
+					nextPromise
+						.Then(value => result.CompleteSuccess(value))
+						.Error(errInner =>
 				 {
 					 result.CompleteError(errInner);
 				 });

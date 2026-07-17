@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Beamable.Server;
 using NUnit.Framework;
@@ -32,16 +33,19 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 			});
 			Task Launch(int threadNumber)
 			{
-				var task = Task.Run(() =>
+				var task = Task.Run(async () =>
 				{
 					try
 					{
 						for (var i = 0; i < cycleCount; i++)
 						{
 							var id = (threadNumber * cycleCount) + i;
-							var rc = new RequestContext("cid", "pid", id, 200, 1, eventPath, "get", "1",
-								new HashSet<string>());
-							context.HandleMessage(rc);
+							var rc = new MicroserviceRequestContext("cid", "pid", id, 200, 1, eventPath, "get", "1",
+								new HashSet<string>())
+							{
+								BodyElement = JsonElement.Parse("1")
+							};
+							await context.HandleMessage(null, rc);
 						}
 					}
 					catch (Exception ex)

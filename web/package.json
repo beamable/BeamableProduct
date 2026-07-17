@@ -1,11 +1,16 @@
 {
-  "name": "beamable-sdk",
+  "name": "@beamable/sdk",
   "version": "1.0.0",
   "description": "Beamable Web SDK",
   "main": "dist/node/index.cjs",
   "module": "dist/node/index.mjs",
   "unpkg": "dist/browser/index.iife.js",
   "types": "dist/types/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/beamable/BeamableProduct",
+    "directory": "web"
+  },
   "author": "Beamable",
   "license": "MIT",
   "packageManager": "pnpm@10.8.0",
@@ -19,6 +24,7 @@
     "test": "vitest",
     "lint": "eslint --ext .ts src tests",
     "format": "prettier --write .",
+    "codegen": "WEB_DIR=$PWD && cd \"$WEB_DIR/..\" && [ -f build-number.txt ] || echo 0 > build-number.txt && dotnet run -f net10.0 --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --engine web --conflict-strategy RenameUncommonConflicts --output \"$WEB_DIR/src/__generated__\"",
     "doc": "node ./generateDocs.mjs",
     "release": "node ./update-version.mjs && pnpm build",
     "prepublishOnly": "pnpm build"
@@ -59,6 +65,11 @@
       "import": "./dist/schema.mjs"
     },
     "./api": {
+      "browser": {
+        "types": "./dist/types/api.d.ts",
+        "require": "./dist/api.iife.js",
+        "import": "./dist/api.mjs"
+      },
       "types": "./dist/types/api.d.ts",
       "require": "./dist/api.cjs",
       "import": "./dist/api.mjs"

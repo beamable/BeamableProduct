@@ -1,5 +1,8 @@
 import { defineConfig } from 'tsdown';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Map the '@' prefix to the 'src' directory so that
 // imports like `import { foo } from '@/utils/foo'`

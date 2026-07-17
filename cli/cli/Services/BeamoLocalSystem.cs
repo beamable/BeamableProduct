@@ -1,15 +1,17 @@
-﻿using Beamable.Common;
+using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
 using Beamable.Server;
 using cli.Commands.Project;
+using cli.Services.PortalExtension;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Newtonsoft.Json;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using cli.Utils;
 using microservice.Extensions;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Exceptions;
@@ -115,6 +117,13 @@ public partial class BeamoLocalSystem
 		
 		
 		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_ctx.DotnetPath, _beamo, _configService, _ctx.IgnoreBeamoIds, _provider.GetService<BeamActivity>(), useCache: useManifestCache, fetchServerManifest);
+
+		// Surface portal extension name collisions (e.g. after a rename) as warnings. This is a purely
+		// local, non-fatal check; the hard failure for conflicts happens during `beam deploy`.
+		foreach (var conflict in PortalExtensionNameValidator.FindLocalConflicts(BeamoManifest))
+		{
+			Log.Warning(conflict);
+		}
 	}
 	
 	private static Uri GetLocalDockerEndpoint(ConfigService config)
@@ -152,6 +161,17 @@ public partial class BeamoLocalSystem
 		}
 
 		throw new CliException($"No docker address found. Use the {ConfigService.ENV_VAR_DOCKER_URI} environment variable to set a Docker Uri.");
+	}
+	
+	public static string GetServiceType(BeamoProtocolType protocolType)
+	{
+		return protocolType switch
+		{
+			BeamoProtocolType.HttpMicroservice => "service",
+			BeamoProtocolType.PortalExtension => "portalExtension",
+			BeamoProtocolType.EmbeddedMongoDb => "storage",
+			_ => throw new ArgumentOutOfRangeException()
+		};
 	}
 
 	public void SaveBeamoLocalRuntime() {
@@ -315,33 +335,72 @@ public partial class BeamoLocalSystem
 				continue;
 			}
 
-			var relativeProjectPath = definition.AbsoluteProjectPath;
-			var projectFile = File.ReadAllText(relativeProjectPath);
-			XDocument doc = XDocument.Parse(projectFile);
-
-			// Find the BeamServiceGroup element
-			XElement beamServiceGroupElement = doc.Descendants("BeamServiceGroup").FirstOrDefault();
-			var newGroupValue = string.Join(';',groups);
-			if (beamServiceGroupElement != null)
+			// Portal extensions store their groups in package.json; microservices/storages in the csproj.
+			if (definition.Protocol == BeamoProtocolType.PortalExtension)
 			{
-				beamServiceGroupElement.Value = newGroupValue;
+				SetPortalExtensionGroups(definition, groups);
 			}
 			else
 			{
-				// Find the PropertyGroup element with Label="Beamable Settings"
-				XElement propertyGroupElement = doc.Descendants("PropertyGroup")
-					.FirstOrDefault(e => (string)e.Attribute("Label") == "Beamable Settings");
-				if (propertyGroupElement == null)
-				{
-					throw new CliException("Beamable Settings not found in project file.");
-				}
-				propertyGroupElement.Add(new XElement("BeamServiceGroup", newGroupValue));
+				SetCsprojGroups(definition, groups);
 			}
 
-			var result = doc.ToString().Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>",string.Empty);
-			File.WriteAllText(relativeProjectPath, result);
-			
+			// Keep the in-memory manifest in sync so multiple args targeting the same service,
+			// or any later read in this process, observe the updated groups.
+			definition.ServiceGroupTags = groups;
 		}
+	}
+
+	private static void SetCsprojGroups(BeamoServiceDefinition definition, string[] groups)
+	{
+		var relativeProjectPath = definition.AbsoluteProjectPath;
+		var projectFile = File.ReadAllText(relativeProjectPath);
+		XDocument doc = XDocument.Parse(projectFile);
+
+		// Find the BeamServiceGroup element
+		XElement beamServiceGroupElement = doc.Descendants("BeamServiceGroup").FirstOrDefault();
+		var newGroupValue = string.Join(';', groups);
+		if (beamServiceGroupElement != null)
+		{
+			beamServiceGroupElement.Value = newGroupValue;
+		}
+		else
+		{
+			// Find the PropertyGroup element with Label="Beamable Settings"
+			XElement propertyGroupElement = doc.Descendants("PropertyGroup")
+				.FirstOrDefault(e => (string)e.Attribute("Label") == "Beamable Settings");
+			if (propertyGroupElement == null)
+			{
+				throw new CliException("Beamable Settings not found in project file.");
+			}
+			propertyGroupElement.Add(new XElement("BeamServiceGroup", newGroupValue));
+		}
+
+		var result = doc.ToString().Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>", string.Empty);
+		File.WriteAllText(relativeProjectPath, result);
+	}
+
+	private static void SetPortalExtensionGroups(BeamoServiceDefinition definition, string[] groups)
+	{
+		var packageJsonPath = definition.PortalExtensionDefinition?.AbsolutePackageJsonPath;
+		if (string.IsNullOrEmpty(packageJsonPath) || !File.Exists(packageJsonPath))
+		{
+			throw new CliException($"Could not find package.json for portal extension '{definition.BeamoId}'.");
+		}
+
+		var root = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(packageJsonPath));
+
+		// A discovered extension always has a "beamable" block (it's where portalExtension lives),
+		// but create it defensively so the command never fails on a hand-edited file.
+		if (root["beamable"] is not Newtonsoft.Json.Linq.JObject beamable)
+		{
+			beamable = new Newtonsoft.Json.Linq.JObject();
+			root["beamable"] = beamable;
+		}
+
+		beamable["serviceGroups"] = new Newtonsoft.Json.Linq.JArray(groups);
+
+		File.WriteAllText(packageJsonPath, root.ToString(Formatting.Indented));
 	}
 
 	public Promise UpdateDockerFile(BeamoServiceDefinition serviceDefinition)
@@ -542,10 +601,14 @@ public class BeamoLocalManifest
 
 public class BeamoServiceDefinition
 {
+	// TODO: this is temporary, should be merged into the BeamoServiceDefinition
+	public PortalExtensionDef PortalExtensionDefinition;
+
 	public bool IsInRemote;
+
 	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
 
-	public enum ProjectLanguage { CSharpDotnet, }
+	public enum ProjectLanguage { CSharpDotnet, TypescriptReact }
 
 	/// <summary>
 	/// The id that this service will be know, both locally and remotely.
@@ -570,29 +633,40 @@ public class BeamoServiceDefinition
 		// create a default instance so that downstream callers don't need to check for isLocal over and over again. 
 		= new MicroserviceFederationsConfig();
 
+	public static async Task<(bool, OpenApiDocument)> TryGetOpenApiDocument(string openApiPath)
+	{
+		if (!File.Exists(openApiPath))
+		{
+			return (false, null);
+		}
+
+		var openApiStringReader = new OpenApiStringReader();
+		var fileContent = await File.ReadAllTextAsync(openApiPath);
+		var document = openApiStringReader.Read(fileContent, out var diagnostic);
+		foreach (var warning in diagnostic.Warnings)
+		{
+			Log.Warning("found warning for {path}. {message} . from {pointer}", openApiPath, warning.Message,
+				warning.Pointer);
+			throw new OpenApiException($"invalid document {openApiPath} - {warning.Message} - {warning.Pointer}");
+		}
+
+		foreach (var error in diagnostic.Errors)
+		{
+			Log.Error("found ERROR for {path}. {message} . from {pointer}", openApiPath, error.Message,
+				error.Pointer);
+			throw new OpenApiException($"invalid document {openApiPath} - {error.Message} - {error.Pointer}");
+		}
+
+		return (true, document);
+	}
+
 	public static async Task<MicroserviceFederationsConfig> ReloadFederationsData(string openApiPath)
 	{
 		// string openApiPath = definition.OpenApiPath;
-		if (File.Exists(openApiPath))
+		(bool hasOpenApiDocument, OpenApiDocument document) = await TryGetOpenApiDocument(openApiPath);
+		if (hasOpenApiDocument)
 		{
-			var openApiStringReader = new OpenApiStringReader();
-			var fileContent = await File.ReadAllTextAsync(openApiPath);
-			var openApiDocument = openApiStringReader.Read(fileContent, out var diagnostic);
-			foreach (var warning in diagnostic.Warnings)
-			{
-				Log.Warning("found warning for {path}. {message} . from {pointer}", openApiPath, warning.Message,
-					warning.Pointer);
-				throw new OpenApiException($"invalid document {openApiPath} - {warning.Message} - {warning.Pointer}");
-			}
-
-			foreach (var error in diagnostic.Errors)
-			{
-				Log.Error("found ERROR for {path}. {message} . from {pointer}", openApiPath, error.Message,
-					error.Pointer);
-				throw new OpenApiException($"invalid document {openApiPath} - {error.Message} - {error.Pointer}");
-			}
-
-			if (!openApiDocument.Extensions.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY,
+			if (!document.Extensions.TryGetValue(ServiceConstants.MICROSERVICE_FEDERATED_COMPONENTS_V2_KEY,
 				    out var ext) ||
 			    ext is not OpenApiArray { Count: > 0 } federationIds)
 			{
@@ -810,6 +884,53 @@ public class BeamoServiceDefinition
 	};
 }
 
+public class PortalExtensionDef
+{
+	public string Name;
+	public string Version => Properties.Version;
+
+	public string RelativePath;
+	public string AbsolutePath;
+
+	public string AbsolutePackageJsonPath => Path.Combine(AbsolutePath, "package.json");
+
+	public List<string> MicroserviceDependencies => Properties.MicroserviceDependencies;
+	public PortalExtensionPackageProperties Properties;
+
+	private string ToolkitNodeModulesPackageJsonPath =>
+		Path.Combine(AbsolutePath, "node_modules", "@beamable", "portal-toolkit", "package.json");
+
+	/// <summary>
+	/// Reads the @beamable/portal-toolkit version. If the devDependencies value is not a semver
+	/// (e.g. a file: reference), falls back to reading the installed toolkit's package.json version field.
+	/// </summary>
+	public string GetToolkitVersion()
+	{
+		try
+		{
+			var json = File.ReadAllText(AbsolutePackageJsonPath);
+			var root = Newtonsoft.Json.Linq.JObject.Parse(json);
+			var depVersion = (root["devDependencies"] as Newtonsoft.Json.Linq.JObject)
+				?["@beamable/portal-toolkit"]?.ToString();
+
+			// If the version is a file: reference or other non-semver, resolve from the installed package
+			if (depVersion != null && !char.IsDigit(depVersion.TrimStart('^', '~')[0]))
+			{
+				var toolkitJson = File.ReadAllText(ToolkitNodeModulesPackageJsonPath);
+				var toolkitRoot = Newtonsoft.Json.Linq.JObject.Parse(toolkitJson);
+				return toolkitRoot.SelectToken("version")?.ToString() ?? depVersion;
+			}
+
+			return depVersion;
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+}
+
 /// <summary>
 /// Data representing a Docker Port Binding.
 /// </summary>
@@ -888,6 +1009,9 @@ public enum BeamoProtocolType
 
 	// Current Mongo-based Data Storage
 	EmbeddedMongoDb,
+
+	// A portal extension app
+	PortalExtension
 }
 
 public interface IBeamoLocalProtocol

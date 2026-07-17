@@ -135,7 +135,8 @@ public static class ClickhouseConnection
 					Timestamp = convertedDate.ToLocalTime().ToString(CultureInfo.InvariantCulture),
 					LogLevel = row.SeverityText,
 					Message = row.Body,
-					ServiceName = row.ServiceName
+					ServiceName = row.ServiceName,
+					LogAttributes = row.LogAttributes as Dictionary<string, string>
 				});
 			}
 

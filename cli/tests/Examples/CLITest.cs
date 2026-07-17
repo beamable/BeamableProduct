@@ -1,4 +1,5 @@
 using Beamable.Common.Api;
+using Beamable.Common.Api.Auth;
 using Beamable.Common.Dependencies;
 using cli;
 using cli.Services;
@@ -11,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.Extensions.Logging;
+using tests.MoqExtensions;
 using ZLogger;
 
 #pragma warning disable CS8618
@@ -31,6 +33,7 @@ public class CLITest
 	protected string TestId { get; private set; }
 
 	protected Mock<IRequester> _mockRequester;
+	protected Mock<IAuthApi> _mockAuth;
 	protected BeamLogSwitch _logSwitch;
 	private Action<IDependencyBuilder> _configurator;
 
@@ -64,6 +67,17 @@ public class CLITest
 
 		_logSwitch = new BeamLogSwitch() { Level = LogLevel.Trace };
 		_mockRequester = new Mock<IRequester>();
+		_mockAuth = new Mock<IAuthApi>();
+		
+		_mockAuth.Setup(x => x.LoginRefreshToken(It.IsAny<string>()))
+				.ReturnsPromise(new TokenResponse
+				{
+					refresh_token = "refresh",
+					access_token = "access",
+					token_type = "token",
+					expires_in = (long)TimeSpan.FromMinutes(30).TotalMilliseconds
+				});
+
 	}
 
 
@@ -120,6 +134,9 @@ public class CLITest
 			builder.Remove<IBeamableRequester>();
 			builder.Remove<IRequester>();
 			builder.Remove<CliRequester>();
+			builder.Remove<IAuthApi>();
+			
+			builder.AddSingleton<IAuthApi>(_mockAuth.Object);
 			builder.AddSingleton<IRequester>(_mockRequester.Object);
 			builder.AddSingleton<IBeamableRequester>(_mockRequester.Object);
 

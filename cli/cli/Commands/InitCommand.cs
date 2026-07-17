@@ -23,6 +23,7 @@ public class InitCommandArgs : LoginCommandArgs
 	public List<string> addExtraPathsToFile = new List<string>();
 	public List<string> pathsToIgnore = new List<string>();
 	public bool ignoreExistingPid;
+	public bool generateAgentsFile;
 }
 
 [Serializable]
@@ -64,7 +65,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
 
 		// Options to allow for re-initializing a project to a different host/cid/pid and user
-		AddOption(new HostOption(), (args, i) => args.selectedEnvironment = i);
+		AddOption(HostOption.Instance, (args, i) => args.selectedEnvironment = i);
 		AddOption(new RefreshTokenOption(), (args, i) => args.refreshToken = i);
 
 		AddOption(new Option<bool>("--ignore-pid", "Ignore the existing pid while initializing"),
@@ -97,6 +98,12 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		SaveToFileOption.Bind(this);
 		AddOption(new RealmScopedOption(), (args, b) => args.realmScoped = b);
 		AddOption(new PrintToConsoleOption(), (args, b) => args.printToConsole = b);
+
+		// The AGENTS.md AI-agent guide points at the Beamable MCP, which is internal-only for now.
+		// Keep this opt-in and hidden until the MCP integration is public (see feature/beam-mcp-public).
+		var agentsOption = new Option<bool>("--generate-agents-file", () => false,
+			"INTERNAL Generate an AGENTS.md AI-agent guide for this workspace") { IsHidden = true };
+		AddOption(agentsOption, (args, v) => args.generateAgentsFile = v);
 	}
 
 
@@ -134,7 +141,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		}
 
 		{ // set the host string from existing value or given parameter, and then reset cid/pid
-			host = _configService.SetConfigString(ConfigService.CFG_JSON_FIELD_HOST, GetHost(args));
+			host = _configService.WriteConfigString(ConfigService.CFG_JSON_FIELD_HOST, GetHost(args));
 			await _ctx.Set(string.Empty, string.Empty, host);
 		}
 		
@@ -169,7 +176,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 				// need to validate that cid actually exists...
 				
 			}
-			_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_CID, cid);
+			_configService.WriteConfigString(ConfigService.CFG_JSON_FIELD_CID, cid);
 		}
 
 		{ // resolve the new PID
@@ -232,7 +239,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			}
 			
 			if(_configService.TryGetProjectBeamableCLIVersion(out var cliVersion))
-				_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_CLI_VERSION, cliVersion);
+				_configService.WriteConfigString(ConfigService.CFG_JSON_FIELD_CLI_VERSION, cliVersion);
 		}
 
 		SaveExtraPathFiles(args);
@@ -240,7 +247,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));
 		else await _ctx.Set(string.Empty, string.Empty, _ctx.Host);
 
-		var host = _configService.SetConfigString(ConfigService.CFG_JSON_FIELD_HOST, GetHost(args));
+		var host = _configService.WriteConfigString(ConfigService.CFG_JSON_FIELD_HOST, GetHost(args));
 		var cid = await GetCid(args);
 		await _ctx.Set(cid, string.Empty, host);
 
@@ -264,7 +271,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			}
 		}
 
-		_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_CID, cid);
+		_configService.WriteConfigString(ConfigService.CFG_JSON_FIELD_CID, cid);
 		var success = await GetPidAndAuth(args, cid, host);
 		if (!success)
 		{
@@ -285,6 +292,13 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		else
 		{
 			Log.Information("The beamable project has been initialized in the current folder.");
+		}
+
+		if (args.generateAgentsFile)
+		{
+			var (_, outcome) = AgentsFileWriter.EnsureAgentsFile(args.ConfigService.BeamableWorkspace);
+			if (outcome is AgentsFileWriter.AgentsFileOutcome.Created or AgentsFileWriter.AgentsFileOutcome.Appended)
+				Log.Information("Created AGENTS.md for AI agent discovery");
 		}
 
 		return new InitCommandResult()
@@ -312,8 +326,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		{
 			await _ctx.Set(cid, _ctx.Pid, host);
 			_configService.SetWorkingDir(_ctx.WorkingDirectory);
-			_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_PID, _ctx.Pid);
-			_configService.FlushConfig();
+			_configService.WriteConfigString(ConfigService.CFG_JSON_FIELD_PID, _ctx.Pid);
 			_configService.CreateIgnoreFile();
 
 			var didLogin = await Login(args);
@@ -325,13 +338,12 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		if (!string.IsNullOrEmpty(args.pid))
 		{
 			await _ctx.Set(cid, args.pid, host);
-			_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_PID, args.pid);
+			_configService.WriteConfigString(ConfigService.CFG_JSON_FIELD_PID, args.pid);
 			
 			var didLogin = !args.SaveToFile || await Login(args);
 			if (didLogin)
 			{
 				_configService.SetWorkingDir(_ctx.WorkingDirectory);
-				_configService.FlushConfig();
 				_configService.CreateIgnoreFile();
 				return true;
 			}
@@ -343,7 +355,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		await _ctx.Set(cid, null, host);
 		_configService.SetWorkingDir(_ctx.WorkingDirectory);
-		_configService.FlushConfig();
+		// _configService.FlushConfig();
 		_configService.CreateIgnoreFile();
 
 		var pid = await PickGameAndRealm(args);
@@ -351,13 +363,11 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			throw new CliException("Failed to find a realm to target.");
 
 		await _ctx.Set(cid, pid, host);
-		_configService.SetConfigString(ConfigService.CFG_JSON_FIELD_PID, pid);
-		_configService.FlushConfig();
+		_configService.WriteConfigString(ConfigService.CFG_JSON_FIELD_PID, pid);
 		
 		// Whenever we swap realms using init, we also clear the local override for the selected realm.
 		_configService.DeleteLocalOverride(ConfigService.CFG_JSON_FIELD_PID);
-		_configService.FlushLocalOverrides();
-		
+
 		return await Login(args);
 	}
 
@@ -461,6 +471,9 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		if (!string.IsNullOrEmpty(args.cid))
 			return Task.FromResult(args.cid);
 
+		if (args.Quiet)
+			throw new CliException("--cid is required when using -q (quiet mode). Provide a CID or alias via --cid <value>.");
+
 		return Task.FromResult(AnsiConsole.Prompt(
 			new TextPrompt<string>("Please enter your [green]cid or alias[/]:")
 				.PromptStyle("green")
@@ -493,7 +506,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		// If we were given a host that is a path, let's just return it.
 		if (env.StartsWith("http"))
-			return env;
+			return env.TrimEnd('/');
 
 		// Otherwise, we try to convert it into a valid URL.
 		return (env switch
@@ -501,15 +514,17 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			dev => Constants.PLATFORM_DEV,
 			staging => Constants.PLATFORM_STAGING,
 			prod => Constants.PLATFORM_PRODUCTION,
-			custom => AnsiConsole.Prompt(
-				new TextPrompt<string>("Enter the Beamable platform [green]uri[/]:")
-					.PromptStyle("green")
-					.ValidationErrorMessage("[red]Not a valid uri[/]")
-					.Validate(age =>
-					{
-						if (!age.StartsWith("http://") && !age.StartsWith("https://")) return ValidationResult.Error("[red]Not a valid url[/]");
-						return ValidationResult.Success();
-					})).ToString(),
+			custom => args.Quiet
+				? throw new CliException("Provide a full URL with --host (e.g. --host https://your-url.com) instead of 'custom' in quiet mode.")
+				: AnsiConsole.Prompt(
+					new TextPrompt<string>("Enter the Beamable platform [green]uri[/]:")
+						.PromptStyle("green")
+						.ValidationErrorMessage("[red]Not a valid uri[/]")
+						.Validate(age =>
+						{
+							if (!age.StartsWith("http://") && !age.StartsWith("https://")) return ValidationResult.Error("[red]Not a valid url[/]");
+							return ValidationResult.Success();
+						})).ToString(),
 			_ => throw new ArgumentOutOfRangeException()
 		});
 	}

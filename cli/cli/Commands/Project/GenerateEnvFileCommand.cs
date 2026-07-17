@@ -28,6 +28,7 @@ public class GenerateEnvFileCommandArgs : CommandArgs
 	public bool autoDeploy;
 	public bool includeSecret;
 	public bool excludeOtelCreds;
+	public bool useRemoteDeps;
 	public int autoRemoveInstancesExceptProcessId;
 }
 
@@ -48,6 +49,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		AddOption(new Option<int>("--instance-count", () => 1, "How many virtual websocket connections the server will open"), (args, i) => args.instanceCount = i);
 		AddOption(new Option<bool>("--auto-deploy", () => false, "When enabled, automatically deploy dependencies that aren't running"), (args, i) => args.autoDeploy = i);
 		AddOption(new Option<bool>("--include-secret", () => false, "When enabled, includes the legacy SECRET realm secret environment variable"), (args, i) => args.includeSecret = i);
+		AddOption(new Option<bool>("--use-remote-deps", () => false, "When enabled, prevents any connection strings from being added to the environment"), (args, i) => args.useRemoteDeps = i);
 		AddOption(new Option<int>("--remove-all-except-pid",  "When enabled, automatically stop all other local instances of this service"), (args, i) => args.autoRemoveInstancesExceptProcessId = i);
 	}
 
@@ -117,7 +119,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 					await manifestTask;
 					await StopProjectCommand.DiscoverAndStopServices(args,
 						new HashSet<string>(new string[] { args.serviceId.Value }),
-						true, TimeSpan.FromMilliseconds(500), output =>
+						"generate-env command",true, TimeSpan.FromMilliseconds(500), output =>
 						{
 							Log.Information($"Stopping other service key=[{output.instance.primaryKey}]");
 						}, filter: (instance) =>
@@ -149,7 +151,30 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		Promise<OtelAuthConfig> otelAuthReq = null;
 		if (!args.excludeOtelCreds)
 		{
-			otelAuthReq = beamoApi.GetOtelAuthWriterConfig();
+			// The otel auth writer endpoint is flaky when many services call it concurrently
+			// (e.g. `beam project run` with ~30 services), so retry on 5xx with a small backoff.
+			int otelAttempt = 0;
+			otelAuthReq = Promise.RetryPromise(
+				() =>
+				{
+					var current = otelAttempt++;
+					if (current == 0)
+					{
+						return beamoApi.GetOtelAuthWriterConfig();
+					}
+					return Task.Delay(TimeSpan.FromMilliseconds(250 * current)).ToPromise()
+						.FlatMap(_ => beamoApi.GetOtelAuthWriterConfig());
+				},
+				ex =>
+				{
+					if (ex is RequesterException re && re.Status >= 500 && re.Status < 600)
+					{
+						BeamableLogger.LogWarning($"Otel auth writer config failed with status=[{re.Status}], retrying...");
+						return true;
+					}
+					return false;
+				},
+				maxAttempts: 5);
 		}
 		
 		var user = await userReq;
@@ -217,7 +242,10 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 
 			try
 			{
-				await AppendDependencyVars(deps);
+				if (!args.useRemoteDeps)
+				{
+					await AppendDependencyVars(deps);
+				}
 			}
 			catch (Exception) when (args.autoDeploy)
 			{

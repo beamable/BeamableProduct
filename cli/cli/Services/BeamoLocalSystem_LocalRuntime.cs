@@ -154,9 +154,11 @@ public partial class BeamoLocalSystem
 					switch (c.Protocol)
 					{
 						case BeamoProtocolType.EmbeddedMongoDb:
-							return info.Names[0] == "/" + BeamoLocalSystem.GetBeamIdAsMongoContainer(c.BeamoId);
+							return info.Names[0] == "/" + GetBeamIdAsMongoContainer(c.BeamoId);
 						case BeamoProtocolType.HttpMicroservice:
-							return info.Names[0] == "/" + BeamoLocalSystem.GetBeamIdAsMicroserviceContainer(c.BeamoId);
+							return info.Names[0] == "/" + GetBeamIdAsMicroserviceContainer(c.BeamoId);
+						case BeamoProtocolType.PortalExtension:
+							return info.Names[0] == "/" + GetBeamIdAsPortalExtension(c.BeamoId);
 						default:
 							throw new CliException("Unknown protocol type");
 					}
@@ -194,89 +196,102 @@ public partial class BeamoLocalSystem
 		// Since Docker API docs are not the best. I recommend using JsonConvert.SerializeObject and print out the object that their APIs return to debug or add to any of this stuff.
 		async void DockerSystemEventHandler(Message message)
 		{
-			var messageType = message.Type;
-			var messageAction = message.Action;
-			Log.Verbose($"Docker Message type=[{messageType}] action=[{messageAction}] id=[{message.ID}]");
-
-			switch (messageType, messageAction)
+			try
 			{
-				case ("container", "create"):
+				var messageType = message.Type;
+				var messageAction = message.Action;
+				Log.Verbose($"Docker Message type=[{messageType}] action=[{messageAction}] id=[{message.ID}]");
+
+				switch (messageType, messageAction)
 				{
-					// Find the beamoId tied to the image that was used to create the container
-					var beamoId = BeamoManifest.ServiceDefinitions.FirstOrDefault(c => message.Actor.Attributes["name"].Contains(c.BeamoId))
-						?.BeamoId;
-					if (!string.IsNullOrEmpty(beamoId))
+					case ("container", "create"):
 					{
-						var containerData = (await _client.Containers.InspectContainerAsync(message.ID));
-						var containerName = containerData.Name.Substring(1);
-						var ports = containerData.HostConfig.PortBindings.Select(kvp =>
+						// Find the beamoId tied to the image that was used to create the container
+						var beamoId = BeamoManifest.ServiceDefinitions
+							.FirstOrDefault(c => message.Actor.Attributes["name"].Contains(c.BeamoId))
+							?.BeamoId;
+						if (!string.IsNullOrEmpty(beamoId))
 						{
-							var inContainerPort = kvp.Key.Split("/")[0];
-							var localPort = kvp.Value.First().HostPort;
-							return new DockerPortBinding { LocalPort = localPort, InContainerPort = inContainerPort };
-						}).ToList();
+							message.ID ??= message.Actor.ID;
 
-						var newServiceInstance = new BeamoServiceInstance()
-						{
-							ImageId = containerData.Image,
-							BeamoId = beamoId,
-							ContainerId = message.ID,
-							ContainerName = containerName,
-							ActivePortBindings = ports,
-							IsRunning = false
-						};
-						BeamoRuntime.ExistingLocalServiceInstances.Add(newServiceInstance);
-						onServiceContainerStateChange?.Invoke(beamoId, messageAction, message);
-					}
+							var containerData = (await _client.Containers.InspectContainerAsync(message.ID));
+							var containerName = containerData.Name.Substring(1);
+							var ports = containerData.HostConfig.PortBindings.Select(kvp =>
+							{
+								var inContainerPort = kvp.Key.Split("/")[0];
+								var localPort = kvp.Value.First().HostPort;
+								return new DockerPortBinding
+									{ LocalPort = localPort, InContainerPort = inContainerPort };
+							}).ToList();
 
-					break;
-				}
-
-				case ("container", "destroy"):
-				{
-					
-					BeamoRuntime.ExistingLocalServiceInstances.RemoveAll(si =>
-					{
-						var wasDestroyed = message.Actor.Attributes["name"].Contains(si.BeamoId);
-						if (wasDestroyed)
-						{
-							si.IsRunning = false;
-							onServiceContainerStateChange?.Invoke(si.BeamoId, messageAction, message);
+							var newServiceInstance = new BeamoServiceInstance()
+							{
+								ImageId = containerData.Image,
+								BeamoId = beamoId,
+								ContainerId = message.ID,
+								ContainerName = containerName,
+								ActivePortBindings = ports,
+								IsRunning = false
+							};
+							BeamoRuntime.ExistingLocalServiceInstances.Add(newServiceInstance);
+							onServiceContainerStateChange?.Invoke(beamoId, messageAction, message);
 						}
 
-						return wasDestroyed;
-					});
-					
-					break;
-				}
-
-				case ("container", "start"):
-				{
-					var beamoServiceInstance =
-						BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => message.Actor.Attributes["name"].Contains(si.BeamoId));
-					if (beamoServiceInstance != null)
-					{
-						beamoServiceInstance.IsRunning = true;
-						onServiceContainerStateChange?.Invoke(beamoServiceInstance.BeamoId, messageAction, message);
+						break;
 					}
 
-					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
-					break;
-				}
-				
-				case ("container", "stop"):
-				{
-					var beamoServiceInstance =
-						BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => message.Actor.Attributes["name"].Contains(si.BeamoId));
-					if (beamoServiceInstance != null)
+					case ("container", "destroy"):
 					{
-						beamoServiceInstance.IsRunning = false;
-						onServiceContainerStateChange?.Invoke(beamoServiceInstance.BeamoId, messageAction, message);
+
+						BeamoRuntime.ExistingLocalServiceInstances.RemoveAll(si =>
+						{
+							var wasDestroyed = message.Actor.Attributes["name"].Contains(si.BeamoId);
+							if (wasDestroyed)
+							{
+								si.IsRunning = false;
+								onServiceContainerStateChange?.Invoke(si.BeamoId, messageAction, message);
+							}
+
+							return wasDestroyed;
+						});
+
+						break;
 					}
 
-					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
-					break;
+					case ("container", "start"):
+					{
+						var beamoServiceInstance =
+							BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si =>
+								message.Actor.Attributes["name"].Contains(si.BeamoId));
+						if (beamoServiceInstance != null)
+						{
+							beamoServiceInstance.IsRunning = true;
+							onServiceContainerStateChange?.Invoke(beamoServiceInstance.BeamoId, messageAction, message);
+						}
+
+						// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
+						break;
+					}
+
+					case ("container", "stop"):
+					{
+						var beamoServiceInstance =
+							BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si =>
+								message.Actor.Attributes["name"].Contains(si.BeamoId));
+						if (beamoServiceInstance != null)
+						{
+							beamoServiceInstance.IsRunning = false;
+							onServiceContainerStateChange?.Invoke(beamoServiceInstance.BeamoId, messageAction, message);
+						}
+
+						// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
+						break;
+					}
 				}
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex, "Failed to listen to docker");
 			}
 		}
 	}
@@ -331,6 +346,8 @@ public partial class BeamoLocalSystem
 			
 			case BeamoProtocolType.EmbeddedMongoDb:
 				return true; // always pull down a version of mongo.
+			case BeamoProtocolType.PortalExtension:
+				return false;
 			default:
 				throw new CliException($"Unknown protocol=[{toCheck.Protocol}] inside method=[{nameof(VerifyCanBeBuiltLocally)}]");
 		}

@@ -110,8 +110,12 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 		{
 			foreach (var local in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
 			{
+				// skip portal extensions, since they are not dotnet projects
+				if (local.PortalExtensionDefinition != null) continue;
+
 				// skip services that don't have local source code
 				if (!local.IsLocal) continue;
+
 				Log.Information($"Restoring local project=[{local.AbsoluteProjectPath}]");
 				try
 				{

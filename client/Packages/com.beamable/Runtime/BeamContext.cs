@@ -20,6 +20,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Common.Spew;
 using Beamable.Common.Util;
 using Beamable.Connection;
+using Beamable.Console;
 using Beamable.Content.Utility;
 using Beamable.Coroutines;
 using Beamable.Player;
@@ -262,6 +263,7 @@ namespace Beamable
 		private ISessionService _sessionService;
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
+		private BeamableAdminConsole _adminConsole;
 		private OfflineCache _offlineCache;
 		private RealmsBasicRealmConfiguration _realmConfig;
 
@@ -469,11 +471,11 @@ namespace Beamable
 				var errors = new Exception[attemptDurations.Length];
 				while (!success)
 				{
-					var attemptIndex = attempt;
+					var retryConfigIndex = attempt >= attemptDurations.Length ? attemptDurations.Length - 1 : attempt;
 					yield return InitProcedure()
 						.Error(err =>
 						{
-							errors[attemptIndex] = err;
+							errors[retryConfigIndex] = err;
 							switch (err)
 							{
 								case ServiceScopeDisposedException ex:
@@ -499,8 +501,7 @@ namespace Beamable
 						yield break;
 					}
 
-					var duration =
-						attemptDurations[attempt >= attemptDurations.Length ? attemptDurations.Length - 1 : attempt];
+					var duration = attemptDurations[retryConfigIndex];
 					Debug.LogWarning($"Beamable couldn't start. playerCode=[{playerCode}] Will try again in {duration} seconds...");
 					yield return new WaitForSecondsRealtime((float)duration);
 					attempt++;
@@ -538,6 +539,13 @@ namespace Beamable
 			_notification = ServiceProvider.GetService<NotificationService>();
 			_sessionService = ServiceProvider.GetService<ISessionService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
+
+			if (ConsoleConfiguration.Instance.EnableAdminConsole)
+			{
+				_adminConsole = ServiceProvider.GetService<BeamableAdminConsole>();
+				_adminConsole.InitializeConsole(this);
+			}
+			
 			_offlineCache = ServiceProvider.GetService<OfflineCache>();
 			_connectivityService = ServiceProvider.GetService<IConnectivityService>();
 
@@ -819,8 +827,6 @@ namespace Beamable
 				SetupEmitEvents();
 			}
 		}
-
-
 
 		/// <summary>
 		/// Create or retrieve a <see cref="BeamContext"/> for the given <see cref="PlayerCode"/>. There is only one instance of a context per <see cref="PlayerCode"/>.

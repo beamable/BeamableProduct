@@ -1,0 +1,35 @@
+{
+  "manifest_version": "0.4",
+  "name": "beamable",
+  "display_name": "Beamable",
+  "version": "VERSION_PLACEHOLDER",
+  "description": "Beamable game backend CLI - manage microservices, content, deployments, and more through MCP tools",
+  "author": {
+    "name": "Beamable",
+    "url": "https://beamable.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/beamable/BeamableProduct"
+  },
+  "license": "MIT",
+  "privacy_policies": ["https://beamable.com/privacy"],
+  "server": {
+    "type": "binary",
+    "entry_point": "server/BINARY_PLACEHOLDER",
+    "mcp_config": {
+      "command": "${__dirname}/server/BINARY_PLACEHOLDER",
+      "args": ["mcp", "serve"]
+    }
+  },
+  "tools": [
+    { "name": "beam_list_commands", "description": "Discover available beam CLI commands" },
+    { "name": "beam_get_help", "description": "Get full documentation for a beam command including arguments, options, and output schema" },
+    { "name": "beam_exec", "description": "Execute a beam CLI command" },
+    { "name": "beam_get_skill", "description": "Load step-by-step skill guides for complex Beamable workflows" },
+    { "name": "beam_get_source", "description": "Get Beamable SDK source code — resolves paths and reads file content directly" }
+  ],
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"]
+  }
+}

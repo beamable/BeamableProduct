@@ -13,6 +13,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public BeamDeploymentDiffSummary diff;
         public System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> notes;
         public System.Collections.Generic.List<string> servicesToUpload;
+        public System.Collections.Generic.List<BeamPortalExtensionUploadInfo> portalExtensionsToUpload;
+        public System.Collections.Generic.List<BeamPortalExtensionPlanReference> portalExtensionReferences;
         public bool ranHealthChecks;
         public int changeCount;
     }

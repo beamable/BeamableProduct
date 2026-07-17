@@ -4,6 +4,6 @@
  */
 
 export type RealmConfigChangeRequest = { 
-  deletes?: string[]; 
-  upserts?: Record<string, string>; 
+  deletes?: string[] | null; 
+  upserts?: Record<string, string> | null; 
 };

@@ -44,13 +44,13 @@ namespace Beamable.Editor.Util
 					clickedRefresh = BeamGUI.HeaderButton(null, iconRefresh,
 					                                      width: 30,
 					                                      padding: 4,
-					                                      iconPadding: -5,
+					                                      iconPadding: 3,
 					                                      drawBorder: false);
 
 					clickedHelp = BeamGUI.HeaderButton(null, iconHelp,
 					                                   width: 30,
 					                                   padding: 4,
-					                                   iconPadding: 5,
+					                                   iconPadding: 1,
 					                                   drawBorder: false);
 				}
 

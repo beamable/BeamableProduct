@@ -72,7 +72,12 @@ public class SolutionCommandArgs : NewProjectCommandArgs, IHasSolutionFileArg
 							// ignore the unity-like .sln file
 							var hasUnityIsm = slnContent.Contains("\"Assembly-CSharp.csproj\"",
 								StringComparison.InvariantCultureIgnoreCase);
-							return !hasUnityIsm;
+
+							// ignore the unreal-like .sln file
+							var hasUnrealIsm = slnContent.Contains("\"UnrealBuildTool\"", 
+								StringComparison.InvariantCultureIgnoreCase);
+							
+							return !hasUnityIsm && !hasUnrealIsm;
 						});
 					if (string.IsNullOrEmpty(firstSlnPath))
 						return String.Empty; // will be converted into PROJECT/PROJECT.sln
@@ -196,7 +201,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 				() =>
 				{
 					var currentVersion = AppContext.TargetFrameworkName.Split('=')[1].Substring(1);
-					var currentVersionDouble = double.Parse(currentVersion);
+					var currentVersionDouble = double.Parse(currentVersion, System.Globalization.CultureInfo.InvariantCulture);
 					if (currentVersionDouble < 8.0)
 					{
 						currentVersion = "8.0";

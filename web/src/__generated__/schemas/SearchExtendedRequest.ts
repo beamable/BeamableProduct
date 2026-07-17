@@ -3,12 +3,14 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { StatsSearchCriteria } from './StatsSearchCriteria';
+import type { StatsBasicStatsSearchCriteria } from './StatsBasicStatsSearchCriteria';
 
 export type SearchExtendedRequest = { 
   access: string; 
-  criteria: StatsSearchCriteria[]; 
+  criteria: StatsBasicStatsSearchCriteria[]; 
   domain: string; 
   objectType: string; 
   statKeys: string[]; 
+  limit?: number; 
+  offset?: number; 
 };

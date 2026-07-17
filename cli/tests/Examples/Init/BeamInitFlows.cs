@@ -13,7 +13,7 @@ using tests.MoqExtensions;
 
 namespace tests.Examples.Init;
 
-public class BeamInitFlows : CLITest
+public partial class BeamInitFlows : CLITest
 {
 
 	[TestCase("")]
@@ -34,6 +34,16 @@ public class BeamInitFlows : CLITest
 				.ReturnsPromise(new ServiceManifest())
 				.Verifiable();
 		});
+
+		Mock<IAuthApi>(mock =>
+		{
+			mock.Setup(x => x.LoginRefreshToken(It.IsAny<string>()))
+				.ReturnsPromise(new TokenResponse
+				{
+					refresh_token = "refresh", access_token = "access", token_type = "token"
+				}).Verifiable();
+		});
+
 		if (!string.IsNullOrEmpty(initArg))
 		{
 			Directory.SetCurrentDirectory(initArg);
@@ -74,6 +84,7 @@ public class BeamInitFlows : CLITest
 
 		Mock<IAuthApi>(mock =>
 		{
+	
 			mock.Setup(x => x.Login(userName, password, false, true))
 				.ReturnsPromise(new TokenResponse
 				{
@@ -82,6 +93,9 @@ public class BeamInitFlows : CLITest
 					token_type = "token"
 				})
 				.Verifiable();
+			
+		
+
 		});
 
 		Mock<IRealmsApi>(mock =>

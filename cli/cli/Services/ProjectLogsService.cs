@@ -15,6 +15,20 @@ public class ProjectLogsService
 				var parsed = JsonConvert.DeserializeObject<TailLogMessage>(logMessage);
 				if (parsed.message == null)
 				{
+					if (!logMessage.StartsWith("{"))
+					{
+						var index = logMessage.IndexOf('{');
+						if (index >= 0)
+						{
+							Log.Warning($"Truncating message to read json. Full=[{logMessage}] index=[{index}]");
+							logMessage = logMessage.Substring(index);
+						}
+						else
+						{
+							Log.Error($"Unable to parse log because it was not a JSON object. message=[{logMessage}]");
+							return;
+						}
+					}
 					var mongoParsed = JsonConvert.DeserializeObject<MongoLogMessage>(logMessage);
 					parsed.message = mongoParsed.message;
 					parsed.timeStamp = DateTimeOffset.Now.ToString("T");
@@ -38,6 +52,8 @@ public class ProjectLogsService
 		while (!cts.IsCancellationRequested)
 		{
 			var discovery = args.DependencyProvider.GetService<DiscoveryService>();
+			var portalExtensionServiceType = BeamoLocalSystem.GetServiceType(BeamoProtocolType.PortalExtension);
+			var expectedServiceName = args.service.Value;
 
 			Task tailTask = null;
 			// TODO: ignore remote, and also care about id filtering
@@ -47,8 +63,17 @@ public class ProjectLogsService
 				if (evt.Type != ServiceEventType.Running)
 					continue;
 
-				if (evt.Service != args.service)
-					continue;
+				if (evt.ServiceType == portalExtensionServiceType)
+				{
+ 					if (!BeamoLocalSystem.IsMatchingPortalExtensionService(evt.Service, expectedServiceName))
+						continue;
+				}
+				else
+				{
+					if (evt.Service != args.service)
+						continue;	
+				}
+				
 
 				switch (evt)
 				{
@@ -84,6 +109,8 @@ public class ProjectLogsService
 		}
 	}
 
+ 	
+
 	async static Task TailDockerContainer(DockerServiceDescriptor container, BeamoLocalSystem beamo, Action<string> handleLog, CancellationTokenSource cts)
 	{
 		await foreach (var line in beamo.TailLogs(container.containerId, cts))
@@ -102,7 +129,7 @@ public class ProjectLogsService
 		// Set up the HTTP GET request
 		var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{host.healthPort}/logs");
 
-		// Set the "text/event-stream" media type to indicate Server-Sent Events
+		// Set the "text/event-stream" media type to indicate Se rver-Sent Events
 		request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("text/event-stream"));
 
 

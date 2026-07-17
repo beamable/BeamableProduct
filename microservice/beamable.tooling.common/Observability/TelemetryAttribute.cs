@@ -178,6 +178,32 @@ namespace Beamable.Server
             name: Otel.ATTR_TRACE_LEVEL, 
             description: "A level of importance for a trace",
             importance.ToString());
+         
+        public static TelemetryAttribute PortalExtensionName(string portalExtensionName) => TelemetryAttribute.String(
+	        name: Otel.ATTR_PORTAL_EXTENSION_NAME, 
+	        description: "The name of the portal extension. ",
+	        portalExtensionName);
+        
+        public static TelemetryAttribute PortalExtensionCssSize(long size) => TelemetryAttribute.Long(
+	        name: Otel.ATTR_PORTAL_EXTENSION_BUILD_CSS_SIZE_BYTES, 
+	        description: "The size of the Css on Built Portal extension. ",
+	        size);
+        
+        public static TelemetryAttribute PortalExtensionJsSize(long size) => TelemetryAttribute.Long(
+	        name: Otel.ATTR_PORTAL_EXTENSION_BUILD_JS_SIZE_BYTES, 
+	        description: "The size of Javascript on Built Portal extension. ",
+	        size);
+        
+        public static TelemetryAttribute PortalExtensionMetadataSize(long size) => TelemetryAttribute.Long(
+	        name: Otel.ATTR_PORTAL_EXTENSION_BUILD_METADATA_SIZE_BYTES, 
+	        description: "The size of metadata.json size on Built Portal extension. ",
+	        size);
+        
+        
+        public static TelemetryAttribute PortalExtensionTotalSize(long size) => TelemetryAttribute.Long(
+	        name: Otel.ATTR_PORTAL_EXTENSION_BUILD_TOTAL_SIZE_BYTES, 
+	        description: "The total size of Built Portal extension. ",
+	        size);
 
     }
 

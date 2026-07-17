@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _tags:
   - base
+  _serializedValidationGUID: 00000000-0000-0000-0000-000000000008
   icon:
-    m_AssetGUID: 
+    m_AssetGUID: a7796303ede2490ea179355045c77b7e
     m_SubObjectName: 
     m_SubObjectType: 
     m_EditorAssetChanged: 0

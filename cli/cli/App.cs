@@ -12,6 +12,7 @@ using Beamable.Common.Semantics;
 using Beamable.Common.Util;
 using beamable.otel.exporter;
 using cli.CliServerCommand;
+using cli.Commands;
 using cli.Commands.Project;
 using cli.Commands.Project.Deps;
 using cli.Commands.Project.StorageData;
@@ -19,6 +20,7 @@ using cli.Content;
 using cli.Content.Tag;
 using cli.DeploymentCommands;
 using cli.DockerCommands;
+using cli.Commands.Docs;
 using cli.Docs;
 using cli.Dotnet;
 using cli.FederationCommands;
@@ -57,6 +59,7 @@ using cli.Commands.Project.Logs;
 using cli.Services.Web;
 using cli.DeveloperUserCommands;
 using cli.OtelCommands;
+using cli.Mcp;
 using cli.OtelCommands.Grafana;
 using cli.Services.DeveloperUserManager;
 using Microsoft.Extensions.Logging;
@@ -67,6 +70,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Spectre.Console;
+using System.Globalization;
 using ZLogger;
 using Command = System.CommandLine.Command;
 using Otel = Beamable.Common.Constants.Features.Otel;
@@ -246,7 +250,7 @@ public class App
 		services.AddSingleton<HttpSignedRequester>();
 		services.AddSingleton<IUserContext, SimpleUserContext>(_ => new SimpleUserContext(0) );
 		services.AddSingleton<ProcessFileLocker>();
-		
+		services.AddSingleton<IRemotePortalConfigService, RemotePortalConfigService>();
 
 		services.AddSingleton<DefaultActivityProvider>(DefaultActivityProvider.CreateCliServiceProvider());
 		services.AddSingleton<ResourceBuilder>(p =>
@@ -280,6 +284,11 @@ public class App
 				dict[Otel.ATTR_ENGINE_VERSION] = ctx.EngineVersion;
 			}
 
+			if (TryDetectAiAgent(out var aiAgent))
+			{
+				dict[Otel.ATTR_AI_AGENT] = aiAgent;
+			}
+
 			dict[Otel.ATTR_SOURCE] = "cli";
 				
 			var resourceBuilder = ResourceBuilder.CreateEmpty()
@@ -297,7 +306,6 @@ public class App
 			{
 				
 				return Sdk.CreateTracerProviderBuilder()
-					.SetSampler(new TraceIdRatioBasedSampler(0.05f)) //TODO find a better way to reduce number of traces, also get this percentage from a env var
 					.SetResourceBuilder(resourceBuilder)
 					.AddHttpClientInstrumentation(opts =>
 					{
@@ -463,9 +471,10 @@ public class App
 		Commands.AddSingleton(EngineSdkVersionOption.Instance);
 		Commands.AddSingleton(EngineVersionOption.Instance);
 		Commands.AddSingleton(IgnoreBeamoIdsOption.Instance);
-		Commands.AddSingleton<QuietOption>();
+		Commands.AddSingleton(QuietOption.Instance);
 		Commands.AddSingleton(PidOption.Instance);
-		Commands.AddSingleton<HostOption>();
+		Commands.AddSingleton(HostOption.Instance);
+		Commands.AddSingleton(PortalUrlOption.Instance);
 		Commands.AddSingleton<LimitOption>();
 		Commands.AddSingleton<SkipOption>();
 		Commands.AddSingleton<DeployFilePathOption>();
@@ -490,8 +499,9 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<EngineSdkVersionOption>());
 			root.AddGlobalOption(provider.GetRequiredService<EngineVersionOption>());
 			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
-			root.AddGlobalOption(provider.GetRequiredService<QuietOption>());
+			root.AddGlobalOption(QuietOption.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<HostOption>());
+			root.AddGlobalOption(provider.GetRequiredService<PortalUrlOption>());
 			root.AddGlobalOption(provider.GetRequiredService<AccessTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
@@ -515,15 +525,21 @@ public class App
 
 		// add commands
 		Commands.AddRootCommand<CliInterfaceGeneratorCommand, CliInterfaceGeneratorCommandArgs>();
+		Commands.AddRootCommand<McpGroupCommand>();
+		Commands.AddSubCommand<McpServeCommand, McpServeCommandArgs, McpGroupCommand>();
+		Commands.AddSubCommand<McpSetupCommand, McpSetupCommandArgs, McpGroupCommand>();
+		Commands.AddRootCommand<InstallAISkillsCommand, InstallAISkillsCommandArgs>();
 		Commands.AddRootCommand<ServerGroupCommand>();
 		Commands.AddSubCommand<ServeCliCommand, ServeCliCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<RequestCliCommand, RequestCliCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<ServerPsCommand, ServerPsCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<ServerKillCommand, ServerKillCommandArgs, ServerGroupCommand>();
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
-		
+		Commands.AddSubCommandWithHandler<InitGetRealmsCommand, InitGetRealmsCommandArgs, InitCommand>();
+
 		Commands.AddRootCommand<CheckCommandCommandGroup>();
 		Commands.AddSubCommand<CreateChecksCommand, CreateChecksCommandArgs, CheckCommandCommandGroup>();
+		Commands.AddSubCommand<LockedFilesCheckCommand, LockedFilesCheckCommandArgs, CheckCommandCommandGroup>();
 
 		Commands.AddRootCommand<OtelCommand>();
 		Commands.AddSubCommandWithHandler<GetClickhouseCredentials, GetClickhouseCredentialsArgs, OtelCommand>();
@@ -576,6 +592,8 @@ public class App
 		Commands.AddSubCommand<GroupRemoveCommand, UpdateGroupArgs, GroupCommand>();
 		Commands.AddSubCommand<ListCommand, ListCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<NewStorageCommand, NewStorageCommandArgs, ProjectNewCommand>();
+		Commands.AddSubCommand<NewPortalExtensionCommand, NewPortalExtensionCommandArgs, ProjectNewCommand>();
+		Commands.AddSubCommand<NewPortalExtensionLibCommand, NewPortalExtensionLibCommandArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateIgnoreFileCommand, GenerateIgnoreFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
@@ -594,11 +612,18 @@ public class App
 		Commands.AddSubCommand<GenerateClientOapiCommand, GenerateClientOapiCommandArgs, ProjectCommand>();
 
 		Commands.AddSubCommand<ProjectGenerateCommand, CommandGroupArgs, ProjectCommand>();
+		Commands.AddSubCommand<AddReplacementTypeCommand, AddReplacementTypeCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<ListReplacementTypeCommand, ListReplacementTypeCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<RemoveReplacementTypeCommand, RemoveReplacementTypeCommandArgs, ProjectCommand>();
+		
 		Commands.AddSubCommand<GenerateWebClientCommand, GenerateWebClientCommandArgs, ProjectGenerateCommand>();
+		Commands.AddSubCommand<GeneratePortalExtensionClientsCommand, GeneratePortalExtensionClientsCommandArgs, ProjectGenerateCommand>();
 
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
 		Commands.AddRootCommand<GenerateMkDocsCommand, GenerateMkDocsCommandArgs>();
+		Commands.AddRootCommand<GenerateBeamableTypesSchemaCommand, GenerateBeamableTypesSchemaCommandArgs>();
+		Commands.AddRootCommand<GenerateSkillDocsCommand, GenerateSkillDocsCommandArgs>();
 		
 		// FEDERATION COMMANDS
 		Commands.AddRootCommand<FederationCommand>();
@@ -629,7 +654,26 @@ public class App
 		
 		Commands.AddRootCommand<PortalCommand, PortalCommandArgs>();
 		Commands.AddSubCommandWithHandler<PortalOpenCurrentAccountCommand, PortalOpenCurrentAccountCommandArgs, PortalCommand>();
-		
+		Commands.AddSubCommandWithHandler<PortalOpenExtensionCommand, PortalOpenExtensionCommandArgs, PortalCommand>();
+		Commands.AddSubCommandWithHandler<PortalExtensionCommand, PortalExtensionCommandArgs, PortalCommand>();
+		Commands
+			.AddSubCommandWithHandler<PortalExtensionCheckCommand, PortalExtensionCheckCommandArgs,
+				PortalExtensionCommand>();
+		Commands
+			.AddSubCommandWithHandler<PortalExtensionAddDependencyCommand, PortalExtensionAddDependencyCommandArgs,
+				PortalExtensionCommand>();
+		Commands
+			.AddSubCommandWithHandler<PortalExtensionAddLibraryCommand, PortalExtensionAddLibraryCommandArgs,
+				PortalExtensionCommand>();
+		Commands
+			.AddSubCommandWithHandler<PortalExtensionUpdateToolkitCommand, PortalExtensionUpdateToolkitCommandArgs,
+				PortalExtensionCommand>();
+		Commands
+			.AddSubCommandWithHandler<SetPortalExtensionConfigCommand, SetPortalExtensionConfigCommandArgs,
+				PortalExtensionCommand>();
+		Commands.AddSubCommandWithHandler<ListMountSitesCommand, ListMountSitesCommandArgs, PortalExtensionCommand>();
+		Commands.AddSubCommandWithHandler<ListPortalExtensionOptionsCommand, ListPortalExtensionOptionsCommandArgs, PortalExtensionCommand>();
+
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();
 		Commands.AddSubCommandWithHandler<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
@@ -738,7 +782,12 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentSnapshotCommand, ContentSnapshotCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentRestoreCommand, ContentRestoreCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentSnapshotListCommand, ContentSnapshotListCommandArgs, ContentCommand>();
-		
+		Commands.AddSubCommandWithHandler<ContentHistoryCommand, ContentHistoryCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentHistorySyncChangelistCommand, ContentHistorySyncChangelistCommandArgs, ContentHistoryCommand>();
+		Commands.AddSubCommandWithHandler<ContentHistorySyncContentCommand, ContentHistorySyncContentCommandArgs, ContentHistoryCommand>();
+		Commands.AddSubCommandWithHandler<ContentHistoryRestoreCommand, ContentHistoryRestoreCommandArgs, ContentHistoryCommand>();
+
+
 		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
 		
 		Commands.AddSubCommandWithHandler<ContentTagSetCommand, ContentTagSetCommandArgs, ContentTagCommand>();
@@ -786,6 +835,9 @@ public class App
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be built again");
 		
+		CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+		CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+
 		BeamableLogProvider.Provider = new BeamableZLoggerProvider();
 		var logBuffer = new ZLoggerBufferedProcessor();
 		{ // construct some fake log setup so that we can log before the actual logs are initilaized. 
@@ -1099,7 +1151,7 @@ public class App
 			//in case otel is enabled, check if otel data stored in files is too large
 			if (Otel.CliTracesEnabled())
 			{
-				bool quiet = ctx.BindingContext.ParseResult.GetValueForOption(provider.GetRequiredService<QuietOption>());
+				bool quiet = ctx.BindingContext.ParseResult.GetValueForOption(QuietOption.Instance);
 				
 				var configService = provider.GetService<ConfigService>();
 				var otelDirectory = configService.ConfigTempOtelDirectoryPath;
@@ -1500,12 +1552,77 @@ public class App
 	public virtual int Run(string[] args)
 	{
 		var prog = GetProgram();
+		WarnIfAIEnvironmentWithoutMcp(args);
 		return prog.Invoke(args);
 	}
+
+	private static void WarnIfAIEnvironmentWithoutMcp(string[] args)
+	{
+		// Disabled while the Beamable MCP is internal-only (see feature/beam-mcp-public).
+		return;
+
+		if (IsRunningInMcpServer) return;
+		var joined = string.Join(" ", args).ToLowerInvariant();
+		if (joined.Contains("mcp serve") || joined.Contains("mcp setup")) return;
+
+		if (!TryDetectAiAgent(out _)) return;
+
+		BeamableLogger.LogWarning(
+			"[beam] You are calling beam CLI directly. For better AI integration, use the Beamable MCP server. " +
+			"Run 'beam mcp setup' to generate a .mcp.json config, then use MCP tools (beam_exec, beam_get_help, beam_get_skill) for structured interaction.");
+	}
+
+	public static bool TryDetectAiAgent(out string agentName)
+	{
+		var mapping = new (string EnvVar, string AgentName)[]
+		{
+			("CLAUDECODE", "claude_code"),
+			("CLAUDE_CODE_ENTRYPOINT", "claude_code"),
+			("CURSOR_SESSION_ID", "cursor"),
+			("COPILOT_AGENT", "copilot"),
+			("COPILOT_CLI", "copilot"),
+			("COPILOT_AGENT_SESSION_ID", "copilot"),
+			("WINDSURF_SESSION", "windsurf"),
+			("OPENCODE_SESSION", "opencode"),
+			("OPENCODE", "opencode"),
+			("AIDER", "aider"),
+			("AI_AGENT", "unknown"),
+		};
+
+		string detected = null;
+		foreach (var (envVar, name) in mapping)
+		{
+			if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envVar)))
+			{
+				detected = name;
+				break;
+			}
+		}
+
+		var prefix = IsRunningInMcpServer ? "mcp" : "cli";
+
+		if (detected != null)
+		{
+			agentName = $"{prefix}_{detected}";
+			return true;
+		}
+
+		if (IsRunningInMcpServer)
+		{
+			agentName = "mcp_unknown";
+			return true;
+		}
+
+		agentName = null;
+		return false;
+	}
+
+	internal static bool IsRunningInMcpServer { get; set; }
 
 	public virtual Task<int> RunAsync(string[] args)
 	{
 		var prog = GetProgram();
+		WarnIfAIEnvironmentWithoutMcp(args);
 		return prog.InvokeAsync(args);
 	}
 

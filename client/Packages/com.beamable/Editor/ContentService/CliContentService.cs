@@ -20,13 +20,40 @@ using Object = UnityEngine.Object;
 
 namespace Beamable.Editor.ContentService
 {
+	/// <summary>
+	/// Tracks a detected rename: a Created entry (new name) paired with a Deleted entry (old name).
+	/// </summary>
+	public struct ContentRenameInfo
+	{
+		public string CreatedFullId;
+		public string DeletedFullId;
+		public string OldName;
+		public string NewName;
+		public string TypeName;
+	}
+
+	/// <summary>
+	/// Tracks the currently running content operation so the Content Manager can render progress inside the window.
+	/// </summary>
+	public class ContentOperationProgress
+	{
+		public bool IsActive;
+		public bool HasError;
+		public string Title = string.Empty;
+		public string Description = string.Empty;
+		public string CurrentContentName = string.Empty;
+		public int ProcessedItems;
+		public int TotalItems;
+		public float Progress;
+	}
+
 	public class CliContentService : IStorageHandler<CliContentService>, ILoadWithContext
 	{
 		private const string SYNC_OPERATION_TITLE = "Sync Contents";
-		private const string SYNC_OPERATION_SUCCESS_BASE_MESSAGE = "{0} sync complete";
+		private const string SYNC_OPERATION_SUCCESS_BASE_MESSAGE = "{0} sync complete. {1}/{2} items synced.";
 		private const string SYNC_OPERATION_ERROR_BASE_MESSAGE = "Error when syncing content {0}. Error message: {1}";
 		private const string PUBLISH_OPERATION_TITLE = "Publish Contents";
-		private const string PUBLISH_OPERATION_SUCCESS_BASE_MESSAGE = "{0} published";
+		private const string PUBLISH_OPERATION_SUCCESS_BASE_MESSAGE = "{0} published. {1}/{2} items published.";
 		private const string ERROR_PUBLISH_OPERATION_ERROR_BASE_MESSAGE = "Error when publishing content {0}. Discarding publishes changes. Error message: {1}";
 
 		public string manifestIdOverride;
@@ -45,15 +72,46 @@ namespace Beamable.Editor.ContentService
 		private List<string> _tagsCache = new();
 		private int syncedContents;
 		private int publishedContents;
+		private readonly Dictionary<string, string> _lastSavedPropertiesCache = new();
+		private readonly Dictionary<string, ContentRenameInfo> _renameRegistry = new();
+		private readonly Dictionary<string, ContentRenameInfo> _explicitRenameTracking = new();
+		private static readonly string RenameCachePath =
+			Path.Combine("Library", "BeamableEditor", "ContentRenameCache.json");
+		private bool _showUnityModalProgress;
 		
 		[NonSerialized]
 		public bool isReloading;
 		public List<string> availableManifestIds;
 
+		/// <summary>
+		/// True once the most recent <see cref="Reload"/> has finished fetching the realm's remote
+		/// manifest list. Until this is true the realm's emptiness is unknown (still loading).
+		/// </summary>
+		public bool RemoteManifestsLoaded { get; private set; }
+		/// <summary>
+		/// True when the last remote-manifest fetch errored. Used so the Content Manager does not
+		/// misread a transient failure as "this realm is empty".
+		/// </summary>
+		public bool RemoteManifestsErrored { get; private set; }
+		/// <summary>
+		/// Number of remote manifests on the realm as of the last successful fetch. Zero means the
+		/// realm has never had content published — the signal used to offer the opt-in default
+		/// content import (see DefaultContentImporter).
+		/// </summary>
+		public int RemoteManifestCount { get; private set; }
+
 		public Dictionary<string, LocalContentManifestEntry> EntriesCache { get; }
 
 		private readonly Dictionary<string, ContentObject> _contentScriptableCache;
 		public BeamContentPsProgressMessage LatestProgressUpdate;
+		/// <summary>
+		/// Current publish or sync progress state consumed by the Content Manager IMGUI view.
+		/// </summary>
+		public ContentOperationProgress CurrentProgress { get; } = new();
+		/// <summary>
+		/// Monotonic value incremented when <see cref="CurrentProgress"/> changes so the Content Manager can repaint on demand.
+		/// </summary>
+		public int ProgressUpdateVersion { get; private set; }
 		private readonly ContentConfiguration _contentConfiguration;
 
 		private ValidationContext ValidationContext => _provider.GetService<ValidationContext>();
@@ -74,6 +132,15 @@ namespace Beamable.Editor.ContentService
 			}
 		}
 
+		public bool TryGetRenameInfo(string fullId, out ContentRenameInfo info) =>
+			_renameRegistry.TryGetValue(fullId, out info);
+
+		public List<ContentRenameInfo> GetAllRenames() =>
+			_renameRegistry.Values
+				.GroupBy(r => r.CreatedFullId)
+				.Select(g => g.First())
+				.ToList();
+
 		public Dictionary<string, List<LocalContentManifestEntry>> TypeContentCache => _typeContentCache;
 
 		public List<string> TagsCache => _tagsCache;
@@ -88,6 +155,7 @@ namespace Beamable.Editor.ContentService
 			ContentObject.ValidationContext = ValidationContext;
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			_contentConfiguration = contentConfiguration;
+			LoadRenameCache();
 			_ = Reload();
 		}
 
@@ -95,6 +163,16 @@ namespace Beamable.Editor.ContentService
 		public void SaveContent(ContentObject selectedContentObject)
 		{
 			string propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
+
+			// This prevents save storms when the debounce fires for rapid-fire edits where
+			// the final serialised value is the same as what was already written.
+			if (_lastSavedPropertiesCache.TryGetValue(selectedContentObject.Id, out var lastJson)
+			    && lastJson == propertiesJson)
+			{
+				return;
+			}
+			_lastSavedPropertiesCache[selectedContentObject.Id] = propertiesJson;
+
 			bool hasValidationError = selectedContentObject.HasValidationErrors(GetValidationContext(), out List<string> _);
 			UpdateContentValidationStatus(selectedContentObject.Id, hasValidationError);
 			SaveContent(selectedContentObject.Id, propertiesJson, () => SetContentTags(selectedContentObject.Id, selectedContentObject.Tags));
@@ -194,11 +272,12 @@ namespace Beamable.Editor.ContentService
 		                                           bool syncConflicted,
 		                                           bool syncDeleted,
 		                                           string filter = null,
-		                                           ContentFilterType filterType = default)
+		                                           ContentFilterType filterType = default,
+		                                           bool showUnityModalProgress = false)
 		{
 
 			syncedContents = 0;
-			EditorUtility.DisplayProgressBar(SYNC_OPERATION_TITLE, "Synchronizing contents...", 0);
+			BeginActionProgress(SYNC_OPERATION_TITLE, "Synchronizing contents...", showUnityModalProgress);
 			try
 			{
 				if (_contentWatcher != null)
@@ -215,6 +294,7 @@ namespace Beamable.Editor.ContentService
 					syncDeleted = syncDeleted,
 					filter = filter,
 					filterType = filterType,
+					downloadMaxParallelCount = GetEditorSyncDownloadMaxParallelCountCliOption(),
 					
 				});
 
@@ -248,6 +328,7 @@ namespace Beamable.Editor.ContentService
 				syncDeleted = syncDeleted,
 				filter = filter,
 				filterType = filterType,
+				downloadMaxParallelCount = GetEditorSyncDownloadMaxParallelCountCliOption(),
 			});
 			
 			await contentSyncCommand.Run();
@@ -255,14 +336,11 @@ namespace Beamable.Editor.ContentService
 
 		public void SetContentTags(string contentId, string[] tags)
 		{
-			if (!EntriesCache.TryGetValue(contentId, out var entry))
+			if (EntriesCache.TryGetValue(contentId, out var entry))
 			{
-				Debug.LogError($"No Entry found with id: {contentId}");
-				return;
+				entry.Tags = tags;
+				EntriesCache[contentId] = entry;
 			}
-
-			entry.Tags = tags;
-			EntriesCache[contentId] = entry;
 
 			if (tags.Length == 0)
 			{
@@ -287,7 +365,30 @@ namespace Beamable.Editor.ContentService
 				});
 				setContentTagCommand.Run();
 			}
-			
+
+		}
+
+		public bool DuplicateContent(LocalContentManifestEntry entry, out ContentObject duplicatedObject)
+		{
+			if (TryGetContentObject(entry.FullId, out var contentObject))
+			{
+				duplicatedObject = Object.Instantiate(contentObject);
+				string baseName = $"{contentObject.ContentName}_Copy";
+				int itemsWithBaseNameCount = GetContentsFromType(contentObject.GetType())
+				                                            .Count(item => item.Name.StartsWith(baseName));
+				duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
+				duplicatedObject.ContentStatus = ContentStatus.Created;
+				duplicatedObject.Tags = entry.Tags;
+				entry.Name = duplicatedObject.ContentName;
+				entry.FullId = duplicatedObject.Id;
+				entry.TypeName = duplicatedObject.ContentType;
+				AddContentToCache(entry);
+				SaveContent(duplicatedObject);
+				return true;
+			}
+
+			duplicatedObject = null;
+			return false;
 		}
 
 		public string RenameContent(string contentId, string newName)
@@ -301,6 +402,9 @@ namespace Beamable.Editor.ContentService
 			if(entry.Name == newName)
 				return contentId;
 
+			// Prevents the user to rename the content with spaces
+			newName = newName.Replace(' ', '_');
+			
 			if (!ValidateNewContentName(newName))
 			{
 				Debug.LogError(
@@ -324,6 +428,8 @@ namespace Beamable.Editor.ContentService
 			// Apply local changes while CLI is updating the Data so Unity UI doesn't take long to update.
 			if (entry.StatusEnum is not ContentStatus.Created)
 			{
+				string oldName = entry.Name;
+
 				RemoveContentFromCache(entry);
 				entry.CurrentStatus = (int)ContentStatus.Deleted;
 				AddContentToCache(entry);
@@ -331,10 +437,82 @@ namespace Beamable.Editor.ContentService
 				entry.CurrentStatus = (int)ContentStatus.Created;
 				entry.FullId = newFullId;
 				AddContentToCache(entry);
+
+				// Track rename: collapse chain if this was already the Created side of a prior rename (A→B→C becomes A→C)
+				string ultimateDeletedId = contentId;
+				string ultimateOldName = oldName;
+				if (_explicitRenameTracking.TryGetValue(contentId, out var priorRename) && priorRename.CreatedFullId == contentId)
+				{
+					ultimateDeletedId = priorRename.DeletedFullId;
+					ultimateOldName = priorRename.OldName;
+					_explicitRenameTracking.Remove(priorRename.CreatedFullId);
+					_explicitRenameTracking.Remove(priorRename.DeletedFullId);
+					_renameRegistry.Remove(priorRename.CreatedFullId);
+					_renameRegistry.Remove(priorRename.DeletedFullId);
+				}
+
+				// If renamed back to the original name (A→B→A), remove tracking entirely
+				if (newFullId == ultimateDeletedId)
+				{
+					// Undo the Deleted+Created pair: remove the Deleted entry we just added and restore the original status
+					RemoveContentFromCache(entry);
+					entry.CurrentStatus = (int)ContentStatus.UpToDate;
+					entry.FullId = newFullId;
+					entry.Name = newName;
+					// Also remove the stale Deleted entry we added above
+					if (EntriesCache.TryGetValue(ultimateDeletedId, out var staleDeleted))
+						RemoveContentFromCache(staleDeleted);
+					AddContentToCache(entry);
+					SaveRenameCache();
+				}
+				else
+				{
+					var renameInfo = new ContentRenameInfo
+					{
+						CreatedFullId = newFullId,
+						DeletedFullId = ultimateDeletedId,
+						OldName = ultimateOldName,
+						NewName = newName,
+						TypeName = entry.TypeName,
+					};
+					_explicitRenameTracking[newFullId] = renameInfo;
+					_explicitRenameTracking[ultimateDeletedId] = renameInfo;
+					_renameRegistry[newFullId] = renameInfo;
+					_renameRegistry[ultimateDeletedId] = renameInfo;
+					SaveRenameCache();
+				}
 			}
 			else
 			{
 				RemoveContentFromCache(entry);
+
+				// If this Created entry is the Created side of a prior rename (A→B), update tracking to A→C
+				if (_explicitRenameTracking.TryGetValue(contentId, out var priorRename) && priorRename.CreatedFullId == contentId)
+				{
+					_explicitRenameTracking.Remove(priorRename.CreatedFullId);
+					_explicitRenameTracking.Remove(priorRename.DeletedFullId);
+					_renameRegistry.Remove(priorRename.CreatedFullId);
+					_renameRegistry.Remove(priorRename.DeletedFullId);
+
+					// If renamed back to the original name (A→B→A), just clear tracking
+					if (newFullId != priorRename.DeletedFullId)
+					{
+						var renameInfo = new ContentRenameInfo
+						{
+							CreatedFullId = newFullId,
+							DeletedFullId = priorRename.DeletedFullId,
+							OldName = priorRename.OldName,
+							NewName = newName,
+							TypeName = entry.TypeName,
+						};
+						_explicitRenameTracking[newFullId] = renameInfo;
+						_explicitRenameTracking[priorRename.DeletedFullId] = renameInfo;
+						_renameRegistry[newFullId] = renameInfo;
+						_renameRegistry[priorRename.DeletedFullId] = renameInfo;
+					}
+					SaveRenameCache();
+				}
+
 				entry.Name = newName;
 				entry.FullId = newFullId;
 				AddContentToCache(entry);
@@ -387,7 +565,7 @@ namespace Beamable.Editor.ContentService
 		
 		public async Promise PublishContentsWithProgress()
 		{
-			EditorUtility.DisplayProgressBar(PUBLISH_OPERATION_TITLE, "Publishing contents...", 0);
+			BeginActionProgress(PUBLISH_OPERATION_TITLE, "Publishing contents...", true);
 			publishedContents = 0;
 			
 			try
@@ -415,10 +593,58 @@ namespace Beamable.Editor.ContentService
 			}
 		}
 
+		/// <summary>
+		/// Finishes the active content operation, clears any modal progress UI, and reloads local content state.
+		/// </summary>
 		private void FinishActionProgress()
 		{
-			EditorUtility.ClearProgressBar();
+			if (_showUnityModalProgress)
+			{
+				EditorUtility.ClearProgressBar();
+			}
+
+			CurrentProgress.IsActive = false;
+			ProgressUpdateVersion++;
 			_ = Reload();
+		}
+
+		/// <summary>
+		/// Initializes progress state for a content operation. Sync can use in-window progress only, while publish can still opt into Unity's modal progress UI.
+		/// </summary>
+		private void BeginActionProgress(string title, string description, bool showUnityModalProgress)
+		{
+			_showUnityModalProgress = showUnityModalProgress;
+			CurrentProgress.IsActive = true;
+			CurrentProgress.Title = title;
+			CurrentProgress.Description = description;
+			CurrentProgress.CurrentContentName = string.Empty;
+			CurrentProgress.ProcessedItems = 0;
+			CurrentProgress.TotalItems = 0;
+			CurrentProgress.Progress = 0;
+			CurrentProgress.HasError = false;
+			ProgressUpdateVersion++;
+
+			if (_showUnityModalProgress)
+			{
+				EditorUtility.DisplayProgressBar(title, description, 0);
+			}
+		}
+
+		/// <summary>
+		/// Converts the optional editor sync concurrency setting to the CLI argument value.
+		/// </summary>
+		/// <remarks>
+		/// Returning the default int omits the CLI argument, allowing the CLI default to apply. A configured value of 0 maps to -1 so the generated command includes an explicit unbounded setting.
+		/// </remarks>
+		private int GetEditorSyncDownloadMaxParallelCountCliOption()
+		{
+			if (_contentConfiguration.EditorSyncDownloadMaxParallelCount?.HasValue != true)
+			{
+				return default;
+			}
+
+			var value = _contentConfiguration.EditorSyncDownloadMaxParallelCount.Value;
+			return value == 0 ? -1 : value;
 		}
 
 		public async Task PublishContents()
@@ -497,6 +723,10 @@ namespace Beamable.Editor.ContentService
 									AddContentToCache(entry);
 								}
 							}
+							else
+							{
+								AddContentToCache(entry);
+							}
 
 							ValidationContext.AllContent.Remove(entry.FullId);
 						}
@@ -504,6 +734,7 @@ namespace Beamable.Editor.ContentService
 
 					if (hasRemoveManifest || hasChangeManifest)
 					{
+						RestoreRenameRegistry();
 						ManifestChangedCount++;
 					}
 
@@ -521,10 +752,10 @@ namespace Beamable.Editor.ContentService
 				_contentWatcher.OnProgressStreamContentPsProgressMessage(dp => { LatestProgressUpdate = dp.data; });
 				_ = _contentWatcher.Command.Run();
 
-				bool addedAnyDefault = false;
+				RemoteManifestsLoaded = false;
+				RemoteManifestsErrored = false;
 				var getAvailableManifestsPromise = _cli.ContentListManifests(new ContentListManifestsArgs()).OnStreamContentListManifestsCommandResults(dp =>
 				{
-					
 					var manifestIds = new HashSet<string>();
 					foreach (var id in dp.data.localManifests)
 					{
@@ -535,40 +766,24 @@ namespace Beamable.Editor.ContentService
 					{
 						manifestIds.Add(id);
 					}
-					
-					if (dp.data.remoteManifests.Count == 0)
-					{
-						// If no remote manifest on remote, it means that it is the first time that the customer is using this realm
-						// If so, we need to create the default contents
-						string[] guids = BeamableAssetDatabase.FindAssets<ContentObject>(new[] {Constants.Directories.DEFAULT_DATA_DIR});
-						foreach (string guid in guids)
-						{
-							string path = AssetDatabase.GUIDToAssetPath(guid);
-							ContentObject obj = AssetDatabase.LoadAssetAtPath<ContentObject>(path);
 
-							if (obj == null)
-								continue;
-
-							string fileName = Path.GetFileNameWithoutExtension(path);
-							obj.SetContentName(fileName);
-							SaveContent(obj);
-							addedAnyDefault = true;
-						}
-					}
+					// A realm with zero remote manifests has never had content published to it.
+					// Seeding default content is deferred to an explicit, user-initiated action
+					// (see DefaultContentImporter) so we never mutate the AssetDatabase / Addressables
+					// at init time. Here we only record the signal the Content Manager uses to offer
+					// the opt-in import prompt.
+					RemoteManifestCount = dp.data.remoteManifests.Count;
+					RemoteManifestsLoaded = true;
 
 					availableManifestIds = manifestIds.ToList();
 				}).OnError(dp =>
 				{
+					RemoteManifestsErrored = true;
 					Debug.LogError(dp.data.message);
 				}).Run();
-				
+
 				await manifestIsFetchedTaskCompletion.Task;
 				await getAvailableManifestsPromise;
-
-				if (addedAnyDefault)
-				{
-					await PublishContents();
-				}
 
 				ManifestChangedCount++;
 			}
@@ -596,6 +811,104 @@ namespace Beamable.Editor.ContentService
 			_statusContentCache.Clear();
 			_conflictedContentCache.Clear();
 			_contentIdTagsCache.Clear();
+			_lastSavedPropertiesCache.Clear();
+			_renameRegistry.Clear();
+		}
+
+		private void RestoreRenameRegistry()
+		{
+			_renameRegistry.Clear();
+
+			foreach (var kvp in _explicitRenameTracking)
+			{
+				if (EntriesCache.ContainsKey(kvp.Value.CreatedFullId) &&
+				    EntriesCache.ContainsKey(kvp.Value.DeletedFullId))
+				{
+					_renameRegistry[kvp.Key] = kvp.Value;
+				}
+			}
+
+			var staleKeys = _explicitRenameTracking
+				.Where(kvp => !EntriesCache.ContainsKey(kvp.Value.CreatedFullId) ||
+				              !EntriesCache.ContainsKey(kvp.Value.DeletedFullId))
+				.Select(kvp => kvp.Key)
+				.ToList();
+			if (staleKeys.Count > 0)
+			{
+				foreach (var key in staleKeys)
+					_explicitRenameTracking.Remove(key);
+				SaveRenameCache();
+			}
+		}
+
+		private void LoadRenameCache()
+		{
+			try
+			{
+				if (File.Exists(RenameCachePath))
+				{
+					var json = File.ReadAllText(RenameCachePath);
+					var data = JsonUtility.FromJson<RenameCacheData>(json);
+					if (data?.Entries != null)
+					{
+						_explicitRenameTracking.Clear();
+						foreach (var e in data.Entries)
+						{
+							var info = new ContentRenameInfo
+							{
+								CreatedFullId = e.CreatedFullId,
+								DeletedFullId = e.DeletedFullId,
+								OldName = e.OldName,
+								NewName = e.NewName,
+								TypeName = e.TypeName,
+							};
+							_explicitRenameTracking[info.CreatedFullId] = info;
+							_explicitRenameTracking[info.DeletedFullId] = info;
+						}
+					}
+				}
+			}
+			catch { }
+		}
+
+		private void SaveRenameCache()
+		{
+			try
+			{
+				var dir = Path.GetDirectoryName(RenameCachePath);
+				if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+					Directory.CreateDirectory(dir);
+				var distinct = _explicitRenameTracking.Values
+					.GroupBy(r => r.CreatedFullId)
+					.Select(g => g.First())
+					.ToArray();
+				var data = new RenameCacheData
+				{
+					Entries = distinct.Select(r => new RenameCacheEntry
+					{
+						CreatedFullId = r.CreatedFullId,
+						DeletedFullId = r.DeletedFullId,
+						OldName = r.OldName,
+						NewName = r.NewName,
+						TypeName = r.TypeName,
+					}).ToArray()
+				};
+				File.WriteAllText(RenameCachePath, JsonUtility.ToJson(data));
+			}
+			catch { }
+		}
+
+		[Serializable]
+		private class RenameCacheData { public RenameCacheEntry[] Entries; }
+
+		[Serializable]
+		private class RenameCacheEntry
+		{
+			public string CreatedFullId;
+			public string DeletedFullId;
+			public string OldName;
+			public string NewName;
+			public string TypeName;
 		}
 
 		public void ReceiveStorageHandle(StorageHandle<CliContentService> handle)
@@ -722,10 +1035,28 @@ namespace Beamable.Editor.ContentService
 
 		private void AddContentToCache(LocalContentManifestEntry entry)
 		{
-			if (!TypeContentCache.TryGetValue(entry.TypeName, out var typeContentList))
+			if (entry.StatusEnum is not ContentStatus.Deleted &&
+			    (string.IsNullOrEmpty(entry.JsonFilePath) || !File.Exists(entry.JsonFilePath)))
 			{
-				TypeContentCache[entry.TypeName] = typeContentList = new List<LocalContentManifestEntry>();;
+				return;
 			}
+
+			var entryType = _contentTypeReflectionCache.GetTypeFromId(entry.FullId);
+			if (!_contentTypeReflectionCache.TryGetName(entryType, out var typeName))
+			{
+				//Fallback to CLI Value
+				typeName = entry.TypeName;
+			}
+
+			if (!TypeContentCache.TryGetValue(typeName, out var typeContentList))
+			{
+				TypeContentCache[typeName] = typeContentList = new List<LocalContentManifestEntry>();;
+			}
+			
+			// Before using the new CliContent on Unity we supported Content names with dots.
+			// So before caching the content data that comes from Cli we need to fix any names that might came wrong by applying it again using the real contentTypeName
+			entry.TypeName = typeName;
+			entry.Name = entry.FullId.Substring(typeName.Length + 1);
 			
 			typeContentList.Add(entry);
 
@@ -744,7 +1075,7 @@ namespace Beamable.Editor.ContentService
 			_contentIdTagsCache[entry.FullId] = entry.Tags.ToList();
 			
 			EntriesCache[entry.FullId] = entry;
-			
+
 			CacheScriptableContent(entry);
 
 			if (entry.StatusEnum is not ContentStatus.Deleted)
@@ -782,7 +1113,7 @@ namespace Beamable.Editor.ContentService
 				contentObject = ScriptableObject.CreateInstance(type) as ContentObject;
 				_contentScriptableCache[entry.FullId] = contentObject;
 			}
-			
+
 			contentObject = LoadContentObject(entry, contentObject);
 
 			Object.DontDestroyOnLoad(contentObject);
@@ -861,13 +1192,23 @@ namespace Beamable.Editor.ContentService
 		                                string onSuccessBaseMessage,
 		                                string onErrorBaseMessage, ref int countItem)
 		{
-			string description = string.Empty;
-			float progress = (float)countItem / data.totalItems;
+			int totalItems = Math.Max(data.totalItems, 0);
+			string description = CurrentProgress.Description;
+			float progress = totalItems == 0 ? 0 : Mathf.Clamp01((float)countItem / totalItems);
+			int processedItemsForDisplay = countItem;
 
 			switch (data.EventType)
 			{
 				case 0: // Error on Content Progress Update
-					EditorUtility.ClearProgressBar();
+					CurrentProgress.HasError = true;
+					CurrentProgress.CurrentContentName = data.contentName;
+					CurrentProgress.TotalItems = totalItems;
+					CurrentProgress.Description = string.Format(onErrorBaseMessage, data.contentName, data.errorMessage);
+					ProgressUpdateVersion++;
+					if (_showUnityModalProgress)
+					{
+						EditorUtility.ClearProgressBar();
+					}
 					EditorUtility.DisplayDialog(
 						operationTitle,
 						string.Format(onErrorBaseMessage, data.contentName, data.errorMessage),
@@ -876,14 +1217,33 @@ namespace Beamable.Editor.ContentService
 					return;
 				case 1: // Sync Complete
 				case 2: // Publish Complete
-					description = string.Format(onSuccessBaseMessage, data.contentName);
+					CurrentProgress.CurrentContentName = data.contentName;
+					int visibleCount = totalItems == 0 ? 0 : Mathf.Min(totalItems, countItem + 1);
+					processedItemsForDisplay = visibleCount;
+					description = string.Format(onSuccessBaseMessage, data.contentName, visibleCount, totalItems);
+					progress = totalItems == 0 ? 1 : Mathf.Clamp01((float)visibleCount / totalItems);
 					break;
 				case 3: // Update Processed item count
 					countItem = data.processedItems;
+					processedItemsForDisplay = totalItems == 0 ? countItem : Mathf.Min(countItem, totalItems);
+					progress = totalItems == 0 ? 1 : Mathf.Clamp01((float)processedItemsForDisplay / totalItems);
+					description = totalItems == 0
+						? $"{operationTitle} complete."
+						: $"{processedItemsForDisplay}/{totalItems} items processed.";
 					break;
 			}
 
-			EditorUtility.DisplayProgressBar(operationTitle, description, progress);
+			CurrentProgress.Title = operationTitle;
+			CurrentProgress.Description = description;
+			CurrentProgress.ProcessedItems = processedItemsForDisplay;
+			CurrentProgress.TotalItems = totalItems;
+			CurrentProgress.Progress = progress;
+			ProgressUpdateVersion++;
+
+			if (_showUnityModalProgress)
+			{
+				EditorUtility.DisplayProgressBar(operationTitle, description, progress);
+			}
 		}
 
 		public void SetManifestId(string id)

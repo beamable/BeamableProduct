@@ -11,7 +11,10 @@ using System.Text.RegularExpressions;
 using Beamable.Server;
 using microservice.Extensions;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Xml.Linq;
+using Beamable.Common;
+using Newtonsoft.Json.Linq;
 
 namespace cli.Services;
 
@@ -268,6 +271,63 @@ public class ProjectService
 		return path;
 	}
 
+	public async Task<NewServiceInfo> CreateNewPortalExtension(NewPortalExtensionCommandArgs args)
+	{
+		string usedVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
+		var portalExtensionInfo = new NewServiceInfo();
+
+		// check that we have the templates available
+		await EnsureCanUseTemplates(usedVersion);
+
+		var outputPath = Path.Combine(_configService.BeamableWorkspace, "extensions");
+
+		portalExtensionInfo.ServicePath = Path.Combine(outputPath, args.ProjectName);
+		var templateShortName = PortalExtensionTemplates.ToDotnetTemplateShortName(args.template);
+		await RunDotnetCommand($"new {templateShortName} -n {args.ProjectName} -o {portalExtensionInfo.ServicePath.EnquotePath()}");
+
+		{ // Updates the package name to use the same name passed in it's creation, making sure it's the correct one instead of what dotnet template might parse
+			var packagePath = Path.Combine(portalExtensionInfo.ServicePath, "package.json");
+			string jsonContent = File.ReadAllText(packagePath);
+
+			JObject root = JObject.Parse(jsonContent);
+			root[Beamable.Common.Constants.Features.PortalExtension.EXTENSION_NAME_PROPERTY_NAME] =
+				JToken.FromObject(args.ProjectName.Value);
+
+			File.WriteAllText(packagePath, root.ToString(Newtonsoft.Json.Formatting.Indented));
+		}
+
+		await args.BeamoLocalSystem.InitManifest();
+
+		return portalExtensionInfo;
+	}
+
+	public async Task<NewServiceInfo> CreateNewPortalExtensionLib(NewPortalExtensionLibCommandArgs args)
+	{
+		string usedVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
+		var libInfo = new NewServiceInfo();
+
+		// check that we have the templates available
+		await EnsureCanUseTemplates(usedVersion);
+
+		var outputPath = Path.Combine(_configService.BeamableWorkspace, "extensions-libs");
+
+		libInfo.ServicePath = Path.Combine(outputPath, args.ProjectName);
+		await RunDotnetCommand($"new portalextensioncommonlib -n {args.ProjectName} -o {libInfo.ServicePath.EnquotePath()}");
+
+		{ // Updates the package name to use the same name passed in it's creation, making sure it's the correct one instead of what dotnet template might parse
+			var packagePath = Path.Combine(libInfo.ServicePath, "package.json");
+			string jsonContent = File.ReadAllText(packagePath);
+
+			JObject root = JObject.Parse(jsonContent);
+			root[Beamable.Common.Constants.Features.PortalExtension.EXTENSION_NAME_PROPERTY_NAME] =
+				JToken.FromObject(args.ProjectName.Value);
+
+			File.WriteAllText(packagePath, root.ToString(Newtonsoft.Json.Formatting.Indented));
+		}
+
+		return libInfo;
+	}
+
 	public async Task<NewServiceInfo> CreateNewStorage(NewStorageCommandArgs args)
 	{
 		string usedVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
@@ -354,6 +414,17 @@ public class ProjectService
 	{
 		var solutionPath = Path.Combine(_configService.WorkingDirectory, directory);
 
+		await RunDotnetCommand("--version", out var versionBuffer);
+		var validVersion = PackageVersion.TryFromSemanticVersionString(versionBuffer.ToString(), out var dotnetVersion);
+
+		// Starting in 10.0.102 (patch version what the heck: https://github.com/dotnet/sdk/pull/51861/changes )
+		//  the default sln format changes to slnx, and a --format flag exists to request the older sln format. 
+		//  we can only safely set this option when the user is at 102 or above. 
+		var formatOption = validVersion 
+		                   && dotnetVersion >= "10.0.102"
+			? " --format sln "
+			: " ";
+		
 		if (Directory.Exists(solutionPath))
 		{
 			if (Directory.EnumerateFiles(solutionPath, "*sln").ToArray().Length > 0)
@@ -371,7 +442,7 @@ public class ProjectService
 
 		var slnNameWithoutExtension = slnNameWithExtension.Substring(0, slnNameWithExtension.Length - ".sln".Length);
 		
-		await RunDotnetCommand($"new sln -n {slnNameWithoutExtension.EnquotePath()} -o {solutionPath.EnquotePath()} --format sln", out var buffer);
+		await RunDotnetCommand($"new sln -n {slnNameWithoutExtension.EnquotePath()} -o {solutionPath.EnquotePath()} {formatOption}", out var buffer);
 
 		return Path.Combine(solutionPath, slnNameWithExtension);
 	}
@@ -583,7 +654,7 @@ public class ProjectService
 		Detach
 	}
 	
-	public static async Task WatchBuild(BuildProjectCommandArgs args, ServiceName serviceName, BuildFlags buildFlags, Action<ProjectErrorReport> onReport)
+	public static async Task WatchBuild(BuildProjectCommandArgs args, ServiceName serviceName, BuildFlags buildFlags, Action<ProjectErrorReport> onReport, string serviceStopReason = "")
 	{
 		var localServices = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols;
 		if (!localServices.TryGetValue(serviceName, out var service))
@@ -606,8 +677,11 @@ public class ProjectService
 		var dockerfilePath = service.AbsoluteDockerfilePath;
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 		var commandStr = $"build {projectPath.EnquotePath()} -v n -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
+		if (args.MaxParallelTask > 0)
+		{
+			commandStr += $" -maxcpucount:{args.MaxParallelTask}";
+		}
 		Log.Debug($"dotnet command=[{args.AppContext.DotnetPath} {commandStr}]");
-
 		if (buildFlags.HasFlag(BuildFlags.DisableClientCodeGen))
 		{
 			commandStr += " -p:GenerateClientCode=false";
@@ -615,8 +689,13 @@ public class ProjectService
 		
 		using var cts = new CancellationTokenSource();
 
+		var envVars = new Dictionary<string, string> { ["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1", ["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1", };
+		if (!string.IsNullOrWhiteSpace(serviceStopReason))
+		{
+			envVars.Add("BEAM_STOP_SERVICE_REASON", serviceStopReason.Replace("\"", ""));
+		}
 		var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
-			.WithEnvironmentVariables(new Dictionary<string, string> { ["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1", ["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1", })
+			.WithEnvironmentVariables(envVars)
 			.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
 			{
 				Log.Information(line);

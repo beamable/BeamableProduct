@@ -26,7 +26,7 @@ namespace microserviceTests.microservice.Util
 		        builder.AddZLoggerLogProcessor(testLogs);
 	        });
 	        testLogger = testFactory.CreateLogger<TestLogs>();
-	        
+
 	        BeamableZLoggerProvider.LogContext.Value = testLogger;
         }
 

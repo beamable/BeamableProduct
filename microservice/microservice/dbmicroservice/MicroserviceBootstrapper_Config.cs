@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Server.Common;
 using Beamable.Server.Content;
@@ -29,8 +30,15 @@ public class BeamServiceConfig : IBeamServiceConfig
     List<Action<IDependencyBuilder>> IBeamServiceConfig.ServiceConfigurations { get; set; } = new List<Action<IDependencyBuilder>>();
 
     List<Func<IDependencyProviderScope, Task>> IBeamServiceConfig.ServiceInitializers { get; set; } = new List<Func<IDependencyProviderScope, Task>>();
-    Func<ILogger> IBeamServiceConfig.LogFactory { get; set; }
+
+    Func<ILoggingBuilder, DebugLogProcessor, DebugLogProcessor> IBeamServiceConfig.AddLoggerProvider { get; set; }
+
+    List<Func<IDependencyProviderScope, Task>> IBeamServiceConfig.PerServiceInitializers { get; set; } =
+	    new List<Func<IDependencyProviderScope, Task>>();
+
     Action<IBeamableService> IBeamServiceConfig.FirstConnectionHandler { get; set; }
+
+    Action<BeamCliInvocation> IBeamServiceConfig.LocalEnvModifier { get; set; } = _ => { };
 }
 
 public static class BeamServiceConfigExtensions
@@ -117,19 +125,43 @@ public static class BeamServiceConfigExtensions
 		conf.ServiceInitializers.Add(initializer);
 		return conf;
 	}
-	
+
 }
 
 public interface IBeamServiceConfig
 {
     IMicroserviceArgs Args { get; set; }
+    
+    [Obsolete("Please use the " + nameof(LocalEnvModifier) + " instead.")]
     string LocalEnvCustomArgs { get; set; }
     IMicroserviceAttributes Attributes { get; set; }
     List<BeamRouteSource> RouteSources { get; set; }
     List<Action<IDependencyBuilder>> ServiceConfigurations { get; set; }
     List<Func<IDependencyProviderScope, Task>> ServiceInitializers { get; set; }
-    Func<ILogger> LogFactory { get; set; }
+    /// <summary>
+    /// An optional delegate that customizes the logging pipeline for this microservice.
+    /// <para>
+    /// The delegate receives the <see cref="ILoggingBuilder"/> so you can add or clear log providers,
+    /// and the default <see cref="DebugLogProcessor"/> that Beamable has already configured.
+    /// It must return the <see cref="DebugLogProcessor"/> that should be used — return the received
+    /// <paramref name="defaultProcessor"/> to keep the default, return a new instance to replace it
+    /// </para>
+    /// <example>
+    /// Add a custom provider while keeping the default processor:
+    /// <code>
+    /// config.AddLoggerProvider = (builder, defaultProcessor) =>
+    /// {
+    ///     builder.AddProvider(new MyCustomLogProvider());
+    ///     return defaultProcessor;
+    /// };
+    /// </code>
+    /// </example>
+    /// </summary>
+    Func<ILoggingBuilder, DebugLogProcessor, DebugLogProcessor> AddLoggerProvider { get; set; }
+    List<Func<IDependencyProviderScope, Task>> PerServiceInitializers { get; set; }
     Action<IBeamableService> FirstConnectionHandler { get; set; }
+    Action<BeamCliInvocation> LocalEnvModifier { get; set; }
+    
 }
 
 public static class BeamServer
@@ -238,10 +270,25 @@ public static class MicroserviceResultExtensions
 
 public static class IBeamServiceConfigExtensions
 {
+	public static BeamServiceConfigBuilder ForceRemoteStorage(this BeamServiceConfigBuilder builder)
+	{
+		var conf = builder.Config as IBeamServiceConfig;
+		conf.LocalEnvModifier += invocation =>
+		{
+			invocation.AddArgIfNotExist(new BeamCliPart("--use-remote-deps"));
+			invocation.RemoveKey("--auto-deploy");
+		};
+		return builder;
+	}
+
+	
 	public static BeamServiceConfigBuilder UseRealmSecretAuth(this BeamServiceConfigBuilder builder)
 	{
 		var conf = builder.Config as IBeamServiceConfig;
-		conf.LocalEnvCustomArgs = " . --auto-deploy --include-prefix ";
+		conf.LocalEnvModifier += invocation =>
+		{
+			invocation.AddArgIfNotExist(new BeamCliPart("--include-secret"));
+		};
 		return builder;
 	}
 	

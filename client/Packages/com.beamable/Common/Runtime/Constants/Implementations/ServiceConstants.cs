@@ -82,6 +82,11 @@ namespace Beamable.Common
 				public const string PATH_CALLABLE_METHOD_NAME_KEY = "x-beamable-callable-method-name";
 				public const string PATH_CALLABLE_METHOD_CLIENT_PREFIX_KEY = "x-beamable-route-source-client-prefix";
 				
+				/// <summary>
+				/// OpenAPI extension that describes the semantic type of a primitive field.
+				/// </summary>
+				public const string SCHEMA_SEMANTIC_TYPE_NAME_KEY = "x-beamable-semantic-type";
+				
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_INTERFACE_KEY = "interface";
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_ID_KEY = "federationId";
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_V2_FEDERATION_CLASS_NAME_KEY = "federationClassName";
@@ -131,6 +136,8 @@ namespace Beamable.Common
 					public const string EVENT_PROVIDER_INITIALIZED = "Event provider initialized";
 					public const string STORAGE_READY = "Waiting for connections";
 					public const string GENERATED_CLIENT_PREFIX = "Generated Client Code.";
+					public const string PORTAL_EXTENSION_RUNNING =
+						"Portal extension started successfully and is now running.";
 				}
 
 				public static class Dialogs

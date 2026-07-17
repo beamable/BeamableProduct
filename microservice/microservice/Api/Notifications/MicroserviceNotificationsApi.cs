@@ -72,26 +72,39 @@ namespace Beamable.Server.Api.Notifications
         #endregion
 
         #region Notify Server
+
+        public async Promise<EmptyResponse> NotifyServer<T>(CustomEvent<T> evt, T payload)
+        {
+	        var req = new ServerEvent
+	        {
+		        eventKey = evt.EventName,
+		        payload = JsonConvert.SerializeObject(payload, Formatting.None, UnitySerializationSettings.Instance),
+		        toAll = evt.ToAll
+	        };
+	        await _notificationApi.PostService(req);
+	        return EmptyResponse.Unit;
+        }
+        
         public async Promise<EmptyResponse> NotifyServer(bool toAll, string eventName, string messagePayload)
         {
 	        var req = new ServerEvent
 	        {
 		        payload = new OptionalString(messagePayload), eventKey = eventName, toAll = toAll
 	        };
-	        await _notificationApi.PostServer(req);
+	        await _notificationApi.PostService(req);
 	        return EmptyResponse.Unit;
         }
         public async Promise<EmptyResponse> NotifyServer<T>(bool toAll, string eventName, T messagePayload)
         {
 	        var json = JsonConvert.SerializeObject(messagePayload, Formatting.None, UnitySerializationSettings.Instance);
 	        var req = new ServerEvent { payload = new OptionalString(json), eventKey = eventName, toAll = toAll };
-	        await _notificationApi.PostServer(req);
+	        await _notificationApi.PostService(req);
 	        return EmptyResponse.Unit;
         }
         public async Promise<EmptyResponse> NotifyServer(bool toAll, string eventName)
         {
 	        var req = new ServerEvent { eventKey = eventName, toAll = toAll };
-	        await _notificationApi.PostServer(req);
+	        await _notificationApi.PostService(req);
 	        return EmptyResponse.Unit;
         }
         #endregion

@@ -17,6 +17,7 @@ import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
 import type { InventoryQueryRequest } from '@/__generated__/schemas/InventoryQueryRequest';
 import type { InventoryUpdateRequest } from '@/__generated__/schemas/InventoryUpdateRequest';
+import type { InventoryUpdateResponse } from '@/__generated__/schemas/InventoryUpdateResponse';
 import type { InventoryView } from '@/__generated__/schemas/InventoryView';
 import type { ItemContentResponse } from '@/__generated__/schemas/ItemContentResponse';
 import type { MultipliersGetResponse } from '@/__generated__/schemas/MultipliersGetResponse';
@@ -203,11 +204,11 @@ export async function inventoryPostByObjectId(requester: HttpRequester, objectId
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function inventoryPutByObjectId(requester: HttpRequester, objectId: bigint | string, payload: InventoryUpdateRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function inventoryPutByObjectId(requester: HttpRequester, objectId: bigint | string, payload: InventoryUpdateRequest, gamertag?: string): Promise<HttpResponse<InventoryUpdateResponse>> {
   let endpoint = "/object/inventory/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
-  return makeApiRequest<CommonResponse, InventoryUpdateRequest>({
+  return makeApiRequest<InventoryUpdateResponse, InventoryUpdateRequest>({
     r: requester,
     e: endpoint,
     m: PUT,

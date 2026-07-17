@@ -1,0 +1,46 @@
+﻿using System;
+using Beamable.Common.BeamCli;
+
+namespace Beamable.Common.Semantics
+{
+    [CliContractType, Serializable]
+    public struct BeamPid : IBeamSemanticType<string>, IEquatable<string>, IEquatable<BeamPid>
+    {
+        private string _stringValue;
+
+        public string SemanticName => "Pid";
+        
+        public string AsString
+        {
+	        get => _stringValue ?? string.Empty;
+            set => _stringValue = value;
+        }
+        
+        public BeamPid(string value)
+        {
+            _stringValue = value;
+        }
+        
+        public static implicit operator string(BeamPid id) => id.AsString;
+        public static implicit operator BeamPid(string value) => new BeamPid(value);
+        public string ToJson()
+        {
+	        return $"\"{AsString}\"";
+        }
+
+        public bool Equals(string other)
+        {
+	        return other == AsString;
+        }
+
+        public bool Equals(BeamPid other)
+        {
+	        return other.AsString == AsString;
+        }
+
+        public override string ToString()
+        {
+	        return AsString;
+        }
+    }
+}

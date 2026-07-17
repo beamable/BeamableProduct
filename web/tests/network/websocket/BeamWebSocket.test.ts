@@ -140,6 +140,26 @@ describe('BeamWebSocket', () => {
     );
   });
 
+  it('sends a session-start frame as the first message after open', async () => {
+    const sendSpy = vi.spyOn(MockWebSocket.prototype, 'send');
+    const ws = new BeamWebSocket();
+
+    const connectPromise = ws.connect({
+      requester: fakeRequester,
+      cid: 'cid-1',
+      pid: 'pid-2',
+      refreshToken: 'refresh-123',
+    });
+    await vi.runAllTimersAsync();
+    await expect(connectPromise).resolves.toBeUndefined();
+
+    expect(sendSpy).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(sendSpy.mock.calls[0][0] as string);
+    expect(payload.type).toBe('session-start');
+    expect(typeof payload.device.platform).toBe('string');
+    expect(typeof payload.device.model).toBe('string');
+  });
+
   it('reconnects when the socket closes unexpectedly', async () => {
     const ws = new BeamWebSocket();
 

@@ -475,7 +475,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IApp
 	protected virtual void BindBaseContext(IServiceProvider provider, TArgs args, BindingContext bindingContext)
 	{
 		args.Dryrun = bindingContext.ParseResult.GetValueForOption(provider.GetRequiredService<DryRunOption>());
-		args.Quiet = bindingContext.ParseResult.GetValueForOption(provider.GetRequiredService<QuietOption>());
+		args.Quiet = bindingContext.ParseResult.GetValueForOption(QuietOption.Instance);
 		args.IgnoreStandaloneValidation =
 			bindingContext.ParseResult.GetValueForOption(provider.GetRequiredService<SkipStandaloneValidationOption>());
 	}

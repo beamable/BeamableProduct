@@ -387,6 +387,9 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			
 			var contentObject = CreateInstance(type) as ContentObject;
+			// Force Unity's serializer to instantiate all nested [Serializable] reference fields
+			// (e.g. Optional abd strings types) with proper default instances instead of leaving them null.
+			JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(contentObject), contentObject);
 			string baseName = $"New_{itemType.Replace(".","_")}_";
 			int nextNumber = _contentService.GetContentsFromType(type)
 			                                .Select(item => item.Name)
@@ -549,10 +552,19 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			string lastUpdateDate = DateTimeOffset.FromUnixTimeMilliseconds(entry.LatestUpdateAtDate).ToLocalTime().ToString("g");
 
+			bool isRenamed = _contentService.TryGetRenameInfo(entry.FullId, out var renameInfo)
+			                 && renameInfo.CreatedFullId == entry.FullId;
+			if (isRenamed)
+				nameLabel = isEditingName ? nameLabel : $"{entry.Name} (renamed from {renameInfo.OldName})";
+
 			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
-			Texture iconForEntry = !_contentService.IsContentInvalid(entry.FullId)
-				? GetIconForStatus(entry.IsInConflict, entry.StatusEnum)
-				: BeamGUI.iconStatusInvalid;
+			Texture iconForEntry;
+			if (_contentService.IsContentInvalid(entry.FullId))
+				iconForEntry = BeamGUI.iconStatusInvalid;
+			else if (isRenamed)
+				iconForEntry = BeamGUI.iconStatusModified;
+			else
+				iconForEntry = GetIconForStatus(entry.IsInConflict, entry.StatusEnum);
 			Texture[] icons = {iconForEntry};
 
 			bool[] isEditable = {isEditingName};
@@ -782,7 +794,18 @@ namespace Beamable.Editor.UI.ContentWindow
 					});
 				}
 
-				if (entry.StatusEnum is not ContentStatus.UpToDate and not ContentStatus.Created)
+				if (_contentService.TryGetRenameInfo(entry.FullId, out var ctxRenameInfo)
+				    && ctxRenameInfo.CreatedFullId == entry.FullId)
+				{
+					menu.AddItem(new GUIContent($"Revert Item (renamed from {ctxRenameInfo.OldName})"), false,
+					             () =>
+					             {
+						             var bothIds = $"{ctxRenameInfo.CreatedFullId},{ctxRenameInfo.DeletedFullId}";
+						             _ = _contentService.SyncContentsWithProgress(
+							             true, true, true, true, bothIds, ContentFilterType.ExactIds);
+					             });
+				}
+				else if (entry.StatusEnum is not ContentStatus.UpToDate and not ContentStatus.Created)
 				{
 					menu.AddItem(new GUIContent("Revert Item"), false,
 					             () =>
@@ -873,18 +896,11 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void DuplicateContent(LocalContentManifestEntry entry)
 		{
-			if (_contentService.TryGetContentObject(entry.FullId, out var contentObject))
+			if (_contentService.DuplicateContent(entry, out var duplicatedObject))
 			{
-				var duplicatedObject = Instantiate(contentObject);
-				string baseName = $"{contentObject.ContentName}_Copy";
-				int itemsWithBaseNameCount = _contentService.GetContentsFromType(contentObject.GetType())
-				                                            .Count(item => item.Name.StartsWith(baseName));
-				duplicatedObject.SetContentName($"{baseName}{itemsWithBaseNameCount}");
-				duplicatedObject.ContentStatus = ContentStatus.Created;
-				duplicatedObject.Tags = entry.Tags;
-				_contentService.SaveContent(duplicatedObject);
-				Selection.activeObject = duplicatedObject;
+				SetEntryIdAsSelected(duplicatedObject.Id);
 			}
+			
 		}
 
 		private void StartEditEntryName(LocalContentManifestEntry entry)
@@ -1076,6 +1092,14 @@ namespace Beamable.Editor.UI.ContentWindow
 		                        HashSet<string> statuses,
 		                        string nameSearchPartValue)
 		{
+			// Hide the Deleted side of a detected rename — only the Created side (new name) is shown
+			if (entry.StatusEnum == ContentStatus.Deleted
+			    && _contentService.TryGetRenameInfo(entry.FullId, out var ri)
+			    && ri.DeletedFullId == entry.FullId)
+			{
+				return false;
+			}
+
 			// Check if it is the specificType
 			if (!string.IsNullOrEmpty(specificType) &&
 			    !entry.TypeName.Equals(specificType, StringComparison.InvariantCultureIgnoreCase))

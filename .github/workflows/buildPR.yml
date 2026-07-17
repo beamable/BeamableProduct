@@ -82,20 +82,32 @@ jobs:
     timeout-minutes: 30
     runs-on: ${{ matrix.runners }}
     concurrency:
-      group: cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{matrix.runners}}
+      group: cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{ matrix.runners }}-${{ matrix.test-culture }}
       cancel-in-progress: true
     strategy:
       max-parallel: 2
       matrix:
         dotnet-version: ['10.0.x' ]
-        runners: [ windows-latest, ubuntu-latest ]
+        include:
+          - runners: windows-latest
+            test-culture: en-US
+            dotnet-cli-ui-language: en
+          - runners: ubuntu-latest
+            test-culture: en-US
+            dotnet-cli-ui-language: en
+            lang: en_US.UTF-8
+          - runners: ubuntu-latest
+            test-culture: pl-PL
+            dotnet-cli-ui-language: pl
+            lang: pl_PL.UTF-8
     env:
       BEAM_DOCKER_WINDOWS_CONTAINERS: ${{ matrix.runners == 'windows-latest' && '1' || '0' }}
+      DOTNET_CLI_UI_LANGUAGE: ${{ matrix.dotnet-cli-ui-language }}
     steps:
       - name: Check Docker 
         run: docker version
       - name: Check concurrency
-        run: echo 'cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{matrix.runners}}'
+        run: echo 'cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{ matrix.runners }}-${{ matrix.test-culture }}'
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v4
@@ -108,6 +120,12 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget
+      - name: Configure locale
+        if: matrix.runners == 'ubuntu-latest' && matrix.lang
+        run: |
+          sudo locale-gen ${{ matrix.lang }}
+          echo "LANG=${{ matrix.lang }}" >> "$GITHUB_ENV"
+          echo "LC_ALL=${{ matrix.lang }}" >> "$GITHUB_ENV"
       - name: Install Go
         uses: actions/setup-go@v5
         with:
@@ -123,12 +141,15 @@ jobs:
         run: |
           cat ./build-number.txt
           beam --version
+      - name: Check Dotnet Version 
+        working-directory: cli/tests
+        run: dotnet --info
       - name: Install dependencies
         run: dotnet restore cli/tests
       - name: Build
         run: dotnet build --configuration Release --no-restore cli/tests -p:BeamOverrideVersionWithLocalDev=true
       - name: Test
-        run: dotnet test --configuration Release --no-build cli/tests -p:BeamOverrideVersionWithLocalDev=true
+        run: dotnet test --configuration Release --no-build cli/tests -p:BeamOverrideVersionWithLocalDev=true -- NUnit.DefaultCulture=${{ matrix.test-culture }}
   testSourceGen:
     timeout-minutes: 10
     runs-on: ubuntu-latest
@@ -158,7 +179,16 @@ jobs:
         run: dotnet build --configuration Release --no-restore templates/SourceGen/MicroserviceSourceGen.Tests
       - name: Test
         run: dotnet test --configuration Release --no-build templates/SourceGen/MicroserviceSourceGen.Tests
-  testAllModes:
+  # Unity Pro serials allow 2 concurrent activations each, and we own 3 serials
+  # (UNITY_SERIAL, UNITY_SERIAL_BUILD, UNITY_SERIAL_DEVOPS), so the Unity workload is
+  # sharded into one job per serial. Each shard runs max-parallel: 1. Although a serial
+  # has 2 seats, the license return of a finishing leg overlaps the activation of the
+  # next, momentarily demanding a third seat and tripping spurious "No valid Unity Editor
+  # license found" failures (observed on run 27972570615). Capping at 1 leaves a full
+  # seat of headroom for that return/activate transition. This does not guard against
+  # cross-run contention (a second concurrent run on the same serial); raise toward the
+  # seat count only behind a license server that gives blocking seat acquisition. ~Claude
+  testGroupDefault:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
@@ -167,6 +197,7 @@ jobs:
       cancel-in-progress: true
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         projectPath:
           - client
@@ -177,23 +208,8 @@ jobs:
           - 2021.3.29f1
           - 2022.3.7f1
           - 6000.0.37f1
-          - 6000.2.8f1
-          - 6000.3.0f1
         gameCiVersion:
           - 3.1.0
-        include:
-          - unityVersion: 2022.3.7f1
-            unityEmailOverride: UNITY_EMAIL_DEVOPS
-            unityPasswordOverride: UNITY_PASSWORD_DEVOPS
-            unitySerialOverride: UNITY_SERIAL_DEVOPS
-          - unityVersion: 2021.3.29f1
-            unityEmailOverride: UNITY_EMAIL_BUILD
-            unityPasswordOverride: UNITY_PASSWORD_BUILD
-            unitySerialOverride: UNITY_SERIAL_BUILD
-          - unityVersion: 6000.0.37f1
-            unityEmailOverride: UNITY_EMAIL_BUILD
-            unityPasswordOverride: UNITY_PASSWORD_BUILD
-            unitySerialOverride: UNITY_SERIAL_BUILD
     env:
       GAME_CI_VERSION: >-
         ${{
@@ -288,6 +304,11 @@ jobs:
           large-packages: true
           docker-images: true
           swap-storage: true
+      # Surface the literal Unity license-contention lines as annotations live, mid-run.
+      # Complements the post-failure XML check below, which controls the job's outcome.
+      # Container-action stdout scope is unconfirmed; verify on a real run. ~Claude
+      - name: Register Unity license problem matcher
+        run: echo "::add-matcher::.github/matchers/unity-license.json"
       - uses: game-ci/unity-test-runner@v4
         id: tests
         timeout-minutes: 30
@@ -297,9 +318,9 @@ jobs:
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
           BEAM_UNITY_TEST_CI: "true"
-          UNITY_EMAIL: ${{ secrets[matrix.unityEmailOverride] || secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
         with:
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ env.GAME_CI_VERSION }}
           customParameters: -warnaserror+ -executeMethod Beamable.Editor.BeamCli.BeamCliUtil.InstallToolFromLocalPackageSource
@@ -310,6 +331,179 @@ jobs:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
 
+      # A license/seat activation failure aborts before any tests run, so it produces
+      # no result XML. If the shard failed and no XML exists, surface a plain-language
+      # annotation naming license contention so the red build is self-explanatory and
+      # nobody has to scroll the editor log to find "No valid Unity Editor license
+      # found". (Artifact presence is used rather than parsing the editor stdout, which
+      # a later step cannot read back.) ~Claude
+      - name: Annotate Unity license contention
+        if: failure()
+        shell: bash
+        env:
+          ARTIFACTS: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
+        run: |
+          if find "$ARTIFACTS" -name '*.xml' 2>/dev/null | grep -q .; then
+            echo "Test result XML present: this is a genuine test failure, not license contention."
+          else
+            echo "::error title=Unity license contention::${{ matrix.unityVersion }} ${{ matrix.testMode }} produced no test results -- the editor exited before tests ran, the signature of a Unity license/seat activation failure (serial contention), not a test failure."
+          fi
+
+  # Second Unity-test shard, pinned to the UNITY_SERIAL_BUILD seat (see the comment
+  # above testGroupDefault for the seat-budget rationale). ~Claude
+  testGroupBuild:
+    timeout-minutes: 30
+    name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: unity-tests-${{ matrix.unityVersion }}-${{ matrix.testMode }}-${{ github.head_ref }}
+      cancel-in-progress: true
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        projectPath:
+          - client
+        testMode:
+          - playmode
+          - editmode
+        unityVersion:
+          - 6000.2.8f1
+          - 6000.3.0f1
+        gameCiVersion:
+          - 3.1.0
+    env:
+      GAME_CI_VERSION: >-
+        ${{
+          matrix.unityVersion == '6000.2.8f1' && '3.2.0' ||
+          matrix.unityVersion == '6000.3.0f1' && '3.2.1' ||
+          matrix.gameCiVersion
+        }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Unity Mapped Values
+        id: unityMap
+        env:
+          UNITY_MODE: >-
+            ${{ fromJson('{
+              "playmode": "player",
+              "editmode": "editor"
+            }')[matrix.testMode] }}
+        run: |
+          echo "UNITY_MODE=$UNITY_MODE" >> "$GITHUB_OUTPUT"
+
+
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            9.0.x
+            8.0.302
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
+      - name: Build and Install BEAM CLI
+        working-directory: ./
+        run: |
+          ./setup.sh
+          SKIP_GENERATION=true ./dev.sh --skip-unreal
+        env:
+          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
+      - name: Check Beam CLI
+        run: |
+          pwd
+          ls -a
+          beam version
+      - name: Apply Nuget Version to Unity SDK
+        run: |
+          ReleaseSharedCode=true dotnet build ./cli/beamable.common -t:CopyCodeToUnity
+
+      - name: Apply CLI Versions
+        run: jq --arg nextVersion 0.0.123.1 '.nugetPackageVersion = $nextVersion' ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json > localtmpfile && mv localtmpfile ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
+
+      - name: Review Unity version-default file
+        run: |
+          cat ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
+
+      - name: Copy the nuget packages into unity
+        working-directory: ./
+        run: |
+          mkdir -p client/BeamableNugetSource/
+          ls BeamableNugetSource
+          cp BeamableNugetSource/*.nupkg client/BeamableNugetSource/
+
+      - name: Cache Unity Folders
+        uses: actions/cache@v3
+        with:
+          path: ${{ matrix.projectPath }}/Library
+          key: Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+          restore-keys: |
+            Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+      # See the registration rationale above testGroupDefault's matching step. ~Claude
+      - name: Register Unity license problem matcher
+        run: echo "::add-matcher::.github/matchers/unity-license.json"
+      - uses: game-ci/unity-test-runner@v4
+        id: tests
+        timeout-minutes: 30
+        env:
+          DOTNET_CLI_UI_LANGUAGE: en
+          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+          BEAM_UNITY_TEST_CI: "true"
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL_BUILD }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD_BUILD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL_BUILD }}
+        with:
+          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ env.GAME_CI_VERSION }}
+          customParameters: -warnaserror+ -executeMethod Beamable.Editor.BeamCli.BeamCliUtil.InstallToolFromLocalPackageSource
+          projectPath: ${{ matrix.projectPath }}
+          testMode: ${{ matrix.testMode }}
+          unityVersion: ${{ matrix.unityVersion }}
+          artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
+
+      # See the annotation rationale above testGroupDefault's matching step. ~Claude
+      - name: Annotate Unity license contention
+        if: failure()
+        shell: bash
+        env:
+          ARTIFACTS: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
+        run: |
+          if find "$ARTIFACTS" -name '*.xml' 2>/dev/null | grep -q .; then
+            echo "Test result XML present: this is a genuine test failure, not license contention."
+          else
+            echo "::error title=Unity license contention::${{ matrix.unityVersion }} ${{ matrix.testMode }} produced no test results -- the editor exited before tests ran, the signature of a Unity license/seat activation failure (serial contention), not a test failure."
+          fi
+
   build:
     name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
@@ -319,6 +513,10 @@ jobs:
       cancel-in-progress: true
     strategy:
       fail-fast: false
+      # All device builds share the UNITY_SERIAL_DEVOPS seat (see the comment above
+      # testGroupDefault). max-parallel: 1 leaves a seat of headroom for the license
+      # return/activate transition. ~Claude
+      max-parallel: 1
       matrix:
         targetPlatform:
           - Android
@@ -329,15 +527,6 @@ jobs:
           - 6000.0.37f1
         projectPath:
           - client
-        include:
-          - targetPlatform: Android
-            unityEmailOverride: UNITY_EMAIL_DEVOPS
-            unityPasswordOverride: UNITY_PASSWORD_DEVOPS
-            unitySerialOverride: UNITY_SERIAL_DEVOPS
-          - targetPlatform: StandaloneOSX
-            unityEmailOverride: UNITY_EMAIL_BUILD
-            unityPasswordOverride: UNITY_PASSWORD_BUILD
-            unitySerialOverride: UNITY_SERIAL_BUILD
     steps:
       - uses: actions/checkout@v4
         with:
@@ -425,9 +614,9 @@ jobs:
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
         env:
-          UNITY_EMAIL: ${{ secrets[matrix.unityEmailOverride] || secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL_DEVOPS }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD_DEVOPS }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL_DEVOPS }}
         with:
           customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-${{steps.unityMap.outputs.UNITY_PLATFORM}}-3.1.0
           targetPlatform: ${{ matrix.targetPlatform }}
@@ -440,4 +629,3 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
           buildMethod: BuildSampleProject.Development
-

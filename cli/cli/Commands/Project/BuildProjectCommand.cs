@@ -1,3 +1,4 @@
+using System.CommandLine;
 using Beamable.Common.Semantics;
 using cli.Dotnet;
 using cli.Services;
@@ -8,6 +9,8 @@ public class BuildProjectCommandArgs : CommandArgs
 {
 	public List<string> services = new List<string>();
 	public bool watch;
+	public string stopReason;
+	public int MaxParallelTask;
 }
 
 public class BuildProjectCommandOutput
@@ -26,6 +29,11 @@ public class BuildProjectCommand : StreamCommand<BuildProjectCommandArgs, BuildP
 	{
 		ProjectCommand.AddWatchOption(this, (args, i) => args.watch = i);
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
+		AddOption(new Option<string>("--stop-reason", "A message to send to the running service when it is terminated"),
+			(args, i) => args.stopReason = i);
+		AddOption(
+			new Option<int>(new string[] { "--max-parallel-count", "-mpc" }, () => 0,
+				"Maximum number of parallel services builds"), (args, i) => args.MaxParallelTask = i);
 	}
 
 	public override async Task Handle(BuildProjectCommandArgs args)
@@ -41,7 +49,7 @@ public class BuildProjectCommand : StreamCommand<BuildProjectCommandArgs, BuildP
 					service = service,
 					report = report
 				});
-			}));
+			}, serviceStopReason: args.stopReason));
 		}
 
 		await Task.WhenAll(serviceTasks);

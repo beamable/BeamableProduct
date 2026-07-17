@@ -14,41 +14,131 @@ public static class DirectoryUtils
 {
 	public static DirectoryInfoUtils CalculateDirectorySize(string path)
 	{
-		var result = new DirectoryInfoUtils()
+		long size = 0;
+		int fileCount = 0;
+
+		var options = new EnumerationOptions
 		{
-			FileCount = 0,
-			Size = 0
+			RecurseSubdirectories = true,
+			IgnoreInaccessible = true,          // skip permission errors silently
+			AttributesToSkip = FileAttributes.ReparsePoint  // skip symlinks/junctions
 		};
 
-		var files = Directory.GetFiles(path);
-		foreach (string file in files)
+		foreach (var file in new DirectoryInfo(path).EnumerateFiles("*", options))
 		{
 			try
 			{
-				if(!File.Exists(file))
-					continue;
-				var fileInfo = new FileInfo(file);
-				result.Size += fileInfo.Length;
-				result.FileCount++;
+				size += file.Length;   // Length is pre-populated on the FileInfo
+				fileCount++;
 			}
 			catch (Exception ex)
 			{
-				Log.Warning($"Could not access file {file}: {ex.Message}");
+				Console.WriteLine($"Could not access file {file.FullName}: {ex.Message}");
 			}
 		}
 
-		var subdirectories = Directory.GetDirectories(path);
-		foreach (string subdirectory in subdirectories)
+		return new DirectoryInfoUtils { Size = size, FileCount = fileCount };
+	}
+
+	/// <summary>
+	/// Holds the project-related files discovered by <see cref="ScanProjectFiles"/>, bucketed by kind.
+	/// </summary>
+	public sealed class ProjectScanResult
+	{
+		public List<string> Csprojs = new();
+		public List<string> BeamIgnores = new();
+		public List<string> PackageJsons = new();
+	}
+
+	/// <summary>
+	/// Directory names that never legitimately contain Beamable source projects (.csproj / package.json)
+	/// and are pruned during <see cref="ScanProjectFiles"/> traversal so we don't descend into them.
+	/// </summary>
+	private static readonly HashSet<string> PrunedDirNames =
+		new(StringComparer.OrdinalIgnoreCase)
 		{
+			"bin", "obj", ".git", "node_modules", "Library", "Temp", "Logs", ".vs", ".idea", ".beamable"
+		};
+
+	/// <summary>
+	/// Walks each search path's directory tree exactly once, pruning well-known non-source directories
+	/// (see <see cref="PrunedDirNames"/>) and any subtree under <paramref name="absolutePathsToIgnore"/>
+	/// before descending, and buckets the matched files (*.csproj, *.beamignore, package.json).
+	/// This replaces three independent recursive <see cref="Directory.GetFiles(string,string,SearchOption)"/>
+	/// walks that previously traversed (and post-filtered) the entire workspace per file kind.
+	/// </summary>
+	public static ProjectScanResult ScanProjectFiles(
+		IReadOnlyList<string> searchPaths,
+		IReadOnlyList<string> absolutePathsToIgnore)
+	{
+		var result = new ProjectScanResult();
+
+		// normalize the ignore prefixes to full paths for a stable StartsWith comparison.
+		var ignorePrefixes = new string[absolutePathsToIgnore?.Count ?? 0];
+		for (var i = 0; i < ignorePrefixes.Length; i++)
+		{
+			ignorePrefixes[i] = Path.GetFullPath(absolutePathsToIgnore[i]);
+		}
+
+		// guard against overlapping search paths and symlink loops by tracking visited directories.
+		var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var stack = new Stack<string>();
+		foreach (var searchPath in searchPaths)
+		{
+			if (string.IsNullOrEmpty(searchPath) || !Directory.Exists(searchPath)) continue;
+			stack.Push(Path.GetFullPath(searchPath));
+		}
+
+		bool IsIgnored(string fullPath)
+		{
+			foreach (var prefix in ignorePrefixes)
+			{
+				if (fullPath.StartsWith(prefix, StringComparison.Ordinal)) return true;
+			}
+			return false;
+		}
+
+		while (stack.Count > 0)
+		{
+			var dir = stack.Pop();
+			if (!visited.Add(dir)) continue;
+			if (IsIgnored(dir)) continue;
+
+			IEnumerable<FileSystemInfo> entries;
 			try
 			{
-				var subResult = CalculateDirectorySize(subdirectory);
-				result.Size += subResult.Size;
-				result.FileCount += subResult.FileCount;
+				entries = new DirectoryInfo(dir).EnumerateFileSystemInfos();
 			}
-			catch (Exception ex)
+			catch
 			{
-				Log.Warning($"Could not access directory {subdirectory}: {ex.Message}");
+				// IgnoreInaccessible-equivalent: skip directories we cannot read.
+				continue;
+			}
+
+			foreach (var entry in entries)
+			{
+				// skip symlinks/junctions to avoid loops, mirroring CalculateDirectorySize.
+				if ((entry.Attributes & FileAttributes.ReparsePoint) != 0) continue;
+
+				if ((entry.Attributes & FileAttributes.Directory) != 0)
+				{
+					if (PrunedDirNames.Contains(entry.Name)) continue;
+					stack.Push(entry.FullName);
+					continue;
+				}
+
+				if (string.Equals(entry.Name, "package.json", StringComparison.OrdinalIgnoreCase))
+				{
+					result.PackageJsons.Add(entry.FullName);
+				}
+				else if (string.Equals(entry.Extension, ".csproj", StringComparison.OrdinalIgnoreCase))
+				{
+					result.Csprojs.Add(entry.FullName);
+				}
+				else if (string.Equals(entry.Extension, ".beamignore", StringComparison.OrdinalIgnoreCase))
+				{
+					result.BeamIgnores.Add(entry.FullName);
+				}
 			}
 		}
 

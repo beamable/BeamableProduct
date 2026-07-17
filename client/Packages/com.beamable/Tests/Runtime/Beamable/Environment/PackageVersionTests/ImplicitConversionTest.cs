@@ -10,8 +10,8 @@ namespace Beamable.Tests.Runtime.Environment.PackageVersionTests
 		{
 			var versionStr = "1.0.1";
 			var version = PackageVersion.FromSemanticVersionString("1.0.2");
-			Assert.AreEqual(false, versionStr < version);
-			Assert.AreEqual(false, version > versionStr);
+			Assert.AreEqual(true, versionStr < version);
+			Assert.AreEqual(true, version > versionStr);
 		}
 
 		[Test]
