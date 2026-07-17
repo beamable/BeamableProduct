@@ -185,7 +185,7 @@ namespace Beamable.Content
 
 			_manifestPromise.CompleteSuccess(new Unit());
 		}
-		
+
 		private bool TryGetCachedManifest(string uid, out ClientManifest manifest)
 		{
 			manifest = null;
@@ -227,7 +227,7 @@ namespace Beamable.Content
 				Debug.LogError($"Failed to save cached manifest: {ex.Message}");
 			}
 		}
-		
+
 		private string GetManifestPath(string uid)
 		{
 			var pid = Beam.RuntimeConfigProvider.Pid;
@@ -302,7 +302,7 @@ namespace Beamable.Content
 		/// Member holds all content that has been cached as a result of fetching new content
 		/// </summary>
 		public ContentDataInfoWrapper CachedContentDataInfo = new ContentDataInfoWrapper();
-		
+
 		/// <summary>
 		/// Member holds all content that was baked into the current build
 		/// To resolve content, please use the <see cref="GetContent(string,string)"/> method.
@@ -367,7 +367,7 @@ namespace Beamable.Content
 
 			// Subscribable = _provider.GetService<IManifestSubscriptionFactory>()
 			//                         .CreateSubscription(CurrentDefaultManifestID);
-			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID, _config.OmitContentManifestTags);
+			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID, _config.OmitContentManifestTags, BakedManifest);
 			Subscribable.Subscribe(cb =>
 			{
 				// pay attention, server...
@@ -405,14 +405,14 @@ namespace Beamable.Content
 				yield return delay;
 				if (cacheVersion != CachedContentDataInfo.cacheVersion)
 				{
-					// there has been a cache update since we waited. We should wait 
+					// there has been a cache update since we waited. We should wait
 					//  some more time to let all the changes roll in.
 					continue;
 				}
-				
+
 				// check if cache needs to be saved
 				if (CachedContentDataInfo.cacheVersion <= committedCacheVersion)
-					continue; // wait for another 5 seconds ? 
+					continue; // wait for another 5 seconds ?
 
 				try
 				{
@@ -455,7 +455,7 @@ namespace Beamable.Content
 
 			return $"{fsa.GetPersistentDataPathWithoutTrailingSlash()}/{pid}-{cid}/content/content.json";
 		}
-		
+
 		/// <summary>
 		/// get the baked content and hold it as an in-memory dictionary for use later
 		/// </summary>
@@ -467,7 +467,7 @@ namespace Beamable.Content
 			{
 				return new ContentDataInfoWrapper();
 			}
-			
+
 			string json = bakedFile.text;
 			var isValidJson = Json.IsValidJson(json);
 			if (isValidJson)
@@ -611,7 +611,7 @@ namespace Beamable.Content
 
 		public Promise<IContentObject> GetContent(IContentRef reference, string manifestID = "")
 		{
-			
+
 			var referencedType = reflectionCache.GetTypeFromId(reference.GetId());
 			return GetContent(reference.GetId(), referencedType, DetermineManifestID(manifestID));
 		}
