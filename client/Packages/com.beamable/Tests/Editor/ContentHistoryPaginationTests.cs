@@ -108,6 +108,18 @@ namespace Beamable.Editor.Tests
 		}
 
 		[Test]
+		public void ContentHistoryTimestamp_UsesIso8601UtcFormat()
+		{
+			var formatter = typeof(ContentWindow).GetMethod("FormatHistoryTimestamp",
+				BindingFlags.Static | BindingFlags.NonPublic);
+
+			Assert.That(formatter, Is.Not.Null, "Content history needs a dedicated timestamp formatter.");
+			var formatted = (string)formatter.Invoke(null, new object[] { 0L });
+
+			Assert.That(formatted, Is.EqualTo("1970-01-01T00:00:00Z"));
+		}
+
+		[Test]
 		public void ContentHistoryOperationException_FormatsFullCopyableDiagnostic()
 		{
 			var error = new ContentHistoryOperationException(

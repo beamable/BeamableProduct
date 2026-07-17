@@ -1,6 +1,7 @@
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
+using Beamable.Content.Utility;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.ContentService;
@@ -8,6 +9,7 @@ using Beamable.Editor.ThirdParty.Splitter;
 using Beamable.Editor.Util;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -24,7 +26,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private const int HistoryChangesPageSize = 25;
 		private const float HistoryEntryRowHeight = 24f;
 		private const float HistoryChangeRowHeight = 22f;
-		private const float HistoryTimeColumnWidth = 74f;
+		private const float HistoryTimeColumnWidth = 156f;
 		private const float HistoryChangesColumnWidth = 82f;
 		private const float HistoryAuthorColumnWidth = 112f;
 		private const float HistoryManifestCopyButtonWidth = 20f;
@@ -445,7 +447,6 @@ namespace Beamable.Editor.UI.ContentWindow
 					: HistoryEntryColor);
 			}
 
-			var date = DateTimeOffset.FromUnixTimeMilliseconds(entry.CreatedDate).LocalDateTime;
 			var timeRect = new Rect(rowRect.x + 6, rowRect.y + 3, HistoryTimeColumnWidth - 6, EditorGUIUtility.singleLineHeight);
 			var changesRect = new Rect(timeRect.xMax, rowRect.y + 3, HistoryChangesColumnWidth, EditorGUIUtility.singleLineHeight);
 			var manifestLayout = ContentHistoryManifestCopyLayout.Create(rowRect, changesRect,
@@ -466,7 +467,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 			}
 
-			GUI.Label(timeRect, date.ToString("h:mm tt"), EditorStyles.miniLabel);
+			GUI.Label(timeRect, FormatHistoryTimestamp(entry.CreatedDate), EditorStyles.miniLabel);
 			GUI.Label(changesRect, $"{entry.AffectedContentIds?.Length ?? 0} changed", EditorStyles.miniLabel);
 			DrawHistoryTruncatedLabel(manifestRect, entry.ManifestUid);
 			DrawHistoryTruncatedLabel(authorRect, string.IsNullOrEmpty(entry.PublishedByName) ? entry.PublishedBy : entry.PublishedByName);
@@ -475,6 +476,13 @@ namespace Beamable.Editor.UI.ContentWindow
 				EditorGUIUtility.systemCopyBuffer = entry.ManifestUid;
 			}
 			GUI.Label(copyManifestRect, _historyCopyManifestTooltipContent, GUIStyle.none);
+		}
+
+		private static string FormatHistoryTimestamp(long timestampMilliseconds)
+		{
+			return DateTimeOffset.FromUnixTimeMilliseconds(timestampMilliseconds)
+				.ToUniversalTime()
+				.ToString(DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture);
 		}
 
 		private void DrawHistoryPagination(int entryCount, int pageSize, int pageCount)
