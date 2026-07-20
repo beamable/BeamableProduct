@@ -25,6 +25,10 @@ ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/Android"
 ENV_FILE="$ANDROID_DIR/.native-build-env"
 PACKAGE_ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/Unity/Plugins/Android"
 PACKAGE_IOS_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/Unity/Plugins/iOS"
+# Standalone web/WebView Unity package (zero com.beamable dependency) — ships its own copy of the
+# same binaries so it can be consumed without the Unity SDK notifications package.
+PACKAGE_WEB_ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/Unity.Web/Plugins/Android"
+PACKAGE_WEB_IOS_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/Unity.Web/Plugins/iOS"
 PACKAGE_RN_ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/ReactNative/android/libs"
 PACKAGE_RN_IOS_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/ReactNative/ios"
 
@@ -107,6 +111,12 @@ cp "$NOTIF_AAR" "$PACKAGE_ANDROID_DIR/beamable-notifications-release.aar"
 echo "  beamable-notifications-release.aar → $PACKAGE_ANDROID_DIR"
 
 echo ""
+echo "--- Copying AAR into the standalone web Unity package ---"
+mkdir -p "$PACKAGE_WEB_ANDROID_DIR"
+cp "$NOTIF_AAR" "$PACKAGE_WEB_ANDROID_DIR/beamable-notifications-release.aar"
+echo "  beamable-notifications-release.aar → $PACKAGE_WEB_ANDROID_DIR"
+
+echo ""
 echo "--- Copying AAR into the unified React Native package ---"
 mkdir -p "$PACKAGE_RN_ANDROID_DIR"
 cp "$NOTIF_AAR" "$PACKAGE_RN_ANDROID_DIR/beamable-notifications-release.aar"
@@ -138,6 +148,13 @@ if [ "$OS" = macos ] && [ "${IOS_SUPPORTED_NATIVE:-false}" = true ]; then
   rm -rf "$PACKAGE_IOS_DIR/BeamableNotifications.xcframework"
   cp -R "$IOS_XCFRAMEWORK" "$PACKAGE_IOS_DIR/BeamableNotifications.xcframework"
   echo "  BeamableNotifications.xcframework → $PACKAGE_IOS_DIR"
+
+  echo ""
+  echo "--- Copying xcframework into the standalone web Unity package ---"
+  mkdir -p "$PACKAGE_WEB_IOS_DIR"
+  rm -rf "$PACKAGE_WEB_IOS_DIR/BeamableNotifications.xcframework"
+  cp -R "$IOS_XCFRAMEWORK" "$PACKAGE_WEB_IOS_DIR/BeamableNotifications.xcframework"
+  echo "  BeamableNotifications.xcframework → $PACKAGE_WEB_IOS_DIR"
 
   echo ""
   echo "--- Copying xcframework into the unified React Native package ---"

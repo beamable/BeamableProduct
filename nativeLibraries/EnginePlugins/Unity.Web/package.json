@@ -1,0 +1,20 @@
+{
+  "name": "com.beamable.notifications.web",
+  "version": "1.0.0",
+  "displayName": "Beamable Notifications (Web / WebView)",
+  "description": "Standalone Unity bridge that lets a web/React UI running inside a Unity WebView drive the Beamable native notifications binary (iOS + Android) — local + remote push, permissions, deep links, closed-app analytics. Zero dependency on the Beamable Unity SDK (com.beamable): the page uses the Beamable Web SDK, and this package is a thin JSON relay between the WebView and the native library. Bring your own WebView plugin (gree/unity-webview, Vuplex, uniwebview, …).",
+  "unity": "2021.3",
+  "keywords": [
+    "ios",
+    "android",
+    "notifications",
+    "push",
+    "fcm",
+    "apns",
+    "webview",
+    "websdk"
+  ],
+  "author": {
+    "name": "Beamable"
+  }
+}
