@@ -77,6 +77,11 @@ data class NotificationChannelSpec(
  * @param channelId channel to post on.
  * @param dataPayload arbitrary key/value data carried into the launch intent.
  * @param deepLinkUrl convenience deep link; merged into the payload under "deeplink".
+ * @param imageUrl rich-media image URL for the `bigPicture` style (downloaded at build time).
+ * @param style built-in style preset: "default" | "bigPicture" | "bigText" (null = default).
+ * @param badge app-icon badge count applied via setNumber (orthogonal to style); null leaves it unset.
+ * @param category id of a registered [NotificationCategorySpec] whose action buttons to render
+ *   (orthogonal to [style], like [badge]); null renders no buttons.
  */
 data class NotificationTemplate(
     val id: Int = 0,
@@ -86,7 +91,11 @@ data class NotificationTemplate(
     val largeIconResName: String? = null,
     val channelId: String,
     val dataPayload: Map<String, String> = emptyMap(),
-    val deepLinkUrl: String? = null
+    val deepLinkUrl: String? = null,
+    val imageUrl: String? = null,
+    val style: String? = null,
+    val badge: Int? = null,
+    val category: String? = null
 ) {
 
     /**
@@ -117,6 +126,11 @@ data class NotificationTemplate(
         obj.put("largeIconResName", largeIconResName ?: JSONObject.NULL)
         obj.put("channelId", channelId)
         obj.put("deepLinkUrl", deepLinkUrl ?: JSONObject.NULL)
+        obj.put("imageUrl", imageUrl ?: JSONObject.NULL)
+        obj.put("style", style ?: JSONObject.NULL)
+        // 0 is a valid badge count, so serialize the number when set and JSON null when unset.
+        obj.put("badge", badge ?: JSONObject.NULL)
+        obj.put("category", category ?: JSONObject.NULL)
         val data = JSONObject()
         for ((k, v) in dataPayload) data.put(k, v)
         obj.put("dataPayload", data)
@@ -148,7 +162,12 @@ data class NotificationTemplate(
                 largeIconResName = obj.optStringOrNull("largeIconResName"),
                 channelId = obj.optString("channelId", ""),
                 dataPayload = data,
-                deepLinkUrl = obj.optStringOrNull("deepLinkUrl")
+                deepLinkUrl = obj.optStringOrNull("deepLinkUrl"),
+                imageUrl = obj.optStringOrNull("imageUrl"),
+                style = obj.optStringOrNull("style"),
+                // has()/optInt keeps 0 as a valid count (a missing/null key stays null).
+                badge = if (obj.has("badge") && !obj.isNull("badge")) obj.optInt("badge") else null,
+                category = obj.optStringOrNull("category")
             )
         }
 

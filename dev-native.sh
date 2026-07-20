@@ -122,6 +122,35 @@ mkdir -p "$PACKAGE_RN_ANDROID_DIR"
 cp "$NOTIF_AAR" "$PACKAGE_RN_ANDROID_DIR/beamable-notifications-release.aar"
 echo "  beamable-notifications-release.aar → $PACKAGE_RN_ANDROID_DIR"
 
+# ---------------------------------------------------------------------------
+# Bust the Gradle artifact-transform cache for the .aar.
+#
+# The RN app consumes the .aar via `api fileTree(dir: libs, include: ['*.aar'])`
+# (EnginePlugins/ReactNative/android/build.gradle). Gradle caches the *exploded*
+# form of that loose .aar under ~/.gradle/caches/<ver>/transforms/<hash>/ and does
+# NOT reliably re-explode it when the file is overwritten in place under the same
+# name — so a rebuilt APK can silently keep the OLD bytecode. `./gradlew clean`
+# does NOT clear this (the transform cache lives outside the project, in the Gradle
+# user home). Remove any transform dirs holding this .aar so the next app build
+# re-transforms the freshly staged one.
+# ---------------------------------------------------------------------------
+echo ""
+echo "--- Busting Gradle transform cache for beamable-notifications-release.aar ---"
+GRADLE_HOME="${GRADLE_USER_HOME:-$HOME/.gradle}"
+if [ -d "$GRADLE_HOME/caches" ]; then
+  # A transform's output dir is named after the .aar:
+  #   .../transforms/<hash>/transformed/beamable-notifications-release
+  # Remove the enclosing <hash> dir so the whole transform is regenerated.
+  find "$GRADLE_HOME/caches" -type d -name "beamable-notifications-release" 2>/dev/null \
+    | while read -r d; do
+        hashdir="$(dirname "$(dirname "$d")")"
+        rm -rf "$hashdir" && echo "  removed stale transform: $hashdir"
+      done
+  echo "  done (next RN app build will re-explode the fresh .aar)."
+else
+  echo "  (no Gradle cache at $GRADLE_HOME/caches — skipping)"
+fi
+
 echo ""
 echo "--- Staging AAR into the Unreal plugin (ThirdParty/Android) ---"
 # Flat .aar consumed by the APL's <AARImports> via a Gradle flatDir repo.

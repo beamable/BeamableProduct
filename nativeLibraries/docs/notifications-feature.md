@@ -201,6 +201,19 @@ typed objects at the engine/SDK layer. On the wire it looks like:
   across platforms.
 - `deeplink` is passed through verbatim and is intentionally schema-less.
 
+**Styling keys (additive).** The same flat data map also carries optional presentation fields.
+They are plain strings on the wire (Android FCM is data-only — the library builds the tray
+notification itself). See `docs/custom-notifications-android.md` for the Android rendering and
+`docs/custom-notifications-ios.md` for iOS.
+
+| Key | Type (wire) | Meaning | Default when absent |
+|-----|-------------|---------|---------------------|
+| `style` | string | `default` \| `bigPicture` \| `bigText` \| `actions` — built-in preset | `default` |
+| `imageUrl` | string | rich-media image URL for `bigPicture` (downloaded natively) | none (falls back to plain/bigText) |
+| `badge` | string(int) | app-icon badge count; applied via `setNumber`, orthogonal to `style` | unchanged |
+| `sound` | string | sound name (mapped to a channel) | `default` |
+| `category` | string | iOS-only (ignored on Android) | — |
+
 ### 3.4 Deep-link behavior under the schema
 
 The existing deep-link behavior keeps working with the schema present.

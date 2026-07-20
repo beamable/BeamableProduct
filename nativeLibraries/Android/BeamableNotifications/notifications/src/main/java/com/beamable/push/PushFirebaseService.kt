@@ -102,7 +102,8 @@ class PushFirebaseService : FirebaseMessagingService() {
             ?: getString(R.string.beamable_default_channel)
         val deepLink = data["deeplink"]
 
-        // Carry every data entry forward so the engine can read it on tap.
+        // Carry every data entry forward so the engine can read it on tap. Styling fields
+        // (§3.3) drive the built-in presets in NotificationBuilder; badge is orthogonal.
         val template = NotificationTemplate(
             id = 0,
             title = title,
@@ -110,7 +111,11 @@ class PushFirebaseService : FirebaseMessagingService() {
             smallIconResName = data["smallIcon"],
             channelId = channelId,
             dataPayload = data,
-            deepLinkUrl = deepLink
+            deepLinkUrl = deepLink,
+            imageUrl = data["imageUrl"],
+            style = data["style"],
+            badge = data["badge"]?.toIntOrNull(),
+            category = data["category"]
         ).let {
             // A 0 id would overwrite itself repeatedly; give data pushes a stable
             // per-message id derived from the FCM message id when available.

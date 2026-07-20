@@ -140,12 +140,15 @@ function toNotificationData(json: unknown, wasLaunch = false): NotificationData 
   const deeplink =
     typeof rawDeep === 'string' && rawDeep.length > 0 ? rawDeep : undefined;
   const id = (o.id as string) ?? (o.messageId as string) ?? '';
+  const actionId = o.actionId as string | undefined;
   return {
     id: String(id),
     title: o.title as string | undefined,
     body: o.body as string | undefined,
     subtitle: o.subtitle as string | undefined,
     deeplink,
+    // Set when an action button (not the body) was tapped; the button's id (parity with iOS).
+    actionId: typeof actionId === 'string' && actionId.length > 0 ? actionId : undefined,
     wasLaunch,
     campaignId: o.campaignId as string | undefined,
     nodeId: o.nodeId as string | undefined,
@@ -600,12 +603,23 @@ export const BeamableNotifications = {
     // No-op on Android (FCM tokens are not explicitly unregistered here).
   },
 
-  // Templates / categories / analytics — iOS only; no-ops on Android.
+  // Templates — iOS only; no-op on Android.
   registerTemplate(template: TemplateSpec): void {
     if (IS_IOS) IosNative.registerTemplate(template);
   },
+  /**
+   * Register an action-button category (a named set of buttons) referenced by a notification's
+   * `category`. On iOS the OS matches `aps.category`; on Android the buttons are rendered by the
+   * library and a tap surfaces the button's id as `notificationOpened.actionId`. Register at app
+   * start (categories are persisted natively so a killed-app push can still render the buttons).
+   */
   registerCategory(category: CategorySpec): void {
-    if (IS_IOS) IosNative.registerCategory(category);
+    if (!isBeamableNotificationsSupported) return;
+    if (IS_IOS) {
+      IosNative.registerCategory(category);
+      return;
+    }
+    BeamablePush.registerCategory(JSON.stringify(category));
   },
 
   /**

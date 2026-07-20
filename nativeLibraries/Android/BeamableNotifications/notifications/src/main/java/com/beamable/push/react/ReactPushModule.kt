@@ -3,7 +3,9 @@ package com.beamable.push.react
 import android.app.Activity
 import android.content.Intent
 import com.beamable.push.BeamableAnalytics
+import com.beamable.push.CategoryStore
 import com.beamable.push.IntentDataReader
+import com.beamable.push.NotificationCategorySpec
 import com.beamable.push.NotificationIntentData
 import com.beamable.push.PushListener
 import com.beamable.push.PushManager
@@ -46,6 +48,23 @@ class ReactPushModule(
     @ReactMethod
     fun registerChannel(id: String, name: String, description: String, importance: Double) =
         PushManager.registerChannel(id, name, description, importance.toInt())
+
+    /**
+     * Registers a notification action category (a named set of buttons). [categoryJson] is a
+     * serialized [NotificationCategorySpec] ({ id, actions:[{ id, title, foreground?, destructive? }] }).
+     * Persisted so the killed-app FCM path can render the buttons (see [CategoryStore]).
+     */
+    @ReactMethod
+    fun registerCategory(categoryJson: String) {
+        try {
+            CategoryStore.register(
+                reactApplicationContext,
+                NotificationCategorySpec.fromJson(categoryJson),
+            )
+        } catch (t: Throwable) {
+            PushManager.dispatchError("register_category", t.message ?: t.toString())
+        }
+    }
 
     @ReactMethod
     fun requestPermission() {
