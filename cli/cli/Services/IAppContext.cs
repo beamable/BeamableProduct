@@ -344,15 +344,31 @@ public class DefaultAppContext : IAppContext
 			defaultAccessToken = response.Token;
 			defaultRefreshToken = response.RefreshToken;
 		}
+		// Detect whether the caller explicitly supplied a token on the command line (or via config
+		// override). When they did, the stored login in the token file must not override it.
+		var hasAccessTokenOverride = !string.IsNullOrEmpty(bindingContext.ParseResult.GetValueForOption(_accessTokenOption));
+		var hasRefreshTokenOverride = !string.IsNullOrEmpty(bindingContext.ParseResult.GetValueForOption(_refreshTokenOption));
+		var hasTokenOverride = hasAccessTokenOverride || hasRefreshTokenOverride;
+
+		// If an access token is supplied without a matching refresh token, don't inherit the stored
+		// user's refresh token: it belongs to a different identity, and the requester retry path would
+		// use it to silently swap back to that user on any 401/403.
+		if (hasAccessTokenOverride && !hasRefreshTokenOverride)
+		{
+			defaultRefreshToken = string.Empty;
+		}
+
 		_configService.TryGetSetting(out var accessToken, bindingContext, _accessTokenOption, defaultAccessToken);
 		_configService.TryGetSetting(out _refreshToken, bindingContext, _refreshTokenOption, defaultRefreshToken);
 
 		_token = new CliToken(accessToken, _refreshToken, cid, pid);;
-		
+
 		await Set(cid, pid, host);
-		
+
 		// if the token we got from the config file is expired, try to refresh it with the refresh token.
-		if (isExpiredToken)
+		// Skip this when the caller explicitly supplied a token override, otherwise the override would be
+		// silently discarded and replaced by the stored user's refreshed token.
+		if (isExpiredToken && !hasTokenOverride)
 		{
 			TokenResponse tokenResponse = await _provider.GetService<IAuthApi>().LoginRefreshToken(response.RefreshToken);
 			
