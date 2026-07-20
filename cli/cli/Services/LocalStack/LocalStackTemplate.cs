@@ -257,7 +257,12 @@ public static class LocalStackTemplate
 				// BASIC/OBJECT service providers log "<type> Service Started: <name>" when they register.
 				// HTTP gateway apps (com.*.gateway.App) never do — they log "Serving traffic at ..." on bind.
 				readyWhenLogContains = isGateway ? "Serving traffic" : "Service Started",
-				readyTimeoutSeconds = 120
+				readyTimeoutSeconds = 120,
+				// The first Scala services to boot (e.g. realms, session) can lose a startup race with Mongo:
+				// they connect before the replica set has a writable primary and die on their startup index
+				// writes (MongoTimeoutException on a w=majority write). Relaunch a few times — the RS becomes
+				// writable within seconds, exactly like the C# gateway step above.
+				readyRetries = 5
 			};
 			// The gateway exposes /metadata (PR#632) once it is serving; use it as a stronger, backend-confirmed
 			// readiness gate, with the log substring above as fallback.
