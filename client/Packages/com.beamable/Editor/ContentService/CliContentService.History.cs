@@ -210,7 +210,7 @@ namespace Beamable.Editor.ContentService
 			}
 		}
 
-		internal void CancelContentHistoryRequests()
+		public void CancelContentHistoryRequests()
 		{
 			_contentHistoryChangesRequest.CancelActive();
 			_contentHistoryPreviewRequest.CancelActive();
@@ -320,7 +320,7 @@ namespace Beamable.Editor.ContentService
 		}
 	}
 
-	internal static class ContentHistoryRequestFactory
+	public static class ContentHistoryRequestFactory
 	{
 		public static ContentHistorySyncContentArgs CreateContentSync(string manifestUid, string contentId)
 		{
@@ -332,7 +332,7 @@ namespace Beamable.Editor.ContentService
 		}
 	}
 
-	internal sealed class ContentHistoryRequestSlot<TRequest> where TRequest : class
+	public sealed class ContentHistoryRequestSlot<TRequest> where TRequest : class
 	{
 		private readonly Action<TRequest> _cancel;
 		private TRequest _activeRequest;

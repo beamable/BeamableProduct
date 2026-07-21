@@ -108,6 +108,28 @@ namespace Beamable.Editor.Tests
 		}
 
 		[Test]
+		public void ContentHistoryExtensionPoints_ArePublic()
+		{
+			var types = new[]
+			{
+				typeof(SearchBarClearInteraction),
+				typeof(ContentHistoryRequestFactory),
+				typeof(ContentHistoryRequestSlot<>),
+				typeof(ContentHistoryChangesSearch),
+				typeof(ContentHistoryPublishSearchResult),
+				typeof(ContentHistoryPublishSearch),
+				typeof(ContentHistoryFilterCache),
+				typeof(ContentHistoryManifestCopyLayout),
+				typeof(ContentHistoryInspectorPreview),
+				typeof(ContentHistoryPreviewRequest)
+			};
+
+			Assert.That(types, Is.All.Matches<Type>(type => type.IsPublic));
+			Assert.That(typeof(CliContentService).GetMethod("CancelContentHistoryRequests",
+				BindingFlags.Instance | BindingFlags.Public), Is.Not.Null);
+		}
+
+		[Test]
 		public void ContentHistoryTimestamp_UsesIso8601UtcFormat()
 		{
 			var formatter = typeof(ContentWindow).GetMethod("FormatHistoryTimestamp",

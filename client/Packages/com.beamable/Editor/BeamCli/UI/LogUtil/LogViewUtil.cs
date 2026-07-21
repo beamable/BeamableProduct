@@ -238,7 +238,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 		public Action onEndCheck;
 	}
 
-	internal static class SearchBarClearInteraction
+	public static class SearchBarClearInteraction
 	{
 		public static bool IsClearClick(EventType eventType, bool isPointerOverClearGlyph)
 		{

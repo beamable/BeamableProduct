@@ -1110,7 +1110,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		}
 	}
 
-	internal static class ContentHistoryChangesSearch
+	public static class ContentHistoryChangesSearch
 	{
 		public static IReadOnlyList<BeamContentHistoryChangelistEntry> Filter(
 			IReadOnlyList<BeamContentHistoryChangelistEntry> changes, string search)
@@ -1137,7 +1137,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		}
 	}
 
-	internal readonly struct ContentHistoryPublishSearchResult
+	public readonly struct ContentHistoryPublishSearchResult
 	{
 		public IReadOnlyList<BeamContentHistoryEntry> Entries { get; }
 		public bool ShowNoExactIdHint { get; }
@@ -1149,7 +1149,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		}
 	}
 
-	internal static class ContentHistoryPublishSearch
+	public static class ContentHistoryPublishSearch
 	{
 		public static ContentHistoryPublishSearchResult Filter(IReadOnlyList<BeamContentHistoryEntry> entries, string search)
 		{
@@ -1185,7 +1185,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		}
 	}
 
-	internal static class ContentHistoryFilterCache
+	public static class ContentHistoryFilterCache
 	{
 		public static bool CanReuse(bool hasCachedRows, bool sourceMatches, string cachedSearch, string currentSearch)
 		{
@@ -1193,7 +1193,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		}
 	}
 
-	internal readonly struct ContentHistoryManifestCopyLayout
+	public readonly struct ContentHistoryManifestCopyLayout
 	{
 		public Rect ManifestRect { get; }
 		public Rect CopyButtonRect { get; }
@@ -1218,7 +1218,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		}
 	}
 
-	internal static class ContentHistoryInspectorPreview
+	public static class ContentHistoryInspectorPreview
 	{
 		private static readonly HashSet<int> PreviewInstanceIds = new();
 
@@ -1297,7 +1297,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		}
 	}
 
-	internal static class ContentHistoryPreviewRequest
+	public static class ContentHistoryPreviewRequest
 	{
 		public static bool IsCurrent(int currentSelectionVersion, int requestSelectionVersion,
 			int currentPreviewVersion, int requestPreviewVersion)
