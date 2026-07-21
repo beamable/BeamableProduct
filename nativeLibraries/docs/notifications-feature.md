@@ -204,7 +204,9 @@ typed objects at the engine/SDK layer. On the wire it looks like:
 **Styling keys (additive).** The same flat data map also carries optional presentation fields.
 They are plain strings on the wire (Android FCM is data-only — the library builds the tray
 notification itself). See `docs/custom-notifications-android.md` for the Android rendering and
-`docs/custom-notifications-ios.md` for iOS.
+`docs/custom-notifications-ios.md` for iOS. To author your **own** style beyond the built-in presets
+(a consuming-app `PushNotificationStyleRenderer`, wired for React Native / Unity / Unreal), see
+`docs/custom-notification-styles-guide.md`.
 
 | Key | Type (wire) | Meaning | Default when absent |
 |-----|-------------|---------|---------------------|

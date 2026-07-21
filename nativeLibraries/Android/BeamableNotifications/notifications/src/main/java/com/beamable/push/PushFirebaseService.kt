@@ -32,8 +32,9 @@ class PushFirebaseService : FirebaseMessagingService() {
 
         // Receive-time hook — fires in foreground, background, AND killed states
         // (data-only messages). Runs before any display/dispatch branching, and must never
-        // throw out of here.
-        invokeNotificationReceived(remoteMessage, data, json)
+        // throw out of here. Returns the built event (or null on failure) so we can also offer
+        // it to custom-style renderers below.
+        val event = invokeNotificationReceived(remoteMessage, data, json)
 
         if (PushManager.isForeground) {
             // App is visible: hand the raw message to the engine to decide how to
@@ -46,6 +47,10 @@ class PushFirebaseService : FirebaseMessagingService() {
         // "notification" block; we explicitly display *data-only* messages here so
         // they still produce a tappable, deep-link-carrying notification.
         if (remoteMessage.notification == null) {
+            // Custom-style renderers (app-provided, for styles the shared lib doesn't build) get
+            // first chance to own display. If one consumes the notification, we post nothing here
+            // so there's no duplicate / plain-fallback post.
+            if (event != null && PushManager.dispatchStyleRender(applicationContext, event)) return
             displayDataMessage(remoteMessage, data)
         }
     }
@@ -58,8 +63,8 @@ class PushFirebaseService : FirebaseMessagingService() {
         remoteMessage: RemoteMessage,
         data: Map<String, String>,
         dataJson: String,
-    ) {
-        try {
+    ): PushReceivedEvent? {
+        return try {
             val intentData = NotificationIntentData.fromDataMap(data)
             // Native funnel "Received" — works in foreground AND closed-app data path.
             BeamableAnalytics.trackFunnel(
@@ -75,8 +80,10 @@ class PushFirebaseService : FirebaseMessagingService() {
                 intentData = intentData
             )
             PushManager.dispatchNotificationReceived(applicationContext, event)
+            event
         } catch (t: Throwable) {
             PushManager.dispatchError("notification_received", t.message ?: t.toString())
+            null
         }
     }
 
@@ -104,6 +111,8 @@ class PushFirebaseService : FirebaseMessagingService() {
 
         // Carry every data entry forward so the engine can read it on tap. Styling fields
         // (§3.3) drive the built-in presets in NotificationBuilder; badge is orthogonal.
+        // Custom styles (not built into the lib) are handled earlier by a PushNotificationStyleRenderer;
+        // if none consumed the message, an unknown style falls back to the default notification here.
         val template = NotificationTemplate(
             id = 0,
             title = title,

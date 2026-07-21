@@ -249,3 +249,49 @@ Android implementation:
 `setShowBadge(true)`. On **stock Android / Pixel** this yields only a **notification dot** — a numeric
 app-icon badge is OEM-specific (Samsung/Sony/etc.) and not available without a launcher-badge library.
 Per decision, no such dependency is added. iOS renders `aps.badge` as a real numeric badge.
+
+---
+
+## 11. Shared-library model — adding your own style
+
+`PushRailService` + the Push console extension are meant to be adopted as a **shared library**;
+each team defines **their own** styles. The shared pieces are deliberately generic:
+
+- **Service (`PushRailService`)** is **style-agnostic**: `ParsePushMessage`/`ReadExtra` capture any
+  non-reserved `extraData` key into `PushMessage.extra` and `WriteIntentData` emits it verbatim into
+  the FCM `data` map. `Get/SaveNotificationStyleConfig` persist arbitrary styles/fields in the
+  `NotificationConfigStorage` Micro storage. **No server code changes per style.**
+- **Console extension** ships only the bare-minimum static baseline in `DEFAULT_CONFIG`
+  (`default`/`bigPicture`/`bigText`/`actions` + common fields). All other styles — including the
+  **`animated`** and **`countdown`** examples — live in **Micro storage**, not code.
+- **Native (`BeamableNotifications`)** ships the built-in renderers in `NotificationBuilder.applyStyle`
+  (`default`/`bigPicture`/`bigText` + the orthogonal actions/badge). It renders **only** those
+  built-ins; a style it doesn't know is offered to a consuming-app **`PushNotificationStyleRenderer`**
+  (`PushContracts.kt`) before falling back to the default notification. The `animated`/`countdown`
+  examples are rendered by the React Native sample's own renderer
+  (`Samples/ReactNative/plugins/android/SampleNotificationStyleRenderer.kt`), **not** by the shared
+  library.
+
+### The native-support signal
+The console's "is this style implemented natively?" callout reads a **per-platform** set,
+`NATIVE_SUPPORTED_STYLES = { android: [...], ios: [] }` in `notificationConfig.ts`. This mirrors the
+native renderers (`android` tracks `NotificationBuilder.applyStyle`; `ios` is populated when iOS
+renderers land). It is **not** inferred from the device and **not** a per-style data flag — it is the
+list of style ids each platform actually renders.
+
+### To add a new style (3 steps)
+1. **Author it in the console modal** ("Manage styles & fields"): add the style and any new fields
+   (each field's `id` is its wire key). This persists to Micro storage — **no code**.
+2. **Implement a native renderer** for that `style` id in your **app's own native layer** via the
+   `PushNotificationStyleRenderer` hook (register it by manifest meta-data
+   `com.beamable.push.notification_style_renderer` or `PushManager.addStyleRenderer`), reading the
+   field keys off `PushReceivedEvent.dataJson`. Do **not** edit the shared library's
+   `NotificationBuilder`. The console's custom-style callout names exactly which properties your
+   renderer must read. **See the full walkthrough:**
+   [`custom-notification-styles-guide.md`](./custom-notification-styles-guide.md).
+3. *(Optional)* **Add the id** to `NATIVE_SUPPORTED_STYLES[platform]` in `notificationConfig.ts` once
+   your renderer ships on that platform — the custom-style callout then notes it's "already wired"
+   there.
+
+Until a renderer exists for a style, the console flags it as custom and the device falls back to the
+default notification, so authoring a not-yet-native style never breaks delivery.

@@ -28,7 +28,8 @@
           "appGroup": "group.com.beamable.mobiletest",
           "enableServiceExtension": true
         }
-      ]
+      ],
+      "./plugins/withSampleNotificationStyles"
     ],
     "experiments": {
       "typedRoutes": true

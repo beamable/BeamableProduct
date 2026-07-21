@@ -98,6 +98,34 @@ interface PushNotificationReceivedHandler {
 }
 
 // ---------------------------------------------------------------------------
+// PushNotificationStyleRenderer
+// ---------------------------------------------------------------------------
+
+/**
+ * Display-override hook for CUSTOM notification styles the shared library does not build itself.
+ *
+ * The shared library ships only a bare-minimum set of built-in styles (default / bigPicture /
+ * bigText, plus action buttons). A consuming app that defines its OWN styles (e.g. the ReactNative
+ * sample's `animated` / `countdown`) implements this to render them in its own native layer.
+ *
+ * Invoked by [PushFirebaseService] on the background/killed **data-only** display path, BEFORE the
+ * library posts its own notification. Return `true` if this renderer HANDLED the notification
+ * (posted and/or scheduled it) — the library then SKIPS its own default post, avoiding a duplicate.
+ * Return `false` to let the library (or another renderer) handle it.
+ *
+ * The style id and any custom fields are read from [PushReceivedEvent.dataJson] (the flat FCM data
+ * map as JSON). Discovery, threading, and the closed-app constraints mirror
+ * [PushNotificationReceivedHandler] exactly:
+ *  - AndroidManifest meta-data, key PREFIX `com.beamable.push.notification_style_renderer`
+ *    (`.1`, `.2`, … for multiple), each class needing a public no-arg constructor; and/or
+ *  - programmatically while alive via [PushManager.addStyleRenderer].
+ * Renderers run in registration order; the FIRST to return `true` wins. Failures are isolated.
+ */
+interface PushNotificationStyleRenderer {
+    fun render(context: Context, event: PushReceivedEvent): Boolean
+}
+
+// ---------------------------------------------------------------------------
 // EngineBridge
 // ---------------------------------------------------------------------------
 

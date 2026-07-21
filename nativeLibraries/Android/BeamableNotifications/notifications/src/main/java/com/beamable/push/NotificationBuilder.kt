@@ -32,7 +32,8 @@ object NotificationBuilder {
 
     private const val UNITY_ACTIVITY = "com.unity3d.player.UnityPlayerActivity"
 
-    // Built-in style presets. Values match the shared wire contract (§3.3 `style`).
+    // Built-in style presets the shared library renders. Custom styles (e.g. an app's own
+    // `animated`/`countdown`) are handled by a PushNotificationStyleRenderer in the consuming app.
     private const val STYLE_BIG_PICTURE = "bigPicture"
     private const val STYLE_BIG_TEXT = "bigText"
 
@@ -87,7 +88,7 @@ object NotificationBuilder {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(buildContentIntent(context, template))
 
-        applyStyle(context, builder, template)
+        applyStyle(builder, template)
 
         // Badge is orthogonal to the chosen style: apply whenever a value is present. A numeric
         // app-icon badge on Android is launcher/OEM-dependent and often surfaces only as a
@@ -125,7 +126,6 @@ object NotificationBuilder {
      * [STYLE_BIG_PICTURE] is safe here.
      */
     private fun applyStyle(
-        context: Context,
         builder: NotificationCompat.Builder,
         template: NotificationTemplate
     ) {
