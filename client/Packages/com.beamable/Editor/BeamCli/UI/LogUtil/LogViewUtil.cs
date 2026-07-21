@@ -237,7 +237,21 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 		[NonSerialized]
 		public Action onEndCheck;
 	}
-	
+
+	public static class SearchBarClearInteraction
+	{
+		public static bool IsClearClick(EventType eventType, bool isPointerOverClearGlyph)
+		{
+			return eventType == EventType.MouseDown && isPointerOverClearGlyph;
+		}
+
+		public static void Clear(SearchData searchData)
+		{
+			searchData.searchText = null;
+			searchData.onEndCheck?.Invoke();
+		}
+	}
+
 	public static class CliLogMessageExtensions
 	{
 		public static CliLogLevel GetLogLevel(this CliLogMessage log)
@@ -621,33 +635,36 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 				                               searchRect.height, searchRect.height);
 
 				EditorGUIUtility.AddCursorRect(searchClearRect, MouseCursor.Link);
-				var isButtonHover = searchClearRect.Contains(Event.current.mousePosition);
-				var clearButtonClicked = isButtonHover && Event.current.rawType == EventType.MouseDown;
 				if (searchData != null)
 				{
+					// The text field covers the clear-glyph rect. Capture its mouse-down before the
+					// field processes the event, otherwise the later visual button cannot receive it.
+					var clearClicked = !string.IsNullOrEmpty(searchData.searchText) &&
+					                   SearchBarClearInteraction.IsClearClick(Event.current.type,
+						                   searchClearRect.Contains(Event.current.mousePosition));
+
 					if (textFieldName != null)
 						GUI.SetNextControlName(textFieldName);
 					searchData.searchText = EditorGUI.TextField(searchRect, searchData.searchText, searchStyle);
-					if (EditorGUI.EndChangeCheck())
-					{
-						searchData.onEndCheck?.Invoke();
-					}
+					var searchTextChanged = EditorGUI.EndChangeCheck();
 
 					if (!string.IsNullOrEmpty(searchData.searchText))
 					{
+						// This is intentionally visual-only; EditorGUI.TextField owns the event.
 						GUI.Button(searchClearRect, GUIContent.none, "SearchCancelButton");
+					}
 
-						if (clearButtonClicked)
-						{
-							window.AddDelayedAction(() =>
-							{
-								searchData.searchText = null;
-								GUIUtility.hotControl = 0;
-								GUIUtility.keyboardControl = 0;
-								searchData.onEndCheck?.Invoke();
-								window.Repaint();
-							});
-						}
+					if (clearClicked)
+					{
+						SearchBarClearInteraction.Clear(searchData);
+						GUIUtility.hotControl = 0;
+						GUIUtility.keyboardControl = 0;
+						Event.current.Use();
+						window.Repaint();
+					}
+					else if (searchTextChanged)
+					{
+						searchData.onEndCheck?.Invoke();
 					}
 				}
 			}
