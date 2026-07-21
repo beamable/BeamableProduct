@@ -50,8 +50,8 @@
     <ItemGroup>
       <Compile Remove="Runtime\OpenApi\BeamServiceplan.gs.cs" />
       <Compile Remove="Runtime\OpenApi\BeamServiceplanCommon.gs.cs" />
-      <Compile Remove="Runtime\OpenApi\BeamCustomerCommon.gs.cs" />
-      <Compile Remove="Runtime\OpenApi\BeamCustomer.gs.cs" />
+      <!-- BeamCustomer(.Common) is compiled in: RealmsService.GetCustomerData uses the generated
+           BeamCustomerApi (GET /api/customers/{customerId}). -->
       <Compile Remove="Runtime\OpenApi\BeamAdmin.gs.cs" />
     </ItemGroup>
     
