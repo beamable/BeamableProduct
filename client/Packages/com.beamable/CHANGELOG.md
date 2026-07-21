@@ -5,7 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.1.1] - 2026-06-29
+## [Unreleased]
+
+### Fixed
+
+- Fixed the Content window Snapshot tab hanging at "Loading snapshots" when snapshots in different realm folders share a name (e.g. `LastPublished-global.json` auto snapshots from publishing to multiple realms)
+- Unity SDK version headers were not being sent by default. 
+
+## [5.1.2] - 2026-07-16
+
+### Changed
+
+- Update CLI to 7.2.2
+
+## [5.1.1] - 2026-06-30
 
 ### Added
 
@@ -20,6 +33,7 @@ tracked error buffer.
 ### Changed
 
 - Validation of the content no longer can automatically try to update the content value
+- Update CLI to 7.2.1
 
 
 
@@ -49,6 +63,7 @@ tracked error buffer.
 - AdminFlow prefab (ConsoleFlow) was removed from the Beam Samples Window and is now considered Deprecated
 - Now Renamed content entries will be shown as Modified Renamed in the Content Manager Window rather than a New and Deleted entries.
 - Default assets and content are imported manually on first visit to Content Manager
+- Update CLI to 7.2.0
 
 ## [5.0.1] - 2026-04-02
 ### Fixed

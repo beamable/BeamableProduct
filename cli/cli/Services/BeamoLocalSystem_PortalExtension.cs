@@ -6,6 +6,7 @@ using cli.Portal;
 using cli.Services.PortalExtension;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.CommandLine.Binding;
 using System.Text.RegularExpressions;
 using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
@@ -48,6 +49,24 @@ public partial class BeamoLocalSystem
 	{
 		var extension = definition.PortalExtensionDefinition;
 		beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(extension.Name));
+
+		// The portal URL is resolved from the --portal-url override (parsed into the BindingContext)
+		// falling back to the host; grab the BindingContext here while we still have the DI provider.
+		var binding = _provider.GetService<BindingContext>();
+
+		// The portal accepts either the numeric CID or the customer alias in the URL path. Resolve the
+		// alias once (the call is cheap/cached) so the "open in browser" URL is human-readable; fall back
+		// to the numeric CID if the customer has no alias or the lookup fails.
+		string alias = null;
+		try
+		{
+			var customer = await _realmApi.GetCustomerData();
+			alias = customer?.Alias;
+		}
+		catch (Exception e)
+		{
+			Log.Debug($"Could not resolve customer alias for portal extension URL, falling back to CID. Error: {e.Message}");
+		}
 
 		// Per-call state so concurrent extensions in one `beam project run` invocation
 		// don't share microservice names or log sinks.
@@ -128,7 +147,7 @@ public partial class BeamoLocalSystem
 					};
 
 					microserviceConfig.AddLoggerProvider = (builder, debugLogProcessor) =>
-						runtime.AddLoggerProvider(builder, appContext, debugLogProcessor, extension, onProgress);
+						runtime.AddLoggerProvider(builder, appContext, binding, alias, debugLogProcessor, extension, onProgress);
 				})
 				.RunForever();
 			
@@ -176,7 +195,7 @@ public partial class BeamoLocalSystem
 		///     keeps using it.</item>
 		/// </list>
 		/// </summary>
-		public DebugLogProcessor AddLoggerProvider(ILoggingBuilder builder, IAppContext appContext, DebugLogProcessor debugLogProcessor, PortalExtensionDef extension, Action<float, string> onProgress = null)
+		public DebugLogProcessor AddLoggerProvider(ILoggingBuilder builder, IAppContext appContext, BindingContext binding, string alias, DebugLogProcessor debugLogProcessor, PortalExtensionDef extension, Action<float, string> onProgress = null)
 		{
 			builder.ClearProviders();
 			if (_sink == null)
@@ -186,13 +205,13 @@ public partial class BeamoLocalSystem
 				// construction are buffered rather than dropped.
 				_sink = debugLogProcessor;
 				_sink.GetMessageSubscription(MicroserviceName);
-				builder.AddProvider(new ExtensionAppLogProvider(_sink, appContext, extension, onProgress));
+				builder.AddProvider(new ExtensionAppLogProvider(_sink, appContext, binding, alias, extension, onProgress));
 				// Return the same sink; ctx.debugLogProcessor stays as-is.
 				return debugLogProcessor;
 			}
 
 			// Second ConfigureLogging call: point the new builder at the stable first sink.
-			builder.AddProvider(new ExtensionAppLogProvider(_sink, appContext, extension, onProgress));
+			builder.AddProvider(new ExtensionAppLogProvider(_sink, appContext, binding, alias, extension, onProgress));
 			// Drain any messages that landed in the temporary second sink into the channel
 			// of the stable first sink, then discard the temporary subscription.
 			var tmpEarly = debugLogProcessor.GetMessageSubscription(MicroserviceName);
@@ -205,20 +224,23 @@ public partial class BeamoLocalSystem
 		}
 	}
 
-	public static string BuildPortalExtensionUrl(IAppContext context, PortalExtensionDef extension)
+	public static string BuildPortalExtensionUrl(BindingContext binding, IAppContext context, string alias, PortalExtensionDef extension)
 	{
 		if (context == null)
 		{
 			return null;
 		}
 
-		var treatedHost = GetPortalExtensionBaseUrl(context.Host);
+		var treatedHost = PortalCommand.GetPortalBaseUrl(binding, context, PortalType.Console);
 		if (string.IsNullOrEmpty(treatedHost) || string.IsNullOrEmpty(context.Cid) || string.IsNullOrEmpty(context.Pid))
 		{
 			return null;
 		}
 
-		var baseUrl = $"{treatedHost}/{context.Cid}/games/{context.Pid}/realms/{context.Pid}";
+		// Prefer the human-readable customer alias in the URL; fall back to the numeric CID
+		// when no alias was resolved.
+		var customerSegment = string.IsNullOrEmpty(alias) ? context.Cid : alias;
+		var baseUrl = $"{treatedHost}/{customerSegment}/games/{context.Pid}/realms/{context.Pid}";
 		// An extension can declare multiple mounts; pick the first one with a
 		// non-empty page to use as the "open in browser" landing target. If a
 		// future iteration adds explicit selection (e.g. a --mount flag), this
@@ -234,28 +256,15 @@ public partial class BeamoLocalSystem
 		return $"Invalid Mount Path for Extension {extension.Name}";
 	}
 
-	public static string BuildPortalExtensionReadyMessage(IAppContext context, PortalExtensionDef extension)
+	public static string BuildPortalExtensionReadyMessage(BindingContext binding, IAppContext context, string alias, PortalExtensionDef extension)
 	{
-		var portalUrl = BuildPortalExtensionUrl(context, extension);
+		var portalUrl = BuildPortalExtensionUrl(binding, context, alias, extension);
 		if (string.IsNullOrEmpty(portalUrl))
 		{
 			return ServiceLogs.PORTAL_EXTENSION_RUNNING;
 		}
 
 		return $"{ServiceLogs.PORTAL_EXTENSION_RUNNING} Portal URL: {portalUrl}";
-	}
-
-	private static string GetPortalExtensionBaseUrl(string host)
-	{
-		if (string.IsNullOrEmpty(host))
-		{
-			return null;
-		}
-
-		return host.Replace("/socket", "")
-			.Replace("wss", "https")
-			.Replace("dev.", "dev-")
-			.Replace("api", "portal");
 	}
 
 	public static string NormalizePortalExtensionMountPage(string mountPage)
@@ -286,11 +295,17 @@ public class PortalExtensionMountProperties
 	public const string KEY_NAV_COLOR = "navColor";
 	public const string KEY_NAV_GROUP_ORDER = "navGroupOrder";
 	public const string KEY_NAV_LABEL_ORDER = "navLabelOrder";
+	public const string KEY_FILTERS = "filters";
 
+	// For #extension-page mounts the page path defines the hub hierarchy: a single segment
+	// declares a hub that is a full page of its own, and a nested path
+	// places that extension inside the "cars" hub. The nav group is a separate,
+	// additional way to organize extensions inside a given hub.
 	[JsonProperty(KEY_PAGE)] public string Page;
 
 	[JsonProperty(KEY_SELECTOR)] public string Selector;
 
+	// Optional grouping used to organize extensions within a hub's navigation.
 	[JsonProperty(KEY_NAV_GROUP)]
 	[JsonConverter(typeof(OptionalConverter))]
 	public OptionalString NavGroup;
@@ -324,6 +339,12 @@ public class PortalExtensionMountProperties
 	public OptionalInt NavLabelOrder;
 
 	[JsonProperty("args")] public Dictionary<string, string> Args = new Dictionary<string, string>();
+
+	// Conditions the portal evaluates before mounting the extension into the
+	// agentic portal. Keys are dotted paths (e.g. "account.role", "account.tier")
+	// matched against the viewer's context; the CLI scaffolds these with default
+	// values so the extension mounts everywhere until the author narrows them.
+	[JsonProperty(KEY_FILTERS)] public Dictionary<string, string> Filters = new Dictionary<string, string>();
 }
 
 [Serializable]
@@ -359,18 +380,22 @@ public class ExtensionAppLogProvider : ILoggerProvider
 {
 	private readonly DebugLogProcessor _sink;
 	private readonly IAppContext _appContext;
+	private readonly BindingContext _binding;
+	private readonly string _alias;
 	private readonly PortalExtensionDef _extension;
 	private readonly Action<float, string> _onProgress;
 
-	public ExtensionAppLogProvider(DebugLogProcessor sink, IAppContext appContext, PortalExtensionDef extension, Action<float, string> onProgress = null)
+	public ExtensionAppLogProvider(DebugLogProcessor sink, IAppContext appContext, BindingContext binding, string alias, PortalExtensionDef extension, Action<float, string> onProgress = null)
 	{
 		_sink = sink;
 		_appContext = appContext;
+		_binding = binding;
+		_alias = alias;
 		_extension = extension;
 		_onProgress = onProgress;
 	}
 
-	public ILogger CreateLogger(string categoryName) => new ExtensionLogger(_sink, _appContext, _extension, _onProgress);
+	public ILogger CreateLogger(string categoryName) => new ExtensionLogger(_sink, _appContext, _binding, _alias, _extension, _onProgress);
 
 	public void Dispose() { }
 }
@@ -379,13 +404,17 @@ public class ExtensionLogger : ILogger
 {
 	private readonly DebugLogProcessor _debugLogProcessor;
 	private readonly IAppContext _appContext;
+	private readonly BindingContext _binding;
+	private readonly string _alias;
 	private readonly PortalExtensionDef _extension;
 	private readonly Action<float, string> _onProgress;
 
-	public ExtensionLogger(DebugLogProcessor debugLogProcessor, IAppContext appContext, PortalExtensionDef extension, Action<float, string> onProgress = null)
+	public ExtensionLogger(DebugLogProcessor debugLogProcessor, IAppContext appContext, BindingContext binding, string alias, PortalExtensionDef extension, Action<float, string> onProgress = null)
 	{
 		_debugLogProcessor = debugLogProcessor;
 		_appContext = appContext;
+		_binding = binding;
+		_alias = alias;
 		_extension = extension;
 		_onProgress = onProgress;
 	}
@@ -446,7 +475,7 @@ public class ExtensionLogger : ILogger
 		switch (logMessage)
 		{
 			case var _ when logMessage.StartsWith(ServiceLogs.READY_FOR_TRAFFIC_PREFIX):
-				return BeamoLocalSystem.BuildPortalExtensionReadyMessage(_appContext, _extension);
+				return BeamoLocalSystem.BuildPortalExtensionReadyMessage(_binding, _appContext, _alias, _extension);
 			case var _ when logMessage.StartsWith(ServiceLogs.STARTING_PREFIX):
 			case var _ when logMessage.StartsWith(ServiceLogs.SCANNING_CLIENT_PREFIX):
 			case var _ when logMessage.StartsWith(ServiceLogs.REGISTERING_STANDARD_SERVICES):
