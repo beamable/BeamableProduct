@@ -1,9 +1,3 @@
-#if !BEAMABLE_DISABLE_VERSION_HEADERS
-#define BEAMABLE_ENABLE_VERSION_HEADERS
-#else
-#undef BEAMABLE_ENABLE_VERSION_HEADERS
-#endif
-
 using Beamable.Api.Analytics;
 using Beamable.Api.Caches;
 using Beamable.Api.Connectivity;
@@ -64,7 +58,7 @@ namespace Beamable.Api
 			// if the routing map is empty, do not include the header
 			if (string.IsNullOrEmpty(self.RoutingMap))
 				return headers;
-			
+
 			headers[Constants.Requester.HEADER_ROUTINGKEY] = self.RoutingMap;
 			return headers;
 		}
@@ -385,7 +379,7 @@ namespace Beamable.Api
 				contentType = "application/json";
 			}
 
-			var safetyClone = new SDKRequesterOptions<T>(req); // TODO: since its a struct, do we need to do this? 
+			var safetyClone = new SDKRequesterOptions<T>(req); // TODO: since its a struct, do we need to do this?
 			return MakeRequestWithTokenRefresh<T>(contentType, bodyBytes, safetyClone);
 		}
 
@@ -444,7 +438,7 @@ namespace Beamable.Api
 						   }
 						   else if (httpNoInternet)
 						   {
-							   return Promise<T>.Failed(error); 
+							   return Promise<T>.Failed(error);
 						   }
 
 						   return HandleError<T>(error, contentType, body, opts);
@@ -485,11 +479,11 @@ namespace Beamable.Api
 					if (settings.EnableTokenAnalytics)
 					{
 						analytics.TrackEvent(TokenEvent.InvalidAccessToken(playerId: userId,
-						                                                   accessToken: oldToken?.Token, 
-						                                                   refreshToken: oldToken?.RefreshToken, 
+						                                                   accessToken: oldToken?.Token,
+						                                                   refreshToken: oldToken?.RefreshToken,
 						                                                   error: code?.Error.error), true);
 					}
-					
+
 					var nextToken = await AuthService.LoginRefreshToken(Token.RefreshToken);
 					Token = new AccessToken(accessTokenStorage, Cid, Pid, nextToken.access_token,
 											nextToken.refresh_token, nextToken.expires_in);
@@ -497,9 +491,9 @@ namespace Beamable.Api
 					if (settings.EnableTokenAnalytics)
 					{
 						analytics.TrackEvent(
-							TokenEvent.GetNewToken(playerId: userId, 
-							                       newAccessToken: Token?.Token, 
-							                       newRefreshToken: Token?.RefreshToken, 
+							TokenEvent.GetNewToken(playerId: userId,
+							                       newAccessToken: Token?.Token,
+							                       newRefreshToken: Token?.RefreshToken,
 							                       oldAccessToken: oldToken?.Token,
 							                       oldRefreshToken: oldToken?.RefreshToken), true);
 						analytics.TrackEvent(
@@ -548,13 +542,12 @@ namespace Beamable.Api
 					PlatformLogger.Log($"<b>[PlatformRequester][{opts.method.ToString()}]</b> {Host}{opts.uri} -- trying again due to ssl error.");
 					return true;
 				}
-				// the error is not a known retry case... 
+				// the error is not a known retry case...
 				return false;
 			});
 
 		}
-		
-		[Conditional("BEAMABLE_ENABLE_VERSION_HEADERS")]
+
 		protected void AddVersionHeaders(Dictionary<string, string> headers)
 		{
 #if !BEAMABLE_DISABLE_VERSION_HEADERS
@@ -628,14 +621,14 @@ namespace Beamable.Api
 
 			var headers = new Dictionary<string, string>();
 			headers["Accept"] = GetAcceptHeader();
-			
+
 			if (!opts.disableScopeHeaders)
 			{
 				AddCidPidHeaders(headers);
 			}
 
 			_routingKeyResolution?.ApplyRoutingHeaders(headers);
-			
+
 			AddVersionHeaders(headers);
 			AddAuthHeader(headers, opts);
 			AddShardHeader(headers);
@@ -653,7 +646,7 @@ namespace Beamable.Api
 			{
 				request.SetRequestHeader(kvp.Key, kvp.Value);
 			}
-			
+
 			return request;
 		}
 
@@ -714,9 +707,9 @@ namespace Beamable.Api
 						}
 						else if (typeof(T) == typeof(Unit) )
 						{
-							// don't even bother trying to interpret the response payload if our type is _Unit_. 
+							// don't even bother trying to interpret the response payload if our type is _Unit_.
 							//  we don't care about the server response anyway.
-							//  btw, if the server returns `""` as a response, then the JsonUtility.FromJson call fails. 
+							//  btw, if the server returns `""` as a response, then the JsonUtility.FromJson call fails.
 							result = default;
 						}
 						else
@@ -745,7 +738,7 @@ namespace Beamable.Api
 			{
 				return;
 			}
-			
+
 			LatestServerTime = parsedDate;
 		}
 

@@ -19,7 +19,9 @@ public class PageExtensionOption
 }
 
 /// <summary>
-/// Represents a component slot inside an existing Portal page.
+/// Represents a component slot on an existing Portal page. Slots contributed by other running
+/// extensions (their <c>&lt;BeamExtensionSite&gt;</c> declarations) also appear here — they are just
+/// additional uniquely-named selectors on the site at the URL where that extension renders.
 /// Set --mount-page to path and --mount-selector to one of the entries in selectors.
 /// </summary>
 public class ComponentExtensionOption

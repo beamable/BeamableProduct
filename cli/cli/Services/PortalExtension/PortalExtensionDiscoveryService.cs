@@ -16,6 +16,14 @@ public class ExtensionBuildMetaData
 	public string Name;
 	public string ToolkitVersion;
 	public PortalExtensionPackageProperties Properties;
+
+	/// <summary>
+	/// The selector names this extension exposes via <c>&lt;BeamExtensionSite selector="..." /&gt;</c>
+	/// (e.g. <c>top</c>, <c>bottom</c>, <c>B-top</c>), scanned once at build time. Combined with
+	/// <see cref="Properties"/>'s <c>mount.page</c>, this tells the CLI/Portal which selectors live at
+	/// which URL. May be null/empty (or absent entirely in metadata built before this field existed).
+	/// </summary>
+	public List<string> ExtensionSites;
 }
 
 public class PortalExtensionDiscoveryService : Microservice
@@ -190,7 +198,9 @@ public class PortalExtensionObserver
 		{
 			Name = ExtensionMetaData.Name,
 			ToolkitVersion = ExtensionMetaData.GetToolkitVersion(),
-			Properties = ExtensionMetaData.Properties
+			Properties = ExtensionMetaData.Properties,
+			// Scan the source once, at build, so listing/creating extensions later never has to.
+			ExtensionSites = RemotePortalConfigService.ScanExtensionSiteSelectors(ExtensionMetaData.AbsolutePath)
 		};
 
 		string metaDataDir = Path.GetDirectoryName(MetadataPath);
