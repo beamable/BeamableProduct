@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added Content Manager publish history with diff inspection, pagination, preview, and local file restoration.
+- Add support for the version 5 of the Unity IAP package
 
 ### Fixed
 
