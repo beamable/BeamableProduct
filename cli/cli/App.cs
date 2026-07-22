@@ -732,7 +732,14 @@ public class App
 		Commands.AddSubCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
 		Commands.AddSubCommand<RealmListCommand, RealmsListCommandArgs, OrganizationCommand>();
 		Commands.AddSubCommand<GameListCommand, GameListCommandArgs, OrganizationCommand>();
-		
+		Commands.AddSubCommand<PrCommand, CommandGroupArgs, OrganizationCommand>();
+		Commands.AddSubCommand<PrSubmitCommand, PrSubmitCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrListCommand, PrListCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrDiffCommand, PrDiffCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrCommentCommand, PrCommentCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrApproveCommand, PrApproveCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrRejectCommand, PrRejectCommandArgs, PrCommand>();
+
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand>();
 
