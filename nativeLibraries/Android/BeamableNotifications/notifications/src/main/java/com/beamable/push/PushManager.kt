@@ -82,6 +82,25 @@ object PushManager {
     private const val NOTIFICATION_RECEIVED_HANDLER_META =
         "com.beamable.push.notification_received_handler"
 
+    // --- Custom-style renderers (display-override hook) ---
+    // Same additive/discovery model as receive handlers: programmatic (app-alive) + manifest
+    // meta-data (closed-app). The first renderer to return true from render() consumes the post.
+    private const val NOTIFICATION_STYLE_RENDERER_META =
+        "com.beamable.push.notification_style_renderer"
+
+    private val programmaticRenderers = CopyOnWriteArrayList<PushNotificationStyleRenderer>()
+
+    @Volatile
+    private var manifestRenderers: List<PushNotificationStyleRenderer> = emptyList()
+    @Volatile
+    private var manifestRenderersResolved = false
+    @Volatile
+    private var combinedRenderersCache: List<PushNotificationStyleRenderer>? = null
+
+    private fun invalidateRendererCache() {
+        combinedRenderersCache = null
+    }
+
     // ---- Initialization -----------------------------------------------------
 
     /**
@@ -128,6 +147,19 @@ object PushManager {
         if (programmaticHandlers.remove(handler)) invalidateHandlerCache()
     }
 
+    /** Adds a custom-style renderer programmatically (app-alive only). Duplicates are ignored. */
+    fun addStyleRenderer(renderer: PushNotificationStyleRenderer) {
+        if (!programmaticRenderers.contains(renderer)) {
+            programmaticRenderers.add(renderer)
+            invalidateRendererCache()
+        }
+    }
+
+    /** Removes a previously-added programmatic custom-style renderer. */
+    fun removeStyleRenderer(renderer: PushNotificationStyleRenderer) {
+        if (programmaticRenderers.remove(renderer)) invalidateRendererCache()
+    }
+
     /**
      * Resolves ALL receive-time handlers for the current process (§1.1): the additive
      * [addNotificationReceivedHandler] ones (insertion order), then every class named by a manifest
@@ -169,6 +201,57 @@ object PushManager {
         manifestHandlers = emptyList()
         manifestHandlersResolved = false
         invalidateHandlerCache()
+        programmaticRenderers.clear()
+        manifestRenderers = emptyList()
+        manifestRenderersResolved = false
+        invalidateRendererCache()
+    }
+
+    /**
+     * Resolves ALL custom-style renderers for the current process — programmatic (insertion order)
+     * then manifest-declared — mirroring [resolveHandlers]. Cached per process.
+     */
+    internal fun resolveRenderers(context: Context): List<PushNotificationStyleRenderer> {
+        if (!manifestRenderersResolved) {
+            synchronized(this) {
+                if (!manifestRenderersResolved) {
+                    manifestRenderers = instantiateManifestClasses(
+                        context,
+                        NOTIFICATION_STYLE_RENDERER_META,
+                        PushNotificationStyleRenderer::class.java,
+                        "notification_style_renderer_resolve"
+                    )
+                    manifestRenderersResolved = true
+                    invalidateRendererCache()
+                }
+            }
+        }
+        combinedRenderersCache?.let { return it }
+        synchronized(this) {
+            combinedRenderersCache?.let { return it }
+            val combined = LinkedHashSet<PushNotificationStyleRenderer>()
+            combined.addAll(programmaticRenderers)
+            combined.addAll(manifestRenderers)
+            val list = combined.toList()
+            combinedRenderersCache = list
+            return list
+        }
+    }
+
+    /**
+     * Offers [event] to each resolved custom-style renderer in order; the FIRST to return `true`
+     * consumes the notification and this returns `true` (the caller then skips the library's own
+     * post). Returns `false` when no renderer handled it. Per-renderer failures are isolated.
+     */
+    internal fun dispatchStyleRender(context: Context, event: PushReceivedEvent): Boolean {
+        for (renderer in resolveRenderers(context)) {
+            try {
+                if (renderer.render(context, event)) return true
+            } catch (t: Throwable) {
+                dispatchError("style_render", t.message ?: t.toString())
+            }
+        }
+        return false
     }
 
     /**
@@ -191,22 +274,38 @@ object PushManager {
 
     private fun instantiateManifestHandlers(
         context: Context
-    ): List<PushNotificationReceivedHandler> {
+    ): List<PushNotificationReceivedHandler> = instantiateManifestClasses(
+        context,
+        NOTIFICATION_RECEIVED_HANDLER_META,
+        PushNotificationReceivedHandler::class.java,
+        "notification_received_handler_resolve"
+    )
+
+    /**
+     * Reflectively instantiates every class named by a manifest meta-data whose key is [metaKey]
+     * (index -1, sorts first) or `<metaKey>.<N>` where N is a non-negative integer. Non-numeric
+     * suffixes (e.g. ".enabled") are silently ignored. Each class needs a public no-arg constructor
+     * and must be assignable to [type]; per-class failures route to [dispatchError] under [errStage]
+     * and are skipped. Shared by the receive-handler and custom-style-renderer discovery.
+     */
+    private fun <T : Any> instantiateManifestClasses(
+        context: Context,
+        metaKey: String,
+        type: Class<T>,
+        errStage: String
+    ): List<T> {
         return try {
             val ai = context.packageManager.getApplicationInfo(
                 context.packageName,
                 PackageManager.GET_META_DATA
             )
             val meta = ai.metaData ?: return emptyList()
-            // Collect (index, className) for the exact base key (index -1, sorts first) and any
-            // key whose suffix after "<BASE>." is a NON-NEGATIVE INTEGER (.1, .2, …). Keys with a
-            // non-numeric suffix (e.g. ".enabled") are silently ignored — no dispatchError.
-            val suffixPrefix = "$NOTIFICATION_RECEIVED_HANDLER_META."
+            val suffixPrefix = "$metaKey."
             val entries = ArrayList<Pair<Int, String>>()
             val seen = HashSet<Int>() // dedup so the base key isn't processed twice
             for (key in meta.keySet()) {
                 val index: Int = when {
-                    key == NOTIFICATION_RECEIVED_HANDLER_META -> -1
+                    key == metaKey -> -1
                     key.startsWith(suffixPrefix) -> {
                         val suffix = key.substring(suffixPrefix.length)
                         suffix.toIntOrNull()?.takeIf { it >= 0 } ?: continue
@@ -219,22 +318,19 @@ object PushManager {
             }
             // Deterministic order: base key (-1) first, then ascending numeric index.
             entries.sortBy { it.first }
-            val handlers = ArrayList<PushNotificationReceivedHandler>()
+            val out = ArrayList<T>()
             for ((_, className) in entries) {
                 try {
                     val instance = Class.forName(className)
                         .getDeclaredConstructor().newInstance()
-                    (instance as? PushNotificationReceivedHandler)?.let { handlers.add(it) }
+                    if (type.isInstance(instance)) type.cast(instance)?.let { out.add(it) }
                 } catch (t: Throwable) {
-                    dispatchError(
-                        "notification_received_handler_resolve",
-                        "$className: ${t.message ?: t.toString()}"
-                    )
+                    dispatchError(errStage, "$className: ${t.message ?: t.toString()}")
                 }
             }
-            handlers
+            out
         } catch (t: Throwable) {
-            dispatchError("notification_received_handler_resolve", t.message ?: t.toString())
+            dispatchError(errStage, t.message ?: t.toString())
             emptyList()
         }
     }

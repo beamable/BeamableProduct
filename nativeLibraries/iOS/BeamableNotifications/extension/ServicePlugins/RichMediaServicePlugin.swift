@@ -2,15 +2,18 @@ import UserNotifications
 import Foundation
 
 /// Downloads a remote media asset referenced by the push payload and attaches it to the
-/// notification (feature 7, rich media). Looks for the URL under `media-url` (or the
-/// nested `bmn.mediaUrl`). Silently passes through if there is nothing to attach.
+/// notification (feature 7, rich media — the `bigPicture` style). Looks for the URL under the
+/// canonical `imageUrl` key first (the shared wire contract emitted by `PushRailService`), then
+/// falls back to the legacy `media-url` / nested `bmn.mediaUrl` aliases. Silently passes through
+/// if there is nothing to attach.
 public final class RichMediaServicePlugin: NotificationServicePlugin {
 
     public init() {}
 
     public func process(_ content: UNMutableNotificationContent,
                         completion: @escaping (UNMutableNotificationContent) -> Void) {
-        guard let urlString = (content.userInfo["media-url"] as? String)
+        guard let urlString = (content.userInfo["imageUrl"] as? String)
+                ?? (content.userInfo["media-url"] as? String)
                 ?? ((content.userInfo["bmn"] as? [String: Any])?["mediaUrl"] as? String),
               let url = URL(string: urlString) else {
             completion(content)

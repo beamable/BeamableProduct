@@ -43,10 +43,31 @@ public final class NotificationManager: NSObject {
         guard !initialized else { return }
         initialized = true
         reassertDelegate()
+        registerBuiltInCategories()
         PluginRegistry.shared.discoverAndRegisterFromInfoPlist()
         PluginRegistry.shared.dispatchInitialize(PluginContext(manager: self))
         RemotePush.shared.installSwizzlingIfNeeded()
         flushPendingFunnel()
+    }
+
+    /// Registers the built-in `beam_actions` category (Open / Dismiss) that backs the shared
+    /// `actions` notification style — the iOS counterpart of Android's actions preset. Categories
+    /// must be registered with `UNUserNotificationCenter` in the app process before a push arrives
+    /// (iOS resolves a remote notification's buttons from the OS-held registration, even when the
+    /// app was killed), so this runs at init. Reuses `CategoryStore`; apps can register their own
+    /// categories on top via the C ABI / RN bridge without clobbering this one (it accumulates).
+    private func registerBuiltInCategories() {
+        let beamActions = CategorySpec(
+            id: "beam_actions",
+            actions: [
+                ActionSpec(id: "open", title: "Open", foreground: true,
+                           destructive: nil, authenticationRequired: nil),
+                ActionSpec(id: "dismiss", title: "Dismiss", foreground: nil,
+                           destructive: true, authenticationRequired: nil),
+            ],
+            hiddenPreviewsBodyPlaceholder: nil
+        )
+        CategoryStore.shared.register(beamActions, center: center)
     }
 
     /// Replay funnel events the NSE persisted because it couldn't authenticate/send them in

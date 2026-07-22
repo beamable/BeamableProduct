@@ -79,6 +79,7 @@ data class NotificationChannelSpec(
  * @param deepLinkUrl convenience deep link; merged into the payload under "deeplink".
  * @param imageUrl rich-media image URL for the `bigPicture` style (downloaded at build time).
  * @param style built-in style preset: "default" | "bigPicture" | "bigText" (null = default).
+ *   Custom styles are rendered by an app's [PushNotificationStyleRenderer], not by this builder.
  * @param badge app-icon badge count applied via setNumber (orthogonal to style); null leaves it unset.
  * @param category id of a registered [NotificationCategorySpec] whose action buttons to render
  *   (orthogonal to [style], like [badge]); null renders no buttons.

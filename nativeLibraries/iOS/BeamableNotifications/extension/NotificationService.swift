@@ -32,10 +32,12 @@ final class NotificationService: UNNotificationServiceExtension {
     private var startTime = Date()
 
     /// Default chain. Analytics first (so a receipt is logged before any slow media
-    /// download), then rich media.
+    /// download), then the built-in style mapping (badge/sound/category), then rich media
+    /// (image attachment). App-provided `BMNServicePlugins` run last.
     private func makePlugins() -> [NotificationServicePlugin] {
         var plugins: [NotificationServicePlugin] = [
             AnalyticsServicePlugin(),
+            StyleServicePlugin(),
             RichMediaServicePlugin()
         ]
         plugins.append(contentsOf: Self.discoverPlugins())

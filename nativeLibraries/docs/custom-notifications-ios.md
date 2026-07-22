@@ -1,175 +1,123 @@
 # Custom Notification Styles — iOS
 
-**Status: proposed / not yet implemented.**
+**Status: implemented** (built-in presets on the remote path, rendered in the NSE). Custom
+app-defined styles are covered by the cross-engine
+[`custom-notification-styles-guide.md`](./custom-notification-styles-guide.md) (iOS section).
 
-This spec describes how to give Beamable push notifications selectable *styles* on **iOS**,
-including a working rich-media image, badge, and action buttons. It is self-contained and
-end-to-end: it covers the shared wire contract, the push authoring extension, the APNs slice of
-`PushRailService`, the iOS native module, and the small React Native bridge change required for
-action categories. The Android counterpart lives in
-[`custom-notifications-android.md`](./custom-notifications-android.md).
+This spec describes how Beamable push notifications get selectable *styles* on **iOS** — a working
+rich-media image, badge, sound, and action buttons — on the remote (APNs) path. The Android
+counterpart lives in [`custom-notifications-android.md`](./custom-notifications-android.md).
 
 ---
 
 ## 1. Overview & goal
 
-On iOS most of the plumbing already exists — this work is largely **reconciliation and turning it
-on for the remote path**:
+The styling is applied **in the Notification Service Extension (NSE)**, mirroring Android's
+client-renders model (`NotificationBuilder.applyStyle`). `PushRailService` stays completely
+**style-agnostic**: `ApnsProvider` already sends `mutable-content: 1` (so the NSE runs on every push,
+including when the app is killed) and the shared `WriteIntentData` already puts `style` / `imageUrl` /
+`badge` / `sound` / `category` / arbitrary `extra` into the top-level **`userInfo`**. The NSE reads
+those keys back and maps them onto the native notification — **no APNs payload change, no per-style
+server code.**
 
-- **Rich media** is supported by the Notification Service Extension (NSE):
-  `iOS/BeamableNotifications/extension/ServicePlugins/RichMediaServicePlugin.swift:13` downloads an
-  image referenced by `media-url` (or nested `bmn.mediaUrl`) and attaches it as a
-  `UNNotificationAttachment`.
-- **Badge** is supported: `NotificationManager.setBadge` (`NotificationManager.swift:168`) and
-  `content.badge` in `buildContent` (`NotificationManager.swift:246`).
-- **Templates** exist via `TemplateStore.swift` (`{placeholder}` substitution) and **action-button
-  categories** via `CategoryStore.swift` (`register`).
+**Built-in presets (v1):**
 
-The gap is that the **service never sends** `imageUrl` / `badge` / `sound` / `category`, and the
-`actions` style needs its category registered on-device *before* the push arrives.
+| `style` | iOS rendering | Applied by |
+|---------|---------------|-----------|
+| `default` | plain alert; full body shown natively | — (no work) |
+| `bigPicture` | image attachment from `imageUrl` | `RichMediaServicePlugin` |
+| `bigText` | full body shown natively on expand | — (no work) |
+| `actions` | `UNNotificationCategory` buttons (Open / Dismiss) | `StyleServicePlugin` + `beam_actions` |
 
-**Goal:** let the sender choose a *style* and pass a working `imageUrl` + `badge`, honored on the
-remote push path.
-
-**Design (hybrid model).** The wire payload carries a `style` id plus inline fields; iOS ships
-**built-in presets** (no per-app registration required) while preserving the existing
-`TemplateStore`/`CategoryStore` override path. Presets shipped in v1:
-
-| `style` | iOS rendering |
-|---------|---------------|
-| `default` | plain alert; full body shown natively |
-| `bigPicture` | image attachment via the NSE (`imageUrl`) |
-| `bigText` | full body shown natively (no attachment) |
-| `actions` | `UNNotificationCategory` action buttons (Open / Dismiss) |
-
-`badge` is **orthogonal** — sent as `aps.badge` whenever a badge value is present.
+`badge` and `sound` are **orthogonal** to `style` and applied whenever present.
 
 ---
 
-## 2. Shared wire contract (§3.3 additions)
+## 2. Shared wire contract
 
-New keys added to the flat string→string §3.3 map. On iOS, scalar styling fields are lifted into
-the APNs `aps` dictionary (badge / sound / category), while `imageUrl` rides in `userInfo` for the
-NSE to consume.
+No change from the flat string→string §3.3 map. On iOS the styling fields stay in **`userInfo`**
+(they are **not** lifted into the `aps` dictionary) and the NSE applies them to
+`UNMutableNotificationContent`:
 
-| Key | Type (wire) | Meaning | Default when absent |
-|-----|-------------|---------|---------------------|
-| `style` | string | `default` \| `bigPicture` \| `bigText` \| `actions` | `default` |
-| `imageUrl` | string | **canonical** rich-media image URL (aliases `media-url` / `bmn.mediaUrl` kept) | none |
-| `badge` | string(int) | app-icon badge count → `aps.badge` | unchanged |
-| `sound` | string | sound name → `aps.sound` | `default` |
-| `category` | string | `UNNotificationCategory` id; derived from `style` when omitted | none |
-
-**Doc updates required alongside implementation:**
-- `nativeLibraries/docs/notifications-feature.md` §3.3 (~lines 170-192) — document the new keys,
-  and note `imageUrl` is now the canonical key with `media-url`/`bmn.mediaUrl` as back-compat aliases.
-- `PushRailService.cs:344-345` — the stale comment currently reads *"imageUrl / sound / badge are
-  accepted but not rendered by the copied APNs/FCM clients."* Update it once they are rendered.
+| Key | Meaning | NSE mapping |
+|-----|---------|-------------|
+| `style` | `default` \| `bigPicture` \| `bigText` \| `actions` | drives category default for `actions` |
+| `imageUrl` | **canonical** rich-media image URL (aliases `media-url` / `bmn.mediaUrl` kept) | `content.attachments` |
+| `badge` | app-icon badge count (string int) | `content.badge` |
+| `sound` | bundled sound filename | `content.sound` |
+| `category` | `UNNotificationCategory` id (buttons + which content extension renders) | `content.categoryIdentifier` |
 
 ---
 
-## 3. Push extension (shared sender UI)
+## 3. Push extension (shared sender UI) + console
 
-`D:\Repositories\agentic-portal\extensions\hubs\player-engagement\push\src\App.tsx`
+The console already collects/sends `style` / `imageUrl` / `sound` / `badge` / `category` as generic
+`extraData`. The only console change for iOS parity is marking these styles as natively supported so
+the native-support callout shows **"native for Android and iOS"**:
 
-The extension **already** collects and sends `imageUrl`, `sound`, and `badge` in `extraDataFed`
-(`buildExtraData`, `App.tsx:85`; interface `PushExtraData`, `App.tsx:34`). They currently do
-nothing because the service drops them (§4). The only new UI is the style selector:
-
-- `PushExtraData` (line 34): add `style?: string` and `category?: string`.
-- `buildExtraData` (line 85): default `style` to `'default'`; keep `imageUrl`/`sound`/`badge`
-  passthrough exactly as today.
-- Compose card (~line 294): add a **Style** `<select>` / segmented control
-  (Default / Big Picture / Big Text / Action buttons) bound to a new `style` state (default
-  `'default'`). The live payload preview (~line 427) already renders `extraDataFed` verbatim.
+- `agentic-portal/.../push/src/notificationConfig.ts` — `NATIVE_SUPPORTED_STYLES.ios =
+  ['default','bigPicture','bigText','actions']`.
 
 ---
 
 ## 4. Service — APNs slice
 
-`D:\Repositories\agentic-portal\services\PushRailService`
+**No change.** `ApnsProvider.BuildPayload` (`ApnsProvider.cs:174`) already:
+- sends `mutable-content: 1` (required for the NSE to run), and
+- writes every styling field into top-level `userInfo` via `PushMessage.WriteIntentData`
+  (`PushRailService.cs:782`).
 
-**`PushRailService.cs`**
-- `PushMessage` (line 685): add `string imageUrl; string sound; int? badge; string style; string category;`.
-- `ParsePushMessage` (line 347): read `imageUrl` / `sound` / `style` / `category` via the existing
-  `ReadString` helper, and `badge` via a new `ReadInt` helper. Keep the *title-or-body-required* guard.
-- `WriteIntentData` (line 708): emit `imageUrl` and `style` as string entries (omit blanks) so they
-  reach `userInfo`. `badge` / `sound` / `category` are lifted into `aps` in `BuildPayload` instead
-  (below).
-- **`DeliverBatch` per-recipient copy (~line 238) — easy to miss.** `DeliverBatch` parses once into
-  a `baseMessage`, then builds a **new** `PushMessage` per recipient. That copy must forward
-  `imageUrl`/`sound`/`badge`/`style`/`category`, or they're parsed but dropped before the provider.
-  (This bit us on 2026-07-16.)
-
-**`ApnsProvider.cs` — `BuildPayload` (line 174):**
-- `aps["sound"]`: use `message.sound` when set, else `"default"` (currently hardcoded to `"default"`
-  at `ApnsProvider.cs:183`).
-- `aps["badge"] = message.badge.Value` when `message.badge.HasValue`.
-- `aps["category"]`: `message.category` ?? a style-derived id (e.g. `beam_actions` when
-  `style == "actions"`).
-- `imageUrl` already flows into `userInfo` via `WriteIntentData`; the NSE attaches it (§5.1).
-- Keep `mutable-content: 1` (`ApnsProvider.cs:188`) — required for the NSE to run and attach media.
+The NSE owns the translation, so nothing style-specific belongs in the service (keeps the shared lib
+generic for adopting teams).
 
 ---
 
 ## 5. iOS native
 
-`D:\Repositories\BeamableProduct\nativeLibraries\iOS\BeamableNotifications`
+`nativeLibraries/iOS/BeamableNotifications`
 
-### 5.1 `extension/ServicePlugins/RichMediaServicePlugin.swift` (line 13)
+### 5.1 `extension/ServicePlugins/RichMediaServicePlugin.swift`
+Reads the canonical `imageUrl` key first, falling back to the legacy `media-url` / `bmn.mediaUrl`
+aliases; downloads → `UNNotificationAttachment` → `content.attachments` (unchanged). Powers
+`bigPicture`.
 
-Extend the URL lookup to also read the **canonical** `imageUrl` key first, keeping the existing
-`media-url` and `bmn.mediaUrl` as fallbacks:
+### 5.2 `extension/ServicePlugins/StyleServicePlugin.swift` (new)
+A `NotificationServicePlugin` in the default NSE chain (`NotificationService.makePlugins`). Maps
+`userInfo` onto the content: `badge` → `content.badge`, `sound` → `content.sound`,
+`category` (or the built-in `beam_actions` for `style == "actions"`) → `content.categoryIdentifier`.
+`default` / `bigText` need no work.
 
-```swift
-let urlString = (content.userInfo["imageUrl"] as? String)
-    ?? (content.userInfo["media-url"] as? String)
-    ?? ((content.userInfo["bmn"] as? [String: Any])?["mediaUrl"] as? String)
-```
+### 5.3 Built-in `beam_actions` category
+`NotificationManager.initialize` registers a built-in `beam_actions` `CategorySpec` (Open / Dismiss)
+via `CategoryStore.register` at app init — iOS resolves a remote notification's buttons from the
+OS-held category registration, so it must exist before the push arrives. Apps may register additional
+categories via the existing `registerCategory` API (accumulates, doesn't clobber).
 
-Everything else in the plugin (download → `UNNotificationAttachment` → `content.attachments`) is
-unchanged.
-
-### 5.2 Built-in action categories
-
-The `actions` style renders `UNNotificationAction` buttons. iOS requires the category to be
-registered with `UNUserNotificationCenter` **before** the push is delivered, so it cannot be
-purely payload-driven. Register a built-in `beam_actions` `CategorySpec` (Open / Dismiss) at init
-by reusing `CategoryStore.register` (`CategoryStore.swift:14`). This is wired from the RN bridge
-`initialize()` (§6). Apps may still register additional categories via the existing
-`registerCategory` API (override path preserved).
-
-### 5.3 Badge / sound / category on the remote path
-
-Once APNs carries `aps.badge` / `aps.sound` / `aps.category` (§4), the OS honors them directly —
-no `NotificationManager` change is required for the remote path. `setBadge` and `buildContent`
-remain in use for the **local** scheduling path.
-
-### 5.4 Reuse (do not re-implement)
-
-`TemplateStore.swift`, `CategoryStore.register`, `RichMediaServicePlugin.swift`,
-`NotificationManager.setBadge` / `buildContent`.
+### 5.4 Reuse (not re-implemented)
+`RichMediaServicePlugin` download→attach, `CategoryStore.register` + `CategorySpec`/`ActionSpec`, the
+NSE plugin chain + `BMNServicePlugins` discovery.
 
 ---
 
-## 6. RN bridge changes
+## 6. Custom (app-defined) styles
 
-`D:\Repositories\BeamableProduct\nativeLibraries\EnginePlugins\ReactNative\src`
+Beyond the four built-ins, apps add their own iOS styles two ways — both documented with worked
+examples in [`custom-notification-styles-guide.md`](./custom-notification-styles-guide.md):
 
-Minimal — the remote-path styling is native; the bridge only needs to register the iOS action
-category so the `actions` style renders:
-
-- `index.ts` — `initialize()` (line 468): on iOS, register the built-in `beam_actions` category via
-  the existing `registerCategory` path (a `CategorySpec` with Open / Dismiss `ActionSpec`s).
-- `types.ts`: add optional `style?: string` and `imageUrl?: string` to `LocalRequest` and
-  `TemplateSpec` for type-completeness and future local use (does not block the e2e path).
+- **Transform-only** — a custom `NotificationServicePlugin` (attach media / tweak content), listed in
+  the NSE target's `BMNServicePlugins` Info.plist array.
+- **Fully-custom UI** — a `UNNotificationContentExtension` rendering a custom UIKit view in the
+  expanded notification (keyed by `categoryIdentifier`), via a `BeamContentRenderer` listed in the
+  content-extension target's `BMNContentRenderers`. This is the iOS analog of Android's fully-custom
+  renderer (the RN sample ships a `countdown` demo). Limitation: custom UI shows only in the
+  **expanded** view; the collapsed banner is the OS default.
 
 ---
 
 ## 7. Artifact rebuild (macOS-only)
 
-Editing native Swift does **not** change the engine packages until the `.xcframework` is rebuilt
-and restaged (see `AGENTS.md`).
+Editing native Swift does **not** change the engine packages until the `.xcframework` is rebuilt and
+restaged:
 
 ```bash
 # from iOS/BeamableNotifications
@@ -177,22 +125,22 @@ and restaged (see `AGENTS.md`).
 # then restage into EnginePlugins/ReactNative/ios/Frameworks/
 ```
 
+For the RN sample, `expo prebuild` regenerates `ios/` with the NSE (+ Content Extension when
+`enableContentExtension` is set) targets and their `BMNServicePlugins` / `BMNContentRenderers`.
+
 ---
 
-## 8. Verification (end-to-end)
+## 8. Verification (end-to-end, macOS + real device)
 
-1. Ensure realm secrets are set: `apns_push/*` (see `ApnsSettings` doc comment). Confirm via the
-   `CheckPushConfig` ServerCallable.
-2. Rebuild + restage the iOS `.xcframework` (§7) — requires macOS.
-3. Build + install the RN sample on a real iOS device (release build; the NSE target must be
-   bundled). Opt in to push and confirm the device token is registered via `/message-rail/register`
-   (the delivery micro must be running).
-4. Deploy `PushRailService` + the `push` extension (co-deployed via `microserviceDependencies`).
-5. From the Portal push console, send **each** style and confirm on-device:
-   - `bigPicture` (with `imageUrl`) → image attachment on the expanded notification,
+1. Realm secrets set: `apns_push/*` — confirm via `CheckPushConfig`.
+2. Rebuild + restage the iOS `.xcframework` (§7).
+3. Build + install the RN sample on a real iOS device (release; the NSE target must be bundled). Opt
+   in to push; confirm the token registers via `/message-rail/register`.
+4. From the Portal push console, send each style and confirm on-device:
+   - `bigPicture` (+`imageUrl`) → image attachment on expand,
    - `bigText` → full body,
-   - `actions` → Open / Dismiss buttons (requires the app to have launched once so `beam_actions`
-     is registered),
-   - a `badge` value → app-icon badge count,
-   - deep-link on tap still routes (no regression),
-   - a plain `default` push is unchanged from today's behavior.
+   - `actions` → Open / Dismiss (app must have launched once so `beam_actions` is registered),
+   - `badge` → app-icon badge count,
+   - `default` unchanged; deep-link on tap still routes,
+   - the sample `countdown` custom style → expanding shows the custom card with a ticking countdown
+     (Content Extension).

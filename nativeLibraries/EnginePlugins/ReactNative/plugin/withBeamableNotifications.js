@@ -67,6 +67,7 @@ const RECEIVED_HANDLER_CLASS = 'BeamablePushReceivedHandler';
 const DEEPLINK_SCHEME_META = 'com.beamable.push.deeplink_scheme';
 
 const NSE_TARGET_NAME = 'BeamableNotificationServiceExtension';
+const CONTENT_TARGET_NAME = 'BeamableNotificationContentExtension';
 // iOS NSE + extension-safe core Swift sources. Prefer a copy VENDORED inside this
 // package (`plugin/ios/`, populated for publish the same way the xcframework is);
 // otherwise fall back to the monorepo-canonical iOS SDK dir (works for in-repo
@@ -76,6 +77,10 @@ const SDK_ROOT = fs.existsSync(path.join(VENDORED_IOS, 'extension'))
   ? VENDORED_IOS
   : path.resolve(__dirname, '../../../iOS/BeamableNotifications');
 const NSE_SOURCE_DIR = path.join(SDK_ROOT, 'extension');
+// SDK sources for the Notification CONTENT extension (custom expanded UI, Tier 3). Self-contained
+// (UIKit + UserNotificationsUI only — no core subset needed); app-provided BeamContentRenderer
+// files are copied in alongside these.
+const CONTENT_SOURCE_DIR = path.join(SDK_ROOT, 'content-extension');
 // The NSE compiles the core FROM SOURCE too — but only the extension-SAFE subset.
 // NotificationManager.swift / RemotePush.swift use UIApplication (forbidden in an
 // app extension), so they're excluded; the NSE plugins only need these two.
@@ -126,6 +131,55 @@ function nseSwiftFileNames() {
   return [...names, ...CORE_NSE_FILES];
 }
 
+// The SDK's content-extension .swift basenames (flat dir). Empty if the dir is absent.
+function contentSwiftFileNames() {
+  if (!fs.existsSync(CONTENT_SOURCE_DIR)) return [];
+  return fs
+    .readdirSync(CONTENT_SOURCE_DIR, { withFileTypes: true })
+    .filter((e) => e.isFile() && e.name.endsWith('.swift'))
+    .map((e) => e.name);
+}
+
+// Copy app-provided extension Swift files (NSE service plugins or content renderers) into a target
+// dir, stripping any `import BeamableNotifications` (the core/plugin protocols are compiled into the
+// same extension module). `descriptors` is `[{ file, className }]`; `file` resolves relative to the
+// consuming project root. Returns the copied basenames (for the Xcode sources build phase).
+function copyExtraSwift(projectRoot, destDir, descriptors) {
+  const names = [];
+  for (const d of descriptors || []) {
+    if (!d || !d.file) continue;
+    const srcAbs = path.isAbsolute(d.file) ? d.file : path.resolve(projectRoot, d.file);
+    const base = path.basename(srcAbs);
+    const src = fs
+      .readFileSync(srcAbs, 'utf8')
+      .replace(/^[ \t]*import BeamableNotifications[ \t]*\r?\n/m, '');
+    fs.writeFileSync(path.join(destDir, base), src);
+    names.push(base);
+  }
+  return names;
+}
+
+// Build a `<key>…</key><array>…</array>` plist fragment listing class names, or '' when empty.
+// Used to inject BMNServicePlugins / BMNContentRenderers into an extension Info.plist.
+function classArrayPlist(key, descriptors) {
+  const classNames = (descriptors || []).map((d) => d && d.className).filter(Boolean);
+  if (!classNames.length) return '';
+  const items = classNames.map((c) => `\t\t<string>${c}</string>`).join('\n');
+  return `\t<key>${key}</key>\n\t<array>\n${items}\n\t</array>\n`;
+}
+
+// Attach a freshly-created PBXGroup under the project's main group (the unnamed, pathless root
+// group). Factored out of the NSE target mod so the content-extension target can reuse it.
+function attachGroupToMain(proj, groupUuid) {
+  const groups = proj.hash.project.objects.PBXGroup;
+  Object.keys(groups).forEach((key) => {
+    const g = groups[key];
+    if (g.name === undefined && g.path === undefined && g.isa !== 'PBXVariantGroup' && g.children) {
+      proj.addToPbxGroup(groupUuid, key);
+    }
+  });
+}
+
 function resolveAppGroup(config, props) {
   if (props && props.appGroup) return props.appGroup;
   const bundleId = config.ios && config.ios.bundleIdentifier;
@@ -158,7 +212,7 @@ function withAppInfoPlist(config, appGroup) {
 }
 
 // --- 5a: copy the SDK's NSE sources + write the NSE Info.plist/entitlements --
-function withNSEFiles(config, appGroup) {
+function withNSEFiles(config, appGroup, servicePlugins) {
   return withDangerousMod(config, [
     'ios',
     (cfg) => {
@@ -195,6 +249,13 @@ function withNSEFiles(config, appGroup) {
         swiftFiles.push(name);
       }
 
+      // 3) App-provided custom NSE service plugins (Tier 2 custom-style seam). Copied here so
+      //    they survive `expo prebuild`; their class names go into BMNServicePlugins below.
+      copyExtraSwift(cfg.modRequest.projectRoot, nseDir, servicePlugins);
+
+      // Optional BMNServicePlugins array (app-provided NotificationServicePlugin class names).
+      const servicePluginsBlock = classArrayPlist('BMNServicePlugins', servicePlugins);
+
       // NSE Info.plist — UNNotificationServiceExtension point + BMNAppGroup so the
       // extension reaches the same shared container as the app. CFBundlePackageType
       // = XPC! is REQUIRED for an app extension; without it the built .appex is an
@@ -224,7 +285,7 @@ function withNSEFiles(config, appGroup) {
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>BMNAppGroup</key>
 	<string>${appGroup}</string>
-	<key>NSExtension</key>
+${servicePluginsBlock}	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.usernotifications.service</string>
@@ -364,6 +425,149 @@ function withNSETarget(config, appGroup, swiftFiles) {
   });
 }
 
+// --- 6a: copy the SDK content-extension sources + app renderers, write plist -
+// Tier 3: a UNNotificationContentExtension renders fully-custom UI in the EXPANDED notification,
+// keyed by the notification's categoryIdentifier (set by the NSE from the style). App-provided
+// `BeamContentRenderer` files are copied alongside the SDK host + protocol and listed in
+// BMNContentRenderers; the categories this extension handles go in UNNotificationExtensionCategory.
+function withContentFiles(config, appGroup, contentRenderers, contentCategories) {
+  return withDangerousMod(config, [
+    'ios',
+    (cfg) => {
+      const iosRoot = cfg.modRequest.platformProjectRoot;
+      const dir = path.join(iosRoot, CONTENT_TARGET_NAME);
+      fs.mkdirSync(dir, { recursive: true });
+
+      const swiftFiles = [];
+
+      // 1) SDK content-extension sources (NotificationViewController + ContentRenderer). Self-
+      //    contained (UIKit/UserNotificationsUI); strip a stray core import if present.
+      for (const entry of fs.readdirSync(CONTENT_SOURCE_DIR, { withFileTypes: true })) {
+        if (!entry.isFile() || !entry.name.endsWith('.swift')) continue;
+        const src = fs
+          .readFileSync(path.join(CONTENT_SOURCE_DIR, entry.name), 'utf8')
+          .replace(/^[ \t]*import BeamableNotifications[ \t]*\r?\n/m, '');
+        fs.writeFileSync(path.join(dir, entry.name), src);
+        swiftFiles.push(entry.name);
+      }
+
+      // 2) App-provided BeamContentRenderer files (survive prebuild); listed in BMNContentRenderers.
+      swiftFiles.push(...copyExtraSwift(cfg.modRequest.projectRoot, dir, contentRenderers));
+
+      const renderersBlock = classArrayPlist('BMNContentRenderers', contentRenderers);
+      const categoriesItems = (contentCategories || [])
+        .map((c) => `\t\t\t<string>${c}</string>`)
+        .join('\n');
+
+      const infoPlist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>${CONTENT_TARGET_NAME}</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>XPC!</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>BMNAppGroup</key>
+	<string>${appGroup}</string>
+${renderersBlock}	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.usernotifications.content-extension</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>$(PRODUCT_MODULE_NAME).NotificationViewController</string>
+		<key>NSExtensionAttributes</key>
+		<dict>
+			<key>UNNotificationExtensionCategory</key>
+			<array>
+${categoriesItems}
+			</array>
+			<key>UNNotificationExtensionInitialContentSizeRatio</key>
+			<real>0.6</real>
+			<key>UNNotificationExtensionDefaultContentHidden</key>
+			<true/>
+		</dict>
+	</dict>
+</dict>
+</plist>
+`;
+      fs.writeFileSync(path.join(dir, 'Info.plist'), infoPlist);
+
+      const entitlements = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>${appGroup}</string>
+	</array>
+</dict>
+</plist>
+`;
+      fs.writeFileSync(
+        path.join(dir, `${CONTENT_TARGET_NAME}.entitlements`),
+        entitlements,
+      );
+
+      return cfg;
+    },
+  ]);
+}
+
+// --- 6b: register the Content Extension target in the Xcode project ---------
+function withContentTarget(config, appGroup, swiftFiles) {
+  return withXcodeProject(config, (cfg) => {
+    const proj = cfg.modResults;
+    if (proj.pbxTargetByName(CONTENT_TARGET_NAME)) return cfg;
+
+    const bundleId = cfg.ios && cfg.ios.bundleIdentifier;
+    const ceBundleId = `${bundleId}.${CONTENT_TARGET_NAME}`;
+
+    const groupFiles = [...swiftFiles, 'Info.plist', `${CONTENT_TARGET_NAME}.entitlements`];
+    const pbxGroup = proj.addPbxGroup(groupFiles, CONTENT_TARGET_NAME, CONTENT_TARGET_NAME);
+    attachGroupToMain(proj, pbxGroup.uuid);
+
+    const target = proj.addTarget(CONTENT_TARGET_NAME, 'app_extension', CONTENT_TARGET_NAME, ceBundleId);
+    proj.addBuildPhase(swiftFiles, 'PBXSourcesBuildPhase', 'Sources', target.uuid);
+    proj.addBuildPhase([], 'PBXResourcesBuildPhase', 'Resources', target.uuid);
+    proj.addBuildPhase([], 'PBXFrameworksBuildPhase', 'Frameworks', target.uuid);
+
+    const configs = proj.pbxXCBuildConfigurationSection();
+    for (const key in configs) {
+      const buildSettings = configs[key].buildSettings;
+      if (buildSettings && buildSettings.PRODUCT_NAME === `"${CONTENT_TARGET_NAME}"`) {
+        buildSettings.PRODUCT_BUNDLE_IDENTIFIER = `"${ceBundleId}"`;
+        buildSettings.INFOPLIST_FILE = `"${CONTENT_TARGET_NAME}/Info.plist"`;
+        buildSettings.CODE_SIGN_ENTITLEMENTS = `"${CONTENT_TARGET_NAME}/${CONTENT_TARGET_NAME}.entitlements"`;
+        buildSettings.IPHONEOS_DEPLOYMENT_TARGET = '14.0';
+        buildSettings.SWIFT_VERSION = '5.0';
+        buildSettings.TARGETED_DEVICE_FAMILY = '"1,2"';
+        buildSettings.CODE_SIGN_STYLE = 'Automatic';
+        buildSettings.GENERATE_INFOPLIST_FILE = 'NO';
+        buildSettings.MARKETING_VERSION = '1.0';
+        buildSettings.CURRENT_PROJECT_VERSION = '1';
+        buildSettings.SWIFT_OPTIMIZATION_LEVEL =
+          buildSettings.SWIFT_OPTIMIZATION_LEVEL || '"-Onone"';
+      }
+    }
+
+    return cfg;
+  });
+}
+
 // === Android ================================================================
 //
 // `expo prebuild` regenerates `android/` from scratch, so the receive-time handler must be
@@ -470,9 +674,31 @@ module.exports = function withBeamableNotifications(config, props) {
   // building out of the box. Local + remote-registration notifications work
   // without it.
   if (props && props.enableServiceExtension) {
-    const swiftFiles = nseSwiftFileNames();
-    config = withNSEFiles(config, appGroup);
-    config = withNSETarget(config, appGroup, swiftFiles);
+    // Tier 2: app-provided custom NSE service plugins (transform-only custom styles), e.g.
+    //   "iosServicePlugins": [{ "file": "./plugins/ios/MyPlugin.swift", "className": "MyPlugin" }]
+    const servicePlugins = (props && props.iosServicePlugins) || [];
+    const nseSwift = [
+      ...nseSwiftFileNames(),
+      ...servicePlugins.map((p) => path.basename(p.file)),
+    ];
+    config = withNSEFiles(config, appGroup, servicePlugins);
+    config = withNSETarget(config, appGroup, nseSwift);
+  }
+
+  // Tier 3: a Notification Content Extension for fully-custom expanded UI. Opt-in:
+  //   "enableContentExtension": true,
+  //   "contentCategories": ["countdown"],            // categoryIdentifiers this UI handles
+  //   "iosContentRenderers": [{ "file": "./plugins/ios/MyRenderer.swift", "className": "MyRenderer" }]
+  // Requires enableServiceExtension too — the NSE is what sets the categoryIdentifier from the style.
+  if (props && props.enableContentExtension) {
+    const contentRenderers = (props && props.iosContentRenderers) || [];
+    const contentCategories = (props && props.contentCategories) || [];
+    const contentSwift = [
+      ...contentSwiftFileNames(),
+      ...contentRenderers.map((r) => path.basename(r.file)),
+    ];
+    config = withContentFiles(config, appGroup, contentRenderers, contentCategories);
+    config = withContentTarget(config, appGroup, contentSwift);
   }
   return config;
 };
