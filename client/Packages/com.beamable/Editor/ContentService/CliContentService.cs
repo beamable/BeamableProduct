@@ -47,7 +47,7 @@ namespace Beamable.Editor.ContentService
 		public float Progress;
 	}
 
-	public class CliContentService : IStorageHandler<CliContentService>, ILoadWithContext
+	public partial class CliContentService : IStorageHandler<CliContentService>, ILoadWithContext
 	{
 		private const string SYNC_OPERATION_TITLE = "Sync Contents";
 		private const string SYNC_OPERATION_SUCCESS_BASE_MESSAGE = "{0} sync complete. {1}/{2} items synced.";
