@@ -46,7 +46,8 @@ run-name: Release ${{ inputs.releaseType }} ${{ inputs.major }}.${{ inputs.minor
 env:
   DOCKER_REGISTRY: ghcr.io
 jobs:
-  nuget:
+  package:
+    name: Build and Publish the Beamable Unity SDK Package
     timeout-minutes: 60
     runs-on: ubuntu-latest
     permissions:
@@ -230,7 +231,6 @@ jobs:
           ls ./client/Packages/com.beamable
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
-      
 
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
@@ -355,10 +355,10 @@ jobs:
           fi
 
   lightbeam:
-    needs: nuget
+    needs: package
     uses: ./.github/workflows/lightBeamRelease.yml
     with:
-      customTag: unity-sdk-${{ needs.nuget.outputs.version }}
+      customTag: unity-sdk-${{ needs.package.outputs.version }}
     secrets:
       UNITY_EMAIL: ${{ secrets.UNITY_EMAIL_DEVOPS }}
       UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD_DEVOPS }}
