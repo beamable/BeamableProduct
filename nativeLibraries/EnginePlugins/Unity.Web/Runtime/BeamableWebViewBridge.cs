@@ -105,8 +105,15 @@ namespace Beamable.Notifications.Web
                         return;
                     }
 
-                    // No-argument methods.
+                    // Native setup: routes to the facade initializer (Android needs the GameObject
+                    // name — initialize(String); iOS registers callbacks + bmn_initialize). NOT the
+                    // generic no-arg CallJson, whose bare initialize() has no matching facade method.
+                    // Idempotent (bridge.Start() already called it).
                     case "initialize":
+                        NativeNotifications.Initialize();
+                        break;
+
+                    // No-argument methods.
                     case "getPermissionStatus":
                     case "cancelAllLocal":
                     case "getPending":

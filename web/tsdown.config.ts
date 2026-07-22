@@ -61,8 +61,14 @@ const typeEntries = ['src/index.ts', 'src/api.ts', 'src/schema.ts'];
 
 export default defineConfig([
   // Node Build
+  // Object-form entry so output basenames stay flat (dist/node/{index,resolveBeamConfig}.{cjs,mjs})
+  // regardless of each source file's subdirectory. `resolveBeamConfig` is a Node-only,
+  // build-time helper (uses node:fs) shipped solely on the node target — never browser/RN.
   withSharedConfig({
-    entry: ['src/index.ts'], // Entry files for node build
+    entry: {
+      index: 'src/index.ts',
+      resolveBeamConfig: 'src/platform/resolveBeamConfig.ts',
+    }, // Entry files for node build
     format: ['cjs', 'esm'], // Output formats: CommonJS and ES modules
     outDir: 'dist/node', // Output directory for the build
     platform: 'node', // Target node environment for bundling
@@ -136,4 +142,17 @@ export default defineConfig([
       dts: '.d.ts',
     }),
   })),
+  // Types for the Node-only resolver (object-form entry keeps the basename flat:
+  // dist/types/resolveBeamConfig.d.ts, matching the `./node` export condition).
+  {
+    entry: { resolveBeamConfig: 'src/platform/resolveBeamConfig.ts' },
+    outDir: 'dist/types',
+    clean: false,
+    dts: {
+      emitDtsOnly: true,
+    },
+    outExtensions: () => ({
+      dts: '.d.ts',
+    }),
+  },
 ]);

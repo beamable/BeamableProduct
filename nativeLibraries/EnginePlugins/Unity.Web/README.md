@@ -116,7 +116,7 @@ webView.OnPageFinished += (view, code, url) =>
 
 ## Serving the web bundle (optional)
 
-`StreamingAssetsServer` serves a static web bundle from `Assets/StreamingAssets/react` over
+`StreamingAssetsServer` serves a static web bundle from StreamingAssets over
 `http://127.0.0.1:17890/` (proper http origin; works in Editor, iOS, and Android). Or skip it and
 point your WebView at any URL.
 
@@ -126,14 +126,16 @@ yield return server.StartServer();
 _webView.LoadURL(server.BaseUrl);
 ```
 
-Export the web bundle into StreamingAssets with the shipped script (run from your Unity project root):
+Stage the web bundle with the Editor tool: **Tools ▸ Beamable ▸ Web Bundle Exporter**. Select your
+React Native project folder and click **Build & Copy**. It runs the RN web build (default
+`npm run export:web`), copies the output into `Assets/StreamingAssets/<projectName>/`, writes
+`manifest.txt`, and writes `Assets/StreamingAssets/beamable-webview.json`
+(`{"contentFolder":"<projectName>"}`).
 
-```bash
-/path/to/com.beamable.notifications.web/Tools/build-react-webview.sh
-# or explicitly:
-RN_SAMPLE_DIR=/path/to/ExpoApp UNITY_PROJECT_DIR=/path/to/UnityProject \
-  /path/to/.../Tools/build-react-webview.sh
-```
+`StreamingAssetsServer` reads that config at runtime to decide which folder to serve — so the folder
+name lives in the config, not in the tool or the component. Hand-edit `beamable-webview.json` to
+switch between multiple exported bundles. If the config is absent, the server falls back to its
+serialized `Content Folder` field (default `react`).
 
 ## Auth & analytics
 

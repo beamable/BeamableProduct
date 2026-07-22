@@ -137,6 +137,26 @@ For manual setup, the JSON can omit `host` and use `{ "cid": "...", "pid": "..."
 instead. And the plain `Beam.init({ cid, pid })` usage above keeps working unchanged — the JSON is
 never required.
 
+### Locate `.beamable/config.beam.json` from a build step (`@beamable/sdk/node`)
+
+The static import above requires the JSON to sit at a fixed relative path. If you would rather
+find it wherever it lives — e.g. a monorepo where `beam init` wrote `.beamable/` further up the
+tree — the SDK ships a Node-only helper that walks the directory tree upward and returns the
+nearest usable `{ cid, pid, host }`, falling back to `BEAM_CID`/`BEAM_PID`/`BEAM_HOST` env vars:
+
+```js
+// app.config.js / metro.config.js / any Node build step
+const { resolveBeamConfig } = require('@beamable/sdk/node');
+const beam = resolveBeamConfig({ from: __dirname }); // { cid, pid, host } | {}
+```
+
+This is **Node/build-time only**: a shipped browser or React Native bundle has no filesystem, so
+the discovered values have to be baked into the bundle by your build (for Expo, inject `beam` via
+`extra` in `app.config.js` and read it back with `expo-constants`). The `./node` export has no
+browser/React Native condition on purpose — importing it into an app bundle fails loudly rather
+than shipping `node:fs`. It never throws: if nothing is found it returns `{}`, so you can layer
+your own further fallbacks (a committed default, `Beam.init`'s built-in environment, …).
+
 ## Documentation
 
 Find detailed API references, usage examples, and integration guides for the Beam Web SDK:

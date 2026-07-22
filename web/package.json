@@ -98,6 +98,11 @@
     },
     "./react-native/polyfills": {
       "default": "./dist/react-native/polyfills.mjs"
+    },
+    "./node": {
+      "types": "./dist/types/resolveBeamConfig.d.ts",
+      "require": "./dist/node/resolveBeamConfig.cjs",
+      "import": "./dist/node/resolveBeamConfig.mjs"
     }
   },
   "keywords": [
