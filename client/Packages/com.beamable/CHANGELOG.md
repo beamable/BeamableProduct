@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed the Content window Snapshot tab hanging at "Loading snapshots" when snapshots in different realm folders share a name (e.g. `LastPublished-global.json` auto snapshots from publishing to multiple realms)
-- Unity SDK version headers were not being sent by default. 
+- Unity SDK version headers were not being sent by default. - Fixed `BeamContext` initialization throwing `IndexOutOfRangeException` from its own retry handler when initialization kept failing with infinite context retries enabled, which masked the underlying initialization error.
 
 ## [5.1.2] - 2026-07-16
 
