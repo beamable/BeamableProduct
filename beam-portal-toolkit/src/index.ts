@@ -9,3 +9,4 @@ import './generated/globals';
 
 export * from '@beamable/sdk';
 export * from './portal';
+export * from './storage';

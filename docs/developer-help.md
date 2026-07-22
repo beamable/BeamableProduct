@@ -272,10 +272,10 @@ Luckily, all of those things share the same Nuget version numbering scheme. If y
 1. change the version number in the `versions-default.json` file, to a valid deployed Nuget version, and then
 2. run the `beam unity download-all-nuget-packages ./client --logs v`. This will download the source code and copy the files into the Unity project. 
 
-However, if you want to use your local files to validate something, set the `nugetPackageVersion` to `0.0.123`, which is our "local dev" version. Then, when you build the CLI, include the `ReleaseSharedCode` msbuild property, and it will copy the local source code into the Unity project. 
+However, if you want to use your local files to validate something, set the `nugetPackageVersion` to `0.0.123`, which is our "local dev" version. Then, when you build the CLI, include the `BEAM_COPY_CODE_TO_UNITY` msbuild property, and it will copy the local source code into the Unity project. 
 
 ```sh
-dotnet build -p:ReleaseSharedCode=true
+dotnet build -p:BEAM_COPY_CODE_TO_UNITY=true
 ```
 
 Finally, as mentioned, the SDK depends on the Beam CLI. As part of the SDK's initialization, it will resolve a Beam CLI executable path. In a deployed package, it uses the value of the `nugetPackageVersion` field and downloads the Nuget tool as a local package in `/Library/BeamableEditor/BeamCLI`. If you are developing locally, you can edit this through the `EditorConfiguration` .

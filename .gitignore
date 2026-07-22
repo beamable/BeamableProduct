@@ -181,3 +181,5 @@ web/docs
 web/node_modules
 web/temp
 
+/client/UserSettings/EditorUserSettings.asset
+/client/UserSettings/Layouts/*.dwlt

@@ -63,7 +63,9 @@ PUSH_ARGS="--source $FEED_NAME"
 
 dotnet restore $SOLUTION
 dotnet build $SOLUTION $BUILD_ARGS
-dotnet build cli/beamable.common -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=$SHOULD_APPLY_TO_UNITY
+# the copy target runs the CLI via `dotnet run --no-build`, which defaults to Debug;
+# point it at the Release build produced by the solution build above.
+dotnet build cli/beamable.common -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=$SHOULD_APPLY_TO_UNITY -p:BeamCopyCommonFlags="--no-build -c Release"
 dotnet pack $SOLUTION $PACK_ARGS
 dotnet nuget push $TMP_BUILD_OUTPUT/*.$VERSION.nupkg $PUSH_ARGS
 

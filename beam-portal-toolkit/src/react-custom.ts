@@ -14,6 +14,7 @@
 
 import { createElement, type CSSProperties, type ComponentType, type ReactElement, type ReactNode, type Ref } from 'react';
 import { hostComponent } from './react-host';
+import type { CandidateMetadata } from './portal';
 
 export interface BeamTableProps<T = unknown> {
   data: T[];
@@ -72,6 +73,19 @@ export type BeamCellComponent<T = unknown> = ComponentType<BeamCellProps<T>>;
 
 export interface BeamChildExtensionProps {
   extensionName: string;
+  /**
+   * Arbitrary in-process data to hand to the embedded extension. Shows up
+   * on the child's `context.siteData` as a snapshot at mount time.
+   *
+   * Use for one-shot parent→child handoff (a resolved id, a computed
+   * value). For live-in-sync scenarios, pass a store (`writable<T>`) —
+   * the child subscribes to it in its own React tree.
+   *
+   * Referentially unstable values (fresh object literal per render) cause
+   * new mounts to see a fresh snapshot; existing mounted children keep
+   * their own. `useMemo` the value if that's not what you want.
+   */
+  siteData?: unknown;
 }
 
 export function BeamChildExtension(
@@ -114,6 +128,52 @@ export interface BeamExtensionSiteProps {
    * match falls back to additive so the tab strip is never one tab wide.
    */
   mountKind?: 'additive' | 'tabs' | 'tabs-route';
+  /**
+   * Arbitrary in-process data to hand to every child extension mounted at
+   * this site. Shows up on the child's `context.siteData` as a snapshot at
+   * mount time — mutating the value after a child has mounted does NOT
+   * update that child; a remount picks up the new value.
+   *
+   * Typed as `unknown` — the mount site is a generic primitive and can't
+   * know a specific child's contract. Publish a companion type or schema
+   * if you want consumers to validate.
+   *
+   * For live-in-sync scenarios, pass a store (`writable<T>`) through
+   * `siteData` and the child subscribes to it. No new observable API is
+   * required — the store IS the observability boundary.
+   *
+   * Referentially unstable values (fresh object literal per render) cause
+   * new mounts to see a fresh snapshot; existing mounted children keep
+   * their own. `useMemo` the value if that's not what you want.
+   */
+  siteData?: unknown;
+  /**
+   * Curate which candidates mount and in what order. `resolve` is the full
+   * mechanism; `include` is sugar over it.
+   *
+   * `resolve` receives the site's live candidate set (each with metadata) and
+   * returns the subset to mount, **in the returned order** — so it filters
+   * **and** reorders. Return either the {@link CandidateMetadata} objects or
+   * their beam ids. It re-runs whenever the candidate set changes, so it MUST
+   * be pure: do not mutate the argument (it is `readonly`) or reach for side
+   * effects. If it throws, the error surfaces on this extension's own error
+   * page.
+   *
+   * @example
+   *   resolve={(c) => [...c].filter(x => !x.isLocal)
+   *                         .sort((a, b) => (a.mount.navLabelOrder ?? 0) - (b.mount.navLabelOrder ?? 0))}
+   */
+  resolve?: (candidates: readonly CandidateMetadata[]) => CandidateMetadata[] | string[];
+  /**
+   * Allowlist of beam ids — sugar over {@link resolve}. Only listed candidates
+   * mount; **membership only, no reordering** — survivors keep the site's
+   * existing order. An id that matches no candidate is a no-op (logged as a
+   * console warning). Ignored when `resolve` is also provided.
+   *
+   * To learn which beam ids are valid, read
+   * {@link ExtensionContext.getMountSiteCandidates} (or `useMountSiteCandidates`).
+   */
+  include?: string[];
 }
 
 export function BeamExtensionSite(

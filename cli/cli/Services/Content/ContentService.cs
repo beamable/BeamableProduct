@@ -1968,7 +1968,7 @@ public partial class ContentService
 			{
 				try
 				{
-					manifest = await _contentApi.GetManifestPublicJson(manifestId, manifestUid);
+					manifest = await _contentApi.GetManifestPublicJson(manifestId, uid: manifestUid);
 				}
 				catch (RequesterException e)
 				{

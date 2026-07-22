@@ -5,8 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] 
 
-## [7.2.1] - 2026-06-29
+### Fixed
+- Portal extension scanning no longer excludes sym linked package files
+
+## [7.2.2] - 2026-07-16
+
+### Fixed
+
+- Fixed an issue where SmallerJson was not serializing/deserializing null fields to default values.
+
+## [7.2.1] - 2026-06-30
 
 ### Changed
 

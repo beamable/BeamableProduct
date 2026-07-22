@@ -1091,11 +1091,11 @@ namespace Beamable.Serialization.SmallerJSON
 			{
 				if (targetType == null) throw new ArgumentNullException(nameof(targetType));
 
-				// Null handling
+				// Null handling — mirror Unity JsonUtility, which never leaves reference fields null
+				// (missing string => "", missing array/list => empty, missing [Serializable] class => instance).
 				if (node == null)
 				{
-					targetType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-					return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
+					return CreateJsonUtilityDefault(targetType, 0);
 				}
 
 				// Unwrap nullable
@@ -1185,7 +1185,13 @@ namespace Beamable.Serialization.SmallerJSON
 						var canBeSerialized = (hasSerializeField || !field.IsNotSerialized);
 						if (!canBeSerialized) continue;
 
-						if (!objNode.TryGetValue(field.Name, out var rawValue)) continue;
+						if (!objNode.TryGetValue(field.Name, out var rawValue))
+						{
+							// Field omitted from JSON: default to a JsonUtility-parity non-null value
+							// so downstream code keeps its historical non-nullable guarantees.
+							field.SetValue(instance, CreateJsonUtilityDefault(field.FieldType, 0));
+							continue;
+						}
 
 						var converted = ConvertToType(rawValue, field.FieldType);
 						field.SetValue(instance, converted);
@@ -1202,6 +1208,53 @@ namespace Beamable.Serialization.SmallerJSON
 
 				throw new InvalidOperationException(
 					$"SmallerJSON cannot convert node type [{node.GetType().FullName}] to [{targetType.FullName}].");
+			}
+
+			// Guards against StackOverflow on self-referential [Serializable] graphs. Unity's own
+			// serializer stops nesting custom classes at a similar depth.
+			private const int MaxDefaultDepth = 10;
+
+			/// <summary>
+			/// Produces the same non-null default Unity's JsonUtility.FromJson would materialize for a
+			/// field that is absent (or explicitly null) in the JSON:
+			/// string => "", array => empty array, List/Dictionary => empty collection,
+			/// nested [Serializable] class => default-constructed instance with its own fields defaulted,
+			/// value types => their zero value. Anything without a usable parameterless ctor => null.
+			/// </summary>
+			private static object CreateJsonUtilityDefault(Type type, int depth)
+			{
+				if (type == null) return null;
+				type = Nullable.GetUnderlyingType(type) ?? type;
+
+				if (type == typeof(string)) return "";
+				if (type.IsValueType) return Activator.CreateInstance(type);
+				if (type.IsArray) return Array.CreateInstance(type.GetElementType()!, 0);
+
+				// Concrete generic List<T> / Dictionary<,> => empty collection.
+				if (type.IsGenericType && !type.IsInterface && !type.IsAbstract &&
+				    (typeof(IList).IsAssignableFrom(type) || typeof(IDictionary).IsAssignableFrom(type)))
+				{
+					return Activator.CreateInstance(type);
+				}
+
+				// Nested serializable class: instantiate and recursively default its serializable fields.
+				if (type.IsClass && !type.IsAbstract && depth < MaxDefaultDepth &&
+				    type.GetConstructor(Type.EmptyTypes) != null)
+				{
+					var instance = Activator.CreateInstance(type);
+					var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+					for (int i = 0; i < fields.Length; i++)
+					{
+						var field = fields[i];
+						var hasSerializeField = field.GetCustomAttribute(SerializeFieldType) != null;
+						var canBeSerialized = (hasSerializeField || !field.IsNotSerialized);
+						if (!canBeSerialized) continue;
+						field.SetValue(instance, CreateJsonUtilityDefault(field.FieldType, depth + 1));
+					}
+					return instance;
+				}
+
+				return null;
 			}
 
 			private static bool TryGetSemanticPrimitiveType(Type semanticType, out Type primitiveType)
