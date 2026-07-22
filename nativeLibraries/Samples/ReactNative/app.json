@@ -26,7 +26,21 @@
         "@beamable/notifications-react-native",
         {
           "appGroup": "group.com.beamable.mobiletest",
-          "enableServiceExtension": true
+          "enableServiceExtension": true,
+          "iosServicePlugins": [
+            {
+              "file": "./plugins/ios/SampleStyleServicePlugin.swift",
+              "className": "SampleStyleServicePlugin"
+            }
+          ],
+          "enableContentExtension": true,
+          "contentCategories": ["countdown"],
+          "iosContentRenderers": [
+            {
+              "file": "./plugins/ios/SampleCountdownContentRenderer.swift",
+              "className": "SampleCountdownContentRenderer"
+            }
+          ]
         }
       ],
       "./plugins/withSampleNotificationStyles"

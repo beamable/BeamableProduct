@@ -9,7 +9,8 @@ This is the companion to [`custom-notifications-android.md`](./custom-notificati
 (which covers the **built-in** presets `default`/`bigPicture`/`bigText`/`actions`) and
 [`notifications-feature.md`](./notifications-feature.md) (the overall feature). The shared library
 ships only those built-in presets; everything beyond them is a *custom style* implemented in **your
-app's own native layer** through the `PushNotificationStyleRenderer` hook described here.
+app's own native layer** through the `PushNotificationStyleRenderer` hook described here. **iOS** has
+its own two seams (an NSE service plugin and a Notification Content Extension) — see §8.
 
 > The canonical worked example ships in the repo: the React Native sample implements `animated` and
 > `countdown` styles in
@@ -325,3 +326,113 @@ it):
 
 If your renderer throws or returns `false`, delivery still succeeds — the library posts the default
 notification — so a broken custom style never drops the message.
+
+---
+
+## 8. iOS: custom styles (NSE plugin + Content Extension)
+
+iOS renders push notifications differently from Android: there is no `NotificationBuilder` running in
+your app process. Instead, a **Notification Service Extension (NSE)** runs on every remote push
+(`mutable-content: 1` is always sent), and — for fully-custom UI — a **Notification Content
+Extension** renders a view when the user *expands* the notification. The four built-in styles
+(`default`/`bigPicture`/`bigText`/`actions`) are already handled by the shared SDK's NSE plugins (see
+[`custom-notifications-ios.md`](./custom-notifications-ios.md)). For your **own** styles there are two
+seams, in increasing power:
+
+`PushRailService` puts `style` + your fields into the notification's top-level `userInfo`, so both
+seams read them from `notification.request.content.userInfo` (the iOS equivalent of Android's
+`event.dataJson`).
+
+### 8.1 Transform-only — an NSE service plugin
+
+The analog of a lightweight Android renderer: mutate the notification content (attach media, set
+badge/sound/category, tweak title/body). It **cannot draw custom UI**. Write a `NotificationServicePlugin`:
+
+```swift
+import UserNotifications
+
+@objc(MyStylePlugin)                                   // stable ObjC name for NSClassFromString
+public final class MyStylePlugin: NSObject, NotificationServicePlugin {
+    public override init() { super.init() }
+    public func process(_ content: UNMutableNotificationContent,
+                        completion: @escaping (UNMutableNotificationContent) -> Void) {
+        if (content.userInfo["style"] as? String) == "myStyle" {
+            content.categoryIdentifier = "myStyle"     // e.g. route to a Content Extension
+            // …attach media / set badge / etc…
+        }
+        completion(content)                            // ALWAYS forward exactly once
+    }
+}
+```
+
+It must be an `NSObject` subclass with a no-arg `init()`, and is discovered by class name from the NSE
+target's **`BMNServicePlugins`** Info.plist array. See the sample
+[`SampleStyleServicePlugin.swift`](../Samples/ReactNative/plugins/ios/SampleStyleServicePlugin.swift).
+
+### 8.2 Fully-custom UI — a Content Extension renderer
+
+The true analog of Android's fully-custom renderer (`animated`/`countdown`). A `BeamContentRenderer`
+draws a custom UIKit view in the **expanded** notification, keyed by the notification's
+`categoryIdentifier`:
+
+```swift
+import UIKit
+import UserNotifications
+
+@objc(MyContentRenderer)
+public final class MyContentRenderer: NSObject, BeamContentRenderer {
+    public override init() { super.init() }
+    public func render(in container: UIView, notification: UNNotification) -> Bool {
+        let info = notification.request.content.userInfo
+        guard (info["style"] as? String) == "myStyle" else { return false }  // not mine
+        // …add subviews to `container`; keep a Timer for live updates while on-screen…
+        return true                                                          // I drew it
+    }
+}
+```
+
+Discovered from the Content Extension target's **`BMNContentRenderers`** array; its category must be
+listed in the target's `UNNotificationExtensionCategory`. The SDK's `NotificationViewController`
+(the extension's principal class) offers the notification to each renderer, first-`true`-wins — the
+same claim/skip contract as Android's `render()`. See the sample
+[`SampleCountdownContentRenderer.swift`](../Samples/ReactNative/plugins/ios/SampleCountdownContentRenderer.swift)
+(the iOS parity demo for the Android `countdown`).
+
+> **Limitation:** a Content Extension renders only the **expanded / long-press** view. The collapsed
+> banner is the OS default and cannot host a live-updating custom view — full parity with Android's
+> always-visible RemoteViews chronometer is an OS constraint.
+
+### 8.3 Wire it per engine
+
+- **React Native (Expo)** — the shared `@beamable/notifications-react-native` plugin exposes opt-in
+  props (no manual Xcode work; they survive `expo prebuild`):
+  ```jsonc
+  ["@beamable/notifications-react-native", {
+    "appGroup": "group.<your.bundle>",
+    "enableServiceExtension": true,
+    "iosServicePlugins":   [{ "file": "./plugins/ios/MyStylePlugin.swift",     "className": "MyStylePlugin" }],
+    "enableContentExtension": true,
+    "contentCategories":   ["myStyle"],
+    "iosContentRenderers": [{ "file": "./plugins/ios/MyContentRenderer.swift", "className": "MyContentRenderer" }]
+  }]
+  ```
+  The plugin copies your Swift into the NSE / Content Extension targets and writes `BMNServicePlugins`
+  / `BMNContentRenderers` + `UNNotificationExtensionCategory`. Because classes are resolved via
+  `NSClassFromString`, annotate them `@objc(ClassName)` so the bare `className` resolves. The RN sample
+  wires both in its [`app.json`](../Samples/ReactNative/app.json).
+- **Unity** — drop the plugin `.swift` into the NSE source dir (`Plugins/iOS~/Extension`) and add its
+  class name to the NSE Info.plist `BMNServicePlugins` (written by `NotificationsPostProcess.cs`). A
+  Content Extension needs a **second** app-extension target — call `AddAppExtension` again with
+  content-extension constants (the current `ExtensionName` is a single `const`; parameterize it or add
+  an `AddContentExtension` method + a content-ext Info.plist writer). **Not automated yet — manual.**
+- **Unreal** — add the plugin `.swift` to the staged `Extension/` sources and `BMNServicePlugins`. A
+  Content Extension needs a parallel `xcodeproj`-gem target (mirror `Scripts/add-nse.sh` with a second
+  `new_target(:app_extension, …)`, a content-ext Info.plist, and a second `.appex` build/embed).
+  **Not automated yet — manual.**
+
+### 8.4 Verify (macOS + real device)
+
+`expo prebuild` (or an Xcode build) produces **two** app-extension targets (NSE + Content Extension).
+Send your style from the console; expand the notification to see the custom view. iOS remote push
+needs a real device (or a simulator on recent Xcode). Rebuild the SDK `.xcframework` first if you
+edited the shared Swift (`scripts/build-xcframework.sh`).
