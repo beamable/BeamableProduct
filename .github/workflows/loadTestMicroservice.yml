@@ -124,12 +124,13 @@ jobs:
       - name: Post to a Slack channel
         id: slack
         if: ${{!contains(steps.nbomber.outputs.log, 'No issues found') || !contains(steps.counters.outputs.log, 'No issues found')}}
-        uses: slackapi/slack-github-action@v1.21.0
+        uses: slackapi/slack-github-action@v4.0.0
         with:
-          channel-id: C0409CMRKA9
-          slack-message: "Automated C#MS smoke tests failed! \nbomber: ${{steps.nbomber.outputs.log}} \ncounters: ${{steps.counters.outputs.log}} \n https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: "C0409CMRKA9"
+            text: "Automated C#MS smoke tests failed! \nbomber: ${{steps.nbomber.outputs.log}} \ncounters: ${{steps.counters.outputs.log}} \n https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
       - name: Fail if checks failed
         if: ${{!contains(steps.nbomber.outputs.log, 'No issues found') || !contains(steps.counters.outputs.log, 'No issues found')}}
         run: |

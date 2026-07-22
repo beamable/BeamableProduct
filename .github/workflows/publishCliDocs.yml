@@ -44,9 +44,10 @@ jobs:
           dotnet run -f net10.0 --project ./cli/cli -- docs --readme-key ${{secrets.README_API_KEY}} --guide-slug cli-guides --command-slug cli-command-reference --readme-version ${{ github.event.inputs.version }}
       - name: Post to a Slack channel
         id: slack
-        uses: slackapi/slack-github-action@v1.21.0
+        uses: slackapi/slack-github-action@v4.0.0
         with:
-          channel-id: C01300W32CS
-          slack-message: "CLI Docs have been published! commit=[${{ github.event.inputs.commit }}]"
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: "C01300W32CS"
+            text: "CLI Docs have been published! commit=[${{ github.event.inputs.commit }}]"
