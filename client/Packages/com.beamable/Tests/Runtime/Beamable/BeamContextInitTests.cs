@@ -1,12 +1,16 @@
 using Beamable;
+using Beamable.Api.Payments;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Dependencies;
 using Beamable.Platform.Tests;
+using Beamable.Purchasing;
 using Beamable.Tests.Runtime;
 using NUnit.Framework;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.TestTools;
 
@@ -180,6 +184,73 @@ namespace Tests.Runtime.Beamable
 				LogAssert.ignoreFailingMessages = false;
 			}
 		}
+	}
+
+	public class CommerceInitializationTests : BeamContextTest
+	{
+		private bool _originalSkipCommerceInitialization;
+		private MockPlatformRoute<GetSKUsResponse> _getSkusRoute;
+
+		[SetUp]
+		public void SaveConfiguration()
+		{
+			_originalSkipCommerceInitialization = CoreConfiguration.Instance.SkipCommerceInitialization;
+		}
+
+		[TearDown]
+		public void RestoreConfiguration()
+		{
+			CoreConfiguration.Instance.SkipCommerceInitialization = _originalSkipCommerceInitialization;
+		}
+
+		protected override void OnRegister(IDependencyBuilder builder)
+		{
+			base.OnRegister(builder);
+			UnityBeamablePurchaserRegister.RegisterServices(builder);
+			BeamablePurchaserConfigurationRegister.RegisterServices(builder);
+		}
+
+		protected override void OnInit(MockBeamContext ctx)
+		{
+			base.OnInit(ctx);
+			_getSkusRoute = ctx.Requester.MockRequest<GetSKUsResponse>(Method.GET, "/basic/commerce/skus")
+				.WithResponse(new GetSKUsResponse
+				{
+					skus = new SKUDefinitions
+					{
+						version = 1,
+						created = string.Empty,
+						definitions = new List<SKU>()
+					}
+				})
+				.WithToken(MockBeamContext.ACCESS_TOKEN);
+		}
+
+		[UnityTest]
+		public IEnumerator SkippedCommerceInitializationUsesDummyPurchaserWithoutRequestingSkus()
+		{
+			CoreConfiguration.Instance.SkipCommerceInitialization = true;
+
+			TriggerContextInit();
+			yield return Context.OnReady.ToYielder();
+
+			Assert.AreEqual(0, _getSkusRoute.CallCount);
+			Assert.IsInstanceOf<DummyPurchaser>(Context.Api.BeamableIAP.GetResult());
+		}
+
+#if !BEAMABLE_PURCHASING_IMPLEMENTATION_DISABLED
+		[UnityTest]
+		public IEnumerator DefaultCommerceInitializationUsesUnityPurchaserAndRequestsSkus()
+		{
+			CoreConfiguration.Instance.SkipCommerceInitialization = false;
+
+			TriggerContextInit();
+			yield return Context.OnReady.ToYielder();
+
+			Assert.AreEqual(1, _getSkusRoute.CallCount);
+			Assert.IsInstanceOf<UnityBeamablePurchaser>(Context.Api.BeamableIAP.GetResult());
+		}
+#endif
 	}
 
 }
