@@ -3,6 +3,9 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type CustomerActorRealmConfigSaveRequest = { 
-  config?: Record<string, string>; 
+export type RealmSecretInfo = { 
+  algorithm: string; 
+  dataKeyId: string; 
+  key: string; 
+  updatedAt: Date; 
 };

@@ -6,7 +6,7 @@
 import type { Promotion } from './Promotion';
 import type { PromotableType } from './enums/PromotableType';
 
-export type CustomerActorPromotionScope = { 
+export type PromotionScope = { 
   name: PromotableType; 
   promotions?: Promotion[]; 
 };

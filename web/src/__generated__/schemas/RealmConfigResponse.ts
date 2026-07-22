@@ -3,6 +3,6 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type CustomerActorRealmConfigResponse = { 
-  config?: Record<string, string>; 
+export type RealmConfigResponse = { 
+  config: Record<string, string>; 
 };

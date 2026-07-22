@@ -3,6 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type RealmsBasicRealmConfigResponse = { 
-  config: Record<string, string>; 
+export type ConfigChangeRequest = { 
+  deletes?: string[] | null; 
+  upserts?: Record<string, string> | null; 
 };

@@ -3,6 +3,5 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type RealmsBasicRealmConfigSaveRequest = { 
-  config: Record<string, string>; 
+export type ApiAnalyticsQueryPostAnalyticsResponse = { 
 };
