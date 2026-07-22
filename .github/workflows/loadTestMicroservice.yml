@@ -17,14 +17,14 @@ jobs:
       group: stresstest-${{ github.head_ref }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
       - name: Setup .NET Core SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: |
             8.0.x
@@ -91,7 +91,7 @@ jobs:
           cat ./logs/serviceRuntime.log
           cp ./logs/serviceRuntime.log ./reports/serviceRuntime.log
       - name: Save Profiler Data 
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: profiler
           if-no-files-found: error

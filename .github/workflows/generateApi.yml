@@ -15,13 +15,13 @@ jobs:
       group: generate-${{ github.head_ref }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup .NET Core SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
@@ -48,7 +48,7 @@ jobs:
       - name: Check Status
         run: git status
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         id: cpr
         if: ${{ steps.changes.outputs.any == 'true' }}
         with:

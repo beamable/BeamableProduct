@@ -61,16 +61,16 @@ jobs:
           echo rc=${{ inputs.rcNumber }}
           echo releaseType=${{ inputs.releaseType }}
           
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: 
           ref: ${{ github.event.inputs.commit }}
 
       - name: Setup .NET Core SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '20.x'
           registry-url: >-
@@ -88,7 +88,7 @@ jobs:
           jq --version
 
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum

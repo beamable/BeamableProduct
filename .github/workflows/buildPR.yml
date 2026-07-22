@@ -25,12 +25,12 @@ jobs:
       matrix:
         dotnet-version: ['10.0.x' ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-      - uses: actions/cache@v3
+      - uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file
@@ -39,13 +39,13 @@ jobs:
             ${{ runner.os }}-nuget
       - name: Build a Nuget package
         run: dotnet pack ./microservice/microservice -c Release -o ./nuget-build -p:PackageVersion=0.0.0 /p:CombinedVersion=0.0.0
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: Microservice Nuget Package
           path: ./nuget-build
           retention-days: 1
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
@@ -60,12 +60,12 @@ jobs:
       matrix:
         dotnet-version: ['10.0.x' ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-      - uses: actions/cache@v3
+      - uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file
@@ -108,12 +108,12 @@ jobs:
         run: docker version
       - name: Check concurrency
         run: echo 'cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{ matrix.runners }}-${{ matrix.test-culture }}'
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-      - uses: actions/cache@v3
+      - uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file
@@ -127,7 +127,7 @@ jobs:
           echo "LANG=${{ matrix.lang }}" >> "$GITHUB_ENV"
           echo "LC_ALL=${{ matrix.lang }}" >> "$GITHUB_ENV"
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
@@ -161,12 +161,12 @@ jobs:
       matrix:
         dotnet-version: [ '10.0.x' ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-      - uses: actions/cache@v3
+      - uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file
@@ -218,10 +218,10 @@ jobs:
           matrix.gameCiVersion
         }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Log in to the Container registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ github.actor }}
@@ -240,14 +240,14 @@ jobs:
 
 
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: |
             10.0.x
             9.0.x
             8.0.302
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
@@ -283,7 +283,7 @@ jobs:
           cp BeamableNugetSource/*.nupkg client/BeamableNugetSource/
       
       - name: Cache Unity Folders
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: ${{ matrix.projectPath }}/Library
           key: Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
@@ -381,10 +381,10 @@ jobs:
           matrix.gameCiVersion
         }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Log in to the Container registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ github.actor }}
@@ -403,14 +403,14 @@ jobs:
 
 
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: |
             10.0.x
             9.0.x
             8.0.302
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
@@ -446,7 +446,7 @@ jobs:
           cp BeamableNugetSource/*.nupkg client/BeamableNugetSource/
 
       - name: Cache Unity Folders
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: ${{ matrix.projectPath }}/Library
           key: Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
@@ -530,7 +530,7 @@ jobs:
         projectPath:
           - client
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           lfs: true
@@ -550,17 +550,17 @@ jobs:
 
 
       - name: Setup .NET Core SDK 
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
       - name: Log in to the Container registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
@@ -585,7 +585,7 @@ jobs:
           ./build/create_config_defaults.sh
         shell: bash
       - name: Cache Unity Folders
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: |
             ${{ matrix.projectPath }}/Library

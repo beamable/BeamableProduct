@@ -28,9 +28,9 @@ jobs:
           - 2020.3.19f1
           - 2021.3.2f1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Cache Unity Folders
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ matrix.projectPath }}/Library
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
@@ -51,7 +51,7 @@ jobs:
           artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: Test results for ${{ matrix.unityVersion }} ${{ matrix.testMode }}
@@ -75,12 +75,12 @@ jobs:
         projectPath:
           - client_installer
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           lfs: true
       - name: Cache Unity Folders
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ${{ matrix.projectPath }}/Library

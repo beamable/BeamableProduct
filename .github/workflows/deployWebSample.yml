@@ -29,10 +29,10 @@ jobs:
       SAMPLE_DIR: web/samples/WordWiz
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22.14.0'
 
