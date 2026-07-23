@@ -16,6 +16,9 @@ import { POST } from '@/constants';
 import { PUT } from '@/constants';
 import { realmIdPlaceholder } from '@/__generated__/apis/constants';
 import type { ApiCustomersActivatePutCustomerResponse } from '@/__generated__/schemas/ApiCustomersActivatePutCustomerResponse';
+import type { ConfigChangeRequest } from '@/__generated__/schemas/ConfigChangeRequest';
+import type { ConfigResponse } from '@/__generated__/schemas/ConfigResponse';
+import type { ConfigSaveRequest } from '@/__generated__/schemas/ConfigSaveRequest';
 import type { CreateRealmRequest } from '@/__generated__/schemas/CreateRealmRequest';
 import type { CustomerActorAliasAvailableResponse } from '@/__generated__/schemas/CustomerActorAliasAvailableResponse';
 import type { CustomerActorCustomer } from '@/__generated__/schemas/CustomerActorCustomer';
@@ -26,15 +29,12 @@ import type { CustomerActorNewCustomerResponse } from '@/__generated__/schemas/C
 import type { CustomerActorNewGameRequest } from '@/__generated__/schemas/CustomerActorNewGameRequest';
 import type { CustomerActorPromoteRealmRequest } from '@/__generated__/schemas/CustomerActorPromoteRealmRequest';
 import type { CustomerActorPromoteRealmResponse } from '@/__generated__/schemas/CustomerActorPromoteRealmResponse';
-import type { CustomerActorRealmConfigResponse } from '@/__generated__/schemas/CustomerActorRealmConfigResponse';
-import type { CustomerActorRealmConfigSaveRequest } from '@/__generated__/schemas/CustomerActorRealmConfigSaveRequest';
 import type { CustomerActorRealmConfiguration } from '@/__generated__/schemas/CustomerActorRealmConfiguration';
 import type { CustomerActorUpdateGameHierarchyRequest } from '@/__generated__/schemas/CustomerActorUpdateGameHierarchyRequest';
 import type { EmptyMessage } from '@/__generated__/schemas/EmptyMessage';
 import type { GetGamesResponse } from '@/__generated__/schemas/GetGamesResponse';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
-import type { RealmConfigChangeRequest } from '@/__generated__/schemas/RealmConfigChangeRequest';
 import type { RealmView } from '@/__generated__/schemas/RealmView';
 import type { RenameRealmRequest } from '@/__generated__/schemas/RenameRealmRequest';
 import type { StripeSubscriptionResponse } from '@/__generated__/schemas/StripeSubscriptionResponse';
@@ -297,14 +297,64 @@ export async function customersDeleteRealms(requester: HttpRequester, customerId
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersGetConfigByCustomerId(requester: HttpRequester, customerId: string, gamertag?: string): Promise<HttpResponse<CustomerActorRealmConfigResponse>> {
+export async function customersGetConfigByCustomerId(requester: HttpRequester, customerId: string, gamertag?: string): Promise<HttpResponse<ConfigResponse>> {
   let endpoint = "/api/customers/{customerId}/config".replace(customerIdPlaceholder, endpointEncoder(customerId));
   
   // Make the API request
-  return makeApiRequest<CustomerActorRealmConfigResponse>({
+  return makeApiRequest<ConfigResponse>({
     r: requester,
     e: endpoint,
     m: GET,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `ConfigSaveRequest` instance to use for the API request
+ * @param customerId - ID of the customer.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function customersPutConfigByCustomerId(requester: HttpRequester, customerId: string, payload: ConfigSaveRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
+  let endpoint = "/api/customers/{customerId}/config".replace(customerIdPlaceholder, endpointEncoder(customerId));
+  
+  // Make the API request
+  return makeApiRequest<EmptyMessage, ConfigSaveRequest>({
+    r: requester,
+    e: endpoint,
+    m: PUT,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `ConfigChangeRequest` instance to use for the API request
+ * @param customerId - ID of the customer.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function customersPatchConfigByCustomerId(requester: HttpRequester, customerId: string, payload: ConfigChangeRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
+  let endpoint = "/api/customers/{customerId}/config".replace(customerIdPlaceholder, endpointEncoder(customerId));
+  
+  // Make the API request
+  return makeApiRequest<EmptyMessage, ConfigChangeRequest>({
+    r: requester,
+    e: endpoint,
+    m: PATCH,
+    p: payload,
     g: gamertag,
     w: true
   });
@@ -478,11 +528,11 @@ export async function customersPutRealmsRename(requester: HttpRequester, custome
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersGetRealmsConfig(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string): Promise<HttpResponse<CustomerActorRealmConfigResponse>> {
+export async function customersGetRealmsConfig(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string): Promise<HttpResponse<ConfigResponse>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/config".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
-  return makeApiRequest<CustomerActorRealmConfigResponse>({
+  return makeApiRequest<ConfigResponse>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -497,17 +547,17 @@ export async function customersGetRealmsConfig(requester: HttpRequester, custome
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `CustomerActorRealmConfigSaveRequest` instance to use for the API request
+ * @param payload - The `ConfigSaveRequest` instance to use for the API request
  * @param customerId - ID of the customer.
  * @param realmId - ID of the realm to update.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersPutRealmsConfig(requester: HttpRequester, customerId: string, realmId: string, payload: CustomerActorRealmConfigSaveRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
+export async function customersPutRealmsConfig(requester: HttpRequester, customerId: string, realmId: string, payload: ConfigSaveRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/config".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
-  return makeApiRequest<EmptyMessage, CustomerActorRealmConfigSaveRequest>({
+  return makeApiRequest<EmptyMessage, ConfigSaveRequest>({
     r: requester,
     e: endpoint,
     m: PUT,
@@ -523,17 +573,17 @@ export async function customersPutRealmsConfig(requester: HttpRequester, custome
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `RealmConfigChangeRequest` instance to use for the API request
+ * @param payload - The `ConfigChangeRequest` instance to use for the API request
  * @param customerId - ID of the customer.
  * @param realmId - ID of the realm to update.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersPatchRealmsConfig(requester: HttpRequester, customerId: string, realmId: string, payload: RealmConfigChangeRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
+export async function customersPatchRealmsConfig(requester: HttpRequester, customerId: string, realmId: string, payload: ConfigChangeRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/config".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
-  return makeApiRequest<EmptyMessage, RealmConfigChangeRequest>({
+  return makeApiRequest<EmptyMessage, ConfigChangeRequest>({
     r: requester,
     e: endpoint,
     m: PATCH,

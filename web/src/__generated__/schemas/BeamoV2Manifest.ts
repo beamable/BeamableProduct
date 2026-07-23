@@ -14,6 +14,8 @@ export type BeamoV2Manifest = {
   createdByAccountId?: bigint | string | null; 
   id?: string; 
   portalExtensionReferences?: BeamoV2PortalExtensionReference[]; 
+  references?: Record<string, string> | null; 
+  schemaVersion?: number | null; 
   serviceReferences?: BeamoV2ServiceReference[]; 
   storageGroupId?: string | null; 
   storageReferences?: BeamoV2ServiceStorageReference[]; 

@@ -6,6 +6,5 @@
 export type BeginPurchaseRequest = { 
   purchaseId: string; 
   language?: string; 
-  returnUrl?: string; 
   time?: string; 
 };

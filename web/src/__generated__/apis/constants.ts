@@ -13,11 +13,21 @@ export const queryIdPlaceholder = "{queryId}";
 
 export const storageObjectNamePlaceholder = "{storageObjectName}";
 
+export const bundleNamePlaceholder = "{bundleName}";
+
+export const nsPlaceholder = "{ns}";
+
+export const checksumPlaceholder = "{checksum}";
+
+export const tagPlaceholder = "{tag}";
+
+export const cidPlaceholder = "{cid}";
+
+export const realmIdPlaceholder = "{realmId}";
+
 export const viewIdPlaceholder = "{viewId}";
 
 export const customerIdPlaceholder = "{customerId}";
-
-export const realmIdPlaceholder = "{realmId}";
 
 export const gameIdPlaceholder = "{gameId}";
 
@@ -25,9 +35,13 @@ export const destinationRealmIdPlaceholder = "{destinationRealmId}";
 
 export const aliasPlaceholder = "{alias}";
 
-export const idPlaceholder = "{id}";
+export const segmentIdPlaceholder = "{segmentId}";
 
 export const playerIdPlaceholder = "{playerId}";
+
+export const idPlaceholder = "{id}";
+
+export const keyPlaceholder = "{key}";
 
 export const jobIdPlaceholder = "{jobId}";
 

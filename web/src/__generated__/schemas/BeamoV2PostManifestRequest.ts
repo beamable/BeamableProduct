@@ -12,5 +12,7 @@ export type BeamoV2PostManifestRequest = {
   comments?: string | null; 
   manifest?: BeamoV2ServiceReference[]; 
   portalExtensionReferences?: BeamoV2PortalExtensionReference[] | null; 
+  references?: Record<string, string> | null; 
+  schemaVersion?: number | null; 
   storageReferences?: BeamoV2ServiceStorageReference[]; 
 };

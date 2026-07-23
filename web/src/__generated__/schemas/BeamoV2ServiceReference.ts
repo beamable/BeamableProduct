@@ -3,6 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
+import type { BeamoV2BundleOrigin } from './BeamoV2BundleOrigin';
 import type { BeamoV2ServiceComponent } from './BeamoV2ServiceComponent';
 import type { BeamoV2ServiceDependencyReference } from './BeamoV2ServiceDependencyReference';
 import type { BeamoV2LogProvider } from './enums/BeamoV2LogProvider';
@@ -18,6 +19,7 @@ export type BeamoV2ServiceReference = {
   imageCpuArch?: string | null; 
   imageId?: string; 
   logProvider?: BeamoV2LogProvider; 
+  origin?: BeamoV2BundleOrigin; 
   serviceName?: string; 
   templateId?: string; 
 };

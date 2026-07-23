@@ -3,12 +3,12 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { ServiceReference } from './ServiceReference';
-import type { ServiceStorageReference } from './ServiceStorageReference';
+import type { BeamoBasicServiceReference } from './BeamoBasicServiceReference';
+import type { BeamoBasicServiceStorageReference } from './BeamoBasicServiceStorageReference';
 
 export type PostManifestRequest = { 
-  manifest: ServiceReference[]; 
+  manifest: BeamoBasicServiceReference[]; 
   autoDeploy?: boolean; 
   comments?: string; 
-  storageReferences?: ServiceStorageReference[]; 
+  storageReferences?: BeamoBasicServiceStorageReference[]; 
 };

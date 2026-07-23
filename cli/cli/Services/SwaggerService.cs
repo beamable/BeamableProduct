@@ -1228,9 +1228,13 @@ public class SwaggerService
 		foreach ((string key, OpenApiSchema value) in swagger.Document.Components.Schemas)
 		{
 			var recursiveCheck = new Stack<OpenApiSchema>();
+			// Track visited schema instances so cyclic/recursive types don't cause the stack
+			// to grow without bound (which throws "Array dimensions exceeded supported range").
+			var seen = new HashSet<OpenApiSchema>();
 
 			foreach ((_, OpenApiSchema propertySchema) in value.Properties)
-				recursiveCheck.Push(propertySchema);
+				if (seen.Add(propertySchema))
+					recursiveCheck.Push(propertySchema);
 
 			bool isSelfReferential = false;
 			OpenApiSchema curr = null;
@@ -1242,7 +1246,8 @@ public class SwaggerService
 				}
 
 				foreach ((_, OpenApiSchema propertySchema) in curr.Properties)
-					recursiveCheck.Push(propertySchema);
+					if (seen.Add(propertySchema))
+						recursiveCheck.Push(propertySchema);
 			}
 
 			if (isSelfReferential)

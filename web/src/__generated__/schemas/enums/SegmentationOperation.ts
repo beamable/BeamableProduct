@@ -1,0 +1,16 @@
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
+export enum SegmentationOperation {
+  Create = "Create",
+  UpdateRule = "UpdateRule",
+  UpdateMetadata = "UpdateMetadata",
+  ChangeState = "ChangeState",
+  IncludeAdd = "IncludeAdd",
+  IncludeRemove = "IncludeRemove",
+  ExcludeAdd = "ExcludeAdd",
+  ExcludeRemove = "ExcludeRemove",
+  CrossScopeRead = "CrossScopeRead"
+}

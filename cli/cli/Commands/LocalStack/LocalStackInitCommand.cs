@@ -239,6 +239,132 @@ public class LocalStackInitCommand
 	/// <summary>Display prefix for service-group entries in the extension multi-select (per the "GROUP name" ask).</summary>
 	private const string GroupDisplayPrefix = "GROUP ";
 
+	/// <summary>Meta-choice in the Scala picker that expands to the curated <see cref="LocalStackTemplate.DefaultScalaServices"/> set.</summary>
+	private const string ScalaDefaultChoice = "DEFAULT (curated set)";
+
+	/// <summary>Meta-choice in the Scala picker that expands to every discovered <c>tools/*</c> service.</summary>
+	private const string ScalaAllChoice = "ALL (every discovered service)";
+
+	/// <summary>
+	/// Scala-services picker. Offers two meta-choices — DEFAULT (the curated <see cref="LocalStackTemplate.DefaultScalaServices"/>
+	/// set, preselected) and ALL (every discovered tool) — followed by each discovered service so the user can
+	/// add services individually on top of DEFAULT. ALL wins over everything; otherwise the result is the union of
+	/// DEFAULT (if ticked) and any individually-ticked services, de-duplicated (case-insensitive, order-preserving).
+	/// A passed --scala-services value wins verbatim (with the "default"/"all" keywords expanded for scripting parity);
+	/// quiet / non-interactive mode returns the default set.
+	/// </summary>
+	private static string AskScalaSelection(string title, string passed,
+		List<string> discoveredNames, List<string> defaultNames, bool quiet)
+	{
+		if (passed != null) return ExpandScalaKeywords(passed, discoveredNames, defaultNames);
+		if (quiet) return string.Join(" ", defaultNames);
+
+		var choices = new List<string> { ScalaDefaultChoice };
+		if (discoveredNames.Count > 0) choices.Add(ScalaAllChoice);
+		choices.AddRange(discoveredNames);
+
+		var prompt = new MultiSelectionPrompt<string>()
+			.Title(title)
+			.PageSize(15)
+			.MoreChoicesText("[grey](move up/down to reveal more)[/]")
+			.InstructionsText("[grey](press [blue]<space>[/] to toggle, [green]<enter>[/] to accept; DEFAULT + any extras are combined)[/]")
+			.AddChoices(choices)
+			.AddBeamHightlight()
+			.NotRequired();
+		prompt.Select(ScalaDefaultChoice); // DEFAULT ticked out of the box (today's behavior)
+
+		return ResolveScalaSelection(AnsiConsole.Prompt(prompt), discoveredNames, defaultNames);
+	}
+
+	/// <summary>Turns the picked Scala choices into a space-separated, de-duplicated name list: ALL wins over
+	/// everything; otherwise DEFAULT (if ticked) is unioned with the individually-ticked services.</summary>
+	private static string ResolveScalaSelection(List<string> selected,
+		List<string> discoveredNames, List<string> defaultNames)
+	{
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var ordered = new List<string>();
+		void Add(string n)
+		{
+			if (seen.Add(n))
+			{
+				ordered.Add(n);
+			}
+		}
+
+		if (selected.Contains(ScalaAllChoice))
+		{
+			foreach (var n in discoveredNames)
+			{
+				Add(n);
+			}
+		}
+		else
+		{
+			if (selected.Contains(ScalaDefaultChoice))
+			{
+				foreach (var n in defaultNames)
+				{
+					Add(n);
+				}
+			}
+
+			foreach (var s in selected)
+			{
+				if (s == ScalaDefaultChoice || s == ScalaAllChoice)
+				{
+					continue;
+				}
+
+				Add(s);
+			}
+		}
+
+		return string.Join(" ", ordered);
+	}
+
+	/// <summary>Expands the "default"/"all" keywords in a passed --scala-services value to their name sets and
+	/// de-duplicates the result (so e.g. "default auth" = the curated set plus auth, with no repeats).</summary>
+	private static string ExpandScalaKeywords(string passed,
+		List<string> discoveredNames, List<string> defaultNames)
+	{
+		var tokens = Split(passed);
+		if (tokens == null) return passed; // empty/whitespace → honor verbatim (clears the list)
+
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var ordered = new List<string>();
+		void Add(string n)
+		{
+			if (seen.Add(n))
+			{
+				ordered.Add(n);
+			}
+		}
+
+		foreach (var t in tokens)
+		{
+			if (string.Equals(t, "all", StringComparison.OrdinalIgnoreCase))
+			{
+				foreach (var n in discoveredNames.Count > 0 ? discoveredNames : defaultNames)
+				{
+					Add(n);
+				}
+			}
+			else if (string.Equals(t, "default", StringComparison.OrdinalIgnoreCase))
+			{
+				foreach (var n in defaultNames)
+				{
+					Add(n);
+				}
+			}
+			else
+			{
+				Add(t);
+			}
+		}
+
+		return string.Join(" ", ordered);
+	}
+
 	/// <summary>
 	/// Portal-extension picker that also lists service groups (prefixed "GROUP ") at the top. Returns the
 	/// selected group names and individual extension ids separately. A passed <c>--extensions</c> value wins
@@ -366,8 +492,9 @@ public class LocalStackInitCommand
 		// Scala services default to the curated/discovered set (small, known-good). Microservices and extensions
 		// are opt-in: discovered ids are offered to pick from, but nothing is selected by default (a workspace can
 		// have dozens of extensions — running them all is rarely what you want).
-		var scalaServices = Ask("[green]Scala[/] services to run [grey](space separated)[/]:",
-			args.scalaServices, string.Join(" ", defaultScalaNames), quiet, allowEmpty: false);
+		var discoveredNames = discovered.Select(t => t.name).ToList();
+		var scalaServices = AskScalaSelection("Select the [green]Scala[/] services to run:",
+			args.scalaServices, discoveredNames, defaultScalaNames, quiet);
 		var selectedServices = Split(AskServiceSelection("Select the [green]microservices[/] to run:",
 			args.services, discoveredServices, preselected: null, quiet, quietDefault: string.Empty)) ?? new List<string>();
 		// The extension picker also lists service groups (prefixed "GROUP "); selecting a group runs all its members.
