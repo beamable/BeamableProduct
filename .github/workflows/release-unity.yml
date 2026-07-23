@@ -130,9 +130,25 @@ jobs:
 
       - name: Install CLI
         working-directory: ./
+        # The Unity SDK pins a CLI/Nuget version in versions-default.json. When that
+        # version is the local dev version (0.0.123.x), build the CLI from source via
+        # setup.sh/dev.sh. For any other (released) version, install that exact
+        # published Beamable.Tools instead. ~Claude
         run: |
-          bash ./setup.sh
-          bash ./dev.sh 
+          CLI_VERSION=$(jq -r .nugetPackageVersion client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json)
+          echo "Pinned CLI version: $CLI_VERSION"
+          case "$CLI_VERSION" in
+            0.0.123*)
+              echo "Local dev version detected; building CLI from source."
+              bash ./setup.sh
+              bash ./dev.sh
+              ;;
+            *)
+              echo "Released version detected; installing Beamable.Tools $CLI_VERSION."
+              dotnet tool install Beamable.Tools --version "$CLI_VERSION" --global
+              echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+              ;;
+          esac
           ls ./client/Packages/com.beamable/Editor/BeamCli/Commands/
 
       - name: Check CLI
