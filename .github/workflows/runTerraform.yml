@@ -23,29 +23,30 @@ on:
 jobs:
   run-terraform:
     runs-on: ubuntu-latest
-    
+
+    env:
+      TF_VAR_ROOT_DOMAIN_NAME: ${{ secrets.TF_VAR_ROOT_DOMAIN_NAME }}
+      TF_VAR_HOSTED_ZONE_ID: ${{ secrets.TF_VAR_HOSTED_ZONE_ID }}
+      TF_VAR_CERTIFICATE: ${{ secrets.TF_VAR_CERTIFICATE }}
+
     defaults:
       run:
         working-directory: "terraform/environments/${{ github.event.inputs.environment }}"
 
     steps:
-    - uses: Firenza/secrets-to-env@v1.2.0
-      with:
-        secrets: ${{ toJSON(secrets) }}
-        
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with: 
         ref: ${{ github.event.inputs.commit }}
     
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
+      uses: aws-actions/configure-aws-credentials@v6
       with:
         aws-access-key-id: ${{ secrets.AWS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
         mask-aws-account-id: false
     
-    - uses: hashicorp/setup-terraform@v2
+    - uses: hashicorp/setup-terraform@v4
       with:
         terraform_version: 1.3.7
 
