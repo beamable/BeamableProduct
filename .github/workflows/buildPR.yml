@@ -208,15 +208,9 @@ jobs:
           - 2021.3.29f1
           - 2022.3.7f1
           - 6000.0.37f1
-        gameCiVersion:
-          - 3.1.0
     env:
       GAME_CI_VERSION: >-
-        ${{
-          matrix.unityVersion == '6000.2.8f1' && '3.2.0' ||
-          matrix.unityVersion == '6000.3.0f1' && '3.2.1' ||
-          matrix.gameCiVersion
-        }}
+        ${{ fromJSON('{"6000.2.8f1": "3.2.0", "6000.3.0f1": "3.2.1"}')[matrix.unityVersion] || '3.1.0' }}
     steps:
       - uses: actions/checkout@v5
 
@@ -371,15 +365,9 @@ jobs:
         unityVersion:
           - 6000.2.8f1
           - 6000.3.0f1
-        gameCiVersion:
-          - 3.1.0
     env:
       GAME_CI_VERSION: >-
-        ${{
-          matrix.unityVersion == '6000.2.8f1' && '3.2.0' ||
-          matrix.unityVersion == '6000.3.0f1' && '3.2.1' ||
-          matrix.gameCiVersion
-        }}
+        ${{ fromJSON('{"6000.2.8f1": "3.2.0", "6000.3.0f1": "3.2.1"}')[matrix.unityVersion] || '3.1.0' }}
     steps:
       - uses: actions/checkout@v5
 

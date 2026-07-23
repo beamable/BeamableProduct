@@ -62,8 +62,9 @@ jobs:
       matrix:
         unityVersion:
           - 6000.3.0f1
-        gameCiVersion:
-          - 3.2.1
+    env:
+      GAME_CI_VERSION: >-
+        ${{ fromJSON('{"6000.2.8f1": "3.2.0", "6000.3.0f1": "3.2.1"}')[matrix.unityVersion] || '3.1.0' }}
     outputs:
       version: ${{ steps.version.outputs.VERSION }}
     steps:
@@ -259,7 +260,7 @@ jobs:
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
         with:
-          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ matrix.gameCiVersion }}
+          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ env.GAME_CI_VERSION }}
           customParameters: -beamableOrgId ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -username ${{ secrets.UNITY_EMAIL }} -password ${{ secrets.UNITY_PASSWORD }} -cloudOrganization ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -upmPack client/Packages/com.beamable client/build/package_dist/com.beamable
           gitPrivateToken: ${{ secrets.GITHUB_TOKEN }}
           unityVersion: ${{ matrix.unityVersion }}
