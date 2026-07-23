@@ -17,6 +17,5 @@ namespace Beamable.Editor.BeamCli.Commands
         public System.Collections.Generic.List<BeamPortalExtensionPlanReference> portalExtensionReferences;
         public bool ranHealthChecks;
         public int changeCount;
-        public System.Collections.Generic.Dictionary<string, string> references;
     }
 }
