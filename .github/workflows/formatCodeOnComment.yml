@@ -16,11 +16,9 @@ jobs:
           PR_NO: ${{ github.event.issue.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Comment PR
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: |
-            Formatting requested...
-          pr_number: ${{ github.event.issue.number }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment ${{ github.event.issue.number }} --body "Formatting requested..."
       - name: Checkout
         uses: actions/checkout@v5
         with:
@@ -50,16 +48,12 @@ jobs:
           committer_name: GitHub Actions
           committer_email: 41898282+github-actions[bot]@users.noreply.github.com
       - name: Comment PR
-        uses: thollander/actions-comment-pull-request@v2
         if: ${{ steps.format-changes.outputs.any == 'true' }}
-        with:
-          message: |
-            Formatting completed!
-          pr_number: ${{ github.event.issue.number }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment ${{ github.event.issue.number }} --body "Formatting completed!"
       - name: Comment PR
-        uses: thollander/actions-comment-pull-request@v2
         if: ${{ steps.format-changes.outputs.any == 'false' }}
-        with:
-          message: |
-            No need for formatting ;)
-          pr_number: ${{ github.event.issue.number }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment ${{ github.event.issue.number }} --body "No need for formatting ;)"

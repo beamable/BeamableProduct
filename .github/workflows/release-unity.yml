@@ -324,18 +324,15 @@ jobs:
             }')[github.event.inputs.releaseType] }}
 
       - name: Create Release
-        id: create_release
-        if: ${{ inputs.dryRun == false }} 
-        uses: actions/create-release@v1
+        if: ${{ inputs.dryRun == false }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-        with:
-          tag_name: unity-sdk-${{ steps.version.outputs.VERSION }}
-          release_name: Unity SDK ${{ steps.version.outputs.VERSION }}
-          body: |
-            Unity SDK Release ${{ steps.version.outputs.VERSION }}
-          draft: false
-          prerelease: ${{ inputs.releaseType != 'production' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "unity-sdk-${{ steps.version.outputs.VERSION }}" \
+            --target "${{ github.sha }}" \
+            --title "Unity SDK ${{ steps.version.outputs.VERSION }}" \
+            --notes "Unity SDK Release ${{ steps.version.outputs.VERSION }}" \
+            ${{ inputs.releaseType != 'production' && '--prerelease' || '' }}
 
       # Close the matching "Unity X.Y.Z" milestone once a production release ships.
       # Warns (does not fail) when no open milestone matches, so it never blocks a release. ~Claude
