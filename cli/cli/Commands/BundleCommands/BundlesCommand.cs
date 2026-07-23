@@ -26,13 +26,13 @@ public static class BundleAclScope
 	public static string Resolve(string scope, IAppContext ctx)
 	{
 		if (string.IsNullOrWhiteSpace(scope))
-			throw new CliException("--scope is required. Use 'realm', 'org', or 'public' (or a literal <cid>.<pid> / <cid> / *).");
+			throw new CliException("--scope is required. Use 'realm', 'org', or 'public'.");
 
 		var value = scope.Trim();
 		switch (value.ToLowerInvariant())
 		{
-			case Realm: return $"{ctx.Cid}.{ctx.Pid}";
-			case Org: return ctx.Cid;
+			case Realm: return "cid.pid";
+			case Org: return "cid";
 			case Public:
 			case "*":
 				return "*";
@@ -40,11 +40,8 @@ public static class BundleAclScope
 
 		// A literal value must be '*', a bare '<cid>', or '<cid>.<pid>' (cids/pids contain no dots).
 		if (value == "*") return value;
-		var parts = value.Split('.');
-		if (parts.Length == 1 && parts[0].Length > 0) return value;
-		if (parts.Length == 2 && parts[0].Length > 0 && parts[1].Length > 0) return value;
 
-		throw new CliException($"Invalid --scope=[{scope}]. Use 'realm', 'org', or 'public', or a literal <cid> / <cid>.<pid> / *.");
+		throw new CliException($"Invalid --scope=[{scope}]. Use 'realm', 'org', or 'public'.");
 	}
 }
 
