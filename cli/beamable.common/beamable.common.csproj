@@ -47,14 +47,6 @@
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
     </ItemGroup>
     
-    <ItemGroup>
-      <Compile Remove="Runtime\OpenApi\BeamServiceplan.gs.cs" />
-      <Compile Remove="Runtime\OpenApi\BeamServiceplanCommon.gs.cs" />
-      <!-- BeamCustomer(.Common) is compiled in: RealmsService.GetCustomerData uses the generated
-           BeamCustomerApi (GET /api/customers/{customerId}). -->
-      <Compile Remove="Runtime\OpenApi\BeamAdmin.gs.cs" />
-    </ItemGroup>
-    
     <!-- MSBuild only keeps the last target with a given name, so this must stay a single
          target; a per-framework copy under the same name is silently discarded. -->
     <Target Name="CopyCodeToUnity"
