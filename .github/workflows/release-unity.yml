@@ -133,6 +133,7 @@ jobs:
         run: |
           bash ./setup.sh
           bash ./dev.sh 
+          ls ./client/Packages/com.beamable/Editor/BeamCli/Commands/
 
       - name: Check CLI
         run: beam version
