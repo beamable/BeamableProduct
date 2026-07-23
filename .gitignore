@@ -181,5 +181,7 @@ web/docs
 web/node_modules
 web/temp
 
+/cli/tests/TestResults/*.trx
+
 /client/UserSettings/EditorUserSettings.asset
 /client/UserSettings/Layouts/*.dwlt
