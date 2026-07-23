@@ -5,7 +5,9 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Dependencies;
 using Beamable.Platform.Tests;
+#if BEAMABLE_PURCHASING
 using Beamable.Purchasing;
+#endif
 using Beamable.Tests.Runtime;
 using NUnit.Framework;
 using System;
@@ -186,6 +188,7 @@ namespace Tests.Runtime.Beamable
 		}
 	}
 
+#if BEAMABLE_PURCHASING
 	public class CommerceInitializationTests : BeamContextTest
 	{
 		private bool _originalSkipCommerceInitialization;
@@ -252,5 +255,6 @@ namespace Tests.Runtime.Beamable
 		}
 #endif
 	}
+#endif
 
 }

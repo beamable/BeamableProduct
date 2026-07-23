@@ -20,13 +20,13 @@ jobs:
         group: publish-websdkdocs
         cancel-in-progress: true
       steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: 
           ref: ${{ github.event.inputs.commit }}
 
       # Setup Node.js LTS version 22.14.0
       - name: Use Node.js LTS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: '22.14.0'
 
