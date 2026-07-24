@@ -722,6 +722,7 @@ public static class MicroserviceStartupUtil
 				.AddScoped<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider =>
 					StatsCacheFactory)
 				.AddScoped<UserDataCache<RankEntry>.FactoryFunction>(provider => LeaderboardRankEntryFactory)
+				.AddSingleton<IServiceOpenApiDocsCache, ServiceOpenApiDocsCache>()
 				.AddScoped<IBeamableServices>(ExtractSdks)
 
 				// allow the DI system to get a list of all telemetry attribute providers...
