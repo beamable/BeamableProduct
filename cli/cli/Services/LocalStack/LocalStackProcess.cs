@@ -1,4 +1,7 @@
+using System.Diagnostics;
 using System.Management;
+using System.Net;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace cli.Services.LocalStack;
@@ -144,5 +147,118 @@ public static class LocalStackProcess
 	{
 		try { return value == null ? 0 : Convert.ToInt32(value); }
 		catch { return 0; }
+	}
+
+	/// <summary>
+	/// Docker's port proxy / VM plumbing — a process holding a port that maps to one of these is a legitimate
+	/// published container port, never a squatter to kill.
+	/// </summary>
+	private static readonly string[] DockerProcessNames =
+		{ "com.docker.backend", "com.docker.build", "dockerd", "docker", "vpnkit", "wslrelay", "wslhost" };
+
+	/// <summary>
+	/// Frees a host TCP port squatted by a non-Docker process bound to the <em>specific</em> <c>127.0.0.1</c>
+	/// address. Docker Desktop's port proxy binds <c>0.0.0.0</c> / <c>[::]</c> (never the specific loopback
+	/// address), so a listener on exactly <c>127.0.0.1:&lt;port&gt;</c> is by definition a foreign squatter 
+	/// which permanently takes TCP 27015 on Windows and shadows the local stack's <c>mongo_master</c> publish, 
+	/// timing out every Mongo connection. Windows-only; a no-op (returns <c>null</c>) elsewhere. 
+	///Best-effort — never throws. Returns the freed process name (for logging) or <c>null</c> if nothing was freed.
+	/// </summary>
+	public static string FreeLoopbackPortSquatter(int port)
+	{
+		if (!OperatingSystem.IsWindows())
+			return null;
+		return FreeLoopbackPortSquatterWindows(port);
+	}
+
+	[SupportedOSPlatform("windows")]
+	private static string FreeLoopbackPortSquatterWindows(int port)
+	{
+		try
+		{
+			var pid = FindLoopbackListenerPid(port);
+			if (pid <= 0)
+				return null;
+
+			string name;
+			try { name = Process.GetProcessById(pid).ProcessName; }
+			catch { return null; } // already gone
+
+			// Never touch Docker's own proxy (it binds 0.0.0.0, not 127.0.0.1, so this is belt-and-suspenders).
+			if (DockerProcessNames.Contains(name, StringComparer.OrdinalIgnoreCase))
+				return null;
+
+			Process.GetProcessById(pid).Kill();
+			return name;
+		}
+		catch
+		{
+			return null; // a port that can't be freed just falls through to the normal (failing) bring-up
+		}
+	}
+
+	// --- iphlpapi GetExtendedTcpTable: find the PID owning the 127.0.0.1:<port> LISTEN socket -----------------
+
+	private const int AF_INET = 2;
+	private const int TCP_TABLE_OWNER_PID_LISTENER = 3;
+	private const uint MIB_TCP_STATE_LISTEN = 2;
+
+	[StructLayout(LayoutKind.Sequential)]
+	private struct MIB_TCPROW_OWNER_PID
+	{
+		public uint state;
+		public uint localAddr;
+		public uint localPort; // network byte order, low 16 bits
+		public uint remoteAddr;
+		public uint remotePort;
+		public uint owningPid;
+	}
+
+	[DllImport("iphlpapi.dll", SetLastError = true)]
+	private static extern uint GetExtendedTcpTable(IntPtr pTcpTable, ref int dwOutBufLen, bool sort,
+		int ipVersion, int tblClass, int reserved);
+
+	[SupportedOSPlatform("windows")]
+	private static int FindLoopbackListenerPid(int port)
+	{
+		// 127.0.0.1 as the driver stores it (network-order bytes read as a host uint).
+		var loopbackAddr = BitConverter.ToUInt32(IPAddress.Loopback.GetAddressBytes(), 0);
+
+		int bufLen = 0;
+		GetExtendedTcpTable(IntPtr.Zero, ref bufLen, false, AF_INET, TCP_TABLE_OWNER_PID_LISTENER, 0);
+		if (bufLen <= 0)
+			return 0;
+
+		var table = Marshal.AllocHGlobal(bufLen);
+		try
+		{
+			if (GetExtendedTcpTable(table, ref bufLen, false, AF_INET, TCP_TABLE_OWNER_PID_LISTENER, 0) != 0)
+				return 0;
+
+			var numEntries = Marshal.ReadInt32(table);
+			var rowPtr = IntPtr.Add(table, sizeof(int));
+			var rowSize = Marshal.SizeOf<MIB_TCPROW_OWNER_PID>();
+			for (var i = 0; i < numEntries; i++)
+			{
+				var row = Marshal.PtrToStructure<MIB_TCPROW_OWNER_PID>(rowPtr);
+				rowPtr = IntPtr.Add(rowPtr, rowSize);
+
+				if (row.state != MIB_TCP_STATE_LISTEN)
+					continue;
+				if (row.localAddr != loopbackAddr) // specific 127.0.0.1 bind only — excludes Docker's 0.0.0.0
+					continue;
+
+				// localPort is network byte order in the low word; swap to host order.
+				var hostPort = ((int)(row.localPort & 0xFF) << 8) | (int)((row.localPort >> 8) & 0xFF);
+				if (hostPort == port)
+					return (int)row.owningPid;
+			}
+		}
+		finally
+		{
+			Marshal.FreeHGlobal(table);
+		}
+
+		return 0;
 	}
 }

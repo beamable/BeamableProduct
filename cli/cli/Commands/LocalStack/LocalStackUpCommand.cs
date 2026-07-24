@@ -138,6 +138,10 @@ public class LocalStackUpCommand
 		// dies mid-bring-up with a cryptic daemon error.
 		EnsureDockerRunning(steps);
 
+		// Free the Mongo host port if a foreign process is squatting 127.0.0.1:27015. Docker publishes mongo_master on 0.0.0.0/[::], but a specific
+		// 127.0.0.1 bind shadows it for `localhost` connections, timing out the gateway + every scala service.
+		FreeMongoPortIfSquatted(steps);
+
 		// Resolve how to invoke this same beam CLI for `beam: true` steps, and the workspace to run them from.
 		var (beamExe, beamLeading) = ResolveBeam(args);
 		var beamWorkspaceFallback = args.ConfigService?.BeamableWorkspace
@@ -299,6 +303,11 @@ public class LocalStackUpCommand
 					var l = LaunchAndRegister(stepToRun);
 					awaits.Add(AwaitStep(stepToRun, l, config, baseProgress, steps.Count, token,
 						() => LaunchAndRegister(stepToRun)));
+
+					// Within a large parallel group (the "scala" batch), space out launches so ~34 JVMs don't
+					// storm the Mongo port-proxy at once. Skip the delay after the batch's last launch.
+					if (batch.Count > 1 && idx != batch[^1])
+						await Task.Delay(GroupLaunchStagger, token);
 				}
 
 				await Task.WhenAll(awaits);
@@ -481,6 +490,39 @@ public class LocalStackUpCommand
 	/// binary exists) before we start anything, so bring-up fails fast with a clear message instead of the
 	/// first `docker compose up` dying on a daemon-connection error mid-run.
 	/// </summary>
+	/// <summary>
+	/// Host port the local stack's <c>mongo_master</c> container is published on — mirrors
+	/// <c>BeamableAPI/docker-compose.yml</c> (<c>"27015:27017"</c>) and the <c>MongoDB:MainMongoHost</c> =
+	/// <c>localhost:27015</c> that the gateway + scala services connect to. Not modeled in CLI config.
+	/// </summary>
+	private const int MongoHostPort = 27015;
+
+	/// <summary>
+	/// Delay between launches within a parallel group (the ~34-service "scala" batch). Launching them all at
+	/// once storms Docker Desktop's Windows userspace port-proxy with simultaneous <c>localhost:27015</c> Mongo
+	/// connects; a subset stall in CONNECTING, hit the driver's 5s serverSelectionTimeout, and hang (they never
+	/// exit, so per-step <c>readyRetries</c> never re-fires). Staggering spreads the connect attempts so each
+	/// completes well within the timeout. Readiness waits still overlap — only the launches are spaced out.
+	/// </summary>
+	private static readonly TimeSpan GroupLaunchStagger = TimeSpan.FromMilliseconds(2000);
+
+	/// <summary>
+	///  if a non-Docker process is squatting <c>127.0.0.1:27015</c> it shadows the docker-published mongo_master, so
+	/// every host process' <c>localhost:27015</c> Mongo connection times out and the gateway + scala services
+	/// die. Freeing it lets those connections fall through to Docker's <c>0.0.0.0</c> bind. Only runs for
+	/// Docker-dependent stacks; a no-op on non-Windows.
+	/// </summary>
+	private static void FreeMongoPortIfSquatted(List<LocalStackStep> steps)
+	{
+		var needsDocker = steps.Any(s => string.Equals(s.command, "docker", StringComparison.OrdinalIgnoreCase));
+		if (!needsDocker) return;
+
+		var freed = LocalStackProcess.FreeLoopbackPortSquatter(MongoHostPort);
+		if (freed != null)
+			Log.Warning($"Freed '{freed}' off 127.0.0.1:{MongoHostPort} — it was shadowing the local stack's " +
+			            "mongo_master; Mongo connections will now reach Docker.");
+	}
+
 	private static void EnsureDockerRunning(List<LocalStackStep> steps)
 	{
 		var needsDocker = steps.Any(s => string.Equals(s.command, "docker", StringComparison.OrdinalIgnoreCase));
