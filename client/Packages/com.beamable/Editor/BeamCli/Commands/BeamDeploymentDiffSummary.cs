@@ -23,5 +23,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public System.Collections.Generic.List<string> addedPortalExtensions;
         public System.Collections.Generic.List<string> changedPortalExtensions;
         public System.Collections.Generic.List<string> removedPortalExtensions;
+        public System.Collections.Generic.List<BeamBundleReferenceChange> addedBundleReferences;
+        public System.Collections.Generic.List<BeamBundleReferenceChange> changedBundleReferences;
+        public System.Collections.Generic.List<BeamBundleReferenceChange> removedBundleReferences;
     }
 }
