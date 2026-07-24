@@ -248,20 +248,8 @@ jobs:
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
-          CLI_VERSION=$(jq -r .nugetPackageVersion client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json)
-          echo "Pinned CLI version: $CLI_VERSION"
-          case "$CLI_VERSION" in
-            0.0.123*)
-              echo "Local dev version detected; building CLI from source."
-              ./setup.sh
-              SKIP_GENERATION=true ./dev.sh --skip-unreal
-              ;;
-            *)
-              echo "Released version detected; installing Beamable.Tools $CLI_VERSION."
-              dotnet tool install Beamable.Tools --version "$CLI_VERSION" --global
-              echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
-              ;;
-          esac
+          ./setup.sh
+          SKIP_GENERATION=true ./dev.sh --skip-unreal
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
@@ -417,20 +405,8 @@ jobs:
       - name: Build and Install BEAM CLI
         working-directory: ./
         run: |
-          CLI_VERSION=$(jq -r .nugetPackageVersion client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json)
-          echo "Pinned CLI version: $CLI_VERSION"
-          case "$CLI_VERSION" in
-            0.0.123*)
-              echo "Local dev version detected; building CLI from source."
-              ./setup.sh
-              SKIP_GENERATION=true ./dev.sh --skip-unreal
-              ;;
-            *)
-              echo "Released version detected; installing Beamable.Tools $CLI_VERSION."
-              dotnet tool install Beamable.Tools --version "$CLI_VERSION" --global
-              echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
-              ;;
-          esac
+          ./setup.sh
+          SKIP_GENERATION=true ./dev.sh --skip-unreal
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
@@ -579,20 +555,8 @@ jobs:
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
-          CLI_VERSION=$(jq -r .nugetPackageVersion client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json)
-          echo "Pinned CLI version: $CLI_VERSION"
-          case "$CLI_VERSION" in
-            0.0.123*)
-              echo "Local dev version detected; building CLI from source."
-              ./setup.sh
-              SKIP_GENERATION=true ./dev.sh
-              ;;
-            *)
-              echo "Released version detected; installing Beamable.Tools $CLI_VERSION."
-              dotnet tool install Beamable.Tools --version "$CLI_VERSION" --global
-              echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
-              ;;
-          esac
+          ./setup.sh
+          SKIP_GENERATION=true ./dev.sh
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
