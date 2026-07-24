@@ -29,7 +29,10 @@ namespace Beamable.Editor.Dotnet
 		public static readonly string DOTNET_GLOBAL_CONFIG_PATH = "global.json";
 
 		public const string DOTNET_TEMPLATE_ARG_VERSION = "__DOTNET_VERSION__";
-		public const string DOTNET_TEMPLATE_GLOBAL_CONFIG = "{\n  \"sdk\": {\n    \"version\": \"" + DOTNET_TEMPLATE_ARG_VERSION +  "\"\n} \n}";
+		// rollForward:latestFeature treats the templated version as a floor so the written global.json
+		// resolves against any newer same-major SDK the user has installed (matching the >= detection in
+		// DotnetInfoResult), rather than demanding that exact feature band and failing when it is absent.
+		public const string DOTNET_TEMPLATE_GLOBAL_CONFIG = "{\n  \"sdk\": {\n    \"version\": \"" + DOTNET_TEMPLATE_ARG_VERSION +  "\",\n    \"rollForward\": \"latestFeature\"\n} \n}";
 
 		static bool DotnetHandled
 		{
