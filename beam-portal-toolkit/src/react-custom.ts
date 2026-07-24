@@ -12,7 +12,7 @@
 //     events (`wa-save`, `wa-discard`). The hand-written forwarder surfaces
 //     both as typed React props.
 
-import { createElement, type CSSProperties, type ComponentType, type ReactElement, type ReactNode, type Ref } from 'react';
+import { createElement, type CSSProperties, type ComponentType, type DetailedHTMLProps, type HTMLAttributes, type ReactElement, type ReactNode, type Ref } from 'react';
 import { hostComponent } from './react-host';
 import type { CandidateMetadata } from './portal';
 
@@ -289,3 +289,94 @@ export function BeamChangeBar(
   return createElement(hostComponent('BeamChangeBar'), props);
 }
 BeamChangeBar.displayName = 'BeamChangeBar';
+
+// ---------------------------------------------------------------------------
+// Chart components — `<beam-*-chart>` forwarders. The portal host owns the
+// actual charting implementation; these are thin `hostComponent` shells like
+// the rest of the toolkit's React surface. They are NOT modeled in the CEM
+// (data/series/nodes are Lit `@property({ attribute: false })` object fields,
+// not attributes), so codegen can't emit them — they live here as
+// hand-written forwarders.
+// ---------------------------------------------------------------------------
+
+/**
+ * @csspart chart - The chart container.
+ * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+ */
+export interface BeamLineChartProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  /** Rows of data points, e.g. `[{ day: 'Apr 10', sent: 5, opened: 3 }]`. @default [] */
+  data?: Array<Record<string, unknown>>;
+  /** Series to plot, each pulling `key` out of every row. @default [] */
+  series?: unknown;
+  /** Row key for the x-axis category. @default 'x' */
+  'x-key'?: string;
+}
+/** React forwarder for `<beam-line-chart>`. */
+export function BeamLineChart(props: BeamLineChartProps & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('BeamLineChart'), props);
+}
+BeamLineChart.displayName = 'BeamLineChart';
+
+/**
+ * @csspart chart - The chart container.
+ * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+ */
+export interface BeamBarChartProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  /** Bars to plot, e.g. `[{ label: 'Sent', value: 120 }]`. @default [] */
+  data?: unknown;
+  /** Optional per-bar color override; defaults to the theme categorical palette. */
+  palette?: string[] | undefined;
+}
+/** React forwarder for `<beam-bar-chart>`. */
+export function BeamBarChart(props: BeamBarChartProps & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('BeamBarChart'), props);
+}
+BeamBarChart.displayName = 'BeamBarChart';
+
+/**
+ * @csspart chart - The chart container.
+ * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+ */
+export interface BeamDonutChartProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  /** Slices to plot, e.g. `[{ label: 'Push', value: 45 }]`. @default [] */
+  data?: unknown;
+  /** Optional per-slice color override; defaults to the theme categorical palette. */
+  palette?: string[] | undefined;
+}
+/** React forwarder for `<beam-donut-chart>`. */
+export function BeamDonutChart(props: BeamDonutChartProps & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('BeamDonutChart'), props);
+}
+BeamDonutChart.displayName = 'BeamDonutChart';
+
+/**
+ * @csspart chart - The chart container.
+ * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+ */
+export interface BeamFunnelChartProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  /** Funnel stages in order, e.g. `[{ label: 'Audience', value: 1000 }, …]`. @default [] */
+  data?: unknown;
+  /** Optional per-stage color override; defaults to the theme categorical palette. */
+  palette?: string[] | undefined;
+}
+/** React forwarder for `<beam-funnel-chart>`. */
+export function BeamFunnelChart(props: BeamFunnelChartProps & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('BeamFunnelChart'), props);
+}
+BeamFunnelChart.displayName = 'BeamFunnelChart';
+
+/**
+ * @csspart chart - The chart container.
+ * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+ */
+export interface BeamSankeyChartProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  /** Nodes, e.g. `[{ name: 'Sent' }, { name: 'Opened' }]`. @default [] */
+  nodes?: unknown;
+  /** Links, e.g. `[{ source: 'Sent', target: 'Opened', value: 80 }]`. @default [] */
+  links?: unknown;
+}
+/** React forwarder for `<beam-sankey-chart>`. */
+export function BeamSankeyChart(props: BeamSankeyChartProps & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('BeamSankeyChart'), props);
+}
+BeamSankeyChart.displayName = 'BeamSankeyChart';
