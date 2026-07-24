@@ -794,50 +794,16 @@ namespace Beamable.Server
 	      }
       }
 
-      async Task HandleWebsocketMessage(IConnection ws, JsonDocument document, Stopwatch sw)
+      /// <summary>
+      /// Applies logging context rules based on the provided request context.
+      /// This method utilizes the microservice's routing key and logging context service
+      /// to determine the appropriate log level and any additional logging rules to be applied.
+      /// It ensures that logging behavior is dynamically adjusted to reflect the specified configuration.
+      /// </summary>
+      /// <param name="ctx">The context of the current request, providing necessary information
+      /// for logging configuration, such as routing keys and associated metadata.</param>
+      private void ApplyLoggingContextRules(RequestContext ctx)
       {
-	
-	      MicroserviceRequestContext ctx = null;
-	      using (var requestActivity = _activityProvider.Create(Otel.TRACE_CONSTRUCT_CTX, importance: TelemetryImportance.VERBOSE))
-	      {
-		      if (!document.TryBuildRequestContext(InstanceArgs, out ctx))
-		      {
-			      requestActivity.SetStatus(ActivityStatusCode.Error);
-			      Log.Debug("WS Message contains no data. Cannot handle. Skipping message.");
-			      return;
-		      }
-		      requestActivity.SetStatus(ActivityStatusCode.Ok);
-	      }
-
-	      BeamActivity parentActivity = BeamActivity.Noop;
-	      if (_socketRequesterContext.TryGetListener(ctx.Id, out var existingListener))
-	      {
-		      parentActivity = existingListener.Activity;
-	      }
-	      
-	      
-	      using var activity = _activityProvider.Create(Otel.TRACE_WS, parentActivity);
-	      MicroserviceRequester.ContextActivity.Value = activity;
-	      ctx.ActivityContext = activity;
-	      
-
-		  var extraOtelTags = _telemetryProviders.CreateRequestAttributes(InstanceArgs, ctx, ConnectionId);
-	      activity.SetTags(extraOtelTags);
-
-
-	      // First get the Global Realm Config Log Level and apply it by running UpdateLogLevel
-	      var configService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
-	      if (ctx.Path?.StartsWith(_adminPrefix) ?? false)
-	      {
-		      // when the path starts with admin, use warning.
-		      MicroserviceBootstrapper.ContextLogLevel.Value = LogLevel.Warning;
-	      }
-	      else
-	      {
-		      // otherwise, allow default behaviour.
-		      configService.UpdateLogLevel();
-	      }
-
 	      string routingKey = InstanceArgs.GetRoutingKey().GetOrElse(string.Empty);
 	      try
 	      {
@@ -901,7 +867,7 @@ namespace Beamable.Server
 			      }
 
 			   
-			      MicroserviceBootstrapper.ContextLogLevel.Value = contextLogLevel;
+			      MicroserviceLogLevelContext.CurrentLogLevel.Value = contextLogLevel;
 
 			      void TryToSetNewLogLevel(LogLevel newLogLevel)
 			      {
@@ -918,7 +884,63 @@ namespace Beamable.Server
 	      {
 		      BeamableZLoggerProvider.Instance.Error(ex);
 	      }
+      }
 
+      /// <summary>
+      /// Adjusts the log level for the current request context based on specific policy criteria.
+      /// Determines whether the request is for a protected admin route and sets the log level accordingly.
+      /// If the route is not protected, applies custom logging rules and updates the log level
+      /// using the service configuration.
+      /// </summary>
+      /// <param name="ctx">The request context object containing information about the current request,
+      /// including the request path.</param>
+      private void ApplyRequestLogLevel(RequestContext ctx)
+      {
+	      var isProtectedAdminRoute = ctx.Path?.StartsWith(_adminPrefix) == true
+	                                  && InstanceArgs.AdminRouteLogPolicy == AdminRouteLogPolicy.Protected;
+
+	      if (isProtectedAdminRoute)
+	      {
+		      MicroserviceLogLevelContext.CurrentLogLevel.Value = LogLevel.Warning;
+	      }
+	      else
+	      {
+		      var configureService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
+		      configureService.UpdateLogLevel();
+		      ApplyLoggingContextRules(ctx);
+	      }
+      }
+
+      async Task HandleWebsocketMessage(IConnection ws, JsonDocument document, Stopwatch sw)
+      {
+	      MicroserviceRequestContext ctx = null;
+	      using (var requestActivity = _activityProvider.Create(Otel.TRACE_CONSTRUCT_CTX, importance: TelemetryImportance.VERBOSE))
+	      {
+		      if (!document.TryBuildRequestContext(InstanceArgs, out ctx))
+		      {
+			      requestActivity.SetStatus(ActivityStatusCode.Error);
+			      Log.Debug("WS Message contains no data. Cannot handle. Skipping message.");
+			      return;
+		      }
+		      requestActivity.SetStatus(ActivityStatusCode.Ok);
+	      }
+
+	      BeamActivity parentActivity = BeamActivity.Noop;
+	      if (_socketRequesterContext.TryGetListener(ctx.Id, out var existingListener))
+	      {
+		      parentActivity = existingListener.Activity;
+	      }
+
+
+	      using var activity = _activityProvider.Create(Otel.TRACE_WS, parentActivity);
+	      MicroserviceRequester.ContextActivity.Value = activity;
+	      ctx.ActivityContext = activity;
+
+
+		  var extraOtelTags = _telemetryProviders.CreateRequestAttributes(InstanceArgs, ctx, ConnectionId);
+	      activity.SetTags(extraOtelTags);
+
+	      ApplyRequestLogLevel(ctx);
 	      
 		  var logger = BeamableZLoggerProvider.LogContext.Value = InstanceArgs.ServiceScope.GetLogger<BeamableMicroService>();
 	      using var scope = logger.BeginScope(extraOtelTags.ToDictionary());

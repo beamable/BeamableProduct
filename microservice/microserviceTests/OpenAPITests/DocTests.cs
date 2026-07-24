@@ -14,6 +14,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Beamable.Common.Dependencies;
 using microserviceTests.microservice.Util;
+using microservice.Common;
+using Microsoft.Extensions.Logging;
 
 namespace microserviceTests.OpenAPITests;
 
@@ -49,7 +51,30 @@ public class DocTests
 		{
 		}
 	}
-	
+
+	public class RecordingTelemetryAttributeProvider : ITelemetryAttributeProvider
+	{
+		public static readonly List<LogLevel> SeenLogLevels = new List<LogLevel>();
+
+		public List<TelemetryAttributeDescriptor> GetDescriptors()
+		{
+			SeenLogLevels.Add(MicroserviceLogLevelContext.CurrentLogLevel.Value);
+			return new List<TelemetryAttributeDescriptor>();
+		}
+
+		public void CreateDefaultAttributes(IDefaultAttributeContext ctx)
+		{
+		}
+
+		public void CreateConnectionAttributes(IConnectionAttributeContext ctx)
+		{
+		}
+
+		public void CreateRequestAttributes(IRequestAttributeContext ctx)
+		{
+		}
+	}
+
 	[Test]
 	public void TestMethodScanning()
 	{
@@ -73,6 +98,58 @@ public class DocTests
 		
 		var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 		Console.WriteLine(outputString);
+	}
+
+	[Test]
+	public void AdminRoutesDocsTemporarilyRaisesLogLevelAndRestoresPreviousValue()
+	{
+		LoggingUtil.InitTestCorrelator();
+		RecordingTelemetryAttributeProvider.SeenLogLevels.Clear();
+
+		var originalLogLevel = MicroserviceLogLevelContext.CurrentLogLevel.Value;
+		var previousLogLevel = LogLevel.Debug;
+		MicroserviceLogLevelContext.CurrentLogLevel.Value = previousLogLevel;
+
+		try
+		{
+			var args = new TestArgs();
+			var microserviceAttribute = new MicroserviceAttribute("docs");
+			var startupContext = new StartupContext
+			{
+				args = args,
+				attributes = microserviceAttribute,
+				routeSources = new[]
+				{
+					new BeamRouteSource
+					{
+						InstanceType = typeof(DocService)
+					}
+				}
+			};
+
+			var builder = new DependencyBuilder();
+			builder.AddSingleton<IMicroserviceArgs>(args);
+			builder.AddSingleton(startupContext);
+			builder.AddSingleton<SingletonDependencyList<ITelemetryAttributeProvider>>();
+			builder.AddSingleton<RecordingTelemetryAttributeProvider>();
+
+			var routes = new AdminRoutes
+			{
+				GlobalProvider = builder.Build(),
+				MicroserviceAttribute = microserviceAttribute
+			};
+
+			var outputString = routes.Docs();
+
+			Assert.That(outputString, Does.Contain("\"openapi\""));
+			Assert.That(RecordingTelemetryAttributeProvider.SeenLogLevels, Is.Not.Empty);
+			Assert.That(RecordingTelemetryAttributeProvider.SeenLogLevels, Has.All.EqualTo(LogLevel.Warning));
+			Assert.AreEqual(previousLogLevel, MicroserviceLogLevelContext.CurrentLogLevel.Value);
+		}
+		finally
+		{
+			MicroserviceLogLevelContext.CurrentLogLevel.Value = originalLogLevel;
+		}
 	}
 
 	[Microservice("docs")]
