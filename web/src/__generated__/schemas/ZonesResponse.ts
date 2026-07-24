@@ -3,8 +3,8 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type ProtoError = { 
-  description?: string | null; 
-  error?: string | null; 
-  status?: number; 
+import type { ZoneView } from './ZoneView';
+
+export type ZonesResponse = { 
+  zones?: ZoneView[]; 
 };

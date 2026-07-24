@@ -101,6 +101,34 @@ public static class OpenApiMethodNameGenerator
 		return isInternalEndpoint ? $"{methodName}Internal" : methodName;
 	}
 
+	/// <summary>
+	/// Extract the path parameter names (in path order) for an endpoint, e.g.
+	/// <c>/api/customers/{customerId}/realms/{realmId}/segments/{segmentId}</c> →
+	/// <c>[CustomerId, RealmId, SegmentId]</c>. Mirrors the segment handling in
+	/// <see cref="GenerateMethodName"/> so the derived names line up.
+	/// </summary>
+	public static IReadOnlyList<string> GetPathParamNames(string apiEndpoint)
+		=> apiEndpoint
+			.Split(Separator, StringSplitOptions.RemoveEmptyEntries)
+			.Where(s => !SkippablePrefixes.Contains(s, StringComparer.OrdinalIgnoreCase))
+			.Select(RemoveNonAlphanumericExceptBraces)
+			.Where(IsParameter)
+			.Select(p => ParamName(SanitizeSegment(p)))
+			.ToList();
+
+	/// <summary>
+	/// Appends a <c>By{Param1}And{Param2}…</c> suffix built from the endpoint's path
+	/// parameters, producing a unique variant of <paramref name="baseName"/>. Returns
+	/// <paramref name="baseName"/> unchanged when the endpoint has no path parameters.
+	/// Used to disambiguate method-name collisions between endpoints that share the same
+	/// static path segments and HTTP verb but differ by their path parameters.
+	/// </summary>
+	public static string AppendParamDisambiguator(string baseName, string apiEndpoint)
+	{
+		var paramNames = GetPathParamNames(apiEndpoint);
+		return paramNames.Count == 0 ? baseName : baseName + "By" + string.Join("And", paramNames);
+	}
+
 	// ─── Helper Methods ───
 
 	private static bool IsParameter(string word)

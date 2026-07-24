@@ -6,7 +6,7 @@
 import type { BeamoBasicServiceReference } from './BeamoBasicServiceReference';
 import type { BeamoBasicServiceStorageReference } from './BeamoBasicServiceStorageReference';
 
-export type PostManifestRequest = { 
+export type BeamoBasicPostManifestRequest = { 
   manifest: BeamoBasicServiceReference[]; 
   autoDeploy?: boolean; 
   comments?: string; 

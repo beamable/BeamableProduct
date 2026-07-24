@@ -3,8 +3,6 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type MessageRailRegistrationResponse = { 
-  message?: string | null; 
-  playerId?: string; 
-  success?: boolean; 
+export type SetZoneRoleRequest = { 
+  role: string; 
 };

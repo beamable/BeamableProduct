@@ -57,7 +57,7 @@ export async function beamoGetBundles(requester: HttpRequester, gamertag?: strin
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function beamoGetBundles(requester: HttpRequester, bundleName: string, ns: string, gamertag?: string): Promise<HttpResponse<GetBundleResponse>> {
+export async function beamoGetBundlesByNsAndBundleName(requester: HttpRequester, bundleName: string, ns: string, gamertag?: string): Promise<HttpResponse<GetBundleResponse>> {
   let endpoint = "/api/beamo/bundles/{ns}/{bundleName}".replace(bundleNamePlaceholder, endpointEncoder(bundleName)).replace(nsPlaceholder, endpointEncoder(ns));
   
   // Make the API request

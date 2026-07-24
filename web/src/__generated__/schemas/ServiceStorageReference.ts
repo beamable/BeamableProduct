@@ -5,7 +5,7 @@
 
 import type { BundleOrigin } from './BundleOrigin';
 
-export type BeamoBundleActorServiceStorageReference = { 
+export type ServiceStorageReference = { 
   archived?: boolean; 
   checksum?: string; 
   enabled?: boolean; 

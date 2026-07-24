@@ -3,6 +3,6 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type BeamoBundleActorServiceComponent = { 
-  name?: string; 
+export type PromoteZoneRequest = { 
+  sourceZoneId: string; 
 };

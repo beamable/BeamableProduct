@@ -407,6 +407,7 @@ export class ContentService
           this.requester,
           manifestId,
           undefined,
+          undefined,
           this.accountId,
         ),
       ]);
@@ -467,6 +468,7 @@ export class ContentService
     const { body } = await contentGetManifestPublicJsonBasic(
       this.requester,
       manifestId,
+      undefined,
       undefined,
       this.accountId,
     );

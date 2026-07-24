@@ -3,7 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type UnregisterUserWithMessageRailRequest = { 
-  federationId: string; 
-  playerId: string; 
-};
+export enum ZoneOrigin {
+  Bootstrapped = "Bootstrapped",
+  User = "User"
+}

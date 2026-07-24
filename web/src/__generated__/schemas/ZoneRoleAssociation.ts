@@ -3,6 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type SendMessagesResponse = { 
-  trackId: string; 
+export type ZoneRoleAssociation = { 
+  roleString?: string; 
+  zoneId?: string; 
 };

@@ -79,7 +79,7 @@ export async function customersGetSegmentsMembers(requester: HttpRequester, cust
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersGetSegmentsMembers(requester: HttpRequester, customerId: string, playerId: bigint | string, segmentId: string, gamertag?: string): Promise<HttpResponse<MembershipCheckResponse>> {
+export async function customersGetSegmentsMembersByCustomerIdAndSegmentIdAndPlayerId(requester: HttpRequester, customerId: string, playerId: bigint | string, segmentId: string, gamertag?: string): Promise<HttpResponse<MembershipCheckResponse>> {
   let endpoint = "/api/customers/{customerId}/segments/{segmentId}/members/{playerId}".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(playerIdPlaceholder, endpointEncoder(playerId)).replace(segmentIdPlaceholder, endpointEncoder(segmentId));
   
   // Make the API request

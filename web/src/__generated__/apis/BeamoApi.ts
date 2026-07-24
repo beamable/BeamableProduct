@@ -15,6 +15,7 @@ import { serviceNamePlaceholder } from '@/__generated__/apis/constants';
 import { storageObjectNamePlaceholder } from '@/__generated__/apis/constants';
 import type { BeamoBasicGetManifestsResponse } from '@/__generated__/schemas/BeamoBasicGetManifestsResponse';
 import type { BeamoBasicManifestChecksums } from '@/__generated__/schemas/BeamoBasicManifestChecksums';
+import type { BeamoBasicPostManifestRequest } from '@/__generated__/schemas/BeamoBasicPostManifestRequest';
 import type { BeamoV2ApiBeamoServicesLogsQueryDeleteBeamoResponse } from '@/__generated__/schemas/BeamoV2ApiBeamoServicesLogsQueryDeleteBeamoResponse';
 import type { BeamoV2ConnectionStringResponse } from '@/__generated__/schemas/BeamoV2ConnectionStringResponse';
 import type { BeamoV2DeleteRegistrationRequest } from '@/__generated__/schemas/BeamoV2DeleteRegistrationRequest';
@@ -62,7 +63,6 @@ import type { MicroserviceRegistrationsQuery } from '@/__generated__/schemas/Mic
 import type { MicroserviceRegistrationsResponse } from '@/__generated__/schemas/MicroserviceRegistrationsResponse';
 import type { MicroserviceSecretResponse } from '@/__generated__/schemas/MicroserviceSecretResponse';
 import type { PerformanceResponse } from '@/__generated__/schemas/PerformanceResponse';
-import type { PostManifestRequest } from '@/__generated__/schemas/PostManifestRequest';
 import type { PostManifestResponse } from '@/__generated__/schemas/PostManifestResponse';
 import type { PreSignedUrlsResponse } from '@/__generated__/schemas/PreSignedUrlsResponse';
 import type { PullBeamoManifestRequest } from '@/__generated__/schemas/PullBeamoManifestRequest';
@@ -275,10 +275,11 @@ export async function beamoGetStatus(requester: HttpRequester, gamertag?: string
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
+ * @param serviceName - Optional service names to resolve repository names for.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function beamoGetRegistryUri(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2UriResponse>> {
+export async function beamoGetRegistryUri(requester: HttpRequester, serviceName?: string[], gamertag?: string): Promise<HttpResponse<BeamoV2UriResponse>> {
   let endpoint = "/api/beamo/registry-uri";
   
   // Make the API request
@@ -286,6 +287,9 @@ export async function beamoGetRegistryUri(requester: HttpRequester, gamertag?: s
     r: requester,
     e: endpoint,
     m: GET,
+    q: {
+      serviceName
+    },
     g: gamertag,
     w: true
   });
@@ -1232,15 +1236,15 @@ export async function beamoGetManifestBasic(requester: HttpRequester, id: string
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `PostManifestRequest` instance to use for the API request
+ * @param payload - The `BeamoBasicPostManifestRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function beamoPostManifestBasic(requester: HttpRequester, payload: PostManifestRequest, gamertag?: string): Promise<HttpResponse<PostManifestResponse>> {
+export async function beamoPostManifestBasic(requester: HttpRequester, payload: BeamoBasicPostManifestRequest, gamertag?: string): Promise<HttpResponse<PostManifestResponse>> {
   let endpoint = "/basic/beamo/manifest";
   
   // Make the API request
-  return makeApiRequest<PostManifestResponse, PostManifestRequest>({
+  return makeApiRequest<PostManifestResponse, BeamoBasicPostManifestRequest>({
     r: requester,
     e: endpoint,
     m: POST,

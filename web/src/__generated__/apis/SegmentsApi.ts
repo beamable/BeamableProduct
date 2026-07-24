@@ -236,7 +236,7 @@ export async function customersPostRealmsSegmentsReconcile(requester: HttpReques
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersPostRealmsSegmentsReconcile(requester: HttpRequester, customerId: string, realmId: string, segmentId: string, gamertag?: string): Promise<HttpResponse<SegmentReconcileResult>> {
+export async function customersPostRealmsSegmentsReconcileByCustomerIdAndRealmIdAndSegmentId(requester: HttpRequester, customerId: string, realmId: string, segmentId: string, gamertag?: string): Promise<HttpResponse<SegmentReconcileResult>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/segments/{segmentId}/reconcile".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId)).replace(segmentIdPlaceholder, endpointEncoder(segmentId));
   
   // Make the API request
@@ -310,7 +310,7 @@ export async function customersGetRealmsSegmentsCount(requester: HttpRequester, 
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersGetRealmsSegments(requester: HttpRequester, customerId: string, realmId: string, segmentId: string, gamertag?: string): Promise<HttpResponse<SegmentResponse>> {
+export async function customersGetRealmsSegmentsByCustomerIdAndRealmIdAndSegmentId(requester: HttpRequester, customerId: string, realmId: string, segmentId: string, gamertag?: string): Promise<HttpResponse<SegmentResponse>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/segments/{segmentId}".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId)).replace(segmentIdPlaceholder, endpointEncoder(segmentId));
   
   // Make the API request
@@ -469,7 +469,7 @@ export async function customersDeleteRealmsSegmentsMembers(requester: HttpReques
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersGetRealmsSegmentsMembers(requester: HttpRequester, customerId: string, playerId: bigint | string, realmId: string, segmentId: string, gamertag?: string): Promise<HttpResponse<MembershipCheckResponse>> {
+export async function customersGetRealmsSegmentsMembersByCustomerIdAndRealmIdAndSegmentIdAndPlayerId(requester: HttpRequester, customerId: string, playerId: bigint | string, realmId: string, segmentId: string, gamertag?: string): Promise<HttpResponse<MembershipCheckResponse>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/segments/{segmentId}/members/{playerId}".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(playerIdPlaceholder, endpointEncoder(playerId)).replace(realmIdPlaceholder, endpointEncoder(realmId)).replace(segmentIdPlaceholder, endpointEncoder(segmentId));
   
   // Make the API request

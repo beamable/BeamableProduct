@@ -7,6 +7,7 @@ import type { CustomerActorExternalIdentity } from './CustomerActorExternalIdent
 import type { CustomerActorThirdPartyAssociation } from './CustomerActorThirdPartyAssociation';
 import type { RealmAssociation } from './RealmAssociation';
 import type { RoleAssociation } from './RoleAssociation';
+import type { ZoneRoleAssociation } from './ZoneRoleAssociation';
 
 export type CustomerActorAccount = { 
   accountId?: bigint | string; 
@@ -25,4 +26,5 @@ export type CustomerActorAccount = {
   thirdPartyAssociations?: CustomerActorThirdPartyAssociation[]; 
   updatedTimeMs?: bigint | string; 
   username?: string | null; 
+  zoneRoles?: ZoneRoleAssociation[] | null; 
 };

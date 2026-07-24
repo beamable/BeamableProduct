@@ -3,8 +3,6 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { BatchState } from './BatchState';
-
-export type FederationStagingState = { 
-  batches: BatchState[]; 
+export type CommentPullRequestRequest = { 
+  message?: string; 
 };

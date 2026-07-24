@@ -3,7 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type BeamoBundleActorServiceDependencyReference = { 
+export type ServiceDependencyReference = { 
   id?: string; 
   storageType?: string; 
 };

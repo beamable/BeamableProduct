@@ -4,7 +4,7 @@
  */
 
 import { bundleNamePlaceholder } from '@/__generated__/apis/constants';
-import { cidPlaceholder } from '@/__generated__/apis/constants';
+import { customerIdPlaceholder } from '@/__generated__/apis/constants';
 import { DELETE } from '@/constants';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
@@ -27,12 +27,12 @@ import type { SetForcedBundleRequest } from '@/__generated__/schemas/SetForcedBu
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param cid - The `cid` parameter to include in the API request.
+ * @param customerId - The `customerId` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function beamoGetCidsForcedBundlesByCid(requester: HttpRequester, cid: string, gamertag?: string): Promise<HttpResponse<ListForcedBundlesResponse>> {
-  let endpoint = "/api/beamo/cids/{cid}/forced-bundles".replace(cidPlaceholder, endpointEncoder(cid));
+export async function beamoGetCidsForcedBundlesByCustomerId(requester: HttpRequester, customerId: string, gamertag?: string): Promise<HttpResponse<ListForcedBundlesResponse>> {
+  let endpoint = "/api/beamo/cids/{customerId}/forced-bundles".replace(customerIdPlaceholder, endpointEncoder(customerId));
   
   // Make the API request
   return makeApiRequest<ListForcedBundlesResponse>({
@@ -52,13 +52,13 @@ export async function beamoGetCidsForcedBundlesByCid(requester: HttpRequester, c
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SetForcedBundleRequest` instance to use for the API request
  * @param bundleName - The `bundleName` parameter to include in the API request.
- * @param cid - The `cid` parameter to include in the API request.
+ * @param customerId - The `customerId` parameter to include in the API request.
  * @param ns - The `ns` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function beamoPutCidsForcedBundles(requester: HttpRequester, bundleName: string, cid: string, ns: string, payload: SetForcedBundleRequest, gamertag?: string): Promise<HttpResponse<ApiBeamoCidsForcedBundlesPutBeamoForcedBundleResponse>> {
-  let endpoint = "/api/beamo/cids/{cid}/forced-bundles/{ns}/{bundleName}".replace(bundleNamePlaceholder, endpointEncoder(bundleName)).replace(cidPlaceholder, endpointEncoder(cid)).replace(nsPlaceholder, endpointEncoder(ns));
+export async function beamoPutCidsForcedBundles(requester: HttpRequester, bundleName: string, customerId: string, ns: string, payload: SetForcedBundleRequest, gamertag?: string): Promise<HttpResponse<ApiBeamoCidsForcedBundlesPutBeamoForcedBundleResponse>> {
+  let endpoint = "/api/beamo/cids/{customerId}/forced-bundles/{ns}/{bundleName}".replace(bundleNamePlaceholder, endpointEncoder(bundleName)).replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(nsPlaceholder, endpointEncoder(ns));
   
   // Make the API request
   return makeApiRequest<ApiBeamoCidsForcedBundlesPutBeamoForcedBundleResponse, SetForcedBundleRequest>({
@@ -78,13 +78,13 @@ export async function beamoPutCidsForcedBundles(requester: HttpRequester, bundle
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param bundleName - The `bundleName` parameter to include in the API request.
- * @param cid - The `cid` parameter to include in the API request.
+ * @param customerId - The `customerId` parameter to include in the API request.
  * @param ns - The `ns` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function beamoDeleteCidsForcedBundles(requester: HttpRequester, bundleName: string, cid: string, ns: string, gamertag?: string): Promise<HttpResponse<ApiBeamoCidsForcedBundlesDeleteBeamoForcedBundleResponse>> {
-  let endpoint = "/api/beamo/cids/{cid}/forced-bundles/{ns}/{bundleName}".replace(bundleNamePlaceholder, endpointEncoder(bundleName)).replace(cidPlaceholder, endpointEncoder(cid)).replace(nsPlaceholder, endpointEncoder(ns));
+export async function beamoDeleteCidsForcedBundles(requester: HttpRequester, bundleName: string, customerId: string, ns: string, gamertag?: string): Promise<HttpResponse<ApiBeamoCidsForcedBundlesDeleteBeamoForcedBundleResponse>> {
+  let endpoint = "/api/beamo/cids/{customerId}/forced-bundles/{ns}/{bundleName}".replace(bundleNamePlaceholder, endpointEncoder(bundleName)).replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(nsPlaceholder, endpointEncoder(ns));
   
   // Make the API request
   return makeApiRequest<ApiBeamoCidsForcedBundlesDeleteBeamoForcedBundleResponse>({
@@ -104,14 +104,14 @@ export async function beamoDeleteCidsForcedBundles(requester: HttpRequester, bun
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `SetForcedBundleRequest` instance to use for the API request
  * @param bundleName - The `bundleName` parameter to include in the API request.
- * @param cid - The `cid` parameter to include in the API request.
+ * @param customerId - The `customerId` parameter to include in the API request.
  * @param ns - The `ns` parameter to include in the API request.
  * @param realmId - The `realmId` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function beamoPutRealmsForcedBundles(requester: HttpRequester, bundleName: string, cid: string, ns: string, realmId: string, payload: SetForcedBundleRequest, gamertag?: string): Promise<HttpResponse<ApiBeamoRealmsForcedBundlesPutBeamoForcedBundleResponse>> {
-  let endpoint = "/api/beamo/realms/{cid}/{realmId}/forced-bundles/{ns}/{bundleName}".replace(bundleNamePlaceholder, endpointEncoder(bundleName)).replace(cidPlaceholder, endpointEncoder(cid)).replace(nsPlaceholder, endpointEncoder(ns)).replace(realmIdPlaceholder, endpointEncoder(realmId));
+export async function beamoPutRealmsForcedBundles(requester: HttpRequester, bundleName: string, customerId: string, ns: string, realmId: string, payload: SetForcedBundleRequest, gamertag?: string): Promise<HttpResponse<ApiBeamoRealmsForcedBundlesPutBeamoForcedBundleResponse>> {
+  let endpoint = "/api/beamo/realms/{customerId}/{realmId}/forced-bundles/{ns}/{bundleName}".replace(bundleNamePlaceholder, endpointEncoder(bundleName)).replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(nsPlaceholder, endpointEncoder(ns)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
   return makeApiRequest<ApiBeamoRealmsForcedBundlesPutBeamoForcedBundleResponse, SetForcedBundleRequest>({
@@ -131,14 +131,14 @@ export async function beamoPutRealmsForcedBundles(requester: HttpRequester, bund
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param bundleName - The `bundleName` parameter to include in the API request.
- * @param cid - The `cid` parameter to include in the API request.
+ * @param customerId - The `customerId` parameter to include in the API request.
  * @param ns - The `ns` parameter to include in the API request.
  * @param realmId - The `realmId` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function beamoDeleteRealmsForcedBundles(requester: HttpRequester, bundleName: string, cid: string, ns: string, realmId: string, gamertag?: string): Promise<HttpResponse<ApiBeamoRealmsForcedBundlesDeleteBeamoForcedBundleResponse>> {
-  let endpoint = "/api/beamo/realms/{cid}/{realmId}/forced-bundles/{ns}/{bundleName}".replace(bundleNamePlaceholder, endpointEncoder(bundleName)).replace(cidPlaceholder, endpointEncoder(cid)).replace(nsPlaceholder, endpointEncoder(ns)).replace(realmIdPlaceholder, endpointEncoder(realmId));
+export async function beamoDeleteRealmsForcedBundles(requester: HttpRequester, bundleName: string, customerId: string, ns: string, realmId: string, gamertag?: string): Promise<HttpResponse<ApiBeamoRealmsForcedBundlesDeleteBeamoForcedBundleResponse>> {
+  let endpoint = "/api/beamo/realms/{customerId}/{realmId}/forced-bundles/{ns}/{bundleName}".replace(bundleNamePlaceholder, endpointEncoder(bundleName)).replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(nsPlaceholder, endpointEncoder(ns)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
   return makeApiRequest<ApiBeamoRealmsForcedBundlesDeleteBeamoForcedBundleResponse>({
