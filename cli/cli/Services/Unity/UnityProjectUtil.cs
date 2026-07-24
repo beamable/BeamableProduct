@@ -302,11 +302,17 @@ public static class UnityProjectUtil
 		public string version;
 	}
 
-	public static void DeleteAllFilesWithExtensions(string folder, string[] extensions)
+	/// <summary>
+	/// Deletes files with the specified extensions, then removes any descendant directories left empty.
+	/// Directories containing Unity-owned files, such as assembly definitions, are preserved.
+	/// </summary>
+	/// <param name="folder">The root folder to clean. The root folder itself is never deleted.</param>
+	/// <param name="extensions">The file extensions to delete.</param>
+	public static void DeleteAllFilesWithExtensionsAndEmptyDirectories(string folder, string[] extensions)
 	{
 		if (!Directory.Exists(folder))
 			return;
-		
+
 		foreach (var ext in extensions)
 		{
 			var filesToDelete = Directory.GetFiles(folder, $"*{ext}", SearchOption.AllDirectories);
@@ -315,6 +321,24 @@ public static class UnityProjectUtil
 				File.SetAttributes(file, FileAttributes.None);
 				File.Delete(file);
 			}
+		}
+
+		var directories = Directory.GetDirectories(folder, "*", SearchOption.AllDirectories)
+			.OrderByDescending(directory => directory.Length);
+
+		foreach (var directory in directories)
+		{
+			if (Directory.EnumerateFileSystemEntries(directory).Any())
+				continue;
+
+			Directory.Delete(directory);
+
+			var metaFile = $"{directory}.meta";
+			if (!File.Exists(metaFile))
+				continue;
+
+			File.SetAttributes(metaFile, FileAttributes.None);
+			File.Delete(metaFile);
 		}
 	}
 }
