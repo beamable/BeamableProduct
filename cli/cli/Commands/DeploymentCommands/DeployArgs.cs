@@ -15,9 +15,9 @@ public class DeployArgs
 		where TArgs : CommandArgs, IHasDockerComposeArgs
 	{
 		command.AddOption(new Option<string>(new string[]{"--docker-compose-dir", "-dcd"}, () => "", 
-				description: $"Specify an output path where a new docker-compose project will be created. " +
-				             $"The compose file can be used to run services locally. " +
-				             $"(Note, existing files in this folder will be overwritten)"),
+				description: $"Specify an output path where a new docker-compose project will be created." +
+				             $" The compose file can be used to run services locally." +
+				             $" (Note, existing files in this folder will be overwritten)"),
 			(args, i) => args.DockerComposeDirectoryPath = i);
 	}
 	

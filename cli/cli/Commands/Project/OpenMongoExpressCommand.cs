@@ -36,8 +36,8 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>, 
 			{
 				case 1:
 					args.storageName = new ServiceName(storages[0].BeamoId);
-					Log.Debug($"No service-name passed as argument. " +
-					          $"Running command for {args.storageName} since it is the only storage in BeamoManifest.");
+					Log.Debug($"No service-name passed as argument." +
+					          $" Running command for {args.storageName} since it is the only storage in BeamoManifest.");
 					break;
 				case > 1:
 					if (args.Quiet)

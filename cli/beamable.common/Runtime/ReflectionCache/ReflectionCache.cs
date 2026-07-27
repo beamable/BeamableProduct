@@ -190,8 +190,8 @@ namespace Beamable.Common.Reflection
 		public void RegisterTypeProvider(IReflectionTypeProvider provider)
 		{
 			Assert(provider != null, "Provider cannot be null. Please ensure the provider instance exists when passing it in here.");
-			Assert(!_registeredProvider.Contains(provider), "Already registered this provider --- Please ensure providers are registered a single time. " +
-															"This is makes the Assembly Sweep more efficient.");
+			Assert(!_registeredProvider.Contains(provider), "Already registered this provider --- Please ensure providers are registered a single time." +
+															" This is makes the Assembly Sweep more efficient.");
 
 			// Guard so people don't accidentally shoot themselves in the foot when defining their attributes of interest.
 			foreach (var attributeOfInterest in provider.AttributesOfInterest)
@@ -242,8 +242,8 @@ namespace Beamable.Common.Reflection
 		public void RegisterReflectionSystem(IReflectionSystem system)
 		{
 			Assert(system != null, "System cannot be null. Please ensure the system instance exists when passing it in here.");
-			Assert(!_registeredCacheUserSystems.Contains(system), "Already registered this system --- Please ensure systems are registered a single time. " +
-																  "This is makes the Assembly Sweep more efficient and makes it so that you run the system callbacks run only once.");
+			Assert(!_registeredCacheUserSystems.Contains(system), "Already registered this system --- Please ensure systems are registered a single time." +
+																  " This is makes the Assembly Sweep more efficient and makes it so that you run the system callbacks run only once.");
 
 			_registeredCacheUserSystems.Add(system);
 		}

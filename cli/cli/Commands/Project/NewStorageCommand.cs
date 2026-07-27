@@ -151,8 +151,8 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 
 		var prompt = new MultiSelectionPrompt<string>()
 			.Title("Service Dependencies")
-			.InstructionsText("Which services will use this storage?\n[grey](Press [blue]<space>[/] to toggle, " +
-							  "[green]<enter>[/] to accept)[/]")
+			.InstructionsText("Which services will use this storage?\n[grey](Press [blue]<space>[/] to toggle," +
+							  " [green]<enter>[/] to accept)[/]")
 			.AddChoices(choices)
 			.AddBeamHightlight()
 			.NotRequired();
