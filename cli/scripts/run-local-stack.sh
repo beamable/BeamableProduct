@@ -71,6 +71,11 @@ GATEWAY_ASPNETCORE_ENV="${GATEWAY_ASPNETCORE_ENV:-Local}"
 # The built C# Gateway binary to launch (not `dotnet run`). Built automatically if missing.
 GATEWAY_BIN="${GATEWAY_BIN:-$API_DIR/BeamableGateway/bin/Debug/net10.0/BeamableGateway}"
 
+# The built Message Rail runtime binary (dedicated backend worker that drains message-rail
+# staging and delivers to federations). Distinct port from the Gateway (:5000).
+RAIL_BIN="${RAIL_BIN:-$API_DIR/BeamableMessageRailRuntime/bin/Debug/net10.0/BeamableMessageRailRuntime}"
+RAIL_URL="${RAIL_URL:-http://localhost:5030}"
+
 # ---------------------------------------------------------------------------
 # Flags
 # ---------------------------------------------------------------------------
@@ -245,6 +250,18 @@ if [[ "$SKIP_API" == "0" ]]; then
   fi
   wait_for_http "$GATEWAY_URL" "Gateway" 180 "$LOG_DIR/gateway.log"
   wait_for_http "$HOST" "Caddy" 30
+
+  # Message Rail runtime — sibling backend worker; without it message-rail sends stage but never
+  # deliver. Run as a binary with a distinct ASPNETCORE_URLS so it does not collide with :5000.
+  if [[ ! -x "$RAIL_BIN" ]]; then
+    say "Building BeamableMessageRailRuntime (binary not found at $RAIL_BIN)"
+    ( cd "$API_DIR" && dotnet build BeamableMessageRailRuntime ) >"$LOG_DIR/message-rail-build.log" 2>&1 \
+      || { tail -30 "$LOG_DIR/message-rail-build.log"; die "BeamableMessageRailRuntime build failed (see $LOG_DIR/message-rail-build.log)"; }
+  fi
+  [[ -x "$RAIL_BIN" ]] || die "BeamableMessageRailRuntime binary still not found at $RAIL_BIN"
+  start_bg "C# Message Rail" "$LOG_DIR/message-rail.log" "$(dirname "$RAIL_BIN")" \
+    env "ASPNETCORE_ENVIRONMENT=Local" "ASPNETCORE_URLS=$RAIL_URL" "$RAIL_BIN"
+  wait_for_http "$RAIL_URL" "Message Rail" 180 "$LOG_DIR/message-rail.log"
 else
   warn "Skipping BeamableAPI / Gateway (--skip-api)"
 fi

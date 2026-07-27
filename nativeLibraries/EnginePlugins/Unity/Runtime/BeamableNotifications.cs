@@ -383,6 +383,9 @@ namespace Beamable.Notifications
             if (campaign.CidPid != null) p["cidPid"] = campaign.CidPid;
             if (effectiveOffer != null) p["offerData"] = JsonSerializable.Serialize(effectiveOffer);
             if (campaign.Deeplink != null) p["deeplink"] = campaign.Deeplink;
+            // Echo the message-rail per-recipient join key so the funnel attributes back to the exact
+            // recipient the notification was delivered to (matches the backend funnel's outreachId key).
+            if (campaign.OutreachId != null) p["outreachId"] = campaign.OutreachId;
             p["funnelType"] = funnelType;
 
             try

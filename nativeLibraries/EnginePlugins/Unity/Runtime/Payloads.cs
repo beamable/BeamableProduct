@@ -453,6 +453,12 @@ namespace Beamable.Notifications
         public string Deeplink;
         public List<Offer> Offers;
         public Dictionary<string, object> CampaignData;
+        /// <summary>
+        /// The per-recipient message-rail join key the federation embedded under the
+        /// <c>beam_outreach</c> key (Beamable.Common <c>MessageRailContract.OutreachKey</c>). Echoed on
+        /// the Opened/Clicked funnel event so it attributes back to the exact recipient.
+        /// </summary>
+        public string OutreachId;
 
         /// <summary>True when this notification belongs to a tracked campaign (§4.2).</summary>
         public bool IsTrackedCampaign =>
@@ -468,6 +474,7 @@ namespace Beamable.Notifications
                 if (AccountId != null) s.Serialize("accountId", ref AccountId);
                 if (CidPid != null) s.Serialize("cidPid", ref CidPid);
                 if (Deeplink != null) s.Serialize("deeplink", ref Deeplink);
+                if (OutreachId != null) s.Serialize("beam_outreach", ref OutreachId);
                 if (Offers != null) s.SerializeList("offers", ref Offers);
                 if (CampaignData != null) LocalRequest.SerializeFreeFormDict(s, "campaignData", ref CampaignData);
             }
@@ -479,6 +486,7 @@ namespace Beamable.Notifications
                 s.Serialize("accountId", ref AccountId);
                 s.Serialize("cidPid", ref CidPid);
                 s.Serialize("deeplink", ref Deeplink);
+                s.Serialize("beam_outreach", ref OutreachId);
                 s.SerializeList("offers", ref Offers);
                 LocalRequest.SerializeFreeFormDict(s, "campaignData", ref CampaignData);
             }
@@ -501,6 +509,8 @@ namespace Beamable.Notifications
             intent.AccountId = AsString(userInfo, "accountId");
             intent.CidPid = AsString(userInfo, "cidPid");
             intent.Deeplink = ReadDeeplink(userInfo);
+            // The message-rail per-recipient join key (Beamable.Common MessageRailContract.OutreachKey).
+            intent.OutreachId = AsString(userInfo, "beam_outreach");
 
             if (userInfo.TryGetValue("offers", out var offersRaw) && offersRaw != null)
                 intent.Offers = ParseOffers(offersRaw);

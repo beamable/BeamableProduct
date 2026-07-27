@@ -28,6 +28,9 @@ public static class LocalStackTemplate
 		public string host = "http://localhost:8080";
 		public string portalUrl = "http://localhost:4950";
 		public string gatewayUrl = "http://localhost:5000";
+		// The message-rail runtime binds its own port (distinct from the gateway's 5000) — it is run as a
+		// binary, so ASPNETCORE_URLS is set explicitly rather than via launchSettings.
+		public string messageRailUrl = "http://localhost:5030";
 		public string apiDir;
 		public string scalaDir;
 		public string portalDir;
@@ -174,6 +177,39 @@ public static class LocalStackTemplate
 			readyWhenHttp200 = $"{o.gatewayUrl}/health",
 			// The gateway can crash on startup if Mongo hasn't finished initializing its users yet
 			// (MongoAuthenticationException). Relaunch it a few times — it succeeds once Mongo is ready.
+			readyRetries = 5,
+			readyTimeoutSeconds = 180
+		});
+
+		// The message-rail runtime — a dedicated backend worker (sibling to the gateway) that drains the
+		// message-rail Mongo staging and delivers to the last-mile federations. Without it, message-rail
+		// sends stage but never deliver. Modeled on the gateway steps; run as a binary with an explicit
+		// ASPNETCORE_URLS so it doesn't collide with the gateway's :5000.
+		config.steps.Add(new LocalStackStep
+		{
+			name = "build: c# message rail runtime",
+			workingDirectory = apiDir,
+			command = "dotnet",
+			arguments = "build BeamableMessageRailRuntime -c Debug",
+			build = true,
+			waitForExit = true,
+			readyTimeoutSeconds = 300
+		});
+		config.steps.Add(new LocalStackStep
+		{
+			name = "c# message rail runtime",
+			workingDirectory =
+				Path.Combine(apiDir, "BeamableMessageRailRuntime", "bin", "Debug", "net10.0"),
+			command = OperatingSystem.IsWindows()
+				? "BeamableMessageRailRuntime.exe"
+				: "./BeamableMessageRailRuntime",
+			environment = new Dictionary<string, string>
+			{
+				["ASPNETCORE_ENVIRONMENT"] = "Local",
+				["ASPNETCORE_URLS"] = o.messageRailUrl
+			},
+			readyWhenHttp200 = $"{o.messageRailUrl}/health",
+			// Same Mongo-not-ready-yet relaunch tolerance as the gateway.
 			readyRetries = 5,
 			readyTimeoutSeconds = 180
 		});
