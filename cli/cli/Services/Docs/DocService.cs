@@ -227,13 +227,10 @@ public class DocService
 				argSb.Append(opt.ValueType.Name);
 			}
 			argSb.Append("|");
-			var argDesc = opt.Description.ReplaceLineEndings("<br>");
+			var argDesc = (opt.Description ?? "").TrimEnd().ReplaceLineEndings("<br>");
 			if (desc.TryGetMarkdown($"{{{{Opt_{opt.Name}}}}}", out var extra))
 			{
-				extra = extra.Replace("\n", " ")
-					.Replace("\n\r", " ")
-					.Replace("\r\n", " ");
-				argDesc += $". {extra}";
+				argDesc = AppendSupplementalDescription(argDesc, extra);
 			}
 
 			argSb.Append(argDesc);
@@ -247,6 +244,30 @@ public class DocService
 ";
 
 		return argSection;
+	}
+
+	/// <summary>
+	/// Join a command description with its supplemental markdown snippet, flattening the
+	/// snippet onto a single line.
+	/// </summary>
+	/// <remarks>
+	/// A sentence separator is inserted only when the description does not already end in
+	/// terminal punctuation. Descriptions are conventionally unpunctuated and need the
+	/// separator, but the few multi-sentence ones would otherwise render as ". ".
+	/// </remarks>
+	private static string AppendSupplementalDescription(string description, string extra)
+	{
+		description = (description ?? "").TrimEnd();
+
+		// Collapse every whitespace run, so line breaks and stray trailing spaces in the
+		// snippet cannot leak double spaces into the rendered table cell.
+		extra = string.Join(" ", (extra ?? "").Split((char[])null, StringSplitOptions.RemoveEmptyEntries));
+
+		if (extra.Length == 0) return description;
+		if (description.Length == 0) return extra;
+
+		var separator = ".?!:;".Contains(description[^1]) ? " " : ". ";
+		return description + separator + extra;
 	}
 
 	public string GetArgDescription(BeamCommandDescriptor command, CompiledDocDescriptor desc)
@@ -265,13 +286,10 @@ public class DocService
 			argSb.Append("|");
 			argSb.Append(arg.ValueType.Name);
 			argSb.Append("|");
-			var argDesc = arg.Description;
+			var argDesc = (arg.Description ?? "").TrimEnd();
 			if (desc.TryGetMarkdown($"{{{{Arg_{arg.Name}}}}}", out var extra))
 			{
-				extra = extra.Replace("\n", " ")
-					.Replace("\n\r", " ")
-					.Replace("\r\n", " ");
-				argDesc += $". {extra}";
+				argDesc = AppendSupplementalDescription(argDesc, extra);
 			}
 
 			argSb.Append(argDesc);
