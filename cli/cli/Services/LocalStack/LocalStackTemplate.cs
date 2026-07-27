@@ -43,6 +43,18 @@ public static class LocalStackTemplate
 		public List<string> groups;
 		/// <summary>Java 8 JAVA_HOME to bake into the manifest (stored in <see cref="LocalStackConfig.javaHome"/>). Null = omit from manifest and resolve at run time.</summary>
 		public string javaHome;
+		/// <summary>
+		/// Whether to emit the local web package registry step (Verdaccio + local-unpkg). Defaults to false:
+		/// it is only useful when iterating on <c>@beamable/sdk</c> or <c>@beamable/portal-toolkit</c>, and
+		/// leaving it off keeps the manifest identical to a stack without it.
+		/// </summary>
+		public bool includeWebRegistry;
+
+		/// <summary>
+		/// The <c>portal-localdev</c> directory holding the web registry's docker-compose file. Only read when
+		/// <see cref="includeWebRegistry"/> is set; empty writes an <c>&lt;EDIT: ...&gt;</c> placeholder.
+		/// </summary>
+		public string webRegistryDir;
 	}
 
 	/// <summary>A discovered Scala <c>tools/*</c> service: its folder name, resolved main class, and metadata.</summary>
@@ -140,6 +152,26 @@ public static class LocalStackTemplate
 		var extensions = o.extensions ?? new List<string>();
 
 		var config = new LocalStackConfig { host = o.host, portalUrl = o.portalUrl, javaHome = o.javaHome };
+
+		// 0. Local web package registry (opt-in via `beam local init --with-web-registry`). Placed first
+		//    because `build: portal deps` and the portal extension steps below run npm installs that may
+		//    need to resolve locally published @beamable packages from it. Independent of everything else
+		//    and fast to come up, so it costs nothing to have early.
+		if (o.includeWebRegistry)
+		{
+			config.steps.Add(new LocalStackStep
+			{
+				name = WebRegistryStepName,
+				workingDirectory = Dir(o.webRegistryDir, "portal-localdev (local web package registry)"),
+				command = "docker",
+				arguments = "compose up -d --wait",
+				stopArguments = "compose down",
+				waitForExit = true,
+				// Verdaccio answers its web UI on the root once it is serving; any response is enough.
+				readyWhenHttpOk = WebRegistryReadyUrl,
+				readyTimeoutSeconds = 180
+			});
+		}
 
 		// 1. C# stack FIRST — docker deps + Caddy, then the built Gateway binary. The C# stack hosts
 		//    the service-discovery the Scala services resolve against, so it must be up before them.
@@ -307,21 +339,89 @@ public static class LocalStackTemplate
 			config.steps.Add(step);
 		}
 
-		// 4. Microservices — via the current beam CLI (exe auto-resolved). After Scala so the backend they
+		// 4. Local web packages — only under `--build`, and only when the web registry is part of this stack.
+		//    Publishes @beamable/sdk + @beamable/portal-toolkit as the local-dev version and refreshes the
+		//    projects that consume them, so the extension steps below build against what was just built.
+		//
+		//    Placed here, after the Scala group, for two reasons: `beam local up` runs EnsureRealmAndLogin
+		//    before the first `beam` step, and that authenticates through the Scala auth service — putting
+		//    these earlier would trigger a login against a backend that isn't up yet. And extensions must be
+		//    refreshed before `project run` builds them, which happens immediately below.
+		//
+		//    Paths go in workingDirectory, never in arguments: the runner splits arguments on whitespace with
+		//    no quote handling, so a path containing a space would be torn into separate argv entries. Both
+		//    commands default to their working directory, so nothing is lost.
+		if (o.includeWebRegistry)
+		{
+			var productDir = Dir(WebProductDir(o.webRegistryDir), "BeamableProduct (web packages repo)");
+
+			config.steps.Add(new LocalStackStep
+			{
+				name = WebPublishStepName,
+				workingDirectory = productDir,
+				beam = true,
+				arguments = "web publish",
+				build = true,
+				waitForExit = true,
+				// Two tsdown builds plus two publishes; generous, and a non-zero exit aborts the stack rather
+				// than letting extensions build against a stale toolkit.
+				readyTimeoutSeconds = 900
+			});
+			config.steps.Add(new LocalStackStep
+			{
+				name = WebRefreshStepName,
+				// The repo holding the extensions to repoint — the same one the portal frontend runs from.
+				workingDirectory = portalDir,
+				beam = true,
+				arguments = "web use",
+				build = true,
+				waitForExit = true,
+				readyTimeoutSeconds = 600
+			});
+		}
+
+		// 5. Microservices — via the current beam CLI (exe auto-resolved). After Scala so the backend they
 		//    call is up.
 		foreach (var svc in services)
 			config.steps.Add(MicroserviceStep(svc));
 
-		// 5. Portal extensions — beam run with --portal-url so the landing URL points at the local portal.
+		// 6. Portal extensions — beam run with --portal-url so the landing URL points at the local portal.
 		foreach (var ext in extensions)
 			config.steps.Add(ExtensionStep(ext));
 
-		// 6. Service groups — run every member (microservices + extensions) of the group in one beam invocation.
+		// 7. Service groups — run every member (microservices + extensions) of the group in one beam invocation.
 		foreach (var group in o.groups ?? new List<string>())
 			config.steps.Add(GroupStep(group));
 
 		return config;
 	}
+
+	/// <summary>
+	/// Name of the optional local web package registry step (Verdaccio + local-unpkg). Not a prefix: there
+	/// is exactly one, and the "update services" flow leaves it alone because it matches none of the
+	/// microservice/extension/group prefixes below.
+	/// </summary>
+	public const string WebRegistryStepName = "docker: web registry";
+
+	/// <summary>Readiness probe for <see cref="WebRegistryStepName"/> — Verdaccio's default address.</summary>
+	public const string WebRegistryReadyUrl = "http://localhost:4873";
+
+	/// <summary>
+	/// Names of the optional web-package steps. Like <see cref="WebRegistryStepName"/> these deliberately
+	/// avoid the microservice/extension/group prefixes below, so <c>beam local init --update-services</c>
+	/// leaves them alone.
+	/// </summary>
+	public const string WebPublishStepName = "build: web packages";
+
+	/// <inheritdoc cref="WebPublishStepName"/>
+	public const string WebRefreshStepName = "build: web extension pins";
+
+	/// <summary>
+	/// The product repo holding <c>web/</c> and <c>beam-portal-toolkit/</c>, derived from the
+	/// <c>portal-localdev</c> path so <c>beam local init</c> needs no extra option for it.
+	/// </summary>
+	public static string WebProductDir(string webRegistryDir) =>
+		string.IsNullOrWhiteSpace(webRegistryDir) ? null : Path.GetDirectoryName(webRegistryDir);
 
 	/// <summary>Name prefix identifying microservice steps (used by the "update services" flow).</summary>
 	public const string MicroservicePrefix = "microservice: ";

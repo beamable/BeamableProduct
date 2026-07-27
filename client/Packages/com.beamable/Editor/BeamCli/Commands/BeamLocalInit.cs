@@ -28,6 +28,10 @@ namespace Beamable.Editor.BeamCli.Commands
         public string extensions;
         /// <summary>Only update the microservice/extension steps of an existing manifest, leaving everything else untouched</summary>
         public bool updateServices;
+        /// <summary>Include a step for the local web package registry (Verdaccio and local-unpkg), for iterating on the web SDK or Portal Toolkit</summary>
+        public bool withWebRegistry;
+        /// <summary>Absolute path to the portal-localdev directory holding the web registry compose file; implies --with-web-registry</summary>
+        public string webRegistryDir;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -87,6 +91,16 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.updateServices != default(bool)))
             {
                 genBeamCommandArgs.Add(("--update-services=" + this.updateServices));
+            }
+            // If the withWebRegistry value was not default, then add it to the list of args.
+            if ((this.withWebRegistry != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--with-web-registry=" + this.withWebRegistry));
+            }
+            // If the webRegistryDir value was not default, then add it to the list of args.
+            if ((this.webRegistryDir != default(string)))
+            {
+                genBeamCommandArgs.Add(("--web-registry-dir=" + this.webRegistryDir));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

@@ -1,6 +1,7 @@
 using Beamable.Server;
 using Beamable.Server.Api.Notifications;
 using cli.Portal;
+using cli.Services.Web;
 using cli.Utils;
 using System.IO.Compression;
 using System.Security.Cryptography;
@@ -181,7 +182,12 @@ public class PortalExtensionObserver
 	{
 		using var childActivity = _rootActivity.CreateChild("Install Dependencies");
 
-		StartProcessResult result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
+		// An extension pinning a local developer build of the toolkit (0.0.123-*) can only resolve it from
+		// the local registry — npmjs has never heard of that version — so the install has to be routed
+		// there. Contributes nothing for a normal, published pin.
+		var installArgs = "install" + WebLocalRegistryService.InstallArgsFor(AppFilesPath);
+
+		StartProcessResult result = StartProcessUtil.Run("npm", installArgs, useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
 		if (result.exit != 0)
 		{
 			throw new CliException($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"

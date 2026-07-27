@@ -1,5 +1,6 @@
 using Beamable.Server;
 using cli.Services;
+using cli.Services.Web;
 using cli.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -94,9 +95,11 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 			File.WriteAllText(packagePath, root.ToString(Newtonsoft.Json.Formatting.Indented));
 
 			// Install so the file: dependency is symlinked into node_modules and types resolve immediately.
-			// Best-effort: package.json is the source of truth, and the extension run flow installs deps
-			// again before building, so a failed/offline install here must not fail the command.
-			var result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: extension.AbsolutePath).WaitForResult();
+			// Routed at the local registry when the extension pins a local developer build of the toolkit,
+			// which only exists there. Best-effort: package.json is the source of truth, and the extension
+			// run flow installs deps again before building, so a failed/offline install must not fail this.
+			var installArgs = "install" + WebLocalRegistryService.InstallArgsFor(extension.AbsolutePath);
+			var result = StartProcessUtil.Run("npm", installArgs, useShell: true, workingDirectoryPath: extension.AbsolutePath).WaitForResult();
 			if (result.exit != 0)
 			{
 				Log.Warning($"Added library [{args.LibraryName}] to [{extension.Name}], but 'npm install' failed. " +

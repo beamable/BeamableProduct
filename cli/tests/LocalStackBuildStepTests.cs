@@ -90,6 +90,86 @@ public class LocalStackBuildStepTests
 		Assert.That(step.workingDirectory, Is.EqualTo(@"C:\repos\portal"));
 	}
 
+	private static LocalStackConfig CreateWithWebRegistry() => LocalStackTemplate.Create(new LocalStackTemplate.Options
+	{
+		apiDir = @"C:\repos\BeamableAPI",
+		scalaDir = @"C:\repos\BeamableBackend",
+		portalDir = @"C:\repos\portal",
+		includeWebRegistry = true,
+		webRegistryDir = @"C:\repos\BeamableProduct\portal-localdev",
+		extensions = new System.Collections.Generic.List<string> { "my-ext" },
+		scalaTools = new System.Collections.Generic.List<LocalStackTemplate.ScalaToolInfo>
+		{
+			new() { name = "gateway", mainClass = "com.beamable.gateway.App" },
+			new() { name = "auth", mainClass = "com.beamable.auth.App" },
+		},
+	});
+
+	[Test]
+	public void Web_steps_are_omitted_unless_the_web_registry_is_included()
+	{
+		var config = CreateWithRepos();
+
+		foreach (var name in new[]
+			{
+				LocalStackTemplate.WebRegistryStepName,
+				LocalStackTemplate.WebPublishStepName,
+				LocalStackTemplate.WebRefreshStepName
+			})
+		{
+			Assert.That(Step(config, name), Is.Null, $"{name} must not be emitted by default");
+		}
+	}
+
+	[Test]
+	public void Web_package_steps_are_build_steps_that_run_to_completion()
+	{
+		var config = CreateWithWebRegistry();
+
+		foreach (var name in new[] { LocalStackTemplate.WebPublishStepName, LocalStackTemplate.WebRefreshStepName })
+		{
+			var step = Step(config, name);
+			Assert.That(step, Is.Not.Null, $"missing {name}");
+			Assert.That(step.build, Is.True, $"{name} must only run under --build");
+			Assert.That(step.waitForExit, Is.True, $"{name} must run to completion");
+			Assert.That(step.beam, Is.True, $"{name} must invoke the beam CLI");
+			// Paths must travel via workingDirectory: the runner splits arguments on whitespace.
+			Assert.That(step.arguments, Does.Not.Contain(@"C:\"), $"{name} must keep paths out of its arguments");
+		}
+	}
+
+	[Test]
+	public void Web_package_steps_run_in_the_right_repos()
+	{
+		var config = CreateWithWebRegistry();
+
+		// Derived from the portal-localdev path rather than a separate option.
+		Assert.That(Step(config, LocalStackTemplate.WebPublishStepName).workingDirectory,
+			Is.EqualTo(@"C:\repos\BeamableProduct"));
+		Assert.That(Step(config, LocalStackTemplate.WebRefreshStepName).workingDirectory,
+			Is.EqualTo(@"C:\repos\portal"));
+	}
+
+	[Test]
+	public void Web_steps_are_ordered_after_scala_and_before_the_extensions_that_consume_them()
+	{
+		var config = CreateWithWebRegistry();
+
+		// After the Scala services: `beam local up` logs in before its first beam step, and that login
+		// authenticates through the Scala auth service.
+		Assert.That(IndexOf(config, "scala: auth"),
+			Is.LessThan(IndexOf(config, LocalStackTemplate.WebPublishStepName)));
+
+		// Publish, then repoint, then run the extension that was repointed.
+		Assert.That(IndexOf(config, LocalStackTemplate.WebPublishStepName),
+			Is.LessThan(IndexOf(config, LocalStackTemplate.WebRefreshStepName)));
+		Assert.That(IndexOf(config, LocalStackTemplate.WebRefreshStepName),
+			Is.LessThan(IndexOf(config, "portal extension: my-ext")));
+
+		// The registry itself comes up first of all.
+		Assert.That(IndexOf(config, LocalStackTemplate.WebRegistryStepName), Is.EqualTo(0));
+	}
+
 	[Test]
 	public void Run_steps_are_not_marked_build()
 	{

@@ -20,6 +20,8 @@ public class LocalStackInitCommandArgs : CommandArgs
 	public string services;
 	public string extensions;
 	public bool updateServices;
+	public bool withWebRegistry;
+	public string webRegistryDir;
 }
 
 public class LocalStackInitCommandResult
@@ -68,6 +70,10 @@ public class LocalStackInitCommand
 			(args, v) => args.extensions = v);
 		AddOption(new Option<bool>("--update-services", "Only update the microservice/extension steps of an existing manifest, leaving everything else untouched"),
 			(args, v) => args.updateServices = v);
+		AddOption(new Option<bool>("--with-web-registry", "Include a step for the local web package registry (Verdaccio and local-unpkg), for iterating on the web SDK or Portal Toolkit"),
+			(args, v) => args.withWebRegistry = v);
+		AddOption(new Option<string>("--web-registry-dir", "Absolute path to the portal-localdev directory holding the web registry compose file; implies --with-web-registry"),
+			(args, v) => args.webRegistryDir = v);
 	}
 
 	private static List<string> Split(string value) =>
@@ -76,6 +82,35 @@ public class LocalStackInitCommand
 			: value.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
 	private static string NullIfEmpty(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
+	/// <summary>
+	/// Resolves the <c>portal-localdev</c> directory for the optional web registry step. An explicit
+	/// <c>--web-registry-dir</c> wins; otherwise <c>--with-web-registry</c> prompts, defaulting to the
+	/// auto-detected path. Returns null when the caller opted out, in which case no step is written.
+	/// </summary>
+	private static string ResolveWebRegistryDir(LocalStackInitCommandArgs args, string startDir, bool quiet)
+	{
+		if (!string.IsNullOrWhiteSpace(args.webRegistryDir))
+		{
+			return args.webRegistryDir;
+		}
+
+		if (!args.withWebRegistry)
+		{
+			return null;
+		}
+
+		var productDir = FindRepoDir(startDir, "BeamableProduct");
+		var detected = productDir == null ? null : Path.Combine(productDir, "portal-localdev");
+		if (detected != null && !Directory.Exists(detected))
+		{
+			detected = null;
+		}
+
+		// Empty is allowed: the template writes an <EDIT: ...> placeholder, matching the other repo paths.
+		return Ask("Absolute path to the [green]portal-localdev[/] web registry directory [grey](empty = placeholder)[/]:",
+			null, detected, quiet, allowEmpty: true);
+	}
 
 	/// <summary>
 	/// Looks for a folder named <paramref name="name"/> in <paramref name="startDir"/> and its ancestors (up to
@@ -467,6 +502,11 @@ public class LocalStackInitCommand
 		var portalDir = Ask("Absolute path to the [green]portal frontend[/] repo [grey](empty = placeholder)[/]:",
 			args.portalDir, FindRepoDir(startDir, "agentic-portal"), quiet, allowEmpty: true);
 
+		// Local web package registry — opt-in, since it's only useful when iterating on @beamable/sdk or
+		// @beamable/portal-toolkit. Passing --web-registry-dir implies the flag. When neither is given the
+		// step is omitted entirely and the manifest matches what it has always been.
+		var webRegistryDir = ResolveWebRegistryDir(args, startDir, quiet);
+
 		// Endpoints (defaults — Enter accepts).
 		var host = Ask("Backend API [green]host[/]:", args.host, defaults.host, quiet, allowEmpty: false);
 		var portalUrl = Ask("[green]Portal[/] frontend URL:", args.portalUrl, defaults.portalUrl, quiet, allowEmpty: false);
@@ -515,6 +555,8 @@ public class LocalStackInitCommand
 			extensions = ExcludeGroupMembers(selectedExtensions, selectedGroups, discoveredGroups),
 			groups = selectedGroups,
 			javaHome = javaHome,
+			includeWebRegistry = args.withWebRegistry || !string.IsNullOrWhiteSpace(args.webRegistryDir),
+			webRegistryDir = NullIfEmpty(webRegistryDir),
 		};
 
 		var config = LocalStackTemplate.Create(options);
