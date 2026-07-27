@@ -30,7 +30,7 @@ public final class SampleCountdownContentRenderer: NSObject, BeamContentRenderer
         let info = notification.request.content.userInfo
         guard (info["style"] as? String) == "countdown" else { return false }
 
-        expiresAt = Self.resolveExpiry(info)
+        expiresAt = Self.resolveExpiry(info, deliveredAt: notification.date)
 
         titleLabel.text = notification.request.content.title
         titleLabel.font = .preferredFont(forTextStyle: .headline)
@@ -81,13 +81,17 @@ public final class SampleCountdownContentRenderer: NSObject, BeamContentRenderer
         countdownLabel.text = String(format: "%02d:%02d", total / 60, total % 60)
     }
 
-    /// Prefer an absolute `expiresAtMs` (epoch ms); else `expiresInSeconds` from now.
-    private static func resolveExpiry(_ info: [AnyHashable: Any]) -> Date? {
+    /// Prefer an absolute `expiresAtMs` (epoch ms); else `expiresInSeconds` measured from the
+    /// notification's DELIVERY time (`deliveredAt`), not `Date()` — otherwise the deadline is
+    /// recomputed every time the notification is expanded, so the countdown appears to restart.
+    /// Anchoring to delivery time keeps the relative `expiresInSeconds` wire field stable across
+    /// re-expands (matches the Android `expiresInSeconds` semantics).
+    private static func resolveExpiry(_ info: [AnyHashable: Any], deliveredAt: Date) -> Date? {
         if let ms = (info["expiresAtMs"] as? String).flatMap(Double.init), ms > 0 {
             return Date(timeIntervalSince1970: ms / 1000.0)
         }
         if let secs = (info["expiresInSeconds"] as? String).flatMap(Double.init), secs > 0 {
-            return Date().addingTimeInterval(secs)
+            return deliveredAt.addingTimeInterval(secs)
         }
         return nil
     }

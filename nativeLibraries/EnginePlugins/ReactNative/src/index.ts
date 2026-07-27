@@ -603,6 +603,39 @@ export const BeamableNotifications = {
     // No-op on Android (FCM tokens are not explicitly unregistered here).
   },
 
+  /**
+   * Start a **Live Activity** countdown — the no-tap, always-visible card on the Lock Screen /
+   * Dynamic Island (unlike a Notification Content Extension, which only renders when expanded).
+   * iOS 16.1+; requires the app's Expo config to enable `enableLiveActivity` (the WidgetKit
+   * extension) and the user to have Live Activities allowed. Pass a relative `expiresInSeconds`
+   * (Android-style) or an absolute `expiresAtMs`; the widget ticks the countdown down on its own,
+   * so no updates are needed. No-op on Android / when the native method is unavailable.
+   */
+  startCountdownLiveActivity(opts: {
+    title: string;
+    body?: string;
+    expiresInSeconds?: number;
+    expiresAtMs?: number;
+  }): void {
+    if (
+      IS_IOS &&
+      IosNative &&
+      typeof IosNative.startCountdownLiveActivity === 'function'
+    ) {
+      IosNative.startCountdownLiveActivity(opts);
+    }
+  },
+  /** End any running countdown Live Activity (iOS only). */
+  endCountdownLiveActivity(): void {
+    if (
+      IS_IOS &&
+      IosNative &&
+      typeof IosNative.endCountdownLiveActivity === 'function'
+    ) {
+      IosNative.endCountdownLiveActivity();
+    }
+  },
+
   // Templates — iOS only; no-op on Android.
   registerTemplate(template: TemplateSpec): void {
     if (IS_IOS) IosNative.registerTemplate(template);

@@ -19,11 +19,11 @@
     "deeplink:android": "npx uri-scheme open \"beamrnsample://details/42\" --android"
   },
   "dependencies": {
-    "@beamable/sdk": "file:../../../web",
     "@beamable/notifications-react-native": "file:../../EnginePlugins/ReactNative",
+    "@beamable/sdk": "file:../../../web",
     "@expo/metro-runtime": "~56.0.16",
     "@react-native-async-storage/async-storage": "2.2.0",
-    "expo": "^56",
+    "expo": "^56.0.16",
     "expo-asset": "~56.0.17",
     "expo-build-properties": "~56.0.19",
     "expo-constants": "~56.0.18",
@@ -32,12 +32,12 @@
     "expo-router": "~56.2.11",
     "expo-splash-screen": "~56.0.10",
     "expo-status-bar": "~56.0.4",
-    "react-native-url-polyfill": "^3.0.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.85.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2",
+    "react-native-url-polyfill": "^3.0.0",
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {

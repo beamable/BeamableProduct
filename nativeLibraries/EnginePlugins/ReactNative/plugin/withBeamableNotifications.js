@@ -68,6 +68,12 @@ const DEEPLINK_SCHEME_META = 'com.beamable.push.deeplink_scheme';
 
 const NSE_TARGET_NAME = 'BeamableNotificationServiceExtension';
 const CONTENT_TARGET_NAME = 'BeamableNotificationContentExtension';
+// WidgetKit extension target that hosts the Live Activity (the no-tap, always-visible countdown
+// on the Lock Screen / Dynamic Island). Opt-in via `enableLiveActivity`.
+const WIDGET_TARGET_NAME = 'BeamableNotificationWidgets';
+// The shared ActivityAttributes source lives in the package's `ios/` (compiled into the app by the
+// podspec) and is ALSO copied into the widget target so both sides share the type.
+const LIVE_ACTIVITY_SHARED_FILE = path.join(__dirname, '..', 'ios', 'CountdownLiveActivityAttributes.swift');
 // iOS NSE + extension-safe core Swift sources. Prefer a copy VENDORED inside this
 // package (`plugin/ios/`, populated for publish the same way the xcframework is);
 // otherwise fall back to the monorepo-canonical iOS SDK dir (works for in-repo
@@ -552,6 +558,12 @@ function withContentTarget(config, appGroup, swiftFiles) {
         buildSettings.PRODUCT_BUNDLE_IDENTIFIER = `"${ceBundleId}"`;
         buildSettings.INFOPLIST_FILE = `"${CONTENT_TARGET_NAME}/Info.plist"`;
         buildSettings.CODE_SIGN_ENTITLEMENTS = `"${CONTENT_TARGET_NAME}/${CONTENT_TARGET_NAME}.entitlements"`;
+        // A UNNotificationContentExtension MUST link UserNotificationsUI — it vends the
+        // content-extension context class. Swift auto-link does NOT pull it in here (the
+        // principal class only conforms to the protocol), so the extension crashes at load in
+        // `EXConcreteExtensionContextVendor _extensionContextClass` and shows a blank card on
+        // every platform (simulator + device). Link it explicitly.
+        buildSettings.OTHER_LDFLAGS = '"$(inherited) -framework UserNotificationsUI"';
         buildSettings.IPHONEOS_DEPLOYMENT_TARGET = '14.0';
         buildSettings.SWIFT_VERSION = '5.0';
         buildSettings.TARGETED_DEVICE_FAMILY = '"1,2"';
@@ -559,6 +571,123 @@ function withContentTarget(config, appGroup, swiftFiles) {
         buildSettings.GENERATE_INFOPLIST_FILE = 'NO';
         buildSettings.MARKETING_VERSION = '1.0';
         buildSettings.CURRENT_PROJECT_VERSION = '1';
+        buildSettings.SWIFT_OPTIMIZATION_LEVEL =
+          buildSettings.SWIFT_OPTIMIZATION_LEVEL || '"-Onone"';
+      }
+    }
+
+    return cfg;
+  });
+}
+
+// --- Live Activity: app Info.plist opt-in flag -----------------------------
+function withLiveActivityInfoPlist(config) {
+  return withInfoPlist(config, (cfg) => {
+    cfg.modResults.NSSupportsLiveActivities = true;
+    return cfg;
+  });
+}
+
+// --- Live Activity: copy the widget sources + write the widget Info.plist ---
+// Mirrors withContentFiles, but for a WidgetKit extension: no principal class (SwiftUI `@main`
+// WidgetBundle), extension point `com.apple.widgetkit-extension`, and it copies the SHARED
+// ActivityAttributes so the widget module defines the same type as the app.
+function withWidgetFiles(config, liveActivityWidgets) {
+  return withDangerousMod(config, [
+    'ios',
+    (cfg) => {
+      const iosRoot = cfg.modRequest.platformProjectRoot;
+      const dir = path.join(iosRoot, WIDGET_TARGET_NAME);
+      fs.mkdirSync(dir, { recursive: true });
+
+      const swiftFiles = [];
+
+      // 1) Shared ActivityAttributes — the SAME type the app/pod compiles. ActivityKit matches a
+      //    running Activity to its widget by the attributes type's unqualified name, so the widget
+      //    module must define an identically-named type.
+      if (fs.existsSync(LIVE_ACTIVITY_SHARED_FILE)) {
+        const base = path.basename(LIVE_ACTIVITY_SHARED_FILE);
+        fs.copyFileSync(LIVE_ACTIVITY_SHARED_FILE, path.join(dir, base));
+        swiftFiles.push(base);
+      }
+
+      // 2) App-provided widget UI (the @main WidgetBundle + ActivityConfiguration).
+      swiftFiles.push(...copyExtraSwift(cfg.modRequest.projectRoot, dir, liveActivityWidgets));
+
+      const infoPlist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>${WIDGET_TARGET_NAME}</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>XPC!</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.widgetkit-extension</string>
+	</dict>
+</dict>
+</plist>
+`;
+      fs.writeFileSync(path.join(dir, 'Info.plist'), infoPlist);
+      return cfg;
+    },
+  ]);
+}
+
+// --- Live Activity: register the Widget-extension target in the Xcode project ---
+function withWidgetTarget(config, swiftFiles) {
+  return withXcodeProject(config, (cfg) => {
+    const proj = cfg.modResults;
+    if (proj.pbxTargetByName(WIDGET_TARGET_NAME)) return cfg;
+
+    const bundleId = cfg.ios && cfg.ios.bundleIdentifier;
+    const wBundleId = `${bundleId}.${WIDGET_TARGET_NAME}`;
+
+    const groupFiles = [...swiftFiles, 'Info.plist'];
+    const pbxGroup = proj.addPbxGroup(groupFiles, WIDGET_TARGET_NAME, WIDGET_TARGET_NAME);
+    attachGroupToMain(proj, pbxGroup.uuid);
+
+    const target = proj.addTarget(WIDGET_TARGET_NAME, 'app_extension', WIDGET_TARGET_NAME, wBundleId);
+    proj.addBuildPhase(swiftFiles, 'PBXSourcesBuildPhase', 'Sources', target.uuid);
+    proj.addBuildPhase([], 'PBXResourcesBuildPhase', 'Resources', target.uuid);
+    proj.addBuildPhase([], 'PBXFrameworksBuildPhase', 'Frameworks', target.uuid);
+
+    const configs = proj.pbxXCBuildConfigurationSection();
+    for (const key in configs) {
+      const buildSettings = configs[key].buildSettings;
+      if (buildSettings && buildSettings.PRODUCT_NAME === `"${WIDGET_TARGET_NAME}"`) {
+        buildSettings.PRODUCT_BUNDLE_IDENTIFIER = `"${wBundleId}"`;
+        buildSettings.INFOPLIST_FILE = `"${WIDGET_TARGET_NAME}/Info.plist"`;
+        // Live Activities require iOS 16.1+; this target is all-16.1 so no per-symbol @available.
+        buildSettings.IPHONEOS_DEPLOYMENT_TARGET = '16.1';
+        buildSettings.SWIFT_VERSION = '5.0';
+        buildSettings.TARGETED_DEVICE_FAMILY = '"1,2"';
+        buildSettings.CODE_SIGN_STYLE = 'Automatic';
+        buildSettings.GENERATE_INFOPLIST_FILE = 'NO';
+        buildSettings.MARKETING_VERSION = '1.0';
+        buildSettings.CURRENT_PROJECT_VERSION = '1';
+        // Xcode 16+/iOS 26 explicitly-built-modules workaround (same as the other targets).
+        buildSettings.CLANG_ENABLE_EXPLICIT_MODULES = 'NO';
+        buildSettings.SWIFT_ENABLE_EXPLICIT_MODULES = 'NO';
+        // WidgetKit + SwiftUI are used directly so autolink normally covers them; link explicitly as
+        // insurance (the plugin creates an empty Frameworks phase).
+        buildSettings.OTHER_LDFLAGS = '"$(inherited) -framework WidgetKit -framework SwiftUI"';
         buildSettings.SWIFT_OPTIMIZATION_LEVEL =
           buildSettings.SWIFT_OPTIMIZATION_LEVEL || '"-Onone"';
       }
@@ -699,6 +828,24 @@ module.exports = function withBeamableNotifications(config, props) {
     ];
     config = withContentFiles(config, appGroup, contentRenderers, contentCategories);
     config = withContentTarget(config, appGroup, contentSwift);
+  }
+
+  // Live Activity (ActivityKit + WidgetKit) — a live countdown shown WITHOUT tap-and-hold, on the
+  // Lock Screen / Dynamic Island. Opt-in:
+  //   "enableLiveActivity": true,
+  //   "iosLiveActivityWidgets": [{ "file": "./plugins/ios/SampleCountdownLiveActivity.swift" }]
+  // Adds NSSupportsLiveActivities to the app, and a WidgetKit extension target that renders the
+  // shared BeamCountdownActivityAttributes. The app starts it via
+  // BeamNotifications.startCountdownLiveActivity(...). A pure countdown needs no push updates.
+  if (props && props.enableLiveActivity) {
+    const liveActivityWidgets = (props && props.iosLiveActivityWidgets) || [];
+    const widgetSwift = [
+      path.basename(LIVE_ACTIVITY_SHARED_FILE),
+      ...liveActivityWidgets.map((w) => path.basename(w.file)),
+    ];
+    config = withLiveActivityInfoPlist(config);
+    config = withWidgetFiles(config, liveActivityWidgets);
+    config = withWidgetTarget(config, widgetSwift);
   }
   return config;
 };
