@@ -81,9 +81,9 @@ public static class ServiceUploadUtil
 				attempt < MAX_UPLOAD_ATTEMPTS)
 			{
 				var delay = GetUploadRetryDelay(attempt);
-				Log.Warning($"Transient upload failure for [{beamoId}]. " +
-					$"Retrying attempt=[{attempt + 1}/{MAX_UPLOAD_ATTEMPTS}] " +
-					$"delay=[{delay.TotalMilliseconds}ms] error=[{ex.GetType().Name}] message=[{ex.Message}]");
+				Log.Warning($"Transient upload failure for [{beamoId}]." +
+					$" Retrying attempt=[{attempt + 1}/{MAX_UPLOAD_ATTEMPTS}]" +
+					$" delay=[{delay.TotalMilliseconds}ms] error=[{ex.GetType().Name}] message=[{ex.Message}]");
 				onProgressCallback?.Invoke(0);
 				await Task.Delay(delay, cts.Token);
 			}

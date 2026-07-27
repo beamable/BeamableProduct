@@ -2173,8 +2173,8 @@ public partial class DeployUtil
 			if (IsJsonAPlan(data))
 			{
 				throw new CliException(
-					$"The file=[{manifestFile}] appears to contain a plan file, but should contain a manifest. " +
-					$"To use the plan, use the `--from-plan` option.");
+					$"The file=[{manifestFile}] appears to contain a plan file, but should contain a manifest." +
+					$" To use the plan, use the `--from-plan` option.");
 			}
 
 			throw new CliException($"The file=[{manifestFile}] does not contain a valid plan file");

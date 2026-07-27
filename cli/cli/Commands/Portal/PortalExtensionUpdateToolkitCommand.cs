@@ -145,15 +145,15 @@ public class PortalExtensionUpdateToolkitCommand : AtomicCommand<PortalExtension
 				var result = handle.WaitForResult();
 				if (result.exit != 0)
 				{
-					Log.Warning($"Updated {TOOLKIT_PACKAGE} in [{target.name}], but 'npm install' failed. " +
-						$"Run it manually in the project directory to resolve packages. Errors: \n{result.stderr}");
+					Log.Warning($"Updated {TOOLKIT_PACKAGE} in [{target.name}], but 'npm install' failed." +
+						$" Run it manually in the project directory to resolve packages. Errors: \n{result.stderr}");
 				}
 			}
 			catch (Exception e)
 			{
 				// Best-effort: a failure to spawn/await npm must not fail the whole update.
-				Log.Warning($"Updated {TOOLKIT_PACKAGE} in [{target.name}], but 'npm install' could not be run. " +
-					$"Run it manually in the project directory to resolve packages. Message = [{e.Message}]");
+				Log.Warning($"Updated {TOOLKIT_PACKAGE} in [{target.name}], but 'npm install' could not be run." +
+					$" Run it manually in the project directory to resolve packages. Message = [{e.Message}]");
 			}
 			finally
 			{

@@ -119,9 +119,9 @@ public class InstallAISkillsCommand
 				var fallbackDir = Path.Combine(configDir, ConfigService.LOCAL_FOLDER_NAME, "skills");
 				targets.Add((fallbackDir, "SKILL.md"));
 				fallbackMessage =
-					$"Could not detect an AI agent directory (.claude/, .cursor/, .windsurf/, .opencode/). " +
-					$"Skills were installed to the fallback location: {fallbackDir}. " +
-					$"To install for a specific agent, use --claude, --cursor, --windsurf, or --opencode.";
+					$"Could not detect an AI agent directory (.claude/, .cursor/, .windsurf/, .opencode/)." +
+					$" Skills were installed to the fallback location: {fallbackDir}." +
+					$" To install for a specific agent, use --claude, --cursor, --windsurf, or --opencode.";
 			}
 		}
 

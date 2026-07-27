@@ -95,8 +95,8 @@ public class PruneYankedCommand : AtomicCommand<PruneYankedCommandArgs, PruneYan
 			}
 
 			args.ConfigService.SaveManifestReferences(manifest);
-			Log.Information($"Removed {yankedKeys.Count} yanked reference(s) from {ConfigService.MANIFEST_FILE_NAME}. " +
-			                $"Review the change and re-pin a newer checksum before releasing.");
+			Log.Information($"Removed {yankedKeys.Count} yanked reference(s) from {ConfigService.MANIFEST_FILE_NAME}." +
+			                $" Review the change and re-pin a newer checksum before releasing.");
 		}
 		else
 		{

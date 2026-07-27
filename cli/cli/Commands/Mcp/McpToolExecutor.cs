@@ -100,8 +100,8 @@ public class McpToolExecutor
 					var result = new
 					{
 						error = "Could not auto-detect Beamable SDK platform or version",
-						hint = "Pass platform ('unity', 'cli', 'web', 'unreal') and version explicitly, " +
-						       "or run this tool from within a project directory that has Beamable installed",
+						hint = "Pass platform ('unity', 'cli', 'web', 'unreal') and version explicitly," +
+						       " or run this tool from within a project directory that has Beamable installed",
 						searchedFrom = startDir
 					};
 					return Task.FromResult(JsonConvert.SerializeObject(result, Formatting.None));
@@ -153,13 +153,13 @@ public class McpToolExecutor
 
 					sourcePath = nugetBase;
 					commonPaths = new[] { commonSrc, toolingSrc, runtimeSrc, runtimeBuild, commonBuild };
-					hint = "Read files from the 'commonPaths' directories listed below — those are the actual source locations. " +
-					       "Do NOT read from 'sourcePath' directly in sandbox environments (it is the broad NuGet cache root). " +
-					       "commonPaths[0] (beamable.common) has content types, APIs, and Optional<T>. " +
-					       "commonPaths[1] (beamable.tooling.common) has callable attributes, federation interfaces, and storage. " +
-					       "commonPaths[2] (beamable.microservice.runtime) has the Microservice base class and API implementations. " +
-					       "commonPaths[3] (beamable.microservice.runtime/build) has MSBuild .targets and .props for OAPI gen, build validation, and collector resolution. " +
-					       "commonPaths[4] (beamable.common/build) has MSBuild .props for the common package.";
+					hint = "Read files from the 'commonPaths' directories listed below — those are the actual source locations." +
+					       " Do NOT read from 'sourcePath' directly in sandbox environments (it is the broad NuGet cache root)." +
+					       " commonPaths[0] (beamable.common) has content types, APIs, and Optional<T>." +
+					       " commonPaths[1] (beamable.tooling.common) has callable attributes, federation interfaces, and storage." +
+					       " commonPaths[2] (beamable.microservice.runtime) has the Microservice base class and API implementations." +
+					       " commonPaths[3] (beamable.microservice.runtime/build) has MSBuild .targets and .props for OAPI gen, build validation, and collector resolution." +
+					       " commonPaths[4] (beamable.common/build) has MSBuild .props for the common package.";
 					break;
 				}
 				case "web":
