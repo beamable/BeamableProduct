@@ -1,5 +1,8 @@
 import Foundation
 import React
+#if canImport(ActivityKit)
+import ActivityKit
+#endif
 // The Swift core is now consumed as a PREBUILT xcframework (vendored by the podspec,
 // Decision Q2) rather than compiled from a vendored source mirror. It is therefore a
 // separate Swift module, so its public types (NotificationManager, LocalRequest, JSON,
@@ -194,6 +197,82 @@ final class BeamableNotificationsModule: RCTEventEmitter {
 
     @objc func clearAuth() {
         NotificationManager.shared.clearAuth()
+    }
+
+    // MARK: Live Activity (ActivityKit) — a live countdown shown WITHOUT tap-and-hold
+    // Unlike the Notification Content Extension (custom UI only in the expanded/long-press view),
+    // a Live Activity renders on the Lock Screen / Dynamic Island and updates on its own. A pure
+    // countdown needs NO push updates: the widget uses `Text(timerInterval:)`, so we only START it
+    // with an absolute expiry. `expiresInSeconds` (Android-style) is converted to an absolute Date
+    // once, at start — it does not restart. `expiresAtMs` is honored if provided.
+
+    @objc(startCountdownLiveActivity:)
+    func startCountdownLiveActivity(_ options: NSDictionary) {
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+                NSLog("[Beam] Live Activities are not enabled (Settings → Face ID & Passcode / per-app).")
+                return
+            }
+            let title = (options["title"] as? String) ?? "Offer"
+            let body = (options["body"] as? String) ?? ""
+            let expiresAt: Date
+            if let ms = (options["expiresAtMs"] as? NSNumber)?.doubleValue, ms > 0 {
+                expiresAt = Date(timeIntervalSince1970: ms / 1000.0)
+            } else {
+                let secs = (options["expiresInSeconds"] as? NSNumber)?.doubleValue ?? 300
+                expiresAt = Date().addingTimeInterval(secs)
+            }
+            let attributes = BeamCountdownActivityAttributes(title: title)
+            let state = BeamCountdownActivityAttributes.ContentState(expiresAt: expiresAt, body: body)
+            do {
+                let activity: Activity<BeamCountdownActivityAttributes>
+                if #available(iOS 16.2, *) {
+                    activity = try Activity.request(
+                        attributes: attributes,
+                        content: .init(state: state, staleDate: expiresAt),
+                        pushType: nil
+                    )
+                } else {
+                    activity = try Activity.request(attributes: attributes, contentState: state, pushType: nil)
+                }
+                // Flip to the "expired" state at the deadline. A pure countdown ticks via
+                // Text(timerInterval:), but to change the copy at zero we push a real content update
+                // from the app (reliable, unlike context.isStale on the Simulator). This runs while
+                // the app is alive; in production an APNs Live Activity update would drive it.
+                let expiredState = BeamCountdownActivityAttributes.ContentState(
+                    expiresAt: expiresAt, body: "Offer expired", isExpired: true
+                )
+                Task {
+                    let delay = max(0, expiresAt.timeIntervalSinceNow)
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    if #available(iOS 16.2, *) {
+                        await activity.update(ActivityContent(state: expiredState, staleDate: nil))
+                    } else {
+                        await activity.update(using: expiredState)
+                    }
+                }
+            } catch {
+                NSLog("[Beam] startCountdownLiveActivity failed: \(error)")
+            }
+        }
+        #endif
+    }
+
+    @objc func endCountdownLiveActivity() {
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            Task {
+                for activity in Activity<BeamCountdownActivityAttributes>.activities {
+                    if #available(iOS 16.2, *) {
+                        await activity.end(nil, dismissalPolicy: .immediate)
+                    } else {
+                        await activity.end(dismissalPolicy: .immediate)
+                    }
+                }
+            }
+        }
+        #endif
     }
 
     private func decodeJson<T: Decodable>(_ type: T.Type, _ json: String) -> T? {

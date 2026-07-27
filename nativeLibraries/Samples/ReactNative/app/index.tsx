@@ -215,6 +215,24 @@ export default function Home() {
     append('Local notification scheduled in 10s. Background the app & tap it.');
   };
 
+  // Start a Live Activity countdown — the no-tap, always-visible card on the Lock Screen /
+  // Dynamic Island (iOS 16.1+). Unlike the `countdown` notification (custom UI only on expand),
+  // this ticks down on its own with nothing tapped. Uses the Android-style relative
+  // `expiresInSeconds`; anchored to an absolute expiry once at start, so it never restarts.
+  const beamStartLiveActivity = () => {
+    BeamNotifications.startCountdownLiveActivity({
+      title: 'Flash Sale',
+      body: 'Save 30% — offer ends soon',
+      expiresInSeconds: 30,
+    });
+    append('Live Activity started (iOS 16.1+). Lock the screen (Cmd+L) — the countdown ticks with no tap.');
+  };
+
+  const beamEndLiveActivity = () => {
+    BeamNotifications.endCountdownLiveActivity();
+    append('Live Activity ended.');
+  };
+
   // 3) Device registration via the backend `push` message rail ----------
   // Devices auto-register on the `tokenReceived` event above. These actions
   // register this device manually and list the player's registrations.
@@ -438,6 +456,8 @@ export default function Home() {
             <Button label={`Register for remote (${remoteProvider})`} onPress={beamRegisterRemote} />
             <Button label="Fire local now → Details #777" onPress={beamFireLocal} />
             <Button label="Fire local in 10s (background & tap) → #888" onPress={beamFireDelayed} />
+            <Button label="Start countdown Live Activity (no tap, iOS 16.1+)" onPress={beamStartLiveActivity} />
+            <Button label="End Live Activity" onPress={beamEndLiveActivity} />
           </>
         ) : (
           <Text style={styles.hint}>Native module not available on this platform.</Text>

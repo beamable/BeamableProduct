@@ -38,4 +38,9 @@ RCT_EXTERN_METHOD(trackOfferConverted:(NSString *)requestJson)
 RCT_EXTERN_METHOD(configureAuth:(NSString *)json)
 RCT_EXTERN_METHOD(clearAuth)
 
+// Live Activity (ActivityKit) — a live countdown shown WITHOUT tap-and-hold (Lock Screen /
+// Dynamic Island). `options` = { title, body, expiresInSeconds | expiresAtMs }.
+RCT_EXTERN_METHOD(startCountdownLiveActivity:(NSDictionary *)options)
+RCT_EXTERN_METHOD(endCountdownLiveActivity)
+
 @end

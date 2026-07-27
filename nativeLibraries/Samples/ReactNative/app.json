@@ -40,6 +40,12 @@
               "file": "./plugins/ios/SampleCountdownContentRenderer.swift",
               "className": "SampleCountdownContentRenderer"
             }
+          ],
+          "enableLiveActivity": true,
+          "iosLiveActivityWidgets": [
+            {
+              "file": "./plugins/ios/SampleCountdownLiveActivity.swift"
+            }
           ]
         }
       ],

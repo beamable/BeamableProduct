@@ -38,9 +38,27 @@ module.exports = ({ config }) => {
     plugins.push(['expo-build-properties', { android: { usesCleartextTraffic: true } }]);
   }
 
+  // iOS counterpart of the Android cleartext relaxation above. iOS App Transport Security
+  // blocks plain HTTP by default and (unlike Android) is unaffected by the cleartext flag, so a
+  // LAN local stack at `http://<private-ip>:8080` is otherwise unreachable. `NSAllowsLocalNetworking`
+  // permits cleartext to local/private-range hosts (`.local`, `10/8`, `172.16/12`, `192.168/16`)
+  // WITHOUT the blanket `NSAllowsArbitraryLoads`. Gated on the same `APP_VARIANT=local` switch, so
+  // it never reaches remote/release builds.
+  const ios = { ...(config.ios || {}) };
+  if (usesCleartext) {
+    ios.infoPlist = {
+      ...(ios.infoPlist || {}),
+      NSAppTransportSecurity: {
+        ...(ios.infoPlist?.NSAppTransportSecurity || {}),
+        NSAllowsLocalNetworking: true,
+      },
+    };
+  }
+
   return {
     ...config,
     plugins,
+    ios,
     extra: {
       ...(config.extra || {}),
       // The Beamable API base URL (e.g. https://dev.api.beamable.com). Undefined falls back
