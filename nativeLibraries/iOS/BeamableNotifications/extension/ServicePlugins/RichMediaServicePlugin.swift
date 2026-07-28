@@ -64,7 +64,10 @@ public final class RichMediaServicePlugin: NotificationServicePlugin {
             // from the response's MIME type. Many image URLs (avatars, signed CDN links) carry no
             // extension — without a type hint `UNNotificationAttachment` can't infer the type and the
             // attachment silently fails, so we also pass an explicit UTI hint when the MIME is known.
-            let mapped = response?.mimeType?.lowercased().flatMap { Self.mimeMap[$0] }
+            var mapped: (ext: String, uti: String)?
+            if let mime = response?.mimeType?.lowercased() {
+                mapped = Self.mimeMap[mime]
+            }
             let ext = url.pathExtension.isEmpty ? (mapped?.ext ?? "tmp") : url.pathExtension
             let dest = tempURL.deletingPathExtension().appendingPathExtension(ext)
             try? FileManager.default.moveItem(at: tempURL, to: dest)
