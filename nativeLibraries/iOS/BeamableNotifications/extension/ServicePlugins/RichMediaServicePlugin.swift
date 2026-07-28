@@ -1,5 +1,6 @@
 import UserNotifications
 import Foundation
+import os.log
 
 /// Downloads a remote media asset referenced by the push payload and attaches it to the
 /// notification (feature 7, rich media — the `bigPicture` style). Looks for the URL under the
@@ -23,6 +24,11 @@ public final class RichMediaServicePlugin: NotificationServicePlugin {
         "image/heic": ("heic", "public.heic"),
     ]
 
+    /// Diagnostics — filter Console.app on subsystem `com.beamable.notifications`, category `richmedia`
+    /// while the NSE runs on device to see whether the failure is the download (ATS block / non-2xx)
+    /// or the attachment (unclassifiable type).
+    private static let log = Logger(subsystem: "com.beamable.notifications", category: "richmedia")
+
     public func process(_ content: UNMutableNotificationContent,
                         completion: @escaping (UNMutableNotificationContent) -> Void) {
         guard let urlString = (content.userInfo["imageUrl"] as? String)
@@ -33,11 +39,23 @@ public final class RichMediaServicePlugin: NotificationServicePlugin {
             return
         }
 
-        let task = URLSession.shared.downloadTask(with: url) { tempURL, response, _ in
-            guard let tempURL = tempURL else { completion(content); return }
+        Self.log.info("downloading rich media: \(urlString, privacy: .public)")
+
+        let task = URLSession.shared.downloadTask(with: url) { tempURL, response, error in
+            if let error = error {
+                // An ATS block surfaces here (URLSession fails the task before any response).
+                Self.log.error("download failed for \(urlString, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                completion(content)
+                return
+            }
+            guard let tempURL = tempURL else {
+                Self.log.error("download returned no file for \(urlString, privacy: .public)")
+                completion(content); return
+            }
 
             // Skip non-2xx responses so we never attach an error page as if it were an image.
             if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+                Self.log.error("non-2xx (\(http.statusCode, privacy: .public)) for \(urlString, privacy: .public)")
                 completion(content)
                 return
             }
@@ -54,6 +72,9 @@ public final class RichMediaServicePlugin: NotificationServicePlugin {
             let options = mapped.map { [UNNotificationAttachmentOptionsTypeHintKey: $0.uti] }
             if let attachment = try? UNNotificationAttachment(identifier: "media", url: dest, options: options) {
                 content.attachments = [attachment]
+                Self.log.info("attached rich media (mime: \(response?.mimeType ?? "nil", privacy: .public), ext: \(ext, privacy: .public))")
+            } else {
+                Self.log.error("UNNotificationAttachment init failed (mime: \(response?.mimeType ?? "nil", privacy: .public), ext: \(ext, privacy: .public))")
             }
             completion(content)
         }

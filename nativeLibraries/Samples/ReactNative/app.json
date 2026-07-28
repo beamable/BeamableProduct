@@ -44,7 +44,16 @@
           "enableLiveActivity": true,
           "iosLiveActivityWidgets": [
             {
+              "file": "./plugins/ios/SampleWidgetsBundle.swift"
+            },
+            {
               "file": "./plugins/ios/SampleCountdownLiveActivity.swift"
+            },
+            {
+              "file": "./plugins/ios/SampleActionsLiveActivity.swift"
+            },
+            {
+              "file": "./plugins/ios/SampleAnimatedLiveActivity.swift"
             }
           ]
         }

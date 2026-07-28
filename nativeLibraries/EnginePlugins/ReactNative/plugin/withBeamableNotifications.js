@@ -71,9 +71,17 @@ const CONTENT_TARGET_NAME = 'BeamableNotificationContentExtension';
 // WidgetKit extension target that hosts the Live Activity (the no-tap, always-visible countdown
 // on the Lock Screen / Dynamic Island). Opt-in via `enableLiveActivity`.
 const WIDGET_TARGET_NAME = 'BeamableNotificationWidgets';
-// The shared ActivityAttributes source lives in the package's `ios/` (compiled into the app by the
-// podspec) and is ALSO copied into the widget target so both sides share the type.
-const LIVE_ACTIVITY_SHARED_FILE = path.join(__dirname, '..', 'ios', 'CountdownLiveActivityAttributes.swift');
+// The shared Live Activity sources live in the package's `ios/` (compiled into the app by the
+// podspec) and are ALSO copied into the widget target so both sides define identically-named types.
+// This covers every attributes type + the App Intent behind the interactive "actions" buttons —
+// ActivityKit matches a running Activity to its widget by the attributes type's unqualified name, and
+// `Button(intent:)` in the widget needs the intent type compiled into the widget target too.
+const LIVE_ACTIVITY_SHARED_FILES = [
+  'CountdownLiveActivityAttributes.swift',
+  'ActionsLiveActivityAttributes.swift',
+  'AnimatedLiveActivityAttributes.swift',
+  'LiveActivityActionIntent.swift',
+].map((f) => path.join(__dirname, '..', 'ios', f));
 // iOS NSE + extension-safe core Swift sources. Prefer a copy VENDORED inside this
 // package (`plugin/ios/`, populated for publish the same way the xcframework is);
 // otherwise fall back to the monorepo-canonical iOS SDK dir (works for in-repo
@@ -262,6 +270,17 @@ function withNSEFiles(config, appGroup, servicePlugins) {
       // Optional BMNServicePlugins array (app-provided NotificationServicePlugin class names).
       const servicePluginsBlock = classArrayPlist('BMNServicePlugins', servicePlugins);
 
+      // App Transport Security for the NSE. The extension runs in its OWN process with its own
+      // ATS policy — it does NOT inherit the app target's Info.plist. `RichMediaServicePlugin`
+      // downloads the `bigPicture` image via URLSession inside this extension, so a cleartext/LAN
+      // (HTTP) image host is blocked here even when the app target allows it. Mirror the app's
+      // local-dev exception (see app.config.js, keyed on APP_VARIANT=local) so bigPicture images
+      // served from a local stack load. Release builds get no exception (HTTPS only).
+      const atsBlock =
+        process.env.APP_VARIANT === 'local'
+          ? `\t<key>NSAppTransportSecurity</key>\n\t<dict>\n\t\t<key>NSAllowsLocalNetworking</key>\n\t\t<true/>\n\t</dict>\n`
+          : '';
+
       // NSE Info.plist — UNNotificationServiceExtension point + BMNAppGroup so the
       // extension reaches the same shared container as the app. CFBundlePackageType
       // = XPC! is REQUIRED for an app extension; without it the built .appex is an
@@ -291,7 +310,7 @@ function withNSEFiles(config, appGroup, servicePlugins) {
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>BMNAppGroup</key>
 	<string>${appGroup}</string>
-${servicePluginsBlock}	<key>NSExtension</key>
+${atsBlock}${servicePluginsBlock}	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.usernotifications.service</string>
@@ -602,13 +621,16 @@ function withWidgetFiles(config, liveActivityWidgets) {
 
       const swiftFiles = [];
 
-      // 1) Shared ActivityAttributes — the SAME type the app/pod compiles. ActivityKit matches a
-      //    running Activity to its widget by the attributes type's unqualified name, so the widget
-      //    module must define an identically-named type.
-      if (fs.existsSync(LIVE_ACTIVITY_SHARED_FILE)) {
-        const base = path.basename(LIVE_ACTIVITY_SHARED_FILE);
-        fs.copyFileSync(LIVE_ACTIVITY_SHARED_FILE, path.join(dir, base));
-        swiftFiles.push(base);
+      // 1) Shared ActivityAttributes + the App Intent — the SAME types the app/pod compiles.
+      //    ActivityKit matches a running Activity to its widget by the attributes type's unqualified
+      //    name, so the widget module must define identically-named types; the intent must also be
+      //    in the widget target so `Button(intent:)` compiles.
+      for (const shared of LIVE_ACTIVITY_SHARED_FILES) {
+        if (fs.existsSync(shared)) {
+          const base = path.basename(shared);
+          fs.copyFileSync(shared, path.join(dir, base));
+          swiftFiles.push(base);
+        }
       }
 
       // 2) App-provided widget UI (the @main WidgetBundle + ActivityConfiguration).
@@ -686,8 +708,9 @@ function withWidgetTarget(config, swiftFiles) {
         buildSettings.CLANG_ENABLE_EXPLICIT_MODULES = 'NO';
         buildSettings.SWIFT_ENABLE_EXPLICIT_MODULES = 'NO';
         // WidgetKit + SwiftUI are used directly so autolink normally covers them; link explicitly as
-        // insurance (the plugin creates an empty Frameworks phase).
-        buildSettings.OTHER_LDFLAGS = '"$(inherited) -framework WidgetKit -framework SwiftUI"';
+        // insurance (the plugin creates an empty Frameworks phase). AppIntents is required by the
+        // "actions" Live Activity's interactive `Button(intent:)` (BeamLiveActivityActionIntent).
+        buildSettings.OTHER_LDFLAGS = '"$(inherited) -framework WidgetKit -framework SwiftUI -framework AppIntents"';
         buildSettings.SWIFT_OPTIMIZATION_LEVEL =
           buildSettings.SWIFT_OPTIMIZATION_LEVEL || '"-Onone"';
       }
@@ -840,7 +863,7 @@ module.exports = function withBeamableNotifications(config, props) {
   if (props && props.enableLiveActivity) {
     const liveActivityWidgets = (props && props.iosLiveActivityWidgets) || [];
     const widgetSwift = [
-      path.basename(LIVE_ACTIVITY_SHARED_FILE),
+      ...LIVE_ACTIVITY_SHARED_FILES.map((f) => path.basename(f)),
       ...liveActivityWidgets.map((w) => path.basename(w.file)),
     ];
     config = withLiveActivityInfoPlist(config);

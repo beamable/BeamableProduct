@@ -1,5 +1,6 @@
 import UIKit
 import UserNotifications
+import os.log
 
 /// Sample **Content Extension renderer** (Tier 3) for the RN sample app — the iOS parity demo for the
 /// Android `countdown` custom style. Draws a styled "expiring offer" card in the EXPANDED notification
@@ -29,6 +30,11 @@ public final class SampleCountdownContentRenderer: NSObject, BeamContentRenderer
     public func render(in container: UIView, notification: UNNotification) -> Bool {
         let info = notification.request.content.userInfo
         guard (info["style"] as? String) == "countdown" else { return false }
+
+        // Diagnostic: confirm the on-the-wire encoding of the expiry fields on device. The push rail
+        // sends these as JSON numbers, `simctl push` files as strings — see resolveExpiry.
+        let log = Logger(subsystem: "com.beamable.notifications", category: "countdown")
+        log.info("countdown wire types — expiresInSeconds: \(String(describing: type(of: info["expiresInSeconds"])), privacy: .public), expiresAtMs: \(String(describing: type(of: info["expiresAtMs"])), privacy: .public)")
 
         expiresAt = Self.resolveExpiry(info, deliveredAt: notification.date)
 
@@ -86,11 +92,19 @@ public final class SampleCountdownContentRenderer: NSObject, BeamContentRenderer
     /// recomputed every time the notification is expanded, so the countdown appears to restart.
     /// Anchoring to delivery time keeps the relative `expiresInSeconds` wire field stable across
     /// re-expands (matches the Android `expiresInSeconds` semantics).
+    ///
+    /// The wire value may arrive as EITHER a JSON number or a string: a hand-authored
+    /// `simctl push` `.apns` file typically uses string values, while the Beamable push rail
+    /// (`ApnsProvider`) JSON-encodes them as numbers. A `String`-only cast silently dropped the
+    /// rail's numeric values (countdown stuck at `--:--`), so accept both encodings.
     private static func resolveExpiry(_ info: [AnyHashable: Any], deliveredAt: Date) -> Date? {
-        if let ms = (info["expiresAtMs"] as? String).flatMap(Double.init), ms > 0 {
+        func number(_ key: String) -> Double? {
+            (info[key] as? NSNumber)?.doubleValue ?? (info[key] as? String).flatMap(Double.init)
+        }
+        if let ms = number("expiresAtMs"), ms > 0 {
             return Date(timeIntervalSince1970: ms / 1000.0)
         }
-        if let secs = (info["expiresInSeconds"] as? String).flatMap(Double.init), secs > 0 {
+        if let secs = number("expiresInSeconds"), secs > 0 {
             return deliveredAt.addingTimeInterval(secs)
         }
         return nil

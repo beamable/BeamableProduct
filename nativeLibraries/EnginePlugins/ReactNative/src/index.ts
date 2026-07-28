@@ -636,6 +636,69 @@ export const BeamableNotifications = {
     }
   },
 
+  /**
+   * Begin observing **Live Activity push tokens** (iOS 17.2+). Subscribe to
+   * `liveActivityPushToStartToken` / `liveActivityUpdateToken` (via `addListener`) and forward the
+   * tokens to your `PushNotificationService` (`message-rail/register`) so the backend can START /
+   * UPDATE / END Live Activities via APNs. Safe to call once at app start; no-op on Android / when
+   * the native method is unavailable (< iOS 17.2). The tokens only ever arrive on a physical device.
+   */
+  startLiveActivityPushRegistration(): void {
+    if (
+      IS_IOS &&
+      IosNative &&
+      typeof IosNative.startLiveActivityPushRegistration === 'function'
+    ) {
+      IosNative.startLiveActivityPushRegistration();
+    }
+  },
+  /**
+   * Start an **actions** Live Activity locally (Simulator UI / App Intent button testing). Production
+   * starts come from the rail via push-to-start. `buttons` default to Claim + Dismiss. iOS-only.
+   */
+  startActionsLiveActivity(opts: {
+    title: string;
+    headline?: string;
+    body?: string;
+    buttons?: { id: string; title: string; role?: 'default' | 'destructive' }[];
+  }): void {
+    if (
+      IS_IOS &&
+      IosNative &&
+      typeof IosNative.startActionsLiveActivity === 'function'
+    ) {
+      IosNative.startActionsLiveActivity(opts);
+    }
+  },
+  /**
+   * Start an **animated** Live Activity locally (Simulator UI testing). `colors` are hex strings and
+   * `flipIntervalMs` is best-effort (throttled on the Lock Screen — see the widget). iOS-only.
+   */
+  startAnimatedLiveActivity(opts: {
+    title: string;
+    body?: string;
+    colors?: string[];
+    flipIntervalMs?: number;
+  }): void {
+    if (
+      IS_IOS &&
+      IosNative &&
+      typeof IosNative.startAnimatedLiveActivity === 'function'
+    ) {
+      IosNative.startAnimatedLiveActivity(opts);
+    }
+  },
+  /** End any running actions/animated Live Activities (iOS only). */
+  endLiveActivities(): void {
+    if (
+      IS_IOS &&
+      IosNative &&
+      typeof IosNative.endLiveActivities === 'function'
+    ) {
+      IosNative.endLiveActivities();
+    }
+  },
+
   // Templates — iOS only; no-op on Android.
   registerTemplate(template: TemplateSpec): void {
     if (IS_IOS) IosNative.registerTemplate(template);

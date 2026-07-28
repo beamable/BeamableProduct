@@ -187,6 +187,13 @@ APNs credentials on your realm.
 > enabled) the iOS extension sources into your app at prebuild time. Its implementation lives
 > in `plugin/`; see `ios/README.md` for how the iOS NSE sources are vendored for publish.
 
+## Custom notifications & Live Activities
+
+To add your own notification styles (Android + iOS), configure the Push console from zero (realm
+secrets, per-style fields), use iOS **Live Activities**, and control what happens when a device can't
+show a Live Activity (fall back to a normal notification, or skip), see
+[`docs/custom-notifications.md`](docs/custom-notifications.md).
+
 ## Web SDK in React Native
 
 Running the Beamable Web SDK (`@beamable/sdk`) in React Native is a separate concern from

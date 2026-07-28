@@ -33,7 +33,10 @@ final class BeamableNotificationsModule: RCTEventEmitter {
         return [
             "permissionResult", "tokenReceived", "tokenError",
             "notificationPresented", "notificationReceived", "notificationTapped",
-            "pendingNotifications", "deliveryReceipts"
+            "pendingNotifications", "deliveryReceipts",
+            // Live Activity push-to-start (iOS 17.2+): the app forwards these tokens to the push rail
+            // (`message-rail/register`) so the backend can start/update/end Live Activities via APNs.
+            "liveActivityPushToStartToken", "liveActivityUpdateToken", "liveActivityStarted"
         ]
     }
 
@@ -101,6 +104,10 @@ final class BeamableNotificationsModule: RCTEventEmitter {
         m.onPendingNotifications = { [weak self] in self?.emit("pendingNotifications", Self.array($0)) }
         m.onDeliveryReceipts = { [weak self] in self?.emit("deliveryReceipts", Self.array($0)) }
         m.initialize()
+        // Begin observing Live Activity push tokens so the app can register them with the rail.
+        #if canImport(ActivityKit)
+        if #available(iOS 17.2, *) { startLiveActivityPushRegistration() }
+        #endif
     }
 
     // MARK: Permission (feature 5)
@@ -273,6 +280,136 @@ final class BeamableNotificationsModule: RCTEventEmitter {
             }
         }
         #endif
+    }
+
+    // MARK: Live Activity push-to-start (ActivityKit, iOS 17.2+)
+    // The backend (PushRailService) can START a Live Activity for a player it isn't already running,
+    // and later UPDATE/END it, via APNs — but only if the device first mints and registers the tokens:
+    //   • a per-attributes-type PUSH-TO-START token (Activity<T>.pushToStartTokenUpdates), and
+    //   • a per-activity UPDATE token for each running activity (activity.pushTokenUpdates).
+    // We observe both and emit them to JS, which forwards them to `message-rail/register`. The token
+    // is the raw APNs token as lowercase hex — the same shape the regular device token uses.
+
+    #if canImport(ActivityKit)
+    /// Observes the push-to-start token (per attributes type) and, for each push-started activity,
+    /// its per-activity update token. Long-lived: the `for await` loops live for the app's lifetime.
+    @available(iOS 17.2, *)
+    private func observeLiveActivityTokens<T: ActivityAttributes>(_ type: T.Type, activityType: String) {
+        Task {
+            for await tokenData in Activity<T>.pushToStartTokenUpdates {
+                self.emit("liveActivityPushToStartToken",
+                          ["activityType": activityType, "token": Self.hexString(tokenData)])
+            }
+        }
+        Task {
+            for await activity in Activity<T>.activityUpdates {
+                self.emit("liveActivityStarted",
+                          ["activityType": activityType, "activityId": activity.id])
+                Task {
+                    for await tokenData in activity.pushTokenUpdates {
+                        self.emit("liveActivityUpdateToken",
+                                  ["activityType": activityType,
+                                   "activityId": activity.id,
+                                   "token": Self.hexString(tokenData)])
+                    }
+                }
+            }
+        }
+    }
+    #endif
+
+    @objc func startLiveActivityPushRegistration() {
+        #if canImport(ActivityKit)
+        if #available(iOS 17.2, *) {
+            observeLiveActivityTokens(BeamActionsActivityAttributes.self, activityType: "actions")
+            observeLiveActivityTokens(BeamAnimatedActivityAttributes.self, activityType: "animated")
+            observeLiveActivityTokens(BeamCountdownActivityAttributes.self, activityType: "countdown")
+        }
+        #endif
+    }
+
+    // MARK: Live Activity local start (Simulator UI/button testing only)
+    // Push-to-start can't run on the Simulator, so these let you exercise the widget UIs and the
+    // interactive App Intent buttons locally. Production starts come from the rail via APNs.
+
+    @objc(startActionsLiveActivity:)
+    func startActionsLiveActivity(_ options: NSDictionary) {
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+                NSLog("[Beam] Live Activities are not enabled."); return
+            }
+            let title = (options["title"] as? String) ?? "Offer"
+            let headline = (options["headline"] as? String) ?? "Limited-time offer"
+            let body = (options["body"] as? String) ?? ""
+            var buttons: [BeamLiveActivityButton] = []
+            if let arr = options["buttons"] as? [NSDictionary] {
+                buttons = arr.compactMap { d in
+                    guard let id = d["id"] as? String, let t = d["title"] as? String else { return nil }
+                    return BeamLiveActivityButton(id: id, title: t, role: (d["role"] as? String) ?? "default")
+                }
+            }
+            if buttons.isEmpty {
+                buttons = [BeamLiveActivityButton(id: "claim", title: "Claim"),
+                           BeamLiveActivityButton(id: "dismiss", title: "Dismiss", role: "destructive")]
+            }
+            let attributes = BeamActionsActivityAttributes(title: title)
+            let state = BeamActionsActivityAttributes.ContentState(headline: headline, body: body, buttons: buttons)
+            do {
+                if #available(iOS 16.2, *) {
+                    _ = try Activity.request(attributes: attributes, content: .init(state: state, staleDate: nil), pushType: nil)
+                } else {
+                    _ = try Activity.request(attributes: attributes, contentState: state, pushType: nil)
+                }
+            } catch { NSLog("[Beam] startActionsLiveActivity failed: \(error)") }
+        }
+        #endif
+    }
+
+    @objc(startAnimatedLiveActivity:)
+    func startAnimatedLiveActivity(_ options: NSDictionary) {
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+                NSLog("[Beam] Live Activities are not enabled."); return
+            }
+            let title = (options["title"] as? String) ?? "Now live"
+            let body = (options["body"] as? String) ?? ""
+            let colors = (options["colors"] as? [String]) ?? ["#3366F2", "#F25A4D", "#27B373", "#F29E26"]
+            let flip = (options["flipIntervalMs"] as? NSNumber)?.intValue ?? 900
+            let attributes = BeamAnimatedActivityAttributes(title: title)
+            let state = BeamAnimatedActivityAttributes.ContentState(body: body, colors: colors, flipIntervalMs: flip)
+            do {
+                if #available(iOS 16.2, *) {
+                    _ = try Activity.request(attributes: attributes, content: .init(state: state, staleDate: nil), pushType: nil)
+                } else {
+                    _ = try Activity.request(attributes: attributes, contentState: state, pushType: nil)
+                }
+            } catch { NSLog("[Beam] startAnimatedLiveActivity failed: \(error)") }
+        }
+        #endif
+    }
+
+    @objc func endLiveActivities() {
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            Task {
+                for activity in Activity<BeamActionsActivityAttributes>.activities {
+                    if #available(iOS 16.2, *) { await activity.end(nil, dismissalPolicy: .immediate) }
+                    else { await activity.end(dismissalPolicy: .immediate) }
+                }
+                for activity in Activity<BeamAnimatedActivityAttributes>.activities {
+                    if #available(iOS 16.2, *) { await activity.end(nil, dismissalPolicy: .immediate) }
+                    else { await activity.end(dismissalPolicy: .immediate) }
+                }
+            }
+        }
+        #endif
+    }
+
+    /// The raw APNs token as lowercase hex (matches the device-token encoding the rail already stores).
+    private static func hexString(_ data: Data) -> String {
+        data.map { String(format: "%02x", $0) }.joined()
     }
 
     private func decodeJson<T: Decodable>(_ type: T.Type, _ json: String) -> T? {

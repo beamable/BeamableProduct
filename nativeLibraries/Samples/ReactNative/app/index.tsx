@@ -35,6 +35,7 @@ import { listDevices, registerDevice, unregisterDevice } from '../src/beam/pushN
 import { addEmail } from '../src/beam/account';
 import { listInGameMessages } from '../src/beam/ingameMessages';
 import { registerRail, unregisterRail } from '../src/beam/messageRail';
+import { startLiveActivityTokenForwarding } from '../src/beam/liveActivity';
 import { detailsPath, detailsUrl, openUrl } from '../src/linking/links';
 import UnityBridgeSection from '../src/unity/UnityBridgeSection';
 
@@ -49,6 +50,9 @@ const EVENT_COLOR: Record<BeamableEvent, string> = {
   pendingNotifications: '#ca8a04',
   deliveryReceipts: '#0d9488',
   funnelResult: '#db2777',
+  liveActivityPushToStartToken: '#4f46e5',
+  liveActivityUpdateToken: '#0369a1',
+  liveActivityStarted: '#15803d',
 };
 
 // One captured native-event firing.
@@ -66,6 +70,8 @@ export default function Home() {
   // Every native SDK event, captured raw with its payload (the merged callbacks view).
   const [events, setEvents] = useState<EventEntry[]>([]);
   const eventCounter = useRef(0);
+  // Live Activity push-token forwarding subscription (started on connect; iOS 17.2+ device only).
+  const liveActivitySubRef = useRef<{ remove: () => void } | null>(null);
   // §4 funnel coordinates. Editable by the user; auto-filled from the campaign push that
   // opened (or was tapped in) the app — see `applyCampaignCoords`.
   const [campaignId, setCampaignId] = useState('');
@@ -166,6 +172,10 @@ export default function Home() {
       const playerId = b.player.id;
       setBeam({ state: 'ready', playerId });
       append(`Beam ready. player.id = ${playerId}`);
+      // Forward any Live Activity push-to-start / update tokens to the `push` rail so the backend
+      // can drive Live Activities via APNs. Tokens only arrive on a physical iOS 17.2+ device.
+      liveActivitySubRef.current?.remove();
+      liveActivitySubRef.current = startLiveActivityTokenForwarding(append);
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       setBeam({ state: 'error', message });
@@ -231,6 +241,38 @@ export default function Home() {
   const beamEndLiveActivity = () => {
     BeamNotifications.endCountdownLiveActivity();
     append('Live Activity ended.');
+  };
+
+  // Local-start demos for the two push-driven Live Activities (Actions + Animated). Push-to-start
+  // can't run on the Simulator, so these exercise the widget UIs + interactive buttons locally; the
+  // real end-to-end path is the portal → push rail → APNs push-to-start (see the token forwarding
+  // wired on connect, which registers this device's push-to-start tokens with the `push` rail).
+  const beamStartActionsLiveActivity = () => {
+    BeamNotifications.startActionsLiveActivity({
+      title: 'Daily Reward',
+      headline: 'Your reward is ready',
+      body: 'Claim 500 coins before they expire.',
+      buttons: [
+        { id: 'claim', title: 'Claim' },
+        { id: 'dismiss', title: 'Dismiss', role: 'destructive' },
+      ],
+    });
+    append('Actions Live Activity started. Lock the screen — tap Claim/Dismiss with no app open.');
+  };
+
+  const beamStartAnimatedLiveActivity = () => {
+    BeamNotifications.startAnimatedLiveActivity({
+      title: 'Live Event',
+      body: 'The arena is heating up!',
+      colors: ['#3366F2', '#F25A4D', '#27B373', '#F29E26'],
+      flipIntervalMs: 900,
+    });
+    append('Animated Live Activity started (color panels cycle; throttled on the Lock Screen).');
+  };
+
+  const beamEndOtherLiveActivities = () => {
+    BeamNotifications.endLiveActivities();
+    append('Actions/Animated Live Activities ended.');
   };
 
   // 3) Device registration via the backend `push` message rail ----------
@@ -458,6 +500,9 @@ export default function Home() {
             <Button label="Fire local in 10s (background & tap) → #888" onPress={beamFireDelayed} />
             <Button label="Start countdown Live Activity (no tap, iOS 16.1+)" onPress={beamStartLiveActivity} />
             <Button label="End Live Activity" onPress={beamEndLiveActivity} />
+            <Button label="Start Actions Live Activity (buttons, local)" onPress={beamStartActionsLiveActivity} />
+            <Button label="Start Animated Live Activity (local)" onPress={beamStartAnimatedLiveActivity} />
+            <Button label="End Actions/Animated Live Activities" onPress={beamEndOtherLiveActivities} />
           </>
         ) : (
           <Text style={styles.hint}>Native module not available on this platform.</Text>
