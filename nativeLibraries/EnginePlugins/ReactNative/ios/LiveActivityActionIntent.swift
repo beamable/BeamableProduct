@@ -26,15 +26,19 @@ public struct BeamLiveActivityActionIntent: LiveActivityIntent {
     public init(actionId: String) { self.actionId = actionId }
 
     public func perform() async throws -> some IntentResult {
-        for activity in Activity<BeamActionsActivityAttributes>.activities {
-            if actionId == "dismiss" {
-                await activity.end(nil, dismissalPolicy: .immediate)
-            } else {
-                var state = activity.content.state
-                state.isResolved = true
-                state.headline = "Claimed"
-                state.buttons = []
-                await activity.update(ActivityContent(state: state, staleDate: nil))
+        // The interactive `Button(intent:)` that triggers this is iOS 17+, so `perform()` only ever
+        // runs there — but the widget target deploys at 16.1, so gate the 16.2 ActivityKit APIs.
+        if #available(iOS 16.2, *) {
+            for activity in Activity<BeamActionsActivityAttributes>.activities {
+                if actionId == "dismiss" {
+                    await activity.end(nil, dismissalPolicy: .immediate)
+                } else {
+                    var state = activity.content.state
+                    state.isResolved = true
+                    state.headline = "Claimed"
+                    state.buttons = []
+                    await activity.update(ActivityContent(state: state, staleDate: nil))
+                }
             }
         }
         return .result()
