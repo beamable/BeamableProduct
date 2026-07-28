@@ -7,10 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.0] - 2026-07-28
+
+### Breaking Changes
+
+- Unity In-App Purchasing (UnityIAP) 5 is now the selected version, since Unity deprecated UnityIAP 4. Projects still on UnityIAP 4 keep working.
+
 ### Added
 
 - Added Content Manager publish history with diff inspection, pagination, preview, and local file restoration.
-- Add support for the version 5 of the Unity IAP package
+- Added `BEAMABLE_PURCHASING_IMPLEMENTATION_DISABLED` to turn off the Beamable UnityIAP integration entirely.
 - Added `CoreConfiguration.SkipCommerceInitialization` to opt out of automatic purchaser initialization and its commerce SKU request.
 
 ### Fixed
