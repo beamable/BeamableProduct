@@ -4,8 +4,11 @@
         <!-- All Microservices must have the value, "service" -->
         <BeamProjectType>service</BeamProjectType>
         <!-- Marks this as a zone (cid.zid) scoped service. Read at build time into the runtime scope; the
-             SDK withholds realm-scoped services and only ZoneMicroservice-based code is valid. -->
-        <BeamServiceScope>zone</BeamServiceScope>
+             SDK withholds realm-scoped services and only ZoneMicroservice-based code is valid.
+             NOTE: the property name is emitted via the BEAM_SERVICE_SCOPE_PROP template token because the
+             template's sourceName is "BeamService" — writing <BeamServiceScope> literally would be rewritten
+             to <{ServiceName}Scope> during `dotnet new`. -->
+        <BEAM_SERVICE_SCOPE_PROP>zone</BEAM_SERVICE_SCOPE_PROP>
     </PropertyGroup>
 
     <!-- These are special Beamable parameters that we use to keep the beamable packages in-sync to the CLI version your project is using. -->

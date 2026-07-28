@@ -23,6 +23,7 @@ public class ReleaseDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
 	public bool UseSequentialBuild { get; set; }
 	public int MaxParallelTask { get; set; }
 	public int MaxConcurrentUploads { get; set; }
+	public DeployScope Scope { get; set; }
 	public string SlnFilePath;
 
 
@@ -58,12 +59,12 @@ public class ReleaseDeploymentCommand
 
 	public override async Task Handle(ReleaseDeploymentCommandArgs args)
 	{
-		var remoteManifestTask = DeployUtil.CreateReleaseManifestFromRealm(args.DependencyProvider.GetService<IBeamoApi>());
-		
 		DeployablePlan plan = null;
 		string planPath = null;
 
-		
+		// Resolve the plan source before touching scope: a plan loaded from disk carries its own scope
+		// (realm/zone), and that scope — not the CLI flag — must drive the whole release, since the plan's
+		// manifest and checksum were built under it.
 		var isLoadingPlan = !string.IsNullOrEmpty(args.fromPlanFile);
 		if (args.fromLastPlan)
 		{
@@ -81,17 +82,17 @@ public class ReleaseDeploymentCommand
 			isLoadingPlan = true;
 		}
 		var isLoadingManifest = !string.IsNullOrEmpty(args.FromManifestFile);
-		
+
 		if (isLoadingPlan && isLoadingManifest)
 		{
 			throw new CliException("Cannot specify both --from-plan and --from-manifest");
 		}
-		
+
 		if (isLoadingPlan)
 		{
 			Log.Information($"Loading release plan from file=[{args.fromPlanFile}]");
 			var json = await File.ReadAllTextAsync(args.fromPlanFile);
-			
+
 			// before deserializing it as a plan, check the fields to make sure its a valid plan.
 			var data = Json.Deserialize(json) as IDictionary<string, object>;
 			if (!DeployUtil.IsJsonAPlan(data))
@@ -107,15 +108,30 @@ public class ReleaseDeploymentCommand
 					$"The file {args.fromPlanFile} does not contain a valid plan. Use the `dotnet beam deploy plan` command to create a plan.");
 			}
 			plan = JsonSerializable.FromJson<DeployablePlan>(json);
+
+			// The plan's scope is authoritative — adopt it so the requester and downstream operations
+			// target the manifest (realm vs zone) the plan was built against.
+			if (args.Scope != plan.scope)
+			{
+				Log.Information($"Releasing with scope [{plan.scope}] from the loaded plan.");
+				args.Scope = plan.scope;
+			}
 		}
-		else
+
+		// For `--scope zone` (from the flag or the loaded plan), pin the requester to the zone (cid.zid)
+		// before any manifest fetch/publish so the whole release targets the zone manifest; realm is a no-op.
+		using var scopeHandle = await DeployArgs.ApplyDeployScopeAsync(args, args.Scope);
+
+		var remoteManifestTask = DeployUtil.CreateReleaseManifestViewFromRealmV2(args.DependencyProvider.GetService<IBeamBeamoApi>());
+
+		if (!isLoadingPlan)
 		{
 			Log.Information("Generating release plan...");
 			(plan, planPath) = await this.InteractivePlan(
-				args.DependencyProvider, 
+				args.DependencyProvider,
 				args);
 		}
-		
+
 		var remoteManifest = await remoteManifestTask;
 		if (remoteManifest.checksum != plan.builtFromRemoteChecksum)
 		{

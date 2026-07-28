@@ -167,6 +167,13 @@ public static class WebApi
 		SortApiParameters(apiParameters);
 		ProcessParameters(apiParameters, modules, paramCommentList, requiredParams, optionalParams);
 
+		// GenerateMethodName only appends `By{param}` for single-param endpoints, so two operations on the
+		// same resource whose names otherwise collapse (e.g. GET /beamo/bundles and
+		// GET /beamo/bundles/{bundleName}/{ns} both -> beamoGetBundles) would emit duplicate function
+		// declarations and break the bundled SDK. Disambiguate only actual collisions so every already-unique
+		// name stays stable.
+		methodName = EnsureUniqueMethodName(methodName, apiParameters, tsFunctions);
+
 		AddPathParameterStatements(apiParameters, methodBodyStatements, endpointVariable, apiEndpoint, tsImports);
 		AddQueryParameterStatements(apiParameters, queriesObjectLiteral);
 
@@ -214,6 +221,37 @@ public static class WebApi
 			optionalParams, requiresAuthRemarks, deprecatedDoc, paramCommentList, responseType, methodBodyStatements,
 			modules, headerParams);
 		BuildAndAddMethod(@params);
+	}
+
+	/// <summary>
+	/// Returns a method name that is unique within the given file's functions. If <paramref name="methodName"/>
+	/// is already taken, appends the path parameter names (e.g. <c>...ByBundleNameAndNs</c>), and finally falls
+	/// back to a numeric suffix. Non-colliding names are returned unchanged.
+	/// </summary>
+	private static string EnsureUniqueMethodName(string methodName, List<OpenApiParameter> apiParameters,
+		List<TsFunction> tsFunctions)
+	{
+		bool Taken(string n) => tsFunctions.Any(f => f.Name == n);
+		if (!Taken(methodName))
+			return methodName;
+
+		var pathParams = apiParameters
+			.Where(p => p.In == ParameterLocation.Path)
+			.Select(p => StringHelper.Capitalize(p.Name))
+			.Where(p => !string.IsNullOrEmpty(p))
+			.ToList();
+		if (pathParams.Count > 0)
+		{
+			var candidate = $"{methodName}By{string.Join("And", pathParams)}";
+			if (!Taken(candidate))
+				return candidate;
+			methodName = candidate;
+		}
+
+		var suffix = 2;
+		while (Taken($"{methodName}{suffix}"))
+			suffix++;
+		return $"{methodName}{suffix}";
 	}
 
 	private static bool TryGetMediaTypeAndResponseType(OpenApiOperation operation, out string responseType)

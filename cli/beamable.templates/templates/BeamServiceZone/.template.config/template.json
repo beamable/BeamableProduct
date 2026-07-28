@@ -19,6 +19,12 @@
     }
   ],
   "symbols": {
+    "ServiceScopeProperty": {
+      "type": "generated",
+      "generator": "constant",
+      "parameters": { "value": "BeamServiceScope" },
+      "replaces": "BEAM_SERVICE_SCOPE_PROP"
+    },
     "TemplateVersion": {
       "replaces": "TemplateVersion",
       "type": "bind",

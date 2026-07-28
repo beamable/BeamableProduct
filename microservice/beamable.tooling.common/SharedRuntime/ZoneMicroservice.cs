@@ -40,6 +40,37 @@ namespace Beamable.Server
 		/// </summary>
 		protected ZonedRequestContext Context => _serviceProvider?.GetService<ZonedRequestContext>();
 
+		/// <summary>
+		/// The zone service surface — the zone analog of the realm <see cref="Microservice"/>'s <c>Services</c>.
+		/// Use <c>Services.Customer</c> to query the customer's realms and zones. There is no player/realm SDK
+		/// here; to act within a realm, use <see cref="AssumeRealm"/>.
+		/// </summary>
+		protected IZoneServices Services => _serviceProvider.GetService<IZoneServices>();
+
+		/// <summary>
+		/// Enter a realm (<c>cid.pid</c>) from this zone service and get back the full realm SDK — the same
+		/// dependency scope a realm <see cref="Microservice"/> would have — scoped to <paramref name="pid"/>.
+		/// <para>
+		/// This is the zone→realm analog of <see cref="Microservice.AssumeNewUser"/>: the returned
+		/// <see cref="UserRequestDataHandler"/> is <b>disposable</b> and owns its own child scope, so wrap it
+		/// in a <c>using</c> and dispose it when done. Access the realm SDK through its <c>Services</c>,
+		/// requests through its <c>Requester</c>, and DI through its <c>Provider</c>.
+		/// </para>
+		/// </summary>
+		/// <param name="pid">The realm (project) id to act within.</param>
+		/// <param name="gamerTag">
+		/// Optional player on that realm to act on behalf of. When 0 (the default), the scope acts with the
+		/// zone service's own (server) identity rather than a specific player.
+		/// </param>
+		protected UserRequestDataHandler AssumeRealm(string pid, long gamerTag = 0)
+		{
+			if (string.IsNullOrEmpty(pid))
+			{
+				throw new InvalidArgumentException(nameof(pid), "A realm (pid) is required to AssumeRealm.");
+			}
+			return _serviceProvider.GetService<IRealmScopeFactory>().CreateRealmScope(pid, gamerTag);
+		}
+
 		public void ReceiveDefaultServices(IDependencyProviderScope scope)
 		{
 			// A zone service has no realm/player context, so — unlike Microservice — only the dependency

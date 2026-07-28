@@ -656,7 +656,9 @@ public static class MicroserviceStartupUtil
 	/// requester/context/signed-requester, realm content, realm config, and storage. Only invoked when a
 	/// microservice runs in <see cref="BeamServiceScope.Realm"/>.
 	/// </summary>
-	private static void ConfigureRealmServices(IDependencyBuilder collection, StartupContext startupContext,
+	// internal (not private) so the zone→realm scope factory (RealmScopeFactory) can re-apply the realm SDK
+	// onto a forked scope when a zone service calls AssumeRealm.
+	internal static void ConfigureRealmServices(IDependencyBuilder collection, StartupContext startupContext,
 		IMicroserviceArgs envArgs)
 	{
 		collection
@@ -735,7 +737,24 @@ public static class MicroserviceStartupUtil
 	private static void ConfigureZoneServices(IDependencyBuilder collection, StartupContext startupContext,
 		IMicroserviceArgs envArgs)
 	{
-		// No zone-specific services yet; scope-neutral infrastructure is registered by ConfigureCommonServices.
+		collection
+			// A websocket requester used by the customer-directory queries. It resolves its RequestContext
+			// from the per-request scope (RouteSourceUtil adds one per message, scoped to cid.zid), so we do
+			// NOT register a RequestContext at the zone root — doing so made every per-request AddScoped of
+			// RequestContext collide and log "already existed" on every message.
+			.AddScoped<MicroserviceRequester>(provider =>
+				new MicroserviceRequester(
+					provider.GetService<IMicroserviceArgs>(),
+					provider.GetService<RequestContext>(),
+					provider.GetService<SocketRequesterContext>(),
+					true,
+					provider.GetService<IActivityProvider>()))
+			.AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())
+			.AddScoped<IRequester>(p => p.GetService<MicroserviceRequester>())
+			.AddScoped<IZoneCustomerApi>(p => new ZoneCustomerApi(p.GetService<MicroserviceRequester>(), p.GetService<IMicroserviceArgs>()))
+			.AddScoped<IZoneServices>(p => new ZoneServices(p.GetService<IZoneCustomerApi>()))
+			// The zone→realm bridge for AssumeRealm. Forks this (root) scope and re-applies the realm SDK.
+			.AddSingleton<IRealmScopeFactory>(provider => new RealmScopeFactory(provider, startupContext, envArgs));
 	}
 
 	/// <summary>

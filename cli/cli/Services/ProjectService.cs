@@ -282,7 +282,7 @@ public class ProjectService
 		var outputPath = Path.Combine(_configService.BeamableWorkspace, "extensions");
 
 		portalExtensionInfo.ServicePath = Path.Combine(outputPath, args.ProjectName);
-		var templateShortName = PortalExtensionTemplates.ToDotnetTemplateShortName(args.template);
+		var templateShortName = PortalExtensionTemplates.ToDotnetTemplateShortName(args.template, args.IsZone);
 		await RunDotnetCommand($"new {templateShortName} -n {args.ProjectName} -o {portalExtensionInfo.ServicePath.EnquotePath()}");
 
 		{ // Updates the package name to use the same name passed in it's creation, making sure it's the correct one instead of what dotnet template might parse

@@ -157,6 +157,12 @@ namespace Beamable.Server
 
       private string _adminPrefix;
 
+      /// <summary>
+      /// True when this service runs in the realm (cid.pid) scope. Zone-scoped services do not register the
+      /// realm SDK (content, realm config, storage), so realm-only setup must be guarded on this.
+      /// </summary>
+      private bool IsRealmScoped => _serviceAttribute.GetServiceScope() == BeamServiceScope.Realm;
+
       public async Task Start(IMicroserviceArgs args, StartupContext startupContext)
       {
 	      _startupContext = startupContext;
@@ -361,7 +367,7 @@ namespace Beamable.Server
 	            {
 		            // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
 		            // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
-		            if (initContent)
+		            if (initContent && IsRealmScoped)
 		            {
 			            await Provider.GetService<ContentService>().Init(preload: true);
 		            }
@@ -371,12 +377,19 @@ namespace Beamable.Server
 				await RunServiceSetupCallbacks();
             }
 
-            var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
-            
-            var loggingContextService = InstanceArgs.ServiceScope.GetService<ILoggingContextService>();
-            
-            await realmService.GetRealmConfigSettings();
-            await loggingContextService.GetAllLoggingContexts();
+            if (IsRealmScoped)
+            {
+            	// Realm config is only registered for realm-scoped services.
+            	var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
+            	await realmService.GetRealmConfigSettings();
+            }
+
+            // Beamo log-context is realm-scoped; zone services have no realm beamo api.
+            if (IsRealmScoped)
+            {
+            	var loggingContextService = InstanceArgs.ServiceScope.GetService<ILoggingContextService>();
+            	await loggingContextService.GetAllLoggingContexts();
+            }
             await ProvideService();
 
             HasInitialized = true;
@@ -388,7 +401,10 @@ namespace Beamable.Server
             }
             
             Log.Information(Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion} " + portalUrlLogline, InstanceArgs.SdkVersionBaseBuild, InstanceArgs.SdkVersionExecution);
-            realmService.UpdateLogLevel();
+            if (IsRealmScoped)
+            {
+            	InstanceArgs.ServiceScope.GetService<IRealmConfigService>().UpdateLogLevel();
+            }
 
             _serviceInitialized.CompleteSuccess(PromiseBase.Unit);
          }
@@ -837,21 +853,23 @@ namespace Beamable.Server
 
 
 	      // First get the Global Realm Config Log Level and apply it by running UpdateLogLevel
-	      var configService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
 	      if (ctx.Path?.StartsWith(_adminPrefix) ?? false)
 	      {
 		      // when the path starts with admin, use warning.
 		      MicroserviceBootstrapper.ContextLogLevel.Value = LogLevel.Warning;
 	      }
-	      else
+	      else if (IsRealmScoped)
 	      {
 		      // otherwise, allow default behaviour.
+		      var configService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
 		      configService.UpdateLogLevel();
 	      }
 
 	      string routingKey = InstanceArgs.GetRoutingKey().GetOrElse(string.Empty);
 	      try
 	      {
+	      	if (IsRealmScoped)
+	      	{
 		      var loggingContextService = Provider.GetService<ILoggingContextService>();
 		      BeamoV2ServiceLoggingContext loglevelContext = loggingContextService.GetLogLevelContext(MicroserviceName, routingKey);
 		      
@@ -924,6 +942,7 @@ namespace Beamable.Server
 
 			      
 		      }
+	      	}
 	      }
 	      catch (Exception ex)
 	      {

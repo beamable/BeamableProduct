@@ -1,12 +1,29 @@
 using Beamable.Common.Content;
+using Beamable.Common.Dependencies;
 using Beamable.Serialization;
 using cli.Deployment.Services;
+using cli.Services;
 using System.CommandLine;
 using Beamable.Server;
 
 namespace cli.DeploymentCommands;
 
 public delegate void ProgressHandler(string name, float ratio, bool isKnownLength=true, string serviceName=null);
+
+/// <summary>
+/// Which manifest a deploy operation targets.
+/// <list type="bullet">
+/// <item><b>Realm</b> (default): the realm manifest (<c>cid.pid</c>). Zone-scoped services are
+/// excluded from the plan.</item>
+/// <item><b>Zone</b>: the zone manifest (<c>cid.zid</c>). All realm-scoped services are ignored and
+/// the beamo manifest APIs are called with a <c>cid.zid</c> BEAM_SCOPE header.</item>
+/// </list>
+/// </summary>
+public enum DeployScope
+{
+	Realm,
+	Zone,
+}
 
 public class DeployArgs
 {
@@ -60,6 +77,13 @@ public class DeployArgs
 
 
 		AddModeOption(command, (args, i) => args.DeployMode = i);
+
+		command.AddOption(
+			new Option<DeployScope>(new string[] { "--scope" }, () => DeployScope.Realm,
+				"Which manifest to operate against: 'realm' (default) builds and plans the realm manifest " +
+				"(cid.pid) and ignores zone-scoped services; 'zone' ignores all realm-scoped services and " +
+				"operates against the zone manifest (cid.zid)"),
+			(args, i) => args.Scope = i);
 	}
 	
 	
@@ -116,6 +140,45 @@ public class DeployArgs
 		}));
 	}
 	
+	/// <summary>
+	/// Applies the deploy scope for the current operation. For <see cref="DeployScope.Zone"/>, resolves the
+	/// effective zone id (a selected realm's zone binding wins; otherwise the local <c>.beamable</c> zid) and
+	/// pins the requester's BEAM_SCOPE to <c>{cid}.{zid}</c> so every beamo manifest API call targets the zone
+	/// manifest. Returns a handle that restores the previous scope on dispose — wrap the plan/release in a
+	/// <c>using</c>. For <see cref="DeployScope.Realm"/> this is a no-op (default <c>{cid}.{pid}</c> scope).
+	/// </summary>
+	public static async Task<IDisposable> ApplyDeployScopeAsync(CommandArgs args, DeployScope scope)
+	{
+		if (scope != DeployScope.Zone)
+		{
+			return NoopScope.Instance;
+		}
+
+		var cid = args.AppContext.Cid;
+		var pid = args.AppContext.Pid;
+		var localZid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_ZID);
+		var zid = await ZoneResolver.ResolveZid(args.DependencyProvider, cid, pid, localZid);
+		if (string.IsNullOrEmpty(zid))
+		{
+			var reason = string.IsNullOrEmpty(pid)
+				? "no realm is selected and no 'zid' is set in the .beamable config"
+				: $"the selected realm [{pid}] is not bound to a zone";
+			throw new CliException(
+				$"`--scope zone` was requested, but {reason}. Bind the realm to a zone (Portal > Zone Management) " +
+				$"or set a 'zid' in the .beamable config.");
+		}
+
+		Log.Information($"Deploying against zone [{zid}] with scope [{cid}.{zid}]");
+		var requester = args.DependencyProvider.GetService<CliRequester>();
+		return requester.WithBeamScope($"{cid}.{zid}");
+	}
+
+	private sealed class NoopScope : IDisposable
+	{
+		public static readonly NoopScope Instance = new NoopScope();
+		public void Dispose() { }
+	}
+
 	public static async Task MaybeSaveToFile<T>(string toFile, T instance, string note="saving to file")
 		where T : JsonSerializable.ISerializable
 	{

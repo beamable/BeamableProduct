@@ -123,7 +123,7 @@ export async function customersDeleteRealmsSecretsValues(requester: HttpRequeste
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersGetRealmsSecretsValues(requester: HttpRequester, customerId: string, realmId: string, cursor?: string, gamertag?: string): Promise<HttpResponse<RealmSecretInfoCursorPagedResult>> {
+export async function customersGetRealmsSecretsValuesByCustomerIdAndRealmId(requester: HttpRequester, customerId: string, realmId: string, cursor?: string, gamertag?: string): Promise<HttpResponse<RealmSecretInfoCursorPagedResult>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/secrets/values".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
