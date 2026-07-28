@@ -43,9 +43,9 @@ public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNuget
 			throw new CliException("Cannot download nuget packages for developer 0.0.123 version.");
 		}
 
-		UnityProjectUtil.DeleteAllFilesWithExtensions(Path.Combine(info.packageFolder, "Common"), new string[]{".cs", ".cs.meta"});
-		UnityProjectUtil.DeleteAllFilesWithExtensions(Path.Combine(infoServer.packageFolder, "SharedRuntime"), new string[]{".cs", ".cs.meta"});
-		UnityProjectUtil.DeleteAllFilesWithExtensions(Path.Combine(infoServer.packageFolder, "Runtime/Common"), new string[]{".cs", ".cs.meta"});
+		UnityProjectUtil.DeleteAllFilesWithExtensionsAndEmptyDirectories(Path.Combine(info.packageFolder, "Common"), new string[]{".cs", ".cs.meta"});
+		UnityProjectUtil.DeleteAllFilesWithExtensionsAndEmptyDirectories(Path.Combine(infoServer.packageFolder, "SharedRuntime"), new string[]{".cs", ".cs.meta"});
+		UnityProjectUtil.DeleteAllFilesWithExtensionsAndEmptyDirectories(Path.Combine(infoServer.packageFolder, "Runtime/Common"), new string[]{".cs", ".cs.meta"});
 
 		await UnityProjectUtil.DownloadPackage("Beamable.Common", info.beamableNugetVersion,
 			"content/sourceCode/", Path.Combine(info.packageFolder, "Common"));

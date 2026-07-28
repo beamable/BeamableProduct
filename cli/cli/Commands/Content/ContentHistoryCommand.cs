@@ -98,8 +98,8 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 	, IResultSteam<DefaultStreamResultChannel, ContentHistoryCommandEvent>
 	, ISkipManifest
 {
-	public ContentHistoryCommand() : base("history", "Fetches and caches locally the entire list of content publishes to this realm. " +
-	                                                 "Can be run in watch mode for continuous updates regarding new downloaded content changelists and new content entries")
+	public ContentHistoryCommand() : base("history", "Fetches and caches locally the entire list of content publishes to this realm." +
+	                                                 " Can be run in watch mode for continuous updates regarding new downloaded content changelists and new content entries")
 	{
 	}
 

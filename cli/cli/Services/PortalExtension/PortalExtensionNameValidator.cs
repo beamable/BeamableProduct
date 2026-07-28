@@ -49,8 +49,8 @@ public static class PortalExtensionNameValidator
 			if (serviceStorageSet.Contains(peName))
 			{
 				errors.Add(
-					$"Portal extension name '{peName}' conflicts with a microservice or storage of the same name. " +
-					$"Names must be unique across microservices, storages, and portal extensions.");
+					$"Portal extension name '{peName}' conflicts with a microservice or storage of the same name." +
+					$" Names must be unique across microservices, storages, and portal extensions.");
 			}
 		}
 
@@ -98,8 +98,8 @@ public static class PortalExtensionNameValidator
 				_ => "microservice"
 			};
 			error =
-				$"Cannot create portal extension '{name}': a {kind} with that name already exists. " +
-				$"Names must be unique across microservices, storages, and portal extensions.";
+				$"Cannot create portal extension '{name}': a {kind} with that name already exists." +
+				$" Names must be unique across microservices, storages, and portal extensions.";
 			return true;
 		}
 

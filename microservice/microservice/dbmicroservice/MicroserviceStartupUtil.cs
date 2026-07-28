@@ -877,7 +877,7 @@ public static class MicroserviceStartupUtil
 		var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);
 		var msgBytes = Encoding.UTF8.GetBytes(msgJson);
 		var broadcastSocket = new UdpClient();
-		broadcastSocket.Connect(new IPEndPoint(IPAddress.Broadcast, Constants.Features.Services.DISCOVERY_PORT));
+		broadcastSocket.Connect(new IPEndPoint(System.Net.IPAddress.Broadcast, Constants.Features.Services.DISCOVERY_PORT));
 		return Task.Run(function: async () =>
 		{
 			try
