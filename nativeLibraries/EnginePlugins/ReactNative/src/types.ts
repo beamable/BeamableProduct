@@ -196,6 +196,23 @@ export type EventMap = {
     statusCode: number;
     message: string;
   };
+  /**
+   * iOS 17.2+ Live Activity **push-to-start** token for an attributes type
+   * (`activityType` ∈ 'actions' | 'animated' | 'countdown'). Forward it to the push rail so the
+   * backend can START a Live Activity for this player via APNs. iOS-only.
+   */
+  liveActivityPushToStartToken: { activityType: string; token: string };
+  /**
+   * iOS 16.1+ per-activity **update** token for a running Live Activity (`activityId`). Forward it
+   * so the backend can UPDATE/END that specific activity via APNs. iOS-only.
+   */
+  liveActivityUpdateToken: {
+    activityType: string;
+    activityId: string;
+    token: string;
+  };
+  /** A Live Activity started (usually via a push-to-start). iOS-only. */
+  liveActivityStarted: { activityType: string; activityId: string };
 };
 
 /** Every event the SDK can emit — the runtime list matching `keyof EventMap`. */
@@ -209,6 +226,9 @@ export const BEAMABLE_EVENTS = [
   'pendingNotifications',
   'deliveryReceipts',
   'funnelResult',
+  'liveActivityPushToStartToken',
+  'liveActivityUpdateToken',
+  'liveActivityStarted',
 ] as const;
 
 export type BeamableEvent = (typeof BEAMABLE_EVENTS)[number];

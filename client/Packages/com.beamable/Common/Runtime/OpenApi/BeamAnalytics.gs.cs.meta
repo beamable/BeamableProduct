@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+<<<<<<<< HEAD:client/Packages/com.beamable/Common/Runtime/OpenApi/BeamBilling.gs.cs.meta
+guid: 777d3ec5dcfddf825b351319ab4d8715
+========
+guid: 28b76f265082c8106af21470015660b5
+>>>>>>>> main:client/Packages/com.beamable/Common/Runtime/OpenApi/BeamAnalytics.gs.cs.meta
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

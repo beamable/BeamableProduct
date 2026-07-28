@@ -24,6 +24,13 @@ public interface IAppContext : IRealmInfo, IRequesterInfo
 {
 	public BeamLogSwitch LogSwitch { get; }
 	public string Cid { get; }
+
+	/// <summary>
+	/// The customer alias for the current <see cref="Cid"/>, when it is known without a network call —
+	/// i.e. when the configured cid setting was itself an alias. Null when the configuration stores a
+	/// numeric cid; resolve via <see cref="Beamable.Common.Api.Realms.IRealmsApi.GetCustomerData"/> then.
+	/// </summary>
+	public string Alias { get; }
 	public string Pid { get; }
 	public string EngineCalling { get; }
 	public string EngineSdkVersion { get; }
@@ -160,13 +167,14 @@ public class DefaultAppContext : IAppContext
 	public IAccessToken Token => _token;
 	private CliToken _token;
 
-	private string _cid, _pid, _host;
+	private string _cid, _alias, _pid, _host;
 	private string _engine, _engineVersion, _engineSdkVersion;
 	private string _refreshToken;
 	private BindingContext _bindingContext;
 	private IDependencyProvider _provider;
-	
+
 	public string Cid => _cid;
+	public string Alias => _alias;
 	public string Pid => _pid;
 	public string Host => _host;
 	public string EngineCalling => _engine;
@@ -345,6 +353,20 @@ public class DefaultAppContext : IAppContext
 			defaultAccessToken = response.Token;
 			defaultRefreshToken = response.RefreshToken;
 		}
+		// Detect whether the caller explicitly supplied a token on the command line (or via config
+		// override). When they did, the stored login in the token file must not override it.
+		var hasAccessTokenOverride = !string.IsNullOrEmpty(bindingContext.ParseResult.GetValueForOption(_accessTokenOption));
+		var hasRefreshTokenOverride = !string.IsNullOrEmpty(bindingContext.ParseResult.GetValueForOption(_refreshTokenOption));
+		var hasTokenOverride = hasAccessTokenOverride || hasRefreshTokenOverride;
+
+		// If an access token is supplied without a matching refresh token, don't inherit the stored
+		// user's refresh token: it belongs to a different identity, and the requester retry path would
+		// use it to silently swap back to that user on any 401/403.
+		if (hasAccessTokenOverride && !hasRefreshTokenOverride)
+		{
+			defaultRefreshToken = string.Empty;
+		}
+
 		_configService.TryGetSetting(out var accessToken, bindingContext, _accessTokenOption, defaultAccessToken);
 		_configService.TryGetSetting(out _refreshToken, bindingContext, _refreshTokenOption, defaultRefreshToken);
 
@@ -365,11 +387,11 @@ public class DefaultAppContext : IAppContext
 			Log.Warning($"Could not resolve cid/host against {host}: {e.Message} — continuing offline.");
 			_host = host; _cid = cid; _pid = pid; _token.Cid = cid; _token.Pid = pid;
 		}
-
+		await Set(cid, pid, host);
 		// if the token we got from the config file is expired, try to refresh it — again time-bounded and
 		// non-fatal, so a down/unreachable backend can't hang or crash every command. Standalone/offline
 		// commands (e.g. `beam local init`) don't need auth; commands that do will surface a clear error later.
-		if (isExpiredToken)
+		if (isExpiredToken && !hasTokenOverride)
 		{
 			try
 			{
@@ -425,10 +447,12 @@ public class DefaultAppContext : IAppContext
 			service.Requester = new NoAuthHttpRequester(host);
 			var aliasResolve = await service.Resolve(cid);
 			_cid = aliasResolve.Cid;
+			_alias = aliasResolve.Alias.GetOrElse(() => null);
 		}
 		else
 		{
 			_cid = cid;
+			_alias = null;
 		}
 		_pid = pid;
 		_token.Cid = _cid;

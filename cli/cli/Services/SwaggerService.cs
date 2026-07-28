@@ -1227,27 +1227,38 @@ public class SwaggerService
 	{
 		foreach ((string key, OpenApiSchema value) in swagger.Document.Components.Schemas)
 		{
-			var recursiveCheck = new Stack<OpenApiSchema>();
-			// Track visited schema instances so cyclic/recursive types don't cause the stack
-			// to grow without bound (which throws "Array dimensions exceeded supported range").
-			var seen = new HashSet<OpenApiSchema>();
-
-			foreach ((_, OpenApiSchema propertySchema) in value.Properties)
-				if (seen.Add(propertySchema))
-					recursiveCheck.Push(propertySchema);
-
 			bool isSelfReferential = false;
-			OpenApiSchema curr = null;
-			while (recursiveCheck.TryPop(out curr))
+
+			// reference equality: detects the same schema object reappearing as its own ancestor
+			var onPath = new HashSet<OpenApiSchema>();
+			var path = new List<string>();
+			var stack = new Stack<TraversalFrame>();
+
+			// seed with the top-level schema's properties (matches the original traversal)
+			foreach ((string propName, OpenApiSchema propertySchema) in value.Properties)
 			{
-				if (curr.Reference != null && value.Reference != null && curr.Reference.Id.Equals(value.Reference.Id))
+				stack.Push(new TraversalFrame(propertySchema, propName, isExit: false));
+			}
+
+			while (stack.TryPop(out var frame))
+			{
+				var node = frame.Node;
+
+				if (frame.IsExit)
+				{
+					// subtree fully processed: leave the node
+					onPath.Remove(node);
+					path.RemoveAt(path.Count - 1);
+					continue;
+				}
+
+				if (node.Reference != null && value.Reference != null && node.Reference.Id.Equals(value.Reference.Id))
 				{
 					isSelfReferential = true;
 				}
 
 				foreach ((_, OpenApiSchema propertySchema) in curr.Properties)
-					if (seen.Add(propertySchema))
-						recursiveCheck.Push(propertySchema);
+					recursiveCheck.Push(propertySchema);
 			}
 
 			if (isSelfReferential)
@@ -1257,6 +1268,20 @@ public class SwaggerService
 		}
 
 		return new List<OpenApiDocumentResult> { swagger };
+	}
+
+	private readonly struct TraversalFrame
+	{
+		public readonly OpenApiSchema Node;
+		public readonly string Property;
+		public readonly bool IsExit;
+
+		public TraversalFrame(OpenApiSchema node, string property, bool isExit)
+		{
+			Node = node;
+			Property = property;
+			IsExit = isExit;
+		}
 	}
 
 

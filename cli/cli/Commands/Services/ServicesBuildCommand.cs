@@ -479,18 +479,18 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		
 		var tagString = string.Join(" ", tags.Select(tag => $"-t {id.ToLowerInvariant()}:{tag}"));
 		var fullDockerfilePath = http.AbsoluteDockerfilePath;
-		var argString = $"buildx build {fullContextPath.EnquotePath()} -f {fullDockerfilePath.EnquotePath()} " +
-		                $"{tagString} " +
-		                $"--progress rawjson " +
-		                $"--build-arg BEAM_DOTNET_VERSION={defaultBaseImageTag} " +
-		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(dockerContextPath, report.outputDirSupport).Replace("\\", "/")} " +
-		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(dockerContextPath,report.outputDirApp).Replace("\\", "/")} " +
-		                $"--build-arg BEAM_APP_DEST=/beamApp/{definition.BeamoId}.dll " +
-		                $"{(forceCpu ? "--platform linux/amd64 " : "")} " +
-		                $"{(noCache ? "--no-cache " : "")}" +
+		var argString = $"buildx build {fullContextPath.EnquotePath()} -f {fullDockerfilePath.EnquotePath()}" +
+		                $" {tagString}" +
+		                $" --progress rawjson" +
+		                $" --build-arg BEAM_DOTNET_VERSION={defaultBaseImageTag}" +
+		                $" --build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(dockerContextPath, report.outputDirSupport).Replace("\\", "/")}" +
+		                $" --build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(dockerContextPath,report.outputDirApp).Replace("\\", "/")}" +
+		                $" --build-arg BEAM_APP_DEST=/beamApp/{definition.BeamoId}.dll" +
+		                $" {(forceCpu ? "--platform linux/amd64 " : "")}" +
+		                $" {(noCache ? "--no-cache " : "")}" +
 		                $"{(pull ? "--pull " : "")}" +
-		                $"--label \"beamoId={id.ToLowerInvariant()}\" " +
-		                $"--label \"beamVersion={VersionService.GetNugetPackagesForExecutingCliVersion()}\" "
+		                $"--label \"beamoId={id.ToLowerInvariant()}\"" +
+		                $" --label \"beamVersion={VersionService.GetNugetPackagesForExecutingCliVersion()}\" "
 		                ;
 
 		Log.Verbose($"running docker command with args=[{argString}]");
@@ -621,8 +621,8 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			if (string.IsNullOrEmpty(imageId))
 			{
 				isSuccess = false;
-				Log.Error($"While [{id}] build succeeded, Beamable Tools we were not able to identify image ID from status updates. Try running command again with `--logs verbose` to gather more informations. In case services deployment fails with this message, reach out to Beamable team with this message. " +
-				          $"Make sure to gather information about used OS and Docker version." +
+				Log.Error($"While [{id}] build succeeded, Beamable Tools we were not able to identify image ID from status updates. Try running command again with `--logs verbose` to gather more informations. In case services deployment fails with this message, reach out to Beamable team with this message." +
+				          $" Make sure to gather information about used OS and Docker version." +
 				          $"Here are the status updates: {statusBuffer}. Entire buffer=[{entireBuffer}]");
 			}
 			progressMessage?.Invoke(new ServicesBuiltProgress

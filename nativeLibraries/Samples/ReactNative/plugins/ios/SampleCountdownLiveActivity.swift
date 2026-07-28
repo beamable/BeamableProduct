@@ -129,9 +129,6 @@ struct SampleCountdownLiveActivity: Widget {
     }
 }
 
-@main
-struct BeamableSampleWidgetsBundle: WidgetBundle {
-    var body: some Widget {
-        SampleCountdownLiveActivity()
-    }
-}
+// The `@main WidgetBundle` that registers all of the sample's Live Activity widgets now lives in
+// `SampleWidgetsBundle.swift` (a bundle can declare `@main` only once). This file defines only the
+// countdown widget.

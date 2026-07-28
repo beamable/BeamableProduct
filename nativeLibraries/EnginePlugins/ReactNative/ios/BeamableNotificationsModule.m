@@ -43,4 +43,13 @@ RCT_EXTERN_METHOD(clearAuth)
 RCT_EXTERN_METHOD(startCountdownLiveActivity:(NSDictionary *)options)
 RCT_EXTERN_METHOD(endCountdownLiveActivity)
 
+// Live Activity push-to-start (iOS 17.2+). Begin observing the push-to-start + per-activity update
+// tokens; each token is emitted via the liveActivity* events for the app to register with the rail.
+RCT_EXTERN_METHOD(startLiveActivityPushRegistration)
+// Local starts for Simulator UI/button testing (push-to-start can't run in the Simulator).
+// options = { title, headline, body, buttons:[{id,title,role}] } / { title, body, colors:[hex], flipIntervalMs }.
+RCT_EXTERN_METHOD(startActionsLiveActivity:(NSDictionary *)options)
+RCT_EXTERN_METHOD(startAnimatedLiveActivity:(NSDictionary *)options)
+RCT_EXTERN_METHOD(endLiveActivities)
+
 @end
