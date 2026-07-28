@@ -1,7 +1,9 @@
 using System;
 using Beamable.Api;
 using Beamable.Api.Commerce;
+using Beamable.Api.Payments;
 using Beamable.Common.Content;
+using Beamable.Common.Dependencies;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -87,6 +89,14 @@ namespace Beamable
 				 "in a buffer and optimistically simulate the effects locally in memory. When your player comes back " +
 				 "online, the buffer will be replayed. If this isn't desirable, you should disable the feature.")]
 		public OfflineStrategy InventoryOfflineMode = OfflineStrategy.Optimistic;
+
+		/// <summary>
+		/// When enabled, Beamable skips automatic purchasing initialization and does not request commerce SKUs during <see cref="BeamContext"/> initialization.
+		/// </summary>
+		[Header("Commerce")]
+		[Tooltip("When enabled, Beamable skips automatic purchasing initialization and does not request commerce SKUs when a BeamContext initializes.")]
+		public bool SkipCommerceInitialization = false;
+
 		[Tooltip(@"The CommerceService will use the PlayerStoreView.nextDeltaSeconds value
 to automatically refresh the store content.
 
@@ -268,6 +278,22 @@ The default is 60 seconds.
 			}
 #endif
 			return new string[] { };
+		}
+	}
+
+	[BeamContextSystem]
+	public static class BeamablePurchaserConfigurationRegister
+	{
+		[RegisterBeamableDependencies(1)]
+		public static void RegisterServices(IDependencyBuilder builder)
+		{
+			if (!CoreConfiguration.Instance.SkipCommerceInitialization)
+			{
+				return;
+			}
+
+			builder.RemoveIfExists<IBeamablePurchaser>();
+			builder.AddSingleton<IBeamablePurchaser, DummyPurchaser>();
 		}
 	}
 	

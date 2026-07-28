@@ -241,7 +241,7 @@ public class PublishBundleCommand
 		if (!string.IsNullOrEmpty(args.scope))
 		{
 			var scope = BundleAclScope.Resolve(args.scope, args.AppContext);
-			await bundleApi.PatchBundlesChecksumsAcl(bundle.name, publishedChecksum, ns, new UpdateBundleAclRequest { scope = scope });
+			await bundleApi.PutBundlesChecksumsAcl(bundle.name, publishedChecksum, ns, new UpdateBundleAclRequest { scope = scope });
 			Log.Information($"Widened ACL for checksum=[{publishedChecksum}] to scope=[{scope}]");
 		}
 

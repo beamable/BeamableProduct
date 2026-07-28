@@ -65,9 +65,9 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		catch (RequesterException ex) when (ex.Status == 401)
 		{
 			throw new CliException(
-				message: $"The authorization context is not sufficient to start a microservice in the current realm=[{args.AppContext.Pid}]. " +
-				         $"If you have not logged into the current realm, then you must do so before running the service. " +
-				         $"Run the `beam login` command and retry. ");
+				message: $"The authorization context is not sufficient to start a microservice in the current realm=[{args.AppContext.Pid}]." +
+				         $" If you have not logged into the current realm, then you must do so before running the service." +
+				         $" Run the `beam login` command and retry. ");
 		}
 	}
 

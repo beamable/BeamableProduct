@@ -169,8 +169,8 @@ public class ProjectService
 		{
 			case false when noTemplatesInstalled:
 				throw new CliException(
-					"Before you can continue, you must install the Beamable templates by running - " +
-					"dotnet new --install beamable.templates");
+					"Before you can continue, you must install the Beamable templates by running -" +
+					" dotnet new --install beamable.templates");
 			case false:
 				return;
 		}

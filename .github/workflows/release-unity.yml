@@ -46,7 +46,8 @@ run-name: Release ${{ inputs.releaseType }} ${{ inputs.major }}.${{ inputs.minor
 env:
   DOCKER_REGISTRY: ghcr.io
 jobs:
-  nuget:
+  package:
+    name: Build and Publish the Beamable Unity SDK Package
     timeout-minutes: 60
     runs-on: ubuntu-latest
     permissions:
@@ -61,8 +62,9 @@ jobs:
       matrix:
         unityVersion:
           - 6000.3.0f1
-        gameCiVersion:
-          - 3.2.1
+    env:
+      GAME_CI_VERSION: >-
+        ${{ fromJSON('{"6000.2.8f1": "3.2.0", "6000.3.0f1": "3.2.1"}')[matrix.unityVersion] || '3.1.0' }}
     outputs:
       version: ${{ steps.version.outputs.VERSION }}
     steps:
@@ -76,23 +78,23 @@ jobs:
           echo rc=${{ inputs.rcNumber }}
           echo releaseType=${{ inputs.releaseType }}
          
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: 
           ref: ${{ github.event.inputs.commit }}
 
       - name: Log in to the Container registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup .NET Core SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
@@ -112,7 +114,7 @@ jobs:
           jq --version
 
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
@@ -128,9 +130,26 @@ jobs:
 
       - name: Install CLI
         working-directory: ./
+        # The Unity SDK pins a CLI/Nuget version in versions-default.json. When that
+        # version is the local dev version (0.0.123.x), build the CLI from source via
+        # setup.sh/dev.sh. For any other (released) version, install that exact
+        # published Beamable.Tools instead. ~Claude
         run: |
-          bash ./setup.sh
-          bash ./dev.sh 
+          CLI_VERSION=$(jq -r .nugetPackageVersion client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json)
+          echo "Pinned CLI version: $CLI_VERSION"
+          case "$CLI_VERSION" in
+            0.0.123*)
+              echo "Local dev version detected; building CLI from source."
+              bash ./setup.sh
+              bash ./dev.sh
+              ;;
+            *)
+              echo "Released version detected; installing Beamable.Tools $CLI_VERSION."
+              dotnet tool install Beamable.Tools --version "$CLI_VERSION" --global
+              echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+              ;;
+          esac
+          ls ./client/Packages/com.beamable/Editor/BeamCli/Commands/
 
       - name: Check CLI
         run: beam version
@@ -230,7 +249,6 @@ jobs:
           ls ./client/Packages/com.beamable
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
-      
 
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
@@ -259,7 +277,7 @@ jobs:
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
         with:
-          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ matrix.gameCiVersion }}
+          customImage: ${{ env.DOCKER_REGISTRY }}/beamable/editor:ubuntu-${{ matrix.unityVersion }}-base-${{ env.GAME_CI_VERSION }}
           customParameters: -beamableOrgId ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -username ${{ secrets.UNITY_EMAIL }} -password ${{ secrets.UNITY_PASSWORD }} -cloudOrganization ${{ secrets.BEAMABLE_UNITY_ORG_ID }} -upmPack client/Packages/com.beamable client/build/package_dist/com.beamable
           gitPrivateToken: ${{ secrets.GITHUB_TOKEN }}
           unityVersion: ${{ matrix.unityVersion }}
@@ -324,18 +342,15 @@ jobs:
             }')[github.event.inputs.releaseType] }}
 
       - name: Create Release
-        id: create_release
-        if: ${{ inputs.dryRun == false }} 
-        uses: actions/create-release@v1
+        if: ${{ inputs.dryRun == false }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-        with:
-          tag_name: unity-sdk-${{ steps.version.outputs.VERSION }}
-          release_name: Unity SDK ${{ steps.version.outputs.VERSION }}
-          body: |
-            Unity SDK Release ${{ steps.version.outputs.VERSION }}
-          draft: false
-          prerelease: ${{ inputs.releaseType != 'production' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "unity-sdk-${{ steps.version.outputs.VERSION }}" \
+            --target "${{ github.sha }}" \
+            --title "Unity SDK ${{ steps.version.outputs.VERSION }}" \
+            --notes "Unity SDK Release ${{ steps.version.outputs.VERSION }}" \
+            ${{ inputs.releaseType != 'production' && '--prerelease' || '' }}
 
       # Close the matching "Unity X.Y.Z" milestone once a production release ships.
       # Warns (does not fail) when no open milestone matches, so it never blocks a release. ~Claude
@@ -355,10 +370,10 @@ jobs:
           fi
 
   lightbeam:
-    needs: nuget
+    needs: package
     uses: ./.github/workflows/lightBeamRelease.yml
     with:
-      customTag: unity-sdk-${{ needs.nuget.outputs.version }}
+      customTag: unity-sdk-${{ needs.package.outputs.version }}
     secrets:
       UNITY_EMAIL: ${{ secrets.UNITY_EMAIL_DEVOPS }}
       UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD_DEVOPS }}

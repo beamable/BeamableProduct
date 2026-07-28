@@ -42,8 +42,8 @@ public class YankBundleCommand : AtomicCommand<YankBundleCommandArgs, YankBundle
 		var manifest = args.ConfigService.LoadManifestReferences();
 		if (manifest != null && manifest.references.TryGetValue(fullName, out var pinned) && pinned == checksum)
 		{
-			Log.Warning($"[{fullName}] is pinned to this yanked checksum in {ConfigService.MANIFEST_FILE_NAME}. " +
-			            $"Existing deploys keep working, but you can't newly reference it. Run `beam bundles prune-yanked` to review/clear.");
+			Log.Warning($"[{fullName}] is pinned to this yanked checksum in {ConfigService.MANIFEST_FILE_NAME}." +
+			            $" Existing deploys keep working, but you can't newly reference it. Run `beam bundles prune-yanked` to review/clear.");
 		}
 
 		return new YankBundleCommandOutput { name = response.name, checksum = response.checksum };

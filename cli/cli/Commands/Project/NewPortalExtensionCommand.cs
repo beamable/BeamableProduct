@@ -299,13 +299,13 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		{
 			if (string.IsNullOrEmpty(args.mountSelector))
 				throw new CliException(
-					$"--mount-selector is required for component pages. " +
-					$"Valid selectors for '{args.mountPage}': {string.Join(", ", componentConfig.selectors.Select(s => s.selector))}");
+					$"--mount-selector is required for component pages." +
+					$" Valid selectors for '{args.mountPage}': {string.Join(", ", componentConfig.selectors.Select(s => s.selector))}");
 			var selector = componentConfig.selectors.FirstOrDefault(s => s.selector == args.mountSelector);
 			if (selector == null)
 				throw new CliException(
-					$"Invalid --mount-selector '{args.mountSelector}' for page '{args.mountPage}'. " +
-					$"Valid selectors: {string.Join(", ", componentConfig.selectors.Select(s => s.selector))}");
+					$"Invalid --mount-selector '{args.mountSelector}' for page '{args.mountPage}'." +
+					$" Valid selectors: {string.Join(", ", componentConfig.selectors.Select(s => s.selector))}");
 			return selector;
 		}
 
@@ -314,8 +314,8 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		// "cars" hub) — and the page slot selector is auto-assigned.
 		if (pageSelector == null)
 			throw new CliException(
-				"No page mount slot is available from the Portal config, so a full-page extension cannot be created. " +
-				"Run 'portal extension list-extension-options' to see valid component pages and selectors.");
+				"No page mount slot is available from the Portal config, so a full-page extension cannot be created." +
+				" Run 'portal extension list-extension-options' to see valid component pages and selectors.");
 		args.mountSelector = pageSelector.selector;
 		return pageSelector;
 	}

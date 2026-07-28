@@ -16,13 +16,11 @@ jobs:
           PR_NO: ${{ github.event.issue.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Comment PR
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: |
-            Formatting requested...
-          pr_number: ${{ github.event.issue.number }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment ${{ github.event.issue.number }} --body "Formatting requested..."
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ steps.get-branch.outputs.branch }}
           fetch-depth: 0
@@ -36,30 +34,26 @@ jobs:
         run: echo ::set-output name=any::$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)
         id: format-changes
       - name: Lint changelogs
-        uses: DavidAnson/markdownlint-cli2-action@v10
+        uses: DavidAnson/markdownlint-cli2-action@v24.1.0
         continue-on-error: true
         with:
-          command: fix
+          fix: true
           globs: |
             client/Packages/**/CHANGELOG.md
             cli/cli/CHANGELOG.md
-      - uses: EndBug/add-and-commit@v9
+      - uses: EndBug/add-and-commit@v10
         if: ${{ steps.format-changes.outputs.any == 'true' }}
         with:
           message: Format code
           committer_name: GitHub Actions
           committer_email: 41898282+github-actions[bot]@users.noreply.github.com
       - name: Comment PR
-        uses: thollander/actions-comment-pull-request@v2
         if: ${{ steps.format-changes.outputs.any == 'true' }}
-        with:
-          message: |
-            Formatting completed!
-          pr_number: ${{ github.event.issue.number }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment ${{ github.event.issue.number }} --body "Formatting completed!"
       - name: Comment PR
-        uses: thollander/actions-comment-pull-request@v2
         if: ${{ steps.format-changes.outputs.any == 'false' }}
-        with:
-          message: |
-            No need for formatting ;)
-          pr_number: ${{ github.event.issue.number }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment ${{ github.event.issue.number }} --body "No need for formatting ;)"

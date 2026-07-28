@@ -830,7 +830,11 @@ namespace Beamable.Editor.UI.ContentWindow
 			};
 			_historyEllipsisLabelStyle = new GUIStyle(EditorStyles.miniLabel)
 			{
+#if UNITY_6000_3_OR_NEWER
 				clipping = TextClipping.Ellipsis,
+#else
+				clipping = TextClipping.Clip, // TextClipping.Ellipsis was added in Unity 6.3; the SDK supports 2021.3+
+#endif
 				wordWrap = false
 			};
 			_historyManifestCopyButtonStyle = new GUIStyle(EditorStyles.iconButton)

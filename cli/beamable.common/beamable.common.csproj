@@ -52,7 +52,7 @@
       <Compile Remove="Runtime\OpenApi\BeamServiceplanCommon.gs.cs" />
       <Compile Remove="Runtime\OpenApi\BeamAdmin.gs.cs" />
     </ItemGroup>
-    
+
     <!-- MSBuild only keeps the last target with a given name, so this must stay a single
          target; a per-framework copy under the same name is silently discarded. -->
     <Target Name="CopyCodeToUnity"

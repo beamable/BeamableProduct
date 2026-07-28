@@ -58,7 +58,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		AddArgument(new Argument<string>(
 			name: "path", 
 			getDefaultValue: () => ".",
-			description: "the folder that will be initialized as a beamable project. "), 
+			description: "the folder that will be initialized as a beamable project"),
 			(args, i) => args.path = Path.GetFullPath(i));
 		
 		AddOption(new UsernameOption(), (args, i) => args.username = i);

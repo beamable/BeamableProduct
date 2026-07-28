@@ -59,7 +59,7 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.commit }}
 
@@ -106,18 +106,15 @@ jobs:
         run: npm publish --no-git-checks --provenance --access public --tag ${{ steps.version.outputs.NPM_TAG }}
 
       - name: Create Release
-        id: create_release
-        if: ${{ inputs.dryRun == false }} 
-        uses: actions/create-release@v1
+        if: ${{ inputs.dryRun == false }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-        with:
-          tag_name: web-sdk-${{ steps.version.outputs.VERSION }}
-          release_name: Web SDK ${{ steps.version.outputs.VERSION }}
-          body: |
-            Web SDK Release ${{ steps.version.outputs.VERSION }}
-          draft: false
-          prerelease: ${{ inputs.releaseType != 'production' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "web-sdk-${{ steps.version.outputs.VERSION }}" \
+            --target "${{ github.sha }}" \
+            --title "Web SDK ${{ steps.version.outputs.VERSION }}" \
+            --notes "Web SDK Release ${{ steps.version.outputs.VERSION }}" \
+            ${{ inputs.releaseType != 'production' && '--prerelease' || '' }}
 
       - name: Publish Changelog
         if: ${{ inputs.dryRun == false }}

@@ -101,8 +101,8 @@ public class ReleaseDeploymentCommand
 				if (DeployUtil.IsJsonAManifest(data))
 				{
 					throw new CliException(
-						$"The file {args.fromPlanFile} appears to contain a manifest, but should contain a plan. " +
-						$"Use `dotnet beam deploy release --from-manifest {args.fromPlanFile}` to create a plan.");
+						$"The file {args.fromPlanFile} appears to contain a manifest, but should contain a plan." +
+						$" Use `dotnet beam deploy release --from-manifest {args.fromPlanFile}` to create a plan.");
 				}
 				throw new CliException(
 					$"The file {args.fromPlanFile} does not contain a valid plan. Use the `dotnet beam deploy plan` command to create a plan.");
