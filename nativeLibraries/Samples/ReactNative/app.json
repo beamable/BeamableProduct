@@ -11,7 +11,7 @@
       "output": "single"
     },
     "ios": {
-      "bundleIdentifier": "com.beamble.samples.beamfarmrn",
+      "bundleIdentifier": "com.beamble.samples.beamfarm",
       "supportsTablet": true
     },
     "android": {
