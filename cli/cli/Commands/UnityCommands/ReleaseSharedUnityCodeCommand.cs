@@ -96,7 +96,7 @@ public class ReleaseSharedUnityCodeCommand : AtomicCommand<ReleaseSharedUnityCod
 		Log.Information($"Copying code src=[{args.csProjPath}] to dst=[{dstPath}]");
 
 		// clean up all old cs and meta files, while leaving possible Unity specific files, like asmdef files.
-		UnityProjectUtil.DeleteAllFilesWithExtensions(dstPath, new string[]{".cs", ".cs.meta"});
+		UnityProjectUtil.DeleteAllFilesWithExtensionsAndEmptyDirectories(dstPath, new string[]{".cs", ".cs.meta"});
 
 		var srcDir = Path.Combine(Path.GetDirectoryName(args.csProjPath), args.relativeSrc);
 		UnityProjectUtil.CopyProject(srcDir, dstPath);

@@ -8,7 +8,9 @@
         "Beamable.Service",
         "Unity.Beamable.Runtime.Common",
         "UnityEngine.Purchasing",
-        "UnityEngine.Purchasing.Stores"
+        "UnityEngine.Purchasing.Stores",
+        "Unity.Purchasing",
+        "Unity.Purchasing.Stores"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -26,6 +28,11 @@
             "name": "com.unity.purchasing",
             "expression": "4.6",
             "define": "UNITY_PURCHASING_4_6_OR_NEWER"
+        },
+        {
+            "name": "com.unity.purchasing",
+            "expression": "5.0",
+            "define": "UNITY_PURCHASING_5_OR_NEWER"
         }
     ],
     "noEngineReferences": false

@@ -129,8 +129,8 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 
 		if (args.services.Count > 1)
 		{
-			Log.Warning("You are starting multiple services " +
-			            "Their log output will be shown interleaved; for optimal log viewing, use the `beam project logs' command");
+			Log.Warning("You are starting multiple services" +
+			            " Their log output will be shown interleaved; for optimal log viewing, use the `beam project logs' command");
 		}
 
 		// Emit some progress messages to let any listeners know we are doing work...

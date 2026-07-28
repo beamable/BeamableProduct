@@ -29,10 +29,10 @@ jobs:
       SAMPLE_DIR: web/samples/WordWiz
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22.14.0'
 
@@ -55,8 +55,8 @@ jobs:
           GIT_WEB_SDK_SAMPLE_PAT: ${{ secrets.GIT_WEB_SDK_SAMPLE_PAT }}
           SAMPLE_DIR: ${{ env.SAMPLE_DIR }}
           
-      - uses: github-actions-up-and-running/pr-comment@v1.0.1
+      - name: Comment PR
         if: ${{ github.event_name == 'pull_request' }}
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          message: Web SDK Sample Build [link](https://beamable.github.io/web-sdk-sample/)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --body "Web SDK Sample Build [link](https://beamable.github.io/web-sdk-sample/)"

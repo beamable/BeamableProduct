@@ -1022,8 +1022,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 							context.PerSubsystemEndpointNameCollisions[serviceName][endpointName] = true;
 
 							var firstServiceData = helperLogDictLocal[endpointName];
-							Log.Debug(GetLog(logHeader, $"Found endpoint name collision within service. Service=[{serviceName}], " +
-							                            $" FirstOperation=[{firstServiceData.operationType}], FirstEndpointPath=[{firstServiceData.endpointPath}]," +
+							Log.Debug(GetLog(logHeader, $"Found endpoint name collision within service. Service=[{serviceName}]," +
+							                            $"  FirstOperation=[{firstServiceData.operationType}], FirstEndpointPath=[{firstServiceData.endpointPath}]," +
 							                            $" Operation=[{operationType}], EndpointPath=[{endpointPath}]," +
 							                            $" NamespacedName=[{endpointName.AsStr}]"));
 						}
@@ -2132,9 +2132,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		var doesConflict = endpointNameOverlaps != null && endpointNameOverlaps.TryGetValue(methodName, out var conflicts) && conflicts;
 		if (doesConflict)
 		{
-			throw new ArgumentException($"{methodName} was found in more than one service. " +
-			                            $"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
-			                            $"Please change your Microservice name to resolve this.");
+			throw new ArgumentException($"{methodName} was found in more than one service." +
+			                            $" In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API." +
+			                            $" Please change your Microservice name to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -2164,8 +2164,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		var doesConflict = endpointNameOverlaps != null && endpointNameOverlaps.TryGetValue(methodName, out var conflicts) && conflicts;
 		if (doesConflict)
 		{
-			throw new ArgumentException($"{methodName} was overloaded in {serviceName}. " +
-			                            $"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
+			throw new ArgumentException($"{methodName} was overloaded in {serviceName}." +
+			                            $" We do not support overloading Callable/ClientCallable/AdminCallable functions." +
 			                            $"Please rename all overloads to resolve this.");
 		}
 

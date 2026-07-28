@@ -87,12 +87,12 @@ public class SolutionCommandArgs : NewProjectCommandArgs, IHasSolutionFileArg
 					return relativePath;
 				},
 				description:
-				"Relative path to the .sln file to use for the new project. " +
-				"If the .sln file does not exist, it will be created. " +
-				"When no option is configured, if this command is executing inside a .beamable folder, " +
-				"then the first .sln found in .beamable/.. will be used. " +
-				"If no .sln is found, the .sln path will be <name>.sln. " +
-				"If no .beamable folder exists, then the <project>/<project>.sln will be used"),
+				"Relative path to the .sln file to use for the new project." +
+				" If the .sln file does not exist, it will be created." +
+				" When no option is configured, if this command is executing inside a .beamable folder," +
+				" then the first .sln found in .beamable/.. will be used." +
+				" If no .sln is found, the .sln path will be <name>.sln." +
+				" If no .beamable folder exists, then the <project>/<project>.sln will be used"),
 			(args, i) =>
 			{
 				if (string.IsNullOrEmpty(i))
@@ -329,8 +329,8 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 		var prompt = new MultiSelectionPrompt<string>()
 			.Title("Storage Dependencies")
-			.InstructionsText("Which storages will be added to this service?\n[grey](Press [blue]<space>[/] to toggle, " +
-			                  "[green]<enter>[/] to accept)[/]")
+			.InstructionsText("Which storages will be added to this service?\n[grey](Press [blue]<space>[/] to toggle," +
+			                  " [green]<enter>[/] to accept)[/]")
 			.AddChoices(choices)
 			.AddBeamHightlight()
 			.NotRequired();

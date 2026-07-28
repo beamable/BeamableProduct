@@ -30,10 +30,10 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>, IStandaloneComma
 				.Color(Color.Red));
 
 		var url = args.AppContext.Host.Replace("api.", "portal.") + "/signup/registration";
-		AnsiConsole.WriteLine("Welcome to Beamable. " +
-		                      "You are creating a new Beamable organization. " +
-		                      "If you already have an organization, use the 'beam init' command to sign in. " + 
-		                      $"Otherwise, open a browser to {url} to create an organization, and then run `beam init` to sign in on the CLI. "
+		AnsiConsole.WriteLine("Welcome to Beamable." +
+		                      " You are creating a new Beamable organization." +
+		                      " If you already have an organization, use the 'beam init' command to sign in." + 
+		                      $" Otherwise, open a browser to {url} to create an organization, and then run `beam init` to sign in on the CLI. "
 		                      );
 		
 		// const string url = "https://portal.beamable.com/signup/registration";

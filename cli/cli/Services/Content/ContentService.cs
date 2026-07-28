@@ -832,8 +832,8 @@ public partial class ContentService
 				var jitterMs    = rng.Next(-baseDelayMs / 5, baseDelayMs / 5);
 				var delayMs     = Math.Max(500, baseDelayMs + jitterMs);
 				Log.Warning(
-					"Content publish batch received HTTP {Status} (attempt {Attempt}/{MaxRetries}) — " +
-					"retrying in {Delay} ms.  Server: {Error}",
+					"Content publish batch received HTTP {Status} (attempt {Attempt}/{MaxRetries}) —" +
+					" retrying in {Delay} ms.  Server: {Error}",
 					ex.Status, attempt + 1, CONTENT_PUBLISH_MAX_RETRIES, delayMs,
 					ex.RequestError?.message ?? ex.Message);
 				await Task.Delay(delayMs);
@@ -912,8 +912,8 @@ public partial class ContentService
 		{
 			var conflicted = localAgainstLatest.ContentFiles.Where(c => c.IsInConflict).Select(c => c.Id);
 			throw new CliException(
-				"You have conflicting changes that were made against an older manifest. " +
-				$"Please run `dotnet beam content sync --sync-conflicts --filter {string.Join(",", conflicted)}` (this will discard all your local changes for the conflicting files)." +
+				"You have conflicting changes that were made against an older manifest." +
+				$" Please run `dotnet beam content sync --sync-conflicts --filter {string.Join(",", conflicted)}` (this will discard all your local changes for the conflicting files)." +
 				$"If you'd like, you can then re-apply your local ones before publishing. ",
 				ERR_CODE_PUBLISH_FAILED_INVALID_REFERENCE_MANIFEST, true);
 		}
@@ -1031,8 +1031,8 @@ public partial class ContentService
 			// Unwrap AggregateException so the message contains the real failure.
 			var inner = e is AggregateException agg ? (agg.InnerException ?? e) : e;
 			throw new CliException(
-				$"Failed to save the local content after {CONTENT_PUBLISH_MAX_RETRIES} retries. " +
-				$"Please try again. {inner.GetType().Name}: {inner.Message}");
+				$"Failed to save the local content after {CONTENT_PUBLISH_MAX_RETRIES} retries." +
+				$" Please try again. {inner.GetType().Name}: {inner.Message}");
 		}
 		
 		// Prepare the save manifest request using the response from the save content request.
@@ -1968,7 +1968,7 @@ public partial class ContentService
 			{
 				try
 				{
-					manifest = await _contentApi.GetManifestPublicJson(manifestId, manifestUid);
+					manifest = await _contentApi.GetManifestPublicJson(manifestId, uid: manifestUid);
 				}
 				catch (RequesterException e)
 				{
