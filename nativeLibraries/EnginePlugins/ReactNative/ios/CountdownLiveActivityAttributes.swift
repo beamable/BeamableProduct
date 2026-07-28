@@ -30,6 +30,25 @@ public struct BeamCountdownActivityAttributes: ActivityAttributes {
             self.body = body
             self.isExpired = isExpired
         }
+
+        // Tolerant decode so an incomplete/differently-encoded push-to-start `content-state` still
+        // starts the Activity. `expiresAt` accepts a numeric epoch (seconds or milliseconds) or a
+        // JSON date; a missing/instant value falls back to +5 min so the card still renders. `encode`
+        // stays synthesized (local start uses the memberwise init above).
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            body = (try? c.decode(String.self, forKey: .body)) ?? ""
+            isExpired = (try? c.decode(Bool.self, forKey: .isExpired)) ?? false
+            if let secs = try? c.decode(Double.self, forKey: .expiresAt) {
+                // Heuristic: values that look like epoch-ms are divided down to seconds.
+                let seconds = secs > 4_102_444_800 ? secs / 1000.0 : secs
+                expiresAt = Date(timeIntervalSince1970: seconds)
+            } else if let date = try? c.decode(Date.self, forKey: .expiresAt) {
+                expiresAt = date
+            } else {
+                expiresAt = Date().addingTimeInterval(300)
+            }
+        }
     }
 
     /// Static title shown for the life of the activity.

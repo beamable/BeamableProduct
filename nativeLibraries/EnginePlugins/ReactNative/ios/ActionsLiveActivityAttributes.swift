@@ -17,6 +17,15 @@ public struct BeamLiveActivityButton: Codable, Hashable {
         self.title = title
         self.role = role
     }
+
+    // Tolerant decode: a push-to-start payload is decoded by the OS with a strict decoder, and a
+    // single missing key would throw and drop the whole Live Activity start. Default any absent key.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? c.decode(String.self, forKey: .id)) ?? ""
+        title = (try? c.decode(String.self, forKey: .title)) ?? ""
+        role = (try? c.decode(String.self, forKey: .role)) ?? "default"
+    }
 }
 
 /// Shared `ActivityAttributes` for the "actions" **Live Activity**. The always-visible Lock-Screen /
@@ -49,6 +58,17 @@ public struct BeamActionsActivityAttributes: ActivityAttributes {
             self.body = body
             self.buttons = buttons
             self.isResolved = isResolved
+        }
+
+        // Tolerant decode so an incomplete push-to-start `content-state` still starts the Activity
+        // (a missing non-optional key would otherwise make the OS silently drop the start). `encode`
+        // stays synthesized.
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            headline = (try? c.decode(String.self, forKey: .headline)) ?? ""
+            body = (try? c.decode(String.self, forKey: .body)) ?? ""
+            buttons = (try? c.decode([BeamLiveActivityButton].self, forKey: .buttons)) ?? []
+            isResolved = (try? c.decode(Bool.self, forKey: .isResolved)) ?? false
         }
     }
 
