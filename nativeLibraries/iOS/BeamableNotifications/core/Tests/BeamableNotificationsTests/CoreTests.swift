@@ -339,6 +339,104 @@ final class CoreTests: XCTestCase {
         registry.register(Dropper())
         XCTAssertNil(registry.transformWillSchedule(LocalRequest(id: "1")))
     }
+
+    // MARK: Action buttons (the `buttons` wire key)
+
+    /// The rail stringifies every non-scalar, so this is the shape that actually arrives on device.
+    func testButtonsParseFromJSONString() {
+        let raw = "[{\"id\":\"claim\",\"title\":\"Claim\",\"role\":\"default\"}," +
+                  "{\"id\":\"dismiss\",\"title\":\"No thanks\",\"role\":\"destructive\"}]"
+        let buttons = BeamActionButtons.parse(userInfo: ["buttons": raw])
+        XCTAssertEqual(buttons.count, 2)
+        XCTAssertEqual(buttons[0], BeamActionButton(id: "claim", title: "Claim", role: "default"))
+        XCTAssertTrue(buttons[1].isDestructive)
+    }
+
+    /// A locally-scheduled notification or a hand-written `simctl push` can carry a real array.
+    func testButtonsParseFromArray() {
+        let raw: [[String: Any]] = [["id": "claim", "title": "Claim", "role": "default"]]
+        let buttons = BeamActionButtons.parse(userInfo: ["buttons": raw])
+        XCTAssertEqual(buttons.map(\.id), ["claim"])
+    }
+
+    /// A malformed value must degrade the buttons, never the notification — the caller falls back to
+    /// the built-in pair on an empty result.
+    func testButtonsParseTolerantOfGarbage() {
+        XCTAssertTrue(BeamActionButtons.parse(userInfo: ["buttons": "not json"]).isEmpty)
+        XCTAssertTrue(BeamActionButtons.parse(userInfo: ["buttons": ""]).isEmpty)
+        XCTAssertTrue(BeamActionButtons.parse(userInfo: ["buttons": 42]).isEmpty)
+        XCTAssertTrue(BeamActionButtons.parse(userInfo: [:]).isEmpty)
+    }
+
+    /// Missing keys default rather than throwing away the whole set.
+    func testButtonsPartialEntryDecodes() {
+        let buttons = BeamActionButtons.parse(userInfo: ["buttons": "[{\"id\":\"a\",\"title\":\"A\"}]"])
+        XCTAssertEqual(buttons.first?.role, "default")
+        XCTAssertFalse(buttons.first?.isDestructive ?? true)
+    }
+
+    func testButtonsSanitizeDropsUnusableDedupesAndCaps() {
+        let input = [
+            BeamActionButton(id: "", title: "blank id", role: "default"),
+            BeamActionButton(id: "no-title", title: "  ", role: "default"),
+            // Would be indistinguishable from "player tapped the body" in the tap path.
+            BeamActionButton(id: "com.apple.UNNotificationDefaultActionIdentifier", title: "X"),
+            BeamActionButton(id: "a", title: "A"),
+            BeamActionButton(id: "a", title: "A duplicate"),
+            BeamActionButton(id: "b", title: "B"),
+            BeamActionButton(id: "c", title: "C"),
+        ]
+        let out = BeamActionButtons.sanitize(input)
+        XCTAssertEqual(out.map(\.id), ["a", "b"], "keeps first-wins order, capped at maxButtons")
+        XCTAssertEqual(BeamActionButtons.maxButtons, 2)
+    }
+
+    /// The id must be stable across processes and launches: the NSE and the app both compute it, and
+    /// repeated pushes of one campaign must reuse a single registration. A literal expectation here is
+    /// deliberate — it fails loudly if the hash is ever refactored.
+    func testCategoryIdIsDeterministic() {
+        let buttons = [BeamActionButton(id: "claim", title: "Claim"),
+                       BeamActionButton(id: "dismiss", title: "No thanks", role: "destructive")]
+        let id = BeamActionButtons.categoryId(for: buttons)
+        XCTAssertEqual(id, BeamActionButtons.categoryId(for: buttons))
+        XCTAssertTrue(BeamActionButtons.isSynthesized(id))
+        XCTAssertEqual(id, "beam_actions_" + BeamActionButtons.fnv1a64Hex(
+            "claim\u{01}Claim\u{01}default\u{02}dismiss\u{01}No thanks\u{01}destructive"))
+    }
+
+    func testCategoryIdVariesWithTitleAndRole() {
+        let a = BeamActionButtons.categoryId(for: [BeamActionButton(id: "x", title: "Claim")])
+        let b = BeamActionButtons.categoryId(for: [BeamActionButton(id: "x", title: "Claimed")])
+        let c = BeamActionButtons.categoryId(for: [BeamActionButton(id: "x", title: "Claim",
+                                                                   role: "destructive")])
+        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(a, c)
+    }
+
+    /// No buttons ⇒ the built-in category, so callers can use the result unconditionally.
+    func testCategoryIdEmptyFallsBackToBuiltIn() {
+        XCTAssertEqual(BeamActionButtons.categoryId(for: []),
+                       BeamActionButtons.builtInActionsCategory)
+        XCTAssertFalse(BeamActionButtons.isSynthesized(BeamActionButtons.builtInActionsCategory))
+    }
+
+    /// Option mapping must mirror the built-in pair: destructive is not foreground, everything else is
+    /// (its tap has to route the deep link, which needs the app frontmost).
+    func testSynthesizedCategorySpecMapsRoles() {
+        let spec = CategorySpec(synthesizedFrom: [
+            BeamActionButton(id: "claim", title: "Claim"),
+            BeamActionButton(id: "dismiss", title: "No thanks", role: "destructive"),
+        ])
+        XCTAssertEqual(spec.id, BeamActionButtons.categoryId(for: [
+            BeamActionButton(id: "claim", title: "Claim"),
+            BeamActionButton(id: "dismiss", title: "No thanks", role: "destructive"),
+        ]))
+        XCTAssertEqual(spec.actions.count, 2)
+        XCTAssertEqual(spec.actions[0].foreground, true)
+        XCTAssertNil(spec.actions[0].destructive)
+        XCTAssertEqual(spec.actions[1].destructive, true)
+        XCTAssertNil(spec.actions[1].foreground)
+    }
 }
 
 private final class TagInjector: NSObject, NotificationPlugin {

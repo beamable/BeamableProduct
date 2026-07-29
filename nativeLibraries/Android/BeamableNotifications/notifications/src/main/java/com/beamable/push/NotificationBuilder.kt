@@ -37,6 +37,13 @@ object NotificationBuilder {
     private const val STYLE_BIG_PICTURE = "bigPicture"
     private const val STYLE_BIG_TEXT = "bigText"
 
+    /**
+     * The `actions` style. Deliberately NOT a branch in [applyStyle] — it has no layout of its own and
+     * renders the default one; it only affects which BUTTONS appear (see [resolveActions]), because
+     * buttons are orthogonal to style on Android.
+     */
+    private const val STYLE_ACTIONS = "actions"
+
     // Under the default preset, bodies longer than this auto-promote to BigTextStyle so the full
     // text is available on expand (the "sensible default" behavior).
     private const val DEFAULT_BIG_TEXT_THRESHOLD = 40
@@ -103,20 +110,44 @@ object NotificationBuilder {
     }
 
     /**
-     * Adds one action button per action of the template's registered [NotificationCategorySpec]
-     * (looked up by [NotificationTemplate.category]). No-op when the notification names no category
-     * or the category was never registered. Each button opens the app carrying its `actionId`, which
-     * surfaces to the engine via the normal open path (see [buildActionIntent] / IntentDataReader).
+     * Adds one action button per resolved action (see [resolveActions]). Each button opens the app
+     * carrying its `actionId`, which surfaces to the engine via the normal open path (see
+     * [buildActionIntent] / IntentDataReader).
      */
     private fun applyActions(
         context: Context,
         builder: NotificationCompat.Builder,
         template: NotificationTemplate
     ) {
-        val category = CategoryStore.get(context, template.category) ?: return
-        category.actions.forEachIndexed { index, action ->
+        resolveActions(context, template).forEachIndexed { index, action ->
             builder.addAction(0, action.title, buildActionIntent(context, template, action, index))
         }
+    }
+
+    /**
+     * Resolves which action buttons to render, in three tiers (mirroring the iOS `StyleServicePlugin`):
+     *
+     *  1. a **registered category** named by [NotificationTemplate.category] — the app-authored set.
+     *     It keeps precedence, so an app that registered its own buttons is unaffected by this change
+     *     and can still override the built-in pair by re-registering `beam_actions`.
+     *  2. the payload's own **[NotificationTemplate.buttons]** — what lets a campaign author's labels
+     *     ("Claim" / "No thanks") reach the device with no app-side registration at all. Previously
+     *     Android ignored these and a push with no registered category rendered no buttons.
+     *  3. for `style: "actions"` only, the SDK's **built-in Open / Dismiss pair**, so the style always
+     *     renders buttons even when the payload carries neither of the above.
+     *
+     * Empty for any other style with no category and no buttons — buttons stay opt-in.
+     */
+    private fun resolveActions(
+        context: Context,
+        template: NotificationTemplate
+    ): List<NotificationActionSpec> {
+        CategoryStore.get(context, template.category)?.let { return it.actions }
+
+        val payloadButtons = ActionButtons.parse(template.buttons)
+        if (payloadButtons.isNotEmpty()) return payloadButtons
+
+        return if (template.style == STYLE_ACTIONS) ActionButtons.builtInActions() else emptyList()
     }
 
     /**

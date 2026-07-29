@@ -52,6 +52,7 @@ const EVENT_COLOR: Record<BeamableEvent, string> = {
   liveActivityPushToStartToken: '#4f46e5',
   liveActivityUpdateToken: '#0369a1',
   liveActivityStarted: '#15803d',
+  liveActivityCapability: '#9333ea',
 };
 
 // One captured native-event firing.

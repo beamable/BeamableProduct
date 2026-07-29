@@ -46,8 +46,21 @@ void bmn_trackOfferClicked(const char *requestJson);   // emits a "Clicked" funn
 void bmn_trackOfferConverted(const char *requestJson); // emits a "Converted" funnel event
 
 // Templates (feature 4) & action-button categories (feature 7).
+// Note: a remote `actions`-style push no longer needs a pre-registered category — the NSE synthesizes
+// one from the payload's `buttons` array so the campaign author's own labels render. Use
+// bmn_registerCategory for app-defined button sets, or to override that per-payload behavior.
 void bmn_registerTemplate(const char *templateJson);
 void bmn_registerCategory(const char *categoryJson);
+
+// Live Activity (iOS 17.2+ push-to-start). Start observing, then forward each token to
+// message-rail/register yourself — the SDK does not, because the app owns the authenticated player.
+// A build with no WidgetKit extension reports widgetPresent:false and publishes NO token, so the rail
+// delivers a notification with the payload's action buttons instead.
+void bmn_startLiveActivityObservation(void);
+const char *bmn_getLiveActivityCapabilities(void);     // JSON array; release with bmn_free
+void bmn_setOnLiveActivityToken(bmn_callback cb);      // {"kind":"pushToStart"|"update",...,"token":"<hex>"}
+void bmn_setOnLiveActivityStarted(bmn_callback cb);    // {"activityType","attributesType","activityId"}
+void bmn_setOnLiveActivityCapability(bmn_callback cb); // JSON array; available:false => withdraw token
 
 // Badge / delivered.
 void bmn_setBadge(int count);

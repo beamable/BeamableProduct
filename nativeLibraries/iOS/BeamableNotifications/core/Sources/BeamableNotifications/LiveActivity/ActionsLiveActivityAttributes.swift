@@ -2,43 +2,24 @@ import Foundation
 #if canImport(ActivityKit)
 import ActivityKit
 
-/// A single action button rendered inside the "actions" **Live Activity** (the always-visible,
-/// Lock-Screen answer to "action buttons without tap-and-hold"). Lives in `ContentState` — NOT the
-/// static attributes — so the server can change the buttons with an update push (e.g. swap "Claim"
-/// for "Claimed" after the player taps). `role` mirrors the native `actions` category semantics
-/// (`CategoryStore` foreground/destructive): `"destructive"` tints the button red and, by
-/// convention, ends the activity; anything else is a normal action.
-public struct BeamLiveActivityButton: Codable, Hashable {
-    public var id: String
-    public var title: String
-    public var role: String   // "default" | "destructive"
-    public init(id: String, title: String, role: String = "default") {
-        self.id = id
-        self.title = title
-        self.role = role
-    }
-
-    // Tolerant decode: a push-to-start payload is decoded by the OS with a strict decoder, and a
-    // single missing key would throw and drop the whole Live Activity start. Default any absent key.
-    public init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        id = (try? c.decode(String.self, forKey: .id)) ?? ""
-        title = (try? c.decode(String.self, forKey: .title)) ?? ""
-        role = (try? c.decode(String.self, forKey: .role)) ?? "default"
-    }
-}
+// The button model (`BeamActionButton`, aliased as `BeamLiveActivityButton`) lives one level up in
+// `ActionButton.swift`, because the SAME authored `{id,title,role}` pair now drives both iOS surfaces:
+// this Live Activity's `ContentState`, and the action buttons of the notification that an iOS device
+// WITHOUT Live Activity support falls back to (the NSE synthesizes a `UNNotificationCategory` from the
+// payload's `buttons` key). One model, so the two surfaces cannot drift.
 
 /// Shared `ActivityAttributes` for the "actions" **Live Activity**. The always-visible Lock-Screen /
 /// Dynamic-Island card with persistent, interactive buttons (via `BeamLiveActivityActionIntent`) —
 /// the iOS equivalent of the always-on action buttons apps like iFood/Duolingo show. A native
 /// `actions` push notification can only reveal its buttons on expand (OS rule); this is the no-tap path.
 ///
-/// This SAME type is compiled into BOTH the app (the `BeamableNotificationsRN` podspec globs
-/// `ios/*.swift`) and the Widget extension (the Expo config plugin copies this file into the widget
-/// target). ActivityKit matches a running Activity to its widget by the attributes type's UNQUALIFIED
-/// name, and APNs push-to-start matches on the `attributes-type` string — so this name
+/// This SAME type is compiled into BOTH the app (via the `BeamableNotifications` core module) and the
+/// Widget extension (the Expo config plugin copies this file, plus `ActionButton.swift`, into the
+/// widget target). ActivityKit matches a running Activity to its widget by the attributes type's
+/// UNQUALIFIED name, and APNs push-to-start matches on the `attributes-type` string — so this name
 /// (`BeamActionsActivityAttributes`) and the `ContentState` field names are a wire contract shared
-/// with `PushRailService`/the portal. Gated `@available(iOS 16.1, *)`.
+/// with `PushRailService`/the portal. It must therefore be defined EXACTLY once per target: that is why
+/// the RN engine plugin's copy was deleted when this moved into core. Gated `@available(iOS 16.1, *)`.
 @available(iOS 16.1, *)
 public struct BeamActionsActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {

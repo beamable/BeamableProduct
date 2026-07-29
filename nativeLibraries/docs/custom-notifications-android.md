@@ -129,9 +129,21 @@ After the existing small-icon resolution, branch on `template.style`:
   `NotificationCompat.BigPictureStyle().bigPicture(bmp)` and `builder.setLargeIcon(bmp)`. If the
   URL is blank or the download fails, **fall back** to the `default` branch (never fail the post).
 - **`bigText`**: `NotificationCompat.BigTextStyle().bigText(template.body)`.
-- **`actions`**: add two `NotificationCompat.Action`s — **Open** (a content-style `PendingIntent`
-  reusing `buildContentIntent`) and **Dismiss** — routed through the existing
-  `NotificationActionReceiver.kt` (already used by the local scheduler for action handling).
+- **`actions`**: *not a style branch on Android* — this was specified but never implemented as one, and
+  the shipped `applyStyle` `when` handles only `bigPicture` / `bigText` / `else → applyDefaultStyle`, so
+  `style: "actions"` renders the default layout. Buttons here are **orthogonal** to `style`:
+  `applyActions` reads `template.category`, looks the id up in `CategoryStore` (SharedPreferences, so a
+  killed-app data push still finds it) and adds one `NotificationCompat.Action` per registered action.
+  Titles and ids therefore live **in the app**, not in the payload — unlike iOS, which since the unified
+  `actions` style synthesizes a category from the payload's `buttons`. See `custom-notifications-ios.md`
+  §2.
+
+  `resolveActions` now resolves buttons in three tiers, mirroring iOS: a **registered category** named by
+  `template.category` wins (the app-authored override), else the payload's own **`buttons`** array
+  (`[{id,title,role}]`, capped at 2 — this is what lets a campaign author's labels render with no
+  app-side `registerCategory`), else — for `style: "actions"` only — the SDK's built-in **Open / Dismiss**
+  pair. A malformed `buttons` value costs the buttons, never the notification. So `actions` IS natively
+  supported on Android, it simply contributes no layout of its own.
 - **`default` / null**: current behavior; optionally auto-promote to `BigTextStyle` when the body
   exceeds one line (documents the "sensible default" behavior).
 
@@ -274,9 +286,10 @@ each team defines **their own** styles. The shared pieces are deliberately gener
 
 ### The native-support signal
 The console's "is this style implemented natively?" callout reads a **per-platform** set,
-`NATIVE_SUPPORTED_STYLES = { android: [...], ios: [] }` in `notificationConfig.ts`. This mirrors the
-native renderers (`android` tracks `NotificationBuilder.applyStyle`; `ios` is populated when iOS
-renderers land). It is **not** inferred from the device and **not** a per-style data flag — it is the
+`NATIVE_SUPPORTED_STYLES` in `notificationConfig.ts`. This mirrors the native renderers: `android`
+tracks `NotificationBuilder.applyStyle` (`default`, `bigPicture`, `bigText`), and `ios` — no longer
+empty, as this section originally said — tracks the NSE plugin chain (`default`, `bigPicture`,
+`bigText`, `actions`). It is **not** inferred from the device and **not** a per-style data flag — it is the
 list of style ids each platform actually renders.
 
 ### To add a new style (3 steps)

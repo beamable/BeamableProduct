@@ -210,11 +210,17 @@ notification itself). See `docs/custom-notifications-android.md` for the Android
 
 | Key | Type (wire) | Meaning | Default when absent |
 |-----|-------------|---------|---------------------|
-| `style` | string | `default` \| `bigPicture` \| `bigText` \| `actions` — built-in preset | `default` |
+| `style` | string | `default` \| `bigPicture` \| `bigText` \| `actions` — built-in preset. `actions` is an **iOS-only** rendering: Android has no `STYLE_ACTIONS` branch and falls through to `applyDefaultStyle` | `default` |
 | `imageUrl` | string | rich-media image URL for `bigPicture` (downloaded natively) | none (falls back to plain/bigText) |
 | `badge` | string(int) | app-icon badge count; applied via `setNumber`, orthogonal to `style` | unchanged |
-| `sound` | string | sound name (mapped to a channel) | `default` |
-| `category` | string | iOS-only (ignored on Android) | — |
+| `sound` | string | sound name (mapped to a channel). iOS only — Android's `displayDataMessage` never reads it (the channel decides) | `default` |
+| `category` | string | id of a category the app registered on-device. Rendered on **both** platforms: it is the ONLY source of Android buttons, and on iOS it overrides `buttons` | — |
+| `buttons` | string (JSON array) | `[{id,title,role}]`, `role` = `default` \| `destructive`, capped at 2. **iOS only** — the NSE synthesizes a `UNNotificationCategory` from it so the notification shows the labels the campaign author typed. The same array also rides in the Live Activity's `content-state`, so both iOS surfaces match | iOS falls back to the built-in `beam_actions` (Open / Dismiss) for `style: actions` |
+
+`buttons` follows the same JSON-string-in-a-flat-map convention as `offers` / `campaignData` above: the
+rail's `extra` passthrough is `string→string` and FCM data values must be strings, so non-scalars travel
+as raw JSON text. Native reads it tolerantly — a real array (a locally-scheduled notification, or a
+hand-written `simctl push`) is accepted too.
 
 ### 3.4 Deep-link behavior under the schema
 

@@ -76,12 +76,33 @@ const WIDGET_TARGET_NAME = 'BeamableNotificationWidgets';
 // This covers every attributes type + the App Intent behind the interactive "actions" buttons —
 // ActivityKit matches a running Activity to its widget by the attributes type's unqualified name, and
 // `Button(intent:)` in the widget needs the intent type compiled into the widget target too.
-const LIVE_ACTIVITY_SHARED_FILES = [
-  'CountdownLiveActivityAttributes.swift',
-  'ActionsLiveActivityAttributes.swift',
-  'AnimatedLiveActivityAttributes.swift',
-  'LiveActivityActionIntent.swift',
-].map((f) => path.join(__dirname, '..', 'ios', f));
+// ActivityKit sources shared between the app and the Widget extension. They live in the CORE iOS SDK
+// (`core/Sources/BeamableNotifications/LiveActivity/`, plus the Foundation-only button model one level
+// up) so every engine gets Live Activity support from one place. The app target gets them by linking
+// the core module; the widget target can't link it, so the plugin copies the SOURCES in — ActivityKit
+// matches a running activity to its widget by the attributes type's UNQUALIFIED name, so a per-target
+// copy resolves to the same wire identity. Resolved lazily against SDK_ROOT (vendored or monorepo).
+const LIVE_ACTIVITY_SHARED_SUBPATHS = [
+  'core/Sources/BeamableNotifications/ActionButton.swift',
+  'core/Sources/BeamableNotifications/LiveActivity/CountdownLiveActivityAttributes.swift',
+  'core/Sources/BeamableNotifications/LiveActivity/ActionsLiveActivityAttributes.swift',
+  'core/Sources/BeamableNotifications/LiveActivity/AnimatedLiveActivityAttributes.swift',
+  'core/Sources/BeamableNotifications/LiveActivity/LiveActivityActionIntent.swift',
+];
+
+/** Attributes types the SDK ships widget-compatible sources for, in the same order. */
+const LIVE_ACTIVITY_ATTRIBUTES_TYPES = [
+  'BeamActionsActivityAttributes',
+  'BeamAnimatedActivityAttributes',
+  'BeamCountdownActivityAttributes',
+];
+/** Info.plist key the SDK's capability gate reads (`LiveActivitySupport.declarationKey`). */
+const BMN_LIVE_ACTIVITY_TYPES_KEY = 'BMNLiveActivityTypes';
+// The SDK's DEFAULT widget UI for the `actions` Live Activity, staged only when the app supplies no
+// `iosLiveActivityWidgets` of its own — it carries the `@main WidgetBundle`, and two `@main` entry
+// points in one target don't compile. So `enableLiveActivity: true` alone yields a working Live
+// Activity, and providing any widget file opts out of the default entirely.
+const LIVE_ACTIVITY_DEFAULT_WIDGET_SUBPATH = 'core/WidgetTemplates/BeamActionsLiveActivityWidget.swift';
 // iOS NSE + extension-safe core Swift sources. Prefer a copy VENDORED inside this
 // package (`plugin/ios/`, populated for publish the same way the xcframework is);
 // otherwise fall back to the monorepo-canonical iOS SDK dir (works for in-repo
@@ -99,6 +120,9 @@ const CONTENT_SOURCE_DIR = path.join(SDK_ROOT, 'content-extension');
 // NotificationManager.swift / RemotePush.swift use UIApplication (forbidden in an
 // app extension), so they're excluded; the NSE plugins only need these two.
 const CORE_SOURCE_DIR = path.join(SDK_ROOT, 'core/Sources/BeamableNotifications');
+/** Absolute paths of the ActivityKit sources shared with the Widget extension (see the subpath list). */
+const liveActivitySharedFiles = () =>
+  LIVE_ACTIVITY_SHARED_SUBPATHS.map((sub) => path.join(SDK_ROOT, sub));
 // Extension-safe core subset the NSE compiles. All Foundation-only (no UIApplication),
 // required by AnalyticsServicePlugin.swift to log delivery receipts and fire the funnel
 // "Received" event: Models.swift (JSONValue/DeliveryReceipt/FunnelEvent/AuthConfig +
@@ -106,7 +130,18 @@ const CORE_SOURCE_DIR = path.join(SDK_ROOT, 'core/Sources/BeamableNotifications'
 // (BeamableAnalytics.makeEvent/emit). Listed by basename — `copyCoreFile`/`nseSwiftFileNames`
 // resolve each one recursively under CORE_SOURCE_DIR (BeamableAnalytics.swift is nested in
 // the Analytics/ subdir).
-const CORE_NSE_FILES = ['Models.swift', 'SharedConfig.swift', 'BeamableAnalytics.swift'];
+//
+// ActionButtons.swift + CategoryStore.swift are required by StyleServicePlugin.swift, which parses
+// the payload's `buttons` key and synthesizes a UNNotificationCategory from it so a fallback
+// notification shows the author's own button labels. Both are Foundation/UserNotifications only —
+// no UIApplication — so they stay extension-safe.
+const CORE_NSE_FILES = [
+  'Models.swift',
+  'SharedConfig.swift',
+  'BeamableAnalytics.swift',
+  'ActionButtons.swift',
+  'CategoryStore.swift',
+];
 
 // Resolve a core source by basename anywhere under CORE_SOURCE_DIR (the subset spans
 // the dir root and the Analytics/ subdir). Returns the absolute path or null if missing.
@@ -603,6 +638,12 @@ function withContentTarget(config, appGroup, swiftFiles) {
 function withLiveActivityInfoPlist(config) {
   return withInfoPlist(config, (cfg) => {
     cfg.modResults.NSSupportsLiveActivities = true;
+    // Declare which attributes types this build embeds widget UI for. The SDK's capability gate
+    // (`LiveActivitySupport`) reads this to decide whether to publish a push-to-start token at all —
+    // without a token the rail sends a plain notification instead, which is the correct degradation.
+    // DERIVED from the sources actually staged into the widget target rather than hand-maintained, so
+    // it cannot drift from the build and silently promise UI that isn't there.
+    cfg.modResults[BMN_LIVE_ACTIVITY_TYPES_KEY] = LIVE_ACTIVITY_ATTRIBUTES_TYPES;
     return cfg;
   });
 }
@@ -621,11 +662,11 @@ function withWidgetFiles(config, liveActivityWidgets) {
 
       const swiftFiles = [];
 
-      // 1) Shared ActivityAttributes + the App Intent — the SAME types the app/pod compiles.
-      //    ActivityKit matches a running Activity to its widget by the attributes type's unqualified
-      //    name, so the widget module must define identically-named types; the intent must also be
-      //    in the widget target so `Button(intent:)` compiles.
-      for (const shared of LIVE_ACTIVITY_SHARED_FILES) {
+      // 1) Shared ActivityAttributes + button model + the App Intent — the SAME types the app links
+      //    from the core module. ActivityKit matches a running Activity to its widget by the attributes
+      //    type's unqualified name, so the widget module must define identically-named types; the
+      //    intent must also be in the widget target so `Button(intent:)` compiles.
+      for (const shared of liveActivitySharedFiles()) {
         if (fs.existsSync(shared)) {
           const base = path.basename(shared);
           fs.copyFileSync(shared, path.join(dir, base));
@@ -633,8 +674,18 @@ function withWidgetFiles(config, liveActivityWidgets) {
         }
       }
 
-      // 2) App-provided widget UI (the @main WidgetBundle + ActivityConfiguration).
-      swiftFiles.push(...copyExtraSwift(cfg.modRequest.projectRoot, dir, liveActivityWidgets));
+      // 2) App-provided widget UI (the @main WidgetBundle + ActivityConfiguration), or the SDK's
+      //    default `actions` widget when the app provides none. Never both: each carries a @main.
+      if (liveActivityWidgets.length > 0) {
+        swiftFiles.push(...copyExtraSwift(cfg.modRequest.projectRoot, dir, liveActivityWidgets));
+      } else {
+        const fallback = path.join(SDK_ROOT, LIVE_ACTIVITY_DEFAULT_WIDGET_SUBPATH);
+        if (fs.existsSync(fallback)) {
+          const base = path.basename(fallback);
+          fs.copyFileSync(fallback, path.join(dir, base));
+          swiftFiles.push(base);
+        }
+      }
 
       const infoPlist = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -863,8 +914,11 @@ module.exports = function withBeamableNotifications(config, props) {
   if (props && props.enableLiveActivity) {
     const liveActivityWidgets = (props && props.iosLiveActivityWidgets) || [];
     const widgetSwift = [
-      ...LIVE_ACTIVITY_SHARED_FILES.map((f) => path.basename(f)),
-      ...liveActivityWidgets.map((w) => path.basename(w.file)),
+      ...liveActivitySharedFiles().map((f) => path.basename(f)),
+      // Mirrors withWidgetFiles' either/or: app-provided widgets, else the SDK's default one.
+      ...(liveActivityWidgets.length > 0
+        ? liveActivityWidgets.map((w) => path.basename(w.file))
+        : [path.basename(LIVE_ACTIVITY_DEFAULT_WIDGET_SUBPATH)]),
     ];
     config = withLiveActivityInfoPlist(config);
     config = withWidgetFiles(config, liveActivityWidgets);

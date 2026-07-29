@@ -124,7 +124,10 @@ class PushFirebaseService : FirebaseMessagingService() {
             imageUrl = data["imageUrl"],
             style = data["style"],
             badge = data["badge"]?.toIntOrNull(),
-            category = data["category"]
+            category = data["category"],
+            // Payload-authored action buttons (raw JSON array string). Rendered when the push names no
+            // registered category, so a campaign's own button labels work with no app-side setup.
+            buttons = data[ActionButtons.KEY_BUTTONS]
         ).let {
             // A 0 id would overwrite itself repeatedly; give data pushes a stable
             // per-message id derived from the FCM message id when available.

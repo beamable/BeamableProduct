@@ -176,7 +176,51 @@ public func bmn_free(_ ptr: UnsafePointer<CChar>?) {
     free(UnsafeMutableRawPointer(mutating: ptr))
 }
 
+// MARK: - Live Activity (iOS 17.2+ push-to-start)
+//
+// Generics and ActivityKit types can't cross `@_cdecl`, but nothing here needs to: every value the
+// engines want is already JSON. The generic observation stays internal Swift in
+// `LiveActivityCoordinator`, which iterates the known attributes types itself.
+//
+// Honest limitation: neither the Unity nor the Unreal iOS tooling creates a WidgetKit extension target,
+// so an app built from those engines has no Live Activity UI and its capability reports
+// `widgetPresent: false`. That is the CORRECT degradation — no push-to-start token is published, so the
+// rail delivers a notification with the payload's action buttons instead — but it does mean these entry
+// points are necessary and not sufficient for Live Activity support on those engines.
+
+@_cdecl("bmn_startLiveActivityObservation")
+public func bmn_startLiveActivityObservation() {
+    LiveActivityCoordinator.shared.start()
+}
+
+/// Live Activity capability per attributes type, as a malloc'd UTF-8 JSON array.
+/// The caller MUST release it with `bmn_free`.
+@_cdecl("bmn_getLiveActivityCapabilities")
+public func bmn_getLiveActivityCapabilities() -> UnsafePointer<CChar>? {
+    UnsafePointer(strdup(JSON.encode(LiveActivityCoordinator.shared.capabilities())))
+}
+
 // MARK: - Callback registration (feature 3)
+
+/// A push-to-start (`kind: "pushToStart"`) or per-activity update (`kind: "update"`) token arrived.
+/// The engine forwards it to `message-rail/register`; the SDK deliberately does not, because the app
+/// owns the authenticated player.
+@_cdecl("bmn_setOnLiveActivityToken")
+public func bmn_setOnLiveActivityToken(_ cb: BMNCallback?) {
+    LiveActivityCoordinator.shared.onToken = cb == nil ? nil : { invoke(cb, JSON.encode($0)) }
+}
+
+@_cdecl("bmn_setOnLiveActivityStarted")
+public func bmn_setOnLiveActivityStarted(_ cb: BMNCallback?) {
+    LiveActivityCoordinator.shared.onStarted = cb == nil ? nil : { invoke(cb, JSON.encode($0)) }
+}
+
+/// Capability per attributes type, at init and whenever the player's Settings toggle changes.
+/// `available: false` means withdraw that type's token so the rail falls back to a notification.
+@_cdecl("bmn_setOnLiveActivityCapability")
+public func bmn_setOnLiveActivityCapability(_ cb: BMNCallback?) {
+    LiveActivityCoordinator.shared.onCapability = cb == nil ? nil : { invoke(cb, JSON.encode($0)) }
+}
 
 @_cdecl("bmn_setOnPermissionResult")
 public func bmn_setOnPermissionResult(_ cb: BMNCallback?) { CB.permission = cb }

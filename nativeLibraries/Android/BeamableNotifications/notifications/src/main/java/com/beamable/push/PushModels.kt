@@ -82,7 +82,11 @@ data class NotificationChannelSpec(
  *   Custom styles are rendered by an app's [PushNotificationStyleRenderer], not by this builder.
  * @param badge app-icon badge count applied via setNumber (orthogonal to style); null leaves it unset.
  * @param category id of a registered [NotificationCategorySpec] whose action buttons to render
- *   (orthogonal to [style], like [badge]); null renders no buttons.
+ *   (orthogonal to [style], like [badge]). Takes precedence over [buttons].
+ * @param buttons payload-authored action buttons as a raw JSON array string — `[{id,title,role}]`,
+ *   the `buttons` wire key. Rendered when no registered [category] matches, so a campaign's own button
+ *   labels reach the device without the app pre-registering anything. Carried as a JSON string because
+ *   the FCM data map is string-only (same convention as `offers` / `campaignData`).
  */
 data class NotificationTemplate(
     val id: Int = 0,
@@ -96,7 +100,8 @@ data class NotificationTemplate(
     val imageUrl: String? = null,
     val style: String? = null,
     val badge: Int? = null,
-    val category: String? = null
+    val category: String? = null,
+    val buttons: String? = null
 ) {
 
     /**
@@ -132,6 +137,9 @@ data class NotificationTemplate(
         // 0 is a valid badge count, so serialize the number when set and JSON null when unset.
         obj.put("badge", badge ?: JSONObject.NULL)
         obj.put("category", category ?: JSONObject.NULL)
+        // Raw JSON array string, passed through verbatim (never re-parsed here) so a payload the
+        // builder can't fully understand still survives the round-trip.
+        obj.put("buttons", buttons ?: JSONObject.NULL)
         val data = JSONObject()
         for ((k, v) in dataPayload) data.put(k, v)
         obj.put("dataPayload", data)
@@ -168,7 +176,8 @@ data class NotificationTemplate(
                 style = obj.optStringOrNull("style"),
                 // has()/optInt keeps 0 as a valid count (a missing/null key stays null).
                 badge = if (obj.has("badge") && !obj.isNull("badge")) obj.optInt("badge") else null,
-                category = obj.optStringOrNull("category")
+                category = obj.optStringOrNull("category"),
+                buttons = obj.optStringOrNull("buttons")
             )
         }
 

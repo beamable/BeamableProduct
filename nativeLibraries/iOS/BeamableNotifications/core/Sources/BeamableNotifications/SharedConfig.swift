@@ -19,6 +19,9 @@ public final class SharedConfig {
     private static let maxReceipts = 200
     /// Cap on persisted-for-replay funnel events (NSE fallback path, §4.3).
     private static let maxPendingFunnel = 200
+    private static let synthesizedCategoriesKey = "bmn.synthesizedCategories"
+    /// Cap on payload-synthesized categories re-seeded at app launch (mirrors `CategoryStore`'s cap).
+    private static let maxSynthesizedCategories = 32
 
     private let defaults: UserDefaults?
     public let appGroupId: String?
@@ -104,6 +107,40 @@ public final class SharedConfig {
         let events = loadPendingFunnel()
         defaults?.removeObject(forKey: Self.pendingFunnelKey)
         return events
+    }
+
+    // MARK: Synthesized notification categories
+
+    /// Persist a category the NSE synthesized from a payload's `buttons`, so the app can re-seed it at
+    /// launch (`CategoryStore.hydrateFromSharedStore`).
+    ///
+    /// Without this the app's own `setNotificationCategories` at init would replace the whole OS-held
+    /// set and strip the buttons from any such notification still sitting in Notification Center.
+    /// Deduped by id — the id is a deterministic hash of the buttons, so re-sending a campaign is a
+    /// no-op — and trimmed oldest-first to the cap.
+    public func appendSynthesizedCategory(_ spec: CategorySpec) {
+        guard let defaults = defaults else { return }
+        var specs = loadSynthesizedCategories()
+        if let existing = specs.firstIndex(where: { $0.id == spec.id }) {
+            // Refresh recency without duplicating: move it to the end of the eviction order.
+            specs.remove(at: existing)
+        }
+        specs.append(spec)
+        if specs.count > Self.maxSynthesizedCategories {
+            specs.removeFirst(specs.count - Self.maxSynthesizedCategories)
+        }
+        if let data = try? JSON.encoder.encode(specs) {
+            defaults.set(data, forKey: Self.synthesizedCategoriesKey)
+        }
+    }
+
+    public func loadSynthesizedCategories() -> [CategorySpec] {
+        guard let defaults = defaults,
+              let data = defaults.data(forKey: Self.synthesizedCategoriesKey),
+              let specs = try? JSON.decoder.decode([CategorySpec].self, from: data) else {
+            return []
+        }
+        return specs
     }
 
     // MARK: Delivery receipts

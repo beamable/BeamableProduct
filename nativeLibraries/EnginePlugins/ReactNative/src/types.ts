@@ -201,18 +201,58 @@ export type EventMap = {
    * (`activityType` ∈ 'actions' | 'animated' | 'countdown'). Forward it to the push rail so the
    * backend can START a Live Activity for this player via APNs. iOS-only.
    */
-  liveActivityPushToStartToken: { activityType: string; token: string };
+  liveActivityPushToStartToken: {
+    activityType: string;
+    /**
+     * Unqualified Swift attributes type name (e.g. `BeamActionsActivityAttributes`) — the identity the
+     * rail and portal key on. Emitted by the SDK since it owns the slug→type mapping, so an app no
+     * longer has to keep its own copy of that map.
+     */
+    attributesType: string;
+    token: string;
+  };
   /**
    * iOS 16.1+ per-activity **update** token for a running Live Activity (`activityId`). Forward it
    * so the backend can UPDATE/END that specific activity via APNs. iOS-only.
    */
   liveActivityUpdateToken: {
     activityType: string;
+    attributesType: string;
     activityId: string;
     token: string;
   };
   /** A Live Activity started (usually via a push-to-start). iOS-only. */
-  liveActivityStarted: { activityType: string; activityId: string };
+  liveActivityStarted: {
+    activityType: string;
+    attributesType: string;
+    activityId: string;
+  };
+  /**
+   * Whether this device+build can actually DRAW a Live Activity, per attributes type. Emitted at init
+   * and again whenever the player toggles Live Activities in Settings. iOS-only.
+   *
+   * `available: false` is the cue to **withdraw** any token already registered for that type: the rail
+   * chooses Live-Activity-vs-notification purely by token presence, so a stale token means the player
+   * gets an activity nothing can render AND loses the notification that would have worked.
+   */
+  liveActivityCapability: {
+    capabilities: {
+      attributesType: string;
+      activityType: string;
+      /** iOS 17.2+, the push-to-start floor. */
+      supported: boolean;
+      /** The player's Settings toggle (`areActivitiesEnabled`). */
+      enabled: boolean;
+      /** Listed in the app's `Info.plist` under `BMNLiveActivityTypes`. */
+      declared: boolean;
+      /** A WidgetKit extension is embedded in this build. */
+      widgetPresent: boolean;
+      /** All four of the above. Only register a token when this is true. */
+      available: boolean;
+      /** Human-readable cause when `available` is false; empty otherwise. */
+      reason: string;
+    }[];
+  };
 };
 
 /** Every event the SDK can emit — the runtime list matching `keyof EventMap`. */
@@ -229,6 +269,7 @@ export const BEAMABLE_EVENTS = [
   'liveActivityPushToStartToken',
   'liveActivityUpdateToken',
   'liveActivityStarted',
+  'liveActivityCapability',
 ] as const;
 
 export type BeamableEvent = (typeof BEAMABLE_EVENTS)[number];

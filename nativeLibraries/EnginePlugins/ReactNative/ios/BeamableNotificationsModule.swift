@@ -36,7 +36,11 @@ final class BeamableNotificationsModule: RCTEventEmitter {
             "pendingNotifications", "deliveryReceipts",
             // Live Activity push-to-start (iOS 17.2+): the app forwards these tokens to the push rail
             // (`message-rail/register`) so the backend can start/update/end Live Activities via APNs.
-            "liveActivityPushToStartToken", "liveActivityUpdateToken", "liveActivityStarted"
+            "liveActivityPushToStartToken", "liveActivityUpdateToken", "liveActivityStarted",
+            // Whether this device/build can actually DRAW a Live Activity per attributes type. Emitted
+            // at init and whenever the player toggles the Settings switch — `available: false` means
+            // withdraw the token so the rail falls back to a notification with action buttons.
+            "liveActivityCapability"
         ]
     }
 
@@ -103,11 +107,22 @@ final class BeamableNotificationsModule: RCTEventEmitter {
         m.onNotificationTapped = { [weak self] in self?.emit("notificationTapped", Self.object($0)) }
         m.onPendingNotifications = { [weak self] in self?.emit("pendingNotifications", Self.array($0)) }
         m.onDeliveryReceipts = { [weak self] in self?.emit("deliveryReceipts", Self.array($0)) }
+        // Live Activity events, produced by core's LiveActivityCoordinator. Bridge them BEFORE
+        // `initialize()`, which starts the observation — otherwise the first push-to-start token can
+        // land before anything is listening. `capability.available == false` is the app's cue to
+        // WITHDRAW a token it registered earlier, so the rail stops sending Live Activities this build
+        // can't draw and falls back to a notification instead.
+        let la = LiveActivityCoordinator.shared
+        la.onToken = { [weak self] event in
+            self?.emit(event.kind == "pushToStart" ? "liveActivityPushToStartToken"
+                                                   : "liveActivityUpdateToken",
+                       Self.object(event))
+        }
+        la.onStarted = { [weak self] event in self?.emit("liveActivityStarted", Self.object(event)) }
+        la.onCapability = { [weak self] caps in
+            self?.emit("liveActivityCapability", Self.object(["capabilities": caps]))
+        }
         m.initialize()
-        // Begin observing Live Activity push tokens so the app can register them with the rail.
-        #if canImport(ActivityKit)
-        if #available(iOS 17.2, *) { startLiveActivityPushRegistration() }
-        #endif
     }
 
     // MARK: Permission (feature 5)
@@ -290,42 +305,21 @@ final class BeamableNotificationsModule: RCTEventEmitter {
     // We observe both and emit them to JS, which forwards them to `message-rail/register`. The token
     // is the raw APNs token as lowercase hex — the same shape the regular device token uses.
 
-    #if canImport(ActivityKit)
-    /// Observes the push-to-start token (per attributes type) and, for each push-started activity,
-    /// its per-activity update token. Long-lived: the `for await` loops live for the app's lifetime.
-    @available(iOS 17.2, *)
-    private func observeLiveActivityTokens<T: ActivityAttributes>(_ type: T.Type, activityType: String) {
-        Task {
-            for await tokenData in Activity<T>.pushToStartTokenUpdates {
-                self.emit("liveActivityPushToStartToken",
-                          ["activityType": activityType, "token": Self.hexString(tokenData)])
-            }
-        }
-        Task {
-            for await activity in Activity<T>.activityUpdates {
-                self.emit("liveActivityStarted",
-                          ["activityType": activityType, "activityId": activity.id])
-                Task {
-                    for await tokenData in activity.pushTokenUpdates {
-                        self.emit("liveActivityUpdateToken",
-                                  ["activityType": activityType,
-                                   "activityId": activity.id,
-                                   "token": Self.hexString(tokenData)])
-                    }
-                }
-            }
-        }
-    }
-    #endif
-
+    /// Kick off (or re-state) Live Activity observation. Idempotent, and now a thin delegation: the
+    /// observation itself lives in core's `LiveActivityCoordinator` so every engine shares one
+    /// implementation and one capability gate. `initialize()` already calls it via
+    /// `NotificationManager.initialize()`; JS can call this again safely (e.g. after connecting a
+    /// player) to have the current capability + tokens re-emitted.
     @objc func startLiveActivityPushRegistration() {
-        #if canImport(ActivityKit)
-        if #available(iOS 17.2, *) {
-            observeLiveActivityTokens(BeamActionsActivityAttributes.self, activityType: "actions")
-            observeLiveActivityTokens(BeamAnimatedActivityAttributes.self, activityType: "animated")
-            observeLiveActivityTokens(BeamCountdownActivityAttributes.self, activityType: "countdown")
-        }
-        #endif
+        LiveActivityCoordinator.shared.start()
+    }
+
+    /// Current Live Activity capability per attributes type, for JS that wants to check before
+    /// registering rather than waiting for the event.
+    @objc(getLiveActivityCapabilities)
+    func getLiveActivityCapabilities() {
+        emit("liveActivityCapability",
+             Self.object(["capabilities": LiveActivityCoordinator.shared.capabilities()]))
     }
 
     // MARK: Live Activity local start (Simulator UI/button testing only)
@@ -405,11 +399,6 @@ final class BeamableNotificationsModule: RCTEventEmitter {
             }
         }
         #endif
-    }
-
-    /// The raw APNs token as lowercase hex (matches the device-token encoding the rail already stores).
-    private static func hexString(_ data: Data) -> String {
-        data.map { String(format: "%02x", $0) }.joined()
     }
 
     private func decodeJson<T: Decodable>(_ type: T.Type, _ json: String) -> T? {

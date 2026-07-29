@@ -16,17 +16,25 @@ export default function RootLayout() {
   useEffect(() => {
     BeamNotifications.initialize();
 
-    // Register a demo action-button category. A push carrying `category: "beam_actions"` then
-    // renders these buttons; tapping one opens the app and fires `notificationOpened` with
-    // `actionId` = 'accept' | 'decline' (handled below). Categories are persisted natively, so
-    // this also works for pushes that arrive while the app is killed.
-    BeamNotifications.registerCategory({
-      id: 'beam_actions',
-      actions: [
-        { id: 'accept', title: 'Accept', foreground: true },
-        { id: 'decline', title: 'Decline', foreground: true },
-      ],
-    });
+    // No `registerCategory` call is needed for campaign action buttons any more: the native SDK
+    // renders the buttons the push itself carries (`buttons: [{id,title,role}]`, authored in the
+    // Portal's Action Buttons style) on both platforms, and falls back to a built-in Open / Dismiss
+    // pair for `style: "actions"` with no buttons. Tapping one still fires `notificationOpened` with
+    // `actionId` set to the authored id, handled below.
+    //
+    // `registerCategory` remains available for APP-defined button sets — a registered category takes
+    // precedence over the payload, which is the override path. Example, if you want it:
+    //
+    //   BeamNotifications.registerCategory({
+    //     id: 'beam_actions',                          // overrides the SDK's built-in pair
+    //     actions: [
+    //       { id: 'accept', title: 'Accept', foreground: true },
+    //       { id: 'decline', title: 'Decline', foreground: true },
+    //     ],
+    //   });
+    //
+    // Note it would then win over whatever the campaign author typed in the console, on both
+    // platforms — which is why the sample leaves it off by default.
   }, []);
 
   // ── Beamable Notifications → deep-link routing ────────────────────────────

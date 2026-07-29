@@ -27,7 +27,13 @@ server code.**
 | `default` | plain alert; full body shown natively | — (no work) |
 | `bigPicture` | image attachment from `imageUrl` | `RichMediaServicePlugin` |
 | `bigText` | full body shown natively on expand | — (no work) |
-| `actions` | `UNNotificationCategory` buttons (Open / Dismiss) | `StyleServicePlugin` + `beam_actions` |
+| `actions` | `UNNotificationCategory` buttons built from the payload's `buttons` — falls back to the built-in Open / Dismiss | `StyleServicePlugin` + synthesized category |
+
+> **`actions` is dual-delivery.** The console's "Action Buttons" style reaches a device that published a
+> Live Activity push-to-start token as an **ActivityKit card**, and every other device as the
+> notification above. Those are two separate APNs deliveries (`apns-push-type: liveactivity` vs
+> `alert`), so the NSE only ever sees the fallback leg and has nothing to suppress. Both surfaces render
+> the same authored `buttons`, so the player sees the labels the campaign author typed either way.
 
 `badge` and `sound` are **orthogonal** to `style` and applied whenever present.
 
@@ -45,7 +51,27 @@ No change from the flat string→string §3.3 map. On iOS the styling fields sta
 | `imageUrl` | **canonical** rich-media image URL (aliases `media-url` / `bmn.mediaUrl` kept) | `content.attachments` |
 | `badge` | app-icon badge count (string int) | `content.badge` |
 | `sound` | bundled sound filename | `content.sound` |
-| `category` | `UNNotificationCategory` id (buttons + which content extension renders) | `content.categoryIdentifier` |
+| `category` | `UNNotificationCategory` id (buttons + which content extension renders). **Wins over `buttons`** | `content.categoryIdentifier` |
+| `buttons` | JSON **string** of `[{id,title,role}]`, `role` = `default` \| `destructive`, capped at 2 | parsed → `UNNotificationCategory` synthesized by the NSE → `content.categoryIdentifier` |
+| `liveActivity` | `"true"` when the campaign authored a Live Activity. Diagnostics only on this leg — its arrival already means ActivityKit didn't happen | — |
+
+**Category precedence** (`StyleServicePlugin`): `category` → `buttons` → built-in `beam_actions`.
+
+- An explicit `category` is the author override and the only value a Notification **Content Extension**
+  can match on (`UNNotificationExtensionCategory` can't wildcard), so it deliberately wins.
+- `buttons` is synthesized into a category whose id is a deterministic FNV-1a hash of the button set
+  (`beam_actions_<hash>`), so repeated pushes of one campaign reuse a single registration instead of
+  leaking one per delivery. `role: destructive` → `.destructive`; everything else → `.foreground`,
+  matching the built-in pair.
+- Absent, empty, or malformed `buttons` degrades to the built-in Open / Dismiss. A bad value costs the
+  buttons, never the notification.
+- The NSE registers the synthesized category itself and read-back-confirms it before returning, because
+  the OS resolves `categoryIdentifier` as soon as the plugin hands the content over. `CategoryStore`
+  merges the OS-held set before writing (the app and the NSE are separate processes and
+  `setNotificationCategories` replaces the whole set), and the app re-seeds synthesized categories from
+  the App Group at launch so notifications already in Notification Center keep their buttons.
+- iOS reveals action buttons only when the notification is **expanded** — unlike Android, which draws
+  them on the collapsed banner.
 
 ---
 

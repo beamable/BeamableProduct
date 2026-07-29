@@ -11,9 +11,19 @@
  * discriminator the push federation reads. Unlike the device token, these are keyed by
  * `attributesType` (push-to-start) or `activityId` (update).
  *
- * The native side emits a short `activityType` slug ('actions' | 'animated' | 'countdown'); the
- * backend + portal key on the UNQUALIFIED Swift attributes type name, so we map here — this map is
- * the single source of truth the sample owns for that contract.
+ * Native emits both a short `activityType` slug ('actions' | 'animated' | 'countdown') and the
+ * UNQUALIFIED Swift `attributesType` the backend + portal key on, so we forward the latter directly
+ * (the local slug map survives only as a fallback for older native builds).
+ *
+ * A third event, `liveActivityCapability`, reports whether this build can actually DRAW an activity
+ * (iOS 17.2+, the player's Settings toggle, and a widget embedded + declared). We refuse to register a
+ * token for a type that fails it: the rail chooses Live Activity vs notification purely by token
+ * presence, so publishing a token we can't render would cost the player both surfaces.
+ *
+ * Caveat, and a known gap: `optOut('push')` removes ALL of a player's push registrations, so there is
+ * no way to WITHDRAW just a stale Live Activity token from the client. If a build that shipped a widget
+ * is replaced by one that doesn't, the server-side token outlives it until APNs reports it dead. A
+ * per-token unregister on the rail would close this.
  */
 import { BeamNotifications } from '@beamable/notifications-react-native';
 import { DEFAULT_APNS_ENVIRONMENT } from '@beamable/notifications-react-native';
@@ -30,15 +40,22 @@ function messageRail() {
   return beam.messageRail;
 }
 
-/** activityType slug (native) → unqualified Swift `ActivityAttributes` type name (wire contract). */
+/**
+ * activityType slug (native) → unqualified Swift `ActivityAttributes` type name (wire contract).
+ *
+ * Only a FALLBACK now: the SDK emits `attributesType` on every token event since it owns the mapping.
+ * Kept so this sample still works against an older native build that emits the slug alone.
+ */
 const ATTRIBUTES_TYPE: Record<string, string> = {
   actions: 'BeamActionsActivityAttributes',
   animated: 'BeamAnimatedActivityAttributes',
   countdown: 'BeamCountdownActivityAttributes',
 };
 
-function attributesTypeFor(activityType: string): string {
-  return ATTRIBUTES_TYPE[activityType] ?? activityType;
+function attributesTypeFor(event: { activityType: string; attributesType?: string }): string {
+  return (
+    event.attributesType || ATTRIBUTES_TYPE[event.activityType] || event.activityType
+  );
 }
 
 /**
@@ -56,12 +73,38 @@ export function startLiveActivityTokenForwarding(
 
   const subs: Subscription[] = [];
 
+  // Which attributes types this build can actually DRAW. The SDK gates token emission on the same
+  // check, so this is belt-and-braces — but it is also the only place that can report WHY a device
+  // silently takes the notification path instead, which is the first question when a Live Activity
+  // doesn't appear.
+  const unavailable = new Set<string>();
+
+  subs.push(
+    BeamNotifications.addListener('liveActivityCapability', (p) => {
+      for (const cap of p.capabilities) {
+        if (cap.available) {
+          unavailable.delete(cap.attributesType);
+        } else if (!unavailable.has(cap.attributesType)) {
+          unavailable.add(cap.attributesType);
+          log?.(`LA unavailable (${cap.activityType}): ${cap.reason} — expect a notification instead.`);
+        }
+      }
+    }),
+  );
+
   subs.push(
     BeamNotifications.addListener('liveActivityPushToStartToken', async (p) => {
+      const attributesType = attributesTypeFor(p);
+      // Never publish a token for a type this build can't render: the rail picks Live-Activity-vs-
+      // notification purely by token presence, so a token we can't draw costs the player BOTH surfaces.
+      if (unavailable.has(attributesType)) {
+        log?.(`LA push-to-start token ignored (${p.activityType}): not renderable on this device.`);
+        return;
+      }
       try {
         await messageRail().optIn('push', {
           kind: 'liveActivityPushToStart',
-          attributesType: attributesTypeFor(p.activityType),
+          attributesType,
           token: p.token,
           environment: DEFAULT_APNS_ENVIRONMENT,
         });
@@ -77,7 +120,7 @@ export function startLiveActivityTokenForwarding(
       try {
         await messageRail().optIn('push', {
           kind: 'liveActivityUpdate',
-          attributesType: attributesTypeFor(p.activityType),
+          attributesType: attributesTypeFor(p),
           activityId: p.activityId,
           token: p.token,
           environment: DEFAULT_APNS_ENVIRONMENT,

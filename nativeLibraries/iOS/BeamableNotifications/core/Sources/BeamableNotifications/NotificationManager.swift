@@ -47,6 +47,11 @@ public final class NotificationManager: NSObject {
         PluginRegistry.shared.discoverAndRegisterFromInfoPlist()
         PluginRegistry.shared.dispatchInitialize(PluginContext(manager: self))
         RemotePush.shared.installSwizzlingIfNeeded()
+        // Observe ActivityKit so the app can register (or withdraw) its Live Activity push tokens with
+        // the message rail. A no-op below iOS 17.2, with Live Activities disabled, or in an app that
+        // embeds no widget — in which case no token is published and the rail correctly falls back to
+        // a notification with the payload's action buttons. Registration itself stays app-side.
+        LiveActivityCoordinator.shared.start()
         flushPendingFunnel()
     }
 
@@ -57,8 +62,14 @@ public final class NotificationManager: NSObject {
     /// app was killed), so this runs at init. Reuses `CategoryStore`; apps can register their own
     /// categories on top via the C ABI / RN bridge without clobbering this one (it accumulates).
     private func registerBuiltInCategories() {
+        // Re-seed the categories the NSE synthesized from payload `buttons` while the app was dead,
+        // BEFORE writing our own set: `setNotificationCategories` replaces the whole OS-held set, so
+        // without this the first launch after such a push would strip the buttons from any of those
+        // notifications still sitting in Notification Center. No-op without an App Group.
+        CategoryStore.shared.hydrateFromSharedStore()
+
         let beamActions = CategorySpec(
-            id: "beam_actions",
+            id: BeamActionButtons.builtInActionsCategory,
             actions: [
                 ActionSpec(id: "open", title: "Open", foreground: true,
                            destructive: nil, authenticationRequired: nil),
