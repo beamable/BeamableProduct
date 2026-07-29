@@ -40,6 +40,12 @@ namespace Beamable.Server
 		/// Creates a disposable realm-scoped handle (the full realm SDK, scoped to <paramref name="pid"/> and,
 		/// optionally, acting on behalf of <paramref name="gamerTag"/>).
 		/// </summary>
-		UserRequestDataHandler CreateRealmScope(string pid, long gamerTag = 0);
+		/// <param name="useSignedRequests">
+		/// When false (the default), realm requests ride the zone's websocket with an <c>X-BEAM-SCOPE: cid.pid</c>
+		/// header so the gateway routes them to the realm — this requires the realm to belong to this zone. When
+		/// true, requests go over a signed HTTP requester authenticated with the realm's own secret, which also
+		/// reaches realms outside this zone.
+		/// </param>
+		UserRequestDataHandler CreateRealmScope(string pid, long gamerTag = 0, bool useSignedRequests = false);
 	}
 }

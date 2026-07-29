@@ -62,13 +62,19 @@ namespace Beamable.Server
 		/// Optional player on that realm to act on behalf of. When 0 (the default), the scope acts with the
 		/// zone service's own (server) identity rather than a specific player.
 		/// </param>
-		protected UserRequestDataHandler AssumeRealm(string pid, long gamerTag = 0)
+		/// <param name="useSignedRequests">
+		/// When false (the default), realm requests ride this zone's websocket with an <c>X-BEAM-SCOPE: cid.pid</c>
+		/// header — the fast path, valid only for a realm that belongs to this zone. Set true to route through a
+		/// signed HTTP requester (authenticated with the realm's own secret) instead, which also reaches realms
+		/// that are not part of this zone.
+		/// </param>
+		protected UserRequestDataHandler AssumeRealm(string pid, long gamerTag = 0, bool useSignedRequests = false)
 		{
 			if (string.IsNullOrEmpty(pid))
 			{
 				throw new InvalidArgumentException(nameof(pid), "A realm (pid) is required to AssumeRealm.");
 			}
-			return _serviceProvider.GetService<IRealmScopeFactory>().CreateRealmScope(pid, gamerTag);
+			return _serviceProvider.GetService<IRealmScopeFactory>().CreateRealmScope(pid, gamerTag, useSignedRequests);
 		}
 
 		public void ReceiveDefaultServices(IDependencyProviderScope scope)

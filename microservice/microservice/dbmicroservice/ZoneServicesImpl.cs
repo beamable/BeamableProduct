@@ -77,19 +77,15 @@ namespace Beamable.Server
 			_env = env;
 		}
 
-		public UserRequestDataHandler CreateRealmScope(string pid, long gamerTag = 0)
+		public UserRequestDataHandler CreateRealmScope(string pid, long gamerTag = 0, bool useSignedRequests = false)
 		{
 			// Re-target the env to the realm so ConfigureRealmServices registers a cid.pid RequestContext (and
 			// scopes its requester to cid.pid) directly, while keeping the zone's secret/host for signing.
 			var realmEnv = _env.Copy(a => a.ProjectName = pid);
 
-			// WORKAROUND: the assumed-realm websocket rides the zone's cid.zid connection, so the backend
-			// treats the zid as the pid for every request over that socket — realm-scoped calls (stats, etc.)
-			// end up hitting the wrong realm. Instead, route the realm SDK's HTTP requests through the signed
-			// requester, authenticated as cid.pid with the *realm's* secret (fetched from the customer API).
-			// The secret fetch is lazy (Func<Promise<string>>) and cached so it happens at most once per scope.
-			// It runs on the first signed request, by which point `realmScope` is assigned — and it must use
-			// that scope's requester, not the zone root, because the root has no RequestContext.
+			// The realm secret is only needed for the signed-HTTP fallback (see below). It's lazy (fetched at
+			// most once, on the first signed request) and must run against `realmScope`'s requester — not the
+			// zone root, which has no RequestContext — so it captures the scope assigned after the Fork.
 			IDependencyProviderScope realmScope = null;
 			var realmSecret = new Lazy<Promise<string>>(() => FetchRealmSecret(realmScope, pid));
 
@@ -104,33 +100,59 @@ namespace Beamable.Server
 
 				MicroserviceStartupUtil.ConfigureRealmServices(builder, _startupContext, realmEnv);
 
-				// ConfigureRealmServices derives IRealmInfo from IMicroserviceArgs, which still resolves to the
-				// ZONE env in this fork — so the signed requester's Pid (taken from IRealmInfo) would be the
-				// zone's, not the realm's. Pin IRealmInfo to the realm so it signs and scopes as cid.pid.
-				builder.RemoveIfExists<IRealmInfo>();
-				builder.AddScoped<IRealmInfo>(_ => realmEnv);
-
-				// Point the signed requester at the realm secret (ConfigureRealmServices wired it to the zone's
-				// secret via realmEnv). The HttpSignedRequester signs as cid.pid using this.
-				builder.RemoveIfExists<ISignedRequesterConfig>();
-				builder.AddSingleton<ISignedRequesterConfig>(() => new DefaultSignedRequesterConfig
+				if (useSignedRequests)
 				{
-					Host = realmEnv.Host
-						.Replace("ws://", "http://")
-						.Replace("wss://", "https://")
-						.Replace("/socket/", "")
-						.Replace("/socket", ""),
-					RealmSecretGenerator = () => realmSecret.Value,
-				});
+					// Fallback path: route the realm SDK's requests through a signed HTTP requester, authenticated
+					// as cid.pid with the *realm's* own secret. This reaches any realm the zone service can read a
+					// secret for, including realms that don't belong to this zone.
 
-				// Resolve the realm SDK's requester to the signed HTTP requester (cid.pid + realm secret)
-				// instead of the zone's websocket MicroserviceRequester. Services that need the socket directly
-				// (e.g. ContentService) resolve MicroserviceRequester/SocketRequesterContext explicitly and are
-				// unaffected; this only redirects the generic IBeamableRequester/IRequester consumers.
-				builder.RemoveIfExists<IBeamableRequester>();
-				builder.RemoveIfExists<IRequester>();
-				builder.AddScoped<IBeamableRequester>(p => p.GetService<HttpSignedRequester>());
-				builder.AddScoped<IRequester>(p => p.GetService<HttpSignedRequester>());
+					// ConfigureRealmServices derives IRealmInfo from IMicroserviceArgs, which still resolves to the
+					// ZONE env in this fork — so the signed requester's Pid (taken from IRealmInfo) would be the
+					// zone's, not the realm's. Pin IRealmInfo to the realm so it signs and scopes as cid.pid.
+					builder.RemoveIfExists<IRealmInfo>();
+					builder.AddScoped<IRealmInfo>(_ => realmEnv);
+
+					// Point the signed requester at the realm secret (ConfigureRealmServices wired it to the zone's
+					// secret via realmEnv). The HttpSignedRequester signs as cid.pid using this.
+					builder.RemoveIfExists<ISignedRequesterConfig>();
+					builder.AddSingleton<ISignedRequesterConfig>(() => new DefaultSignedRequesterConfig
+					{
+						Host = realmEnv.Host
+							.Replace("ws://", "http://")
+							.Replace("wss://", "https://")
+							.Replace("/socket/", "")
+							.Replace("/socket", ""),
+						RealmSecretGenerator = () => realmSecret.Value,
+					});
+
+					// Resolve the realm SDK's requester to the signed HTTP requester (cid.pid + realm secret)
+					// instead of the zone's websocket MicroserviceRequester. Services that need the socket directly
+					// (e.g. ContentService) resolve MicroserviceRequester/SocketRequesterContext explicitly and are
+					// unaffected; this only redirects the generic IBeamableRequester/IRequester consumers.
+					builder.RemoveIfExists<IBeamableRequester>();
+					builder.RemoveIfExists<IRequester>();
+					builder.AddScoped<IBeamableRequester>(p => p.GetService<HttpSignedRequester>());
+					builder.AddScoped<IRequester>(p => p.GetService<HttpSignedRequester>());
+				}
+				else
+				{
+					// Default path: keep the zone's websocket MicroserviceRequester (already scoped to cid.pid by
+					// ConfigureRealmServices) but stamp X-BEAM-SCOPE: cid.pid on every frame. The socket is still
+					// authenticated as the zone's cid.zid; the gateway honors the per-request scope header and
+					// routes the call to the realm. Only valid for a realm that belongs to this zone — otherwise
+					// the gateway rejects the scope and the caller should pass useSignedRequests: true.
+					builder.RemoveIfExists<MicroserviceRequester>();
+					builder.AddScoped<MicroserviceRequester>(provider =>
+						new MicroserviceRequester(
+							provider.GetService<IMicroserviceArgs>(),
+							provider.GetService<RequestContext>(),
+							provider.GetService<SocketRequesterContext>(),
+							true,
+							provider.GetService<IActivityProvider>())
+						{
+							ScopeOverride = $"{realmEnv.CustomerID}.{pid}"
+						});
+				}
 
 				// BeamScheduler is a *common* singleton, so a forked scope resolves it against the zone parent
 				// (which lacks the realm-only IBeamSchedulerApi). Re-register it as fork-local scoped so it

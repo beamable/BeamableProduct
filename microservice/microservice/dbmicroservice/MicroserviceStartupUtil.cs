@@ -918,9 +918,10 @@ public static class MicroserviceStartupUtil
 			return Task.CompletedTask;
 		}
 
-		// TODO(zones): local discovery is realm-shaped (broadcasts pid). A zone-scoped service should
-		// broadcast its zid (add a zid field to ServiceDiscoveryEntry) so `beam project` tooling can find it.
-		// Left realm-only for now; containerized (cloud) deploys skip this path entirely.
+		// Local discovery is realm-shaped: this broadcasts the pid, which for a zone service is the zone
+		// identity (ZONE_<zid>). The CLI's DiscoveryService reconciles that against the local manifest
+		// (matching zone services by serviceName), so no dedicated zid field is needed here. Containerized
+		// (cloud) deploys skip this path entirely.
 		var msg = new ServiceDiscoveryEntry
 		{
 			processId = Environment.ProcessId,
