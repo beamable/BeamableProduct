@@ -9,6 +9,10 @@ public class LocalStackStopCommandArgs : CommandArgs
 {
 	public string configPath;
 	public string step;
+
+	/// <summary>Reverse docker steps destructively (<c>compose down -v</c>) instead of just stopping the
+	/// containers — deletes the local database along with them.</summary>
+	public bool purge;
 }
 
 public class LocalStackStopCommandResult
@@ -20,8 +24,15 @@ public class LocalStackStopCommandResult
 /// <summary>
 /// Stops the local stack recorded by <c>beam local up</c>. Long-running processes are killed
 /// (whole process tree, in reverse start order); run-to-completion steps that declared a
-/// <c>stopArguments</c> reversal (e.g. <c>docker compose down</c>) are reversed. With a step name, only
+/// <c>stopArguments</c> reversal (e.g. <c>docker compose stop</c>) are reversed. With a step name, only
 /// that step is stopped; otherwise the whole stack is stopped and the run-state cleared.
+/// <para>
+/// Stopping is NON-DESTRUCTIVE by default: docker steps are reversed with <c>compose stop</c>, so the
+/// containers and their volumes survive and the next <c>up</c> reuses the existing database. Pass
+/// <c>--purge</c> to use each step's destructive reversal (<c>compose down -v</c>) instead, which removes
+/// the containers and volumes — that deletes the local accounts/customers/realms, so the next <c>up</c>
+/// seeds a brand-new realm under a new CID.
+/// </para>
 /// </summary>
 public class LocalStackStopCommand
 	: AtomicCommand<LocalStackStopCommandArgs, LocalStackStopCommandResult>
@@ -37,6 +48,11 @@ public class LocalStackStopCommand
 			(args, v) => args.step = v);
 		AddOption(new Option<string>("--config", "Path to the manifest whose run-state to read (defaults to .beamable/local-stack.json)"),
 			(args, v) => args.configPath = v);
+		AddOption(new Option<bool>(new[] { "--purge", "--clean" },
+				"DESTRUCTIVE: reverse docker steps with `compose down -v` (removing the containers and their "
+				+ "volumes) instead of `compose stop`. This deletes the local database — accounts, customers "
+				+ "and realms — so the next `up` seeds a brand-new realm with a new CID. Omit to keep data."),
+			(args, v) => args.purge = v);
 	}
 
 	public override Task<LocalStackStopCommandResult> GetResult(LocalStackStopCommandArgs args)
@@ -58,7 +74,7 @@ public class LocalStackStopCommand
 		for (var i = targeting.Count - 1; i >= 0; i--)
 		{
 			var entry = targeting[i];
-			if (StopEntry(entry))
+			if (StopEntry(entry, args.purge))
 				stopped.Add(entry.name);
 		}
 
@@ -86,16 +102,28 @@ public class LocalStackStopCommand
 		});
 	}
 
-	private static bool StopEntry(LocalStackRunEntry entry)
+	private static bool StopEntry(LocalStackRunEntry entry, bool purge)
 	{
 		// Reversible run-to-completion steps (e.g. docker compose up -d) are reversed via their stop command.
-		if (!string.IsNullOrWhiteSpace(entry.stopArguments) && !string.IsNullOrWhiteSpace(entry.command))
-			return RunReversal(entry);
+		var reversal = ResolveReversal(entry, purge);
+		if (!string.IsNullOrWhiteSpace(reversal) && !string.IsNullOrWhiteSpace(entry.command))
+			return RunReversal(entry, reversal);
 
 		return KillTree(entry);
 	}
 
-	private static bool RunReversal(LocalStackRunEntry entry)
+	/// <summary>
+	/// Picks a step's reversal arguments: the destructive <see cref="LocalStackRunEntry.purgeStopArguments"/>
+	/// when <paramref name="purge"/> is set and the step declares one, otherwise the non-destructive
+	/// <see cref="LocalStackRunEntry.stopArguments"/>. Run-states recorded before <c>purgeStopArguments</c>
+	/// existed carry only the latter, so <c>--purge</c> falls back to whatever they recorded.
+	/// </summary>
+	private static string ResolveReversal(LocalStackRunEntry entry, bool purge) =>
+		purge && !string.IsNullOrWhiteSpace(entry.purgeStopArguments)
+			? entry.purgeStopArguments
+			: entry.stopArguments;
+
+	private static bool RunReversal(LocalStackRunEntry entry, string stopArguments)
 	{
 		try
 		{
@@ -105,19 +133,19 @@ public class LocalStackStopCommand
 				UseShellExecute = false,
 				CreateNoWindow = true,
 			};
-			foreach (var a in entry.stopArguments.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+			foreach (var a in stopArguments.Split(' ', StringSplitOptions.RemoveEmptyEntries))
 				psi.ArgumentList.Add(a);
 			if (!string.IsNullOrEmpty(entry.workingDirectory) && Directory.Exists(entry.workingDirectory))
 				psi.WorkingDirectory = entry.workingDirectory;
 
 			var proc = Process.Start(psi);
 			proc?.WaitForExit();
-			Log.Information($"[{entry.name}] reversed via `{entry.command} {entry.stopArguments}`");
+			Log.Information($"[{entry.name}] reversed via `{entry.command} {stopArguments}`");
 			return true;
 		}
 		catch (Exception e)
 		{
-			Log.Warning($"[{entry.name}] failed to reverse (`{entry.command} {entry.stopArguments}`): {e.Message}");
+			Log.Warning($"[{entry.name}] failed to reverse (`{entry.command} {stopArguments}`): {e.Message}");
 			return false;
 		}
 	}

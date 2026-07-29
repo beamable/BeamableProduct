@@ -199,7 +199,8 @@ public static class LocalStackTemplate
 				workingDirectory = Dir(o.webRegistryDir, "portal-localdev (local web package registry)"),
 				command = "docker",
 				arguments = "compose up -d --wait",
-				stopArguments = "compose down",
+				stopArguments = "compose stop",
+				purgeStopArguments = "compose down -v",
 				waitForExit = true,
 				// Verdaccio answers its web UI on the root once it is serving; any response is enough.
 				readyWhenHttpOk = WebRegistryReadyUrl,
@@ -217,7 +218,12 @@ public static class LocalStackTemplate
 			// --wait blocks until the containers are running/healthy (uses the broker healthcheck), so the
 			// gateway doesn't start before its dependencies are actually up.
 			arguments = "compose up -d --wait",
-			stopArguments = "compose down",
+			// `compose stop`, NOT `compose down`: mongo_master's data lives in anonymous volumes, which
+			// `down` deletes along with the containers — that wiped accounts/customers/realms on every
+			// stop/up cycle and forced a new CID each time. `stop` leaves the containers (and data) intact
+			// and the next `compose up -d --wait` just restarts them. Use `stop --purge` for a clean slate.
+			stopArguments = "compose stop",
+			purgeStopArguments = "compose down -v",
 			waitForExit = true,
 			readyTimeoutSeconds = 300
 		});
@@ -313,7 +319,8 @@ public static class LocalStackTemplate
 			workingDirectory = Path.Combine(scalaDir, "docker", "local"),
 			command = "docker",
 			arguments = "compose up -d --no-deps redis",
-			stopArguments = "compose down",
+			stopArguments = "compose stop",
+			purgeStopArguments = "compose down -v",
 			waitForExit = true,
 			readyTimeoutSeconds = 120
 		});

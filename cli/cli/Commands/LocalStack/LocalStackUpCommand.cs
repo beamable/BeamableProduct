@@ -235,6 +235,7 @@ public class LocalStackUpCommand
 				entry.workingDirectory = l.WorkingDirectory;
 				entry.command = step.command;
 				entry.stopArguments = LocalStackConfigIO.Substitute(step.stopArguments, config);
+ 				entry.purgeStopArguments = LocalStackConfigIO.Substitute(step.purgeStopArguments, config);
 				entry.waitForExit = step.waitForExit;
 				LocalStackRunStateIO.Save(runStatePath, runState);
 			}

@@ -129,10 +129,21 @@ public class LocalStackStep
 
 	/// <summary>
 	/// Optional arguments used by <c>beam local stop</c> to reverse a run-to-completion step (e.g.
-	/// <c>compose down</c> for a <c>docker compose up -d</c> step); run as <c>command stopArguments</c> in
-	/// <see cref="workingDirectory"/>.
+	/// <c>compose stop</c> for a <c>docker compose up -d</c> step); run as <c>command stopArguments</c> in
+	/// <see cref="workingDirectory"/>. Keep this NON-destructive: it runs on every plain
+	/// <c>beam local stop</c>, so anything that deletes container volumes here wipes the local database
+	/// (accounts/customers/realms) on each stop/up cycle. Put the destructive form in
+	/// <see cref="purgeStopArguments"/> instead.
 	/// </summary>
 	public string stopArguments;
+
+	/// <summary>
+	/// Optional destructive variant of <see cref="stopArguments"/>, used only when the user passes
+	/// <c>beam local stop --purge</c> (e.g. <c>compose down -v</c>, which removes the containers and their
+	/// volumes and therefore the local database). When unset, <c>--purge</c> falls back to
+	/// <see cref="stopArguments"/>.
+	/// </summary>
+	public string purgeStopArguments;
 
 	/// <summary>How long to wait for the readiness gate before giving up and continuing anyway.</summary>
 	public int readyTimeoutSeconds = 120;

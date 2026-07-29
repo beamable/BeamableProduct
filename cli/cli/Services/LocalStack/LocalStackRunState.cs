@@ -55,8 +55,13 @@ public class LocalStackRunEntry
 	public string command;
 
 	/// <summary>If set, <c>stop</c> runs <c>command stopArguments</c> in <see cref="workingDirectory"/> to
-	/// reverse a run-to-completion step (e.g. <c>compose down</c>).</summary>
+	/// reverse a run-to-completion step (e.g. <c>compose stop</c>). Non-destructive: it runs on every plain
+	/// <c>beam local stop</c>.</summary>
 	public string stopArguments;
+
+	/// <summary>If set, <c>stop --purge</c> runs this instead of <see cref="stopArguments"/> (e.g.
+	/// <c>compose down -v</c>, which also deletes the containers' volumes and so the local database).</summary>
+	public string purgeStopArguments;
 
 	/// <summary>True for run-to-completion steps (e.g. <c>docker compose up -d</c>): their <see cref="pid"/>
 	/// is expected to be dead; liveness is not judged by it.</summary>
