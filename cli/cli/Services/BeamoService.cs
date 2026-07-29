@@ -125,9 +125,14 @@ public class BeamoService
 			? "?" + string.Join("&", names.Select(n => $"serviceName={Uri.EscapeDataString(n)}"))
 			: string.Empty;
 
-		var scope = string.IsNullOrEmpty(Requester.Pid) ? Requester.Cid : $"{Requester.Cid}.{Requester.Pid}";
-		Log.Information($"Resolving docker image registry via GET /api/beamo/registry-uri{query} " +
-		                $"(X-BEAM-SCOPE via requester cid.pid=[{scope}]; a zone deploy overrides this to cid.zid)");
+		// Report the ACTUAL scope header this request will send: the requester's BeamScopeOverride when set
+		// (a zone deploy pins it to cid.zid), otherwise the default cid.pid. The previous log computed
+		// cid.pid from the access token regardless of the override, which was misleading.
+		var overrideScope = (Requester as CliRequester)?.BeamScopeOverride;
+		var scope = !string.IsNullOrEmpty(overrideScope)
+			? overrideScope
+			: (string.IsNullOrEmpty(Requester.Pid) ? Requester.Cid : $"{Requester.Cid}.{Requester.Pid}");
+		Log.Information($"Resolving docker image registry via GET /api/beamo/registry-uri{query} (X-BEAM-SCOPE=[{scope}])");
 
 		var resp = await Requester.Request<BeamoV2UriResponse>(Method.GET, $"/api/beamo/registry-uri{query}")
 			.RecoverFrom40x(_ => new BeamoV2UriResponse());

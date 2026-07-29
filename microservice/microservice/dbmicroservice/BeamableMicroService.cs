@@ -419,12 +419,10 @@ namespace Beamable.Server
       
       private bool TryBuildPortalUrl(out string portalUrl)
       {
-	      // TODO(zones): this portal URL is realm-shaped (/{cid}/games/{pid}/realms/{pid}/microservices/...).
-	      // A zone-scoped service has no realm; it should either build a zone-shaped portal URL or skip this
-	      // entirely. Left realm-only for now.
 	      var cid = InstanceArgs.CustomerID;
-	      var pid = InstanceArgs.ProjectName;
-	      var microName = QualifiedName;
+	      // For a realm service this is the pid; for a zone service it is the ZONE_<zid> (the zone rides the
+	      // pid slot), which is exactly what the console's zone route wants.
+	      var scopeId = InstanceArgs.ProjectName;
 	      var refreshToken = InstanceArgs.RefreshToken;
 
 	      if (string.IsNullOrEmpty(refreshToken))
@@ -433,19 +431,26 @@ namespace Beamable.Server
 		      portalUrl = "";
 		      return false;
 	      }
-	      
+
 	      var queryArgs = new List<string>
 	      {
 		      $"refresh_token={refreshToken}",
 		      $"routingKey={InstanceArgs.NamePrefix}"
 	      };
 	      var joinedQueryString = string.Join("&", queryArgs);
+	      // The portal now lives on the console.* DNS (dev.console.beamable.com / console.beamable.com), so
+	      // map the api host to console (dev.api.beamable.com -> dev.console.beamable.com).
 	      var treatedHost = InstanceArgs.Host.Replace("/socket", "")
 		      .Replace("wss", "https")
-		      .Replace("dev.", "dev-")
-		      .Replace("api", "portal");
-	      portalUrl = $"{treatedHost}/{cid}/games/{pid}/realms/{pid}/microservices/{microName}/docs?{joinedQueryString}";
-	      
+		      .Replace("api", "console");
+
+	      portalUrl = IsRealmScoped
+		      // Realm service: /{cid}/games/{pid}/realms/{pid}/microservices/micro_{name}/docs
+		      ? $"{treatedHost}/{cid}/games/{scopeId}/realms/{scopeId}/microservices/{QualifiedName}/docs?{joinedQueryString}"
+		      // Zone service: a zone has no realm — the console inspects it under
+		      // /{cid}/zones/{zid}/inspect/{name}/swagger (unprefixed service name).
+		      : $"{treatedHost}/{cid}/zones/{scopeId}/inspect/{MicroserviceName}/swagger?{joinedQueryString}";
+
 	      Log.Verbose("portal url " + portalUrl);
 
 	      return true;

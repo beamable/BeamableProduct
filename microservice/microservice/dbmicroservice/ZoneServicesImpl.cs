@@ -150,25 +150,40 @@ namespace Beamable.Server
 		}
 
 		/// <summary>
-		/// Fetches the realm secret for <paramref name="pid"/> from the customer API. Issued over the given
-		/// scope's requester (the realm fork, which has a RequestContext — the zone root does not). Used to
-		/// sign realm-scoped requests from an <c>AssumeRealm</c> scope as cid.pid.
+		/// Fetches the realm secret for <paramref name="pid"/> from the admin-customer endpoint
+		/// (<c>/basic/realms/admin/customer</c>), which returns every project (realm) the customer owns
+		/// together with its microservice secret. Issued over the given scope's requester (the realm fork,
+		/// which has a RequestContext — the zone root does not). Used to sign realm-scoped requests from an
+		/// <c>AssumeRealm</c> scope as cid.pid.
+		/// <para>
+		/// NOTE: the per-realm <c>/api/customers/{cid}/realms/{pid}</c> view does NOT include the secret for
+		/// anyone (even an operator), which is why the admin-customer list is used instead.
+		/// </para>
 		/// </summary>
 		private Promise<string> FetchRealmSecret(IDependencyProvider scope, string pid)
 		{
 			var requester = scope.GetService<MicroserviceRequester>();
-			var customerApi = new BeamCustomerApi(requester);
-			return customerApi.GetRealms(_env.CustomerID, pid).Map(view =>
-			{
-				var secret = view.secret.GetOrElse(string.Empty);
-				if (string.IsNullOrEmpty(secret))
+			return requester
+				.Request<AdminCustomerResponse>(Method.GET, "/basic/realms/admin/customer",
+					parser: json => JsonConvert.DeserializeObject<AdminCustomerResponse>(json))
+				.Map(resp =>
 				{
-					throw new Exception(
-						$"AssumeRealm could not resolve a realm secret for pid=[{pid}] from the customer API. " +
-						$"The zone service may lack permission to read the realm secret.");
-				}
-				return secret;
-			});
+					var project = resp?.customer?.projects?.FirstOrDefault(p => p.name == pid);
+					var secret = project?.secret;
+					if (string.IsNullOrEmpty(secret))
+					{
+						throw new Exception(
+							$"AssumeRealm could not resolve a realm secret for pid=[{pid}] from " +
+							$"/basic/realms/admin/customer. The zone service may lack permission to read realm secrets, " +
+							$"or the realm is not present in the customer's project list.");
+					}
+					return secret;
+				});
 		}
+
+		// Wire DTOs for /basic/realms/admin/customer — public fields so Newtonsoft populates them.
+		private class AdminCustomerResponse { public AdminCustomer customer; }
+		private class AdminCustomer { public List<AdminProject> projects; }
+		private class AdminProject { public string name; public string secret; }
 	}
 }

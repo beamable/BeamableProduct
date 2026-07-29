@@ -182,44 +182,23 @@ public static class ServiceUploadUtil
 				DefaultRequestVersion = HttpVersion.Version20,
 				DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
 			};
-			// The registry authorizes pushes by (clientid, project/zone, token). AppContext.Pid is always the
-			// realm pid, so derive the effective scope from the requester's override (a zone deploy sets it to
-			// `{cid}.ZONE_{zid}`). A REALM push sends x-ks-projectid; a ZONE push sends x-ks-zoneid (raw zid)
-			// INSTEAD — the ingress resolves x-ks-projectid strictly as a realm and 500s on a ZONE_ value.
+			// The registry authorizes pushes by (clientid, projectid, token). AppContext.Pid is always the
+			// realm pid, so for a zone deploy derive the effective scope from the requester's override (set to
+			// `{cid}.{zid}`) and send the zone id in the SAME x-ks-projectid header — no new headers. The repo
+			// itself is already the scoped one returned by /api/beamo/registry-uri for this scope.
 			var registryRequester = provider.GetService<IBeamableRequester>();
 			var registryClientId = ctx.Cid;
 			var registryProjectId = ctx.Pid;
-			string registryZoneId = null;
 			if (registryRequester is CliRequester cliRequester && !string.IsNullOrEmpty(cliRequester.BeamScopeOverride))
 			{
 				var scopeParts = cliRequester.BeamScopeOverride.Split('.', 2);
 				registryClientId = scopeParts[0];
-				var project = scopeParts.Length > 1 ? scopeParts[1] : registryProjectId;
-				const string zonePrefix = "ZONE_";
-				if (project.StartsWith(zonePrefix))
-				{
-					// Zone push: authorize as a zone via x-ks-zoneid (keep the ZONE_ prefix) and do not send
-					// x-ks-projectid (the ingress 500s resolving a ZONE_ value as a realm project).
-					registryZoneId = project;
-					registryProjectId = null;
-				}
-				else
-				{
-					registryProjectId = project;
-				}
+				if (scopeParts.Length > 1) registryProjectId = scopeParts[1];
 			}
 
-			Log.Information($"[{beamoId}] registry auth headers: x-ks-clientid=[{registryClientId}] " +
-			                $"x-ks-projectid=[{registryProjectId ?? "<none>"}] x-ks-zoneid=[{registryZoneId ?? "<none>"}]");
+			Log.Information($"[{beamoId}] registry auth headers: x-ks-clientid=[{registryClientId}] x-ks-projectid=[{registryProjectId}]");
 			client.DefaultRequestHeaders.Add("x-ks-clientid", registryClientId);
-			if (!string.IsNullOrEmpty(registryZoneId))
-			{
-				client.DefaultRequestHeaders.Add("x-ks-zoneid", registryZoneId);
-			}
-			if (!string.IsNullOrEmpty(registryProjectId))
-			{
-				client.DefaultRequestHeaders.Add("x-ks-projectid", registryProjectId);
-			}
+			client.DefaultRequestHeaders.Add("x-ks-projectid", registryProjectId);
 			client.DefaultRequestHeaders.Add("x-ks-token", registryRequester.AccessToken.Token);
 
 
