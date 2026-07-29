@@ -134,6 +134,40 @@ public static class LocalStackTemplate
 		return null;
 	}
 
+	/// <summary>
+	/// The <c>tools/*</c> folders Maven will actually accept in <c>-pl</c>: the <c>&lt;module&gt;</c> entries of
+	/// the <c>tools/pom.xml</c> aggregator. A folder can hold a pom and a launchable MicroService yet not be
+	/// registered in the reactor (e.g. <c>disruptor-bot</c>, <c>gatling</c>), and passing one to <c>-pl</c>
+	/// fails the *entire* build with "Could not find the selected project in the reactor" — which aborts
+	/// <c>up --build</c> and rolls the whole stack back. Returns an empty set when the aggregator pom is
+	/// missing or holds no modules; callers treat that as "don't filter", so a parse problem can never
+	/// silently drop every module and turn a working build into a no-op.
+	/// </summary>
+	public static HashSet<string> ReadScalaReactorModules(string scalaDir)
+	{
+		var modules = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		if (string.IsNullOrWhiteSpace(scalaDir)) return modules;
+
+		var aggregator = Path.Combine(scalaDir, "tools", "pom.xml");
+		if (!File.Exists(aggregator)) return modules;
+
+		foreach (var raw in File.ReadLines(aggregator))
+		{
+			var line = raw.Trim();
+			var idxOpen = line.IndexOf("<module>", StringComparison.Ordinal);
+			if (idxOpen < 0) continue;
+
+			var start = idxOpen + "<module>".Length;
+			var idxClose = line.IndexOf("</module>", start, StringComparison.Ordinal);
+			if (idxClose <= start) continue;
+
+			var name = line.Substring(start, idxClose - start).Trim();
+			if (name.Length > 0) modules.Add(name);
+		}
+
+		return modules;
+	}
+
 	private static string Dir(string value, string label) =>
 		string.IsNullOrWhiteSpace(value) ? $"<EDIT: absolute path to {label}>" : value;
 
@@ -285,9 +319,16 @@ public static class LocalStackTemplate
 		});
 		// Compile the selected Scala services (and their intra-repo `core` via -am) so target/classes + jars
 		// exist before the JVMs launch — only when `beam local up --build` is passed.
-		if (scalaTools.Count > 0)
+		// Only hand Maven the folders its reactor knows about: one unregistered folder in `-pl` fails the
+		// whole build and rolls the stack back. An unreadable aggregator pom yields an empty set, which
+		// deliberately falls through to the old unfiltered list rather than building nothing.
+		var reactorModules = ReadScalaReactorModules(scalaDir);
+		var buildableTools = reactorModules.Count > 0
+			? scalaTools.Where(t => reactorModules.Contains(t.name)).ToList()
+			: scalaTools;
+		if (buildableTools.Count > 0)
 		{
-			var scalaModules = string.Join(",", scalaTools.Select(t => $"tools/{t.name}"));
+			var scalaModules = string.Join(",", buildableTools.Select(t => $"tools/{t.name}"));
 			config.steps.Add(new LocalStackStep
 			{
 				name = "build: scala",
