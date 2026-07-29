@@ -37,6 +37,17 @@ public struct BeamAnimatedActivityAttributes: ActivityAttributes {
             self.flipIntervalMs = flipIntervalMs
             self.activeIndex = activeIndex
         }
+
+        // Tolerant decode so an incomplete push-to-start `content-state` still starts the Activity
+        // (a missing non-optional key would otherwise make the OS silently drop the start). `encode`
+        // stays synthesized.
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            body = (try? c.decode(String.self, forKey: .body)) ?? ""
+            colors = (try? c.decode([String].self, forKey: .colors)) ?? []
+            flipIntervalMs = (try? c.decode(Int.self, forKey: .flipIntervalMs)) ?? 900
+            activeIndex = (try? c.decode(Int.self, forKey: .activeIndex)) ?? 0
+        }
     }
 
     /// Static title shown for the life of the activity.

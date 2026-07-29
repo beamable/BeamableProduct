@@ -10,6 +10,7 @@ import {
   Beam,
   ContentService,
   LeaderboardsService,
+  MessageRailService,
   StatsService,
 } from '@beamable/sdk';
 import { BEAM_CONFIG } from './config';
@@ -103,13 +104,14 @@ export async function initBeam(): Promise<Beam> {
       ContentService,
       StatsService,
       AnnouncementsService,
-      LeaderboardsService
+      LeaderboardsService,
+      MessageRailService
     ]);
     // CampaignService is the only microservice the client talks to directly, and only for
-    // reading the player's registered devices (`listMyDevices`). Device/email/in-game
-    // registration goes through the backend `/message-rail` endpoint (see src/beam/messageRail.ts)
-    // — the rail microservices (push/email/ingame/messagerail) are backend-only and are never
-    // referenced from the client.
+    // reading the player's registered devices (`listMyDevices`). Device/email/in-game opt-in
+    // goes through the SDK's `beam.messageRail` service, which calls the backend
+    // `/api/message-rail/{register,unregister}` endpoints — the rail microservices
+    // (push/email/ingame/messagerail) are backend-only and are never referenced from the client.
     beam.use(CampaignServiceClient);
     beamInstance = beam;
 

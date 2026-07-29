@@ -6,9 +6,10 @@
  *     Activity for this player via APNs (`apns-push-type: liveactivity`, `event: "start"`).
  *   - `liveActivityUpdateToken`      — one per running activity; lets the backend UPDATE / END it.
  *
- * We forward each token to the same `push` message rail the device token uses
- * (`/message-rail/register`), tagged with a `kind` discriminator the push federation reads. Unlike
- * the device token, these are keyed by `attributesType` (push-to-start) or `activityId` (update).
+ * We forward each token to the same `push` message rail the device token uses, through the Web
+ * SDK's `beam.messageRail` service (`POST /api/message-rail/register`), tagged with a `kind`
+ * discriminator the push federation reads. Unlike the device token, these are keyed by
+ * `attributesType` (push-to-start) or `activityId` (update).
  *
  * The native side emits a short `activityType` slug ('actions' | 'animated' | 'countdown'); the
  * backend + portal key on the UNQUALIFIED Swift attributes type name, so we map here — this map is
@@ -17,7 +18,17 @@
 import { BeamNotifications } from '@beamable/notifications-react-native';
 import { DEFAULT_APNS_ENVIRONMENT } from '@beamable/notifications-react-native';
 import type { Subscription } from '@beamable/notifications-react-native';
-import { registerRail } from './messageRail';
+import { getBeam } from './beamClient';
+
+const NOT_CONNECTED =
+  'Not connected — call initBeam() (Connect to Beamable) first.';
+
+/** Resolve the message-rail service, or throw if not connected. */
+function messageRail() {
+  const beam = getBeam();
+  if (!beam) throw new Error(NOT_CONNECTED);
+  return beam.messageRail;
+}
 
 /** activityType slug (native) → unqualified Swift `ActivityAttributes` type name (wire contract). */
 const ATTRIBUTES_TYPE: Record<string, string> = {
@@ -48,7 +59,7 @@ export function startLiveActivityTokenForwarding(
   subs.push(
     BeamNotifications.addListener('liveActivityPushToStartToken', async (p) => {
       try {
-        await registerRail('push', {
+        await messageRail().optIn('push', {
           kind: 'liveActivityPushToStart',
           attributesType: attributesTypeFor(p.activityType),
           token: p.token,
@@ -64,7 +75,7 @@ export function startLiveActivityTokenForwarding(
   subs.push(
     BeamNotifications.addListener('liveActivityUpdateToken', async (p) => {
       try {
-        await registerRail('push', {
+        await messageRail().optIn('push', {
           kind: 'liveActivityUpdate',
           attributesType: attributesTypeFor(p.activityType),
           activityId: p.activityId,

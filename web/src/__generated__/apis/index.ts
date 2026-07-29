@@ -29,6 +29,7 @@ export * from './LobbyApi';
 export * from './MailApi';
 export * from './MailboxApi';
 export * from './MatchmakingApi';
+export * from './MessageRailApi';
 export * from './NotificationApi';
 export * from './PartyApi';
 export * from './PaymentsApi';

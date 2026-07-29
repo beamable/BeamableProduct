@@ -34,7 +34,6 @@ import type {
 import { listDevices, registerDevice, unregisterDevice } from '../src/beam/pushNotifications';
 import { addEmail } from '../src/beam/account';
 import { listInGameMessages } from '../src/beam/ingameMessages';
-import { registerRail, unregisterRail } from '../src/beam/messageRail';
 import { startLiveActivityTokenForwarding } from '../src/beam/liveActivity';
 import { detailsPath, detailsUrl, openUrl } from '../src/linking/links';
 import UnityBridgeSection from '../src/unity/UnityBridgeSection';
@@ -281,7 +280,7 @@ export default function Home() {
   const registerThisDevice = async () => {
     if (!getBeam()) return append('Register: connect to Beamable first');
     if (!pushToken) return append(`No push token yet — tap "Register for remote (${remoteProvider})" first (physical device).`);
-    append('message-rail/register (push) …');
+    append('/api/message-rail/register (push) …');
     try {
       const res = await registerDevice(pushToken, BeamNotifications.devicePushPlatform());
       append(`Register push → ${res.success ? 'ok' : 'failed'}${res.message ? `: ${res.message}` : ''}`);
@@ -295,7 +294,7 @@ export default function Home() {
   // the player from the `push` federation by playerId.
   const optOutOfPush = async () => {
     if (!getBeam()) return append('Opt out of push: connect to Beamable first');
-    append('message-rail/unregister (push) …');
+    append('/api/message-rail/unregister (push) …');
     try {
       const res = await unregisterDevice();
       append(`Push opt-out → ${res.success ? 'ok' : 'failed'}${res.message ? `: ${res.message}` : ''}`);
@@ -332,17 +331,18 @@ export default function Home() {
     }
   };
 
-  // 3b-ii) Opt in / out of a message rail (email / in-game) via the backend endpoint.
+  // 3b-ii) Opt in / out of a message rail (email / in-game) via `beam.messageRail`.
   const setRailOptIn = async (
     federationId: 'email' | 'ingame',
     optIn: boolean,
   ) => {
-    if (!getBeam()) return append(`${federationId}: connect to Beamable first`);
-    append(`message-rail/${optIn ? 'register' : 'unregister'} (${federationId}) …`);
+    const beam = getBeam();
+    if (!beam) return append(`${federationId}: connect to Beamable first`);
+    append(`/api/message-rail/${optIn ? 'register' : 'unregister'} (${federationId}) …`);
     try {
       const res = optIn
-        ? await registerRail(federationId)
-        : await unregisterRail(federationId);
+        ? await beam.messageRail.optIn(federationId)
+        : await beam.messageRail.optOut(federationId);
       append(
         `${federationId} ${optIn ? 'opt-in' : 'opt-out'} → ${res.success ? 'ok' : 'failed'}${res.message ? `: ${res.message}` : ''}`,
       );
@@ -469,7 +469,7 @@ export default function Home() {
         <Button label="Add email to account" onPress={addEmailToAccount} />
         <Text style={styles.hint}>
           Email delivery is opt-in. Add an email above first, then opt in — the backend routes
-          campaigns to the `email` rail (POST /message-rail/register), which resolves your
+          campaigns to the `email` rail (POST /api/message-rail/register), which resolves your
           address server-side at send time.
         </Text>
         <Button label="Opt in to email" onPress={() => setRailOptIn('email', true)} />
@@ -515,8 +515,8 @@ export default function Home() {
           <>
             <Text style={styles.hint}>
               Opt in registers this device's {remoteProvider} token with the backend `push`
-              message rail (POST /message-rail/register) so the realm can target it; opt out
-              unregisters the player (POST /message-rail/unregister). Steps: Connect to
+              message rail (POST /api/message-rail/register) so the realm can target it; opt out
+              unregisters the player (POST /api/message-rail/unregister). Steps: Connect to
               Beamable → Register for remote (section 2) → Opt in to push. Delivery is driven
               from the Portal Campaign Builder.
             </Text>
@@ -582,7 +582,7 @@ export default function Home() {
         </Text>
         <Text style={styles.hint}>
           In-game delivery is opt-in — opt in so campaigns targeting the `ingame` rail reach
-          your mailbox (POST /message-rail/register).
+          your mailbox (POST /api/message-rail/register).
         </Text>
         <Button label="Opt in to in-game delivery" onPress={() => setRailOptIn('ingame', true)} />
         <Button label="Opt out of in-game delivery" onPress={() => setRailOptIn('ingame', false)} />
