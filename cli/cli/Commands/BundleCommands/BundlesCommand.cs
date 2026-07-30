@@ -49,34 +49,40 @@ public static class BundleAclScope
 }
 
 /// <summary>
-/// Helpers for parsing a bundle reference of the form <c>&lt;bundle-name&gt;</c> or
-/// <c>&lt;bundle-name&gt;@&lt;selector&gt;</c> (where <c>selector</c> is a tag or a
-/// <c>sha256:&lt;checksum&gt;</c>). Bundle names are short — the namespace is derived at runtime
-/// (see <see cref="cli.Services.Bundles.BundleNamespace"/>), never part of a reference.
+/// Helpers for parsing a bundle reference of the form <c>[@&lt;namespace&gt;/]&lt;bundle-name&gt;</c> or
+/// <c>[@&lt;namespace&gt;/]&lt;bundle-name&gt;@&lt;selector&gt;</c> (where <c>selector</c> is a tag or a
+/// <c>sha256:&lt;checksum&gt;</c>). The namespace is optional: when the reference is written in its
+/// fully-qualified <c>@&lt;namespace&gt;/&lt;bundle-name&gt;</c> form the namespace is honored as-is (so you
+/// can address a bundle owned by another customer); otherwise it is derived at runtime from your
+/// customer alias (see <see cref="cli.Services.Bundles.BundleNamespace"/>).
 /// </summary>
 public static class BundleRef
 {
 	/// <summary>
-	/// Split <c>&lt;bundle-name&gt;@&lt;selector&gt;</c> into its short bundle name and the trailing
-	/// selector. When there is no trailing <c>@selector</c>, <c>selector</c> is null.
+	/// Split <c>[@&lt;namespace&gt;/]&lt;bundle-name&gt;@&lt;selector&gt;</c> into its optional namespace, short
+	/// bundle name, and trailing selector. When the reference carries no <c>@&lt;namespace&gt;/</c> prefix
+	/// <c>ns</c> is null; when it carries no trailing <c>@selector</c>, <c>selector</c> is null.
 	/// </summary>
-	public static (string name, string selector) Split(string raw)
+	public static (string ns, string name, string selector) Split(string raw)
 	{
 		if (string.IsNullOrWhiteSpace(raw))
 			throw new CliException("A bundle reference is required, e.g. <bundle-name> or <bundle-name>@sha256:<checksum>");
 
+		// Peel off a trailing @selector first. A leading '@' (the namespace prefix) is at index 0, so
+		// LastIndexOf > 0 only matches a selector separator, never the namespace marker.
 		var at = raw.LastIndexOf('@');
-		var (name, selector) = at > 0 ? (raw.Substring(0, at), raw.Substring(at + 1)) : (raw, null);
+		var (head, selector) = at > 0 ? (raw.Substring(0, at), raw.Substring(at + 1)) : (raw, null);
+		var (ns, name) = BundleNamespace.SplitName(head);
 		BundleWorkspace.ValidateName(name);
-		return (name, selector);
+		return (ns, name, selector);
 	}
 
 	/// <summary>Require a <c>sha256:</c> checksum selector on the reference, throwing otherwise.</summary>
-	public static (string name, string checksum) RequireChecksum(string raw)
+	public static (string ns, string name, string checksum) RequireChecksum(string raw)
 	{
-		var (name, selector) = Split(raw);
+		var (ns, name, selector) = Split(raw);
 		if (string.IsNullOrEmpty(selector) || !selector.StartsWith("sha256:"))
 			throw new CliException($"Reference=[{raw}] must include a content checksum, e.g. <bundle-name>@sha256:<checksum>");
-		return (name, selector);
+		return (ns, name, selector);
 	}
 }
