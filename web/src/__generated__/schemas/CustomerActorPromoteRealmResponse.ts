@@ -3,9 +3,9 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { PromotionScope } from './PromotionScope';
+import type { CustomerActorPromotionScope } from './CustomerActorPromotionScope';
 
 export type CustomerActorPromoteRealmResponse = { 
   sourceRealmId: string; 
-  scopes?: PromotionScope[]; 
+  scopes?: CustomerActorPromotionScope[]; 
 };

@@ -3,5 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type ApiBeamoZonesForcedBundlesPutZonesResponse = { 
+export type CampaignNodeFunnelDto = { 
+  node?: string; 
+  stages?: Record<string, bigint | string>; 
 };

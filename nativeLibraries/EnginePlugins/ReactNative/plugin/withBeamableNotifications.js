@@ -90,7 +90,15 @@ const LIVE_ACTIVITY_SHARED_SUBPATHS = [
   'core/Sources/BeamableNotifications/LiveActivity/LiveActivityActionIntent.swift',
 ];
 
-/** Attributes types the SDK ships widget-compatible sources for, in the same order. */
+/**
+ * Attributes types the SDK ships widget-compatible sources for, in the same order.
+ *
+ * The ALLOWLIST, not the declaration: what actually lands in `BMNLiveActivityTypes` is whichever
+ * of these the staged widget sources declare an `ActivityConfiguration` for (see
+ * `declaredAttributesTypes`). Intersecting against this list keeps a typo in an app-provided
+ * widget from injecting a type the SDK has no `Activity<T>` dispatch for
+ * (`LiveActivityCoordinator.observeAvailableTypes`).
+ */
 const LIVE_ACTIVITY_ATTRIBUTES_TYPES = [
   'BeamActionsActivityAttributes',
   'BeamAnimatedActivityAttributes',
@@ -123,6 +131,99 @@ const CORE_SOURCE_DIR = path.join(SDK_ROOT, 'core/Sources/BeamableNotifications'
 /** Absolute paths of the ActivityKit sources shared with the Widget extension (see the subpath list). */
 const liveActivitySharedFiles = () =>
   LIVE_ACTIVITY_SHARED_SUBPATHS.map((sub) => path.join(SDK_ROOT, sub));
+
+// Sources staged into the widget target under a DIFFERENT basename than the one they have in the
+// SDK, because another extension target already stages that basename.
+//
+// `ActionButton.swift` is needed by both the NSE (StyleServicePlugin synthesizes the fallback
+// notification's buttons from it) and the widget (the `actions` Live Activity draws them). But the
+// `xcode` npm library keys PBXFileReference / PBXBuildFile by BASENAME: staging the same basename
+// into two targets yields ONE file reference parented to two groups with different `path`s, and ONE
+// PBXBuildFile listed in two Sources phases. `xcodeproj` then refuses to serialize the project —
+//   [Xcodeproj] Consistency issue: no parent for object `ActionButton.swift`:
+//   `SourcesBuildPhase`, `SourcesBuildPhase`
+// — which fails `pod install` at the end of an otherwise successful prebuild.
+//
+// Swift attaches no meaning to a file's name, so renaming the widget's copy is a complete fix.
+// `assertNoBasenameCollisions` below catches any future pair this map hasn't been updated for.
+const WIDGET_BASENAME_OVERRIDES = {
+  'ActionButton.swift': 'BeamActionButton.swift',
+};
+
+/** The basename a source is staged under inside the widget target. */
+const widgetBasename = (srcPath) => {
+  const base = path.basename(srcPath);
+  return WIDGET_BASENAME_OVERRIDES[base] || base;
+};
+
+/**
+ * Fail the prebuild with an actionable message if two extension targets stage the same basename.
+ *
+ * Runs at config-eval time, before any mod touches the project, so the error names the offending
+ * file instead of surfacing as the opaque `xcodeproj` consistency crash described above.
+ *
+ * @param {Record<string, string[]>} byTarget target name → staged .swift basenames
+ */
+function assertNoBasenameCollisions(byTarget) {
+  const targets = Object.keys(byTarget);
+  for (let i = 0; i < targets.length; i++) {
+    for (let j = i + 1; j < targets.length; j++) {
+      const shared = byTarget[targets[i]].filter((n) => byTarget[targets[j]].includes(n));
+      if (shared.length) {
+        throw new Error(
+          `[withBeamableNotifications] ${targets[i]} and ${targets[j]} both stage ` +
+            `${shared.join(', ')}. The xcode library keys file references by basename, so this ` +
+            `produces a project xcodeproj cannot serialize. Stage one copy under a different ` +
+            `name (see WIDGET_BASENAME_OVERRIDES).`,
+        );
+      }
+    }
+  }
+}
+
+// Absolute paths of the widget-UI sources that get staged into the widget target: the app's own
+// `iosLiveActivityWidgets`, or — when it supplies none — the SDK's default `actions` widget. Each
+// carries a `@main`, so it is one or the other, never both.
+//
+// The single source of truth for "which widget files are in this build". `withWidgetFiles` copies
+// exactly this set, and `declaredAttributesTypes` reads exactly this set, so the Info.plist
+// declaration cannot disagree with what the widget target actually compiles.
+function stagedWidgetSources(projectRoot, liveActivityWidgets) {
+  if ((liveActivityWidgets || []).length > 0) {
+    return liveActivityWidgets
+      .filter((w) => w && w.file)
+      .map((w) => (path.isAbsolute(w.file) ? w.file : path.resolve(projectRoot, w.file)));
+  }
+  const fallback = path.join(SDK_ROOT, LIVE_ACTIVITY_DEFAULT_WIDGET_SUBPATH);
+  return fs.existsSync(fallback) ? [fallback] : [];
+}
+
+// `ActivityConfiguration(for: <Type>.self)` — how a WidgetKit widget binds itself to an
+// ActivityAttributes type. Whitespace-tolerant; `[\s\S]` rather than `.` because the argument is
+// often wrapped onto its own line.
+const ACTIVITY_CONFIGURATION_RE = /ActivityConfiguration\s*\(\s*for\s*:\s*([A-Za-z_][A-Za-z0-9_]*)\s*\.self/g;
+
+/**
+ * The attributes types the staged widget sources actually render, for `BMNLiveActivityTypes`.
+ *
+ * The SDK's capability gate treats this declaration as "there is widget UI for this type" and
+ * publishes a push-to-start token on the strength of it. Declaring a type with no widget is the
+ * worst outcome available: the rail picks Live Activity over notification purely by token
+ * presence, so the player gets an activity that renders nothing AND loses the notification that
+ * would have worked. Hence derived from the sources rather than hand-maintained.
+ *
+ * Returned in `LIVE_ACTIVITY_ATTRIBUTES_TYPES` order (stable across prebuilds) and intersected
+ * with it, so an unrecognised type name in a widget is ignored rather than declared.
+ */
+function declaredAttributesTypes(projectRoot, liveActivityWidgets) {
+  const found = new Set();
+  for (const src of stagedWidgetSources(projectRoot, liveActivityWidgets)) {
+    if (!fs.existsSync(src)) continue;
+    const text = fs.readFileSync(src, 'utf8');
+    for (const m of text.matchAll(ACTIVITY_CONFIGURATION_RE)) found.add(m[1]);
+  }
+  return LIVE_ACTIVITY_ATTRIBUTES_TYPES.filter((t) => found.has(t));
+}
 // Extension-safe core subset the NSE compiles. All Foundation-only (no UIApplication),
 // required by AnalyticsServicePlugin.swift to log delivery receipts and fire the funnel
 // "Received" event: Models.swift (JSONValue/DeliveryReceipt/FunnelEvent/AuthConfig +
@@ -637,7 +738,7 @@ function withContentTarget(config, appGroup, swiftFiles) {
 }
 
 // --- Live Activity: app Info.plist opt-in flag -----------------------------
-function withLiveActivityInfoPlist(config) {
+function withLiveActivityInfoPlist(config, liveActivityWidgets) {
   return withInfoPlist(config, (cfg) => {
     cfg.modResults.NSSupportsLiveActivities = true;
     // Declare which attributes types this build embeds widget UI for. The SDK's capability gate
@@ -645,7 +746,10 @@ function withLiveActivityInfoPlist(config) {
     // without a token the rail sends a plain notification instead, which is the correct degradation.
     // DERIVED from the sources actually staged into the widget target rather than hand-maintained, so
     // it cannot drift from the build and silently promise UI that isn't there.
-    cfg.modResults[BMN_LIVE_ACTIVITY_TYPES_KEY] = LIVE_ACTIVITY_ATTRIBUTES_TYPES;
+    cfg.modResults[BMN_LIVE_ACTIVITY_TYPES_KEY] = declaredAttributesTypes(
+      cfg.modRequest.projectRoot,
+      liveActivityWidgets,
+    );
     return cfg;
   });
 }
@@ -668,9 +772,11 @@ function withWidgetFiles(config, liveActivityWidgets) {
       //    from the core module. ActivityKit matches a running Activity to its widget by the attributes
       //    type's unqualified name, so the widget module must define identically-named types; the
       //    intent must also be in the widget target so `Button(intent:)` compiles.
+      //    Staged under `widgetBasename` so a source the NSE also compiles (ActionButton.swift)
+      //    does not collide with it in the Xcode project.
       for (const shared of liveActivitySharedFiles()) {
         if (fs.existsSync(shared)) {
-          const base = path.basename(shared);
+          const base = widgetBasename(shared);
           fs.copyFileSync(shared, path.join(dir, base));
           swiftFiles.push(base);
         }
@@ -678,15 +784,17 @@ function withWidgetFiles(config, liveActivityWidgets) {
 
       // 2) App-provided widget UI (the @main WidgetBundle + ActivityConfiguration), or the SDK's
       //    default `actions` widget when the app provides none. Never both: each carries a @main.
-      if (liveActivityWidgets.length > 0) {
-        swiftFiles.push(...copyExtraSwift(cfg.modRequest.projectRoot, dir, liveActivityWidgets));
-      } else {
-        const fallback = path.join(SDK_ROOT, LIVE_ACTIVITY_DEFAULT_WIDGET_SUBPATH);
-        if (fs.existsSync(fallback)) {
-          const base = path.basename(fallback);
-          fs.copyFileSync(fallback, path.join(dir, base));
-          swiftFiles.push(base);
-        }
+      //    Resolved by `stagedWidgetSources` — the SAME call `declaredAttributesTypes` reads, so
+      //    what lands in BMNLiveActivityTypes is exactly what this target compiles.
+      //    `import BeamableNotifications` is stripped: these types are compiled into this module.
+      for (const src of stagedWidgetSources(cfg.modRequest.projectRoot, liveActivityWidgets)) {
+        if (!fs.existsSync(src)) continue;
+        const base = widgetBasename(src);
+        const text = fs
+          .readFileSync(src, 'utf8')
+          .replace(/^[ \t]*import BeamableNotifications[ \t]*\r?\n/m, '');
+        fs.writeFileSync(path.join(dir, base), text);
+        swiftFiles.push(base);
       }
 
       const infoPlist = `<?xml version="1.0" encoding="UTF-8"?>
@@ -872,6 +980,10 @@ module.exports = function withBeamableNotifications(config, props) {
   // Android: hand the SDK our deep-link scheme so it can complete schemeless remote links.
   config = withDeeplinkSchemeManifest(config);
 
+  // Staged .swift basenames per extension target, checked for cross-target collisions once every
+  // opt-in branch below has contributed (see `assertNoBasenameCollisions`).
+  const stagedByTarget = {};
+
   // The Notification Service Extension (rich media + closed-app analytics) is
   // opt-in: `{ "enableServiceExtension": true }`. It requires a physical device
   // + APNs to exercise, and compiling the core into the extension needs an
@@ -886,6 +998,7 @@ module.exports = function withBeamableNotifications(config, props) {
       ...nseSwiftFileNames(),
       ...servicePlugins.map((p) => path.basename(p.file)),
     ];
+    stagedByTarget[NSE_TARGET_NAME] = nseSwift;
     config = withNSEFiles(config, appGroup, servicePlugins);
     config = withNSETarget(config, appGroup, nseSwift);
   }
@@ -902,6 +1015,7 @@ module.exports = function withBeamableNotifications(config, props) {
       ...contentSwiftFileNames(),
       ...contentRenderers.map((r) => path.basename(r.file)),
     ];
+    stagedByTarget[CONTENT_TARGET_NAME] = contentSwift;
     config = withContentFiles(config, appGroup, contentRenderers, contentCategories);
     config = withContentTarget(config, appGroup, contentSwift);
   }
@@ -915,16 +1029,23 @@ module.exports = function withBeamableNotifications(config, props) {
   // BeamNotifications.startCountdownLiveActivity(...). A pure countdown needs no push updates.
   if (props && props.enableLiveActivity) {
     const liveActivityWidgets = (props && props.iosLiveActivityWidgets) || [];
+    // `widgetBasename`, not `path.basename` — must match the names withWidgetFiles writes.
     const widgetSwift = [
-      ...liveActivitySharedFiles().map((f) => path.basename(f)),
+      ...liveActivitySharedFiles().map(widgetBasename),
       // Mirrors withWidgetFiles' either/or: app-provided widgets, else the SDK's default one.
       ...(liveActivityWidgets.length > 0
-        ? liveActivityWidgets.map((w) => path.basename(w.file))
-        : [path.basename(LIVE_ACTIVITY_DEFAULT_WIDGET_SUBPATH)]),
+        ? liveActivityWidgets.map((w) => widgetBasename(w.file))
+        : [widgetBasename(LIVE_ACTIVITY_DEFAULT_WIDGET_SUBPATH)]),
     ];
-    config = withLiveActivityInfoPlist(config);
+    stagedByTarget[WIDGET_TARGET_NAME] = widgetSwift;
+    config = withLiveActivityInfoPlist(config, liveActivityWidgets);
     config = withWidgetFiles(config, liveActivityWidgets);
     config = withWidgetTarget(config, widgetSwift);
   }
+
+  // Throws before any mod runs if two targets stage the same basename — the `xcode` library would
+  // otherwise silently share one PBXBuildFile between them and break `pod install`.
+  assertNoBasenameCollisions(stagedByTarget);
+
   return config;
 };

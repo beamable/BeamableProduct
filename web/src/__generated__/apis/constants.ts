@@ -21,15 +21,21 @@ export const checksumPlaceholder = "{checksum}";
 
 export const tagPlaceholder = "{tag}";
 
-export const customerIdPlaceholder = "{customerId}";
+export const cidPlaceholder = "{cid}";
 
 export const realmIdPlaceholder = "{realmId}";
 
 export const viewIdPlaceholder = "{viewId}";
 
-export const pullRequestIdPlaceholder = "{pullRequestId}";
+export const campaignIdPlaceholder = "{campaignId}";
+
+export const versionPlaceholder = "{version}";
+
+export const customerIdPlaceholder = "{customerId}";
 
 export const gameIdPlaceholder = "{gameId}";
+
+export const destinationRealmIdPlaceholder = "{destinationRealmId}";
 
 export const aliasPlaceholder = "{alias}";
 
@@ -44,9 +50,5 @@ export const keyPlaceholder = "{key}";
 export const jobIdPlaceholder = "{jobId}";
 
 export const itemTypePlaceholder = "{itemType}";
-
-export const zoneIdPlaceholder = "{zoneId}";
-
-export const accountIdPlaceholder = "{accountId}";
 
 export const objectIdPlaceholder = "{objectId}";

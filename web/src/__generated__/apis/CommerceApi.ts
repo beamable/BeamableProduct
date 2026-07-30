@@ -21,7 +21,6 @@ import type { GetTotalCouponResponse } from '@/__generated__/schemas/GetTotalCou
 import type { GiveCouponReq } from '@/__generated__/schemas/GiveCouponReq';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
-import type { InventoryUpdateResponse } from '@/__generated__/schemas/InventoryUpdateResponse';
 import type { PurchaseRequest } from '@/__generated__/schemas/PurchaseRequest';
 import type { ReportPurchaseRequest } from '@/__generated__/schemas/ReportPurchaseRequest';
 import type { ResultResponse } from '@/__generated__/schemas/ResultResponse';
@@ -241,11 +240,11 @@ export async function commerceGetOffersAdminByObjectId(requester: HttpRequester,
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function commercePostPurchaseByObjectId(requester: HttpRequester, objectId: bigint | string, payload: PurchaseRequest, gamertag?: string): Promise<HttpResponse<InventoryUpdateResponse>> {
+export async function commercePostPurchaseByObjectId(requester: HttpRequester, objectId: bigint | string, payload: PurchaseRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/object/commerce/{objectId}/purchase".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
-  return makeApiRequest<InventoryUpdateResponse, PurchaseRequest>({
+  return makeApiRequest<CommonResponse, PurchaseRequest>({
     r: requester,
     e: endpoint,
     m: POST,

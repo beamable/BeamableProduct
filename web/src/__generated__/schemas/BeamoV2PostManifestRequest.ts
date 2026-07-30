@@ -4,7 +4,6 @@
  */
 
 import type { BeamoV2PortalExtensionReference } from './BeamoV2PortalExtensionReference';
-import type { BeamoV2SchemaReference } from './BeamoV2SchemaReference';
 import type { BeamoV2ServiceReference } from './BeamoV2ServiceReference';
 import type { BeamoV2ServiceStorageReference } from './BeamoV2ServiceStorageReference';
 
@@ -14,7 +13,6 @@ export type BeamoV2PostManifestRequest = {
   manifest?: BeamoV2ServiceReference[]; 
   portalExtensionReferences?: BeamoV2PortalExtensionReference[] | null; 
   references?: Record<string, string> | null; 
-  schemaReferences?: BeamoV2SchemaReference[] | null; 
   schemaVersion?: number | null; 
   storageReferences?: BeamoV2ServiceStorageReference[]; 
 };

@@ -3,6 +3,10 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type CommentPullRequestRequest = { 
+export type CampaignChangeDto = { 
+  edge?: string | null; 
+  field?: string | null; 
+  kind?: string; 
   message?: string; 
+  node?: string | null; 
 };

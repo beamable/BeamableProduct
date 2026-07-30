@@ -3,17 +3,15 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
+import type { BeamoBundleActorServiceReference } from './BeamoBundleActorServiceReference';
+import type { BeamoBundleActorServiceStorageReference } from './BeamoBundleActorServiceStorageReference';
 import type { BundlePeerDep } from './BundlePeerDep';
 import type { PortalExtensionReference } from './PortalExtensionReference';
-import type { SchemaReference } from './SchemaReference';
-import type { ServiceReference } from './ServiceReference';
-import type { ServiceStorageReference } from './ServiceStorageReference';
 
 export type PublishBundleRequest = { 
   peerDependencies?: Record<string, BundlePeerDep>; 
   portalExtensionReferences?: PortalExtensionReference[]; 
-  schemaReferences?: SchemaReference[]; 
-  serviceReferences?: ServiceReference[]; 
-  storageReferences?: ServiceStorageReference[]; 
+  serviceReferences?: BeamoBundleActorServiceReference[]; 
+  storageReferences?: BeamoBundleActorServiceStorageReference[]; 
   tag?: string | null; 
 };

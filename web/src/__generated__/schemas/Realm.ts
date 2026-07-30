@@ -16,5 +16,4 @@ export type Realm = {
   parent?: string | null; 
   secret?: string; 
   sharded?: boolean | null; 
-  zoneId?: string | null; 
 };

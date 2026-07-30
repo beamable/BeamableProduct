@@ -3,8 +3,8 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export enum ManifestDiffChange {
-  Added = "Added",
-  Changed = "Changed",
-  Removed = "Removed"
+export enum EntryTriggerKind {
+  AutoSegment = "AutoSegment",
+  Event = "Event",
+  Inaction = "Inaction"
 }

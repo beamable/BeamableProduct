@@ -3,9 +3,8 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export enum PullRequestStatus {
-  Pending = "Pending",
-  Approved = "Approved",
-  Rejected = "Rejected",
-  Superseded = "Superseded"
+export enum RequalifyKind {
+  Never = "Never",
+  Immediately = "Immediately",
+  After = "After"
 }

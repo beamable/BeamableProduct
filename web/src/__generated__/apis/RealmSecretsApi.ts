@@ -27,9 +27,6 @@ import type { RotateRealmDataKeyResponse } from '@/__generated__/schemas/RotateR
  * **Authentication:**
  * This method requires a valid bearer token in the `Authorization` header.
  * 
- * @deprecated
- * This API method is deprecated and may be removed in future versions.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param customerId - The `customerId` parameter to include in the API request.
  * @param key - The `key` parameter to include in the API request.
@@ -54,9 +51,6 @@ export async function customersGetRealmsSecretsValuesByCustomerIdAndRealmIdAndKe
  * @remarks
  * **Authentication:**
  * This method requires a valid bearer token in the `Authorization` header.
- * 
- * @deprecated
- * This API method is deprecated and may be removed in future versions.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `PutRealmSecretRequest` instance to use for the API request
@@ -85,9 +79,6 @@ export async function customersPutRealmsSecretsValues(requester: HttpRequester, 
  * **Authentication:**
  * This method requires a valid bearer token in the `Authorization` header.
  * 
- * @deprecated
- * This API method is deprecated and may be removed in future versions.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param customerId - The `customerId` parameter to include in the API request.
  * @param key - The `key` parameter to include in the API request.
@@ -112,9 +103,6 @@ export async function customersDeleteRealmsSecretsValues(requester: HttpRequeste
  * @remarks
  * **Authentication:**
  * This method requires a valid bearer token in the `Authorization` header.
- * 
- * @deprecated
- * This API method is deprecated and may be removed in future versions.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param customerId - The `customerId` parameter to include in the API request.
@@ -144,9 +132,6 @@ export async function customersGetRealmsSecretsValues(requester: HttpRequester, 
  * **Authentication:**
  * This method requires a valid bearer token in the `Authorization` header.
  * 
- * @deprecated
- * This API method is deprecated and may be removed in future versions.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param customerId - The `customerId` parameter to include in the API request.
  * @param realmId - The `realmId` parameter to include in the API request.
@@ -175,9 +160,6 @@ export async function customersGetRealmsSecretsDataKeys(requester: HttpRequester
  * **Authentication:**
  * This method requires a valid bearer token in the `Authorization` header.
  * 
- * @deprecated
- * This API method is deprecated and may be removed in future versions.
- * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param customerId - The `customerId` parameter to include in the API request.
  * @param realmId - The `realmId` parameter to include in the API request.
@@ -201,9 +183,6 @@ export async function customersPostRealmsSecretsDataKeys(requester: HttpRequeste
  * @remarks
  * **Authentication:**
  * This method requires a valid bearer token in the `Authorization` header.
- * 
- * @deprecated
- * This API method is deprecated and may be removed in future versions.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param customerId - The `customerId` parameter to include in the API request.

@@ -3,5 +3,5 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type ApiBeamoZonesForcedBundlesDeleteZonesResponse = { 
+export type ApiCampaignsDeactivatePostCampaignResponse = { 
 };

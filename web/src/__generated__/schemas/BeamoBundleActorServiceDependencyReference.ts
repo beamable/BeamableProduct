@@ -3,7 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export enum ZoneOrigin {
-  Bootstrapped = "Bootstrapped",
-  User = "User"
-}
+export type BeamoBundleActorServiceDependencyReference = { 
+  id?: string; 
+  storageType?: string; 
+};

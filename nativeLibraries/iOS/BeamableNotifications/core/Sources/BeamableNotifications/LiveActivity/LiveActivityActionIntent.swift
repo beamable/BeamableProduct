@@ -9,7 +9,19 @@ import ActivityKit
 /// background if needed WITHOUT foregrounding the app — that's what lets a Claim/Dismiss button on the
 /// Lock Screen mutate or end the Activity in place, no tap-through to the app. The type must be
 /// compiled into BOTH the app target (to execute) and the Widget extension (so `Button(intent:)`
-/// compiles) — the podspec globs it into the app and the Expo plugin copies it into the widget.
+/// compiles). The Expo plugin copies THIS file into the widget target.
+///
+/// **This copy cannot serve the app target.** iOS dispatches a tap by looking the intent up in the
+/// app bundle's `Metadata.appintents`, which `appintentsmetadataprocessor` builds from SOURCE in the
+/// app target and from the `.appintents` bundles of its static-library dependencies. The core reaches
+/// engines as a prebuilt xcframework (a static `.a` + `.swiftinterface`) that carries no AppIntents
+/// metadata, so this copy is invisible to that lookup no matter that it is linked in. Each engine
+/// plugin therefore compiles its OWN app-side copy from source; for React Native that is
+/// `EnginePlugins/ReactNative/ios/BeamLiveActivityActionIntent.swift`, compiled into the
+/// `BeamableNotificationsRN` pod. Both copies must keep the type name and the `actionId` parameter
+/// name identical — AppIntents pairs the widget's constructed intent to the app's executable one by
+/// unqualified type name. (Unity and Unreal have no app-side copy yet, so their Live Activity buttons
+/// render but do nothing — same defect, still open.)
 ///
 /// Note: `perform()` is available from iOS 16, but interactive `Button(intent:)` in a Live Activity
 /// requires iOS 17 — so the WIDGET gates the button rendering, not this intent.
