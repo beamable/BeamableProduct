@@ -25,6 +25,11 @@ build_slice() {
   local dd="$BUILD/dd-$slug"
   local archive="$BUILD/$slug.xcarchive"
 
+  # Interface verification stays ON by design: `-create-xcframework` strips the binary
+  # .swiftmodule and ships only the textual .swiftinterface, so a module whose interface does not
+  # round-trip is unimportable by EVERY consumer. Verifying here fails the artifact at build time
+  # instead of in each engine's app build. (This is why BeamLiveActivityActionIntent is internal —
+  # see the comment on that type; AppIntents `@Parameter` cannot be printed into an interface.)
   # All progress goes to stderr so the captured stdout is ONLY the headers path.
   ( cd "$CORE" && xcodebuild archive \
       -scheme "$SCHEME" \

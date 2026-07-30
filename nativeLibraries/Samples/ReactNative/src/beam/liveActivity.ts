@@ -58,6 +58,44 @@ function attributesTypeFor(event: { activityType: string; attributesType?: strin
   );
 }
 
+/** The four gate booleans always come from native; `available`/`reason` are derived from them. */
+type CapabilityShape = {
+  attributesType: string;
+  activityType: string;
+  supported: boolean;
+  enabled: boolean;
+  declared: boolean;
+  widgetPresent: boolean;
+  available?: boolean;
+  reason?: string;
+};
+
+/**
+ * Whether a Live Activity can actually be drawn for this type.
+ *
+ * Prefer native's computed `available`, but fall back to ANDing the four gate booleans: older/partial
+ * native builds omit `available` (it was a computed Swift property that didn't serialize), which made
+ * it read as `undefined` → falsy → every type wrongly treated as unavailable, so no token was ever
+ * published and the rail fell back to a notification.
+ */
+function capabilityAvailable(cap: CapabilityShape): boolean {
+  return (
+    cap.available ??
+    (cap.supported && cap.enabled && cap.declared && cap.widgetPresent)
+  );
+}
+
+/** The reason a type is unavailable — native's when present, else derived from the failing gate. */
+function capabilityReason(cap: CapabilityShape): string {
+  if (cap.reason) return cap.reason;
+  if (!cap.supported) return 'requires iOS 17.2 or later';
+  if (!cap.enabled) return 'Live Activities turned off in Settings';
+  if (!cap.declared)
+    return `${cap.attributesType} not listed in Info.plist BMNLiveActivityTypes`;
+  if (!cap.widgetPresent) return 'no WidgetKit extension embedded';
+  return '';
+}
+
 /**
  * Start observing Live Activity push tokens and forward them to the `push` rail. Call once after
  * connecting to Beamable (registration needs the authenticated player). Returns a subscription that
@@ -81,12 +119,13 @@ export function startLiveActivityTokenForwarding(
 
   subs.push(
     BeamNotifications.addListener('liveActivityCapability', (p) => {
+      console.log('[LA-DEBUG] capability event:', JSON.stringify(p.capabilities));
       for (const cap of p.capabilities) {
-        if (cap.available) {
+        if (capabilityAvailable(cap)) {
           unavailable.delete(cap.attributesType);
         } else if (!unavailable.has(cap.attributesType)) {
           unavailable.add(cap.attributesType);
-          log?.(`LA unavailable (${cap.activityType}): ${cap.reason} — expect a notification instead.`);
+          log?.(`LA unavailable (${cap.activityType}): ${capabilityReason(cap)} — expect a notification instead.`);
         }
       }
     }),
@@ -95,6 +134,7 @@ export function startLiveActivityTokenForwarding(
   subs.push(
     BeamNotifications.addListener('liveActivityPushToStartToken', async (p) => {
       const attributesType = attributesTypeFor(p);
+      console.log('[LA-DEBUG] pushToStart token arrived:', p.activityType, '->', attributesType, 'unavailable?', unavailable.has(attributesType));
       // Never publish a token for a type this build can't render: the rail picks Live-Activity-vs-
       // notification purely by token presence, so a token we can't draw costs the player BOTH surfaces.
       if (unavailable.has(attributesType)) {
@@ -108,8 +148,10 @@ export function startLiveActivityTokenForwarding(
           token: p.token,
           environment: DEFAULT_APNS_ENVIRONMENT,
         });
+        console.log('[LA-DEBUG] pushToStart token REGISTERED ok:', attributesType);
         log?.(`LA push-to-start token registered (${p.activityType}).`);
       } catch (e) {
+        console.log('[LA-DEBUG] pushToStart register ERROR:', attributesType, e instanceof Error ? e.message : String(e));
         log?.(`LA push-to-start register error: ${e instanceof Error ? e.message : String(e)}`);
       }
     }),

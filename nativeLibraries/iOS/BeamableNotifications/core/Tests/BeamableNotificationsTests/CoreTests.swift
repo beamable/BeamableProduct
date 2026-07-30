@@ -437,6 +437,103 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(spec.actions[1].destructive, true)
         XCTAssertNil(spec.actions[1].foreground)
     }
+
+    // MARK: Live Activity capability serialization
+
+    /// `available` and `reason` are computed properties; the synthesized Codable dropped them, so the
+    /// engine layer saw `available === undefined` and treated every type as unavailable. They MUST be
+    /// present in the encoded wire shape.
+    func testCapabilityEncodesComputedAvailableAndReason() throws {
+        let available = LiveActivityCapability(
+            attributesType: "BeamActionsActivityAttributes", activityType: "actions",
+            supported: true, enabled: true, declared: true, widgetPresent: true)
+        let data = try JSONEncoder().encode(available)
+        let dict = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(dict["available"] as? Bool, true)
+        XCTAssertEqual(dict["reason"] as? String, "")
+
+        let unavailable = LiveActivityCapability(
+            attributesType: "BeamActionsActivityAttributes", activityType: "actions",
+            supported: true, enabled: true, declared: false, widgetPresent: true)
+        let dict2 = try XCTUnwrap(
+            JSONSerialization.jsonObject(
+                with: try JSONEncoder().encode(unavailable)) as? [String: Any])
+        XCTAssertEqual(dict2["available"] as? Bool, false)
+        XCTAssertEqual(dict2["reason"] as? String,
+                       "BeamActionsActivityAttributes is not listed in Info.plist BMNLiveActivityTypes")
+    }
+
+    /// Round-trip still works: the custom decoder ignores the derived `available`/`reason` and
+    /// recomputes them from the stored gate fields.
+    func testCapabilityCodableRoundTrips() throws {
+        let original = LiveActivityCapability(
+            attributesType: "BeamCountdownActivityAttributes", activityType: "countdown",
+            supported: true, enabled: false, declared: true, widgetPresent: true)
+        let decoded = try JSONDecoder().decode(
+            LiveActivityCapability.self, from: try JSONEncoder().encode(original))
+        XCTAssertEqual(decoded, original)
+        XCTAssertFalse(decoded.available)
+        XCTAssertEqual(decoded.reason, "player has Live Activities turned off in Settings")
+    }
+
+    // MARK: Live Activity push-to-start token replay
+
+    /// A push-to-start token minted before the app attached its rail-forwarding listener must be
+    /// re-delivered when `start()` runs again (the sample calls `startLiveActivityPushRegistration()`
+    /// right before attaching that listener, after the player connects). Without replay the one-shot
+    /// token is lost and the rail falls back to a plain notification.
+    func testStartReplaysCachedPushToStartToken() {
+        let coordinator = LiveActivityCoordinator()
+        var received: [LiveActivityTokenEvent] = []
+        coordinator.onToken = { received.append($0) }
+
+        // ActivityKit hands us the token before any forwarding listener exists.
+        let token = LiveActivityTokenEvent(
+            kind: "pushToStart",
+            activityType: "actions",
+            attributesType: "BeamActionsActivityAttributes",
+            activityId: nil,
+            token: "deadbeef")
+        coordinator.record(token)
+        XCTAssertEqual(received.count, 1, "record forwards the token immediately")
+
+        // A later start() (post-connect) must replay the cached token to the now-attached listener.
+        coordinator.start()
+        XCTAssertEqual(received.count, 2, "start() replays the cached push-to-start token")
+        XCTAssertEqual(received.last, token)
+    }
+
+    /// A fresh coordinator with no token seen yet must not emit anything on `start()`.
+    func testStartWithoutTokensReplaysNothing() {
+        let coordinator = LiveActivityCoordinator()
+        var received: [LiveActivityTokenEvent] = []
+        coordinator.onToken = { received.append($0) }
+
+        coordinator.start()
+        XCTAssertTrue(received.isEmpty, "no cached token means no replay")
+    }
+
+    /// The cache keeps push-to-start (keyed by attributes type) and update (keyed by activity id)
+    /// tokens in separate namespaces, so both survive a replay without clobbering each other.
+    func testStartReplaysBothPushToStartAndUpdateTokens() {
+        let coordinator = LiveActivityCoordinator()
+        var received: [LiveActivityTokenEvent] = []
+        coordinator.onToken = { received.append($0) }
+
+        coordinator.record(LiveActivityTokenEvent(
+            kind: "pushToStart", activityType: "actions",
+            attributesType: "BeamActionsActivityAttributes", activityId: nil, token: "aaaa"))
+        coordinator.record(LiveActivityTokenEvent(
+            kind: "update", activityType: "actions",
+            attributesType: "BeamActionsActivityAttributes", activityId: "act-1", token: "bbbb"))
+        received.removeAll()
+
+        coordinator.start()
+        XCTAssertEqual(received.count, 2, "both cached tokens replay")
+        XCTAssertTrue(received.contains { $0.kind == "pushToStart" && $0.token == "aaaa" })
+        XCTAssertTrue(received.contains { $0.kind == "update" && $0.token == "bbbb" })
+    }
 }
 
 private final class TagInjector: NSObject, NotificationPlugin {

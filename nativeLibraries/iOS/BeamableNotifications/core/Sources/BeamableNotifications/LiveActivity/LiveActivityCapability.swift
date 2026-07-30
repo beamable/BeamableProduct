@@ -41,6 +41,46 @@ public struct LiveActivityCapability: Codable, Equatable {
     }
 }
 
+/// Custom `Codable` so the wire shape carries `available` and `reason`.
+///
+/// Both are computed properties, and Swift's synthesized `Codable` encodes only STORED properties —
+/// so the default encoding silently dropped them. The engine layer (RN's `liveActivity.ts`, Unity,
+/// Unreal) keys its token-registration decision on `available` and shows `reason` when it is false, so
+/// their absence made every type read as `available === undefined` (falsy) → the token was never
+/// published and the rail fell back to a plain notification. Encoding them explicitly is the fix.
+/// (Defined in an extension so the memberwise initializer that `LiveActivitySupport.capability(...)`
+/// relies on stays synthesized.)
+extension LiveActivityCapability {
+    private enum CodingKeys: String, CodingKey {
+        case attributesType, activityType, supported, enabled, declared, widgetPresent, available, reason
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        // `available`/`reason` are recomputed from the stored fields, so any decoded values are ignored.
+        self.init(
+            attributesType: try c.decode(String.self, forKey: .attributesType),
+            activityType: try c.decode(String.self, forKey: .activityType),
+            supported: try c.decode(Bool.self, forKey: .supported),
+            enabled: try c.decode(Bool.self, forKey: .enabled),
+            declared: try c.decode(Bool.self, forKey: .declared),
+            widgetPresent: try c.decode(Bool.self, forKey: .widgetPresent))
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(attributesType, forKey: .attributesType)
+        try c.encode(activityType, forKey: .activityType)
+        try c.encode(supported, forKey: .supported)
+        try c.encode(enabled, forKey: .enabled)
+        try c.encode(declared, forKey: .declared)
+        try c.encode(widgetPresent, forKey: .widgetPresent)
+        // Computed, but the engine layer depends on them — they MUST be in the wire shape.
+        try c.encode(available, forKey: .available)
+        try c.encode(reason, forKey: .reason)
+    }
+}
+
 /// Reads the device + app facts behind `LiveActivityCapability`.
 public enum LiveActivitySupport {
 

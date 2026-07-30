@@ -131,7 +131,8 @@ const liveActivitySharedFiles = () =>
 // resolve each one recursively under CORE_SOURCE_DIR (BeamableAnalytics.swift is nested in
 // the Analytics/ subdir).
 //
-// ActionButtons.swift + CategoryStore.swift are required by StyleServicePlugin.swift, which parses
+// ActionButton.swift (the `{id,title,role}` model) + ActionButtons.swift + CategoryStore.swift are
+// required by StyleServicePlugin.swift, which parses
 // the payload's `buttons` key and synthesizes a UNNotificationCategory from it so a fallback
 // notification shows the author's own button labels. Both are Foundation/UserNotifications only —
 // no UIApplication — so they stay extension-safe.
@@ -139,6 +140,7 @@ const CORE_NSE_FILES = [
   'Models.swift',
   'SharedConfig.swift',
   'BeamableAnalytics.swift',
+  'ActionButton.swift',
   'ActionButtons.swift',
   'CategoryStore.swift',
 ];

@@ -13,19 +13,29 @@ import ActivityKit
 ///
 /// Note: `perform()` is available from iOS 16, but interactive `Button(intent:)` in a Live Activity
 /// requires iOS 17 — so the WIDGET gates the button rendering, not this intent.
+/// **Deliberately `internal`, not `public`.** The core ships to engines as an xcframework built with
+/// library evolution, and `xcodebuild -create-xcframework` keeps only the TEXTUAL `.swiftinterface`
+/// (it strips the binary `.swiftmodule`), so every consumer parses that interface. Swift cannot print
+/// an AppIntents `@Parameter` wrapper into an interface — `actionId` round-trips into a call to
+/// `IntentParameter.init()`, which AppIntents marks `@available(*, unavailable)` — so a PUBLIC intent
+/// here makes the entire module unimportable ("error: 'init()' is unavailable"). Internal keeps this
+/// code compiled into every app that links the core, while leaving it out of the interface.
+/// Widget targets never depend on this copy: the Expo plugin's `LIVE_ACTIVITY_SHARED_SUBPATHS` copies
+/// this file's SOURCE into the widget target, where it compiles as that module's own type — and
+/// ActivityKit matches activities to widgets by unqualified type name, so the split is invisible.
 @available(iOS 16.0, *)
-public struct BeamLiveActivityActionIntent: LiveActivityIntent {
-    public static var title: LocalizedStringResource = "Beam Live Activity Action"
+struct BeamLiveActivityActionIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Beam Live Activity Action"
 
     /// The tapped button's `id` (matches `BeamLiveActivityButton.id`). `"dismiss"` ends the activity;
     /// anything else resolves it (clears the buttons, flips to the resolved card).
     @Parameter(title: "Action")
-    public var actionId: String
+    var actionId: String
 
-    public init() {}
-    public init(actionId: String) { self.actionId = actionId }
+    init() {}
+    init(actionId: String) { self.actionId = actionId }
 
-    public func perform() async throws -> some IntentResult {
+    func perform() async throws -> some IntentResult {
         // The interactive `Button(intent:)` that triggers this is iOS 17+, so `perform()` only ever
         // runs there — but the widget target deploys at 16.1, so gate the 16.2 ActivityKit APIs.
         if #available(iOS 16.2, *) {

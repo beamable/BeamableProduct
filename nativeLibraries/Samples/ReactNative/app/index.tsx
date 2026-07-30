@@ -125,14 +125,15 @@ export default function Home() {
   // returns a single subscription — no per-event loop, no `addListener` cast.
   useEffect(() => {
     if (!nativeSupported) return;
-    const sub = BeamNotifications.addAllListeners((event, data) =>
+    const sub = BeamNotifications.addAllListeners((event, data) => {
+      console.log('[LA-DEBUG]', event, JSON.stringify(data));
       setEvents((prev) =>
         [
           { key: (eventCounter.current += 1), time: time(), event, data },
           ...prev,
         ].slice(0, 100),
-      ),
-    );
+      );
+    });
     return () => sub.remove();
   }, [nativeSupported]);
 
