@@ -30,7 +30,7 @@ namespace microserviceTests.microservice
 			// IMicroserviceInventoryApi is [RealmScoped]; registering it in a zone container must fail on Build.
 			builder.AddScoped<IMicroserviceInventoryApi>(_ => null);
 
-			var ex = Assert.Throws<System.InvalidOperationException>(() => builder.Build());
+			var ex = Assert.Throws<ScopeValidationException>(() => builder.Build());
 			StringAssert.Contains(nameof(IMicroserviceInventoryApi), ex.Message);
 			StringAssert.Contains("Zone", ex.Message);
 		}
@@ -51,7 +51,7 @@ namespace microserviceTests.microservice
 			var builder = new ScopedDependencyBuilder(BeamServiceScope.Realm);
 			builder.AddScoped(typeof(ZoneTestService));
 
-			var ex = Assert.Throws<System.InvalidOperationException>(() => builder.Build());
+			var ex = Assert.Throws<ScopeValidationException>(() => builder.Build());
 			StringAssert.Contains(nameof(ZoneTestService), ex.Message);
 		}
 
