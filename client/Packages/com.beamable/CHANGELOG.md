@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.1] - 2026
+
+### Fixed
+
+- Fixed IAP support for the 5.4.2 version of the Unity In-App Purchasing.
+
 ## [6.0.0] - 2026-07-28
 
 ### Changed
