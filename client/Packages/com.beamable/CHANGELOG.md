@@ -16,9 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [6.0.0] - 2026-07-28
 
-### Breaking Changes
+### Changed
 
-- Unity In-App Purchasing (UnityIAP) 5 is now the selected version, since Unity deprecated UnityIAP 4. Projects still on UnityIAP 4 keep working.
+- **Breaking:** Unity In-App Purchasing (UnityIAP) 5 is now the selected version, since Unity deprecated UnityIAP 4. Projects still on UnityIAP 4 keep working.
 
 ### Added
 
