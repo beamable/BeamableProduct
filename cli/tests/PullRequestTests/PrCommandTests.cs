@@ -144,10 +144,10 @@ public class PrCommandTests : CLITestExtensions
 
 	#endregion
 
-	#region approve / reject
+	#region merge / reject
 
 	[Test]
-	public void Approve_Quiet_ShowsDiffThenApproves()
+	public void Merge_Quiet_ShowsDiffThenMerges()
 	{
 		InitWorkspace();
 		MockPrApi(mock =>
@@ -160,15 +160,15 @@ public class PrCommandTests : CLITestExtensions
 				.Verifiable();
 		});
 
-		Run("org", "pr", "approve", "--id", "pr-1", "--quiet");
+		Run("org", "pr", "merge", "--id", "pr-1", "--quiet");
 	}
 
 	[Test]
-	public void Approve_Fails_WhenNoId()
+	public void Merge_Fails_WhenNoId()
 	{
 		InitWorkspace();
-		var exitCode = RunFull(new[] { "org", "pr", "approve", "--quiet" });
-		Assert.That(exitCode, Is.EqualTo(1), "approve without --id must fail");
+		var exitCode = RunFull(new[] { "org", "pr", "merge", "--quiet" });
+		Assert.That(exitCode, Is.EqualTo(1), "merge without --id must fail");
 	}
 
 	[Test]

@@ -737,7 +737,7 @@ public class App
 		Commands.AddSubCommand<PrListCommand, PrListCommandArgs, PrCommand>();
 		Commands.AddSubCommand<PrDiffCommand, PrDiffCommandArgs, PrCommand>();
 		Commands.AddSubCommand<PrCommentCommand, PrCommentCommandArgs, PrCommand>();
-		Commands.AddSubCommand<PrApproveCommand, PrApproveCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrMergeCommand, PrMergeCommandArgs, PrCommand>();
 		Commands.AddSubCommand<PrRejectCommand, PrRejectCommandArgs, PrCommand>();
 
 		// beamo commands

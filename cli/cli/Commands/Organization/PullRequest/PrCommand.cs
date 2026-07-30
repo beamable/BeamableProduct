@@ -13,7 +13,7 @@ public class PrCommand : CommandGroup
 
 	/// <summary>
 	/// Render a server-computed manifest diff (component and bundle-reference changes) to the user.
-	/// Shared by the <c>diff</c> and <c>approve</c> commands. Modeled on <c>BundleDiff.Print</c>.
+	/// Shared by the <c>diff</c> and <c>merge</c> commands. Modeled on <c>BundleDiff.Print</c>.
 	/// </summary>
 	public static void PrintDiff(ManifestDiffResponse diff)
 	{

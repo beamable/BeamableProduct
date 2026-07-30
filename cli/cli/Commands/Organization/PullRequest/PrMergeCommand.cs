@@ -6,58 +6,58 @@ using System.CommandLine;
 
 namespace cli;
 
-public class PrApproveCommandArgs : CommandArgs
+public class PrMergeCommandArgs : CommandArgs
 {
 	public string Id;
 }
 
-public class PrApproveCommandOutput
+public class PrMergeCommandOutput
 {
 	public string id;
 	public string checksum;
 	public string createdAt;
 }
 
-public class PrApproveCommand : AtomicCommand<PrApproveCommandArgs, PrApproveCommandOutput>, ISkipManifest
+public class PrMergeCommand : AtomicCommand<PrMergeCommandArgs, PrMergeCommandOutput>, ISkipManifest
 {
-	public PrApproveCommand() : base("approve", "Approve a pull request and deploy its proposed manifest")
+	public PrMergeCommand() : base("merge", "Merge a pull request and deploy its proposed manifest")
 	{
 	}
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("--id", "The id of the pull request to approve"),
+		AddOption(new Option<string>("--id", "The id of the pull request to merge"),
 			(args, i) => args.Id = i);
 	}
 
-	public override async Task<PrApproveCommandOutput> GetResult(PrApproveCommandArgs args)
+	public override async Task<PrMergeCommandOutput> GetResult(PrMergeCommandArgs args)
 	{
 		if (string.IsNullOrEmpty(args.Id))
 		{
-			throw new CliException("--id is required. Use --id <pullRequestId> to specify the pull request to approve.");
+			throw new CliException("--id is required. Use --id <pullRequestId> to specify the pull request to merge.");
 		}
 
 		var api = args.Provider.GetService<IBeamBeamopullrequestApi>();
 
-		// Show the PR and its diff before approving.
+		// Show the PR and its diff before merging.
 		var pr = await api.GetPrs(args.Id);
 		PrCommand.PrintInfo(pr.pullRequest.HasValue ? pr.pullRequest.Value : null);
 		PrCommand.PrintDiff(pr.diff.HasValue ? pr.diff.Value : null);
 
-		Log.Warning("Approving this pull request will deploy its proposed manifest and supersede all other pending pull requests targeting this realm.");
+		Log.Warning("Merging this pull request will deploy its proposed manifest and supersede all other pending pull requests targeting this realm.");
 
 		// --quiet skips the confirmation prompt (mirrors `deploy release` / `publish bundle`).
 		var confirm = args.Quiet || string.Equals("yes",
-			AnsiConsole.Prompt(new TextPrompt<string>("Are you sure you want to approve this pull request?\nType 'yes' to continue.")),
+			AnsiConsole.Prompt(new TextPrompt<string>("Are you sure you want to merge this pull request?\nType 'yes' to continue.")),
 			StringComparison.InvariantCultureIgnoreCase);
 		if (!confirm)
 		{
-			throw new CliException("Approval cancelled.");
+			throw new CliException("Merge cancelled.");
 		}
 
 		var response = await api.PostPrsApprove(args.Id);
 
-		return new PrApproveCommandOutput
+		return new PrMergeCommandOutput
 		{
 			id = response.id.GetOrElse((string)null),
 			checksum = response.checksum.GetOrElse((string)null),
