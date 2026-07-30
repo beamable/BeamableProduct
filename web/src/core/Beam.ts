@@ -42,7 +42,6 @@ export class Beam extends ClientServicesMixin(BeamBase) {
 
   /** Initialize a new Beam client instance. */
   static async init(config: BeamConfig) {
-    console.log("Hello, And Good Day!!!")
     const beam = new this(config);
     await beam.connect();
     beam.isInitialized = true;

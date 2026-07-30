@@ -2,12 +2,13 @@ import type { BeamEnvironmentName } from '@/configs/BeamEnvironmentConfig';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { TokenData, TokenStorage } from '@/platform/types/TokenStorage';
 import { TokenStorage as TokenStorageBase } from '@/platform/types/TokenStorage';
-import { createStandaloneRequester } from '@/core/BeamUtils';
+import { createStandaloneRequester, serverServices } from '@/core/BeamUtils';
 import {
   BeamMicroServiceClient,
   type BeamMicroServiceClientCtor,
   type BeamMicroServiceHost,
 } from '@/core/BeamMicroServiceClient';
+import { BeamServer } from '@/core/BeamServer';
 import { BeamError } from '@/constants/Errors';
 import {
   customersGetByCustomerId,
@@ -138,11 +139,68 @@ export class BeamZoneSdk implements BeamMicroServiceHost {
   /** Customer-directory queries (realms and zones). */
   readonly customer: ZoneCustomerApi;
 
-  private constructor(config: BeamZoneSdkConfig, requester: HttpRequester) {
+  // Retained so `assumeRealm` can spin up a realm SDK that reuses this zone SDK's operator
+  // identity: the same token storage, environment, and raw transport, re-scoped to a pid.
+  private readonly environment?: BeamEnvironmentName;
+  private readonly tokenStorage?: TokenStorage;
+  private readonly innerRequester?: HttpRequester;
+
+  private constructor(
+    config: BeamZoneSdkConfig,
+    requester: HttpRequester,
+    tokenStorage?: TokenStorage,
+  ) {
     this.cid = config.cid;
     this.zid = config.zid;
     this.requester = requester;
     this.customer = new ZoneCustomerApi(requester, config.cid);
+    this.environment = config.environment;
+    this.tokenStorage = tokenStorage;
+    this.innerRequester = config.requester;
+  }
+
+  /**
+   * Enter a realm (`cid.pid`) from this zone SDK and get back a realm-scoped SDK that reuses
+   * this zone SDK's operator identity — the same token storage, environment, and transport,
+   * re-scoped to `pid`. The web analog of the C# `ZoneMicroservice.AssumeRealm`: a zone runs
+   * *above* realms, so to act *within* one you resolve a pid (e.g. from
+   * {@link ZoneCustomerApi.getRealms}) and cross into it here.
+   *
+   * @remarks
+   * Returns a {@link BeamServer}, not a {@link Beam}. A portal/tooling caller authenticates
+   * with an operator bearer token, so the realm surface is the requester-only server SDK:
+   * `BeamServer.init` does not guest-login or open a player websocket (both realm/player
+   * concepts a zone context has no session for). Realm APIs are reached through the server
+   * service accessors, e.g. `realm.stats(playerId).get(...)` or `realm.content...`.
+   *
+   * @param pid The realm (project) id to act within. Must belong to the operator's customer.
+   * @param options.services Override which server services are registered on the realm SDK.
+   *   Defaults to the full {@link serverServices} set (stats, content, accounts, …).
+   *
+   * @example
+   * ```ts
+   * const zone = await BeamZoneSdk.init({ cid, zid, token: operatorToken });
+   * const realms = await zone.customer.getRealms();
+   * const pid = realms.find((r) => r.zoneId === zone.zid)!.realmId;
+   * const realm = await zone.assumeRealm(pid);
+   * const stats = await realm.stats(playerId).get({ accessType: 'public' });
+   * ```
+   */
+  async assumeRealm(
+    pid: string,
+    options?: { services?: (beam: BeamServer) => void },
+  ): Promise<BeamServer> {
+    if (!pid) {
+      throw new BeamError('A realm (pid) is required to assumeRealm.');
+    }
+    return BeamServer.init({
+      cid: this.cid,
+      pid,
+      environment: this.environment,
+      tokenStorage: this.tokenStorage,
+      requester: this.innerRequester,
+      services: options?.services ?? serverServices,
+    });
   }
 
   /**
@@ -211,7 +269,7 @@ export class BeamZoneSdk implements BeamMicroServiceHost {
       tokenStorageTag: config.instanceTag,
     });
 
-    return new BeamZoneSdk(config, requester);
+    return new BeamZoneSdk(config, requester, tokenStorage);
   }
 }
 
