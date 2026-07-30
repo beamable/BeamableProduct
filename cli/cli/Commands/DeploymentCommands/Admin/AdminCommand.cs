@@ -55,9 +55,9 @@ public class ForceInjectBundleCommand : AtomicCommand<ForceInjectBundleCommandAr
 			(args, i) => args.bundleName = i);
 		AddOption(new Option<string>(new[] { "--namespace", "-ns" }, "The bundle's namespace (a customer alias). Defaults to the current context's customer alias; pass it to force-inject a bundle owned by a different customer"),
 			(args, i) => args.ns = i);
-		AddOption(new Option<string>(new[] { "--cid" }, "The target customer id to force the bundle onto. Defaults to the current project's cid; pass it to force-inject onto a different customer"),
+		AddOption(new Option<string>(new[] { "--target-cid" }, "The target customer id to force the bundle onto. Defaults to the current project's cid; pass it to force-inject onto a different customer"),
 			(args, i) => args.cid = i);
-		AddOption(new Option<string>(new[] { "--realm", "-r" }, "The target realm id to force the bundle onto. When omitted, the bundle is forced CID-wide as the default for every realm"),
+		AddOption(new Option<string>(new[] { "--target-realm", "-r" }, "The target realm id to force the bundle onto. When omitted, the bundle is forced CID-wide as the default for every realm"),
 			(args, i) => args.realmId = i);
 		AddOption(new Option<string>(new[] { "--checksum", "-c" }, "The bundle content checksum to force (sha256:<checksum>). Defaults to the bundle's latest published checksum when omitted"),
 			(args, i) => args.checksum = i);
