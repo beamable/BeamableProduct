@@ -52,17 +52,13 @@ public static class UnityProjectUtil
 		{
 			var fullPath = Path.Combine(targetDirectory, file.FileName);
 			var dir = Path.GetDirectoryName(fullPath);
-			
-			if (Directory.Exists(dir))
-			{
-				File.SetAttributes(dir, FileAttributes.None);
-			}
-			else
-			{
-				Directory.CreateDirectory(dir);
-				File.SetAttributes(dir, FileAttributes.ReadOnly);
-			}
-			
+
+			// The directory must stay writable while we copy files into it. On Unix a read-only
+			// directory (no write bit) prevents creating files inside it, which fails the copy when
+			// the CLI runs as a non-root user (e.g. the GitHub Actions runner). We only mark the
+			// generated files themselves read-only, never their containing folders.
+			Directory.CreateDirectory(dir);
+
 			if (File.Exists(fullPath))
 			{
 				File.SetAttributes(fullPath, FileAttributes.None);
