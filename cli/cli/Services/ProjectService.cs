@@ -382,11 +382,41 @@ public class ProjectService
 
 		microserviceInfo.ServicePath = Path.Combine(args.ServicesBaseFolderPath, args.ProjectName);
 		await RunDotnetCommand($"new beamstorage -n {args.ProjectName} -o {microserviceInfo.ServicePath.EnquotePath()} --no-update-check --TargetFrameworkOverride {args.targetFramework}");
+
+		// A zone-scoped storage marks itself with <BeamServiceScope>zone</BeamServiceScope>, the same csproj
+		// property a zone microservice uses. Unlike a zone service (which needs a different base class, so it
+		// has its own template), a storage is scope-agnostic at runtime — only its deploy target differs — so
+		// we just stamp the property onto the generated csproj instead of maintaining a second template.
+		if (args.IsZone)
+		{
+			SetZoneScopeOnCsproj(Path.Combine(microserviceInfo.ServicePath, $"{args.ProjectName}.csproj"));
+		}
+
 		await RunDotnetCommand($"sln {microserviceInfo.SolutionPath.EnquotePath()} add {microserviceInfo.ServicePath.EnquotePath()}");
 
 		await args.BeamoLocalSystem.InitManifest();
 
 		return microserviceInfo;
+	}
+
+	/// <summary>
+	/// Stamps <c>&lt;BeamServiceScope&gt;zone&lt;/BeamServiceScope&gt;</c> into the "Beamable Settings"
+	/// property group of a freshly-generated csproj, marking the project as zone-scoped. Used for zone
+	/// storages, which share a single template with realm storages and differ only by this property.
+	/// </summary>
+	private static void SetZoneScopeOnCsproj(string csprojPath)
+	{
+		var doc = XDocument.Load(csprojPath);
+		var propertyGroup = doc.Descendants("PropertyGroup")
+			.FirstOrDefault(e => (e.Attribute("Label")?.Value ?? "") == "Beamable Settings");
+		Debug.Assert(propertyGroup != null, nameof(propertyGroup) + " != null");
+		propertyGroup.Add(new XElement("BeamServiceScope", "zone"));
+		doc.Save(csprojPath);
+
+		// Saving with XDocument prepends an <?xml ...?> declaration; Beamable-compatible csprojs must start
+		// with <Project Sdk=...>, so drop that first line (mirrors CreateNewService's Unreal injection).
+		string[] lines = File.ReadAllLines(csprojPath);
+		File.WriteAllLines(csprojPath, lines.Skip(1).ToArray());
 	}
 
 	public async Task<NewServiceInfo> CreateNewMicroservice(NewMicroserviceArgs args)

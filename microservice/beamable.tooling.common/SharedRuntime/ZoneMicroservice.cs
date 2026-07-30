@@ -13,9 +13,10 @@ namespace Beamable.Server
 	/// <para>
 	/// A zone runs above realms and has no player/realm context, so the realm accessors that
 	/// <see cref="Microservice"/> exposes — <c>Services</c>, <c>Context</c>, <c>Requester</c>,
-	/// <c>Storage</c>, <c>SignedRequester</c>, and the on-behalf-of-a-player helpers — are intentionally
-	/// absent here. Only the dependency <see cref="Provider"/> is exposed; zone-appropriate services are
-	/// resolved from it.
+	/// <c>SignedRequester</c>, and the on-behalf-of-a-player helpers — are intentionally absent here.
+	/// <c>Storage</c> <b>is</b> available, since a zone service can own zone-scoped storages; it resolves
+	/// against the zone (cid.zid). Otherwise only the dependency <see cref="Provider"/> is exposed;
+	/// zone-appropriate services are resolved from it.
 	/// </para>
 	///
 	/// <para>
@@ -46,6 +47,14 @@ namespace Beamable.Server
 		/// here; to act within a realm, use <see cref="AssumeRealm"/>.
 		/// </summary>
 		protected IZoneServices Services => _serviceProvider.GetService<IZoneServices>();
+
+		/// <summary>
+		/// Access to this zone service's storage objects, resolved against the zone (<c>cid.zid</c>). The zone
+		/// analog of the realm <see cref="Microservice"/>'s <c>Storage</c>: read and write the zone-scoped
+		/// storages this service depends on. A zone service may only depend on zone storages (cross-scope
+		/// references are rejected), so everything here stays within the zone manifest.
+		/// </summary>
+		protected IStorageObjectConnectionProvider Storage;
 
 		/// <summary>
 		/// Enter a realm (<c>cid.pid</c>) from this zone service and get back the full realm SDK — the same
@@ -79,9 +88,10 @@ namespace Beamable.Server
 
 		public void ReceiveDefaultServices(IDependencyProviderScope scope)
 		{
-			// A zone service has no realm/player context, so — unlike Microservice — only the dependency
-			// scope is captured. The realm-scoped services are not registered in a zone container.
+			// A zone service has no realm/player context, so — unlike Microservice — the realm SDK services
+			// are not captured. Storage is the exception: a zone service can own zone-scoped storages.
 			_serviceProvider = scope;
+			Storage = scope.GetService<IStorageObjectConnectionProvider>();
 		}
 
 		// IUserScope is realm-shaped. These members are implemented explicitly so they do not appear on the

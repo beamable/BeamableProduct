@@ -830,6 +830,10 @@ public static class ProjectContextUtil
 		definition.Protocol = BeamoProtocolType.EmbeddedMongoDb;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
 		definition.ServiceGroupTags = ExtractServiceGroupTags(project);
+		// Carry the storage's scope (csproj <BeamServiceScope>) onto the definition so IsZoneScoped is correct
+		// for storages too — used by `project ps` (scope column) and the deploy `--scope` filter, which routes
+		// a zone storage into the zone manifest and a realm storage into the realm manifest.
+		definition.ServiceScope = project.properties.ServiceScope;
 
 		return definition;
 	}

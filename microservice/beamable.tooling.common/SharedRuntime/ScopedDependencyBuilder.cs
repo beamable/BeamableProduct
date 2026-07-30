@@ -75,7 +75,7 @@ namespace Beamable.Server
 				sb.AppendLine($"  - {violation}");
 			}
 
-			throw new InvalidOperationException(sb.ToString());
+			throw new ScopeValidationException(sb.ToString());
 		}
 
 		private void CollectViolations(IEnumerable<ServiceDescriptor> descriptors, HashSet<string> violations)
@@ -136,5 +136,17 @@ namespace Beamable.Server
 
 			return false;
 		}
+	}
+
+	/// <summary>
+	/// Thrown by <see cref="ScopedDependencyBuilder"/> when the registration set contains a service whose
+	/// declared <see cref="ServiceScopeUsageAttribute"/> scope doesn't match the builder's scope (e.g. a
+	/// <c>[ZoneScoped]</c> service — including a <see cref="ZoneMicroservice"/> — in a realm container).
+	/// A dedicated type (still an <see cref="InvalidOperationException"/>) so callers such as the OpenAPI
+	/// generator can catch this specific failure and report it cleanly instead of aborting.
+	/// </summary>
+	public sealed class ScopeValidationException : InvalidOperationException
+	{
+		public ScopeValidationException(string message) : base(message) { }
 	}
 }

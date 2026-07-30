@@ -106,7 +106,40 @@ public static class MicroserviceStartupUtil
 		{
 			LogUtil.TryParseSystemLogLevel(configuredArgs.OapiGenLogLevel, out var defaultLevel, LogLevel.Information);
 			MicroserviceBootstrapper.ContextLogLevel.Value = defaultLevel;
-			await GenerateOpenApiSpecification(startupCtx, configurator);
+			try
+			{
+				await GenerateOpenApiSpecification(startupCtx, configurator);
+			}
+			catch (ScopeValidationException ex)
+			{
+				// The service's code scope and its <BeamServiceScope> csproj property disagree — most often a
+				// class that inherits ZoneMicroservice while <BeamServiceScope> is 'realm' (or a Microservice
+				// while it is 'zone'). Report it cleanly here: OpenAPI generation runs as a build subprocess, so
+				// letting this bubble aborts the process (exit 134) and MSBuild only shows a generic MSB3073.
+				var message =
+					$"OpenAPI generation failed: the service's code and its <BeamServiceScope> csproj property " +
+					$"disagree.\n{ex.Message}\n" +
+					$"Set <BeamServiceScope> to match the base class: 'zone' for a ZoneMicroservice, or 'realm' " +
+					$"(or omit the property) for a Microservice.";
+				startupCtx.logger.LogError(message);
+				// Write to stdout (not stderr) and flush: the build's generate-oapi Exec captures stdout via
+				// ConsoleToMSBuild and re-emits it as an MSBuild <Error> so it survives the terminal logger.
+				Console.Out.WriteLine(message);
+				Console.Out.Flush();
+				Environment.Exit(1);
+			}
+			catch (Exception ex)
+			{
+				// Any other OpenAPI-generation failure: log the full detail and exit non-zero cleanly rather
+				// than surfacing as an unhandled abort (exit 134) that hides the reason inside the build.
+				var message = $"OpenAPI generation failed: {ex.Message}\n{ex}";
+				startupCtx.logger.LogError(message);
+				// Write to stdout (not stderr) and flush: the build's generate-oapi Exec captures stdout via
+				// ConsoleToMSBuild and re-emits it as an MSBuild <Error> so it survives the terminal logger.
+				Console.Out.WriteLine(message);
+				Console.Out.Flush();
+				Environment.Exit(1);
+			}
 			startupCtx.result.GeneratedClient = true;
 			return startupCtx.result;
 		}
@@ -753,6 +786,13 @@ public static class MicroserviceStartupUtil
 			.AddScoped<IRequester>(p => p.GetService<MicroserviceRequester>())
 			.AddScoped<IZoneCustomerApi>(p => new ZoneCustomerApi(p.GetService<MicroserviceRequester>(), p.GetService<IMicroserviceArgs>()))
 			.AddScoped<IZoneServices>(p => new ZoneServices(p.GetService<IZoneCustomerApi>()))
+			// Storage access for a zone service. The connection provider resolves the zone storage's connection
+			// (GET beamo/storage/connection over the cid.zid requester) and names the database from IRealmInfo,
+			// which for a zone is the zone env (cid + ZONE_zid). Registered *scoped* — unlike the realm path's
+			// singleton — because the zone root has no RequestContext; the per-request scope (added by
+			// RouteSourceUtil, cid.zid) does, which is what the requester it depends on needs.
+			.AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
+			.AddScoped<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
 			// The zone→realm bridge for AssumeRealm. Forks this (root) scope and re-applies the realm SDK.
 			.AddSingleton<IRealmScopeFactory>(provider => new RealmScopeFactory(provider, startupContext, envArgs));
 	}
