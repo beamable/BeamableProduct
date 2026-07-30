@@ -1595,8 +1595,8 @@ public class App
 		if (!TryDetectAiAgent(out _)) return;
 
 		BeamableLogger.LogWarning(
-			"[beam] You are calling beam CLI directly. For better AI integration, use the Beamable MCP server. " +
-			"Run 'beam mcp setup' to generate a .mcp.json config, then use MCP tools (beam_exec, beam_get_help, beam_get_skill) for structured interaction.");
+			"[beam] You are calling beam CLI directly. For better AI integration, use the Beamable MCP server." +
+			" Run 'beam mcp setup' to generate a .mcp.json config, then use MCP tools (beam_exec, beam_get_help, beam_get_skill) for structured interaction.");
 	}
 
 	public static bool TryDetectAiAgent(out string agentName)

@@ -152,8 +152,8 @@ public class TsVariable : TsNode
 		// default export of a variable statement is not legal TypeScript
 		if (Modifiers.HasFlag(TsModifier.Default))
 			throw new InvalidOperationException(
-				"'export default' cannot be applied directly to a variable declaration. " +
-				"Declare the variable first, then write 'export default foo;'."
+				"'export default' cannot be applied directly to a variable declaration." +
+				" Declare the variable first, then write 'export default foo;'."
 			);
 
 		// declare must NOT have an initializer
@@ -163,8 +163,8 @@ public class TsVariable : TsNode
 		// const without initializer requires declare
 		if (IsConst && Initializer == null && !Modifiers.HasFlag(TsModifier.Declare))
 			throw new InvalidOperationException(
-				"A runtime 'const' variable must have an initializer. " +
-				"Use 'declare const' for ambient declarations without a value."
+				"A runtime 'const' variable must have an initializer." +
+				" Use 'declare const' for ambient declarations without a value."
 			);
 	}
 }

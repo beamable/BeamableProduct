@@ -59,7 +59,7 @@ public class BundleAclCommand : AtomicCommand<BundleAclCommandArgs, BundleAclCom
 		}
 
 		var scope = BundleAclScope.Resolve(args.scope, args.AppContext);
-		await api.PatchBundlesChecksumsAcl(name, checksum, ns, new UpdateBundleAclRequest { scope = scope });
+		await api.PutBundlesChecksumsAcl(name, checksum, ns, new UpdateBundleAclRequest { scope = scope });
 		return new BundleAclCommandOutput { name = BundleNamespace.Qualify(ns, name), checksum = checksum, scope = scope };
 	}
 }

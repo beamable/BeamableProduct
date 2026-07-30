@@ -42,8 +42,8 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 		if (libraryPath == null)
 		{
 			throw new CliException(
-				$"Couldn't find a Portal Extension library with the name: [{args.LibraryName}]. " +
-				$"Create one with 'beam project new portal-extension-lib {args.LibraryName}'.");
+				$"Couldn't find a Portal Extension library with the name: [{args.LibraryName}]." +
+				$" Create one with 'beam project new portal-extension-lib {args.LibraryName}'.");
 		}
 
 		var requestedNames = args.ExtensionNames.Distinct().ToList();
@@ -99,8 +99,8 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 			var result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: extension.AbsolutePath).WaitForResult();
 			if (result.exit != 0)
 			{
-				Log.Warning($"Added library [{args.LibraryName}] to [{extension.Name}], but 'npm install' failed. " +
-					$"Run it manually in the extension directory to resolve types. Errors: \n{result.stderr}");
+				Log.Warning($"Added library [{args.LibraryName}] to [{extension.Name}], but 'npm install' failed." +
+					$" Run it manually in the extension directory to resolve types. Errors: \n{result.stderr}");
 			}
 		}
 		catch (CliException)
@@ -288,10 +288,10 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 			{
 				// References a library that can't be found by name and whose recorded path no longer exists.
 				throw new CliException(
-					$"Portal Extension [{extension.Name}] depends on library [{depName}] via [{value}], " +
-					$"but that path does not exist (resolved to [{resolvedAbs}]) and no matching library was found. " +
-					$"Recreate it with 'beam project new portal-extension-lib {depName}' or re-add it with " +
-					$"'beam portal extension add-library {extension.Name} {depName}'.");
+					$"Portal Extension [{extension.Name}] depends on library [{depName}] via [{value}]," +
+					$" but that path does not exist (resolved to [{resolvedAbs}]) and no matching library was found." +
+					$" Recreate it with 'beam project new portal-extension-lib {depName}' or re-add it with" +
+					$" 'beam portal extension add-library {extension.Name} {depName}'.");
 			}
 		}
 
@@ -361,9 +361,9 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 		if (conflicts.Count > 0)
 		{
 			throw new CliException(
-				$"Dependency version conflict detected for Portal Extension [{extension.Name}]. " +
-				$"An extension and one of its libraries require incompatible versions of a shared package; " +
-				$"align them so both use the same version.\n\n" +
+				$"Dependency version conflict detected for Portal Extension [{extension.Name}]." +
+				$" An extension and one of its libraries require incompatible versions of a shared package;" +
+				$" align them so both use the same version.\n\n" +
 				string.Join("\n", conflicts.Select(c => $"  - {c}")));
 		}
 	}
@@ -482,8 +482,8 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 				if (NpmSemver.TrySatisfies(version, range, out var satisfied) && !satisfied)
 				{
 					conflicts.Add(
-						$"library [{library.LibraryName}] requires {package}@\"{range}\", " +
-						$"but the extension provides {package}@{version}");
+						$"library [{library.LibraryName}] requires {package}@\"{range}\"," +
+						$" but the extension provides {package}@{version}");
 				}
 			}
 		}
