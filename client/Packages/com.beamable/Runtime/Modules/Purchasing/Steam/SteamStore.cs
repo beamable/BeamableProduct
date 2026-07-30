@@ -345,6 +345,17 @@ namespace Beamable.Purchasing.Steam
 				"Entitlement checks are not supported by the Steam store.");
 		}
 	}
+	
+#if UNITY_PURCHASING_5_4_2_OR_NEWER
+	/// <summary>
+	/// Minimal, empty <see cref="IPaymentProvidersOrderInfo"/> implementation for Steam integration.
+	/// </summary>
+	public class SteamProviderOrderInfo : IPaymentProvidersOrderInfo
+	{
+		public string CustomReferenceId { get; set; } = "";
+		public IReadOnlyDictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
+	}
+#endif
 
 	/// <summary>
 	/// Minimal <see cref="IOrderInfo"/> implementation for the Steam custom store. The concrete Unity
@@ -371,8 +382,8 @@ namespace Beamable.Purchasing.Steam
 
 		public IAppleOrderInfo Apple => null;
 		public IGoogleOrderInfo Google => null;
-#if UNITY_PURCHASING_5_4_2_OR_NEWER 
-		public IPaymentProvidersOrderInfo PaymentProviders => null;
+#if UNITY_PURCHASING_5_4_2_OR_NEWER
+		public IPaymentProvidersOrderInfo PaymentProviders => new SteamProviderOrderInfo();
 #endif
 		public List<IPurchasedProductInfo> PurchasedProductInfo { get; set; }
 		public string Receipt { get; }
