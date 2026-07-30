@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Server;
 using cli.Services;
 using cli.Services.Bundles;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -65,6 +66,43 @@ public class ListBundlesCommand : AtomicCommand<ListBundlesCommandArgs, ListBund
 		}
 
 		return new ListBundlesCommandOutput { published = published, local = local };
+	}
+
+	protected override void LogResult(object result)
+	{
+		if (result is not ListBundlesCommandOutput output)
+		{
+			base.LogResult(result);
+			return;
+		}
+
+		var published = new Table().Title("Published");
+		published.AddColumn("Name");
+		published.AddColumn("Published At");
+		published.AddColumn("Checksum");
+		published.AddColumn("ACL");
+		published.AddColumn("Yanked");
+		foreach (var bundle in output.published)
+		{
+			published.AddRow(
+				Markup.Escape(bundle.name),
+				Markup.Escape(BundleInfo.FormatPublishedAt(bundle.publishedAt)),
+				Markup.Escape(bundle.checksum),
+				Markup.Escape(bundle.acl),
+				bundle.yanked ? "yes" : "no");
+		}
+		AnsiConsole.Write(published);
+
+		var local = new Table().Title("Local");
+		local.AddColumn("Name");
+		local.AddColumn("Path");
+		foreach (var bundle in output.local)
+		{
+			local.AddRow(
+				Markup.Escape(bundle.name),
+				Markup.Escape(bundle.filePath));
+		}
+		AnsiConsole.Write(local);
 	}
 
 	/// <summary>
