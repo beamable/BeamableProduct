@@ -350,7 +350,7 @@ namespace Beamable.Purchasing.Steam
 	/// Minimal <see cref="IOrderInfo"/> implementation for the Steam custom store. The concrete Unity
 	/// OrderInfo type is internal to the IAP package, so custom stores supply their own.
 	/// </summary>
-	internal class SteamOrderInfo : IOrderInfo
+	public class SteamOrderInfo : IOrderInfo
 	{
 		public SteamOrderInfo(string transactionId)
 		{
@@ -371,6 +371,9 @@ namespace Beamable.Purchasing.Steam
 
 		public IAppleOrderInfo Apple => null;
 		public IGoogleOrderInfo Google => null;
+#if UNITY_PURCHASING_5_4_2_OR_NEWER 
+		public IPaymentProvidersOrderInfo PaymentProviders => null;
+#endif
 		public List<IPurchasedProductInfo> PurchasedProductInfo { get; set; }
 		public string Receipt { get; }
 		public string TransactionID { get; }
