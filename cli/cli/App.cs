@@ -1341,6 +1341,16 @@ public class App
 			}
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
+		// Disable System.CommandLine's "@file" response-file token replacement. Otherwise any
+		// argument starting with '@' (e.g. a bundle name like "@alias/bundleName") is treated as a
+		// path to a response file and fails with "Error reading response file". Installing a no-op
+		// TryReplaceToken (returns false, no error) lets '@' tokens pass through as literal strings.
+		commandLineBuilder.UseTokenReplacer((string tokenToReplace, out IReadOnlyList<string> replacementTokens, out string errorMessage) =>
+		{
+			replacementTokens = null;
+			errorMessage = null;
+			return false;
+		});
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
 		commandLineBuilder.UseHelpBuilder(_ => helpBuilder);

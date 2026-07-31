@@ -58,7 +58,7 @@ public class ReleaseDeploymentCommand
 
 	public override async Task Handle(ReleaseDeploymentCommandArgs args)
 	{
-		var remoteManifestTask = DeployUtil.CreateReleaseManifestFromRealm(args.DependencyProvider.GetService<IBeamoApi>());
+		var remoteManifestTask = DeployUtil.CreateReleaseManifestViewFromRealmV2(args.DependencyProvider.GetService<IBeamBeamoApi>());
 		
 		DeployablePlan plan = null;
 		string planPath = null;
