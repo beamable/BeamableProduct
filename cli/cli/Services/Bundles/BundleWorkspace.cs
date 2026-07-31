@@ -51,7 +51,7 @@ public static class BundleWorkspace
 		if (string.IsNullOrWhiteSpace(name))
 			throw new CliException("Bundle name is required.");
 		if (name.Contains('/') || name.Contains('\\') || name.Contains('@'))
-			throw new CliException($"Bundle name=[{name}] must be a plain name without '/', '\\' or '@'. The namespace is derived from your customer alias and must not be included.");
+			throw new CliException($"Bundle name=[{name}] must be a plain name without '/', '\\' or '@'. To target another customer's namespace, qualify the whole reference as @<namespace>/<bundle-name>; otherwise the namespace is derived from your customer alias.");
 		if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
 			throw new CliException($"Bundle name=[{name}] contains characters that are not valid in a file name.");
 	}

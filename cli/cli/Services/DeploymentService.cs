@@ -1325,7 +1325,6 @@ public partial class DeployUtil
 		const string MergingManifestProgressName = "calculating plan";
 
 
-		var api = provider.GetService<IBeamoApi>();
 		var beamo = provider.GetService<BeamoLocalSystem>();
 		var beamoApi = provider.GetService<IBeamBeamoApi>();
 
@@ -1374,7 +1373,8 @@ public partial class DeployUtil
 		Task<(ManifestView, List<BuildImageOutput>)> localTask = null;
 		
 		progressHandler?.Invoke(FetchManifestProgressName, 0);
-		var remoteTask = CreateReleaseManifestFromRealm(api);
+		// Read the remote manifest from the V2 API (adapted to the legacy ManifestView the merge uses).
+		var remoteTask = CreateReleaseManifestViewFromRealmV2(beamoApi);
 		var beamoV2ManifestTask = CreateReleaseManifestFromRealmV2(beamoApi);
 
 		// TODO: scope better; explain how to resolve remote and local manifest
@@ -1851,7 +1851,6 @@ public partial class DeployUtil
 		Task<ManifestView> remoteManifestTask=null,
 		int maxConcurrentUploads=6)
 	{
-		var api = provider.GetService<IBeamoApi>();
 		var beamoApi = provider.GetService<IBeamBeamoApi>();
 		var beamoService = provider.GetService<BeamoService>();
 		var beamo = provider.GetService<BeamoLocalSystem>();
@@ -1861,7 +1860,7 @@ public partial class DeployUtil
 		
 		var beamoV2Manifest = await CreateReleaseManifestFromRealmV2(beamoApi);
 		
-		var remote = await (remoteManifestTask ?? CreateReleaseManifestFromRealm(api));
+		var remote = await (remoteManifestTask ?? CreateReleaseManifestViewFromRealmV2(beamoApi));
 		var gamePid = (await gamePidPromise).FindRoot().Pid; // TODO I really think we should move this to _ctx/ConfigService and grab it during init...
 		var dockerRegistryUrl = await dockerRegistryUrlPromise;
 
@@ -2116,22 +2115,16 @@ public partial class DeployUtil
 		}
 	}
 
-	public static async Task<ManifestView> CreateReleaseManifestFromRealm(IBeamoApi beamo)
+	/// <summary>
+	/// Reads the current remote manifest via the V2 API and adapts it to the legacy <see cref="ManifestView"/>
+	/// the plan/merge pipeline expects. This replaces the old realm-only fetch (which hit
+	/// <c>/basic/beamo/manifest/current</c> via <c>IBeamoApi</c>) so the read and the publish share the same
+	/// V2 endpoint.
+	/// </summary>
+	public static async Task<ManifestView> CreateReleaseManifestViewFromRealmV2(IBeamBeamoApi beamBeamo)
 	{
-		try
-		{
-			var current = await beamo.GetManifestCurrent();
-			return current.manifest;
-		}
-		catch (RequesterException requesterException) when (requesterException.Status == 404)
-		{
-			// there is no existing manifest.
-			return new ManifestView
-			{
-				manifest = Array.Empty<ServiceReference>(),
-				storageReference = new OptionalArrayOfServiceStorageReference(Array.Empty<ServiceStorageReference>())
-			};
-		}
+		var v2 = await CreateReleaseManifestFromRealmV2(beamBeamo);
+		return v2.ConvertToManifestView();
 	}
 
 	public static async Task<BeamoV2Manifest> CreateReleaseManifestFromRealmV2(IBeamBeamoApi beamBeamo)

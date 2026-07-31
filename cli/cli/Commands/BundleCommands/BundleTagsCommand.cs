@@ -24,16 +24,17 @@ public class BundleTagsCommand : AtomicCommand<BundleTagsCommandArgs, BundleTags
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("bundle-name", "The bundle name"),
+		AddArgument(new Argument<string>("bundle-name", "The bundle name, optionally namespaced as @<namespace>/<bundle-name>"),
 			(args, i) => args.bundleName = i);
 	}
 
 	public override async Task<BundleTagsCommandOutput> GetResult(BundleTagsCommandArgs args)
 	{
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
-		BundleWorkspace.ValidateName(args.bundleName);
-		var ns = await BundleNamespace.Get(args);
-		var response = await api.GetBundles(args.bundleName, ns);
+		var (explicitNs, name) = BundleNamespace.SplitName(args.bundleName);
+		BundleWorkspace.ValidateName(name);
+		var ns = await BundleNamespace.Resolve(args, explicitNs);
+		var response = await api.GetBundles(name, ns);
 		return new BundleTagsCommandOutput { tags = response.tags.ToTagInfos() };
 	}
 }

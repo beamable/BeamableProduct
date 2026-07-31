@@ -27,7 +27,7 @@ public class PinBundleCommand : AtomicCommand<PinBundleCommandArgs, PinBundleCom
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("bundle-name", "The bundle name"),
+		AddArgument(new Argument<string>("bundle-name", "The bundle name, optionally namespaced as @<namespace>/<bundle-name>"),
 			(args, i) => args.bundleName = i);
 		AddOption(new Option<string>("--tag", () => "latest", "Resolve the checksum from this tag"),
 			(args, i) => args.tag = i);
@@ -37,18 +37,19 @@ public class PinBundleCommand : AtomicCommand<PinBundleCommandArgs, PinBundleCom
 
 	public override async Task<PinBundleCommandOutput> GetResult(PinBundleCommandArgs args)
 	{
-		BundleWorkspace.ValidateName(args.bundleName);
-		var ns = await BundleNamespace.Get(args);
-		var fullName = BundleNamespace.Qualify(ns, args.bundleName);
+		var (explicitNs, name) = BundleNamespace.SplitName(args.bundleName);
+		BundleWorkspace.ValidateName(name);
+		var ns = await BundleNamespace.Resolve(args, explicitNs);
+		var fullName = BundleNamespace.Qualify(ns, name);
 
 		var checksum = args.checksum;
 		if (string.IsNullOrEmpty(checksum))
 		{
 			var api = args.Provider.GetService<IBeamBeamobundleApi>();
-			var response = await api.GetBundles(args.bundleName, ns);
+			var response = await api.GetBundles(name, ns);
 			var match = response.tags.ToTagInfos().FirstOrDefault(t => t.tag == args.tag);
 			if (match == null)
-				throw new CliException($"Bundle [{args.bundleName}] has no tag [{args.tag}]. Use --checksum to pin an exact checksum.");
+				throw new CliException($"Bundle [{name}] has no tag [{args.tag}]. Use --checksum to pin an exact checksum.");
 			checksum = match.checksum;
 		}
 

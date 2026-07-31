@@ -45,6 +45,35 @@ public static class BundleNamespace
 		}
 	}
 
+	/// <summary>
+	/// Resolve the namespace a command should operate in: the <paramref name="explicitNs"/> the user
+	/// supplied inline (a fully-qualified <c>@&lt;namespace&gt;/&lt;bundle-name&gt;</c> argument) when present,
+	/// otherwise the workspace's own namespace (see <see cref="Get"/>). Lets a user address a bundle in
+	/// another customer's namespace instead of always inferring their own.
+	/// </summary>
+	public static async Task<string> Resolve(CommandArgs args, string explicitNs)
+		=> string.IsNullOrEmpty(explicitNs) ? await Get(args) : explicitNs;
+
+	/// <summary>
+	/// Split an optional leading <c>@&lt;namespace&gt;/</c> prefix off a bundle name. When the name is
+	/// written in its fully-qualified <c>@&lt;namespace&gt;/&lt;short-name&gt;</c> form the namespace is returned
+	/// verbatim (including its leading <c>@</c>) and the short name separately; otherwise <c>ns</c> is
+	/// null and the name is returned unchanged. The short name is not validated here — callers pass it
+	/// to <see cref="BundleWorkspace.ValidateName"/>.
+	/// </summary>
+	public static (string ns, string name) SplitName(string raw)
+	{
+		if (raw != null && raw.StartsWith("@"))
+		{
+			var slash = raw.IndexOf('/');
+			if (slash <= 1 || slash == raw.Length - 1)
+				throw new CliException($"Bundle name=[{raw}] has a namespace prefix but is malformed. Use @<namespace>/<bundle-name>.");
+			return (raw.Substring(0, slash), raw.Substring(slash + 1));
+		}
+
+		return (null, raw);
+	}
+
 	/// <summary>The catalog namespace for a customer alias: <c>@&lt;alias&gt;</c>.</summary>
 	public static string FromAlias(string alias) => "@" + alias.TrimStart('@');
 

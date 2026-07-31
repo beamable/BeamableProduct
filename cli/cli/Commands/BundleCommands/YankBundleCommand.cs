@@ -25,15 +25,15 @@ public class YankBundleCommand : AtomicCommand<YankBundleCommandArgs, YankBundle
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("bundle-ref", "The bundle checksum reference, e.g. <bundle-name>@sha256:<checksum>"),
+		AddArgument(new Argument<string>("bundle-ref", "The bundle checksum reference, e.g. <bundle-name>@sha256:<checksum> (optionally namespaced as @<namespace>/<bundle-name>@sha256:<checksum>)"),
 			(args, i) => args.bundleRef = i);
 	}
 
 	public override async Task<YankBundleCommandOutput> GetResult(YankBundleCommandArgs args)
 	{
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
-		var (name, checksum) = BundleRef.RequireChecksum(args.bundleRef);
-		var ns = await BundleNamespace.Get(args);
+		var (explicitNs, name, checksum) = BundleRef.RequireChecksum(args.bundleRef);
+		var ns = await BundleNamespace.Resolve(args, explicitNs);
 		var fullName = BundleNamespace.Qualify(ns, name);
 		var response = await api.PostBundlesChecksumsYank(name, checksum, ns);
 
