@@ -363,6 +363,14 @@ public static class WebApi
 	{
 		foreach (var param in apiParameters)
 		{
+			// Header parameters are not part of the generated function signature. The web SDK's
+			// makeApiRequest only forwards X-BEAM-SCOPE (applied by default) and X-BEAM-GAMERTAG (handled
+			// separately as the `gamertag` parameter). Any other header (e.g. X-BEAM-REGISTRY-METHOD on
+			// /beamo/registry/auth) would otherwise be emitted with its raw name as a parameter — which is
+			// invalid TypeScript (hyphens aren't valid identifiers) and a dead param the SDK can't send.
+			if (param.In == ParameterLocation.Header)
+				continue;
+
 			var paramName = param.Name;
 			var paramSchema = param.Schema;
 			var paramDescription = !string.IsNullOrEmpty(param.Description)

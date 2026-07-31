@@ -327,12 +327,10 @@ export async function beamoGetStatus(requester: HttpRequester, gamertag?: string
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param X-BEAM-REGISTRY-METHOD - The `X-BEAM-REGISTRY-METHOD` parameter to include in the API request.
- * @param X-BEAM-REGISTRY-URI - The `X-BEAM-REGISTRY-URI` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function beamoGetRegistryAuth(requester: HttpRequester, X-BEAM-REGISTRY-METHOD?: string, X-BEAM-REGISTRY-URI?: string, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
+export async function beamoGetRegistryAuth(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
   let endpoint = "/api/beamo/registry/auth";
   
   // Make the API request
