@@ -9,6 +9,7 @@ using Beamable.Content.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Player
 {
@@ -19,6 +20,9 @@ namespace Beamable.Player
 		private const string MAIL_UPDATE_CHANNEL = "MAILBOX.UPDATE";
 		private const string MAIL_SOCIAL_INVITE_CATEGORY = "SOCIAL.FRIEND.INVITE";
 		private const string FRIEND_PRESENCE_CHANGED = "social.friend_presence_changed";
+		private const string MAIL_SUPPRESSION_MESSAGE =
+			"Automatic Social invitation mail checks are disabled in Beamable Project Settings. " +
+			"Sending and accepting friend invitations is unavailable in this build.";
 
 		/// <summary>
 		/// This promise will complete when the first social data has arrived
@@ -77,8 +81,15 @@ namespace Beamable.Player
 			// lots of events will show up on the social update channel
 			_notificationService.Subscribe<FriendRequestUpdateNotification>(SOCIAL_UPDATE_CHANNEL, OnSocialUpdate);
 
-			// but critically, friend invitations only appear on the mail channel :/
-			_notificationService.Subscribe(MAIL_UPDATE_CHANNEL, OnMailUpdate);
+			if (!CoreConfiguration.Instance.SuppressAutomaticMailUpdatesFromPlayerSocial)
+			{
+				// Invitation mail IDs arrive through the mail notification channel.
+				_notificationService.Subscribe(MAIL_UPDATE_CHANNEL, OnMailUpdate);
+			}
+			else
+			{
+				Debug.LogWarning(MAIL_SUPPRESSION_MESSAGE);
+			}
 
 			_notificationService.Subscribe<FriendStatusChangedNotification>(FRIEND_PRESENCE_CHANGED, OnFriendPresenceChanged);
 
@@ -103,6 +114,8 @@ namespace Beamable.Player
 
 		private async Promise RefreshMail()
 		{
+			if (CoreConfiguration.Instance.SuppressAutomaticMailUpdatesFromPlayerSocial) return;
+
 			var inviteMail = await _mailApi.GetMail(MAIL_SOCIAL_INVITE_CATEGORY);
 			_inviteMail = inviteMail.result;
 
@@ -230,8 +243,14 @@ namespace Beamable.Player
 		/// After the resultant <see cref="Promise"/> completes, the <see cref="SentInvites"/> list will contain an invite for the given <see cref="playerId"/>
 		/// </summary>
 		/// <param name="playerId">the player id of the player to invite to become friends</param>
+		/// <exception cref="InvalidOperationException">Thrown when automatic Player Social mail updates are suppressed in Project Settings.</exception>
 		public async Promise Invite(long playerId)
 		{
+			if (CoreConfiguration.Instance.SuppressAutomaticMailUpdatesFromPlayerSocial)
+			{
+				throw new InvalidOperationException(MAIL_SUPPRESSION_MESSAGE);
+			}
+
 			await _socialApi.SendFriendRequest(playerId);
 			await Refresh();
 		}
@@ -243,8 +262,14 @@ namespace Beamable.Player
 		/// After the resultant <see cref="Promise"/> completes, the <see cref="ReceivedInvites"/> list will no longer include the given <see cref="playerId"/>
 		/// </summary>
 		/// <param name="playerId">the gamerTag of the player to accept friendship for</param>
+		/// <exception cref="InvalidOperationException">Thrown when automatic Player Social mail updates are suppressed in Project Settings.</exception>
 		public async Promise AcceptInviteFrom(long playerId)
 		{
+			if (CoreConfiguration.Instance.SuppressAutomaticMailUpdatesFromPlayerSocial)
+			{
+				throw new InvalidOperationException(MAIL_SUPPRESSION_MESSAGE);
+			}
+
 			await OnReady;
 			var invite = ReceivedInvites.FirstOrDefault(i => i.invitingPlayerId == playerId);
 			if (invite == null)

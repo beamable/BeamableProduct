@@ -90,6 +90,11 @@ namespace Beamable
 				 "online, the buffer will be replayed. If this isn't desirable, you should disable the feature.")]
 		public OfflineStrategy InventoryOfflineMode = OfflineStrategy.Optimistic;
 
+		[Header("Social")]
+		[Tooltip("Disables automatic mail polling used by Player Social for friend invitations. " +
+		         "Existing friends and other Social features remain available, but sending and accepting friend invitations is disabled for this build.")]
+		public bool SuppressAutomaticMailUpdatesFromPlayerSocial = false;
+
 		/// <summary>
 		/// When enabled, Beamable skips automatic purchasing initialization and does not request commerce SKUs during <see cref="BeamContext"/> initialization.
 		/// </summary>
