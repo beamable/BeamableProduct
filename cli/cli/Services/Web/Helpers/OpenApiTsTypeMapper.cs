@@ -159,12 +159,15 @@ public static class OpenApiTsTypeMapper
 
 	private static List<TsType> GetOneOfTypes(IList<OpenApiSchema> oneOfList, ref List<string> modules)
 	{
-		var moduleList = modules;
-		return oneOfList.Select(schema =>
+		// Route every oneOf member through Map rather than assuming each is a $ref. A oneOf can contain
+		// inline objects, primitives, or nullable schemas (schema.Reference is null for those), which would
+		// otherwise NRE on schema.Reference.Id. Map handles all of those cases (and adds modules) uniformly.
+		var result = new List<TsType>(oneOfList.Count);
+		foreach (var schema in oneOfList)
 		{
-			var type = schema.Reference.Id;
-			moduleList.Add(type);
-			return TsType.Of(type);
-		}).ToList();
+			result.Add(Map(schema, ref modules));
+		}
+
+		return result;
 	}
 }

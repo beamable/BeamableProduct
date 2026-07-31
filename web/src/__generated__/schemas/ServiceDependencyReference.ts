@@ -4,6 +4,6 @@
  */
 
 export type ServiceDependencyReference = { 
-  id: string; 
-  storageType: string; 
+  id?: string; 
+  storageType?: string; 
 };

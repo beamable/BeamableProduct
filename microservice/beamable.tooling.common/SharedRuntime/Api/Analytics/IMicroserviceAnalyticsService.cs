@@ -2,6 +2,8 @@
 
 namespace Beamable.Server.Api.Analytics
 {
+
+	[RealmScoped]
 	public interface IMicroserviceAnalyticsService : IBeamAnalyticsService
 	{
 	}

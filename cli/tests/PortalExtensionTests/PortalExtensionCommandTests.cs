@@ -241,6 +241,32 @@ public class PortalExtensionCommandTests : CLITestExtensions
 	}
 
 	[Test]
+	public void NewPortalExtension_ZoneExtension_ScaffoldsZoneTemplate()
+	{
+		InitWorkspace();
+		SetupBeamoServiceMock();
+		MockRemotePortalConfig();
+
+		Run("project", "new", "portal-extension", "TestZoneExt", "--quiet",
+			"--mount-page", "my-zone-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react",
+			"--zone");
+
+		Assert.That(BFile.Exists("extensions/TestZoneExt/package.json"),
+			"package.json must exist after scaffolding");
+
+		var packageJson = BFile.ReadAllText("extensions/TestZoneExt/package.json");
+		Assert.That(packageJson, Does.Contain("\"serviceScope\": \"zone\""),
+			"a zone extension must mark its backing service as zone-scoped");
+
+		var mainTsx = BFile.ReadAllText("extensions/TestZoneExt/src/main.tsx");
+		Assert.That(mainTsx, Does.Contain("registerReactZoneExtension"),
+			"the zone template must register via the zone-scoped API");
+	}
+
+	[Test]
 	public void NewPortalExtension_PageExtension_PassesThroughHubPath()
 	{
 		InitWorkspace();

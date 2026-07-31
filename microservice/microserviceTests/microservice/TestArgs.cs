@@ -95,6 +95,61 @@ namespace microserviceTests.microservice
 			
 		}
 
+		/// <summary>
+		/// Janky groundwork: boots <typeparamref name="T"/> as a ZONE-scoped service. The API is still taking
+		/// shape — notably, zone traffic will eventually carry a <c>zid</c> instead of a <c>pid</c>. For now we
+		/// force zone scope by handing the bootstrapper a zone-scoped <see cref="DefaultMicroserviceAttributes"/>
+		/// and give the service args no pid (only a zid). Only scope-neutral services are overridden here; the
+		/// realm SDK is never registered for a zone service (and the ScopedDependencyBuilder would reject it).
+		/// </summary>
+		public async Task StartZone<T>(Action<IDependencyBuilder> configurator = null) where T : ZoneMicroservice
+		{
+			var attr = typeof(T).GetCustomAttribute<MicroserviceAttribute>();
+			var zoneAttributes = new DefaultMicroserviceAttributes
+			{
+				MicroserviceName = attr.MicroserviceName,
+				ServiceScope = "zone",
+				EnableEagerContentLoading = false,
+				DisableAllBeamableEvents = true,
+			};
+
+			// zone services have no realm; represent that with an empty pid + a zid.
+			var args = new TestArgs { ProjectName = "", Zid = "testzid" };
+
+			_instances = await new BeamServiceConfigBuilder(zoneAttributes)
+				.IncludeRoutes<T>(routePrefix: "")
+				.ConfigureServices(builder =>
+				{
+					builder.RemoveIfExists<IActivityProvider>();
+					builder.AddSingleton<IActivityProvider, NoopActivityProvider>();
+
+					builder.RemoveIfExists<ILoggerFactory>();
+					builder.AddSingleton<ILoggerFactory>(LoggingUtil.testFactory);
+
+					builder.RemoveIfExists<ILoggingContextService>();
+					builder.AddSingleton<ILoggingContextService>(_ => new MockLoggingContextService());
+
+					builder.RemoveIfExists<IConnectionProvider>();
+					builder.AddSingleton(_provider);
+
+					configurator?.Invoke(builder);
+				})
+				.OverrideConfig(c =>
+				{
+					c.Args = args;
+					c.AddLoggerProvider = (loggerBuilder, _) =>
+					{
+						loggerBuilder.ClearProviders();
+						var testLogs = new LoggingUtil.TestLogs();
+						loggerBuilder.SetMinimumLevel(LogLevel.Trace);
+						loggerBuilder.AddZLoggerLogProcessor(testLogs);
+						return null;
+					};
+					c.FirstConnectionHandler = (service) => { Service = service; };
+				})
+				.Run();
+		}
+
 		public async Task OnShutdown(object sender, EventArgs args)
 		{
 			Service.OnShutdown(sender, args);
@@ -127,6 +182,8 @@ namespace microserviceTests.microservice
 	   
       public string CustomerID { get; set; } = "testcid";
       public string ProjectName { get; set; } = "testpid";
+      // groundwork: zone services are scoped by a zid instead of a pid. Not yet on IMicroserviceArgs.
+      public string Zid { get; set; } = "testzid";
       public IDependencyProviderScope ServiceScope { get; set; }
       public int HealthPort => 6565;
       public string Host { get; set; } = "testhost";
