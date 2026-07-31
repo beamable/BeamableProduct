@@ -27,7 +27,7 @@ public class PromoteBundleTagCommand : AtomicCommand<PromoteBundleTagCommandArgs
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("bundle-ref", "The bundle checksum reference, e.g. <bundle-name>@sha256:<checksum>"),
+		AddArgument(new Argument<string>("bundle-ref", "The bundle checksum reference, e.g. <bundle-name>@sha256:<checksum> (optionally namespaced as @<namespace>/<bundle-name>@sha256:<checksum>)"),
 			(args, i) => args.bundleRef = i);
 		AddArgument(new Argument<string>("tag", "The tag to advance, e.g. stable"),
 			(args, i) => args.tag = i);
@@ -36,8 +36,8 @@ public class PromoteBundleTagCommand : AtomicCommand<PromoteBundleTagCommandArgs
 	public override async Task<PromoteBundleTagCommandOutput> GetResult(PromoteBundleTagCommandArgs args)
 	{
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
-		var (name, checksum) = BundleRef.RequireChecksum(args.bundleRef);
-		var ns = await BundleNamespace.Get(args);
+		var (explicitNs, name, checksum) = BundleRef.RequireChecksum(args.bundleRef);
+		var ns = await BundleNamespace.Resolve(args, explicitNs);
 		await api.PostBundlesTags(name, ns, args.tag, new PromoteBundleTagRequest { checksum = checksum });
 		return new PromoteBundleTagCommandOutput { name = BundleNamespace.Qualify(ns, name), tag = args.tag, checksum = checksum };
 	}
