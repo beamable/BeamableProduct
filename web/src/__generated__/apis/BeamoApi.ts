@@ -22,6 +22,8 @@ import type { BeamoV2DeleteRegistrationRequest } from '@/__generated__/schemas/B
 import type { BeamoV2EmptyMessage } from '@/__generated__/schemas/BeamoV2EmptyMessage';
 import type { BeamoV2FederationRegistrationResponse } from '@/__generated__/schemas/BeamoV2FederationRegistrationResponse';
 import type { BeamoV2GetAllServiceLoggingContexts } from '@/__generated__/schemas/BeamoV2GetAllServiceLoggingContexts';
+import type { BeamoV2GetManifestContentUrlsRequest } from '@/__generated__/schemas/BeamoV2GetManifestContentUrlsRequest';
+import type { BeamoV2GetManifestContentUrlsResponse } from '@/__generated__/schemas/BeamoV2GetManifestContentUrlsResponse';
 import type { BeamoV2GetManifestsResponse } from '@/__generated__/schemas/BeamoV2GetManifestsResponse';
 import type { BeamoV2GetMetricsRequest } from '@/__generated__/schemas/BeamoV2GetMetricsRequest';
 import type { BeamoV2GetServiceSecretResponse } from '@/__generated__/schemas/BeamoV2GetServiceSecretResponse';
@@ -32,6 +34,8 @@ import type { BeamoV2ManifestChecksum } from '@/__generated__/schemas/BeamoV2Man
 import type { BeamoV2PostManifestRequest } from '@/__generated__/schemas/BeamoV2PostManifestRequest';
 import type { BeamoV2PromoteBeamoManifestRequest } from '@/__generated__/schemas/BeamoV2PromoteBeamoManifestRequest';
 import type { BeamoV2QueryResponse } from '@/__generated__/schemas/BeamoV2QueryResponse';
+import type { BeamoV2SaveBinaryContentRequest } from '@/__generated__/schemas/BeamoV2SaveBinaryContentRequest';
+import type { BeamoV2SaveBinaryContentResponse } from '@/__generated__/schemas/BeamoV2SaveBinaryContentResponse';
 import type { BeamoV2ServiceLoggingContext } from '@/__generated__/schemas/BeamoV2ServiceLoggingContext';
 import type { BeamoV2ServiceRegistrationQuery } from '@/__generated__/schemas/BeamoV2ServiceRegistrationQuery';
 import type { BeamoV2ServiceRegistrationRequest } from '@/__generated__/schemas/BeamoV2ServiceRegistrationRequest';
@@ -203,6 +207,54 @@ export async function beamoPostManifestsCurrent(requester: HttpRequester, gamert
  * **Authentication:**
  * This method requires a valid bearer token in the `Authorization` header.
  * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `BeamoV2GetManifestContentUrlsRequest` instance to use for the API request
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function beamoPostManifestsCurrentContentUrls(requester: HttpRequester, payload: BeamoV2GetManifestContentUrlsRequest, gamertag?: string): Promise<HttpResponse<BeamoV2GetManifestContentUrlsResponse>> {
+  let endpoint = "/api/beamo/manifests/current/content-urls";
+  
+  // Make the API request
+  return makeApiRequest<BeamoV2GetManifestContentUrlsResponse, BeamoV2GetManifestContentUrlsRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `BeamoV2SaveBinaryContentRequest` instance to use for the API request
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function beamoPostContentBinary(requester: HttpRequester, payload: BeamoV2SaveBinaryContentRequest, gamertag?: string): Promise<HttpResponse<BeamoV2SaveBinaryContentResponse>> {
+  let endpoint = "/api/beamo/content/binary";
+  
+  // Make the API request
+  return makeApiRequest<BeamoV2SaveBinaryContentResponse, BeamoV2SaveBinaryContentRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
  * @deprecated
  * This API method is deprecated and may be removed in future versions.
  * 
@@ -261,6 +313,30 @@ export async function beamoGetStatus(requester: HttpRequester, gamertag?: string
   
   // Make the API request
   return makeApiRequest<BeamoV2GetStatusResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param X-BEAM-REGISTRY-METHOD - The `X-BEAM-REGISTRY-METHOD` parameter to include in the API request.
+ * @param X-BEAM-REGISTRY-URI - The `X-BEAM-REGISTRY-URI` parameter to include in the API request.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function beamoGetRegistryAuth(requester: HttpRequester, X-BEAM-REGISTRY-METHOD?: string, X-BEAM-REGISTRY-URI?: string, gamertag?: string): Promise<HttpResponse<BeamoV2EmptyMessage>> {
+  let endpoint = "/api/beamo/registry/auth";
+  
+  // Make the API request
+  return makeApiRequest<BeamoV2EmptyMessage>({
     r: requester,
     e: endpoint,
     m: GET,

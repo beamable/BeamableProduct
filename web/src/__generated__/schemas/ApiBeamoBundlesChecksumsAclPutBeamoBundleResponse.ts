@@ -3,8 +3,5 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export enum BundleOriginKind {
-  Inline = "Inline",
-  Referenced = "Referenced",
-  Forced = "Forced"
-}
+export type ApiBeamoBundlesChecksumsAclPutBeamoBundleResponse = { 
+};

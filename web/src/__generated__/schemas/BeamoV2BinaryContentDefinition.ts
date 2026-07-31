@@ -3,8 +3,8 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export enum BeamoV2BundleOriginKind {
-  Inline = "Inline",
-  Referenced = "Referenced",
-  Forced = "Forced"
-}
+export type BeamoV2BinaryContentDefinition = { 
+  checksum?: string; 
+  id?: string; 
+  uploadContentType?: string; 
+};

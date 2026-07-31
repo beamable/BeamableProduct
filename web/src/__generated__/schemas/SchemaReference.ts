@@ -3,14 +3,11 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { BundleOrigin } from './BundleOrigin';
-
 export type SchemaReference = { 
   archived?: boolean; 
   checksum?: string; 
   contentId?: string; 
   enabled?: boolean; 
   name?: string; 
-  origin?: BundleOrigin; 
   version?: string; 
 };

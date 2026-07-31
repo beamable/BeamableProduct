@@ -3,5 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type ApiBeamoBundlesChecksumsAclPatchBeamoBundleResponse = { 
+export type BeamoV2ManifestContentItem = { 
+  contentId?: string; 
+  version?: string; 
 };

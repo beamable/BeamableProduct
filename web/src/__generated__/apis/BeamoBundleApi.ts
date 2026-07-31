@@ -9,10 +9,10 @@ import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { nsPlaceholder } from '@/__generated__/apis/constants';
-import { PATCH } from '@/constants';
 import { POST } from '@/constants';
+import { PUT } from '@/constants';
 import { tagPlaceholder } from '@/__generated__/apis/constants';
-import type { ApiBeamoBundlesChecksumsAclPatchBeamoBundleResponse } from '@/__generated__/schemas/ApiBeamoBundlesChecksumsAclPatchBeamoBundleResponse';
+import type { ApiBeamoBundlesChecksumsAclPutBeamoBundleResponse } from '@/__generated__/schemas/ApiBeamoBundlesChecksumsAclPutBeamoBundleResponse';
 import type { ApiBeamoBundlesTagsPostBeamoBundleResponse } from '@/__generated__/schemas/ApiBeamoBundlesTagsPostBeamoBundleResponse';
 import type { GetBundleResponse } from '@/__generated__/schemas/GetBundleResponse';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
@@ -210,14 +210,14 @@ export async function beamoPostBundlesChecksumsYank(requester: HttpRequester, bu
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function beamoPatchBundlesChecksumsAcl(requester: HttpRequester, bundleName: string, checksum: string, ns: string, payload: UpdateBundleAclRequest, gamertag?: string): Promise<HttpResponse<ApiBeamoBundlesChecksumsAclPatchBeamoBundleResponse>> {
+export async function beamoPutBundlesChecksumsAcl(requester: HttpRequester, bundleName: string, checksum: string, ns: string, payload: UpdateBundleAclRequest, gamertag?: string): Promise<HttpResponse<ApiBeamoBundlesChecksumsAclPutBeamoBundleResponse>> {
   let endpoint = "/api/beamo/bundles/{ns}/{bundleName}/checksums/{checksum}/acl".replace(bundleNamePlaceholder, endpointEncoder(bundleName)).replace(checksumPlaceholder, endpointEncoder(checksum)).replace(nsPlaceholder, endpointEncoder(ns));
   
   // Make the API request
-  return makeApiRequest<ApiBeamoBundlesChecksumsAclPatchBeamoBundleResponse, UpdateBundleAclRequest>({
+  return makeApiRequest<ApiBeamoBundlesChecksumsAclPutBeamoBundleResponse, UpdateBundleAclRequest>({
     r: requester,
     e: endpoint,
-    m: PATCH,
+    m: PUT,
     p: payload,
     g: gamertag,
     w: true

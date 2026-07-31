@@ -3,8 +3,8 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type ClientAnalyticsEvent = { 
-  e?: string | null; 
-  p?: Record<string, any> | null; 
-  time?: bigint | string | null; 
+export type BeamoV2ManifestContentUrl = { 
+  contentId?: string; 
+  url?: string; 
+  version?: string; 
 };

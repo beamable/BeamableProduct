@@ -3,11 +3,10 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type BeamoV2SchemaReference = { 
-  archived?: boolean; 
-  checksum?: string; 
-  contentId?: string; 
-  enabled?: boolean; 
-  name?: string; 
+export type BeamoV2BinaryContentUploadUrl = { 
+  id?: string; 
+  uploadMethod?: string; 
+  uploadUri?: string; 
+  uri?: string; 
   version?: string; 
 };
