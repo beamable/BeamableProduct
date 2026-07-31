@@ -225,6 +225,7 @@ public class PlanDeploymentCommand
 	public override void Configure()
 	{
 		DeployArgs.AddPlanOptions(this);
+		DeployArgs.AddScopeOption(this);
 		DeployArgs.AddDockerComposeOutputOptions(this);
 		SolutionCommandArgs.ConfigureSolutionFlag(this, _ => throw new CliException("Must have a valid .beamable folder"));
 

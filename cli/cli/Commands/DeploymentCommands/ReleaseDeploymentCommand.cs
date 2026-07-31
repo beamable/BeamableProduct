@@ -49,6 +49,7 @@ public class ReleaseDeploymentCommand
 	public override void Configure()
 	{
 		DeployArgs.AddPlanOptions(this);
+		DeployArgs.AddScopeOption(this);
 		AddOption(new Option<string>(new string[] { "--from-plan", "--plan", "-p" }, "The file path to a pre-generated plan file using the `deploy plan` command"),
 			(args, i) => args.fromPlanFile = i);
 		SolutionCommandArgs.ConfigureSolutionFlag(this, _ => throw new CliException("Must have a valid .beamable folder"));

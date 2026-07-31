@@ -77,13 +77,30 @@ public class DeployArgs
 
 
 		AddModeOption(command, (args, i) => args.DeployMode = i);
+	}
 
-		command.AddOption(
-			new Option<DeployScope>(new string[] { "--scope" }, () => DeployScope.Realm,
-				"Which manifest to operate against: 'realm' (default) builds and plans the realm manifest " +
-				"(cid.pid) and ignores zone-scoped services; 'zone' ignores all realm-scoped services and " +
-				"operates against the zone manifest (cid.zid)"),
-			(args, i) => args.Scope = i);
+	/// <summary>
+	/// Adds the deploy <c>--scope</c> (realm/zone) option. Kept OUT of <see cref="AddPlanOptions{TArgs}"/> so
+	/// it applies ONLY to the deploy commands (plan/release), not the bundle commands that share
+	/// AddPlanOptions but already define their own, unrelated <c>--scope</c> (visibility tier).
+	/// <para>
+	/// Typed as <c>string</c> (parsed to <see cref="DeployScope"/> in the binder) on purpose: the Unity
+	/// BeamCli command-wrapper generator emits an option's ValueType verbatim, and a <c>cli</c>-namespaced
+	/// <c>DeployScope</c> field does not resolve inside the Unity package (there is no <c>cli</c> assembly),
+	/// which broke the Unity build. A string generates cleanly and carries the same values.
+	/// </para>
+	/// </summary>
+	public static void AddScopeOption<TArgs>(AppCommand<TArgs> command)
+		where TArgs : CommandArgs, IHasDeployPlanArgs
+	{
+		var scopeOption = new Option<string>(new string[] { "--scope" }, () => "realm",
+			"Which manifest to operate against: 'realm' (default) builds and plans the realm manifest " +
+			"(cid.pid) and ignores zone-scoped services; 'zone' ignores all realm-scoped services and " +
+			"operates against the zone manifest (cid.zid)");
+		scopeOption.FromAmong("realm", "zone");
+		command.AddOption(scopeOption,
+			(args, i) => args.Scope =
+				System.Enum.TryParse<DeployScope>(i, ignoreCase: true, out var s) ? s : DeployScope.Realm);
 	}
 	
 	
