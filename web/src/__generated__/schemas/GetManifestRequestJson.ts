@@ -5,5 +5,6 @@
 
 export type GetManifestRequestJson = { 
   id?: string; 
+  omitTags?: boolean; 
   uid?: string; 
 };

@@ -24,9 +24,11 @@
 /**
  * Whose data a value belongs to.
  * - `pid` (default): specific to the current realm/project.
+ * - `zid`: specific to the current zone (for zone-scoped extensions, which have
+ *   no realm — `pid` is meaningless there, use `zid` or `cid`).
  * - `cid`: shared across every realm under the whole customer org.
  */
-export type StorageScope = 'pid' | 'cid';
+export type StorageScope = 'pid' | 'zid' | 'cid';
 
 /**
  * How a value relates to the extension's mount sites.

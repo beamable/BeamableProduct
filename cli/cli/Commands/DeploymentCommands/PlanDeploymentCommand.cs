@@ -21,6 +21,8 @@ public interface IHasDeployPlanArgs : IHasSolutionFileArg
 	bool UseSequentialBuild { get; set; }
 	int MaxParallelTask { get; set; }
 	int MaxConcurrentUploads { get; set; }
+	/// <summary>The manifest scope this deploy targets — realm (default) or zone. See <see cref="DeployScope"/>.</summary>
+	DeployScope Scope { get; set; }
 }
 
 public interface IHasDockerComposeArgs
@@ -41,6 +43,7 @@ public class PlanDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs, IHasDo
 	public bool UseSequentialBuild { get; set; }
 	public int MaxParallelTask { get; set; }
 	public int MaxConcurrentUploads { get; set; }
+	public DeployScope Scope { get; set; }
 	public string SlnFilePath;
 
 
@@ -222,6 +225,7 @@ public class PlanDeploymentCommand
 	public override void Configure()
 	{
 		DeployArgs.AddPlanOptions(this);
+		DeployArgs.AddScopeOption(this);
 		DeployArgs.AddDockerComposeOutputOptions(this);
 		SolutionCommandArgs.ConfigureSolutionFlag(this, _ => throw new CliException("Must have a valid .beamable folder"));
 
@@ -232,6 +236,10 @@ public class PlanDeploymentCommand
 
 	public override async Task Handle(PlanDeploymentCommandArgs args)
 	{
+		// For `--scope zone`, pin the requester to the zone (cid.zid) so the beamo manifest APIs
+		// operate on the zone manifest; for realm (default) this is a no-op.
+		using var scopeHandle = await DeployArgs.ApplyDeployScopeAsync(args, args.Scope);
+
 		(DeployablePlan plan, var planPath) = await this.InteractivePlan(
 			args.DependencyProvider, 
 			args);

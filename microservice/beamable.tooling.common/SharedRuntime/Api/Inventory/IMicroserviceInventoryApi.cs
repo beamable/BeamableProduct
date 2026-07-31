@@ -16,6 +16,8 @@ namespace Beamable.Server.Api.Inventory
 	/// ![img beamable-logo]
 	///
 	/// </summary>
+
+	[RealmScoped]
 	public interface IMicroserviceInventoryApi : IInventoryApi
 	{
 		/// <summary>

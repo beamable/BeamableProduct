@@ -1,6 +1,7 @@
 export * from '@/core/BeamBase';
 export * from '@/core/Beam';
 export * from '@/core/BeamServer';
+export * from '@/core/BeamZoneSdk';
 export * from '@/core/BeamMicroServiceClient';
 export * from '@/configs/BeamConfig';
 export * from '@/configs/BeamServerConfig';

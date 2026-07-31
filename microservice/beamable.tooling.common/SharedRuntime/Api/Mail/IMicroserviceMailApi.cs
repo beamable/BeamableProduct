@@ -14,6 +14,8 @@ namespace Beamable.Server.Api.Mail
 	/// ![img beamable-logo]
 	/// 
 	/// </summary>
+
+	[RealmScoped]
 	public interface IMicroserviceMailApi : IMailApi
 	{
 

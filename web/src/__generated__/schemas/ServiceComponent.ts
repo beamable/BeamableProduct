@@ -4,5 +4,5 @@
  */
 
 export type ServiceComponent = { 
-  name: string; 
+  name?: string; 
 };

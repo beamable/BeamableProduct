@@ -18,6 +18,8 @@ namespace Beamable.Server.Api.Stats
 	/// ![img beamable-logo]
 	///
 	/// </summary>
+
+	[RealmScoped]
 	public interface IMicroserviceStatsApi : IStatsApi
 	{
 		/// <summary>

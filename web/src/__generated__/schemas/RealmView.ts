@@ -13,4 +13,5 @@ export type RealmView = {
   parent?: string | null; 
   secret?: string | null; 
   sharded?: boolean | null; 
+  zoneId?: string | null; 
 };

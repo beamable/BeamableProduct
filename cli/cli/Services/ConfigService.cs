@@ -47,6 +47,7 @@ public class ConfigService
 	public const string CFG_JSON_FIELD_HOST = "host";
 	public const string CFG_JSON_FIELD_CID = "cid";
 	public const string CFG_JSON_FIELD_PID = "pid";
+	public const string CFG_JSON_FIELD_ZID = "zid";
 	public const string CFG_JSON_FIELD_PROJ_PATH_ROOT = "projectPathRoot";
 	public const string CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS = "additionalProjectPaths";
 	public const string CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS = "ignoredProjectPaths";

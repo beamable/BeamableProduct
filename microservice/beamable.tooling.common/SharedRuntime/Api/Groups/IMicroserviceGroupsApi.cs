@@ -14,6 +14,8 @@ namespace Beamable.Server.Api.Groups
 	/// ![img beamable-logo]
 	/// 
 	/// </summary>
+
+	[RealmScoped]
 	public interface IMicroserviceGroupsApi : IGroupsApi
 	{
 

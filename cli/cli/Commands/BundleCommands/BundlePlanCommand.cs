@@ -24,6 +24,7 @@ public class BundlePlanCommandArgs : CommandArgs, IHasDeployPlanArgs
 	public bool UseSequentialBuild { get; set; }
 	public int MaxParallelTask { get; set; }
 	public int MaxConcurrentUploads { get; set; }
+	public DeployScope Scope { get; set; }
 	public string SlnFilePath;
 
 	public string SolutionFilePath

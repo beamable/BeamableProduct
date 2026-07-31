@@ -34,6 +34,16 @@ export abstract class BeamBase {
   cid: string;
   /** The Beamable Project ID. */
   pid: string;
+
+  /**
+   * The routing scope segment used for microservice calls (`/basic/{cid}.{scope}.micro_...`).
+   * For a realm SDK this is the `pid`; the zone SDK overrides it with its `zid`.
+   * Satisfies the `BeamMicroServiceHost` contract so generated microservice
+   * clients work under both.
+   */
+  get microServiceScope(): string {
+    return this.pid;
+  }
   /**
    * The token storage instance used by the client SDK.
    * Defaults to `BrowserTokenStorage` in browser environments and `NodeTokenStorage` in Node.js environments.

@@ -670,8 +670,18 @@ public class DiscoveryService
 								continue;
 						}
 
-						// If the message we got from a local service running that is not for this PID/CID, we ignore it.
-						if (service.cid != _appContext.Cid || service.pid != _appContext.Pid)
+						// Local discovery is realm-shaped: a running service broadcasts its pid, and we normally
+						// surface only those matching the current realm. A zone service broadcasts a zone identity
+						// (ZONE_<zid>) in the pid slot, which never equals the realm pid — so surface it by its
+						// local manifest definition instead (the workspace only defines its own zone projects),
+						// keyed off the serviceName the broadcast carries.
+						if (service.cid != _appContext.Cid)
+							continue;
+
+						var isLocalZoneService =
+							_localSystem.BeamoManifest.TryGetDefinition(service.serviceName, out var discoveredDef) &&
+							discoveredDef.IsZoneScoped;
+						if (!isLocalZoneService && service.pid != _appContext.Pid)
 							continue;
 
 						var entryKey = (service.processId, service.serviceName);

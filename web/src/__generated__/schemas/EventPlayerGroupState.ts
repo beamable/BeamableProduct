@@ -11,4 +11,5 @@ export type EventPlayerGroupState = {
   rankRewards: EventRewardState[]; 
   scoreRewards: EventRewardState[]; 
   groupId?: string; 
+  groupMissing?: boolean; 
 };

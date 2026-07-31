@@ -20,7 +20,7 @@ namespace Beamable.Server
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public class RequestContext : IUserContext
+	public class RequestContext : IUserContext, IRequestContext
 	{
 		private readonly long _userId;
 

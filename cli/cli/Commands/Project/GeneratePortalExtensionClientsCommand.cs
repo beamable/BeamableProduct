@@ -67,12 +67,21 @@ public class GeneratePortalExtensionClientsCommand : AppCommand<GeneratePortalEx
 				return;
 			}
 
-			var generator = new WebClientCodeGenerator(document, "ts");
-
 			foreach (var extension in extensionsToUpdate)
 			{
 				var extensionPath = extension.PortalExtensionDefinition.AbsolutePath;
 				var clientsOutputDirectory = Path.Combine(extensionPath, "beamable/clients");
+
+				// A zone extension's `context.beam` is a BeamZoneSdk, not a Beam, so its
+				// generated client must bind to BeamZoneSdk (constructor param + the
+				// `declare module` augmentation that types `beam.<name>Client`). Realm
+				// extensions bind to BeamBase as before.
+				var isZone = string.Equals(
+					extension.PortalExtensionDefinition.Properties?.ServiceScope?.Trim(),
+					"zone",
+					StringComparison.OrdinalIgnoreCase);
+				var augmentType = isZone ? "BeamZoneSdk" : "BeamBase";
+				var generator = new WebClientCodeGenerator(document, "ts", augmentType);
 
 				object pathLock = _pathLocks.GetOrAdd(clientsOutputDirectory, _ => new object());
 

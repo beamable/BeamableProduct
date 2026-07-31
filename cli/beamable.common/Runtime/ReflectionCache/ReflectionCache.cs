@@ -405,7 +405,20 @@ namespace Beamable.Common.Reflection
 				{
 					if (assembliesToSweepStr.Contains("₢" + assemblies[i].GetName().Name + "₢"))
 					{
-						var types = assemblies[i].GetTypes();
+						Type[] types;
+						try
+						{
+							types = assemblies[i].GetTypes();
+						}
+						catch (ReflectionTypeLoadException ex)
+						{
+							// A swept assembly can carry metadata references to assemblies that aren't present at
+							// runtime — e.g. NBomber (bundled for load-testing) references Serilog, which is stripped
+							// from shipped CLI builds. GetTypes() then throws, but the types that DID resolve are
+							// still valid, so sweep those and skip the unresolved ones rather than failing the whole
+							// reflection cache (and the host process) to load.
+							types = ex.Types.Where(t => t != null).ToArray();
+						}
 
 						for (int k = 0; k < types.Length; k++)
 						{

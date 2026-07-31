@@ -139,12 +139,19 @@ public class HttpSignedRequester : ISignedRequester
             req.body,
             body => JsonConvert.SerializeObject(body, UnitySerializationSettings.Instance));
         
-        var uri = _config.Host + req.uri;
+        // Normalize the request path to a single leading slash. SDK service APIs (e.g. stats -> "object/stats")
+        // pass slash-less paths that the websocket MicroserviceRequester tolerates, but a naive Host + uri
+        // concat here would produce "https://host.comobject/...". Sign and send the same normalized path so
+        // the server-side signature check matches.
+        var path = string.IsNullOrEmpty(req.uri)
+            ? "/"
+            : (req.uri[0] == '/' ? req.uri : "/" + req.uri);
+        var uri = _config.Host.TrimEnd('/') + path;
 
-        var signature = SignedRequesterHelper.CalculateSignature(Pid, 
-            _secret, 
-            req.uri, 
-            body: bodyContent, 
+        var signature = SignedRequesterHelper.CalculateSignature(Pid,
+            _secret,
+            path,
+            body: bodyContent,
             version: _config.ApiVersion);
 
         var httpMethod = HttpMethod.Get;

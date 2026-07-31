@@ -9,6 +9,8 @@ namespace Beamable.Server.Api.Chat
 	/// <summary>
 	/// The chat API for Microservice usage
 	/// </summary>
+
+	[RealmScoped]
 	public interface IMicroserviceChatApi : IChatApi { }
 
 }

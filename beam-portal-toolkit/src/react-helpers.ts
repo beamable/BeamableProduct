@@ -13,9 +13,9 @@
 
 import { createElement, useCallback, useEffect, useMemo, useRef, useState, StrictMode, type ComponentType, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { Portal, type BadgeContext, type BadgeValue, type CandidateMetadata, type ExtensionContext, type MountSiteHandle } from './portal';
+import { Portal, type BadgeContext, type BadgeValue, type CandidateMetadata, type ExtensionContext, type MountSiteHandle, type ZoneBadgeContext, type ZoneExtensionContext } from './portal';
 import type { ExtensionStore, SetOptions } from './storage';
-import type { Beam } from '@beamable/sdk';
+import type { Beam, BeamZoneSdk } from '@beamable/sdk';
 
 // ---------------------------------------------------------------------------
 // useBeam
@@ -50,6 +50,32 @@ export function useBeam(context: ExtensionContext): Beam | null {
     // Depend on the promise specifically, not the whole `context`
     // object — host implementations may rebuild `context` on every
     // render but keep the promise stable.
+  }, [context.beam]);
+  return beam;
+}
+
+/**
+ * The zone-scoped analog of {@link useBeam}: resolves a {@link ZoneExtensionContext}'s
+ * `beam` promise into a {@link BeamZoneSdk} and re-renders once it lands. Returns `null`
+ * until the SDK is ready.
+ *
+ * @example
+ *   export default function App({ context }: { context: ZoneExtensionContext }) {
+ *     const beam = useZoneBeam(context);
+ *     if (!beam) return <BeamSpinner />;
+ *     // ...use beam.customer.getRealms() / getZones()
+ *   }
+ */
+export function useZoneBeam(context: ZoneExtensionContext): BeamZoneSdk | null {
+  const [beam, setBeam] = useState<BeamZoneSdk | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    context.beam.then((b) => {
+      if (!cancelled) setBeam(b);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [context.beam]);
   return beam;
 }
@@ -236,6 +262,52 @@ export interface RegisterReactExtensionOptions {
 export function registerReactExtension(options: RegisterReactExtensionOptions): void {
   const { beamId, App, disableStrictMode, wrapper, getBadge } = options;
   Portal.registerExtension({
+    beamId,
+    onMount: (container, context) => {
+      const root = createRoot(container);
+      const appEl = createElement(App, { context });
+      const body = wrapper ? wrapper({ context, children: appEl }) : appEl;
+      root.render(disableStrictMode ? body : createElement(StrictMode, null, body));
+      return root;
+    },
+    onUnmount: (instance) => {
+      (instance as Root).unmount();
+    },
+    ...(getBadge ? { getBadge } : {}),
+  });
+}
+
+/**
+ * Options for {@link registerReactZoneExtension}. The zone analog of
+ * {@link RegisterReactExtensionOptions}: `App` / `wrapper` receive a
+ * {@link ZoneExtensionContext} and `getBadge` a {@link ZoneBadgeContext}.
+ */
+export interface RegisterReactZoneExtensionOptions {
+  /** Unique extension name — must match the `beamId` in your manifest. */
+  beamId: string;
+  /** Your top-level React component. Receives `{ context }` (zone-scoped) as its only prop. */
+  App: ComponentType<{ context: ZoneExtensionContext }>;
+  /** Disable React StrictMode. Defaults to `false`. */
+  disableStrictMode?: boolean;
+  /** Optional wrapper rendered around the App (providers, etc.). */
+  wrapper?: (props: { context: ZoneExtensionContext; children: ReactNode }) => ReactNode;
+  /** Optional sidebar nav-badge supplier — forwarded to {@link Portal.registerZoneExtension}. */
+  getBadge?: (context: ZoneBadgeContext) => Promise<BadgeValue | null>;
+}
+
+/**
+ * One-line React bootstrap for a **zone-scoped** extension. The zone analog of
+ * {@link registerReactExtension} — same boilerplate, but registers via
+ * {@link Portal.registerZoneExtension} so the App gets a {@link ZoneExtensionContext}.
+ *
+ * @example
+ *   import { registerReactZoneExtension } from '@beamable/portal-toolkit/react-helpers';
+ *   import App from './App';
+ *   registerReactZoneExtension({ beamId: 'zone-overview', App });
+ */
+export function registerReactZoneExtension(options: RegisterReactZoneExtensionOptions): void {
+  const { beamId, App, disableStrictMode, wrapper, getBadge } = options;
+  Portal.registerZoneExtension({
     beamId,
     onMount: (container, context) => {
       const root = createRoot(container);

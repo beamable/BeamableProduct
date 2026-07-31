@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Beamable",
+  "classifications": [ "beamable", "portal", "extension", "react", "zone" ],
+  "tags": {
+    "language": "TypeScript",
+    "type": "project"
+  },
+  "identity": "Beamable.Templates.PortalExtensionReactAppZone",
+  "name": "Beamable Portal Extension Zone (React 19)",
+  "shortName": "portalextensionreactappzone",
+  "sourceName": "PortalExtensionReactAppZone",
+  "sources": [
+    {
+      "modifiers": [
+        { "include": [ ".gitignore", ".dockerignore" ] },
+        { "exclude": [ ".vs/**", ".template_config/**", "[Content_Types].xml" ,"_rels/**"] }
+      ]
+    }
+  ],
+  "symbols": {
+    "TemplateVersion": {
+      "replaces": "TemplateVersion",
+      "type": "bind",
+      "binding": "Version"
+    }
+  }
+}

@@ -467,6 +467,16 @@ namespace Beamable.Server
 
       public IAccessToken AccessToken { get; }
 
+      /// <summary>
+      /// When set (e.g. <c>"cid.pid"</c>), every outgoing request stamps this value as the
+      /// <see cref="Constants.Requester.HEADER_SCOPE"/> (<c>X-BEAM-SCOPE</c>) header, overriding the scope the
+      /// socket authenticated with. A zone service's socket authenticates as <c>cid.zid</c>; an
+      /// <c>AssumeRealm</c> fork sets this to the realm's <c>cid.pid</c> so the gateway routes the request to
+      /// the realm instead of the zone (requires the backend to honor the per-request scope header). Left null
+      /// for ordinary requests, which inherit the socket's authenticated scope.
+      /// </summary>
+      public string ScopeOverride { get; set; }
+
       public Task WaitForAuthorization(TimeSpan timeout = default, string message=null) => _socketContext.WaitForAuthorization(timeout, message);
 
       /// <summary>
@@ -598,6 +608,14 @@ namespace Beamable.Server
          if (beamReq.headerInterceptor != null)
          {
             req.headers = beamReq.headerInterceptor.Invoke(req.headers);
+         }
+
+         // Stamp the scope override (if any) last so a per-request headerInterceptor can't drop it. This lets an
+         // AssumeRealm fork target a realm (cid.pid) over the zone's (cid.zid) socket.
+         if (!string.IsNullOrEmpty(ScopeOverride))
+         {
+            req.headers ??= new Dictionary<string, string>();
+            req.headers[Constants.Requester.HEADER_SCOPE] = ScopeOverride;
          }
 
          if (_requestContext != null &&

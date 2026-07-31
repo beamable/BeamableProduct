@@ -67,6 +67,8 @@ namespace Beamable.Server
 	/// ![img beamable-logo]
 	///
 	/// </summary>
+
+	[RealmScoped]
 	public interface IBeamableServices : IHaveDependencyProvider
 	{
 		IMicroserviceAnalyticsService Analytics { get; }

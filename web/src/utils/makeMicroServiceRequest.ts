@@ -1,9 +1,10 @@
 import { HttpRequest } from '@/network/http/types/HttpRequest';
 import { BeamBase } from '@/core/BeamBase';
+import { BeamMicroServiceHost } from '@/core/BeamMicroServiceClient';
 import { HEADERS, POST } from '@/constants';
 
 interface makeMicroServiceRequestProps<TReq> {
-  beam: BeamBase;
+  host: BeamMicroServiceHost;
   serviceName: string;
   endpoint: string;
   payload?: TReq;
@@ -18,13 +19,21 @@ interface makeMicroServiceRequestProps<TReq> {
 export async function makeMicroServiceRequest<TRes = any, TReq = any>(
   props: makeMicroServiceRequestProps<TReq>,
 ): Promise<TRes> {
-  const { beam, serviceName, endpoint, payload, withAuth } = props;
-  const { cid, pid, requester } = beam;
-  const url = `/basic/${cid}.${pid}.micro_${serviceName}/${endpoint}`;
+  const { host, serviceName, endpoint, payload, withAuth } = props;
+  const { cid, microServiceScope, requester } = host;
+  // `microServiceScope` is the realm pid for a realm SDK, or the zone zid for a
+  // zone SDK — so a zone extension calling a zone-running service routes to
+  // `/basic/{cid}.{zid}.micro_{service}/...`, the zone analog of `{cid}.{pid}`.
+  const scope = `${cid}.${microServiceScope}`;
+  const url = `/basic/${scope}.micro_${serviceName}/${endpoint}`;
   const routingKey = BeamBase.env.BEAM_ROUTING_KEY;
 
-  // Create the header parameters object
-  const headers: Record<string, string> = {};
+  // Create the header parameters object. Pin the scope to the routed target so
+  // a zone SDK — whose requester defaults to a cid-only scope for its
+  // customer-directory calls — still scopes microservice calls to `cid.zid`.
+  const headers: Record<string, string> = {
+    [HEADERS.BEAM_SCOPE]: scope,
+  };
   if (routingKey) {
     headers[HEADERS.ROUTING_KEY] = routingKey;
   }

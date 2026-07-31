@@ -36,6 +36,11 @@ public class ServiceStatus
 {
 	public string service;
 	public string serviceType;
+	/// <summary>
+	/// The deployment scope of the service: "zone" for a zone-scoped service (<c>cid.zid</c>),
+	/// "realm" otherwise (<c>cid.pid</c>). Sourced from the service's <c>&lt;BeamServiceScope&gt;</c>.
+	/// </summary>
+	public string scope = "realm";
 	public string[] groups;
 	public string[] storages;
 	public List<ServicesForRouteCollection> availableRoutes = new List<ServicesForRouteCollection>();
@@ -245,6 +250,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			table.AddRow(
 				service.service,
 				service.serviceType,
+				service.scope,
 				originValue,
 				instance?.startedByAccountEmail ?? "<?>",
 				infoValue,
@@ -254,6 +260,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 
 		AddColumn("beamoId");
 		AddColumn("type");
+		AddColumn("scope");
 		AddColumn("origin");
 		AddColumn("email");
 		AddColumn("info");
@@ -329,6 +336,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 				{
 					service = definition.BeamoId,
 					serviceType = BeamoLocalSystem.GetServiceType(definition.Protocol),
+					scope = definition.IsZoneScoped ? "zone" : "realm",
 					storages = isMicroservice ? http.StorageDependencyBeamIds.ToArray() : Array.Empty<string>(),
 					availableRoutes = new List<ServicesForRouteCollection>()
 					{
@@ -404,6 +412,9 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 						{
 							service = name,
 							serviceType = "portalExtension",
+							scope = manifest.ServiceDefinitions.FirstOrDefault(d => d.BeamoId == name)?.IsZoneScoped == true
+								? "zone"
+								: "realm",
 							storages = Array.Empty<string>(),
 							groups = Array.Empty<string>(),
 							availableRoutes = new List<ServicesForRouteCollection> { remoteRoute },
@@ -441,6 +452,9 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 				{
 					service = discoveryEvent.Service,
 					serviceType = discoveryEvent.ServiceType,
+					scope = manifest.ServiceDefinitions.FirstOrDefault(d => d.BeamoId == discoveryEvent.Service)?.IsZoneScoped == true
+						? "zone"
+						: "realm",
 					storages =
 						isLocalMicroservice ? http.StorageDependencyBeamIds.ToArray() : Array.Empty<string>(),
 					groups = discoveryEvent switch

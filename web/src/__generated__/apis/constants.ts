@@ -13,24 +13,40 @@ export const queryIdPlaceholder = "{queryId}";
 
 export const storageObjectNamePlaceholder = "{storageObjectName}";
 
-export const viewIdPlaceholder = "{viewId}";
+export const bundleNamePlaceholder = "{bundleName}";
+
+export const nsPlaceholder = "{ns}";
+
+export const checksumPlaceholder = "{checksum}";
+
+export const tagPlaceholder = "{tag}";
 
 export const customerIdPlaceholder = "{customerId}";
 
 export const realmIdPlaceholder = "{realmId}";
 
-export const gameIdPlaceholder = "{gameId}";
+export const viewIdPlaceholder = "{viewId}";
 
-export const destinationRealmIdPlaceholder = "{destinationRealmId}";
+export const pullRequestIdPlaceholder = "{pullRequestId}";
+
+export const gameIdPlaceholder = "{gameId}";
 
 export const aliasPlaceholder = "{alias}";
 
-export const idPlaceholder = "{id}";
+export const segmentIdPlaceholder = "{segmentId}";
 
 export const playerIdPlaceholder = "{playerId}";
+
+export const idPlaceholder = "{id}";
+
+export const keyPlaceholder = "{key}";
 
 export const jobIdPlaceholder = "{jobId}";
 
 export const itemTypePlaceholder = "{itemType}";
+
+export const zoneIdPlaceholder = "{zoneId}";
+
+export const accountIdPlaceholder = "{accountId}";
 
 export const objectIdPlaceholder = "{objectId}";
