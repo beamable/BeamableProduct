@@ -3,7 +3,9 @@ namespace cli.Services.LocalStack;
 /// <summary>
 /// Builds a reference <see cref="LocalStackConfig"/> manifest that mirrors the proven
 /// <c>scripts/run-local-stack.sh</c> bring-up order:
-///   1. C# Gateway + Caddy proxy (BeamableAPI)   2. Scala backing services (BeamableBackend tools/*)
+///   1. C# Gateway + Caddy proxy, plus the backend workers the gateway hands work off to — the
+///      message-rail runtime and the campaign runtime (all BeamableAPI)
+///   2. Scala backing services (BeamableBackend tools/*)
 ///   3. Portal frontend (Vite)                   4. Microservices     5. Portal extensions
 ///
 /// Every path is a parameter so the produced manifest is machine-agnostic; unset directories are
@@ -31,6 +33,8 @@ public static class LocalStackTemplate
 		// The message-rail runtime binds its own port (distinct from the gateway's 5000) — it is run as a
 		// binary, so ASPNETCORE_URLS is set explicitly rather than via launchSettings.
 		public string messageRailUrl = "http://localhost:5030";
+		// Likewise the campaign runtime, on its own port again so the three .NET hosts can coexist.
+		public string campaignRuntimeUrl = "http://localhost:5040";
 		public string apiDir;
 		public string scalaDir;
 		public string portalDir;
@@ -281,6 +285,43 @@ public static class LocalStackTemplate
 				["ASPNETCORE_URLS"] = o.messageRailUrl
 			},
 			readyWhenHttp200 = $"{o.messageRailUrl}/health",
+			// Same Mongo-not-ready-yet relaunch tolerance as the gateway.
+			readyRetries = 5,
+			readyTimeoutSeconds = 180
+		});
+
+		// The campaign runtime — the worker that actually *runs* campaigns. The gateway only authors them
+		// (validate, store the graph, write the directory row); enrolling the entry segment, walking each
+		// lane, and handing sends to the message rail all happen here, as does the Launching -> Active
+		// transition. Without it a campaign publishes successfully and then does nothing at all, which
+		// looks identical to a broken campaign — so it belongs in the default stack rather than being a
+		// thing you have to know to start. Same shape as the message-rail runtime: joins the actor cluster
+		// as a Member (so it needs Mongo + ActiveMQ from the docker step above), run as a binary with its
+		// own ASPNETCORE_URLS, ready on /health.
+		config.steps.Add(new LocalStackStep
+		{
+			name = "build: c# campaign runtime",
+			workingDirectory = apiDir,
+			command = "dotnet",
+			arguments = "build BeamableCampaignRuntime -c Debug",
+			build = true,
+			waitForExit = true,
+			readyTimeoutSeconds = 300
+		});
+		config.steps.Add(new LocalStackStep
+		{
+			name = "c# campaign runtime",
+			workingDirectory =
+				Path.Combine(apiDir, "BeamableCampaignRuntime", "bin", "Debug", "net10.0"),
+			command = OperatingSystem.IsWindows()
+				? "BeamableCampaignRuntime.exe"
+				: "./BeamableCampaignRuntime",
+			environment = new Dictionary<string, string>
+			{
+				["ASPNETCORE_ENVIRONMENT"] = "Local",
+				["ASPNETCORE_URLS"] = o.campaignRuntimeUrl
+			},
+			readyWhenHttp200 = $"{o.campaignRuntimeUrl}/health",
 			// Same Mongo-not-ready-yet relaunch tolerance as the gateway.
 			readyRetries = 5,
 			readyTimeoutSeconds = 180

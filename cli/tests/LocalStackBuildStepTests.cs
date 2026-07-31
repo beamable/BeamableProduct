@@ -178,4 +178,48 @@ public class LocalStackBuildStepTests
 		foreach (var name in new[] { "c# gateway", "portal frontend", "scala: gateway" })
 			Assert.That(Step(config, name).build, Is.False, $"{name} must not be a build step");
 	}
+
+	/// <summary>
+	/// The two backend workers are as load-bearing as the gateway, and their absence is silent: without the
+	/// message-rail runtime a send stages and never delivers; without the campaign runtime a campaign
+	/// publishes and then never enrolls, advances or sends. The campaign runtime was in fact missing from
+	/// this template until it was noticed only by a campaign sitting in Launching forever — hence the guard.
+	/// </summary>
+	[Test]
+	public void Emits_the_backend_worker_runtimes_with_their_own_ports()
+	{
+		var config = CreateWithRepos();
+
+		foreach (var (buildName, runName, binary) in new[]
+		{
+			("build: c# message rail runtime", "c# message rail runtime", "BeamableMessageRailRuntime"),
+			("build: c# campaign runtime", "c# campaign runtime", "BeamableCampaignRuntime"),
+		})
+		{
+			var build = Step(config, buildName);
+			Assert.That(build, Is.Not.Null, $"missing {buildName}");
+			Assert.That(build.build, Is.True, $"{buildName} must be a build step");
+			Assert.That(build.arguments, Does.Contain(binary));
+
+			var run = Step(config, runName);
+			Assert.That(run, Is.Not.Null, $"missing {runName}");
+			Assert.That(run.build, Is.False, $"{runName} must not be a build step");
+			Assert.That(run.command, Does.Contain(binary));
+			Assert.That(run.environment["ASPNETCORE_ENVIRONMENT"], Is.EqualTo("Local"));
+			Assert.That(run.readyWhenHttp200, Does.EndWith("/health"));
+			Assert.That(IndexOf(config, buildName), Is.LessThan(IndexOf(config, runName)));
+		}
+
+		// Three .NET hosts share the machine, so each must bind a port of its own. The gateway takes the
+		// ASPNETCORE_URLS default, so it has no entry — stand in a sentinel to keep the comparison honest.
+		var ports = new[] { "c# gateway", "c# message rail runtime", "c# campaign runtime" }
+			.Select(n => Step(config, n))
+			.Select(s => s.environment.TryGetValue("ASPNETCORE_URLS", out var url) ? url : "gateway-default")
+			.ToArray();
+		Assert.That(ports, Is.Unique);
+
+		// Both workers join the actor cluster, so the docker step bringing up Mongo + ActiveMQ runs first.
+		Assert.That(IndexOf(config, "docker: api deps + caddy"),
+			Is.LessThan(IndexOf(config, "c# campaign runtime")));
+	}
 }
