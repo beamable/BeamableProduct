@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update CLI to 7.2.3
 
+- Added build-scoped suppression and per-player runtime opt-in for automatic Player Social friend-invitation Mail checks.
+
 ## [6.0.1] - 2026-07-31
 
 ### Changed
