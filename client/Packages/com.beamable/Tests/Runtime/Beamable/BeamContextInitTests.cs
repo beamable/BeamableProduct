@@ -3,6 +3,8 @@ using Beamable.Api.Payments;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Api.Mail;
+using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Presence;
 using Beamable.Common.Api.Social;
 using Beamable.Common.Dependencies;
@@ -194,8 +196,12 @@ namespace Tests.Runtime.Beamable
 
 	public class PlayerSocialMailSuppressionTests : BeamContextTest
 	{
+		private const string MailUpdateChannel = "MAILBOX.UPDATE";
+		private const long OtherPlayerId = 5678;
+
 		private bool _originalSuppressAutomaticMailUpdatesFromPlayerSocial;
 		private MockPlatformRoute<MailSearchResponse> _mailSearchRoute;
+		private MockPlatformRoute<EmptyResponse> _sendFriendInviteRoute;
 
 		[SetUp]
 		public void SaveConfiguration()
@@ -237,6 +243,11 @@ namespace Tests.Runtime.Beamable
 				   $"/object/mail/{MockBeamContext.DEFAULT_DBID}/search")
 			   .WithRawResponse("{\"results\":[{\"content\":[],\"count\":0,\"name\":\"search\"}]}")
 			   .WithToken(MockBeamContext.ACCESS_TOKEN);
+
+			_sendFriendInviteRoute = ctx.Requester
+			   .MockRequest<EmptyResponse>(Method.POST, "/basic/social/friends/invite")
+			   .WithResponse(new EmptyResponse())
+			   .WithToken(MockBeamContext.ACCESS_TOKEN);
 		}
 
 		[UnityTest]
@@ -275,7 +286,7 @@ namespace Tests.Runtime.Beamable
 			yield return social.OnReady.ToYielder();
 
 			Exception error = null;
-			var promise = social.Invite(5678);
+			var promise = social.Invite(OtherPlayerId);
 			promise.Error(ex => error = ex);
 			yield return promise.ToYielder();
 
@@ -292,11 +303,111 @@ namespace Tests.Runtime.Beamable
 			yield return social.OnReady.ToYielder();
 
 			Exception error = null;
-			var promise = social.AcceptInviteFrom(5678);
+			var promise = social.AcceptInviteFrom(OtherPlayerId);
 			promise.Error(ex => error = ex);
 			yield return promise.ToYielder();
 
 			Assert.IsInstanceOf<InvalidOperationException>(error);
+		}
+
+		[UnityTest]
+		public IEnumerator SuppressedMailChecksCanBeEnabledMidsession()
+		{
+			CoreConfiguration.Instance.SuppressAutomaticMailUpdatesFromPlayerSocial = true;
+
+			TriggerContextInit();
+			yield return Context.OnReady.ToYielder();
+
+			var social = Context.Social;
+			yield return social.OnReady.ToYielder();
+
+			Assert.AreEqual(0, _mailSearchRoute.CallCount);
+
+			yield return social.EnableFriendInvitationMailChecks().ToYielder();
+			Assert.AreEqual(1, _mailSearchRoute.CallCount);
+		}
+
+		[UnityTest]
+		public IEnumerator EnablingSuppressedMailChecksTwiceOnlySearchesMailOnce()
+		{
+			CoreConfiguration.Instance.SuppressAutomaticMailUpdatesFromPlayerSocial = true;
+
+			TriggerContextInit();
+			yield return Context.OnReady.ToYielder();
+			var social = Context.Social;
+			yield return social.OnReady.ToYielder();
+
+			yield return social.EnableFriendInvitationMailChecks().ToYielder();
+			yield return social.EnableFriendInvitationMailChecks().ToYielder();
+
+			Assert.AreEqual(1, _mailSearchRoute.CallCount);
+		}
+
+		[UnityTest]
+		public IEnumerator EnabledMailChecksSearchMailWhenMailboxUpdateArrives()
+		{
+			CoreConfiguration.Instance.SuppressAutomaticMailUpdatesFromPlayerSocial = true;
+
+			TriggerContextInit();
+			yield return Context.OnReady.ToYielder();
+			var social = Context.Social;
+			yield return social.OnReady.ToYielder();
+			yield return social.EnableFriendInvitationMailChecks().ToYielder();
+
+			Context.Api.NotificationService.Publish(MailUpdateChannel, null);
+			var timeout = Time.realtimeSinceStartup + 1f;
+			while (_mailSearchRoute.CallCount < 2 && Time.realtimeSinceStartup < timeout)
+			{
+				yield return null;
+			}
+
+			Assert.AreEqual(2, _mailSearchRoute.CallCount);
+		}
+
+		[UnityTest]
+		public IEnumerator EnabledMailChecksAllowSendingFriendInvites()
+		{
+			CoreConfiguration.Instance.SuppressAutomaticMailUpdatesFromPlayerSocial = true;
+
+			TriggerContextInit();
+			yield return Context.OnReady.ToYielder();
+			var social = Context.Social;
+			yield return social.OnReady.ToYielder();
+			yield return social.EnableFriendInvitationMailChecks().ToYielder();
+
+			yield return social.Invite(OtherPlayerId).ToYielder();
+
+			Assert.AreEqual(1, _sendFriendInviteRoute.CallCount);
+		}
+
+		[UnityTest]
+		public IEnumerator EnablingMailChecksDoesNotEnableAnotherPlayerSocialInstance()
+		{
+			CoreConfiguration.Instance.SuppressAutomaticMailUpdatesFromPlayerSocial = true;
+
+			TriggerContextInit();
+			yield return Context.OnReady.ToYielder();
+			var enabledSocial = Context.Social;
+			yield return enabledSocial.OnReady.ToYielder();
+
+			var suppressedSocial = new PlayerSocial(
+				Context.ServiceProvider.GetService<ISocialApi>(),
+				Context.ServiceProvider.GetService<INotificationService>(),
+				Context.ServiceProvider.GetService<IMailApi>(),
+				Context.ServiceProvider.GetService<IPresenceApi>());
+			yield return suppressedSocial.OnReady.ToYielder();
+
+			yield return enabledSocial.EnableFriendInvitationMailChecks().ToYielder();
+
+			Exception error = null;
+			var invitePromise = suppressedSocial.Invite(OtherPlayerId);
+			invitePromise.Error(ex => error = ex);
+			yield return invitePromise.ToYielder();
+			yield return suppressedSocial.OnDispose().ToYielder();
+
+			Assert.AreEqual(1, _mailSearchRoute.CallCount);
+			Assert.IsInstanceOf<InvalidOperationException>(error);
+			Assert.IsTrue(CoreConfiguration.Instance.SuppressAutomaticMailUpdatesFromPlayerSocial);
 		}
 
 	}

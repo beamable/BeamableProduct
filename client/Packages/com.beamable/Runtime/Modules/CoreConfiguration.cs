@@ -91,8 +91,9 @@ namespace Beamable
 		public OfflineStrategy InventoryOfflineMode = OfflineStrategy.Optimistic;
 
 		[Header("Social")]
-		[Tooltip("Disables automatic mail polling used by Player Social for friend invitations. " +
-		         "Existing friends and other Social features remain available, but sending and accepting friend invitations is disabled for this build.")]
+		[Tooltip("When enabled, Player Social does not automatically check Mail for friend invitations or subscribe to Mail updates. " +
+		         "Existing friends and other Social features remain available. " +
+		         "Call Context.Social.EnableFriendInvitationMailChecks() to enable invitation checks for a specific player context at runtime.")]
 		public bool SuppressAutomaticMailUpdatesFromPlayerSocial = false;
 
 		/// <summary>
