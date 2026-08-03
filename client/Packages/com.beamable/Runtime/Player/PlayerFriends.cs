@@ -397,7 +397,6 @@ namespace Beamable.Player
 		/// </remarks>
 		public async Promise EnableFriendInvitationMailChecks()
 		{
-			if (_friendInvitationMailChecksEnabled) return;
 			await OnReady;
 
 			// Recheck because another caller may have enabled it while awaiting.
