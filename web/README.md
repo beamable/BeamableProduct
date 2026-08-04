@@ -94,7 +94,7 @@ npm install @beamable/sdk @react-native-async-storage/async-storage react-native
 
 The RN build is compiled to ES2021, so Hermes parses it directly (no Babel static-block
 transform required). For a full Expo/Metro setup — including the `withBeamableSdk` Metro
-helper — see the samples under `nativeLibraries/Samples/`.
+helper — see the samples under `beam-native-mobile/Samples/`.
 
 ## Configuring the connection
 
