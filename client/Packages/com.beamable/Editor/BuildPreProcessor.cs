@@ -4,6 +4,7 @@ using Beamable.Content;
 using Beamable.Editor.Content;
 using Beamable.Editor.UI.OptionDialogWindow;
 using Beamable.Editor.ContentService;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -17,13 +18,71 @@ namespace Beamable.Editor
 	public class BuildPreProcessor : IPreprocessBuildWithReport
 	{
 		/// <summary>
-		/// Dictionary where key represents define symbol
-		/// and value is list of proguard rules required by that define symbol
+		/// A set of proguard rules, and the condition under which a project needs them.
 		/// </summary>
-		private static readonly Dictionary<string, string[]> RulesPerDefineSymbol = new Dictionary<string, string[]>
+		private class ProguardRuleSet
 		{
-			{"BEAMABLE_GPGS", new[] {"com.beamable.googlesignin.**", "com.google.unity.**"}}
+			/// <summary>What pulls these rules in, for the warning message.</summary>
+			public string Reason;
+
+			/// <summary>Whether this project needs the rules.</summary>
+			public Func<bool> IsRequired;
+
+			/// <summary>Class patterns to keep.</summary>
+			public string[] Rules;
+		}
+
+		/// <summary>
+		/// Proguard rules Beamable needs in a minified Android build, with the condition that makes
+		/// each set necessary.
+		/// </summary>
+		private static readonly List<ProguardRuleSet> RequiredProguardRules = new List<ProguardRuleSet>
+		{
+			new ProguardRuleSet
+			{
+				Reason = "Google Play Games Services",
+				IsRequired = () => PlayerSettingsHelper.GetDefines().Contains(BEAMABLE_GPGS),
+				Rules = new[] {"com.google.unity.**"}
+			},
+
+			new ProguardRuleSet
+			{
+				// Every entry point in Beamable's Google Sign-In plugin is reached only by JNI
+				// reflection from C#, so R8 sees no call sites and a minified build renames or strips
+				// them - failing at runtime in release builds only.
+				//
+				// This used to be gated on BEAMABLE_GPGS alone, which meant a project using plain
+				// Google Sign-In with no Play Games got no keep rule at all. googlesignin-release.aar
+				// 2.0.0+ also ships these rules as AAR consumer rules, so this check is now a second
+				// line of defence rather than the only protection.
+				Reason = "Google Sign-In",
+				IsRequired = () => PlayerSettingsHelper.GetDefines().Contains(BEAMABLE_GPGS) ||
+								   IsGoogleSignInEnabled(),
+				Rules = new[] {"com.beamable.googlesignin.**"}
+			}
 		};
+
+		private const string BEAMABLE_GPGS = "BEAMABLE_GPGS";
+
+		/// <summary>
+		/// Whether plain Google Sign-In is switched on in the Account Management configuration.
+		/// Treated as "off" if the configuration cannot be read, since the .aar's own consumer rules
+		/// cover this case anyway and a build should not fail over a missing optional asset.
+		/// </summary>
+		private static bool IsGoogleSignInEnabled()
+		{
+			try
+			{
+				var configuration = AccountManagement.AccountManagementConfiguration.Instance;
+				return configuration != null && configuration.Google;
+			}
+			catch (Exception e)
+			{
+				Debug.Log($"Beamable could not read the Account Management configuration while checking " +
+						  $"proguard rules. {e.Message}");
+				return false;
+			}
+		}
 
 		public int callbackOrder { get; }
 
@@ -191,14 +250,14 @@ In the Unity Editor window in top-right corner, click on the Beamable Menu, then
 
 			var doesProguardFileExists = proguardFilesGuids.Length > 0;
 
-			foreach (var defineSymbolRules in RulesPerDefineSymbol)
+			foreach (var ruleSet in RequiredProguardRules)
 			{
-				if (!PlayerSettingsHelper.GetDefines().Contains(defineSymbolRules.Key))
+				if (!ruleSet.IsRequired())
 				{
 					continue;
 				}
 
-				var rules = defineSymbolRules.Value;
+				var rules = ruleSet.Rules;
 				if (!doesProguardFileExists)
 				{
 					warningMessage = "There is no Proguard File";
@@ -240,7 +299,8 @@ In the Unity Editor window in top-right corner, click on the Beamable Menu, then
 				}
 
 				var rulesString = $"{string.Join(" { *; }\n", missingRules)} {{ *; }}";
-				warningMessage = $"Proguard File does not have this rules:\n{rulesString}";
+				warningMessage = $"Proguard File does not have this rules, required by " +
+								 $"{ruleSet.Reason}:\n{rulesString}";
 				if (!EditorGUIExtension.IsInHeadlessMode() && EditorUtility.DisplayDialog("Update proguard file",
 					    $"{warningMessage}.\nDo you want to update the proguard file?", 
 					    "Yes", "No, cancel build"))
