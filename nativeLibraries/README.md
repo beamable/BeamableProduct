@@ -1,34 +1,54 @@
 # Beamable Native Libraries
 
-Home for **all native libraries used by Beamable**, organized by platform. Each platform lives
-in its own folder.
+Home for **all native libraries used by Beamable** — push notifications and deep links for Android and
+iOS, plus the per-engine plugins that expose them to Unity, Unreal, and React Native.
 
-> **Feature reference:** [`docs/notifications-feature.md`](docs/notifications-feature.md) is the
-> authoritative design doc for BeamableNotifications (multi-handler model, intent-data schema,
-> analytics funnel). See also [`LIBRARY_GUIDE.md`](LIBRARY_GUIDE.md) for the per-platform walkthrough.
+> **Start here:** the per-engine push notification guides in the Beamable documentation —
+> *Push notifications in Unity*, *…in a Unity WebView*, *…for Unreal*, and *…for React Native*. Each one
+> covers install, Android and iOS provisioning, custom notification styles, Live Activities, the
+> receive-time hook, and an end-to-end walkthrough for that engine.
 
 ```
 nativeLibraries/
-  Android/   # Kotlin libraries built as .aar
-  iOS/       # (planned) Swift / Objective-C libraries
+  Android/BeamableNotifications/    # Kotlin — one Gradle module → one .aar
+  iOS/BeamableNotifications/       # Swift — core/ (shared) + extension/ (NSE)
+  EnginePlugins/                   # Unity, Unity.Web, Unreal, ReactNative
+  Samples/                         # ReactNative, WebSDKUsageSample
+  docs/                            # feature reference + custom notification styles
 ```
 
-## Android/
+## The two native cores
 
-Engine-agnostic Kotlin libraries, each a standalone Gradle project that builds a `.aar`.
+| Core | Location | Ships |
+|---|---|---|
+| **Android** | `Android/BeamableNotifications` | One module (`notifications`) → one `.aar`. **Push** (`com.beamable.push`): local notifications (AlarmManager), optional remote push (FCM), channels/templates, permission, launch-intent reading, and a receive-time handler that runs even when the app is killed. **Deep links** (`com.beamable.deeplink`): native `VIEW`-intent capture, cold and warm start. The thin engine adapters (`unity/`, `unreal/`, `react/`) ship inside the same `.aar`. |
+| **iOS** | `iOS/BeamableNotifications` | Swift package → xcframework. Local + remote (APNs) notifications, permission, templates, action categories, rich media and closed-app analytics via a Notification Service Extension, and a plugin system. Exposes a C ABI (`bmn_*`). |
 
-- **PushNotifications/** (`com.beamable.push`) — local + optional remote (FCM) push,
-  configurable notification templates, channels, permission request, launch-intent reading, and
-  a receive-time handler that fires natively even when the app is killed.
-- **Deeplink/** (`com.beamable.deeplink`) — native deeplink (VIEW intent) capture for cold and
-  warm start, without replacing the host activity.
+The two platforms are first-class equals — every capability exists on both, with the same
+public/bridge-facing names. Where a platform has no native equivalent the method is kept as a
+best-effort no-op, so it is never absent and never throws. The per-engine guides carry the full parity
+tables.
 
-Each `.aar` bundles thin routing adapters for **Unity** (`unity/`), **Unreal** (`unreal/`), and
-**React Native** (`react/`) over the shared core. **Unity** is wired up end-to-end today;
-Unreal still needs its C++/UPL plugin glue and React Native its JS package (the Kotlin side is
-already in the `.aar`). See `Android/README.md` for build, API, per-engine usage, and the
-adapter/ProGuard details.
+## Engine plugins
 
-## iOS/
+Each plugin has its own README with install and setup steps:
 
-Planned — not implemented yet. See `iOS/README.md`.
+- [`EnginePlugins/Unity/README.md`](EnginePlugins/Unity/README.md) — `Beamable.Notifications`, one
+  cross-platform C# API over both natives.
+- [`EnginePlugins/Unity.Web/README.md`](EnginePlugins/Unity.Web/README.md) — for a web/React UI running
+  inside a Unity WebView; a thin JSON relay with no dependency on the Unity SDK.
+- [`EnginePlugins/Unreal/README.md`](EnginePlugins/Unreal/README.md) — the `BeamPlatformNotifications`
+  plugin (iOS C ABI + Android JNI).
+- [`EnginePlugins/ReactNative/README.md`](EnginePlugins/ReactNative/README.md) —
+  `@beamable/notifications-react-native`.
+
+> **The plugins ship prebuilt binaries** (the `.aar`, the `.xcframework`), staged by `../dev-native.sh`.
+> Editing native source does **not** change an engine package until the binaries are rebuilt and
+> restaged — see [`AGENTS.md`](AGENTS.md).
+
+## Docs
+
+| Doc | Covers |
+|---|---|
+| Per-engine push notification guides (Beamable documentation) | Install, Android/iOS provisioning, custom styles, Live Activities, the receive-time hook, and a walkthrough — one page per engine. |
+| [`AGENTS.md`](AGENTS.md) | Orientation for AI agents working in this folder. |

@@ -49,7 +49,7 @@ object PushManager {
     private var appContext: Context? = null
 
     /**
-     * Programmatically-registered receive-time handlers (§1.1). Note: these only help while the
+     * Programmatically-registered receive-time handlers. Note: these only help while the
      * app process is alive — when a push arrives with the app fully closed, the FCM process
      * starts fresh and this list is empty, so handlers are resolved from manifest meta-data
      * instead (see [resolveHandlers]). Multiple handlers are supported, mirroring iOS's
@@ -161,7 +161,7 @@ object PushManager {
     }
 
     /**
-     * Resolves ALL receive-time handlers for the current process (§1.1): the additive
+     * Resolves ALL receive-time handlers for the current process: the additive
      * [addNotificationReceivedHandler] ones (insertion order), then every class named by a manifest
      * meta-data (numeric-suffix sorted — see [instantiateManifestHandlers]). The combined list is
      * deduped. Manifest handlers ALWAYS participate.
@@ -555,7 +555,7 @@ object PushManager {
         return data
     }
 
-    // ---- Auth credential writer (§4 / Decision Q5) --------------------------
+    // ---- Auth credential writer (Decision Q5) --------------------------
 
     /**
      * Persists the player's auth credentials into the `beamable_notifications_auth` prefs that
@@ -618,7 +618,7 @@ object PushManager {
     }
 
     internal fun dispatchNotificationOpened(json: String) {
-        // Funnel: a notification tap is an "Opened" event (§4.5). Fired natively, gated on a
+        // Funnel: a notification tap is an "Opened" event. Fired natively, gated on a
         // tracked campaign + scope/gamerTag inside trackFunnel.
         appContext?.let { ctx ->
             try {
@@ -630,11 +630,11 @@ object PushManager {
         listener?.let { safe("notification_opened") { it.onNotificationOpened(json) } }
     }
 
-    // ---- Offer / conversion funnel helpers (§4.7) ---------------------------
+    // ---- Offer / conversion funnel helpers ---------------------------
 
     /**
      * Emits a **Clicked** funnel event for an in-app offer click, attributed to the campaign that
-     * arrived in the originating notification (§4.7). [intentDataJson] is the notification's
+     * arrived in the originating notification. [intentDataJson] is the notification's
      * intent-data JSON (as delivered to the engine); [offerJson] is the single clicked offer.
      * No-op unless campaignId + nodeId + scope + gamerTag are present.
      */
@@ -642,7 +642,7 @@ object PushManager {
         trackOffer(intentDataJson, offerJson, BeamableAnalytics.FunnelType.Clicked)
     }
 
-    /** Emits a **Converted** funnel event for an offer conversion (§4.7). See [trackOfferClicked]. */
+    /** Emits a **Converted** funnel event for an offer conversion. See [trackOfferClicked]. */
     fun trackOfferConverted(intentDataJson: String, offerJson: String?) {
         trackOffer(intentDataJson, offerJson, BeamableAnalytics.FunnelType.Converted)
     }

@@ -11,11 +11,11 @@ import java.net.URL
 import java.util.concurrent.Executors
 
 /**
- * Native funnel-analytics POSTer (spec §4).
+ * Native funnel-analytics POSTer.
  *
  * Fires Beamable CoreEvent funnel events directly from native code so they work even when the
  * JS/C# VM is dead (closed-app FCM path). Events are POSTed fire-and-forget with a short timeout
- * to `/report/custom_batch/{cid}/{pid}/{gamerTag}` (§4.3).
+ * to `/report/custom_batch/{cid}/{pid}/{gamerTag}`.
  *
  * Auth (Decision Q5): the SDK persists the player's access + refresh token into shared prefs
  * (readable here because the FCM handler runs in the app process). Native attaches
@@ -37,7 +37,7 @@ object BeamableAnalytics {
     const val KEY_PID = "pid"
     const val KEY_HOST = "host" // e.g. https://api.beamable.com
 
-    /** CoreEvent constants (§4.6). */
+    /** CoreEvent constants. */
     private const val CORE_OP = "g.core"
     private const val FUNNEL_CATEGORY = "notification_funnel"
 
@@ -59,7 +59,7 @@ object BeamableAnalytics {
     /** Refresh if the token expires within this skew window. */
     private const val EXPIRY_SKEW_MS = 60_000L
 
-    /** SharedPreferences key holding the JSON array of persisted-for-replay funnel events (§4.3). */
+    /** SharedPreferences key holding the JSON array of persisted-for-replay funnel events. */
     const val KEY_PENDING_FUNNEL = "pending_funnel"
 
     /** Cap on persisted-for-replay funnel events so a long offline streak can't grow unbounded. */
@@ -75,7 +75,7 @@ object BeamableAnalytics {
 
     /**
      * Fires a funnel event for [intent] of [type], fire-and-forget. No-op unless the intent is a
-     * tracked campaign (campaignId + nodeId) AND carries a gamerTag (§4.2). The realm scope comes
+     * tracked campaign (campaignId + nodeId) AND carries a gamerTag. The realm scope comes
      * from the intent's cidPid or, failing that, the stored auth cid/pid (mirroring iOS, which
      * fills cidPid from persisted auth); if neither is known yet the event is persisted for replay
      * once the SDK calls configureAuth. [offer] is the single offer this event concerns
@@ -378,7 +378,7 @@ object BeamableAnalytics {
         }
     }
 
-    // ---- CoreEvent JSON builder (§4.6) --------------------------------------
+    // ---- CoreEvent JSON builder --------------------------------------
 
     /** Builds the POST body: a JSON array of one CoreEvent (`/report/custom_batch` accepts a batch). */
     internal fun buildBatch(
@@ -414,7 +414,7 @@ object BeamableAnalytics {
         // not send it. Falls back to an explicitly-provided accountId if one is present.
         (intent.accountId ?: intent.gamerTag)?.let { sorted["accountId"] = it }
         intent.cidPid?.let { sorted["cidPid"] = it }
-        // Offers relevant to this event (§4.6) as a SINGLE flat column holding a stringified JSON
+        // Offers relevant to this event as a SINGLE flat column holding a stringified JSON
         // array of offer objects (`[{customData,itemId,value}, ...]`). Athena has no nested-object
         // column type, so the whole array is carried as one string the reader JSON-parses — this
         // lets any offer shape (incl. free-form customData) survive intact. Stage events carry every
@@ -433,7 +433,7 @@ object BeamableAnalytics {
 
     private fun OutputStream.writeBytesUtf8(s: String) = write(s.toByteArray(Charsets.UTF_8))
 
-    // ---- Persist-and-replay (§4.3, mirrors iOS SharedConfig/FunnelEvent) ----
+    // ---- Persist-and-replay (mirrors iOS SharedConfig/FunnelEvent) ----
 
     /**
      * Serializable snapshot of a funnel event persisted for later replay (mirrors iOS's

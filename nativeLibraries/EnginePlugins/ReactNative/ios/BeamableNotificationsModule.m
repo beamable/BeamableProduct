@@ -28,7 +28,7 @@ RCT_EXTERN_METHOD(clearDelivered)
 RCT_EXTERN_METHOD(getLaunchNotification:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
-// Offer / conversion funnel tracking (§4.7) — additive. Arg is an OfferTrackRequest JSON
+// Offer / conversion funnel tracking — additive. Arg is an OfferTrackRequest JSON
 // string (campaign context + the single offer).
 RCT_EXTERN_METHOD(trackOfferClicked:(NSString *)requestJson)
 RCT_EXTERN_METHOD(trackOfferConverted:(NSString *)requestJson)

@@ -117,7 +117,7 @@ object UnrealPush {
     }
 
     /**
-     * Emits a **Clicked** funnel event for an offer the player acted on (§4.7).
+     * Emits a **Clicked** funnel event for an offer the player acted on.
      *
      * The Unreal C++ side passes ONE canonical `OfferTrackRequest` JSON (matching iOS
      * `bmn_trackOfferClicked`), a FLAT object:
@@ -137,7 +137,7 @@ object UnrealPush {
         PushManager.trackOfferClicked(intentDataJson, offerJson)
     }
 
-    /** Emits a **Converted** funnel event for an offer conversion (§4.7). See [trackOfferClicked]. */
+    /** Emits a **Converted** funnel event for an offer conversion. See [trackOfferClicked]. */
     @JvmStatic
     fun trackOfferConverted(requestJson: String) {
         val (intentDataJson, offerJson) = splitOfferTrackRequest(requestJson)

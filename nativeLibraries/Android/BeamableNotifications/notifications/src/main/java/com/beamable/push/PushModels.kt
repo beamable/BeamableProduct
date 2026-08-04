@@ -10,7 +10,7 @@ import org.json.JSONObject
  *
  * Consolidated into one file (Kotlin allows multiple top-level declarations) to keep the
  * cohesive notification models together: [PushReceivedEvent], [NotificationTemplate],
- * [NotificationChannelSpec], and the cross-platform [NotificationIntentData] schema (§3.3).
+ * [NotificationChannelSpec], and the cross-platform [NotificationIntentData] schema.
  */
 
 // ---------------------------------------------------------------------------
@@ -27,7 +27,7 @@ import org.json.JSONObject
  * @param receivedTimeMillis when the device received it (System.currentTimeMillis()).
  * @param wasForeground whether the app was foregrounded when received (best-effort).
  * @param deepLink convenience copy of dataPayload["deeplink"] if present, else null.
- * @param intentData the full parsed campaign/funnel intent-data schema (§3.3), when present.
+ * @param intentData the full parsed campaign/funnel intent-data schema, when present.
  */
 data class PushReceivedEvent(
     val messageId: String?,
@@ -201,11 +201,11 @@ data class NotificationTemplate(
 }
 
 // ---------------------------------------------------------------------------
-// NotificationIntentData (cross-platform schema, §3.3)
+// NotificationIntentData (cross-platform schema,)
 // ---------------------------------------------------------------------------
 
 /**
- * A single offer carried inside the notification intent data (§3.3 `offers[]`).
+ * A single offer carried inside the notification intent data (`offers[]`).
  *
  * `value` may be a string or a number on the wire; it is surfaced here as a String
  * ([rawValue]) since the bridge boundary is untyped. `customData` is a free-form object
@@ -246,7 +246,7 @@ data class NotificationOffer(
 }
 
 /**
- * Canonical cross-platform notification intent-data schema (spec §3.3). Embedded inside the
+ * Canonical cross-platform notification intent-data schema. Embedded inside the
  * FCM `data` map as a FLAT string→string map (Decision Q3 — nested objects are stringified).
  *
  * Scalars ([campaignId], [nodeId], [gamerTag], [accountId], [cidPid], [deeplink]) are plain
@@ -298,7 +298,7 @@ data class NotificationIntentData(
         }
     }
 
-    /** True when both campaignId and nodeId are present — i.e. part of a tracked campaign (§4.2). */
+    /** True when both campaignId and nodeId are present — i.e. part of a tracked campaign. */
     fun isTrackedCampaign(): Boolean = !campaignId.isNullOrEmpty() && !nodeId.isNullOrEmpty()
 
     /** True when realm scope + player are present, so an authenticated POST is possible. */

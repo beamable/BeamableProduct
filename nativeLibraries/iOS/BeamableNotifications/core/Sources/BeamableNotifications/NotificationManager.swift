@@ -82,7 +82,7 @@ public final class NotificationManager: NSObject {
     }
 
     /// Replay funnel events the NSE persisted because it couldn't authenticate/send them in
-    /// its budget (§4.3 fallback). Drained and POSTed (authenticated) now that the app is alive.
+    /// its budget (fallback). Drained and POSTed (authenticated) now that the app is alive.
     private func flushPendingFunnel() {
         let pending = SharedConfig.shared.drainPendingFunnel()
         guard !pending.isEmpty else { return }
@@ -211,7 +211,7 @@ public final class NotificationManager: NSObject {
         center.removeAllDeliveredNotifications()
     }
 
-    // MARK: Beamable analytics auth + offer funnel (§4.7)
+    // MARK: Beamable analytics auth + offer funnel
 
     /// Persist the player bearer token + realm routing for native funnel POSTs. The engine
     /// SDK calls this on login/refresh; `clearAuth()` on logout.
@@ -238,13 +238,13 @@ public final class NotificationManager: NSObject {
         SharedConfig.shared.clearAuthConfig()
     }
 
-    /// Emit a **Clicked** funnel event for an in-app offer click (§4.7), attributed to the
+    /// Emit a **Clicked** funnel event for an in-app offer click, attributed to the
     /// originating campaign.
     public func trackOfferClicked(_ request: OfferTrackRequest) {
         emitOfferFunnel(.clicked, request: request)
     }
 
-    /// Emit a **Converted** funnel event when an offer click results in a conversion (§4.7).
+    /// Emit a **Converted** funnel event when an offer click results in a conversion.
     public func trackOfferConverted(_ request: OfferTrackRequest) {
         emitOfferFunnel(.converted, request: request)
     }
@@ -411,7 +411,7 @@ extension NotificationData {
         var info: [String: JSONValue] = [:]
         for (k, v) in content.userInfo { info["\(k)"] = JSONValue(any: v) }
         let deepLink = info.bmnDeepLink
-        // Lift the campaign intent-data schema (§3.3) so engines get the full context, not
+        // Lift the campaign intent-data schema so engines get the full context, not
         // just the deep link. Parsing here means cold-start launch payloads carry it too.
         let intent = info.bmnCampaignIntent
         self.init(

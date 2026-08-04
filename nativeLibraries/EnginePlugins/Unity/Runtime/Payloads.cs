@@ -41,7 +41,7 @@ namespace Beamable.Notifications
     // JsonSaveStream already omits Nullable<T> fields with no value, so primitives behave the same.
     //
     // The JSON field names below MUST match the native bridge verbatim (iOS C ABI + Android
-    // UnityNotifications facade depend on them) and the shared §3.3 intent-data contract.
+    // UnityNotifications facade depend on them) and the shared intent-data contract.
 
     /// <summary>
     /// Player auth credentials pushed to the native layers so the closed-app campaign funnel can
@@ -399,7 +399,7 @@ namespace Beamable.Notifications
     }
 
     /// <summary>
-    /// A single offer carried by a campaign notification (§3.3 <c>offers[]</c>). <c>CustomData</c>
+    /// A single offer carried by a campaign notification (<c>offers[]</c>). <c>CustomData</c>
     /// is free-form (the spec's generic <c>T</c>): it travels as an opaque JSON object and is only
     /// typed at the SDK layer. <c>Value</c> is <c>string|number</c> on the wire (matches Android
     /// <c>NotificationOffer.rawValue</c>), so it is held as an <c>object</c> (a boxed string,
@@ -435,12 +435,12 @@ namespace Beamable.Notifications
     }
 
     /// <summary>
-    /// The canonical notification intent-data schema (§3.3), as parsed out of a notification's
+    /// The canonical notification intent-data schema, as parsed out of a notification's
     /// <c>userInfo</c>. Scalar fields are plain strings; <c>Offers</c> and <c>CampaignData</c> arrive
     /// stringified on the wire (Decision Q3) and are parsed into typed objects here — this is the
     /// "typed at the engine/SDK layer" generic boundary. Field names match the shared iOS/Android
     /// contract verbatim. A notification is only part of a tracked campaign when both
-    /// <c>CampaignId</c> and <c>NodeId</c> are present (§4.2).
+    /// <c>CampaignId</c> and <c>NodeId</c> are present.
     /// </summary>
     public class NotificationIntentData : JsonSerializable.ISerializable
     {
@@ -460,7 +460,7 @@ namespace Beamable.Notifications
         /// </summary>
         public string OutreachId;
 
-        /// <summary>True when this notification belongs to a tracked campaign (§4.2).</summary>
+        /// <summary>True when this notification belongs to a tracked campaign.</summary>
         public bool IsTrackedCampaign =>
             !string.IsNullOrEmpty(CampaignId) && !string.IsNullOrEmpty(NodeId);
 
@@ -493,7 +493,7 @@ namespace Beamable.Notifications
         }
 
         /// <summary>
-        /// Parse the §3.3 intent-data schema out of a notification's free-form <c>userInfo</c>.
+        /// Parse the intent-data schema out of a notification's free-form <c>userInfo</c>.
         /// Scalars are read directly; <c>offers</c>/<c>campaignData</c> are accepted both as
         /// JSON-encoded strings (the canonical wire form per Decision Q3) and — defensively — as
         /// already-decoded objects, since locally-scheduled notifications may carry real nested values.
@@ -619,9 +619,9 @@ namespace Beamable.Notifications
         }
 
         /// <summary>
-        /// The §3.3 campaign intent-data view of this notification, parsed from <see cref="UserInfo"/>
+        /// The campaign intent-data view of this notification, parsed from <see cref="UserInfo"/>
         /// (additive — does not alter the existing wire shape). Use this to attribute in-app
-        /// offer clicks/conversions back to the originating campaign (§4.7). Falls back to
+        /// offer clicks/conversions back to the originating campaign. Falls back to
         /// <see cref="DeepLink"/> when <c>userInfo</c> carries no deeplink key.
         /// </summary>
         public NotificationIntentData CampaignIntent

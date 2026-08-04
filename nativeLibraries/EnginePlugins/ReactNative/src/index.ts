@@ -13,7 +13,7 @@
  *              `BeamableDeeplink` (com.beamable.deeplink.react.ReactDeepLinkModule),
  *              aggregated by com.beamable.reactnative.BeamableNotificationsPackage.
  *
- * §3.1 NAME PARITY — the public/bridge-facing event vocabulary is unified here at the TS
+ * NAME PARITY — the public/bridge-facing event vocabulary is unified here at the TS
  * layer (native @ReactMethod / RCT_EXTERN_METHOD / @objc names are left unchanged — they are
  * an ABI). Canonical event names exposed to JS:
  *   - `notificationPresented` — foreground delivery.
@@ -114,7 +114,7 @@ function asObject(json: unknown): Record<string, unknown> {
   return {};
 }
 
-/** Un-stringify a §3.3 nested field (offers/campaignData arrive as JSON strings). */
+/** Un-stringify a nested field (offers/campaignData arrive as JSON strings). */
 function parseNested<T>(value: unknown): T | undefined {
   if (value == null) return undefined;
   if (typeof value === 'string') {
@@ -271,7 +271,7 @@ export function addListener<K extends keyof EventMap>(
       // `notificationReceived` as genuinely distinct native events. Android has a SINGLE
       // native foreground event (`onMessageForeground`), so we bind it to exactly ONE
       // unified event — the canonical `notificationPresented` — to keep parity with the
-      // cross-platform name chosen in §3.1.
+      // cross-platform name chosen.
       return on('onMessageForeground', (json: string) =>
         toNotificationData(json),
       );
@@ -391,7 +391,7 @@ function awaitEvent<K extends keyof EventMap>(
 }
 
 // ---------------------------------------------------------------------------
-// Offer tracking (§4.7) — unified TS API over the two native bridge shapes.
+// Offer tracking — unified TS API over the two native bridge shapes.
 //
 // iOS native takes ONE OfferTrackRequest JSON (campaign fields + the single offer
 // flattened together). Android native takes TWO JSON strings: the notification's
@@ -783,7 +783,7 @@ export const BeamableNotifications = {
   },
 
   /**
-   * §4.7 — record that the user clicked an offer from a campaign in-app, attributed to the
+   * Record that the user clicked an offer from a campaign in-app, attributed to the
    * originating notification's intent data. Emits a `Clicked` funnel event natively.
    */
   trackOfferClicked(
@@ -793,7 +793,7 @@ export const BeamableNotifications = {
     if (!isBeamableNotificationsSupported) return;
     trackOffer('clicked', intent, offer);
   },
-  /** §4.7 — record that an offer click converted. Emits a `Converted` funnel event. */
+  /** Record that an offer click converted. Emits a `Converted` funnel event. */
   trackOfferConverted(
     intent: NotificationIntentData,
     offer?: NotificationOffer,
@@ -869,7 +869,7 @@ export default BeamableNotifications;
 export const BeamNotifications = BeamableNotifications;
 
 // ---------------------------------------------------------------------------
-// Generic, app-agnostic extras (relocated from the RN sample, §6).
+// Generic, app-agnostic extras (relocated from the RN sample,).
 // ---------------------------------------------------------------------------
 //
 // NOTE: AsyncStorage-backed token storage for the Beamable Web SDK is now built

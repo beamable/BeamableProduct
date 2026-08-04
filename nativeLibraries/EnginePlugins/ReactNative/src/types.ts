@@ -112,7 +112,7 @@ export interface PermissionResult {
 }
 
 // ---------------------------------------------------------------------------
-// §3.3 — Notification Intent Data schema (shared by Android, iOS and the engines).
+// Notification Intent Data schema (shared by Android, iOS and the engines).
 // Free-form fields (`offers[].customData`, `campaignData`) are typed `T` only at this
 // layer; on the wire they travel stringified inside a flat string→string map (Decision Q3).
 // ---------------------------------------------------------------------------
@@ -147,7 +147,7 @@ export interface NotificationData {
   deeplink?: string;
   actionId?: string;
   wasLaunch?: boolean;
-  // §3.3 campaign intent-data (all optional; present only for tracked campaigns).
+  // Campaign intent-data (all optional; present only for tracked campaigns).
   campaignId?: string;
   nodeId?: string;
   gamerTag?: string;
@@ -172,7 +172,7 @@ export interface DeepLinkEvent {
 }
 
 // ---------------------------------------------------------------------------
-// Events — unified vocabulary (§3.1).
+// Events — unified vocabulary.
 // ---------------------------------------------------------------------------
 
 export type EventMap = {
@@ -298,7 +298,7 @@ export interface BeamNotificationsState {
 }
 
 // ---------------------------------------------------------------------------
-// Web transport (§ web build). The web build routes façade calls to a native host over a
+// Web transport (web build). The web build routes façade calls to a native host over a
 // transport. The default transport is the bundled gree/unity-webview bridge; consumers on a
 // different host can supply their own via `BeamNotifications.setWebTransport(...)`.
 // ---------------------------------------------------------------------------

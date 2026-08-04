@@ -13,7 +13,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 /**
- * Covers the CoreEvent JSON builder (§4.6): op/category/eventName shape, params, and the
+ * Covers the CoreEvent JSON builder: op/category/eventName shape, params, and the
  * single-column `offerData` JSON-array + `campaignData` emission rules.
  */
 @RunWith(RobolectricTestRunner::class)

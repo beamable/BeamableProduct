@@ -56,7 +56,7 @@ class PushFirebaseService : FirebaseMessagingService() {
     }
 
     /**
-     * Builds the receive event, fires the native **Received** funnel event (§4.5), then dispatches
+     * Builds the receive event, fires the native **Received** funnel event, then dispatches
      * to EVERY registered handler with each handler's failure isolated. Never throws out.
      */
     private fun invokeNotificationReceived(
@@ -110,7 +110,7 @@ class PushFirebaseService : FirebaseMessagingService() {
         val deepLink = data["deeplink"]
 
         // Carry every data entry forward so the engine can read it on tap. Styling fields
-        // (§3.3) drive the built-in presets in NotificationBuilder; badge is orthogonal.
+        //  drive the built-in presets in NotificationBuilder; badge is orthogonal.
         // Custom styles (not built into the lib) are handled earlier by a PushNotificationStyleRenderer;
         // if none consumed the message, an unknown style falls back to the default notification here.
         val template = NotificationTemplate(

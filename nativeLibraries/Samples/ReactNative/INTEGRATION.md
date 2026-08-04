@@ -124,6 +124,16 @@ player-facing endpoints — **delivery** is driven from the **Portal Campaign Bu
 | `UnregisterDeviceToken(token)` | `[ClientCallable]` | remove a token (e.g. on logout) |
 | `ListMyDevices()` | `[ClientCallable]` | list the caller's devices (tokens masked) |
 
+The operator/admin side of the same service — what the Portal calls, not the app:
+
+| Endpoint | Purpose |
+|---|---|
+| `ListRegisteredPlayers()` | the registered-device roster: every player with a device, their device count, push platforms, game platform/device, and last-updated |
+| `SendCampaignPushToPlayer(playerId, request)` | fan a `PushCampaignRequest` (title / body / deep link, plus optional campaign coordinates, offers, and `campaignData`) out to one player's devices, returning a per-player result |
+
+> The app never calls these two. They exist for a Portal surface driving delivery directly; production
+> campaign sends go through the campaign runtime and the `push` message rail instead.
+
 **Generate & register the typed client.** A microservice client is generated from the
 service (the Beam CLI emits it) and registered with `beam.use(...)`. In this sample the
 generated client lives at `src/beam/beamable/clients/CampaignServiceClient.ts` and

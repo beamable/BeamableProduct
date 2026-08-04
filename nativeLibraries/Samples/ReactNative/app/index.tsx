@@ -72,7 +72,7 @@ export default function Home() {
   const eventCounter = useRef(0);
   // Live Activity push-token forwarding subscription (started on connect; iOS 17.2+ device only).
   const liveActivitySubRef = useRef<{ remove: () => void } | null>(null);
-  // §4 funnel coordinates. Editable by the user; auto-filled from the campaign push that
+  // Funnel coordinates. Editable by the user; auto-filled from the campaign push that
   // opened (or was tapped in) the app — see `applyCampaignCoords`.
   const [campaignId, setCampaignId] = useState('');
   const [nodeId, setNodeId] = useState('');
@@ -106,7 +106,7 @@ export default function Home() {
       ].slice(0, 40),
     );
 
-  // Override the §4 funnel coordinates from a notification that carries them. Notifications
+  // Override the funnel coordinates from a notification that carries them. Notifications
   // without campaignId/nodeId (e.g. the local test notifications) leave the user's typed
   // values untouched.
   const applyCampaignCoords = (n: NotificationData) => {
@@ -155,7 +155,7 @@ export default function Home() {
   // App already running: a tapped campaign push replaces the funnel coordinates.
   BeamNotificationEvent('notificationOpened', (n) => applyCampaignCoords(n));
 
-  // Cold start: if the app was launched by tapping a campaign push, seed §4's funnel
+  // Cold start: if the app was launched by tapping a campaign push, seed the funnel
   // coordinates from its payload. `BeamLaunchNotification` resolves the cached launch payload
   // (also consumed for routing in app/_layout.tsx), so reading it here has no side effect.
   const launch = BeamLaunchNotification();

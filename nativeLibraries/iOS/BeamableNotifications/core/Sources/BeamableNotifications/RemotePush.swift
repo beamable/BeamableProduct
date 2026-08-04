@@ -70,7 +70,7 @@ public final class RemotePush: NSObject {
         let id = obj["bmnId"]?.stringValue
             ?? obj["aps"]?["thread-id"]?.stringValue
             ?? UUID().uuidString
-        // Lift the campaign intent-data (§3.3) so a silent push that's part of a tracked
+        // Lift the campaign intent-data so a silent push that's part of a tracked
         // campaign still surfaces the full schema (and can fire the Received funnel event).
         let intent = obj.bmnCampaignIntent
         let data = NotificationData(

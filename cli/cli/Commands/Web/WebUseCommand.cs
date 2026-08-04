@@ -44,7 +44,7 @@ public class WebUseCommandResults
 /// </para>
 /// <para>
 /// It edits TRACKED files. That is inherent to the incrementing-version model — the pin has to name the
-/// new build — but it must not be committed; see WEB_LOCAL_DEV.md for the revert step.
+/// new build — but it must not be committed; see web/LOCAL_DEV.md for the revert step.
 /// </para>
 /// </summary>
 public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResults>, IStandaloneCommand, ISkipManifest

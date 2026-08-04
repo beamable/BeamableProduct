@@ -102,7 +102,7 @@ public func bmn_getDeliveryReceipts() {
     NotificationManager.shared.emitDeliveryReceipts()
 }
 
-// MARK: - Beamable funnel analytics auth + offer helpers (§4)
+// MARK: - Beamable funnel analytics auth + offer helpers
 
 /// Persist the player bearer token + realm routing (AuthConfig JSON) into the App Group so
 /// native funnel POSTs can authenticate even with the engine VM dead. Call on login/refresh.
@@ -118,7 +118,7 @@ public func bmn_clearAuth() {
     NotificationManager.shared.clearAuth()
 }
 
-/// Emit a **Clicked** funnel event for an in-app offer click (§4.7). Arg is an
+/// Emit a **Clicked** funnel event for an in-app offer click. Arg is an
 /// `OfferTrackRequest` JSON carrying the campaign context + the clicked offer.
 @_cdecl("bmn_trackOfferClicked")
 public func bmn_trackOfferClicked(_ requestJson: UnsafePointer<CChar>?) {
@@ -126,7 +126,7 @@ public func bmn_trackOfferClicked(_ requestJson: UnsafePointer<CChar>?) {
     NotificationManager.shared.trackOfferClicked(request)
 }
 
-/// Emit a **Converted** funnel event when an offer click converts (§4.7).
+/// Emit a **Converted** funnel event when an offer click converts.
 @_cdecl("bmn_trackOfferConverted")
 public func bmn_trackOfferConverted(_ requestJson: UnsafePointer<CChar>?) {
     guard let request = JSON.decode(OfferTrackRequest.self, from: cString(requestJson)) else { return }

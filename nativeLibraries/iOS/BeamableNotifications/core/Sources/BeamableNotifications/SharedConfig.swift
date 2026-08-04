@@ -17,7 +17,7 @@ public final class SharedConfig {
     private static let pendingFunnelKey = "bmn.pendingFunnelEvents"
     /// Cap so a long offline streak can't grow the store unbounded.
     private static let maxReceipts = 200
-    /// Cap on persisted-for-replay funnel events (NSE fallback path, §4.3).
+    /// Cap on persisted-for-replay funnel events (NSE fallback path,).
     private static let maxPendingFunnel = 200
     private static let synthesizedCategoriesKey = "bmn.synthesizedCategories"
     /// Cap on payload-synthesized categories re-seeded at app launch (mirrors `CategoryStore`'s cap).
@@ -38,7 +38,7 @@ public final class SharedConfig {
 
     public var isAvailable: Bool { defaults != nil }
 
-    // MARK: Auth config (§4.3) — player bearer token + realm routing for the funnel POST.
+    // MARK: Auth config — player bearer token + realm routing for the funnel POST.
 
     public func saveAuthConfig(_ config: AuthConfig) {
         guard let defaults = defaults,
@@ -74,7 +74,7 @@ public final class SharedConfig {
         defaults?.removeObject(forKey: Self.authKey)
     }
 
-    // MARK: Pending funnel events (§4.3 NSE fallback / persist-and-replay)
+    // MARK: Pending funnel events (NSE fallback / persist-and-replay)
 
     /// Append a funnel event to be flushed (authenticated) on next app open. Used when a
     /// closed-app POST can't complete inside the NSE's ~30s budget.

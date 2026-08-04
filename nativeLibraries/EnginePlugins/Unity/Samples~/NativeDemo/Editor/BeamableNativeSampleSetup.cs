@@ -9,7 +9,7 @@ using UnityEngine;
 /// straight into the test harness. The scene ships with the sample (no generation); this only
 /// configures the project. Idempotent.
 ///
-/// Decision Q8 / §5.2: this no longer auto-wires a Discord-webhook receive handler. Receive-time
+/// Decision Q8: this no longer auto-wires a Discord-webhook receive handler. Receive-time
 /// analytics moved native; if you want a custom receive handler, generate the sample
 /// PushNotificationReceivedHandler from the Beamable Notifications window and wire it yourself.
 /// </summary>

@@ -173,7 +173,7 @@ namespace Beamable.Notifications
 #endif
         }
 
-        // MARK: Auth credentials (§4 closed-app campaign funnel)
+        // MARK: Auth credentials (closed-app campaign funnel)
 
         /// <summary>
         /// Push the player's auth credentials to the native layer so the native push/campaign
@@ -321,18 +321,18 @@ namespace Beamable.Notifications
 #endif
         }
 
-        // MARK: Offer / conversion analytics helpers (§4.7)
+        // MARK: Offer / conversion analytics helpers
 
-        /// <summary>Funnel stage names matching the §4.6 shared contract.</summary>
+        /// <summary>Funnel stage names matching the shared contract.</summary>
         private const string FunnelCategory = "notification_funnel";
 
         /// <summary>
-        /// Record that the player clicked an offer that came from a campaign notification (§4.7).
+        /// Record that the player clicked an offer that came from a campaign notification.
         /// Emits a <c>Clicked</c> funnel <see cref="CoreEvent"/> via the player's Beamable
         /// analytics service. <paramref name="campaign"/> carries the context that arrived in the
         /// notification's intent data (see <see cref="NotificationData.CampaignIntent"/>) so the
         /// conversion attributes back to the originating notification. No-op when the campaign is
-        /// not tracked (missing campaignId/nodeId, §4.2).
+        /// not tracked (missing campaignId/nodeId,).
         /// </summary>
         /// <param name="campaign">The campaign intent data the notification carried.</param>
         /// <param name="offer">The single offer that was clicked (optional).</param>
@@ -340,7 +340,7 @@ namespace Beamable.Notifications
             TrackOfferFunnel("Clicked", campaign, offer);
 
         /// <summary>
-        /// Record that an offer click resulted in a conversion (§4.7). Emits a <c>Converted</c>
+        /// Record that an offer click resulted in a conversion. Emits a <c>Converted</c>
         /// funnel <see cref="CoreEvent"/>. See <see cref="TrackOfferClicked"/> for attribution rules.
         /// </summary>
         public static void TrackOfferConverted(NotificationIntentData campaign, Offer offer = null) =>
@@ -360,7 +360,7 @@ namespace Beamable.Notifications
         private static NotificationIntentData BuildIntent(string campaignId, string nodeId) =>
             new NotificationIntentData { CampaignId = campaignId, NodeId = nodeId };
 
-        // Builds the §4.6 funnel CoreEvent and sends it through the player's analytics service.
+        // Builds the funnel CoreEvent and sends it through the player's analytics service.
         private static void TrackOfferFunnel(string funnelType, NotificationIntentData campaign, Offer offer)
         {
             if (campaign == null || !campaign.IsTrackedCampaign)
@@ -370,7 +370,7 @@ namespace Beamable.Notifications
                 return;
             }
 
-            // Single offer relevant to this event (§4.6): the explicit one, else the first carried.
+            // Single offer relevant to this event: the explicit one, else the first carried.
             Offer effectiveOffer = offer;
             if (effectiveOffer == null && campaign.Offers != null && campaign.Offers.Count > 0)
                 effectiveOffer = campaign.Offers[0];

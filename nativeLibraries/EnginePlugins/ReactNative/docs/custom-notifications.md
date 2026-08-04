@@ -1,19 +1,23 @@
 # Custom Notifications & Live Activities (React Native)
 
 How to add your own notification styles to the Beamable React Native SDK and drive them from the
-Push console (the `player-engagement/push` portal extension) — from zero. Covers both **Android** and
+Push console (the `player-engagement/push-message-rail` portal extension) — from zero. Covers both **Android** and
 **iOS**, the **portal + realm setup** (secrets, per-style fields), and **iOS Live Activities**
 (the always-visible Lock-Screen / Dynamic-Island cards), including what happens when a device can't
 show a Live Activity and how to control that from the portal.
 
 The RN sample at `nativeLibraries/Samples/ReactNative` is the worked reference for everything here.
 
-Deeper platform-specific detail lives in the shared guides — this doc is the RN-focused map that
-ties them together:
-- Android renderers: [`docs/custom-notifications-android.md`](../../../docs/custom-notifications-android.md)
-- iOS NSE / Content Extension: [`docs/custom-notifications-ios.md`](../../../docs/custom-notifications-ios.md)
-- Cross-engine style guide: [`docs/custom-notification-styles-guide.md`](../../../docs/custom-notification-styles-guide.md)
-- APNs / FCM realm setup: [`iOS/BeamableNotifications/docs/apns-setup.md`](../../../iOS/BeamableNotifications/docs/apns-setup.md)
+This doc is the **RN-focused map**. The platform-neutral material — the wire contract, push-console
+authoring, the Android renderer hook and the iOS NSE/Content-Extension seams, artifact rebuild — lives
+in the shared guide, and is not repeated here:
+- *Push notifications for React Native* in the Beamable documentation — the published guide, which
+  covers the wire contract, push-console authoring, both renderer seams, APNs/FCM realm setup, and the
+  end-to-end walkthrough
+
+What's **only** here: the mental model for choosing between a custom notification and a Live Activity
+(§0), the RN-specific renderer gotchas (§2), `app.json` wiring (§4), **Live Activities** end to end
+(§5), and the unsupported-device fallback (§6).
 
 ---
 
@@ -30,9 +34,10 @@ There are **two delivery mechanisms**, and picking the right one is the first de
 | Buttons | Android: always; iOS: only when expanded (OS rule) | Interactive App Intent buttons, always visible |
 | Examples in the sample | `countdown`, `animated` (Android), `countdown` (iOS expand) | `liveActivityActions`, `liveActivityAnimated`, plus the countdown Live Activity |
 
-Everything is **data-driven from one wire contract**: the push rail (`services/PushRailService`) puts
-your authored fields into the APNs `userInfo` / FCM `data` map under the **exact key names you choose
-in the portal**, and native reads whatever keys it understands. **The single most important rule:**
+Everything is **data-driven from one wire contract**: the push rail (`services/PushMessageRailService`)
+puts your authored fields into the APNs `userInfo` / FCM `data` map under the **exact key names you
+choose in the portal**, and native reads whatever keys it understands. **The single most important
+rule:**
 
 > **The portal field `id` IS the wire key. It must match the key the native renderer reads, byte for
 > byte.** A typo means the field silently never reaches the renderer.
@@ -63,7 +68,7 @@ Verify provisioning without leaking secrets: the rail exposes a `CheckPushConfig
 reports whether each provider's secrets are present and parse.
 
 Full Apple Developer setup (App ID + Push capability, the `.p8` key, provisioning) is in
-[`apns-setup.md`](../../../iOS/BeamableNotifications/docs/apns-setup.md).
+the *Push notifications for React Native* guide in the Beamable documentation.
 
 ---
 
@@ -73,49 +78,31 @@ A custom style is: **(a)** a native renderer for that `style` id on each platfor
 style + its fields authored in the Push console so an operator can send it. The RN sample already ships
 `countdown` and `animated` as the reference.
 
-### 2.1 Android renderer (Kotlin)
+The renderer APIs themselves are documented once, for all engines, in the shared guide: the Android
+`PushNotificationStyleRenderer` hook in
+the *custom styles for Android* section,
+and the two iOS seams (NSE service plugin, Content Extension renderer) in
+the *custom styles for iOS* section. The sample's
+implementations are `plugins/android/SampleNotificationStyleRenderer.kt`,
+`plugins/ios/SampleStyleServicePlugin.swift`, and `plugins/ios/SampleCountdownContentRenderer.swift`.
 
-The shared library renders `default` / `bigPicture` / `bigText` / `actions`. Anything else is your
-app's own via the `PushNotificationStyleRenderer` hook. In the sample:
-`Samples/ReactNative/plugins/android/SampleNotificationStyleRenderer.kt`.
+What's RN-specific:
 
-- Implement `render(context, event): Boolean` — switch on `data.optString("style")`; return `true` if
-  you handled it, `false` to fall through to the shared library.
-- Read your fields directly off the FCM `data` map by their key names (e.g. `colors`,
-  `flipIntervalMs`, `expiresInSeconds`). These keys must match the portal field ids.
-- It runs on FCM's background thread with **no JS runtime**, so it must be native Kotlin. The Expo
-  config plugin `plugins/withSampleNotificationStyles.js` copies it into the generated Android project
-  on every prebuild and rewrites its `package`.
-- Register it via the AndroidManifest meta-data `com.beamable.push.notification_style_renderer`
-  (the sample's config plugin does this for you).
+### 2.1 The renderers are copied in on every prebuild
 
-See [`custom-notifications-android.md`](../../../docs/custom-notifications-android.md) for the full API.
+`expo prebuild` regenerates the native projects, so nothing you add by hand survives. Android renderers
+are copied and manifest-registered by the app-owned config plugin
+`plugins/withSampleNotificationStyles.js` (which also rewrites the Kotlin `package` line); iOS plugins
+and renderers are copied into the extension targets by the Beamable plugin from your `app.json` props
+(§4). Class discovery is by name from the extension `Info.plist` arrays (`BMNServicePlugins`,
+`BMNContentRenderers`) plus `UNNotificationExtensionCategory` — the plugin writes all three from those
+props, which is why the Swift classes need `@objc(ClassName)`.
 
-### 2.2 iOS renderer
+### 2.2 iOS gotchas baked into the plugin
 
-iOS has **two seams**, both delivered through the app's extensions and gated on `aps.mutable-content:1`
-(the rail always sets it):
-
-1. **Transform-only — an NSE service plugin.** Runs in the Notification Service Extension before the
-   banner shows. Use it to mutate content (attach an image, set a category). The sample's
-   `plugins/ios/SampleStyleServicePlugin.swift` maps `style == "countdown"` →
-   `categoryIdentifier = "countdown"` so the Content Extension fires. The shared
-   `RichMediaServicePlugin` implements `bigPicture` by downloading `imageUrl` and attaching it.
-2. **Fully-custom UI — a Content Extension renderer.** Draws a custom view in the **expanded**
-   notification (long-press) only — a `UNNotificationContentExtension` can never draw the collapsed
-   banner (hard iOS rule). The sample's `plugins/ios/SampleCountdownContentRenderer.swift` draws the
-   ticking countdown.
-
-Both are wired through the Beamable Expo plugin props in `app.json` (see §4). Discovery is by class
-name listed in the extension `Info.plist` arrays (`BMNServicePlugins`, `BMNContentRenderers`) and the
-`UNNotificationExtensionCategory` list — the plugin writes these from your props.
-
-> **iOS gotchas baked into the plugin now:** the Content Extension target links
-> `UserNotificationsUI` (without it the extension crashes blank), and — for local/HTTP image hosts —
-> the NSE target gets an ATS exception when `APP_VARIANT=local` (the extension has its own ATS and does
-> not inherit the app's). Public HTTPS images always work.
-
-See [`custom-notifications-ios.md`](../../../docs/custom-notifications-ios.md) for the plugin protocols.
+- The Content Extension target links `UserNotificationsUI` — without it the extension crashes blank.
+- For local/HTTP image hosts the NSE target gets an ATS exception when `APP_VARIANT=local`; the
+  extension has its own ATS and does **not** inherit the app's. Public HTTPS images always work.
 
 ### 2.3 Wire type matters (a real bug we hit)
 
@@ -130,28 +117,20 @@ func number(_ key: String) -> Double? {
 
 ---
 
-## 3. Author the style + fields in the Push console (from zero)
+## 3. Author the style + fields in the Push console
 
-Open the **Push Notifications** extension → **Manage styles & fields**. Styles and fields are data.
+Authoring styles and fields is engine-independent — see the shared guide
+the *Push console* section for the modal,
+the field types, and the Mongo alternative. Two things worth repeating because they cause most of the
+lost time here:
 
-1. **Define the fields** your style needs. A `FieldDefinition.id` is the wire key, so name it exactly
-   what the native renderer reads (`imageUrl`, `colors`, `flipIntervalMs`, `expiresInSeconds`, …).
-   Types: `text`, `number`, `color`, `boolean`, `select`, `stringList` (comma/newline → `string[]`),
-   `buttonList` (one `id|title|role` per line → objects).
-2. **Define the style** — its `id` is the wire `style` value (`countdown`, `animated`, …) — and list
-   the `fieldIds` it exposes.
-3. `title` + `body` are built-in and always sent.
+**Field-matching is the #1 failure mode.** A `FieldDefinition.id` *is* the wire key, so it must match
+what your renderer reads (`colors`, `flipIntervalMs`, `expiresInSeconds`, …) byte for byte. No shared
+contract module enforces this, so the ids are your responsibility on both sides. The console's
+custom-style callout lists the exact field ids it will send — cross-check them against your renderer.
 
-The built-ins (`default`, `bigPicture`, `bigText`, `actions`) ship in code and can't be edited. Custom
-styles are persisted to Micro storage.
-
-**Field-matching is the #1 failure mode.** The console shows a **native-vs-custom callout**: built-in
-styles are marked native (they render out of the box); a custom style shows a warning listing the exact
-field ids it will send — cross-check those against your renderer. There is no shared contract module
-enforcing this yet, so the field ids are your responsibility on both sides.
-
-The **Payload preview** panel shows the exact `extraDataFed` JSON that will be sent — use it to confirm
-`style` and every field key/value before sending.
+**Use the Payload preview.** It shows the exact `extraDataFed` JSON that will be sent; confirm `style`
+and every field key/value there before sending.
 
 ---
 
@@ -262,7 +241,7 @@ on Android, on iOS < 17.2, or their app never minted/registered one. The Live Ac
 - **`skip`** — the rail delivers **nothing** to unsupported recipients. They're reported with a benign,
   non-retriable `skipped` status (not an error).
 
-Mechanics (in `PushRailService.DeliverLiveActivity`): a `start` with no push-to-start token and
+Mechanics (in `PushMessageRailService.DeliverLiveActivity`): a `start` with no push-to-start token and
 `fallback = default` falls through to the normal APNs/FCM delivery path; `skip` records the skip;
 anything else (absent / `none`) reports a terminal `unknown` "no token" error. `update`/`end` never
 fall back to a notification (there's nothing running to represent) — a missing token there is skipped or
@@ -309,6 +288,6 @@ The console's per-recipient Activity Log shows `sent` vs the terminal statuses
 | Expo config plugin (targets, ATS, frameworks) | `EnginePlugins/ReactNative/plugin/withBeamableNotifications.js` |
 | JS API (LA start/registration) | `EnginePlugins/ReactNative/src/index.ts` |
 | Sample LA token forwarding | `Samples/ReactNative/src/beam/liveActivity.ts` |
-| Rail: payload build + routing + fallback | `agentic-portal/services/PushRailService/{ApnsProvider,PushRailService}.cs` |
-| Portal: styles/fields/LA meta | `agentic-portal/extensions/hubs/player-engagement/push/src/notificationConfig.ts` |
-| Portal: compose UI + payload assembly | `agentic-portal/extensions/hubs/player-engagement/push/src/App.tsx` |
+| Rail: payload build + routing + fallback | `agentic-portal/services/PushMessageRailService/{ApnsProvider,PushMessageRailService}.cs` |
+| Portal: styles/fields/LA meta | `agentic-portal/extensions/hubs/player-engagement/push-message-rail/src/notificationConfig.ts` |
+| Portal: compose UI + payload assembly | `agentic-portal/extensions/hubs/player-engagement/push-message-rail/src/App.tsx` |

@@ -188,7 +188,7 @@ final class BeamableNotificationsModule: RCTEventEmitter {
         }
     }
 
-    // MARK: Offer / conversion funnel (feature §4.7)
+    // MARK: Offer / conversion funnel
     // New bridge methods (additive) — the core already exposes the API via the C ABI
     // (bmn_trackOfferClicked / bmn_trackOfferConverted) and NotificationManager; here we
     // surface it to React Native. The JS arg is an `OfferTrackRequest` JSON string

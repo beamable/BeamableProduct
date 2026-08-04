@@ -142,7 +142,7 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(config.loadAuthConfig()?.accessTokenExpiresAt, 9_000_000)
     }
 
-    // MARK: Campaign intent-data schema (§3.3)
+    // MARK: Campaign intent-data schema
 
     func testCampaignIntentParsesStringifiedOffersAndCampaignData() {
         let offersJSON = #"[{"itemId":"gold_pack","value":"5","customData":{"tier":"gold"}}]"#
@@ -188,7 +188,7 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(JSON.decode(NotificationData.self, from: json), note)
     }
 
-    // MARK: Beamable funnel CoreEvent (§4.6)
+    // MARK: Beamable funnel CoreEvent
 
     func testCoreEventShapeMatchesContract() {
         let event = FunnelEvent(funnelType: FunnelType.received.rawValue,

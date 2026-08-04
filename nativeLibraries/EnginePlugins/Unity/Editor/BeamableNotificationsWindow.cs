@@ -3,11 +3,11 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Richer single setup/validation window for the Beamable Notifications package (§5.4). Supersedes
+/// Richer single setup/validation window for the Beamable Notifications package. Supersedes
 /// the old Android-only BeamableAndroidSetupWindow. Menu: Tools/Beamable/Notifications.
 ///
 /// Sections:
-///  1. Deeplink / intent-data schema setup and change (§3.3, §3.4).
+///  1. Deeplink / intent-data schema setup and change.
 ///  2. Validation + "Run Setup (All)" plus per-item run buttons, covering Android and iOS
 ///     post-build setup (wraps BeamableAndroidSetup.Validate()/the per-step API).
 ///  3. Push-received handler SAMPLE generation (generate + open; no auto-wire — Decision Q8).
@@ -17,7 +17,7 @@ public class BeamableNotificationsWindow : EditorWindow
 {
     private const string SchemePrefKey = "Beamable.Notifications.DeepLinkScheme";
 
-    // The canonical §3.3 intent-data schema fields, shown read-only as a contract reference.
+    // The canonical intent-data schema fields, shown read-only as a contract reference.
     private static readonly string[] IntentSchemaFields =
     {
         "campaignId  (string)   — campaign identifier (enables funnel tracking with nodeId)",
@@ -113,7 +113,7 @@ public class BeamableNotificationsWindow : EditorWindow
                 "follow-up.", MessageType.Info);
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Notification intent-data schema (§3.3) — shared contract",
+            EditorGUILayout.LabelField("Notification intent-data schema — shared contract",
                 EditorStyles.boldLabel);
             EditorGUILayout.LabelField(
                 "Carried in the FCM data / APNs userInfo payload; parsed into NotificationData.CampaignIntent.",

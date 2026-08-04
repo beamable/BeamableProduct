@@ -31,7 +31,7 @@ public static class BeamableAndroidSetup
     public const string DeepLinkScheme = "beamable";
     public const int RequiredMinSdk = 24;
 
-    // Receive-time handler wiring is NO LONGER auto-applied (Decision Q8 / §5.2): receive-time
+    // Receive-time handler wiring is NO LONGER auto-applied (Decision Q8): receive-time
     // analytics moved native, so the package no longer owns/scaffolds a push-received handler.
     // The editor window can GENERATE a sample handler file for the user to customize; wiring its
     // <meta-data> into the manifest is then an explicit, opt-in action (pass handlerClass to
@@ -139,7 +139,7 @@ public static class BeamableAndroidSetup
     /// Applies the settings the tool can fix automatically. Returns what changed.
     /// <paramref name="handlerClass"/> is an OPT-IN: when given, wires the receive-time handler
     /// meta-data to that class; when null (the default) no receive handler is wired or scaffolded
-    /// (Decision Q8 / §5.2) and any existing handler value is left untouched.
+    /// (Decision Q8) and any existing handler value is left untouched.
     /// </summary>
     public static List<string> ApplySettings(string handlerClass = null)
     {
@@ -187,7 +187,7 @@ public static class BeamableAndroidSetup
         return changes;
     }
 
-    // ---- Individually-runnable setup steps (§5.4) ---------------------------
+    // ---- Individually-runnable setup steps ---------------------------
 
     /// <summary>A single, named, individually-runnable setup step for the editor window.</summary>
     public class SetupStep
@@ -205,7 +205,7 @@ public static class BeamableAndroidSetup
     }
 
     /// <summary>
-    /// The post-build setup decomposed into individually-runnable items (§5.4), covering BOTH
+    /// The post-build setup decomposed into individually-runnable items, covering BOTH
     /// Android and iOS. Each step wraps a slice of <see cref="ApplySettings"/> so the window can run
     /// them one at a time or all together ("Run Setup (All)"). iOS steps are advisory here: the
     /// heavy iOS Xcode wiring runs automatically in the post-build processor (NotificationsPostProcess).
@@ -291,7 +291,7 @@ public static class BeamableAndroidSetup
         return changes;
     }
 
-    // ---- Push-received handler SAMPLE generation (§5.2 / §5.4) --------------
+    // ---- Push-received handler SAMPLE generation --------------
 
     /// <summary>
     /// Generates a SAMPLE Android <c>PushNotificationReceivedHandler</c> Kotlin file for the user to
@@ -440,7 +440,7 @@ class MyPushReceivedHandler : PushNotificationReceivedHandler {
         }
 
         // 4. Receive-handler meta-data — ONLY when explicitly opting in (handlerClass != null).
-        //    Decision Q8 / §5.2: the package no longer auto-wires a placeholder handler. When a
+        //    Decision Q8: the package no longer auto-wires a placeholder handler. When a
         //    handler class is given (user wired their generated sample), set/update its meta-data.
         if (handlerClass != null)
         {

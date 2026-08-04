@@ -43,7 +43,7 @@ Prereqs: `dotnet` (8+), and a POSIX shell for the provided scripts (or use WSL o
 - Run the repo-level scripts from the repository root. See `cli/` README for how to run CLI-specific projects after running the scripts.
 
 ### Web local dev (Portal Toolkit & Web SDK)
-Prereqs: Node.js 22+, `pnpm`, and Docker. **Full guide: [WEB_LOCAL_DEV.md](WEB_LOCAL_DEV.md).**
+Prereqs: Node.js 22+, `pnpm`, and Docker. **Full guide: [web/LOCAL_DEV.md](web/LOCAL_DEV.md).**
 
 Both packages are published to a local Verdaccio registry as version **`0.0.123`** — the same "developer
 build" sentinel the .NET packages use (`dev.sh` publishes `0.0.123.<N>`). Any package at that version is
@@ -77,7 +77,7 @@ same on Windows, macOS and Linux. The commands they call can also be used direct
 
 `beam local init --with-web-registry` wires all of this into `beam local up`: the registry starts with the
 rest of the local stack, and `beam local up --build` also publishes the packages and refreshes the
-extensions before running them. See [WEB_LOCAL_DEV.md](WEB_LOCAL_DEV.md).
+extensions before running them. See [web/LOCAL_DEV.md](web/LOCAL_DEV.md).
 
 If the Portal's `.env.local` has `VITE_INJECT_HOST_SDK=true`, comment it out — that's a different approach
 and it takes precedence over the local CDN.

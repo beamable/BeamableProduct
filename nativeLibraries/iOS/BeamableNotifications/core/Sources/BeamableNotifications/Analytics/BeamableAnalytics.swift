@@ -1,7 +1,7 @@
 import Foundation
 
-/// Shared Beamable funnel analytics for iOS (§4). Builds the Beamable `CoreEvent` body and
-/// POSTs it directly to `/report/custom_batch/{cid}/{pid}/{gamerTag}` (§4.3), authenticated
+/// Shared Beamable funnel analytics for iOS. Builds the Beamable `CoreEvent` body and
+/// POSTs it directly to `/report/custom_batch/{cid}/{pid}/{gamerTag}`, authenticated
 /// with the persisted player bearer token + realm scope (Decision Q5). This replaces the
 /// demo Slack webhook.
 ///
@@ -12,7 +12,7 @@ import Foundation
 /// All public so the extension target (which links the core module) can call it.
 public enum BeamableAnalytics {
 
-    // MARK: CoreEvent JSON (§4.6)
+    // MARK: CoreEvent JSON
 
     /// Build the params bag (`p`) for a single funnel event. Matches the cross-platform
     /// contract: campaignId, nodeId, gamerTag, accountId, cidPid, optional offerData,
@@ -118,7 +118,7 @@ public enum BeamableAnalytics {
     /// explicitly passed (Clicked/Converted via `trackOffer*`) only that single offer is attached;
     /// stage events (Sent/Received/Opened) carry every offer the push held (`intent.offers`). The
     /// free-form `campaignData` is carried on every stage. Returns nil if the intent isn't a
-    /// tracked campaign (§4.2) — caller can rely on that to gate emission.
+    /// tracked campaign — caller can rely on that to gate emission.
     public static func makeEvent(_ type: FunnelType,
                                  intent: CampaignIntentData,
                                  offer: NotificationOffer? = nil) -> FunnelEvent? {
@@ -141,7 +141,7 @@ public enum BeamableAnalytics {
     /// if stale), then POSTs fire-and-forget with a short timeout. If credentials/scope are
     /// missing, or the refresh+POST can't complete within `budget` (the NSE ~30s window),
     /// the event is persisted to the App Group for authenticated replay on next app open
-    /// (§4.3 fallback).
+    /// (fallback).
     ///
     /// - Parameters:
     ///   - persistOnFailure: when true (the NSE path), an event that can't be sent in time is
@@ -233,7 +233,7 @@ public enum BeamableAnalytics {
         }
     }
 
-    // MARK: Native POST (§4.3)
+    // MARK: Native POST
 
     /// Fire the funnel POST. `ok` is true on a 2xx response (best-effort; fire-and-forget
     /// otherwise). Completion is always called exactly once.
@@ -288,7 +288,7 @@ public enum BeamableAnalytics {
         task.resume()
     }
 
-    // MARK: Token refresh (§4.3) — POST {host}/basic/auth/token, no bearer, scope header.
+    // MARK: Token refresh — POST {host}/basic/auth/token, no bearer, scope header.
 
     public struct RefreshedTokens {
         public let accessToken: String

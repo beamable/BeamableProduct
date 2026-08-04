@@ -34,9 +34,57 @@ time.
 > `beamable-notifications-release.aar`) are staged by the repo's `dev-native.sh`. If `ThirdParty/`
 > is empty, run `./dev-native.sh` from the repo root first (macOS + Xcode for the iOS framework).
 
+> **Naming:** the UE plugin/module is `BeamPlatformNotifications`, but the iOS **framework** binary is
+> still `BeamableNotifications.framework` (it matches its `@rpath` install name), and the native C ABI
+> (`bmn_*`) / Android JNI exports (`Java_com_beamable_…`) are unchanged.
+
+> The embedded iOS framework is **device-only (arm64)**. For an iOS Simulator build, repackage the
+> simulator slice from `build/BeamableNotifications.xcframework` in the same layout.
+
+## One-time Xcode / Project Settings steps (UPL can't do these)
+
+The UPL automatically adds the `remote-notification` background mode and the `BMNAppGroup` Info.plist
+key, and links `UserNotifications`. These three remain manual:
+
+1. **Project Settings → iOS → Online → "Enable Remote Notifications Support"** — writes the
+   `aps-environment` entitlement.
+2. Add the **App Group** capability (e.g. `group.com.beamable.notifications`) to **both** the app and
+   the extension in your provisioning profiles.
+3. In the generated Xcode project, add a **Notification Service Extension** target using the staged
+   `BeamableNotificationServiceExtension/` sources, and set its `BMNAppGroup` Info.plist key + App
+   Group entitlement. (The editor's **"iOS + NSE → Device"** button does this for you on a packaged
+   build — see `NSE-SETUP.md`.)
+
+## Usage (Blueprint or C++)
+
+Get the subsystem via **Get Game Instance Subsystem → BeamPlatformNotificationsSubsystem**, bind the
+event dispatchers, then call the functions. In C++:
+
+```cpp
+auto* Notif = GetGameInstance()->GetSubsystem<UBeamPlatformNotificationsSubsystem>();
+
+Notif->OnTokenReceived.AddDynamic(this, &AMyActor::HandleToken);
+Notif->OnNotificationTapped.AddDynamic(this, &AMyActor::HandleTap);
+
+Notif->RequestPermission(/*alert*/true, /*badge*/true, /*sound*/true);
+
+Notif->ScheduleLocalNotification(
+    TEXT("daily"), TEXT("Come back!"), TEXT("Your energy is full"),
+    /*DelaySeconds*/ 3600.f, /*DeepLink*/ TEXT("game://home"));
+
+Notif->RegisterForRemote();
+
+FBMNNotificationData Launch;
+if (Notif->GetLaunchNotification(Launch)) { /* route Launch.DeepLink */ }
+```
+
+All delegates are broadcast on the game thread. For payloads beyond the simple helper, use
+`ScheduleLocalJson` / `RegisterTemplateJson` / `RegisterCategoryJson` with the JSON schemas in
+the *Push notifications for Unreal* guide in the Beamable documentation.
+
 ## Funnel analytics
 Campaign funnel events (Sent/Received/Opened/Clicked/Converted) are POSTed natively to Beamable.
-The native code (iOS Swift core + NSE, Android Kotlin core + `BeamUnrealPushReceivedHandler`)
+The native code (the iOS Swift core plus its NSE, and the Android Kotlin core's `PushFirebaseService`)
 authenticates and POSTs even when the engine VM is asleep, using credentials the app supplies:
 - **`ConfigureAuth(AuthJson)`** — persist the player bearer token + realm routing (`cid`/`pid`/
   `host`) so native funnel POSTs can authenticate. Call on login/refresh. **`ClearAuth()`** on logout.
@@ -45,8 +93,12 @@ authenticates and POSTs even when the engine VM is asleep, using credentials the
   notification's intent data. `RequestJson` is the canonical `OfferTrackRequest`
   (`{campaignId,nodeId,gamerTag,accountId,cidPid,deeplink,offer:{...}}`).
 
-Closed-app receipt funnel events are emitted natively: the **iOS** Notification Service Extension
-(see `NSE-SETUP.md`) and the **Android** `BeamUnrealPushReceivedHandler` (registered via the APL).
+Closed-app receipt funnel events are emitted natively: on **iOS** by the Notification Service Extension
+(see `NSE-SETUP.md`), and on **Android** by `PushFirebaseService` itself, which fires the **Received**
+event on delivery. No game-side receive handler is registered or required for the funnel to work — the
+library declares none, and Unreal has no Blueprint/C++ hook to add one. To run your own code at receive
+time, add a Kotlin `PushNotificationReceivedHandler` and register it through your own APL
+`<androidManifestUpdates>` block.
 
 ## Settings (written to the project's `DefaultEngine.ini`)
 - `[/Script/BeamPlatformNotifications.Settings] AppGroup` — iOS App Group id (UPL/Info.plist).

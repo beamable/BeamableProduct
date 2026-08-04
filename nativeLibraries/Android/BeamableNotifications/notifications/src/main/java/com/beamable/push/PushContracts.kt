@@ -76,7 +76,7 @@ interface PushListener {
  * short blocking network call is acceptable here; for guaranteed delivery, enqueue WorkManager
  * from within your implementation.
  *
- * MULTIPLE HANDLERS (§1.1): the library supports N handlers, mirroring iOS's PluginRegistry.
+ * MULTIPLE HANDLERS: the library supports N handlers, mirroring iOS's PluginRegistry.
  * Register via:
  *  1. AndroidManifest meta-data (required for the closed-app case — resolved by reflection).
  *     Declare one or more, using the shared key as a PREFIX (the manifest merger rejects

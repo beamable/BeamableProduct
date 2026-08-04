@@ -10,9 +10,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 /**
- * Covers the cross-platform [NotificationIntentData] schema (§3.3): parsing a flat
+ * Covers the cross-platform [NotificationIntentData] schema: parsing a flat
  * string→string FCM data map, stringified nested objects (offers / campaignData),
- * and the funnel gating predicates (§4.2).
+ * and the funnel gating predicates.
  */
 @RunWith(RobolectricTestRunner::class)
 class NotificationIntentDataTest {

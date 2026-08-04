@@ -11,7 +11,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 /**
- * Covers §1.1 multi-handler dispatch: every registered [PushNotificationReceivedHandler]
+ * Covers multi-handler dispatch: every registered [PushNotificationReceivedHandler]
  * receives the event, a throwing handler does not block the others, and add/remove semantics
  * behave as specified.
  */

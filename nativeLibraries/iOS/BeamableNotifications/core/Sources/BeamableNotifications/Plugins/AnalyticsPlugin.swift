@@ -2,14 +2,14 @@ import Foundation
 import UIKit
 
 /// Reference plugin: emits Beamable funnel analytics for notifications observed *while the
-/// app is alive* (§4). The closed-app case is handled by the NSE
+/// app is alive*. The closed-app case is handled by the NSE
 /// (`AnalyticsServicePlugin`); together they give full funnel coverage.
 ///
 /// - **Received** — fired when a notification is presented in the foreground.
 /// - **Opened** — fired when the user taps the notification (or an action button).
 ///
 /// Events are only emitted when the notification carries a tracked campaign
-/// (`campaignId` + `nodeId`) plus the scope/gamerTag needed to authenticate (§4.2/§4.3);
+/// (`campaignId` + `nodeId`) plus the scope/gamerTag needed to authenticate;
 /// otherwise the notification isn't part of a tracked campaign and is ignored. The POST is
 /// authenticated with the player bearer token persisted in the App Group via `SharedConfig`.
 ///
@@ -39,7 +39,7 @@ public final class AnalyticsPlugin: NSObject, NotificationPlugin {
     }
 
     public func onNotificationTapped(_ note: NotificationData, actionId: String?) {
-        // A tap on the notification itself is the "Opened" funnel stage (§4.5). In-app offer
+        // A tap on the notification itself is the "Opened" funnel stage. In-app offer
         // clicks ("Clicked"/"Converted") are emitted separately by the offer-tracking helpers.
         emit(.opened, note: note)
     }

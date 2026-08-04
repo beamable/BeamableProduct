@@ -35,7 +35,7 @@ void bmn_unregisterForRemote(void);
 // Delivery receipts (feature 8). Replayed from the App Group (logged by the NSE).
 void bmn_getDeliveryReceipts(void);                    // -> onDeliveryReceipts
 
-// Beamable funnel analytics auth + offer helpers (spec §4).
+// Beamable funnel analytics auth + offer helpers.
 // configJson: AuthConfig {"accessToken":"","refreshToken":"","accessTokenExpiresAt":<sec>,
 //                         "cid":"","pid":"","host":"https://..."} — persisted to App Group.
 void bmn_configureAuth(const char *configJson);        // call on login/refresh

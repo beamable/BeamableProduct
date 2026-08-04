@@ -2,17 +2,17 @@ import UserNotifications
 import Foundation
 import BeamableNotifications
 
-/// Closed-app analytics (§4). Runs in the NSE on remote-push receipt — even when the main
+/// Closed-app analytics. Runs in the NSE on remote-push receipt — even when the main
 /// app is terminated — and:
 ///   1. ALWAYS logs a delivery receipt to the App Group (the reliable signal the app
 ///      replays on next launch), and
 ///   2. fires a Beamable funnel **Received** event via a best-effort authenticated POST to
-///      `/report/custom_batch/...` (§4.3), so a received-but-never-opened notification still
+///      `/report/custom_batch/...`, so a received-but-never-opened notification still
 ///      reports. If the refresh+POST can't finish within the NSE's ~30s budget, the event is
-///      persisted to the App Group for authenticated replay on next app open (§4.3 fallback).
+///      persisted to the App Group for authenticated replay on next app open (fallback).
 ///
 /// The funnel event is only emitted for tracked campaigns (`campaignId`+`nodeId`) that also
-/// carry the scope/gamerTag needed to authenticate (§4.2). The receipt is logged regardless.
+/// carry the scope/gamerTag needed to authenticate. The receipt is logged regardless.
 ///
 /// IMPORTANT (chain altitude): `process` does NOT block the plugin chain on its network POST.
 /// It persists the receipt synchronously (the reliable signal), kicks the funnel POST as a

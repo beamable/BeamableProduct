@@ -174,9 +174,9 @@ public extension Dictionary where Key == String, Value == JSONValue {
     }
 }
 
-// MARK: - Campaign intent-data schema (§3.3)
+// MARK: - Campaign intent-data schema
 
-/// A single offer carried by a campaign notification (§3.3). `customData` is free-form
+/// A single offer carried by a campaign notification. `customData` is free-form
 /// (the spec's generic `T`), so it travels as an opaque JSON object and is typed only at
 /// the engine/SDK layer. `value` is `string|number` on the wire, kept as a `JSONValue`.
 public struct NotificationOffer: Codable, Equatable {
@@ -193,11 +193,11 @@ public struct NotificationOffer: Codable, Equatable {
     }
 }
 
-/// The canonical notification intent-data schema (§3.3), parsed out of a notification's
+/// The canonical notification intent-data schema, parsed out of a notification's
 /// `userInfo`. Per Decision Q3 the nested objects (`offers`, `campaignData`) arrive as
 /// JSON-encoded **strings** even on iOS, so this parser un-stringifies them. Scalar
 /// fields are plain strings. All fields are optional — a notification is only treated as
-/// part of a tracked campaign when both `campaignId` and `nodeId` are present (§4.2).
+/// part of a tracked campaign when both `campaignId` and `nodeId` are present.
 public struct CampaignIntentData: Codable, Equatable {
     public var campaignId: String?
     public var nodeId: String?
@@ -227,14 +227,14 @@ public struct CampaignIntentData: Codable, Equatable {
         self.campaignData = campaignData
     }
 
-    /// True when this notification belongs to a tracked campaign (§4.2): both
+    /// True when this notification belongs to a tracked campaign: both
     /// `campaignId` and `nodeId` are present and non-empty.
     public var isTrackedCampaign: Bool {
         guard let c = campaignId, !c.isEmpty, let n = nodeId, !n.isEmpty else { return false }
         return true
     }
 
-    /// Has enough context to authenticate + route a native funnel POST (§4.3): a realm
+    /// Has enough context to authenticate + route a native funnel POST: a realm
     /// scope (`cidPid`) and a `gamerTag`, in addition to being a tracked campaign.
     public var canEmitFunnel: Bool {
         guard isTrackedCampaign else { return false }
@@ -253,7 +253,7 @@ public struct CampaignIntentData: Codable, Equatable {
 }
 
 public extension Dictionary where Key == String, Value == JSONValue {
-    /// Parse the campaign intent-data schema (§3.3) out of a notification's `userInfo`.
+    /// Parse the campaign intent-data schema out of a notification's `userInfo`.
     /// Nested `offers`/`campaignData` are accepted both as JSON-encoded strings (the
     /// canonical wire format per Decision Q3) and — defensively — as already-decoded
     /// objects/arrays, since locally-scheduled notifications may carry real nested values.
@@ -316,7 +316,7 @@ public struct NotificationData: Codable, Equatable {
     /// Set when this notification launched the app (cold start).
     public var wasLaunch: Bool?
 
-    // MARK: Campaign intent-data (§3.3) — additive. Lifted out of `userInfo` and surfaced
+    // MARK: Campaign intent-data — additive. Lifted out of `userInfo` and surfaced
     // to engines alongside the existing fields. All optional, so the synthesized Codable
     // uses `encodeIfPresent` and omits them when absent — keeping the existing JSON shape
     // (no new keys appear for non-campaign notifications) for backward compatibility.
@@ -325,7 +325,7 @@ public struct NotificationData: Codable, Equatable {
     public var gamerTag: String?
     public var accountId: String?
     public var cidPid: String?
-    /// Parsed offers (un-stringified from the §3.3 wire format).
+    /// Parsed offers (un-stringified from the wire format).
     public var offers: [NotificationOffer]?
     /// Parsed free-form campaign data (un-stringified).
     public var campaignData: [String: JSONValue]?
@@ -497,11 +497,11 @@ public struct DeliveryReceipt: Codable, Equatable {
     public var userInfo: [String: JSONValue]?
 }
 
-// MARK: - Beamable analytics auth + funnel (§4)
+// MARK: - Beamable analytics auth + funnel
 
 /// Player session credentials + realm routing, persisted by the SDK into the App Group so
 /// the native funnel POST (and the closed-app NSE) can authenticate without the engine VM
-/// being alive (§4.3, Decision Q5). The SDK keeps this updated on login/refresh and clears
+/// being alive (Decision Q5). The SDK keeps this updated on login/refresh and clears
 /// it on logout. No realm secret is ever stored here.
 public struct AuthConfig: Codable, Equatable {
     public var accessToken: String?
@@ -548,9 +548,9 @@ public struct AuthConfig: Codable, Equatable {
     }
 }
 
-/// One funnel event (§4.6) — the engine-facing / wire param bag. `op`/`e`/`c`/`p` are
+/// One funnel event — the engine-facing / wire param bag. `op`/`e`/`c`/`p` are
 /// assembled by `BeamableAnalytics` when POSTing; this struct is what we persist for replay
-/// when a closed-app POST can't finish in the NSE budget (§4.3 fallback).
+/// when a closed-app POST can't finish in the NSE budget (fallback).
 public struct FunnelEvent: Codable, Equatable {
     public var funnelType: String          // Sent | Received | Opened | Clicked | Converted
     public var campaignId: String
@@ -591,7 +591,7 @@ public struct FunnelEvent: Codable, Equatable {
         self.timestamp = timestamp
     }
 
-    /// Stable identity for replay dedup (§4.3). The same Received event can be enqueued twice
+    /// Stable identity for replay dedup. The same Received event can be enqueued twice
     /// — once by the NSE safety-timer persist and once by `emit`'s own persist-on-failure —
     /// which would otherwise replay (and double-count) the same funnel stage. Keyed on the
     /// campaign coordinates + funnel stage + gamerTag + the specific offer it concerns (so
@@ -604,7 +604,7 @@ public struct FunnelEvent: Codable, Equatable {
     }
 }
 
-/// The five funnel stages (§4.5).
+/// The five funnel stages.
 public enum FunnelType: String {
     case sent = "Sent"
     case received = "Received"
@@ -613,7 +613,7 @@ public enum FunnelType: String {
     case converted = "Converted"
 }
 
-/// Engine-facing request for the offer-tracking helpers (§4.7). Carries the campaign
+/// Engine-facing request for the offer-tracking helpers. Carries the campaign
 /// context that arrived in the notification's intent data so an in-app offer click/convert
 /// can be attributed back to the originating campaign. The `offer` is the single offer the
 /// user acted on. `gamerTag`/`accountId`/`cidPid` are optional here because the helper
