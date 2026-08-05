@@ -870,7 +870,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			}
 			
 			
-			ValidateMembersInSymbol(compilation, reportDiagnostic, fieldSymbol.Type, checkBeamGenAttr, isBlueprintCompatible, fallbackLocation, processedTypes);
+			ValidateMembersInSymbol(compilation, reportDiagnostic, fieldSymbol.Type, isBlueprintCompatible, checkBeamGenAttr, fallbackLocation, processedTypes);
 			
 			
 			// Check if parent was type with BeamGen attribute, if so, need to check if class or type members are as well
