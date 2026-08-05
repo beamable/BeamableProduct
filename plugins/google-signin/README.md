@@ -138,11 +138,43 @@ Two OAuth clients are needed, which is the most common source of confusion:
    Nothing references its ID directly, but sign-in fails without it.
 
 A missing or mismatched SHA-1 surfaces as status code 10, reported as
-`EXCEPTION - DEVELOPER_ERROR(10)`. Get the debug SHA-1 with:
+`EXCEPTION - DEVELOPER_ERROR(10)` — from both `login` and `silentLogin`. Get the debug SHA-1 with:
 
 ```bash
 keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
 ```
+
+You do not have to: when GMS rejects the configuration, the plugin logs everything needed to fix it,
+including the SHA-1 of the certificate the installed APK is actually signed with:
+
+```
+adb logcat -s GoogleSignInActivity
+```
+```
+E  Sign-in failed: DEVELOPER_ERROR(10)
+E  Google Sign-In configuration check - compare these with the Google Cloud console:
+E    packageName = com.example.game
+E    signingSha1 = A1:B2:C3:...
+E    clientId    = 000000000000-xxxxxxxx.apps.googleusercontent.com
+```
+
+Register an **Android** client against that package name and SHA-1, in the same Cloud project as the
+web client, and confirm in the console that the `clientId` shown is the **Web application** client —
+web and Android client IDs are indistinguishable from the string alone, so the log cannot check that
+for you.
+
+The same block is logged when sign-in succeeds but Google grants no ID token (reported as `UNKNOWN`),
+which is the specific signature of a client ID that is not a web client.
+
+### Why `login` used to report a misconfiguration as `CANCELED`
+
+Worth knowing if you are debugging an older build. GMS returns `RESULT_CANCELED` both when the player
+dismisses the chooser and when it refuses the request outright, and only the `Status` inside the
+result intent separates the two. Before plugin 2.0.0, `onActivityResult` branched on `resultCode`
+before ever unpacking that `Status`, so a `DEVELOPER_ERROR(10)` arrived in Unity as `CANCELED` — the
+chooser would flash open, close by itself with no UI, and the game would report that the player had
+dismissed it. `CANCELED` now means `SIGN_IN_CANCELLED` (12501), or a chooser that closed without
+producing any status at all.
 
 ## C# usage
 
@@ -173,7 +205,7 @@ handles the receiver GameObject, timeouts, and old-`.aar` detection for you.
 |---|---|
 | *a JWT* (`eyJ…`) | success; the Google ID token |
 | `NO_CREDENTIAL - 4` | silent attempt found no usable credential, or consent is required. A normal outcome, not an error |
-| `CANCELED` | the player dismissed the account chooser |
+| `CANCELED` | GMS reported `SIGN_IN_CANCELLED` (12501), or the chooser closed without producing any status. **Not** used for a rejected configuration — see above |
 | `SIGNED_OUT` / `REVOKED` | `signOut` / `revokeAccess` completed |
 | `UNKNOWN` | no token and no exception — usually a client ID that is not a *web* OAuth client |
 | `EXCEPTION - <detail>` | anything else; includes the GMS status code name and number where available |

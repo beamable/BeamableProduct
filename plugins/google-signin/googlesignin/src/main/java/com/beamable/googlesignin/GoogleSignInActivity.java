@@ -7,8 +7,9 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.unity3d.player.UnityPlayer;
 
 /**
@@ -32,6 +33,12 @@ public class GoogleSignInActivity extends Activity {
     // ever did apply - another reason the newer entry points require the target to be passed in.
     private String _unityObject = "GoogleSignInBehaviour";
     private String _unityMethod = "GoogleAuthResponse";
+
+    /**
+     * The client ID this attempt was started with. Kept so that a failure can report it, since it is
+     * the single most useful thing to compare against the Google Cloud console.
+     */
+    private String _clientId;
 
     /**
      * Commence Google Sign-In login.
@@ -138,20 +145,39 @@ public class GoogleSignInActivity extends Activity {
             final Intent intent = getIntent();
             _unityObject = intent.getStringExtra("unityObject");
             _unityMethod = intent.getStringExtra("unityMethod");
+            _clientId = intent.getStringExtra("clientId");
+
+            // Recorded on every attempt, not just on failure, so a log always says which credential
+            // was used. A client ID is a public identifier - it ships inside the APK.
+            Log.i(TAG, "Starting interactive sign-in with clientId="
+                    + (_clientId == null || _clientId.length() == 0 ? "(none)" : _clientId));
+
             // Shared with the silent path on purpose - silentSignIn() only recognises the cached
             // account if the options match exactly. See GoogleSignInBridge#buildOptions.
-            GoogleSignInClient client =
-                    GoogleSignIn.getClient(this, GoogleSignInBridge.buildOptions(intent.getStringExtra("clientId")));
-            // Force the account chooser to appear every time (beam-1880). Deliberately not awaited:
-            // signOut() returns a Task, so this races getSignInIntent() below. It has worked in
-            // practice since 2022 and is left alone rather than re-timed - but it IS a race, so if
-            // account selection ever starts misbehaving, start here.
-            // The silent path must never do this, which is why it does not share this method.
-            client.signOut();
-            startActivityForResult(client.getSignInIntent(), REQUEST_CODE_SIGNIN);
-        } catch (Exception e) {
-            Log.e(TAG, "Exception before sign-in", e);
-            sendResponse("EXCEPTION - " + e.getLocalizedMessage());
+            final GoogleSignInClient client =
+                    GoogleSignIn.getClient(this, GoogleSignInBridge.buildOptions(_clientId));
+
+            // Force the account chooser to appear every time (beam-1880). Awaited, rather than raced
+            // against getSignInIntent() as it used to be: signOut() completing underneath a running
+            // SignInHubActivity was this file's own documented first suspect whenever account
+            // selection misbehaved, and there is no reason to keep the race when the fix is one
+            // listener. Scoped to this Activity so it cannot fire after the Activity is gone.
+            // The silent path must never sign out, which is why it does not share this method.
+            client.signOut().addOnCompleteListener(this, new OnCompleteListener<Void>() {
+                @Override
+                public void onComplete(Task<Void> task) {
+                    try {
+                        startActivityForResult(client.getSignInIntent(), REQUEST_CODE_SIGNIN);
+                    } catch (Throwable t) {
+                        Log.e(TAG, "Could not start the account chooser", t);
+                        sendResponse(GoogleSignInBridge.describeThrowable(t));
+                        finish();
+                    }
+                }
+            });
+        } catch (Throwable t) {
+            Log.e(TAG, "Exception before sign-in", t);
+            sendResponse(GoogleSignInBridge.describeThrowable(t));
             finish();
         }
     }
@@ -160,26 +186,24 @@ public class GoogleSignInActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        Log.d(TAG, "onActivityResult: " + requestCode + " : " + resultCode);
+        // hasData distinguishes "GMS answered with a Status" from "the Activity was torn down", which
+        // is the difference between a diagnosable failure and a genuine dismissal.
+        Log.d(TAG, "onActivityResult: requestCode=" + requestCode + " resultCode=" + resultCode
+                + " hasData=" + (data != null));
         try {
-            if (resultCode == RESULT_CANCELED) {
-                Log.i(TAG, "Sign-in canceled");
-                sendResponse("CANCELED");
-            } else if (requestCode == REQUEST_CODE_SIGNIN) {
-                Log.d(TAG, "Successful sign-in response");
-                GoogleSignInAccount account = GoogleSignIn.getSignedInAccountFromIntent(data).getResult();
-                if (account == null) {
-                    throw new AccountNotFoundException();
-                }
-                String token = account.getIdToken();
-                sendResponse(token == null ? "UNKNOWN" : token);
-            } else {
+            if (requestCode != REQUEST_CODE_SIGNIN) {
                 Log.w(TAG, "Sign-in response had unexpected request code: " + requestCode);
-                sendResponse("UNKNOWN");
+                sendResponse(GoogleSignInBridge.RESPONSE_UNKNOWN);
+                return;
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Exception during sign-in", e);
-            sendResponse("EXCEPTION - " + e.getLocalizedMessage());
+
+            // Note there is deliberately no resultCode check. GMS reports RESULT_CANCELED both for a
+            // dismissal and for a configuration rejection; only the Status inside the intent tells
+            // them apart, and this used to collapse both into "CANCELED".
+            sendResponse(GoogleSignInBridge.describeInteractiveResult(this, data, resultCode, _clientId));
+        } catch (Throwable t) {
+            Log.e(TAG, "Exception during sign-in", t);
+            sendResponse(GoogleSignInBridge.describeThrowable(t));
         } finally {
             finish();
         }
@@ -193,5 +217,10 @@ public class GoogleSignInActivity extends Activity {
         GoogleSignInBridge.sendResponse(_unityObject, _unityMethod, message);
     }
 
+    /**
+     * No longer thrown - {@link GoogleSignInBridge#describeInteractiveResult} reports a missing
+     * account as {@code UNKNOWN} rather than as an exception, so that the response carries the GMS
+     * status instead of a Java class name. Retained because it is public API.
+     */
     public static class AccountNotFoundException extends Exception {}
 }

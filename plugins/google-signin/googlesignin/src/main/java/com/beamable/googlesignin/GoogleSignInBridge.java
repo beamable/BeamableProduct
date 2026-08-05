@@ -1,6 +1,12 @@
 package com.beamable.googlesignin;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
+import android.os.Build;
 import android.util.Log;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -13,6 +19,8 @@ import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.unity3d.player.UnityPlayer;
+
+import java.security.MessageDigest;
 
 /**
  * Implementation behind the static entry points on {@link GoogleSignInActivity}.
@@ -186,6 +194,174 @@ final class GoogleSignInBridge {
 		}
 	}
 
+	/**
+	 * Classify the result of the interactive account chooser into the response vocabulary.
+	 *
+	 * <p>The {@code resultCode} is deliberately <em>not</em> what decides the outcome. GMS returns
+	 * {@code RESULT_CANCELED} both when the player dismisses the chooser ({@code SIGN_IN_CANCELLED},
+	 * 12501) and when it refuses the request outright ({@code DEVELOPER_ERROR}, 10 - a package name,
+	 * signing SHA-1 or OAuth client ID that does not match the Cloud console). Only the {@code Status}
+	 * inside {@code data} tells them apart. Reporting both as a cancellation sends whoever is
+	 * debugging it looking for a UI problem that does not exist, so the {@code Status} is read first
+	 * and {@code resultCode} is used only for logging.
+	 *
+	 * <p>Mirrors {@link #describeSilentResult} on purpose: both paths should classify the same failure
+	 * the same way.
+	 *
+	 * @param context  used only to describe the app when the configuration is what GMS rejected.
+	 * @param data     the chooser's result intent. Null means it never produced a {@code Status}.
+	 * @param resultCode the raw Activity result code, for logging.
+	 * @param clientId the client ID the request was made with, for the diagnostic dump.
+	 */
+	static String describeInteractiveResult(Context context, Intent data, int resultCode, String clientId) {
+		if (data == null) {
+			// No Status to read. In practice a back press before the hub ever reached Google, or the
+			// Activity being torn down. This is the one path that still reports a cancellation without
+			// positive evidence of one.
+			Log.i(TAG, "Sign-in returned no data (resultCode=" + resultCode + "); treating as cancelled");
+			return RESPONSE_CANCELED;
+		}
+
+		final Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+
+		if (task.isSuccessful()) {
+			final GoogleSignInAccount account = task.getResult();
+			if (account == null) {
+				Log.w(TAG, "Sign-in succeeded with no account");
+				return RESPONSE_UNKNOWN;
+			}
+
+			final String idToken = account.getIdToken();
+			if (idToken == null) {
+				// The account is real but Google granted no ID token, which is what happens when the
+				// client ID is not a *web* OAuth client. Same diagnosis as DEVELOPER_ERROR, so it earns
+				// the same dump.
+				Log.w(TAG, "Sign-in succeeded but no ID token was granted");
+				logConfigurationDiagnostics(context, clientId);
+				return RESPONSE_UNKNOWN;
+			}
+
+			Log.d(TAG, "Sign-in succeeded");
+			return idToken;
+		}
+
+		final Exception failure = task.getException();
+		if (failure instanceof ApiException) {
+			final int statusCode = ((ApiException) failure).getStatusCode();
+
+			if (statusCode == GoogleSignInStatusCodes.SIGN_IN_CANCELLED) {
+				// The only status that earns the word "cancelled".
+				Log.i(TAG, "Sign-in cancelled by the player");
+				return RESPONSE_CANCELED;
+			}
+
+			if (statusCode == CommonStatusCodes.DEVELOPER_ERROR) {
+				logConfigurationDiagnostics(context, clientId);
+			}
+
+			return describeStatusCode("Sign-in failed", statusCode);
+		}
+
+		if (failure == null) {
+			Log.w(TAG, "Sign-in failed with no exception (resultCode=" + resultCode + ")");
+			return RESPONSE_UNKNOWN;
+		}
+
+		Log.e(TAG, "Sign-in failed", failure);
+		return describeThrowable(failure);
+	}
+
+	/**
+	 * Log everything needed to compare this build against the Google Cloud console.
+	 *
+	 * <p>Called only when GMS has said the configuration is what it rejected, because it means
+	 * nothing when sign-in works and the output is deliberately loud. Every value here is derivable
+	 * from the installed APK by anyone holding it, so none of it is secret - and all of it is needed,
+	 * because the usual cause is a pair (package name, signing SHA-1) that was never registered.
+	 *
+	 * <p>Nothing in here may throw: a diagnostic that breaks sign-in would be worse than no
+	 * diagnostic at all.
+	 */
+	static void logConfigurationDiagnostics(Context context, String clientId) {
+		try {
+			Log.e(TAG, "Google Sign-In configuration check - compare these with the Google Cloud console:");
+			Log.e(TAG, "  packageName = " + (context == null ? "unknown" : context.getPackageName()));
+			Log.e(TAG, "  signingSha1 = " + signingCertificateSha1(context));
+			Log.e(TAG, "  clientId    = " + (clientId == null || clientId.length() == 0 ? "(none)" : clientId));
+			Log.e(TAG, "  Two OAuth clients are required, in the SAME Cloud project: a Web application");
+			Log.e(TAG, "  client (whose ID is the clientId above - the string cannot prove its type, so");
+			Log.e(TAG, "  check it in the console) and an Android client registered against the package");
+			Log.e(TAG, "  name and SHA-1 above. See plugins/google-signin/README.md.");
+		} catch (Throwable t) {
+			Log.e(TAG, "Could not log the Google Sign-In configuration", t);
+		}
+	}
+
+	/**
+	 * The SHA-1 of the certificate this build is signed with, as colon-separated uppercase hex - the
+	 * format the Cloud console expects, so it can be pasted straight in.
+	 *
+	 * <p>A debug build is signed with the local {@code ~/.android/debug.keystore}, whose SHA-1 differs
+	 * per machine. Reading it at runtime is the only way to be sure which certificate the APK on the
+	 * device actually carries, which is exactly the thing that is usually wrong.
+	 */
+	private static String signingCertificateSha1(Context context) {
+		if (context == null) {
+			return "unavailable (no context)";
+		}
+
+		try {
+			final PackageManager packages = context.getPackageManager();
+			final String name = context.getPackageName();
+			final Signature[] signatures;
+
+			if (Build.VERSION.SDK_INT >= 28) {
+				final PackageInfo info =
+						packages.getPackageInfo(name, PackageManager.GET_SIGNING_CERTIFICATES);
+				signatures = info.signingInfo.getApkContentsSigners();
+			} else {
+				// Deprecated on 28+ but the only option below it, and minSdk here is 16.
+				@SuppressWarnings("deprecation")
+				final PackageInfo info = packages.getPackageInfo(name, PackageManager.GET_SIGNATURES);
+				signatures = info.signatures;
+			}
+
+			if (signatures == null || signatures.length == 0) {
+				return "unavailable (no signatures)";
+			}
+
+			final StringBuilder all = new StringBuilder();
+			for (int i = 0; i < signatures.length; i++) {
+				if (i > 0) {
+					// More than one signer is legal, and then any of them may be the registered one.
+					all.append(" | ");
+				}
+				all.append(hex(MessageDigest.getInstance("SHA-1").digest(signatures[i].toByteArray())));
+			}
+
+			return all.toString();
+		} catch (Throwable t) {
+			return "unavailable (" + t.getClass().getSimpleName() + ": " + t.getLocalizedMessage() + ")";
+		}
+	}
+
+	/** Colon-separated uppercase hex, the shape keytool prints and the Cloud console accepts. */
+	private static String hex(byte[] bytes) {
+		final StringBuilder text = new StringBuilder(bytes.length * 3);
+		for (int i = 0; i < bytes.length; i++) {
+			if (i > 0) {
+				text.append(':');
+			}
+			final int value = bytes[i] & 0xFF;
+			if (value < 0x10) {
+				text.append('0');
+			}
+			text.append(Integer.toHexString(value).toUpperCase());
+		}
+
+		return text.toString();
+	}
+
 	/** Classify a completed {@code silentSignIn()} task into the response vocabulary. */
 	private static String describeSilentResult(Task<GoogleSignInAccount> task) {
 		if (task.isSuccessful()) {
@@ -257,7 +433,7 @@ final class GoogleSignInBridge {
 	 * "EXCEPTION - DEVELOPER_ERROR(10)" - code 10 is specifically the signal that the SHA-1 or the
 	 * OAuth client ID is misconfigured, which is the single most common setup mistake.
 	 */
-	private static String describeStatusCode(String logPrefix, int statusCode) {
+	static String describeStatusCode(String logPrefix, int statusCode) {
 		String name;
 		try {
 			name = GoogleSignInStatusCodes.getStatusCodeString(statusCode);
@@ -274,7 +450,7 @@ final class GoogleSignInBridge {
 	 * carries the missing class name as its message, which is exactly the diagnostic needed when a
 	 * consuming project has not supplied {@code play-services-auth}.
 	 */
-	private static String describeThrowable(Throwable t) {
+	static String describeThrowable(Throwable t) {
 		final String message = t.getLocalizedMessage();
 		if (message == null) {
 			return RESPONSE_EXCEPTION_PREFIX + t.getClass().getName();
