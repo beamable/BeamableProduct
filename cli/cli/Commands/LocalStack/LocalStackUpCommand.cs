@@ -1140,9 +1140,50 @@ public class LocalStackUpCommand
 			var waited = 0;
 			var nextBeat = 10;
 
-			while (waited < timeout)
+			while (true)
 			{
 				token.ThrowIfCancellationRequested();
+
+				if (waited >= timeout)
+				{
+					// The gate never tripped. The `readyRetries` path below only fires when the process EXITS, so a
+					// service that catches its own startup failure and then parks was never retried — the Scala
+					// gateway losing the Mongo connect race is the standing example. The bring-up logged
+					// "continuing anyway" and still printed "Stack is up" with nothing listening on 9002, so every
+					// `/basic/*` call through Caddy 502'd and every microservice and portal extension died on
+					// startup, which reads as "the whole stack is broken" rather than "one step is hung".
+					//
+					// Only retry when the step is PROVABLY not serving (see <see cref="StepIsDeadOnItsPort"/>).
+					// Missing this gate is usually a false negative — on a good run a dozen Scala services report
+					// "did not signal ready" while serving traffic fine — so retrying on the timeout alone would
+					// kill and relaunch a working stack.
+					if (retriesLeft > 0 && relaunch != null && StepIsDeadOnItsPort(step))
+					{
+						retriesLeft--;
+						Log.Warning($"[{step.name}] never signalled ready and nothing is listening on port {step.port} — " +
+						            $"hung rather than slow; killing and retrying ({retriesLeft} left). Last log: {LastLogLine(l)}");
+						Send(step.name, "starting",
+							$"hung with port {step.port} unbound — retrying ({retriesLeft} left)", baseProgress);
+
+						// Kill first: unlike the exit path below, this process is still alive, and leaving it behind
+						// orphans a JVM that would race the relaunch for the same port.
+						KillLaunched(l);
+						try { await Task.Delay(3000, token); }
+						catch (OperationCanceledException) { return; }
+
+						l = relaunch();
+						foreach (var s in sources) s.Dispose();
+						sources = l.OpenLineSources();
+						lastLine = "";
+						waited = 0;
+						nextBeat = 10;
+						continue;
+					}
+
+					Send(step.name, "running", $"did not signal ready within {timeout}s; continuing", baseProgress);
+					Log.Warning($"[{step.name}] did not signal ready within {timeout}s — continuing anyway.");
+					return;
+				}
 
 				if (l.ExitedTask.IsCompleted)
 				{
@@ -1211,15 +1252,22 @@ public class LocalStackUpCommand
 					Log.Information($"[{step.name}] still starting — {waited}/{timeout}s{hint}");
 				}
 			}
-
-			Send(step.name, "running", $"did not signal ready within {timeout}s; continuing", baseProgress);
-			Log.Warning($"[{step.name}] did not signal ready within {timeout}s — continuing anyway.");
 		}
 		finally
 		{
 			foreach (var s in sources) s.Dispose();
 		}
 	}
+
+	/// <summary>
+	/// True when a step that missed its readiness gate is provably not serving: it declares the TCP port it binds
+	/// and nothing holds that port. Steps leaving <c>port</c> at 0 always answer false — a missed gate there is
+	/// usually a false negative (most Scala services register correctly but never log the exact substring the gate
+	/// looks for), and treating that as failure would kill and relaunch healthy services. Only the three steps
+	/// whose whole job is to serve a port declare one: the Scala gateway, the C# gateway and the portal frontend.
+	/// </summary>
+	private static bool StepIsDeadOnItsPort(LocalStackStep step) =>
+		step.port > 0 && !LocalStackPortGuard.IsPortTaken(step.port);
 
 	/// <summary>
 	/// True if the step's HTTP readiness endpoint is already answering — i.e. something is already serving
@@ -1321,23 +1369,8 @@ public class LocalStackUpCommand
 			var l = snapshot[i];
 			try
 			{
-				if (!l.Process.HasExited)
-					l.Process.Kill(entireProcessTree: true);
-
-				// Windows: the wrapper tree-kill can miss a runtime grandchild that already detached from it, so
-				// also kill by a stack-specific token on its command line (no-op on unix / when nothing matches).
-				// Reuse `stop`'s per-kind token derivation (scala mainClass + tools/<svc>/, gateway/portal work
-				// dir, beam service id) so a JVM is reaped even when its mainClass wasn't discovered.
-				var probe = new LocalStackRunEntry
-				{
-					name = l.Step.name,
-					kind = l.Kind,
-					matchToken = l.Step.mainClass,
-					workingDirectory = l.WorkingDirectory,
-				};
-				foreach (var pid in LocalStackProcess.FindByCommandLine(
-					         LocalStackStopCommand.BuildKillTokens(probe), LocalStackProcess.ServiceImages))
-					KillPid(pid);
+				// Tree-kill plus the command-line sweep for detached grandchildren — see KillLaunched.
+				KillLaunched(l);
 
 				Log.Information($"[{l.Step.name}] stopped");
 			}
@@ -1352,6 +1385,37 @@ public class LocalStackUpCommand
 	{
 		try { Process.GetProcessById(pid).Kill(entireProcessTree: true); }
 		catch { /* already gone */ }
+	}
+
+	/// <summary>
+	/// Kills one launched step's whole process tree, best-effort. On Windows the tracked pid is usually a shell
+	/// wrapper and the runtime grandchild may already have detached from it, so the tree-kill is followed by a
+	/// sweep for the step's own command-line token (reusing <c>stop</c>'s per-kind derivation) — otherwise a JVM
+	/// outlives its parent and keeps holding the port the caller is about to relaunch onto.
+	/// </summary>
+	private static void KillLaunched(Launched l)
+	{
+		try
+		{
+			if (!l.Process.HasExited)
+				l.Process.Kill(entireProcessTree: true);
+		}
+		catch { /* already gone */ }
+
+		try
+		{
+			var probe = new LocalStackRunEntry
+			{
+				name = l.Step.name,
+				kind = l.Kind,
+				matchToken = l.Step.mainClass,
+				workingDirectory = l.WorkingDirectory,
+			};
+			foreach (var pid in LocalStackProcess.FindByCommandLine(
+				         LocalStackStopCommand.BuildKillTokens(probe), LocalStackProcess.ServiceImages))
+				KillPid(pid);
+		}
+		catch { /* best-effort */ }
 	}
 
 	private static int SafePid(Launched l)
