@@ -25,7 +25,12 @@ public static class LocalStackProcess
 	/// require a stack-specific command-line token; image name alone is not sufficient for those.
 	/// </summary>
 	public static readonly string[] ServiceImages =
-		{ "java.exe", "javaw.exe", "node.exe", "dotnet.exe", "BeamableGateway.exe" };
+	{
+		"java.exe", "javaw.exe", "node.exe", "dotnet.exe",
+		// The three BeamableAPI .NET hosts the manifest launches as their own apphosts. Each is unambiguous
+		// on its own, unlike dotnet.exe/node.exe; omitting one hides it from `ps` and from the orphan sweep.
+		"BeamableGateway.exe", "BeamableMessageRailRuntime.exe", "BeamableCampaignRuntime.exe"
+	};
 
 	/// <summary>Wrapper/host-console images that are never the real service when walking a process tree.</summary>
 	private static readonly string[] WrapperImages =
@@ -107,6 +112,85 @@ public static class LocalStackProcess
 		{
 			return rootPid;
 		}
+	}
+
+	/// <summary>
+	/// The command line of ONE pid, or null when it can't be read. Unlike <see cref="FindByCommandLine"/> (a
+	/// Windows-only scan of every process) this works on every platform, so a step's identity can be confirmed
+	/// off Windows too: <c>/proc/&lt;pid&gt;/cmdline</c> on Linux, <c>ps -o command=</c> on macOS, WMI on Windows.
+	/// Best-effort — never throws.
+	/// </summary>
+	public static string TryGetCommandLine(int pid)
+	{
+		if (pid <= 0)
+			return null;
+
+		try
+		{
+			if (OperatingSystem.IsWindows())
+				return GetCommandLineWindows(pid);
+
+			// Linux (and WSL): the kernel exposes the argv vector NUL-separated.
+			var procFile = $"/proc/{pid}/cmdline";
+			if (File.Exists(procFile))
+				return File.ReadAllText(procFile).Replace('\0', ' ').Trim();
+
+			// macOS has no /proc; ask ps for the full argument vector of just this pid.
+			return RunPs(pid);
+		}
+		catch
+		{
+			return null; // unreadable (permissions, already exited, unsupported platform)
+		}
+	}
+
+	[SupportedOSPlatform("windows")]
+	private static string GetCommandLineWindows(int pid)
+	{
+		using var searcher = new ManagementObjectSearcher(
+			$"SELECT CommandLine FROM Win32_Process WHERE ProcessId = {pid}");
+		using var results = searcher.Get();
+		foreach (var o in results)
+		{
+			using var mo = (ManagementObject)o;
+			return mo["CommandLine"] as string;
+		}
+
+		return null;
+	}
+
+	/// <summary>macOS/BSD fallback: <c>ps -ww -o command= -p &lt;pid&gt;</c>. Both pipes are drained and the wait is
+	/// bounded, so a stalled <c>ps</c> can never hang the caller.</summary>
+	private static string RunPs(int pid)
+	{
+		var psi = new ProcessStartInfo("ps")
+		{
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			UseShellExecute = false,
+			CreateNoWindow = true
+		};
+		psi.ArgumentList.Add("-ww");
+		psi.ArgumentList.Add("-o");
+		psi.ArgumentList.Add("command=");
+		psi.ArgumentList.Add("-p");
+		psi.ArgumentList.Add(pid.ToString());
+
+		using var proc = Process.Start(psi);
+		if (proc == null)
+			return null;
+
+		// Drain both pipes concurrently: reading one to EOF while the other fills its buffer deadlocks.
+		var stdout = proc.StandardOutput.ReadToEndAsync();
+		var stderr = proc.StandardError.ReadToEndAsync();
+		if (!proc.WaitForExit(3000))
+		{
+			try { proc.Kill(entireProcessTree: true); } catch { /* best-effort */ }
+			return null;
+		}
+
+		Task.WaitAll(new Task[] { stdout, stderr }, 1000);
+		return stdout.IsCompletedSuccessfully ? stdout.Result.Trim() : null;
 	}
 
 	[SupportedOSPlatform("windows")]
@@ -218,8 +302,25 @@ public static class LocalStackProcess
 	private static extern uint GetExtendedTcpTable(IntPtr pTcpTable, ref int dwOutBufLen, bool sort,
 		int ipVersion, int tblClass, int reserved);
 
+	/// <summary>
+	/// The pid listening on <paramref name="port"/> at <em>any</em> local address (0.0.0.0, a specific NIC, or
+	/// 127.0.0.1) — used to name the owner of a squatted port. Windows-only; returns 0 elsewhere, on error, or
+	/// when nothing is listening. IPv4 table only, so an IPv6-only listener is not identified (the caller's bind
+	/// probe still reports the port as taken).
+	/// </summary>
+	public static int FindListenerPid(int port)
+	{
+		if (port <= 0 || !OperatingSystem.IsWindows())
+			return 0;
+		try { return FindListenerPidWindows(port, loopbackOnly: false); }
+		catch { return 0; }
+	}
+
 	[SupportedOSPlatform("windows")]
-	private static int FindLoopbackListenerPid(int port)
+	private static int FindLoopbackListenerPid(int port) => FindListenerPidWindows(port, loopbackOnly: true);
+
+	[SupportedOSPlatform("windows")]
+	private static int FindListenerPidWindows(int port, bool loopbackOnly)
 	{
 		// 127.0.0.1 as the driver stores it (network-order bytes read as a host uint).
 		var loopbackAddr = BitConverter.ToUInt32(IPAddress.Loopback.GetAddressBytes(), 0);
@@ -245,7 +346,9 @@ public static class LocalStackProcess
 
 				if (row.state != MIB_TCP_STATE_LISTEN)
 					continue;
-				if (row.localAddr != loopbackAddr) // specific 127.0.0.1 bind only — excludes Docker's 0.0.0.0
+				// The squatter hunt wants the specific 127.0.0.1 bind only (Docker's proxy binds 0.0.0.0, so a
+				// loopback bind is by definition foreign). Naming a port's owner wants any local address.
+				if (loopbackOnly && row.localAddr != loopbackAddr)
 					continue;
 
 				// localPort is network byte order in the low word; swap to host order.

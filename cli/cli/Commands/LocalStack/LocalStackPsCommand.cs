@@ -81,13 +81,14 @@ public class LocalStackPsCommand
 
 		foreach (var s in state.steps)
 		{
-			// The recorded pid works once `up` has resolved it to the service leaf. For stacks brought up by
-			// an older CLI (which recorded the Windows wrapper pid that has since died), fall back to matching
-			// the service on a live JVM's command line so it isn't misreported as "stopped".
-			var running = !s.waitForExit && IsRunning(s.pid);
+			// The recorded pid works once `up` has resolved it to the service leaf, but it must be identity-checked:
+			// a recycled pid otherwise reports a service as running when it is long gone (see LocalStackLiveness).
+			// For stacks brought up by an older CLI (which recorded the Windows wrapper pid that has since died),
+			// fall back to matching the service on a live JVM's command line so it isn't misreported as "stopped".
+			var tokens = LocalStackStopCommand.BuildKillTokens(s);
+			var running = LocalStackLiveness.IsEntryRunning(s, tokens);
 			if (!running && !s.waitForExit)
-				running = LocalStackProcess.FindByCommandLine(
-					LocalStackStopCommand.BuildKillTokens(s), LocalStackProcess.ServiceImages).Count > 0;
+				running = LocalStackProcess.FindByCommandLine(tokens, LocalStackProcess.ServiceImages).Count > 0;
 
 			result.steps.Add(new LocalStackPsEntry
 			{
@@ -106,19 +107,6 @@ public class LocalStackPsCommand
 		return result;
 	}
 
-	private static bool IsRunning(int pid)
-	{
-		if (pid <= 0) return false;
-		try
-		{
-			var p = Process.GetProcessById(pid);
-			return !p.HasExited;
-		}
-		catch
-		{
-			return false;
-		}
-	}
 
 	private static async Task<bool> ProbeMetadata(string host)
 	{

@@ -22,6 +22,7 @@ public class LocalStackInitCommandArgs : CommandArgs
 	public bool updateServices;
 	public bool withWebRegistry;
 	public string webRegistryDir;
+	public string scalaJvmArgs;
 }
 
 public class LocalStackInitCommandResult
@@ -70,6 +71,9 @@ public class LocalStackInitCommand
 			(args, v) => args.extensions = v);
 		AddOption(new Option<bool>("--update-services", "Only update the microservice/extension steps of an existing manifest, leaving everything else untouched"),
 			(args, v) => args.updateServices = v);
+		AddOption(new Option<string>("--scala-jvm-args", () => LocalStackTemplate.DefaultScalaJvmArgs,
+				"JVM flags each Scala service is launched with; the heap cap keeps ~18 JDK 8 JVMs from each reserving a quarter of physical RAM"),
+			(args, v) => args.scalaJvmArgs = v);
 		AddOption(new Option<bool>("--with-web-registry", "Include a step for the local web package registry (Verdaccio and local-unpkg), for iterating on the web SDK or Portal Toolkit"),
 			(args, v) => args.withWebRegistry = v);
 		AddOption(new Option<string>("--web-registry-dir", "Absolute path to the portal-localdev directory holding the web registry compose file; implies --with-web-registry"),
@@ -555,6 +559,7 @@ public class LocalStackInitCommand
 			extensions = ExcludeGroupMembers(selectedExtensions, selectedGroups, discoveredGroups),
 			groups = selectedGroups,
 			javaHome = javaHome,
+			scalaJvmArgs = args.scalaJvmArgs ?? defaults.scalaJvmArgs,
 			includeWebRegistry = args.withWebRegistry || !string.IsNullOrWhiteSpace(args.webRegistryDir),
 			webRegistryDir = NullIfEmpty(webRegistryDir),
 		};
