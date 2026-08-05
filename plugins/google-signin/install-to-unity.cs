@@ -34,6 +34,15 @@ using System.Text.RegularExpressions;
 // project's D8, and a D8 from AGP 4.0.x cannot read anything newer. 52 is Java 8.
 const int RequiredClassFileMajorVersion = 52;
 
+// The JDK that runs the build - unrelated to the bytecode above, which is always Java 8.
+//
+// The floor is AGP: 7.4.2 refuses to run on anything older than Java 11, and fails inside Gradle with
+// an unhelpful message rather than up front. The ceiling is Gradle: 7.6.4 cannot run on Java 20+ at
+// all ("Unsupported class file major version"). 11-17 is also exactly the window Unity's bundled JDKs
+// occupy - 11 for 2021.3-2022.3, 17 for Unity 6 - so the Unity-paired JDK always qualifies.
+const int MinimumJdkMajorVersion = 11;
+const int MaximumJdkMajorVersion = 17;
+
 // The static methods GoogleSignIn.cs / GoogleSignInService.cs call by name through JNI. If R8 or a
 // refactor drops one of these, the failure only shows up at runtime on a device.
 string[] requiredMethods =
@@ -53,6 +62,9 @@ if (args.Contains("--help") || args.Contains("-h"))
 
         JAVA_HOME and ANDROID_HOME are used when set; otherwise a Unity-bundled JDK and
         Android SDK are located automatically.
+
+        The build needs a JDK between 11 and 17. A JAVA_HOME outside that range is
+        reported and skipped in favour of a Unity-bundled JDK.
         """);
     return 0;
 }
@@ -91,6 +103,20 @@ var pluginVersion = ReadPluginVersion(moduleBuildGradle);
 var requiredPlatform = ReadGradleValue(moduleBuildGradle, @"compileSdk\s+(\d+)");
 var requiredBuildTools = ReadGradleValue(moduleBuildGradle, @"buildToolsVersion\s+['""]([^'""]+)['""]");
 
+// Only used to explain the JDK requirement, since these two are what impose it. Read rather than
+// hardcoded, so the message cannot drift away from the pins it describes.
+var agpVersion = ReadGradleValue(Path.Combine(pluginDir.FullName, "build.gradle"),
+    @"com\.android\.tools\.build:gradle:([\d.]+)");
+var gradleVersion = ReadGradleValue(
+    Path.Combine(pluginDir.FullName, "gradle", "wrapper", "gradle-wrapper.properties"),
+    @"gradle-([\d.]+)-bin\.zip");
+
+var jdkRequirement = $"JDK {MinimumJdkMajorVersion} to {MaximumJdkMajorVersion} is required" +
+    (string.IsNullOrEmpty(agpVersion) && string.IsNullOrEmpty(gradleVersion)
+        ? "."
+        : $": AGP {Quote(agpVersion)} does not run on an older JDK, and Gradle {Quote(gradleVersion)} " +
+          $"cannot run on a newer one.");
+
 Console.WriteLine($"Beamable Google Sign-In plugin {pluginVersion}");
 Console.WriteLine($"  plugin:  {pluginDir.FullName}");
 Console.WriteLine($"  install: {(verifyOnly ? "(skipped, --verify-only)" : unityPluginDir)}");
@@ -101,9 +127,10 @@ Console.WriteLine($"  install: {(verifyOnly ? "(skipped, --verify-only)" : unity
 // build reproducible: javac 11 and javac 17 both emit valid Java 8 bytecode, but not byte-identical
 // class files, so mixing editors would make the committed .aar churn for no source change.
 var androidHome = ResolveAndroidHome(requiredPlatform, requiredBuildTools);
-var javaHome = ResolveJavaHome(androidHome);
+var jdk = ResolveJavaHome(androidHome, MinimumJdkMajorVersion, MaximumJdkMajorVersion, jdkRequirement);
+var javaHome = jdk.Path;
 
-Console.WriteLine($"  JDK:     {javaHome}");
+Console.WriteLine($"  JDK:     {javaHome} (JDK {jdk.Major})");
 Console.WriteLine($"  SDK:     {androidHome}");
 Console.WriteLine($"           (needs platform android-{requiredPlatform}, build-tools {requiredBuildTools})");
 Console.WriteLine();
@@ -363,31 +390,123 @@ static string ReadGradleValue(string buildGradle, string pattern)
     return match.Success ? match.Groups[1].Value : "";
 }
 
-static string ResolveJavaHome(string androidHome)
+/// <summary>
+/// Find a JDK the build can actually run on, in order of preference, and prove its version.
+/// </summary>
+/// <remarks>
+/// Unlike <c>ResolveAndroidHome</c>, an explicit JAVA_HOME is *not* respected as-is: Gradle will
+/// happily download a missing Android SDK component, but it cannot fix a JDK that AGP refuses to run
+/// on - it just fails deep in the build with a message that does not mention Java. So every candidate
+/// is version-checked here, and one that does not qualify is reported and skipped rather than handed
+/// to Gradle. Skipping is loud on purpose: silently overriding an explicit JAVA_HOME would be its own
+/// kind of surprise.
+/// </remarks>
+static (string Path, int Major) ResolveJavaHome(
+    string androidHome, int minimumMajor, int maximumMajor, string requirement)
 {
+    var candidates = new List<(string Path, string Source)>();
+
     var fromEnvironment = Environment.GetEnvironmentVariable("JAVA_HOME");
     if (!string.IsNullOrWhiteSpace(fromEnvironment) && Directory.Exists(fromEnvironment))
     {
-        return fromEnvironment;
+        candidates.Add((fromEnvironment, "JAVA_HOME"));
     }
 
-    // Any JDK 11 or 17 works - AGP 7.4.2 runs on both, which is why it is pinned. The Unity-bundled
-    // one means nobody has to install a JDK to build this plugin. Prefer the one sitting next to the
-    // Android SDK we chose, so the two come from the same editor install.
+    // The Unity-bundled JDK means nobody has to install one to build this plugin. Prefer the one
+    // sitting next to the Android SDK we chose, so the two come from the same editor install.
     var sibling = Path.Combine(Path.GetDirectoryName(androidHome.TrimEnd(Path.DirectorySeparatorChar)) ?? "",
                                "OpenJDK");
     if (Directory.Exists(sibling))
     {
-        return sibling;
+        candidates.Add((sibling, "the JDK bundled beside the chosen Android SDK"));
     }
 
-    var candidate = UnityAndroidPlayerDirectories()
-        .Select(d => Path.Combine(d, "OpenJDK"))
-        .FirstOrDefault(Directory.Exists);
+    // Any other editor's JDK, newest first. Worth checking even though the list is ordered
+    // lexicographically rather than by version: an editor bundling a JDK outside the supported range
+    // is now skipped instead of selected and then failing inside Gradle.
+    foreach (var other in UnityAndroidPlayerDirectories()
+                 .Select(d => Path.Combine(d, "OpenJDK"))
+                 .Where(Directory.Exists))
+    {
+        candidates.Add((other, "a Unity-bundled JDK"));
+    }
 
-    return candidate ?? throw new InvalidOperationException(
-        "No JDK found. Set JAVA_HOME, or install a Unity editor with Android support " +
-        "(its bundled JDK is used automatically).");
+    var rejected = new List<string>();
+
+    foreach (var (path, source) in candidates.DistinctBy(c => c.Path))
+    {
+        var major = JdkMajorVersion(path);
+
+        if (major >= minimumMajor && major <= maximumMajor)
+        {
+            return (path, major.Value);
+        }
+
+        var found = major.HasValue ? $"JDK {major}" : "no usable JDK";
+        rejected.Add($"{source}: {path} ({found})");
+
+        Console.WriteLine($"  note  skipping {source} - {found} at {path}. This build needs " +
+                          $"JDK {minimumMajor}-{maximumMajor}.");
+    }
+
+    throw new InvalidOperationException(
+        $"No supported JDK found. {requirement}\n" +
+        (rejected.Count == 0
+            ? "  nothing was found to check."
+            : string.Join("\n", rejected.Select(r => $"  rejected {r}"))) +
+        $"\nSet JAVA_HOME to a JDK {minimumMajor} or {maximumMajor}, or install a Unity editor with " +
+        "Android support (its bundled JDK is used automatically).");
+}
+
+/// <summary>
+/// The major version of the JDK installed at <paramref name="javaHome"/>, or null if that is not a
+/// usable JDK.
+/// </summary>
+/// <remarks>
+/// The `release` file is part of every JDK 9+ layout, so the common case costs no process launch.
+/// The fallback exists for JDK 8, which has no `release` file on some builds and which is precisely
+/// the version this check has to catch.
+/// </remarks>
+static int? JdkMajorVersion(string javaHome)
+{
+    var releaseFile = Path.Combine(javaHome, "release");
+    if (File.Exists(releaseFile))
+    {
+        var declared = Regex.Match(File.ReadAllText(releaseFile), @"JAVA_VERSION=""([^""]+)""");
+        if (declared.Success && TryParseJavaMajor(declared.Groups[1].Value, out var fromRelease))
+        {
+            return fromRelease;
+        }
+    }
+
+    var java = Path.Combine(javaHome, "bin", OperatingSystem.IsWindows() ? "java.exe" : "java");
+    if (!File.Exists(java))
+    {
+        // Not a JDK at all - an empty directory, or a JRE-only layout that cannot compile anything.
+        return null;
+    }
+
+    // `java -version` writes its banner to stderr on JDK 8 and to stdout on newer JDKs; Capture
+    // concatenates both, so one regex covers either.
+    var banner = Capture(java, ["-version"]);
+    var reported = Regex.Match(banner, @"version\s+""([^""]+)""");
+
+    return reported.Success && TryParseJavaMajor(reported.Groups[1].Value, out var fromBanner)
+        ? fromBanner
+        : null;
+}
+
+/// <summary>
+/// Parse a Java version string into its major version: "1.8.0_402" is 8, "11.0.20" is 11, "17" is 17,
+/// "21.0.2+13" is 21.
+/// </summary>
+static bool TryParseJavaMajor(string version, out int major)
+{
+    // The legacy "1.x" scheme puts the major version second; everything since Java 9 puts it first.
+    var match = Regex.Match(version, @"^(?:1\.(\d+)|(\d+))");
+    var digits = match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value;
+
+    return int.TryParse(digits, out major);
 }
 
 static string ResolveAndroidHome(string requiredPlatform, string requiredBuildTools)

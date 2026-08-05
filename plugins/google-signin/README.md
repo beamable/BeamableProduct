@@ -16,8 +16,12 @@ is `Beamable.Platform.SDK.Auth.GoogleSignIn` / `GoogleSignInService`.
 
 ## Prerequisites
 
-- **JDK 11 or 17.** Both work. The Unity-bundled JDK is a fine choice and needs no separate install:
-  `/Applications/Unity/Hub/Editor/<version>/PlaybackEngines/AndroidPlayer/OpenJDK`
+- **JDK 11 or 17.** Both work; nothing outside 11–17 does — AGP 7.4.2 will not run on Java 8, and
+  Gradle 7.6.4 will not run on Java 20+. The Unity-bundled JDK is a fine choice and needs no separate
+  install: `/Applications/Unity/Hub/Editor/<version>/PlaybackEngines/AndroidPlayer/OpenJDK`
+  `install-to-unity.cs` checks the major version of every candidate, so a `JAVA_HOME` outside the
+  range is reported and skipped in favour of the Unity-bundled JDK rather than failing later inside
+  Gradle.
 - **Android SDK with platform 34 and build-tools 34.0.0.** The SDK bundled with Unity 2022.3 has
   exactly these, so pointing `ANDROID_HOME` at it requires no `sdkmanager` downloads:
   `/Applications/Unity/Hub/Editor/<version>/PlaybackEngines/AndroidPlayer/SDK`
