@@ -407,6 +407,94 @@ public partial class MyMicroservice : Microservice
 	}
 	
 	[Fact]
+	public async Task Test_ClientCallable_TupleReturn_IsAllowedWhenUnrealBlueprintCompatibilityIsDisabled()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice
+{
+	[ClientCallable]
+	public (int, int) GetTuple()
+	{
+		return (1, 3);
+	}
+}
+";
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+
+		PrepareForRun(ctx, UserCode, enableUnrealBlueprintCompatibility: false);
+
+		await ctx.RunAsync();
+	}
+
+	[Fact]
+	public async Task Test_ClientCallable_TupleReturn_StillValidatesItsElements()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice
+{
+	[ClientCallable]
+	public (int, InvalidResponse) GetTuple()
+	{
+		return (1, new InvalidResponse());
+	}
+}
+
+public class {|#0:InvalidResponse|}
+{
+	public int value;
+}
+";
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+
+		PrepareForRun(ctx, UserCode, enableUnrealBlueprintCompatibility: false);
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.MissingSerializableAttributeOnType)
+				.WithLocation(0)
+				.WithArguments("InvalidResponse"));
+
+		await ctx.RunAsync();
+	}
+
+	[Fact]
+	public async Task Test_ClientCallable_TupleReturn_IsRejectedWhenUnrealBlueprintCompatibilityIsEnabled()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice
+{
+	[ClientCallable]
+	public {|#0:(int, int)|} GetTuple()
+	{
+		return (1, 3);
+	}
+}
+";
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+
+		PrepareForRun(ctx, UserCode);
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.InvalidGenericTypeOnMicroservice)
+				.WithLocation(0)
+				.WithArguments("GetTuple return", "GetTuple"));
+
+		await ctx.RunAsync();
+	}
+
+	[Fact]
 	public async Task Test_Diagnostic_Srv_MissingSerializableOnType()
 	{
 		const string UserCode = @"
