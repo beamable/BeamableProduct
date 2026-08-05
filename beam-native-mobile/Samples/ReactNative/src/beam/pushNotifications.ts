@@ -35,7 +35,7 @@ export {
 } from '@beamable/notifications-react-native';
 
 const NOT_CONNECTED =
-  'Not connected — call initBeam() (Connect to Beamable) first.';
+  'Not connected — Beamable connects automatically on launch; wait for it, or use Retry connection.';
 
 /** Resolve the message-rail service, or throw if not connected. */
 function messageRail() {

@@ -205,8 +205,9 @@ Because these are native changes, the app runs as a **dev build** (`expo run:ios
 
 ### React hooks (recommended) — how this sample wires it
 
-The package ships three hooks; this sample uses all three (see `app/index.tsx` and
-`app/_layout.tsx`). They own subscription lifecycle and expose push state as React state:
+The package ships three hooks; this sample uses all three (see `src/state/notificationContext.tsx`
+and `app/(tabs)/index.tsx`, the Push tab). They own subscription lifecycle and expose push state
+as React state:
 
 ```tsx
 import {
@@ -252,7 +253,7 @@ List the player's devices any time with `listDevices()` (→ `listMyDevices()`).
 ### Native events → deep-link routing
 
 A tapped notification carries a deep link. Route it through the OS both while running
-and on cold start (see `app/_layout.tsx`):
+and on cold start (see `src/state/notificationContext.tsx`):
 
 ```tsx
 BeamNotificationEvent('notificationOpened', (n) => {
@@ -322,14 +323,15 @@ Android also exposes raw URL-scheme VIEW intents via `addBeamableDeepLinkListene
 
 On a **physical device** with a **dev build**:
 
-1. Connect to Beamable (guest login succeeds, `player.id` shown).
-2. Request permission → `permissionResult` fires.
+1. On launch, the status strip reaches `Ready · player <id>` with no interaction (guest login).
+2. **Push** tab → Request permission → `permissionResult` fires.
 3. Register for remote → `tokenReceived` fires; the device auto-registers (a
-   `Device registered with CampaignService` line appears).
-4. List devices → your token comes back (masked).
-5. Fire a local notification, background the app, tap it → `notificationOpened` fires
-   and the app deep-links into `details/<id>`.
-6. Track clicked / converted → `funnelResult` reports the send.
+   `Device registered via message-rail (push)` line appears in the Activity stream).
+4. Opt in to push, then List my registered devices → your token comes back.
+5. **Push → Debug** → Fire local now, background the app, tap it → `notificationOpened` fires
+   **exactly once** in the Native events stream and the app deep-links into `details/<id>`.
+6. **Analytics** tab → Track clicked / converted → `funnelResult` reports the send.
+7. **In-game** tab → switch away and back; the mailbox refreshes on focus with no tap.
 
 > Optional: the web build can also run inside a **Unity WebView**, where the same calls route
 > to the Unity `com.beamable.notifications` plugin. This is now **built into the package** — its

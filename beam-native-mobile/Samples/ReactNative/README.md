@@ -50,7 +50,7 @@ npx expo install --fix   # align native module versions with the Expo SDK
 ## 2. Configure Beamable credentials
 
 Edit `src/beam/config.ts` and set your realm's `cid`, `pid`, and `environment`. The app
-runs without this, but **"Connect to Beamable"** will report it's not configured; deep
+connects on launch, so without this the status bar reports it's not configured; deep
 links and local notifications work regardless.
 
 For **remote** push you also need provider credentials on your realm — `apns_push`
@@ -108,20 +108,43 @@ config plugin (see below). Later runs are fast (`npm start` to just start Metro)
 
 ---
 
-## The single screen (`app/index.tsx`)
+## The screens
 
-| Section | Buttons | What it verifies |
+Beamable connects **automatically on launch** — there is no connect button. A status strip
+above the tabs shows `Ready · player <id>`, and offers **Retry connection** if init failed.
+
+Tabs are listed below in bar order; the bar follows the order of the `Tabs.Screen` children in
+`app/(tabs)/_layout.tsx`. Push is the `index` route, so the first tab is also the launch screen.
+
+| Tab (`app/(tabs)/…`) | Controls | What it verifies |
 |---|---|---|
-| **1 · Web SDK** | Connect to Beamable | `Beam.init()` guest login; shows `beam.player.id` |
-| **2 · Permission & remote** | Request permission · Register for remote · Fire local now/in 10s | permission flow, remote registration (token on event), local notifications that deep-link |
-| **3 · Devices** | Register this device · List my registered devices | registers the APNs/FCM token with `CampaignService`; lists registrations |
-| **4 · Analytics** | Track offer clicked · Track offer converted · Clear native auth | native `Clicked`/`Converted` funnel events (iOS + Android) |
-| **5 · Deep links** | Simulate deep link · Navigate directly | OS-routed deep link and in-app navigation |
-| **Native events** | *(live log)* | every SDK event with its payload, color-coded |
-| **Activity log** | *(text feed)* | outcomes of the button presses above |
+| **Push** (`index.tsx`) | Request permission · Register for remote · Opt in/out of push · List my devices · **Debug**: fire local now/in 10s, 5 × Live Activity *(iOS only — hidden on Android)* | permission flow, remote registration (token on event), the `push` rail, local notifications that deep-link, Live Activity widgets |
+| **Deep links** (`deeplinks.tsx`) | Simulate · Navigate directly · Open any URL · Last received | OS-routed deep link, in-app navigation, `normalizeDeepLink`'s schemeless back-stop |
+| **In-game** (`inbox.tsx`) | Opt in/out of in-game · Inbox (auto-refreshes on focus, ↻ in the corner) | the `ingame` rail and the player's Beamable mailbox |
+| **Email** (`email.tsx`) | Account (read-only) · Add email to account · Opt in/out of email | `beam.account.current()` guest-vs-credentialed state; `addCredentials` → POST `/basic/accounts/register`; the `email` rail |
+| **Analytics** (`analytics.tsx`) | Campaign/Node ID · Track offer clicked · Track offer converted · Clear native auth | native `Clicked`/`Converted` funnel events (iOS + Android) and the closed-app auth handoff |
+| **Unity** (`unity.tsx`) | Send message to Unity | the Unity ↔ React WebView bridge. **Web only** — the tab is hidden on native |
 
-The device auto-registers as soon as the `tokenReceived` event fires (section 2 →
-section 3). Push **delivery** is driven from the Portal Campaign Builder.
+A collapsible console is pinned to the bottom of every tab with two streams behind a tab
+strip: **Activity** (outcomes of button presses) and **Native events** (every SDK event with
+its payload, color-coded).
+
+The device auto-registers as soon as the `tokenReceived` event fires (Push → Remote
+registration). Push **delivery** is driven from the Portal Campaign Builder.
+
+> Rail opt-in state is shown as "last action here", not as current status:
+> `MessageRailService` exposes only `optIn` / `optOut` — the platform has no endpoint to read a
+> player's registration back.
+
+### Shared state (`src/state/`)
+
+Cross-page state lives in three providers, composed by `AppProviders.tsx`:
+
+- `logContext.tsx` — the two log streams. Split into `useLogActions()` (stable `append`) and
+  `useLogData()` (the arrays) so a log line doesn't re-render every page.
+- `beamContext.tsx` — auto-init, connection status, account, and rail opt-in.
+- `notificationContext.tsx` — funnel coordinates, deep-link routing, device registration on
+  `tokenReceived`, and the last captured native deep link.
 
 ### Deep links from the command line
 
@@ -136,14 +159,15 @@ npx uri-scheme open "beamrnsample://details/42" --ios   # or --android
 
 ### Notification → deep-link routing
 
-`app/_layout.tsx` uses the package's React hooks: `BeamNotificationEvent('notificationOpened', …)`
-opens the payload's deep link via `Linking.openURL`, and `BeamLaunchNotification()` covers a tap
-that **cold-launches** the app so it still routes correctly. Background the app, then tap a
-notification to test it.
+`src/state/notificationContext.tsx` uses the package's React hooks:
+`BeamNotificationEvent('notificationOpened', …)` opens the payload's deep link via
+`Linking.openURL`, and `BeamLaunchNotification()` covers a tap that **cold-launches** the app so
+it still routes correctly. Background the app, then tap a notification to test it. Both handlers
+also seed the Analytics tab's funnel coordinates — one subscription per event, not two.
 
 ### React hooks (the ergonomic API)
 
-Both screens consume the package's hooks rather than hand-wiring `addListener`/`useEffect`:
+The providers consume the package's hooks rather than hand-wiring `addListener`/`useEffect`:
 
 - `BeamPushNotifications()` — initializes on mount and returns reactive `{ isSupported, permission,
   token, lastOpened }` plus the Promise-returning `requestPermission` / `registerForRemote`.
@@ -185,10 +209,20 @@ via `beam.use(CampaignServiceClient)` and reached with `getPushService()`. See
 
 ```
 app/
-  _layout.tsx        # Stack + notification-tap → deep-link routing
-  index.tsx          # the single screen (all flows + native-event log)
+  _layout.tsx        # AppProviders + root Stack
+  (tabs)/
+    _layout.tsx      # ConnectionBar + <Tabs> + DebugConsole (tab order lives here)
+    index.tsx        # Push: permission, remote registration, push rail, Debug group
+    deeplinks.tsx    # simulate / open any URL / last received
+    inbox.tsx        # in-game rail + mailbox (auto-refresh on focus)
+    email.tsx        # account, add-email, email rail
+    analytics.tsx    # funnel clicked/converted, native auth
+    unity.tsx        # Unity bridge (web only — hidden tab on native)
   details/[id].tsx   # deep-link target screen
 src/
+  state/             # AppProviders + the three contexts (log / beam / notification)
+  ui/                # theme tokens + Section/Button/Field/Collapsible/TabStrip/
+                     #   ConnectionBar/DebugConsole/MessageCard
   beam/
     config.ts        # cid / pid / environment (EDIT THIS)
     beamClient.ts    # Beam.init() singleton + getPushService()

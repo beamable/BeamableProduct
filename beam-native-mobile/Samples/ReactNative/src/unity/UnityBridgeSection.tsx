@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import {
   addUnityMessageListener,
@@ -10,19 +10,24 @@ import {
   type UnityHostPlatform,
 } from '@beamable/notifications-react-native';
 
+import { useLogActions } from '../state/logContext';
+import Button from '../ui/Button';
+import { Hint, Value } from '../ui/Hint';
+import Section from '../ui/Section';
+import { colors, space } from '../ui/theme';
+
 /**
- * Demo panel for the Unity ↔ React bridge. Rendered only on web
- * (app/index.tsx gates it behind Platform.OS === 'web'); it is meaningful when
- * the web build is hosted inside a Unity WebView (gree/unity-webview).
+ * Demo panel for the Unity ↔ React bridge. Rendered on the web-only Unity tab; it is
+ * meaningful when the web build is hosted inside a Unity WebView (gree/unity-webview).
+ *
+ * Bridge traffic goes to the shared Activity log rather than a private list, so it interleaves
+ * with everything else the app is doing.
  */
 export default function UnityBridgeSection() {
+  const { append } = useLogActions();
   const [inUnity, setInUnity] = useState(isUnityWebView());
   const [host, setHost] = useState<UnityHostPlatform | null>(getUnityHostPlatform());
-  const [log, setLog] = useState<string[]>([]);
   const [sendCount, setSendCount] = useState(0);
-
-  const append = (msg: string) =>
-    setLog((prev) => [`${new Date().toLocaleTimeString()}  ${msg}`, ...prev].slice(0, 20));
 
   useEffect(() => {
     // On iOS/macOS the window.Unity shim is injected by Unity after page load,
@@ -50,66 +55,36 @@ export default function UnityBridgeSection() {
   };
 
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>6 · Unity bridge</Text>
+    <Section title="Unity bridge">
       <View style={styles.statusRow}>
-        <View style={[styles.dot, { backgroundColor: inUnity ? '#22c55e' : '#9ca3af' }]} />
+        <View
+          style={[
+            styles.dot,
+            { backgroundColor: inUnity ? colors.statusReady : colors.statusIdle },
+          ]}
+        />
         <Text style={styles.statusText}>
           {inUnity ? 'Running inside a Unity WebView' : 'Not inside Unity (plain browser)'}
         </Text>
       </View>
       {host && (
-        <Text style={styles.hint}>
-          Host: {host.os}
+        <Value label="Host">
+          {host.os}
           {host.isEditor ? ' (editor)' : ''} · native notifications{' '}
           {host.nativeSupported ? 'available' : 'unavailable'}
-        </Text>
+        </Value>
       )}
-      <Text style={styles.hint}>
-        Sends window.Unity.call(json) to Unity; receives messages Unity pushes
-        via EvaluateJS("window.onUnityMessage('…')").
-      </Text>
-      <Pressable
-        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-        onPress={ping}
-      >
-        <Text style={styles.buttonText}>Send message to Unity</Text>
-      </Pressable>
-      {log.length === 0 ? (
-        <Text style={styles.hint}>No bridge messages yet.</Text>
-      ) : (
-        log.map((line, i) => (
-          <Text key={i} style={styles.logLine}>
-            {line}
-          </Text>
-        ))
-      )}
-    </View>
+      <Hint>
+        Sends window.Unity.call(json) to Unity; receives messages Unity pushes via
+        EvaluateJS("window.onUnityMessage('…')"). Both directions land in the Activity log.
+      </Hint>
+      <Button label="Send message to Unity" onPress={ping} />
+    </Section>
   );
 }
 
-// Mirrors the section/button styling in app/index.tsx.
 const styles = StyleSheet.create({
-  section: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    padding: 14,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#111827' },
-  button: {
-    backgroundColor: '#5A31F4',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  buttonPressed: { opacity: 0.7 },
-  buttonText: { color: 'white', fontWeight: '600', textAlign: 'center' },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   dot: { width: 10, height: 10, borderRadius: 5 },
-  statusText: { fontSize: 14, color: '#374151', flexShrink: 1 },
-  hint: { color: '#6b7280', fontSize: 12, fontFamily: 'Courier' },
-  logLine: { fontSize: 12, color: '#374151', fontFamily: 'Courier' },
+  statusText: { fontSize: 14, color: colors.inkSoft, flexShrink: 1 },
 });

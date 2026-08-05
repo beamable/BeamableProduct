@@ -12,7 +12,7 @@ import { mailPostSearchByObjectId } from '@beamable/sdk/api';
 import { getBeam } from './beamClient';
 
 const NOT_CONNECTED =
-  'Not connected — call initBeam() (Connect to Beamable) first.';
+  'Not connected — Beamable connects automatically on launch; wait for it, or use Retry connection.';
 
 /**
  * Fetches the current player's in-game messages (their Beamable mailbox), newest first.

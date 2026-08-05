@@ -14,9 +14,6 @@ import {
   StatsService,
 } from '@beamable/sdk';
 import { BEAM_CONFIG } from './config';
-// The package façade is platform-resolved: native → the native module, web → the built-in
-// Unity-WebView bridge (its `index.web.ts`). No per-app web file needed.
-import { BeamNotifications } from '@beamable/notifications-react-native';
 import { CampaignServiceClient } from './beamable/clients/CampaignServiceClient';
 
 export type BeamStatus =
@@ -117,22 +114,11 @@ export async function initBeam(): Promise<Beam> {
 
     // Best-effort: hand the player's tokens to the native side so the CLOSED-APP analytics
     // funnel can authenticate when the JS runtime is not running. Wrapped so a failure here
-    // never breaks init. The host is the platform URL the SDK is pointed at. The SDK stores
-    // `expiresIn` as an absolute epoch-MILLISECONDS timestamp, so it maps straight
-    // onto `accessTokenExpiresAt`.
+    // never breaks init. The payload is assembled by `nativeAuth.ts`, which the Analytics tab's
+    // auth viewer also uses — one source of truth for what native receives.
     try {
-      const { accessToken, refreshToken, expiresIn } =
-        await beam.tokenStorage.getTokenData();
-      if (accessToken && refreshToken && host) {
-        BeamNotifications.configureAuth({
-          accessToken,
-          refreshToken,
-          accessTokenExpiresAt: expiresIn ?? 0,
-          cid,
-          pid,
-          host,
-        });
-      }
+      const { configureNativeAuth } = await import('./nativeAuth');
+      await configureNativeAuth();
     } catch {
       // Native funnel auth is best-effort; never block init on it.
     }
