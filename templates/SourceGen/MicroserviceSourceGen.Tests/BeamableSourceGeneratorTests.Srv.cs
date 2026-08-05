@@ -432,6 +432,63 @@ public partial class MyMicroservice : Microservice
 	}
 
 	[Fact]
+	public async Task Test_ClientCallable_TupleField_IsAllowedWhenUnrealBlueprintCompatibilityIsDisabled()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using System;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice
+{
+	[ClientCallable]
+	public TupleResponse GetTupleResponse()
+	{
+		return new TupleResponse { value = (1, 3) };
+	}
+}
+
+[Serializable]
+public class TupleResponse
+{
+	public (int, int) value;
+}
+";
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+
+		PrepareForRun(ctx, UserCode, enableUnrealBlueprintCompatibility: false);
+
+		await ctx.RunAsync();
+	}
+
+	[Fact]
+	public async Task Test_ClientCallable_TupleParameter_IsAllowedWhenUnrealBlueprintCompatibilityIsDisabled()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice
+{
+	[ClientCallable]
+	public int AddTuple((int, int) value)
+	{
+		return value.Item1 + value.Item2;
+	}
+}
+";
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+
+		PrepareForRun(ctx, UserCode, enableUnrealBlueprintCompatibility: false);
+
+		await ctx.RunAsync();
+	}
+
+	[Fact]
 	public async Task Test_ClientCallable_TupleReturn_StillValidatesItsElements()
 	{
 		const string UserCode = @"

@@ -645,7 +645,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		}
 		
 		//Unity supports C# tuple serialization, but Unreal Blueprint generation does not.
-		if (!isBlueprintCompatible && typeSymbol.IsTupleType)
+		if (IsAllowedTuple(isBlueprintCompatible, typeSymbol))
 		{
 			return;
 		}
@@ -700,7 +700,8 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			}
 		}
 		
-		if (!isBlueprintCompatible && typeSymbol.IsTupleType)
+		//Unity supports C# tuple serialization, but Unreal Blueprint generation does not.
+		if (IsAllowedTuple(isBlueprintCompatible, typeSymbol))
 		{
 			return;
 		}
@@ -1056,4 +1057,23 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		return attributeClass.BaseType?.Name == callableAttributeName;
 	}
 	
+	/// <summary>
+	/// Determines whether a tuple is supported for the current client-generation target.
+	/// </summary>
+	/// <remarks>
+	/// Tuple containers are supported when Unreal Blueprint compatibility is disabled.
+	/// Their element types must still be validated before container-level validation is skipped.
+	/// </remarks>
+	/// <param name="isBlueprintCompatible">
+	/// Whether Unreal Blueprint compatibility is enabled for the current build.
+	/// </param>
+	/// <param name="typeSymbol">The type being validated.</param>
+	/// <returns>
+	/// <see langword="true"/> when <paramref name="typeSymbol"/> is a tuple and Unreal
+	/// Blueprint compatibility is disabled; otherwise, <see langword="false"/>.
+	/// </returns>
+	private static bool IsAllowedTuple(bool isBlueprintCompatible, ITypeSymbol typeSymbol)
+	{
+		return !isBlueprintCompatible && typeSymbol.IsTupleType;
+	}
 }
