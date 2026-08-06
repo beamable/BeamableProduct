@@ -1,12 +1,15 @@
 package com.beamable.push.react
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import com.beamable.push.BeamableAnalytics
 import com.beamable.push.CategoryStore
 import com.beamable.push.IntentDataReader
 import com.beamable.push.NotificationCategorySpec
 import com.beamable.push.NotificationIntentData
+import com.beamable.push.PermissionHelper
 import com.beamable.push.PushListener
 import com.beamable.push.PushManager
 import com.facebook.react.bridge.ActivityEventListener
@@ -16,6 +19,7 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.modules.core.DeviceEventManagerModule
+import com.facebook.react.modules.core.PermissionAwareActivity
 
 /**
  * INBOUND + OUTBOUND React Native bridge. `@ReactMethod` functions are the inbound API the JS
@@ -66,9 +70,59 @@ class ReactPushModule(
         }
     }
 
+    /**
+     * Requests POST_NOTIFICATIONS and emits `permissionResult` with the user's ACTUAL answer.
+     *
+     * RN's activity implements [PermissionAwareActivity], so unlike Unity we can observe
+     * `onRequestPermissionsResult`. We must: emitting the library's best-effort result instead would
+     * report the state *before* the user answers — always "denied" — so the first request failed and
+     * only a second one (short-circuiting on the now-granted permission) reported the truth.
+     *
+     * Falls back to the best-effort path only when the activity is not permission-aware, which is
+     * better than never emitting at all and leaving the JS promise pending forever.
+     */
     @ReactMethod
     fun requestPermission() {
-        currentActivity?.let { PushManager.requestPermission(it) }
+        val activity = currentActivity
+        if (activity == null) {
+            PushManager.dispatchError("request_permission", "No current activity")
+            PushManager.notifyPermissionResult(PushManager.hasPermission(reactContext))
+            return
+        }
+
+        val aware = activity as? PermissionAwareActivity
+        if (aware == null) {
+            // No way to observe the answer here; the best-effort path at least emits something.
+            PushManager.requestPermission(activity)
+            return
+        }
+
+        // Covers both early-outs: hasPermission() is unconditionally true below API 33.
+        if (PushManager.hasPermission(activity)) {
+            PushManager.notifyPermissionResult(true)
+            return
+        }
+
+        // RN issues the ONLY system request, so the grant callback routes back to this listener.
+        aware.requestPermissions(
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            PermissionHelper.DEFAULT_REQUEST_CODE,
+        ) { requestCode, permissions, grantResults ->
+            if (requestCode == PermissionHelper.DEFAULT_REQUEST_CODE) {
+                val idx = permissions.indexOf(Manifest.permission.POST_NOTIFICATIONS)
+                val granted = idx >= 0 &&
+                    idx < grantResults.size &&
+                    grantResults[idx] == PackageManager.PERMISSION_GRANTED
+                PushManager.notifyPermissionResult(granted)
+            }
+            true // handled; RN may release this listener
+        }
+    }
+
+    /** The current permission state, so JS can report it without having to request. */
+    @ReactMethod
+    fun getPermissionStatus(promise: Promise) {
+        promise.resolve(PushManager.hasPermission(reactContext))
     }
 
     @ReactMethod

@@ -56,11 +56,11 @@ export function BeamNotificationEvent<K extends keyof EventMap>(
  * arrive on the `notificationOpened` event instead — see {@link BeamPushNotifications}.
  */
 export function BeamLaunchNotification(): NotificationData | null {
-  const [launch, setLaunch] = useState<NotificationData | null>(null);
+  const [launch, setLaunch] = useState<NotificationData | null>(launchOnce.value);
 
   useEffect(() => {
     let active = true;
-    BeamableNotifications.getLaunchNotification().then((n) => {
+    resolveLaunchNotification().then((n) => {
       if (active) setLaunch(n);
     });
     return () => {
@@ -69,6 +69,31 @@ export function BeamLaunchNotification(): NotificationData | null {
   }, []);
 
   return launch;
+}
+
+/**
+ * Module-level memo of the cold-start launch notification.
+ *
+ * The native read is DESTRUCTIVE on Android — `IntentDataReader` clears the intent markers so a
+ * later resume cannot re-consume them — and therefore one-shot. Any remount of the provider
+ * (StrictMode's double-invoke in dev, Fast Refresh, a re-keyed provider) would otherwise resolve
+ * null the second time and silently drop the campaign coords, since the first result is discarded
+ * by the unmounted effect's `active` guard. iOS retains the value natively; Android does not.
+ */
+const launchOnce: { value: NotificationData | null; promise: Promise<NotificationData | null> | null } =
+  { value: null, promise: null };
+
+function resolveLaunchNotification(): Promise<NotificationData | null> {
+  if (launchOnce.value) return Promise.resolve(launchOnce.value);
+  if (!launchOnce.promise) {
+    launchOnce.promise = BeamableNotifications.getLaunchNotification().then((n) => {
+      // Only a hit is cached; a miss stays uncached so a later genuine launch can still resolve.
+      if (n) launchOnce.value = n;
+      launchOnce.promise = null;
+      return n;
+    });
+  }
+  return launchOnce.promise;
 }
 
 /**

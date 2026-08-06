@@ -178,10 +178,21 @@ object BeamableAnalytics {
         val alreadyRefreshed = auth.refreshed
 
         val body = buildBatch(intent, event.funnelType).toString()
-        val url = "$host/report/custom_batch/$cid/$pid/$gamerTag"
         val scope = "$cid.$pid"
 
-        var code = doPost(url, body, accessToken, scope)
+        // PRIMARY: the gateway's analytics endpoint, which publishes to the `analytics.events` bus
+        // the campaign event consumer subscribes to. This is the ONLY device path that can reach a
+        // campaign: `/report/custom_batch` publishes to `platform_metric_reports.general`, which
+        // feeds the warehouse loader and is never republished onto `analytics.events`.
+        //
+        // The bodies are identical — the gateway's `ClientAnalyticsEvent` has the same
+        // {op,e,c,p,time} shape as the CoreEvent built by [buildBatch] — so this is a URL swap.
+        // FALLBACK: the canonical report route (shared with Unity/CLI/iOS), used when the gateway
+        // endpoint is unavailable, so an older backend still records the event for the warehouse.
+        val primaryUrl = "$host/analytics/events"
+        val fallbackUrl = "$host/report/custom_batch/$cid/$pid/$gamerTag"
+
+        var code = doPost(primaryUrl, body, accessToken, scope)
         if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN) {
             if (alreadyRefreshed) {
                 // A proactive refresh already happened this send; a freshly-refreshed token still
@@ -198,7 +209,16 @@ object BeamableAnalytics {
                 return
             }
             accessToken = refreshed
-            code = doPost(url, body, accessToken, scope)
+            code = doPost(primaryUrl, body, accessToken, scope)
+        }
+
+        // The gateway route is missing/unroutable (e.g. an older backend): fall back rather than
+        // drop the event. Auth failures are NOT retried here — the token was already proven above.
+        if (code !in 200..299 && code != HttpURLConnection.HTTP_UNAUTHORIZED &&
+            code != HttpURLConnection.HTTP_FORBIDDEN
+        ) {
+            Log.i(TAG, "analytics endpoint unavailable (HTTP $code); falling back to report route")
+            code = doPost(fallbackUrl, body, accessToken, scope)
         }
         // Transport failure (-1) or any non-2xx after the single retry: persist for replay.
         if (code !in 200..299) {

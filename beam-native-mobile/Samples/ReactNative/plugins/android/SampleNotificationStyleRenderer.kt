@@ -11,6 +11,7 @@ import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.beamable.push.LocalNotificationScheduler
+import com.beamable.push.NotificationBuilder
 import com.beamable.push.NotificationTemplate
 import com.beamable.push.PushNotificationStyleRenderer
 import com.beamable.push.PushReceivedEvent
@@ -100,6 +101,7 @@ class SampleNotificationStyleRenderer : PushNotificationStyleRenderer {
         if (flipperId != 0) rv.setInt(flipperId, "setFlipInterval", flipInterval)
 
         ensureChannel(context)
+        val id = notificationId(event)
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(body)
@@ -109,8 +111,15 @@ class SampleNotificationStyleRenderer : PushNotificationStyleRenderer {
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setCustomContentView(rv)
             .setCustomBigContentView(rv)
+            // Carries the campaign payload onto the tap intent — see [templateFor].
+            .setContentIntent(
+                NotificationBuilder.buildContentIntent(
+                    context,
+                    templateFor(event, data, id, title, body, STYLE_ANIMATED),
+                )
+            )
 
-        NotificationManagerCompat.from(context).notify(notificationId(event), builder.build())
+        NotificationManagerCompat.from(context).notify(id, builder.build())
         return true
     }
 
@@ -178,6 +187,13 @@ class SampleNotificationStyleRenderer : PushNotificationStyleRenderer {
             // Ongoing so the ticking offer isn't swiped away before it expires; the expired swap
             // (same id, autoCancel) replaces it.
             .setOngoing(true)
+            // Carries the campaign payload onto the tap intent — see [templateFor].
+            .setContentIntent(
+                NotificationBuilder.buildContentIntent(
+                    context,
+                    templateFor(event, data, id, title, body, STYLE_COUNTDOWN),
+                )
+            )
 
         val layoutId = res.getIdentifier("beam_notif_countdown", "layout", pkg)
         if (layoutId != 0) {
@@ -208,12 +224,15 @@ class SampleNotificationStyleRenderer : PushNotificationStyleRenderer {
         // Schedule the "expired" replacement (SAME id → replaces the ticking notification in place).
         // Use an EXACT alarm so it fires right at 0 (no lingering negative countdown); the app
         // declares USE_EXACT_ALARM/SCHEDULE_EXACT_ALARM (see withSampleNotificationStyles.js).
-        val expired = NotificationTemplate(
-            id = id,
-            title = data.optStringOrNull("expiredTitle") ?: title,
-            body = data.optStringOrNull("expiredBody") ?: "Offer expired",
-            channelId = CHANNEL_ID,
-            style = "default"
+        // Carries the same payload/deeplink as the ticking notification it replaces, so tapping the
+        // expired variant still attributes to the campaign instead of opening with empty coords.
+        val expired = templateFor(
+            event,
+            data,
+            id,
+            data.optStringOrNull("expiredTitle") ?: title,
+            data.optStringOrNull("expiredBody") ?: "Offer expired",
+            style = "default",
         )
         LocalNotificationScheduler.scheduleAt(context, expired, expiresAtMs, exact = true)
         return true
@@ -222,6 +241,48 @@ class SampleNotificationStyleRenderer : PushNotificationStyleRenderer {
     // -----------------------------------------------------------------------
     // helpers
     // -----------------------------------------------------------------------
+
+    /**
+     * The FCM data map as a flat String→String payload.
+     *
+     * This is what carries `campaignId` / `nodeId` onto the tap intent. Without it the shared
+     * library's `beamable_payload_json` extra is never stamped, `IntentDataReader` bails on the
+     * missing marker, and the app opens with no campaign coords at all.
+     */
+    private fun payloadOf(data: JSONObject): Map<String, String> {
+        val out = LinkedHashMap<String, String>()
+        val keys = data.keys()
+        while (keys.hasNext()) {
+            val k = keys.next()
+            if (!data.isNull(k)) out[k] = data.optString(k)
+        }
+        return out
+    }
+
+    /**
+     * A template describing what we just posted, purely so [NotificationBuilder.buildContentIntent]
+     * can build the tap intent the shared library would have built itself.
+     *
+     * A renderer that returns true short-circuits the library's own `displayDataMessage`, so every
+     * renderer is responsible for its own content intent — omitting it is what left campaign
+     * attribution empty for the `animated` and `countdown` styles.
+     */
+    private fun templateFor(
+        event: PushReceivedEvent,
+        data: JSONObject,
+        id: Int,
+        title: String,
+        body: String,
+        style: String,
+    ) = NotificationTemplate(
+        id = id,
+        title = title,
+        body = body,
+        channelId = CHANNEL_ID,
+        dataPayload = payloadOf(data),
+        deepLinkUrl = event.deepLink,
+        style = style,
+    )
 
     /** Ensures the shared default channel exists (API 26+). No-op below that. */
     private fun ensureChannel(context: Context) {

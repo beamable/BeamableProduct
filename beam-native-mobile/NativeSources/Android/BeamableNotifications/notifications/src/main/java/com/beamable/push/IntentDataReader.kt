@@ -36,7 +36,11 @@ object IntentDataReader {
     fun readIntent(intent: Intent?): String? {
         if (intent == null) return null
         val marker = intent.getStringExtra(MARKER_KEY)
-        if (marker != "1") return null
+        // A push carrying an FCM `notification` block is displayed by the OS, not by this library,
+        // so it never gets the marker — but FCM still copies the `data` map into the intent extras.
+        // Recognizing those by their campaign keys is what keeps attribution working for pushes the
+        // library did not post itself; without it such a tap looks like a plain launch.
+        if (marker != "1" && !hasCampaignExtras(intent)) return null
 
         val payloadJson = intent.getStringExtra(PAYLOAD_JSON_KEY)
         var result = if (!payloadJson.isNullOrEmpty()) {
@@ -58,6 +62,14 @@ object IntentDataReader {
         intent.removeExtra(EXTRA_ACTION_ID)
         return result
     }
+
+    /**
+     * True when [intent] carries campaign attribution in its extras even though this library did
+     * not stamp it — the signature of an OS-displayed FCM `notification`-block push.
+     */
+    private fun hasCampaignExtras(intent: Intent): Boolean =
+        !intent.getStringExtra(NotificationIntentData.KEY_CAMPAIGN_ID).isNullOrEmpty() ||
+            !intent.getStringExtra(NotificationIntentData.KEY_NODE_ID).isNullOrEmpty()
 
     /** Returns [json] with an "actionId" field set, tolerating a malformed/empty input. */
     private fun withActionId(json: String, actionId: String): String = try {

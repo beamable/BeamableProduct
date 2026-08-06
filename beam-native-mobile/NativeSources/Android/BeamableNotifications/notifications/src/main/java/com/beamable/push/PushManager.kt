@@ -358,6 +358,17 @@ object PushManager {
         PermissionHelper.requestPermission(activity)
     }
 
+    /**
+     * Variant for hosts that observe `onRequestPermissionsResult` themselves and then report the
+     * authoritative answer via [notifyPermissionResult]. Returns true when the system dialog was
+     * shown and the result is still pending; false when the outcome was already known and dispatched.
+     */
+    fun requestPermissionAwaitingResult(activity: Activity, requestCode: Int): Boolean =
+        PermissionHelper.requestPermission(activity, requestCode, emitBestEffort = false)
+
+    /** Emit a permission result observed by the host (see [requestPermissionAwaitingResult]). */
+    fun notifyPermissionResult(granted: Boolean) = dispatchPermissionResult(granted)
+
     /** True if notifications are currently permitted. */
     fun hasPermission(context: Context): Boolean = PermissionHelper.hasPermission(context)
 

@@ -503,11 +503,18 @@ export const BeamableNotifications = {
     });
   },
   /**
-   * Read the current permission status. Resolves with the status (iOS). Android has no
-   * bridged status query — the status only arrives via {@link requestPermission} — so this
-   * resolves `{ status: 'notDetermined' }` there.
+   * Read the current permission status without requesting it.
+   *
+   * Android resolves `notDetermined` only on older native builds that predate the bridged
+   * `getPermissionStatus` — it cannot distinguish "never asked" from "denied", since the platform
+   * check only reports whether the permission is currently held.
    */
   getPermissionStatus(): Promise<PermissionResult> {
+    // Guard first: when the native module is missing, `BeamablePush` is a Proxy that throws on any
+    // property access, so even probing for the method would blow up here.
+    if (!isBeamableNotificationsSupported) {
+      return Promise.resolve({ status: 'notDetermined', granted: false });
+    }
     if (IS_IOS) {
       return awaitEvent(
         'permissionResult',
@@ -515,7 +522,13 @@ export const BeamableNotifications = {
         { timeoutMs: 5000 },
       );
     }
-    return Promise.resolve({ status: 'notDetermined', granted: false });
+    // Older native builds predate this bridged method; fall back rather than reject.
+    if (typeof BeamablePush.getPermissionStatus !== 'function') {
+      return Promise.resolve({ status: 'notDetermined', granted: false });
+    }
+    return Promise.resolve(BeamablePush.getPermissionStatus()).then(
+      (granted: boolean) => ({ status: granted ? 'granted' : 'denied', granted }),
+    );
   },
 
   // Local notifications
