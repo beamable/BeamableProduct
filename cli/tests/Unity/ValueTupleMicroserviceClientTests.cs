@@ -19,7 +19,7 @@ namespace tests.Unity;
 public class ValueTupleMicroserviceClientTests
 {
 	[Test]
-	public void ClientGenerator_PreservesValueTupleCallableParameterType()
+	public void ClientGenerator_PreservesValueTupleCallableTypes()
 	{
 		InitializeLogging();
 		var document = GenerateServiceDocument();
@@ -34,6 +34,8 @@ public class ValueTupleMicroserviceClientTests
 				Does.Contain("System.ValueTuple<int, int> value"));
 			Assert.That(generatedClient,
 				Does.Contain("serializedFields.Add(\"value\", raw_value)"));
+			Assert.That(generatedClient,
+				Does.Contain("Beamable.Common.Promise<System.ValueTuple<int, int>> GetTuple()"));
 		}
 		finally
 		{
@@ -94,5 +96,8 @@ public class ValueTupleMicroserviceClientTests
 	{
 		[ClientCallable]
 		public int AddTuple((int, int) value) => value.Item1 + value.Item2;
+
+		[ClientCallable]
+		public (int, int) GetTuple() => (1, 3);
 	}
 }
