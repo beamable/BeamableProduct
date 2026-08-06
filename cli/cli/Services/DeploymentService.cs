@@ -2010,7 +2010,7 @@ public partial class DeployUtil
 
 	/// <summary>
 	/// Upload the changed asset binaries for the portal extensions in <paramref name="plan"/> (via
-	/// PostBinary + signed-URL PUT) and fill each matching <c>portalExtensionReferences</c> entry's
+	/// the beamo PostContentBinary endpoint + signed-URL PUT) and fill each matching <c>portalExtensionReferences</c> entry's
 	/// <c>files[]</c> with the resulting contentIds. Shared by realm release and bundle publish.
 	/// When <paramref name="onlyNames"/> is non-null, only those extensions are uploaded.
 	/// </summary>
@@ -2020,7 +2020,7 @@ public partial class DeployUtil
 			.Where(pe => onlyNames == null || onlyNames.Contains(pe.name)).ToList();
 		if (toUpload.Count == 0) return;
 
-		var contentApi = provider.GetService<IContentApi>();
+		var beamoApi = provider.GetService<IBeamBeamoApi>();
 		using var httpClient = new HttpClient();
 
 		await Task.WhenAll(toUpload.Select(async pe =>
@@ -2028,22 +2028,30 @@ public partial class DeployUtil
 			var progressName = $"upload portal extension {pe.name}";
 			progressHandler?.Invoke(progressName, 0f);
 
+			// The beamo content/binary endpoint rejects ids containing '/', '\' or whitespace, so join the
+			// extension name and file name with ':' — it doesn't appear in either part, so the two remain
+			// distinguishable. This id is opaque downstream (matched/stored as-is), so the separator is free.
+			string ContentIdFor(string fileName) => $"{pe.name}:{fileName}";
+
 			// Build binary definitions in parallel for files that changed
 			var filesToUpload = pe.files.Where(f => f.needsUpload).ToList();
 			var binDefs = await Task.WhenAll(filesToUpload.Select(async file =>
 			{
 				var filePath = Path.Combine(pe.absolutePath, "assets", file.fileName);
-				return await GetBinaryDefinitionFromFile(filePath, $"{pe.name}/{file.fileName}", file.contentType);
+				return await GetBinaryDefinitionFromFile(filePath, ContentIdFor(file.fileName), file.contentType);
 			}));
 
 			// Get signed upload URLs for files that need uploading
-			var uploadedRefs = new Dictionary<string, BinaryReference>();
+			var uploadedRefs = new Dictionary<string, BeamoV2BinaryContentUploadUrl>();
 			if (binDefs.Length > 0)
 			{
-				var binaryResp = await contentApi.PostBinary(new SaveBinaryRequest { binary = binDefs });
+				var binaryResp = await beamoApi.PostContentBinary(new BeamoV2SaveBinaryContentRequest
+				{
+					binary = new OptionalArrayOfBeamoV2BinaryContentDefinition { Value = binDefs, HasValue = true }
+				});
 				foreach (var file in filesToUpload)
 				{
-					uploadedRefs[file.fileName] = binaryResp.binary.First(b => b.id == $"{pe.name}/{file.fileName}");
+					uploadedRefs[file.fileName] = binaryResp.binary.Value.First(b => b.id == ContentIdFor(file.fileName));
 				}
 			}
 			progressHandler?.Invoke(progressName, 0.33f);
@@ -2052,7 +2060,8 @@ public partial class DeployUtil
 			await Task.WhenAll(filesToUpload.Select(async file =>
 			{
 				var bytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", file.fileName));
-				await PutToSignedUrl(httpClient, uploadedRefs[file.fileName].uploadUri, bytes, file.contentType, MD5.HashData(bytes));
+				var uploadRef = uploadedRefs[file.fileName];
+				await UploadToSignedUrl(httpClient, uploadRef.uploadMethod.Value, uploadRef.uploadUri.Value, bytes, file.contentType, MD5.HashData(bytes));
 			}));
 			progressHandler?.Invoke(progressName, 0.66f);
 
@@ -2060,7 +2069,7 @@ public partial class DeployUtil
 			var peRef = plan.portalExtensionReferences.First(r => r.name == pe.name);
 			peRef.files = pe.files.Select(f => new PortalExtensionPlanFileReference
 			{
-				contentId = f.needsUpload ? uploadedRefs[f.fileName].id : f.existingContentId,
+				contentId = f.needsUpload ? uploadedRefs[f.fileName].id.Value : f.existingContentId,
 				name = f.fileName,
 				version = f.checksum,
 			}).ToList();
@@ -2069,20 +2078,19 @@ public partial class DeployUtil
 		}));
 	}
 
-	private static async Task<BinaryDefinition> GetBinaryDefinitionFromFile(string filePath, string contentId, string contentType)
+	private static async Task<BeamoV2BinaryContentDefinition> GetBinaryDefinitionFromFile(string filePath, string contentId, string contentType)
 	{
 		var bytes = await File.ReadAllBytesAsync(filePath);
 		var md5Bytes = MD5.HashData(bytes);
-		return new BinaryDefinition
+		return new BeamoV2BinaryContentDefinition
 		{
-			id = contentId,
-			checksum = BitConverter.ToString(md5Bytes).Replace("-", ""),
-			uploadContentType = contentType,
-			visibility = new OptionalString { Value = "private", HasValue = true },
+			id = new OptionalString { Value = contentId, HasValue = true },
+			checksum = new OptionalString { Value = BitConverter.ToString(md5Bytes).Replace("-", ""), HasValue = true },
+			uploadContentType = new OptionalString { Value = contentType, HasValue = true },
 		};
 	}
 
-	private static async Task PutToSignedUrl(HttpClient httpClient, string url, byte[] data, string contentType, byte[] md5Bytes)
+	private static async Task UploadToSignedUrl(HttpClient httpClient, string uploadMethod, string url, byte[] data, string contentType, byte[] md5Bytes)
 	{
 		//TODO This can be done with more granular updates over how many bytes were uploaded
 		// INstead of using ByteArrayContent we can use ObservableByteArrayContent
@@ -2090,7 +2098,11 @@ public partial class DeployUtil
 		content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
 		content.Headers.ContentMD5 = md5Bytes;
 
-		var response = await httpClient.PutAsync(url, content);
+		// Honor the HTTP verb the signed-URL response asked for (defaults to PUT when unspecified).
+		var method = string.IsNullOrEmpty(uploadMethod) ? HttpMethod.Put : new HttpMethod(uploadMethod);
+		var request = new HttpRequestMessage(method, url) { Content = content };
+
+		var response = await httpClient.SendAsync(request);
 		if (!response.IsSuccessStatusCode)
 		{
 			var body = await response.Content.ReadAsStringAsync();
