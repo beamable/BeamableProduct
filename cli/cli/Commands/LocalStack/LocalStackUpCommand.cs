@@ -74,7 +74,7 @@ public class LocalStackUpCommand
 		detach.AddAlias("-d");
 		AddOption(detach, (args, v) => args.runDetached = v);
 
-		AddOption(new Option<bool>("--build", "Build the C# gateway, Scala services, and portal deps before launching (microservices/extensions always build via project run)"),
+		AddOption(new Option<bool>("--build", "Rebuild the C# hosts, Scala services, and portal deps before launching (a manifest that declares a build output also builds that step on its own when the output is missing; microservices/extensions always build via project run)"),
 			(args, v) => args.build = v);
 
 		AddOption(new Option<bool>("--save-logs", "Persist per-run logs under the workspace (.beamable/local-stack-logs/run-<id>); without it logs go to a temp folder and are removed on `beam local stop`"),
@@ -115,9 +115,17 @@ public class LocalStackUpCommand
 		var only = NameSet(args.only);
 		var skip = NameSet(args.skip);
 
+		// A build step that declares an output runs even without --build when that output is missing: the run
+		// step after it launches a PRE-BUILT binary, so without it `up` would retry a nonexistent executable
+		// `readyRetries` times and then report the stack as up minus that service. Mirrors the reference
+		// scripts/run-local-stack.sh, which builds each gateway/worker binary when it isn't there.
+		var autoBuild = args.build
+			? new HashSet<LocalStackStep>()
+			: config.steps.Where(s => s.enabled && LocalStackConfigIO.BuildOutputMissing(s, config)).ToHashSet();
+
 		bool Included(LocalStackStep s) =>
 			s.enabled
-			&& (!s.build || args.build) // build steps run only under --build
+			&& (!s.build || args.build || autoBuild.Contains(s)) // build steps run under --build, or when their output is missing
 			&& (only == null || only.Contains(s.name))
 			&& (skip == null || !skip.Contains(s.name));
 
@@ -125,9 +133,21 @@ public class LocalStackUpCommand
 		if (steps.Count == 0)
 			throw new CliException("No steps to run (all disabled or filtered out).");
 
+		// Say WHY a build is running when the user didn't ask for one, so it never looks like a mystery step.
+		// The per-step reason also rides along on the stream message when it launches (see the loop below).
+		foreach (var s in steps.Where(autoBuild.Contains))
+			Log.Information($"[{s.name}] {LocalStackConfigIO.ResolveRequiredOutput(s, config)} is missing — building it (pass --build to rebuild everything).");
+
 		// Manifests generated before build steps existed won't have any — tell the user how to get them.
 		if (args.build && !config.steps.Any(s => s.build))
 			Log.Warning("--build was passed but this manifest has no build steps. Re-run `beam local init` to regenerate it with build steps (or add them by hand).");
+
+		// The self-healing build and the port pre-flight are both driven by manifest fields (`requiredOutput`,
+		// `port`) that only `beam local init` writes. A manifest generated before them gets neither, so say so
+		// rather than letting the user believe protections are running that aren't.
+		if (!config.steps.Any(s => s.build && !string.IsNullOrWhiteSpace(s.requiredOutput))
+		    && !config.steps.Any(s => s.port > 0))
+			Log.Warning("This manifest predates automatic builds and port-conflict checks (no `requiredOutput` or `port` on any step), so neither will run. Re-run `beam local init` to regenerate it.");
 
 		// A clean build should re-resolve deps too: drop the shared Scala classpath cache so each service's
 		// launch rebuilds it (the cache otherwise only refreshes when core/pom.xml changes).
@@ -170,9 +190,24 @@ public class LocalStackUpCommand
 			// Scala backend, and avoids duplicate processes fighting over the same ports.
 			var existing = LocalStackRunStateIO.Load(runStatePath);
 			if (existing?.steps != null)
+			{
 				foreach (var e in existing.steps)
-					if (!e.waitForExit && IsPidAlive(e.pid))
-						aliveByName[e.name] = e;
+				{
+					// Identity-checked, not just pid-alive: a recycled pid used to read as "already running" and
+					// silently cost the stack that service — see LocalStackLiveness.
+					var liveness = LocalStackLiveness.Check(e, LocalStackStopCommand.BuildKillTokens(e));
+					if (liveness == LocalStackLiveness.Liveness.Stopped)
+						continue;
+
+					// Unverified carries over: relaunching a service that IS still up would fight it for its port
+					// (and duplicate a JVM), which is worse than skipping a service that has actually died — the
+					// next `up` re-checks, and `ps` shows it.
+					if (liveness == LocalStackLiveness.Liveness.Unverified)
+						Log.Verbose($"[{e.name}] pid {e.pid} could not be confirmed; assuming it is still running.");
+
+					aliveByName[e.name] = e;
+				}
+			}
 			runState = new LocalStackRunState
 			{
 				host = config.host, portalUrl = config.portalUrl,
@@ -189,6 +224,14 @@ public class LocalStackUpCommand
 		var launched = new List<Launched>();
 		var token = args.Lifecycle.CancellationToken;
 		var realmEnsured = false;
+
+		// Port pre-flight, BEFORE anything is launched and before the try/catch below. A squatted port is
+		// otherwise invisible until the service loses the bind and shows up as a readiness timeout, a Caddy 502,
+		// or dependents failing to fetch dbids — so it is worth stopping for. It runs here, not in the launch
+		// loop, for two reasons: nothing has started yet (so aborting cannot orphan half a stack, nor clear the
+		// run-state that is the only record of carried-over services still running from a previous `up`), and
+		// every conflict is reported at once instead of one per run.
+		await EnsurePortsFree(steps, config, aliveByName, token);
 
 		// Attached: put every launched process in a kill-on-close job so the whole stack dies with the CLI —
 		// even on a terminal close / IDE stop / hard kill that skips the graceful teardown (Windows only; no-op
@@ -228,6 +271,9 @@ public class LocalStackUpCommand
 
 				entry.group = step.group;
 				entry.pid = SafePid(l);
+				// Pin the pid to this exact process, so a later `up`/`ps`/`stop` can tell it apart from whatever
+				// recycles that pid number after the stack dies.
+				entry.startedAtUtcTicks = LocalStackLiveness.StartTicksOf(entry.pid);
 				entry.matchToken = LocalStackConfigIO.Substitute(step.mainClass, config);
 				entry.kind = l.Kind;
 				entry.stdoutLog = l.StdoutLog;
@@ -290,6 +336,19 @@ public class LocalStackUpCommand
 						continue;
 					}
 
+					// Can this step even start? A missing working directory (a build output folder whose build
+					// failed or timed out, or an unedited `<EDIT: ...>` placeholder) means it cannot. Report the
+					// step as failed and keep going: one unusable step is not a reason to tear down a stack that
+					// is otherwise coming up, and the old behavior — launching it anyway — just produced a raw
+					// "not recognized" several retries later.
+					var blocked = CannotStartReason(step, config);
+					if (blocked != null)
+					{
+						Send(step.name, "failed", blocked, baseProgress);
+						Log.Warning($"[{step.name}] {blocked}");
+						continue;
+					}
+
 					// Ensure a valid local realm/login before the first beam step — microservices and
 					// extensions authenticate against the local backend on startup.
 					if (step.beam && !realmEnsured)
@@ -298,7 +357,11 @@ public class LocalStackUpCommand
 						await EnsureRealmAndLogin(args, config);
 					}
 
-					Send(step.name, "starting", $"launching ({idx + 1}/{steps.Count})", baseProgress);
+					// An unrequested build is surprising unless it says why, and the stream channel is what the
+					// user (and the Unity/portal tooling) actually sees.
+					Send(step.name, "starting", autoBuild.Contains(step)
+						? $"launching ({idx + 1}/{steps.Count}) — its output is missing, so it builds even without --build"
+						: $"launching ({idx + 1}/{steps.Count})", baseProgress);
 
 					var stepToRun = step;
 					var l = LaunchAndRegister(stepToRun);
@@ -318,7 +381,7 @@ public class LocalStackUpCommand
 			// → java). Rewrite each recorded pid to the real service leaf so `ps`/`stop` (and the next `up`'s
 			// idempotency check) act on the JVM instead of a wrapper that will die. Attached keeps no run-state.
 			if (args.runDetached)
-				ReconcileLeafPids(runState, runStatePath);
+				ReconcileLeafPids(runState, runStatePath, launched);
 
 			// No beam steps ran the hook above — still ensure/validate the realm once the backend is up.
 			if (!realmEnsured)
@@ -399,6 +462,84 @@ public class LocalStackUpCommand
 
 		await Task.WhenAny(Task.WhenAll(longRunning), Task.Delay(Timeout.Infinite, token));
 		token.ThrowIfCancellationRequested();
+	}
+
+	/// <summary>
+	/// Fails the whole command — before anything has been launched — when a step's declared port is already held
+	/// by something that is not this stack. Steps carried over from a previous detached `up`, and steps whose
+	/// readiness endpoint is already answering, are skipped: those are OUR service on that port, and the launch
+	/// loop skips them for the same reason. Every conflict is collected so one run reports them all.
+	/// </summary>
+	private async Task EnsurePortsFree(List<LocalStackStep> steps, LocalStackConfig config,
+		Dictionary<string, LocalStackRunEntry> aliveByName, CancellationToken token)
+	{
+		var conflicts = new List<string>();
+		foreach (var step in steps.Where(s => s.port > 0))
+		{
+			token.ThrowIfCancellationRequested();
+			if (aliveByName.ContainsKey(step.name))
+			{
+				continue; // our own service from a previous `up` owns that port
+			}
+
+			if (!LocalStackPortGuard.IsPortTaken(step.port))
+			{
+				continue;
+			}
+
+			// Taken — but by us? A gateway/portal left running outside the run-state answers its own readiness
+			// endpoint, and the launch loop will skip launching a duplicate, so that is not a conflict.
+			if (await AlreadyServing(step, config, token))
+			{
+				continue;
+			}
+
+			var conflict = LocalStackPortGuard.DescribeConflict(step.name, step.port);
+			if (conflict != null)
+			{
+				conflicts.Add(conflict);
+			}
+		}
+
+		if (conflicts.Count == 0)
+		{
+			return;
+		}
+
+		foreach (var conflict in conflicts)
+		{
+			Send(string.Empty, "failed", conflict, 0f);
+		}
+
+		throw new CliException(string.Join(Environment.NewLine, conflicts)
+		                       + Environment.NewLine
+		                       + "Nothing was started, so no part of the stack was touched.");
+	}
+
+	/// <summary>
+	/// Why a step cannot be launched at all, or null when it can. Only the working directory is checked: every
+	/// non-<c>beam</c> step names a real directory (a repo, or a build output folder), and when it is absent the
+	/// launcher would silently fall back to the CLI's own cwd and fail with a raw "not recognized". <c>beam</c>
+	/// steps are exempt — <see cref="StartStep"/> substitutes the workspace for them.
+	/// </summary>
+	private static string CannotStartReason(LocalStackStep step, LocalStackConfig config)
+	{
+		if (step.beam)
+		{
+			return null;
+		}
+
+		var workDir = LocalStackConfigIO.Substitute(step.workingDirectory, config);
+		if (string.IsNullOrEmpty(workDir) || Directory.Exists(workDir))
+		{
+			return null;
+		}
+
+		// Deliberately does NOT tell the user to pass --build: when this is a build output folder, its build step
+		// has already run (or been filtered out), so the honest advice is to look at why it produced nothing.
+		return $"working directory '{workDir}' does not exist, so this step cannot start. If it is a build "
+		       + "output folder, its build step failed, timed out, or was skipped (see `beam local logs`); "
+		       + "otherwise fix the path in the manifest (or re-run `beam local init`)";
 	}
 
 	/// <summary>Best-effort recursive delete of a directory (used to clean up ephemeral temp log dirs).</summary>
@@ -648,6 +789,9 @@ public class LocalStackUpCommand
 		// beam sub-commands need to run inside a .beamable workspace to see the local service manifest.
 		if (step.beam && (string.IsNullOrEmpty(workDir) || !Directory.Exists(workDir)))
 			workDir = beamWorkspaceFallback;
+
+		// A step whose working directory is missing cannot run at all; the launch loop checks that up front
+		// (CannotStartReason) and reports the step as failed rather than launching it into the CLI's own cwd.
 
 		var safe = SafeName(step.name);
 		var stdoutLog = Path.Combine(logsDir, safe + ".log");
@@ -912,7 +1056,7 @@ public class LocalStackUpCommand
 		CancellationToken token, Func<Launched> relaunch)
 	{
 		if (step.waitForExit)
-			return AwaitCompletion(step, l, baseProgress);
+			return AwaitCompletion(step, l, config, baseProgress);
 
 		if (!string.IsNullOrEmpty(step.readyWhenHttpOk)
 		    || !string.IsNullOrEmpty(step.readyWhenHttp200)
@@ -944,7 +1088,7 @@ public class LocalStackUpCommand
 		Send(step.name, "running", "no readiness gate; assuming up", baseProgress + 1f / totalSteps);
 	}
 
-	private async Task AwaitCompletion(LocalStackStep step, Launched l, float baseProgress)
+	private async Task AwaitCompletion(LocalStackStep step, Launched l, LocalStackConfig config, float baseProgress)
 	{
 		Send(step.name, "starting", "waiting for completion", baseProgress);
 		var timeout = TimeSpan.FromSeconds(Math.Max(1, step.readyTimeoutSeconds));
@@ -959,6 +1103,18 @@ public class LocalStackUpCommand
 		var code = SafeExitCode(l);
 		if (code != 0)
 			throw new CliException($"Step '{step.name}' exited with code {code}. Last log: {LastLogLine(l)}");
+
+		// A build that exits 0 without producing what it declared is the reference script's `[[ -x $BIN ]] ||
+		// die`: the run step after it would launch a binary that isn't there and the stack would come up
+		// silently missing a service, so fail here instead.
+		var output = LocalStackConfigIO.ResolveRequiredOutput(step, config);
+		if (output != null && !File.Exists(output) && !Directory.Exists(output))
+		{
+			throw new CliException(
+				$"Step '{step.name}' completed but did not produce '{output}'. Check the step's command and " +
+				"working directory in the manifest (or re-run `beam local init`).");
+		}
+
 		Send(step.name, "ready", "completed", baseProgress);
 	}
 
@@ -984,9 +1140,50 @@ public class LocalStackUpCommand
 			var waited = 0;
 			var nextBeat = 10;
 
-			while (waited < timeout)
+			while (true)
 			{
 				token.ThrowIfCancellationRequested();
+
+				if (waited >= timeout)
+				{
+					// The gate never tripped. The `readyRetries` path below only fires when the process EXITS, so a
+					// service that catches its own startup failure and then parks was never retried — the Scala
+					// gateway losing the Mongo connect race is the standing example. The bring-up logged
+					// "continuing anyway" and still printed "Stack is up" with nothing listening on 9002, so every
+					// `/basic/*` call through Caddy 502'd and every microservice and portal extension died on
+					// startup, which reads as "the whole stack is broken" rather than "one step is hung".
+					//
+					// Only retry when the step is PROVABLY not serving (see <see cref="StepIsDeadOnItsPort"/>).
+					// Missing this gate is usually a false negative — on a good run a dozen Scala services report
+					// "did not signal ready" while serving traffic fine — so retrying on the timeout alone would
+					// kill and relaunch a working stack.
+					if (retriesLeft > 0 && relaunch != null && StepIsDeadOnItsPort(step))
+					{
+						retriesLeft--;
+						Log.Warning($"[{step.name}] never signalled ready and nothing is listening on port {step.port} — " +
+						            $"hung rather than slow; killing and retrying ({retriesLeft} left). Last log: {LastLogLine(l)}");
+						Send(step.name, "starting",
+							$"hung with port {step.port} unbound — retrying ({retriesLeft} left)", baseProgress);
+
+						// Kill first: unlike the exit path below, this process is still alive, and leaving it behind
+						// orphans a JVM that would race the relaunch for the same port.
+						KillLaunched(l);
+						try { await Task.Delay(3000, token); }
+						catch (OperationCanceledException) { return; }
+
+						l = relaunch();
+						foreach (var s in sources) s.Dispose();
+						sources = l.OpenLineSources();
+						lastLine = "";
+						waited = 0;
+						nextBeat = 10;
+						continue;
+					}
+
+					Send(step.name, "running", $"did not signal ready within {timeout}s; continuing", baseProgress);
+					Log.Warning($"[{step.name}] did not signal ready within {timeout}s — continuing anyway.");
+					return;
+				}
 
 				if (l.ExitedTask.IsCompleted)
 				{
@@ -1055,15 +1252,22 @@ public class LocalStackUpCommand
 					Log.Information($"[{step.name}] still starting — {waited}/{timeout}s{hint}");
 				}
 			}
-
-			Send(step.name, "running", $"did not signal ready within {timeout}s; continuing", baseProgress);
-			Log.Warning($"[{step.name}] did not signal ready within {timeout}s — continuing anyway.");
 		}
 		finally
 		{
 			foreach (var s in sources) s.Dispose();
 		}
 	}
+
+	/// <summary>
+	/// True when a step that missed its readiness gate is provably not serving: it declares the TCP port it binds
+	/// and nothing holds that port. Steps leaving <c>port</c> at 0 always answer false — a missed gate there is
+	/// usually a false negative (most Scala services register correctly but never log the exact substring the gate
+	/// looks for), and treating that as failure would kill and relaunch healthy services. Only the three steps
+	/// whose whole job is to serve a port declare one: the Scala gateway, the C# gateway and the portal frontend.
+	/// </summary>
+	private static bool StepIsDeadOnItsPort(LocalStackStep step) =>
+		step.port > 0 && !LocalStackPortGuard.IsPortTaken(step.port);
 
 	/// <summary>
 	/// True if the step's HTTP readiness endpoint is already answering — i.e. something is already serving
@@ -1150,13 +1354,6 @@ public class LocalStackUpCommand
 
 	private static string Trim(string s, int max) => s.Length <= max ? s : s.Substring(0, max);
 
-	private static bool IsPidAlive(int pid)
-	{
-		if (pid <= 0) return false;
-		try { return !Process.GetProcessById(pid).HasExited; }
-		catch { return false; }
-	}
-
 	// ----------------------------------------------------------------------------------
 	// Teardown (attached exit/Ctrl-C, and the detached bring-up failure path)
 	// ----------------------------------------------------------------------------------
@@ -1172,23 +1369,8 @@ public class LocalStackUpCommand
 			var l = snapshot[i];
 			try
 			{
-				if (!l.Process.HasExited)
-					l.Process.Kill(entireProcessTree: true);
-
-				// Windows: the wrapper tree-kill can miss a runtime grandchild that already detached from it, so
-				// also kill by a stack-specific token on its command line (no-op on unix / when nothing matches).
-				// Reuse `stop`'s per-kind token derivation (scala mainClass + tools/<svc>/, gateway/portal work
-				// dir, beam service id) so a JVM is reaped even when its mainClass wasn't discovered.
-				var probe = new LocalStackRunEntry
-				{
-					name = l.Step.name,
-					kind = l.Kind,
-					matchToken = l.Step.mainClass,
-					workingDirectory = l.WorkingDirectory,
-				};
-				foreach (var pid in LocalStackProcess.FindByCommandLine(
-					         LocalStackStopCommand.BuildKillTokens(probe), LocalStackProcess.ServiceImages))
-					KillPid(pid);
+				// Tree-kill plus the command-line sweep for detached grandchildren — see KillLaunched.
+				KillLaunched(l);
 
 				Log.Information($"[{l.Step.name}] stopped");
 			}
@@ -1205,6 +1387,37 @@ public class LocalStackUpCommand
 		catch { /* already gone */ }
 	}
 
+	/// <summary>
+	/// Kills one launched step's whole process tree, best-effort. On Windows the tracked pid is usually a shell
+	/// wrapper and the runtime grandchild may already have detached from it, so the tree-kill is followed by a
+	/// sweep for the step's own command-line token (reusing <c>stop</c>'s per-kind derivation) — otherwise a JVM
+	/// outlives its parent and keeps holding the port the caller is about to relaunch onto.
+	/// </summary>
+	private static void KillLaunched(Launched l)
+	{
+		try
+		{
+			if (!l.Process.HasExited)
+				l.Process.Kill(entireProcessTree: true);
+		}
+		catch { /* already gone */ }
+
+		try
+		{
+			var probe = new LocalStackRunEntry
+			{
+				name = l.Step.name,
+				kind = l.Kind,
+				matchToken = l.Step.mainClass,
+				workingDirectory = l.WorkingDirectory,
+			};
+			foreach (var pid in LocalStackProcess.FindByCommandLine(
+				         LocalStackStopCommand.BuildKillTokens(probe), LocalStackProcess.ServiceImages))
+				KillPid(pid);
+		}
+		catch { /* best-effort */ }
+	}
+
 	private static int SafePid(Launched l)
 	{
 		try { return l.Process.Id; }
@@ -1219,7 +1432,7 @@ public class LocalStackUpCommand
 	/// No-op on unix (the launcher <c>exec</c>s the service, so the tracked pid already is the service) and
 	/// for run-to-completion (docker) steps.
 	/// </summary>
-	private void ReconcileLeafPids(LocalStackRunState runState, string runStatePath)
+	private void ReconcileLeafPids(LocalStackRunState runState, string runStatePath, List<Launched> launched)
 	{
 		if (!OperatingSystem.IsWindows())
 			return;
@@ -1227,9 +1440,15 @@ public class LocalStackUpCommand
 		var changed = false;
 		lock (_launchedLock)
 		{
+			// ONLY the steps this run launched. A carried-over entry's pid is already the resolved service leaf, and
+			// ResolveServiceRootPid always descends to a child — so re-reconciling it would walk the recorded pid
+			// one level deeper on every `up`, until `ps`/`stop` were pointing at a helper process (esbuild, a
+			// dotnet child) while the real service kept running and holding its port.
+			var launchedNames = new HashSet<string>(launched.Select(l => l.Step.name), StringComparer.OrdinalIgnoreCase);
+
 			foreach (var entry in runState.steps)
 			{
-				if (entry.waitForExit || entry.pid <= 0)
+				if (entry.waitForExit || entry.pid <= 0 || !launchedNames.Contains(entry.name))
 					continue;
 
 				var service = LocalStackProcess.ResolveServiceRootPid(entry.pid);
@@ -1237,6 +1456,8 @@ public class LocalStackUpCommand
 				{
 					Log.Verbose($"[{entry.name}] tracking service pid={service} (was wrapper pid={entry.pid})");
 					entry.pid = service;
+					// Re-pin: the start time recorded at launch belongs to the wrapper, not to this leaf.
+					entry.startedAtUtcTicks = LocalStackLiveness.StartTicksOf(service);
 					changed = true;
 				}
 			}

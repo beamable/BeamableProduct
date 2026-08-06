@@ -51,7 +51,7 @@ public class LocalStackStopCommand
 		AddOption(new Option<bool>(new[] { "--purge", "--clean" },
 				"DESTRUCTIVE: reverse docker steps with `compose down -v` (removing the containers and their "
 				+ "volumes) instead of `compose stop`. This deletes the local database — accounts, customers "
-				+ "and realms — so the next `up` seeds a brand-new realm with a new CID. Omit to keep data."),
+				+ "and realms — so the next `up` seeds a brand-new realm with a new CID; omit to keep data"),
 			(args, v) => args.purge = v);
 	}
 
@@ -71,16 +71,22 @@ public class LocalStackStopCommand
 
 		// Reverse start order: services before the infrastructure they depend on.
 		var stopped = new List<string>();
+		var forget = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		for (var i = targeting.Count - 1; i >= 0; i--)
 		{
 			var entry = targeting[i];
-			if (StopEntry(entry, args.purge))
+			var outcome = StopEntry(entry, args.purge);
+			if (outcome == StopOutcome.Stopped)
 				stopped.Add(entry.name);
+
+			// Forget a step once it is down (or was already down). A step we could neither confirm nor stop stays
+			// recorded, so `ps`/`stop` can still act on it instead of it becoming an untracked orphan.
+			if (outcome != StopOutcome.Unconfirmed)
+				forget.Add(entry.name);
 		}
 
-		// Update the run-state: drop the stopped steps; delete the file when nothing remains.
-		var stoppedSet = new HashSet<string>(targeting.Select(s => s.name));
-		state.steps.RemoveAll(s => stoppedSet.Contains(s.name));
+		// Update the run-state: drop the steps that are down; delete the file when nothing remains.
+		state.steps.RemoveAll(s => forget.Contains(s.name));
 		if (state.steps.Count == 0)
 		{
 			LocalStackRunStateIO.Clear(runStatePath);
@@ -102,12 +108,21 @@ public class LocalStackStopCommand
 		});
 	}
 
-	private static bool StopEntry(LocalStackRunEntry entry, bool purge)
+	/// <summary>What happened to one step: whether it was brought down, was already down, or could neither be
+	/// confirmed nor stopped (in which case it must stay recorded rather than be forgotten).</summary>
+	private enum StopOutcome
+	{
+		Stopped,
+		AlreadyGone,
+		Unconfirmed
+	}
+
+	private static StopOutcome StopEntry(LocalStackRunEntry entry, bool purge)
 	{
 		// Reversible run-to-completion steps (e.g. docker compose up -d) are reversed via their stop command.
 		var reversal = ResolveReversal(entry, purge);
 		if (!string.IsNullOrWhiteSpace(reversal) && !string.IsNullOrWhiteSpace(entry.command))
-			return RunReversal(entry, reversal);
+			return RunReversal(entry, reversal) ? StopOutcome.Stopped : StopOutcome.Unconfirmed;
 
 		return KillTree(entry);
 	}
@@ -150,17 +165,26 @@ public class LocalStackStopCommand
 		}
 	}
 
-	private static bool KillTree(LocalStackRunEntry entry)
+	private static StopOutcome KillTree(LocalStackRunEntry entry)
 	{
 		var killed = new HashSet<int>();
 		var stoppedAny = false;
+		var tokens = BuildKillTokens(entry);
+		var liveness = LocalStackLiveness.Check(entry, tokens);
 
 		// 1) Kill the recorded pid's tree. On unix this is the exec'd leaf; on Windows `up` resolved it to the
 		//    real service leaf (the JVM) so killing it directly works even after the cmd/powershell wrappers die.
-		if (entry.pid > 0)
+		//    Only when the pid is CONFIRMED to be this service: a recorded pid can have been recycled by an
+		//    unrelated process since the stack was started (observed: a dead `scala: auth` pid reused by an audio
+		//    service), and killing whatever now holds that number would take out a bystander.
+		if (entry.pid > 0 && liveness == LocalStackLiveness.Liveness.Running)
 		{
 			killed.Add(entry.pid);
 			stoppedAny |= KillPid(entry.pid, entry.name);
+		}
+		else if (entry.pid > 0)
+		{
+			Log.Verbose($"[{entry.name}] recorded pid {entry.pid} is {liveness} — not killing it by pid");
 		}
 
 		// 2) Fallback: the Windows wrapper chain (cmd → powershell → java, cmd → npm → node, cmd → dotnet) can
@@ -168,7 +192,7 @@ public class LocalStackStopCommand
 		//    stack-specific identity string on its command line and kill it. Also self-heals runtimes orphaned
 		//    by older CLI builds that recorded only the wrapper pid. Strictly token-gated so unrelated
 		//    java/node/dotnet processes (Rider, MSBuild, MCP) are never touched. No-op on non-Windows.
-		foreach (var pid in LocalStackProcess.FindByCommandLine(BuildKillTokens(entry), LocalStackProcess.ServiceImages))
+		foreach (var pid in LocalStackProcess.FindByCommandLine(tokens, LocalStackProcess.ServiceImages))
 		{
 			if (!killed.Add(pid))
 				continue;
@@ -179,10 +203,21 @@ public class LocalStackStopCommand
 			}
 		}
 
-		if (!stoppedAny)
-			Log.Information($"[{entry.name}] already stopped (pid={entry.pid})");
+		if (stoppedAny)
+			return StopOutcome.Stopped;
 
-		return true;
+		// Nothing was killed. If the pid is confirmed gone the step is simply already down; but if it may still be
+		// alive and we could not confirm it, saying "already stopped" and forgetting it would leave a process
+		// running (holding its port) with nothing tracking it — so keep the entry and say so.
+		if (liveness == LocalStackLiveness.Liveness.Stopped)
+		{
+			Log.Information($"[{entry.name}] already stopped (pid={entry.pid})");
+			return StopOutcome.AlreadyGone;
+		}
+
+		Log.Warning($"[{entry.name}] could not confirm or stop pid {entry.pid} — leaving it recorded. " +
+		            "If it is still running, stop it by hand (it may still hold its port).");
+		return StopOutcome.Unconfirmed;
 	}
 
 	/// <summary>Kills a process and its tree. Returns true if a live process was actually killed.</summary>

@@ -13,6 +13,19 @@ namespace cli.Services.LocalStack;
 /// </summary>
 public static class LocalStackTemplate
 {
+	/// <summary>
+	/// Heap flags every Scala service JVM is launched with. These are small backing services; the cap exists to
+	/// stop JDK 8's "quarter of physical RAM" default from making ~18 concurrent JVMs unschedulable.
+	/// </summary>
+	public const string DefaultScalaJvmArgs = "-Xmx512m -Xms256m";
+
+	/// <summary>
+	/// The Scala service that hands out dbids (<c>DBIDProvider</c>). Every other service fetches one at boot, so
+	/// it is launched — and awaited — before the rest instead of taking its alphabetical slot in the parallel
+	/// group, where six of its dependents started ahead of it and spent ~15s timing out on `Failed to fetch DBIDs`.
+	/// </summary>
+	public const string ScalaDbidService = "dbflake";
+
 	/// <summary>The Scala backing services started by default (curated set that actually needs to be up).</summary>
 	public static readonly string[] DefaultScalaServices =
 	{
@@ -33,8 +46,13 @@ public static class LocalStackTemplate
 		// The message-rail runtime binds its own port (distinct from the gateway's 5000) — it is run as a
 		// binary, so ASPNETCORE_URLS is set explicitly rather than via launchSettings.
 		public string messageRailUrl = "http://localhost:5030";
-		// Likewise the campaign runtime, on its own port again so the three .NET hosts can coexist.
-		public string campaignRuntimeUrl = "http://localhost:5040";
+		// Likewise the campaign runtime, on its own port again so the three .NET hosts can coexist. Picking one
+		// took two tries: NOT 5040, because on Windows the Connected Devices Platform service (svchost) holds
+		// 0.0.0.0:5040 with an exclusive bind, so whichever starts first wins and the runtime intermittently fails
+		// to bind (presenting as a campaign that publishes and never advances); and NOT 5050 or 5031, which
+		// BeamableAPI's own launchSettings already claim (BeamableScheduler.Loader/.Dispatcher default to 5050).
+		// 5045 is unused across BeamableAPI and this CLI.
+		public string campaignRuntimeUrl = "http://localhost:5045";
 		public string apiDir;
 		public string scalaDir;
 		public string portalDir;
@@ -47,6 +65,21 @@ public static class LocalStackTemplate
 		public List<string> groups;
 		/// <summary>Java 8 JAVA_HOME to bake into the manifest (stored in <see cref="LocalStackConfig.javaHome"/>). Null = omit from manifest and resolve at run time.</summary>
 		public string javaHome;
+
+		/// <summary>
+		/// JVM flags every Scala service is launched with. Defaults to <see cref="DefaultScalaJvmArgs"/> — a heap
+		/// cap, which matters because JDK 8 defaults <c>-Xmx</c> to a QUARTER of physical RAM per JVM (≈32 GB each
+		/// on a 128 GB box). Launch ~18 of those and they cannot reserve address space: "Error occurred during
+		/// initialization of VM — Could not reserve enough space for object heap", or a native-OOM crash of the
+		/// whole Akka platform JVM, which then reads as Caddy 502s and microservices failing to fetch dbids.
+		/// </summary>
+		public string scalaJvmArgs = DefaultScalaJvmArgs;
+
+		/// <summary>
+		/// The port the Scala <c>gateway</c> service binds (its own listener, distinct from the Caddy host it is
+		/// reached through). Only used to detect a port conflict before launching it.
+		/// </summary>
+		public int scalaGatewayPort = 9002;
 		/// <summary>
 		/// Whether to emit the local web package registry step (Verdaccio + local-unpkg). Defaults to false:
 		/// it is only useful when iterating on <c>@beamable/sdk</c> or <c>@beamable/portal-toolkit</c>, and
@@ -147,15 +180,30 @@ public static class LocalStackTemplate
 	/// missing or holds no modules; callers treat that as "don't filter", so a parse problem can never
 	/// silently drop every module and turn a working build into a no-op.
 	/// </summary>
-	public static HashSet<string> ReadScalaReactorModules(string scalaDir)
+	public static HashSet<string> ReadScalaReactorModules(string scalaDir) =>
+		string.IsNullOrWhiteSpace(scalaDir)
+			? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+			: ReadReactorModules(Path.Combine(scalaDir, "tools", "pom.xml"));
+
+	/// <summary>
+	/// The modules of the Scala repo's <b>root</b> aggregator (<c>core</c>, <c>tools</c>, <c>rest</c>) — a
+	/// different pom from <see cref="ReadScalaReactorModules"/>'s <c>tools/pom.xml</c>. Used to confirm
+	/// <c>core</c> is reactor-registered before adding it to <c>-pl</c>, under the same rule: an unregistered
+	/// <c>-pl</c> entry fails the entire build.
+	/// </summary>
+	public static HashSet<string> ReadRootReactorModules(string scalaDir) =>
+		string.IsNullOrWhiteSpace(scalaDir)
+			? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+			: ReadReactorModules(Path.Combine(scalaDir, "pom.xml"));
+
+	/// <summary>Reads the <c>&lt;module&gt;</c> entries out of a Maven aggregator pom; empty when it is missing
+	/// or holds none.</summary>
+	private static HashSet<string> ReadReactorModules(string pomPath)
 	{
 		var modules = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		if (string.IsNullOrWhiteSpace(scalaDir)) return modules;
+		if (!File.Exists(pomPath)) return modules;
 
-		var aggregator = Path.Combine(scalaDir, "tools", "pom.xml");
-		if (!File.Exists(aggregator)) return modules;
-
-		foreach (var raw in File.ReadLines(aggregator))
+		foreach (var raw in File.ReadLines(pomPath))
 		{
 			var line = raw.Trim();
 			var idxOpen = line.IndexOf("<module>", StringComparison.Ordinal);
@@ -172,8 +220,79 @@ public static class LocalStackTemplate
 		return modules;
 	}
 
+	/// <summary>The Scala repo's shared <c>core</c> module — a root-aggregator module every <c>tools/*</c>
+	/// service is launched against (<c>core/target/classes</c> is on every launch classpath).</summary>
+	public const string ScalaCoreModule = "core";
+
+	/// <summary>The target framework the BeamableAPI .NET hosts build to — their output path is
+	/// <c>bin/Debug/&lt;tfm&gt;/</c>, which both the build step's declared output and the run step's working
+	/// directory are derived from.</summary>
+	private const string DotnetHostTfm = "net10.0";
+
+	/// <summary>
+	/// Adds the build+run pair for one of the BeamableAPI .NET hosts (gateway / message-rail runtime /
+	/// campaign runtime): <c>dotnet build &lt;project&gt; -c Debug</c>, then the produced binary run from its
+	/// own output directory (so the <c>appsettings*.json</c> copied there are found).
+	///
+	/// Both steps come from one place on purpose: the build step declares the binary as its
+	/// <see cref="LocalStackStep.requiredOutput"/>, so <c>up</c> builds it when it is missing even without
+	/// <c>--build</c> — and that path can never drift from the path the run step actually launches.
+	/// <paramref name="aspnetUrls"/> is null for the gateway, which takes the ASPNETCORE_URLS default; the
+	/// workers each bind a port of their own so all three can coexist.
+	/// </summary>
+	private static void AddDotnetHost(LocalStackConfig config, string apiDir, string label, string project,
+		string healthUrl, string aspnetUrls)
+	{
+		var outDir = Path.Combine(apiDir, project, "bin", "Debug", DotnetHostTfm);
+		config.steps.Add(new LocalStackStep
+		{
+			name = $"build: {label}",
+			workingDirectory = apiDir,
+			command = "dotnet",
+			arguments = $"build {project} -c Debug",
+			build = true,
+			// The apphost `dotnet build` produces: <project>.exe on Windows, an extension-less binary elsewhere.
+			requiredOutput = Path.Combine(outDir, OperatingSystem.IsWindows() ? project + ".exe" : project),
+			waitForExit = true,
+			readyTimeoutSeconds = 300
+		});
+
+		var environment = new Dictionary<string, string> { ["ASPNETCORE_ENVIRONMENT"] = "Local" };
+		if (!string.IsNullOrEmpty(aspnetUrls))
+		{
+			environment["ASPNETCORE_URLS"] = aspnetUrls;
+		}
+
+		config.steps.Add(new LocalStackStep
+		{
+			name = label,
+			workingDirectory = outDir,
+			command = OperatingSystem.IsWindows() ? project + ".exe" : "./" + project,
+			environment = environment,
+			// The gateway binds the port its /health lives on; the workers bind the one in ASPNETCORE_URLS.
+			port = PortOf(aspnetUrls ?? healthUrl),
+			// Require a real 200 from the /health endpoint (UseHealthChecks) rather than any response on the
+			// root — otherwise a not-yet-serving host looks "ready after 0s".
+			readyWhenHttp200 = $"{healthUrl}/health",
+			// These can crash on startup if Mongo hasn't finished initializing its users yet
+			// (MongoAuthenticationException). Relaunch a few times — they succeed once Mongo is ready.
+			readyRetries = 5,
+			readyTimeoutSeconds = 180
+		});
+	}
+
+	/// <summary>
+	/// The explicit port of a <c>http://host:port</c> URL, or 0 when it has none (so no conflict check runs).
+	/// <c>Uri.Port</c> never reports 0 for http/https — it substitutes the scheme default — so a URL written
+	/// without a port must be recognized via <c>IsDefaultPort</c>, otherwise the guard would probe :80/:443.
+	/// </summary>
+	private static int PortOf(string url) =>
+		Uri.TryCreate(url, UriKind.Absolute, out var uri) && !uri.IsDefaultPort && uri.Port > 0 ? uri.Port : 0;
+
 	private static string Dir(string value, string label) =>
-		string.IsNullOrWhiteSpace(value) ? $"<EDIT: absolute path to {label}>" : value;
+		string.IsNullOrWhiteSpace(value)
+			? $"{LocalStackConfigIO.EditPlaceholder} absolute path to {label}>"
+			: value;
 
 	public static LocalStackConfig Create(Options o)
 	{
@@ -231,64 +350,16 @@ public static class LocalStackTemplate
 			waitForExit = true,
 			readyTimeoutSeconds = 300
 		});
-		// Build the C# gateway before running its binary — only when `beam local up --build` is passed.
-		config.steps.Add(new LocalStackStep
-		{
-			name = "build: c# gateway",
-			workingDirectory = apiDir,
-			command = "dotnet",
-			arguments = "build BeamableGateway -c Debug",
-			build = true,
-			waitForExit = true,
-			readyTimeoutSeconds = 300
-		});
-		config.steps.Add(new LocalStackStep
-		{
-			name = "c# gateway",
-			workingDirectory = Path.Combine(apiDir, "BeamableGateway", "bin", "Debug", "net10.0"),
-			command = OperatingSystem.IsWindows() ? "BeamableGateway.exe" : "./BeamableGateway",
-			environment = new Dictionary<string, string> { ["ASPNETCORE_ENVIRONMENT"] = "Local" },
-			// Require a real 200 from the gateway's /health endpoint (UseHealthChecks) rather than any
-			// response on the root — otherwise a not-yet-serving gateway looks "ready after 0s".
-			readyWhenHttp200 = $"{o.gatewayUrl}/health",
-			// The gateway can crash on startup if Mongo hasn't finished initializing its users yet
-			// (MongoAuthenticationException). Relaunch it a few times — it succeeds once Mongo is ready.
-			readyRetries = 5,
-			readyTimeoutSeconds = 180
-		});
+		// The C# gateway. Its build step declares the binary as its requiredOutput, so `beam local up` builds
+		// it when it is missing even without --build (see AddDotnetHost).
+		AddDotnetHost(config, apiDir, "c# gateway", "BeamableGateway", o.gatewayUrl, aspnetUrls: null);
 
 		// The message-rail runtime — a dedicated backend worker (sibling to the gateway) that drains the
 		// message-rail Mongo staging and delivers to the last-mile federations. Without it, message-rail
 		// sends stage but never deliver. Modeled on the gateway steps; run as a binary with an explicit
 		// ASPNETCORE_URLS so it doesn't collide with the gateway's :5000.
-		config.steps.Add(new LocalStackStep
-		{
-			name = "build: c# message rail runtime",
-			workingDirectory = apiDir,
-			command = "dotnet",
-			arguments = "build BeamableMessageRailRuntime -c Debug",
-			build = true,
-			waitForExit = true,
-			readyTimeoutSeconds = 300
-		});
-		config.steps.Add(new LocalStackStep
-		{
-			name = "c# message rail runtime",
-			workingDirectory =
-				Path.Combine(apiDir, "BeamableMessageRailRuntime", "bin", "Debug", "net10.0"),
-			command = OperatingSystem.IsWindows()
-				? "BeamableMessageRailRuntime.exe"
-				: "./BeamableMessageRailRuntime",
-			environment = new Dictionary<string, string>
-			{
-				["ASPNETCORE_ENVIRONMENT"] = "Local",
-				["ASPNETCORE_URLS"] = o.messageRailUrl
-			},
-			readyWhenHttp200 = $"{o.messageRailUrl}/health",
-			// Same Mongo-not-ready-yet relaunch tolerance as the gateway.
-			readyRetries = 5,
-			readyTimeoutSeconds = 180
-		});
+		AddDotnetHost(config, apiDir, "c# message rail runtime", "BeamableMessageRailRuntime",
+			o.messageRailUrl, o.messageRailUrl);
 
 		// The campaign runtime — the worker that actually *runs* campaigns. The gateway only authors them
 		// (validate, store the graph, write the directory row); enrolling the entry segment, walking each
@@ -298,34 +369,8 @@ public static class LocalStackTemplate
 		// thing you have to know to start. Same shape as the message-rail runtime: joins the actor cluster
 		// as a Member (so it needs Mongo + ActiveMQ from the docker step above), run as a binary with its
 		// own ASPNETCORE_URLS, ready on /health.
-		config.steps.Add(new LocalStackStep
-		{
-			name = "build: c# campaign runtime",
-			workingDirectory = apiDir,
-			command = "dotnet",
-			arguments = "build BeamableCampaignRuntime -c Debug",
-			build = true,
-			waitForExit = true,
-			readyTimeoutSeconds = 300
-		});
-		config.steps.Add(new LocalStackStep
-		{
-			name = "c# campaign runtime",
-			workingDirectory =
-				Path.Combine(apiDir, "BeamableCampaignRuntime", "bin", "Debug", "net10.0"),
-			command = OperatingSystem.IsWindows()
-				? "BeamableCampaignRuntime.exe"
-				: "./BeamableCampaignRuntime",
-			environment = new Dictionary<string, string>
-			{
-				["ASPNETCORE_ENVIRONMENT"] = "Local",
-				["ASPNETCORE_URLS"] = o.campaignRuntimeUrl
-			},
-			readyWhenHttp200 = $"{o.campaignRuntimeUrl}/health",
-			// Same Mongo-not-ready-yet relaunch tolerance as the gateway.
-			readyRetries = 5,
-			readyTimeoutSeconds = 180
-		});
+		AddDotnetHost(config, apiDir, "c# campaign runtime", "BeamableCampaignRuntime",
+			o.campaignRuntimeUrl, o.campaignRuntimeUrl);
 
 		// 2. Portal frontend (Vite dev server). Placed BEFORE the Scala group because it only serves the
 		//    frontend (the browser talks to the backend at runtime) — so it comes up in ~1s instead of waiting
@@ -348,6 +393,8 @@ public static class LocalStackTemplate
 			command = OperatingSystem.IsWindows() ? "npm.cmd" : "npm",
 			arguments = "run dev",
 			readyWhenHttpOk = o.portalUrl,
+			// Vite is configured with strictPort, so a squatter here is a hard failure rather than a port bump.
+			port = PortOf(o.portalUrl),
 			readyTimeoutSeconds = 120
 		});
 
@@ -365,8 +412,8 @@ public static class LocalStackTemplate
 			waitForExit = true,
 			readyTimeoutSeconds = 120
 		});
-		// Compile the selected Scala services (and their intra-repo `core` via -am) so target/classes + jars
-		// exist before the JVMs launch — only when `beam local up --build` is passed.
+		// Compile `core` plus the selected Scala services so target/classes + jars exist before the JVMs
+		// launch — only when `beam local up --build` is passed.
 		// Only hand Maven the folders its reactor knows about: one unregistered folder in `-pl` fails the
 		// whole build and rolls the stack back. An unreadable aggregator pom yields an empty set, which
 		// deliberately falls through to the old unfiltered list rather than building nothing.
@@ -376,23 +423,44 @@ public static class LocalStackTemplate
 			: scalaTools;
 		if (buildableTools.Count > 0)
 		{
-			var scalaModules = string.Join(",", buildableTools.Select(t => $"tools/{t.name}"));
+			// `core` explicitly, not just implied by `-am`: every launch script prepends `core/target/classes`
+			// to the classpath (it holds rendered config resources the ~/.m2 jar lacks), yet `-am` only pulls
+			// core into the reactor when a selected tool declares a direct dependency on it. It lives in the
+			// ROOT aggregator (not tools/pom.xml), and is only passed when that pom actually registers it —
+			// same rule as above, an unregistered `-pl` entry would fail the whole build.
+			var modules = new List<string>();
+			if (ReadRootReactorModules(scalaDir).Contains(ScalaCoreModule))
+			{
+				modules.Add(ScalaCoreModule);
+			}
+
+			foreach (var tool in buildableTools)
+			{
+				var module = $"tools/{tool.name}";
+				if (!modules.Contains(module, StringComparer.OrdinalIgnoreCase))
+				{
+					modules.Add(module);
+				}
+			}
+
 			config.steps.Add(new LocalStackStep
 			{
 				name = "build: scala",
 				workingDirectory = scalaDir,
 				command = OperatingSystem.IsWindows() ? "mvn.cmd" : "mvn",
 				// `clean` so a shared-module API change can't leave cross-module classes skewed (NoSuchMethodError).
-				arguments = $"-q -pl {scalaModules} -am clean package -DskipTests",
+				arguments = $"-q -pl {string.Join(",", modules)} -am clean package -DskipTests",
 				// Scala runs under Java 8; ${java} is substituted to that JAVA_HOME by `up` (as for the launch shells).
 				environment = new Dictionary<string, string> { ["JAVA_HOME"] = "${java}" },
 				build = true,
 				waitForExit = true,
-				readyTimeoutSeconds = 900
+				// A cold `clean package` of core + ~17 tools can run past 15 minutes, and a readiness timeout
+				// only warns and continues — which would launch the JVMs against half-built jars.
+				readyTimeoutSeconds = 1800
 			});
 		}
 
-		foreach (var tool in scalaTools)
+		LocalStackStep ScalaStep(ScalaToolInfo tool, bool grouped)
 		{
 			var isGateway = tool.name.Contains("gateway", StringComparison.OrdinalIgnoreCase);
 			// Emit the launch script in the shell that matches THIS machine's OS: PowerShell on Windows
@@ -403,14 +471,16 @@ public static class LocalStackTemplate
 			var step = new LocalStackStep
 			{
 				name = $"scala: {tool.name}",
-				group = "scala", // launch all Scala services in parallel (they're independent backing services)
+				// Grouped steps launch in parallel (they're independent backing services). dbflake is emitted
+				// ungrouped and first, so `up` has it ready before the group that depends on it starts.
+				group = grouped ? "scala" : null,
 				workingDirectory = scalaDir,
 				shell = true,
 				shellKind = onWindows ? "powershell" : "sh",
 				mainClass = tool.mainClass,
 				arguments = onWindows
-					? ScalaLaunchPowerShell(tool.name, tool.mainClass)
-					: ScalaLaunchShell(tool.name, tool.mainClass),
+					? ScalaLaunchPowerShell(tool.name, tool.mainClass, o.scalaJvmArgs)
+					: ScalaLaunchShell(tool.name, tool.mainClass, o.scalaJvmArgs),
 				// BASIC/OBJECT service providers log "<type> Service Started: <name>" when they register.
 				// HTTP gateway apps (com.*.gateway.App) never do — they log "Serving traffic at ..." on bind.
 				readyWhenLogContains = isGateway ? "Serving traffic" : "Service Started",
@@ -421,11 +491,32 @@ public static class LocalStackTemplate
 				// writable within seconds, exactly like the C# gateway step above.
 				readyRetries = 5
 			};
-			// The gateway exposes /metadata (PR#632) once it is serving; use it as a stronger, backend-confirmed
-			// readiness gate, with the log substring above as fallback.
 			if (isGateway)
+			{
+				// The gateway exposes /metadata (PR#632) once it is serving; use it as a stronger, backend-confirmed
+				// readiness gate, with the log substring above as fallback. Its readiness URL is the Caddy host, so
+				// name the port it actually binds separately.
 				step.readyWhenHttp200 = "${host}/metadata";
-			config.steps.Add(step);
+				step.port = o.scalaGatewayPort;
+			}
+
+			return step;
+		}
+
+		// dbflake serves the dbids every other Scala service fetches at boot (DBIDProvider), so it goes first and
+		// on its own: awaiting its readiness gate before the group removes the ~15s window in which every
+		// alphabetically-earlier service logs `Failed to fetch DBIDs / ServiceClient timeout` and retries. Only
+		// dbflake is hoisted — the rest are dbid *consumers* and stay parallel.
+		var dbid = scalaTools.FirstOrDefault(t =>
+			string.Equals(t.name, ScalaDbidService, StringComparison.OrdinalIgnoreCase));
+		if (dbid != null)
+		{
+			config.steps.Add(ScalaStep(dbid, grouped: false));
+		}
+
+		foreach (var tool in scalaTools.Where(t => t != dbid))
+		{
+			config.steps.Add(ScalaStep(tool, grouped: true));
 		}
 
 		// 4. Local web packages — only under `--build`, and only when the web registry is part of this stack.
@@ -556,12 +647,13 @@ public static class LocalStackTemplate
 	/// <paramref name="mainClass"/> discovered at <c>init</c> time — falling back to grepping <c>pom.xml</c>
 	/// when it is unknown.
 	/// </summary>
-	private static string ScalaLaunchShell(string svc, string mainClass)
+	private static string ScalaLaunchShell(string svc, string mainClass, string jvmArgs)
 	{
 		// Single-quoted for the sh -c wrapper; keep it one logical line. ${java} is substituted by up.
 		return
 			$"set -e; SVC={svc}; " +
 			"JHOME=\"${java}\"; " +
+			$"JVM_ARGS='{jvmArgs}'; " +
 			"JAR=$(ls tools/$SVC/target/*-1.0-SNAPSHOT.jar 2>/dev/null | grep -v sources | head -1); " +
 			$"MAIN='{mainClass ?? string.Empty}'; " +
 			"[ -n \"$MAIN\" ] || MAIN=$(grep -m1 -oE '<mainClass>[^<]+</mainClass>' tools/$SVC/pom.xml | sed -E 's#</?mainClass>##g'); " +
@@ -570,9 +662,15 @@ public static class LocalStackTemplate
 			// added to core lands on it). `-am` builds `core` in the reactor and resolves its transitive deps
 			// from the CURRENT source pom instead of a possibly-stale ~/.m2 install — otherwise a dep added to
 			// core (e.g. zstd-jni) is silently dropped and the service dies with NoClassDefFoundError at runtime.
-			"{ [ -s \"$CPF\" ] && [ \"$CPF\" -nt core/pom.xml ]; } || JAVA_HOME=\"$JHOME\" mvn -q -pl tools/$SVC -am dependency:build-classpath -Dmdep.outputFile=\"$CPF\"; " +
+			// `|| true` so `set -e` does not abort here on a failed mvn: the explicit guard below has to be
+			// reached, or the only output is raw Maven noise and the step just "exited early (code 1)".
+			"{ [ -s \"$CPF\" ] && [ \"$CPF\" -nt core/pom.xml ]; } || JAVA_HOME=\"$JHOME\" mvn -q -pl tools/$SVC -am dependency:build-classpath -Dmdep.outputFile=\"$CPF\" || true; " +
+			// An empty cache means the mvn above failed. Launching anyway starts a JVM with only the module's own
+			// classes on the classpath, which dies deep in classloading — say what actually went wrong instead.
+			"[ -s \"$CPF\" ] || { echo \"beam: classpath cache $CPF is empty — 'mvn dependency:build-classpath' failed for tools/$SVC. Re-run with --build, or run that mvn command by hand to see why.\" >&2; exit 1; }; " +
 			"CP=\"tools/$SVC/target/classes:core/target/classes:$JAR:$(cat \"$CPF\")\"; " +
-			"exec \"$JHOME/bin/java\" -cp \"$CP\" \"$MAIN\"";
+			// $JVM_ARGS unquoted on purpose: it must word-split into separate flags.
+			"exec \"$JHOME/bin/java\" $JVM_ARGS -cp \"$CP\" \"$MAIN\"";
 	}
 
 	/// <summary>
@@ -583,7 +681,7 @@ public static class LocalStackTemplate
 	/// resolve against the step's <c>workingDirectory</c> (the Scala repo), exactly like the sh version.
 	/// <c>${java}</c> is substituted to the resolved Java 8 home by <c>up</c>.
 	/// </summary>
-	private static string ScalaLaunchPowerShell(string svc, string mainClass)
+	private static string ScalaLaunchPowerShell(string svc, string mainClass, string jvmArgs)
 	{
 		// Written verbatim to a .launch.ps1 and run via `powershell -File`. Keep it dependency-free
 		// (only cmdlets + mvn/java on PATH) so it works on stock Windows PowerShell 5.1.
@@ -592,6 +690,9 @@ public static class LocalStackTemplate
 			"$ErrorActionPreference = 'Stop'",
 			$"$svc = '{svc}'",
 			"$jhome = '${java}'",
+			// An array so it splats as separate arguments to java.exe below; empty stays empty (an empty string
+			// element would reach java as an unrecognized "" option).
+			"$jvmArgs = @(" + string.Join(",", SplitJvmArgs(jvmArgs).Select(a => $"'{a}'")) + ")",
 			"$jar = Get-ChildItem -Path \"tools/$svc/target\" -Filter '*-1.0-SNAPSHOT.jar' -ErrorAction SilentlyContinue |",
 			"       Where-Object { $_.Name -notlike '*sources*' } | Select-Object -First 1 -ExpandProperty FullName",
 			$"$main = '{mainClass ?? string.Empty}'",
@@ -605,9 +706,21 @@ public static class LocalStackTemplate
 			"$stale = (-not (Test-Path $cpf)) -or ((Get-Item $cpf).Length -eq 0) -or ((Get-Item 'core/pom.xml').LastWriteTime -gt (Get-Item $cpf).LastWriteTime)",
 			"if ($stale) {",
 			"  $env:JAVA_HOME = $jhome; mvn -q -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\" }",
-			"$cp = \"tools/$svc/target/classes;core/target/classes;$jar;\" + ((Get-Content $cpf -Raw).Trim())",
-			"& \"$jhome\\bin\\java.exe\" -cp $cp $main",
+			// An empty/missing cache means that mvn failed. Reading it with `(Get-Content -Raw).Trim()` threw
+			// "You cannot call a method on a null-valued expression" and the service silently never launched —
+			// so read it defensively and report what actually broke.
+			"$deps = ''",
+			"if (Test-Path $cpf) { $raw = Get-Content $cpf -Raw; if ($raw) { $deps = $raw.Trim() } }",
+			"if (-not $deps) {",
+			"  Write-Host \"beam: classpath cache $cpf is empty - 'mvn dependency:build-classpath' failed for tools/$svc. Re-run with --build, or run that mvn command by hand to see why.\"",
+			"  exit 1 }",
+			"$cp = \"tools/$svc/target/classes;core/target/classes;$jar;\" + $deps",
+			"& \"$jhome\\bin\\java.exe\" @jvmArgs -cp $cp $main",
 			"exit $LASTEXITCODE",
 		});
 	}
+
+	/// <summary>Splits a JVM argument string into individual flags (for PowerShell array splatting).</summary>
+	private static string[] SplitJvmArgs(string jvmArgs) =>
+		(jvmArgs ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 }

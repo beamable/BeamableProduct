@@ -8,12 +8,12 @@
 #   1. Builds the unified AAR (beamable-notifications-release.aar — push + deep links)
 #      using the JDK 17 + Android SDK resolved by setup-native.sh.
 #   2. Copies it into the shared Unity package at
-#      nativeLibraries/EnginePlugins/Unity/Plugins/Android/ (the package ships the binary;
+#      beam-native-mobile/Unity/Plugins/Android/ (the package ships the binary;
 #      the Unity client consumes it via its local UPM reference), into the unified React
 #      Native package, and into the Unreal plugin's ThirdParty/Android/.
 #   3. On macOS (and only if setup-native.sh found Xcode), builds the iOS
 #      BeamableNotifications.xcframework via the inner build-xcframework.sh script
-#      and replaces the copy under nativeLibraries/EnginePlugins/Unity/Plugins/iOS/ and the
+#      and replaces the copy under beam-native-mobile/Unity/Plugins/iOS/ and the
 #      React Native package; then builds the dynamic-framework variant via
 #      build-xcframework-dynamic.sh and stages its BeamableNotifications.embeddedframework.zip
 #      into the Unreal plugin's ThirdParty/.
@@ -21,27 +21,27 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/Android"
+ANDROID_DIR="$SCRIPT_DIR/beam-native-mobile/NativeSources/Android"
 ENV_FILE="$ANDROID_DIR/.native-build-env"
-PACKAGE_ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/Unity/Plugins/Android"
-PACKAGE_IOS_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/Unity/Plugins/iOS"
+PACKAGE_ANDROID_DIR="$SCRIPT_DIR/beam-native-mobile/Unity/Plugins/Android"
+PACKAGE_IOS_DIR="$SCRIPT_DIR/beam-native-mobile/Unity/Plugins/iOS"
 # Standalone web/WebView Unity package (zero com.beamable dependency) — ships its own copy of the
 # same binaries so it can be consumed without the Unity SDK notifications package.
-PACKAGE_WEB_ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/Unity.Web/Plugins/Android"
-PACKAGE_WEB_IOS_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/Unity.Web/Plugins/iOS"
-PACKAGE_RN_ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/ReactNative/android/libs"
-PACKAGE_RN_IOS_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/ReactNative/ios"
+PACKAGE_WEB_ANDROID_DIR="$SCRIPT_DIR/beam-native-mobile/Unity.Web/Plugins/Android"
+PACKAGE_WEB_IOS_DIR="$SCRIPT_DIR/beam-native-mobile/Unity.Web/Plugins/iOS"
+PACKAGE_RN_ANDROID_DIR="$SCRIPT_DIR/beam-native-mobile/ReactNative/android/libs"
+PACKAGE_RN_IOS_DIR="$SCRIPT_DIR/beam-native-mobile/ReactNative/ios"
 
 # Unreal plugin: ships its native binaries under ThirdParty/ (iOS embeddedframework.zip
 # directly under ThirdParty/, Android .aar under ThirdParty/Android/).
-PACKAGE_UNREAL_DIR="$SCRIPT_DIR/nativeLibraries/EnginePlugins/Unreal"
+PACKAGE_UNREAL_DIR="$SCRIPT_DIR/beam-native-mobile/Unreal"
 PACKAGE_UNREAL_TP="$PACKAGE_UNREAL_DIR/ThirdParty"
 PACKAGE_UNREAL_ANDROID="$PACKAGE_UNREAL_TP/Android"
 
 NOTIF_PROJ="$ANDROID_DIR/BeamableNotifications"
 NOTIF_AAR="$NOTIF_PROJ/notifications/build/outputs/aar/notifications-release.aar"
 
-IOS_PROJ="$SCRIPT_DIR/nativeLibraries/iOS/BeamableNotifications"
+IOS_PROJ="$SCRIPT_DIR/beam-native-mobile/NativeSources/iOS/BeamableNotifications"
 IOS_BUILD_SCRIPT="$IOS_PROJ/scripts/build-xcframework.sh"
 IOS_XCFRAMEWORK="$IOS_PROJ/build/BeamableNotifications.xcframework"
 IOS_DYNAMIC_BUILD_SCRIPT="$IOS_PROJ/scripts/build-xcframework-dynamic.sh"
@@ -126,7 +126,7 @@ echo "  beamable-notifications-release.aar → $PACKAGE_RN_ANDROID_DIR"
 # Bust the Gradle artifact-transform cache for the .aar.
 #
 # The RN app consumes the .aar via `api fileTree(dir: libs, include: ['*.aar'])`
-# (EnginePlugins/ReactNative/android/build.gradle). Gradle caches the *exploded*
+# (ReactNative/android/build.gradle). Gradle caches the *exploded*
 # form of that loose .aar under ~/.gradle/caches/<ver>/transforms/<hash>/ and does
 # NOT reliably re-explode it when the file is overwritten in place under the same
 # name — so a rebuilt APK can silently keep the OLD bytecode. `./gradlew clean`
@@ -160,7 +160,7 @@ echo "  beamable-notifications-release.aar → $PACKAGE_UNREAL_ANDROID"
 
 # ---------------------------------------------------------------------------
 # 3. iOS xcframework (macOS only). Builds BeamableNotifications.xcframework via the
-#    existing nativeLibraries/iOS script and replaces the copy under Plugins/iOS so
+#    existing beam-native-mobile/NativeSources/iOS script and replaces the copy under Plugins/iOS so
 #    Unity picks up the fresh slices. We only swap the binary directory; any
 #    committed .xcframework.meta files persist.
 # ---------------------------------------------------------------------------
@@ -219,15 +219,15 @@ fi
 echo ""
 echo "Done."
 echo "The Unity plugin's native binaries are staged under"
-echo "nativeLibraries/EnginePlugins/Unity/Plugins/ (Android .aar always; iOS"
+echo "beam-native-mobile/Unity/Plugins/ (Android .aar always; iOS"
 echo "xcframework on macOS with Xcode)."
 echo "To install the Unity package, open the client in Unity, then use"
 echo "Window > Package Manager > + > Add package from disk... and select"
-echo "nativeLibraries/EnginePlugins/Unity/package.json."
+echo "beam-native-mobile/Unity/package.json."
 echo "The Unreal plugin's native binaries are staged under"
-echo "nativeLibraries/EnginePlugins/Unreal/ThirdParty/ (Android .aar always; iOS"
+echo "beam-native-mobile/Unreal/ThirdParty/ (Android .aar always; iOS"
 echo "embeddedframework.zip on macOS with Xcode)."
 if [ "$OS" = macos ] && [ "${IOS_SUPPORTED_NATIVE:-false}" = true ]; then
-  echo "The iOS xcframework is installed under nativeLibraries/EnginePlugins/Unity/Plugins/iOS/"
+  echo "The iOS xcframework is installed under beam-native-mobile/Unity/Plugins/iOS/"
   echo "and will be picked up next time Unity builds for iOS."
 fi

@@ -9,7 +9,7 @@ Runs two services:
 | **Verdaccio** | 4873 | Local npm registry — holds locally-built `@beamable/*` packages |
 | **local-unpkg** | 4874 | CDN file server — serves individual files from Verdaccio tarballs, mirroring the unpkg.com URL format used by the Portal at runtime |
 
-You do not normally drive these by hand. **See [WEB_LOCAL_DEV.md](../WEB_LOCAL_DEV.md) for the full
+You do not normally drive these by hand. **See [web/LOCAL_DEV.md](../web/LOCAL_DEV.md) for the full
 guide**; the short version, from the repository root:
 
 ```bash

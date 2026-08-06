@@ -11,7 +11,7 @@
 #      accept SDK licenses idempotently. On macOS, also verify Xcode + the iOS SDK
 #      so dev-native.sh can build the BeamableNotifications xcframework.
 #   3. Persist the resolved JAVA_HOME / ANDROID_SDK_ROOT / IOS_SUPPORTED_NATIVE
-#      to nativeLibraries/Android/.native-build-env and write a local.properties
+#      to beam-native-mobile/NativeSources/Android/.native-build-env and write a local.properties
 #      (sdk.dir) into the Gradle project.
 #   4. Bootstrap the Gradle wrapper (the wrapper .jar is not committed).
 #
@@ -23,11 +23,11 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ANDROID_DIR="$SCRIPT_DIR/nativeLibraries/Android"
+ANDROID_DIR="$SCRIPT_DIR/beam-native-mobile/NativeSources/Android"
 ENV_FILE="$ANDROID_DIR/.native-build-env"
 
 NOTIF_PROJ="$ANDROID_DIR/BeamableNotifications"
-IOS_PROJ="$SCRIPT_DIR/nativeLibraries/iOS/BeamableNotifications"
+IOS_PROJ="$SCRIPT_DIR/beam-native-mobile/NativeSources/iOS/BeamableNotifications"
 
 GRADLE_VERSION=8.2
 

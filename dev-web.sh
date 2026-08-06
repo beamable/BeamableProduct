@@ -15,7 +15,7 @@
 #   4. Refreshes the projects that consume it (`beam web use`) — which force-reinstalls, because npm
 #      would otherwise see 0.0.123 already installed and do nothing.
 #
-# Thin wrapper around `beam web publish` + `beam web use` — see WEB_LOCAL_DEV.md for the full guide.
+# Thin wrapper around `beam web publish` + `beam web use` — see web/LOCAL_DEV.md for the full guide.
 #
 # ⚠️  Step 4 pins 0.0.123 in every extension it finds, which edits package.json and lock files. Because
 #     the version never changes this is a ONE-TIME edit, not per run — but it is tracked files, so it

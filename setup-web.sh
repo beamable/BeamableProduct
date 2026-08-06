@@ -5,7 +5,7 @@
 # Starts the local npm registry (Verdaccio) and CDN file server (local-unpkg) from
 # portal-localdev/, wiping any previously published packages.
 #
-# Thin wrapper around `beam web reset` — see WEB_LOCAL_DEV.md for the full guide.
+# Thin wrapper around `beam web reset` — see web/LOCAL_DEV.md for the full guide.
 #
 # Note: unlike older versions, this does NOT write an @beamable registry override into your global
 # npm config, so nothing here changes machine-wide npm behaviour. A project opts in by pinning a

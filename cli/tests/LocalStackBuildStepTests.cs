@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using cli.Services.LocalStack;
 using NUnit.Framework;
@@ -78,6 +79,93 @@ public class LocalStackBuildStepTests
 		Assert.That(step.workingDirectory, Is.EqualTo(@"C:\repos\BeamableBackend"));
 		Assert.That(step.environment.TryGetValue("JAVA_HOME", out var jh) && jh == "${java}", Is.True,
 			"scala build must run under the Java 8 home substituted by `up`");
+	}
+
+	/// <summary>
+	/// Writes a throwaway Scala repo whose root pom registers <paramref name="rootModules"/> and whose
+	/// tools aggregator registers <paramref name="toolModules"/>, so the reactor-module readers have real
+	/// poms to parse. Only the two aggregator poms matter — nothing is built.
+	/// </summary>
+	private static string WriteFakeScalaRepo(string[] rootModules, string[] toolModules)
+	{
+		var dir = Path.Combine(Path.GetTempPath(), "beam-scala-repo-" + Guid.NewGuid().ToString("N")[..8]);
+		Directory.CreateDirectory(Path.Combine(dir, "tools"));
+
+		string Pom(string[] modules) =>
+			"<project><modules>"
+			+ string.Join("", modules.Select(m => $"\n        <module>{m}</module>"))
+			+ "\n    </modules></project>\n";
+
+		if (rootModules != null)
+		{
+			File.WriteAllText(Path.Combine(dir, "pom.xml"), Pom(rootModules));
+		}
+
+		File.WriteAllText(Path.Combine(dir, "tools", "pom.xml"), Pom(toolModules));
+		return dir;
+	}
+
+	private static LocalStackConfig CreateWithScalaRepo(string scalaDir) =>
+		LocalStackTemplate.Create(new LocalStackTemplate.Options
+		{
+			apiDir = @"C:\repos\BeamableAPI",
+			scalaDir = scalaDir,
+			portalDir = @"C:\repos\portal",
+			scalaTools = new System.Collections.Generic.List<LocalStackTemplate.ScalaToolInfo>
+			{
+				new() { name = "gateway", mainClass = "com.beamable.gateway.App" },
+				new() { name = "auth", mainClass = "com.beamable.auth.App" },
+			},
+		});
+
+	/// <summary>
+	/// `core` must be built explicitly rather than left to `-am`: every Scala launch script prepends
+	/// `core/target/classes` to the classpath (it holds rendered config resources the ~/.m2 jar lacks), but
+	/// `-am` only pulls core into the reactor when a selected tool declares a direct dependency on it.
+	/// </summary>
+	[Test]
+	public void Scala_build_includes_core_when_the_root_pom_registers_it()
+	{
+		var repo = WriteFakeScalaRepo(new[] { "core", "tools", "rest" }, new[] { "gateway", "auth" });
+		try
+		{
+			var step = Step(CreateWithScalaRepo(repo), "build: scala");
+
+			Assert.That(step.arguments, Does.Contain("-pl core,"));
+			Assert.That(step.arguments, Does.Contain("tools/gateway"));
+			Assert.That(step.arguments, Does.Contain("tools/auth"));
+			Assert.That(step.arguments, Does.Contain("-am"));
+			Assert.That(step.arguments, Does.Contain("clean"));
+			// One `core` entry only — a repeated -pl module is at best noise and at worst a broken selector.
+			Assert.That(step.arguments.Split(',').Count(m => m.Trim().EndsWith("core")), Is.EqualTo(1));
+			// A cold clean build of core + the tools can outrun the old 900s.
+			Assert.That(step.readyTimeoutSeconds, Is.EqualTo(1800));
+		}
+		finally
+		{
+			Directory.Delete(repo, recursive: true);
+		}
+	}
+
+	/// <summary>
+	/// The safe fallback: an unregistered `-pl` entry fails the ENTIRE reactor build and rolls the stack back,
+	/// so a root pom we cannot read must leave `core` out rather than guess it in.
+	/// </summary>
+	[Test]
+	public void Scala_build_omits_core_when_the_root_pom_does_not_register_it()
+	{
+		var repo = WriteFakeScalaRepo(rootModules: null, toolModules: new[] { "gateway", "auth" });
+		try
+		{
+			var step = Step(CreateWithScalaRepo(repo), "build: scala");
+
+			Assert.That(step.arguments, Does.Not.Contain("-pl core"));
+			Assert.That(step.arguments, Does.Contain("tools/gateway"));
+		}
+		finally
+		{
+			Directory.Delete(repo, recursive: true);
+		}
 	}
 
 	[Test]
@@ -221,5 +309,131 @@ public class LocalStackBuildStepTests
 		// Both workers join the actor cluster, so the docker step bringing up Mongo + ActiveMQ runs first.
 		Assert.That(IndexOf(config, "docker: api deps + caddy"),
 			Is.LessThan(IndexOf(config, "c# campaign runtime")));
+	}
+
+	/// <summary>The three .NET hosts, as (build step, run step, project) — the set that must stay in lockstep.</summary>
+	private static readonly (string build, string run, string project)[] DotnetHosts =
+	{
+		("build: c# gateway", "c# gateway", "BeamableGateway"),
+		("build: c# message rail runtime", "c# message rail runtime", "BeamableMessageRailRuntime"),
+		("build: c# campaign runtime", "c# campaign runtime", "BeamableCampaignRuntime"),
+	};
+
+	/// <summary>
+	/// Each .NET host's build step must declare the binary it produces, because that is what lets `beam local
+	/// up` build it when it is missing instead of launching a nonexistent executable, retrying it, and then
+	/// reporting the stack as up minus that service.
+	/// </summary>
+	[Test]
+	public void Dotnet_host_build_steps_declare_the_binary_they_produce()
+	{
+		var config = CreateWithRepos();
+
+		foreach (var (buildName, _, project) in DotnetHosts)
+		{
+			var build = Step(config, buildName);
+			Assert.That(build.requiredOutput, Is.Not.Null.And.Not.Empty, $"{buildName} must declare its output");
+			Assert.That(build.requiredOutput, Does.Contain(Path.Combine("bin", "Debug", "net10.0")),
+				$"{buildName} output must be the Debug build output folder");
+			Assert.That(Path.GetFileName(build.requiredOutput),
+				Is.EqualTo(OperatingSystem.IsWindows() ? project + ".exe" : project),
+				$"{buildName} output must be the apphost `dotnet build` actually produces on this OS");
+		}
+	}
+
+	/// <summary>
+	/// The anti-drift guard: the declared output and the binary the run step launches are the same file. They
+	/// come from one helper for exactly this reason — a build step that "succeeds" while pointing somewhere
+	/// else would let `up` skip the build and then fail to launch.
+	/// </summary>
+	[Test]
+	public void Declared_build_output_is_the_binary_the_run_step_launches()
+	{
+		var config = CreateWithRepos();
+
+		foreach (var (buildName, runName, _) in DotnetHosts)
+		{
+			var run = Step(config, runName);
+			var launched = Path.Combine(run.workingDirectory, run.command.TrimStart('.', '/', '\\'));
+			Assert.That(Step(config, buildName).requiredOutput, Is.EqualTo(launched),
+				$"{buildName} must declare exactly the binary '{runName}' launches");
+		}
+	}
+
+	/// <summary>Steps whose build is slow and whose absence fails loudly on its own stay `--build`-only — a
+	/// surprise multi-minute `mvn clean package` on a plain `up` is worse than an error.</summary>
+	[Test]
+	public void Slow_build_steps_declare_no_output_so_they_stay_build_only()
+	{
+		var config = CreateWithWebRegistry();
+
+		foreach (var name in new[]
+			{
+				"build: scala", "build: portal deps",
+				LocalStackTemplate.WebPublishStepName, LocalStackTemplate.WebRefreshStepName
+			})
+		{
+			Assert.That(Step(config, name).requiredOutput, Is.Null.Or.Empty,
+				$"{name} must not opt into building without --build");
+		}
+	}
+
+	private static LocalStackConfig EmptyConfig() => new LocalStackConfig();
+
+	[Test]
+	public void Build_output_missing_is_true_only_for_a_build_step_with_an_absent_declared_output()
+	{
+		var dir = TestContext.CurrentContext.TestDirectory;
+		var present = Path.Combine(dir, "beam-required-output-probe.txt");
+		File.WriteAllText(present, "built");
+
+		var absent = new LocalStackStep { build = true, requiredOutput = Path.Combine(dir, "does-not-exist.bin") };
+		Assert.That(LocalStackConfigIO.BuildOutputMissing(absent, EmptyConfig()), Is.True);
+
+		var built = new LocalStackStep { build = true, requiredOutput = present };
+		Assert.That(LocalStackConfigIO.BuildOutputMissing(built, EmptyConfig()), Is.False);
+
+		// A directory counts as produced too (e.g. node_modules), not just a file.
+		var builtDir = new LocalStackStep { build = true, requiredOutput = dir };
+		Assert.That(LocalStackConfigIO.BuildOutputMissing(builtDir, EmptyConfig()), Is.False);
+
+		// No declaration = today's behavior: --build only.
+		Assert.That(LocalStackConfigIO.BuildOutputMissing(new LocalStackStep { build = true }, EmptyConfig()), Is.False);
+
+		// Never applies to a run step, which is not gated on --build in the first place.
+		var runStep = new LocalStackStep { build = false, requiredOutput = Path.Combine(dir, "does-not-exist.bin") };
+		Assert.That(LocalStackConfigIO.BuildOutputMissing(runStep, EmptyConfig()), Is.False);
+	}
+
+	[Test]
+	public void Relative_build_output_resolves_against_the_working_directory()
+	{
+		var dir = TestContext.CurrentContext.TestDirectory;
+		var name = "beam-relative-output-probe.txt";
+		File.WriteAllText(Path.Combine(dir, name), "built");
+
+		var step = new LocalStackStep { build = true, workingDirectory = dir, requiredOutput = name };
+		Assert.That(LocalStackConfigIO.ResolveRequiredOutput(step, EmptyConfig()),
+			Is.EqualTo(Path.Combine(dir, name)));
+		Assert.That(LocalStackConfigIO.BuildOutputMissing(step, EmptyConfig()), Is.False);
+	}
+
+	/// <summary>
+	/// An unedited `&lt;EDIT: absolute path to ...&gt;` placeholder must not be read as "the output is missing,
+	/// go build it" — the manifest is simply not filled in yet.
+	/// </summary>
+	[Test]
+	public void Placeholder_paths_do_not_trigger_a_build()
+	{
+		var config = LocalStackTemplate.Create(new LocalStackTemplate.Options());
+
+		foreach (var (buildName, _, _) in DotnetHosts)
+		{
+			var step = Step(config, buildName);
+			Assert.That(step.requiredOutput, Does.Contain("<EDIT:"),
+				"an unset api dir must still produce the placeholder");
+			Assert.That(LocalStackConfigIO.BuildOutputMissing(step, config), Is.False,
+				$"{buildName} must not auto-build off a placeholder path");
+		}
 	}
 }

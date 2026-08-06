@@ -2,7 +2,7 @@
 
 # Reverses setup-web.sh: stops the local registry and CDN, and deletes the packages published to it.
 #
-# Thin wrapper around `beam web stop --wipe` — see WEB_LOCAL_DEV.md for the full guide.
+# Thin wrapper around `beam web stop --wipe` — see web/LOCAL_DEV.md for the full guide.
 #
 # There is no global npm config to restore: this flow never wrote one. What DOES need undoing is the
 # toolkit pin that `dev-web.sh` wrote into your extensions — that lives in tracked files, so revert it
