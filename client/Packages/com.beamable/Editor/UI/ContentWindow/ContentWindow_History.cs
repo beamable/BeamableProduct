@@ -1224,26 +1224,42 @@ namespace Beamable.Editor.UI.ContentWindow
 
 	public static class ContentHistoryInspectorPreview
 	{
+		#if UNITY_6000_4_OR_NEWER
+		private static readonly HashSet<EntityId> PreviewIds = new();
+		#else
 		private static readonly HashSet<int> PreviewInstanceIds = new();
+		#endif
 
 		public static void Register(ContentObject content)
 		{
 			if (content != null)
 			{
+				#if UNITY_6000_4_OR_NEWER
+				PreviewIds.Add(content.GetEntityId());
+				#else
 				PreviewInstanceIds.Add(content.GetInstanceID());
+				#endif
 			}
 		}
 
 		public static bool IsReadOnly(ContentObject content)
 		{
+			#if UNITY_6000_4_OR_NEWER
+			return content != null && PreviewIds.Contains(content.GetEntityId());
+			#else
 			return content != null && PreviewInstanceIds.Contains(content.GetInstanceID());
+			#endif
 		}
 
 		public static void Release(ContentObject content)
 		{
 			if (content != null)
 			{
+				#if UNITY_6000_4_OR_NEWER
+				PreviewIds.Remove(content.GetEntityId());
+				#else
 				PreviewInstanceIds.Remove(content.GetInstanceID());
+				#endif
 			}
 		}
 
