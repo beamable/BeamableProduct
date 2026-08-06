@@ -35,7 +35,12 @@ public static class LocalStackTemplate
 		// email.basic (/basic/email/direct). Required by the player-engagement In-Game and Email rails.
 		// "notification" serves notification.basic, which the content service broadcasts to when
 		// committing a manifest — without it `content publish` fails server-side.
-		"mail", "messaging", "notification"
+		"mail", "messaging", "notification",
+		// Analytics ingest: serves POST /report/custom_batch/{cid}/{pid}/{gamerTag}, the route every
+		// client SDK (Unity, web, and the native iOS/Android push funnels) posts core events to. It
+		// binds :9003 — a DIFFERENT listener from the gateway's :9002 — so Caddy needs a matching
+		// `handle /report/*` block or the requests fall through to the C# gateway and 404.
+		"analytics-gateway"
 	};
 
 	public class Options
@@ -657,6 +662,18 @@ public static class LocalStackTemplate
 			"JAR=$(ls tools/$SVC/target/*-1.0-SNAPSHOT.jar 2>/dev/null | grep -v sources | head -1); " +
 			$"MAIN='{mainClass ?? string.Empty}'; " +
 			"[ -n \"$MAIN\" ] || MAIN=$(grep -m1 -oE '<mainClass>[^<]+</mainClass>' tools/$SVC/pom.xml | sed -E 's#</?mainClass>##g'); " +
+			// The module's OWN compiled output has to exist too — a perfectly valid dependency classpath still
+			// dies with a bare "Could not find or load main class" when target/classes is empty and no jar was
+			// built (tools/cloud-saving ships sources but a plain `up` never compiles it). Say that plainly.
+			// Deliberately DIAGNOSE-ONLY: do not run maven here. `mvn -pl tools/$SVC -am ...` also rebuilds
+			// `core`, and a freshly built core against day-old tools/* classes makes every other service die
+			// with `NoSuchMethodError: com.kickstand.core.RequestContext.copy(...)` the moment it handles a
+			// request — the whole stack proxies through gateway, so one stray -am build silently bricks it.
+			// Whole-reactor rebuilds belong to the `build: scala` step (`--build`), which keeps core and every
+			// tools/* module binary-consistent.
+			"CLASSES=\"tools/$SVC/target/classes\"; " +
+			"HAS_CLASSES=$(find \"$CLASSES\" -name '*.class' -print -quit 2>/dev/null); " +
+			"{ [ -n \"$HAS_CLASSES\" ] || [ -n \"$JAR\" ]; } || { echo \"beam: tools/$SVC has no compiled output (target/classes is empty and no jar) — re-run 'beam local up --build' to build the Scala reactor. Do NOT build this module alone with -am: that rebuilds core and breaks every other already-built service.\" >&2; exit 1; }; " +
 			"CPF=\"${TMPDIR:-/tmp}/beam-scala-cp/cp-$SVC.txt\"; mkdir -p \"$(dirname \"$CPF\")\"; " +
 			// Rebuild the cached classpath when it is missing/empty OR older than core/pom.xml (so a dep newly
 			// added to core lands on it). `-am` builds `core` in the reactor and resolves its transitive deps
@@ -698,6 +715,20 @@ public static class LocalStackTemplate
 			$"$main = '{mainClass ?? string.Empty}'",
 			"if (-not $main) { $main = (Select-String -Path \"tools/$svc/pom.xml\" -Pattern '<mainClass>([^<]+)</mainClass>' |",
 			"                  Select-Object -First 1).Matches.Groups[1].Value }",
+			// The module's OWN compiled output has to exist too — a perfectly valid dependency classpath still
+			// dies with a bare "Could not find or load main class" when target/classes is empty and no jar was
+			// built (tools/cloud-saving ships sources but a plain `up` never compiles it). Say that plainly.
+			// Deliberately DIAGNOSE-ONLY: do not run maven here. `mvn -pl tools/$svc -am ...` also rebuilds
+			// `core`, and a freshly built core against day-old tools/* classes makes every other service die
+			// with `NoSuchMethodError: com.kickstand.core.RequestContext.copy(...)` the moment it handles a
+			// request — the whole stack proxies through gateway, so one stray -am build silently bricks it.
+			// Whole-reactor rebuilds belong to the `build: scala` step (`--build`), which keeps core and every
+			// tools/* module binary-consistent.
+			"$classes = \"tools/$svc/target/classes\"",
+			"$hasClasses = (Test-Path $classes) -and $null -ne (Get-ChildItem -Path $classes -Filter '*.class' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1)",
+			"if (-not $hasClasses -and -not $jar) {",
+			"  Write-Host \"beam: tools/$svc has no compiled output (target/classes is empty and no jar) - re-run 'beam local up --build' to build the Scala reactor. Do NOT build this module alone with -am: that rebuilds core and breaks every other already-built service.\"",
+			"  exit 1 }",
 			"$cpf = Join-Path $env:TEMP \"beam-scala-cp/cp-$svc.txt\"",
 			"New-Item -ItemType Directory -Force -Path (Split-Path $cpf) | Out-Null",
 			// Rebuild the cached classpath when missing/empty OR older than core/pom.xml. `-am` resolves the
