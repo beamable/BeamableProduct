@@ -84,7 +84,7 @@ namespace Beamable.Api
 		{
 			if (_prefix.StartsWith("editor."))
 			{
-				SaveTokenForCustomer(cid, token); // if this token looks like an editor token, then we should should also save it as customer scoped, otherwise, the save action won't apply to the right data. 
+				SaveTokenForCustomer(cid, token); // if this token looks like an editor token, then we should should also save it as customer scoped, otherwise, the save action won't apply to the right data.
 			}
 			AliasHelper.ValidateCid(cid);
 			PlayerPrefs.SetString($"{_prefix}{cid}.{pid}.access_token", token.Token);

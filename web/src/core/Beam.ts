@@ -153,9 +153,16 @@ export class Beam extends ClientServicesMixin(BeamBase) {
 
       if (tokenResponse) await saveToken(this.tokenStorage, tokenResponse);
 
+      // Realtime is opt-out via `config.realtime.enabled = false`. Skipping it
+      // keeps the SDK usable as a pure API client when there's no player to
+      // sustain a realtime session (e.g. an admin/portal context, which would
+      // otherwise fail the socket handshake with "no player id"). Callers can
+      // connect later with `connectRealtime()` once a player exists.
+      const realtimeEnabled = this.beamConfig.realtime?.enabled ?? true;
+
       await Promise.all([
         this.clientServices.account.current(),
-        this.setupRealtimeConnection(),
+        realtimeEnabled ? this.setupRealtimeConnection() : Promise.resolve(),
         this.clientServices.content.syncContentManifests({
           ids: Array.from(
             new Set(['global', ...(this.beamConfig.contentNamespaces ?? [])]),
@@ -177,6 +184,34 @@ export class Beam extends ClientServicesMixin(BeamBase) {
       pid: this.pid,
       refreshToken,
     });
+  }
+
+  /**
+   * Establishes the realtime (websocket) connection to Beamable server-events.
+   *
+   * Use this when the client was initialized with `realtime: { enabled: false }`
+   * — for example after creating a player via `beam.auth.loginAsGuest()`, at
+   * which point the account has a player id on the realm and the realtime
+   * session can be sustained.
+   *
+   * @example
+   * ```ts
+   * const beam = await Beam.init({ cid, pid, realtime: { enabled: false } });
+   * await beam.auth.loginAsGuest();
+   * await beam.connectRealtime();
+   * ```
+   * @throws {BeamWebSocketError} If no refresh token is available.
+   */
+  async connectRealtime(): Promise<void> {
+    await this.setupRealtimeConnection();
+  }
+
+  /**
+   * Closes the realtime (websocket) connection, if one is open. Safe to call
+   * when no connection exists (no-op).
+   */
+  disconnectRealtime(): void {
+    this.ws.disconnect();
   }
 
   /**

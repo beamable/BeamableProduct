@@ -11,6 +11,8 @@ namespace Beamable.Editor.Util
 
 			var logoRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Height(50),
 			                                        GUILayout.ExpandWidth(true));
+			if (!logo) return;
+			
 			var logoAspect = logo.width / (float) logo.height;
 			var shadowWidth = logoAspect * logoRect.height;
 

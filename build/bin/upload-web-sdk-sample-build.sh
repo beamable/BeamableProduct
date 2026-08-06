@@ -8,7 +8,7 @@ workspace="${GITHUB_WORKSPACE:-.}"
 
 # Set Up Paths
 build_directory="$workspace/web-sdk-sample-build"
-github_repo_url="https://$GITHUB_USERNAME:$GITHUB_PASSWORD@github.com/beamable/web-sdk-sample.git"
+github_repo_url="https://x-access-token:$GIT_WEB_SDK_SAMPLE_PAT@github.com/beamable/web-sdk-sample.git"
 source_dist_folder="$workspace/$SAMPLE_DIR/dist"
 
 # Validate Source Files Exist

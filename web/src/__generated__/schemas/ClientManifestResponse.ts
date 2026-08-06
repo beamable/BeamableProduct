@@ -7,6 +7,7 @@ import type { ClientContentInfo } from './ClientContentInfo';
 
 export type ClientManifestResponse = { 
   items: ClientContentInfo[]; 
+  clientVersion?: string; 
   createdAt?: bigint | string; 
   latestUpdate?: bigint | string; 
 };

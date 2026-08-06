@@ -98,6 +98,11 @@ public class MicroserviceAuthenticationDaemon
 	private readonly MicroserviceRequester _requester;
 
 	/// <summary>
+	/// The preferred codec negotiated with the server during authentication, or null if none.
+	/// </summary>
+	public string NegotiatedCodec { get; private set; }
+
+	/// <summary>
 	/// Tracks the number of requests that failed due to <see cref="UnauthenticatedException"/>.
 	/// </summary>
 	public int AuthorizationCounter = 0; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
@@ -206,6 +211,9 @@ public class MicroserviceAuthenticationDaemon
 	
 	async Task<MicroserviceAuthResponse> AuthWithRefreshToken()
 	{
+		// TODO(zones): a zone-scoped service is scoped by cid.zid, not cid.pid. When the service is
+		// BeamServiceScope.Zone, this should be `_env.CustomerID + "." + _env.Zid`. Left as cid.pid for now;
+		// requires the backend to accept a zone:cid authenticated session first.
 		var tempRequester = new MicroserviceHttpRequester(_env, new HttpClient())
 		{
 			ScopeHeader = _env.CustomerID + "." + _env.ProjectName
@@ -213,12 +221,20 @@ public class MicroserviceAuthenticationDaemon
 		var authApi = new AuthApi(tempRequester);
 		var  res = await authApi.PostToken(new TokenRequestWrapper
 		{
-			grant_type = "refresh_token", 
+			grant_type = "refresh_token",
 			refresh_token = _env.RefreshToken
 		});
 		var accessToken = res.access_token.GetOrThrow();
-		
-		var req = new MicroserviceAuthRequestWithToken { cid = _env.CustomerID, pid = _env.ProjectName, token = accessToken };
+
+		var req = new MicroserviceAuthRequestWithToken
+		{
+			cid = _env.CustomerID,
+			// TODO(zones): for a zone service, send `zid = _env.Zid` (and omit pid) so the platform
+			// authenticates a zone:cid session. Kept as pid for now (backend zone auth not yet available).
+			pid = _env.ProjectName,
+			token = accessToken,
+			codecs = SocketCompression.SupportedCodecs
+		};
 		return await _requester.Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth", req);
 	}
 
@@ -235,7 +251,15 @@ public class MicroserviceAuthenticationDaemon
 		var res = await _requester.Request<MicroserviceNonceResponse>(Method.GET, "gateway/nonce");
 		BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Got nonce ThreadID at = {Thread.CurrentThread.ManagedThreadId}");
 		var sig = CalculateSignature(_env.Secret + res.nonce);
-		var req = new MicroserviceAuthRequest { cid = _env.CustomerID, pid = _env.ProjectName, signature = sig };
+		var req = new MicroserviceAuthRequest
+		{
+			cid = _env.CustomerID,
+			// TODO(zones): for a zone service, send `zid = _env.Zid` (and omit pid) to authenticate a
+			// zone:cid session. Kept as pid for now (backend zone auth not yet available).
+			pid = _env.ProjectName,
+			signature = sig,
+			codecs = SocketCompression.SupportedCodecs
+		};
 		return await _requester.Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth", req);
 	}
 	
@@ -257,6 +281,12 @@ public class MicroserviceAuthenticationDaemon
 		{
 			BeamableZLoggerProvider.LogContext.Value.ZLogError($"Authorization failed. result=[{authRes.result}]");
 			throw new BeamableWebsocketAuthException(authRes.result);
+		}
+
+		if (authRes.codecs?.Length > 0)
+		{
+			NegotiatedCodec = SocketCompression.GetPreferredCodec(authRes.codecs);
+			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Using websocket codec {NegotiatedCodec}");
 		}
 
 		BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Authorization complete at ThreadID = {Thread.CurrentThread.ManagedThreadId}");

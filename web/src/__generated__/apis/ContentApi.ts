@@ -19,6 +19,8 @@ import type { ContentBasicManifestChecksums } from '@/__generated__/schemas/Cont
 import type { ContentOrText } from '@/__generated__/schemas/ContentOrText';
 import type { DeleteLocalizationRequest } from '@/__generated__/schemas/DeleteLocalizationRequest';
 import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
+import type { GetBinaryDownloadUrlsRequest } from '@/__generated__/schemas/GetBinaryDownloadUrlsRequest';
+import type { GetBinaryDownloadUrlsResponse } from '@/__generated__/schemas/GetBinaryDownloadUrlsResponse';
 import type { GetLocalizationsResponse } from '@/__generated__/schemas/GetLocalizationsResponse';
 import type { GetManifestDiffsResponse } from '@/__generated__/schemas/GetManifestDiffsResponse';
 import type { GetManifestHistoryResponse } from '@/__generated__/schemas/GetManifestHistoryResponse';
@@ -316,11 +318,12 @@ export async function contentGetManifestExactBasic(requester: HttpRequester, uid
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param id - ID of the content manifest
+ * @param omitTags - When true, the tags column is emitted empty for every row. Defaults to false.
  * @param uid - UID of the content manifest
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function contentGetManifestBasic(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
+export async function contentGetManifestBasic(requester: HttpRequester, id?: string, omitTags?: boolean, uid?: string, gamertag?: string): Promise<HttpResponse<ContentBasicManifest>> {
   let endpoint = "/basic/content/manifest";
   
   // Make the API request
@@ -330,6 +333,7 @@ export async function contentGetManifestBasic(requester: HttpRequester, id?: str
     m: GET,
     q: {
       id,
+      omitTags,
       uid
     },
     g: gamertag,
@@ -450,11 +454,12 @@ export async function contentPostBasic(requester: HttpRequester, payload: SaveCo
 /**
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param id - ID of the content manifest
+ * @param omitTags - When true, the tags column is emitted empty for every row. Defaults to false.
  * @param uid - UID of the content manifest
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function contentGetManifestPublicBasic(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestResponse>> {
+export async function contentGetManifestPublicBasic(requester: HttpRequester, id?: string, omitTags?: boolean, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestResponse>> {
   let endpoint = "/basic/content/manifest/public";
   
   // Make the API request
@@ -464,6 +469,7 @@ export async function contentGetManifestPublicBasic(requester: HttpRequester, id
     m: GET,
     q: {
       id,
+      omitTags,
       uid
     },
     g: gamertag
@@ -473,11 +479,12 @@ export async function contentGetManifestPublicBasic(requester: HttpRequester, id
 /**
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param id - Content ID of the content manifest
+ * @param omitTags - When true, the tags array is emitted empty for every entry. Defaults to false.
  * @param uid - UID of the content manifest
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function contentGetManifestPublicJsonBasic(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestJsonResponse>> {
+export async function contentGetManifestPublicJsonBasic(requester: HttpRequester, id?: string, omitTags?: boolean, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestJsonResponse>> {
   let endpoint = "/basic/content/manifest/public/json";
   
   // Make the API request
@@ -487,6 +494,7 @@ export async function contentGetManifestPublicJsonBasic(requester: HttpRequester
     m: GET,
     q: {
       id,
+      omitTags,
       uid
     },
     g: gamertag
@@ -524,11 +532,12 @@ export async function contentPutManifestRepeatBasic(requester: HttpRequester, pa
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param id - Content ID of the content manifest
+ * @param omitTags - When true, the tags array is emitted empty for every entry. Defaults to false.
  * @param uid - UID of the content manifest
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function contentGetManifestPrivateJsonBasic(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestJsonResponse>> {
+export async function contentGetManifestPrivateJsonBasic(requester: HttpRequester, id?: string, omitTags?: boolean, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestJsonResponse>> {
   let endpoint = "/basic/content/manifest/private/json";
   
   // Make the API request
@@ -538,6 +547,7 @@ export async function contentGetManifestPrivateJsonBasic(requester: HttpRequeste
     m: GET,
     q: {
       id,
+      omitTags,
       uid
     },
     g: gamertag,
@@ -552,11 +562,12 @@ export async function contentGetManifestPrivateJsonBasic(requester: HttpRequeste
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param id - ID of the content manifest
+ * @param omitTags - When true, the tags column is emitted empty for every row. Defaults to false.
  * @param uid - UID of the content manifest
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function contentGetManifestPrivateBasic(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestResponse>> {
+export async function contentGetManifestPrivateBasic(requester: HttpRequester, id?: string, omitTags?: boolean, uid?: string, gamertag?: string): Promise<HttpResponse<ClientManifestResponse>> {
   let endpoint = "/basic/content/manifest/private";
   
   // Make the API request
@@ -566,6 +577,7 @@ export async function contentGetManifestPrivateBasic(requester: HttpRequester, i
     m: GET,
     q: {
       id,
+      omitTags,
       uid
     },
     g: gamertag,
@@ -596,13 +608,38 @@ export async function contentGetManifestChecksumsBasic(requester: HttpRequester,
 }
 
 /**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `GetBinaryDownloadUrlsRequest` instance to use for the API request
+ * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
+ * 
+ */
+export async function contentPostBinaryPrivateUrlsBasic(requester: HttpRequester, payload: GetBinaryDownloadUrlsRequest, gamertag?: string): Promise<HttpResponse<GetBinaryDownloadUrlsResponse>> {
+  let endpoint = "/basic/content/binary/private/urls";
+  
+  // Make the API request
+  return makeApiRequest<GetBinaryDownloadUrlsResponse, GetBinaryDownloadUrlsRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param id - ID of the content manifest
+ * @param omitTags - When true, the tags column is emitted empty for every row. Defaults to false.
  * @param uid - UID of the content manifest
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function contentGetManifestChecksumBasic(requester: HttpRequester, id?: string, uid?: string, gamertag?: string): Promise<HttpResponse<ContentBasicManifestChecksum>> {
+export async function contentGetManifestChecksumBasic(requester: HttpRequester, id?: string, omitTags?: boolean, uid?: string, gamertag?: string): Promise<HttpResponse<ContentBasicManifestChecksum>> {
   let endpoint = "/basic/content/manifest/checksum";
   
   // Make the API request
@@ -612,6 +649,7 @@ export async function contentGetManifestChecksumBasic(requester: HttpRequester, 
     m: GET,
     q: {
       id,
+      omitTags,
       uid
     },
     g: gamertag

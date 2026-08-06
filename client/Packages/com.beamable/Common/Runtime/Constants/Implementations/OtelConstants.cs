@@ -107,6 +107,11 @@ namespace Beamable.Common
                 public const string ATTR_SOURCE = "beam.source";
 
                 /// <summary>
+                /// The AI agent calling the CLI in the format "transport_agentname" (e.g. "mcp_claude_code", "cli_cursor")
+                /// </summary>
+                public const string ATTR_AI_AGENT = "beam.ai_agent";
+
+                /// <summary>
                 /// A tag used to identify which engine is using the CLI, either "unity" or "unreal"
                 /// </summary>
                 public const string ATTR_ENGINE_SOURCE = "beam.engine.source";
@@ -159,6 +164,31 @@ namespace Beamable.Common
                 public const string ATTR_SDK_VERSION = "beam.sdk_version";
                 
                 
+                /// <summary>
+                /// The name of the Portal Extension
+                /// </summary>
+                public const string ATTR_PORTAL_EXTENSION_NAME = "beam.portal_extension.name";
+
+                /// <summary>
+                /// Size in bytes of the Portal Extension built metadata.json file
+                /// </summary>
+                public const string ATTR_PORTAL_EXTENSION_BUILD_METADATA_SIZE_BYTES = "beam.portal_extension.build.metadata_bytes";
+                
+                /// <summary>
+                /// Size in bytes of the Portal Extension built JS bundle
+                /// </summary>
+                public const string ATTR_PORTAL_EXTENSION_BUILD_JS_SIZE_BYTES = "beam.portal_extension.build.js_size_bytes";
+
+                /// <summary>
+                /// Size in bytes of the Portal Extension built CSS bundle
+                /// </summary>
+                public const string ATTR_PORTAL_EXTENSION_BUILD_CSS_SIZE_BYTES = "beam.portal_extension.build.css_size_bytes";
+
+                /// <summary>
+                /// Total size in bytes of the Portal Extension build output (JS + CSS)
+                /// </summary>
+                public const string ATTR_PORTAL_EXTENSION_BUILD_TOTAL_SIZE_BYTES = "beam.portal_extension.build.total_size_bytes";
+
                 public const string METER_SERVICE_NAME = "Beamable.Service.Core";
                 public const string METER_CLI_NAME = "Beamable.Cli";
                 

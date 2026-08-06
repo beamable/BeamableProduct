@@ -22,7 +22,7 @@ public class ContentCommand : CommandGroup
 			$"\n{nameof(ContentFilterType.TypeHierarchy)} => Will add the given tags to any content of the ','-separated list of filters (content type strings with full hierarchy --- StartsWith comparison)" +
 			$"\n{nameof(ContentFilterType.Tags)} => Will add the given tags to any content that currently has any of the ','-separated list of filters (tags)");
 
-	public ContentCommand() : base("content", "Open content folder in file explorer")
+	public ContentCommand() : base("content", "Manage Beamable content — publish, sync, resolve conflicts, and snapshot manifests")
 	{
 	}
 }

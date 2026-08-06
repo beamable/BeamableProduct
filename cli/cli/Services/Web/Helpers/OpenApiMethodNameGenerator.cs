@@ -145,6 +145,7 @@ public static class OpenApiMethodNameGenerator
 			"POST" => "Post",
 			"PUT" => "Put",
 			"DELETE" => "Delete",
+			"PATCH" => "Patch",
 			_ => "Get"
 		};
 }

@@ -5,6 +5,7 @@
 
 import type { BeamoV2ServiceComponent } from './BeamoV2ServiceComponent';
 import type { BeamoV2ServiceDependencyReference } from './BeamoV2ServiceDependencyReference';
+import type { BeamoV2LogProvider } from './enums/BeamoV2LogProvider';
 
 export type BeamoV2ServiceReference = { 
   archived?: boolean; 
@@ -16,6 +17,7 @@ export type BeamoV2ServiceReference = {
   enabled?: boolean; 
   imageCpuArch?: string | null; 
   imageId?: string; 
+  logProvider?: BeamoV2LogProvider; 
   serviceName?: string; 
   templateId?: string; 
 };

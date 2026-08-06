@@ -12,6 +12,11 @@ using UnityEngine.UI;
 using Component = UnityEngine.Component;
 using Object = UnityEngine.Object;
 
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem.UI;
+using UnityEngine.EventSystems;
+#endif
+
 namespace Beamable.Runtime.LightBeams
 {
 	/// <summary>
@@ -62,6 +67,24 @@ namespace Beamable.Runtime.LightBeams
 
 		public Promise<T> GotoPage<T>() where T : MonoBehaviour, ILightComponent
 			=> Scope.GotoPage<T>();
+
+		public static void OpenDocumentationPage(string page)
+		{
+
+			string basePath = "";
+			if (BeamableEnvironment.SdkVersion.Major == 0)
+			{
+				basePath = "https://help.beamable.com/Unity-Latest/";
+			}
+			else
+			{
+				var version = BeamableEnvironment.SdkVersion.Major + "." + BeamableEnvironment.SdkVersion.Minor;
+				basePath = "https://help.beamable.com/Unity-" + version + "/";
+			}
+			
+			Debug.Log("Opening documentation page: " + basePath + page);
+			Application.OpenURL(basePath + page);
+		}
 
 		public void OpenPortalRealm(string relativePath,
 		                       Dictionary<string, string> queryArgs = null,
@@ -115,6 +138,28 @@ namespace Beamable.Runtime.LightBeams
 			Application.OpenURL(url);
 		}
 		
+		public static void CheckConvertSampleToNewInputSystem()
+		{
+#if ENABLE_INPUT_SYSTEM
+		EventSystem eventSystem = EventSystem.current;
+        if (eventSystem == null)
+            return;
+
+        // Remove old module
+        var oldModule = eventSystem.GetComponent<StandaloneInputModule>();
+
+        if (oldModule != null)
+        {
+            Object.Destroy(oldModule);
+        }
+        
+        // Add new module if missing
+        if (eventSystem.GetComponent<InputSystemUIInputModule>() == null)
+        {
+            eventSystem.gameObject.AddComponent<InputSystemUIInputModule>();
+        }
+#endif
+		}
 	}
 
 	public interface ILightRoot

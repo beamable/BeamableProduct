@@ -26,6 +26,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool syncDeleted;
         /// <summary>If you pass in a Manifest's UID, we'll sync with that as the target. If filters are provided, will only do this for content that matches the filter</summary>
         public string target;
+        /// <summary>Maximum number of content files to download in parallel while syncing. Use 0 for unbounded parallelism</summary>
+        public int downloadMaxParallelCount;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -74,6 +76,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.target != default(string)))
             {
                 genBeamCommandArgs.Add(("--target=" + this.target));
+            }
+            // If the downloadMaxParallelCount value was not default, then add it to the list of args.
+            if ((this.downloadMaxParallelCount != default(int)))
+            {
+                genBeamCommandArgs.Add(("--download-max-parallel-count=" + this.downloadMaxParallelCount));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

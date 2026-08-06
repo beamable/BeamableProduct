@@ -1,4 +1,6 @@
 using System;
+using System.Security.Cryptography;
+using System.Text;
 using UnityEngine;
 
 namespace Beamable.Common.Content.Serialization
@@ -37,6 +39,15 @@ namespace Beamable.Common.Content.Serialization
 		public static IContentObject DeserializeContentFromCli(string json, IContentObject instanceToDeserialize, string contentId, out SchemaDifference schemaIsDifferent, bool disableExceptions = false)
 		{
 			return Instance.DeserializeFromCli(json, instanceToDeserialize, contentId, out schemaIsDifferent, disableExceptions);
+		}
+		
+		public static string CalculateChecksum(string propertiesJsonWithoutIndent)
+		{
+			var bytes = Encoding.UTF8.GetBytes(propertiesJsonWithoutIndent);
+			using var sha1 = SHA1.Create();
+			var hash = sha1.ComputeHash(bytes);
+			var checksum = BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
+			return checksum;
 		}
 	}
 }

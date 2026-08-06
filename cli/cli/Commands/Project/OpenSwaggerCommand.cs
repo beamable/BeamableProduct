@@ -78,10 +78,12 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 			{
 				case 1:
 					args.ServiceName = new ServiceName(serviceDefinitions[0].BeamoId);
-					Log.Debug($"No service-name passed as argument. " +
-					          $"Running command for {args.ServiceName} since it is the only microservice in BeamoManifest.");
+					Log.Debug($"No service-name passed as argument." +
+					          $" Running command for {args.ServiceName} since it is the only microservice in BeamoManifest.");
 					break;
 				case > 1:
+					if (args.Quiet)
+						throw new CliException("Multiple microservices found. Provide the service name as an argument when using -q (quiet mode).");
 					Log.Information("Found more than one microservices in the directory");
 					args.ServiceName = new ServiceName(AskForServiceNameAndRunBeamCommandTask(serviceDefinitions));
 					break;

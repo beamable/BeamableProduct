@@ -20,8 +20,8 @@ public class DockerPathOption : Option<string>
 	private DockerPathOption() : base(
 		name: "--docker-cli-path", 
 		description: "a custom location for docker. By default, the CLI will attempt to resolve" +
-		             $" docker through its usual install locations. You can also use the {ConfigService.ENV_VAR_DOCKER_EXE} " +
-		             "environment variable to specify. ")
+		             $" docker through its usual install locations. You can also use the {ConfigService.ENV_VAR_DOCKER_EXE}" +
+		             " environment variable to specify. ")
 	{
 		if (TryGetDockerPath(out var dockerPath, out _))
 		{

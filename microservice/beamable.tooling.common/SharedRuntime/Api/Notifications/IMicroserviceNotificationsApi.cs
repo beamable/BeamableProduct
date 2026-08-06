@@ -10,6 +10,8 @@ namespace Beamable.Server.Api.Notifications
 	/// <summary>
 	/// Microservice API for sending Notifications to clients.
 	/// </summary>
+
+	[RealmScoped]
 	public interface IMicroserviceNotificationsApi
 	{
 		/// <summary>
@@ -85,5 +87,8 @@ namespace Beamable.Server.Api.Notifications
 
 		/// <inheritdoc cref="NotifyServer(bool,string,string)"/>
 		Promise<EmptyResponse> NotifyServer<T>(bool toAll, string name, T messagePayload);
+		
+		/// <inheritdoc cref="NotifyServer(bool,string,string)"/>
+		Promise<EmptyResponse> NotifyServer<T>(CustomEvent<T> evt, T payload);
 	}
 }

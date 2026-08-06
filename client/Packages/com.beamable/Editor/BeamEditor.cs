@@ -629,19 +629,41 @@ namespace Beamable
 			await BeamCli.Login(host, cid, email, password);
 			ApplyRequesterToken();
 			OnUserChange?.Invoke(BeamCli.latestUser);
-
-			if (!ConfigDatabaseProvider.HasConfigFile())
+			// When the account has exactly one game, there is no game-selection step.
+			// Use that game's production/root PID as the first-run build PID. Multi-game
+			// accounts wait for the user to choose a game/realm before we write build config.
+			if (BeamCli.latestGames?.VisibleGames?.Length == 1)
 			{
-				CommitConfigDefaults();
+				var productionPid = BeamCli.latestGames.VisibleGames[0].Pid;
+				CommitProductionBuildConfigDefaultsIfMissing(productionPid);
 			}
 		}
 
-		public void CommitConfigDefaults()
+		public void CommitProductionBuildConfigDefaultsIfMissing(string productionPid = null)
+		{
+			var config = ServiceScope.GetService<ConfigDatabaseProvider>();
+			config.Reload();
+			
+			if (!string.IsNullOrEmpty(config.Pid))
+			{
+				return;
+			}
+
+			productionPid ??= BeamCli.CurrentRealm?.FindRoot()?.Pid;
+			if (string.IsNullOrEmpty(productionPid))
+			{
+				return;
+			}
+
+			CommitConfigDefaults(productionPid);
+		}
+		
+		public void CommitConfigDefaults(string pidOverride = null)
 		{
 			var config = new ConfigData()
 			{
 				cid = BeamCli.Cid,
-				pid = BeamCli.Pid,
+				pid = pidOverride ?? BeamCli.Pid,
 				alias = BeamCli.Alias,
 				host = BeamCli.HostUrl,
 				portalUrl = BeamCli.PortalUrl
@@ -663,13 +685,14 @@ namespace Beamable
 
 			if (writeConfig)
 			{
+				var wasNewConfigFile = !File.Exists(path);
 				string directoryName = Path.GetDirectoryName(path);
 				if (!string.IsNullOrWhiteSpace(directoryName))
 				{
 					Directory.CreateDirectory(directoryName);
 				}
 
-				if (File.Exists(path))
+				if (!wasNewConfigFile)
 				{
 					var fileInfo = new FileInfo(path);
 					fileInfo.IsReadOnly = false;
@@ -684,8 +707,30 @@ namespace Beamable
 						Debug.LogWarning($"Unable to checkout: {path}");
 					}
 				}
-
+				
 				File.WriteAllText(path, asJson);
+				if (wasNewConfigFile)
+				{
+					// Import synchronously so Unity's AssetDatabase can see the newly-created
+					// Resources asset before callers continue. This matters for first-run setup,
+					// where config-defaults.txt may not have existed a moment earlier.
+					AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+
+					// ImportAsset can still fail to resolve the asset immediately in some editor
+					// timing cases, so fall back to a synchronous refresh before reloading config.
+					if (AssetDatabase.LoadAssetAtPath<TextAsset>(path) == null)
+					{
+						AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+					}
+
+					// Keep the Project window in sync for editor-driven writes, but avoid repainting
+					// editor UI while Unity is in the build pipeline.
+					if (!BuildPipeline.isBuildingPlayer)
+					{
+						EditorApplication.RepaintProjectWindow();
+					}
+				}
+				
 				ServiceScope.GetService<ConfigDatabaseProvider>().Reload();
 			}
 		}

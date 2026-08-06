@@ -1,0 +1,705 @@
+---
+name: beam-microservice-examples
+description: Progressive code examples for Beamable C# microservices — from basic endpoints to federated auth
+---
+
+# Microservice Examples
+
+## When to Use This Skill
+- User wants to see real-world code examples of Beamable microservices
+- User is building a feature and wants a reference implementation to follow
+- User wants progressive examples from basic to advanced
+
+For API signatures, CLI commands, storage setup, and common pitfalls, load the `beam-manage-service` skill first.
+
+## Examples
+
+The following four examples demonstrate increasing complexity: basic endpoints → storage → inventory workflows → external integrations. All code is self-contained — these samples are not available via `beam_get_source`.
+
+### Example 1: Stats and Admin Operations
+
+Demonstrates all four endpoint types, structured responses, batch processing with concurrency control, and Stats API usage.
+
+**Response models:**
+```csharp
+[Serializable]
+public class HealthCheckResponse
+{
+    public string Status { get; set; }
+    public DateTime Timestamp { get; set; }
+    public string Version { get; set; }
+}
+
+[Serializable]
+public class BatchResetScoresResult
+{
+    public int TotalProcessed { get; set; }
+    public int SuccessCount { get; set; }
+    public int FailureCount { get; set; }
+    public List<string> ErrorMessages { get; set; } = new();
+    public List<long> FailedPlayerIds { get; set; } = new();
+    public double DurationMs { get; set; }
+    public string Status { get; set; }
+}
+```
+
+**Microservice:**
+```csharp
+public partial class SampleOne : Microservice
+{
+    private const int MaxBatchSize = 100;
+    private const int ChunkSize = 10;
+
+    // Public: no authentication required
+    [Callable]
+    public HealthCheckResponse HealthCheck()
+    {
+        BeamableLogger.Log("HealthCheck called");
+        return new HealthCheckResponse
+        {
+            Status = "healthy",
+            Timestamp = DateTime.UtcNow,
+            Version = "2.0"
+        };
+    }
+
+    // Player-facing: requires authenticated user token
+    [ClientCallable]
+    public async Task<StatResponse> GetPlayerScore()
+    {
+        var userId = Context.UserId;
+        try
+        {
+            var score = await Services.Stats.GetStat(
+                StatsDomainType.Game, StatsAccessType.Public, userId, "score");
+            var value = string.IsNullOrEmpty(score) ? "0" : score;
+            return new StatResponse
+            {
+                Status = "success", Value = value,
+                PlayerId = userId, Timestamp = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            BeamableLogger.LogError($"GetPlayerScore failed for userId={userId}: {ex.Message}");
+            return new StatResponse
+            {
+                Status = "error", Value = "0",
+                PlayerId = userId, Timestamp = DateTime.UtcNow
+            };
+        }
+    }
+
+    // Admin-only: batch reset with chunking, deduplication, and error aggregation
+    [AdminOnlyCallable]
+    public async Task<BatchResetScoresResult> ResetAllScores(long[] playerIds)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var result = new BatchResetScoresResult();
+        try
+        {
+            if (playerIds == null || playerIds.Length == 0)
+            {
+                result.Status = "success";
+                return result;
+            }
+
+            if (playerIds.Length > MaxBatchSize)
+            {
+                result.Status = "error";
+                result.ErrorMessages.Add($"Batch size {playerIds.Length} exceeds maximum {MaxBatchSize}");
+                return result;
+            }
+
+            var uniqueIds = playerIds.Distinct().ToList();
+            result.TotalProcessed = uniqueIds.Count;
+
+            // Process in chunks to avoid rate-limit spikes
+            var allResults = new List<DeleteResult>();
+            for (int i = 0; i < uniqueIds.Count; i += ChunkSize)
+            {
+                var chunk = uniqueIds.Skip(i).Take(ChunkSize).ToList();
+                var tasks = chunk.Select(id => DeletePlayerScore(id)).ToList();
+                var chunkResults = await Task.WhenAll(tasks);
+                allResults.AddRange(chunkResults);
+            }
+
+            foreach (var r in allResults)
+            {
+                if (r.Success) result.SuccessCount++;
+                else
+                {
+                    result.FailureCount++;
+                    result.FailedPlayerIds.Add(r.PlayerId);
+                    result.ErrorMessages.Add(r.ErrorMessage);
+                }
+            }
+            result.Status = result.FailureCount == 0 ? "success" : "partial";
+        }
+        catch (Exception ex)
+        {
+            result.Status = "error";
+            result.ErrorMessages.Add($"Fatal error: {ex.Message}");
+        }
+        finally
+        {
+            stopwatch.Stop();
+            result.DurationMs = stopwatch.Elapsed.TotalMilliseconds;
+        }
+        return result;
+    }
+
+    // Admin: set a specific player's score using a request DTO
+    [AdminOnlyCallable]
+    public async Task<StatResponse> SetPlayerScore(SetScoreRequest request)
+    {
+        if (request == null || request.PlayerId <= 0)
+            return new StatResponse { Status = "error", Timestamp = DateTime.UtcNow };
+
+        await Services.Stats.SetStats(
+            StatsDomainType.Game, StatsAccessType.Public, request.PlayerId,
+            new() { { "score", request.Value } });
+
+        return new StatResponse
+        {
+            Status = "success", Value = request.Value,
+            PlayerId = request.PlayerId, Timestamp = DateTime.UtcNow
+        };
+    }
+
+    // Direct endpoint: callable from portal extensions or other microservices
+    [ServerCallable]
+    public HealthCheckResponse InternalSync() => HealthCheck();
+
+    private record struct DeleteResult(bool Success, long PlayerId, string ErrorMessage);
+
+    private async Task<DeleteResult> DeletePlayerScore(long playerId)
+    {
+        try
+        {
+            await Services.Stats.DeleteStats(
+                StatsDomainType.Game, StatsAccessType.Public, playerId, ["score"]);
+            return new DeleteResult(true, playerId, null);
+        }
+        catch (Exception ex)
+        {
+            return new DeleteResult(false, playerId, $"PlayerId {playerId}: {ex.Message}");
+        }
+    }
+}
+```
+
+**Key patterns:** Input validation and size guards, deduplication, chunked concurrency (`Task.WhenAll` per chunk), per-item error tracking with aggregated results, `Stopwatch` for observability.
+
+---
+
+### Example 2: MongoDB Storage — Town Builder
+
+Demonstrates `StorageDocument` usage, MongoDB filter builders, player data isolation, input validation, and capacity checks.
+
+**Storage setup:**
+```csharp
+[StorageObject("StorageSample")]
+public class StorageSample : MongoStorageObject { }
+
+[Serializable]
+public class TownResident : StorageDocument
+{
+    public long PlayerId { get; set; }
+    public string RegionName { get; set; } = string.Empty;
+    public string ResidentName { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+
+    public TownResidentData ToData() => new TownResidentData
+    {
+        PlayerId = PlayerId, RegionName = RegionName,
+        ResidentName = ResidentName, Role = Role
+    };
+}
+```
+
+**Response models:**
+```csharp
+[Serializable]
+public class TownResidentData
+{
+    public long PlayerId { get; set; }
+    public string RegionName { get; set; }
+    public string ResidentName { get; set; }
+    public string Role { get; set; }
+}
+
+[Serializable]
+public class AddResidentResponse
+{
+    public bool Success { get; set; }
+    public string Error { get; set; }
+    public TownResidentData Resident { get; set; }
+}
+
+[Serializable]
+public class RemoveResidentResponse
+{
+    public bool Success { get; set; }
+    public string Error { get; set; }
+}
+```
+
+**Microservice:**
+```csharp
+public partial class SampleTwo : Microservice
+{
+    private const string TOWN_RESIDENTS_COLLECTION = "town_residents";
+    private const int MaxResidentsPerRegion = 20;
+    private static readonly HashSet<string> ValidRoles =
+        new() { "farmer", "merchant", "guard", "builder", "healer" };
+
+    [ClientCallable]
+    public async Task<AddResidentResponse> AddResident(
+        string regionName, string residentName, string role)
+    {
+        if (string.IsNullOrWhiteSpace(regionName) || string.IsNullOrWhiteSpace(residentName))
+            return new AddResidentResponse
+            { Success = false, Error = "Region name and resident name are required." };
+
+        if (!ValidRoles.Contains(role))
+            return new AddResidentResponse
+            { Success = false, Error = $"Invalid role '{role}'. Valid: {string.Join(", ", ValidRoles)}." };
+
+        var collection = await Storage
+            .StorageSampleCollection<TownResident>(TOWN_RESIDENTS_COLLECTION);
+
+        // Compound filter: scope to current player + region
+        var regionFilter = Builders<TownResident>.Filter.Eq(x => x.PlayerId, Context.UserId)
+            & Builders<TownResident>.Filter.Eq(x => x.RegionName, regionName);
+
+        // Capacity check before insert
+        var currentCount = await collection.CountDocumentsAsync(regionFilter);
+        if (currentCount >= MaxResidentsPerRegion)
+            return new AddResidentResponse
+            { Success = false, Error = $"Region '{regionName}' is full ({MaxResidentsPerRegion} max)." };
+
+        var resident = new TownResident
+        {
+            PlayerId = Context.UserId,
+            RegionName = regionName,
+            ResidentName = residentName,
+            Role = role
+        };
+
+        await collection.InsertOneAsync(resident);
+        return new AddResidentResponse { Success = true, Resident = resident.ToData() };
+    }
+
+    [ClientCallable]
+    public async Task<List<TownResidentData>> GetResidents(string regionName)
+    {
+        var collection = await Storage
+            .StorageSampleCollection<TownResident>(TOWN_RESIDENTS_COLLECTION);
+
+        var filter = Builders<TownResident>.Filter.Eq(x => x.PlayerId, Context.UserId)
+            & Builders<TownResident>.Filter.Eq(x => x.RegionName, regionName);
+
+        var residents = await collection.Find(filter).ToListAsync();
+        return residents.Select(r => r.ToData()).ToList();
+    }
+
+    [ClientCallable]
+    public async Task<RemoveResidentResponse> RemoveResident(
+        string regionName, string residentName)
+    {
+        if (string.IsNullOrWhiteSpace(regionName) || string.IsNullOrWhiteSpace(residentName))
+            return new RemoveResidentResponse
+            { Success = false, Error = "Region name and resident name are required." };
+
+        var collection = await Storage
+            .StorageSampleCollection<TownResident>(TOWN_RESIDENTS_COLLECTION);
+
+        var filter = Builders<TownResident>.Filter.Eq(x => x.PlayerId, Context.UserId)
+            & Builders<TownResident>.Filter.Eq(x => x.RegionName, regionName)
+            & Builders<TownResident>.Filter.Eq(x => x.ResidentName, residentName);
+
+        var result = await collection.DeleteOneAsync(filter);
+        if (result.DeletedCount == 0)
+            return new RemoveResidentResponse
+            { Success = false, Error = $"Resident '{residentName}' not found in '{regionName}'." };
+
+        return new RemoveResidentResponse { Success = true };
+    }
+}
+```
+
+**Key patterns:** `StorageDocument` for MongoDB documents, typed extension methods (`StorageSampleCollection<T>`), `Builders<T>.Filter.Eq()` with `&` for compound filters, `Context.UserId` for player isolation, capacity checks via `CountDocumentsAsync`, `ToData()` mapping to keep storage internals out of responses.
+
+---
+
+### Example 3: Inventory and Rewards
+
+Demonstrates `InventoryUpdateBuilder` for atomic multi-operation transactions, reusable utility classes, and a multi-service workflow combining Content, Stats, and Inventory APIs.
+
+**Utility class:**
+```csharp
+public static class InventoryHelper
+{
+    public static async Task<long> GetBalanceSafe(IBeamableServices services, string currencyId)
+    {
+        try
+        {
+            return await services.Inventory.GetCurrency(currencyId);
+        }
+        catch (Exception ex)
+        {
+            BeamableLogger.LogError($"GetBalanceSafe failed for currency={currencyId}: {ex.Message}");
+            return 0;
+        }
+    }
+
+    public static async Task<bool> HasSufficientBalance(
+        IBeamableServices services, string currencyId, long requiredAmount)
+    {
+        var balance = await GetBalanceSafe(services, currencyId);
+        return balance >= requiredAmount;
+    }
+
+    public static InventoryUpdateBuilder BuildPurchase(
+        string currencyId, long price, string itemContentId)
+    {
+        var spend = new InventoryUpdateBuilder().CurrencyChange(currencyId, -price);
+        var grant = new InventoryUpdateBuilder().AddItem(itemContentId);
+        return spend.Concat(grant);
+    }
+
+    public static InventoryUpdateBuilder BuildRewardBundle(
+        Dictionary<string, long> currencyRewards, List<string> itemContentIds)
+    {
+        var builder = new InventoryUpdateBuilder();
+        if (currencyRewards != null)
+            foreach (var kvp in currencyRewards)
+                builder.CurrencyChange(kvp.Key, kvp.Value);
+        if (itemContentIds != null)
+            foreach (var contentId in itemContentIds)
+                builder.AddItem(contentId);
+        return builder;
+    }
+}
+```
+
+**Atomic purchase — deducts currency and grants item in one transaction:**
+```csharp
+[ClientCallable]
+public async Task<PurchaseResponse> PurchaseItem(
+    string currencyId, long price, string itemContentId)
+{
+    if (string.IsNullOrWhiteSpace(currencyId) ||
+        string.IsNullOrWhiteSpace(itemContentId) || price <= 0)
+        return new PurchaseResponse
+        { Success = false, Error = "Invalid input: currencyId, itemContentId, and positive price required." };
+
+    if (!await InventoryHelper.HasSufficientBalance(Services, currencyId, price))
+        return new PurchaseResponse
+        { Success = false, Error = $"Insufficient balance for currency '{currencyId}'." };
+
+    try
+    {
+        var builder = InventoryHelper.BuildPurchase(currencyId, price, itemContentId);
+        await Services.Inventory.Update(builder);
+        var remaining = await Services.Inventory.GetCurrency(currencyId);
+
+        return new PurchaseResponse
+        {
+            Success = true,
+            ItemContentId = itemContentId,
+            RemainingBalance = remaining
+        };
+    }
+    catch (Exception ex)
+    {
+        BeamableLogger.LogError($"PurchaseItem failed: {ex.Message}");
+        return new PurchaseResponse { Success = false, Error = "Purchase failed. Please try again." };
+    }
+}
+```
+
+**Multi-service workflow — completes an objective using Content + Stats + Inventory:**
+```csharp
+[Serializable]
+public class GrantRewardsResponse
+{
+    public bool Success { get; set; }
+    public string Error { get; set; }
+    public int XpGranted { get; set; }
+    public int NewTotalXp { get; set; }
+    public int CurrentLevel { get; set; }
+    public bool DidLevelUp { get; set; }
+    public int ItemsGranted { get; set; }
+}
+
+private const int XP_PER_LEVEL_BASE = 100;
+
+[ClientCallable]
+public async Task<GrantRewardsResponse> FinishObjective(string objectiveId)
+{
+    if (string.IsNullOrWhiteSpace(objectiveId))
+        return new GrantRewardsResponse { Success = false, Error = "Objective ID is required." };
+
+    try
+    {
+        // Step 1: Fetch objective content definition
+        var objective = await Services.Content.GetContent<ObjectiveContent>(
+            new ContentRef(typeof(ObjectiveContent), objectiveId));
+        if (objective == null)
+            return new GrantRewardsResponse
+            { Success = false, Error = $"Objective '{objectiveId}' not found." };
+
+        // Step 2: Read current player stats
+        var stats = await Services.Stats.GetFilteredStats(
+            StatsDomainType.Game, StatsAccessType.Public, Context.UserId,
+            new[] { "currentXp", "currentLevel" });
+
+        stats.TryGetValue("currentXp", out var xpStr);
+        stats.TryGetValue("currentLevel", out var levelStr);
+        int.TryParse(xpStr, out var currentXp);
+        int.TryParse(levelStr, out var currentLevel);
+        if (currentLevel < 1) currentLevel = 1;
+
+        // Step 3: Calculate XP and level-up
+        var xpGranted = objective.xpReward;
+        var newXp = currentXp + xpGranted;
+        var requiredForNextLevel = (currentLevel * (currentLevel + 1) / 2) * XP_PER_LEVEL_BASE;
+        var didLevelUp = newXp >= requiredForNextLevel;
+        if (didLevelUp) currentLevel++;
+
+        // Step 4: Update player stats
+        await Services.Stats.SetStats(
+            StatsDomainType.Game, StatsAccessType.Public, Context.UserId,
+            new Dictionary<string, string>
+            {
+                { "currentXp", newXp.ToString() },
+                { "currentLevel", currentLevel.ToString() }
+            });
+
+        // Step 5: Grant item rewards atomically
+        var itemContentIds = objective.itemRewards?.Select(r => r.Id).ToList()
+            ?? new List<string>();
+        if (itemContentIds.Count > 0)
+        {
+            var rewardBuilder = InventoryHelper.BuildRewardBundle(null, itemContentIds);
+            await Services.Inventory.Update(rewardBuilder);
+        }
+
+        return new GrantRewardsResponse
+        {
+            Success = true, XpGranted = xpGranted, NewTotalXp = newXp,
+            CurrentLevel = currentLevel, DidLevelUp = didLevelUp,
+            ItemsGranted = itemContentIds.Count
+        };
+    }
+    catch (Exception ex)
+    {
+        BeamableLogger.LogError($"FinishObjective failed: {ex.Message}");
+        return new GrantRewardsResponse { Success = false, Error = "Failed to complete objective." };
+    }
+}
+```
+
+**Key patterns:** `InventoryUpdateBuilder.Concat()` to compose atomic transactions, `GetBalanceSafe` for defensive currency reads, multi-step workflows (Content → Stats → Inventory), `GetFilteredStats` for batch stat reads, reusable utility class to keep microservice methods focused.
+
+---
+
+### Example 4: Discord Federated Authentication
+
+Demonstrates `IFederatedLogin<T>` for external auth provider integration, realm config for secrets management, external HTTP API calls, player initialization with starting stats, and a WebSocket bot for real-time event handling.
+
+**Federation identity:**
+```csharp
+[FederationId(Id)]
+public class DiscordId : IFederationId
+{
+    public const string Id = "discord";
+}
+```
+
+**Microservice with federated login:**
+```csharp
+[Microservice("SampleFour")]
+public partial class SampleFour : Microservice, IFederatedLogin<DiscordId>
+{
+    public const string DiscordWhitelistedStatKey = "matchmaking_discord_whitelisted";
+
+    // Register singleton services via ConfigureServices
+    [ConfigureServices]
+    public static void ConfigureDiscord(IServiceBuilder builder)
+    {
+        builder.Builder.AddSingleton<DiscordBot>();
+    }
+
+    // IFederatedLogin — validate external token, return provider user_id
+    async Promise<FederatedAuthenticationResponse> IFederatedLogin<DiscordId>.Authenticate(
+        string token, string challenge, string solution)
+    {
+        var discordUser = await DiscordRequests.GetDiscordUserFromToken(token);
+        if (discordUser == null)
+            throw new UnauthorizedAccessException("Invalid Discord Token");
+        return new FederatedAuthenticationResponse { user_id = discordUser.id };
+    }
+}
+```
+
+**Token validation — external HTTP call to Discord API:**
+```csharp
+public static async Task<DiscordUser> GetDiscordUserFromToken(string token)
+{
+    using var httpClient = new HttpClient();
+    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+    var response = await httpClient.GetAsync("https://discord.com/api/v10/users/@me");
+
+    if (!response.IsSuccessStatusCode) return null;
+
+    var asStr = await response.Content.ReadAsStringAsync();
+    try { return JsonUtility.FromJson<DiscordUser>(asStr); }
+    catch (Exception) { return null; }
+}
+```
+
+**Player initialization — populate starting stats from Discord profile:**
+```csharp
+private async Task CreatePlayerDiscord(Account account,
+    Dictionary<string, string> properties,
+    Dictionary<string, string> outStartingStats,
+    InventoryUpdateBuilder outStartingInventory)
+{
+    var associatedDiscordIdentity = account.external?
+        .FirstOrDefault(e => e.providerNamespace == DiscordId.Id);
+    if (associatedDiscordIdentity == null) return;
+
+    // Read secrets from realm config (set in Portal under "discord_integration" namespace)
+    var discordRealmConfig = await DiscordRequests.GetDiscordRealmConfig(Services.RealmConfig);
+    if (string.IsNullOrWhiteSpace(discordRealmConfig.BotToken) ||
+        string.IsNullOrWhiteSpace(discordRealmConfig.GuildId))
+        return;
+
+    // Fetch Discord profile via Guild Member API
+    var discordGuildUser = await DiscordRequests.GetGuildUserById(
+        discordRealmConfig.BotToken, discordRealmConfig.GuildId,
+        associatedDiscordIdentity.userId);
+
+    if (discordGuildUser?.user == null)
+        throw new MicroserviceException(404, "INVALID_DISCORD_USER_ID",
+            $"Failed to find Discord user. ExternalID={associatedDiscordIdentity.userId}");
+
+    // Set public starting stats from Discord profile
+    var discordUser = discordGuildUser.user;
+    outStartingStats["player_name"] = !string.IsNullOrWhiteSpace(discordUser.global_name)
+        ? discordUser.global_name : discordUser.username;
+    outStartingStats["avatar"] = string.IsNullOrEmpty(discordUser.avatar)
+        ? string.Empty
+        : $"https://cdn.discordapp.com/avatars/{discordUser.id}/{discordUser.avatar}.png";
+
+    // Set private stat: matchmaking whitelist based on Discord roles
+    var gamerTag = account.gamerTags.First(gta => gta.projectId == Context.Pid).gamerTag;
+    var isWhitelisted = discordGuildUser.roles != null &&
+        discordGuildUser.roles.Intersect(discordRealmConfig.RoleIds).Any();
+
+    await using var requestingUser = AssumeNewUser(gamerTag);
+    await requestingUser.Services.Stats.SetStats(
+        StatsDomainType.Game, StatsAccessType.Private, gamerTag,
+        new() { { DiscordWhitelistedStatKey, $"{isWhitelisted}" } });
+}
+```
+
+**Realm config access:**
+```csharp
+public static async Task<DiscordRealmConfig> GetDiscordRealmConfig(
+    IMicroserviceRealmConfigService realmConfigService)
+{
+    var realmConfig = await realmConfigService.GetRealmConfigSettings();
+    var ns = realmConfig.GetNamespace("discord_integration");
+    return new DiscordRealmConfig
+    {
+        BotToken = ns.GetSetting("bot_token"),
+        GuildId = ns.GetSetting("guild_id"),
+        NotifyChannel = ulong.TryParse(ns.GetSetting("notify_channel"), out var v) ? v : 0,
+        RoleIds = ns.GetSetting("matchmaking_roles_whitelist")?.Trim().Split(",").ToHashSet() ?? [],
+    };
+}
+
+public class DiscordRealmConfig
+{
+    public string BotToken;
+    public string GuildId;
+    public ulong NotifyChannel;
+    public HashSet<string> RoleIds;
+}
+```
+
+**Real-time Discord bot (WebSocket) — reacts to role changes:**
+```csharp
+public class DiscordBot
+{
+    private readonly IMicroserviceRealmConfigService _beamableConfigService;
+    private readonly IMicroserviceStatsApi _beamableStatsService;
+    private readonly IMicroserviceNotificationsApi _notificationsApi;
+    private readonly IBeamableRequester _beamableRequester;
+    private readonly DiscordSocketClient _discordClient;
+
+    public DiscordBot(IBeamableRequester requester,
+        IMicroserviceRealmConfigService realmConfigService,
+        IMicroserviceStatsApi statsService,
+        IMicroserviceNotificationsApi notificationsApi)
+    {
+        _beamableRequester = requester;
+        _beamableConfigService = realmConfigService;
+        _beamableStatsService = statsService;
+        _notificationsApi = notificationsApi;
+
+        _discordClient = new DiscordSocketClient(new DiscordSocketConfig
+        {
+            AlwaysDownloadUsers = true,
+            GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers,
+        });
+
+        _discordClient.GuildMemberUpdated += OnGuildMemberUpdated;
+    }
+
+    public async Task Connect()
+    {
+        var config = await DiscordRequests.GetDiscordRealmConfig(_beamableConfigService);
+        if (string.IsNullOrEmpty(config.BotToken) || config.RoleIds.Count == 0) return;
+
+        await _discordClient.LoginAsync(TokenType.Bot, config.BotToken);
+        await _discordClient.StartAsync();
+    }
+
+    // When a guild member's roles change, update their Beamable matchmaking stat
+    private async Task OnGuildMemberUpdated(
+        Cacheable<SocketGuildUser, ulong> cachedUser, SocketGuildUser postUpdateUser)
+    {
+        if (!cachedUser.HasValue) return;
+        if (cachedUser.Value.Roles.Count == postUpdateUser.Roles.Count) return;
+
+        var config = await DiscordRequests.GetDiscordRealmConfig(_beamableConfigService);
+        var hasAccess = postUpdateUser.Roles
+            .Any(role => config.RoleIds.Contains(role.Id.ToString()));
+
+        var discordUserId = cachedUser.Value.Id.ToString();
+        var account = await DiscordRequests.GetBeamableAccountFromDiscordId(
+            _beamableRequester, discordUserId);
+        var gamerTag = account.gamerTags
+            .FirstOrDefault(a => a.projectId == _beamableRequester.Pid);
+        if (gamerTag == null) return;
+
+        await _beamableStatsService.SetStats("game", "private", "player",
+            gamerTag.gamerTag,
+            new Dictionary<string, string>
+            { { SampleFour.DiscordWhitelistedStatKey, hasAccess.ToString() } });
+        await _notificationsApi.NotifyPlayer(gamerTag.gamerTag, hasAccess);
+    }
+}
+```
+
+**Key patterns:** `IFederatedLogin<T>` for external auth providers, `[FederationId]` to declare the identity type, `[ConfigureServices]` for DI registration, `AssumeNewUser(gamerTag)` for acting as another player, realm config namespaces for secrets, external HTTP calls with `HttpClient`, `MicroserviceException` for typed errors, WebSocket bot with DI-injected Beamable services for real-time cross-platform sync.
+
+## Related Skills
+- `beam-manage-service` — API signatures, CLI commands, storage setup, service design, common pitfalls
+- `beam-content-types` — creating custom content types for microservice use
+- `beam-build-and-deploy` — Docker build and cloud deployment

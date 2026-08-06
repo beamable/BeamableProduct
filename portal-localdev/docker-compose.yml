@@ -1,0 +1,25 @@
+services:
+  verdaccio:
+    image: verdaccio/verdaccio:5
+    container_name: beamable-verdaccio
+    ports:
+      - "4873:4873"
+    volumes:
+      - ./verdaccio/config.yml:/verdaccio/conf/config.yaml
+      - verdaccio-storage:/verdaccio/storage
+    environment:
+      - VERDACCIO_PUBLIC_URL=http://localhost:4873
+
+  local-unpkg:
+    build: ./local-unpkg
+    container_name: beamable-local-unpkg
+    ports:
+      - "4874:4874"
+    environment:
+      - VERDACCIO_URL=http://verdaccio:4873
+      - PORT=4874
+    depends_on:
+      - verdaccio
+
+volumes:
+  verdaccio-storage:

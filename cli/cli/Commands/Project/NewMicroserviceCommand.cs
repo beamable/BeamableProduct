@@ -87,12 +87,12 @@ public class SolutionCommandArgs : NewProjectCommandArgs, IHasSolutionFileArg
 					return relativePath;
 				},
 				description:
-				"Relative path to the .sln file to use for the new project. " +
-				"If the .sln file does not exist, it will be created. " +
-				"When no option is configured, if this command is executing inside a .beamable folder, " +
-				"then the first .sln found in .beamable/.. will be used. " +
-				"If no .sln is found, the .sln path will be <name>.sln. " +
-				"If no .beamable folder exists, then the <project>/<project>.sln will be used"),
+				"Relative path to the .sln file to use for the new project." +
+				" If the .sln file does not exist, it will be created." +
+				" When no option is configured, if this command is executing inside a .beamable folder," +
+				" then the first .sln found in .beamable/.. will be used." +
+				" If no .sln is found, the .sln path will be <name>.sln." +
+				" If no .beamable folder exists, then the <project>/<project>.sln will be used"),
 			(args, i) =>
 			{
 				if (string.IsNullOrEmpty(i))
@@ -171,6 +171,7 @@ public class NewMicroserviceArgs : SolutionCommandArgs
 {
 	public bool GenerateCommon;
 	public string TargetFramework;
+	public bool IsZone;
 }
 
 public class RegenerateSolutionFilesCommandArgs : SolutionCommandArgs
@@ -201,7 +202,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 				() =>
 				{
 					var currentVersion = AppContext.TargetFrameworkName.Split('=')[1].Substring(1);
-					var currentVersionDouble = double.Parse(currentVersion);
+					var currentVersionDouble = double.Parse(currentVersion, System.Globalization.CultureInfo.InvariantCulture);
 					if (currentVersionDouble < 8.0)
 					{
 						currentVersion = "8.0";
@@ -231,6 +232,10 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 				name: "--generate-common",
 				description: "If passed, will create a common library for this project"),
 			(args, i) => args.GenerateCommon = i);
+		AddOption(new Option<bool>(
+				name: "--zone",
+				description: "If passed, creates a zone-scoped microservice (ZoneMicroservice, deployed per cid.zid) instead of a realm-scoped one"),
+			(args, i) => args.IsZone = i);
 
 
 		{ // saved for legacy reasons. I don't want the old commands to CRASH
@@ -286,11 +291,11 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 			{
 				if ((args.LinkedStorages == null || args.LinkedStorages.Count == 0) && !args.Quiet)
 				{
-					dependencies = GetChoicesFromPrompt(args.BeamoLocalSystem);
+					dependencies = GetChoicesFromPrompt(args.BeamoLocalSystem, args.IsZone);
 				}
 				else if (args.LinkedStorages != null)
 				{
-					dependencies = GetDependenciesFromName(args.BeamoLocalSystem, args.LinkedStorages);
+					dependencies = GetDependenciesFromName(args.BeamoLocalSystem, args.LinkedStorages, args.IsZone);
 				}
 			}
 
@@ -321,16 +326,20 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 	}
 
-	private string[] GetChoicesFromPrompt(BeamoLocalSystem localSystem)
+	private string[] GetChoicesFromPrompt(BeamoLocalSystem localSystem, bool isZone)
 	{
-		// identify the linkable projects...
+		// identify the linkable projects... only same-scope storages are valid (a zone service can
+		// only use zone storages, a realm service only realm storages — they deploy into different
+		// manifests, so a cross-scope reference could never be satisfied).
 		var storages = localSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols;
-		var choices = storages.Select(storage => storage.Key).ToList();
+		var choices = storages.Select(storage => storage.Key)
+			.Where(key => IsSameScope(localSystem, key, isZone))
+			.ToList();
 
 		var prompt = new MultiSelectionPrompt<string>()
 			.Title("Storage Dependencies")
-			.InstructionsText("Which storages will be added to this service?\n[grey](Press [blue]<space>[/] to toggle, " +
-			                  "[green]<enter>[/] to accept)[/]")
+			.InstructionsText("Which storages will be added to this service?\n[grey](Press [blue]<space>[/] to toggle," +
+			                  " [green]<enter>[/] to accept)[/]")
 			.AddChoices(choices)
 			.AddBeamHightlight()
 			.NotRequired();
@@ -341,7 +350,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		return AnsiConsole.Prompt(prompt).ToArray();
 	}
 
-	private string[] GetDependenciesFromName(BeamoLocalSystem localSystem, List<string> dependencies)
+	private string[] GetDependenciesFromName(BeamoLocalSystem localSystem, List<string> dependencies, bool isZone)
 	{
 		if (dependencies == null)
 		{
@@ -353,16 +362,29 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		foreach (var dep in dependencies)
 		{
 			var localProtocol = storages.FirstOrDefault(x => x.Key.Equals(dep)).Value;
-			if (localProtocol != null)
-			{
-				choices.Add(dep);
-			}
-			else
+			if (localProtocol == null)
 			{
 				Log.Warning($"The dependency {dep} does not exist in the local manifest and cannot be added as reference. Use `beam project deps add <service> <storage> to add after the storage is already created`");
+				continue;
 			}
+
+			// A service can only depend on a storage in its own scope — cross-scope references span two
+			// manifests and could never deploy. Skip mismatches.
+			if (!IsSameScope(localSystem, dep, isZone))
+			{
+				Log.Warning($"Skipping {dep}: a {(isZone ? "realm" : "zone")}-scoped storage cannot be a dependency of a " +
+							$"{(isZone ? "zone" : "realm")}-scoped service. Only same-scope storages can be linked.");
+				continue;
+			}
+
+			choices.Add(dep);
 		}
 
 		return choices.ToArray();
 	}
+
+	// A service and the storage it depends on must share a scope (both zone, or both realm); otherwise
+	// the reference would span two manifests and could never deploy. Used to filter link candidates.
+	private static bool IsSameScope(BeamoLocalSystem localSystem, string beamoId, bool isZone)
+		=> localSystem.BeamoManifest.TryGetDefinition(beamoId, out var def) && def.IsZoneScoped == isZone;
 }

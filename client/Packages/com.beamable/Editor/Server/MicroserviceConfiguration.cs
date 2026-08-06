@@ -58,6 +58,9 @@ namespace Beamable.Server.Editor
 		[Tooltip("For each service, a boolean to control if the client code should be generated automatically when the service is built. By default, services will autogenerate, so if the key does not exist, the service will autogenerate a client. ")]
 		public SerializableDictionaryStringToBool AutoGenerateClientOnBuilds =
 			new SerializableDictionaryStringToBool();
+		
+		[Tooltip("Optional value to set the Max Parallel Build Count for Microservices during release plan build")]
+		public Optional<int> MaxParallelBuildCount =  new Optional<int>() { Value = 8, HasValue = false};
 
 	}
 	

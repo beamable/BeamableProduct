@@ -345,7 +345,34 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 				methodSymbol.Locations.FirstOrDefault(), 
 				context.Compilation));
 
-			if (!methodSymbol.GetAttributes().Any(IsCallableAttribute))
+			bool IsCallableWithSkipClientGen(AttributeData data)
+			{
+				// Check for ConstructorArguments first
+				foreach (TypedConstant arg in data.ConstructorArguments)
+				{
+					if (arg.Type?.Name == nameof(CallableFlags) &&
+					    arg.Value is int flagValue && 
+					    (flagValue & (int)CallableFlags.SkipGenerateClientFiles) != 0)
+					{
+						return true;
+					}
+				}
+
+				// Now try to get from NamedArguments
+				foreach (KeyValuePair<string, TypedConstant> namedArg in data.NamedArguments)
+				{
+					if (namedArg.Value.Type?.Name == nameof(CallableFlags) &&
+					    namedArg.Value.Value is int flagValue &&
+					    (flagValue & (int)CallableFlags.SkipGenerateClientFiles) != 0)
+					{
+						return true;
+					}
+				}
+
+				return false;
+			}
+			
+			if (!methodSymbol.GetAttributes().Any(IsCallableAttribute) || methodSymbol.GetAttributes().Any(IsCallableWithSkipClientGen))
 			{
 				return;
 			}

@@ -6,9 +6,14 @@ namespace cli.Utils;
 
 public static class PromiseExtensions
 {
+	
 	public static Promise<T> ShowLoading<T>(this Promise<T> self, string message = "loading...",
 		[CanBeNull] Spinner spinner = null)
 	{
+		if (!AnsiConsole.Profile.Capabilities.Interactive)
+		{
+			return self;
+		}
 		spinner ??= Spinner.Known.Default;
 		return AnsiConsole.Status()
 			.Spinner(spinner)

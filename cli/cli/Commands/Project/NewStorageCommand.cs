@@ -11,6 +11,7 @@ public class NewStorageCommandArgs : SolutionCommandArgs
 {
 	public List<string> linkedServices;
 	public string targetFramework;
+	public bool IsZone;
 }
 
 
@@ -30,7 +31,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 				() =>
 				{
 					var currentVersion = AppContext.TargetFrameworkName.Split('=')[1].Substring(1);
-					var currentVersionDouble = double.Parse(currentVersion);
+					var currentVersionDouble = double.Parse(currentVersion, System.Globalization.CultureInfo.InvariantCulture);
 					if (currentVersionDouble < 8.0)
 					{
 						currentVersion = "8.0";
@@ -57,6 +58,10 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 			AllowMultipleArgumentsPerToken = true
 		};
 		AddOption(groups, (x, i) => x.Groups = i);
+		AddOption(new Option<bool>(
+				name: "--zone",
+				description: "If passed, creates a zone-scoped storage (deployed per cid.zid, into the zone manifest) instead of a realm-scoped one"),
+			(args, i) => args.IsZone = i);
 	}
 
 	public override async Task Handle(NewStorageCommandArgs args)
@@ -71,11 +76,11 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 		string[] dependencies = null;
 		if ((args.linkedServices == null || args.linkedServices.Count == 0) && !args.Quiet)
 		{
-			dependencies = GetChoicesFromPrompt(args.BeamoLocalSystem);
+			dependencies = GetChoicesFromPrompt(args.BeamoLocalSystem, args.IsZone);
 		}
 		else if (args.linkedServices != null)
 		{
-			dependencies = GetDependenciesFromName(args.BeamoLocalSystem, args.linkedServices);
+			dependencies = GetDependenciesFromName(args.BeamoLocalSystem, args.linkedServices, args.IsZone);
 		}
 
 		if (dependencies == null)
@@ -118,7 +123,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 		await args.BeamoLocalSystem.UpdateDockerFile(definition);
 	}
 
-	private string[] GetDependenciesFromName(BeamoLocalSystem localSystem, List<string> dependencies)
+	private string[] GetDependenciesFromName(BeamoLocalSystem localSystem, List<string> dependencies, bool isZone)
 	{
 		if (dependencies == null)
 		{
@@ -130,29 +135,45 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 		foreach (var dep in dependencies)
 		{
 			var localProtocol = services.FirstOrDefault(x => x.Key.Equals(dep)).Value;
-			if (localProtocol != null)
-			{
-				choices.Add(dep);
-			}
-			else
+			if (localProtocol == null)
 			{
 				Log.Warning($"The dependency {dep} does not exist in the local manifest and cannot be added as reference. Use `beam project deps add <service> <storage> to add after the storage is already created`");
+				continue;
 			}
+
+			// A dependency cannot cross scopes — a zone storage can only be used by zone services and a realm
+			// storage only by realm services, since they deploy into different manifests. Skip mismatches.
+			if (!IsSameScope(localSystem, dep, isZone))
+			{
+				Log.Warning($"Skipping {dep}: a {(isZone ? "zone" : "realm")}-scoped storage cannot be a dependency of a " +
+							$"{(isZone ? "realm" : "zone")}-scoped service. Only same-scope services can use this storage.");
+				continue;
+			}
+
+			choices.Add(dep);
 		}
 
 		return choices.ToArray();
 	}
 
-	private string[] GetChoicesFromPrompt(BeamoLocalSystem localSystem)
+	// A storage and the service that uses it must share a scope (both zone, or both realm); otherwise the
+	// reference would span two manifests and could never deploy. Used to filter link candidates.
+	private static bool IsSameScope(BeamoLocalSystem localSystem, string beamoId, bool isZone)
+		=> localSystem.BeamoManifest.TryGetDefinition(beamoId, out var def) && def.IsZoneScoped == isZone;
+
+	private string[] GetChoicesFromPrompt(BeamoLocalSystem localSystem, bool isZone)
 	{
-		// identify the linkable projects...
+		// identify the linkable projects... only same-scope services can use this storage (a zone storage
+		// belongs to the zone manifest, a realm storage to the realm manifest — a cross-scope link is invalid).
 		var services = localSystem.BeamoManifest.HttpMicroserviceLocalProtocols;
-		var choices = services.Select(service => service.Key).ToList();
+		var choices = services.Select(service => service.Key)
+			.Where(key => IsSameScope(localSystem, key, isZone))
+			.ToList();
 
 		var prompt = new MultiSelectionPrompt<string>()
 			.Title("Service Dependencies")
-			.InstructionsText("Which services will use this storage?\n[grey](Press [blue]<space>[/] to toggle, " +
-							  "[green]<enter>[/] to accept)[/]")
+			.InstructionsText("Which services will use this storage?\n[grey](Press [blue]<space>[/] to toggle," +
+							  " [green]<enter>[/] to accept)[/]")
 			.AddChoices(choices)
 			.AddBeamHightlight()
 			.NotRequired();

@@ -24,7 +24,7 @@ public class CollectorStatusResult
 public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, CollectorStatusResult>, IResultSteam<ExtraStreamResultChannel, OtelFileStatus>
 {
 	
-	private const int SECONDS_DELAY_TO_FILE_STATUS = 15;
+	private const int SECONDS_DELAY_TO_FILE_STATUS = 60;
 	public CollectorStatusCommand() : base("ps", "Starts a stream of messages containing the status of the collector")
 	{
 	}
@@ -36,6 +36,15 @@ public class CollectorStatusCommand : StreamCommand<CollectorStatusCommandArgs, 
 
 	public override async Task Handle(CollectorStatusCommandArgs args)
 	{
+		var otelConfig = args.ConfigService.LoadOtelConfigFromFile();
+
+		if (!Otel.CliTracesEnabled() || !otelConfig.BeamCliAllowTelemetry) // if otel is disabled, then we don't start anything
+		{
+			Log.Trace("Trying to start collector ps, but telemetry is disabled.");
+			return;
+		}
+
+
 		CollectorManager.AddDefaultCollectorHostAndPortFallback();
 		
 		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);

@@ -36,14 +36,23 @@ public class ConfigService
 	public const string CFG_TOKEN_JSON_FIELD_REFRESH_TOKEN = "refresh-token";
 
 	public const string CFG_FILE_NAME = "config.beam.json";
+	/// <summary>
+	/// The v2 root manifest file (sibling to <see cref="CFG_FILE_NAME"/>). Holds bundle references
+	/// for this realm. Presence of this file = v2 manifest schema; absence = legacy v1.
+	/// </summary>
+	public const string MANIFEST_FILE_NAME = "manifest.beam.json";
+	/// <summary>The manifest schemaVersion the CLI authors for v2 workspaces.</summary>
+	public const int MANIFEST_SCHEMA_VERSION = 2;
 	public const string CFG_JSON_FIELD_CLI_VERSION = "cliVersion";
 	public const string CFG_JSON_FIELD_HOST = "host";
 	public const string CFG_JSON_FIELD_CID = "cid";
 	public const string CFG_JSON_FIELD_PID = "pid";
+	public const string CFG_JSON_FIELD_ZID = "zid";
 	public const string CFG_JSON_FIELD_PROJ_PATH_ROOT = "projectPathRoot";
 	public const string CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS = "additionalProjectPaths";
 	public const string CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS = "ignoredProjectPaths";
 	public const string CFG_JSON_FIELD_OBJ_OTEL = "otelConfig";
+	public const string CFG_JSON_FIELD_OBJ_PORTAL_EXTENSION = "portalExtension";
 	public const string CFG_JSON_FIELD_OBJ_LINKED_ENGINE_PROJECTS = "linkedProjects";
 
 	public const string SHARED_FOLDER_NAME = "shared";
@@ -57,6 +66,15 @@ public class ConfigService
 	public const string CONTENT_SNAPSHOTS_SHARED_DIR = $"{SHARED_FOLDER_NAME}/{CONTENT_SNAPTSHOT_FOLDER_NAME}";
 	public const string CONTENT_SNAPSHOTS_LOCAL_DIR = $"{LOCAL_FOLDER_NAME}/{CONTENT_SNAPTSHOT_FOLDER_NAME}";
 
+	public const string CONTENT_HISTORY_FOLDER_NAME = "contentHistory";
+	public const string CONTENT_HISTORY_ENTRIES_FOLDER_NAME = "entries";
+	public const string CONTENT_HISTORY_CHANGELISTS_FOLDER_NAME = "changelists";
+	public const string CONTENT_HISTORY_CONTENT_FOLDER_NAME = "content";
+	public const string CONTENT_HISTORY_LOCAL_DIR = $"{LOCAL_FOLDER_NAME}/{CONTENT_HISTORY_FOLDER_NAME}";
+	public const string CONTENT_HISTORY_LOCAL_ENTRIES_DIR = $"{CONTENT_HISTORY_LOCAL_DIR}/{CONTENT_HISTORY_ENTRIES_FOLDER_NAME}";
+	public const string CONTENT_HISTORY_LOCAL_CHANGELISTS_DIR = $"{CONTENT_HISTORY_LOCAL_DIR}/{CONTENT_HISTORY_CHANGELISTS_FOLDER_NAME}";
+	public const string CONTENT_HISTORY_LOCAL_CONTENT_DIR = $"{CONTENT_HISTORY_LOCAL_DIR}/{CONTENT_HISTORY_CONTENT_FOLDER_NAME}";
+	
 	public const string DEV_USER_FOLDER_NAME = "developerUser";
 	public const string DEV_USER_SHARED_DIR = $"{SHARED_FOLDER_NAME}/{DEV_USER_FOLDER_NAME}";
 	public const string DEV_USER_LOCAL_DIR = $"{LOCAL_FOLDER_NAME}/{DEV_USER_FOLDER_NAME}";
@@ -447,28 +465,32 @@ public class ConfigService
 
 
 	/// <summary>
-	/// Called to initialize or overwrite the current DotNet dotnet-tools.json file in the ".beamable" folder's sibling ".config" folder.  
+	/// Called to initialize or overwrite the current DotNet dotnet-tools.json file in the ".beamable" folder's sibling ".config" folder.
 	/// </summary>
 	public void EnforceDotNetToolsManifest(out string pathToToolsManifest)
 	{
-		pathToToolsManifest = null;
 		if (string.IsNullOrEmpty(ConfigDirectoryPath))
 			throw new CliException("No beamable project exists. Please use beam init");
 
-		var pathToDotNetConfigFolder = Directory.GetParent(ConfigDirectoryPath)!.ToString();
-		pathToDotNetConfigFolder = Path.Combine(pathToDotNetConfigFolder, ".config");
+		var projectRoot = Directory.GetParent(ConfigDirectoryPath)!.ToString();
+		pathToToolsManifest = EnsureDotNetToolsManifest(projectRoot);
+	}
 
-		// Create the sibling ".config" folder if its not there.
-		if (!Directory.Exists(pathToDotNetConfigFolder))
-			Directory.CreateDirectory(pathToDotNetConfigFolder);
+	/// <summary>
+	/// Creates or updates .config/dotnet-tools.json under the given directory with the current CLI version.
+	/// </summary>
+	public static string EnsureDotNetToolsManifest(string targetDir)
+	{
+		var configFolder = Path.Combine(targetDir, ".config");
+		if (!Directory.Exists(configFolder))
+			Directory.CreateDirectory(configFolder);
 
-		// Create/Update the manifest inside the ".config" folder 
-		pathToToolsManifest = Path.Combine(pathToDotNetConfigFolder, "dotnet-tools.json");
+		var manifestPath = Path.Combine(configFolder, "dotnet-tools.json");
 		string manifestString;
 
 		var versionStr = BeamAssemblyVersionUtil.GetVersion<App>();
 		// Create the file if it doesn't exist with our default local tool and its correct version.
-		if (!File.Exists(pathToToolsManifest))
+		if (!File.Exists(manifestPath))
 		{
 			manifestString = $@"{{
   ""version"": 1,
@@ -487,7 +509,7 @@ public class ConfigService
 		else
 		{
 			var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+.*?)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
-			manifestString = File.ReadAllText(pathToToolsManifest);
+			manifestString = File.ReadAllText(manifestPath);
 
 			if (versionMatching.IsMatch(manifestString))
 			{
@@ -513,7 +535,7 @@ public class ConfigService
 				toolsDict.Add("version", versionStr);
 				toolsDict.Add("commands", new[] { "beam" });
 
-				// Update the tools JSON object 
+				// Update the tools JSON object
 				var tools = (ArrayDict)manifest["tools"];
 				tools["beamable.tools"] = toolsDict;
 
@@ -522,7 +544,8 @@ public class ConfigService
 			}
 		}
 
-		File.WriteAllText(pathToToolsManifest, manifestString);
+		File.WriteAllText(manifestPath, manifestString);
+		return manifestPath;
 	}
 
 	public bool TryGetProjectBeamableCLIVersion(out string version)
@@ -709,7 +732,7 @@ public class ConfigService
 	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option, string defaultValue = null)
 	{
 		// Try to get from option and, if we can't, get it from the loaded config file.		
-		value = context.ParseResult.GetValueForOption(option) ?? GetConfigString2(option.OptionName, defaultValue);
+		value = context.ParseResult.GetValueForOption(option) ?? GetConfigString(option.OptionName, defaultValue);
 		return !string.IsNullOrEmpty(value);
 	}
 
@@ -723,17 +746,13 @@ public class ConfigService
 		return "";
 	} 
 
-	// [CanBeNull]
-	// public string GetConfigString(string key, [CanBeNull] string defaultValue = null) =>
-	// 	GetConfig<string>(key, defaultValue);
-	//
-	public string GetConfigString2(string key, [CanBeNull] string defaultValue = null) =>
-		GetConfig2<string>(key, defaultValue);
+	public string GetConfigString(string key, [CanBeNull] string defaultValue = null) =>
+		GetConfig<string>(key, defaultValue);
 
 	[CanBeNull]
-	public string GetConfigStringIgnoreOverride(string key, [CanBeNull] string defaultValue = null) => GetConfig2<string>(key, defaultValue, true);
+	public string GetConfigStringIgnoreOverride(string key, [CanBeNull] string defaultValue = null) => GetConfig<string>(key, defaultValue, true);
 
-	public T GetConfig2<T>(string key, [CanBeNull] T defaultValue, bool ignoreOverride = false)
+	public T GetConfig<T>(string key, [CanBeNull] T defaultValue, bool ignoreOverride = false)
 	{
 		if (!ignoreOverride)
 		{
@@ -754,24 +773,6 @@ public class ConfigService
 		TryGetConfig(key, defaultValue, config, out var currentValue);
 		return currentValue; 
 	}
-	// public T GetConfig<T>(string key, [CanBeNull] T defaultValue, bool ignoreOverride = false)
-	// {
-	// 	var value = _configLocalOverrides?.SelectToken(key);
-	// 	if (value != null)
-	// 	{
-	// 		if (!ignoreOverride)
-	// 		{
-	// 			return value switch
-	// 			{
-	// 				JObject json => JsonConvert.DeserializeObject<T>(json.ToString()),
-	// 				JArray arr => JsonConvert.DeserializeObject<T>(arr.ToString()),
-	// 				_ => value.Value<T>()
-	// 			};
-	// 		}
-	// 	}
-	//
-	// 	return GetConfig(key, defaultValue, _config);
-	// }
 
 	public T GetConfig<T>(string key, [CanBeNull] T defaultValue, JObject config)
 	{
@@ -970,8 +971,6 @@ public class ConfigService
 		}, isOverride);
 		return nextValue;
 	}
-
-	// public T SetConfig<T>(string path, [CanBeNull] T newValue, bool isOverride = false) => SetConfig(path, newValue, isOverride ? _configLocalOverrides : _config);
 
 	public static T SetConfig<T>(string path, [CanBeNull] T newValue, JObject target)
 	{
@@ -1429,7 +1428,7 @@ public class ConfigService
 
 	public OtelConfig LoadOtelConfigFromFile()
 	{
-		var config = GetConfig2(CFG_JSON_FIELD_OBJ_OTEL, new OtelConfig());
+		var config = GetConfig(CFG_JSON_FIELD_OBJ_OTEL, new OtelConfig());
 		if (string.IsNullOrEmpty(config.BeamCliTelemetryLogLevel))
 		{
 			config.BeamCliTelemetryLogLevel = nameof(LogLevel.Warning);
@@ -1448,17 +1447,86 @@ public class ConfigService
 		WriteConfig(CFG_JSON_FIELD_OBJ_OTEL, config);
 	}
 
-	public bool ExistsOtelConfig() => GetConfig2<OtelConfig>(CFG_JSON_FIELD_OBJ_OTEL, null) != null;
+	public bool ExistsOtelConfig() => GetConfig<OtelConfig>(CFG_JSON_FIELD_OBJ_OTEL, null) != null;
+
+	#endregion
+
+	#region Helpers - Portal Extensions
+
+	public void SavePortalExtensionConfig(PortalExtensionConfig config)
+	{
+		WriteConfig(CFG_JSON_FIELD_OBJ_PORTAL_EXTENSION, config);
+	}
+
+	public PortalExtensionConfig LoadPortalExtensionConfig()
+	{
+		var config = GetConfig(CFG_JSON_FIELD_OBJ_PORTAL_EXTENSION, new PortalExtensionConfig());
+		if (config.fileExtensionsToObserve == null)
+		{
+			config.fileExtensionsToObserve = new List<string>();
+		}
+
+		return config;
+	}
+
+	#endregion
+
+	#region Helpers - Manifest References (v2 bundles)
+
+	/// <summary>The full path to the v2 root manifest file, whether or not it exists.</summary>
+	public string GetManifestReferencesPath() => GetConfigPath(MANIFEST_FILE_NAME);
+
+	/// <summary>True when this workspace opts into the v2 bundle-references manifest schema.</summary>
+	public bool ExistsManifestReferences() => File.Exists(GetManifestReferencesPath());
+
+	/// <summary>
+	/// Load <c>.beamable/manifest.beam.json</c>, or <c>null</c> if the workspace is legacy v1 (no file).
+	/// Parsed via <see cref="JObject"/> rather than typed deserialization to avoid Beamable's
+	/// Optional converters on a plain-shaped file.
+	/// </summary>
+	[CanBeNull]
+	public ManifestReferences LoadManifestReferences()
+	{
+		var path = GetManifestReferencesPath();
+		if (!File.Exists(path)) return null;
+
+		var obj = JsonConvert.DeserializeObject<JObject>(LockedRead(path)) ?? new JObject();
+		var result = new ManifestReferences
+		{
+			schemaVersion = obj.Value<int?>("schemaVersion") ?? MANIFEST_SCHEMA_VERSION,
+			references = new Dictionary<string, string>()
+		};
+		if (obj["references"] is JObject refs)
+		{
+			foreach (var kvp in refs)
+			{
+				result.references[kvp.Key] = kvp.Value?.Value<string>();
+			}
+		}
+
+		return result;
+	}
+
+	/// <summary>Write <c>.beamable/manifest.beam.json</c>, creating it if absent.</summary>
+	public void SaveManifestReferences(ManifestReferences manifest)
+	{
+		var obj = new JObject
+		{
+			["schemaVersion"] = manifest?.schemaVersion ?? MANIFEST_SCHEMA_VERSION,
+			["references"] = JObject.FromObject(manifest?.references ?? new Dictionary<string, string>())
+		};
+		LockedWrite(GetManifestReferencesPath(), obj.ToString(Formatting.Indented));
+	}
 
 	#endregion
 
 	#region Helpers - Microservice Parsing Settings
 
-	public List<string> LoadExtraPathsFromFile() => GetConfig2(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, new List<string>());
+	public List<string> LoadExtraPathsFromFile() => GetConfig(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, new List<string>());
 
 	public List<string> LoadPathsToIgnoreFromFile()
 	{
-		var paths = GetConfig2(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, new List<string>());
+		var paths = GetConfig(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, new List<string>());
 		return paths
 			.Select(GetRelativeToExecutionPath)
 			.Select(Path.GetFullPath)
@@ -1467,21 +1535,21 @@ public class ConfigService
 
 	public void SaveExtraPathsToFile(List<string> paths)
 	{
-		var currentPaths = GetConfig2<List<string>>(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, new List<string>());
+		var currentPaths = GetConfig<List<string>>(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, new List<string>());
 		currentPaths.AddRange(paths);
 		WriteConfig(CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS, currentPaths.Distinct().ToList());
 	}
 
 	public void SavePathsToIgnoreToFile(List<string> paths)
 	{
-		var currentPaths = GetConfig2<List<string>>(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, new List<string>());
+		var currentPaths = GetConfig<List<string>>(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, new List<string>());
 		currentPaths.AddRange(paths);
 		WriteConfig(CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS, currentPaths.Distinct().ToList());
 	}
 
 	public string GetProjectRootPath()
 	{
-		var relativePath = GetConfig2<string>(CFG_JSON_FIELD_PROJ_PATH_ROOT, ".");
+		var relativePath = GetConfig<string>(CFG_JSON_FIELD_PROJ_PATH_ROOT, ".");
 		var fullPath = Path.Combine(BeamableWorkspace, relativePath);
 		return new DirectoryInfo(fullPath).FullName;
 	}
@@ -1552,7 +1620,10 @@ public class ConfigService
 
 	#region Helpers - Microservice Codegen Settings
 
-	public EngineProjectData GetLinkedEngineProjects() => GetConfig2(CFG_JSON_FIELD_OBJ_LINKED_ENGINE_PROJECTS, new EngineProjectData());
+	public EngineProjectData GetLinkedEngineProjects()
+	{
+		return GetConfig(CFG_JSON_FIELD_OBJ_LINKED_ENGINE_PROJECTS, new EngineProjectData());
+	}
 
 	public void SetLinkedEngineProjects(EngineProjectData data)
 	{
@@ -1811,6 +1882,30 @@ public class OtelConfig
 }
 
 [Serializable]
+public class PortalExtensionConfig
+{
+	public List<string> fileExtensionsToObserve;
+}
+
+/// <summary>
+/// JsonConverter that ensures null arrays are deserialized as empty arrays
+/// </summary>
+public class EmptyArrayConverter<T> : JsonConverter<T[]>
+{
+	public override T[] ReadJson(JsonReader reader, Type objectType, T[] existingValue, bool hasExistingValue, JsonSerializer serializer)
+	{
+		if (reader.TokenType == JsonToken.Null || reader.TokenType == JsonToken.None || reader.TokenType == JsonToken.Undefined)
+			return Array.Empty<T>();
+		return serializer.Deserialize<T[]>(reader) ?? Array.Empty<T>();
+	}
+
+	public override void WriteJson(JsonWriter writer, T[] value, JsonSerializer serializer)
+	{
+		serializer.Serialize(writer, value);
+	}
+}
+
+[Serializable]
 public class EngineProjectData
 {
 	public HashSet<Unity> unityProjectsPaths = new();
@@ -1894,7 +1989,35 @@ public class EngineProjectData
 		/// </summary>
 		public string BeamableBackendGenerationPassFile;
 
-		public ReplacementTypeInfo[] ReplacementTypeInfos;
+		/// <summary>
+		/// Custom type mappings that replace default generated types with hand-written types in the Unreal SDK code generation
+		/// </summary>
+		[JsonConverter(typeof(EmptyArrayConverter<ReplacementTypeInfo>))]
+		public ReplacementTypeInfo[] ReplacementTypeInfos = Array.Empty<ReplacementTypeInfo>();
+
+		public Unreal()
+		{
+			CoreProjectName = "";
+			BlueprintNodesProjectName = "";
+			Path = "";
+			SourceFilesPath = "";
+			MsCoreHeaderPath = "";
+			MsCoreCppPath = "";
+			MsBlueprintNodesHeaderPath = "";
+			MsBlueprintNodesCppPath = "";
+			BeamableBackendGenerationPassFile = "";
+			ReplacementTypeInfos = Array.Empty<ReplacementTypeInfo>();
+		}
+
+		/// <summary>
+		/// Called after deserialization to ensure null arrays become empty arrays.
+		/// Works with Newtonsoft.Json (via OnDeserialized) and System.Text.Json (via null-coalescing).
+		/// </summary>
+		[System.Runtime.Serialization.OnDeserialized]
+		internal void OnDeserializedMethod(System.Runtime.Serialization.StreamingContext context)
+		{
+			ReplacementTypeInfos ??= Array.Empty<ReplacementTypeInfo>();
+		}
 
 		public string GetProjectName()
 		{

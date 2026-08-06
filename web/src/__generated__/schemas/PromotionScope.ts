@@ -4,8 +4,9 @@
  */
 
 import type { Promotion } from './Promotion';
+import type { PromotableType } from './enums/PromotableType';
 
 export type PromotionScope = { 
-  name: string; 
-  promotions: Promotion[]; 
+  name: PromotableType; 
+  promotions?: Promotion[]; 
 };

@@ -36,16 +36,21 @@ public class ItemDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerItem>
 
 	private void Refresh()
 	{
-		typeText.text = $"Name: {_model.Content.name}";
+		typeText.text = _model.Content.ContentName;
 		idText.text = $"Id: {_model.Content.Id}";
 
 		icon.sprite = null;
-		if (_model.Content.icon != null && _model.Content.icon.Asset != null)
+		if (_model.Content.icon != null)
 		{
 			_model.Content.icon.LoadSprite().Then((sprite) =>
 			{
 				icon.sprite = sprite;
+				icon.gameObject.SetActive(true);
 			});
+		}
+		else
+		{
+			icon.gameObject.SetActive(false);
 		}
 	}
 }

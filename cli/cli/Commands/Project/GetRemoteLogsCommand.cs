@@ -74,16 +74,16 @@ public class GetRemoteLogsCommand : StreamCommand<GetRemoteLogsCommandArgs, Tail
 {
     public override bool IsForInternalUse => true;
 
-    public GetRemoteLogsCommand() : base("remote-logs", "get remote logs for a service")
+    public GetRemoteLogsCommand() : base("remote-logs", "Get remote logs for a service")
     {
     }
 
     public override void Configure()
     {
-        const string FORMAT = "Must be an exact date time string, or a relative time string. " +
-                              "Relative time strings are in the format <number><unit>. " +
-                              "The unit is either s (seconds), m (minutes), h (hours), or d (days). " +
-                              "To represent 5 minutes in the past, use the term '5m' ";
+        const string FORMAT = "Must be an exact date time string, or a relative time string." +
+                              " Relative time strings are in the format <number><unit>." +
+                              " The unit is either s (seconds), m (minutes), h (hours), or d (days)." +
+                              " To represent 5 minutes in the past, use the term '5m' ";
         AddArgument(new Argument<string>("service-id", "The beamo id for the service to get logs for"), (args, i) => args.service = i);
         AddOption(new Option<string>(new string[]{"-f", "--filter"}, "A text filter for log searching"), (args, i) => args.filter = i);
         AddOption(new Option<string>(new string[]{"-sl", "--server-log-level",}, "A log level filter for searching"), (args, i) => args.level = i);

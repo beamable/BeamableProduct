@@ -121,6 +121,8 @@ public static class WebApi
 				.Where(p => p.In == ParameterLocation.Header)
 				// Exclude 'X-BEAM-SCOPE' header; it is set by default via the Beam Web SDK.
 				.Where(p => p.Name != "X-BEAM-SCOPE")
+				// Only include headers that makeApiRequest supports (currently just X-BEAM-GAMERTAG).
+				.Where(p => p.Name == "X-BEAM-GAMERTAG")
 				.ToList();
 
 			foreach (var (httpMethod, operation) in pathItem.Operations)
@@ -164,6 +166,13 @@ public static class WebApi
 		var apiParameters = operation.Parameters.ToList();
 		SortApiParameters(apiParameters);
 		ProcessParameters(apiParameters, modules, paramCommentList, requiredParams, optionalParams);
+
+		// GenerateMethodName only appends `By{param}` for single-param endpoints, so two operations on the
+		// same resource whose names otherwise collapse (e.g. GET /beamo/bundles and
+		// GET /beamo/bundles/{bundleName}/{ns} both -> beamoGetBundles) would emit duplicate function
+		// declarations and break the bundled SDK. Disambiguate only actual collisions so every already-unique
+		// name stays stable.
+		methodName = EnsureUniqueMethodName(methodName, apiParameters, tsFunctions);
 
 		AddPathParameterStatements(apiParameters, methodBodyStatements, endpointVariable, apiEndpoint, tsImports);
 		AddQueryParameterStatements(apiParameters, queriesObjectLiteral);
@@ -214,6 +223,37 @@ public static class WebApi
 		BuildAndAddMethod(@params);
 	}
 
+	/// <summary>
+	/// Returns a method name that is unique within the given file's functions. If <paramref name="methodName"/>
+	/// is already taken, appends the path parameter names (e.g. <c>...ByBundleNameAndNs</c>), and finally falls
+	/// back to a numeric suffix. Non-colliding names are returned unchanged.
+	/// </summary>
+	private static string EnsureUniqueMethodName(string methodName, List<OpenApiParameter> apiParameters,
+		List<TsFunction> tsFunctions)
+	{
+		bool Taken(string n) => tsFunctions.Any(f => f.Name == n);
+		if (!Taken(methodName))
+			return methodName;
+
+		var pathParams = apiParameters
+			.Where(p => p.In == ParameterLocation.Path)
+			.Select(p => StringHelper.Capitalize(p.Name))
+			.Where(p => !string.IsNullOrEmpty(p))
+			.ToList();
+		if (pathParams.Count > 0)
+		{
+			var candidate = $"{methodName}By{string.Join("And", pathParams)}";
+			if (!Taken(candidate))
+				return candidate;
+			methodName = candidate;
+		}
+
+		var suffix = 2;
+		while (Taken($"{methodName}{suffix}"))
+			suffix++;
+		return $"{methodName}{suffix}";
+	}
+
 	private static bool TryGetMediaTypeAndResponseType(OpenApiOperation operation, out string responseType)
 	{
 		if (!operation.Responses.TryGetValue("200", out var response))
@@ -247,7 +287,9 @@ public static class WebApi
 		var requiresAuth = !serviceType.Equals("basic", StringComparison.InvariantCultureIgnoreCase) ||
 		                   serviceName.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
 		                   (operation.Security.Count >= 1 &&
-		                    operation.Security[0].Any(kvp => kvp.Key.Reference.Id == "user"));
+		                    operation.Security[0].Any(kvp =>
+			                    kvp.Key.Reference?.Id is "user" or "auth" ||
+			                    kvp.Key.Scheme?.Equals("bearer", StringComparison.OrdinalIgnoreCase) == true));
 		var remarks = requiresAuth
 			? "@remarks\n**Authentication:**\nThis method requires a valid bearer token in the `Authorization` header.\n\n"
 			: string.Empty;
@@ -321,6 +363,14 @@ public static class WebApi
 	{
 		foreach (var param in apiParameters)
 		{
+			// Header parameters are not part of the generated function signature. The web SDK's
+			// makeApiRequest only forwards X-BEAM-SCOPE (applied by default) and X-BEAM-GAMERTAG (handled
+			// separately as the `gamertag` parameter). Any other header (e.g. X-BEAM-REGISTRY-METHOD on
+			// /beamo/registry/auth) would otherwise be emitted with its raw name as a parameter — which is
+			// invalid TypeScript (hyphens aren't valid identifiers) and a dead param the SDK can't send.
+			if (param.In == ParameterLocation.Header)
+				continue;
+
 			var paramName = param.Name;
 			var paramSchema = param.Schema;
 			var paramDescription = !string.IsNullOrEmpty(param.Description)

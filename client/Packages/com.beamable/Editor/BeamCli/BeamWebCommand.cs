@@ -94,8 +94,8 @@ namespace Beamable.Editor.BeamCli
 		private ServerServeWrapper _serverCommand;
 
 		public BeamWebCommandFactory(
-			BeamableDispatcher dispatcher, 
-			BeamWebCliCommandHistory history, 
+			BeamableDispatcher dispatcher,
+			BeamWebCliCommandHistory history,
 			BeamWebCommandFactoryOptions options, BeamCli beamCli)
 		{
 			this.dispatcher = dispatcher;
@@ -104,7 +104,7 @@ namespace Beamable.Editor.BeamCli
 			processFactory = new BeamCommandFactory(dispatcher);
 			processCommands = new BeamCommands(processFactory, beamCli);
 			_options.port = _options.startPortOverride.GetOrElse(8432);
-			
+
 			dispatcher.Run("cli-server-discovery", ServerDiscoveryLoop());
 		}
 		
@@ -133,6 +133,24 @@ namespace Beamable.Editor.BeamCli
 		{
 			_serverCommand?.Cancel();
 			_serverCommand = null;
+		}
+
+		public Promise InvalidateServer(Exception cause)
+		{
+			// Marshal back to the editor coroutine thread — port, _serverCommand,
+			// and discoveryRequest are all touched by ServerDiscoveryLoop and
+			// shouldn't race with an async continuation.
+			var jobId = dispatcher.Schedule(() =>
+			{
+				_history.AddServerEvent(
+					$"Server invalidated: {cause.GetType().Name}: {cause.Message}");
+
+				KillServer();
+				port = _options.startPortOverride.GetOrElse(8432);
+				discoveryRequest++;
+			});
+
+			return dispatcher.WaitForJobIds(new List<long> { jobId });
 		}
 
 		public string GetServerProcess()
@@ -362,6 +380,8 @@ namespace Beamable.Editor.BeamCli
 		private BeamWebCommandFactory _factory;
 		private CancellationTokenSource _cts;
 		private BeamWebCliCommandHistory _history;
+		private Promise _runPromise;
+		private const int MaxPreResponseTransportRetries = 2;
 
 		public BeamWebCommand(BeamWebCommandFactory factory, BeamWebCliCommandHistory history)
 		{
@@ -379,10 +399,43 @@ namespace Beamable.Editor.BeamCli
 			_history.UpdateCommand(id, commandString);
 		}
 		
-		public async Promise Run()
+		public Promise Run()
+		{
+			_runPromise = RunImpl();
+			return _runPromise;
+		}
+
+		private async Promise RunImpl()
 		{
 			_history.UpdateResolvingHostTime(id);
 
+			for (var attempt = 0;; attempt++)
+			{
+				try
+				{
+					await RunHttpRequestOnce();
+					return;
+				}
+				catch (PreResponseTransportException ex) when (attempt < MaxPreResponseTransportRetries)
+				{
+					if (attempt == 0)
+					{
+						_history.AddCustomLog(id,
+							$"[Unity] local CLI transport failed before response; confirming server before retry. attempt=[{attempt + 1}]");
+						await _factory.EnsureServerIsRunning();
+					}
+					else
+					{
+						_history.AddCustomLog(id,
+							$"[Unity] local CLI transport failed before response; invalidating server before retry. attempt=[{attempt + 1}]");
+						await _factory.InvalidateServer(ex.InnerException ?? ex);
+					}
+				}
+			}
+		}
+
+		private async Promise RunHttpRequestOnce()
+		{
 			await _factory.EnsureServerIsRunning();
 
 			_history.UpdateStartTime(id, _factory.ExecuteUrl);
@@ -394,75 +447,80 @@ namespace Beamable.Editor.BeamCli
 			CliLogger.Log("Sending cli web request, " + json);
 			var dispatchedIds = new List<long>();
 			var p = new Promise();
+			var responseStarted = false;
 
 			try
 			{
-				if (!_cts.IsCancellationRequested)
+				// Per-call HttpClient. We tried sharing one on the factory but
+				// pooled connections to the localhost CLI server went bad on
+				// Windows (login would surface as TaskCanceledException from a
+				// poisoned half-closed socket); a fresh client per command
+				// avoids that.
+				using var client = new HttpClient { Timeout = TimeSpan.FromDays(7) };
+				var sendTask = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, _cts.Token);
+				_history.AddCustomLog(id, "[Unity] sent request...");
+
+				using HttpResponseMessage response = await sendTask;
+				responseStarted = true;
+				_history.AddCustomLog(id, "[Unity] opened response...");
+
+				using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
+				_history.AddCustomLog(id, "[Unity] opened response stream...");
+
+				using StreamReader reader = new StreamReader(streamToReadFrom);
+
+				Task<string> readTask = null;
+				while (!reader.EndOfStream)
 				{
-					var client = new HttpClient() {Timeout = TimeSpan.FromDays(7),};
-					var sendTask = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
-					_history.AddCustomLog(id, "[Unity] sent request...");
-
-					using HttpResponseMessage response = await sendTask;
-					_history.AddCustomLog(id, "[Unity] opened response...");
-
-					using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
-					_history.AddCustomLog(id, "[Unity] opened response stream...");
-
-					using StreamReader reader = new StreamReader(streamToReadFrom);
-
-					Task<string> readTask = null;
-					while (!reader.EndOfStream)
+					if (_cts.Token.IsCancellationRequested)
 					{
-						if (_cts.Token.IsCancellationRequested)
-						{
-							break;
-						}
-
-						readTask = reader.ReadLineAsync();
-						while (!readTask.IsCompleted)
-						{
-							await Task.WhenAny(readTask, Task.Delay(50));
-							if (_cts.Token.IsCancellationRequested)
-							{
-								break;
-							}
-						}
-						if (_cts.Token.IsCancellationRequested)
-						{
-							break;
-						}
-						
-						var line = await readTask;
-						if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
-
-						// remove life-cycle zero-width character
-						line = line.Replace("\u200b", "");
-						if (!line.StartsWith("data: "))
-						{
-							Debug.LogWarning(
-								$"CLI received a message over the local-server that did not start with the expected 'data: ' format. line=[{line}]");
-							continue;
-						}
-
-						var jobId = _factory.dispatcher.Schedule(() => // put callback on separate work queue.
-						{
-							var lineJson = line
-								.Substring("data: ".Length); // remove the Server-Side-Event notation
-
-							CliLogger.Log("received, " + lineJson, "from " + commandString);
-
-							var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
-							res.json = lineJson;
-
-
-							_history.HandleMessage(id, res);
-							_callbacks?.Invoke(res);
-						});
-						dispatchedIds.Add(jobId);
+						break;
 					}
+
+					readTask = reader.ReadLineAsync();
+					var cancelTcs = new TaskCompletionSource<bool>();
+					using (_cts.Token.Register(() => cancelTcs.TrySetResult(true)))
+					{
+						await Task.WhenAny(readTask, cancelTcs.Task);
+					}
+					if (_cts.Token.IsCancellationRequested)
+					{
+						break;
+					}
+
+					var line = await readTask;
+					if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
+
+					// remove life-cycle zero-width character
+					line = line.Replace("\u200b", "");
+					if (!line.StartsWith("data: "))
+					{
+						Debug.LogWarning(
+							$"CLI received a message over the local-server that did not start with the expected 'data: ' format. line=[{line}]");
+						continue;
+					}
+
+					var jobId = _factory.dispatcher.Schedule(() => // put callback on separate work queue.
+					{
+						var lineJson = line
+							.Substring("data: ".Length); // remove the Server-Side-Event notation
+
+						CliLogger.Log("received, " + lineJson, "from " + commandString);
+
+						var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
+						res.json = lineJson;
+
+
+						_history.HandleMessage(id, res);
+						_callbacks?.Invoke(res);
+					});
+					dispatchedIds.Add(jobId);
 				}
 
+			}
+			catch (Exception ex) when (IsRecoverableLocalTransportFailure(ex) && !responseStarted)
+			{
+				throw new PreResponseTransportException(ex);
 			}
 			finally
 			{
@@ -481,7 +539,33 @@ namespace Beamable.Editor.BeamCli
 		public void Cancel()
 		{
 			if (_cts.IsCancellationRequested) return; // no-op
+			// Mark the run's promise as observed so the cancellation
+			// exception we're about to trigger isn't logged as an
+			// UncaughtPromiseException. Awaiters still see the throw.
+			_runPromise?.Error(_ => { });
 			_cts.Cancel();
+		}
+
+		private static bool IsTransportFailure(Exception ex)
+		{
+			return ex is HttpRequestException
+			       || ex is SocketException
+			       || ex is ObjectDisposedException
+			       || ex is IOException;
+		}
+
+		private bool IsRecoverableLocalTransportFailure(Exception ex)
+		{
+			return !_cts.IsCancellationRequested &&
+			       (IsTransportFailure(ex) || ex is OperationCanceledException);
+		}
+
+		private class PreResponseTransportException : Exception
+		{
+			public PreResponseTransportException(Exception innerException)
+				: base(innerException.Message, innerException)
+			{
+			}
 		}
 
 		public IBeamCommand On<T>(Func<ReportDataPointDescription, bool> predicate, Action<ReportDataPoint<T>> cb)

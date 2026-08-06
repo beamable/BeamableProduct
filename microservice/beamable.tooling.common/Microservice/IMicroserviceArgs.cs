@@ -11,6 +11,11 @@ public enum LogOutputType
 public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
 {
     public IDependencyProviderScope ServiceScope { get; }
+    /// <summary>
+    /// The zone id for a zone-scoped service. Empty/null for realm-scoped services (which use
+    /// <see cref="IRealmInfo.ProjectName"/> instead).
+    /// </summary>
+    string Zid { get; }
     public int HealthPort { get; }
     string Host { get; }
     string Secret { get; }
@@ -41,6 +46,7 @@ public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
     public LogOutputType LogOutputType { get; }
     public string LogOutputPath { get; }
     public bool EnableDangerousDeflateOptions { get; }
+    public bool DisableOutboundWsCompression { get; }
     public string MetadataUrl { get; }
     public string RefreshToken { get; }
     public string AccountEmail { get; }
@@ -56,5 +62,6 @@ public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
     public bool OtelExporterStandardEnabled { get; }
     public string OtelExporterRetryMaxSize { get; }
     public bool AllowStartupWithoutBeamableSettings { get; }
+    public int MaxUniqueEventBindingCount { get; }
     void SetResolvedCid(string resolvedCid);
 }

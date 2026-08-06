@@ -25,7 +25,7 @@ namespace Beamable.Server
 	/// <param name="args">The arguments to pass to the method.</param>
 	/// <returns>A task representing the asynchronous execution of the method.</returns>
 	public delegate Task MethodInvocation(object target, object[] args);
-
+	
 	/// <summary>
 	/// Represents a service method with its associated metadata and behavior.
 	/// </summary>

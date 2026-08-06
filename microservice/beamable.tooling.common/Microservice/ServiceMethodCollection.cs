@@ -11,7 +11,7 @@ namespace Beamable.Server
 	/// </summary>
    public class ServiceMethodCollection
    {
-      private readonly IEnumerable<ServiceMethod> _methods;
+      private readonly List<ServiceMethod> _methods;
       private Dictionary<string, ServiceMethod> _pathToMethod;
 
       /// <summary>
@@ -20,8 +20,8 @@ namespace Beamable.Server
       /// <param name="methods">The collection of service methods to be included in the collection.</param>
       public ServiceMethodCollection(IEnumerable<ServiceMethod> methods)
       {
-         _methods = methods;
-         _pathToMethod = methods.ToDictionary(method => method.Path.ToLower());
+         _methods = methods.ToList();
+         _pathToMethod = _methods.ToDictionary(method => method.Path.ToLower());
       }
 
       /// <summary>

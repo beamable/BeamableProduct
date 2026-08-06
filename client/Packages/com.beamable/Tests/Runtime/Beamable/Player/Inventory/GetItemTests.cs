@@ -52,7 +52,7 @@ namespace Beamable.Tests.Runtime
 				};
 			}
 
-			MockContent.Provide(new InventoryTestItem().SetContentName(itemName));
+			MockContent.Provide(ScriptableObject.CreateInstance<InventoryTestItem>().SetContentName(itemName));
 			TriggerContextInit(b =>
 			{
 				OnRegister(b);
@@ -75,7 +75,7 @@ namespace Beamable.Tests.Runtime
 		{
 			const string itemName = "test";
 
-			MockContent.Provide(new InventoryTestItem().SetContentName(itemName));
+			MockContent.Provide(ScriptableObject.CreateInstance<InventoryTestItem>().SetContentName(itemName));
 			TriggerContextInit(b =>
 			{
 				OnRegister(b);
@@ -99,7 +99,7 @@ namespace Beamable.Tests.Runtime
 		{
 			const string itemName = "test";
 
-			MockContent.Provide(new InventoryTestItem().SetContentName(itemName));
+			MockContent.Provide(ScriptableObject.CreateInstance<InventoryTestItem>().SetContentName(itemName));
 			TriggerContextInit(b =>
 			{
 				OnRegister(b);
@@ -135,7 +135,7 @@ namespace Beamable.Tests.Runtime
 		{
 			const string itemName = "test";
 
-			MockContent.Provide(new InventoryTestItem().SetContentName(itemName));
+			MockContent.Provide(ScriptableObject.CreateInstance<InventoryTestItem>().SetContentName(itemName));
 			TriggerContextInit(b =>
 			{
 				OnRegister(b);
@@ -214,9 +214,9 @@ namespace Beamable.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanHandle_LastDeletion()
 		{
-			MockContent.Provide(new InventoryTestItem().SetContentName("a"));
-			MockContent.Provide(new InventoryTestItem().SetContentName("b"));
-			MockContent.Provide(new InventoryTestItem().SetContentName("will-be-deleted"));
+			MockContent.Provide(ScriptableObject.CreateInstance<InventoryTestItem>().SetContentName("a"));
+			MockContent.Provide(ScriptableObject.CreateInstance<InventoryTestItem>().SetContentName("b"));
+			MockContent.Provide(ScriptableObject.CreateInstance<InventoryTestItem>().SetContentName("will-be-deleted"));
 			TriggerContextInit(b =>
 			{
 				OnRegister(b);
@@ -322,8 +322,8 @@ namespace Beamable.Tests.Runtime
 		public IEnumerator CanHandle_EmptyCallback()
 		{
 
-			MockContent.Provide(new InventoryTestItem().SetContentName("a"));
-			MockContent.Provide(new InventoryTestItem().SetContentName("b"));
+			MockContent.Provide(ScriptableObject.CreateInstance<InventoryTestItem>().SetContentName("a"));
+			MockContent.Provide(ScriptableObject.CreateInstance<InventoryTestItem>().SetContentName("b"));
 			// var putCalled = false;
 			TriggerContextInit(b =>
 			{
@@ -409,6 +409,13 @@ namespace Beamable.Tests.Runtime
 							};
 						}
 						throw new NotImplementedException("Unexpected call to get inventory");
+					},
+					ObjectPut = (id, request, auth) =>
+					{
+						return Promise<InventoryUpdateResponse>.Successful(new InventoryUpdateResponse
+						{
+							result = "success"
+						});
 					}
 				});
 			});

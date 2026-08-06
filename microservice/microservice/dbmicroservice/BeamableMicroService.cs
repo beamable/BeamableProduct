@@ -84,6 +84,7 @@ namespace Beamable.Server
       private const int EXIT_CODE_PENDING_TASKS_STILL_RUNNING = 11;
       private const int EXIT_CODE_FAILED_AUTH = 12;
       private const int EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK = 110;
+      private const int EXIT_CODE_FAILED_CUSTOM_SERVICE_SETUP_INITIALIZATION_HOOK = 111;
       private const int HTTP_STATUS_GONE = 410;
       private const int ShutdownLimitSeconds = 5;
       private const int ShutdownMinCycleTimeMilliseconds = 100;
@@ -156,10 +157,19 @@ namespace Beamable.Server
 
       private string _adminPrefix;
 
+      /// <summary>
+      /// True when this service runs in the realm (cid.pid) scope. Zone-scoped services do not register the
+      /// realm SDK (content, realm config, storage), so realm-only setup must be guarded on this.
+      /// </summary>
+      private bool IsRealmScoped => _serviceAttribute.GetServiceScope() == BeamServiceScope.Realm;
+
       public async Task Start(IMicroserviceArgs args, StartupContext startupContext)
       {
 	      _startupContext = startupContext;
-	      if (HasInitialized) return;
+	      if (HasInitialized)
+	      {
+		      return;
+	      }
          
          _serviceAttribute = startupContext.attributes;
          _adminPrefix = _serviceAttribute.GetQualifiedName() + "/admin/";
@@ -170,6 +180,7 @@ namespace Beamable.Server
 	         conf.ServiceScope = conf.ServiceScope.Fork(builder =>
 	         {
 				// do we need instance specific services? They'd go here.
+				builder.AddSingleton(this);
 				builder.AddScoped(_socketRequesterContext);
 				builder.AddScoped(_socketRequesterContext.Daemon);
 	         });
@@ -197,22 +208,30 @@ namespace Beamable.Server
             Log.Error("Service failed to initialize {message} {stack}", ex.Message, ex.StackTrace);
          });
          
-         // the first time this runs, it'll complete, but due to how promises work, all of the next times, it'll no-op.
-         var contentService = Provider.GetService<ContentService>();
-         ContentApi.Instance.CompleteSuccess(contentService);
+         // Realm content and storage are not registered for a zone-scoped service; skip that setup.
+         // TODO(zones): wire up zone-scoped content/storage equivalents when they exist.
+         var isRealmScope = _serviceAttribute.GetServiceScope() == BeamServiceScope.Realm;
 
-         
+         // the first time this runs, it'll complete, but due to how promises work, all of the next times, it'll no-op.
+         ContentService contentService = null;
+         if (isRealmScope)
+         {
+            contentService = Provider.GetService<ContentService>();
+            ContentApi.Instance.CompleteSuccess(contentService);
+         }
+
+
          // Connect and Run
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
-         
-         if (!InstanceArgs.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
+
+         if (isRealmScope && !InstanceArgs.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
          {
 	         await SetupStorage();
          }
 
          await SetupWebsocket(socket, _serviceAttribute.EnableEagerContentLoading);
-         if (!_serviceAttribute.EnableEagerContentLoading)
+         if (isRealmScope && !_serviceAttribute.EnableEagerContentLoading)
          {
 	         _ = contentService.Init();
          }
@@ -341,28 +360,36 @@ namespace Beamable.Server
             // We can disable custom initialization hooks from running. This is so we can verify the image works (outside of the custom hooks) before a publish.
             // TODO This is not ideal. There's an open ticket with some ideas on how we can improve the publish process to guarantee it's impossible to publish an image
             // TODO that will not boot correctly.
-            if (!InstanceArgs.DisableCustomInitializationHooks)
+            if (!_ranCustomUserInitializationHooks)
             {
-                // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
-                // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
-                if (!_ranCustomUserInitializationHooks)
-                {
-	                if (initContent)
-	                {
-		                await Provider.GetService<ContentService>().Init(preload:true);
-	                }
+	            _ranCustomUserInitializationHooks = true;
+	            if (!InstanceArgs.DisableCustomInitializationHooks)
+	            {
+		            // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
+		            // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
+		            if (initContent && IsRealmScoped)
+		            {
+			            await Provider.GetService<ContentService>().Init(preload: true);
+		            }
 
-                    await ResolveCustomInitializationHook();
-                    _ranCustomUserInitializationHooks = true;
-                }
+		            await ResolveCustomInitializationHook();
+	            }
+				await RunServiceSetupCallbacks();
             }
 
-            var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
-            
-            var loggingContextService = InstanceArgs.ServiceScope.GetService<ILoggingContextService>();
-            
-            await realmService.GetRealmConfigSettings();
-            await loggingContextService.GetAllLoggingContexts();
+            if (IsRealmScoped)
+            {
+            	// Realm config is only registered for realm-scoped services.
+            	var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
+            	await realmService.GetRealmConfigSettings();
+            }
+
+            // Beamo log-context is realm-scoped; zone services have no realm beamo api.
+            if (IsRealmScoped)
+            {
+            	var loggingContextService = InstanceArgs.ServiceScope.GetService<ILoggingContextService>();
+            	await loggingContextService.GetAllLoggingContexts();
+            }
             await ProvideService();
 
             HasInitialized = true;
@@ -374,7 +401,10 @@ namespace Beamable.Server
             }
             
             Log.Information(Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion} " + portalUrlLogline, InstanceArgs.SdkVersionBaseBuild, InstanceArgs.SdkVersionExecution);
-            realmService.UpdateLogLevel();
+            if (IsRealmScoped)
+            {
+            	InstanceArgs.ServiceScope.GetService<IRealmConfigService>().UpdateLogLevel();
+            }
 
             _serviceInitialized.CompleteSuccess(PromiseBase.Unit);
          }
@@ -390,8 +420,9 @@ namespace Beamable.Server
       private bool TryBuildPortalUrl(out string portalUrl)
       {
 	      var cid = InstanceArgs.CustomerID;
-	      var pid = InstanceArgs.ProjectName;
-	      var microName = QualifiedName;
+	      // For a realm service this is the pid; for a zone service it is the ZONE_<zid> (the zone rides the
+	      // pid slot), which is exactly what the console's zone route wants.
+	      var scopeId = InstanceArgs.ProjectName;
 	      var refreshToken = InstanceArgs.RefreshToken;
 
 	      if (string.IsNullOrEmpty(refreshToken))
@@ -400,19 +431,26 @@ namespace Beamable.Server
 		      portalUrl = "";
 		      return false;
 	      }
-	      
+
 	      var queryArgs = new List<string>
 	      {
 		      $"refresh_token={refreshToken}",
 		      $"routingKey={InstanceArgs.NamePrefix}"
 	      };
 	      var joinedQueryString = string.Join("&", queryArgs);
+	      // The portal now lives on the console.* DNS (dev.console.beamable.com / console.beamable.com), so
+	      // map the api host to console (dev.api.beamable.com -> dev.console.beamable.com).
 	      var treatedHost = InstanceArgs.Host.Replace("/socket", "")
 		      .Replace("wss", "https")
-		      .Replace("dev.", "dev-")
-		      .Replace("api", "portal");
-	      portalUrl = $"{treatedHost}/{cid}/games/{pid}/realms/{pid}/microservices/{microName}/docs?{joinedQueryString}";
-	      
+		      .Replace("api", "console");
+
+	      portalUrl = IsRealmScoped
+		      // Realm service: /{cid}/games/{pid}/realms/{pid}/microservices/micro_{name}/docs
+		      ? $"{treatedHost}/{cid}/games/{scopeId}/realms/{scopeId}/microservices/{QualifiedName}/docs?{joinedQueryString}"
+		      // Zone service: a zone has no realm — the console inspects it under
+		      // /{cid}/zones/{zid}/inspect/{name}/swagger (unprefixed service name).
+		      : $"{treatedHost}/{cid}/zones/{scopeId}/inspect/{MicroserviceName}/swagger?{joinedQueryString}";
+
 	      Log.Verbose("portal url " + portalUrl);
 
 	      return true;
@@ -519,11 +557,48 @@ namespace Beamable.Server
 	         var task = initializer?.Invoke(InstanceArgs.ServiceScope);
 	         if (task != null)
 	         {
-		         await task;
+		         try
+		         {
+			         await task;
+			         BeamableLogger.Log($"Custom service initializer succeeded.\n");
+		         }
+		         catch (Exception ex)
+		         {
+			         BeamableLogger.LogError($"Custom service initializer failed.\n" +
+			                                 $"{ex.Message}\n" +
+			                                 $"{{stacktrace}}", ex.StackTrace);
+
+			         BeamableLogger.LogException(ex);
+			         Environment.Exit(EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK);
+		         }
 	         }
          }
       }
 
+      private async Task RunServiceSetupCallbacks()
+      {
+	      foreach (var initializer in _startupContext.perServiceInitializers)
+	      {
+		      var task = initializer?.Invoke(InstanceArgs.ServiceScope);
+		      if (task != null)
+		      {
+			      try
+			      {
+				      await task;
+				      Log.Debug($"Custom service setup initializer succeeded.\n");
+			      }
+			      catch (Exception ex)
+			      {
+				      BeamableLogger.LogError($"Custom service setup initializer failed.\n" +
+				                              $"{ex.Message}\n" +
+				                              $"{{stacktrace}}", ex.StackTrace);
+
+				      BeamableLogger.LogException(ex);
+				      Environment.Exit(EXIT_CODE_FAILED_CUSTOM_SERVICE_SETUP_INITIALIZATION_HOOK);
+			      }
+		      }
+	      }
+      }
 
 
       public Promise<IConnection> GetWebsocketPromise()
@@ -615,7 +690,7 @@ namespace Beamable.Server
 	      
 	      try
 	      {
-		      _socketRequesterContext.HandleMessage(ctx, activity);
+		      await _socketRequesterContext.HandleMessage(Provider, ctx, activity);
 		      await _requester.Acknowledge(ctx);
 		      activity.SetStatus(ActivityStatusCode.Ok);
 	      }
@@ -660,7 +735,7 @@ namespace Beamable.Server
 	      }
 	      catch (MicroserviceException ex)
 	      {
-		      activity.SetStatus(ActivityStatusCode.Error);
+		      activity.SetException(ex);
 
 		      var failResponse = new GatewayErrorResponse
 		      {
@@ -679,6 +754,8 @@ namespace Beamable.Server
 	      catch (TargetInvocationException ex)
 	      {
 		      var inner = ex.InnerException;
+		      activity.SetException(inner);
+		      
 		      var failResponse = new GatewayResponse()
 		      {
 			      id = ctx.Id,
@@ -723,6 +800,7 @@ namespace Beamable.Server
 	      }
 	      catch (Exception ex) // TODO: Catch a general PlatformException type sort of thing.
 	      {
+		      activity.SetException(ex);
 		      BeamableZLoggerProvider.Instance.Error(ex);
 		      // var failResponse = new GatewayErrorResponse
 		      // {
@@ -780,21 +858,23 @@ namespace Beamable.Server
 
 
 	      // First get the Global Realm Config Log Level and apply it by running UpdateLogLevel
-	      var configService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
 	      if (ctx.Path?.StartsWith(_adminPrefix) ?? false)
 	      {
 		      // when the path starts with admin, use warning.
 		      MicroserviceBootstrapper.ContextLogLevel.Value = LogLevel.Warning;
 	      }
-	      else
+	      else if (IsRealmScoped)
 	      {
 		      // otherwise, allow default behaviour.
+		      var configService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
 		      configService.UpdateLogLevel();
 	      }
 
 	      string routingKey = InstanceArgs.GetRoutingKey().GetOrElse(string.Empty);
 	      try
 	      {
+	      	if (IsRealmScoped)
+	      	{
 		      var loggingContextService = Provider.GetService<ILoggingContextService>();
 		      BeamoV2ServiceLoggingContext loglevelContext = loggingContextService.GetLogLevelContext(MicroserviceName, routingKey);
 		      
@@ -867,6 +947,7 @@ namespace Beamable.Server
 
 			      
 		      }
+	      	}
 	      }
 	      catch (Exception ex)
 	      {
@@ -978,13 +1059,22 @@ namespace Beamable.Server
 		      body: req.ToJson());
 	      _ = serviceProviderTask.Then(_ => Log.Debug(Constants.Features.Services.Logs.SERVICE_PROVIDER_INITIALIZED));
 
-	      var eventProvider = _serviceAttribute.DisableAllBeamableEvents
-		      ? PromiseBase.SuccessfulUnit
-		      : _requester.InitializeSubscription().Then(res =>
-		      {
-			      Log.Debug(Constants.Features.Services.Logs.EVENT_PROVIDER_INITIALIZED);
-		      }).ToUnit();
-
+	      
+	      var eventConfig = Provider.GetService<IEventSubscriptionConfiguration>();
+	      foreach (var evt in MicroserviceRequester.DefaultEventNames)
+	      {
+		      eventConfig.AddSubscription(evt, true);
+	      }
+	      var hook = Provider.GetService<IEventSubscriptionHook>();
+	      var args = new CreateSubscriptionArgs
+	      {
+		      Provider = Provider,
+		      Configuration = eventConfig,
+		      Attributes = _serviceAttribute, 
+		      Requester = _requester
+	      };
+	      var eventProvider = hook.CreateSubscription(args);
+	      
 	      await serviceProviderTask;
 	      await RegisterFederation(routingKey);
 	      await eventProvider;

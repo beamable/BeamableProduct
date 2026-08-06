@@ -71,6 +71,7 @@ namespace Beamable.Editor.BeamCli
 		private ConfigRoutesWrapper _routesInvoke;
 		private ProjectAddUnityProjectWrapper _linkCommand;
 		private ProjectAddPathsWrapper _addPathsInvoke;
+		private Promise _refreshPromise;
 
 		// public Dictionary<string, BeamOrgRealmData> pidToRealm = new Dictionary<string, BeamOrgRealmData>();
 
@@ -105,6 +106,26 @@ namespace Beamable.Editor.BeamCli
 		}
 
 		public async Promise Refresh()
+		{
+			// Refresh owns shared command wrappers; overlapping refreshes cancel each other's requests.
+			if (_refreshPromise != null)
+			{
+				await _refreshPromise;
+				return;
+			}
+
+			_refreshPromise = RefreshImpl();
+			try
+			{
+				await _refreshPromise;
+			}
+			finally
+			{
+				_refreshPromise = null;
+			}
+		}
+
+		private async Promise RefreshImpl()
 		{
 			_addPathsInvoke?.Cancel();
 			var configPath = Path.Combine(latestConfig?.configPath ?? ".beamable", "config.beam.json");
@@ -348,6 +369,11 @@ namespace Beamable.Editor.BeamCli
 			
 			var initPromise = initInvoke.Run();
 			await initPromise;
+
+			if (!string.IsNullOrEmpty(latestLoginError))
+			{
+				return;
+			}
 
 			await Refresh();
 		}

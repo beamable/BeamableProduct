@@ -19,6 +19,10 @@ public interface IHasDeployPlanArgs : IHasSolutionFileArg
 	public DeployMode DeployMode { get; set; }
 	public bool RunHealthChecks { get; set; }
 	bool UseSequentialBuild { get; set; }
+	int MaxParallelTask { get; set; }
+	int MaxConcurrentUploads { get; set; }
+	/// <summary>The manifest scope this deploy targets — realm (default) or zone. See <see cref="DeployScope"/>.</summary>
+	DeployScope Scope { get; set; }
 }
 
 public interface IHasDockerComposeArgs
@@ -37,6 +41,9 @@ public class PlanDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs, IHasDo
 	public DeployMode DeployMode { get; set; }
 	public bool RunHealthChecks { get; set; }
 	public bool UseSequentialBuild { get; set; }
+	public int MaxParallelTask { get; set; }
+	public int MaxConcurrentUploads { get; set; }
+	public DeployScope Scope { get; set; }
 	public string SlnFilePath;
 
 
@@ -119,13 +126,16 @@ public static class PlanCommandExtensions {
 		}
 	}
 	
-	public static async Task<(DeployablePlan, string)> InteractivePlan<T, TArgs>(this T self, 
-		IDependencyProvider provider, 
-		TArgs args
+	public static async Task<(DeployablePlan, string)> InteractivePlan<T, TArgs>(this T self,
+		IDependencyProvider provider,
+		TArgs args,
+		bool excludeAuthoredBundleComponents = true,
+		bool savePlanToTemp = true,
+		HashSet<string> includeOnlyBeamoIds = null
 		)
 		where T : AppCommand<TArgs>
 				, IResultSteam<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>
-				, IResultSteam<PlanReleaseProgressChannel, PlanReleaseProgress> 
+				, IResultSteam<PlanReleaseProgressChannel, PlanReleaseProgress>
 		where TArgs : CommandArgs, IHasDeployPlanArgs
 	{
 		
@@ -139,8 +149,10 @@ public static class PlanCommandExtensions {
 					var progressTasks = new Dictionary<string, ProgressTask>();
 
 					(plan, buildResults) = await DeployUtil.Plan(
-						provider, 
+						provider,
 						args,
+						excludeAuthoredBundleComponents: excludeAuthoredBundleComponents,
+						includeOnlyBeamoIds: includeOnlyBeamoIds,
 						progressHandler:
 						(name, progress, isKnownLength, serviceName) =>
 						{
@@ -189,7 +201,9 @@ public static class PlanCommandExtensions {
 		}
 		else
 		{
-			var planPath = await DeployUtil.SavePlanToTempFolder(args.DependencyProvider, plan);
+			// bundle plan/publish save their own BundlePlanFile in temp/bundles-plans instead, so a
+			// bundle build never becomes `deploy release --from-latest-plan`'s most recent plan.
+			var planPath = savePlanToTemp ? await DeployUtil.SavePlanToTempFolder(args.DependencyProvider, plan) : null;
 			return (plan, planPath);
 		}
 	}
@@ -211,6 +225,7 @@ public class PlanDeploymentCommand
 	public override void Configure()
 	{
 		DeployArgs.AddPlanOptions(this);
+		DeployArgs.AddScopeOption(this);
 		DeployArgs.AddDockerComposeOutputOptions(this);
 		SolutionCommandArgs.ConfigureSolutionFlag(this, _ => throw new CliException("Must have a valid .beamable folder"));
 
@@ -221,6 +236,10 @@ public class PlanDeploymentCommand
 
 	public override async Task Handle(PlanDeploymentCommandArgs args)
 	{
+		// For `--scope zone`, pin the requester to the zone (cid.zid) so the beamo manifest APIs
+		// operate on the zone manifest; for realm (default) this is a no-op.
+		using var scopeHandle = await DeployArgs.ApplyDeployScopeAsync(args, args.Scope);
+
 		(DeployablePlan plan, var planPath) = await this.InteractivePlan(
 			args.DependencyProvider, 
 			args);

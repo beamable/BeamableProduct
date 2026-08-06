@@ -1,36 +1,65 @@
-[Beamable Docs](https://docs.beamable.com/docs/beamable-overview)
+[Beamable Docs](https://help.beamable.com/Home/)
 
 # Beamable C# SDK Monorepo
-This repository contains the Unity C# SDK, the CLI, project templates, the Microservice framework, and various utilities. This code is available to browse, read, and understand. However, this repository is not _Open Source_, and usage of the code is only permitted through approved Beamable products such as the Unity SDK or the CLI. 
+This repository contains the Beamable Unity SDK, the Beamable CLI, microservice runtime code, templates, and developer tooling. The repo is intended for reference and internal development workflows. However, this is not an open-source distribution. Use of this code in products is only permitted through approved Beamable distributions such as the Unity SDK, the CLI NuGet tool, the Web SDK NuGet package, or the Unreal SDK.
 
-#### [Unity SDK Code](https://github.com/beamable/BeamableProduct/tree/main/client/Packages)
-The Unity SDK code is available under the `/client/Packages` folder. In Beamable 2.x, there were two packages, `com.beamable`, and `com.beamable.server`. However, in Beamable 3.0, there will be a single package, `com.beamable`. The `/client` folder is a Unity project that we use for internal testing, but nothing in the `/client/Assets` folder is included in any Unity SDK release. 
+## What lives here
 
-#### [Microservice Code](https://github.com/beamable/BeamableProduct/tree/main/microservice)
-The Microservice framework code is available under the `/microservice` folder, and we use the `/microservice/microservice.sln` solution when developing the Microservice framework. However, the solution file references the Beamable common project, in the `/client/Packages/com.beamable` folder. 
+### [Unity SDK Code](https://github.com/beamable/BeamableProduct/tree/main/client/Packages)
+The Unity SDK code is available under the `/client/Packages` folder. The SDK is distributed as a single UPM package, `com.beamable`. The `/client` folder is a Unity project used for internal testing, but nothing in `/client/Assets` is included in any Unity SDK release. 
 
-#### [CLI Code](https://github.com/beamable/BeamableProduct/tree/main/cli)
-The CLI code is available under the `/cli` folder, and we use the `/cli/cli.sln` solution when developing the CLI. However, similar to the Microservice solution, the CLI solution references `.csproj` files throughout the code base, including the `/client/Packages/com.beamable` common project.
+#### How to test changes in this project
+To test any changes to the Unity SDK, you can open the `/client` Unity project in Unity 2021 or greater. 
 
-#### [Beamable.Common Nuget Package](https://github.com/beamable/BeamableProduct/tree/main/client/Packages/com.beamable/Common) 
-Inside the `/client/Packages/com.beamable/Common` folder, there is a `.csproj` that declares a Net Standard 2.0 project. This common project contains most of our Beamable base types that are used across Unity, the CLI, and the Microservice.
+### [Dotnet Code (CLI, Microservices, Common)](https://github.com/beamable/BeamableProduct/tree/main/cli)
+The CLI, Microservice runtime, and shared common types all live under the `/cli` folder and are developed using the `/cli/cli.sln` solution. The solution references `.csproj` files throughout the codebase. The CLI-specific commands and tooling live under `/cli/cli`, while the microservice runtime and related projects live under `/microservice`. Both reference the shared common project.
 
-#### [Unity SDK Installer Code](https://github.com/beamable/BeamableProduct/tree/main/client_installer)
-The Unity SDK Installer is available under the `/client_installer` directory. This directory contains Unity project with code for Beamable Installer and code for packaging that installer into `.unitypackage`.
+#### How to test changes in this project
+To test changed made to this project you can run the `dev.sh` script and use it in your local environment by setting the `.config/dotnet-tools.json` to use the version generated from the script, usually starts with `0.0.123.` 
 
-# Getting Started
-This repository is for referential use only. If you're looking to get started building with Beamable, then you should head over to our documentation.
+### [Beamable.Common NuGet Package](https://github.com/beamable/BeamableProduct/tree/main/cli/beamable.common)
+The canonical source for the shared common project lives in `/cli/beamable.common`. This .NET Standard 2.0 project contains most of the Beamable base types (dependency injection, promise library, core components) used across the CLI, Microservice runtime, and Unity SDK. It is published as [`Beamable.Common`](https://www.nuget.org/packages/Beamable.Common) on NuGet. The folder [`client/Packages/com.beamable/Common`](https://github.com/beamable/BeamableProduct/tree/main/client/Packages/com.beamable/Common) is a copy of this project used for Unity package consumption.
 
-To start using the Unity SDK, 
-[https://docs.beamable.com/docs/installing-beamable](https://docs.beamable.com/docs/installing-beamable)
+### [Unity SDK Installer Code](https://github.com/beamable/BeamableProduct/tree/main/client_installer)
+The Unity SDK Installer is available under the `/client_installer` directory. This directory contains a Unity project with code for the Beamable Installer and code for packaging that installer into a `.unitypackage`.
 
-To start using the CLI directly,
-[https://docs.beamable.com/docs/cli-guide-getting-started](https://docs.beamable.com/docs/cli-guide-getting-started)
+### [Web SDK](https://github.com/beamable/BeamableProduct/tree/main/web)
+The Web SDK is a TypeScript library under the `/web` folder, built for both Node.js and browser environments. It is distributed as `beamable-sdk` on npm and includes samples (e.g., the WordWiz Telegram Mini App demo). See the [Web SDK README](https://github.com/beamable/BeamableProduct/tree/main/web/README.md) for installation and usage.
 
-# Contributing 
-At this time, Beamable is not accepting code contributions from outside the company. However, feedback and discussion is more than welcome, so please consider posting in the [Github Discussions](https://github.com/beamable/BeamableProduct/discussions), or report a [Github Issue](https://github.com/beamable/BeamableProduct/issues/new)
+### [Terraform](https://github.com/beamable/BeamableProduct/tree/main/terraform)
+The `/terraform` folder contains Terraform manifests for infrastructure managed by CI workflows. It includes reusable modules (e.g., S3) and environment configurations. The CI workflow at `.github/workflows/runTerraform.yml` runs `terraform init/plan/apply` against the selected environment. See the [Terraform README](https://github.com/beamable/BeamableProduct/tree/main/terraform/README.md) for local usage instructions and prerequisites.
 
-# License 
-All source code in this repository is licensed under the [MS-RSL](https://referencesource.microsoft.com/license.html) license, which is also included locally in the repository, in the [LICENSE.txt file](https://github.com/beamable/BeamableProduct/tree/main/LICENSE.txt).
 
-In short, you are free to use this code for _referential use_ only. To use the code for any other purpose, you must use Beamable's official distributions, available through Unity Package Manager, Nuget, or Dockerhub.  
+Notes:
+- The CLI-specific commands and tooling live under `cli/cli` and reference the shared Common project.
+- When developing locally you can either consume the published NuGet package or reference the local project directly (see `cli/beamable.common/DOTNET-CODE-README.md` and `cli/DOTNET-CODE-README.md` for details).
+
+## Quickstart — developer flow
+Prereqs: `dotnet` (8+), and a POSIX shell for the provided scripts (or use WSL on Windows). `docker` is only required when you plan to deploy, run microservice integration/unit tests, or run containerized flows for microservice development.
+
+- Repo-level dev scripts
+- `./setup.sh` (run once) — prepares the local dev environment and builds helper tooling such as the OTEL collector used by microservices during development.
+- `./dev.sh` — builds and publishes local packages into a local NuGet feed consumed by downstream projects (used for fast iteration across CLI, microservices, and Unity SDK).
+- Run the repo-level scripts from the repository root. See `cli/` README for how to run CLI-specific projects after running the scripts.
+
+### Web local dev (Portal Toolkit & Web SDK)
+Prereqs: Node.js 22+, `pnpm`, and Docker.
+
+- `./setup-web.sh` (run once) — starts a local Verdaccio npm registry and local-unpkg CDN via Docker Compose, resets the build number, and configures npm to resolve `@beamable/*` packages from the local registry.
+- `./dev-web.sh` — builds and publishes `@beamable/sdk` and `@beamable/portal-toolkit` to the local Verdaccio registry, then restarts local-unpkg to clear its cache.
+- `./teardown-web.sh` — removes the `@beamable/*` registry override from npm config and stops the local Docker stack.
+
+## Documentation and help
+- Unity SDK docs: https://help.beamable.com/Unity-Latest/
+- CLI docs: https://help.beamable.com/CLI-Latest/
+- Web SDK docs: https://help.beamable.com/WebSDK-Latest/
+
+## Contributing
+This repository is not open for external code contributions. We welcome feedback via GitHub Discussions or Issues:
+- Discussions: https://github.com/beamable/BeamableProduct/discussions
+- Issues: https://github.com/beamable/BeamableProduct/issues/new
+
+## License
+All source in this repository is licensed under the MS-RSL license: https://referencesource.microsoft.com/license.html
+
+You may use the code for reference only; to ship a product use Beamable's official distributions (UPM, NuGet, Dockerhub).

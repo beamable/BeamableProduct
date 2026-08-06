@@ -23,6 +23,7 @@ public class InitCommandArgs : LoginCommandArgs
 	public List<string> addExtraPathsToFile = new List<string>();
 	public List<string> pathsToIgnore = new List<string>();
 	public bool ignoreExistingPid;
+	public bool generateAgentsFile;
 }
 
 [Serializable]
@@ -57,7 +58,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		AddArgument(new Argument<string>(
 			name: "path", 
 			getDefaultValue: () => ".",
-			description: "the folder that will be initialized as a beamable project. "), 
+			description: "the folder that will be initialized as a beamable project"),
 			(args, i) => args.path = Path.GetFullPath(i));
 		
 		AddOption(new UsernameOption(), (args, i) => args.username = i);
@@ -97,6 +98,12 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		SaveToFileOption.Bind(this);
 		AddOption(new RealmScopedOption(), (args, b) => args.realmScoped = b);
 		AddOption(new PrintToConsoleOption(), (args, b) => args.printToConsole = b);
+
+		// The AGENTS.md AI-agent guide points at the Beamable MCP, which is internal-only for now.
+		// Keep this opt-in and hidden until the MCP integration is public (see feature/beam-mcp-public).
+		var agentsOption = new Option<bool>("--generate-agents-file", () => false,
+			"INTERNAL Generate an AGENTS.md AI-agent guide for this workspace") { IsHidden = true };
+		AddOption(agentsOption, (args, v) => args.generateAgentsFile = v);
 	}
 
 
@@ -111,7 +118,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 				return false;
 			}
 			// If the config file does not exist, we should be handling this workspace as a new one and require the full-login process to happen.
-			else if (args.ConfigService.GetConfigString2("cid") == null || args.ConfigService.GetConfigString2("pid") == null)
+			else if (args.ConfigService.GetConfigString("cid") == null || args.ConfigService.GetConfigString("pid") == null)
 			{
 				return false;
 			}
@@ -287,11 +294,18 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			Log.Information("The beamable project has been initialized in the current folder.");
 		}
 
+		if (args.generateAgentsFile)
+		{
+			var (_, outcome) = AgentsFileWriter.EnsureAgentsFile(args.ConfigService.BeamableWorkspace);
+			if (outcome is AgentsFileWriter.AgentsFileOutcome.Created or AgentsFileWriter.AgentsFileOutcome.Appended)
+				Log.Information("Created AGENTS.md for AI agent discovery");
+		}
+
 		return new InitCommandResult()
 		{
-			host = args.ConfigService.GetConfigString2(ConfigService.CFG_JSON_FIELD_HOST),
-			cid = args.ConfigService.GetConfigString2(ConfigService.CFG_JSON_FIELD_CID),
-			pid = args.ConfigService.GetConfigString2(ConfigService.CFG_JSON_FIELD_PID)
+			host = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_HOST),
+			cid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_CID),
+			pid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_PID)
 		};
 	}
 
@@ -457,6 +471,9 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		if (!string.IsNullOrEmpty(args.cid))
 			return Task.FromResult(args.cid);
 
+		if (args.Quiet)
+			throw new CliException("--cid is required when using -q (quiet mode). Provide a CID or alias via --cid <value>.");
+
 		return Task.FromResult(AnsiConsole.Prompt(
 			new TextPrompt<string>("Please enter your [green]cid or alias[/]:")
 				.PromptStyle("green")
@@ -489,7 +506,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		// If we were given a host that is a path, let's just return it.
 		if (env.StartsWith("http"))
-			return env;
+			return env.TrimEnd('/');
 
 		// Otherwise, we try to convert it into a valid URL.
 		return (env switch
@@ -497,15 +514,17 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			dev => Constants.PLATFORM_DEV,
 			staging => Constants.PLATFORM_STAGING,
 			prod => Constants.PLATFORM_PRODUCTION,
-			custom => AnsiConsole.Prompt(
-				new TextPrompt<string>("Enter the Beamable platform [green]uri[/]:")
-					.PromptStyle("green")
-					.ValidationErrorMessage("[red]Not a valid uri[/]")
-					.Validate(age =>
-					{
-						if (!age.StartsWith("http://") && !age.StartsWith("https://")) return ValidationResult.Error("[red]Not a valid url[/]");
-						return ValidationResult.Success();
-					})).ToString(),
+			custom => args.Quiet
+				? throw new CliException("Provide a full URL with --host (e.g. --host https://your-url.com) instead of 'custom' in quiet mode.")
+				: AnsiConsole.Prompt(
+					new TextPrompt<string>("Enter the Beamable platform [green]uri[/]:")
+						.PromptStyle("green")
+						.ValidationErrorMessage("[red]Not a valid uri[/]")
+						.Validate(age =>
+						{
+							if (!age.StartsWith("http://") && !age.StartsWith("https://")) return ValidationResult.Error("[red]Not a valid url[/]");
+							return ValidationResult.Success();
+						})).ToString(),
 			_ => throw new ArgumentOutOfRangeException()
 		});
 	}

@@ -29,6 +29,8 @@ public class ProcessInfo
 
 public class LockedFilesCheckCommand : StreamCommand<LockedFilesCheckCommandArgs, LockedFilesCheckCommandResult>
 {
+	public override bool IsForInternalUse => true;
+
 	public LockedFilesCheckCommand() : base("locked-files", "Check if there are any locked file inside a folder")
 	{
 	}

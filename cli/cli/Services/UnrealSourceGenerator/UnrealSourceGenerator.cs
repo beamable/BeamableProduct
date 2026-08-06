@@ -1,8 +1,3 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
-using System.Text.RegularExpressions;
 using Beamable.Common;
 using Beamable.Server;
 using Docker.DotNet.Models;
@@ -12,6 +7,11 @@ using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Writers;
 using Newtonsoft.Json;
 using Swan;
+using System.Collections.Concurrent;
+using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
+using System.Text.RegularExpressions;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace cli.Unreal;
@@ -1024,8 +1024,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 							context.PerSubsystemEndpointNameCollisions[serviceName][endpointName] = true;
 
 							var firstServiceData = helperLogDictLocal[endpointName];
-							Log.Debug(GetLog(logHeader, $"Found endpoint name collision within service. Service=[{serviceName}], " +
-							                            $" FirstOperation=[{firstServiceData.operationType}], FirstEndpointPath=[{firstServiceData.endpointPath}]," +
+							Log.Debug(GetLog(logHeader, $"Found endpoint name collision within service. Service=[{serviceName}]," +
+							                            $"  FirstOperation=[{firstServiceData.operationType}], FirstEndpointPath=[{firstServiceData.endpointPath}]," +
 							                            $" Operation=[{operationType}], EndpointPath=[{endpointPath}]," +
 							                            $" NamespacedName=[{endpointName.AsStr}]"));
 						}
@@ -2134,9 +2134,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		var doesConflict = endpointNameOverlaps != null && endpointNameOverlaps.TryGetValue(methodName, out var conflicts) && conflicts;
 		if (doesConflict)
 		{
-			throw new ArgumentException($"{methodName} was found in more than one service. " +
-			                            $"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
-			                            $"Please change your Microservice name to resolve this.");
+			throw new ArgumentException($"{methodName} was found in more than one service." +
+			                            $" In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API." +
+			                            $" Please change your Microservice name to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -2166,8 +2166,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		var doesConflict = endpointNameOverlaps != null && endpointNameOverlaps.TryGetValue(methodName, out var conflicts) && conflicts;
 		if (doesConflict)
 		{
-			throw new ArgumentException($"{methodName} was overloaded in {serviceName}. " +
-			                            $"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
+			throw new ArgumentException($"{methodName} was overloaded in {serviceName}." +
+			                            $" We do not support overloading Callable/ClientCallable/AdminCallable functions." +
 			                            $"Please rename all overloads to resolve this.");
 		}
 
@@ -2381,6 +2381,24 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			case (_, _, _, _) when string.Equals(semType, "StatsType", StringComparison.InvariantCultureIgnoreCase):
 				return new(nonOverridenType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_STATSTYPE : UNREAL_U_SEMTYPE_STATSTYPE);
 
+      case ("object", _, _, _) when schema.Reference == null && !schema.AdditionalPropertiesAllowed:
+      {
+        if (!string.IsNullOrEmpty(schema.Title) &&
+            (parentDoc.Components.Schemas.TryGetValue(schema.Title, out var innerSchema) ||
+             parentDoc.Components.Schemas.TryGetValue(Uri.EscapeDataString(schema.Title), out innerSchema)))
+        {
+          return GetUnrealTypeForField(
+            out nonOverridenType,
+            context,
+            parentDoc,
+            innerSchema,
+            fieldDeclarationHandle,
+            flags);
+        }
+
+        throw new Exception(
+          "Object fields must either reference some other schema or must be a map/dictionary!");
+      }
 			case (_, _, _, _) when isArbitraryJsonObject:
 				return new UnrealType(nonOverridenType = UNREAL_JSON);
 
@@ -2508,12 +2526,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					: UNREAL_MAP + $"<{UNREAL_STRING}, {dataType}>");
 			}
 			case ("object", _, _, _) when schema.Reference == null && !schema.AdditionalPropertiesAllowed:
-				if (parentDoc.Components.Schemas.TryGetValue(schema.Title, out var innerSchema) || parentDoc.Components.Schemas.TryGetValue( Uri.EscapeDataString(schema.Title), out innerSchema))
-				{
-					return GetUnrealTypeForField(out nonOverridenType, context, parentDoc, innerSchema, fieldDeclarationHandle, flags);
-				}
-				throw new Exception(
-					"Object fields must either reference some other schema or must be a map/dictionary!");
+				throw new Exception("Object fields must either reference some other schema or must be a map/dictionary!");
 			case ("array", _, _, _):
 			{
 				var isReference = schema.Items.Reference != null;

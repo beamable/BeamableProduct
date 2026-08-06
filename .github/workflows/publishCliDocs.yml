@@ -23,15 +23,15 @@ jobs:
       group: publish-cli
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: 
           ref: ${{ github.event.inputs.commit }}
       - name: Setup .NET Core SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
@@ -44,9 +44,10 @@ jobs:
           dotnet run -f net10.0 --project ./cli/cli -- docs --readme-key ${{secrets.README_API_KEY}} --guide-slug cli-guides --command-slug cli-command-reference --readme-version ${{ github.event.inputs.version }}
       - name: Post to a Slack channel
         id: slack
-        uses: slackapi/slack-github-action@v1.21.0
+        uses: slackapi/slack-github-action@v4.0.0
         with:
-          channel-id: C01300W32CS
-          slack-message: "CLI Docs have been published! commit=[${{ github.event.inputs.commit }}]"
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: "C01300W32CS"
+            text: "CLI Docs have been published! commit=[${{ github.event.inputs.commit }}]"

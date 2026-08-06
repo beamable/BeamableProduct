@@ -31,6 +31,8 @@ namespace Beamable.Editor.Content.UI
 		{
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
+			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject)))
+			{
 			var isEditingMultiple = targets.Length > 1;
 
 			var contentService = BeamEditorContext.Default.ServiceScope.GetService<CliContentService>();
@@ -119,7 +121,8 @@ namespace Beamable.Editor.Content.UI
 					DrawContentButtons(contentObject, buttonsRect, contentService);
 				}
 			}
-		GUILayout.EndVertical();
+			GUILayout.EndVertical();
+			}
 		}
 
 		private void DrawContentButtons(ContentObject content, Rect buttonsRect, CliContentService contentService)
@@ -345,6 +348,8 @@ namespace Beamable.Editor.Content.UI
 		{
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
+			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject)))
+			{
 
 			if (contentObject.ContentStatus is Common.BeamCli.Contracts.ContentStatus.Deleted)
 			{
@@ -374,10 +379,12 @@ namespace Beamable.Editor.Content.UI
 				rect = new Rect(rect.x, rect.y - 6, rect.width, rect.height);
 				GUI.Box(new Rect(0, rect.y, contextWidth, rect.height), "", "In BigTitle Post");
 
-				EditorGUI.SelectableLabel(rect, $"Checksum: {ContentUtils.ComputeChecksum(contentObject)}", checksumStyle);
+				EditorGUI.SelectableLabel(rect, $"Checksum: {contentObject.GetEditorDataChecksum()}", checksumStyle);
 			}
-
+			
 			base.OnInspectorGUI();
+			contentObject.CheckForNonDetectedChanges();
+			}
 		}
 
 		public string GetTagString(string[] tags)

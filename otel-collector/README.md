@@ -4,8 +4,10 @@ Running `./build.sh` from this folder will build all binaries for the 6 supporte
 those files to the `cli` project inside `cli/cli/Resources/`.
 
 ## Schemas
+- Setup queries for ClickHouse live in the `Schemas/` folder.
 
-In the `Schemas/` folder you will find all setup queries for a new ClickHouse database.
+# Contributing
+This project has the same [contribution policy](https://github.com/beamable/BeamableProduct/tree/main/README.md#Contributing) as the main repository.
 
-
-(WIP)
+# License
+This project has the same [license policy](https://github.com/beamable/BeamableProduct/tree/main/README.md#License) as the main repository.

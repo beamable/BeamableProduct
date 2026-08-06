@@ -78,6 +78,10 @@ public class DocTests
 	[Microservice("docs")]
 	public class DocService : Microservice
 	{
+		
+		[ServerCallable]
+		public void ServerMethod(ServerCallableClass serverCallableClass){ }
+		
 		[ClientCallable]
 		public void Nothing(){ }
 		
@@ -185,6 +189,9 @@ public class DocTests
 		/// </summary>
 		public Number sum;
 	}
+	
+	[Serializable]
+	public class ServerCallableClass {}
 
 	/// <summary>
 	/// a number
