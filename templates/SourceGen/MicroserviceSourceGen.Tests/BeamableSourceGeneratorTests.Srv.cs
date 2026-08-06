@@ -489,6 +489,103 @@ public partial class MyMicroservice : Microservice
 	}
 
 	[Fact]
+	public async Task Test_ClientCallable_TupleParameter_IsRejectedWhenUnrealBlueprintCompatibilityIsEnabled()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice
+{
+	[ClientCallable]
+	public int AddTuple((int, int) {|#0:value|})
+	{
+		return value.Item1 + value.Item2;
+	}
+}
+";
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+
+		PrepareForRun(ctx, UserCode);
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.InvalidGenericTypeOnMicroservice)
+				.WithLocation(0)
+				.WithArguments("parameter value", "AddTuple"));
+
+		await ctx.RunAsync();
+	}
+
+	[Fact]
+	public async Task Test_ClientCallable_NestedTupleField_IsRejectedWhenUnrealBlueprintCompatibilityIsEnabled()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using System;
+
+namespace TestNamespace;
+
+[Microservice(""MyMicroservice"")]
+public partial class MyMicroservice : Microservice
+{
+	[ClientCallable]
+	public OuterResponse GetTupleResponse()
+	{
+		return new OuterResponse();
+	}
+}
+
+[Serializable]
+public class OuterResponse
+{
+	public InnerResponse inner;
+}
+
+[Serializable]
+public class InnerResponse
+{
+	public (int, int) {|#0:value|};
+}
+";
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+
+		PrepareForRun(ctx, UserCode);
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.InvalidGenericTypeOnMicroservice)
+				.WithLocation(0)
+				.WithArguments("field value", "InnerResponse"));
+
+		await ctx.RunAsync();
+	}
+
+	[Fact]
+	public async Task Test_BeamGenerateSchema_TupleField_IsRejected()
+	{
+		const string UserCode = @"
+using System;
+
+namespace TestNamespace;
+
+[Serializable]
+[Beamable.BeamGenerateSchema]
+public class TupleSchema
+{
+	public {|#0:(int, int)|} value;
+}
+";
+		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
+
+		PrepareForRun(ctx, UserCode, enableUnrealBlueprintCompatibility: false);
+		ctx.ExpectedDiagnostics.Add(
+			new DiagnosticResult(Diagnostics.Srv.TypeInBeamGeneratedIsMissingBeamGeneratedAttribute)
+				.WithLocation(0)
+				.WithArguments("ValueTuple"));
+
+		await ctx.RunAsync();
+	}
+
+	[Fact]
 	public async Task Test_ClientCallable_TupleReturn_StillValidatesItsElements()
 	{
 		const string UserCode = @"

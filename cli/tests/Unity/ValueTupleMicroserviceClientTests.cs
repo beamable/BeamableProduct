@@ -59,6 +59,17 @@ public class ValueTupleMicroserviceClientTests
 		Assert.That(deserialized.Item2, Is.EqualTo(3));
 	}
 
+	[Test]
+	public void ResponseDeserialization_RoundTripsValueTupleReturn()
+	{
+		const string ResponseJson = "{\"Item1\":1,\"Item2\":3}";
+
+		var deserialized = Json.Deserialize<(int, int)>(ResponseJson);
+
+		Assert.That(deserialized.Item1, Is.EqualTo(1));
+		Assert.That(deserialized.Item2, Is.EqualTo(3));
+	}
+
 	private static Microsoft.OpenApi.Models.OpenApiDocument GenerateServiceDocument()
 	{
 		var builder = new DependencyBuilder();
