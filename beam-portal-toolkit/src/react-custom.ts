@@ -293,10 +293,15 @@ BeamChangeBar.displayName = 'BeamChangeBar';
 // ---------------------------------------------------------------------------
 // Chart components — `<beam-*-chart>` forwarders. The portal host owns the
 // actual charting implementation; these are thin `hostComponent` shells like
-// the rest of the toolkit's React surface. They are NOT modeled in the CEM
-// (data/series/nodes are Lit `@property({ attribute: false })` object fields,
-// not attributes), so codegen can't emit them — they live here as
-// hand-written forwarders.
+// the rest of the toolkit's React surface.
+//
+// These were hand-written because the charts were once absent from the CEM (data /
+// series / nodes are Lit `@property({ attribute: false })` object fields, not
+// attributes). They ARE in the CEM now, so codegen would happily emit them too — which
+// is why every chart tag is listed in `REACT_HANDWRITTEN` in
+// `scripts/sync-components.mjs`. Dropping one from that set does not create a harmless
+// duplicate: it makes the name an ambiguous star export from `react.ts`, and the name
+// then vanishes from the public API while its definition stays visible in the bundle.
 // ---------------------------------------------------------------------------
 
 /**

@@ -25271,6 +25271,10 @@
           "name": "BeamTab",
           "cssParts": [
             {
+              "description": "The remove button.",
+              "name": "remove-button"
+            },
+            {
               "description": "The component's base wrapper.",
               "name": "base"
             }
@@ -25282,6 +25286,22 @@
             }
           ],
           "members": [
+            {
+              "kind": "field",
+              "name": "withRemove",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "with-remove",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "_handleRemoveClick",
+              "privacy": "private",
+              "description": "The click must not reach the tab group. `wa-tab-group` activates a tab from a\nclick anywhere on the tab element, so without this the remove button would\nalso select the very tab it is about to delete — and a consumer that removes\nthe active tab then gets a selection event for an item that no longer exists."
+            },
             {
               "kind": "field",
               "name": "css",
@@ -25429,6 +25449,15 @@
           ],
           "attributes": [
             {
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Makes the tab removable and shows a remove button.",
+              "name": "with-remove",
+              "default": "false",
+              "fieldName": "withRemove"
+            },
+            {
               "name": "panel",
               "type": {
                 "text": "string"
@@ -25481,16 +25510,31 @@
             "name": "WebAwesomeElement",
             "module": "/src/internal/webawesome-element.js"
           },
-          "summary": "Tabs are used inside [tab groups](/docs/components/tab-group) to represent and activate [tab panels](/docs/components/tab-panel).",
+          "summary": "Subclass of Web Awesome's tab that adds an opt-in remove button.",
           "jsDoc": "/**\n * @summary Tabs are used inside [tab groups](/docs/components/tab-group) to represent and activate [tab panels](/docs/components/tab-panel).\n * @documentation https://webawesome.com/docs/components/tab\n * @status stable\n * @since 2.0\n *\n * @slot - The tab's label.\n *\n * @csspart base - The component's base wrapper.\n */",
           "status": "stable",
           "since": "2.0",
           "tagName": "beam-tab",
           "modulePath": "components/tab/tab.js",
           "definitionPath": "components/tab/tab.js",
-          "cssProperties": [],
+          "cssProperties": [
+            {
+              "description": "Width/height of the remove button.",
+              "name": "--beam-tab-remove-size",
+              "default": "1rem"
+            },
+            {
+              "description": "Remove button color. Defaults to the inherited tab color at reduced opacity.",
+              "name": "--beam-tab-remove-color"
+            }
+          ],
           "cssStates": [],
-          "events": []
+          "events": [
+            {
+              "description": "Emitted when the remove button is activated. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).",
+              "name": "wa-remove"
+            }
+          ]
         },
         {
           "kind": "class",
@@ -29751,6 +29795,14 @@
             },
             {
               "kind": "field",
+              "name": "minGroupSize",
+              "type": {
+                "text": "number"
+              },
+              "attribute": "min-group-size"
+            },
+            {
+              "kind": "field",
               "name": "tableTitle",
               "type": {
                 "text": "string | undefined"
@@ -30152,6 +30204,12 @@
               "description": "Fires when the user changes pages. Bubbles, composed."
             },
             {
+              "name": "beam-group-toggle",
+              "type": {
+                "text": "CustomEvent"
+              }
+            },
+            {
               "name": "beam-row-click",
               "type": {
                 "text": "CustomEvent<{ row: any; index: number }>"
@@ -30230,6 +30288,13 @@
               },
               "default": "false",
               "fieldName": "defaultCollapsed"
+            },
+            {
+              "name": "min-group-size",
+              "type": {
+                "text": "number"
+              },
+              "fieldName": "minGroupSize"
             },
             {
               "name": "table-title",
@@ -30357,12 +30422,106 @@
             },
             {
               "kind": "field",
+              "name": "showPath",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "show-path",
+              "reflects": true
+            },
+            {
+              "kind": "field",
               "name": "_collapsedPaths",
               "type": {
                 "text": "Set<string>"
               },
               "privacy": "private",
               "default": "new Set()"
+            },
+            {
+              "kind": "field",
+              "name": "_selectedPath",
+              "type": {
+                "text": "string | null"
+              },
+              "privacy": "private",
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "_pathInputValue",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "private",
+              "default": "''"
+            },
+            {
+              "kind": "field",
+              "name": "_pathNotFound",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "_pathNavTimer",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "private",
+              "default": "0"
+            },
+            {
+              "kind": "method",
+              "name": "_buildChildPath",
+              "static": true,
+              "return": {
+                "type": {
+                  "text": "string"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "parent",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "key",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "isIndex",
+                  "type": {
+                    "text": "boolean"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_parseJsonPath",
+              "static": true,
+              "return": {
+                "type": {
+                  "text": "string[] | null"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
             },
             {
               "kind": "field",
@@ -30402,6 +30561,113 @@
               ]
             },
             {
+              "kind": "method",
+              "name": "_onNodeClick",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_onPathInput",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_onPathKeydown",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "KeyboardEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_navigateToPath",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "pathStr",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_expandAncestors",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "targetPath",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "segments",
+                  "type": {
+                    "text": "string[]"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_copyPath",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "navigateToPath",
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_wrapClickable",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "content",
+                  "type": {
+                    "text": "any"
+                  }
+                }
+              ]
+            },
+            {
               "kind": "field",
               "name": "_seen",
               "privacy": "private",
@@ -30436,6 +30702,20 @@
                   }
                 }
               ]
+            },
+            {
+              "kind": "method",
+              "name": "_renderPathBar",
+              "privacy": "private"
+            }
+          ],
+          "events": [
+            {
+              "name": "beam-json-path-select",
+              "type": {
+                "text": "CustomEvent"
+              },
+              "description": "Fired when a path is selected or deselected. `detail.path` is the JSONPath string or `null`."
             }
           ],
           "attributes": [
@@ -30462,6 +30742,14 @@
               },
               "default": "false",
               "fieldName": "noToolbar"
+            },
+            {
+              "name": "show-path",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "showPath"
             }
           ],
           "superclass": {
@@ -31468,6 +31756,37 @@
             },
             {
               "kind": "field",
+              "name": "wide",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Wide layout for detailed content.",
+              "default": "false",
+              "attribute": "wide",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "details",
+              "type": {
+                "text": "string"
+              },
+              "description": "Secondary detail text below the message.",
+              "default": "''",
+              "attribute": "details"
+            },
+            {
+              "kind": "field",
+              "name": "showProgress",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Show a drain progress bar that empties over `duration`.",
+              "default": "false",
+              "attribute": "show-progress"
+            },
+            {
+              "kind": "field",
               "name": "_timer",
               "type": {
                 "text": "number | null"
@@ -31601,6 +31920,33 @@
               "description": "Hide the close button.",
               "default": "false",
               "fieldName": "noClose"
+            },
+            {
+              "name": "wide",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Wide layout for detailed content.",
+              "default": "false",
+              "fieldName": "wide"
+            },
+            {
+              "name": "details",
+              "type": {
+                "text": "string"
+              },
+              "description": "Secondary detail text below the message.",
+              "default": "''",
+              "fieldName": "details"
+            },
+            {
+              "name": "show-progress",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Show a drain progress bar that empties over `duration`.",
+              "default": "false",
+              "fieldName": "showProgress"
             }
           ],
           "superclass": {
@@ -31643,7 +31989,7 @@
               "kind": "field",
               "name": "placement",
               "type": {
-                "text": "'top-start' | 'top-end' | 'bottom-start' | 'bottom-end'"
+                "text": "'top-start' | 'top-end' | 'top-center' | 'bottom-start' | 'bottom-end' | 'bottom-center'"
               },
               "description": "Where toasts appear on the screen.",
               "default": "'bottom-end'",
@@ -31816,6 +32162,25 @@
               "description": "Dismiss all toasts at once."
             },
             {
+              "kind": "method",
+              "name": "_removeToast",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "id",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "reason",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
               "kind": "field",
               "name": "_onChildHide",
               "privacy": "private"
@@ -31846,7 +32211,7 @@
             {
               "name": "placement",
               "type": {
-                "text": "'top-start' | 'top-end' | 'bottom-start' | 'bottom-end'"
+                "text": "'top-start' | 'top-end' | 'top-center' | 'bottom-start' | 'bottom-end' | 'bottom-center'"
               },
               "description": "Where toasts appear on the screen.",
               "default": "'bottom-end'",
@@ -33222,6 +33587,1130 @@
           "declaration": {
             "name": "BeamKpiRow",
             "module": "src/beam-components/beam-kpi-row.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/beam-components/beam-tag-input.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamTagInput",
+          "cssProperties": [
+            {
+              "description": "Minimum field height.",
+              "name": "--beam-tag-input-min-height",
+              "default": "2.25rem"
+            },
+            {
+              "description": "Gap between pills.",
+              "name": "--beam-tag-input-gap",
+              "default": "0.25rem"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The bordered field wrapper.",
+              "name": "base"
+            },
+            {
+              "description": "Each committed pill.",
+              "name": "tag"
+            },
+            {
+              "description": "The inner text input.",
+              "name": "input"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Nothing. Content is driven by the `value` property.",
+              "name": ""
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "value",
+              "type": {
+                "text": "string[]"
+              },
+              "description": "The committed values. A real array, not a delimited string — see the class\ncomment for why that distinction is the whole point of this component.",
+              "default": "[]",
+              "attribute": "value"
+            },
+            {
+              "kind": "field",
+              "name": "placeholder",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "placeholder"
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "disabled",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "variant",
+              "type": {
+                "text": "'brand' | 'neutral' | 'success' | 'warning' | 'danger'"
+              },
+              "description": "Pill color, passed through to the underlying `beam-tag`.",
+              "default": "'brand'",
+              "attribute": "variant"
+            },
+            {
+              "kind": "field",
+              "name": "_pending",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "private",
+              "description": "The text typed but not yet committed.",
+              "default": "''"
+            },
+            {
+              "kind": "field",
+              "name": "_field",
+              "type": {
+                "text": "HTMLInputElement | null"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "_commit",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              },
+              "description": "Commit `_pending`, ignoring blanks and duplicates. Returns whether it changed."
+            },
+            {
+              "kind": "method",
+              "name": "_emit",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": {
+                    "text": "string[]"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_remove",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "tag",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "_handleInput",
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "_handleKeydown",
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "_handleBlur",
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "_handleBaseClick",
+              "privacy": "private",
+              "description": "Clicking the padding around the pills should focus the field, like a real input."
+            }
+          ],
+          "events": [
+            {
+              "name": "wa-change",
+              "type": {
+                "text": "CustomEvent<{ value: string[] }>"
+              },
+              "description": "Emitted whenever the list changes, by any means. `detail.value` is the new array. Composed, so it crosses shadow boundaries (extensions render inside a shadow root)."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "value",
+              "type": {
+                "text": "string[]"
+              },
+              "description": "The committed values. A real array, not a delimited string — see the class\ncomment for why that distinction is the whole point of this component.",
+              "default": "[]",
+              "fieldName": "value"
+            },
+            {
+              "name": "placeholder",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "placeholder"
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "disabled"
+            },
+            {
+              "name": "variant",
+              "type": {
+                "text": "'brand' | 'neutral' | 'success' | 'warning' | 'danger'"
+              },
+              "description": "Pill color, passed through to the underlying `beam-tag`.",
+              "default": "'brand'",
+              "fieldName": "variant"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "beam-tag-input",
+          "customElement": true,
+          "summary": "Text field that commits what you type into removable pills — for\nediting a list of short values (tags, labels, keywords)."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BeamTagInput",
+          "declaration": {
+            "name": "BeamTagInput",
+            "module": "src/beam-components/beam-tag-input.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-tag-input",
+          "declaration": {
+            "name": "BeamTagInput",
+            "module": "src/beam-components/beam-tag-input.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/beam-components/beam-date-picker.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamDatePicker",
+          "cssProperties": [
+            {
+              "description": "Popover background.",
+              "name": "--beam-date-picker-panel-background"
+            },
+            {
+              "description": "Width/height of a day cell.",
+              "name": "--beam-date-picker-cell-size",
+              "default": "2rem"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The trigger button.",
+              "name": "base"
+            },
+            {
+              "description": "The calendar popover panel.",
+              "name": "panel"
+            },
+            {
+              "description": "Each selectable day cell.",
+              "name": "day"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "description": "The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is\nset. Empty string means nothing selected. Same format as a native\n`datetime-local` / `date` input, so this is a drop-in replacement for one.",
+              "default": "''",
+              "attribute": "value"
+            },
+            {
+              "kind": "field",
+              "name": "placeholder",
+              "type": {
+                "text": "string"
+              },
+              "description": "Text shown on the trigger when there is no value.",
+              "default": "'Select a date'",
+              "attribute": "placeholder"
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "disabled",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "withoutTime",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Date only — hides the time field and drops the time from the value.",
+              "default": "false",
+              "attribute": "without-time",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "_open",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "_viewYear",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "private",
+              "description": "First day of the month the grid is showing. Not necessarily the selected month."
+            },
+            {
+              "kind": "field",
+              "name": "_viewMonth",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "_parts",
+              "type": {
+                "text": "Parts | null"
+              },
+              "privacy": "private",
+              "description": "Selected parts, or null when the value is empty or malformed.",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "_openPanel",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "_closePanel",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "field",
+              "name": "_handleDocumentPointerDown",
+              "privacy": "private",
+              "description": "Close on a click outside. `composedPath` rather than `contains`, because the\npanel lives in this element's shadow root — `contains` on the host would be\ntrue for a shadow descendant but the check needs to survive the extension's\nown shadow boundary above us too."
+            },
+            {
+              "kind": "field",
+              "name": "_handleKeydown",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "_shiftMonth",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "delta",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_selectDay",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "day",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "_handleTimeInput",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "_emit",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "parts",
+                  "type": {
+                    "text": "Parts"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_triggerLabel",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "string"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "_renderGrid",
+              "privacy": "private"
+            }
+          ],
+          "events": [
+            {
+              "name": "wa-change",
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              },
+              "description": "Emitted when the value changes. `detail.value` is the new value. Composed, so it crosses shadow boundaries (extensions render inside a shadow root)."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "description": "The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is\nset. Empty string means nothing selected. Same format as a native\n`datetime-local` / `date` input, so this is a drop-in replacement for one.",
+              "default": "''",
+              "fieldName": "value"
+            },
+            {
+              "name": "placeholder",
+              "type": {
+                "text": "string"
+              },
+              "description": "Text shown on the trigger when there is no value.",
+              "default": "'Select a date'",
+              "fieldName": "placeholder"
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "disabled"
+            },
+            {
+              "name": "without-time",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Date only — hides the time field and drops the time from the value.",
+              "default": "false",
+              "fieldName": "withoutTime"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "beam-date-picker",
+          "customElement": true,
+          "summary": "Calendar date (and optional time) picker."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BeamDatePicker",
+          "declaration": {
+            "name": "BeamDatePicker",
+            "module": "src/beam-components/beam-date-picker.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-date-picker",
+          "declaration": {
+            "name": "BeamDatePicker",
+            "module": "src/beam-components/beam-date-picker.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/beam-components/beam-line-chart.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamLineChart",
+          "cssProperties": [
+            {
+              "description": "Overall chart height.",
+              "name": "--beam-chart-height",
+              "default": "280px"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The chart container.",
+              "name": "chart"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "data",
+              "type": {
+                "text": "Array<Record<string, unknown>>"
+              },
+              "description": "Rows of data points, e.g. `[{ day: 'Apr 10', sent: 5, opened: 3 }]`.",
+              "default": "[]",
+              "attribute": "data"
+            },
+            {
+              "kind": "field",
+              "name": "series",
+              "type": {
+                "text": "LineSeries[]"
+              },
+              "description": "Series to plot, each pulling `key` out of every row.",
+              "default": "[]",
+              "attribute": "series"
+            },
+            {
+              "kind": "field",
+              "name": "xKey",
+              "type": {
+                "text": "string"
+              },
+              "description": "Row key for the x-axis category.",
+              "default": "'x'",
+              "attribute": "x-key"
+            },
+            {
+              "kind": "method",
+              "name": "draw",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "container",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                },
+                {
+                  "name": "width",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "height",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            }
+          ],
+          "attributes": [
+            {
+              "name": "data",
+              "type": {
+                "text": "Array<Record<string, unknown>>"
+              },
+              "description": "Rows of data points, e.g. `[{ day: 'Apr 10', sent: 5, opened: 3 }]`.",
+              "default": "[]",
+              "fieldName": "data"
+            },
+            {
+              "name": "series",
+              "type": {
+                "text": "LineSeries[]"
+              },
+              "description": "Series to plot, each pulling `key` out of every row.",
+              "default": "[]",
+              "fieldName": "series"
+            },
+            {
+              "name": "x-key",
+              "type": {
+                "text": "string"
+              },
+              "description": "Row key for the x-axis category.",
+              "default": "'x'",
+              "fieldName": "xKey"
+            }
+          ],
+          "superclass": {
+            "name": "BeamChartBase",
+            "module": "/src/beam-components/beam-chart-base"
+          },
+          "tagName": "beam-line-chart",
+          "customElement": true,
+          "summary": "Multi-series line / area chart (D3). Theme-aware, responsive, with an HTML tooltip."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BeamLineChart",
+          "declaration": {
+            "name": "BeamLineChart",
+            "module": "src/beam-components/beam-line-chart.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-line-chart",
+          "declaration": {
+            "name": "BeamLineChart",
+            "module": "src/beam-components/beam-line-chart.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/beam-components/beam-bar-chart.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamBarChart",
+          "cssProperties": [
+            {
+              "description": "Overall chart height.",
+              "name": "--beam-chart-height",
+              "default": "280px"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The chart container.",
+              "name": "chart"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "data",
+              "type": {
+                "text": "BarDatum[]"
+              },
+              "description": "Bars to plot, e.g. `[{ label: 'Sent', value: 120 }]`.",
+              "default": "[]",
+              "attribute": "data"
+            },
+            {
+              "kind": "field",
+              "name": "palette",
+              "type": {
+                "text": "string[] | undefined"
+              },
+              "description": "Optional per-bar color override; defaults to the theme categorical palette.",
+              "attribute": "palette"
+            },
+            {
+              "kind": "method",
+              "name": "draw",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "container",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                },
+                {
+                  "name": "width",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "height",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            }
+          ],
+          "attributes": [
+            {
+              "name": "data",
+              "type": {
+                "text": "BarDatum[]"
+              },
+              "description": "Bars to plot, e.g. `[{ label: 'Sent', value: 120 }]`.",
+              "default": "[]",
+              "fieldName": "data"
+            },
+            {
+              "name": "palette",
+              "type": {
+                "text": "string[] | undefined"
+              },
+              "description": "Optional per-bar color override; defaults to the theme categorical palette.",
+              "fieldName": "palette"
+            }
+          ],
+          "superclass": {
+            "name": "BeamChartBase",
+            "module": "/src/beam-components/beam-chart-base"
+          },
+          "tagName": "beam-bar-chart",
+          "customElement": true,
+          "summary": "Vertical bar chart (D3). Theme-aware, responsive, with an HTML tooltip."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BeamBarChart",
+          "declaration": {
+            "name": "BeamBarChart",
+            "module": "src/beam-components/beam-bar-chart.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-bar-chart",
+          "declaration": {
+            "name": "BeamBarChart",
+            "module": "src/beam-components/beam-bar-chart.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/beam-components/beam-donut-chart.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamDonutChart",
+          "cssProperties": [
+            {
+              "description": "Overall chart height.",
+              "name": "--beam-chart-height",
+              "default": "280px"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The chart container.",
+              "name": "chart"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "data",
+              "type": {
+                "text": "DonutDatum[]"
+              },
+              "description": "Slices to plot, e.g. `[{ label: 'Push', value: 45 }]`.",
+              "default": "[]",
+              "attribute": "data"
+            },
+            {
+              "kind": "field",
+              "name": "palette",
+              "type": {
+                "text": "string[] | undefined"
+              },
+              "description": "Optional per-slice color override; defaults to the theme categorical palette.",
+              "attribute": "palette"
+            },
+            {
+              "kind": "method",
+              "name": "draw",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "container",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                },
+                {
+                  "name": "width",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "height",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            }
+          ],
+          "attributes": [
+            {
+              "name": "data",
+              "type": {
+                "text": "DonutDatum[]"
+              },
+              "description": "Slices to plot, e.g. `[{ label: 'Push', value: 45 }]`.",
+              "default": "[]",
+              "fieldName": "data"
+            },
+            {
+              "name": "palette",
+              "type": {
+                "text": "string[] | undefined"
+              },
+              "description": "Optional per-slice color override; defaults to the theme categorical palette.",
+              "fieldName": "palette"
+            }
+          ],
+          "superclass": {
+            "name": "BeamChartBase",
+            "module": "/src/beam-components/beam-chart-base"
+          },
+          "tagName": "beam-donut-chart",
+          "customElement": true,
+          "summary": "Donut (pie) chart (D3) with an optional inline legend. Theme-aware and responsive."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BeamDonutChart",
+          "declaration": {
+            "name": "BeamDonutChart",
+            "module": "src/beam-components/beam-donut-chart.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-donut-chart",
+          "declaration": {
+            "name": "BeamDonutChart",
+            "module": "src/beam-components/beam-donut-chart.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/beam-components/beam-funnel-chart.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamFunnelChart",
+          "cssProperties": [
+            {
+              "description": "Overall chart height.",
+              "name": "--beam-chart-height",
+              "default": "280px"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The chart container.",
+              "name": "chart"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "data",
+              "type": {
+                "text": "FunnelDatum[]"
+              },
+              "description": "Funnel stages in order, e.g. `[{ label: 'Audience', value: 1000 }, …]`.",
+              "default": "[]",
+              "attribute": "data"
+            },
+            {
+              "kind": "field",
+              "name": "palette",
+              "type": {
+                "text": "string[] | undefined"
+              },
+              "description": "Optional per-stage color override; defaults to the theme categorical palette.",
+              "attribute": "palette"
+            },
+            {
+              "kind": "method",
+              "name": "draw",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "container",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                },
+                {
+                  "name": "width",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "height",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            }
+          ],
+          "attributes": [
+            {
+              "name": "data",
+              "type": {
+                "text": "FunnelDatum[]"
+              },
+              "description": "Funnel stages in order, e.g. `[{ label: 'Audience', value: 1000 }, …]`.",
+              "default": "[]",
+              "fieldName": "data"
+            },
+            {
+              "name": "palette",
+              "type": {
+                "text": "string[] | undefined"
+              },
+              "description": "Optional per-stage color override; defaults to the theme categorical palette.",
+              "fieldName": "palette"
+            }
+          ],
+          "superclass": {
+            "name": "BeamChartBase",
+            "module": "/src/beam-components/beam-chart-base"
+          },
+          "tagName": "beam-funnel-chart",
+          "customElement": true,
+          "summary": "Horizontal funnel chart — stacked percentage bars from a baseline (first row = 100%).\nTheme-aware and responsive. Promotes the inline funnel pattern into a reusable component."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BeamFunnelChart",
+          "declaration": {
+            "name": "BeamFunnelChart",
+            "module": "src/beam-components/beam-funnel-chart.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-funnel-chart",
+          "declaration": {
+            "name": "BeamFunnelChart",
+            "module": "src/beam-components/beam-funnel-chart.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/beam-components/beam-sankey-chart.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamSankeyChart",
+          "cssProperties": [
+            {
+              "description": "Overall chart height.",
+              "name": "--beam-chart-height",
+              "default": "280px"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The chart container.",
+              "name": "chart"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "nodes",
+              "type": {
+                "text": "SankeyNode[]"
+              },
+              "description": "Nodes, e.g. `[{ name: 'Sent' }, { name: 'Opened' }]`.",
+              "default": "[]",
+              "attribute": "nodes"
+            },
+            {
+              "kind": "field",
+              "name": "links",
+              "type": {
+                "text": "SankeyLink[]"
+              },
+              "description": "Links, e.g. `[{ source: 'Sent', target: 'Opened', value: 80 }]`.",
+              "default": "[]",
+              "attribute": "links"
+            },
+            {
+              "kind": "method",
+              "name": "draw",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "container",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                },
+                {
+                  "name": "width",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "height",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            }
+          ],
+          "attributes": [
+            {
+              "name": "nodes",
+              "type": {
+                "text": "SankeyNode[]"
+              },
+              "description": "Nodes, e.g. `[{ name: 'Sent' }, { name: 'Opened' }]`.",
+              "default": "[]",
+              "fieldName": "nodes"
+            },
+            {
+              "name": "links",
+              "type": {
+                "text": "SankeyLink[]"
+              },
+              "description": "Links, e.g. `[{ source: 'Sent', target: 'Opened', value: 80 }]`.",
+              "default": "[]",
+              "fieldName": "links"
+            }
+          ],
+          "superclass": {
+            "name": "BeamChartBase",
+            "module": "/src/beam-components/beam-chart-base"
+          },
+          "tagName": "beam-sankey-chart",
+          "customElement": true,
+          "summary": "Sankey flow diagram (d3-sankey). Theme-aware, responsive, with a link tooltip.\nLinks may reference nodes by array index or by node `name`."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BeamSankeyChart",
+          "declaration": {
+            "name": "BeamSankeyChart",
+            "module": "src/beam-components/beam-sankey-chart.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-sankey-chart",
+          "declaration": {
+            "name": "BeamSankeyChart",
+            "module": "src/beam-components/beam-sankey-chart.ts"
           }
         }
       ]
