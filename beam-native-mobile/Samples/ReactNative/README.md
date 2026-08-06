@@ -94,6 +94,26 @@ Re-run `expo prebuild --clean` (or a fresh `expo run:*`) when switching variants
 regenerated Android manifest picks up the change. (iOS uses ATS and is unaffected by the
 cleartext flag.)
 
+### Forcing a full rebuild (`--clean`)
+
+The `:local` scripts build incrementally, and several caches can silently serve stale code —
+most notably a changed `@beamable/sdk` dist, which does *not* invalidate Gradle's release
+bundling task, so you reinstall a byte-identical APK. Pass `--clean` to rebuild from scratch:
+
+```bash
+npm run android:local:release -- --clean
+npm run android:local -- --clean          # works for the dev + iOS scripts too
+```
+
+It stops the Gradle daemons, rebuilds the web SDK (`pnpm build` in `web/`), deletes the
+Gradle transform-cache entries made from `beamable-notifications-release.aar` (a restaged
+`.aar` is otherwise ignored — `gradlew clean` does not clear this), clears the Metro/Expo
+caches, re-runs `expo prebuild --clean` (restoring `android/local.properties`, which prebuild
+would otherwise wipe), and removes the Gradle build output — then runs the normal build.
+
+Reach for it after editing the web SDK, after restaging the notifications `.aar`, or whenever
+a change you know you made doesn't show up on device.
+
 ## 3. Run (dev build)
 
 This app uses native modules, so it runs as a **dev build**, not Expo Go:
