@@ -162,6 +162,12 @@ public class LocalStackUpCommand
 		// 127.0.0.1 bind shadows it for `localhost` connections, timing out the gateway + every scala service.
 		FreeMongoPortIfSquatted(steps);
 
+		// Fail fast if Windows has reserved a port the compose files publish — docker otherwise dies mid-bring-up on
+		// an error that names no cause and no owner, and the stack gets rolled back.
+		var reservedDockerPorts = LocalStackPortGuard.DescribeReservedDockerPorts(steps);
+		if (reservedDockerPorts != null)
+			throw new CliException(reservedDockerPorts);
+
 		// Resolve how to invoke this same beam CLI for `beam: true` steps, and the workspace to run them from.
 		var (beamExe, beamLeading) = ResolveBeam(args);
 		var beamWorkspaceFallback = args.ConfigService?.BeamableWorkspace
