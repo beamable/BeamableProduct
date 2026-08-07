@@ -34,6 +34,10 @@ final class BeamableNotificationsModule: RCTEventEmitter {
             "permissionResult", "tokenReceived", "tokenError",
             "notificationPresented", "notificationReceived", "notificationTapped",
             "pendingNotifications", "deliveryReceipts",
+            // Outcome of a native funnel-analytics POST. The funnel call itself is
+            // fire-and-forget, so this is how `trackOfferClicked` / `trackOfferConverted`
+            // report their HTTP status back to JS (parity with Android's onFunnelResult).
+            "funnelResult",
             // Live Activity push-to-start (iOS 17.2+): the app forwards these tokens to the push rail
             // (`message-rail/register`) so the backend can start/update/end Live Activities via APNs.
             "liveActivityPushToStartToken", "liveActivityUpdateToken", "liveActivityStarted",
@@ -107,6 +111,7 @@ final class BeamableNotificationsModule: RCTEventEmitter {
         m.onNotificationTapped = { [weak self] in self?.emit("notificationTapped", Self.object($0)) }
         m.onPendingNotifications = { [weak self] in self?.emit("pendingNotifications", Self.array($0)) }
         m.onDeliveryReceipts = { [weak self] in self?.emit("deliveryReceipts", Self.array($0)) }
+        m.onFunnelResult = { [weak self] in self?.emit("funnelResult", Self.object($0)) }
         // Live Activity events, produced by core's LiveActivityCoordinator. Bridge them BEFORE
         // `initialize()`, which starts the observation — otherwise the first push-to-start token can
         // land before anything is listening. `capability.available == false` is the app's cue to

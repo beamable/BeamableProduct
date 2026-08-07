@@ -237,11 +237,10 @@ export function addListener<K extends keyof EventMap>(
 ): Subscription {
   if (!isBeamableNotificationsSupported) return { remove: () => {} };
   if (IS_IOS) {
-    // iOS funnel-result is a follow-up: the native side doesn't emit `onFunnelResult` yet,
-    // so return an inert subscription rather than binding to a non-existent native event.
-    if (event === 'funnelResult') return { remove: () => {} };
-    // iOS native already emits the unified vocabulary, except `notificationOpened`,
-    // whose native event name is `notificationTapped`.
+    // iOS native emits the unified vocabulary, except `notificationOpened`,
+    // whose native event name is `notificationTapped`. `funnelResult` included: the core
+    // reports every funnel POST's outcome (NotificationManager.onFunnelResult) with the
+    // same {funnelType, ok, statusCode, message} shape Android normalizes to below.
     const nativeName =
       event === 'notificationOpened' ? 'notificationTapped' : (event as string);
     return getIosEmitter()!.addListener(

@@ -283,7 +283,7 @@ const intent = { campaignId, nodeId, gamerTag: String(beam.player.id), cidPid: `
 const offer  = { itemId: 'sword_01', value: 100, customData: { tier: 'gold' } };
 BeamNotifications.trackOfferClicked(intent, offer);
 BeamNotifications.trackOfferConverted(intent, offer);
-// outcome arrives on the funnelResult event (Android; iOS follow-up)
+// outcome arrives on the funnelResult event (both platforms)
 ```
 
 ### Closed-app analytics auth
@@ -312,7 +312,7 @@ The unified TS layer maps the per-platform native names onto one vocabulary:
 | `notificationOpened` | `NotificationData` | `notificationTapped` | `onNotificationOpened` |
 | `pendingNotifications` | `NotificationData[]` | `pendingNotifications` | — |
 | `deliveryReceipts` | `DeliveryReceipt[]` | `deliveryReceipts` | — |
-| `funnelResult` | `{ funnelType, ok, statusCode, message }` | *(follow-up)* | `onFunnelResult` |
+| `funnelResult` | `{ funnelType, ok, statusCode, message }` | `funnelResult` | `onFunnelResult` |
 
 Android also exposes raw URL-scheme VIEW intents via `addBeamableDeepLinkListener`
 (inert on iOS) — expo-router already navigates for those, so the sample only logs them.

@@ -604,6 +604,24 @@ public struct FunnelEvent: Codable, Equatable {
     }
 }
 
+/// The outcome of a native funnel-analytics POST, reported once per emitted `FunnelEvent`.
+/// Mirrors Android's `onFunnelResult(funnelType, ok, statusCode, message)` so the engine
+/// wrappers surface one shape on both platforms. `statusCode` is 0 when no HTTP attempt was
+/// made (missing auth/scope, or the request couldn't be built).
+public struct FunnelResult: Codable, Equatable {
+    public var funnelType: String
+    public var ok: Bool
+    public var statusCode: Int
+    public var message: String
+
+    public init(funnelType: String, ok: Bool, statusCode: Int, message: String) {
+        self.funnelType = funnelType
+        self.ok = ok
+        self.statusCode = statusCode
+        self.message = message
+    }
+}
+
 /// The five funnel stages.
 public enum FunnelType: String {
     case sent = "Sent"

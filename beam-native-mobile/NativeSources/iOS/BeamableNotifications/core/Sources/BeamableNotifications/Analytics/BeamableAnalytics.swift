@@ -135,6 +135,22 @@ public enum BeamableAnalytics {
                            campaignData: intent.campaignData)
     }
 
+    // MARK: Result reporting
+
+    /// Called once per `emit` with the terminal outcome of the funnel POST. `NotificationManager`
+    /// wires this to its `onFunnelResult` callback, which the engine bridges surface as the
+    /// `funnelResult` event — the iOS counterpart of Android's `dispatchFunnelResult`, and what
+    /// lets a caller await the real per-press HTTP status of `trackOfferClicked`/`Converted`.
+    ///
+    /// Set only in the app process; in the NSE (a separate process) it stays nil and the
+    /// closed-app funnel is silent, exactly as before.
+    public static var onResult: ((FunnelResult) -> Void)?
+
+    private static func report(_ event: FunnelEvent, _ ok: Bool, _ statusCode: Int, _ message: String) {
+        onResult?(FunnelResult(funnelType: event.funnelType, ok: ok,
+                               statusCode: statusCode, message: message))
+    }
+
     // MARK: Emit (auth + POST + fallback)
 
     /// Emit a funnel event. Authenticates with the persisted bearer token (refreshing first
@@ -154,20 +170,24 @@ public enum BeamableAnalytics {
                             persistOnFailure: Bool = false,
                             budget: TimeInterval = 25,
                             completion: (() -> Void)? = nil) {
-        guard let auth = shared.loadAuthConfig(),
-              let host = auth.host, !host.isEmpty,
-              let cidPid = event.cidPid, cidPid.contains("."),
-              let gamerTag = event.gamerTag, !gamerTag.isEmpty else {
-            // No way to authenticate/route — persist for replay if asked, else drop.
+        // No way to authenticate/route — persist for replay if asked, else drop. The reason is
+        // reported verbatim so a caller awaiting `funnelResult` sees WHY nothing was sent
+        // (missing native auth is by far the most common cause), matching Android's messages.
+        func abort(_ reason: String) {
             if persistOnFailure { shared.appendPendingFunnel(event) }
+            report(event, false, 0, persistOnFailure ? "\(reason); queued for replay" : reason)
             completion?()
-            return
         }
+        guard let auth = shared.loadAuthConfig() else { abort("no native auth configured"); return }
+        guard let host = auth.host, !host.isEmpty else { abort("no host"); return }
+        guard let cidPid = event.cidPid, cidPid.contains(".") else { abort("no scope"); return }
+        guard let gamerTag = event.gamerTag, !gamerTag.isEmpty else { abort("no gamerTag"); return }
 
         let deadline = Date().addingTimeInterval(budget)
 
-        func fallbackAndFinish() {
+        func fallbackAndFinish(_ statusCode: Int, _ reason: String) {
             if persistOnFailure { shared.appendPendingFunnel(event) }
+            report(event, false, statusCode, persistOnFailure ? "\(reason); queued for replay" : reason)
             completion?()
         }
 
@@ -183,6 +203,7 @@ public enum BeamableAnalytics {
                     // ForwardFunnelToSlack endpoint so device-side stages appear in Slack too. Never
                     // affects the analytics result.
                     forwardFunnelToSlack(event, host: host, cidPid: cidPid, accessToken: token, session: session)
+                    report(event, true, status, "ok")
                     completion?()
                     return
                 }
@@ -190,12 +211,12 @@ public enum BeamableAnalytics {
                 guard isAuthError, allowRetry,
                       Date() < deadline,
                       let refreshToken = auth.refreshToken, !refreshToken.isEmpty else {
-                    fallbackAndFinish()
+                    fallbackAndFinish(status, status == 0 ? "request failed (no response)" : "HTTP \(status)")
                     return
                 }
                 refresh(refreshToken: refreshToken, host: host, cidPid: cidPid,
                         session: session) { result in
-                    guard Date() < deadline else { fallbackAndFinish(); return }
+                    guard Date() < deadline else { fallbackAndFinish(status, "timed out"); return }
                     switch result {
                     case .success(let refreshed):
                         shared.updateTokens(accessToken: refreshed.accessToken,
@@ -203,7 +224,7 @@ public enum BeamableAnalytics {
                                             expiresAt: refreshed.expiresAt)
                         doPost(token: refreshed.accessToken, allowRetry: false)
                     case .failure:
-                        fallbackAndFinish()
+                        fallbackAndFinish(status, "token refresh failed")
                     }
                 }
             }
@@ -213,7 +234,7 @@ public enum BeamableAnalytics {
             // Clock-stale: refresh first, then POST — but bail to the fallback if we blow the budget.
             refresh(refreshToken: refreshToken, host: host, cidPid: cidPid,
                     session: session) { result in
-                guard Date() < deadline else { fallbackAndFinish(); return }
+                guard Date() < deadline else { fallbackAndFinish(0, "timed out"); return }
                 switch result {
                 case .success(let refreshed):
                     shared.updateTokens(accessToken: refreshed.accessToken,
@@ -222,14 +243,14 @@ public enum BeamableAnalytics {
                     // Already refreshed up-front; don't burn the single retry on another refresh.
                     doPost(token: refreshed.accessToken, allowRetry: false)
                 case .failure:
-                    fallbackAndFinish()
+                    fallbackAndFinish(0, "token refresh failed")
                 }
             }
         } else if let token = auth.accessToken, !token.isEmpty {
             // Token looks fresh by the clock: POST once, with a 401/403 refresh+retry available.
             doPost(token: token, allowRetry: true)
         } else {
-            fallbackAndFinish()
+            fallbackAndFinish(0, "no token")
         }
     }
 

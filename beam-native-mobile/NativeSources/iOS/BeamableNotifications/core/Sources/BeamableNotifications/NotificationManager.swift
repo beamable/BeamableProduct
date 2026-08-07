@@ -27,6 +27,21 @@ public final class NotificationManager: NSObject {
     /// JSON array string of DeliveryReceipt.
     public var onDeliveryReceipts: ((String) -> Void)?
 
+    /// Outcome of a native funnel-analytics POST (Sent/Received/Opened/Clicked/Converted).
+    /// The iOS counterpart of Android's `onFunnelResult`: the funnel POST is fire-and-forget,
+    /// so this is the only place its HTTP status surfaces. Assigning it installs the
+    /// `BeamableAnalytics` hook, so every funnel emit from this process reports here —
+    /// including the ones `trackOfferClicked`/`trackOfferConverted` skip before any network
+    /// call, which would otherwise leave a caller awaiting the event forever.
+    public var onFunnelResult: ((FunnelResult) -> Void)? {
+        didSet {
+            BeamableAnalytics.onResult = { [weak self] result in
+                guard let self = self else { return }
+                self.dispatch { self.onFunnelResult?(result) }
+            }
+        }
+    }
+
     /// Setting this flushes any taps that were queued before a callback existed
     /// (e.g. a cold-start tap delivered before the engine booted).
     public var onNotificationTapped: ((NotificationData) -> Void)? {
@@ -254,6 +269,11 @@ public final class NotificationManager: NSObject {
         let intent = request.intent(fallbackAuth: auth)
         guard let event = BeamableAnalytics.makeEvent(type, intent: intent, offer: request.offer) else {
             NSLog("[BeamableNotifications] trackOffer %@ skipped: missing campaign/scope", type.rawValue)
+            // Still report: this call never reaches `BeamableAnalytics.emit`, so without it a
+            // caller awaiting `onFunnelResult` would just time out with no reason.
+            let result = FunnelResult(funnelType: type.rawValue, ok: false, statusCode: 0,
+                                      message: "skipped: missing campaignId/nodeId")
+            dispatch { self.onFunnelResult?(result) }
             return
         }
         BeamableAnalytics.emit(event, persistOnFailure: false)

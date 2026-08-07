@@ -188,7 +188,9 @@ export type EventMap = {
   deliveryReceipts: DeliveryReceipt[];
   /**
    * Result of a native analytics funnel send (Received/Opened/Sent/Clicked/Converted).
-   * Android emits the native `onFunnelResult` event; iOS is a follow-up (inert for now).
+   * Emitted on both platforms: Android's native `onFunnelResult`, iOS's `funnelResult`.
+   * `statusCode` is 0 when no HTTP attempt was made (e.g. no native auth configured) — the
+   * `message` then says why.
    */
   funnelResult: {
     funnelType: string;
