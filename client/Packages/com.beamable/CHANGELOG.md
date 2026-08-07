@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
 - Added build-scoped suppression and per-player runtime opt-in for automatic Player Social friend-invitation Mail checks.
+- Content Manifest caching between runs.
 
 ## [6.0.1] - 2026-07-31
 
@@ -24,7 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Content Manifest caching between runs.
 - Added Content Manager publish history with diff inspection, pagination, preview, and local file restoration.
 - Added `BEAMABLE_PURCHASING_IMPLEMENTATION_DISABLED` to turn off the Beamable UnityIAP integration entirely.
 - Added `CoreConfiguration.SkipCommerceInitialization` to opt out of automatic purchaser initialization and its commerce SKU request.
