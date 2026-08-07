@@ -45,9 +45,9 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		
 		var skipBuildOption = new Option<bool>(
 			name: "--skip-build", 
-			description: "If options are modified, the project needs to be re-built so that the " +
-			             "embedded resource is available on the next execution of the service. " +
-		                 "However, this build operation may be skipped when this option is set");
+			description: "If options are modified, the project needs to be re-built so that the" +
+			             " embedded resource is available on the next execution of the service." +
+		                 " However, this build operation may be skipped when this option is set");
 		skipBuildOption.AddAlias("--skip");
 		skipBuildOption.AddAlias("-s");
 		AddOption(skipBuildOption, (args, i) => args.skipBuild = i);

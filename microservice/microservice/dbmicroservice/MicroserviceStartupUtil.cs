@@ -106,7 +106,40 @@ public static class MicroserviceStartupUtil
 		{
 			LogUtil.TryParseSystemLogLevel(configuredArgs.OapiGenLogLevel, out var defaultLevel, LogLevel.Information);
 			MicroserviceBootstrapper.ContextLogLevel.Value = defaultLevel;
-			await GenerateOpenApiSpecification(startupCtx, configurator);
+			try
+			{
+				await GenerateOpenApiSpecification(startupCtx, configurator);
+			}
+			catch (ScopeValidationException ex)
+			{
+				// The service's code scope and its <BeamServiceScope> csproj property disagree — most often a
+				// class that inherits ZoneMicroservice while <BeamServiceScope> is 'realm' (or a Microservice
+				// while it is 'zone'). Report it cleanly here: OpenAPI generation runs as a build subprocess, so
+				// letting this bubble aborts the process (exit 134) and MSBuild only shows a generic MSB3073.
+				var message =
+					$"OpenAPI generation failed: the service's code and its <BeamServiceScope> csproj property " +
+					$"disagree.\n{ex.Message}\n" +
+					$"Set <BeamServiceScope> to match the base class: 'zone' for a ZoneMicroservice, or 'realm' " +
+					$"(or omit the property) for a Microservice.";
+				startupCtx.logger.LogError(message);
+				// Write to stdout (not stderr) and flush: the build's generate-oapi Exec captures stdout via
+				// ConsoleToMSBuild and re-emits it as an MSBuild <Error> so it survives the terminal logger.
+				Console.Out.WriteLine(message);
+				Console.Out.Flush();
+				Environment.Exit(1);
+			}
+			catch (Exception ex)
+			{
+				// Any other OpenAPI-generation failure: log the full detail and exit non-zero cleanly rather
+				// than surfacing as an unhandled abort (exit 134) that hides the reason inside the build.
+				var message = $"OpenAPI generation failed: {ex.Message}\n{ex}";
+				startupCtx.logger.LogError(message);
+				// Write to stdout (not stderr) and flush: the build's generate-oapi Exec captures stdout via
+				// ConsoleToMSBuild and re-emits it as an MSBuild <Error> so it survives the terminal logger.
+				Console.Out.WriteLine(message);
+				Console.Out.Flush();
+				Environment.Exit(1);
+			}
 			startupCtx.result.GeneratedClient = true;
 			return startupCtx.result;
 		}
@@ -600,6 +633,224 @@ public static class MicroserviceStartupUtil
 		return reflectionCache;
 	}
 
+	private static ContentService CreateNewContentService(MicroserviceRequester requester,
+		SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache,
+		IMicroserviceAttributes attribute)
+	{
+		return attribute.DisableAllBeamableEvents
+			? new UnreliableContentService(requester, socket, contentResolver, reflectionCache)
+			: new ContentService(requester, socket, contentResolver, reflectionCache);
+	}
+
+	private static UserDataCache<Dictionary<string, string>> StatsCacheFactory(string name, long ttlms,
+		UserDataCache<Dictionary<string, string>>.CacheResolver resolver, IDependencyProvider provider)
+	{
+		return new EphemeralUserDataCache<Dictionary<string, string>>(name, resolver);
+	}
+
+	private static UserDataCache<RankEntry> LeaderboardRankEntryFactory(string name, long ttlms,
+		UserDataCache<RankEntry>.CacheResolver resolver, IDependencyProvider provider)
+	{
+		return new EphemeralUserDataCache<RankEntry>(name, resolver);
+	}
+
+	private static IBeamableServices ExtractSdks(IDependencyProvider provider)
+	{
+		var services = new BeamableServices
+		{
+			Scope = provider.GetService<IDependencyProviderScope>(),
+			Analytics = provider.GetRequiredService<IMicroserviceAnalyticsService>(),
+			Auth = provider.GetRequiredService<IMicroserviceAuthApi>(),
+			Stats = provider.GetRequiredService<IMicroserviceStatsApi>(),
+			Content = provider.GetRequiredService<IMicroserviceContentApi>(),
+			Inventory = provider.GetRequiredService<IMicroserviceInventoryApi>(),
+			Leaderboards = provider.GetRequiredService<IMicroserviceLeaderboardsApi>(),
+			Announcements = provider.GetRequiredService<IMicroserviceAnnouncementsApi>(),
+			Calendars = provider.GetRequiredService<IMicroserviceCalendarsApi>(),
+			Events = provider.GetRequiredService<IMicroserviceEventsApi>(),
+			Groups = provider.GetRequiredService<IMicroserviceGroupsApi>(),
+			Mail = provider.GetRequiredService<IMicroserviceMailApi>(),
+			Notifications = provider.GetRequiredService<IMicroserviceNotificationsApi>(),
+			Social = provider.GetRequiredService<IMicroserviceSocialApi>(),
+			Tournament = provider.GetRequiredService<IMicroserviceTournamentApi>(),
+			TrialData = provider.GetRequiredService<IMicroserviceCloudDataApi>(),
+			RealmConfig = provider.GetRequiredService<IMicroserviceRealmConfigService>(),
+			Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>(),
+			Chat = provider.GetRequiredService<IMicroserviceChatApi>(),
+			Payments = provider.GetRequiredService<IMicroservicePaymentsApi>(),
+			Push = provider.GetRequiredService<IMicroservicePushApi>(),
+			Scheduler = provider.GetRequiredService<BeamScheduler>()
+		};
+		return services;
+	}
+
+	/// <summary>
+	/// Registers the realm (cid.pid) scoped SDK surface — the player/realm APIs, the realm-scoped
+	/// requester/context/signed-requester, realm content, realm config, and storage. Only invoked when a
+	/// microservice runs in <see cref="BeamServiceScope.Realm"/>.
+	/// </summary>
+	// internal (not private) so the zone→realm scope factory (RealmScopeFactory) can re-apply the realm SDK
+	// onto a forked scope when a zone service calls AssumeRealm.
+	internal static void ConfigureRealmServices(IDependencyBuilder collection, StartupContext startupContext,
+		IMicroserviceArgs envArgs)
+	{
+		collection
+			.AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
+			.AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())
+			.AddScoped<IRequester>(p => p.GetService<MicroserviceRequester>())
+			.AddScoped<MicroserviceRequester>(provider =>
+				new MicroserviceRequester(
+					provider.GetService<IMicroserviceArgs>(),
+					provider.GetService<RequestContext>(),
+					provider.GetService<SocketRequesterContext>(),
+					true,
+					provider.GetService<IActivityProvider>()))
+			.AddScoped<IUserContext>(provider => provider.GetService<RequestContext>())
+			.AddScoped<IMicroserviceAuthApi, ServerAuthApi>()
+			.AddScoped<IMicroserviceStatsApi, MicroserviceStatsApi>()
+			.AddScoped<IStatsApi, MicroserviceStatsApi>()
+			.AddSingleton(new RequestContext(envArgs.CustomerID, envArgs.ProjectName))
+			.AddSingleton<ContentService>(p => CreateNewContentService(
+				p.GetService<MicroserviceRequester>(),
+				p.GetService<SocketRequesterContext>(),
+				p.GetService<IContentResolver>(),
+				p.GetService<ReflectionCache>(),
+				p.GetService<IMicroserviceAttributes>()
+			))
+			.AddSingleton<ISignedRequesterConfig, DefaultSignedRequesterConfig>(() =>
+				new DefaultSignedRequesterConfig
+				{
+					Host = envArgs.Host
+						.Replace("ws://", "http://")
+						.Replace("wss://", "https://")
+						.Replace("/socket/", "")
+						.Replace("/socket", ""),
+					RealmSecretGenerator = () => Promise<string>.Successful(envArgs.Secret)
+				})
+			.AddScoped(p => new HttpSignedRequester(p.GetService<ISignedRequesterConfig>(),
+				p.GetService<IRealmInfo>(), p.GetService<RequestContext>()))
+			.AddScoped<ISignedRequester>(p => p.GetService<HttpSignedRequester>())
+			.AddSingleton<IMicroserviceContentApi>(p => p.GetService<ContentService>())
+			.AddSingleton<IContentApi>(p => p.GetService<ContentService>())
+			.AddScoped<IMicroserviceInventoryApi, MicroserviceInventoryApi>()
+			.AddScoped<IMicroserviceGroupsApi, MicroserviceGroupsApi>()
+			.AddScoped<IMicroserviceAnalyticsService, MicroserviceAnalyticsService>(p =>
+				new MicroserviceAnalyticsService(p.GetService<RequestContext>(), p.GetService<ISignedRequester>()))
+			.AddScoped<IMicroserviceTournamentApi, MicroserviceTournamentApi>()
+			.AddScoped<IMicroserviceLeaderboardsApi, MicroserviceLeaderboardApi>()
+			.AddScoped<IMicroserviceAnnouncementsApi, MicroserviceAnnouncementsApi>()
+			.AddScoped<IMicroserviceCalendarsApi, MicroserviceCalendarsApi>()
+			.AddScoped<IMicroserviceEventsApi, MicroserviceEventsApi>()
+			.AddScoped<IMicroserviceMailApi, MicroserviceMailApi>()
+			.AddScoped<IMicroserviceNotificationsApi, MicroserviceNotificationApi>()
+			.AddScoped<IMicroserviceSocialApi, MicroserviceSocialApi>()
+			.AddScoped<IMicroserviceCloudDataApi, MicroserviceCloudDataApi>()
+			.AddSingleton<IMicroserviceRealmConfigService>(p => p.GetService<RealmConfigService>())
+			.AddSingleton<IRealmConfigService>(p => p.GetService<RealmConfigService>())
+			.AddSingleton<RealmConfigService>()
+			.AddScoped<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
+			.AddScoped<IMicroservicePaymentsApi, MicroservicePaymentsApi>()
+			.AddScoped<IMicroservicePushApi, MicroservicePushApi>()
+			.AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
+			.AddScoped<IMicroserviceChatApi, MicroserviceChatApi>()
+			.AddSingleton<IBeamBeamootelApi, BeamBeamootelApi>()
+			.AddScoped<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider => StatsCacheFactory)
+			.AddScoped<UserDataCache<RankEntry>.FactoryFunction>(provider => LeaderboardRankEntryFactory)
+			.AddScoped<IBeamableServices>(ExtractSdks)
+			;
+		OpenApiRegistration.RegisterOpenApis(collection);
+	}
+
+	/// <summary>
+	/// Registers the zone (cid.zid) scoped surface. Only invoked when a microservice runs in
+	/// <see cref="BeamServiceScope.Zone"/>. A zone has no realm/player context, so none of the realm SDK is
+	/// available. TODO(zones): register zone-scoped equivalents of the requester, context, and storage
+	/// providers as that infrastructure lands.
+	/// </summary>
+	private static void ConfigureZoneServices(IDependencyBuilder collection, StartupContext startupContext,
+		IMicroserviceArgs envArgs)
+	{
+		collection
+			// A websocket requester used by the customer-directory queries. It resolves its RequestContext
+			// from the per-request scope (RouteSourceUtil adds one per message, scoped to cid.zid), so we do
+			// NOT register a RequestContext at the zone root — doing so made every per-request AddScoped of
+			// RequestContext collide and log "already existed" on every message.
+			.AddScoped<MicroserviceRequester>(provider =>
+				new MicroserviceRequester(
+					provider.GetService<IMicroserviceArgs>(),
+					provider.GetService<RequestContext>(),
+					provider.GetService<SocketRequesterContext>(),
+					true,
+					provider.GetService<IActivityProvider>()))
+			.AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())
+			.AddScoped<IRequester>(p => p.GetService<MicroserviceRequester>())
+			.AddScoped<IZoneCustomerApi>(p => new ZoneCustomerApi(p.GetService<MicroserviceRequester>(), p.GetService<IMicroserviceArgs>()))
+			.AddScoped<IZoneServices>(p => new ZoneServices(p.GetService<IZoneCustomerApi>()))
+			// Storage access for a zone service. The connection provider resolves the zone storage's connection
+			// (GET beamo/storage/connection over the cid.zid requester) and names the database from IRealmInfo,
+			// which for a zone is the zone env (cid + ZONE_zid). Registered *scoped* — unlike the realm path's
+			// singleton — because the zone root has no RequestContext; the per-request scope (added by
+			// RouteSourceUtil, cid.zid) does, which is what the requester it depends on needs.
+			.AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
+			.AddScoped<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
+			// The zone→realm bridge for AssumeRealm. Forks this (root) scope and re-applies the realm SDK.
+			.AddSingleton<IRealmScopeFactory>(provider => new RealmScopeFactory(provider, startupContext, envArgs));
+	}
+
+	/// <summary>
+	/// Registers the scope-neutral infrastructure shared by every microservice regardless of scope —
+	/// logging, telemetry, args, the dependency provider, event subscription, serialization, and connection
+	/// plumbing. Realm-only and zone-only services are registered by <see cref="ConfigureRealmServices"/> and
+	/// <see cref="ConfigureZoneServices"/> respectively.
+	/// </summary>
+	private static void ConfigureCommonServices(IDependencyBuilder collection, StartupContext startupContext,
+		IMicroserviceArgs envArgs, IMicroserviceAttributes attribute)
+	{
+		collection
+			.AddSingleton(startupContext)
+			.AddSingleton(attribute)
+			.AddSingleton<MicroserviceAttribute>(() =>
+			{
+				return new MicroserviceAttribute(attribute.MicroserviceName)
+				{
+					CustomAutoGeneratedClientPath = attribute.CustomAutoGeneratedClientPath,
+					DisableAllBeamableEvents = attribute.DisableAllBeamableEvents,
+					EnableEagerContentLoading = attribute.EnableEagerContentLoading,
+#pragma warning disable CS0618 // Type or member is obsolete
+					UseLegacySerialization = attribute.UseLegacySerialization
+#pragma warning restore CS0618 // Type or member is obsolete
+				};
+			})
+			.AddSingleton<IActivityProvider>(startupContext.activityProvider)
+			.AddSingleton<ILoggerFactory>(startupContext.logFactory)
+			.AddSingleton<IBeamSchedulerContext, SchedulerContext>()
+			.AddSingleton<BeamScheduler>()
+			.AddSingleton<FederationMetadata>()
+			.AddSingleton<IEventSubscriptionHook, DefaultEventSubscription>()
+			.AddScoped<IEventSubscriptionConfiguration, DefaultEventSubscriptionConfiguration>()
+			.AddSingleton<IUsageApi>(startupContext.ecsService)
+			.AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
+			.AddScoped<IHttpRequester, MicroserviceHttpRequester>(() =>
+			{
+				HttpClientHandler handler = new HttpClientHandler()
+				{
+					AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+				};
+				return new MicroserviceHttpRequester(envArgs, new HttpClient(handler));
+			})
+			.AddSingleton<IMicroserviceArgs>(envArgs)
+			.AddSingleton<SocketRequesterContext>(_ => { return startupContext.services[0].SocketContext; })
+			.AddSingleton<IContentResolver, DefaultContentResolver>()
+			.AddSingleton<IConnectionProvider, EasyWebSocketProvider>()
+			.AddSingleton<IAliasService, AliasService>()
+			.AddSingleton<MongoSerializationService>()
+			.AddSingleton<IMongoSerializationService>(p => p.GetService<MongoSerializationService>())
+			.AddSingleton(startupContext.reflectionCache)
+			.AddSingleton<SingletonDependencyList<ITelemetryAttributeProvider>>()
+			.AddSingleton<ILoggingContextService, LoggingContextService>()
+      .AddSingleton<IServiceOpenApiDocsCache, ServiceOpenApiDocsCache>();
+	}
+
 	public static IDependencyBuilder ConfigureServices(StartupContext startupContext, IBeamServiceConfig configurator)
 	{
 		startupContext.logger.LogDebug(Constants.Features.Services.Logs.REGISTERING_STANDARD_SERVICES);
@@ -607,130 +858,23 @@ public static class MicroserviceStartupUtil
 		var envArgs = startupContext.args;
 		try
 		{
-			var collection = new DependencyBuilder();
+			var scope = attribute?.GetServiceScope() ?? BeamServiceScope.Realm;
+			var collection = new ScopedDependencyBuilder(scope);
 			foreach (var type in startupContext.routeSources)
 			{
 				collection.AddScoped(type.InstanceType);
 			}
 
-			collection
-				.AddSingleton(startupContext)
-				.AddSingleton(attribute)
+			ConfigureCommonServices(collection, startupContext, envArgs, attribute);
 
-				// for legacy reasons, we should keep the MicroserviceAttribute in DI.
-				//  it existed for a long time, and customers could be relying on it in their
-				//  custom DI containers. 
-				.AddSingleton<MicroserviceAttribute>(() =>
-				{
-					return new MicroserviceAttribute(attribute.MicroserviceName)
-					{
-						CustomAutoGeneratedClientPath = attribute.CustomAutoGeneratedClientPath,
-						DisableAllBeamableEvents = attribute.DisableAllBeamableEvents,
-						EnableEagerContentLoading = attribute.EnableEagerContentLoading,
-#pragma warning disable CS0618 // Type or member is obsolete
-						UseLegacySerialization = attribute.UseLegacySerialization
-#pragma warning restore CS0618 // Type or member is obsolete
-					};
-				})
-				.AddSingleton<IActivityProvider>(startupContext.activityProvider)
-				.AddSingleton<ILoggerFactory>(startupContext.logFactory)
-				.AddSingleton<IBeamSchedulerContext, SchedulerContext>()
-				.AddSingleton<BeamScheduler>()
-				.AddSingleton<FederationMetadata>()
-				
-				// allow the developer to change how the event service is created. 
-				.AddSingleton<IEventSubscriptionHook, DefaultEventSubscription>()
-				.AddScoped<IEventSubscriptionConfiguration, DefaultEventSubscriptionConfiguration>()
-				
-				.AddSingleton<IUsageApi>(startupContext.ecsService)
-				.AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
-				.AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
-				.AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())
-				.AddScoped<IRequester>(p => p.GetService<MicroserviceRequester>())
-				.AddScoped<IHttpRequester, MicroserviceHttpRequester>(() =>
-				{
-					HttpClientHandler handler = new HttpClientHandler()
-					{
-						AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-					};
-					return new MicroserviceHttpRequester(envArgs, new HttpClient(handler));
-				})
-				.AddSingleton<IMicroserviceArgs>(envArgs)
-				.AddSingleton<SocketRequesterContext>(_ => { return startupContext.services[0].SocketContext; })
-				.AddScoped<MicroserviceRequester>(provider =>
-					new MicroserviceRequester(
-						provider.GetService<IMicroserviceArgs>(),
-						provider.GetService<RequestContext>(),
-						provider.GetService<SocketRequesterContext>(),
-						true,
-						provider.GetService<IActivityProvider>()))
-				.AddScoped<IUserContext>(provider => provider.GetService<RequestContext>())
-				.AddScoped<IMicroserviceAuthApi, ServerAuthApi>()
-				.AddScoped<IMicroserviceStatsApi, MicroserviceStatsApi>()
-				.AddScoped<IStatsApi, MicroserviceStatsApi>()
-				.AddSingleton(new RequestContext(envArgs.CustomerID, envArgs.ProjectName))
-				.AddSingleton<ContentService>(p => CreateNewContentService(
-					p.GetService<MicroserviceRequester>(),
-					p.GetService<SocketRequesterContext>(),
-					p.GetService<IContentResolver>(),
-					p.GetService<ReflectionCache>()
-				))
-				.AddSingleton<ISignedRequesterConfig, DefaultSignedRequesterConfig>(() =>
-					new DefaultSignedRequesterConfig
-					{
-						Host = envArgs.Host
-							.Replace("ws://", "http://")
-							.Replace("wss://", "https://")
-							.Replace("/socket/", "")
-							.Replace("/socket", ""),
-						RealmSecretGenerator = () => Promise<string>.Successful(envArgs.Secret)
-					})
-				.AddScoped(p => new HttpSignedRequester(p.GetService<ISignedRequesterConfig>(),
-					p.GetService<IRealmInfo>(), p.GetService<RequestContext>()))
-				.AddScoped<ISignedRequester>(p => p.GetService<HttpSignedRequester>())
-				.AddSingleton<IMicroserviceContentApi>(p => p.GetService<ContentService>())
-				.AddSingleton<IContentApi>(p => p.GetService<ContentService>())
-				.AddSingleton<IContentResolver, DefaultContentResolver>()
-				.AddSingleton<IConnectionProvider, EasyWebSocketProvider>()
-				.AddSingleton<IAliasService, AliasService>()
-				.AddScoped<IMicroserviceInventoryApi, MicroserviceInventoryApi>()
-				.AddScoped<IMicroserviceGroupsApi, MicroserviceGroupsApi>()
-				.AddScoped<IMicroserviceAnalyticsService, MicroserviceAnalyticsService>(p =>
-					new MicroserviceAnalyticsService(p.GetService<RequestContext>(), p.GetService<ISignedRequester>()))
-				.AddScoped<IMicroserviceTournamentApi, MicroserviceTournamentApi>()
-				.AddScoped<IMicroserviceLeaderboardsApi, MicroserviceLeaderboardApi>()
-				.AddScoped<IMicroserviceAnnouncementsApi, MicroserviceAnnouncementsApi>()
-				.AddScoped<IMicroserviceCalendarsApi, MicroserviceCalendarsApi>()
-				.AddScoped<IMicroserviceEventsApi, MicroserviceEventsApi>()
-				.AddScoped<IMicroserviceMailApi, MicroserviceMailApi>()
-				.AddScoped<IMicroserviceNotificationsApi, MicroserviceNotificationApi>()
-				.AddScoped<IMicroserviceSocialApi, MicroserviceSocialApi>()
-				.AddScoped<IMicroserviceCloudDataApi, MicroserviceCloudDataApi>()
-				.AddSingleton<IMicroserviceRealmConfigService>(p => p.GetService<RealmConfigService>())
-				.AddSingleton<IRealmConfigService>(p => p.GetService<RealmConfigService>())
-				.AddSingleton<RealmConfigService>()
-				.AddScoped<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
-				.AddScoped<IMicroservicePaymentsApi, MicroservicePaymentsApi>()
-				.AddScoped<IMicroservicePushApi, MicroservicePushApi>()
-				.AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
-				.AddSingleton<MongoSerializationService>()
-				.AddSingleton<IMongoSerializationService>(p => p.GetService<MongoSerializationService>())
-				.AddScoped<IMicroserviceChatApi, MicroserviceChatApi>()
-				.AddSingleton(startupContext.reflectionCache)
-				.AddSingleton<IBeamBeamootelApi, BeamBeamootelApi>()
-
-				.AddScoped<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider =>
-					StatsCacheFactory)
-				.AddScoped<UserDataCache<RankEntry>.FactoryFunction>(provider => LeaderboardRankEntryFactory)
-				.AddSingleton<IServiceOpenApiDocsCache, ServiceOpenApiDocsCache>()
-				.AddScoped<IBeamableServices>(ExtractSdks)
-
-				// allow the DI system to get a list of all telemetry attribute providers...
-				//  _INCLUDING_ the standard Beamable one, which should be registered _LAST_
-				.AddSingleton<SingletonDependencyList<ITelemetryAttributeProvider>>()
-				.AddSingleton<ILoggingContextService, LoggingContextService>()
-				;
-			OpenApiRegistration.RegisterOpenApis(collection);
+			if (scope == BeamServiceScope.Zone)
+			{
+				ConfigureZoneServices(collection, startupContext, envArgs);
+			}
+			else
+			{
+				ConfigureRealmServices(collection, startupContext, envArgs);
+			}
 
 			startupContext.logger.LogDebug(Constants.Features.Services.Logs.REGISTERING_CUSTOM_SERVICES);
 			var builder = new DefaultServiceBuilder(collection);
@@ -797,56 +941,6 @@ public static class MicroserviceStartupUtil
 			BeamableLogger.LogException(ex);
 			throw;
 		}
-
-		ContentService CreateNewContentService(MicroserviceRequester requester, SocketRequesterContext socket,
-			IContentResolver contentResolver, ReflectionCache reflectionCache)
-		{
-			return attribute.DisableAllBeamableEvents
-				? new UnreliableContentService(requester, socket, contentResolver, reflectionCache)
-				: new ContentService(requester, socket, contentResolver, reflectionCache);
-		}
-
-		UserDataCache<Dictionary<string, string>> StatsCacheFactory(string name, long ttlms,
-			UserDataCache<Dictionary<string, string>>.CacheResolver resolver, IDependencyProvider provider)
-		{
-			return new EphemeralUserDataCache<Dictionary<string, string>>(name, resolver);
-		}
-
-		UserDataCache<RankEntry> LeaderboardRankEntryFactory(string name, long ttlms,
-			UserDataCache<RankEntry>.CacheResolver resolver, IDependencyProvider provider)
-		{
-			return new EphemeralUserDataCache<RankEntry>(name, resolver);
-		}
-
-		IBeamableServices ExtractSdks(IDependencyProvider provider)
-		{
-			var services = new BeamableServices
-			{
-				Scope = provider.GetService<IDependencyProviderScope>(),
-				Analytics = provider.GetRequiredService<IMicroserviceAnalyticsService>(),
-				Auth = provider.GetRequiredService<IMicroserviceAuthApi>(),
-				Stats = provider.GetRequiredService<IMicroserviceStatsApi>(),
-				Content = provider.GetRequiredService<IMicroserviceContentApi>(),
-				Inventory = provider.GetRequiredService<IMicroserviceInventoryApi>(),
-				Leaderboards = provider.GetRequiredService<IMicroserviceLeaderboardsApi>(),
-				Announcements = provider.GetRequiredService<IMicroserviceAnnouncementsApi>(),
-				Calendars = provider.GetRequiredService<IMicroserviceCalendarsApi>(),
-				Events = provider.GetRequiredService<IMicroserviceEventsApi>(),
-				Groups = provider.GetRequiredService<IMicroserviceGroupsApi>(),
-				Mail = provider.GetRequiredService<IMicroserviceMailApi>(),
-				Notifications = provider.GetRequiredService<IMicroserviceNotificationsApi>(),
-				Social = provider.GetRequiredService<IMicroserviceSocialApi>(),
-				Tournament = provider.GetRequiredService<IMicroserviceTournamentApi>(),
-				TrialData = provider.GetRequiredService<IMicroserviceCloudDataApi>(),
-				RealmConfig = provider.GetRequiredService<IMicroserviceRealmConfigService>(),
-				Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>(),
-				Chat = provider.GetRequiredService<IMicroserviceChatApi>(),
-				Payments = provider.GetRequiredService<IMicroservicePaymentsApi>(),
-				Push = provider.GetRequiredService<IMicroservicePushApi>(),
-				Scheduler = provider.GetRequiredService<BeamScheduler>()
-			};
-			return services;
-		}
 	}
 
 	public static void InitializeServices(IServiceProvider provider)
@@ -864,6 +958,10 @@ public static class MicroserviceStartupUtil
 			return Task.CompletedTask;
 		}
 
+		// Local discovery is realm-shaped: this broadcasts the pid, which for a zone service is the zone
+		// identity (ZONE_<zid>). The CLI's DiscoveryService reconciles that against the local manifest
+		// (matching zone services by serviceName), so no dedicated zid field is needed here. Containerized
+		// (cloud) deploys skip this path entirely.
 		var msg = new ServiceDiscoveryEntry
 		{
 			processId = Environment.ProcessId,

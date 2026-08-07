@@ -18,6 +18,7 @@ public class NewPortalExtensionCommandArgs : SolutionCommandArgs
 	public int mountGroupOrder;
 	public int mountLabelOrder;
 	public string template;
+	public bool IsZone;
 	public string[] filters;
 }
 
@@ -27,9 +28,16 @@ public static class PortalExtensionTemplates
 
 	public static readonly string[] All = { React };
 
-	public static string ToDotnetTemplateShortName(string template) => template switch
+	/// <summary>
+	/// Resolves the dotnet template short name for a given UI framework template. When
+	/// <paramref name="isZone"/> is true, the zone-scoped variant is used — it scaffolds the
+	/// front end against the zone registration APIs (<c>registerReactZoneExtension</c> /
+	/// <c>useZoneBeam</c> / <c>ZoneExtensionContext</c>) so the extension receives a
+	/// <c>BeamZoneSdk</c> (cid.zid) instead of a realm-scoped <c>Beam</c>.
+	/// </summary>
+	public static string ToDotnetTemplateShortName(string template, bool isZone = false) => template switch
 	{
-		React => "portalextensionreactapp",
+		React => isZone ? "portalextensionreactappzone" : "portalextensionreactapp",
 		_ => throw new CliException($"Unknown portal-extension template '{template}'. Valid values: {string.Join(", ", All)}")
 	};
 }
@@ -90,6 +98,11 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 				getDefaultValue: () => PortalExtensionTemplates.React,
 				description: "UI framework template to scaffold the extension with. Allowed values: react"),
 			binder: (args, i) => args.template = i);
+
+		AddOption(new Option<bool>(
+				name: "--zone",
+				description: "If passed, creates a zone-scoped portal extension (its backing service runs as a ZoneMicroservice, per cid.zid) instead of a realm-scoped one"),
+			(args, i) => args.IsZone = i);
 
 		AddOption(new Option<string[]>(
 				aliases: new string[] { "--filters" },
@@ -286,13 +299,13 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		{
 			if (string.IsNullOrEmpty(args.mountSelector))
 				throw new CliException(
-					$"--mount-selector is required for component pages. " +
-					$"Valid selectors for '{args.mountPage}': {string.Join(", ", componentConfig.selectors.Select(s => s.selector))}");
+					$"--mount-selector is required for component pages." +
+					$" Valid selectors for '{args.mountPage}': {string.Join(", ", componentConfig.selectors.Select(s => s.selector))}");
 			var selector = componentConfig.selectors.FirstOrDefault(s => s.selector == args.mountSelector);
 			if (selector == null)
 				throw new CliException(
-					$"Invalid --mount-selector '{args.mountSelector}' for page '{args.mountPage}'. " +
-					$"Valid selectors: {string.Join(", ", componentConfig.selectors.Select(s => s.selector))}");
+					$"Invalid --mount-selector '{args.mountSelector}' for page '{args.mountPage}'." +
+					$" Valid selectors: {string.Join(", ", componentConfig.selectors.Select(s => s.selector))}");
 			return selector;
 		}
 
@@ -301,8 +314,8 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		// "cars" hub) — and the page slot selector is auto-assigned.
 		if (pageSelector == null)
 			throw new CliException(
-				"No page mount slot is available from the Portal config, so a full-page extension cannot be created. " +
-				"Run 'portal extension list-extension-options' to see valid component pages and selectors.");
+				"No page mount slot is available from the Portal config, so a full-page extension cannot be created." +
+				" Run 'portal extension list-extension-options' to see valid component pages and selectors.");
 		args.mountSelector = pageSelector.selector;
 		return pageSelector;
 	}

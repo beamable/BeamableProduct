@@ -1,0 +1,186 @@
+---
+name: beam-zones
+description: Work with Beamable zones — create, run, and deploy zone-scoped services, storages, and portal extensions (cid.zid), and call a zone service from a zone portal extension.
+---
+
+# Working with Zones
+
+## What a Zone Is
+A **zone** is a scope that sits *above* realms. A realm is addressed as `cid.pid`; a zone is addressed as `cid.zid`. A zone-scoped service/storage/extension is deployed once per **zone** rather than per realm, and it authenticates as `cid.zid` instead of `cid.pid` (the zone id rides the PID slot as `ZONE_<zid>`, which the gateway detects).
+
+Everything zone-related is selected by a single csproj property, `<BeamServiceScope>zone</BeamServiceScope>`, or the `--zone` flag on the `project new` commands / the `--scope zone` flag on `deploy`. When the property is absent the project is **realm**-scoped (the default).
+
+## When to Use This Skill
+- Creating a service, storage, or portal extension that should run per-zone (`cid.zid`) instead of per-realm.
+- Deploying to a zone manifest (`deploy … --scope zone`).
+- Inspecting which local projects are zone- vs realm-scoped (`project ps`).
+- Writing a zone service that reaches into a realm (`AssumeRealm`) or its own zone storage.
+- Building a zone portal extension and calling a zone service from it.
+
+## Creating Zone-Scoped Projects
+
+All three `project new` commands take `--zone`. This stamps `<BeamServiceScope>zone</BeamServiceScope>` into the generated csproj (a service additionally inherits `ZoneMicroservice` instead of `Microservice`).
+
+```
+beam_exec("project new service MyZoneService --zone -q")
+beam_exec("project new storage MyZoneStorage --zone -q")
+beam_exec("project new portal-extension MyZonePanel --zone -q")
+```
+{{ if commands["project new service"] }}
+#### `beam project new service` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["project new service"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+{{ if commands["project new storage"] }}
+#### `beam project new storage` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["project new storage"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+{{ if commands["project new portal-extension"] }}
+#### `beam project new portal-extension` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["project new portal-extension"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+### Scope must be consistent across a dependency
+A service can only depend on a storage in the **same scope** — a zone storage may only be linked to zone services, and a realm storage only to realm services (they deploy into different manifests). The CLI enforces this: `project new`'s dependency prompt only offers same-scope candidates, and `project deps add` rejects a cross-scope link.
+
+```
+beam_exec("project deps add MyZoneService MyZoneStorage -q")
+```
+
+## Running & Inspecting Locally
+
+`project ps` reports a **scope** column for every service, storage, and portal extension, so you can see zone vs realm at a glance.
+
+```
+beam_exec("project ps -q")
+```
+
+Run a zone service locally exactly like a realm one; it authenticates against the zone the current realm is bound to (or the `.beamable` `zid`).
+
+```
+beam_exec("project run --ids MyZoneService -q")
+```
+
+## Deploying to a Zone
+
+`deploy plan` and `deploy release` default to `--scope realm`. Pass **`--scope zone`** to target the zone manifest (`cid.zid`); realm-scoped projects are then ignored, and only zone-scoped ones are included (and vice-versa). The chosen scope is persisted into the plan, so a later `deploy release --from-latest-plan` re-applies the same scope automatically.
+
+```
+beam_exec("deploy plan --scope zone -q")
+beam_exec("deploy release --scope zone -q")
+```
+{{ if commands["deploy plan"] }}
+#### `beam deploy plan` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["deploy plan"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+{{ if commands["deploy release"] }}
+#### `beam deploy release` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["deploy release"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+## Inside a Zone Service (C#)
+
+A zone service inherits `ZoneMicroservice` (not `Microservice`). It has no player/realm SDK by default, but it does expose:
+
+- **`Services.Customer`** — the customer directory: `GetRealms()` / `GetZones()` (each realm carries its `zoneId`).
+- **`Storage`** — access to this zone's storages, exactly like a realm `Microservice.Storage` (resolved against `cid.zid`).
+- **`AssumeRealm(pid, ...)`** — cross into a realm and get the full realm SDK scoped to `cid.pid`.
+
+```csharp
+public class MyZoneService : ZoneMicroservice
+{
+    [ClientCallable]
+    public async Task<int> RealmCount()
+    {
+        var realms = await Services.Customer.GetRealms();
+        return realms.Count;
+    }
+
+    [ClientCallable]
+    public async Task<string> ReadStat(string pid, long playerId)
+    {
+        // Enter a realm that belongs to this zone; the request rides the zone socket with an
+        // X-BEAM-SCOPE: cid.pid header. For a realm NOT in this zone, pass useSignedRequests: true.
+        using var realm = AssumeRealm(pid);
+        var stats = await realm.Services.Stats.GetStats(/* ... */);
+        return /* ... */;
+    }
+}
+```
+
+`AssumeRealm(pid, gamerTag = 0, useSignedRequests = false)`:
+- **default (`false`)** — realm calls ride this zone's websocket with an `X-BEAM-SCOPE: cid.pid` header; valid only for a realm that belongs to this zone.
+- **`true`** — routes through a signed HTTP requester authenticated with the realm's own secret, which also reaches realms outside this zone.
+
+## Zone Portal Extensions
+
+`project new portal-extension … --zone` scaffolds the front end against the **zone** registration API. The differences from a realm extension:
+
+- It registers with `registerReactZoneExtension({ beamId, App })` (from `@beamable/portal-toolkit/react`) instead of `registerReactExtension`.
+- Its `App` receives a `ZoneExtensionContext` (from `@beamable/portal-toolkit`) carrying the `zid`.
+- `useZoneBeam(context)` returns a **`BeamZoneSdk`** (scoped to `cid.zid`) instead of a realm `Beam`.
+
+```tsx
+import { useZoneBeam, BeamPageHeader } from '@beamable/portal-toolkit/react'
+import { type ZoneExtensionContext } from '@beamable/portal-toolkit'
+
+export default function App({ context }: { context: ZoneExtensionContext }) {
+  const beam = useZoneBeam(context)          // BeamZoneSdk (cid.zid)
+  // beam.zid, beam.customer.getRealms(), beam.customer.getZones()
+}
+```
+
+## Calling a Zone Service From a Zone Extension
+
+The `BeamZoneSdk` hosts zone-running microservice clients the same way a realm `Beam` hosts realm clients — calls route to `/basic/{cid}.{zid}.micro_{Service}/...`.
+
+**1. Declare the dependency and generate a typed client** for the extension's backing zone service:
+```
+beam_exec("portal extension add-microservice MyZonePanel MyZoneService -q")
+beam_exec("project generate portal-extension-clients --ids MyZonePanel -q")
+```
+This emits a `MyZoneServiceClient` into the extension, generated in zone mode.
+
+**2. Register and call it** through the `BeamZoneSdk`:
+```tsx
+import { useZoneBeam } from '@beamable/portal-toolkit/react'
+import { MyZoneServiceClient } from './beamGenerated'
+
+const beam = useZoneBeam(context)
+beam.use(MyZoneServiceClient)                       // exposed as beam.myZoneServiceClient
+const count = await beam.myZoneServiceClient.RealmCount()
+```
+
+**Reaching a realm from the extension.** A zone extension holds an operator token, not a realm player session, so to act inside a realm use `beam.assumeRealm(pid)` — it returns a `BeamServer` (requester-only realm SDK) that reuses the same token, scoped to `cid.pid`:
+```tsx
+const realms = await beam.customer.getRealms()
+const pid = realms.find(r => r.zoneId === beam.zid)!.realmId
+const realm = await beam.assumeRealm(pid)           // BeamServer (cid.pid)
+const stats = await realm.stats(playerId).get({ accessType: 'public' })
+```
+
+## Common Pitfalls
+- **Scope mismatch between code and csproj.** A class that inherits `ZoneMicroservice` while `<BeamServiceScope>` is `realm` (or omitted), or a `Microservice` while it is `zone`, fails the build during OpenAPI generation with `… requires [ZoneScoped]` / `[RealmScoped]`. Fix: set `<BeamServiceScope>` to match the base class — `zone` for a `ZoneMicroservice`, `realm` (or omit) for a `Microservice`.
+- **Cross-scope dependencies are rejected.** A zone storage can only be a dependency of a zone service, and a realm storage only of a realm service — they live in different manifests.
+- **`deploy` defaults to realm.** Without `--scope zone`, a zone service/storage/extension is *not* deployed (and a realm one is skipped by `--scope zone`).
+- **Zone storages only surface after deploy.** The portal's live registration feed does not include storages; a zone storage appears once it is deployed into the zone manifest.
+- **`AssumeRealm` default only reaches in-zone realms.** For a realm that is not bound to the current zone, pass `useSignedRequests: true`.
+
+## Wrap-Up
+After a zone workflow, summarize for the user:
+1. **What is zone-scoped** — which services/storages/extensions carry `<BeamServiceScope>zone</BeamServiceScope>` (confirm with `project ps`).
+2. **Where it deployed** — the zone manifest (`cid.zid`), via `deploy … --scope zone`; verify with `deploy list` (zone-scoped) or the Portal's zone inspect screen.
+3. **How things talk** — which extension calls which zone service (client), and any `AssumeRealm`/`assumeRealm` bridges into realms.
+4. **How to verify** — run the zone service (`project run`), open its zone swagger from the boot log, and exercise a `[ClientCallable]` from the extension.
+
+## CLI Version Awareness
+If the CLI version has changed (check `.config/dotnet-tools.json`), re-run `beam_list_commands()` and `beam_get_help()` to get up-to-date command information. Command options and behavior may have changed between versions.

@@ -64,7 +64,8 @@ public static class ServiceUploadUtil
 		string dockerRegistryUrl,
 		CancellationTokenSource cts,
 		Action<float> onProgressCallback,
-		TimeSpan? stallTimeout = null)
+		TimeSpan? stallTimeout = null,
+		string repositoryName = null)
 	{
 		var effectiveStallTimeout = stallTimeout ?? DEFAULT_STALL_TIMEOUT;
 
@@ -72,7 +73,7 @@ public static class ServiceUploadUtil
 		{
 			try
 			{
-				await UploadCore(provider, beamoId, imageId, gamePid, dockerRegistryUrl, cts, onProgressCallback, effectiveStallTimeout);
+				await UploadCore(provider, beamoId, imageId, gamePid, dockerRegistryUrl, cts, onProgressCallback, effectiveStallTimeout, repositoryName);
 				return;
 			}
 			catch (Exception ex) when (
@@ -81,9 +82,9 @@ public static class ServiceUploadUtil
 				attempt < MAX_UPLOAD_ATTEMPTS)
 			{
 				var delay = GetUploadRetryDelay(attempt);
-				Log.Warning($"Transient upload failure for [{beamoId}]. " +
-					$"Retrying attempt=[{attempt + 1}/{MAX_UPLOAD_ATTEMPTS}] " +
-					$"delay=[{delay.TotalMilliseconds}ms] error=[{ex.GetType().Name}] message=[{ex.Message}]");
+				Log.Warning($"Transient upload failure for [{beamoId}]." +
+					$" Retrying attempt=[{attempt + 1}/{MAX_UPLOAD_ATTEMPTS}]" +
+					$" delay=[{delay.TotalMilliseconds}ms] error=[{ex.GetType().Name}] message=[{ex.Message}]");
 				onProgressCallback?.Invoke(0);
 				await Task.Delay(delay, cts.Token);
 			}
@@ -97,7 +98,8 @@ public static class ServiceUploadUtil
 		string dockerRegistryUrl,
 		CancellationTokenSource cts,
 		Action<float> onProgressCallback,
-		TimeSpan stallTimeout)
+		TimeSpan stallTimeout,
+		string repositoryName = null)
 	{
 		var sw = new Stopwatch();
 		sw.Start();
@@ -159,10 +161,19 @@ public static class ServiceUploadUtil
 
 			TrackProgress(.05f);
 
-			var serviceUniqueName = GetHash($"{ctx.Cid}_{gamePid}_{beamoId}")
-				// This substring exists because there is a char-length limit on the remote beamo registry :(
-				.Substring(0, 30);
+			// Prefer the server-provided canonical repository name (scope-aware — realm or zone). Fall back to
+			// the legacy client-side hash of cid_pid_beamoId only when the server didn't supply one (older
+			// backends); that fallback is realm-only and is why zone pushes previously missed.
+			var usedServerRepo = !string.IsNullOrEmpty(repositoryName);
+			var serviceUniqueName = usedServerRepo
+				? repositoryName
+				: GetHash($"{ctx.Cid}_{gamePid}_{beamoId}")
+					// This substring exists because there is a char-length limit on the remote beamo registry :(
+					.Substring(0, 30);
 			var baseUrl = dockerRegistryUrl + serviceUniqueName + "/";
+			Log.Information($"[{beamoId}] pushing docker image → repo=[{serviceUniqueName}] " +
+			                $"(source={(usedServerRepo ? "server-canonical" : "client-hash(cid_pid_beamoId)")}) " +
+			                $"baseUrl=[{baseUrl}]");
 
 			var client = new HttpClient
 			{
@@ -171,9 +182,24 @@ public static class ServiceUploadUtil
 				DefaultRequestVersion = HttpVersion.Version20,
 				DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
 			};
-			client.DefaultRequestHeaders.Add("x-ks-clientid", ctx.Cid);
-			client.DefaultRequestHeaders.Add("x-ks-projectid", ctx.Pid);
-			client.DefaultRequestHeaders.Add("x-ks-token", provider.GetService<IBeamableRequester>().AccessToken.Token);
+			// The registry authorizes pushes by (clientid, projectid, token). AppContext.Pid is always the
+			// realm pid, so for a zone deploy derive the effective scope from the requester's override (set to
+			// `{cid}.{zid}`) and send the zone id in the SAME x-ks-projectid header — no new headers. The repo
+			// itself is already the scoped one returned by /api/beamo/registry-uri for this scope.
+			var registryRequester = provider.GetService<IBeamableRequester>();
+			var registryClientId = ctx.Cid;
+			var registryProjectId = ctx.Pid;
+			if (registryRequester is CliRequester cliRequester && !string.IsNullOrEmpty(cliRequester.BeamScopeOverride))
+			{
+				var scopeParts = cliRequester.BeamScopeOverride.Split('.', 2);
+				registryClientId = scopeParts[0];
+				if (scopeParts.Length > 1) registryProjectId = scopeParts[1];
+			}
+
+			Log.Information($"[{beamoId}] registry auth headers: x-ks-clientid=[{registryClientId}] x-ks-projectid=[{registryProjectId}]");
+			client.DefaultRequestHeaders.Add("x-ks-clientid", registryClientId);
+			client.DefaultRequestHeaders.Add("x-ks-projectid", registryProjectId);
+			client.DefaultRequestHeaders.Add("x-ks-token", registryRequester.AccessToken.Token);
 
 
 			var (hasManifest, manifestBytes) = await TryGetBytesForEntry(imageArchive, "manifest.json");

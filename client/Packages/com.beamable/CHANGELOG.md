@@ -7,10 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added build-scoped suppression and per-player runtime opt-in for automatic Player Social friend-invitation Mail checks.
+
+## [6.0.1] - 2026-07-31
+
+### Changed
+
+- Unity In-App Purchasing (UnityIAP) 5.4.2 is now supported. The Beamable Steam store implements `IOrderInfo.PaymentProviders`, which UnityIAP introduced in 5.4.2.
+- The supported UnityIAP 5 range is **5.2.0 through 5.4.2**. UnityIAP 5.0.x and 5.1.x do not compile against Beamable 6.x, because they predate the `StoreController.OnStoreConnected` event that the purchasing integration requires.
+
+## [6.0.0] - 2026-07-28
+
+### Changed
+
+- **Breaking:** Unity In-App Purchasing (UnityIAP) 5 is now the selected version, since Unity deprecated UnityIAP 4. Projects still on UnityIAP 4 keep working.
+
+### Added
+
+- Added Content Manager publish history with diff inspection, pagination, preview, and local file restoration.
+- Added `BEAMABLE_PURCHASING_IMPLEMENTATION_DISABLED` to turn off the Beamable UnityIAP integration entirely.
+- Added `CoreConfiguration.SkipCommerceInitialization` to opt out of automatic purchaser initialization and its commerce SKU request.
+
 ### Fixed
 
 - Fixed the Content window Snapshot tab hanging at "Loading snapshots" when snapshots in different realm folders share a name (e.g. `LastPublished-global.json` auto snapshots from publishing to multiple realms)
-- Unity SDK version headers were not being sent by default. 
+- Unity SDK version headers were not being sent by default.
+- Fixed `BeamContext` initialization throwing `IndexOutOfRangeException` from its own retry handler when initialization kept failing with infinite context retries enabled, which masked the underlying initialization error.
+- Fixed CLI bootstrap failing when the installed .NET SDK is a supported version newer than the pinned feature band (for example 10.0.301 when the pin is 10.0.100); the generated `global.json` now rolls forward to any compatible installed SDK.
 
 ## [5.1.2] - 2026-07-16
 

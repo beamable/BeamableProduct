@@ -34,6 +34,7 @@ public class PublishBundleCommandArgs : CommandArgs, IHasDeployPlanArgs
 	public bool UseSequentialBuild { get; set; }
 	public int MaxParallelTask { get; set; }
 	public int MaxConcurrentUploads { get; set; }
+	public DeployScope Scope { get; set; }
 	public string SlnFilePath;
 
 	public string SolutionFilePath
@@ -181,9 +182,9 @@ public class PublishBundleCommand
 		if (services.Any(s => servicesToUpload.Contains(s.serviceName)))
 		{
 			var gamePid = (await args.RealmsApi.GetRealm()).FindRoot().Pid;
-			var dockerRegistryUrl = await args.BeamoService.GetDockerImageRegistryUri();
+			var (dockerRegistryUrl, repositoryNames) = await args.BeamoService.GetImageUploadTargets(servicesToUpload);
 			await DeployUtil.UploadServiceImages(services, servicesToUpload, provider, gamePid,
-				dockerRegistryUrl, args.Lifecycle.Source, null);
+				dockerRegistryUrl, args.Lifecycle.Source, null, repositoryNames: repositoryNames);
 		}
 
 		// Upload the bundle's portal-extension assets; this fills each extension's file contentIds
@@ -240,7 +241,7 @@ public class PublishBundleCommand
 		if (!string.IsNullOrEmpty(args.scope))
 		{
 			var scope = BundleAclScope.Resolve(args.scope, args.AppContext);
-			await bundleApi.PatchBundlesChecksumsAcl(bundle.name, publishedChecksum, ns, new UpdateBundleAclRequest { scope = scope });
+			await bundleApi.PutBundlesChecksumsAcl(bundle.name, publishedChecksum, ns, new UpdateBundleAclRequest { scope = scope });
 			Log.Information($"Widened ACL for checksum=[{publishedChecksum}] to scope=[{scope}]");
 		}
 

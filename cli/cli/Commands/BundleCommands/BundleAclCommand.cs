@@ -34,7 +34,7 @@ public class BundleAclCommand : AtomicCommand<BundleAclCommandArgs, BundleAclCom
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("bundle-ref", "The bundle reference: <bundle-name>, <bundle-name>@<tag>, or <bundle-name>@sha256:<checksum> (a name or tag resolves to its checksum; a bare name means @latest)"),
+		AddArgument(new Argument<string>("bundle-ref", "The bundle reference: <bundle-name>, <bundle-name>@<tag>, or <bundle-name>@sha256:<checksum> (a name or tag resolves to its checksum; a bare name means @latest). Optionally namespaced as @<namespace>/<bundle-name>"),
 			(args, i) => args.bundleRef = i);
 		AddOption(new Option<string>("--scope", "Visibility tier to widen to (each tier is a superset of the previous, not a list of realms): 'realm' = only this realm; 'org' = every realm in your customer; 'public' = every realm in every customer. A literal <cid>.<pid> / <cid> / * is also accepted"),
 			(args, i) => args.scope = i);
@@ -43,8 +43,8 @@ public class BundleAclCommand : AtomicCommand<BundleAclCommandArgs, BundleAclCom
 	public override async Task<BundleAclCommandOutput> GetResult(BundleAclCommandArgs args)
 	{
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
-		var (name, selector) = BundleRef.Split(args.bundleRef);
-		var ns = await BundleNamespace.Get(args);
+		var (explicitNs, name, selector) = BundleRef.Split(args.bundleRef);
+		var ns = await BundleNamespace.Resolve(args, explicitNs);
 
 		var checksum = selector;
 		if (string.IsNullOrEmpty(selector) || !selector.StartsWith("sha256:"))
@@ -59,7 +59,7 @@ public class BundleAclCommand : AtomicCommand<BundleAclCommandArgs, BundleAclCom
 		}
 
 		var scope = BundleAclScope.Resolve(args.scope, args.AppContext);
-		await api.PatchBundlesChecksumsAcl(name, checksum, ns, new UpdateBundleAclRequest { scope = scope });
+		await api.PutBundlesChecksumsAcl(name, checksum, ns, new UpdateBundleAclRequest { scope = scope });
 		return new BundleAclCommandOutput { name = BundleNamespace.Qualify(ns, name), checksum = checksum, scope = scope };
 	}
 }

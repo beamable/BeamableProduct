@@ -1,12 +1,29 @@
 using Beamable.Common.Content;
+using Beamable.Common.Dependencies;
 using Beamable.Serialization;
 using cli.Deployment.Services;
+using cli.Services;
 using System.CommandLine;
 using Beamable.Server;
 
 namespace cli.DeploymentCommands;
 
 public delegate void ProgressHandler(string name, float ratio, bool isKnownLength=true, string serviceName=null);
+
+/// <summary>
+/// Which manifest a deploy operation targets.
+/// <list type="bullet">
+/// <item><b>Realm</b> (default): the realm manifest (<c>cid.pid</c>). Zone-scoped services are
+/// excluded from the plan.</item>
+/// <item><b>Zone</b>: the zone manifest (<c>cid.zid</c>). All realm-scoped services are ignored and
+/// the beamo manifest APIs are called with a <c>cid.zid</c> BEAM_SCOPE header.</item>
+/// </list>
+/// </summary>
+public enum DeployScope
+{
+	Realm,
+	Zone,
+}
 
 public class DeployArgs
 {
@@ -15,9 +32,9 @@ public class DeployArgs
 		where TArgs : CommandArgs, IHasDockerComposeArgs
 	{
 		command.AddOption(new Option<string>(new string[]{"--docker-compose-dir", "-dcd"}, () => "", 
-				description: $"Specify an output path where a new docker-compose project will be created. " +
-				             $"The compose file can be used to run services locally. " +
-				             $"(Note, existing files in this folder will be overwritten)"),
+				description: $"Specify an output path where a new docker-compose project will be created." +
+				             $" The compose file can be used to run services locally." +
+				             $" (Note, existing files in this folder will be overwritten)"),
 			(args, i) => args.DockerComposeDirectoryPath = i);
 	}
 	
@@ -60,6 +77,30 @@ public class DeployArgs
 
 
 		AddModeOption(command, (args, i) => args.DeployMode = i);
+	}
+
+	/// <summary>
+	/// Adds the deploy <c>--scope</c> (realm/zone) option. Kept OUT of <see cref="AddPlanOptions{TArgs}"/> so
+	/// it applies ONLY to the deploy commands (plan/release), not the bundle commands that share
+	/// AddPlanOptions but already define their own, unrelated <c>--scope</c> (visibility tier).
+	/// <para>
+	/// Typed as <c>string</c> (parsed to <see cref="DeployScope"/> in the binder) on purpose: the Unity
+	/// BeamCli command-wrapper generator emits an option's ValueType verbatim, and a <c>cli</c>-namespaced
+	/// <c>DeployScope</c> field does not resolve inside the Unity package (there is no <c>cli</c> assembly),
+	/// which broke the Unity build. A string generates cleanly and carries the same values.
+	/// </para>
+	/// </summary>
+	public static void AddScopeOption<TArgs>(AppCommand<TArgs> command)
+		where TArgs : CommandArgs, IHasDeployPlanArgs
+	{
+		var scopeOption = new Option<string>(new string[] { "--scope" }, () => "realm",
+			"Which manifest to operate against: 'realm' (default) builds and plans the realm manifest " +
+			"(cid.pid) and ignores zone-scoped services; 'zone' ignores all realm-scoped services and " +
+			"operates against the zone manifest (cid.zid)");
+		scopeOption.FromAmong("realm", "zone");
+		command.AddOption(scopeOption,
+			(args, i) => args.Scope =
+				System.Enum.TryParse<DeployScope>(i, ignoreCase: true, out var s) ? s : DeployScope.Realm);
 	}
 	
 	
@@ -116,6 +157,45 @@ public class DeployArgs
 		}));
 	}
 	
+	/// <summary>
+	/// Applies the deploy scope for the current operation. For <see cref="DeployScope.Zone"/>, resolves the
+	/// effective zone id (a selected realm's zone binding wins; otherwise the local <c>.beamable</c> zid) and
+	/// pins the requester's BEAM_SCOPE to <c>{cid}.{zid}</c> so every beamo manifest API call targets the zone
+	/// manifest. Returns a handle that restores the previous scope on dispose — wrap the plan/release in a
+	/// <c>using</c>. For <see cref="DeployScope.Realm"/> this is a no-op (default <c>{cid}.{pid}</c> scope).
+	/// </summary>
+	public static async Task<IDisposable> ApplyDeployScopeAsync(CommandArgs args, DeployScope scope)
+	{
+		if (scope != DeployScope.Zone)
+		{
+			return NoopScope.Instance;
+		}
+
+		var cid = args.AppContext.Cid;
+		var pid = args.AppContext.Pid;
+		var localZid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_ZID);
+		var zid = await ZoneResolver.ResolveZid(args.DependencyProvider, cid, pid, localZid);
+		if (string.IsNullOrEmpty(zid))
+		{
+			var reason = string.IsNullOrEmpty(pid)
+				? "no realm is selected and no 'zid' is set in the .beamable config"
+				: $"the selected realm [{pid}] is not bound to a zone";
+			throw new CliException(
+				$"`--scope zone` was requested, but {reason}. Bind the realm to a zone (Portal > Zone Management) " +
+				$"or set a 'zid' in the .beamable config.");
+		}
+
+		Log.Information($"Deploying against zone [{zid}] with scope [{cid}.{zid}]");
+		var requester = args.DependencyProvider.GetService<CliRequester>();
+		return requester.WithBeamScope($"{cid}.{zid}");
+	}
+
+	private sealed class NoopScope : IDisposable
+	{
+		public static readonly NoopScope Instance = new NoopScope();
+		public void Dispose() { }
+	}
+
 	public static async Task MaybeSaveToFile<T>(string toFile, T instance, string note="saving to file")
 		where T : JsonSerializable.ISerializable
 	{

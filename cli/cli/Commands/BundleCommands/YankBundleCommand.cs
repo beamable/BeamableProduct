@@ -25,15 +25,15 @@ public class YankBundleCommand : AtomicCommand<YankBundleCommandArgs, YankBundle
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("bundle-ref", "The bundle checksum reference, e.g. <bundle-name>@sha256:<checksum>"),
+		AddArgument(new Argument<string>("bundle-ref", "The bundle checksum reference, e.g. <bundle-name>@sha256:<checksum> (optionally namespaced as @<namespace>/<bundle-name>@sha256:<checksum>)"),
 			(args, i) => args.bundleRef = i);
 	}
 
 	public override async Task<YankBundleCommandOutput> GetResult(YankBundleCommandArgs args)
 	{
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
-		var (name, checksum) = BundleRef.RequireChecksum(args.bundleRef);
-		var ns = await BundleNamespace.Get(args);
+		var (explicitNs, name, checksum) = BundleRef.RequireChecksum(args.bundleRef);
+		var ns = await BundleNamespace.Resolve(args, explicitNs);
 		var fullName = BundleNamespace.Qualify(ns, name);
 		var response = await api.PostBundlesChecksumsYank(name, checksum, ns);
 
@@ -42,8 +42,8 @@ public class YankBundleCommand : AtomicCommand<YankBundleCommandArgs, YankBundle
 		var manifest = args.ConfigService.LoadManifestReferences();
 		if (manifest != null && manifest.references.TryGetValue(fullName, out var pinned) && pinned == checksum)
 		{
-			Log.Warning($"[{fullName}] is pinned to this yanked checksum in {ConfigService.MANIFEST_FILE_NAME}. " +
-			            $"Existing deploys keep working, but you can't newly reference it. Run `beam bundles prune-yanked` to review/clear.");
+			Log.Warning($"[{fullName}] is pinned to this yanked checksum in {ConfigService.MANIFEST_FILE_NAME}." +
+			            $" Existing deploys keep working, but you can't newly reference it. Run `beam bundles prune-yanked` to review/clear.");
 		}
 
 		return new YankBundleCommandOutput { name = response.name, checksum = response.checksum };

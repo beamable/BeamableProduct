@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+ - `BeamConfig.realtime.enabled` — opt out of the realtime websocket at init (defaults to `true`). Lets the SDK be used as a pure API client when there's no player to sustain a realtime session.
+ - `Beam.connectRealtime()` / `Beam.disconnectRealtime()` — public methods to start/stop the realtime websocket on demand (e.g. after creating a player via `beam.auth.loginAsGuest()`), and to cleanly tear the connection down.
+
+### Changed
+
+ - `Beam.init()` now skips the realtime connection when `realtime.enabled` is `false` instead of always connecting.
+
 ## [1.2.1] - 2026-06-03
 
 ### Fixed

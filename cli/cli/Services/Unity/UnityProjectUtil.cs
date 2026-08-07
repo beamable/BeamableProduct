@@ -52,17 +52,13 @@ public static class UnityProjectUtil
 		{
 			var fullPath = Path.Combine(targetDirectory, file.FileName);
 			var dir = Path.GetDirectoryName(fullPath);
-			
-			if (Directory.Exists(dir))
-			{
-				File.SetAttributes(dir, FileAttributes.None);
-			}
-			else
-			{
-				Directory.CreateDirectory(dir);
-				File.SetAttributes(dir, FileAttributes.ReadOnly);
-			}
-			
+
+			// The directory must stay writable while we copy files into it. On Unix a read-only
+			// directory (no write bit) prevents creating files inside it, which fails the copy when
+			// the CLI runs as a non-root user (e.g. the GitHub Actions runner). We only mark the
+			// generated files themselves read-only, never their containing folders.
+			Directory.CreateDirectory(dir);
+
 			if (File.Exists(fullPath))
 			{
 				File.SetAttributes(fullPath, FileAttributes.None);
@@ -302,11 +298,17 @@ public static class UnityProjectUtil
 		public string version;
 	}
 
-	public static void DeleteAllFilesWithExtensions(string folder, string[] extensions)
+	/// <summary>
+	/// Deletes files with the specified extensions, then removes any descendant directories left empty.
+	/// Directories containing Unity-owned files, such as assembly definitions, are preserved.
+	/// </summary>
+	/// <param name="folder">The root folder to clean. The root folder itself is never deleted.</param>
+	/// <param name="extensions">The file extensions to delete.</param>
+	public static void DeleteAllFilesWithExtensionsAndEmptyDirectories(string folder, string[] extensions)
 	{
 		if (!Directory.Exists(folder))
 			return;
-		
+
 		foreach (var ext in extensions)
 		{
 			var filesToDelete = Directory.GetFiles(folder, $"*{ext}", SearchOption.AllDirectories);
@@ -315,6 +317,24 @@ public static class UnityProjectUtil
 				File.SetAttributes(file, FileAttributes.None);
 				File.Delete(file);
 			}
+		}
+
+		var directories = Directory.GetDirectories(folder, "*", SearchOption.AllDirectories)
+			.OrderByDescending(directory => directory.Length);
+
+		foreach (var directory in directories)
+		{
+			if (Directory.EnumerateFileSystemEntries(directory).Any())
+				continue;
+
+			Directory.Delete(directory);
+
+			var metaFile = $"{directory}.meta";
+			if (!File.Exists(metaFile))
+				continue;
+
+			File.SetAttributes(metaFile, FileAttributes.None);
+			File.Delete(metaFile);
 		}
 	}
 }

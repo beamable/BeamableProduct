@@ -26,7 +26,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public int mountGroupOrder;
         /// <summary>Specify the order of the mount label</summary>
         public int mountLabelOrder;
-        /// <summary>UI framework template to scaffold the extension with. Allowed values: svelte, react</summary>
+        /// <summary>UI framework template to scaffold the extension with. Allowed values: react</summary>
         public string template;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
