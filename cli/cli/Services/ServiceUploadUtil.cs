@@ -180,7 +180,11 @@ public static class ServiceUploadUtil
 				Timeout = Timeout.InfiniteTimeSpan,
 				BaseAddress = new Uri(baseUrl),
 				DefaultRequestVersion = HttpVersion.Version20,
-				DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
+				// Prefer HTTP/2 but fall back to HTTP/1.1 when the registry endpoint can't negotiate h2
+				// (some networks/proxies, or a registry path that only speaks HTTP/1.1). RequestVersionExact
+				// would throw "unable to establish HTTP/2 connection" instead of downgrading. The Docker
+				// Registry v2 API works over HTTP/1.1, so the fallback is safe.
+				DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower
 			};
 			// The registry authorizes pushes by (clientid, projectid, token). AppContext.Pid is always the
 			// realm pid, so for a zone deploy derive the effective scope from the requester's override (set to

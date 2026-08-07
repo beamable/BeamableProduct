@@ -18,8 +18,57 @@ beam_exec("portal extension list-extension-options")
 ```
 
 The response has two sections:
-- **pageExtensions**: Full-page extensions that add a new page to the Portal navigation. Use `routePrefix` + your custom route as `--mount-page`. The `--mount-selector` is auto-assigned from `autoSelector`.
+- **pageExtensions**: Full-page extensions that add an entry to the Portal navigation. A non-empty `pageExtensions` list just signals that a full-page slot exists; set `--mount-page` to a **hub path** — a bare hub name, or `hub/page` to nest a page inside a hub (see *Hubs vs. pages* below). The `routePrefix` (e.g. `!hub/`) is a discovery marker, not a literal prefix to concatenate. The `--mount-selector` is auto-assigned from `autoSelector`.
 - **componentExtensions**: Component slots that inject into an existing Portal page. Use `path` as `--mount-page` and pick one of the `selectors` as `--mount-selector`.
+
+### Hubs vs. pages: how full-page extensions are routed
+
+Full-page extensions form a **two-level hierarchy**, and the `--mount-page` value
+(persisted as the `page` field under `beamable.mounts[]` in the extension's
+`package.json`) encodes which level the extension occupies:
+
+| `page` value           | What it creates                                                          |
+|------------------------|--------------------------------------------------------------------------|
+| `hub-name`             | The extension **is a hub** — a top-level entry in the Portal navigation. |
+| `hub-name/page-name`   | The extension is a **page mounted inside** the `hub-name` hub.           |
+
+The routing rule is simply: **the segment before the first `/` is the hub.** A value
+with no `/` is a hub itself; a value with a `/` is a page nested under the hub named by
+its first segment. The Portal parses this hierarchy from the `page` string itself — the
+CLI stores whatever you pass to `--mount-page` verbatim.
+
+Key points about the model:
+
+- **A hub is itself a full-page extension.** It is not a separate kind of object — it
+  has its own content and renders exactly like a page.
+- **Pages are full-page extensions too**, distinguished only by prefixing the hub name:
+  `hub-name/page-name`.
+- **A hub with no child pages** shows up in the nav and renders whatever content that
+  hub extension defines.
+- **A hub with child pages** can either render its own content when selected, **or** act
+  purely as a navigation entry that routes into one of its pages.
+
+So "create a new dashboard hub" and "add a page to an existing hub" are the *same*
+operation — a `project new portal-extension` whose `--mount-page` is a bare hub name or
+a `hub/page` path.
+
+#### Relationship to `list-extension-options`
+
+The full-page slot shows up in `pageExtensions[]` as a `routePrefix`. That prefix is a
+**discovery marker, not a literal string to concatenate**: the remote Portal config
+exposes the page slot as `!hub/!pathMatch`, so `routePrefix` comes back looking like
+`!hub/`. The leading `!` marks the wildcard segment — it means "the segment before the
+`/` is the hub" — and is **not** part of the value you store. Strip the marker and
+substitute a real hub name:
+
+- To mount a page **inside a hub**: `--mount-page "<hub-name>/<your-page>"` — e.g.
+  `--mount-page "cars/ferrari"` puts a `ferrari` page under the `cars` hub.
+- To create a **brand-new hub** (or land on an existing one): `--mount-page "<hub-name>"`
+  — e.g. `--mount-page "dashboards"`.
+
+(This is what step 1's *"routePrefix + your custom route"* means: the `!hub/` marker is
+replaced by your hub path, not literally prepended.) For full-page extensions the
+`--mount-selector` is always auto-assigned from the page slot, so you never pass it.
 
 ### 2. Create the extension
 
