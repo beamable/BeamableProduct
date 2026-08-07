@@ -12,6 +12,8 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.unity3d.player.UnityPlayer;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * The plugin's entry point, and the only class name the C# side knows
  * ({@code Beamable.Platform.SDK.Auth.GoogleSignIn} hardcodes it for
@@ -39,6 +41,36 @@ public class GoogleSignInActivity extends Activity {
      * the single most useful thing to compare against the Google Cloud console.
      */
     private String _clientId;
+
+    /**
+     * Guards the single response this Activity is allowed to send.
+     *
+     * <p>Exactly-once settlement is a correctness requirement, not tidiness. Unity's side of an
+     * interactive request ({@code GoogleSignInService.SignIn}) applies <em>no</em> timeout on
+     * purpose - the account chooser can legitimately own the screen for minutes - so a request that
+     * ends without a response leaves the C# promise, and any Account Management flow awaiting it,
+     * pending for the rest of the process. Every exit from this Activity therefore goes through
+     * {@link #settle}, including the {@link #onDestroy} backstop, and the first one wins.
+     *
+     * <p>Atomic rather than a plain boolean only as insurance: every writer here runs on the main
+     * thread today, but a response sent twice is a bug Unity cannot see.
+     */
+    private final AtomicBoolean _settled = new AtomicBoolean(false);
+
+    /** True once the pre-login {@code signOut()} has completed, successfully or not. */
+    private boolean _signOutFinished;
+
+    /** True once the chooser intent has been handed to {@code startActivityForResult}. */
+    private boolean _chooserLaunched;
+
+    /** True between {@code onResume} and {@code onPause}, i.e. while this Activity is foreground. */
+    private boolean _resumed;
+
+    /** Set at the top of {@link #onDestroy}, so {@link #settle} does not call {@code finish()} there. */
+    private boolean _destroying;
+
+    /** Built in {@code onCreate} and used again once the pre-login sign-out completes. */
+    private GoogleSignInClient _client;
 
     /**
      * Commence Google Sign-In login.
@@ -154,31 +186,109 @@ public class GoogleSignInActivity extends Activity {
 
             // Shared with the silent path on purpose - silentSignIn() only recognises the cached
             // account if the options match exactly. See GoogleSignInBridge#buildOptions.
-            final GoogleSignInClient client =
-                    GoogleSignIn.getClient(this, GoogleSignInBridge.buildOptions(_clientId));
+            _client = GoogleSignIn.getClient(this, GoogleSignInBridge.buildOptions(_clientId));
 
             // Force the account chooser to appear every time (beam-1880). Awaited, rather than raced
             // against getSignInIntent() as it used to be: signOut() completing underneath a running
             // SignInHubActivity was this file's own documented first suspect whenever account
             // selection misbehaved, and there is no reason to keep the race when the fix is one
-            // listener. Scoped to this Activity so it cannot fire after the Activity is gone.
-            // The silent path must never sign out, which is why it does not share this method.
-            client.signOut().addOnCompleteListener(this, new OnCompleteListener<Void>() {
+            // listener. The silent path must never sign out, which is why it does not share this
+            // method.
+            //
+            // Deliberately NOT addOnCompleteListener(this, ...). An Activity-scoped listener is
+            // removed in onStop and never re-added, so a player who backgrounds the app in the
+            // window between onCreate and signOut() completing loses the callback permanently: no
+            // chooser is launched, no response reaches Unity, and because SignIn() has no timeout
+            // the promise stays pending forever. The unscoped listener always runs; deciding
+            // whether it is safe to act on it is #launchChooserWhenReady's job, and onDestroy is
+            // the backstop for the case where it never becomes safe.
+            _client.signOut().addOnCompleteListener(new OnCompleteListener<Void>() {
                 @Override
                 public void onComplete(Task<Void> task) {
-                    try {
-                        startActivityForResult(client.getSignInIntent(), REQUEST_CODE_SIGNIN);
-                    } catch (Throwable t) {
-                        Log.e(TAG, "Could not start the account chooser", t);
-                        sendResponse(GoogleSignInBridge.describeThrowable(t));
-                        finish();
-                    }
+                    // GMS dispatches an executor-less listener on the main looper, which is the same
+                    // thread as every lifecycle callback here - so the flags below need no locking.
+                    _signOutFinished = true;
+                    launchChooserWhenReady();
                 }
             });
         } catch (Throwable t) {
             Log.e(TAG, "Exception before sign-in", t);
-            sendResponse(GoogleSignInBridge.describeThrowable(t));
-            finish();
+            settle(GoogleSignInBridge.describeThrowable(t));
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        _resumed = true;
+
+        // Normally a no-op: the sign-out listener cannot run before this, because onCreate through
+        // onResume are one message on the main looper. It matters on the way back from being
+        // backgrounded, where it is what finally launches a chooser that was deferred.
+        launchChooserWhenReady();
+    }
+
+    @Override
+    protected void onPause() {
+        _resumed = false;
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        _destroying = true;
+
+        // The backstop that makes settlement exactly-once rather than at-most-once. Reached without
+        // a response whenever the OS tears this Activity down mid-flight: destroyed while a
+        // deferred chooser was still waiting for the player to return, or reclaimed while the
+        // chooser itself was in front, in which case onActivityResult will never be delivered.
+        // Either way this request has no other way to end, so Unity has to hear something.
+        //
+        // Cancelled, not an error: the player leaving is exactly what this means, it is how
+        // GoogleSignInBridge#describeInteractiveResult already reports a torn-down Activity, and it
+        // lands on the C# side as a benign GoogleSignInStatus.Cancelled rather than something a
+        // game would show an error dialog for.
+        //
+        // A configuration change is not a teardown - onCreate runs again on the new instance and
+        // restarts the flow - so answering here would settle a request that is still live.
+        if (!isChangingConfigurations()) {
+            settle(GoogleSignInBridge.RESPONSE_CANCELED + " - the sign-in Activity was destroyed before "
+                    + "sign-in finished");
+        }
+
+        super.onDestroy();
+    }
+
+    /**
+     * Launch the account chooser, once the pre-login sign-out has finished and this Activity is
+     * actually in the foreground.
+     *
+     * <p>Both conditions have to hold. Starting an Activity from a stopped one is subject to
+     * Android 10's background-activity-start restrictions and would be silently dropped, which is
+     * the same indefinite hang this method exists to prevent - so if the player has backgrounded
+     * the app, the launch waits for {@link #onResume} instead. If they never come back,
+     * {@link #onDestroy} settles the request.
+     *
+     * <p>Safe to call more than once, from either trigger, in any order.
+     */
+    private void launchChooserWhenReady() {
+        if (_chooserLaunched || _settled.get() || !_signOutFinished) {
+            return;
+        }
+
+        if (!_resumed || isFinishing()) {
+            Log.i(TAG, "Pre-login sign-out finished while the Activity was not in the foreground; "
+                    + "deferring the account chooser until the player returns");
+            return;
+        }
+
+        _chooserLaunched = true;
+
+        try {
+            startActivityForResult(_client.getSignInIntent(), REQUEST_CODE_SIGNIN);
+        } catch (Throwable t) {
+            Log.e(TAG, "Could not start the account chooser", t);
+            settle(GoogleSignInBridge.describeThrowable(t));
         }
     }
 
@@ -193,28 +303,43 @@ public class GoogleSignInActivity extends Activity {
         try {
             if (requestCode != REQUEST_CODE_SIGNIN) {
                 Log.w(TAG, "Sign-in response had unexpected request code: " + requestCode);
-                sendResponse(GoogleSignInBridge.RESPONSE_UNKNOWN);
+                settle(GoogleSignInBridge.RESPONSE_UNKNOWN);
                 return;
             }
 
             // Note there is deliberately no resultCode check. GMS reports RESULT_CANCELED both for a
             // dismissal and for a configuration rejection; only the Status inside the intent tells
             // them apart, and this used to collapse both into "CANCELED".
-            sendResponse(GoogleSignInBridge.describeInteractiveResult(this, data, resultCode, _clientId));
+            settle(GoogleSignInBridge.describeInteractiveResult(this, data, resultCode, _clientId));
         } catch (Throwable t) {
             Log.e(TAG, "Exception during sign-in", t);
-            sendResponse(GoogleSignInBridge.describeThrowable(t));
-        } finally {
-            finish();
+            settle(GoogleSignInBridge.describeThrowable(t));
         }
     }
 
     /**
-     * Send a response back to Unity. Unity will receive this as soon as the activity is finished.
+     * End this request: send exactly one response back to Unity and finish the Activity.
+     *
+     * <p>Every exit path calls this, and only the first call does anything - see {@link #_settled}
+     * for why that matters. Later calls, including the {@link #onDestroy} backstop firing after a
+     * normal response, are no-ops, so the more specific outcome always wins.
+     *
+     * <p>{@code UnitySendMessage} queues for the player loop, so the C# callback runs on a later
+     * frame regardless of whether the Activity has finished by then.
+     *
      * @param message message to send to the callback.
      */
-    private void sendResponse(String message) {
+    private void settle(String message) {
+        if (!_settled.compareAndSet(false, true)) {
+            Log.d(TAG, "Ignoring a second response for the same request: " + message);
+            return;
+        }
+
         GoogleSignInBridge.sendResponse(_unityObject, _unityMethod, message);
+
+        if (!_destroying && !isFinishing()) {
+            finish();
+        }
     }
 
     /**
