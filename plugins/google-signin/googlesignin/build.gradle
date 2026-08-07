@@ -1,17 +1,49 @@
 apply plugin: 'com.android.library'
 
+// Bumped by hand whenever the plugin's public surface changes. GoogleSignInActivity.getPluginVersion()
+// returns it so the C# side can cheaply detect an .aar that predates a feature it wants to use, and
+// degrade instead of throwing. This version deliberately does NOT appear in the .aar filename - see
+// the installToUnity task below.
+def pluginVersion = '2.0.0'
+
 android {
-    compileSdkVersion 30
-    buildToolsVersion "30.0.2"
+    namespace 'com.beamable.googlesignin'
+
+    // compileSdk only decides which android.jar we compile against; it has no effect on consumers
+    // and is not recorded in the .aar in any consumer-visible way. 34 is chosen because it is the
+    // oldest platform bundled with the Unity 2022.3+ Android SDK, so the plugin builds with the SDK
+    // a Unity developer already has, with no sdkmanager downloads.
+    compileSdk 34
+    buildToolsVersion '34.0.0'
 
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 30
-        versionCode 1
-        versionName "1.0"
+        // Do NOT raise minSdk. AGP writes it into the .aar's manifest and the manifest merger
+        // enforces library.minSdk <= app.minSdk, where the app's value comes from the *customer's*
+        // Unity Player Settings. Raising it here hard-fails the build of every customer below the
+        // new floor ("uses-sdk:minSdkVersion N cannot be smaller than version M declared in
+        // library"), and it buys nothing: play-services-auth:18.1.0 is itself minSdk 14, this
+        // plugin calls no API-gated framework method, and core library desugaring is not used.
+        minSdk 16
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles "consumer-rules.pro"
+        // A library's targetSdk, versionCode and versionName are ignored by the manifest merger and
+        // unused at runtime - the consuming app's values govern - so they are deliberately absent.
+        // The plugin's own version is exposed through BuildConfig.PLUGIN_VERSION instead.
+
+        consumerProguardFiles 'consumer-rules.pro'
+
+        buildConfigField 'String', 'PLUGIN_VERSION', "\"${pluginVersion}\""
+    }
+
+    compileOptions {
+        // NON-NEGOTIABLE, and pinned explicitly even though 1.8 also happens to be AGP 7.4's
+        // default. Everything in classes.jar is dexed by the *consumer's* D8, so the bytecode level
+        // has to be one every consumer can read. Java 8 gives class file major version 52, which
+        // every D8 back to AGP 3.x accepts. AGP 8's default of Java 17 would give major 61 and fail
+        // in older consumer projects with "Unsupported class file major version 61" - a failure that
+        // is invisible here and fatal there, and which the consumer cannot fix on their side.
+        // The CI workflow (.github/workflows/androidPluginPR.yml) gates on major version 52.
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     buildTypes {
@@ -23,6 +55,37 @@ android {
 }
 
 dependencies {
+    // Deliberately 'implementation': nothing is embedded in the .aar and no dependency metadata
+    // travels with it, so the consuming Unity project supplies play-services-auth itself through
+    // Assets/Plugins/Android/mainTemplate.gradle. Consequence to respect when editing this plugin:
+    // any GMS API used here must exist in the OLDEST version a customer might resolve.
+    // GoogleSignInClient.silentSignIn() long predates 18.1.0.
     implementation 'com.google.android.gms:play-services-auth:18.1.0'
+
+    // com.unity3d.player.UnityPlayer is provided by the Unity player at runtime; it must never be
+    // packaged into the .aar, hence compileOnly.
     compileOnly files('libs/unity-classes.jar')
+}
+
+// Installs the built .aar into the Unity package. Usage:
+//   ./gradlew :googlesignin:installToUnity
+tasks.register('installToUnity', Copy) {
+    group = 'beamable'
+    description = 'Copies the release .aar into client/Packages/com.beamable/Plugins/Android.'
+    dependsOn 'assembleRelease'
+
+    // Copy, NEVER Sync. Sync deletes destination files that are not in the source set, which would
+    // delete googlesignin-release.aar.meta. Unity would then generate a fresh .meta with a new
+    // random GUID and *default* import settings - no longer Android-only - and because this ships
+    // inside the published com.beamable UPM package, that GUID is part of its public surface: a
+    // change to it is breaking for every consuming project.
+    //
+    // For the same reason the destination filename must stay exactly googlesignin-release.aar:
+    // Unity binds a .meta to an asset by path. Never put the plugin version in the filename.
+    from layout.buildDirectory.file('outputs/aar/googlesignin-release.aar')
+    into rootProject.file('../../client/Packages/com.beamable/Plugins/Android')
+
+    doLast {
+        logger.lifecycle("Installed googlesignin-release.aar (plugin version ${pluginVersion}) into the Unity package.")
+    }
 }

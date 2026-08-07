@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.beamable.googlesignin">
+<!-- The package name lives in googlesignin/build.gradle as `namespace`. The `package` attribute
+     that used to be here is deprecated from AGP 7.3 onwards and removed in AGP 8.
+     No permissions are declared: play-services-auth contributes what it needs through manifest
+     merging, and the consuming app's minSdk/targetSdk govern. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application>
         <activity android:name=".GoogleSignInActivity" />

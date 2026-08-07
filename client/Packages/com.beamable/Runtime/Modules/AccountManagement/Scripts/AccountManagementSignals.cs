@@ -77,9 +77,21 @@ namespace Beamable.AccountManagement
 	{
 		public AuthThirdParty ThirdParty { get; }
 
-		public ThirdPartyLoginPromise(AuthThirdParty thirdParty)
+		/// <summary>
+		/// When true, the provider must acquire its token without showing any UI, and must report a
+		/// benign result rather than an error if it cannot. Carried on the promise rather than being
+		/// a separate signal so that the existing fan-out of <c>ThirdPartyLoginAttempted</c> - where
+		/// every provider behaviour self-filters on <see cref="ThirdParty"/> - keeps working
+		/// unchanged, with no prefab edits.
+		/// </summary>
+		public bool Silent { get; }
+
+		public ThirdPartyLoginPromise(AuthThirdParty thirdParty) : this(thirdParty, false) { }
+
+		public ThirdPartyLoginPromise(AuthThirdParty thirdParty, bool silent)
 		{
 			ThirdParty = thirdParty;
+			Silent = silent;
 		}
 	}
 
@@ -89,14 +101,39 @@ namespace Beamable.AccountManagement
 		public readonly bool Cancelled;
 		public readonly bool AuthTokenOneUseOnly;
 
+		/// <summary>
+		/// True when a silent attempt found no credential to use. Implies <see cref="Cancelled"/>, so
+		/// the login flow treats it as a no-op, but lets a caller tell "nobody has signed in on this
+		/// device" apart from "the player dismissed the dialog".
+		/// </summary>
+		public readonly bool NoCredential;
+
 		public ThirdPartyLoginResponse() { }
 
-		public ThirdPartyLoginResponse(string authToken, bool cancelled = false, bool oneUseOnly = false)
+		public ThirdPartyLoginResponse(string authToken, bool cancelled = false, bool oneUseOnly = false,
+									   bool noCredential = false)
 		{
 			AuthToken = authToken;
 			Cancelled = cancelled;
 			AuthTokenOneUseOnly = oneUseOnly;
+			NoCredential = noCredential;
 		}
+
+		/// <summary>
+		/// A fresh "nothing happened" response.
+		/// </summary>
+		/// <remarks>
+		/// Prefer this to the <see cref="CANCELLED"/> singleton: that is a shared mutable instance
+		/// with a public, writable <see cref="AuthToken"/>, so anything that assigns to it corrupts
+		/// every future cancellation process-wide.
+		/// </remarks>
+		public static ThirdPartyLoginResponse Cancel() => new ThirdPartyLoginResponse(null, true);
+
+		/// <summary>
+		/// A fresh response for "a silent attempt found no usable credential".
+		/// </summary>
+		public static ThirdPartyLoginResponse NoCredentialFound() =>
+			new ThirdPartyLoginResponse(null, true, false, true);
 
 		public static ThirdPartyLoginResponse CANCELLED = new ThirdPartyLoginResponse(null, true);
 	}
@@ -362,11 +399,44 @@ namespace Beamable.AccountManagement
 			 * | YES                       | NO                       | attach the credentials to the current account
 			 *
 			 */
+			if (argument.Silent)
+			{
+				LoginThirdPartySilently(argument.ThirdParty);
+				return;
+			}
+
 			var promise = new ThirdPartyLoginPromise(argument.ThirdParty);
 
 			WithLoading("Logging In...",
 						promise.FlatMap(response => StartThirdPartyLogin(response, argument.ThirdParty)))
 				.Error(HandleError);
+			DeferBroadcast(promise, s => s.ThirdPartyLoginAttempted);
+		}
+
+		/// <summary>
+		/// Attempt a third party login without showing any UI, using a credential the player has
+		/// already granted on this device. Currently only Google Sign-In on Android can service this;
+		/// every other provider reports back that no credential is available and nothing happens.
+		/// </summary>
+		/// <remarks>
+		/// <para>Two deliberate differences from <see cref="LoginThirdParty"/>: there is no
+		/// <c>WithLoading</c> overlay, because a silent attempt must not block the game behind a
+		/// spinner; and failures are logged rather than routed to <c>HandleError</c>, because a silent
+		/// attempt that does not find a credential is an ordinary outcome, not something to interrupt
+		/// the player about.</para>
+		///
+		/// <para>Note that this is silent about <i>acquiring the token</i>, not necessarily about
+		/// <i>adopting the account</i>: if the token resolves to an existing account, the downstream
+		/// flow still offers the account switch prompt. For a fully silent startup restore, use
+		/// <c>GoogleSignInService.SignInSilently</c> with
+		/// <c>PlayerAccounts.RecoverAccountWithThirdParty</c> instead.</para>
+		/// </remarks>
+		public void LoginThirdPartySilently(AuthThirdParty thirdParty)
+		{
+			var promise = new ThirdPartyLoginPromise(thirdParty, silent: true);
+
+			promise.FlatMap(response => StartThirdPartyLogin(response, thirdParty))
+				   .Error(err => Debug.Log($"Silent {thirdParty} login did not complete. {err.Message}"));
 			DeferBroadcast(promise, s => s.ThirdPartyLoginAttempted);
 		}
 
