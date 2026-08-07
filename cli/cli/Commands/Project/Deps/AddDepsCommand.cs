@@ -38,6 +38,16 @@ public class AddDepsCommand : AppCommand<AddDepsCommandArgs>, IEmptyResult
 			return;
 		}
 
+		// A dependency cannot cross scopes: a zone service/storage lives in the zone manifest and a realm one in
+		// the realm manifest, so a reference between the two could never be satisfied at deploy time. Reject it.
+		if (serviceDefinition.IsZoneScoped != dependencyDefinition.IsZoneScoped)
+		{
+			throw new CliException(
+				$"Cannot add {args.Dependency} ({(dependencyDefinition.IsZoneScoped ? "zone" : "realm")}-scoped) as a " +
+				$"dependency of {args.ServiceName} ({(serviceDefinition.IsZoneScoped ? "zone" : "realm")}-scoped). " +
+				$"A dependency must be in the same scope — they deploy into different manifests.");
+		}
+
 		List<DependencyData> dependencies = args.BeamoLocalSystem.GetDependencies(args.ServiceName);
 		bool isAlreadyDependency = dependencies.Any(data => data.name == args.Dependency);
 

@@ -213,6 +213,13 @@ public class DeployablePlan : JsonSerializable.ISerializable
 	public DeployMode mode;
 
 	/// <summary>
+	/// Which manifest this plan targets — realm (<c>cid.pid</c>) or zone (<c>cid.zid</c>). Captured at plan
+	/// time so a later <c>deploy release --from-plan</c> re-applies the same scope automatically, without the
+	/// caller having to pass <c>--scope zone</c> again. Defaults to <see cref="DeployScope.Realm"/>.
+	/// </summary>
+	public DeployScope scope;
+
+	/// <summary>
 	/// The resulting manifest. After the plan is released, the server-side manifest will be this manifest.
 	/// </summary>
 	public ManifestView manifest;
@@ -236,6 +243,7 @@ public class DeployablePlan : JsonSerializable.ISerializable
 	{
 		s.Serialize(nameof(builtFromRemoteChecksum), ref builtFromRemoteChecksum);
 		s.SerializeEnum(nameof(mode), ref mode);
+		s.SerializeEnum(nameof(scope), ref scope);
 		s.Serialize(nameof(manifest), ref manifest);
 		s.Serialize(nameof(diff), ref diff);
 		s.Serialize(nameof(changeCount), ref changeCount);
@@ -1325,7 +1333,6 @@ public partial class DeployUtil
 		const string MergingManifestProgressName = "calculating plan";
 
 
-		var api = provider.GetService<IBeamoApi>();
 		var beamo = provider.GetService<BeamoLocalSystem>();
 		var beamoApi = provider.GetService<IBeamBeamoApi>();
 
@@ -1374,7 +1381,9 @@ public partial class DeployUtil
 		Task<(ManifestView, List<BuildImageOutput>)> localTask = null;
 		
 		progressHandler?.Invoke(FetchManifestProgressName, 0);
-		var remoteTask = CreateReleaseManifestFromRealm(api);
+		// Read the remote manifest from the V2 API (adapted to the legacy ManifestView the merge uses)
+		// for both realm and zone scopes — see CreateReleaseManifestViewFromRealmV2.
+		var remoteTask = CreateReleaseManifestViewFromRealmV2(beamoApi);
 		var beamoV2ManifestTask = CreateReleaseManifestFromRealmV2(beamoApi);
 
 		// TODO: scope better; explain how to resolve remote and local manifest
@@ -1392,8 +1401,8 @@ public partial class DeployUtil
 		{
 			// Docker is only needed to build service images. A filtered plan whose set contains no
 			// local microservice (e.g. a portal-extension-only bundle) can run without the daemon.
-			var needsServiceBuild = includeOnlyBeamoIds == null || beamo.BeamoManifest.ServiceDefinitions.Any(d =>
-				d.IsLocal && d.Protocol == BeamoProtocolType.HttpMicroservice && includeOnlyBeamoIds.Contains(d.BeamoId));
+			var needsServiceBuild = beamo.BeamoManifest.ServiceDefinitions.Any(d =>
+				d.IsLocal && d.Protocol == BeamoProtocolType.HttpMicroservice && d.IsZoneScoped == (args.Scope == DeployScope.Zone) && (includeOnlyBeamoIds == null || includeOnlyBeamoIds.Contains(d.BeamoId)));
 			if (needsServiceBuild)
 			{
 				var dockerStatus = await DockerStatusCommand.CheckDocker(provider);
@@ -1403,7 +1412,7 @@ public partial class DeployUtil
 				}
 			}
 
-			localTask = CreateReleaseManifestFromLocal(args, provider, beamo.BeamoManifest, progressHandler, args.MaxParallelTask, useSequentialBuild: args.UseSequentialBuild, includeOnlyBeamoIds: includeOnlyBeamoIds);
+			localTask = CreateReleaseManifestFromLocal(args, provider, beamo.BeamoManifest, progressHandler, args.MaxParallelTask, useSequentialBuild: args.UseSequentialBuild, includeOnlyBeamoIds: includeOnlyBeamoIds, scope: args.Scope);
 		}
 		progressHandler?.Invoke(MergingManifestProgressName, 0);
 		remote = await remoteTask;
@@ -1432,6 +1441,8 @@ public partial class DeployUtil
 
 		var localPeDefs = beamo.BeamoManifest.ServiceDefinitions
 			.Where(d => d.Protocol == BeamoProtocolType.PortalExtension && d.IsLocal)
+			// A realm plan skips zone-scoped extensions; a zone plan includes only them.
+			.Where(d => d.IsZoneScoped == (args.Scope == DeployScope.Zone))
 			.Select(d => d.PortalExtensionDefinition)
 			// Portal extensions that belong to an authored bundle are excluded from the root manifest.
 			.Where(d => !bundleComponentIds.Contains(d.Name))
@@ -1769,6 +1780,7 @@ public partial class DeployUtil
 			ranHealthChecks = args.RunHealthChecks,
 			builtFromRemoteChecksum = remote.checksum,
 			mode = args.DeployMode,
+			scope = args.Scope,
 			diff = diff,
 			manifest = next,
 			notes = notes,
@@ -1851,19 +1863,20 @@ public partial class DeployUtil
 		Task<ManifestView> remoteManifestTask=null,
 		int maxConcurrentUploads=6)
 	{
-		var api = provider.GetService<IBeamoApi>();
 		var beamoApi = provider.GetService<IBeamBeamoApi>();
 		var beamoService = provider.GetService<BeamoService>();
 		var beamo = provider.GetService<BeamoLocalSystem>();
 
 		var gamePidPromise = provider.GetService<IRealmsApi>().GetRealm();
-		var dockerRegistryUrlPromise = beamoService.GetDockerImageRegistryUri();
-		
+		// Resolve the registry URI + per-service canonical repository names from the scoped V2 endpoint, so a
+		// zone deploy pushes images to the zone repos the server expects (see BeamoService.GetImageUploadTargets).
+		var uploadTargetsPromise = beamoService.GetImageUploadTargets(plan.servicesToUpload);
+
 		var beamoV2Manifest = await CreateReleaseManifestFromRealmV2(beamoApi);
-		
-		var remote = await (remoteManifestTask ?? CreateReleaseManifestFromRealm(api));
+
+		var remote = await (remoteManifestTask ?? CreateReleaseManifestViewFromRealmV2(beamoApi));
 		var gamePid = (await gamePidPromise).FindRoot().Pid; // TODO I really think we should move this to _ctx/ConfigService and grab it during init...
-		var dockerRegistryUrl = await dockerRegistryUrlPromise;
+		var (dockerRegistryUrl, repositoryNames) = await uploadTargetsPromise;
 
 		if (remote.checksum != plan.builtFromRemoteChecksum)
 		{
@@ -1876,7 +1889,7 @@ public partial class DeployUtil
 
 		progressHandler?.Invoke("publish", 0);
 		await UploadServiceImages(plan.manifest.manifest, servicesToUpload,
-			provider, gamePid, dockerRegistryUrl, cts, progressHandler, maxConcurrentUploads);
+			provider, gamePid, dockerRegistryUrl, cts, progressHandler, maxConcurrentUploads, repositoryNames);
 
 		// ── Portal Extension binary uploads ───────────────────────────────────────
 		// Must happen before building BeamoV2PostManifestRequest so files[] are populated.
@@ -1951,7 +1964,8 @@ public partial class DeployUtil
 		string dockerRegistryUrl,
 		CancellationTokenSource cts,
 		ProgressHandler progressHandler,
-		int maxConcurrentUploads = 6)
+		int maxConcurrentUploads = 6,
+		IReadOnlyDictionary<string, string> repositoryNames = null)
 	{
 		var toUpload = services.Where(s => servicesToUpload.Contains(s.serviceName)).ToList();
 		if (toUpload.Count == 0) return;
@@ -1969,6 +1983,9 @@ public partial class DeployUtil
 			try
 			{
 				var progressTaskName = $"upload {service.serviceName}";
+				var repositoryName = repositoryNames != null && repositoryNames.TryGetValue(service.serviceName, out var repo)
+					? repo
+					: null;
 				await ServiceUploadUtil.Upload(
 					provider: provider,
 					beamoId: service.serviceName,
@@ -1979,7 +1996,8 @@ public partial class DeployUtil
 					onProgressCallback: progressRatio =>
 					{
 						progressHandler?.Invoke(progressTaskName, progressRatio, serviceName: service.serviceName);
-					});
+					},
+					repositoryName: repositoryName);
 			}
 			finally
 			{
@@ -1992,7 +2010,7 @@ public partial class DeployUtil
 
 	/// <summary>
 	/// Upload the changed asset binaries for the portal extensions in <paramref name="plan"/> (via
-	/// PostBinary + signed-URL PUT) and fill each matching <c>portalExtensionReferences</c> entry's
+	/// the beamo PostContentBinary endpoint + signed-URL PUT) and fill each matching <c>portalExtensionReferences</c> entry's
 	/// <c>files[]</c> with the resulting contentIds. Shared by realm release and bundle publish.
 	/// When <paramref name="onlyNames"/> is non-null, only those extensions are uploaded.
 	/// </summary>
@@ -2002,7 +2020,7 @@ public partial class DeployUtil
 			.Where(pe => onlyNames == null || onlyNames.Contains(pe.name)).ToList();
 		if (toUpload.Count == 0) return;
 
-		var contentApi = provider.GetService<IContentApi>();
+		var beamoApi = provider.GetService<IBeamBeamoApi>();
 		using var httpClient = new HttpClient();
 
 		await Task.WhenAll(toUpload.Select(async pe =>
@@ -2010,22 +2028,30 @@ public partial class DeployUtil
 			var progressName = $"upload portal extension {pe.name}";
 			progressHandler?.Invoke(progressName, 0f);
 
+			// The beamo content/binary endpoint rejects ids containing '/', '\' or whitespace, so join the
+			// extension name and file name with ':' — it doesn't appear in either part, so the two remain
+			// distinguishable. This id is opaque downstream (matched/stored as-is), so the separator is free.
+			string ContentIdFor(string fileName) => $"{pe.name}:{fileName}";
+
 			// Build binary definitions in parallel for files that changed
 			var filesToUpload = pe.files.Where(f => f.needsUpload).ToList();
 			var binDefs = await Task.WhenAll(filesToUpload.Select(async file =>
 			{
 				var filePath = Path.Combine(pe.absolutePath, "assets", file.fileName);
-				return await GetBinaryDefinitionFromFile(filePath, $"{pe.name}/{file.fileName}", file.contentType);
+				return await GetBinaryDefinitionFromFile(filePath, ContentIdFor(file.fileName), file.contentType);
 			}));
 
 			// Get signed upload URLs for files that need uploading
-			var uploadedRefs = new Dictionary<string, BinaryReference>();
+			var uploadedRefs = new Dictionary<string, BeamoV2BinaryContentUploadUrl>();
 			if (binDefs.Length > 0)
 			{
-				var binaryResp = await contentApi.PostBinary(new SaveBinaryRequest { binary = binDefs });
+				var binaryResp = await beamoApi.PostContentBinary(new BeamoV2SaveBinaryContentRequest
+				{
+					binary = new OptionalArrayOfBeamoV2BinaryContentDefinition { Value = binDefs, HasValue = true }
+				});
 				foreach (var file in filesToUpload)
 				{
-					uploadedRefs[file.fileName] = binaryResp.binary.First(b => b.id == $"{pe.name}/{file.fileName}");
+					uploadedRefs[file.fileName] = binaryResp.binary.Value.First(b => b.id == ContentIdFor(file.fileName));
 				}
 			}
 			progressHandler?.Invoke(progressName, 0.33f);
@@ -2034,7 +2060,8 @@ public partial class DeployUtil
 			await Task.WhenAll(filesToUpload.Select(async file =>
 			{
 				var bytes = await File.ReadAllBytesAsync(Path.Combine(pe.absolutePath, "assets", file.fileName));
-				await PutToSignedUrl(httpClient, uploadedRefs[file.fileName].uploadUri, bytes, file.contentType, MD5.HashData(bytes));
+				var uploadRef = uploadedRefs[file.fileName];
+				await UploadToSignedUrl(httpClient, uploadRef.uploadMethod.Value, uploadRef.uploadUri.Value, bytes, file.contentType, MD5.HashData(bytes));
 			}));
 			progressHandler?.Invoke(progressName, 0.66f);
 
@@ -2042,7 +2069,7 @@ public partial class DeployUtil
 			var peRef = plan.portalExtensionReferences.First(r => r.name == pe.name);
 			peRef.files = pe.files.Select(f => new PortalExtensionPlanFileReference
 			{
-				contentId = f.needsUpload ? uploadedRefs[f.fileName].id : f.existingContentId,
+				contentId = f.needsUpload ? uploadedRefs[f.fileName].id.Value : f.existingContentId,
 				name = f.fileName,
 				version = f.checksum,
 			}).ToList();
@@ -2051,20 +2078,19 @@ public partial class DeployUtil
 		}));
 	}
 
-	private static async Task<BinaryDefinition> GetBinaryDefinitionFromFile(string filePath, string contentId, string contentType)
+	private static async Task<BeamoV2BinaryContentDefinition> GetBinaryDefinitionFromFile(string filePath, string contentId, string contentType)
 	{
 		var bytes = await File.ReadAllBytesAsync(filePath);
 		var md5Bytes = MD5.HashData(bytes);
-		return new BinaryDefinition
+		return new BeamoV2BinaryContentDefinition
 		{
-			id = contentId,
-			checksum = BitConverter.ToString(md5Bytes).Replace("-", ""),
-			uploadContentType = contentType,
-			visibility = new OptionalString { Value = "private", HasValue = true },
+			id = new OptionalString { Value = contentId, HasValue = true },
+			checksum = new OptionalString { Value = BitConverter.ToString(md5Bytes).Replace("-", ""), HasValue = true },
+			uploadContentType = new OptionalString { Value = contentType, HasValue = true },
 		};
 	}
 
-	private static async Task PutToSignedUrl(HttpClient httpClient, string url, byte[] data, string contentType, byte[] md5Bytes)
+	private static async Task UploadToSignedUrl(HttpClient httpClient, string uploadMethod, string url, byte[] data, string contentType, byte[] md5Bytes)
 	{
 		//TODO This can be done with more granular updates over how many bytes were uploaded
 		// INstead of using ByteArrayContent we can use ObservableByteArrayContent
@@ -2072,7 +2098,11 @@ public partial class DeployUtil
 		content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
 		content.Headers.ContentMD5 = md5Bytes;
 
-		var response = await httpClient.PutAsync(url, content);
+		// Honor the HTTP verb the signed-URL response asked for (defaults to PUT when unspecified).
+		var method = string.IsNullOrEmpty(uploadMethod) ? HttpMethod.Put : new HttpMethod(uploadMethod);
+		var request = new HttpRequestMessage(method, url) { Content = content };
+
+		var response = await httpClient.SendAsync(request);
 		if (!response.IsSuccessStatusCode)
 		{
 			var body = await response.Content.ReadAsStringAsync();
@@ -2116,22 +2146,17 @@ public partial class DeployUtil
 		}
 	}
 
-	public static async Task<ManifestView> CreateReleaseManifestFromRealm(IBeamoApi beamo)
+	/// <summary>
+	/// Reads the current remote manifest via the V2 API and adapts it to the legacy <see cref="ManifestView"/>
+	/// the plan/merge pipeline expects. This replaced the old realm-only fetch (which hit
+	/// <c>/basic/beamo/manifest/current</c> via <c>IBeamoApi</c>) for both realm and zone scopes, so a zone
+	/// deploy (whose requester scope is <c>cid.zid</c>) reads the zone manifest from the same V2 endpoint the
+	/// publish uses.
+	/// </summary>
+	public static async Task<ManifestView> CreateReleaseManifestViewFromRealmV2(IBeamBeamoApi beamBeamo)
 	{
-		try
-		{
-			var current = await beamo.GetManifestCurrent();
-			return current.manifest;
-		}
-		catch (RequesterException requesterException) when (requesterException.Status == 404)
-		{
-			// there is no existing manifest.
-			return new ManifestView
-			{
-				manifest = Array.Empty<ServiceReference>(),
-				storageReference = new OptionalArrayOfServiceStorageReference(Array.Empty<ServiceStorageReference>())
-			};
-		}
+		var v2 = await CreateReleaseManifestFromRealmV2(beamBeamo);
+		return v2.ConvertToManifestView();
 	}
 
 	public static async Task<BeamoV2Manifest> CreateReleaseManifestFromRealmV2(IBeamBeamoApi beamBeamo)
@@ -2188,7 +2213,7 @@ public partial class DeployUtil
 		return (localManifest, new List<BuildImageOutput>());
 	}
 	
-	public static async Task<(ManifestView, List<BuildImageOutput>)> CreateReleaseManifestFromLocal<TArg>(TArg slnArg, IDependencyProvider provider, BeamoLocalManifest localManifest, ProgressHandler progressHandler, int maxParallelTask, bool useSequentialBuild=false, HashSet<string> includeOnlyBeamoIds = null)
+	public static async Task<(ManifestView, List<BuildImageOutput>)> CreateReleaseManifestFromLocal<TArg>(TArg slnArg, IDependencyProvider provider, BeamoLocalManifest localManifest, ProgressHandler progressHandler, int maxParallelTask, bool useSequentialBuild=false, HashSet<string> includeOnlyBeamoIds = null, DeployScope scope = DeployScope.Realm)
 		where TArg : CommandArgs, IHasSolutionFileArg
 	{
 		var services = new ServiceReference[localManifest.HttpMicroserviceLocalProtocols.Count];
@@ -2201,8 +2226,8 @@ public partial class DeployUtil
 
 		// build all the local services first as a solution level build. On a filtered plan with no
 		// microservice in the set (e.g. a portal-extension-only bundle), skip the solution build.
-		var anyIncludedService = includeOnlyBeamoIds == null || localManifest.ServiceDefinitions.Any(d =>
-			d.IsLocal && d.Protocol == BeamoProtocolType.HttpMicroservice && includeOnlyBeamoIds.Contains(d.BeamoId));
+		var anyIncludedService = localManifest.ServiceDefinitions.Any(d =>
+			d.IsLocal && d.Protocol == BeamoProtocolType.HttpMicroservice && d.IsZoneScoped == (scope == DeployScope.Zone) && (includeOnlyBeamoIds == null || includeOnlyBeamoIds.Contains(d.BeamoId)));
 		var beamoIdToReport = new Dictionary<string, BuildImageSourceOutput>();
 		if (!useSequentialBuild && anyIncludedService)
 		{
@@ -2218,6 +2243,9 @@ public partial class DeployUtil
 				continue;
 			if (includeOnlyBeamoIds != null && !includeOnlyBeamoIds.Contains(definition.BeamoId))
 				// a filtered plan only builds/includes the requested components.
+				continue;
+			if (definition.IsZoneScoped != (scope == DeployScope.Zone))
+				// a realm plan ignores zone-scoped services; a zone plan includes only them.
 				continue;
 
 			switch (definition.Protocol)

@@ -27,7 +27,7 @@ public class GetBundleCommand : AtomicCommand<GetBundleCommandArgs, GetBundleCom
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("bundle-ref", "The bundle name, optionally @<tag> or @sha256:<checksum>"),
+		AddArgument(new Argument<string>("bundle-ref", "The bundle name, optionally @<tag> or @sha256:<checksum>, and optionally namespaced as @<namespace>/<bundle-name> to read another customer's bundle"),
 			(args, i) => args.bundleRef = i);
 		AddOption(new Option<bool>(new[] { "--pin" }, "Also pin the fetched checksum into the local manifest.beam.json references"),
 			(args, i) => args.pin = i);
@@ -36,8 +36,8 @@ public class GetBundleCommand : AtomicCommand<GetBundleCommandArgs, GetBundleCom
 	public override async Task<GetBundleCommandOutput> GetResult(GetBundleCommandArgs args)
 	{
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
-		var (name, selector) = BundleRef.Split(args.bundleRef);
-		var ns = await BundleNamespace.Get(args);
+		var (explicitNs, name, selector) = BundleRef.Split(args.bundleRef);
+		var ns = await BundleNamespace.Resolve(args, explicitNs);
 		var fullName = BundleNamespace.Qualify(ns, name);
 
 		GetBundleResponse response;

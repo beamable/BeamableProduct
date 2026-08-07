@@ -1,5 +1,7 @@
 using Beamable.Common;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using System;
 using System.CommandLine;
 using System.CommandLine.Binding;
 
@@ -21,7 +23,7 @@ public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResul
 			(args, b) => args.IsSet = b);
 	}
 
-	public override Task<ConfigCommandResult> GetResult(ConfigCommandArgs args)
+	public override async Task<ConfigCommandResult> GetResult(ConfigCommandArgs args)
 	{
 		// If we were asked to set the config values, we first set them.
 		var res = new ConfigCommandResult();
@@ -85,10 +87,38 @@ public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResul
 			res.cid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_CID);
 			res.pid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_PID);
 		}
-		
-		
 
-		return Task.FromResult(res);
+		res.zid = await ResolveZid(args, res.pid, args.IgnoreOverrides);
+
+		return res;
+	}
+
+	/// <summary>
+	/// Resolves the effective zone id for the current configuration.
+	/// <para>
+	/// When a pid is selected, the realm's zone binding is authoritative: it always wins over any locally
+	/// configured zid, and a realm that is not bound to a zone resolves to "no zone" (null) regardless of
+	/// the local value. When no pid is selected, we fall back to the zid stored in the .beamable config.
+	/// </para>
+	/// </summary>
+	static async Task<string> ResolveZid(ConfigCommandArgs args, string pid, bool ignoreOverrides)
+	{
+		var localZid = ignoreOverrides
+			? args.ConfigService.GetConfigStringIgnoreOverride(ConfigService.CFG_JSON_FIELD_ZID)
+			: args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_ZID);
+
+		try
+		{
+			// AppContext.Cid is alias-resolved to the numeric cid the customers/{cid}/realms endpoint needs.
+			return await ZoneResolver.ResolveZid(args.DependencyProvider, args.AppContext.Cid, pid, localZid);
+		}
+		catch (Exception ex)
+		{
+			// Do not fail `beam config` (which is otherwise offline-friendly) if the realm's zone cannot be
+			// resolved — report it as unresolved instead.
+			BeamableLogger.LogWarning($"Could not resolve the zone bound to realm=[{pid}]: {ex.Message}");
+			return null;
+		}
 	}
 }
 
@@ -97,6 +127,11 @@ public class ConfigCommandResult
 	public string host;
 	public string cid;
 	public string pid;
+	/// <summary>
+	/// The effective zone id. When a pid is selected this is the pid's realm zone (null means the realm is
+	/// bound to no zone); otherwise it is the zid stored in the local .beamable config.
+	/// </summary>
+	public string zid;
 	public string configPath;
 }
 

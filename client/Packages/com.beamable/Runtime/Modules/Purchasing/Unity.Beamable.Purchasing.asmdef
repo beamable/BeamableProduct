@@ -33,6 +33,11 @@
             "name": "com.unity.purchasing",
             "expression": "5.0",
             "define": "UNITY_PURCHASING_5_OR_NEWER"
+        },
+        {
+            "name": "com.unity.purchasing",
+            "expression": "5.4.2",
+            "define": "UNITY_PURCHASING_5_4_2_OR_NEWER"
         }
     ],
     "noEngineReferences": false

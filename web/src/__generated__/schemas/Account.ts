@@ -8,6 +8,7 @@ import type { GamerTagAssociation } from './GamerTagAssociation';
 import type { InFlightMessage } from './InFlightMessage';
 import type { RoleMapping } from './RoleMapping';
 import type { ThirdPartyAssociation } from './ThirdPartyAssociation';
+import type { ZoneRoleMapping } from './ZoneRoleMapping';
 
 export type Account = { 
   createdTimeMillis: bigint | string; 
@@ -30,4 +31,5 @@ export type Account = {
   roles?: RoleMapping[]; 
   userName?: string; 
   wasMigrated?: boolean; 
+  zoneRoles?: ZoneRoleMapping[]; 
 };
