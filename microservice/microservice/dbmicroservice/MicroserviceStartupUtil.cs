@@ -848,7 +848,7 @@ public static class MicroserviceStartupUtil
 			.AddSingleton(startupContext.reflectionCache)
 			.AddSingleton<SingletonDependencyList<ITelemetryAttributeProvider>>()
 			.AddSingleton<ILoggingContextService, LoggingContextService>()
-			;
+      .AddSingleton<IServiceOpenApiDocsCache, ServiceOpenApiDocsCache>();
 	}
 
 	public static IDependencyBuilder ConfigureServices(StartupContext startupContext, IBeamServiceConfig configurator)
