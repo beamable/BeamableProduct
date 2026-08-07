@@ -298,7 +298,7 @@ In the Unity Editor window in top-right corner, click on the Beamable Menu, then
 					continue;
 				}
 
-				var rulesString = $"{string.Join(" { *; }\n", missingRules)} {{ *; }}";
+				var rulesString = string.Join("\n", missingRules.Select(rule => $"-keep class {rule} {{ *; }}"));
 				warningMessage = $"Proguard File does not have this rules, required by " +
 								 $"{ruleSet.Reason}:\n{rulesString}";
 				if (!EditorGUIExtension.IsInHeadlessMode() && EditorUtility.DisplayDialog("Update proguard file",
