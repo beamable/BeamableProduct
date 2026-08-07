@@ -85,6 +85,13 @@ public static class LocalStackTemplate
 		/// reached through). Only used to detect a port conflict before launching it.
 		/// </summary>
 		public int scalaGatewayPort = 9002;
+
+		/// <summary>
+		/// The port the Scala <c>analytics-gateway</c> binds (its own <c>server.conf</c>: 9003). Distinct from
+		/// <see cref="scalaGatewayPort"/> — it is a separate HTTP app serving the analytics ingest route.
+		/// Only used to detect a port conflict and to probe readiness before launching it.
+		/// </summary>
+		public int analyticsGatewayPort = 9003;
 		/// <summary>
 		/// Whether to emit the local web package registry step (Verdaccio + local-unpkg). Defaults to false:
 		/// it is only useful when iterating on <c>@beamable/sdk</c> or <c>@beamable/portal-toolkit</c>, and
@@ -467,7 +474,15 @@ public static class LocalStackTemplate
 
 		LocalStackStep ScalaStep(ScalaToolInfo tool, bool grouped)
 		{
-			var isGateway = tool.name.Contains("gateway", StringComparison.OrdinalIgnoreCase);
+			// EXACT match, not Contains: `analytics-gateway` is a different HTTP app that happens to end in
+			// "gateway". Matching loosely gave it the real gateway's :9002 in the port guard and a
+			// `/metadata` readiness probe it does not serve — so the guard flagged a phantom conflict against
+			// the actual gateway, and readiness passed only because the OTHER service answered the probe.
+			var isGateway = tool.name.Equals("gateway", StringComparison.OrdinalIgnoreCase);
+			// Both are akka-http apps that log "Serving traffic at ..." on bind rather than registering as a
+			// BASIC/OBJECT provider, so the log gate below is shared.
+			var isHttpApp = isGateway
+				|| tool.name.Equals("analytics-gateway", StringComparison.OrdinalIgnoreCase);
 			// Emit the launch script in the shell that matches THIS machine's OS: PowerShell on Windows
 			// (cmd.exe can't run the POSIX-sh script), sh on macOS/Linux. `up` reads `shellKind` to pick
 			// the interpreter. The manifest already holds absolute machine-specific paths, so being
@@ -488,7 +503,7 @@ public static class LocalStackTemplate
 					: ScalaLaunchShell(tool.name, tool.mainClass, o.scalaJvmArgs),
 				// BASIC/OBJECT service providers log "<type> Service Started: <name>" when they register.
 				// HTTP gateway apps (com.*.gateway.App) never do — they log "Serving traffic at ..." on bind.
-				readyWhenLogContains = isGateway ? "Serving traffic" : "Service Started",
+				readyWhenLogContains = isHttpApp ? "Serving traffic" : "Service Started",
 				readyTimeoutSeconds = 120,
 				// The first Scala services to boot (e.g. realms, session) can lose a startup race with Mongo:
 				// they connect before the replica set has a writable primary and die on their startup index
@@ -503,6 +518,14 @@ public static class LocalStackTemplate
 				// name the port it actually binds separately.
 				step.readyWhenHttp200 = "${host}/metadata";
 				step.port = o.scalaGatewayPort;
+			}
+			else if (tool.name.Equals("analytics-gateway", StringComparison.OrdinalIgnoreCase))
+			{
+				// Serves the analytics ingest route every client SDK posts core events to. `/report/ping` is its
+				// own liveness route (App.scala) — probed DIRECTLY on the port it binds, not through Caddy, so a
+				// healthy proxy or the real gateway can never make it look up when it isn't.
+				step.readyWhenHttp200 = $"http://localhost:{o.analyticsGatewayPort}/report/ping";
+				step.port = o.analyticsGatewayPort;
 			}
 
 			return step;
@@ -624,7 +647,13 @@ public static class LocalStackTemplate
 		// invoked in (set one explicitly here only if the service lives in a different workspace).
 		name = $"{MicroservicePrefix}{svc}",
 		beam = true,
-		arguments = $"project run --ids {svc} --host ${{host}} --logs v --no-log-file"
+		arguments = $"project run --ids {svc} --host ${{host}} --logs v --no-log-file",
+		// These launch LAST, as a burst of a dozen `beam project run` processes each doing its own
+		// restore/build, and a service that loses that scramble EXITS rather than hanging — which is the
+		// one condition `readyRetries` reliably catches (the hung path needs a `port`, and these declare
+		// none). Without it a single transient "failed to start all services" leaves the stack up minus
+		// that microservice, and the next thing to notice is a device call 404ing hours later.
+		readyRetries = 3
 	};
 
 	/// <summary>Builds the beam step that runs a portal extension, pointing its landing URL at the local portal.</summary>
@@ -633,7 +662,11 @@ public static class LocalStackTemplate
 		// No workingDirectory: runs from the .beamable workspace `beam local up` is invoked in.
 		name = $"{ExtensionPrefix}{ext}",
 		beam = true,
-		arguments = $"project run --ids {ext} --host ${{host}} --portal-url ${{portalUrl}} --logs v --no-log-file"
+		arguments = $"project run --ids {ext} --host ${{host}} --portal-url ${{portalUrl}} --logs v --no-log-file",
+		// Same rationale as MicroserviceStep: these run last and die outright when `${host}` is briefly
+		// unreachable — a Docker Desktop restart mid-bring-up is enough, and Caddy returning ~1 minute
+		// later is well inside 3 retries at 3s plus each attempt's own build time.
+		readyRetries = 3
 	};
 
 	/// <summary>Builds the beam step that runs a whole service group (all its microservices + extensions).</summary>
