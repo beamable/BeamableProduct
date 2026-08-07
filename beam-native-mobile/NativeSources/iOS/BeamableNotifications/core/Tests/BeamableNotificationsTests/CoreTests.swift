@@ -266,6 +266,71 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(cd?["season"]?.stringValue, "summer")
     }
 
+    // MARK: Campaign attribution stamp (beam_outreach / trackId)
+
+    func testCampaignIntentParsesTheAttributionStamp() {
+        // The push spells the join key `beam_outreach`; engine code handing an intent object back
+        // uses the field name. Both must resolve, or the echoed funnel loses its attribution.
+        let fromPush: [String: JSONValue] = [
+            "campaignId": .string("c"), "nodeId": .string("n"),
+            "beam_outreach": .string("outreach-1"), "trackId": .string("campaign:c:1:send")
+        ]
+        XCTAssertEqual(fromPush.bmnCampaignIntent.outreachId, "outreach-1")
+        XCTAssertEqual(fromPush.bmnCampaignIntent.trackId, "campaign:c:1:send")
+
+        let fromEngine: [String: JSONValue] = [
+            "campaignId": .string("c"), "nodeId": .string("n"),
+            "outreachId": .string("outreach-2")
+        ]
+        XCTAssertEqual(fromEngine.bmnCampaignIntent.outreachId, "outreach-2")
+    }
+
+    func testMakeParamsEchoesTheAttributionStamp() {
+        // CampaignEventProcessor.ProcessAttributedStage reads exactly these two param names; if
+        // either is missing or renamed the stage is silently not counted in the campaign funnel.
+        let intent = CampaignIntentData(campaignId: "c", nodeId: "n", gamerTag: "1",
+                                        cidPid: "CID.PID",
+                                        outreachId: "outreach-1", trackId: "campaign:c:1:send")
+        guard let event = BeamableAnalytics.makeEvent(.clicked, intent: intent) else {
+            return XCTFail("clicked event should be built for a tracked campaign")
+        }
+        let p = BeamableAnalytics.makeParams(for: event)
+        XCTAssertEqual(p["outreachId"]?.stringValue, "outreach-1")
+        XCTAssertEqual(p["trackId"]?.stringValue, "campaign:c:1:send")
+    }
+
+    func testMakeParamsOmitsTheStampWhenAbsent() {
+        // A hand-built funnel (no originating push) must not emit empty attribution keys — an empty
+        // trackId would fail CampaignSendAttribution.TryParse anyway, but the columns stay clean.
+        let event = FunnelEvent(funnelType: "Clicked", campaignId: "c", nodeId: "n",
+                                gamerTag: "1", cidPid: "CID.PID",
+                                outreachId: "", trackId: nil, timestamp: 0)
+        let p = BeamableAnalytics.makeParams(for: event)
+        XCTAssertNil(p["outreachId"])
+        XCTAssertNil(p["trackId"])
+    }
+
+    func testFunnelEventRoundTripsTheStampForReplay() {
+        // The killed-app path persists the event and replays it on next open; dropping the stamp
+        // there would make every replayed Clicked invisible to the campaign funnel.
+        let event = FunnelEvent(funnelType: "Clicked", campaignId: "c", nodeId: "n",
+                                outreachId: "outreach-1", trackId: "campaign:c:1:send",
+                                timestamp: 0)
+        let decoded = JSON.decode(FunnelEvent.self, from: JSON.encode(event))
+        XCTAssertEqual(decoded?.outreachId, "outreach-1")
+        XCTAssertEqual(decoded?.trackId, "campaign:c:1:send")
+    }
+
+    func testOfferTrackRequestCarriesTheStampIntoTheIntent() {
+        let request = OfferTrackRequest(campaignId: "c", nodeId: "n", gamerTag: "1",
+                                        cidPid: "CID.PID",
+                                        outreachId: "outreach-1", trackId: "campaign:c:1:send",
+                                        offer: NotificationOffer(itemId: "gold"))
+        let intent = request.intent(fallbackAuth: nil)
+        XCTAssertEqual(intent.outreachId, "outreach-1")
+        XCTAssertEqual(intent.trackId, "campaign:c:1:send")
+    }
+
     func testFunnelEventCodableRoundTripsOffersAndCampaignData() {
         let event = FunnelEvent(funnelType: "Received", campaignId: "c", nodeId: "n",
                                 offers: [NotificationOffer(itemId: "gold")],

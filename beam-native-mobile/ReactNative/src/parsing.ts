@@ -29,20 +29,33 @@ export function deepLinkFromNotification(n: {
 }
 
 /**
- * Pull campaign coordinates (campaignId / nodeId) out of a notification payload. The
- * native SDK lifts these onto top-level fields for tracked campaign pushes; falls back
- * to `userInfo`. Returns only the keys actually present.
+ * Pull campaign coordinates out of a notification payload: the human-facing campaignId / nodeId
+ * plus the attribution stamp (`outreachId` / `trackId`) the message rail wrote onto the push. The
+ * native SDK lifts these onto top-level fields for tracked campaign pushes; falls back to
+ * `userInfo` (where outreachId is still spelled `beam_outreach`, its wire key). Returns only the
+ * keys actually present.
+ *
+ * Pass the whole result back into `trackOfferClicked` / `trackOfferConverted` — without the stamp
+ * the funnel event cannot be attributed to a send node, so the portal's campaign funnel will not
+ * count it.
  */
 export function campaignCoordsFromNotification(n: {
   campaignId?: string;
   nodeId?: string;
+  outreachId?: string;
+  trackId?: string;
   userInfo?: Record<string, unknown>;
-}): { campaignId?: string; nodeId?: string } {
-  const out: { campaignId?: string; nodeId?: string } = {};
+}): { campaignId?: string; nodeId?: string; outreachId?: string; trackId?: string } {
+  const out: { campaignId?: string; nodeId?: string; outreachId?: string; trackId?: string } = {};
   const info = n.userInfo ?? {};
   const campaignId = n.campaignId ?? (info.campaignId as string | undefined);
   const nodeId = n.nodeId ?? (info.nodeId as string | undefined);
+  const outreachId =
+    n.outreachId ?? ((info.outreachId ?? info.beam_outreach) as string | undefined);
+  const trackId = n.trackId ?? (info.trackId as string | undefined);
   if (typeof campaignId === 'string' && campaignId.length > 0) out.campaignId = campaignId;
   if (typeof nodeId === 'string' && nodeId.length > 0) out.nodeId = nodeId;
+  if (typeof outreachId === 'string' && outreachId.length > 0) out.outreachId = outreachId;
+  if (typeof trackId === 'string' && trackId.length > 0) out.trackId = trackId;
   return out;
 }

@@ -99,4 +99,52 @@ class NotificationIntentDataTest {
         val offer = NotificationOffer.fromJson(JSONObject("""{"itemId":"x","value":42}"""))
         assertEquals("42", offer.rawValue)
     }
+
+    @Test
+    fun fromDataMap_readsTheAttributionStampUnderItsWireKey() {
+        // The rail writes the join key as `beam_outreach` (PushMessageRailService.WriteIntentData).
+        val intent = NotificationIntentData.fromDataMap(
+            mapOf(
+                "campaignId" to "c",
+                "nodeId" to "n",
+                "beam_outreach" to "outreach-1",
+                "trackId" to "campaign:c:1:send"
+            )
+        )
+
+        assertEquals("outreach-1", intent.outreachId)
+        assertEquals("campaign:c:1:send", intent.trackId)
+    }
+
+    @Test
+    fun fromDataMap_alsoAcceptsTheFieldNameSpelling() {
+        // Engine code (the RN / Unreal trackOffer* bridges) hands back an intent OBJECT, whose key
+        // is the field name rather than the push's wire key. Both must resolve or the echoed funnel
+        // silently loses its attribution.
+        val intent = NotificationIntentData.fromDataMap(
+            mapOf("campaignId" to "c", "nodeId" to "n", "outreachId" to "outreach-2")
+        )
+
+        assertEquals("outreach-2", intent.outreachId)
+    }
+
+    @Test
+    fun fromDataMap_leavesTheStampNullWhenThePushCarriesNone() {
+        val intent = NotificationIntentData.fromDataMap(
+            mapOf("campaignId" to "c", "nodeId" to "n", "beam_outreach" to "")
+        )
+
+        assertNull(intent.outreachId)
+        assertNull(intent.trackId)
+    }
+
+    @Test
+    fun fromJson_roundTripsTheAttributionStamp() {
+        val intent = NotificationIntentData.fromJson(
+            """{"campaignId":"c","nodeId":"n","outreachId":"o-1","trackId":"campaign:c:1:send"}"""
+        )
+
+        assertEquals("o-1", intent.outreachId)
+        assertEquals("campaign:c:1:send", intent.trackId)
+    }
 }

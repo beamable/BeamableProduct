@@ -261,6 +261,14 @@ data class NotificationIntentData(
     val gamerTag: String? = null,
     val accountId: String? = null,
     val cidPid: String? = null,
+    /**
+     * The push's attribution stamp: the per-recipient join key (wire key `beam_outreach`) and the
+     * send's coordinates (wire key `trackId`, "campaign:{campaign}:{version}:{node}"). Echoed back
+     * verbatim on the funnel so the campaign runtime can count the stage against the send node that
+     * produced this push. Both null on a notification that did not come from a campaign send.
+     */
+    val outreachId: String? = null,
+    val trackId: String? = null,
     /** Raw JSON-encoded string of the `offers` array, or null. */
     val offersJson: String? = null,
     /** Raw JSON-encoded string of the free-form `campaignData` object, or null. */
@@ -310,6 +318,14 @@ data class NotificationIntentData(
         const val KEY_GAMER_TAG = "gamerTag"
         const val KEY_ACCOUNT_ID = "accountId"
         const val KEY_CID_PID = "cidPid"
+        /**
+         * The rail's per-recipient join key. The push carries it as [KEY_OUTREACH_ID]; engine code
+         * that hands back an intent object (the RN/Unreal `trackOffer*` bridges) uses the field
+         * name, so both spellings are accepted on the way in.
+         */
+        const val KEY_OUTREACH_ID = "beam_outreach"
+        const val KEY_OUTREACH_ID_ALT = "outreachId"
+        const val KEY_TRACK_ID = "trackId"
         const val KEY_OFFERS = "offers"
         const val KEY_CAMPAIGN_DATA = "campaignData"
         const val KEY_DEEPLINK = "deeplink"
@@ -324,6 +340,8 @@ data class NotificationIntentData(
             gamerTag = data[KEY_GAMER_TAG]?.ifEmpty { null },
             accountId = data[KEY_ACCOUNT_ID]?.ifEmpty { null },
             cidPid = data[KEY_CID_PID]?.ifEmpty { null },
+            outreachId = (data[KEY_OUTREACH_ID] ?: data[KEY_OUTREACH_ID_ALT])?.ifEmpty { null },
+            trackId = data[KEY_TRACK_ID]?.ifEmpty { null },
             offersJson = data[KEY_OFFERS]?.ifEmpty { null },
             campaignDataJson = data[KEY_CAMPAIGN_DATA]?.ifEmpty { null },
             deeplink = data[KEY_DEEPLINK]?.ifEmpty { null }

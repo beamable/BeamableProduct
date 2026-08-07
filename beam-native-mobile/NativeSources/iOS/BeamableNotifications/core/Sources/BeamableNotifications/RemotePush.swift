@@ -81,6 +81,8 @@ public final class RemotePush: NSObject {
             gamerTag: intent.gamerTag,
             accountId: intent.accountId,
             cidPid: intent.cidPid,
+            outreachId: intent.outreachId,
+            trackId: intent.trackId,
             offers: intent.offers,
             campaignData: intent.campaignData,
             userInfo: obj

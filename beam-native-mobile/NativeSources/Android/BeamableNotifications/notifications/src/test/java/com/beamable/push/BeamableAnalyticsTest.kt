@@ -74,6 +74,31 @@ class BeamableAnalyticsTest {
     }
 
     @Test
+    fun buildCoreEvent_echoesTheAttributionStamp() {
+        // CampaignEventProcessor.ProcessAttributedStage reads exactly these two param names; if
+        // either is missing or renamed the stage is silently not counted in the campaign funnel.
+        val p = BeamableAnalytics.buildCoreEvent(
+            trackedIntent().copy(outreachId = "outreach-1", trackId = "campaign:camp-1:1:node-7"),
+            BeamableAnalytics.FunnelType.Clicked
+        ).getJSONObject("p")
+
+        assertEquals("outreach-1", p.getString("outreachId"))
+        assertEquals("campaign:camp-1:1:node-7", p.getString("trackId"))
+    }
+
+    @Test
+    fun buildCoreEvent_omitsTheStampWhenThePushCarriedNone() {
+        // A hand-built funnel (no originating push) must not emit empty attribution keys.
+        val p = BeamableAnalytics.buildCoreEvent(
+            trackedIntent().copy(outreachId = "", trackId = null),
+            BeamableAnalytics.FunnelType.Clicked
+        ).getJSONObject("p")
+
+        assertFalse(p.has("outreachId"))
+        assertFalse(p.has("trackId"))
+    }
+
+    @Test
     fun buildParams_emitsKeysAlphabetically() {
         // All platforms emit the funnel params in alphabetical key order (iOS via .sortedKeys,
         // microservice via SortedDictionary) so the funnel JSON matches across the board.
@@ -184,6 +209,28 @@ class BeamableAnalyticsTest {
         assertEquals("camp-1", p.getString("campaignId"))
         assertEquals("sword", JSONArray(p.getString("offerData")).getJSONObject(0).getString("itemId"))
         assertEquals(campaignData, p.getString("campaignData"))
+    }
+
+    @Test
+    fun appendThenDrain_roundTripsTheAttributionStamp() {
+        // The killed-app path persists the event and replays it on next open; dropping the stamp
+        // there would make every replayed Clicked invisible to the campaign funnel.
+        BeamableAnalytics.appendPendingFunnel(
+            context,
+            BeamableAnalytics.PendingFunnel.from(
+                trackedIntent().copy(outreachId = "outreach-1", trackId = "campaign:camp-1:1:node-7"),
+                BeamableAnalytics.FunnelType.Clicked,
+                null
+            )
+        )
+        val e = BeamableAnalytics.drainPendingFunnel(context).single()
+
+        assertEquals("outreach-1", e.outreachId)
+        assertEquals("campaign:camp-1:1:node-7", e.trackId)
+        // And the rebuilt CoreEvent still carries it, which is what actually reaches the backend.
+        val p = BeamableAnalytics.buildCoreEvent(e.toIntentData(), e.funnelType).getJSONObject("p")
+        assertEquals("outreach-1", p.getString("outreachId"))
+        assertEquals("campaign:camp-1:1:node-7", p.getString("trackId"))
     }
 
     @Test

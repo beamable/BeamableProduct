@@ -38,6 +38,13 @@ type NotificationContextValue = {
   nodeId: string;
   setCampaignId: (v: string) => void;
   setNodeId: (v: string) => void;
+  /**
+   * The attribution stamp of the campaign push that filled the coordinates above, if any. Only a
+   * funnel event carrying this can be counted against a send node — a hand-typed campaign/node has
+   * no stamp, so it reaches the warehouse but never moves the portal's funnel columns.
+   */
+  outreachId: string | null;
+  trackId: string | null;
   /** The most recent native deep link (Android VIEW intents), for the Deep links page. */
   lastDeepLink: CapturedDeepLink | null;
   /** The notification the app was cold-started from, if any. */
@@ -52,6 +59,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const { append } = useLogActions();
   const [campaignId, setCampaignId] = useState('');
   const [nodeId, setNodeId] = useState('');
+  const [outreachId, setOutreachId] = useState<string | null>(null);
+  const [trackId, setTrackId] = useState<string | null>(null);
   const [lastDeepLink, setLastDeepLink] = useState<CapturedDeepLink | null>(null);
 
   /**
@@ -64,10 +73,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const coords = BeamNotifications.campaignCoordsFromNotification(n);
       if (coords.campaignId) setCampaignId(coords.campaignId);
       if (coords.nodeId) setNodeId(coords.nodeId);
+      // Replace the stamp wholesale (including clearing it) whenever new coordinates arrive, so a
+      // later push can never be tracked under the previous one's outreach.
       if (coords.campaignId || coords.nodeId) {
+        setOutreachId(coords.outreachId ?? null);
+        setTrackId(coords.trackId ?? null);
         append(
-          `Funnel coords from notification: campaignId=${coords.campaignId ?? '—'} nodeId=${coords.nodeId ?? '—'}`,
+          `Funnel coords from notification: campaignId=${coords.campaignId ?? '—'} nodeId=${coords.nodeId ?? '—'} ` +
+            `outreachId=${coords.outreachId ?? '—'} trackId=${coords.trackId ?? '—'}`,
         );
+        if (!coords.outreachId || !coords.trackId) {
+          append(
+            'No attribution stamp on this push — the funnel will be recorded but the portal’s campaign funnel will not count it.',
+          );
+        }
       }
     },
     [append],
@@ -135,11 +154,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       nodeId,
       setCampaignId,
       setNodeId,
+      outreachId,
+      trackId,
       lastDeepLink,
       launchNotification,
       launchDeepLink,
     }),
-    [campaignId, nodeId, lastDeepLink, launchNotification, launchDeepLink],
+    [campaignId, nodeId, outreachId, trackId, lastDeepLink, launchNotification, launchDeepLink],
   );
 
   return (

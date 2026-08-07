@@ -132,6 +132,15 @@ export interface NotificationIntentData<
   gamerTag?: string;
   accountId?: string;
   cidPid?: string;
+  /**
+   * The push's attribution stamp — the per-recipient join key (carried on the push as
+   * `beam_outreach`) and the send's coordinates (`trackId`). Pass them back on `trackOffer*` and
+   * the campaign runtime counts the Clicked/Converted against the send node that produced the
+   * push, which is what makes the stage visible in the portal's campaign funnel. Both are absent
+   * on a notification that did not come from a campaign send.
+   */
+  outreachId?: string;
+  trackId?: string;
   offers?: NotificationOffer<TOfferCustom>[];
   campaignData?: TCampaign;
   /** Raw deeplink — intentionally schema-less, passed through verbatim. */
@@ -153,6 +162,9 @@ export interface NotificationData {
   gamerTag?: string;
   accountId?: string;
   cidPid?: string;
+  /** Attribution stamp (see {@link NotificationIntentData}) — echo these back on `trackOffer*`. */
+  outreachId?: string;
+  trackId?: string;
   offers?: NotificationOffer[];
   campaignData?: Record<string, unknown>;
   userInfo?: Record<string, unknown>;

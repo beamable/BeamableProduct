@@ -206,6 +206,11 @@ public struct CampaignIntentData: Codable, Equatable {
     /// "<cid>.<pid>" realm scope.
     public var cidPid: String?
     public var deeplink: String?
+    /// The per-recipient message-rail join key, carried on the push as `beam_outreach`.
+    public var outreachId: String?
+    /// The send's coordinates, carried on the push as `trackId`
+    /// ("campaign:{campaign}:{version}:{node}").
+    public var trackId: String?
     public var offers: [NotificationOffer]?
     public var campaignData: [String: JSONValue]?
 
@@ -215,6 +220,8 @@ public struct CampaignIntentData: Codable, Equatable {
                 accountId: String? = nil,
                 cidPid: String? = nil,
                 deeplink: String? = nil,
+                outreachId: String? = nil,
+                trackId: String? = nil,
                 offers: [NotificationOffer]? = nil,
                 campaignData: [String: JSONValue]? = nil) {
         self.campaignId = campaignId
@@ -223,6 +230,8 @@ public struct CampaignIntentData: Codable, Equatable {
         self.accountId = accountId
         self.cidPid = cidPid
         self.deeplink = deeplink
+        self.outreachId = outreachId
+        self.trackId = trackId
         self.offers = offers
         self.campaignData = campaignData
     }
@@ -265,6 +274,13 @@ public extension Dictionary where Key == String, Value == JSONValue {
         intent.accountId = self["accountId"]?.stringValue
         intent.cidPid = self["cidPid"]?.stringValue
         intent.deeplink = bmnDeepLink
+        // Attribution stamp written by the message rail (PushMessageRailService.WriteIntentData).
+        // Echoed back verbatim on the funnel so the campaign runtime can attribute the stage to the
+        // exact recipient and send node; absent on a push that came from outside a campaign.
+        // The push spells it `beam_outreach`; engine code handing back an intent object uses the
+        // field name, so both are accepted (mirrors Android's KEY_OUTREACH_ID/_ALT).
+        intent.outreachId = self["beam_outreach"]?.stringValue ?? self["outreachId"]?.stringValue
+        intent.trackId = self["trackId"]?.stringValue
 
         if let offers = self["offers"] {
             intent.offers = JSONValue.bmnDecodeStringified([NotificationOffer].self, from: offers)
@@ -325,6 +341,9 @@ public struct NotificationData: Codable, Equatable {
     public var gamerTag: String?
     public var accountId: String?
     public var cidPid: String?
+    /// The push's attribution stamp, surfaced so engine code can echo it back on `trackOffer*`.
+    public var outreachId: String?
+    public var trackId: String?
     /// Parsed offers (un-stringified from the wire format).
     public var offers: [NotificationOffer]?
     /// Parsed free-form campaign data (un-stringified).
@@ -345,6 +364,8 @@ public struct NotificationData: Codable, Equatable {
                 gamerTag: String? = nil,
                 accountId: String? = nil,
                 cidPid: String? = nil,
+                outreachId: String? = nil,
+                trackId: String? = nil,
                 offers: [NotificationOffer]? = nil,
                 campaignData: [String: JSONValue]? = nil,
                 userInfo: [String: JSONValue] = [:]) {
@@ -360,6 +381,8 @@ public struct NotificationData: Codable, Equatable {
         self.gamerTag = gamerTag
         self.accountId = accountId
         self.cidPid = cidPid
+        self.outreachId = outreachId
+        self.trackId = trackId
         self.offers = offers
         self.campaignData = campaignData
         self.userInfo = userInfo
@@ -370,6 +393,7 @@ public struct NotificationData: Codable, Equatable {
         CampaignIntentData(campaignId: campaignId, nodeId: nodeId, gamerTag: gamerTag,
                            accountId: accountId, cidPid: cidPid,
                            deeplink: deepLink ?? userInfo.bmnDeepLink,
+                           outreachId: outreachId, trackId: trackId,
                            offers: offers, campaignData: campaignData)
     }
 }
@@ -559,6 +583,11 @@ public struct FunnelEvent: Codable, Equatable {
     public var accountId: String?
     public var cidPid: String?
     public var deeplink: String?
+    /// The push's attribution stamp, echoed back verbatim. Together these are what let the campaign
+    /// runtime count this stage against the send node that produced the push; both are absent when
+    /// the funnel wasn't triggered by a campaign push.
+    public var outreachId: String?
+    public var trackId: String?
     /// The offer(s) this event concerns (omitted when none). Stage events (Sent/Received/Opened)
     /// carry every offer the push held; Clicked/Converted carry only the concerned offer. Emitted
     /// as a single `offerData` JSON-array column so any offer shape survives intact.
@@ -576,6 +605,8 @@ public struct FunnelEvent: Codable, Equatable {
                 accountId: String? = nil,
                 cidPid: String? = nil,
                 deeplink: String? = nil,
+                outreachId: String? = nil,
+                trackId: String? = nil,
                 offers: [NotificationOffer]? = nil,
                 campaignData: [String: JSONValue]? = nil,
                 timestamp: Double = Date().timeIntervalSince1970) {
@@ -586,6 +617,8 @@ public struct FunnelEvent: Codable, Equatable {
         self.accountId = accountId
         self.cidPid = cidPid
         self.deeplink = deeplink
+        self.outreachId = outreachId
+        self.trackId = trackId
         self.offers = offers
         self.campaignData = campaignData
         self.timestamp = timestamp
@@ -643,6 +676,11 @@ public struct OfferTrackRequest: Codable, Equatable {
     public var accountId: String?
     public var cidPid: String?
     public var deeplink: String?
+    /// The attribution stamp the caller read off the notification that started this flow. Optional:
+    /// without it the funnel still records in the warehouse, it just can't be attributed to a
+    /// campaign send node (so the portal's funnel counters won't move).
+    public var outreachId: String?
+    public var trackId: String?
     public var offer: NotificationOffer?
 
     public init(campaignId: String,
@@ -651,6 +689,8 @@ public struct OfferTrackRequest: Codable, Equatable {
                 accountId: String? = nil,
                 cidPid: String? = nil,
                 deeplink: String? = nil,
+                outreachId: String? = nil,
+                trackId: String? = nil,
                 offer: NotificationOffer? = nil) {
         self.campaignId = campaignId
         self.nodeId = nodeId
@@ -658,6 +698,8 @@ public struct OfferTrackRequest: Codable, Equatable {
         self.accountId = accountId
         self.cidPid = cidPid
         self.deeplink = deeplink
+        self.outreachId = outreachId
+        self.trackId = trackId
         self.offer = offer
     }
 
@@ -674,6 +716,8 @@ public struct OfferTrackRequest: Codable, Equatable {
                                   accountId: accountId,
                                   cidPid: resolvedCidPid,
                                   deeplink: deeplink,
+                                  outreachId: outreachId,
+                                  trackId: trackId,
                                   offers: offer.map { [$0] },
                                   campaignData: nil)
     }

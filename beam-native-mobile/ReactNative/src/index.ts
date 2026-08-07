@@ -155,6 +155,10 @@ function toNotificationData(json: unknown, wasLaunch = false): NotificationData 
     gamerTag: o.gamerTag as string | undefined,
     accountId: o.accountId as string | undefined,
     cidPid: o.cidPid as string | undefined,
+    // The attribution stamp. iOS surfaces it as a normalized `outreachId`; on Android the payload is
+    // the raw FCM data map, where the key is still the wire spelling `beam_outreach`.
+    outreachId: (o.outreachId ?? o.beam_outreach) as string | undefined,
+    trackId: o.trackId as string | undefined,
     offers: parseNested<NotificationOffer[]>(o.offers),
     campaignData: parseNested<Record<string, unknown>>(o.campaignData),
     userInfo: o,
@@ -409,6 +413,10 @@ function buildIosOfferRequest(
     accountId: intent.accountId,
     cidPid: intent.cidPid,
     deeplink: intent.deeplink,
+    // The attribution stamp the push carried. Without it the funnel is still recorded but cannot be
+    // counted against a campaign send node, so the portal's funnel columns stay at zero.
+    outreachId: intent.outreachId,
+    trackId: intent.trackId,
     offer,
   });
 }

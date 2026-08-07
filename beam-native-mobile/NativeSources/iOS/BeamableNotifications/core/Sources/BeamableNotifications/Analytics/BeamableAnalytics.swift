@@ -1,9 +1,15 @@
 import Foundation
 
-/// Shared Beamable funnel analytics for iOS. Builds the Beamable `CoreEvent` body and
-/// POSTs it directly to `/report/custom_batch/{cid}/{pid}/{gamerTag}`, authenticated
-/// with the persisted player bearer token + realm scope (Decision Q5). This replaces the
-/// demo Slack webhook.
+/// Shared Beamable funnel analytics for iOS. Builds the Beamable `CoreEvent` body and POSTs it
+/// authenticated with the persisted player bearer token + realm scope (Decision Q5).
+///
+/// Two routes, primary then fallback (identical body — see `postAnalyticsEventsStatus`):
+///  - `/analytics/events` — the gateway endpoint. Publishes onto `analytics.events`, the bus the
+///    campaign event consumer subscribes to, so this is the only route whose Opened/Clicked/
+///    Converted can be counted in a campaign's funnel.
+///  - `/report/custom_batch/{cid}/{pid}/{gamerTag}` — the canonical report route shared with
+///    Unity/CLI/Android. Feeds the warehouse only; used when the gateway endpoint is unavailable
+///    (an older backend) so the event is still recorded rather than dropped.
 ///
 /// Both the in-app `AnalyticsPlugin` (app alive) and the closed-app NSE
 /// `AnalyticsServicePlugin` use this type via `import BeamableNotifications`, so the wire
@@ -29,6 +35,12 @@ public enum BeamableAnalytics {
         if let v = event.accountId ?? event.gamerTag { p["accountId"] = .string(v) }
         if let v = event.cidPid { p["cidPid"] = .string(v) }
         if let v = event.deeplink { p["deeplink"] = .string(v) }
+        // The push's attribution stamp, echoed verbatim. `CampaignEventProcessor.ProcessAttributedStage`
+        // needs BOTH — trackId to recover the send node, outreachId as the exactly-once dedup key — to
+        // count this stage in the campaign funnel the portal reads. Omitted when the funnel wasn't
+        // triggered by a campaign push; the event is still recorded, just unattributed.
+        if let v = event.outreachId, !v.isEmpty { p["outreachId"] = .string(v) }
+        if let v = event.trackId, !v.isEmpty { p["trackId"] = .string(v) }
         // Offers as a SINGLE flat column holding a stringified JSON array of offer objects
         // (`[{itemId,value,customData}, ...]`). Athena has no nested-object column type, so the
         // whole array travels as one string the reader JSON-parses. customData is itself free-form,
@@ -131,6 +143,8 @@ public enum BeamableAnalytics {
                            accountId: intent.accountId,
                            cidPid: intent.cidPid,
                            deeplink: intent.deeplink,
+                           outreachId: intent.outreachId,
+                           trackId: intent.trackId,
                            offers: offer.map { [$0] } ?? intent.offers,
                            campaignData: intent.campaignData)
     }
@@ -191,27 +205,55 @@ public enum BeamableAnalytics {
             completion?()
         }
 
+        /// Terminal success handling, shared by both routes.
+        func succeed(_ status: Int, token: String) {
+            // Best-effort debug mirror: forward the same funnel params to the microservice's
+            // ForwardFunnelToSlack endpoint so device-side stages appear in Slack too. Never
+            // affects the analytics result.
+            forwardFunnelToSlack(event, host: host, cidPid: cidPid, accessToken: token, session: session)
+            report(event, true, status, "ok")
+            completion?()
+        }
+
+        // The gateway route is missing/unroutable (e.g. an older backend): fall back to the canonical
+        // report route rather than drop the event — it still reaches the warehouse, it just cannot
+        // reach a campaign. Auth failures are NOT retried here; the token was already proven above.
+        func doFallbackPost(token: String, primaryStatus: Int) {
+            postFunnelStatus(events: [event], host: host, cidPid: cidPid, gamerTag: gamerTag,
+                             accessToken: token, session: session) { status in
+                if (200..<300).contains(status) {
+                    succeed(status, token: token)
+                    return
+                }
+                // Report the PRIMARY status when the fallback couldn't be sent at all — that is the
+                // status that describes what actually went wrong.
+                let reported = status == 0 ? primaryStatus : status
+                fallbackAndFinish(reported,
+                                  reported == 0 ? "request failed (no response)" : "HTTP \(reported)")
+            }
+        }
+
         // POST with `token`. On 401/403 — a revoked (not merely clock-stale) token — force a
         // single refresh (ignoring staleness) and re-POST once with the new token, mirroring
         // Android's single-retry semantics. The persist-on-failure fallback only runs after the
         // retry (or refresh) also fails, so a recoverable auth error isn't dropped prematurely.
         func doPost(token: String, allowRetry: Bool) {
-            postFunnelStatus(events: [event], host: host, cidPid: cidPid, gamerTag: gamerTag,
-                             accessToken: token, session: session) { status in
+            postAnalyticsEventsStatus(events: [event], host: host, cidPid: cidPid,
+                                      accessToken: token, session: session) { status in
                 if (200..<300).contains(status) {
-                    // Best-effort debug mirror: forward the same funnel params to the microservice's
-                    // ForwardFunnelToSlack endpoint so device-side stages appear in Slack too. Never
-                    // affects the analytics result.
-                    forwardFunnelToSlack(event, host: host, cidPid: cidPid, accessToken: token, session: session)
-                    report(event, true, status, "ok")
-                    completion?()
+                    succeed(status, token: token)
                     return
                 }
                 let isAuthError = (status == 401 || status == 403)
-                guard isAuthError, allowRetry,
+                guard isAuthError else {
+                    // Not an auth problem — the endpoint itself is unavailable. Try the legacy route.
+                    doFallbackPost(token: token, primaryStatus: status)
+                    return
+                }
+                guard allowRetry,
                       Date() < deadline,
                       let refreshToken = auth.refreshToken, !refreshToken.isEmpty else {
-                    fallbackAndFinish(status, status == 0 ? "request failed (no response)" : "HTTP \(status)")
+                    fallbackAndFinish(status, "HTTP \(status)")
                     return
                 }
                 refresh(refreshToken: refreshToken, host: host, cidPid: cidPid,
@@ -271,9 +313,9 @@ public enum BeamableAnalytics {
         }
     }
 
-    /// Fire the funnel POST, surfacing the HTTP status code (0 when the request couldn't be
-    /// built/sent). Used by `emit` to drive the 401/403 refresh+retry. Completion is always
-    /// called exactly once.
+    /// Fire the funnel POST at the LEGACY report route, surfacing the HTTP status code (0 when the
+    /// request couldn't be built/sent). This is the fallback leg of `emit` — see
+    /// `postAnalyticsEventsStatus` for the primary. Completion is always called exactly once.
     public static func postFunnelStatus(events: [FunnelEvent],
                                         host: String,
                                         cidPid: String,
@@ -282,14 +324,46 @@ public enum BeamableAnalytics {
                                         session: URLSession = .shared,
                                         completion: @escaping (Int) -> Void) {
         let parts = cidPid.split(separator: ".", maxSplits: 1).map(String.init)
-        guard parts.count == 2, !parts[0].isEmpty, !parts[1].isEmpty,
-              let body = makeBody(for: events) else {
+        guard parts.count == 2, !parts[0].isEmpty, !parts[1].isEmpty else {
             completion(0)
             return
         }
         let cid = parts[0], pid = parts[1]
+        post(events: events, path: "/report/custom_batch/\(cid)/\(pid)/\(gamerTag)",
+             host: host, cidPid: "\(cid).\(pid)", accessToken: accessToken,
+             session: session, completion: completion)
+    }
+
+    /// Fire the funnel POST at the gateway's analytics endpoint — the PRIMARY route.
+    ///
+    /// It publishes onto the `analytics.events` bus the campaign event consumer subscribes to, which
+    /// makes it the only device path that can reach a campaign: `/report/custom_batch` publishes to
+    /// `platform_metric_reports.general`, which feeds the warehouse loader and is never republished
+    /// onto `analytics.events`. Mirrors Android's `BeamableAnalytics.primaryUrl`.
+    ///
+    /// The body is identical to the legacy route's — the gateway's `ClientAnalyticsEvent` has the
+    /// same `{op,e,c,p}` shape as the CoreEvent `makeBody` builds — so this is purely a URL swap.
+    public static func postAnalyticsEventsStatus(events: [FunnelEvent],
+                                                 host: String,
+                                                 cidPid: String,
+                                                 accessToken: String,
+                                                 session: URLSession = .shared,
+                                                 completion: @escaping (Int) -> Void) {
+        // The player id comes from the token claim here, not the URL, so no gamerTag path segment.
+        post(events: events, path: "/analytics/events", host: host, cidPid: cidPid,
+             accessToken: accessToken, session: session, completion: completion)
+    }
+
+    /// Shared transport for both funnel routes: same body, same headers, different path.
+    private static func post(events: [FunnelEvent],
+                             path: String,
+                             host: String,
+                             cidPid: String,
+                             accessToken: String,
+                             session: URLSession,
+                             completion: @escaping (Int) -> Void) {
         let base = host.hasSuffix("/") ? String(host.dropLast()) : host
-        guard let url = URL(string: "\(base)/report/custom_batch/\(cid)/\(pid)/\(gamerTag)") else {
+        guard let body = makeBody(for: events), let url = URL(string: base + path) else {
             completion(0)
             return
         }
@@ -299,7 +373,7 @@ public enum BeamableAnalytics {
         request.timeoutInterval = 15
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        request.setValue("\(cid).\(pid)", forHTTPHeaderField: "X-BEAM-SCOPE")
+        request.setValue(cidPid, forHTTPHeaderField: "X-BEAM-SCOPE")
         request.httpBody = body
 
         let task = session.dataTask(with: request) { _, response, _ in

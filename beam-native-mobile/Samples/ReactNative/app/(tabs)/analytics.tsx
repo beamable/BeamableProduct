@@ -64,7 +64,7 @@ function nextFunnelResult(): Promise<EventMap['funnelResult']> {
  */
 export default function AnalyticsTab() {
   const { isReady } = useBeam();
-  const { campaignId, nodeId, setCampaignId, setNodeId } = useNotifications();
+  const { campaignId, nodeId, setCampaignId, setNodeId, outreachId, trackId } = useNotifications();
   const [authView, setAuthView] = useState<string | null>(null);
 
   // Funnel coordinates live in the notification context, so a campaign push that arrives while
@@ -75,6 +75,10 @@ export default function AnalyticsTab() {
     gamerTag: String(getBeam()!.player.id),
     cidPid: `${BEAM_CONFIG.cid}.${BEAM_CONFIG.pid}`,
     deeplink: detailsUrl(777),
+    // Echoed from the push that filled the coordinates. Null when the IDs were typed by hand — the
+    // event is still sent, it just can't be attributed to a campaign send node.
+    outreachId: outreachId ?? undefined,
+    trackId: trackId ?? undefined,
   });
 
   const track = (kind: 'clicked' | 'converted') => async () => {

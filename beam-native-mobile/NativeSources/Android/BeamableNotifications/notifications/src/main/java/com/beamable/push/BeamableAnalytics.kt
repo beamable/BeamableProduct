@@ -434,6 +434,12 @@ object BeamableAnalytics {
         // not send it. Falls back to an explicitly-provided accountId if one is present.
         (intent.accountId ?: intent.gamerTag)?.let { sorted["accountId"] = it }
         intent.cidPid?.let { sorted["cidPid"] = it }
+        // The push's attribution stamp, echoed verbatim. CampaignEventProcessor.ProcessAttributedStage
+        // needs BOTH — trackId to recover the send node, outreachId as the exactly-once dedup key — to
+        // count this stage in the campaign funnel the portal reads. Omitted when the funnel wasn't
+        // triggered by a campaign push; the event is still recorded, just unattributed.
+        intent.outreachId?.takeIf { it.isNotEmpty() }?.let { sorted["outreachId"] = it }
+        intent.trackId?.takeIf { it.isNotEmpty() }?.let { sorted["trackId"] = it }
         // Offers relevant to this event as a SINGLE flat column holding a stringified JSON
         // array of offer objects (`[{customData,itemId,value}, ...]`). Athena has no nested-object
         // column type, so the whole array is carried as one string the reader JSON-parses — this
@@ -472,6 +478,13 @@ object BeamableAnalytics {
         val accountId: String?,
         val cidPid: String?,
         val deeplink: String?,
+        /**
+         * The push's attribution stamp. Persisted with the event so a funnel replayed on next open
+         * (the killed-app path) still attributes to its send node — dropping it here would make
+         * every replayed Clicked invisible to the campaign funnel.
+         */
+        val outreachId: String?,
+        val trackId: String?,
         /** Stringified JSON array of the offer(s) this event concerns (null when none). */
         val offersJson: String?,
         /** Stringified JSON object of the free-form campaign metadata (null when absent). */
@@ -496,6 +509,8 @@ object BeamableAnalytics {
             gamerTag = gamerTag,
             accountId = accountId,
             cidPid = cidPid,
+            outreachId = outreachId,
+            trackId = trackId,
             offersJson = offersJson,
             campaignDataJson = campaignDataJson,
             deeplink = deeplink
@@ -510,6 +525,8 @@ object BeamableAnalytics {
             accountId?.let { obj.put("accountId", it) }
             cidPid?.let { obj.put("cidPid", it) }
             deeplink?.let { obj.put("deeplink", it) }
+            outreachId?.let { obj.put("outreachId", it) }
+            trackId?.let { obj.put("trackId", it) }
             offersJson?.let { obj.put("offersJson", it) }
             campaignDataJson?.let { obj.put("campaignDataJson", it) }
             obj.put("timestamp", timestamp)
@@ -529,6 +546,8 @@ object BeamableAnalytics {
                 accountId = intent.accountId,
                 cidPid = intent.cidPid,
                 deeplink = intent.deeplink,
+                outreachId = intent.outreachId,
+                trackId = intent.trackId,
                 // Stage events (offer == null) carry every offer the push held; Clicked/Converted
                 // carry just the single concerned offer. Either way the offers are re-serialized
                 // through [toAnalyticsArray] so customData is guaranteed to be a stringified JSON
@@ -571,6 +590,8 @@ object BeamableAnalytics {
                     accountId = obj.optStringOrNull("accountId"),
                     cidPid = obj.optStringOrNull("cidPid"),
                     deeplink = obj.optStringOrNull("deeplink"),
+                    outreachId = obj.optStringOrNull("outreachId"),
+                    trackId = obj.optStringOrNull("trackId"),
                     offersJson = obj.optStringOrNull("offersJson"),
                     campaignDataJson = obj.optStringOrNull("campaignDataJson"),
                     timestamp = obj.optLong("timestamp")
