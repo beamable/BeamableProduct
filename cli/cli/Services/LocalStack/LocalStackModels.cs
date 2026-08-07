@@ -33,6 +33,16 @@ public class LocalStackConfig
 	public string javaHome;
 
 	/// <summary>
+	/// How often (seconds) an attached <c>beam local up</c> re-checks that the containers its
+	/// <c>docker compose up</c> steps started are still running. 0 disables the check.
+	///
+	/// Docker steps are run-to-completion, so their containers are invisible to the attached wait: one can die
+	/// mid-run and the orchestrator would keep streaming reconnect errors under a "Stack is up" banner. See
+	/// <see cref="LocalStackDockerWatchdog"/>.
+	/// </summary>
+	public int dockerWatchdogSeconds = 15;
+
+	/// <summary>
 	/// The ordered set of processes to launch. Order matters — earlier steps that declare a
 	/// readiness gate are fully up before later steps start.
 	/// </summary>
