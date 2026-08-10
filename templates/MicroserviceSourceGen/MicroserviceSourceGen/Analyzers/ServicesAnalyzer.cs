@@ -93,7 +93,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 					
 					var location = Diagnostics.GetValidLocation(classDeclaration.Identifier.GetLocation(), context.Compilation);
 					ValidateNestedType(context.Compilation, context.ReportDiagnostic, location, namedSymbol);
-					ValidateSerializableAttributeOnSymbol(context.Compilation, context.ReportDiagnostic, namedSymbol, location);
+					ValidateSerializableAttributeOnSymbol(context.Compilation, context.ReportDiagnostic, namedSymbol, isBlueprintCompatible, location);
 					ValidateMembersInSymbol(context.Compilation, context.ReportDiagnostic, namedSymbol, isBlueprintCompatible, true, location);
 				}
 			}
@@ -471,7 +471,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		}
 		
 		ValidateNestedType(context.Compilation, context.ReportDiagnostic, returnLocation, methodSymbolReturnType, methodSymbol.Name);
-		ValidateSerializableAttributeOnSymbol(context.Compilation, context.ReportDiagnostic, methodSymbolReturnType, returnLocation);
+		ValidateSerializableAttributeOnSymbol(context.Compilation, context.ReportDiagnostic, methodSymbolReturnType, isBlueprintCompatible, returnLocation);
 		ValidateMembersInSymbol(context.Compilation, context.ReportDiagnostic, methodSymbolReturnType, isBlueprintCompatible, fallbackLocation: returnLocation);
 		ValidateContentObjectType(context.ReportDiagnostic, methodSymbolReturnType, returnLocation, $"{methodSymbol.Name} return");
 		
@@ -524,7 +524,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			}
 			
 			ValidateNestedType(context.Compilation, context.ReportDiagnostic, parameterLocation, parameterSymbol.Type, methodSymbol.Name);
-			ValidateSerializableAttributeOnSymbol(context.Compilation, context.ReportDiagnostic, parameterSymbol.Type, parameterLocation);
+			ValidateSerializableAttributeOnSymbol(context.Compilation, context.ReportDiagnostic, parameterSymbol.Type, isBlueprintCompatible, parameterLocation);
 			ValidateMembersInSymbol(context.Compilation, context.ReportDiagnostic, parameterSymbol.Type, isBlueprintCompatible, fallbackLocation: parameterLocation);
 			ValidateContentObjectType(context.ReportDiagnostic, parameterSymbol.Type, parameterLocation, $"parameter {parameterSymbol.Name}");
 			
@@ -609,7 +609,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 	}
 
 	private static void ValidateSerializableAttributeOnSymbol(Compilation compilation, Action<Diagnostic> reportDiagnostic,
-		ITypeSymbol typeSymbol, Location fallbackLocation = null, HashSet<string> processedTypes = null)
+		ITypeSymbol typeSymbol, bool isBlueprintCompatible, Location fallbackLocation = null, HashSet<string> processedTypes = null)
 	{
 		processedTypes ??= new HashSet<string>();
 		
@@ -634,16 +634,21 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			
 			foreach (ITypeSymbol typeMember in namedTypeSymbol.TypeArguments)
 			{
-				ValidateSerializableAttributeOnSymbol(compilation, reportDiagnostic, typeMember, fallbackLocation, processedTypes);
+				ValidateSerializableAttributeOnSymbol(compilation, reportDiagnostic, typeMember, isBlueprintCompatible, fallbackLocation, processedTypes);
 			}
 		}
 
 		if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
 		{
-			ValidateSerializableAttributeOnSymbol(compilation, reportDiagnostic, arrayTypeSymbol.ElementType, fallbackLocation, processedTypes);
+			ValidateSerializableAttributeOnSymbol(compilation, reportDiagnostic, arrayTypeSymbol.ElementType, isBlueprintCompatible, fallbackLocation, processedTypes);
 			return;
 		}
 		
+		//Unity supports C# tuple serialization, but Unreal Blueprint generation does not.
+		if (IsAllowedTuple(isBlueprintCompatible, typeSymbol))
+		{
+			return;
+		}
 		
 		bool isKnownTypeOrNullable = IsKnownTypeOrNullable(typeSymbol);
 		bool isSerializable = typeSymbol.AnyBaseTypes(baseType => baseType is INamedTypeSymbol { IsSerializable: true });
@@ -695,6 +700,11 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			}
 		}
 		
+		//Unity supports C# tuple serialization, but Unreal Blueprint generation does not.
+		if (IsAllowedTuple(isBlueprintCompatible, typeSymbol))
+		{
+			return;
+		}
 		
 		bool isKnownTypeOrNullable = IsKnownTypeOrNullable(typeSymbol);
 		bool isClassOrStruct = typeSymbol.TypeKind is TypeKind.Class or TypeKind.Struct;
@@ -851,7 +861,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			
 
 			//Validate if field type is also serializable
-			ValidateSerializableAttributeOnSymbol(compilation, reportDiagnostic, fieldSymbol.Type, fallbackLocation);
+			ValidateSerializableAttributeOnSymbol(compilation, reportDiagnostic, fieldSymbol.Type, isBlueprintCompatible, fallbackLocation);
 
 			// We only need to validate Members for Classes and Structs
 			if (!isMemberClassOrStruct)
@@ -860,7 +870,7 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 			}
 			
 			
-			ValidateMembersInSymbol(compilation, reportDiagnostic, fieldSymbol.Type, checkBeamGenAttr, isBlueprintCompatible, fallbackLocation, processedTypes);
+			ValidateMembersInSymbol(compilation, reportDiagnostic, fieldSymbol.Type, isBlueprintCompatible, checkBeamGenAttr, fallbackLocation, processedTypes);
 			
 			
 			// Check if parent was type with BeamGen attribute, if so, need to check if class or type members are as well
@@ -1047,4 +1057,23 @@ public class ServicesAnalyzer : DiagnosticAnalyzer
 		return attributeClass.BaseType?.Name == callableAttributeName;
 	}
 	
+	/// <summary>
+	/// Determines whether a tuple is supported for the current client-generation target.
+	/// </summary>
+	/// <remarks>
+	/// Tuple containers are supported when Unreal Blueprint compatibility is disabled.
+	/// Their element types must still be validated before container-level validation is skipped.
+	/// </remarks>
+	/// <param name="isBlueprintCompatible">
+	/// Whether Unreal Blueprint compatibility is enabled for the current build.
+	/// </param>
+	/// <param name="typeSymbol">The type being validated.</param>
+	/// <returns>
+	/// <see langword="true"/> when <paramref name="typeSymbol"/> is a tuple and Unreal
+	/// Blueprint compatibility is disabled; otherwise, <see langword="false"/>.
+	/// </returns>
+	private static bool IsAllowedTuple(bool isBlueprintCompatible, ITypeSymbol typeSymbol)
+	{
+		return !isBlueprintCompatible && typeSymbol.IsTupleType;
+	}
 }
