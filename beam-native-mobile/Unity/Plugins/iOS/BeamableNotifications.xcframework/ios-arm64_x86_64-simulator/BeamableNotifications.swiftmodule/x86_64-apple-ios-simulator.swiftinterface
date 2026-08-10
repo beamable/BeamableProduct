@@ -1,7 +1,9 @@
 // swift-interface-format-version: 1.0
-// swift-compiler-version: Apple Swift version 6.2 effective-5.10 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)
+// swift-compiler-version: Apple Swift version 6.2.3 effective-5.10 (swiftlang-6.2.3.3.21 clang-1700.6.3.2)
 // swift-module-flags: -target x86_64-apple-ios14.0-simulator -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-experimental-feature DebugDescriptionMacro -module-name BeamableNotifications
-// swift-module-flags-ignorable:  -formal-cxx-interoperability-mode=off -interface-compiler-version 6.2
+// swift-module-flags-ignorable:  -formal-cxx-interoperability-mode=off -interface-compiler-version 6.2.3
+import ActivityKit
+import AppIntents
 import Foundation
 import Swift
 import UIKit
@@ -9,6 +11,39 @@ import UserNotifications
 import _Concurrency
 import _StringProcessing
 import _SwiftConcurrencyShims
+public struct BeamActionButton : Swift.Codable, Swift.Equatable, Swift.Hashable {
+  public var id: Swift.String
+  public var title: Swift.String
+  public var role: Swift.String
+  public var isDestructive: Swift.Bool {
+    get
+  }
+  public init(id: Swift.String, title: Swift.String, role: Swift.String = "default")
+  public init(from decoder: any Swift.Decoder) throws
+  public static func == (a: BeamableNotifications.BeamActionButton, b: BeamableNotifications.BeamActionButton) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public typealias BeamLiveActivityButton = BeamableNotifications.BeamActionButton
+public enum BeamActionButtons {
+  public static let maxButtons: Swift.Int
+  public static let userInfoKey: Swift.String
+  public static let synthesizedPrefix: Swift.String
+  public static let builtInActionsCategory: Swift.String
+  public static func isSynthesized(_ categoryId: Swift.String) -> Swift.Bool
+  public static func parse(userInfo: [Swift.AnyHashable : Any]) -> [BeamableNotifications.BeamActionButton]
+  #if compiler(>=5.3) && $NonescapableTypes
+  public static func parse(_ raw: Any?) -> [BeamableNotifications.BeamActionButton]
+  #endif
+  public static func sanitize(_ buttons: [BeamableNotifications.BeamActionButton]) -> [BeamableNotifications.BeamActionButton]
+  public static func categoryId(for buttons: [BeamableNotifications.BeamActionButton]) -> Swift.String
+}
+extension BeamableNotifications.CategorySpec {
+  public init(synthesizedFrom buttons: [BeamableNotifications.BeamActionButton])
+}
 public enum BeamableAnalytics {
   public static func makeParams(for event: BeamableNotifications.FunnelEvent) -> [Swift.String : BeamableNotifications.JSONValue]
   public static func makeCoreEvent(for event: BeamableNotifications.FunnelEvent) -> BeamableNotifications.JSONValue
@@ -22,11 +57,13 @@ public enum BeamableAnalytics {
   #if compiler(>=5.3) && $NonescapableTypes
   public static func makeEvent(_ type: BeamableNotifications.FunnelType, intent: BeamableNotifications.CampaignIntentData, offer: BeamableNotifications.NotificationOffer? = nil) -> BeamableNotifications.FunnelEvent?
   #endif
+  public static var onResult: ((BeamableNotifications.FunnelResult) -> Swift.Void)?
   #if compiler(>=5.3) && $NonescapableTypes
   public static func emit(_ event: BeamableNotifications.FunnelEvent, shared: BeamableNotifications.SharedConfig = .shared, session: Foundation.URLSession = .shared, persistOnFailure: Swift.Bool = false, budget: Foundation.TimeInterval = 25, completion: (() -> Swift.Void)? = nil)
   #endif
   public static func postFunnel(events: [BeamableNotifications.FunnelEvent], host: Swift.String, cidPid: Swift.String, gamerTag: Swift.String, accessToken: Swift.String, session: Foundation.URLSession = .shared, completion: @escaping (Swift.Bool) -> Swift.Void)
   public static func postFunnelStatus(events: [BeamableNotifications.FunnelEvent], host: Swift.String, cidPid: Swift.String, gamerTag: Swift.String, accessToken: Swift.String, session: Foundation.URLSession = .shared, completion: @escaping (Swift.Int) -> Swift.Void)
+  public static func postAnalyticsEventsStatus(events: [BeamableNotifications.FunnelEvent], host: Swift.String, cidPid: Swift.String, accessToken: Swift.String, session: Foundation.URLSession = .shared, completion: @escaping (Swift.Int) -> Swift.Void)
   public struct RefreshedTokens {
     public let accessToken: Swift.String
     public let refreshToken: Swift.String?
@@ -106,6 +143,24 @@ public func bmn_getLaunchNotification() -> Swift.UnsafePointer<Swift.CChar>?
 @_cdecl("bmn_free")
 public func bmn_free(_ ptr: Swift.UnsafePointer<Swift.CChar>?)
 #endif
+@_cdecl("bmn_startLiveActivityObservation")
+public func bmn_startLiveActivityObservation()
+#if compiler(>=5.3) && $NonescapableTypes
+@_cdecl("bmn_getLiveActivityCapabilities")
+public func bmn_getLiveActivityCapabilities() -> Swift.UnsafePointer<Swift.CChar>?
+#endif
+#if compiler(>=5.3) && $NonescapableTypes
+@_cdecl("bmn_setOnLiveActivityToken")
+public func bmn_setOnLiveActivityToken(_ cb: BeamableNotifications.BMNCallback?)
+#endif
+#if compiler(>=5.3) && $NonescapableTypes
+@_cdecl("bmn_setOnLiveActivityStarted")
+public func bmn_setOnLiveActivityStarted(_ cb: BeamableNotifications.BMNCallback?)
+#endif
+#if compiler(>=5.3) && $NonescapableTypes
+@_cdecl("bmn_setOnLiveActivityCapability")
+public func bmn_setOnLiveActivityCapability(_ cb: BeamableNotifications.BMNCallback?)
+#endif
 #if compiler(>=5.3) && $NonescapableTypes
 @_cdecl("bmn_setOnPermissionResult")
 public func bmn_setOnPermissionResult(_ cb: BeamableNotifications.BMNCallback?)
@@ -141,6 +196,14 @@ public func bmn_setOnDeliveryReceipts(_ cb: BeamableNotifications.BMNCallback?)
 @_hasMissingDesignatedInitializers final public class CategoryStore {
   public static let shared: BeamableNotifications.CategoryStore
   final public func register(_ spec: BeamableNotifications.CategorySpec, center: UserNotifications.UNUserNotificationCenter = .current())
+  #if compiler(>=5.3) && $NonescapableTypes
+  final public func register(_ spec: BeamableNotifications.CategorySpec, center: UserNotifications.UNUserNotificationCenter, completion: (() -> Swift.Void)?)
+  #endif
+  #if compiler(>=5.3) && $NonescapableTypes
+  @discardableResult
+  final public func registerSynthesized(buttons: [BeamableNotifications.BeamActionButton], center: UserNotifications.UNUserNotificationCenter = .current(), persist: Swift.Bool = true, completion: (() -> Swift.Void)? = nil) -> Swift.String
+  #endif
+  final public func hydrateFromSharedStore(_ shared: BeamableNotifications.SharedConfig = .shared)
   @objc deinit
 }
 @_hasMissingDesignatedInitializers final public class LaunchTracker {
@@ -153,6 +216,134 @@ public func bmn_setOnDeliveryReceipts(_ cb: BeamableNotifications.BMNCallback?)
   #endif
   final public func enqueueTap(_ data: BeamableNotifications.NotificationData)
   final public func drainPendingTaps() -> [BeamableNotifications.NotificationData]
+  @objc deinit
+}
+@available(iOS 16.1, *)
+public struct BeamActionsActivityAttributes : ActivityKit.ActivityAttributes {
+  public struct ContentState : Swift.Codable, Swift.Hashable {
+    public var headline: Swift.String
+    public var body: Swift.String
+    public var buttons: [BeamableNotifications.BeamLiveActivityButton]
+    public var isResolved: Swift.Bool
+    public init(headline: Swift.String, body: Swift.String, buttons: [BeamableNotifications.BeamLiveActivityButton] = [], isResolved: Swift.Bool = false)
+    public init(from decoder: any Swift.Decoder) throws
+    public static func == (a: BeamableNotifications.BeamActionsActivityAttributes.ContentState, b: BeamableNotifications.BeamActionsActivityAttributes.ContentState) -> Swift.Bool
+    public func encode(to encoder: any Swift.Encoder) throws
+    public func hash(into hasher: inout Swift.Hasher)
+    public var hashValue: Swift.Int {
+      get
+    }
+  }
+  public var title: Swift.String
+  public init(title: Swift.String)
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+@available(iOS 16.1, *)
+public struct BeamAnimatedActivityAttributes : ActivityKit.ActivityAttributes {
+  public struct ContentState : Swift.Codable, Swift.Hashable {
+    public var body: Swift.String
+    public var colors: [Swift.String]
+    public var flipIntervalMs: Swift.Int
+    public var activeIndex: Swift.Int
+    public init(body: Swift.String, colors: [Swift.String], flipIntervalMs: Swift.Int = 900, activeIndex: Swift.Int = 0)
+    public init(from decoder: any Swift.Decoder) throws
+    public static func == (a: BeamableNotifications.BeamAnimatedActivityAttributes.ContentState, b: BeamableNotifications.BeamAnimatedActivityAttributes.ContentState) -> Swift.Bool
+    public func encode(to encoder: any Swift.Encoder) throws
+    public func hash(into hasher: inout Swift.Hasher)
+    public var hashValue: Swift.Int {
+      get
+    }
+  }
+  public var title: Swift.String
+  public init(title: Swift.String)
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+@available(iOS 16.1, *)
+public struct BeamCountdownActivityAttributes : ActivityKit.ActivityAttributes {
+  public struct ContentState : Swift.Codable, Swift.Hashable {
+    public var expiresAt: Foundation.Date
+    public var body: Swift.String
+    public var isExpired: Swift.Bool
+    public init(expiresAt: Foundation.Date, body: Swift.String, isExpired: Swift.Bool = false)
+    public init(from decoder: any Swift.Decoder) throws
+    public static func == (a: BeamableNotifications.BeamCountdownActivityAttributes.ContentState, b: BeamableNotifications.BeamCountdownActivityAttributes.ContentState) -> Swift.Bool
+    public func encode(to encoder: any Swift.Encoder) throws
+    public func hash(into hasher: inout Swift.Hasher)
+    public var hashValue: Swift.Int {
+      get
+    }
+  }
+  public var title: Swift.String
+  public init(title: Swift.String)
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct LiveActivityCapability : Swift.Codable, Swift.Equatable {
+  public var attributesType: Swift.String
+  public var activityType: Swift.String
+  public var supported: Swift.Bool
+  public var enabled: Swift.Bool
+  public var declared: Swift.Bool
+  public var widgetPresent: Swift.Bool
+  public var available: Swift.Bool {
+    get
+  }
+  public var reason: Swift.String {
+    get
+  }
+  public static func == (a: BeamableNotifications.LiveActivityCapability, b: BeamableNotifications.LiveActivityCapability) -> Swift.Bool
+}
+extension BeamableNotifications.LiveActivityCapability {
+  public init(from decoder: any Swift.Decoder) throws
+  public func encode(to encoder: any Swift.Encoder) throws
+}
+public enum LiveActivitySupport {
+  public static let declarationKey: Swift.String
+  public static let knownTypes: [(activityType: Swift.String, attributesType: Swift.String)]
+  #if compiler(>=5.3) && $NonescapableTypes
+  public static func declaredTypes(infoDictionary: [Swift.String : Any]? = Bundle.main.infoDictionary) -> [Swift.String]
+  #endif
+  public static let hasWidgetExtension: Swift.Bool
+  public static var isPushToStartSupported: Swift.Bool {
+    get
+  }
+  public static var areActivitiesEnabled: Swift.Bool {
+    get
+  }
+  #if compiler(>=5.3) && $NonescapableTypes
+  public static func capability(for attributesType: Swift.String, activityType: Swift.String? = nil, infoDictionary: [Swift.String : Any]? = Bundle.main.infoDictionary) -> BeamableNotifications.LiveActivityCapability
+  #endif
+  #if compiler(>=5.3) && $NonescapableTypes
+  public static func capabilities(infoDictionary: [Swift.String : Any]? = Bundle.main.infoDictionary) -> [BeamableNotifications.LiveActivityCapability]
+  #endif
+}
+public struct LiveActivityTokenEvent : Swift.Codable, Swift.Equatable {
+  public var kind: Swift.String
+  public var activityType: Swift.String
+  public var attributesType: Swift.String
+  public var activityId: Swift.String?
+  public var token: Swift.String
+  public static func == (a: BeamableNotifications.LiveActivityTokenEvent, b: BeamableNotifications.LiveActivityTokenEvent) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct LiveActivityStartedEvent : Swift.Codable, Swift.Equatable {
+  public var activityType: Swift.String
+  public var attributesType: Swift.String
+  public var activityId: Swift.String
+  public static func == (a: BeamableNotifications.LiveActivityStartedEvent, b: BeamableNotifications.LiveActivityStartedEvent) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+@_hasMissingDesignatedInitializers final public class LiveActivityCoordinator {
+  public static let shared: BeamableNotifications.LiveActivityCoordinator
+  final public var onToken: ((BeamableNotifications.LiveActivityTokenEvent) -> Swift.Void)?
+  final public var onStarted: ((BeamableNotifications.LiveActivityStartedEvent) -> Swift.Void)?
+  final public var onCapability: (([BeamableNotifications.LiveActivityCapability]) -> Swift.Void)?
+  final public func capabilities() -> [BeamableNotifications.LiveActivityCapability]
+  final public func start()
   @objc deinit
 }
 indirect public enum JSONValue : Swift.Codable, Swift.Equatable {
@@ -205,10 +396,12 @@ public struct CampaignIntentData : Swift.Codable, Swift.Equatable {
   public var accountId: Swift.String?
   public var cidPid: Swift.String?
   public var deeplink: Swift.String?
+  public var outreachId: Swift.String?
+  public var trackId: Swift.String?
   public var offers: [BeamableNotifications.NotificationOffer]?
   public var campaignData: [Swift.String : BeamableNotifications.JSONValue]?
   #if compiler(>=5.3) && $NonescapableTypes
-  public init(campaignId: Swift.String? = nil, nodeId: Swift.String? = nil, gamerTag: Swift.String? = nil, accountId: Swift.String? = nil, cidPid: Swift.String? = nil, deeplink: Swift.String? = nil, offers: [BeamableNotifications.NotificationOffer]? = nil, campaignData: [Swift.String : BeamableNotifications.JSONValue]? = nil)
+  public init(campaignId: Swift.String? = nil, nodeId: Swift.String? = nil, gamerTag: Swift.String? = nil, accountId: Swift.String? = nil, cidPid: Swift.String? = nil, deeplink: Swift.String? = nil, outreachId: Swift.String? = nil, trackId: Swift.String? = nil, offers: [BeamableNotifications.NotificationOffer]? = nil, campaignData: [Swift.String : BeamableNotifications.JSONValue]? = nil)
   #endif
   public var isTrackedCampaign: Swift.Bool {
     get
@@ -243,11 +436,13 @@ public struct NotificationData : Swift.Codable, Swift.Equatable {
   public var gamerTag: Swift.String?
   public var accountId: Swift.String?
   public var cidPid: Swift.String?
+  public var outreachId: Swift.String?
+  public var trackId: Swift.String?
   public var offers: [BeamableNotifications.NotificationOffer]?
   public var campaignData: [Swift.String : BeamableNotifications.JSONValue]?
   public var userInfo: [Swift.String : BeamableNotifications.JSONValue]
   #if compiler(>=5.3) && $NonescapableTypes
-  public init(id: Swift.String, title: Swift.String? = nil, body: Swift.String? = nil, subtitle: Swift.String? = nil, deepLink: Swift.String? = nil, actionId: Swift.String? = nil, wasLaunch: Swift.Bool? = nil, campaignId: Swift.String? = nil, nodeId: Swift.String? = nil, gamerTag: Swift.String? = nil, accountId: Swift.String? = nil, cidPid: Swift.String? = nil, offers: [BeamableNotifications.NotificationOffer]? = nil, campaignData: [Swift.String : BeamableNotifications.JSONValue]? = nil, userInfo: [Swift.String : BeamableNotifications.JSONValue] = [:])
+  public init(id: Swift.String, title: Swift.String? = nil, body: Swift.String? = nil, subtitle: Swift.String? = nil, deepLink: Swift.String? = nil, actionId: Swift.String? = nil, wasLaunch: Swift.Bool? = nil, campaignId: Swift.String? = nil, nodeId: Swift.String? = nil, gamerTag: Swift.String? = nil, accountId: Swift.String? = nil, cidPid: Swift.String? = nil, outreachId: Swift.String? = nil, trackId: Swift.String? = nil, offers: [BeamableNotifications.NotificationOffer]? = nil, campaignData: [Swift.String : BeamableNotifications.JSONValue]? = nil, userInfo: [Swift.String : BeamableNotifications.JSONValue] = [:])
   #endif
   public var campaignIntent: BeamableNotifications.CampaignIntentData {
     get
@@ -398,16 +593,28 @@ public struct FunnelEvent : Swift.Codable, Swift.Equatable {
   public var accountId: Swift.String?
   public var cidPid: Swift.String?
   public var deeplink: Swift.String?
+  public var outreachId: Swift.String?
+  public var trackId: Swift.String?
   public var offers: [BeamableNotifications.NotificationOffer]?
   public var campaignData: [Swift.String : BeamableNotifications.JSONValue]?
   public var timestamp: Swift.Double
   #if compiler(>=5.3) && $NonescapableTypes
-  public init(funnelType: Swift.String, campaignId: Swift.String, nodeId: Swift.String, gamerTag: Swift.String? = nil, accountId: Swift.String? = nil, cidPid: Swift.String? = nil, deeplink: Swift.String? = nil, offers: [BeamableNotifications.NotificationOffer]? = nil, campaignData: [Swift.String : BeamableNotifications.JSONValue]? = nil, timestamp: Swift.Double = Date().timeIntervalSince1970)
+  public init(funnelType: Swift.String, campaignId: Swift.String, nodeId: Swift.String, gamerTag: Swift.String? = nil, accountId: Swift.String? = nil, cidPid: Swift.String? = nil, deeplink: Swift.String? = nil, outreachId: Swift.String? = nil, trackId: Swift.String? = nil, offers: [BeamableNotifications.NotificationOffer]? = nil, campaignData: [Swift.String : BeamableNotifications.JSONValue]? = nil, timestamp: Swift.Double = Date().timeIntervalSince1970)
   #endif
   public var dedupKey: Swift.String {
     get
   }
   public static func == (a: BeamableNotifications.FunnelEvent, b: BeamableNotifications.FunnelEvent) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct FunnelResult : Swift.Codable, Swift.Equatable {
+  public var funnelType: Swift.String
+  public var ok: Swift.Bool
+  public var statusCode: Swift.Int
+  public var message: Swift.String
+  public init(funnelType: Swift.String, ok: Swift.Bool, statusCode: Swift.Int, message: Swift.String)
+  public static func == (a: BeamableNotifications.FunnelResult, b: BeamableNotifications.FunnelResult) -> Swift.Bool
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
 }
@@ -432,9 +639,11 @@ public struct OfferTrackRequest : Swift.Codable, Swift.Equatable {
   public var accountId: Swift.String?
   public var cidPid: Swift.String?
   public var deeplink: Swift.String?
+  public var outreachId: Swift.String?
+  public var trackId: Swift.String?
   public var offer: BeamableNotifications.NotificationOffer?
   #if compiler(>=5.3) && $NonescapableTypes
-  public init(campaignId: Swift.String, nodeId: Swift.String, gamerTag: Swift.String? = nil, accountId: Swift.String? = nil, cidPid: Swift.String? = nil, deeplink: Swift.String? = nil, offer: BeamableNotifications.NotificationOffer? = nil)
+  public init(campaignId: Swift.String, nodeId: Swift.String, gamerTag: Swift.String? = nil, accountId: Swift.String? = nil, cidPid: Swift.String? = nil, deeplink: Swift.String? = nil, outreachId: Swift.String? = nil, trackId: Swift.String? = nil, offer: BeamableNotifications.NotificationOffer? = nil)
   #endif
   #if compiler(>=5.3) && $NonescapableTypes
   public func intent(fallbackAuth: BeamableNotifications.AuthConfig?) -> BeamableNotifications.CampaignIntentData
@@ -460,6 +669,10 @@ public enum JSON {
   final public var onNotificationReceived: ((BeamableNotifications.NotificationData) -> Swift.Void)?
   final public var onPendingNotifications: ((Swift.String) -> Swift.Void)?
   final public var onDeliveryReceipts: ((Swift.String) -> Swift.Void)?
+  final public var onFunnelResult: ((BeamableNotifications.FunnelResult) -> Swift.Void)? {
+    get
+    set
+  }
   final public var onNotificationTapped: ((BeamableNotifications.NotificationData) -> Swift.Void)? {
     get
     set
@@ -594,6 +807,8 @@ final public class SharedConfig {
   final public func appendPendingFunnel(_ event: BeamableNotifications.FunnelEvent)
   final public func loadPendingFunnel() -> [BeamableNotifications.FunnelEvent]
   final public func drainPendingFunnel() -> [BeamableNotifications.FunnelEvent]
+  final public func appendSynthesizedCategory(_ spec: BeamableNotifications.CategorySpec)
+  final public func loadSynthesizedCategories() -> [BeamableNotifications.CategorySpec]
   final public func appendReceipt(_ receipt: BeamableNotifications.DeliveryReceipt)
   final public func loadReceipts() -> [BeamableNotifications.DeliveryReceipt]
   final public func drainReceipts() -> [BeamableNotifications.DeliveryReceipt]

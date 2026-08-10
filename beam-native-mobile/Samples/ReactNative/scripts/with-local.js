@@ -21,6 +21,16 @@ const SAMPLE_DIR = path.resolve(__dirname, '..');
 const ANDROID_DIR = path.join(SAMPLE_DIR, 'android');
 // The `@beamable/sdk` dependency is `file:../../../web`, i.e. the repo's web SDK source.
 const WEB_SDK_DIR = path.resolve(SAMPLE_DIR, '../../../web');
+// The Android SDK ships to the app as a PREBUILT binary — `ReactNative/android/build.gradle` pulls
+// it in with `fileTree(dir: "$projectDir/libs")`, so nothing in this build compiles the Kotlin.
+const AAR_FILE = path.resolve(
+  SAMPLE_DIR,
+  '../../ReactNative/android/libs/beamable-notifications-release.aar',
+);
+const NATIVE_ANDROID_SRC = path.resolve(
+  SAMPLE_DIR,
+  '../../NativeSources/Android/BeamableNotifications/notifications/src/main',
+);
 
 const args = process.argv.slice(2);
 // Strip our own flag; everything else is forwarded to `expo` verbatim.
@@ -51,6 +61,49 @@ function run(cmd, cmdArgs, opts = {}) {
     console.error(`\n[clean] \`${cmd} ${cmdArgs.join(' ')}\` failed (exit ${result.status}).`);
     process.exit(result.status ?? 1);
   }
+}
+
+/** Newest mtime among files under `dir` matching `test`, or null when there are none. */
+function newestFile(dir, test) {
+  if (!fs.existsSync(dir)) return null;
+  let newest = null;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true, recursive: true })) {
+    if (!entry.isFile() || !test(entry.name)) continue;
+    const full = path.join(entry.parentPath ?? entry.path ?? dir, entry.name);
+    const mtime = fs.statSync(full).mtime;
+    if (!newest || mtime > newest.mtime) newest = { mtime, file: entry.name };
+  }
+  return newest;
+}
+
+const stamp = (d) => d.toISOString().slice(0, 16).replace('T', ' ');
+
+/**
+ * Abort when the vendored `.aar` predates the Kotlin it is built from.
+ *
+ * Nothing in the app build compiles `NativeSources/Android` — the binary is staged by
+ * `dev-native.sh`. So editing Kotlin and rebuilding the app produces a perfectly green build that
+ * still runs the OLD bytecode, with no error on the device and no failing test. That drift is what
+ * silently posted the funnel to the warehouse-only route for three days.
+ *
+ * A hard failure rather than a warning: warnings scroll past in an Expo build.
+ */
+function assertAarIsFresh() {
+  if (!fs.existsSync(AAR_FILE)) return; // a consumer without the vendored binary — not our call
+  const newestSrc = newestFile(NATIVE_ANDROID_SRC, (n) => n.endsWith('.kt'));
+  if (!newestSrc) return; // sources absent (published package) — nothing to compare against
+
+  const aarMtime = fs.statSync(AAR_FILE).mtime;
+  if (aarMtime >= newestSrc.mtime) return;
+
+  console.error(
+    `\n[stale] The bundled beamable-notifications AAR is older than the Kotlin it is built from.\n` +
+      `  aar     ${stamp(aarMtime)}  ${path.basename(AAR_FILE)}\n` +
+      `  source  ${stamp(newestSrc.mtime)}  ${newestSrc.file}\n\n` +
+      `  The app links the prebuilt .aar, so your Kotlin changes are NOT in this build.\n` +
+      `  Run ./dev-native.sh from the repo root, then re-run this command.\n`,
+  );
+  process.exit(1);
 }
 
 /** rm -rf, with retries — Windows briefly holds handles via AV/indexers. */
@@ -188,6 +241,9 @@ function cleanAll() {
 
   log('clean complete — starting the build.\n');
 }
+
+// Before any of the (slow) clean/build work — a stale binary makes all of it pointless.
+if (isAndroid) assertAarIsFresh();
 
 if (clean) cleanAll();
 

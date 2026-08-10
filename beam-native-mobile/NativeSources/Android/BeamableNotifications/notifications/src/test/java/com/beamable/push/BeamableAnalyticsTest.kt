@@ -74,6 +74,36 @@ class BeamableAnalyticsTest {
     }
 
     @Test
+    fun analyticsUrl_isTheGatewayRoute() {
+        // The PRIMARY route must stay `/analytics/events`. That endpoint publishes onto the
+        // `analytics.events` bus the campaign event consumer subscribes to; `/report/custom_batch`
+        // publishes to `platform_metric_reports.general`, which only feeds the warehouse loader and
+        // is never republished. Posting to the wrong one still returns 2xx, so nothing else in the
+        // stack notices — a shipped build that did exactly that is what this test exists to catch.
+        assertEquals("https://api.example.com/analytics/events",
+            BeamableAnalytics.analyticsUrl("https://api.example.com"))
+    }
+
+    @Test
+    fun reportUrl_isTheRealmScopedFallback() {
+        // Fallback only, for an older backend with no `/analytics/events`. Realm-scoped in the path
+        // (the gateway route derives the player from the token claim instead).
+        assertEquals("https://api.example.com/report/custom_batch/CID/PID/12345",
+            BeamableAnalytics.reportUrl("https://api.example.com", "CID", "PID", "12345"))
+    }
+
+    @Test
+    fun routes_areDistinct() {
+        // Guards the copy-paste failure the two builders are here to make impossible: a fallback
+        // that silently equals the primary would make the "gateway unavailable" retry a no-op.
+        val host = "https://api.example.com"
+        assertNotEquals(
+            BeamableAnalytics.analyticsUrl(host),
+            BeamableAnalytics.reportUrl(host, "CID", "PID", "12345")
+        )
+    }
+
+    @Test
     fun buildCoreEvent_echoesTheAttributionStamp() {
         // CampaignEventProcessor.ProcessAttributedStage reads exactly these two param names; if
         // either is missing or renamed the stage is silently not counted in the campaign funnel.

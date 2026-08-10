@@ -189,8 +189,8 @@ object BeamableAnalytics {
         // {op,e,c,p,time} shape as the CoreEvent built by [buildBatch] — so this is a URL swap.
         // FALLBACK: the canonical report route (shared with Unity/CLI/iOS), used when the gateway
         // endpoint is unavailable, so an older backend still records the event for the warehouse.
-        val primaryUrl = "$host/analytics/events"
-        val fallbackUrl = "$host/report/custom_batch/$cid/$pid/$gamerTag"
+        val primaryUrl = analyticsUrl(host)
+        val fallbackUrl = reportUrl(host, cid, pid, gamerTag)
 
         var code = doPost(primaryUrl, body, accessToken, scope)
         if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN) {
@@ -397,6 +397,22 @@ object BeamableAnalytics {
             -1
         }
     }
+
+    // ---- Route builders ----------------------------------------------
+    //
+    // Pure and `internal` so the route order is unit-testable without a Context, prefs or a socket.
+    // Which URL is PRIMARY is a correctness contract, not a preference: only `/analytics/events`
+    // publishes onto the `analytics.events` bus the campaign consumer reads, so a build that
+    // silently posts to the report route instead records the event for the warehouse and drops it
+    // from every campaign funnel — with a 2xx and no error anywhere. That is exactly how a stale
+    // binary shipped undetected; these two functions exist so a test can pin it.
+
+    /** PRIMARY: the gateway endpoint whose events can reach a campaign funnel. */
+    internal fun analyticsUrl(host: String): String = "$host/analytics/events"
+
+    /** FALLBACK: the canonical report route (shared with Unity/CLI/iOS). Warehouse only. */
+    internal fun reportUrl(host: String, cid: String, pid: String, gamerTag: String): String =
+        "$host/report/custom_batch/$cid/$pid/$gamerTag"
 
     // ---- CoreEvent JSON builder --------------------------------------
 
