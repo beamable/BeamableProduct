@@ -52,3 +52,7 @@ export const zoneIdPlaceholder = "{zoneId}";
 export const accountIdPlaceholder = "{accountId}";
 
 export const objectIdPlaceholder = "{objectId}";
+
+export const campaignIdPlaceholder = "{campaignId}";
+
+export const versionPlaceholder = "{version}";

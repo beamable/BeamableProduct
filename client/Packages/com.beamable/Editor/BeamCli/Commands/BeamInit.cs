@@ -6,7 +6,7 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class InitArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>the folder that will be initialized as a beamable project. </summary>
+        /// <summary>the folder that will be initialized as a beamable project</summary>
         public string path;
         /// <summary>Specify user email address</summary>
         public string email;

@@ -12,6 +12,10 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool local;
         /// <summary>The verdaccio registry URL used for --local and for version existence checks</summary>
         public string registry;
+        /// <summary>Only update Portal Extensions that are components of a bundle, skipping every other extension and library</summary>
+        public bool bundlesOnly;
+        /// <summary>Only update the Portal Extensions with these beamoIds (separated by whitespace); libraries are skipped</summary>
+        public string[] ids;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -31,6 +35,20 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.registry != default(string)))
             {
                 genBeamCommandArgs.Add(("--registry=" + this.registry));
+            }
+            // If the bundlesOnly value was not default, then add it to the list of args.
+            if ((this.bundlesOnly != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--bundles-only=" + this.bundlesOnly));
+            }
+            // If the ids value was not default, then add it to the list of args.
+            if ((this.ids != default(string[])))
+            {
+                for (int i = 0; (i < this.ids.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--ids=" + this.ids[i]));
+                }
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

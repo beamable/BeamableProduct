@@ -28,6 +28,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string extensions;
         /// <summary>Only update the microservice/extension steps of an existing manifest, leaving everything else untouched</summary>
         public bool updateServices;
+        /// <summary>JVM flags each Scala service is launched with; the heap cap keeps ~18 JDK 8 JVMs from each reserving a quarter of physical RAM</summary>
+        public string scalaJvmArgs;
         /// <summary>Include a step for the local web package registry (Verdaccio and local-unpkg), for iterating on the web SDK or Portal Toolkit</summary>
         public bool withWebRegistry;
         /// <summary>Absolute path to the portal-localdev directory holding the web registry compose file; implies --with-web-registry</summary>
@@ -91,6 +93,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.updateServices != default(bool)))
             {
                 genBeamCommandArgs.Add(("--update-services=" + this.updateServices));
+            }
+            // If the scalaJvmArgs value was not default, then add it to the list of args.
+            if ((this.scalaJvmArgs != default(string)))
+            {
+                genBeamCommandArgs.Add(("--scala-jvm-args=" + this.scalaJvmArgs));
             }
             // If the withWebRegistry value was not default, then add it to the list of args.
             if ((this.withWebRegistry != default(bool)))

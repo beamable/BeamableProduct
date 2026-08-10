@@ -18,7 +18,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public string skip;
         /// <summary>Run the stack detached: services keep running after `up` returns; manage with `beam local ps`/`logs`/`stop`. Default runs attached — logs stream live and the stack stops when `up` exits (Ctrl+C)</summary>
         public bool runDetached;
-        /// <summary>Build the C# gateway, Scala services, and portal deps before launching (microservices/extensions always build via project run)</summary>
+        /// <summary>Rebuild the C# hosts, Scala services, and portal deps before launching (a manifest that declares a build output also builds that step on its own when the output is missing; microservices/extensions always build via project run)</summary>
         public bool build;
         /// <summary>Persist per-run logs under the workspace (.beamable/local-stack-logs/run-<id>); without it logs go to a temp folder and are removed on `beam local stop`</summary>
         public bool saveLogs;

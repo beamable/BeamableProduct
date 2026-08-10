@@ -10,6 +10,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string step;
         /// <summary>Path to the manifest whose run-state to read (defaults to .beamable/local-stack.json)</summary>
         public string config;
+        /// <summary>DESTRUCTIVE: reverse docker steps with `compose down -v` (removing the containers and their volumes) instead of `compose stop`. This deletes the local database — accounts, customers and realms — so the next `up` seeds a brand-new realm with a new CID; omit to keep data</summary>
+        public bool purge;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -24,6 +26,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.config != default(string)))
             {
                 genBeamCommandArgs.Add(("--config=" + this.config));
+            }
+            // If the purge value was not default, then add it to the list of args.
+            if ((this.purge != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--purge=" + this.purge));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

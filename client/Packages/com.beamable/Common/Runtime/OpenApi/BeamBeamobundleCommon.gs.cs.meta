@@ -1,9 +1,5 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:client/Packages/com.beamable/Common/Runtime/OpenApi/BeamPlayerstatsCommon.gs.cs.meta
-guid: b610a4db1aff375425a14b7f544693b9
-========
 guid: 59425dde8314a6734f93225113ef798e
->>>>>>>> main:client/Packages/com.beamable/Common/Runtime/OpenApi/BeamBeamobundleCommon.gs.cs.meta
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2

@@ -14,6 +14,7 @@ export * from './BeamoOtelApi';
 export * from './BeamoPullRequestApi';
 export * from './BillingApi';
 export * from './CalendarsApi';
+export * from './CampaignApi';
 export * from './CloudsavingApi';
 export * from './CommerceApi';
 export * from './ContentApi';
