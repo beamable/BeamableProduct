@@ -408,7 +408,7 @@ public class LocalStackUpCommand
 				// Attached (default): logs already stream live from each child. Hold the foreground until the
 				// user stops (Ctrl+C) or all long-running services exit, then tear the whole stack down.
 				Log.Information("Attached — streaming logs. Press Ctrl+C to stop the stack.");
-				try { await WaitAttached(launched, token); }
+				try { await WaitAttached(launched, steps, config, token); }
 				catch (OperationCanceledException) { /* Ctrl+C — fall through to teardown */ }
 				Log.Information("Stopping the local stack...");
 				TearDown(launched);
@@ -452,22 +452,152 @@ public class LocalStackUpCommand
 	/// Attached mode: hold the foreground while logs stream, until the user cancels (Ctrl+C) or every
 	/// long-running service has exited on its own. Throws <see cref="OperationCanceledException"/> on cancel
 	/// so the caller tears the stack down.
+	///
+	/// The container watchdog runs alongside the wait but is never a reason to return — a dead container is
+	/// reported and restarted, it does not end the run. Attached only: detached <c>up</c> returns immediately
+	/// and has no foreground to poll from.
 	/// </summary>
-	private async Task WaitAttached(List<Launched> launched, CancellationToken token)
+	private async Task WaitAttached(List<Launched> launched, List<LocalStackStep> steps, LocalStackConfig config,
+		CancellationToken token)
 	{
 		List<Task> longRunning;
 		lock (_launchedLock)
 			longRunning = launched.Where(l => !l.Step.waitForExit).Select(l => l.ExitedTask).ToList();
 
-		if (longRunning.Count == 0)
+		// Stops the watchdog when the wait ends for any reason, so it can't outlive the run it is watching.
+		using var watchdogStop = CancellationTokenSource.CreateLinkedTokenSource(token);
+		var watchdog = WatchDockerContainers(steps, config, watchdogStop.Token);
+
+		try
 		{
-			// No long-running services to hold the foreground — just wait for Ctrl+C.
-			await Task.Delay(Timeout.Infinite, token);
+			if (longRunning.Count == 0)
+			{
+				// No long-running services to hold the foreground — just wait for Ctrl+C.
+				await Task.Delay(Timeout.Infinite, token);
+				return;
+			}
+
+			await Task.WhenAny(Task.WhenAll(longRunning), Task.Delay(Timeout.Infinite, token));
+			token.ThrowIfCancellationRequested();
+		}
+		finally
+		{
+			watchdogStop.Cancel();
+			try { await watchdog; } catch { /* the watchdog never fails the run */ }
+		}
+	}
+
+	/// <summary>
+	/// Polls the containers this stack's <c>docker compose up</c> steps started, for as long as <c>up</c> is
+	/// attached. Docker steps are run-to-completion, so nothing else in the command ever looks at their
+	/// containers again — one can die mid-run and the only symptom is a rising tide of connection errors under
+	/// an already-printed "Stack is up". This reports each death with its cause and re-runs the owning step.
+	///
+	/// See <see cref="LocalStackDockerWatchdog"/> for the failure this was written against.
+	/// </summary>
+	private async Task WatchDockerContainers(List<LocalStackStep> steps, LocalStackConfig config,
+		CancellationToken token)
+	{
+		var interval = config?.dockerWatchdogSeconds ?? 0;
+		if (interval <= 0) return;
+
+		var targets = LocalStackDockerWatchdog.DiscoverTargets(steps, config);
+		if (targets.Count == 0) return;
+
+		if (!DockerPathOption.TryGetDockerPath(out var dockerPath, out _))
+			return; // the stack already failed EnsureDockerRunning if it needed docker
+
+		// Reporting is per container (so every casualty is named), but restarting is per step — one
+		// `compose up` brings the step's whole project back, so a Docker-VM teardown that kills 13 containers
+		// must not fire 13 restarts.
+		var reported = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var restarts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+		var gaveUp = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		while (!token.IsCancellationRequested)
+		{
+			try { await Task.Delay(TimeSpan.FromSeconds(interval), token); }
+			catch (OperationCanceledException) { return; }
+
+			foreach (var target in targets)
+			{
+				if (token.IsCancellationRequested) return;
+
+				var containers = LocalStackDockerWatchdog.Poll(target, dockerPath);
+
+				// Classify the whole poll at once — the first one also seals this project's liveness baseline.
+				var dead = target.liveness.Dead(containers);
+
+				// A container that came back clears its mark, so a later crash is reported afresh.
+				foreach (var alive in containers.Except(dead))
+					reported.Remove(alive.name);
+
+				foreach (var container in dead.Where(c => reported.Add(c.name)))
+					ReportDeadContainer(target, container, dockerPath);
+
+				if (dead.Count > 0)
+					TryRestartTarget(target, dead, config, dockerPath, restarts, gaveUp);
+			}
+		}
+	}
+
+	/// <summary>Reports one dead container with its exit code, the reason, and the tail of its own log.</summary>
+	private void ReportDeadContainer(LocalStackDockerWatchdog.Target target,
+		LocalStackDockerWatchdog.ContainerState container, string dockerPath)
+	{
+		var headline = $"[{target.step.name}] container '{container.name}' is {container.state} " +
+		               $"(exit {container.exitCode}) — {container.Explain()}";
+
+		Log.Error(headline);
+		Send(target.step.name, "failed", headline, 1f);
+
+		var tail = LocalStackDockerWatchdog.LogTail(dockerPath, container.name, 20);
+		if (!string.IsNullOrWhiteSpace(tail))
+			Log.Error($"[{target.step.name}] last output from '{container.name}':{Environment.NewLine}{tail}");
+	}
+
+	/// <summary>
+	/// Re-runs one step's <c>docker compose up</c> to bring its dead containers back, up to the step's attempt
+	/// budget. Budgeted per step, not per container, because a single <c>compose up</c> recovers the step's whole
+	/// project — a Docker-VM teardown kills every container at once and must not fire one restart per casualty.
+	///
+	/// Restarting containers is not the same as recovering the stack: the Scala/C# services hold connections to
+	/// whatever just died and do not re-establish them, which is why a mid-run <c>mongo_master</c> crash is fatal
+	/// in practice. So say that, rather than implying the stack is healed.
+	/// </summary>
+	private void TryRestartTarget(LocalStackDockerWatchdog.Target target,
+		List<LocalStackDockerWatchdog.ContainerState> dead, LocalStackConfig config, string dockerPath,
+		Dictionary<string, int> restarts, HashSet<string> gaveUp)
+	{
+		var step = target.step.name;
+		if (gaveUp.Contains(step))
+			return; // already reported as beyond automatic recovery — don't repeat it every poll
+
+		var budget = LocalStackDockerWatchdog.RestartAttemptsFor(target.step);
+		restarts.TryGetValue(step, out var used);
+
+		if (used >= budget)
+		{
+			gaveUp.Add(step);
+			Log.Error($"[{step}] its containers have been restarted {used}/{budget} times and are still dying — " +
+			          "giving up on them. Fix the underlying crash, then re-run `beam local up`.");
 			return;
 		}
 
-		await Task.WhenAny(Task.WhenAll(longRunning), Task.Delay(Timeout.Infinite, token));
-		token.ThrowIfCancellationRequested();
+		restarts[step] = used + 1;
+		var names = string.Join(", ", dead.Select(c => c.name));
+		Log.Warning($"[{step}] restarting (attempt {used + 1}/{budget}) to recover {names}: " +
+		            $"docker {target.step.arguments}");
+
+		if (!LocalStackDockerWatchdog.Restart(target, dockerPath, config, out var error))
+		{
+			Log.Error($"[{step}] restart failed: {error}");
+			return;
+		}
+
+		Log.Warning($"[{step}] containers restarted, but the services that were already connected to them still " +
+		            "hold dead connections and will not recover on their own — stop this run (Ctrl+C) and " +
+		            "re-run `beam local up`.");
 	}
 
 	/// <summary>
