@@ -161,10 +161,10 @@
   <Target Name="RegenerateSkillDocs" AfterTargets="RegenerateTypeSchema"
           Condition="('$(TargetFramework)' == 'net8.0' OR ('$(TargetFramework)' == 'net10.0' AND !Exists('$(OutputPath)../net8.0/') AND !Exists('$(OutputPath)..\net8.0\'))) AND $(DOTNET_RUNNING_IN_CONTAINER)!=true AND $(SKIP_GENERATION)!=true">
     <Exec Condition="'$(IsWindows)'!='true'"
-          Command="./$(OutputPath)$(AssemblyName) generate-skill-docs --template-dir=$(MSBuildThisFileDirectory)Docs"
+          Command="&quot;./$(OutputPath)$(AssemblyName)&quot; generate-skill-docs --template-dir=&quot;$(MSBuildThisFileDirectory)Docs&quot;"
           IgnoreExitCode="true" />
     <Exec Condition="'$(IsWindows)'=='true'"
-          Command=".\$(OutputPath)$(AssemblyName) generate-skill-docs --template-dir=$(MSBuildThisFileDirectory)Docs"
+          Command="&quot;.\$(OutputPath)$(AssemblyName)&quot; generate-skill-docs --template-dir=&quot;$(MSBuildThisFileDirectory)Docs&quot;"
           IgnoreExitCode="true" />
   </Target>
 

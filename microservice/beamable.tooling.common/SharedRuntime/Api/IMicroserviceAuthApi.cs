@@ -15,6 +15,8 @@ namespace Beamable.Server.Api
 	/// ![img beamable-logo]
 	/// 
 	/// </summary>
+
+	[RealmScoped]
 	public interface IMicroserviceAuthApi : IAuthApi
 	{
 		/// <summary>

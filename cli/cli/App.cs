@@ -753,7 +753,14 @@ public class App
 		Commands.AddSubCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
 		Commands.AddSubCommand<RealmListCommand, RealmsListCommandArgs, OrganizationCommand>();
 		Commands.AddSubCommand<GameListCommand, GameListCommandArgs, OrganizationCommand>();
-		
+		Commands.AddSubCommand<PrCommand, CommandGroupArgs, OrganizationCommand>();
+		Commands.AddSubCommand<PrSubmitCommand, PrSubmitCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrListCommand, PrListCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrDiffCommand, PrDiffCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrCommentCommand, PrCommentCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrMergeCommand, PrMergeCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrRejectCommand, PrRejectCommandArgs, PrCommand>();
+
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand>();
 
@@ -1355,6 +1362,16 @@ public class App
 			}
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
+		// Disable System.CommandLine's "@file" response-file token replacement. Otherwise any
+		// argument starting with '@' (e.g. a bundle name like "@alias/bundleName") is treated as a
+		// path to a response file and fails with "Error reading response file". Installing a no-op
+		// TryReplaceToken (returns false, no error) lets '@' tokens pass through as literal strings.
+		commandLineBuilder.UseTokenReplacer((string tokenToReplace, out IReadOnlyList<string> replacementTokens, out string errorMessage) =>
+		{
+			replacementTokens = null;
+			errorMessage = null;
+			return false;
+		});
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
 		commandLineBuilder.UseHelpBuilder(_ => helpBuilder);

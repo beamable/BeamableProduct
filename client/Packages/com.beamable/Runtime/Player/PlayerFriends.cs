@@ -9,6 +9,7 @@ using Beamable.Content.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Player
 {
@@ -19,6 +20,9 @@ namespace Beamable.Player
 		private const string MAIL_UPDATE_CHANNEL = "MAILBOX.UPDATE";
 		private const string MAIL_SOCIAL_INVITE_CATEGORY = "SOCIAL.FRIEND.INVITE";
 		private const string FRIEND_PRESENCE_CHANGED = "social.friend_presence_changed";
+		private const string MAIL_SUPPRESSION_MESSAGE =
+			"Friend invitation Mail checks are disabled for this player context. " +
+			"Call EnableFriendInvitationMailChecks before sending or accepting friend invitations.";
 
 		/// <summary>
 		/// This promise will complete when the first social data has arrived
@@ -53,6 +57,8 @@ namespace Beamable.Player
 		/// </summary>
 		public event Action<PlayerFriend> FriendPresenceChanged;
 
+		private bool _friendInvitationMailChecksEnabled;
+		private bool _mailUpdateSubscribed;
 		private SocialList _socialList;
 
 		private ISocialApi _socialApi;
@@ -69,6 +75,9 @@ namespace Beamable.Player
 			_presenceApi = presenceApi;
 			_inviteMail = new List<MailMessage>();
 
+			_friendInvitationMailChecksEnabled =
+				!CoreConfiguration.Instance.SuppressAutomaticMailUpdatesFromPlayerSocial;
+
 			Friends = new PlayerFriendList(FriendsListRefresh);
 			Blocked = new BlockedPlayerList(BlockedListRefresh);
 			SentInvites = new SentFriendInviteList(SentInviteRefresh);
@@ -77,12 +86,35 @@ namespace Beamable.Player
 			// lots of events will show up on the social update channel
 			_notificationService.Subscribe<FriendRequestUpdateNotification>(SOCIAL_UPDATE_CHANNEL, OnSocialUpdate);
 
-			// but critically, friend invitations only appear on the mail channel :/
-			_notificationService.Subscribe(MAIL_UPDATE_CHANNEL, OnMailUpdate);
+			if (_friendInvitationMailChecksEnabled)
+			{
+				SubscribeToMailUpdates();
+			}
+			else
+			{
+				Debug.LogWarning(MAIL_SUPPRESSION_MESSAGE);
+			}
 
 			_notificationService.Subscribe<FriendStatusChangedNotification>(FRIEND_PRESENCE_CHANGED, OnFriendPresenceChanged);
 
 			OnReady = Refresh().FlatMap(_ => RefreshMail()).ToPromise();
+		}
+
+		// Subscribe to mail updates while preventing duplicate subscriptions.
+		private void SubscribeToMailUpdates()
+		{
+			if (_mailUpdateSubscribed) return;
+
+			// Invitation mail IDs arrive through the mail notification channel.
+			_notificationService.Subscribe(MAIL_UPDATE_CHANNEL, OnMailUpdate);
+			_mailUpdateSubscribed = true;
+		}
+
+		private void UnsubscribeFromMailUpdates()
+		{
+			if (!_mailUpdateSubscribed) return;
+			_notificationService.Unsubscribe(MAIL_UPDATE_CHANNEL, OnMailUpdate);
+			_mailUpdateSubscribed = false;
 		}
 
 		private async void OnFriendPresenceChanged(FriendStatusChangedNotification notification)
@@ -103,6 +135,8 @@ namespace Beamable.Player
 
 		private async Promise RefreshMail()
 		{
+			if (!_friendInvitationMailChecksEnabled) return;
+
 			var inviteMail = await _mailApi.GetMail(MAIL_SOCIAL_INVITE_CATEGORY);
 			_inviteMail = inviteMail.result;
 
@@ -230,8 +264,14 @@ namespace Beamable.Player
 		/// After the resultant <see cref="Promise"/> completes, the <see cref="SentInvites"/> list will contain an invite for the given <see cref="playerId"/>
 		/// </summary>
 		/// <param name="playerId">the player id of the player to invite to become friends</param>
+		/// <exception cref="InvalidOperationException">Thrown when friend invitation Mail checks are disabled for this player context.</exception>
 		public async Promise Invite(long playerId)
 		{
+			if (!_friendInvitationMailChecksEnabled)
+			{
+				throw new InvalidOperationException(MAIL_SUPPRESSION_MESSAGE);
+			}
+
 			await _socialApi.SendFriendRequest(playerId);
 			await Refresh();
 		}
@@ -243,8 +283,14 @@ namespace Beamable.Player
 		/// After the resultant <see cref="Promise"/> completes, the <see cref="ReceivedInvites"/> list will no longer include the given <see cref="playerId"/>
 		/// </summary>
 		/// <param name="playerId">the gamerTag of the player to accept friendship for</param>
+		/// <exception cref="InvalidOperationException">Thrown when friend invitation Mail checks are disabled for this player context.</exception>
 		public async Promise AcceptInviteFrom(long playerId)
 		{
+			if (!_friendInvitationMailChecksEnabled)
+			{
+				throw new InvalidOperationException(MAIL_SUPPRESSION_MESSAGE);
+			}
+
 			await OnReady;
 			var invite = ReceivedInvites.FirstOrDefault(i => i.invitingPlayerId == playerId);
 			if (invite == null)
@@ -341,10 +387,40 @@ namespace Beamable.Player
 			await Refresh();
 		}
 
+		/// <summary>
+		/// Enables the Mail checks required for sending and accepting friend
+		/// invitations for this PlayerSocial instance.
+		/// </summary>
+		/// <remarks>
+		/// This performs an immediate Mail search and subscribes this player
+		/// context to future mailbox updates.
+		/// </remarks>
+		public async Promise EnableFriendInvitationMailChecks()
+		{
+			await OnReady;
+
+			// Recheck because another caller may have enabled it while awaiting.
+			if (_friendInvitationMailChecksEnabled) return;
+
+			_friendInvitationMailChecksEnabled = true;
+			SubscribeToMailUpdates();
+
+			try
+			{
+				await RefreshMail();
+			}
+			catch
+			{
+				_friendInvitationMailChecksEnabled = false;
+				UnsubscribeFromMailUpdates();
+				throw;
+			}
+		}
+
 		public Promise OnDispose()
 		{
 			_notificationService.Unsubscribe<FriendRequestUpdateNotification>(SOCIAL_UPDATE_CHANNEL, OnSocialUpdate);
-			_notificationService.Unsubscribe(MAIL_UPDATE_CHANNEL, OnMailUpdate);
+			UnsubscribeFromMailUpdates();
 			_notificationService.Unsubscribe<FriendStatusChangedNotification>(FRIEND_PRESENCE_CHANGED, OnFriendPresenceChanged);
 			_socialApi = null;
 			return Promise.Success;

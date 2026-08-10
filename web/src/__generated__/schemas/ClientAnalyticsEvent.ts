@@ -4,9 +4,7 @@
  */
 
 export type ClientAnalyticsEvent = { 
-  c?: string | null; 
   e?: string | null; 
-  op?: string | null; 
   p?: Record<string, any> | null; 
   time?: bigint | string | null; 
 };

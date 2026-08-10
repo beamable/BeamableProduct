@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TokenStorage.hydrate()` — a concrete no-op hook (overridden by the React Native storage) the
   SDK awaits at the start of `connect()` so asynchronously-persisted tokens are loaded before
   the synchronous `isExpired` check.
+- `BeamConfig.realtime.enabled` — opt out of the realtime websocket at init (defaults to `true`). Lets the SDK be used as a pure API client when there's no player to sustain a realtime session.
+- `Beam.connectRealtime()` / `Beam.disconnectRealtime()` — public methods to start/stop the realtime websocket on demand (e.g. after creating a player via `beam.auth.loginAsGuest()`), and to cleanly tear the connection down.
+
+### Changed
+
+- `Beam.init()` now skips the realtime connection when `realtime.enabled` is `false` instead of always connecting.
 
 ## [1.2.1] - 2026-06-03
 

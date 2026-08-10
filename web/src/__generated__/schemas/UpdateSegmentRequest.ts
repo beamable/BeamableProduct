@@ -4,10 +4,12 @@
  */
 
 import type { Rule } from './Rule';
+import type { SegmentPropertyInput } from './SegmentPropertyInput';
 
 export type UpdateSegmentRequest = { 
   description?: string | null; 
   displayName?: string | null; 
   expectedActiveId?: string | null; 
+  properties?: Record<string, SegmentPropertyInput> | null; 
   rule?: Rule; 
 };

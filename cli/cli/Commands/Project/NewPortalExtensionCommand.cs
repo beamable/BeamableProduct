@@ -18,6 +18,7 @@ public class NewPortalExtensionCommandArgs : SolutionCommandArgs
 	public int mountGroupOrder;
 	public int mountLabelOrder;
 	public string template;
+	public bool IsZone;
 	public string[] filters;
 }
 
@@ -27,9 +28,16 @@ public static class PortalExtensionTemplates
 
 	public static readonly string[] All = { React };
 
-	public static string ToDotnetTemplateShortName(string template) => template switch
+	/// <summary>
+	/// Resolves the dotnet template short name for a given UI framework template. When
+	/// <paramref name="isZone"/> is true, the zone-scoped variant is used — it scaffolds the
+	/// front end against the zone registration APIs (<c>registerReactZoneExtension</c> /
+	/// <c>useZoneBeam</c> / <c>ZoneExtensionContext</c>) so the extension receives a
+	/// <c>BeamZoneSdk</c> (cid.zid) instead of a realm-scoped <c>Beam</c>.
+	/// </summary>
+	public static string ToDotnetTemplateShortName(string template, bool isZone = false) => template switch
 	{
-		React => "portalextensionreactapp",
+		React => isZone ? "portalextensionreactappzone" : "portalextensionreactapp",
 		_ => throw new CliException($"Unknown portal-extension template '{template}'. Valid values: {string.Join(", ", All)}")
 	};
 }
@@ -90,6 +98,11 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 				getDefaultValue: () => PortalExtensionTemplates.React,
 				description: "UI framework template to scaffold the extension with. Allowed values: react"),
 			binder: (args, i) => args.template = i);
+
+		AddOption(new Option<bool>(
+				name: "--zone",
+				description: "If passed, creates a zone-scoped portal extension (its backing service runs as a ZoneMicroservice, per cid.zid) instead of a realm-scoped one"),
+			(args, i) => args.IsZone = i);
 
 		AddOption(new Option<string[]>(
 				aliases: new string[] { "--filters" },

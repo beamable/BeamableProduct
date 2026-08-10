@@ -1,7 +1,7 @@
 // Portal extension registration utilities.
 // Import via:  import { Portal } from '@beamable/portal-toolkit';
 
-import { Beam, BeamBase } from "@beamable/sdk";
+import { Beam, BeamBase, BeamZoneSdk } from "@beamable/sdk";
 import type { ExtensionStorage } from "./storage";
 
 // ---------------------------------------------------------------------------
@@ -132,17 +132,29 @@ export interface BadgeValue {
 }
 
 /**
- * Limited context handed to `getBadge`. Deliberately narrower than
- * {@link ExtensionContext} — the badge pull runs *outside* the extension's
- * mount lifecycle (no shadow DOM, no React tree, no URL params) so the
- * extension must never reach for `params` / `location` / `navigate` /
+ * Shared shape for the limited context handed to `getBadge`, parametrized over the
+ * SDK type. Deliberately narrower than {@link ExtensionContext} — the badge pull runs
+ * *outside* the extension's mount lifecycle (no shadow DOM, no React tree, no URL
+ * params) so the extension must never reach for `params` / `location` / `navigate` /
  * `mount` here.
  */
-export interface BadgeContext {
-  realm: string;
+export interface BaseBadgeContext<TBeam> {
   cid: string;
-  beam: Promise<Beam>;
+  beam: Promise<TBeam>;
   config: ExtensionConfig;
+}
+
+/** Badge context for a realm-scoped extension. */
+export interface BadgeContext extends BaseBadgeContext<Beam> {
+  realm: string;
+}
+
+/**
+ * Badge context for a zone-scoped extension. Carries a `zid` instead of a `realm`, and
+ * a {@link BeamZoneSdk} instead of a full {@link Beam}.
+ */
+export interface ZoneBadgeContext extends BaseBadgeContext<BeamZoneSdk> {
+  zid: string;
 }
 
 /**
@@ -172,12 +184,14 @@ export interface CandidateMetadata {
 }
 
 /**
- * Runtime context provided by the Beamable portal to every extension on mount.
+ * The runtime context the portal hands every extension on mount, parametrized over the
+ * SDK type. The realm and zone variants ({@link ExtensionContext} /
+ * {@link ZoneExtensionContext}) add their scope-specific identity field (`realm` / `zid`)
+ * and bind `beam` to the matching SDK; everything else is shared.
  */
-export interface ExtensionContext extends Map<any, any> {
-  realm: string;
+export interface BaseExtensionContext<TBeam> extends Map<any, any> {
   cid: string;
-  beam: Promise<Beam>;
+  beam: Promise<TBeam>;
   /**
    * URL params extracted by matching the extension's `mount.page` pattern
    * against the current realm-relative path. For example, an extension
@@ -265,6 +279,29 @@ export interface ExtensionContext extends Map<any, any> {
 }
 
 /**
+ * Runtime context provided by the Beamable portal to a realm-scoped extension on mount.
+ * Carries the current `realm` (pid) and a full {@link Beam} client SDK.
+ */
+export interface ExtensionContext extends BaseExtensionContext<Beam> {
+  /** The current realm (pid) this extension is mounted under. */
+  realm: string;
+}
+
+/**
+ * Runtime context provided by the Beamable portal to a zone-scoped extension on mount.
+ *
+ * @remarks
+ * A zone runs *above* realms, so there is no `realm` here — instead the extension gets
+ * the `zid` it is scoped to and a {@link BeamZoneSdk} (customer realm/zone directory
+ * queries only; no player/realm surface). To act within a realm, resolve a pid from
+ * `beam.customer.getRealms()` and start a realm session with `Beam.init({ cid, pid })`.
+ */
+export interface ZoneExtensionContext extends BaseExtensionContext<BeamZoneSdk> {
+  /** The zone (zid) this extension is mounted under. */
+  zid: string;
+}
+
+/**
  * Options passed to {@link Portal.registerExtension}.
  */
 export interface RegisterExtensionOptions {
@@ -323,16 +360,60 @@ export interface RegisterExtensionOptions {
 }
 
 /**
- * Shape published on `window[beamId]` by {@link Portal.registerExtension}.
- * The portal reads this back to invoke mount/unmount and (separately, with
- * a narrower context) the badge pull. Exported so portal-side typings can
- * reach the same shape.
+ * Options passed to {@link Portal.registerZoneExtension}. The zone-scoped analog of
+ * {@link RegisterExtensionOptions}: identical shape, but `onMount` / `getBadge` receive
+ * the zone context ({@link ZoneExtensionContext} / {@link ZoneBadgeContext}) and thus a
+ * {@link BeamZoneSdk} instead of a full {@link Beam}.
  */
-export interface WindowExtensionRegistration {
-  mount: (targetElement: HTMLElement, context: ExtensionContext) => unknown | Promise<unknown>;
-  unmount: (instance: unknown) => void | Promise<void>;
-  getBadge?: (context: BadgeContext) => Promise<BadgeValue | null>;
+export interface RegisterZoneExtensionOptions {
+  /** Unique name for the extension */
+  beamId: string;
+  /** Called when the portal mounts this zone extension into the DOM. */
+  onMount: (container: HTMLElement, context: ZoneExtensionContext) => unknown | Promise<unknown>;
+  /** Called when the portal is about to remove this extension from the DOM. */
+  onUnmount: (instance: unknown) => void | Promise<void>;
+  /** Optional sidebar nav-badge supplier — see {@link RegisterExtensionOptions.getBadge}. */
+  getBadge?: (context: ZoneBadgeContext) => Promise<BadgeValue | null>;
 }
+
+/**
+ * Shared shape published on `window[beamId]` by the register* helpers, parametrized over
+ * the mount/badge context types. The portal reads this back to invoke mount/unmount and
+ * (separately, with a narrower context) the badge pull.
+ */
+export interface BaseWindowExtensionRegistration<TCtx, TBadgeCtx> {
+  /**
+   * Discriminates which SDK/context the portal must build for this extension: `realm`
+   * gets an {@link ExtensionContext} (full {@link Beam}); `zone` gets a
+   * {@link ZoneExtensionContext} ({@link BeamZoneSdk}). The portal uses this to route the
+   * extension to a compatible mount site and reject a mismatch.
+   */
+  scope: 'realm' | 'zone';
+  mount: (targetElement: HTMLElement, context: TCtx) => unknown | Promise<unknown>;
+  unmount: (instance: unknown) => void | Promise<void>;
+  getBadge?: (context: TBadgeCtx) => Promise<BadgeValue | null>;
+}
+
+/** Registration published by {@link Portal.registerExtension} (realm-scoped). */
+export interface RealmWindowExtensionRegistration
+  extends BaseWindowExtensionRegistration<ExtensionContext, BadgeContext> {
+  scope: 'realm';
+}
+
+/** Registration published by {@link Portal.registerZoneExtension} (zone-scoped). */
+export interface ZoneWindowExtensionRegistration
+  extends BaseWindowExtensionRegistration<ZoneExtensionContext, ZoneBadgeContext> {
+  scope: 'zone';
+}
+
+/**
+ * Shape published on `window[beamId]`. A discriminated union on {@link
+ * BaseWindowExtensionRegistration.scope} — narrow on `scope` to get the matching context
+ * types. Exported so portal-side typings can reach the same shape.
+ */
+export type WindowExtensionRegistration =
+  | RealmWindowExtensionRegistration
+  | ZoneWindowExtensionRegistration;
 
 
 // ---------------------------------------------------------------------------
@@ -358,7 +439,41 @@ export interface WindowExtensionRegistration {
  * ```
  */
 function registerExtension(options: RegisterExtensionOptions): void {
-  const registration: WindowExtensionRegistration = {
+  const registration: RealmWindowExtensionRegistration = {
+    scope: 'realm',
+    mount: (targetElement, context) => options.onMount(targetElement, context),
+    unmount: (instance) => options.onUnmount(instance),
+    ...(options.getBadge ? { getBadge: options.getBadge } : {}),
+  };
+  (window as unknown as Record<string, WindowExtensionRegistration>)[options.beamId] = registration;
+}
+
+/**
+ * Registers a **zone-scoped** extension with the Beamable portal. The zone analog of
+ * {@link registerExtension}: the mount context is a {@link ZoneExtensionContext}, so
+ * `context.beam` is a {@link BeamZoneSdk} (customer realm/zone directory only) and there
+ * is no `realm` — use `context.zid`.
+ *
+ * @example
+ * ```ts
+ * import { Portal } from '@beamable/portal-toolkit';
+ *
+ * Portal.registerZoneExtension({
+ *   beamId: 'ZoneOverview',
+ *   async onMount(container, context) {
+ *     const beam = await context.beam;
+ *     const realms = await beam.customer.getRealms();
+ *     container.innerHTML = `<p>Zone ${context.zid}: ${realms.length} realms</p>`;
+ *   },
+ *   onUnmount(instance) {
+ *     // clean up
+ *   },
+ * });
+ * ```
+ */
+function registerZoneExtension(options: RegisterZoneExtensionOptions): void {
+  const registration: ZoneWindowExtensionRegistration = {
+    scope: 'zone',
     mount: (targetElement, context) => options.onMount(targetElement, context),
     unmount: (instance) => options.onUnmount(instance),
     ...(options.getBadge ? { getBadge: options.getBadge } : {}),
@@ -381,4 +496,5 @@ function registerExtension(options: RegisterExtensionOptions): void {
  */
 export const Portal = {
   registerExtension,
+  registerZoneExtension,
 } as const;

@@ -24,6 +24,53 @@ public class CliRequester : IRequester
 
 	public Dictionary<string, string> GlobalHeaders { get; } = new Dictionary<string, string>();
 
+	/// <summary>
+	/// When set, overrides the <c>X-BEAM-SCOPE</c> header for every request instead of the default
+	/// <c>{cid}.{pid}</c>. Used by zone-scoped operations (e.g. <c>beam deploy --scope zone</c>) to target
+	/// the zone manifest via a <c>{cid}.{zid}</c> scope. Set it around the scoped operation and clear it
+	/// (null/empty) afterward — see <see cref="WithBeamScope"/>.
+	/// </summary>
+	public string BeamScopeOverride { get; set; }
+
+	/// <summary>
+	/// Sets <see cref="BeamScopeOverride"/> for the lifetime of the returned handle and restores the prior
+	/// value on dispose, so callers can scope a block of requests without leaking the override.
+	/// </summary>
+	public IDisposable WithBeamScope(string scope)
+	{
+		var previous = BeamScopeOverride;
+		BeamScopeOverride = scope;
+		return new ScopeResetter(this, previous);
+	}
+
+	/// <summary>
+	/// The <c>X-BEAM-SCOPE</c> value the next request will send: <see cref="BeamScopeOverride"/> when set
+	/// (e.g. a zone deploy's <c>{cid}.{zid}</c>), otherwise the default <c>{cid}.{pid}</c> (or just <c>{cid}</c>
+	/// with no realm selected). Surfaced in the verbose request log so callers can confirm the scope.
+	/// </summary>
+	private string GetEffectiveScope()
+	{
+		if (!string.IsNullOrEmpty(BeamScopeOverride))
+		{
+			return BeamScopeOverride;
+		}
+		var pid = AccessToken?.Pid ?? Pid;
+		var cid = AccessToken?.Cid ?? Cid;
+		return string.IsNullOrEmpty(pid) ? cid : $"{cid}.{pid}";
+	}
+
+	private sealed class ScopeResetter : IDisposable
+	{
+		private readonly CliRequester _requester;
+		private readonly string _previous;
+		public ScopeResetter(CliRequester requester, string previous)
+		{
+			_requester = requester;
+			_previous = previous;
+		}
+		public void Dispose() => _requester.BeamScopeOverride = _previous;
+	}
+
 	public CliRequester(IRequesterInfo requesterInfo)
 	{
 		_requesterInfo = requesterInfo;
@@ -41,9 +88,9 @@ public class CliRequester : IRequester
 	public async Promise<T> CustomRequest<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
 										  Func<string, T> parser = null, bool customerScoped = false, IEnumerable<string> customHeaders = null)
 	{
-		Log.Verbose($"{method} call: {uri}");
-		
-		using HttpClient client = GetClient(_requesterInfo.Host, includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken, customerScoped);
+		Log.Verbose($"{method} call: {uri} (X-BEAM-SCOPE={GetEffectiveScope()})");
+
+		using HttpClient client = GetClient(_requesterInfo.Host, includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken, customerScoped, BeamScopeOverride);
 		var request = PrepareRequest(method, _requesterInfo.Host, uri, body);
 		
 		if (GlobalHeaders != null)
@@ -249,7 +296,7 @@ public class CliRequester : IRequester
 		return filter;
 	}
 	
-	private static HttpClient GetClient(string host, bool includeAuthHeader, string pid, string cid, IAccessToken token, bool customerScoped)
+	private static HttpClient GetClient(string host, bool includeAuthHeader, string pid, string cid, IAccessToken token, bool customerScoped, string scopeOverride = null)
 	{
 		var handler = new HttpClientHandler();
 		handler.ServerCertificateCustomValidationCallback = (message, _, _, _) =>
@@ -273,7 +320,9 @@ public class CliRequester : IRequester
 
 		client.DefaultRequestHeaders.Add("contentType", "application/json"); // confirm that it is required
 
-		var scope = string.IsNullOrEmpty(pid) ? cid : $"{cid}.{pid}";
+		var scope = !string.IsNullOrEmpty(scopeOverride)
+			? scopeOverride
+			: (string.IsNullOrEmpty(pid) ? cid : $"{cid}.{pid}");
 		if (!string.IsNullOrEmpty(scope))
 		{
 			client.DefaultRequestHeaders.Add("X-BEAM-SCOPE", scope);

@@ -14,12 +14,13 @@ public class ListCommandResult
 {
 	public List<ServiceInfo> localServices;
 	public List<ServiceInfo> localStorages;
+	public List<ServiceInfo> localPortalExtensions;
 }
 
 public class ListCommand : AtomicCommand<ListCommandArgs, ListCommandResult>
 {
 	public ListCommand() : base("list",
-		"Get a list of microservices")
+		"Get a list of microservices, storages, and portal extensions")
 	{
 	}
 
@@ -29,15 +30,24 @@ public class ListCommand : AtomicCommand<ListCommandArgs, ListCommandResult>
 
 	public override Task<ListCommandResult> GetResult(ListCommandArgs args)
 	{
-		var services = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
-			.Where(definition => definition.Protocol == BeamoProtocolType.HttpMicroservice).Select(
-				definition => new ServiceInfo() { name = definition.BeamoId, projectPath = definition.ProjectDirectory });
-		var storages = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
-			.Where(definition => definition.Protocol == BeamoProtocolType.EmbeddedMongoDb).Select(
-				definition => new ServiceInfo() { name = definition.BeamoId, projectPath = definition.ProjectDirectory });
+		var definitions = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions;
 
-		Log.Debug("Found {} services", args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Count);
+		List<ServiceInfo> Select(BeamoProtocolType protocol) => definitions
+			.Where(definition => definition.Protocol == protocol)
+			.Select(definition => new ServiceInfo() { name = definition.BeamoId, projectPath = definition.ProjectDirectory })
+			.ToList();
 
-		return Task.FromResult(new ListCommandResult { localServices = services.ToList(), localStorages = storages.ToList() });
+		var services = Select(BeamoProtocolType.HttpMicroservice);
+		var storages = Select(BeamoProtocolType.EmbeddedMongoDb);
+		var portalExtensions = Select(BeamoProtocolType.PortalExtension);
+
+		Log.Debug("Found {} service definitions", definitions.Count);
+
+		return Task.FromResult(new ListCommandResult
+		{
+			localServices = services,
+			localStorages = storages,
+			localPortalExtensions = portalExtensions,
+		});
 	}
 }

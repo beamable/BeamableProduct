@@ -6,7 +6,6 @@
 import { aliasPlaceholder } from '@/__generated__/apis/constants';
 import { customerIdPlaceholder } from '@/__generated__/apis/constants';
 import { DELETE } from '@/constants';
-import { destinationRealmIdPlaceholder } from '@/__generated__/apis/constants';
 import { endpointEncoder } from '@/utils/endpointEncoder';
 import { gameIdPlaceholder } from '@/__generated__/apis/constants';
 import { GET } from '@/constants';
@@ -366,6 +365,76 @@ export async function customersPatchConfigByCustomerId(requester: HttpRequester,
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function customersGetConfig(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ConfigResponse>> {
+  let endpoint = "/api/customers/config";
+  
+  // Make the API request
+  return makeApiRequest<ConfigResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `ConfigSaveRequest` instance to use for the API request
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function customersPutConfig(requester: HttpRequester, payload: ConfigSaveRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
+  let endpoint = "/api/customers/config";
+  
+  // Make the API request
+  return makeApiRequest<EmptyMessage, ConfigSaveRequest>({
+    r: requester,
+    e: endpoint,
+    m: PUT,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `ConfigChangeRequest` instance to use for the API request
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function customersPatchConfig(requester: HttpRequester, payload: ConfigChangeRequest, gamertag?: string): Promise<HttpResponse<EmptyMessage>> {
+  let endpoint = "/api/customers/config";
+  
+  // Make the API request
+  return makeApiRequest<EmptyMessage, ConfigChangeRequest>({
+    r: requester,
+    e: endpoint,
+    m: PATCH,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
  * @param customerId - ID of the customer.
  * @param showHiddenRealms - Whether to include hidden realms.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
@@ -625,12 +694,12 @@ export async function customersGetRealmsClientDefaults(requester: HttpRequester,
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `CustomerActorPromoteRealmRequest` instance to use for the API request
  * @param customerId - ID of the customer.
- * @param destinationRealmId - ID of the realm to promote content into.
+ * @param realmId - ID of the realm to promote into.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersPostRealmsPromotion(requester: HttpRequester, customerId: string, destinationRealmId: string, payload: CustomerActorPromoteRealmRequest, gamertag?: string): Promise<HttpResponse<CustomerActorPromoteRealmResponse>> {
-  let endpoint = "/api/customers/{customerId}/realms/{destinationRealmId}/promotion".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(destinationRealmIdPlaceholder, endpointEncoder(destinationRealmId));
+export async function customersPostRealmsPromotion(requester: HttpRequester, customerId: string, realmId: string, payload: CustomerActorPromoteRealmRequest, gamertag?: string): Promise<HttpResponse<CustomerActorPromoteRealmResponse>> {
+  let endpoint = "/api/customers/{customerId}/realms/{realmId}/promotion".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
   return makeApiRequest<CustomerActorPromoteRealmResponse, CustomerActorPromoteRealmRequest>({
@@ -650,15 +719,15 @@ export async function customersPostRealmsPromotion(requester: HttpRequester, cus
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param customerId - ID of the customer.
- * @param destinationRealmId - ID of the destination realm.
+ * @param realmId - ID of the destination realm.
  * @param contentIds - Comma-separated list of content IDs to filter by.
  * @param promotables - Comma-separated list of promotable types to include.
  * @param sourceRealmId - ID of the source realm.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersGetRealmsPromotion(requester: HttpRequester, customerId: string, destinationRealmId: string, contentIds?: string, promotables?: string, sourceRealmId?: string, gamertag?: string): Promise<HttpResponse<CustomerActorPromoteRealmResponse>> {
-  let endpoint = "/api/customers/{customerId}/realms/{destinationRealmId}/promotion".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(destinationRealmIdPlaceholder, endpointEncoder(destinationRealmId));
+export async function customersGetRealmsPromotion(requester: HttpRequester, customerId: string, realmId: string, contentIds?: string, promotables?: string, sourceRealmId?: string, gamertag?: string): Promise<HttpResponse<CustomerActorPromoteRealmResponse>> {
+  let endpoint = "/api/customers/{customerId}/realms/{realmId}/promotion".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
   return makeApiRequest<CustomerActorPromoteRealmResponse>({

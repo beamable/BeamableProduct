@@ -3,11 +3,14 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
+import type { BeamoV2ManifestBundle } from './BeamoV2ManifestBundle';
 import type { BeamoV2PortalExtensionReference } from './BeamoV2PortalExtensionReference';
+import type { BeamoV2SchemaReference } from './BeamoV2SchemaReference';
 import type { BeamoV2ServiceReference } from './BeamoV2ServiceReference';
 import type { BeamoV2ServiceStorageReference } from './BeamoV2ServiceStorageReference';
 
 export type BeamoV2Manifest = { 
+  bundles?: BeamoV2ManifestBundle[] | null; 
   checksum?: string; 
   comments?: string | null; 
   created?: bigint | string; 
@@ -15,6 +18,7 @@ export type BeamoV2Manifest = {
   id?: string; 
   portalExtensionReferences?: BeamoV2PortalExtensionReference[]; 
   references?: Record<string, string> | null; 
+  schemaReferences?: BeamoV2SchemaReference[]; 
   schemaVersion?: number | null; 
   serviceReferences?: BeamoV2ServiceReference[]; 
   storageGroupId?: string | null; 

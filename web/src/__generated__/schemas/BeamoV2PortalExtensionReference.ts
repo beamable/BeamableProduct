@@ -3,7 +3,6 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { BeamoV2BundleOrigin } from './BeamoV2BundleOrigin';
 import type { BeamoV2ExtensionContentReference } from './BeamoV2ExtensionContentReference';
 
 export type BeamoV2PortalExtensionReference = { 
@@ -14,5 +13,4 @@ export type BeamoV2PortalExtensionReference = {
   enabled?: boolean; 
   files?: BeamoV2ExtensionContentReference[]; 
   name?: string; 
-  origin?: BeamoV2BundleOrigin; 
 };

@@ -776,6 +776,17 @@ public class BeamoServiceDefinition
 	public string[] ServiceGroupTags;
 
 	/// <summary>
+	/// The deployment scope of the service, sourced from the &lt;BeamServiceScope&gt; csproj property.
+	/// Null/empty means realm-scoped (<c>cid.pid</c>); "zone" means zone-scoped (<c>cid.zid</c>).
+	/// </summary>
+	public string ServiceScope;
+
+	/// <summary>
+	/// True when this service is zone-scoped (<c>cid.zid</c>) rather than realm-scoped.
+	/// </summary>
+	public bool IsZoneScoped => string.Equals(ServiceScope?.Trim(), "zone", StringComparison.OrdinalIgnoreCase);
+
+	/// <summary>
 	/// Path to the directory containing project file(csproj).
 	/// </summary>
 	public string ProjectDirectory => ProjectPath == null ? null : Path.GetDirectoryName(ProjectPath);

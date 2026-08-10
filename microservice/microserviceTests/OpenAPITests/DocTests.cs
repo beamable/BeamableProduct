@@ -54,24 +54,23 @@ public class DocTests
 	public void TestMethodScanning()
 	{
 		LoggingUtil.InitTestCorrelator();
-		var gen = new ServiceDocGenerator();
-
 		var builder = new DependencyBuilder();
 		
 		builder.AddSingleton<BeamStandardTelemetryAttributeProvider>();
 		builder.AddSingleton<SingletonDependencyList<ITelemetryAttributeProvider>>();
 		builder.AddSingleton<IMicroserviceArgs, TestArgs>();
 		builder.AddSingleton<ExampleAttrs>();
+		builder.AddSingleton<IServiceOpenApiDocsCache, ServiceOpenApiDocsCache>();
 		var provider = builder.Build();
-		var doc = gen.Generate<DocService>(provider);
-		
+
+		var doc = provider.GetService<IServiceOpenApiDocsCache>().GetServiceDocument(typeof(DocService));
+		string outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
+
+
 		// Assert.AreEqual("docs", doc.Info.Title);
 		// Assert.AreEqual(1, doc.Paths.Count);
-
 		// var reqSchema = doc.Paths["/Add"].Operations[OperationType.Post].RequestBody.Content["application/json"].Schema;
 		// Assert.AreEqual(1, reqSchema.Required.Count);
-		
-		var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 		Console.WriteLine(outputString);
 	}
 

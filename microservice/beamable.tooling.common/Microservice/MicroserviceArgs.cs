@@ -17,6 +17,7 @@ namespace Beamable.Server
 		public int HealthPort { get; set; }
 		public string CustomerID { get; set; }
 		public string ProjectName { get; set; }
+		public string Zid { get; set; }
 		public string Secret { get; set; }
 		public string Host { get; set; }
 		public string NamePrefix { get; set; }
@@ -170,6 +171,7 @@ namespace Beamable.Server
 		public string RefreshToken => Environment.GetEnvironmentVariable("REFRESH_TOKEN");
 		public string CustomerID => Environment.GetEnvironmentVariable("CID");
 		public string ProjectName => Environment.GetEnvironmentVariable("PID");
+		public string Zid => Environment.GetEnvironmentVariable("ZID");
 		public IDependencyProviderScope ServiceScope { get; }
 
 		private int? _freeHealthPort = null;

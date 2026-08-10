@@ -22,4 +22,21 @@ export interface BeamConfig extends BeamBaseConfig {
    * ```
    */
   services?: (beam: Beam) => void;
+
+  /**
+   * Controls the realtime (websocket) connection to Beamable server-events.
+   *
+   * When `enabled` is `false`, `Beam.init()` skips establishing the realtime
+   * connection during initialization. This is useful when the SDK is used
+   * purely as an API client (e.g. an admin/portal context with no player), or
+   * when you want to defer realtime until a player exists. Call
+   * `beam.connectRealtime()` to establish it later — for example after creating
+   * a player via `beam.auth.loginAsGuest()`.
+   *
+   * @default { enabled: true }
+   */
+  realtime?: {
+    /** Whether to auto-connect the realtime websocket on `init`. @default true */
+    enabled?: boolean;
+  };
 }

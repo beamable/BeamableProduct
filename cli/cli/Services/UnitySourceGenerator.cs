@@ -542,6 +542,16 @@ public static class UnityHelper
 
 		foreach (var param in parameters)
 		{
+			// Header parameters are not part of the generated method signature. The generated client only
+			// forwards the auth header (via the includeAuthHeader argument); any other header (e.g.
+			// X-BEAM-REGISTRY-METHOD on /beamo/registry/auth) would otherwise be emitted with its raw name
+			// as a parameter — which is invalid C# (hyphens aren't valid identifiers) and a dead param the
+			// requester can't send.
+			if (param.In == ParameterLocation.Header)
+			{
+				continue;
+			}
+
 			if (param.Schema == null)
 			{
 				Log.Warning(
