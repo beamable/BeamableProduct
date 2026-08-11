@@ -59,14 +59,6 @@ export class CampaignServiceClient extends BeamMicroServiceClient {
     });
   }
   
-  async forwardFunnelToSlack(params: Types.ForwardFunnelToSlackRequestArgs): Promise<Types.WebhookResult> {
-    return this.request({
-      endpoint: "ForwardFunnelToSlack",
-      payload: params,
-      withAuth: true
-    });
-  }
-  
   async listRegisteredPlayers(): Promise<Types.RegisteredPlayerList> {
     return this.request({
       endpoint: "ListRegisteredPlayers",

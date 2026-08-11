@@ -82,41 +82,6 @@ public enum BeamableAnalytics {
 
     public static let funnelCategory = "notification_funnel"
 
-    /// Microservice + endpoint exposing the `ForwardFunnelToSlack` [Callable] used as a debug mirror
-    /// of the funnel (so device-side stages show up in Slack alongside the server-emitted "Sent").
-    /// Hosted by the portal's CampaignService.
-    public static let funnelSlackMicroservice = "CampaignService"
-    public static let funnelSlackEndpoint = "ForwardFunnelToSlack"
-
-    /// Forward the funnel params (the CoreEvent `p`) to the microservice's `ForwardFunnelToSlack`
-    /// [Callable] via the standard microservice route `/basic/<cid>.<pid>.micro_<service>/<endpoint>`,
-    /// authenticated with the player bearer + realm scope. Fire-and-forget, best-effort: failures are
-    /// ignored (the microservice may be undeployed) and never affect the analytics POST.
-    public static func forwardFunnelToSlack(_ event: FunnelEvent,
-                                            host: String,
-                                            cidPid: String,
-                                            accessToken: String,
-                                            session: URLSession = .shared) {
-        let base = host.hasSuffix("/") ? String(host.dropLast()) : host
-        guard cidPid.contains("."),
-              let url = URL(string: "\(base)/basic/\(cidPid).micro_\(funnelSlackMicroservice)/\(funnelSlackEndpoint)")
-        else { return }
-        // Callable args bind by parameter name: ForwardFunnelToSlack(string funnelData). funnelData is
-        // the funnel params JSON (matches the microservice's own Slack payload shape).
-        let funnelData = jsonString(.object(makeParams(for: event)))
-        let bodyValue: JSONValue = .object(["funnelData": .string(funnelData)])
-        guard let body = try? JSON.encoder.encode(bodyValue) else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.timeoutInterval = 15
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        request.setValue(cidPid, forHTTPHeaderField: "X-BEAM-SCOPE")
-        request.httpBody = body
-        session.dataTask(with: request) { _, _, _ in }.resume()
-    }
-
     /// Compact JSON string for a `JSONValue` — carries free-form customData as a flat string.
     private static func jsonString(_ value: JSONValue) -> String {
         guard let data = try? JSON.encoder.encode(value),
@@ -206,11 +171,7 @@ public enum BeamableAnalytics {
         }
 
         /// Terminal success handling, shared by both routes.
-        func succeed(_ status: Int, token: String) {
-            // Best-effort debug mirror: forward the same funnel params to the microservice's
-            // ForwardFunnelToSlack endpoint so device-side stages appear in Slack too. Never
-            // affects the analytics result.
-            forwardFunnelToSlack(event, host: host, cidPid: cidPid, accessToken: token, session: session)
+        func succeed(_ status: Int) {
             report(event, true, status, "ok")
             completion?()
         }
@@ -222,7 +183,7 @@ public enum BeamableAnalytics {
             postFunnelStatus(events: [event], host: host, cidPid: cidPid, gamerTag: gamerTag,
                              accessToken: token, session: session) { status in
                 if (200..<300).contains(status) {
-                    succeed(status, token: token)
+                    succeed(status)
                     return
                 }
                 // Report the PRIMARY status when the fallback couldn't be sent at all — that is the
@@ -241,7 +202,7 @@ public enum BeamableAnalytics {
             postAnalyticsEventsStatus(events: [event], host: host, cidPid: cidPid,
                                       accessToken: token, session: session) { status in
                 if (200..<300).contains(status) {
-                    succeed(status, token: token)
+                    succeed(status)
                     return
                 }
                 let isAuthError = (status == 401 || status == 403)

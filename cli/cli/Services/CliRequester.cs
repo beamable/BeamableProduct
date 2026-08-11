@@ -17,6 +17,25 @@ public class CliRequester : IRequester
 
 	private readonly int ProgressiveDelayIncreaser = 5;
 	private readonly IRequesterInfo _requesterInfo;
+
+	/// <summary>
+	/// How many times a rate-limited (429) request is retried before giving up. A parallel service
+	/// launch (`beam project run --with-group`) fans every service's `generate-env` at the gateway
+	/// at once, which trips the limiter; without a retry here the losing service dies outright.
+	/// </summary>
+	private const int MaxRateLimitRetries = 5;
+
+	/// <summary>
+	/// Exponential back-off with +/-20% jitter: ~2s, 4s, 8s, 16s, 32s. The jitter matters more than
+	/// the curve — a fixed delay just re-synchronises the herd that caused the 429 in the first
+	/// place. Mirrors <c>ContentService.PostBatchWithRetryAsync</c>.
+	/// </summary>
+	private static int RateLimitDelayMs(int attempt)
+	{
+		var baseDelayMs = 1000 << (attempt + 1);
+		var jitterMs = Random.Shared.Next(-baseDelayMs / 5, baseDelayMs / 5);
+		return Math.Max(500, baseDelayMs + jitterMs);
+	}
 	
 	public IAccessToken AccessToken => _requesterInfo.Token;
 	public string Pid => AccessToken.Pid;
@@ -204,8 +223,26 @@ public class CliRequester : IRequester
 					}
 
 					BeamableLogger.LogWarning("Timeout error, retrying in few seconds... ");
+					// Carry retryCount forward: routing through Request<T> resets it to 0, turning this
+					// into an unbounded fixed-delay loop instead of a progressive one.
 					return Task.Delay(TimeSpan.FromSeconds(ProgressiveDelayIncreaser * (retryCount + 1))).ToPromise().FlatMap(_ =>
-						Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
+						InternalRequest<T>(method, uri, body, includeAuthHeader, parser, useCache, retryCount + 1));
+				case RequesterException e when e.Status == 429:
+					// The gateway rate-limits bursts; a 429 is transient by definition, so retry it
+					// rather than failing the caller. Note RequesterException carries no headers, so
+					// Retry-After cannot be honoured — the back-off is purely exponential.
+					if (retryCount >= MaxRateLimitRetries || isAuthTokenRequest)
+					{
+						BeamableLogger.LogWarning(
+							$"Rate limited by {_requesterInfo.Host} on [{uri}] and out of retries after {retryCount} attempt(s).");
+						break;
+					}
+
+					var rateLimitDelayMs = RateLimitDelayMs(retryCount);
+					BeamableLogger.LogWarning(
+						$"Rate limited (429) on [{uri}] — retrying in {rateLimitDelayMs}ms (attempt {retryCount + 1}/{MaxRateLimitRetries}).");
+					return Task.Delay(rateLimitDelayMs).ToPromise().FlatMap(_ =>
+						InternalRequest<T>(method, uri, body, includeAuthHeader, parser, useCache, retryCount + 1));
 				case RequesterException e when e.RequestError?.error is "ExpiredTokenError" ||
 				                               e.Status == 403 ||
 				                               (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&

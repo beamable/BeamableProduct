@@ -20,6 +20,10 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool runDetached;
         /// <summary>Rebuild the C# hosts, Scala services, and portal deps before launching (a manifest that declares a build output also builds that step on its own when the output is missing; microservices/extensions always build via project run)</summary>
         public bool build;
+        /// <summary>Skip the local web-registry steps: do not bring the registry up, publish the web packages, or repin the portal extensions (the fast path, but the portal then runs against the PUBLISHED web SDK)</summary>
+        public bool noWebRegistry;
+        /// <summary>Explicitly run the local web-registry steps; they are already the default, so this is a no-op except that it overrides --no-web-registry when both are passed</summary>
+        public bool withWebRegistry;
         /// <summary>Persist per-run logs under the workspace (.beamable/local-stack-logs/run-<id>); without it logs go to a temp folder and are removed on `beam local stop`</summary>
         public bool saveLogs;
         /// <summary>Do not auto-create a local realm when the saved login is invalid — just warn (by default `up` creates one after a docker cleanup)</summary>
@@ -73,6 +77,16 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.build != default(bool)))
             {
                 genBeamCommandArgs.Add(("--build=" + this.build));
+            }
+            // If the noWebRegistry value was not default, then add it to the list of args.
+            if ((this.noWebRegistry != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--no-web-registry=" + this.noWebRegistry));
+            }
+            // If the withWebRegistry value was not default, then add it to the list of args.
+            if ((this.withWebRegistry != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--with-web-registry=" + this.withWebRegistry));
             }
             // If the saveLogs value was not default, then add it to the list of args.
             if ((this.saveLogs != default(bool)))
