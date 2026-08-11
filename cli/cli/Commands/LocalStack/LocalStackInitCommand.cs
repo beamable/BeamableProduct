@@ -20,7 +20,12 @@ public class LocalStackInitCommandArgs : CommandArgs
 	public string services;
 	public string extensions;
 	public bool updateServices;
-	public bool withWebRegistry;
+
+	/// <summary>
+	/// Opt OUT of writing the web-registry steps. Stored inverted so the default (a plain <c>bool</c> field,
+	/// false) means "include them" without depending on how the option binder treats an absent flag.
+	/// </summary>
+	public bool noWebRegistry;
 	public string webRegistryDir;
 	public string scalaJvmArgs;
 }
@@ -74,9 +79,14 @@ public class LocalStackInitCommand
 		AddOption(new Option<string>("--scala-jvm-args", () => LocalStackTemplate.DefaultScalaJvmArgs,
 				"JVM flags each Scala service is launched with; the heap cap keeps ~18 JDK 8 JVMs from each reserving a quarter of physical RAM"),
 			(args, v) => args.scalaJvmArgs = v);
-		AddOption(new Option<bool>("--with-web-registry", "Include a step for the local web package registry (Verdaccio and local-unpkg), for iterating on the web SDK or Portal Toolkit"),
-			(args, v) => args.withWebRegistry = v);
-		AddOption(new Option<string>("--web-registry-dir", "Absolute path to the portal-localdev directory holding the web registry compose file; implies --with-web-registry"),
+		// The web-registry steps are written by DEFAULT: a manifest without them silently leaves the portal's
+		// extensions on a published toolkit pin, which resolves their web SDK from unpkg instead of the local
+		// build. Opting out is a deliberate choice, so it gets the flag.
+		AddOption(new Option<bool>("--no-web-registry", "Do not write the local web package registry steps (Verdaccio and local-unpkg); skips the portal-localdev prompt and leaves the manifest without them"),
+			(args, v) => args.noWebRegistry = v);
+		AddOption(new Option<bool>("--with-web-registry", "Explicitly write the local web package registry steps; they are already the default, so this is a no-op except that it overrides --no-web-registry when both are passed"),
+			(args, v) => { if (v) args.noWebRegistry = false; });
+		AddOption(new Option<string>("--web-registry-dir", "Absolute path to the portal-localdev directory holding the web registry compose file; skips the prompt for it"),
 			(args, v) => args.webRegistryDir = v);
 	}
 
@@ -88,9 +98,9 @@ public class LocalStackInitCommand
 	private static string NullIfEmpty(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
 	/// <summary>
-	/// Resolves the <c>portal-localdev</c> directory for the optional web registry step. An explicit
-	/// <c>--web-registry-dir</c> wins; otherwise <c>--with-web-registry</c> prompts, defaulting to the
-	/// auto-detected path. Returns null when the caller opted out, in which case no step is written.
+	/// Resolves the <c>portal-localdev</c> directory for the web registry steps, which are written by default.
+	/// An explicit <c>--web-registry-dir</c> wins; otherwise this prompts, defaulting to the auto-detected
+	/// path. Returns null only under <c>--no-web-registry</c>, in which case no step is written.
 	/// </summary>
 	private static string ResolveWebRegistryDir(LocalStackInitCommandArgs args, string startDir, bool quiet)
 	{
@@ -99,7 +109,7 @@ public class LocalStackInitCommand
 			return args.webRegistryDir;
 		}
 
-		if (!args.withWebRegistry)
+		if (args.noWebRegistry)
 		{
 			return null;
 		}
@@ -560,7 +570,7 @@ public class LocalStackInitCommand
 			groups = selectedGroups,
 			javaHome = javaHome,
 			scalaJvmArgs = args.scalaJvmArgs ?? defaults.scalaJvmArgs,
-			includeWebRegistry = args.withWebRegistry || !string.IsNullOrWhiteSpace(args.webRegistryDir),
+			includeWebRegistry = !args.noWebRegistry || !string.IsNullOrWhiteSpace(args.webRegistryDir),
 			webRegistryDir = NullIfEmpty(webRegistryDir),
 		};
 

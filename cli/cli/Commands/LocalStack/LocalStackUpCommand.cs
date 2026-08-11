@@ -1,5 +1,6 @@
 using Beamable.Server;
 using cli.Services.LocalStack;
+using cli.Services.Web;
 using System.CommandLine;
 using System.Diagnostics;
 using System.Reflection;
@@ -16,6 +17,12 @@ public class LocalStackUpCommandArgs : CommandArgs
 	public string skip;
 	public bool runDetached;
 	public bool build;
+
+	/// <summary>
+	/// Opt OUT of the web-registry steps. Stored inverted so the default (a plain <c>bool</c> field, false)
+	/// means "run them" without relying on how the option binder treats an absent flag.
+	/// </summary>
+	public bool noWebRegistry;
 	public bool saveLogs;
 	public bool noCreateRealm;
 	public string realmCustomer;
@@ -77,6 +84,18 @@ public class LocalStackUpCommand
 		AddOption(new Option<bool>("--build", "Rebuild the C# hosts, Scala services, and portal deps before launching (a manifest that declares a build output also builds that step on its own when the output is missing; microservices/extensions always build via project run)"),
 			(args, v) => args.build = v);
 
+		// The web-registry steps run by DEFAULT when the manifest has them: skipping them leaves the portal's
+		// extensions pinned at a published toolkit, which silently resolves their SDK from unpkg instead of the
+		// local build, so a plain `up` that "succeeded" would still be running the wrong code.
+		AddOption(new Option<bool>("--no-web-registry", "Skip the local web-registry steps: do not bring the registry up, publish the web packages, or repin the portal extensions (the fast path, but the portal then runs against the PUBLISHED web SDK)"),
+			(args, v) => args.noWebRegistry = v);
+
+		// Kept accepted, and still meaningful as an explicit override of an earlier --no-web-registry. Passing
+		// it used to be an unrecognized-option parse error that aborted the whole bring-up, so it must never
+		// become one again (App.cs calls UseDefaults, which reports parse errors).
+		AddOption(new Option<bool>("--with-web-registry", "Explicitly run the local web-registry steps; they are already the default, so this is a no-op except that it overrides --no-web-registry when both are passed"),
+			(args, v) => { if (v) args.noWebRegistry = false; });
+
 		AddOption(new Option<bool>("--save-logs", "Persist per-run logs under the workspace (.beamable/local-stack-logs/run-<id>); without it logs go to a temp folder and are removed on `beam local stop`"),
 			(args, v) => args.saveLogs = v);
 
@@ -94,7 +113,93 @@ public class LocalStackUpCommand
 			(args, v) => args.realmPassword = v);
 	}
 
-	private static HashSet<string> NameSet(string value) =>
+	/// <summary>
+	/// The local registry only helps if the portal's extensions actually PIN the local build: the portal reads
+	/// each extension's built <c>ToolkitVersion</c>, and for a published version it resolves the sdk from
+	/// unpkg rather than the local CDN — so a stale pin silently runs against the published sdk and any API
+	/// that only exists in the local build fails at runtime as "not a function". Bringing the registry up
+	/// without refreshing the pins is a valid thing to do, so this warns rather than throwing.
+	/// </summary>
+	private static void WarnOnStaleExtensionPins(LocalStackConfig config, List<LocalStackStep> steps)
+	{
+		// Only meaningful for a stack that uses the local registry at all.
+		if (!config.steps.Any(s => s.enabled && s.name == LocalStackTemplate.WebRegistryStepName))
+		{
+			return;
+		}
+
+		// If the refresh step is running, it is about to fix the pins — nothing to warn about.
+		if (steps.Any(s => s.name == LocalStackTemplate.WebRefreshStepName))
+		{
+			return;
+		}
+
+		var refresh = config.steps.FirstOrDefault(s => s.name == LocalStackTemplate.WebRefreshStepName);
+		var portalDir = refresh?.workingDirectory;
+		if (string.IsNullOrWhiteSpace(portalDir) || !Directory.Exists(portalDir))
+		{
+			return;
+		}
+
+		var stale = WebLocalRegistryService.FindExtensionProjects(portalDir)
+			.Select(p => WebLocalRegistryService.ReadPinnedVersion(p.packageJsonPath, WebLocalRegistryService.ToolkitPackage))
+			.Where(v => !string.IsNullOrWhiteSpace(v) && !WebLocalRegistryService.IsLocalDevVersion(v))
+			.ToList();
+
+		if (stale.Count == 0)
+		{
+			return;
+		}
+
+		var versions = string.Join(", ", stale.Distinct().OrderBy(v => v));
+		Log.Warning(
+			$"{stale.Count} extension(s) under [{portalDir}] still pin {WebLocalRegistryService.ToolkitPackage}@{versions} "
+			+ $"instead of the local build {WebLocalRegistryService.LocalDevVersion}, so the portal will load the published "
+			+ "sdk from unpkg and any API that only exists in your local build will fail at runtime. Re-run with "
+			+ $"`--with-web-registry` (or `beam web use --workspace {portalDir}`).");
+	}
+
+	/// <summary>
+	/// The enabled web-registry steps, which run by default. Empty under <c>--no-web-registry</c>, where
+	/// <see cref="SelectSteps"/> excludes them outright rather than merely leaving them un-forced.
+	/// </summary>
+	public static HashSet<LocalStackStep> ForcedWebSteps(LocalStackConfig config, bool noWebRegistry) =>
+		noWebRegistry
+			? new HashSet<LocalStackStep>()
+			: config.steps.Where(s => s.enabled && LocalStackTemplate.IsWebStep(s.name)).ToHashSet();
+
+	/// <summary>
+	/// Which steps this invocation runs. Pure so the gate is testable: a step silently NOT selected is the
+	/// failure mode this guards — the web steps used to be skipped on a plain <c>up</c> that still reported
+	/// success, leaving the portal on a published toolkit pin.
+	/// </summary>
+	/// <param name="autoBuild">Build steps whose declared output is missing, so they build without --build.</param>
+	/// <param name="forcedWeb">Web steps to run without --build, from <see cref="ForcedWebSteps"/>.</param>
+	/// <param name="noWebRegistry">Opt out: excludes every web step, including the non-build registry container.</param>
+	public static List<LocalStackStep> SelectSteps(
+		LocalStackConfig config,
+		bool build,
+		HashSet<LocalStackStep> autoBuild,
+		HashSet<LocalStackStep> forcedWeb,
+		HashSet<string> only,
+		HashSet<string> skip,
+		bool noWebRegistry = false)
+	{
+		bool Included(LocalStackStep s) =>
+			s.enabled
+			// --no-web-registry drops all three web steps. `docker: web registry` is not a build step, so
+			// without this it would keep coming up and the opt-out would only be half-honoured.
+			&& !(noWebRegistry && LocalStackTemplate.IsWebStep(s.name))
+			// build steps run under --build, when their output is missing, when they are web steps (the
+			// default), or when --only asks for them by name — naming a step is already an explicit request.
+			&& (!s.build || build || autoBuild.Contains(s) || forcedWeb.Contains(s) || only?.Contains(s.name) == true)
+			&& (only == null || only.Contains(s.name))
+			&& (skip == null || !skip.Contains(s.name));
+
+		return config.steps.Where(Included).ToList();
+	}
+
+	public static HashSet<string> NameSet(string value) =>
 		string.IsNullOrWhiteSpace(value)
 			? null
 			// Split on comma only — step names contain spaces (e.g. "portal frontend", "scala: gateway").
@@ -123,20 +228,39 @@ public class LocalStackUpCommand
 			? new HashSet<LocalStackStep>()
 			: config.steps.Where(s => s.enabled && LocalStackConfigIO.BuildOutputMissing(s, config)).ToHashSet();
 
-		bool Included(LocalStackStep s) =>
-			s.enabled
-			&& (!s.build || args.build || autoBuild.Contains(s)) // build steps run under --build, or when their output is missing
-			&& (only == null || only.Contains(s.name))
-			&& (skip == null || !skip.Contains(s.name));
+		// The web-registry steps are build steps with no `requiredOutput`, so the self-healing set above can
+		// never reach them. They therefore run by DEFAULT: skipping them left the portal loading the PUBLISHED
+		// sdk from unpkg instead of the local build, on an `up` that reported success. --no-web-registry opts out.
+		var forcedWeb = ForcedWebSteps(config, args.noWebRegistry);
 
-		var steps = config.steps.Where(Included).ToList();
+		var steps = SelectSteps(config, args.build, autoBuild, forcedWeb, only, skip, args.noWebRegistry);
 		if (steps.Count == 0)
+		{
 			throw new CliException("No steps to run (all disabled or filtered out).");
+		}
 
 		// Say WHY a build is running when the user didn't ask for one, so it never looks like a mystery step.
 		// The per-step reason also rides along on the stream message when it launches (see the loop below).
 		foreach (var s in steps.Where(autoBuild.Contains))
+		{
 			Log.Information($"[{s.name}] {LocalStackConfigIO.ResolveRequiredOutput(s, config)} is missing — building it (pass --build to rebuild everything).");
+		}
+
+		// These are slow (a pnpm rebuild of the web packages, then a reinstall per extension) and nobody asked
+		// for them explicitly, so say why they are running and how to turn them off.
+		foreach (var s in steps.Where(forcedWeb.Contains).Where(s => s.build))
+		{
+			Log.Information($"[{s.name}] running because the local web registry is on by default (pass --no-web-registry to skip it).");
+		}
+
+		// Opting out is legitimate, but it is the thing that leaves the portal on a published toolkit pin, so
+		// it should never be a silent choice.
+		if (args.noWebRegistry && config.steps.Any(s => s.enabled && LocalStackTemplate.IsWebStep(s.name)))
+		{
+			Log.Warning("--no-web-registry: skipping the local web registry, so the portal's extensions keep whatever toolkit version they already pin. If that is a published version, the portal loads the published web SDK from unpkg rather than your local build.");
+		}
+
+		WarnOnStaleExtensionPins(config, steps);
 
 		// Manifests generated before build steps existed won't have any — tell the user how to get them.
 		if (args.build && !config.steps.Any(s => s.build))
@@ -365,9 +489,17 @@ public class LocalStackUpCommand
 
 					// An unrequested build is surprising unless it says why, and the stream channel is what the
 					// user (and the Unity/portal tooling) actually sees.
-					Send(step.name, "starting", autoBuild.Contains(step)
-						? $"launching ({idx + 1}/{steps.Count}) — its output is missing, so it builds even without --build"
-						: $"launching ({idx + 1}/{steps.Count})", baseProgress);
+					var launching = $"launching ({idx + 1}/{steps.Count})";
+					if (autoBuild.Contains(step))
+					{
+						launching += " — its output is missing, so it builds even without --build";
+					}
+					else if (step.build && forcedWeb.Contains(step))
+					{
+						launching += " — --with-web-registry was passed, so it builds even without --build";
+					}
+
+					Send(step.name, "starting", launching, baseProgress);
 
 					var stepToRun = step;
 					var l = LaunchAndRegister(stepToRun);

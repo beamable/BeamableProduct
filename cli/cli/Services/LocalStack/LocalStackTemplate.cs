@@ -625,6 +625,17 @@ public static class LocalStackTemplate
 	public const string WebRefreshStepName = "build: web extension pins";
 
 	/// <summary>
+	/// True when <paramref name="name"/> is one of the three local web-registry steps. Both
+	/// <see cref="WebPublishStepName"/> and <see cref="WebRefreshStepName"/> are build steps with no
+	/// <c>requiredOutput</c>, so <c>beam local up</c> cannot self-heal them the way it does a missing binary —
+	/// <c>--with-web-registry</c> uses this to opt them in explicitly.
+	/// </summary>
+	public static bool IsWebStep(string name) =>
+		string.Equals(name, WebRegistryStepName, StringComparison.OrdinalIgnoreCase)
+		|| string.Equals(name, WebPublishStepName, StringComparison.OrdinalIgnoreCase)
+		|| string.Equals(name, WebRefreshStepName, StringComparison.OrdinalIgnoreCase);
+
+	/// <summary>
 	/// The product repo holding <c>web/</c> and <c>beam-portal-toolkit/</c>, derived from the
 	/// <c>portal-localdev</c> path so <c>beam local init</c> needs no extra option for it.
 	/// </summary>

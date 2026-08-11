@@ -395,7 +395,11 @@ public class WebLocalRegistryService
 			{
 				var name = Path.GetFileName(directory);
 				if (string.Equals(name, "node_modules", StringComparison.OrdinalIgnoreCase)
-					|| string.Equals(name, ".git", StringComparison.OrdinalIgnoreCase))
+					|| string.Equals(name, ".git", StringComparison.OrdinalIgnoreCase)
+					// The `dotnet new` scaffolding sources carry the same portalExtension/portalExtensionLib
+					// markers as a real extension, so a scan rooted at the product repo would repin them to the
+					// local dev version — and every extension created afterwards would inherit that pin.
+					|| string.Equals(name, "beamable.templates", StringComparison.OrdinalIgnoreCase))
 				{
 					continue;
 				}

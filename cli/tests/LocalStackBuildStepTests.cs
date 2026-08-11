@@ -218,7 +218,9 @@ public class LocalStackBuildStepTests
 		{
 			var step = Step(config, name);
 			Assert.That(step, Is.Not.Null, $"missing {name}");
-			Assert.That(step.build, Is.True, $"{name} must only run under --build");
+			// Still flagged `build` in the manifest; `up` opts them in by default (see
+			// LocalStackWebRegistryStepTests), and --no-web-registry opts back out.
+			Assert.That(step.build, Is.True, $"{name} must be a build step");
 			Assert.That(step.waitForExit, Is.True, $"{name} must run to completion");
 			Assert.That(step.beam, Is.True, $"{name} must invoke the beam CLI");
 			// Paths must travel via workingDirectory: the runner splits arguments on whitespace.
@@ -360,8 +362,12 @@ public class LocalStackBuildStepTests
 		}
 	}
 
-	/// <summary>Steps whose build is slow and whose absence fails loudly on its own stay `--build`-only — a
-	/// surprise multi-minute `mvn clean package` on a plain `up` is worse than an error.</summary>
+	/// <summary>
+	/// Steps whose build is slow and whose absence fails loudly on its own declare no output, so the
+	/// self-healing "its output is missing, build it anyway" path never reaches them — a surprise multi-minute
+	/// `mvn clean package` on a plain `up` is worse than an error. The two web steps also declare no output,
+	/// which is why `up` needs its own default to run them (see LocalStackWebRegistryStepTests).
+	/// </summary>
 	[Test]
 	public void Slow_build_steps_declare_no_output_so_they_stay_build_only()
 	{
