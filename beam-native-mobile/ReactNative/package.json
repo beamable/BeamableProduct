@@ -6,6 +6,7 @@
   "react-native": "src/index.ts",
   "types": "src/index.ts",
   "files": [
+    "CHANGELOG.md",
     "src",
     "android",
     "ios",
