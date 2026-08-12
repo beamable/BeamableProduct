@@ -14,11 +14,21 @@ namespace tests;
 /// </summary>
 public class LocalStackBuildStepTests
 {
+	// Built with Path.Combine rather than literals: WebProductDir() derives the BeamableProduct path with
+	// Path.GetDirectoryName, which only understands the CURRENT platform's separator — a hard-coded Windows
+	// path would silently collapse to "" (and then to an <EDIT: ...> placeholder) on macOS/Linux.
+	private static readonly string Root = Path.Combine(Path.GetPathRoot(Path.GetTempPath()) ?? "/", "repos");
+	private static readonly string ApiDir = Path.Combine(Root, "BeamableAPI");
+	private static readonly string ScalaDir = Path.Combine(Root, "BeamableBackend");
+	private static readonly string PortalDir = Path.Combine(Root, "portal");
+	private static readonly string ProductDir = Path.Combine(Root, "BeamableProduct");
+	private static readonly string WebRegistryDir = Path.Combine(ProductDir, "portal-localdev");
+
 	private static LocalStackConfig CreateWithRepos() => LocalStackTemplate.Create(new LocalStackTemplate.Options
 	{
-		apiDir = @"C:\repos\BeamableAPI",
-		scalaDir = @"C:\repos\BeamableBackend",
-		portalDir = @"C:\repos\portal",
+		apiDir = ApiDir,
+		scalaDir = ScalaDir,
+		portalDir = PortalDir,
 		scalaTools = new System.Collections.Generic.List<LocalStackTemplate.ScalaToolInfo>
 		{
 			new() { name = "gateway", mainClass = "com.beamable.gateway.App" },
@@ -63,7 +73,7 @@ public class LocalStackBuildStepTests
 
 		Assert.That(step.command, Is.EqualTo("dotnet"));
 		Assert.That(step.arguments, Does.Contain("build BeamableGateway"));
-		Assert.That(step.workingDirectory, Is.EqualTo(@"C:\repos\BeamableAPI"));
+		Assert.That(step.workingDirectory, Is.EqualTo(ApiDir));
 	}
 
 	[Test]
@@ -76,7 +86,7 @@ public class LocalStackBuildStepTests
 		Assert.That(step.arguments, Does.Contain("tools/gateway"));
 		Assert.That(step.arguments, Does.Contain("tools/auth"));
 		Assert.That(step.arguments, Does.Contain("-am"));
-		Assert.That(step.workingDirectory, Is.EqualTo(@"C:\repos\BeamableBackend"));
+		Assert.That(step.workingDirectory, Is.EqualTo(ScalaDir));
 		Assert.That(step.environment.TryGetValue("JAVA_HOME", out var jh) && jh == "${java}", Is.True,
 			"scala build must run under the Java 8 home substituted by `up`");
 	}
@@ -108,9 +118,9 @@ public class LocalStackBuildStepTests
 	private static LocalStackConfig CreateWithScalaRepo(string scalaDir) =>
 		LocalStackTemplate.Create(new LocalStackTemplate.Options
 		{
-			apiDir = @"C:\repos\BeamableAPI",
+			apiDir = ApiDir,
 			scalaDir = scalaDir,
-			portalDir = @"C:\repos\portal",
+			portalDir = PortalDir,
 			scalaTools = new System.Collections.Generic.List<LocalStackTemplate.ScalaToolInfo>
 			{
 				new() { name = "gateway", mainClass = "com.beamable.gateway.App" },
@@ -175,16 +185,16 @@ public class LocalStackBuildStepTests
 
 		Assert.That(step.command, Is.EqualTo(OperatingSystem.IsWindows() ? "npm.cmd" : "npm"));
 		Assert.That(step.arguments, Is.EqualTo("install"));
-		Assert.That(step.workingDirectory, Is.EqualTo(@"C:\repos\portal"));
+		Assert.That(step.workingDirectory, Is.EqualTo(PortalDir));
 	}
 
 	private static LocalStackConfig CreateWithWebRegistry() => LocalStackTemplate.Create(new LocalStackTemplate.Options
 	{
-		apiDir = @"C:\repos\BeamableAPI",
-		scalaDir = @"C:\repos\BeamableBackend",
-		portalDir = @"C:\repos\portal",
+		apiDir = ApiDir,
+		scalaDir = ScalaDir,
+		portalDir = PortalDir,
 		includeWebRegistry = true,
-		webRegistryDir = @"C:\repos\BeamableProduct\portal-localdev",
+		webRegistryDir = WebRegistryDir,
 		extensions = new System.Collections.Generic.List<string> { "my-ext" },
 		scalaTools = new System.Collections.Generic.List<LocalStackTemplate.ScalaToolInfo>
 		{
@@ -224,7 +234,7 @@ public class LocalStackBuildStepTests
 			Assert.That(step.waitForExit, Is.True, $"{name} must run to completion");
 			Assert.That(step.beam, Is.True, $"{name} must invoke the beam CLI");
 			// Paths must travel via workingDirectory: the runner splits arguments on whitespace.
-			Assert.That(step.arguments, Does.Not.Contain(@"C:\"), $"{name} must keep paths out of its arguments");
+			Assert.That(step.arguments, Does.Not.Contain(Root), $"{name} must keep paths out of its arguments");
 		}
 	}
 
@@ -235,9 +245,9 @@ public class LocalStackBuildStepTests
 
 		// Derived from the portal-localdev path rather than a separate option.
 		Assert.That(Step(config, LocalStackTemplate.WebPublishStepName).workingDirectory,
-			Is.EqualTo(@"C:\repos\BeamableProduct"));
+			Is.EqualTo(ProductDir));
 		Assert.That(Step(config, LocalStackTemplate.WebRefreshStepName).workingDirectory,
-			Is.EqualTo(@"C:\repos\portal"));
+			Is.EqualTo(PortalDir));
 	}
 
 	[Test]
