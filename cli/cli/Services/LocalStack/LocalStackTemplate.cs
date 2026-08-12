@@ -322,6 +322,19 @@ public static class LocalStackTemplate
 
 		var config = new LocalStackConfig { host = o.host, portalUrl = o.portalUrl, javaHome = o.javaHome };
 
+		// Documentation-only metadata, recorded so the generated agent skill can name the repos this manifest
+		// spans. Uses the same already-placeholdered values the steps below get, so the two can never disagree.
+		config.repos = new LocalStackRepos
+		{
+			apiDir = apiDir,
+			scalaDir = scalaDir,
+			portalDir = portalDir,
+			// Only meaningful when the web-registry steps are written; left null otherwise so the skill can say
+			// "not part of this stack" rather than pointing at a path nothing uses.
+			webRegistryDir = o.includeWebRegistry ? Dir(o.webRegistryDir, "portal-localdev (local web package registry)") : null,
+			productDir = o.includeWebRegistry ? Dir(WebProductDir(o.webRegistryDir), "BeamableProduct (web packages repo)") : null,
+		};
+
 		// 0. Local web package registry (opt-in via `beam local init --with-web-registry`). Placed first
 		//    because `build: portal deps` and the portal extension steps below run npm installs that may
 		//    need to resolve locally published @beamable packages from it. Independent of everything else

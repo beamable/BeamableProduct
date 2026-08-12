@@ -43,10 +43,48 @@ public class LocalStackConfig
 	public int dockerWatchdogSeconds = 15;
 
 	/// <summary>
+	/// The repository checkouts this manifest was generated against. Documentation-only metadata: the steps
+	/// carry their own absolute <see cref="LocalStackStep.workingDirectory"/> values and nothing in the
+	/// orchestrator reads this. It exists so the generated <c>beam-local-stack</c> agent skill (see
+	/// <see cref="LocalStackSkillTemplate"/>) can name the repos without reverse-engineering step names —
+	/// which also keeps it correct for <c>beam local init --update-services</c>, where the repo paths are
+	/// never prompted for.
+	///
+	/// Null on manifests written before this field existed (and omitted from the JSON when null), so readers
+	/// must treat it as optional.
+	/// </summary>
+	public LocalStackRepos repos;
+
+	/// <summary>
 	/// The ordered set of processes to launch. Order matters — earlier steps that declare a
 	/// readiness gate are fully up before later steps start.
 	/// </summary>
 	public List<LocalStackStep> steps = new List<LocalStackStep>();
+}
+
+/// <summary>
+/// The repository checkouts a <see cref="LocalStackConfig"/> was generated against. Every value may hold an
+/// unedited <c>&lt;EDIT: ...&gt;</c> placeholder (see <see cref="LocalStackConfigIO.EditPlaceholder"/>) when
+/// <c>beam local init</c> could not resolve it, or be null when that part of the stack is not included.
+/// </summary>
+public class LocalStackRepos
+{
+	/// <summary>The <c>BeamableAPI</c> checkout: the docker deps + Caddy compose file and the three .NET hosts.</summary>
+	public string apiDir;
+
+	/// <summary>The <c>BeamableBackend</c> checkout: the Scala <c>tools/*</c> services and the redis compose file.</summary>
+	public string scalaDir;
+
+	/// <summary>The portal frontend checkout: the Vite dev server and the portal extensions it serves.</summary>
+	public string portalDir;
+
+	/// <summary>The <c>portal-localdev</c> directory holding the local web registry compose file. Null when the
+	/// web-registry steps are not part of this manifest.</summary>
+	public string webRegistryDir;
+
+	/// <summary>The <c>BeamableProduct</c> checkout holding the web packages, derived from
+	/// <see cref="webRegistryDir"/>. Null when the web-registry steps are not part of this manifest.</summary>
+	public string productDir;
 }
 
 /// <summary>

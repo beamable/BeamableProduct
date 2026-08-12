@@ -28,6 +28,11 @@ public class LocalStackInitCommandArgs : CommandArgs
 	public bool noWebRegistry;
 	public string webRegistryDir;
 	public string scalaJvmArgs;
+
+	/// <summary>Opt IN to writing the <c>beam-local-stack</c> agent skill. Off by default — the manifest is
+	/// what <c>init</c> exists to produce, and the doc is a separate, generated file that not every workspace
+	/// wants (it lands outside <c>.beamable</c> and records machine-specific absolute paths).</summary>
+	public bool skill;
 }
 
 public class LocalStackInitCommandResult
@@ -35,6 +40,9 @@ public class LocalStackInitCommandResult
 	public string manifestPath;
 	public int stepCount;
 	public bool created;
+
+	/// <summary>Where the generated <c>beam-local-stack</c> skill was written; null when it was skipped.</summary>
+	public string skillPath;
 }
 
 /// <summary>
@@ -88,6 +96,10 @@ public class LocalStackInitCommand
 			(args, v) => { if (v) args.noWebRegistry = false; });
 		AddOption(new Option<string>("--web-registry-dir", "Absolute path to the portal-localdev directory holding the web registry compose file; skips the prompt for it"),
 			(args, v) => args.webRegistryDir = v);
+		var skill = new Option<bool>("--skill",
+			$"Also write the {LocalStackSkillTemplate.SkillName} agent skill, documenting the repositories this manifest spans and how the stack works, to .claude/skills/ (off by default; regenerated on every init that passes this)");
+		skill.AddAlias("--with-skill");
+		AddOption(skill, (args, v) => args.skill = v);
 	}
 
 	private static List<string> Split(string value) =>
@@ -172,6 +184,43 @@ public class LocalStackInitCommand
 		catch (Exception e)
 		{
 			Log.Verbose($"could not update .gitignore: {e.Message}");
+		}
+	}
+
+	/// <summary>
+	/// Writes the <c>beam-local-stack</c> agent skill that documents the repositories this manifest spans and
+	/// how the stack works (see <see cref="LocalStackSkillTemplate"/>). Opt-in via <c>--skill</c>; when asked
+	/// for, it always OVERWRITES, because the file is generated from the manifest and a stale copy describing
+	/// a stack you no longer have is worse than none — so it needs neither <c>--force</c> nor a prompt, unlike
+	/// the manifest itself.
+	///
+	/// Best-effort, like <see cref="EnsureGitignore"/>: an init that already produced a valid manifest must
+	/// never fail because a documentation file could not be written.
+	/// </summary>
+	/// <returns>The path written, or null when not asked for or when writing failed.</returns>
+	private static string WriteSkill(LocalStackInitCommandArgs args, string manifestPath, LocalStackConfig config)
+	{
+		if (!args.skill)
+		{
+			return null;
+		}
+
+		try
+		{
+			var skillPath = LocalStackSkillTemplate.Write(args.ConfigService, manifestPath, config);
+			if (skillPath == null)
+			{
+				Log.Verbose("local init: the embedded local-stack skill template is missing; skipped writing it.");
+				return null;
+			}
+
+			Log.Information($"Wrote local-stack skill to {skillPath}.");
+			return skillPath;
+		}
+		catch (Exception e)
+		{
+			Log.Verbose($"local init: could not write the local-stack skill: {e.Message}");
+			return null;
 		}
 	}
 
@@ -579,13 +628,15 @@ public class LocalStackInitCommand
 		EnsureGitignore(Path.GetDirectoryName(path));
 
 		Log.Information($"Wrote local-stack manifest to {path} ({config.steps.Count} steps).");
+		var skillPath = WriteSkill(args, path, config);
 		Log.Information("Edit any <EDIT: ...> paths, then run: beam local up");
 
 		return new LocalStackInitCommandResult
 		{
 			manifestPath = path,
 			stepCount = config.steps.Count,
-			created = true
+			created = true,
+			skillPath = skillPath
 		};
 	}
 
@@ -645,12 +696,16 @@ public class LocalStackInitCommand
 		LocalStackConfigIO.Save(path, config);
 
 		Log.Information($"Updated microservice/extension/group steps in {path} ({config.steps.Count} steps total).");
+		// Regenerate the skill here too when --skill is passed: the service selection it lists just changed, and
+		// the doc is rendered from the manifest, so this path needs nothing the full init has.
+		var skillPath = WriteSkill(args, path, config);
 
 		return new LocalStackInitCommandResult
 		{
 			manifestPath = path,
 			stepCount = config.steps.Count,
-			created = false
+			created = false,
+			skillPath = skillPath
 		};
 	}
 }
