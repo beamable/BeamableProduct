@@ -1234,6 +1234,12 @@ public class ConfigService
 					ex = e;
 					written = false;
 				}
+				catch (UnauthorizedAccessException e)
+				{
+					// Windows surfaces a locked destination as an access violation rather than an IOException.
+					ex = e;
+					written = false;
+				}
 			}
 
 			if (!written) throw new CliException($"Failed to flush configuration. LAST_EXCEPTION={ex}");
@@ -1725,39 +1731,90 @@ public class ConfigService
 		return false;
 	}
 
-	public static void LockedWrite(string path, string content, int allowedAttempts = 10, int retryDelayMs = 25)
+	private const int FILE_LOCK_ATTEMPTS = 10;
+	private const int FILE_LOCK_DELAY_MS = 25;
+	private const int FILE_LOCK_MAX_DELAY_MS = 500;
+
+	/// <summary>
+	/// A fixed retry delay makes every contending process wake up at the same instant and collide again,
+	/// so back off exponentially and add jitter to spread the retries out.
+	/// </summary>
+	private static int GetRetryDelayMs(int baseDelayMs, int attempt)
+	{
+		var backoff = Math.Min(baseDelayMs * (1 << Math.Min(attempt, 5)), FILE_LOCK_MAX_DELAY_MS);
+		return backoff + Random.Shared.Next((backoff / 2) + 1);
+	}
+
+	public static void LockedWrite(string path, string content, int allowedAttempts = FILE_LOCK_ATTEMPTS, int retryDelayMs = FILE_LOCK_DELAY_MS)
+	{
+		// Write to a sibling temp file and swap it in, instead of truncating the real file in place.
+		// FileMode.Create empties the file before the content lands, so a reader that slips into that
+		// window sees an empty config; a rename is atomic, so readers only ever see old or new content.
+		var tempPath = $"{path}.{Environment.ProcessId}.{Guid.NewGuid():N}.tmp";
+		try
+		{
+			File.WriteAllText(tempPath, content);
+
+			for (var i = 0; i < allowedAttempts; i++)
+			{
+				try
+				{
+					File.Move(tempPath, path, true);
+					return;
+				}
+				catch (IOException) when (i < allowedAttempts - 1)
+				{
+					Thread.Sleep(GetRetryDelayMs(retryDelayMs, i));
+				}
+				catch (UnauthorizedAccessException) when (i < allowedAttempts - 1)
+				{
+					Thread.Sleep(GetRetryDelayMs(retryDelayMs, i));
+				}
+			}
+		}
+		finally
+		{
+			// The move consumes the temp file, so this only cleans up after a failed write.
+			if (File.Exists(tempPath))
+			{
+				try
+				{
+					File.Delete(tempPath);
+				}
+				catch (IOException)
+				{
+					// a leftover temp file is not worth masking the write failure over.
+				}
+			}
+		}
+	}
+
+	public static string LockedRead(string path, int allowedAttempts = FILE_LOCK_ATTEMPTS, int retryDelayMs = FILE_LOCK_DELAY_MS)
 	{
 		for (var i = 0; i < allowedAttempts; i++)
 		{
 			try
 			{
-				using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
-				using var writer = new StreamWriter(stream);
-				writer.Write(content);
-				writer.Flush();
-			}
-			catch (IOException) when (i < allowedAttempts)
-			{
-				Thread.Sleep(retryDelayMs);
-			}
-		}
-	}
-	public static string LockedRead(string path, int allowedAttempts=10, int retryDelayMs=25)
-	{
-		for (var i = 0; i < allowedAttempts ; i ++)
-		{
-			try
-			{
-				using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+				// FileShare.Delete lets a concurrent LockedWrite rename its temp file over this one while
+				// the read is in flight; without it, the swap fails on Windows whenever a reader is open.
+				using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
 				using var reader = new StreamReader(stream);
 				return reader.ReadToEnd();
 			}
-			catch (IOException) when (i < allowedAttempts)
+			catch (IOException ex)
 			{
-				Thread.Sleep(retryDelayMs);
+				// Keep the original exception (and the path) on the last attempt. A bare
+				// "failed after N attempts" hides both the file and the reason it could not be read.
+				if (i == allowedAttempts - 1)
+				{
+					throw new IOException($"Failed to read file after {allowedAttempts} attempts. PATH=[{path}]", ex);
+				}
+
+				Thread.Sleep(GetRetryDelayMs(retryDelayMs, i));
 			}
 		}
-		throw new IOException($"Failed to read file after {allowedAttempts} attempts.");
+
+		throw new IOException($"Failed to read file after {allowedAttempts} attempts. PATH=[{path}]");
 	}
 
 	/// <summary>
