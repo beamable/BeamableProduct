@@ -41,17 +41,6 @@ object BeamableAnalytics {
     private const val CORE_OP = "g.core"
     private const val FUNNEL_CATEGORY = "notification_funnel"
 
-    /**
-     * Microservice that exposes the `ForwardFunnelToSlack` [Callable] used as a debug mirror of the
-     * funnel. After a successful analytics POST we also forward the same funnel params to it so the
-     * device-side stages (Received/Opened/Clicked/Converted) show up in Slack alongside the
-     * server-emitted "Sent" event. Hosted by the portal's CampaignService. Invoked via the standard
-     * microservice route `/basic/<cid>.<pid>.micro_<service>/<endpoint>` with the player's bearer +
-     * realm scope.
-     */
-    private const val SLACK_MICROSERVICE = "CampaignService"
-    private const val SLACK_ENDPOINT = "ForwardFunnelToSlack"
-
     /** Short fire-and-forget timeouts (ms) — must stay well within the FCM ~10s budget. */
     private const val CONNECT_TIMEOUT_MS = 4_000
     private const val READ_TIMEOUT_MS = 4_000
@@ -227,48 +216,6 @@ object BeamableAnalytics {
             PushManager.dispatchFunnelResult(event.funnelType.name, false, code, "HTTP $code; queued for replay")
         } else {
             PushManager.dispatchFunnelResult(event.funnelType.name, true, code, "ok")
-            // Best-effort debug mirror: forward the same funnel params to the microservice's
-            // ForwardFunnelToSlack endpoint so device-side stages appear in Slack too. Never affects
-            // the analytics result — failures are logged and swallowed.
-            forwardFunnelToSlack(host, cid, pid, accessToken, buildParams(intent, event.funnelType).toString())
-        }
-    }
-
-    /**
-     * Forwards [funnelData] (the CoreEvent params JSON) to the microservice's `ForwardFunnelToSlack`
-     * [Callable] via the standard microservice route `/basic/<cid>.<pid>.micro_<service>/<endpoint>`,
-     * authenticated with the player bearer + realm scope. Fire-and-forget, best-effort: any failure
-     * is logged and never propagates (the microservice may be undeployed, etc.).
-     */
-    private fun forwardFunnelToSlack(
-        host: String,
-        cid: String,
-        pid: String,
-        accessToken: String,
-        funnelData: String
-    ) {
-        try {
-            val url = "$host/basic/$cid.$pid.micro_$SLACK_MICROSERVICE/$SLACK_ENDPOINT"
-            val scope = "$cid.$pid"
-            // Callable args bind by parameter name: ForwardFunnelToSlack(string funnelData).
-            val body = JSONObject().put("funnelData", funnelData).toString()
-            val conn = (URL(url).openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                connectTimeout = CONNECT_TIMEOUT_MS
-                readTimeout = READ_TIMEOUT_MS
-                doOutput = true
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Authorization", "Bearer $accessToken")
-                setRequestProperty("X-BEAM-SCOPE", scope)
-            }
-            conn.outputStream.use { it.writeBytesUtf8(body) }
-            val code = conn.responseCode
-            try { conn.inputStream.use { it.readBytes() } } catch (_: Throwable) {
-                try { conn.errorStream?.use { it.readBytes() } } catch (_: Throwable) {}
-            }
-            Log.i(TAG, "funnel→slack microservice POST -> HTTP $code")
-        } catch (t: Throwable) {
-            Log.w(TAG, "funnel→slack microservice error: ${t.message}")
         }
     }
 
@@ -432,10 +379,9 @@ object BeamableAnalytics {
         .put("c", FUNNEL_CATEGORY)
         .put("p", buildParams(intent, type))
 
-    /** Builds the funnel event params bag (the CoreEvent `p`). Shared by the analytics POST and the
-     *  `ForwardFunnelToSlack` debug mirror, so both carry an identical payload. Keys are emitted in
-     *  alphabetical (ordinal) order to match the microservice and iOS (which encodes with
-     *  `.sortedKeys`), so every platform's funnel JSON has the same field order. */
+    /** Builds the funnel event params bag (the CoreEvent `p`). Keys are emitted in alphabetical
+     *  (ordinal) order to match the microservice and iOS (which encodes with `.sortedKeys`), so every
+     *  platform's funnel JSON has the same field order. */
     internal fun buildParams(
         intent: NotificationIntentData,
         type: FunnelType

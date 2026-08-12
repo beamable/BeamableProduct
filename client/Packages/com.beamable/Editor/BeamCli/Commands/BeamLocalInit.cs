@@ -30,9 +30,11 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool updateServices;
         /// <summary>JVM flags each Scala service is launched with; the heap cap keeps ~18 JDK 8 JVMs from each reserving a quarter of physical RAM</summary>
         public string scalaJvmArgs;
-        /// <summary>Include a step for the local web package registry (Verdaccio and local-unpkg), for iterating on the web SDK or Portal Toolkit</summary>
+        /// <summary>Do not write the local web package registry steps (Verdaccio and local-unpkg); skips the portal-localdev prompt and leaves the manifest without them</summary>
+        public bool noWebRegistry;
+        /// <summary>Explicitly write the local web package registry steps; they are already the default, so this is a no-op except that it overrides --no-web-registry when both are passed</summary>
         public bool withWebRegistry;
-        /// <summary>Absolute path to the portal-localdev directory holding the web registry compose file; implies --with-web-registry</summary>
+        /// <summary>Absolute path to the portal-localdev directory holding the web registry compose file; skips the prompt for it</summary>
         public string webRegistryDir;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
@@ -98,6 +100,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.scalaJvmArgs != default(string)))
             {
                 genBeamCommandArgs.Add(("--scala-jvm-args=" + this.scalaJvmArgs));
+            }
+            // If the noWebRegistry value was not default, then add it to the list of args.
+            if ((this.noWebRegistry != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--no-web-registry=" + this.noWebRegistry));
             }
             // If the withWebRegistry value was not default, then add it to the list of args.
             if ((this.withWebRegistry != default(bool)))
