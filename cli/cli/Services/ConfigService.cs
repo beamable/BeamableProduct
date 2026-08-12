@@ -1656,9 +1656,12 @@ public class ConfigService
 
 		try
 		{
-			var content = File.ReadAllText(fullPath);
+			var content = LockedRead(fullPath);
 			response = JsonConvert.DeserializeObject<CliToken>(content);
-			return true;
+
+			// An empty or "null" file deserializes to null. Reporting success with a null token makes every
+			// caller dereference it, so treat that as "no token" instead.
+			return response != null;
 		}
 		catch
 		{
@@ -1676,7 +1679,10 @@ public class ConfigService
 		Directory.CreateDirectory(dir!);
 
 		var json = JsonConvert.SerializeObject(response, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
-		File.WriteAllText(fullPath, json);
+		// Every command refreshes an expired token on startup, so concurrent beam processes write this file
+		// at the same time. LockedWrite swaps the file in atomically; a plain write truncates it first and
+		// lets a concurrent reader see an empty file.
+		LockedWrite(fullPath, json);
 	}
 
 	public void DeleteTokenFile()

@@ -343,7 +343,8 @@ public class DefaultAppContext : IAppContext
 		string defaultAccessToken = string.Empty;
 		string defaultRefreshToken = string.Empty;
 		bool isExpiredToken = false;
-		if (_configService.ReadTokenFromFile(out var response) && response.Cid.Equals(cid, StringComparison.InvariantCultureIgnoreCase))
+		// static string.Equals so a token file without a cid is treated as a mismatch rather than throwing.
+		if (_configService.ReadTokenFromFile(out var response) && string.Equals(response.Cid, cid, StringComparison.InvariantCultureIgnoreCase))
 		{
 			if (response.ExpiresAt < DateTime.Now)
 			{
