@@ -432,6 +432,10 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			[Beamable.Common.Constants.Features.Services.Logs.REGISTERING_CUSTOM_SERVICES] = .45f,
 			[Beamable.Common.Constants.Features.Services.Logs.SCANNING_CLIENT_PREFIX] = .5f,
 			[Beamable.Common.Constants.Features.Services.Logs.SERVICE_PROVIDER_INITIALIZED] = .7f,
+			// Between provider init and the event provider — that is the order ProvideService runs them in.
+			// Without a milestone here, the window where federation registration happens (and can fail) was
+			// indistinguishable from a service simply being slow to reach "ready".
+			[Beamable.Common.Constants.Features.Services.Logs.FEDERATION_REGISTERED] = .72f,
 			[Beamable.Common.Constants.Features.Services.Logs.EVENT_PROVIDER_INITIALIZED] = .75f,
 			[Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX] = 1
 		};

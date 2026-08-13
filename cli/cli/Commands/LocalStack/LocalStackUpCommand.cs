@@ -5,6 +5,7 @@ using System.CommandLine;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using ServiceLogs = Beamable.Common.Constants.Features.Services.Logs;
 
 namespace cli.Commands.LocalStack;
 
@@ -1016,12 +1017,65 @@ public class LocalStackUpCommand
 		/// (readiness tails the log files instead).</summary>
 		public StreamLineBuffer LineBuffer;
 
+		/// <summary>Health signals scraped from this step's log stream. Attached mode only — in detached mode
+		/// nothing reads the child's output live, so it stays silent.</summary>
+		public StepHealth Health = new StepHealth();
+
 		/// <summary>The line source(s) the readiness gate should poll: the in-memory stream buffer (attached)
 		/// or fresh tailers over the stdout/stderr log files (detached).</summary>
 		public IReadOnlyList<ILineSource> OpenLineSources() =>
 			LineBuffer != null
 				? new ILineSource[] { LineBuffer }
 				: new ILineSource[] { new LineTailer(StdoutLog, -1), new LineTailer(StderrLog, -1) };
+	}
+
+	/// <summary>
+	/// Per-step health that only the log stream can tell us about. A microservice whose federation components
+	/// fail to register still starts, still passes every readiness gate, and still reports itself ready for
+	/// traffic — the only evidence is one line in its log. Without this the stack printed "Stack is up" over a
+	/// service that was running but unroutable, which is exactly how a whole class of federation bugs stayed
+	/// invisible.
+	/// </summary>
+	private sealed class StepHealth
+	{
+		private readonly object _gate = new();
+		private bool _federationFailed;
+		private Action _handler;
+
+		/// <summary>Called from the log pump on the first failure line; fires the handler once.</summary>
+		public void MarkFederationFailed()
+		{
+			Action handler;
+			lock (_gate)
+			{
+				if (_federationFailed)
+					return;
+				_federationFailed = true;
+				handler = _handler;
+			}
+
+			handler?.Invoke();
+		}
+
+		/// <summary>
+		/// Registers the one-shot reporter. Fires immediately when the failure has already been seen, so a
+		/// failure that lands before the readiness wait is reported just like one that lands after it — the
+		/// retry backoff means it can arrive either side of the grace period.
+		/// </summary>
+		public void WhenFederationFailed(Action handler)
+		{
+			bool already;
+			lock (_gate)
+			{
+				_handler = handler;
+				already = _federationFailed;
+			}
+
+			if (already)
+			{
+				handler();
+			}
+		}
 	}
 
 	private (string exe, string[] leading) ResolveBeam(CommandArgs args)
@@ -1149,6 +1203,7 @@ public class LocalStackUpCommand
 		proc.Exited += (_, _) => exitTcs.TrySetResult();
 
 		StreamLineBuffer buffer = null;
+		var health = new StepHealth();
 		if (attached)
 		{
 			// Detach stdin so the child never blocks reading the console.
@@ -1157,15 +1212,15 @@ public class LocalStackUpCommand
 			// Pipe stdout/stderr live: to the console (prefixed), to the readiness buffer, and — under
 			// --save-logs — tee to the log files. No file is required for the stack to run.
 			buffer = new StreamLineBuffer();
-			_ = PumpAsync(proc.StandardOutput, step.name, isError: false, buffer, saveLogs ? stdoutLog : null);
-			_ = PumpAsync(proc.StandardError, step.name, isError: true, buffer, saveLogs ? stderrLog : null);
+			_ = PumpAsync(proc.StandardOutput, step.name, isError: false, buffer, saveLogs ? stdoutLog : null, health);
+			_ = PumpAsync(proc.StandardError, step.name, isError: true, buffer, saveLogs ? stderrLog : null, health);
 		}
 
 		return new Launched
 		{
 			Step = step, Process = proc, ExitedTask = exitTcs.Task,
 			StdoutLog = stdoutLog, StderrLog = stderrLog, WorkingDirectory = workDir, Kind = kind,
-			LineBuffer = buffer
+			LineBuffer = buffer, Health = health
 		};
 	}
 
@@ -1202,7 +1257,7 @@ public class LocalStackUpCommand
 	/// name), feeds the readiness buffer, and — when <paramref name="teePath"/> is set (--save-logs) — appends
 	/// each line to the log file.</summary>
 	private static async Task PumpAsync(StreamReader reader, string name, bool isError, StreamLineBuffer buffer,
-		string teePath)
+		string teePath, StepHealth health = null)
 	{
 		try
 		{
@@ -1212,6 +1267,16 @@ public class LocalStackUpCommand
 				if (isError) Log.Warning($"[{name}] {line}");
 				else Log.Information($"[{name}] {line}");
 				buffer.Append(line);
+
+				// Substring match on the raw line: the runtime logs structured JSON under
+				// LOG_TYPE=structured+file, so the marker arrives embedded in a JSON payload rather than as
+				// a bare message. This is the same approach RunProjectCommand's progress table takes.
+				if (health != null
+				    && line.Contains(ServiceLogs.FEDERATION_REGISTRATION_FAILED, StringComparison.Ordinal))
+				{
+					health.MarkFederationFailed();
+				}
+
 				if (teePath != null)
 				{
 					try { File.AppendAllText(teePath, line + Environment.NewLine); }
@@ -1323,6 +1388,19 @@ public class LocalStackUpCommand
 	private Task AwaitStep(LocalStackStep step, Launched l, LocalStackConfig config, float baseProgress, int totalSteps,
 		CancellationToken token, Func<Launched> relaunch)
 	{
+		// Report a federation-registration failure whenever it surfaces, rather than gating the step on it.
+		// Registration retries for several seconds, so the failure can land either side of a readiness wait —
+		// and a service that came up but cannot route federated traffic should be called out either way. It is
+		// reported as degraded, not failed: the stack is still usable and tearing it down would be worse.
+		l.Health.WhenFederationFailed(() =>
+		{
+			Send(step.name, "degraded",
+				"running, but its federation components failed to register — see `beam local logs`",
+				baseProgress + 1f / totalSteps);
+			Log.Warning($"[{step.name}] running, but federation registration failed — this service will not "
+			            + "receive federated traffic. See `beam local logs` for the platform's rejection.");
+		});
+
 		if (step.waitForExit)
 			return AwaitCompletion(step, l, config, baseProgress);
 
