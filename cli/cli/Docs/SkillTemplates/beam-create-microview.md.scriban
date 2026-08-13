@@ -1,0 +1,221 @@
+---
+name: beam-create-microview
+description: Create a microView (full-page or component) mounted on the Beamable Portal. microView is the current name for what the CLI still calls a portal extension.
+---
+
+# Create microView
+
+A **microView** is a Vite-built React package that mounts inside the Beamable
+Portal — either as a full page with its own navigation entry, or as a component
+injected into a slot on an existing Portal page.
+
+## Naming: microView vs "portal extension"
+
+**microView is the current name for this feature. "Portal extension" is the old
+name.** The rename has not reached the backend yet, so every CLI command, flag,
+directory, and SDK identifier below still spells it "extension". That is
+expected — **use them exactly as written and do not try to rename them**:
+
+| You will see | Where |
+|---|---|
+| `project new portal-extension` | command |
+| `portal extension list-extension-options` | command |
+| `portal extension add-microservice` | command |
+| `portal open-extension` | command |
+| `extensions/<Name>/` | directory the CLI scaffolds into |
+| `--mount-page`, `--mount-selector` | flags |
+| `@beamable/portal-toolkit` | npm package |
+
+Say "microView" when talking to the user; type "extension" when talking to the
+CLI. A command renamed to match the new terminology will simply not exist.
+
+## Prerequisites
+- A `.beamable` workspace must exist (run `beam init` first)
+- Node.js and npm must be available on the system, it uses node version 22 or greater.
+
+## Steps
+
+### 1. Discover mount points (REQUIRED)
+You MUST call this before creating the microView. It returns the valid `--mount-page` and `--mount-selector` values from the remote portal config.
+```
+beam_exec("portal extension list-extension-options")
+```
+
+The response has two sections:
+- **pageExtensions**: Full-page microViews that add an entry to the Portal navigation. A non-empty `pageExtensions` list just signals that a full-page slot exists; set `--mount-page` to a **hub path** — a bare hub name, or `hub/page` to nest a page inside a hub (see *Hubs vs. pages* below). The `routePrefix` (e.g. `!hub/`) is a discovery marker, not a literal prefix to concatenate. The `--mount-selector` is auto-assigned from `autoSelector`.
+- **componentExtensions**: Component slots that inject into an existing Portal page. Use `path` as `--mount-page` and pick one of the `selectors` as `--mount-selector`.
+
+### Hubs vs. pages: how full-page microViews are routed
+
+Full-page microViews form a **two-level hierarchy**, and the `--mount-page` value
+(persisted as the `page` field under `beamable.mounts[]` in the microView's
+`package.json`) encodes which level it occupies:
+
+| `page` value           | What it creates                                                       |
+|------------------------|-----------------------------------------------------------------------|
+| `hub-name`             | The microView **is a hub** — a top-level entry in the Portal navigation. |
+| `hub-name/page-name`   | The microView is a **page mounted inside** the `hub-name` hub.        |
+
+The routing rule is simply: **the segment before the first `/` is the hub.** A value
+with no `/` is a hub itself; a value with a `/` is a page nested under the hub named by
+its first segment. The Portal parses this hierarchy from the `page` string itself — the
+CLI stores whatever you pass to `--mount-page` verbatim.
+
+Key points about the model:
+
+- **A hub is itself a full-page microView.** It is not a separate kind of object — it
+  has its own content and renders exactly like a page.
+- **Pages are full-page microViews too**, distinguished only by prefixing the hub name:
+  `hub-name/page-name`.
+- **A hub with no child pages** shows up in the nav and renders whatever content that
+  hub microView defines.
+- **A hub with child pages** can either render its own content when selected, **or** act
+  purely as a navigation entry that routes into one of its pages.
+
+So "create a new dashboard hub" and "add a page to an existing hub" are the *same*
+operation — a `project new portal-extension` whose `--mount-page` is a bare hub name or
+a `hub/page` path.
+
+#### Relationship to `list-extension-options`
+
+The full-page slot shows up in `pageExtensions[]` as a `routePrefix`. That prefix is a
+**discovery marker, not a literal string to concatenate**: the remote Portal config
+exposes the page slot as `!hub/!pathMatch`, so `routePrefix` comes back looking like
+`!hub/`. The leading `!` marks the wildcard segment — it means "the segment before the
+`/` is the hub" — and is **not** part of the value you store. Strip the marker and
+substitute a real hub name:
+
+- To mount a page **inside a hub**: `--mount-page "<hub-name>/<your-page>"` — e.g.
+  `--mount-page "cars/ferrari"` puts a `ferrari` page under the `cars` hub.
+- To create a **brand-new hub** (or land on an existing one): `--mount-page "<hub-name>"`
+  — e.g. `--mount-page "dashboards"`.
+
+For full-page microViews the `--mount-selector` is always auto-assigned from the page
+slot, so you never pass it.
+
+**If this returns no mount options, stop and tell the user.** The catalog is
+fetched from `{env}.console.beamable.com/extension-pages.json`, and not every
+environment publishes it — a realm whose environment has no catalog yields an
+empty list plus a warning, not an error. **Never invent a mount page or
+selector to work around an empty response**; they are validated against the
+live Portal and a guessed value produces a microView that silently never
+mounts. Report the empty catalog and ask the user how to proceed.
+
+### 2. Create the microView
+
+For a **page microView** (full-page, appears in navigation):
+```
+beam_exec("project new portal-extension <Name> --mount-page \"<hub-name>/<your-page>\" --mount-group \"<NavGroup>\" --mount-label \"<NavLabel>\" -q")
+```
+- `--mount-page` is a **hub path**, not `routePrefix` concatenated with a route — pass
+  `<hub-name>` to create a hub, or `<hub-name>/<your-page>` to nest a page inside one
+- `--mount-group` and `--mount-label` are required for sidebar navigation
+- `--mount-selector` is auto-assigned; do not provide it
+
+For a **component microView** (slot on an existing page):
+```
+beam_exec("project new portal-extension <Name> --mount-page \"<path>\" --mount-selector \"<selector>\" -q")
+```
+- `--mount-selector` is REQUIRED and must match one of the selectors from step 1
+- Do NOT provide `--mount-group` or `--mount-label`
+
+{{ if commands["project new portal-extension"] }}
+#### `beam project new portal-extension` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["project new portal-extension"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+### 3. Run the microView locally
+```
+beam_exec("project run --ids <Name>")
+```
+
+### 4. Add microservice dependency (if needed)
+If the microView needs to call a microservice, add it as a dependency. The microservice must already exist (created via `project new service`).
+```
+beam_exec("portal extension add-microservice <Name> <MicroserviceName>")
+```
+This generates typed client code in the `beamable/clients/` directory inside the microView project, giving you type-safe access to the microservice's `[ClientCallable]` and `[ServerCallable]` endpoints from TypeScript.
+{{ if commands["portal extension add-microservice"] }}
+#### `beam portal extension add-microservice` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["portal extension add-microservice"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+### 5. Open in browser to verify
+```
+beam_exec("portal open-extension <Name>")
+```
+
+## Web SDK Documentation
+The microView uses `@beamable/portal-toolkit` which depends on `@beamable/sdk`. To find the actual SDK version, check `node_modules/@beamable/portal-toolkit/package.json` → `peerDependencies["@beamable/sdk"]`. Use the `beam-get-source` skill to read SDK source code locally.
+
+## Beamable UI Components
+
+microViews use components from `@beamable/portal-toolkit`.
+
+### Finding the component API
+
+Read the generated TypeScript files in the microView's `node_modules` to discover available components, their props, and usage patterns. The files are at:
+
+`extensions/<Name>/node_modules/@beamable/portal-toolkit/src/generated/`
+
+| Template | Files to read | Import path |
+|----------|--------------|-------------|
+| **React** (default) | `react-components.ts` — display components<br>`react-bindable.ts` — form controls (`onValueChange`/`onCheckedChange` callbacks)<br>`react-custom.ts` — `BeamTable<T>` with marker children<br>`react-markers.ts` — `BeamColumn<T>`, `BeamTopRow`, `BeamGroupHeader` | `@beamable/portal-toolkit/react` |
+| **Other frameworks** (only if user requests) | `custom-elements.json` (in `node_modules/@beamable/portal-toolkit/`) | Use `<beam-*>` web component tags directly |
+
+**Read the installed package, not your memory.** The component surface changes
+between toolkit versions — only import what the generated files actually
+export. If a component you want is not there, do not invent it and do not copy
+one out of another microView in the workspace; fall back to what the toolkit
+does export and tell the user what was missing.
+
+### Key patterns
+
+- **In React, import `BeamX` components** from `@beamable/portal-toolkit/react` — do NOT use `<beam-x>` web component tags in TSX. The typed React forwarders provide full prop autocompletion.
+- **Form controls** in `react-bindable.ts` use typed callbacks: `onValueChange` (for string/number inputs) and `onCheckedChange` (for checkbox/switch). Use these instead of raw `onChange`.
+- **`BeamTable<T>`** uses `BeamColumn<T>` marker children to define columns (see `react-custom.ts` and `react-markers.ts`) — not a flat `headers` array.
+- **Components delegate to the host portal** at runtime via `window.__beamPortal.react` — they only render inside the Portal. The toolkit ships forwarder shells, not the actual implementations.
+- **Styling** uses `variant` and `appearance` props — not hardcoded CSS colors. Read the component interfaces for available values.
+
+## Common Pitfalls
+- **Never guess mount values.** Valid pages and selectors come from a remote config that changes between Portal versions. Always call `list-extension-options` first, and stop if it comes back empty.
+- **Always pass `-q` (quiet mode)** when executing from MCP to avoid interactive prompts that will hang.
+- **Page microViews need `--mount-group` and `--mount-label`** for the sidebar entry. Component microViews do not use these.
+- **Mount page format differs by type**: page microViews use a **hub path** (`hub` or `hub/page`), component microViews use the exact `path` value. Do NOT literally prepend `routePrefix` — the `!` in `!hub/` marks a wildcard segment and is not part of the value.
+- **In React, import components from `@beamable/portal-toolkit/react`** — do NOT use `<beam-*>` web component tags directly in TSX. Use the typed React forwarders instead.
+- **Use Beamable components, not raw HTML.** microViews render inside the Portal UI, inside a shadow root — plain `<button>`/`<table>` and any Tailwind or global helper classes will not pick up Portal styling. Read the generated files in `node_modules/@beamable/portal-toolkit/src/generated/` for available components.
+- **The `--service-directory` for microViews is `extensions/`**, not `services/`. This is the un-renamed backend, not a mistake — do not relocate or rename the generated folder, or the CLI and the service manifest will stop tracking it.
+- **`beamId` must match the package name.** The scaffolder wires these up for you; if you edit one by hand, edit both.
+
+## Generated microservice clients
+
+When `portal extension add-microservice` generates clients:
+- Generated clients go to `extensions/<Name>/beamable/clients/<ServiceName>Client.ts`
+- The client class extends `BeamMicroServiceClient` from `@beamable/sdk`
+- Import in React: `import { MyServiceClient } from '../beamable/clients/MyServiceClient'`
+
+## Wrap-Up
+
+After completing the workflow, provide the user with a summary that covers:
+
+1. **What was created**: The microView name and whether it is a page microView (new navigation entry) or a component microView (injected into an existing page).
+2. **Where the files live**:
+   - microView project root: `extensions/<Name>/` — contains the source. (Yes, `extensions/` — the directory still uses the old name.)
+   - Entry point: `extensions/<Name>/src/App.tsx`.
+   - Components: Import from `@beamable/portal-toolkit/react`.
+   - Package config: `extensions/<Name>/package.json` — dependencies including `@beamable/portal-toolkit`.
+   - If a microservice dependency was added: `extensions/<Name>/beamable/clients/` — auto-generated typed clients for calling microservice endpoints.
+   - Service manifest: `.beamable/beamoLocalManifest.json` — tracks the microView alongside other services.
+3. **Why specific choices were made** — explain the reasoning:
+   - **Mount point chosen**: Why this `--mount-page` and `--mount-selector` — what Portal page it extends and where in the UI it appears. For page microViews, explain what the nav group and label mean for Portal navigation.
+   - **Page vs component**: Why this type was chosen — page microViews are standalone features with their own route, while component microViews augment existing Portal pages at specific insertion points.
+   - **Microservice dependency**: If added, explain that `portal extension add-microservice` generated typed clients so the microView can call `[ClientCallable]` endpoints, and that the microservice must be running (locally or deployed) for those calls to work.
+4. **How to iterate**: Remind the user they can run `project run --ids <Name>` to start the dev server, open it with `portal open-extension <Name>`, and that changes hot-reload in the browser.
+
+## CLI Version Awareness
+
+If the CLI version has changed (check `.config/dotnet-tools.json`), re-run `beam_list_commands()` and `beam_get_help()` to get up-to-date command information. Command options and behavior may have changed between versions.
