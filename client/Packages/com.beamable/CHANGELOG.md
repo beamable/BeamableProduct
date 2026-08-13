@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added build-scoped suppression and per-player runtime opt-in for automatic Player Social friend-invitation Mail checks.
 - Fixed `CommerceService.GetCurrent()` waiting indefinitely when called without a store scope; unscoped Commerce requests now fail immediately with a clear error.
+- Content Manifest caching between runs.
+
 
 ## [6.0.1] - 2026-07-31
 
@@ -35,6 +37,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unity SDK version headers were not being sent by default.
 - Fixed `BeamContext` initialization throwing `IndexOutOfRangeException` from its own retry handler when initialization kept failing with infinite context retries enabled, which masked the underlying initialization error.
 - Fixed CLI bootstrap failing when the installed .NET SDK is a supported version newer than the pinned feature band (for example 10.0.301 when the pin is 10.0.100); the generated `global.json` now rolls forward to any compatible installed SDK.
+
+## [5.1.2] - 2026-07-16
+
+### Changed
+
+- Update CLI to 7.2.2
 
 ## [5.1.2] - 2026-07-16
 
