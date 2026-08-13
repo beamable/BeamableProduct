@@ -30,7 +30,12 @@ public static class LocalStackTemplate
 	public static readonly string[] DefaultScalaServices =
 	{
 		"dbflake", "gateway", "auth", "account", "session", "content", "stats", "beamo",
-		"realms", "announcements", "events", "groups", "history", "leaderboards", "cloud-saving",
+		// No "realms": the Scala realms service is retired. BeamableBackend PR#747 dropped it from the
+		// tools/pom.xml reactor, so `-pl tools/realms` fails the whole build with "Could not find the
+		// selected project in the reactor". Its routes are served by the C# stack — core's RealmsTransformers
+		// proxies the "realms" service with defaultProxy = true, which is what `POST /basic/realms/customer`
+		// (LocalRealmService) hits.
+		"announcements", "events", "groups", "history", "leaderboards", "cloud-saving",
 		// Message rails: "mail" serves /basic/mail/bulk (in-game inbox); "messaging" serves
 		// email.basic (/basic/email/direct). Required by the player-engagement In-Game and Email rails.
 		// "notification" serves notification.basic, which the content service broadcasts to when
