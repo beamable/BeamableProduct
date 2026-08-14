@@ -423,6 +423,55 @@ public class LocalStackUpCommand
 			return l;
 		}
 
+		// Record a step this `up` did NOT launch because it was already answering its readiness endpoint, so the
+		// stack it is part of can still be stopped as a whole.
+		//
+		// Without this the step becomes an untracked orphan: `stop` brings down everything it launched, honestly
+		// reports "0 still recorded", and leaves the carried-over process running. That is not just untidy — the
+		// survivor holds its build outputs open, so the NEXT `up --build` dies in a build step
+		// (MSB3021 "Unable to copy file ...dll" for the .NET hosts, maven-clean "Failed to delete ...jar" for a
+		// Scala service), and a failed build step tears the whole stack down. Observed end to end on 2026-08-13.
+		//
+		// This also makes the two skip paths consistent: a step skipped because the RUN-STATE says it is alive
+		// stays recorded and stoppable, so a step skipped because HTTP says it is alive should be too.
+		//
+		// No pid is recorded: the owning process was never a child of this `up`, and guessing one from the port
+		// would be wrong exactly where it matters (a docker step's port is held by Docker's proxy, not by the
+		// container). `stop` needs none — docker steps reverse via `stopArguments` (`compose stop`), and the rest
+		// are found by the token sweep in `KillTree`, which is gated to stack runtime images and this step's own
+		// identity string.
+		void AdoptAlreadyServing(LocalStackStep step)
+		{
+			// Build steps are never recorded (nothing to stop), and attached runs keep no run-state at all.
+			if (step.build || attached)
+				return;
+
+			lock (_launchedLock)
+			{
+				var entry = runState.steps.FirstOrDefault(e => e.name == step.name);
+				if (entry == null)
+				{
+					entry = new LocalStackRunEntry { name = step.name };
+					runState.steps.Add(entry);
+				}
+
+				entry.group = step.group;
+				entry.pid = 0;
+				entry.startedAtUtcTicks = 0;
+				entry.matchToken = LocalStackConfigIO.Substitute(step.mainClass, config);
+				entry.kind = ResolveKind(step);
+				// This run launched nothing, so it produced no logs for the step. Leave any paths a previous run
+				// recorded intact rather than pointing `beam local logs` at a file this run never wrote.
+				entry.workingDirectory = LocalStackConfigIO.Substitute(step.workingDirectory, config);
+				entry.command = step.command;
+				entry.stopArguments = LocalStackConfigIO.Substitute(step.stopArguments, config);
+				entry.purgeStopArguments = LocalStackConfigIO.Substitute(step.purgeStopArguments, config);
+				entry.waitForExit = step.waitForExit;
+				entry.adopted = true;
+				LocalStackRunStateIO.Save(runStatePath, runState);
+			}
+		}
+
 		try
 		{
 			var i = 0;
@@ -461,11 +510,14 @@ public class LocalStackUpCommand
 
 					// Already serving on its HTTP readiness endpoint (e.g. a gateway/portal from a previous
 					// session, the IDE, or a stray process)? Don't launch a conflicting duplicate that would
-					// fail to bind the port and hang at "still starting".
+					// fail to bind the port and hang at "still starting". Adopt it into the run-state so it is
+					// still part of the stack `stop` takes down — see AdoptAlreadyServing.
 					if (await AlreadyServing(step, config, token))
 					{
+						AdoptAlreadyServing(step);
 						Send(step.name, "running", "already serving — skipping launch", baseProgress + 1f / steps.Count);
-						Log.Information($"[{step.name}] already serving at its readiness endpoint — skipping launch.");
+						Log.Information($"[{step.name}] already serving at its readiness endpoint — skipping launch " +
+						                "(adopted into the run-state, so `beam local stop` will still stop it).");
 						continue;
 					}
 
@@ -1136,6 +1188,18 @@ public class LocalStackUpCommand
 		return (args.AppContext.DotnetPath, new[] { "beam" });
 	}
 
+	/// <summary>
+	/// The step's run-state <c>kind</c> (<c>beam | docker | shell | process</c>), which drives how <c>stop</c>
+	/// reverses it and which command-line tokens identify its runtime. Derived from the step definition alone so
+	/// a step that is adopted rather than launched (see the already-serving path in <c>Handle</c>) is classified
+	/// exactly as the launched one would have been.
+	/// </summary>
+	private static string ResolveKind(LocalStackStep step) =>
+		step.beam ? "beam"
+		: string.Equals(step.command, "docker", StringComparison.OrdinalIgnoreCase) ? "docker"
+		: step.shell ? "shell"
+		: "process";
+
 	private Launched StartStep(LocalStackStep step, LocalStackConfig config, string beamExe, string[] beamLeading,
 		string beamWorkspaceFallback, string logsDir, bool attached, bool saveLogs, LocalStackJobObject job)
 	{
@@ -1169,10 +1233,7 @@ public class LocalStackUpCommand
 			ResetLog(stderrLog);
 		}
 
-		var kind = step.beam ? "beam"
-			: string.Equals(step.command, "docker", StringComparison.OrdinalIgnoreCase) ? "docker"
-			: step.shell ? "shell"
-			: "process";
+		var kind = ResolveKind(step);
 
 		var inner = BuildInnerScript(step, beamExe, beamLeading, argsText, workDir, command);
 		var launcher = WriteLauncher(step, logsDir, safe, inner, argsText);

@@ -10,5 +10,6 @@ namespace Beamable.Editor.BeamCli.Commands
         public string manifestPath;
         public int stepCount;
         public bool created;
+        public string skillPath;
     }
 }

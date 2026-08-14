@@ -119,7 +119,16 @@ public class LocalStackStopCommand
 
 	private static StopOutcome StopEntry(LocalStackRunEntry entry, bool purge)
 	{
+		// An adopted step was already serving when `up` ran, so `up` recorded it without launching it (and
+		// without a pid). Say so before stopping it: the process predates this stack's bring-up, so if the user
+		// started it themselves — from an IDE, or a `beam local up` they since forgot about — this line is the
+		// only warning that `stop` is about to take it down as part of the stack.
+		if (entry.adopted)
+			Log.Information($"[{entry.name}] was adopted (already serving when the stack came up) — stopping it too");
+
 		// Reversible run-to-completion steps (e.g. docker compose up -d) are reversed via their stop command.
+		// This is also how an adopted docker step comes down: `compose stop` needs no pid, so it works on every
+		// platform regardless of who started the containers.
 		var reversal = ResolveReversal(entry, purge);
 		if (!string.IsNullOrWhiteSpace(reversal) && !string.IsNullOrWhiteSpace(entry.command))
 			return RunReversal(entry, reversal) ? StopOutcome.Stopped : StopOutcome.Unconfirmed;
@@ -192,6 +201,10 @@ public class LocalStackStopCommand
 		//    stack-specific identity string on its command line and kill it. Also self-heals runtimes orphaned
 		//    by older CLI builds that recorded only the wrapper pid. Strictly token-gated so unrelated
 		//    java/node/dotnet processes (Rider, MSBuild, MCP) are never touched. No-op on non-Windows.
+		//    This is the ONLY path that stops a non-docker ADOPTED step: it has no pid by design (`up` never
+		//    launched it), so step 1 is skipped and its identity on the command line is all there is to go on.
+		//    Being Windows-only, an adopted non-docker step survives `stop` on macOS/Linux — no worse than
+		//    before the entry existed, where it was invisible to `stop` on every platform.
 		foreach (var pid in LocalStackProcess.FindByCommandLine(tokens, LocalStackProcess.ServiceImages))
 		{
 			if (!killed.Add(pid))
@@ -211,7 +224,11 @@ public class LocalStackStopCommand
 		// running (holding its port) with nothing tracking it — so keep the entry and say so.
 		if (liveness == LocalStackLiveness.Liveness.Stopped)
 		{
-			Log.Information($"[{entry.name}] already stopped (pid={entry.pid})");
+			// An adopted entry always reports Stopped (it has no pid), so nothing found by the sweep means the
+			// process it stood for is gone — say that rather than quoting a pid it never had.
+			Log.Information(entry.adopted
+				? $"[{entry.name}] adopted process is no longer running"
+				: $"[{entry.name}] already stopped (pid={entry.pid})");
 			return StopOutcome.AlreadyGone;
 		}
 
