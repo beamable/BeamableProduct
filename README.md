@@ -98,12 +98,13 @@ On a machine that has never run the stack:
 4. Then:
 
 ```bash
-beam local setup                # or --toolchain-dir <path> to choose where dependencies live
-beam local init                 # writes .beamable/local-stack.json
-beam local setup                # re-run to wire the toolchain into the new manifest
+beam local setup                # installs the toolchain; needs no .beamable workspace
+beam local init                 # writes the manifest and adopts that toolchain automatically
 beam local validate --with-aws
 beam local up --build
 ```
+
+`setup` comes first: it installs the JDK, and `init` picks it up rather than asking you for one.
 
 `beam local validate` reports each dependency's **source** — `toolchain` (pinned) or `system` (whatever this
 machine happens to have) — which is how a Maven running under an IDE's JDK 21, or a Node major the portal was

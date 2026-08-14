@@ -274,6 +274,38 @@ public class LocalStackInitCommand
 		return (services, extensions, groups);
 	}
 
+	/// <summary>
+	/// Merges the extensions found by scanning a portal checkout into the ones the beamo manifest reported.
+	///
+	/// The beamo manifest only covers the workspace the command RUNS in, so running <c>init</c> anywhere but the
+	/// portal repo discovered nothing and the picker came up empty — which reads as "this project has no
+	/// extensions" rather than "you are standing somewhere else". Scanning the checkout that was actually pointed
+	/// at fixes that for both the interactive flow and <c>--update-services</c>.
+	/// </summary>
+	private static (List<string> extensions, Dictionary<string, string[]> groups) MergePortalExtensions(
+		string portalDir, List<string> discoveredExtensions, Dictionary<string, string[]> discoveredGroups)
+	{
+		var (scannedExtensions, scannedGroups) = LocalStackTemplate.DiscoverPortalExtensions(portalDir);
+
+		var extensions = (discoveredExtensions ?? new List<string>())
+			.Concat(scannedExtensions)
+			.Distinct(StringComparer.OrdinalIgnoreCase)
+			.OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+			.ToList();
+
+		var groups = discoveredGroups != null
+			? new Dictionary<string, string[]>(discoveredGroups, StringComparer.OrdinalIgnoreCase)
+			: new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+
+		foreach (var (group, members) in scannedGroups)
+		{
+			// A group the workspace already knows about wins — that membership is authoritative.
+			if (!groups.ContainsKey(group)) groups[group] = members;
+		}
+
+		return (extensions, groups);
+	}
+
 	/// <summary>Maps the selected Scala service names to <see cref="LocalStackTemplate.ScalaToolInfo"/>, attaching
 	/// the discovered main class where known (unknown names get a null main class → the launch shell greps pom.xml).</summary>
 	private static List<LocalStackTemplate.ScalaToolInfo> ToScalaTools(List<string> names, List<LocalStackTemplate.ScalaToolInfo> discovered)
@@ -534,10 +566,21 @@ public class LocalStackInitCommand
 		var quiet = args.Quiet || !AnsiConsole.Profile.Capabilities.Interactive;
 		var defaults = new LocalStackTemplate.Options();
 
-		// Where the manifest lives.
-		var defaultPath = LocalStackCommand.ResolveManifestPath(args.ConfigService, args.configPath);
+		// Where the manifest lives. With no workspace this defaults to `<cwd>/.beamable/local-stack.json` — a real
+		// workspace folder rather than a loose file the rest of the CLI would not recognise as one.
+		var defaultPath = LocalStackCommand.ResolveManifestPathForInit(args.ConfigService, args.configPath);
 		var path = Path.GetFullPath(Ask("Where is the manifest?",
 			args.configPath, defaultPath, quiet, allowEmpty: false));
+
+		// Create the containing folder if it is not there yet. Adding a `.beamable` directory to someone's project
+		// is a visible change, so an interactive run says what it is about to do and asks; a quiet run just does it.
+		var created = LocalStackCommand.EnsureManifestDirectory(path,
+			confirm: dir => quiet || AnsiConsole.Confirm(
+				$"[green]{dir}[/] does not exist yet. Create it?", defaultValue: true),
+			out var manifestDir);
+
+		if (!created)
+			throw new CliException($"Aborted — {manifestDir} was not created, so there is nowhere to write the manifest.");
 
 		// Discover the microservices/portal extensions/service groups in the current .beamable workspace so they
 		// can be offered as defaults (empty when run outside a workspace).
@@ -545,7 +588,19 @@ public class LocalStackInitCommand
 
 		// Update-only mode: rewrite just the microservice/extension/group steps of an existing manifest.
 		if (args.updateServices)
-			return UpdateServices(args, path, quiet, discoveredServices, discoveredExtensions, discoveredGroups);
+		{
+			// This path never prompts for repo paths, so take the portal checkout from the manifest being updated
+			// and scan it too. Without this, `--update-services` — the command you reach for precisely when you
+			// want to ADD extensions — could only offer what the workspace it runs in happens to know about.
+			var existingPortalDir = File.Exists(path)
+				? NullIfEmpty(LocalStackConfigIO.Load(path)?.repos?.portalDir)
+				: null;
+
+			var (updateExtensions, updateGroups) = MergePortalExtensions(
+				existingPortalDir, discoveredExtensions, discoveredGroups);
+
+			return UpdateServices(args, path, quiet, discoveredServices, updateExtensions, updateGroups);
+		}
 
 		if (File.Exists(path) && !args.force)
 		{
@@ -574,12 +629,18 @@ public class LocalStackInitCommand
 		var host = Ask("Backend API [green]host[/]:", args.host, defaults.host, quiet, allowEmpty: false);
 		var portalUrl = Ask("[green]Portal[/] frontend URL:", args.portalUrl, defaults.portalUrl, quiet, allowEmpty: false);
 
-		// Java 8 home — auto-detect (or use --java-path if explicitly provided) and prompt to confirm.
-		// Empty answer = omit from manifest; beam local up will auto-detect at run time.
-		var javaDefault = args.AppContext?.JavaPath;
-		var javaHome = NullIfEmpty(Ask(
-			"Java 8 home for the Scala backend [grey](empty = resolve at run time)[/]:",
-			null, javaDefault, quiet, allowEmpty: true));
+		// The toolchain is NOT prompted for. `beam local setup` is what installs the JDK (and Maven, the .NET SDK
+		// and Node), and it records where it put them — so init simply adopts that. Asking here was the wrong way
+		// round: you had to name a Java 8 home at `init` time that only `setup` could produce, which forced people
+		// to run the commands in an order that could not work on a fresh machine.
+		//
+		// Null when setup has not run yet: the manifest then carries no toolchain, and `beam local up` falls back
+		// to machine-level Java discovery exactly as before. Re-running `beam local setup` after `init` fills it in.
+		var toolchain = ToolchainService.TryReadInstalled();
+		if (toolchain != null)
+			Log.Information($"Using the toolchain installed by `beam local setup` at {toolchain.dir}.");
+		else
+			Log.Information("No toolchain found — run `beam local setup` to install one, then re-run this command (or `beam local setup` again) to wire it in.");
 
 		// Scala services: auto-discover the tools/* services from the repo (name + main class) and default to
 		// the curated set that's actually present; fall back to the static list when nothing is discovered.
@@ -587,6 +648,9 @@ public class LocalStackInitCommand
 		var defaultScalaNames = ResolveDefaultScalaNames(discovered);
 		if (discovered.Count > 0)
 			Log.Information($"Discovered {discovered.Count} Scala tools under {scalaDir}.");
+
+		(discoveredExtensions, discoveredGroups) =
+			MergePortalExtensions(NullIfEmpty(portalDir), discoveredExtensions, discoveredGroups);
 
 		LogDiscovered("microservice", discoveredServices);
 		LogDiscovered("portal extension", discoveredExtensions);
@@ -617,7 +681,8 @@ public class LocalStackInitCommand
 			services = ExcludeGroupMembers(selectedServices, selectedGroups, discoveredGroups),
 			extensions = ExcludeGroupMembers(selectedExtensions, selectedGroups, discoveredGroups),
 			groups = selectedGroups,
-			javaHome = javaHome,
+			toolchain = toolchain,
+			javaHome = toolchain?.java,
 			scalaJvmArgs = args.scalaJvmArgs ?? defaults.scalaJvmArgs,
 			includeWebRegistry = !args.noWebRegistry || !string.IsNullOrWhiteSpace(args.webRegistryDir),
 			webRegistryDir = NullIfEmpty(webRegistryDir),

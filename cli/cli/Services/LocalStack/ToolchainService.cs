@@ -727,20 +727,68 @@ public class ToolchainService
 	/// substitute <c>${java}</c>/<c>${maven}</c>/<c>${node}</c>/<c>${dotnet}</c> and build a <c>PATH</c> without
 	/// re-probing anything.
 	/// </summary>
-	public LocalStackToolchain ToManifestBlock()
+	public LocalStackToolchain ToManifestBlock() => ToManifestBlock(Manifest, _dir);
+
+	/// <inheritdoc cref="ToManifestBlock()"/>
+	public static LocalStackToolchain ToManifestBlock(ToolchainManifest manifest, string dir)
 	{
 		string HomeOf(string toolId) =>
-			Manifest.tools.TryGetValue(toolId, out var entry) ? entry?.home : null;
+			manifest != null && manifest.tools.TryGetValue(toolId, out var entry) ? entry?.home : null;
 
 		return new LocalStackToolchain
 		{
-			dir = _dir,
+			dir = dir,
 			java = HomeOf(ToolchainPins.Jdk),
 			maven = HomeOf(ToolchainPins.Maven),
 			dotnet = HomeOf(ToolchainPins.Dotnet),
 			node = HomeOf(ToolchainPins.Node)
 		};
 	}
+
+	/// <summary>
+	/// Reads whatever <c>beam local setup</c> installed into <paramref name="overrideDir"/> (or the default
+	/// location), as a manifest block — or null when no toolchain is there.
+	///
+	/// This is what lets <c>setup</c> run BEFORE <c>init</c>: setup records its installs in the toolchain
+	/// directory, and <c>init</c> then picks them up on its own. Nothing has to be typed twice, and the
+	/// <c>.beamable</c> workspace is not a prerequisite for installing a JDK.
+	///
+	/// Only a toolchain whose executables actually exist is returned — a stale record pointing at a deleted
+	/// directory must not be baked into a fresh manifest.
+	/// </summary>
+	public static LocalStackToolchain TryReadInstalled(string overrideDir = null)
+	{
+		try
+		{
+			var dir = ResolveDir(overrideDir);
+			var manifest = LoadManifest(Path.Combine(dir, ManifestFileName));
+			if (manifest.tools.Count == 0) return null;
+
+			var usable = manifest.tools
+				.Where(kv =>
+				{
+					var exe = ExecutablePath(kv.Key, kv.Value?.home);
+					return exe != null && File.Exists(exe);
+				})
+				.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+
+			if (usable.Count == 0) return null;
+
+			return ToManifestBlock(new ToolchainManifest { tools = usable }, dir);
+		}
+		catch
+		{
+			return null; // never let toolchain discovery break the caller
+		}
+	}
+
+	/// <summary>
+	/// The JDK 8 home <c>beam local setup</c> installed, or null. Used as the highest-priority source when
+	/// resolving <c>JAVA_HOME</c>, so the pinned JDK wins over whatever the machine happens to have — which is
+	/// the whole point of installing it.
+	/// </summary>
+	public static string TryReadInstalledJavaHome(string overrideDir = null) =>
+		TryReadInstalled(overrideDir)?.java;
 
 	/// <summary>Runs a process to completion, returning stdout+stderr combined.</summary>
 	private static string RunCapture(string exe, string arguments, out int exitCode, string workingDirectory)

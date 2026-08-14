@@ -6,11 +6,24 @@ Windows and Linux**.
 `beam local validate` is the check. `beam local setup` is the fix.
 
 ```bash
-beam local setup                     # install everything into ~/.beamable-toolchain
-beam local setup --toolchain-dir D:\beam-tools   # ...or wherever you want it
-beam local validate --with-aws       # confirm
-beam local up --build                # run the stack
+beam local setup                     # 1. install everything into ~/.beamable-toolchain
+beam local init                      # 2. write the manifest (adopts the toolchain automatically)
+beam local validate --with-aws       # 3. confirm
+beam local up --build                # 4. run the stack
 ```
+
+**Run `setup` before `init`.** Setup installs the JDK; init writes the manifest and picks that JDK up on its
+own. It used to be the other way round — `init` asked for a Java 8 home that only `setup` could produce, so on
+a fresh machine neither order worked. Init no longer asks about Java at all.
+
+`init` writes to `.beamable/local-stack.json`, creating the `.beamable` folder if it is not there (it asks
+first when interactive, and just creates it under `--quiet`). Pass `--config <path>` to put the manifest
+somewhere else.
+
+Setup needs **no `.beamable` workspace**: it finds the checkouts by walking up for the well-known folder names,
+so `scala-config`, `portal-config` and the AWS preflight all work before any manifest exists. Only the
+`manifest` step waits for `init`, and re-running setup afterwards is optional — init wires the toolchain in
+itself.
 
 ---
 
@@ -119,6 +132,10 @@ Two details that matter:
   service role rather than individual developers; a chained success is reported as
   `(via the services role)` because it is a materially different answer from a flat failure — it means the role
   is reachable and you do *not* need a trust-policy change.
+
+`beam local setup` prints a full AWS setup guide whenever an AWS check fails, and on demand with
+`beam local setup --aws-guide`. The guide is generated from *your* `awsglobal.conf`, so the profile name, role
+ARNs, secret id and bucket names in it are the ones this checkout actually uses.
 
 ### What an administrator may need to do
 

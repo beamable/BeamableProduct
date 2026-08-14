@@ -2,6 +2,7 @@ using CliWrap;
 using System.CommandLine;
 using System.Text;
 using Beamable.Server;
+using cli.Services.LocalStack;
 
 namespace cli;
 
@@ -45,6 +46,18 @@ public class JavaPathOption : Option<string>
 		    && TryValidateJavaHome(ConfigService.CustomJavaHome, requireJava8: false, out _))
 		{
 			javaHome = ConfigService.CustomJavaHome;
+			return true;
+		}
+
+		// The JDK that `beam local setup` installed. It is checked before every machine-level source on purpose:
+		// it is the PINNED one, and preferring a system JDK over it would defeat installing it at all. (On Apple
+		// Silicon the system JDK 8 is usually the x64 build running under Rosetta, while the toolchain's is a
+		// native aarch64 build.) This needs no .beamable workspace — the toolchain records itself in its own
+		// directory — which is what lets `setup` run before `init`.
+		var fromToolchain = ToolchainService.TryReadInstalledJavaHome();
+		if (!string.IsNullOrEmpty(fromToolchain) && TryValidateJavaHome(fromToolchain, requireJava8: false, out _))
+		{
+			javaHome = fromToolchain;
 			return true;
 		}
 

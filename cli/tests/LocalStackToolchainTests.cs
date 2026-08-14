@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using cli.Commands.LocalStack;
 using cli.Services.LocalStack;
 using NUnit.Framework;
 
@@ -288,6 +289,110 @@ public class LocalStackToolchainTests
 		{
 			Environment.SetEnvironmentVariable(ToolchainService.EnvVarToolchainDir, previous);
 		}
+	}
+
+	// ----------------------------------------------------------------------------------
+	// setup/init ordering
+	// ----------------------------------------------------------------------------------
+
+	[Test]
+	public void TheHomeDirectoryIsNeverTreatedAsAWorkspace()
+	{
+		// Workspace lookup walks up from the working directory, so a ~/.beamable makes EVERY command run outside a
+		// workspace resolve to the home folder — silently writing a manifest, config and logs there, and then
+		// picking that phantom workspace up on later runs from unrelated directories.
+		var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+		Assert.That(LocalStackCommand.IsHomeWorkspace(Path.Combine(home, ".beamable")), Is.True);
+		Assert.That(LocalStackCommand.IsHomeWorkspace(Path.Combine(home, ".beamable") + Path.DirectorySeparatorChar), Is.True);
+
+		// A real workspace under the home directory is still a real workspace.
+		Assert.That(LocalStackCommand.IsHomeWorkspace(Path.Combine(home, "repos", "portal", ".beamable")), Is.False);
+		Assert.That(LocalStackCommand.IsHomeWorkspace(Path.Combine(Root, "somewhere", ".beamable")), Is.False);
+	}
+
+	[Test]
+	public void RepoDiscoveryWalksUpFromTheWorkingDirectory()
+	{
+		// `setup` has to find the checkouts itself, because it is meant to run BEFORE any manifest exists.
+		var dir = Directory.CreateTempSubdirectory("beam-repo-discovery");
+		try
+		{
+			var api = Directory.CreateDirectory(Path.Combine(dir.FullName, LocalStackCommand.ApiRepoName)).FullName;
+			var nested = Directory.CreateDirectory(Path.Combine(dir.FullName, "a", "b")).FullName;
+
+			Assert.That(LocalStackCommand.FindRepoDir(nested, LocalStackCommand.ApiRepoName), Is.EqualTo(api));
+			Assert.That(LocalStackCommand.FindRepoDir(nested, "NoSuchRepo"), Is.Null);
+			// Bounded: it must not climb to the filesystem root looking for a name that is not there.
+			Assert.That(LocalStackCommand.FindRepoDir(nested, LocalStackCommand.ApiRepoName, maxLevels: 0), Is.Null);
+		}
+		finally
+		{
+			dir.Delete(recursive: true);
+		}
+	}
+
+	[Test]
+	public void InitTargetsADotBeamableFolderWhenThereIsNoWorkspace()
+	{
+		// A loose local-stack.json in the current directory is not a workspace as far as the rest of the CLI is
+		// concerned, so `init` targets `.beamable/` and creates it.
+		var expected = Path.GetFullPath(Path.Combine(
+			Directory.GetCurrentDirectory(), ".beamable", "local-stack.json"));
+
+		Assert.That(LocalStackCommand.ResolveManifestPathForInit(null, null), Is.EqualTo(expected));
+		// An explicit --config still wins outright.
+		var custom = Path.Combine(Root, "custom", "stack.json");
+		Assert.That(LocalStackCommand.ResolveManifestPathForInit(null, custom), Is.EqualTo(Path.GetFullPath(custom)));
+	}
+
+	[Test]
+	public void EnsureManifestDirectoryCreatesOnlyWhenAllowed()
+	{
+		var dir = Directory.CreateTempSubdirectory("beam-manifest-dir");
+		try
+		{
+			var manifest = Path.Combine(dir.FullName, ".beamable", "local-stack.json");
+
+			// Declined: nothing is created, and the caller can report why.
+			Assert.That(LocalStackCommand.EnsureManifestDirectory(manifest, _ => false, out var declined), Is.False);
+			Assert.That(Directory.Exists(declined), Is.False);
+
+			// Allowed: created.
+			Assert.That(LocalStackCommand.EnsureManifestDirectory(manifest, _ => true, out var created), Is.True);
+			Assert.That(Directory.Exists(created), Is.True);
+
+			// Already there: the confirm callback must not fire again for an existing workspace.
+			var asked = false;
+			Assert.That(LocalStackCommand.EnsureManifestDirectory(manifest, _ => { asked = true; return false; }, out _), Is.True);
+			Assert.That(asked, Is.False);
+		}
+		finally
+		{
+			dir.Delete(recursive: true);
+		}
+	}
+
+	[Test]
+	public void TheTemplateCarriesTheToolchainInitAdopted()
+	{
+		// init no longer PROMPTS for a Java home — `setup` installs it and init adopts what it recorded. So the
+		// toolchain has to survive from Options into the written manifest, javaHome included.
+		var toolchain = new LocalStackToolchain
+		{
+			dir = Path.Combine(Root, "tc"),
+			java = Path.Combine(Root, "tc", "jdk8", "home"),
+			maven = Path.Combine(Root, "tc", "maven"),
+		};
+
+		var config = LocalStackTemplate.Create(new LocalStackTemplate.Options
+		{
+			toolchain = toolchain,
+			javaHome = toolchain.java,
+		});
+
+		Assert.That(config.toolchain, Is.SameAs(toolchain));
+		Assert.That(config.javaHome, Is.EqualTo(toolchain.java));
 	}
 
 	[Test]

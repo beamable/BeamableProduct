@@ -1227,6 +1227,21 @@ public class App
 					{
 						shouldContinue = false;
 					}
+					else if (!quiet && !AnsiConsole.Profile.Capabilities.Interactive)
+					{
+						// There is no one to ask: the output is piped, or this is CI / a script / an agent. Prompting
+						// here threw "Failed to read input in non-interactive mode" and took the whole command with
+						// it — so the FIRST command run after any `.beamable` folder appeared would crash, which is
+						// a miserable way to discover that a consent prompt exists.
+						//
+						// Default to NOT collecting. Silence is not consent, and this is the one branch where the
+						// answer was never actually given. `--quiet` keeps its existing opt-in behaviour, and
+						// BEAM_CLI_AUTO_SETUP_TELEMETRY (handled above) is how a non-interactive run opts in.
+						shouldContinue = false;
+						Log.Verbose(
+							"Skipping the telemetry consent prompt: the console is not interactive. Defaulting to " +
+							"no telemetry — set the auto-setup telemetry env var to choose explicitly.");
+					}
 					else if(!quiet)// if we don't have the auto setup set we will check if we should auto accept or show the prompt
 					{
 						shouldContinue = AnsiConsole.Prompt(

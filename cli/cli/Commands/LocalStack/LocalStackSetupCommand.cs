@@ -25,6 +25,9 @@ public class LocalStackSetupCommandArgs : CommandArgs
 	public string apiDir;
 
 	public string portalDir;
+
+	/// <summary>Print the AWS setup guide even when every AWS check passed.</summary>
+	public bool awsGuide;
 }
 
 /// <summary>One line of the setup report.</summary>
@@ -112,6 +115,8 @@ public class LocalStackSetupCommand
 			(args, v) => args.apiDir = v);
 		AddOption(new Option<string>("--portal-dir", "Absolute path to the portal repo; only needed when the manifest does not record it yet"),
 			(args, v) => args.portalDir = v);
+		AddOption(new Option<bool>("--aws-guide", "Print the AWS setup guide at the end of the run (it is printed automatically whenever an AWS check fails)"),
+			(args, v) => args.awsGuide = v);
 	}
 
 	public override async Task<LocalStackSetupCommandResult> GetResult(LocalStackSetupCommandArgs args)
@@ -163,9 +168,20 @@ public class LocalStackSetupCommand
 
 		// The repo paths come from the manifest that `beam local init` already recorded; the options are for the
 		// case where setup runs before init.
-		var scalaDir = FirstUsable(args.scalaDir, config?.repos?.scalaDir);
-		var apiDir = FirstUsable(args.apiDir, config?.repos?.apiDir);
-		var portalDir = FirstUsable(args.portalDir, config?.repos?.portalDir);
+		// Repo paths: an explicit option wins, then the manifest (when `init` has already run), then a walk up the
+		// directory tree for the well-known checkout names — the same discovery `init` uses.
+		//
+		// That last fallback is what makes `setup` runnable BEFORE `init`. Requiring a manifest here created a
+		// deadlock on a fresh machine: `init` needed a Java 8 home that only `setup` could install, and `setup`
+		// needed a manifest that only `init` could write. Now either order works, and running `setup` twice
+		// (once before `init` for the toolchain, once after to wire the manifest) is never necessary — just harmless.
+		var startDir = args.ConfigService?.WorkingDirectory ?? Directory.GetCurrentDirectory();
+		var scalaDir = FirstUsable(args.scalaDir, config?.repos?.scalaDir,
+			LocalStackCommand.FindRepoDir(startDir, LocalStackCommand.ScalaRepoName));
+		var apiDir = FirstUsable(args.apiDir, config?.repos?.apiDir,
+			LocalStackCommand.FindRepoDir(startDir, LocalStackCommand.ApiRepoName));
+		var portalDir = FirstUsable(args.portalDir, config?.repos?.portalDir,
+			LocalStackCommand.FindRepoDir(startDir, LocalStackCommand.PortalRepoName));
 
 		if (Included(ToolchainPins.ScalaConfig))
 			result.steps.Add(await RenderScalaConfig(args, scalaDir));
@@ -184,6 +200,20 @@ public class LocalStackSetupCommand
 
 		result.allOk = result.steps.All(s => s.ok);
 		Render(result, args.dryRun);
+
+		// The guide goes AFTER the table, where it is read as "here is how to fix the red rows" rather than as
+		// boilerplate scrolling past before the result. Shown whenever an AWS row failed, or on request.
+		var awsFailed = result.steps.Any(st => st.name.StartsWith("aws", StringComparison.OrdinalIgnoreCase)
+		                                       && st.status is "failed" or "warning");
+		if (args.awsGuide || (!args.dryRun && awsFailed))
+		{
+			// Written straight to the console rather than through a Spectre panel: the guide is pre-wrapped
+			// prose with URLs and commands in it, and a panel re-wraps to its inner width — which split the
+			// install URL across two lines and broke sentences mid-word.
+			Console.WriteLine();
+			Console.WriteLine(new AwsPreflightService(args.awsRegion).BuildSetupGuide(scalaDir));
+		}
+
 		return result;
 	}
 
@@ -286,7 +316,9 @@ public class LocalStackSetupCommand
 				name = "manifest",
 				status = "skipped",
 				ok = true,
-				detail = $"no manifest at {manifestPath} yet — run `beam local init`, then re-run setup to wire the toolchain in"
+				// `init` reads the toolchain directly from the toolchain directory, so it wires itself in — there is
+				// no need to come back and run setup a second time.
+				detail = $"no manifest yet — run `beam local init` next; it picks up this toolchain automatically"
 			};
 		}
 
@@ -395,7 +427,9 @@ public class LocalStackSetupCommand
 			};
 		}
 
-		var host = config?.host;
+		// With no manifest yet, fall back to the reference host the template would write, so portal-config
+		// still points the portal at the local backend rather than being skipped.
+		var host = string.IsNullOrWhiteSpace(config?.host) ? new LocalStackTemplate.Options().host : config.host;
 
 		if (args.dryRun)
 		{
@@ -507,7 +541,14 @@ public class LocalStackSetupCommand
 		}
 
 		if (result.allOk)
-			Log.Information("Local stack setup complete. Next: `beam local validate`, then `beam local up --build`.");
+		{
+			var needsInit = result.steps.Any(st =>
+				st.name == "manifest" && st.status == "skipped" && (st.detail?.Contains("no manifest") ?? false));
+
+			Log.Information(needsInit
+				? "Local stack setup complete. Next: `beam local init` (it adopts this toolchain), then `beam local up --build`."
+				: "Local stack setup complete. Next: `beam local validate`, then `beam local up --build`.");
+		}
 		else
 			Log.Warning("Local stack setup finished with failures — see the table above. Each row names the action that fixes it.");
 	}

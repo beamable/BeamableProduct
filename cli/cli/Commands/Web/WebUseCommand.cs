@@ -29,6 +29,13 @@ public class WebUseCommandResults
 	public string version;
 	public List<WebUsedProject> updated = new List<WebUsedProject>();
 	public List<string> skipped = new List<string>();
+
+	/// <summary>
+	/// Projects whose pin was rewritten but whose install failed. These are NOT usable: the extension will not
+	/// build or start. Reported separately because a project appearing in <see cref="updated"/> used to be the
+	/// only signal, which made a run where every install failed look completely successful.
+	/// </summary>
+	public List<string> failed = new List<string>();
 }
 
 /// <summary>
@@ -127,12 +134,33 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 			directoriesToInstall.Add((name, directory));
 		}
 
+		var installFailures = new List<string>();
 		if (!args.SkipInstall)
 		{
-			RunInstalls(directoriesToInstall, version, registry);
+			installFailures = RunInstalls(directoriesToInstall, version, registry);
 		}
 
-		Log.Information($"Updated {results.updated.Count} project(s); skipped {results.skipped.Count}.");
+		if (installFailures.Count > 0)
+		{
+			// Previously this was only a per-project warning while the project was still reported as "updated",
+			// so a run whose installs ALL failed looked successful — and the extension then failed to start with
+			// no visible cause. Say it plainly instead.
+			results.failed = installFailures;
+
+			// Exit NON-ZERO. `beam local up` runs this step on every start (it is in the forced-web set, not
+			// gated on --build) and treats a non-zero build step as fatal — which is exactly the signal wanted
+			// here. Exiting 0 with a warning is what made a broken install invisible: the step "succeeded", the
+			// stack came up, and the extensions silently never started with no error anywhere to point at.
+			// Every other build step (mvn, npm install) already aborts the stack this way; this was the anomaly.
+			throw new CliException(
+				$"Repointed the pins, but the install FAILED in {installFailures.Count} project(s): " +
+				$"{string.Join(", ", installFailures)}.\n" +
+				"Those extensions cannot build or start. Re-run with --logs v to see npm's output, or use " +
+				"--skip-install to rewrite the pins without installing.");
+		}
+
+		Log.Information($"Updated {results.updated.Count} project(s); skipped {results.skipped.Count}" +
+			(installFailures.Count > 0 ? $"; install failed in {installFailures.Count}." : "."));
 		if (results.updated.Count > 0)
 		{
 			Log.Warning("These are tracked files. Before committing, run: " +
@@ -172,11 +200,12 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 	/// Installs in each updated project, bounded by processor count. Each has its own node_modules so the
 	/// installs are independent; only npm's cache is shared, and npm locks that itself.
 	/// </summary>
-	private static void RunInstalls(List<(string name, string directory)> directories, string version, string registry)
+	private static List<string> RunInstalls(List<(string name, string directory)> directories, string version, string registry)
 	{
+		var failures = new System.Collections.Concurrent.ConcurrentBag<string>();
 		if (directories.Count == 0)
 		{
-			return;
+			return new List<string>();
 		}
 
 		Log.Information($"Installing {WebLocalRegistryService.ToolkitPackage}@{version} in {directories.Count} project(s) from [{registry}]");
@@ -194,14 +223,18 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 					{
 						// Best-effort, as in update-toolkit: package.json is the source of truth and the run
 						// flow installs again before building, so a failed install only warns.
+						failures.Add(target.name);
 						Log.Warning($"Repointed [{target.name}], but installing {WebLocalRegistryService.ToolkitPackage}@{version} " +
 							$"failed there. Run it manually to resolve packages. Errors: \n{error}");
 					}
 				}
 				catch (Exception e)
 				{
+					failures.Add(target.name);
 					Log.Warning($"Repointed [{target.name}], but the install could not be run: {e.Message}");
 				}
 			});
+
+		return failures.ToList();
 	}
 }

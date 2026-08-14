@@ -91,6 +91,13 @@ public static class LocalStackTemplate
 		public string javaHome;
 
 		/// <summary>
+		/// The toolchain <c>beam local setup</c> installed, adopted by <c>init</c> rather than prompted for. Null
+		/// when setup has not run yet, in which case the manifest carries no toolchain and every command token
+		/// falls back to the bare name resolved through PATH.
+		/// </summary>
+		public LocalStackToolchain toolchain;
+
+		/// <summary>
 		/// JVM flags every Scala service is launched with. Defaults to <see cref="DefaultScalaJvmArgs"/> — a heap
 		/// cap, which matters because JDK 8 defaults <c>-Xmx</c> to a QUARTER of physical RAM per JVM (≈32 GB each
 		/// on a 128 GB box). Launch ~18 of those and they cannot reserve address space: "Error occurred during
@@ -123,6 +130,103 @@ public static class LocalStackTemplate
 		/// <see cref="includeWebRegistry"/> is set; empty writes an <c>&lt;EDIT: ...&gt;</c> placeholder.
 		/// </summary>
 		public string webRegistryDir;
+	}
+
+	/// <summary>
+	/// Finds the portal extensions in a portal checkout by scanning for <c>package.json</c> files whose
+	/// <c>beamable.portalExtension</c> flag is set, returning their package names and the service groups each
+	/// declares.
+	///
+	/// This exists because the beamo manifest only covers the workspace the command is RUN in. Running
+	/// <c>beam local init</c> anywhere other than the portal repo therefore discovered nothing, and the extension
+	/// picker came up empty — which looks exactly like "this workspace has no extensions" rather than "you are
+	/// standing in the wrong folder". Scanning the checkout that was just pointed at with <c>--portal-dir</c> is
+	/// both what the user meant and independent of where they happen to be.
+	/// </summary>
+	public static (List<string> extensions, Dictionary<string, string[]> groups) DiscoverPortalExtensions(string portalDir)
+	{
+		var extensions = new List<string>();
+		var groups = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+		if (string.IsNullOrWhiteSpace(portalDir)
+		    || portalDir.Contains(LocalStackConfigIO.EditPlaceholder, StringComparison.Ordinal)
+		    || !Directory.Exists(portalDir))
+		{
+			return (extensions, new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase));
+		}
+
+		// Extensions live under bundles/, but scan the whole checkout so a non-standard layout still works.
+		foreach (var packageJson in EnumeratePackageJsonFiles(portalDir))
+		{
+			try
+			{
+				var json = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(packageJson));
+				var beamable = json["beamable"];
+				if ((bool?)beamable?["portalExtension"] != true) continue;
+
+				var name = (string)json["name"];
+				if (string.IsNullOrWhiteSpace(name)) continue;
+
+				extensions.Add(name);
+				foreach (var group in beamable["serviceGroups"] ?? Enumerable.Empty<Newtonsoft.Json.Linq.JToken>())
+				{
+					var groupName = (string)group;
+					if (string.IsNullOrWhiteSpace(groupName)) continue;
+
+					if (!groups.TryGetValue(groupName, out var members))
+						groups[groupName] = members = new List<string>();
+
+					members.Add(name);
+				}
+			}
+			catch
+			{
+				// A malformed package.json is that extension's problem, not a reason to discover nothing.
+			}
+		}
+
+		extensions.Sort(StringComparer.OrdinalIgnoreCase);
+		return (extensions, groups.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray(), StringComparer.OrdinalIgnoreCase));
+	}
+
+	/// <summary>
+	/// Walks a checkout for <c>package.json</c> files, skipping the directories that would make this
+	/// pathologically slow and can only contain false positives (<c>node_modules</c>, build output, VCS data).
+	/// </summary>
+	private static IEnumerable<string> EnumeratePackageJsonFiles(string root)
+	{
+		var skip = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+		{
+			"node_modules", "dist", "build", ".git", ".beamable", "bin", "obj", "target", ".vite"
+		};
+
+		var stack = new Stack<string>();
+		stack.Push(root);
+
+		while (stack.Count > 0)
+		{
+			var dir = stack.Pop();
+
+			string[] files;
+			string[] subdirectories;
+			try
+			{
+				files = Directory.GetFiles(dir, "package.json");
+				subdirectories = Directory.GetDirectories(dir);
+			}
+			catch
+			{
+				continue; // unreadable directory — skip it rather than abort the scan
+			}
+
+			foreach (var file in files) yield return file;
+
+			foreach (var subdirectory in subdirectories)
+			{
+				var name = Path.GetFileName(subdirectory);
+				if (!skip.Contains(name)) stack.Push(subdirectory);
+			}
+		}
 	}
 
 	/// <summary>A discovered Scala <c>tools/*</c> service: its folder name, resolved main class, and metadata.</summary>
@@ -342,7 +446,10 @@ public static class LocalStackTemplate
 		var services = o.services ?? new List<string>();
 		var extensions = o.extensions ?? new List<string>();
 
-		var config = new LocalStackConfig { host = o.host, portalUrl = o.portalUrl, javaHome = o.javaHome };
+		var config = new LocalStackConfig
+		{
+			host = o.host, portalUrl = o.portalUrl, javaHome = o.javaHome, toolchain = o.toolchain
+		};
 
 		// Documentation-only metadata, recorded so the generated agent skill can name the repos this manifest
 		// spans. Uses the same already-placeholdered values the steps below get, so the two can never disagree.
@@ -500,6 +607,10 @@ public static class LocalStackTemplate
 				// the reactor build itself, and the fact that Maven picks its JDK from JAVA_HOME/PATH, so an
 				// unpinned mvn can compile Scala 2.11 sources under a JDK 17/21 it was never meant to see.
 				command = MavenToken,
+				// The modules this reactor build produces output for. `up` runs the step without --build when any
+				// of them has never been compiled, so a first `beam local up` on a fresh clone builds itself
+				// instead of launching JVMs against empty target/classes.
+				scalaModules = new List<string>(modules),
 				// `clean` so a shared-module API change can't leave cross-module classes skewed (NoSuchMethodError).
 				arguments = $"-q -pl {string.Join(",", modules)} -am clean package -DskipTests",
 				// Scala runs under Java 8; ${java} is substituted to that JAVA_HOME by `up` (as for the launch shells).

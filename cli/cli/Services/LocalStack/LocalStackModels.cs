@@ -156,6 +156,20 @@ public class LocalStackStep
 	public string requiredOutput;
 
 	/// <summary>
+	/// For the Scala reactor build step: the module directories it produces output for, relative to
+	/// <see cref="workingDirectory"/> (e.g. <c>core</c>, <c>tools/auth</c>).
+	///
+	/// <c>beam local up</c> runs this build WITHOUT <c>--build</c> when any listed module has never been compiled.
+	/// A plain first `up` on a fresh clone otherwise launched JVMs against modules with no classes, which does not
+	/// fail cleanly — the service starts, half the stack proxies through it, and the result is a "malfunctioning"
+	/// backend rather than an obvious build error. A single <see cref="requiredOutput"/> cannot express this
+	/// because one step builds ~18 modules.
+	///
+	/// Null on manifests written before this existed, which simply keeps the old behaviour.
+	/// </summary>
+	public List<string> scalaModules;
+
+	/// <summary>
 	/// Optional parallel-group label. Consecutive steps that share the same non-empty group are
 	/// launched together and their readiness gates awaited concurrently (e.g. all Scala services),
 	/// instead of one-at-a-time. Ordering between different groups (and ungrouped steps) is preserved.
@@ -444,6 +458,12 @@ public static class LocalStackConfigIO
 			return false;
 		}
 
+		// A Scala reactor step is "missing output" when ANY of its modules has never been compiled.
+		if (FirstUnbuiltScalaModule(step, config) != null)
+		{
+			return true;
+		}
+
 		var path = ResolveRequiredOutput(step, config);
 		if (path == null)
 		{
@@ -451,5 +471,81 @@ public static class LocalStackConfigIO
 		}
 
 		return !File.Exists(path) && !Directory.Exists(path);
+	}
+
+	/// <summary>
+	/// The module list from a Maven <c>-pl a,b,c</c> argument, so a manifest written before
+	/// <see cref="LocalStackStep.scalaModules"/> existed still gets the never-built check.
+	/// </summary>
+	private static List<string> ScalaModulesFromMavenArguments(LocalStackStep step)
+	{
+		var arguments = step?.arguments;
+		if (string.IsNullOrWhiteSpace(arguments)) return null;
+
+		var tokens = arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+		for (var i = 0; i < tokens.Length - 1; i++)
+		{
+			if (!tokens[i].Equals("-pl", StringComparison.Ordinal)) continue;
+
+			return tokens[i + 1]
+				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+				.ToList();
+		}
+
+		return null;
+	}
+
+	/// <summary>
+	/// The first module in <see cref="LocalStackStep.scalaModules"/> with no compiled output, or null when they
+	/// have all been built at least once.
+	///
+	/// "Built" is deliberately the SAME predicate the launch script uses — a <c>*.class</c> under
+	/// <c>target/classes</c>, or a built jar — so the check and the thing it guards can never disagree. Testing
+	/// for the <c>target/classes</c> directory alone would not do: Maven creates it even for a build that
+	/// produced nothing.
+	/// </summary>
+	public static string FirstUnbuiltScalaModule(LocalStackStep step, LocalStackConfig config)
+	{
+		// Fall back to the modules named in the mvn `-pl` list. Manifests written before `scalaModules` existed
+		// still carry them there, so an existing stack gets this check without having to be regenerated.
+		var modules = step?.scalaModules != null && step.scalaModules.Count > 0
+			? step.scalaModules
+			: ScalaModulesFromMavenArguments(step);
+
+		if (modules == null || modules.Count == 0) return null;
+
+		var workDir = Substitute(step.workingDirectory, config);
+		if (string.IsNullOrWhiteSpace(workDir)
+		    || workDir.Contains(EditPlaceholder, StringComparison.Ordinal)
+		    || !Directory.Exists(workDir))
+		{
+			return null; // the repo path was never filled in — "not built" would be a guess
+		}
+
+		foreach (var module in modules)
+		{
+			if (string.IsNullOrWhiteSpace(module)) continue;
+
+			try
+			{
+				var target = Path.Combine(workDir, module, "target");
+				if (!Directory.Exists(target)) return module;
+
+				var classes = Path.Combine(target, "classes");
+				var hasClasses = Directory.Exists(classes)
+				                 && Directory.EnumerateFiles(classes, "*.class", SearchOption.AllDirectories).Any();
+
+				var hasJar = Directory.EnumerateFiles(target, "*.jar", SearchOption.TopDirectoryOnly)
+					.Any(j => !Path.GetFileName(j).Contains("sources", StringComparison.OrdinalIgnoreCase));
+
+				if (!hasClasses && !hasJar) return module;
+			}
+			catch
+			{
+				// unreadable module directory — do not claim it is unbuilt
+			}
+		}
+
+		return null;
 	}
 }

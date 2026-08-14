@@ -1,5 +1,6 @@
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
+using System.Text;
 
 namespace cli.Services.LocalStack;
 
@@ -313,6 +314,100 @@ public class AwsPreflightService
 		}
 
 		return result;
+	}
+
+
+	/// <summary>
+	/// A setup guide for the AWS access the local stack needs, grounded in the values this checkout actually
+	/// uses: the profile name the backend reads, and the role ARNs / secret id / buckets from the rendered
+	/// <c>awsglobal.conf</c> when it is available.
+	///
+	/// Printed by <c>beam local setup</c> when an AWS check fails, because that is the moment someone needs it —
+	/// and because the failure it explains (no credentials) produces a stack that looks completely healthy and
+	/// simply cannot log in.
+	/// </summary>
+	public string BuildSetupGuide(string scalaDir)
+	{
+		var confPath = scalaDir == null
+			? null
+			: Path.Combine(scalaDir, "core", "src", "main", "resources", "awsglobal.conf");
+
+		var haveConf = confPath != null && File.Exists(confPath);
+		string Conf(string key) => haveConf ? ScalaLocalVarsService.ReadConfValue(confPath, key) : null;
+
+		// The backend reads `aws.default.profile.name`, which is normally absent — and then defaults to "default".
+		var profile = Conf("aws.default.profile.name") ?? "default";
+		var secretId = Conf(JwtSecretKey) ?? "beamable.jwt.signingKey.local";
+
+		var roles = RoleKeys
+			.Select(r => (r.label, arn: Conf(r.key)))
+			.Where(r => !string.IsNullOrWhiteSpace(r.arn))
+			.ToList();
+
+		var buckets = BucketKeys
+			.Select(b => Conf(b.key))
+			.Where(b => !string.IsNullOrWhiteSpace(b))
+			.ToList();
+
+		var text = new StringBuilder();
+		text.AppendLine("AWS setup for the local stack");
+		text.AppendLine("=============================");
+		text.AppendLine();
+		text.AppendLine("Real AWS access is required - there is no LocalStack in this stack. The Scala");
+		text.AppendLine("`auth` service reads its JWT signing key from AWS Secrets Manager at runtime,");
+		text.AppendLine("so without working credentials every service starts healthy and no one can");
+		text.AppendLine("log in.");
+		text.AppendLine();
+		text.AppendLine("1. Install the AWS CLI v2");
+		text.AppendLine("   https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html");
+		text.AppendLine();
+		text.AppendLine($"2. Configure the profile the backend reads: [{profile}]");
+		text.AppendLine($"     aws configure --profile {profile}          # region: {DefaultRegion}");
+		text.AppendLine("   Long-lived IAM user keys (AKIA...) are simplest - they do not expire.");
+		text.AppendLine("   SSO works too (`aws sso login`), but you must refresh it when it lapses.");
+		text.AppendLine("   The name comes from `aws.default.profile.name` in awsglobal.conf;");
+		text.AppendLine("   unset means \"default\".");
+		text.AppendLine();
+		text.AppendLine("3. Get permission to assume the platform roles. This is the step a new");
+		text.AppendLine("   developer usually needs an AWS administrator for: your IAM principal has");
+		text.AppendLine("   to be in each role's trust policy (sts:AssumeRole).");
+		if (roles.Count > 0)
+		{
+			foreach (var (label, arn) in roles) text.AppendLine($"     - {arn}   ({label})");
+		}
+		else
+		{
+			text.AppendLine("     (run `beam local setup --only scala-config` first - the ARNs come from");
+			text.AppendLine("      the generated awsglobal.conf, which is not present yet)");
+		}
+
+		text.AppendLine();
+		text.AppendLine("4. The services role also needs secretsmanager:GetSecretValue on");
+		text.AppendLine($"   `{secretId}` in {DefaultRegion}. If the secret does not exist, an");
+		text.AppendLine("   administrator has to create it - without it `auth` cannot mint tokens and");
+		text.AppendLine("   no login to the local stack will succeed.");
+		if (buckets.Count > 0)
+		{
+			text.AppendLine();
+			text.AppendLine("5. Feature-specific (non-blocking): read access to these buckets -");
+			text.AppendLine($"   {string.Join(", ", buckets)}");
+		}
+
+		text.AppendLine();
+		text.AppendLine("Verify:  beam local validate --with-aws");
+		text.AppendLine();
+		text.AppendLine("Gotchas");
+		text.AppendLine("-------");
+		text.AppendLine("* AWS_PROFILE overrides the profile above. If it names MFA session");
+		text.AppendLine("  credentials (ASIA...), they expire and every call fails with `ExpiredToken`");
+		text.AppendLine("  - refresh them, or unset AWS_PROFILE to fall back to the long-lived keys.");
+		text.AppendLine("* Never set AWS_PROFILE to an empty string: the CLI then looks for a profile");
+		text.AppendLine("  literally named \"\" and fails with `The config profile () could not be found`.");
+		text.AppendLine("* A role may be reachable only by CHAINING through the services role rather");
+		text.AppendLine("  than directly. The preflight shows that as \"(via the services role)\" - that");
+		text.AppendLine("  is fine, not a misconfiguration.");
+
+		return text.ToString();
 	}
 
 	/// <summary>

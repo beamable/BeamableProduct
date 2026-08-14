@@ -229,6 +229,19 @@ public class LocalStackUpCommand
 			? new HashSet<LocalStackStep>()
 			: config.steps.Where(s => s.enabled && LocalStackConfigIO.BuildOutputMissing(s, config)).ToHashSet();
 
+		// Say WHY a build is being run that was not asked for. "Building the Scala reactor" out of nowhere on a
+		// plain `up` is confusing unless it names the module that has never been compiled.
+		foreach (var step in autoBuild)
+		{
+			var unbuilt = LocalStackConfigIO.FirstUnbuiltScalaModule(step, config);
+			if (unbuilt != null)
+			{
+				Log.Information(
+					$"[{step.name}] running without --build: '{unbuilt}' has never been compiled. " +
+					"Building the reactor once so the services have classes to run.");
+			}
+		}
+
 		// The web-registry steps are build steps with no `requiredOutput`, so the self-healing set above can
 		// never reach them. They therefore run by DEFAULT: skipping them left the portal loading the PUBLISHED
 		// sdk from unpkg instead of the local build, on an `up` that reported success. --no-web-registry opts out.
