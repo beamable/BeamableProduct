@@ -96,10 +96,10 @@ namespace Beamable.Server
 				[nameof(IFederatedLogin<DummyThirdParty>.Authenticate)] = "authenticate",
  				// Message-rail methods route on the literal method name; the backend worker POSTs
 				// {federationId}/SendMessageBatch (see BeamableAPI MessageRailFederation).
-				[nameof(IMessageRailFederation<DummyThirdParty>.SendMessage)] = "SendMessage",
-				[nameof(IMessageRailFederation<DummyThirdParty>.SendMessageBatch)] = "SendMessageBatch",
-				[nameof(IMessageRailFederation<DummyThirdParty>.RegisterUserWithMessageRail)] = "RegisterUserWithMessageRail",
-				[nameof(IMessageRailFederation<DummyThirdParty>.UnregisterUserWithMessageRail)] = "UnregisterUserWithMessageRail",
+				[nameof(IFederatedMessageRail<DummyThirdParty>.SendMessage)] = "SendMessage",
+				[nameof(IFederatedMessageRail<DummyThirdParty>.SendMessageBatch)] = "SendMessageBatch",
+				[nameof(IFederatedMessageRail<DummyThirdParty>.RegisterUserWithMessageRail)] = "RegisterUserWithMessageRail",
+				[nameof(IFederatedMessageRail<DummyThirdParty>.UnregisterUserWithMessageRail)] = "UnregisterUserWithMessageRail",
 			};
 
 			foreach (var interfaceType in interfaces)

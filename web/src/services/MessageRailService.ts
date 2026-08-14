@@ -8,7 +8,7 @@ import {
 /**
  * Identifies which message rail (outreach channel) a player is opting in to or out of.
  * @remarks
- * A rail is backed by a customer microservice implementing `IMessageRailFederation`, so the
+ * A rail is backed by a customer microservice implementing `IFederatedMessageRail`, so the
  * valid ids are whatever the realm has deployed. `'push'`, `'email'`, and `'ingame'` are the
  * built-in rails; any other deployed federation id is accepted.
  */
