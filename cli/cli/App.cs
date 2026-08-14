@@ -571,6 +571,7 @@ public class App
 		Commands.AddSubCommand<StopGrafanaCommand, StopGrafanaCommandArgs, GrafanaCommand>();
 
 		Commands.AddRootCommand<LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackSetupCommand, LocalStackSetupCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackInitCommand, LocalStackInitCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackUpCommand, LocalStackUpCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackPsCommand, LocalStackPsCommandArgs, LocalStackCommand>();

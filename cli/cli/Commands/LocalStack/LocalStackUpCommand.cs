@@ -410,7 +410,9 @@ public class LocalStackUpCommand
 				entry.stdoutLog = l.StdoutLog;
 				entry.stderrLog = l.StderrLog;
 				entry.workingDirectory = l.WorkingDirectory;
-				entry.command = step.command;
+				// Substituted, like the stop arguments below: `beam local stop` runs this command directly,
+					// so an unresolved ${...} token would reach the shell verbatim.
+					entry.command = LocalStackConfigIO.Substitute(step.command, config);
 				entry.stopArguments = LocalStackConfigIO.Substitute(step.stopArguments, config);
  				entry.purgeStopArguments = LocalStackConfigIO.Substitute(step.purgeStopArguments, config);
 				entry.waitForExit = step.waitForExit;
@@ -982,6 +984,39 @@ public class LocalStackUpCommand
 		}
 	}
 
+	/// <summary>
+	/// Prepends the manifest's toolchain <c>bin</c> directories to the child's <c>PATH</c> and points
+	/// <c>JAVA_HOME</c> at the resolved Java 8 home. No-op when the manifest records no toolchain, so a stack
+	/// that was never <c>beam local setup</c>-provisioned keeps resolving everything through the inherited
+	/// environment exactly as before.
+	///
+	/// <c>JAVA_HOME</c> is set for every step, not just the Maven ones: the inherited value is frequently a
+	/// JDK 17/21 (an IDE bundle, or a newer default install), and Maven prefers <c>JAVA_HOME</c> over
+	/// <c>PATH</c> — so leaving it alone would let the wrong JDK win despite the PATH prefix.
+	/// </summary>
+	private static void ApplyToolchainEnvironment(ProcessStartInfo psi, LocalStackConfig config)
+	{
+		var prefix = LocalStackConfigIO.ToolchainPathPrefix(config).ToList();
+		if (prefix.Count > 0)
+		{
+			// psi.Environment is seeded from the current process, so read the inherited PATH from it (the child
+			// would otherwise lose docker, git and everything else the steps rely on).
+			psi.Environment.TryGetValue("PATH", out var inherited);
+			inherited ??= Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+
+			var combined = string.Join(Path.PathSeparator.ToString(), prefix);
+			psi.Environment["PATH"] = string.IsNullOrEmpty(inherited)
+				? combined
+				: combined + Path.PathSeparator + inherited;
+		}
+
+		if (!string.IsNullOrWhiteSpace(config?.javaHome)
+		    && !config.javaHome.Contains(LocalStackConfigIO.EditPlaceholder, StringComparison.Ordinal))
+		{
+			psi.Environment["JAVA_HOME"] = config.javaHome;
+		}
+	}
+
 	private static string ResolveJavaHome(CommandArgs args, LocalStackConfig config)
 	{
 		// 1. Explicit --java-path CLI option (user wants this exact path for this invocation)
@@ -995,7 +1030,12 @@ public class LocalStackUpCommand
 		// 3. Manifest-pinned path (stored by beam local init — the user's chosen version)
 		if (!string.IsNullOrWhiteSpace(config.javaHome)) return config.javaHome;
 
-		// 4. Auto-detection as last resort (JAVA_HOME, macOS java_home, common install dirs)
+		// 4. The toolchain `beam local setup` provisioned. `setup` also mirrors this into javaHome above, so this
+		//    only carries a manifest whose javaHome was hand-cleared — but it must win over auto-detection, or a
+		//    system JDK 8 would silently be preferred to the pinned one.
+		if (!string.IsNullOrWhiteSpace(config.toolchain?.java)) return config.toolchain.java;
+
+		// 5. Auto-detection as last resort (JAVA_HOME, macOS java_home, common install dirs)
 		if (JavaPathOption.TryGetJavaHome(out var home, out _)) return home;
 		return null; // Scala launch shell will fail clearly if a JDK is needed and missing
 	}
@@ -1101,11 +1141,14 @@ public class LocalStackUpCommand
 	{
 		var workDir = LocalStackConfigIO.Substitute(step.workingDirectory, config);
 		var argsText = LocalStackConfigIO.Substitute(step.arguments, config) ?? string.Empty;
+		// The command carries tokens too (${maven}/${npm}/${dotnet}), which resolve to the toolchain's pinned
+		// executables — or back to the bare command name when no toolchain was provisioned.
+		var command = LocalStackConfigIO.Substitute(step.command, config);
 
 		// `--build` always does a CLEAN Scala build: an incremental `mvn package` can leave cross-module classes
 		// skewed (the NoSuchMethodError class of failure). Inject `clean` for manifests generated before this
 		// whose mvn build step only says `package`; new manifests already include it.
-		if (step.build && IsMvn(step.command) && !argsText.Contains("clean"))
+		if (step.build && IsMvn(command) && !argsText.Contains("clean"))
 			argsText = InsertCleanBeforeMavenGoal(argsText);
 
 		// beam sub-commands need to run inside a .beamable workspace to see the local service manifest.
@@ -1131,7 +1174,7 @@ public class LocalStackUpCommand
 			: step.shell ? "shell"
 			: "process";
 
-		var inner = BuildInnerScript(step, beamExe, beamLeading, argsText, workDir);
+		var inner = BuildInnerScript(step, beamExe, beamLeading, argsText, workDir, command);
 		var launcher = WriteLauncher(step, logsDir, safe, inner, argsText);
 		var psi = new ProcessStartInfo { UseShellExecute = false, CreateNoWindow = true };
 
@@ -1166,6 +1209,14 @@ public class LocalStackUpCommand
 
 		if (!string.IsNullOrEmpty(workDir) && Directory.Exists(workDir))
 			psi.WorkingDirectory = workDir;
+
+		// Put the toolchain ahead of the inherited PATH, and pin JAVA_HOME to it, BEFORE the step's own
+		// environment is applied (so an explicit value in the manifest still wins). Substituting the command is
+		// not enough on its own: every one of these tools execs another one — npm execs node, mvn execs java,
+		// dotnet resolves SDKs — and those nested lookups go through PATH/JAVA_HOME. Without this a
+		// toolchain-pinned `mvn` still compiles the Scala reactor with whatever JDK happens to be first on the
+		// developer's PATH, which is the drift the toolchain exists to remove.
+		ApplyToolchainEnvironment(psi, config);
 
 		foreach (var (k, v) in step.environment)
 			psi.Environment[k] = LocalStackConfigIO.Substitute(v, config);
@@ -1290,7 +1341,7 @@ public class LocalStackUpCommand
 	/// <summary>Builds the shell body written to the per-step launcher file (its last command is exec'd so the
 	/// tracked pid becomes the service).</summary>
 	private static string BuildInnerScript(LocalStackStep step, string beamExe, string[] beamLeading, string argsText,
-		string workDir)
+		string workDir, string command)
 	{
 		if (step.shell)
 			return argsText; // already a shell script; the Scala launcher ends with its own `exec`.
@@ -1299,7 +1350,7 @@ public class LocalStackUpCommand
 		if (step.beam)
 			parts = new[] { beamExe }.Concat(beamLeading).Concat(SplitArgs(argsText));
 		else
-			parts = new[] { ResolveExecutable(step.command, workDir) }.Concat(SplitArgs(argsText));
+			parts = new[] { ResolveExecutable(command, workDir) }.Concat(SplitArgs(argsText));
 
 		if (OperatingSystem.IsWindows())
 			return string.Join(" ", parts.Select(WinQuote));
@@ -1313,9 +1364,30 @@ public class LocalStackUpCommand
 		return string.IsNullOrEmpty(cleaned) ? "step" : cleaned;
 	}
 
-	public static bool IsMvn(string command) =>
-		command != null && (command.Equals("mvn", StringComparison.OrdinalIgnoreCase)
-		                    || command.Equals("mvn.cmd", StringComparison.OrdinalIgnoreCase));
+	/// <summary>
+	/// True when a step's (already substituted) command is Maven. Matches the file name rather than the whole
+	/// string, because a toolchain-provisioned <c>${maven}</c> substitutes to an absolute path — comparing the
+	/// full value would silently stop recognising the Scala build step and drop the injected <c>clean</c>.
+	/// </summary>
+	public static bool IsMvn(string command)
+	{
+		if (string.IsNullOrWhiteSpace(command)) return false;
+
+		string name;
+		try
+		{
+			name = Path.GetFileName(command.Trim().Trim('"'));
+		}
+		catch
+		{
+			name = command;
+		}
+
+		return name.Equals("mvn", StringComparison.OrdinalIgnoreCase)
+		       || name.Equals("mvn.cmd", StringComparison.OrdinalIgnoreCase)
+		       // An unsubstituted token still means "this is the Maven step".
+		       || command.Contains(LocalStackTemplate.MavenToken, StringComparison.Ordinal);
+	}
 
 	/// <summary>Inserts a <c>clean</c> goal before the first build phase in an mvn argument string. Maven runs
 	/// goals in command-line order, so <c>clean</c> must precede <c>package</c>/<c>install</c>/etc.</summary>

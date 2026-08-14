@@ -33,6 +33,16 @@ public class LocalStackConfig
 	public string javaHome;
 
 	/// <summary>
+	/// The pinned toolchain <c>beam local setup</c> provisioned, if any: private installs of JDK 8, Maven, the
+	/// .NET SDK and Node that the steps below resolve their commands from instead of <c>PATH</c>.
+	///
+	/// Null on a manifest that predates <c>setup</c> (and omitted from the JSON when null), in which case every
+	/// token falls back to the bare command name and the stack behaves exactly as it did before — so an existing
+	/// manifest keeps working untouched.
+	/// </summary>
+	public LocalStackToolchain toolchain;
+
+	/// <summary>
 	/// How often (seconds) an attached <c>beam local up</c> re-checks that the containers its
 	/// <c>docker compose up</c> steps started are still running. 0 disables the check.
 	///
@@ -85,6 +95,33 @@ public class LocalStackRepos
 	/// <summary>The <c>BeamableProduct</c> checkout holding the web packages, derived from
 	/// <see cref="webRegistryDir"/>. Null when the web-registry steps are not part of this manifest.</summary>
 	public string productDir;
+}
+
+/// <summary>
+/// The private, pinned toolchain a manifest runs against, written by <c>beam local setup</c>. Each value is a
+/// tool <em>home</em> (the directory whose <c>bin/</c> holds the executables), matching
+/// <see cref="LocalStackConfig.javaHome"/>'s shape — <see cref="LocalStackConfigIO"/> derives the individual
+/// executable paths and the <c>PATH</c> prefix from these.
+///
+/// Any value may be null (that tool was skipped, or an existing system install was adopted), in which case the
+/// corresponding token falls back to the bare command name and resolves via <c>PATH</c> as before.
+/// </summary>
+public class LocalStackToolchain
+{
+	/// <summary>The toolchain directory these homes live under; recorded so <c>local validate</c> can name it.</summary>
+	public string dir;
+
+	/// <summary>JDK 8 home. Mirrored into <see cref="LocalStackConfig.javaHome"/>, which is what <c>${java}</c> reads.</summary>
+	public string java;
+
+	/// <summary>Maven home — <c>${maven}</c> resolves to its <c>bin/mvn</c>.</summary>
+	public string maven;
+
+	/// <summary>.NET SDK install dir — <c>${dotnet}</c> resolves to the <c>dotnet</c> executable at its root.</summary>
+	public string dotnet;
+
+	/// <summary>Node home — <c>${node}</c> and <c>${npm}</c> resolve to its <c>node</c> / <c>npm</c>.</summary>
+	public string node;
 }
 
 /// <summary>
@@ -259,14 +296,109 @@ public static class LocalStackConfigIO
 		File.WriteAllText(path, JsonConvert.SerializeObject(config, Settings));
 	}
 
-	/// <summary>Replaces <c>${host}</c> / <c>${portalUrl}</c> / <c>${java}</c> tokens in a value.</summary>
+	/// <summary>
+	/// Replaces the manifest tokens in a value: <c>${host}</c>, <c>${portalUrl}</c>, <c>${java}</c> (a JAVA_HOME
+	/// <em>directory</em>) and the toolchain command tokens <c>${maven}</c>, <c>${npm}</c>, <c>${node}</c>,
+	/// <c>${dotnet}</c> (absolute <em>executables</em>).
+	///
+	/// The command tokens fall back to the bare command name when no toolchain is recorded, so a manifest written
+	/// with them still runs on a machine where <c>beam local setup</c> was never used — it just resolves through
+	/// <c>PATH</c> as it always did.
+	/// </summary>
 	public static string Substitute(string value, LocalStackConfig config)
 	{
 		if (string.IsNullOrEmpty(value)) return value;
 		return value
 			.Replace("${host}", config.host ?? string.Empty)
 			.Replace("${portalUrl}", config.portalUrl ?? string.Empty)
-			.Replace("${java}", config.javaHome ?? string.Empty);
+			.Replace("${java}", config.javaHome ?? string.Empty)
+			.Replace("${maven}", MavenCommand(config))
+			.Replace("${npm}", NpmCommand(config))
+			.Replace("${node}", NodeCommand(config))
+			.Replace("${dotnet}", DotnetCommand(config));
+	}
+
+	/// <summary>The <c>mvn</c> to invoke: the toolchain's when there is one, otherwise the bare command.</summary>
+	public static string MavenCommand(LocalStackConfig config) =>
+		ToolCommand(config?.toolchain?.maven, "bin", OperatingSystem.IsWindows() ? "mvn.cmd" : "mvn");
+
+	/// <summary>The <c>npm</c> to invoke. On Windows the Node archive puts <c>npm.cmd</c> at its root, not in <c>bin/</c>.</summary>
+	public static string NpmCommand(LocalStackConfig config) =>
+		OperatingSystem.IsWindows()
+			? ToolCommand(config?.toolchain?.node, null, "npm.cmd")
+			: ToolCommand(config?.toolchain?.node, "bin", "npm");
+
+	/// <inheritdoc cref="NpmCommand"/>
+	public static string NodeCommand(LocalStackConfig config) =>
+		OperatingSystem.IsWindows()
+			? ToolCommand(config?.toolchain?.node, null, "node.exe")
+			: ToolCommand(config?.toolchain?.node, "bin", "node");
+
+	/// <summary>The <c>dotnet</c> to invoke; the SDK's executable sits at the install root rather than in <c>bin/</c>.</summary>
+	public static string DotnetCommand(LocalStackConfig config) =>
+		ToolCommand(config?.toolchain?.dotnet, null, OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet");
+
+	/// <summary>
+	/// Builds an absolute executable path under a tool home, falling back to <paramref name="bareCommand"/> when
+	/// the home is unset or does not actually contain the executable. The existence check matters: a manifest can
+	/// name a toolchain directory that has since been deleted, and resolving to a path that isn't there would fail
+	/// with "no such file" instead of quietly working via PATH.
+	/// </summary>
+	private static string ToolCommand(string home, string binSubdir, string bareCommand)
+	{
+		if (string.IsNullOrWhiteSpace(home) || home.Contains(EditPlaceholder, StringComparison.Ordinal))
+			return bareCommand;
+
+		try
+		{
+			var dir = string.IsNullOrEmpty(binSubdir) ? home : Path.Combine(home, binSubdir);
+			var full = Path.Combine(dir, bareCommand);
+			return File.Exists(full) ? full : bareCommand;
+		}
+		catch
+		{
+			return bareCommand;
+		}
+	}
+
+	/// <summary>
+	/// The directories to prepend to a step's <c>PATH</c> so nested invocations stay inside the toolchain —
+	/// <c>npm</c> execs <c>node</c>, <c>mvn</c> execs <c>java</c>, and <c>dotnet build</c> resolves SDKs. Without
+	/// this a toolchain <c>mvn</c> still compiles the Scala reactor with whatever JDK is first on the inherited
+	/// PATH, which is the exact drift the toolchain exists to prevent. Empty when no toolchain is recorded.
+	/// </summary>
+	public static IEnumerable<string> ToolchainPathPrefix(LocalStackConfig config)
+	{
+		var toolchain = config?.toolchain;
+		if (toolchain == null) yield break;
+
+		// Java first: it is the one every other tool silently picks up from PATH.
+		foreach (var dir in new[]
+		{
+			Bin(toolchain.java, "bin"),
+			Bin(toolchain.maven, "bin"),
+			Bin(toolchain.dotnet, null),
+			Bin(toolchain.node, OperatingSystem.IsWindows() ? null : "bin"),
+		})
+		{
+			if (dir != null) yield return dir;
+		}
+
+		static string Bin(string home, string subdir)
+		{
+			if (string.IsNullOrWhiteSpace(home) || home.Contains(EditPlaceholder, StringComparison.Ordinal))
+				return null;
+
+			try
+			{
+				var dir = string.IsNullOrEmpty(subdir) ? home : Path.Combine(home, subdir);
+				return Directory.Exists(dir) ? dir : null;
+			}
+			catch
+			{
+				return null;
+			}
+		}
 	}
 
 	/// <summary>

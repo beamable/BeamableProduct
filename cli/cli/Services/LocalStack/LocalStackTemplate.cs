@@ -20,6 +20,20 @@ public static class LocalStackTemplate
 	public const string DefaultScalaJvmArgs = "-Xmx512m -Xms256m";
 
 	/// <summary>
+	/// Manifest tokens for the toolchain-provisioned commands. <c>up</c> substitutes each to an absolute
+	/// executable inside the toolchain, or to the bare command name when no toolchain was provisioned — so the
+	/// same manifest works with and without <c>beam local setup</c> (see
+	/// <see cref="LocalStackConfigIO.Substitute"/>).
+	/// </summary>
+	public const string MavenToken = "${maven}";
+
+	/// <inheritdoc cref="MavenToken"/>
+	public const string NpmToken = "${npm}";
+
+	/// <inheritdoc cref="MavenToken"/>
+	public const string DotnetToken = "${dotnet}";
+
+	/// <summary>
 	/// The Scala service that hands out dbids (<c>DBIDProvider</c>). Every other service fetches one at boot, so
 	/// it is launched — and awaited — before the rest instead of taking its alphabetical slot in the parallel
 	/// group, where six of its dependents started ahead of it and spent ~15s timing out on `Failed to fetch DBIDs`.
@@ -265,7 +279,10 @@ public static class LocalStackTemplate
 		{
 			name = $"build: {label}",
 			workingDirectory = apiDir,
-			command = "dotnet",
+			// ${dotnet} is the toolchain's pinned SDK when `beam local setup` provisioned one, and plain `dotnet`
+			// otherwise. BeamableAPI carries no global.json, so an unpinned build follows whichever SDK happens to
+			// be newest on the machine.
+			command = DotnetToken,
 			arguments = $"build {project} -c Debug",
 			build = true,
 			// The apphost `dotnet build` produces: <project>.exe on Windows, an extension-less binary elsewhere.
@@ -410,7 +427,9 @@ public static class LocalStackTemplate
 		{
 			name = "build: portal deps",
 			workingDirectory = portalDir,
-			command = OperatingSystem.IsWindows() ? "npm.cmd" : "npm",
+			// ${npm} — the toolchain's pinned Node when there is one. The portal is built against Node 22
+			// (its Dockerfile is node:22-alpine); a newer major on PATH installs different transitive deps.
+			command = NpmToken,
 			arguments = "install",
 			build = true,
 			waitForExit = true,
@@ -420,7 +439,7 @@ public static class LocalStackTemplate
 		{
 			name = "portal frontend",
 			workingDirectory = portalDir,
-			command = OperatingSystem.IsWindows() ? "npm.cmd" : "npm",
+			command = NpmToken,
 			arguments = "run dev",
 			readyWhenHttpOk = o.portalUrl,
 			// Vite is configured with strictPort, so a squatter here is a hard failure rather than a port bump.
@@ -477,7 +496,10 @@ public static class LocalStackTemplate
 			{
 				name = "build: scala",
 				workingDirectory = scalaDir,
-				command = OperatingSystem.IsWindows() ? "mvn.cmd" : "mvn",
+				// ${maven} — the toolchain's pinned Maven when there is one. Which Maven runs matters twice over:
+				// the reactor build itself, and the fact that Maven picks its JDK from JAVA_HOME/PATH, so an
+				// unpinned mvn can compile Scala 2.11 sources under a JDK 17/21 it was never meant to see.
+				command = MavenToken,
 				// `clean` so a shared-module API change can't leave cross-module classes skewed (NoSuchMethodError).
 				arguments = $"-q -pl {string.Join(",", modules)} -am clean package -DskipTests",
 				// Scala runs under Java 8; ${java} is substituted to that JAVA_HOME by `up` (as for the launch shells).
@@ -743,7 +765,10 @@ public static class LocalStackTemplate
 			// core (e.g. zstd-jni) is silently dropped and the service dies with NoClassDefFoundError at runtime.
 			// `|| true` so `set -e` does not abort here on a failed mvn: the explicit guard below has to be
 			// reached, or the only output is raw Maven noise and the step just "exited early (code 1)".
-			"{ [ -s \"$CPF\" ] && [ \"$CPF\" -nt core/pom.xml ]; } || JAVA_HOME=\"$JHOME\" mvn -q -pl tools/$SVC -am dependency:build-classpath -Dmdep.outputFile=\"$CPF\" || true; " +
+			// MVN is the ${maven} token, not a bare `mvn`: this classpath must be resolved by the SAME Maven (and
+			// therefore the same ~/.m2 layout and JDK) as the `build: scala` reactor step above. Two different
+			// Mavens here produce a classpath that does not match the compiled classes.
+			"{ [ -s \"$CPF\" ] && [ \"$CPF\" -nt core/pom.xml ]; } || JAVA_HOME=\"$JHOME\" \"" + MavenToken + "\" -q -pl tools/$SVC -am dependency:build-classpath -Dmdep.outputFile=\"$CPF\" || true; " +
 			// An empty cache means the mvn above failed. Launching anyway starts a JVM with only the module's own
 			// classes on the classpath, which dies deep in classloading — say what actually went wrong instead.
 			"[ -s \"$CPF\" ] || { echo \"beam: classpath cache $CPF is empty — 'mvn dependency:build-classpath' failed for tools/$SVC. Re-run with --build, or run that mvn command by hand to see why.\" >&2; exit 1; }; " +
@@ -798,7 +823,10 @@ public static class LocalStackTemplate
 			// dep newly added to core (e.g. zstd-jni) is included rather than dropped (NoClassDefFoundError).
 			"$stale = (-not (Test-Path $cpf)) -or ((Get-Item $cpf).Length -eq 0) -or ((Get-Item 'core/pom.xml').LastWriteTime -gt (Get-Item $cpf).LastWriteTime)",
 			"if ($stale) {",
-			"  $env:JAVA_HOME = $jhome; mvn -q -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\" }",
+			// The ${maven} token, not a bare `mvn`: this classpath has to be resolved by the SAME Maven (and
+				// therefore the same ~/.m2 layout and JDK) as the `build: scala` reactor step, or it will not match
+				// the classes that were compiled. `&` because the substituted value is an absolute path.
+				"  $env:JAVA_HOME = $jhome; & '" + MavenToken + "' -q -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\" }",
 			// An empty/missing cache means that mvn failed. Reading it with `(Get-Content -Raw).Trim()` threw
 			// "You cannot call a method on a null-valued expression" and the service silently never launched —
 			// so read it defensively and report what actually broke.

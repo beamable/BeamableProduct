@@ -82,6 +82,39 @@ extensions before running them. See [web/LOCAL_DEV.md](web/LOCAL_DEV.md).
 If the Portal's `.env.local` has `VITE_INJECT_HOST_SDK=true`, comment it out — that's a different approach
 and it takes precedence over the local CDN.
 
+## Running the full local stack on a fresh machine
+
+`beam local setup` provisions everything `beam local up` needs — a private, pinned toolchain (JDK 8, Maven, the
+.NET SDK, Node), the gitignored BeamableBackend config files, the portal's gitignored `.env.local`, and a check
+of the AWS prerequisites. It works the
+same on macOS, Windows and Linux, and installs nothing system-wide.
+
+On a machine that has never run the stack:
+
+1. Install the [.NET SDK](https://dotnet.microsoft.com/download), then `dotnet tool install -g Beamable.Tools`.
+2. Install [Docker Desktop](https://docs.docker.com/get-docker/) and start it — setup cannot install Docker,
+   because it needs administrator rights.
+3. Clone `BeamableAPI`, `BeamableBackend`, `BeamableProduct` and the portal as siblings.
+4. Then:
+
+```bash
+beam local setup                # or --toolchain-dir <path> to choose where dependencies live
+beam local init                 # writes .beamable/local-stack.json
+beam local setup                # re-run to wire the toolchain into the new manifest
+beam local validate --with-aws
+beam local up --build
+```
+
+`beam local validate` reports each dependency's **source** — `toolchain` (pinned) or `system` (whatever this
+machine happens to have) — which is how a Maven running under an IDE's JDK 21, or a Node major the portal was
+never built against, gets caught before it produces a confusing build failure.
+
+**AWS access is required**; there is no LocalStack in this stack. The Scala `auth` service reads its JWT signing
+key from AWS Secrets Manager at runtime, so without credentials the stack comes up healthy and nothing can log
+in. `beam local setup --only aws` checks this and prints what an AWS administrator needs to do.
+
+Full reference: [cli/cli/Docs/LocalStack/local-setup.md](cli/cli/Docs/LocalStack/local-setup.md).
+
 ## Documentation and help
 - Unity SDK docs: https://help.beamable.com/Unity-Latest/
 - CLI docs: https://help.beamable.com/CLI-Latest/

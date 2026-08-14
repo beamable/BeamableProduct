@@ -71,7 +71,11 @@ public class LocalStackBuildStepTests
 	{
 		var step = Step(CreateWithRepos(), "build: c# gateway");
 
-		Assert.That(step.command, Is.EqualTo("dotnet"));
+		// The command is a token so a toolchain-provisioned SDK wins when there is one. It must still resolve to
+		// plain `dotnet` on a machine that never ran `beam local setup` — the manifest has to work either way.
+		Assert.That(step.command, Is.EqualTo(LocalStackTemplate.DotnetToken));
+		Assert.That(LocalStackConfigIO.Substitute(step.command, new LocalStackConfig()),
+			Is.EqualTo(OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet"));
 		Assert.That(step.arguments, Does.Contain("build BeamableGateway"));
 		Assert.That(step.workingDirectory, Is.EqualTo(ApiDir));
 	}
@@ -81,7 +85,9 @@ public class LocalStackBuildStepTests
 	{
 		var step = Step(CreateWithRepos(), "build: scala");
 
-		Assert.That(step.command, Is.EqualTo(OperatingSystem.IsWindows() ? "mvn.cmd" : "mvn"));
+		Assert.That(step.command, Is.EqualTo(LocalStackTemplate.MavenToken));
+		Assert.That(LocalStackConfigIO.Substitute(step.command, new LocalStackConfig()),
+			Is.EqualTo(OperatingSystem.IsWindows() ? "mvn.cmd" : "mvn"));
 		Assert.That(step.arguments, Does.Contain("package"));
 		Assert.That(step.arguments, Does.Contain("tools/gateway"));
 		Assert.That(step.arguments, Does.Contain("tools/auth"));
@@ -183,7 +189,9 @@ public class LocalStackBuildStepTests
 	{
 		var step = Step(CreateWithRepos(), "build: portal deps");
 
-		Assert.That(step.command, Is.EqualTo(OperatingSystem.IsWindows() ? "npm.cmd" : "npm"));
+		Assert.That(step.command, Is.EqualTo(LocalStackTemplate.NpmToken));
+		Assert.That(LocalStackConfigIO.Substitute(step.command, new LocalStackConfig()),
+			Is.EqualTo(OperatingSystem.IsWindows() ? "npm.cmd" : "npm"));
 		Assert.That(step.arguments, Is.EqualTo("install"));
 		Assert.That(step.workingDirectory, Is.EqualTo(PortalDir));
 	}
