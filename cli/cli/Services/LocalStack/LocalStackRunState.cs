@@ -75,6 +75,15 @@ public class LocalStackRunEntry
 	/// <summary>True for run-to-completion steps (e.g. <c>docker compose up -d</c>): their <see cref="pid"/>
 	/// is expected to be dead; liveness is not judged by it.</summary>
 	public bool waitForExit;
+
+	/// <summary>
+	/// True when <c>up</c> did not launch this step because it was already answering its readiness endpoint, and
+	/// recorded it anyway so <c>stop</c> can bring it down. Such an entry has no <see cref="pid"/> (the owning
+	/// process was never a child of this <c>up</c>) — <c>stop</c> finds it by <see cref="stopArguments"/> for
+	/// docker steps and by the command-line token sweep for everything else. Purely informational for the
+	/// stop/ps output; it changes no logic.
+	/// </summary>
+	public bool adopted;
 }
 
 /// <summary>

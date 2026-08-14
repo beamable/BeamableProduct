@@ -36,6 +36,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool withWebRegistry;
         /// <summary>Absolute path to the portal-localdev directory holding the web registry compose file; skips the prompt for it</summary>
         public string webRegistryDir;
+        /// <summary>Also write the beam-local-stack agent skill, documenting the repositories this manifest spans and how the stack works, to .claude/skills/ (off by default; regenerated on every init that passes this)</summary>
+        public bool skill;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -115,6 +117,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.webRegistryDir != default(string)))
             {
                 genBeamCommandArgs.Add(("--web-registry-dir=" + this.webRegistryDir));
+            }
+            // If the skill value was not default, then add it to the list of args.
+            if ((this.skill != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--skill=" + this.skill));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
