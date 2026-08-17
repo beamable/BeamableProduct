@@ -574,6 +574,160 @@ public class LocalStackDiscoveryTests
 	}
 
 	// ----------------------------------------------------------------------------------
+	// Maven negative-cache guardrails
+	// ----------------------------------------------------------------------------------
+
+	[Test]
+	public void BuildScala_ForcesSnapshotUpdate()
+	{
+		// The reactor build has to run with -U so a machine that inherited a cached "com.kickstand:core was
+		// not found in nexus" miss (from an older CLI that used `mvn package`) can re-resolve. Without -U,
+		// the cached miss short-circuits every subsequent resolve and no amount of `beam local up --build`
+		// helps — the specific failure the user hit on Pedro's box.
+		var scalaDir = Path.Combine(Path.GetPathRoot(Path.GetTempPath()) ?? "/", "repos", "BeamableBackend");
+		var config = LocalStackTemplate.Create(new LocalStackTemplate.Options { scalaDir = scalaDir });
+		var step = config.steps.FirstOrDefault(s => s.name == "build: scala");
+		Assert.That(step, Is.Not.Null, "the scala build step should exist");
+		Assert.That(step.arguments, Does.Contain(" -U "),
+			"-U forces re-check of remote for SNAPSHOTs and invalidates the cached miss");
+		Assert.That(step.arguments, Does.Contain("install"),
+			"install (not package) is what writes core to ~/.m2 — the -U is only load-bearing paired with install");
+	}
+
+	[Test]
+	public void ScalaLauncher_UsesOfflineMode_OnPowerShell()
+	{
+		// The per-service launcher never needs to touch remote: every dep is in ~/.m2 (public artifacts from an
+		// earlier resolve, plus `core` from `build: scala`'s mvn install). -o (offline) means Maven cannot
+		// consult `_remote.repositories` for a cached miss — which is the mechanism the negative cache uses to
+		// short-circuit resolution.
+		var config = new LocalStackConfig();
+		var arguments = InvokeScalaLaunchPowerShell("dbflake", "com.kickstand.tools.dbflake.App", string.Empty);
+		var substituted = LocalStackConfigIO.Substitute(arguments, config);
+		Assert.That(substituted, Does.Contain("dependency:build-classpath"),
+			"the classpath cache must still be built");
+		Assert.That(substituted, Does.Contain(" -o "),
+			"the launcher must run offline — sidesteps any stale negative-cache entry for com.kickstand:core");
+	}
+
+	[Test]
+	public void ScalaLauncher_UsesOfflineMode_OnShell()
+	{
+		var config = new LocalStackConfig();
+		var arguments = InvokeScalaLaunchShell("dbflake", "com.kickstand.tools.dbflake.App", string.Empty);
+		var substituted = LocalStackConfigIO.Substitute(arguments, config);
+		Assert.That(substituted, Does.Contain("dependency:build-classpath"));
+		Assert.That(substituted, Does.Contain(" -o "),
+			"the launcher must run offline — sidesteps any stale negative-cache entry for com.kickstand:core");
+	}
+
+	private static string InvokeScalaLaunchPowerShell(string svc, string mainClass, string jvmArgs) =>
+		InvokeScalaLauncherPrivate("ScalaLaunchPowerShell", svc, mainClass, jvmArgs);
+
+	private static string InvokeScalaLaunchShell(string svc, string mainClass, string jvmArgs) =>
+		InvokeScalaLauncherPrivate("ScalaLaunchShell", svc, mainClass, jvmArgs);
+
+	private static string InvokeScalaLauncherPrivate(string methodName, string svc, string mainClass, string jvmArgs)
+	{
+		// The launcher builders are private helpers of LocalStackTemplate. Reflection avoids widening their
+		// visibility just for a test — same trade-off as the existing tests that reach into private helpers
+		// elsewhere in this file.
+		var m = typeof(LocalStackTemplate).GetMethod(methodName,
+			System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+		Assert.That(m, Is.Not.Null, methodName + " should be present on LocalStackTemplate");
+		var result = m!.Invoke(null, new object[] { svc, mainClass, jvmArgs });
+		Assert.That(result, Is.Not.Null);
+		return (string)result!;
+	}
+
+	[Test]
+	public void MissingCoreInM2_ForcesBuildScalaWhenScalaLaunchIsPresent()
+	{
+		// The exact state Pedro's box was in: build: scala exists in the manifest, target/classes is populated
+		// (from an older CLI's `mvn package`), and ~/.m2 has no core. Without this preflight, autoBuild stays
+		// empty on a plain `beam local up`, and the launcher hits the negative-cache trap.
+		var config = new LocalStackConfig
+		{
+			steps = new List<LocalStackStep>
+			{
+				new LocalStackStep { name = "build: scala", enabled = true, build = true },
+				new LocalStackStep { name = "scala: dbflake", enabled = true },
+			}
+		};
+		var autoBuild = new HashSet<LocalStackStep>();
+
+		var jarPath = Path.Combine(Path.GetTempPath(), "no-such-core-" + Guid.NewGuid() + ".jar");
+		var result = LocalStackUpCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
+
+		Assert.That(result, Is.Not.Null, "missing core with a scala launch step should force build: scala");
+		Assert.That(result.name, Is.EqualTo("build: scala"));
+	}
+
+	[Test]
+	public void MissingCoreInM2_LeftAlone_WhenBuildScalaIsAlreadyInAutoBuild()
+	{
+		// With --build (autoBuild starts empty) or when BuildOutputMissing already picked build: scala, this
+		// preflight has no work to do — it must not duplicate.
+		var buildStep = new LocalStackStep { name = "build: scala", enabled = true, build = true };
+		var config = new LocalStackConfig
+		{
+			steps = new List<LocalStackStep>
+			{
+				buildStep,
+				new LocalStackStep { name = "scala: dbflake", enabled = true },
+			}
+		};
+		var autoBuild = new HashSet<LocalStackStep> { buildStep };
+
+		var jarPath = Path.Combine(Path.GetTempPath(), "no-such-core-" + Guid.NewGuid() + ".jar");
+		var result = LocalStackUpCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
+		Assert.That(result, Is.Null);
+	}
+
+	[Test]
+	public void MissingCoreInM2_LeftAlone_WhenNoScalaLaunchStep()
+	{
+		// A stack with no scala services (--skip "scala: *", or an init that never included them) shouldn't
+		// have a Scala reactor forced on it just because ~/.m2 lacks an artifact that's never going to be used.
+		var config = new LocalStackConfig
+		{
+			steps = new List<LocalStackStep>
+			{
+				new LocalStackStep { name = "build: scala", enabled = true, build = true },
+				new LocalStackStep { name = "docker: api deps + caddy", enabled = true },
+			}
+		};
+		var autoBuild = new HashSet<LocalStackStep>();
+
+		var jarPath = Path.Combine(Path.GetTempPath(), "no-such-core-" + Guid.NewGuid() + ".jar");
+		var result = LocalStackUpCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
+		Assert.That(result, Is.Null);
+	}
+
+	[Test]
+	public void MissingCoreInM2_LeftAlone_WhenCoreJarPresent()
+	{
+		var config = new LocalStackConfig
+		{
+			steps = new List<LocalStackStep>
+			{
+				new LocalStackStep { name = "build: scala", enabled = true, build = true },
+				new LocalStackStep { name = "scala: dbflake", enabled = true },
+			}
+		};
+		var autoBuild = new HashSet<LocalStackStep>();
+
+		var jarPath = Path.GetTempFileName();
+		try
+		{
+			var result = LocalStackUpCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
+			Assert.That(result, Is.Null,
+				"a machine with core already installed to ~/.m2 does not need an unrequested rebuild");
+		}
+		finally { File.Delete(jarPath); }
+	}
+
+	// ----------------------------------------------------------------------------------
 	// Scala Mongo-startup-race retry heuristic
 	// ----------------------------------------------------------------------------------
 

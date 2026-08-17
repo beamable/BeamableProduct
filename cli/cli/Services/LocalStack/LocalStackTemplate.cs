@@ -626,7 +626,13 @@ public static class LocalStackTemplate
                 //    interval has elapsed"
 				// which then breaks every service launch. It works on a long-lived machine only because some
 				// earlier manual `mvn install` populated ~/.m2.
-				arguments = $"-q -pl {string.Join(",", modules)} -am clean install -DskipTests",
+				//
+				// `-U` (--update-snapshots) forces Maven to re-check remote for SNAPSHOTs even when
+				// `resolver-status.properties` says "recently checked", which is what invalidates the cached miss
+				// on a machine that has ALREADY been trapped by an older CLI whose `build: scala` ran `package`
+				// instead of `install` (so `core` was never installed to ~/.m2 and every subsequent resolve short-
+				// circuits on the cached 404). The upgraded CLI alone can't undo that history without `-U`.
+				arguments = $"-q -U -pl {string.Join(",", modules)} -am clean install -DskipTests",
 				// Scala runs under Java 8; ${java} is substituted to that JAVA_HOME by `up` (as for the launch shells).
 				environment = new Dictionary<string, string> { ["JAVA_HOME"] = "${java}" },
 				build = true,
@@ -893,10 +899,15 @@ public static class LocalStackTemplate
 			// MVN is the ${maven} token, not a bare `mvn`: this classpath must be resolved by the SAME Maven (and
 			// therefore the same ~/.m2 layout and JDK) as the `build: scala` reactor step above. Two different
 			// Mavens here produce a classpath that does not match the compiled classes.
-			"{ [ -s \"$CPF\" ] && [ \"$CPF\" -nt core/pom.xml ]; } || JAVA_HOME=\"$JHOME\" \"" + MavenToken + "\" -q -pl tools/$SVC -am dependency:build-classpath -Dmdep.outputFile=\"$CPF\" || true; " +
+			// `-o` (offline) so a stale `_remote.repositories` / `resolver-status.properties` entry — the one
+			// that says "com.kickstand:core was not found in nexus during a previous attempt" — cannot short-
+			// circuit the resolve. Every dep this step needs is already in ~/.m2 (public artifacts from earlier
+			// resolves, `core` from `build: scala`'s `mvn install`), so touching remote here has no upside and
+			// one very expensive downside.
+			"{ [ -s \"$CPF\" ] && [ \"$CPF\" -nt core/pom.xml ]; } || JAVA_HOME=\"$JHOME\" \"" + MavenToken + "\" -q -o -pl tools/$SVC -am dependency:build-classpath -Dmdep.outputFile=\"$CPF\" || true; " +
 			// An empty cache means the mvn above failed. Launching anyway starts a JVM with only the module's own
 			// classes on the classpath, which dies deep in classloading — say what actually went wrong instead.
-			"[ -s \"$CPF\" ] || { echo \"beam: classpath cache $CPF is empty — 'mvn dependency:build-classpath' failed for tools/$SVC. The usual cause is that com.kickstand:core is not in your local Maven repository (~/.m2): this goal resolves core as an ARTIFACT, and a 'package'-only build leaves it in core/target. Re-run 'beam local up --build' (it now runs 'mvn install', which puts core in ~/.m2), or run that mvn command by hand to see why.\" >&2; exit 1; }; " +
+			"[ -s \"$CPF\" ] || { echo \"beam: classpath cache $CPF is empty — offline 'mvn dependency:build-classpath' failed for tools/$SVC. The usual cause is that com.kickstand:core is not in your local Maven repository (~/.m2/repository/com/kickstand/core/1.0-SNAPSHOT/). Fix: (1) run 'beam local up --build' (the reactor uses -U and 'mvn install', which invalidates any cached miss and writes core to ~/.m2). If that ALSO fails, (2) delete ~/.m2/repository/com/kickstand/ (locally-built artifacts only, safe to remove) and re-run 'beam local up --build'.\" >&2; exit 1; }; " +
 			"CP=\"tools/$SVC/target/classes:core/target/classes:$JAR:$(cat \"$CPF\")\"; " +
 			// $JVM_ARGS unquoted on purpose: it must word-split into separate flags.
 			"exec \"$JHOME/bin/java\" $JVM_ARGS -cp \"$CP\" \"$MAIN\"";
@@ -951,14 +962,17 @@ public static class LocalStackTemplate
 			// The ${maven} token, not a bare `mvn`: this classpath has to be resolved by the SAME Maven (and
 				// therefore the same ~/.m2 layout and JDK) as the `build: scala` reactor step, or it will not match
 				// the classes that were compiled. `&` because the substituted value is an absolute path.
-				"  $env:JAVA_HOME = $jhome; & '" + MavenToken + "' -q -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\" }",
+				// `-o` (offline) so a stale `_remote.repositories` entry saying "com.kickstand:core was not found
+				// in nexus" cannot short-circuit the resolve. Every dep is already in ~/.m2 (public artifacts from
+				// earlier resolves, `core` from `build: scala`'s `mvn install`) — touching remote here can only hurt.
+				"  $env:JAVA_HOME = $jhome; & '" + MavenToken + "' -q -o -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\" }",
 			// An empty/missing cache means that mvn failed. Reading it with `(Get-Content -Raw).Trim()` threw
 			// "You cannot call a method on a null-valued expression" and the service silently never launched —
 			// so read it defensively and report what actually broke.
 			"$deps = ''",
 			"if (Test-Path $cpf) { $raw = Get-Content $cpf -Raw; if ($raw) { $deps = $raw.Trim() } }",
 			"if (-not $deps) {",
-			"  Write-Host \"beam: classpath cache $cpf is empty - 'mvn dependency:build-classpath' failed for tools/$svc. The usual cause is that com.kickstand:core is not in your local Maven repository (~/.m2): this goal resolves core as an ARTIFACT, and a 'package'-only build leaves it in core/target. Re-run 'beam local up --build' (it now runs 'mvn install', which puts core in ~/.m2), or run that mvn command by hand to see why.\"",
+			"  Write-Host \"beam: classpath cache $cpf is empty - offline 'mvn dependency:build-classpath' failed for tools/$svc. The usual cause is that com.kickstand:core is not in your local Maven repository ($env:USERPROFILE\\.m2\\repository\\com\\kickstand\\core\\1.0-SNAPSHOT\\). Fix: (1) run 'beam local up --build' (the reactor uses -U and 'mvn install', which invalidates any cached miss and writes core to ~/.m2). If that ALSO fails, (2) delete $env:USERPROFILE\\.m2\\repository\\com\\kickstand\\ (locally-built artifacts only, safe to remove) and re-run 'beam local up --build'.\"",
 			"  exit 1 }",
 			"$cp = \"tools/$svc/target/classes;core/target/classes;$jar;\" + $deps",
 			"& \"$jhome\\bin\\java.exe\" @jvmArgs -cp $cp $main",

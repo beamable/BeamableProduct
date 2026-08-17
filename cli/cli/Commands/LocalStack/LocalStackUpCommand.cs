@@ -229,6 +229,14 @@ public class LocalStackUpCommand
 			? new HashSet<LocalStackStep>()
 			: config.steps.Where(s => s.enabled && LocalStackConfigIO.BuildOutputMissing(s, config)).ToHashSet();
 
+		// Add `build: scala` to autoBuild when `~/.m2` has never held `com.kickstand:core`. The BuildOutputMissing
+		// check above is satisfied by any `target/classes` — but an earlier `mvn package` (or an older CLI, before
+		// commit 5d469e98d) populates target/classes without writing core to ~/.m2. In that state, every Scala
+		// service launcher fails to resolve `com.kickstand:core:jar:1.0-SNAPSHOT`, hits remote nexus, gets 404,
+		// and Maven caches the miss — trapping every subsequent run. Force the reactor to run once here, which
+		// runs `mvn install -U` and refills ~/.m2, escaping the trap.
+		EnsureScalaCoreInLocalMavenRepo(config, autoBuild);
+
 		// Say WHY a build is being run that was not asked for. "Building the Scala reactor" out of nowhere on a
 		// plain `up` is confusing unless it names the module that has never been compiled.
 		foreach (var step in autoBuild)
@@ -992,6 +1000,72 @@ public class LocalStackUpCommand
 	/// completes well within the timeout. Readiness waits still overlap — only the launches are spaced out.
 	/// </summary>
 	private static readonly TimeSpan GroupLaunchStagger = TimeSpan.FromMilliseconds(2000);
+
+	/// <summary>
+	/// Local Maven repo path that must hold <c>com.kickstand:core:jar:1.0-SNAPSHOT</c> for the per-service
+	/// launcher's offline <c>dependency:build-classpath</c> to succeed. Written by <c>build: scala</c>'s
+	/// <c>mvn install</c>. Public so <see cref="ShouldForceBuildScalaForMissingCore"/> can be exercised in tests
+	/// with an arbitrary path.
+	/// </summary>
+	public static string ScalaCoreLocalMavenJarPath { get; } = Path.Combine(
+		Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) ?? string.Empty,
+		".m2", "repository", "com", "kickstand", "core", "1.0-SNAPSHOT", "core-1.0-SNAPSHOT.jar");
+
+	/// <summary>
+	/// If the run includes a Scala launch step and <c>com.kickstand:core</c> is not in <c>~/.m2</c>, force the
+	/// existing <c>build: scala</c> step into <paramref name="autoBuild"/>. The reactor's <c>mvn install -U</c>
+	/// puts core there and invalidates any cached "not found in nexus" miss on machines that were previously
+	/// trapped by an older CLI's <c>mvn package</c> step.
+	///
+	/// The wider <see cref="LocalStackConfigIO.BuildOutputMissing"/> check the caller ran above already catches
+	/// <em>never-compiled</em> modules (empty <c>target/classes</c>). It does NOT catch a machine whose
+	/// <c>target/classes</c> is populated by an earlier <c>mvn package</c> — because <c>package</c> writes
+	/// <c>target/classes</c> and <c>target/*.jar</c> but never <c>~/.m2</c>. This preflight is the second half
+	/// of the "is it actually built and installed?" question.
+	/// </summary>
+	private static void EnsureScalaCoreInLocalMavenRepo(LocalStackConfig config, HashSet<LocalStackStep> autoBuild)
+	{
+		var step = ShouldForceBuildScalaForMissingCore(config, autoBuild, ScalaCoreLocalMavenJarPath);
+		if (step == null) return;
+
+		autoBuild.Add(step);
+		Log.Information(
+			$"[{step.name}] running without --build: 'com.kickstand:core' is not in your local Maven " +
+			$"repository ({ScalaCoreLocalMavenJarPath}). Building the Scala reactor once so the per-service " +
+			"launcher's offline classpath resolve can find it.");
+	}
+
+	/// <summary>
+	/// Pure decision helper for <see cref="EnsureScalaCoreInLocalMavenRepo"/> — no logging, no side effects,
+	/// no reference to the process user profile. Returns the <c>build: scala</c> step that should be added to
+	/// autoBuild, or null when nothing should change.
+	/// </summary>
+	public static LocalStackStep ShouldForceBuildScalaForMissingCore(LocalStackConfig config,
+		HashSet<LocalStackStep> autoBuild, string coreJarPath)
+	{
+		if (config?.steps == null) return null;
+		if (autoBuild == null) return null;
+		if (string.IsNullOrWhiteSpace(coreJarPath)) return null;
+
+		var buildScala = config.steps.FirstOrDefault(s =>
+			s != null
+			&& s.enabled
+			&& s.build
+			&& string.Equals(s.name, "build: scala", StringComparison.OrdinalIgnoreCase));
+		if (buildScala == null) return null;
+
+		// Already going to run — either via --build (empty set at the call site) or via BuildOutputMissing.
+		if (autoBuild.Contains(buildScala)) return null;
+
+		var hasScalaLaunch = config.steps.Any(s =>
+			s != null && s.enabled && !string.IsNullOrEmpty(s.name)
+			&& s.name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase));
+		if (!hasScalaLaunch) return null;
+
+		if (File.Exists(coreJarPath)) return null;
+
+		return buildScala;
+	}
 
 	/// <summary>
 	///  if a non-Docker process is squatting <c>127.0.0.1:27015</c> it shadows the docker-published mongo_master, so
