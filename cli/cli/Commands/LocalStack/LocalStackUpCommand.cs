@@ -1087,19 +1087,28 @@ public class LocalStackUpCommand
 	/// <summary>
 	/// Pins the .NET environment to the toolchain's SDK.
 	///
-	/// Putting the private <c>dotnet</c> on PATH — or even invoking it by absolute path — is NOT enough.
-	/// <c>MSBuildSDKsPath</c> overrides where MSBuild resolves <c>&lt;Project Sdk="..."&gt;</c> from, so on a machine
-	/// where something has set it (IDEs and build tooling do) the toolchain's <c>dotnet.exe</c> runs its own
-	/// MSBuild against ANOTHER SDK's targets. That mix fails as
-	/// <c>MSB4062: could not load NuGet.Build.Tasks ... IMultiThreadableTask</c> — which reads as a broken project
-	/// rather than two SDKs spliced together. Verified: a 10.0.100 muxer with <c>MSBuildSDKsPath</c> pointed at a
-	/// 9.0.x <c>Sdks</c> directory loads the 9.0.x targets.
+	/// Putting the private <c>dotnet</c> on PATH — or even invoking it by absolute path — is NOT enough. TWO
+	/// independent mechanisms can splice a foreign SDK's build files into a toolchain-hosted MSBuild, and both
+	/// have to be blocked:
+	/// <list type="number">
+	/// <item><b>Environment redirects.</b> <c>MSBuildSDKsPath</c>, <c>NuGetRestoreTargets</c> and friends override
+	/// where MSBuild resolves <c>&lt;Project Sdk="..."&gt;</c> / <c>NuGet.targets</c> from; IDEs and build tooling
+	/// set them. Removed below. Verified locally: a 10.0.100 muxer with <c>MSBuildSDKsPath</c> pointed at a 9.0.x
+	/// <c>Sdks</c> directory loads the 9.0.x targets.</item>
+	/// <item><b>The resolver's install-location scan.</b> With NO env var set,
+	/// <c>Microsoft.DotNet.MSBuildSdkResolver</c> walks the machine's registered install locations for candidate
+	/// SDKs, and from a PRE-RELEASE muxer SDK it promotes the reference to the newest STABLE SDK found there. This
+	/// is why <c>dotnet --list-sdks</c> can report only the toolchain SDK while MSBuild still loads a newer
+	/// install's <c>NuGet.targets</c>. Blocked by PINNING <c>DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR</c> to the
+	/// toolchain — there is no variable to scrub for this one.</item>
+	/// </list>
+	/// Either way the mix fails as <c>MSB4062: could not load NuGet.Build.Tasks ... IMultiThreadableTask</c>: both
+	/// SDKs ship <c>Microsoft.Build.Framework.dll</c> at assembly version 15.1.0.0, so the CLR treats them as
+	/// type-identical and will not reload — but the newer copy added the <c>IMultiThreadableTask</c> interface its
+	/// <c>NuGet.Build.Tasks.dll</c> needs, and the already-loaded older copy has no such type.
 	///
-	/// The load-bearing part is therefore REMOVING those redirects — removing, not blanking, because an empty
-	/// value is still a value the resolver treats as a path. <c>DOTNET_ROOT</c> is pinned too, but note it does
-	/// NOT affect SDK resolution (the muxer finds SDKs relative to its own location); it governs runtime
-	/// resolution for apps the build spawns, which is worth pinning for the same reason but is not what fixes
-	/// MSB4062.
+	/// <c>DOTNET_ROOT</c> is pinned too, but note it affects NEITHER mechanism (the muxer finds SDKs relative to
+	/// its own location) — it governs runtime resolution for apps the build spawns. Do not mistake it for the fix.
 	/// </summary>
 	public static void ApplyToolchainDotnetEnvironment(ProcessStartInfo psi, LocalStackConfig config)
 	{
@@ -1117,18 +1126,30 @@ public class LocalStackUpCommand
 		foreach (var arch in new[] { "DOTNET_ROOT_X64", "DOTNET_ROOT_X86", "DOTNET_ROOT(x86)", "DOTNET_ROOT_ARM64" })
 			psi.Environment.Remove(arch);
 
-		// These redirect MSBuild's SDK resolver at a specific SDK/CLI directory. IDEs and build tooling set them,
-		// and any one of them silently overrides DOTNET_ROOT for SDK resolution.
+		// Mechanism 1 — environment redirects. Each of these points MSBuild at a specific SDK/CLI/targets path
+		// and silently overrides DOTNET_ROOT for resolution. `NuGetRestoreTargets` is the narrow variant that
+		// hits only restore. Removed, not blanked: an empty value is still a value the resolver treats as a path.
 		foreach (var redirect in new[]
 		{
 			"MSBuildSDKsPath",
-			"DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR",
+			"MSBuildToolsPath",
+			"MSBUILD_EXE_PATH",
+			"NuGetRestoreTargets",
 			"DOTNET_MSBUILD_SDK_RESOLVER_SDKS_DIR",
 			"DOTNET_MSBUILD_SDK_RESOLVER_MSBUILD_DIR",
 		})
 		{
 			psi.Environment.Remove(redirect);
 		}
+
+		// Mechanism 2 — PIN this one rather than removing it. With no env vars set at all,
+		// Microsoft.DotNet.MSBuildSdkResolver walks the machine's registered install locations
+		// (HKLM\SOFTWARE\dotnet\Setup\InstalledVersions on Windows) for candidate SDKs, and from a
+		// PRE-RELEASE muxer SDK it promotes the project's SDK reference to the newest STABLE one it finds there.
+		// That is how `dotnet --list-sdks` can report only the toolchain SDK while MSBuild still loads
+		// C:\Program Files\dotnet\sdk\<newer>\NuGet.targets. Scrubbing cannot fix it — there is no variable
+		// to scrub — so the resolver's search has to be confined to the toolchain install instead.
+		psi.Environment["DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR"] = dotnetHome;
 
 		// The muxer used by anything the build shells out to (SDK tasks, `dotnet tool`, source generators).
 		var hostExe = Path.Combine(dotnetHome, OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet");

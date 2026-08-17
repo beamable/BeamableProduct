@@ -314,9 +314,10 @@ public class LocalStackDiscoveryTests
 	[Test]
 	public void ToolchainDotnetRemovesTheSdkRedirects()
 	{
-		// The Windows failure: the toolchain's 10.0.100 dotnet.exe ran MSBuild against
-		// C:\Program Files\dotnet\sdk\10.0.400's targets and died with MSB4062. MSBuildSDKsPath is what
-		// redirects SDK resolution, so it has to be REMOVED (not blanked - an empty value is still a path).
+		// The Windows failure: the toolchain's 10.0.100 dotnet.exe ran MSBuild against a newer SDK's targets
+		// (C:\Program Files\dotnet\sdk\10.0.400) and died with MSB4062. Two mechanisms cause that, and this
+		// covers both — the scrubbable env redirects, and the resolver's install-location scan which has no env
+		// var to scrub and must instead be CONFINED to the toolchain.
 		var dir = Directory.CreateTempSubdirectory("beam-dotnet-env");
 		try
 		{
@@ -327,18 +328,32 @@ public class LocalStackDiscoveryTests
 
 			var psi = new System.Diagnostics.ProcessStartInfo();
 			psi.Environment["MSBuildSDKsPath"] = "/some/other/sdk/Sdks";
+			psi.Environment["MSBuildToolsPath"] = "/some/other/sdk";
+			psi.Environment["MSBUILD_EXE_PATH"] = "/some/other/msbuild.exe";
+			psi.Environment["NuGetRestoreTargets"] = "/some/other/sdk/NuGet.targets";
 			psi.Environment["DOTNET_MSBUILD_SDK_RESOLVER_SDKS_DIR"] = "/some/other/sdk/Sdks";
 			psi.Environment["DOTNET_ROOT_X64"] = "/some/other/dotnet";
+			// A stale pre-existing pin would keep aiming the resolver at a foreign SDK, so seed one to prove the
+			// code OVERWRITES it rather than skipping when it is already set.
+			psi.Environment["DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR"] = "/some/other/dotnet";
 
 			LocalStackUpCommand.ApplyToolchainDotnetEnvironment(psi, config);
 
-            // Removed outright, not set to empty.
+			// Removed outright, not set to empty — an empty value is still a path to the resolver.
 			Assert.That(psi.Environment.ContainsKey("MSBuildSDKsPath"), Is.False);
+			Assert.That(psi.Environment.ContainsKey("MSBuildToolsPath"), Is.False);
+			Assert.That(psi.Environment.ContainsKey("MSBUILD_EXE_PATH"), Is.False);
+			Assert.That(psi.Environment.ContainsKey("NuGetRestoreTargets"), Is.False,
+				"NuGetRestoreTargets is the narrow redirect that hits only restore");
 			Assert.That(psi.Environment.ContainsKey("DOTNET_MSBUILD_SDK_RESOLVER_SDKS_DIR"), Is.False);
 			Assert.That(psi.Environment.ContainsKey("DOTNET_ROOT_X64"), Is.False,
 				"an architecture-specific root takes precedence over DOTNET_ROOT");
 
 			Assert.That(psi.Environment["DOTNET_ROOT"], Is.EqualTo(dir.FullName));
+			// PINNED, not removed. Unset, the resolver walks the machine's registered install locations and — from
+			// a pre-release toolchain SDK — promotes the project's SDK reference to the newest stable one it finds.
+			Assert.That(psi.Environment["DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR"], Is.EqualTo(dir.FullName),
+				"the resolver must be confined to the toolchain, not left free to walk install locations");
 			// A freshly extracted SDK otherwise installs an HTTPS dev certificate on its first run.
 			Assert.That(psi.Environment["DOTNET_GENERATE_ASPNET_CERTIFICATE"], Is.EqualTo("false"));
 			Assert.That(psi.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"], Is.EqualTo("1"));
@@ -355,6 +370,10 @@ public class LocalStackDiscoveryTests
 		// A stack that never ran `beam local setup` must behave exactly as before — including keeping whatever
 		// SDK redirects the machine has, because its dotnet IS the system one.
 		var psi = new System.Diagnostics.ProcessStartInfo();
+		// psi.Environment is seeded from THIS process, and a dotnet host newer than the toolchain prepopulates
+		// DOTNET_ROOT for its children. Remove it so the assertion tests what the method does, not what the test
+		// harness happened to inherit — otherwise this fails on exactly the machines the fix is aimed at.
+		psi.Environment.Remove("DOTNET_ROOT");
 		psi.Environment["MSBuildSDKsPath"] = "/keep/me";
 
 		LocalStackUpCommand.ApplyToolchainDotnetEnvironment(psi, new LocalStackConfig());
@@ -367,6 +386,10 @@ public class LocalStackDiscoveryTests
 	public void AToolchainDotnetPathThatNoLongerExistsIsIgnored()
 	{
 		var psi = new System.Diagnostics.ProcessStartInfo();
+		// psi.Environment is seeded from THIS process, and a dotnet host newer than the toolchain prepopulates
+		// DOTNET_ROOT for its children. Remove it so the assertion tests what the method does, not what the test
+		// harness happened to inherit — otherwise this fails on exactly the machines the fix is aimed at.
+		psi.Environment.Remove("DOTNET_ROOT");
 		psi.Environment["MSBuildSDKsPath"] = "/keep/me";
 
 		LocalStackUpCommand.ApplyToolchainDotnetEnvironment(psi, new LocalStackConfig
