@@ -367,6 +367,151 @@ public class WebLocalRegistryService
 	}
 
 	/// <summary>
+	/// The <c>web/</c> and <c>beam-portal-toolkit/</c> directories every web-registry step depends on. A missing
+	/// entry here is what <see cref="MissingProductDirMarkers"/> reports and what
+	/// <see cref="EnsureProductDirIntact"/> tries to restore.
+	/// </summary>
+	private static readonly string[] ProductDirMarkerDirs = { "web", "beam-portal-toolkit" };
+
+	/// <summary>
+	/// Names any <see cref="ProductDirMarkerDirs"/> whose <c>package.json</c> is missing under
+	/// <paramref name="productDir"/>. Empty when the checkout is intact.
+	/// </summary>
+	public static IReadOnlyList<string> MissingProductDirMarkers(string productDir)
+	{
+		var missing = new List<string>();
+		if (string.IsNullOrEmpty(productDir) || !Directory.Exists(productDir))
+		{
+			return missing;
+		}
+		foreach (var name in ProductDirMarkerDirs)
+		{
+			if (!File.Exists(Path.Combine(productDir, name, "package.json")))
+			{
+				missing.Add(name);
+			}
+		}
+		return missing;
+	}
+
+	/// <summary>
+	/// Preflight for <c>beam local up</c> and any direct <c>beam web publish</c>: when the recorded
+	/// <paramref name="productDir"/> is a git checkout that has had <c>web/</c> or <c>beam-portal-toolkit/</c>
+	/// wiped from the working tree, restore them from HEAD instead of letting <c>beam web publish</c> fail
+	/// minutes into the run — the stack has spun up 20+ services by then and cascades a full shutdown.
+	///
+	/// Silent no-op on an intact checkout, so the healthy path pays only a couple of <c>File.Exists</c> calls.
+	///
+	/// Restore, not report, because every file under the missing directory is tracked-in-index with the working
+	/// copy deleted, so <c>git restore</c> is a pure re-materialisation — nothing local can be overwritten. If
+	/// the directory is not a git repo (a zip download), or git is not on <c>PATH</c>, or the restore returns
+	/// non-zero, throw a <see cref="CliException"/> naming the exact command to run by hand. Never fail silently:
+	/// a missing marker guarantees a downstream failure, and the point of this preflight is to name the fix.
+	/// </summary>
+	public static void EnsureProductDirIntact(string productDir)
+	{
+		if (string.IsNullOrWhiteSpace(productDir)
+		    || productDir.Contains(cli.Services.LocalStack.LocalStackConfigIO.EditPlaceholder, StringComparison.Ordinal)
+		    || !Directory.Exists(productDir))
+		{
+			return;
+		}
+
+		var missing = MissingProductDirMarkers(productDir);
+		if (missing.Count == 0)
+		{
+			return;
+		}
+
+		var isGitRepo = Directory.Exists(Path.Combine(productDir, ".git"))
+		                || File.Exists(Path.Combine(productDir, ".git"));
+		if (!isGitRepo)
+		{
+			throw new CliException(BuildIncompleteCheckoutMessage(productDir, missing,
+				gitAvailable: false, gitMessage: null));
+		}
+
+		string gitError = null;
+		foreach (var name in missing)
+		{
+			// `git restore` succeeds silently on a tracked path that was deleted only in the working tree; that
+			// is the exact state the bug leaves the repo in.
+			var (exit, _, stderr) = TryRunGit(productDir, "restore", "--", name + "/");
+			if (exit != 0)
+			{
+				gitError = string.IsNullOrWhiteSpace(stderr)
+					? $"git restore -- {name}/ exited with {exit}"
+					: stderr.Trim();
+				break;
+			}
+		}
+
+		var stillMissing = MissingProductDirMarkers(productDir);
+		if (stillMissing.Count == 0)
+		{
+			Log.Warning($"Restored {string.Join(", ", missing.Select(m => m + "/"))} in [{productDir}] from git — they were deleted from the working tree.");
+			return;
+		}
+
+		throw new CliException(BuildIncompleteCheckoutMessage(productDir, stillMissing,
+			gitAvailable: true, gitMessage: gitError));
+	}
+
+	private static string BuildIncompleteCheckoutMessage(string productDir, IReadOnlyList<string> missing,
+		bool gitAvailable, string gitMessage)
+	{
+		var missingList = string.Join(", ", missing.Select(m => m + "/"));
+		var head = $"BeamableProduct checkout at [{productDir}] is missing {missingList} — `beam web publish` cannot run without them.";
+		if (!gitAvailable)
+		{
+			return head + " That directory is not a git checkout, so nothing here can restore the missing files. " +
+			       "Re-clone BeamableProduct, or pass --product-dir at a complete checkout.";
+		}
+		var why = string.IsNullOrEmpty(gitMessage) ? string.Empty : $" git said: {gitMessage}.";
+		var restoreArgs = string.Join(" ", missing.Select(m => m + "/"));
+		return head + $" Tried `git restore` but the working tree is still missing them.{why} " +
+		       $"Fix by hand from the repo root: `git -C \"{productDir}\" restore {restoreArgs}`.";
+	}
+
+	private static (int exit, string stdout, string stderr) TryRunGit(string workingDir, params string[] args)
+	{
+		try
+		{
+			var psi = new System.Diagnostics.ProcessStartInfo
+			{
+				FileName = "git",
+				WorkingDirectory = workingDir,
+				UseShellExecute = false,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true,
+				CreateNoWindow = true,
+			};
+			foreach (var a in args)
+			{
+				psi.ArgumentList.Add(a);
+			}
+
+			var proc = System.Diagnostics.Process.Start(psi);
+			if (proc == null)
+			{
+				return (-1, string.Empty, "git could not be started");
+			}
+			var stdout = proc.StandardOutput.ReadToEnd();
+			var stderr = proc.StandardError.ReadToEnd();
+			if (!proc.WaitForExit(30_000))
+			{
+				try { proc.Kill(entireProcessTree: true); } catch { /* ignore */ }
+				return (-1, stdout, "git did not exit within 30s");
+			}
+			return (proc.ExitCode, stdout, stderr);
+		}
+		catch (Exception e)
+		{
+			return (-1, string.Empty, e.Message);
+		}
+	}
+
+	/// <summary>
 	/// Every portal extension and extension library under <paramref name="root"/>, found by the
 	/// <c>beamable.portalExtension</c> / <c>beamable.portalExtensionLib</c> markers in their package.json.
 	///

@@ -306,6 +306,15 @@ public class LocalStackUpCommand
 		if (reservedDockerPorts != null)
 			throw new CliException(reservedDockerPorts);
 
+		// Fail fast (or auto-repair) when the product checkout is missing web/ or beam-portal-toolkit/. Without
+		// this, the stack builds, launches every docker/scala/c# service, and only THEN fails at `beam web
+		// publish` — cascading a full shutdown minutes in. The wipe is common enough (an unrelated `git clean`,
+		// a manual delete) that the recovery is worth automating.
+		if (steps.Any(s => LocalStackTemplate.IsWebStep(s.name)))
+		{
+			WebLocalRegistryService.EnsureProductDirIntact(config.repos?.productDir);
+		}
+
 		// Resolve how to invoke this same beam CLI for `beam: true` steps, and the workspace to run them from.
 		var (beamExe, beamLeading) = ResolveBeam(args);
 		var beamWorkspaceFallback = args.ConfigService?.BeamableWorkspace

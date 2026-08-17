@@ -1,8 +1,12 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using cli;
 using cli.Commands.LocalStack;
 using cli.Services.LocalStack;
+using cli.Services.Web;
 using NUnit.Framework;
 
 namespace tests;
@@ -399,6 +403,174 @@ public class LocalStackDiscoveryTests
 
 		Assert.That(psi.Environment["MSBuildSDKsPath"], Is.EqualTo("/keep/me"),
 			"a stale toolchain path must not silently strip the machine's own configuration");
+	}
+
+	// ----------------------------------------------------------------------------------
+	// Product-dir intactness preflight
+	// ----------------------------------------------------------------------------------
+
+	private static string MakeProductLikeDir(bool includeWeb = true, bool includeToolkit = true)
+	{
+		var dir = Directory.CreateTempSubdirectory("beam-product-check").FullName;
+		if (includeWeb)
+		{
+			Directory.CreateDirectory(Path.Combine(dir, "web"));
+			File.WriteAllText(Path.Combine(dir, "web", "package.json"), "{}");
+		}
+		if (includeToolkit)
+		{
+			Directory.CreateDirectory(Path.Combine(dir, "beam-portal-toolkit"));
+			File.WriteAllText(Path.Combine(dir, "beam-portal-toolkit", "package.json"), "{}");
+		}
+		return dir;
+	}
+
+	[Test]
+	public void MissingProductDirMarkers_IsEmpty_WhenBothPresent()
+	{
+		var dir = MakeProductLikeDir();
+		try
+		{
+			Assert.That(WebLocalRegistryService.MissingProductDirMarkers(dir), Is.Empty);
+		}
+		finally { Directory.Delete(dir, recursive: true); }
+	}
+
+	[Test]
+	public void MissingProductDirMarkers_NamesTheAbsentDirectory()
+	{
+		// The bug this preflight was written for: `web/` disappears while `beam-portal-toolkit/` stays. Names
+		// the missing one so the error message downstream can point at what to restore, without listing
+		// every marker as absent (which reads as "wrong directory" instead of "partial checkout").
+		var dir = MakeProductLikeDir(includeWeb: false, includeToolkit: true);
+		try
+		{
+			Assert.That(WebLocalRegistryService.MissingProductDirMarkers(dir), Is.EqualTo(new[] { "web" }));
+		}
+		finally { Directory.Delete(dir, recursive: true); }
+	}
+
+	[Test]
+	public void EnsureProductDirIntact_IsSilent_OnIntactCheckout()
+	{
+		// The healthy-path cost has to be low — this runs on every `beam local up` that includes the web steps.
+		var dir = MakeProductLikeDir();
+		try
+		{
+			Assert.DoesNotThrow(() => WebLocalRegistryService.EnsureProductDirIntact(dir));
+		}
+		finally { Directory.Delete(dir, recursive: true); }
+	}
+
+	[Test]
+	public void EnsureProductDirIntact_IsSilent_OnUnknownProductDir()
+	{
+		// Manifests written before the web-registry steps existed leave productDir null, and `local up` still
+		// has to work there — the guard must not throw when there is nothing to check.
+		Assert.DoesNotThrow(() => WebLocalRegistryService.EnsureProductDirIntact(null));
+		Assert.DoesNotThrow(() => WebLocalRegistryService.EnsureProductDirIntact(string.Empty));
+		Assert.DoesNotThrow(() => WebLocalRegistryService.EnsureProductDirIntact(Path.Combine(Path.GetTempPath(), "no-such-dir-" + Guid.NewGuid())));
+	}
+
+	[Test]
+	public void EnsureProductDirIntact_ThrowsWithRestoreCommand_WhenPartialAndNotAGitRepo()
+	{
+		// A downloaded ZIP has no .git — the preflight can name what to do (re-clone) but cannot repair.
+		var dir = MakeProductLikeDir(includeWeb: false, includeToolkit: true);
+		try
+		{
+			var ex = Assert.Throws<CliException>(() => WebLocalRegistryService.EnsureProductDirIntact(dir));
+			Assert.That(ex.Message, Does.Contain("web/"));
+			Assert.That(ex.Message, Does.Contain(dir),
+				"the message must name the directory so the user can restore or re-clone");
+			Assert.That(ex.Message, Does.Contain("not a git checkout"),
+				"there is no restore possible here — say why, so the message doesn't read like a bug in the preflight");
+		}
+		finally { Directory.Delete(dir, recursive: true); }
+	}
+
+	[Test]
+	public void EnsureProductDirIntact_RestoresFromGit_WhenTrackedButDeleted()
+	{
+		// The actual bug that motivated the preflight: `web/` is tracked in git, has been wiped from the working
+		// tree, and `beam local up` should not have to unwind a 20-service launch to name the fix. Make a real
+		// git repo so the preflight's git-restore path exercises end-to-end.
+		if (!TryFindGit(out var _))
+		{
+			Assert.Ignore("git is not on PATH in this test environment");
+		}
+
+		var dir = MakeProductLikeDir();
+		try
+		{
+			RunGit(dir, "init", "-q");
+			RunGit(dir, "-c", "user.email=t@t", "-c", "user.name=t", "add", ".");
+			RunGit(dir, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "seed");
+
+			Directory.Delete(Path.Combine(dir, "web"), recursive: true);
+			Assert.That(File.Exists(Path.Combine(dir, "web", "package.json")), Is.False);
+
+			Assert.DoesNotThrow(() => WebLocalRegistryService.EnsureProductDirIntact(dir));
+
+			Assert.That(File.Exists(Path.Combine(dir, "web", "package.json")), Is.True,
+				"git restore should have re-materialised the working-tree copy from HEAD");
+		}
+		finally { ForceDeleteDir(dir); }
+	}
+
+	/// <summary>
+	/// Recursive delete that first clears the read-only bit. Git leaves pack files marked read-only on
+	/// Windows, and a plain <c>Directory.Delete(recursive: true)</c> then fails with UnauthorizedAccessException.
+	/// </summary>
+	private static void ForceDeleteDir(string dir)
+	{
+		if (!Directory.Exists(dir)) return;
+		foreach (var file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
+		{
+			try { File.SetAttributes(file, FileAttributes.Normal); } catch { /* best effort */ }
+		}
+		Directory.Delete(dir, recursive: true);
+	}
+
+	private static bool TryFindGit(out string _)
+	{
+		try
+		{
+			var psi = new ProcessStartInfo
+			{
+				FileName = "git",
+				ArgumentList = { "--version" },
+				UseShellExecute = false,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true,
+				CreateNoWindow = true,
+			};
+			var proc = Process.Start(psi);
+			if (proc == null) { _ = null; return false; }
+			proc.WaitForExit(5_000);
+			_ = null;
+			return proc.ExitCode == 0;
+		}
+		catch { _ = null; return false; }
+	}
+
+	private static void RunGit(string workingDir, params string[] args)
+	{
+		var psi = new ProcessStartInfo
+		{
+			FileName = "git",
+			WorkingDirectory = workingDir,
+			UseShellExecute = false,
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			CreateNoWindow = true,
+		};
+		foreach (var a in args) psi.ArgumentList.Add(a);
+		var proc = Process.Start(psi);
+		Assert.That(proc, Is.Not.Null);
+		var stderr = proc.StandardError.ReadToEnd();
+		proc.WaitForExit(20_000);
+		Assert.That(proc.ExitCode, Is.EqualTo(0), $"git {string.Join(" ", args)} failed: {stderr}");
 	}
 
 	[Test]
