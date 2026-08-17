@@ -218,6 +218,15 @@ public class LocalStackUpCommand
 		if (!string.IsNullOrWhiteSpace(args.portalUrl)) config.portalUrl = args.portalUrl;
 		config.javaHome = ResolveJavaHome(args, config);
 
+		// The manifest at .beamable/local-stack.json is written ONCE by `beam local init` and read verbatim
+		// on every `up` — so a step's `arguments` string carries whatever verb+flags the CLI version that ran
+		// `init` chose. When that version predates the Maven-cache fixes (commit 5d469e98d / this session),
+		// the reactor still runs `clean package` (which leaves core out of ~/.m2) and the per-service launcher
+		// still hits `dependency:build-classpath` online (which lets a cached "not found in nexus" miss short-
+		// circuit every service). Rewrite those two arguments IN-MEMORY here so a stale manifest self-heals
+		// without asking every existing user to re-run `beam local init`.
+		MigrateStaleScalaArguments(config);
+
 		var only = NameSet(args.only);
 		var skip = NameSet(args.skip);
 
@@ -1000,6 +1009,110 @@ public class LocalStackUpCommand
 	/// completes well within the timeout. Readiness waits still overlap — only the launches are spaced out.
 	/// </summary>
 	private static readonly TimeSpan GroupLaunchStagger = TimeSpan.FromMilliseconds(2000);
+
+	/// <summary>
+	/// In-memory migration for manifests written by a pre-Maven-cache-fix CLI. See the call site in
+	/// <see cref="Handle"/> for the WHY. Two rewrites, each conditional so a fresh manifest is a no-op:
+	/// <list type="bullet">
+	/// <item><c>build: scala</c> — swap <c>clean package</c> for <c>clean install</c> (so <c>core</c> lands in
+	/// <c>~/.m2</c>) and add <c>-U</c> (so any cached "not found in nexus" miss is invalidated on this run).</item>
+	/// <item>Every <c>scala: *</c> launcher script — insert <c>-o</c> before <c>dependency:build-classpath</c>
+	/// so the classpath resolve runs offline and cannot short-circuit on a stale <c>_remote.repositories</c>.</item>
+	/// </list>
+	/// Purely string-level, and each replacement is idempotent — running the migration twice cannot re-double
+	/// a flag. That matters because the manifest itself is not rewritten; every future <c>up</c> re-migrates.
+	/// </summary>
+	public static void MigrateStaleScalaArguments(LocalStackConfig config)
+	{
+		if (config?.steps == null) return;
+
+		foreach (var step in config.steps)
+		{
+			if (step == null || string.IsNullOrEmpty(step.arguments)) continue;
+
+			if (string.Equals(step.name, "build: scala", StringComparison.OrdinalIgnoreCase))
+			{
+				step.arguments = MigrateBuildScalaArguments(step.arguments);
+			}
+			else if (step.name != null
+			         && step.name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase))
+			{
+				step.arguments = MigrateScalaLauncherArguments(step.arguments);
+			}
+		}
+	}
+
+	/// <summary>
+	/// <c>-q -pl … -am clean package -DskipTests</c> → <c>-q -U -pl … -am clean install -DskipTests</c>.
+	/// Idempotent: the <c>-U</c> add and the <c>package</c>→<c>install</c> swap both check for the target state
+	/// first, so a manifest already on the new form comes out unchanged.
+	/// </summary>
+	public static string MigrateBuildScalaArguments(string arguments)
+	{
+		if (string.IsNullOrEmpty(arguments)) return arguments;
+		var updated = arguments;
+
+		// Verb swap. Only when it is followed by `-DskipTests` so we don't accidentally hit a user string that
+		// happens to contain the word "package" (e.g. inside a -pl path). The full phrase is a template fingerprint.
+		if (!updated.Contains("clean install", StringComparison.Ordinal)
+		    && updated.Contains("clean package -DskipTests", StringComparison.Ordinal))
+		{
+			updated = updated.Replace("clean package -DskipTests", "clean install -DskipTests", StringComparison.Ordinal);
+		}
+
+		// Add -U. Insert right after the leading `-q ` so the flag order matches what the current template emits.
+		// If the manifest happens not to lead with `-q`, prepend `-U ` at the very start — same effect, Maven does
+		// not care about order.
+		if (!ContainsFlag(updated, "-U"))
+		{
+			if (updated.StartsWith("-q ", StringComparison.Ordinal))
+			{
+				updated = "-q -U " + updated.Substring(3);
+			}
+			else
+			{
+				updated = "-U " + updated;
+			}
+		}
+
+		return updated;
+	}
+
+	/// <summary>
+	/// Insert <c>-o </c> (offline) before <c>dependency:build-classpath</c> in the launcher script, if it is
+	/// not already present in the same <c>mvn</c> invocation. Also patches the empty-cache guard message so
+	/// the user sees the current instructions rather than the pre-fix ones.
+	/// </summary>
+	public static string MigrateScalaLauncherArguments(string arguments)
+	{
+		if (string.IsNullOrEmpty(arguments)) return arguments;
+		if (!arguments.Contains("dependency:build-classpath", StringComparison.Ordinal)) return arguments;
+		if (ContainsFlag(arguments, "-o")) return arguments; // already migrated (or user hand-added it)
+
+		// The launcher's mvn call is the ONLY line that contains `dependency:build-classpath`, so inserting `-o`
+		// right in front of that goal is unambiguous. Same result on the sh and PowerShell shells.
+		return arguments.Replace("dependency:build-classpath", "-o dependency:build-classpath", StringComparison.Ordinal);
+	}
+
+	/// <summary>
+	/// True when <paramref name="arguments"/> passes <paramref name="flag"/> (e.g. <c>-U</c>, <c>-o</c>) as a
+	/// whole token — so <c>-U</c> is NOT reported for a string that contains <c>-UserHome</c> or <c>-Unpin</c>.
+	/// The check is a whitespace boundary on either side, or start/end of string.
+	/// </summary>
+	private static bool ContainsFlag(string arguments, string flag)
+	{
+		if (string.IsNullOrEmpty(arguments) || string.IsNullOrEmpty(flag)) return false;
+		var idx = 0;
+		while ((idx = arguments.IndexOf(flag, idx, StringComparison.Ordinal)) >= 0)
+		{
+			var before = idx == 0 || char.IsWhiteSpace(arguments[idx - 1]);
+			var afterIdx = idx + flag.Length;
+			var after = afterIdx >= arguments.Length || char.IsWhiteSpace(arguments[afterIdx]);
+			if (before && after) return true;
+			idx = afterIdx;
+		}
+		return false;
+	}
 
 	/// <summary>
 	/// Local Maven repo path that must hold <c>com.kickstand:core:jar:1.0-SNAPSHOT</c> for the per-service

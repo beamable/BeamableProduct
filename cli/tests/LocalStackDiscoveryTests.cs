@@ -704,6 +704,116 @@ public class LocalStackDiscoveryTests
 		Assert.That(result, Is.Null);
 	}
 
+	// ----------------------------------------------------------------------------------
+	// In-memory manifest migration for pre-Maven-cache-fix arguments
+	// ----------------------------------------------------------------------------------
+
+	[Test]
+	public void MigrateBuildScala_SwapsPackageForInstallAndAddsU()
+	{
+		// The exact string an older CLI wrote into local-stack.json. Rewriting only in-memory (never on disk)
+		// lets an existing manifest self-heal without asking every user to re-run `beam local init`.
+		var before = "-q -pl core,tools/dbflake,tools/gateway -am clean package -DskipTests";
+		var after = LocalStackUpCommand.MigrateBuildScalaArguments(before);
+		Assert.That(after, Does.Contain("clean install -DskipTests"),
+			"install (not package) is what writes core to ~/.m2 — the load-bearing part of the migration");
+		Assert.That(after, Does.Contain("-U "),
+			"-U invalidates any cached 'not found in nexus' entry — the reason --build didn't help on Pedro's box");
+		Assert.That(after, Does.StartWith("-q -U "),
+			"flag order should match what the current template emits so diffs stay readable");
+	}
+
+	[Test]
+	public void MigrateBuildScala_IsIdempotent()
+	{
+		// The migration runs on every `up`; running it twice on the same input must not double-add -U or
+		// re-swap install back. Otherwise a stray retry loop could produce nonsense arguments.
+		var first = LocalStackUpCommand.MigrateBuildScalaArguments(
+			"-q -pl core,tools/dbflake -am clean package -DskipTests");
+		var second = LocalStackUpCommand.MigrateBuildScalaArguments(first);
+		Assert.That(second, Is.EqualTo(first));
+	}
+
+	[Test]
+	public void MigrateBuildScala_NoOp_OnAlreadyMigrated()
+	{
+		var current = "-q -U -pl core,tools/dbflake -am clean install -DskipTests";
+		Assert.That(LocalStackUpCommand.MigrateBuildScalaArguments(current), Is.EqualTo(current));
+	}
+
+	[Test]
+	public void MigrateScalaLauncher_InsertsOfflineFlagOnce()
+	{
+		// The launcher script (a whole PowerShell / sh program) has exactly one `dependency:build-classpath`
+		// call. Inserting `-o` right before that goal is the least intrusive rewrite — order of `mvn` flags
+		// doesn't matter to Maven, so this is safe.
+		var before =
+			"if ($stale) { & '${maven}' -q -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\" }";
+		var after = LocalStackUpCommand.MigrateScalaLauncherArguments(before);
+		Assert.That(after, Does.Contain("-o dependency:build-classpath"),
+			"launcher must run offline — sidesteps any stale negative-cache entry for com.kickstand:core");
+		// Idempotence.
+		Assert.That(LocalStackUpCommand.MigrateScalaLauncherArguments(after), Is.EqualTo(after));
+	}
+
+	[Test]
+	public void MigrateScalaLauncher_NoOp_WhenAlreadyOffline()
+	{
+		var already =
+			"& '${maven}' -q -o -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\"";
+		Assert.That(LocalStackUpCommand.MigrateScalaLauncherArguments(already), Is.EqualTo(already));
+	}
+
+	[Test]
+	public void MigrateScalaLauncher_NoOp_OnEmptyOrUnrelatedContent()
+	{
+		Assert.That(LocalStackUpCommand.MigrateScalaLauncherArguments(null), Is.Null);
+		Assert.That(LocalStackUpCommand.MigrateScalaLauncherArguments(string.Empty), Is.EqualTo(string.Empty));
+		Assert.That(LocalStackUpCommand.MigrateScalaLauncherArguments("echo hi"), Is.EqualTo("echo hi"),
+			"a launcher that doesn't call mvn should be left alone");
+	}
+
+	[Test]
+	public void MigrateStaleScalaArguments_RewritesBuildScalaAndEveryScalaLauncher()
+	{
+		// End-to-end shape: the whole manifest walk should hit the reactor step and every scala: launcher step,
+		// but leave unrelated steps (docker, c#, portal frontend) untouched.
+		var config = new LocalStackConfig
+		{
+			steps = new List<LocalStackStep>
+			{
+				new LocalStackStep
+				{
+					name = "build: scala",
+					arguments = "-q -pl core,tools/dbflake -am clean package -DskipTests"
+				},
+				new LocalStackStep
+				{
+					name = "scala: dbflake",
+					arguments = "& '${maven}' -q -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\""
+				},
+				new LocalStackStep
+				{
+					name = "scala: gateway",
+					arguments = "mvn -q -pl tools/$SVC -am dependency:build-classpath -Dmdep.outputFile=$CPF"
+				},
+				new LocalStackStep
+				{
+					name = "docker: api deps + caddy",
+					arguments = "compose up -d --wait"
+				},
+			}
+		};
+
+		LocalStackUpCommand.MigrateStaleScalaArguments(config);
+
+		Assert.That(config.steps[0].arguments, Does.Contain("-U ").And.Contains("clean install"));
+		Assert.That(config.steps[1].arguments, Does.Contain("-o dependency:build-classpath"));
+		Assert.That(config.steps[2].arguments, Does.Contain("-o dependency:build-classpath"));
+		Assert.That(config.steps[3].arguments, Is.EqualTo("compose up -d --wait"),
+			"unrelated docker/c#/frontend steps must be left alone");
+	}
+
 	[Test]
 	public void MissingCoreInM2_LeftAlone_WhenCoreJarPresent()
 	{
