@@ -539,6 +539,11 @@ public static class LocalStackTemplate
 			command = NpmToken,
 			arguments = "install",
 			build = true,
+			// Declaring node_modules as the output makes `up` run this WITHOUT --build when it is missing — the
+			// same self-heal the .NET hosts get. Otherwise a fresh clone launches the Vite step against a portal
+			// with no dependencies and dies with `Cannot find package 'vite'`, which reads as a broken portal
+			// rather than "npm install was never run here".
+			requiredOutput = Path.Combine(portalDir, "node_modules"),
 			waitForExit = true,
 			readyTimeoutSeconds = 600
 		});

@@ -110,10 +110,12 @@ public class LocalStackWebRegistryStepTests
 		var config = ConfigWithWebRegistry();
 		var names = Names(Select(config));
 
-		foreach (var name in new[] { "build: scala", "build: portal deps" })
-		{
-			Assert.That(names, Does.Not.Contain(name), $"a plain up must not trigger {name}");
-		}
+		Assert.That(names, Does.Not.Contain("build: scala"), "a plain up must not trigger the Scala reactor build");
+
+		// `build: portal deps` IS expected here: this config points at a portal directory with no node_modules,
+		// and installing them is what lets the Vite step start at all.
+		Assert.That(names, Does.Contain("build: portal deps"),
+			"a portal with no node_modules must install them, or the frontend cannot start");
 
 		// ...while --build still runs everything.
 		Assert.That(Names(Select(config, build: true)), Does.Contain("build: scala"));

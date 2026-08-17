@@ -464,13 +464,55 @@ public static class LocalStackConfigIO
 			return true;
 		}
 
-		var path = ResolveRequiredOutput(step, config);
+		// An `npm install` step produces node_modules. Inferring that covers manifests written before the step
+		// declared it, so an existing stack self-heals without being regenerated — which matters because the
+		// symptom (`Cannot find package 'vite'`) looks nothing like "dependencies were never installed".
+		var path = ResolveRequiredOutput(step, config) ?? ImplicitNpmInstallOutput(step, config);
 		if (path == null)
 		{
 			return false;
 		}
 
 		return !File.Exists(path) && !Directory.Exists(path);
+	}
+
+	/// <summary>
+	/// <c>&lt;workingDirectory&gt;/node_modules</c> for a build step that runs <c>npm install</c>, or null for
+	/// anything else. Only consulted when the step declares no <see cref="LocalStackStep.requiredOutput"/>.
+	/// </summary>
+	private static string ImplicitNpmInstallOutput(LocalStackStep step, LocalStackConfig config)
+	{
+		if (step?.build != true || step.beam || step.shell) return null;
+
+		var command = step.command ?? string.Empty;
+		var isNpm = command.Contains(LocalStackTemplate.NpmToken, StringComparison.Ordinal)
+		            || Path.GetFileName(command.Trim().Trim('"')) is "npm" or "npm.cmd";
+
+		if (!isNpm) return null;
+
+		// `install` only — `npm run dev` and friends produce nothing to check for.
+		var arguments = (step.arguments ?? string.Empty).Trim();
+		if (!arguments.Equals("install", StringComparison.OrdinalIgnoreCase)
+		    && !arguments.StartsWith("install ", StringComparison.OrdinalIgnoreCase))
+		{
+			return null;
+		}
+
+		var workDir = Substitute(step.workingDirectory, config);
+		if (string.IsNullOrWhiteSpace(workDir)
+		    || workDir.Contains(EditPlaceholder, StringComparison.Ordinal))
+		{
+			return null;
+		}
+
+		try
+		{
+			return Path.Combine(Path.GetFullPath(workDir), "node_modules");
+		}
+		catch
+		{
+			return null;
+		}
 	}
 
 	/// <summary>

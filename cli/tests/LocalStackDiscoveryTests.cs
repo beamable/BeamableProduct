@@ -234,6 +234,78 @@ public class LocalStackDiscoveryTests
 		Assert.That(LocalStackConfigIO.BuildOutputMissing(step, new LocalStackConfig()), Is.False);
 	}
 
+	// ----------------------------------------------------------------------------------
+	// "Have the portal's node deps ever been installed?"
+	// ----------------------------------------------------------------------------------
+
+	[Test]
+	public void PortalDepsRunWithoutBuildWhenNodeModulesIsMissing()
+	{
+		// The Windows failure: `npm install` is a --build-only step, so a fresh clone launched Vite against a
+		// portal with no dependencies and died with `Cannot find package 'vite'`.
+		var portal = Directory.CreateTempSubdirectory("beam-portal-deps");
+		try
+		{
+			var config = LocalStackTemplate.Create(new LocalStackTemplate.Options { portalDir = portal.FullName });
+			var step = config.steps.First(s => s.name == "build: portal deps");
+
+			Assert.That(step.requiredOutput, Is.EqualTo(Path.Combine(portal.FullName, "node_modules")));
+			Assert.That(LocalStackConfigIO.BuildOutputMissing(step, config), Is.True);
+
+			Directory.CreateDirectory(Path.Combine(portal.FullName, "node_modules"));
+			Assert.That(LocalStackConfigIO.BuildOutputMissing(step, config), Is.False,
+				"an installed portal must not reinstall on every up");
+		}
+		finally
+		{
+			portal.Delete(recursive: true);
+		}
+	}
+
+	[Test]
+	public void AnOlderManifestInfersNodeModulesFromTheNpmInstallStep()
+	{
+		// Manifests written before requiredOutput was set on this step must self-heal too, without regenerating.
+		var portal = Directory.CreateTempSubdirectory("beam-portal-legacy");
+		try
+		{
+			var step = new LocalStackStep
+			{
+				name = "build: portal deps",
+				build = true,
+				command = LocalStackTemplate.NpmToken,
+				arguments = "install",
+				workingDirectory = portal.FullName
+			};
+
+			Assert.That(LocalStackConfigIO.BuildOutputMissing(step, new LocalStackConfig()), Is.True);
+
+			Directory.CreateDirectory(Path.Combine(portal.FullName, "node_modules"));
+			Assert.That(LocalStackConfigIO.BuildOutputMissing(step, new LocalStackConfig()), Is.False);
+		}
+		finally
+		{
+			portal.Delete(recursive: true);
+		}
+	}
+
+	[Test]
+	public void NpmRunStepsAreNotTreatedAsInstalls()
+	{
+		// `npm run dev` is the long-running portal step - it produces nothing and must never be mistaken for a
+		// build whose output is missing, or `up` would try to "build" the dev server on every start.
+		var step = new LocalStackStep
+		{
+			name = "portal frontend",
+			build = false,
+			command = LocalStackTemplate.NpmToken,
+			arguments = "run dev",
+			workingDirectory = Path.GetTempPath()
+		};
+
+		Assert.That(LocalStackConfigIO.BuildOutputMissing(step, new LocalStackConfig()), Is.False);
+	}
+
 	[Test]
 	public void TheTemplateRecordsTheModulesItBuilds()
 	{

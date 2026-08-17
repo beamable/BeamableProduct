@@ -385,15 +385,24 @@ public class LocalStackBuildStepTests
 	/// self-healing "its output is missing, build it anyway" path never reaches them — a surprise multi-minute
 	/// `mvn clean package` on a plain `up` is worse than an error. The two web steps also declare no output,
 	/// which is why `up` needs its own default to run them (see LocalStackWebRegistryStepTests).
+	///
+	/// The Scala step still declares no <c>requiredOutput</c>, but it is not unconditional any more either: it
+	/// carries <c>scalaModules</c>, so `up` builds the reactor when a module has NEVER been compiled. That is a
+	/// different trigger from "the output is stale" — it only fires when running would otherwise launch a
+	/// service with no classes.
 	/// </summary>
 	[Test]
 	public void Slow_build_steps_declare_no_output_so_they_stay_build_only()
 	{
 		var config = CreateWithWebRegistry();
 
+		// `build: portal deps` is deliberately NOT in this list any more. It declares node_modules as its output
+		// so a fresh clone installs them without --build: npm install is a ~minute, it fires only when they are
+		// absent (so once), and without it the Vite step dies with `Cannot find package 'vite'` — a stack that
+		// cannot run at all is worse than a short, one-time install.
 		foreach (var name in new[]
 			{
-				"build: scala", "build: portal deps",
+				"build: scala",
 				LocalStackTemplate.WebPublishStepName, LocalStackTemplate.WebRefreshStepName
 			})
 		{
