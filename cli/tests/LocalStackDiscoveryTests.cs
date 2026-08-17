@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using cli.Commands.LocalStack;
 using cli.Services.LocalStack;
 using NUnit.Framework;
 
@@ -304,6 +305,77 @@ public class LocalStackDiscoveryTests
 		};
 
 		Assert.That(LocalStackConfigIO.BuildOutputMissing(step, new LocalStackConfig()), Is.False);
+	}
+
+	// ----------------------------------------------------------------------------------
+	// Pinning the .NET SDK for build steps
+	// ----------------------------------------------------------------------------------
+
+	[Test]
+	public void ToolchainDotnetRemovesTheSdkRedirects()
+	{
+		// The Windows failure: the toolchain's 10.0.100 dotnet.exe ran MSBuild against
+		// C:\Program Files\dotnet\sdk\10.0.400's targets and died with MSB4062. MSBuildSDKsPath is what
+		// redirects SDK resolution, so it has to be REMOVED (not blanked - an empty value is still a path).
+		var dir = Directory.CreateTempSubdirectory("beam-dotnet-env");
+		try
+		{
+			var config = new LocalStackConfig
+			{
+				toolchain = new LocalStackToolchain { dotnet = dir.FullName }
+			};
+
+			var psi = new System.Diagnostics.ProcessStartInfo();
+			psi.Environment["MSBuildSDKsPath"] = "/some/other/sdk/Sdks";
+			psi.Environment["DOTNET_MSBUILD_SDK_RESOLVER_SDKS_DIR"] = "/some/other/sdk/Sdks";
+			psi.Environment["DOTNET_ROOT_X64"] = "/some/other/dotnet";
+
+			LocalStackUpCommand.ApplyToolchainDotnetEnvironment(psi, config);
+
+            // Removed outright, not set to empty.
+			Assert.That(psi.Environment.ContainsKey("MSBuildSDKsPath"), Is.False);
+			Assert.That(psi.Environment.ContainsKey("DOTNET_MSBUILD_SDK_RESOLVER_SDKS_DIR"), Is.False);
+			Assert.That(psi.Environment.ContainsKey("DOTNET_ROOT_X64"), Is.False,
+				"an architecture-specific root takes precedence over DOTNET_ROOT");
+
+			Assert.That(psi.Environment["DOTNET_ROOT"], Is.EqualTo(dir.FullName));
+			// A freshly extracted SDK otherwise installs an HTTPS dev certificate on its first run.
+			Assert.That(psi.Environment["DOTNET_GENERATE_ASPNET_CERTIFICATE"], Is.EqualTo("false"));
+			Assert.That(psi.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"], Is.EqualTo("1"));
+		}
+		finally
+		{
+			dir.Delete(recursive: true);
+		}
+	}
+
+	[Test]
+	public void WithoutAToolchainDotnetTheEnvironmentIsLeftAlone()
+	{
+		// A stack that never ran `beam local setup` must behave exactly as before — including keeping whatever
+		// SDK redirects the machine has, because its dotnet IS the system one.
+		var psi = new System.Diagnostics.ProcessStartInfo();
+		psi.Environment["MSBuildSDKsPath"] = "/keep/me";
+
+		LocalStackUpCommand.ApplyToolchainDotnetEnvironment(psi, new LocalStackConfig());
+
+		Assert.That(psi.Environment["MSBuildSDKsPath"], Is.EqualTo("/keep/me"));
+		Assert.That(psi.Environment.ContainsKey("DOTNET_ROOT"), Is.False);
+	}
+
+	[Test]
+	public void AToolchainDotnetPathThatNoLongerExistsIsIgnored()
+	{
+		var psi = new System.Diagnostics.ProcessStartInfo();
+		psi.Environment["MSBuildSDKsPath"] = "/keep/me";
+
+		LocalStackUpCommand.ApplyToolchainDotnetEnvironment(psi, new LocalStackConfig
+		{
+			toolchain = new LocalStackToolchain { dotnet = Path.Combine(Path.GetTempPath(), "no-such-dotnet") }
+		});
+
+		Assert.That(psi.Environment["MSBuildSDKsPath"], Is.EqualTo("/keep/me"),
+			"a stale toolchain path must not silently strip the machine's own configuration");
 	}
 
 	[Test]

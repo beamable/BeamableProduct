@@ -1080,6 +1080,72 @@ public class LocalStackUpCommand
 		{
 			psi.Environment["JAVA_HOME"] = config.javaHome;
 		}
+
+		ApplyToolchainDotnetEnvironment(psi, config);
+	}
+
+	/// <summary>
+	/// Pins the .NET environment to the toolchain's SDK.
+	///
+	/// Putting the private <c>dotnet</c> on PATH — or even invoking it by absolute path — is NOT enough.
+	/// <c>MSBuildSDKsPath</c> overrides where MSBuild resolves <c>&lt;Project Sdk="..."&gt;</c> from, so on a machine
+	/// where something has set it (IDEs and build tooling do) the toolchain's <c>dotnet.exe</c> runs its own
+	/// MSBuild against ANOTHER SDK's targets. That mix fails as
+	/// <c>MSB4062: could not load NuGet.Build.Tasks ... IMultiThreadableTask</c> — which reads as a broken project
+	/// rather than two SDKs spliced together. Verified: a 10.0.100 muxer with <c>MSBuildSDKsPath</c> pointed at a
+	/// 9.0.x <c>Sdks</c> directory loads the 9.0.x targets.
+	///
+	/// The load-bearing part is therefore REMOVING those redirects — removing, not blanking, because an empty
+	/// value is still a value the resolver treats as a path. <c>DOTNET_ROOT</c> is pinned too, but note it does
+	/// NOT affect SDK resolution (the muxer finds SDKs relative to its own location); it governs runtime
+	/// resolution for apps the build spawns, which is worth pinning for the same reason but is not what fixes
+	/// MSB4062.
+	/// </summary>
+	public static void ApplyToolchainDotnetEnvironment(ProcessStartInfo psi, LocalStackConfig config)
+	{
+		var dotnetHome = config?.toolchain?.dotnet;
+		if (string.IsNullOrWhiteSpace(dotnetHome)
+		    || dotnetHome.Contains(LocalStackConfigIO.EditPlaceholder, StringComparison.Ordinal)
+		    || !Directory.Exists(dotnetHome))
+		{
+			return;
+		}
+
+		psi.Environment["DOTNET_ROOT"] = dotnetHome;
+
+		// Architecture-specific roots take precedence over DOTNET_ROOT, so a stale one would win.
+		foreach (var arch in new[] { "DOTNET_ROOT_X64", "DOTNET_ROOT_X86", "DOTNET_ROOT(x86)", "DOTNET_ROOT_ARM64" })
+			psi.Environment.Remove(arch);
+
+		// These redirect MSBuild's SDK resolver at a specific SDK/CLI directory. IDEs and build tooling set them,
+		// and any one of them silently overrides DOTNET_ROOT for SDK resolution.
+		foreach (var redirect in new[]
+		{
+			"MSBuildSDKsPath",
+			"DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR",
+			"DOTNET_MSBUILD_SDK_RESOLVER_SDKS_DIR",
+			"DOTNET_MSBUILD_SDK_RESOLVER_MSBUILD_DIR",
+		})
+		{
+			psi.Environment.Remove(redirect);
+		}
+
+		// The muxer used by anything the build shells out to (SDK tasks, `dotnet tool`, source generators).
+		var hostExe = Path.Combine(dotnetHome, OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet");
+		if (File.Exists(hostExe))
+			psi.Environment["DOTNET_HOST_PATH"] = hostExe;
+
+		// Blocks the legacy Windows behaviour where a private install ALSO searches the global one.
+		psi.Environment["DOTNET_MULTILEVEL_LOOKUP"] = "0";
+
+		// A freshly extracted SDK has no first-run marker, so its first invocation prints the welcome banner AND
+		// installs an ASP.NET Core HTTPS development certificate — a machine-level side effect nobody asked a
+		// build step for. Suppress the whole first-run experience.
+		psi.Environment["DOTNET_NOLOGO"] = "1";
+		psi.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
+		psi.Environment["DOTNET_GENERATE_ASPNET_CERTIFICATE"] = "false";
+		if (!psi.Environment.ContainsKey("DOTNET_CLI_TELEMETRY_OPTOUT"))
+			psi.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
 	}
 
 	private static string ResolveJavaHome(CommandArgs args, LocalStackConfig config)
