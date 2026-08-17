@@ -617,7 +617,16 @@ public static class LocalStackTemplate
 				// instead of launching JVMs against empty target/classes.
 				scalaModules = new List<string>(modules),
 				// `clean` so a shared-module API change can't leave cross-module classes skewed (NoSuchMethodError).
-				arguments = $"-q -pl {string.Join(",", modules)} -am clean package -DskipTests",
+				// `install`, not `package` — this is what BeamableBackend's own README prescribes (`mvn install`), and
+				// the per-service launcher below depends on it: `dependency:build-classpath` resolves
+				// `com.kickstand:core` as a Maven ARTIFACT, so core has to be in the local repository. `package`
+				// leaves core's jar in core/target only, and on a machine whose ~/.m2 has never seen it the
+				// classpath step falls back to the remote nexus, fails, and Maven CACHES the miss:
+				//   "core:jar:1.0-SNAPSHOT was not found ... resolution is not reattempted until the update
+                //    interval has elapsed"
+				// which then breaks every service launch. It works on a long-lived machine only because some
+				// earlier manual `mvn install` populated ~/.m2.
+				arguments = $"-q -pl {string.Join(",", modules)} -am clean install -DskipTests",
 				// Scala runs under Java 8; ${java} is substituted to that JAVA_HOME by `up` (as for the launch shells).
 				environment = new Dictionary<string, string> { ["JAVA_HOME"] = "${java}" },
 				build = true,
@@ -887,7 +896,7 @@ public static class LocalStackTemplate
 			"{ [ -s \"$CPF\" ] && [ \"$CPF\" -nt core/pom.xml ]; } || JAVA_HOME=\"$JHOME\" \"" + MavenToken + "\" -q -pl tools/$SVC -am dependency:build-classpath -Dmdep.outputFile=\"$CPF\" || true; " +
 			// An empty cache means the mvn above failed. Launching anyway starts a JVM with only the module's own
 			// classes on the classpath, which dies deep in classloading — say what actually went wrong instead.
-			"[ -s \"$CPF\" ] || { echo \"beam: classpath cache $CPF is empty — 'mvn dependency:build-classpath' failed for tools/$SVC. Re-run with --build, or run that mvn command by hand to see why.\" >&2; exit 1; }; " +
+			"[ -s \"$CPF\" ] || { echo \"beam: classpath cache $CPF is empty — 'mvn dependency:build-classpath' failed for tools/$SVC. The usual cause is that com.kickstand:core is not in your local Maven repository (~/.m2): this goal resolves core as an ARTIFACT, and a 'package'-only build leaves it in core/target. Re-run 'beam local up --build' (it now runs 'mvn install', which puts core in ~/.m2), or run that mvn command by hand to see why.\" >&2; exit 1; }; " +
 			"CP=\"tools/$SVC/target/classes:core/target/classes:$JAR:$(cat \"$CPF\")\"; " +
 			// $JVM_ARGS unquoted on purpose: it must word-split into separate flags.
 			"exec \"$JHOME/bin/java\" $JVM_ARGS -cp \"$CP\" \"$MAIN\"";
@@ -949,7 +958,7 @@ public static class LocalStackTemplate
 			"$deps = ''",
 			"if (Test-Path $cpf) { $raw = Get-Content $cpf -Raw; if ($raw) { $deps = $raw.Trim() } }",
 			"if (-not $deps) {",
-			"  Write-Host \"beam: classpath cache $cpf is empty - 'mvn dependency:build-classpath' failed for tools/$svc. Re-run with --build, or run that mvn command by hand to see why.\"",
+			"  Write-Host \"beam: classpath cache $cpf is empty - 'mvn dependency:build-classpath' failed for tools/$svc. The usual cause is that com.kickstand:core is not in your local Maven repository (~/.m2): this goal resolves core as an ARTIFACT, and a 'package'-only build leaves it in core/target. Re-run 'beam local up --build' (it now runs 'mvn install', which puts core in ~/.m2), or run that mvn command by hand to see why.\"",
 			"  exit 1 }",
 			"$cp = \"tools/$svc/target/classes;core/target/classes;$jar;\" + $deps",
 			"& \"$jhome\\bin\\java.exe\" @jvmArgs -cp $cp $main",

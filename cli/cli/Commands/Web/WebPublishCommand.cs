@@ -373,6 +373,37 @@ public class WebPublishCommand : AtomicCommand<WebPublishCommandArgs, WebPublish
 		}
 	}
 
+	/// <summary>
+	/// When the starting directory looks like it was MEANT to be the product checkout (it has one of the two
+	/// marker files, or a directory of the right name), name the marker that is actually missing. A partial
+	/// checkout is the common cause and the generic message gives no way to tell.
+	/// </summary>
+	private static string DescribeMissingMarkers(string startDir)
+	{
+		try
+		{
+			var markers = new[]
+			{
+				Path.Combine("web", "package.json"),
+				Path.Combine("beam-portal-toolkit", "package.json"),
+			};
+
+			var present = markers.Where(m => File.Exists(Path.Combine(startDir, m))).ToList();
+			var absent = markers.Where(m => !File.Exists(Path.Combine(startDir, m))).ToList();
+
+			// Only worth reporting when this directory is a partial match — otherwise we are simply somewhere else
+			// entirely and listing both markers as "missing" is noise.
+			if (present.Count == 0 || absent.Count == 0) return string.Empty;
+
+			return $" That directory has {string.Join(", ", present)} but is missing " +
+			       $"{string.Join(", ", absent)} — it looks like an incomplete checkout.";
+		}
+		catch
+		{
+			return string.Empty;
+		}
+	}
+
 	private static string ResolveProductDir(WebPublishCommandArgs args)
 	{
 		if (!string.IsNullOrEmpty(args.ProductDir))
@@ -385,12 +416,18 @@ public class WebPublishCommand : AtomicCommand<WebPublishCommandArgs, WebPublish
 			return Path.GetFullPath(args.ProductDir);
 		}
 
-		var found = WebLocalRegistryService.FindProductDir(Directory.GetCurrentDirectory());
+		var startDir = Directory.GetCurrentDirectory();
+		var found = WebLocalRegistryService.FindProductDir(startDir);
 		if (string.IsNullOrEmpty(found))
 		{
+			// Say WHERE it looked and WHICH marker is missing. The old message named neither, so a partial or
+			// moved checkout produced "could not find a checkout" while standing in the checkout — with nothing
+			// to act on. `beam local up` now passes --product-dir explicitly, so reaching this means a direct
+			// invocation, where the working directory is the only clue available.
+			var missing = DescribeMissingMarkers(startDir);
 			throw new CliException(
-				"Could not find a BeamableProduct checkout containing web/ and beam-portal-toolkit/. " +
-				"Run this from inside that repository, or pass --product-dir");
+				$"Could not find a BeamableProduct checkout containing web/ and beam-portal-toolkit/, searching " +
+				$"upwards from [{startDir}].{missing} Run this from inside that repository, or pass --product-dir.");
 		}
 
 		Log.Verbose($"Using product directory [{found}]");

@@ -88,7 +88,11 @@ public class LocalStackBuildStepTests
 		Assert.That(step.command, Is.EqualTo(LocalStackTemplate.MavenToken));
 		Assert.That(LocalStackConfigIO.Substitute(step.command, new LocalStackConfig()),
 			Is.EqualTo(OperatingSystem.IsWindows() ? "mvn.cmd" : "mvn"));
-		Assert.That(step.arguments, Does.Contain("package"));
+		// `install`, not just `package`: the per-service launcher runs `dependency:build-classpath`, which resolves
+		// com.kickstand:core as a Maven ARTIFACT, so core must land in ~/.m2. A package-only build leaves it in
+		// core/target and every service launch then fails to resolve it from the remote nexus. This also matches
+		// BeamableBackend's own README ("Build the project by running `mvn install`").
+		Assert.That(step.arguments, Does.Contain("install"));
 		Assert.That(step.arguments, Does.Contain("tools/gateway"));
 		Assert.That(step.arguments, Does.Contain("tools/auth"));
 		Assert.That(step.arguments, Does.Contain("-am"));
