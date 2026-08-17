@@ -1741,17 +1741,26 @@ public class LocalStackUpCommand
 					// `/basic/*` call through Caddy 502'd and every microservice and portal extension died on
 					// startup, which reads as "the whole stack is broken" rather than "one step is hung".
 					//
-					// Only retry when the step is PROVABLY not serving (see <see cref="StepIsDeadOnItsPort"/>).
-					// Missing this gate is usually a false negative — on a good run a dozen Scala services report
-					// "did not signal ready" while serving traffic fine — so retrying on the timeout alone would
-					// kill and relaunch a working stack.
-					if (retriesLeft > 0 && relaunch != null && StepIsDeadOnItsPort(step))
+					// Only retry when the step is PROVABLY not serving. Two independent signals count as "provably":
+					// port unbound (see <see cref="StepIsDeadOnItsPort"/>), and a Mongo startup timeout in the tail
+					// of the log (see <see cref="LogShowsMongoStartupFailure"/>). Missing the gate is usually a
+					// false negative — on a good run a dozen Scala services report "did not signal ready" while
+					// serving traffic fine — so retrying on the timeout alone would kill and relaunch a working
+					// stack. The Mongo case is safe to add because the service has explicitly written
+					// "MongoTimeoutException ... state=CONNECTING" and then parked without ever binding.
+					var deadOnPort = StepIsDeadOnItsPort(step);
+					var mongoRace = !deadOnPort && LogShowsMongoStartupFailure(l);
+					if (retriesLeft > 0 && relaunch != null && (deadOnPort || mongoRace))
 					{
 						retriesLeft--;
-						Log.Warning($"[{step.name}] never signalled ready and nothing is listening on port {step.port} — " +
-						            $"hung rather than slow; killing and retrying ({retriesLeft} left). Last log: {LastLogLine(l)}");
-						Send(step.name, "starting",
-							$"hung with port {step.port} unbound — retrying ({retriesLeft} left)", baseProgress);
+						var reason = deadOnPort
+							? $"never signalled ready and nothing is listening on port {step.port} — hung rather than slow"
+							: "lost the Mongo connect race at startup (MongoTimeoutException) and parked";
+						var progressMsg = deadOnPort
+							? $"hung with port {step.port} unbound — retrying ({retriesLeft} left)"
+							: $"lost Mongo connect race — retrying ({retriesLeft} left)";
+						Log.Warning($"[{step.name}] {reason}; killing and retrying ({retriesLeft} left). Last log: {LastLogLine(l)}");
+						Send(step.name, "starting", progressMsg, baseProgress);
 
 						// Kill first: unlike the exit path below, this process is still alive, and leaving it behind
 						// orphans a JVM that would race the relaunch for the same port.
@@ -1938,6 +1947,86 @@ public class LocalStackUpCommand
 		}
 
 		return "";
+	}
+
+	/// <summary>
+	/// True when the tail of the step's log looks like a Scala service that raced Mongo at startup and lost.
+	///
+	/// The failure has a specific signature: the JVM throws <c>com.mongodb.MongoTimeoutException: Timed out
+	/// after 5000 ms while waiting to connect</c> during index creation on startup, then the service catches it
+	/// and parks — process still alive, no port bound (Scala services other than <c>gateway</c> and
+	/// <c>analytics-gateway</c> don't set <c>step.port</c>, so <see cref="StepIsDeadOnItsPort"/> can never fire).
+	/// The service will never reach the "Service Started" log line, so the readiness gate times out at 120s
+	/// and every downstream call to that service 502s under a "Stack is up" banner.
+	///
+	/// Under a 15-service startup burst this hits 2-3 services stochastically on Windows (the Java Mongo
+	/// driver's 5s serverSelectionTimeout is very tight against localhost:27015 when many services connect at
+	/// once). A relaunch reliably works because the JVMs are no longer contending, so this justifies treating
+	/// the pattern as "provably not serving" — the same bar the port-dead check clears.
+	///
+	/// Scan the last N bytes only; a full-file read on a 50 MB log per timeout would be wasteful. Also require
+	/// that no <c>Service Started</c> or <c>Serving traffic</c> line appears AFTER the exception — a service
+	/// that timed out early, retried its own connection and then bound is not what this gate is for.
+	/// </summary>
+	private static bool LogShowsMongoStartupFailure(Launched l) =>
+		LogTailShowsMongoStartupFailure(l.StdoutLog) || LogTailShowsMongoStartupFailure(l.StderrLog);
+
+	/// <summary>
+	/// Same detection <see cref="LogShowsMongoStartupFailure"/> makes, but on a single log file — separated so
+	/// tests can hand in a plain path without constructing a <c>Launched</c>.
+	/// </summary>
+	public static bool LogTailShowsMongoStartupFailure(string logPath)
+	{
+		try
+		{
+			if (string.IsNullOrEmpty(logPath) || !File.Exists(logPath)) return false;
+			var tail = ReadTail(logPath, 64 * 1024);
+			if (string.IsNullOrEmpty(tail)) return false;
+
+			var mongoIdx = tail.LastIndexOf("MongoTimeoutException", StringComparison.Ordinal);
+			if (mongoIdx < 0)
+			{
+				// Fall back to the driver's own wording — a slightly earlier version of the driver logged the
+				// message without the exception type in front of it in some code paths.
+				mongoIdx = tail.LastIndexOf("Timed out after 5000 ms while waiting to connect", StringComparison.Ordinal);
+			}
+			if (mongoIdx < 0) return false;
+
+			var after = tail.Substring(mongoIdx);
+			if (after.Contains("Service Started", StringComparison.Ordinal)
+			    || after.Contains("Serving traffic", StringComparison.Ordinal))
+			{
+				// The service raced Mongo, recovered on its own, and reached ready after all. Not our problem.
+				return false;
+			}
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+	/// <summary>
+	/// Reads at most <paramref name="maxBytes"/> from the END of the file. Used to scan the readiness log's
+	/// tail for a startup-failure signature without paying for a full-file read on every readiness timeout.
+	/// </summary>
+	private static string ReadTail(string path, int maxBytes)
+	{
+		try
+		{
+			using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+			if (fs.Length == 0) return string.Empty;
+			var toRead = (int)Math.Min(fs.Length, maxBytes);
+			fs.Seek(-toRead, SeekOrigin.End);
+			var buf = new byte[toRead];
+			var read = fs.Read(buf, 0, toRead);
+			return System.Text.Encoding.UTF8.GetString(buf, 0, read);
+		}
+		catch
+		{
+			return string.Empty;
+		}
 	}
 
 	private static string Trim(string s, int max) => s.Length <= max ? s : s.Substring(0, max);

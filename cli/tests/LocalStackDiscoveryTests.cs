@@ -573,6 +573,101 @@ public class LocalStackDiscoveryTests
 		Assert.That(proc.ExitCode, Is.EqualTo(0), $"git {string.Join(" ", args)} failed: {stderr}");
 	}
 
+	// ----------------------------------------------------------------------------------
+	// Scala Mongo-startup-race retry heuristic
+	// ----------------------------------------------------------------------------------
+
+	private const string MongoTimeoutLine =
+		"[scala: leaderboards] com.mongodb.MongoTimeoutException: Timed out after 5000 ms while waiting to connect. " +
+		"Client view of cluster state is {type=UNKNOWN, servers=[{address=localhost:27015, type=UNKNOWN, state=CONNECTING}]";
+
+	[Test]
+	public void MongoStartupFailure_Detected_WhenTailShowsUnrecoveredException()
+	{
+		// The real bug: three Scala services hit MongoTimeoutException on startup, parked, never bound a port,
+		// and the CLI's readyRetries could not fire because StepIsDeadOnItsPort needs `step.port` set. This
+		// gate has to say YES on that exact tail so the retry branch is unblocked.
+		var log = Path.GetTempFileName();
+		try
+		{
+			File.WriteAllText(log,
+				"[scala: leaderboards] INFO Some earlier startup line\n" +
+				MongoTimeoutLine + "\n" +
+				"[scala: leaderboards]   at com.mongodb.internal.connection.BaseCluster.getDescription(BaseCluster.java:185)\n" +
+				"[scala: leaderboards] still starting — 60/120s\n");
+			Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(log), Is.True);
+		}
+		finally { File.Delete(log); }
+	}
+
+	[Test]
+	public void MongoStartupFailure_NotDetected_WhenServiceRecoveredAndBound()
+	{
+		// A service that lost the first Mongo attempt but then reconnected and logged "Service Started" (BASIC/
+		// OBJECT provider) is not stuck. Retrying it would kill a service that is already serving traffic —
+		// exactly the false-positive the developer's block-comment about StepIsDeadOnItsPort warns against.
+		var log = Path.GetTempFileName();
+		try
+		{
+			File.WriteAllText(log,
+				MongoTimeoutLine + "\n" +
+				"[scala: leaderboards] INFO reconnected to mongo, continuing startup\n" +
+				"[scala: leaderboards] INFO basic Service Started: leaderboards\n");
+			Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(log), Is.False);
+		}
+		finally { File.Delete(log); }
+	}
+
+	[Test]
+	public void MongoStartupFailure_NotDetected_WhenAkkaHttpBoundAfterMongoRace()
+	{
+		// The gateway/analytics-gateway variant: the readiness log line is "Serving traffic ..." rather than
+		// "Service Started". Same treatment — if bind followed the timeout, it recovered on its own.
+		var log = Path.GetTempFileName();
+		try
+		{
+			File.WriteAllText(log,
+				MongoTimeoutLine + "\n" +
+				"[scala: gateway] INFO Serving traffic on 0.0.0.0:9002\n");
+			Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(log), Is.False);
+		}
+		finally { File.Delete(log); }
+	}
+
+	[Test]
+	public void MongoStartupFailure_NotDetected_OnHealthyStartup()
+	{
+		// A service that never touched Mongo timeout at all must not trip the gate — otherwise every healthy
+		// Scala service on a `readyTimeoutSeconds=120` gate would be killed and relaunched.
+		var log = Path.GetTempFileName();
+		try
+		{
+			File.WriteAllText(log,
+				"[scala: account] INFO Preloaded signing key and cookie\n" +
+				"[scala: account] INFO basic Service Started: account\n");
+			Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(log), Is.False);
+		}
+		finally { File.Delete(log); }
+	}
+
+	[Test]
+	public void MongoStartupFailure_NotDetected_OnMissingOrEmptyLog()
+	{
+		// Detached runs may not have flushed anything yet; missing/empty files must NOT be treated as failure,
+		// or the retry would fire against every fresh launch.
+		Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(null), Is.False);
+		Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(string.Empty), Is.False);
+		Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(
+			Path.Combine(Path.GetTempPath(), "no-such-file-" + Guid.NewGuid())), Is.False);
+
+		var empty = Path.GetTempFileName();
+		try
+		{
+			Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(empty), Is.False);
+		}
+		finally { File.Delete(empty); }
+	}
+
 	[Test]
 	public void TheTemplateRecordsTheModulesItBuilds()
 	{
