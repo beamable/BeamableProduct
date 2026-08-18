@@ -26,6 +26,8 @@ public class LogTemplateAnalyzer : DiagnosticAnalyzer
 {
 	private const string BEAMABLE_LOGGER_FULL_NAME = "Beamable.Common.BeamableLogger";
 	private const string SERVER_LOG_FULL_NAME = "Beamable.Server.Log";
+	private const string UNITY_DEBUG_FULL_NAME = "UnityEngine.Debug";
+	private const string MICROSERVICE_DEBUG_FULL_NAME = "Beamable.Server.MicroserviceDebug";
 
 	/// <summary>
 	/// Helpers whose name ends in this hand the message straight to <see cref="string.Format(string,object[])"/>,
@@ -77,7 +79,7 @@ public class LogTemplateAnalyzer : DiagnosticAnalyzer
 			{
 				// Judged without needing the argument count: a template assembled at runtime is a problem whether
 				// or not we can see how many arguments came with it.
-				if (!IsForwardedTemplate(messageArgument, logArguments))
+				if (!IsKnownAnalyzedWrapper(context.ContainingSymbol, messageArgument, logArguments))
 				{
 					context.ReportDiagnostic(Diagnostic.Create(Diagnostics.Logs.NonConstantLogTemplate, location, methodName));
 				}
@@ -121,7 +123,9 @@ public class LogTemplateAnalyzer : DiagnosticAnalyzer
 	private static bool IsBeamableLogMethod(IMethodSymbol method)
 	{
 		var containingType = method?.ContainingType?.ToDisplayString();
-		if (containingType != BEAMABLE_LOGGER_FULL_NAME && containingType != SERVER_LOG_FULL_NAME)
+		if (containingType != BEAMABLE_LOGGER_FULL_NAME
+		    && containingType != SERVER_LOG_FULL_NAME
+		    && containingType != UNITY_DEBUG_FULL_NAME)
 		{
 			return false;
 		}
@@ -172,15 +176,17 @@ public class LogTemplateAnalyzer : DiagnosticAnalyzer
 	}
 
 	/// <summary>
-	/// Recognises a logging wrapper handing its own caller's message and arguments straight through, as in
-	/// <c>void MyLog(string message, params object[] args) =&gt; Log.Error(message, args);</c>. The template is not
-	/// being assembled here, so there is nothing to fix at this call site; the mistake, if there is one, belongs
-	/// to whoever called the wrapper. Warning here would be unfixable noise, and this analyzer ships to users
-	/// through the generated service templates.
+	/// Recognises the microservice's known <see cref="UnityEngine.Debug"/> adapter handing its own caller's
+	/// message and arguments straight through. That adapter is exempt because calls to its public
+	/// <see cref="UnityEngine.Debug"/> entry points are analyzed above. Arbitrary pass-through wrappers are not
+	/// exempt: this analyzer cannot see their callers, so suppressing their forwarding call would hide the only
+	/// diagnostic available for a runtime-built template.
 	/// </summary>
-	private static bool IsForwardedTemplate(IArgumentOperation messageArgument, IArgumentOperation logArguments)
+	private static bool IsKnownAnalyzedWrapper(ISymbol containingSymbol,
+		IArgumentOperation messageArgument, IArgumentOperation logArguments)
 	{
-		return Unwrap(messageArgument.Value) is IParameterReferenceOperation messageParameter
+		return containingSymbol?.ContainingType?.ToDisplayString() == MICROSERVICE_DEBUG_FULL_NAME
+		       && Unwrap(messageArgument.Value) is IParameterReferenceOperation messageParameter
 		       && Unwrap(logArguments.Value) is IParameterReferenceOperation argumentsParameter
 		       && argumentsParameter.Parameter.IsParams
 		       && SymbolEqualityComparer.Default.Equals(messageParameter.Parameter.ContainingSymbol,

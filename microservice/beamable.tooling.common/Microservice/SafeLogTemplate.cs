@@ -188,7 +188,7 @@ namespace Beamable.Server
 		/// Renders a template and its arguments as a single unstructured message. The template is emitted
 		/// verbatim, which is safe because a message logged without arguments is never parsed for holes.
 		/// </summary>
-		private static string Flatten(string template, object[] args)
+		internal static string Flatten(string template, object[] args)
 		{
 			var builder = new StringBuilder(template);
 			builder.Append("\n[unformatted log arguments: ");

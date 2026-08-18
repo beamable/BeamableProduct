@@ -124,20 +124,58 @@ public static class LogCallSites
 	}
 
 	[Fact]
-	public async Task Test_NoDiagnostic_Log_PassThroughWrapper()
+	public async Task Test_Diagnostic_Log_ArbitraryPassThroughWrapper_IsNotSuppressed()
 	{
-		// A wrapper forwarding its own caller's message and arguments is not building a template, so there is
-		// nothing to fix here. Warning would be unfixable noise - and this analyzer ships to users.
+		// Calls to arbitrary wrappers are not analyzed, so their forwarding call is the only place where the
+		// analyzer can report that a runtime template and arguments are being combined.
 		var ctx = LogTest(@"
 	public static void MyLog(string message, params object[] args)
 	{
-		BeamableLogger.LogError(message, args);
+		BeamableLogger.LogError({|#0:message|}, args);
+	}");
+
+		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Logs.NonConstantLogTemplate)
+			.WithLocation(0)
+			.WithArguments("BeamableLogger.LogError"));
+
+		await ctx.RunAsync();
 	}
 
-	public static void MyServerLog(string message, params object[] args)
+	[Fact]
+	public async Task Test_Diagnostic_Log_UnityDebugWrapperCall_IsAnalyzed()
 	{
-		Log.Error(message, args);
+		var ctx = LogTest(@"
+	public static void Broken(string id)
+	{
+		var message = ""failed for "" + id;
+		UnityEngine.Debug.LogError({|#0:message|}, id);
 	}");
+
+		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Logs.NonConstantLogTemplate)
+			.WithLocation(0)
+			.WithArguments("Debug.LogError"));
+
+		await ctx.RunAsync();
+	}
+
+	[Fact]
+	public async Task Test_NoDiagnostic_Log_KnownMicroserviceDebugAdapter_IsAnalyzedAtItsCallers()
+	{
+		const string UserCode = @"
+using Beamable.Common;
+
+namespace Beamable.Server;
+
+public class MicroserviceDebug
+{
+	public void LogError(string message, params object[] args)
+	{
+		BeamableLogger.LogError(message, args);
+	}
+}
+";
+		var ctx = new CSharpAnalyzerTest<LogTemplateAnalyzer, DefaultVerifier>();
+		PrepareForRun(ctx, UserCode);
 
 		await ctx.RunAsync();
 	}
@@ -181,6 +219,24 @@ public static class LogCallSites
 		BeamableLogger.LogErrorFormat(""positional {0}"", new object[] { 1 });
 		BeamableLogger.LogWarningFormat(""positional {0} {1}"", new object[] { 1, 2 });
 	}");
+
+		await ctx.RunAsync();
+	}
+
+	[Fact]
+	public async Task Test_Diagnostic_Log_CompositeFormatBranchUsesPositionalIndexes()
+	{
+		// If the composite-format branch is removed, the named-template rewrite turns {1} into {0} and this
+		// incorrectly passes. One argument cannot satisfy positional index 1.
+		var ctx = LogTest(@"
+	public static void Broken()
+	{
+		BeamableLogger.LogErrorFormat({|#0:""positional {1}""|}, new object[] { 1 });
+	}");
+
+		ctx.ExpectedDiagnostics.Add(new DiagnosticResult(Diagnostics.Logs.UnrenderableLogTemplate)
+			.WithLocation(0)
+			.WithArguments("BeamableLogger.LogErrorFormat", 1));
 
 		await ctx.RunAsync();
 	}

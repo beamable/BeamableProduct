@@ -79,21 +79,28 @@ public class QueuedLogger : ILogger
 	/// </summary>
 	private static string Describe(LogMessage message, Exception failure)
 	{
-		var description = SafeLogTemplate.SafeToString(message.state);
 		if (message.state is IReadOnlyList<KeyValuePair<string, object>> values)
 		{
+			string template = null;
+			var arguments = new List<object>(values.Count);
 			foreach (var value in values)
 			{
-				if (value.Key != "{OriginalFormat}")
+				if (value.Key == "{OriginalFormat}")
 				{
-					continue;
+					template = SafeLogTemplate.SafeToString(value.Value);
 				}
-
-				description = SafeLogTemplate.SafeToString(value.Value);
-				break;
+				else
+				{
+					arguments.Add(value.Value);
+				}
 			}
+
+			var structuredDescription = SafeLogTemplate.Flatten(template ?? "[structured log message]",
+				arguments.ToArray());
+			return structuredDescription + "\n[log message could not be rendered: " + failure.Message + "]";
 		}
 
+		var description = SafeLogTemplate.SafeToString(message.state);
 		return description + "\n[log message could not be rendered: " + failure.Message + "]";
 	}
 
