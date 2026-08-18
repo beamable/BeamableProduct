@@ -58,16 +58,16 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 	}
 
 	private static void PrepareForRun<T>(CSharpAnalyzerTest<T, DefaultVerifier> ctx,
-		string userCode, string[]? extraGlobalConfigs = null) where T : DiagnosticAnalyzer, new()
+		string userCode, string[]? extraGlobalConfigs = null, bool enableUnrealBlueprintCompatibility = true) where T : DiagnosticAnalyzer, new()
 	{
 		ctx.DisabledDiagnostics.Add("BEAM_DBG_0001");
 		AddAssemblyReferences(ctx.TestState);
 
 		ctx.TestCode = userCode;
 
-		string globalConfig = @"
+		string globalConfig = $@"
 is_global = true 
-build_property.EnableUnrealBlueprintCompatibility = true";
+build_property.EnableUnrealBlueprintCompatibility = {(enableUnrealBlueprintCompatibility ? "true" : "false")}";
 		if (extraGlobalConfigs != null)
 		{
 			foreach (string extraGlobalConfig in extraGlobalConfigs)
