@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 using System.Text;
 
 namespace Beamable.Server
@@ -47,10 +48,12 @@ namespace Beamable.Server
 				return;
 			}
 
-			// The template is rendered here, up front, so that a broken one is caught while this frame is still
+			// The template is checked here, up front, so that a broken one is caught while this frame is still
 			// on the stack. A try/catch around the write below would not be enough on its own: a queued logger
-			// defers formatting until its flush, and an otel exporter until its export.
-			if (!CanRender(template, args))
+			// defers formatting until its flush, and an otel exporter until its export. Only the template and the
+			// argument count are inspected - never the argument values, which must not be rendered twice and must
+			// not be able to throw from inside this guard.
+			if (!CanRender(template, args.Length))
 			{
 				logger.Log(level, Flatten(template, args));
 				return;
@@ -69,9 +72,23 @@ namespace Beamable.Server
 
 		/// <summary>
 		/// Reports whether <see cref="Microsoft.Extensions.Logging"/> would be able to render the given message
-		/// template with the given arguments.
+		/// template with the given arguments. Only how many arguments there are matters, never their values.
 		/// </summary>
 		public static bool CanRender(string template, object[] args)
+		{
+			return CanRender(template, args?.Length ?? 0);
+		}
+
+		/// <summary>
+		/// Reports whether <see cref="Microsoft.Extensions.Logging"/> would be able to render the given message
+		/// template against this many arguments.
+		/// <para/>
+		/// The argument values are deliberately not involved. Rendering them here would run application
+		/// <c>ToString()</c> code a second time on every successful log call, and a <c>ToString()</c> that throws
+		/// would defeat the whole purpose of this class. Placeholder nulls stand in for the real values, which is
+		/// also how the BEAM_LOG analyzer checks the same templates at compile time.
+		/// </summary>
+		public static bool CanRender(string template, int argCount)
 		{
 			if (string.IsNullOrEmpty(template))
 			{
@@ -79,10 +96,18 @@ namespace Beamable.Server
 				return true;
 			}
 
+			var positionalFormat = ToPositionalFormat(template, out var holeCount);
+			if (holeCount > argCount)
+			{
+				// The usual failure: text interpolated into the template brought its own braces along and so
+				// declared more holes than the caller passed arguments. Caught without formatting anything.
+				return false;
+			}
+
 			try
 			{
-				var positionalFormat = ToPositionalFormat(template);
-				string.Format(positionalFormat, args ?? Array.Empty<object>());
+				// Catches what a hole count cannot: a stray brace, or a bad alignment such as "{0,zz}".
+				string.Format(CultureInfo.InvariantCulture, positionalFormat, new object[argCount]);
 				return true;
 			}
 			catch (Exception)
@@ -102,13 +127,23 @@ namespace Beamable.Server
 		/// </summary>
 		public static string ToPositionalFormat(string template)
 		{
+			return ToPositionalFormat(template, out _);
+		}
+
+		/// <summary>
+		/// The same rewrite as <see cref="ToPositionalFormat(string)"/>, also reporting how many holes the
+		/// template declares. That count is what says whether the caller passed enough arguments, and it can be
+		/// compared without rendering anything.
+		/// </summary>
+		public static string ToPositionalFormat(string template, out int holeCount)
+		{
+			holeCount = 0;
 			if (string.IsNullOrEmpty(template))
 			{
 				return template;
 			}
 
 			var builder = new StringBuilder(template.Length);
-			var holeCount = 0;
 			var scanIndex = 0;
 			var endIndex = template.Length;
 
@@ -164,11 +199,32 @@ namespace Beamable.Server
 					builder.Append(", ");
 				}
 
-				builder.Append(args[i]);
+				builder.Append(SafeToString(args[i]));
 			}
 
 			builder.Append("]");
 			return builder.ToString();
+		}
+
+		/// <summary>
+		/// Renders a single value without ever throwing. An argument's <c>ToString()</c> is application code and
+		/// is free to fail; when it does, the template and the remaining arguments still have to reach the log.
+		/// </summary>
+		internal static string SafeToString(object value)
+		{
+			if (value == null)
+			{
+				return "[null]";
+			}
+
+			try
+			{
+				return value.ToString();
+			}
+			catch (Exception e)
+			{
+				return $"[unrenderable {value.GetType().Name}: {e.GetType().Name}]";
+			}
 		}
 
 		/// <summary>

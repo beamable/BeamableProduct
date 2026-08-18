@@ -63,10 +63,9 @@ public class LogTemplateAnalyzer : DiagnosticAnalyzer
 			}
 
 			var logArgumentCount = GetLogArgumentCount(logArguments);
-			if (logArgumentCount <= 0)
+			if (logArgumentCount == 0)
 			{
-				// Either there are no log arguments, in which case the message is never parsed and its braces
-				// are already literal, or they arrived as an array whose length is not known here.
+				// With no log arguments the message is never parsed, so its braces are already literal.
 				return;
 			}
 
@@ -76,13 +75,26 @@ public class LogTemplateAnalyzer : DiagnosticAnalyzer
 
 			if (!message.HasValue)
 			{
-				context.ReportDiagnostic(Diagnostic.Create(Diagnostics.Logs.NonConstantLogTemplate, location, methodName));
+				// Judged without needing the argument count: a template assembled at runtime is a problem whether
+				// or not we can see how many arguments came with it.
+				if (!IsForwardedTemplate(messageArgument, logArguments))
+				{
+					context.ReportDiagnostic(Diagnostic.Create(Diagnostics.Logs.NonConstantLogTemplate, location, methodName));
+				}
+
 				return;
 			}
 
 			if (!(message.Value is string template))
 			{
 				// A null message; the logger handles that on its own.
+				return;
+			}
+
+			if (logArgumentCount < 0)
+			{
+				// The template is constant, but the arguments arrived as an array of unknowable length, so there is
+				// nothing to compare its holes against.
 				return;
 			}
 
@@ -126,22 +138,67 @@ public class LogTemplateAnalyzer : DiagnosticAnalyzer
 	}
 
 	/// <summary>
-	/// Counts the values passed to a <c>params</c> parameter, or returns -1 when the caller passed an array
-	/// directly and the count cannot be known at compile time.
+	/// Counts the values passed to a <c>params</c> parameter, or returns -1 when the count genuinely cannot be
+	/// known here.
+	/// <para/>
+	/// The count is read off the array operation rather than off <see cref="ArgumentKind"/>. Roslyn reports
+	/// <see cref="ArgumentKind.ParamArray"/> only for the array it synthesizes for an <i>expanded</i> call, so a
+	/// caller who writes the array out - <c>new object[] { x }</c> - arrives as
+	/// <see cref="ArgumentKind.Explicit"/> and was previously skipped even though its length is plain to see.
 	/// </summary>
 	private static int GetLogArgumentCount(IArgumentOperation logArguments)
 	{
-		if (logArguments.ArgumentKind != ArgumentKind.ParamArray)
+		var value = Unwrap(logArguments.Value);
+		if (!(value is IArrayCreationOperation arrayCreation))
 		{
+			// a variable, a field, Array.Empty<object>() - the length belongs to run time
 			return -1;
 		}
 
-		if (logArguments.Value is IArrayCreationOperation arrayCreation && arrayCreation.Initializer != null)
+		if (arrayCreation.Initializer != null)
 		{
 			return arrayCreation.Initializer.ElementValues.Length;
 		}
 
+		if (arrayCreation.DimensionSizes.Length == 1
+		    && arrayCreation.DimensionSizes[0].ConstantValue.HasValue
+		    && arrayCreation.DimensionSizes[0].ConstantValue.Value is int length)
+		{
+			// new object[3]: no initializer, but a constant length all the same
+			return length;
+		}
+
 		return -1;
+	}
+
+	/// <summary>
+	/// Recognises a logging wrapper handing its own caller's message and arguments straight through, as in
+	/// <c>void MyLog(string message, params object[] args) =&gt; Log.Error(message, args);</c>. The template is not
+	/// being assembled here, so there is nothing to fix at this call site; the mistake, if there is one, belongs
+	/// to whoever called the wrapper. Warning here would be unfixable noise, and this analyzer ships to users
+	/// through the generated service templates.
+	/// </summary>
+	private static bool IsForwardedTemplate(IArgumentOperation messageArgument, IArgumentOperation logArguments)
+	{
+		return Unwrap(messageArgument.Value) is IParameterReferenceOperation messageParameter
+		       && Unwrap(logArguments.Value) is IParameterReferenceOperation argumentsParameter
+		       && argumentsParameter.Parameter.IsParams
+		       && SymbolEqualityComparer.Default.Equals(messageParameter.Parameter.ContainingSymbol,
+			       argumentsParameter.Parameter.ContainingSymbol);
+	}
+
+	/// <summary>
+	/// Strips the implicit conversions Roslyn wraps an argument in - a covariant <c>string[]</c> passed as
+	/// <c>object[]</c>, for instance - so that the underlying expression can be matched.
+	/// </summary>
+	private static IOperation Unwrap(IOperation operation)
+	{
+		while (operation is IConversionOperation conversion)
+		{
+			operation = conversion.Operand;
+		}
+
+		return operation;
 	}
 
 	/// <summary>

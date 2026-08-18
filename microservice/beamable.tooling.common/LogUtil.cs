@@ -44,16 +44,59 @@ public class QueuedLogger : ILogger
 				catch (Exception ex)
 				{
 					// A buffered message is only formatted here, on the flush, so this is the first chance a
-					// malformed message template gets to fail. Losing that one message must not cost us the
-					// rest of the queue. The notice below passes no arguments, so it cannot fail the same way.
-					target.Log(LogLevel.Error, "A buffered log message could not be written. " + ex.Message);
+					// malformed message template gets to fail. Losing that one message must not cost us the rest
+					// of the queue - nor the diagnostic context, which is usually the whole reason the message was
+					// buffered. The severity, the event id and the attached exception are carried over as they were;
+					// only the text that could not be rendered is replaced, by a plain string no sink can fail on.
+					try
+					{
+						var description = Describe(message, ex);
+						target.Log(
+							logLevel: message.logLevel,
+							eventId: message.eventId,
+							state: description,
+							exception: message.exception,
+							formatter: (string text, Exception _) => text
+							);
+					}
+					catch (Exception)
+					{
+						// The target itself is refusing writes. Drop this one record rather than let the throw escape
+						// the lock below, which would skip the Clear() and strand every message still queued - behind
+						// a flushSignal that already forbids new writes.
+					}
 				}
 			}
 			messages.Clear();
 		}
 		
 	}
-	
+
+	/// <summary>
+	/// Describes a record whose own formatter has just failed, without running that formatter again. The raw
+	/// message template is recovered from the log state when it is there - Microsoft.Extensions.Logging keeps it
+	/// under the "{OriginalFormat}" key - because the template is a plain string and so cannot itself throw.
+	/// </summary>
+	private static string Describe(LogMessage message, Exception failure)
+	{
+		var description = SafeLogTemplate.SafeToString(message.state);
+		if (message.state is IReadOnlyList<KeyValuePair<string, object>> values)
+		{
+			foreach (var value in values)
+			{
+				if (value.Key != "{OriginalFormat}")
+				{
+					continue;
+				}
+
+				description = SafeLogTemplate.SafeToString(value.Value);
+				break;
+			}
+		}
+
+		return description + "\n[log message could not be rendered: " + failure.Message + "]";
+	}
+
 	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
 	{
 		if (Interlocked.Read(ref flushSignal) > 0)
