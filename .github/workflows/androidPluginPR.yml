@@ -39,13 +39,16 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      # Keep in step with compileSdk / buildToolsVersion in googlesignin/build.gradle. The runner
-      # image ships some Android platforms but not a guaranteed set, and Gradle's failure when one
-      # is missing points at a licence prompt rather than at the missing package.
-      - name: Install the pinned Android SDK packages
-        run: |
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+      # Keep the packages in step with compileSdk / buildToolsVersion in googlesignin/build.gradle.
+      # The runner image ships some Android platforms but not a guaranteed set, and Gradle's failure
+      # when one is missing points at a licence prompt rather than at the missing package.
+      #
+      # This action rather than a plain `sdkmanager` call: sdkmanager is not on the runner's PATH -
+      # it lives under $ANDROID_HOME/cmdline-tools - and the action also accepts the licences, which
+      # is what makes an unattended install possible at all.
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 build-tools;34.0.0'
 
       - name: Build and verify the .aar
         working-directory: plugins/google-signin
