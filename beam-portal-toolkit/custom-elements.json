@@ -25300,7 +25300,7 @@
               "kind": "field",
               "name": "_handleRemoveClick",
               "privacy": "private",
-              "description": "The click must not reach the tab group. `wa-tab-group` activates a tab from a\nclick anywhere on the tab element, so without this the remove button would\nalso select the very tab it is about to delete — and a consumer that removes\nthe active tab then gets a selection event for an item that no longer exists."
+              "description": "The click must not reach the tab group. `wa-tab-group` activates a tab from a\r\nclick anywhere on the tab element, so without this the remove button would\r\nalso select the very tab it is about to delete — and a consumer that removes\r\nthe active tab then gets a selection event for an item that no longer exists."
             },
             {
               "kind": "field",
@@ -29733,7 +29733,7 @@
               "type": {
                 "text": "string[] | undefined"
               },
-              "description": "Group keys to pin to the top of the table, in the given order. Any group\nnot listed here falls through to the default alphabetical sort."
+              "description": "Group keys to pin to the top of the table, in the given order. Any group\r\nnot listed here falls through to the default alphabetical sort."
             },
             {
               "kind": "field",
@@ -29815,7 +29815,7 @@
               "type": {
                 "text": "'compact' | 'comfortable'"
               },
-              "description": "Cell density preset — `compact` (default, 0.5rem vertical) or\n`comfortable` (0.75rem vertical). Setting `--cell-padding-y` /\n`--cell-padding-x` inline overrides this.",
+              "description": "Cell density preset — `compact` (default, 0.5rem vertical) or\r\n`comfortable` (0.75rem vertical). Setting `--cell-padding-y` /\r\n`--cell-padding-x` inline overrides this.",
               "default": "'compact'",
               "attribute": "density",
               "reflects": true
@@ -29826,7 +29826,7 @@
               "type": {
                 "text": "boolean"
               },
-              "description": "Slots for an external owner (e.g. the React wrapper) to portal content\ninto. When set, the table emits a placeholder with `data-beam-portal-id`\n— `__top-row__` for the top row, `__group-header__:{groupKey}` for each\ngroup's header — and the owner is expected to mount its own DOM there.\nIf unset, the table renders its built-in defaults.",
+              "description": "Slots for an external owner (e.g. the React wrapper) to portal content\r\ninto. When set, the table emits a placeholder with `data-beam-portal-id`\r\n— `__top-row__` for the top row, `__group-header__:{groupKey}` for each\r\ngroup's header — and the owner is expected to mount its own DOM there.\r\nIf unset, the table renders its built-in defaults.",
               "default": "false",
               "attribute": "has-top-row"
             },
@@ -29838,6 +29838,16 @@
               },
               "default": "false",
               "attribute": "has-group-header"
+            },
+            {
+              "kind": "field",
+              "name": "hasRowDetail",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "When set, each data row is clickable to expand an inline detail region\r\nrendered beneath it. The table prepends a chevron column, tracks expansion\r\nstate internally, emits a `beam-row-expand` event on toggle, and emits a\r\n`__row-detail__:{rowKey}` portal placeholder for the expanded row so an\r\nexternal owner (the React wrapper) can mount the detail content.",
+              "default": "false",
+              "attribute": "has-row-detail"
             },
             {
               "kind": "field",
@@ -29899,6 +29909,25 @@
             },
             {
               "kind": "field",
+              "name": "_expandedRows",
+              "type": {
+                "text": "Set<string>"
+              },
+              "privacy": "private",
+              "default": "new Set()"
+            },
+            {
+              "kind": "field",
+              "name": "_renderedDetails",
+              "type": {
+                "text": "Array<{ key: string; row: any; index: number }>"
+              },
+              "privacy": "private",
+              "default": "[]",
+              "description": "Row-detail placeholders emitted in the last render (key + row + index),\r\nso the React wrapper can resolve `__row-detail__:{key}` back to its row."
+            },
+            {
+              "kind": "field",
               "name": "_initialized",
               "type": {
                 "text": "boolean"
@@ -29911,7 +29940,7 @@
               "name": "_cellElCache",
               "privacy": "private",
               "default": "new WeakMap<object, Map<string, HTMLElement>>()",
-              "description": "Cache of `cellTag` element instances, keyed by row identity then column key.\nLets us reuse the same `<plugin-foo-cell>` element across data updates so\nthe consumer's reactive plumbing on `.row =` survives sort/page changes."
+              "description": "Cache of `cellTag` element instances, keyed by row identity then column key.\r\nLets us reuse the same `<plugin-foo-cell>` element across data updates so\r\nthe consumer's reactive plumbing on `.row =` survives sort/page changes."
             },
             {
               "kind": "field",
@@ -29921,7 +29950,7 @@
               },
               "privacy": "private",
               "default": "0",
-              "description": "Monotonic generation counter — included in `beam-cells-rendered` events\nso subscribers can ignore stale events from interleaved updates."
+              "description": "Monotonic generation counter — included in `beam-cells-rendered` events\r\nso subscribers can ignore stale events from interleaved updates."
             },
             {
               "kind": "field",
@@ -29984,7 +30013,7 @@
                 "text": "{ groups: BeamTableGroup[]; totalVisibleRows: number } | null"
               },
               "privacy": "private",
-              "description": "Builds a flat list of visible items (group headers + expanded data rows),\npaginates that flat list, then reconstructs groups for rendering.\nCollapsed groups contribute only their header row, so collapsing a big\ngroup causes subsequent content to fill the page.",
+              "description": "Builds a flat list of visible items (group headers + expanded data rows),\r\npaginates that flat list, then reconstructs groups for rendering.\r\nCollapsed groups contribute only their header row, so collapsing a big\r\ngroup causes subsequent content to fill the page.",
               "readonly": true
             },
             {
@@ -30027,6 +30056,50 @@
                   }
                 }
               ]
+            },
+            {
+              "kind": "method",
+              "name": "_detailKey",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "string"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "row",
+                  "type": {
+                    "text": "any"
+                  }
+                },
+                {
+                  "name": "index",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ],
+              "description": "Stable per-row key for expansion tracking + detail portal ids."
+            },
+            {
+              "kind": "field",
+              "name": "_colSpan",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "private",
+              "description": "Column span accounting for the optional leading expander column.",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "renderedDetailKeys",
+              "type": {
+                "text": "Array<{ key: string; row: any; index: number }>"
+              },
+              "description": "Row-detail placeholders emitted in the last render. Consumed by the React\r\nwrapper to portal detail content into the matching `__row-detail__` cell.",
+              "readonly": true
             },
             {
               "kind": "method",
@@ -30085,7 +30158,7 @@
                   }
                 }
               ],
-              "description": "Resolve a column to a renderable cell value.\n\nPriority: `cellTag` → `render(row, index)` → `field` (or falls back to\n`String(row[col.key] ?? '')`).\n\nReturns a tuple of `[content, portalId?]`. `content` is whatever\nlit-html should put inside the `<td>` (a Node, TemplateResult, or\nstring). `portalId` is a string to set as `data-beam-portal-id` on\nthe cell — used by the React wrapper to claim cells via portal."
+              "description": "Resolve a column to a renderable cell value.\r\n\r\nPriority: `cellTag` → `render(row, index)` → `field` (or falls back to\r\n`String(row[col.key] ?? '')`).\r\n\r\nReturns a tuple of `[content, portalId?]`. `content` is whatever\r\nlit-html should put inside the `<td>` (a Node, TemplateResult, or\r\nstring). `portalId` is a string to set as `data-beam-portal-id` on\r\nthe cell — used by the React wrapper to claim cells via portal."
             },
             {
               "kind": "method",
@@ -30131,7 +30204,7 @@
               "type": {
                 "text": "BeamTableGroup[]"
               },
-              "description": "The groups currently rendered (post-pagination). Exposed so external\nowners (e.g. the React wrapper) can resolve a `__group-header__:{key}`\nplaceholder back to its full `BeamTableGroup` (key + rows + totalRows)\nwhen portaling content into it.",
+              "description": "The groups currently rendered (post-pagination). Exposed so external\r\nowners (e.g. the React wrapper) can resolve a `__group-header__:{key}`\r\nplaceholder back to its full `BeamTableGroup` (key + rows + totalRows)\r\nwhen portaling content into it.",
               "readonly": true
             },
             {
@@ -30210,6 +30283,12 @@
               }
             },
             {
+              "name": "beam-row-expand",
+              "type": {
+                "text": "CustomEvent"
+              }
+            },
+            {
               "name": "beam-row-click",
               "type": {
                 "text": "CustomEvent<{ row: any; index: number }>"
@@ -30222,7 +30301,7 @@
               "type": {
                 "text": "'compact' | 'comfortable'"
               },
-              "description": "Cell density preset — `compact` (default, 0.5rem vertical) or\n`comfortable` (0.75rem vertical). Setting `--cell-padding-y` /\n`--cell-padding-x` inline overrides this.",
+              "description": "Cell density preset — `compact` (default, 0.5rem vertical) or\r\n`comfortable` (0.75rem vertical). Setting `--cell-padding-y` /\r\n`--cell-padding-x` inline overrides this.",
               "name": "density",
               "default": "'compact'",
               "fieldName": "density"
@@ -30308,7 +30387,7 @@
               "type": {
                 "text": "boolean"
               },
-              "description": "Slots for an external owner (e.g. the React wrapper) to portal content\ninto. When set, the table emits a placeholder with `data-beam-portal-id`\n— `__top-row__` for the top row, `__group-header__:{groupKey}` for each\ngroup's header — and the owner is expected to mount its own DOM there.\nIf unset, the table renders its built-in defaults.",
+              "description": "Slots for an external owner (e.g. the React wrapper) to portal content\r\ninto. When set, the table emits a placeholder with `data-beam-portal-id`\r\n— `__top-row__` for the top row, `__group-header__:{groupKey}` for each\r\ngroup's header — and the owner is expected to mount its own DOM there.\r\nIf unset, the table renders its built-in defaults.",
               "default": "false",
               "fieldName": "hasTopRow"
             },
@@ -30319,6 +30398,15 @@
               },
               "default": "false",
               "fieldName": "hasGroupHeader"
+            },
+            {
+              "name": "has-row-detail",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "When set, each data row is clickable to expand an inline detail region\r\nrendered beneath it. The table prepends a chevron column, tracks expansion\r\nstate internally, emits a `beam-row-expand` event on toggle, and emits a\r\n`__row-detail__:{rowKey}` portal placeholder for the expanded row so an\r\nexternal owner (the React wrapper) can mount the detail content.",
+              "default": "false",
+              "fieldName": "hasRowDetail"
             }
           ],
           "superclass": {
@@ -31393,7 +31481,7 @@
               "type": {
                 "text": "string"
               },
-              "description": "Optional comma-separated list of page-size choices, e.g. \"10,25,50,100\".\nWhen set, a `<select>` dropdown is rendered to the left of the info text.",
+              "description": "Optional comma-separated list of page-size choices, e.g. \"10,25,50,100\".\r\nWhen set, a `<select>` dropdown is rendered to the left of the info text.",
               "default": "''",
               "attribute": "page-size-options"
             },
@@ -31580,7 +31668,7 @@
               "type": {
                 "text": "string"
               },
-              "description": "Optional comma-separated list of page-size choices, e.g. \"10,25,50,100\".\nWhen set, a `<select>` dropdown is rendered to the left of the info text.",
+              "description": "Optional comma-separated list of page-size choices, e.g. \"10,25,50,100\".\r\nWhen set, a `<select>` dropdown is rendered to the left of the info text.",
               "default": "''",
               "fieldName": "pageSizeOptions"
             },
@@ -31830,7 +31918,7 @@
                   }
                 }
               ],
-              "description": "Dismiss the toast. If `reason` is omitted, defaults to `'manual'`.\nIdempotent — calling twice has no effect after the first."
+              "description": "Dismiss the toast. If `reason` is omitted, defaults to `'manual'`.\r\nIdempotent — calling twice has no effect after the first."
             },
             {
               "kind": "method",
@@ -32623,7 +32711,7 @@
               "type": {
                 "text": "boolean"
               },
-              "description": "Render the bar inline at the host's normal flow position instead of\nfixed to the bottom of the viewport. Useful for in-page docs/previews\nand for embedding the bar inside a settings panel.",
+              "description": "Render the bar inline at the host's normal flow position instead of\r\nfixed to the bottom of the viewport. Useful for in-page docs/previews\r\nand for embedding the bar inside a settings panel.",
               "default": "false",
               "attribute": "inline",
               "reflects": true
@@ -32634,7 +32722,7 @@
               "type": {
                 "text": "boolean"
               },
-              "description": "Auto-save mode. When enabled, the bar dispatches `wa-save` automatically\n(debounced by `auto-save-debounce`) whenever `changes` is dirty AND\n`errors` is empty, and the visible bar UI is hidden. If validation errors\nappear, the bar falls back to its normal interactive state so the user\ncan fix them. The consumer still owns the actual save logic via the\n`wa-save` handler — the bar only schedules the dispatch.",
+              "description": "Auto-save mode. When enabled, the bar dispatches `wa-save` automatically\r\n(debounced by `auto-save-debounce`) whenever `changes` is dirty AND\r\n`errors` is empty, and the visible bar UI is hidden. If validation errors\r\nappear, the bar falls back to its normal interactive state so the user\r\ncan fix them. The consumer still owns the actual save logic via the\r\n`wa-save` handler — the bar only schedules the dispatch.",
               "default": "false",
               "attribute": "auto-save",
               "reflects": true
@@ -32645,7 +32733,7 @@
               "type": {
                 "text": "number"
               },
-              "description": "Debounce window in milliseconds before auto-save dispatches `wa-save`.\nResets every time `changes` updates so rapid edits collapse into one save.",
+              "description": "Debounce window in milliseconds before auto-save dispatches `wa-save`.\r\nResets every time `changes` updates so rapid edits collapse into one save.",
               "default": "800",
               "attribute": "auto-save-debounce"
             },
@@ -32734,7 +32822,7 @@
               "type": {
                 "text": "'idle' | 'pending' | 'saving' | 'paused-errors'"
               },
-              "description": "Public read-only view of the bar's high-level state. Useful for consumers\nthat want to drive per-field UI (spinners, status dots) from the bar's\ninternal phase. Also reflected onto the host as `data-state` for CSS.",
+              "description": "Public read-only view of the bar's high-level state. Useful for consumers\r\nthat want to drive per-field UI (spinners, status dots) from the bar's\r\ninternal phase. Also reflected onto the host as `data-state` for CSS.",
               "readonly": true
             },
             {
@@ -32959,7 +33047,7 @@
               "type": {
                 "text": "boolean"
               },
-              "description": "Render the bar inline at the host's normal flow position instead of\nfixed to the bottom of the viewport. Useful for in-page docs/previews\nand for embedding the bar inside a settings panel.",
+              "description": "Render the bar inline at the host's normal flow position instead of\r\nfixed to the bottom of the viewport. Useful for in-page docs/previews\r\nand for embedding the bar inside a settings panel.",
               "default": "false",
               "fieldName": "inline"
             },
@@ -32968,7 +33056,7 @@
               "type": {
                 "text": "boolean"
               },
-              "description": "Auto-save mode. When enabled, the bar dispatches `wa-save` automatically\n(debounced by `auto-save-debounce`) whenever `changes` is dirty AND\n`errors` is empty, and the visible bar UI is hidden. If validation errors\nappear, the bar falls back to its normal interactive state so the user\ncan fix them. The consumer still owns the actual save logic via the\n`wa-save` handler — the bar only schedules the dispatch.",
+              "description": "Auto-save mode. When enabled, the bar dispatches `wa-save` automatically\r\n(debounced by `auto-save-debounce`) whenever `changes` is dirty AND\r\n`errors` is empty, and the visible bar UI is hidden. If validation errors\r\nappear, the bar falls back to its normal interactive state so the user\r\ncan fix them. The consumer still owns the actual save logic via the\r\n`wa-save` handler — the bar only schedules the dispatch.",
               "default": "false",
               "fieldName": "autoSave"
             },
@@ -32977,7 +33065,7 @@
               "type": {
                 "text": "number"
               },
-              "description": "Debounce window in milliseconds before auto-save dispatches `wa-save`.\nResets every time `changes` updates so rapid edits collapse into one save.",
+              "description": "Debounce window in milliseconds before auto-save dispatches `wa-save`.\r\nResets every time `changes` updates so rapid edits collapse into one save.",
               "default": "800",
               "fieldName": "autoSaveDebounce"
             }
@@ -33130,7 +33218,7 @@
               "type": {
                 "text": "'positive' | 'negative' | 'neutral'"
               },
-              "description": "Coloring for the change text. `positive` → success green,\n`negative` → error red, `neutral` → muted gray. Defaults to\n`neutral`.",
+              "description": "Coloring for the change text. `positive` → success green,\r\n`negative` → error red, `neutral` → muted gray. Defaults to\r\n`neutral`.",
               "default": "'neutral'",
               "attribute": "tone"
             },
@@ -33140,7 +33228,7 @@
               "type": {
                 "text": "string"
               },
-              "description": "Shortcut for the `icon` slot — set this to a Font Awesome name\n(e.g. `\"bolt\"`, `\"file-lines\"`) and the card renders a softly-tinted\n`<beam-icon>` for you. Slotted content always wins.",
+              "description": "Shortcut for the `icon` slot — set this to a Font Awesome name\r\n(e.g. `\"bolt\"`, `\"file-lines\"`) and the card renders a softly-tinted\r\n`<beam-icon>` for you. Slotted content always wins.",
               "default": "''",
               "attribute": "icon"
             }
@@ -33187,7 +33275,7 @@
               "type": {
                 "text": "'positive' | 'negative' | 'neutral'"
               },
-              "description": "Coloring for the change text. `positive` → success green,\n`negative` → error red, `neutral` → muted gray. Defaults to\n`neutral`.",
+              "description": "Coloring for the change text. `positive` → success green,\r\n`negative` → error red, `neutral` → muted gray. Defaults to\r\n`neutral`.",
               "default": "'neutral'",
               "fieldName": "tone"
             },
@@ -33196,7 +33284,7 @@
               "type": {
                 "text": "string"
               },
-              "description": "Shortcut for the `icon` slot — set this to a Font Awesome name\n(e.g. `\"bolt\"`, `\"file-lines\"`) and the card renders a softly-tinted\n`<beam-icon>` for you. Slotted content always wins.",
+              "description": "Shortcut for the `icon` slot — set this to a Font Awesome name\r\n(e.g. `\"bolt\"`, `\"file-lines\"`) and the card renders a softly-tinted\r\n`<beam-icon>` for you. Slotted content always wins.",
               "default": "''",
               "fieldName": "icon"
             }
@@ -33207,7 +33295,7 @@
           },
           "tagName": "beam-kpi-card",
           "customElement": true,
-          "summary": "Compact card showing a single key performance indicator — a\nbig value, a short label, an optional subtitle, an icon in the top-left,\nand a delta indicator in the top-right."
+          "summary": "Compact card showing a single key performance indicator — a\r\nbig value, a short label, an optional subtitle, an icon in the top-left,\r\nand a delta indicator in the top-right."
         }
       ],
       "exports": [
@@ -33271,7 +33359,7 @@
           },
           "tagName": "beam-section-label",
           "customElement": true,
-          "summary": "Small uppercase muted heading for sections inside cards or\npanels, with an optional trailing action slot."
+          "summary": "Small uppercase muted heading for sections inside cards or\r\npanels, with an optional trailing action slot."
         }
       ],
       "exports": [
@@ -33337,7 +33425,7 @@
               "type": {
                 "text": "'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral'"
               },
-              "description": "Color treatment. `neutral` (default) uses the muted text color.\n`success` / `warning` / `error` / `info` / `accent` use the matching\nsemantic palette.",
+              "description": "Color treatment. `neutral` (default) uses the muted text color.\r\n`success` / `warning` / `error` / `info` / `accent` use the matching\r\nsemantic palette.",
               "default": "'neutral'",
               "attribute": "tone",
               "reflects": true
@@ -33349,7 +33437,7 @@
               "type": {
                 "text": "'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral'"
               },
-              "description": "Color treatment. `neutral` (default) uses the muted text color.\n`success` / `warning` / `error` / `info` / `accent` use the matching\nsemantic palette.",
+              "description": "Color treatment. `neutral` (default) uses the muted text color.\r\n`success` / `warning` / `error` / `info` / `accent` use the matching\r\nsemantic palette.",
               "default": "'neutral'",
               "fieldName": "tone"
             }
@@ -33360,7 +33448,7 @@
           },
           "tagName": "beam-status-pill",
           "customElement": true,
-          "summary": "Compact rounded pill with a soft tinted background and\nmatching foreground — for status badges that need a softer look\nthan `beam-badge` provides."
+          "summary": "Compact rounded pill with a soft tinted background and\r\nmatching foreground — for status badges that need a softer look\r\nthan `beam-badge` provides."
         }
       ],
       "exports": [
@@ -33459,7 +33547,7 @@
               "type": {
                 "text": "string"
               },
-              "description": "Font Awesome icon-name shortcut. If set and nothing is slotted,\nrenders a `<beam-icon name=...>` inside the tile. Slotted content\nwins.",
+              "description": "Font Awesome icon-name shortcut. If set and nothing is slotted,\r\nrenders a `<beam-icon name=...>` inside the tile. Slotted content\r\nwins.",
               "default": "''",
               "attribute": "icon"
             }
@@ -33497,7 +33585,7 @@
               "type": {
                 "text": "string"
               },
-              "description": "Font Awesome icon-name shortcut. If set and nothing is slotted,\nrenders a `<beam-icon name=...>` inside the tile. Slotted content\nwins.",
+              "description": "Font Awesome icon-name shortcut. If set and nothing is slotted,\r\nrenders a `<beam-icon name=...>` inside the tile. Slotted content\r\nwins.",
               "default": "''",
               "fieldName": "icon"
             }
@@ -33508,7 +33596,7 @@
           },
           "tagName": "beam-icon-tile",
           "customElement": true,
-          "summary": "Small rounded tile that holds an icon — the colored\ncircle/rounded-square used in feed lists, timelines, and activity\nstreams to give an item a visual anchor."
+          "summary": "Small rounded tile that holds an icon — the colored\r\ncircle/rounded-square used in feed lists, timelines, and activity\r\nstreams to give an item a visual anchor."
         }
       ],
       "exports": [
@@ -33569,7 +33657,7 @@
           },
           "tagName": "beam-kpi-row",
           "customElement": true,
-          "summary": "Responsive grid that lays out a row of KPI cards (or any\nfixed-width tile content) with auto-fit columns."
+          "summary": "Responsive grid that lays out a row of KPI cards (or any\r\nfixed-width tile content) with auto-fit columns."
         }
       ],
       "exports": [
@@ -33601,9 +33689,8 @@
           "name": "BeamTagInput",
           "cssProperties": [
             {
-              "description": "Minimum field height.",
-              "name": "--beam-tag-input-min-height",
-              "default": "2.25rem"
+              "description": "Minimum field height. Defaults to `--wa-form-control-height`, so the control matches a `beam-input` sitting beside it.",
+              "name": "--beam-tag-input-min-height"
             },
             {
               "description": "Gap between pills.",
@@ -33638,7 +33725,7 @@
               "type": {
                 "text": "string[]"
               },
-              "description": "The committed values. A real array, not a delimited string — see the class\ncomment for why that distinction is the whole point of this component.",
+              "description": "The committed values. A real array, not a delimited string — see the class\r\ncomment for why that distinction is the whole point of this component.",
               "default": "[]",
               "attribute": "value"
             },
@@ -33773,7 +33860,7 @@
               "type": {
                 "text": "string[]"
               },
-              "description": "The committed values. A real array, not a delimited string — see the class\ncomment for why that distinction is the whole point of this component.",
+              "description": "The committed values. A real array, not a delimited string — see the class\r\ncomment for why that distinction is the whole point of this component.",
               "default": "[]",
               "fieldName": "value"
             },
@@ -33809,7 +33896,7 @@
           },
           "tagName": "beam-tag-input",
           "customElement": true,
-          "summary": "Text field that commits what you type into removable pills — for\nediting a list of short values (tags, labels, keywords)."
+          "summary": "Text field that commits what you type into removable pills — for\r\nediting a list of short values (tags, labels, keywords)."
         }
       ],
       "exports": [
@@ -33871,7 +33958,7 @@
               "type": {
                 "text": "string"
               },
-              "description": "The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is\nset. Empty string means nothing selected. Same format as a native\n`datetime-local` / `date` input, so this is a drop-in replacement for one.",
+              "description": "The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is\r\nset. Empty string means nothing selected. Same format as a native\r\n`datetime-local` / `date` input, so this is a drop-in replacement for one.",
               "default": "''",
               "attribute": "value"
             },
@@ -33966,7 +34053,7 @@
               "kind": "field",
               "name": "_handleDocumentPointerDown",
               "privacy": "private",
-              "description": "Close on a click outside. `composedPath` rather than `contains`, because the\npanel lives in this element's shadow root — `contains` on the host would be\ntrue for a shadow descendant but the check needs to survive the extension's\nown shadow boundary above us too."
+              "description": "Close on a click outside. `composedPath` rather than `contains`, because the\r\npanel lives in this element's shadow root — `contains` on the host would be\r\ntrue for a shadow descendant but the check needs to survive the extension's\r\nown shadow boundary above us too."
             },
             {
               "kind": "field",
@@ -34063,7 +34150,7 @@
               "type": {
                 "text": "string"
               },
-              "description": "The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is\nset. Empty string means nothing selected. Same format as a native\n`datetime-local` / `date` input, so this is a drop-in replacement for one.",
+              "description": "The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is\r\nset. Empty string means nothing selected. Same format as a native\r\n`datetime-local` / `date` input, so this is a drop-in replacement for one.",
               "default": "''",
               "fieldName": "value"
             },

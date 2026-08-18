@@ -2284,7 +2284,7 @@ declare module 'svelte/elements' {
      */
     'beam-table': import('svelte/elements').HTMLAttributes<HTMLElement> & {
       /**
-       * Cell density preset — `compact` (default, 0.5rem vertical) or `comfortable` (0.75rem vertical). Setting `--cell-padding-y` / `--cell-padding-x` inline overrides this.
+       * Cell density preset — `compact` (default, 0.5rem vertical) or `comfortable` (0.75rem vertical). Setting `--cell-padding-y` / `--cell-padding-x` inline overrides this.
        * @default 'compact'
        */
       density?: 'compact' | 'comfortable';
@@ -2305,12 +2305,17 @@ declare module 'svelte/elements' {
       'min-group-size'?: number;
       'table-title'?: string | undefined;
       /**
-       * Slots for an external owner (e.g. the React wrapper) to portal content into. When set, the table emits a placeholder with `data-beam-portal-id` — `__top-row__` for the top row, `__group-header__:{groupKey}` for each group's header — and the owner is expected to mount its own DOM there. If unset, the table renders its built-in defaults.
+       * Slots for an external owner (e.g. the React wrapper) to portal content into. When set, the table emits a placeholder with `data-beam-portal-id` — `__top-row__` for the top row, `__group-header__:{groupKey}` for each group's header — and the owner is expected to mount its own DOM there. If unset, the table renders its built-in defaults.
        * @default false
        */
       'has-top-row'?: boolean;
       /** @default false */
       'has-group-header'?: boolean;
+      /**
+       * When set, each data row is clickable to expand an inline detail region rendered beneath it. The table prepends a chevron column, tracks expansion state internally, emits a `beam-row-expand` event on toggle, and emits a `__row-detail__:{rowKey}` portal placeholder for the expanded row so an external owner (the React wrapper) can mount the detail content.
+       * @default false
+       */
+      'has-row-detail'?: boolean;
     };
 
     /**
@@ -2406,7 +2411,7 @@ declare module 'svelte/elements' {
       /** Total number of items across all pages. @default 0 */
       total?: number;
       /**
-       * Optional comma-separated list of page-size choices, e.g. "10,25,50,100". When set, a `<select>` dropdown is rendered to the left of the info text.
+       * Optional comma-separated list of page-size choices, e.g. "10,25,50,100". When set, a `<select>` dropdown is rendered to the left of the info text.
        * @default ''
        */
       'page-size-options'?: string;
@@ -2533,17 +2538,17 @@ declare module 'svelte/elements' {
       /** Hide the Review button + dialog entirely. @default false */
       'no-review'?: boolean;
       /**
-       * Render the bar inline at the host's normal flow position instead of fixed to the bottom of the viewport. Useful for in-page docs/previews and for embedding the bar inside a settings panel.
+       * Render the bar inline at the host's normal flow position instead of fixed to the bottom of the viewport. Useful for in-page docs/previews and for embedding the bar inside a settings panel.
        * @default false
        */
       inline?: boolean;
       /**
-       * Auto-save mode. When enabled, the bar dispatches `wa-save` automatically (debounced by `auto-save-debounce`) whenever `changes` is dirty AND `errors` is empty, and the visible bar UI is hidden. If validation errors appear, the bar falls back to its normal interactive state so the user can fix them. The consumer still owns the actual save logic via the `wa-save` handler — the bar only schedules the dispatch.
+       * Auto-save mode. When enabled, the bar dispatches `wa-save` automatically (debounced by `auto-save-debounce`) whenever `changes` is dirty AND `errors` is empty, and the visible bar UI is hidden. If validation errors appear, the bar falls back to its normal interactive state so the user can fix them. The consumer still owns the actual save logic via the `wa-save` handler — the bar only schedules the dispatch.
        * @default false
        */
       'auto-save'?: boolean;
       /**
-       * Debounce window in milliseconds before auto-save dispatches `wa-save`. Resets every time `changes` updates so rapid edits collapse into one save.
+       * Debounce window in milliseconds before auto-save dispatches `wa-save`. Resets every time `changes` updates so rapid edits collapse into one save.
        * @default 800
        */
       'auto-save-debounce'?: number;
@@ -2575,12 +2580,12 @@ declare module 'svelte/elements' {
       /** Delta indicator string, e.g. "+12%" or "-5.2%". Omit to hide. @default '' */
       change?: string;
       /**
-       * Coloring for the change text. `positive` → success green, `negative` → error red, `neutral` → muted gray. Defaults to `neutral`.
+       * Coloring for the change text. `positive` → success green, `negative` → error red, `neutral` → muted gray. Defaults to `neutral`.
        * @default 'neutral'
        */
       tone?: 'positive' | 'negative' | 'neutral';
       /**
-       * Shortcut for the `icon` slot — set this to a Font Awesome name (e.g. `"bolt"`, `"file-lines"`) and the card renders a softly-tinted `<beam-icon>` for you. Slotted content always wins.
+       * Shortcut for the `icon` slot — set this to a Font Awesome name (e.g. `"bolt"`, `"file-lines"`) and the card renders a softly-tinted `<beam-icon>` for you. Slotted content always wins.
        * @default ''
        */
       icon?: string;
@@ -2606,7 +2611,7 @@ declare module 'svelte/elements' {
      */
     'beam-status-pill': import('svelte/elements').HTMLAttributes<HTMLElement> & {
       /**
-       * Color treatment. `neutral` (default) uses the muted text color. `success` / `warning` / `error` / `info` / `accent` use the matching semantic palette.
+       * Color treatment. `neutral` (default) uses the muted text color. `success` / `warning` / `error` / `info` / `accent` use the matching semantic palette.
        * @default 'neutral'
        */
       tone?: 'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral';
@@ -2627,7 +2632,7 @@ declare module 'svelte/elements' {
       /** Size — defaults to `medium` (2rem). @default 'medium' */
       size?: 'small' | 'medium' | 'large';
       /**
-       * Font Awesome icon-name shortcut. If set and nothing is slotted, renders a `<beam-icon name=...>` inside the tile. Slotted content wins.
+       * Font Awesome icon-name shortcut. If set and nothing is slotted, renders a `<beam-icon name=...>` inside the tile. Slotted content wins.
        * @default ''
        */
       icon?: string;
@@ -2648,13 +2653,13 @@ declare module 'svelte/elements' {
      * @csspart base - The bordered field wrapper.
      * @csspart tag - Each committed pill.
      * @csspart input - The inner text input.
-     * @cssproperty --beam-tag-input-min-height - Minimum field height. [default: 2.25rem]
+     * @cssproperty --beam-tag-input-min-height - Minimum field height. Defaults to `--wa-form-control-height`, so the control matches a `beam-input` sitting beside it.
      * @cssproperty --beam-tag-input-gap - Gap between pills. [default: 0.25rem]
      * @event wa-change - Emitted whenever the list changes, by any means. `detail.value` is the new array. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
      */
     'beam-tag-input': import('svelte/elements').HTMLAttributes<HTMLElement> & {
       /**
-       * The committed values. A real array, not a delimited string — see the class comment for why that distinction is the whole point of this component.
+       * The committed values. A real array, not a delimited string — see the class comment for why that distinction is the whole point of this component.
        * @default []
        */
       value?: string[];
@@ -2676,7 +2681,7 @@ declare module 'svelte/elements' {
      */
     'beam-date-picker': import('svelte/elements').HTMLAttributes<HTMLElement> & {
       /**
-       * The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is set. Empty string means nothing selected. Same format as a native `datetime-local` / `date` input, so this is a drop-in replacement for one.
+       * The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is set. Empty string means nothing selected. Same format as a native `datetime-local` / `date` input, so this is a drop-in replacement for one.
        * @default ''
        */
       value?: string;

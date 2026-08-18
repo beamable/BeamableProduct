@@ -2015,7 +2015,7 @@ export interface BeamPaginationProps extends DetailedHTMLProps<HTMLAttributes<HT
   /** Total number of items across all pages. @default 0 */
   total?: number;
   /**
-   * Optional comma-separated list of page-size choices, e.g. "10,25,50,100". When set, a `<select>` dropdown is rendered to the left of the info text.
+   * Optional comma-separated list of page-size choices, e.g. "10,25,50,100". When set, a `<select>` dropdown is rendered to the left of the info text.
    * @default ''
    */
   'page-size-options'?: string;
@@ -2161,12 +2161,12 @@ export interface BeamKpiCardProps extends DetailedHTMLProps<HTMLAttributes<HTMLE
   /** Delta indicator string, e.g. "+12%" or "-5.2%". Omit to hide. @default '' */
   change?: string;
   /**
-   * Coloring for the change text. `positive` → success green, `negative` → error red, `neutral` → muted gray. Defaults to `neutral`.
+   * Coloring for the change text. `positive` → success green, `negative` → error red, `neutral` → muted gray. Defaults to `neutral`.
    * @default 'neutral'
    */
   tone?: 'positive' | 'negative' | 'neutral';
   /**
-   * Shortcut for the `icon` slot — set this to a Font Awesome name (e.g. `"bolt"`, `"file-lines"`) and the card renders a softly-tinted `<beam-icon>` for you. Slotted content always wins.
+   * Shortcut for the `icon` slot — set this to a Font Awesome name (e.g. `"bolt"`, `"file-lines"`) and the card renders a softly-tinted `<beam-icon>` for you. Slotted content always wins.
    * @default ''
    */
   icon?: string;
@@ -2204,7 +2204,7 @@ BeamSectionLabel.displayName = 'BeamSectionLabel';
  */
 export interface BeamStatusPillProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
   /**
-   * Color treatment. `neutral` (default) uses the muted text color. `success` / `warning` / `error` / `info` / `accent` use the matching semantic palette.
+   * Color treatment. `neutral` (default) uses the muted text color. `success` / `warning` / `error` / `info` / `accent` use the matching semantic palette.
    * @default 'neutral'
    */
   tone?: 'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral';
@@ -2231,7 +2231,7 @@ export interface BeamIconTileProps extends DetailedHTMLProps<HTMLAttributes<HTML
   /** Size — defaults to `medium` (2rem). @default 'medium' */
   size?: 'small' | 'medium' | 'large';
   /**
-   * Font Awesome icon-name shortcut. If set and nothing is slotted, renders a `<beam-icon name=...>` inside the tile. Slotted content wins.
+   * Font Awesome icon-name shortcut. If set and nothing is slotted, renders a `<beam-icon name=...>` inside the tile. Slotted content wins.
    * @default ''
    */
   icon?: string;
@@ -2264,13 +2264,13 @@ BeamKpiRow.displayName = 'BeamKpiRow';
  * @csspart base - The bordered field wrapper.
  * @csspart tag - Each committed pill.
  * @csspart input - The inner text input.
- * @cssproperty --beam-tag-input-min-height - Minimum field height. [default: 2.25rem]
+ * @cssproperty --beam-tag-input-min-height - Minimum field height. Defaults to `--wa-form-control-height`, so the control matches a `beam-input` sitting beside it.
  * @cssproperty --beam-tag-input-gap - Gap between pills. [default: 0.25rem]
  * @event wa-change - Emitted whenever the list changes, by any means. `detail.value` is the new array. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
  */
 export interface BeamTagInputProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
   /**
-   * The committed values. A real array, not a delimited string — see the class comment for why that distinction is the whole point of this component.
+   * The committed values. A real array, not a delimited string — see the class comment for why that distinction is the whole point of this component.
    * @default []
    */
   value?: string[];
@@ -2302,7 +2302,7 @@ BeamTagInput.displayName = 'BeamTagInput';
  */
 export interface BeamDatePickerProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
   /**
-   * The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is set. Empty string means nothing selected. Same format as a native `datetime-local` / `date` input, so this is a drop-in replacement for one.
+   * The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is set. Empty string means nothing selected. Same format as a native `datetime-local` / `date` input, so this is a drop-in replacement for one.
    * @default ''
    */
   value?: string;
