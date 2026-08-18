@@ -11,18 +11,16 @@ namespace Beamable.AccountManagement
 	/// <remarks>
 	/// <para>This behaviour deliberately hosts no native callback of its own. The Google plugins answer
 	/// through <c>UnitySendMessage(objectName, methodName, message)</c>, which carries no correlation
-	/// id, so a behaviour that owned the callback could only ever have one channel: a silent attempt
-	/// started at launch and an interactive attempt started by a button press would both answer to the
-	/// same method, and whichever arrived first would settle whichever promise the behaviour happened
-	/// to be holding - potentially handing the login flow the <i>previously</i> signed-in account's ID
-	/// token. <see cref="GoogleSignInService"/> creates a uniquely named
+	/// id, so a behaviour that owned the callback could only ever have one channel: a button press here
+	/// and a <see cref="GoogleSignInService.SignInSilently"/> started by game code would both answer to
+	/// the same method, and whichever arrived first would settle whichever promise the behaviour
+	/// happened to be holding - potentially handing the login flow the <i>previously</i> signed-in
+	/// account's ID token. <see cref="GoogleSignInService"/> creates a uniquely named
 	/// <see cref="GoogleSignInReceiver"/> per request, which is the only correlation channel that
-	/// exists, and applies <see cref="GoogleSignInService.DEFAULT_SILENT_TIMEOUT_SECONDS"/> to the
-	/// silent path so a dropped <c>UnitySendMessage</c> cannot leave a promise - and with it the
-	/// "Logging In..." overlay - pending forever.</para>
+	/// exists.</para>
 	///
-	/// <para>The public method signatures are fixed by the prefab's <c>ThirdPartyLoginAttempted</c>
-	/// wiring, so they are kept exactly as they were.</para>
+	/// <para>The public method signature is fixed by the prefab's <c>ThirdPartyLoginAttempted</c>
+	/// wiring, so it is kept exactly as it was.</para>
 	/// </remarks>
 	public class GoogleSignInBehavior : MonoBehaviour
 	{
@@ -38,21 +36,13 @@ namespace Beamable.AccountManagement
 		/// <remarks>
 		/// Wired to <c>AccountManagementSignals.ThirdPartyLoginAttempted</c> on the
 		/// AccountManagementFlow prefab, which fans out to every provider behaviour; this one returns
-		/// immediately unless the promise is for Google. A promise created by
-		/// <see cref="AccountManagementSignals.LoginThirdPartySilently"/> is routed to
-		/// <see cref="StartGoogleSilentLogin"/> from here, so the prefab needs no extra wiring.
+		/// immediately unless the promise is for Google.
 		/// </remarks>
 		/// <param name="promise">Promise to be completed when sign-in succeeds or fails</param>
 		public void StartGoogleLogin(ThirdPartyLoginPromise promise)
 		{
 			if (promise == null || promise.ThirdParty != AuthThirdParty.Google)
 			{
-				return;
-			}
-
-			if (promise.Silent)
-			{
-				StartGoogleSilentLogin(promise);
 				return;
 			}
 
@@ -79,51 +69,13 @@ namespace Beamable.AccountManagement
 		}
 
 		/// <summary>
-		/// Begin a silent Google Sign-In: refresh the ID token of the account the player has already
-		/// granted on this device, with no account chooser and no UI at all.
-		/// </summary>
-		/// <remarks>
-		/// Android only, and requires <c>googlesignin-release.aar</c>
-		/// <see cref="GoogleSignInService.MINIMUM_SILENT_PLUGIN_VERSION"/> or newer. Everywhere else -
-		/// including the Editor - the promise completes with
-		/// <see cref="ThirdPartyLoginResponse.NoCredentialFound"/>, quietly, so a game can attempt this
-		/// on every platform without special-casing. Public so that a project with its own
-		/// AccountManagement prefab can wire it directly; the shipped prefab reaches it through
-		/// <see cref="StartGoogleLogin"/> instead.
-		/// </remarks>
-		/// <param name="promise">Promise to be completed when the attempt resolves</param>
-		public void StartGoogleSilentLogin(ThirdPartyLoginPromise promise)
-		{
-			if (promise == null || promise.ThirdParty != AuthThirdParty.Google)
-			{
-				return;
-			}
-
-			// Refusing an overlap is not just a policy here: GoogleSignInService coalesces concurrent
-			// silent requests onto one native call, so a second promise would otherwise resolve to the
-			// first request's result rather than to a request of its own.
-			if (IsPending())
-			{
-				Debug.Log("A Google Sign-In attempt is already in progress; ignoring this silent one.");
-				promise.CompleteSuccess(ThirdPartyLoginResponse.NoCredentialFound());
-				return;
-			}
-
-			_pending = promise;
-
-			GoogleSignInConfigHelper.SignInSilently().Then(result => Settle(promise, result));
-		}
-
-		/// <summary>
 		/// Apply a request's result to the promise that request was started for.
 		/// </summary>
 		/// <remarks>
 		/// The promise is captured per request rather than read out of a field, so a response that
-		/// arrives late - after the behaviour has moved on, or after
-		/// <see cref="GoogleSignInService"/> has timed the request out - can only ever reach its own
-		/// promise. That, plus the already-resolved guard in
-		/// <see cref="GoogleSignInResponseMapping.Apply"/>, is what stops one attempt's ID token from
-		/// completing another attempt.
+		/// arrives late - after the behaviour has moved on - can only ever reach its own promise. That,
+		/// plus the already-resolved guard in <see cref="GoogleSignInResponseMapping.Apply"/>, is what
+		/// stops one attempt's ID token from completing another attempt.
 		/// </remarks>
 		private void Settle(ThirdPartyLoginPromise promise, GoogleSignInResult result)
 		{
@@ -158,9 +110,7 @@ namespace Beamable.AccountManagement
 				return;
 			}
 
-			pending.CompleteSuccess(pending.Silent
-										? ThirdPartyLoginResponse.NoCredentialFound()
-										: ThirdPartyLoginResponse.Cancel());
+			pending.CompleteSuccess(ThirdPartyLoginResponse.Cancel());
 		}
 	}
 
@@ -203,9 +153,7 @@ namespace Beamable.AccountManagement
 				return;
 			}
 
-			// A failed silent attempt is not the player's problem: it is reported as "no credential" so
-			// the flow offers the Google button instead of raising an error nobody asked for.
-			if (!promise.Silent && result.Status == GoogleSignInStatus.Error)
+			if (result.Status == GoogleSignInStatus.Error)
 			{
 				promise.CompleteError(new GoogleInvalidTokenException(Describe(result)));
 				return;
@@ -214,26 +162,25 @@ namespace Beamable.AccountManagement
 			if (!result.IsBenign)
 			{
 				// Cancelled, NoCredential and Unavailable are ordinary outcomes, and GoogleSignInService
-				// already logs the reason for Unavailable. What is left - a silent attempt that errored,
-				// or a Busy - deserves a breadcrumb, because nothing else will mention it.
+				// already logs the reason for Unavailable. What is left is Busy, which deserves a
+				// breadcrumb because nothing else will mention it.
 				Debug.Log($"Google Sign-In did not produce a token. {result}");
 			}
 
-			promise.CompleteSuccess(ToNoTokenResponse(result, promise.Silent));
+			promise.CompleteSuccess(ToNoTokenResponse(result));
 		}
 
 		/// <summary>
 		/// The benign response for a result that carries no ID token.
 		/// </summary>
 		/// <remarks>
-		/// <see cref="GoogleSignInStatus.NoCredential"/> is reported as such whether or not the attempt
-		/// was silent, because it is actionable either way: nobody has granted an account on this
-		/// device. Everything else that reaches here during an interactive attempt - Cancelled,
+		/// <see cref="GoogleSignInStatus.NoCredential"/> is reported as such because it is actionable -
+		/// nobody has granted an account on this device. Everything else that reaches here - Cancelled,
 		/// Unavailable, Busy - is an ordinary cancellation.
 		/// </remarks>
-		public static ThirdPartyLoginResponse ToNoTokenResponse(GoogleSignInResult result, bool silent)
+		public static ThirdPartyLoginResponse ToNoTokenResponse(GoogleSignInResult result)
 		{
-			if (silent || result.Status == GoogleSignInStatus.NoCredential)
+			if (result.Status == GoogleSignInStatus.NoCredential)
 			{
 				return ThirdPartyLoginResponse.NoCredentialFound();
 			}

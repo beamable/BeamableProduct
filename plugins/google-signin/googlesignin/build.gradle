@@ -56,9 +56,11 @@ android {
 
 dependencies {
     // Deliberately 'implementation': nothing is embedded in the .aar and no dependency metadata
-    // travels with it, so the consuming Unity project supplies play-services-auth itself through
-    // Assets/Plugins/Android/mainTemplate.gradle. Consequence to respect when editing this plugin:
-    // any GMS API used here must exist in the OLDEST version a customer might resolve.
+    // travels with it, so the consuming Unity project supplies play-services-auth itself. Beamable's
+    // Editor/AndroidGradleDependencies.cs appends it to the generated unityLibrary/build.gradle
+    // after Unity writes it, rather than shipping a mainTemplate.gradle that would pin the project to
+    // one Unity version - see plugins/google-signin/README.md. Consequence to respect when editing
+    // this plugin: any GMS API used here must exist in the OLDEST version a customer might resolve.
     // GoogleSignInClient.silentSignIn() long predates 18.1.0.
     implementation 'com.google.android.gms:play-services-auth:18.1.0'
 
@@ -67,12 +69,243 @@ dependencies {
     compileOnly files('libs/unity-classes.jar')
 }
 
+// The bytecode level every class in the .aar must carry. 52 is Java 8 - see compileOptions above
+// for why anything newer is a failure the consumer cannot fix on their side.
+def requiredClassFileMajorVersion = 52
+
+// The static methods the C# side calls by name through JNI (GoogleSignInService.cs,
+// GoogleSignIn.cs). If a refactor drops one, nothing fails until a player taps the button on a
+// device, so it is checked here instead.
+def requiredEntryPoints = ['login', 'silentLogin', 'signOut', 'revokeAccess', 'getPluginVersion']
+
+// Checks the built .aar carries what consumers depend on. Everything here is a failure that is
+// invisible in this project and fatal in a customer's, which is why it gates installToUnity rather
+// than being a separate thing to remember. Usage:
+//   ./gradlew :googlesignin:verifyAar
+tasks.register('verifyAar') {
+    group = 'beamable'
+    description = 'Verifies the release .aar: bytecode level, manifest, consumer rules, JNI entry points.'
+    dependsOn 'assembleRelease'
+
+    def aar = layout.buildDirectory.file('outputs/aar/googlesignin-release.aar')
+    def major = requiredClassFileMajorVersion
+    def entryPoints = requiredEntryPoints
+    def version = pluginVersion
+
+    inputs.file(aar)
+
+    doLast {
+        def file = aar.get().asFile
+        def problems = []
+        def zip = new java.util.zip.ZipFile(file)
+
+        try {
+            def read = { String name ->
+                def entry = zip.getEntry(name)
+                entry == null ? null : zip.getInputStream(entry).bytes
+            }
+
+            // The consuming app's minSdk floor. AGP writes uses-sdk into the .aar manifest and the
+            // merger enforces library <= app, so raising it hard-fails every customer below it.
+            def manifest = read('AndroidManifest.xml')
+            if (manifest == null) {
+                problems << 'AndroidManifest.xml is missing'
+            } else {
+                def text = new String(manifest, 'UTF-8')
+                if (!(text =~ /minSdkVersion="16"/)) {
+                    problems << 'the manifest does not declare minSdkVersion 16'
+                }
+                if (!text.contains('GoogleSignInActivity')) {
+                    problems << 'the manifest does not declare GoogleSignInActivity'
+                }
+            }
+
+            // Without these, R8 strips the JNI entry points from a minified consumer build.
+            def proguard = read('proguard.txt')
+            if (proguard == null || !new String(proguard, 'UTF-8').contains('com.beamable.googlesignin')) {
+                problems << 'proguard.txt does not keep com.beamable.googlesignin.**'
+            }
+
+            def classesJar = read('classes.jar')
+            if (classesJar == null) {
+                problems << 'classes.jar is missing'
+            } else {
+                def classes = [:]
+                new java.util.zip.ZipInputStream(new ByteArrayInputStream(classesJar)).withCloseable { stream ->
+                    def buffer = new byte[8192]
+                    def entry
+                    while ((entry = stream.nextEntry) != null) {
+                        // Read the entry by hand: Groovy's InputStream.getBytes() closes the stream it
+                        // was given, which on a ZipInputStream ends the whole archive after one entry.
+                        def bytes = new ByteArrayOutputStream()
+                        int count
+                        while ((count = stream.read(buffer)) > 0) {
+                            bytes.write(buffer, 0, count)
+                        }
+                        classes[entry.name] = bytes.toByteArray()
+                    }
+                }
+
+                def classFiles = classes.findAll { name, bytes -> name.endsWith('.class') }
+                if (classFiles.isEmpty()) {
+                    problems << 'classes.jar contains no classes'
+                }
+
+                // 0xCAFEBABE, then u2 minor, then u2 major - both big-endian.
+                classFiles.each { name, bytes ->
+                    if (bytes.length < 8) {
+                        problems << "${name} is too short to be a class file"
+                        return
+                    }
+                    def found = ((bytes[6] & 0xFF) << 8) | (bytes[7] & 0xFF)
+                    if (found != major) {
+                        problems << "${name} is class file major ${found}, expected ${major}"
+                    }
+                }
+
+                // Lambdas compile to invokedynamic at -target 8, which relies on the *consumer's*
+                // desugaring being enabled. See the no-lambdas rule in GoogleSignInBridge.
+                def lambdas = classes.keySet().findAll { it.contains('$$Lambda') }
+                if (!lambdas.isEmpty()) {
+                    problems << "lambda classes were packaged: ${lambdas.join(', ')}"
+                }
+
+                // unity-classes.jar is compileOnly; the Unity player provides it at runtime.
+                def unity = classes.keySet().findAll { it.startsWith('com/unity3d/') }
+                if (!unity.isEmpty()) {
+                    problems << "Unity classes were packaged: ${unity.join(', ')}"
+                }
+
+                // Method names live in the constant pool as UTF-8, so their literal bytes being
+                // present is exactly the check for "this entry point was not renamed or dropped".
+                def activity = classes['com/beamable/googlesignin/GoogleSignInActivity.class']
+                if (activity == null) {
+                    problems << 'GoogleSignInActivity.class is missing'
+                } else {
+                    def text = new String(activity, 'ISO-8859-1')
+                    entryPoints.each { method ->
+                        if (!text.contains(method)) {
+                            problems << "GoogleSignInActivity does not expose ${method}()"
+                        }
+                    }
+                }
+
+                // getPluginVersion() is the C# side's feature probe, so the version baked into
+                // BuildConfig has to be the one this build declares.
+                def buildConfig = classes['com/beamable/googlesignin/BuildConfig.class']
+                if (buildConfig == null) {
+                    problems << 'BuildConfig.class is missing, so getPluginVersion() cannot answer'
+                } else if (!new String(buildConfig, 'ISO-8859-1').contains(version)) {
+                    problems << "BuildConfig does not carry PLUGIN_VERSION ${version}"
+                }
+            }
+        } finally {
+            zip.close()
+        }
+
+        if (!problems.isEmpty()) {
+            throw new GradleException("googlesignin-release.aar failed verification:\n  - "
+                    + problems.join("\n  - "))
+        }
+
+        logger.lifecycle("Verified googlesignin-release.aar (plugin version ${version}): "
+                + "Java 8 bytecode, no lambdas, consumer rules present, "
+                + "entry points ${entryPoints.join(', ')}.")
+    }
+}
+
+// Checks that the .aar committed into the Unity package was actually rebuilt from the Java sources
+// next to it. This is the failure this project is most exposed to: nothing rebuilds the binary
+// automatically, so a Java fix that is committed without a rebuilt .aar is inert in Unity - the
+// source says the bug is fixed and the shipped plugin still has it.
+//
+// Compares symbol *names*, not bytes. Class file bytes differ between javac 11 and javac 17 for
+// identical sources, so a byte comparison would be flaky; method names and manifest attributes are
+// stable across JDKs, and every source change that matters introduces or removes one. Usage:
+//   ./gradlew :googlesignin:verifyCommittedAar
+tasks.register('verifyCommittedAar') {
+    group = 'beamable'
+    description = 'Checks the .aar committed into the Unity package matches the Java sources.'
+
+    def javaSources = fileTree('src/main/java') { include '**/*.java' }
+    def sourceManifest = file('src/main/AndroidManifest.xml')
+    def committed = rootProject.file(
+            '../../client/Packages/com.beamable/Plugins/Android/googlesignin-release.aar')
+
+    inputs.files(javaSources)
+    inputs.file(sourceManifest)
+    inputs.file(committed)
+
+    doLast {
+        if (!committed.exists()) {
+            throw new GradleException("The committed .aar is missing: ${committed}")
+        }
+
+        // Method declarations in the sources. Deliberately over-inclusive: a name that is not really
+        // a method still has to appear somewhere in the class files, and anything the regex misses
+        // simply is not checked.
+        def declaration = ~/(?m)^[ \t]*(?:(?:public|protected|private|static|final|synchronized|abstract|native)[ \t]+)*[A-Za-z_][\w.<>\[\], \t]*[ \t]+(\w+)[ \t]*\(/
+        def keywords = ['if', 'for', 'while', 'switch', 'catch', 'return', 'new', 'else', 'do',
+                        'synchronized', 'super', 'this'] as Set
+        def names = [] as Set
+        javaSources.each { source ->
+            (source.text =~ declaration).each { match -> names << match[1] }
+        }
+        names.removeAll(keywords)
+
+        def zip = new java.util.zip.ZipFile(committed)
+        def symbols = new StringBuilder()
+        def manifest
+        try {
+            manifest = new String(zip.getInputStream(zip.getEntry('AndroidManifest.xml')).bytes, 'UTF-8')
+            def classesJar = zip.getInputStream(zip.getEntry('classes.jar')).bytes
+            new java.util.zip.ZipInputStream(new ByteArrayInputStream(classesJar)).withCloseable { stream ->
+                def buffer = new byte[8192]
+                while (stream.nextEntry != null) {
+                    int count
+                    while ((count = stream.read(buffer)) > 0) {
+                        // Constant-pool entries are UTF-8; ISO-8859-1 keeps every byte addressable.
+                        symbols.append(new String(buffer, 0, count, 'ISO-8859-1'))
+                    }
+                }
+            }
+        } finally {
+            zip.close()
+        }
+
+        def text = symbols.toString()
+        def missing = names.findAll { !text.contains(it) }.sort()
+
+        // Attribute names the source manifest declares must survive into the packaged manifest.
+        def sourceAttributes = [] as Set
+        (sourceManifest.text =~ /android:(\w+)=/).each { match -> sourceAttributes << match[1] }
+        def missingAttributes = sourceAttributes.findAll { !manifest.contains("android:${it}=") }.sort()
+
+        if (!missing.isEmpty() || !missingAttributes.isEmpty()) {
+            def detail = []
+            if (!missing.isEmpty()) {
+                detail << "methods declared in the sources but absent from the .aar: ${missing.join(', ')}"
+            }
+            if (!missingAttributes.isEmpty()) {
+                detail << "manifest attributes absent from the .aar: ${missingAttributes.join(', ')}"
+            }
+            throw new GradleException(
+                    "googlesignin-release.aar is stale - it was not rebuilt from the current Java sources.\n"
+                    + "  - " + detail.join("\n  - ") + "\n"
+                    + "Run ./gradlew :googlesignin:installToUnity and commit the rebuilt .aar.")
+        }
+
+        logger.lifecycle("The committed googlesignin-release.aar matches the Java sources "
+                + "(${names.size()} method names, ${sourceAttributes.size()} manifest attributes).")
+    }
+}
+
 // Installs the built .aar into the Unity package. Usage:
 //   ./gradlew :googlesignin:installToUnity
 tasks.register('installToUnity', Copy) {
     group = 'beamable'
     description = 'Copies the release .aar into client/Packages/com.beamable/Plugins/Android.'
-    dependsOn 'assembleRelease'
+    dependsOn 'assembleRelease', 'verifyAar'
 
     // Copy, NEVER Sync. Sync deletes destination files that are not in the source set, which would
     // delete googlesignin-release.aar.meta. Unity would then generate a fresh .meta with a new

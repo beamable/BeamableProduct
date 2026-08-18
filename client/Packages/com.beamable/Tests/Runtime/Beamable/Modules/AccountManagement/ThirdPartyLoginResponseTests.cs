@@ -10,8 +10,8 @@ namespace Beamable.Tests.Runtime.Modules.AccountManagement
 		{
 			var response = ThirdPartyLoginResponse.NoCredentialFound();
 
-			// ThirdPartyLogin() short-circuits on Cancelled, which is what makes a silent miss a
-			// no-op rather than an error path.
+			// ThirdPartyLogin() short-circuits on Cancelled, which is what makes "nobody has granted
+			// an account on this device" a no-op rather than an error path.
 			Assert.IsTrue(response.Cancelled);
 			Assert.IsTrue(response.NoCredential);
 			Assert.IsNull(response.AuthToken);

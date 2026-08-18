@@ -19,13 +19,13 @@ namespace Beamable.Tests.Runtime.Modules.AccountManagement
 		private const string ID_TOKEN =
 			"eyJhbGciOiJSUzI1NiIsImtpZCI6ImFiYzEyMyJ9.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIn0.c2ln";
 
-		private static ThirdPartyLoginPromise Promise(bool silent) =>
-			new ThirdPartyLoginPromise(AuthThirdParty.Google, silent);
+		private static ThirdPartyLoginPromise Promise() =>
+			new ThirdPartyLoginPromise(AuthThirdParty.Google);
 
 		[Test]
-		public void Success_CompletesWithTheIdToken([Values(true, false)] bool silent)
+		public void Success_CompletesWithTheIdToken()
 		{
-			var promise = Promise(silent);
+			var promise = Promise();
 
 			GoogleSignInResponseMapping.Apply(promise, GoogleSignInResult.Success(ID_TOKEN));
 
@@ -35,35 +35,34 @@ namespace Beamable.Tests.Runtime.Modules.AccountManagement
 		}
 
 		/// <summary>
-		/// Everything a silent attempt can fail with reads as "no credential": the flow treats it as a
-		/// no-op and shows the Google button, and the player is never interrupted.
+		/// Every no-token outcome except Error resolves the promise rather than failing it, so the flow
+		/// treats it as a no-op and the player is never interrupted.
 		/// </summary>
 		[Test]
-		public void SilentFailures_AllReportNoCredential(
-			[ValueSource(nameof(NonSuccessResults))] GoogleSignInResult result)
+		public void BenignFailures_ResolveThePromiseWithNoToken(
+			[ValueSource(nameof(NoTokenResults))] GoogleSignInResult result)
 		{
-			var promise = Promise(silent: true);
+			var promise = Promise();
 
 			GoogleSignInResponseMapping.Apply(promise, result);
 
 			Assert.IsFalse(promise.IsFailed);
-			Assert.IsTrue(promise.GetResult().NoCredential);
 			Assert.IsTrue(promise.GetResult().Cancelled);
 			Assert.IsNull(promise.GetResult().AuthToken);
 		}
 
-		private static GoogleSignInResult[] NonSuccessResults() => new[]
+		private static GoogleSignInResult[] NoTokenResults() => new[]
 		{
 			GoogleSignInResult.Cancelled(),
 			GoogleSignInResult.NoCredential(),
 			GoogleSignInResult.Unavailable("no plugin"),
-			GoogleSignInResult.Error("EXCEPTION - boom")
+			GoogleSignInResult.Busy("in flight")
 		};
 
 		[Test]
-		public void Cancelled_Interactive_IsAPlainCancellation()
+		public void Cancelled_IsAPlainCancellation()
 		{
-			var promise = Promise(silent: false);
+			var promise = Promise();
 
 			GoogleSignInResponseMapping.Apply(promise, GoogleSignInResult.Cancelled());
 
@@ -76,9 +75,9 @@ namespace Beamable.Tests.Runtime.Modules.AccountManagement
 		/// promise rather than leave it pending, which is what used to wedge the loading overlay.
 		/// </summary>
 		[Test]
-		public void Unavailable_Interactive_IsACancellation()
+		public void Unavailable_IsACancellation()
 		{
-			var promise = Promise(silent: false);
+			var promise = Promise();
 
 			GoogleSignInResponseMapping.Apply(promise, GoogleSignInResult.Unavailable("editor"));
 
@@ -93,9 +92,9 @@ namespace Beamable.Tests.Runtime.Modules.AccountManagement
 		/// its own case, or it would fall through to the Error branch and raise a spurious error.
 		/// </summary>
 		[Test]
-		public void Busy_Interactive_IsACancellationSoTheIncumbentRequestStaysAuthoritative()
+		public void Busy_IsACancellationSoTheIncumbentRequestStaysAuthoritative()
 		{
-			var promise = Promise(silent: false);
+			var promise = Promise();
 
 			GoogleSignInResponseMapping.Apply(promise, GoogleSignInResult.Busy("in flight"));
 
@@ -103,10 +102,14 @@ namespace Beamable.Tests.Runtime.Modules.AccountManagement
 			Assert.IsTrue(promise.GetResult().Cancelled);
 		}
 
+		/// <summary>
+		/// NoCredential is the outcome that tells a game "nobody has granted an account on this device",
+		/// which is actionable - show the Google button - rather than an error to report.
+		/// </summary>
 		[Test]
-		public void NoCredential_Interactive_IsReportedAsNoCredentialNotAnError()
+		public void NoCredential_IsReportedAsNoCredentialNotAnError()
 		{
-			var promise = Promise(silent: false);
+			var promise = Promise();
 
 			GoogleSignInResponseMapping.Apply(promise, GoogleSignInResult.NoCredential());
 
@@ -115,9 +118,9 @@ namespace Beamable.Tests.Runtime.Modules.AccountManagement
 		}
 
 		[Test]
-		public void Error_Interactive_FailsThePromise()
+		public void Error_FailsThePromise()
 		{
-			var promise = Promise(silent: false);
+			var promise = Promise();
 			Exception captured = null;
 			promise.Error(ex => captured = ex);
 
@@ -137,7 +140,7 @@ namespace Beamable.Tests.Runtime.Modules.AccountManagement
 		[Test]
 		public void Apply_DoesNotOverwriteAnAlreadyResolvedPromise()
 		{
-			var promise = Promise(silent: true);
+			var promise = Promise();
 			promise.CompleteSuccess(ThirdPartyLoginResponse.NoCredentialFound());
 
 			GoogleSignInResponseMapping.Apply(promise, GoogleSignInResult.Success(ID_TOKEN));

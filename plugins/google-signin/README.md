@@ -19,9 +19,6 @@ is `Beamable.Platform.SDK.Auth.GoogleSignIn` / `GoogleSignInService`.
 - **JDK 11 or 17.** Both work; nothing outside 11–17 does — AGP 7.4.2 will not run on Java 8, and
   Gradle 7.6.4 will not run on Java 20+. The Unity-bundled JDK is a fine choice and needs no separate
   install: `/Applications/Unity/Hub/Editor/<version>/PlaybackEngines/AndroidPlayer/OpenJDK`
-  `install-to-unity.cs` checks the major version of every candidate, so a `JAVA_HOME` outside the
-  range is reported and skipped in favour of the Unity-bundled JDK rather than failing later inside
-  Gradle.
 - **Android SDK with platform 34 and build-tools 34.0.0.** The SDK bundled with Unity 2022.3 has
   exactly these, so pointing `ANDROID_HOME` at it requires no `sdkmanager` downloads:
   `/Applications/Unity/Hub/Editor/<version>/PlaybackEngines/AndroidPlayer/SDK`
@@ -56,56 +53,52 @@ Also deliberate: **no lambdas or method references in the source** (at `-target 
 `catch (Exception)` (a consuming project missing `play-services-auth` raises `NoClassDefFoundError`,
 which is an `Error`, and uncaught it kills the player instead of reporting to C#).
 
-## Build
-
-```bash
-./gradlew :googlesignin:assembleRelease
-```
-
-Output: `googlesignin/build/outputs/aar/googlesignin-release.aar`
-
-## Install into the Unity package
-
-The recommended way, which also finds the toolchain for you and verifies the artifact before it
-touches the package:
-
-```bash
-dotnet run install-to-unity.cs
-```
-
-[`install-to-unity.cs`](install-to-unity.cs) is a .NET file-based app — a single `.cs` file, no
-project file, no NuGet packages, requires the .NET 10 SDK. It locates a Unity-bundled JDK and Android
-SDK (honouring `JAVA_HOME` / `ANDROID_HOME` when set), runs the Gradle build, checks the `.aar`, and
-only then copies it in. On macOS/Linux `./install-to-unity.cs` works too, via its shebang.
-
-```bash
-dotnet run install-to-unity.cs --verify-only
-```
-
-```bash
-dotnet run install-to-unity.cs -- --help
-```
-
-The `--` in the second command is needed because `dotnet run` claims `--help` for itself; options it
-does not recognise, such as `--verify-only`, reach the script either way.
-
-The checks it runs are the ones whose failures are invisible locally and fatal in a customer project:
-`minSdkVersion` is still 16, every class is Java 8 bytecode, no lambdas, no Unity classes packaged,
-the ProGuard consumer rules shipped, the manifest declares the Activity, and `GoogleSignInActivity`
-still exposes the five static methods C# calls by name with no Google Play services type in their
-signatures.
-
-The equivalent Gradle task, without the verification, is:
+## Build, verify and install
 
 ```bash
 ./gradlew :googlesignin:installToUnity
 ```
 
-Either way, **commit the `.aar` along with the source change** — nothing rebuilds it automatically,
-so a Java change that is not accompanied by a rebuilt binary does nothing in Unity. The build is
-reproducible as long as the JDK is the same: the script pairs the JDK with the Android SDK from one
-editor install for that reason, since javac 11 and javac 17 both emit valid Java 8 bytecode but not
-byte-identical class files.
+That is the whole workflow: it assembles the release `.aar`, runs `verifyAar` over it, and only then
+copies it into `client/Packages/com.beamable/Plugins/Android`. To check without touching the package:
+
+```bash
+./gradlew :googlesignin:verifyAar
+```
+
+The build alone, if you want just the artifact at
+`googlesignin/build/outputs/aar/googlesignin-release.aar`:
+
+```bash
+./gradlew :googlesignin:assembleRelease
+```
+
+`verifyAar` checks the things whose failures are invisible here and fatal in a customer's project:
+`minSdkVersion` is still 16, every class is Java 8 bytecode (major 52), no lambda classes were
+packaged, no Unity classes were packaged, the ProGuard consumer rules shipped, the manifest declares
+the Activity, `GoogleSignInActivity` still exposes the five static methods C# calls by name, and
+`BuildConfig` carries the `pluginVersion` this build declares — which is what
+`getPluginVersion()` returns, and therefore what the C# feature probe reads.
+
+**Commit the `.aar` along with the source change.** Nothing rebuilds it automatically, so a Java
+change that is not accompanied by a rebuilt binary does nothing in Unity — the source says the bug is
+fixed and the shipped plugin still has it. A separate task checks for exactly that:
+
+```bash
+./gradlew :googlesignin:verifyCommittedAar
+```
+
+It compares the method names declared in the `.java` sources, and the `android:` attributes declared
+in the source manifest, against the `.aar` committed in the Unity package. Names rather than bytes,
+because javac 11 and javac 17 emit different class file bytes for identical sources, while symbols are
+stable across both.
+
+Both tasks run in CI on any PR that touches this directory, via
+[`.github/workflows/androidPluginPR.yml`](../../.github/workflows/androidPluginPR.yml).
+
+Bump `pluginVersion` in [`googlesignin/build.gradle`](googlesignin/build.gradle) whenever the public
+surface changes, since that is how the C# side detects an `.aar` that predates a feature it wants to
+use.
 
 The filename must stay exactly `googlesignin-release.aar`. Unity binds a `.meta` file to an asset by
 path, and `googlesignin-release.aar.meta` carries both the asset GUID
@@ -117,15 +110,35 @@ lives in `BuildConfig.PLUGIN_VERSION`, never in the filename.
 ## The consuming project must supply play-services-auth
 
 The GMS dependency is declared `implementation`, so it is neither embedded in the `.aar` nor carried
-as dependency metadata. The **game** provides it, in `Assets/Plugins/Android/mainTemplate.gradle`:
+as dependency metadata. Something in the **game** has to put it on the classpath:
 
 ```gradle
 implementation 'com.google.android.gms:play-services-auth:18.1.0'
 ```
 
+Beamable adds it for you. `Editor/AndroidGradleDependencies.cs` implements
+`IPostGenerateGradleAndroidProject` and appends that one dependency to the generated
+`unityLibrary/build.gradle` whenever Google is enabled in the Account Management configuration — the
+same condition that governs the proguard check in `BuildPreProcessor.cs`. If the project already
+declares `play-services-auth` anywhere in that file, the step sees it and does nothing, so pinning a
+different version by hand still works. `BEAMABLE_NO_ANDROID_GRADLE_DEPENDENCIES` turns it off.
+
+### Why not just ship a mainTemplate.gradle
+
+Because a custom `mainTemplate.gradle` *replaces* the one Unity would have written, which ties it to
+the Unity version it was copied from — and the package declares support from 2021.3 upwards. Unity
+2021.3 builds with AGP 4.0.1, which has no `namespace` DSL; Unity 6 builds with AGP 8, which requires
+`namespace` and will not fall back to the manifest's package attribute. One file cannot satisfy both.
+Unity's `**TOKEN**` vocabulary also moves between versions, and a token the running editor does not
+recognise is left in the output verbatim, failing Gradle with a syntax error.
+
+Appending after generation avoids the whole problem: Unity writes whatever `build.gradle` is correct
+for the version in use, and Beamable adds one line to it. Gradle merges repeated `dependencies`
+blocks, so nothing needs to be parsed.
+
 Consequence when editing this plugin: any GMS API used here must exist in the oldest version a
-customer might resolve. Without this line, calls fail with `NoClassDefFoundError`, which the plugin
-reports to C# as `EXCEPTION - NoClassDefFoundError: ...`.
+customer might resolve. Without the dependency, calls fail with `NoClassDefFoundError`, which the
+plugin reports to C# as `EXCEPTION - NoClassDefFoundError: ...`.
 
 ## Google Cloud setup
 
@@ -232,8 +245,9 @@ web client ID and `exp` is in the future:
 echo '<token>' | cut -d. -f2 | base64 -d 2>/dev/null | python3 -m json.tool
 ```
 
-Note that the Unity sample project's `Assets/Plugins/Android/mainTemplate.gradle` still pins AGP
-3.4.0 and lists `jcenter()`; it needs updating before it will build on a modern Unity at all.
+The Unity sample project deliberately has no `Assets/Plugins/Android/mainTemplate.gradle`, so it
+exercises the same dependency-injection path a customer project does. Adding one back would pin the
+sample to a single Unity version — see "Why not just ship a mainTemplate.gradle" above.
 
 ## Why there are no instrumentation tests
 

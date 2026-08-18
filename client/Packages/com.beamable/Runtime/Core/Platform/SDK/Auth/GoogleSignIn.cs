@@ -60,69 +60,6 @@ namespace Beamable.Platform.SDK.Auth
 #endif // UNITY_ANDROID || UNITY_IOS
 		}
 
-		/// <summary>
-		/// Initiate a silent login: refresh the ID token of the Google account the player has already
-		/// granted on this device, with no account chooser and no UI. Android only.
-		/// </summary>
-		/// <remarks>
-		/// <para>Unlike <see cref="Login"/>, this always calls back exactly once - including on
-		/// platforms where it cannot run, where it answers with an UNAVAILABLE response rather than
-		/// leaving the caller waiting. Callers should route the message through
-		/// <see cref="GoogleSignInResult.Parse"/> so they can tell
-		/// <see cref="GoogleSignInStatus.NoCredential"/> (no credential yet; show a sign-in button)
-		/// apart from a real failure.</para>
-		///
-		/// <para>Requires <c>googlesignin-release.aar</c> 2.0.0 or newer; an older plugin has no
-		/// <c>silentLogin</c> method and is reported as unavailable.</para>
-		/// </remarks>
-		public void LoginSilently()
-		{
-#if UNITY_ANDROID && !UNITY_EDITOR
-			if (string.IsNullOrEmpty(_webClientId))
-			{
-				SendUnavailable("no Google web client ID is configured.");
-				return;
-			}
-
-			try
-			{
-				using (var plugin = new AndroidJavaClass(JAVA_CLASS_NAME))
-				{
-					plugin.CallStatic("silentLogin", _target.name, _callbackMethod, _webClientId);
-				}
-			}
-			catch (Exception e)
-			{
-				// Most likely a googlesignin-release.aar that predates silent sign-in, or one whose
-				// entry points were stripped by R8.
-				SendUnavailable($"could not call silentLogin - update googlesignin-release.aar to 2.0.0 " +
-								$"or newer. ({e.Message})");
-			}
-#else
-			SendUnavailable($"silent Google Sign-In is only supported on Android players " +
-							$"(platform={Application.platform}).");
-#endif // UNITY_ANDROID && !UNITY_EDITOR
-		}
-
-		/// <summary>
-		/// Deliver a synthetic response to the same callback the native plugin would have used, so
-		/// that every code path answers exactly once. GameObject.SendMessage reaches private methods,
-		/// which is what UnitySendMessage does natively.
-		/// </summary>
-		private void SendUnavailable(string reason)
-		{
-			Debug.Log($"[Beamable] Google Sign-In: {reason}");
-
-			if (_target == null)
-			{
-				return;
-			}
-
-			_target.SendMessage(_callbackMethod,
-								$"{GoogleSignInResult.SENTINEL_UNAVAILABLE} - {reason}",
-								SendMessageOptions.DontRequireReceiver);
-		}
-
 #if UNITY_IOS
       [System.Runtime.InteropServices.DllImport("__Internal")]
       private static extern void GoogleSignIn_Login(string clientId, string callbackObject, string callbackMethod);
