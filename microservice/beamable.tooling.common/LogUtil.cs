@@ -30,14 +30,24 @@ public class QueuedLogger : ILogger
 			while (messages.Count > 0)
 			{
 				var message = messages.Dequeue();
-				
-				target.Log(
-					logLevel: message.logLevel, 
-					eventId: message.eventId, 
-					state: message.state, 
-					exception: message.exception, 
-					formatter: message.formatter
-					);
+
+				try
+				{
+					target.Log(
+						logLevel: message.logLevel,
+						eventId: message.eventId,
+						state: message.state,
+						exception: message.exception,
+						formatter: message.formatter
+						);
+				}
+				catch (Exception ex)
+				{
+					// A buffered message is only formatted here, on the flush, so this is the first chance a
+					// malformed message template gets to fail. Losing that one message must not cost us the
+					// rest of the queue. The notice below passes no arguments, so it cannot fail the same way.
+					target.Log(LogLevel.Error, "A buffered log message could not be written. " + ex.Message);
+				}
 			}
 			messages.Clear();
 		}

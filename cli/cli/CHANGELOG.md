@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Portal extension scanning no longer excludes sym linked package files
 - Fixed orphaned Unity .meta files left behind when cleaning generated Beamable source directories.
+- Fix logging unexpected curly-brace expressions  [4566](https://github.com/beamable/BeamableProduct/issues/4566).
 
 ## [7.2.2] - 2026-07-16
 
