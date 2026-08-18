@@ -1,3 +1,4 @@
+using Beamable.Server;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,6 +8,7 @@ using cli;
 using cli.Commands.LocalStack;
 using cli.Services.LocalStack;
 using cli.Services.Web;
+using Microsoft.Extensions.Logging.Abstractions;
 using NUnit.Framework;
 
 namespace tests;
@@ -17,6 +19,13 @@ namespace tests;
 /// </summary>
 public class LocalStackDiscoveryTests
 {
+	[SetUp]
+	public void SetUp()
+	{
+		// The git-restore path logs a warning; ensure a logger exists in this bare test context.
+		BeamableZLoggerProvider.SetLogger(NullLogger.Instance);
+	}
+
 	// ----------------------------------------------------------------------------------
 	// Portal extension discovery
 	// ----------------------------------------------------------------------------------
