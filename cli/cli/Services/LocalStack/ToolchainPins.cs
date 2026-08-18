@@ -25,6 +25,9 @@ public static class ToolchainPins
 	/// <inheritdoc cref="Jdk"/>
 	public const string Node = "node";
 
+	/// <inheritdoc cref="Jdk"/>
+	public const string Pnpm = "pnpm";
+
 	/// <summary>
 	/// Non-tool setup ids, also accepted by <c>--only</c>/<c>--skip</c>: the generated BeamableBackend config
 	/// files, the portal's .env.local, and the AWS preflight. They install nothing into the toolchain dir.
@@ -37,11 +40,14 @@ public static class ToolchainPins
 	/// <inheritdoc cref="ScalaConfig"/>
 	public const string Aws = "aws";
 
-	/// <summary>The tool ids, in install order (fast/independent first).</summary>
-	public static readonly string[] ToolIds = { Jdk, Maven, Dotnet, Node };
+	/// <summary>
+	/// The tool ids, in install order (fast/independent first). <see cref="Pnpm"/> is LAST because it is installed
+	/// by the toolchain's own npm, so Node has to be in place before it runs.
+	/// </summary>
+	public static readonly string[] ToolIds = { Jdk, Maven, Dotnet, Node, Pnpm };
 
 	/// <summary>Every id <c>--only</c>/<c>--skip</c> accepts, tools plus the non-tool setup steps.</summary>
-	public static readonly string[] AllStepIds = { Jdk, Maven, Dotnet, Node, ScalaConfig, PortalConfig, Aws };
+	public static readonly string[] AllStepIds = { Jdk, Maven, Dotnet, Node, Pnpm, ScalaConfig, PortalConfig, Aws };
 
 	/// <summary>
 	/// Maven version the Scala reactor is built with. 3.9.x is what BeamableBackend's README documents;
@@ -61,6 +67,18 @@ public static class ToolchainPins
 	/// download time (see <see cref="ResolveNodeVersionAsync"/>) so the pin does not rot.
 	/// </summary>
 	public const string NodeMajor = "22";
+
+	/// <summary>
+	/// The pnpm version the web packages are built with. <c>@beamable/sdk</c> and <c>@beamable/portal-toolkit</c>
+	/// both declare <c>"packageManager": "pnpm@10.8.0"</c>, and <c>beam web publish</c> shells out to <c>pnpm</c>
+	/// to build them — so without it the <c>build: web packages</c> step cannot run at all. BeamableProduct's
+	/// README lists pnpm as a prereq; this installs it instead of assuming it.
+	///
+	/// Keep in step with the <c>packageManager</c> field in <c>web/package.json</c> and
+	/// <c>beam-portal-toolkit/package.json</c> — pnpm itself refuses to run a project pinned to a different
+	/// package manager, so a mismatch here fails loudly rather than silently.
+	/// </summary>
+	public const string PnpmVersion = "10.8.0";
 
 	/// <summary>The Java feature version the Scala backend runs under (Scala 2.11 / JDK 8 source+target).</summary>
 	public const string JavaFeatureVersion = "8";

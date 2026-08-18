@@ -207,7 +207,8 @@ public class ToolchainService
 	public static string BinSubdir(string toolId) => toolId switch
 	{
 		ToolchainPins.Dotnet => string.Empty,
-		ToolchainPins.Node => OperatingSystem.IsWindows() ? string.Empty : "bin",
+		// npm --global --prefix lays pnpm out exactly like Node itself: bin/ on POSIX, shims at the root on Windows.
+		ToolchainPins.Node or ToolchainPins.Pnpm => OperatingSystem.IsWindows() ? string.Empty : "bin",
 		_ => "bin"
 	};
 
@@ -218,6 +219,7 @@ public class ToolchainService
 		ToolchainPins.Maven => OperatingSystem.IsWindows() ? "mvn.cmd" : "mvn",
 		ToolchainPins.Dotnet => OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet",
 		ToolchainPins.Node => OperatingSystem.IsWindows() ? "node.exe" : "node",
+		ToolchainPins.Pnpm => OperatingSystem.IsWindows() ? "pnpm.cmd" : "pnpm",
 		_ => null
 	};
 
@@ -273,6 +275,9 @@ public class ToolchainService
 
 			if (toolId == ToolchainPins.Dotnet)
 				return await EnsureDotnetAsync(token);
+
+			if (toolId == ToolchainPins.Pnpm)
+				return EnsurePnpm();
 
 			var download = toolId switch
 			{
@@ -400,6 +405,9 @@ public class ToolchainService
 			ToolchainPins.Maven => version.StartsWith(ToolchainPins.MavenVersion, StringComparison.Ordinal),
 			ToolchainPins.Dotnet => version.StartsWith("10.", StringComparison.Ordinal),
 			ToolchainPins.Node => version.TrimStart('v').StartsWith(ToolchainPins.NodeMajor + ".", StringComparison.Ordinal),
+			// Exact: the web packages pin `packageManager: pnpm@<ver>` and pnpm refuses to run a project pinned to
+			// a different version of itself, so "close enough" is not a thing here.
+			ToolchainPins.Pnpm => version.TrimStart('v').StartsWith(ToolchainPins.PnpmVersion, StringComparison.Ordinal),
 			ToolchainPins.Jdk => version.Contains("1.8.") || version.StartsWith("8", StringComparison.Ordinal),
 			_ => false
 		};
@@ -420,7 +428,11 @@ public class ToolchainService
 			_ => ("--version", false)
 		};
 
-		var output = RunCapture(exe, args, out var exitCode, workingDirectory: null);
+		// pnpm reads the nearest package.json and REFUSES to run when that project pins a different package
+		// manager ("This project is configured to use npm"). Probing it from the CLI's cwd therefore fails
+		// spuriously inside any npm-managed repo, so probe from the tool's own directory instead.
+		var probeDir = toolId == ToolchainPins.Pnpm ? home : null;
+		var output = RunCapture(exe, args, out var exitCode, workingDirectory: probeDir);
 		if (exitCode != 0 && string.IsNullOrWhiteSpace(output)) return null;
 
 		var text = output?.Trim();
@@ -497,6 +509,55 @@ public class ToolchainService
 		var entry = new ToolchainEntry { version = ToolchainPins.DotnetVersion, home = root, source = "downloaded" };
 		Manifest.tools[ToolchainPins.Dotnet] = entry;
 		return new ToolchainResult { toolId = ToolchainPins.Dotnet, entry = entry, action = "installed" };
+	}
+
+	/// <summary>
+	/// Installs the pinned pnpm using the toolchain's own npm, into <c>&lt;toolchain&gt;/pnpm/&lt;version&gt;</c>.
+	///
+	/// Deliberately npm rather than pnpm's standalone GitHub binary: that release publishes <b>no checksum</b> for
+	/// its executables, and pnpm is the one tool here that runs arbitrary package lifecycle scripts — the worst
+	/// place to drop the integrity check every other tool gets. npm verifies the registry's sha512 itself and
+	/// generates the platform-correct bin shim, so this needs neither a digest of our own nor a hand-written
+	/// launcher.
+	/// </summary>
+	private ToolchainResult EnsurePnpm()
+	{
+		var root = InstallRoot(ToolchainPins.Pnpm, ToolchainPins.PnpmVersion);
+
+		if (_options.dryRun)
+		{
+			return new ToolchainResult
+			{
+				toolId = ToolchainPins.Pnpm,
+				action = "would install",
+				entry = new ToolchainEntry { version = ToolchainPins.PnpmVersion, home = root, source = "downloaded" }
+			};
+		}
+
+		// pnpm is installed BY npm, so Node has to be in place first (ToolIds orders it last for this reason).
+		if (!Manifest.tools.TryGetValue(ToolchainPins.Node, out var node) || string.IsNullOrEmpty(node?.home))
+			throw new CliException("pnpm is installed with the toolchain's npm, so install Node first (drop `--skip node`).");
+
+		var npm = Path.Combine(BinDir(ToolchainPins.Node, node.home) ?? string.Empty,
+			OperatingSystem.IsWindows() ? "npm.cmd" : "npm");
+		if (!File.Exists(npm))
+			throw new CliException($"Expected the toolchain npm at {npm}, but it is not there. Re-run `beam local setup --only node --force`.");
+
+		Directory.CreateDirectory(root);
+		Log.Information($"Installing pnpm {ToolchainPins.PnpmVersion} into {root} ...");
+
+		var args = $"install --global --prefix \"{root}\" pnpm@{ToolchainPins.PnpmVersion} --no-audit --no-fund";
+		var output = RunCapture(npm, args, out var exitCode, workingDirectory: root);
+		if (exitCode != 0)
+			throw new CliException($"npm failed to install pnpm@{ToolchainPins.PnpmVersion} (exit {exitCode}): {Tail(output)}");
+
+        var installed = ExecutablePath(ToolchainPins.Pnpm, root);
+		if (!File.Exists(installed))
+			throw new CliException($"npm reported success but produced no {installed}.");
+
+		var entry = new ToolchainEntry { version = ToolchainPins.PnpmVersion, home = root, source = "downloaded" };
+		Manifest.tools[ToolchainPins.Pnpm] = entry;
+		return new ToolchainResult { toolId = ToolchainPins.Pnpm, entry = entry, action = "installed" };
 	}
 
 	// ----------------------------------------------------------------------------------
@@ -741,7 +802,8 @@ public class ToolchainService
 			java = HomeOf(ToolchainPins.Jdk),
 			maven = HomeOf(ToolchainPins.Maven),
 			dotnet = HomeOf(ToolchainPins.Dotnet),
-			node = HomeOf(ToolchainPins.Node)
+			node = HomeOf(ToolchainPins.Node),
+			pnpm = HomeOf(ToolchainPins.Pnpm)
 		};
 	}
 

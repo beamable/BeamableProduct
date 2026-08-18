@@ -122,6 +122,12 @@ public class LocalStackToolchain
 
 	/// <summary>Node home — <c>${node}</c> and <c>${npm}</c> resolve to its <c>node</c> / <c>npm</c>.</summary>
 	public string node;
+
+	/// <summary>
+	/// pnpm home. No token needs it: <c>beam web publish</c> shells out to a bare <c>pnpm</c>, so what matters is
+	/// that this directory reaches the child's <c>PATH</c> (see <see cref="LocalStackConfigIO.ToolchainPathPrefix"/>).
+	/// </summary>
+	public string pnpm;
 }
 
 /// <summary>
@@ -393,6 +399,9 @@ public static class LocalStackConfigIO
 			Bin(toolchain.maven, "bin"),
 			Bin(toolchain.dotnet, null),
 			Bin(toolchain.node, OperatingSystem.IsWindows() ? null : "bin"),
+			// pnpm is invoked by name from inside `beam web publish`, so it has to be on PATH — there is no token
+			// to substitute for it.
+			Bin(toolchain.pnpm, OperatingSystem.IsWindows() ? null : "bin"),
 		})
 		{
 			if (dir != null) yield return dir;

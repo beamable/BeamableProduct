@@ -40,6 +40,63 @@ public class LocalStackToolchainTests
 	}
 
 	[Test]
+	public void PnpmSharesNodesLayout()
+	{
+		// `npm --global --prefix` lays pnpm out exactly like Node itself: bin/ on POSIX, shims at the root on
+		// Windows. Getting this wrong makes the resolved path miss by one directory on one platform only.
+		Assert.That(ToolchainService.BinSubdir(ToolchainPins.Pnpm),
+			Is.EqualTo(ToolchainService.BinSubdir(ToolchainPins.Node)));
+		Assert.That(ToolchainService.ProbeExecutable(ToolchainPins.Pnpm),
+			Is.EqualTo(OperatingSystem.IsWindows() ? "pnpm.cmd" : "pnpm"));
+	}
+
+	[Test]
+	public void PnpmPinIsExactBecauseTheWebPackagesPinIt()
+	{
+		// web/package.json and beam-portal-toolkit/package.json both declare `packageManager: pnpm@<ver>`, and pnpm
+		// refuses to run a project pinned to a different version of itself — so "close enough" is not a thing.
+		Assert.That(ToolchainService.SatisfiesPin(ToolchainPins.Pnpm, ToolchainPins.PnpmVersion), Is.True);
+		Assert.That(ToolchainService.SatisfiesPin(ToolchainPins.Pnpm, "v" + ToolchainPins.PnpmVersion), Is.True);
+		Assert.That(ToolchainService.SatisfiesPin(ToolchainPins.Pnpm, "9.0.0"), Is.False);
+		Assert.That(ToolchainService.SatisfiesPin(ToolchainPins.Pnpm, null), Is.False);
+	}
+
+	[Test]
+	public void PnpmIsInstalledAfterNodeBecauseItNeedsNpm()
+	{
+		// pnpm is installed BY the toolchain's npm, so Node has to be in place first.
+		var ids = ToolchainPins.ToolIds.ToList();
+		Assert.That(ids, Contains.Item(ToolchainPins.Pnpm));
+		Assert.That(ids.IndexOf(ToolchainPins.Pnpm), Is.GreaterThan(ids.IndexOf(ToolchainPins.Node)));
+		Assert.That(ToolchainPins.AllStepIds, Contains.Item(ToolchainPins.Pnpm));
+	}
+
+	[Test]
+	public void PnpmIsOnThePathPrefixBecauseItHasNoToken()
+	{
+		// `beam web publish` shells out to a bare `pnpm`, so there is no token to substitute — the only thing that
+		// makes it resolvable is the step's PATH.
+		var dir = Directory.CreateTempSubdirectory("beam-pnpm-path");
+		try
+		{
+			var binDir = OperatingSystem.IsWindows()
+				? dir.FullName
+				: Directory.CreateDirectory(Path.Combine(dir.FullName, "bin")).FullName;
+
+			var config = new LocalStackConfig
+			{
+				toolchain = new LocalStackToolchain { pnpm = dir.FullName }
+			};
+
+			Assert.That(LocalStackConfigIO.ToolchainPathPrefix(config), Contains.Item(binDir));
+		}
+		finally
+		{
+			dir.Delete(recursive: true);
+		}
+	}
+
+	[Test]
 	public void JdkAndMavenUseBinSubdirectory()
 	{
 		Assert.That(ToolchainService.BinSubdir(ToolchainPins.Jdk), Is.EqualTo("bin"));
