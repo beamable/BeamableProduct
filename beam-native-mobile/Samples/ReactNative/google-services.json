@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "849519363476",
+    "project_id": "test-native-project-34d65",
+    "storage_bucket": "test-native-project-34d65.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:849519363476:android:9217dcce18519ed4cfbb81",
+        "android_client_info": {
+          "package_name": "com.beamable.rnsample"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEtZYtqrG3SPazWamWXzpBaVbSJONoeZw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

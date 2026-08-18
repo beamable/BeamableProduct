@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Default color cycle for the "animated" notification style. Used when the incoming
+      `colors` data key is absent or fully unparseable. Duolingo-esque palette.
+    -->
+    <color name="beam_notif_cycle_0">#58CC02</color>
+    <color name="beam_notif_cycle_1">#1CB0F6</color>
+    <color name="beam_notif_cycle_2">#FF9600</color>
+    <color name="beam_notif_cycle_3">#CE82FF</color>
+</resources>

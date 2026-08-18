@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-08-04
+
+### Added
+- `beam-tab` gains `with-remove`, which shows a remove button and emits `wa-remove`. Web Awesome 3
+  dropped the closable-tab feature Shoelace had, so a tab strip whose items can be deleted had
+  nowhere to put the affordance. Same vocabulary as `beam-tag`'s `with-remove` / `wa-remove`.
+- `beam-tag-input` — a text field that commits what you type into removable pills, with a real
+  `string[]` value. Replaces the comma-separated-string pattern, where re-splitting the value on
+  every keystroke makes the separator itself impossible to type.
+- `beam-date-picker` — a calendar (and optional time) picker. The value format is identical to a
+  native `datetime-local` / `date` input, so it is a drop-in replacement for one.
+
+### Fixed
+- **The five chart components (`BeamLineChart`, `BeamBarChart`, `BeamDonutChart`, `BeamFunnelChart`,
+  `BeamSankeyChart`) are exported again.** They have hand-written forwarders in `react-custom.ts` but
+  were absent from `REACT_HANDWRITTEN`, so codegen emitted a second copy of each; `react.ts`
+  star-exports both modules, and a name exported by two `export *` sources is ambiguous, which ES
+  semantics resolve by omitting it entirely. Consumers got "has no exported member 'BeamLineChart'"
+  while the definition sat visibly in the shipped bundle.
+- **`.d.ts` builds no longer drop declarations that reference the DOM `Element` type.**
+  `react-elements.ts` emits inside `declare module 'react' { namespace JSX { … } }`, where a bare
+  `Element` binds to React's `JSX.Element` rather than the DOM type and fails with TS4033. Such types
+  are now emitted as `globalThis.Element`.
+- `@types/react` / `@types/react-dom` / `@vitejs/plugin-react` are now devDependencies. Node and
+  TypeScript resolve a package's imports from its real location, so without them a `npm link`ed
+  toolkit could not typecheck its own React surface or load its Vite plugin — and the missing React
+  types were silently degrading emitted prop types to ones without `children`.
+
+### Changed
+- Generated React prop types now include typed handlers for each component's custom events
+  (`onWaRemove`, `onWaChange`, `onWaTabShow`, …). The codegen previously read only CEM attributes, so
+  a component whose output was a custom event had no typed React surface at all and needed either a
+  cast or a hand-written forwarder. Purely additive — every new prop is optional.
+
 ## [0.4.0] - 2026-07-13
 
 ### Added

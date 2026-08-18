@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Kept in sync with the Unity C# AndroidChannelId ("deeplink_channel"). -->
+    <string name="beamable_default_channel">deeplink_channel</string>
+</resources>
