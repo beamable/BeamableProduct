@@ -20,6 +20,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string[] groups;
         /// <summary>If passed, will create a common library for this project</summary>
         public bool generateCommon;
+        /// <summary>If passed, creates a zone-scoped microservice (ZoneMicroservice, deployed per cid.zid) instead of a realm-scoped one</summary>
+        public bool zone;
         /// <summary>INTERNAL This enables a sane workflow for beamable developers to be happy and productive</summary>
         public bool beamableDev;
         /// <summary>Serializes the arguments for command line usage.</summary>
@@ -66,6 +68,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.generateCommon != default(bool)))
             {
                 genBeamCommandArgs.Add(("--generate-common=" + this.generateCommon));
+            }
+            // If the zone value was not default, then add it to the list of args.
+            if ((this.zone != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--zone=" + this.zone));
             }
             // If the beamableDev value was not default, then add it to the list of args.
             if ((this.beamableDev != default(bool)))

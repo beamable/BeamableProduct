@@ -134,6 +134,21 @@ namespace Beamable.Common
 					public const string REGISTERING_CUSTOM_SERVICES = "Registering custom services";
 					public const string SERVICE_PROVIDER_INITIALIZED = "Service provider initialized";
 					public const string EVENT_PROVIDER_INITIALIZED = "Event provider initialized";
+
+					/// <summary>
+					/// Emitted once the service's federation components are registered with the platform.
+					/// A service with federations that never logs this is running but unroutable, so
+					/// tooling watching the log stream treats its absence as a degraded start.
+					/// </summary>
+					public const string FEDERATION_REGISTERED = "Federation components registered.";
+
+					/// <summary>
+					/// Emitted when federation registration has exhausted its retries. Paired with
+					/// <see cref="FEDERATION_REGISTERED"/> so tooling can tell "registered" from
+					/// "gave up" rather than inferring it from silence.
+					/// </summary>
+					public const string FEDERATION_REGISTRATION_FAILED = "Federation components failed to register.";
+
 					public const string STORAGE_READY = "Waiting for connections";
 					public const string GENERATED_CLIENT_PREFIX = "Generated Client Code.";
 					public const string PORTAL_EXTENSION_RUNNING =

@@ -10,7 +10,13 @@ export default defineConfig([
     dts: false,
     sourcemap: false,
     minify: true,
-    external: ['@beamable/sdk', 'react', 'react-dom'],
+    // `@vitejs/plugin-react` MUST stay external. src/vite.ts imports it dynamically
+    // precisely so the toolkit ships without hard-depending on it; bundling it inlines
+    // its napi loader, which then looks for `@rolldown/binding-*` — a package the
+    // published tarball declares no dependency on, so every extension build fails at
+    // config load with "Cannot find native binding". Extensions carry their own
+    // @vitejs/plugin-react devDep, which is where this import should resolve from.
+    external: ['@beamable/sdk', 'react', 'react-dom', '@vitejs/plugin-react'],
   },
   // Type declarations
   {

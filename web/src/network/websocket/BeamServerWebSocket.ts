@@ -166,8 +166,14 @@ export class BeamServerWebSocket {
 
     if (this.wsUrl) return; // URL already set
 
-    this.wsUrl = apiUrl
-      .replace('localhost', 'host.docker.internal')
+    // `host.docker.internal` is only resolvable from inside a Docker container (where a Node
+    // microservice runs this SDK to reach the host gateway). In the browser it's unresolvable, so keep
+    // `localhost` there — otherwise the portal's socket targets a host the tab can't reach (close 1006).
+    const hostPart = isBrowserEnv()
+      ? apiUrl
+      : apiUrl.replace('localhost', 'host.docker.internal');
+
+    this.wsUrl = hostPart
       .replace('http', 'ws')
       .replace('https', 'wss')
       .concat('/socket');

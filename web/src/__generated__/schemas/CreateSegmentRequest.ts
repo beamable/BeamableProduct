@@ -4,6 +4,7 @@
  */
 
 import type { Rule } from './Rule';
+import type { SegmentPropertyInput } from './SegmentPropertyInput';
 import type { SegmentScope } from './enums/SegmentScope';
 
 export type CreateSegmentRequest = { 
@@ -12,6 +13,7 @@ export type CreateSegmentRequest = {
   displayName?: string | null; 
   excludes?: (bigint | string)[] | null; 
   includes?: (bigint | string)[] | null; 
+  properties?: Record<string, SegmentPropertyInput> | null; 
   rule?: Rule; 
   scope?: SegmentScope; 
 };

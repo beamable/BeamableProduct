@@ -59,6 +59,33 @@ export class BeamEnvironmentRegistry {
     }
     return config;
   }
+
+  /**
+   * Find a registered environment whose `apiUrl` matches the given host.
+   * The comparison ignores any trailing slash on either side.
+   */
+  findByApiUrl(host: string): BeamEnvironmentConfig | undefined {
+    const normalized = host.replace(/\/+$/, '');
+    return Object.values(this.envs).find(
+      (env) => env.apiUrl.replace(/\/+$/, '') === normalized,
+    );
+  }
+
+  /**
+   * Resolve a full environment configuration from a host URL.
+   * A host matching a registered environment (built-in or custom) returns that config;
+   * any other URL is treated as a custom host with the URL as its `apiUrl`.
+   */
+  fromHost(host: string): BeamEnvironmentConfig {
+    return (
+      this.findByApiUrl(host) ?? {
+        apiUrl: host.replace(/\/+$/, ''),
+        portalUrl: '',
+        beamMongoExpressUrl: '',
+        dockerRegistryUrl: '',
+      }
+    );
+  }
 }
 
 /** An instance of BeamEnvironmentRegistry */

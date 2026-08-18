@@ -19,7 +19,7 @@ This is the next step of the broader portal-extension tooling work (`add-library
 
 - **npm install**: after rewriting each project's `package.json`, run `npm install` best-effort
   (warn on failure, never fail the command) — mirrors `AddLibraryToExtension`.
-- **Verdaccio**: default to `http://localhost:4873` (matches `setup-web.sh`/`dev-web.sh`), with an
+- **Verdaccio**: default to `http://localhost:4873` (matches `beam web publish`), with an
   optional `--registry` override.
 - **Missing dependency**: if a scanned project's `package.json` has no `@beamable/portal-toolkit`
   entry in any dependency block, skip it and log that it was skipped. Never insert it.
@@ -57,8 +57,9 @@ Resolution rules:
 - **No options** → npm registry `dist-tags.latest`.
 - **`--version X`** → check `X` exists in npm registry `versions`; if not, check verdaccio
   `versions`; if found in either, use `X` verbatim; otherwise throw `CliException`.
-- **`--local`** → verdaccio `dist-tags.local` (the tag `dev-web.sh` publishes under,
-  e.g. `0.0.123-local<n>`). Requires verdaccio reachable; throw a clear `CliException` if not.
+- **`--local`** → verdaccio `dist-tags.local` (the tag `beam web publish` publishes under; it was
+  `0.0.123-local<n>` when this was written, and is now the version consumers already pin). Requires
+  verdaccio reachable; throw a clear `CliException` if not.
 
 The version string is written verbatim (exact pin, no caret) to match the existing template
 convention (`"0.1.6"`).
@@ -106,7 +107,7 @@ convention (`"0.1.6"`).
    package.json files now pin npm's `latest`.
 4. `... update-toolkit --version 0.1.6` → both updated to `0.1.6`; a bogus
    `--version 9.9.9` throws a clear error.
-5. With verdaccio running (`./setup-web.sh` + `./dev-web.sh` from `BeamableProduct/`):
+5. With verdaccio running (`beam web publish` from `BeamableProduct/`):
    `... update-toolkit --local` → both pin the `0.0.123-local<n>` version; confirm
    `npm install` resolves it via the `@beamable` scoped registry.
 6. Confirm a project lacking the toolkit dependency is skipped with a log line.

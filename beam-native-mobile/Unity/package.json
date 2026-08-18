@@ -1,0 +1,38 @@
+{
+  "name": "com.beamable.notifications",
+  "version": "1.0.0",
+  "displayName": "Beamable Notifications",
+  "description": "Cross-platform Beamable notifications SDK for Unity (iOS + Android): local + remote push, deep links, templates, action buttons, rich media, closed-app analytics.",
+  "unity": "2021.3",
+  "scopedRegistries": [
+    {
+      "name": "Beamable",
+      "url": "https://nexus.beamable.com/nexus/content/repositories/unity",
+      "scopes": [
+        "com.beamable"
+      ]
+    }
+  ],
+  "_com.beamable_version_TODO": "TEMPORARY PIN (Decision Q9): com.beamable is hard-pinned to 5.1.0 for now. This must later auto-adjust to track the consumer's already-installed Beamable version rather than forcing this exact version — see spec §5.3 / §7 remaining item Q9-auto-adjust.",
+  "dependencies": {
+    "com.beamable": "5.1.0"
+  },
+  "keywords": [
+    "ios",
+    "android",
+    "notifications",
+    "push",
+    "fcm",
+    "apns"
+  ],
+  "samples": [
+    {
+      "displayName": "Native Demo",
+      "description": "IMGUI test harness exercising local/remote notifications + deep links, plus a sample native receive-time handler you customize from the Beamable Notifications editor window.",
+      "path": "Samples~/NativeDemo"
+    }
+  ],
+  "author": {
+    "name": "Beamable"
+  }
+}

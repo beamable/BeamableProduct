@@ -58,6 +58,38 @@ describe('BeamEnvironmentRegistry – class behaviour', () => {
     }).toThrow(TypeError);
   });
 
+  it('findByApiUrl() matches a built-in environment (ignoring trailing slash)', () => {
+    const reg = create();
+    expect(reg.findByApiUrl('https://dev.api.beamable.com')?.apiUrl).toBe(
+      'https://dev.api.beamable.com',
+    );
+    // trailing slash on the input is ignored
+    expect(reg.findByApiUrl('https://api.beamable.com/')?.apiUrl).toBe(
+      'https://api.beamable.com',
+    );
+  });
+
+  it('findByApiUrl() returns undefined for an unknown host', () => {
+    const reg = create();
+    expect(reg.findByApiUrl('http://localhost:9000')).toBeUndefined();
+  });
+
+  it('fromHost() resolves a built-in host to its registered config', () => {
+    const reg = create();
+    expect(reg.fromHost('https://dev.api.beamable.com')).toEqual(
+      reg.get('dev'),
+    );
+  });
+
+  it('fromHost() treats an unknown host as a custom environment', () => {
+    const reg = create();
+    const cfg = reg.fromHost('http://localhost:9000/');
+    expect(cfg.apiUrl).toBe('http://localhost:9000'); // trailing slash trimmed
+    expect(cfg.portalUrl).toBe('');
+    expect(cfg.beamMongoExpressUrl).toBe('');
+    expect(cfg.dockerRegistryUrl).toBe('');
+  });
+
   it('allows register() after list() and new env appears in subsequent list()', () => {
     const reg = create();
     const before = reg.list(); // initial snapshot

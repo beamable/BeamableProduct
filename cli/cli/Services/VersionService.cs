@@ -27,12 +27,15 @@ public class VersionService
 
 	/// <summary>
 	/// The subset of an npm "packument" (the JSON returned by GET {registry}/{package}) that we care
-	/// about: the dist-tags (e.g. "latest", "local") and the set of published versions.
+	/// about: the dist-tags (e.g. "latest", "local"), the set of published versions, and each version's
+	/// publish timestamp.
 	/// </summary>
 	public class NpmPackument
 	{
 		[JsonProperty("dist-tags")] public Dictionary<string, string> DistTags;
 		[JsonProperty("versions")] public Dictionary<string, object> Versions;
+		/// <summary>Version -> ISO publish time. Also carries "created"/"modified" keys. May be absent.</summary>
+		[JsonProperty("time")] public Dictionary<string, string> Time;
 	}
 
 	/// <summary>

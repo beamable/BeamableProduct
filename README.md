@@ -43,11 +43,78 @@ Prereqs: `dotnet` (8+), and a POSIX shell for the provided scripts (or use WSL o
 - Run the repo-level scripts from the repository root. See `cli/` README for how to run CLI-specific projects after running the scripts.
 
 ### Web local dev (Portal Toolkit & Web SDK)
-Prereqs: Node.js 22+, `pnpm`, and Docker.
+Prereqs: Node.js 22+, `pnpm`, and Docker. **Full guide: [web/LOCAL_DEV.md](web/LOCAL_DEV.md).**
 
-- `./setup-web.sh` (run once) — starts a local Verdaccio npm registry and local-unpkg CDN via Docker Compose, resets the build number, and configures npm to resolve `@beamable/*` packages from the local registry.
-- `./dev-web.sh` — builds and publishes `@beamable/sdk` and `@beamable/portal-toolkit` to the local Verdaccio registry, then restarts local-unpkg to clear its cache.
-- `./teardown-web.sh` — removes the `@beamable/*` registry override from npm config and stops the local Docker stack.
+Both packages are published to a local Verdaccio registry as version **`0.0.123`** — the same "developer
+build" sentinel the .NET packages use (`dev.sh` publishes `0.0.123.<N>`). Any package at that version is
+treated as a local-dev build: the Portal recognises it and loads it from the local CDN with **no
+configuration**.
+
+- `./setup-web.sh` (run once) — starts the local Verdaccio registry and local-unpkg CDN from
+  `portal-localdev/`, wiping anything previously published.
+- `./dev-web.sh` — builds and publishes both packages, then refreshes the projects that consume them. Set
+  `BEAM_WORKSPACE=/path/to/repo-with-your-extensions`. Add `--build` to reinstall the packages'
+  dependencies first, `--only sdk|toolkit` to rebuild just one (both are still published — their versions
+  have to match).
+- `./teardown-web.sh` — stops the local stack and deletes the published packages.
+
+Because the version never changes, the pin is a **one-time** edit rather than per-build — but keeping the
+build fresh does mean forcing a reinstall, which `beam web use` handles.
+
+⚠️ That pin lives in your extensions' `package.json` and lock files — tracked files. Revert at the end of a
+session: `git restore '**/package.json' '**/package-lock.json'`.
+
+The scripts are thin wrappers that `dotnet run` the CLI, so there is one implementation and it behaves the
+same on Windows, macOS and Linux. The commands they call can also be used directly:
+
+| Command | Purpose |
+|---|---|
+| `beam web publish` | Build + publish both packages as `0.0.123` (`--only sdk\|toolkit` to rebuild one) |
+| `beam web use` | Pin `0.0.123` in the extensions under a directory and force-refresh the install |
+| `beam web status` | Is the registry/CDN up, what's published, and when it was published |
+| `beam web reset` | Wipe the registry and restart it empty |
+| `beam web stop` | Stop the registry (`--wipe` to also delete packages) |
+
+`beam local init --with-web-registry` wires all of this into `beam local up`: the registry starts with the
+rest of the local stack, and `beam local up --build` also publishes the packages and refreshes the
+extensions before running them. See [web/LOCAL_DEV.md](web/LOCAL_DEV.md).
+
+If the Portal's `.env.local` has `VITE_INJECT_HOST_SDK=true`, comment it out — that's a different approach
+and it takes precedence over the local CDN.
+
+## Running the full local stack on a fresh machine
+
+`beam local setup` provisions everything `beam local up` needs — a private, pinned toolchain (JDK 8, Maven, the
+.NET SDK, Node), the gitignored BeamableBackend config files, the portal's gitignored `.env.local`, and a check
+of the AWS prerequisites. It works the
+same on macOS, Windows and Linux, and installs nothing system-wide.
+
+On a machine that has never run the stack:
+
+1. Install the [.NET SDK](https://dotnet.microsoft.com/download), then `dotnet tool install -g Beamable.Tools`.
+2. Install [Docker Desktop](https://docs.docker.com/get-docker/) and start it — setup cannot install Docker,
+   because it needs administrator rights.
+3. Clone `BeamableAPI`, `BeamableBackend`, `BeamableProduct` and the portal as siblings.
+4. Then:
+
+```bash
+beam local setup                # installs the toolchain; needs no .beamable workspace
+beam local init                 # writes the manifest and adopts that toolchain automatically
+beam local validate --with-aws
+beam local up --build
+```
+
+`setup` comes first: it installs the JDK, and `init` picks it up rather than asking you for one.
+
+`beam local validate` reports each dependency's **source** — `toolchain` (pinned) or `system` (whatever this
+machine happens to have) — which is how a Maven running under an IDE's JDK 21, or a Node major the portal was
+never built against, gets caught before it produces a confusing build failure.
+
+**AWS access is required**; there is no LocalStack in this stack. The Scala `auth` service reads its JWT signing
+key from AWS Secrets Manager at runtime, so without credentials the stack comes up healthy and nothing can log
+in. `beam local setup --only aws` checks this and prints what an AWS administrator needs to do.
+
+Full reference: [cli/cli/Docs/LocalStack/local-setup.md](cli/cli/Docs/LocalStack/local-setup.md).
 
 ## Documentation and help
 - Unity SDK docs: https://help.beamable.com/Unity-Latest/

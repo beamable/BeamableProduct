@@ -689,7 +689,7 @@ declare module 'react' {
       /**
        * The flip boundary describes clipping element(s) that overflow will be checked relative to when flipping. By default, the boundary includes overflow ancestors that will cause the element to be clipped. If needed, you can change the boundary by passing a reference to one or more elements to this property.
        */
-      flipBoundary?: Element | Element[];
+      flipBoundary?: globalThis.Element | globalThis.Element[];
       /** The amount of padding, in pixels, to exceed before the flip behavior will occur. @default 0 */
       'flip-padding'?: number;
       /** Moves the popup along the axis to keep it in view when clipped. @default false */
@@ -697,7 +697,7 @@ declare module 'react' {
       /**
        * The shift boundary describes clipping element(s) that overflow will be checked relative to when shifting. By default, the boundary includes overflow ancestors that will cause the element to be clipped. If needed, you can change the boundary by passing a reference to one or more elements to this property.
        */
-      shiftBoundary?: Element | Element[];
+      shiftBoundary?: globalThis.Element | globalThis.Element[];
       /** The amount of padding, in pixels, to exceed before the shift behavior will occur. @default 0 */
       'shift-padding'?: number;
       /** When set, this will cause the popup to automatically resize itself to prevent it from overflowing. */
@@ -707,7 +707,7 @@ declare module 'react' {
       /**
        * The auto-size boundary describes clipping element(s) that overflow will be checked relative to when resizing. By default, the boundary includes overflow ancestors that will cause the element to be clipped. If needed, you can change the boundary by passing a reference to one or more elements to this property.
        */
-      autoSizeBoundary?: Element | Element[];
+      autoSizeBoundary?: globalThis.Element | globalThis.Element[];
       /** The amount of padding, in pixels, to exceed before the auto-size behavior will occur. @default 0 */
       'auto-size-padding'?: number;
       /**
@@ -1973,9 +1973,15 @@ declare module 'react' {
 
     /**
      * @slot (default) - The tab's label.
+     * @csspart remove-button - The remove button.
      * @csspart base - The component's base wrapper.
+     * @cssproperty --beam-tab-remove-size - Width/height of the remove button. [default: 1rem]
+     * @cssproperty --beam-tab-remove-color - Remove button color. Defaults to the inherited tab color at reduced opacity.
+     * @event wa-remove - Emitted when the remove button is activated. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
      */
     'beam-tab': import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement> & {
+      /** Makes the tab removable and shows a remove button. @default false */
+      'with-remove'?: boolean;
       /**
        * The name of the tab panel this tab is associated with. The panel must be located in the same tab group.
        * @default ''
@@ -2301,6 +2307,7 @@ declare module 'react' {
       'loading-message'?: string;
       /** @default false */
       'default-collapsed'?: boolean;
+      'min-group-size'?: number;
       'table-title'?: string | undefined;
       /**
        * Slots for an external owner (e.g. the React wrapper) to portal content into. When set, the table emits a placeholder with `data-beam-portal-id` — `__top-row__` for the top row, `__group-header__:{groupKey}` for each group's header — and the owner is expected to mount its own DOM there. If unset, the table renders its built-in defaults.
@@ -2326,6 +2333,8 @@ declare module 'react' {
       indent?: number;
       /** @default false */
       'no-toolbar'?: boolean;
+      /** @default false */
+      'show-path'?: boolean;
     };
 
     /**
@@ -2441,6 +2450,12 @@ declare module 'react' {
       'action-label'?: string;
       /** Hide the close button. @default false */
       'no-close'?: boolean;
+      /** Wide layout for detailed content. @default false */
+      wide?: boolean;
+      /** Secondary detail text below the message. @default '' */
+      details?: string;
+      /** Show a drain progress bar that empties over `duration`. @default false */
+      'show-progress'?: boolean;
     };
 
     /**
@@ -2453,7 +2468,7 @@ declare module 'react' {
      */
     'beam-toast-stack': import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement> & {
       /** Where toasts appear on the screen. @default 'bottom-end' */
-      placement?: 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end';
+      placement?: 'top-start' | 'top-end' | 'top-center' | 'bottom-start' | 'bottom-end' | 'bottom-center';
       /** Maximum number of toasts visible at once. Older toasts beyond this limit are dropped. @default 5 */
       'max-toasts'?: number;
     };
@@ -2631,6 +2646,108 @@ declare module 'react' {
      */
     'beam-kpi-row': import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement> & {
       // No attributes defined in CEM.
+    };
+
+    /**
+     * @slot (default) - Nothing. Content is driven by the `value` property.
+     * @csspart base - The bordered field wrapper.
+     * @csspart tag - Each committed pill.
+     * @csspart input - The inner text input.
+     * @cssproperty --beam-tag-input-min-height - Minimum field height. [default: 2.25rem]
+     * @cssproperty --beam-tag-input-gap - Gap between pills. [default: 0.25rem]
+     * @event wa-change - Emitted whenever the list changes, by any means. `detail.value` is the new array. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
+     */
+    'beam-tag-input': import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement> & {
+      /**
+       * The committed values. A real array, not a delimited string — see the class comment for why that distinction is the whole point of this component.
+       * @default []
+       */
+      value?: string[];
+      /** @default '' */
+      placeholder?: string;
+      /** @default false */
+      disabled?: boolean;
+      /** Pill color, passed through to the underlying `beam-tag`. @default 'brand' */
+      variant?: 'brand' | 'neutral' | 'success' | 'warning' | 'danger';
+    };
+
+    /**
+     * @csspart base - The trigger button.
+     * @csspart panel - The calendar popover panel.
+     * @csspart day - Each selectable day cell.
+     * @cssproperty --beam-date-picker-panel-background - Popover background.
+     * @cssproperty --beam-date-picker-cell-size - Width/height of a day cell. [default: 2rem]
+     * @event wa-change - Emitted when the value changes. `detail.value` is the new value. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
+     */
+    'beam-date-picker': import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement> & {
+      /**
+       * The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is set. Empty string means nothing selected. Same format as a native `datetime-local` / `date` input, so this is a drop-in replacement for one.
+       * @default ''
+       */
+      value?: string;
+      /** Text shown on the trigger when there is no value. @default 'Select a date' */
+      placeholder?: string;
+      /** @default false */
+      disabled?: boolean;
+      /** Date only — hides the time field and drops the time from the value. @default false */
+      'without-time'?: boolean;
+    };
+
+    /**
+     * @csspart chart - The chart container.
+     * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+     */
+    'beam-line-chart': import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement> & {
+      /** Rows of data points, e.g. `[{ day: 'Apr 10', sent: 5, opened: 3 }]`. @default [] */
+      data?: Array<Record<string, unknown>>;
+      /** Series to plot, each pulling `key` out of every row. @default [] */
+      series?: unknown;
+      /** Row key for the x-axis category. @default 'x' */
+      'x-key'?: string;
+    };
+
+    /**
+     * @csspart chart - The chart container.
+     * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+     */
+    'beam-bar-chart': import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement> & {
+      /** Bars to plot, e.g. `[{ label: 'Sent', value: 120 }]`. @default [] */
+      data?: unknown;
+      /** Optional per-bar color override; defaults to the theme categorical palette. */
+      palette?: string[] | undefined;
+    };
+
+    /**
+     * @csspart chart - The chart container.
+     * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+     */
+    'beam-donut-chart': import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement> & {
+      /** Slices to plot, e.g. `[{ label: 'Push', value: 45 }]`. @default [] */
+      data?: unknown;
+      /** Optional per-slice color override; defaults to the theme categorical palette. */
+      palette?: string[] | undefined;
+    };
+
+    /**
+     * @csspart chart - The chart container.
+     * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+     */
+    'beam-funnel-chart': import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement> & {
+      /** Funnel stages in order, e.g. `[{ label: 'Audience', value: 1000 }, …]`. @default [] */
+      data?: unknown;
+      /** Optional per-stage color override; defaults to the theme categorical palette. */
+      palette?: string[] | undefined;
+    };
+
+    /**
+     * @csspart chart - The chart container.
+     * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+     */
+    'beam-sankey-chart': import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement> & {
+      /** Nodes, e.g. `[{ name: 'Sent' }, { name: 'Opened' }]`. @default [] */
+      nodes?: unknown;
+      /** Links, e.g. `[{ source: 'Sent', target: 'Opened', value: 80 }]`. @default [] */
+      links?: unknown;
     };
     }
   }

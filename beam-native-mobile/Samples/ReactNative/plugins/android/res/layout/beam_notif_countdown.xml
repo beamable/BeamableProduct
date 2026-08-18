@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Custom layout for the sample app's "countdown" (expiring-offer) style.
+
+  A large Chronometer (@id/cd_chrono) counts DOWN to the offer's expiry, self-ticking with no
+  re-posting (Chronometer's base uses the SystemClock.elapsedRealtime timebase — see
+  SampleNotificationStyleRenderer.renderCountdown). Title/body sit above/below it. Only
+  RemoteViews-supported widgets are used (LinearLayout, TextView, Chronometer).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/cd_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textStyle="bold"
+        android:textSize="15sp" />
+
+    <Chronometer
+        android:id="@+id/cd_chrono"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textStyle="bold"
+        android:textSize="30sp" />
+
+    <TextView
+        android:id="@+id/cd_body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:textSize="13sp" />
+</LinearLayout>

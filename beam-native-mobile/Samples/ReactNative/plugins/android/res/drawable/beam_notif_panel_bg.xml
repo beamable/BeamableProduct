@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Rounded-corner base background for the "animated" style's cycling panels.
+  A solid color is set at runtime via RemoteViews.setInt(panelId, "setBackgroundColor", ...);
+  this shape only supplies the corner radius. (A plain setBackgroundColor would replace the
+  whole drawable and lose the rounding, so panels that need rounding keep this and are tinted
+  through a color-filter-free solid fill — see NotificationBuilder.applyAnimatedStyle.)
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="8dp" />
+    <solid android:color="#58CC02" />
+</shape>

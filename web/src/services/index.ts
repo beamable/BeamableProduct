@@ -3,6 +3,7 @@ export * from './AnnouncementsService';
 export * from './AuthService';
 export * from './ContentService';
 export * from './LeaderboardsService';
+export * from './MessageRailService';
 export * from './PlayerService';
 export * from './StatsService';
 export * from './types';

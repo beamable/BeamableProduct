@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Custom layout for the "animated" (Duolingo-style) notification style.
+
+  A ViewFlipper (@id/flipper) auto-cycles up to four colored panels (@id/panel0..panel3),
+  each tinted at runtime via RemoteViews.setInt(panelId, "setBackgroundColor", color); unused
+  panels are hidden with setViewVisibility(GONE). Title/body/icon live in a shared overlay on
+  top of the cycling color band (RemoteViews cannot address per-panel duplicate ids, so text is
+  set once on the shared @id/title / @id/body views).
+
+  Only RemoteViews-supported widgets are used (FrameLayout, LinearLayout, ViewFlipper, TextView,
+  ImageView).
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="64dp"
+    android:padding="8dp">
+
+    <!-- Auto-cycling colored background band. -->
+    <ViewFlipper
+        android:id="@+id/flipper"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:autoStart="true"
+        android:flipInterval="900"
+        android:measureAllChildren="false">
+
+        <LinearLayout
+            android:id="@+id/panel0"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/beam_notif_panel_bg" />
+
+        <LinearLayout
+            android:id="@+id/panel1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/beam_notif_panel_bg" />
+
+        <LinearLayout
+            android:id="@+id/panel2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/beam_notif_panel_bg" />
+
+        <LinearLayout
+            android:id="@+id/panel3"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/beam_notif_panel_bg" />
+    </ViewFlipper>
+
+    <!-- Shared text/icon overlay drawn on top of the cycling band. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <ImageView
+            android:id="@+id/icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="8dp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

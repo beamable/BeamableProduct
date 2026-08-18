@@ -84,6 +84,12 @@ export interface BeamIconProps extends DetailedHTMLProps<HTMLAttributes<HTMLElem
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the icon has loaded. When using `spriteSheet: true` this will not emit. */
+  onWaLoad?: (event: CustomEvent) => void;
+  /**
+   * Emitted when the icon fails to load due to an error. When using `spriteSheet: true` this will not emit.
+   */
+  onWaError?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-icon>`. */
@@ -150,6 +156,20 @@ export interface BeamTreeItemProps extends DetailedHTMLProps<HTMLAttributes<HTML
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the tree item expands. */
+  onWaExpand?: (event: CustomEvent) => void;
+  /** Emitted after the tree item expands and all animations are complete. */
+  onWaAfterExpand?: (event: CustomEvent) => void;
+  /** Emitted when the tree item collapses. */
+  onWaCollapse?: (event: CustomEvent) => void;
+  /** Emitted after the tree item collapses and all animations are complete. */
+  onWaAfterCollapse?: (event: CustomEvent) => void;
+  /** Emitted when the tree item's lazy state changes. */
+  onWaLazyChange?: (event: CustomEvent) => void;
+  /**
+   * Emitted when a lazy item is selected. Use this event to asynchronously load data and append items to the tree before expanding. After appending new items, remove the `lazy` attribute to remove the loading state and update the tree.
+   */
+  onWaLazyLoad?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-tree-item>`. */
@@ -242,6 +262,8 @@ export interface BeamButtonProps extends DetailedHTMLProps<HTMLAttributes<HTMLEl
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the form control has been checked for validity and its constraints aren't satisfied. */
+  onWaInvalid?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-button>`. */
@@ -300,6 +322,12 @@ export interface BeamAnimationProps extends DetailedHTMLProps<HTMLAttributes<HTM
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the animation is canceled. */
+  onWaCancel?: (event: CustomEvent) => void;
+  /** Emitted when the animation finishes. */
+  onWaFinish?: (event: CustomEvent) => void;
+  /** Emitted when the animation starts or restarts. */
+  onWaStart?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-animation>`. */
@@ -333,6 +361,10 @@ export interface BeamAvatarProps extends DetailedHTMLProps<HTMLAttributes<HTMLEl
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /**
+   * The image could not be loaded. This may because of an invalid URL, a temporary network condition, or some unknown cause.
+   */
+  onWaError?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-avatar>`. */
@@ -600,7 +632,7 @@ export interface BeamPopupProps extends DetailedHTMLProps<HTMLAttributes<HTMLEle
   /**
    * The flip boundary describes clipping element(s) that overflow will be checked relative to when flipping. By default, the boundary includes overflow ancestors that will cause the element to be clipped. If needed, you can change the boundary by passing a reference to one or more elements to this property.
    */
-  flipBoundary?: Element | Element[];
+  flipBoundary?: globalThis.Element | globalThis.Element[];
   /** The amount of padding, in pixels, to exceed before the flip behavior will occur. @default 0 */
   'flip-padding'?: number;
   /** Moves the popup along the axis to keep it in view when clipped. @default false */
@@ -608,7 +640,7 @@ export interface BeamPopupProps extends DetailedHTMLProps<HTMLAttributes<HTMLEle
   /**
    * The shift boundary describes clipping element(s) that overflow will be checked relative to when shifting. By default, the boundary includes overflow ancestors that will cause the element to be clipped. If needed, you can change the boundary by passing a reference to one or more elements to this property.
    */
-  shiftBoundary?: Element | Element[];
+  shiftBoundary?: globalThis.Element | globalThis.Element[];
   /** The amount of padding, in pixels, to exceed before the shift behavior will occur. @default 0 */
   'shift-padding'?: number;
   /** When set, this will cause the popup to automatically resize itself to prevent it from overflowing. */
@@ -618,7 +650,7 @@ export interface BeamPopupProps extends DetailedHTMLProps<HTMLAttributes<HTMLEle
   /**
    * The auto-size boundary describes clipping element(s) that overflow will be checked relative to when resizing. By default, the boundary includes overflow ancestors that will cause the element to be clipped. If needed, you can change the boundary by passing a reference to one or more elements to this property.
    */
-  autoSizeBoundary?: Element | Element[];
+  autoSizeBoundary?: globalThis.Element | globalThis.Element[];
   /** The amount of padding, in pixels, to exceed before the auto-size behavior will occur. @default 0 */
   'auto-size-padding'?: number;
   /**
@@ -629,6 +661,10 @@ export interface BeamPopupProps extends DetailedHTMLProps<HTMLAttributes<HTMLEle
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /**
+   * Emitted when the popup is repositioned. This event can fire a lot, so avoid putting expensive operations in your listener or consider debouncing it.
+   */
+  onWaReposition?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-popup>`. */
@@ -693,6 +729,14 @@ export interface BeamTooltipProps extends DetailedHTMLProps<HTMLAttributes<HTMLE
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the tooltip begins to show. */
+  onWaShow?: (event: CustomEvent) => void;
+  /** Emitted after the tooltip has shown and all animations are complete. */
+  onWaAfterShow?: (event: CustomEvent) => void;
+  /** Emitted when the tooltip begins to hide. */
+  onWaHide?: (event: CustomEvent) => void;
+  /** Emitted after the tooltip has hidden and all animations are complete. */
+  onWaAfterHide?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-tooltip>`. */
@@ -740,6 +784,10 @@ export interface BeamCopyButtonProps extends DetailedHTMLProps<HTMLAttributes<HT
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the data has been copied. */
+  onWaCopy?: (event: CustomEvent) => void;
+  /** Emitted when the data could not be copied. */
+  onWaError?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-copy-button>`. */
@@ -785,6 +833,14 @@ export interface BeamDetailsProps extends DetailedHTMLProps<HTMLAttributes<HTMLE
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the details opens. */
+  onWaShow?: (event: CustomEvent) => void;
+  /** Emitted after the details opens and all animations are complete. */
+  onWaAfterShow?: (event: CustomEvent) => void;
+  /** Emitted when the details closes. */
+  onWaHide?: (event: CustomEvent) => void;
+  /** Emitted after the details closes and all animations are complete. */
+  onWaAfterHide?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-details>`. */
@@ -838,6 +894,16 @@ export interface BeamDialogProps extends DetailedHTMLProps<HTMLAttributes<HTMLEl
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the dialog opens. */
+  onWaShow?: (event: CustomEvent) => void;
+  /** Emitted after the dialog opens and all animations are complete. */
+  onWaAfterShow?: (event: CustomEvent) => void;
+  /**
+   * Emitted when the dialog is requested to close. Calling `event.preventDefault()` will prevent the dialog from closing. You can inspect `event.detail.source` to see which element caused the dialog to close. If the source is the dialog element itself, the user has pressed [[Escape]] or the dialog has been closed programmatically. Avoid using this unless closing the dialog will result in destructive behavior such as data loss.
+   */
+  onWaHide?: (event: CustomEvent) => void;
+  /** Emitted after the dialog closes and all animations are complete. */
+  onWaAfterHide?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-dialog>`. */
@@ -912,6 +978,16 @@ export interface BeamDrawerProps extends DetailedHTMLProps<HTMLAttributes<HTMLEl
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the drawer opens. */
+  onWaShow?: (event: CustomEvent) => void;
+  /** Emitted after the drawer opens and all animations are complete. */
+  onWaAfterShow?: (event: CustomEvent) => void;
+  /**
+   * Emitted when the drawer is requesting to close. Calling `event.preventDefault()` will prevent the drawer from closing. You can inspect `event.detail.source` to see which element caused the drawer to close. If the source is the drawer element itself, the user has pressed [[Escape]] or the drawer has been closed programmatically. Avoid using this unless closing the drawer will result in destructive behavior such as data loss.
+   */
+  onWaHide?: (event: CustomEvent) => void;
+  /** Emitted after the drawer closes and all animations are complete. */
+  onWaAfterHide?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-drawer>`. */
@@ -999,6 +1075,16 @@ export interface BeamDropdownProps extends DetailedHTMLProps<HTMLAttributes<HTML
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the dropdown is about to show. */
+  onWaShow?: (event: CustomEvent) => void;
+  /** Emitted after the dropdown has been shown. */
+  onWaAfterShow?: (event: CustomEvent) => void;
+  /** Emitted when the dropdown is about to hide. */
+  onWaHide?: (event: CustomEvent) => void;
+  /** Emitted after the dropdown has been hidden. */
+  onWaAfterHide?: (event: CustomEvent) => void;
+  /** Emitted when an item in the dropdown is selected. */
+  onWaSelect?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-dropdown>`. */
@@ -1125,6 +1211,8 @@ export interface BeamIntersectionObserverProps extends DetailedHTMLProps<HTMLAtt
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Fired when a tracked element begins or ceases intersecting. */
+  onWaIntersect?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-intersection-observer>`. */
@@ -1158,6 +1246,8 @@ export interface BeamMutationObserverProps extends DetailedHTMLProps<HTMLAttribu
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when a mutation occurs. */
+  onWaMutation?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-mutation-observer>`. */
@@ -1191,6 +1281,8 @@ export interface BeamTagProps extends DetailedHTMLProps<HTMLAttributes<HTMLEleme
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the remove button is activated. */
+  onWaRemove?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-tag>`. */
@@ -1282,6 +1374,14 @@ export interface BeamPopoverProps extends DetailedHTMLProps<HTMLAttributes<HTMLE
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the popover begins to show. Canceling this event will stop the popover from showing. */
+  onWaShow?: (event: CustomEvent) => void;
+  /** Emitted after the popover has shown and all animations are complete. */
+  onWaAfterShow?: (event: CustomEvent) => void;
+  /** Emitted when the popover begins to hide. Canceling this event will stop the popover from hiding. */
+  onWaHide?: (event: CustomEvent) => void;
+  /** Emitted after the popover has hidden and all animations are complete. */
+  onWaAfterHide?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-popover>`. */
@@ -1491,6 +1591,8 @@ export interface BeamResizeObserverProps extends DetailedHTMLProps<HTMLAttribute
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the element is resized. */
+  onWaResize?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-resize-observer>`. */
@@ -1520,9 +1622,15 @@ BeamSkeleton.displayName = 'BeamSkeleton';
 
 /**
  * @slot (default) - The tab's label.
+ * @csspart remove-button - The remove button.
  * @csspart base - The component's base wrapper.
+ * @cssproperty --beam-tab-remove-size - Width/height of the remove button. [default: 1rem]
+ * @cssproperty --beam-tab-remove-color - Remove button color. Defaults to the inherited tab color at reduced opacity.
+ * @event wa-remove - Emitted when the remove button is activated. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
  */
 export interface BeamTabProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  /** Makes the tab removable and shows a remove button. @default false */
+  'with-remove'?: boolean;
   /**
    * The name of the tab panel this tab is associated with. The panel must be located in the same tab group.
    * @default ''
@@ -1533,6 +1641,10 @@ export interface BeamTabProps extends DetailedHTMLProps<HTMLAttributes<HTMLEleme
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /**
+   * Emitted when the remove button is activated. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
+   */
+  onWaRemove?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-tab>`. */
@@ -1583,6 +1695,8 @@ export interface BeamSplitPanelProps extends DetailedHTMLProps<HTMLAttributes<HT
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the divider's position changes. */
+  onWaReposition?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-split-panel>`. */
@@ -1644,6 +1758,10 @@ export interface BeamTabGroupProps extends DetailedHTMLProps<HTMLAttributes<HTML
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when a tab is shown. */
+  onWaTabShow?: (event: CustomEvent) => void;
+  /** Emitted when a tab is hidden. */
+  onWaTabHide?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-tab-group>`. */
@@ -1673,6 +1791,8 @@ export interface BeamTreeProps extends DetailedHTMLProps<HTMLAttributes<HTMLElem
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when a tree item is selected or deselected. */
+  onWaSelectionChange?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-tree>`. */
@@ -1789,6 +1909,8 @@ export interface BeamJsonProps extends DetailedHTMLProps<HTMLAttributes<HTMLElem
   indent?: number;
   /** @default false */
   'no-toolbar'?: boolean;
+  /** @default false */
+  'show-path'?: boolean;
 }
 
 /** React forwarder for `<beam-json>`. */
@@ -1853,6 +1975,16 @@ export interface BeamConfirmDialogProps extends DetailedHTMLProps<HTMLAttributes
   'cancel-label'?: string;
   /** Visual variant of the confirm button. @default 'brand' */
   'confirm-variant'?: unknown;
+  /** Fired when the dialog opens. */
+  onWaShow?: (event: CustomEvent) => void;
+  /** Fired when the dialog closes for any reason. */
+  onWaHide?: (event: CustomEvent) => void;
+  /**
+   * Fired when the dialog is dismissed via the cancel button, overlay click, Escape, or `cancel()`. Bubbles, composed.
+   */
+  onWaCancel?: (event: CustomEvent) => void;
+  /** Fired when the user clicks the confirm button. Bubbles, composed. */
+  onWaConfirm?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-confirm-dialog>`. */
@@ -1891,6 +2023,14 @@ export interface BeamPaginationProps extends DetailedHTMLProps<HTMLAttributes<HT
   'hide-info'?: boolean;
   /** Hide the page input (Prev/Next only). @default false */
   'hide-page-input'?: boolean;
+  /**
+   * Fired when the user clicks Prev/Next, edits the page input, or any other navigation control. Bubbles, composed.
+   */
+  onWaPageChange?: (event: CustomEvent) => void;
+  /**
+   * Fired when the user picks a new page size from the dropdown. Bubbles, composed. The page is NOT auto-reset; consumers should clamp the page when responding.
+   */
+  onWaPageSizeChange?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-pagination>`. */
@@ -1928,6 +2068,18 @@ export interface BeamToastProps extends DetailedHTMLProps<HTMLAttributes<HTMLEle
   'action-label'?: string;
   /** Hide the close button. @default false */
   'no-close'?: boolean;
+  /** Wide layout for detailed content. @default false */
+  wide?: boolean;
+  /** Secondary detail text below the message. @default '' */
+  details?: string;
+  /** Show a drain progress bar that empties over `duration`. @default false */
+  'show-progress'?: boolean;
+  /** Fired after the toast is mounted and visible. */
+  onWaShow?: (event: CustomEvent) => void;
+  /** Fired when the toast dismisses for any reason. Bubbles, composed. */
+  onWaHide?: (event: CustomEvent) => void;
+  /** Fired when the user clicks the action button (when one is provided). Bubbles, composed. */
+  onWaAction?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-toast>`. */
@@ -1946,9 +2098,13 @@ BeamToast.displayName = 'BeamToast';
  */
 export interface BeamToastStackProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
   /** Where toasts appear on the screen. @default 'bottom-end' */
-  placement?: 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end';
+  placement?: 'top-start' | 'top-end' | 'top-center' | 'bottom-start' | 'bottom-end' | 'bottom-center';
   /** Maximum number of toasts visible at once. Older toasts beyond this limit are dropped. @default 5 */
   'max-toasts'?: number;
+  /** Fired when a new toast is appended. Bubbles, composed. */
+  onWaShow?: (event: CustomEvent) => void;
+  /** Fired when a toast is removed. Bubbles, composed. */
+  onWaHide?: (event: CustomEvent) => void;
 }
 
 /** React forwarder for `<beam-toast-stack>`. */
@@ -2102,3 +2258,68 @@ export function BeamKpiRow(props: BeamKpiRowProps & { ref?: Ref<HTMLElement> }):
   return createElement(hostComponent('BeamKpiRow'), props);
 }
 BeamKpiRow.displayName = 'BeamKpiRow';
+
+/**
+ * @slot (default) - Nothing. Content is driven by the `value` property.
+ * @csspart base - The bordered field wrapper.
+ * @csspart tag - Each committed pill.
+ * @csspart input - The inner text input.
+ * @cssproperty --beam-tag-input-min-height - Minimum field height. [default: 2.25rem]
+ * @cssproperty --beam-tag-input-gap - Gap between pills. [default: 0.25rem]
+ * @event wa-change - Emitted whenever the list changes, by any means. `detail.value` is the new array. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
+ */
+export interface BeamTagInputProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  /**
+   * The committed values. A real array, not a delimited string — see the class comment for why that distinction is the whole point of this component.
+   * @default []
+   */
+  value?: string[];
+  /** @default '' */
+  placeholder?: string;
+  /** @default false */
+  disabled?: boolean;
+  /** Pill color, passed through to the underlying `beam-tag`. @default 'brand' */
+  variant?: 'brand' | 'neutral' | 'success' | 'warning' | 'danger';
+  /**
+   * Emitted whenever the list changes, by any means. `detail.value` is the new array. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
+   */
+  onWaChange?: (event: CustomEvent) => void;
+}
+
+/** React forwarder for `<beam-tag-input>`. */
+export function BeamTagInput(props: BeamTagInputProps & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('BeamTagInput'), props);
+}
+BeamTagInput.displayName = 'BeamTagInput';
+
+/**
+ * @csspart base - The trigger button.
+ * @csspart panel - The calendar popover panel.
+ * @csspart day - Each selectable day cell.
+ * @cssproperty --beam-date-picker-panel-background - Popover background.
+ * @cssproperty --beam-date-picker-cell-size - Width/height of a day cell. [default: 2rem]
+ * @event wa-change - Emitted when the value changes. `detail.value` is the new value. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
+ */
+export interface BeamDatePickerProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  /**
+   * The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is set. Empty string means nothing selected. Same format as a native `datetime-local` / `date` input, so this is a drop-in replacement for one.
+   * @default ''
+   */
+  value?: string;
+  /** Text shown on the trigger when there is no value. @default 'Select a date' */
+  placeholder?: string;
+  /** @default false */
+  disabled?: boolean;
+  /** Date only — hides the time field and drops the time from the value. @default false */
+  'without-time'?: boolean;
+  /**
+   * Emitted when the value changes. `detail.value` is the new value. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
+   */
+  onWaChange?: (event: CustomEvent) => void;
+}
+
+/** React forwarder for `<beam-date-picker>`. */
+export function BeamDatePicker(props: BeamDatePickerProps & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('BeamDatePicker'), props);
+}
+BeamDatePicker.displayName = 'BeamDatePicker';

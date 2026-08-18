@@ -5,6 +5,15 @@ export function getUserDeviceAndPlatform(): {
   deviceType: DeviceType;
   platform: string;
 } {
+  // React Native: `navigator` exists (product === 'ReactNative') but there is no
+  // `window.document`, so it must be checked before the Node fallback below.
+  if (
+    typeof navigator !== 'undefined' &&
+    (navigator as any).product === 'ReactNative'
+  ) {
+    return { deviceType: 'Mobile', platform: 'React Native' };
+  }
+
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
     return { deviceType: 'Desktop', platform: 'Node' };
   }

@@ -13,7 +13,7 @@ public class TsFunction : TsNode
 	/// <summary>
 	/// The name of the function.
 	/// </summary>
-	public string Name { get; }
+	public string Name { get; private set; }
 
 	/// <summary>
 	/// The type parameters of the function.
@@ -55,6 +55,19 @@ public class TsFunction : TsNode
 	{
 		Name = name;
 		Identifier = new TsIdentifier(name);
+	}
+
+	/// <summary>
+	/// Renames the function, updating both its <see cref="Name"/> and <see cref="Identifier"/>.
+	/// Used by the API generator to disambiguate colliding method names.
+	/// </summary>
+	/// <param name="name">The new name of the function.</param>
+	/// <returns>The current <see cref="TsFunction"/> instance for chaining.</returns>
+	public TsFunction Rename(string name)
+	{
+		Name = name;
+		Identifier = new TsIdentifier(name);
+		return this;
 	}
 
 	/// <summary>

@@ -1,5 +1,6 @@
 using Beamable.Server;
 using cli.Services;
+using cli.Services.Web;
 using cli.Services.Bundles;
 using cli.Utils;
 using Newtonsoft.Json.Linq;
@@ -291,9 +292,20 @@ public class PortalExtensionUpdateToolkitCommand : AtomicCommand<PortalExtension
 			await gate.WaitAsync();
 			try
 			{
+				// A local developer build (0.0.123-*) exists only on the local registry, so the install has
+				// to be routed there or npm 404s against npmjs. --prefer-offline is dropped in that case:
+				// the whole point is to fetch a version that was just published.
+				// A local dev build already carries its own "--registry <local>" in localArgs, so the explicit
+				// --registry is only added on the normal path (where it stops npm inheriting the user's global
+				// config, which behind a proxy may point at verdaccio).
+				var localArgs = WebLocalRegistryService.InstallArgsFor(target.directory);
+				var arguments = string.IsNullOrEmpty(localArgs)
+					? $"install --no-audit --no-fund --prefer-offline --registry {registry}"
+					: "install --no-audit --no-fund" + localArgs;
+
 				var handle = StartProcessUtil.Run(
 					"npm",
-					$"install --no-audit --no-fund --prefer-offline --registry {registry}",
+					arguments,
 					useShell: true,
 					workingDirectoryPath: target.directory);
 
@@ -341,7 +353,7 @@ public class PortalExtensionUpdateToolkitCommand : AtomicCommand<PortalExtension
 			    !packument.DistTags.TryGetValue("local", out var localVersion) ||
 			    string.IsNullOrEmpty(localVersion))
 			{
-				throw new CliException($"No 'local' version of {TOOLKIT_PACKAGE} found on verdaccio [{verdaccio}]. Publish it first with dev-web.sh");
+				throw new CliException($"No 'local' version of {TOOLKIT_PACKAGE} found on verdaccio [{verdaccio}]. Publish it first with 'beam web publish'");
 			}
 
 			return (localVersion, verdaccio);

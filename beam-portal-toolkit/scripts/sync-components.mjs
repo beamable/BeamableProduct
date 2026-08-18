@@ -164,6 +164,22 @@ const SAFE_TYPE_IDENTS = new Set([
 ]);
 
 /**
+ * DOM type names that React's own `JSX` namespace also declares.
+ *
+ * `react-elements.ts` emits its attribute types inside
+ * `declare module 'react' { namespace JSX { ... } }`, and inside that namespace a bare
+ * `Element` binds to **`JSX.Element`** (React's ReactElement alias), not to the DOM
+ * `Element` the CEM meant. The emitted `.d.ts` then fails to build with TS4033
+ * ("exported interface has or is using private name 'Element'").
+ *
+ * This went unnoticed for as long as the toolkit had no `@types/react` installed: with
+ * no `JSX.Element` in scope the name fell through to the DOM global and happened to
+ * mean the right thing. Qualifying with `globalThis.` says what was always intended and
+ * is valid in every context these types are emitted into, shadowed or not.
+ */
+const JSX_SHADOWED_DOM_TYPES = new Set(['Element']);
+
+/**
  * Convert a CEM type text string to a safe TypeScript type string. If the
  * type references any identifier we don't have visibility into (component
  * internals like IconAnimation, Lit's CSSResultGroup, etc.), fall back to
@@ -187,7 +203,14 @@ function toTsType(typeText) {
   for (const id of idents) {
     if (!SAFE_TYPE_IDENTS.has(id)) return 'unknown';
   }
-  return normalized;
+  // Qualify DOM names that a surrounding `namespace JSX` would otherwise capture.
+  // Whole-word only, and never one already qualified — `globalThis.Element` must not
+  // become `globalThis.globalThis.Element`.
+  let out = normalized;
+  for (const name of JSX_SHADOWED_DOM_TYPES) {
+    out = out.replace(new RegExp(`(?<![.\\w])${name}\\b`, 'g'), `globalThis.${name}`);
+  }
+  return out;
 }
 
 /** 'beam-some-thing' → 'BeamSomeThing' */
@@ -232,6 +255,42 @@ function formatPropJsDoc(description, defaultValue, indent = '  ') {
   }
   const lines = parts.map((p) => `${indent} * ${p}`);
   return `${indent}/**\n${lines.join('\n')}\n${indent} */\n`;
+}
+
+/**
+ * 'wa-tab-show' → 'onWaTabShow'.
+ *
+ * Derived from the event name rather than read from the CEM's own `reactName`,
+ * which for a handful of Web Awesome events is plain `onChange` / `onInput`.
+ * Those would collide with the identically-named handlers React's
+ * `HTMLAttributes` already declares, and the emitted prop would end up as an
+ * intersection of two incompatible signatures.
+ */
+function toEventPropName(eventName) {
+  return `on${toPascalCase(eventName)}`;
+}
+
+/**
+ * Typed handler props for a declaration's custom events, e.g.
+ * `onWaRemove?: (event: CustomEvent) => void;`.
+ *
+ * Without these, a component whose *output* is a custom event has no typed React
+ * surface at all — the codegen otherwise reads only CEM attributes, so listening
+ * to `wa-remove` or `wa-change` meant either a `@ts-expect-error` or a hand-written
+ * forwarder (which is why `beam-change-bar` has one). The host wrapper already
+ * turns these props into `addEventListener` calls at runtime via `@lit/react`'s
+ * `createComponent`; this only declares them.
+ *
+ * Only `wa-`-prefixed events are emitted, matching the JSDoc emitter below.
+ */
+function formatEventProps(decl, indent = '  ') {
+  return (decl.events ?? [])
+    .filter((evt) => evt.name?.startsWith('wa-'))
+    .map((evt) => {
+      const doc = formatPropJsDoc(evt.description, undefined, indent);
+      return `${doc}${indent}${toEventPropName(evt.name)}?: (event: CustomEvent) => void;`;
+    })
+    .join('\n');
 }
 
 /** @param {object} decl  @param {string} indent */
@@ -485,6 +544,20 @@ const REACT_HANDWRITTEN = new Set([
   // the auto-gen can't see — it pulls only from CEM attributes. The
   // hand-written forwarder surfaces those as typed React props.
   'beam-change-bar',
+  // The charts have hand-written forwarders in `react-custom.ts` and MUST be
+  // listed here, even though the CEM now models them well enough to generate.
+  //
+  // Generating them too is not a harmless duplicate: `react.ts` star-exports both
+  // modules, and a name exported by two `export *` sources is **ambiguous, so ES
+  // semantics omit it entirely**. The result is a silent one — the declarations exist
+  // in the emitted `.d.ts` and `.mjs`, but no export binding does, so every consumer
+  // sees "has no exported member 'BeamLineChart'" with the definition visibly right
+  // there in the bundle. Anything added to `react-custom.ts` belongs in this set.
+  'beam-line-chart',
+  'beam-bar-chart',
+  'beam-donut-chart',
+  'beam-funnel-chart',
+  'beam-sankey-chart',
 ]);
 
 /** Bindable components — input-like components whose React wrappers
@@ -529,7 +602,8 @@ const reactComponentEntries = reactComponentDeclarations.map((decl) => {
     })
     .join('\n');
 
-  const propsBody = attrs || '  // No attributes defined in CEM.';
+  const events = formatEventProps(decl);
+  const propsBody = [attrs, events].filter(Boolean).join('\n') || '  // No attributes defined in CEM.';
   const ifaceDoc = formatComponentJsDoc(decl);
   const funcDoc = `/** React forwarder for \`<${decl.tagName}>\`. */\n`;
 
@@ -595,7 +669,8 @@ const reactBindableEntries = reactBindableDeclarations.map((decl) => {
     })
     .join('\n');
 
-  const attrsBody = attrs || '  // No attributes defined in CEM.';
+  const events = formatEventProps(decl);
+  const attrsBody = [attrs, events].filter(Boolean).join('\n') || '  // No attributes defined in CEM.';
 
   const callbacks = [];
   if (meta.mode === 'value') {

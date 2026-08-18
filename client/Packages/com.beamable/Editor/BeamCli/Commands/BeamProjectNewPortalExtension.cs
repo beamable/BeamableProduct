@@ -16,7 +16,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public string mountPage;
         /// <summary>The mount slot on the page. Required for component extensions; omit for page extensions (auto-assigned). Run 'portal extension list-extension-options' to see valid selectors per page</summary>
         public string mountSelector;
-        /// <summary>Specify the navigation group of the extension. This is only valid when the extension is a full page</summary>
+        /// <summary>Specify the navigation group of the extension, used to organize extensions within a hub. This is required when the extension is a full page</summary>
         public string mountGroup;
         /// <summary>Specify the navigation label of the extension. This is only valid when the extension is a full page</summary>
         public string mountLabel;
@@ -28,6 +28,10 @@ namespace Beamable.Editor.BeamCli.Commands
         public int mountLabelOrder;
         /// <summary>UI framework template to scaffold the extension with. Allowed values: react</summary>
         public string template;
+        /// <summary>If passed, creates a zone-scoped portal extension (its backing service runs as a ZoneMicroservice, per cid.zid) instead of a realm-scoped one</summary>
+        public bool zone;
+        /// <summary>Conditional mount filters as key=value pairs (e.g. --filters account.role=developer|admin account.tier=default). Values are regex-matched by the portal against the viewer's context, so | alternation is valid; quote entries containing | so your shell doesn't interpret it. Merged over the template defaults, so unspecified keys keep their defaults</summary>
+        public string[] filters;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -84,6 +88,20 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.template != default(string)))
             {
                 genBeamCommandArgs.Add(("--template=" + this.template));
+            }
+            // If the zone value was not default, then add it to the list of args.
+            if ((this.zone != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--zone=" + this.zone));
+            }
+            // If the filters value was not default, then add it to the list of args.
+            if ((this.filters != default(string[])))
+            {
+                for (int i = 0; (i < this.filters.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--filters=" + this.filters[i]));
+                }
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
