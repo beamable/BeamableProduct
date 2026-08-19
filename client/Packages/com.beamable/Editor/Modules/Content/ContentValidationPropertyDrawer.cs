@@ -18,48 +18,266 @@ namespace Beamable.Editor.Content
 		private GUIStyle _lblStyle;
 		private const int WIDTH = 3;
 		private const int OFFSET = -10;
+		private const int MAX_VALIDATION_CACHE_ENTRIES = 512;
+		private static readonly Dictionary<ValidationCacheKey, ValidationCacheEntry>
+			_validationCache = new Dictionary<ValidationCacheKey, ValidationCacheEntry>();
 
+		#region Cache Data Types
+
+		private readonly struct ValidationCacheKey : IEquatable<ValidationCacheKey>
+		{
+			public readonly int TargetInstanceId;
+			public readonly string PropertyPath;
+
+			public ValidationCacheKey(int targetInstanceId, string propertyPath)
+			{
+				TargetInstanceId = targetInstanceId;
+				PropertyPath = propertyPath;
+			}
+
+			public bool Equals(ValidationCacheKey other)
+			{
+				return TargetInstanceId == other.TargetInstanceId
+				       && string.Equals(PropertyPath, other.PropertyPath, StringComparison.Ordinal);
+			}
+
+			public override bool Equals(object obj)
+			{
+				return obj is ValidationCacheKey other && Equals(other);
+			}
+
+			public override int GetHashCode()
+			{
+				unchecked
+				{
+					return (TargetInstanceId * 397) ^
+					       (PropertyPath != null ? PropertyPath.GetHashCode() : 0);
+				}
+			}
+		}
+
+		private readonly struct ValidationRevision : IEquatable<ValidationRevision>
+		{
+			private readonly uint _propertyHash;
+			private readonly Guid _objectRevision;
+			private readonly bool _usesObjectRevision;
+
+			private ValidationRevision(uint propertyHash, Guid objectRevision, bool usesObjectRevision)
+			{
+				_propertyHash = propertyHash;
+				_objectRevision = objectRevision;
+				_usesObjectRevision = usesObjectRevision;
+			}
+
+			public static ValidationRevision Create(SerializedProperty property, ContentObject contentObject)
+			{
+#if UNITY_2022_2_OR_NEWER
+				// contentHash tracks the specific property rather than invalidating
+				// every validation field when one field changes.
+				// For a direct managed reference, contentHash only represents the
+				// managed-reference id, not all referenced contents. Use the
+				// ContentObject revision for that case.
+				if (property.propertyType != SerializedPropertyType.ManagedReference)
+				{
+					return new ValidationRevision(
+						property.contentHash,
+						Guid.Empty,
+						false);
+				}
+#endif
+
+				// Beamable currently supports Unity 2021.3. contentHash is unavailable
+				// there, so use the ContentObject validation revision as a safe,
+				// slightly coarser fallback.
+				return new ValidationRevision(
+					0,
+					contentObject.ValidationGuid,
+					true);
+			}
+
+			public bool Equals(ValidationRevision other)
+			{
+				if (_usesObjectRevision != other._usesObjectRevision)
+					return false;
+
+				return _usesObjectRevision ? _objectRevision.Equals(other._objectRevision)
+					: _propertyHash == other._propertyHash;
+			}
+
+			public override bool Equals(object obj)
+			{
+				return obj is ValidationRevision other && Equals(other);
+			}
+
+			public override int GetHashCode()
+			{
+				return _usesObjectRevision
+					? _objectRevision.GetHashCode()
+					: (int)_propertyHash;
+			}
+		}
+
+		private sealed class ValidationCacheEntry
+		{
+			public ValidationRevision PropertyRevision;
+			public int ManifestRevision;
+			public ValidationResult Result;
+		}
+
+		private sealed class ValidationResult
+		{
+			public static readonly ValidationResult Empty = new(Array.Empty<ContentException>(), 0);
+			public ContentException[] Exceptions { get; }
+			public int AdditionalLineCount { get; }
+
+			public ValidationResult(ContentException[] exceptions, int additionalLineCount)
+			{
+				Exceptions = exceptions;
+				AdditionalLineCount = additionalLineCount;
+			}
+		}
+
+		#endregion
+
+		#region Cache LifeCycle Cleanup
+
+		private static void ClearValidationCache()
+		{
+			_validationCache.Clear();
+		}
+
+		private static void InvalidateValidationResult(SerializedProperty property)
+		{
+			if (property == null ||
+			   property.serializedObject == null ||
+			   property.serializedObject.targetObject == null)
+			{
+				return;
+			}
+
+			var key = new ValidationCacheKey(property.serializedObject.targetObject.GetInstanceID(),
+				property.propertyPath);
+
+			_validationCache.Remove(key);
+		}
+
+		#endregion
+
+		static ContentValidationPropertyDrawer()
+		{
+			Selection.selectionChanged += ClearValidationCache;
+			Undo.undoRedoPerformed += ClearValidationCache;
+			AssemblyReloadEvents.beforeAssemblyReload += ClearValidationCache;
+			EditorApplication.quitting += ClearValidationCache;
+		}
+
+		private ValidationResult GetValidationResult(SerializedProperty property)
+		{
+			var contentObject = property.serializedObject.targetObject as ContentObject;
+			if (contentObject == null || !BeamEditor.IsInitialized)
+			{
+				return ValidationResult.Empty;
+			}
+
+			var contentService = BeamEditorContext.Default.CliContentService;
+			var validationContext = contentService.GetValidationContext();
+
+			// Do not cache the uninitialized state. Once initialization completes,
+			// the next layout/draw must perform validation.
+			if (validationContext is not {Initialized: true})
+			{
+				return ValidationResult.Empty;
+			}
+
+			var key = new ValidationCacheKey(contentObject.GetInstanceID(), property.propertyPath);
+			var propertyRevision = ValidationRevision.Create(property, contentObject);
+			var currentManifestRevision = contentService.ManifestChangedCount;
+
+			if (_validationCache.TryGetValue(key, out var cachedEntry) &&
+			   cachedEntry.PropertyRevision.Equals(propertyRevision) &&
+			   cachedEntry.ManifestRevision == currentManifestRevision)
+			{
+				return cachedEntry.Result;
+			}
+
+			var result = ComputeValidationResult(
+				property,
+				contentObject,
+				validationContext);
+
+			// Defensive upper bound for removed array elements and objects that
+			// remain alive without causing a Unity selection change.
+			if (_validationCache.Count >= MAX_VALIDATION_CACHE_ENTRIES &&
+			    !_validationCache.ContainsKey(key))
+			{
+				_validationCache.Clear();
+			}
+
+			_validationCache[key] = new ValidationCacheEntry
+			{
+				PropertyRevision = propertyRevision,
+				ManifestRevision = currentManifestRevision,
+				Result = result
+			};
+
+			return result;
+		}
+
+		private ValidationResult ComputeValidationResult(SerializedProperty property, ContentObject contentObject, IValidationContext validationContext)
+		{
+			if (fieldInfo == null) return ValidationResult.Empty;
+
+			var attributes = fieldInfo.GetCustomAttributes<ValidationAttribute>().ToArray();
+			if (attributes.Length == 0) return ValidationResult.Empty;
+
+			var parentValue = ContentRefPropertyDrawer.GetTargetParentObjectOfProperty(property);
+			var isArray = TryGetArrayIndex(property, out var arrayIndex);
+			var wrapper = new ValidationFieldWrapper(fieldInfo, parentValue);
+			var validationArgs = ContentValidationArgs.Create(wrapper,
+			                                                  contentObject,
+			                                                  validationContext,
+			                                                  arrayIndex,
+			                                                  isArray);
+
+			var exceptions = new List<ContentException>();
+			var additionalLineCount = 0;
+
+			foreach (var attribute in attributes)
+			{
+				try
+				{
+					attribute.Validate(validationArgs);
+				}
+				catch (ContentException ex)
+				{
+					exceptions.Add(ex);
+					var messageLineCount =
+						1 + ex.FriendlyMessage.Count(character => character == '\n');
+
+					additionalLineCount += messageLineCount;
+				}
+			}
+			return new ValidationResult(
+				exceptions.ToArray(),
+				additionalLineCount);
+		}
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 		{
 			label.tooltip = PropertyDrawerHelper.SetTooltipWithFallback(fieldInfo, property);
 
 			var baseHeight = RefEditorGUI.DefaultPropertyHeight(property, label);
-			//         var baseHeight = EditorGUI.GetPropertyHeight(property, label);
-
 			if (property.serializedObject.isEditingMultipleObjects || !BeamEditor.IsInitialized)
 			{
 				return baseHeight;
 			}
-			var ctx = BeamEditorContext.Default.CliContentService.GetValidationContext();
 
-			var attributes = fieldInfo.GetCustomAttributes<ValidationAttribute>();
-			var contentObj = property.serializedObject.targetObject as ContentObject;
+			var validationResult =
+				GetValidationResult(property);
 
-			var exceptions = new List<ContentException>();
-			var isArray = TryGetArrayIndex(property, out var arrayIndex);
-
-			var newlineCount = 0;
-
-			if (ctx.Initialized)
-			{
-				foreach (var attribute in attributes)
-				{
-					try
-					{
-						var value = ContentRefPropertyDrawer.GetTargetParentObjectOfProperty(property);
-						var wrapper = new ValidationFieldWrapper(fieldInfo, value);
-						attribute.Validate(ContentValidationArgs.Create(wrapper, contentObj, ctx, arrayIndex, isArray));
-					}
-					catch (ContentException ex)
-					{
-						newlineCount += 1 + ex.FriendlyMessage.Count(c => c == '\n');
-						exceptions.Add(ex);
-					}
-				}
-			}
-
-			return baseHeight + EditorGUIUtility.singleLineHeight * newlineCount;
+			return baseHeight +
+			       EditorGUIUtility.singleLineHeight *
+			       validationResult.AdditionalLineCount;
 		}
 
 		/// <summary>
@@ -143,92 +361,67 @@ namespace Beamable.Editor.Content
 			if (property.serializedObject.isEditingMultipleObjects || !BeamEditor.IsInitialized)
 			{
 				RefEditorGUI.DefaultPropertyField(position, property, label);
-				return; // don't support multiple edit.
+				return; // Multiple-object validation is not supported.
 			}
 
-			var ctx = BeamEditorContext.Default.CliContentService.GetValidationContext();
+			var validationResult = GetValidationResult(property);
 
-			var parentValue = ContentRefPropertyDrawer.GetTargetParentObjectOfProperty(property);
-			var value = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property);
-			//
-			if (property.propertyPath.Contains("description"))
-			{
-
-			}
-			//
-			//         if (property.propertyPath.Contains("title"))
-			//         {
-			//
-			//         }
-			//
-			//         // if the property is an optional, we need to forward the Value, or don't do anything...
-			//         var baseProperty = property.Copy();
-			//         if (typeof(DisplayableStringCollection).IsAssignableFrom(value.GetType()))
-			//         {
-			//            var valueProperty = baseProperty.FindPropertyRelative("rawData");
-			//
-			//            var propType = valueProperty.type;
-			//            var actualValue = ContentRefPropertyDrawer.GetTargetObjectOfProperty(valueProperty);
-			//
-			//
-			//         }
-
-
-			var attributes = fieldInfo.GetCustomAttributes<ValidationAttribute>();
-			var contentObj = property.serializedObject.targetObject as ContentObject;
-
-			var isArray = TryGetArrayIndex(property, out var arrayIndex);
-			var exceptions = new List<ContentException>();
-			if (ctx.Initialized)
-			{
-				foreach (var attribute in attributes)
-				{
-					try
-					{
-						var wrapper = new ValidationFieldWrapper(fieldInfo, parentValue);
-						attribute.Validate(ContentValidationArgs.Create(wrapper, contentObj, ctx, arrayIndex, isArray));
-					}
-					catch (ContentException ex)
-					{
-						exceptions.Add(ex);
-					}
-				}
-			}
+			EditorGUI.BeginChangeCheck();
 
 			if (!TryDrawContentDropdown(position, property, label))
 			{
 				RefEditorGUI.DefaultPropertyField(position, property, label);
 			}
 
-			if (exceptions.Count > 0)
+			var propertyChanged = EditorGUI.EndChangeCheck();
+
+			if (propertyChanged)
 			{
-
-				var maxY = 0f;
-				if (_lblStyle == null)
-				{
-					_lblStyle = new GUIStyle(GUI.skin.label);
-					_lblStyle.fontSize = (int)(_lblStyle.fontSize * .7f);
-					_lblStyle.normal.textColor = Color.red;
-					_lblStyle.hover.textColor = Color.red;
-				}
-
-				for (var i = 0; i < exceptions.Count; i++)
-				{
-					var ex = exceptions[i];
-					var content = new GUIContent($"  {ex.FriendlyMessage}");
-					var newlineCount = ex.FriendlyMessage.Count(c => c == '\n');
-					EditorGUI.LabelField(new Rect(position.x, position.y + position.height + EditorGUIUtility.singleLineHeight * (i - (newlineCount + 1)), position.width, EditorGUIUtility.singleLineHeight * (newlineCount + 1)), content, _lblStyle);
-					//EditorGUILayout.LabelField(content, _lblStyle);
-
-					//maxY += _lblStyle.CalcSize(content).y;
-				}
-				var errRect = new Rect(position.x - WIDTH + OFFSET, position.y - 1, WIDTH, position.height + maxY + 2);
-
-				EditorGUI.DrawRect(errRect, Color.red);
-				// EditorGUI.
+				// Do not recompute immediately. Unity calculated position.height
+				// during the preceding layout pass using the previous result.
+				// The next layout/repaint will compute the updated validation result.
+				InvalidateValidationResult(property);
 			}
 
-			//         EditorGUI.EndProperty();
+			var exceptions = validationResult.Exceptions;
+
+			if (exceptions.Length == 0)
+			{
+				return;
+			}
+
+			if (_lblStyle == null)
+			{
+				_lblStyle = new GUIStyle(GUI.skin.label) {fontSize = (int)(GUI.skin.label.fontSize * 0.7f)};
+				_lblStyle.normal.textColor = Color.red;
+				_lblStyle.hover.textColor = Color.red;
+			}
+
+			for (var i = 0; i < exceptions.Length; i++)
+			{
+				var exception = exceptions[i];
+				var content = new GUIContent($"  {exception.FriendlyMessage}");
+				var newlineCount = exception.FriendlyMessage.Count(character => character == '\n');
+				var errorHeight = EditorGUIUtility.singleLineHeight * (newlineCount + 1);
+				var errorPosition = new Rect(
+					position.x,
+					position.y +
+					position.height +
+					EditorGUIUtility.singleLineHeight *
+					(i - (newlineCount + 1)),
+					position.width,
+					errorHeight);
+
+				EditorGUI.LabelField(errorPosition, content, _lblStyle);
+			}
+
+			var errorBarPosition = new Rect(
+				position.x - WIDTH + OFFSET,
+				position.y - 1,
+				WIDTH,
+				position.height + 2);
+
+			EditorGUI.DrawRect(errorBarPosition, Color.red);
 		}
 	}
 
