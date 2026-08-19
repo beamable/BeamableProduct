@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed repeated content validation during Unity Inspector repaints, reducing Editor log spam and performance overhead when viewing content.
 - Fixed Unity Editor hitches after editing content properties by avoiding synchronous end-of-stream checks while reading streamed CLI responses.
 
 ## [6.0.1] - 2026-07-31
