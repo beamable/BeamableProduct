@@ -66,7 +66,7 @@ public class SwaggerService
 		BeamableApis.BasicService("mail"),
 		BeamableApis.ObjectService("mail"),
 		BeamableApis.BasicService("session").WithRename("User", "SessionUser"),
-		// INFO: At the moment, this is unsupported in UE-generation due to it generating a recursively referenced type (which breaks due to circular #includes). 
+		// INFO: At the moment, this is unsupported in UE-generation due to it generating a recursively referenced type (which breaks due to circular #includes).
 		BeamableApis.BasicService("trials").WithRename("\"ref\"", "\"reference\"").WithoutSDKs(TARGET_ENGINE_NAME_UNREAL),
 	};
 
@@ -212,7 +212,7 @@ public class SwaggerService
 				GatherSchemaRefs(doc.Components.Schemas, schemaName, schemaName, schemaRefCount);
 
 				// We fail loudly if we ever get two schemas with the same name in the same document.
-				// This means we can't properly disambiguate between them.   
+				// This means we can't properly disambiguate between them.
 				if (!schemaRecursiveRefs.TryAdd(namedOpenApiSchemaHandle, schemaRefCount))
 					throw new Exception($"Schema Name {schemaName} Clashing with another document's Schema!");
 
@@ -526,8 +526,8 @@ public class SwaggerService
 	}
 
 	public static async Task<(string url, string content)> GetOapiStringReader(
-		IAppContext context, 
-		ISwaggerStreamDownloader downloader, 
+		IAppContext context,
+		ISwaggerStreamDownloader downloader,
 		BeamableApiDescriptor api)
 	{
 		switch (api.Location)
@@ -1648,7 +1648,7 @@ public class NamedOpenApiSchema
 	public OpenApiSchema RawSchema;
 
 	/// <summary>
-	/// List of openAPI Schemas that this depends on. 
+	/// List of openAPI Schemas that this depends on.
 	/// </summary>
 	public List<OpenApiSchema> DependsOnSchema;
 

@@ -11,8 +11,11 @@
  *   /beamable-sdk@0.6.0/dist/browser/index.global.js
  *   /@beamable/portal-toolkit@0.1.2/package.json
  *
- * All resolved files are cached in memory — restart the server to bust the
- * cache (useful when re-publishing a package under the same version locally).
+ * Resolved files are cached in memory. Local dev republishes the SAME version
+ * with different content, so that cache has to be bustable without a restart:
+ * POST /__flush clears it (`beam web publish` calls this). Responses are sent
+ * `no-store` for the same reason — an immutable/max-age header would make the
+ * browser hold a stale copy of a version that just changed underneath it.
  */
 
 'use strict'
@@ -120,6 +123,17 @@ const CONTENT_TYPES = {
 }
 
 const server = http.createServer(async (req, res) => {
+  // Cache-bust hook — called by `beam web publish` after republishing a package
+  // under a version this server may already have cached.
+  if (req.method === 'POST' && (req.url ?? '').split('?')[0] === '/__flush') {
+    const flushed = fileCache.size
+    fileCache.clear()
+    console.log(`[200] __flush: cleared ${flushed} cached file(s)`)
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+    res.end(JSON.stringify({ flushed }))
+    return
+  }
+
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.writeHead(405).end()
     return
@@ -169,7 +183,9 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, {
       'Content-Type': contentType,
       'Content-Length': String(content.length),
-      'Cache-Control': 'public, max-age=31536000, immutable',
+      // Deliberately NOT immutable: local dev republishes the same version with
+      // new content, and a cached browser copy would silently hide the change.
+      'Cache-Control': 'no-store',
       'Access-Control-Allow-Origin': '*',
     })
 

@@ -1,0 +1,723 @@
+package com.beamable.push
+
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.provider.Settings
+import android.util.Log
+import java.util.Calendar
+import java.util.TimeZone
+import java.util.concurrent.CopyOnWriteArrayList
+import com.google.firebase.FirebaseApp
+import com.google.firebase.messaging.FirebaseMessaging
+
+/**
+ * Public facade for the Beamable push library. Engine adapters and host apps
+ * interact almost exclusively through this object.
+ *
+ * Threading: FCM callbacks invoke the dispatch* helpers from background threads.
+ * The bundled Unity adapter forwards via UnityPlayer.UnitySendMessage, which is
+ * thread-safe, so listener callbacks are invoked directly with no main-thread
+ * marshaling. Custom [PushListener] implementations must be thread-safe.
+ *
+ * Remote (FCM) is OPTIONAL: the library works local-only when no Firebase config
+ * (google-services.json) is present. See [remoteEnabled] / [initialize].
+ */
+object PushManager {
+
+    private const val TAG = "BeamablePush"
+
+    @Volatile
+    var listener: PushListener? = null
+
+    /** Set by the host engine to indicate whether the app is currently foregrounded. */
+    @Volatile
+    var isForeground: Boolean = false
+
+    /**
+     * Whether remote (FCM) features are active. True only when the caller opted in
+     * (`enableRemote`) AND a Firebase config is actually present. When false the library
+     * still does local notifications fully; remote calls become no-ops.
+     */
+    @Volatile
+    var remoteEnabled: Boolean = false
+        private set
+
+    @Volatile
+    private var appContext: Context? = null
+
+    /**
+     * Programmatically-registered receive-time handlers. Note: these only help while the
+     * app process is alive — when a push arrives with the app fully closed, the FCM process
+     * starts fresh and this list is empty, so handlers are resolved from manifest meta-data
+     * instead (see [resolveHandlers]). Multiple handlers are supported, mirroring iOS's
+     * PluginRegistry.
+     */
+    private val programmaticHandlers = CopyOnWriteArrayList<PushNotificationReceivedHandler>()
+
+    // Cache of the manifest-declared handlers so we reflect/instantiate only once per process.
+    @Volatile
+    private var manifestHandlers: List<PushNotificationReceivedHandler> = emptyList()
+    @Volatile
+    private var manifestHandlersResolved = false
+
+    /**
+     * Cache of the COMBINED handler list (programmatic + manifest) so [resolveHandlers] — called on
+     * every incoming notification — does not rebuild a LinkedHashSet per push. Null means "not yet
+     * computed / invalidated"; recomputed lazily under [this]'s monitor. Invalidated whenever the
+     * handler set changes (add/remove) or after manifest resolution.
+     */
+    @Volatile
+    private var combinedHandlersCache: List<PushNotificationReceivedHandler>? = null
+
+    /** Drops the combined-handler cache so the next [resolveHandlers] recomputes it. */
+    private fun invalidateHandlerCache() {
+        combinedHandlersCache = null
+    }
+
+    // Shared meta-data key used as a PREFIX: handlers are declared as this exact key plus
+    // `.1`, `.2`, … because the manifest merger rejects duplicate exact <meta-data> names.
+    private const val NOTIFICATION_RECEIVED_HANDLER_META =
+        "com.beamable.push.notification_received_handler"
+
+    // --- Custom-style renderers (display-override hook) ---
+    // Same additive/discovery model as receive handlers: programmatic (app-alive) + manifest
+    // meta-data (closed-app). The first renderer to return true from render() consumes the post.
+    private const val NOTIFICATION_STYLE_RENDERER_META =
+        "com.beamable.push.notification_style_renderer"
+
+    private val programmaticRenderers = CopyOnWriteArrayList<PushNotificationStyleRenderer>()
+
+    @Volatile
+    private var manifestRenderers: List<PushNotificationStyleRenderer> = emptyList()
+    @Volatile
+    private var manifestRenderersResolved = false
+    @Volatile
+    private var combinedRenderersCache: List<PushNotificationStyleRenderer>? = null
+
+    private fun invalidateRendererCache() {
+        combinedRenderersCache = null
+    }
+
+    // ---- Initialization -----------------------------------------------------
+
+    /**
+     * Initializes with an explicit [listener].
+     *
+     * @param enableRemote opt into FCM. Even when true, remote is only activated if a
+     *   Firebase config is present (auto-detected); pass false to force local-only.
+     */
+    fun initialize(context: Context, listener: PushListener, enableRemote: Boolean = true) {
+        this.appContext = context.applicationContext
+        this.listener = listener
+        this.remoteEnabled = enableRemote && isFirebaseAvailable(context)
+        Log.i(TAG, "initialized (remoteEnabled=$remoteEnabled, requested=$enableRemote)")
+        // Best-effort: if creds are already persisted (returning player), replay any funnel events
+        // that were persisted while offline / unauthenticated.
+        try {
+            BeamableAnalytics.flushPendingFunnel(context.applicationContext)
+        } catch (_: Throwable) { /* analytics is best-effort */ }
+    }
+
+    /** True if a Firebase app/config is present in this process (google-services.json). */
+    private fun isFirebaseAvailable(context: Context): Boolean {
+        return try {
+            FirebaseApp.getApps(context).isNotEmpty()
+        } catch (t: Throwable) {
+            false
+        }
+    }
+
+    // Note: the public `listener` property already exposes a JVM `setListener(...)`
+    // setter to Java/JNI/C# callers, so no explicit setter method is needed (an
+    // explicit one would clash with the property's generated setter signature).
+
+    /** Adds a receive-time handler programmatically (app-alive only). Duplicates are ignored. */
+    fun addNotificationReceivedHandler(handler: PushNotificationReceivedHandler) {
+        if (!programmaticHandlers.contains(handler)) {
+            programmaticHandlers.add(handler)
+            invalidateHandlerCache()
+        }
+    }
+
+    /** Removes a previously-added programmatic receive-time handler. */
+    fun removeNotificationReceivedHandler(handler: PushNotificationReceivedHandler) {
+        if (programmaticHandlers.remove(handler)) invalidateHandlerCache()
+    }
+
+    /** Adds a custom-style renderer programmatically (app-alive only). Duplicates are ignored. */
+    fun addStyleRenderer(renderer: PushNotificationStyleRenderer) {
+        if (!programmaticRenderers.contains(renderer)) {
+            programmaticRenderers.add(renderer)
+            invalidateRendererCache()
+        }
+    }
+
+    /** Removes a previously-added programmatic custom-style renderer. */
+    fun removeStyleRenderer(renderer: PushNotificationStyleRenderer) {
+        if (programmaticRenderers.remove(renderer)) invalidateRendererCache()
+    }
+
+    /**
+     * Resolves ALL receive-time handlers for the current process: the additive
+     * [addNotificationReceivedHandler] ones (insertion order), then every class named by a manifest
+     * meta-data (numeric-suffix sorted — see [instantiateManifestHandlers]). The combined list is
+     * deduped. Manifest handlers ALWAYS participate.
+     *
+     * Uses the supplied [context] (the FCM service) rather than [appContext], which is null in a
+     * freshly-spawned closed-app process.
+     */
+    internal fun resolveHandlers(context: Context): List<PushNotificationReceivedHandler> {
+        if (!manifestHandlersResolved) {
+            synchronized(this) {
+                if (!manifestHandlersResolved) {
+                    manifestHandlers = instantiateManifestHandlers(context)
+                    manifestHandlersResolved = true
+                    // Manifest set just changed; drop any stale combined cache built before it.
+                    invalidateHandlerCache()
+                }
+            }
+        }
+        // Fast path: serve the cached combined list (set on this hot path, called per push).
+        combinedHandlersCache?.let { return it }
+        synchronized(this) {
+            // Re-check under lock: another thread may have populated the cache meanwhile.
+            combinedHandlersCache?.let { return it }
+            // Programmatic handlers (insertion order), then manifest handlers, deduped.
+            val combined = LinkedHashSet<PushNotificationReceivedHandler>()
+            combined.addAll(programmaticHandlers)
+            combined.addAll(manifestHandlers)
+            val list = combined.toList()
+            combinedHandlersCache = list
+            return list
+        }
+    }
+
+    /** Resets all in-process handler state. Test seam only. */
+    internal fun resetHandlersForTest() {
+        programmaticHandlers.clear()
+        manifestHandlers = emptyList()
+        manifestHandlersResolved = false
+        invalidateHandlerCache()
+        programmaticRenderers.clear()
+        manifestRenderers = emptyList()
+        manifestRenderersResolved = false
+        invalidateRendererCache()
+    }
+
+    /**
+     * Resolves ALL custom-style renderers for the current process — programmatic (insertion order)
+     * then manifest-declared — mirroring [resolveHandlers]. Cached per process.
+     */
+    internal fun resolveRenderers(context: Context): List<PushNotificationStyleRenderer> {
+        if (!manifestRenderersResolved) {
+            synchronized(this) {
+                if (!manifestRenderersResolved) {
+                    manifestRenderers = instantiateManifestClasses(
+                        context,
+                        NOTIFICATION_STYLE_RENDERER_META,
+                        PushNotificationStyleRenderer::class.java,
+                        "notification_style_renderer_resolve"
+                    )
+                    manifestRenderersResolved = true
+                    invalidateRendererCache()
+                }
+            }
+        }
+        combinedRenderersCache?.let { return it }
+        synchronized(this) {
+            combinedRenderersCache?.let { return it }
+            val combined = LinkedHashSet<PushNotificationStyleRenderer>()
+            combined.addAll(programmaticRenderers)
+            combined.addAll(manifestRenderers)
+            val list = combined.toList()
+            combinedRenderersCache = list
+            return list
+        }
+    }
+
+    /**
+     * Offers [event] to each resolved custom-style renderer in order; the FIRST to return `true`
+     * consumes the notification and this returns `true` (the caller then skips the library's own
+     * post). Returns `false` when no renderer handled it. Per-renderer failures are isolated.
+     */
+    internal fun dispatchStyleRender(context: Context, event: PushReceivedEvent): Boolean {
+        for (renderer in resolveRenderers(context)) {
+            try {
+                if (renderer.render(context, event)) return true
+            } catch (t: Throwable) {
+                dispatchError("style_render", t.message ?: t.toString())
+            }
+        }
+        return false
+    }
+
+    /**
+     * Dispatches [event] to every resolved handler, isolating each handler's failure so one
+     * throwing handler does not block the others (failures route to [dispatchError] under [stage]).
+     */
+    internal fun dispatchNotificationReceived(
+        context: Context,
+        event: PushReceivedEvent,
+        stage: String = "notification_received"
+    ) {
+        for (handler in resolveHandlers(context)) {
+            try {
+                handler.onNotificationReceived(context, event)
+            } catch (t: Throwable) {
+                dispatchError(stage, t.message ?: t.toString())
+            }
+        }
+    }
+
+    private fun instantiateManifestHandlers(
+        context: Context
+    ): List<PushNotificationReceivedHandler> = instantiateManifestClasses(
+        context,
+        NOTIFICATION_RECEIVED_HANDLER_META,
+        PushNotificationReceivedHandler::class.java,
+        "notification_received_handler_resolve"
+    )
+
+    /**
+     * Reflectively instantiates every class named by a manifest meta-data whose key is [metaKey]
+     * (index -1, sorts first) or `<metaKey>.<N>` where N is a non-negative integer. Non-numeric
+     * suffixes (e.g. ".enabled") are silently ignored. Each class needs a public no-arg constructor
+     * and must be assignable to [type]; per-class failures route to [dispatchError] under [errStage]
+     * and are skipped. Shared by the receive-handler and custom-style-renderer discovery.
+     */
+    private fun <T : Any> instantiateManifestClasses(
+        context: Context,
+        metaKey: String,
+        type: Class<T>,
+        errStage: String
+    ): List<T> {
+        return try {
+            val ai = context.packageManager.getApplicationInfo(
+                context.packageName,
+                PackageManager.GET_META_DATA
+            )
+            val meta = ai.metaData ?: return emptyList()
+            val suffixPrefix = "$metaKey."
+            val entries = ArrayList<Pair<Int, String>>()
+            val seen = HashSet<Int>() // dedup so the base key isn't processed twice
+            for (key in meta.keySet()) {
+                val index: Int = when {
+                    key == metaKey -> -1
+                    key.startsWith(suffixPrefix) -> {
+                        val suffix = key.substring(suffixPrefix.length)
+                        suffix.toIntOrNull()?.takeIf { it >= 0 } ?: continue
+                    }
+                    else -> continue
+                }
+                if (!seen.add(index)) continue
+                val className = meta.getString(key) ?: continue
+                entries.add(index to className)
+            }
+            // Deterministic order: base key (-1) first, then ascending numeric index.
+            entries.sortBy { it.first }
+            val out = ArrayList<T>()
+            for ((_, className) in entries) {
+                try {
+                    val instance = Class.forName(className)
+                        .getDeclaredConstructor().newInstance()
+                    if (type.isInstance(instance)) type.cast(instance)?.let { out.add(it) }
+                } catch (t: Throwable) {
+                    dispatchError(errStage, "$className: ${t.message ?: t.toString()}")
+                }
+            }
+            out
+        } catch (t: Throwable) {
+            dispatchError(errStage, t.message ?: t.toString())
+            emptyList()
+        }
+    }
+
+    // ---- Channels -----------------------------------------------------------
+
+    /** Registers (creates) a notification channel from a [spec]. */
+    fun registerChannel(spec: NotificationChannelSpec) {
+        val ctx = appContext ?: return
+        NotificationBuilder.ensureChannel(ctx, spec)
+    }
+
+    /**
+     * Field overload of [registerChannel] for easy cross-language calls (engine adapters use this
+     * — no JSON). [importance] uses the `NotificationManager.IMPORTANCE_*` constants (e.g. 4 = HIGH).
+     */
+    fun registerChannel(id: String, name: String, description: String, importance: Int) {
+        registerChannel(NotificationChannelSpec(id, name, description, importance))
+    }
+
+    // ---- Permission ---------------------------------------------------------
+
+    /** Requests the POST_NOTIFICATIONS permission (API 33+). */
+    fun requestPermission(activity: Activity) {
+        PermissionHelper.requestPermission(activity)
+    }
+
+    /**
+     * Variant for hosts that observe `onRequestPermissionsResult` themselves and then report the
+     * authoritative answer via [notifyPermissionResult]. Returns true when the system dialog was
+     * shown and the result is still pending; false when the outcome was already known and dispatched.
+     */
+    fun requestPermissionAwaitingResult(activity: Activity, requestCode: Int): Boolean =
+        PermissionHelper.requestPermission(activity, requestCode, emitBestEffort = false)
+
+    /** Emit a permission result observed by the host (see [requestPermissionAwaitingResult]). */
+    fun notifyPermissionResult(granted: Boolean) = dispatchPermissionResult(granted)
+
+    /** True if notifications are currently permitted. */
+    fun hasPermission(context: Context): Boolean = PermissionHelper.hasPermission(context)
+
+    // ---- Local notifications -----------------------------------------------
+
+    /** Schedules a local notification after [delayMillis]; returns its id. */
+    fun scheduleLocal(template: NotificationTemplate, delayMillis: Long): Int {
+        val ctx = appContext
+        if (ctx == null) {
+            dispatchError("schedule_local", "PushManager not initialized")
+            return 0
+        }
+        val id = LocalNotificationScheduler.schedule(ctx, template, delayMillis)
+        dispatchLocalScheduled(id)
+        return id
+    }
+
+    /** JSON overload of [scheduleLocal]. */
+    fun scheduleLocal(templateJson: String, delayMillis: Long): Int {
+        return try {
+            scheduleLocal(NotificationTemplate.fromJson(templateJson), delayMillis)
+        } catch (t: Throwable) {
+            dispatchError("schedule_local", t.message ?: t.toString())
+            0
+        }
+    }
+
+    /**
+     * Exact variant of [scheduleLocal] — uses an exact alarm so it fires precisely (subject to OEM
+     * limits) instead of being batched. Requires the SCHEDULE_EXACT_ALARM permission on API 31+
+     * (the app must declare it; API 33+ also needs a user grant — see [canScheduleExactAlarms] /
+     * [requestExactAlarmPermission]); falls back to inexact with a `schedule_exact_denied` warning.
+     */
+    fun scheduleLocalExact(template: NotificationTemplate, delayMillis: Long): Int {
+        val ctx = appContext
+        if (ctx == null) {
+            dispatchError("schedule_local", "PushManager not initialized")
+            return 0
+        }
+        val id = LocalNotificationScheduler.schedule(ctx, template, delayMillis, exact = true)
+        dispatchLocalScheduled(id)
+        return id
+    }
+
+    /** JSON overload of [scheduleLocalExact]. */
+    fun scheduleLocalExact(templateJson: String, delayMillis: Long): Int {
+        return try {
+            scheduleLocalExact(NotificationTemplate.fromJson(templateJson), delayMillis)
+        } catch (t: Throwable) {
+            dispatchError("schedule_local", t.message ?: t.toString())
+            0
+        }
+    }
+
+    /**
+     * Schedules [template] at an absolute wall-clock time. The given fields are interpreted in
+     * **UTC** when [useUtc] is true, otherwise in the **device's local** time zone, then converted
+     * to an epoch instant. [month] is 1-12.
+     *
+     * @param exact use an exact alarm (see [scheduleLocalExact]); defaults to inexact via the JSON overload.
+     */
+    fun scheduleLocalAt(
+        template: NotificationTemplate,
+        year: Int, month: Int, dayOfMonth: Int, hourOfDay: Int, minute: Int, second: Int,
+        useUtc: Boolean, exact: Boolean
+    ): Int {
+        val ctx = appContext
+        if (ctx == null) {
+            dispatchError("schedule_local", "PushManager not initialized")
+            return 0
+        }
+        val tz = if (useUtc) TimeZone.getTimeZone("UTC") else TimeZone.getDefault()
+        val cal = Calendar.getInstance(tz)
+        cal.clear()
+        cal.set(year, month - 1, dayOfMonth, hourOfDay, minute, second)
+        val id = LocalNotificationScheduler.scheduleAt(ctx, template, cal.timeInMillis, exact)
+        dispatchLocalScheduled(id)
+        return id
+    }
+
+    /** JSON overload of [scheduleLocalAt]. */
+    fun scheduleLocalAt(
+        templateJson: String,
+        year: Int, month: Int, dayOfMonth: Int, hourOfDay: Int, minute: Int, second: Int,
+        useUtc: Boolean, exact: Boolean
+    ): Int {
+        return try {
+            scheduleLocalAt(
+                NotificationTemplate.fromJson(templateJson),
+                year, month, dayOfMonth, hourOfDay, minute, second, useUtc, exact
+            )
+        } catch (t: Throwable) {
+            dispatchError("schedule_local", t.message ?: t.toString())
+            0
+        }
+    }
+
+    /** True if exact alarms can currently be scheduled (always pre-API-31; permission-gated after). */
+    fun canScheduleExactAlarms(): Boolean {
+        val ctx = appContext ?: return false
+        return LocalNotificationScheduler.canScheduleExact(ctx)
+    }
+
+    /** Opens the system settings screen where the user can grant exact-alarm permission (API 31+). */
+    fun requestExactAlarmPermission(activity: Activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                activity.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
+            } catch (t: Throwable) {
+                dispatchError("request_exact_alarm", t.message ?: t.toString())
+            }
+        }
+    }
+
+    /** Cancels a scheduled/posted notification by id. */
+    fun cancel(id: Int) {
+        val ctx = appContext ?: return
+        LocalNotificationScheduler.cancel(ctx, id)
+    }
+
+    /** Cancels all posted notifications. */
+    fun cancelAll() {
+        val ctx = appContext ?: return
+        LocalNotificationScheduler.cancelAll(ctx)
+    }
+
+    // ---- FCM tokens / topics (no-op when remote disabled) -------------------
+
+    /** Fetches the current FCM registration token asynchronously (remote only). */
+    fun fetchToken() {
+        if (!remoteEnabled) {
+            Log.i(TAG, "fetchToken skipped: remote disabled (local-only)")
+            return
+        }
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                dispatchToken(task.result ?: "")
+            } else {
+                val msg = task.exception?.message ?: "unknown token error"
+                listener?.let { safe("token_error") { it.onTokenRefreshError(msg) } }
+            }
+        }
+    }
+
+    /** Subscribes to an FCM topic (remote only). */
+    fun subscribeTopic(topic: String) {
+        if (!remoteEnabled) {
+            Log.i(TAG, "subscribeTopic skipped: remote disabled (local-only)")
+            return
+        }
+        FirebaseMessaging.getInstance().subscribeToTopic(topic)
+            .addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    dispatchError("subscribe_topic", task.exception?.message ?: topic)
+                }
+            }
+    }
+
+    /** Unsubscribes from an FCM topic (remote only). */
+    fun unsubscribeTopic(topic: String) {
+        if (!remoteEnabled) {
+            Log.i(TAG, "unsubscribeTopic skipped: remote disabled (local-only)")
+            return
+        }
+        FirebaseMessaging.getInstance().unsubscribeFromTopic(topic)
+            .addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    dispatchError("unsubscribe_topic", task.exception?.message ?: topic)
+                }
+            }
+    }
+
+    // ---- Launch intent ------------------------------------------------------
+
+    /**
+     * Consumes the launch intent. Returns the notification payload JSON if the app
+     * was opened from a notification (also dispatched via [onNotificationOpened]),
+     * otherwise null.
+     */
+    fun consumeLaunchIntent(activity: Activity): String? {
+        val data = IntentDataReader.readLaunchIntent(activity) ?: return null
+        dispatchNotificationOpened(data)
+        return data
+    }
+
+    /**
+     * Warm-start variant of [consumeLaunchIntent]: consumes a freshly-delivered [intent]
+     * (e.g. from `Activity.onNewIntent`, which does not update the activity's current intent)
+     * and dispatches [onNotificationOpened] if it carries a notification payload. Returns the
+     * payload JSON, or null when [intent] is not a notification tap.
+     */
+    fun consumeIntent(intent: Intent?): String? {
+        val data = IntentDataReader.readIntent(intent) ?: return null
+        dispatchNotificationOpened(data)
+        return data
+    }
+
+    // ---- Auth credential writer (Decision Q5) --------------------------
+
+    /**
+     * Persists the player's auth credentials into the `beamable_notifications_auth` prefs that
+     * [BeamableAnalytics] reads when firing the native funnel (the funnel is inert until these are
+     * written). The native side is otherwise a pure reader, so the SDK must call this whenever the
+     * player's token/scope changes.
+     *
+     * [authJson] is the canonical credential object:
+     * `{ "accessToken": string, "refreshToken": string, "accessTokenExpiresAt": number(epoch ms),
+     *    "cid": string, "pid": string, "host": string }`.
+     * Keys are optional individually; present ones overwrite, absent ones are left untouched.
+     * Malformed JSON routes to [dispatchError] and writes nothing (never crashes).
+     */
+    fun configureAuth(context: Context, authJson: String) {
+        try {
+            val obj = org.json.JSONObject(authJson)
+            val prefs = context.applicationContext
+                .getSharedPreferences(BeamableAnalytics.PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().apply {
+                if (obj.has("accessToken"))
+                    putString(BeamableAnalytics.KEY_ACCESS_TOKEN, obj.optString("accessToken"))
+                if (obj.has("refreshToken"))
+                    putString(BeamableAnalytics.KEY_REFRESH_TOKEN, obj.optString("refreshToken"))
+                if (obj.has("accessTokenExpiresAt"))
+                    putLong(
+                        BeamableAnalytics.KEY_ACCESS_TOKEN_EXPIRES_AT,
+                        obj.optLong("accessTokenExpiresAt")
+                    )
+                if (obj.has("cid")) putString(BeamableAnalytics.KEY_CID, obj.optString("cid"))
+                if (obj.has("pid")) putString(BeamableAnalytics.KEY_PID, obj.optString("pid"))
+                if (obj.has("host")) putString(BeamableAnalytics.KEY_HOST, obj.optString("host"))
+            }.apply()
+            // "Connected to Beamable" trigger: now that creds are persisted, replay any funnel
+            // events that were stored while offline / unauthenticated. Best-effort.
+            BeamableAnalytics.flushPendingFunnel(context.applicationContext)
+        } catch (t: Throwable) {
+            dispatchError("configure_auth", t.message ?: t.toString())
+        }
+    }
+
+    /** Clears all persisted auth credentials (e.g. on sign-out). The funnel goes inert afterward. */
+    fun clearAuth(context: Context) {
+        try {
+            context.applicationContext
+                .getSharedPreferences(BeamableAnalytics.PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().clear().apply()
+        } catch (t: Throwable) {
+            dispatchError("clear_auth", t.message ?: t.toString())
+        }
+    }
+
+    // ---- Internal dispatch helpers (all guarded) ----------------------------
+
+    internal fun dispatchToken(token: String) {
+        listener?.let { safe("token") { it.onTokenReceived(token) } }
+    }
+
+    internal fun dispatchForegroundMessage(json: String) {
+        listener?.let { safe("foreground_message") { it.onMessageReceivedForeground(json) } }
+    }
+
+    internal fun dispatchNotificationOpened(json: String) {
+        // Funnel: a notification tap is an "Opened" event. Fired natively, gated on a
+        // tracked campaign + scope/gamerTag inside trackFunnel.
+        appContext?.let { ctx ->
+            try {
+                BeamableAnalytics.trackFunnel(
+                    ctx, NotificationIntentData.fromJson(json), BeamableAnalytics.FunnelType.Opened
+                )
+            } catch (_: Throwable) { /* analytics is best-effort */ }
+        }
+        listener?.let { safe("notification_opened") { it.onNotificationOpened(json) } }
+    }
+
+    // ---- Offer / conversion funnel helpers ---------------------------
+
+    /**
+     * Emits a **Clicked** funnel event for an in-app offer click, attributed to the campaign that
+     * arrived in the originating notification. [intentDataJson] is the notification's
+     * intent-data JSON (as delivered to the engine); [offerJson] is the single clicked offer.
+     * No-op unless campaignId + nodeId + scope + gamerTag are present.
+     */
+    fun trackOfferClicked(intentDataJson: String, offerJson: String?) {
+        trackOffer(intentDataJson, offerJson, BeamableAnalytics.FunnelType.Clicked)
+    }
+
+    /** Emits a **Converted** funnel event for an offer conversion. See [trackOfferClicked]. */
+    fun trackOfferConverted(intentDataJson: String, offerJson: String?) {
+        trackOffer(intentDataJson, offerJson, BeamableAnalytics.FunnelType.Converted)
+    }
+
+    private fun trackOffer(
+        intentDataJson: String,
+        offerJson: String?,
+        type: BeamableAnalytics.FunnelType
+    ) {
+        val ctx = appContext ?: return
+        try {
+            val intent = NotificationIntentData.fromJson(intentDataJson)
+            val offer = offerJson?.takeIf { it.isNotEmpty() }?.let {
+                NotificationOffer.fromJson(org.json.JSONObject(it))
+            }
+            BeamableAnalytics.trackFunnel(ctx, intent, type, offer)
+        } catch (t: Throwable) {
+            dispatchError("analytics_offer", t.message ?: t.toString())
+        }
+    }
+
+    internal fun dispatchPermissionResult(granted: Boolean) {
+        listener?.let { safe("permission_result") { it.onPermissionResult(granted) } }
+    }
+
+    internal fun dispatchLocalScheduled(id: Int) {
+        listener?.let { safe("local_scheduled") { it.onLocalNotificationScheduled(id) } }
+    }
+
+    internal fun dispatchError(stage: String, message: String) {
+        listener?.let { l ->
+            try {
+                l.onError(stage, message)
+            } catch (_: Throwable) {
+                // Never let listener errors propagate out of dispatch.
+            }
+        }
+    }
+
+    /**
+     * Reports the outcome of a native funnel-analytics POST to the listener. [funnelType] is the
+     * funnel stage name, [ok] whether it succeeded, [statusCode] the HTTP code (0 when no network
+     * attempt), [message] a short human description. Mirrors [dispatchError]'s guarded direct call.
+     */
+    internal fun dispatchFunnelResult(funnelType: String, ok: Boolean, statusCode: Int, message: String) {
+        val l = listener
+        Log.i(
+            TAG,
+            "dispatchFunnelResult $funnelType ok=$ok code=$statusCode msg='$message' " +
+                "listener=${l?.javaClass?.simpleName ?: "null"}"
+        )
+        try {
+            l?.onFunnelResult(funnelType, ok, statusCode, message)
+        } catch (t: Throwable) {
+            Log.w(TAG, "onFunnelResult dispatch failed: ${t.message}")
+        }
+    }
+
+    /** Runs [block], routing any thrown error to [onError] instead of crashing. */
+    private inline fun safe(stage: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (t: Throwable) {
+            dispatchError(stage, t.message ?: t.toString())
+        }
+    }
+}

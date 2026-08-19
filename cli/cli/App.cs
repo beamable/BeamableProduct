@@ -13,6 +13,7 @@ using Beamable.Common.Util;
 using beamable.otel.exporter;
 using cli.CliServerCommand;
 using cli.Commands;
+using cli.Commands.LocalStack;
 using cli.Commands.Project;
 using cli.Commands.Project.Deps;
 using cli.Commands.Project.StorageData;
@@ -32,6 +33,7 @@ using cli.PlayerCommands;
 using cli.Portal;
 using cli.Services;
 using cli.Services.HttpServer;
+ using cli.Services.Web;
 using cli.TempCommands;
 using cli.TokenCommands;
 using cli.UnityCommands;
@@ -39,6 +41,7 @@ using cli.Unreal;
 using cli.UnrealCommands;
 using cli.Utils;
 using cli.Version;
+using cli.Web;
 using CliWrap;
 using Errata;
 using Microsoft.Build.Locator;
@@ -253,6 +256,7 @@ public class App
 		services.AddSingleton<IUserContext, SimpleUserContext>(_ => new SimpleUserContext(0) );
 		services.AddSingleton<ProcessFileLocker>();
 		services.AddSingleton<IRemotePortalConfigService, RemotePortalConfigService>();
+		services.AddSingleton<WebLocalRegistryService>();
 
 		services.AddSingleton<DefaultActivityProvider>(DefaultActivityProvider.CreateCliServiceProvider());
 		services.AddSingleton<ResourceBuilder>(p =>
@@ -492,6 +496,7 @@ public class App
 		Commands.AddSingleton(NoLogFileOption.Instance);
 		Commands.AddSingleton(UnmaskLogsOption.Instance);
 		Commands.AddSingleton(DockerPathOption.Instance);
+		Commands.AddSingleton(JavaPathOption.Instance);
 		Commands.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -514,6 +519,7 @@ public class App
 			root.AddGlobalOption(UnmaskLogsOption.Instance);
 			root.AddGlobalOption(NoLogFileOption.Instance);
 			root.AddGlobalOption(DockerPathOption.Instance);
+			root.AddGlobalOption(JavaPathOption.Instance);
 			root.AddGlobalOption(EmitLogsOption.Instance);
 			root.AddGlobalOption(ExtraProjectPathOptions.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<ShowRawOutput>());
@@ -563,6 +569,15 @@ public class App
 		Commands.AddSubCommand<StartGrafanaCommand, StartGrafanaCommandArgs, GrafanaCommand>();
 		Commands.AddSubCommand<CheckGrafanaCommand, CheckGrafanaCommandArgs, GrafanaCommand>();
 		Commands.AddSubCommand<StopGrafanaCommand, StopGrafanaCommandArgs, GrafanaCommand>();
+
+		Commands.AddRootCommand<LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackSetupCommand, LocalStackSetupCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackInitCommand, LocalStackInitCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackUpCommand, LocalStackUpCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackPsCommand, LocalStackPsCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackLogsCommand, LocalStackLogsCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackStopCommand, LocalStackStopCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackValidateCommand, LocalStackValidateCommandArgs, LocalStackCommand>();
 
 
 		Commands.AddRootCommand<ProjectCommand>();
@@ -675,6 +690,13 @@ public class App
 				PortalExtensionCommand>();
 		Commands.AddSubCommandWithHandler<ListMountSitesCommand, ListMountSitesCommandArgs, PortalExtensionCommand>();
 		Commands.AddSubCommandWithHandler<ListPortalExtensionOptionsCommand, ListPortalExtensionOptionsCommandArgs, PortalExtensionCommand>();
+
+		Commands.AddRootCommand<WebCommand, WebCommandArgs>();
+		Commands.AddSubCommandWithHandler<WebPublishCommand, WebPublishCommandArgs, WebCommand>();
+		Commands.AddSubCommandWithHandler<WebUseCommand, WebUseCommandArgs, WebCommand>();
+		Commands.AddSubCommandWithHandler<WebResetCommand, WebResetCommandArgs, WebCommand>();
+		Commands.AddSubCommandWithHandler<WebStopCommand, WebStopCommandArgs, WebCommand>();
+		Commands.AddSubCommandWithHandler<WebStatusCommand, WebStatusCommandArgs, WebCommand>();
 
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();
@@ -1204,6 +1226,21 @@ public class App
 					}else if (Otel.CliRunningOnDockerContainer()) // If it is running on a docker and wasn't overrided by the Otel.CliAutoSetupTelemetryEnabled() shouldn't use the telemetry
 					{
 						shouldContinue = false;
+					}
+					else if (!quiet && !AnsiConsole.Profile.Capabilities.Interactive)
+					{
+						// There is no one to ask: the output is piped, or this is CI / a script / an agent. Prompting
+						// here threw "Failed to read input in non-interactive mode" and took the whole command with
+						// it — so the FIRST command run after any `.beamable` folder appeared would crash, which is
+						// a miserable way to discover that a consent prompt exists.
+						//
+						// Default to NOT collecting. Silence is not consent, and this is the one branch where the
+						// answer was never actually given. `--quiet` keeps its existing opt-in behaviour, and
+						// BEAM_CLI_AUTO_SETUP_TELEMETRY (handled above) is how a non-interactive run opts in.
+						shouldContinue = false;
+						Log.Verbose(
+							"Skipping the telemetry consent prompt: the console is not interactive. Defaulting to " +
+							"no telemetry — set the auto-setup telemetry env var to choose explicitly.");
 					}
 					else if(!quiet)// if we don't have the auto setup set we will check if we should auto accept or show the prompt
 					{

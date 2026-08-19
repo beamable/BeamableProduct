@@ -626,11 +626,11 @@ namespace Beamable.Common.Api
 		public bool CausedByExistingOutage => source == NoConnectivityExceptionSource.EXISTING_OUTAGE;
 		
 		protected NoConnectivityException(ISDKRequesterOptionDataView requestData, UnityWebRequest failedRequest)
-			: base($"NoConnectivity detected through failed web request. " +
-			       $"opts-json=[{requestData?.ConvertToJson()}] " +
-			       $"request-error=[{failedRequest?.error}] " +
-			       $"request-url=[{failedRequest?.url}] " +
-			       $"request-status=[{failedRequest?.responseCode}] ")
+			: base($"NoConnectivity detected through failed web request." +
+			       $" opts-json=[{requestData?.ConvertToJson()}]" +
+			       $" request-error=[{failedRequest?.error}]" +
+			       $" request-url=[{failedRequest?.url}]" +
+			       $" request-status=[{failedRequest?.responseCode}] ")
 		{
 			source = NoConnectivityExceptionSource.FAILED_REQUEST;
 			this.requestData = requestData;
@@ -638,9 +638,9 @@ namespace Beamable.Common.Api
 		}
 
 		protected NoConnectivityException(string key, string description)
-			: base("NoConnectivity detected through cache miss. " +
-			       $"cache-key=[{key}] " +
-			       $"cache-key-desc=[{description}]")
+			: base("NoConnectivity detected through cache miss." +
+			       $" cache-key=[{key}]" +
+			       $" cache-key-desc=[{description}]")
 		{
 			source = NoConnectivityExceptionSource.CACHE_MISS;
 			CacheKey = key;
@@ -648,8 +648,8 @@ namespace Beamable.Common.Api
 		}
 
 		protected NoConnectivityException(ISDKRequesterOptionDataView requestData)
-			: base("NoConnectivity detected because Beamable is still not reachable. " +
-			       $"opts-json=[{requestData?.ConvertToJson()}]" )
+			: base("NoConnectivity detected because Beamable is still not reachable." +
+			       $" opts-json=[{requestData?.ConvertToJson()}]" )
 		{
 			this.requestData = requestData;
 			source = NoConnectivityExceptionSource.EXISTING_OUTAGE;

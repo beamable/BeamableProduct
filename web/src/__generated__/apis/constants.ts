@@ -37,9 +37,11 @@ export const segmentIdPlaceholder = "{segmentId}";
 
 export const playerIdPlaceholder = "{playerId}";
 
-export const idPlaceholder = "{id}";
+export const kindPlaceholder = "{kind}";
 
 export const keyPlaceholder = "{key}";
+
+export const idPlaceholder = "{id}";
 
 export const jobIdPlaceholder = "{jobId}";
 
@@ -50,3 +52,7 @@ export const zoneIdPlaceholder = "{zoneId}";
 export const accountIdPlaceholder = "{accountId}";
 
 export const objectIdPlaceholder = "{objectId}";
+
+export const campaignIdPlaceholder = "{campaignId}";
+
+export const versionPlaceholder = "{version}";
