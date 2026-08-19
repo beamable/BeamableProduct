@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `beam project run` progress no longer freezes at "Bundling Beamable Properties…" when a service dies during `generate-env`; both the structured and plain-text milestone tables are now consulted on both transports.
 - A failing `POST /basic/auth/token` no longer mutually recurses into a stack overflow, because auth-token requests are excluded from the token-refresh retry path. Timeout retries are also no longer an unbounded fixed-delay loop, since the retry count is now carried through the internal retry instead of being reset.
 - Web SDK code generation fixes: colliding generated method names are disambiguated with a `By{Param}And{Param}` suffix (they previously emitted duplicate top-level declarations, a `SyntaxError` in the ESM build); duplicate `export type` declarations are collapsed by name and the static type collections are cleared after each generation, so types no longer leak across microservices or across repeated generations in a long-lived process such as the MCP server; and `oneOf` members are routed through the type mapper, fixing a null reference on inline, primitive, and nullable schemas.
+- Fix logging unexpected curly-brace expressions.
 
 ## [7.2.2] - 2026-07-16
 
