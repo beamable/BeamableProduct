@@ -161,7 +161,8 @@ public static class OpenApiTsTypeMapper
 	{
 		// Route every oneOf member through Map rather than assuming each is a $ref. A oneOf can contain
 		// inline objects, primitives, or nullable schemas (schema.Reference is null for those), which would
-		// otherwise NRE on schema.Reference.Id. Map handles all of those cases (and adds modules) uniformly.
+		// otherwise NRE on schema.Reference.Id. Map handles all of those cases (and adds modules) uniformly,
+		// including the namespace-stripping and DateTime special-case a raw Reference.Id read would miss.
 		var result = new List<TsType>(oneOfList.Count);
 		foreach (var schema in oneOfList)
 		{

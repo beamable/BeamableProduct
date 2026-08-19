@@ -257,6 +257,31 @@ export async function customersPostRealmsSegmentsReconcileByCustomerIdAndRealmId
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param customerId - The `customerId` parameter to include in the API request.
  * @param realmId - The `realmId` parameter to include in the API request.
+ * @param segmentId - The `segmentId` parameter to include in the API request.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function customersPostRealmsSegmentsPropertiesRecompute(requester: HttpRequester, customerId: string, realmId: string, segmentId: string, gamertag?: string): Promise<HttpResponse<SegmentResponse>> {
+  let endpoint = "/api/customers/{customerId}/realms/{realmId}/segments/{segmentId}/properties/recompute".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId)).replace(segmentIdPlaceholder, endpointEncoder(segmentId));
+  
+  // Make the API request
+  return makeApiRequest<SegmentResponse>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param customerId - The `customerId` parameter to include in the API request.
+ * @param realmId - The `realmId` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */

@@ -110,6 +110,10 @@ export class BeamServer extends ServerServicesMixin(BeamBase) {
 
   /** Connects the server SDK to the Beamable gateway to listen for server-events. This method is called automatically during `BeamServer.init()` if `enableServerEvents` is set to `true`. */
   private async connect() {
+    // Load any persisted tokens first (no-op for synchronous browser/Node
+    // storages; loads from AsyncStorage for the React Native storage).
+    // Optional-chained for backward compatibility with custom token storages.
+    await this.tokenStorage.hydrate?.();
     const tokenData = await this.tokenStorage.getTokenData();
     const accessToken = tokenData.accessToken ?? undefined;
     await this.ws.connect({
