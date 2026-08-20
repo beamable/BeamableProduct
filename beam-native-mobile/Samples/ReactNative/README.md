@@ -11,7 +11,10 @@ end to end:
 - **tracking `Clicked` / `Converted`** funnel analytics (iOS + Android);
 - **native events** — `notificationOpened`, `notificationReceived`,
   `notificationPresented`, token, delivery receipts, funnel results — in a live log;
-- **deep links** — a tapped notification deep-links into the app (`beamrnsample://details/<id>`).
+- **deep links** — a tapped notification deep-links into the app (`beamrnsample://details/<id>`);
+- **stats → segments** — bump a **game-private** player stat through the `PlayerStatsService`
+  microservice (a client token cannot write that domain) and read back the Portal segments
+  the backend moved the player into, plus the enter/exit history.
 
 > 📘 **New to this?** [`INTEGRATION.md`](./INTEGRATION.md) is the step-by-step guide to
 > adding Beamable push to a **fresh** React Native app — the Beamable side and the
@@ -66,6 +69,8 @@ To run against a local Beamable backend (e.g. `beam local up` over your LAN), do
 ```
 # env.local — git-ignored, never committed
 VITE_API_BASE=http://192.168.x.x:8080
+# Only needed while microservices run via `beam project run` — see below.
+BEAM_ROUTING_KEY=<output of `beam fed local-key`>
 ```
 
 `app.config.js` reads it and surfaces the URL to the app (`src/beam/config.ts` flips
@@ -142,6 +147,7 @@ Tabs are listed below in bar order; the bar follows the order of the `Tabs.Scree
 | **Deep links** (`deeplinks.tsx`) | Simulate · Navigate directly · Open any URL · Last received | OS-routed deep link, in-app navigation, `normalizeDeepLink`'s schemeless back-stop |
 | **In-game** (`inbox.tsx`) | Opt in/out of in-game · Inbox (auto-refreshes on focus, ↻ in the corner) | the `ingame` rail and the player's Beamable mailbox |
 | **Email** (`email.tsx`) | Account (read-only) · Add email to account · Opt in/out of email | `beam.account.current()` guest-vs-credentialed state; `addCredentials` → POST `/basic/accounts/register`; the `email` rail |
+| **Segments** (`segments.tsx`) | `PLAYER_LEVEL` card with an add button · Set/delete any stat · Create N players with a stat · My segments (↻) · Recent transitions | the stats → segment loop: `PlayerStatsService.AddToMyStat` writes a **game-private** stat (the domain segment rules read, and one a client token cannot write), the backend re-evaluates the Portal segment rules watching that key, and `GET /api/realms/{realmId}/players/{playerId}/segments` (+ `/transitions`) reads the membership back |
 | **Analytics** (`analytics.tsx`) | Campaign/Node ID · Track offer clicked · Track offer converted · Clear native auth | native `Clicked`/`Converted` funnel events (iOS + Android) and the closed-app auth handoff |
 | **Unity** (`unity.tsx`) | Send message to Unity | the Unity ↔ React WebView bridge. **Web only** — the tab is hidden on native |
 
@@ -225,6 +231,69 @@ via `beam.use(CampaignServiceClient)` and reached with `getPushService()`. See
 
 ---
 
+## The `PlayerStatsService` microservice
+
+Beamable **segments** are rules over a player's **game-private** stats
+(`game.private.player.{playerId}`). A client token cannot create or change those — the
+`client` domain is all it can reach, and the `game` domain needs the privileged identity a
+microservice runs as. So the Segments tab does not call `beam.stats`; it calls
+**`PlayerStatsService`**, whose `[ClientCallable]` endpoints always act on the *caller's own*
+player id:
+
+| Endpoint | Purpose |
+|---|---|
+| `GetMyStats()` | every game-private stat on the caller (the read path — the client can't read this domain either) |
+| `SetMyStat(key, value)` | create/overwrite one stat, absolute value |
+| `AddToMyStat(key, amount)` | add to one stat and return the new total (the cards' add buttons) |
+| `DeleteMyStat(key)` | remove one stat |
+| `CreatePlayersWithStat(count, key, value)` | create N new players carrying one stat, to populate a segment with members (capped at 25 — a QA fixture, not for production clients) |
+
+Writes answer `200` with `success: false` for a rejected key/value, so `src/beam/segments.ts`
+throws on that flag rather than treating a resolved call as a success.
+
+The service's source lives in the **agentic-portal** workspace at
+`services/PlayerStatsService` (with its own README covering the Portal segment setup), and its
+typed client — `src/beam/beamable/clients/PlayerStatsServiceClient.ts`, generated with
+`dotnet beam project generate web-client` — is registered via
+`beam.use(PlayerStatsServiceClient)` and reached with `getPlayerStatsService()`.
+
+### Reaching a service that runs locally
+
+The service must be reachable in the realm this sample connects to
+(`.beamable/config.beam.json`). How it got there decides whether you need one more setting:
+
+- **Deployed** (`beam deploy release`) — it binds with no routing key. Nothing else to do; leave
+  `BEAM_ROUTING_KEY` out of `env.local`.
+- **Run locally** (`beam project run`, which is also how a local stack starts services) — the
+  binding is registered behind a **per-machine routing key**, and the platform routes to it *only*
+  for callers presenting that key. Every call otherwise fails with
+  `BindingNotFoundException: No binding found for … micro_playerstatsservice`, which reads like
+  the service doesn't exist. This applies to **every** microservice, `CampaignService` included —
+  it is not specific to stats.
+
+  ```bash
+  dotnet beam fed local-key      # → mac-mini-de-felipe_5258…
+  # env.local
+  BEAM_ROUTING_KEY=mac-mini-de-felipe_5258…
+  ```
+
+  `app.config.js` passes it through `extra`, `src/beam/config.ts` exposes it as
+  `LOCAL_ROUTING_KEY`, and `beamClient.ts` expands it to
+  `X-BEAM-SERVICE-ROUTING-KEY: micro_CampaignService:<key>,micro_PlayerStatsService:<key>`.
+
+  Two safeguards there are deliberate, and worth preserving if you touch that code:
+
+  1. The header is installed **after `Beam.init()`**, by mutating the requester's `defaultHeaders`.
+     The SDK also honours a global `BeamBase.env.BEAM_ROUTING_KEY`, but that is read on *every*
+     request — including the guest login inside `init()` — so a bad value there breaks
+     authentication itself. Applying it afterwards means a wrong key can only break microservice
+     calls. (The Portal does the same thing for extension SDK instances.)
+  2. The value is validated against `^[A-Za-z0-9_.-]+$` and expanded per service. A malformed key
+     is ignored with a console warning rather than sent, because the platform rejects a malformed
+     header on every route with `BadRoutingKeyHeaderException`.
+
+---
+
 ## Project layout
 
 ```
@@ -236,18 +305,20 @@ app/
     deeplinks.tsx    # simulate / open any URL / last received
     inbox.tsx        # in-game rail + mailbox (auto-refresh on focus)
     email.tsx        # account, add-email, email rail
+    segments.tsx     # stat cards with add buttons, segment membership + transitions
     analytics.tsx    # funnel clicked/converted, native auth
     unity.tsx        # Unity bridge (web only — hidden tab on native)
   details/[id].tsx   # deep-link target screen
 src/
   state/             # AppProviders + the three contexts (log / beam / notification)
   ui/                # theme tokens + Section/Button/Field/Collapsible/TabStrip/
-                     #   ConnectionBar/DebugConsole/MessageCard
+                     #   ConnectionBar/DebugConsole/MessageCard/StatCard
   beam/
     config.ts        # cid / pid / environment (EDIT THIS)
     beamClient.ts    # Beam.init() singleton + getPushService()
-    beamable/clients/# generated microservice client (CampaignServiceClient)
+    beamable/clients/# generated microservice clients (CampaignService, PlayerStatsService)
     pushNotifications.ts # binds device register/list to CampaignServiceClient
+    segments.ts      # demo stat catalog + PlayerStatsService writes and segment reads
   linking/links.ts   # scheme + URL/path helpers
   unity/UnityBridgeSection.tsx  # demo panel over the package's Unity-bridge helpers (web only)
 app.json             # registers the "@beamable/notifications-react-native" config plugin

@@ -66,6 +66,10 @@ export default function TabsLayout() {
             options={{ title: 'Email', tabBarIcon: icon('mail-outline') }}
           />
           <Tabs.Screen
+            name="segments"
+            options={{ title: 'Segments', tabBarIcon: icon('people-outline') }}
+          />
+          <Tabs.Screen
             name="analytics"
             options={{ title: 'Analytics', tabBarIcon: icon('stats-chart-outline') }}
           />
