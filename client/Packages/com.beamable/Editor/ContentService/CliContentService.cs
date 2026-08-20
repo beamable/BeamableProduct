@@ -55,6 +55,9 @@ namespace Beamable.Editor.ContentService
 		private const string PUBLISH_OPERATION_TITLE = "Publish Contents";
 		private const string PUBLISH_OPERATION_SUCCESS_BASE_MESSAGE = "{0} published. {1}/{2} items published.";
 		private const string ERROR_PUBLISH_OPERATION_ERROR_BASE_MESSAGE = "Error when publishing content {0}. Discarding publishes changes. Error message: {1}";
+		// Mirrors ContentPsCommandEvent.EVT_TYPE_FullRebuild in the CLI contract.
+		// The generated Unity contract exposes EventType but not its constants.
+		private const int CONTENT_PS_EVENT_TYPE_FULL_REBUILD = 0;
 
 		public string manifestIdOverride;
 		
@@ -692,6 +695,12 @@ namespace Beamable.Editor.ContentService
 						item.OwnerCid == currentCid && item.OwnerPid == currentPid;
 
 					var reportData = report.data;
+					var isFullRebuild = reportData.EventType == CONTENT_PS_EVENT_TYPE_FULL_REBUILD;
+					if (isFullRebuild)
+					{
+						// A full rebuild is a replacement snapshot, not an incremental merge.
+						ClearCaches();
+					}
 					var changesManifest = reportData.RelevantManifestsAgainstLatest.FirstOrDefault(ValidateManifest);
 					var removeManifest = reportData.ToRemoveLocalEntries.FirstOrDefault(ValidateManifest);
 
@@ -732,7 +741,7 @@ namespace Beamable.Editor.ContentService
 						}
 					}
 
-					if (hasRemoveManifest || hasChangeManifest)
+					if (isFullRebuild || hasRemoveManifest || hasChangeManifest)
 					{
 						RestoreRenameRegistry();
 						ManifestChangedCount++;
