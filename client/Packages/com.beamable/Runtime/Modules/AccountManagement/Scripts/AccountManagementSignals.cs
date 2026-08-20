@@ -89,14 +89,40 @@ namespace Beamable.AccountManagement
 		public readonly bool Cancelled;
 		public readonly bool AuthTokenOneUseOnly;
 
+		/// <summary>
+		/// True when the provider had no credential to use - Google reporting SIGN_IN_REQUIRED, for
+		/// instance. Implies <see cref="Cancelled"/>, so the login flow treats it as a no-op, but lets
+		/// a caller tell "nobody has signed in on this device" apart from "the player dismissed the
+		/// dialog".
+		/// </summary>
+		public readonly bool NoCredential;
+
 		public ThirdPartyLoginResponse() { }
 
-		public ThirdPartyLoginResponse(string authToken, bool cancelled = false, bool oneUseOnly = false)
+		public ThirdPartyLoginResponse(string authToken, bool cancelled = false, bool oneUseOnly = false,
+									   bool noCredential = false)
 		{
 			AuthToken = authToken;
 			Cancelled = cancelled;
 			AuthTokenOneUseOnly = oneUseOnly;
+			NoCredential = noCredential;
 		}
+
+		/// <summary>
+		/// A fresh "nothing happened" response.
+		/// </summary>
+		/// <remarks>
+		/// Prefer this to the <see cref="CANCELLED"/> singleton: that is a shared mutable instance
+		/// with a public, writable <see cref="AuthToken"/>, so anything that assigns to it corrupts
+		/// every future cancellation process-wide.
+		/// </remarks>
+		public static ThirdPartyLoginResponse Cancel() => new ThirdPartyLoginResponse(null, true);
+
+		/// <summary>
+		/// A fresh response for "the provider had no usable credential".
+		/// </summary>
+		public static ThirdPartyLoginResponse NoCredentialFound() =>
+			new ThirdPartyLoginResponse(null, true, false, true);
 
 		public static ThirdPartyLoginResponse CANCELLED = new ThirdPartyLoginResponse(null, true);
 	}
