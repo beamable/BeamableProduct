@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed 62 folders under `Common/Runtime` shipping without their `.meta` files in 6.1.0-PREVIEW.RC1 and RC2, which made Unity ignore the scripts inside them. The release tooling now repopulates the generated source before pruning empty folders, backfills any missing folder meta, and fails the release if any importable folder in the package still has no meta.
 - Fixed repeated content validation during Unity Inspector repaints, reducing Editor log spam and performance overhead when viewing content.
 - Fixed Unity Editor hitches after editing content properties by avoiding synchronous end-of-stream checks while reading streamed CLI responses.
 

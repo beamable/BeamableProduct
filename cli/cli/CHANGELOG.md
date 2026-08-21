@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [7.2.3] 
 
+### Added
+
+- Added `beam unity verify-package-metas <packagePath>`, which fails when a Unity package contains an importable directory with no sibling `.meta` file.
+
 ### Fixed
 
+- Fixed `beam unity download-all-nuget-packages` deleting folder `.meta` files before the replacement source was downloaded, which shipped Unity packages containing folders Unity then ignored. The generated files are now deleted, the replacement source is downloaded, missing folder metas are backfilled, and only then are still-empty folders pruned. The same sequence is used by `beam unity release-shared-code`.
+- Fixed generated Unity `.meta` guids being derived from the absolute output path, so the same file now gets the same guid on a build machine and in a local checkout. Guids already present in the Unity tree are reused rather than recomputed.
+- Fixed generated folder `.meta` files using the script `MonoImporter` template instead of `folderAsset: yes` with `DefaultImporter`.
 - Fix logging unexpected curly-brace expressions.
 
 ## [7.2.2] - 2026-07-16
