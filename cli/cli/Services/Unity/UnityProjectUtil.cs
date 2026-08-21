@@ -308,6 +308,38 @@ public static class UnityProjectUtil
 	/// </summary>
 	/// <param name="folder">The root folder to clean. The root folder itself is never deleted.</param>
 	/// <param name="extensions">The file extensions to delete.</param>
+	/// <summary>
+	/// Delete the generated source files (and their file metas) under <paramref name="folder"/>,
+	/// leaving every directory and every directory meta in place. This is step one of the
+	/// delete -> repopulate -> prune sequence; it must not remove directories, because the
+	/// replacement source has not arrived yet and a directory that survives keeps its meta GUID.
+	/// </summary>
+	public static void DeleteGeneratedFiles(string folder, string[] extensions)
+	{
+		throw new NotImplementedException("See UnityCommonTreeCleanupTests: delete generated files only, never directories.");
+	}
+
+	/// <summary>
+	/// Delete every directory under <paramref name="folder"/> that is still empty after the
+	/// replacement source has been written, along with its sibling directory meta. This is the
+	/// final step of the delete -> repopulate -> prune sequence, so a directory the new source
+	/// repopulated is left alone and keeps its established GUID.
+	/// </summary>
+	public static void PruneEmptyDirectoriesAndMetaFiles(string folder)
+	{
+		throw new NotImplementedException("See UnityCommonTreeCleanupTests: prune only directories still empty after repopulation.");
+	}
+
+	/// <summary>
+	/// Generate a directory meta for every directory under <paramref name="folder"/> that does not
+	/// already have one, so a directory the replacement source introduces is importable by Unity.
+	/// Directories that already have a meta are left untouched, preserving their GUIDs.
+	/// </summary>
+	public static void EnsureFolderMetaFiles(string folder)
+	{
+		throw new NotImplementedException("See UnityCommonTreeCleanupTests: backfill metas for directories that lack one.");
+	}
+
 	public static void DeleteAllFilesWithExtensionsAndEmptyDirectories(string folder, string[] extensions)
 	{
 		if (!Directory.Exists(folder))
