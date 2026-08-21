@@ -305,6 +305,13 @@ jobs:
       - name: Copy npmRC over
         run: cp client/Packages/com.beamable/.npmrc ./client/build/package_dist/.npmrc
 
+      # The Free Disk Space step above deletes /usr/share/dotnet to make room for the Unity build,
+      # which would leave the globally installed `beam` tool with no runtime to run on.
+      - name: Restore .NET for the tarball audit
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
       # Last gate before anything leaves the runner: audit the tarball that is actually about to be
       # published, not just the working tree it was built from. ~Claude
       - name: Verify Packaged Tarball Meta Files
