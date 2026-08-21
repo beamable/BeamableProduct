@@ -2,6 +2,7 @@ using Beamable.Common.BeamCli.Contracts;
 using cli.UnityCommands;
 using Newtonsoft.Json;
 using System.IO.Compression;
+using System.Net;
 using System.Text.RegularExpressions;
 using Beamable.Server;
 
@@ -114,9 +115,93 @@ public static class UnityProjectUtil
 	}
 
 	/// <summary>
+	/// A nuget package that has been fetched into memory, ready to be written into a Unity project.
+	/// </summary>
+	public class FetchedNugetPackage
+	{
+		public string packageId;
+		public string packageVersion;
+		public byte[] archiveBytes;
+
+		/// <summary>
+		/// The comment prepended to every extracted file, recording where the file came from.
+		/// </summary>
+		public string fileHeader;
+	}
+
+	/// <summary>
+	/// Fetch a nuget package into memory without touching the file system.
+	/// </summary>
+	/// <remarks>
+	/// This is deliberately separate from <see cref="WritePackageToUnity"/> so that a caller which is
+	/// about to delete the generated code it is replacing can confirm the replacement exists first.
+	/// A pinned version that has not been published yet would otherwise leave the Unity project with
+	/// its generated source deleted and nothing to put back.
+	/// </remarks>
+	/// <exception cref="CliException">The package version could not be downloaded.</exception>
+	public static async Task<FetchedNugetPackage> FetchPackage(string packageId, string packageVersion)
+	{
+		var packageUrl = $"https://www.nuget.org/api/v2/package/{packageId}/{packageVersion}";
+		var detailUrl = $"https://www.nuget.org/packages/{packageId}/{packageVersion}";
+
+		using (HttpClient client = new HttpClient())
+		{
+			byte[] zipBytes;
+			try
+			{
+				Log.Debug($"Fetching nuget package from {packageUrl}");
+				zipBytes = await client.GetByteArrayAsync(packageUrl);
+			}
+			catch (HttpRequestException ex)
+			{
+				var reason = ex.StatusCode == HttpStatusCode.NotFound
+					? $"No such package version exists on nuget.org. If {packageVersion} has not been published yet, publish it or pin an already published version."
+					: ex.Message;
+				throw new CliException(
+					$"Failed to download nuget package {packageId}@{packageVersion}. {reason} url=[{packageUrl}]");
+			}
+
+			return new FetchedNugetPackage
+			{
+				packageId = packageId,
+				packageVersion = packageVersion,
+				archiveBytes = zipBytes,
+				fileHeader =
+					$"// this file was copied from nuget package {packageId}@{packageVersion}\n// {detailUrl}\n"
+			};
+		}
+	}
+
+	/// <summary>
+	/// Write the source files of an already fetched nuget package into a target unity project.
+	/// This will generate meta files as well.
+	/// </summary>
+	/// <param name="package">A package returned by <see cref="FetchPackage"/>.</param>
+	/// <param name="packageSrc">The path inside the archive to copy from.</param>
+	/// <param name="outputPath">The Unity folder to copy into.</param>
+	/// <param name="snapshot">Meta files captured before the target folder was cleaned, used to keep already established guids stable.</param>
+	/// <exception cref="CliException"></exception>
+	public static async Task WritePackageToUnity(FetchedNugetPackage package, string packageSrc, string outputPath,
+		UnityMetaSnapshot snapshot = null)
+	{
+		// Extract files in memory without saving the entire archive to disk
+		using (MemoryStream memoryStream = new MemoryStream(package.archiveBytes))
+		{
+			using (ZipArchive zipArchive = new ZipArchive(memoryStream))
+			{
+				await ExtractPackageSource(zipArchive, packageSrc, outputPath, package.fileHeader, snapshot);
+			}
+		}
+	}
+
+	/// <summary>
 	/// Download a nuget package from nuget.org and copy the src files into a target unity project.
 	/// This will generate meta files as well.
 	/// </summary>
+	/// <remarks>
+	/// A caller that deletes the code it is replacing should call <see cref="FetchPackage"/> before
+	/// deleting anything, then <see cref="WritePackageToUnity"/>, rather than using this method.
+	/// </remarks>
 	/// <param name="packageId"></param>
 	/// <param name="packageVersion"></param>
 	/// <param name="packageSrc"></param>
@@ -125,26 +210,8 @@ public static class UnityProjectUtil
 	/// <exception cref="CliException"></exception>
 	public static async Task DownloadPackage(string packageId, string packageVersion, string packageSrc, string outputPath, UnityMetaSnapshot snapshot = null)
 	{
-		var packageUrl = $"https://www.nuget.org/api/v2/package/{packageId}/{packageVersion}";
-		var detailUrl = $"https://www.nuget.org/packages/{packageId}/{packageVersion}";
-		
-
-		using (HttpClient client = new HttpClient())
-		{
-			// Download the zip file as a byte array
-			byte[] zipBytes = await client.GetByteArrayAsync(packageUrl);
-
-			// Extract files in memory without saving the entire archive to disk
-			using (MemoryStream memoryStream = new MemoryStream(zipBytes))
-			{
-				using (ZipArchive zipArchive = new ZipArchive(memoryStream))
-				{
-					var header =
-						$"// this file was copied from nuget package {packageId}@{packageVersion}\n// {detailUrl}\n";
-					await ExtractPackageSource(zipArchive, packageSrc, outputPath, header, snapshot);
-				}
-			}
-		}
+		var package = await FetchPackage(packageId, packageVersion);
+		await WritePackageToUnity(package, packageSrc, outputPath, snapshot);
 	}
 
 	/// <summary>

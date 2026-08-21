@@ -47,6 +47,11 @@ public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNuget
 		var generatedExtensions = new string[] { ".cs", ".cs.meta" };
 		var commonFolder = Path.Combine(info.packageFolder, "Common");
 
+		// fetch the replacement source BEFORE deleting the source it replaces. A pinned version that is
+		// not published yet used to leave the Unity project with its generated code deleted and nothing
+		// to put back, which broke the project until the files were restored by hand.
+		var commonPackage = await UnityProjectUtil.FetchPackage("Beamable.Common", info.beamableNugetVersion);
+
 		// capture the meta files before anything is deleted, so that folder guids and file guids that
 		// already exist survive the delete-and-replace cycle below.
 		var commonSnapshot = UnityProjectUtil.CaptureMetaSnapshot(commonFolder);
@@ -64,8 +69,8 @@ public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNuget
 			UnityProjectUtil.DeleteGeneratedFiles(serverFolder, generatedExtensions);
 		}
 
-		await UnityProjectUtil.DownloadPackage("Beamable.Common", info.beamableNugetVersion,
-			"content/sourceCode/", commonFolder, commonSnapshot);
+		await UnityProjectUtil.WritePackageToUnity(commonPackage, "content/sourceCode/", commonFolder,
+			commonSnapshot);
 
 		// only prune once the replacement source is on disk. A folder that the new source still uses has
 		// been repopulated by now, so it is no longer empty and keeps its meta file. A folder that the new
