@@ -53,6 +53,19 @@ public class LocalStackConfig
 	public int dockerWatchdogSeconds = 15;
 
 	/// <summary>
+	/// The standing web-registry choice <c>beam local init</c> recorded: whether <c>beam local up</c> runs the
+	/// local web package registry steps (Verdaccio + local-unpkg) without being asked to. The steps themselves
+	/// are always written to the manifest, so this is the switch — flipping it is what <c>init</c> does, and
+	/// <c>--with-web-registry[=true|false]</c> overrides it for a single run WITHOUT writing back
+	/// here. Re-run <c>beam local init</c> to change the standing choice.
+	///
+	/// Null on a manifest written before this field existed, which reads as TRUE: those manifests only contain
+	/// the web steps when their author asked for them, and <c>up</c> ran them by default, so an existing
+	/// workspace keeps behaving exactly as it did until it is re-initialised.
+	/// </summary>
+	public bool? webRegistry;
+
+	/// <summary>
 	/// The repository checkouts this manifest was generated against. Documentation-only metadata: the steps
 	/// carry their own absolute <see cref="LocalStackStep.workingDirectory"/> values and nothing in the
 	/// orchestrator reads this. It exists so the generated <c>beam-local-stack</c> agent skill (see
