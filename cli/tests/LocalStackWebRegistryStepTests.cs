@@ -43,19 +43,19 @@ public class LocalStackWebRegistryStepTests
 	};
 
 	/// <summary>
-	/// Mirrors what <c>beam local up</c> does: resolve the flags against the manifest's standing choice, then
-	/// select. <paramref name="noWebRegistry"/> / <paramref name="withWebRegistry"/> are the FLAGS, not the
-	/// resolved value — a test that passes neither is a plain <c>up</c>.
+	/// Mirrors what <c>beam local up</c> does: resolve the flag against the manifest's standing choice, then
+	/// select. <paramref name="webRegistry"/> is the FLAG value, not the resolved one — null means
+	/// <c>--with-web-registry</c> was not passed, i.e. a plain <c>up</c>.
 	/// </summary>
 	private static List<LocalStackStep> Select(
-		LocalStackConfig config, bool build = false, bool noWebRegistry = false,
-		string only = null, string skip = null, bool withWebRegistry = false)
+		LocalStackConfig config, bool build = false, bool? webRegistry = null,
+		string only = null, string skip = null)
 	{
 		var autoBuild = build
 			? new HashSet<LocalStackStep>()
 			: config.steps.Where(s => s.enabled && LocalStackConfigIO.BuildOutputMissing(s, config)).ToHashSet();
 
-		var resolved = LocalStackUpCommand.ResolveNoWebRegistry(config, noWebRegistry, withWebRegistry);
+		var resolved = LocalStackUpCommand.ResolveNoWebRegistry(config, webRegistry);
 
 		return LocalStackUpCommand.SelectSteps(
 			config, build, autoBuild,
@@ -101,13 +101,13 @@ public class LocalStackWebRegistryStepTests
 	/// un-forced the build steps would leave the container coming up and honour the flag by halves.
 	/// </summary>
 	[Test]
-	public void No_web_registry_skips_every_web_step_including_the_container()
+	public void Opting_out_skips_every_web_step_including_the_container()
 	{
-		var names = Names(Select(ConfigWithWebRegistry(), noWebRegistry: true));
+		var names = Names(Select(ConfigWithWebRegistry(), webRegistry: false));
 
 		foreach (var name in WebBuildSteps.Append(LocalStackTemplate.WebRegistryStepName))
 		{
-			Assert.That(names, Does.Not.Contain(name), $"--no-web-registry must skip {name}");
+			Assert.That(names, Does.Not.Contain(name), $"--with-web-registry=false must skip {name}");
 		}
 
 		// It is an opt-out for the web steps only — the rest of the stack is untouched.
@@ -115,15 +115,15 @@ public class LocalStackWebRegistryStepTests
 		Assert.That(names, Does.Contain("c# gateway"));
 	}
 
-	/// <summary>--no-web-registry must win even over an explicit --build.</summary>
+	/// <summary>Opting out must win even over an explicit --build.</summary>
 	[Test]
-	public void No_web_registry_beats_build()
+	public void Opting_out_beats_build()
 	{
-		var names = Names(Select(ConfigWithWebRegistry(), build: true, noWebRegistry: true));
+		var names = Names(Select(ConfigWithWebRegistry(), build: true, webRegistry: false));
 
 		foreach (var name in WebBuildSteps.Append(LocalStackTemplate.WebRegistryStepName))
 		{
-			Assert.That(names, Does.Not.Contain(name), $"--no-web-registry must skip {name} even under --build");
+			Assert.That(names, Does.Not.Contain(name), $"--with-web-registry=false must skip {name} even under --build");
 		}
 
 		Assert.That(names, Does.Contain("build: scala"), "--build must still run the non-web build steps");
@@ -220,17 +220,17 @@ public class LocalStackWebRegistryStepTests
 	[Test]
 	public void With_web_registry_overrides_an_off_init_choice_for_one_run()
 	{
-		var names = Names(Select(ConfigWithWebRegistry(webRegistry: false), withWebRegistry: true));
+		var names = Names(Select(ConfigWithWebRegistry(webRegistry: false), webRegistry: true));
 
 		AssertWebStepsRun(names, "--with-web-registry overrides the manifest choice");
 	}
 
 	[Test]
-	public void No_web_registry_overrides_an_on_init_choice_for_one_run()
+	public void The_flag_overrides_an_on_init_choice_for_one_run()
 	{
-		var names = Names(Select(ConfigWithWebRegistry(webRegistry: true), noWebRegistry: true));
+		var names = Names(Select(ConfigWithWebRegistry(webRegistry: true), webRegistry: false));
 
-		AssertWebStepsSkipped(names, "--no-web-registry overrides the manifest choice");
+		AssertWebStepsSkipped(names, "--with-web-registry=false overrides the manifest choice");
 	}
 
 	/// <summary>
@@ -243,7 +243,7 @@ public class LocalStackWebRegistryStepTests
 		var config = ConfigWithWebRegistry();
 		config.webRegistry = null;
 
-		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(config, false, false), Is.False);
+		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(config, null), Is.False);
 		AssertWebStepsRun(Names(Select(config)), "an unrecorded choice means on, as it always did");
 	}
 
@@ -270,15 +270,20 @@ public class LocalStackWebRegistryStepTests
 		}
 	}
 
-	/// <summary>--with-web-registry has always won when both flags are passed; that must not change.</summary>
+	/// <summary>The three states the single override field has to represent, at the resolver.</summary>
 	[Test]
-	public void With_web_registry_beats_no_web_registry()
+	public void The_run_override_has_three_states()
 	{
-		var on = ConfigWithWebRegistry();
 		var off = ConfigWithWebRegistry(webRegistry: false);
+		var on = ConfigWithWebRegistry();
 
-		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(on, noFlag: true, withFlag: true), Is.False);
-		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(off, noFlag: true, withFlag: true), Is.False);
+		// null defers to the manifest — the state a plain bool could not represent.
+		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(off, null), Is.True);
+		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(on, null), Is.False);
+
+		// ...and an explicit flag overrides it in either direction.
+		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(off, true), Is.False);
+		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(on, false), Is.True);
 	}
 
 	[Test]

@@ -10,7 +10,7 @@ namespace tests;
 /// <summary>
 /// The web-registry choice is made once, at <c>beam local init</c>, and recorded in the manifest so it lasts
 /// until the next <c>init</c> — before this, the only way to skip the registry was to remember
-/// <c>--no-web-registry</c> on every single <c>beam local up</c>.
+/// a flag on every single <c>beam local up</c>.
 ///
 /// Two things have to hold for that to work, and both are easy to break by accident: the choice must be
 /// PERSISTED (a dropped `false` reads back as "unrecorded", which means on), and the three steps must be
@@ -58,7 +58,7 @@ public class LocalStackInitWebRegistryTests : CLITest
 		AssertWebStepsWritten(config);
 
 		// And `up` with no flags honours it — this is the whole point of the field.
-		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(config, false, false), Is.True);
+		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(config, null), Is.True);
 	}
 
 	[Test]
@@ -68,13 +68,13 @@ public class LocalStackInitWebRegistryTests : CLITest
 
 		Assert.That(config.webRegistry, Is.True);
 		AssertWebStepsWritten(config);
-		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(config, false, false), Is.False);
+		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(config, null), Is.False);
 	}
 
 	[Test]
-	public void No_web_registry_records_the_registry_as_off()
+	public void With_web_registry_false_records_the_registry_as_off()
 	{
-		var config = InitAndLoad("--no-web-registry");
+		var config = InitAndLoad("--with-web-registry=false");
 
 		Assert.That(config.webRegistry, Is.False);
 		AssertWebStepsWritten(config);
@@ -93,13 +93,27 @@ public class LocalStackInitWebRegistryTests : CLITest
 		Assert.That(config.repos.webRegistryDir, Is.EqualTo(dir));
 	}
 
-	/// <summary>--with-web-registry wins when both are passed, matching `beam local up`.</summary>
-	[Test]
-	public void With_web_registry_beats_no_web_registry()
+	/// <summary>
+	/// The single flag takes an optional VALUE, which is what lets it express BOTH answers — that is the whole
+	/// reason there is no second `--no-...` flag. The binder receives default(bool) for an absent flag, so
+	/// honouring an explicit `false` means asking the parse result whether the token was really there
+	/// (LocalStackCommand.WasSupplied); getting that wrong would silently ignore every `=false` and leave the
+	/// command with no way to say "no" at all.
+	/// </summary>
+	[TestCase("--with-web-registry", true)]
+	[TestCase("--with-web-registry=true", true)]
+	[TestCase("--with-web-registry=false", false)]
+	public void The_flag_accepts_an_explicit_bool_value(string flag, bool expected)
 	{
-		var config = InitAndLoad("--no-web-registry", "--with-web-registry");
+		Assert.That(InitAndLoad(flag).webRegistry, Is.EqualTo(expected));
+	}
 
-		Assert.That(config.webRegistry, Is.True);
+	/// <summary>The space-separated form has to work too, since that is how people type flags.</summary>
+	[Test]
+	public void The_value_can_be_space_separated()
+	{
+		Assert.That(InitAndLoad("--with-web-registry", "true").webRegistry, Is.True);
+		Assert.That(InitAndLoad("--with-web-registry", "false").webRegistry, Is.False);
 	}
 
 	/// <summary>
@@ -109,7 +123,7 @@ public class LocalStackInitWebRegistryTests : CLITest
 	public void Re_running_init_flips_the_standing_choice()
 	{
 		Assert.That(InitAndLoad("--with-web-registry").webRegistry, Is.True);
-		Assert.That(InitAndLoad("--no-web-registry").webRegistry, Is.False);
+		Assert.That(InitAndLoad("--with-web-registry=false").webRegistry, Is.False);
 		Assert.That(InitAndLoad("--with-web-registry").webRegistry, Is.True);
 	}
 

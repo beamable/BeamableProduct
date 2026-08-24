@@ -242,7 +242,7 @@ public class LocalStackBuildStepTests
 			var step = Step(config, name);
 			Assert.That(step, Is.Not.Null, $"missing {name}");
 			// Still flagged `build` in the manifest; `up` opts them in whenever the manifest's `webRegistry`
-			// choice is on (see LocalStackWebRegistryStepTests), and --no-web-registry opts back out.
+			// choice is on (see LocalStackWebRegistryStepTests), and --with-web-registry=false opts back out.
 			Assert.That(step.build, Is.True, $"{name} must be a build step");
 			Assert.That(step.waitForExit, Is.True, $"{name} must run to completion");
 			Assert.That(step.beam, Is.True, $"{name} must invoke the beam CLI");

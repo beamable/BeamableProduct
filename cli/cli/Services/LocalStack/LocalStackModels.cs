@@ -56,7 +56,7 @@ public class LocalStackConfig
 	/// The standing web-registry choice <c>beam local init</c> recorded: whether <c>beam local up</c> runs the
 	/// local web package registry steps (Verdaccio + local-unpkg) without being asked to. The steps themselves
 	/// are always written to the manifest, so this is the switch — flipping it is what <c>init</c> does, and
-	/// <c>--no-web-registry</c> / <c>--with-web-registry</c> override it for a single run WITHOUT writing back
+	/// <c>--with-web-registry[=true|false]</c> overrides it for a single run WITHOUT writing back
 	/// here. Re-run <c>beam local init</c> to change the standing choice.
 	///
 	/// Null on a manifest written before this field existed, which reads as TRUE: those manifests only contain

@@ -186,7 +186,7 @@ public static class LocalStackSkillTemplate
 		// choice, not their presence. Saying "included" for a stack whose registry is switched off would
 		// describe a bring-up that does not happen.
 		sb.AppendLine(webSteps.Count > 0 && config.webRegistry != false
-			? $"- **Local web registry**: on ({string.Join(", ", webSteps.Select(n => $"`{n}`"))}). `beam local up --no-web-registry` skips them for one run."
+			? $"- **Local web registry**: on ({string.Join(", ", webSteps.Select(n => $"`{n}`"))}). `beam local up --with-web-registry=false` skips them for one run."
 			: "- **Local web registry**: off — the portal resolves `@beamable/*` from the published packages, not your local build. `beam local up --with-web-registry` turns it on for one run; re-run `beam local init` to change the standing choice.");
 		sb.AppendLine();
 	}
