@@ -12,9 +12,10 @@ end to end:
 - **native events** — `notificationOpened`, `notificationReceived`,
   `notificationPresented`, token, delivery receipts, funnel results — in a live log;
 - **deep links** — a tapped notification deep-links into the app (`beamrnsample://details/<id>`);
-- **stats → segments** — bump a **game-private** player stat through the `PlayerStatsService`
-  microservice (a client token cannot write that domain) and read back the Portal segments
-  the backend moved the player into, plus the enter/exit history.
+- **stats → segments** — drive a segment from a stat this app writes itself with `beam.stats`
+  (`client.public` / `client.private`, no microservice), or from a **game-private** stat through
+  the `PlayerStatsService` microservice, and read back the Portal segments the backend moved the
+  player into plus the enter/exit history.
 
 > 📘 **New to this?** [`INTEGRATION.md`](./INTEGRATION.md) is the step-by-step guide to
 > adding Beamable push to a **fresh** React Native app — the Beamable side and the
@@ -147,7 +148,7 @@ Tabs are listed below in bar order; the bar follows the order of the `Tabs.Scree
 | **Deep links** (`deeplinks.tsx`) | Simulate · Navigate directly · Open any URL · Last received | OS-routed deep link, in-app navigation, `normalizeDeepLink`'s schemeless back-stop |
 | **In-game** (`inbox.tsx`) | Opt in/out of in-game · Inbox (auto-refreshes on focus, ↻ in the corner) | the `ingame` rail and the player's Beamable mailbox |
 | **Email** (`email.tsx`) | Account (read-only) · Add email to account · Opt in/out of email | `beam.account.current()` guest-vs-credentialed state; `addCredentials` → POST `/basic/accounts/register`; the `email` rail |
-| **Segments** (`segments.tsx`) | `PLAYER_LEVEL` card with an add button · Set/delete any stat · Create N players with a stat · My segments (↻) · Recent transitions | the stats → segment loop: `PlayerStatsService.AddToMyStat` writes a **game-private** stat (the domain segment rules read, and one a client token cannot write), the backend re-evaluates the Portal segment rules watching that key, and `GET /api/realms/{realmId}/players/{playerId}/segments` (+ `/transitions`) reads the membership back |
+| **Segments** (`segments.tsx`) | namespace picker · `CLIENT_LEVEL` card (`beam.stats`) · `PLAYER_LEVEL` card (microservice) · Set/delete any stat in either namespace · Create N players with a stat · My segments (↻) · Recent transitions | the stats → segment loop in both namespaces a rule can read: `beam.stats.set` writes `client.*` directly, `PlayerStatsService.AddToMyStat` writes `game.private`, the backend re-evaluates the Portal rules watching that attribute, and `GET /api/realms/{realmId}/players/{playerId}/segments` (+ `/transitions`) reads the membership back. The screen renders the rule JSON to author, including a cross-namespace one |
 | **Analytics** (`analytics.tsx`) | Campaign/Node ID · Track offer clicked · Track offer converted · Clear native auth | native `Clicked`/`Converted` funnel events (iOS + Android) and the closed-app auth handoff |
 | **Unity** (`unity.tsx`) | Send message to Unity | the Unity ↔ React WebView bridge. **Web only** — the tab is hidden on native |
 
@@ -231,14 +232,41 @@ via `beam.use(CampaignServiceClient)` and reached with `getPushService()`. See
 
 ---
 
+## Segments and stat namespaces
+
+A player's stats are split by **namespace** — `{domain}.{visibility}`, one Mongo collection
+each — and a segment rule leaf names the namespace its key lives in:
+
+```jsonc
+// a stat this app writes
+{ "leaf": { "key": "CLIENT_LEVEL", "op": "GTE", "values": [3], "ns": "client.public" } }
+
+// a platform stat — no `ns`, which means game.private
+{ "leaf": { "key": "PLAYER_LEVEL", "op": "GTE", "values": [10] } }
+
+// one rule over both
+{ "and": { "rules": [ /* the two leaves above */ ] } }
+```
+
+An omitted `ns` means `game.private`, so every rule authored before the field existed keeps
+meaning exactly what it did.
+
+Which write path the Segments tab uses follows from what a **client token** is allowed to do:
+
+| Namespace | Written by | Why |
+|---|---|---|
+| `client.public`, `client.private` | this app, `beam.stats.set` | a player may write their own `client.*` stats. A rule leaf naming one now reads it, so no server is involved at all — **the path a shipping game wants** |
+| `game.private` | `PlayerStatsService` microservice | the `game` domain needs the privileged identity a microservice runs as, and it is where the platform's own aggregates (`SPEND_*`, `PURCHASES_*`, `SESSIONS_*`) live |
+
+The client path's one caveat is spelled out on screen: its add button does the
+read-modify-write **in the client**, because the stats API has no atomic increment and there is
+no privileged service in that path — so two devices bumping the same key at once can lose an
+increment. `AddToMyStat` does the same work inside the service, in one hop.
+
 ## The `PlayerStatsService` microservice
 
-Beamable **segments** are rules over a player's **game-private** stats
-(`game.private.player.{playerId}`). A client token cannot create or change those — the
-`client` domain is all it can reach, and the `game` domain needs the privileged identity a
-microservice runs as. So the Segments tab does not call `beam.stats`; it calls
-**`PlayerStatsService`**, whose `[ClientCallable]` endpoints always act on the *caller's own*
-player id:
+For the `game.private` half, the tab calls **`PlayerStatsService`**, whose `[ClientCallable]`
+endpoints always act on the *caller's own* player id:
 
 | Endpoint | Purpose |
 |---|---|
@@ -305,7 +333,7 @@ app/
     deeplinks.tsx    # simulate / open any URL / last received
     inbox.tsx        # in-game rail + mailbox (auto-refresh on focus)
     email.tsx        # account, add-email, email rail
-    segments.tsx     # stat cards with add buttons, segment membership + transitions
+    segments.tsx     # client + game stat cards, namespace picker, membership + transitions
     analytics.tsx    # funnel clicked/converted, native auth
     unity.tsx        # Unity bridge (web only — hidden tab on native)
   details/[id].tsx   # deep-link target screen
@@ -318,7 +346,7 @@ src/
     beamClient.ts    # Beam.init() singleton + getPushService()
     beamable/clients/# generated microservice clients (CampaignService, PlayerStatsService)
     pushNotifications.ts # binds device register/list to CampaignServiceClient
-    segments.ts      # demo stat catalog + PlayerStatsService writes and segment reads
+    segments.ts      # namespace model + rule JSON, beam.stats and PlayerStatsService writes, segment reads
   linking/links.ts   # scheme + URL/path helpers
   unity/UnityBridgeSection.tsx  # demo panel over the package's Unity-bridge helpers (web only)
 app.json             # registers the "@beamable/notifications-react-native" config plugin

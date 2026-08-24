@@ -1,22 +1,32 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import {
+  CLIENT_DEMO_STAT,
+  CLIENT_NAMESPACES,
+  DEFAULT_NAMESPACE,
   DEMO_STATS,
   MAX_BULK_PLAYERS,
   STAT_OBJECT,
+  addToClientStat,
   addToStat,
   createPlayersWithStat,
+  crossNamespaceRuleJson,
+  deleteClientStat,
   deleteStat,
   describeSegmentError,
   formatWhen,
   listMySegments,
   listMyTransitions,
+  readClientStats,
   readStats,
+  ruleLeafJson,
+  setClientStat,
   setStat,
   statNumber,
+  type ClientNamespace,
   type PlayerSegment,
   type SegmentTransition,
 } from '../../src/beam/segments';
@@ -29,18 +39,25 @@ import MessageCard from '../../src/ui/MessageCard';
 import Screen from '../../src/ui/Screen';
 import Section from '../../src/ui/Section';
 import StatCard from '../../src/ui/StatCard';
+import TabStrip from '../../src/ui/TabStrip';
 import { colors, mono, radius, space } from '../../src/ui/theme';
 
 /** How many transition rows to render — the endpoint pages, and this is a demo. */
 const MAX_TRANSITIONS = 10;
 
 /**
- * Segments tab: the stats → segment loop.
+ * Segments tab: the stats → segment loop, in both namespaces a rule can now read.
  *
- * Segments are evaluated from a player's GAME-PRIVATE stats, which a client token cannot read or
- * write — so both halves of this page go through the `PlayerStatsService` microservice for the
- * stats, and through the realms segments API for the membership. A press on a card's add button
- * and the resulting Enter/Exit row are visible at once.
+ * A rule leaf names the namespace its stat lives in, so the page is two write paths against one
+ * read path:
+ *
+ *  - **client.public / client.private** — `beam.stats`, straight from this app. This is the new
+ *    one, and the one a shipping game wants: no microservice, no privileged identity.
+ *  - **game.private** — the `PlayerStatsService` microservice, because a client token cannot
+ *    write the game domain. Still the only way to reach the platform's own aggregates.
+ *
+ * Membership and history come back through the realms segments API either way, so a press on a
+ * card's add button and the resulting Enter/Exit row are visible at once.
  *
  * Nothing here provisions a segment — the rule has to exist in the Portal for a stat bump to
  * move the player. Until then the stat cards still work and "My segments" stays empty, which is
@@ -61,6 +78,16 @@ export default function SegmentsTab() {
   const [transitionsError, setTransitionsError] = useState<string | null>(null);
   const [segmentsBusy, setSegmentsBusy] = useState(false);
 
+  // Client-namespace stats: this app writes them itself, so they need their own read and their
+  // own namespace choice.
+  const [clientNs, setClientNs] = useState<ClientNamespace>(CLIENT_NAMESPACES[0]);
+  const [clientStats, setClientStats] = useState<Record<string, string>>({});
+  const [clientLoaded, setClientLoaded] = useState(false);
+  const [clientBusy, setClientBusy] = useState(false);
+  const [clientError, setClientError] = useState<string | null>(null);
+  const [clientKey, setClientKey] = useState('');
+  const [clientValue, setClientValue] = useState('');
+
   const [customKey, setCustomKey] = useState('');
   const [customValue, setCustomValue] = useState('');
 
@@ -71,6 +98,7 @@ export default function SegmentsTab() {
   const [bulkPlayers, setBulkPlayers] = useState<string[]>([]);
 
   const statsInFlight = useRef(false);
+  const clientInFlight = useRef(false);
   const segmentsInFlight = useRef(false);
 
   /** `silent` keeps the on-focus refresh out of the Activity log — see the Inbox tab. */
@@ -99,6 +127,37 @@ export default function SegmentsTab() {
       }
     },
     [isReady, append],
+  );
+
+  /**
+   * The client-namespace read. Keyed on `clientNs`, so switching the namespace re-reads — the two
+   * namespaces are separate collections and a key in one says nothing about the other.
+   */
+  const refreshClientStats = useCallback(
+    async (silent = false) => {
+      if (!isReady) {
+        if (!silent) append('Client stats: Beamable is not connected yet');
+        return;
+      }
+      if (clientInFlight.current) return;
+      clientInFlight.current = true;
+      setClientBusy(true);
+      setClientError(null);
+      try {
+        const next = await readClientStats(clientNs);
+        setClientStats(next);
+        setClientLoaded(true);
+        if (!silent) append(`${clientNs} stats: ${Object.keys(next).length} key(s)`);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setClientError(msg);
+        append(`Client stats error: ${msg}`);
+      } finally {
+        clientInFlight.current = false;
+        setClientBusy(false);
+      }
+    },
+    [isReady, clientNs, append],
   );
 
   /**
@@ -148,9 +207,16 @@ export default function SegmentsTab() {
   useFocusEffect(
     useCallback(() => {
       void refreshStats(true);
+      void refreshClientStats(true);
       void refreshSegments(true);
-    }, [refreshStats, refreshSegments]),
+    }, [refreshStats, refreshClientStats, refreshSegments]),
   );
+
+  // Switching namespace re-reads on its own, so the card never shows one namespace's value under
+  // the other's label. `refreshClientStats` changes identity with `clientNs`.
+  useEffect(() => {
+    void refreshClientStats(true);
+  }, [refreshClientStats]);
 
   /** The add button on a stat card: bump the stat, then look for the resulting move. */
   const add = (key: string, step: number) => async () => {
@@ -161,6 +227,37 @@ export default function SegmentsTab() {
     // ↻ in the Segments header is there for when the move lands a moment later.
     void refreshSegments(true);
     return `${key} = ${next} — rules watching this key re-evaluate server-side`;
+  };
+
+  /** The add button on the client card: `beam.stats` write, then look for the resulting move. */
+  const addClient = (key: string, step: number) => async () => {
+    if (!isReady) throw new Error('Beamable is not connected yet');
+    const next = await addToClientStat(clientNs, key, step);
+    setClientStats((prev) => ({ ...prev, [key]: String(next) }));
+    void refreshSegments(true);
+    return `${clientNs}: ${key} = ${next} — a rule leaf with ns "${clientNs}" re-evaluates`;
+  };
+
+  const setClientCustom = async () => {
+    const key = requireClientKey();
+    const value = clientValue.trim();
+    if (!value) throw new Error('Enter a value first');
+    const message = await setClientStat(clientNs, key, value);
+    setClientStats((prev) => ({ ...prev, [key]: value }));
+    void refreshSegments(true);
+    return message;
+  };
+
+  const deleteClientCustom = async () => {
+    const key = requireClientKey();
+    const message = await deleteClientStat(clientNs, key);
+    setClientStats((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+    void refreshSegments(true);
+    return message;
   };
 
   const setCustomStat = async () => {
@@ -206,6 +303,13 @@ export default function SegmentsTab() {
     return message;
   };
 
+  function requireClientKey(): string {
+    if (!isReady) throw new Error('Beamable is not connected yet');
+    const key = clientKey.trim();
+    if (!key) throw new Error('Enter a stat key first');
+    return key;
+  }
+
   function requireCustomKey(): string {
     if (!isReady) throw new Error('Beamable is not connected yet');
     const key = customKey.trim();
@@ -234,21 +338,36 @@ export default function SegmentsTab() {
     .filter((k) => !DEMO_STATS.some((s) => s.key === k))
     .sort();
 
+  // The same, for the selected client namespace — anything this app or an earlier build wrote.
+  const clientOtherKeys = Object.keys(clientStats)
+    .filter((k) => k !== CLIENT_DEMO_STAT.key)
+    .sort();
+
   return (
     <Screen>
       <Section title="How segments work">
         <Hint>
           A segment is a rule over player STATS, authored in the Portal (Segments) — e.g.
-          `PLAYER_LEVEL {'>'}= 10`. The backend watches the stat keys a rule mentions; when one
+          `CLIENT_LEVEL {'>'}= 3`. The backend watches the stat keys a rule mentions; when one
           changes for a player it re-evaluates the rule and moves the player in or out. Campaigns,
           announcements and listings then target the segment, never a player list.
           {'\n\n'}
-          The stats it reads are GAME PRIVATE — `{STAT_OBJECT}` — and a client token cannot create
-          or change those. So the cards below do not call `beam.stats`: they call the
-          `PlayerStatsService` MICROSERVICE, which runs with a privileged identity and only ever
-          writes the caller's own stats.
+          A player's stats are not one bucket. They are split by NAMESPACE —
+          `{'{'}domain{'}'}.{'{'}visibility{'}'}` — and a rule leaf now names the namespace its key
+          lives in, so a rule can read any of them and can mix them:
           {'\n\n'}
-          1. write a stat — PlayerStatsService.AddToMyStat / SetMyStat (the cards below){'\n'}
+          `client.public` · `client.private` — THIS APP writes them (`beam.stats`), because a
+          player may write their own client stats. A rule leaf naming one of these reads it. No
+          microservice.
+          {'\n'}
+          `game.private` — the platform's namespace, where its own aggregates live (`SPEND_*`,
+          `PURCHASES_*`, `SESSIONS_*`). A client token cannot write it, so that section goes
+          through the `PlayerStatsService` MICROSERVICE.
+          {'\n\n'}
+          A leaf with no `ns` means `game.private`, so every rule authored before namespaces
+          existed keeps meaning exactly what it did.
+          {'\n\n'}
+          1. write a stat — `beam.stats.set` or PlayerStatsService.AddToMyStat{'\n'}
           2. read the membership back — GET
           /api/realms/{'{'}realmId{'}'}/players/{'{'}playerId{'}'}/segments
           {'\n\n'}
@@ -258,12 +377,87 @@ export default function SegmentsTab() {
       </Section>
 
       <Section
+        title="Client stats · no microservice"
+        right={refreshButton(clientBusy, () => void refreshClientStats(), 'Refresh client stats')}
+      >
+        <Hint>
+          The namespaces this app can write for itself. Pick one — they are separate collections,
+          and the same key in each is a different attribute as far as a rule is concerned.
+        </Hint>
+        <TabStrip
+          tone="light"
+          tabs={CLIENT_NAMESPACES.map((ns) => ({ key: ns, label: ns }))}
+          active={clientNs}
+          onChange={setClientNs}
+        />
+        <Hint>
+          `beam.stats.set({'{'} accessType: '{clientNs === 'client.public' ? 'public' : 'private'}'
+          {'}'})` — object id `{clientNs}.player.{'{'}playerId{'}'}`. The add button reads, adds and
+          writes back FROM THE CLIENT: the stats API has no atomic increment and there is no
+          privileged service in this path, so two devices bumping at once can lose an increment.
+          That is the trade for not needing a microservice — a game that cares should `set` a value
+          it computes rather than add to one.
+          {'\n\n'}
+          The rule to author in the Portal, with the `ns` this whole section is about:
+          {'\n'}
+          {ruleLeafJson(clientNs, CLIENT_DEMO_STAT.key, 'GTE', 3)}
+          {'\n\n'}
+          A rule can also read BOTH namespaces at once — a platform stat AND one this app owns,
+          which is the thing no single namespace could express. Both keys below are movable from
+          this screen, so this is authorable and then testable straight away:
+          {'\n'}
+          {crossNamespaceRuleJson(clientNs)}
+        </Hint>
+        {clientError && (
+          <Text style={styles.error} selectable>
+            ✕ {clientError}
+          </Text>
+        )}
+        <StatCard
+          statKey={CLIENT_DEMO_STAT.key}
+          label={CLIENT_DEMO_STAT.label}
+          value={clientLoaded ? String(statNumber(clientStats, CLIENT_DEMO_STAT.key)) : null}
+          description={CLIENT_DEMO_STAT.description}
+          rule={`ns "${clientNs}" · ${CLIENT_DEMO_STAT.rule}`}
+          step={CLIENT_DEMO_STAT.step}
+          add={addClient(CLIENT_DEMO_STAT.key, CLIENT_DEMO_STAT.step)}
+        />
+        {clientOtherKeys.length > 0 && (
+          <Hint>
+            Other {clientNs} stats on this player:{'\n'}
+            {clientOtherKeys.map((k) => `${k} = ${clientStats[k]}`).join('\n')}
+          </Hint>
+        )}
+        <Hint>
+          Any key in this namespace — `beam.stats.set` for an absolute value, and a delete for
+          making the player EXIT again (there is no `beam.stats` delete, so that one is the
+          generated `players/stats` REST binding).
+        </Hint>
+        <Field
+          placeholder="Stat key (e.g. FAVORITE_CLASS)"
+          value={clientKey}
+          onChangeText={setClientKey}
+        />
+        <Field placeholder="Value (e.g. mage)" value={clientValue} onChangeText={setClientValue} />
+        <AsyncButton label={`Set in ${clientNs}`} run={setClientCustom} />
+        <AsyncButton
+          label={`Delete from ${clientNs}`}
+          variant="secondary"
+          run={deleteClientCustom}
+        />
+      </Section>
+
+      <Section
         title="Player stats · game.private"
         right={refreshButton(statsBusy, () => void refreshStats(), 'Refresh stats')}
       >
         <Hint>
-          Game-private stats for this player — object id `{STAT_OBJECT}`. Read with
-          PlayerStatsService.GetMyStats, because the client SDK cannot read this domain either.
+          The platform's own namespace. Reach for it when a rule has to read a platform aggregate
+          or a stat a game SERVER owns; for a stat this app owns, the section above is the shorter
+          path.
+          {'\n\n'}
+          Object id `{STAT_OBJECT}`. Read with PlayerStatsService.GetMyStats, because the client
+          SDK cannot read this domain either.
           {'\n'}
           The add button calls AddToMyStat: the service re-reads the key, adds the step and writes
           the sum back in one round trip — the stats API has no atomic increment.
@@ -272,6 +466,9 @@ export default function SegmentsTab() {
           platform's own aggregates (`SPEND_*` / `PURCHASES_*` / `SESSIONS_*`) are rebuilt from real
           session and purchase records at session start, so writing those by hand does not last —
           use "Any stat key" below if a rule in your realm watches one.
+          {'\n\n'}
+          A leaf over one of these keys needs no `ns` at all:{'\n'}
+          {ruleLeafJson(DEFAULT_NAMESPACE, DEMO_STATS[0].key, 'GTE', 10)}
         </Hint>
         {statsError && (
           <Text style={styles.error} selectable>
