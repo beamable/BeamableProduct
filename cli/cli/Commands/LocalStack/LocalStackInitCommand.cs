@@ -22,10 +22,15 @@ public class LocalStackInitCommandArgs : CommandArgs
 	public bool updateServices;
 
 	/// <summary>
-	/// Opt OUT of writing the web-registry steps. Stored inverted so the default (a plain <c>bool</c> field,
-	/// false) means "include them" without depending on how the option binder treats an absent flag.
+	/// The answer to the web-registry question when it is given as a flag
+	/// (<c>--with-web-registry[=true|false]</c>), or null when the flag was not passed — where the question is
+	/// actually asked, or takes its default in a quiet run.
+	///
+	/// Nullable because "not passed" has to stay distinguishable from "passed false": the first still has a
+	/// question to ask, the second does not. The steps are written to the manifest either way; what this
+	/// records is whether <c>beam local up</c> runs them (see <see cref="LocalStackConfig.webRegistry"/>).
 	/// </summary>
-	public bool noWebRegistry;
+	public bool? webRegistry;
 	public string webRegistryDir;
 	public string scalaJvmArgs;
 
@@ -87,14 +92,25 @@ public class LocalStackInitCommand
 		AddOption(new Option<string>("--scala-jvm-args", () => LocalStackTemplate.DefaultScalaJvmArgs,
 				"JVM flags each Scala service is launched with; the heap cap keeps ~18 JDK 8 JVMs from each reserving a quarter of physical RAM"),
 			(args, v) => args.scalaJvmArgs = v);
-		// The web-registry steps are written by DEFAULT: a manifest without them silently leaves the portal's
-		// extensions on a published toolkit pin, which resolves their web SDK from unpkg instead of the local
-		// build. Opting out is a deliberate choice, so it gets the flag.
-		AddOption(new Option<bool>("--no-web-registry", "Do not write the local web package registry steps (Verdaccio and local-unpkg); skips the portal-localdev prompt and leaves the manifest without them"),
-			(args, v) => args.noWebRegistry = v);
-		AddOption(new Option<bool>("--with-web-registry", "Explicitly write the local web package registry steps; they are already the default, so this is a no-op except that it overrides --no-web-registry when both are passed"),
-			(args, v) => { if (v) args.noWebRegistry = false; });
-		AddOption(new Option<string>("--web-registry-dir", "Absolute path to the portal-localdev directory holding the web registry compose file; skips the prompt for it"),
+		// The web-registry steps are ALWAYS written; what this command records is whether `beam local up` runs
+		// them, so nobody has to remember a flag on every single `up`. The question defaults to NO (the registry
+		// is only useful when iterating on @beamable/sdk or @beamable/portal-toolkit), and this flag answers it
+		// without prompting.
+		//
+		// It takes an OPTIONAL VALUE (`--with-web-registry`, `--with-web-registry=false`,
+		// `--with-web-registry true`), which is what lets ONE flag express both answers. Only a flag actually
+		// written on the command line answers the question: an absent flag has to leave it to be ASKED, and a
+		// binder cannot tell "absent" from "--with-web-registry false" by value alone, since it receives
+		// default(bool) either way.
+		var withWebRegistry = new Option<bool>("--with-web-registry", "Record whether `beam local up` should run the local web package registry steps (Verdaccio and local-unpkg); pass it to turn them on, or --with-web-registry=false to turn them off, either of which skips both prompts");
+		AddOption(withWebRegistry, (args, ctx, v) =>
+		{
+			if (LocalStackCommand.WasSupplied(ctx, withWebRegistry))
+			{
+				args.webRegistry = v;
+			}
+		});
+		AddOption(new Option<string>("--web-registry-dir", "Absolute path to the portal-localdev directory holding the web registry compose file; implies --with-web-registry and skips both prompts"),
 			(args, v) => args.webRegistryDir = v);
 		var skill = new Option<bool>("--skill",
 			$"Also write the {LocalStackSkillTemplate.SkillName} agent skill, documenting the repositories this manifest spans and how the stack works, to .claude/skills/ (off by default; regenerated on every init that passes this)");
@@ -110,20 +126,53 @@ public class LocalStackInitCommand
 	private static string NullIfEmpty(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
 	/// <summary>
-	/// Resolves the <c>portal-localdev</c> directory for the web registry steps, which are written by default.
-	/// An explicit <c>--web-registry-dir</c> wins; otherwise this prompts, defaulting to the auto-detected
-	/// path. Returns null only under <c>--no-web-registry</c>, in which case no step is written.
+	/// The standing web-registry choice to record in the manifest: whether <c>beam local up</c> runs the local
+	/// web package registry steps without being asked to.
+	///
+	/// An explicit <c>--with-web-registry</c> answers it, as does an explicit <c>--web-registry-dir</c> (naming
+	/// the directory only makes sense if you want the registry). Otherwise an interactive run asks, defaulting to NO — the
+	/// registry is only useful while iterating on <c>@beamable/sdk</c> or <c>@beamable/portal-toolkit</c>, and
+	/// its steps are a slow pnpm rebuild plus a reinstall per extension. A quiet run takes that same default.
 	/// </summary>
-	private static string ResolveWebRegistryDir(LocalStackInitCommandArgs args, string startDir, bool quiet)
+	private static bool ResolveWebRegistryChoice(LocalStackInitCommandArgs args, bool quiet)
+	{
+		// Naming the directory only makes sense if you want the registry, so it answers the question too.
+		if (!string.IsNullOrWhiteSpace(args.webRegistryDir))
+		{
+			return true;
+		}
+
+		if (args.webRegistry.HasValue)
+		{
+			return args.webRegistry.Value;
+		}
+
+		if (quiet)
+		{
+			return false;
+		}
+
+		return AnsiConsole.Confirm(
+			"Run the local web package registry ([green]Verdaccio[/] + local-unpkg) on `beam local up`? "
+			+ "[grey](only needed while iterating on the web SDK; change it by re-running this command)[/]",
+			defaultValue: false);
+	}
+
+	/// <summary>
+	/// Resolves the <c>portal-localdev</c> directory for the web-registry steps, which are always written so
+	/// that <c>beam local up --with-web-registry</c> keeps working without regenerating the manifest.
+	///
+	/// An explicit <c>--web-registry-dir</c> wins. Otherwise the path is only PROMPTED for when the registry
+	/// was actually asked for; a "no" answer takes the auto-detected path silently rather than adding a
+	/// question about a directory the stack is not going to use. Either way an unresolved path becomes an
+	/// <c>&lt;EDIT: ...&gt;</c> placeholder, exactly like the other repo paths.
+	/// </summary>
+	private static string ResolveWebRegistryDir(
+		LocalStackInitCommandArgs args, string startDir, bool quiet, bool webRegistry)
 	{
 		if (!string.IsNullOrWhiteSpace(args.webRegistryDir))
 		{
 			return args.webRegistryDir;
-		}
-
-		if (args.noWebRegistry)
-		{
-			return null;
 		}
 
 		var productDir = FindRepoDir(startDir, "BeamableProduct");
@@ -131,6 +180,11 @@ public class LocalStackInitCommand
 		if (detected != null && !Directory.Exists(detected))
 		{
 			detected = null;
+		}
+
+		if (!webRegistry)
+		{
+			return detected;
 		}
 
 		// Empty is allowed: the template writes an <EDIT: ...> placeholder, matching the other repo paths.
@@ -620,10 +674,11 @@ public class LocalStackInitCommand
 		var portalDir = Ask("Absolute path to the [green]portal frontend[/] repo [grey](empty = placeholder)[/]:",
 			args.portalDir, FindRepoDir(startDir, "agentic-portal"), quiet, allowEmpty: true);
 
-		// Local web package registry — opt-in, since it's only useful when iterating on @beamable/sdk or
-		// @beamable/portal-toolkit. Passing --web-registry-dir implies the flag. When neither is given the
-		// step is omitted entirely and the manifest matches what it has always been.
-		var webRegistryDir = ResolveWebRegistryDir(args, startDir, quiet);
+		// Local web package registry — the steps are always written, and this is the standing choice of whether
+		// `beam local up` runs them. It lives in the manifest precisely so it survives until the next `init`:
+		// before this, the only way to skip the registry was to remember a flag on every single `up`.
+		var webRegistry = ResolveWebRegistryChoice(args, quiet);
+		var webRegistryDir = ResolveWebRegistryDir(args, startDir, quiet, webRegistry);
 
 		// Endpoints (defaults — Enter accepts).
 		var host = Ask("Backend API [green]host[/]:", args.host, defaults.host, quiet, allowEmpty: false);
@@ -684,7 +739,10 @@ public class LocalStackInitCommand
 			toolchain = toolchain,
 			javaHome = toolchain?.java,
 			scalaJvmArgs = args.scalaJvmArgs ?? defaults.scalaJvmArgs,
-			includeWebRegistry = !args.noWebRegistry || !string.IsNullOrWhiteSpace(args.webRegistryDir),
+			// Always emit the steps, so flipping the choice later — `beam local up --with-web-registry`, or a
+			// re-run of this command — needs no hand-editing of the manifest.
+			includeWebRegistry = true,
+			webRegistry = webRegistry,
 			webRegistryDir = NullIfEmpty(webRegistryDir),
 		};
 
