@@ -30,11 +30,9 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool updateServices;
         /// <summary>JVM flags each Scala service is launched with; the heap cap keeps ~18 JDK 8 JVMs from each reserving a quarter of physical RAM</summary>
         public string scalaJvmArgs;
-        /// <summary>Do not write the local web package registry steps (Verdaccio and local-unpkg); skips the portal-localdev prompt and leaves the manifest without them</summary>
-        public bool noWebRegistry;
-        /// <summary>Explicitly write the local web package registry steps; they are already the default, so this is a no-op except that it overrides --no-web-registry when both are passed</summary>
+        /// <summary>Record whether `beam local up` should run the local web package registry steps (Verdaccio and local-unpkg); pass it to turn them on, or --with-web-registry=false to turn them off, either of which skips both prompts</summary>
         public bool withWebRegistry;
-        /// <summary>Absolute path to the portal-localdev directory holding the web registry compose file; skips the prompt for it</summary>
+        /// <summary>Absolute path to the portal-localdev directory holding the web registry compose file; implies --with-web-registry and skips both prompts</summary>
         public string webRegistryDir;
         /// <summary>Also write the beam-local-stack agent skill, documenting the repositories this manifest spans and how the stack works, to .claude/skills/ (off by default; regenerated on every init that passes this)</summary>
         public bool skill;
@@ -102,11 +100,6 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.scalaJvmArgs != default(string)))
             {
                 genBeamCommandArgs.Add(("--scala-jvm-args=" + this.scalaJvmArgs));
-            }
-            // If the noWebRegistry value was not default, then add it to the list of args.
-            if ((this.noWebRegistry != default(bool)))
-            {
-                genBeamCommandArgs.Add(("--no-web-registry=" + this.noWebRegistry));
             }
             // If the withWebRegistry value was not default, then add it to the list of args.
             if ((this.withWebRegistry != default(bool)))

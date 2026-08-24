@@ -119,11 +119,19 @@ public static class LocalStackTemplate
 		/// </summary>
 		public int analyticsGatewayPort = 9003;
 		/// <summary>
-		/// Whether to emit the local web package registry step (Verdaccio + local-unpkg). Defaults to false:
-		/// it is only useful when iterating on <c>@beamable/sdk</c> or <c>@beamable/portal-toolkit</c>, and
-		/// leaving it off keeps the manifest identical to a stack without it.
+		/// Whether to EMIT the local web package registry steps (Verdaccio + local-unpkg) at all.
+		/// <c>beam local init</c> always sets this, so the steps are always in the manifest and can be turned
+		/// on later without regenerating it; whether they actually RUN is <see cref="webRegistry"/>. Only a
+		/// caller that wants a manifest structurally without them (the tests) leaves this false.
 		/// </summary>
 		public bool includeWebRegistry;
+
+		/// <summary>
+		/// The standing choice to record in <see cref="LocalStackConfig.webRegistry"/>: whether
+		/// <c>beam local up</c> runs the web-registry steps without being asked to. Only meaningful together
+		/// with <see cref="includeWebRegistry"/> — there is nothing to run when the steps were not emitted.
+		/// </summary>
+		public bool webRegistry;
 
 		/// <summary>
 		/// The <c>portal-localdev</c> directory holding the web registry's docker-compose file. Only read when
@@ -448,7 +456,10 @@ public static class LocalStackTemplate
 
 		var config = new LocalStackConfig
 		{
-			host = o.host, portalUrl = o.portalUrl, javaHome = o.javaHome, toolchain = o.toolchain
+			host = o.host, portalUrl = o.portalUrl, javaHome = o.javaHome, toolchain = o.toolchain,
+			// The standing web-registry choice. Only recorded when the steps exist to be run: a manifest
+			// without them would otherwise claim a choice that has nothing to act on.
+			webRegistry = o.includeWebRegistry ? o.webRegistry : null
 		};
 
 		// Documentation-only metadata, recorded so the generated agent skill can name the repos this manifest
@@ -464,7 +475,8 @@ public static class LocalStackTemplate
 			productDir = o.includeWebRegistry ? Dir(WebProductDir(o.webRegistryDir), "BeamableProduct (web packages repo)") : null,
 		};
 
-		// 0. Local web package registry (opt-in via `beam local init --with-web-registry`). Placed first
+		// 0. Local web package registry. Always written by `beam local init`; whether it RUNS is the
+		//    `webRegistry` choice above (see LocalStackUpCommand.ResolveNoWebRegistry). Placed first
 		//    because `build: portal deps` and the portal extension steps below run npm installs that may
 		//    need to resolve locally published @beamable packages from it. Independent of everything else
 		//    and fast to come up, so it costs nothing to have early.

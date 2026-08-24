@@ -1,5 +1,7 @@
 using cli.Services;
 using cli.Services.LocalStack;
+using System.CommandLine;
+using System.CommandLine.Binding;
 
 namespace cli.Commands.LocalStack;
 
@@ -15,6 +17,18 @@ public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 	public LocalStackCommand() : base("local", "Orchestrate a full local Beamable stack from a manifest")
 	{
 	}
+
+	/// <summary>
+	/// Whether an option was actually written on the command line, as opposed to merely having its type
+	/// default handed to the binder.
+	///
+	/// Binders run for EVERY declared option on every invocation, receiving <c>default(bool)</c> when the flag
+	/// is absent — so by value alone an absent flag is indistinguishable from an explicit <c>--flag false</c>.
+	/// That matters for the web-registry flags, where "absent" means "defer to the manifest" and an explicit
+	/// <c>false</c> means "turn it off": collapsing the two would silently ignore the second.
+	/// </summary>
+	public static bool WasSupplied(BindingContext context, Option option) =>
+		context.ParseResult.FindResultFor(option) is { IsImplicit: false };
 
 	/// <summary>
 	/// Resolves the manifest path: the explicit <paramref name="overridePath"/> if given, otherwise

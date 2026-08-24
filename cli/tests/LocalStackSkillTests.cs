@@ -28,13 +28,15 @@ public class LocalStackSkillTests
 	private static readonly string ManifestPath =
 		Path.Combine(Root, "game", ".beamable", LocalStackConfigIO.DefaultFileName);
 
-	private static LocalStackConfig Config(bool includeWebRegistry = true, bool withRepoPaths = true) =>
+	private static LocalStackConfig Config(
+		bool includeWebRegistry = true, bool withRepoPaths = true, bool webRegistry = true) =>
 		LocalStackTemplate.Create(new LocalStackTemplate.Options
 		{
 			apiDir = withRepoPaths ? ApiDir : null,
 			scalaDir = withRepoPaths ? ScalaDir : null,
 			portalDir = withRepoPaths ? PortalDir : null,
 			includeWebRegistry = includeWebRegistry,
+			webRegistry = webRegistry,
 			webRegistryDir = withRepoPaths ? WebRegistryDir : null,
 			services = new List<string> { "MyService" },
 			extensions = new List<string> { "MyExtension" },
@@ -108,18 +110,25 @@ public class LocalStackSkillTests
 	}
 
 	/// <summary>
-	/// Omitting the web registry is the one choice that silently changes which code the portal runs, so the
-	/// doc has to say which way this manifest went.
+	/// Turning the web registry off is the one choice that silently changes which code the portal runs, so the
+	/// doc has to say which way this manifest went. Since `beam local init` now always WRITES the steps, the
+	/// doc has to read the standing choice rather than infer it from their presence — otherwise every stack
+	/// would be described as running a registry it may have switched off.
 	/// </summary>
 	[Test]
-	public void Web_registry_presence_is_reported_either_way()
+	public void Web_registry_state_is_reported_either_way()
 	{
-		Assert.That(LocalStackSkillTemplate.RenderThisStack(Config(includeWebRegistry: true), ManifestPath),
-			Does.Contain(LocalStackTemplate.WebRegistryStepName));
+		var on = LocalStackSkillTemplate.RenderThisStack(Config(webRegistry: true), ManifestPath);
+		Assert.That(on, Does.Contain(LocalStackTemplate.WebRegistryStepName));
+		Assert.That(on, Does.Contain("**Local web registry**: on"));
+
+		// Steps present, choice off — the case the presence check used to get wrong.
+		var off = LocalStackSkillTemplate.RenderThisStack(Config(webRegistry: false), ManifestPath);
+		Assert.That(off, Does.Contain("**Local web registry**: off"));
 
 		var without = LocalStackSkillTemplate.RenderThisStack(Config(includeWebRegistry: false), ManifestPath);
 		Assert.That(without, Does.Not.Contain(LocalStackTemplate.WebRegistryStepName));
-		Assert.That(without, Does.Contain("NOT included"));
+		Assert.That(without, Does.Contain("**Local web registry**: off"));
 	}
 
 	/// <summary>

@@ -35,7 +35,8 @@ beam local up --only "<step>"      # just these steps (comma/space separated, ex
 beam local up --skip "<step>"      # everything except these
 beam local up --build              # also run the build steps (see below)
 beam local up --detach             # leave it running and return the prompt
-beam local up --no-web-registry    # fast path: skip the local web package registry steps
+beam local up --with-web-registry        # run the local web package registry steps this run
+beam local up --with-web-registry=false  # fast path: skip them this run
 beam local up --save-logs          # keep logs under .beamable/local-stack-logs/run-<id>
 ```
 
@@ -58,15 +59,32 @@ Two exceptions worth knowing:
   declared output is exactly the binary their run step launches.
 - The slow builds (`build: scala`, `build: portal deps`) declare no output on purpose — a surprise
   multi-minute `mvn clean package` on a plain `up` is worse than an error. Run them with `--build`.
-- The web-registry steps are also flagged `build`, but `up` opts them in by default; `--no-web-registry`
-  opts back out.
+- The web-registry steps are also flagged `build`, but `up` opts them in whenever the manifest's
+  `webRegistry` choice is on (see below); `--with-web-registry=false` opts back out for one run.
 
 ### The local web package registry
 
-When the manifest includes it, `up` starts a local npm registry, publishes this repo's `@beamable/*` web
-packages to it, and repins the portal extensions at those versions — so the portal runs **your** web SDK
-build. Skipping it (`--no-web-registry`) is faster, but the portal then resolves the web SDK from the
-published packages, which is a common source of "my web SDK change isn't showing up".
+When it is on, `up` starts a local npm registry, publishes this repo's `@beamable/*` web packages to it,
+and repins the portal extensions at those versions — so the portal runs **your** web SDK build. Leaving it
+off is faster, but the portal then resolves the web SDK from the published packages, which is a common
+source of "my web SDK change isn't showing up".
+
+**The choice is made once, at `init`, and lasts until the next `init`.** `beam local init` asks whether to
+run the registry — defaulting to **no**, since it only matters while iterating on `@beamable/sdk` or
+`@beamable/portal-toolkit` — and records the answer as `webRegistry` at the top of the manifest.
+
+`--with-web-registry` answers the question without prompting. It takes an **optional value**, so one flag
+covers both answers: bare (or `=true`) means yes, `=false` means no. The space-separated form works too
+(`--with-web-registry false`).
+
+The three steps are **always written** to the manifest, so switching the choice never means regenerating
+it. On `up`, the same flag overrides the recorded choice **for that run only** and never writes back;
+omitting it defers to the manifest.
+
+```
+beam local init --with-web-registry --force         # turn it on for good
+beam local init --with-web-registry=false --force   # turn it off for good
+```
 
 ### Logs and teardown
 
