@@ -122,7 +122,7 @@ public static class LocalStackSkillTemplate
 
 		AppendRepositories(sb, config.repos);
 		AppendEndpoints(sb, config);
-		AppendSelection(sb, steps);
+		AppendSelection(sb, config, steps);
 		AppendPlaceholders(sb, steps, config.repos);
 		AppendSteps(sb, steps);
 
@@ -166,7 +166,7 @@ public static class LocalStackSkillTemplate
 		sb.AppendLine();
 	}
 
-	private static void AppendSelection(StringBuilder sb, List<LocalStackStep> steps)
+	private static void AppendSelection(StringBuilder sb, LocalStackConfig config, List<LocalStackStep> steps)
 	{
 		// `shell` narrows the "scala: " prefix to the host-JVM services. `scala: redis` shares the prefix but is
 		// a docker container the Scala services depend on, not one of them.
@@ -182,9 +182,12 @@ public static class LocalStackSkillTemplate
 		AppendIdList(sb, $"Microservices ({services.Count})", services);
 		AppendIdList(sb, $"Portal extensions ({extensions.Count})", extensions);
 		AppendIdList(sb, $"Service groups ({groups.Count})", groups);
-		sb.AppendLine(webSteps.Count > 0
-			? $"- **Local web registry**: included ({string.Join(", ", webSteps.Select(n => $"`{n}`"))}). `beam local up --no-web-registry` skips them."
-			: "- **Local web registry**: NOT included — the portal resolves `@beamable/*` from the published packages, not your local build. Re-run `beam local init` without `--no-web-registry` to add it.");
+		// The steps are in every generated manifest now, so what decides this is the standing `webRegistry`
+		// choice, not their presence. Saying "included" for a stack whose registry is switched off would
+		// describe a bring-up that does not happen.
+		sb.AppendLine(webSteps.Count > 0 && config.webRegistry != false
+			? $"- **Local web registry**: on ({string.Join(", ", webSteps.Select(n => $"`{n}`"))}). `beam local up --no-web-registry` skips them for one run."
+			: "- **Local web registry**: off — the portal resolves `@beamable/*` from the published packages, not your local build. `beam local up --with-web-registry` turns it on for one run; re-run `beam local init` to change the standing choice.");
 		sb.AppendLine();
 	}
 

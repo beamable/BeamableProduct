@@ -19,13 +19,19 @@ namespace tests;
 /// </summary>
 public class LocalStackWebRegistryStepTests
 {
-	private static LocalStackConfig ConfigWithWebRegistry(string portalDir = @"C:\repos\portal") =>
+	/// <summary>
+	/// A manifest as <c>beam local init</c> writes one: the three web steps are always emitted, and
+	/// <paramref name="webRegistry"/> is the standing choice of whether <c>up</c> runs them.
+	/// </summary>
+	private static LocalStackConfig ConfigWithWebRegistry(
+		string portalDir = @"C:\repos\portal", bool webRegistry = true) =>
 		LocalStackTemplate.Create(new LocalStackTemplate.Options
 		{
 			apiDir = @"C:\repos\BeamableAPI",
 			scalaDir = @"C:\repos\BeamableBackend",
 			portalDir = portalDir,
 			includeWebRegistry = true,
+			webRegistry = webRegistry,
 			webRegistryDir = @"C:\repos\BeamableProduct\portal-localdev",
 			extensions = new List<string> { "my-ext" },
 		});
@@ -36,18 +42,41 @@ public class LocalStackWebRegistryStepTests
 		LocalStackTemplate.WebRefreshStepName,
 	};
 
+	/// <summary>
+	/// Mirrors what <c>beam local up</c> does: resolve the flags against the manifest's standing choice, then
+	/// select. <paramref name="noWebRegistry"/> / <paramref name="withWebRegistry"/> are the FLAGS, not the
+	/// resolved value — a test that passes neither is a plain <c>up</c>.
+	/// </summary>
 	private static List<LocalStackStep> Select(
 		LocalStackConfig config, bool build = false, bool noWebRegistry = false,
-		string only = null, string skip = null)
+		string only = null, string skip = null, bool withWebRegistry = false)
 	{
 		var autoBuild = build
 			? new HashSet<LocalStackStep>()
 			: config.steps.Where(s => s.enabled && LocalStackConfigIO.BuildOutputMissing(s, config)).ToHashSet();
 
+		var resolved = LocalStackUpCommand.ResolveNoWebRegistry(config, noWebRegistry, withWebRegistry);
+
 		return LocalStackUpCommand.SelectSteps(
 			config, build, autoBuild,
-			LocalStackUpCommand.ForcedWebSteps(config, noWebRegistry),
-			LocalStackUpCommand.NameSet(only), LocalStackUpCommand.NameSet(skip), noWebRegistry);
+			LocalStackUpCommand.ForcedWebSteps(config, resolved),
+			LocalStackUpCommand.NameSet(only), LocalStackUpCommand.NameSet(skip), resolved);
+	}
+
+	private static void AssertWebStepsRun(List<string> names, string because)
+	{
+		foreach (var name in WebBuildSteps.Append(LocalStackTemplate.WebRegistryStepName))
+		{
+			Assert.That(names, Does.Contain(name), $"{name} must run: {because}");
+		}
+	}
+
+	private static void AssertWebStepsSkipped(List<string> names, string because)
+	{
+		foreach (var name in WebBuildSteps.Append(LocalStackTemplate.WebRegistryStepName))
+		{
+			Assert.That(names, Does.Not.Contain(name), $"{name} must be skipped: {because}");
+		}
 	}
 
 	private static List<string> Names(List<LocalStackStep> steps) => steps.Select(s => s.name).ToList();
@@ -162,6 +191,94 @@ public class LocalStackWebRegistryStepTests
 
 		var names = Names(Select(config, only: LocalStackTemplate.WebRefreshStepName));
 		Assert.That(names, Is.Empty);
+	}
+
+	// ---------------------------------------------------------------------------------------------------
+	// The standing choice `beam local init` records in the manifest, and the two flags that override it for a
+	// single run. The point of the choice is that a workspace with the registry off does not need a flag on
+	// every `up` — so "manifest says off, no flags" skipping is the behaviour these exist to protect.
+	// ---------------------------------------------------------------------------------------------------
+
+	[Test]
+	public void Init_choice_off_skips_every_web_step_without_any_flag()
+	{
+		var names = Names(Select(ConfigWithWebRegistry(webRegistry: false)));
+
+		AssertWebStepsSkipped(names, "the manifest records webRegistry: false");
+
+		// The steps are still IN the manifest — that is what makes the choice reversible without re-running
+		// init — so this must come from the choice, not from their absence.
+		var config = ConfigWithWebRegistry(webRegistry: false);
+		Assert.That(config.steps.Select(x => x.name), Does.Contain(LocalStackTemplate.WebRegistryStepName),
+			"init always writes the web steps, so the choice is what decides whether they run");
+
+		// Opting out is web-only; the rest of the stack is untouched.
+		Assert.That(names, Does.Contain("portal frontend"));
+		Assert.That(names, Does.Contain("c# gateway"));
+	}
+
+	[Test]
+	public void With_web_registry_overrides_an_off_init_choice_for_one_run()
+	{
+		var names = Names(Select(ConfigWithWebRegistry(webRegistry: false), withWebRegistry: true));
+
+		AssertWebStepsRun(names, "--with-web-registry overrides the manifest choice");
+	}
+
+	[Test]
+	public void No_web_registry_overrides_an_on_init_choice_for_one_run()
+	{
+		var names = Names(Select(ConfigWithWebRegistry(webRegistry: true), noWebRegistry: true));
+
+		AssertWebStepsSkipped(names, "--no-web-registry overrides the manifest choice");
+	}
+
+	/// <summary>
+	/// A manifest written before the choice existed has no <c>webRegistry</c> field. Those must keep running
+	/// the web steps: upgrading the CLI must never silently turn the registry off under an existing workspace.
+	/// </summary>
+	[Test]
+	public void A_manifest_with_no_recorded_choice_still_runs_the_web_steps()
+	{
+		var config = ConfigWithWebRegistry();
+		config.webRegistry = null;
+
+		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(config, false, false), Is.False);
+		AssertWebStepsRun(Names(Select(config)), "an unrecorded choice means on, as it always did");
+	}
+
+	/// <summary>Round-trips through the JSON, since the field only helps if it actually persists.</summary>
+	[Test]
+	public void The_choice_survives_a_save_and_load()
+	{
+		var path = Path.Combine(Path.GetTempPath(), "beam-web-choice-" + TestContext.CurrentContext.Test.ID + ".json");
+		try
+		{
+			LocalStackConfigIO.Save(path, ConfigWithWebRegistry(webRegistry: false));
+
+			// DefaultValueHandling.Include must keep the `false` in the file — dropped, it would read back as
+			// "unrecorded", which means ON, and the choice would silently invert on the next `up`.
+			Assert.That(File.ReadAllText(path), Does.Contain("\"webRegistry\""));
+			Assert.That(LocalStackConfigIO.Load(path).webRegistry, Is.False);
+
+			LocalStackConfigIO.Save(path, ConfigWithWebRegistry(webRegistry: true));
+			Assert.That(LocalStackConfigIO.Load(path).webRegistry, Is.True);
+		}
+		finally
+		{
+			File.Delete(path);
+		}
+	}
+
+	/// <summary>--with-web-registry has always won when both flags are passed; that must not change.</summary>
+	[Test]
+	public void With_web_registry_beats_no_web_registry()
+	{
+		var on = ConfigWithWebRegistry();
+		var off = ConfigWithWebRegistry(webRegistry: false);
+
+		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(on, noFlag: true, withFlag: true), Is.False);
+		Assert.That(LocalStackUpCommand.ResolveNoWebRegistry(off, noFlag: true, withFlag: true), Is.False);
 	}
 
 	[Test]
