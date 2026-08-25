@@ -82,6 +82,20 @@ public class AwsPreflightService
 		("analytics (S3 + Athena)", "aws.credentials.athena.analytics.role.arn"),
 	};
 
+	/// <summary>
+	/// The analytics roles the <em>C# hosts</em> assume, as settings paths in BeamableAPI's
+	/// <c>appsettings.Local.json</c>. Deliberately separate from <see cref="RoleKeys"/>: those come from Scala's
+	/// <c>awsglobal.conf</c> and name a DIFFERENT role (<c>beamable-athena-analytics-assume-role</c>), so a green
+	/// analytics check there says nothing about whether the gateway, actor host and analytics loader can reach
+	/// their own <c>beamable-local-analytics-*</c> roles. Checking only the Scala one reports the stack as fine
+	/// while every Athena query fails at runtime.
+	/// </summary>
+	private static readonly (string label, string path)[] ApiAnalyticsRolePaths =
+	{
+		("analytics writer (C# hosts)", "AmazonAccountAnalytics.RoleArn"),
+		("analytics readonly (C# hosts)", "AmazonAccountAnalyticsReadOnly.RoleArn"),
+	};
+
 	/// <summary>Conf keys naming the buckets the backend reads/writes locally.</summary>
 	private static readonly (string label, string key)[] BucketKeys =
 	{
@@ -217,6 +231,44 @@ public class AwsPreflightService
 
 			if (assumed.ok && key == RoleKeys[0].key)
 				servicesCredentials = assumed.output;
+		}
+
+		// 3b. The analytics roles the C# hosts use. Same direct-then-chained probe as above, but the ARNs are read
+		// from BeamableAPI's appsettings rather than awsglobal.conf. Reported as warnings: a developer who never
+		// runs the analytics loader does not need these, and blocking `beam local up` on them would make analytics
+		// access a prerequisite for a stack that otherwise works fine without it.
+		foreach (var (label, settingPath) in ApiAnalyticsRolePaths)
+		{
+			var roleArn = ReadApiLocalSetting(apiDir, settingPath);
+			if (string.IsNullOrWhiteSpace(roleArn)) continue; // no BeamableAPI checkout, or an older settings file
+
+			var assumed = AssumeRole(aws, roleArn, null);
+			var chained = false;
+			if (!assumed.ok && servicesCredentials != null)
+			{
+				var viaServices = AssumeRole(aws, roleArn, servicesCredentials);
+				if (viaServices.ok)
+				{
+					assumed = viaServices;
+					chained = true;
+				}
+			}
+
+			result.checks.Add(new AwsCheck
+			{
+				name = $"assume role: {label}",
+				ok = assumed.ok,
+				warning = true,
+				detail = chained ? $"{roleArn} (via the services role)" : roleArn,
+				awsError = assumed.ok ? null : Summarize(assumed.output),
+				remediation = assumed.ok
+					? null
+					: $"Your IAM principal ({arn}) cannot assume {roleArn}, directly or through the services role. " +
+					  "Analytics will not work locally: the analytics loader lands nothing and Athena queries fail, " +
+					  "so the warehouse-backed pickers in the Portal stay empty. Ask an AWS administrator to add you " +
+					  "to that role's trust policy (sts:AssumeRole), or disable the `c# analytics loader` step in " +
+					  "the manifest if you do not need analytics locally."
+			});
 		}
 
 		// 4. The JWT signing key, fetched the way `auth` fetches it: with the assumed role, not the base profile.
@@ -414,7 +466,14 @@ public class AwsPreflightService
 	/// The scheduler's SQS queue URL from BeamableAPI's <c>appsettings.Local.json</c> (the environment
 	/// <c>beam local up</c> runs those hosts under). Null when the file or key is absent.
 	/// </summary>
-	private static string ReadSchedulerQueueUrl(string apiDir)
+	private static string ReadSchedulerQueueUrl(string apiDir) =>
+		ReadApiLocalSetting(apiDir, "Scheduler.JobQueue.QueueUrl");
+
+	/// <summary>
+	/// One value from BeamableAPI's <c>BeamableGateway/appsettings.Local.json</c> by dotted path (the environment
+	/// <c>beam local up</c> runs those hosts under). Null when the file, or the key, is absent.
+	/// </summary>
+	private static string ReadApiLocalSetting(string apiDir, string settingPath)
 	{
 		if (string.IsNullOrWhiteSpace(apiDir)) return null;
 
@@ -423,7 +482,7 @@ public class AwsPreflightService
 
 		try
 		{
-			return (string)JObject.Parse(File.ReadAllText(path)).SelectToken("Scheduler.JobQueue.QueueUrl");
+			return (string)JObject.Parse(File.ReadAllText(path)).SelectToken(settingPath);
 		}
 		catch
 		{

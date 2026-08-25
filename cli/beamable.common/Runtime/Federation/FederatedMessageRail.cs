@@ -90,5 +90,21 @@ namespace Beamable.Common
 		/// Opened/Clicked so the funnel attributes back to the exact recipient.
 		/// </summary>
 		public const string OutreachKey = "beam_outreach";
+
+		/// <summary>
+		/// Ack param a federation sets on <c>MessageRailSendResponse.params</c> to declare how delivery
+		/// works for it. Absent means the default: the message is in flight and a receipt may follow.
+		/// </summary>
+		public const string DeliveryModeKey = "delivery";
+
+		/// <summary>
+		/// The federation delivers DURABLY: an accepted message is already in the recipient's possession
+		/// (in-game mail lands in a mailbox and waits there), so there is no in-flight state and no
+		/// separate receipt will ever arrive. The platform emits <c>Delivered</c> alongside <c>Sent</c>
+		/// for such a send rather than leaving the stage structurally zero forever.
+		/// <para>Consequence worth surfacing in any UI: for a durable rail Sent and Delivered track ~1:1.
+		/// That is honest, not a bug — the two genuinely coincide when there is no transport in between.</para>
+		/// </summary>
+		public const string DeliveryDurable = "durable";
 	}
 }

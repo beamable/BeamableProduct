@@ -166,7 +166,8 @@ public class LocalStackLivenessTests
 		var stackImages = new[]
 		{
 			"java", "javaw", "node", "dotnet", "beam", "Beamable.Tools",
-			"BeamableGateway", "BeamableMessageRailRuntime", "BeamableCampaignRuntime"
+			"BeamableGateway", "BeamableMessageRailRuntime", "BeamableCampaignRuntime",
+			"BeamableAnalyticsLoader"
 		};
 		if (stackImages.Contains(current, StringComparer.OrdinalIgnoreCase))
 		{
