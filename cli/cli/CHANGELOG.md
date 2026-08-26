@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web SDK code generation fixes: colliding generated method names are disambiguated with a `By{Param}And{Param}` suffix (they previously emitted duplicate top-level declarations, a `SyntaxError` in the ESM build); duplicate `export type` declarations are collapsed by name and the static type collections are cleared after each generation, so types no longer leak across microservices or across repeated generations in a long-lived process such as the MCP server; and `oneOf` members are routed through the type mapper, fixing a null reference on inline, primitive, and nullable schemas.
 
 
-## [7.2.3] 
+## [7.2.3] - 2026-08-26
 
 ### Added
 
