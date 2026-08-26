@@ -100,6 +100,15 @@ namespace Beamable.Server
 				[nameof(IFederatedMessageRail<DummyThirdParty>.SendMessageBatch)] = "SendMessageBatch",
 				[nameof(IFederatedMessageRail<DummyThirdParty>.RegisterUserWithMessageRail)] = "RegisterUserWithMessageRail",
 				[nameof(IFederatedMessageRail<DummyThirdParty>.UnregisterUserWithMessageRail)] = "UnregisterUserWithMessageRail",
+				// Store-offer methods route on the literal method name too, for the same reason: the
+				// backend POSTs {federationId}/GrantOffer (see BeamableAPI StoreOfferFederation).
+				[nameof(IFederatedStoreOffer<DummyThirdParty>.ListOffers)] = "ListOffers",
+				[nameof(IFederatedStoreOffer<DummyThirdParty>.GetOffer)] = "GetOffer",
+				[nameof(IFederatedStoreOffer<DummyThirdParty>.GrantOffer)] = "GrantOffer",
+				[nameof(IFederatedStoreOffer<DummyThirdParty>.RevokeOffer)] = "RevokeOffer",
+				[nameof(IFederatedStoreOffer<DummyThirdParty>.RedeemOffer)] = "RedeemOffer",
+				[nameof(IFederatedStoreOffer<DummyThirdParty>.GetPlayerEntitlements)] = "GetPlayerEntitlements",
+				[nameof(IFederatedStoreOffer<DummyThirdParty>.OnPurchaseCompleted)] = "OnPurchaseCompleted",
 			};
 
 			foreach (var interfaceType in interfaces)

@@ -53,8 +53,12 @@ public class GeneratePortalExtensionClientsCommand : AppCommand<GeneratePortalEx
 
 		await Parallel.ForEachAsync(micros, parallelOptions, async (ms, cancellationToken) =>
 		{
+			// Null-safe on the definition as well as the list: this predicate runs against EVERY
+			// extension in the workspace for EVERY microservice, so a single malformed extension
+			// throws here for all of them, fails the post-build `generate pe-client` target, and
+			// stops the entire microservice tier from starting.
 			var extensionsToUpdate = allExtensions
-				.Where(e => e.PortalExtensionDefinition.MicroserviceDependencies.Contains(ms.BeamoId))
+				.Where(e => e.PortalExtensionDefinition?.MicroserviceDependencies.Contains(ms.BeamoId) == true)
 				.ToList();
 
 			if (extensionsToUpdate.Count == 0) return;

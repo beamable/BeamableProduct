@@ -296,6 +296,20 @@ public static class LocalStackPortGuard
 		}
 	}
 
+	/// <summary>Platform-appropriate "kill this one pid" command, for the remedy text.</summary>
+	private static string KillCommand(int pid) =>
+		OperatingSystem.IsWindows() ? $"taskkill /PID {pid} /F" : $"kill -9 {pid}";
+
+	/// <summary>
+	/// Platform-appropriate "reap every leftover stack process" command. Matches the Scala JVMs by their
+	/// toolchain JDK path and the .NET hosts by assembly name, so it cannot take down an unrelated java or
+	/// node process that happens to be running.
+	/// </summary>
+	private static string ReapCommand() =>
+		OperatingSystem.IsWindows()
+			? "Get-CimInstance Win32_Process | ? { $_.CommandLine -match 'beamable-toolchain\\\\jdk8|BeamableGateway|BeamableCampaignRuntime|BeamableMessageRailRuntime' } | % { Stop-Process -Id $_.ProcessId -Force }"
+			: "pkill -f 'beamable-toolchain/jdk8.*java'; pkill -f 'BeamableGateway|BeamableCampaignRuntime|BeamableMessageRailRuntime'";
+
 	private static int TryGetOwnerPid(int port)
 	{
 		try
@@ -370,6 +384,29 @@ public static class LocalStackPortGuard
 	private static readonly string[] AirPlayProcessNames = { "ControlCenter", "AirPlayXPCHelper", "sharingd" };
 
 	/// <summary>
+	/// Process names a leftover step from a previous stack presents as: the Scala services and the portal run
+	/// under a shared runtime (<c>java</c>, <c>node</c>), the .NET hosts under their own assembly name.
+	///
+	/// Recognising them changes the ADVICE, which is the whole point. The generic remedy suggests
+	/// <c>beam local stop</c>, and for this case that is actively misleading: <c>stop</c> reads
+	/// <c>.beamable/local-stack.run.json</c>, which only a DETACHED run writes. An attached run that was
+	/// Ctrl+C'd or died mid-bring-up leaves every process it had already started with no run-state behind
+	/// them, so <c>stop</c> answers "No running local stack recorded" and changes nothing — while the ports
+	/// stay held and the next <c>up</c> fails identically.
+	/// </summary>
+	private static readonly string[] StackProcessNames =
+	{
+		"java", "node", "BeamableGateway", "BeamableCampaignRuntime", "BeamableMessageRailRuntime"
+	};
+
+	/// <summary>
+	/// True when <paramref name="owner"/> (a <see cref="DescribeOwner"/> string) names a process that looks like
+	/// a leftover from a previous stack rather than an unrelated application.
+	/// </summary>
+	public static bool LooksLikeStackLeftover(string owner) =>
+		owner != null && StackProcessNames.Any(n => owner.Contains($"({n})", StringComparison.OrdinalIgnoreCase));
+
+	/// <summary>
 	/// The message <c>up</c> fails with when a step's port is taken by something else. Returns null when the
 	/// port is free (or unknown), so the caller reads as a plain guard.
 	/// </summary>
@@ -392,11 +429,33 @@ public static class LocalStackPortGuard
 		// guaranteed to be configured wherever it runs).
 		var owner = DescribeOwner(port);
 
-		var remedy = owner != null && AirPlayProcessNames.Any(n => owner.Contains(n, StringComparison.OrdinalIgnoreCase))
-			? "That is macOS AirPlay Receiver — turn it off in System Settings → General → AirDrop & Handoff → "
-			  + "\"AirPlay Receiver\" (or change the port in the manifest), then re-run"
-			: "Stop it first — `beam local stop` if it is a leftover from a previous stack, otherwise kill that "
-			  + "process (or change the port in the manifest)";
+		var pid = TryGetOwnerPid(port);
+
+		string remedy;
+		if (owner != null && AirPlayProcessNames.Any(n => owner.Contains(n, StringComparison.OrdinalIgnoreCase)))
+		{
+			remedy = "That is macOS AirPlay Receiver — turn it off in System Settings → General → AirDrop & Handoff → "
+			         + "\"AirPlay Receiver\" (or change the port in the manifest), then re-run";
+		}
+		else if (LooksLikeStackLeftover(owner))
+		{
+			// Named separately from the generic case because the obvious remedy does not work here — see
+			// StackProcessNames. Reaping the WHOLE stale stack is offered as well as the single pid: one
+			// orphaned run holds ~20 ports, so killing them one conflict at a time is a long afternoon.
+			remedy = "That looks like a leftover from a previous stack. Note `beam local stop` will NOT help if "
+			         + "that run was attached (no --detach): it reads .beamable/local-stack.run.json, which only a "
+			         + "detached run writes, so it reports \"No running local stack recorded\" and changes nothing. "
+			         + "Kill the holder directly"
+			         + (pid > 0 ? $" (`{KillCommand(pid)}`)" : "")
+			         + ", or reap the whole stale stack:"
+			         + Environment.NewLine + "    " + ReapCommand()
+			         + Environment.NewLine + "then re-run";
+		}
+		else
+		{
+			remedy = "Stop it first — `beam local stop` if it is a leftover from a DETACHED previous stack, "
+			         + "otherwise kill that process (or change the port in the manifest)";
+		}
 
 		owner ??= OperatingSystem.IsWindows()
 			? $"an unidentified process (run `netstat -ano | findstr :{port}` to find it)"

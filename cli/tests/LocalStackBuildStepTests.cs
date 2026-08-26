@@ -66,6 +66,49 @@ public class LocalStackBuildStepTests
 		Assert.That(IndexOf(config, "build: scala"), Is.LessThan(IndexOf(config, "scala: gateway")));
 	}
 
+	/// <summary>
+	/// The Vite dep-optimizer cache is dropped before the dev server starts, on EVERY run.
+	///
+	/// Vite's `browserHash` — the `?v=` on every optimized dep URL — comes from the lockfile and the Vite
+	/// config, not from the chunk split. So a re-bundle re-chunks shared code while that hash stays put,
+	/// and anything holding the old module graph asks for a `chunk-*.js` that no longer exists: the portal
+	/// serves a blank page and "The file does not exist at .../deps/chunk-XXXX.js?v=YYYY". Starting each
+	/// run from an empty cache is what stops it arising.
+	/// </summary>
+	[Test]
+	public void Vite_cache_is_cleared_before_the_portal_dev_server_starts()
+	{
+		var config = CreateWithRepos();
+		var step = Step(config, LocalStackTemplate.ViteCacheStepName);
+
+		Assert.That(IndexOf(config, LocalStackTemplate.ViteCacheStepName),
+			Is.LessThan(IndexOf(config, "portal frontend")),
+			"clearing after the dev server has started would leave it serving the stale graph it booted with");
+
+		// NOT a build step: `--build` is occasional, and this has to happen every time node_modules may
+		// have moved under the optimizer (a fresh `npm install`, or `beam web use` repinning extensions).
+		Assert.That(step.build, Is.False, "must run on every up, not just --build");
+		Assert.That(step.waitForExit, Is.True, "the dev server must not start against a half-deleted cache");
+		Assert.That(step.shell, Is.True);
+		Assert.That(step.arguments, Does.Contain(".vite"));
+
+		// UNCONDITIONAL. Skipping the clear when Vite's own invalidation inputs (installed-tree lockfile,
+		// resolved config) look unchanged was tried, and it brought the blank page back within one run: a
+		// self-consistent cache on disk says nothing about the module graph a BROWSER is still holding, and
+		// keeping the cache keeps `browserHash`, so that stale graph is never retired. Only a full delete
+		// forces the re-optimize whose fresh timestamp moves the hash. Do not re-add a staleness guard.
+		Assert.That(step.arguments, Does.Not.Contain("_metadata.json"),
+			"a staleness guard here keeps a cache whose browserHash a stale browser graph still matches");
+
+		// Addressable by `--skip` / `--only`, and not swept up by `init --update-services`, which owns only
+		// the microservice/extension/group prefixes.
+		Assert.That(LocalStackTemplate.IsWebStep(LocalStackTemplate.ViteCacheStepName), Is.False);
+		Assert.That(LocalStackTemplate.ViteCacheStepName,
+			Does.Not.StartWith(LocalStackTemplate.MicroservicePrefix)
+				.And.Not.StartWith(LocalStackTemplate.ExtensionPrefix)
+				.And.Not.StartWith(LocalStackTemplate.GroupPrefix));
+	}
+
 	[Test]
 	public void Gateway_build_runs_dotnet_build_in_the_api_repo()
 	{

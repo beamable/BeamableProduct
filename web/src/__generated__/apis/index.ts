@@ -52,6 +52,7 @@ export * from './SegmentsApi';
 export * from './SessionApi';
 export * from './SocialApi';
 export * from './StatsApi';
+export * from './StoreOfferApi';
 export * from './TournamentsApi';
 export * from './TrialsApi';
 export * from './ZonesApi';

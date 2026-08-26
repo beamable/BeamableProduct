@@ -12,6 +12,7 @@ import {
   LeaderboardsService,
   MessageRailService,
   StatsService,
+  StoreOfferService,
 } from '@beamable/sdk';
 import { BEAM_CONFIG, LOCAL_ROUTING_KEY } from './config';
 import { CampaignServiceClient } from './beamable/clients/CampaignServiceClient';
@@ -172,7 +173,13 @@ export async function initBeam(): Promise<Beam> {
       StatsService,
       AnnouncementsService,
       LeaderboardsService,
-      MessageRailService
+      MessageRailService,
+      // The offer federation's two client-callable gateway routes (entitlements /
+      // redeem). Like the rail, this goes through `/api/store-offer/*`, NOT through
+      // `micro_BeamableStoreOfferService` — the federation routes on the microservice
+      // itself trust whatever playerId they are handed, so the gateway is the
+      // authorized front door and the only thing a client should call.
+      StoreOfferService,
     ]);
     // CampaignService is the only microservice the client talks to directly, and only for
     // reading the player's registered devices (`listMyDevices`). Device/email/in-game opt-in

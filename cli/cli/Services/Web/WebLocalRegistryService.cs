@@ -110,7 +110,15 @@ public class WebLocalRegistryService
 
 		// --save-exact so the manifest keeps the literal version rather than npm's default caret range.
 		// (IsLocalDevVersion tolerates a range anyway, but an exact pin is what we asked for.)
-		var args = $"install {package}@{version} --registry {registryUrl} --save-exact --no-audit --no-fund {AuthTokenFlag(registryUrl)}";
+		//
+		// The registry is bound to the @beamable SCOPE, not set globally. A global `--registry` routes the
+		// project's ENTIRE dependency tree through the local registry, which then has to proxy every
+		// third-party package from npmjs — so the local registry's uplink (and its on-disk cache of that
+		// uplink) sits in the critical path of an install that has no business touching it. A single
+		// corrupted cache entry there made npm retry 3x per package at ~70s a time, and turned this step
+		// into ten minutes across the workspace's ~70 projects. Only @beamable/* has any reason to come
+		// from here; everything else resolves from npmjs with the local npm cache in front.
+		var args = $"install {package}@{version} {ScopedRegistryFlag(registryUrl)} --save-exact --no-audit --no-fund {AuthTokenFlag(registryUrl)}";
 		var result = StartProcessUtil.Run("npm", args, useShell: true, workingDirectoryPath: directory).WaitForResult();
 		if (result.exit == 0)
 		{
@@ -252,14 +260,19 @@ public class WebLocalRegistryService
 
 	/// <summary>
 	/// The npm arguments needed to install a project whose <c>@beamable/portal-toolkit</c> pin is a local
-	/// developer build — i.e. <c>--registry &lt;local&gt;</c> plus its auth token. Returns an empty string
-	/// for every other project, so a normal install is completely untouched.
+	/// developer build — the local registry bound to the <c>@beamable</c> scope, plus its auth token.
+	/// Returns an empty string for every other project, so a normal install is completely untouched.
 	///
 	/// <para>
 	/// Required, not an optimisation: a local-dev version exists only on the local registry, so a plain
-	/// <c>npm install</c> resolves it against npmjs, 404s, and fails the build. Routing the *whole* install
-	/// at the local registry is correct because it proxies everything else to npmjs (see
-	/// <c>portal-localdev/verdaccio/config.yml</c>).
+	/// <c>npm install</c> resolves it against npmjs, 404s, and fails the build.
+	/// </para>
+	/// <para>
+	/// This used to route the *whole* install at the local registry, on the reasoning that the registry
+	/// proxies everything else to npmjs anyway. It does — but that also made a dev-only container and its
+	/// cache of the upstream a hard dependency of every package in the tree, and a few truncated cache
+	/// entries were enough to turn a seconds-long step into a ten-minute one. See
+	/// <see cref="ScopedRegistryFlag"/>.
 	/// </para>
 	/// </summary>
 	public static string InstallArgsFor(string projectDir, string registryUrl = DefaultRegistry)
@@ -271,7 +284,7 @@ public class WebLocalRegistryService
 		}
 
 		Log.Verbose($"[{projectDir}] pins the local build {ToolkitPackage}@{pinned}; installing from [{registryUrl}]");
-		return $" --registry {registryUrl} {AuthTokenFlag(registryUrl)}";
+		return $" {ScopedRegistryFlag(registryUrl)} {AuthTokenFlag(registryUrl)}";
 	}
 
 	/// <summary>Reads the <c>version</c> field of a package.json. Throws when the file is missing or has none.</summary>
@@ -318,6 +331,67 @@ public class WebLocalRegistryService
 				"Files already fetched may be stale until it restarts.");
 		}
 	}
+
+	/// <summary>
+	/// The integrity hash recorded for an installed package in a project, or null when the project does
+	/// not currently have that package installed.
+	///
+	/// <para>
+	/// Two checks, and BOTH are needed. The lockfile records what npm installed, but
+	/// <see cref="ForceReinstall"/> deletes the package directory before it installs — so a run
+	/// interrupted between those two steps leaves a lockfile confidently describing a package that is no
+	/// longer on disk. Trusting the lockfile alone would permanently skip exactly the projects a previous
+	/// interrupted run broke. Requiring the directory too makes those projects miss and heal.
+	/// </para>
+	/// </summary>
+	public static string InstalledIntegrity(string directory, string package)
+	{
+		var relative = $"node_modules/{package}";
+		var onDisk = Path.Combine(directory, "node_modules", package.Replace("/", Path.DirectorySeparatorChar.ToString()), "package.json");
+		if (!File.Exists(onDisk))
+		{
+			return null;
+		}
+
+		var lockPath = Path.Combine(directory, "node_modules", ".package-lock.json");
+		if (!File.Exists(lockPath))
+		{
+			return null;
+		}
+
+		try
+		{
+			var root = JObject.Parse(File.ReadAllText(lockPath));
+			return root["packages"]?[relative]?["integrity"]?.ToString();
+		}
+		catch (Exception e)
+		{
+			// A malformed lockfile is not worth failing over — treat it as "unknown" so the install runs.
+			Log.Verbose($"[{directory}] could not read {lockPath}: {e.Message}");
+			return null;
+		}
+	}
+
+	/// <summary>
+	/// The npm flag binding the local registry to the <c>@beamable</c> scope only.
+	///
+	/// <para>
+	/// Deliberately NOT a global <c>--registry</c>. A global one makes npm resolve <em>every</em> package
+	/// in the project — React, its types, every transitive dependency — through the local registry, which
+	/// proxies them on to npmjs. That puts a dev-only Verdaccio container, and its on-disk cache of the
+	/// upstream, in the critical path of installs that only ever needed one package from it. When three
+	/// of those cached entries were left truncated by an interrupted run, every affected package started
+	/// answering 500; npm retried each three times at ~70s, and `beam web use` went from seconds to over
+	/// ten minutes across ~70 projects before timing out unfinished.
+	/// </para>
+	/// <para>
+	/// Scoping loses nothing. The registry's own config gives <c>@beamable/*</c> an npmjs uplink, so a
+	/// project pinning a <em>published</em> toolkit version still resolves through here — which is the
+	/// only reason that uplink exists. Third-party packages were never meant to route through it.
+	/// </para>
+	/// </summary>
+	public static string ScopedRegistryFlag(string registryUrl) =>
+		$"--@beamable:registry={registryUrl}";
 
 	/// <summary>
 	/// npm refuses to publish without a token even when the registry allows anonymous writes, so every

@@ -426,6 +426,22 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 
 		// float[] so the value is mutable inside the lambda closures below.
 		var currentProgress = new float[] { 0f };
+
+		// A ring of the last few output lines, kept so a non-zero exit can quote what actually went
+		// wrong. `dotnet run` reports a failing post-build target on STDOUT (MSB3073 ...), and the
+		// SARIF error log only ever holds compiler diagnostics, so without this a service that dies
+		// in a post-build step exits with no attributable message anywhere.
+		const int recentOutputCapacity = 40;
+		var recentOutput = new Queue<string>(recentOutputCapacity);
+		void RememberOutput(string line)
+		{
+			if (string.IsNullOrWhiteSpace(line)) return;
+			lock (recentOutput)
+			{
+				if (recentOutput.Count == recentOutputCapacity) recentOutput.Dequeue();
+				recentOutput.Enqueue(line.TrimEnd());
+			}
+		}
 		var serviceLogProgressTable = new Dictionary<string, float>
 		{
 			[Beamable.Common.Constants.Features.Services.Logs.REGISTERING_STANDARD_SERVICES] = .42f,
@@ -502,10 +518,16 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				isDetach: isDetach,
 				environmentVariables: envVars,
 				onStdout: line =>
+				{
+					RememberOutput(line);
 					HandleOutputLine(line, currentProgress, serviceLogProgressTable, nonServiceLogProgressTable,
-						onProgress, onLog),
+						onProgress, onLog);
+				},
 				onStderr: line =>
-					HandleErrorLine(line, onLog));
+				{
+					RememberOutput(line);
+					HandleErrorLine(line, onLog);
+				});
 
 			var proc = handle.Process;
 			var shouldAutoKill = false;
@@ -552,6 +574,49 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			else if (proc.HasExited && proc.ExitCode != 0)
 			{
 				var report = ProjectService.ReadErrorReport(errorPath);
+
+				// ReadErrorReport derives isSuccess purely from the SARIF compiler diagnostics, so a
+				// service whose COMPILE succeeded but whose build then failed in a post-build target
+				// (or which crashed on startup) was reported as {isSuccess:true, errors:[]} — a failure
+				// event whose payload says success. Nothing else marked the service dead, and the
+				// "failed to start all services" throw at the end of Handle is unreachable in a group
+				// run because Task.WhenAll also waits on the effectively-infinite extension tasks. So
+				// the stack came up looking healthy with zero microservices running. Synthesise a real
+				// error here from the exit code and whatever the process last said.
+				if (report.errors.Count == 0)
+				{
+					string tail;
+					lock (recentOutput)
+					{
+						tail = string.Join(Environment.NewLine, recentOutput);
+					}
+
+					var detail = string.IsNullOrWhiteSpace(tail)
+						? "The process produced no output."
+						: tail;
+
+					report.isSuccess = false;
+					report.errors.Add(new ProjectErrorResult
+					{
+						level = "Error",
+						formattedMessage =
+							$"{serviceName} exited with code {proc.ExitCode} without a compiler error. " +
+							$"The build compiled but the run failed — most often a post-build target. Last output:" +
+							$"{Environment.NewLine}{detail}",
+						uri = projectPath,
+						line = 0,
+						column = 0
+					});
+
+					Log.Error(
+						$"Service [{serviceName}] exited with code {proc.ExitCode} and never started. Last output:{Environment.NewLine}{detail}");
+				}
+
+				// Terminal progress update, so anything tracking the stream channel stops waiting at
+				// the last milestone the service happened to reach. Mirrors what `Guarded` does for
+				// the PortalExtension / EmbeddedMongoDb branches.
+				onProgress?.Invoke(1f, $"failed: exited with code {proc.ExitCode}");
+
 				onFailure?.Invoke(report, proc.ExitCode);
 			}
 		}

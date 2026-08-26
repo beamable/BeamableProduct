@@ -8,5 +8,7 @@ export enum BeamoV2FederationType {
   IFederatedInventory = "IFederatedInventory",
   IFederatedCommerce = "IFederatedCommerce",
   IFederatedGameServer = "IFederatedGameServer",
-  IFederatedPlayerInit = "IFederatedPlayerInit"
+  IFederatedPlayerInit = "IFederatedPlayerInit",
+  IFederatedMessageRail = "IFederatedMessageRail",
+  IFederatedStoreOffer = "IFederatedStoreOffer"
 }

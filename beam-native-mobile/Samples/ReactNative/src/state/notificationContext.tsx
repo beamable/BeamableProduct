@@ -27,6 +27,7 @@ import type { NotificationData } from '@beamable/notifications-react-native';
 
 import { getBeam } from '../beam/beamClient';
 import { registerDevice } from '../beam/pushNotifications';
+import { OFFER_GRANT_KEY } from '../beam/storeOffers';
 import { useLogActions } from './logContext';
 
 /** A URL-scheme VIEW intent captured by the native deeplink module. */
@@ -51,6 +52,15 @@ type NotificationContextValue = {
   launchNotification: NotificationData | null;
   /** The deep link resolved off `launchNotification`, if it carried one. */
   launchDeepLink: string | null;
+  /**
+   * The offer grant id carried by the most recent campaign push, if it carried one.
+   *
+   * A campaign that attaches an offer to a send writes the grant id into the payload under the
+   * reserved `beam_offer_grant` key, so the message can deep-link the player straight to what
+   * they were given. This is the read side of that: the Offers tab claims it in one press.
+   * Null until a push carrying one arrives — most pushes do not.
+   */
+  lastOfferGrantId: string | null;
 };
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -62,6 +72,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [outreachId, setOutreachId] = useState<string | null>(null);
   const [trackId, setTrackId] = useState<string | null>(null);
   const [lastDeepLink, setLastDeepLink] = useState<CapturedDeepLink | null>(null);
+  const [lastOfferGrantId, setLastOfferGrantId] = useState<string | null>(null);
 
   /**
    * Override the funnel coordinates from a notification that carries them. Notifications
@@ -70,6 +81,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
    */
   const applyCampaignCoords = useCallback(
     (n: NotificationData) => {
+      // An offer attached to the send rides the same push under its reserved key. Read it
+      // before the coords so a push that carries only an offer still registers.
+      const grantId = offerGrantFromNotification(n);
+      if (grantId) {
+        setLastOfferGrantId(grantId);
+        append(`Offer grant on this push: ${grantId} — claim it on the Offers tab`);
+      }
+
       const coords = BeamNotifications.campaignCoordsFromNotification(n);
       if (coords.campaignId) setCampaignId(coords.campaignId);
       if (coords.nodeId) setNodeId(coords.nodeId);
@@ -159,13 +178,43 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       lastDeepLink,
       launchNotification,
       launchDeepLink,
+      lastOfferGrantId,
     }),
-    [campaignId, nodeId, outreachId, trackId, lastDeepLink, launchNotification, launchDeepLink],
+    [
+      campaignId,
+      nodeId,
+      outreachId,
+      trackId,
+      lastDeepLink,
+      launchNotification,
+      launchDeepLink,
+      lastOfferGrantId,
+    ],
   );
 
   return (
     <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>
   );
+}
+
+/**
+ * Digs the reserved `beam_offer_grant` key out of a received push.
+ *
+ * The push rail passes every unreserved `extraDataFed` key straight through into the device
+ * payload, and the native module surfaces those arbitrary extras under `userInfo` (with
+ * `campaignData` carrying the campaign's own block). Read both and take the first hit rather
+ * than betting on one: the key is not part of `NotificationData`'s typed surface, so which
+ * bucket it lands in is the native layer's business, not this app's.
+ *
+ * Returns null for the overwhelmingly common case of a push with no offer attached.
+ */
+function offerGrantFromNotification(n: NotificationData): string | null {
+  const buckets: Array<Record<string, unknown> | undefined> = [n.userInfo, n.campaignData];
+  for (const bucket of buckets) {
+    const raw = bucket?.[OFFER_GRANT_KEY];
+    if (typeof raw === 'string' && raw.trim()) return raw.trim();
+  }
+  return null;
 }
 
 export function useNotifications(): NotificationContextValue {
