@@ -1,7 +1,9 @@
 ﻿using Beamable;
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Content;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
+using Beamable.Editor.ContentService;
 using Beamable.Editor.Util;
 using Beamable.Editor.UI2.Utils;
 using System.Collections.Generic;
@@ -119,7 +121,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				if (BeamGUI.HeaderButton("Content Editor", BeamGUI.iconContentEditorIcon, width: 90, iconPadding: 2))
 				{
-					ChangeWindowStatus(ContentWindowStatus.Normal);
+					ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 				}
 			}
 			if (_windowStatus is ContentWindowStatus.Normal || _windowStatus is ContentWindowStatus.Validate)
@@ -178,6 +180,12 @@ namespace Beamable.Editor.UI.ContentWindow
 					ChangeToSnapshotManager();
 				}
 
+				if (BeamGUI.HeaderButton("History", BeamGUI.iconRefresh, width: HEADER_BUTTON_WIDTH, iconPadding: 2,
+				                         tooltip: "View published content history"))
+				{
+					ChangeToHistory();
+				}
+
 				if (_windowStatus != ContentWindowStatus.Validate)
 				{
 					EditorGUILayout.Space(5, false);
@@ -223,12 +231,31 @@ namespace Beamable.Editor.UI.ContentWindow
 			});
 		}
 
+		private void ChangeToHistory()
+		{
+			AddDelayedAction(() => ChangeWindowStatus(ContentWindowStatus.History));
+		}
+
 		private void ChangeWindowStatus(ContentWindowStatus windowStatus, bool shouldRepaint = true)
 		{
 			if(_windowStatus == windowStatus)
 				return;
 			
+			var previousWindowStatus = _windowStatus;
 			_windowStatus = windowStatus;
+			if (previousWindowStatus == ContentWindowStatus.History && _windowStatus != ContentWindowStatus.History)
+			{
+				ResetHistorySelection();
+			}
+			if (_windowStatus == ContentWindowStatus.History)
+			{
+				ResetHistorySelection();
+				_contentService?.StartContentHistory();
+			}
+			else
+			{
+				_contentService?.StopContentHistory();
+			}
 			if (_windowStatus is ContentWindowStatus.Normal)
 			{
 				var selection = new List<Object> { };
@@ -258,6 +285,17 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			if(shouldRepaint)
 				Repaint();
+		}
+
+		/// <summary>
+		/// Defers Content Manager state changes until the current IMGUI event has finished.
+		/// </summary>
+		/// <remarks>
+		/// Some state transitions remove or add controls. Deferring them avoids mismatched layout groups during repaint.
+		/// </remarks>
+		private void ChangeWindowStatusDelayed(ContentWindowStatus windowStatus)
+		{
+			EditorApplication.delayCall += () => ChangeWindowStatus(windowStatus);
 		}
 
 		private void DrawLowBarHeader(Rect rect)
@@ -420,27 +458,38 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private async Promise RevertAllContents()
 		{
-			await _contentService.SyncContentsWithProgress(true, true, true, true);
+			await _contentService.SyncContentsWithProgress(true, true, true, true, showUnityModalProgress: false);
 		}
 
 		private async Promise RevertModifiedContents()
 		{
-			await _contentService.SyncContentsWithProgress(true, false, false, false);
+			// Capture renames before the first sync clears the registry via Reload()
+			var renames = _contentService.GetAllRenames();
+
+			await _contentService.SyncContentsWithProgress(true, false, false, false, showUnityModalProgress: false);
+
+			if (renames.Count > 0)
+			{
+				var renameIds = string.Join(",",
+					renames.SelectMany(r => new[] { r.CreatedFullId, r.DeletedFullId }));
+				await _contentService.SyncContentsWithProgress(
+					true, true, true, true, renameIds, ContentFilterType.ExactIds);
+			}
 		}
 
 		private async Promise RevertConflictedContents()
 		{
-			await _contentService.SyncContentsWithProgress(false, false, true, false);
+			await _contentService.SyncContentsWithProgress(false, false, true, false, showUnityModalProgress: false);
 		}
 
 		private async Promise RevertDeletedContents()
 		{
-			await _contentService.SyncContentsWithProgress(false, false, false, true);
+			await _contentService.SyncContentsWithProgress(false, false, false, true, showUnityModalProgress: false);
 		}
 
 		private async Promise RevertAllNewContents()
 		{
-			await _contentService.SyncContentsWithProgress(false, true, false, false);
+			await _contentService.SyncContentsWithProgress(false, true, false, false, showUnityModalProgress: false);
 		}
 
 		

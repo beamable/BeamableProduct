@@ -24,6 +24,13 @@ public interface IAppContext : IRealmInfo, IRequesterInfo
 {
 	public BeamLogSwitch LogSwitch { get; }
 	public string Cid { get; }
+
+	/// <summary>
+	/// The customer alias for the current <see cref="Cid"/>, when it is known without a network call —
+	/// i.e. when the configured cid setting was itself an alias. Null when the configuration stores a
+	/// numeric cid; resolve via <see cref="Beamable.Common.Api.Realms.IRealmsApi.GetCustomerData"/> then.
+	/// </summary>
+	public string Alias { get; }
 	public string Pid { get; }
 	public string EngineCalling { get; }
 	public string EngineSdkVersion { get; }
@@ -33,6 +40,9 @@ public interface IAppContext : IRealmInfo, IRequesterInfo
 	public bool ShowRawOutput { get; }
 	public bool ShowPrettyOutput { get; }
 	public string DotnetPath { get; }
+	public string JavaPath { get; }
+	/// <summary>Non-null only when <c>--java-path</c> was explicitly passed on the command line (not auto-detected).</summary>
+	string ExplicitJavaPath { get; }
 	public HashSet<string> IgnoreBeamoIds { get; }
 	public string WorkingDirectory { get; }
 	public string RefreshToken { get; }
@@ -101,7 +111,9 @@ public class DefaultAppContext : IAppContext
 	public bool ShowPrettyOutput { get; private set; }
 
 	public string DotnetPath { get; private set; }
-	public string DockerPath { get; private set; }
+	public string JavaPath { get; private set; }
+	public string ExplicitJavaPath { get; private set; }
+		public string DockerPath { get; private set; }
 	public HashSet<string> IgnoreBeamoIds { get; private set; }
 
 
@@ -155,13 +167,14 @@ public class DefaultAppContext : IAppContext
 	public IAccessToken Token => _token;
 	private CliToken _token;
 
-	private string _cid, _pid, _host;
+	private string _cid, _alias, _pid, _host;
 	private string _engine, _engineVersion, _engineSdkVersion;
 	private string _refreshToken;
 	private BindingContext _bindingContext;
 	private IDependencyProvider _provider;
-	
+
 	public string Cid => _cid;
+	public string Alias => _alias;
 	public string Pid => _pid;
 	public string Host => _host;
 	public string EngineCalling => _engine;
@@ -200,6 +213,10 @@ public class DefaultAppContext : IAppContext
 		_skipValidationOption = skipValidationOption;
 		_dotnetPathOption = dotnetPathOption;
 		DockerPath = consoleContext.ParseResult.GetValueForOption(dockerPathOption);
+			ExplicitJavaPath = consoleContext.ParseResult.GetValueForOption(JavaPathOption.Instance);
+			JavaPath = ExplicitJavaPath;
+			if (string.IsNullOrEmpty(JavaPath) && JavaPathOption.TryGetJavaHome(out var resolvedJavaHome, out _))
+				JavaPath = resolvedJavaHome;
 		IgnoreBeamoIds =
 			new HashSet<string>(consoleContext.ParseResult.GetValueForOption(IgnoreBeamoIdsOption.Instance));
 	}
@@ -326,7 +343,8 @@ public class DefaultAppContext : IAppContext
 		string defaultAccessToken = string.Empty;
 		string defaultRefreshToken = string.Empty;
 		bool isExpiredToken = false;
-		if (_configService.ReadTokenFromFile(out var response) && response.Cid.Equals(cid, StringComparison.InvariantCultureIgnoreCase))
+		// static string.Equals so a token file without a cid is treated as a mismatch rather than throwing.
+		if (_configService.ReadTokenFromFile(out var response) && string.Equals(response.Cid, cid, StringComparison.InvariantCultureIgnoreCase))
 		{
 			if (response.ExpiresAt < DateTime.Now)
 			{
@@ -336,25 +354,88 @@ public class DefaultAppContext : IAppContext
 			defaultAccessToken = response.Token;
 			defaultRefreshToken = response.RefreshToken;
 		}
+		// Detect whether the caller explicitly supplied a token on the command line (or via config
+		// override). When they did, the stored login in the token file must not override it.
+		var hasAccessTokenOverride = !string.IsNullOrEmpty(bindingContext.ParseResult.GetValueForOption(_accessTokenOption));
+		var hasRefreshTokenOverride = !string.IsNullOrEmpty(bindingContext.ParseResult.GetValueForOption(_refreshTokenOption));
+		var hasTokenOverride = hasAccessTokenOverride || hasRefreshTokenOverride;
+
+		// If an access token is supplied without a matching refresh token, don't inherit the stored
+		// user's refresh token: it belongs to a different identity, and the requester retry path would
+		// use it to silently swap back to that user on any 401/403.
+		if (hasAccessTokenOverride && !hasRefreshTokenOverride)
+		{
+			defaultRefreshToken = string.Empty;
+		}
+
 		_configService.TryGetSetting(out var accessToken, bindingContext, _accessTokenOption, defaultAccessToken);
 		_configService.TryGetSetting(out _refreshToken, bindingContext, _refreshTokenOption, defaultRefreshToken);
 
 		_token = new CliToken(accessToken, _refreshToken, cid, pid);;
 		
-		await Set(cid, pid, host);
-		
-		// if the token we got from the config file is expired, try to refresh it with the refresh token.
-		if (isExpiredToken)
+		// Resolve cid + point at the host — time-bounded so an unreachable/half-up host (e.g. Caddy is up but
+		// the gateway is down, so the TCP connect succeeds but the request never responds) can't hang startup.
+		try
 		{
-			TokenResponse tokenResponse = await _provider.GetService<IAuthApi>().LoginRefreshToken(response.RefreshToken);
-			
-			Log.Debug(
-				$"Got new token: access=[{tokenResponse.access_token}] refresh=[{tokenResponse.refresh_token}] type=[{tokenResponse.token_type}] ");
-			
-			_token = new CliToken(tokenResponse.access_token, _refreshToken, cid, pid);
-			
-			_configService.SaveTokenToFile(_token);
+			if (!await CompletesWithin(Set(cid, pid, host), StartupNetworkTimeout))
+			{
+				Log.Warning($"Resolving cid/host against {host} timed out after {StartupNetworkTimeout.TotalSeconds}s — continuing offline.");
+				_host = host; _cid = cid; _pid = pid; _token.Cid = cid; _token.Pid = pid;
+			}
 		}
+		catch (Exception e)
+		{
+			Log.Warning($"Could not resolve cid/host against {host}: {e.Message} — continuing offline.");
+			_host = host; _cid = cid; _pid = pid; _token.Cid = cid; _token.Pid = pid;
+		}
+		await Set(cid, pid, host);
+		// if the token we got from the config file is expired, try to refresh it — again time-bounded and
+		// non-fatal, so a down/unreachable backend can't hang or crash every command. Standalone/offline
+		// commands (e.g. `beam local init`) don't need auth; commands that do will surface a clear error later.
+		if (isExpiredToken && !hasTokenOverride)
+		{
+			try
+			{
+				var refreshTask = RefreshTokenAsync(response.RefreshToken);
+				if (await CompletesWithin(refreshTask, StartupNetworkTimeout))
+				{
+					var tokenResponse = await refreshTask;
+					Log.Debug($"Got new token: type=[{tokenResponse.token_type}]");
+					_token = new CliToken(tokenResponse.access_token, _refreshToken, cid, pid);
+					_configService.SaveTokenToFile(_token);
+				}
+				else
+				{
+					Log.Warning($"Token refresh against {host} timed out after {StartupNetworkTimeout.TotalSeconds}s — continuing with the existing token.");
+				}
+			}
+			catch (Exception e)
+			{
+				Log.Warning($"Could not refresh the access token against {host}: {e.Message}. Continuing with the existing token.");
+			}
+		}
+	}
+
+	/// <summary>How long a startup network call (alias resolve / token refresh) may take before we give up and
+	/// proceed offline — so an unreachable or half-up backend can't hang every command.</summary>
+	private static readonly TimeSpan StartupNetworkTimeout = TimeSpan.FromSeconds(8);
+
+	private async Task<TokenResponse> RefreshTokenAsync(string refreshToken) =>
+		await _provider.GetService<IAuthApi>().LoginRefreshToken(refreshToken);
+
+	/// <summary>Awaits <paramref name="task"/> but returns false if it doesn't finish within
+	/// <paramref name="timeout"/> (the task keeps running in the background; its exception is observed).</summary>
+	private static async Task<bool> CompletesWithin(Task task, TimeSpan timeout)
+	{
+		if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
+		{
+			await task; // surface any exception to the caller
+			return true;
+		}
+
+		// Timed out — observe the eventual exception so it doesn't become an UnobservedTaskException.
+		_ = task.ContinueWith(t => { _ = t.Exception; }, TaskScheduler.Default);
+		return false;
 	}
 
 	public async Task Set(string cid, string pid, string host)
@@ -367,10 +448,12 @@ public class DefaultAppContext : IAppContext
 			service.Requester = new NoAuthHttpRequester(host);
 			var aliasResolve = await service.Resolve(cid);
 			_cid = aliasResolve.Cid;
+			_alias = aliasResolve.Alias.GetOrElse(() => null);
 		}
 		else
 		{
 			_cid = cid;
+			_alias = null;
 		}
 		_pid = pid;
 		_token.Cid = _cid;

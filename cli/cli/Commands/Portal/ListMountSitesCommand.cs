@@ -1,6 +1,5 @@
 
 using System.Diagnostics;
-using System.Text.Json;
 namespace cli.Portal;
 
 public class ListMountSitesCommandArgs : CommandArgs
@@ -48,32 +47,10 @@ public class ListMountSitesCommand : AtomicCommand<ListMountSitesCommandArgs, Li
     {
     }
 
-    public static async Task<RemotePortalConfiguration> GetRemotePortalConfig(CommandArgs args)
-    {
-        var url = PortalCommand.GetPortalBaseUrl(args) + "/extension-pages.json";
-
-        var client = new HttpClient();
-        var json = await client.GetStringAsync(url);
-        var config = JsonSerializer.Deserialize<RemotePortalConfiguration>(json, new JsonSerializerOptions
-        {
-            IncludeFields = true
-        });
-        
-        // transform out the common prefix 
-        var commonPref = "/:customerId/games/:gameId/realms/:realmId/";
-        foreach (var mountSite in config.mountSites)
-        {
-            if (mountSite.path.StartsWith(commonPref))
-            {
-                mountSite.path = mountSite.path.Substring(commonPref.Length);
-            }
-        }
-        
-        return config;
-    }
     public override async Task<ListMountSitesCommandResults> GetResult(ListMountSitesCommandArgs args)
     {
-        var config = await GetRemotePortalConfig(args);
+        var configService = args.DependencyProvider.GetService<IRemotePortalConfigService>();
+        var config = await configService.GetRemotePortalConfig(args);
         return new ListMountSitesCommandResults
         {
             config = config

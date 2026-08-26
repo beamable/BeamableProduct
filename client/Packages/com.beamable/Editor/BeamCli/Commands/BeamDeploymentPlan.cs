@@ -23,10 +23,14 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool buildSequentially;
         /// <summary>Maximum number of parallel services builds</summary>
         public int maxParallelCount;
+        /// <summary>Maximum number of concurrent service image uploads during deployment</summary>
+        public int maxConcurrentUploads;
         /// <summary>Create a Release that merges your current local environment to the existing remote services. Existing deployed services will not be removed</summary>
         public bool merge;
         /// <summary>Create a Release that completely overrides the existing remote services. Existing deployed services that are not present locally will be removed (default)</summary>
         public bool replace;
+        /// <summary>Which manifest to operate against: 'realm' (default) builds and plans the realm manifest (cid.pid) and ignores zone-scoped services; 'zone' ignores all realm-scoped services and operates against the zone manifest (cid.zid)</summary>
+        public string scope;
         /// <summary>Specify an output path where a new docker-compose project will be created. The compose file can be used to run services locally. (Note, existing files in this folder will be overwritten)</summary>
         public string dockerComposeDir;
         /// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. When no option is configured, if this command is executing inside a .beamable folder, then the first .sln found in .beamable/.. will be used. If no .sln is found, the .sln path will be <name>.sln. If no .beamable folder exists, then the <project>/<project>.sln will be used</summary>
@@ -82,6 +86,11 @@ namespace Beamable.Editor.BeamCli.Commands
             {
                 genBeamCommandArgs.Add(("--max-parallel-count=" + this.maxParallelCount));
             }
+            // If the maxConcurrentUploads value was not default, then add it to the list of args.
+            if ((this.maxConcurrentUploads != default(int)))
+            {
+                genBeamCommandArgs.Add(("--max-concurrent-uploads=" + this.maxConcurrentUploads));
+            }
             // If the merge value was not default, then add it to the list of args.
             if ((this.merge != default(bool)))
             {
@@ -91,6 +100,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.replace != default(bool)))
             {
                 genBeamCommandArgs.Add(("--replace=" + this.replace));
+            }
+            // If the scope value was not default, then add it to the list of args.
+            if ((this.scope != default(string)))
+            {
+                genBeamCommandArgs.Add(("--scope=" + this.scope));
             }
             // If the dockerComposeDir value was not default, then add it to the list of args.
             if ((this.dockerComposeDir != default(string)))

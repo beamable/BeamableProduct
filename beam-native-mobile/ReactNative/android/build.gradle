@@ -1,0 +1,54 @@
+// Gradle module for the Beamable Android notifications RN package.
+//
+// It contributes the aggregator ReactPackage (BeamableNotificationsPackage) and links
+// the prebuilt unified `.aar` that carries the actual bridges + core. The `.aar` is a
+// loose binary (no POM), so its transitive deps are declared explicitly here — mirror
+// of the core library's build.gradle (androidx.core, firebase-messaging).
+//
+// React is `implementation 'com.facebook.react:react-android'` (provided by the host RN
+// app at runtime; the version is supplied by the app's React Native Gradle setup).
+
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+
+android {
+    namespace 'com.beamable.reactnative'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 24
+    }
+
+    // Java 17 to match the Expo / React Native 0.76 app toolchain (the app compiles
+    // Java at 17, so Kotlin must target 17 too or AGP fails with a JVM-target mismatch).
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    // The bundled bridges (ReactPushModule / ReactDeepLinkModule) + engine-agnostic core.
+    // `api` (not `implementation`) so the `.aar`'s classes (e.g.
+    // com.beamable.push.PushNotificationReceivedHandler / PushReceivedEvent) are exposed
+    // transitively to the host app — the sample's BeamablePushReceivedHandler.java, compiled
+    // in the app module, implements that interface.
+    api fileTree(dir: "$projectDir/libs", include: ['*.aar'])
+
+    // React Native — provided by the host app at runtime.
+    implementation 'com.facebook.react:react-android'
+
+    // Transitive deps of the loose `.aar` (a flat .aar has no POM to resolve them).
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')
+    implementation 'com.google.firebase:firebase-messaging-ktx'
+}

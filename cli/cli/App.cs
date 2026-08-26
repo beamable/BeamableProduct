@@ -12,13 +12,18 @@ using Beamable.Common.Semantics;
 using Beamable.Common.Util;
 using beamable.otel.exporter;
 using cli.CliServerCommand;
+using cli.Commands;
+using cli.Commands.LocalStack;
 using cli.Commands.Project;
 using cli.Commands.Project.Deps;
 using cli.Commands.Project.StorageData;
 using cli.Content;
 using cli.Content.Tag;
+using cli.BundleCommands;
 using cli.DeploymentCommands;
+using cli.DeploymentCommands.Admin;
 using cli.DockerCommands;
+using cli.Commands.Docs;
 using cli.Docs;
 using cli.Dotnet;
 using cli.FederationCommands;
@@ -28,6 +33,7 @@ using cli.PlayerCommands;
 using cli.Portal;
 using cli.Services;
 using cli.Services.HttpServer;
+ using cli.Services.Web;
 using cli.TempCommands;
 using cli.TokenCommands;
 using cli.UnityCommands;
@@ -35,6 +41,7 @@ using cli.Unreal;
 using cli.UnrealCommands;
 using cli.Utils;
 using cli.Version;
+using cli.Web;
 using CliWrap;
 using Errata;
 using Microsoft.Build.Locator;
@@ -57,6 +64,7 @@ using cli.Commands.Project.Logs;
 using cli.Services.Web;
 using cli.DeveloperUserCommands;
 using cli.OtelCommands;
+using cli.Mcp;
 using cli.OtelCommands.Grafana;
 using cli.Services.DeveloperUserManager;
 using Microsoft.Extensions.Logging;
@@ -67,6 +75,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Spectre.Console;
+using System.Globalization;
 using ZLogger;
 using Command = System.CommandLine.Command;
 using Otel = Beamable.Common.Constants.Features.Otel;
@@ -246,7 +255,8 @@ public class App
 		services.AddSingleton<HttpSignedRequester>();
 		services.AddSingleton<IUserContext, SimpleUserContext>(_ => new SimpleUserContext(0) );
 		services.AddSingleton<ProcessFileLocker>();
-		
+		services.AddSingleton<IRemotePortalConfigService, RemotePortalConfigService>();
+		services.AddSingleton<WebLocalRegistryService>();
 
 		services.AddSingleton<DefaultActivityProvider>(DefaultActivityProvider.CreateCliServiceProvider());
 		services.AddSingleton<ResourceBuilder>(p =>
@@ -278,6 +288,11 @@ public class App
 			if (!string.IsNullOrEmpty(ctx.EngineVersion))
 			{
 				dict[Otel.ATTR_ENGINE_VERSION] = ctx.EngineVersion;
+			}
+
+			if (TryDetectAiAgent(out var aiAgent))
+			{
+				dict[Otel.ATTR_AI_AGENT] = aiAgent;
 			}
 
 			dict[Otel.ATTR_SOURCE] = "cli";
@@ -481,6 +496,7 @@ public class App
 		Commands.AddSingleton(NoLogFileOption.Instance);
 		Commands.AddSingleton(UnmaskLogsOption.Instance);
 		Commands.AddSingleton(DockerPathOption.Instance);
+		Commands.AddSingleton(JavaPathOption.Instance);
 		Commands.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -503,6 +519,7 @@ public class App
 			root.AddGlobalOption(UnmaskLogsOption.Instance);
 			root.AddGlobalOption(NoLogFileOption.Instance);
 			root.AddGlobalOption(DockerPathOption.Instance);
+			root.AddGlobalOption(JavaPathOption.Instance);
 			root.AddGlobalOption(EmitLogsOption.Instance);
 			root.AddGlobalOption(ExtraProjectPathOptions.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<ShowRawOutput>());
@@ -516,13 +533,18 @@ public class App
 
 		// add commands
 		Commands.AddRootCommand<CliInterfaceGeneratorCommand, CliInterfaceGeneratorCommandArgs>();
+		Commands.AddRootCommand<McpGroupCommand>();
+		Commands.AddSubCommand<McpServeCommand, McpServeCommandArgs, McpGroupCommand>();
+		Commands.AddSubCommand<McpSetupCommand, McpSetupCommandArgs, McpGroupCommand>();
+		Commands.AddRootCommand<InstallAISkillsCommand, InstallAISkillsCommandArgs>();
 		Commands.AddRootCommand<ServerGroupCommand>();
 		Commands.AddSubCommand<ServeCliCommand, ServeCliCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<RequestCliCommand, RequestCliCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<ServerPsCommand, ServerPsCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<ServerKillCommand, ServerKillCommandArgs, ServerGroupCommand>();
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
-		
+		Commands.AddSubCommandWithHandler<InitGetRealmsCommand, InitGetRealmsCommandArgs, InitCommand>();
+
 		Commands.AddRootCommand<CheckCommandCommandGroup>();
 		Commands.AddSubCommand<CreateChecksCommand, CreateChecksCommandArgs, CheckCommandCommandGroup>();
 		Commands.AddSubCommand<LockedFilesCheckCommand, LockedFilesCheckCommandArgs, CheckCommandCommandGroup>();
@@ -547,6 +569,15 @@ public class App
 		Commands.AddSubCommand<StartGrafanaCommand, StartGrafanaCommandArgs, GrafanaCommand>();
 		Commands.AddSubCommand<CheckGrafanaCommand, CheckGrafanaCommandArgs, GrafanaCommand>();
 		Commands.AddSubCommand<StopGrafanaCommand, StopGrafanaCommandArgs, GrafanaCommand>();
+
+		Commands.AddRootCommand<LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackSetupCommand, LocalStackSetupCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackInitCommand, LocalStackInitCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackUpCommand, LocalStackUpCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackPsCommand, LocalStackPsCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackLogsCommand, LocalStackLogsCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackStopCommand, LocalStackStopCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackValidateCommand, LocalStackValidateCommandArgs, LocalStackCommand>();
 
 
 		Commands.AddRootCommand<ProjectCommand>();
@@ -579,6 +610,7 @@ public class App
 		Commands.AddSubCommand<ListCommand, ListCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<NewStorageCommand, NewStorageCommandArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<NewPortalExtensionCommand, NewPortalExtensionCommandArgs, ProjectNewCommand>();
+		Commands.AddSubCommand<NewPortalExtensionLibCommand, NewPortalExtensionLibCommandArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateIgnoreFileCommand, GenerateIgnoreFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
@@ -602,10 +634,13 @@ public class App
 		Commands.AddSubCommand<RemoveReplacementTypeCommand, RemoveReplacementTypeCommandArgs, ProjectCommand>();
 		
 		Commands.AddSubCommand<GenerateWebClientCommand, GenerateWebClientCommandArgs, ProjectGenerateCommand>();
+		Commands.AddSubCommand<GeneratePortalExtensionClientsCommand, GeneratePortalExtensionClientsCommandArgs, ProjectGenerateCommand>();
 
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
 		Commands.AddRootCommand<GenerateMkDocsCommand, GenerateMkDocsCommandArgs>();
+		Commands.AddRootCommand<GenerateBeamableTypesSchemaCommand, GenerateBeamableTypesSchemaCommandArgs>();
+		Commands.AddRootCommand<GenerateSkillDocsCommand, GenerateSkillDocsCommandArgs>();
 		
 		// FEDERATION COMMANDS
 		Commands.AddRootCommand<FederationCommand>();
@@ -636,6 +671,7 @@ public class App
 		
 		Commands.AddRootCommand<PortalCommand, PortalCommandArgs>();
 		Commands.AddSubCommandWithHandler<PortalOpenCurrentAccountCommand, PortalOpenCurrentAccountCommandArgs, PortalCommand>();
+		Commands.AddSubCommandWithHandler<PortalOpenExtensionCommand, PortalOpenExtensionCommandArgs, PortalCommand>();
 		Commands.AddSubCommandWithHandler<PortalExtensionCommand, PortalExtensionCommandArgs, PortalCommand>();
 		Commands
 			.AddSubCommandWithHandler<PortalExtensionCheckCommand, PortalExtensionCheckCommandArgs,
@@ -644,9 +680,23 @@ public class App
 			.AddSubCommandWithHandler<PortalExtensionAddDependencyCommand, PortalExtensionAddDependencyCommandArgs,
 				PortalExtensionCommand>();
 		Commands
+			.AddSubCommandWithHandler<PortalExtensionAddLibraryCommand, PortalExtensionAddLibraryCommandArgs,
+				PortalExtensionCommand>();
+		Commands
+			.AddSubCommandWithHandler<PortalExtensionUpdateToolkitCommand, PortalExtensionUpdateToolkitCommandArgs,
+				PortalExtensionCommand>();
+		Commands
 			.AddSubCommandWithHandler<SetPortalExtensionConfigCommand, SetPortalExtensionConfigCommandArgs,
 				PortalExtensionCommand>();
 		Commands.AddSubCommandWithHandler<ListMountSitesCommand, ListMountSitesCommandArgs, PortalExtensionCommand>();
+		Commands.AddSubCommandWithHandler<ListPortalExtensionOptionsCommand, ListPortalExtensionOptionsCommandArgs, PortalExtensionCommand>();
+
+		Commands.AddRootCommand<WebCommand, WebCommandArgs>();
+		Commands.AddSubCommandWithHandler<WebPublishCommand, WebPublishCommandArgs, WebCommand>();
+		Commands.AddSubCommandWithHandler<WebUseCommand, WebUseCommandArgs, WebCommand>();
+		Commands.AddSubCommandWithHandler<WebResetCommand, WebResetCommandArgs, WebCommand>();
+		Commands.AddSubCommandWithHandler<WebStopCommand, WebStopCommandArgs, WebCommand>();
+		Commands.AddSubCommandWithHandler<WebStatusCommand, WebStatusCommandArgs, WebCommand>();
 
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();
@@ -688,6 +738,7 @@ public class App
 		Commands.AddSubCommand<UpdateServiceDllsReferenceCommand, UpdateServiceDllsReferenceCommandArgs,
 			UnityGroupCommand>();
 		Commands.AddSubCommand<ShowManifestCommand, ShowManifestCommandArgs, UnityGroupCommand>();
+		Commands.AddSubCommand<VerifyPackageMetasCommand, VerifyPackageMetasCommandArgs, UnityGroupCommand>();
 		
 		// unreal commands
 		Commands.AddRootCommand<UnrealGroupCommand>();
@@ -704,7 +755,14 @@ public class App
 		Commands.AddSubCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
 		Commands.AddSubCommand<RealmListCommand, RealmsListCommandArgs, OrganizationCommand>();
 		Commands.AddSubCommand<GameListCommand, GameListCommandArgs, OrganizationCommand>();
-		
+		Commands.AddSubCommand<PrCommand, CommandGroupArgs, OrganizationCommand>();
+		Commands.AddSubCommand<PrSubmitCommand, PrSubmitCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrListCommand, PrListCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrDiffCommand, PrDiffCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrCommentCommand, PrCommentCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrMergeCommand, PrMergeCommandArgs, PrCommand>();
+		Commands.AddSubCommand<PrRejectCommand, PrRejectCommandArgs, PrCommand>();
+
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand>();
 
@@ -740,7 +798,25 @@ public class App
 		Commands.AddSubCommandWithHandler<ShowCurrentBeamoStatusCommand, ShowCurrentBeamoStatusCommandArgs, DeploymentCommand>();
 		Commands.AddSubCommandWithHandler<PlanDeploymentCommand, PlanDeploymentCommandArgs, DeploymentCommand>();
 		Commands.AddSubCommandWithHandler<ReleaseDeploymentCommand, ReleaseDeploymentCommandArgs, DeploymentCommand>();
-		
+
+		Commands.AddSubCommand<AdminCommand, CommandGroupArgs, DeploymentCommand>();
+		Commands.AddSubCommandWithHandler<ForceInjectBundleCommand, ForceInjectBundleCommandArgs, AdminCommand>();
+
+		// `bundles` is its own top-level command group: `beam bundles <cmd>`
+		Commands.AddRootCommand<BundlesCommand>();
+		Commands.AddSubCommandWithHandler<NewBundleCommand, NewBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<ListBundlesCommand, ListBundlesCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<GetBundleCommand, GetBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<BundleHistoryCommand, BundleHistoryCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<BundleTagsCommand, BundleTagsCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<PromoteBundleTagCommand, PromoteBundleTagCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<YankBundleCommand, YankBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<BundleAclCommand, BundleAclCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<PinBundleCommand, PinBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<PruneYankedCommand, PruneYankedCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<PublishBundleCommand, PublishBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<BundlePlanCommand, BundlePlanCommandArgs, BundlesCommand>();
+
 		Commands.AddRootCommand<ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentPsCommand, ContentPsCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentStatusCommand, ContentStatusCommandArgs, ContentCommand>();
@@ -809,6 +885,9 @@ public class App
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be built again");
 		
+		CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+		CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+
 		BeamableLogProvider.Provider = new BeamableZLoggerProvider();
 		var logBuffer = new ZLoggerBufferedProcessor();
 		{ // construct some fake log setup so that we can log before the actual logs are initilaized. 
@@ -1149,6 +1228,21 @@ public class App
 					{
 						shouldContinue = false;
 					}
+					else if (!quiet && !AnsiConsole.Profile.Capabilities.Interactive)
+					{
+						// There is no one to ask: the output is piped, or this is CI / a script / an agent. Prompting
+						// here threw "Failed to read input in non-interactive mode" and took the whole command with
+						// it — so the FIRST command run after any `.beamable` folder appeared would crash, which is
+						// a miserable way to discover that a consent prompt exists.
+						//
+						// Default to NOT collecting. Silence is not consent, and this is the one branch where the
+						// answer was never actually given. `--quiet` keeps its existing opt-in behaviour, and
+						// BEAM_CLI_AUTO_SETUP_TELEMETRY (handled above) is how a non-interactive run opts in.
+						shouldContinue = false;
+						Log.Verbose(
+							"Skipping the telemetry consent prompt: the console is not interactive. Defaulting to " +
+							"no telemetry — set the auto-setup telemetry env var to choose explicitly.");
+					}
 					else if(!quiet)// if we don't have the auto setup set we will check if we should auto accept or show the prompt
 					{
 						shouldContinue = AnsiConsole.Prompt(
@@ -1285,6 +1379,16 @@ public class App
 			}
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
+		// Disable System.CommandLine's "@file" response-file token replacement. Otherwise any
+		// argument starting with '@' (e.g. a bundle name like "@alias/bundleName") is treated as a
+		// path to a response file and fails with "Error reading response file". Installing a no-op
+		// TryReplaceToken (returns false, no error) lets '@' tokens pass through as literal strings.
+		commandLineBuilder.UseTokenReplacer((string tokenToReplace, out IReadOnlyList<string> replacementTokens, out string errorMessage) =>
+		{
+			replacementTokens = null;
+			errorMessage = null;
+			return false;
+		});
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
 		commandLineBuilder.UseHelpBuilder(_ => helpBuilder);
@@ -1523,12 +1627,77 @@ public class App
 	public virtual int Run(string[] args)
 	{
 		var prog = GetProgram();
+		WarnIfAIEnvironmentWithoutMcp(args);
 		return prog.Invoke(args);
 	}
+
+	private static void WarnIfAIEnvironmentWithoutMcp(string[] args)
+	{
+		// Disabled while the Beamable MCP is internal-only (see feature/beam-mcp-public).
+		return;
+
+		if (IsRunningInMcpServer) return;
+		var joined = string.Join(" ", args).ToLowerInvariant();
+		if (joined.Contains("mcp serve") || joined.Contains("mcp setup")) return;
+
+		if (!TryDetectAiAgent(out _)) return;
+
+		BeamableLogger.LogWarning(
+			"[beam] You are calling beam CLI directly. For better AI integration, use the Beamable MCP server." +
+			" Run 'beam mcp setup' to generate a .mcp.json config, then use MCP tools (beam_exec, beam_get_help, beam_get_skill) for structured interaction.");
+	}
+
+	public static bool TryDetectAiAgent(out string agentName)
+	{
+		var mapping = new (string EnvVar, string AgentName)[]
+		{
+			("CLAUDECODE", "claude_code"),
+			("CLAUDE_CODE_ENTRYPOINT", "claude_code"),
+			("CURSOR_SESSION_ID", "cursor"),
+			("COPILOT_AGENT", "copilot"),
+			("COPILOT_CLI", "copilot"),
+			("COPILOT_AGENT_SESSION_ID", "copilot"),
+			("WINDSURF_SESSION", "windsurf"),
+			("OPENCODE_SESSION", "opencode"),
+			("OPENCODE", "opencode"),
+			("AIDER", "aider"),
+			("AI_AGENT", "unknown"),
+		};
+
+		string detected = null;
+		foreach (var (envVar, name) in mapping)
+		{
+			if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envVar)))
+			{
+				detected = name;
+				break;
+			}
+		}
+
+		var prefix = IsRunningInMcpServer ? "mcp" : "cli";
+
+		if (detected != null)
+		{
+			agentName = $"{prefix}_{detected}";
+			return true;
+		}
+
+		if (IsRunningInMcpServer)
+		{
+			agentName = "mcp_unknown";
+			return true;
+		}
+
+		agentName = null;
+		return false;
+	}
+
+	internal static bool IsRunningInMcpServer { get; set; }
 
 	public virtual Task<int> RunAsync(string[] args)
 	{
 		var prog = GetProgram();
+		WarnIfAIEnvironmentWithoutMcp(args);
 		return prog.InvokeAsync(args);
 	}
 

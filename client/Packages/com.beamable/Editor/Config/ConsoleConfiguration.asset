@@ -12,4 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b13dd78d032d942468126fb6bad6c9df, type: 3}
   m_Name: ConsoleConfiguration
   m_EditorClassIdentifier: 
-  ToggleKey: 96
+  UISize: 1.25
+  Height: 0.5
+  EnableAdminConsole: 1
+  ForceEnabled: 1
+  ToggleAction:
+    KeyCode: 96

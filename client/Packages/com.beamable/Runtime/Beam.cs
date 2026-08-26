@@ -40,6 +40,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Config;
 using Beamable.Connection;
+using Beamable.Console;
 using Beamable.Content;
 using Beamable.Coroutines;
 using Beamable.Experimental.Api.Calendars;
@@ -168,6 +169,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(contentReflectionCache);
 			DependencyBuilder.AddComponentSingleton<CoroutineService>();
 			DependencyBuilder.AddComponentSingleton<NotificationService>();
+			DependencyBuilder.AddComponentSingleton<BeamableAdminConsole>();
 			DependencyBuilder.AddComponentSingleton<BeamableBehaviour>();
 			DependencyBuilder.AddComponentSingleton<PubnubSubscriptionManager>(
 				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>(), provider));

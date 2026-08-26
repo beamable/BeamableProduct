@@ -26,6 +26,7 @@ public class ConfigService
 	public const string ENV_VAR_DOCKER_URI = "BEAM_DOCKER_URI";
 	public const string ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND = "BEAM_CLI_IS_REDIRECTED_COMMAND";
 	public const string ENV_VAR_DOCKER_EXE = "BEAM_DOCKER_EXE";
+	public const string ENV_VAR_JAVA_HOME = "BEAM_JAVA_HOME";
 
 	public const string CFG_FOLDER = ".beamable";
 	public const string BEAM_ROOT_FILE = ".beamroot";
@@ -36,10 +37,18 @@ public class ConfigService
 	public const string CFG_TOKEN_JSON_FIELD_REFRESH_TOKEN = "refresh-token";
 
 	public const string CFG_FILE_NAME = "config.beam.json";
+	/// <summary>
+	/// The v2 root manifest file (sibling to <see cref="CFG_FILE_NAME"/>). Holds bundle references
+	/// for this realm. Presence of this file = v2 manifest schema; absence = legacy v1.
+	/// </summary>
+	public const string MANIFEST_FILE_NAME = "manifest.beam.json";
+	/// <summary>The manifest schemaVersion the CLI authors for v2 workspaces.</summary>
+	public const int MANIFEST_SCHEMA_VERSION = 2;
 	public const string CFG_JSON_FIELD_CLI_VERSION = "cliVersion";
 	public const string CFG_JSON_FIELD_HOST = "host";
 	public const string CFG_JSON_FIELD_CID = "cid";
 	public const string CFG_JSON_FIELD_PID = "pid";
+	public const string CFG_JSON_FIELD_ZID = "zid";
 	public const string CFG_JSON_FIELD_PROJ_PATH_ROOT = "projectPathRoot";
 	public const string CFG_JSON_FIELD_ARR_ADDITIONAL_PROJECT_PATHS = "additionalProjectPaths";
 	public const string CFG_JSON_FIELD_ARR_IGNORED_PROJECT_PATHS = "ignoredProjectPaths";
@@ -457,28 +466,32 @@ public class ConfigService
 
 
 	/// <summary>
-	/// Called to initialize or overwrite the current DotNet dotnet-tools.json file in the ".beamable" folder's sibling ".config" folder.  
+	/// Called to initialize or overwrite the current DotNet dotnet-tools.json file in the ".beamable" folder's sibling ".config" folder.
 	/// </summary>
 	public void EnforceDotNetToolsManifest(out string pathToToolsManifest)
 	{
-		pathToToolsManifest = null;
 		if (string.IsNullOrEmpty(ConfigDirectoryPath))
 			throw new CliException("No beamable project exists. Please use beam init");
 
-		var pathToDotNetConfigFolder = Directory.GetParent(ConfigDirectoryPath)!.ToString();
-		pathToDotNetConfigFolder = Path.Combine(pathToDotNetConfigFolder, ".config");
+		var projectRoot = Directory.GetParent(ConfigDirectoryPath)!.ToString();
+		pathToToolsManifest = EnsureDotNetToolsManifest(projectRoot);
+	}
 
-		// Create the sibling ".config" folder if its not there.
-		if (!Directory.Exists(pathToDotNetConfigFolder))
-			Directory.CreateDirectory(pathToDotNetConfigFolder);
+	/// <summary>
+	/// Creates or updates .config/dotnet-tools.json under the given directory with the current CLI version.
+	/// </summary>
+	public static string EnsureDotNetToolsManifest(string targetDir)
+	{
+		var configFolder = Path.Combine(targetDir, ".config");
+		if (!Directory.Exists(configFolder))
+			Directory.CreateDirectory(configFolder);
 
-		// Create/Update the manifest inside the ".config" folder 
-		pathToToolsManifest = Path.Combine(pathToDotNetConfigFolder, "dotnet-tools.json");
+		var manifestPath = Path.Combine(configFolder, "dotnet-tools.json");
 		string manifestString;
 
 		var versionStr = BeamAssemblyVersionUtil.GetVersion<App>();
 		// Create the file if it doesn't exist with our default local tool and its correct version.
-		if (!File.Exists(pathToToolsManifest))
+		if (!File.Exists(manifestPath))
 		{
 			manifestString = $@"{{
   ""version"": 1,
@@ -497,7 +510,7 @@ public class ConfigService
 		else
 		{
 			var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+.*?)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
-			manifestString = File.ReadAllText(pathToToolsManifest);
+			manifestString = File.ReadAllText(manifestPath);
 
 			if (versionMatching.IsMatch(manifestString))
 			{
@@ -523,7 +536,7 @@ public class ConfigService
 				toolsDict.Add("version", versionStr);
 				toolsDict.Add("commands", new[] { "beam" });
 
-				// Update the tools JSON object 
+				// Update the tools JSON object
 				var tools = (ArrayDict)manifest["tools"];
 				tools["beamable.tools"] = toolsDict;
 
@@ -532,7 +545,8 @@ public class ConfigService
 			}
 		}
 
-		File.WriteAllText(pathToToolsManifest, manifestString);
+		File.WriteAllText(manifestPath, manifestString);
+		return manifestPath;
 	}
 
 	public bool TryGetProjectBeamableCLIVersion(out string version)
@@ -1220,6 +1234,12 @@ public class ConfigService
 					ex = e;
 					written = false;
 				}
+				catch (UnauthorizedAccessException e)
+				{
+					// Windows surfaces a locked destination as an access violation rather than an IOException.
+					ex = e;
+					written = false;
+				}
 			}
 
 			if (!written) throw new CliException($"Failed to flush configuration. LAST_EXCEPTION={ex}");
@@ -1375,6 +1395,12 @@ public class ConfigService
 	/// </summary>
 	public static string CustomDockerExe => Environment.GetEnvironmentVariable(ENV_VAR_DOCKER_EXE);
 
+	/// <summary>
+	/// The local Scala backend requires a Java 8 <c>JAVA_HOME</c>. By default the CLI guesses it; this env
+	/// var (or the <c>--java-path</c> option) overrides that guess.
+	/// </summary>
+	public static string CustomJavaHome => Environment.GetEnvironmentVariable(ENV_VAR_JAVA_HOME);
+
 
 	public string GetPathFromRelativeToService(string path, string servicePath)
 	{
@@ -1454,6 +1480,55 @@ public class ConfigService
 		}
 
 		return config;
+	}
+
+	#endregion
+
+	#region Helpers - Manifest References (v2 bundles)
+
+	/// <summary>The full path to the v2 root manifest file, whether or not it exists.</summary>
+	public string GetManifestReferencesPath() => GetConfigPath(MANIFEST_FILE_NAME);
+
+	/// <summary>True when this workspace opts into the v2 bundle-references manifest schema.</summary>
+	public bool ExistsManifestReferences() => File.Exists(GetManifestReferencesPath());
+
+	/// <summary>
+	/// Load <c>.beamable/manifest.beam.json</c>, or <c>null</c> if the workspace is legacy v1 (no file).
+	/// Parsed via <see cref="JObject"/> rather than typed deserialization to avoid Beamable's
+	/// Optional converters on a plain-shaped file.
+	/// </summary>
+	[CanBeNull]
+	public ManifestReferences LoadManifestReferences()
+	{
+		var path = GetManifestReferencesPath();
+		if (!File.Exists(path)) return null;
+
+		var obj = JsonConvert.DeserializeObject<JObject>(LockedRead(path)) ?? new JObject();
+		var result = new ManifestReferences
+		{
+			schemaVersion = obj.Value<int?>("schemaVersion") ?? MANIFEST_SCHEMA_VERSION,
+			references = new Dictionary<string, string>()
+		};
+		if (obj["references"] is JObject refs)
+		{
+			foreach (var kvp in refs)
+			{
+				result.references[kvp.Key] = kvp.Value?.Value<string>();
+			}
+		}
+
+		return result;
+	}
+
+	/// <summary>Write <c>.beamable/manifest.beam.json</c>, creating it if absent.</summary>
+	public void SaveManifestReferences(ManifestReferences manifest)
+	{
+		var obj = new JObject
+		{
+			["schemaVersion"] = manifest?.schemaVersion ?? MANIFEST_SCHEMA_VERSION,
+			["references"] = JObject.FromObject(manifest?.references ?? new Dictionary<string, string>())
+		};
+		LockedWrite(GetManifestReferencesPath(), obj.ToString(Formatting.Indented));
 	}
 
 	#endregion
@@ -1581,9 +1656,12 @@ public class ConfigService
 
 		try
 		{
-			var content = File.ReadAllText(fullPath);
+			var content = LockedRead(fullPath);
 			response = JsonConvert.DeserializeObject<CliToken>(content);
-			return true;
+
+			// An empty or "null" file deserializes to null. Reporting success with a null token makes every
+			// caller dereference it, so treat that as "no token" instead.
+			return response != null;
 		}
 		catch
 		{
@@ -1601,7 +1679,10 @@ public class ConfigService
 		Directory.CreateDirectory(dir!);
 
 		var json = JsonConvert.SerializeObject(response, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
-		File.WriteAllText(fullPath, json);
+		// Every command refreshes an expired token on startup, so concurrent beam processes write this file
+		// at the same time. LockedWrite swaps the file in atomically; a plain write truncates it first and
+		// lets a concurrent reader see an empty file.
+		LockedWrite(fullPath, json);
 	}
 
 	public void DeleteTokenFile()
@@ -1656,39 +1737,90 @@ public class ConfigService
 		return false;
 	}
 
-	public static void LockedWrite(string path, string content, int allowedAttempts = 10, int retryDelayMs = 25)
+	private const int FILE_LOCK_ATTEMPTS = 10;
+	private const int FILE_LOCK_DELAY_MS = 25;
+	private const int FILE_LOCK_MAX_DELAY_MS = 500;
+
+	/// <summary>
+	/// A fixed retry delay makes every contending process wake up at the same instant and collide again,
+	/// so back off exponentially and add jitter to spread the retries out.
+	/// </summary>
+	private static int GetRetryDelayMs(int baseDelayMs, int attempt)
+	{
+		var backoff = Math.Min(baseDelayMs * (1 << Math.Min(attempt, 5)), FILE_LOCK_MAX_DELAY_MS);
+		return backoff + Random.Shared.Next((backoff / 2) + 1);
+	}
+
+	public static void LockedWrite(string path, string content, int allowedAttempts = FILE_LOCK_ATTEMPTS, int retryDelayMs = FILE_LOCK_DELAY_MS)
+	{
+		// Write to a sibling temp file and swap it in, instead of truncating the real file in place.
+		// FileMode.Create empties the file before the content lands, so a reader that slips into that
+		// window sees an empty config; a rename is atomic, so readers only ever see old or new content.
+		var tempPath = $"{path}.{Environment.ProcessId}.{Guid.NewGuid():N}.tmp";
+		try
+		{
+			File.WriteAllText(tempPath, content);
+
+			for (var i = 0; i < allowedAttempts; i++)
+			{
+				try
+				{
+					File.Move(tempPath, path, true);
+					return;
+				}
+				catch (IOException) when (i < allowedAttempts - 1)
+				{
+					Thread.Sleep(GetRetryDelayMs(retryDelayMs, i));
+				}
+				catch (UnauthorizedAccessException) when (i < allowedAttempts - 1)
+				{
+					Thread.Sleep(GetRetryDelayMs(retryDelayMs, i));
+				}
+			}
+		}
+		finally
+		{
+			// The move consumes the temp file, so this only cleans up after a failed write.
+			if (File.Exists(tempPath))
+			{
+				try
+				{
+					File.Delete(tempPath);
+				}
+				catch (IOException)
+				{
+					// a leftover temp file is not worth masking the write failure over.
+				}
+			}
+		}
+	}
+
+	public static string LockedRead(string path, int allowedAttempts = FILE_LOCK_ATTEMPTS, int retryDelayMs = FILE_LOCK_DELAY_MS)
 	{
 		for (var i = 0; i < allowedAttempts; i++)
 		{
 			try
 			{
-				using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
-				using var writer = new StreamWriter(stream);
-				writer.Write(content);
-				writer.Flush();
-			}
-			catch (IOException) when (i < allowedAttempts)
-			{
-				Thread.Sleep(retryDelayMs);
-			}
-		}
-	}
-	public static string LockedRead(string path, int allowedAttempts=10, int retryDelayMs=25)
-	{
-		for (var i = 0; i < allowedAttempts ; i ++)
-		{
-			try
-			{
-				using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+				// FileShare.Delete lets a concurrent LockedWrite rename its temp file over this one while
+				// the read is in flight; without it, the swap fails on Windows whenever a reader is open.
+				using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
 				using var reader = new StreamReader(stream);
 				return reader.ReadToEnd();
 			}
-			catch (IOException) when (i < allowedAttempts)
+			catch (IOException ex)
 			{
-				Thread.Sleep(retryDelayMs);
+				// Keep the original exception (and the path) on the last attempt. A bare
+				// "failed after N attempts" hides both the file and the reason it could not be read.
+				if (i == allowedAttempts - 1)
+				{
+					throw new IOException($"Failed to read file after {allowedAttempts} attempts. PATH=[{path}]", ex);
+				}
+
+				Thread.Sleep(GetRetryDelayMs(retryDelayMs, i));
 			}
 		}
-		throw new IOException($"Failed to read file after {allowedAttempts} attempts.");
+
+		throw new IOException($"Failed to read file after {allowedAttempts} attempts. PATH=[{path}]");
 	}
 
 	/// <summary>

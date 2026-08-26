@@ -71,7 +71,7 @@ public class AddReplacementTypeCommand : AppCommand<AddReplacementTypeCommandArg
 			return;
 		}
 		
-		string projectSelection = GetProjectPrompt(unrealProjects);
+		string projectSelection = GetProjectPrompt(args, unrealProjects);
 		
 		var selectedProject = unrealProjects.First(item => item.GetProjectName() == projectSelection);
 		AddReplacementAndSetLinkedEngineProjects(args, linkedEngineProjects, selectedProject, replacementType);
@@ -88,8 +88,10 @@ public class AddReplacementTypeCommand : AppCommand<AddReplacementTypeCommandArg
 		AnsiConsole.MarkupLine($"Added replacement type [green]{replacementType.ReferenceId}[/] for [green]{onlyItem.GetProjectName()}[/]. Make sure to add the Replacement Type Under your [green]Plugins/BeamableUnrealMicroserviceClients/Source/CustomReplacementTypes[/] folder");
 	}
 
-	private static string GetProjectPrompt(HashSet<EngineProjectData.Unreal> unrealProjects)
+	private static string GetProjectPrompt(AddReplacementTypeCommandArgs args, HashSet<EngineProjectData.Unreal> unrealProjects)
 	{
+		if (args.Quiet)
+			throw new CliException("--project-name is required when using -q (quiet mode) with multiple Unreal projects linked.");
 		var projectSelection = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("Which [green]project[/] do you want to add the Replacement Type?")
@@ -103,16 +105,20 @@ public class AddReplacementTypeCommand : AppCommand<AddReplacementTypeCommandArg
 	{
 		if (string.IsNullOrEmpty(args.ReferenceId))
 		{
+			if (args.Quiet)
+				throw new CliException("--reference-id is required when using -q (quiet mode).");
 			return Task.FromResult(AnsiConsole.Prompt(
 				new TextPrompt<string>("Please enter the Replacement [green]Reference Id[/] (Use the same name as in the OpenApi Specs):").PromptStyle("green")));
 		}
 		return Task.FromResult(args.ReferenceId);
 	}
-	
+
 	private Task<string> GetEngineReplacementType(AddReplacementTypeCommandArgs args)
 	{
 		if (string.IsNullOrEmpty(args.EngineReplacementType))
 		{
+			if (args.Quiet)
+				throw new CliException("--replacement-type is required when using -q (quiet mode).");
 			return Task.FromResult(AnsiConsole.Prompt(
 				new TextPrompt<string>("Please enter the [green]Engine Replacement Type[/]:").PromptStyle("green")));
 		}
@@ -123,16 +129,20 @@ public class AddReplacementTypeCommand : AppCommand<AddReplacementTypeCommandArg
 	{
 		if (string.IsNullOrEmpty(args.EngineOptionalReplacementType))
 		{
+			if (args.Quiet)
+				throw new CliException("--optional-replacement-type is required when using -q (quiet mode).");
 			return Task.FromResult(AnsiConsole.Prompt(
 				new TextPrompt<string>("Please enter the [green]Engine Optional Replacement Type[/]:").PromptStyle("green")));
 		}
 		return Task.FromResult(args.EngineOptionalReplacementType);
 	}
-	
+
 	private Task<string> GetEngineImport(AddReplacementTypeCommandArgs args)
 	{
 		if (string.IsNullOrEmpty(args.EngineImport))
 		{
+			if (args.Quiet)
+				throw new CliException("--engine-import is required when using -q (quiet mode).");
 			return Task.FromResult(AnsiConsole.Prompt(
 				new TextPrompt<string>("Please enter the [green]Engine Import[/]:").PromptStyle("green")));
 		}

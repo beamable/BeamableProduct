@@ -19,6 +19,7 @@ import {
   AuthService,
   ContentService,
   LeaderboardsService,
+  MessageRailService,
   StatsService,
 } from '@/services';
 
@@ -116,6 +117,7 @@ export function clientServices(beam: Beam) {
     new AuthService(apiServiceProps),
     new ContentService(apiServiceProps),
     new LeaderboardsService(apiServiceProps),
+    new MessageRailService(apiServiceProps),
     new StatsService(apiServiceProps),
   ];
 
@@ -139,6 +141,7 @@ export function serverServices(beamServer: BeamServer) {
     new AuthService(apiServiceProps),
     new ContentService(apiServiceProps),
     new LeaderboardsService(apiServiceProps),
+    new MessageRailService(apiServiceProps),
     new StatsService(apiServiceProps),
   ];
 

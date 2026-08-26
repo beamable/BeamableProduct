@@ -1,142 +1,95 @@
 #!/bin/bash
 
 # PREREQ:
-#   Run ./setup-web.sh at least once before running this script.
+#   Run ./setup-web.sh at least once before running this script (or have the registry running via
+#   `beam local up`, when initialized with --with-web-registry).
 #
-# This script will be run many times as you develop web packages locally.
-# Each run:
-#   1. Increments the build number (stored in web-build-number.txt)
-#   2. Builds and publishes @beamable/sdk and @beamable/portal-toolkit
-#      as version 0.0.123-local<build_number> to the local Verdaccio
-#      registry (http://localhost:4873)
-#   3. Restarts local-unpkg to bust its in-memory file cache
+# Run this many times as you develop the web packages locally. Each run:
+#   1. Builds @beamable/sdk and @beamable/portal-toolkit (tsdown; the toolkit also regenerates its
+#      component bindings first). Pass --skip-build to publish as-is.
+#   2. Publishes BOTH as version 0.0.123 to the local Verdaccio registry (http://localhost:4873),
+#      pointing the toolkit's @beamable/sdk peer dependency at it too — the Portal reads that peer dep
+#      to decide which SDK to load, so they have to agree. 0.0.123 is the shared "developer build"
+#      sentinel; dev.sh uses the same base for the .NET packages.
+#   3. Flushes the local CDN's file cache, since the version it already cached hasn't changed name.
+#   4. Refreshes the projects that consume it (`beam web use`) — which force-reinstalls, because npm
+#      would otherwise see 0.0.123 already installed and do nothing.
+#
+# Thin wrapper around `beam web publish` + `beam web use` — see web/LOCAL_DEV.md for the full guide.
+#
+# ⚠️  Step 4 pins 0.0.123 in every extension it finds, which edits package.json and lock files. Because
+#     the version never changes this is a ONE-TIME edit, not per run — but it is tracked files, so it
+#     must not be committed. At the end of a session:
+#
+#       git restore '**/package.json' '**/package-lock.json'
+#
+# BUILD FLAGS:
+#   --build        Full build: runs 'pnpm install' in both packages before building. Use after the
+#                  packages' own dependencies changed (a normal run skips the install, since it only
+#                  matters when node_modules is missing or out of date). Slower.
+#   --skip-build   Publish whatever is already in dist/ without rebuilding.
+#
+# BEAM_WORKSPACE (optional) — the repo holding your extensions, where step 4 runs. Defaults to this
+# repo, which is only right if you're developing against its own extensions:
+#
+#   BEAM_WORKSPACE=/path/to/agentic-portal ./dev-web.sh
+#
+# Extra arguments pass straight through to `beam web publish`, e.g.:
+#   ./dev-web.sh --only sdk
+#   ./dev-web.sh --build --only toolkit
+#   ./dev-web.sh --version 1.2.3-mine          # publish under a different version entirely
+#
+# Set BEAM_SKIP_UPDATE=1 to publish without repointing any extension.
+# Set BEAM_FULL_BUILD=1 as an alternative to passing --build.
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WEB_SDK_DIR="$SCRIPT_DIR/web"
-TOOLKIT_DIR="$SCRIPT_DIR/beam-portal-toolkit"
-LOCALDEV_DIR="$SCRIPT_DIR/portal-localdev"
-WEB_BUILD_NUMBER_FILE="$SCRIPT_DIR/web-build-number.txt"
-REGISTRY="http://localhost:4873"
+source "$SCRIPT_DIR/scripts/beam-cli.sh"
 
-# ---------------------------------------------------------------------------
-# Cleanup trap — restores package.json files even if the script exits early
-# ---------------------------------------------------------------------------
-SDK_BACKUP=false
-TOOLKIT_BACKUP=false
+PUBLISH_ARGS=(web publish --product-dir "$SCRIPT_DIR")
 
-cleanup() {
-  local exit_code=$?
-  if [ "$SDK_BACKUP" = true ]; then
-    echo "  Restoring web/package.json..."
-    cp "$WEB_SDK_DIR/package.json.devbak" "$WEB_SDK_DIR/package.json" 2>/dev/null || true
-    rm -f "$WEB_SDK_DIR/package.json.devbak"
+# Translate the friendly --build alias (and BEAM_FULL_BUILD=1) into the CLI's --force-install, and
+# pass everything else through untouched.
+PASSTHROUGH=()
+FULL_BUILD="$BEAM_FULL_BUILD"
+for arg in "$@"; do
+  if [ "$arg" = "--build" ]; then
+    FULL_BUILD=1
+  else
+    PASSTHROUGH+=("$arg")
   fi
-  if [ "$TOOLKIT_BACKUP" = true ]; then
-    echo "  Restoring beam-portal-toolkit/package.json..."
-    cp "$TOOLKIT_DIR/package.json.devbak" "$TOOLKIT_DIR/package.json" 2>/dev/null || true
-    rm -f "$TOOLKIT_DIR/package.json.devbak"
-  fi
-  exit $exit_code
-}
-trap cleanup EXIT
+done
 
-# ---------------------------------------------------------------------------
-# Build number
-# ---------------------------------------------------------------------------
-if [ ! -f "$WEB_BUILD_NUMBER_FILE" ]; then
-  echo "web-build-number.txt not found. Run ./setup-web.sh first."
-  exit 1
+if [ -n "$FULL_BUILD" ]; then
+  PUBLISH_ARGS+=(--force-install)
+  echo "Full build requested — dependencies will be reinstalled before building."
 fi
-
-NEXT_BUILD_NUMBER=$(cat "$WEB_BUILD_NUMBER_FILE")
-((NEXT_BUILD_NUMBER += 1))
-echo $NEXT_BUILD_NUMBER > "$WEB_BUILD_NUMBER_FILE"
-
-VERSION="0.0.123-local$NEXT_BUILD_NUMBER"
 
 echo ""
 echo "=== Beamable Web Local Dev ==="
-echo "Publishing version: $VERSION"
-echo "Registry:           $REGISTRY"
 echo ""
 
-# ---------------------------------------------------------------------------
-# Publish webSDK
-# ---------------------------------------------------------------------------
-echo "--- Building @beamable/sdk ---"
-cd "$WEB_SDK_DIR"
+beam_cli "$SCRIPT_DIR" "${PUBLISH_ARGS[@]}" "${PASSTHROUGH[@]}"
 
-cp package.json package.json.devbak
-SDK_BACKUP=true
+if [ -n "$BEAM_SKIP_UPDATE" ]; then
+  echo ""
+  echo "BEAM_SKIP_UPDATE set — your extensions still have the PREVIOUS build installed."
+  echo "Run 'beam web use' in the repo holding them to pick this one up."
+else
+  WORKSPACE="${BEAM_WORKSPACE:-$SCRIPT_DIR}"
+  echo ""
+  echo "--- Refreshing extensions in [$WORKSPACE] ---"
+  # `beam web use` force-reinstalls: the pin is already 0.0.123 after the first run, so a plain install
+  # would consider the tree satisfied and never fetch what we just published.
+  #
+  # Deliberately not `beam portal extension update-toolkit --local`, which does the same pin rewrite but
+  # discovers extensions via the Beamo manifest — that makes it authenticate against the configured host,
+  # so it fails when the backend is down even though this is a purely local file operation.
+  beam_cli "$SCRIPT_DIR" web use --workspace "$WORKSPACE"
+fi
 
-echo "  [cmd] pnpm install"
-pnpm install
-echo "  [cmd] pnpm version $VERSION --no-git-tag-version"
-pnpm version "$VERSION" --no-git-tag-version
-echo "  [cmd] pnpm build"
-pnpm build
-echo "  [cmd] pnpm publish --registry $REGISTRY --no-git-checks"
-pnpm publish --registry "$REGISTRY" --no-git-checks
-
-cp package.json.devbak package.json && rm package.json.devbak
-SDK_BACKUP=false
-
-echo "Published @beamable/sdk@$VERSION"
-cd "$SCRIPT_DIR"
-
-# ---------------------------------------------------------------------------
-# Publish toolkit
-# ---------------------------------------------------------------------------
 echo ""
-echo "--- Building @beamable/portal-toolkit ---"
-cd "$TOOLKIT_DIR"
-
-cp package.json package.json.devbak
-TOOLKIT_BACKUP=true
-
-node -e "
-  const fs = require('fs');
-  const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-  pkg.peerDependencies['@beamable/sdk'] = '$VERSION';
-  pkg.devDependencies['@beamable/sdk'] = '$VERSION';
-  fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-"
-echo "  Updated @beamable/sdk → $VERSION"
-
-# Evict any cached @beamable/sdk tarball from the pnpm content-addressable store
-# AND the pnpm metadata cache. After a Verdaccio wipe the same version is
-# republished with a different hash, so stale cached integrity hashes cause
-# ERR_PNPM_TARBALL_INTEGRITY on the next install.
-rm -f pnpm-lock.yaml
-pnpm store delete @beamable/sdk 2>/dev/null || true
-pnpm cache delete @beamable/sdk 2>/dev/null || true
-echo "  [cmd] pnpm install"
-pnpm install
-echo "  [cmd] pnpm version $VERSION --no-git-tag-version"
-pnpm version "$VERSION" --no-git-tag-version
-
-echo "  [cmd] pnpm build"
-pnpm build
-echo "  [cmd] pnpm publish --registry $REGISTRY --no-git-checks"
-pnpm publish --registry "$REGISTRY" --no-git-checks
-
-cp package.json.devbak package.json && rm package.json.devbak
-TOOLKIT_BACKUP=false
-
-echo "Published @beamable/portal-toolkit@$VERSION"
-cd "$SCRIPT_DIR"
-
-# ---------------------------------------------------------------------------
-# Restart local-unpkg to clear the in-memory file cache
-# ---------------------------------------------------------------------------
-echo ""
-echo "--- Restarting local-unpkg (clearing file cache) ---"
-docker compose -f "$LOCALDEV_DIR/docker-compose.yml" restart local-unpkg
-
-# ---------------------------------------------------------------------------
-# Done
-# ---------------------------------------------------------------------------
-echo ""
-echo "Done. Set ToolkitVersion: \"$VERSION\" in your extension manifest and run the Portal."
+echo "Done. The Portal needs no configuration — it recognises the 0.0.123 version and loads it from the"
+echo "local CDN automatically. Hard-reload it to drop its in-memory module cache."
+echo "At the end of your session:  git restore '**/package.json' '**/package-lock.json'"

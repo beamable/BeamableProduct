@@ -4,5 +4,6 @@
  */
 
 export type BeamoV2UriResponse = { 
+  repositoryNames?: Record<string, string> | null; 
   uri?: string; 
 };

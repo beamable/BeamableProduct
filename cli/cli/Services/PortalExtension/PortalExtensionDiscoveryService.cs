@@ -1,6 +1,7 @@
 using Beamable.Server;
 using Beamable.Server.Api.Notifications;
 using cli.Portal;
+using cli.Services.Web;
 using cli.Utils;
 using System.IO.Compression;
 using System.Security.Cryptography;
@@ -16,12 +17,21 @@ public class ExtensionBuildMetaData
 	public string Name;
 	public string ToolkitVersion;
 	public PortalExtensionPackageProperties Properties;
+
+	/// <summary>
+	/// The selector names this extension exposes via <c>&lt;BeamExtensionSite selector="..." /&gt;</c>
+	/// (e.g. <c>top</c>, <c>bottom</c>, <c>B-top</c>), scanned once at build time. Combined with
+	/// <see cref="Properties"/>'s <c>mount.page</c>, this tells the CLI/Portal which selectors live at
+	/// which URL. May be null/empty (or absent entirely in metadata built before this field existed).
+	/// </summary>
+	public List<string> ExtensionSites;
 }
 
 public class PortalExtensionDiscoveryService : Microservice
 {
 
-	[ClientCallable]
+	// Note: this creates source code leaking, even tho the service has an ever changing Guid
+	[Callable]
 	public ExtensionBuildData RequestPortalExtensionData(string currentHash = "")
 	{
 		var observer = Provider.GetService<PortalExtensionObserver>();
@@ -29,6 +39,22 @@ public class PortalExtensionDiscoveryService : Microservice
 		ExtensionBuildData buildData = observer.GetAppBuild(currentHash);
 
 		return buildData;
+	}
+}
+
+/// <summary>
+/// Zone (cid.zid) variant of <see cref="PortalExtensionDiscoveryService"/>. Used as the route source when a
+/// portal extension declares <c>beamable.serviceScope: "zone"</c>, so its backing service boots as a
+/// <see cref="ZoneMicroservice"/> (no realm SDK). The route body is identical — it only needs
+/// <see cref="ZoneMicroservice.Provider"/> to reach the neutral <see cref="PortalExtensionObserver"/>.
+/// </summary>
+public class PortalExtensionDiscoveryZoneService : ZoneMicroservice
+{
+	[Callable]
+	public ExtensionBuildData RequestPortalExtensionData(string currentHash = "")
+	{
+		var observer = Provider.GetService<PortalExtensionObserver>();
+		return observer.GetAppBuild(currentHash);
 	}
 }
 
@@ -42,6 +68,7 @@ public class ExtensionBuildData
 	public string ErrorMessage;
 	public string ErrorStackTrace;
 
+	public int DiffAlgorithmVersion;
 	public DiffInstructions DiffInstructionsJs;
 	public DiffInstructions DiffInstructionsCss;
 	public DiffInstructions DiffInstructionsMetadata;
@@ -51,7 +78,7 @@ public class ExtensionBuildData
 
 public class PortalExtensionObserver
 {
-	private static readonly string[] _defaultFilesExtensionsToObserve = new string[] { "css", "svelte", "js", "html" };
+	private static readonly string[] _defaultFilesExtensionsToObserve = new string[] { "css", "js", "html", "tsx", "jsx", "ts" };
 	private bool _alreadyStarted;
 
 	private PortalExtensionDef _metaData;
@@ -171,7 +198,12 @@ public class PortalExtensionObserver
 	{
 		using var childActivity = _rootActivity.CreateChild("Install Dependencies");
 
-		StartProcessResult result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
+		// An extension pinning a local developer build of the toolkit (0.0.123-*) can only resolve it from
+		// the local registry — npmjs has never heard of that version — so the install has to be routed
+		// there. Contributes nothing for a normal, published pin.
+		var installArgs = "install" + WebLocalRegistryService.InstallArgsFor(AppFilesPath);
+
+		StartProcessResult result = StartProcessUtil.Run("npm", installArgs, useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
 		if (result.exit != 0)
 		{
 			throw new CliException($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
@@ -188,7 +220,9 @@ public class PortalExtensionObserver
 		{
 			Name = ExtensionMetaData.Name,
 			ToolkitVersion = ExtensionMetaData.GetToolkitVersion(),
-			Properties = ExtensionMetaData.Properties
+			Properties = ExtensionMetaData.Properties,
+			// Scan the source once, at build, so listing/creating extensions later never has to.
+			ExtensionSites = RemotePortalConfigService.ScanExtensionSiteSelectors(ExtensionMetaData.AbsolutePath)
 		};
 
 		string metaDataDir = Path.GetDirectoryName(MetadataPath);
@@ -264,6 +298,7 @@ public class PortalExtensionObserver
 				DiffInstructionsJs = diffJs,
 				DiffInstructionsCss = diffCss,
 				DiffInstructionsMetadata = diffMetadata,
+				DiffAlgorithmVersion = PortalExtensionDiff.AlgorithmVersion
 			};
 		}
 
@@ -307,33 +342,98 @@ public class PortalExtensionObserver
 
 		_alreadyStarted = true;
 
-		using var watcher = new FileSystemWatcher(AppFilesPath);
-
-		watcher.Filters.Clear();
-
 		var fileExtensions = _defaultFilesExtensionsToObserve.ToList();
 		fileExtensions.AddRange(FileExtensions);
 		fileExtensions = fileExtensions.Distinct().ToList();
 
-		foreach (var ext in fileExtensions)
+		// Watch the extension itself plus any shared libraries it depends on, so editing a linked
+		// library rebuilds the extension that consumes it.
+		var watchPaths = new List<string> { AppFilesPath };
+		watchPaths.AddRange(GetLinkedLibraryPaths());
+
+		var watchers = new List<FileSystemWatcher>();
+		try
 		{
-			watcher.Filters.Add($"*.{ext}");
+			foreach (var watchPath in watchPaths)
+			{
+				var watcher = new FileSystemWatcher(watchPath);
+				watcher.Filters.Clear();
+
+				foreach (var ext in fileExtensions)
+				{
+					watcher.Filters.Add($"*.{ext}");
+				}
+
+				watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
+
+				watcher.IncludeSubdirectories = true;
+				watcher.EnableRaisingEvents = true;
+
+				watcher.Changed += OnChanged;
+				watcher.Created += OnChanged;
+				watcher.Deleted += OnChanged;
+				watcher.Renamed += OnChanged;
+
+				watchers.Add(watcher);
+			}
+
+			while (!token.IsCancellationRequested)
+			{
+				await Task.Delay(250, token);
+			}
+		}
+		finally
+		{
+			foreach (var watcher in watchers)
+			{
+				watcher.Dispose();
+			}
+		}
+	}
+
+	/// <summary>
+	/// Resolves the real source directories of any "file:" library dependencies declared in the
+	/// extension's package.json, so they can be watched for live-rebuild alongside the extension.
+	/// </summary>
+	private List<string> GetLinkedLibraryPaths()
+	{
+		var paths = new List<string>();
+		try
+		{
+			var packagePath = ExtensionMetaData.AbsolutePackageJsonPath;
+			if (!File.Exists(packagePath))
+			{
+				return paths;
+			}
+
+			var root = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(packagePath));
+			if (root["dependencies"] is not Newtonsoft.Json.Linq.JObject dependencies)
+			{
+				return paths;
+			}
+
+			foreach (var (_, token) in dependencies)
+			{
+				var value = token?.ToString();
+				if (string.IsNullOrEmpty(value) || !value.StartsWith("file:"))
+				{
+					continue;
+				}
+
+				var relPath = value.Substring("file:".Length);
+				var resolved = Path.GetFullPath(Path.Combine(AppFilesPath, relPath));
+				if (Directory.Exists(resolved))
+				{
+					paths.Add(resolved);
+				}
+			}
+		}
+		catch
+		{
+			// If the package.json can't be read we simply don't add extra watchers.
 		}
 
-		watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
-
-		watcher.IncludeSubdirectories = true;
-		watcher.EnableRaisingEvents = true;
-
-		watcher.Changed += OnChanged;
-		watcher.Created += OnChanged;
-		watcher.Deleted += OnChanged;
-		watcher.Renamed += OnChanged;
-
-		while (!token.IsCancellationRequested)
-		{
-			await Task.Delay(250, token);
-		}
+		return paths;
 	}
 
 	private string ConvertBuiltFiles(string[] paths)
@@ -370,14 +470,14 @@ public class PortalExtensionObserver
 			return; // this case we ignore because these are the build files
 		}
 
-		// generate microservice client files, in case a manually change happened to the package.json adding a new dep
-		PortalExtensionAddDependencyCommand.GenerateDependenciesClients(AppFilesPath, _manifest);
-
 		// build the app since there are new changes in the src files
 		BuildExtension();
 
 		//TODO: check this back once event subscriptions change
-		_notificationsApi.NotifyServer(true, "notify-portalextension",
+		// TODO(zones): NotifyServer is realm-scoped (IMicroserviceNotificationsApi). A zone extension has no
+		// realm notification channel, so _notificationsApi is null for zone today — hot-reload push is
+		// skipped. Wire up a zone-appropriate notification once the zone event channel exists.
+		_notificationsApi?.NotifyServer(true, "notify-portalextension",
 			new PortalExtensionNotifyPayload()
 			{
 				serviceName = _attributes.MicroserviceName ,

@@ -5,5 +5,6 @@
 
 export type ContentBasicGetManifestRequest = { 
   id?: string; 
+  omitTags?: boolean; 
   uid?: string; 
 };

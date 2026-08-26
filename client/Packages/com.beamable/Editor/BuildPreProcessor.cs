@@ -239,7 +239,10 @@ In the Unity Editor window in top-right corner, click on the Beamable Menu, then
 					continue;
 				}
 
-				var rulesString = $"{string.Join(" { *; }\n", missingRules)} {{ *; }}";
+				// Every rule needs its -keep class directive: the text offered here is pasted verbatim
+				// into proguard-user.txt below, and a bare class pattern is not valid proguard syntax -
+				// R8 fails to parse the file rather than ignoring the line.
+				var rulesString = string.Join("\n", missingRules.Select(rule => $"-keep class {rule} {{ *; }}"));
 				warningMessage = $"Proguard File does not have this rules:\n{rulesString}";
 				if (!EditorGUIExtension.IsInHeadlessMode() && EditorUtility.DisplayDialog("Update proguard file",
 					    $"{warningMessage}.\nDo you want to update the proguard file?", 

@@ -5,19 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [Unreleased]
+
+### Added
+- `IMessageRailFederation<T>` — implement it in a microservice to handle Message Rail last-mile delivery (push, email, in-game) with per-player funnel results: `SendMessage`, `SendMessageBatch`, `RegisterUserWithMessageRail`, `UnregisterUserWithMessageRail`. Ships with `MessageRailRecipient`, `MessageRailPayload`, `MessageRailSendResponse` (whose `maxBatchSize` lets a federation declare its provider's batch limit so the backend right-sizes later pages), `MessageRailRegistrationResponse`, and the shared `MessageRailContract` wire vocabulary (`OverCapacityStatus` for retriable oversized-batch rejections, `OutreachKey` for the per-recipient join key that attributes Opened/Clicked funnel events back to the exact recipient).
+
+### Changed
+- CLI HTTP requests now retry `429 Too Many Requests` up to 5 times with jittered exponential back-off instead of failing the caller.
+- CLI startup network calls (alias/cid resolution and token refresh) are now bounded to 8 seconds and non-fatal, so an unreachable or half-up backend warns and continues offline instead of hanging every command.
+- `beam project run --with-group` now staggers its service fan-out, so parallel `generate-env` calls no longer trip the gateway's rate limiter.
+- Portal extension "open in browser" landing URLs now honor the `--portal-url` override.
+
+### Fixed
+- Portal extension scanning no longer excludes sym linked package files
+- Fixed orphaned Unity .meta files left behind when cleaning generated Beamable source directories.
+- `beam project run` no longer hangs silently when a portal extension or embedded-Mongo service fails to start. Those faults were unobservable behind infinite sibling tasks; they now log, emit a terminal stream update, and release the waiting consumer.
+- `beam project run` progress no longer freezes at "Bundling Beamable Properties…" when a service dies during `generate-env`; both the structured and plain-text milestone tables are now consulted on both transports.
+- A failing `POST /basic/auth/token` no longer mutually recurses into a stack overflow, because auth-token requests are excluded from the token-refresh retry path. Timeout retries are also no longer an unbounded fixed-delay loop, since the retry count is now carried through the internal retry instead of being reset.
+- Web SDK code generation fixes: colliding generated method names are disambiguated with a `By{Param}And{Param}` suffix (they previously emitted duplicate top-level declarations, a `SyntaxError` in the ESM build); duplicate `export type` declarations are collapsed by name and the static type collections are cleared after each generation, so types no longer leak across microservices or across repeated generations in a long-lived process such as the MCP server; and `oneOf` members are routed through the type mapper, fixing a null reference on inline, primitive, and nullable schemas.
+
+
+## [7.2.3] 
+
+### Added
+
+- Added `beam unity verify-package-metas <packagePath>`, which fails when a Unity package contains an importable directory with no sibling `.meta` file.
+
+### Fixed
+
+- Fixed `beam unity download-all-nuget-packages` deleting folder `.meta` files before the replacement source was downloaded, which shipped Unity packages containing folders Unity then ignored. The generated files are now deleted, the replacement source is downloaded, missing folder metas are backfilled, and only then are still-empty folders pruned. The same sequence is used by `beam unity release-shared-code`.
+- Fixed generated Unity `.meta` guids being derived from the absolute output path, so the same file now gets the same guid on a build machine and in a local checkout. Guids already present in the Unity tree are reused rather than recomputed.
+- Fixed generated folder `.meta` files using the script `MonoImporter` template instead of `folderAsset: yes` with `DefaultImporter`.
+- Fix logging unexpected curly-brace expressions.
+
+## [7.2.2] - 2026-07-16
+
+### Fixed
+
+- Fixed an issue where SmallerJson was not serializing/deserializing null fields to default values.
+
+## [7.2.1] - 2026-06-30
+
+### Changed
+
+- Validation of the content no longer can automatically try to update the content value
+
+## [7.2.0] - 2026-06-16
 
 ### Added
 - New Commands `project add-replacement-type`, `project list-replacement-type`, `project remove-replacement-type` to manage Unreal replacement types.
 - Unreal Types for Microservices FColor, FVector, FLinearColor, FIntVector, FGameplayTag, FGameplayTagCOntainer, FSoftObjectPath.
 - Semantic Types for Beamable Classes with custom serialization and deserialization
 - A `.beamroot` file will stop the CLI's search for a `.beamable` folder. 
-- Added internal `content history` command suite to power engine integrations for inspecting history of content changes to a realm. 
+- Added internal `content history` command suite to power engine integrations for inspecting history of content changes to a realm.
+- MCP Server Configuration for Beamable CLI. Use `beam mcp setup` to configure in your project.
+- Agentic AI Skills for working with beamable. Use `beam install-ai-skill` to install it in your project.
 
 ### Changed
 - Update `AbsInventoryApi` and `MicroserviceInventoryApi` to use new Auto-generated IInventoryApi with Inventory filtering support.
 - Update `deploy release` and `deploy plan` with new optional parameter `--max-parallel-count` to control the max number of services that can be built simultaneously. This is to help with out-of-memory issues on machines with low resources.
 - Removed 5% sample rating for OTEL traces so we can get all traces from portal extensions and errors that happens in the CLI.
+- Improved Content Publish command performance by adding size-aware batching and retry.
+- Refactored calculation of directory size, 2x performance improvement.
+- Refactored generation of local manifest data, 20x performance improvement.
+- Added support to Max Concurrent Upload for `deploy release`.
 
 ### Fixed
 - Resolved issues in the token refresh flow where the CLI did not properly refresh, and persist the access token.
@@ -25,6 +76,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed issue that considered types used in ServerCallable methods on Microservices to be generated to client code.
 - Creating microservices when CultureInfo is expecting `,` instead of `.` as the decimal separator.
 - Fix an issue where some summary tag were missing the closing tag, which produced a truncated summary tag.
+- Setting environment variable ``BEAM_NO_TELEMETRY`` or the ``BeamCliAllowTelemetry`` config now prevents collector ps process from starting
+- Fixed .NET framework argument parsing issues related to culture and locale handling.
 
 ## [7.0.1] - 2026-04-02
 ### Fixed
@@ -265,6 +318,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed an issue in which running `beam deploy release` when CID was an alias resulted in an error in execution.
 - Fixed `useLocal: true` in Scheduler Microservice invocation when the C#MS is remotely deployed.
+
+## [4.3.8] - 2026-06-24
+
+### Fixed
+- Backported microservice content resilience: manifest and content-entry fetches now retry transient failures (timeouts, 429, 5xx, transport errors) with bounded exponential backoff and jitter, and a failed fetch no longer poisons the in-memory content cache.
+
+## [4.3.7] - 2026-04-10
+
+### Fixed
+- Backported possible `IndexOutOfBounds` error when running `beam project ps` due to nameless docker containers
 
 ## [4.3.6] - 2026-03-13
 

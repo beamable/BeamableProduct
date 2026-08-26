@@ -1,0 +1,20 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.beamable/beam-mcp",
+  "description": "Beamable game backend CLI — manage microservices, content, deployments, and more through MCP tools",
+  "repository": {
+    "url": "https://github.com/beamable/BeamableProduct",
+    "source": "github"
+  },
+  "version": "VERSION_PLACEHOLDER",
+  "packages": [
+    {
+      "registryType": "nuget",
+      "identifier": "Beamable.Tools",
+      "version": "VERSION_PLACEHOLDER",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

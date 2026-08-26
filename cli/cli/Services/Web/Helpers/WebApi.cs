@@ -52,6 +52,9 @@ public static class WebApi
 	{
 		var resources = new List<GeneratedFileDescriptor>();
 		var apiDeclarations = new Dictionary<string, (Dictionary<string, TsImport>, List<TsFunction>)>();
+		// Tracks the source endpoint each generated function came from so colliding
+		// method names can be disambiguated by their path parameters (keyed by reference).
+		var endpointByFunction = new Dictionary<TsFunction, string>();
 		var httpRequester = new TsIdentifier("HttpRequester");
 		var httpResponse = new TsIdentifier("HttpResponse");
 
@@ -63,13 +66,14 @@ public static class WebApi
 			var apiName = ToPascalCaseIdentifier(serviceName) + "Api";
 			if (apiDeclarations.TryGetValue(apiName, out var declaration))
 			{
-				GenerateApiMethod(document, declaration.Item1, declaration.Item2, enums, serviceName, serviceType);
+				GenerateApiMethod(document, declaration.Item1, declaration.Item2, enums, serviceName, serviceType,
+					endpointByFunction);
 				continue;
 			}
 
 			var tsImports = new Dictionary<string, TsImport>();
 			var tsFunctions = new List<TsFunction>();
-			GenerateApiMethod(document, tsImports, tsFunctions, enums, serviceName, serviceType);
+			GenerateApiMethod(document, tsImports, tsFunctions, enums, serviceName, serviceType, endpointByFunction);
 			apiDeclarations.Add(apiName, (tsImports, tsFunctions));
 		}
 
@@ -98,6 +102,12 @@ public static class WebApi
 			foreach (var kvp in orderedTsImports)
 				tsFile.AddImport(kvp.Value);
 
+			// Disambiguate any functions in this file that resolved to the same name
+			// (e.g. a list endpoint and a get-by-id endpoint with identical static
+			// segments) before rendering — duplicate top-level declarations are a
+			// SyntaxError in the ESM build.
+			ResolveMethodNameCollisions(tsFunctions, endpointByFunction);
+
 			foreach (var tsFunction in tsFunctions)
 				tsFile.AddDeclaration(tsFunction);
 
@@ -112,7 +122,8 @@ public static class WebApi
 	}
 
 	private static void GenerateApiMethod(OpenApiDocument document, Dictionary<string, TsImport> tsImports,
-		List<TsFunction> tsFunctions, List<TsEnum> enums, string serviceName, string serviceType)
+		List<TsFunction> tsFunctions, List<TsEnum> enums, string serviceName, string serviceType,
+		Dictionary<TsFunction, string> endpointByFunction)
 	{
 		foreach (var (apiEndpoint, pathItem) in document.Paths)
 		{
@@ -128,14 +139,15 @@ public static class WebApi
 			foreach (var (httpMethod, operation) in pathItem.Operations)
 			{
 				ProcessOperation(apiEndpoint, httpMethod, operation, headerParams, tsImports, tsFunctions, enums,
-					serviceName, serviceType);
+					serviceName, serviceType, endpointByFunction);
 			}
 		}
 	}
 
 	private static void ProcessOperation(string apiEndpoint, OperationType httpMethod, OpenApiOperation operation,
 		List<OpenApiParameter> headerParams, Dictionary<string, TsImport> tsImports, List<TsFunction> tsFunctions,
-		List<TsEnum> enums, string serviceName, string serviceType)
+		List<TsEnum> enums, string serviceName, string serviceType,
+		Dictionary<TsFunction, string> endpointByFunction)
 	{
 		if (!TryGetMediaTypeAndResponseType(operation, out var responseType))
 			return;
@@ -166,6 +178,13 @@ public static class WebApi
 		var apiParameters = operation.Parameters.ToList();
 		SortApiParameters(apiParameters);
 		ProcessParameters(apiParameters, modules, paramCommentList, requiredParams, optionalParams);
+
+		// GenerateMethodName only appends `By{param}` for single-param endpoints, so two operations on the
+		// same resource whose names otherwise collapse (e.g. GET /beamo/bundles and
+		// GET /beamo/bundles/{bundleName}/{ns} both -> beamoGetBundles) would emit duplicate function
+		// declarations and break the bundled SDK. Disambiguate only actual collisions so every already-unique
+		// name stays stable.
+		methodName = EnsureUniqueMethodName(methodName, apiParameters, tsFunctions);
 
 		AddPathParameterStatements(apiParameters, methodBodyStatements, endpointVariable, apiEndpoint, tsImports);
 		AddQueryParameterStatements(apiParameters, queriesObjectLiteral);
@@ -214,6 +233,40 @@ public static class WebApi
 			optionalParams, requiresAuthRemarks, deprecatedDoc, paramCommentList, responseType, methodBodyStatements,
 			modules, headerParams);
 		BuildAndAddMethod(@params);
+
+		// Remember which endpoint produced the function just added, for collision resolution.
+		endpointByFunction[tsFunctions[^1]] = apiEndpoint;
+	}
+
+	/// <summary>
+	/// Returns a method name that is unique within the given file's functions. If <paramref name="methodName"/>
+	/// is already taken, appends the path parameter names (e.g. <c>...ByBundleNameAndNs</c>), and finally falls
+	/// back to a numeric suffix. Non-colliding names are returned unchanged.
+	/// </summary>
+	private static string EnsureUniqueMethodName(string methodName, List<OpenApiParameter> apiParameters,
+		List<TsFunction> tsFunctions)
+	{
+		bool Taken(string n) => tsFunctions.Any(f => f.Name == n);
+		if (!Taken(methodName))
+			return methodName;
+
+		var pathParams = apiParameters
+			.Where(p => p.In == ParameterLocation.Path)
+			.Select(p => StringHelper.Capitalize(p.Name))
+			.Where(p => !string.IsNullOrEmpty(p))
+			.ToList();
+		if (pathParams.Count > 0)
+		{
+			var candidate = $"{methodName}By{string.Join("And", pathParams)}";
+			if (!Taken(candidate))
+				return candidate;
+			methodName = candidate;
+		}
+
+		var suffix = 2;
+		while (Taken($"{methodName}{suffix}"))
+			suffix++;
+		return $"{methodName}{suffix}";
 	}
 
 	private static bool TryGetMediaTypeAndResponseType(OpenApiOperation operation, out string responseType)
@@ -325,6 +378,14 @@ public static class WebApi
 	{
 		foreach (var param in apiParameters)
 		{
+			// Header parameters are not part of the generated function signature. The web SDK's
+			// makeApiRequest only forwards X-BEAM-SCOPE (applied by default) and X-BEAM-GAMERTAG (handled
+			// separately as the `gamertag` parameter). Any other header (e.g. X-BEAM-REGISTRY-METHOD on
+			// /beamo/registry/auth) would otherwise be emitted with its raw name as a parameter — which is
+			// invalid TypeScript (hyphens aren't valid identifiers) and a dead param the SDK can't send.
+			if (param.In == ParameterLocation.Header)
+				continue;
+
 			var paramName = param.Name;
 			var paramSchema = param.Schema;
 			var paramDescription = !string.IsNullOrEmpty(param.Description)
@@ -390,6 +451,48 @@ public static class WebApi
 		{
 			var member = new TsObjectLiteralMember(new TsIdentifier(param.Name), new TsIdentifier(param.Name));
 			queriesObjectLiteral.AddMember(member);
+		}
+	}
+
+	/// <summary>
+	/// Ensures every function in <paramref name="tsFunctions"/> has a unique name. When two or
+	/// more endpoints produced the same method name (they share static path segments and HTTP
+	/// verb, differing only by their path parameters), the one with the fewest path parameters
+	/// — typically the collection/list endpoint — keeps the base name, and the others are
+	/// renamed by appending their path parameters (e.g. <c>customersGetRealmsSegments</c> vs
+	/// <c>customersGetRealmsSegmentsByCustomerIdAndRealmIdAndSegmentId</c>). Only colliding
+	/// names change; unique names are left untouched.
+	/// </summary>
+	private static void ResolveMethodNameCollisions(List<TsFunction> tsFunctions,
+		Dictionary<TsFunction, string> endpointByFunction)
+	{
+		var collisions = tsFunctions
+			.GroupBy(f => f.Name)
+			.Where(g => g.Count() > 1)
+			.ToList();
+
+		foreach (var group in collisions)
+		{
+			var members = group.ToList();
+			var minParamCount = members.Min(f => GetPathParamNames(endpointByFunction[f]).Count);
+			// The single fewest-parameter function keeps the base name; on a tie, everyone is
+			// disambiguated so no member silently retains the ambiguous name.
+			var baseKeeper = members.Count(f => GetPathParamNames(endpointByFunction[f]).Count == minParamCount) == 1
+				? members.First(f => GetPathParamNames(endpointByFunction[f]).Count == minParamCount)
+				: null;
+
+			foreach (var fn in members)
+			{
+				if (fn == baseKeeper)
+					continue;
+
+				var candidate = AppendParamDisambiguator(fn.Name, endpointByFunction[fn]);
+				var unique = candidate;
+				var suffix = 2;
+				while (tsFunctions.Any(other => other != fn && other.Name == unique))
+					unique = candidate + suffix++;
+				fn.Rename(unique);
+			}
 		}
 	}
 

@@ -5,11 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [7.2.3]
+
+### Added
+
+- Cache OpenAPI docs schema on first use.
+
+## [7.2.1] - 2026-06-30
+
+### Fixed
+- Microservice content fetches now retry with bounded exponential backoff and jitter. This applies to both manifest and content entry fetches.
+
+## [7.2.0] - 2026-05-23
 
 ### Changed
 - `Context.Headers` are not case-sensitive
 - Changed `Func<ILogger> IBeamServiceConfig.LogFactory` to `Action<ILoggingBuilder> IBeamServiceConfig.AddLoggerProvider`, which enables to override the C#MS logs to your own implementation of `ILoggerProvider`
+
+### Fixed
+ - Local running microservice failing to get otel credentials when otel is enabled for local development
 
 ## [7.0.0] - 2026-02-19
 ### Added

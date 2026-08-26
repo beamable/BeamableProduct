@@ -19,7 +19,8 @@
         "Beamable.UnityUIExtensions",
         "Unity.Beamable.Purchasing",
         "Beamable.Endel.NativeWebsocket",
-        "Beamable.Utility"
+        "Beamable.Utility",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

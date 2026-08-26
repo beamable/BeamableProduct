@@ -802,4 +802,52 @@ namespace Test
 }");
 
 	}
+
+	[Test]
+	public void PrimitiveOneOf_TopLevelSchema_GeneratesWrapperClass()
+	{
+		var schema = new OpenApiSchema
+		{
+			OneOf = new List<OpenApiSchema>
+			{
+				new OpenApiSchema { Type = "string" },
+				new OpenApiSchema { Type = "integer" },
+				new OpenApiSchema { Type = "number", Format = "double" },
+				new OpenApiSchema { Type = "boolean" },
+				new OpenApiSchema
+				{
+					Type = "array",
+					Items = new OpenApiSchema
+					{
+						OneOf = new List<OpenApiSchema>
+						{
+							new OpenApiSchema { Type = "string" },
+							new OpenApiSchema { Type = "integer" },
+							new OpenApiSchema { Type = "number", Format = "double" },
+							new OpenApiSchema { Type = "boolean" }
+						}
+					}
+				}
+			}
+		};
+
+		UnityHelper.GenerateModelDecl("StatsValue", schema, out var model, out var polymorphicFields);
+		Assert.IsNotNull(model);
+		Assert.AreEqual(0, polymorphicFields.Count, "Top-level primitive oneOf should not register a polymorphic field");
+
+		var unit = new CodeCompileUnit();
+		unit.Namespaces.Add(new CodeNamespace("Test") { Types = { model } });
+		var src = UnityHelper.GenerateCsharp(unit);
+		Console.WriteLine(src);
+
+		StringAssert.Contains("public partial class StatsValue", src);
+		StringAssert.Contains("Beamable.Serialization.SmallerJSON.IRawJsonProvider", src);
+		StringAssert.Contains("public OptionalString StringValue", src);
+		StringAssert.Contains("public OptionalLong IntValue", src);
+		StringAssert.Contains("public OptionalDouble DoubleValue", src);
+		StringAssert.Contains("public OptionalBool BoolValue", src);
+		StringAssert.Contains("public OptionalArrayOfStatsValue ArrayValue", src);
+		StringAssert.Contains("public string ToJson()", src);
+		StringAssert.Contains("public void SerializeAt(", src);
+	}
 }

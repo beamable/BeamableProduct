@@ -25,6 +25,7 @@ source ./.dev.env
 SHOULD_APPLY_TO_UNITY=true
 SHOULD_APPLY_TO_UNREAL=true
 SHOULD_APPLY_TO_SAMS_SANDBOX=true
+SHOULD_APPLY_TO_AGENTIC_PORTAL=true
 while test $# -gt 0
 do
     case "$1" in
@@ -36,6 +37,9 @@ do
             ;;
         --skip-sams-sandbox) SHOULD_APPLY_TO_SAMS_SANDBOX=false
             echo "skipping sams-sandbox $1 $SHOULD_APPLY_TO_SAMS_SANDBOX"
+            ;;
+        --skip-agentic-portal) SHOULD_APPLY_TO_AGENTIC_PORTAL=false
+            echo "skipping agentic-portal $1 $SHOULD_APPLY_TO_AGENTIC_PORTAL"
             ;;
         *) echo "argument $1"
             ;;
@@ -63,7 +67,9 @@ PUSH_ARGS="--source $FEED_NAME"
 
 dotnet restore $SOLUTION
 dotnet build $SOLUTION $BUILD_ARGS
-dotnet build cli/beamable.common -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=$SHOULD_APPLY_TO_UNITY
+# the copy target runs the CLI via `dotnet run --no-build`, which defaults to Debug;
+# point it at the Release build produced by the solution build above.
+dotnet build cli/beamable.common -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=$SHOULD_APPLY_TO_UNITY -p:BeamCopyCommonFlags="--no-build -c Release"
 dotnet pack $SOLUTION $PACK_ARGS
 dotnet nuget push $TMP_BUILD_OUTPUT/*.$VERSION.nupkg $PUSH_ARGS
 
@@ -138,3 +144,18 @@ if [ $SHOULD_APPLY_TO_SAMS_SANDBOX = true ] && [[ -d "../SamsLocalSandbox" ]]; t
   cd ../BeamableProduct  
 fi
 
+# If the user has the agentic-portal repo as a sibling, we update the version number there too
+if [ $SHOULD_APPLY_TO_AGENTIC_PORTAL = true ] && [[ -d "../agentic-portal" ]]; then
+  echo "Preparing the agentic-portal local project to use locally built CLI"
+  # subshell so the cwd is restored without hardcoding this repo's folder name
+  (
+    cd ../agentic-portal
+    dotnet tool update Beamable.Tools --version $VERSION --allow-downgrade
+    # every microservice lives under services/; the repo root also holds node_modules/, dist/
+    # and bundles/, none of which contain projects worth walking.
+    for i in `find ./services -name "*.csproj" -type f`; do
+      echo "Restoring Microservice Project: $i"
+      dotnet restore "$i" --no-cache --force
+    done
+  )
+fi

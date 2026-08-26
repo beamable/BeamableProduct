@@ -39,7 +39,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="templates\PortalExtensionApp\assets\" />
+      <Folder Include="templates\PortalExtensionReactApp\assets\" />
     </ItemGroup>
 
 </Project>

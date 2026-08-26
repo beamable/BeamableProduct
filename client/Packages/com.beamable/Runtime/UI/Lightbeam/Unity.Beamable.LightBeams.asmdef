@@ -1,5 +1,6 @@
 {
     "name": "Unity.Beamable.LightBeams",
+    "rootNamespace": "",
     "references": [
         "Beamable.Coroutines",
         "Beamable.Platform",
@@ -10,14 +11,16 @@
         "Unity.ResourceManager",
         "Unity.TextMeshPro",
         "Unity.Beamable.Runtime.Common",
-        "Unity.Beamable"
+        "Unity.Beamable",
+        "Unity.InputSystem"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

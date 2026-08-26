@@ -4,6 +4,7 @@ import type {
   AuthService,
   ContentService,
   LeaderboardsService,
+  MessageRailService,
   StatsService,
 } from '@/services';
 
@@ -17,6 +18,7 @@ export const SERVICE_KEYS = [
   'auth',
   'content',
   'leaderboards',
+  'messageRail',
   'stats',
 ] as const;
 
@@ -30,6 +32,7 @@ export type ServiceMap = {
   auth: AuthService;
   content: ContentService;
   leaderboards: LeaderboardsService;
+  messageRail: MessageRailService;
   stats: StatsService;
 };
 

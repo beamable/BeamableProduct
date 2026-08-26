@@ -1,9 +1,9 @@
 /**
  * Rollup config helpers for Beamable portal extensions.
  *
- * Provides pre-configured external/globals options so that `@beamable/sdk`
- * and `@beamable/sdk/api` are excluded from the extension bundle and resolved
- * to the versioned window globals that the Portal injects before running the
+ * Provides pre-configured external/globals options so that Portal-provided
+ * runtime modules are excluded from the extension bundle and resolved to the
+ * versioned window globals that the Portal injects before running the
  * extension script.
  *
  * Usage in rollup.config.js:
@@ -20,26 +20,39 @@
  *     },
  *     external: portalExtensionRollupOptions.external,
  *   }
+ *
+ * For a React-based extension, opt in with the function form:
+ *
+ *   const opts = portalExtensionRollup({ react: true })
+ *   export default {
+ *     ...,
+ *     external: opts.external,
+ *     output: { ..., globals: opts.output.globals },
+ *   }
  */
 
-import pkg from '../package.json'
+import {
+  buildPortalExternals,
+  type PortalExtensionPluginOptions,
+} from './build-shared'
 
-// Versioned global names the Portal registers on window before the extension
-// script runs. Must match the `globalName` in the Portal's beam-sdk-registry.
-const SDK_VERSION = pkg.peerDependencies['@beamable/sdk']
-const SDK_GLOBAL = `@beamable/sdk-${SDK_VERSION}`
-const SDK_API_GLOBAL = `@beamable/sdk/api-${SDK_VERSION}`
+export type { PortalExtensionPluginOptions } from './build-shared'
 
 /**
- * Spread `external` into the top-level rollup config and `output` into the
- * output object. Both are read-only — do not mutate them.
+ * Programmatic form. Pass `{ react: true }` to externalize React along with
+ * the Beamable SDK.
  */
-export const portalExtensionRollupOptions = {
-  external: ['@beamable/sdk', '@beamable/sdk/api'] as const,
-  output: {
-    globals: {
-      '@beamable/sdk': `window['${SDK_GLOBAL}']`,
-      '@beamable/sdk/api': `window['${SDK_API_GLOBAL}']`,
-    },
-  },
-} as const
+export function portalExtensionRollup(options: PortalExtensionPluginOptions = {}) {
+  const { external, globals } = buildPortalExternals(options)
+  return {
+    external,
+    output: { globals },
+  } as const
+}
+
+/**
+ * Convenience constant for the default (SDK-only) case. Spread `external` into
+ * the top-level rollup config and `output` into the output object. Both are
+ * read-only — do not mutate them.
+ */
+export const portalExtensionRollupOptions = portalExtensionRollup()

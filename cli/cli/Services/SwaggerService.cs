@@ -66,7 +66,7 @@ public class SwaggerService
 		BeamableApis.BasicService("mail"),
 		BeamableApis.ObjectService("mail"),
 		BeamableApis.BasicService("session").WithRename("User", "SessionUser"),
-		// INFO: At the moment, this is unsupported in UE-generation due to it generating a recursively referenced type (which breaks due to circular #includes). 
+		// INFO: At the moment, this is unsupported in UE-generation due to it generating a recursively referenced type (which breaks due to circular #includes).
 		BeamableApis.BasicService("trials").WithRename("\"ref\"", "\"reference\"").WithoutSDKs(TARGET_ENGINE_NAME_UNREAL),
 	};
 
@@ -212,7 +212,7 @@ public class SwaggerService
 				GatherSchemaRefs(doc.Components.Schemas, schemaName, schemaName, schemaRefCount);
 
 				// We fail loudly if we ever get two schemas with the same name in the same document.
-				// This means we can't properly disambiguate between them.   
+				// This means we can't properly disambiguate between them.
 				if (!schemaRecursiveRefs.TryAdd(namedOpenApiSchemaHandle, schemaRefCount))
 					throw new Exception($"Schema Name {schemaName} Clashing with another document's Schema!");
 
@@ -526,8 +526,8 @@ public class SwaggerService
 	}
 
 	public static async Task<(string url, string content)> GetOapiStringReader(
-		IAppContext context, 
-		ISwaggerStreamDownloader downloader, 
+		IAppContext context,
+		ISwaggerStreamDownloader downloader,
 		BeamableApiDescriptor api)
 	{
 		switch (api.Location)
@@ -1227,22 +1227,51 @@ public class SwaggerService
 	{
 		foreach ((string key, OpenApiSchema value) in swagger.Document.Components.Schemas)
 		{
-			var recursiveCheck = new Stack<OpenApiSchema>();
-
-			foreach ((_, OpenApiSchema propertySchema) in value.Properties)
-				recursiveCheck.Push(propertySchema);
-
 			bool isSelfReferential = false;
-			OpenApiSchema curr = null;
-			while (recursiveCheck.TryPop(out curr))
+
+			// reference equality: detects the same schema object reappearing as its own ancestor
+			var onPath = new HashSet<OpenApiSchema>();
+			var path = new List<string>();
+			var stack = new Stack<TraversalFrame>();
+
+			// seed with the top-level schema's properties (matches the original traversal)
+			foreach ((string propName, OpenApiSchema propertySchema) in value.Properties)
 			{
-				if (curr.Reference != null && value.Reference != null && curr.Reference.Id.Equals(value.Reference.Id))
+				stack.Push(new TraversalFrame(propertySchema, propName, isExit: false));
+			}
+
+			while (stack.TryPop(out var frame))
+			{
+				var node = frame.Node;
+
+				if (frame.IsExit)
+				{
+					// subtree fully processed: leave the node
+					onPath.Remove(node);
+					path.RemoveAt(path.Count - 1);
+					continue;
+				}
+
+				if (node.Reference != null && value.Reference != null && node.Reference.Id.Equals(value.Reference.Id))
 				{
 					isSelfReferential = true;
 				}
 
-				foreach ((_, OpenApiSchema propertySchema) in curr.Properties)
-					recursiveCheck.Push(propertySchema);
+				onPath.Add(node);
+				path.Add(frame.Property);
+
+				// cleanup marker: popped only after this node's whole subtree is done
+				stack.Push(new TraversalFrame(node, frame.Property, isExit: true));
+
+				foreach ((string propName, OpenApiSchema child) in node.Properties)
+				{
+					if (onPath.Contains(child))
+					{
+						break;
+					}
+
+					stack.Push(new TraversalFrame(child, propName, isExit: false));
+				}
 			}
 
 			if (isSelfReferential)
@@ -1252,6 +1281,20 @@ public class SwaggerService
 		}
 
 		return new List<OpenApiDocumentResult> { swagger };
+	}
+
+	private readonly struct TraversalFrame
+	{
+		public readonly OpenApiSchema Node;
+		public readonly string Property;
+		public readonly bool IsExit;
+
+		public TraversalFrame(OpenApiSchema node, string property, bool isExit)
+		{
+			Node = node;
+			Property = property;
+			IsExit = isExit;
+		}
 	}
 
 
@@ -1605,7 +1648,7 @@ public class NamedOpenApiSchema
 	public OpenApiSchema RawSchema;
 
 	/// <summary>
-	/// List of openAPI Schemas that this depends on. 
+	/// List of openAPI Schemas that this depends on.
 	/// </summary>
 	public List<OpenApiSchema> DependsOnSchema;
 

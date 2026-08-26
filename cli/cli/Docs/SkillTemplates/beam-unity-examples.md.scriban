@@ -1,0 +1,724 @@
+---
+name: beam-unity-examples
+description: Getting started with Beamable in Unity and sample projects demonstrating leaderboards, matchmaking, multiplayer, IAP, and microservices
+---
+
+# Unity Examples
+
+## When to Use This Skill
+- User asks how to get started with Beamable in Unity
+- User wants example projects to learn from or reference
+- User wants to understand what Beamable features look like in a real Unity project
+
+## Getting Started
+
+### Requirements
+- Unity 2021.3 to 6000.3 (all project templates)
+- Platforms: Windows, Mac, iOS, Android, WebGL
+- .NET SDK: 10.0.100 or 8.0.302+ (required for SDK 5.0.0+)
+
+### Installation
+1. Download the SDK Installer Package from `packages.beamable.com`
+2. Import via Assets → Import Package → Custom Package
+3. Click Install in the dialog that appears
+4. Remove the installer package after completion
+5. Install .NET if prompted
+
+### Project structure created
+- `.beamable/` — workspace config (has its own `.gitignore` for auth tokens)
+- `.config/dotnet-tools.json` — pins the Beam CLI version
+
+Both directories should be committed to source control.
+
+### Beam CLI integration
+- Auto-installed as a dotnet tool during SDK setup
+- SDK versions are tied to specific CLI versions (e.g., SDK 5.0.1 requires CLI 7.0.1)
+- Do not manually edit `dotnet-tools.json` — version mismatches break functionality
+
+### Verification
+Enter play mode in Unity, press `~` to open the Admin Console. Test with `help` or `dbid` commands to confirm SDK connectivity.
+
+### Key initialization pattern
+```csharp
+private async void SetupBeamable()
+{
+    var beamContext = BeamContext.Default;
+    await beamContext.OnReady;
+    // SDK is now connected and ready
+}
+```
+
+## SDK Feature Samples
+
+All samples below are MonoBehaviours with `[ContextMenu]` methods for quick testing in the Unity Inspector. Attach any sample to a GameObject, enter Play Mode, right-click the component, and select the action. All code is self-contained — these samples are not available via `beam_get_source`.
+
+### Stats
+
+```csharp
+using Beamable;
+using UnityEngine;
+
+public class StatsUsage : MonoBehaviour
+{
+    [ContextMenu("Get All Stats")]
+    private async void GetAllStats()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Stats.OnReady;
+
+        Debug.Log("[Stats] Player stats:");
+        foreach (var stat in ctx.Stats)
+            Debug.Log($"  - {stat.Key}: {stat.Value.Value}");
+    }
+
+    [ContextMenu("Set Player Name")]
+    private async void SetPlayerName()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Stats.Set("player_name", "SamplePlayer");
+
+        Debug.Log("[Stats] Set player_name = SamplePlayer");
+    }
+
+    [ContextMenu("Refresh Stats")]
+    private async void RefreshStats()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Stats.OnReady;
+
+        Debug.Log($"[Stats] Refreshed — {ctx.Stats.Count} stat(s) loaded");
+        foreach (var stat in ctx.Stats)
+            Debug.Log($"  - {stat.Key}: {stat.Value.Value}");
+    }
+}
+```
+
+**Key patterns:** `await ctx.Stats.OnReady` before reading, `ctx.Stats.Set(key, value)` for writes, dictionary-like iteration over stats.
+
+---
+
+### Inventory
+
+```csharp
+using Beamable;
+using Beamable.Common.Api.Inventory;
+using Beamable.Player;
+using UnityEngine;
+
+public class InventoryUsage : MonoBehaviour
+{
+    [ContextMenu("Get Currencies")]
+    private async void GetCurrencies()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var currencies = ctx.Inventory.GetCurrencies();
+        await currencies.Refresh();
+
+        Debug.Log($"[Inventory] Currencies:");
+        foreach (PlayerCurrency currency in currencies)
+            Debug.Log($"  - {currency.CurrencyId}: {currency.Amount}");
+    }
+
+    [ContextMenu("Get Items")]
+    private async void GetItems()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var items = ctx.Inventory.GetItems();
+        await items.Refresh();
+
+        Debug.Log($"[Inventory] Items:");
+        foreach (PlayerItem item in items)
+            Debug.Log($"  - {item.Content.name} (id: {item.Content.Id})");
+    }
+
+    [ContextMenu("Add 100 Coins")]
+    private async void AddCurrency()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Inventory.Update(b => b.CurrencyChange("currency.coins", 100));
+        Debug.Log("[Inventory] Added 100 coins");
+    }
+
+    [ContextMenu("Remove 50 Coins")]
+    private async void RemoveCurrency()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Inventory.Update(b => b.CurrencyChange("currency.coins", -50));
+        Debug.Log("[Inventory] Removed 50 coins");
+    }
+}
+```
+
+**Key patterns:** `ctx.Inventory.GetCurrencies()` / `GetItems()` return observable collections, call `.Refresh()` to sync, `ctx.Inventory.Update(b => b.CurrencyChange(...))` for currency changes. Note: if content has WriteSelf disabled, client-side updates will fail — use a microservice endpoint instead.
+
+---
+
+### Content
+
+```csharp
+using Beamable;
+using Beamable.Common;
+using Beamable.Common.Content;
+using Beamable.Common.Inventory;
+using UnityEngine;
+
+public class ContentUsage : MonoBehaviour
+{
+    [ContextMenu("Get Manifest")]
+    private async void GetManifest()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var manifest = await ctx.Content.GetManifest();
+
+        Debug.Log($"[Content] Manifest loaded — {manifest.entries.Count} entries:");
+        foreach (var entry in manifest.entries)
+            Debug.Log($"  - {entry.contentId} (type: {entry.type})");
+    }
+
+    [ContextMenu("Resolve Objective Content")]
+    private async void ResolveObjectiveContent()
+    {
+        var contentRef = new ContentRef<ObjectiveContent>("objective.tutorial_1");
+        var objective = await contentRef.Resolve();
+
+        if (objective != null)
+            Debug.Log($"[Content] Resolved: {objective.objectiveName} — XP: {objective.xpReward}, Items: {objective.itemRewards?.Count ?? 0}");
+        else
+            Debug.LogWarning("[Content] Could not resolve objective.tutorial_1");
+    }
+
+    [ContextMenu("Get Currency Content")]
+    private async void GetCurrencyContent()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var content = await ctx.Content.GetContent<CurrencyContent>(new CurrencyRef("currency.coins"));
+
+        if (content != null)
+            Debug.Log($"[Content] Currency: {content.name} (id: {content.Id})");
+        else
+            Debug.LogWarning("[Content] Could not resolve currency.coins");
+    }
+}
+```
+
+**Key patterns:** `ctx.Content.GetManifest()` for all content entries, `new ContentRef<T>(id).Resolve()` for typed content resolution, `ctx.Content.GetContent<T>(ref)` for direct fetching.
+
+---
+
+### Leaderboards
+
+```csharp
+using Beamable;
+using Beamable.Player;
+using UnityEngine;
+
+public class LeaderboardsUsage : MonoBehaviour
+{
+    [ContextMenu("Get Board")]
+    private async void GetBoard()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var board = ctx.Leaderboards.GetBoard("leaderboards.high_score");
+
+        if (board == null)
+        {
+            Debug.LogError("[Leaderboards] Board not found: leaderboards.high_score");
+            return;
+        }
+        var playerStanding = board.myStandings.HasValue ? board.myStandings.Value.score : 0;
+        Debug.Log($"[Leaderboards] Board: {board.boardId}, Player Score: {playerStanding}");
+        Debug.Log("[Leaderboards] Use board.OnUpdated to subscribe to score changes");
+    }
+}
+```
+
+**Key patterns:** `ctx.Leaderboards.GetBoard(id)` returns a board with `myStandings` (nullable), subscribe to `board.OnUpdated` for real-time changes.
+
+---
+
+### Announcements
+
+```csharp
+using Beamable;
+using System.Linq;
+using UnityEngine;
+
+public class AnnouncementsUsage : MonoBehaviour
+{
+    [ContextMenu("Get Announcements")]
+    private async void GetAnnouncements()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Announcements.OnReady;
+
+        Debug.Log("[Announcements] Current announcements:");
+        foreach (var announcement in ctx.Announcements)
+            Debug.Log($"  - [{announcement.Channel}] {announcement.Title} (Read: {announcement.IsRead}, Claimed: {announcement.IsClaimed})");
+    }
+
+    [ContextMenu("Read First Announcement")]
+    private async void ReadFirstAnnouncement()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Announcements.OnReady;
+
+        var first = ctx.Announcements.FirstOrDefault();
+        if (first == null)
+        {
+            Debug.LogWarning("[Announcements] No announcements available");
+            return;
+        }
+
+        await ctx.Announcements.Read(first);
+        Debug.Log($"[Announcements] Marked as read: {first.Title}");
+    }
+
+    [ContextMenu("Claim First Announcement")]
+    private async void ClaimFirstAnnouncement()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Announcements.OnReady;
+
+        var first = ctx.Announcements.FirstOrDefault();
+        if (first == null)
+        {
+            Debug.LogWarning("[Announcements] No announcements available");
+            return;
+        }
+
+        await ctx.Announcements.Claim(first);
+        Debug.Log($"[Announcements] Claimed: {first.Title}");
+    }
+}
+```
+
+**Key patterns:** `await ctx.Announcements.OnReady` before reading, iterable collection with `Channel`, `Title`, `IsRead`, `IsClaimed`, lifecycle methods `Read()` and `Claim()`.
+
+---
+
+### Social
+
+```csharp
+using Beamable;
+using Beamable.Player;
+using UnityEngine;
+
+public class SocialUsage : MonoBehaviour
+{
+    [ContextMenu("Get Friends")]
+    private async void GetFriends()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Social.OnReady;
+
+        Debug.Log($"[Social] Friends ({ctx.Social.Friends.Count}):");
+        foreach (PlayerFriend friend in ctx.Social.Friends)
+            Debug.Log($"  - PlayerId: {friend.playerId}");
+    }
+
+    [ContextMenu("Get Received Invites")]
+    private async void GetReceivedInvites()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Social.OnReady;
+
+        Debug.Log($"[Social] Received invites ({ctx.Social.ReceivedInvites.Count}):");
+        foreach (ReceivedFriendInvite invite in ctx.Social.ReceivedInvites)
+            Debug.Log($"  - From PlayerId: {invite.invitingPlayerId}");
+    }
+
+    [ContextMenu("Get Sent Invites")]
+    private async void GetSentInvites()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Social.OnReady;
+
+        Debug.Log($"[Social] Sent invites ({ctx.Social.SentInvites.Count}):");
+        foreach (SentFriendInvite invite in ctx.Social.SentInvites)
+            Debug.Log($"  - To PlayerId: {invite.invitedPlayerId}");
+    }
+
+    [ContextMenu("Get Blocked Players")]
+    private async void GetBlockedPlayers()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Social.OnReady;
+
+        Debug.Log($"[Social] Blocked ({ctx.Social.Blocked.Count}):");
+        foreach (BlockedPlayer blocked in ctx.Social.Blocked)
+            Debug.Log($"  - PlayerId: {blocked.playerId}");
+    }
+
+    [ContextMenu("Invite Friend (id: 12345)")]
+    private async void InviteFriend()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Social.Invite(12345).Error(e =>
+        {
+            Debug.LogWarning($"[Social] Failed to invite: {e.Message}");
+        });
+        Debug.Log("[Social] Invite sent to PlayerId 12345");
+    }
+
+    [ContextMenu("Refresh Social")]
+    private async void RefreshSocial()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Social.Refresh();
+        Debug.Log($"[Social] Refreshed — {ctx.Social.Friends.Count} friend(s), {ctx.Social.Blocked.Count} blocked");
+    }
+}
+```
+
+**Key patterns:** `await ctx.Social.OnReady`, collections for `Friends`, `ReceivedInvites`, `SentInvites`, `Blocked`, action methods `Invite(playerId)` and `Refresh()`, `.Error()` callback for error handling.
+
+---
+
+### Cloud Saving
+
+```csharp
+using Beamable;
+using Beamable.Player.CloudSaving;
+using UnityEngine;
+
+public class CloudSavingUsage : MonoBehaviour
+{
+    [ContextMenu("Init Cloud Saving")]
+    private async void InitCloudSaving()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var status = await ctx.CloudSaving.Init();
+        Debug.Log($"[CloudSaving] Initialized — Status: {status}");
+    }
+
+    [ContextMenu("Save Data")]
+    private async void SaveData()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        if (ctx.CloudSaving.ServiceStatus != CloudSaveStatus.Initialized)
+        {
+            Debug.LogWarning("[CloudSaving] Service not initialized. Call Init first.");
+            return;
+        }
+
+        var data = "{\"level\": 5, \"checkpoint\": \"forest_gate\"}";
+        await ctx.CloudSaving.SaveData("sample_save.json", data);
+        Debug.Log("[CloudSaving] Saved sample_save.json");
+    }
+
+    [ContextMenu("Load Data")]
+    private async void LoadData()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        if (ctx.CloudSaving.ServiceStatus != CloudSaveStatus.Initialized)
+        {
+            Debug.LogWarning("[CloudSaving] Service not initialized. Call Init first.");
+            return;
+        }
+
+        var content = await ctx.CloudSaving.LoadDataString("sample_save.json");
+        if (content != null)
+            Debug.Log($"[CloudSaving] Loaded: {content}");
+        else
+            Debug.LogWarning("[CloudSaving] No data found for sample_save.json");
+    }
+
+    [ContextMenu("Force Upload")]
+    private async void ForceUpload()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.CloudSaving.ForceUploadLocalData();
+        Debug.Log("[CloudSaving] Forced upload of local data");
+    }
+
+    [ContextMenu("Force Download")]
+    private async void ForceDownload()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.CloudSaving.ForceDownloadCloudData();
+        Debug.Log("[CloudSaving] Forced download of cloud data");
+    }
+}
+```
+
+**Key patterns:** `ctx.CloudSaving.Init()` must be called before save/load, check `ServiceStatus == CloudSaveStatus.Initialized`, `SaveData(fileName, jsonString)` / `LoadDataString(fileName)` for persistence, `ForceUploadLocalData()` / `ForceDownloadCloudData()` for manual sync.
+
+---
+
+### Accounts and Authentication
+
+**Basic account operations:**
+```csharp
+using Beamable;
+using Beamable.Common.Api.Auth;
+using Beamable.Platform.SDK.Auth;
+using Beamable.Player;
+using System.Threading.Tasks;
+using UnityEngine;
+
+public class AccountsUsage : MonoBehaviour
+{
+    [ContextMenu("Get Account Info")]
+    private async void GetAccountInfo()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        await ctx.Accounts.Refresh();
+
+        PlayerAccount account = ctx.Accounts.Current;
+        Debug.Log($"[Accounts] GamerTag: {account.GamerTag}");
+        Debug.Log($"[Accounts] Alias: {account.Alias}");
+        Debug.Log($"[Accounts] Email: {account.Email}");
+        Debug.Log($"[Accounts] HasEmail: {account.HasEmail}");
+        Debug.Log($"[Accounts] DeviceIds: {string.Join(", ", account.DeviceIds)}");
+    }
+
+    [ContextMenu("Set Alias")]
+    private async void SetAlias()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var updated = await ctx.Accounts.SetAlias("SampleAlias");
+        Debug.Log($"[Accounts] Alias updated to: {updated.Alias}");
+    }
+
+    [ContextMenu("Set Avatar")]
+    private async void SetAvatar()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var updated = await ctx.Accounts.SetAvatar("avatar_01");
+        Debug.Log($"[Accounts] Avatar updated to: {updated.Avatar}");
+    }
+
+    [ContextMenu("Create New Account")]
+    private async void CreateNewAccount()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var newAccount = await ctx.Accounts.CreateNewAccount();
+        Debug.Log($"[Accounts] New account created — GamerTag: {newAccount.GamerTag}");
+        Debug.Log("[Accounts] Call newAccount.SwitchToAccount() to switch to it");
+    }
+
+    [ContextMenu("Check Email Availability")]
+    private async void CheckEmailAvailability()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var isAvailable = await ctx.Accounts.IsEmailAvailable("test@example.com");
+        Debug.Log($"[Accounts] Email test@example.com available: {isAvailable}");
+    }
+}
+```
+
+**Third-party authentication pattern:**
+
+All providers follow the same Beamable-side flow. The provider-specific SDK obtains a token, then these shared helpers handle the rest:
+
+```csharp
+// 1. Check if credentials are already linked to an account
+var credentialStatus = await ctx.Api.AuthService.GetCredentialStatus(thirdParty, token);
+var available = credentialStatus == CredentialUsageStatus.NEVER_USED;
+var userHasCredentials = ctx.Api.User.HasThirdPartyAssociation(thirdParty);
+
+// 2a. Fresh token, no existing association → attach to current account
+await ctx.Accounts.AddThirdParty(thirdParty, token);
+
+// 2b. Token already linked to another account → recover/switch
+var op = await ctx.Accounts.RecoverAccountWithThirdParty(thirdParty, token);
+await op.SwitchToAccount();
+
+// 3. Remove association
+await ctx.Accounts.RemoveThirdParty(thirdParty, token);
+```
+
+**Supported providers** (`AuthThirdParty` enum): `Facebook`, `FacebookLimited` (iOS 14+), `Google`, `Apple` (iOS, via `com.lupidan.apple-auth`), `GoogleGamesServices` (Android, via `com.google.play.games` + `BEAMABLE_GPGS` define symbol).
+
+---
+
+## Calling Microservices from Unity
+
+Shows how the Unity client calls `[ClientCallable]` endpoints via auto-generated client proxies.
+Access pattern: `ctx.Microservices.{ServiceName}()` returns a typed client with `{ServiceName}_{MethodName}(args)` methods.
+
+> **Note:** SampleOne through SampleFour here are the Unity client counterparts of the same microservices documented in the `beam-microservice-examples` skill. Load that skill to see the server-side implementation of each endpoint.
+
+### Basic Service Calls
+
+```csharp
+using Beamable;
+using Beamable.Common;
+using Beamable.Server.Clients;
+using UnityEngine;
+
+public class SampleOneUsage : MonoBehaviour
+{
+    [ContextMenu("Health Check")]
+    private async void HealthCheck()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var client = ctx.Microservices.SampleOne();
+
+        var result = await client.SampleOne_HealthCheck();
+        Debug.Log($"[SampleOne] HealthCheck — Status: {result.Status}, Version: {result.Version}, Time: {result.Timestamp}");
+    }
+
+    [ContextMenu("Get My Score")]
+    private async void GetMyScore()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var client = ctx.Microservices.SampleOne();
+
+        var result = await client.SampleOne_GetPlayerScore();
+        Debug.Log($"[SampleOne] GetPlayerScore — Status: {result.Status}, Score: {result.Value}, PlayerId: {result.PlayerId}");
+    }
+}
+```
+
+---
+
+### CRUD Operations (Storage-Backed)
+
+```csharp
+using Beamable;
+using Beamable.Common;
+using Beamable.Server.Clients;
+using UnityEngine;
+
+public class SampleTwoUsage : MonoBehaviour
+{
+    [ContextMenu("Add Resident")]
+    private async void AddResident()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var client = ctx.Microservices.SampleTwo();
+
+        var result = await client.SampleTwo_AddResident("town_center", "Alice", "merchant");
+        if (result.Success)
+            Debug.Log($"[SampleTwo] Added: {result.Resident.ResidentName} ({result.Resident.Role}) in {result.Resident.RegionName}");
+        else
+            Debug.LogWarning($"[SampleTwo] AddResident failed: {result.Error}");
+    }
+
+    [ContextMenu("Get Residents")]
+    private async void GetResidents()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var client = ctx.Microservices.SampleTwo();
+
+        var residents = await client.SampleTwo_GetResidents("town_center");
+        Debug.Log($"[SampleTwo] Found {residents.Count} resident(s) in town_center:");
+        foreach (var r in residents)
+            Debug.Log($"  - {r.ResidentName} ({r.Role})");
+    }
+
+    [ContextMenu("Remove Resident")]
+    private async void RemoveResident()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var client = ctx.Microservices.SampleTwo();
+
+        var result = await client.SampleTwo_RemoveResident("town_center", "Alice");
+        if (result.Success)
+            Debug.Log("[SampleTwo] Resident removed successfully");
+        else
+            Debug.LogWarning($"[SampleTwo] RemoveResident failed: {result.Error}");
+    }
+}
+```
+
+---
+
+### Economy and Objectives
+
+```csharp
+using Beamable;
+using Beamable.Common;
+using Beamable.Server.Clients;
+using UnityEngine;
+
+public class SampleThreeUsage : MonoBehaviour
+{
+    [ContextMenu("Get Balance")]
+    private async void GetBalance()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var client = ctx.Microservices.SampleThree();
+
+        var result = await client.SampleThree_GetBalance("currency.coins");
+        Debug.Log($"[SampleThree] Balance — Status: {result.Status}, Currency: {result.CurrencyId}, Amount: {result.Balance}");
+    }
+
+    [ContextMenu("Add Currency (+500)")]
+    private async void AddCurrency()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var client = ctx.Microservices.SampleThree();
+
+        var result = await client.SampleThree_UpdateCurrency("currency.coins", 500);
+        Debug.Log($"[SampleThree] UpdateCurrency — Status: {result.Status}, New Balance: {result.Balance}");
+    }
+
+    [ContextMenu("Purchase Item")]
+    private async void PurchaseItem()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var client = ctx.Microservices.SampleThree();
+
+        var result = await client.SampleThree_PurchaseItem("currency.coins", 100, "items.sword");
+        if (result.Success)
+            Debug.Log($"[SampleThree] Purchased {result.ItemContentId}, Remaining: {result.RemainingBalance}");
+        else
+            Debug.LogWarning($"[SampleThree] Purchase failed: {result.Error}");
+    }
+
+    [ContextMenu("Finish Objective")]
+    private async void FinishObjective()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var client = ctx.Microservices.SampleThree();
+
+        var result = await client.SampleThree_FinishObjective("objective.tutorial_1");
+        if (result.Success)
+            Debug.Log($"[SampleThree] Objective complete — XP: +{result.XpGranted} (Total: {result.NewTotalXp}), Level: {result.CurrentLevel}, LevelUp: {result.DidLevelUp}, Items: {result.ItemsGranted}");
+        else
+            Debug.LogWarning($"[SampleThree] FinishObjective failed: {result.Error}");
+    }
+}
+```
+
+---
+
+### External Integration (Discord)
+
+```csharp
+using Beamable;
+using Beamable.Server.Clients;
+using UnityEngine;
+
+public class SampleFourUsage : MonoBehaviour
+{
+    [ContextMenu("Update From Discord")]
+    private async void UpdateFromDiscord()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var client = ctx.Microservices.SampleFour();
+        var isWhitelisted = await client.SampleFour_UpdateFromDiscord();
+        Debug.Log($"[SampleFour] UpdateFromDiscord — Whitelisted: {isWhitelisted}");
+    }
+
+    [ContextMenu("Check Whitelist Status")]
+    private async void CheckWhitelistStatus()
+    {
+        var ctx = await BeamContext.Default.Instance;
+        var client = ctx.Microservices.SampleFour();
+
+        var result = await client.SampleFour_UpdateUserWhitelistedStatus();
+        Debug.Log($"[SampleFour] Whitelist Status — Whitelisted: {result.matchmaking_discord_whitelisted}");
+    }
+}
+```
+
+---
+
+## Related Skills
+- `beam-manage-service` — microservice API patterns (Stats, Content, Inventory, Federation)
+- `beam-microservice-examples` — server-side implementations of SampleOne through SampleFour
+- `beam-content-types` — creating and managing custom content types
+- `beam-initialize-project` — setting up a new Beamable workspace

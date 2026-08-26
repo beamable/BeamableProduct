@@ -1,0 +1,147 @@
+package com.beamable.push
+
+import android.content.Context
+
+/**
+ * Interface contracts for the Beamable push library, consolidated into one file:
+ * [PushListener], [PushNotificationReceivedHandler], and [EngineBridge].
+ *
+ * (The deeplink package keeps its own [com.beamable.deeplink.EngineBridge] — the two
+ * are intentionally not merged across packages.)
+ */
+
+// ---------------------------------------------------------------------------
+// PushListener
+// ---------------------------------------------------------------------------
+
+/**
+ * Engine-agnostic callback surface for the push library.
+ *
+ * Implementations may be invoked from background threads (FCM callbacks run off
+ * the main thread). Implementations must therefore be thread-safe or marshal to
+ * their own main thread as needed. The bundled [com.beamable.push.unity.UnityNotificationsBridge]
+ * forwards via UnityPlayer.UnitySendMessage, which is itself thread-safe.
+ */
+interface PushListener {
+    /** A fresh FCM registration token is available. */
+    fun onTokenReceived(token: String)
+
+    /** Fetching/refreshing the FCM token failed. */
+    fun onTokenRefreshError(error: String)
+
+    /** A push message arrived while the app was in the foreground (JSON payload). */
+    fun onMessageReceivedForeground(messageJson: String)
+
+    /** The app was opened by tapping a notification; [dataJson] carries the payload. */
+    fun onNotificationOpened(dataJson: String)
+
+    /** Result of a POST_NOTIFICATIONS permission request. */
+    fun onPermissionResult(granted: Boolean)
+
+    /** A local notification was successfully scheduled; [id] is its notification id. */
+    fun onLocalNotificationScheduled(id: Int)
+
+    /** A recoverable error occurred at [stage] with a human-readable [message]. */
+    fun onError(stage: String, message: String)
+
+    /**
+     * Result of a native funnel-analytics POST: [funnelType] is the funnel stage name
+     * (e.g. "Clicked"), [ok] whether the POST succeeded, [statusCode] the HTTP status
+     * (or 0 when no network attempt was made), and [message] a short human description.
+     *
+     * Default no-op so existing implementers (Unity/Unreal bridges, tests) keep compiling.
+     */
+    fun onFunnelResult(funnelType: String, ok: Boolean, statusCode: Int, message: String) {}
+}
+
+// ---------------------------------------------------------------------------
+// PushNotificationReceivedHandler
+// ---------------------------------------------------------------------------
+
+/**
+ * Receive-time hook, invoked by [PushFirebaseService] for EVERY incoming FCM message —
+ * including while the app is backgrounded or fully killed.
+ *
+ * This is the only extension point that can run on receipt while the app is closed: it
+ * executes in FCM's background process, with NO game-engine runtime (Unity/Unreal/RN)
+ * initialized. Implementations must therefore be self-contained native code.
+ *
+ * IMPORTANT — FCM delivery constraints:
+ *  - This fires while closed/backgrounded ONLY for **data-only** messages (no `notification`
+ *    block) sent with high priority. A message carrying a `notification` block is displayed
+ *    by the OS and does NOT invoke onMessageReceived until the user taps it.
+ *  - A force-stopped (or aggressively OEM-killed) app receives nothing until reopened.
+ *
+ * Threading: called on FCM's background thread with a limited (~10s) execution budget. A
+ * short blocking network call is acceptable here; for guaranteed delivery, enqueue WorkManager
+ * from within your implementation.
+ *
+ * MULTIPLE HANDLERS: the library supports N handlers, mirroring iOS's PluginRegistry.
+ * Register via:
+ *  1. AndroidManifest meta-data (required for the closed-app case — resolved by reflection).
+ *     Declare one or more, using the shared key as a PREFIX (the manifest merger rejects
+ *     duplicate exact names):
+ *     <meta-data android:name="com.beamable.push.notification_received_handler"
+ *                android:value="your.first.HandlerClass" />
+ *     <meta-data android:name="com.beamable.push.notification_received_handler.1"
+ *                android:value="your.second.HandlerClass" />
+ *     Implementations registered this way MUST have a public no-arg constructor.
+ *  2. Programmatically while the app is alive:
+ *     [PushManager.addNotificationReceivedHandler].
+ *
+ * Manifest-declared and programmatic handlers are additive — both sets always participate.
+ * Every registered handler is invoked for each event; one handler throwing must not block
+ * the others (failures are isolated and routed to [PushManager.dispatchError]).
+ */
+interface PushNotificationReceivedHandler {
+    fun onNotificationReceived(context: Context, event: PushReceivedEvent)
+}
+
+// ---------------------------------------------------------------------------
+// PushNotificationStyleRenderer
+// ---------------------------------------------------------------------------
+
+/**
+ * Display-override hook for CUSTOM notification styles the shared library does not build itself.
+ *
+ * The shared library ships only a bare-minimum set of built-in styles (default / bigPicture /
+ * bigText, plus action buttons). A consuming app that defines its OWN styles (e.g. the ReactNative
+ * sample's `animated` / `countdown`) implements this to render them in its own native layer.
+ *
+ * Invoked by [PushFirebaseService] on the background/killed **data-only** display path, BEFORE the
+ * library posts its own notification. Return `true` if this renderer HANDLED the notification
+ * (posted and/or scheduled it) — the library then SKIPS its own default post, avoiding a duplicate.
+ * Return `false` to let the library (or another renderer) handle it.
+ *
+ * The style id and any custom fields are read from [PushReceivedEvent.dataJson] (the flat FCM data
+ * map as JSON). Discovery, threading, and the closed-app constraints mirror
+ * [PushNotificationReceivedHandler] exactly:
+ *  - AndroidManifest meta-data, key PREFIX `com.beamable.push.notification_style_renderer`
+ *    (`.1`, `.2`, … for multiple), each class needing a public no-arg constructor; and/or
+ *  - programmatically while alive via [PushManager.addStyleRenderer].
+ * Renderers run in registration order; the FIRST to return `true` wins. Failures are isolated.
+ */
+interface PushNotificationStyleRenderer {
+    fun render(context: Context, event: PushReceivedEvent): Boolean
+}
+
+// ---------------------------------------------------------------------------
+// EngineBridge
+// ---------------------------------------------------------------------------
+
+/**
+ * Lowest-common-denominator bridge to a host game engine.
+ *
+ * Engine-specific adapters (Unity, Unreal, React Native) implement this to
+ * forward a callback [method] name and a serialized [payload] string back to
+ * managed/script code. The core library never depends on any engine type.
+ */
+interface EngineBridge {
+    /**
+     * Emit a callback to the host engine.
+     *
+     * @param method the callback/handler name the engine should dispatch to.
+     * @param payload a string (often JSON) carrying the callback data.
+     */
+    fun emit(method: String, payload: String)
+}

@@ -80,8 +80,18 @@
         </PropertyGroup>
 
         <Message Text="Generating OAPI specifications" Importance="high" />
+        <!-- Capture the generator's output + exit code instead of letting a non-zero exit fail the Exec task
+             directly. The default terminal logger suppresses subprocess console output, so on failure we
+             re-emit the captured message as a real MSBuild <Error> below (errors are shown by every logger). -->
         <Exec Command="dotnet &quot;$(_BeamOapiExecPath)&quot; --generate-oapi --tl:off"
-              EnvironmentVariables="OPEN_API_OUTPUT_PATH=$(BeamOapiOutputDir);MSBUILDTERMINALLOGGER=off"/>
+              EnvironmentVariables="OPEN_API_OUTPUT_PATH=$(BeamOapiOutputDir);MSBUILDTERMINALLOGGER=off"
+              ConsoleToMSBuild="true"
+              IgnoreExitCode="true">
+            <Output TaskParameter="ConsoleOutput" PropertyName="_BeamOapiGenOutput" />
+            <Output TaskParameter="ExitCode" PropertyName="_BeamOapiGenExitCode" />
+        </Exec>
+        <Error Condition="'$(_BeamOapiGenExitCode)' != '0'"
+               Text="OpenAPI generation failed for $(AssemblyName) (exit code $(_BeamOapiGenExitCode)):%0A$(_BeamOapiGenOutput)" />
         <WriteLinesToFile File="$(IntermediateOutputPath)/generateClientFlag.txt" Lines="flag" Overwrite="true"/>
     </Target>
 
@@ -114,6 +124,17 @@
               EchoOff="true"
               EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
               Condition="'@(_BeamServiceRef)' != '' AND !Exists('%(_BeamServiceRef.OapiPath)')" />
+    </Target>
+
+    <!--
+        Generate client .ts files for portal extensions that are dependant of this service
+    -->
+    <Target Name="GeneratePortalExtensionClients"
+            DependsOnTargets="generate-oapi"
+            AfterTargets="AfterBuild">
+        <Exec EchoOff="true"
+              EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
+              Command="dotnet beam project generate pe-client --ids $(BeamId)" />
     </Target>
 
     <!--
@@ -170,9 +191,8 @@
         <Delete Files="$(BeamSettingsFile)"/>
 
         <WriteLinesToFile File="$(BeamSettingsFile)" Overwrite="false" Lines="BeamId=$(BeamId)"/>
-<!--        TODO: add more settings?   -->
-<!--        <WriteLinesToFile File="$(BeamSettingsFile)" Overwrite="false" Lines="BeamId=$(BeamId)"/>-->
-        
+        <WriteLinesToFile File="$(BeamSettingsFile)" Overwrite="false" Lines="BeamServiceScope=$(BeamServiceScope)"/>
+
         <ItemGroup>
             <EmbeddedResource Include="$(BeamSettingsFile)" Type="Non-Resx" WithCulture="false" LogicalName="Beamable.settings"/>
         </ItemGroup>

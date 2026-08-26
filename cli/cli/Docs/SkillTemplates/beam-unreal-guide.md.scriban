@@ -1,0 +1,420 @@
+---
+name: beam-unreal-guide
+description: Unreal development guide — custom content types, microservice integration, Blueprints, and semantic types
+---
+
+# Unreal Development Guide
+
+## When to Use This Skill
+- User is building a Beamable game in Unreal Engine
+- User needs custom content types shared between microservices and Unreal
+- User wants to call microservice endpoints from Unreal (C++ or Blueprints)
+- User asks about Beamable Blueprint nodes or visual scripting
+- User needs to understand Beamable's semantic type system
+
+## Getting Started
+
+### Requirements
+- Unreal Engine 5.6.X (must be a C++ project, not Blueprint-only)
+- .NET SDK 8.0.302+
+- Docker Desktop (for microservices and storage)
+
+### Installation
+1. Create a Beamable Portal account at `portal.beamable.com`
+2. Download the latest SDK release from `github.com/beamable/UnrealSDK/releases`
+3. Run the initialization script:
+   ```bash
+   bash beam_init_game_maker.sh
+   ```
+4. Update your Target.cs and Build.cs files with Beamable module dependencies:
+   ```csharp
+   // In YourGame.Target.cs
+   Beam.ConfigureGame(Target, this);
+
+   // In YourGameEditor.Target.cs
+   Beam.ConfigureEditor(Target, this);
+   ```
+5. Verify setup: `.beamable/` folder should be created, and `dotnet beam --version` should return the CLI version
+
+### Upgrading
+When upgrading to a newer SDK version, download the new release and re-run `beam_init_game_maker.sh`. The script handles updating module references and configuration.
+
+---
+
+## Custom Content Types
+
+Content types are defined independently in C# (microservices) and Unreal C++. Both use the same JSON format and content IDs. The content type name becomes the ID prefix — `"weapons"` means IDs like `weapons.sword_01`.
+
+### Defining in C# (microservices)
+
+```csharp
+[ContentType("weapons")]
+[System.Serializable]
+public class WeaponContent : ContentObject
+{
+    public int damage;
+    public float attackSpeed;
+    public string description;
+    public List<string> tags;
+    public Optional<int> bonusDamage;
+}
+```
+
+### Defining in Unreal C++
+
+Two parts: declare the `GetContentType_` function in the header, then use the `DEFINE_CONTENT_TYPE_NAME` macro after the class.
+
+```cpp
+#pragma once
+#include "CoreMinimal.h"
+#include "Content/BeamContentObject.h"
+#include "WeaponContent.generated.h"
+
+UCLASS(BlueprintType)
+class UWeaponContent : public UBeamContentObject
+{
+    GENERATED_BODY()
+
+public:
+    UFUNCTION()
+    void GetContentType_UWeaponContent(FString& Result);
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 Damage;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float AttackSpeed;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FString Description;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<FString> Tags;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FOptionalInt32 BonusDamage;
+};
+
+DEFINE_CONTENT_TYPE_NAME(UWeaponContent, "weapons")
+```
+
+### Keeping types in sync
+
+Property names and types must match across C# and Unreal. Use this mapping:
+
+| C# | Unreal | Notes |
+|---|---|---|
+| `int` | `int32` | |
+| `long` | `int64` | |
+| `float` | `float` | |
+| `string` | `FString` | |
+| `bool` | `bool` | |
+| `List<T>` / `T[]` | `TArray<T>` | |
+| `Dictionary<string, V>` | `TMap<FString, V>` | Only FString keys supported |
+| `Optional<T>` | `FOptional<T>` | Not serialized when unset |
+| `DateTime` | `FDateTime` | |
+| `Guid` | `FGuid` | |
+
+### Resolving content in Unreal
+
+```cpp
+auto* ContentSS = GetGameInstance()->GetSubsystem<UBeamContentSubsystem>();
+
+// By ID — returns base UBeamContentObject*
+UBeamContentObject* Content;
+ContentSS->TryGetContent(FBeamContentId("weapons.sword_01"), Content);
+
+// Typed — casts to your subclass
+UWeaponContent* Weapon;
+ContentSS->TryGetContentOfType<UWeaponContent>(
+    FBeamContentId("weapons.sword_01"), Weapon);
+
+// Fetch manifest from backend (async)
+ContentSS->CPP_FetchContentManifestOperation(
+    FBeamContentManifestId{"global"}, true, false,
+    FBeamOperationEventHandlerCode::CreateLambda([](FBeamOperationEvent Evt) {
+        // Content now available via TryGetContent
+    }));
+```
+
+### Built-in content types
+
+These are already defined in the SDK — do not redefine them:
+
+| Class | Content type | ID prefix |
+|-------|-------------|-----------|
+| `UBeamItemContent` | `"items"` | `items.` |
+| `UBeamCurrencyContent` | `"currency"` | `currency.` |
+| `UBeamAnnouncementContent` | `"announcements"` | `announcements.` |
+| `UBeamStoreContent` | `"stores"` | `stores.` |
+| `UBeamListingContent` | `"listings"` | `listings.` |
+| `UBeamLeaderboardContent` | `"leaderboards"` | `leaderboards.` |
+| `UBeamGameTypeContent` | `"game_types"` | `game_types.` |
+
+### Content type resolution
+
+When the subsystem loads content, it resolves types hierarchically:
+1. **Exact subclass match** → `FullSupport` — all properties accessible
+2. **Parent type match** → `PartiallySupported` — only parent properties accessible
+3. **No match** → generic `UBeamContentObject` with `NoSupport` flag
+
+Always define Unreal content types for any custom C# content you access from the client. Content authored in Unity or via the Portal that has no Unreal class will still load — you just can't access its custom properties.
+
+---
+
+## Microservices with Unreal
+
+### How it works
+
+1. Define `[ClientCallable]` endpoints in C# microservices
+2. Run `beam project build` to generate OpenAPI specs
+3. Run `beam project generate-client` to auto-generate Unreal C++ and Blueprint client code
+4. Call the generated subsystem from Unreal
+
+Client code is 100% auto-generated. Never write microservice client code manually.
+
+### Workflow
+
+```bash
+# 1. Create the microservice
+beam project new service MyService -q
+
+# 2. Implement [ClientCallable] endpoints in C#
+
+# 3. Build — generates OpenAPI spec
+beam project build --ids MyService -q
+
+# 4. Generate Unreal client code
+beam project generate-client -q
+```
+
+### Generated code structure
+
+After generation, a plugin is created with this layout:
+
+```
+Plugins/BeamableUnrealMicroserviceClients/
+  Source/.../Public/AutoGen/
+    SubSystems/
+      BeamMyServiceApi.h              ← API subsystem (entry point)
+      MyService/
+        MyServiceDoSomethingRequest.h ← Request object per endpoint
+    MyServiceDoSomethingResponse.h    ← Response type
+    DoSomethingRequestArgs.h          ← Request parameter struct
+```
+
+### Calling from C++
+
+```cpp
+// 1. Get the auto-generated engine subsystem
+auto* Api = GEngine->GetEngineSubsystem<UBeamMyServiceApi>();
+
+// 2. Create the request
+auto* Request = UMyServiceDoSomethingRequest::Make(
+    PlayerId, GetOwner(), TMap<FString, FString>{});
+
+// 3. Call with lambda handler
+FBeamRequestContext OutContext;
+Api->CPP_DoSomething(
+    Request,
+    FOnMyServiceDoSomethingFullResponse::CreateLambda(
+        [](const auto& Response) {
+            if (Response.bSuccess)
+            {
+                // Use Response.SuccessData->...
+            }
+        }),
+    OutContext);
+```
+
+### Calling from Blueprints
+
+The same endpoints are exposed as Blueprint nodes:
+- Search for the service name in the Blueprint action menu
+- Nodes have **Success**, **Error**, and **Complete** delegate pins
+- Request parameters are exposed as input pins on the request `Make` node
+
+### Which attributes generate Unreal client code
+
+| Attribute | Generates Unreal client code | Who can call |
+|-----------|------------------------------|-------------|
+| `[Callable]` | Yes | Anyone (no auth) |
+| `[ClientCallable]` | Yes | Any Beamable user or developer |
+| `[AdminOnlyCallable]` | Yes | Beamable admin accounts |
+| `[ServerCallable]` | **No** | Portal extensions, other microservices |
+
+> **Note:** Unity client generation differs — `[AdminOnlyCallable]` is skipped for Unity but generated for Unreal. `[ServerCallable]` is skipped for both. Use `CallableFlags.SkipGenerateClientFiles` to opt out of generation for any attribute on both platforms.
+
+### Federation (external auth)
+
+Microservices implementing `IFederatedLogin<T>` auto-generate:
+- Getter functions for the federation identity (e.g., `GetSteamId()`)
+- Blueprint-accessible data nodes
+
+To authenticate from Unreal using a federated identity:
+```cpp
+auto* Runtime = GetGameInstance()->GetSubsystem<UBeamRuntime>();
+Runtime->CPP_LoginFederatedOperation(
+    FUserSlot("Player0"),
+    "MyService",          // microservice name
+    "steam",              // federation ID
+    ExternalToken,        // token from external provider
+    FBeamOperationEventHandlerCode::CreateLambda([](FBeamOperationEvent Evt) {
+        // Player is now authenticated
+    }));
+```
+
+---
+
+## Beamable Blueprints
+
+### Two levels of Blueprint exposure
+
+**High-level: Runtime Subsystem Operations**
+Designer-friendly nodes for common operations. Found under `Beam|Operation|{Service}` in the Blueprint palette.
+- Return `FBeamOperationHandle` for async tracking
+- Provide clear Success/Error/Complete delegate pins
+
+**Low-level: Auto-generated API Request Nodes**
+Per-endpoint nodes generated from OpenAPI specs. Found under `BeamFlow|ApiRequest|{Service}`.
+- Marked `BlueprintInternalUseOnly` — hidden from palette by default
+- Used internally by K2Node wrappers for cleaner graphs
+- Available for advanced use cases when high-level nodes don't cover a specific endpoint
+
+### Available subsystems
+
+All subsystems are `UGameInstanceSubsystem` instances accessible via `GetGameInstance()->GetSubsystem<T>()`:
+
+| Subsystem | Purpose |
+|-----------|---------|
+| `UBeamStatsSubsystem` | Player stats (key-value pairs) |
+| `UBeamInventorySubsystem` | Currencies and items |
+| `UBeamContentSubsystem` | Content manifests and resolution |
+| `UBeamLeaderboardsSubsystem` | Leaderboard queries and updates |
+| `UBeamAnnouncementsSubsystem` | Scheduled announcements |
+| `UBeamFriendsSubsystem` | Friends, invites, blocked players |
+| `UBeamStoreSubsystem` | Store listings and purchases |
+| `UBeamPartySubsystem` | Party creation and management |
+| `UBeamLobbySubsystem` | Lobby management |
+| `UBeamMatchmakingSubsystem` | Matchmaking queues |
+
+### Async operation pattern
+
+All Beamable operations are async. The pattern in both C++ and Blueprints:
+
+**C++:**
+```cpp
+auto* StatsSS = GetGameInstance()->GetSubsystem<UBeamStatsSubsystem>();
+StatsSS->CPP_SetStatOperation(
+    FUserSlot("Player0"),
+    "player_name", "NewName",
+    FBeamOperationEventHandlerCode::CreateLambda([](FBeamOperationEvent Evt) {
+        if (Evt.EventType == OET_SUCCESS) { /* stat saved */ }
+    }));
+```
+
+**Blueprints:** Call the Operation node → bind the `OnOperationEvent` delegate → check event type for Success/Error/Complete.
+
+### State queries (synchronous)
+
+Read locally cached state without network calls:
+
+```cpp
+auto* StatsSS = GetGameInstance()->GetSubsystem<UBeamStatsSubsystem>();
+TArray<FString> Keys;
+TArray<FString> Values;
+bool bHasData = StatsSS->TryGetAllStats(
+    FUserSlot("Player0"),
+    EBeamStatsDomain::Game,
+    EBeamStatsVisibility::Public,
+    Keys, Values);
+// bHasData is false if stats haven't been fetched yet
+```
+
+Similar `TryGet*` methods exist on all subsystems: `TryGetAllCurrencies`, `TryGetLeaderboard`, `TryGetStoreView`, etc. All return `bool` — `false` means data hasn't been fetched from the backend yet.
+
+### Event binding
+
+Subsystems expose `BlueprintAssignable` multicast delegates for reactive updates:
+
+| Subsystem | Event | Fires when |
+|-----------|-------|------------|
+| `UBeamStatsSubsystem` | `OnStatsUpdated` | Stats change |
+| `UBeamInventorySubsystem` | `OnInventoryRefreshed` | Inventory updated |
+| `UBeamAnnouncementsSubsystem` | `OnAnnouncementsUpdated` | New announcements |
+| `UBeamLeaderboardsSubsystem` | `OnUpdateLeaderboard` | Leaderboard changes |
+| `UBeamFriendsSubsystem` | `OnInviteReceived` | Friend invite received |
+
+Bind in `BeginPlay` (C++) or the equivalent Blueprint event to react to state changes.
+
+### BeamFlow graph mode
+
+Custom graph editor for visual async flows:
+- Nodes auto-manage success/error/complete execution paths
+- Integrates with subsystem state queries
+- Access via the BeamFlow category in the Blueprint palette
+
+### FUserSlot: multi-player support
+
+All operations require a `FUserSlot` parameter to identify which local player is making the call:
+
+| Slot | Use |
+|------|-----|
+| `FUserSlot("Player0")` | Single-player or first player |
+| `FUserSlot("Player1")`, `"Player2"`, etc. | Local multiplayer |
+
+Pass the correct slot through all Beamable operations. Subsystems maintain per-slot cached state.
+
+---
+
+## Semantic Types
+
+Semantic types are strongly-typed wrappers around primitives (`FString`, `int64`) that add meaning to API parameters. Instead of passing raw strings everywhere, Beamable APIs use types like `FBeamAccountId` and `FBeamGamerTag` so you can't accidentally pass a CID where a PID is expected.
+
+### Discovering semantic types
+
+Search the user's installed Unreal SDK rather than relying on a hardcoded list:
+
+**Using `beam_get_source`:**
+```
+beam_get_source(platform: "unreal", filePath: "BeamBackend/SemanticTypes")
+```
+This lists all semantic type headers. Read individual files (e.g., `BeamAccountId.h`) for the full API.
+
+**Manual path:** `Plugins/BeamableCore/Source/BeamableCore/Public/BeamBackend/SemanticTypes/`
+
+### Key concepts
+
+- All semantic types inherit from `FBeamSemanticType`
+- The first representation is always `FString` (for serialization compatibility)
+- Some types have a second representation (e.g., `int64` for numeric IDs)
+- Access representations via `.AsString`, `.AsLong` properties
+- Blueprint autocast conversions in `UBeamSemanticTypeConversions`
+- Stats-specific helpers in `UBeamStatsTypeLibrary` (`MakeStatsType`, `BreakStatsType`)
+
+### Usage
+
+```cpp
+// Semantic types self-document parameter intent:
+void ProcessPlayer(FBeamGamerTag Player);   // Clear what this is
+void ProcessPlayer(FString Player);         // Ambiguous
+
+// Access representations:
+FBeamGamerTag Tag("12345");
+FString AsStr = Tag.AsString;   // "12345"
+int64 AsNum = Tag.AsLong;       // 12345
+```
+
+### Custom semantic types
+
+Use `BeamAccountId.h` as a reference. The pattern:
+1. Inherit from `FBeamSemanticType`
+2. Declare `UPROPERTY` fields for each representation (`AsString` required, others optional)
+3. Provide constructors from each representation
+4. Override `GetAddr()`, `Set()`, and `GetSerializationRepresentation()`
+
+## Related Skills
+- `beam-manage-service` — microservice API patterns and architecture guidance
+- `beam-content-types` — detailed content type creation and validation
+- `beam-content-workflow` — content sync and publish workflows
+- `beam-microservice-examples` — progressive microservice code examples

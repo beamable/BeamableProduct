@@ -1,13 +1,17 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
-    ext.kotlin_version = "1.4.10"
     repositories {
         google()
-        jcenter()
+        mavenCentral()
     }
     dependencies {
-        classpath "com.android.tools.build:gradle:4.0.2"
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        // AGP 7.4.2 is the newest Android Gradle Plugin that runs on BOTH JDKs Unity ships:
+        // JDK 11 (Unity 2021.3 - 2022.3) and JDK 17 (Unity 6). AGP 8.x requires JDK 17, which
+        // would exclude anyone whose only JDK is the one bundled with Unity 2022.3, and it
+        // defaults the Java target to 17 - see the compileOptions comment in
+        // googlesignin/build.gradle for why that would produce an .aar that older consumer
+        // projects cannot dex.
+        classpath 'com.android.tools.build:gradle:7.4.2'
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -17,7 +21,9 @@ buildscript {
 allprojects {
     repositories {
         google()
-        jcenter()
+        // jcenter() was removed: it went read-only in 2021 and is not a dependable source any
+        // more. Everything this project needs is on google() or mavenCentral().
+        mavenCentral()
     }
 }
 

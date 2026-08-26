@@ -7,38 +7,50 @@ namespace cli.Portal;
 
 public class PortalCommandArgs : CommandArgs
 {
-	
 }
 
+public enum PortalType
+{
+	LegacyPortal, 
+	Console
+}
 
 public class PortalCommand : AppCommand<PortalCommandArgs>
 {
-	public PortalCommand() : base("portal", "Open portal")
+	public PortalCommand() : base("portal", "Open the Beamable Portal in a browser, auto-logged in with the current CID, PID and account credentials")
 	{
 	}
 
 	public override void Configure()
 	{
-		
 	}
 
-	public override Task Handle(PortalCommandArgs args)
+	public override async Task Handle(PortalCommandArgs args)
 	{
-
-		GetPortalRealmUrl(args, out var url, out var qb);
-		url = $"{url}/{qb}";
-		MachineHelper.OpenBrowser(url);
-
-		return Task.CompletedTask;
+		GetPortalRealmUrl(args, out var realmUrl, out var qb);
+		MachineHelper.OpenBrowser($"{realmUrl}/{qb}");
 	}
 
-	public static string GetPortalBaseUrl(CommandArgs args)
+	public static string GetPortalBaseUrl(CommandArgs args, PortalType isNewPortal = PortalType.LegacyPortal)
 	{
 		var binding = args.DependencyProvider.GetService<BindingContext>();
-		var portalUrl = binding.ParseResult.GetValueForOption(args.DependencyProvider.GetService<PortalUrlOption>());
+		return GetPortalBaseUrl(binding, args.AppContext, isNewPortal);
+	}
+
+	public static string GetPortalBaseUrl(BindingContext binding, IAppContext appContext, PortalType isNewPortal = PortalType.LegacyPortal)
+	{
+		var portalUrl = binding.ParseResult.GetValueForOption(PortalUrlOption.Instance);
 		if (string.IsNullOrEmpty(portalUrl))
 		{
-			portalUrl = args.AppContext.Host.Replace("dev.", "dev-").Replace("api", "portal");
+			if (isNewPortal == PortalType.Console)
+			{
+				portalUrl = appContext.Host.Replace("api", "console");
+			}
+			else
+			{
+				portalUrl = appContext.Host.Replace("dev.", "dev-").Replace("api", "portal");
+			}
+
 		}
 		else
 		{

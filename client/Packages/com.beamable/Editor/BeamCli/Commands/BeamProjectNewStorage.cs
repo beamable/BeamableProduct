@@ -18,6 +18,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string[] linkTo;
         /// <summary>Specify BeamableGroups for this service</summary>
         public string[] groups;
+        /// <summary>If passed, creates a zone-scoped storage (deployed per cid.zid, into the zone manifest) instead of a realm-scoped one</summary>
+        public bool zone;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -57,6 +59,11 @@ namespace Beamable.Editor.BeamCli.Commands
                     // The parameter allows multiple values
                     genBeamCommandArgs.Add(("--groups=" + this.groups[i]));
                 }
+            }
+            // If the zone value was not default, then add it to the list of args.
+            if ((this.zone != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--zone=" + this.zone));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

@@ -5,18 +5,124 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [6.1.0]
+
+### Added
+- Added build-scoped suppression and per-player runtime opt-in for automatic Player Social friend-invitation Mail checks.
+- Fixed `CommerceService.GetCurrent()` waiting indefinitely when called without a store scope; unscoped Commerce requests now fail immediately with a clear error.
+- Content Manifest caching between runs.
+- Added support for silent login to the Google Sign In integration.
+
 ### Fixed
+
+- Fixed repeated content validation during Unity Inspector repaints, reducing Editor log spam and performance overhead when viewing content.
+- Fixed Unity Editor hitches after editing content properties by avoiding synchronous end-of-stream checks while reading streamed CLI responses.
+
+### Changed
+
+- Update CLI to 7.2.3
+
+## [6.0.1] - 2026-07-31
+
+### Changed
+
+- Unity In-App Purchasing (UnityIAP) 5.4.2 is now supported. The Beamable Steam store implements `IOrderInfo.PaymentProviders`, which UnityIAP introduced in 5.4.2.
+- The supported UnityIAP 5 range is **5.2.0 through 5.4.2**. UnityIAP 5.0.x and 5.1.x do not compile against Beamable 6.x, because they predate the `StoreController.OnStoreConnected` event that the purchasing integration requires.
+
+- Added build-scoped suppression and per-player runtime opt-in for automatic Player Social friend-invitation Mail checks.
+- Fixed `CommerceService.GetCurrent()` waiting indefinitely when called without a store scope; unscoped Commerce requests now fail immediately with a clear error.
+- Content Manifest caching between runs.
+- Added support for silent login to the Google Sign In integration.
+
+### Fixed
+
+- Fixed repeated content validation during Unity Inspector repaints, reducing Editor log spam and performance overhead when viewing content.
+- Fixed Unity Editor hitches after editing content properties by avoiding synchronous end-of-stream checks while reading streamed CLI responses.
+
+## [6.0.1] - 2026-07-31
+
+### Changed
+
+- Unity In-App Purchasing (UnityIAP) 5.4.2 is now supported. The Beamable Steam store implements `IOrderInfo.PaymentProviders`, which UnityIAP introduced in 5.4.2.
+- The supported UnityIAP 5 range is **5.2.0 through 5.4.2**. UnityIAP 5.0.x and 5.1.x do not compile against Beamable 6.x, because they predate the `StoreController.OnStoreConnected` event that the purchasing integration requires.
+
+## [6.0.0] - 2026-07-28
+
+### Changed
+
+- **Breaking:** Unity In-App Purchasing (UnityIAP) 5 is now the selected version, since Unity deprecated UnityIAP 4. Projects still on UnityIAP 4 keep working.
+
+### Added
+
+- Added Content Manager publish history with diff inspection, pagination, preview, and local file restoration.
+- Added `BEAMABLE_PURCHASING_IMPLEMENTATION_DISABLED` to turn off the Beamable UnityIAP integration entirely.
+- Added `CoreConfiguration.SkipCommerceInitialization` to opt out of automatic purchaser initialization and its commerce SKU request.
+
+### Fixed
+
+- Fixed the Content window Snapshot tab hanging at "Loading snapshots" when snapshots in different realm folders share a name (e.g. `LastPublished-global.json` auto snapshots from publishing to multiple realms)
+- Unity SDK version headers were not being sent by default.
+- Fixed `BeamContext` initialization throwing `IndexOutOfRangeException` from its own retry handler when initialization kept failing with infinite context retries enabled, which masked the underlying initialization error.
+- Fixed CLI bootstrap failing when the installed .NET SDK is a supported version newer than the pinned feature band (for example 10.0.301 when the pin is 10.0.100); the generated `global.json` now rolls forward to any compatible installed SDK.
+
+## [5.1.2] - 2026-07-16
+
+### Changed
+
+- Update CLI to 7.2.2
+
+## [5.1.2] - 2026-07-16
+
+### Changed
+
+- Update CLI to 7.2.2
+
+## [5.1.1] - 2026-06-30
+
+### Added
+
+- Content fields with attribute `MustReferenceContent` will have display content picker inspector in Editor
+
+### Fixed
+
+- Fixed `Accounts.OnReady` failing when stale or invalid remembered device tokens are present, while preserving strict validation for the active player token.
+- Fixed BeamContext infinite retry handling so retry attempts past the configured retry-delay array do not overflow the
+tracked error buffer.
+
+### Changed
+
+- Validation of the content no longer can automatically try to update the content value
+- Update CLI to 7.2.1
+
+
+
+## [5.1.0] - 2026-06-16
+### Added
+- Added `OmitContentManifestTags` option to `ContentConfiguration` to opt out of content tag download in the public manifest. Tag-based `ContentQuery` filters (e.g. `tag:weapon`) return no results when this is enabled. [4597](https://github.com/beamable/BeamableProduct/issues/4597)
+- Added in-window Content Manager progress for sync and revert operations.
+- Added editor content sync download concurrency configuration.
+- Implemented new Admin Console feature
+
+### Fixed
+- Improved content sync resilience for transient SSL/socket reset download failures.
+- Fixed first-run Account window build config setup when `config-defaults.txt` is missing or has no PID.
+- Fixed intermittent Account login `TaskCanceledException` from overlapping Unity editor CLI refreshes.
 - Deserialization issue with `properties` field in Score Items of Events
 - Fixed an issue where the Unity Editor would not detect changes to Icon subObject (for Sprites in Multiple Mode) and thus not saving it correctly
-<<<<<<< fix/contentNullFields
+- Fixed CLI web command spamming `ObjectDisposedException` when the local CLI server is unreachable [4581](https://github.com/beamable/BeamableProduct/issues/4581)
 - Fixed an issue when creating a new Content Object some Optional and string values were null instead of default values.
-=======
 - Fix issue where Critical log errors where not being parsed to Unity LogLevels.
->>>>>>> main
+- Fix periodic freeze caused by telemetry collector polling.
 
 ### Changed
 - Added support to configure Max Parallel Service Build count on MicroserviceConfiguration.
+- Reworked Lightbeam samples
+- Changed default gem icon
+- "Beam Library" Window is now "Beam Samples" Window and was updated with latest docs and samples
+- AdminFlow prefab (ConsoleFlow) was removed from the Beam Samples Window and is now considered Deprecated
+- Now Renamed content entries will be shown as Modified Renamed in the Content Manager Window rather than a New and Deleted entries.
+- Default assets and content are imported manually on first visit to Content Manager
+- Update CLI to 7.2.0
 
 ## [5.0.1] - 2026-04-02
 ### Fixed

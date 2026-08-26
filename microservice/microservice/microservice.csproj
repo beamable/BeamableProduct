@@ -63,5 +63,9 @@
   <ItemGroup Label="Pack Internal Beamable References">
     <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build" Pack="True"/>
   </ItemGroup>
-  
+
+  <ItemGroup Label="Pack: source code">
+    <None Include="**/*.cs" PackagePath="content/sourceCode" Pack="True" Exclude="bin/**;obj/**" />
+  </ItemGroup>
+
 </Project>

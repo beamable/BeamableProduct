@@ -1,0 +1,496 @@
+---
+name: beam-web-guide
+description: Web SDK guide — installation, authentication, stats, leaderboards, content, announcements, accounts, and microservice clients for TypeScript/JavaScript
+---
+
+# Web SDK Guide
+
+## When to Use This Skill
+- User is integrating Beamable into a web or Node.js application
+- User wants to use Beamable from TypeScript or JavaScript
+- User is building a web game client, admin tool, or server-side integration
+
+## Getting Started
+
+### Installation
+
+```bash
+npm install beamable-sdk
+```
+
+### Initialization
+
+#### ES Modules
+```ts
+import { Beam } from "beamable-sdk";
+
+const beam = await Beam.init({
+  cid: "YOUR_CUSTOMER_ID",
+  pid: "YOUR_PROJECT_ID",
+});
+console.log(beam.player.id);
+```
+
+#### CommonJS (Node.js)
+```js
+const { Beam } = require('beamable-sdk');
+const beam = await Beam.init({
+  cid: 'YOUR_CUSTOMER_ID',
+  pid: 'YOUR_PROJECT_ID',
+});
+```
+
+#### Browser (IIFE)
+```html
+<script src="https://unpkg.com/beamable-sdk"></script>
+<script>
+  const { Beam } = Beamable;
+  const beam = await Beam.init({
+    cid: 'YOUR_CUSTOMER_ID',
+    pid: 'YOUR_PROJECT_ID',
+  });
+</script>
+```
+
+`Beam.init()` automatically: authenticates (guest login or restores saved token), fetches account info, sets up WebSocket, syncs content manifests.
+
+CID/PID come from Beamable Portal or `beam config -q`.
+
+### Service registration
+Auth, Account, and Content are registered by default. Other services must be registered explicitly:
+```ts
+import { StatsService, LeaderboardsService, AnnouncementsService } from "beamable-sdk";
+
+const beam = await Beam.init({
+  cid: "YOUR_CUSTOMER_ID",
+  pid: "YOUR_PROJECT_ID",
+  services: (beam) => {
+    beam.use(StatsService);
+    beam.use([LeaderboardsService, AnnouncementsService]);
+  },
+});
+```
+
+### Token management
+- Tokens auto-persisted (browser: localStorage/IndexedDB, Node: filesystem)
+- Automatic refresh: 401 responses trigger automatic token renewal; original request retried
+- Custom storage via `tokenStorage` config option for SSR or non-browser environments
+
+### Handling refresh failures
+```ts
+import { RefreshAccessTokenError } from "beamable-sdk";
+
+try {
+  await beam.someService.someMethod();
+} catch (error) {
+  if (error instanceof RefreshAccessTokenError) {
+    // Refresh failed — redirect user to login
+  }
+}
+```
+
+---
+
+## Authentication (beam.auth)
+
+Registered by default. All methods return `Promise<TokenResponse>`.
+
+### Guest login
+```ts
+const token = await beam.auth.loginAsGuest();
+await beam.refresh(token);
+```
+
+### Email/password login
+```ts
+const token = await beam.auth.loginWithEmail({
+  email: "user@example.com",
+  password: "password123",
+});
+await beam.refresh(token);
+```
+
+### Third-party login (Google, Facebook, etc.)
+```ts
+import { ThirdPartyAuthProvider } from "beamable-sdk";
+
+const token = await beam.auth.loginWithThirdParty({
+  provider: ThirdPartyAuthProvider.Google,
+  token: "google-auth-token",
+});
+await beam.refresh(token);
+```
+
+### External identity (federation)
+```ts
+const token = await beam.auth.loginWithExternalIdentity({
+  externalToken: "acme-auth-token",
+  providerService: "MyService",
+  providerNamespace: "acme",
+  challengeHandler: async (challenge) => {
+    return solveChallengeFromUser(challenge);
+  },
+});
+await beam.refresh(token);
+```
+
+### Smart third-party flow (client-only)
+```ts
+await beam.auth.handleThirdPartyAuthFlow({
+  provider: ThirdPartyAuthProvider.Google,
+  token: "google-auth-token",
+});
+// Auto-handles: switch user if already assigned, link if available, create guest if needed
+```
+
+---
+
+## Accounts (beam.account)
+
+Registered by default.
+
+### Get current account
+```ts
+const account = await beam.account.current();
+// account.id, account.email, account.thirdPartyAppAssociations, etc.
+```
+
+### Register email/password
+```ts
+await beam.account.addCredentials({
+  email: "player@example.com",
+  password: "password123",
+});
+```
+
+### Link/unlink third-party
+```ts
+await beam.account.addThirdParty({
+  provider: ThirdPartyAuthProvider.Google,
+  token: "google-auth-token",
+});
+await beam.account.removeThirdParty({
+  provider: ThirdPartyAuthProvider.Google,
+  token: "google-auth-token",
+});
+```
+
+### Link/unlink external identity (federation)
+```ts
+await beam.account.addExternalIdentity({
+  externalToken: "acme-auth-token",
+  providerService: "MyService",
+  providerNamespace: "acme",
+});
+await beam.account.removeExternalIdentity({
+  providerService: "MyService",
+  providerNamespace: "acme",
+  externalUserId: "acme-user-id",
+});
+```
+
+### Check credential availability
+```ts
+import { CredentialStatus } from "beamable-sdk";
+
+const status = await beam.account.getEmailCredentialStatus({
+  email: "player@example.com",
+});
+if (status === CredentialStatus.NotAssigned) { /* email is available */ }
+```
+
+### Email/password update flow
+```ts
+await beam.account.initiateEmailUpdate({ newEmail: "new@example.com" });
+// User receives verification code...
+await beam.account.confirmEmailUpdate({ code: "123456", password: "current-password" });
+
+await beam.account.initiatePasswordUpdate({ email: "player@example.com" });
+// User receives code...
+await beam.account.confirmPasswordUpdate({ code: "123456", newPassword: "new-password" });
+```
+
+---
+
+## Stats (beam.stats)
+
+Requires registration: `beam.use(StatsService)`
+
+### Get stats
+```ts
+const stats = await beam.stats.get({
+  accessType: "public",              // "public" or "private"
+  stats: ["CURRENT_LEVEL", "SCORE"], // optional — omit to fetch all
+});
+// Returns Record<string, string>: { CURRENT_LEVEL: "10", SCORE: "5000" }
+```
+
+### Set stats
+```ts
+await beam.stats.set({
+  accessType: "public",
+  stats: { CURRENT_LEVEL: "10", SCORE: "5000" },
+});
+```
+
+### Domain types
+- `"client"` (default) — client-writable stats
+- `"game"` — server-only stats (use `beamServer.stats(playerId)`)
+
+---
+
+## Content (beam.content)
+
+Registered by default. Multi-tier caching (in-memory -> persistent storage -> API).
+
+### Get content by ID
+```ts
+const item = await beam.content.getById({ id: "items.sword_01" });
+// item.id, item.properties, item.version
+```
+
+### Get content by IDs
+```ts
+const items = await beam.content.getByIds({
+  ids: ["items.sword_01", "items.shield_01"],
+});
+```
+
+### Get all content of a type
+```ts
+const allItems = await beam.content.getByType({ type: "items" });
+```
+
+### Get manifest entries
+```ts
+const entries = await beam.content.getManifestEntries();
+// entries[0].contentId, entries[0].checksum, entries[0].uri
+```
+
+### Non-default manifests
+All content methods accept `manifestId` (defaults to `"global"`):
+```ts
+const item = await beam.content.getById({
+  id: "items.sword_01",
+  manifestId: "my-manifest",
+});
+```
+
+---
+
+## Leaderboards (beam.leaderboards)
+
+Requires registration: `beam.use(LeaderboardsService)`
+
+### Get leaderboard
+```ts
+const board = await beam.leaderboards.get({
+  id: "leaderboards.high_scores",
+  from: 0,
+  max: 10,
+});
+for (const entry of board.rankings) {
+  console.log(`${entry.gt}: ${entry.score}`);
+}
+```
+
+### Focus on a player
+```ts
+const board = await beam.leaderboards.get({
+  id: "leaderboards.high_scores",
+  focus: playerId,  // center view on this player
+  max: 20,          // 10 above + player + 10 below
+});
+```
+
+### Get friend ranks
+```ts
+const friendBoard = await beam.leaderboards.getFriendRanks({
+  id: "leaderboards.high_scores",
+});
+```
+
+### Get specific player ranks
+```ts
+const ranks = await beam.leaderboards.getRanks({
+  id: "leaderboards.high_scores",
+  playerIds: ["player1Id", "player2Id"],
+});
+```
+
+### Submit score
+```ts
+await beam.leaderboards.setScore({
+  id: "leaderboards.high_scores",
+  score: 1500,
+  increment: true,  // add to existing score instead of replacing
+  stats: { level: "12" }, // optional attached stats
+});
+```
+
+### Partitioned/assigned boards
+```ts
+const assigned = await beam.leaderboards.getAssignedBoard({
+  id: "leaderboards.weekly",
+});
+```
+
+---
+
+## Announcements (beam.announcements)
+
+Requires registration: `beam.use(AnnouncementsService)`
+
+### List announcements
+```ts
+const announcements = await beam.announcements.list();
+for (const a of announcements) {
+  console.log(a.id, a.summary, a.isClaimed, a.isRead);
+}
+```
+
+### Claim rewards
+```ts
+await beam.announcements.claim({ id: "announcement-id" });
+// or batch:
+await beam.announcements.claim({ id: ["id-1", "id-2"] });
+```
+
+### Mark as read
+```ts
+await beam.announcements.markAsRead({ id: "announcement-id" });
+```
+
+### Delete
+```ts
+await beam.announcements.delete({ id: "announcement-id" });
+```
+
+---
+
+## Microservice Clients
+
+For calling `[ClientCallable]` endpoints from web apps.
+
+### Creating a client
+```ts
+import { BeamMicroServiceClient } from "beamable-sdk";
+
+class MyServiceClient extends BeamMicroServiceClient {
+  get serviceName() { return "MyService"; }
+
+  async getPlayerScore(): Promise<{ score: number }> {
+    return this.request({
+      endpoint: "/GetPlayerScore",
+      withAuth: true,
+    });
+  }
+
+  async submitScore(score: number): Promise<void> {
+    return this.request({
+      endpoint: "/SubmitScore",
+      payload: { score },
+      withAuth: true,
+    });
+  }
+}
+```
+
+### Registering and using
+```ts
+const beam = await Beam.init({
+  cid: "YOUR_CUSTOMER_ID",
+  pid: "YOUR_PROJECT_ID",
+  services: (beam) => {
+    beam.use(MyServiceClient);
+  },
+});
+
+const result = await beam.myServiceClient.getPlayerScore();
+```
+
+Naming convention: `MyServiceClient` -> accessible as `beam.myServiceClient` (class name -> camelCase with "Client" suffix).
+
+### Request options
+- `endpoint` — the `[ClientCallable]` method name as path (e.g., `"/GetPlayerScore"`)
+- `payload` — request body (serialized to JSON)
+- `withAuth: true` — include Bearer token (required for `[ClientCallable]`)
+
+---
+
+## Server-Side SDK (BeamServer)
+
+For Node.js backends and admin tools.
+
+### Initialization
+```ts
+import { BeamServer } from "beamable-sdk";
+
+const beamServer = await BeamServer.init({
+  cid: "YOUR_CUSTOMER_ID",
+  pid: "YOUR_PROJECT_ID",
+  secret: "YOUR_SECRET", // realm secret from Portal
+});
+```
+
+### Accessing services for a player
+```ts
+const stats = await beamServer.stats(playerId).get({
+  domainType: "game",
+  accessType: "public",
+});
+await beamServer.stats(playerId).set({
+  domainType: "game",
+  accessType: "public",
+  stats: { level: "10" },
+});
+
+const account = await beamServer.account(playerId).current();
+const board = await beamServer.leaderboards(playerId).get({ id: "leaderboards.high_scores" });
+const announcements = await beamServer.announcements(playerId).list();
+```
+
+### Server-only operations
+```ts
+await beamServer.leaderboards(adminId).freeze({ id: "leaderboards.weekly" });
+```
+
+---
+
+## Real-Time Events
+
+WebSocket subscriptions for live updates:
+```ts
+beam.on("content.refresh", (data) => {
+  // Content manifest changed — re-fetch if needed
+});
+beam.on("announcements.refresh", (data) => {
+  // New announcements available
+});
+```
+
+---
+
+## Raw APIs (no service wrapper)
+
+These features have auto-generated API functions but no high-level service wrapper. Use them via the generated API functions with the beam requester:
+
+- **Inventory** — `inventoryGetByObjectId`, `inventoryPutByObjectId`, etc.
+- **Commerce/Store** — `commerceGetCatalogBasic`, `commercePostPurchaseByObjectId`, etc.
+- **Social/Friends** — `socialGetMyBasic`, `socialPostFriendsInviteBasic`, etc.
+- **Cloud Saving** — `cloudsavingGetBasic`, `cloudsavingPostDataUploadURLBasic`, etc.
+
+Import from `beamable-sdk/api`:
+```ts
+import { inventoryGetByObjectId } from "beamable-sdk/api";
+```
+
+## Related Skills
+- `beam-manage-service` — microservice API patterns and architecture guidance
+- `beam-content-types` — content type creation and validation
+- `beam-content-workflow` — content sync and publish workflows
+- `beam-microservice-examples` — progressive C# microservice code examples
+
+## CLI Version Awareness
+
+If the CLI version has changed (check `.config/dotnet-tools.json`), re-run `beam_list_commands()` and `beam_get_help()` to get up-to-date command information. Command options and behavior may have changed between versions.
