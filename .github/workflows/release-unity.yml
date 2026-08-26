@@ -376,6 +376,26 @@ jobs:
             --notes "Unity SDK Release ${{ steps.version.outputs.VERSION }}" \
             ${{ inputs.releaseType != 'production' && '--prerelease' || '' }}
 
+      # Tell beamable/docs to regenerate the SDK/CLI version table. Dispatched from
+      # here rather than from a tag-push trigger: the tag above is created with
+      # GITHUB_TOKEN, and events raised by GITHUB_TOKEN never start a workflow run.
+      # --fail-with-body so an expired DOCS_DISPATCH_PAT fails the step loudly.
+      - name: Notify docs of SDK release
+        if: ${{ inputs.dryRun == false && inputs.releaseType == 'production' }}
+        run: |
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer ${{ secrets.DOCS_DISPATCH_PAT }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/beamable/docs/dispatches \
+            -d '{
+              "event_type": "unity-sdk-released",
+              "client_payload": {
+                "tag": "unity-sdk-${{ steps.version.outputs.VERSION }}",
+                "sdk_version": "${{ steps.version.outputs.VERSION }}"
+              }
+            }'
+
       # Close the matching "Unity X.Y.Z" milestone once a production release ships.
       # Warns (does not fail) when no open milestone matches, so it never blocks a release. ~Claude
       - name: Close shipped milestone
