@@ -36,6 +36,9 @@ public class WebLocalRegistryService
 	public const string DefaultRegistry = "http://localhost:4873";
 	public const string DefaultCdn = "http://localhost:4874";
 
+	/// <summary>The public npm registry a released <c>@beamable</c> pin must always resolve against.</summary>
+	public const string PublicRegistry = "https://registry.npmjs.org/";
+
 	/// <summary>Directory inside the product repo holding the registry's docker-compose file.</summary>
 	public const string LocaldevDirName = "portal-localdev";
 
@@ -251,23 +254,31 @@ public class WebLocalRegistryService
 	}
 
 	/// <summary>
-	/// The npm arguments needed to install a project whose <c>@beamable/portal-toolkit</c> pin is a local
-	/// developer build — i.e. <c>--registry &lt;local&gt;</c> plus its auth token. Returns an empty string
-	/// for every other project, so a normal install is completely untouched.
-	///
-	/// <para>
-	/// Required, not an optimisation: a local-dev version exists only on the local registry, so a plain
-	/// <c>npm install</c> resolves it against npmjs, 404s, and fails the build. Routing the *whole* install
-	/// at the local registry is correct because it proxies everything else to npmjs (see
+	/// The npm arguments needed to install a project's <c>@beamable/portal-toolkit</c> pin, chosen from the
+	/// pinned version:
+	/// <list type="bullet">
+	/// <item>
+	/// A local developer build (<c>0.0.123-*</c>) exists only on the local registry, so the whole install is
+	/// routed there with <c>--registry &lt;local&gt;</c> plus its auth token. Required, not an optimisation:
+	/// a plain <c>npm install</c> would resolve it against npmjs, 404, and fail the build. Routing everything
+	/// at the local registry is fine because it proxies the rest to npmjs (see
 	/// <c>portal-localdev/verdaccio/config.yml</c>).
-	/// </para>
+	/// </item>
+	/// <item>
+	/// A released build pins the <c>@beamable</c> scope at the public npm registry with
+	/// <c>--@beamable:registry=&lt;public&gt;</c>. A user's machine may have a corporate proxy or a private
+	/// registry configured for <c>@beamable</c> in their npmrc that has never heard of the package, so pinning
+	/// the scope to npmjs keeps a normal install from failing there.
+	/// </item>
+	/// </list>
 	/// </summary>
 	public static string InstallArgsFor(string projectDir, string registryUrl = DefaultRegistry)
 	{
 		var pinned = ReadPinnedVersion(Path.Combine(projectDir, "package.json"), ToolkitPackage);
 		if (!IsLocalDevVersion(pinned))
 		{
-			return string.Empty;
+			Log.Verbose($"[{projectDir}] pins the released {ToolkitPackage}@{pinned}; forcing the @beamable scope at [{PublicRegistry}]");
+			return $" --@beamable:registry={PublicRegistry}";
 		}
 
 		Log.Verbose($"[{projectDir}] pins the local build {ToolkitPackage}@{pinned}; installing from [{registryUrl}]");

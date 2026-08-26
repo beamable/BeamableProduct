@@ -293,11 +293,13 @@ public class ProjectService
 			root[Beamable.Common.Constants.Features.PortalExtension.EXTENSION_NAME_PROPERTY_NAME] =
 				JToken.FromObject(args.ProjectName.Value);
 
-			// A zone extension marks its backing service as zone-scoped via beamable.serviceScope; the run
-			// path (BeamoLocalSystem_PortalExtension) reads this and boots the service as a ZoneMicroservice.
-			if (args.IsZone && root["beamable"] is JObject beamable)
+			// Stamp the extension's scope on beamable.serviceScope. A zone extension marks its backing
+			// service as zone-scoped (the run path BeamoLocalSystem_PortalExtension reads this and boots
+			// the service as a ZoneMicroservice); a realm extension records "realm" explicitly. The Portal
+			// reads the same field to place the extension's hub at org (zone) vs realm level.
+			if (root["beamable"] is JObject beamable)
 			{
-				beamable["serviceScope"] = "zone";
+				beamable["serviceScope"] = args.IsZone ? "zone" : "realm";
 			}
 
 			File.WriteAllText(packagePath, root.ToString(Newtonsoft.Json.Formatting.Indented));
