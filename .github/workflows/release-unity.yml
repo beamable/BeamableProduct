@@ -365,20 +365,26 @@ jobs:
               "production": "production"
             }')[github.event.inputs.releaseType] }}
 
-      - name: Create Release
+      # Creates the release tag only. GitHub Releases are deliberately not used:
+      # they carried no assets and no notes beyond a stub, nothing read them, and
+      # every downstream consumer (LightBeam aliases, the docs version table) keys
+      # off the git tag. Existing releases are left in place; none are made here.
+      # Created via the API rather than git tag/push so the tag lands on exactly
+      # ${{ github.sha }} and stays lightweight, matching every prior tag.
+      - name: Create release tag
         if: ${{ inputs.dryRun == false }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "unity-sdk-${{ steps.version.outputs.VERSION }}" \
-            --target "${{ github.sha }}" \
-            --title "Unity SDK ${{ steps.version.outputs.VERSION }}" \
-            --notes "Unity SDK Release ${{ steps.version.outputs.VERSION }}" \
-            ${{ inputs.releaseType != 'production' && '--prerelease' || '' }}
+          gh api "repos/${{ github.repository }}/git/refs" \
+            -f ref="refs/tags/unity-sdk-${{ steps.version.outputs.VERSION }}" \
+            -f sha="${{ github.sha }}"
 
-      # Tell beamable/docs to regenerate the SDK/CLI version table. Dispatched from
-      # here rather than from a tag-push trigger: the tag above is created with
-      # GITHUB_TOKEN, and events raised by GITHUB_TOKEN never start a workflow run.
+      # Tell beamable/docs to regenerate the SDK/CLI version table. This is the
+      # only path that does so: the tag above is created with GITHUB_TOKEN, and
+      # events raised by GITHUB_TOKEN never start a workflow run, so an
+      # on-push-tags trigger cannot work here. Cross-repo dispatch needs a real
+      # PAT; GITHUB_TOKEN is scoped to this repository and cannot reach docs.
       # --fail-with-body so an expired DOCS_DISPATCH_PAT fails the step loudly.
       - name: Notify docs of SDK release
         if: ${{ inputs.dryRun == false && inputs.releaseType == 'production' }}

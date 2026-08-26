@@ -105,16 +105,20 @@ jobs:
         if: ${{ inputs.dryRun == false }}
         run: npm publish --no-git-checks --provenance --access public --tag ${{ steps.version.outputs.NPM_TAG }}
 
-      - name: Create Release
+      # Creates the release tag only. GitHub Releases are deliberately not used:
+      # they carried no assets and no notes beyond a stub, nothing read them, and
+      # every downstream consumer (LightBeam aliases, the docs version table) keys
+      # off the git tag. Existing releases are left in place; none are made here.
+      # Created via the API rather than git tag/push so the tag lands on exactly
+      # ${{ github.sha }} and stays lightweight, matching every prior tag.
+      - name: Create release tag
         if: ${{ inputs.dryRun == false }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "web-sdk-${{ steps.version.outputs.VERSION }}" \
-            --target "${{ github.sha }}" \
-            --title "Web SDK ${{ steps.version.outputs.VERSION }}" \
-            --notes "Web SDK Release ${{ steps.version.outputs.VERSION }}" \
-            ${{ inputs.releaseType != 'production' && '--prerelease' || '' }}
+          gh api "repos/${{ github.repository }}/git/refs" \
+            -f ref="refs/tags/web-sdk-${{ steps.version.outputs.VERSION }}" \
+            -f sha="${{ github.sha }}"
 
       - name: Publish Changelog
         if: ${{ inputs.dryRun == false }}
