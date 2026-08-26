@@ -9,6 +9,7 @@ on:
     paths-ignore:
       - 'rfc/**'
       - 'client_installer/**'
+      - 'web/**'
 
 env:
   DOCKER_REGISTRY: ghcr.io
@@ -110,7 +111,7 @@ jobs:
       BEAM_DOCKER_WINDOWS_CONTAINERS: ${{ matrix.runners == 'windows-latest' && '1' || '0' }}
       DOTNET_CLI_UI_LANGUAGE: ${{ matrix.dotnet-cli-ui-language }}
     steps:
-      - name: Check Docker 
+      - name: Check Docker
         run: docker version
       - name: Check concurrency
         run: echo 'cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{ matrix.runners }}-${{ matrix.test-culture }}'
@@ -147,7 +148,7 @@ jobs:
         run: |
           cat ./build-number.txt
           beam --version
-      - name: Check Dotnet Version 
+      - name: Check Dotnet Version
         working-directory: cli/tests
         run: dotnet --info
       - name: Install dependencies
@@ -229,7 +230,7 @@ jobs:
 
       - name: Create Unity Mapped Values
         id: unityMap
-        env: 
+        env:
           UNITY_MODE: >-
             ${{ fromJson('{
               "playmode": "player",
@@ -251,7 +252,7 @@ jobs:
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
-      - name: Build and Install BEAM CLI 
+      - name: Build and Install BEAM CLI
         working-directory: ./
         run: |
           ./setup.sh
@@ -267,21 +268,21 @@ jobs:
         working-directory: ./cli/beamable.common
         run: |
           dotnet build -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true -p:BeamCopyCommonFlags="--no-build -c Release" -v:n
-      
-      - name: Apply CLI Versions 
+
+      - name: Apply CLI Versions
         run: jq --arg nextVersion 0.0.123.1 '.nugetPackageVersion = $nextVersion' ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json > localtmpfile && mv localtmpfile ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
 
       - name: Review Unity version-default file
         run: |
           cat ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
-      
+
       - name: Copy the nuget packages into unity
         working-directory: ./
         run: |
           mkdir -p client/BeamableNugetSource/
           ls BeamableNugetSource
           cp BeamableNugetSource/*.nupkg client/BeamableNugetSource/
-      
+
       - name: Cache Unity Folders
         uses: actions/cache@v5
         with:
@@ -296,7 +297,7 @@ jobs:
           # this might remove tools that are actually needed,
           # if set to "true" but frees about 6 GB
           tool-cache: false
-          
+
           # all of these default to true, but feel free to set to
           # "false" if necessary for your workflow
           android: true
@@ -528,10 +529,10 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
-      
+
       - name: Create Unity Mapped Values
         id: unityMap
-        env: 
+        env:
           UNITY_PLATFORM: >-
             ${{ fromJson('{
               "Android": "android",
@@ -543,7 +544,7 @@ jobs:
           echo "UNITY_PLATFORM=$UNITY_PLATFORM" >> "$GITHUB_OUTPUT"
 
 
-      - name: Setup .NET Core SDK 
+      - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
@@ -558,7 +559,7 @@ jobs:
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
-      - name: Build and Install BEAM CLI 
+      - name: Build and Install BEAM CLI
         working-directory: ./
         run: |
           ./setup.sh
@@ -572,7 +573,7 @@ jobs:
         working-directory: ./cli/beamable.common
         run: |
           dotnet build -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true -p:BeamCopyCommonFlags="--no-build -c Release" -v:n
-      
+
       - name: Prepare Config-Defaults
         run: |
           chmod +x ./build/create_config_defaults.sh
@@ -599,7 +600,7 @@ jobs:
           # this might remove tools that are actually needed,
           # if set to "true" but frees about 6 GB
           tool-cache: false
-          
+
           # all of these default to true, but feel free to set to
           # "false" if necessary for your workflow
           android: true
