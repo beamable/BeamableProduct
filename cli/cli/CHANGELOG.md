@@ -53,31 +53,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [7.2.0] - 2026-06-16
 
 ### Added
-- New Commands `project add-replacement-type`, `project list-replacement-type`, `project remove-replacement-type` to manage Unreal replacement types.
-- Unreal Types for Microservices FColor, FVector, FLinearColor, FIntVector, FGameplayTag, FGameplayTagCOntainer, FSoftObjectPath.
-- Semantic Types for Beamable Classes with custom serialization and deserialization
-- A `.beamroot` file will stop the CLI's search for a `.beamable` folder. 
-- Added internal `content history` command suite to power engine integrations for inspecting history of content changes to a realm.
 - MCP Server Configuration for Beamable CLI. Use `beam mcp setup` to configure in your project.
 - Agentic AI Skills for working with beamable. Use `beam install-ai-skill` to install it in your project.
 
 ### Changed
-- Update `AbsInventoryApi` and `MicroserviceInventoryApi` to use new Auto-generated IInventoryApi with Inventory filtering support.
-- Update `deploy release` and `deploy plan` with new optional parameter `--max-parallel-count` to control the max number of services that can be built simultaneously. This is to help with out-of-memory issues on machines with low resources.
-- Removed 5% sample rating for OTEL traces so we can get all traces from portal extensions and errors that happens in the CLI.
 - Improved Content Publish command performance by adding size-aware batching and retry.
 - Refactored calculation of directory size, 2x performance improvement.
 - Refactored generation of local manifest data, 20x performance improvement.
 - Added support to Max Concurrent Upload for `deploy release`.
 
 ### Fixed
+- Setting environment variable ``BEAM_NO_TELEMETRY`` or the ``BeamCliAllowTelemetry`` config now prevents collector ps process from starting
+- Fixed .NET framework argument parsing issues related to culture and locale handling.
+
+## [7.1.0] - 2026-04-16
+
+### Added
+- New Commands `project add-replacement-type`, `project list-replacement-type`, `project remove-replacement-type` to manage Unreal replacement types.
+- Unreal Types for Microservices FColor, FVector, FLinearColor, FIntVector, FGameplayTag, FGameplayTagCOntainer, FSoftObjectPath.
+- Semantic Types for Beamable Classes with custom serialization and deserialization
+- A `.beamroot` file will stop the CLI's search for a `.beamable` folder.
+- Added internal `content history` command suite to power engine integrations for inspecting history of content changes to a realm.
+
+### Changed
+- Update `AbsInventoryApi` and `MicroserviceInventoryApi` to use new Auto-generated IInventoryApi with Inventory filtering support.
+- Update `deploy release` and `deploy plan` with new optional parameter `--max-parallel-count` to control the max number of services that can be built simultaneously. This is to help with out-of-memory issues on machines with low resources.
+- Removed 5% sample rating for OTEL traces so we can get all traces from portal extensions and errors that happens in the CLI.
+
+### Fixed
 - Resolved issues in the token refresh flow where the CLI did not properly refresh, and persist the access token.
 - Concurrency issue in `Promise` code that could lead to deadlock scenario in multi-threaded code
 - Fixed issue that considered types used in ServerCallable methods on Microservices to be generated to client code.
 - Creating microservices when CultureInfo is expecting `,` instead of `.` as the decimal separator.
-- Fix an issue where some summary tag were missing the closing tag, which produced a truncated summary tag.
-- Setting environment variable ``BEAM_NO_TELEMETRY`` or the ``BeamCliAllowTelemetry`` config now prevents collector ps process from starting
-- Fixed .NET framework argument parsing issues related to culture and locale handling.
 
 ## [7.0.1] - 2026-04-02
 ### Fixed
