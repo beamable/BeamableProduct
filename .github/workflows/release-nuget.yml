@@ -238,6 +238,6 @@ jobs:
           COPY_WEB_SDK: 'false'
         run: |
           bash ./build/bin/release-notes.sh
-          gh release create "$TAG" \
+          gh release create "$TAG" --verify-tag \
             --title "CLI ${{ steps.version.outputs.VERSION }}" \
             --notes-file "$RUNNER_TEMP/release-notes.md"
