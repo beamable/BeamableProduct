@@ -105,12 +105,11 @@ jobs:
         if: ${{ inputs.dryRun == false }}
         run: npm publish --no-git-checks --provenance --access public --tag ${{ steps.version.outputs.NPM_TAG }}
 
-      # Creates the release tag only. GitHub Releases are deliberately not used:
-      # they carried no assets and no notes beyond a stub, nothing read them, and
-      # every downstream consumer (LightBeam aliases, the docs version table) keys
-      # off the git tag. Existing releases are left in place; none are made here.
-      # Created via the API rather than git tag/push so the tag lands on exactly
-      # ${{ github.sha }} and stays lightweight, matching every prior tag.
+      # Mints the release tag. Created via the API rather than git tag/push so the tag
+      # lands on exactly ${{ github.sha }} and stays lightweight, matching every prior
+      # tag - release-unity.yml checks out inputs.commit, which need not be github.sha.
+      # Every downstream consumer (LightBeam aliases, the docs version table) keys off
+      # this tag, not off the GitHub Release created below.
       - name: Create release tag
         if: ${{ inputs.dryRun == false }}
         env:
@@ -119,6 +118,27 @@ jobs:
           gh api "repos/${{ github.repository }}/git/refs" \
             -f ref="refs/tags/web-sdk-${{ steps.version.outputs.VERSION }}" \
             -f sha="${{ github.sha }}"
+
+      # A GitHub Release is created for production only. Nightly and RC tags stay bare:
+      # a Release per preview build is what made the previous 999 of them noise. The
+      # notes are a machine-generated verbatim slice of this version's CHANGELOG.md
+      # section, for the lanes this workflow publishes - the same COPY_* lanes declared
+      # for Publish Changelog above. Warns rather than fails on a missing section, so a
+      # changelog nobody updated cannot red-X a release whose packages already shipped.
+      - name: Create GitHub Release
+        if: ${{ inputs.dryRun == false && inputs.releaseType == 'production' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          TAG: web-sdk-${{ steps.version.outputs.VERSION }}
+          COPY_UNITY_SDK: 'false'
+          COPY_CLI: 'false'
+          COPY_WEB_SDK: 'true'
+        run: |
+          bash ./../build/bin/release-notes.sh
+          gh release create "$TAG" \
+            --title "Web SDK ${{ steps.version.outputs.VERSION }}" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
 
       - name: Publish Changelog
         if: ${{ inputs.dryRun == false }}
