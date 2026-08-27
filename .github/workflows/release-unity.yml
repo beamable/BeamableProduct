@@ -396,22 +396,39 @@ jobs:
               }
             }'
 
-      # Close the matching "Unity X.Y.Z" milestone once a production release ships.
-      # Warns (does not fail) when no open milestone matches, so it never blocks a release. ~Claude
+      # Close the matching "Unity X.Y.Z" milestone once a production release ships,
+      # but only when nothing is still open in it. A milestone holding open issues has
+      # not shipped everything it claims, and closing it drops it off the default
+      # milestones view -- the issues stay open and stay attached, but they stop being
+      # somewhere anyone looks. So leave it open and name the stragglers instead.
+      # Warns, never fails: this step cannot block or redden a release.
       - name: Close shipped milestone
         if: ${{ inputs.dryRun == false && inputs.releaseType == 'production' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           title="Unity ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}"
-          num=$(gh api "repos/${{ github.repository }}/milestones?state=open&per_page=100" \
-                --jq ".[] | select(.title==\"$title\") | .number")
-          if [ -n "$num" ]; then
-            gh api -X PATCH "repos/${{ github.repository }}/milestones/$num" -f state=closed
-            echo "Closed milestone $title (#$num)"
-          else
+          milestone=$(gh api "repos/${{ github.repository }}/milestones?state=open&per_page=100" \
+                      --jq ".[] | select(.title==\"$title\")" || true)
+
+          if [ -z "$milestone" ]; then
             echo "::warning::No open milestone titled '$title' to close"
+            exit 0
           fi
+
+          num=$(printf '%s' "$milestone" | jq -r '.number')
+          open_count=$(printf '%s' "$milestone" | jq -r '.open_issues')
+
+          if [ "$open_count" -gt 0 ]; then
+            echo "::warning::Milestone '$title' still has $open_count open item(s), so it was left OPEN. Move them to the next milestone, then close '$title' by hand."
+            gh issue list --repo "${{ github.repository }}" --milestone "$title" \
+              --state open --limit 100 --json number,title \
+              --jq '.[] | "::warning::still open in milestone: #\(.number) \(.title)"' || true
+            exit 0
+          fi
+
+          gh api -X PATCH "repos/${{ github.repository }}/milestones/$num" -f state=closed
+          echo "Closed milestone $title (#$num)"
 
   lightbeam:
     needs: package
