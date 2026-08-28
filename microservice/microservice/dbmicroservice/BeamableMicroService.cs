@@ -552,11 +552,17 @@ namespace Beamable.Server
             }
             catch (Exception ex)
             {
-               BeamableLogger.LogError($"Custom service initializer [{initializationMethod.DeclaringType?.FullName}.{initializationMethod.Name}] failed.\n" +
-                                       $"{ex.Message}\n" +
-                                       $"{{stacktrace}}", ex.StackTrace);
-
+               // The real exception is logged first, so that nothing about it can be lost to a formatting
+               // problem in the context line below.
                BeamableLogger.LogException(ex);
+
+               // ex.Message is passed as an argument, never interpolated into the message itself: a message
+               // containing curly braces (json, a format string) would otherwise be read as extra placeholders.
+               BeamableLogger.LogError("Custom service initializer [{typeName}.{methodName}] failed.\n{message}\n{stacktrace}",
+                                       initializationMethod.DeclaringType?.FullName,
+                                       initializationMethod.Name,
+                                       ex.Message,
+                                       ex.StackTrace);
                Environment.Exit(EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK);
             }
          }
@@ -574,11 +580,10 @@ namespace Beamable.Server
 		         }
 		         catch (Exception ex)
 		         {
-			         BeamableLogger.LogError($"Custom service initializer failed.\n" +
-			                                 $"{ex.Message}\n" +
-			                                 $"{{stacktrace}}", ex.StackTrace);
-
 			         BeamableLogger.LogException(ex);
+			         BeamableLogger.LogError("Custom service initializer failed.\n{message}\n{stacktrace}",
+			                                 ex.Message,
+			                                 ex.StackTrace);
 			         Environment.Exit(EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK);
 		         }
 	         }
@@ -599,11 +604,10 @@ namespace Beamable.Server
 			      }
 			      catch (Exception ex)
 			      {
-				      BeamableLogger.LogError($"Custom service setup initializer failed.\n" +
-				                              $"{ex.Message}\n" +
-				                              $"{{stacktrace}}", ex.StackTrace);
-
 				      BeamableLogger.LogException(ex);
+				      BeamableLogger.LogError("Custom service setup initializer failed.\n{message}\n{stacktrace}",
+				                              ex.Message,
+				                              ex.StackTrace);
 				      Environment.Exit(EXIT_CODE_FAILED_CUSTOM_SERVICE_SETUP_INITIALIZATION_HOOK);
 			      }
 		      }

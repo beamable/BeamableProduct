@@ -15,8 +15,64 @@ import {
   MessageRailService,
   StatsService,
 } from '@beamable/sdk';
-import { BEAM_CONFIG } from './config';
+import { BEAM_CONFIG, LOCAL_ROUTING_KEY } from './config';
 import { CampaignServiceClient } from './beamable/clients/CampaignServiceClient';
+import { PlayerStatsServiceClient } from './beamable/clients/PlayerStatsServiceClient';
+
+/**
+ * The microservices this app calls. Only used to build the routing-key header below, where the
+ * platform names them `micro_<ServiceName>`.
+ */
+const MICROSERVICES = ['CampaignService', 'PlayerStatsService'] as const;
+
+/**
+ * A routing key identifies a developer's machine: letters, digits, `_`, `.`, `-`. Nothing else.
+ * Anything failing this is a typo, and a malformed header value makes the platform reject EVERY
+ * request with `BadRoutingKeyHeaderException` — so a bad key must never reach the wire.
+ */
+const ROUTING_KEY_PATTERN = /^[A-Za-z0-9_.-]+$/;
+
+/** The header the platform reads (the SDK's internal `HEADERS.ROUTING_KEY`, which is not exported). */
+const ROUTING_KEY_HEADER = 'X-BEAM-SERVICE-ROUTING-KEY';
+
+/**
+ * Point microservice calls at services running locally (`beam project run`), when
+ * `BEAM_ROUTING_KEY` is set in `env.local`. A no-op otherwise, which is the right default for a
+ * realm whose services are deployed.
+ *
+ * Two deliberate choices, both of which keep authentication out of the blast radius:
+ *
+ *  - It is applied **after `Beam.init()`**, by mutating the requester's `defaultHeaders` in place
+ *    (that object is shared by reference with the requester, so later requests pick it up). The
+ *    alternative — `BeamBase.env.BEAM_ROUTING_KEY`, which the SDK also honours — is read on EVERY
+ *    request including the guest login inside `init()`. Doing it here means a wrong key can break
+ *    a stats call but can never break logging in. This mirrors what the Portal does for extension
+ *    SDK instances (`src/lib/utils/extensionSdkRegistry.ts`).
+ *  - The key is validated and expanded per service. A raw multi-service string is NOT passed
+ *    through: the only accepted input is one machine key.
+ */
+function applyLocalRoutingKey(beam: Beam): void {
+  const key = LOCAL_ROUTING_KEY?.trim();
+  if (!key) return;
+
+  if (!ROUTING_KEY_PATTERN.test(key)) {
+    console.warn(
+      `[beam] Ignoring BEAM_ROUTING_KEY from env.local: '${key}' is not a valid routing key ` +
+        '(letters, digits, "_", "." and "-" only). Microservice calls will target the realm\'s ' +
+        'deployed services instead.',
+    );
+    return;
+  }
+
+  // `defaultHeaders` is protected on BeamBase; the Portal reaches it the same way.
+  const headers = (beam as unknown as { defaultHeaders?: Record<string, string> }).defaultHeaders;
+  if (!headers) {
+    console.warn('[beam] Could not reach defaultHeaders — local microservice routing not applied.');
+    return;
+  }
+
+  headers[ROUTING_KEY_HEADER] = MICROSERVICES.map((name) => `micro_${name}:${key}`).join(',');
+}
 
 export type BeamStatus =
   | { state: 'idle' }
@@ -40,6 +96,16 @@ export function getBeam(): Beam | null {
  */
 export function getPushService(): CampaignServiceClient | null {
   return beamInstance?.campaignServiceClient ?? null;
+}
+
+/**
+ * The typed client for the `PlayerStatsService` microservice, or null until `initBeam()` has
+ * resolved. It owns the player's GAME-PRIVATE stats (`game.private.player.{playerId}`) — the
+ * domain Beamable segments are evaluated from, and one a client token cannot write. See
+ * `src/beam/segments.ts`.
+ */
+export function getPlayerStatsService(): PlayerStatsServiceClient | null {
+  return beamInstance?.playerStatsServiceClient ?? null;
 }
 
 /**
@@ -93,6 +159,10 @@ export async function initBeam(): Promise<Beam> {
     // launches (config marker `beam_cid`/`beam_pid` + tokens all in AsyncStorage).
     const beam = await Beam.init({ cid, pid, host, gameEngine: 'react-native' });
 
+    // Init (and its guest login) is done — only now is it safe to add the local-microservice
+    // routing header, so a bad key can never break authentication.
+    applyLocalRoutingKey(beam);
+
     // Register every high-level service the app uses. Accessors like
     // `beam.announcements` / `beam.content` / `beam.stats` / `beam.leaderboards`
     // throw "Call beam.use(...)" until their service is registered here.
@@ -119,6 +189,9 @@ export async function initBeam(): Promise<Beam> {
     // `/api/message-rail/{register,unregister}` endpoints — the rail microservices
     // (push/email/ingame/messagerail) are backend-only and are never referenced from the client.
     beam.use(CampaignServiceClient);
+    // PlayerStatsService is the Segments tab's write path: segments are evaluated from
+    // game-private player stats, which a client token cannot touch, so the service does it.
+    beam.use(PlayerStatsServiceClient);
     beamInstance = beam;
 
     // Best-effort: hand the player's tokens to the native side so the CLOSED-APP analytics

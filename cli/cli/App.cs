@@ -738,6 +738,7 @@ public class App
 		Commands.AddSubCommand<UpdateServiceDllsReferenceCommand, UpdateServiceDllsReferenceCommandArgs,
 			UnityGroupCommand>();
 		Commands.AddSubCommand<ShowManifestCommand, ShowManifestCommandArgs, UnityGroupCommand>();
+		Commands.AddSubCommand<VerifyPackageMetasCommand, VerifyPackageMetasCommandArgs, UnityGroupCommand>();
 		
 		// unreal commands
 		Commands.AddRootCommand<UnrealGroupCommand>();

@@ -20,9 +20,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool runDetached;
         /// <summary>Rebuild the C# hosts, Scala services, and portal deps before launching (a manifest that declares a build output also builds that step on its own when the output is missing; microservices/extensions always build via project run)</summary>
         public bool build;
-        /// <summary>Skip the local web-registry steps: do not bring the registry up, publish the web packages, or repin the portal extensions (the fast path, but the portal then runs against the PUBLISHED web SDK)</summary>
-        public bool noWebRegistry;
-        /// <summary>Explicitly run the local web-registry steps; they are already the default, so this is a no-op except that it overrides --no-web-registry when both are passed</summary>
+        /// <summary>Run the local web-registry steps for this run whatever `beam local init` chose, or skip them with --with-web-registry=false (skipping is the fast path, but the portal then runs against the PUBLISHED web SDK rather than your local build)</summary>
         public bool withWebRegistry;
         /// <summary>Persist per-run logs under the workspace (.beamable/local-stack-logs/run-<id>); without it logs go to a temp folder and are removed on `beam local stop`</summary>
         public bool saveLogs;
@@ -77,11 +75,6 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.build != default(bool)))
             {
                 genBeamCommandArgs.Add(("--build=" + this.build));
-            }
-            // If the noWebRegistry value was not default, then add it to the list of args.
-            if ((this.noWebRegistry != default(bool)))
-            {
-                genBeamCommandArgs.Add(("--no-web-registry=" + this.noWebRegistry));
             }
             // If the withWebRegistry value was not default, then add it to the list of args.
             if ((this.withWebRegistry != default(bool)))

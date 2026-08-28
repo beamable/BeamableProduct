@@ -180,8 +180,15 @@ namespace Beamable.Api
 		/// <returns></returns>
 		public virtual PlatformSubscription<Data> Subscribe(string scope, Action<Data> callback)
 		{
-			scope = scope ?? String.Empty;
+			scope ??= String.Empty;
 
+			//Reject unsupported scopes before registering a subscription that can never be notified
+			var scopeError = GetInvalidScopeException(scope);
+			if (scopeError != null)
+			{
+				throw scopeError;
+			}
+			
 			List<PlatformSubscription<Data>> subscriptions;
 			if (!scopedSubscriptions.TryGetValue(scope, out subscriptions))
 			{
@@ -366,6 +373,15 @@ namespace Beamable.Api
 		/// <returns></returns>
 		public Promise<Data> GetCurrent(string scope = "")
 		{
+			scope ??= String.Empty;
+			
+			// Reject unsupported scopes before creating a Promise that can never receive matching data.
+			var scopeError = GetInvalidScopeException(scope);
+			if (scopeError != null)
+			{
+				return Promise<Data>.Failed(scopeError);
+			}
+
 			if (scopedData.TryGetValue(scope, out var data))
 			{
 				return Promise<Data>.Successful(data);
@@ -512,6 +528,8 @@ namespace Beamable.Api
 				}
 			}
 		}
+
+		protected virtual Exception GetInvalidScopeException(string scope) => null;
 	}
 
 	// A class instead of a struct to reduce code-size bloat from the generic dictionary instantiation

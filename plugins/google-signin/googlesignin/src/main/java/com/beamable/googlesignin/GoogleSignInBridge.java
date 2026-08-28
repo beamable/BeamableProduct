@@ -1,0 +1,480 @@
+package com.beamable.googlesignin;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
+import android.os.Build;
+import android.util.Log;
+
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.CommonStatusCodes;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.unity3d.player.UnityPlayer;
+
+import java.security.MessageDigest;
+
+/**
+ * Implementation behind the static entry points on {@link GoogleSignInActivity}.
+ *
+ * <p>Everything here runs <em>without</em> an Activity. {@code silentSignIn}, {@code signOut} and
+ * {@code revokeAccess} only need a {@link android.content.Context} and return a
+ * {@link Task}, so hosting them in the proxy Activity would be all cost and no benefit: it would
+ * background the Unity player (pausing the player loop, which also delays delivery of the response
+ * until the proxy finishes), flash a blank window, and add a lifecycle window in which the OS could
+ * kill the Activity mid-flight. A silent sign-in that visibly interrupts the game is not silent.
+ *
+ * <p>Two rules that are load-bearing for anyone editing this file:
+ * <ul>
+ *   <li><b>No lambdas or method references.</b> At {@code -target 8} javac compiles them to
+ *       {@code invokedynamic} + {@code LambdaMetafactory}, which relies on the <em>consuming</em>
+ *       project's desugaring being enabled. Anonymous inner classes have no such dependency.</li>
+ *   <li><b>Catch {@link Throwable}, not {@link Exception}.</b> A consuming project that has not
+ *       added {@code play-services-auth} to its {@code mainTemplate.gradle} raises
+ *       {@link NoClassDefFoundError}, which is an {@link Error}. Caught as a {@code Throwable} it
+ *       is reported to Unity as a normal failure; uncaught it escapes the JNI boundary and takes
+ *       the player down. For the same reason every public entry point takes and returns only
+ *       {@link String}: a GMS type in a signature would move the failure to method resolution,
+ *       where it cannot be caught.</li>
+ * </ul>
+ */
+final class GoogleSignInBridge {
+	private static final String TAG = "GoogleSignInActivity";
+
+	/** Response vocabulary. These strings are a wire contract with the C# side - see
+	 * {@code Beamable.Platform.SDK.Auth.GoogleSignInResult} - and must not be reworded. */
+	static final String RESPONSE_CANCELED = "CANCELED";
+	static final String RESPONSE_UNKNOWN = "UNKNOWN";
+	static final String RESPONSE_NO_CREDENTIAL = "NO_CREDENTIAL";
+	static final String RESPONSE_SIGNED_OUT = "SIGNED_OUT";
+	static final String RESPONSE_REVOKED = "REVOKED";
+	static final String RESPONSE_EXCEPTION_PREFIX = "EXCEPTION - ";
+
+	private GoogleSignInBridge() {
+	}
+
+	/**
+	 * The single source of truth for the sign-in options.
+	 *
+	 * <p>This is shared with the interactive path in {@link GoogleSignInActivity} as a correctness
+	 * requirement rather than for tidiness: {@code silentSignIn()} fails with
+	 * {@code SIGN_IN_REQUIRED} unless the options match those the cached account was originally
+	 * signed in with. If the two paths ever build their options separately, silent sign-in starts
+	 * failing for reasons that look like a credential problem.
+	 */
+	static GoogleSignInOptions buildOptions(String clientId) {
+		return new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+				.requestEmail()
+				.requestIdToken(clientId)
+				.build();
+	}
+
+	/**
+	 * Refresh the signed-in player's Google ID token without showing any UI.
+	 *
+	 * <p>Deliberately does <em>not</em> call {@code signOut()} first, unlike
+	 * {@link GoogleSignInActivity#login}, which force-signs-out so the account chooser always
+	 * appears. Preserving the cached account is the entire point of this call.
+	 *
+	 * <p>Prefer this to {@code GoogleSignIn.getLastSignedInAccount()}: that returns a cached
+	 * account whose ID token may already have expired, whereas {@code silentSignIn()} refreshes it.
+	 */
+	static void silentLogin(final String unityObject, final String unityMethod, final String clientId) {
+		postToUiThread(unityObject, unityMethod, new Runnable() {
+			@Override
+			public void run() {
+				final GoogleSignInClient client =
+						GoogleSignIn.getClient(UnityPlayer.currentActivity, buildOptions(clientId));
+
+				client.silentSignIn().addOnCompleteListener(new OnCompleteListener<GoogleSignInAccount>() {
+					@Override
+					public void onComplete(Task<GoogleSignInAccount> task) {
+						sendResponse(unityObject, unityMethod, describeSilentResult(task));
+					}
+				});
+			}
+		});
+	}
+
+	/**
+	 * Forget the cached Google account, so the next {@code silentLogin} reports
+	 * {@link #RESPONSE_NO_CREDENTIAL} and the next interactive {@code login} starts clean.
+	 *
+	 * <p>This is what a game's "log out" button should call. It does not withdraw the OAuth grant,
+	 * so signing back in does not re-prompt for consent.
+	 */
+	static void signOut(final String unityObject, final String unityMethod, final String clientId) {
+		postToUiThread(unityObject, unityMethod, new Runnable() {
+			@Override
+			public void run() {
+				final GoogleSignInClient client =
+						GoogleSignIn.getClient(UnityPlayer.currentActivity, buildOptions(clientId));
+
+				client.signOut().addOnCompleteListener(new OnCompleteListener<Void>() {
+					@Override
+					public void onComplete(Task<Void> task) {
+						sendResponse(unityObject, unityMethod, describeVoidResult(task, RESPONSE_SIGNED_OUT));
+					}
+				});
+			}
+		});
+	}
+
+	/**
+	 * Withdraw the OAuth grant entirely.
+	 *
+	 * <p><b>Destructive.</b> The player must pass through the full consent screen again next time.
+	 * Wire this to "delete account" or "unlink Google", never to a plain "log out" button - use
+	 * {@link #signOut} for that.
+	 */
+	static void revokeAccess(final String unityObject, final String unityMethod, final String clientId) {
+		postToUiThread(unityObject, unityMethod, new Runnable() {
+			@Override
+			public void run() {
+				final GoogleSignInClient client =
+						GoogleSignIn.getClient(UnityPlayer.currentActivity, buildOptions(clientId));
+
+				client.revokeAccess().addOnCompleteListener(new OnCompleteListener<Void>() {
+					@Override
+					public void onComplete(Task<Void> task) {
+						sendResponse(unityObject, unityMethod, describeVoidResult(task, RESPONSE_REVOKED));
+					}
+				});
+			}
+		});
+	}
+
+	/**
+	 * Post GMS work to the Android UI thread, reporting any failure to Unity instead of letting it
+	 * escape into JNI.
+	 *
+	 * <p>Unity calls in on the player thread ("UnityMain"), which has no {@link android.os.Looper}.
+	 * GMS is designed to cope with that, but hopping to the UI thread keeps this plugin on the same
+	 * thread the interactive path has always used, and means the {@code Task} completion listener
+	 * (whose default executor is the main looper) runs there too - so each request is
+	 * single-threaded end to end.
+	 *
+	 * <p>It also removes any question of re-entrancy on the fast path where
+	 * {@code silentSignIn()} returns an already-completed {@code Task}: the work is posted, so it
+	 * has not started when the JNI call returns. Independently,
+	 * {@code UnityPlayer.UnitySendMessage} queues for the player loop, so the C# callback always
+	 * lands on a later frame and can never re-enter the caller.
+	 */
+	private static void postToUiThread(final String unityObject, final String unityMethod, final Runnable work) {
+		try {
+			final Activity activity = UnityPlayer.currentActivity;
+			if (activity == null) {
+				sendResponse(unityObject, unityMethod,
+						RESPONSE_EXCEPTION_PREFIX + "UnityPlayer.currentActivity was null");
+				return;
+			}
+
+			activity.runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						work.run();
+					} catch (Throwable t) {
+						Log.e(TAG, "Google Sign-In request failed", t);
+						sendResponse(unityObject, unityMethod, describeThrowable(t));
+					}
+				}
+			});
+		} catch (Throwable t) {
+			Log.e(TAG, "Could not dispatch Google Sign-In request", t);
+			sendResponse(unityObject, unityMethod, describeThrowable(t));
+		}
+	}
+
+	/**
+	 * Classify the result of the interactive account chooser into the response vocabulary.
+	 *
+	 * <p>The {@code resultCode} is deliberately <em>not</em> what decides the outcome. GMS returns
+	 * {@code RESULT_CANCELED} both when the player dismisses the chooser ({@code SIGN_IN_CANCELLED},
+	 * 12501) and when it refuses the request outright ({@code DEVELOPER_ERROR}, 10 - a package name,
+	 * signing SHA-1 or OAuth client ID that does not match the Cloud console). Only the {@code Status}
+	 * inside {@code data} tells them apart. Reporting both as a cancellation sends whoever is
+	 * debugging it looking for a UI problem that does not exist, so the {@code Status} is read first
+	 * and {@code resultCode} is used only for logging.
+	 *
+	 * <p>Mirrors {@link #describeSilentResult} on purpose: both paths should classify the same failure
+	 * the same way.
+	 *
+	 * @param context  used only to describe the app when the configuration is what GMS rejected.
+	 * @param data     the chooser's result intent. Null means it never produced a {@code Status}.
+	 * @param resultCode the raw Activity result code, for logging.
+	 * @param clientId the client ID the request was made with, for the diagnostic dump.
+	 */
+	static String describeInteractiveResult(Context context, Intent data, int resultCode, String clientId) {
+		if (data == null) {
+			// No Status to read. In practice a back press before the hub ever reached Google, or the
+			// Activity being torn down. This is the one path that still reports a cancellation without
+			// positive evidence of one.
+			Log.i(TAG, "Sign-in returned no data (resultCode=" + resultCode + "); treating as cancelled");
+			return RESPONSE_CANCELED;
+		}
+
+		final Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+
+		if (task.isSuccessful()) {
+			final GoogleSignInAccount account = task.getResult();
+			if (account == null) {
+				Log.w(TAG, "Sign-in succeeded with no account");
+				return RESPONSE_UNKNOWN;
+			}
+
+			final String idToken = account.getIdToken();
+			if (idToken == null) {
+				// The account is real but Google granted no ID token, which is what happens when the
+				// client ID is not a *web* OAuth client. Same diagnosis as DEVELOPER_ERROR, so it earns
+				// the same dump.
+				Log.w(TAG, "Sign-in succeeded but no ID token was granted");
+				logConfigurationDiagnostics(context, clientId);
+				return RESPONSE_UNKNOWN;
+			}
+
+			Log.d(TAG, "Sign-in succeeded");
+			return idToken;
+		}
+
+		final Exception failure = task.getException();
+		if (failure instanceof ApiException) {
+			final int statusCode = ((ApiException) failure).getStatusCode();
+
+			if (statusCode == GoogleSignInStatusCodes.SIGN_IN_CANCELLED) {
+				// The only status that earns the word "cancelled".
+				Log.i(TAG, "Sign-in cancelled by the player");
+				return RESPONSE_CANCELED;
+			}
+
+			if (statusCode == CommonStatusCodes.DEVELOPER_ERROR) {
+				logConfigurationDiagnostics(context, clientId);
+			}
+
+			return describeStatusCode("Sign-in failed", statusCode);
+		}
+
+		if (failure == null) {
+			Log.w(TAG, "Sign-in failed with no exception (resultCode=" + resultCode + ")");
+			return RESPONSE_UNKNOWN;
+		}
+
+		Log.e(TAG, "Sign-in failed", failure);
+		return describeThrowable(failure);
+	}
+
+	/**
+	 * Log everything needed to compare this build against the Google Cloud console.
+	 *
+	 * <p>Called only when GMS has said the configuration is what it rejected, because it means
+	 * nothing when sign-in works and the output is deliberately loud. Every value here is derivable
+	 * from the installed APK by anyone holding it, so none of it is secret - and all of it is needed,
+	 * because the usual cause is a pair (package name, signing SHA-1) that was never registered.
+	 *
+	 * <p>Nothing in here may throw: a diagnostic that breaks sign-in would be worse than no
+	 * diagnostic at all.
+	 */
+	static void logConfigurationDiagnostics(Context context, String clientId) {
+		try {
+			Log.e(TAG, "Google Sign-In configuration check - compare these with the Google Cloud console:");
+			Log.e(TAG, "  packageName = " + (context == null ? "unknown" : context.getPackageName()));
+			Log.e(TAG, "  signingSha1 = " + signingCertificateSha1(context));
+			Log.e(TAG, "  clientId    = " + (clientId == null || clientId.length() == 0 ? "(none)" : clientId));
+			Log.e(TAG, "  Two OAuth clients are required, in the SAME Cloud project: a Web application");
+			Log.e(TAG, "  client (whose ID is the clientId above - the string cannot prove its type, so");
+			Log.e(TAG, "  check it in the console) and an Android client registered against the package");
+			Log.e(TAG, "  name and SHA-1 above. See plugins/google-signin/README.md.");
+		} catch (Throwable t) {
+			Log.e(TAG, "Could not log the Google Sign-In configuration", t);
+		}
+	}
+
+	/**
+	 * The SHA-1 of the certificate this build is signed with, as colon-separated uppercase hex - the
+	 * format the Cloud console expects, so it can be pasted straight in.
+	 *
+	 * <p>A debug build is signed with the local {@code ~/.android/debug.keystore}, whose SHA-1 differs
+	 * per machine. Reading it at runtime is the only way to be sure which certificate the APK on the
+	 * device actually carries, which is exactly the thing that is usually wrong.
+	 */
+	private static String signingCertificateSha1(Context context) {
+		if (context == null) {
+			return "unavailable (no context)";
+		}
+
+		try {
+			final PackageManager packages = context.getPackageManager();
+			final String name = context.getPackageName();
+			final Signature[] signatures;
+
+			if (Build.VERSION.SDK_INT >= 28) {
+				final PackageInfo info =
+						packages.getPackageInfo(name, PackageManager.GET_SIGNING_CERTIFICATES);
+				signatures = info.signingInfo.getApkContentsSigners();
+			} else {
+				// Deprecated on 28+ but the only option below it, and minSdk here is 16.
+				@SuppressWarnings("deprecation")
+				final PackageInfo info = packages.getPackageInfo(name, PackageManager.GET_SIGNATURES);
+				signatures = info.signatures;
+			}
+
+			if (signatures == null || signatures.length == 0) {
+				return "unavailable (no signatures)";
+			}
+
+			final StringBuilder all = new StringBuilder();
+			for (int i = 0; i < signatures.length; i++) {
+				if (i > 0) {
+					// More than one signer is legal, and then any of them may be the registered one.
+					all.append(" | ");
+				}
+				all.append(hex(MessageDigest.getInstance("SHA-1").digest(signatures[i].toByteArray())));
+			}
+
+			return all.toString();
+		} catch (Throwable t) {
+			return "unavailable (" + t.getClass().getSimpleName() + ": " + t.getLocalizedMessage() + ")";
+		}
+	}
+
+	/** Colon-separated uppercase hex, the shape keytool prints and the Cloud console accepts. */
+	private static String hex(byte[] bytes) {
+		final StringBuilder text = new StringBuilder(bytes.length * 3);
+		for (int i = 0; i < bytes.length; i++) {
+			if (i > 0) {
+				text.append(':');
+			}
+			final int value = bytes[i] & 0xFF;
+			if (value < 0x10) {
+				text.append('0');
+			}
+			text.append(Integer.toHexString(value).toUpperCase());
+		}
+
+		return text.toString();
+	}
+
+	/** Classify a completed {@code silentSignIn()} task into the response vocabulary. */
+	private static String describeSilentResult(Task<GoogleSignInAccount> task) {
+		if (task.isSuccessful()) {
+			final GoogleSignInAccount account = task.getResult();
+			if (account == null) {
+				Log.w(TAG, "Silent sign-in succeeded with no account");
+				return RESPONSE_UNKNOWN;
+			}
+
+			final String idToken = account.getIdToken();
+			if (idToken == null) {
+				// Almost always a client ID that was not configured as a *web* OAuth client.
+				Log.w(TAG, "Silent sign-in succeeded but no ID token was granted");
+				return RESPONSE_UNKNOWN;
+			}
+
+			Log.d(TAG, "Silent sign-in succeeded");
+			return idToken;
+		}
+
+		final Exception failure = task.getException();
+		if (failure instanceof ApiException) {
+			final int statusCode = ((ApiException) failure).getStatusCode();
+
+			// SIGN_IN_REQUIRED is the ordinary "nobody has signed in on this device yet, or consent
+			// is needed" outcome. It is a normal result for a silent attempt, not an error, and the
+			// C# layer surfaces it as GoogleSignInStatus.NoCredential so the game can fall back to
+			// showing a Google button.
+			if (statusCode == CommonStatusCodes.SIGN_IN_REQUIRED) {
+				Log.i(TAG, "Silent sign-in found no usable credential");
+				return RESPONSE_NO_CREDENTIAL + " - " + statusCode;
+			}
+
+			return describeStatusCode("Silent sign-in failed", statusCode);
+		}
+
+		if (failure == null) {
+			Log.w(TAG, "Silent sign-in failed with no exception");
+			return RESPONSE_UNKNOWN;
+		}
+
+		Log.e(TAG, "Silent sign-in failed", failure);
+		return describeThrowable(failure);
+	}
+
+	/** Classify a completed {@code signOut()} / {@code revokeAccess()} task. */
+	private static String describeVoidResult(Task<Void> task, String successResponse) {
+		if (task.isSuccessful()) {
+			Log.d(TAG, successResponse);
+			return successResponse;
+		}
+
+		final Exception failure = task.getException();
+		if (failure instanceof ApiException) {
+			return describeStatusCode("Request failed", ((ApiException) failure).getStatusCode());
+		}
+
+		if (failure == null) {
+			return RESPONSE_UNKNOWN;
+		}
+
+		Log.e(TAG, "Request failed", failure);
+		return describeThrowable(failure);
+	}
+
+	/**
+	 * Keep the numeric status code in the message. This is what makes the difference between a
+	 * support ticket that reads "EXCEPTION - 10" and one that reads
+	 * "EXCEPTION - DEVELOPER_ERROR(10)" - code 10 is specifically the signal that the SHA-1 or the
+	 * OAuth client ID is misconfigured, which is the single most common setup mistake.
+	 */
+	static String describeStatusCode(String logPrefix, int statusCode) {
+		String name;
+		try {
+			name = GoogleSignInStatusCodes.getStatusCodeString(statusCode);
+		} catch (Throwable t) {
+			name = "STATUS";
+		}
+
+		Log.e(TAG, logPrefix + ": " + name + "(" + statusCode + ")");
+		return RESPONSE_EXCEPTION_PREFIX + name + "(" + statusCode + ")";
+	}
+
+	/**
+	 * Describe any throwable, including the ones with no message. {@link NoClassDefFoundError}
+	 * carries the missing class name as its message, which is exactly the diagnostic needed when a
+	 * consuming project has not supplied {@code play-services-auth}.
+	 */
+	static String describeThrowable(Throwable t) {
+		final String message = t.getLocalizedMessage();
+		if (message == null) {
+			return RESPONSE_EXCEPTION_PREFIX + t.getClass().getName();
+		}
+
+		return RESPONSE_EXCEPTION_PREFIX + t.getClass().getSimpleName() + ": " + message;
+	}
+
+	/**
+	 * Send a response back to Unity.
+	 *
+	 * <p>{@code UnitySendMessage} queues the message for the Unity player loop, so the C# callback
+	 * runs on the main thread on a later frame regardless of which thread calls this. Note that it
+	 * <em>silently drops</em> the message if the player's native libraries are not loaded (it logs
+	 * "Native libraries not loaded - dropping message") - which is why the C# side puts a timeout on
+	 * every silent request rather than trusting that a response always arrives.
+	 */
+	static void sendResponse(String unityObject, String unityMethod, String message) {
+		try {
+			UnityPlayer.UnitySendMessage(unityObject, unityMethod, message);
+		} catch (Throwable t) {
+			// Nothing useful is left to do: the channel we would report the failure over is the one
+			// that just failed.
+			Log.e(TAG, "Could not send response to Unity", t);
+		}
+	}
+}

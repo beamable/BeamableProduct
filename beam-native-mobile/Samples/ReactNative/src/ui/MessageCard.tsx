@@ -3,8 +3,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, mono, radius, space } from './theme';
 
 /**
- * One entry in the player's Beamable mailbox (the `ingame` rail's last mile). Fields come
- * from the SDK `Message` schema via `listInGameMessages()`.
+ * A titled entry with an optional body and a monospaced meta line.
+ *
+ * Two callers: the In-game tab's mailbox (the `ingame` rail's last mile — fields from the SDK
+ * `Message` schema via `listInGameMessages()`), and the Segments tab's membership and
+ * transition rows.
  */
 export default function MessageCard({
   subject,
