@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Portal extension "open in browser" landing URLs now honor the `--portal-url` override.
 
 ### Fixed
+- `content ps --watch` now recovers from filesystem watcher overflow by performing an authoritative full rescan instead of leaving consumers with an incomplete local content state.
 - Portal extension scanning no longer excludes sym linked package files
 - Fixed orphaned Unity .meta files left behind when cleaning generated Beamable source directories.
 - `beam project run` no longer hangs silently when a portal extension or embedded-Mongo service fails to start. Those faults were unobservable behind infinite sibling tasks; they now log, emit a terminal stream update, and release the waiting consumer.

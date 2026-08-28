@@ -36,6 +36,7 @@ namespace cli.Content;
 public class LocalContentFileChanges
 {
 	public List<ChangedContentFile> AllFileChanges;
+	public bool RequiresFullRescan;
 }
 
 public struct RemoteContentPublished
@@ -53,6 +54,7 @@ public struct ChangedContentFile
 {
 	public string OwnerPid;
 	public string OwnerManifestId;
+	public bool RequiresFullRescan;
 
 	public string OldContentId;
 	public string ContentId;
@@ -117,6 +119,8 @@ public partial class ContentService
 	private const int DEFAULT_CONTENT_DOWNLOAD_MAX_CONCURRENCY = 64;
 	private const int CONTENT_DOWNLOAD_RETRY_BASE_DELAY_MS = 250;
 	private const int CONTENT_DOWNLOAD_RETRY_JITTER_MS = 250;
+	private const int CONTENT_FILE_READ_MAX_ATTEMPTS = 5;
+	private const int CONTENT_FILE_READ_RETRY_DELAY_MS = 25;
 
 	/// <summary>
 	/// Shared client for CDN content-file downloads during sync.
@@ -169,6 +173,69 @@ public partial class ContentService
 		// Initialize local content-history channels used by the History partial class
 		_channelContentHistoryEntries = Channel.CreateUnbounded<ChangedContentHistoryEntryFile>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true });
 		_channelContentHistoryChangelists = Channel.CreateUnbounded<ChangedContentHistoryChangelistFile>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = true });
+	}
+
+	public static bool TryCreateWatcherRecoveryChange(Exception exception, string pid, string manifestId,
+		out ChangedContentFile recoveryChange)
+	{
+		if (exception is not InternalBufferOverflowException)
+		{
+			recoveryChange = default;
+			return false;
+		}
+
+		recoveryChange = new ChangedContentFile
+		{
+			OwnerPid = pid,
+			OwnerManifestId = manifestId,
+			RequiresFullRescan = true
+		};
+		return true;
+	}
+
+	public static void HandleWatcherError(Exception exception, string pid, string manifestId, ILogger logger,
+		ChannelWriter<ChangedContentFile> changedContentFiles)
+	{
+		if (TryCreateWatcherRecoveryChange(exception, pid, manifestId, out var recoveryChange))
+		{
+			logger.LogWarning(
+				"Content filesystem notifications were lost. Scheduling a full local content rescan. " +
+				"PID={Pid}, ManifestId={ManifestId}",
+				pid,
+				manifestId);
+			changedContentFiles.TryWrite(recoveryChange);
+			return;
+		}
+
+		logger.LogError(
+			exception,
+			"Content filesystem watcher failed. PID={Pid}, ManifestId={ManifestId}",
+			pid,
+			manifestId);
+	}
+
+	public static LocalContentFileChanges BatchLocalFileChanges(IEnumerable<ChangedContentFile> changes, string pid,
+		string manifestId)
+	{
+		var batch = new LocalContentFileChanges { AllFileChanges = new List<ChangedContentFile>() };
+		foreach (var changed in changes)
+		{
+			if (changed.OwnerPid != pid || changed.OwnerManifestId != manifestId)
+			{
+				continue;
+			}
+
+			if (changed.RequiresFullRescan)
+			{
+				// Multiple overflow notifications in the same batch collapse into one full rescan.
+				batch.RequiresFullRescan = true;
+				continue;
+			}
+
+			batch.AllFileChanges.Add(changed);
+		}
+
+		return batch;
 	}
 
 	private string RootContentPath => _config.GetConfigPath(ConfigService.CONTENT_DIR);
@@ -294,7 +361,10 @@ public partial class ContentService
 		                        NotifyFilters.DirectoryName |
 		                        NotifyFilters.FileName |
 		                        NotifyFilters.LastWrite);
-		watcher.Error += (_, e) => Log.Error(e.GetException().ToString());
+		watcher.Error += (_, e) =>
+		{
+			HandleWatcherError(e.GetException(), pid, manifestId, Log.Default, _channelChangedContentFiles.Writer);
+		};
 		watcher.Disposed += (_, e) => Log.Error($"Disposed {e}");
 		watcher.Created += (_, e) => { OnLocalRealmContentFilesChanged(e); };
 		watcher.Deleted += (_, e) => { OnLocalRealmContentFilesChanged(e); };
@@ -327,18 +397,18 @@ public partial class ContentService
 				break;
 			}
 
-			// Get all the files that were changed respecting the PID filter.
-			var batchedChanges = new LocalContentFileChanges() { AllFileChanges = new() };
+			// Get all the files that were changed respecting the watcher filters.
+			var drainedChanges = new List<ChangedContentFile>();
 			while (reader.TryRead(out var changed))
 			{
-				if (changed.OwnerPid == pid)
-				{
-					batchedChanges.AllFileChanges.Add(changed);
-				}
+				drainedChanges.Add(changed);
 			}
+			var batchedChanges = BatchLocalFileChanges(drainedChanges, pid, manifestId);
 
-			
-			yield return batchedChanges;
+			if (batchedChanges.RequiresFullRescan || batchedChanges.AllFileChanges.Count > 0)
+			{
+				yield return batchedChanges;
+			}
 		}
 
 		yield break;
@@ -578,8 +648,8 @@ public partial class ContentService
 		if (!UNSUPPORTED_FILTERS_BEFORE_LOADING.Contains(filterType))
 			filterFunc = BuildFilterFunc(filterType, filters);
 
-		// Build a list of tasks for computing a ContentFile structure for each relevant content id in this manifest.  
-		var tasks =
+		// Build a list of tasks for computing a ContentFile structure for each relevant local content id.
+		var localFileTasks =
 			// For each existing file inside the content folder we care about, we'll have one entry.
 			Directory.EnumerateFiles(contentFolder)
 				// Only get the JSON files
@@ -589,21 +659,43 @@ public partial class ContentService
 				// Load the files that passed the filter into memory
 				.Select(async fp =>
 				{
-					// We got to do this so that we don't collide with other software editing the files on disk. 
-					var text = "";
-					var readText = false;
-					while (!readText || text == "")
+					// Content files may be temporarily locked or empty while another process writes them.
+					// A file deleted during this scan is no longer a local entry and must not block recovery.
+					string text = null;
+					for (var attempt = 1; attempt <= CONTENT_FILE_READ_MAX_ATTEMPTS; attempt++)
 					{
 						try
 						{
 							text = await File.ReadAllTextAsync(fp);
-							readText = true;
+							if (!string.IsNullOrEmpty(text))
+							{
+								break;
+							}
 						}
-						catch (IOException)
+						catch (FileNotFoundException)
 						{
-							readText = false;
-							text = "";
+							return (ContentFile?)null;
 						}
+						catch (DirectoryNotFoundException)
+						{
+							return (ContentFile?)null;
+						}
+						catch (IOException) when (attempt < CONTENT_FILE_READ_MAX_ATTEMPTS)
+						{
+							// Retry transient sharing violations and other short-lived I/O failures.
+						}
+
+						if (!File.Exists(fp))
+						{
+							return (ContentFile?)null;
+						}
+
+						if (attempt == CONTENT_FILE_READ_MAX_ATTEMPTS)
+						{
+							throw new IOException($"Content file remained unreadable after {CONTENT_FILE_READ_MAX_ATTEMPTS} attempts: {fp}");
+						}
+
+						await Task.Delay(CONTENT_FILE_READ_RETRY_DELAY_MS);
 					}
 
 					var id = Path.GetFileNameWithoutExtension(fp);
@@ -624,7 +716,7 @@ public partial class ContentService
 						};
 						contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
 
-						return contentFile;
+						return (ContentFile?)contentFile;
 					}
 					catch (Exception e)
 					{
@@ -632,38 +724,46 @@ public partial class ContentService
 						throw;
 					}
 				})
-				// We'll also have on entry for each entry in the reference manifest that is NOT represented in the local files.
-				.Concat(
-					localFiles.TargetManifest.entries
-						// Filter only the content types that do NOT exist locally
-						.Where(e =>
-						{
-							var expectedPath = Path.Combine(contentFolder, $"{e.contentId}.json");
-							return !File.Exists(expectedPath);
-						})
-						// Filter all content to only match the ones we care about.
-						.Where(fp => filterFunc(new ContentFile() { Id = fp.contentId }))
-						// Create a dummy ContentFile to represent the deleted file.
-						.Select(e => Task.FromResult(new ContentFile()
-						{
-							Id = e.contentId,
-							LocalFilePath = "",
-							Properties = JsonSerializer.Deserialize<JsonElement>("{}"),
-							Tags = JsonSerializer.SerializeToElement(e.tags),
-
-							// For deletions, this is set as the reference manifest because it doesn't matter what the reference manifest was before deletion.
-							// If someone publishes a manifest that has this guy in it, we'll auto sync it back up.
-							// Using the target manifest uid, simplifies other cases (such as the initial sync) so we use this. 
-							FetchedFromManifestUid = localFiles.TargetManifest.uid.GetOrElse(""),
-							PropertiesChecksum = e.version,
-							ReferenceContent = e,
-						}))
-				).ToList();
+				.ToList();
 
 		// Wait for all the content file tasks and return the list of ContentFile.
 		try
 		{
-			localFiles.ContentFiles = (await Task.WhenAll(tasks)).ToList();
+			var existingLocalFiles = (await Task.WhenAll(localFileTasks))
+				.Where(contentFile => contentFile.HasValue)
+				.Select(contentFile => contentFile.Value)
+				// A file can be deleted after its read finishes. Reconcile against the current disk
+				// state before deciding which remote entries need deletion placeholders.
+				.Where(contentFile => File.Exists(contentFile.LocalFilePath))
+				.ToList();
+			var existingLocalContentIds = existingLocalFiles
+				.Select(contentFile => contentFile.Id)
+				.ToHashSet();
+
+			// Add one entry for each reference-manifest item that is not represented by a surviving
+			// local file. Doing this after local reads prevents a file from being represented as both
+			// locally present and locally deleted when the filesystem changes during the scan.
+			var deletedLocalFiles = localFiles.TargetManifest.entries
+				.Where(entry => !existingLocalContentIds.Contains(entry.contentId))
+				.Where(entry => filterFunc(new ContentFile { Id = entry.contentId }))
+				.Select(entry => new ContentFile
+				{
+					Id = entry.contentId,
+					LocalFilePath = "",
+					Properties = JsonSerializer.Deserialize<JsonElement>("{}"),
+					Tags = JsonSerializer.SerializeToElement(entry.tags),
+
+					// For deletions, this is set as the reference manifest because it doesn't matter what the reference manifest was before deletion.
+					// If someone publishes a manifest that has this guy in it, we'll auto sync it back up.
+					// Using the target manifest uid, simplifies other cases (such as the initial sync) so we use this.
+					FetchedFromManifestUid = localFiles.TargetManifest.uid.GetOrElse(""),
+					PropertiesChecksum = entry.version,
+					ReferenceContent = entry,
+				});
+
+			localFiles.ContentFiles = existingLocalFiles
+				.Concat(deletedLocalFiles)
+				.ToList();
 
 			// Filter after we've loaded the files into memory as the provided filter type can only be applied
 			// over the data IN the file. 
