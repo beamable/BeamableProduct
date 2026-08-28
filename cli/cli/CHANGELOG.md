@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `IMessageRailFederation<T>` — implement it in a microservice to handle Message Rail last-mile delivery (push, email, in-game) with per-player funnel results: `SendMessage`, `SendMessageBatch`, `RegisterUserWithMessageRail`, `UnregisterUserWithMessageRail`. Ships with `MessageRailRecipient`, `MessageRailPayload`, `MessageRailSendResponse` (whose `maxBatchSize` lets a federation declare its provider's batch limit so the backend right-sizes later pages), `MessageRailRegistrationResponse`, and the shared `MessageRailContract` wire vocabulary (`OverCapacityStatus` for retriable oversized-batch rejections, `OutreachKey` for the per-recipient join key that attributes Opened/Clicked funnel events back to the exact recipient).
+- `MailMessage.metadata` — the opaque per-message map a campaign message rail stamps its `beam_outreach` / `trackId` attribution onto, now carried on the generated `Message`, `SendMailRequest` and `SendMailObjectRequest` models and surfaced on `MailMessage`. Null for ordinary game mail, which is the normal case.
+- `AbsMailApi` now reports the campaign funnel's `Opened` automatically when campaign mail moves from `Unread` to `Read`, so a game writes no tracking code of its own. Push gets that stage from the handset echoing the notification payload back; in-game mail has no handset, so this client report *is* the Opened signal. Ships `MailOpenedFunnelEvent`, shaped identically to what the iOS and Android push SDKs already emit (same `notification_funnel` category, same `outreachId` / `trackId` params) so the platform attributes it with no ingest change. Best-effort and fire-and-forget: a failed analytics call never makes a mail look unread.
+- `MessageRailContract.DeliveryModeKey` / `DeliveryDurable` — a federation can declare on `MessageRailSendResponse.params` that it delivers *durably* (an accepted message is already in the recipient's possession, e.g. in-game mail waiting in a mailbox), so no separate receipt will ever arrive and the platform emits `Delivered` alongside `Sent` instead of leaving that stage structurally zero. For a durable rail, Sent and Delivered track ~1:1 by design.
 
 ### Changed
 - CLI HTTP requests now retry `429 Too Many Requests` up to 5 times with jittered exponential back-off instead of failing the caller.
@@ -17,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Portal extension "open in browser" landing URLs now honor the `--portal-url` override.
 
 ### Fixed
+- A portal extension whose rebuild throws no longer takes down the whole `beam project run` process. `FileSystemWatcher` callbacks run on thread-pool threads, so an escaping exception killed every service and extension in the group rather than just the failing one; the failure is now logged and the rebuild stays a failed rebuild. Concurrent rebuilds are also serialised, since two file-change events could reach the builder at once and collide writing `metadata.json`.
 - Portal extension scanning no longer excludes sym linked package files
 - Fixed orphaned Unity .meta files left behind when cleaning generated Beamable source directories.
 - `beam project run` no longer hangs silently when a portal extension or embedded-Mongo service fails to start. Those faults were unobservable behind infinite sibling tasks; they now log, emit a terminal stream update, and release the waiting consumer.
