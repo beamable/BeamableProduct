@@ -1,5 +1,5 @@
 /**
- * App-specific bindings for the **offer federation** (`IFederatedStoreOffer`).
+ * App-specific bindings for the **offer federation** (`IFederatedCampaignOffer`).
  *
  * A campaign lane can attach an offer to the message it sends: the operator authors it in the
  * Portal, the campaign runtime grants it to each recipient as the send goes out, and the player
@@ -16,14 +16,14 @@
  *    federation id travels with it everywhere. Never parse it, show it as a name, or key anything
  *    durable on its shape.
  *
- * Only two of the seven store-offer routes are reachable from a player token — list what I hold,
+ * Only two of the seven campaign-offer routes are reachable from a player token — list what I hold,
  * and claim one of them. Granting, revoking, the catalog and purchase settlement are all
  * operator or server-to-server concerns and are permission-scoped away from a game client.
  *
- * `StoreOfferService` is registered in `beamClient.ts`.
+ * `CampaignOfferService` is registered in `beamClient.ts`.
  */
-import type { StoreOfferFederationId } from '@beamable/sdk';
-import type { OfferEntitlement } from '@beamable/sdk/schema';
+import type { CampaignOfferFederationId } from '@beamable/sdk';
+import type { CampaignOfferEntitlement } from '@beamable/sdk/schema';
 import { getBeam } from './beamClient';
 
 const NOT_CONNECTED =
@@ -36,7 +36,7 @@ function requireBeam() {
 }
 
 /** The provider Beamable ships. It is the screen's default, never an assumption in the code. */
-export const DEFAULT_STORE: StoreOfferFederationId = 'beamable_store';
+export const DEFAULT_STORE: CampaignOfferFederationId = 'beamable_store';
 
 /**
  * The reserved campaign-payload key carrying the grant id for a send.
@@ -66,9 +66,9 @@ export type Entitlement = {
  * it — which is also why the result must not be cached across a session.
  */
 export async function listEntitlements(
-  federationId: StoreOfferFederationId,
+  federationId: CampaignOfferFederationId,
 ): Promise<Entitlement[]> {
-  const held = await requireBeam().storeOffer.getEntitlements(federationId);
+  const held = await requireBeam().campaignOffer.getEntitlements(federationId);
   return held.map(normalize).sort((a, b) => b.grantedAt - a.grantedAt);
 }
 
@@ -82,10 +82,10 @@ export async function listEntitlements(
  * A generic "could not claim" would hide the only sentence that says what to fix.
  */
 export async function claimGrant(
-  federationId: StoreOfferFederationId,
+  federationId: CampaignOfferFederationId,
   grantId: string,
 ): Promise<string> {
-  const res = await requireBeam().storeOffer.redeem(federationId, grantId);
+  const res = await requireBeam().campaignOffer.redeem(federationId, grantId);
   if (!res.success) {
     throw new Error(res.message || `The store refused this claim (${res.status ?? 'no status'})`);
   }
@@ -132,7 +132,7 @@ export function formatWhen(unixSeconds: number): string {
  * hand back either — `Number(...)` here keeps that out of the UI, the same way `segments.ts` does
  * for its stat values.
  */
-function normalize(e: OfferEntitlement): Entitlement {
+function normalize(e: CampaignOfferEntitlement): Entitlement {
   return {
     grantId: e.grantId ?? '',
     offerId: e.offerId ?? '',

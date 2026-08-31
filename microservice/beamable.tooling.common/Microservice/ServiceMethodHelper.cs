@@ -101,14 +101,14 @@ namespace Beamable.Server
 				[nameof(IFederatedMessageRail<DummyThirdParty>.RegisterUserWithMessageRail)] = "RegisterUserWithMessageRail",
 				[nameof(IFederatedMessageRail<DummyThirdParty>.UnregisterUserWithMessageRail)] = "UnregisterUserWithMessageRail",
 				// Store-offer methods route on the literal method name too, for the same reason: the
-				// backend POSTs {federationId}/GrantOffer (see BeamableAPI StoreOfferFederation).
-				[nameof(IFederatedStoreOffer<DummyThirdParty>.ListOffers)] = "ListOffers",
-				[nameof(IFederatedStoreOffer<DummyThirdParty>.GetOffer)] = "GetOffer",
-				[nameof(IFederatedStoreOffer<DummyThirdParty>.GrantOffer)] = "GrantOffer",
-				[nameof(IFederatedStoreOffer<DummyThirdParty>.RevokeOffer)] = "RevokeOffer",
-				[nameof(IFederatedStoreOffer<DummyThirdParty>.RedeemOffer)] = "RedeemOffer",
-				[nameof(IFederatedStoreOffer<DummyThirdParty>.GetPlayerEntitlements)] = "GetPlayerEntitlements",
-				[nameof(IFederatedStoreOffer<DummyThirdParty>.OnPurchaseCompleted)] = "OnPurchaseCompleted",
+				// backend POSTs {federationId}/GrantOffer (see BeamableAPI CampaignOfferFederation).
+				[nameof(IFederatedCampaignOffer<DummyThirdParty>.ListOffers)] = "ListOffers",
+				[nameof(IFederatedCampaignOffer<DummyThirdParty>.GetOffer)] = "GetOffer",
+				[nameof(IFederatedCampaignOffer<DummyThirdParty>.GrantOffer)] = "GrantOffer",
+				[nameof(IFederatedCampaignOffer<DummyThirdParty>.RevokeOffer)] = "RevokeOffer",
+				[nameof(IFederatedCampaignOffer<DummyThirdParty>.RedeemOffer)] = "RedeemOffer",
+				[nameof(IFederatedCampaignOffer<DummyThirdParty>.GetPlayerEntitlements)] = "GetPlayerEntitlements",
+				[nameof(IFederatedCampaignOffer<DummyThirdParty>.OnPurchaseCompleted)] = "OnPurchaseCompleted",
 			};
 
 			foreach (var interfaceType in interfaces)

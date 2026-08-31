@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { StoreOfferService } from '@/services/StoreOfferService';
+import { CampaignOfferService } from '@/services/CampaignOfferService';
 import * as apis from '@/__generated__/apis';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type {
-  OfferEntitlementsResponse,
-  OfferRedeemResponse,
-  RedeemOfferRequest,
+  CampaignOfferEntitlementsResponse,
+  CampaignOfferRedeemResponse,
+  RedeemCampaignOfferRequest,
 } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
 import { BeamBase } from '@/core/BeamBase';
@@ -20,22 +20,22 @@ function makeService() {
   } as unknown as BeamBase;
 
   const playerService = new PlayerService();
-  return new StoreOfferService({ beam, getPlayer: () => playerService });
+  return new CampaignOfferService({ beam, getPlayer: () => playerService });
 }
 
 /** The payload the service actually sent on the nth `redeem` call. */
-function sentRedeemPayload(call: number): RedeemOfferRequest {
-  return vi.mocked(apis.storeOfferPostRedeem).mock.calls[call][1];
+function sentRedeemPayload(call: number): RedeemCampaignOfferRequest {
+  return vi.mocked(apis.campaignOfferPostRedeem).mock.calls[call][1];
 }
 
-describe('StoreOfferService', () => {
+describe('CampaignOfferService', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
   describe('getEntitlements', () => {
-    it('calls storeOfferGetEntitlements with the federation id and the current player', async () => {
-      const mockBody: OfferEntitlementsResponse = {
+    it('calls campaignOfferGetEntitlements with the federation id and the current player', async () => {
+      const mockBody: CampaignOfferEntitlementsResponse = {
         playerId: '0',
         entitlements: [
           {
@@ -48,7 +48,7 @@ describe('StoreOfferService', () => {
         ],
       };
 
-      vi.spyOn(apis, 'storeOfferGetEntitlements').mockResolvedValue({
+      vi.spyOn(apis, 'campaignOfferGetEntitlements').mockResolvedValue({
         status: 200,
         headers: {},
         body: mockBody,
@@ -56,7 +56,7 @@ describe('StoreOfferService', () => {
 
       const result = await makeService().getEntitlements('beamable_store');
 
-      expect(apis.storeOfferGetEntitlements).toHaveBeenCalledWith(
+      expect(apis.campaignOfferGetEntitlements).toHaveBeenCalledWith(
         mockRequester,
         'beamable_store',
         '0',
@@ -66,17 +66,17 @@ describe('StoreOfferService', () => {
     });
 
     it('returns an empty list when the store reports no entitlements', async () => {
-      vi.spyOn(apis, 'storeOfferGetEntitlements').mockResolvedValue({
+      vi.spyOn(apis, 'campaignOfferGetEntitlements').mockResolvedValue({
         status: 200,
         headers: {},
-        body: { playerId: '0' } as OfferEntitlementsResponse,
+        body: { playerId: '0' } as CampaignOfferEntitlementsResponse,
       });
 
       expect(await makeService().getEntitlements('beamable_store')).toEqual([]);
     });
 
     it('passes any federation id through — the default provider is not privileged', async () => {
-      vi.spyOn(apis, 'storeOfferGetEntitlements').mockResolvedValue({
+      vi.spyOn(apis, 'campaignOfferGetEntitlements').mockResolvedValue({
         status: 200,
         headers: {},
         body: { playerId: '0', entitlements: [] },
@@ -84,7 +84,7 @@ describe('StoreOfferService', () => {
 
       await makeService().getEntitlements('my_web_shop');
 
-      expect(apis.storeOfferGetEntitlements).toHaveBeenCalledWith(
+      expect(apis.campaignOfferGetEntitlements).toHaveBeenCalledWith(
         mockRequester,
         'my_web_shop',
         '0',
@@ -94,10 +94,10 @@ describe('StoreOfferService', () => {
   });
 
   describe('redeem', () => {
-    const ok: OfferRedeemResponse = { grantId: 'bsg_1', success: true };
+    const ok: CampaignOfferRedeemResponse = { grantId: 'bsg_1', success: true };
 
     it('sends the federation id, the current player, the grant and a transaction id', async () => {
-      vi.spyOn(apis, 'storeOfferPostRedeem').mockResolvedValue({
+      vi.spyOn(apis, 'campaignOfferPostRedeem').mockResolvedValue({
         status: 200,
         headers: {},
         body: ok,
@@ -115,7 +115,7 @@ describe('StoreOfferService', () => {
     });
 
     it('reuses one transaction id per grant, so a retried claim is not read as a double-claim', async () => {
-      vi.spyOn(apis, 'storeOfferPostRedeem').mockResolvedValue({
+      vi.spyOn(apis, 'campaignOfferPostRedeem').mockResolvedValue({
         status: 200,
         headers: {},
         body: ok,
@@ -131,7 +131,7 @@ describe('StoreOfferService', () => {
     });
 
     it('mints a distinct transaction id per grant and per store', async () => {
-      vi.spyOn(apis, 'storeOfferPostRedeem').mockResolvedValue({
+      vi.spyOn(apis, 'campaignOfferPostRedeem').mockResolvedValue({
         status: 200,
         headers: {},
         body: ok,
@@ -147,7 +147,7 @@ describe('StoreOfferService', () => {
     });
 
     it('honours a caller-supplied transaction id and params', async () => {
-      vi.spyOn(apis, 'storeOfferPostRedeem').mockResolvedValue({
+      vi.spyOn(apis, 'campaignOfferPostRedeem').mockResolvedValue({
         status: 200,
         headers: {},
         body: ok,
@@ -165,13 +165,13 @@ describe('StoreOfferService', () => {
     });
 
     it('resolves a refused claim rather than throwing — success is on the body', async () => {
-      const refused: OfferRedeemResponse = {
+      const refused: CampaignOfferRedeemResponse = {
         grantId: 'bsg_1',
         success: false,
         status: 'unavailable',
         message: 'This offer expired before it was claimed.',
       };
-      vi.spyOn(apis, 'storeOfferPostRedeem').mockResolvedValue({
+      vi.spyOn(apis, 'campaignOfferPostRedeem').mockResolvedValue({
         status: 200,
         headers: {},
         body: refused,

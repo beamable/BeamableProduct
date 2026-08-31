@@ -10,5 +10,5 @@ export enum FederationType {
   IFederatedGameServer = "IFederatedGameServer",
   IFederatedCommerce = "IFederatedCommerce",
   IFederatedMessageRail = "IFederatedMessageRail",
-  IFederatedStoreOffer = "IFederatedStoreOffer"
+  IFederatedCampaignOffer = "IFederatedCampaignOffer"
 }

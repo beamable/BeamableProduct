@@ -3,7 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type OfferEntitlement = { 
+export type CampaignOfferEntitlement = { 
   expiresAtUnixSeconds?: bigint | string; 
   grantId?: string; 
   grantedAtUnixSeconds?: bigint | string; 

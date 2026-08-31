@@ -6,7 +6,7 @@ import type {
   LeaderboardsService,
   MessageRailService,
   StatsService,
-  StoreOfferService,
+  CampaignOfferService,
 } from '@/services';
 
 /**
@@ -21,7 +21,7 @@ export const SERVICE_KEYS = [
   'leaderboards',
   'messageRail',
   'stats',
-  'storeOffer',
+  'campaignOffer',
 ] as const;
 
 /**
@@ -36,7 +36,7 @@ export type ServiceMap = {
   leaderboards: LeaderboardsService;
   messageRail: MessageRailService;
   stats: StatsService;
-  storeOffer: StoreOfferService;
+  campaignOffer: CampaignOfferService;
 };
 
 /** The `ServiceKey` type represents a valid key for accessing services from the `ServiceMap`. */

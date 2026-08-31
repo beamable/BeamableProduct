@@ -1,17 +1,17 @@
 import type {
-  OfferEntitlement,
-  OfferRedeemResponse,
+  CampaignOfferEntitlement,
+  CampaignOfferRedeemResponse,
 } from '@/__generated__/schemas';
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
 import {
-  storeOfferGetEntitlements,
-  storeOfferPostRedeem,
+  campaignOfferGetEntitlements,
+  campaignOfferPostRedeem,
 } from '@/__generated__/apis';
 
 /**
  * Identifies which store an offer came from.
  * @remarks
- * A store is backed by a customer microservice implementing `IFederatedStoreOffer`, so the
+ * A store is backed by a customer microservice implementing `IFederatedCampaignOffer`, so the
  * valid ids are whatever the realm has deployed. `'beamable_store'` is the default provider
  * Beamable ships; a game selling through Steam, a console store, or its own web shop
  * implements the same interface under its own id and is reached through these same calls.
@@ -19,13 +19,13 @@ import {
  * Never branch on this value — if client code special-cases a store, the extension point is
  * broken. Pass it through.
  */
-export type StoreOfferFederationId = 'beamable_store' | (string & {});
+export type CampaignOfferFederationId = 'beamable_store' | (string & {});
 
-/** Optional per-call overrides for {@link StoreOfferService.redeem}. */
+/** Optional per-call overrides for {@link CampaignOfferService.redeem}. */
 export interface RedeemOfferOptions {
   /**
    * The idempotency key for this claim. Omit it and the service supplies a stable one — see
-   * {@link StoreOfferService.redeem}. Provide your own only if you are persisting it yourself
+   * {@link CampaignOfferService.redeem}. Provide your own only if you are persisting it yourself
    * across app launches.
    */
   transactionId?: string;
@@ -37,7 +37,7 @@ export interface RedeemOfferOptions {
  * Claiming offers a campaign granted to the current player.
  *
  * @remarks
- * These are the only two store-offer routes a player token can reach. Listing a catalog,
+ * These are the only two campaign-offer routes a player token can reach. Listing a catalog,
  * granting, revoking and settling a purchase are all operator or server-to-server concerns and
  * are permission-scoped away from a game client.
  *
@@ -45,7 +45,7 @@ export interface RedeemOfferOptions {
  * which is why `federationId` travels alongside it everywhere. Do not parse it, show it as a
  * name, or key anything durable on its shape.
  */
-export class StoreOfferService extends ApiService {
+export class CampaignOfferService extends ApiService {
   /**
    * One transaction id per grant, for the life of this service instance.
    *
@@ -64,7 +64,7 @@ export class StoreOfferService extends ApiService {
 
   /** @internal */
   get serviceName(): string {
-    return 'storeOffer';
+    return 'campaignOffer';
   }
 
   /**
@@ -79,15 +79,15 @@ export class StoreOfferService extends ApiService {
    * `expiresAtUnixSeconds` of `0` means the grant never expires.
    * @example
    * ```ts
-   * const held = await beam.storeOffer.getEntitlements('beamable_store');
+   * const held = await beam.campaignOffer.getEntitlements('beamable_store');
    * const claimable = held.filter((e) => e.state === 'granted');
    * ```
    * @throws {BeamError} If the request fails, or if no store is deployed for `federationId`.
    */
   async getEntitlements(
-    federationId: StoreOfferFederationId,
-  ): Promise<OfferEntitlement[]> {
-    const { body } = await storeOfferGetEntitlements(
+    federationId: CampaignOfferFederationId,
+  ): Promise<CampaignOfferEntitlement[]> {
+    const { body } = await campaignOfferGetEntitlements(
       this.requester,
       federationId,
       this.accountId,
@@ -112,17 +112,17 @@ export class StoreOfferService extends ApiService {
    * the only thing that says so.
    * @example
    * ```ts
-   * const res = await beam.storeOffer.redeem('beamable_store', grantId);
+   * const res = await beam.campaignOffer.redeem('beamable_store', grantId);
    * if (!res.success) throw new Error(res.message ?? 'Could not claim this offer');
    * ```
    * @throws {BeamError} If the request fails, or if no store is deployed for `federationId`.
    */
   async redeem(
-    federationId: StoreOfferFederationId,
+    federationId: CampaignOfferFederationId,
     grantId: string,
     options: RedeemOfferOptions = {},
-  ): Promise<OfferRedeemResponse> {
-    const { body } = await storeOfferPostRedeem(
+  ): Promise<CampaignOfferRedeemResponse> {
+    const { body } = await campaignOfferPostRedeem(
       this.requester,
       {
         federationId,

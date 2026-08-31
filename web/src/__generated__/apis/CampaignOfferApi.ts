@@ -8,9 +8,9 @@ import { makeApiRequest } from '@/utils/makeApiRequest';
 import { POST } from '@/constants';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
-import type { OfferEntitlementsResponse } from '@/__generated__/schemas/OfferEntitlementsResponse';
-import type { OfferRedeemResponse } from '@/__generated__/schemas/OfferRedeemResponse';
-import type { RedeemOfferRequest } from '@/__generated__/schemas/RedeemOfferRequest';
+import type { CampaignOfferEntitlementsResponse } from '@/__generated__/schemas/CampaignOfferEntitlementsResponse';
+import type { CampaignOfferRedeemResponse } from '@/__generated__/schemas/CampaignOfferRedeemResponse';
+import type { RedeemCampaignOfferRequest } from '@/__generated__/schemas/RedeemCampaignOfferRequest';
 
 /**
  * @remarks
@@ -23,11 +23,11 @@ import type { RedeemOfferRequest } from '@/__generated__/schemas/RedeemOfferRequ
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function storeOfferGetEntitlements(requester: HttpRequester, federationId: string, playerId: string, gamertag?: string): Promise<HttpResponse<OfferEntitlementsResponse>> {
-  let endpoint = "/api/store-offer/entitlements";
+export async function campaignOfferGetEntitlements(requester: HttpRequester, federationId: string, playerId: string, gamertag?: string): Promise<HttpResponse<CampaignOfferEntitlementsResponse>> {
+  let endpoint = "/api/campaign-offer/entitlements";
   
   // Make the API request
-  return makeApiRequest<OfferEntitlementsResponse>({
+  return makeApiRequest<CampaignOfferEntitlementsResponse>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -46,15 +46,15 @@ export async function storeOfferGetEntitlements(requester: HttpRequester, federa
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `RedeemOfferRequest` instance to use for the API request
+ * @param payload - The `RedeemCampaignOfferRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function storeOfferPostRedeem(requester: HttpRequester, payload: RedeemOfferRequest, gamertag?: string): Promise<HttpResponse<OfferRedeemResponse>> {
-  let endpoint = "/api/store-offer/redeem";
+export async function campaignOfferPostRedeem(requester: HttpRequester, payload: RedeemCampaignOfferRequest, gamertag?: string): Promise<HttpResponse<CampaignOfferRedeemResponse>> {
+  let endpoint = "/api/campaign-offer/redeem";
   
   // Make the API request
-  return makeApiRequest<OfferRedeemResponse, RedeemOfferRequest>({
+  return makeApiRequest<CampaignOfferRedeemResponse, RedeemCampaignOfferRequest>({
     r: requester,
     e: endpoint,
     m: POST,

@@ -13,7 +13,7 @@ import {
   isClaimable,
   listEntitlements,
   type Entitlement,
-} from '../../src/beam/storeOffers';
+} from '../../src/beam/campaignOffers';
 import { useBeam } from '../../src/state/beamContext';
 import { useLogActions } from '../../src/state/logContext';
 import { useNotifications } from '../../src/state/notificationContext';
@@ -29,7 +29,7 @@ import { colors, mono, radius, space } from '../../src/ui/theme';
  *
  * A campaign lane attaches an offer to the message it sends; the campaign runtime grants it to
  * each recipient as the send goes out; this screen is where the player claims it. Two calls,
- * both on `beam.storeOffer`, and both parameterised by the federation id — because "which store"
+ * both on `beam.campaignOffer`, and both parameterised by the federation id — because "which store"
  * is an extension point, not a Beamable feature. The Federation field is not a debugging
  * convenience: it is the whole point.
  *
@@ -112,7 +112,7 @@ export default function OffersTab() {
     <Screen>
       <Section title="Store">
         <Hint>
-          Which store answers is a federation — a microservice implementing IFederatedStoreOffer
+          Which store answers is a federation — a microservice implementing IFederatedCampaignOffer
           under its own id. `beamable_store` is the default Beamable ships; a game selling through
           Steam or its own web shop deploys its own and is reached by these same two calls. Nothing
           on this screen branches on the value, which is why it is an input.
@@ -144,7 +144,7 @@ export default function OffersTab() {
         }
       >
         <Hint>
-          Reads beam.storeOffer.getEntitlements(federationId) → GET /api/store-offer/entitlements.
+          Reads beam.campaignOffer.getEntitlements(federationId) → GET /api/campaign-offer/entitlements.
           Every grant in every state, so read the state rather than the presence of a row —
           claimed and revoked ones stay in the list. Expiry is evaluated on read, not swept, so a
           lapsed grant reports "expired" the first time you look.

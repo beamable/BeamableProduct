@@ -3,11 +3,11 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { OfferRedeemPayload } from './OfferRedeemPayload';
+import type { CampaignOfferRedeemPayload } from './CampaignOfferRedeemPayload';
 
-export type RedeemOfferRequest = { 
+export type RedeemCampaignOfferRequest = { 
   federationId: string; 
   grantId: string; 
   playerId: string; 
-  request?: OfferRedeemPayload; 
+  request?: CampaignOfferRedeemPayload; 
 };

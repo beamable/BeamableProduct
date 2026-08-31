@@ -16,13 +16,13 @@ claims it in-game. "Which store the offer comes from" is a **federation** — an
 Beamable feature:
 
 ```
-Portal (author)          →  campaign graph  →  campaign runtime  →  IFederatedStoreOffer<T>
-beamable-store-offer                            GrantOffer()         BeamableStoreOfferService
+Portal (author)          →  campaign graph  →  campaign runtime  →  IFederatedCampaignOffer<T>
+beamable-campaign-offer                            GrantOffer()         BeamableCampaignOfferService
   (or a game's own                                                     (or a game's own
    offer extension)                                                     microservice)
 ```
 
-`IFederatedStoreOffer<T>` is the extension point. `BeamableStoreOfferService` (federation id
+`IFederatedCampaignOffer<T>` is the extension point. `BeamableCampaignOfferService` (federation id
 `beamable_store`) is only the default implementation, shipped so the feature works out of the box. A
 game selling through Steam, a console store, or its own web shop implements the same interface under its
 own `[FederationId]` and is treated identically by the gateway, the campaign runtime, and the Portal.
@@ -38,9 +38,9 @@ applies to the client SDKs too — see §6.
 
 | Path | What |
 |---|---|
-| `cli/beamable.common/Runtime/Federation/FederatedStoreOffer.cs` | `IFederatedStoreOffer<T>` + every DTO + `StoreOfferContract` (payload keys, statuses, entitlement states) |
-| `client/Packages/com.beamable/Common/Runtime/Federation/FederatedStoreOffer.cs` | the Unity mirror (build-time copy, read-only) |
-| `cli/beamable.common/Runtime/OpenApi/Models.gs.cs` | `FederationType.IFederatedStoreOffer` / `BeamoV2FederationType.IFederatedStoreOffer` (+ Unity mirror) |
+| `cli/beamable.common/Runtime/Federation/FederatedCampaignOffer.cs` | `IFederatedCampaignOffer<T>` + every DTO + `CampaignOfferContract` (payload keys, statuses, entitlement states) |
+| `client/Packages/com.beamable/Common/Runtime/Federation/FederatedCampaignOffer.cs` | the Unity mirror (build-time copy, read-only) |
+| `cli/beamable.common/Runtime/OpenApi/Models.gs.cs` | `FederationType.IFederatedCampaignOffer` / `BeamoV2FederationType.IFederatedCampaignOffer` (+ Unity mirror) |
 | `microservice/beamable.tooling.common/Microservice/FederatedComponentGenerator.cs` | maps the interface name to the enum — a miss throws at service startup |
 | `microservice/beamable.tooling.common/Microservice/ServiceMethodHelper.cs` | routes all seven methods at `{federationId}/{MethodName}` |
 | `web/src/__generated__/schemas/enums/*FederationType.ts` | the two web enums (also added the long-missing `IFederatedMessageRail`) |
@@ -48,15 +48,15 @@ applies to the client SDKs too — see §6.
 The interface, in full:
 
 ```csharp
-public interface IFederatedStoreOffer<in T> : IFederation where T : IFederationId, new()
+public interface IFederatedCampaignOffer<in T> : IFederation where T : IFederationId, new()
 {
-    Promise<OfferCatalogResponse>      ListOffers(OfferQuery query);
-    Promise<OfferDetailsResponse>      GetOffer(string offerId);
-    Promise<OfferGrantResponse>        GrantOffer(string playerId, string offerId, OfferGrantContext context);
-    Promise<OfferGrantResponse>        RevokeOffer(string playerId, string grantId);
-    Promise<OfferRedeemResponse>       RedeemOffer(string playerId, string grantId, OfferRedeemRequest request);
-    Promise<OfferEntitlementsResponse> GetPlayerEntitlements(string playerId);
-    Promise<OfferPurchaseAck>          OnPurchaseCompleted(OfferPurchaseNotification notification);
+    Promise<CampaignOfferCatalogResponse>      ListOffers(CampaignOfferQuery query);
+    Promise<CampaignOfferDetailsResponse>      GetOffer(string offerId);
+    Promise<CampaignOfferGrantResponse>        GrantOffer(string playerId, string offerId, CampaignOfferGrantContext context);
+    Promise<CampaignOfferGrantResponse>        RevokeOffer(string playerId, string grantId);
+    Promise<CampaignOfferRedeemResponse>       RedeemOffer(string playerId, string grantId, CampaignOfferRedeemRequest request);
+    Promise<CampaignOfferEntitlementsResponse> GetPlayerEntitlements(string playerId);
+    Promise<CampaignOfferPurchaseAck>          OnPurchaseCompleted(CampaignOfferPurchaseNotification notification);
 }
 ```
 
@@ -66,10 +66,10 @@ public interface IFederatedStoreOffer<in T> : IFederation where T : IFederationI
 
 ### BeamableAPI (gateway + campaign runtime)
 
-- `BeamableShared/Federation/StoreOffer/` — backend contract, wire DTOs, and the dispatch client that
+- `BeamableShared/Federation/CampaignOffer/` — backend contract, wire DTOs, and the dispatch client that
   discovers the microservice registered for a federation id and POSTs to
   `basic/{ServiceNameWithoutType}/{federationId}/{Method}`. Modelled on `MessageRailFederation`.
-- `BeamableGateway/Controllers/StoreOfferController.cs` — the seven public routes (§3).
+- `BeamableGateway/Controllers/CampaignOfferController.cs` — the seven public routes (§3).
 - `BeamableShared/Services/Campaigns/Model/Nodes.cs` — `SendNodeBody.OfferFederationId` (additive,
   init-only). The offer ref alone is not routable: only the store that minted an id can interpret it, so
   the id and its federation travel together.
@@ -81,12 +81,12 @@ public interface IFederatedStoreOffer<in T> : IFederation where T : IFederationI
 
 ### agentic-portal
 
-- `services/BeamableStoreOfferService/` — the default provider. **Authoring, not catalog**: it mints an
+- `services/BeamableCampaignOfferService/` — the default provider. **Authoring, not catalog**: it mints an
   offer per campaign, parses the authored definition off the grant (`AuthoredOfferCodec`), stores it on
   the grant row, and fulfils from that row at redeem via `Services.Inventory.Update`.
 - `bundles/extensions-libs/offer-contract/` — the Portal parent/child contract (`OfferDraft`,
   `OfferSiteData`, `validateOfferDraft`, `OFFER_KEY_PREFIX`).
-- `bundles/extensions/hubs/player-engagement/beamable-store-offer/` — the authoring form.
+- `bundles/extensions/hubs/player-engagement/beamable-campaign-offer/` — the authoring form.
 - `bundles/extensions/hubs/player-engagement/campaigns/` — the lane's `offer` extension site.
 - `guides/creating-offer-providers.md` — how a game ships its own provider.
 
@@ -97,17 +97,17 @@ public interface IFederatedStoreOffer<in T> : IFederation where T : IFederationI
 
 ## 3. The gateway surface a client can reach
 
-`BeamableGateway/Controllers/StoreOfferController.cs`, served under the `/api` path base.
+`BeamableGateway/Controllers/CampaignOfferController.cs`, served under the `/api` path base.
 
 | Route | Client-callable? | Notes |
 |---|---|---|
-| `GET  /api/store-offer/entitlements?federationId&playerId` | **YES** | what this player holds, in any state |
-| `POST /api/store-offer/redeem` | **YES** | claim a grant |
-| `POST /api/store-offer/offers` | no — `StoreOffer:Read` | catalog list; operator/Portal |
-| `GET  /api/store-offer/offers/{offerId}?federationId` | no — `StoreOffer:Read` | |
-| `POST /api/store-offer/grant` | no — `StoreOffer:Write` | server-to-server |
-| `POST /api/store-offer/revoke` | no — `StoreOffer:Write` | |
-| `POST /api/store-offer/purchase-completed` | no — `StoreOffer:Write` | payment webhook fan-in |
+| `GET  /api/campaign-offer/entitlements?federationId&playerId` | **YES** | what this player holds, in any state |
+| `POST /api/campaign-offer/redeem` | **YES** | claim a grant |
+| `POST /api/campaign-offer/offers` | no — `CampaignOffer:Read` | catalog list; operator/Portal |
+| `GET  /api/campaign-offer/offers/{offerId}?federationId` | no — `CampaignOffer:Read` | |
+| `POST /api/campaign-offer/grant` | no — `CampaignOffer:Write` | server-to-server |
+| `POST /api/campaign-offer/revoke` | no — `CampaignOffer:Write` | |
+| `POST /api/campaign-offer/purchase-completed` | no — `CampaignOffer:Write` | payment webhook fan-in |
 
 **The two client routes are deliberately not permission-scoped.** A player holds no operator permissions
 at all, so a resource permission cannot express "may act on themselves". Instead they are guarded
@@ -117,16 +117,16 @@ accounts may act on anyone. This mirrors `MessageRailController`'s `register`/`u
 Request/response shapes:
 
 ```jsonc
-// POST /api/store-offer/redeem
+// POST /api/campaign-offer/redeem
 { "federationId": "beamable_store", "playerId": "1234", "grantId": "bsg_…",
   "request": { "transactionId": "…", "params": {} } }
 // → { grantId, success, status?, message? }
 
-// GET /api/store-offer/entitlements?federationId=beamable_store&playerId=1234
+// GET /api/campaign-offer/entitlements?federationId=beamable_store&playerId=1234
 // → { playerId, entitlements: [ { grantId, offerId, state, grantedAtUnixSeconds, expiresAtUnixSeconds } ] }
 ```
 
-`state` is one of `StoreOfferContract`'s: `granted` (claimable), `redeemed`, `revoked`, `expired`.
+`state` is one of `CampaignOfferContract`'s: `granted` (claimable), `redeemed`, `revoked`, `expired`.
 
 ---
 
@@ -137,10 +137,10 @@ Request/response shapes:
 - Unity's `Common/Runtime/OpenApi/Models.gs.cs` and Unreal's
   `Plugins/BeamableCore/Source/BeamableCore/Public/AutoGen/SubSystems/*` are generated from the
   **`/basic/*` OpenAPI documents** (`cli/cli/openapi/*.oapi.json`, downloaded via `SwaggerService`).
-- `store-offer`, `message-rail` and `campaigns` are **C# gateway controllers**, not Scala `/basic`
+- `campaign-offer`, `message-rail` and `campaigns` are **C# gateway controllers**, not Scala `/basic`
   services. They appear only in the **web SDK's** generated API
   (`web/src/__generated__/apis/`).
-- Confirmed by grep: zero hits for `message-rail` or `store-offer` anywhere under
+- Confirmed by grep: zero hits for `message-rail` or `campaign-offer` anywhere under
   `client/Packages/com.beamable/` or `UnrealSDK/Plugins/`.
 
 So a plan must pick one of:
@@ -149,7 +149,7 @@ So a plan must pick one of:
    message-rail, campaigns and every future gateway controller at once — but it is a codegen-pipeline
    change, not a feature change, and it is the larger piece of work.
 2. **Hand-write the two client calls** in each SDK against the raw requester, the way the Portal
-   extensions do (`beam.requester.request({ url: '/api/store-offer/…' })`). Fast, unblocks the player
+   extensions do (`beam.requester.request({ url: '/api/campaign-offer/…' })`). Fast, unblocks the player
    flow, but sets a precedent of hand-rolled gateway calls in Unity/Unreal that will need unpicking.
 
 Whichever is chosen, note that **the same gap blocks the message rail**: neither Unity nor Unreal can
@@ -168,7 +168,7 @@ the set.
 The end-to-end flow a game client participates in:
 
 1. A campaign sends a message through a rail (push / email / in-game). The payload carries
-   `StoreOfferContract.GrantKey` — the literal key **`beam_offer_grant`** — holding the grant id, written
+   `CampaignOfferContract.GrantKey` — the literal key **`beam_offer_grant`** — holding the grant id, written
    by `CampaignSendPayload.Build`. This is the deep-link: the message says "you got something", and this
    is the handle to it.
 2. The client reads that key out of the message it received and calls **redeem** with the grant id.
@@ -181,13 +181,13 @@ Proposed client surface, per SDK:
 
 ```csharp
 // Unity — sketch, not a commitment
-var offers = await beamContext.StoreOffer.GetEntitlements("beamable_store");
-await beamContext.StoreOffer.Redeem("beamable_store", grantId);
+var offers = await beamContext.CampaignOffer.GetEntitlements("beamable_store");
+await beamContext.CampaignOffer.Redeem("beamable_store", grantId);
 ```
 
 Things the client surface must get right:
 
-- **Idempotency.** `RedeemOfferRequest.transactionId` is the client's key. A retried redeem with the same
+- **Idempotency.** `RedeemCampaignOfferRequest.transactionId` is the client's key. A retried redeem with the same
   transaction id returns the first result; a *different* transaction id on a spent grant is refused as a
   double-claim. The SDK should generate and persist one per redeem attempt rather than leaving it to the
   game.
@@ -233,21 +233,21 @@ These are not stylistic; each one is load-bearing somewhere upstream.
 - **No payment surface.** Offers are granted and claimed; nothing is priced or purchased.
   `OnPurchaseCompleted` exists for a store that settles payment elsewhere, and is server-to-server.
 - **Generated files were hand-edited** (`Models.gs.cs` ×2, the two web enums, `SendBodyDto.ts`, and now
-  the web SDK's `StoreOfferApi.ts` + five store-offer schemas) because the OpenAPI snapshots in-tree are
+  the web SDK's `CampaignOfferApi.ts` + five campaign-offer schemas) because the OpenAPI snapshots in-tree are
   stale — `IFederatedMessageRail` was added the same way before this work. A regeneration will drop them
   unless the source documents are updated first. Relevant to §4 option 1.
 
   The web SDK's are the ones with a concrete path out: `web/`'s `pnpm codegen` runs
-  `beam oapi generate --engine web --host https://dev.api.beamable.com`, so once the store-offer routes
+  `beam oapi generate --engine web --host https://dev.api.beamable.com`, so once the campaign-offer routes
   are deployed to that host (or `--host` is pointed at a local gateway), regenerating emits them for
   real. The hand-written functions are named exactly as the generator would spell them
-  (`storeOfferGetEntitlements`, `storeOfferPostRedeem`) so that regeneration replaces the file rather
+  (`campaignOfferGetEntitlements`, `campaignOfferPostRedeem`) so that regeneration replaces the file rather
   than colliding with it. **Check first that the run does not drop the two `FederationType` enum
   entries**, which are hand-added in the same tree.
 - **The permission matrix is a hardcoded, fail-closed dictionary** —
   `BeamableGateway/Security/Authorization/PermissionAuthorizationHandler.cs`. A resource string that is
   not listed there returns 403 for everyone below `SuperAdmin`, silently, with no startup validation.
-  `StoreOffer` is registered now (Admin/Developer read+write, Tester read-only). Any new gateway route
+  `CampaignOffer` is registered now (Admin/Developer read+write, Tester read-only). Any new gateway route
   needs the same. Worth a separate RFC to make that set an enum or assert it at boot.
 
 ---
@@ -256,7 +256,7 @@ These are not stylistic; each one is load-bearing somewhere upstream.
 
 1. **Decide §4** — codegen pipeline vs. hand-written calls. Everything else depends on it.
 2. Land the two client-callable routes in whichever SDK surface that decision implies.
-3. Add a `StoreOffer` service to each SDK with `GetEntitlements` / `Redeem`, federation-id parameterised,
+3. Add a `CampaignOffer` service to each SDK with `GetEntitlements` / `Redeem`, federation-id parameterised,
    modelled on `web/src/services/MessageRailService.ts`.
 4. Wire the `beam_offer_grant` deep-link: a helper that reads the key out of a received message payload
    and redeems in one call, since that is the flow every game will write otherwise.
@@ -271,15 +271,15 @@ These are not stylistic; each one is load-bearing somewhere upstream.
 RN is not blocked by §4: it runs on the web SDK, whose generated API already covers the gateway's
 `/api/*` routes. So the player half exists there, and it is the reference shape for §8 step 3.
 
-**`web/` — `StoreOfferService`**, modelled line-for-line on `MessageRailService`:
+**`web/` — `CampaignOfferService`**, modelled line-for-line on `MessageRailService`:
 
 ```ts
-beam.use([StoreOfferService]);
-const held = await beam.storeOffer.getEntitlements('beamable_store');   // OfferEntitlement[]
-const res  = await beam.storeOffer.redeem('beamable_store', grantId);   // OfferRedeemResponse
+beam.use([CampaignOfferService]);
+const held = await beam.campaignOffer.getEntitlements('beamable_store');   // CampaignOfferEntitlement[]
+const res  = await beam.campaignOffer.redeem('beamable_store', grantId);   // CampaignOfferRedeemResponse
 ```
 
-- `StoreOfferFederationId` is the same open union the rail uses (`'beamable_store' | (string & {})`) —
+- `CampaignOfferFederationId` is the same open union the rail uses (`'beamable_store' | (string & {})`) —
   it names the default without closing the set.
 - **Only the two client-callable routes are exposed.** The other five are permission-scoped or
   server-to-server; a client SDK offering them would only invite a 403.
@@ -290,10 +290,10 @@ const res  = await beam.storeOffer.redeem('beamable_store', grantId);   // Offer
   within a session.
 - **`redeem` resolves for a refused claim.** It returns the body; `success` is on it. Same convention as
   `MessageRailService`, so the caller decides what a refusal means. 8 unit tests in
-  `web/tests/services/StoreOfferService.test.ts`.
+  `web/tests/services/CampaignOfferService.test.ts`.
 
 **`beam-native-mobile/Samples/ReactNative` — the Offers tab** (`app/(tabs)/offers.tsx` +
-`src/beam/storeOffers.ts`): a store-federation-id input (never hardcoded), the entitlement list with
+`src/beam/campaignOffers.ts`): a store-federation-id input (never hardcoded), the entitlement list with
 per-row claim, and the `beam_offer_grant` deep-link claimed straight off the received push, read in
 `src/state/notificationContext.tsx`.
 
