@@ -58,6 +58,36 @@ namespace Beamable.Server
 	public static class ServiceMethodHelper
 	{
 		/// <summary>
+		/// Maps each federated interface method to the path part it is served on, appended to
+		/// <c>{federationId}/</c>. A method missing from here throws when the service starts.
+		/// <para>Hoisted out of <c>ScanTypeFederation</c> so it can be asserted by a test: these
+		/// strings are a contract shared with the Beamable platform, and routes are matched by path
+		/// alone with no HTTP verb, so a wrong or duplicated path part is a silent routing failure.</para>
+		/// </summary>
+		public static readonly IReadOnlyDictionary<string, string> FederatedMethodPaths =
+			new Dictionary<string, string>
+			{
+				[nameof(IFederatedGameServer<DummyThirdParty>.CreateGameServer)] = "servers",
+				[nameof(IFederatedPlayerInit<DummyThirdParty>.CreatePlayer)] = "player",
+				[nameof(IFederatedInventory<DummyThirdParty>.GetInventoryState)] = "inventory/state",
+				[nameof(IFederatedInventory<DummyThirdParty>.StartInventoryTransaction)] = "inventory/put",
+				[nameof(IFederatedLogin<DummyThirdParty>.Authenticate)] = "authenticate",
+				// Message-rail methods route on the literal method name; the backend worker POSTs
+				// {federationId}/SendMessageBatch (see BeamableAPI MessageRailFederation).
+				[nameof(IFederatedMessageRail<DummyThirdParty>.SendMessage)] = "SendMessage",
+				[nameof(IFederatedMessageRail<DummyThirdParty>.SendMessageBatch)] = "SendMessageBatch",
+				[nameof(IFederatedMessageRail<DummyThirdParty>.RegisterUserWithMessageRail)] = "RegisterUserWithMessageRail",
+				[nameof(IFederatedMessageRail<DummyThirdParty>.UnregisterUserWithMessageRail)] = "UnregisterUserWithMessageRail",
+				// Payments routes on literal method names too. One path part per operation is required,
+				// not stylistic: routes here carry no HTTP verb, so two operations sharing a path would
+				// collide. These must stay equal to FederatedPaymentPaths on the platform side.
+				[nameof(IFederatedPayments<DummyThirdParty>.BeginPayment)] = "BeginPayment",
+				[nameof(IFederatedPayments<DummyThirdParty>.VerifyPayments)] = "VerifyPayments",
+				[nameof(IFederatedPayments<DummyThirdParty>.VerifyReceipt)] = "VerifyReceipt",
+				[nameof(IFederatedPayments<DummyThirdParty>.FulfillPayment)] = "FulfillPayment",
+			};
+
+		/// <summary>
 		/// Scans for service methods based on various providers and generators.
 		/// </summary>
 		public static ServiceMethodCollection Scan(IMicroserviceAttributes serviceAttribute,
@@ -87,20 +117,6 @@ namespace Beamable.Server
 
 			var interfaces = type.GetInterfaces();
 
-			var methodToPathMap = new Dictionary<string, string>
-			{
-				[nameof(IFederatedGameServer<DummyThirdParty>.CreateGameServer)] = "servers",
-				[nameof(IFederatedPlayerInit<DummyThirdParty>.CreatePlayer)] = "player",
-				[nameof(IFederatedInventory<DummyThirdParty>.GetInventoryState)] = "inventory/state",
-				[nameof(IFederatedInventory<DummyThirdParty>.StartInventoryTransaction)] = "inventory/put",
-				[nameof(IFederatedLogin<DummyThirdParty>.Authenticate)] = "authenticate",
- 				// Message-rail methods route on the literal method name; the backend worker POSTs
-				// {federationId}/SendMessageBatch (see BeamableAPI MessageRailFederation).
-				[nameof(IFederatedMessageRail<DummyThirdParty>.SendMessage)] = "SendMessage",
-				[nameof(IFederatedMessageRail<DummyThirdParty>.SendMessageBatch)] = "SendMessageBatch",
-				[nameof(IFederatedMessageRail<DummyThirdParty>.RegisterUserWithMessageRail)] = "RegisterUserWithMessageRail",
-				[nameof(IFederatedMessageRail<DummyThirdParty>.UnregisterUserWithMessageRail)] = "UnregisterUserWithMessageRail",
-			};
 
 			foreach (var interfaceType in interfaces)
 			{
@@ -119,7 +135,7 @@ namespace Beamable.Server
 					var attribute = method.GetCustomAttribute<CallableAttribute>(true);
 					if (attribute != null) continue;
 
-					if (!methodToPathMap.TryGetValue(interfaceMethod.Name, out var pathName))
+					if (!FederatedMethodPaths.TryGetValue(interfaceMethod.Name, out var pathName))
 					{
 						var err = $"Unable to map method name to path part. name=[{interfaceMethod.Name}]";
 						throw new Exception(err);

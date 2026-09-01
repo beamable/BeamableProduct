@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Api.Payments;
+using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -64,6 +65,56 @@ namespace Beamable.Api.Payments
 			   Method.POST,
 			   $"/basic/payments/{_options.ProviderId}/purchase/begin",
 			   new BeginPurchaseRequest(purchaseId)
+			);
+		}
+
+		/// <summary>
+		/// Begins a purchase through a payments federation rather than one of the built-in providers.
+		///
+		/// <para>Goes to the commerce object service, not <c>/basic/payments/{provider}</c>: the
+		/// provider name in those legacy routes selects a handler compiled into the platform, whereas a
+		/// federation is resolved at runtime from the realm's registered microservices. The provider is
+		/// therefore a value in the request, not part of the path.</para>
+		///
+		/// <para>The server reads the listing and freezes what the purchase will grant, so nothing about
+		/// what the player receives is decided by the client.</para>
+		/// </summary>
+		/// <param name="purchaseId">The listing the player wishes to purchase.</param>
+		/// <param name="paymentProvider">
+		/// The federation namespace handling payment. Defaults to <see cref="IPaymentServiceOptions.ProviderId"/>.
+		/// </param>
+		public Promise<PurchaseResponse> BeginFederatedPurchase(
+			string purchaseId,
+			string paymentProvider = null)
+		{
+			return _requester.Request<PurchaseResponse>(
+			   Method.POST,
+			   $"/object/commerce/{_platform.User.id}/payments",
+			   new BeginFederatedPaymentRequest(paymentProvider ?? _options.ProviderId, purchaseId)
+			);
+		}
+
+		/// <summary>
+		/// Settles a federated purchase: the receipt is verified and then the goods are granted, both by
+		/// the federation. Returns once the transaction has reached a settled state.
+		/// </summary>
+		/// <param name="transactionId">The transaction returned by <see cref="BeginFederatedPurchase"/>.</param>
+		/// <param name="receipt">The receipt, exactly as the store produced it.</param>
+		/// <param name="paymentProvider">
+		/// The federation namespace handling payment. Defaults to <see cref="IPaymentServiceOptions.ProviderId"/>.
+		/// </param>
+		public Promise<FederatedPaymentResult> CompleteFederatedPurchase(
+			long transactionId,
+			string receipt,
+			string paymentProvider = null)
+		{
+			return _requester.Request<FederatedPaymentResult>(
+			   Method.PUT,
+			   $"/object/commerce/{_platform.User.id}/payments",
+			   new CompleteFederatedPaymentRequest(
+				   transactionId,
+				   paymentProvider ?? _options.ProviderId,
+				   receipt)
 			);
 		}
 
@@ -317,6 +368,72 @@ namespace Beamable.Api.Payments
 		public string googleplay;
 		public string facebook;
 		public string steam;
+
+		/// <summary>
+		/// Product ids for federated providers, keyed by federation namespace.
+		///
+		/// <para>A map rather than more fields: the whole point of federation is that the platform does
+		/// not know the provider names ahead of time, so they cannot be a fixed set of members. The
+		/// fields above stay for the built-in providers and for backwards compatibility.</para>
+		/// </summary>
+		public SerializableDictionaryStringToString federated = new SerializableDictionaryStringToString();
+
+		/// <summary>
+		/// The product id for a provider, checking the built-in fields first and then the federated map.
+		/// Null when the sku declares none for that provider.
+		/// </summary>
+		public string ForProvider(string provider)
+		{
+			switch (provider)
+			{
+				case "itunes": return itunes;
+				case "googleplay": return googleplay;
+				case "facebook": return facebook;
+				case "steam": return steam;
+			}
+
+			return federated != null && federated.TryGetValue(provider, out var id) ? id : null;
+		}
+	}
+
+	[Serializable]
+	public class BeginFederatedPaymentRequest
+	{
+		public string paymentProvider;
+		public string productId;
+
+		public BeginFederatedPaymentRequest(string paymentProvider, string productId)
+		{
+			this.paymentProvider = paymentProvider;
+			this.productId = productId;
+		}
+	}
+
+	[Serializable]
+	public class CompleteFederatedPaymentRequest
+	{
+		public long transactionId;
+		public string paymentProvider;
+		public string receipt;
+
+		public CompleteFederatedPaymentRequest(long transactionId, string paymentProvider, string receipt)
+		{
+			this.transactionId = transactionId;
+			this.paymentProvider = paymentProvider;
+			this.receipt = receipt;
+		}
+	}
+
+	[Serializable]
+	public class FederatedPaymentResult
+	{
+		public long transactionId;
+
+		/// <summary>
+		/// The transaction's state after settling. COMPLETED means the goods were granted; anything else
+		/// means they were not, and the value says why.
+		/// </summary>
+		public string state;
 	}
 
 	[Serializable]
