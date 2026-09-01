@@ -77,6 +77,10 @@ public static class LocalStackTemplate
 		// BeamableAPI's own launchSettings already claim (BeamableScheduler.Loader/.Dispatcher default to 5050).
 		// 5045 is unused across BeamableAPI and this CLI.
 		public string campaignRuntimeUrl = "http://localhost:5045";
+		// The analytics loader. 5020 is not an arbitrary pick like the two above: it is the port the project's
+		// OWN launchSettings.json already declares, so it is reserved for this process across BeamableAPI and
+		// cannot collide with the gateway (5000), the message rail (5030) or the campaign runtime (5045).
+		public string analyticsLoaderUrl = "http://localhost:5020";
 		public string apiDir;
 		public string scalaDir;
 		public string portalDir;
@@ -537,6 +541,22 @@ public static class LocalStackTemplate
 		// own ASPNETCORE_URLS, ready on /health.
 		AddDotnetHost(config, apiDir, "c# campaign runtime", "BeamableCampaignRuntime",
 			o.campaignRuntimeUrl, o.campaignRuntimeUrl);
+
+		// The analytics loader — the competing consumer that drains the analytics event stream and lands it as
+		// Parquet in S3, which the gateway's commit timer then folds into the Iceberg tables Athena reads.
+		// Without it, events reach ActiveMQ and stop there: `POST /analytics/query` returns nothing and anything
+		// built on the warehouse (the Campaign builder's analytics-event picker, Campaign Analytics) is empty
+		// locally for no visible reason.
+		//
+		// This is the ONE step in the stack that talks to real AWS. There is no local emulator for S3 Tables or
+		// Athena, so it uses a dedicated shared `local` analytics environment (the beamable-local-analytics*
+		// buckets and the beamable-analytics-local workgroups; see BeamableAPI's appsettings.Local.json and its
+		// README's "Analytics in Local Development"). That means it needs credentials that can assume the
+		// analytics roles — run `beam local setup --only aws` to check. Without them the host still starts and
+		// serves /health; it just logs AWS errors and lands nothing. To opt out entirely, set this step's
+		// "enabled": false in the manifest.
+		AddDotnetHost(config, apiDir, "c# analytics loader", "BeamableAnalyticsLoader",
+			o.analyticsLoaderUrl, o.analyticsLoaderUrl);
 
 		// 2. Portal frontend (Vite dev server). Placed BEFORE the Scala group because it only serves the
 		//    frontend (the browser talks to the backend at runtime) — so it comes up in ~1s instead of waiting

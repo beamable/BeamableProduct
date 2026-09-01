@@ -1,4 +1,4 @@
-using Beamable.Server;
+﻿using Beamable.Server;
 using Beamable.Server.Api.Notifications;
 using cli.Portal;
 using cli.Services.Web;
@@ -86,6 +86,10 @@ public class PortalExtensionObserver
 	private PortalExtensionBuildHistory _buildHistory;
 
 	private CancellationTokenSource _cancelToken;
+
+	// The watcher raises OnChanged on thread-pool threads with no serialisation, so two events can
+	// reach BuildExtension at once and collide writing metadata.json. Rebuilds are serialised here.
+	private readonly object _buildLock = new object();
 	private IMicroserviceNotificationsApi _notificationsApi;
 	private IMicroserviceAttributes _attributes;
 	private BeamActivity _rootActivity;
@@ -145,6 +149,14 @@ public class PortalExtensionObserver
 	}
 
 	public void BuildExtension()
+	{
+		lock (_buildLock)
+		{
+			BuildExtensionUnsafe();
+		}
+	}
+
+	private void BuildExtensionUnsafe()
 	{
 		using var childActivity = _rootActivity.CreateChild("Build extension");
 
@@ -503,28 +515,18 @@ public class PortalExtensionObserver
 			return; // this case we ignore because these are the build files
 		}
 
-		// build the app since there are new changes in the src files.
-		// FileSystemWatcher callbacks run on a threadpool thread, so anything thrown here is an unhandled
-		// exception that tears down the whole `beam project run`; a bad edit must only fail the rebuild.
+		// A FileSystemWatcher callback runs on a thread-pool thread, so anything that escapes here takes the
+		// whole `beam project run` process down with it — killing every service and extension in the group,
+		// not just this one. A failed rebuild has to stay a failed rebuild.
 		try
 		{
+			// build the app since there are new changes in the src files
 			BuildExtension();
-		}
-		catch (Exception ex)
-		{
-			Log.Error("Portal extension [{name}] failed to rebuild after a file change. {message}\n{stack}",
-				_metaData.Name, ex.Message, ex.StackTrace);
-			return;
-		}
 
-		//TODO: check this back once event subscriptions change
-		// TODO(zones): NotifyServer is realm-scoped (IMicroserviceNotificationsApi). A zone extension has no
-		// realm notification channel, so _notificationsApi is null for zone today — hot-reload push is
-		// skipped. Wire up a zone-appropriate notification once the zone event channel exists.
-		// Guarded for the same reason as the rebuild above: this still runs on the watcher thread, and a
-		// failed hot-reload push must not be fatal now that the new build is already on disk.
-		try
-		{
+			//TODO: check this back once event subscriptions change
+			// TODO(zones): NotifyServer is realm-scoped (IMicroserviceNotificationsApi). A zone extension has no
+			// realm notification channel, so _notificationsApi is null for zone today — hot-reload push is
+			// skipped. Wire up a zone-appropriate notification once the zone event channel exists.
 			_notificationsApi?.NotifyServer(true, "notify-portalextension",
 				new PortalExtensionNotifyPayload()
 				{
@@ -535,8 +537,7 @@ public class PortalExtensionObserver
 		}
 		catch (Exception ex)
 		{
-			Log.Error("Portal extension [{name}] rebuilt, but notifying the portal failed. {message}",
-				_metaData.Name, ex.Message);
+			Log.Error($"Portal extension [{_metaData?.Name}] failed to rebuild after a file change: {ex.Message}");
 		}
 	}
 
