@@ -1,9 +1,15 @@
 ---
 name: beam-create-portal-extension
-description: Create a portal extension (full-page or component) mounted on the Beamable Portal.
+description: Superseded by beam-create-microview - prefer that skill. Create a portal extension (full-page or component) mounted on the Beamable Portal; microView is the current name for this feature.
 ---
 
 # Create Portal Extension
+
+> **Superseded — prefer `beam-create-microview`.** "microView" is the current
+> name for this feature; "portal extension" is the old one. This skill is kept
+> under its original name because the CLI commands, flags, and directories
+> have not been renamed yet. The two skills describe the same workflow — use
+> `beam-create-microview` unless you specifically need this one.
 
 ## Prerequisites
 - A `.beamable` workspace must exist (run `beam init` first)
