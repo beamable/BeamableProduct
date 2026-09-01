@@ -54,11 +54,11 @@ describe('CampaignOfferService', () => {
         body: mockBody,
       });
 
-      const result = await makeService().getEntitlements('beamable_store');
+      const result = await makeService().getEntitlements('beamable_virtual_store');
 
       expect(apis.campaignOfferGetEntitlements).toHaveBeenCalledWith(
         mockRequester,
-        'beamable_store',
+        'beamable_virtual_store',
         '0',
         '0',
       );
@@ -72,7 +72,96 @@ describe('CampaignOfferService', () => {
         body: { playerId: '0' } as CampaignOfferEntitlementsResponse,
       });
 
-      expect(await makeService().getEntitlements('beamable_store')).toEqual([]);
+      expect(await makeService().getEntitlements('beamable_virtual_store')).toEqual([]);
+    });
+
+    it('passes the whole offer through, so one call can render a store screen', async () => {
+      // The entitlement embeds the offer precisely so a client does not fan out a GetOffer per row.
+      // If any of these are dropped on the way through, a real-money bundle reaches the player as a
+      // title and a price with no disclosure of what is in it — which is what `rewards` exists to fix.
+      const mockBody: CampaignOfferEntitlementsResponse = {
+        playerId: '0',
+        entitlements: [
+          {
+            grantId: 'bsg_1',
+            offerId: 'starter_store/bundle_10',
+            state: 'granted',
+            grantedAtUnixSeconds: '1787677536',
+            expiresAtUnixSeconds: '0',
+            offer: {
+              offerId: 'starter_store/bundle_10',
+              title: 'Starter Bundle',
+              priceLabel: '350 Coins',
+              rewards: [
+                { type: 'currency', symbol: 'currency.gems', amount: '1200' },
+                { type: 'item', symbol: 'items.blade', amount: '1', title: 'Blade' },
+                // A store's own vocabulary must survive untouched — nothing may close the set.
+                { type: 'steam_dlc', symbol: '480', amount: '1' },
+              ],
+              listings: [
+                {
+                  listingSymbol: 'bundle_10',
+                  storeSymbol: 'starter_store',
+                  price: {
+                    type: 'currency',
+                    symbol: 'currency.coins',
+                    // The numbers, not just the label: a client needs them to tell whether the
+                    // player can afford this.
+                    amount: '350',
+                    label: '350 Coins',
+                  },
+                },
+              ],
+            },
+            available: false,
+            unavailableReasons: [
+              { code: 'stat-requirement', message: 'Reach level 10.' },
+            ],
+          },
+        ],
+      };
+
+      vi.spyOn(apis, 'campaignOfferGetEntitlements').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: mockBody,
+      });
+
+      const [held] = await makeService().getEntitlements('beamable_virtual_store');
+
+      expect(held.offer?.rewards).toHaveLength(3);
+      expect(held.offer?.rewards?.[0]).toEqual({
+        type: 'currency',
+        symbol: 'currency.gems',
+        amount: '1200',
+      });
+      expect(held.offer?.rewards?.[2].type).toBe('steam_dlc');
+      expect(held.offer?.listings?.[0].price?.symbol).toBe('currency.coins');
+      expect(held.offer?.listings?.[0].price?.amount).toBe('350');
+      // `available` is not `state` — a granted grant can still be unactionable.
+      expect(held.state).toBe('granted');
+      expect(held.available).toBe(false);
+      expect(held.unavailableReasons?.[0].code).toBe('stat-requirement');
+    });
+
+    it('tolerates a provider that sends no offer, rather than requiring one', async () => {
+      // The contract allows a null offer, and a third-party store that cannot afford to embed it
+      // is legitimate. The client falls back to the opaque offerId.
+      vi.spyOn(apis, 'campaignOfferGetEntitlements').mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: {
+          playerId: '0',
+          entitlements: [
+            { grantId: 'bsg_1', offerId: 'opaque', state: 'granted' },
+          ],
+        },
+      });
+
+      const [held] = await makeService().getEntitlements('beamable_virtual_store');
+
+      expect(held.offer).toBeUndefined();
+      expect(held.offerId).toBe('opaque');
     });
 
     it('passes any federation id through — the default provider is not privileged', async () => {
@@ -103,10 +192,10 @@ describe('CampaignOfferService', () => {
         body: ok,
       });
 
-      const result = await makeService().redeem('beamable_store', 'bsg_1');
+      const result = await makeService().redeem('beamable_virtual_store', 'bsg_1');
 
       const payload = sentRedeemPayload(0);
-      expect(payload.federationId).toBe('beamable_store');
+      expect(payload.federationId).toBe('beamable_virtual_store');
       expect(payload.playerId).toBe('0');
       expect(payload.grantId).toBe('bsg_1');
       expect(payload.request?.transactionId).toBeTruthy();
@@ -122,8 +211,8 @@ describe('CampaignOfferService', () => {
       });
 
       const service = makeService();
-      await service.redeem('beamable_store', 'bsg_1');
-      await service.redeem('beamable_store', 'bsg_1');
+      await service.redeem('beamable_virtual_store', 'bsg_1');
+      await service.redeem('beamable_virtual_store', 'bsg_1');
 
       expect(sentRedeemPayload(1).request?.transactionId).toBe(
         sentRedeemPayload(0).request?.transactionId,
@@ -138,8 +227,8 @@ describe('CampaignOfferService', () => {
       });
 
       const service = makeService();
-      await service.redeem('beamable_store', 'bsg_1');
-      await service.redeem('beamable_store', 'bsg_2');
+      await service.redeem('beamable_virtual_store', 'bsg_1');
+      await service.redeem('beamable_virtual_store', 'bsg_2');
       await service.redeem('my_web_shop', 'bsg_1');
 
       const ids = [0, 1, 2].map((i) => sentRedeemPayload(i).request?.transactionId);
@@ -153,7 +242,7 @@ describe('CampaignOfferService', () => {
         body: ok,
       });
 
-      await makeService().redeem('beamable_store', 'bsg_1', {
+      await makeService().redeem('beamable_virtual_store', 'bsg_1', {
         transactionId: 'txn-mine',
         params: { source: 'push' },
       });
@@ -178,7 +267,7 @@ describe('CampaignOfferService', () => {
       });
 
       await expect(
-        makeService().redeem('beamable_store', 'bsg_1'),
+        makeService().redeem('beamable_virtual_store', 'bsg_1'),
       ).resolves.toEqual(refused);
     });
   });

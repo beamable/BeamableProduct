@@ -100,15 +100,14 @@ namespace Beamable.Server
 				[nameof(IFederatedMessageRail<DummyThirdParty>.SendMessageBatch)] = "SendMessageBatch",
 				[nameof(IFederatedMessageRail<DummyThirdParty>.RegisterUserWithMessageRail)] = "RegisterUserWithMessageRail",
 				[nameof(IFederatedMessageRail<DummyThirdParty>.UnregisterUserWithMessageRail)] = "UnregisterUserWithMessageRail",
-				// Store-offer methods route on the literal method name too, for the same reason: the
+				// Virtual-offer methods route on the literal method name too, for the same reason: the
 				// backend POSTs {federationId}/GrantOffer (see BeamableAPI CampaignOfferFederation).
-				[nameof(IFederatedCampaignOffer<DummyThirdParty>.ListOffers)] = "ListOffers",
-				[nameof(IFederatedCampaignOffer<DummyThirdParty>.GetOffer)] = "GetOffer",
-				[nameof(IFederatedCampaignOffer<DummyThirdParty>.GrantOffer)] = "GrantOffer",
-				[nameof(IFederatedCampaignOffer<DummyThirdParty>.RevokeOffer)] = "RevokeOffer",
-				[nameof(IFederatedCampaignOffer<DummyThirdParty>.RedeemOffer)] = "RedeemOffer",
-				[nameof(IFederatedCampaignOffer<DummyThirdParty>.GetPlayerEntitlements)] = "GetPlayerEntitlements",
-				[nameof(IFederatedCampaignOffer<DummyThirdParty>.OnPurchaseCompleted)] = "OnPurchaseCompleted",
+				[nameof(IFederatedCampaignVirtualOffer<DummyThirdParty>.ListOffers)] = "ListOffers",
+				[nameof(IFederatedCampaignVirtualOffer<DummyThirdParty>.GetOffer)] = "GetOffer",
+				[nameof(IFederatedCampaignVirtualOffer<DummyThirdParty>.GrantOffer)] = "GrantOffer",
+				[nameof(IFederatedCampaignVirtualOffer<DummyThirdParty>.RevokeOffer)] = "RevokeOffer",
+				[nameof(IFederatedCampaignVirtualOffer<DummyThirdParty>.RedeemOffer)] = "RedeemOffer",
+				[nameof(IFederatedCampaignVirtualOffer<DummyThirdParty>.GetPlayerEntitlements)] = "GetPlayerEntitlements",
 			};
 
 			foreach (var interfaceType in interfaces)

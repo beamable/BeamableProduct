@@ -148,10 +148,14 @@ Tabs are listed below in bar order; the bar follows the order of the `Tabs.Scree
 | **Deep links** (`deeplinks.tsx`) | Simulate · Navigate directly · Open any URL · Last received | OS-routed deep link, in-app navigation, `normalizeDeepLink`'s schemeless back-stop |
 | **In-game** (`inbox.tsx`) | Opt in/out of in-game · Inbox (auto-refreshes on focus, ↻ in the corner) | the `ingame` rail and the player's Beamable mailbox |
 | **Email** (`email.tsx`) | Account (read-only) · Add email to account · Opt in/out of email | `beam.account.current()` guest-vs-credentialed state; `addCredentials` → POST `/basic/accounts/register`; the `email` rail |
-| **Offers** (`offers.tsx`) | Store federation id · Entitlements (auto-refreshes on focus, ↻ in the corner) · Claim · Claim from the last push | the **offer federation** (`IFederatedCampaignOffer`): `beam.campaignOffer.getEntitlements(federationId)` → GET `/api/campaign-offer/entitlements` and `beam.campaignOffer.redeem(federationId, grantId)` → POST `/api/campaign-offer/redeem` — the only two of the seven campaign-offer routes a player token can reach. Also the deep-link: a campaign that attaches an offer writes the grant id into the push under the reserved `beam_offer_grant` key, and the last section claims straight from it |
+| **Offers** (`offers.tsx`) | Store federation id · Wallet (↻) · Entitlements with the offer, its price and **what the bundle contains** (↻) · **Buy** · Claim · Claim from the last push | the **virtual offer federation** (`IFederatedCampaignVirtualOffer`) end to end, for an offer bought with soft currency. `beam.campaignOffer.getEntitlements(federationId)` → GET `/api/campaign-offer/entitlements` and `beam.campaignOffer.redeem(federationId, grantId)` → POST `/api/campaign-offer/redeem` — the only two routes a player token can reach. The store embeds the whole offer in each entitlement (title, the price as a currency and an amount, and `rewards`), so one call renders the screen. **An offer IS a storefront listing**, and claiming buys it: the provider spends on the player's behalf through `POST /object/commerce/{playerId}/purchase`, which debits the price and credits the bundle in one inventory transaction. "What you received" is a wallet diff around it, not the purchase response — so cost and gain read together. Real-money offers are a separate federation and are not in this sample. Also the deep-link: a campaign that attaches an offer writes the grant id into the push under the reserved `beam_offer_grant` key, and the last section claims straight from it |
 | **Segments** (`segments.tsx`) | namespace picker · `CLIENT_LEVEL` card (`beam.stats`) · `PLAYER_LEVEL` card (microservice) · Set/delete any stat in either namespace · Create N players with a stat · My segments (↻) · Recent transitions | the stats → segment loop in both namespaces a rule can read: `beam.stats.set` writes `client.*` directly, `PlayerStatsService.AddToMyStat` writes `game.private`, the backend re-evaluates the Portal rules watching that attribute, and `GET /api/realms/{realmId}/players/{playerId}/segments` (+ `/transitions`) reads the membership back. The screen renders the rule JSON to author, including a cross-namespace one |
 | **Analytics** (`analytics.tsx`) | Campaign/Node ID · Track offer clicked · Track offer converted · Clear native auth | native `Clicked`/`Converted` funnel events (iOS + Android) and the closed-app auth handoff |
 | **Unity** (`unity.tsx`) | Send message to Unity | the Unity ↔ React WebView bridge. **Web only** — the tab is hidden on native |
+
+> **New to the offer system?** `docs/offer-federation.md` in this repo is a full walkthrough —
+> the contract, the gateway routes, how a real-money purchase actually flows, what this tab
+> does, and how to run the whole thing locally.
 
 A collapsible console is pinned to the bottom of every tab with two streams behind a tab
 strip: **Activity** (outcomes of button presses) and **Native events** (every SDK event with
@@ -342,6 +346,7 @@ app/
 src/
   state/             # AppProviders + the three contexts (log / beam / notification)
   ui/                # theme tokens + Section/Button/Field/Collapsible/TabStrip/
+                     #   RefreshButton/BalanceRow/OfferCard/
                      #   ConnectionBar/DebugConsole/MessageCard/StatCard
   beam/
     config.ts        # cid / pid / environment (EDIT THIS)
@@ -350,6 +355,8 @@ src/
     pushNotifications.ts # binds device register/list to CampaignServiceClient
     segments.ts      # namespace model + rule JSON, beam.stats and PlayerStatsService writes, segment reads
     campaignOffers.ts   # offer federation bindings over beam.campaignOffer (entitlements + claim)
+    inventory.ts     # currency balances + the wallet diff that answers "what did I receive"
+    commerce.ts      # buying a virtual listing: one call, price debited and payout credited together
   linking/links.ts   # scheme + URL/path helpers
   unity/UnityBridgeSection.tsx  # demo panel over the package's Unity-bridge helpers (web only)
 app.json             # registers the "@beamable/notifications-react-native" config plugin

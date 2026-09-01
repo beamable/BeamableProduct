@@ -4,17 +4,26 @@ using System.Collections.Generic;
 namespace Beamable.Common
 {
 	/// <summary>
-	/// Federation for a store's offers. A microservice implements this to expose a catalog the Portal can
-	/// author campaigns against, and to grant / revoke / redeem those offers for a player.
+	/// Federation for a store's <b>virtual</b> offers — ones a player buys with soft currency. A microservice
+	/// implements this to expose a catalog the Portal can author campaigns against, and to grant / revoke /
+	/// redeem those offers for a player.
 	/// </summary>
 	/// <remarks>
 	/// <para>
+	/// <b>Virtual, deliberately.</b> A real-money offer is a different federation, because it is a different
+	/// problem: it needs platform product ids, a native purchase flow, receipt verification and a settlement
+	/// callback from outside Beamable, none of which a soft-currency offer has any use for. Carrying both on
+	/// one interface meant every virtual provider inherited fields it could not fill. So the price on this
+	/// contract is a currency amount, and a provider that finds a real-money listing in its catalog should
+	/// refuse it rather than describe it.
+	/// </para>
+	/// <para>
 	/// This interface is the extension point, not a Beamable feature with an interface bolted on. Beamable
-	/// ships <c>BeamableCampaignOfferService</c> (federation id <c>beamable_store</c>) as the default
-	/// implementation over its own commerce, but a game that sells through Steam, a console store, or its
-	/// own web shop implements this same interface under its own <see cref="FederationIdAttribute"/> and is
-	/// treated identically by the gateway, the campaign runtime, and the Portal. Nothing outside a given
-	/// implementation may branch on which federation id it is talking to.
+	/// ships <c>BeamableCampaignOfferService</c> (federation id <c>beamable_virtual_store</c>) as the default
+	/// implementation over its own commerce, but a game with its own virtual economy implements this same
+	/// interface under its own <see cref="FederationIdAttribute"/> and is treated identically by the gateway,
+	/// the campaign runtime, and the Portal. Nothing outside a given implementation may branch on which
+	/// federation id it is talking to.
 	/// </para>
 	/// <para>
 	/// The DTOs below are deliberately generic for that reason — a store maps its own catalog onto
@@ -28,7 +37,7 @@ namespace Beamable.Common
 	/// (BEAM_FED_0004), because the id becomes a route segment and a generated client member.
 	/// </para>
 	/// </remarks>
-	public interface IFederatedCampaignOffer<in T> : IFederation where T : IFederationId, new()
+	public interface IFederatedCampaignVirtualOffer<in T> : IFederation where T : IFederationId, new()
 	{
 		/// <summary>
 		/// The offers this store can sell right now. Backs the Portal's offer picker, so it is called
@@ -75,13 +84,6 @@ namespace Beamable.Common
 		/// grant lifecycle — what the player can still claim, and what they already did.
 		/// </summary>
 		Promise<CampaignOfferEntitlementsResponse> GetPlayerEntitlements(string playerId);
-
-		/// <summary>
-		/// A purchase settled somewhere the federation does not control (a platform store callback, an IAP
-		/// receipt), letting the store close out the matching grant. Delivered at-least-once, so it must be
-		/// idempotent on <see cref="CampaignOfferPurchaseNotification.transactionId"/>.
-		/// </summary>
-		Promise<CampaignOfferPurchaseAck> OnPurchaseCompleted(CampaignOfferPurchaseNotification notification);
 	}
 
 	/// <summary>What the Portal's picker is asking the store for. Every field is optional.</summary>
@@ -119,13 +121,13 @@ namespace Beamable.Common
 		public string imageUrl;
 
 		/// <summary>
-		/// Already formatted for display ("$4.99", "1200 Gems"), for surfaces that only ever print it.
+		/// Already formatted for display ("1200 Gems"), for surfaces that only ever print it.
 		///
 		/// <para>
-		/// <b>Never the only representation of a price.</b> It is neither localizable nor transactable,
-		/// so a client that has to open a native purchase flow needs
-		/// <see cref="CampaignOfferListingRef.price"/> instead — in particular its
-		/// <see cref="CampaignOfferPrice.productIds"/>.
+		/// <b>Never the only representation of a price.</b> It is neither localizable nor comparable, so a
+		/// client that has to decide whether the player can afford this, or to show the cost against a
+		/// balance, needs <see cref="CampaignOfferListingRef.price"/> instead — its
+		/// <see cref="CampaignOfferPrice.symbol"/> and <see cref="CampaignOfferPrice.amount"/>.
 		/// </para>
 		/// </summary>
 		public string priceLabel;
@@ -141,6 +143,24 @@ namespace Beamable.Common
 		/// </para>
 		/// </summary>
 		public List<CampaignOfferListingRef> listings = new List<CampaignOfferListingRef>();
+
+		/// <summary>
+		/// What the player gets for buying this offer — the bundle's contents, itemised.
+		///
+		/// <para>
+		/// <b>Disclosure, not a fulfilment instruction.</b> The store still fulfils however it fulfils;
+		/// this exists so a surface can tell the player what they are about to buy. Nothing consumes it
+		/// to grant anything, and a client must never reconcile it against what actually landed — a loot
+		/// roll, a VIP multiplier or a store-side promotion can legitimately make the two differ.
+		/// </para>
+		///
+		/// <para>
+		/// Empty is legitimate and must render: a provider that cannot enumerate its payout (an opaque
+		/// third-party bundle) leaves it empty, and a client falls back to
+		/// <see cref="description"/>. Do not treat empty as "this offer gives nothing".
+		/// </para>
+		/// </summary>
+		public List<CampaignOfferReward> rewards = new List<CampaignOfferReward>();
 
 		/// <summary>
 		/// Every language this offer has text for, keyed by language code. <see cref="title"/> and
@@ -194,6 +214,13 @@ namespace Beamable.Common
 		public string storeSymbol;
 
 		public CampaignOfferPrice price;
+
+		/// <summary>
+		/// Anything this contract does not name about the listing specifically. Same escape hatch as
+		/// <see cref="CampaignOfferItem.properties"/>, at listing scope — so a store with two listings
+		/// on one offer does not have to hoist per-listing data up to the item and re-key it.
+		/// </summary>
+		public Dictionary<string, string> properties = new Dictionary<string, string>();
 	}
 
 	/// <summary>
@@ -201,38 +228,41 @@ namespace Beamable.Common
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// A label alone is enough for the Portal and useless to a game client: to charge for a real-money
-	/// listing the client has to address the platform's own product, which is what
-	/// <see cref="productIds"/> carries. A client that only has a formatted string can display a price
-	/// it cannot take.
+	/// A label alone is enough for the Portal and useless to a game client: to spend on a player's behalf,
+	/// or to show them whether they can afford it, a client needs the currency and the amount as numbers.
+	/// So <see cref="symbol"/> and <see cref="amount"/> are the price, and <see cref="label"/> is a
+	/// convenience on top of them.
+	/// </para>
+	/// <para>
+	/// <b>Soft currency only.</b> There is no real-money price here and no platform product ids — a
+	/// real-money offer belongs to its own federation. A provider whose catalog contains a SKU-priced
+	/// listing must not describe it through this contract; see the interface remarks.
 	/// </para>
 	/// </remarks>
 	[Serializable]
 	public class CampaignOfferPrice
 	{
-		/// <summary><c>"sku"</c> for real money, <c>"currency"</c> for soft, or the store's own vocabulary.</summary>
+		/// <summary>
+		/// <c>"currency"</c> for the ordinary case, or the store's own vocabulary. Never a real-money type —
+		/// a listing priced in money is not representable here.
+		/// </summary>
 		public string type;
 
-		/// <summary>The SKU or currency symbol this is priced in.</summary>
+		/// <summary>The currency symbol this is priced in.</summary>
 		public string symbol;
 
-		/// <summary>Soft-currency amount, when <see cref="type"/> is a currency.</summary>
+		/// <summary>How much of <see cref="symbol"/> the listing costs.</summary>
 		public long amount;
-
-		/// <summary>Real-money price in minor units, to keep money off floating point. 0 when not priced in money.</summary>
-		public long realPriceCents;
-
-		/// <summary>ISO 4217, e.g. "USD".</summary>
-		public string currencyCode;
-
-		/// <summary>
-		/// Platform product ids for a real-money price — <c>{ "itunes": …, "googleplay": …, "steam": … }</c>.
-		/// The handle a mobile or console client needs to open the native purchase flow.
-		/// </summary>
-		public Dictionary<string, string> productIds = new Dictionary<string, string>();
 
 		/// <summary>Already formatted for display. A convenience, never the only representation.</summary>
 		public string label;
+
+		/// <summary>
+		/// Anything this contract does not name about the price. A store with its own pricing concept
+		/// (a regional tier, a subscription interval, a bundle discount) carries it here rather than
+		/// encoding it into <see cref="label"/>, which is display-only.
+		/// </summary>
+		public Dictionary<string, string> properties = new Dictionary<string, string>();
 	}
 
 	/// <summary>
@@ -254,6 +284,70 @@ namespace Beamable.Common
 
 		/// <summary>Optional extra context — the stat that failed, the limit that was hit.</summary>
 		public string detail;
+
+		/// <summary>
+		/// Anything this contract does not name about why. Lets a store carry the structured form of
+		/// what <see cref="message"/> says in prose — the requirement's id, the threshold, the reset
+		/// time — so a client can build its own copy without parsing English.
+		/// </summary>
+		public Dictionary<string, string> properties = new Dictionary<string, string>();
+	}
+
+	/// <summary>
+	/// One thing an offer gives the player. A bundle is a list of these.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The federation contract deliberately carries no opinion about what a "product" is: Beamable's own
+	/// commerce happens to grant currencies, items, entitlements and loot rolls, but a store selling
+	/// through Steam or a console grants whatever that platform grants. So <see cref="type"/> is an open
+	/// string and <see cref="symbol"/> is opaque, exactly like <see cref="CampaignOfferItem.offerId"/>.
+	/// </para>
+	/// <para>
+	/// <b>Never switch exhaustively on <see cref="type"/>.</b> A client renders the types it knows and
+	/// falls back to <see cref="title"/> (then <see cref="symbol"/>) for the rest — a provider is free
+	/// to invent a type this contract predates, and a client that treats an unknown type as an error
+	/// breaks the extension point.
+	/// </para>
+	/// </remarks>
+	[Serializable]
+	public class CampaignOfferReward
+	{
+		/// <summary>
+		/// What kind of thing this is. Beamable's own provider emits
+		/// <see cref="CampaignOfferContract.RewardCurrency"/>,
+		/// <see cref="CampaignOfferContract.RewardItem"/>,
+		/// <see cref="CampaignOfferContract.RewardEntitlement"/> and
+		/// <see cref="CampaignOfferContract.RewardLootRoll"/>; a third-party store may emit its own.
+		/// </summary>
+		public string type;
+
+		/// <summary>
+		/// The store's own reference for the thing granted — a currency id, a content id, an
+		/// entitlement symbol. Opaque: only the store that issued it can interpret it.
+		/// </summary>
+		public string symbol;
+
+		/// <summary>
+		/// How many. <c>1</c> for a single item, a quantity for currency. <c>0</c> where the amount is
+		/// not known until fulfilment, which is the normal case for
+		/// <see cref="CampaignOfferContract.RewardLootRoll"/> — so a client must not render <c>0</c> as
+		/// "nothing".
+		/// </summary>
+		public long amount;
+
+		/// <summary>Display name, when the store has one. Falls back to <see cref="symbol"/>.</summary>
+		public string title;
+
+		/// <summary>Icon or art for this reward, when the store has one.</summary>
+		public string imageUrl;
+
+		/// <summary>
+		/// Anything this contract does not name about the reward — item properties, an entitlement
+		/// specialization, a rarity, a duration. The escape hatch that keeps
+		/// <see cref="type"/> from having to grow a field per product kind.
+		/// </summary>
+		public Dictionary<string, string> properties = new Dictionary<string, string>();
 	}
 
 	[Serializable]
@@ -263,6 +357,25 @@ namespace Beamable.Common
 
 		/// <summary>Pass back as <see cref="CampaignOfferQuery.cursor"/> for the next page. Empty on the last page.</summary>
 		public string nextCursor;
+
+		/// <summary>
+		/// Anything this contract does not name about the catalog as a whole.
+		///
+		/// <para>
+		/// The reason it exists: an empty <see cref="offers"/> list is ambiguous, and the two things it can
+		/// mean need different words in front of an operator. "This realm has authored nothing yet" is a
+		/// normal starting state. "This store has listings but none it can offer here" is a filter the
+		/// operator cannot see and will not guess — they published a listing and it is simply absent.
+		/// Without somewhere to say so, a picker can only report the absence.
+		/// </para>
+		/// <para>
+		/// <see cref="CampaignOfferContract.CatalogWithheldCountKey"/> and
+		/// <see cref="CampaignOfferContract.CatalogWithheldReasonKey"/> are the well-known keys for that.
+		/// A store with its own reason to withhold entries uses the same pair — the reason is a sentence
+		/// the store writes, so nothing consuming it has to know what was filtered or why.
+		/// </para>
+		/// </summary>
+		public Dictionary<string, string> properties = new Dictionary<string, string>();
 	}
 
 	[Serializable]
@@ -290,7 +403,7 @@ namespace Beamable.Common
 
 		/// <summary>
 		/// The per-recipient join key the campaign and the message rail share. Also the idempotency key for
-		/// <see cref="IFederatedCampaignOffer{T}.GrantOffer"/> — see that method's remarks.
+		/// <see cref="IFederatedCampaignVirtualOffer{T}.GrantOffer"/> — see that method's remarks.
 		/// </summary>
 		public string outreachId;
 
@@ -301,7 +414,7 @@ namespace Beamable.Common
 		/// <para>
 		/// For a provider that serves a catalog this is optional colour. For one that mints an offer per
 		/// campaign — authoring it in its Portal extension rather than looking it up — <b>this is the offer
-		/// itself</b>, and <see cref="IFederatedCampaignOffer{T}.GrantOffer"/> has nothing to grant without it.
+		/// itself</b>, and <see cref="IFederatedCampaignVirtualOffer{T}.GrantOffer"/> has nothing to grant without it.
 		/// </para>
 		/// </summary>
 		public Dictionary<string, string> extraDataFed = new Dictionary<string, string>();
@@ -392,7 +505,7 @@ namespace Beamable.Common
 		/// The offer this grant is for, in full.
 		///
 		/// <para>
-		/// Carried here so that <see cref="IFederatedCampaignOffer{T}.GetPlayerEntitlements"/> alone is
+		/// Carried here so that <see cref="IFederatedCampaignVirtualOffer{T}.GetPlayerEntitlements"/> alone is
 		/// enough to render a store UI — without it every client fans out a <c>GetOffer</c> per row. A
 		/// provider that finds this expensive may leave it null and let the client fall back.
 		/// </para>
@@ -420,37 +533,6 @@ namespace Beamable.Common
 	{
 		public string playerId;
 		public List<CampaignOfferEntitlement> entitlements = new List<CampaignOfferEntitlement>();
-	}
-
-	[Serializable]
-	public class CampaignOfferPurchaseNotification
-	{
-		public string playerId;
-
-		/// <summary>The grant being settled, when the purchase can be tied to one. May be empty.</summary>
-		public string grantId;
-
-		public string offerId;
-
-		/// <summary>The payment processor's id for this purchase. The idempotency key for the callback.</summary>
-		public string transactionId;
-
-		public string sku;
-
-		/// <summary>ISO 4217, e.g. "USD".</summary>
-		public string currency;
-
-		/// <summary>Minor units, to keep money off floating point.</summary>
-		public long amountCents;
-
-		public long completedAtUnixSeconds;
-	}
-
-	[Serializable]
-	public class CampaignOfferPurchaseAck
-	{
-		public bool acknowledged;
-		public string message;
 	}
 
 	/// <summary>
@@ -540,5 +622,46 @@ namespace Beamable.Common
 
 		/// <summary>Outside the listing's active period or schedule.</summary>
 		public const string ReasonNotActive = "not-active";
+
+		// --- Catalog-level properties ---------------------------------------
+		//
+		// Well-known keys on CampaignOfferCatalogResponse.properties. Both are optional; a surface that
+		// does not recognise them shows the catalog exactly as before.
+
+		/// <summary>
+		/// How many catalog entries the store declined to offer, as a decimal string. Present only when
+		/// non-zero, so its absence means "nothing was withheld" rather than "unknown".
+		/// </summary>
+		public const string CatalogWithheldCountKey = "withheldCount";
+
+		/// <summary>
+		/// Why those entries were withheld, as a sentence to show an operator. Written by the store,
+		/// because only the store knows what it filtered — a consumer renders it and does not interpret it.
+		/// </summary>
+		public const string CatalogWithheldReasonKey = "withheldReason";
+
+		// ── Reward types (CampaignOfferReward.type) ─────────────────────────────────────────────
+		//
+		// The four kinds Beamable's own commerce can grant. A store is NOT limited to these — the
+		// field is an open string precisely so a third-party provider can name its own — so a client
+		// must render an unknown type rather than reject it.
+
+		/// <summary>A soft-currency amount. <c>symbol</c> is the currency content id.</summary>
+		public const string RewardCurrency = "currency";
+
+		/// <summary>An inventory item. <c>symbol</c> is the item content id.</summary>
+		public const string RewardItem = "item";
+
+		/// <summary>
+		/// A granted right — DLC, a coupon, tier membership. <c>symbol</c> is the entitlement symbol;
+		/// a specialization travels in <c>properties</c>.
+		/// </summary>
+		public const string RewardEntitlement = "entitlement";
+
+		/// <summary>
+		/// A roll against a loot table. Its contents are not known until fulfilment, so
+		/// <c>amount</c> is <c>0</c> and the surface should say "contents vary" rather than "nothing".
+		/// </summary>
+		public const string RewardLootRoll = "lootRoll";
 	}
 }

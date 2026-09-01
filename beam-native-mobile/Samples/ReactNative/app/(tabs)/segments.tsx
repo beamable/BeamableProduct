@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import Ionicons from '@expo/vector-icons/Ionicons';
 
 import {
   CLIENT_DEMO_STAT,
@@ -36,6 +35,7 @@ import AsyncButton from '../../src/ui/AsyncButton';
 import Field from '../../src/ui/Field';
 import { Hint } from '../../src/ui/Hint';
 import MessageCard from '../../src/ui/MessageCard';
+import RefreshButton from '../../src/ui/RefreshButton';
 import Screen from '../../src/ui/Screen';
 import Section from '../../src/ui/Section';
 import StatCard from '../../src/ui/StatCard';
@@ -317,20 +317,9 @@ export default function SegmentsTab() {
     return key;
   }
 
-  const refreshButton = (busy: boolean, onPress: () => void, label: string) =>
-    busy ? (
-      <ActivityIndicator size="small" />
-    ) : (
-      <Pressable
-        onPress={onPress}
-        hitSlop={10}
-        style={({ pressed }) => [styles.refresh, pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-      >
-        <Ionicons name="refresh" size={18} color={colors.primary} />
-      </Pressable>
-    );
+  const refreshButton = (busy: boolean, onPress: () => void, label: string) => (
+    <RefreshButton busy={busy} onPress={onPress} label={label} />
+  );
 
   // Keys the player has that aren't one of the four cards — usually stats this realm's own
   // segments watch, written by a game server or another service.
@@ -601,8 +590,6 @@ export default function SegmentsTab() {
 }
 
 const styles = StyleSheet.create({
-  refresh: { padding: space.xs },
-  pressed: { opacity: 0.5 },
   error: {
     color: colors.errorInk,
     backgroundColor: colors.errorBg,

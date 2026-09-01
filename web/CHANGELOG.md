@@ -7,8 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The offer federation is now explicitly the *virtual* offer federation.**
+  `IFederatedCampaignOffer` is renamed `IFederatedCampaignVirtualOffer` and the default provider's
+  id `beamable_store` becomes `beamable_virtual_store`. Real-money offers become a separate
+  federation with its own contract, because they need platform product ids, a native purchase flow,
+  receipt verification and an external settlement callback — none of which a soft-currency offer
+  has any use for, and all of which every virtual provider was inheriting as fields it could not
+  fill.
+
+  Consequently `CampaignOfferPrice` drops `realPriceCents`, `currencyCode` and `productIds`: a
+  price is now a currency `symbol` and `amount`. The gateway route, the reserved campaign payload
+  keys and the `CampaignOffer*` type names are unchanged — those are shared dispatch vocabulary
+  across offer federations, in the same way one message-rail route serves push, email and ingame.
+
 ### Added
 
+- `CampaignOfferService` (`beam.campaignOffer`) — the player half of the **virtual offer
+  federation** (`IFederatedCampaignVirtualOffer`): `getEntitlements(federationId)` and
+  `redeem(federationId, grantId)`, the only two campaign-offer routes a player token can reach. The
+  federation id is always a parameter; `'beamable_virtual_store'` is the default provider Beamable
+  ships, not a special case. `redeem` resolves for a refused claim — check `success` on the body.
+  Claiming does not pay out: a virtual offer is bought with soft currency through
+  `POST /object/commerce/{playerId}/purchase`, and the claim settles the grant afterwards.
+- `CampaignOfferEntitlement` now carries the offer inline: `offer`, `listings`, `available` and
+  `unavailableReasons`. One `getEntitlements` call is enough to render a store screen, instead of
+  a `GetOffer` fan-out per row. All optional — a provider may omit `offer` and the client falls
+  back to the opaque `offerId`.
+- `CampaignOfferReward` and `CampaignOfferItem.rewards` — what an offer actually gives the player,
+  itemised, so a bundle can disclose its contents instead of reaching the player as a title and a
+  price. `type` is an **open string** (`currency`, `item`, `entitlement`, `lootRoll`,
+  or a store's own), so never switch on it exhaustively; render what you know and fall back to
+  `title`/`symbol`. It is disclosure, not a receipt — never reconcile it against what landed, and
+  an empty list means "this store cannot enumerate its payout", not "gives nothing".
+- `CampaignOfferCatalogResponse.properties` — a catalog-level escape hatch, with two well-known keys
+  (`withheldCount`, `withheldReason`). An empty `offers` list cannot distinguish "nothing authored yet"
+  from "this store has listings but none it can offer here", and only the provider knows which; these
+  let it say so in a sentence a surface renders verbatim. Absence means nothing was withheld.
+- New campaign-offer schemas: `CampaignOfferItem`, `CampaignOfferListingRef`, `CampaignOfferPrice`
+  (a soft-currency `symbol` and `amount`, plus a display `label`), `CampaignOfferReason`,
+  `CampaignOfferReward`, `CampaignOfferText`. Each of
+  `CampaignOfferListingRef`, `CampaignOfferPrice`, `CampaignOfferReason` and `CampaignOfferReward`
+  carries a `properties` escape hatch, so a third-party store can extend the contract without a
+  version bump.
 - Native **React Native** build target (`dist/react-native`), selected automatically by Metro
   via the package `exports` `"react-native"` condition. Ships AsyncStorage-backed token,
   config, and content storage (`ReactNativeTokenStorage`, `ReactNativeConfigStorage`,

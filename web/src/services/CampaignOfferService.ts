@@ -11,15 +11,15 @@ import {
 /**
  * Identifies which store an offer came from.
  * @remarks
- * A store is backed by a customer microservice implementing `IFederatedCampaignOffer`, so the
- * valid ids are whatever the realm has deployed. `'beamable_store'` is the default provider
- * Beamable ships; a game selling through Steam, a console store, or its own web shop
- * implements the same interface under its own id and is reached through these same calls.
+ * A store is backed by a customer microservice implementing `IFederatedCampaignVirtualOffer`, so
+ * the valid ids are whatever the realm has deployed. `'beamable_virtual_store'` is the default
+ * provider Beamable ships; a game with its own virtual economy implements the same interface
+ * under its own id and is reached through these same calls.
  *
  * Never branch on this value — if client code special-cases a store, the extension point is
  * broken. Pass it through.
  */
-export type CampaignOfferFederationId = 'beamable_store' | (string & {});
+export type CampaignOfferFederationId = 'beamable_virtual_store' | (string & {});
 
 /** Optional per-call overrides for {@link CampaignOfferService.redeem}. */
 export interface RedeemOfferOptions {
@@ -38,8 +38,13 @@ export interface RedeemOfferOptions {
  *
  * @remarks
  * These are the only two campaign-offer routes a player token can reach. Listing a catalog,
- * granting, revoking and settling a purchase are all operator or server-to-server concerns and
- * are permission-scoped away from a game client.
+ * granting and revoking are all operator or server-to-server concerns and are permission-scoped
+ * away from a game client.
+ *
+ * Claiming is not how the player gets the goods: a virtual offer is a storefront listing bought
+ * with soft currency through `POST /object/commerce/{playerId}/purchase`, and the claim only
+ * settles the grant afterwards (and forfeits the siblings it was an alternative to). The provider
+ * verifies that the purchase happened before settling, so claiming without buying is refused.
  *
  * The offer id on an entitlement is **opaque**: only the store that minted it can interpret it,
  * which is why `federationId` travels alongside it everywhere. Do not parse it, show it as a
@@ -77,6 +82,18 @@ export class CampaignOfferService extends ApiService {
    * session boundary.
    *
    * `expiresAtUnixSeconds` of `0` means the grant never expires.
+   *
+   * Each entitlement carries the offer inline, so this one call is enough to render a store
+   * screen — there is no need to fan out a request per row:
+   * - `offer` is the whole offer, including `rewards` (what the bundle contains) and `listings`
+   *   (the storefront handles to act on it). A provider may leave it null; fall back to the
+   *   opaque `offerId` rather than blanking the row.
+   * - `offer.rewards` is disclosure, not a receipt. It says what the offer promises; it is not
+   *   reconciled against what actually landed, and an empty list means "this store cannot
+   *   enumerate its payout", never "this offer gives nothing".
+   * - `available` is **distinct from `state`**: a `granted` grant can still be unavailable
+   *   because a requirement on its listing is unmet.
+   * - `unavailableReasons` is non-empty whenever `available` is false. Show `message`.
    * @example
    * ```ts
    * const held = await beam.campaignOffer.getEntitlements('beamable_store');
@@ -97,9 +114,16 @@ export class CampaignOfferService extends ApiService {
   }
 
   /**
-   * Claims a grant, moving whatever it holds into the player's inventory.
+   * Settles a grant the player has acted on, closing it out.
    *
    * @remarks
+   * **This does not, on its own, give the player anything.** What a claim does is the store's
+   * business: Beamable's default provider sells storefront listings, so the goods and the money
+   * both move through the platform's commerce purchase flow and redeeming only settles the grant
+   * (and forfeits any siblings it was an alternative to). Another provider may well fulfil here
+   * instead. Either way, never treat a successful redeem as proof the inventory changed — read
+   * the inventory back if you need to know.
+   *
    * A player may only ever redeem their own grants — the gateway resolves the player from the
    * token and rejects a mismatch with 403 `IncorrectPlayer`.
    *
