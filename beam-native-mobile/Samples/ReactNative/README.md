@@ -63,22 +63,55 @@ For **remote** push you also need provider credentials on your realm — `apns_p
 
 ### Pointing at a local stack
 
-To run against a local Beamable backend (e.g. `beam local up` over your LAN), do two things.
+To run against a local Beamable backend (e.g. `beam local up` over your LAN), do three things.
 
-**1. Point at the backend** — create an uncommitted `env.local` at the project root:
+**1. Point at the realm** — edit `.beamable/config.beam.json` with the cid, pid and host of your
+local stack:
 
+```json
+{
+  "cid": "95633677400146944",
+  "pid": "DE_95633677402244098",
+  "host": "http://192.168.x.x:8080"
+}
 ```
+
+This file is the **only** thing that sets the SDK's realm and host: `src/beam/config.ts` imports it
+directly and `beamClient.ts` passes it to `Beam.init`. `env.local` / `VITE_API_BASE` does **not**
+change the SDK host — that path exists for the web/Unity-WebView variant only. Point `env.local` at
+a local URL and leave this file on its committed defaults and every request still goes to
+`api.beamable.com`, which shows up as `400 InvalidScopeError: Invalid scope: <cid>.<pid>` because
+your local realm does not exist there.
+
+`host` must be reachable **from the device**, not from your dev machine — `localhost` means the
+phone itself:
+
+| Target | host |
+|---|---|
+| Android emulator | `http://10.0.2.2:8080` (alias for the host loopback) |
+| Physical device / iPad | your dev machine's LAN IP, e.g. `http://192.168.x.x:8080` |
+
+`beam local up` rewrites the *portal's* config on every stack reset, but **not this file** — and a
+reset mints a brand-new cid/pid, so re-copy them after one.
+
+**2. Make sure the SDK is built.** The sample links `@beamable/sdk` straight at the monorepo
+(`file:../../../web`), and it bundles `web/dist`, which is **git-ignored** — a fresh clone has none.
+`dotnet beam local up --build` builds and publishes it (the plain `beam local up` skips that step),
+or build it directly:
+
+```bash
+cd ../../../web && npm run build
 # env.local — git-ignored, never committed
 VITE_API_BASE=http://192.168.x.x:8080
 # Only needed while microservices run via `beam project run` — see below.
 BEAM_ROUTING_KEY=<output of `beam fed local-key`>
 ```
 
-`app.config.js` reads it and surfaces the URL to the app (`src/beam/config.ts` flips
-`environment` to `local`). `env.local` only chooses *which* URL to target — it works for
-`http://` or `https://` and does not by itself change any native setting.
+A stale `dist` is worse than a missing one: custom-host support lives in `web/src/core/BeamBase.ts`,
+so an old bundle silently ignores `host` and falls back to prod. Verify with
+`grep -oE "fromHost|findByApiUrl" ../../../web/dist/react-native/index.mjs` — both must appear.
 
-**2. Build with the local variant** — a LAN backend is plain HTTP, which Android blocks by
+**3. Build with the local variant** — a LAN backend is plain HTTP, which Android blocks by
 default, so use the **`:local`** scripts:
 
 ```bash
@@ -93,8 +126,14 @@ and is **not** inferred from the URL — so the build *variant*, not a config va
 the native security posture. A plain `npm run android` (no `:local`) always stays TLS-only,
 and cleartext never reaches remote/release builds.
 
-> If you set an `http://` `env.local` but forget `:local`, the app builds fine but Android
-> blocks the traffic — run the `:local` variant instead.
+> If you set an `http://` host but forget `:local`, the app builds fine but Android blocks the
+> traffic — run the `:local` variant instead. On iOS the same omission trips App Transport
+> Security, which fails the request before it leaves the device, so it looks like a connection
+> problem rather than a config one.
+
+> **Config is read at BUNDLE time.** After editing `config.beam.json` or rebuilding the SDK, restart
+> Metro with a cleared cache (`node scripts/with-local.js start --dev-client -c`) or you will keep
+> running the previous realm.
 
 Re-run `expo prebuild --clean` (or a fresh `expo run:*`) when switching variants so the
 regenerated Android manifest picks up the change. (iOS uses ATS and is unaffected by the

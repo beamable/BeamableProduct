@@ -22,4 +22,5 @@ export type Message = {
   playerRewards?: PlayerReward; 
   rewards?: MailRewards; 
   subject?: string; 
+  metadata?: Record<string, string>; 
 };

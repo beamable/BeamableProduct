@@ -5,11 +5,13 @@ import '@beamable/sdk/react-native/polyfills';
 
 import {
   AccountService,
+  AnalyticsService,
   AnnouncementsService,
   AuthService,
   Beam,
   ContentService,
   LeaderboardsService,
+  MailService,
   MessageRailService,
   StatsService,
   CampaignOfferService,
@@ -174,12 +176,19 @@ export async function initBeam(): Promise<Beam> {
       AnnouncementsService,
       LeaderboardsService,
       MessageRailService,
-      // The offer federation's two client-callable gateway routes (entitlements /
+      // The virtual offer federation's two client-callable gateway routes (entitlements /
       // redeem). Like the rail, this goes through `/api/campaign-offer/*`, NOT through
       // `micro_BeamableCampaignOfferService` — the federation routes on the microservice
       // itself trust whatever playerId they are handed, so the gateway is the
       // authorized front door and the only thing a client should call.
       CampaignOfferService,
+      // The in-game rail delivers campaigns as Beamable mail, so the Inbox tab reads
+      // `beam.mail`. AnalyticsService is registered alongside it deliberately: MailService
+      // reports the campaign funnel's `Opened` through it on the Unread -> Read transition, so
+      // without analytics the Inbox still works but every in-game campaign reports zero
+      // engagement -- a silent failure, which is why they are listed together.
+      MailService,
+      AnalyticsService,
     ]);
     // CampaignService is the only microservice the client talks to directly, and only for
     // reading the player's registered devices (`listMyDevices`). Device/email/in-game opt-in

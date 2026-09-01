@@ -350,6 +350,7 @@ public class LocalStackBuildStepTests
 		{
 			("build: c# message rail runtime", "c# message rail runtime", "BeamableMessageRailRuntime"),
 			("build: c# campaign runtime", "c# campaign runtime", "BeamableCampaignRuntime"),
+			("build: c# analytics loader", "c# analytics loader", "BeamableAnalyticsLoader"),
 		})
 		{
 			var build = Step(config, buildName);
@@ -366,9 +367,12 @@ public class LocalStackBuildStepTests
 			Assert.That(IndexOf(config, buildName), Is.LessThan(IndexOf(config, runName)));
 		}
 
-		// Three .NET hosts share the machine, so each must bind a port of its own. The gateway takes the
+		// Four .NET hosts share the machine, so each must bind a port of its own. The gateway takes the
 		// ASPNETCORE_URLS default, so it has no entry — stand in a sentinel to keep the comparison honest.
-		var ports = new[] { "c# gateway", "c# message rail runtime", "c# campaign runtime" }
+		// This is the assertion that catches a future port collision, which otherwise surfaces as whichever
+		// host started second silently failing to bind.
+		var ports = new[]
+			{ "c# gateway", "c# message rail runtime", "c# campaign runtime", "c# analytics loader" }
 			.Select(n => Step(config, n))
 			.Select(s => s.environment.TryGetValue("ASPNETCORE_URLS", out var url) ? url : "gateway-default")
 			.ToArray();
@@ -379,12 +383,13 @@ public class LocalStackBuildStepTests
 			Is.LessThan(IndexOf(config, "c# campaign runtime")));
 	}
 
-	/// <summary>The three .NET hosts, as (build step, run step, project) — the set that must stay in lockstep.</summary>
+	/// <summary>The four .NET hosts, as (build step, run step, project) — the set that must stay in lockstep.</summary>
 	private static readonly (string build, string run, string project)[] DotnetHosts =
 	{
 		("build: c# gateway", "c# gateway", "BeamableGateway"),
 		("build: c# message rail runtime", "c# message rail runtime", "BeamableMessageRailRuntime"),
 		("build: c# campaign runtime", "c# campaign runtime", "BeamableCampaignRuntime"),
+		("build: c# analytics loader", "c# analytics loader", "BeamableAnalyticsLoader"),
 	};
 
 	/// <summary>

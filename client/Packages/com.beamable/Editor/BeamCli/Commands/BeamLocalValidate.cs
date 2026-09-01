@@ -6,11 +6,32 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class LocalValidateArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
+        /// <summary>Toolchain directory to inspect (default: ~/.beamable-toolchain, or $BEAM_TOOLCHAIN_DIR)</summary>
+        public string toolchainDir;
+        /// <summary>Path to the local-stack manifest to validate against (defaults to .beamable/local-stack.json)</summary>
+        public string config;
+        /// <summary>Also run the AWS preflight (credentials, assume-role, the JWT signing secret, buckets, scheduler queue)</summary>
+        public bool withAws;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
+            // If the toolchainDir value was not default, then add it to the list of args.
+            if ((this.toolchainDir != default(string)))
+            {
+                genBeamCommandArgs.Add(("--toolchain-dir=" + this.toolchainDir));
+            }
+            // If the config value was not default, then add it to the list of args.
+            if ((this.config != default(string)))
+            {
+                genBeamCommandArgs.Add(("--config=" + this.config));
+            }
+            // If the withAws value was not default, then add it to the list of args.
+            if ((this.withAws != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--with-aws=" + this.withAws));
+            }
             string genBeamCommandStr = "";
             // Join all the args with spaces
             genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
@@ -19,7 +40,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual LocalValidateWrapper LocalValidate()
+        public virtual LocalValidateWrapper LocalValidate(LocalValidateArgs validateArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
@@ -27,6 +48,7 @@ namespace Beamable.Editor.BeamCli.Commands
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
             genBeamCommandArgs.Add("local");
             genBeamCommandArgs.Add("validate");
+            genBeamCommandArgs.Add(validateArgs.Serialize());
             // Create an instance of an IBeamCommand
             Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
             // Join all the command paths and args into one string

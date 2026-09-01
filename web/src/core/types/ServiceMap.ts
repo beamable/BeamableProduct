@@ -1,9 +1,11 @@
 import type {
   AccountService,
+  AnalyticsService,
   AnnouncementsService,
   AuthService,
   ContentService,
   LeaderboardsService,
+  MailService,
   MessageRailService,
   StatsService,
   CampaignOfferService,
@@ -15,10 +17,12 @@ import type {
  */
 export const SERVICE_KEYS = [
   'account',
+  'analytics',
   'announcements',
   'auth',
   'content',
   'leaderboards',
+  'mail',
   'messageRail',
   'stats',
   'campaignOffer',
@@ -30,10 +34,12 @@ export const SERVICE_KEYS = [
  */
 export type ServiceMap = {
   account: AccountService;
+  analytics: AnalyticsService;
   announcements: AnnouncementsService;
   auth: AuthService;
   content: ContentService;
   leaderboards: LeaderboardsService;
+  mail: MailService;
   messageRail: MessageRailService;
   stats: StatsService;
   campaignOffer: CampaignOfferService;

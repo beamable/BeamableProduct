@@ -77,9 +77,9 @@ jobs:
           echo patch=${{ inputs.patch }}
           echo rc=${{ inputs.rcNumber }}
           echo releaseType=${{ inputs.releaseType }}
-         
+
       - uses: actions/checkout@v5
-        with: 
+        with:
           ref: ${{ github.event.inputs.commit }}
 
       - name: Log in to the Container registry
@@ -98,7 +98,7 @@ jobs:
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
-            
+
       - name: Update npm
         # Pinned to 11.16.0 (last-known-good): npm 11.17.0 attempts OIDC trusted
         # publishing, which Nexus 2 rejects (token-exchange 404 then PUT 400),
@@ -155,24 +155,24 @@ jobs:
         run: beam version
 
       - name: Get Version Number (Nightly)
-        if: ${{ inputs.releaseType == 'nightly' }} 
+        if: ${{ inputs.releaseType == 'nightly' }}
         run: beam version construct 0 0 0 --nightly > version.txt
-      
+
       - name: Get Version Number (RC)
-        if: ${{ inputs.releaseType == 'rc' }} 
+        if: ${{ inputs.releaseType == 'rc' }}
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --rc ${{ inputs.rcNumber }} > version.txt
-      
+
       - name: Get Version Number (Exp)
-        if: ${{ inputs.releaseType == 'exp' }} 
+        if: ${{ inputs.releaseType == 'exp' }}
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --exp ${{ inputs.rcNumber }} > version.txt
-      
+
       - name: Get Version Number (Prod)
-        if: ${{ inputs.releaseType == 'production' }} 
+        if: ${{ inputs.releaseType == 'production' }}
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --prod > version.txt
-      
+
       - name: Store version number as output
         id: version
-        env: 
+        env:
           NPM_TAG: >-
             ${{ fromJson('{
               "nightly": "--tag nightly",
@@ -216,15 +216,22 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
           ENVIRONMENT: ${{steps.version.outputs.BUILD_ENV}}
-          
+
       - name: Apply Nuget Version to Unity SDK
         run: |
           beam unity download-all-nuget-packages ./client --logs v
 
+      # Unity ignores any directory that has no sibling .meta file, and an installed UPM package is
+      # immutable, so a package published with missing folder metas cannot be repaired on the consumer
+      # side. Fail the build here instead. ~Claude
+      - name: Verify Unity Package Meta Files
+        run: |
+          beam unity verify-package-metas ./client/Packages/com.beamable
+
       - name: Prepare Unity Samples
         run: sh ./../../../build/bin/prepare-samples.sh
         working-directory: ./client/Packages/com.beamable/
-      
+
       - name: Update UPM Versions (com.beamable)
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable/
@@ -256,7 +263,7 @@ jobs:
           # this might remove tools that are actually needed,
           # if set to "true" but frees about 6 GB
           tool-cache: false
-          
+
           # all of these default to true, but feel free to set to
           # "false" if necessary for your workflow
           android: true
@@ -298,11 +305,28 @@ jobs:
       - name: Copy npmRC over
         run: cp client/Packages/com.beamable/.npmrc ./client/build/package_dist/.npmrc
 
+      # The Free Disk Space step above deletes /usr/share/dotnet to make room for the Unity build,
+      # which would leave the globally installed `beam` tool with no runtime to run on.
+      - name: Restore .NET for the tarball audit
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      # Last gate before anything leaves the runner: audit the tarball that is actually about to be
+      # published, not just the working tree it was built from. ~Claude
+      - name: Verify Packaged Tarball Meta Files
+        run: |
+          rm -rf ./tarball-audit
+          mkdir -p ./tarball-audit
+          tar -xzf ./client/build/package_dist/com.beamable/com.beamable-${{ steps.version.outputs.VERSION }}.tgz -C ./tarball-audit
+          beam unity verify-package-metas ./tarball-audit/package
+          rm -rf ./tarball-audit
+
       - name: Release com.beamable UPM Package to Nexus
         if: ${{ inputs.dryRun == false }}
         run: npm publish ./com.beamable/com.beamable-${{ steps.version.outputs.VERSION }}.tgz ${{steps.version.outputs.NPM_TAG}}
         working-directory: ./client/build/package_dist/
-        env: 
+        env:
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
           NPM_REGISTRY: ${{steps.version.outputs.NEXUS_REG}}
@@ -318,13 +342,13 @@ jobs:
         if: ${{ inputs.dryRun == false }}
         run: npm publish ${{steps.version.outputs.NPM_TAG}}
         working-directory: ./client/Packages/com.beamable.server
-        env: 
+        env:
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
           NPM_REGISTRY: ${{steps.version.outputs.NEXUS_REG}}
 
       - name: Publish Changelog
-        if: ${{ inputs.dryRun == false }} 
+        if: ${{ inputs.dryRun == false }}
         run: sh ./build/bin/upload-changelogs.sh
         env:
           COPY_UNITY_SDK: 'true'
@@ -351,6 +375,26 @@ jobs:
             --title "Unity SDK ${{ steps.version.outputs.VERSION }}" \
             --notes "Unity SDK Release ${{ steps.version.outputs.VERSION }}" \
             ${{ inputs.releaseType != 'production' && '--prerelease' || '' }}
+
+      # Tell beamable/docs to regenerate the SDK/CLI version table. Dispatched from
+      # here rather than from a tag-push trigger: the tag above is created with
+      # GITHUB_TOKEN, and events raised by GITHUB_TOKEN never start a workflow run.
+      # --fail-with-body so an expired DOCS_DISPATCH_PAT fails the step loudly.
+      - name: Notify docs of SDK release
+        if: ${{ inputs.dryRun == false && inputs.releaseType == 'production' }}
+        run: |
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer ${{ secrets.DOCS_DISPATCH_PAT }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/beamable/docs/dispatches \
+            -d '{
+              "event_type": "unity-sdk-released",
+              "client_payload": {
+                "tag": "unity-sdk-${{ steps.version.outputs.VERSION }}",
+                "sdk_version": "${{ steps.version.outputs.VERSION }}"
+              }
+            }'
 
       # Close the matching "Unity X.Y.Z" milestone once a production release ships.
       # Warns (does not fail) when no open milestone matches, so it never blocks a release. ~Claude

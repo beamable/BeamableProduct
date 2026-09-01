@@ -10,6 +10,7 @@ on:
       - 'rfc/**'
       - '.github/**'
       - 'client_installer/**'
+      - 'web/**'
     # paths:
     #   - 'client/**'
     #   - 'microservice/**'
