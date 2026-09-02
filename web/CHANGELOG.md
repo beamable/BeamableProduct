@@ -60,6 +60,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Bundle catalog APIs follow the reworked backend contract: `beamoGetBundlesHistory` is now
+  `beamoGetBundlesReleases` (a paged release log) and `beamoPutBundlesChecksumsAcl` is now
+  `beamoPutBundlesAcl`, since a bundle's visibility belongs to its name rather than to one
+  published checksum.
+- `beamoGetBundles` returns `BundleSummary[]` without the component arrays, bundle tags are a
+  tag-to-checksum map, and `peerDependencies` is now `bundleDependencies`.
 - `Beam.init()` now skips the realtime connection when `realtime.enabled` is `false` instead of always connecting.
 - `getUserDeviceAndPlatform()` now detects React Native (`navigator.product === 'ReactNative'`) and
   reports `{ deviceType: 'Mobile', platform: 'React Native' }` instead of falling through to the

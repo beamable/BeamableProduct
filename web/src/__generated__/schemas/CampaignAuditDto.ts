@@ -4,15 +4,13 @@
  */
 
 import type { AuthorDto } from './AuthorDto';
-import type { CampaignLifecycle } from './enums/CampaignLifecycle';
 
-export type CampaignSummaryDto = { 
-  campaignId?: string; 
-  createdAt?: Date | null; 
+export type CampaignAuditDto = { 
+  createdAt?: Date; 
   createdBy?: AuthorDto; 
-  name?: string; 
-  phase?: CampaignLifecycle; 
+  createdBySystem?: string; 
+  lastUpdatedAt?: Date; 
+  lastUpdatedBy?: AuthorDto; 
   publishedAt?: Date | null; 
   publishedBy?: AuthorDto; 
-  version?: number; 
 };

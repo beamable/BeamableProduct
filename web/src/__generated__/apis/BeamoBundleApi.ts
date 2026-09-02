@@ -12,11 +12,12 @@ import { nsPlaceholder } from '@/__generated__/apis/constants';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
 import { tagPlaceholder } from '@/__generated__/apis/constants';
-import type { ApiBeamoBundlesChecksumsAclPutBeamoBundleResponse } from '@/__generated__/schemas/ApiBeamoBundlesChecksumsAclPutBeamoBundleResponse';
+import type { ApiBeamoBundlesAclPutBeamoBundleResponse } from '@/__generated__/schemas/ApiBeamoBundlesAclPutBeamoBundleResponse';
 import type { ApiBeamoBundlesTagsPostBeamoBundleResponse } from '@/__generated__/schemas/ApiBeamoBundlesTagsPostBeamoBundleResponse';
 import type { GetBundleResponse } from '@/__generated__/schemas/GetBundleResponse';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { ListBundleReleasesResponse } from '@/__generated__/schemas/ListBundleReleasesResponse';
 import type { ListBundlesResponse } from '@/__generated__/schemas/ListBundlesResponse';
 import type { PromoteBundleTagRequest } from '@/__generated__/schemas/PromoteBundleTagRequest';
 import type { PublishBundleRequest } from '@/__generated__/schemas/PublishBundleRequest';
@@ -78,17 +79,23 @@ export async function beamoGetBundlesByBundleNameAndNs(requester: HttpRequester,
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param bundleName - The `bundleName` parameter to include in the API request.
  * @param ns - The `ns` parameter to include in the API request.
+ * @param fromVersion - The `fromVersion` parameter to include in the API request.
+ * @param limit - The `limit` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function beamoGetBundlesHistory(requester: HttpRequester, bundleName: string, ns: string, gamertag?: string): Promise<HttpResponse<ListBundlesResponse>> {
-  let endpoint = "/api/beamo/bundles/{ns}/{bundleName}/history".replace(bundleNamePlaceholder, endpointEncoder(bundleName)).replace(nsPlaceholder, endpointEncoder(ns));
+export async function beamoGetBundlesReleases(requester: HttpRequester, bundleName: string, ns: string, fromVersion?: bigint | string, limit?: number, gamertag?: string): Promise<HttpResponse<ListBundleReleasesResponse>> {
+  let endpoint = "/api/beamo/bundles/{ns}/{bundleName}/releases".replace(bundleNamePlaceholder, endpointEncoder(bundleName)).replace(nsPlaceholder, endpointEncoder(ns));
   
   // Make the API request
-  return makeApiRequest<ListBundlesResponse>({
+  return makeApiRequest<ListBundleReleasesResponse>({
     r: requester,
     e: endpoint,
     m: GET,
+    q: {
+      fromVersion,
+      limit
+    },
     g: gamertag,
     w: true
   });
@@ -205,16 +212,15 @@ export async function beamoPostBundlesChecksumsYank(requester: HttpRequester, bu
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `UpdateBundleAclRequest` instance to use for the API request
  * @param bundleName - The `bundleName` parameter to include in the API request.
- * @param checksum - The `checksum` parameter to include in the API request.
  * @param ns - The `ns` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function beamoPutBundlesChecksumsAcl(requester: HttpRequester, bundleName: string, checksum: string, ns: string, payload: UpdateBundleAclRequest, gamertag?: string): Promise<HttpResponse<ApiBeamoBundlesChecksumsAclPutBeamoBundleResponse>> {
-  let endpoint = "/api/beamo/bundles/{ns}/{bundleName}/checksums/{checksum}/acl".replace(bundleNamePlaceholder, endpointEncoder(bundleName)).replace(checksumPlaceholder, endpointEncoder(checksum)).replace(nsPlaceholder, endpointEncoder(ns));
+export async function beamoPutBundlesAcl(requester: HttpRequester, bundleName: string, ns: string, payload: UpdateBundleAclRequest, gamertag?: string): Promise<HttpResponse<ApiBeamoBundlesAclPutBeamoBundleResponse>> {
+  let endpoint = "/api/beamo/bundles/{ns}/{bundleName}/acl".replace(bundleNamePlaceholder, endpointEncoder(bundleName)).replace(nsPlaceholder, endpointEncoder(ns));
   
   // Make the API request
-  return makeApiRequest<ApiBeamoBundlesChecksumsAclPutBeamoBundleResponse, UpdateBundleAclRequest>({
+  return makeApiRequest<ApiBeamoBundlesAclPutBeamoBundleResponse, UpdateBundleAclRequest>({
     r: requester,
     e: endpoint,
     m: PUT,

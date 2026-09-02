@@ -15,8 +15,8 @@ export type SendMailObjectRequest = {
   bodyRef?: bigint | string; 
   expires?: string; 
   id?: bigint | string; 
+  metadata?: Record<string, string>; 
   playerRewards?: PlayerReward; 
   rewards?: MailRewards; 
   subject?: string; 
-  metadata?: Record<string, string>; 
 };
