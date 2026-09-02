@@ -655,7 +655,7 @@ public class SwaggerService
 		string output = Regex.Replace(input, pattern, "");
 
 		// // Remove all non-alphanumeric characters and join the remaining parts of the string
-		output = string.Join("", output.Split(new char[] { '/', '-' }).Select(part =>
+		output = string.Join("", Regex.Split(output, @"\W").Select(part =>
 		{
 			if (part.Length > 0) // Check if the length of the part is greater than zero
 			{

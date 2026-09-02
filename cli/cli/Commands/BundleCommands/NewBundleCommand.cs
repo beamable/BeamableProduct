@@ -60,7 +60,7 @@ public class NewBundleCommand : AtomicCommand<NewBundleCommandArgs, NewBundleCom
 		var json = new JObject
 		{
 			["components"] = new JArray(args.components),
-			["peerDependencies"] = new JObject()
+			["bundleDependencies"] = new JObject()
 		};
 		File.WriteAllText(fullPath, json.ToString(Formatting.Indented));
 		Log.Information($"Created bundle config [{fullName}] at [{fullPath}]");

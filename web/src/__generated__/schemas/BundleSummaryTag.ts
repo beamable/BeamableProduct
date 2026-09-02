@@ -3,5 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type ApiBeamoBundlesChecksumsAclPutBeamoBundleResponse = { 
+export type BundleSummaryTag = { 
+  checksum?: string; 
+  tag?: string; 
 };
