@@ -30,6 +30,22 @@ namespace Beamable.Common
 		/// back to this exact recipient. Optional on the wire (empty when the producer omits it).
 		/// </summary>
 		public string outreachId;
+
+		/// <summary>
+		/// Ready-made open-tracking pixel URL for this recipient. A rendering federation places it as
+		/// <c>&lt;img src="..." width="1" height="1" alt=""&gt;</c> and needs to understand nothing
+		/// about it — the URL is opaque, signed by the platform, and identifies this one recipient.
+		/// <para>EMPTY means tracking is not configured, and empty must render NO pixel at all: a
+		/// broken image in someone's inbox is worse than a missing metric.</para>
+		/// <para>Only rails whose engagement signal arrives out of band need this. Push gets Opened
+		/// from the handset echoing <see cref="MessageRailContract.OutreachKey"/>, so a push federation
+		/// can ignore it; email has no handset, which is why the pixel is the only signal available.</para>
+		/// <para>Do NOT build this URL yourself. It carries a signed token whose payload includes the
+		/// recipient's gamer tag, which the campaign funnel needs to resolve an account — a
+		/// federation-built copy cannot be signed and has historically dropped that field, which makes
+		/// every open it records invisible to the campaign funnel.</para>
+		/// </summary>
+		public string openTrackingUrl;
 	}
 
 	[Serializable]
