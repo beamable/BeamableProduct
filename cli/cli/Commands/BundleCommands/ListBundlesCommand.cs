@@ -18,11 +18,12 @@ public class ListBundlesCommandArgs : CommandArgs
 public class ListBundlesCommandOutput
 {
 	/// <summary>Published bundles in the catalog that are visible to the current realm.</summary>
-	public BundleInfo[] published = Array.Empty<BundleInfo>();
+	public BundleSummaryInfo[] published = Array.Empty<BundleSummaryInfo>();
 
 	/// <summary>
-	/// Bundles authored in this workspace (may not be published to the catalog yet). Same shape as
-	/// <see cref="published"/>; catalog-only fields (checksum, acl, yanked, publishedAt) are empty.
+	/// Bundles authored in this workspace (may not be published to the catalog yet). A different
+	/// shape from <see cref="published"/>: the catalog list is per-name, so it has no component
+	/// references, while a local bundle has nothing but them.
 	/// </summary>
 	public BundleInfo[] local = Array.Empty<BundleInfo>();
 }
@@ -53,16 +54,17 @@ public class ListBundlesCommand : AtomicCommand<ListBundlesCommandArgs, ListBund
 
 		// Published catalog bundles. Tolerate a fetch failure (e.g. not logged in / no realm) so the
 		// local list is still returned.
-		BundleInfo[] published;
+		BundleSummaryInfo[] published;
 		try
 		{
 			var response = await args.Provider.GetService<IBeamBeamobundleApi>().GetBundles();
-			published = (response.bundles ?? Array.Empty<Bundle>()).Select(BundleInfo.FromBundle).ToArray();
+			published = (response.bundles ?? Array.Empty<BundleSummary>())
+				.Select(BundleSummaryInfo.FromSummary).ToArray();
 		}
 		catch (RequesterException e)
 		{
 			Log.Warning($"Could not fetch published bundles from the catalog (status={e.Status}); showing local bundles only.");
-			published = Array.Empty<BundleInfo>();
+			published = Array.Empty<BundleSummaryInfo>();
 		}
 
 		return new ListBundlesCommandOutput { published = published, local = local };
@@ -78,18 +80,20 @@ public class ListBundlesCommand : AtomicCommand<ListBundlesCommandArgs, ListBund
 
 		var published = new Table().Title("Published");
 		published.AddColumn("Name");
-		published.AddColumn("Published At");
-		published.AddColumn("Checksum");
+		published.AddColumn("Updated At");
+		published.AddColumn("Version");
+		published.AddColumn("Latest Checksum");
 		published.AddColumn("ACL");
-		published.AddColumn("Yanked");
+		published.AddColumn("Tags");
 		foreach (var bundle in output.published)
 		{
 			published.AddRow(
 				Markup.Escape(bundle.name),
-				Markup.Escape(BundleInfo.FormatPublishedAt(bundle.publishedAt)),
-				Markup.Escape(bundle.checksum),
+				Markup.Escape(BundleInfo.FormatPublishedAt(bundle.updatedAt)),
+				Markup.Escape(bundle.latestVersion.ToString()),
+				Markup.Escape(bundle.latestChecksum),
 				Markup.Escape(bundle.acl),
-				bundle.yanked ? "yes" : "no");
+				Markup.Escape(bundle.FormatTags()));
 		}
 		AnsiConsole.Write(published);
 
@@ -142,7 +146,8 @@ public class ListBundlesCommand : AtomicCommand<ListBundlesCommandArgs, ListBund
 			serviceNames = services.ToArray(),
 			storageIds = storages.ToArray(),
 			portalExtensionNames = extensions.ToArray(),
-			peerDependencies = bundle.peerDependencies.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.type ?? ""),
+			bundleDependencies = bundle.bundleDependencies.ToDictionary(
+				kvp => kvp.Key, kvp => kvp.Value?.Format() ?? ""),
 		};
 	}
 }
