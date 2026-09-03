@@ -1,3 +1,36 @@
+## Unreleased
+
+### Breaking
+
+- **The campaign-offer contract was reshaped.** `getEntitlements` becomes
+  `getCampaignOffers(federationId, states?)`, and the route it calls becomes
+  `GET /api/campaign-offer/campaign-offers`. `states` filters by lifecycle — omit it for everything,
+  pass `['Granted']` for what a store screen wants. "Unredeemed" was never a state: it would also
+  include revoked and expired.
+- `CampaignOfferEntitlement` → `CampaignOffer`; `CampaignOfferEntitlementsResponse` →
+  `CampaignOffersResponse`. `state` is now a closed union (`'Granted' | 'Redeemed' | 'Revoked' |
+  'Expired'`) rather than an open string, and it is **capitalised** — the platform owns this state
+  machine, so a store cannot invent a fifth value.
+- **`CampaignOfferListingRef` and `CampaignOfferPrice` are gone**, and `CampaignOfferReward` is now
+  `CampaignOfferAmount`. An offer carries `cost` and `rewards` as two lists of the same shape, at the
+  same level — the two halves of one trade. The price used to hang off a storefront-listing wrapper,
+  which meant a provider without a storefront had nowhere to say what its offer cost at all.
+  Read `offer.cost[0].symbol` / `.amount` where you read `offer.listings[0].price` before.
+- `amount` is now always a real quantity. A loot roll is `1` roll, not `0` of a prize; a store that
+  cannot enumerate its payout leaves `rewards` empty instead.
+
+### Changed
+
+- **Claiming IS the purchase.** The provider spends on the player's behalf, so `redeem` is one call —
+  not a commerce purchase followed by a settle. A client that buys first now charges the player twice.
+- **`available` is re-evaluated on every read.** A campaign can gate an offer, and the gate is checked
+  when the list is read — so an offer the player could not claim yesterday unlocks by itself, with no
+  new message. Never cache the list across a session.
+- `unavailableReasons[].properties` carries structured facts (`attribute`, `target`, `current`) so a
+  client can render progress, or decide to hide a row rather than show it locked. Prefer them over
+  `message`, which was authored for an operator.
+- Responses carry `contractVersion`, so skew is detectable rather than discovered as a parse bug.
+
 # Changelog
 
 All notable changes to this project will be documented in this file.

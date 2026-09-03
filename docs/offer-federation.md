@@ -39,7 +39,15 @@ Two sentences carry almost the whole design:
 > Beamable ships. A game with its own virtual economy implements the same interface under its own id
 > and is treated identically by the gateway, the campaign runtime and the Portal.
 
-Everything awkward about the code follows from those two, and the second one has a hard rule
+A third sentence was added when the contract was simplified:
+
+> **A catalog is not a federation concern.** Listing and describing offers had exactly one consumer —
+> the provider's own Portal extension — and a federation method whose only caller is the provider's
+> own UI federates nothing. The message rail, which this federation is modelled on, has no catalog
+> methods either. So a catalog is an ordinary microservice, and a game with its own economy writes
+> its own, or ships none and authors offers inline in its extension.
+
+Everything awkward about the code follows from these, and the second one has a hard rule
 attached: **nothing outside a provider may branch on which federation id it is talking to.** If you
 find yourself writing `if (federationId == "beamable_virtual_store")`, the extension point is broken.
 
@@ -112,13 +120,14 @@ Four repos. This is the map worth memorising.
   sold-out offer degrades the outreach, it does not swallow it.
 
 **Default provider — `agentic-portal/services/BeamableCampaignOfferService/`**
+- Four federation methods and no catalog. Listing offers left the contract entirely — see §1.
 - `BeamableCampaignOfferService.cs` — `Grant`, `Redeem`, `BuyListing`, `Entitlements`,
   `ToEntitlement`, `Forfeit`
+**Default catalog — `agentic-portal/services/BeamableCampaignOfferCatalogService/`**
+- An ordinary microservice, **not a federation**: `ListOffers` / `GetOffer` as `[ServerCallable]`
 - `CommerceCatalog.cs` — reads the **Mongo** catalog (`/basic/commerce/catalog`), delegates to
-  `ContentCatalog` when that is empty. `IsRealMoneyPrice` — the shared gate both readers use to skip
-  a SKU-priced listing
-- `ContentCatalog.cs` — reads **published content**, which is where a `commerce|useComet` realm keeps
-  it. `List()`, `ToRewards`
+  `ContentCatalog` when that is empty
+- `ContentCatalog.cs` — reads **published content**, which is where a `commerce|useComet` realm keeps it
 - `OfferGrantStore.cs` — the grant ledger. Stored as a JSON blob in a **private per-player stat**,
   `beam_offer_grants` (`:26`), not a storage object.
 - `Models.cs` — `OfferGrant`, `GrantedListing`, `AuthoredOffer`
@@ -136,7 +145,7 @@ Four repos. This is the map worth memorising.
 
 ## 3. The gateway surface
 
-`/api/campaign-offer/*`. Six routes; a player can reach exactly two.
+`/api/campaign-offer/*`. Four routes; a player can reach exactly two.
 
 The route itself is **shared vocabulary, not this federation's**: it dispatches by `federationId`, the
 way one `/api/message-rail/*` route serves push, email and ingame. A future real-money offer federation
@@ -145,12 +154,15 @@ DTOs are still named `CampaignOffer*` rather than `CampaignVirtualOffer*`.
 
 | Route | Client? | Guard |
 |---|---|---|
-| `POST /offers` | no | `CampaignOffer:Read` — the Portal picker |
-| `GET /offers/{offerId}` | no | `CampaignOffer:Read` |
 | `POST /grant` | no | `CampaignOffer:Write` — the campaign runtime |
 | `POST /revoke` | no | `CampaignOffer:Write` |
 | **`POST /redeem`** | **yes** | `ForbiddenForPlayer` |
-| **`GET /entitlements`** | **yes** | `ForbiddenForPlayer` |
+| **`GET /campaign-offers`** | **yes** | `ForbiddenForPlayer` |
+
+The two catalog routes are gone. A picker reads its own provider's catalog service directly, so
+`CampaignOffer:Read` no longer gates anything — **including for the Tester role**, which used to
+reach the picker through it. That is an accepted regression: a Tester can still publish a campaign,
+they just cannot browse the catalog.
 
 The two client routes are **deliberately not permission-scoped.** A player holds no operator
 permissions at all, so a resource permission cannot express "may act on themselves". Instead they are
@@ -169,32 +181,27 @@ from it returns 403 for everyone below SuperAdmin, silently.
 
 ## 4. What crosses the wire
 
-`GET /api/campaign-offer/entitlements` returns the offer **inline**, so one call renders a store
-screen instead of a `GetOffer` fan-out per row:
+`GET /api/campaign-offer/campaign-offers` returns the offer **inline**, so one call renders a store
+screen instead of a lookup per row:
 
 ```jsonc
-{ "playerId": "…", "entitlements": [ {
+{ "playerId": "…", "contractVersion": 1, "offers": [ {
     "grantId": "bsg_…", "offerId": "stores.main/listings.starter",
-    "state": "granted", "grantedAtUnixSeconds": …, "expiresAtUnixSeconds": 0,
+    "state": "Granted", "grantedAtUnixSeconds": …, "expiresAtUnixSeconds": 0,
 
     "offer": {
       "offerId": "stores.main/listings.starter",
       "title": "Starter Pack", "description": …, "imageUrl": …, "priceLabel": "350 Coins",
 
-      // WHAT YOU GET — see below
-      "rewards": [ { "type": "currency", "symbol": "currency.gems", "amount": 500,
+      // WHAT IT COSTS and WHAT YOU GET — the same shape, at the same level.
+      "cost":    [ { "type": "currency", "symbol": "currency.coins", "amount": 350 } ],
+      "rewards": [ { "type": "currency", "symbol": "currency.gems",  "amount": 500,
                      "title": "gems", "properties": {} } ],
 
-      // WHERE TO BUY IT, AND WHAT IT COSTS
-      "listings": [ { "listingSymbol": "listings.starter", "storeSymbol": "stores.main",
-        "price": { "type": "currency", "symbol": "currency.coins",
-                   "amount": 350, "label": "350 Coins",
-                   "properties": {} } } ],
-
+      "available": true, "unavailableReasons": [],
       "localizations": {}, "tags": ["stores.main"], "properties": {}
     },
 
-    "listings": [ … ],
     "available": true,
     "unavailableReasons": []
 } ] }
@@ -212,10 +219,18 @@ Things to know about this payload:
   `type` is an **open string**; render what you know and fall back to `title`/`symbol`. An empty list
   means "this store cannot enumerate its payout", *not* "this offer gives nothing". `amount: 0` means
   "varies" (a loot roll), not "none".
-- **The price is numbers, not just a label.** `symbol` and `amount` are what let a client compare the
-  cost against a balance, disable a row the player cannot afford, or show "350 / 200 Coins".
-  `priceLabel` and `price.label` are conveniences on top and are neither localizable nor comparable —
-  never the only representation you read.
+- **The price is numbers, not just a label.** `cost[].symbol` and `cost[].amount` are what let a
+  client compare against a balance, disable a row the player cannot afford, or show "350 / 200
+  Coins". `priceLabel` is a convenience on top, neither localizable nor comparable — never the only
+  representation you read.
+- **`cost` and `rewards` are the same shape.** A cost is a reward in the other direction, and a
+  client renders both the same way. The price used to hang off a storefront-listing wrapper, which
+  meant a provider without a storefront had nowhere to say what its offer cost at all.
+- **`amount` is always a real quantity.** A loot roll is one roll, not zero of a prize. A store that
+  cannot enumerate its payout leaves `rewards` empty instead.
+- **`available` is re-evaluated on every read.** A campaign can gate an offer on a requirement, and
+  the gate is checked when the list is read — so an offer a player could not claim yesterday unlocks
+  by itself, with no new send. Never cache this list across a session.
 - **There is no real-money price here.** No `realPriceCents`, no `currencyCode`, no `productIds`: this
   is the virtual federation, and a SKU-priced listing is refused rather than described. If you are
   looking for the handles a native purchase flow needs, they belong to the real-money federation,
@@ -360,6 +375,49 @@ and it runs only after the purchase has actually succeeded.
 
 ---
 
+## 5b. Conditions: a gate, not a filter
+
+A campaign can gate an offer. **It does not decide whether to grant.** Every recipient is granted, and
+the offer reports itself unavailable until the player qualifies — so someone who receives a push for
+an offer they cannot yet take keeps it and watches it unlock. Deciding once, at send time, is what
+used to make an offer unreachable forever for anyone who happened not to qualify at that instant.
+
+Three pieces already existed for this and are simply being used properly now:
+`CampaignOffer.available` is documented as distinct from `state`, `ReasonStatRequirement` was already
+in the vocabulary, and expiry was already folded in on read. The campaign's gate joins the same lazy
+model the store's own rules use.
+
+**Who evaluates.** `CampaignConditionRef.FederationId` is an id, not a flag:
+
+| | |
+|---|---|
+| Empty | the **platform** evaluates a segmentation rule over the player's stats — the default |
+| Set | that **federation** answers it, via `VerifyConditions` |
+
+The indirection is what keeps "the campaign owns conditions" true: tying the gate to the offer's own
+store would mean a game using Beamable's commerce could never bring its own eligibility language
+without forking the default provider.
+
+**The gateway evaluates, never the store.** A store answers for its own rules — its schedule, its
+purchase limits — and knows nothing about campaign conditions. The gateway overlays its verdict on
+the way out, and `unavailableReasons` is a list so both can be heard.
+
+**How the gate survives to read time.** It rides in `CampaignOfferGrantContext.conditionToken`, the
+store persists it opaquely, and hands it back on `CampaignOffer.conditionToken`. The gateway strips it
+before a client sees it. The store is the only thing that persists per grant, and the gateway is
+stateless for offers — so the token travels the way a cookie does. It is **snapshotted at grant**:
+editing a campaign afterwards must not change the rule a player was granted under.
+
+**Failing closed.** A rule that cannot be parsed, a federation that cannot be reached, a check absent
+from a verdict — all resolve to *not satisfied*. Opening a gate nobody answered is the worse of the
+two failures.
+
+**Two rules for the reason.** A condition was authored for an *operator*, so its prose is rarely fit
+to show a player — that is what `lockedMessage` is for. And `properties` must never carry a value the
+client could not otherwise read; a player's own client-visible stat is fine, a private one is not.
+
+---
+
 ## 6. The React Native sample
 
 `BeamableProduct/beam-native-mobile/Samples/ReactNative` — Expo + expo-router. The **Offers** tab is
@@ -404,10 +462,9 @@ for a purchase to move. Currency content carries **no display name** — only `i
 **Each entitlement** renders as an `OfferCard`: title, price, a **"You get"** line from `rewards`,
 availability reasons, and the ids. With no `offer`, it degrades to the opaque-id row it always was.
 
-**Buy** is one press and one receipt. It reads the wallet, calls `claimGrant` — which is where the
-provider buys and settles — and reads the wallet again. The error handling is deliberate: if the claim
-throws *after* the purchase landed, that becomes a **warning line inside a successful receipt**, never a
-thrown error. Losing the receipt after taking someone's currency is the worst outcome available.
+**Buy** is one press, **one call**, one receipt. It reads the wallet, calls `claimGrant` — which is
+where the provider buys and settles — and reads the wallet again. The sample does not post to commerce
+itself; it used to, and that charged the player twice.
 
 **"Received"** is a wallet diff around the purchase, *not* the response.
 `InventoryUpdateResponse.deltas` is not populated on this path (`onPurchase` calls the plain
@@ -561,9 +618,9 @@ Carried here so they are not rediscovered. RFC 004 §4/§7 is the authority.
   OpenAPI documents, so the gateway's controllers are invisible to them. The web SDK has the gateway,
   which is why React Native is the only client that can do this flow today. See RFC 004 §4 for the
   choice between feeding the gateway OpenAPI into their codegen and hand-writing the two calls.
-- **`CampaignOfferItem.listings` is a multi-slot nothing fills.** Both catalog readers emit a
-  one-element list, grant takes `FirstOrDefault()`, the picker reads `[0]`. A bundle is **one listing
-  with N rewards**, not N listings.
+- ~~**`CampaignOfferItem.listings` is a multi-slot nothing fills.**~~ **Fixed.** The listing wrapper
+  is gone: cost sits on the offer beside rewards, and the store and listing symbols live inside the
+  offer id the provider minted rather than as contract fields.
 - **A claim cannot be verified after the fact, only performed.** The provider buys during `Redeem`
   precisely because nothing it can read tells it whether a client already did — the platform records
   every purchase in `offer_status` but exposes only `purchasesRemain`, which is `null` without a
@@ -575,7 +632,8 @@ Carried here so they are not rediscovered. RFC 004 §4/§7 is the authority.
   them, which is the deliberate choice, but it is not a transaction.
 - **The in-game rail cannot carry `beam_offer_grant`.** `InGameMessageRailService.ParsePayload` drops
   unknown keys and Beamable mail has no extras field. The deep link works on push only.
-- **The Portal picker drops everything but `priceLabel`.** It cannot show the operator the price
+- **The Portal picker drops everything but `priceLabel`.** (Now its own service's problem rather than
+  the federation's.) It cannot show the operator the price
   currency or amount, so it cannot warn that a listing is priced in a currency the realm does not
   publish. It *can* now say when listings were withheld, via the catalog `properties` bag in §4 — but
   that is a count and a sentence, not per-listing detail: the operator is told one listing was

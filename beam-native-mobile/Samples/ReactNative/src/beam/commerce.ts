@@ -46,9 +46,14 @@ export function purchaseIdFor(listingSymbol: string, storeSymbol?: string | null
 }
 
 /**
- * Buys the listing behind an offer, spending the player's currency.
+ * Buys a listing directly, spending the player's currency.
  *
- * Commerce is the authority on whether this is allowed, and its refusals are worth surfacing
+ * **Not used by the offer path, deliberately.** Claiming a campaign offer IS its purchase — the
+ * provider spends on the player's behalf — so calling this before a claim would charge them twice.
+ * This stays as the plain direct-commerce binding, for a storefront screen that has no grant behind
+ * it.
+ *
+ * Commerce is the authority on whether a purchase is allowed, and its refusals are worth surfacing
  * verbatim rather than pre-empting: `Unavailable` for a listing that is not active or does not
  * exist, and a limit or requirement failure for one the player cannot buy right now. Guessing any
  * of that client-side would only produce a worse message.

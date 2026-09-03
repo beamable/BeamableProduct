@@ -3,7 +3,7 @@ import { CampaignOfferService } from '@/services/CampaignOfferService';
 import * as apis from '@/__generated__/apis';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type {
-  CampaignOfferEntitlementsResponse,
+  CampaignOffersResponse,
   CampaignOfferRedeemResponse,
   RedeemCampaignOfferRequest,
 } from '@/__generated__/schemas';
@@ -33,84 +33,73 @@ describe('CampaignOfferService', () => {
     vi.restoreAllMocks();
   });
 
-  describe('getEntitlements', () => {
-    it('calls campaignOfferGetEntitlements with the federation id and the current player', async () => {
-      const mockBody: CampaignOfferEntitlementsResponse = {
+  describe('getCampaignOffers', () => {
+    it('calls campaignOfferGetCampaignOffers with the federation id and the current player', async () => {
+      const mockBody: CampaignOffersResponse = {
         playerId: '0',
-        entitlements: [
+        offers: [
           {
             grantId: 'bsg_1',
             offerId: 'offer_1',
-            state: 'granted',
+            state: 'Granted',
             grantedAtUnixSeconds: '1787677536',
             expiresAtUnixSeconds: '0',
           },
         ],
       };
 
-      vi.spyOn(apis, 'campaignOfferGetEntitlements').mockResolvedValue({
+      vi.spyOn(apis, 'campaignOfferGetCampaignOffers').mockResolvedValue({
         status: 200,
         headers: {},
         body: mockBody,
       });
 
-      const result = await makeService().getEntitlements('beamable_virtual_store');
+      const result = await makeService().getCampaignOffers('beamable_virtual_store');
 
-      expect(apis.campaignOfferGetEntitlements).toHaveBeenCalledWith(
+      expect(apis.campaignOfferGetCampaignOffers).toHaveBeenCalledWith(
         mockRequester,
         'beamable_virtual_store',
         '0',
+        // The state filter, omitted here: undefined means "every state".
+        undefined,
         '0',
       );
-      expect(result).toEqual(mockBody.entitlements);
+      expect(result).toEqual(mockBody.offers);
     });
 
     it('returns an empty list when the store reports no entitlements', async () => {
-      vi.spyOn(apis, 'campaignOfferGetEntitlements').mockResolvedValue({
+      vi.spyOn(apis, 'campaignOfferGetCampaignOffers').mockResolvedValue({
         status: 200,
         headers: {},
-        body: { playerId: '0' } as CampaignOfferEntitlementsResponse,
+        body: { playerId: '0' } as CampaignOffersResponse,
       });
 
-      expect(await makeService().getEntitlements('beamable_virtual_store')).toEqual([]);
+      expect(await makeService().getCampaignOffers('beamable_virtual_store')).toEqual([]);
     });
 
     it('passes the whole offer through, so one call can render a store screen', async () => {
       // The entitlement embeds the offer precisely so a client does not fan out a GetOffer per row.
       // If any of these are dropped on the way through, a real-money bundle reaches the player as a
       // title and a price with no disclosure of what is in it — which is what `rewards` exists to fix.
-      const mockBody: CampaignOfferEntitlementsResponse = {
+      const mockBody: CampaignOffersResponse = {
         playerId: '0',
-        entitlements: [
+        offers: [
           {
             grantId: 'bsg_1',
             offerId: 'starter_store/bundle_10',
-            state: 'granted',
+            state: 'Granted',
             grantedAtUnixSeconds: '1787677536',
             expiresAtUnixSeconds: '0',
             offer: {
               offerId: 'starter_store/bundle_10',
               title: 'Starter Bundle',
               priceLabel: '350 Coins',
+              cost: [{ type: 'currency', symbol: 'currency.coins', amount: '350' }],
               rewards: [
                 { type: 'currency', symbol: 'currency.gems', amount: '1200' },
                 { type: 'item', symbol: 'items.blade', amount: '1', title: 'Blade' },
                 // A store's own vocabulary must survive untouched — nothing may close the set.
                 { type: 'steam_dlc', symbol: '480', amount: '1' },
-              ],
-              listings: [
-                {
-                  listingSymbol: 'bundle_10',
-                  storeSymbol: 'starter_store',
-                  price: {
-                    type: 'currency',
-                    symbol: 'currency.coins',
-                    // The numbers, not just the label: a client needs them to tell whether the
-                    // player can afford this.
-                    amount: '350',
-                    label: '350 Coins',
-                  },
-                },
               ],
             },
             available: false,
@@ -121,13 +110,13 @@ describe('CampaignOfferService', () => {
         ],
       };
 
-      vi.spyOn(apis, 'campaignOfferGetEntitlements').mockResolvedValue({
+      vi.spyOn(apis, 'campaignOfferGetCampaignOffers').mockResolvedValue({
         status: 200,
         headers: {},
         body: mockBody,
       });
 
-      const [held] = await makeService().getEntitlements('beamable_virtual_store');
+      const [held] = await makeService().getCampaignOffers('beamable_virtual_store');
 
       expect(held.offer?.rewards).toHaveLength(3);
       expect(held.offer?.rewards?.[0]).toEqual({
@@ -136,10 +125,15 @@ describe('CampaignOfferService', () => {
         amount: '1200',
       });
       expect(held.offer?.rewards?.[2].type).toBe('steam_dlc');
-      expect(held.offer?.listings?.[0].price?.symbol).toBe('currency.coins');
-      expect(held.offer?.listings?.[0].price?.amount).toBe('350');
-      // `available` is not `state` — a granted grant can still be unactionable.
-      expect(held.state).toBe('granted');
+
+      // Cost sits beside rewards, at the same level and in the same shape — the two halves of one
+      // trade. It used to hang off a storefront-listing wrapper a store-less provider could not fill.
+      expect(held.offer?.cost?.[0].symbol).toBe('currency.coins');
+      expect(held.offer?.cost?.[0].amount).toBe('350');
+
+      // `available` is not `state` — a Granted offer whose gate is unmet is held, not lost, and
+      // unlocks on a later read without a new send.
+      expect(held.state).toBe('Granted');
       expect(held.available).toBe(false);
       expect(held.unavailableReasons?.[0].code).toBe('stat-requirement');
     });
@@ -147,36 +141,37 @@ describe('CampaignOfferService', () => {
     it('tolerates a provider that sends no offer, rather than requiring one', async () => {
       // The contract allows a null offer, and a third-party store that cannot afford to embed it
       // is legitimate. The client falls back to the opaque offerId.
-      vi.spyOn(apis, 'campaignOfferGetEntitlements').mockResolvedValue({
+      vi.spyOn(apis, 'campaignOfferGetCampaignOffers').mockResolvedValue({
         status: 200,
         headers: {},
         body: {
           playerId: '0',
-          entitlements: [
-            { grantId: 'bsg_1', offerId: 'opaque', state: 'granted' },
+          offers: [
+            { grantId: 'bsg_1', offerId: 'opaque', state: 'Granted' },
           ],
         },
       });
 
-      const [held] = await makeService().getEntitlements('beamable_virtual_store');
+      const [held] = await makeService().getCampaignOffers('beamable_virtual_store');
 
       expect(held.offer).toBeUndefined();
       expect(held.offerId).toBe('opaque');
     });
 
     it('passes any federation id through — the default provider is not privileged', async () => {
-      vi.spyOn(apis, 'campaignOfferGetEntitlements').mockResolvedValue({
+      vi.spyOn(apis, 'campaignOfferGetCampaignOffers').mockResolvedValue({
         status: 200,
         headers: {},
-        body: { playerId: '0', entitlements: [] },
+        body: { playerId: '0', offers: [] },
       });
 
-      await makeService().getEntitlements('my_web_shop');
+      await makeService().getCampaignOffers('my_web_shop');
 
-      expect(apis.campaignOfferGetEntitlements).toHaveBeenCalledWith(
+      expect(apis.campaignOfferGetCampaignOffers).toHaveBeenCalledWith(
         mockRequester,
         'my_web_shop',
         '0',
+        undefined,
         '0',
       );
     });

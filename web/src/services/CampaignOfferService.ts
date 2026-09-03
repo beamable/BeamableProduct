@@ -1,10 +1,11 @@
 import type {
-  CampaignOfferEntitlement,
+  CampaignOffer,
   CampaignOfferRedeemResponse,
+  CampaignOfferState,
 } from '@/__generated__/schemas';
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
 import {
-  campaignOfferGetEntitlements,
+  campaignOfferGetCampaignOffers,
   campaignOfferPostRedeem,
 } from '@/__generated__/apis';
 
@@ -41,12 +42,11 @@ export interface RedeemOfferOptions {
  * granting and revoking are all operator or server-to-server concerns and are permission-scoped
  * away from a game client.
  *
- * Claiming is not how the player gets the goods: a virtual offer is a storefront listing bought
- * with soft currency through `POST /object/commerce/{playerId}/purchase`, and the claim only
- * settles the grant afterwards (and forfeits the siblings it was an alternative to). The provider
- * verifies that the purchase happened before settling, so claiming without buying is refused.
+ * **Claiming IS the purchase.** For a virtual offer the provider spends on the player's behalf —
+ * commerce debits the price and credits the payout in one inventory transaction — so a claim is one
+ * call, not a buy followed by a settle. There is nothing for a client to purchase first.
  *
- * The offer id on an entitlement is **opaque**: only the store that minted it can interpret it,
+ * The offer id is **opaque**: only the store that minted it can interpret it,
  * which is why `federationId` travels alongside it everywhere. Do not parse it, show it as a
  * name, or key anything durable on its shape.
  */
@@ -91,38 +91,49 @@ export class CampaignOfferService extends ApiService {
    * - `offer.rewards` is disclosure, not a receipt. It says what the offer promises; it is not
    *   reconciled against what actually landed, and an empty list means "this store cannot
    *   enumerate its payout", never "this offer gives nothing".
-   * - `available` is **distinct from `state`**: a `granted` grant can still be unavailable
-   *   because a requirement on its listing is unmet.
-   * - `unavailableReasons` is non-empty whenever `available` is false. Show `message`.
+   * - `available` is **distinct from `state`**: a `Granted` offer can still be unavailable because
+   *   a store requirement or the campaign's own gate is unmet. A gated offer unlocks on a later
+   *   read, with no new send — so **never cache this list across a session**, which is also true
+   *   because expiry is folded in on read.
+   * - `unavailableReasons` is non-empty whenever `available` is false. Prefer rendering from
+   *   `properties` over `message`: a campaign gate was authored for an operator, and its structured
+   *   facts are what let you show "Level 7 / 10" or hide the row entirely.
+   * @param federationId - Which store to ask.
+   * @param states - Which states to return. Omitted means all; `['Granted']` is what a store screen
+   *   wants — "unredeemed" would also include revoked and expired.
    * @example
    * ```ts
-   * const held = await beam.campaignOffer.getEntitlements('beamable_store');
-   * const claimable = held.filter((e) => e.state === 'granted');
+   * const held = await beam.campaignOffer.getCampaignOffers('beamable_virtual_store', ['Granted']);
+   * const claimable = held.filter((o) => o.available);
    * ```
    * @throws {BeamError} If the request fails, or if no store is deployed for `federationId`.
    */
-  async getEntitlements(
+  async getCampaignOffers(
     federationId: CampaignOfferFederationId,
-  ): Promise<CampaignOfferEntitlement[]> {
-    const { body } = await campaignOfferGetEntitlements(
+    states?: CampaignOfferState[],
+  ): Promise<CampaignOffer[]> {
+    const { body } = await campaignOfferGetCampaignOffers(
       this.requester,
       federationId,
       this.accountId,
+      states,
       this.accountId,
     );
-    return body.entitlements ?? [];
+    return body.offers ?? [];
   }
 
   /**
    * Settles a grant the player has acted on, closing it out.
    *
    * @remarks
-   * **This does not, on its own, give the player anything.** What a claim does is the store's
-   * business: Beamable's default provider sells storefront listings, so the goods and the money
-   * both move through the platform's commerce purchase flow and redeeming only settles the grant
-   * (and forfeits any siblings it was an alternative to). Another provider may well fulfil here
-   * instead. Either way, never treat a successful redeem as proof the inventory changed — read
-   * the inventory back if you need to know.
+   * **For Beamable's own store this is where the money moves.** The provider buys the listing on
+   * the player's behalf — the price is debited and the payout credited in one inventory
+   * transaction — and then forfeits any siblings the offer was an alternative to. Another provider
+   * may fulfil differently. Either way, never treat a successful redeem as proof the inventory
+   * changed: read the inventory back if you need to know.
+   *
+   * The gateway refuses a claim whose campaign gate is unmet **before** the store is asked, so a
+   * locked offer cannot be claimed early.
    *
    * A player may only ever redeem their own grants — the gateway resolves the player from the
    * token and rejects a mismatch with 403 `IncorrectPlayer`.
@@ -136,7 +147,7 @@ export class CampaignOfferService extends ApiService {
    * the only thing that says so.
    * @example
    * ```ts
-   * const res = await beam.campaignOffer.redeem('beamable_store', grantId);
+   * const res = await beam.campaignOffer.redeem('beamable_virtual_store', grantId);
    * if (!res.success) throw new Error(res.message ?? 'Could not claim this offer');
    * ```
    * @throws {BeamError} If the request fails, or if no store is deployed for `federationId`.

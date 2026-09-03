@@ -51,6 +51,10 @@ public class GeneratePortalExtensionClientsCommand : AppCommand<GeneratePortalEx
 
 		var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 8 };
 
+		// Every clients directory that actually received a client, so `types.ts` can be written beside
+		// each one afterwards. A set, because two microservices can generate into the same extension.
+		var clientDirectories = new ConcurrentDictionary<string, byte>();
+
 		await Parallel.ForEachAsync(micros, parallelOptions, async (ms, cancellationToken) =>
 		{
 			// Null-safe on the definition as well as the list: this predicate runs against EVERY
@@ -94,7 +98,28 @@ public class GeneratePortalExtensionClientsCommand : AppCommand<GeneratePortalEx
 				{
 					generator.GenerateClientCode(clientsOutputDirectory);
 				}
+
+				clientDirectories.TryAdd(clientsOutputDirectory, 0);
 			}
 		});
+
+		// The generated client imports `./types` whenever any type was collected, and nothing here used
+		// to write that file — so every extension with a typed client ended up importing a module that
+		// did not exist, and failed to compile. `GenerateWebClientCommand` has always done this for the
+		// web SDK; the portal-extension path simply never did.
+		//
+		// After the parallel pass, not inside it: the accumulator is process-wide, so emitting mid-flight
+		// would write a types file missing whatever a still-running worker had yet to contribute.
+		// Nothing generated means nothing to write types for — and, critically, means no generator was
+		// ever constructed. `IsTypeScript` reads a static set by that constructor, so consulting it
+		// first throws a NullReferenceException for every service no extension depends on: the build
+		// compiles, the post-build target dies, and the service never starts.
+		if (clientDirectories.IsEmpty || !WebClientCodeGenerator.IsTypeScript)
+			return;
+
+		foreach (var clientsOutputDirectory in clientDirectories.Keys)
+		{
+			WebClientCodeGenerator.GenerateClientTypes(Path.Combine(clientsOutputDirectory, "types"));
+		}
 	}
 }

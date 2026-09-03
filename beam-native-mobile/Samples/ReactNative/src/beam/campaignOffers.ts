@@ -36,9 +36,8 @@
  */
 import type { CampaignOfferFederationId } from '@beamable/sdk';
 import type {
-  CampaignOfferEntitlement,
-  CampaignOfferListingRef,
-  CampaignOfferReward,
+  CampaignOffer,
+  CampaignOfferAmount,
 } from '@beamable/sdk/schema';
 import { getBeam } from './beamClient';
 
@@ -81,20 +80,6 @@ export type Reward = {
   properties: Record<string, string>;
 };
 
-/** The storefront listing an entitlement resolves to, and what it costs in soft currency. */
-export type ListingRef = {
-  listingSymbol: string;
-  storeSymbol: string;
-  /** `currency` in the ordinary case, or the store's own vocabulary. Never a real-money type. */
-  priceType: string;
-  /** The currency this is priced in — the same id the wallet keys on. */
-  priceSymbol: string;
-  /** How much of `priceSymbol` it costs. */
-  priceAmount: number;
-  /** Already formatted by the store, e.g. `350 Coins`. */
-  priceLabel: string;
-};
-
 /** Why an entitlement cannot be acted on. */
 export type Reason = { code: string; message: string; detail: string };
 
@@ -120,6 +105,11 @@ export type Entitlement = {
     imageUrl: string;
     priceLabel: string;
     /**
+     * What the player pays. Several entries are an AND. Empty means free — and is how "no cost" is
+     * said, rather than by the absence of some other collection.
+     */
+    cost: Reward[];
+    /**
      * What the offer pays out. Empty means the store cannot enumerate its payout — NOT that the
      * offer gives nothing. Disclosure only: it is never reconciled against what actually landed.
      */
@@ -128,11 +118,10 @@ export type Entitlement = {
     properties: Record<string, string>;
     tags: string[];
   } | null;
-  /** Zero or more. A store may narrow this per player, so read it as a list. */
-  listings: ListingRef[];
   /**
-   * Whether the player can act on this now. DISTINCT from `state`: a `granted` grant can still
-   * be unavailable because a requirement on its listing is unmet.
+   * Whether the player can act on this NOW. Distinct from `state`: a `Granted` offer can still be
+   * unavailable because a store requirement or the campaign's own gate is unmet — and that gate is
+   * re-evaluated on every read, so a locked row unlocks by itself once the player qualifies.
    */
   available: boolean;
   /** Non-empty whenever `available` is false. */
@@ -150,19 +139,22 @@ export type Entitlement = {
 export async function listEntitlements(
   federationId: CampaignOfferFederationId,
 ): Promise<Entitlement[]> {
-  const held = await requireBeam().campaignOffer.getEntitlements(federationId);
+  // No state filter: this screen shows history too, and a locked row is exactly what the campaign
+  // gate is for. A store screen that only wants claimable rows would pass ['Granted'].
+  const held = await requireBeam().campaignOffer.getCampaignOffers(federationId);
   return held.map(normalize).sort((a, b) => b.grantedAt - a.grantedAt);
 }
 
 /**
- * Settles a grant against a purchase already made, returning the message to show on success.
+ * Claims a grant — which for a virtual offer IS the purchase — returning the message to show.
+ *
+ * The provider spends on the player's behalf: commerce debits the price and credits the payout in
+ * one inventory transaction. So this is **one call, not a buy followed by a settle**. There is
+ * nothing for this client to purchase first, and doing so would charge the player twice.
  *
  * The endpoint answers **200 with `success: false`** for an expired, revoked, already-claimed or
- * unknown grant — a resolved promise is not a success. Throwing the server's own `message` is
- * deliberate: it is the only sentence that says what to fix, and with the default provider the
- * most likely refusal is now **"this offer has not been purchased yet"** — the store verifies the
- * payment before settling, because this route is client-callable and an unverified claim would
- * let a player forfeit their own alternatives for free.
+ * unknown grant, or one whose campaign gate is not met yet — a resolved promise is not a success.
+ * Throwing the server's own `message` is deliberate: it is the only sentence that says what to fix.
  */
 export async function claimGrant(
   federationId: CampaignOfferFederationId,
@@ -179,19 +171,19 @@ export async function claimGrant(
 
 /** Only a `granted` entitlement can be claimed; every other state is terminal. */
 export function isClaimable(e: Entitlement): boolean {
-  return e.state === 'granted';
+  return e.state === 'Granted';
 }
 
 /** Plain-language label for the four states the contract defines. */
 export function describeState(state: string): string {
   switch (state) {
-    case 'granted':
+    case 'Granted':
       return 'Ready to claim';
-    case 'redeemed':
+    case 'Redeemed':
       return 'Claimed';
-    case 'revoked':
+    case 'Revoked':
       return 'Revoked by the store';
-    case 'expired':
+    case 'Expired':
       return 'Expired unclaimed';
     default:
       // A provider may report a state this sample predates. Show it rather than hiding it.
@@ -219,11 +211,11 @@ export function formatWhen(unixSeconds: number): string {
  * Everything the store embeds is defaulted rather than guarded at the call site, so a provider
  * that sends a bare entitlement renders as an id-only row instead of blanking the screen.
  */
-function normalize(e: CampaignOfferEntitlement): Entitlement {
+function normalize(e: CampaignOffer): Entitlement {
   return {
     grantId: e.grantId ?? '',
     offerId: e.offerId ?? '',
-    state: e.state ?? '',
+    state: e.state ?? 'Granted',
     grantedAt: Number(e.grantedAtUnixSeconds ?? 0),
     expiresAt: Number(e.expiresAtUnixSeconds ?? 0),
     offer: e.offer
@@ -232,14 +224,13 @@ function normalize(e: CampaignOfferEntitlement): Entitlement {
           description: e.offer.description ?? '',
           imageUrl: e.offer.imageUrl ?? '',
           priceLabel: e.offer.priceLabel ?? '',
-          rewards: (e.offer.rewards ?? []).map(normalizeReward),
+          // Cost and rewards are the same shape at the same level — the two halves of one trade.
+          cost: (e.offer.cost ?? []).map(normalizeAmount),
+          rewards: (e.offer.rewards ?? []).map(normalizeAmount),
           properties: e.offer.properties ?? {},
           tags: e.offer.tags ?? [],
         }
       : null,
-    // The entitlement's own listings, falling back to the offer's. A store may narrow the former
-    // per player; when it does not, the two are the same list.
-    listings: (e.listings?.length ? e.listings : (e.offer?.listings ?? [])).map(normalizeListing),
     available: e.available ?? false,
     reasons: (e.unavailableReasons ?? []).map((r) => ({
       code: r.code ?? '',
@@ -249,7 +240,7 @@ function normalize(e: CampaignOfferEntitlement): Entitlement {
   };
 }
 
-function normalizeReward(r: CampaignOfferReward): Reward {
+function normalizeAmount(r: CampaignOfferAmount): Reward {
   const symbol = r.symbol ?? '';
   return {
     type: r.type ?? '',
@@ -262,17 +253,6 @@ function normalizeReward(r: CampaignOfferReward): Reward {
   };
 }
 
-function normalizeListing(l: CampaignOfferListingRef): ListingRef {
-  return {
-    listingSymbol: l.listingSymbol ?? '',
-    storeSymbol: l.storeSymbol ?? '',
-    priceType: l.price?.type ?? '',
-    priceSymbol: l.price?.symbol ?? '',
-    priceAmount: Number(l.price?.amount ?? 0),
-    priceLabel: l.price?.label ?? '',
-  };
-}
-
 /** `currency.gems` -> `gems`. Presentation only — never key anything on this. */
 function shortSymbol(symbol: string): string {
   const i = symbol.lastIndexOf('.');
@@ -282,12 +262,13 @@ function shortSymbol(symbol: string): string {
 /**
  * Whether the sample can buy this itself.
  *
- * Only that the grant is still claimable and the store told us which listing to open. The price
- * type is deliberately NOT checked: every price on this contract is soft currency, and a provider
- * using its own vocabulary for it would fail a whitelist test for no reason. If a listing turns
- * out not to be purchasable, commerce says so — and its refusal names the reason, which a guess
- * here never could.
+ * `available` rather than merely `state`, because a Granted offer can still be gated — by a store
+ * requirement or by the campaign's own condition — and that gate is re-evaluated on every read, so
+ * a locked row here unlocks on its own once the player qualifies.
+ *
+ * Asking about COST rather than about some collection's length is the point: "does this have a
+ * price" is the actual question, and it used to be answered by counting storefront listings.
  */
 export function isPurchasable(e: Entitlement): boolean {
-  return isClaimable(e) && e.listings.length > 0;
+  return isClaimable(e) && e.available && e.offer !== null;
 }

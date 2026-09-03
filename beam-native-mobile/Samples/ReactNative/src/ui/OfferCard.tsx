@@ -15,7 +15,7 @@ import { colors, mono, radius, space } from './theme';
  * `StatCard` was lifted out of the Segments tab. It owns no network state: both actions are
  * `AsyncButton`s, which already own their in-flight and result rendering.
  *
- * **Everything the store sends is optional.** A provider may omit the offer, the listings, or the
+ * **Everything the store sends is optional.** A provider may omit the offer, the cost, or the
  * rewards, and a third-party store legitimately will. So each block degrades on its own rather
  * than being guarded as a whole: with no offer the card is the opaque grant id it always was,
  * which is still useful, rather than an empty box.
@@ -34,9 +34,10 @@ export default function OfferCard({
   /** Present only when the grant is still claimable. */
   claim?: () => Promise<string>;
 }) {
-  const { offer, listings } = entitlement;
-  const listing = listings[0];
-  const priceLabel = offer?.priceLabel || listing?.priceLabel || '';
+  const { offer } = entitlement;
+  const isClaimableState = entitlement.state === 'Granted';
+  // One source now, not a fallback chain: the price lives on the offer, beside what it pays out.
+  const priceLabel = offer?.priceLabel || '';
 
   return (
     <View style={styles.card}>
@@ -88,13 +89,6 @@ export default function OfferCard({
       )}
 
       <Value label="offer">{entitlement.offerId || '—'}</Value>
-      {!!listing && (
-        <Value label="listing">
-          {listing.storeSymbol
-            ? `${listing.listingSymbol}:${listing.storeSymbol}`
-            : listing.listingSymbol}
-        </Value>
-      )}
       <Value label="grant">{entitlement.grantId}</Value>
       <Text style={styles.meta}>
         granted {formatWhen(entitlement.grantedAt)} · {formatExpiry(entitlement.expiresAt)}
@@ -111,13 +105,14 @@ export default function OfferCard({
         <AsyncButton label={priceLabel ? `Buy — ${priceLabel}` : 'Buy'} run={buy} />
       )}
 
-      {/* A grant with no listing. The contract allows it — a provider may grant directly rather
-          than through a storefront — so say so instead of showing a button that has nothing to
-          open. Claim is still offered below. */}
-      {!buy && !listing && (
+      {/* Held but not yet actionable — a store rule or the campaign's own gate. The reasons above
+          say which, and the row stays: the gate is re-checked on every read, so this unlocks by
+          itself once the player qualifies. Saying that is the difference between "not yet" and
+          "not for you". */}
+      {!buy && isClaimableState && !entitlement.available && (
         <Hint>
-          This store granted the offer without a listing to buy, so there is nothing to purchase.
-          Claim settles the grant on its own.
+          You cannot claim this yet. It unlocks on its own once you meet the requirements above —
+          no need to wait for another message.
         </Hint>
       )}
 

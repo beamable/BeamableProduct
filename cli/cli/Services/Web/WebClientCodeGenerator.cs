@@ -24,6 +24,27 @@ public class WebClientCodeGenerator
 	private static readonly HashSet<TsTypeAlias> ClientTypes = new();
 	private static readonly List<(TsTypeAlias, List<string>)> ModuleTypes = new(); // (typeAlias, deps)
 
+	/// <summary>
+	/// Guards the two static accumulators above.
+	///
+	/// <para>
+	/// They are deliberately process-wide — <see cref="GenerateClientTypes" /> is static and emits one
+	/// `types.ts` for everything collected — but generators are constructed and run from inside
+	/// <c>Parallel.ForEachAsync</c> in <c>GeneratePortalExtensionClientsCommand</c>, one worker per
+	/// microservice. Concurrent <c>Add</c> on a non-concurrent <see cref="HashSet{T}" /> corrupts it and
+	/// throws "Operations that change non-concurrent collections must have exclusive access", which
+	/// aborts generation **after** the client file is written and before `types.ts` is — leaving every
+	/// extension with a client importing a `./types` that does not exist.
+	/// </para>
+	///
+	/// <para>
+	/// The existing <c>_pathLocks</c> in the command does not cover this: it is keyed by OUTPUT
+	/// DIRECTORY, so two different extensions never contend on it, and the constructor runs outside it
+	/// regardless.
+	/// </para>
+	/// </summary>
+	private static readonly object TypeAccumulatorLock = new();
+
 	private static readonly List<string> CallableMethodsToGenerate = new()
 	{
 		nameof(CallableAttribute),
@@ -85,7 +106,9 @@ public class WebClientCodeGenerator
 			_clientFile.AddImport(tsBeamSchemaImport);
 		}
 
-		if (ClientTypes.Count > 0)
+		bool hasClientTypes;
+		lock (TypeAccumulatorLock) hasClientTypes = ClientTypes.Count > 0;
+		if (hasClientTypes)
 		{
 			var tsClientTypesImport = new TsImport("./types", defaultImport: "* as Types", typeImportOnly: true);
 			_clientFile.AddImport(tsClientTypesImport);
@@ -234,6 +257,22 @@ public class WebClientCodeGenerator
 		if (schema.Type == "array")
 			schema = schema.Items;
 
+		// A dictionary carries its element schema on `AdditionalProperties`, and its `Properties` is
+		// empty — so walking only `Properties` never reaches the VALUE type. `Record<string, Foo>` is
+		// emitted as a property type while `Foo` itself is never declared, and the generated types file
+		// fails with "Cannot find name 'Foo'".
+		//
+		// Recurse into the element with its own mapped type; there is no alias to emit for the
+		// dictionary itself, since `Record<K, V>` is built in.
+		if ((schema.Properties == null || schema.Properties.Count == 0)
+		    && schema.AdditionalProperties != null)
+		{
+			var valueModules = new List<string>();
+			var valueType = OpenApiTsTypeMapper.Map(schema.AdditionalProperties, ref valueModules);
+			HandleSchema(schema.AdditionalProperties, valueType);
+			return;
+		}
+
 		var schemaProps = schema.Properties;
 		if (schemaProps == null || schema.IsPrimitive())
 			return;
@@ -263,10 +302,43 @@ public class WebClientCodeGenerator
 		if (typeRender.EndsWith("[]"))
 			typeRender = typeRender.Substring(0, typeRender.Length - 2);
 
-		ModuleTypes.Add(
-			(new TsTypeAlias(typeRender)
-				.AddModifier(TsModifier.Export)
-				.SetType(TsType.Object(objectPropTypes.ToArray())), modules));
+		// `typeRender` becomes the alias NAME, so it has to be an identifier — and there has to be
+		// something to alias.
+		//
+		// A dictionary property maps to TypeScript's built-in `Record<K, V>`, whose schema carries an
+		// EMPTY but non-null `Properties`. That slips past the guard at the top of this method, and used
+		// to emit `export type Record<string, string> = { };` — which is not merely useless: it shadows
+		// the built-in, is not even syntactically valid as a declaration, and fails the whole generated
+		// types file to compile. Any DTO with a `Dictionary<,>` (which is most of the offer contract:
+		// properties, extraData, localizations) produced one.
+		if (objectPropTypes.Count == 0 || !IsIdentifier(typeRender))
+			return;
+
+		lock (TypeAccumulatorLock)
+		{
+			ModuleTypes.Add(
+				(new TsTypeAlias(typeRender)
+					.AddModifier(TsModifier.Export)
+					.SetType(TsType.Object(objectPropTypes.ToArray())), modules));
+		}
+	}
+
+	/// <summary>
+	/// Is this rendered type a plain name we can declare an alias for, rather than a structural or
+	/// generic type (<c>Record&lt;string, string&gt;</c>, a union, an object literal)?
+	/// </summary>
+	private static bool IsIdentifier(string rendered)
+	{
+		if (string.IsNullOrEmpty(rendered))
+			return false;
+		if (!char.IsLetter(rendered[0]) && rendered[0] != '_')
+			return false;
+		foreach (var c in rendered)
+		{
+			if (!char.IsLetterOrDigit(c) && c != '_')
+				return false;
+		}
+		return true;
 	}
 
 	private TsType HandleAutoGenSchema(OpenApiSchema schema, string schemaRefId)
@@ -281,8 +353,11 @@ public class WebClientCodeGenerator
 	
 	private static void ProcessClientTypes()
 	{
-		foreach (var (moduleType, _) in ModuleTypes)
-			ClientTypes.Add(moduleType);
+		lock (TypeAccumulatorLock)
+		{
+			foreach (var (moduleType, _) in ModuleTypes)
+				ClientTypes.Add(moduleType);
+		}
 	}
 
 	private static void GenerateBeamSDKModuleDeclaration(TsFile clientFile, TsClass tsClass, string augmentType)
@@ -314,7 +389,20 @@ public class WebClientCodeGenerator
 
 	public static string GenerateClientTypes(string typesOutputDirectory)
 	{
-		if (ClientTypes.Count == 0)
+		// Fold first, and that ordering is load-bearing.
+		//
+		// `ProcessClientTypes` also runs from the CONSTRUCTOR, which is before `GenerateClientCode` has
+		// walked any schema — so `ClientTypes` there always lags one generator behind, and for a run
+		// with a single generator it stays empty. Folding again here is what makes the emitted file
+		// reflect the schemas this run actually produced.
+		ProcessClientTypes();
+
+		// Snapshot under the lock and work off the copy: this runs after the parallel pass, but taking
+		// a copy keeps the reader independent of any late writer rather than relying on that ordering.
+		TsTypeAlias[] clientTypes;
+		lock (TypeAccumulatorLock) clientTypes = ClientTypes.ToArray();
+
+		if (clientTypes.Length == 0)
 			return string.Empty;
 
 		var tsClientTypeFile = new TsFile("index");
@@ -324,7 +412,7 @@ public class WebClientCodeGenerator
 		// reference, not by type name — which would emit duplicate `export type` declarations that
 		// fail to compile. Collapse by type name, keeping the first occurrence.
 		var seenTypeNames = new HashSet<string>();
-		foreach (var clientType in ClientTypes)
+		foreach (var clientType in clientTypes)
 		{
 			if (!seenTypeNames.Add(clientType.Name))
 				continue;
@@ -343,6 +431,16 @@ public class WebClientCodeGenerator
 		return clientTypeFilePath;
 	}
 
-	public static bool IsTypeScript => _langType.Equals("typescript", StringComparison.InvariantCultureIgnoreCase) ||
-	                                   _langType.Equals("ts", StringComparison.InvariantCultureIgnoreCase);
+	/// <summary>
+	/// The language the last-constructed generator was built for.
+	///
+	/// <para>
+	/// Null-guarded because <c>_langType</c> is a static set by the CONSTRUCTOR: a run in which no
+	/// generator is built (a microservice no portal extension depends on) leaves it unset, and a caller
+	/// reading this to decide whether to emit types would otherwise throw.
+	/// </para>
+	/// </summary>
+	public static bool IsTypeScript =>
+		"typescript".Equals(_langType, StringComparison.InvariantCultureIgnoreCase) ||
+		"ts".Equals(_langType, StringComparison.InvariantCultureIgnoreCase);
 }

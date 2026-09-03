@@ -8,7 +8,8 @@ import { makeApiRequest } from '@/utils/makeApiRequest';
 import { POST } from '@/constants';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
-import type { CampaignOfferEntitlementsResponse } from '@/__generated__/schemas/CampaignOfferEntitlementsResponse';
+import type { CampaignOffersResponse } from '@/__generated__/schemas/CampaignOffersResponse';
+import type { CampaignOfferState } from '@/__generated__/schemas/CampaignOfferState';
 import type { CampaignOfferRedeemResponse } from '@/__generated__/schemas/CampaignOfferRedeemResponse';
 import type { RedeemCampaignOfferRequest } from '@/__generated__/schemas/RedeemCampaignOfferRequest';
 
@@ -18,22 +19,24 @@ import type { RedeemCampaignOfferRequest } from '@/__generated__/schemas/RedeemC
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param federationId - The store federation to read entitlements from.
- * @param playerId - The player whose entitlements to read.
+ * @param federationId - The store federation to read from.
+ * @param playerId - The player whose offers to read.
+ * @param states - Which states to return, repeated. Omitted means all.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function campaignOfferGetEntitlements(requester: HttpRequester, federationId: string, playerId: string, gamertag?: string): Promise<HttpResponse<CampaignOfferEntitlementsResponse>> {
-  let endpoint = "/api/campaign-offer/entitlements";
+export async function campaignOfferGetCampaignOffers(requester: HttpRequester, federationId: string, playerId: string, states?: CampaignOfferState[], gamertag?: string): Promise<HttpResponse<CampaignOffersResponse>> {
+  let endpoint = "/api/campaign-offer/campaign-offers";
   
   // Make the API request
-  return makeApiRequest<CampaignOfferEntitlementsResponse>({
+  return makeApiRequest<CampaignOffersResponse>({
     r: requester,
     e: endpoint,
     m: GET,
     q: {
       federationId,
-      playerId
+      playerId,
+      states
     },
     g: gamertag,
     w: true

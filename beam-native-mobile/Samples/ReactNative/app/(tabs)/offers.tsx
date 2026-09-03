@@ -20,7 +20,6 @@ import {
   type Balance,
   type BalanceDelta,
 } from '../../src/beam/inventory';
-import { purchaseIdFor, purchaseListing } from '../../src/beam/commerce';
 import { useBeam } from '../../src/state/beamContext';
 import { useLogActions } from '../../src/state/logContext';
 import { useNotifications } from '../../src/state/notificationContext';
@@ -157,28 +156,26 @@ export default function OffersTab() {
   );
 
   /**
-   * Buy the listing behind a grant, then settle the grant — one press, one receipt.
+   * Claim a grant — one press, one call, one receipt.
    *
-   * The order matters and the error handling more so: once the purchase returns, the player's
-   * currency is already spent, so a failure to settle afterwards is reported as a warning line
-   * **inside a successful receipt**, never as a thrown error. Losing the receipt after taking
-   * someone's currency is the worst outcome available here.
+   * **The claim IS the purchase.** The provider spends on the player's behalf: commerce debits the
+   * price and credits the payout in one inventory transaction. So this screen must NOT buy the
+   * listing itself first — doing so charges the player twice, or gets refused by a purchase limit
+   * and then reports the refusal as "bought, but the grant did not settle", which points at exactly
+   * the wrong cause.
+   *
+   * The wallet is read either side because `InventoryUpdateResponse.deltas` is not populated on
+   * this path, so the diff is the only truthful account of what moved — and it captures the price
+   * as well as the payout, since for a virtual offer both are currency.
    */
   const buy = useCallback(
     (entitlement: Entitlement) => async () => {
       if (!isReady) throw new Error('Beamable is not connected yet');
 
-      const listing = entitlement.listings[0];
-      if (!listing) throw new Error('This offer has no listing to buy.');
-
       const before = await readBalances().catch(() => [] as Balance[]);
-      const purchaseId = purchaseIdFor(listing.listingSymbol, listing.storeSymbol);
 
-      await purchaseListing(purchaseId);
+      const settled = await claimGrant(store, entitlement.grantId);
 
-      // The purchase response carries no inventory deltas on this route, so the wallet is the
-      // source of truth for what moved. It also captures the price — which for a virtual offer is
-      // itself a currency — so the debit and the payout show together in one receipt.
       const after = await readBalances().catch(() => before);
       const moved = diffBalances(before, after);
 
@@ -186,22 +183,12 @@ export default function OffersTab() {
       setWalletDeltas(Object.fromEntries(moved.map((d) => [d.id, d.change])));
       setReceipts((current) => ({ ...current, [entitlement.grantId]: moved }));
 
-      let settled = '';
-      try {
-        await claimGrant(store, entitlement.grantId);
-        settled = ' · grant settled';
-      } catch (e) {
-        // Paid but not settled. Surface it without discarding the purchase.
-        const msg = e instanceof Error ? e.message : String(e);
-        settled = ` · ⚠ bought, but the grant did not settle: ${msg}`;
-      }
-
       void refresh(true);
 
       const summary = moved.length
         ? moved.map((d) => `${d.change > 0n ? '+' : ''}${formatAmount(d.change)} ${d.label}`).join(', ')
         : 'no wallet change';
-      return `Purchased ${purchaseId} — ${summary}${settled}`;
+      return `${settled} — ${summary}`;
     },
     [isReady, store, refresh],
   );
@@ -269,7 +256,7 @@ export default function OffersTab() {
         }
       >
         <Hint>
-          Reads beam.campaignOffer.getEntitlements(federationId) → GET /api/campaign-offer/entitlements.
+          Reads beam.campaignOffer.getCampaignOffers(federationId) → GET /api/campaign-offer/campaign-offers.
           Every grant in every state, so read the state rather than the presence of a row —
           claimed and revoked ones stay in the list. The store embeds the whole offer, so this one
           call renders the screen; a provider may send none, and those rows fall back to ids.
@@ -332,11 +319,16 @@ export default function OffersTab() {
       <Section title="How buying works">
         <Collapsible title="One call, one inventory transaction">
           <Hint>
-            Buy posts to POST /object/commerce/{'{playerId}'}/purchase with the listing's
-            `{'{listing}:{store}'}` id. Commerce resolves the listing, checks it is active and that
-            you meet its requirements and purchase limits, then debits the price and credits the
-            payout in a single inventory transaction. This is a real purchase — there is no test
-            handler and no realm flag standing in for a store.
+            Claiming IS the purchase. This screen makes one call — redeem — and the provider spends
+            on your behalf: commerce debits the price and credits the payout in a single inventory
+            transaction, then forfeits any offers this one was an alternative to. This sample never
+            posts to commerce itself; doing so would charge you twice.
+          </Hint>
+          <Hint>
+            The provider buys rather than checking that a client already did, because redeem is
+            client-callable: taking the caller's word would let anyone settle a grant for free and
+            destroy the siblings they were meant to choose between. Performing the purchase removes
+            the question instead of answering it.
           </Hint>
           <Hint>
             This is the virtual federation, so a price is a currency amount. A real-money offer is a
@@ -345,10 +337,9 @@ export default function OffersTab() {
             is refused by the provider rather than shown.
           </Hint>
           <Hint>
-            Buy then settles the grant, because nothing calls the federation's settlement callback
-            on this path. The provider verifies the purchase against your commerce purchase history
-            before settling, so a claim without a purchase is refused — which is what stops a claim
-            forfeiting the alternatives it was offered against for free.
+            An offer can arrive locked. A campaign can gate one on a requirement, and that gate is
+            re-checked every time this list loads — so an offer you cannot claim today unlocks on
+            its own once you qualify, with no new message.
           </Hint>
         </Collapsible>
       </Section>
