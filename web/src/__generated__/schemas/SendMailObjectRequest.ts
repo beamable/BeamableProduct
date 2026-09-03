@@ -18,4 +18,5 @@ export type SendMailObjectRequest = {
   playerRewards?: PlayerReward; 
   rewards?: MailRewards; 
   subject?: string; 
+  metadata?: Record<string, string>; 
 };

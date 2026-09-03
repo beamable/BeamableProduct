@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { BeamNotifications } from '@beamable/notifications-react-native';
 import type {
@@ -10,6 +10,13 @@ import type {
 
 import { getBeam } from '../../src/beam/beamClient';
 import { BEAM_CONFIG } from '../../src/beam/config';
+import {
+  describeSend,
+  emitObjectiveEvent,
+  paramsFromRows,
+  parseParamsJson,
+  type ParamRow,
+} from '../../src/beam/objectiveEvents';
 import { buildAuthPayload, describeAuthPayload } from '../../src/beam/nativeAuth';
 import { detailsUrl } from '../../src/linking/links';
 import { useBeam } from '../../src/state/beamContext';
@@ -17,8 +24,10 @@ import { useNotifications } from '../../src/state/notificationContext';
 import AsyncButton from '../../src/ui/AsyncButton';
 import Field from '../../src/ui/Field';
 import { Hint } from '../../src/ui/Hint';
+import ParamRows from '../../src/ui/ParamRows';
 import Screen from '../../src/ui/Screen';
 import Section from '../../src/ui/Section';
+import Button from '../../src/ui/Button';
 import { colors, mono, radius, space } from '../../src/ui/theme';
 
 const OFFER: NotificationOffer = {
@@ -58,14 +67,33 @@ function nextFunnelResult(): Promise<EventMap['funnelResult']> {
   });
 }
 
+/** Starting rows for the objective emitter — a worked example of a value-conditioned goal. */
+const DEFAULT_PARAM_ROWS: ParamRow[] = [
+  { key: 'currency', value: 'USD' },
+  { key: 'amount', value: '25' },
+];
+
+const DEFAULT_PARAM_JSON = `{
+  "currency": "USD",
+  "details": { "price": 25 }
+}`;
+
 /**
- * Analytics tab: the native Clicked / Converted funnel events, and the native-side auth those
- * events use when the JS runtime isn't running.
+ * Analytics tab: emitting arbitrary events to validate campaign objectives, the native
+ * Clicked / Converted funnel events, and the native-side auth those events use when the JS
+ * runtime isn't running.
  */
 export default function AnalyticsTab() {
   const { isReady } = useBeam();
   const { campaignId, nodeId, setCampaignId, setNodeId, outreachId, trackId } = useNotifications();
   const [authView, setAuthView] = useState<string | null>(null);
+
+  // Objective emitter state.
+  const [eventName, setEventName] = useState('purchase');
+  const [rawMode, setRawMode] = useState(false);
+  const [paramRows, setParamRows] = useState<ParamRow[]>(DEFAULT_PARAM_ROWS);
+  const [paramJson, setParamJson] = useState(DEFAULT_PARAM_JSON);
+  const [recent, setRecent] = useState<string[]>([]);
 
   // Funnel coordinates live in the notification context, so a campaign push that arrives while
   // another tab is active still fills these in.
@@ -98,6 +126,19 @@ export default function AnalyticsTab() {
     return detail;
   };
 
+  const sendObjectiveEvent = async () => {
+    if (!isReady) throw new Error('Beamable is not connected yet');
+
+    // Parsing before sending means a malformed brace surfaces as a red outcome on the button, not
+    // as a send that quietly did nothing.
+    const params = rawMode ? parseParamsJson(paramJson) : paramsFromRows(paramRows);
+    await emitObjectiveEvent(eventName, params);
+
+    const summary = describeSend(eventName.trim(), params);
+    setRecent((prev) => [summary, ...prev].slice(0, 5));
+    return `Sent ${summary}`;
+  };
+
   const viewNativeAuth = async () => {
     const payload = await buildAuthPayload();
     setAuthView(describeAuthPayload(payload));
@@ -112,6 +153,63 @@ export default function AnalyticsTab() {
 
   return (
     <Screen>
+      <Section title="Objective events">
+        <Hint>
+          Emits an analytics event as this player, so a campaign lane's watched-analytics objective
+          can be validated end to end. Send once above a goal's threshold and once below it, and
+          only the first should convert.{'\n'}
+          No category is sent: category routes the campaign FUNNEL, while an objective matches on
+          the event name and its params.
+        </Hint>
+        <Hint>
+          Sending an event also registers it (and its param names) in the realm's observed-event
+          catalog, which is where the Portal's field picker gets its list — so an event has to be
+          fired at least once before you can pick its fields when authoring the goal.
+        </Hint>
+
+        <Field placeholder="Event name (e.g. purchase)" value={eventName} onChangeText={setEventName} />
+
+        <View style={styles.modeRow}>
+          <Button
+            label="Key / value"
+            variant={rawMode ? 'secondary' : 'primary'}
+            onPress={() => setRawMode(false)}
+          />
+          <Button
+            label="Raw JSON"
+            variant={rawMode ? 'primary' : 'secondary'}
+            onPress={() => setRawMode(true)}
+          />
+        </View>
+
+        {rawMode ? (
+          <>
+            <Hint>
+              Raw JSON is the only way to send a NESTED object. The platform flattens those into
+              dot-notation keys (details.price), which is a different code path from typing a dotted
+              key directly — worth exercising if a goal condition targets a nested field.
+            </Hint>
+            <Field
+              style={styles.json}
+              placeholder='{"currency":"USD"}'
+              value={paramJson}
+              onChangeText={setParamJson}
+              multiline
+            />
+          </>
+        ) : (
+          <ParamRows rows={paramRows} onChange={setParamRows} />
+        )}
+
+        <AsyncButton label="Send event" run={sendObjectiveEvent} />
+
+        {recent.length > 0 && (
+          <Text style={styles.recent} selectable>
+            {recent.join('\n')}
+          </Text>
+        )}
+      </Section>
+
       <Section title="Funnel: clicked / converted">
         <Hint>
           Emits native Clicked / Converted funnel analytics for a test offer (iOS & Android). The
@@ -155,6 +253,14 @@ export default function AnalyticsTab() {
 }
 
 const styles = StyleSheet.create({
+  modeRow: { flexDirection: 'row', gap: space.sm },
+  json: { minHeight: 96, fontFamily: mono, fontSize: 12, textAlignVertical: 'top' },
+  recent: {
+    color: colors.muted,
+    fontSize: 11,
+    fontFamily: mono,
+    paddingTop: space.xs,
+  },
   authBlock: {
     color: colors.consoleInk,
     backgroundColor: colors.console,

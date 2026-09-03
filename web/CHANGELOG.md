@@ -39,6 +39,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (draft, publish, status, funnel, deactivate, archive, reactivate), `DataBindingApi`,
   `MessageRailApi` (`register`, `unregister`, `messages`, `staging`), and segment property
   recompute on `SegmentsApi`.
+- `beam.analytics` / `beamServer.analytics(playerId)` — an `AnalyticsService` with `track(event)`,
+  `trackBatch(events)` and the never-throwing `trackSafely(event)`, plus the `AnalyticsEvent` type
+  and the `FUNNEL_CATEGORY` constant. The SDK could previously only *query* analytics
+  (`analyticsPostQuery`) and had no way to emit at all, so a web or React Native game could not
+  report campaign funnel stages the way Unity and the native push SDKs do.
+- `beam.mail` / `beamServer.mail(playerId)` — a `MailService` with `list(params)`, `get(id)`,
+  `markAsRead(id)` and `update(params)`, plus the `MailState` constant object and the
+  `MailStateValue`, `MailListParams` and `MailUpdateParams` types.
+- Campaign funnel `Opened` is now reported **automatically** when mail sent by a campaign moves
+  from `Unread` to `Read` through `MailService`, so a game writes no tracking code of its own.
+  Push gets that stage from the handset echoing the notification payload back; in-game mail has no
+  handset, so this is the equivalent interception point. Reporting is fire-and-forget and never
+  fails the read — including when `AnalyticsService` was not registered, where reading
+  `beam.analytics` throws rather than returning undefined. Register `MailService` and
+  `AnalyticsService` together, or in-game campaigns silently report zero engagement.
+- `metadata` on the generated `Message`, `SendMailRequest` and `SendMailObjectRequest` schemas —
+  the opaque per-message map a campaign message rail stamps its `beam_outreach` / `trackId`
+  attribution onto.
 
 ### Changed
 
