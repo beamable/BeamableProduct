@@ -8,14 +8,17 @@ import {
   claimGrant,
   isClaimable,
   isPurchasable,
-  listEntitlements,
-  type Entitlement,
+  listCampaignOffers,
+  type CampaignOffer,
 } from '../../src/beam/campaignOffers';
 import {
+  currencyLabel,
   diffBalances,
   formatAmount,
   knownCurrencyIds,
+  grantCurrency,
   mergeKnownCurrencies,
+  parseAmount,
   readBalances,
   type Balance,
   type BalanceDelta,
@@ -51,6 +54,13 @@ import { colors, mono, radius, space } from '../../src/ui/theme';
  * The wallet sits above the offers deliberately: a purchase should read before → action → after
  * in one downward glance, and "what did I actually receive" is answered by diffing the wallet
  * around the purchase, not by the purchase response (which carries no deltas on this route).
+ *
+ * The wallet can also grant. Every offer below is priced in soft currency, so a fresh player holds
+ * nothing to pay with and every claim is refused for insufficient funds — which reads as a broken
+ * screen rather than as an empty wallet. The ⊕ on each row tops that currency up, so the whole
+ * federation can be exercised from the app instead of from the Portal. That grant is a
+ * microservice call (`DebugWalletService`) rather than a client one, because currency content
+ * decides who may credit a wallet and it is never the client.
  */
 export default function OffersTab() {
   const { append } = useLogActions();
@@ -58,25 +68,32 @@ export default function OffersTab() {
   const { lastOfferGrantId } = useNotifications();
 
   const [federationId, setFederationId] = useState<string>(DEFAULT_STORE);
-  const [entitlements, setEntitlements] = useState<Entitlement[]>([]);
+  const [campaignOffers, setCampaignOffers] = useState<CampaignOffer[]>([]);
   const [balances, setBalances] = useState<Balance[]>([]);
   const [walletDeltas, setWalletDeltas] = useState<Record<string, bigint>>({});
   const [receipts, setReceipts] = useState<Record<string, BalanceDelta[]>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Tracked separately from `error`: the wallet and the entitlement list fail for different
+  // Tracked separately from `error`: the wallet and the campaign-offer list fail for different
   // reasons and one must not hide the other. Reading currency needs the platform's `inventory`
   // service, which a trimmed local stack often does not run — an empty wallet with no explanation
   // looks like "you have nothing" rather than "this could not be read".
   const [walletError, setWalletError] = useState<string | null>(null);
+  // How much one ⊕ grants. A string because it is a text field: it is parsed on press, so a typo
+  // is reported rather than silently becoming zero.
+  const [grantAmount, setGrantAmount] = useState('100');
+  const [addingId, setAddingId] = useState<string | null>(null);
+  // A third error line, for the same reason `walletError` is a second one: "could not read the
+  // wallet" and "the platform refused this grant" are different sentences with different fixes.
+  const [grantError, setGrantError] = useState<string | null>(null);
   const inFlight = useRef(false);
 
   const store = federationId.trim() || DEFAULT_STORE;
-  const claimable = useMemo(() => entitlements.filter(isClaimable).length, [entitlements]);
+  const claimable = useMemo(() => campaignOffers.filter(isClaimable).length, [campaignOffers]);
 
   /**
    * One read for the whole screen, under a single in-flight guard so a focus change cannot
-   * interleave two of them. Entitlements are never cached across a session: expiry is evaluated
+   * interleave two of them. Campaign offers are never cached across a session: expiry is evaluated
    * server-side on read, so a stale list is wrong by construction.
    *
    * `silent` suppresses the "not connected" line and the loading chatter, so the automatic
@@ -85,7 +102,7 @@ export default function OffersTab() {
   const refresh = useCallback(
     async (silent = false) => {
       if (!isReady) {
-        if (!silent) append('Entitlements: Beamable is not connected yet');
+        if (!silent) append('Campaign offers: Beamable is not connected yet');
         return;
       }
       if (inFlight.current) return;
@@ -95,13 +112,16 @@ export default function OffersTab() {
       // A manual refresh is the user asking "what is true now", so the change chips from an
       // earlier purchase are cleared. The silent refresh that follows a purchase keeps them —
       // they are the whole point of that read.
-      if (!silent) setWalletDeltas({});
+      if (!silent) {
+        setWalletDeltas({});
+        setGrantError(null);
+      }
       try {
         // The wallet read is best-effort: a realm with no currency content still has offers worth
-        // showing, so a failure there must not take the entitlement list down with it — but it is
-        // reported rather than swallowed.
+        // showing, so a failure there must not take the campaign-offer list down with it — but it
+        // is reported rather than swallowed.
         const [held, wallet, knownIds] = await Promise.all([
-          listEntitlements(store),
+          listCampaignOffers(store),
           readBalances().then(
             (b) => {
               setWalletError(null);
@@ -115,15 +135,15 @@ export default function OffersTab() {
           knownCurrencyIds(),
         ]);
 
-        setEntitlements(held);
+        setCampaignOffers(held);
         setBalances(mergeKnownCurrencies(wallet, knownIds));
-        if (!silent) append(`Entitlements (${store}): ${held.length}`);
+        if (!silent) append(`Campaign offers (${store}): ${held.length}`);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         // Shown in the section, not just the collapsed console — the on-focus refresh is
         // silent, so a failure would otherwise be indistinguishable from "you hold nothing".
         setError(msg);
-        append(`Entitlements error: ${msg}`);
+        append(`Campaign offers error: ${msg}`);
       } finally {
         inFlight.current = false;
         setBusy(false);
@@ -156,6 +176,61 @@ export default function OffersTab() {
   );
 
   /**
+   * Top this currency up by the amount in the field, through `DebugWalletService`.
+   *
+   * The grant cannot be a client call: `CurrencyContent.clientPermission.write_self` gates
+   * inventory writes and is off for any currency worth having, so a microservice does it — see
+   * `inventory.ts`. Reading the wallet, on the other hand, is client-side, which is why only this
+   * half of the section needs a service at all.
+   *
+   * Not an `AsyncButton`: the control is a ⊕ on a list row, so the in-flight state and the failure
+   * live on the screen rather than under the button — `addingId` swaps that one row's ⊕ for a
+   * spinner, and `grantError` renders once above the list however many rows there are.
+   *
+   * The wallet is read either side and diffed, exactly as `buy` does below. The service does
+   * return the new balance, but the whole list has to be re-read anyway to be sure nothing else
+   * moved — so one mechanism answers "what moved" for both actions, and the ⊕ lights up the same
+   * green chip a purchase does.
+   */
+  const addFunds = useCallback(
+    (id: string) => () => {
+      if (addingId) return;
+
+      void (async () => {
+        setGrantError(null);
+        setAddingId(id);
+        try {
+          if (!isReady) throw new Error('Beamable is not connected yet');
+          // Parsed before anything is sent, so a typo costs no round trip.
+          const amount = parseAmount(grantAmount);
+
+          const before = await readBalances();
+          const balance = await grantCurrency(id, amount);
+          const after = await readBalances();
+          const moved = diffBalances(before, after);
+
+          // `mergeKnownCurrencies` against the ids already on screen keeps the `0` rows for
+          // currencies the player still holds none of — they are what the next ⊕ is pressed on.
+          setBalances((current) => mergeKnownCurrencies(after, current.map((b) => b.id)));
+          setWalletDeltas(Object.fromEntries(moved.map((d) => [d.id, d.change])));
+          // The service's own figure, not the diff's: if the two disagree, something else moved
+          // this currency at the same time, and the log is where that is worth seeing.
+          append(
+            `Wallet: +${formatAmount(amount)} ${currencyLabel(id)} → ${formatAmount(balance)}`,
+          );
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          setGrantError(msg);
+          append(`Add currency error: ${msg}`);
+        } finally {
+          setAddingId(null);
+        }
+      })();
+    },
+    [addingId, isReady, grantAmount, append],
+  );
+
+  /**
    * Claim a grant — one press, one call, one receipt.
    *
    * **The claim IS the purchase.** The provider spends on the player's behalf: commerce debits the
@@ -169,19 +244,19 @@ export default function OffersTab() {
    * as well as the payout, since for a virtual offer both are currency.
    */
   const buy = useCallback(
-    (entitlement: Entitlement) => async () => {
+    (campaignOffer: CampaignOffer) => async () => {
       if (!isReady) throw new Error('Beamable is not connected yet');
 
       const before = await readBalances().catch(() => [] as Balance[]);
 
-      const settled = await claimGrant(store, entitlement.grantId);
+      const settled = await claimGrant(store, campaignOffer.grantId);
 
       const after = await readBalances().catch(() => before);
       const moved = diffBalances(before, after);
 
       setBalances((current) => mergeKnownCurrencies(after, current.map((b) => b.id)));
       setWalletDeltas(Object.fromEntries(moved.map((d) => [d.id, d.change])));
-      setReceipts((current) => ({ ...current, [entitlement.grantId]: moved }));
+      setReceipts((current) => ({ ...current, [campaignOffer.grantId]: moved }));
 
       void refresh(true);
 
@@ -227,6 +302,31 @@ export default function OffersTab() {
             ✕ {walletError}
           </Text>
         )}
+        <Hint>
+          ⊕ grants this much of that currency — and it goes through the `DebugWalletService`
+          microservice, not through this client. Crediting a wallet is the currency content's call,
+          not the token's: `clientPermission.write_self` is off for anything worth holding, so the
+          platform refuses a client write however the request is shaped. A service runs with the
+          privileged identity that check does not apply to. Reading the wallet needs none of that,
+          which is why only half of this section is server-side. Top up an offer's price currency
+          and the Buy below stops failing for insufficient funds.
+        </Hint>
+        <View style={styles.grantRow}>
+          <Text style={styles.grantLabel}>grant</Text>
+          <Field
+            value={grantAmount}
+            onChangeText={setGrantAmount}
+            placeholder="100"
+            keyboardType="number-pad"
+            accessibilityLabel="Grant amount"
+            style={styles.grantField}
+          />
+        </View>
+        {grantError && (
+          <Text style={styles.error} selectable>
+            ✕ {grantError}
+          </Text>
+        )}
         {balances.length === 0 ? (
           <Hint>
             {walletError
@@ -243,6 +343,8 @@ export default function OffersTab() {
                 amount={formatAmount(balance.amount)}
                 delta={delta ? `${delta > 0n ? '+' : ''}${formatAmount(delta)}` : undefined}
                 tone={delta && delta < 0n ? 'down' : 'up'}
+                onAdd={addFunds(balance.id)}
+                adding={addingId === balance.id}
               />
             );
           })
@@ -250,9 +352,13 @@ export default function OffersTab() {
       </Section>
 
       <Section
-        title={`Entitlements (${entitlements.length})`}
+        title={`Campaign Offers (${campaignOffers.length})`}
         right={
-          <RefreshButton busy={busy} onPress={() => void refresh()} label="Refresh entitlements" />
+          <RefreshButton
+            busy={busy}
+            onPress={() => void refresh()}
+            label="Refresh campaign offers"
+          />
         }
       >
         <Hint>
@@ -266,21 +372,21 @@ export default function OffersTab() {
             ✕ {error}
           </Text>
         )}
-        {entitlements.length === 0 ? (
+        {campaignOffers.length === 0 ? (
           <Hint>
             {error
-              ? 'Entitlements not loaded.'
+              ? 'Campaign offers not loaded.'
               : `Nothing granted by "${store}" yet. Publish a campaign lane with an offer and enrol this player.`}
           </Hint>
         ) : (
           <>
             <Hint>
-              {claimable} of {entitlements.length} ready to act on.
+              {claimable} of {campaignOffers.length} ready to act on.
             </Hint>
-            {entitlements.map((e) => (
+            {campaignOffers.map((e) => (
               <OfferCard
                 key={e.grantId}
-                entitlement={e}
+                campaignOffer={e}
                 receipt={receipts[e.grantId]}
                 buy={isPurchasable(e) ? buy(e) : undefined}
                 claim={isClaimable(e) ? claim(e.grantId) : undefined}
@@ -294,7 +400,7 @@ export default function OffersTab() {
         <Hint>
           A campaign that attaches an offer writes the grant id into the send's payload under the
           reserved `{OFFER_GRANT_KEY}` key, so the message can deep-link straight to what you were
-          given. This reads it off the received notification — no entitlement list needed.
+          given. This reads it off the received notification — no campaign-offer list needed.
         </Hint>
         {lastOfferGrantId ? (
           <>
@@ -302,7 +408,7 @@ export default function OffersTab() {
             <AsyncButton label="Claim from push" run={claim(lastOfferGrantId)} />
             <Hint>
               Claim settles a grant you have already paid for. A push deep-link cannot buy on its
-              own — the listing to charge for lives on the entitlement, so a paid offer is bought
+              own — the listing to charge for lives on the grant, so a paid offer is bought
               from the list above.
             </Hint>
           </>
@@ -348,6 +454,9 @@ export default function OffersTab() {
 }
 
 const styles = StyleSheet.create({
+  grantRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  grantLabel: { color: colors.muted, fontSize: 12, fontFamily: mono },
+  grantField: { flex: 1 },
   error: {
     color: colors.errorInk,
     backgroundColor: colors.errorBg,

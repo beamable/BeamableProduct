@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { colors, mono, radius, space } from './theme';
 
@@ -9,12 +10,18 @@ import { colors, mono, radius, space } from './theme';
  * a column of cards would bury the offers below it. The change chip is the point: after a
  * purchase you want to see `-1,200` next to the currency you spent and `+500` next to the one you
  * gained, without doing the arithmetic yourself.
+ *
+ * `onAdd` puts one control back on the row — a ⊕ that tops this currency up. It is an accessory
+ * rather than a `Button` for the same reason the section's ↻ is: a full-width button per currency
+ * would turn the list back into a column of cards. Rows given no `onAdd` render exactly as before.
  */
 export default function BalanceRow({
   label,
   amount,
   delta,
   tone,
+  onAdd,
+  adding = false,
 }: {
   label: string;
   /** Pre-formatted — the caller owns grouping, because amounts are bigint. */
@@ -22,6 +29,10 @@ export default function BalanceRow({
   /** Signed, pre-formatted: `+500`, `-1,200`. Omitted when nothing changed. */
   delta?: string;
   tone?: 'up' | 'down';
+  /** Grant more of this currency. Omit and the row carries no control at all. */
+  onAdd?: () => void;
+  /** True while this row's grant is in flight — swaps the ⊕ for a spinner. */
+  adding?: boolean;
 }) {
   return (
     <View style={styles.row}>
@@ -33,6 +44,20 @@ export default function BalanceRow({
           <Text style={[styles.delta, tone === 'down' ? styles.down : styles.up]}>{delta}</Text>
         ) : null}
         <Text style={styles.amount}>{amount}</Text>
+        {onAdd &&
+          (adding ? (
+            <ActivityIndicator size="small" />
+          ) : (
+            <Pressable
+              onPress={onAdd}
+              hitSlop={10}
+              style={({ pressed }) => [styles.add, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={`Add ${label}`}
+            >
+              <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+            </Pressable>
+          ))}
       </View>
     </View>
   );
@@ -60,4 +85,6 @@ const styles = StyleSheet.create({
   },
   up: { color: colors.okInk, backgroundColor: colors.okBg },
   down: { color: colors.errorInk, backgroundColor: colors.errorBg },
+  add: { padding: 2 },
+  pressed: { opacity: 0.5 },
 });

@@ -187,7 +187,7 @@ Tabs are listed below in bar order; the bar follows the order of the `Tabs.Scree
 | **Deep links** (`deeplinks.tsx`) | Simulate · Navigate directly · Open any URL · Last received | OS-routed deep link, in-app navigation, `normalizeDeepLink`'s schemeless back-stop |
 | **In-game** (`inbox.tsx`) | Opt in/out of in-game · Inbox (auto-refreshes on focus, ↻ in the corner) | the `ingame` rail and the player's Beamable mailbox |
 | **Email** (`email.tsx`) | Account (read-only) · Add email to account · Opt in/out of email | `beam.account.current()` guest-vs-credentialed state; `addCredentials` → POST `/basic/accounts/register`; the `email` rail |
-| **Offers** (`offers.tsx`) | Store federation id · Wallet (↻) · Entitlements with the offer, its price and **what the bundle contains** (↻) · **Buy** · Claim · Claim from the last push | the **virtual offer federation** (`IFederatedCampaignVirtualOffer`) end to end, for an offer bought with soft currency. `beam.campaignOffer.getEntitlements(federationId)` → GET `/api/campaign-offer/entitlements` and `beam.campaignOffer.redeem(federationId, grantId)` → POST `/api/campaign-offer/redeem` — the only two routes a player token can reach. The store embeds the whole offer in each entitlement (title, the price as a currency and an amount, and `rewards`), so one call renders the screen. **An offer IS a storefront listing**, and claiming buys it: the provider spends on the player's behalf through `POST /object/commerce/{playerId}/purchase`, which debits the price and credits the bundle in one inventory transaction. "What you received" is a wallet diff around it, not the purchase response — so cost and gain read together. Real-money offers are a separate federation and are not in this sample. Also the deep-link: a campaign that attaches an offer writes the grant id into the push under the reserved `beam_offer_grant` key, and the last section claims straight from it |
+| **Offers** (`offers.tsx`) | Store federation id · Wallet with a **⊕ per currency** that grants the amount in the field (↻) · Campaign Offers with the offer, its price and **what the bundle contains** (↻) · **Buy** · Claim · Claim from the last push | the **virtual offer federation** (`IFederatedCampaignVirtualOffer`) end to end, for an offer bought with soft currency. `beam.campaignOffer.getCampaignOffers(federationId)` → GET `/api/campaign-offer/campaign-offers` and `beam.campaignOffer.redeem(federationId, grantId)` → POST `/api/campaign-offer/redeem` — the only two routes a player token can reach. The store embeds the whole offer in each grant (title, the price as a currency and an amount, and `rewards`), so one call renders the screen. **An offer IS a storefront listing**, and claiming buys it: the provider spends on the player's behalf through `POST /object/commerce/{playerId}/purchase`, which debits the price and credits the bundle in one inventory transaction. "What you received" is a wallet diff around it, not the purchase response — so cost and gain read together. Real-money offers are a separate federation and are not in this sample. The wallet's ⊕ grants currency through the **`DebugWalletService`** microservice — it exists because every price here is soft currency, so a fresh player has nothing to pay with and every claim is refused for insufficient funds. It is a service call rather than a client one because `CurrencyContent.clientPermission.write_self` gates inventory writes and is off for anything worth holding: reading this wallet is client-side, crediting it can never be. Also the deep-link: a campaign that attaches an offer writes the grant id into the push under the reserved `beam_offer_grant` key, and the last section claims straight from it |
 | **Segments** (`segments.tsx`) | namespace picker · `CLIENT_LEVEL` card (`beam.stats`) · `PLAYER_LEVEL` card (microservice) · Set/delete any stat in either namespace · Create N players with a stat · My segments (↻) · Recent transitions | the stats → segment loop in both namespaces a rule can read: `beam.stats.set` writes `client.*` directly, `PlayerStatsService.AddToMyStat` writes `game.private`, the backend re-evaluates the Portal rules watching that attribute, and `GET /api/realms/{realmId}/players/{playerId}/segments` (+ `/transitions`) reads the membership back. The screen renders the rule JSON to author, including a cross-namespace one |
 | **Analytics** (`analytics.tsx`) | Campaign/Node ID · Track offer clicked · Track offer converted · Clear native auth | native `Clicked`/`Converted` funnel events (iOS + Android) and the closed-app auth handoff |
 | **Unity** (`unity.tsx`) | Send message to Unity | the Unity ↔ React WebView bridge. **Web only** — the tab is hidden on native |
@@ -351,7 +351,7 @@ The service must be reachable in the realm this sample connects to
 
   `app.config.js` passes it through `extra`, `src/beam/config.ts` exposes it as
   `LOCAL_ROUTING_KEY`, and `beamClient.ts` expands it to
-  `X-BEAM-SERVICE-ROUTING-KEY: micro_CampaignService:<key>,micro_PlayerStatsService:<key>`.
+  `X-BEAM-SERVICE-ROUTING-KEY: micro_CampaignService:<key>,micro_PlayerStatsService:<key>,micro_DebugWalletService:<key>`.
 
   Two safeguards there are deliberate, and worth preserving if you touch that code:
 
@@ -366,6 +366,39 @@ The service must be reachable in the realm this sample connects to
 
 ---
 
+## The `DebugWalletService` microservice
+
+The Offers tab's wallet ⊕ calls **`DebugWalletService`**, which credits the caller's currency:
+
+| Endpoint | Purpose |
+|---|---|
+| `AddCurrency(currencyId, amount)` | add `amount` of `currencyId` to the **caller's** wallet and return the new balance (capped at 1,000,000 per call) |
+
+**Why it is a service at all.** Currency writes are gated by the currency's own content —
+`CurrencyContent.clientPermission.write_self` — and that is off for any currency worth having,
+since a player who can credit their own wallet has no reason to buy anything. The platform refuses
+a client `PUT /object/inventory/{playerId}/` however the request is shaped, so the only way to hand
+a player currency is from a service running with the privileged identity the check does not apply
+to. Exactly the situation `PlayerStatsService` exists for, one domain over. Reading the wallet
+needs none of this and stays client-side (`GET /object/inventory/{playerId}/?scope=currency`).
+
+**"Debug" is in the name on purpose.** The endpoint is `[ClientCallable]`, so anyone holding a
+player token for that realm can grant themselves whatever they like. That is fine for a sample
+pointed at a dev realm and unacceptable anywhere else — do not deploy it to a realm that matters,
+and do not model a reward flow on it. A real grant is a server-authoritative consequence of
+something the player did, never an amount the client names.
+
+Rejections come back as `200` with `success: false` (unknown currency, non-positive amount), so
+`src/beam/inventory.ts` throws on that flag rather than treating a resolved call as a success —
+the same contract `PlayerStatsService` uses.
+
+The source lives in the **agentic-portal** workspace at `services/DebugWalletService`, and its
+typed client — `src/beam/beamable/clients/DebugWalletServiceClient.ts`, generated with
+`dotnet beam project generate web-client` — is registered via `beam.use(DebugWalletServiceClient)`
+and reached with `getDebugWalletService()`.
+
+---
+
 ## Project layout
 
 ```
@@ -377,7 +410,7 @@ app/
     deeplinks.tsx    # simulate / open any URL / last received
     inbox.tsx        # in-game rail + mailbox (auto-refresh on focus)
     email.tsx        # account, add-email, email rail
-    offers.tsx       # offer federation: entitlements, claim, claim-from-push
+    offers.tsx       # offer federation: campaign offers, claim, claim-from-push, wallet top-up
     segments.tsx     # client + game stat cards, namespace picker, membership + transitions
     analytics.tsx    # funnel clicked/converted, native auth
     unity.tsx        # Unity bridge (web only — hidden tab on native)
@@ -390,11 +423,13 @@ src/
   beam/
     config.ts        # cid / pid / environment (EDIT THIS)
     beamClient.ts    # Beam.init() singleton + getPushService()
-    beamable/clients/# generated microservice clients (CampaignService, PlayerStatsService)
+    beamable/clients/# generated microservice clients (CampaignService, PlayerStatsService,
+                     #   DebugWalletService)
     pushNotifications.ts # binds device register/list to CampaignServiceClient
     segments.ts      # namespace model + rule JSON, beam.stats and PlayerStatsService writes, segment reads
-    campaignOffers.ts   # offer federation bindings over beam.campaignOffer (entitlements + claim)
-    inventory.ts     # currency balances + the wallet diff that answers "what did I receive"
+    campaignOffers.ts   # offer federation bindings over beam.campaignOffer (list + claim)
+    inventory.ts     # currency balances, the DebugWalletService grant, and the diff that
+                     #   answers "what did I receive"
     commerce.ts      # buying a virtual listing: one call, price debited and payout credited together
   linking/links.ts   # scheme + URL/path helpers
   unity/UnityBridgeSection.tsx  # demo panel over the package's Unity-bridge helpers (web only)

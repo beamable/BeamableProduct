@@ -112,7 +112,6 @@ namespace Beamable.Server
 				[nameof(IFederatedCampaignVirtualOffer<DummyThirdParty>.RevokeOffer)] = "RevokeOffer",
 				[nameof(IFederatedCampaignVirtualOffer<DummyThirdParty>.RedeemOffer)] = "RedeemOffer",
 				[nameof(IFederatedCampaignVirtualOffer<DummyThirdParty>.GetCampaignOffers)] = "GetCampaignOffers",
-				[nameof(IFederatedCampaignVirtualOffer<DummyThirdParty>.VerifyConditions)] = "VerifyConditions",
 			};
 
 			foreach (var interfaceType in interfaces)

@@ -102,24 +102,6 @@ namespace Beamable.Common
 		/// </para>
 		/// </summary>
 		Promise<CampaignOffersResponse> GetCampaignOffers(string playerId, CampaignOfferFilter filter);
-
-		/// <summary>
-		/// Which of these campaign conditions this player satisfies right now.
-		///
-		/// <para>
-		/// Called by the <b>gateway</b>, on read and on redeem — never by the campaign runtime at grant time.
-		/// It is called only for conditions that named this federation in
-		/// <c>CampaignConditionRef.FederationId</c>, so a provider that offers no condition language of its
-		/// own implements it as "return nothing" and it is never invoked.
-		/// </para>
-		///
-		/// <para>
-		/// A check whose key is absent from <see cref="CampaignConditionVerdict.satisfied"/> is treated as
-		/// <b>not satisfied</b> — failing closed, because granting access through a gate that could not be
-		/// answered is the worse of the two failures.
-		/// </para>
-		/// </summary>
-		Promise<CampaignConditionVerdict> VerifyConditions(string playerId, List<CampaignConditionCheck> checks);
 	}
 
 	// ─── The shared primitive ──────────────────────────────────────────────────────────────────────
@@ -605,36 +587,6 @@ namespace Beamable.Common
 		public bool success;
 		public string status;
 		public string message;
-	}
-
-	// ─── Conditions ────────────────────────────────────────────────────────────────────────────────
-
-	/// <summary>One campaign gate to answer, addressed by the entry it belongs to.</summary>
-	[Serializable]
-	public class CampaignConditionCheck
-	{
-		/// <summary>Correlates the answer back to the offer that carries this gate. Echo it, do not invent it.</summary>
-		public string key;
-
-		/// <summary>
-		/// The condition as this provider's own Portal extension authored it. Opaque to everything else —
-		/// only the federation that minted it can interpret it.
-		/// </summary>
-		public string payload;
-	}
-
-	[Serializable]
-	public class CampaignConditionVerdict
-	{
-		/// <summary>
-		/// The subset of <see cref="CampaignConditionCheck.key"/>s this player satisfies. <b>A key left out
-		/// is not satisfied</b> — there is no third answer, and an unrecognised key must simply be omitted
-		/// rather than reported as an error.
-		/// </summary>
-		public List<string> satisfied = new List<string>();
-
-		/// <summary>Anything this contract does not name — a progress figure, a reset time.</summary>
-		public Dictionary<string, string> properties = new Dictionary<string, string>();
 	}
 
 	// ─── Shared vocabulary ─────────────────────────────────────────────────────────────────────────

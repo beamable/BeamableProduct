@@ -17,7 +17,7 @@ export default function RefreshButton({
 }: {
   busy: boolean;
   onPress: () => void;
-  /** Accessibility label, e.g. "Refresh entitlements". */
+  /** Accessibility label, e.g. "Refresh campaign offers". */
   label: string;
 }) {
   if (busy) return <ActivityIndicator size="small" />;

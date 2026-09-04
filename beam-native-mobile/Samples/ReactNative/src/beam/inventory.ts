@@ -6,7 +6,7 @@
  * from `@beamable/sdk/api` called with `beam.requester` — the same pattern `segments.ts` and
  * `ingameMessages.ts` use for endpoints the SDK has no high-level service for.
  *
- * Two things here are deliberate and easy to get wrong:
+ * Three things here are deliberate and easy to get wrong:
  *
  *  - **Money is `bigint`, not `number`.** Currency amounts are C# `long`s, and the SDK's JSON
  *    reviver widens long numeric strings to BigInt. The rest of this sample normalises with
@@ -18,9 +18,13 @@
  *    returns only what the player holds, so a currency they have none of is simply absent — and a
  *    purchase that grants 500 Gems then has nothing to move from. Reading the published currency
  *    content gives the full set, so a `0` row exists to change.
+ *  - **This wallet can be read by the client but not written by it.** Reading is a player-token
+ *    route; crediting is not, because `CurrencyContent.clientPermission.write_self` gates
+ *    inventory writes and is off for any currency worth having. So `grantCurrency` calls a
+ *    microservice — see that function.
  */
 import { inventoryGetByObjectId } from '@beamable/sdk/api';
-import { getBeam } from './beamClient';
+import { getBeam, getDebugWalletService } from './beamClient';
 
 const NOT_CONNECTED =
   'Not connected — Beamable connects automatically on launch; wait for it, or use Retry connection.';
@@ -105,6 +109,79 @@ export function mergeKnownCurrencies(held: Balance[], knownIds: string[]): Balan
   }
 
   return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/**
+ * Grants currency to the player, through the **`DebugWalletService`** microservice.
+ *
+ * **Why this is not a client call.** The obvious version of this — `PUT /object/inventory/{id}/`
+ * with a `currencies` delta, straight from here — does not work, and not because of the token: it
+ * is the *currency content* that decides. `CurrencyContent.clientPermission.write_self` gates
+ * inventory writes, and it is off for any currency worth having, since a player who can credit
+ * their own wallet has no reason to buy anything. The platform refuses, and no client change can
+ * fix it.
+ *
+ * So the grant goes through a service, which runs with the privileged identity the `write_self`
+ * check does not apply to. This is the same shape as `segments.ts` writing `game.private` stats
+ * through `PlayerStatsService`, one domain over: the read is client-side, the write is not.
+ *
+ * **The service is a debug fixture, and its name says so.** It is `[ClientCallable]`, so anyone
+ * with a player token for that realm can grant themselves anything — fine for a sample pointed at
+ * a dev realm, never something to deploy anywhere else. A real grant is a server-authoritative
+ * consequence of something the player did, not an amount the client names.
+ *
+ * `amount` crosses as a decimal string: it is a C# `long`, which the generated client types
+ * `bigint | string`, and a string is what the SDK would put on the wire either way. The response
+ * carries the resulting balance, so this returns it — but the screen still re-reads the wallet,
+ * because one grant is not the only thing that can have moved.
+ *
+ * A rejection arrives as **200 with `success: false`** (unknown currency, non-positive amount), so
+ * a resolved promise is not a success — the service's own sentence is thrown instead.
+ */
+export async function grantCurrency(id: string, amount: bigint): Promise<bigint> {
+  const wallet = getDebugWalletService();
+  if (!wallet) throw new Error(NOT_CONNECTED);
+
+  let result;
+  try {
+    result = await wallet.addCurrency({ currencyId: id, amount: amount.toString() });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    // `BindingNotFoundException` in a 500 means the PLATFORM has no route for
+    // `micro_DebugWalletService` in this realm — it reads like a bug in the call. Same
+    // translation `segments.ts` does for its own service, for the same reason.
+    if (msg.includes('BindingNotFoundException')) {
+      throw new Error(
+        'DebugWalletService is not reachable in this realm — the platform has no binding for it.' +
+          ' Either it is not deployed here (`beam deploy release`), or it is running locally' +
+          " (`beam project run`), in which case the call needs that machine's routing key in" +
+          ' `env.local` as BEAM_ROUTING_KEY.',
+      );
+    }
+    throw e instanceof Error ? e : new Error(msg);
+  }
+
+  if (!result.success) {
+    throw new Error(result.message || `The service refused to grant ${id}`);
+  }
+
+  return toBigInt(result.balance);
+}
+
+/**
+ * A typed amount → `bigint`, or a thrown message the player can act on.
+ *
+ * Deliberately not `toBigInt` below: that one answers "whatever a provider sent me, keep the wallet
+ * up", which is right for a response and wrong for a text field, where a typo silently becoming
+ * `0` is how you press Add three times and conclude the button is broken.
+ */
+export function parseAmount(text: string): bigint {
+  const trimmed = text.trim();
+  if (!/^\d+$/.test(trimmed)) throw new Error(`"${text}" is not a whole number of currency`);
+
+  const amount = BigInt(trimmed);
+  if (amount === 0n) throw new Error('Enter an amount greater than zero');
+  return amount;
 }
 
 /**

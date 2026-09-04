@@ -96,7 +96,7 @@ Four repos. This is the map worth memorising.
 **Contract — the source of truth for every DTO**
 
 - `BeamableProduct/cli/beamable.common/Runtime/Federation/FederatedCampaignVirtualOffer.cs`
-  - `IFederatedCampaignVirtualOffer<T>` — the six methods
+  - `IFederatedCampaignVirtualOffer<T>` — the four methods
   - `CampaignOfferItem` — an offer as a store describes it
   - `CampaignOfferPrice` — a soft-currency `symbol` + `amount`, plus a display `label`
   - `CampaignOfferReward` — what the offer *contains*
@@ -120,7 +120,7 @@ Four repos. This is the map worth memorising.
   sold-out offer degrades the outreach, it does not swallow it.
 
 **Default provider — `agentic-portal/services/BeamableCampaignOfferService/`**
-- Four federation methods and no catalog. Listing offers left the contract entirely — see §1.
+- All four federation methods and no catalog. Listing offers left the contract entirely — see §1.
 - `BeamableCampaignOfferService.cs` — `Grant`, `Redeem`, `BuyListing`, `Entitlements`,
   `ToEntitlement`, `Forfeit`
 **Default catalog — `agentic-portal/services/BeamableCampaignOfferCatalogService/`**
@@ -387,20 +387,29 @@ Three pieces already existed for this and are simply being used properly now:
 in the vocabulary, and expiry was already folded in on read. The campaign's gate joins the same lazy
 model the store's own rules use.
 
-**Who evaluates.** `CampaignConditionRef.FederationId` is an id, not a flag:
+**The gateway evaluates, never the store.** A condition is a segmentation rule over the player's stats,
+answered in-process by `CampaignOfferBeamableConditionUtilities` with the segments engine's own
+`RuleEvaluator` — so an offer gated on a stat and a segment gated on the same stat cannot disagree about
+the same player. The read path and the redeem path call the **same method**, so a locked offer and a
+refused claim cannot disagree either. A store answers for its own rules — its schedule, its purchase
+limits — and knows nothing about campaign conditions; `unavailableReasons` is a list so both are heard.
 
-| | |
-|---|---|
-| Empty | the **platform** evaluates a segmentation rule over the player's stats — the default |
-| Set | that **federation** answers it, via `VerifyConditions` |
+**There was a second evaluator, and it is gone.** `CampaignConditionRef.FederationId` could name a
+federation, which the gateway then asked over HTTP via `VerifyConditions`. The indirection was meant to
+keep "the campaign owns conditions" true — a game on Beamable's commerce bringing its own eligibility
+language without forking the default provider. What it actually bought was a provider answering **yes/no**
+about its own opaque payload: no progress figure, no message of its own, one condition per offer, and a
+key omitted meaning "not satisfied". Against that it cost a fifth method on the contract that Beamable's
+own store could only stub out as an unreachable empty verdict, a second Portal extension site with its
+own channel and trust boundary, and a branch in the mapper, the graph validator and the gate. A store
+that wants a gate of its own now reports it on `available` / `unavailableReasons`, where it can say
+*why* — strictly more than the verdict carried. Nothing had authored a cross-store gate.
 
-The indirection is what keeps "the campaign owns conditions" true: tying the gate to the offer's own
-store would mean a game using Beamable's commerce could never bring its own eligibility language
-without forking the default provider.
-
-**The gateway evaluates, never the store.** A store answers for its own rules — its schedule, its
-purchase limits — and knows nothing about campaign conditions. The gateway overlays its verdict on
-the way out, and `unavailableReasons` is a list so both can be heard.
+**An ordering operator needs a number.** `>`, `>=`, `<`, `<=` and `between` compare numerically, and a
+numeric string coerces in (`"10"` orders fine), but an operand that can never be ordered is refused at
+publish rather than resolving to `false` in silence. Equality, membership and `contains` compare across
+numbers, strings and booleans. The author declares which kind a comparison is against, per leaf; the
+default is number.
 
 **How the gate survives to read time.** It rides in `CampaignOfferGrantContext.conditionToken`, the
 store persists it opaquely, and hands it back on `CampaignOffer.conditionToken`. The gateway strips it
@@ -408,13 +417,19 @@ before a client sees it. The store is the only thing that persists per grant, an
 stateless for offers — so the token travels the way a cookie does. It is **snapshotted at grant**:
 editing a campaign afterwards must not change the rule a player was granted under.
 
-**Failing closed.** A rule that cannot be parsed, a federation that cannot be reached, a check absent
-from a verdict — all resolve to *not satisfied*. Opening a gate nobody answered is the worse of the
-two failures.
+**Failing closed.** A rule that cannot be parsed, a player id that is not a gamer tag, a stats read that
+fell over — all resolve to *not satisfied*. Opening a gate nobody answered is the worse of the two
+failures.
 
 **Two rules for the reason.** A condition was authored for an *operator*, so its prose is rarely fit
 to show a player — that is what `lockedMessage` is for. And `properties` must never carry a value the
 client could not otherwise read; a player's own client-visible stat is fine, a private one is not.
+
+The reason carries the structured facts too: `attribute`, `target`, and `current` — so a client can
+render "Level 3 / 10" rather than only printing a sentence. `current` is **omitted unless the stat's
+namespace is public**, which is the second rule above, enforced rather than advised. And only a leaf or
+an `and` names a requirement: every branch of a failed `or` is unsatisfied, so naming one would send the
+player after something that is not the only way through.
 
 ---
 
@@ -646,3 +661,7 @@ Carried here so they are not rediscovered. RFC 004 §4/§7 is the authority.
 - **Generated files are hand-edited** (`Models.gs.cs` ×2, two web enums, `CampaignOfferApi.ts` and
   eleven schemas). A regeneration drops them — including the `IFederatedCampaignVirtualOffer` enum
   entries — unless the source OpenAPI documents are updated first.
+- ~~**A federated provider can only answer a condition yes/no.**~~ **Resolved by removal.** The
+  federated evaluator is gone (§5b); a store expresses its own gate on `available` /
+  `unavailableReasons`, which carries a reason. The gate's own reason now also carries `attribute` /
+  `target` / `current`, so a client can render progress.

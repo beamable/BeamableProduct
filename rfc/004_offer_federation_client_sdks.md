@@ -11,6 +11,13 @@
 > substantial backend effort. Carrying both on one interface left every virtual provider with fields
 > it could not fill and a payment-verification path it had no use for.
 >
+> **The catalog and the condition evaluator also left the contract.** `ListOffers` / `GetOffer` became
+> an ordinary microservice (their only consumer was a provider's own Portal extension), and
+> `VerifyConditions` — a federated answer to a campaign condition — was removed outright: it bought a
+> yes/no verdict about an opaque payload and cost a method every provider had to implement. The
+> interface is four methods now: `GrantOffer`, `RevokeOffer`, `RedeemOffer`, `GetCampaignOffers`. A
+> store that wants a gate of its own reports it on `available` / `unavailableReasons`.
+>
 > Two consequences for anyone acting on this document:
 >
 > - **The purchase flow in §5 is obsolete.** There is no payments `begin`/`complete` and no `test`

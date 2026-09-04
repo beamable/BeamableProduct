@@ -39,7 +39,7 @@ function requireBeam() {
  * The id commerce knows a listing by: `"{listingSymbol}:{storeSymbol}"`.
  *
  * The platform splits on `:` and treats the store half as optional — omitting it searches every
- * store — so it is only appended when the entitlement actually carries one.
+ * store — so it is only appended when the campaign offer actually carries one.
  */
 export function purchaseIdFor(listingSymbol: string, storeSymbol?: string | null): string {
   return storeSymbol ? `${listingSymbol}:${storeSymbol}` : listingSymbol;

@@ -55,6 +55,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keys and the `CampaignOffer*` type names are unchanged — those are shared dispatch vocabulary
   across offer federations, in the same way one message-rail route serves push, email and ingame.
 
+- **A campaign condition has one evaluator: the platform.** `VerifyConditions` is removed from
+  `IFederatedCampaignVirtualOffer` (four methods now), along with `CampaignConditionCheck` /
+  `CampaignConditionVerdict` and the Portal's `offer-condition` extension site. A condition could name
+  a federation of its own, which the gateway asked over HTTP; it bought a yes/no verdict about an
+  opaque payload — no progress, no message of its own — and cost a method every provider had to
+  implement, which Beamable's own store could only stub out as an empty verdict. **A store that wants a
+  gate of its own reports it on `available` / `unavailableReasons`**, in `GetCampaignOffers` and
+  `RedeemOffer`, where it can also say *why*.
+
+  None of this is client-reachable: `VerifyConditions` was gateway→service only and was never a
+  generated route, so `beam.campaignOffer` is unaffected. `conditionToken` still round-trips through a
+  store opaquely, and an unmet gate's reason now carries `attribute`, `target` and `current`, so a
+  client can render "Level 3 / 10" instead of only an operator's sentence — `current` travels only from
+  a public stats namespace.
+
 ### Added
 
 - `CampaignOfferService` (`beam.campaignOffer`) — the player half of the **virtual offer

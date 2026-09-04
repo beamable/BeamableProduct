@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import type { Entitlement } from '../beam/campaignOffers';
+import type { CampaignOffer } from '../beam/campaignOffers';
 import { describeState, formatExpiry, formatWhen } from '../beam/campaignOffers';
 import type { BalanceDelta } from '../beam/inventory';
 import { formatDelta } from '../beam/inventory';
@@ -9,7 +9,7 @@ import { Hint, Value } from './Hint';
 import { colors, mono, radius, space } from './theme';
 
 /**
- * One entitlement, as a player should see it.
+ * One campaign offer, as a player should see it.
  *
  * The card exists because the row grew past what a tab file should hold inline — the same reason
  * `StatCard` was lifted out of the Segments tab. It owns no network state: both actions are
@@ -21,12 +21,16 @@ import { colors, mono, radius, space } from './theme';
  * which is still useful, rather than an empty box.
  */
 export default function OfferCard({
-  entitlement,
+  campaignOffer,
   receipt,
   buy,
   claim,
 }: {
-  entitlement: Entitlement;
+  /**
+   * The grant. Named in full rather than `offer` because the store's offer hangs off it as
+   * `campaignOffer.offer`, and one word for both would make this file unreadable.
+   */
+  campaignOffer: CampaignOffer;
   /** What the last purchase on this row moved, if there was one this session. */
   receipt?: BalanceDelta[];
   /** Present only when this sample can actually complete the purchase. */
@@ -34,24 +38,24 @@ export default function OfferCard({
   /** Present only when the grant is still claimable. */
   claim?: () => Promise<string>;
 }) {
-  const { offer } = entitlement;
-  const isClaimableState = entitlement.state === 'Granted';
+  const { offer } = campaignOffer;
+  const isClaimableState = campaignOffer.state === 'Granted';
   // One source now, not a fallback chain: the price lives on the offer, beside what it pays out.
   const priceLabel = offer?.priceLabel || '';
 
   return (
     <View style={styles.card}>
-      <Text style={styles.state}>{describeState(entitlement.state)}</Text>
+      <Text style={styles.state}>{describeState(campaignOffer.state)}</Text>
 
       {offer ? (
         <>
-          <Text style={styles.title}>{offer.title || entitlement.offerId}</Text>
+          <Text style={styles.title}>{offer.title || campaignOffer.offerId}</Text>
           {!!offer.description && <Text style={styles.description}>{offer.description}</Text>}
         </>
       ) : (
         // The contract allows a null offer. Show the identifier as an identifier — never dress an
         // opaque id up as a name.
-        <Text style={styles.titleFallback}>Offer {entitlement.offerId || '—'}</Text>
+        <Text style={styles.titleFallback}>Offer {campaignOffer.offerId || '—'}</Text>
       )}
 
       {!!priceLabel && <Text style={styles.price}>{priceLabel}</Text>}
@@ -77,9 +81,9 @@ export default function OfferCard({
       )}
 
       {/* Distinct from state: a granted grant can still be unactionable. */}
-      {!entitlement.available && entitlement.reasons.length > 0 && (
+      {!campaignOffer.available && campaignOffer.reasons.length > 0 && (
         <View style={styles.reasons}>
-          {entitlement.reasons.map((reason, i) => (
+          {campaignOffer.reasons.map((reason, i) => (
             <Text key={`${reason.code}:${i}`} style={styles.reason}>
               {reason.message || reason.code}
               {reason.detail ? ` (${reason.detail})` : ''}
@@ -88,10 +92,10 @@ export default function OfferCard({
         </View>
       )}
 
-      <Value label="offer">{entitlement.offerId || '—'}</Value>
-      <Value label="grant">{entitlement.grantId}</Value>
+      <Value label="offer">{campaignOffer.offerId || '—'}</Value>
+      <Value label="grant">{campaignOffer.grantId}</Value>
       <Text style={styles.meta}>
-        granted {formatWhen(entitlement.grantedAt)} · {formatExpiry(entitlement.expiresAt)}
+        granted {formatWhen(campaignOffer.grantedAt)} · {formatExpiry(campaignOffer.expiresAt)}
       </Text>
 
       {/* The store's own fields, rendered generically. This is the only thing that makes the
@@ -109,7 +113,7 @@ export default function OfferCard({
           say which, and the row stays: the gate is re-checked on every read, so this unlocks by
           itself once the player qualifies. Saying that is the difference between "not yet" and
           "not for you". */}
-      {!buy && isClaimableState && !entitlement.available && (
+      {!buy && isClaimableState && !campaignOffer.available && (
         <Hint>
           You cannot claim this yet. It unlocks on its own once you meet the requirements above —
           no need to wait for another message.

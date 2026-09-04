@@ -36,7 +36,7 @@
  */
 import type { CampaignOfferFederationId } from '@beamable/sdk';
 import type {
-  CampaignOffer,
+  CampaignOffer as CampaignOfferDto,
   CampaignOfferAmount,
 } from '@beamable/sdk/schema';
 import { getBeam } from './beamClient';
@@ -80,18 +80,22 @@ export type Reward = {
   properties: Record<string, string>;
 };
 
-/** Why an entitlement cannot be acted on. */
+/** Why a campaign offer cannot be acted on. */
 export type Reason = { code: string; message: string; detail: string };
 
 /**
- * An entitlement, with the offer the store embedded in it.
+ * One campaign offer granted to this player, with the offer the store embedded in it.
  *
- * The store sends the whole offer inline so that listing entitlements is enough to render a
- * store screen — there is no second call per row. Every field below `expiresAt` may be absent:
- * the contract allows a provider to omit the offer entirely, and a third-party store legitimately
- * will, so each one has a fallback rather than a guard at the call site.
+ * This is the app's own model, which is why it takes the good name and the wire DTO is imported as
+ * `CampaignOfferDto`: everything above `offer` is the *grant* (who holds it, in what state, until
+ * when), and the store's offer hangs off it.
+ *
+ * The store sends the whole offer inline so that listing a player's campaign offers is enough to
+ * render a store screen — there is no second call per row. Every field below `expiresAt` may be
+ * absent: the contract allows a provider to omit the offer entirely, and a third-party store
+ * legitimately will, so each one has a fallback rather than a guard at the call site.
  */
-export type Entitlement = {
+export type CampaignOffer = {
   grantId: string;
   offerId: string;
   state: string;
@@ -136,9 +140,9 @@ export type Entitlement = {
  * in the background, so a grant past its expiry reports `expired` even though nothing has touched
  * it — which is also why the result must not be cached across a session.
  */
-export async function listEntitlements(
+export async function listCampaignOffers(
   federationId: CampaignOfferFederationId,
-): Promise<Entitlement[]> {
+): Promise<CampaignOffer[]> {
   // No state filter: this screen shows history too, and a locked row is exactly what the campaign
   // gate is for. A store screen that only wants claimable rows would pass ['Granted'].
   const held = await requireBeam().campaignOffer.getCampaignOffers(federationId);
@@ -169,8 +173,8 @@ export async function claimGrant(
   return res.message || `Claimed ${grantId}`;
 }
 
-/** Only a `granted` entitlement can be claimed; every other state is terminal. */
-export function isClaimable(e: Entitlement): boolean {
+/** Only a `granted` offer can be claimed; every other state is terminal. */
+export function isClaimable(e: CampaignOffer): boolean {
   return e.state === 'Granted';
 }
 
@@ -209,9 +213,9 @@ export function formatWhen(unixSeconds: number): string {
  * stays `bigint` because a balance is subtracted to produce a receipt.)
  *
  * Everything the store embeds is defaulted rather than guarded at the call site, so a provider
- * that sends a bare entitlement renders as an id-only row instead of blanking the screen.
+ * that sends a bare grant renders as an id-only row instead of blanking the screen.
  */
-function normalize(e: CampaignOffer): Entitlement {
+function normalize(e: CampaignOfferDto): CampaignOffer {
   return {
     grantId: e.grantId ?? '',
     offerId: e.offerId ?? '',
@@ -269,6 +273,6 @@ function shortSymbol(symbol: string): string {
  * Asking about COST rather than about some collection's length is the point: "does this have a
  * price" is the actual question, and it used to be answered by counting storefront listings.
  */
-export function isPurchasable(e: Entitlement): boolean {
+export function isPurchasable(e: CampaignOffer): boolean {
   return isClaimable(e) && e.available && e.offer !== null;
 }

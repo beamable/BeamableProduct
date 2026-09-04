@@ -18,13 +18,14 @@ import {
 } from '@beamable/sdk';
 import { BEAM_CONFIG, LOCAL_ROUTING_KEY } from './config';
 import { CampaignServiceClient } from './beamable/clients/CampaignServiceClient';
+import { DebugWalletServiceClient } from './beamable/clients/DebugWalletServiceClient';
 import { PlayerStatsServiceClient } from './beamable/clients/PlayerStatsServiceClient';
 
 /**
  * The microservices this app calls. Only used to build the routing-key header below, where the
  * platform names them `micro_<ServiceName>`.
  */
-const MICROSERVICES = ['CampaignService', 'PlayerStatsService'] as const;
+const MICROSERVICES = ['CampaignService', 'PlayerStatsService', 'DebugWalletService'] as const;
 
 /**
  * A routing key identifies a developer's machine: letters, digits, `_`, `.`, `-`. Nothing else.
@@ -110,6 +111,16 @@ export function getPlayerStatsService(): PlayerStatsServiceClient | null {
 }
 
 /**
+ * The typed client for the `DebugWalletService` microservice, or null until `initBeam()` has
+ * resolved. It grants the player currency — which a client token cannot do for itself, because
+ * `CurrencyContent.clientPermission.write_self` gates inventory writes. Same shape of problem as
+ * `getPlayerStatsService()`, one domain over. See `src/beam/inventory.ts`.
+ */
+export function getDebugWalletService(): DebugWalletServiceClient | null {
+  return beamInstance?.debugWalletServiceClient ?? null;
+}
+
+/**
  * Fetch a host-served `beam-config.json` (the realm the host wants this build to use), or `null`
  * when none is served — a plain browser, or a Unity project without a `.beamable`. When hosted in a
  * Unity WebView, `com.beamable.notifications.web` serves this from the Unity project's
@@ -176,7 +187,7 @@ export async function initBeam(): Promise<Beam> {
       AnnouncementsService,
       LeaderboardsService,
       MessageRailService,
-      // The virtual offer federation's two client-callable gateway routes (entitlements /
+      // The virtual offer federation's two client-callable gateway routes (campaign-offers /
       // redeem). Like the rail, this goes through `/api/campaign-offer/*`, NOT through
       // `micro_BeamableCampaignOfferService` — the federation routes on the microservice
       // itself trust whatever playerId they are handed, so the gateway is the
@@ -199,6 +210,10 @@ export async function initBeam(): Promise<Beam> {
     // PlayerStatsService is the Segments tab's write path: segments are evaluated from
     // game-private player stats, which a client token cannot touch, so the service does it.
     beam.use(PlayerStatsServiceClient);
+    // DebugWalletService is the Offers tab's wallet top-up, for the same reason: crediting
+    // currency is gated by the currency content's `write_self`, so a service has to do it. It is
+    // a QA fixture — the name says so — and must not be deployed to a realm that matters.
+    beam.use(DebugWalletServiceClient);
     beamInstance = beam;
 
     // Best-effort: hand the player's tokens to the native side so the CLOSED-APP analytics
