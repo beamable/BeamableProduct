@@ -4,6 +4,7 @@ using cli.Services.Web;
 using System.CommandLine;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using ServiceLogs = Beamable.Common.Constants.Features.Services.Logs;
 
@@ -280,6 +281,15 @@ public class LocalStackUpCommand
 		// and Maven caches the miss — trapping every subsequent run. Force the reactor to run once here, which
 		// runs `mvn install -U` and refills ~/.m2, escaping the trap.
 		EnsureScalaCoreInLocalMavenRepo(config, autoBuild);
+
+		// Second half of the offline-classpath trap. EnsureScalaCoreInLocalMavenRepo above guarantees `core` is in
+		// ~/.m2, but the per-service launcher's `mvn -o dependency:build-classpath` ALSO needs Maven to resolve the
+		// `dependency` plugin PREFIX offline — which requires the maven-dependency-plugin's plugin-group metadata
+		// (org/apache/maven/plugins/maven-metadata-*.xml) to be cached. On a machine where that was never cached (or
+		// was cached as a miss), the offline resolve dies with "No plugin found for prefix 'dependency'" even with
+		// core present — and `--build` does NOT fix it, because the reactor resolves every plugin by explicit
+		// version and never touches the prefix metadata. Probe it, and prime it online once if it is missing.
+		EnsureMavenDependencyPluginResolvableOffline(config, args.build);
 
 		// Say WHY a build is being run that was not asked for. "Building the Scala reactor" out of nowhere on a
 		// plain `up` is confusing unless it names the module that has never been compiled.
@@ -1231,6 +1241,264 @@ public class LocalStackUpCommand
 		if (File.Exists(coreJarPath)) return null;
 
 		return buildScala;
+	}
+
+	/// <summary>
+	/// Inputs for the offline maven-dependency-plugin probe, resolved from the manifest by
+	/// <see cref="PlanDependencyPluginProbe"/>. Public so the decision (should we probe at all, and against which
+	/// module) can be unit-tested without launching Maven.
+	/// </summary>
+	public class MavenDependencyProbePlan
+	{
+		/// <summary>True when there is a Scala launch step and enough resolved inputs to run the probe.</summary>
+		public bool shouldProbe;
+
+		/// <summary>The <c>mvn</c> command the probe runs — the toolchain's pinned path, or bare <c>mvn</c>.</summary>
+		public string mvnCommand;
+
+		/// <summary>The BeamableBackend working directory the probe runs in.</summary>
+		public string scalaDir;
+
+		/// <summary>The module the probe targets (e.g. <c>tools/account</c>), mirroring the launcher's <c>-pl</c>.</summary>
+		public string probeModule;
+
+		/// <summary>When <see cref="shouldProbe"/> is false, the reason — for tests and tracing.</summary>
+		public string skipReason;
+	}
+
+	/// <summary>
+	/// Pure decision for <see cref="EnsureMavenDependencyPluginResolvableOffline"/>: reads the manifest and decides
+	/// whether the offline maven-dependency-plugin probe should run, and against which module. No filesystem check
+	/// (beyond string validity) and no process launch, so it is unit-testable. The probe is only relevant when a
+	/// <c>scala: *</c> service will launch — those are the steps whose launcher runs <c>mvn -o
+	/// dependency:build-classpath</c>. The module is derived from the launch step's name (<c>scala: account</c> →
+	/// <c>tools/account</c>), exactly the <c>-pl tools/$SVC</c> the launcher uses.
+	/// </summary>
+	public static MavenDependencyProbePlan PlanDependencyPluginProbe(LocalStackConfig config)
+	{
+		var plan = new MavenDependencyProbePlan();
+
+		if (config?.steps == null)
+		{
+			plan.skipReason = "no manifest steps";
+			return plan;
+		}
+
+		var scalaLaunch = config.steps.FirstOrDefault(s =>
+			s != null && s.enabled && !string.IsNullOrEmpty(s.name)
+			&& s.name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase));
+		if (scalaLaunch == null)
+		{
+			plan.skipReason = "no scala launch step";
+			return plan;
+		}
+
+		var svc = scalaLaunch.name.Substring("scala: ".Length).Trim();
+		if (string.IsNullOrEmpty(svc))
+		{
+			plan.skipReason = "scala launch step has no service name";
+			return plan;
+		}
+		plan.probeModule = "tools/" + svc;
+
+		var scalaDir = config.repos?.scalaDir;
+		if (string.IsNullOrWhiteSpace(scalaDir)
+		    || scalaDir.Contains(LocalStackConfigIO.EditPlaceholder, StringComparison.Ordinal))
+		{
+			plan.skipReason = "no BeamableBackend path on the manifest";
+			return plan;
+		}
+		plan.scalaDir = scalaDir;
+
+		var mvn = LocalStackConfigIO.Substitute("${maven}", config);
+		if (string.IsNullOrWhiteSpace(mvn))
+		{
+			plan.skipReason = "no maven command resolved";
+			return plan;
+		}
+		plan.mvnCommand = mvn;
+
+		plan.shouldProbe = true;
+		return plan;
+	}
+
+	/// <summary>
+	/// Ensures the per-service launcher's offline <c>mvn -o dependency:build-classpath</c> can resolve the
+	/// <c>dependency</c> plugin prefix. Probes it offline; if that fails, primes the plugin once ONLINE (which
+	/// downloads the plugin-group metadata and clears any cached "not found" miss), re-probes, and — if it still
+	/// cannot be made to work (no network, a blocked Maven repo) — throws with the exact manual fix. See the call
+	/// site in <see cref="Handle"/> for why <c>--build</c> alone does not cover this.
+	/// </summary>
+	private static void EnsureMavenDependencyPluginResolvableOffline(LocalStackConfig config, bool forceBuild)
+	{
+		var plan = PlanDependencyPluginProbe(config);
+		if (!plan.shouldProbe) return;
+
+		// A manifest can name a BeamableBackend path that isn't checked out on this machine — nothing to run mvn in.
+		if (!Directory.Exists(plan.scalaDir)) return;
+
+		// Fast path: a previous run already wrote a non-empty classpath cache, which means the offline resolve
+		// demonstrably works here — skip the maven probe so a healthy `up` pays nothing. `--build` wipes that cache
+		// later in Handle, so always probe on a build: it is exactly the run where priming matters.
+		if (!forceBuild && HasNonEmptyScalaClasspathCache()) return;
+
+		var offline = RunMavenDependencyGoalProbe(config, plan, online: false);
+		if (!offline.started) return;      // couldn't even launch mvn — let the normal launch path surface that
+		if (offline.exitCode == 0) return; // resolves offline — healthy, nothing to do
+
+		Log.Information(
+			"[maven] the Scala services resolve their classpath with an offline 'mvn dependency:build-classpath', " +
+			"but Maven can't resolve the 'dependency' plugin prefix offline yet (its plugin metadata isn't cached). " +
+			$"Priming it once online (mvn -U dependency:help in {plan.scalaDir}) so the services can launch — this " +
+			"does not rebuild anything.");
+
+		var online = RunMavenDependencyGoalProbe(config, plan, online: true);
+		if (online.started && online.exitCode == 0)
+		{
+			var reprobe = RunMavenDependencyGoalProbe(config, plan, online: false);
+			if (reprobe.started && reprobe.exitCode == 0)
+			{
+				Log.Information("[maven] maven-dependency-plugin is now resolvable offline — the Scala classpath " +
+				                "caches will regenerate on launch.");
+				return;
+			}
+		}
+
+		throw new CliException(BuildDependencyPluginRemediation(plan));
+	}
+
+	/// <summary>Outcome of one <c>dependency:help</c> probe: whether mvn started at all, its exit code, and its
+	/// combined output (for the remediation message).</summary>
+	private readonly struct MvnProbeOutcome
+	{
+		public MvnProbeOutcome(bool started, int exitCode, string output)
+		{
+			this.started = started;
+			this.exitCode = exitCode;
+			this.output = output;
+		}
+
+		public readonly bool started;
+		public readonly int exitCode;
+		public readonly string output;
+	}
+
+	/// <summary>
+	/// Runs <c>dependency:help</c> — the cheapest goal that still forces prefix resolution of
+	/// maven-dependency-plugin, i.e. the exact resolution that fails as "No plugin found for prefix 'dependency'".
+	/// Offline (<c>-o</c>) reproduces the launcher's own resolve; online adds <c>-U</c> to invalidate a cached
+	/// "not found" miss and fetch the plugin-group metadata that makes subsequent offline resolves succeed. Runs
+	/// under the same PATH/JAVA_HOME as the reactor so it hits the same <c>~/.m2</c> and JDK.
+	/// </summary>
+	private static MvnProbeOutcome RunMavenDependencyGoalProbe(LocalStackConfig config, MavenDependencyProbePlan plan, bool online)
+	{
+		var mvnArgs = new List<string>();
+		if (!online) mvnArgs.Add("-o");
+		mvnArgs.Add("-q");
+		if (online) mvnArgs.Add("-U");
+		mvnArgs.Add("-pl");
+		mvnArgs.Add(plan.probeModule);
+		mvnArgs.Add("dependency:help");
+
+		var psi = new ProcessStartInfo
+		{
+			UseShellExecute = false,
+			CreateNoWindow = true,
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			WorkingDirectory = plan.scalaDir,
+		};
+
+		if (OperatingSystem.IsWindows())
+		{
+			// mvn is a .cmd batch file — Process.Start can't run it directly, so go through cmd.exe. The doubled
+			// quotes are cmd's rule for "everything after /s /c is one command that carries its own quotes".
+			psi.FileName = "cmd.exe";
+			psi.Arguments = $"/s /c \"\"{plan.mvnCommand}\" {string.Join(" ", mvnArgs)}\"";
+		}
+		else
+		{
+			psi.FileName = plan.mvnCommand;
+			foreach (var a in mvnArgs) psi.ArgumentList.Add(a);
+		}
+
+		ApplyToolchainEnvironment(psi, config);
+
+		var output = new StringBuilder();
+		try
+		{
+			var proc = Process.Start(psi);
+			if (proc == null) return new MvnProbeOutcome(false, -1, string.Empty);
+
+			proc.OutputDataReceived += (_, e) => { if (e.Data != null) lock (output) output.AppendLine(e.Data); };
+			proc.ErrorDataReceived += (_, e) => { if (e.Data != null) lock (output) output.AppendLine(e.Data); };
+			proc.BeginOutputReadLine();
+			proc.BeginErrorReadLine();
+
+			// The offline resolve is fast; the online prime may download plugin-group metadata. Bound both so a
+			// wedged mvn can't hang `up` forever.
+			var timeoutMs = (int)(online ? TimeSpan.FromMinutes(5) : TimeSpan.FromMinutes(2)).TotalMilliseconds;
+			if (!proc.WaitForExit(timeoutMs))
+			{
+				try { proc.Kill(entireProcessTree: true); } catch { /* ignore */ }
+				return new MvnProbeOutcome(false, -1, output.ToString());
+			}
+
+			proc.WaitForExit(); // let the async output readers flush
+			return new MvnProbeOutcome(true, proc.ExitCode, output.ToString());
+		}
+		catch (Exception)
+		{
+			// mvn not found / not runnable — "couldn't probe", not the trap this method detects.
+			return new MvnProbeOutcome(false, -1, output.ToString());
+		}
+	}
+
+	/// <summary>
+	/// True when a previous run left a non-empty <c>cp-*.txt</c> in the shared Scala classpath cache
+	/// (<c>&lt;temp&gt;/beam-scala-cp</c>) — proof the offline resolve works on this machine, so the probe can be
+	/// skipped. Mirrors the temp location the launcher scripts write to and that <c>up</c> wipes on <c>--build</c>.
+	/// </summary>
+	private static bool HasNonEmptyScalaClasspathCache()
+	{
+		try
+		{
+			var dir = Path.Combine(Path.GetTempPath(), "beam-scala-cp");
+			if (!Directory.Exists(dir)) return false;
+			foreach (var f in Directory.EnumerateFiles(dir, "cp-*.txt"))
+			{
+				try { if (new FileInfo(f).Length > 0) return true; } catch { /* unreadable — ignore */ }
+			}
+		}
+		catch { /* ignore */ }
+		return false;
+	}
+
+	/// <summary>
+	/// The fail-fast message when the offline resolve is broken and the automatic online prime could not fix it.
+	/// Names the real cause, says plainly that <c>--build</c> does not fix it, and gives the exact online command
+	/// plus the cached-miss cleanup — the same guidance the per-service launcher's empty-cache guard prints.
+	/// </summary>
+	private static string BuildDependencyPluginRemediation(MavenDependencyProbePlan plan)
+	{
+		var m2Plugin = Path.Combine(
+			Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) ?? "~",
+			".m2", "repository", "org", "apache", "maven", "plugins", "maven-dependency-plugin");
+		var mvnDisplay = plan.mvnCommand?.Contains(' ') == true ? $"\"{plan.mvnCommand}\"" : plan.mvnCommand;
+
+		return
+			"The Scala services can't start: Maven can't resolve the 'dependency' plugin prefix offline, so each " +
+			"service's classpath step ('mvn -o dependency:build-classpath') fails with \"No plugin found for prefix " +
+			"'dependency'\" — even though com.kickstand:core is present in ~/.m2.\n\n" +
+			"'beam local up --build' does NOT fix this: the reactor resolves plugins by version, never by prefix, so " +
+			"it never caches the plugin-prefix metadata this needs. Beam tried to prime it online automatically and " +
+			"could not (usually no network, or a blocked Maven repo).\n\n" +
+			"Fix it by priming the plugin once, online, then re-run 'beam local up':\n" +
+			$"  cd \"{plan.scalaDir}\"\n" +
+			$"  {mvnDisplay} -U dependency:build-classpath -pl {plan.probeModule}\n\n" +
+			"If it still fails, delete the cached-miss markers and retry:\n" +
+			$"  (Windows)      del /s \"{m2Plugin}\\*.lastUpdated\"\n" +
+			$"  (macOS/Linux)  rm {m2Plugin.Replace('\\', '/')}/*/*.lastUpdated";
 	}
 
 	/// <summary>
