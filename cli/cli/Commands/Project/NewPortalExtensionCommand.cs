@@ -60,7 +60,7 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 		AddOption(new Option<string>(
 				aliases: new string[] { "--mount-page" },
-				description: "The portal page to mount on. For page extensions use routePrefix + your custom route; for component extensions use the page path. Run 'portal extension list-extension-options' to see all valid values"),
+				description: "The portal page to mount on. For page extensions use routePrefix + your custom route; for component extensions use the page path. A --zone full-page extension is auto-prefixed with ':cid/' (it renders at org level). Run 'portal extension list-extension-options' to see all valid values"),
 				binder: (args, i) => args.mountPage = i);
 
 		AddOption(new Option<string>(
@@ -146,6 +146,19 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 		return result;
 	}
 
+	// A zone full-page extension renders at the org level (/:customerId/*), so its stored
+	// `page` must begin with a `:cid` param segment — the Portal's org-level matcher
+	// (OrgExtensionPage) matches the whole `<cid>/<rest>` path against it, while the sidebar
+	// nav/hub derivation strips the leading param. Realm extensions mount under the realm
+	// route and need no such prefix. Prepend `:cid/` unless the author already supplied a
+	// leading param segment (any `:name`); tolerate a leading slash.
+	internal static string EnsureZonePagePrefix(string page)
+	{
+		var trimmed = (page ?? string.Empty).TrimStart('/');
+		var firstSeg = trimmed.Split('/')[0];
+		return firstSeg.StartsWith(":") ? trimmed : $":cid/{trimmed}";
+	}
+
 	public override async Task Handle(NewPortalExtensionCommandArgs args)
 	{
 		// Validate required arg pairs before any expensive I/O so errors surface immediately
@@ -195,6 +208,12 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 		if (resolvedSelector.type == "page")
 		{
+			// A zone extension lives at the org level, so its full-page mount needs the
+			// `:cid` prefix the Portal's org matcher expects. Do this before persisting the
+			// page below (and after selector resolution so component mounts are untouched).
+			if (args.IsZone)
+				args.mountPage = EnsureZonePagePrefix(args.mountPage);
+
 			// Full-page (hub) extensions need a nav group and a display label. The hub hierarchy comes
 			// from the page path itself (e.g. "cars" vs "cars/ferrari"); the nav group is a separate way
 			// to organize extensions within a hub, and is required for page extensions.

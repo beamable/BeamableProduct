@@ -267,6 +267,46 @@ public class PortalExtensionCommandTests : CLITestExtensions
 	}
 
 	[Test]
+	public void NewPortalExtension_ZoneExtension_PrefixesPageWithCid()
+	{
+		InitWorkspace();
+		SetupBeamoServiceMock();
+		MockRemotePortalConfig();
+
+		Run("project", "new", "portal-extension", "TestZonePage", "--quiet",
+			"--mount-page", "my-zone-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react",
+			"--zone");
+
+		var packageJson = BFile.ReadAllText("extensions/TestZonePage/package.json");
+		Assert.That(packageJson, Does.Contain("\":cid/my-zone-page\""),
+			"a zone full-page extension renders at org level, so its page must gain a leading :cid segment");
+	}
+
+	[Test]
+	public void NewPortalExtension_ZoneExtension_DoesNotDoublePrefixExplicitCid()
+	{
+		InitWorkspace();
+		SetupBeamoServiceMock();
+		MockRemotePortalConfig();
+
+		Run("project", "new", "portal-extension", "TestZonePreprefixed", "--quiet",
+			"--mount-page", ":cid/my-zone-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react",
+			"--zone");
+
+		var packageJson = BFile.ReadAllText("extensions/TestZonePreprefixed/package.json");
+		Assert.That(packageJson, Does.Contain("\":cid/my-zone-page\""),
+			"an author-supplied :cid prefix must be preserved");
+		Assert.That(packageJson, Does.Not.Contain(":cid/:cid/"),
+			"the prefix must not be applied twice when already present");
+	}
+
+	[Test]
 	public void NewPortalExtension_PageExtension_PassesThroughHubPath()
 	{
 		InitWorkspace();

@@ -70,6 +70,19 @@ substitute a real hub name:
 replaced by your hub path, not literally prepended.) For full-page extensions the
 `--mount-selector` is always auto-assigned from the page slot, so you never pass it.
 
+#### Zone (`--zone`) extensions render at the org level
+
+A `--zone` extension is scoped to `cid.zid` and lives **above realms**, so its hub and
+pages render at the **org level** (`/:customerId/*`) rather than inside a realm. For the
+Portal's org-level matcher to resolve them, the stored `page` must begin with a `:cid`
+param segment — e.g. `:cid/dashboards` (hub) and `:cid/dashboards/overview` (page).
+
+**You do not write the `:cid/` yourself.** Pass the hub path exactly as for a realm
+extension (`--mount-page "dashboards"` or `"dashboards/overview"`); when `--zone` is set,
+the CLI prepends `:cid/` automatically. Only if you author the manifest's `page` by hand
+must you include it — a zone `page` missing the `:cid/` prefix makes the hub appear in the
+picker while its pages render *"No extension is registered for this page."*
+
 ### 2. Create the extension
 
 For a **page extension** (new navigation page):
@@ -147,6 +160,7 @@ Read the generated TypeScript files in the extension's `node_modules` to discove
 - **Always pass `-q` (quiet mode)** when executing from MCP to avoid interactive prompts that will hang.
 - **Page extensions need `--mount-group` and `--mount-label`** for the sidebar entry. Component extensions do not use these.
 - **Mount page format differs by type**: page extensions use `routePrefix + custom-route`, component extensions use the exact `path` value.
+- **Zone extensions render at the org level** and their mount `page` must start with `:cid/`. With `--zone` the CLI prepends this automatically — pass the bare hub path. If you edit the manifest by hand, a missing `:cid/` makes the hub show in the picker but its pages render "No extension is registered for this page."
 - **In React, import components from `@beamable/portal-toolkit/react`** — do NOT use `<beam-*>` web component tags directly in TSX. Use the typed React forwarders instead.
 - **Use Beamable components, not raw HTML.** Portal extensions render inside the Portal UI. Read the generated files in `node_modules/@beamable/portal-toolkit/src/generated/` for available components.
 - **The `--service-directory` for portal extensions is `extensions/`**, not `services/`.

@@ -10,7 +10,7 @@
     "microserviceDependencies": [],
     "mounts": [
       {
-        "page": "page-path",
+        "page": ":cid/page-path",
         "selector": "#extension-page",
         "args": {},
         "navLabel": "",
