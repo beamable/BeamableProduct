@@ -807,7 +807,7 @@ public class App
 		Commands.AddSubCommandWithHandler<NewBundleCommand, NewBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<ListBundlesCommand, ListBundlesCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<GetBundleCommand, GetBundleCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<BundleHistoryCommand, BundleHistoryCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<BundleReleasesCommand, BundleReleasesCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<BundleTagsCommand, BundleTagsCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<PromoteBundleTagCommand, PromoteBundleTagCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<YankBundleCommand, YankBundleCommandArgs, BundlesCommand>();

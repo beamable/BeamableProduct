@@ -49,6 +49,10 @@ public class PublishBundleCommandOutput
 	public string name;
 	public string checksum;
 	public bool isNew;
+
+	/// <summary>The release version this publish produced.</summary>
+	public long version;
+
 	public BundleDiffResult diff;
 }
 
@@ -76,7 +80,7 @@ public class PublishBundleCommand
 			(args, i) => args.fromLastPlan = i);
 		AddOption(new Option<string>(new[] { "--tag" }, "An additional tag to advance to the published checksum"),
 			(args, i) => args.tag = i);
-		AddOption(new Option<string>(new[] { "--scope" }, "Widen the published checksum's visibility tier (each tier is a superset of the previous, not a list of realms): 'realm' = only this realm; 'org' = every realm in your customer; 'public' = every realm in every customer. A literal <cid>.<pid> / <cid> / * is also accepted"),
+		AddOption(new Option<string>(new[] { "--scope" }, "Widen the bundle's visibility tier (each tier is a superset of the previous, not a list of realms): 'realm' = only this realm; 'org' = every realm in your customer; 'public' = every realm in every customer. '*' is also accepted as an alias for 'public'"),
 			(args, i) => args.scope = i);
 	}
 
@@ -218,15 +222,21 @@ public class PublishBundleCommand
 			request.tag = args.tag;
 		}
 
-		if (bundle.peerDependencies.Count > 0)
+		if (bundle.bundleDependencies.Count > 0)
 		{
-			var map = new MapOfBundlePeerDep();
-			foreach (var kvp in bundle.peerDependencies)
+			var map = new MapOfBundleDepRange();
+			foreach (var kvp in bundle.bundleDependencies)
 			{
-				map[kvp.Key] = new BundlePeerDep { type = kvp.Value?.type };
+				var range = new BundleDepRange { min = kvp.Value?.min ?? 0 };
+				if (kvp.Value?.max != null)
+				{
+					range.max = new OptionalLong(kvp.Value.max.Value);
+				}
+
+				map[kvp.Key] = range;
 			}
 
-			request.peerDependencies = new OptionalMapOfBundlePeerDep { HasValue = true, Value = map };
+			request.bundleDependencies = new OptionalMapOfBundleDepRange { HasValue = true, Value = map };
 		}
 
 		var response = await bundleApi.PostBundlesPublish(bundle.name, ns, request);
@@ -235,14 +245,16 @@ public class PublishBundleCommand
 		var publishedName = response.name.GetOrElse(fullName);
 		var publishedChecksum = response.checksum.GetOrElse("");
 		var isNew = response.isNew.GetOrElse(false);
-		Log.Information($"Published bundle=[{publishedName}] checksum=[{publishedChecksum}] isNew=[{isNew}]");
+		var version = response.version.GetOrElse(0);
+		Log.Information($"Published bundle=[{publishedName}] version=[{version}] checksum=[{publishedChecksum}] isNew=[{isNew}]");
 
-		// Optionally widen the freshly-published checksum's ACL (publish always defaults to <cid>.<pid>).
+		// Optionally widen the bundle's ACL (publish always defaults to <cid>.<pid>). Visibility
+		// belongs to the name, so this exposes every version ever published under it.
 		if (!string.IsNullOrEmpty(args.scope))
 		{
 			var scope = BundleAclScope.Resolve(args.scope, args.AppContext);
-			await bundleApi.PutBundlesChecksumsAcl(bundle.name, publishedChecksum, ns, new UpdateBundleAclRequest { scope = scope });
-			Log.Information($"Widened ACL for checksum=[{publishedChecksum}] to scope=[{scope}]");
+			await bundleApi.PutBundlesAcl(bundle.name, ns, new UpdateBundleAclRequest { scope = scope });
+			Log.Information($"Widened ACL for bundle=[{publishedName}] to scope=[{scope}]. This applies to every version ever published under the name.");
 		}
 
 		this.SendResults<DefaultStreamResultChannel, PublishBundleCommandOutput>(new PublishBundleCommandOutput
@@ -250,6 +262,7 @@ public class PublishBundleCommand
 			name = publishedName,
 			checksum = publishedChecksum,
 			isNew = isNew,
+			version = version,
 			diff = diff,
 		});
 	}

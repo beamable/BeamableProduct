@@ -13,11 +13,12 @@ import { versionPlaceholder } from '@/__generated__/apis/constants';
 import type { ApiCampaignsArchivePostCampaignResponse } from '@/__generated__/schemas/ApiCampaignsArchivePostCampaignResponse';
 import type { ApiCampaignsDeactivatePostCampaignResponse } from '@/__generated__/schemas/ApiCampaignsDeactivatePostCampaignResponse';
 import type { ApiCampaignsDeleteCampaignResponse } from '@/__generated__/schemas/ApiCampaignsDeleteCampaignResponse';
-import type { ApiCampaignsGetCampaignResponse } from '@/__generated__/schemas/ApiCampaignsGetCampaignResponse';
 import type { ApiCampaignsReactivatePostCampaignResponse } from '@/__generated__/schemas/ApiCampaignsReactivatePostCampaignResponse';
 import type { CampaignFunnelDto } from '@/__generated__/schemas/CampaignFunnelDto';
 import type { CampaignGraphDto } from '@/__generated__/schemas/CampaignGraphDto';
+import type { CampaignLifecycle } from '@/__generated__/schemas/enums/CampaignLifecycle';
 import type { CampaignStatusDto } from '@/__generated__/schemas/CampaignStatusDto';
+import type { CampaignSummaryDtoCampaignPageDto } from '@/__generated__/schemas/CampaignSummaryDtoCampaignPageDto';
 import type { DeactivateRequestDto } from '@/__generated__/schemas/DeactivateRequestDto';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
@@ -79,17 +80,49 @@ export async function campaignsPostPublish(requester: HttpRequester, payload: Pu
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
+ * @param campaignId - The `campaignId` parameter to include in the API request.
+ * @param createdAfter - The `createdAfter` parameter to include in the API request.
+ * @param createdBefore - The `createdBefore` parameter to include in the API request.
+ * @param createdBy - The `createdBy` parameter to include in the API request.
+ * @param descending - The `descending` parameter to include in the API request.
+ * @param limit - The `limit` parameter to include in the API request.
+ * @param name - The `name` parameter to include in the API request.
+ * @param phase - The `phase` parameter to include in the API request.
+ * @param publishedAfter - The `publishedAfter` parameter to include in the API request.
+ * @param publishedBefore - The `publishedBefore` parameter to include in the API request.
+ * @param publishedBy - The `publishedBy` parameter to include in the API request.
+ * @param realm - The `realm` parameter to include in the API request.
+ * @param skip - The `skip` parameter to include in the API request.
+ * @param sort - The `sort` parameter to include in the API request.
+ * @param tag - The `tag` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function campaignsGet(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ApiCampaignsGetCampaignResponse>> {
+export async function campaignsGet(requester: HttpRequester, campaignId?: string, createdAfter?: Date, createdBefore?: Date, createdBy?: string, descending?: boolean, limit?: number, name?: string, phase?: CampaignLifecycle[], publishedAfter?: Date, publishedBefore?: Date, publishedBy?: string, realm?: string, skip?: number, sort?: unknown, tag?: string, gamertag?: string): Promise<HttpResponse<CampaignSummaryDtoCampaignPageDto>> {
   let endpoint = "/api/campaigns";
   
   // Make the API request
-  return makeApiRequest<ApiCampaignsGetCampaignResponse>({
+  return makeApiRequest<CampaignSummaryDtoCampaignPageDto>({
     r: requester,
     e: endpoint,
     m: GET,
+    q: {
+      campaignId,
+      createdAfter,
+      createdBefore,
+      createdBy,
+      descending,
+      limit,
+      name,
+      phase,
+      publishedAfter,
+      publishedBefore,
+      publishedBy,
+      realm,
+      skip,
+      sort,
+      tag
+    },
     g: gamertag,
     w: true
   });

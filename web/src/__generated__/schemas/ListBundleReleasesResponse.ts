@@ -3,10 +3,9 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { Bundle } from './Bundle';
+import type { BundleRelease } from './BundleRelease';
 
-export type GetBundleResponse = { 
-  bundle?: Bundle; 
+export type ListBundleReleasesResponse = { 
+  releases?: BundleRelease[]; 
   tags?: Record<string, string>; 
-  version?: bigint | string; 
 };

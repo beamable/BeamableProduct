@@ -24,11 +24,11 @@ import type { UpdateOtelViewRequest } from '@/__generated__/schemas/UpdateOtelVi
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param playerId - Player ID to retrieve views for.
+ * @param accountId - Account ID to retrieve views for.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function beamoGetOtelViews(requester: HttpRequester, playerId?: string, gamertag?: string): Promise<HttpResponse<OtelViewsResponse>> {
+export async function beamoGetOtelViews(requester: HttpRequester, accountId?: string, gamertag?: string): Promise<HttpResponse<OtelViewsResponse>> {
   let endpoint = "/api/beamo/otel/views";
   
   // Make the API request
@@ -37,7 +37,7 @@ export async function beamoGetOtelViews(requester: HttpRequester, playerId?: str
     e: endpoint,
     m: GET,
     q: {
-      playerId
+      accountId
     },
     g: gamertag,
     w: true
