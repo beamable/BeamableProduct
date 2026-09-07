@@ -282,10 +282,15 @@ export async function customersPostRealmsSegmentsPropertiesRecompute(requester: 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param customerId - The `customerId` parameter to include in the API request.
  * @param realmId - The `realmId` parameter to include in the API request.
+ * @param custom - The `custom` parameter to include in the API request.
+ * @param domain - The `domain` parameter to include in the API request.
+ * @param namespace - The `namespace` parameter to include in the API request.
+ * @param refresh - The `refresh` parameter to include in the API request.
+ * @param visibility - The `visibility` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersGetRealmsSegmentsAttributes(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string): Promise<HttpResponse<ApiCustomersRealmsSegmentsAttributesGetSegmentsResponse>> {
+export async function customersGetRealmsSegmentsAttributes(requester: HttpRequester, customerId: string, realmId: string, custom?: boolean, domain?: string, namespace?: string[], refresh?: boolean, visibility?: string, gamertag?: string): Promise<HttpResponse<ApiCustomersRealmsSegmentsAttributesGetSegmentsResponse>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/segments/attributes".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
@@ -293,6 +298,13 @@ export async function customersGetRealmsSegmentsAttributes(requester: HttpReques
     r: requester,
     e: endpoint,
     m: GET,
+    q: {
+      custom,
+      domain,
+      namespace,
+      refresh,
+      visibility
+    },
     g: gamertag,
     w: true
   });

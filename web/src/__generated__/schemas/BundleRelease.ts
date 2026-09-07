@@ -3,10 +3,9 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { Bundle } from './Bundle';
-
-export type GetBundleResponse = { 
-  bundle?: Bundle; 
-  tags?: Record<string, string>; 
+export type BundleRelease = { 
+  bundleName?: string; 
+  checksum?: string; 
+  publishedAt?: Date; 
   version?: bigint | string; 
 };

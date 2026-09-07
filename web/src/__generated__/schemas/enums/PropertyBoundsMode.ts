@@ -3,9 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type PublishBundleResponse = { 
-  checksum?: string; 
-  isNew?: boolean; 
-  name?: string; 
-  version?: bigint | string; 
-};
+export enum PropertyBoundsMode {
+  All = "All",
+  Any = "Any"
+}
