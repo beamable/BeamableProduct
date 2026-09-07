@@ -3,9 +3,9 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type PublishBundleResponse = { 
+export type BundleDep = { 
   checksum?: string; 
-  isNew?: boolean; 
+  max?: bigint | string | null; 
+  min?: bigint | string; 
   name?: string; 
-  version?: bigint | string; 
 };

@@ -17,6 +17,9 @@ public class GetBundleCommandOutput
 {
 	public BundleInfo bundle;
 	public BundleTagInfo[] tags;
+
+	/// <summary>The release version this content was published as.</summary>
+	public long version;
 }
 
 public class GetBundleCommand : AtomicCommand<GetBundleCommandArgs, GetBundleCommandOutput>, ISkipManifest
@@ -69,6 +72,9 @@ public class GetBundleCommand : AtomicCommand<GetBundleCommandArgs, GetBundleCom
 			}
 		}
 
-		return new GetBundleCommandOutput { bundle = info, tags = response.tags.ToTagInfos() };
+		return new GetBundleCommandOutput
+		{
+			bundle = info, tags = response.tags.ToTagInfos(), version = response.version.GetOrElse(0)
+		};
 	}
 }

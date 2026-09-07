@@ -23,7 +23,7 @@ Bundles are **authored** in the workspace as `*.beam.bundle.json` files and **pu
 - Publishing a bundle and diffing it against what is already published (`bundles plan` / `bundles publish`).
 - Moving a tag, widening visibility (`bundles tag` / `bundles acl`).
 - Pinning a specific bundle checksum into a realm's manifest (`bundles pin`), and cleaning up after a version is retired (`bundles yank` / `bundles prune-yanked`).
-- Inspecting the catalog: what exists, its history, and its tags (`bundles list` / `get` / `history` / `tags`).
+- Inspecting the catalog: what exists, its releases, and its tags (`bundles list` / `get` / `releases` / `tags`).
 
 If you instead want to deploy your local services to a single realm, that is `deploy plan` / `deploy release`, not bundles.
 
@@ -54,10 +54,10 @@ The generated file looks like:
 ```json
 {
   "components": ["PaymentService", "OrdersStorage", "CheckoutPanel"],
-  "peerDependencies": {}
+  "bundleDependencies": {}
 }
 ```
-`components` are the beamoIds that belong to this bundle; `peerDependencies` declares bundles this one expects to be present at run time (surfaced, not resolved by the CLI). A beamoId may belong to **at most one** bundle in the workspace, and each bundle file name must be unique.
+`components` are the beamoIds that belong to this bundle; `bundleDependencies` maps a bundle name to the range of its releases this one depends on, as `{"@ns/name": {"min": 1, "max": 5}}` (omit `max` for an open range; surfaced, not resolved by the CLI). A beamoId may belong to **at most one** bundle in the workspace, and each bundle file name must be unique.
 {{ if commands["bundles new"] }}{{ if (array.size commands["bundles new"].arguments) > 0 }}
 #### `beam bundles new` arguments
 | Argument | Type | Description |
@@ -97,7 +97,7 @@ beam_exec("bundles plan checkout-stack -q")
 beam_exec("bundles publish checkout-stack --from-latest-plan -q")
 ```
 Behavior worth knowing (the flags themselves are in the options table below):
-- Publishing always creates the checksum at the `realm` ACL tier; you can widen it in the same step or later with `bundles acl` (see *Tags & Visibility*).
+- A bundle name starts at the `realm` ACL tier; you can widen it in the same step or later with `bundles acl` (see *Tags & Visibility*).
 - Advancing a tag alongside the publish also moves that tag to the freshly-published checksum (in addition to `latest`).
 - If the diff is a no-op, publish reports "nothing to publish" and makes no change.
 - A saved plan is only valid against the catalog state it was diffed from; if `latest` moved since planning, publish rejects it — re-run `bundles plan`.
@@ -147,20 +147,23 @@ beam_exec("bundles get checkout-stack -q")
 {{ for opt in commands["bundles get"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
 {{ end }}{{ end }}{{ end }}
 
-`bundles history` lists every published version of a bundle, newest first.
+`bundles releases` lists a bundle's release log, newest first. A release records a change of the
+name's current content, so an idle republish adds nothing while a revert to earlier content does add
+a release. That means one checksum can hold several versions, and the version identifies a release.
+The log is paged; the command walks it to the end unless you pass `--limit`.
 ```
-beam_exec("bundles history checkout-stack -q")
+beam_exec("bundles releases checkout-stack -q")
 ```
-{{ if commands["bundles history"] }}{{ if (array.size commands["bundles history"].arguments) > 0 }}
-#### `beam bundles history` arguments
+{{ if commands["bundles releases"] }}{{ if (array.size commands["bundles releases"].arguments) > 0 }}
+#### `beam bundles releases` arguments
 | Argument | Type | Description |
 |---|---|---|
-{{ for arg in commands["bundles history"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles history"].options) > 0 }}
-#### `beam bundles history` options
+{{ for arg in commands["bundles releases"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
+{{ end }}{{ end }}{{ if (array.size commands["bundles releases"].options) > 0 }}
+#### `beam bundles releases` options
 | Option | Type | Description |
 |---|---|---|
-{{ for opt in commands["bundles history"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
+{{ for opt in commands["bundles releases"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
 {{ end }}{{ end }}{{ end }}
 
 `bundles tags` shows the tag → checksum map for a bundle.
@@ -179,7 +182,7 @@ beam_exec("bundles tags checkout-stack -q")
 {{ for opt in commands["bundles tags"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
 {{ end }}{{ end }}{{ end }}
 
-`get`, `history`, and `tags` all accept the `@<namespace>/<name>` form to read another customer's bundle.
+`get`, `releases`, and `tags` all accept the `@<namespace>/<name>` form to read another customer's bundle.
 
 ## Tags & Visibility
 
@@ -204,9 +207,12 @@ beam_exec("bundles tag checkout-stack@sha256:abc123… stable -q")
 - `org` — every realm in your customer (`<cid>`).
 - `public` — every realm in every customer (`*`).
 
-`bundles acl` accepts a bare name or `@tag` (it resolves to the checksum) as well as an exact `@sha256:…`. Widening is **admin-gated server-side** — a non-admin token is rejected even though the CLI accepts the argument.
+`bundles acl` takes a bundle **name** — no tag or checksum. Visibility belongs to the name, so widening
+exposes every version ever published under it, including content published while it was private.
+Widening is **admin-gated server-side** — a non-admin token is rejected even though the CLI accepts
+the argument.
 ```
-beam_exec("bundles acl checkout-stack@sha256:abc123… --scope org -q")
+beam_exec("bundles acl checkout-stack --scope org -q")
 ```
 {{ if commands["bundles acl"] }}{{ if (array.size commands["bundles acl"].arguments) > 0 }}
 #### `beam bundles acl` arguments
@@ -294,7 +300,7 @@ The catalog API is the generated `IBeamBeamobundleApi` (`Beamable.Api.Autogenera
 
 ## Wrap-Up
 After a bundle workflow, summarize for the user:
-1. **What was published** — the logical name `@<alias>/<name>`, the resulting checksum, and whether it was new (`bundles get` / `history` to confirm).
+1. **What was published** — the logical name `@<alias>/<name>`, the release version, the resulting checksum, and whether it was new (`bundles get` / `releases` to confirm).
 2. **Which tags moved** — `latest` always, plus any tag you advanced (`bundles tags`).
 3. **Who can see it** — the ACL scope (`realm`/`org`/`public`).
 4. **What consumes it** — which realm(s) pin the checksum in `manifest.beam.json`, and whether any pins need pruning after a yank.

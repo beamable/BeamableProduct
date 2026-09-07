@@ -9,7 +9,7 @@ namespace cli.Services.Bundles;
 
 /// <summary>
 /// In-memory model of an authored bundle config file (<c>&lt;bundle-name&gt;.beam.bundle.json</c>).
-/// Declares one bundle: the beamoIds of its components and optional peer dependencies. The bundle's
+/// Declares one bundle: the beamoIds of its components and optional bundle dependencies. The bundle's
 /// (short) name is the file name itself — it is not stored inside the file. The namespace is never
 /// authored either; it is the customer's cid alias, derived at runtime (see <see cref="BundleNamespace"/>).
 /// See <c>DesignDocs/infra/beamo-manifest/beamo-manifest-redesign.md</c> (Workspace organization).
@@ -20,15 +20,28 @@ public class BundleConfigFile
 	[JsonIgnore] public string name;
 
 	public List<string> components = new List<string>();
-	public Dictionary<string, BundlePeerDependencyConfig> peerDependencies = new Dictionary<string, BundlePeerDependencyConfig>();
+
+	/// <summary>Bundle name to the range of its releases this bundle depends on.</summary>
+	public Dictionary<string, BundleDependencyConfig> bundleDependencies = new Dictionary<string, BundleDependencyConfig>();
 
 	/// <summary>Absolute path this config was loaded from (not serialized).</summary>
 	[JsonIgnore] public string filePath;
 }
 
-public class BundlePeerDependencyConfig
+/// <summary>
+/// An inclusive range of another bundle's release versions. A null <see cref="max"/> means the
+/// range has no upper bound.
+/// </summary>
+public class BundleDependencyConfig
 {
-	public string type;
+	public long min;
+	public long? max;
+
+	public string Format() => FormatRange(min, max);
+
+	/// <summary>"1+" for an open range, "1-5" for a closed one.</summary>
+	public static string FormatRange(long min, long? max) =>
+		max.HasValue ? $"{min}-{max.Value}" : $"{min}+";
 }
 
 /// <summary>
@@ -88,15 +101,17 @@ public static class BundleWorkspace
 				filePath = file,
 				name = Path.GetFileName(file).Substring(0, Path.GetFileName(file).Length - BUNDLE_FILE_SUFFIX.Length),
 				components = (obj["components"] as JArray)?.Select(t => t.Value<string>()).ToList() ?? new List<string>(),
-				peerDependencies = new Dictionary<string, BundlePeerDependencyConfig>()
+				bundleDependencies = new Dictionary<string, BundleDependencyConfig>()
 			};
-			if (obj["peerDependencies"] is JObject peers)
+			if (obj["bundleDependencies"] is JObject deps)
 			{
-				foreach (var kvp in peers)
+				foreach (var kvp in deps)
 				{
-					config.peerDependencies[kvp.Key] = new BundlePeerDependencyConfig
+					var range = kvp.Value as JObject;
+					config.bundleDependencies[kvp.Key] = new BundleDependencyConfig
 					{
-						type = (kvp.Value as JObject)?.Value<string>("type")
+						min = range?.Value<long?>("min") ?? 0,
+						max = range?.Value<long?>("max")
 					};
 				}
 			}
