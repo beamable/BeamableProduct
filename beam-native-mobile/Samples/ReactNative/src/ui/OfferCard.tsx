@@ -12,8 +12,8 @@ import { colors, mono, radius, space } from './theme';
  * One campaign offer, as a player should see it.
  *
  * The card exists because the row grew past what a tab file should hold inline — the same reason
- * `StatCard` was lifted out of the Segments tab. It owns no network state: both actions are
- * `AsyncButton`s, which already own their in-flight and result rendering.
+ * `StatCard` was lifted out of the Segments tab. It owns no network state: its action is an
+ * `AsyncButton`, which already owns its in-flight and result rendering.
  *
  * **Everything the store sends is optional.** A provider may omit the offer, the cost, or the
  * rewards, and a third-party store legitimately will. So each block degrades on its own rather
@@ -24,7 +24,6 @@ export default function OfferCard({
   campaignOffer,
   receipt,
   buy,
-  claim,
 }: {
   /**
    * The grant. Named in full rather than `offer` because the store's offer hangs off it as
@@ -33,10 +32,14 @@ export default function OfferCard({
   campaignOffer: CampaignOffer;
   /** What the last purchase on this row moved, if there was one this session. */
   receipt?: BalanceDelta[];
-  /** Present only when this sample can actually complete the purchase. */
+  /**
+   * The one action on this row. Present only when the grant is actionable.
+   *
+   * There is deliberately no second "Claim" button: on this federation the claim IS the purchase
+   * — both would post the same redeem call — so two buttons for one act read as two different
+   * acts, and the player has to guess which is which.
+   */
   buy?: () => Promise<string>;
-  /** Present only when the grant is still claimable. */
-  claim?: () => Promise<string>;
 }) {
   const { offer } = campaignOffer;
   const isClaimableState = campaignOffer.state === 'Granted';
@@ -119,8 +122,6 @@ export default function OfferCard({
           no need to wait for another message.
         </Hint>
       )}
-
-      {claim && <AsyncButton label="Claim" run={claim} variant="secondary" />}
 
       {!!receipt?.length && (
         <View style={styles.receipt}>

@@ -264,15 +264,16 @@ function shortSymbol(symbol: string): string {
 }
 
 /**
- * Whether the sample can buy this itself.
+ * Whether the sample can act on this grant — the single Buy button on the card.
  *
  * `available` rather than merely `state`, because a Granted offer can still be gated — by a store
  * requirement or by the campaign's own condition — and that gate is re-evaluated on every read, so
  * a locked row here unlocks on its own once the player qualifies.
  *
- * Asking about COST rather than about some collection's length is the point: "does this have a
- * price" is the actual question, and it used to be answered by counting storefront listings.
+ * The embedded offer is deliberately NOT required. Redeem takes the grant id alone; the offer is
+ * what the card renders, not what the call needs. Requiring it would leave a store that sends no
+ * offer with an actionable grant and no way to act on it.
  */
 export function isPurchasable(e: CampaignOffer): boolean {
-  return isClaimable(e) && e.available && e.offer !== null;
+  return isClaimable(e) && e.available;
 }

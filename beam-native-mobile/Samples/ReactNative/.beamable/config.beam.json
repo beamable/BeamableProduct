@@ -1,5 +1,13 @@
 {
-  "cid": "1731504735486980",
-  "pid": "DE_83664985048047616",
-  "host": "https://dev.api.beamable.com"
+  "cid": "97573102549992448",
+  "pid": "DE_97573102552089602",
+  "host": "http://192.168.1.7:8080",
+  "otelConfig": {
+    "BeamCliAllowTelemetry": true,
+    "BeamCliTelemetryLogLevel": "Warning",
+    "BeamCliTelemetryMaxSize": 524288000
+  },
+  "cliVersion": "0.0.123.29",
+  "additionalProjectPaths": [],
+  "ignoredProjectPaths": []
 }

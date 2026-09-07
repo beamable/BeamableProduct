@@ -45,11 +45,11 @@ import { colors, mono, radius, space } from '../../src/ui/theme';
  * answers is a federation — an extension point, not a Beamable feature — so the federation id is
  * an input and nothing here branches on its value.
  *
- * **What "acting on it" means, and why there are two calls.** An offer IS a storefront listing.
- * The price and the bundle both move through the platform's commerce flow, and the campaign-offer
- * claim only settles the grant afterwards — marking it redeemed and forfeiting the siblings it was
- * an alternative to. So acting on an offer is **buy, then claim**, and this screen does both in one
- * press because two presses for one act reads as a bug.
+ * **What "acting on it" means, and why there is one button.** An offer IS a storefront listing,
+ * and redeeming the grant is what pays for it: the provider debits the price and credits the
+ * bundle in a single inventory transaction, then forfeits the siblings this one was an alternative
+ * to. Claiming and buying are therefore the same call, so a row shows **Buy** and nothing else —
+ * two buttons posting one request reads as two different acts and makes the player guess.
  *
  * The wallet sits above the offers deliberately: a purchase should read before → action → after
  * in one downward glance, and "what did I actually receive" is answered by diffing the wallet
@@ -231,7 +231,7 @@ export default function OffersTab() {
   );
 
   /**
-   * Claim a grant — one press, one call, one receipt.
+   * Buy an offer — one button, one call, one receipt.
    *
    * **The claim IS the purchase.** The provider spends on the player's behalf: commerce debits the
    * price and credits the payout in one inventory transaction. So this screen must NOT buy the
@@ -293,9 +293,8 @@ export default function OffersTab() {
         <Hint>
           Reads GET /object/inventory/{'{playerId}'}/?scope=currency. Every currency the realm
           publishes is listed, including ones you hold none of — a purchase needs a row to move.
-          Nothing here changes when you Claim: on `beamable_virtual_store` the claim only settles
-          the grant. It changes when you Buy — which for a virtual offer moves this twice, once to
-          pay and once to receive.
+          It changes when you Buy — which for a virtual offer moves this twice, once to pay and
+          once to receive, because the redeem behind that button is the purchase.
         </Hint>
         {walletError && (
           <Text style={styles.error} selectable>
@@ -389,7 +388,6 @@ export default function OffersTab() {
                 campaignOffer={e}
                 receipt={receipts[e.grantId]}
                 buy={isPurchasable(e) ? buy(e) : undefined}
-                claim={isClaimable(e) ? claim(e.grantId) : undefined}
               />
             ))}
           </>
