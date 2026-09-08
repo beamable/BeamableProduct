@@ -12,7 +12,7 @@ public class ListMountSitesCommandResults
 }
 
 /// <summary>
-/// this is the data structure representing https://portal.beamable.com/extension-pages.json
+/// this is the data structure representing https://console.beamable.com/extension-pages.json
 /// </summary>
 [Serializable]
 public class RemotePortalConfiguration

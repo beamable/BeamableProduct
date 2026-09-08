@@ -41,7 +41,7 @@ public class RemotePortalConfigService : IRemotePortalConfigService
 	/// </summary>
 	private static async Task<RemotePortalConfiguration> FetchRemotePortalConfig(CommandArgs args)
 	{
-		var url = "http://localhost:4950/" + "/extension-pages.json";
+		var url = PortalCommand.GetPortalBaseUrl(args, PortalType.Console) + "/extension-pages.json";
 		try
 		{
 			var client = new HttpClient();
