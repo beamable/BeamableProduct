@@ -150,9 +150,9 @@ namespace microserviceTests.microservice
 				.Run();
 		}
 
-		public async Task OnShutdown(object sender, EventArgs args)
+		public Task OnShutdown(object sender, EventArgs args)
 		{
-			Service.OnShutdown(sender, args);
+			return Service.OnShutdown(sender, args);
 		}
 	}
 	
