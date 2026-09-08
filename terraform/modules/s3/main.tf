@@ -113,14 +113,18 @@ resource "aws_s3_bucket_policy" "lightbeam" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid= "BucketReadObjects",
-        Effect = "Allow",
-        Principal = "*",
-        Action = "*",
-        Resource = [
-          "${aws_s3_bucket.lightbeam.arn}/*",
-          "${aws_s3_bucket.lightbeam.arn}"
-        ]
+        Sid       = "CloudFrontRead",
+        Effect    = "Allow",
+        Principal = { AWS = aws_cloudfront_origin_access_identity.lightbeam_s3.iam_arn },
+        Action    = "s3:GetObject",
+        Resource  = "${aws_s3_bucket.lightbeam.arn}/*"
+      },
+      {
+        Sid       = "CloudFrontList",
+        Effect    = "Allow",
+        Principal = { AWS = aws_cloudfront_origin_access_identity.lightbeam_s3.iam_arn },
+        Action    = "s3:ListBucket",
+        Resource  = aws_s3_bucket.lightbeam.arn
       }
     ]
   })
@@ -238,14 +242,18 @@ resource "aws_s3_bucket_policy" "websdkdocs" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid= "BucketReadObjects",
-        Effect = "Allow",
-        Principal = "*",
-        Action = "*",
-        Resource = [
-          "${aws_s3_bucket.websdkdocs.arn}/*",
-          "${aws_s3_bucket.websdkdocs.arn}"
-        ]
+        Sid       = "CloudFrontRead",
+        Effect    = "Allow",
+        Principal = { AWS = aws_cloudfront_origin_access_identity.websdkdocs_s3.iam_arn },
+        Action    = "s3:GetObject",
+        Resource  = "${aws_s3_bucket.websdkdocs.arn}/*"
+      },
+      {
+        Sid       = "CloudFrontList",
+        Effect    = "Allow",
+        Principal = { AWS = aws_cloudfront_origin_access_identity.websdkdocs_s3.iam_arn },
+        Action    = "s3:ListBucket",
+        Resource  = aws_s3_bucket.websdkdocs.arn
       }
     ]
   })
@@ -360,14 +368,18 @@ resource "aws_s3_bucket_policy" "collector" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid= "BucketReadObjects",
-        Effect = "Allow",
-        Principal = "*",
-        Action = "*",
-        Resource = [
-          "${aws_s3_bucket.otel-collector-ch.arn}/*",
-          "${aws_s3_bucket.otel-collector-ch.arn}"
-        ]
+        Sid       = "CloudFrontRead",
+        Effect    = "Allow",
+        Principal = { AWS = aws_cloudfront_origin_access_identity.collector_s3.iam_arn },
+        Action    = "s3:GetObject",
+        Resource  = "${aws_s3_bucket.otel-collector-ch.arn}/*"
+      },
+      {
+        Sid       = "CloudFrontList",
+        Effect    = "Allow",
+        Principal = { AWS = aws_cloudfront_origin_access_identity.collector_s3.iam_arn },
+        Action    = "s3:ListBucket",
+        Resource  = aws_s3_bucket.otel-collector-ch.arn
       }
     ]
   })
