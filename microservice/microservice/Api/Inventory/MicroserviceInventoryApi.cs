@@ -19,7 +19,14 @@ namespace Beamable.Server.Api.Inventory
 
 		public override Promise<InventoryView> GetCurrent(string scope = "")
 		{
-			return InventoryApi.ObjectGet(UserContext.UserId,scope).Map(InventoryViewToAutoGenInventoryView);
+			// An empty scope means "the whole inventory". It must be omitted from the request rather than sent as
+			// an empty query value (`?scope=`): the gateway never replies to that request, and the promise would hang
+			// forever. This matches the pre-7.1.0 behaviour, which only appended the scope when it was non-empty.
+			Optional<string> scopeArg = string.IsNullOrEmpty(scope)
+				? OptionalString.None
+				: new OptionalString(scope);
+
+			return InventoryApi.ObjectGet(UserContext.UserId, scopeArg).Map(InventoryViewToAutoGenInventoryView);
 		}
 
 		public async Promise SendCurrency(Dictionary<string, long> currencies, long recipientPlayer,
