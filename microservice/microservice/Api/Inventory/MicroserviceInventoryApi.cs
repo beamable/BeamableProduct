@@ -19,9 +19,8 @@ namespace Beamable.Server.Api.Inventory
 
 		public override Promise<InventoryView> GetCurrent(string scope = "")
 		{
-			// An empty scope means "the whole inventory". It must be omitted from the request rather than sent as
-			// an empty query value (`?scope=`): the gateway never replies to that request, and the promise would hang
-			// forever. This matches the pre-7.1.0 behaviour, which only appended the scope when it was non-empty.
+			// Null or empty scope means "the whole inventory". Omit the query parameter, as the pre-7.1.0
+			// BeamableGetApiResource did. Sending `?scope=` can leave the websocket request pending (#4833).
 			Optional<string> scopeArg = string.IsNullOrEmpty(scope)
 				? OptionalString.None
 				: new OptionalString(scope);
