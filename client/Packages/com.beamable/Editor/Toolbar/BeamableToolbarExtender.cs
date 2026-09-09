@@ -82,13 +82,16 @@ namespace Beamable.Editor.ToolbarExtender
 			try
 			{
 				var badgeColor = new Color(0,0,0,.3f);
-				if (_editorAPI?.BeamCli.CurrentRealm?.IsProduction ?? false)
+				if (!_editorAPI?.BeamCli?.IsLoggedOut ?? true)
 				{
-					badgeColor = new Color(1, 0, 0, .5f);
-				}
-				else if (_editorAPI?.BeamCli.CurrentRealm?.IsStaging ?? false)
-				{
-					badgeColor = new Color(1, .5f, 0, .5f);
+					if (_editorAPI?.BeamCli.CurrentRealm?.IsProduction ?? false)
+					{
+						badgeColor = new Color(1, 0, 0, .5f);
+					}
+					else if (_editorAPI?.BeamCli.CurrentRealm?.IsStaging ?? false)
+					{
+						badgeColor = new Color(1, .5f, 0, .5f);
+					}
 				}
 
 				var realmDisplay = _editorAPI?.BeamCli.CurrentRealm?.DisplayName ?? "<no realm>";
@@ -107,11 +110,11 @@ namespace Beamable.Editor.ToolbarExtender
 					versionDisplay = "nightly";
 				}
 
-				var loggedOutText = _editorAPI?.BeamCli?.IsLoggedOut ?? false
-					? "[Logged out] "
-					: "";
+				var titleBaseText = _editorAPI?.BeamCli?.IsLoggedOut ?? false
+					? "[Logged out]"
+					: realmDisplay;
 				
-				var titleContent = new GUIContent(loggedOutText + realmDisplay + " (" + versionDisplay + ")");
+				var titleContent = new GUIContent(titleBaseText + " (" + versionDisplay + ")");
 
 				GUI.enabled = _editorAPI != null;
 				var didClick = GUILayout.Button(titleContent, new GUIStyle(EditorStyles.toolbarButton)
