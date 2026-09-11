@@ -60,7 +60,7 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 		AddOption(new Option<string>(
 				aliases: new string[] { "--mount-page" },
-				description: "The portal page to mount on. For page extensions use routePrefix + your custom route; for component extensions use the page path. Run 'portal extension list-extension-options' to see all valid values"),
+				description: "The portal page to mount on. For page extensions use routePrefix + your custom route; for component extensions use the page path. A --zone extension is declared with a zone-relative page path and renders inside the portal's zone view (/zones/:zid/) — the portal owns the prefix. Run 'portal extension list-extension-options' to see all valid values"),
 				binder: (args, i) => args.mountPage = i);
 
 		AddOption(new Option<string>(
@@ -195,6 +195,10 @@ public class NewPortalExtensionCommand : AppCommand<NewPortalExtensionCommandArg
 
 		if (resolvedSelector.type == "page")
 		{
+			// A zone extension's mount page is stored zone-relative and verbatim — the portal
+			// auto-assumes the full `:cid/zones/:zid/` prefix when rendering it in the zone view,
+			// so the CLI must not prepend anything here.
+
 			// Full-page (hub) extensions need a nav group and a display label. The hub hierarchy comes
 			// from the page path itself (e.g. "cars" vs "cars/ferrari"); the nav group is a separate way
 			// to organize extensions within a hub, and is required for page extensions.
