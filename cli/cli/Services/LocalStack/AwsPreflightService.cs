@@ -71,6 +71,25 @@ public class AwsPreflightService
 	private const string SessionName = "beam-local-setup-preflight";
 
 	/// <summary>
+	/// The session name the BACKEND uses when it assumes a role — mirrored from
+	/// <c>AmazonAccountManager.SessionName</c> in BeamableAPI, whose own comment reads "This value NEEDS to be
+	/// this value, so it matches the ALLOWED session name in the AWS Policy".
+	/// <para>Some trust policies condition on <c>sts:RoleSessionName</c>, so a probe under any other name is
+	/// denied even while the service itself assumes the role successfully. That is not a hypothetical: probing
+	/// the <c>beamable-local-analytics-*</c> roles under <see cref="SessionName" /> returns AccessDenied while
+	/// a running analytics loader is happily writing to those same buckets. A check that does not ask the
+	/// question the way production asks it is not a check.</para>
+	/// </summary>
+	public const string PlatformServiceSessionName = "platform-service-assume-role";
+
+	/// <summary>
+	/// Session names an assume-role probe tries, in order: the preflight's own identifiable name first (so
+	/// CloudTrail attributes the probe to the preflight whenever that works), then the backend's, for roles
+	/// whose trust policy conditions on it.
+	/// </summary>
+	public static readonly string[] SessionNameCandidates = { SessionName, PlatformServiceSessionName };
+
+	/// <summary>
 	/// Conf keys naming the roles the backend assumes. Read from the <em>rendered</em> <c>awsglobal.conf</c> rather
 	/// than hardcoded, so a private-cloud or self-hosted setup with different accounts is checked against its own
 	/// roles instead of Beamable's.
@@ -80,6 +99,20 @@ public class AwsPreflightService
 		("services (S3, ECR, ECS, Secrets Manager)", "aws.credentials.s3.services.role.arn"),
 		("storage (microservice containers)", "aws.credentials.s3.storage.role.arn"),
 		("analytics (S3 + Athena)", "aws.credentials.athena.analytics.role.arn"),
+	};
+
+	/// <summary>
+	/// The analytics roles the <em>C# hosts</em> assume, as settings paths in BeamableAPI's
+	/// <c>appsettings.Local.json</c>. Deliberately separate from <see cref="RoleKeys"/>: those come from Scala's
+	/// <c>awsglobal.conf</c> and name a DIFFERENT role (<c>beamable-athena-analytics-assume-role</c>), so a green
+	/// analytics check there says nothing about whether the gateway, actor host and analytics loader can reach
+	/// their own <c>beamable-local-analytics-*</c> roles. Checking only the Scala one reports the stack as fine
+	/// while every Athena query fails at runtime.
+	/// </summary>
+	private static readonly (string label, string path)[] ApiAnalyticsRolePaths =
+	{
+		("analytics writer (C# hosts)", "AmazonAccountAnalytics.RoleArn"),
+		("analytics readonly (C# hosts)", "AmazonAccountAnalyticsReadOnly.RoleArn"),
 	};
 
 	/// <summary>Conf keys naming the buckets the backend reads/writes locally.</summary>
@@ -185,22 +218,9 @@ public class AwsPreflightService
 				continue;
 			}
 
-			// Try the direct assume first (what the backend does from the base profile). If that is denied, retry
-			// CHAINED through the services role: some roles trust the platform service role rather than individual
-			// developers, and a chained success is a materially different answer from a flat failure — it means the
-			// role is reachable, just not directly. Reporting them the same way would send a developer to ask for a
-			// trust-policy change they do not need.
-			var assumed = AssumeRole(aws, roleArn, null);
-			var chained = false;
-			if (!assumed.ok && servicesCredentials != null)
-			{
-				var viaServices = AssumeRole(aws, roleArn, servicesCredentials);
-				if (viaServices.ok)
-				{
-					assumed = viaServices;
-					chained = true;
-				}
-			}
+			// Direct first (what the backend does from the base profile), then chained through the services role,
+			// then both again under the backend's own session name — see TryAssumeEveryWay.
+			var (assumed, chained) = TryAssumeEveryWay(aws, roleArn, servicesCredentials);
 
 			result.checks.Add(new AwsCheck
 			{
@@ -217,6 +237,35 @@ public class AwsPreflightService
 
 			if (assumed.ok && key == RoleKeys[0].key)
 				servicesCredentials = assumed.output;
+		}
+
+		// 3b. The analytics roles the C# hosts use. Same direct-then-chained probe as above, but the ARNs are read
+		// from BeamableAPI's appsettings rather than awsglobal.conf. Reported as warnings: a developer who never
+		// runs the analytics loader does not need these, and blocking `beam local up` on them would make analytics
+		// access a prerequisite for a stack that otherwise works fine without it.
+		foreach (var (label, settingPath) in ApiAnalyticsRolePaths)
+		{
+			var roleArn = ReadApiLocalSetting(apiDir, settingPath);
+			if (string.IsNullOrWhiteSpace(roleArn)) continue; // no BeamableAPI checkout, or an older settings file
+
+			var (assumed, chained) = TryAssumeEveryWay(aws, roleArn, servicesCredentials);
+
+			result.checks.Add(new AwsCheck
+			{
+				name = $"assume role: {label}",
+				ok = assumed.ok,
+				warning = true,
+				detail = chained ? $"{roleArn} (via the services role)" : roleArn,
+				awsError = assumed.ok ? null : Summarize(assumed.output),
+				remediation = assumed.ok
+					? null
+					: $"Your IAM principal ({arn}) cannot assume {roleArn} - directly, through the services role, or " +
+					  "under the backend's own session name. " +
+					  "Analytics will not work locally: the analytics loader lands nothing and Athena queries fail, " +
+					  "so the warehouse-backed pickers in the Portal stay empty. Ask an AWS administrator to add you " +
+					  "to that role's trust policy (sts:AssumeRole), or disable the `c# analytics loader` step in " +
+					  "the manifest if you do not need analytics locally."
+			});
 		}
 
 		// 4. The JWT signing key, fetched the way `auth` fetches it: with the assumed role, not the base profile.
@@ -414,7 +463,14 @@ public class AwsPreflightService
 	/// The scheduler's SQS queue URL from BeamableAPI's <c>appsettings.Local.json</c> (the environment
 	/// <c>beam local up</c> runs those hosts under). Null when the file or key is absent.
 	/// </summary>
-	private static string ReadSchedulerQueueUrl(string apiDir)
+	private static string ReadSchedulerQueueUrl(string apiDir) =>
+		ReadApiLocalSetting(apiDir, "Scheduler.JobQueue.QueueUrl");
+
+	/// <summary>
+	/// One value from BeamableAPI's <c>BeamableGateway/appsettings.Local.json</c> by dotted path (the environment
+	/// <c>beam local up</c> runs those hosts under). Null when the file, or the key, is absent.
+	/// </summary>
+	private static string ReadApiLocalSetting(string apiDir, string settingPath)
 	{
 		if (string.IsNullOrWhiteSpace(apiDir)) return null;
 
@@ -423,7 +479,7 @@ public class AwsPreflightService
 
 		try
 		{
-			return (string)JObject.Parse(File.ReadAllText(path)).SelectToken("Scheduler.JobQueue.QueueUrl");
+			return (string)JObject.Parse(File.ReadAllText(path)).SelectToken(settingPath);
 		}
 		catch
 		{
@@ -458,8 +514,43 @@ public class AwsPreflightService
 	/// Assumes a role, optionally from another role's credentials (chaining). Returns the raw
 	/// <c>assume-role</c> response so the temporary credentials can be reused for the resource checks.
 	/// </summary>
-	private static CliOutcome AssumeRole(string aws, string roleArn, string fromCredentials) =>
-		Run(aws, $"sts assume-role --role-arn {roleArn} --role-session-name {SessionName} --output json", fromCredentials);
+	private static CliOutcome AssumeRole(
+		string aws, string roleArn, string fromCredentials, string sessionName = SessionName) =>
+		Run(aws, AssumeRoleArgs(roleArn, sessionName), fromCredentials);
+
+	/// <summary>The <c>aws sts assume-role</c> arguments. Split out so the session name actually sent is
+	/// assertable without running the AWS CLI.</summary>
+	public static string AssumeRoleArgs(string roleArn, string sessionName) =>
+		$"sts assume-role --role-arn {roleArn} --role-session-name {sessionName} --output json";
+
+	/// <summary>
+	/// Assumes a role the way the preflight always has, and — only if that fails — the way the backend does.
+	/// Both the direct and the chained attempt are retried under the platform session name, because a
+	/// session-name condition and a missing trust relationship are indistinguishable from the error alone.
+	/// </summary>
+	private static (CliOutcome assumed, bool chained) TryAssumeEveryWay(
+		string aws, string roleArn, string servicesCredentials)
+	{
+		foreach (var sessionName in SessionNameCandidates)
+		{
+			var direct = AssumeRole(aws, roleArn, null, sessionName);
+			if (direct.ok) return (direct, false);
+
+			if (servicesCredentials != null)
+			{
+				// Chained: some roles trust the platform service role rather than individual developers. A
+				// chained success is a materially different answer from a flat failure — the role IS reachable,
+				// just not directly — so reporting them the same way would send someone to ask for a
+				// trust-policy change they do not need.
+				var viaServices = AssumeRole(aws, roleArn, servicesCredentials, sessionName);
+				if (viaServices.ok) return (viaServices, true);
+			}
+		}
+
+		// Report the first attempt's error: it is the one made under the preflight's own identity, which is the
+		// most useful thing to show someone whose access is genuinely missing.
+		return (AssumeRole(aws, roleArn, null), false);
+	}
 
 	/// <summary>
 	/// Runs an <c>aws</c> sub-command, optionally with temporary credentials taken from an <c>assume-role</c>

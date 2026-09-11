@@ -3,8 +3,8 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { Bundle } from './Bundle';
+import type { BundleSummary } from './BundleSummary';
 
 export type ListBundlesResponse = { 
-  bundles?: Bundle[]; 
+  bundles?: BundleSummary[]; 
 };

@@ -93,12 +93,79 @@ public class CLITest
 		DisposeDockerClient();
 		ResetConfigurator();
 		Directory.SetCurrentDirectory(OriginalWorkingDir);
-		Directory.Delete(WorkingDir, true);
+		DeleteDirectoryRobust(WorkingDir);
 
 		foreach (var mock in _mockObjects)
 		{
 			mock.VerifyAll();
 		}
+	}
+
+
+	/// <summary>
+	/// Recursively deletes a test's working directory, tolerating the two things a real `npm install` leaves
+	/// behind that plain <see cref="Directory.Delete(string, bool)"/> cannot handle on Windows.
+	///
+	/// A `file:` dependency is materialised as a JUNCTION under `node_modules` (see
+	/// PortalExtensionAddLibraryCommand), and a recursive delete that walks into a reparse point instead of
+	/// unlinking it fails with "The parameter is incorrect" — an IOException raised in TearDown, which NUnit
+	/// reports as a failure even though the test itself passed. Read-only files (npm and git both write some)
+	/// are the other reliable way to break the built-in delete.
+	///
+	/// A short retry covers the transient Windows case where a just-exited child process or a virus scanner
+	/// still holds a handle.
+	/// </summary>
+	private static void DeleteDirectoryRobust(string path)
+	{
+		for (var attempt = 0; ; attempt++)
+		{
+			try
+			{
+				DeleteDirectoryCore(path);
+				return;
+			}
+			catch (Exception) when (attempt < 4)
+			{
+				// Give whoever still holds a handle a moment to let go.
+				System.Threading.Thread.Sleep(100 * (attempt + 1));
+			}
+		}
+	}
+
+	private static void DeleteDirectoryCore(string path)
+	{
+		if (!Directory.Exists(path))
+		{
+			return;
+		}
+
+		var dir = new DirectoryInfo(path);
+
+		foreach (var sub in dir.EnumerateDirectories())
+		{
+			// A junction/symlink: delete the LINK, never what it points at. Recursing through one would also
+			// delete the real library the test scaffolded elsewhere in the tree.
+			if (sub.Attributes.HasFlag(FileAttributes.ReparsePoint))
+			{
+				sub.Delete();
+			}
+			else
+			{
+				DeleteDirectoryCore(sub.FullName);
+			}
+		}
+
+		foreach (var file in dir.EnumerateFiles())
+		{
+			if (file.Attributes.HasFlag(FileAttributes.ReadOnly))
+			{
+				file.Attributes = FileAttributes.Normal;
+			}
+
+			file.Delete();
+		}
+
+		dir.Delete(false);
 	}
 
 	protected void Configure(Action<IDependencyBuilder> configurator)

@@ -10,5 +10,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string name;
         public bool ok;
         public string detail;
+        public string source;
+        public string version;
+        public bool warning;
     }
 }

@@ -106,6 +106,16 @@ MonoImporter:
   assetBundleVariant: 
 ";
 
+	const string FOLDER_META_CONTENT_TEMPLATE = @"fileFormatVersion: 2
+guid: " + GUID_TEMPLATE + @"
+folderAsset: yes
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+";
+
 	public static readonly Dictionary<string, string> sourceToHardcodedGuid = new Dictionary<string, string>
 	{
 		[nameof(ContentObject)] = "c658d5adea78044eb8b9a850f7830051",
@@ -130,46 +140,56 @@ MonoImporter:
 	public static List<GeneratedFileDescriptor> GenerateMetaFiles(List<string> sourceFiles)
 	{
 		var metas = new List<GeneratedFileDescriptor>(sourceFiles.Count);
-
-		using var md5 = MD5.Create();
 		foreach (var sourceFile in sourceFiles)
 		{
-
-			if (!sourceToHardcodedGuid.TryGetValue(Path.GetFileNameWithoutExtension(sourceFile), out var metaGuid))
-			{
-				var hashedBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(sourceFile));
-				var guid = new Guid(hashedBytes);
-				metaGuid = guid.ToString().Replace("-", "");
-			}
-			
-			metas.Add(new GeneratedFileDescriptor
-			{
-				FileName = sourceFile + ".meta",
-				Content = META_CONTENT_TEMPLATE.Replace(GUID_TEMPLATE, metaGuid)
-			});
+			metas.Add(GenerateMetaFile(sourceFile));
 		}
 		return metas;
 	}
 
-	public static GeneratedFileDescriptor GenerateMetaFile(string sourceFile)
+	/// <summary>
+	/// Compute the Unity asset guid for a given path.
+	/// The path is the hash seed, so a caller that wants a location independent guid must pass a path
+	/// relative to the Unity package rather than an absolute path.
+	/// </summary>
+	public static string ComputeMetaGuid(string seedPath)
 	{
-		using var md5 = MD5.Create();
+		if (sourceToHardcodedGuid.TryGetValue(Path.GetFileNameWithoutExtension(seedPath), out var hardcodedGuid))
 		{
-			if (!UnityCliGenerator.sourceToHardcodedGuid.TryGetValue(Path.GetFileNameWithoutExtension(sourceFile),
-				    out var metaGuid))
-			{
-				var hashedBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(sourceFile));
-				var guid = new Guid(hashedBytes);
-				metaGuid = guid.ToString().Replace("-", "");
-			}
-			
-			return new GeneratedFileDescriptor
-			{
-				FileName = sourceFile + ".meta",
-				Content = META_CONTENT_TEMPLATE.Replace(GUID_TEMPLATE, metaGuid)
-			};
+			return hardcodedGuid;
 		}
+
+		// normalize separators so the same logical path hashes identically on every platform
+		var normalized = seedPath.Replace('\\', '/');
+		using var md5 = MD5.Create();
+		var hashedBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(normalized));
+		return new Guid(hashedBytes).ToString().Replace("-", "");
 	}
+
+	public static GeneratedFileDescriptor GenerateMetaFile(string sourceFile) =>
+		GenerateMetaFileWithGuid(sourceFile, ComputeMetaGuid(sourceFile));
+
+	/// <summary>
+	/// Build a script meta file that uses a caller supplied guid.
+	/// Use this to keep an already established guid stable when a file is regenerated.
+	/// </summary>
+	public static GeneratedFileDescriptor GenerateMetaFileWithGuid(string sourceFile, string guid) =>
+		new GeneratedFileDescriptor
+		{
+			FileName = sourceFile + ".meta",
+			Content = META_CONTENT_TEMPLATE.Replace(GUID_TEMPLATE, guid)
+		};
+
+	/// <summary>
+	/// Build the meta file for a <i>directory</i>. Unity expects a folder asset to declare
+	/// <c>folderAsset: yes</c> and use the DefaultImporter, not the MonoImporter used for scripts.
+	/// </summary>
+	public static GeneratedFileDescriptor GenerateFolderMetaFile(string folderPath, string guid) =>
+		new GeneratedFileDescriptor
+		{
+			FileName = folderPath + ".meta",
+			Content = FOLDER_META_CONTENT_TEMPLATE.Replace(GUID_TEMPLATE, guid)
+		};
 
 	public static List<Type> RecurseTypes(IEnumerable<Type> inputTypes, bool includeTypesFromInvalidAssembly = false)
 	{

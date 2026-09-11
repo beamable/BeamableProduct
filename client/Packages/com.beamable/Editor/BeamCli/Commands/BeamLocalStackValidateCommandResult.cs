@@ -9,5 +9,6 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         public bool allOk;
         public System.Collections.Generic.List<BeamLocalStackDependencyCheck> checks;
+        public string toolchainDir;
     }
 }

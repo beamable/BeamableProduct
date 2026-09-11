@@ -20,10 +20,14 @@ public class LocalStackUpCommandArgs : CommandArgs
 	public bool build;
 
 	/// <summary>
-	/// Opt OUT of the web-registry steps. Stored inverted so the default (a plain <c>bool</c> field, false)
-	/// means "run them" without relying on how the option binder treats an absent flag.
+	/// This run's web-registry override, from <c>--with-web-registry[=true|false]</c>, or null when the flag
+	/// was not passed — where the standing choice <c>beam local init</c> recorded in the manifest decides.
+	///
+	/// Nullable because there are THREE outcomes to represent, not two: force on, force off, and defer to the
+	/// manifest. A plain <c>bool</c> cannot tell "passed false" from "not passed", so the manifest's choice
+	/// could never be the default. See <see cref="LocalStackUpCommand.ResolveNoWebRegistry"/>.
 	/// </summary>
-	public bool noWebRegistry;
+	public bool? webRegistry;
 	public bool saveLogs;
 	public bool noCreateRealm;
 	public string realmCustomer;
@@ -85,17 +89,25 @@ public class LocalStackUpCommand
 		AddOption(new Option<bool>("--build", "Rebuild the C# hosts, Scala services, and portal deps before launching (a manifest that declares a build output also builds that step on its own when the output is missing; microservices/extensions always build via project run)"),
 			(args, v) => args.build = v);
 
-		// The web-registry steps run by DEFAULT when the manifest has them: skipping them leaves the portal's
-		// extensions pinned at a published toolkit, which silently resolves their SDK from unpkg instead of the
-		// local build, so a plain `up` that "succeeded" would still be running the wrong code.
-		AddOption(new Option<bool>("--no-web-registry", "Skip the local web-registry steps: do not bring the registry up, publish the web packages, or repin the portal extensions (the fast path, but the portal then runs against the PUBLISHED web SDK)"),
-			(args, v) => args.noWebRegistry = v);
-
-		// Kept accepted, and still meaningful as an explicit override of an earlier --no-web-registry. Passing
-		// it used to be an unrecognized-option parse error that aborted the whole bring-up, so it must never
-		// become one again (App.cs calls UseDefaults, which reports parse errors).
-		AddOption(new Option<bool>("--with-web-registry", "Explicitly run the local web-registry steps; they are already the default, so this is a no-op except that it overrides --no-web-registry when both are passed"),
-			(args, v) => { if (v) args.noWebRegistry = false; });
+		// Whether the web-registry steps run is the standing choice `beam local init` recorded in the manifest
+		// (`webRegistry`). This flag overrides it for a single run and never writes back — the point is that
+		// nobody has to remember a flag on every `up`. Skipping the steps leaves the portal's extensions pinned
+		// at a published toolkit, which silently resolves their SDK from unpkg instead of the local build, so a
+		// plain `up` that "succeeded" could still be running the wrong code.
+		//
+		// It takes an OPTIONAL VALUE (`--with-web-registry`, `--with-web-registry=false`,
+		// `--with-web-registry true`), which is what lets ONE flag express both answers. Only a flag actually
+		// written on the command line writes to args: an absent flag has to leave the manifest in charge, and a
+		// binder cannot tell "absent" from "--with-web-registry false" by value alone, since it receives
+		// default(bool) either way.
+		var withWebRegistry = new Option<bool>("--with-web-registry", "Run the local web-registry steps for this run whatever `beam local init` chose, or skip them with --with-web-registry=false (skipping is the fast path, but the portal then runs against the PUBLISHED web SDK rather than your local build)");
+		AddOption(withWebRegistry, (args, ctx, v) =>
+		{
+			if (LocalStackCommand.WasSupplied(ctx, withWebRegistry))
+			{
+				args.webRegistry = v;
+			}
+		});
 
 		AddOption(new Option<bool>("--save-logs", "Persist per-run logs under the workspace (.beamable/local-stack-logs/run-<id>); without it logs go to a temp folder and are removed on `beam local stop`"),
 			(args, v) => args.saveLogs = v);
@@ -121,8 +133,16 @@ public class LocalStackUpCommand
 	/// that only exists in the local build fails at runtime as "not a function". Bringing the registry up
 	/// without refreshing the pins is a valid thing to do, so this warns rather than throwing.
 	/// </summary>
-	private static void WarnOnStaleExtensionPins(LocalStackConfig config, List<LocalStackStep> steps)
+	private static void WarnOnStaleExtensionPins(LocalStackConfig config, List<LocalStackStep> steps, bool noWebRegistry)
 	{
+		// Nothing to say to someone who has deliberately turned the registry off — the pins are then supposed
+		// to be published versions. The steps are in every generated manifest now, so their mere presence is
+		// no longer evidence that this stack wants the local registry.
+		if (noWebRegistry)
+		{
+			return;
+		}
+
 		// Only meaningful for a stack that uses the local registry at all.
 		if (!config.steps.Any(s => s.enabled && s.name == LocalStackTemplate.WebRegistryStepName))
 		{
@@ -161,8 +181,23 @@ public class LocalStackUpCommand
 	}
 
 	/// <summary>
-	/// The enabled web-registry steps, which run by default. Empty under <c>--no-web-registry</c>, where
-	/// <see cref="SelectSteps"/> excludes them outright rather than merely leaving them un-forced.
+	/// Whether this run skips the web-registry steps: the flag for this run if one was passed, otherwise the
+	/// standing choice <c>beam local init</c> recorded in <see cref="LocalStackConfig.webRegistry"/>.
+	///
+	/// A manifest with no choice recorded (null) runs them, which is what every manifest written before that
+	/// field did — so upgrading the CLI never silently turns the registry off underneath an existing workspace.
+	///
+	/// Pure so the precedence is testable without a stack: getting it wrong means either a flag that does
+	/// nothing or a bring-up that ignores what the user chose at <c>init</c>.
+	/// </summary>
+	/// <param name="flag">The run override from the two flags, or null when neither was passed.</param>
+	public static bool ResolveNoWebRegistry(LocalStackConfig config, bool? flag) =>
+		!(flag ?? config?.webRegistry ?? true);
+
+	/// <summary>
+	/// The enabled web-registry steps, which run unless the resolved choice opts out. Empty when
+	/// <paramref name="noWebRegistry"/> is set, where <see cref="SelectSteps"/> excludes them outright rather
+	/// than merely leaving them un-forced.
 	/// </summary>
 	public static HashSet<LocalStackStep> ForcedWebSteps(LocalStackConfig config, bool noWebRegistry) =>
 		noWebRegistry
@@ -188,8 +223,8 @@ public class LocalStackUpCommand
 	{
 		bool Included(LocalStackStep s) =>
 			s.enabled
-			// --no-web-registry drops all three web steps. `docker: web registry` is not a build step, so
-			// without this it would keep coming up and the opt-out would only be half-honoured.
+			// Opting out drops all three web steps. `docker: web registry` is not a build step, so without
+			// this it would keep coming up and the opt-out would only be half-honoured.
 			&& !(noWebRegistry && LocalStackTemplate.IsWebStep(s.name))
 			// build steps run under --build, when their output is missing, when they are web steps (the
 			// default), or when --only asks for them by name — naming a step is already an explicit request.
@@ -260,11 +295,13 @@ public class LocalStackUpCommand
 		}
 
 		// The web-registry steps are build steps with no `requiredOutput`, so the self-healing set above can
-		// never reach them. They therefore run by DEFAULT: skipping them left the portal loading the PUBLISHED
-		// sdk from unpkg instead of the local build, on an `up` that reported success. --no-web-registry opts out.
-		var forcedWeb = ForcedWebSteps(config, args.noWebRegistry);
+		// never reach them. They therefore run whenever the resolved choice says so: skipping them left the
+		// portal loading the PUBLISHED sdk from unpkg instead of the local build, on an `up` that reported
+		// success. The standing choice comes from `beam local init`; the two flags override it for this run.
+		var noWebRegistry = ResolveNoWebRegistry(config, args.webRegistry);
+		var forcedWeb = ForcedWebSteps(config, noWebRegistry);
 
-		var steps = SelectSteps(config, args.build, autoBuild, forcedWeb, only, skip, args.noWebRegistry);
+		var steps = SelectSteps(config, args.build, autoBuild, forcedWeb, only, skip, noWebRegistry);
 		if (steps.Count == 0)
 		{
 			throw new CliException("No steps to run (all disabled or filtered out).");
@@ -281,17 +318,33 @@ public class LocalStackUpCommand
 		// for them explicitly, so say why they are running and how to turn them off.
 		foreach (var s in steps.Where(forcedWeb.Contains).Where(s => s.build))
 		{
-			Log.Information($"[{s.name}] running because the local web registry is on by default (pass --no-web-registry to skip it).");
+			Log.Information($"[{s.name}] running because the local web registry is on for this workspace (pass --with-web-registry=false to skip it for this run, or `beam local init` to turn it off for good).");
 		}
 
 		// Opting out is legitimate, but it is the thing that leaves the portal on a published toolkit pin, so
-		// it should never be a silent choice.
-		if (args.noWebRegistry && config.steps.Any(s => s.enabled && LocalStackTemplate.IsWebStep(s.name)))
+		// it should never be a silent choice. An EXPLICIT --with-web-registry=false is a per-run surprise and
+		// gets a warning; the manifest's standing choice was made deliberately at `init` time, so warning about
+		// it on every single `up` would be noise — it just says where the choice came from and how to change it.
+		if (noWebRegistry && config.steps.Any(s => s.enabled && LocalStackTemplate.IsWebStep(s.name)))
 		{
-			Log.Warning("--no-web-registry: skipping the local web registry, so the portal's extensions keep whatever toolkit version they already pin. If that is a published version, the portal loads the published web SDK from unpkg rather than your local build.");
+			const string consequence =
+				"skipping the local web registry, so the portal's extensions keep whatever toolkit version they "
+				+ "already pin. If that is a published version, the portal loads the published web SDK from unpkg "
+				+ "rather than your local build.";
+
+			if (args.webRegistry == false)
+			{
+				Log.Warning($"--with-web-registry=false: {consequence}");
+			}
+			else
+			{
+				Log.Information(
+					$"`beam local init` turned the local web registry off for this workspace: {consequence} "
+					+ "Pass --with-web-registry to run it for this run, or re-run `beam local init` to turn it back on.");
+			}
 		}
 
-		WarnOnStaleExtensionPins(config, steps);
+		WarnOnStaleExtensionPins(config, steps, noWebRegistry);
 
 		// Manifests generated before build steps existed won't have any — tell the user how to get them.
 		if (args.build && !config.steps.Any(s => s.build))
@@ -590,7 +643,7 @@ public class LocalStackUpCommand
 					}
 					else if (step.build && forcedWeb.Contains(step))
 					{
-						launching += " — --with-web-registry was passed, so it builds even without --build";
+						launching += " — the local web registry is on for this workspace, so it builds even without --build";
 					}
 
 					Send(step.name, "starting", launching, baseProgress);

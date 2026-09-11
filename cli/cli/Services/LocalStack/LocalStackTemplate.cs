@@ -77,6 +77,10 @@ public static class LocalStackTemplate
 		// BeamableAPI's own launchSettings already claim (BeamableScheduler.Loader/.Dispatcher default to 5050).
 		// 5045 is unused across BeamableAPI and this CLI.
 		public string campaignRuntimeUrl = "http://localhost:5045";
+		// The analytics loader. 5020 is not an arbitrary pick like the two above: it is the port the project's
+		// OWN launchSettings.json already declares, so it is reserved for this process across BeamableAPI and
+		// cannot collide with the gateway (5000), the message rail (5030) or the campaign runtime (5045).
+		public string analyticsLoaderUrl = "http://localhost:5020";
 		public string apiDir;
 		public string scalaDir;
 		public string portalDir;
@@ -119,11 +123,19 @@ public static class LocalStackTemplate
 		/// </summary>
 		public int analyticsGatewayPort = 9003;
 		/// <summary>
-		/// Whether to emit the local web package registry step (Verdaccio + local-unpkg). Defaults to false:
-		/// it is only useful when iterating on <c>@beamable/sdk</c> or <c>@beamable/portal-toolkit</c>, and
-		/// leaving it off keeps the manifest identical to a stack without it.
+		/// Whether to EMIT the local web package registry steps (Verdaccio + local-unpkg) at all.
+		/// <c>beam local init</c> always sets this, so the steps are always in the manifest and can be turned
+		/// on later without regenerating it; whether they actually RUN is <see cref="webRegistry"/>. Only a
+		/// caller that wants a manifest structurally without them (the tests) leaves this false.
 		/// </summary>
 		public bool includeWebRegistry;
+
+		/// <summary>
+		/// The standing choice to record in <see cref="LocalStackConfig.webRegistry"/>: whether
+		/// <c>beam local up</c> runs the web-registry steps without being asked to. Only meaningful together
+		/// with <see cref="includeWebRegistry"/> — there is nothing to run when the steps were not emitted.
+		/// </summary>
+		public bool webRegistry;
 
 		/// <summary>
 		/// The <c>portal-localdev</c> directory holding the web registry's docker-compose file. Only read when
@@ -448,7 +460,10 @@ public static class LocalStackTemplate
 
 		var config = new LocalStackConfig
 		{
-			host = o.host, portalUrl = o.portalUrl, javaHome = o.javaHome, toolchain = o.toolchain
+			host = o.host, portalUrl = o.portalUrl, javaHome = o.javaHome, toolchain = o.toolchain,
+			// The standing web-registry choice. Only recorded when the steps exist to be run: a manifest
+			// without them would otherwise claim a choice that has nothing to act on.
+			webRegistry = o.includeWebRegistry ? o.webRegistry : null
 		};
 
 		// Documentation-only metadata, recorded so the generated agent skill can name the repos this manifest
@@ -464,7 +479,8 @@ public static class LocalStackTemplate
 			productDir = o.includeWebRegistry ? Dir(WebProductDir(o.webRegistryDir), "BeamableProduct (web packages repo)") : null,
 		};
 
-		// 0. Local web package registry (opt-in via `beam local init --with-web-registry`). Placed first
+		// 0. Local web package registry. Always written by `beam local init`; whether it RUNS is the
+		//    `webRegistry` choice above (see LocalStackUpCommand.ResolveNoWebRegistry). Placed first
 		//    because `build: portal deps` and the portal extension steps below run npm installs that may
 		//    need to resolve locally published @beamable packages from it. Independent of everything else
 		//    and fast to come up, so it costs nothing to have early.
@@ -525,6 +541,22 @@ public static class LocalStackTemplate
 		// own ASPNETCORE_URLS, ready on /health.
 		AddDotnetHost(config, apiDir, "c# campaign runtime", "BeamableCampaignRuntime",
 			o.campaignRuntimeUrl, o.campaignRuntimeUrl);
+
+		// The analytics loader — the competing consumer that drains the analytics event stream and lands it as
+		// Parquet in S3, which the gateway's commit timer then folds into the Iceberg tables Athena reads.
+		// Without it, events reach ActiveMQ and stop there: `POST /analytics/query` returns nothing and anything
+		// built on the warehouse (the Campaign builder's analytics-event picker, Campaign Analytics) is empty
+		// locally for no visible reason.
+		//
+		// This is the ONE step in the stack that talks to real AWS. There is no local emulator for S3 Tables or
+		// Athena, so it uses a dedicated shared `local` analytics environment (the beamable-local-analytics*
+		// buckets and the beamable-analytics-local workgroups; see BeamableAPI's appsettings.Local.json and its
+		// README's "Analytics in Local Development"). That means it needs credentials that can assume the
+		// analytics roles — run `beam local setup --only aws` to check. Without them the host still starts and
+		// serves /health; it just logs AWS errors and lands nothing. To opt out entirely, set this step's
+		// "enabled": false in the manifest.
+		AddDotnetHost(config, apiDir, "c# analytics loader", "BeamableAnalyticsLoader",
+			o.analyticsLoaderUrl, o.analyticsLoaderUrl);
 
 		// 2. Portal frontend (Vite dev server). Placed BEFORE the Scala group because it only serves the
 		//    frontend (the browser talks to the backend at runtime) — so it comes up in ~1s instead of waiting

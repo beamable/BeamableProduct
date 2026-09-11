@@ -15,11 +15,11 @@
 const fs = require('fs');
 const path = require('path');
 
-/** Read VITE_API_BASE from env.local, or undefined if the file/key is absent. */
-function readApiBase() {
+/** Read one KEY=VALUE from env.local, or undefined if the file/key is absent. */
+function readEnvLocal(key) {
   try {
     const txt = fs.readFileSync(path.join(__dirname, 'env.local'), 'utf8');
-    const match = txt.match(/^\s*VITE_API_BASE\s*=\s*(.+?)\s*$/m);
+    const match = txt.match(new RegExp(`^\\s*${key}\\s*=\\s*(.+?)\\s*$`, 'm'));
     return match ? match[1].replace(/^["']|["']$/g, '').trim() : undefined;
   } catch {
     return undefined;
@@ -27,7 +27,13 @@ function readApiBase() {
 }
 
 module.exports = ({ config }) => {
-  const apiBase = readApiBase();
+  const apiBase = readEnvLocal('VITE_API_BASE');
+  // Routing key for microservices started with `beam project run` (which is how the local stack
+  // runs them — see .beamable/local-stack.json). Such a service registers its binding behind a
+  // per-machine key and the platform routes to it ONLY for callers presenting that key; without
+  // it every microservice call answers `BindingNotFoundException`. `beam fed local-key` prints
+  // it. Leave it unset for realm-deployed services, which bind unkeyed.
+  const routingKey = readEnvLocal('BEAM_ROUTING_KEY');
   // Cleartext is opt-in via the explicit local build variant only (`APP_VARIANT=local`, set
   // by the `:local` npm scripts). Never committed, never inferred from the URL — so
   // remote/release builds always keep Android's default TLS-only enforcement.
@@ -64,6 +70,8 @@ module.exports = ({ config }) => {
       // The Beamable API base URL (e.g. https://dev.api.beamable.com). Undefined falls back
       // to the named environment in src/beam/config.ts.
       apiBase,
+      // The local-microservice routing key, or undefined for realm-deployed services.
+      routingKey,
       // Surfaced for diagnostics: whether this build allows cleartext HTTP.
       usesCleartext,
     },

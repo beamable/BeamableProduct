@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { listInGameMessages } from '../../src/beam/ingameMessages';
+import { listInGameMessages, markInGameMessageRead } from '../../src/beam/ingameMessages';
 import { useBeam } from '../../src/state/beamContext';
 import { useLogActions } from '../../src/state/logContext';
 import AsyncButton from '../../src/ui/AsyncButton';
@@ -60,6 +60,24 @@ export default function InboxTab() {
     [isReady, append],
   );
 
+  /**
+   * Opens a message. Nothing analytics-related happens here on purpose: the SDK reports the campaign
+   * funnel's `Opened` on the Unread -> Read transition, the same way the native SDKs report a push
+   * tap. That is what makes an in-game campaign measurable without the game writing any tracking code.
+   */
+  const open = useCallback(
+    async (id: bigint | string) => {
+      try {
+        await markInGameMessageRead(id);
+        append(`mail ${String(id)} marked read`);
+        await refresh(true);
+      } catch (e) {
+        append(`mail read failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    },
+    [append, refresh],
+  );
+
   // Auto-refresh on focus. `refresh` changes identity when `isReady` flips, which makes this
   // re-run — so a mailbox opened before the connection landed fills in as soon as it does.
   useFocusEffect(
@@ -105,7 +123,8 @@ export default function InboxTab() {
       >
         <Hint>
           Reads this player's Beamable mailbox, newest first. Refreshes automatically when this
-          tab opens — send a message from the Portal Campaign Builder to see it appear.
+          tab opens — send a message from the Portal Campaign Builder to see it appear. Tap an
+          unread message to open it; campaign mail reports its funnel `Opened` automatically.
         </Hint>
         {error && <Text style={styles.error} selectable>✕ {error}</Text>}
         {messages.length === 0 ? (
@@ -117,6 +136,7 @@ export default function InboxTab() {
               subject={m.subject}
               body={m.body}
               meta={`${m.state}${m.category ? ` · ${m.category}` : ''}`}
+              onPress={m.state === 'Unread' ? () => void open(m.id) : undefined}
             />
           ))
         )}

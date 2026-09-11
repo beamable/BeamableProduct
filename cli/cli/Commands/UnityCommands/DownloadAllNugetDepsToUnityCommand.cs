@@ -1,3 +1,4 @@
+using Beamable.Server;
 using cli.Services.Unity;
 using System.CommandLine;
 
@@ -43,13 +44,62 @@ public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNuget
 			throw new CliException("Cannot download nuget packages for developer 0.0.123 version.");
 		}
 
-		UnityProjectUtil.DeleteAllFilesWithExtensionsAndEmptyDirectories(Path.Combine(info.packageFolder, "Common"), new string[]{".cs", ".cs.meta"});
-		UnityProjectUtil.DeleteAllFilesWithExtensionsAndEmptyDirectories(Path.Combine(infoServer.packageFolder, "SharedRuntime"), new string[]{".cs", ".cs.meta"});
-		UnityProjectUtil.DeleteAllFilesWithExtensionsAndEmptyDirectories(Path.Combine(infoServer.packageFolder, "Runtime/Common"), new string[]{".cs", ".cs.meta"});
+		var generatedExtensions = new string[] { ".cs", ".cs.meta" };
+		var commonFolder = Path.Combine(info.packageFolder, "Common");
 
-		await UnityProjectUtil.DownloadPackage("Beamable.Common", info.beamableNugetVersion,
-			"content/sourceCode/", Path.Combine(info.packageFolder, "Common"));
+		// fetch the replacement source BEFORE deleting the source it replaces. A pinned version that is
+		// not published yet used to leave the Unity project with its generated code deleted and nothing
+		// to put back, which broke the project until the files were restored by hand.
+		var commonPackage = await UnityProjectUtil.FetchPackage("Beamable.Common", info.beamableNugetVersion);
 
+		// capture the meta files before anything is deleted, so that folder guids and file guids that
+		// already exist survive the delete-and-replace cycle below.
+		var commonSnapshot = UnityProjectUtil.CaptureMetaSnapshot(commonFolder);
+
+		UnityProjectUtil.DeleteGeneratedFiles(commonFolder, generatedExtensions);
+
+		// nothing repopulates these two, so they only ever need the file cleanup and a prune.
+		var serverFolders = new[]
+		{
+			Path.Combine(infoServer.packageFolder, "SharedRuntime"),
+			Path.Combine(infoServer.packageFolder, "Runtime/Common")
+		};
+		foreach (var serverFolder in serverFolders)
+		{
+			UnityProjectUtil.DeleteGeneratedFiles(serverFolder, generatedExtensions);
+		}
+
+		await UnityProjectUtil.WritePackageToUnity(commonPackage, "content/sourceCode/", commonFolder,
+			commonSnapshot);
+
+		// only prune once the replacement source is on disk. A folder that the new source still uses has
+		// been repopulated by now, so it is no longer empty and keeps its meta file. A folder that the new
+		// source dropped is still empty, so it is removed along with its orphaned meta file.
+		// If the download throws, neither of the steps below runs, so the folder meta files are left
+		// untouched and a retry is safe.
+		UnityProjectUtil.PruneEmptyDirectoriesAndMetaFiles(commonFolder);
+
+		foreach (var serverFolder in serverFolders)
+		{
+			UnityProjectUtil.PruneEmptyDirectoriesAndMetaFiles(serverFolder);
+		}
+
+		// finally, backfill a meta for any folder that survived the prune without one, which covers both
+		// a folder whose meta this run deleted and a folder the new source introduced.
+		var writtenFolderMetaFiles = UnityProjectUtil.EnsureFolderMetaFiles(commonFolder, commonSnapshot);
+		if (writtenFolderMetaFiles.Count > 0)
+		{
+			Log.Information(
+				$"Wrote {writtenFolderMetaFiles.Count} folder meta files. Folders=[{string.Join(", ", writtenFolderMetaFiles)}]");
+		}
+
+		var missingMetaFiles = UnityProjectUtil.FindDirectoriesMissingMetaFiles(commonFolder);
+		if (missingMetaFiles.Count > 0)
+		{
+			throw new CliException(
+				$"Unity would ignore {missingMetaFiles.Count} directories in [{commonFolder}] because they have no meta file. " +
+				$"Missing=[{string.Join(", ", missingMetaFiles)}]");
+		}
 	}
 	
 }

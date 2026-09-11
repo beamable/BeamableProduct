@@ -7,6 +7,7 @@ import type { Operator } from './enums/Operator';
 
 export type RuleLeaf = { 
   key?: string | null; 
+  ns?: string | null; 
   op?: Operator; 
   values?: (string | number | number | boolean | (string | number | number | boolean)[])[] | null; 
 };

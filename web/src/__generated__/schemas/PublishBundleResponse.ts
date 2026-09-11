@@ -7,4 +7,5 @@ export type PublishBundleResponse = {
   checksum?: string; 
   isNew?: boolean; 
   name?: string; 
+  version?: bigint | string; 
 };
