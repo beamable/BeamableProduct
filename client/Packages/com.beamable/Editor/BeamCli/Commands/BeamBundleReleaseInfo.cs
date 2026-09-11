@@ -5,8 +5,10 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common.BeamCli;
     
     [System.SerializableAttribute()]
-    public partial class BeamBundleHistoryCommandOutput
+    public partial class BeamBundleReleaseInfo
     {
-        public BeamBundleInfo[] history;
+        public long version;
+        public string checksum;
+        public long publishedAt;
     }
 }
