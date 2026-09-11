@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed the Unity Content window failing to reconcile large local content changes after filesystem watcher overflow, which previously required a manual refresh.
 - Fixed repeated content validation during Unity Inspector repaints, reducing Editor log spam and performance overhead when viewing content.
 - Fixed Unity Editor hitches after editing content properties by avoiding synchronous end-of-stream checks while reading streamed CLI responses.
 
