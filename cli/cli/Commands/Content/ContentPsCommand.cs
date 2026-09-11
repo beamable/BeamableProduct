@@ -86,26 +86,7 @@ public class ContentPsCommand
 		var localContentAgainstLatest = contentService.GetAllContentFiles(latestManifest.GetResult(), manifestId);
 		await Task.WhenAll(localContentAgainstLatest);
 
-		// Prepare the content entries between our local state and the remote states that are relevant (our reference and the latest publish in the realm).
-		var entriesToEmitAgainstLatest = ContentService.ContentFileToLocalContentManifestEntries(localContentAgainstLatest.Result.ContentFiles)
-			.ToArray();
-
-		// Build and emit the event
-		var eventToEmit = new ContentPsCommandEvent()
-		{
-			EventType = ContentPsCommandEvent.EVT_TYPE_FullRebuild,
-			RelevantManifestsAgainstLatest = new()
-			{
-				new LocalContentManifest()
-				{
-					OwnerCid = cid, OwnerPid = pid, ManifestId = manifestId, Entries = entriesToEmitAgainstLatest.ToArray(),
-				}
-			},
-			ToRemoveLocalEntries = new(),
-			PublisherAccountId = "",
-			PublisherEmail = "",
-			SyncReports = new(),
-		};
+		var eventToEmit = CreateFullRebuildEvent(localContentAgainstLatest.Result.ContentFiles, cid, pid, manifestId);
 		this.SendResults<DefaultStreamResultChannel, ContentPsCommandEvent>(eventToEmit);
 		this.LogResult(eventToEmit);
 
@@ -133,10 +114,32 @@ public class ContentPsCommand
 
 					try
 					{
-// Refresh both the reference manifest and the latest manifests.
+						// Refresh both the reference manifest and the latest manifests.
 						var latestManifestId = latestManifest.GetResult().uid.GetOrElse("");
 						latestManifest = contentService.GetManifest(manifestId, latestManifestId).ToPromise();
 						await latestManifest;
+
+						var fullRebuildEvent = await CreateFullRebuildEventIfRequired(
+							batchedLocalFileChanges,
+							async () => await contentService.GetAllContentFiles(latestManifest.GetResult(), manifestId),
+							cid,
+							pid,
+							manifestId);
+						if (fullRebuildEvent != null)
+						{
+							Log.Information(
+								"Content filesystem recovery completed. Rebuilt the full local content state. " +
+								"PID={Pid}, ManifestId={ManifestId}",
+								pid,
+								manifestId);
+
+							this.SendResults<DefaultStreamResultChannel, ContentPsCommandEvent>(fullRebuildEvent);
+							this.LogResult(fullRebuildEvent);
+
+							// The full snapshot includes all observed changes, so do not also emit the
+							// incomplete per-ID delta from this batch.
+							continue;
+						}
 
 						// Find all locally deleted content
 						var allLocalDeletions = batchedLocalFileChanges.AllFileChanges.Where(fc => fc.WasDeleted()).Select(fc => fc.ContentId).ToArray();
@@ -292,6 +295,48 @@ public class ContentPsCommand
 			await localFileChangesTask;
 			await remoteManifestPublishTask;
 		}
+	}
+
+	public static async Task<ContentPsCommandEvent> CreateFullRebuildEventIfRequired(
+		LocalContentFileChanges changes,
+		Func<Task<LocalContentFiles>> fullRescan,
+		string cid,
+		string pid,
+		string manifestId)
+	{
+		if (!changes.RequiresFullRescan)
+		{
+			return null;
+		}
+
+		var reconciledContent = await fullRescan();
+		return CreateFullRebuildEvent(reconciledContent.ContentFiles, cid, pid, manifestId);
+	}
+
+	private static ContentPsCommandEvent CreateFullRebuildEvent(IEnumerable<ContentFile> contentFiles, string cid, string pid,
+		string manifestId)
+	{
+		var entries = ContentService.ContentFileToLocalContentManifestEntries(contentFiles)
+			.ToArray();
+
+		return new ContentPsCommandEvent
+		{
+			EventType = ContentPsCommandEvent.EVT_TYPE_FullRebuild,
+			RelevantManifestsAgainstLatest = new()
+			{
+				new LocalContentManifest
+				{
+					OwnerCid = cid,
+					OwnerPid = pid,
+					ManifestId = manifestId,
+					Entries = entries
+				},
+			},
+			ToRemoveLocalEntries = new List<LocalContentManifest>(),
+			PublisherAccountId = "",
+			PublisherEmail = "",
+			SyncReports = new List<ContentSyncReport>()
+		};
 	}
 
 	protected virtual void LogResult(object result)
