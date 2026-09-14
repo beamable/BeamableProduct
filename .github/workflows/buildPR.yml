@@ -311,7 +311,11 @@ jobs:
       # Container-action stdout scope is unconfirmed; verify on a real run. ~Claude
       - name: Register Unity license problem matcher
         run: echo "::add-matcher::.github/matchers/unity-license.json"
-      - uses: game-ci/unity-test-runner@v4
+      # Pinned to the last-good SHA (Sept 7 run). The moving @v4 tag was re-pointed to a
+      # revision that shells out to the game-ci Go CLI, which aborts with
+      # "[WARN] Unknown argument: version" and exit 1 before Unity ever launches.
+      # Revert to @v4 once that upstream regression is fixed. ~Claude
+      - uses: game-ci/unity-test-runner@0ff419b913a3630032cbe0de48a0099b5a9f0ed9 # v4
         id: tests
         timeout-minutes: 30
         env:
@@ -466,7 +470,11 @@ jobs:
       # See the registration rationale above testGroupDefault's matching step. ~Claude
       - name: Register Unity license problem matcher
         run: echo "::add-matcher::.github/matchers/unity-license.json"
-      - uses: game-ci/unity-test-runner@v4
+      # Pinned to the last-good SHA (Sept 7 run). The moving @v4 tag was re-pointed to a
+      # revision that shells out to the game-ci Go CLI, which aborts with
+      # "[WARN] Unknown argument: version" and exit 1 before Unity ever launches.
+      # Revert to @v4 once that upstream regression is fixed. ~Claude
+      - uses: game-ci/unity-test-runner@0ff419b913a3630032cbe0de48a0099b5a9f0ed9 # v4
         id: tests
         timeout-minutes: 30
         env:
