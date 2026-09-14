@@ -42,8 +42,28 @@ public class PortalExtensionLibraryTests
 	{
 		if (Directory.Exists(_root))
 		{
-			Directory.Delete(_root, true);
+			DeleteDirectoryTree(_root);
 		}
+	}
+
+	// Tests may materialize directory links (junctions/symlinks); a plain recursive delete can follow a
+	// reparse point into its target (deleting real content) or loop on cyclic junctions. Walk manually and
+	// unlink reparse points instead of descending through them.
+	private static void DeleteDirectoryTree(string dir)
+	{
+		var info = new DirectoryInfo(dir);
+		if (info.LinkTarget != null || info.Attributes.HasFlag(FileAttributes.ReparsePoint))
+		{
+			Directory.Delete(dir); // removes the link, not its target
+			return;
+		}
+
+		foreach (var sub in Directory.EnumerateDirectories(dir))
+		{
+			DeleteDirectoryTree(sub);
+		}
+
+		Directory.Delete(dir, true); // only real files/empty dirs remain at this point
 	}
 
 	private void WriteExtensionPackageJson(string libSpecifier)
@@ -226,5 +246,73 @@ public class PortalExtensionLibraryTests
 	public void ReadInstalledPackageVersion_NullWhenNotInstalled()
 	{
 		Assert.That(PortalExtensionAddLibraryCommand.ReadInstalledPackageVersion(_extensionDir, Toolkit), Is.Null);
+	}
+
+	// LinkTransitiveLibraryDependencies materializes a library's own library deps into its node_modules so a
+	// library->library import resolves at build time (npm won't install a file:-linked library's deps for us).
+
+	private string CreateLibrary(string name)
+	{
+		var dir = Path.Combine(_root, "extensions-libs", name);
+		Directory.CreateDirectory(dir);
+		File.WriteAllText(Path.Combine(dir, "package.json"), new JObject
+		{
+			["name"] = name,
+			["beamable"] = new JObject { ["portalExtensionLib"] = true }
+		}.ToString());
+		return dir;
+	}
+
+	private static void SetLibraryDeps(string libDir, string block, JObject deps)
+	{
+		var path = Path.Combine(libDir, "package.json");
+		var root = JObject.Parse(File.ReadAllText(path));
+		root[block] = deps;
+		File.WriteAllText(path, root.ToString());
+	}
+
+	[Test]
+	public void LinkTransitive_LinksLibrarysOwnLibraryDevDependency()
+	{
+		// MyExt -> MyLib (devDependency) -> MyDepLib
+		var depLibDir = CreateLibrary("MyDepLib");
+		SetLibraryDeps(_libDir, "devDependencies", new JObject { ["MyDepLib"] = "file:../MyDepLib" });
+		WriteExtensionPackageJson(PortalExtensionAddLibraryCommand.ComputeFileSpecifier(_extensionDir, _libDir));
+
+		PortalExtensionAddLibraryCommand.LinkTransitiveLibraryDependencies(MakeExtensionDef(), _root);
+
+		var linkPath = Path.Combine(_libDir, "node_modules", "MyDepLib");
+		Assert.That(new DirectoryInfo(linkPath).LinkTarget, Is.Not.Null,
+			"MyDepLib must be materialized as a link (not a copied directory) inside MyLib's node_modules");
+		Assert.That(File.Exists(Path.Combine(linkPath, "package.json")), Is.True,
+			"the link must resolve to MyDepLib's real directory");
+		Assert.That(Path.GetFullPath(depLibDir), Is.Not.Null); // depLibDir is the real target the link resolves to
+	}
+
+	[Test]
+	public void LinkTransitive_IgnoresNonLibraryDependencies()
+	{
+		// A dep that isn't a portal-extension library (e.g. react) must never be linked.
+		SetLibraryDeps(_libDir, "devDependencies", new JObject { ["react"] = "^19.0.0" });
+		WriteExtensionPackageJson(PortalExtensionAddLibraryCommand.ComputeFileSpecifier(_extensionDir, _libDir));
+
+		PortalExtensionAddLibraryCommand.LinkTransitiveLibraryDependencies(MakeExtensionDef(), _root);
+
+		Assert.That(Directory.Exists(Path.Combine(_libDir, "node_modules", "react")), Is.False);
+	}
+
+	[Test]
+	public void LinkTransitive_IsCycleSafe()
+	{
+		// MyLib <-> MyDepLib depend on each other; the walk must terminate and link both directions.
+		var depLibDir = CreateLibrary("MyDepLib");
+		SetLibraryDeps(_libDir, "devDependencies", new JObject { ["MyDepLib"] = "file:../MyDepLib" });
+		SetLibraryDeps(depLibDir, "devDependencies", new JObject { ["MyLib"] = "file:../MyLib" });
+		WriteExtensionPackageJson(PortalExtensionAddLibraryCommand.ComputeFileSpecifier(_extensionDir, _libDir));
+
+		PortalExtensionAddLibraryCommand.LinkTransitiveLibraryDependencies(MakeExtensionDef(), _root);
+
+		Assert.That(File.Exists(Path.Combine(_libDir, "node_modules", "MyDepLib", "package.json")), Is.True);
+		Assert.That(File.Exists(Path.Combine(depLibDir, "node_modules", "MyLib", "package.json")), Is.True);
 	}
 }
