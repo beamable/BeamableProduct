@@ -34,7 +34,7 @@ public class ContentStatusTest
 		if (File.Exists(_localFilePath)) File.Delete(_localFilePath);
 	}
 
-	private ContentFile MakeFile(string manifestChecksum, string referenceChecksum, string referenceVersion, string version = RemoteVersion)
+	private ContentFile MakeFile(string manifestChecksum, LocalContentReference? reference, string version = RemoteVersion)
 	{
 		var file = new ContentFile
 		{
@@ -42,8 +42,7 @@ public class ContentStatusTest
 			LocalFilePath = _localFilePath,
 			Properties = JsonSerializer.Deserialize<JsonElement>(Properties),
 			Tags = JsonSerializer.Deserialize<JsonElement>("[]"),
-			ReferenceChecksum = referenceChecksum,
-			ReferenceVersion = referenceVersion,
+			Reference = reference,
 			ReferenceContent = new ClientContentInfoJson
 			{
 				contentId = "items.sword",
@@ -57,14 +56,16 @@ public class ContentStatusTest
 		return file;
 	}
 
-	private string OurChecksum => MakeFile(null, null, null).PropertiesChecksum;
+	private string OurChecksum => MakeFile(null, null).PropertiesChecksum;
+
+	private LocalContentReference ReferenceTo(string version) => new(OurChecksum, version);
 
 	[Test]
 	public void UpToDate_WhenPublisherChecksumIsUnreproducible_ButLocalReferenceMatches()
 	{
 		// The reported bug: an external tool published a checksum over differently ordered JSON. The values
 		// are identical, so this must read as clean.
-		var file = MakeFile("a-checksum-we-could-never-compute", OurChecksum, RemoteVersion);
+		var file = MakeFile("a-checksum-we-could-never-compute", ReferenceTo(RemoteVersion));
 
 		Assert.That(file.GetStatus(), Is.EqualTo(ContentStatus.UpToDate));
 	}
@@ -74,7 +75,7 @@ public class ContentStatusTest
 	{
 		// Our locally derived reference describes the payload we downloaded. If the remote has since changed,
 		// that reference says nothing about the new one and must not be allowed to mask a real change.
-		var file = MakeFile("a-checksum-we-could-never-compute", OurChecksum, "an-older-remote-version");
+		var file = MakeFile("a-checksum-we-could-never-compute", ReferenceTo("an-older-remote-version"));
 
 		Assert.That(file.GetStatus(), Is.EqualTo(ContentStatus.Modified));
 	}
@@ -82,7 +83,7 @@ public class ContentStatusTest
 	[Test]
 	public void Modified_WhenLocalPropertiesActuallyDiffer()
 	{
-		var file = MakeFile(null, "a-checksum-for-different-properties", RemoteVersion);
+		var file = MakeFile(null, new LocalContentReference("a-checksum-for-different-properties", RemoteVersion));
 
 		Assert.That(file.GetStatus(), Is.EqualTo(ContentStatus.Modified));
 	}
@@ -91,19 +92,58 @@ public class ContentStatusTest
 	public void FallsBackToPublisherChecksum_WhenFileHasNoLocalReference()
 	{
 		// Files written before referenceChecksum existed keep the historical comparison until their next sync.
-		var matching = MakeFile(OurChecksum, null, null);
-		var notMatching = MakeFile("a-checksum-we-could-never-compute", null, null);
+		var matching = MakeFile(OurChecksum, null);
+		var notMatching = MakeFile("a-checksum-we-could-never-compute", null);
 
 		Assert.That(matching.GetStatus(), Is.EqualTo(ContentStatus.UpToDate));
 		Assert.That(notMatching.GetStatus(), Is.EqualTo(ContentStatus.Modified));
 	}
 
-	[Test]
-	public void FallsBackToPublisherChecksum_WhenChecksumRecordedWithoutItsVersion()
+	[TestCase("""{"checksum":"abc"}""", TestName = "version missing")]
+	[TestCase("""{"version":"abc"}""", TestName = "checksum missing")]
+	[TestCase("""{"checksum":"abc","version":""}""", TestName = "version empty")]
+	[TestCase("""{}""", TestName = "both missing")]
+	public void ReferenceIsNotRead_WhenEitherHalfIsMissing(string referenceJson)
 	{
-		// Half a reference is not a reference. Without the version we cannot tell which payload it describes.
-		var file = MakeFile(OurChecksum, OurChecksum, null);
+		// Half a reference is not a reference: a checksum without its version cannot say which payload it
+		// describes. Rejecting it here is what makes the half-populated state unrepresentable everywhere else.
+		var json = JsonSerializer.Deserialize<JsonElement>(referenceJson);
 
-		Assert.That(file.GetStatus(), Is.EqualTo(ContentStatus.UpToDate));
+		Assert.That(LocalContentReference.TryRead(in json, out _), Is.False);
+	}
+
+	[Test]
+	public void SerializedFile_NestsTheReferenceUnderOneKey()
+	{
+		// Pins the on-disk shape. The two halves live under one key so that a file cannot express half a
+		// reference, which is the same invariant LocalContentReference enforces in memory.
+		var file = MakeFile(null, new LocalContentReference("the-checksum", "the-version"));
+
+		var json = JsonSerializer.Serialize(file, ContentService.GetContentFileSerializationOptions(false));
+
+		Assert.That(json, Does.Contain("""
+			"reference":{"checksum":"the-checksum","version":"the-version"}
+			""".Trim()));
+	}
+
+	[Test]
+	public void SerializedFile_OmitsAnAbsentReferenceEntirely()
+	{
+		var file = MakeFile(null, null);
+
+		var json = JsonSerializer.Serialize(file, ContentService.GetContentFileSerializationOptions(false));
+
+		// Match the key, not the bare word: "referenceManifestId" contains it as a substring.
+		Assert.That(json, Does.Not.Contain("\"reference\":"));
+	}
+
+	[Test]
+	public void ReferenceIsRead_WhenBothHalvesArePresent()
+	{
+		var json = JsonSerializer.Deserialize<JsonElement>("""{"checksum":"abc","version":"def"}""");
+
+		Assert.That(LocalContentReference.TryRead(in json, out var reference), Is.True);
+		Assert.That(reference.Checksum, Is.EqualTo("abc"));
+		Assert.That(reference.Version, Is.EqualTo("def"));
 	}
 }
