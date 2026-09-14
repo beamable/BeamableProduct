@@ -75,6 +75,8 @@ user-token.json
 /microservice/beamable.tooling.common/bin/
 /microservice/beamable.tooling.common/obj/
 /microservice/beamable.tooling.common/.idea/
+/microservice/MockService/bin/
+/microservice/MockService/obj/
 /microservice/*.sln.DotSettings.*
 
 /microservice/microservice/.idea/
