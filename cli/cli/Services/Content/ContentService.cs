@@ -713,8 +713,7 @@ public partial class ContentService
 							Properties = properties,
 							Tags = json.GetProperty(ContentFile.JSON_NAME_TAGS),
 							FetchedFromManifestUid = json.GetProperty(ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID).GetString(),
-							ReferenceChecksum = GetOptionalString(in json, ContentFile.JSON_NAME_REFERENCE_CHECKSUM),
-							ReferenceVersion = GetOptionalString(in json, ContentFile.JSON_NAME_REFERENCE_VERSION),
+							Reference = ReadReference(in json),
 							ReferenceContent = referenceContent,
 						};
 						contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
@@ -1183,8 +1182,7 @@ public partial class ContentService
 				// version the platform assigned to them.
 				if (publishedVersions.TryGetValue(contentFile.Id, out var publishedVersion))
 				{
-					contentFile.ReferenceChecksum = contentFile.PropertiesChecksum;
-					contentFile.ReferenceVersion = publishedVersion;
+					contentFile.Reference = new LocalContentReference(contentFile.PropertiesChecksum, publishedVersion);
 				}
 
 				saveTasks.Add(SaveContentFile(contentFolder, contentFile));
@@ -1408,8 +1406,7 @@ public partial class ContentService
 			// this same element, so local and reference agree by construction regardless of how the publisher
 			// ordered, escaped or formatted its JSON.
 			contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
-			contentFile.ReferenceChecksum = contentFile.PropertiesChecksum;
-			contentFile.ReferenceVersion = c.ReferenceContent.version;
+			contentFile.Reference = new LocalContentReference(contentFile.PropertiesChecksum, c.ReferenceContent.version);
 			saveTasks.Add(SaveContentFile(contentFolder, contentFile, cancellationToken));
 		}
 
@@ -1427,8 +1424,7 @@ public partial class ContentService
 			// remote ones, so only record a reference for the entries that actually match the target.
 			if (c.ReferenceContent != null && contentFile.GetStatus() == ContentStatus.UpToDate)
 			{
-				contentFile.ReferenceChecksum = contentFile.PropertiesChecksum;
-				contentFile.ReferenceVersion = c.ReferenceContent.version;
+				contentFile.Reference = new LocalContentReference(contentFile.PropertiesChecksum, c.ReferenceContent.version);
 			}
 
 			contentFile.FetchedFromManifestUid = targetManifestUid;
@@ -1990,13 +1986,15 @@ public partial class ContentService
 	}
 
 	/// <summary>
-	/// Reads a string property that is allowed to be absent.
-	/// A content file written by an older CLI simply will not carry the newer optional fields, and absence is
-	/// the signal the caller acts on, so it is resolved here at the parse boundary rather than defended against
-	/// everywhere downstream.
+	/// Reads the locally derived reference off a parsed content file, if it carries one.
+	/// Absence is meaningful rather than exceptional: files written by an older CLI simply do not have it, and
+	/// resolving that here keeps every downstream reader working with a reference that is whole or not there.
 	/// </summary>
-	private static string GetOptionalString(in JsonElement json, string propertyName) =>
-		json.TryGetProperty(propertyName, out var value) ? value.GetString() : null;
+	private static LocalContentReference? ReadReference(in JsonElement json) =>
+		json.TryGetProperty(ContentFile.JSON_NAME_REFERENCE, out var reference)
+		&& LocalContentReference.TryRead(in reference, out var value)
+			? value
+			: null;
 
 	/// <summary>
 	/// Serializes just the <see cref="ContentFile.Properties"/> object.
@@ -2242,14 +2240,60 @@ public struct LocalContentFiles
 	public Dictionary<string, ClientManifestJsonResponse> ReferenceManifests;
 }
 
+/// <summary>
+/// A checksum this CLI computed over a remote content payload, paired with the platform content version that
+/// says which payload it was. Neither half means anything on its own -- a checksum without its version would
+/// let a stale reference mask a genuine remote change -- so the two are only ever constructed together and an
+/// absent reference is represented by a null, not by empty strings.
+/// </summary>
+[Serializable]
+public struct LocalContentReference
+{
+	public const string JSON_NAME_CHECKSUM = "checksum";
+	public const string JSON_NAME_VERSION = "version";
+
+	[JsonPropertyName(JSON_NAME_CHECKSUM)] public string Checksum;
+	[JsonPropertyName(JSON_NAME_VERSION)] public string Version;
+
+	public LocalContentReference(string checksum, string version)
+	{
+		Checksum = checksum;
+		Version = version;
+	}
+
+	/// <summary>
+	/// Reads a reference from the object a content file stores it under, yielding one only when both halves
+	/// are present. A file carrying half a reference is treated as carrying none.
+	/// </summary>
+	public static bool TryRead(in JsonElement json, out LocalContentReference reference)
+	{
+		reference = default;
+
+		if (!json.TryGetProperty(JSON_NAME_CHECKSUM, out var checksumElement)) return false;
+		if (!json.TryGetProperty(JSON_NAME_VERSION, out var versionElement)) return false;
+
+		var checksum = checksumElement.GetString();
+		var version = versionElement.GetString();
+		if (string.IsNullOrEmpty(checksum) || string.IsNullOrEmpty(version)) return false;
+
+		reference = new LocalContentReference(checksum, version);
+		return true;
+	}
+
+	/// <summary>
+	/// True when this reference was taken from the very payload <paramref name="remote"/> points at, which is
+	/// the only situation where comparing a local checksum against it means anything.
+	/// </summary>
+	public bool Describes(ClientContentInfoJson remote) => Version == remote.version;
+}
+
 [Serializable]
 public struct ContentFile : IEquatable<ContentFile>
 {
 	public const string JSON_NAME_PROPERTIES = "properties";
 	public const string JSON_NAME_TAGS = "tags";
 	public const string JSON_NAME_REFERENCE_MANIFEST_ID = "referenceManifestId";
-	public const string JSON_NAME_REFERENCE_CHECKSUM = "referenceChecksum";
-	public const string JSON_NAME_REFERENCE_VERSION = "referenceVersion";
+	public const string JSON_NAME_REFERENCE = "reference";
 
 	[JsonIgnore] public string Id;
 	[JsonIgnore] public string LocalFilePath;
@@ -2268,24 +2312,13 @@ public struct ContentFile : IEquatable<ContentFile>
 	public string FetchedFromManifestUid;
 
 	/// <summary>
-	/// The checksum of the remote properties as this CLI canonicalized them at sync time.
-	/// Unlike <see cref="ClientContentInfoJson.checksum"/>, which is whatever string the publisher
-	/// happened to supply, this is computed locally by <see cref="ContentService.CalculateChecksum(string)"/>,
-	/// so comparing against it does not require the publisher to have emitted byte-identical JSON.
-	/// Empty on files written before this field existed, and only meaningful together with
-	/// <see cref="ReferenceVersion"/>, which says which remote payload it describes.
+	/// What the remote payload hashed to when we last synced it, as computed by this CLI rather than supplied
+	/// by whoever published it. Null on files written before this existed, and on files restored from a
+	/// snapshot, both of which fall back to comparing against the manifest checksum.
 	/// </summary>
-	[JsonPropertyName(JSON_NAME_REFERENCE_CHECKSUM)]
-	public string ReferenceChecksum;
-
-	/// <summary>
-	/// The <see cref="ClientContentInfoJson.version"/> that <see cref="ReferenceChecksum"/> was derived from.
-	/// The platform derives that version from the content payload itself, so it identifies which remote bytes
-	/// our locally computed checksum describes. Without it a stale reference would be mistaken for a current
-	/// one and a genuine remote change would read as up to date.
-	/// </summary>
-	[JsonPropertyName(JSON_NAME_REFERENCE_VERSION)]
-	public string ReferenceVersion;
+	[JsonPropertyName(JSON_NAME_REFERENCE)]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public LocalContentReference? Reference;
 
 
 	public ContentStatus GetStatus()
@@ -2300,22 +2333,14 @@ public struct ContentFile : IEquatable<ContentFile>
 
 	/// <summary>
 	/// Compares the local properties against the remote ones we last synced.
-	/// Prefers <see cref="ReferenceChecksum"/>, which both sides of the comparison canonicalized the same way.
-	/// Falls back to the publisher-supplied manifest checksum for files written before that field existed,
-	/// which is the historical behaviour and is only correct when the publisher matched our serialization.
+	/// Prefers <see cref="Reference"/>, which both sides of the comparison canonicalized the same way, and which
+	/// is only usable for the remote payload it was taken from. Otherwise falls back to the publisher-supplied
+	/// manifest checksum, which is the historical behaviour and is only correct when the publisher happened to
+	/// match our serialization.
 	/// </summary>
-	private bool IsPropertiesDiff() => HasLocalReferenceFor(ReferenceContent)
-		? ReferenceChecksum != PropertiesChecksum
+	private bool IsPropertiesDiff() => Reference.HasValue && Reference.Value.Describes(ReferenceContent)
+		? Reference.Value.Checksum != PropertiesChecksum
 		: ReferenceContent.checksum != PropertiesChecksum;
-
-	/// <summary>
-	/// True when <see cref="ReferenceChecksum"/> was derived from exactly the remote payload described by
-	/// <paramref name="reference"/>, which is the only case where comparing against it is meaningful.
-	/// </summary>
-	private bool HasLocalReferenceFor(ClientContentInfoJson reference) =>
-		!string.IsNullOrEmpty(ReferenceChecksum)
-		&& !string.IsNullOrEmpty(ReferenceVersion)
-		&& ReferenceVersion == reference.version;
 
 	public long GetLastUpdateAt()
 	{
