@@ -713,12 +713,8 @@ public partial class ContentService
 							Properties = properties,
 							Tags = json.GetProperty(ContentFile.JSON_NAME_TAGS),
 							FetchedFromManifestUid = json.GetProperty(ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID).GetString(),
-							ReferenceChecksum = json.TryGetProperty(ContentFile.JSON_NAME_REFERENCE_CHECKSUM, out var referenceChecksum)
-								? referenceChecksum.GetString()
-								: null,
-							ReferenceVersion = json.TryGetProperty(ContentFile.JSON_NAME_REFERENCE_VERSION, out var referenceVersion)
-								? referenceVersion.GetString()
-								: null,
+							ReferenceChecksum = GetOptionalString(in json, ContentFile.JSON_NAME_REFERENCE_CHECKSUM),
+							ReferenceVersion = GetOptionalString(in json, ContentFile.JSON_NAME_REFERENCE_VERSION),
 							ReferenceContent = referenceContent,
 						};
 						contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
@@ -1992,6 +1988,15 @@ public partial class ContentService
 			};
 		});
 	}
+
+	/// <summary>
+	/// Reads a string property that is allowed to be absent.
+	/// A content file written by an older CLI simply will not carry the newer optional fields, and absence is
+	/// the signal the caller acts on, so it is resolved here at the parse boundary rather than defended against
+	/// everywhere downstream.
+	/// </summary>
+	private static string GetOptionalString(in JsonElement json, string propertyName) =>
+		json.TryGetProperty(propertyName, out var value) ? value.GetString() : null;
 
 	/// <summary>
 	/// Serializes just the <see cref="ContentFile.Properties"/> object.
