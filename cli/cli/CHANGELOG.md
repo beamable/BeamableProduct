@@ -19,9 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI startup network calls (alias/cid resolution and token refresh) are now bounded to 8 seconds and non-fatal, so an unreachable or half-up backend warns and continues offline instead of hanging every command.
 - `beam project run --with-group` now staggers its service fan-out, so parallel `generate-env` calls no longer trip the gateway's rate limiter.
 - Portal extension "open in browser" landing URLs now honor the `--portal-url` override.
-
-### Changed
-
 - Update `MongoDB.Driver` dependency to `3.11.2`.
 - Update `SharpCompress` dependency to `0.50.4`.
 
