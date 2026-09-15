@@ -156,6 +156,11 @@ public partial class BeamoLocalSystem
 						// install/build. Auto-repairs a moved library or throws a clear error if one is missing.
 						PortalExtensionAddLibraryCommand.ValidateAndRepairLibraryDependencies(extension, _configService.BeamableWorkspace);
 
+						// npm does not install the deps of a file:-linked library, so a library that imports
+						// another library (resolved at its real path by the extension's Vite build) can't find it.
+						// Link each library's own library deps into its node_modules so those imports resolve.
+						PortalExtensionAddLibraryCommand.LinkTransitiveLibraryDependencies(extension, _configService.BeamableWorkspace);
+
 						observer.InstallDeps();
 
 						// Fail fast if the extension and any of its libraries disagree on a shared package version
