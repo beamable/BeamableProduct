@@ -11,8 +11,6 @@ namespace tests.ContentChecksumTests;
 
 /// <summary>
 /// Covers what <see cref="ContentFile.GetStatus"/> trusts when deciding that content was modified.
-/// The point of these is that a publisher supplying a checksum we cannot reproduce must not make
-/// value-identical content look modified forever.
 /// </summary>
 public class ContentStatusTest
 {
@@ -63,8 +61,7 @@ public class ContentStatusTest
 	[Test]
 	public void UpToDate_WhenPublisherChecksumIsUnreproducible_ButLocalReferenceMatches()
 	{
-		// The reported bug: an external tool published a checksum over differently ordered JSON. The values
-		// are identical, so this must read as clean.
+		// The reported bug: a publisher's checksum taken over differently ordered JSON. The values match.
 		var file = MakeFile("a-checksum-we-could-never-compute", ReferenceTo(RemoteVersion));
 
 		Assert.That(file.GetStatus(), Is.EqualTo(ContentStatus.UpToDate));
@@ -73,8 +70,7 @@ public class ContentStatusTest
 	[Test]
 	public void Modified_WhenTheRemotePayloadMovedOnSinceWeRecordedOurReference()
 	{
-		// Our locally derived reference describes the payload we downloaded. If the remote has since changed,
-		// that reference says nothing about the new one and must not be allowed to mask a real change.
+		// Our reference describes the payload we downloaded; it must not mask a change to a newer one.
 		var file = MakeFile("a-checksum-we-could-never-compute", ReferenceTo("an-older-remote-version"));
 
 		Assert.That(file.GetStatus(), Is.EqualTo(ContentStatus.Modified));
@@ -91,7 +87,7 @@ public class ContentStatusTest
 	[Test]
 	public void FallsBackToPublisherChecksum_WhenFileHasNoLocalReference()
 	{
-		// Files written before referenceChecksum existed keep the historical comparison until their next sync.
+		// Files written before the reference existed keep the historical comparison until their next sync.
 		var matching = MakeFile(OurChecksum, null);
 		var notMatching = MakeFile("a-checksum-we-could-never-compute", null);
 
@@ -105,8 +101,7 @@ public class ContentStatusTest
 	[TestCase("""{}""", TestName = "both missing")]
 	public void ReferenceIsNotRead_WhenEitherHalfIsMissing(string referenceJson)
 	{
-		// Half a reference is not a reference: a checksum without its version cannot say which payload it
-		// describes. Rejecting it here is what makes the half-populated state unrepresentable everywhere else.
+		// Half a reference is not a reference: a checksum without its version names no payload.
 		var json = JsonSerializer.Deserialize<JsonElement>(referenceJson);
 
 		Assert.That(LocalContentReference.TryRead(in json, out _), Is.False);
@@ -115,8 +110,7 @@ public class ContentStatusTest
 	[Test]
 	public void SerializedFile_NestsTheReferenceUnderOneKey()
 	{
-		// Pins the on-disk shape. The two halves live under one key so that a file cannot express half a
-		// reference, which is the same invariant LocalContentReference enforces in memory.
+		// Pins the on-disk shape: both halves under one key, so a file cannot express half a reference.
 		var file = MakeFile(null, new LocalContentReference("the-checksum", "the-version"));
 
 		var json = JsonSerializer.Serialize(file, ContentService.GetContentFileSerializationOptions(false));

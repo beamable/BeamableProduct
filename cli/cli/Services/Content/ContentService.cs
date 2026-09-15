@@ -1157,9 +1157,7 @@ public partial class ContentService
 				}).ToArray()
 		};
 		
-		// The platform derives a content version from the payload it stored, and returns it per item. Index it
-		// so each published file can record which remote payload its local checksum now describes. The same id
-		// comes back once per visibility, carrying the same version.
+		// The platform returns the content version it assigned to each item, repeated once per visibility.
 		var publishedVersions = saveContentResponses
 			.SelectMany(response => response.content)
 			.GroupBy(c => c.id)
@@ -1178,8 +1176,7 @@ public partial class ContentService
 			{
 				ContentFile contentFile = c;
 
-				// We just uploaded these exact properties, so the local checksum is now the reference for the
-				// version the platform assigned to them.
+				// We just uploaded these properties, so our checksum describes the version the platform assigned.
 				if (publishedVersions.TryGetValue(contentFile.Id, out var publishedVersion))
 				{
 					contentFile.Reference = new LocalContentReference(contentFile.PropertiesChecksum, publishedVersion);
@@ -1401,10 +1398,8 @@ public partial class ContentService
 			contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
 			contentFile.FetchedFromManifestUid = targetManifestUid;
 
-			// Hash the payload we just downloaded using our own canonicalization, and record that rather than
-			// trusting the publisher-supplied manifest checksum. The file about to be written is serialized from
-			// this same element, so local and reference agree by construction regardless of how the publisher
-			// ordered, escaped or formatted its JSON.
+			// Hash the downloaded payload ourselves rather than trusting the publisher's manifest checksum. The
+			// file we are about to write is serialized from this same element, so the two agree by construction.
 			contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
 			contentFile.Reference = new LocalContentReference(contentFile.PropertiesChecksum, c.ReferenceContent.version);
 			saveTasks.Add(SaveContentFile(contentFolder, contentFile, cancellationToken));
@@ -1420,8 +1415,7 @@ public partial class ContentService
 				contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
 			}
 
-			// This set also contains locally modified and locally created files, whose local bytes are NOT the
-			// remote ones, so only record a reference for the entries that actually match the target.
+			// This set also holds locally modified and created files, whose bytes are not the remote ones.
 			if (c.ReferenceContent != null && contentFile.GetStatus() == ContentStatus.UpToDate)
 			{
 				contentFile.Reference = new LocalContentReference(contentFile.PropertiesChecksum, c.ReferenceContent.version);
@@ -1987,8 +1981,6 @@ public partial class ContentService
 
 	/// <summary>
 	/// Reads the locally derived reference off a parsed content file, if it carries one.
-	/// Absence is meaningful rather than exceptional: files written by an older CLI simply do not have it, and
-	/// resolving that here keeps every downstream reader working with a reference that is whole or not there.
 	/// </summary>
 	private static LocalContentReference? ReadReference(in JsonElement json) =>
 		json.TryGetProperty(ContentFile.JSON_NAME_REFERENCE, out var reference)
@@ -2053,14 +2045,8 @@ public partial class ContentService
 		{
 			WriteIndented = indent,
 			IncludeFields = true,
-
-			// Pinned deliberately. The bytes these options produce are hashed by CalculateChecksum and the
-			// result is published as the manifest checksum, so this is a wire format rather than a style
-			// preference: changing any value here re-hashes every content item and makes this CLI disagree
-			// with every other CLI version in the realm. JavaScriptEncoder.Default is what System.Text.Json
-			// used implicitly before this was written down, so naming it changes no existing checksum.
+			// Pinned: these bytes get hashed, so a change here re-checksums every content item in the realm.
 			Encoder = JavaScriptEncoder.Default,
-
 			Converters =
 			{
 				new SortedJsonElementConverter(), new SortedSnapshotConverter()
@@ -2241,10 +2227,8 @@ public struct LocalContentFiles
 }
 
 /// <summary>
-/// A checksum this CLI computed over a remote content payload, paired with the platform content version that
-/// says which payload it was. Neither half means anything on its own -- a checksum without its version would
-/// let a stale reference mask a genuine remote change -- so the two are only ever constructed together and an
-/// absent reference is represented by a null, not by empty strings.
+/// A checksum this CLI computed over a remote content payload, paired with the content version identifying
+/// which payload it was. The version is required: without it a stale checksum can mask a real remote change.
 /// </summary>
 [Serializable]
 public struct LocalContentReference
@@ -2262,8 +2246,7 @@ public struct LocalContentReference
 	}
 
 	/// <summary>
-	/// Reads a reference from the object a content file stores it under, yielding one only when both halves
-	/// are present. A file carrying half a reference is treated as carrying none.
+	/// Reads a reference, yielding one only when both halves are present.
 	/// </summary>
 	public static bool TryRead(in JsonElement json, out LocalContentReference reference)
 	{
@@ -2281,8 +2264,7 @@ public struct LocalContentReference
 	}
 
 	/// <summary>
-	/// True when this reference was taken from the very payload <paramref name="remote"/> points at, which is
-	/// the only situation where comparing a local checksum against it means anything.
+	/// True when this reference was taken from the payload <paramref name="remote"/> points at.
 	/// </summary>
 	public bool Describes(ClientContentInfoJson remote) => Version == remote.version;
 }
@@ -2312,9 +2294,9 @@ public struct ContentFile : IEquatable<ContentFile>
 	public string FetchedFromManifestUid;
 
 	/// <summary>
-	/// What the remote payload hashed to when we last synced it, as computed by this CLI rather than supplied
-	/// by whoever published it. Null on files written before this existed, and on files restored from a
-	/// snapshot, both of which fall back to comparing against the manifest checksum.
+	/// What the remote payload hashed to when we last synced it, computed by this CLI rather than supplied by
+	/// the publisher. Null on files written before this existed and on snapshot restores, which fall back to
+	/// the manifest checksum.
 	/// </summary>
 	[JsonPropertyName(JSON_NAME_REFERENCE)]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -2333,10 +2315,9 @@ public struct ContentFile : IEquatable<ContentFile>
 
 	/// <summary>
 	/// Compares the local properties against the remote ones we last synced.
-	/// Prefers <see cref="Reference"/>, which both sides of the comparison canonicalized the same way, and which
-	/// is only usable for the remote payload it was taken from. Otherwise falls back to the publisher-supplied
-	/// manifest checksum, which is the historical behaviour and is only correct when the publisher happened to
-	/// match our serialization.
+	/// Prefers <see cref="Reference"/> when it describes the manifest entry in hand, since both sides of that
+	/// comparison were canonicalized the same way. Otherwise falls back to the publisher-supplied manifest
+	/// checksum, which is the historical behavior.
 	/// </summary>
 	private bool IsPropertiesDiff() => Reference.HasValue && Reference.Value.Describes(ReferenceContent)
 		? Reference.Value.Checksum != PropertiesChecksum
@@ -2470,8 +2451,7 @@ public class SortedJsonElementConverter : JsonConverter<JsonElement>
 				writer.WriteStartObject();
 				foreach (var property in element.EnumerateObject()
 				         .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
-				         // OrderBy is a stable sort, so without this two keys that differ only in case would
-				         // keep whatever order they arrived in -- exactly the instability we are removing.
+				         // OrderBy is stable, so without this, keys differing only in case keep arrival order.
 				         .ThenBy(p => p.Name, StringComparer.Ordinal))
 				{
 					writer.WritePropertyName(property.Name);
