@@ -15,10 +15,13 @@ import type { Beam } from '@/core/Beam';
 import type { BeamServer } from '@/core/BeamServer';
 import {
   AccountService,
+  AnalyticsService,
   AnnouncementsService,
   AuthService,
   ContentService,
   LeaderboardsService,
+  MailService,
+  MessageRailService,
   StatsService,
 } from '@/services';
 
@@ -112,10 +115,13 @@ export function clientServices(beam: Beam) {
   const apiServiceProps = { beam, getPlayer: () => beam.player };
   const allApiServices = [
     new AccountService(apiServiceProps),
+    new AnalyticsService(apiServiceProps),
     new AnnouncementsService(apiServiceProps),
     new AuthService(apiServiceProps),
     new ContentService(apiServiceProps),
     new LeaderboardsService(apiServiceProps),
+    new MailService(apiServiceProps),
+    new MessageRailService(apiServiceProps),
     new StatsService(apiServiceProps),
   ];
 
@@ -135,10 +141,13 @@ export function serverServices(beamServer: BeamServer) {
   const apiServiceProps = { beam: beamServer };
   const allApiServices = [
     new AccountService(apiServiceProps),
+    new AnalyticsService(apiServiceProps),
     new AnnouncementsService(apiServiceProps),
     new AuthService(apiServiceProps),
     new ContentService(apiServiceProps),
     new LeaderboardsService(apiServiceProps),
+    new MailService(apiServiceProps),
+    new MessageRailService(apiServiceProps),
     new StatsService(apiServiceProps),
   ];
 

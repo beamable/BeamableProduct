@@ -10,6 +10,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public string host;
         public string cid;
         public string pid;
+        public string zid;
         public string configPath;
     }
 }

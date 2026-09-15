@@ -35,8 +35,9 @@ public partial class BeamoLocalSystem
 	/// Runs a portal extension locally
 	/// </summary>
 	/// <param name="serviceDefinition"></param>
+	/// <param name="portalBaseUrl">The resolved portal base url (already honoring the <c>--portal-url</c> override). Used to build the "open in browser" landing URL. When null/empty, the URL is derived from <paramref name="appContext"/>.Host.</param>
 	/// <param name="onProgress">Optional callback invoked with (progressRatio, message) as the service starts. A ratio of 1 means the service is ready for traffic.</param>
-	public async Task RunLocalPortalExtension(BeamoServiceDefinition serviceDefinition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, BeamActivity beamActivity, Action<float, string> onProgress = null, CancellationToken token = default)
+	public async Task RunLocalPortalExtension(BeamoServiceDefinition serviceDefinition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, BeamActivity beamActivity, string portalBaseUrl = null, Action<float, string> onProgress = null, CancellationToken token = default)
 	{
 		// Check for dependencies
 		if (!PortalExtensionCheckCommand.CheckPortalExtensionsDependencies())
@@ -44,7 +45,7 @@ public partial class BeamoLocalSystem
 			throw new CliException("Portal Extension dependencies are missing");
 		}
 
-		await RunMicroserviceForever(serviceDefinition, localSystem, config, appContext, beamActivity, onProgress, token);
+		await RunMicroserviceForever(serviceDefinition, localSystem, config, appContext, beamActivity, portalBaseUrl, onProgress, token);
 	}
 
 	// Resolves the zone (zid + secret) for a zone-scoped portal extension and injects the connection env the
@@ -91,7 +92,7 @@ public partial class BeamoLocalSystem
 		}
 	}
 
-	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, BeamActivity beamActivity, Action<float, string> onProgress = null, CancellationToken token = default)
+	private async Task RunMicroserviceForever(BeamoServiceDefinition definition, BeamoLocalSystem localSystem, PortalExtensionConfig config, IAppContext appContext, BeamActivity beamActivity, string portalBaseUrl = null, Action<float, string> onProgress = null, CancellationToken token = default)
 	{
 		var extension = definition.PortalExtensionDefinition;
 		beamActivity.SetTag(TelemetryAttributes.PortalExtensionName(extension.Name));
@@ -490,6 +491,7 @@ public class ExtensionLogger : ILogger
 	private readonly BindingContext _binding;
 	private readonly string _alias;
 	private readonly PortalExtensionDef _extension;
+	private readonly string _portalBaseUrl;
 	private readonly Action<float, string> _onProgress;
 
 	public ExtensionLogger(DebugLogProcessor debugLogProcessor, IAppContext appContext, BindingContext binding, string alias, PortalExtensionDef extension, Action<float, string> onProgress = null)

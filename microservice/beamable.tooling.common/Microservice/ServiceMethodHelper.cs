@@ -94,6 +94,12 @@ namespace Beamable.Server
 				[nameof(IFederatedInventory<DummyThirdParty>.GetInventoryState)] = "inventory/state",
 				[nameof(IFederatedInventory<DummyThirdParty>.StartInventoryTransaction)] = "inventory/put",
 				[nameof(IFederatedLogin<DummyThirdParty>.Authenticate)] = "authenticate",
+ 				// Message-rail methods route on the literal method name; the backend worker POSTs
+				// {federationId}/SendMessageBatch (see BeamableAPI MessageRailFederation).
+				[nameof(IFederatedMessageRail<DummyThirdParty>.SendMessage)] = "SendMessage",
+				[nameof(IFederatedMessageRail<DummyThirdParty>.SendMessageBatch)] = "SendMessageBatch",
+				[nameof(IFederatedMessageRail<DummyThirdParty>.RegisterUserWithMessageRail)] = "RegisterUserWithMessageRail",
+				[nameof(IFederatedMessageRail<DummyThirdParty>.UnregisterUserWithMessageRail)] = "UnregisterUserWithMessageRail",
 			};
 
 			foreach (var interfaceType in interfaces)

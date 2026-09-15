@@ -20,7 +20,7 @@ jobs:
 
       - name: Send repository_dispatch to beamable/docs
         run: |
-          curl -s -X POST \
+          curl --fail-with-body -sS -X POST \
             -H "Authorization: Bearer ${{ secrets.DOCS_DISPATCH_PAT }}" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \

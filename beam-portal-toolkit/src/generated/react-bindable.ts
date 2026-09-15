@@ -56,6 +56,8 @@ export interface BeamCheckboxProps extends DetailedHTMLProps<HTMLAttributes<HTML
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the form control has been checked for validity and its constraints aren't satisfied. */
+  onWaInvalid?: (event: CustomEvent) => void;
   /** Fired when the checked state toggles. Receives the new boolean. */
   onCheckedChange?: (checked: boolean) => void;
 }
@@ -184,6 +186,10 @@ export interface BeamInputProps extends DetailedHTMLProps<HTMLAttributes<HTMLEle
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the clear button is activated. */
+  onWaClear?: (event: CustomEvent) => void;
+  /** Emitted when the form control has been checked for validity and its constraints aren't satisfied. */
+  onWaInvalid?: (event: CustomEvent) => void;
   /** Fired on commit (change). Receives the typed value. */
   onValueChange?: (value: string) => void;
   /** Fired continuously while the user edits. Receives the typed value. */
@@ -312,6 +318,12 @@ export interface BeamColorPickerProps extends DetailedHTMLProps<HTMLAttributes<H
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  onWaShow?: (event: CustomEvent) => void;
+  onWaAfterShow?: (event: CustomEvent) => void;
+  onWaHide?: (event: CustomEvent) => void;
+  onWaAfterHide?: (event: CustomEvent) => void;
+  /** Emitted when the form control has been checked for validity and its constraints aren't satisfied. */
+  onWaInvalid?: (event: CustomEvent) => void;
   /** Fired on commit (change). Receives the typed value. */
   onValueChange?: (value: string) => void;
   /** Fired continuously while the user edits. Receives the typed value. */
@@ -407,6 +419,8 @@ export interface BeamNumberInputProps extends DetailedHTMLProps<HTMLAttributes<H
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the form control has been checked for validity and its constraints aren't satisfied. */
+  onWaInvalid?: (event: CustomEvent) => void;
   /** Fired on commit (change). Receives the typed value. */
   onValueChange?: (value: number) => void;
   /** Fired continuously while the user edits. Receives the typed value. */
@@ -508,6 +522,18 @@ export interface BeamSelectProps extends DetailedHTMLProps<HTMLAttributes<HTMLEl
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the control's value is cleared. */
+  onWaClear?: (event: CustomEvent) => void;
+  /** Emitted when the select's menu opens. */
+  onWaShow?: (event: CustomEvent) => void;
+  /** Emitted after the select's menu opens and all animations are complete. */
+  onWaAfterShow?: (event: CustomEvent) => void;
+  /** Emitted when the select's menu closes. */
+  onWaHide?: (event: CustomEvent) => void;
+  /** Emitted after the select's menu closes and all animations are complete. */
+  onWaAfterHide?: (event: CustomEvent) => void;
+  /** Emitted when the form control has been checked for validity and its constraints aren't satisfied. */
+  onWaInvalid?: (event: CustomEvent) => void;
   /** Fired on commit (change). Receives the typed value. */
   onValueChange?: (value: string) => void;
 }
@@ -564,6 +590,8 @@ export interface BeamRadioGroupProps extends DetailedHTMLProps<HTMLAttributes<HT
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the form control has been checked for validity and its constraints aren't satisfied. */
+  onWaInvalid?: (event: CustomEvent) => void;
   /** Fired on commit (change). Receives the typed value. */
   onValueChange?: (value: string) => void;
 }
@@ -615,6 +643,12 @@ export interface BeamRatingProps extends DetailedHTMLProps<HTMLAttributes<HTMLEl
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /**
+   * Emitted when the user hovers over a value. The `phase` property indicates when hovering starts, moves to a new value, or ends. The `value` property tells what the rating's value would be if the user were to commit to the hovered value.
+   */
+  onWaHover?: (event: CustomEvent) => void;
+  /** Emitted when the form control has been checked for validity and its constraints aren't satisfied. */
+  onWaInvalid?: (event: CustomEvent) => void;
   /** Fired on commit (change). Receives the typed value. */
   onValueChange?: (value: number) => void;
 }
@@ -710,6 +744,8 @@ export interface BeamSliderProps extends DetailedHTMLProps<HTMLAttributes<HTMLEl
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the form control has been checked for validity and its constraints aren't satisfied. */
+  onWaInvalid?: (event: CustomEvent) => void;
   /** Fired on commit (change). Receives the typed value. */
   onValueChange?: (value: number) => void;
   /** Fired continuously while the user edits. Receives the typed value. */
@@ -762,6 +798,8 @@ export interface BeamSwitchProps extends DetailedHTMLProps<HTMLAttributes<HTMLEl
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the form control has been checked for validity and its constraints aren't satisfied. */
+  onWaInvalid?: (event: CustomEvent) => void;
   /** Fired when the checked state toggles. Receives the new boolean. */
   onCheckedChange?: (checked: boolean) => void;
 }
@@ -854,6 +892,8 @@ export interface BeamTextareaProps extends DetailedHTMLProps<HTMLAttributes<HTML
   dir?: string;
   lang?: string;
   'did-ssr'?: unknown;
+  /** Emitted when the form control has been checked for validity and its constraints aren't satisfied. */
+  onWaInvalid?: (event: CustomEvent) => void;
   /** Fired on commit (change). Receives the typed value. */
   onValueChange?: (value: string) => void;
   /** Fired continuously while the user edits. Receives the typed value. */

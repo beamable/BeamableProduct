@@ -470,7 +470,7 @@ namespace Beamable.Editor.BeamCli
 				using StreamReader reader = new StreamReader(streamToReadFrom);
 
 				Task<string> readTask = null;
-				while (!reader.EndOfStream)
+				while (true)
 				{
 					if (_cts.Token.IsCancellationRequested)
 					{
@@ -483,13 +483,27 @@ namespace Beamable.Editor.BeamCli
 					{
 						await Task.WhenAny(readTask, cancelTcs.Task);
 					}
+
 					if (_cts.Token.IsCancellationRequested)
 					{
+						_ = readTask.ContinueWith(completedReadTask => { _ = completedReadTask.Exception;},
+							CancellationToken.None,
+							TaskContinuationOptions.OnlyOnFaulted |
+							TaskContinuationOptions.ExecuteSynchronously,
+							TaskScheduler.Default);
 						break;
 					}
 
 					var line = await readTask;
-					if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
+					if (line == null)
+					{
+						break;
+					}
+
+					if (line.Length == 0)
+					{
+						continue;
+					}
 
 					// remove life-cycle zero-width character
 					line = line.Replace("\u200b", "");

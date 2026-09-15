@@ -95,11 +95,19 @@ public class ReleaseSharedUnityCodeCommand : AtomicCommand<ReleaseSharedUnityCod
 		var dstPath = Path.Combine(info.packageFolder, args.packageRelativeTarget);
 		Log.Information($"Copying code src=[{args.csProjPath}] to dst=[{dstPath}]");
 
+		// capture the existing meta files before deleting anything, so established guids survive.
+		var snapshot = UnityProjectUtil.CaptureMetaSnapshot(dstPath);
+
 		// clean up all old cs and meta files, while leaving possible Unity specific files, like asmdef files.
-		UnityProjectUtil.DeleteAllFilesWithExtensionsAndEmptyDirectories(dstPath, new string[]{".cs", ".cs.meta"});
+		UnityProjectUtil.DeleteGeneratedFiles(dstPath, new string[]{".cs", ".cs.meta"});
 
 		var srcDir = Path.Combine(Path.GetDirectoryName(args.csProjPath), args.relativeSrc);
-		UnityProjectUtil.CopyProject(srcDir, dstPath);
+
+		// CopyProject backfills the folder meta files from the snapshot once the copy has landed.
+		UnityProjectUtil.CopyProject(srcDir, dstPath, snapshot);
+
+		// prune only after the copy, so folders that the new source still uses keep their meta files.
+		UnityProjectUtil.PruneEmptyDirectoriesAndMetaFiles(dstPath);
 		return new ReleaseSharedUnityCodeCommandOutput
 		{
 			message = $"Copying code src=[{args.csProjPath}] to dst=[{dstPath}]"

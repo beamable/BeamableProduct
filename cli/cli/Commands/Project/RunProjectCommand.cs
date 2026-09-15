@@ -109,6 +109,14 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 
 	const float MIN_PROGRESS = .05f;
 
+	/// <summary>
+	/// Spacing between service starts within a single run. Mirrors
+	/// <c>LocalStackUpCommand.GroupLaunchStagger</c>, which spaces the individual <c>--ids</c> steps
+	/// but cannot reach inside a <c>--with-group</c> run because that is one process fanning out
+	/// internally.
+	/// </summary>
+	static readonly TimeSpan GroupFanOutStagger = TimeSpan.FromMilliseconds(2000);
+
 	void SendUpdate(string serviceId, string message = null, float progress = 0)
 	{
 		// remap the progress between MIN and 1.
@@ -181,9 +189,41 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		var runTasks = new List<Task>();
 		var failedTasks = new ConcurrentDictionary<string, RunProjectBuildErrorStream>();
 		Log.Debug("Starting Services. SERVICES={Services}", string.Join(",", serviceTable.Keys));
+
+		// A fault on the PortalExtension/EmbeddedMongoDb branches used to sit unobserved in runTasks:
+		// Task.WhenAll below cannot surface it while sibling tasks are effectively infinite
+		// (RunForever / ExitedTask), so the service hung at its last progress message with nothing in
+		// stderr and nothing on any channel. The HttpMicroservice branch is already guarded inside
+		// RunService; this gives the other two the same treatment, and emits a TERMINAL stream message
+		// so a consumer tracking the stream channel stops waiting.
+		async Task Guarded(string serviceId, Task task)
+		{
+			try
+			{
+				await task;
+			}
+			catch (Exception ex)
+			{
+				Log.Error($"Service [{serviceId}] failed to start: {ex.Message}");
+				SendUpdate(serviceId, $"failed: {ex.Message}", 1);
+			}
+		}
+
+		var startedCount = 0;
 		foreach ((string serviceName, BeamoServiceDefinition serviceDef) in serviceTable)
 		{
 			var name = serviceName;
+
+			// Stagger starts. Launching N services in the same tick is what trips the gateway's rate
+			// limiter during each service's generate-env (every one of them calls accounts/admin/me).
+			// `beam local up` already spaces its individual --ids steps by GroupLaunchStagger; a
+			// --with-group run is a single process that fans out internally, so it needs its own.
+			if (startedCount > 0)
+			{
+				await Task.Delay(GroupFanOutStagger);
+			}
+
+			startedCount++;
 
 			var buildFlags = args.disableClientCodeGen
 				? ProjectService.BuildFlags.DisableClientCodeGen
@@ -205,11 +245,11 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 						}));
 					break;
 				case BeamoProtocolType.EmbeddedMongoDb:
-					runTasks.Add(args.BeamoLocalSystem.RunLocalEmbeddedMongoDb(serviceDef,
+					runTasks.Add(Guarded(name, args.BeamoLocalSystem.RunLocalEmbeddedMongoDb(serviceDef,
 						beamoLocalManifest.EmbeddedMongoDbLocalProtocols[serviceDef.BeamoId], () =>
 						{
 							SendUpdate(name, progress: 1f);
-						}));
+						})));
 					break;
 				case BeamoProtocolType.PortalExtension:
 				{
@@ -219,8 +259,8 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 					if (runFlags.HasFlag(ProjectService.RunFlags.Detach))
 					{
 						// Start a new beam subprocess wrapped in cmd/nohup
-						runTasks.Add(RunPortalExtensionDetached(args, name,
-							(progress, message) => SendUpdate(name, message, progress), OnLogReceived));
+						runTasks.Add(Guarded(name, RunPortalExtensionDetached(args, name,
+							(progress, message) => SendUpdate(name, message, progress), OnLogReceived)));
 					}
 					else
 					{
@@ -247,10 +287,15 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 						}
 
 						var beamActivity = args.Provider.GetService<BeamActivity>();
-						runTasks.Add(args.BeamoLocalSystem.RunLocalPortalExtension(
+						// Resolve the portal base url here (where CommandArgs is in scope) so the
+						// "open in browser" landing URL honors the --portal-url override. This is the
+						// same resolver the portal command and remote-config service use.
+						var portalBaseUrl = cli.Portal.PortalCommand.GetPortalBaseUrl(args);
+						runTasks.Add(Guarded(name, args.BeamoLocalSystem.RunLocalPortalExtension(
 							serviceDef, args.BeamoLocalSystem, portalExtensionConfig, args.AppContext, beamActivity,
+							portalBaseUrl: portalBaseUrl,
 							onProgress: (progress, message) => SendUpdate(name, message, progress),
-							token: cToken.Token));
+							token: cToken.Token)));
 					}
 
 					break;
@@ -286,6 +331,37 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 	}
 
 	/// <summary>
+	/// Advances the progress milestones matched by <paramref name="line"/>, across every table.
+	/// <para>Milestones arrive on both transports: MSBuild emits plain text ("Bundling Beamable
+	/// Properties..."), while the runtime's own milestones ("Starting Prepare") go through the
+	/// structured logger as JSON — <c>RunService</c> forces <c>LOG_TYPE=structured+file</c>. Consulting
+	/// only one table per branch made the "Starting Prepare" (.3) milestone unreachable, so a service
+	/// that died between .2 and .42 — i.e. during <c>generate-env</c> — looked frozen at "Bundling
+	/// Beamable Properties...". Both tables are checked on both paths.</para>
+	/// </summary>
+	private static void ApplyProgress(
+		string line,
+		float[] currentProgress,
+		Action<float, string> onProgress,
+		params Dictionary<string, float>[] tables)
+	{
+		foreach (var table in tables)
+		{
+			var matches = table.Where(kvp => line.Contains(kvp.Key)).ToList();
+			foreach (var kvp in matches)
+			{
+				if (currentProgress[0] < kvp.Value)
+				{
+					currentProgress[0] = kvp.Value;
+					onProgress?.Invoke(kvp.Value, kvp.Key);
+				}
+
+				table.Remove(kvp.Key);
+			}
+		}
+	}
+
+	/// <summary>
 	/// Handles a single stdout line from a running service process.
 	/// Shared by <see cref="RunService"/> and <see cref="RunPortalExtensionDetached"/>.
 	/// </summary>
@@ -303,17 +379,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			var logData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(line,
 				new JsonSerializerOptions { IncludeFields = true });
 
-			var matches = serviceLogProgressTable.Where(kvp => line.Contains(kvp.Key)).ToList();
-			foreach (var kvp in matches)
-			{
-				if (currentProgress[0] < kvp.Value)
-				{
-					currentProgress[0] = kvp.Value;
-					onProgress?.Invoke(kvp.Value, kvp.Key);
-				}
-
-				serviceLogProgressTable.Remove(kvp.Key);
-			}
+			ApplyProgress(line, currentProgress, onProgress, serviceLogProgressTable, nonServiceLogProgressTable);
 
 			onLog?.Invoke(new ProjectRunLogData { rawLogMessage = line, jsonData = logData });
 		}
@@ -328,17 +394,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			}
 			else
 			{
-				var matches = nonServiceLogProgressTable.Where(kvp => line.Contains(kvp.Key)).ToList();
-				foreach (var kvp in matches)
-				{
-					if (currentProgress[0] < kvp.Value)
-					{
-						currentProgress[0] = kvp.Value;
-						onProgress?.Invoke(kvp.Value, kvp.Key);
-					}
-
-					nonServiceLogProgressTable.Remove(kvp.Key);
-				}
+				ApplyProgress(line, currentProgress, onProgress, serviceLogProgressTable, nonServiceLogProgressTable);
 
 				onLog?.Invoke(new ProjectRunLogData { rawLogMessage = line, jsonData = null });
 			}
@@ -376,6 +432,10 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			[Beamable.Common.Constants.Features.Services.Logs.REGISTERING_CUSTOM_SERVICES] = .45f,
 			[Beamable.Common.Constants.Features.Services.Logs.SCANNING_CLIENT_PREFIX] = .5f,
 			[Beamable.Common.Constants.Features.Services.Logs.SERVICE_PROVIDER_INITIALIZED] = .7f,
+			// Between provider init and the event provider — that is the order ProvideService runs them in.
+			// Without a milestone here, the window where federation registration happens (and can fail) was
+			// indistinguishable from a service simply being slow to reach "ready".
+			[Beamable.Common.Constants.Features.Services.Logs.FEDERATION_REGISTERED] = .72f,
 			[Beamable.Common.Constants.Features.Services.Logs.EVENT_PROVIDER_INITIALIZED] = .75f,
 			[Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX] = 1
 		};

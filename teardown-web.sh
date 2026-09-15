@@ -1,31 +1,46 @@
 #!/bin/bash
 
-# Reverses the changes made by setup-web.sh:
-#   1. Restores the global npm/pnpm registry to the default
-#   2. Stops and wipes the local Docker stack
+# Reverses setup-web.sh: stops the local registry and CDN, and deletes the packages published to it.
+#
+# Thin wrapper around `beam web stop --wipe` — see web/LOCAL_DEV.md for the full guide.
+#
+# There is no global npm config to restore: this flow never wrote one. What DOES need undoing is the
+# toolkit pin that `dev-web.sh` wrote into your extensions — that lives in tracked files, so revert it
+# with git in the repo holding them:
+#
+#   git restore '**/package.json' '**/package-lock.json'
+#   npm install     # in any extension you actually ran, to restore the published toolkit
+#
+# Pass --keep-packages to stop the containers without deleting what was published:
+#   ./teardown-web.sh --keep-packages
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOCALDEV_DIR="$SCRIPT_DIR/portal-localdev"
+source "$SCRIPT_DIR/scripts/beam-cli.sh"
 
+STOP_ARGS=(web stop --product-dir "$SCRIPT_DIR")
+KEEP_PACKAGES=""
+PASSTHROUGH=()
+
+for arg in "$@"; do
+  if [ "$arg" = "--keep-packages" ]; then
+    KEEP_PACKAGES=1
+  else
+    PASSTHROUGH+=("$arg")
+  fi
+done
+
+if [ -z "$KEEP_PACKAGES" ]; then
+  STOP_ARGS+=(--wipe)
+fi
+
+echo ""
 echo "=== Beamable Web Local Dev Teardown ==="
-
-# ---------------------------------------------------------------------------
-# Restore global npm/pnpm registry
-# ---------------------------------------------------------------------------
 echo ""
-echo "Removing @beamable/* registry override..."
-npm config delete @beamable:registry
-npm config delete //localhost:4873/:_authToken
-echo "  @beamable/* packages will now resolve from the default npm registry."
 
-# ---------------------------------------------------------------------------
-# Stop local stack
-# ---------------------------------------------------------------------------
-echo ""
-echo "Stopping local registry and CDN server..."
-docker compose -f "$LOCALDEV_DIR/docker-compose.yml" down -v
+beam_cli "$SCRIPT_DIR" "${STOP_ARGS[@]}" "${PASSTHROUGH[@]}"
 
 echo ""
 echo "Teardown complete."
+echo "If a project still has a locally-linked package in node_modules, 'npm install' there restores the published one."

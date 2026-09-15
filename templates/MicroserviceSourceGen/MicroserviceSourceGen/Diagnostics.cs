@@ -15,6 +15,7 @@ public static class Diagnostics
 	public const string Category_Config = "BeamableSourceGenerator_Config";
 	public const string Category_Services = "BeamableSourceGenerator_Microservices";
 	public const string Category_Federations = "BeamableSourceGenerator_Federations";
+	public const string Category_Logging = "BeamableSourceGenerator_Logging";
 
 	// To enable Debug go to Roslyn Settings and Set the BeamableSourceGenerator_Debug to any other Severity.
 	public static readonly DiagnosticDescriptor BeamVerboseDescriptor = new("BEAM_DBG_0001", "Beamable Verbose Debug", "{0}", Category_Debug, DiagnosticSeverity.Hidden,
@@ -240,6 +241,50 @@ public static class Diagnostics
 				Category_Services,
 				DiagnosticSeverity.Error,
 				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl($"{TROUBLESHOOTING_GUIDE_BASE_URL}#invalid-generic-type-in-microservice", Constants.CLI_CURRENT_DOCS_VERSION),
+				isEnabledByDefault: true);
+	}
+
+	public static class Logs
+	{
+		public const string NON_CONSTANT_LOG_TEMPLATE_ID = "BEAM_LOG_0001";
+		public const string UNRENDERABLE_LOG_TEMPLATE_ID = "BEAM_LOG_0002";
+
+		/// <summary>
+		/// Both logging rules point at the same troubleshooting page as the service rules.
+		/// <para/>
+		/// The anchor is the page's diagnostics section rather than a per-rule heading, because the CLI guides
+		/// live in the beamable/docs repository and the two per-rule sections are not published there yet. Give
+		/// each rule its own anchor - "#log-message-template-must-be-a-constant" and
+		/// "#log-message-template-cannot-be-rendered" - once those headings exist.
+		/// </summary>
+		public const string LOGGING_GUIDE_ANCHOR =
+			Srv.TROUBLESHOOTING_GUIDE_BASE_URL + "#possible-issues-and-solutions";
+
+		/// <summary>
+		/// A template that is built at runtime cannot be checked here, and whatever gets interpolated into it
+		/// is read as part of the template. This is a warning rather than an error because the call is only
+		/// provably wrong once the interpolated text is known.
+		/// </summary>
+		public static readonly DiagnosticDescriptor NonConstantLogTemplate
+			= new(NON_CONSTANT_LOG_TEMPLATE_ID,
+				"Log message template must be a constant when log arguments are passed",
+				"The message given to '{0}' is built at runtime while log arguments are also passed. Every '{{...}}' in the message is read as a placeholder, so interpolated text - an exception message or a json fragment, say - can silently consume the arguments. Make the message a constant and pass the values as log arguments instead: Log.Error(\"failed {{message}}\", ex.Message).",
+				Category_Logging,
+				DiagnosticSeverity.Warning,
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl(LOGGING_GUIDE_ANCHOR, Constants.CLI_CURRENT_DOCS_VERSION),
+				isEnabledByDefault: true);
+
+		/// <summary>
+		/// The template is a constant, so whether it can be rendered with this many arguments is decidable
+		/// here. A template that cannot be rendered is always a bug, hence an error.
+		/// </summary>
+		public static readonly DiagnosticDescriptor UnrenderableLogTemplate
+			= new(UNRENDERABLE_LOG_TEMPLATE_ID,
+				"Log message template cannot be rendered with the given log arguments",
+				"The message given to '{0}' declares placeholders that the {1} supplied argument(s) cannot fill, or contains an unescaped brace. Writing this log would fail at runtime. Escape a literal brace by doubling it ('{{{{' and '}}}}'), and give every '{{...}}' placeholder an argument.",
+				Category_Logging,
+				DiagnosticSeverity.Error,
+				helpLinkUri: DocsPageHelper.GetCliDocsPageUrl(LOGGING_GUIDE_ANCHOR, Constants.CLI_CURRENT_DOCS_VERSION),
 				isEnabledByDefault: true);
 	}
 
