@@ -327,18 +327,25 @@ public class ServerService
 	static Task<ServerInfoResponse> HandleInfo(ServeCliCommandArgs args, ulong inflightRequests)
 	{
 		var version = VersionService.GetNugetPackagesForExecutingCliVersion();
-		
+
+		List<string> invocationSnapshot;
+		lock (_cliInvocationsLock)
+		{
+			invocationSnapshot = new List<string>(cliInvocations);
+		}
+
 		return Task.FromResult(new ServerInfoResponse
 		{
 			version = version.ToString(),
 			owner = args.owner,
 			inflightRequests = (long)inflightRequests,
 			pid = Environment.ProcessId,
-			inflightCommands = cliInvocations
+			inflightCommands = invocationSnapshot
 		});
 	}
 
-	public static List<string> cliInvocations = new List<string>();
+	private static readonly object _cliInvocationsLock = new object();
+	private static readonly List<string> cliInvocations = new List<string>();
 
 	static async Task HandleExec(ServeCliCommandArgs args, Stream networkRequestStream, HttpListenerResponse response)
 	{
@@ -347,7 +354,6 @@ public class ServerService
 		var input = await inputStream.ReadToEndAsync();
 		Log.Verbose("Raw input received: " + input);
 		var req = JsonConvert.DeserializeObject<ServerRequest>(input);
-		cliInvocations.Add(input);
 		Log.Verbose("virtualizing " + req.commandLine);
 		
 		var app = new App();
@@ -364,9 +370,17 @@ public class ServerService
 		Log.Verbose("build virtual app in " + sw.ElapsedMilliseconds);
 
 		int exitCode = -1;
+
+		lock (_cliInvocationsLock)
+		{
+			cliInvocations.Add(input);
+		}
+
 		try
 		{
-			exitCode = await app.RunWithSingleString(req.commandLine, args.useCustomSplitter);
+			exitCode = await app.RunWithSingleString(
+				req.commandLine,
+				args.useCustomSplitter);
 		}
 		catch (Exception ex)
 		{
@@ -374,8 +388,13 @@ public class ServerService
 		}
 		finally
 		{
-			cliInvocations.Remove(input);
-			Log.Verbose($"CLI EXEC FINISHED WITH EXIT=[{exitCode}] REQ=[{req.commandLine}]");
+			lock (_cliInvocationsLock)
+			{
+				cliInvocations.Remove(input);
+			}
+
+			Log.Verbose(
+				$"CLI EXEC FINISHED WITH EXIT=[{exitCode}] REQ=[{req.commandLine}]");
 		}
 	}
 
