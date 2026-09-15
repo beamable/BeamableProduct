@@ -19,7 +19,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/scripts/beam-cli.sh"
 
-STOP_ARGS=(web stop --product-dir "$SCRIPT_DIR")
+# --product-dir is read by the .NET CLI, so pass a native Windows path (no-op off Cygwin/MSYS).
+STOP_ARGS=(web stop --product-dir "$(beam_native_path "$SCRIPT_DIR")")
 KEEP_PACKAGES=""
 PASSTHROUGH=()
 
