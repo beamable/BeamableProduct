@@ -265,10 +265,11 @@ public class WebLocalRegistryService
 	/// <c>portal-localdev/verdaccio/config.yml</c>).
 	/// </item>
 	/// <item>
-	/// A released build pins the <c>@beamable</c> scope at the public npm registry with
-	/// <c>--@beamable:registry=&lt;public&gt;</c>. A user's machine may have a corporate proxy or a private
-	/// registry configured for <c>@beamable</c> in their npmrc that has never heard of the package, so pinning
-	/// the scope to npmjs keeps a normal install from failing there.
+	/// A released build gets no special routing — an empty string. verdaccio proxies npmjs (see
+	/// <c>portal-localdev/verdaccio/config.yml</c>), so a released <c>@beamable</c> spec resolves through
+	/// whatever registry is configured: verdaccio when the default points there (it falls back to npmjs on
+	/// its own), or npmjs directly otherwise. The old <c>--@beamable:registry=&lt;public&gt;</c> override was
+	/// removed so verdaccio owns the fallback.
 	/// </item>
 	/// </list>
 	/// </summary>
@@ -277,8 +278,8 @@ public class WebLocalRegistryService
 		var pinned = ReadPinnedVersion(Path.Combine(projectDir, "package.json"), ToolkitPackage);
 		if (!IsLocalDevVersion(pinned))
 		{
-			Log.Verbose($"[{projectDir}] pins the released {ToolkitPackage}@{pinned}; forcing the @beamable scope at [{PublicRegistry}]");
-			return $" --@beamable:registry={PublicRegistry}";
+			Log.Verbose($"[{projectDir}] pins the released {ToolkitPackage}@{pinned}; installing from the default registry (verdaccio proxies npmjs)");
+			return string.Empty;
 		}
 
 		Log.Verbose($"[{projectDir}] pins the local build {ToolkitPackage}@{pinned}; installing from [{registryUrl}]");
