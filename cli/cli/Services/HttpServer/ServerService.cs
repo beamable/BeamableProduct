@@ -347,7 +347,7 @@ public class ServerService
 	private static readonly object _cliInvocationsLock = new object();
 	private static readonly List<string> cliInvocations = new List<string>();
 
-	static async Task HandleExec(ServeCliCommandArgs args, Stream networkRequestStream, HttpListenerResponse response)
+	static async Task HandleExec(ServeCliCommandArgs args, Stream networkRequestStream, HttpListenerResponse response, App app = null)
 	{
 		using var inputStream = new StreamReader(networkRequestStream);
 		response.Headers.Set(HttpResponseHeader.ContentType, "text/event-stream; charset=utf-8");
@@ -356,7 +356,7 @@ public class ServerService
 		var req = JsonConvert.DeserializeObject<ServerRequest>(input);
 		Log.Verbose("virtualizing " + req.commandLine);
 		
-		var app = new App();
+		app ??= new App();
 
 		var sw = new Stopwatch();
 		sw.Start();
