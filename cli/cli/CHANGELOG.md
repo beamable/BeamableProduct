@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] 
 
+### Changed
+
+- Update `MongoDB.Driver` dependency to `3.11.2`.
+- Update `SharpCompress` dependency to `0.50.4`.
+
 ### Fixed
 - Portal extension scanning no longer excludes sym linked package files
 - Fixed orphaned Unity .meta files left behind when cleaning generated Beamable source directories.
