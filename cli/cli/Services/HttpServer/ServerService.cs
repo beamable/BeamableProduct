@@ -229,7 +229,7 @@ public class ServerService
 				break;
 			}
 			Interlocked.Increment(ref _inflightRequests);
-			Log.Verbose($"Starting request. inflight=[{Interlocked.Read(ref _inflightRequests)}]");
+			Log.Trace($"Starting request. inflight=[{Interlocked.Read(ref _inflightRequests)}]");
 
 			var _ = scheduler.StartNew(async () =>
 			{
@@ -256,7 +256,7 @@ public class ServerService
 
 					_selfDestructAt = DateTimeOffset.Now + TimeSpan.FromSeconds(args.selfDestructTimeSeconds);
 					Interlocked.Decrement(ref _inflightRequests);
-					Log.Verbose($"Finishing request. inflight=[{Interlocked.Read(ref _inflightRequests)}]");
+					Log.Trace($"Finishing request. inflight=[{Interlocked.Read(ref _inflightRequests)}]");
 				}
 			});
 		}
@@ -273,7 +273,7 @@ public class ServerService
 
 		// http://base:port/
 		var routePath = ctx.Request.Url.ToString().Substring(ctx.Request.Url.ToString().LastIndexOf('/') + 1);
-		Log.Verbose("got message at route: " + routePath);
+		Log.Trace("got message at route: " + routePath);
 		string response = null;
 		int status = 200;
 		byte[] data;
@@ -366,13 +366,13 @@ public class ServerService
 		try
 		{
 			input = await inputStream.ReadToEndAsync();
-			Log.Verbose("Raw input received: " + input);
+			Log.Trace("Raw input received: " + input);
 			commandLine = JsonConvert.DeserializeObject<ServerRequest>(input)?.commandLine;
 			if (string.IsNullOrWhiteSpace(commandLine))
 			{
 				throw new ArgumentException("An execute request must include a non-empty commandLine.");
 			}
-			Log.Verbose("virtualizing " + commandLine);
+			Log.Trace("virtualizing " + commandLine);
 			app ??= new App();
 
 			var sw = Stopwatch.StartNew();
@@ -388,7 +388,7 @@ public class ServerService
 			}, overwriteLogger: false);
 			app.Build();
 			sw.Stop();
-			Log.Verbose("build virtual app in " + sw.ElapsedMilliseconds);
+			Log.Trace("build virtual app in " + sw.ElapsedMilliseconds);
 
 			lock (_cliInvocationsLock)
 			{
@@ -434,8 +434,7 @@ public class ServerService
 				}
 			}
 
-			Log.Verbose(
-				$"CLI EXEC FINISHED WITH EXIT=[{exitCode}] REQ=[{commandLine}]");
+			Log.Trace($"CLI EXEC FINISHED WITH EXIT=[{exitCode}] REQ=[{commandLine}]");
 		}
 	}
 
