@@ -1,14 +1,11 @@
 ﻿using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
-using Beamable.Common.Content.Serialization;
 using Beamable.Editor.Util;
 using Beamable.Common.Util;
-using Beamable.Editor.ContentService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -33,6 +30,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		private readonly Dictionary<(string filterKey, ContentSortOptionType sortOption), List<LocalContentManifestEntry>> _sortedCache = new();
 
 		private Vector2 _itemsPanelScrollPos;
+
+		private readonly ContentWindow_TooltipsHelper _tooltipsHelper = new();
 
 		private List<string> MultiSelectItemIds
 		{
@@ -558,14 +557,13 @@ namespace Beamable.Editor.UI.ContentWindow
 				nameLabel = isEditingName ? nameLabel : $"{entry.Name} (renamed from {renameInfo.OldName})";
 
 			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
-			Texture iconForEntry;
-			if (_contentService.IsContentInvalid(entry.FullId))
-				iconForEntry = BeamGUI.iconStatusInvalid;
-			else if (isRenamed)
-				iconForEntry = BeamGUI.iconStatusModified;
-			else
-				iconForEntry = GetIconForStatus(entry.IsInConflict, entry.StatusEnum);
-			Texture[] icons = {iconForEntry};
+			GUIContent badge = _tooltipsHelper.GetContentStatusBadge(
+				_contentService,
+				entry,
+				renamedFrom: isRenamed ? renameInfo.OldName : null,
+				defaultIcon: GetIconForStatus(entry.IsInConflict, entry.StatusEnum));
+
+			GUIContent[] icons = { badge };
 
 			bool[] isEditable = {isEditingName};
 			string[] editableId = {entry.FullId};
@@ -914,7 +912,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		                              GUIStyle rowStyle,
 		                              GUIStyle fieldStyle,
 		                              Rect fullRect,
-		                              Texture[] icons = null, bool[] isEditLabel = null, string[] fieldID = null)
+		                              GUIContent[] icons = null, bool[] isEditLabel = null, string[] fieldID = null)
 		{
 			if (Event.current.type == EventType.Repaint)
 			{
@@ -931,10 +929,19 @@ namespace Beamable.Editor.UI.ContentWindow
 				if (icons != null && icons.Length > i)
 				{
 					float iconSize = fullRect.height - BASE_PADDING;
-					if (icons[i])
+					var badge = icons[i];
+
+					if (badge?.image != null)
 					{
-						Rect iconRect = new Rect(fullRect.xMin, fullRect.center.y - iconSize / 2f, iconSize, iconSize);
-						GUI.DrawTexture(iconRect, icons[i], ScaleMode.ScaleToFit);
+						Rect iconRect = new Rect(
+							fullRect.xMin,
+							fullRect.center.y - iconSize / 2f,
+							iconSize,
+							iconSize);
+
+						GUI.DrawTexture(iconRect, badge.image, ScaleMode.ScaleToFit);
+
+						GUI.Label(iconRect, new GUIContent(string.Empty, badge.tooltip), GUIStyle.none);
 					}
 					itemWidth -= iconSize;
 					fullRect.xMin += iconSize;
