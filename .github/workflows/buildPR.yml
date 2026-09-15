@@ -314,8 +314,8 @@ jobs:
       # Pinned to the last-good SHA (Sept 7 run). The moving @v4 tag was re-pointed to a
       # revision that shells out to the game-ci Go CLI, which aborts with
       # "[WARN] Unknown argument: version" and exit 1 before Unity ever launches.
-      # Revert to @v4 once that upstream regression is fixed. ~Claude
-      - uses: game-ci/unity-test-runner@0ff419b913a3630032cbe0de48a0099b5a9f0ed9 # v4
+      # Revert to @v4 once that upstream regression is fixed.
+      - uses: game-ci/unity-test-runner@0ff419b913a3630032cbe0de48a0099b5a9f0ed9 # v4.3.1 -- pinned; see commit message
         id: tests
         timeout-minutes: 30
         env:
@@ -473,8 +473,8 @@ jobs:
       # Pinned to the last-good SHA (Sept 7 run). The moving @v4 tag was re-pointed to a
       # revision that shells out to the game-ci Go CLI, which aborts with
       # "[WARN] Unknown argument: version" and exit 1 before Unity ever launches.
-      # Revert to @v4 once that upstream regression is fixed. ~Claude
-      - uses: game-ci/unity-test-runner@0ff419b913a3630032cbe0de48a0099b5a9f0ed9 # v4
+      # Revert to @v4 once that upstream regression is fixed.
+      - uses: game-ci/unity-test-runner@0ff419b913a3630032cbe0de48a0099b5a9f0ed9 # v4.3.1 -- pinned; see commit message
         id: tests
         timeout-minutes: 30
         env:
