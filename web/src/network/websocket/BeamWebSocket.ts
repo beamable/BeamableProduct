@@ -33,6 +33,15 @@ export class BeamWebSocket {
   private isReconnecting = false;
   private reconnectAttempts = 0;
   private maxRetries = 3;
+  /**
+   * Message listeners owned by this wrapper rather than by a `WebSocket` instance.
+   *
+   * `reconnect()` builds a brand-new `WebSocket` and reassigns `this.socket`, so a listener
+   * attached directly to `rawSocket` is bound to the discarded object and silently stops firing
+   * after the first reconnect. Keeping them here and re-attaching in `initWebSocket` is what makes
+   * a subscription survive a dropped connection.
+   */
+  private messageListeners = new Set<(event: MessageEvent) => void>();
 
   private async initWebSocket(): Promise<void> {
     let accessToken: string | null = null;
@@ -64,10 +73,54 @@ export class BeamWebSocket {
 
     // Web socket open event handler
     socket.onopen = () => this.handleOpen();
+    // Web socket message event handler — dispatches to the wrapper's own listener list, which is
+    // why it is re-attached here (the single socket-creation point) on every reconnect.
+    socket.onmessage = (event) => this.handleMessage(event);
     // Web socket error event handler
     socket.onerror = (event) => this.handleError(event);
     // Web socket close event handler
     socket.onclose = (event) => this.handleClose(event);
+  }
+
+  /**
+   * Fan one frame out to every registered listener.
+   *
+   * Each listener is invoked in its own try/catch. That is load-bearing, not defensive dressing:
+   * before this list existed each subscription had its own `addEventListener` and the DOM isolated
+   * their failures, so one throwing handler could not starve the others. Iterating ourselves
+   * removes that isolation, and without the guard a single bad handler would abort the loop and
+   * silently drop every listener registered after it.
+   */
+  private handleMessage(event: MessageEvent): void {
+    for (const listener of [...this.messageListeners]) {
+      try {
+        listener(event);
+      } catch (e) {
+        console.warn('A websocket message listener threw:', e);
+      }
+    }
+  }
+
+  /**
+   * Registers a listener for every message frame on this socket.
+   *
+   * Prefer this over `rawSocket.addEventListener`: listeners registered here are re-attached to the
+   * new underlying socket on reconnect, and are isolated from each other's failures.
+   *
+   * @param listener Called with each raw `MessageEvent`. Filtering is the caller's job.
+   * @returns {void}
+   */
+  addListener(listener: (event: MessageEvent) => void): void {
+    this.messageListeners.add(listener);
+  }
+
+  /**
+   * Removes a previously registered message listener. Passing a function that was never added, or
+   * was already removed, is a no-op.
+   * @returns {void}
+   */
+  removeListener(listener: (event: MessageEvent) => void): void {
+    this.messageListeners.delete(listener);
   }
 
   private handleOpen() {
@@ -258,8 +311,8 @@ interface SessionStartFrame {
     platform: string;
     model: string;
     locale?: string;
-    "language.code"?: string;
-    "language.context"?: string;
+    'language.code'?: string;
+    'language.context'?: string;
   };
 }
 
@@ -283,8 +336,8 @@ function buildSessionStartFrame(): SessionStartFrame {
 
   if (browserLocale) {
     frame.device.locale = browserLocale.toLowerCase();
-    frame.device["language.code"] =  browserLocale; 
-    frame.device["language.context"] =  'IETF' ;
+    frame.device['language.code'] = browserLocale;
+    frame.device['language.context'] = 'IETF';
   }
 
   return frame;

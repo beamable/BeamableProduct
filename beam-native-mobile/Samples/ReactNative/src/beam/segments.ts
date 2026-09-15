@@ -35,7 +35,7 @@ import {
   realmsGetPlayersSegments,
   realmsGetPlayersSegmentsTransitions,
 } from '@beamable/sdk/api';
-import type { Beam } from '@beamable/sdk';
+import type { Beam, SegmentMembershipChanged } from '@beamable/sdk';
 
 import { getBeam, getPlayerStatsService } from './beamClient';
 import type { PlayerStatsServiceClient } from './beamable/clients/PlayerStatsServiceClient';
@@ -410,6 +410,41 @@ export async function listMyTransitions(): Promise<SegmentTransition[]> {
     beam.cid,
   );
   return body.records ?? [];
+}
+
+/**
+ * Subscribe to this player's segment membership changes over the realtime socket.
+ *
+ * The notification is a **trigger to re-read**, never the truth. Delivery is best-effort: the
+ * server filters it to players who look connected and does not store it for an offline player, so
+ * a game that treats it as the source of truth will eventually be wrong. `listMySegments()` is the
+ * truth; this just tells you when to call it — which is exactly what `onChange` below does.
+ *
+ * The socket is already connected: `initBeam()` passes no `realtime` option and it defaults to on.
+ *
+ * @param onChange Called with each change, plus the freshly re-read membership.
+ * @returns An unsubscribe function. Call it on unmount.
+ */
+export function watchMySegments(
+  onChange: (change: SegmentMembershipChanged, segments: PlayerSegment[]) => void,
+): () => void {
+  const beam = requireBeam();
+  const handler = (change: SegmentMembershipChanged) => {
+    // Re-read rather than trusting the payload. The notification says *that* membership changed;
+    // only the endpoint says what it is now.
+    listMySegments()
+      .then((segments) => onChange(change, segments))
+      .catch(() => onChange(change, []));
+  };
+
+  beam.on('segments.transition', handler);
+  return () => beam.off('segments.transition', handler);
+}
+
+/** A one-line summary of a change, for the activity log. */
+export function describeSegmentChange(change: SegmentMembershipChanged): string {
+  const verb = change.kind === 'Enter' ? 'joined' : 'left';
+  return `${verb} "${change.segmentId}" (${change.cause})`;
 }
 
 /**

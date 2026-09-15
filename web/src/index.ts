@@ -24,6 +24,7 @@ export { defaultTokenStorage } from '@/defaults';
 export type { DefaultTokenStorageProps } from '@/platform/types/DefaultTokenStorageProps';
 export type * from '@/core/types/RefreshableServiceMap';
 export type * from '@/core/types/ServerEventType';
+export type * from '@/core/types/NotificationEventMap';
 export type * from '@/platform/types/TokenStorage';
 export type * from '@/platform/types/ContentStorage';
 export type * from '@/contents/types';

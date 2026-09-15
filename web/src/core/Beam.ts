@@ -11,11 +11,15 @@ import { BeamWebSocket } from '@/network/websocket/BeamWebSocket';
 import { BeamError, BeamWebSocketError } from '@/constants/Errors';
 import {
   REFRESHABLE_SERVICES,
+  type BeamClientContext,
+  type BeamClientContextData,
   type BeamServiceType,
   type RefreshableServiceMap,
   type Subscription,
   type ClientSubscriptionMap,
+  NOTIFICATION_CONTEXTS,
 } from '@/core/types';
+import { BeamJsonUtils } from '@/utils/BeamJsonUtils';
 import { wait } from '@/utils/wait';
 import { HEADERS } from '@/constants';
 import { BeamBase, type BeamEnvVars } from '@/core/BeamBase';
@@ -259,12 +263,13 @@ export class Beam extends ClientServicesMixin(BeamBase) {
    * beam.on('inventory.refresh', handler);
    * ```
    */
-  on<K extends keyof RefreshableServiceMap>(
+  on<K extends BeamClientContext>(
     context: K,
-    handler: (data: RefreshableServiceMap[K]['data']) => void,
+    handler: (data: BeamClientContextData<K>) => void,
   ) {
     this.checkIfInitAndSupportedContext(context);
     const abortController = new AbortController();
+    const isRefreshable = this.isRefreshableContext(context);
     const listener = async (e: MessageEvent) => {
       const eventData = JSON.parse(e.data) as {
         context: string;
@@ -273,24 +278,31 @@ export class Beam extends ClientServicesMixin(BeamBase) {
       // ignore the message if the context does not match
       if (eventData.context !== context) return;
 
-      // parse the messageFull as the expected type
-      const payload = parseSocketMessage<K>(eventData.messageFull);
-
-      if ('delay' in payload) {
-        try {
-          await wait(payload.delay, abortController.signal);
-        } catch {
-          return; // aborted
-        }
+      // A notification context carries its data directly: the payload *is* the event, so it goes
+      // straight to the handler. parseSocketMessage is deliberately not used here — it extracts the
+      // payload by taking the first key that is not `scopes`/`delay`, which is right for a refresh
+      // envelope and returns nonsense for an object that is itself the data.
+      if (!isRefreshable) {
+        handler(
+          JSON.parse(
+            eventData.messageFull,
+            BeamJsonUtils.reviver,
+          ) as BeamClientContextData<K>,
+        );
+        return;
       }
 
-      const data = await this.refreshableRegistry[context].refresh(
-        payload.data,
+      await this.dispatchRefresh(
+        context as keyof RefreshableServiceMap,
+        eventData.messageFull,
+        abortController.signal,
+        handler as (data: unknown) => void,
       );
-      handler(data);
     };
 
-    this.ws.rawSocket?.addEventListener('message', listener);
+    // Registered on the socket wrapper, not on `rawSocket`: `reconnect()` replaces the underlying
+    // WebSocket, and a listener bound to the old instance would silently stop firing.
+    this.ws.addListener(listener);
     const subs: Subscription[] = this.subscriptions[context] ?? [];
     subs.push({ handler, listener, abortController });
     this.subscriptions[context] = subs;
@@ -308,9 +320,9 @@ export class Beam extends ClientServicesMixin(BeamBase) {
    * beam.off('inventory.refresh');
    * ```
    */
-  off<K extends keyof RefreshableServiceMap>(
+  off<K extends BeamClientContext>(
     context: K,
-    handler?: (data: RefreshableServiceMap[K]['data']) => void,
+    handler?: (data: BeamClientContextData<K>) => void,
   ) {
     this.checkIfInitAndSupportedContext(context);
     const subs = this.subscriptions[context];
@@ -319,7 +331,7 @@ export class Beam extends ClientServicesMixin(BeamBase) {
     if (!handler) {
       // if no handler is supplied, remove them all
       subs.forEach(({ listener, abortController }) => {
-        this.ws.rawSocket?.removeEventListener('message', listener);
+        this.ws.removeListener(listener);
         abortController?.abort();
       });
       delete this.subscriptions[context];
@@ -330,24 +342,62 @@ export class Beam extends ClientServicesMixin(BeamBase) {
     if (index === -1) return;
 
     const { listener, abortController } = subs[index];
-    this.ws.rawSocket?.removeEventListener('message', listener);
+    this.ws.removeListener(listener);
     abortController?.abort();
     subs.splice(index, 1);
     if (subs.length === 0) delete this.subscriptions[context];
   }
 
-  private checkIfInitAndSupportedContext(context: keyof RefreshableServiceMap) {
+  /**
+   * The refreshable half of `on`: parse the envelope, honour the server-provided delay, re-fetch the
+   * service data, hand it over.
+   *
+   * Its own generic method so `R` is a single key inside it. Reading the registry through the whole
+   * `keyof RefreshableServiceMap` union instead makes `refresh` an intersection of every service's
+   * parameter type, which nothing satisfies.
+   */
+  private async dispatchRefresh<R extends keyof RefreshableServiceMap>(
+    context: R,
+    messageFull: string,
+    signal: AbortSignal,
+    handler: (data: unknown) => void,
+  ): Promise<void> {
+    const payload = parseSocketMessage<R>(messageFull);
+
+    if ('delay' in payload) {
+      try {
+        await wait(payload.delay, signal);
+      } catch {
+        return; // aborted
+      }
+    }
+
+    handler(await this.refreshableRegistry[context].refresh(payload.data));
+  }
+
+  /** True when `context` names a refreshable service rather than a pass-through notification. */
+  private isRefreshableContext(
+    context: BeamClientContext,
+  ): context is keyof RefreshableServiceMap {
+    return context in this.refreshableRegistry;
+  }
+
+  private checkIfInitAndSupportedContext(context: BeamClientContext) {
     if (!this.isInitialized) {
       throw new BeamError(
         `Call \`await Beam.init({...})\` to initialize the Beam client SDK.`,
       );
     }
 
-    if (!this.refreshableRegistry[context]) {
+    if (
+      !this.isRefreshableContext(context) &&
+      !NOTIFICATION_CONTEXTS.includes(context)
+    ) {
       throw new BeamError(
-        `Context "${context}" is not supported. Available contexts: ${Object.keys(
-          this.refreshableRegistry,
-        ).join(', ')}`,
+        `Context "${context}" is not supported. Available contexts: ${[
+          ...Object.keys(this.refreshableRegistry),
+          ...NOTIFICATION_CONTEXTS,
+        ].join(', ')}`,
       );
     }
   }

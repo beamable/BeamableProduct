@@ -61,6 +61,11 @@ class MockWebSocket {
   send(_data: any) {
     /* no-op */
   }
+
+  /** Deliver a frame, as a real socket would. */
+  emit(data: string) {
+    this.onmessage?.({ data } as any);
+  }
 }
 
 describe('BeamWebSocket', () => {
@@ -182,5 +187,98 @@ describe('BeamWebSocket', () => {
     // check that the connect() promise resolves again
     expect(apis.authPostTokensRefreshToken).toHaveBeenCalledTimes(2);
     await expect(connectPromise).resolves.toBeUndefined();
+  });
+
+  // --- message listeners ---
+
+  const connectParams = {
+    requester: fakeRequester,
+    cid: 'cid-1',
+    pid: 'pid-2',
+    refreshToken: 'refresh-123',
+    apiUrl: 'http://localhost:8080',
+  };
+
+  async function connected() {
+    const ws = new BeamWebSocket();
+    const promise = ws.connect(connectParams);
+    await vi.runAllTimersAsync();
+    await promise;
+    return ws;
+  }
+
+  it('delivers frames to a registered listener', async () => {
+    const ws = await connected();
+    const received: string[] = [];
+    ws.addListener((e) => received.push(e.data));
+
+    ((ws as any).socket as MockWebSocket).emit('{"hello":1}');
+
+    expect(received).toEqual(['{"hello":1}']);
+  });
+
+  it('keeps delivering after a reconnect replaces the underlying socket', async () => {
+    // The reason listeners live on the wrapper. reconnect() builds a brand-new WebSocket, so a
+    // listener attached to `rawSocket` would be bound to the discarded object and silently stop
+    // firing — a subscription that dies on the first dropped connection.
+    const ws = await connected();
+    const received: string[] = [];
+    ws.addListener((e) => received.push(e.data));
+
+    const first = (ws as any).socket as MockWebSocket;
+    first.close(1006, 'network blip');
+    await vi.runAllTimersAsync();
+
+    const second = (ws as any).socket as MockWebSocket;
+    expect(second).not.toBe(first);
+
+    second.emit('{"after":"reconnect"}');
+    expect(received).toEqual(['{"after":"reconnect"}']);
+  });
+
+  it('isolates listeners from each other when one throws', async () => {
+    // Each subscription used to have its own addEventListener, so the DOM isolated their failures.
+    // Iterating our own list removes that isolation, and without the per-listener guard a single
+    // bad handler would abort the loop and starve every listener registered after it.
+    const ws = await connected();
+    const reached: string[] = [];
+    ws.addListener(() => {
+      throw new Error('bad handler');
+    });
+    ws.addListener(() => reached.push('second'));
+
+    expect(() =>
+      ((ws as any).socket as MockWebSocket).emit('{"x":1}'),
+    ).not.toThrow();
+    expect(reached).toEqual(['second']);
+  });
+
+  it('removeListener detaches, and survives being called twice', async () => {
+    const ws = await connected();
+    const received: string[] = [];
+    const listener = (e: MessageEvent) => received.push(e.data);
+    ws.addListener(listener);
+    ws.removeListener(listener);
+
+    ((ws as any).socket as MockWebSocket).emit('{"x":1}');
+
+    expect(received).toEqual([]);
+    expect(() => ws.removeListener(listener)).not.toThrow();
+  });
+
+  it('a removed listener stays removed across a reconnect', async () => {
+    // Removal has to follow the re-attachment, or `off` would look like it worked until the next
+    // dropped connection brought the handler back.
+    const ws = await connected();
+    const received: string[] = [];
+    const listener = (e: MessageEvent) => received.push(e.data);
+    ws.addListener(listener);
+    ws.removeListener(listener);
+
+    ((ws as any).socket as MockWebSocket).close(1006, 'blip');
+    await vi.runAllTimersAsync();
+    ((ws as any).socket as MockWebSocket).emit('{"x":1}');
+
+    expect(received).toEqual([]);
   });
 });
