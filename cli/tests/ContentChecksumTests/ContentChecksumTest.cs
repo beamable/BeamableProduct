@@ -6,8 +6,7 @@ namespace tests.ContentChecksumTests;
 
 /// <summary>
 /// Guards the canonical form that <see cref="ContentService.CalculateChecksum(string)"/> hashes.
-/// The resulting hash is published as the manifest checksum, so these are wire-format tests: a failure
-/// here means this CLI no longer agrees with content published by any other version of it.
+/// The hash is published as the manifest checksum, so these are wire-format tests.
 /// </summary>
 public class ContentChecksumTest
 {
@@ -42,8 +41,7 @@ public class ContentChecksumTest
 	[Test]
 	public void Checksum_IsStableForKeysDifferingOnlyInCase()
 	{
-		// OrderBy is a stable sort, so without an Ordinal tiebreak these two inputs would sort into
-		// different orders and hash differently despite carrying identical values.
+		// Without an Ordinal tiebreak these sort differently despite carrying identical values.
 		var a = ChecksumOf("""{"Damage":{"data":1},"damage":{"data":2}}""");
 		var b = ChecksumOf("""{"damage":{"data":2},"Damage":{"data":1}}""");
 
@@ -72,22 +70,19 @@ public class ContentChecksumTest
 	[Test]
 	public void SerializationOptions_EscapeNonAsciiAsTheyAlwaysHave()
 	{
-		// Pinning the encoder must not have changed the bytes we hash. If this fails, every checksum in
-		// every realm published by an older CLI has just become wrong.
+		// Pinning the encoder must not have changed the bytes we hash.
 		var json = JsonSerializer.Serialize(
 			JsonSerializer.Deserialize<JsonElement>("""{"name":"Café & Co"}"""),
 			ContentService.GetContentFileSerializationOptions(false));
 
-		// JavaScriptEncoder.Default escapes non-ASCII and the HTML-sensitive characters. That is not
-		// pretty, but it is what every previously published checksum was computed over.
+		// JavaScriptEncoder.Default escapes non-ASCII and HTML-sensitive characters, as it always has.
 		Assert.That(json, Is.EqualTo("""{"name":"Caf\u00E9 \u0026 Co"}"""));
 	}
 
 	[Test]
 	public void Checksum_PreservesRawNumberText()
 	{
-		// Numbers are replayed as written rather than normalized, which keeps the float-versus-int
-		// distinction that Unity schemas rely on. Documented here so the behaviour is deliberate.
+		// Numbers are replayed as written, keeping the float-versus-int distinction Unity schemas rely on.
 		var a = ChecksumOf("""{"price":{"data":1.0}}""");
 		var b = ChecksumOf("""{"price":{"data":1}}""");
 
