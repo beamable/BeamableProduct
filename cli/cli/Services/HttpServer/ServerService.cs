@@ -265,7 +265,7 @@ public class ServerService
 	}
 
 	static async Task HandleRequest(ServeCliCommandArgs args, HttpListenerContext ctx,
-		ulong inflightRequests)
+		ulong inflightRequests, App app = null)
 	{
 		// Peel out the requests and response objects
 		HttpListenerRequest req = ctx.Request;
@@ -291,7 +291,7 @@ public class ServerService
 					resp.StatusCode = status;
 					break;
 				case EXEC_ROUTE:
-					await HandleExec(args, req.InputStream, resp);
+					await HandleExec(args, req.InputStream, resp, app);
 					break;
 				default:
 					Log.Information($"Unknown route=[{routePath}]");
@@ -306,6 +306,12 @@ public class ServerService
 					break;
 			}
 		}
+		catch (Exception ex) when (routePath == EXEC_ROUTE)
+		{
+			// HandleExec reports setup/execution errors in-band. Anything escaping that boundary
+			// is a response/cleanup failure: never append raw JSON or reclassify a completed command.
+			Log.Error(ex, "CLI execution response or cleanup failed");
+		}
 		catch (Exception ex)
 		{
 			response = JsonConvert.SerializeObject(new ServerErrorResponse
@@ -318,9 +324,10 @@ public class ServerService
 			await resp.OutputStream.WriteAsync(data, 0, data.Length);
 			resp.StatusCode = status;
 		}
-
-
-		resp.Close();
+		finally
+		{
+			resp.Close();
+		}
 
 	}
 
@@ -347,54 +354,88 @@ public class ServerService
 	private static readonly object _cliInvocationsLock = new object();
 	private static readonly List<string> cliInvocations = new List<string>();
 
-	static async Task HandleExec(ServeCliCommandArgs args, Stream networkRequestStream, HttpListenerResponse response, App app = null)
+	static async Task HandleExec(ServeCliCommandArgs args, Stream networkRequestStream, HttpListenerResponse response, App app)
 	{
 		using var inputStream = new StreamReader(networkRequestStream);
 		response.Headers.Set(HttpResponseHeader.ContentType, "text/event-stream; charset=utf-8");
-		var input = await inputStream.ReadToEndAsync();
-		Log.Verbose("Raw input received: " + input);
-		var req = JsonConvert.DeserializeObject<ServerRequest>(input);
-		Log.Verbose("virtualizing " + req.commandLine);
-		
-		app ??= new App();
-
-		var sw = new Stopwatch();
-		sw.Start();
-		app.Configure(builder =>
-		{
-			builder.Remove<IDataReporterService>();
-			builder.AddSingleton<IDataReporterService, ServerReporterService>(provider => new ServerReporterService(provider, response));
-		}, overwriteLogger: false);
-		app.Build();
-		sw.Stop();
-		Log.Verbose("build virtual app in " + sw.ElapsedMilliseconds);
-
+		string input = null;
+		string commandLine = null;
+		IDataReporterService reporter = null;
+		var registered = false;
 		int exitCode = -1;
-
-		lock (_cliInvocationsLock)
-		{
-			cliInvocations.Add(input);
-		}
-
 		try
 		{
+			input = await inputStream.ReadToEndAsync();
+			Log.Verbose("Raw input received: " + input);
+			commandLine = JsonConvert.DeserializeObject<ServerRequest>(input)?.commandLine;
+			if (string.IsNullOrWhiteSpace(commandLine))
+			{
+				throw new ArgumentException("An execute request must include a non-empty commandLine.");
+			}
+			Log.Verbose("virtualizing " + commandLine);
+			app ??= new App();
+
+			var sw = Stopwatch.StartNew();
+			app.Configure(builder =>
+			{
+				builder.Remove<IDataReporterService>();
+				builder.AddSingleton<IDataReporterService, ServerReporterService>(provider =>
+				{
+					var serverReporter = new ServerReporterService(provider, response);
+					reporter = serverReporter;
+					return serverReporter;
+				});
+			}, overwriteLogger: false);
+			app.Build();
+			sw.Stop();
+			Log.Verbose("build virtual app in " + sw.ElapsedMilliseconds);
+
+			lock (_cliInvocationsLock)
+			{
+				cliInvocations.Add(input);
+				registered = true;
+			}
 			exitCode = await app.RunWithSingleString(
-				req.commandLine,
+				commandLine,
 				args.useCustomSplitter);
 		}
 		catch (Exception ex)
 		{
+			exitCode = ex is CliException cliException ? cliException.NonZeroOrOneExitCode : 1;
 			Log.Error($"CLI EXEC FINISHED WITH FAIL MESSAGE=[{ex.Message}]");
+			if (reporter != null)
+			{
+				// Use the same writer/lock as command output and the connection heartbeat.
+				reporter.Exception(ex, exitCode, commandLine);
+			}
+			else
+			{
+				// Setup failed before a reporter (and its heartbeat) existed. Unity still needs
+				// a ReportDataPoint<ErrorOutput>, not ServerErrorResponse or an HTTP-only error.
+				var error = new ErrorOutput();
+				CliException.Apply(ex, ref error, exitCode, commandLine);
+				var report = new ReportDataPoint<ErrorOutput>
+				{
+					type = DefaultErrorStream.CHANNEL, data = error,
+					ts = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+				};
+				var json = JsonConvert.SerializeObject(report, UnitySerializationSettings.Instance);
+				var bytes = Encoding.UTF8.GetBytes("data: " + json + Environment.NewLine);
+				await response.OutputStream.WriteAsync(bytes, 0, bytes.Length);
+			}
 		}
 		finally
 		{
-			lock (_cliInvocationsLock)
+			if (registered)
 			{
-				cliInvocations.Remove(input);
+				lock (_cliInvocationsLock)
+				{
+					cliInvocations.Remove(input);
+				}
 			}
 
 			Log.Verbose(
-				$"CLI EXEC FINISHED WITH EXIT=[{exitCode}] REQ=[{req.commandLine}]");
+				$"CLI EXEC FINISHED WITH EXIT=[{exitCode}] REQ=[{commandLine}]");
 		}
 	}
 

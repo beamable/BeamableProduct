@@ -1,4 +1,5 @@
 using Beamable.Common.Dependencies;
+using Beamable.Common.BeamCli;
 using Beamable.Server;
 using cli;
 using cli.CliServerCommand;
@@ -31,18 +32,137 @@ public class ServerServiceTests
 	private static readonly TimeSpan Deadline = TimeSpan.FromSeconds(20);
 	private static readonly ServeCliCommandArgs Args = new() { owner = "server-tests", useCustomSplitter = true };
 	private const BindingFlags PrivateStatic = BindingFlags.Static | BindingFlags.NonPublic;
-	private static readonly Func<ServeCliCommandArgs, Stream, HttpListenerResponse, App, Task> HandleExec =
-		typeof(ServerService).GetMethod("HandleExec", PrivateStatic)!
-			.CreateDelegate<Func<ServeCliCommandArgs, Stream, HttpListenerResponse, App, Task>>();
 	private static readonly Func<ServeCliCommandArgs, ulong, Task<ServerInfoResponse>> HandleInfo =
 		typeof(ServerService).GetMethod("HandleInfo", PrivateStatic)!
 			.CreateDelegate<Func<ServeCliCommandArgs, ulong, Task<ServerInfoResponse>>>();
-	private static readonly Func<ServeCliCommandArgs, HttpListenerContext, ulong, Task> HandleRequest =
+	private static readonly Func<ServeCliCommandArgs, HttpListenerContext, ulong, App?, Task> HandleRequest =
 		typeof(ServerService).GetMethod("HandleRequest", PrivateStatic)!
-			.CreateDelegate<Func<ServeCliCommandArgs, HttpListenerContext, ulong, Task>>();
+			.CreateDelegate<Func<ServeCliCommandArgs, HttpListenerContext, ulong, App?, Task>>();
 
 	private static TaskCompletionSource<bool> Signal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 	private static Task<ServerInfoResponse> Snapshot() => HandleInfo(Args, 0);
+
+	[TestCase("{broken")]
+	[TestCase("null")]
+	[TestCase("{}")]
+	public async Task Invalid_execute_request_returns_a_framed_error(string body)
+	{
+		await using var server = new TestServer(null);
+		using var request = new StringContent(body, Encoding.UTF8, "application/json");
+		using var response = await server.Client.PostAsync("execute", request);
+		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), "Command failures are reported in the stream.");
+		Assert.That(response.Content.Headers.ContentType?.MediaType, Is.EqualTo("text/event-stream"));
+		AssertErrorReport(await response.Content.ReadAsStringAsync());
+		Assert.That((await Snapshot()).inflightCommands, Is.Empty);
+		server.AssertNoErrors();
+	}
+
+	private static ErrorOutput AssertErrorReport(string response)
+	{
+		var lines = response.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+		Assert.That(lines, Has.Length.EqualTo(1), response);
+		Assert.That(lines[0], Does.StartWith("data: "));
+		var report = JsonConvert.DeserializeObject<ReportDataPoint<ErrorOutput>>(lines[0]["data: ".Length..])!;
+		Assert.That(report.type, Does.StartWith("error"), "Unity dispatches OnError using the report channel.");
+		Assert.That(report.ts, Is.GreaterThan(0));
+		Assert.That(report.data.exitCode, Is.Not.EqualTo(0));
+		Assert.That(report.data.message, Is.Not.Empty);
+		Assert.That(report.data.typeName, Is.Not.Empty);
+		return report.data;
+	}
+
+	[TestCase(false)]
+	[TestCase(true)]
+	public async Task Typed_errors_are_preserved_without_duplicates(bool unhandled)
+	{
+		await using var server = new TestServer(() => new ControlledApp((command, reporter) =>
+		{
+			var failure = new CliException<FramingTestError>("expected failure", 7)
+			{
+				payload = new FramingTestError { detail = "preserved" }
+			};
+			if (unhandled)
+			{
+				throw failure;
+			}
+			reporter.Exception(failure, 7, command);
+			return Task.FromResult(7);
+		}));
+		var response = await server.Execute("reported-error");
+		var error = AssertErrorReport(response);
+		Assert.That(error.exitCode, Is.EqualTo(7));
+		var report = JObject.Parse(response["data: ".Length..]);
+		Assert.That((string?)report["type"], Is.EqualTo("errorFramingTestError"));
+		Assert.That((string?)report["data"]?["detail"], Is.EqualTo("preserved"));
+		server.AssertNoErrors();
+	}
+
+	[Test]
+	public async Task Partial_output_is_followed_by_a_framed_execution_error()
+	{
+		await using var server = new TestServer(() => new ControlledApp((_, reporter) =>
+		{
+			reporter.Report("stream", new ServerRequest { commandLine = "partial" });
+			throw new InvalidOperationException("failed after partial output");
+		}));
+		var response = await server.Execute("partial-failure");
+		var lines = response.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+		Assert.That(lines, Has.Length.EqualTo(2), response);
+		Assert.That((string?)JObject.Parse(lines[0]["data: ".Length..])["type"], Is.EqualTo("stream"));
+		Assert.That(AssertErrorReport(lines[1]).message, Is.EqualTo("failed after partial output"));
+		Assert.That((await Snapshot()).inflightCommands, Is.Empty);
+		server.AssertNoErrors();
+	}
+
+	[Test]
+	public async Task Cleanup_failure_after_success_does_not_append_a_command_error()
+	{
+		var logger = new CompletionFailureLogger();
+		await using var server = new TestServer(() => new ControlledApp((_, reporter) =>
+		{
+			reporter.Report("stream", new ServerRequest { commandLine = "success" });
+			return Task.FromResult(0);
+		}), logger);
+		var response = await server.Execute("cleanup-failure");
+		Assert.That(logger.FaultInjected, Is.True, "The cleanup failure must actually occur.");
+		var lines = response.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+		Assert.That(lines, Has.Length.EqualTo(1), response);
+		Assert.That(lines[0], Does.StartWith("data: "));
+		var report = JObject.Parse(lines[0]["data: ".Length..]);
+		Assert.That((string?)report["type"], Is.EqualTo("stream"));
+		Assert.That((string?)report["data"]?["commandLine"], Is.EqualTo("success"));
+		Assert.That(logger.DiagnosedFailure, Is.True, "Cleanup failures must remain visible in server diagnostics.");
+		Assert.That((await Snapshot()).inflightCommands, Is.Empty);
+		server.AssertNoErrors();
+	}
+
+	public sealed class FramingTestError : ErrorOutput
+	{
+		public string detail = "";
+	}
+
+	private sealed class CompletionFailureLogger : ILogger
+	{
+		public bool FaultInjected { get; private set; }
+		public bool DiagnosedFailure { get; private set; }
+		public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+		public bool IsEnabled(LogLevel logLevel) => true;
+		public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+			Func<TState, Exception?, string> formatter)
+		{
+			// Fault the diagnostic emitted in HandleExec's finally, after command success and removal.
+			// This exercises the real outer HTTP handler without corrupting the static registry.
+			if (!FaultInjected && formatter(state, exception).StartsWith("CLI EXEC FINISHED WITH EXIT="))
+			{
+				FaultInjected = true;
+				throw new InvalidOperationException("injected cleanup failure");
+			}
+			if (exception?.Message == "injected cleanup failure" && logLevel == LogLevel.Error)
+			{
+				DiagnosedFailure = true;
+			}
+		}
+	}
 
 	[TearDown]
 	public void Check_and_reset_registry()
@@ -193,15 +313,17 @@ public class ServerServiceTests
 	[Test]
 	public async Task Setup_failure_does_not_register_a_command()
 	{
-		var failure = new InvalidOperationException("injected setup failure");
+		var failure = new InvalidOperationException("injected setup failure\nsecond line — preserved");
 		var executed = false;
 		await using var server = new TestServer(() => new ControlledApp((_, _) =>
 		{
 			executed = true;
 			return Task.FromResult(0);
 		}) { SetupFailure = failure });
-		await server.Execute("setup-failure");
-		Assert.That(server.Errors.ToArray(), Is.EqualTo(new[] { failure }));
+		var error = AssertErrorReport(await server.Execute("setup-failure"));
+		Assert.That(error.message, Is.EqualTo(failure.Message));
+		Assert.That(error.invocation, Is.EqualTo("setup-failure"));
+		server.AssertNoErrors();
 		Assert.That(executed, Is.False);
 		Assert.That((await Snapshot()).inflightCommands, Is.Empty);
 	}
@@ -215,7 +337,9 @@ public class ServerServiceTests
 			observedCount = (await Snapshot()).inflightCommands.Count;
 			throw new InvalidOperationException("injected execution failure");
 		}));
-		await server.Execute("execution-failure");
+		var error = AssertErrorReport(await server.Execute("execution-failure"));
+		Assert.That(error.message, Is.EqualTo("injected execution failure"));
+		Assert.That(error.invocation, Is.EqualTo("execution-failure"));
 		Assert.That(observedCount, Is.EqualTo(1));
 		Assert.That((await Snapshot()).inflightCommands, Is.Empty);
 		server.AssertNoErrors();
@@ -263,7 +387,8 @@ public class ServerServiceTests
 	private sealed class TestServer : IAsyncDisposable
 	{
 		private readonly HttpListener _listener = new();
-		private readonly Func<ControlledApp> _createApp;
+		private readonly Func<ControlledApp>? _createApp;
+		private readonly ILogger _logger;
 		private readonly List<Task> _handlers = new();
 		private readonly Task _accept;
 		private readonly TaskCompletionSource<bool> _failed = Signal();
@@ -271,9 +396,10 @@ public class ServerServiceTests
 		public readonly ConcurrentQueue<Exception> Errors = new();
 		public HttpClient Client { get; }
 
-		public TestServer(Func<ControlledApp> createApp)
+		public TestServer(Func<ControlledApp>? createApp, ILogger? logger = null)
 		{
 			_createApp = createApp;
+			_logger = logger ?? NullLogger.Instance;
 			// Register MSBuild once before request workers construct their Apps concurrently.
 			_ = new App();
 			using var portReservation = new TcpListener(IPAddress.Loopback, 0);
@@ -323,18 +449,11 @@ public class ServerServiceTests
 		private async Task Handle(HttpListenerContext context)
 		{
 			// Each request has its own async logging context, just as the CLI normally provides.
-			BeamableZLoggerProvider.LogContext.Value = NullLogger.Instance;
+			BeamableZLoggerProvider.LogContext.Value = _logger;
 			try
 			{
-				if (context.Request.Url!.AbsolutePath == "/execute")
-				{
-					using var app = _createApp();
-					await HandleExec(Args, context.Request.InputStream, context.Response, app);
-				}
-				else
-				{
-					await HandleRequest(Args, context, 0);
-				}
+				using var app = context.Request.Url!.AbsolutePath == "/execute" ? _createApp?.Invoke() : null;
+				await HandleRequest(Args, context, 0, app);
 			}
 			catch (Exception ex)
 			{
