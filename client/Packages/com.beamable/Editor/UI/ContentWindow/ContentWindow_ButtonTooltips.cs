@@ -17,7 +17,12 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private bool DrawHeaderButtonWithTooltip(string label, Texture icon, string tooltip, Texture badge = null)
 		{
-			var rect = GUILayoutUtility.GetRect(
+			return DrawHeaderButtonWithTooltip(label, icon, tooltip, out _, badge);
+		}
+
+		private bool DrawHeaderButtonWithTooltip(string label, Texture icon, string tooltip, out Rect rect, Texture badge = null)
+		{
+			rect = GUILayoutUtility.GetRect(
 				GUIContent.none,
 				GUIStyle.none,
 				GUILayout.Width(HEADER_BUTTON_WIDTH),

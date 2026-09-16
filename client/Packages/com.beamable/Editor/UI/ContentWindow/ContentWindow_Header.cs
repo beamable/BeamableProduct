@@ -273,7 +273,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		/// <summary>
 		/// Draws Publish with an Issues badge when content problems block publishing.
-		/// Clicking reviews issues or opens the publish panel, depending on eligibility.
+		/// Clicking explains blocking issues in a popup or opens the publish panel, depending on eligibility.
 		/// </summary>
 		private void DrawPublishHeaderButton(bool hasContentToPublish, bool hasConflictedOrInvalid)
 		{
@@ -312,15 +312,17 @@ namespace Beamable.Editor.UI.ContentWindow
 				tooltip = "Publish content to the current realm.";
 			}
 
+			Rect publishButtonRect = default;
 			bool clicked = BeamGUI.ShowDisabled(canPublish || canReviewIssues,
 			                                    () => DrawHeaderButtonWithTooltip("Publish",
 				                                    BeamGUI.iconPublish,
 				                                    tooltip,
+				                                    out publishButtonRect,
 				                                    badge: canReviewIssues ? BeamGUI.iconStatusInvalid : null));
 
 			if (!clicked) return;
 
-			if (canReviewIssues) ShowContentIssues();
+			if (canReviewIssues) ShowPublishIssuesPopup(publishButtonRect);
 			else if (canPublish) ChangeToPublishMode();
 		}
 

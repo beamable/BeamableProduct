@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### UI/UX
+
+- Use one Issues icon for Content window validation errors and conflicts.
+- Add content status tooltips explaining the issue and next action.
+- Add an Issues count and filter at the end of the content footer.
+- Highlight footer buttons matching active status filters.
+- Add an Issues badge when publishing is blocked by content issues.
+- Show invalid and conflict counts in a Publish popup with a "Show Items with Issues" action.
+- Explain missing publish permission and no pending changes in Publish tooltips.
+- Add tooltips to content filter, refresh, and help buttons.
+- Position toolbar and footer tooltips beside their buttons.
+- Rename "Show all" to "All content types" to clarify its scope.
+- Add "Clear all filters" to reset the search and filters.
+- Keep typed search filters and filter menus in sync.
+- Fix stale search results when switching content types.
+- Widen the search field and keep "Clear all filters" compact and centered.
+- Unfocus content search when clicking outside it.
+- Add Escape to unfocus content search without clearing the query.
+- Add `/` to focus content search when the Content window is active.
+
 ## [6.1.0] - 2026-08-26
 
 ### Added
