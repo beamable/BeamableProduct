@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Portal extension "open in browser" landing URLs now honor the `--portal-url` override.
 - Update `MongoDB.Driver` dependency to `3.11.2`.
 - Update `SharpCompress` dependency to `0.50.4`.
+- Update CLI `OpenTelemetry` dependencies to `1.18.0`.
 
 ### Fixed
 - `content ps --watch` now recovers from filesystem watcher overflow by performing an authoritative full rescan instead of leaving consumers with an incomplete local content state.
