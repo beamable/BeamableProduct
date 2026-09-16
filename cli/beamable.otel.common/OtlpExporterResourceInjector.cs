@@ -43,18 +43,32 @@ namespace beamable.otel.common
 				.AddAttributes(resourceAttributes.Select(kvp => new KeyValuePair<string, object>(kvp.Key, kvp.Value)))
 				.Build();
 
-			var field = type.GetField(fieldName,
-				BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-
-			if (field == null)
+			// OpenTelemetry 1.18 stores the resource in an internal Resource property,
+			// while Beamable's older exporters use a private `resource` field. Support
+			// both shapes (including members declared on a base type).
+			for (var current = type; current != null; current = current.BaseType)
 			{
-				errorMessage = "Couldn't find the field 'resource' in the passed exporter object";
-				return false;
+				var property = current.GetProperty("Resource",
+					BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+				if (property?.PropertyType == typeof(Resource) && property.SetMethod != null)
+				{
+					property.SetValue(exporter, customResource);
+					errorMessage = string.Empty;
+					return true;
+				}
+
+				var field = current.GetField(fieldName,
+					BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+				if (field?.FieldType == typeof(Resource))
+				{
+					field.SetValue(exporter, customResource);
+					errorMessage = string.Empty;
+					return true;
+				}
 			}
 
-			field.SetValue(exporter, customResource);
-			errorMessage = string.Empty;
-			return true;
+			errorMessage = $"Couldn't find a writable Resource property or private 'resource' field in exporter type '{type.FullName}'. The OpenTelemetry exporter internals are incompatible with this version.";
+			return false;
 		}
 
 		private static bool IsBaseExporterType(Type genericTypeDef)
