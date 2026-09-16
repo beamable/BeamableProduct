@@ -341,6 +341,13 @@ namespace Beamable.Editor.UI.ContentWindow
 				var btnSize = buttonStyle.CalcSize(btnContent);
 				Rect footerAreaRect = bottomRectController.ReserveWidth(btnSize.x + lineSize + BASE_PADDING * 3);
 				var buttonRect = new Rect(footerAreaRect.x,  footerAreaRect.center.y - lineSize/2f, footerAreaRect.width, btnSize.y);
+				bool isSelected = _activeFilters.TryGetValue(ContentSearchFilterType.Status, out var activeStatuses) &&
+				                  activeStatuses.Contains(StatusMapToString[statusEnum]);
+				if (isSelected && Event.current.type == EventType.Repaint)
+				{
+					var highlightRect = new Rect(buttonRect.x, buttonRect.y - 3f, buttonRect.width, buttonRect.height + 6f);
+					GUI.DrawTexture(highlightRect, _rowSelectedItemStyle.normal.background);
+				}
 				
 				var iconRect = new Rect(buttonRect.xMin + BASE_PADDING + lineSize/2f, buttonRect.center.y - lineSize/2f, lineSize, lineSize);
 				GUI.DrawTexture(iconRect, buttonIcon, ScaleMode.ScaleToFit, true);
