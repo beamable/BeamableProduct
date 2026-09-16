@@ -1079,7 +1079,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			var tags = GetFilterTypeActiveItems(ContentSearchFilterType.Tag);
 			var statuses = GetFilterTypeActiveItems(ContentSearchFilterType.Status);
 			
-			var filterKey = $"{specificType}|{nameSearchPartValue}|{string.Join("-",tags)}|{string.Join("-",statuses)}|{string.Join("-",statuses)}";
+			var filterKey = BuildFilterCacheKey(specificType, nameSearchPartValue, types, tags, statuses);
 
 			if (!_filteredCache.TryGetValue(filterKey, out var filteredItems))
 			{
@@ -1091,6 +1091,16 @@ namespace Beamable.Editor.UI.ContentWindow
 			List<LocalContentManifestEntry> contentManifestEntries = shouldSort ? SortItems(filterKey, filteredItems, _currentSortOption) : filteredItems;
 			return contentManifestEntries;
 		}
+		private static string BuildFilterCacheKey(string specificType, string name,
+			IEnumerable<string> types, IEnumerable<string> tags, IEnumerable<string> statuses)
+		{
+			// Length prefixes keep values containing separators distinct; sorting makes set order irrelevant.
+			string Encode(string value) => $"{value.Length}:{value}";
+			string EncodeSet(IEnumerable<string> values) =>
+				Encode(string.Concat(values.OrderBy(value => value, StringComparer.Ordinal).Select(Encode)));
+			return Encode(specificType) + Encode(name) + EncodeSet(types) + EncodeSet(tags) + EncodeSet(statuses);
+		}
+
 		private bool HasContentIssue(LocalContentManifestEntry entry)
 		{
 			return _contentService.IsContentInvalid(entry.FullId) || entry.IsInConflict;
@@ -1168,7 +1178,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					return entry.IsInConflict;
 				}
 
-				return FilterStatusToContentStatus[status] == entry.StatusEnum;
+				return FilterStatusToContentStatus.TryGetValue(status, out var contentStatus) && contentStatus == entry.StatusEnum;
 			}
 		}
 
