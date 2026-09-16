@@ -100,6 +100,7 @@ namespace Beamable.Server
 				[nameof(IFederatedMessageRail<DummyThirdParty>.SendMessageBatch)] = "SendMessageBatch",
 				[nameof(IFederatedMessageRail<DummyThirdParty>.RegisterUserWithMessageRail)] = "RegisterUserWithMessageRail",
 				[nameof(IFederatedMessageRail<DummyThirdParty>.UnregisterUserWithMessageRail)] = "UnregisterUserWithMessageRail",
+				[nameof(IFederatedMessageRail<DummyThirdParty>.CheckMessageRailConfig)] = "CheckMessageRailConfig",
 			};
 
 			foreach (var interfaceType in interfaces)
