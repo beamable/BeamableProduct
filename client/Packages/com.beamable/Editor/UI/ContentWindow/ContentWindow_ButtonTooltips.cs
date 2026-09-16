@@ -15,13 +15,41 @@ namespace Beamable.Editor.UI.ContentWindow
 		private double _buttonTooltipShowAt;
 		private GUIStyle _buttonTooltipStyle;
 
-		private bool DrawHeaderButtonWithTooltip(string label, Texture icon, string tooltip)
+		private bool DrawHeaderButtonWithTooltip(string label, Texture icon, string tooltip, Texture badge = null)
 		{
-			var rect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none,
-				GUILayout.Width(HEADER_BUTTON_WIDTH), GUILayout.ExpandHeight(true));
+			var rect = GUILayoutUtility.GetRect(
+				GUIContent.none,
+				GUIStyle.none,
+				GUILayout.Width(HEADER_BUTTON_WIDTH),
+				GUILayout.ExpandHeight(true));
+
 			RegisterButtonTooltip(rect, tooltip);
-			return BeamGUI.HeaderButton(label, icon, width: HEADER_BUTTON_WIDTH, iconPadding: 2,
+
+			bool clicked = BeamGUI.HeaderButton(
+				label,
+				icon,
+				width: HEADER_BUTTON_WIDTH,
+				iconPadding: 2,
 				forcedRect: rect);
+
+			if (badge != null)
+			{
+				const float badgeSize = 14f;
+
+				var badgeRect = new Rect(
+					rect.xMax - badgeSize - 3f,
+					rect.yMin + 2f,
+					badgeSize,
+					badgeSize);
+
+				GUI.DrawTexture(
+					badgeRect,
+					badge,
+					ScaleMode.ScaleToFit,
+					true);
+			}
+
+			return clicked;
 		}
 
 		private void BeginButtonTooltipFrame()

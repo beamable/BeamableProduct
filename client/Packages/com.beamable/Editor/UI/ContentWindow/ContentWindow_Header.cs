@@ -130,17 +130,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				var hasContentToPublish = _contentService.HasChangedContents;
 				var hasConflictedOrInvalid = _contentService.HasConflictedContent || _contentService.HasInvalidContent;
 
-				string publishTooltip = "Publish Content to Current Realm";
-				string syncTooltip = "Sync contents with Current Realm";
 				string validateTooltip = "Validate Local Changes";
-				if (hasConflictedOrInvalid)
+				string syncTooltip = "Sync contents with Current Realm";
+
+				if (!hasContentToPublish && !hasConflictedOrInvalid)
 				{
-					publishTooltip = "There is Conflicted or Invalid Content, unable to Publish.";
-				}
-				else if (!hasContentToPublish)
-				{
-					publishTooltip = "There is not any modified items to publish. You are up-to-date.";
-					syncTooltip = "There is not any modified items to sync. You are up-to-date.";
+					syncTooltip = "There are no local changes or issues to sync.";
 				}
 
 				if (_windowStatus != ContentWindowStatus.Validate)
@@ -158,16 +153,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					ShowSyncMenu();
 				}
 
-				var hasPrivs = _cli.Permissions.CanPushContent;
-				if (!hasPrivs)
-				{
-					publishTooltip = $"{_cli?.latestUser?.email ?? "this user"} does not have sufficient permission to publish content on this realm.";
-				}
-				if (BeamGUI.ShowDisabled(hasPrivs && hasContentToPublish && !hasConflictedOrInvalid,
-				                         () => DrawHeaderButtonWithTooltip("Publish", BeamGUI.iconPublish, publishTooltip)))
-				{
-					ChangeToPublishMode();
-				}
+				DrawPublishHeaderButton(hasContentToPublish, hasConflictedOrInvalid);
 
 				if (BeamGUI.HeaderButton("Snapshot", BeamGUI.iconContentSnapshotWhite, width: HEADER_BUTTON_WIDTH, iconPadding: 2,
 				                         tooltip: "Manages content snapshots"))
@@ -190,6 +176,82 @@ namespace Beamable.Editor.UI.ContentWindow
 					DrawFilterButton(ContentSearchFilterType.Status, BeamGUI.iconStatus, AllStatus);
 				}
 			}
+		}
+		/// <summary>
+		/// Draws Publish with an Issues badge when content problems block publishing.
+		/// Clicking reviews issues or opens the publish panel, depending on eligibility.
+		/// </summary>
+		private void DrawPublishHeaderButton(bool hasContentToPublish, bool hasConflictedOrInvalid)
+		{
+			bool hasPublishPermission = _cli.Permissions.CanPushContent;
+			bool canReviewIssues = hasConflictedOrInvalid;
+			bool canPublish = hasPublishPermission && hasContentToPublish && !canReviewIssues;
+
+			string tooltip;
+
+			if (canReviewIssues)
+			{
+				int issueCount = _contentService.EntriesCache.Values
+				                                .Count(HasContentIssue);
+
+				string summary = issueCount > 0
+					? $"{issueCount} {(issueCount == 1 ? "item needs" : "items need")} attention."
+					: "Content has validation errors or conflicts.";
+
+				tooltip = $"Publishing blocked: {summary}\n" + "Click to review validation errors and conflicts.";
+
+				if (!hasPublishPermission)
+				{
+					tooltip += "\nYou also do not have permission to publish to this realm.";
+				}
+			}
+			else if (!hasPublishPermission)
+			{
+				tooltip = "You do not have permission to publish to this realm.";
+			}
+			else if (!hasContentToPublish)
+			{
+				tooltip = "No local changes to publish.";
+			}
+			else
+			{
+				tooltip = "Publish content to the current realm.";
+			}
+
+			bool clicked = BeamGUI.ShowDisabled(canPublish || canReviewIssues,
+			                                    () => DrawHeaderButtonWithTooltip("Publish",
+				                                    BeamGUI.iconPublish,
+				                                    tooltip,
+				                                    badge: canReviewIssues ? BeamGUI.iconStatusInvalid : null));
+
+			if (!clicked) return;
+
+			if (canReviewIssues) ShowContentIssues();
+			else if (canPublish) ChangeToPublishMode();
+		}
+
+		/// <summary>
+		/// Opens the content list filtered to items with validation errors or conflicts.
+		/// Clears existing filters, search text, cached results, and the active tooltip.
+		/// Defers the changes until the current UI draw completes.
+		/// </summary>
+		private void ShowContentIssues()
+		{
+			AddDelayedAction(() =>
+			{
+				ChangeWindowStatus(ContentWindowStatus.Normal);
+
+				_activeFilters.Clear();
+				_contentSearchData.searchText = string.Empty;
+				GUI.FocusControl(null);
+
+				GetFilterTypeActiveItems(ContentSearchFilterType.Status)
+					.Add(StatusMapToString[ContentFilterStatus.Issues]);
+
+				ClearCaches();
+				UpdateActiveFilterSearchText();
+				ResetButtonTooltip();
+			});
 		}
 
 		private void ChangeToPublishMode()

@@ -345,17 +345,25 @@ namespace Beamable.Editor.UI.ContentWindow
 				GUI.DrawTexture(iconRect, buttonIcon, ScaleMode.ScaleToFit, true);
 				EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
 				RegisterButtonTooltip(buttonRect, tooltip, above: true);
-				if (GUI.Button(buttonRect, btnContent, buttonStyle))
+
+				if (!GUI.Button(buttonRect, btnContent, buttonStyle))
+				{
+					return;
+				}
+
+				// Issues opens the content list with all previous filters and search text cleared.
+				// Other statuses replace the active filters while preserving the name search.
+				if (statusEnum == ContentFilterStatus.Issues)
+				{
+					ShowContentIssues();
+				}
+				else
 				{
 					_activeFilters.Clear();
-					if (statusEnum == ContentFilterStatus.Issues)
-					{
-						_contentSearchData.searchText = string.Empty;
-						GUI.FocusControl(null);
-					}
-					HashSet<string> statusFilter = GetFilterTypeActiveItems(ContentSearchFilterType.Status);
-					string item = StatusMapToString[statusEnum];
-					statusFilter.Add(item);
+
+					GetFilterTypeActiveItems(ContentSearchFilterType.Status)
+						.Add(StatusMapToString[statusEnum]);
+
 					ClearCaches();
 					UpdateActiveFilterSearchText();
 				}
