@@ -203,6 +203,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				ReloadData();
 			}
 			
+			HandleContentSearchInput();
 			DrawHeader();
 			GUILayout.Space(1);
 			switch (_windowStatus)

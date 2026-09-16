@@ -21,6 +21,9 @@ namespace Beamable.Editor.UI.ContentWindow
 	public partial class ContentWindow
 	{
 		private const int HEADER_BUTTON_WIDTH = 50;
+		private const string CONTENT_SEARCH_CONTROL = "BeamContentSearch";
+		private Rect _contentSearchScreenRect;
+		private bool _focusContentSearch;
 		private const string REVERT_ALL_MENU_ITEM = "Revert All Local Changes (Modified, Created, Deleted, and Conflicted)";
 		private const string REVERT_MODIFIED_MENU_ITEM = "Revert Modified Local Changes";
 		private const string REVERT_CONFLICTED_MENU_ITEM = "Revert Conflicted Changes Only";
@@ -189,7 +192,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					                             _clearFiltersButtonStyle.CalcSize(new GUIContent("Clear all filters")).x;
 					float searchWidth = Mathf.Clamp(position.width - reservedToolbarWidth, 30f, 480f);
 					GUILayout.BeginVertical(GUILayout.Width(searchWidth));
-					this.DrawSearchBar(_contentSearchData, true);
+					this.DrawSearchBar(_contentSearchData, true, CONTENT_SEARCH_CONTROL, OnContentSearchFieldDrawn);
 					GUILayout.EndVertical();
 					DrawFilterButton(ContentSearchFilterType.Tag, BeamGUI.iconTag, _allTags);
 					DrawFilterButton(ContentSearchFilterType.Type, BeamGUI.iconType, _allTypes);
@@ -209,6 +212,65 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 			}
 		}
+		private void HandleContentSearchInput()
+		{
+			var evt = Event.current;
+			bool searchFocused = GUI.GetNameOfFocusedControl() == CONTENT_SEARCH_CONTROL;
+			if (_windowStatus != ContentWindowStatus.Normal || NeedsMigration)
+			{
+				_focusContentSearch = false;
+				if (searchFocused) UnfocusContentSearch();
+				return;
+			}
+
+			// Run before toolbar buttons or list rows can consume the click.
+			if (searchFocused && evt.type == EventType.MouseDown &&
+			    !_contentSearchScreenRect.Contains(GUIUtility.GUIToScreenPoint(evt.mousePosition)))
+			{
+				UnfocusContentSearch();
+				// Leave the click available to the control under the pointer.
+			}
+
+			if (focusedWindow != this || evt.type != EventType.KeyDown) return;
+			if (searchFocused && evt.keyCode == KeyCode.Escape)
+			{
+				UnfocusContentSearch();
+				evt.Use();
+			}
+			else if (!searchFocused && !EditorGUIUtility.editingTextField && GUIUtility.hotControl == 0 &&
+			         !evt.control && !evt.command && !evt.alt && !evt.shift &&
+			         (evt.character == '/' || evt.keyCode == KeyCode.Slash) && _contentSearchScreenRect.width > 30f)
+			{
+				_focusContentSearch = true;
+				evt.Use();
+				Repaint();
+			}
+		}
+
+		private void OnContentSearchFieldDrawn(Rect rect)
+		{
+			if (Event.current.type == EventType.Repaint)
+				_contentSearchScreenRect = GUIUtility.GUIToScreenRect(rect);
+
+			// Used and Layout events return placeholder rectangles. Wait until the field
+			// has been drawn with its real bounds before applying the queued shortcut.
+			if (_focusContentSearch && Event.current.type == EventType.Repaint)
+			{
+				_focusContentSearch = false;
+				if (rect.width > 30f && GUI.enabled && focusedWindow == this)
+					EditorGUI.FocusTextInControl(CONTENT_SEARCH_CONTROL);
+				Repaint();
+			}
+		}
+
+		private void UnfocusContentSearch()
+		{
+			GUI.FocusControl(null);
+			EditorGUIUtility.editingTextField = false;
+			_focusContentSearch = false;
+			Repaint();
+		}
+
 		/// <summary>
 		/// Draws Publish with an Issues badge when content problems block publishing.
 		/// Clicking reviews issues or opens the publish panel, depending on eligibility.
