@@ -111,7 +111,11 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					
 					Application.OpenURL(DocsPageHelper.GetUnityDocsPageUrl("unity/user-reference/beamable-services/profile-storage/content/content-unity/", EditorConstants.UNITY_CURRENT_DOCS_VERSION));
-				}, () => _ = _contentService.Reload());
+				}, () => _ = _contentService.Reload(), (refreshRect, helpRect) =>
+				{
+					RegisterButtonTooltip(refreshRect, "Refresh content status");
+					RegisterButtonTooltip(helpRect, "Open content documentation");
+				});
 			});
 			
 		}
@@ -563,6 +567,14 @@ namespace Beamable.Editor.UI.ContentWindow
 			                                      drawBorder: true,
 			                                      backgroundColor: backgroundColor);
 			Rect buttonRect = GUILayoutUtility.GetLastRect();
+			string tooltip = searchFilterType switch
+			{
+				ContentSearchFilterType.Tag => "Filter by tag",
+				ContentSearchFilterType.Type => "Filter by content type",
+				ContentSearchFilterType.Status => "Filter by status",
+				_ => "Filter content"
+			};
+			RegisterButtonTooltip(buttonRect, tooltip);
 			if (!isClicked)
 			{
 				return;
