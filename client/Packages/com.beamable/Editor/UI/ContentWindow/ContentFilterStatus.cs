@@ -8,5 +8,6 @@
 		Modified,
 		UpToDate,
 		Conflicted,
+		Issues
 	}
 }

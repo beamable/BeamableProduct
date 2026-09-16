@@ -52,7 +52,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			{ContentFilterStatus.Deleted, "deleted"},
 			{ContentFilterStatus.Modified, "modified"},
 			{ContentFilterStatus.UpToDate, "upToDate"},
-			{ContentFilterStatus.Conflicted, "conflicted"}
+			{ContentFilterStatus.Conflicted, "conflicted"},
+			{ContentFilterStatus.Issues, "issues"}
 		};
 
 		private static readonly Dictionary<string, ContentStatus> FilterStatusToContentStatus = new()
@@ -145,18 +146,14 @@ namespace Beamable.Editor.UI.ContentWindow
 				if (_windowStatus != ContentWindowStatus.Validate)
 				{
 					
-					if (BeamGUI.HeaderButton("Validate", BeamGUI.iconCheck,
-					                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
-					                                                    tooltip: validateTooltip))
+					if (DrawHeaderButtonWithTooltip("Validate", BeamGUI.iconCheck, validateTooltip))
 					{
 						ChangeToValidateMode();
 					}
 				}
 
 				if (BeamGUI.ShowDisabled(hasContentToPublish || hasConflictedOrInvalid,
-				                         () => BeamGUI.HeaderButton("Sync", BeamGUI.iconSync,
-				                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
-				                                                    tooltip: syncTooltip)))
+				                         () => DrawHeaderButtonWithTooltip("Sync", BeamGUI.iconSync, syncTooltip)))
 				{
 					ShowSyncMenu();
 				}
@@ -167,9 +164,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					publishTooltip = $"{_cli?.latestUser?.email ?? "this user"} does not have sufficient permission to publish content on this realm.";
 				}
 				if (BeamGUI.ShowDisabled(hasPrivs && hasContentToPublish && !hasConflictedOrInvalid,
-				                         () => BeamGUI.HeaderButton("Publish", BeamGUI.iconPublish,
-				                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
-				                                                    tooltip: publishTooltip)))
+				                         () => DrawHeaderButtonWithTooltip("Publish", BeamGUI.iconPublish, publishTooltip)))
 				{
 					ChangeToPublishMode();
 				}

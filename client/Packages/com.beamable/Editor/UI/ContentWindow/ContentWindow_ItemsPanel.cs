@@ -1091,6 +1091,10 @@ namespace Beamable.Editor.UI.ContentWindow
 			List<LocalContentManifestEntry> contentManifestEntries = shouldSort ? SortItems(filterKey, filteredItems, _currentSortOption) : filteredItems;
 			return contentManifestEntries;
 		}
+		private bool HasContentIssue(LocalContentManifestEntry entry)
+		{
+			return _contentService.IsContentInvalid(entry.FullId) || entry.IsInConflict;
+		}
 
 		private bool FilterItem(string specificType,
 		                        HashSet<string> types,
@@ -1099,10 +1103,11 @@ namespace Beamable.Editor.UI.ContentWindow
 		                        HashSet<string> statuses,
 		                        string nameSearchPartValue)
 		{
-			// Hide the Deleted side of a detected rename — only the Created side (new name) is shown
+			// Hide the Deleted side of a rename unless Issues needs to show a problem on that entry.
 			if (entry.StatusEnum == ContentStatus.Deleted
 			    && _contentService.TryGetRenameInfo(entry.FullId, out var ri)
-			    && ri.DeletedFullId == entry.FullId)
+			    && ri.DeletedFullId == entry.FullId
+			    && !(statuses.Contains(StatusMapToString[ContentFilterStatus.Issues]) && HasContentIssue(entry)))
 			{
 				return false;
 			}
@@ -1148,6 +1153,11 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			bool ValidateEntryStatus(string status)
 			{
+				if (status == StatusMapToString[ContentFilterStatus.Issues])
+				{
+					return HasContentIssue(entry);
+				}
+
 				if (status == StatusMapToString[ContentFilterStatus.Invalid])
 				{
 					return _contentService.IsContentInvalid(entry.FullId);
