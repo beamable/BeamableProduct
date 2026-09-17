@@ -44,6 +44,42 @@ Running projects
 Dev workflow reminder
 - For most iterative work consult the root `README.md` for the recommended dev script workflow. The repo-level scripts prepare local package feeds and tooling used by downstream projects.
 
+## Local server execution errors
+
+`POST /execute` uses the existing line-based streaming protocol: each report is
+`data: ` followed by a compact JSON `ReportDataPoint` and a newline. For example:
+
+```text
+data: {"ts":1789470000000,"type":"error","data":{"message":"Setup failed","exitCode":1,"invocation":"config","typeName":"InvalidOperationException","fullTypeName":"System.InvalidOperationException","stackTrace":null}}
+```
+
+The error channel and `ErrorOutput` payload are both required: adding `data: ` to
+the HTTP server's ordinary JSON error object is insufficient for Unity's `OnError` callback.
+
+- Invalid request bodies and failures before reporter initialization produce a
+  generic error report. No command is registered before application setup completes.
+- Once initialized, unexpected execution failures use the command's existing reporter,
+  including its writer lock, typed error channels, and exit codes. Partial streamed
+  output does not imply command success; a later execution failure is still an error.
+- Normal CLI failures already reported by command middleware are not reported again.
+- Errors stay in the execution stream (HTTP 200), as with other command errors.
+  No HTTP status change or raw JSON is appended after streaming starts.
+- Cleanup and response-write failures escaping the execution handler are logged by
+  the server, and the response is closed. They do not add a new command error after
+  execution completes. A disconnected client cannot be guaranteed an error report.
+- `/info` and other non-execution responses retain their ordinary JSON format.
+
+This keeps the Unity parser and callback contract unchanged. Older CLI binaries still
+need the server fix; this does not add client-side support for malformed legacy responses.
+Unity dispatches these reports through `OnError`; reaching the end of the HTTP stream
+still means transport completion, not command success. Its pre-response transport
+retry path is unchanged, so a framed command error does not replay the command.
+Invocation tracking and error framing regressions are covered by `ServerServiceTests`:
+
+```sh
+dotnet test cli/tests/tests.csproj -c Release -p:SKIP_GENERATION=true --filter FullyQualifiedName~ServerServiceTests
+```
+
 # Contributing 
 This project has the same [contribution policy](https://github.com/beamable/BeamableProduct/tree/main/README.md#Contributing) as the main repository.
 
