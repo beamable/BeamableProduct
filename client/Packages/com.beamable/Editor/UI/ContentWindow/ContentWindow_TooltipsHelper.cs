@@ -38,13 +38,9 @@ namespace Beamable.Editor.UI.ContentWindow
 				: entry.StatusEnum switch
 				{
 					ContentStatus.Created => CreatedTooltip,
-
 					ContentStatus.Modified => ModifiedTooltip,
-
 					ContentStatus.Deleted => DeletedTooltip,
-
 					ContentStatus.UpToDate => UpToDateTooltip,
-
 					_ => "Content status unavailable."
 				};
 
