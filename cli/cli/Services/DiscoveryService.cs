@@ -557,16 +557,57 @@ public class DiscoveryService
 	}
 
 
+	/// <summary>
+	/// Resolves the local manifest definition and beamoId for a service discovered on the network by the
+	/// name it broadcasts. Every service broadcasts under its beamoId except a portal extension, whose
+	/// backing server broadcasts a synthetic runtime name (<c>BeamPortalExtension_&lt;beamoId&gt;_&lt;guid&gt;</c>);
+	/// this reconciles that back to the extension definition so zone detection, metadata, and the surfaced
+	/// name behave the same as they do for a microservice. Without it a zone-scoped portal extension is
+	/// dropped by host discovery — its broadcast pid is the zone id (never the realm pid) and the unresolved
+	/// name defeats the <c>IsZoneScoped</c> escape hatch — so it never appears in <c>beam project ps</c> nor
+	/// gets stopped by <c>beam project stop</c>.
+	/// </summary>
+	/// <returns>true if a local definition was found for the broadcast name.</returns>
+	public static bool TryResolveBroadcastDefinition(BeamoLocalManifest manifest, string broadcastServiceName, out BeamoServiceDefinition definition, out string beamoId)
+	{
+		if (manifest.TryGetDefinition(broadcastServiceName, out definition))
+		{
+			beamoId = broadcastServiceName;
+			return true;
+		}
+
+		foreach (var candidate in manifest.ServiceDefinitions)
+		{
+			if (candidate.Protocol != BeamoProtocolType.PortalExtension)
+			{
+				continue;
+			}
+
+			if (BeamoLocalSystem.IsMatchingPortalExtensionService(broadcastServiceName, candidate.BeamoId))
+			{
+				definition = candidate;
+				beamoId = candidate.BeamoId;
+				return true;
+			}
+		}
+
+		definition = null;
+		beamoId = broadcastServiceName;
+		return false;
+	}
+
 	public Task StartHostDiscoveryTask(CancellationToken token, ConcurrentQueue<HostServiceEvent> evtQueue)
 	{
 		return Task.Run(async () =>
 		{
 			try
 			{
-				// Keyed by (processId, serviceName) so multiple BeamServer instances hosted inside
+				// Keyed by (processId, beamoId) so multiple BeamServer instances hosted inside
 				// the same OS process — e.g. several portal extensions started by one `beam project run` —
 				// each register independently. Keying by processId alone hid every extension after the first.
-				var processIdToEntry = new Dictionary<(int processId, string serviceName), HostServiceDescriptor>();
+				// The beamoId is resolved from the broadcast serviceName below (a portal extension broadcasts a
+				// synthetic runtime name, not its beamoId).
+				var processIdToEntry = new Dictionary<(int processId, string beamoId), HostServiceDescriptor>();
 				var socketListener = new Socket(SocketType.Dgram, ProtocolType.Udp);
 
 				var ed = new IPEndPoint(System.Net.IPAddress.Any, Beamable.Common.Constants.Features.Services.DISCOVERY_PORT);
@@ -672,27 +713,31 @@ public class DiscoveryService
 
 						// Local discovery is realm-shaped: a running service broadcasts its pid, and we normally
 						// surface only those matching the current realm. A zone service broadcasts a zone identity
-						// (ZONE_<zid>) in the pid slot, which never equals the realm pid — so surface it by its
-						// local manifest definition instead (the workspace only defines its own zone projects),
-						// keyed off the serviceName the broadcast carries.
+						// (the raw zid) in the pid slot, which never equals the realm pid — so surface it by its
+						// local manifest definition instead (the workspace only defines its own zone projects).
 						if (service.cid != _appContext.Cid)
 							continue;
 
-						var isLocalZoneService =
-							_localSystem.BeamoManifest.TryGetDefinition(service.serviceName, out var discoveredDef) &&
-							discoveredDef.IsZoneScoped;
+						// A service broadcasts under its MicroserviceName. For a portal extension that is a
+						// synthetic runtime name (BeamPortalExtension_<beamoId>_<guid>), not the beamoId the local
+						// manifest is keyed by — so resolve it back to the manifest definition before it drives
+						// zone detection, metadata, and the surfaced service name. For every other service the
+						// broadcast name already is the beamoId, so this resolves to itself.
+						TryResolveBroadcastDefinition(_localSystem.BeamoManifest, service.serviceName, out var discoveredDef, out var resolvedBeamoId);
+
+						var isLocalZoneService = discoveredDef != null && discoveredDef.IsZoneScoped;
 						if (!isLocalZoneService && service.pid != _appContext.Pid)
 							continue;
 
-						var entryKey = (service.processId, service.serviceName);
+						var entryKey = (service.processId, resolvedBeamoId);
 						if (!processIdToEntry.ContainsKey(entryKey))
 						{
 							var groups = Array.Empty<string>();
 							var fedConfig = default(FederationsConfig);
-							if (_localSystem.BeamoManifest.TryGetDefinition(service.serviceName, out var definition))
+							if (discoveredDef != null)
 							{
-								groups = definition.ServiceGroupTags;
-								fedConfig = definition.FederationsConfig.Federations;
+								groups = discoveredDef.ServiceGroupTags;
+								fedConfig = discoveredDef.FederationsConfig.Federations;
 							}
 
 							var feds = fedConfig?.Select(kvp =>
@@ -703,7 +748,7 @@ public class DiscoveryService
 									           LocalSettings = kvp.Value.Select(v =>
 									           {
 										           var fedKey = FederationUtils.BuildLocalSettingKey(v.Interface, kvp.Key);
-										           if (_localSystem.BeamoManifest.HttpMicroserviceLocalProtocols[service.serviceName].Settings.TryGetSetting(fedKey, out var settingsJsonVal))
+										           if (_localSystem.BeamoManifest.HttpMicroserviceLocalProtocols[resolvedBeamoId].Settings.TryGetSetting(fedKey, out var settingsJsonVal))
 											           return settingsJsonVal;
 										           return "{}";
 									           }).ToArray()
@@ -712,7 +757,7 @@ public class DiscoveryService
 							var addition = processIdToEntry[entryKey] = new HostServiceDescriptor
 							{
 								processId = service.processId,
-								service = service.serviceName,
+								service = resolvedBeamoId,
 								startedByAccountId = service.startedByAccountId,
 								healthPort = service.healthPort,
 								routingKey = service.prefix,

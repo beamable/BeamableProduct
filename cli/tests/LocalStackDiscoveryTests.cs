@@ -714,6 +714,90 @@ public class LocalStackDiscoveryTests
 	}
 
 	// ----------------------------------------------------------------------------------
+	// Offline maven-dependency-plugin probe (the second half of the negative-cache trap:
+	// core is present, but `mvn -o dependency:build-classpath` can't resolve the `dependency`
+	// plugin prefix offline, so every scala service fails and --build never fixes it).
+	// ----------------------------------------------------------------------------------
+
+	private static LocalStackConfig ProbeConfig(string scalaDir, string mavenHome, params (string name, bool enabled)[] steps) =>
+		new LocalStackConfig
+		{
+			repos = new LocalStackRepos { scalaDir = scalaDir },
+			toolchain = mavenHome == null ? null : new LocalStackToolchain { maven = mavenHome },
+			steps = steps.Select(s => new LocalStackStep { name = s.name, enabled = s.enabled }).ToList()
+		};
+
+	[Test]
+	public void PlanDependencyPluginProbe_DerivesModuleFromScalaLaunchStep()
+	{
+		// A scala service will launch, so the launcher's offline classpath resolve will run — the probe is relevant.
+		// The module it targets mirrors the launcher's `-pl tools/$SVC`, derived from the step name after "scala: ".
+		var config = ProbeConfig(Path.GetTempPath(), Path.Combine(Path.GetTempPath(), "mvn-home"),
+			("build: scala", true), ("scala: account", true), ("scala: dbflake", true));
+
+		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+
+		Assert.That(plan.shouldProbe, Is.True, plan.skipReason);
+		Assert.That(plan.probeModule, Is.EqualTo("tools/account"), "first scala launch step wins");
+		Assert.That(plan.scalaDir, Is.EqualTo(Path.GetTempPath()));
+		Assert.That(plan.mvnCommand, Does.Contain("mvn"), "resolves the toolchain's mvn from ${maven}");
+	}
+
+	[Test]
+	public void PlanDependencyPluginProbe_SkipsWhenNoScalaLaunchStep()
+	{
+		// No scala service means no launcher, so the offline classpath resolve never runs — don't pay for a probe.
+		var config = ProbeConfig(Path.GetTempPath(), Path.Combine(Path.GetTempPath(), "mvn-home"),
+			("build: scala", true), ("docker: api deps + caddy", true));
+
+		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+
+		Assert.That(plan.shouldProbe, Is.False);
+		Assert.That(plan.skipReason, Is.EqualTo("no scala launch step"));
+	}
+
+	[Test]
+	public void PlanDependencyPluginProbe_SkipsWhenScalaStepIsDisabled()
+	{
+		// A disabled scala step won't launch, so it must not drag the probe in.
+		var config = ProbeConfig(Path.GetTempPath(), Path.Combine(Path.GetTempPath(), "mvn-home"),
+			("scala: account", false));
+
+		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+
+		Assert.That(plan.shouldProbe, Is.False);
+		Assert.That(plan.skipReason, Is.EqualTo("no scala launch step"));
+	}
+
+	[Test]
+	public void PlanDependencyPluginProbe_SkipsWhenScalaDirIsAPlaceholder()
+	{
+		// An un-edited manifest carries the EditPlaceholder for repo paths; there's no real dir to run mvn in.
+		var config = ProbeConfig("<" + "EDIT-ME" + ">", Path.Combine(Path.GetTempPath(), "mvn-home"),
+			("scala: account", true));
+		// Force the actual placeholder token in case the constant differs from the guess above.
+		config.repos.scalaDir = LocalStackConfigIO.EditPlaceholder;
+
+		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+
+		Assert.That(plan.shouldProbe, Is.False);
+		Assert.That(plan.skipReason, Is.EqualTo("no BeamableBackend path on the manifest"));
+	}
+
+	[Test]
+	public void PlanDependencyPluginProbe_ResolvesBareMvn_WithoutAToolchain()
+	{
+		// No toolchain (never ran `beam local setup`): ${maven} falls back to the bare command, which is still a
+		// valid thing to probe with — it resolves via PATH just like the reactor step would.
+		var config = ProbeConfig(Path.GetTempPath(), mavenHome: null, ("scala: account", true));
+
+		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+
+		Assert.That(plan.shouldProbe, Is.True, plan.skipReason);
+		Assert.That(plan.mvnCommand, Does.Contain("mvn"));
+	}
+
+	// ----------------------------------------------------------------------------------
 	// In-memory manifest migration for pre-Maven-cache-fix arguments
 	// ----------------------------------------------------------------------------------
 
