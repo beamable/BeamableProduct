@@ -450,7 +450,23 @@ namespace Beamable.Common
 
 		void INotifyCompletion.OnCompleted(Action continuation)
 		{
+#if DISABLE_THREADING
 			((ICriticalNotifyCompletion)this).UnsafeOnCompleted(continuation);
+#else
+			// Mirror TaskAwaiter.OnCompleted: flow ExecutionContext so AsyncLocal
+			// values set by the caller survive the await and are restored on the
+			// thread that resolves the promise.
+			var capturedContext = System.Threading.ExecutionContext.Capture();
+			if (capturedContext == null)
+			{
+				((ICriticalNotifyCompletion)this).UnsafeOnCompleted(continuation);
+				return;
+			}
+			((ICriticalNotifyCompletion)this).UnsafeOnCompleted(() =>
+			{
+				System.Threading.ExecutionContext.Run(capturedContext, s => ((Action)s)(), continuation);
+			});
+#endif
 		}
 
 		/// <summary>
