@@ -24,6 +24,7 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 		{
 			Endpoint = new Uri(endpoint),
 			Protocol = options.Protocol,
+			MaxRequestSizeBytes = 128 * 1024 * 1024,
 		};
 
 		_exporter = new OtlpTraceExporter(_otlpOptions);
