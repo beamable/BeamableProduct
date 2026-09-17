@@ -608,7 +608,8 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 		public static void DrawSearchBar(this IDelayedActionWindow window,
 		                                 SearchData searchData,
 		                                 bool isVerticallyCentered = false,
-		                                 string textFieldName=null)
+		                                 string textFieldName=null,
+		                                 Action<Rect> onSearchFieldDrawn = null)
 		{
 			var searchStyle = new GUIStyle(EditorStyles.toolbarSearchField);
 
@@ -686,6 +687,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 						                        windowSize));
 				}
 			}
+			onSearchFieldDrawn?.Invoke(searchRect);
 		}
 
 		static void DrawLogLevelToggle(CliLogLevel logLevel, LogLevelView view, IDelayedActionWindow window, LogView serverLogs)
