@@ -101,30 +101,30 @@ public class BuildSolutionCommand : StreamCommand<BuildSolutionCommandArgs, Buil
         var runtimeArg = forceCpu
             ? $"--runtime unix-x64 -p:BeamPlatform=lin -p:BeamRunningArchitecture=x64 -p:BeamCollectorPlatformArchArg=\"--platform {DownloadCollectorCommand.OS_LINUX} --arch {DownloadCollectorCommand.ARCH_X64}\" "
             : $"--use-current-runtime ";
-        var buildArgs = $"publish {slnPath} " +
-                        $"--verbosity minimal " +
-                        $"--no-self-contained {runtimeArg} " +
-                        $"--configuration Release " +
+        var buildArgs = $"publish {slnPath}" +
+                        $" --verbosity minimal" +
+                        $" --no-self-contained {runtimeArg}" +
+                        $" --configuration Release" +
 
                         // make sure the builds produce a deterministic output so that docker imageIds end up being the same.
-                        $"-p:Deterministic=\"True\" " +
-                        $"{productionArgs} " +
+                        $" -p:Deterministic=\"True\"" +
+                        $" {productionArgs}" +
 
                         // use a custom logger, so we can get the errors back for each
                         //  project one by one
-                        $"-logger:{customLoggerArg.EnquotePath()} " + 
+                        $" -logger:{customLoggerArg.EnquotePath()}" + 
                         
                         // put the entire build in the support directly- 
                         //  and after wards, we will copy only the app pieces to the 
                         //  /app folder.
-                        $"-p:PublishDir={buildDirSupport.EnquotePath()} " +
+                        $" -p:PublishDir={buildDirSupport.EnquotePath()}" +
                         
                         // trick; do a "publish" command, but make nothing publishable. 
                         //  this prevents any projects from actually being published
                         //  EXCEPT the ones that pay attention to the 'BeamPublish' flag.
                         //  Microservice projects override `IsPublishable` when `BeamPublish`
                         //  is enabled. 
-                        $"-p:BeamPublish=\"true\"";
+                        $" -p:BeamPublish=\"true\"";
         
         Log.Verbose($"Running dotnet publish {buildArgs}");
         using var cts = new CancellationTokenSource();

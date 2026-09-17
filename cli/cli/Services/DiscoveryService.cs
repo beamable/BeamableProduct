@@ -557,143 +557,223 @@ public class DiscoveryService
 	}
 
 
+	/// <summary>
+	/// Resolves the local manifest definition and beamoId for a service discovered on the network by the
+	/// name it broadcasts. Every service broadcasts under its beamoId except a portal extension, whose
+	/// backing server broadcasts a synthetic runtime name (<c>BeamPortalExtension_&lt;beamoId&gt;_&lt;guid&gt;</c>);
+	/// this reconciles that back to the extension definition so zone detection, metadata, and the surfaced
+	/// name behave the same as they do for a microservice. Without it a zone-scoped portal extension is
+	/// dropped by host discovery — its broadcast pid is the zone id (never the realm pid) and the unresolved
+	/// name defeats the <c>IsZoneScoped</c> escape hatch — so it never appears in <c>beam project ps</c> nor
+	/// gets stopped by <c>beam project stop</c>.
+	/// </summary>
+	/// <returns>true if a local definition was found for the broadcast name.</returns>
+	public static bool TryResolveBroadcastDefinition(BeamoLocalManifest manifest, string broadcastServiceName, out BeamoServiceDefinition definition, out string beamoId)
+	{
+		if (manifest.TryGetDefinition(broadcastServiceName, out definition))
+		{
+			beamoId = broadcastServiceName;
+			return true;
+		}
+
+		foreach (var candidate in manifest.ServiceDefinitions)
+		{
+			if (candidate.Protocol != BeamoProtocolType.PortalExtension)
+			{
+				continue;
+			}
+
+			if (BeamoLocalSystem.IsMatchingPortalExtensionService(broadcastServiceName, candidate.BeamoId))
+			{
+				definition = candidate;
+				beamoId = candidate.BeamoId;
+				return true;
+			}
+		}
+
+		definition = null;
+		beamoId = broadcastServiceName;
+		return false;
+	}
+
 	public Task StartHostDiscoveryTask(CancellationToken token, ConcurrentQueue<HostServiceEvent> evtQueue)
 	{
 		return Task.Run(async () =>
 		{
 			try
 			{
-				var processIdToEntry = new Dictionary<int, HostServiceDescriptor>();
+				// Keyed by (processId, beamoId) so multiple BeamServer instances hosted inside
+				// the same OS process — e.g. several portal extensions started by one `beam project run` —
+				// each register independently. Keying by processId alone hid every extension after the first.
+				// The beamoId is resolved from the broadcast serviceName below (a portal extension broadcasts a
+				// synthetic runtime name, not its beamoId).
+				var processIdToEntry = new Dictionary<(int processId, string beamoId), HostServiceDescriptor>();
 				var socketListener = new Socket(SocketType.Dgram, ProtocolType.Udp);
 
-				var ed = new IPEndPoint(IPAddress.Any, Beamable.Common.Constants.Features.Services.DISCOVERY_PORT);
+				var ed = new IPEndPoint(System.Net.IPAddress.Any, Beamable.Common.Constants.Features.Services.DISCOVERY_PORT);
 
-				// by setting the receive timeout to a millisecond, this allows the ReceiveAsync function 
+				// by setting the receive timeout to a millisecond, this allows the ReceiveAsync function
 				//  to only block for a single millisecond, which means the Task code below can also
 				//  check for service deletion
 				socketListener.ReceiveTimeout = 1;
 
-				// the important part is that this is a fixed number, the 4kb number is semi arbitrary.
-				//  the C#MS host emits a message every 10ms, so if this application pauses (with a breakpoint), 
-				//  then the buffer will fill up with messages every 10ms, which can result in ghost-like
-				//  messages appearing in the socket-read code AFTER the C#MS has been stopped
-				socketListener.ReceiveBufferSize = 4096;
+				// Bump the OS receive buffer well above the default. Each broadcaster sends every 10ms,
+				// and many BeamServer instances (e.g. dozens of portal extensions hosted by one
+				// `beam project run`) all share the discovery port, so the buffer can fill quickly.
+				// At ~300 B/msg, 1 MB holds ~3500 datagrams — enough headroom for 30+ broadcasters
+				// even if this loop is briefly paused. Dead-process messages are filtered below.
+				socketListener.ReceiveBufferSize = 1024 * 1024;
 				socketListener.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 				socketListener.Bind(ed);
 
-				var buffer = new ArraySegment<byte>(new byte[socketListener.ReceiveBufferSize]);
+				// Per-datagram scratch buffer. UDP datagrams from C#MS are well under 4 KB; this is
+				// independent from the kernel receive buffer above (which can queue many datagrams).
+				var buffer = new ArraySegment<byte>(new byte[4096]);
 				while (!token.IsCancellationRequested)
 				{
 					{
-						// the only reason to delay at all is to avoid task exhaustion on lower end systems. 
+						// the only reason to delay at all is to avoid task exhaustion on lower end systems.
 						//  this should happen at the start of the loop so that it cannot be accidentally skipped
 						//  by `continue` statements
 						await Task.Delay(Beamable.Common.Constants.Features.Services.DISCOVERY_BROADCAST_PERIOD_MS, token);
 					}
-					
+
 					{
 						// check that all services still exist.
-						var toRemove = new HashSet<int>();
-						foreach (var (processId, entry) in processIdToEntry)
+						var toRemove = new HashSet<(int, string)>();
+						foreach (var (key, entry) in processIdToEntry)
 						{
 							try
 							{
-								Process.GetProcessById(processId);
+								Process.GetProcessById(key.processId);
 							}
 							catch
 							{
 								Log.Verbose("dotnet process removed " + entry.processId);
 								evtQueue.Enqueue(new HostServiceEvent { descriptor = entry, type = ServiceEventType.Stopped });
-								toRemove.Add(processId);
+								toRemove.Add(key);
 							}
 						}
 
-						foreach (var id in toRemove)
+						foreach (var k in toRemove)
 						{
-							processIdToEntry.Remove(id);
+							processIdToEntry.Remove(k);
 						}
 					}
 
-					if (socketListener.Available == 0)
-						continue; // there is nothing to read, so don't bother.
-
-					// Block and wait for a socket message. 
-					var byteCount = await socketListener.ReceiveAsync(buffer, token);
-
-					if (byteCount == 0)
-						continue;
-
-					var json = Encoding.UTF8.GetString(buffer.Array!, 0, byteCount);
-
-					// Deserialize the entry into an entry.
-					var service = JsonConvert.DeserializeObject<ServiceDiscoveryEntry>(json, UnitySerializationSettings.Instance);
-					
+					// Drain every datagram currently queued before yielding back to the delay. Reading
+					// one per tick lets the kernel buffer fill faster than we empty it when many
+					// broadcasters share the port, which silently drops registrations.
+					while (socketListener.Available > 0 && !token.IsCancellationRequested)
 					{
-						// it is POSSIBLE that a dead service's message is in the socket receive queue, 
-						//  so before promising that this service exists, do a quick process-check to 
-						//  make sure it is actually alive.
-						var isProcessNotWorking = false;
+						int byteCount;
 						try
 						{
-							Process.GetProcessById(service.processId);
+							byteCount = await socketListener.ReceiveAsync(buffer, token);
+						}
+						catch (SocketException)
+						{
+							break;
+						}
+
+						if (byteCount == 0)
+							continue;
+
+						var json = Encoding.UTF8.GetString(buffer.Array!, 0, byteCount);
+
+						ServiceDiscoveryEntry service;
+						try
+						{
+							service = JsonConvert.DeserializeObject<ServiceDiscoveryEntry>(json, UnitySerializationSettings.Instance);
 						}
 						catch
 						{
-							isProcessNotWorking = true;
-						}
-
-						if (isProcessNotWorking)
+							// truncated or otherwise unparseable datagram; ignore
 							continue;
-					}
+						}
+						if (service == null) continue;
 
-					// If the message we got from a local service running that is not for this PID/CID, we ignore it.
-					if (service.cid != _appContext.Cid || service.pid != _appContext.Pid)
-						continue;
-
-					if (!processIdToEntry.ContainsKey(service.processId))
-					{
-						var groups = Array.Empty<string>();
-						var fedConfig = default(FederationsConfig);
-						if (_localSystem.BeamoManifest.TryGetDefinition(service.serviceName, out var definition))
 						{
-							groups = definition.ServiceGroupTags;
-							fedConfig = definition.FederationsConfig.Federations;
+							// it is POSSIBLE that a dead service's message is in the socket receive queue,
+							//  so before promising that this service exists, do a quick process-check to
+							//  make sure it is actually alive.
+							var isProcessNotWorking = false;
+							try
+							{
+								Process.GetProcessById(service.processId);
+							}
+							catch
+							{
+								isProcessNotWorking = true;
+							}
+
+							if (isProcessNotWorking)
+								continue;
 						}
 
-						var feds = fedConfig?.Select(kvp =>
-							           new FederationInstance
-							           {
-								           FederationTypes = kvp.Value.Select(v => v.Interface).ToArray(),
-								           FederationId = kvp.Key,
-								           LocalSettings = kvp.Value.Select(v =>
-								           {
-									           var fedKey = FederationUtils.BuildLocalSettingKey(v.Interface, kvp.Key);
-									           if (_localSystem.BeamoManifest.HttpMicroserviceLocalProtocols[service.serviceName].Settings.TryGetSetting(fedKey, out var settingsJsonVal))
-										           return settingsJsonVal;
-									           return "{}";
-								           }).ToArray()
-							           }).ToArray()
-						           ?? Array.Empty<FederationInstance>();
-						var addition = processIdToEntry[service.processId] = new HostServiceDescriptor
-						{
-							processId = service.processId,
-							service = service.serviceName,
-							startedByAccountId = service.startedByAccountId,
-							healthPort = service.healthPort,
-							routingKey = service.prefix,
-							groups = groups,
-							federations = feds,
-							serviceType = service.serviceType,
-						};
-						evtQueue.Enqueue(new HostServiceEvent { type = ServiceEventType.Running, descriptor = addition });
-						Log.Verbose("added dotnet process" + service.processId);
-					}
-					else
-					{
-						// it is not possible to change any of these fields while the service is running, so change detection 
-						//  is not useful.
-					}
+						// Local discovery is realm-shaped: a running service broadcasts its pid, and we normally
+						// surface only those matching the current realm. A zone service broadcasts a zone identity
+						// (the raw zid) in the pid slot, which never equals the realm pid — so surface it by its
+						// local manifest definition instead (the workspace only defines its own zone projects).
+						if (service.cid != _appContext.Cid)
+							continue;
 
+						// A service broadcasts under its MicroserviceName. For a portal extension that is a
+						// synthetic runtime name (BeamPortalExtension_<beamoId>_<guid>), not the beamoId the local
+						// manifest is keyed by — so resolve it back to the manifest definition before it drives
+						// zone detection, metadata, and the surfaced service name. For every other service the
+						// broadcast name already is the beamoId, so this resolves to itself.
+						TryResolveBroadcastDefinition(_localSystem.BeamoManifest, service.serviceName, out var discoveredDef, out var resolvedBeamoId);
+
+						var isLocalZoneService = discoveredDef != null && discoveredDef.IsZoneScoped;
+						if (!isLocalZoneService && service.pid != _appContext.Pid)
+							continue;
+
+						var entryKey = (service.processId, resolvedBeamoId);
+						if (!processIdToEntry.ContainsKey(entryKey))
+						{
+							var groups = Array.Empty<string>();
+							var fedConfig = default(FederationsConfig);
+							if (discoveredDef != null)
+							{
+								groups = discoveredDef.ServiceGroupTags;
+								fedConfig = discoveredDef.FederationsConfig.Federations;
+							}
+
+							var feds = fedConfig?.Select(kvp =>
+								           new FederationInstance
+								           {
+									           FederationTypes = kvp.Value.Select(v => v.Interface).ToArray(),
+									           FederationId = kvp.Key,
+									           LocalSettings = kvp.Value.Select(v =>
+									           {
+										           var fedKey = FederationUtils.BuildLocalSettingKey(v.Interface, kvp.Key);
+										           if (_localSystem.BeamoManifest.HttpMicroserviceLocalProtocols[resolvedBeamoId].Settings.TryGetSetting(fedKey, out var settingsJsonVal))
+											           return settingsJsonVal;
+										           return "{}";
+									           }).ToArray()
+								           }).ToArray()
+							           ?? Array.Empty<FederationInstance>();
+							var addition = processIdToEntry[entryKey] = new HostServiceDescriptor
+							{
+								processId = service.processId,
+								service = resolvedBeamoId,
+								startedByAccountId = service.startedByAccountId,
+								healthPort = service.healthPort,
+								routingKey = service.prefix,
+								groups = groups,
+								federations = feds,
+								serviceType = service.serviceType,
+							};
+							evtQueue.Enqueue(new HostServiceEvent { type = ServiceEventType.Running, descriptor = addition });
+							Log.Verbose("added dotnet process" + service.processId);
+						}
+						else
+						{
+							// it is not possible to change any of these fields while the service is running, so change detection
+							//  is not useful.
+						}
+					}
 				}
 			}
 			catch (TaskCanceledException)
@@ -888,7 +968,9 @@ public class HostServiceEvent : DiscoveryService.ServiceEvent<HostServiceDescrip
 	public string ServiceType => descriptor.serviceType;
 	public long StartedByAccountId => descriptor.startedByAccountId;
 	public string RoutingKey => descriptor.routingKey;
-	public string PrimaryKey => $"host-{descriptor.processId}";
+	// Include service so that multiple BeamServers hosted inside one process (e.g. portal
+	// extensions spawned by a single `beam project run`) each get a distinct primary key.
+	public string PrimaryKey => $"host-{descriptor.processId}-{descriptor.service}";
 }
 
 public class RemoteServiceEvent : DiscoveryService.ServiceEvent<RemoteServiceDescriptor>, IDiscoveryEvent

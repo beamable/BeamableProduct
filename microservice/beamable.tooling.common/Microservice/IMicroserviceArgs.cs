@@ -11,6 +11,11 @@ public enum LogOutputType
 public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
 {
     public IDependencyProviderScope ServiceScope { get; }
+    /// <summary>
+    /// The zone id for a zone-scoped service. Empty/null for realm-scoped services (which use
+    /// <see cref="IRealmInfo.ProjectName"/> instead).
+    /// </summary>
+    string Zid { get; }
     public int HealthPort { get; }
     string Host { get; }
     string Secret { get; }

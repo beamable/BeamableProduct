@@ -31,6 +31,8 @@ namespace Beamable.Editor.Content.UI
 		{
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
+			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject)))
+			{
 			var isEditingMultiple = targets.Length > 1;
 
 			var contentService = BeamEditorContext.Default.ServiceScope.GetService<CliContentService>();
@@ -119,7 +121,8 @@ namespace Beamable.Editor.Content.UI
 					DrawContentButtons(contentObject, buttonsRect, contentService);
 				}
 			}
-		GUILayout.EndVertical();
+			GUILayout.EndVertical();
+			}
 		}
 
 		private void DrawContentButtons(ContentObject content, Rect buttonsRect, CliContentService contentService)
@@ -345,6 +348,8 @@ namespace Beamable.Editor.Content.UI
 		{
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
+			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject)))
+			{
 
 			if (contentObject.ContentStatus is Common.BeamCli.Contracts.ContentStatus.Deleted)
 			{
@@ -379,6 +384,7 @@ namespace Beamable.Editor.Content.UI
 			
 			base.OnInspectorGUI();
 			contentObject.CheckForNonDetectedChanges();
+			}
 		}
 
 		public string GetTagString(string[] tags)

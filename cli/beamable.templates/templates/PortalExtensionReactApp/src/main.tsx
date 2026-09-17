@@ -1,21 +1,9 @@
-import { StrictMode } from 'react'
-import { createRoot, type Root } from 'react-dom/client'
-import { Portal, type ExtensionContext } from '@beamable/portal-toolkit'
+import { registerReactExtension } from '@beamable/portal-toolkit/react'
+import { name as beamId } from '../package.json'
 import './app.css'
 import App from './App'
 
-Portal.registerExtension({
-  beamId: 'PortalExtensionReactApp',
-  onMount: (container, context: ExtensionContext) => {
-    const root: Root = createRoot(container)
-    root.render(
-      <StrictMode>
-        <App context={context} />
-      </StrictMode>,
-    )
-    return root
-  },
-  onUnmount: (instance) => {
-    (instance as Root).unmount()
-  },
-})
+// The extension id comes from package.json `name` — the single source of
+// truth the Beamable CLI also reads to register and bundle this extension.
+// Vite inlines the string at build time, so there's nothing here to drift.
+registerReactExtension({ beamId, App })

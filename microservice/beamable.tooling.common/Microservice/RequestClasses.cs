@@ -10,6 +10,9 @@ public class MicroserviceNonceResponse
 public class MicroserviceAuthRequest
 {
     public string cid, pid, signature;
+    // TODO(zones): zone-scoped services authenticate a zone:cid session by sending zid instead of pid.
+    // Unset today (realm services send pid); wire this up once the backend accepts a zone:cid session.
+    public string zid;
     public string[] codecs;
 }
 
@@ -17,6 +20,9 @@ public class MicroserviceAuthRequest
 public class MicroserviceAuthRequestWithToken
 {
     public string cid, pid, token;
+    // TODO(zones): zone-scoped services authenticate a zone:cid session by sending zid instead of pid.
+    // Unset today (realm services send pid); wire this up once the backend accepts a zone:cid session.
+    public string zid;
     public string[] codecs;
 }
 

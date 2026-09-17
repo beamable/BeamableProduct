@@ -74,6 +74,18 @@ declare global {
     'beam-toast-stack': BeamToastStackElement;
     'beam-code-snippet': BeamCodeSnippetElement;
     'beam-change-bar': BeamChangeBarElement;
+    'beam-kpi-card': BeamKpiCardElement;
+    'beam-section-label': BeamSectionLabelElement;
+    'beam-status-pill': BeamStatusPillElement;
+    'beam-icon-tile': BeamIconTileElement;
+    'beam-kpi-row': BeamKpiRowElement;
+    'beam-tag-input': BeamTagInputElement;
+    'beam-date-picker': BeamDatePickerElement;
+    'beam-line-chart': BeamLineChartElement;
+    'beam-bar-chart': BeamBarChartElement;
+    'beam-donut-chart': BeamDonutChartElement;
+    'beam-funnel-chart': BeamFunnelChartElement;
+    'beam-sankey-chart': BeamSankeyChartElement;
   }
 
   // ---------------------------------------------------------------------------
@@ -772,7 +784,7 @@ declare global {
     /**
      * The flip boundary describes clipping element(s) that overflow will be checked relative to when flipping. By default, the boundary includes overflow ancestors that will cause the element to be clipped. If needed, you can change the boundary by passing a reference to one or more elements to this property.
      */
-    flipBoundary?: Element | Element[];
+    flipBoundary?: globalThis.Element | globalThis.Element[];
     /** The amount of padding, in pixels, to exceed before the flip behavior will occur. @default 0 */
     flipPadding?: number;
     /** Moves the popup along the axis to keep it in view when clipped. @default false */
@@ -780,7 +792,7 @@ declare global {
     /**
      * The shift boundary describes clipping element(s) that overflow will be checked relative to when shifting. By default, the boundary includes overflow ancestors that will cause the element to be clipped. If needed, you can change the boundary by passing a reference to one or more elements to this property.
      */
-    shiftBoundary?: Element | Element[];
+    shiftBoundary?: globalThis.Element | globalThis.Element[];
     /** The amount of padding, in pixels, to exceed before the shift behavior will occur. @default 0 */
     shiftPadding?: number;
     /** When set, this will cause the popup to automatically resize itself to prevent it from overflowing. */
@@ -790,7 +802,7 @@ declare global {
     /**
      * The auto-size boundary describes clipping element(s) that overflow will be checked relative to when resizing. By default, the boundary includes overflow ancestors that will cause the element to be clipped. If needed, you can change the boundary by passing a reference to one or more elements to this property.
      */
-    autoSizeBoundary?: Element | Element[];
+    autoSizeBoundary?: globalThis.Element | globalThis.Element[];
     /** The amount of padding, in pixels, to exceed before the auto-size behavior will occur. @default 0 */
     autoSizePadding?: number;
     /**
@@ -993,7 +1005,7 @@ declare global {
     /** @default null */
     for?: string | null;
     /** @default null */
-    anchor?: null | Element;
+    anchor?: null | globalThis.Element;
   }
 
   /**
@@ -1655,7 +1667,7 @@ declare global {
     body?: HTMLElement;
     popup?: unknown;
     /** @default null */
-    anchor?: null | Element;
+    anchor?: null | globalThis.Element;
     /**
      * The preferred placement of the popover. Note that the actual placement may vary as needed to keep the popover inside of the viewport.
      * @default 'top'
@@ -2137,9 +2149,15 @@ declare global {
 
   /**
    * @slot (default) - The tab's label.
+   * @csspart remove-button - The remove button.
    * @csspart base - The component's base wrapper.
+   * @cssproperty --beam-tab-remove-size - Width/height of the remove button. [default: 1rem]
+   * @cssproperty --beam-tab-remove-color - Remove button color. Defaults to the inherited tab color at reduced opacity.
+   * @event wa-remove - Emitted when the remove button is activated. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
    */
   interface BeamTabElement extends HTMLElement {
+    /** @default false */
+    withRemove?: boolean;
     tab?: HTMLElement;
     /**
      * The name of the tab panel this tab is associated with. The panel must be located in the same tab group.
@@ -2443,6 +2461,8 @@ declare global {
    * @cssproperty --wa-font-size-s - Body cell font size. [default: 0.875rem]
    * @cssproperty --wa-font-size-xs - Header label font size. [default: 0.75rem]
    * @cssproperty --wa-shadow-s - Drop shadow for the card variant.
+   * @cssproperty --cell-padding-y - Vertical padding for header, body, and title-bar cells. Default is the "compact" density that every dashboard mockup in this codebase reaches for. Use the `density` attribute below for the named presets; this variable is for fine-grained overrides. [default: 0.5rem]
+   * @cssproperty --cell-padding-x - Horizontal padding for header, body, and title-bar cells. [default: 1rem]
    */
   interface BeamTableElement extends HTMLElement {
     /** @default [] */
@@ -2451,7 +2471,7 @@ declare global {
     data?: any[];
     groupBy?: string | undefined;
     /**
-     * Group keys to pin to the top of the table, in the given order. Any group not listed here falls through to the default alphabetical sort.
+     * Group keys to pin to the top of the table, in the given order. Any group not listed here falls through to the default alphabetical sort.
      */
     groupOrder?: string[] | undefined;
     pageSize?: number | undefined;
@@ -2465,18 +2485,33 @@ declare global {
     defaultSort?: unknown;
     /** @default false */
     defaultCollapsed?: boolean;
+    minGroupSize?: number;
     tableTitle?: string | undefined;
     /**
-     * Slots for an external owner (e.g. the React wrapper) to portal content into. When set, the table emits a placeholder with `data-beam-portal-id` — `__top-row__` for the top row, `__group-header__:{groupKey}` for each group's header — and the owner is expected to mount its own DOM there. If unset, the table renders its built-in defaults.
+     * Cell density preset — `compact` (default, 0.5rem vertical) or `comfortable` (0.75rem vertical). Setting `--cell-padding-y` / `--cell-padding-x` inline overrides this.
+     * @default 'compact'
+     */
+    density?: 'compact' | 'comfortable';
+    /**
+     * Slots for an external owner (e.g. the React wrapper) to portal content into. When set, the table emits a placeholder with `data-beam-portal-id` — `__top-row__` for the top row, `__group-header__:{groupKey}` for each group's header — and the owner is expected to mount its own DOM there. If unset, the table renders its built-in defaults.
      * @default false
      */
     hasTopRow?: boolean;
     /** @default false */
     hasGroupHeader?: boolean;
+    /**
+     * When set, each data row is clickable to expand an inline detail region rendered beneath it. The table prepends a chevron column, tracks expansion state internally, emits a `beam-row-expand` event on toggle, and emits a `__row-detail__:{rowKey}` portal placeholder for the expanded row so an external owner (the React wrapper) can mount the detail content.
+     * @default false
+     */
+    hasRowDetail?: boolean;
     onGroupAction?: unknown;
     rowKey?: unknown;
     /**
-     * The groups currently rendered (post-pagination). Exposed so external owners (e.g. the React wrapper) can resolve a `__group-header__:{key}` placeholder back to its full `BeamTableGroup` (key + rows + totalRows) when portaling content into it.
+     * Row-detail placeholders emitted in the last render. Consumed by the React wrapper to portal detail content into the matching `__row-detail__` cell.
+     */
+    renderedDetailKeys?: unknown;
+    /**
+     * The groups currently rendered (post-pagination). Exposed so external owners (e.g. the React wrapper) can resolve a `__group-header__:{key}` placeholder back to its full `BeamTableGroup` (key + rows + totalRows) when portaling content into it.
      */
     renderedGroups?: unknown;
   }
@@ -2498,6 +2533,8 @@ declare global {
     indent?: number;
     /** @default false */
     noToolbar?: boolean;
+    /** @default false */
+    showPath?: boolean;
   }
 
   /**
@@ -2508,8 +2545,8 @@ declare global {
    * @csspart title - The H1 title element.
    * @csspart description - The description paragraph element.
    * @csspart actions - Container wrapping the `actions` slot.
-   * @cssproperty --beam-page-header-title-size - Title font size. [default: 1.5rem]
-   * @cssproperty --beam-page-header-spacing - Bottom margin reserved below the header. [default: 1.5rem]
+   * @cssproperty --beam-page-header-title-size - Title font size. Default `1.25rem` (20px) matches the mockups every news-agent extension was rolling by hand. [default: 1.25rem]
+   * @cssproperty --beam-page-header-spacing - Bottom margin reserved below the header. Defaults to `0` so the header composes naturally inside a flex/grid parent that already has `gap`. Set to `1.5rem` explicitly when used inside a legacy block-layout page. [default: 0]
    * @cssproperty --beam-page-header-gap - Gap between the text block and the actions slot. [default: 1rem]
    */
   interface BeamPageHeaderElement extends HTMLElement {
@@ -2574,7 +2611,7 @@ declare global {
     /** Total number of items across all pages. @default 0 */
     total?: number;
     /**
-     * Optional comma-separated list of page-size choices, e.g. "10,25,50,100". When set, a `<select>` dropdown is rendered to the left of the info text.
+     * Optional comma-separated list of page-size choices, e.g. "10,25,50,100". When set, a `<select>` dropdown is rendered to the left of the info text.
      * @default ''
      */
     pageSizeOptions?: string;
@@ -2619,6 +2656,12 @@ declare global {
     actionLabel?: string;
     /** Hide the close button. @default false */
     noClose?: boolean;
+    /** Wide layout for detailed content. @default false */
+    wide?: boolean;
+    /** Secondary detail text below the message. @default '' */
+    details?: string;
+    /** Show a drain progress bar that empties over `duration`. @default false */
+    showProgress?: boolean;
   }
 
   /**
@@ -2631,7 +2674,7 @@ declare global {
    */
   interface BeamToastStackElement extends HTMLElement {
     /** Where toasts appear on the screen. @default 'bottom-end' */
-    placement?: 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end';
+    placement?: 'top-start' | 'top-end' | 'top-center' | 'bottom-start' | 'bottom-end' | 'bottom-center';
     /** Maximum number of toasts visible at once. Older toasts beyond this limit are dropped. @default 5 */
     maxToasts?: number;
     /** Get the active toasts as a frozen array (test/debug helper). */
@@ -2701,23 +2744,219 @@ declare global {
     /** Hide the Review button + dialog entirely. @default false */
     noReview?: boolean;
     /**
-     * Render the bar inline at the host's normal flow position instead of fixed to the bottom of the viewport. Useful for in-page docs/previews and for embedding the bar inside a settings panel.
+     * Render the bar inline at the host's normal flow position instead of fixed to the bottom of the viewport. Useful for in-page docs/previews and for embedding the bar inside a settings panel.
      * @default false
      */
     inline?: boolean;
     /**
-     * Auto-save mode. When enabled, the bar dispatches `wa-save` automatically (debounced by `auto-save-debounce`) whenever `changes` is dirty AND `errors` is empty, and the visible bar UI is hidden. If validation errors appear, the bar falls back to its normal interactive state so the user can fix them. The consumer still owns the actual save logic via the `wa-save` handler — the bar only schedules the dispatch.
+     * Auto-save mode. When enabled, the bar dispatches `wa-save` automatically (debounced by `auto-save-debounce`) whenever `changes` is dirty AND `errors` is empty, and the visible bar UI is hidden. If validation errors appear, the bar falls back to its normal interactive state so the user can fix them. The consumer still owns the actual save logic via the `wa-save` handler — the bar only schedules the dispatch.
      * @default false
      */
     autoSave?: boolean;
     /**
-     * Debounce window in milliseconds before auto-save dispatches `wa-save`. Resets every time `changes` updates so rapid edits collapse into one save.
+     * Debounce window in milliseconds before auto-save dispatches `wa-save`. Resets every time `changes` updates so rapid edits collapse into one save.
      * @default 800
      */
     autoSaveDebounce?: number;
     /**
-     * Public read-only view of the bar's high-level state. Useful for consumers that want to drive per-field UI (spinners, status dots) from the bar's internal phase. Also reflected onto the host as `data-state` for CSS.
+     * Public read-only view of the bar's high-level state. Useful for consumers that want to drive per-field UI (spinners, status dots) from the bar's internal phase. Also reflected onto the host as `data-state` for CSS.
      */
     state?: 'idle' | 'pending' | 'saving' | 'paused-errors';
+  }
+
+  /**
+   * @slot icon - Top-left icon. Pass a `<beam-icon>`, emoji, or any inline-sized element. Falls back to empty if no icon is provided. Shortcut: set the `icon` attribute to a Font Awesome name (e.g. `"bolt"`) and the card renders a softly-tinted `<beam-icon>` for you. Anything in the slot wins over the shortcut.
+   * @slot (default) - Default slot rendered below the standard fields. Useful for sparklines or auxiliary content.
+   * @csspart base - The card's outer container.
+   * @csspart header - Row containing the icon and change indicator.
+   * @csspart icon - Wrapper around the icon slot.
+   * @csspart change - The delta indicator span.
+   * @csspart value - The big value text.
+   * @csspart label - The label text.
+   * @csspart sub - The subtitle text.
+   * @cssproperty --beam-kpi-card-padding - Inner padding of the card. [default: 1rem]
+   * @cssproperty --beam-kpi-card-radius - Outer corner radius. [default: 0.5rem]
+   * @cssproperty --beam-kpi-card-value-size - Font size of the value. [default: 1.5rem]
+   * @cssproperty --beam-kpi-card-background - Card background. Defaults to `var(--wa-color-surface-raised)` so it matches the host's `.card` look.
+   * @cssproperty --beam-kpi-card-border-color - Card border color. Defaults to `var(--color-beam-border)`.
+   */
+  interface BeamKpiCardElement extends HTMLElement {
+    /** The big primary value, e.g. "23" or "$306" or "892K". @default '' */
+    value?: string;
+    /** Short label rendered below the value. @default '' */
+    label?: string;
+    /** Optional secondary line below the label. @default '' */
+    sub?: string;
+    /** Delta indicator string, e.g. "+12%" or "-5.2%". Omit to hide. @default '' */
+    change?: string;
+    /**
+     * Coloring for the change text. `positive` → success green, `negative` → error red, `neutral` → muted gray. Defaults to `neutral`.
+     * @default 'neutral'
+     */
+    tone?: 'positive' | 'negative' | 'neutral';
+    /**
+     * Shortcut for the `icon` slot — set this to a Font Awesome name (e.g. `"bolt"`, `"file-lines"`) and the card renders a softly-tinted `<beam-icon>` for you. Slotted content always wins.
+     * @default ''
+     */
+    icon?: string;
+  }
+
+  /**
+   * @slot (default) - The label text. Plain string is typical; rich content works too.
+   * @slot action - Right-aligned action element (button, link, etc).
+   * @csspart base - The outer flex container.
+   * @csspart label - The label text span.
+   * @cssproperty --beam-section-label-margin-bottom - Bottom margin reserved below the label. Set to 0 if the label sits inline. [default: 1rem]
+   */
+  interface BeamSectionLabelElement extends HTMLElement {
+    // No public properties defined in CEM.
+  }
+
+  /**
+   * @slot (default) - The pill label (usually a short string like "Enabled" or "Live").
+   * @csspart base - The pill element itself.
+   * @cssproperty --beam-status-pill-padding - Inner padding. [default: 0.125rem 0.5rem]
+   * @cssproperty --beam-status-pill-radius - Corner radius. [default: 4px]
+   * @cssproperty --beam-status-pill-font-size - Font size. [default: 0.6875rem]
+   */
+  interface BeamStatusPillElement extends HTMLElement {
+    /**
+     * Color treatment. `neutral` (default) uses the muted text color. `success` / `warning` / `error` / `info` / `accent` use the matching semantic palette.
+     * @default 'neutral'
+     */
+    tone?: 'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral';
+  }
+
+  /**
+   * @slot (default) - Anything inline-sized. Overrides the `icon` attribute shortcut.
+   * @csspart base - The tile element.
+   * @cssproperty --beam-icon-tile-size - Width and height of the tile. [default: 2rem]
+   * @cssproperty --beam-icon-tile-radius - Corner radius (50% = circle). [default: 50%]
+   * @cssproperty --beam-icon-tile-font-size - Icon font size. [default: 0.875rem]
+   */
+  interface BeamIconTileElement extends HTMLElement {
+    /** Tone — defaults to `neutral` (muted gray surface). @default 'neutral' */
+    tone?: 'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral';
+    /** Shape — defaults to `circle`. Use `rounded` for a 6px-radius square. @default 'circle' */
+    shape?: 'circle' | 'rounded';
+    /** Size — defaults to `medium` (2rem). @default 'medium' */
+    size?: 'small' | 'medium' | 'large';
+    /**
+     * Font Awesome icon-name shortcut. If set and nothing is slotted, renders a `<beam-icon name=...>` inside the tile. Slotted content wins.
+     * @default ''
+     */
+    icon?: string;
+  }
+
+  /**
+   * @slot (default) - Tile content. Typically `<beam-kpi-card>` children, but any block-level child works.
+   * @csspart base - The grid container.
+   * @cssproperty --beam-kpi-row-min - Minimum column width before the grid reflows. [default: 11rem]
+   * @cssproperty --beam-kpi-row-gap - Gap between tiles. [default: 1rem]
+   */
+  interface BeamKpiRowElement extends HTMLElement {
+    // No public properties defined in CEM.
+  }
+
+  /**
+   * @slot (default) - Nothing. Content is driven by the `value` property.
+   * @csspart base - The bordered field wrapper.
+   * @csspart tag - Each committed pill.
+   * @csspart input - The inner text input.
+   * @cssproperty --beam-tag-input-min-height - Minimum field height. Defaults to `--wa-form-control-height`, so the control matches a `beam-input` sitting beside it.
+   * @cssproperty --beam-tag-input-gap - Gap between pills. [default: 0.25rem]
+   * @event wa-change - Emitted whenever the list changes, by any means. `detail.value` is the new array. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
+   */
+  interface BeamTagInputElement extends HTMLElement {
+    /**
+     * The committed values. A real array, not a delimited string — see the class comment for why that distinction is the whole point of this component.
+     * @default []
+     */
+    value?: string[];
+    /** @default '' */
+    placeholder?: string;
+    /** @default false */
+    disabled?: boolean;
+    /** Pill color, passed through to the underlying `beam-tag`. @default 'brand' */
+    variant?: 'brand' | 'neutral' | 'success' | 'warning' | 'danger';
+  }
+
+  /**
+   * @csspart base - The trigger button.
+   * @csspart panel - The calendar popover panel.
+   * @csspart day - Each selectable day cell.
+   * @cssproperty --beam-date-picker-panel-background - Popover background.
+   * @cssproperty --beam-date-picker-cell-size - Width/height of a day cell. [default: 2rem]
+   * @event wa-change - Emitted when the value changes. `detail.value` is the new value. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
+   */
+  interface BeamDatePickerElement extends HTMLElement {
+    /**
+     * The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is set. Empty string means nothing selected. Same format as a native `datetime-local` / `date` input, so this is a drop-in replacement for one.
+     * @default ''
+     */
+    value?: string;
+    /** Text shown on the trigger when there is no value. @default 'Select a date' */
+    placeholder?: string;
+    /** @default false */
+    disabled?: boolean;
+    /** Date only — hides the time field and drops the time from the value. @default false */
+    withoutTime?: boolean;
+  }
+
+  /**
+   * @csspart chart - The chart container.
+   * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+   */
+  interface BeamLineChartElement extends HTMLElement {
+    /** Rows of data points, e.g. `[{ day: 'Apr 10', sent: 5, opened: 3 }]`. @default [] */
+    data?: Array<Record<string, unknown>>;
+    /** Series to plot, each pulling `key` out of every row. @default [] */
+    series?: unknown;
+    /** Row key for the x-axis category. @default 'x' */
+    xKey?: string;
+  }
+
+  /**
+   * @csspart chart - The chart container.
+   * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+   */
+  interface BeamBarChartElement extends HTMLElement {
+    /** Bars to plot, e.g. `[{ label: 'Sent', value: 120 }]`. @default [] */
+    data?: unknown;
+    /** Optional per-bar color override; defaults to the theme categorical palette. */
+    palette?: string[] | undefined;
+  }
+
+  /**
+   * @csspart chart - The chart container.
+   * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+   */
+  interface BeamDonutChartElement extends HTMLElement {
+    /** Slices to plot, e.g. `[{ label: 'Push', value: 45 }]`. @default [] */
+    data?: unknown;
+    /** Optional per-slice color override; defaults to the theme categorical palette. */
+    palette?: string[] | undefined;
+  }
+
+  /**
+   * @csspart chart - The chart container.
+   * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+   */
+  interface BeamFunnelChartElement extends HTMLElement {
+    /** Funnel stages in order, e.g. `[{ label: 'Audience', value: 1000 }, …]`. @default [] */
+    data?: unknown;
+    /** Optional per-stage color override; defaults to the theme categorical palette. */
+    palette?: string[] | undefined;
+  }
+
+  /**
+   * @csspart chart - The chart container.
+   * @cssproperty --beam-chart-height - Overall chart height. [default: 280px]
+   */
+  interface BeamSankeyChartElement extends HTMLElement {
+    /** Nodes, e.g. `[{ name: 'Sent' }, { name: 'Opened' }]`. @default [] */
+    nodes?: unknown;
+    /** Links, e.g. `[{ source: 'Sent', target: 'Opened', value: 80 }]`. @default [] */
+    links?: unknown;
   }
 }

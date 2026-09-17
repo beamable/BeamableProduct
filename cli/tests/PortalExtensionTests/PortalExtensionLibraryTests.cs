@@ -4,6 +4,7 @@ using cli.Portal;
 using cli.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 using NUnit.Framework;
+using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json.Linq;
 
@@ -41,8 +42,28 @@ public class PortalExtensionLibraryTests
 	{
 		if (Directory.Exists(_root))
 		{
-			Directory.Delete(_root, true);
+			DeleteDirectoryTree(_root);
 		}
+	}
+
+	// Tests may materialize directory links (junctions/symlinks); a plain recursive delete can follow a
+	// reparse point into its target (deleting real content) or loop on cyclic junctions. Walk manually and
+	// unlink reparse points instead of descending through them.
+	private static void DeleteDirectoryTree(string dir)
+	{
+		var info = new DirectoryInfo(dir);
+		if (info.LinkTarget != null || info.Attributes.HasFlag(FileAttributes.ReparsePoint))
+		{
+			Directory.Delete(dir); // removes the link, not its target
+			return;
+		}
+
+		foreach (var sub in Directory.EnumerateDirectories(dir))
+		{
+			DeleteDirectoryTree(sub);
+		}
+
+		Directory.Delete(dir, true); // only real files/empty dirs remain at this point
 	}
 
 	private void WriteExtensionPackageJson(string libSpecifier)
@@ -119,75 +140,179 @@ public class PortalExtensionLibraryTests
 			Throws.InstanceOf<CliException>());
 	}
 
-	// The peer-version check delegates resolution to npm (a `--install-links --strict-peer-deps` dry-run);
-	// these cover the pure scoping logic that decides whether npm's failure actually concerns the toolkit.
+	// The peer-version check compares the versions the extension provides against each library's declared
+	// peerDependency ranges. These cover the pure conflict-detection logic (DetectPeerVersionConflicts).
 
-	[Test]
-	public void HasToolkitVersionConflict_False_WhenNpmSucceeds()
+	private const string Toolkit = "@beamable/portal-toolkit";
+	private const string React = "react";
+	private static readonly string[] SharedPackages = { Toolkit, React };
+
+	private static PortalExtensionAddLibraryCommand.LibraryPeerRequirements Lib(string name, params (string pkg, string range)[] peers)
 	{
-		Assert.That(PortalExtensionAddLibraryCommand.HasToolkitVersionConflict(0, "up to date"), Is.False);
+		var req = new PortalExtensionAddLibraryCommand.LibraryPeerRequirements { LibraryName = name };
+		foreach (var (pkg, range) in peers)
+		{
+			req.PeerRanges[pkg] = range;
+		}
+
+		return req;
 	}
 
 	[Test]
-	public void HasToolkitVersionConflict_False_WhenConflictIsUnrelated()
+	public void DetectConflicts_None_WhenVersionsMatch()
 	{
-		const string reactNoise =
-			"npm error ERESOLVE unable to resolve dependency tree\n" +
-			"npm error peer react@\"^19.2.0\" from react-dom@19.2.7";
+		var provided = new Dictionary<string, string> { [Toolkit] = "0.2.0", [React] = "19.1.0" };
+		var libs = new[] { Lib("MyLib", (Toolkit, "0.2.0"), (React, "^19.0.0")) };
 
-		Assert.That(PortalExtensionAddLibraryCommand.HasToolkitVersionConflict(1, reactNoise), Is.False);
+		var conflicts = PortalExtensionAddLibraryCommand.DetectPeerVersionConflicts(provided, libs, SharedPackages);
+
+		Assert.That(conflicts, Is.Empty);
 	}
 
 	[Test]
-	public void HasToolkitVersionConflict_True_WhenToolkitConflicts()
+	public void DetectConflicts_Flags_WhenToolkitVersionOutsidePeerRange()
 	{
-		const string toolkitConflict =
-			"npm error ERESOLVE unable to resolve dependency tree\n" +
-			"npm error Could not resolve dependency:\n" +
-			"npm error peer @beamable/portal-toolkit@\"0.1.10\" from MyLib@1.0.0";
+		var provided = new Dictionary<string, string> { [Toolkit] = "0.2.0" };
+		var libs = new[] { Lib("MyLib", (Toolkit, "0.3.0")) };
 
-		Assert.That(PortalExtensionAddLibraryCommand.HasToolkitVersionConflict(1, toolkitConflict), Is.True);
+		var conflicts = PortalExtensionAddLibraryCommand.DetectPeerVersionConflicts(provided, libs, SharedPackages);
+
+		Assert.That(conflicts, Has.Count.EqualTo(1));
+		Assert.That(conflicts[0], Does.Contain("MyLib").And.Contain(Toolkit).And.Contain("0.3.0").And.Contain("0.2.0"));
 	}
 
 	[Test]
-	public void HasReactVersionConflict_False_WhenNpmSucceeds()
+	public void DetectConflicts_Flags_WhenReactVersionOutsideCaretRange()
 	{
-		Assert.That(PortalExtensionAddLibraryCommand.HasReactVersionConflict(0, "up to date"), Is.False);
+		var provided = new Dictionary<string, string> { [React] = "18.3.0" };
+		var libs = new[] { Lib("MyLib", (React, "^19.0.0")) };
+
+		var conflicts = PortalExtensionAddLibraryCommand.DetectPeerVersionConflicts(provided, libs, SharedPackages);
+
+		Assert.That(conflicts, Has.Count.EqualTo(1));
+		Assert.That(conflicts[0], Does.Contain(React));
 	}
 
 	[Test]
-	public void HasReactVersionConflict_False_WhenReactIsOnlyTransitiveNoise()
+	public void DetectConflicts_FailsOpen_WhenProvidedVersionUnknown()
 	{
-		// A "peer react@..." line with no "Could not resolve dependency:" header is informational
-		// noise about a transitive relationship, not the dependency npm actually failed to resolve.
-		const string reactNoise =
-			"npm error ERESOLVE unable to resolve dependency tree\n" +
-			"npm error peer react@\"^19.2.0\" from react-dom@19.2.7";
+		// The extension doesn't provide a resolvable version (e.g. not installed) -> never block.
+		var provided = new Dictionary<string, string>();
+		var libs = new[] { Lib("MyLib", (Toolkit, "0.3.0")) };
 
-		Assert.That(PortalExtensionAddLibraryCommand.HasReactVersionConflict(1, reactNoise), Is.False);
+		var conflicts = PortalExtensionAddLibraryCommand.DetectPeerVersionConflicts(provided, libs, SharedPackages);
+
+		Assert.That(conflicts, Is.Empty);
 	}
 
 	[Test]
-	public void HasReactVersionConflict_True_WhenReactConflicts()
+	public void DetectConflicts_FailsOpen_WhenRangeIsUnparseable()
 	{
-		const string reactConflict =
-			"npm error ERESOLVE unable to resolve dependency tree\n" +
-			"npm error Could not resolve dependency:\n" +
-			"npm error peer react@\"^18.0.0\" from MyLib@1.0.0";
+		// A workspace/url/git range this matcher doesn't understand must not block the user.
+		var provided = new Dictionary<string, string> { [Toolkit] = "0.2.0" };
+		var libs = new[] { Lib("MyLib", (Toolkit, "workspace:*")) };
 
-		Assert.That(PortalExtensionAddLibraryCommand.HasReactVersionConflict(1, reactConflict), Is.True);
+		var conflicts = PortalExtensionAddLibraryCommand.DetectPeerVersionConflicts(provided, libs, SharedPackages);
+
+		Assert.That(conflicts, Is.Empty);
 	}
 
 	[Test]
-	public void HasReactVersionConflict_False_WhenOnlyToolkitConflicts()
+	public void DetectConflicts_IgnoresPeersOutsideTheSharedSet()
 	{
-		// A toolkit-only conflict must not be misreported as a react conflict, even though react may
-		// appear elsewhere in npm's resolution output.
-		const string toolkitConflict =
-			"npm error ERESOLVE unable to resolve dependency tree\n" +
-			"npm error Could not resolve dependency:\n" +
-			"npm error peer @beamable/portal-toolkit@\"0.1.10\" from MyLib@1.0.0";
+		// A library may peer-depend on packages we don't police; those must never produce a conflict.
+		var provided = new Dictionary<string, string> { [Toolkit] = "0.2.0" };
+		var libs = new[] { Lib("MyLib", (Toolkit, "0.2.0"), ("some-other-pkg", "^1.0.0")) };
 
-		Assert.That(PortalExtensionAddLibraryCommand.HasReactVersionConflict(1, toolkitConflict), Is.False);
+		var conflicts = PortalExtensionAddLibraryCommand.DetectPeerVersionConflicts(provided, libs, SharedPackages);
+
+		Assert.That(conflicts, Is.Empty);
+	}
+
+	[Test]
+	public void ReadInstalledPackageVersion_ReadsScopedPackageVersion()
+	{
+		var toolkitDir = Path.Combine(_extensionDir, "node_modules", "@beamable", "portal-toolkit");
+		Directory.CreateDirectory(toolkitDir);
+		File.WriteAllText(Path.Combine(toolkitDir, "package.json"),
+			new JObject { ["name"] = Toolkit, ["version"] = "0.2.0" }.ToString());
+
+		var version = PortalExtensionAddLibraryCommand.ReadInstalledPackageVersion(_extensionDir, Toolkit);
+
+		Assert.That(version, Is.EqualTo("0.2.0"));
+	}
+
+	[Test]
+	public void ReadInstalledPackageVersion_NullWhenNotInstalled()
+	{
+		Assert.That(PortalExtensionAddLibraryCommand.ReadInstalledPackageVersion(_extensionDir, Toolkit), Is.Null);
+	}
+
+	// LinkTransitiveLibraryDependencies materializes a library's own library deps into its node_modules so a
+	// library->library import resolves at build time (npm won't install a file:-linked library's deps for us).
+
+	private string CreateLibrary(string name)
+	{
+		var dir = Path.Combine(_root, "extensions-libs", name);
+		Directory.CreateDirectory(dir);
+		File.WriteAllText(Path.Combine(dir, "package.json"), new JObject
+		{
+			["name"] = name,
+			["beamable"] = new JObject { ["portalExtensionLib"] = true }
+		}.ToString());
+		return dir;
+	}
+
+	private static void SetLibraryDeps(string libDir, string block, JObject deps)
+	{
+		var path = Path.Combine(libDir, "package.json");
+		var root = JObject.Parse(File.ReadAllText(path));
+		root[block] = deps;
+		File.WriteAllText(path, root.ToString());
+	}
+
+	[Test]
+	public void LinkTransitive_LinksLibrarysOwnLibraryDevDependency()
+	{
+		// MyExt -> MyLib (devDependency) -> MyDepLib
+		var depLibDir = CreateLibrary("MyDepLib");
+		SetLibraryDeps(_libDir, "devDependencies", new JObject { ["MyDepLib"] = "file:../MyDepLib" });
+		WriteExtensionPackageJson(PortalExtensionAddLibraryCommand.ComputeFileSpecifier(_extensionDir, _libDir));
+
+		PortalExtensionAddLibraryCommand.LinkTransitiveLibraryDependencies(MakeExtensionDef(), _root);
+
+		var linkPath = Path.Combine(_libDir, "node_modules", "MyDepLib");
+		Assert.That(new DirectoryInfo(linkPath).LinkTarget, Is.Not.Null,
+			"MyDepLib must be materialized as a link (not a copied directory) inside MyLib's node_modules");
+		Assert.That(File.Exists(Path.Combine(linkPath, "package.json")), Is.True,
+			"the link must resolve to MyDepLib's real directory");
+		Assert.That(Path.GetFullPath(depLibDir), Is.Not.Null); // depLibDir is the real target the link resolves to
+	}
+
+	[Test]
+	public void LinkTransitive_IgnoresNonLibraryDependencies()
+	{
+		// A dep that isn't a portal-extension library (e.g. react) must never be linked.
+		SetLibraryDeps(_libDir, "devDependencies", new JObject { ["react"] = "^19.0.0" });
+		WriteExtensionPackageJson(PortalExtensionAddLibraryCommand.ComputeFileSpecifier(_extensionDir, _libDir));
+
+		PortalExtensionAddLibraryCommand.LinkTransitiveLibraryDependencies(MakeExtensionDef(), _root);
+
+		Assert.That(Directory.Exists(Path.Combine(_libDir, "node_modules", "react")), Is.False);
+	}
+
+	[Test]
+	public void LinkTransitive_IsCycleSafe()
+	{
+		// MyLib <-> MyDepLib depend on each other; the walk must terminate and link both directions.
+		var depLibDir = CreateLibrary("MyDepLib");
+		SetLibraryDeps(_libDir, "devDependencies", new JObject { ["MyDepLib"] = "file:../MyDepLib" });
+		SetLibraryDeps(depLibDir, "devDependencies", new JObject { ["MyLib"] = "file:../MyLib" });
+		WriteExtensionPackageJson(PortalExtensionAddLibraryCommand.ComputeFileSpecifier(_extensionDir, _libDir));
+
+		PortalExtensionAddLibraryCommand.LinkTransitiveLibraryDependencies(MakeExtensionDef(), _root);
+
+		Assert.That(File.Exists(Path.Combine(_libDir, "node_modules", "MyDepLib", "package.json")), Is.True);
+		Assert.That(File.Exists(Path.Combine(depLibDir, "node_modules", "MyLib", "package.json")), Is.True);
 	}
 }

@@ -57,22 +57,22 @@ public class StartGrafanaCommand : AtomicCommand<StartGrafanaCommandArgs, StartG
         string grafanaIniPath = $"{GrafanaCommand.GetAbsoluteFilePath_GrafanaIni()}:/etc/grafana/grafana.ini";
         string dashboardPath = $"{GrafanaCommand.GetAbsoluteFilePath_DefaultDashboard()}:/etc/grafana/default-dashboard.json";
         
-        var argString = $"run -d --rm " +
-                        $"--name={GrafanaCommand.GetGrafanaContainerName(app)} " +
-                        $"-p 127.0.0.1:{GrafanaCommand.GetGrafanaPort(app)}:3000 " +
-                        $"-e GF_SECURITY_ADMIN_USER=beamable " +
-                        $"-e GF_SECURITY_ADMIN_PASSWORD=beamable " +
-                        $"-e BEAM_CLICKHOUSE_ENDPOINT={connection.Endpoint} " +
-                        $"-e BEAM_CLICKHOUSE_USERNAME={connection.UserName} " +
-                        $"-e BEAM_CLICKHOUSE_PASSWORD={connection.Password} " +
-                        $"-e BEAM_CLICKHOUSE_HOST={connection.Host} " +
-                        $"-e BEAM_CLICKHOUSE_PORT={connection.Port} " +
-                        $"-e GF_INSTALL_PLUGINS=grafana-clickhouse-datasource " +
-                        $"-v {proviosingPath.QuoteDouble()} " + 
-                        $"-v {grafanaIniPath.QuoteDouble()} " +
-                        $"-v {dashboardPath.QuoteDouble()} " +
-                        $"-v {GrafanaCommand.GetGrafanaVolumeName(app)}:/var/lib/grafana " +
-                        $"grafana/grafana:11.6.1";
+        var argString = $"run -d --rm" +
+                        $" --name={GrafanaCommand.GetGrafanaContainerName(app)}" +
+                        $" -p 127.0.0.1:{GrafanaCommand.GetGrafanaPort(app)}:3000" +
+                        $" -e GF_SECURITY_ADMIN_USER=beamable" +
+                        $" -e GF_SECURITY_ADMIN_PASSWORD=beamable" +
+                        $" -e BEAM_CLICKHOUSE_ENDPOINT={connection.Endpoint}" +
+                        $" -e BEAM_CLICKHOUSE_USERNAME={connection.UserName}" +
+                        $" -e BEAM_CLICKHOUSE_PASSWORD={connection.Password}" +
+                        $" -e BEAM_CLICKHOUSE_HOST={connection.Host}" +
+                        $" -e BEAM_CLICKHOUSE_PORT={connection.Port}" +
+                        $" -e GF_INSTALL_PLUGINS=grafana-clickhouse-datasource" +
+                        $" -v {proviosingPath.QuoteDouble()}" + 
+                        $" -v {grafanaIniPath.QuoteDouble()}" +
+                        $" -v {dashboardPath.QuoteDouble()}" +
+                        $" -v {GrafanaCommand.GetGrafanaVolumeName(app)}:/var/lib/grafana" +
+                        $" grafana/grafana:11.6.1";
         
         var command = Cli
             .Wrap(app.DockerPath)

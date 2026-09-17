@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+// ReSharper disable InconsistentNaming
 
 namespace Beamable.Common.Content
 {
@@ -29,6 +30,11 @@ namespace Beamable.Common.Content
 		/// Each <see cref="ClientContentInfo"/> describes one piece of content.
 		/// </summary>
 		public List<ClientContentInfo> entries = new List<ClientContentInfo>();
+
+		/// <summary>
+		/// The unique identifier for this manifest.
+		/// </summary>
+		public Optional<string> uid = null;
 
 		/// <summary>
 		/// Use a <see cref="ContentQuery"/> to filter the <see cref="entries"/> and get a new <see cref="ClientManifest"/>.

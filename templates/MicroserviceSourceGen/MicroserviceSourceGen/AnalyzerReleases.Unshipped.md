@@ -14,6 +14,8 @@
 | BEAM_FED_O001 | Federations | Error    | BEAM_FED_O001_AnalyzerName |
 | BEAM_FED_O002 | Federations | Error    | BEAM_FED_O002_AnalyzerName |
 | BEAM_FED_O003 | Federations | Hidden   | BEAM_FED_O003_AnalyzerName |
+| BEAM_LOG_0001 | Logging     | Warning  | LogTemplateAnalyzer        |
+| BEAM_LOG_0002 | Logging     | Error    | LogTemplateAnalyzer        |
 
 ### Removed Rules
 

@@ -682,7 +682,7 @@ namespace Beamable.Common.Dependencies
 			}
 		}
 
-		public IDependencyProviderScope Build(BuildOptions options = null)
+		public virtual IDependencyProviderScope Build(BuildOptions options = null)
 		{
 			return new DependencyProvider(this, options);
 		}
@@ -762,7 +762,7 @@ namespace Beamable.Common.Dependencies
 		}
 
 
-		public IDependencyBuilder Clone()
+		public virtual IDependencyBuilder Clone()
 		{
 			return new DependencyBuilder
 			{

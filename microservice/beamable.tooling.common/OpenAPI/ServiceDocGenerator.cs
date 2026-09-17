@@ -479,19 +479,33 @@ public static class DocGenExtensions
 	/// <returns>An OpenApiDocument containing the generated documentation.</returns>
 	public static OpenApiDocument Generate<TMicroservice>(this ServiceDocGenerator generator, IDependencyProvider provider) where TMicroservice : Microservice
 	{
-		var attr = typeof(TMicroservice).GetCustomAttribute(typeof(MicroserviceAttribute)) as MicroserviceAttribute;
-		var startupContext = new StartupContext
+		return generator.GenerateDocumentByType(provider, typeof(TMicroservice));
+	}
+    
+	/// <summary>
+	/// Generates OpenAPI documentation for a specified microservice type.
+	/// </summary>
+	/// <typeparam name="TMicroservice">The type of the microservice to generate documentation for.</typeparam>
+	/// <param name="adminRoutes">The administrative routes associated with the microservice.</param>
+	/// <returns>An OpenApiDocument containing the generated documentation.</returns>
+	public static OpenApiDocument GenerateDocumentByType(this ServiceDocGenerator generator, IDependencyProvider provider, Type type, StartupContext context = null)
+	{
+		if (context == null)
 		{
-			routeSources = new BeamRouteSource[]
+			var attr = type.GetCustomAttribute(typeof(MicroserviceAttribute)) as MicroserviceAttribute;
+			context = new StartupContext
 			{
-				new BeamRouteSource
+				routeSources = new BeamRouteSource[]
 				{
-					InstanceType = typeof(TMicroservice)
-				}
-			},
-			attributes = attr,
-			args = provider.GetService<IMicroserviceArgs>()
-		};
-		return generator.Generate(startupContext, provider);
+					new BeamRouteSource
+					{
+						InstanceType = type
+					}
+				},
+				attributes = attr,
+				args = provider.GetService<IMicroserviceArgs>()
+			};
+		}
+		return generator.Generate(context, provider);
 	}
 }

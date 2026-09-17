@@ -88,6 +88,16 @@ namespace Beamable.Server
       private const int HTTP_STATUS_GONE = 410;
       private const int ShutdownLimitSeconds = 5;
       private const int ShutdownMinCycleTimeMilliseconds = 100;
+
+      /// <summary>
+      /// Attempts for the federation registration PUT, which the platform rejects with a 404 until the
+      /// service binding from our provider registration is queryable. Six attempts with
+      /// <see cref="FEDERATION_REGISTRATION_BACKOFF_MS"/> linear backoff spans ~6s, comfortably past the
+      /// backend's 5s service-binding check interval.
+      /// </summary>
+      private const int FEDERATION_REGISTRATION_MAX_ATTEMPTS = 6;
+
+      private const int FEDERATION_REGISTRATION_BACKOFF_MS = 400;
       private Promise<Unit> _serviceInitialized = new Promise<Unit>();
       private IConnection _connection;
       private Promise<IConnection> _webSocketPromise;
@@ -157,6 +167,12 @@ namespace Beamable.Server
 
       private string _adminPrefix;
 
+      /// <summary>
+      /// True when this service runs in the realm (cid.pid) scope. Zone-scoped services do not register the
+      /// realm SDK (content, realm config, storage), so realm-only setup must be guarded on this.
+      /// </summary>
+      private bool IsRealmScoped => _serviceAttribute.GetServiceScope() == BeamServiceScope.Realm;
+
       public async Task Start(IMicroserviceArgs args, StartupContext startupContext)
       {
 	      _startupContext = startupContext;
@@ -202,22 +218,30 @@ namespace Beamable.Server
             Log.Error("Service failed to initialize {message} {stack}", ex.Message, ex.StackTrace);
          });
          
-         // the first time this runs, it'll complete, but due to how promises work, all of the next times, it'll no-op.
-         var contentService = Provider.GetService<ContentService>();
-         ContentApi.Instance.CompleteSuccess(contentService);
+         // Realm content and storage are not registered for a zone-scoped service; skip that setup.
+         // TODO(zones): wire up zone-scoped content/storage equivalents when they exist.
+         var isRealmScope = _serviceAttribute.GetServiceScope() == BeamServiceScope.Realm;
 
-         
+         // the first time this runs, it'll complete, but due to how promises work, all of the next times, it'll no-op.
+         ContentService contentService = null;
+         if (isRealmScope)
+         {
+            contentService = Provider.GetService<ContentService>();
+            ContentApi.Instance.CompleteSuccess(contentService);
+         }
+
+
          // Connect and Run
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
-         
-         if (!InstanceArgs.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
+
+         if (isRealmScope && !InstanceArgs.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
          {
 	         await SetupStorage();
          }
 
          await SetupWebsocket(socket, _serviceAttribute.EnableEagerContentLoading);
-         if (!_serviceAttribute.EnableEagerContentLoading)
+         if (isRealmScope && !_serviceAttribute.EnableEagerContentLoading)
          {
 	         _ = contentService.Init();
          }
@@ -353,7 +377,7 @@ namespace Beamable.Server
 	            {
 		            // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
 		            // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
-		            if (initContent)
+		            if (initContent && IsRealmScoped)
 		            {
 			            await Provider.GetService<ContentService>().Init(preload: true);
 		            }
@@ -363,12 +387,19 @@ namespace Beamable.Server
 				await RunServiceSetupCallbacks();
             }
 
-            var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
-            
-            var loggingContextService = InstanceArgs.ServiceScope.GetService<ILoggingContextService>();
-            
-            await realmService.GetRealmConfigSettings();
-            await loggingContextService.GetAllLoggingContexts();
+            if (IsRealmScoped)
+            {
+            	// Realm config is only registered for realm-scoped services.
+            	var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
+            	await realmService.GetRealmConfigSettings();
+            }
+
+            // Beamo log-context is realm-scoped; zone services have no realm beamo api.
+            if (IsRealmScoped)
+            {
+            	var loggingContextService = InstanceArgs.ServiceScope.GetService<ILoggingContextService>();
+            	await loggingContextService.GetAllLoggingContexts();
+            }
             await ProvideService();
 
             HasInitialized = true;
@@ -380,7 +411,10 @@ namespace Beamable.Server
             }
             
             Log.Information(Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion} " + portalUrlLogline, InstanceArgs.SdkVersionBaseBuild, InstanceArgs.SdkVersionExecution);
-            realmService.UpdateLogLevel();
+            if (IsRealmScoped)
+            {
+            	InstanceArgs.ServiceScope.GetService<IRealmConfigService>().UpdateLogLevel();
+            }
 
             _serviceInitialized.CompleteSuccess(PromiseBase.Unit);
          }
@@ -396,8 +430,9 @@ namespace Beamable.Server
       private bool TryBuildPortalUrl(out string portalUrl)
       {
 	      var cid = InstanceArgs.CustomerID;
-	      var pid = InstanceArgs.ProjectName;
-	      var microName = QualifiedName;
+	      // For a realm service this is the pid; for a zone service it is the ZONE_<zid> (the zone rides the
+	      // pid slot), which is exactly what the console's zone route wants.
+	      var scopeId = InstanceArgs.ProjectName;
 	      var refreshToken = InstanceArgs.RefreshToken;
 
 	      if (string.IsNullOrEmpty(refreshToken))
@@ -406,19 +441,26 @@ namespace Beamable.Server
 		      portalUrl = "";
 		      return false;
 	      }
-	      
+
 	      var queryArgs = new List<string>
 	      {
 		      $"refresh_token={refreshToken}",
 		      $"routingKey={InstanceArgs.NamePrefix}"
 	      };
 	      var joinedQueryString = string.Join("&", queryArgs);
+	      // The portal now lives on the console.* DNS (dev.console.beamable.com / console.beamable.com), so
+	      // map the api host to console (dev.api.beamable.com -> dev.console.beamable.com).
 	      var treatedHost = InstanceArgs.Host.Replace("/socket", "")
 		      .Replace("wss", "https")
-		      .Replace("dev.", "dev-")
-		      .Replace("api", "portal");
-	      portalUrl = $"{treatedHost}/{cid}/games/{pid}/realms/{pid}/microservices/{microName}/docs?{joinedQueryString}";
-	      
+		      .Replace("api", "console");
+
+	      portalUrl = IsRealmScoped
+		      // Realm service: /{cid}/games/{pid}/realms/{pid}/microservices/micro_{name}/docs
+		      ? $"{treatedHost}/{cid}/games/{scopeId}/realms/{scopeId}/microservices/{QualifiedName}/docs?{joinedQueryString}"
+		      // Zone service: a zone has no realm — the console inspects it under
+		      // /{cid}/zones/{zid}/inspect/{name}/swagger (unprefixed service name).
+		      : $"{treatedHost}/{cid}/zones/{scopeId}/inspect/{MicroserviceName}/swagger?{joinedQueryString}";
+
 	      Log.Verbose("portal url " + portalUrl);
 
 	      return true;
@@ -510,11 +552,17 @@ namespace Beamable.Server
             }
             catch (Exception ex)
             {
-               BeamableLogger.LogError($"Custom service initializer [{initializationMethod.DeclaringType?.FullName}.{initializationMethod.Name}] failed.\n" +
-                                       $"{ex.Message}\n" +
-                                       $"{{stacktrace}}", ex.StackTrace);
-
+               // The real exception is logged first, so that nothing about it can be lost to a formatting
+               // problem in the context line below.
                BeamableLogger.LogException(ex);
+
+               // ex.Message is passed as an argument, never interpolated into the message itself: a message
+               // containing curly braces (json, a format string) would otherwise be read as extra placeholders.
+               BeamableLogger.LogError("Custom service initializer [{typeName}.{methodName}] failed.\n{message}\n{stacktrace}",
+                                       initializationMethod.DeclaringType?.FullName,
+                                       initializationMethod.Name,
+                                       ex.Message,
+                                       ex.StackTrace);
                Environment.Exit(EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK);
             }
          }
@@ -532,11 +580,10 @@ namespace Beamable.Server
 		         }
 		         catch (Exception ex)
 		         {
-			         BeamableLogger.LogError($"Custom service initializer failed.\n" +
-			                                 $"{ex.Message}\n" +
-			                                 $"{{stacktrace}}", ex.StackTrace);
-
 			         BeamableLogger.LogException(ex);
+			         BeamableLogger.LogError("Custom service initializer failed.\n{message}\n{stacktrace}",
+			                                 ex.Message,
+			                                 ex.StackTrace);
 			         Environment.Exit(EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK);
 		         }
 	         }
@@ -557,11 +604,10 @@ namespace Beamable.Server
 			      }
 			      catch (Exception ex)
 			      {
-				      BeamableLogger.LogError($"Custom service setup initializer failed.\n" +
-				                              $"{ex.Message}\n" +
-				                              $"{{stacktrace}}", ex.StackTrace);
-
 				      BeamableLogger.LogException(ex);
+				      BeamableLogger.LogError("Custom service setup initializer failed.\n{message}\n{stacktrace}",
+				                              ex.Message,
+				                              ex.StackTrace);
 				      Environment.Exit(EXIT_CODE_FAILED_CUSTOM_SERVICE_SETUP_INITIALIZATION_HOOK);
 			      }
 		      }
@@ -826,21 +872,23 @@ namespace Beamable.Server
 
 
 	      // First get the Global Realm Config Log Level and apply it by running UpdateLogLevel
-	      var configService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
 	      if (ctx.Path?.StartsWith(_adminPrefix) ?? false)
 	      {
 		      // when the path starts with admin, use warning.
 		      MicroserviceBootstrapper.ContextLogLevel.Value = LogLevel.Warning;
 	      }
-	      else
+	      else if (IsRealmScoped)
 	      {
 		      // otherwise, allow default behaviour.
+		      var configService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
 		      configService.UpdateLogLevel();
 	      }
 
 	      string routingKey = InstanceArgs.GetRoutingKey().GetOrElse(string.Empty);
 	      try
 	      {
+	      	if (IsRealmScoped)
+	      	{
 		      var loggingContextService = Provider.GetService<ILoggingContextService>();
 		      BeamoV2ServiceLoggingContext loglevelContext = loggingContextService.GetLogLevelContext(MicroserviceName, routingKey);
 		      
@@ -913,6 +961,7 @@ namespace Beamable.Server
 
 			      
 		      }
+	      	}
 	      }
 	      catch (Exception ex)
 	      {
@@ -1085,14 +1134,55 @@ namespace Beamable.Server
 		      federationRequest.routingKey = routingKey;
 	      }
 
+	      // The platform rejects this PUT with 404 ServiceNotFound until the service_topology binding
+	      // created by our `gateway/provider` registration is queryable. That binding write used to be
+	      // scheduled rather than awaited on the backend, so the two raced and roughly half of all local
+	      // starts lost — silently, because this was a bare catch-and-log with no retry, and the service
+	      // went on to report itself ready for traffic with no routable federation.
+	      //
+	      // The backend now orders that write before it ACKs the provider registration. The retry stays
+	      // because services also run against backends we do not control (prod, staging, an older
+	      // platform), where it is the only thing between a lost race and a service that never federates.
+	      var attempts = 0;
 	      try
 	      {
-		      var response = await api.PutMicroserviceFederationTraffic(federationRequest);
-		      Log.Verbose($"Registered federation. result=[{response.result}], routes=[{string.Join(",",response.data.Select(kvp => $"{kvp.Key}->{kvp.Value}"))}]");
+		      var response = await Promise.RetryPromise(
+			      () =>
+			      {
+				      var previousAttempts = attempts++;
+				      if (previousAttempts == 0)
+				      {
+					      return api.PutMicroserviceFederationTraffic(federationRequest);
+				      }
+
+				      Log.Warning(
+					      "Federation registration was rejected because the service binding is not visible yet; retrying. attempt=[{attempt}] of [{maxAttempts}]",
+					      previousAttempts + 1, FEDERATION_REGISTRATION_MAX_ATTEMPTS);
+				      return Task.Delay(TimeSpan.FromMilliseconds(FEDERATION_REGISTRATION_BACKOFF_MS * previousAttempts))
+					      .ToPromise()
+					      .FlatMap(_ => api.PutMicroserviceFederationTraffic(federationRequest));
+			      },
+			      // Only the race is retryable. A 400 (e.g. MissingRoutingKeys, when the realm has no
+			      // local-traffic filtering configured) will fail identically forever, so it surfaces
+			      // immediately instead of after every backoff.
+			      ex => ex is RequesterException requesterException && requesterException.Status == 404,
+			      maxAttempts: FEDERATION_REGISTRATION_MAX_ATTEMPTS);
+
+		      Log.Information(
+			      Constants.Features.Services.Logs.FEDERATION_REGISTERED + " result=[{result}], routes=[{routes}]",
+			      response.result,
+			      string.Join(",", response.data.Select(kvp => $"{kvp.Key}->{kvp.Value}")));
 	      }
 	      catch (Exception ex)
 	      {
-		      Log.Error($"Failed to register federation components. {ex.Message}");
+		      // Deliberately not fatal: throwing here would abort ProvideService before the event provider
+		      // is wired up, leaving a half-registered socket — a worse failure than a service that runs and
+		      // reports itself degraded. The distinct message is what `beam local up` watches for, so this
+		      // no longer disappears into the log.
+		      Log.Error(
+			      Constants.Features.Services.Logs.FEDERATION_REGISTRATION_FAILED +
+			      " The service is running but its federations are NOT routable. attempts=[{attempts}] error=[{error}]",
+			      attempts, ex.Message);
 	      }
       }
 

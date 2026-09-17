@@ -3,12 +3,13 @@ name: Perf Test Microservices
 on:
   pull_request:
     branches:
-      # TODO: Chris turned this off on March 25, 2026 due to some dev instability. 
+      # TODO: Chris turned this off on March 25, 2026 due to some dev instability.
       - 'DISABLED'
     paths-ignore:
       - 'rfc/**'
       - '.github/**'
       - 'client_installer/**'
+      - 'web/**'
 jobs:
   runPerfTest:
     timeout-minutes: 15
@@ -17,14 +18,14 @@ jobs:
       group: stresstest-${{ github.head_ref }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.24.1
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
       - name: Setup .NET Core SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: |
             8.0.x
@@ -33,7 +34,7 @@ jobs:
       - name: Install Dotnet Counters
         run: |
           dotnet tool install --global dotnet-counters --version 7.0.447801
-      - name: Build and Install BEAM CLI 
+      - name: Build and Install BEAM CLI
         working-directory: ./
         run: |
           ./setup.sh
@@ -47,17 +48,17 @@ jobs:
       - name: Check BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |
-          dotnet beam config -q --logs v 
-      
+          dotnet beam config -q --logs v
+
       - name: Login to BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |
           dotnet beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file -q --logs v
-      
+
       - name: Update Nuget
         working-directory: ./stress-tests/standalone-microservice
         run: |
-          dotnet restore 
+          dotnet restore
 
       - name: Build Microservice
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice
@@ -67,16 +68,16 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/
         run: |
           cd ./standalone-microservice/bin/Debug/net10.0
-      
+
 
           echo "starting counters"
           mkdir ../../../../reports
           dotnet-counters collect --diagnostic-port ~/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json &
-          
+
           echo "starting service"
           mkdir ../../../../logs
           BEAM_DISABLE_STANDARD_OTEL=1 LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=~/myport.sock ./standalone-microservice &
-          
+
           echo "starting profiler"
           cd ../../../..
           echo '{"a":3,"b":4}' > payload.json
@@ -90,8 +91,8 @@ jobs:
           echo "showing logs"
           cat ./logs/serviceRuntime.log
           cp ./logs/serviceRuntime.log ./reports/serviceRuntime.log
-      - name: Save Profiler Data 
-        uses: actions/upload-artifact@v4
+      - name: Save Profiler Data
+        uses: actions/upload-artifact@v6
         with:
           name: profiler
           if-no-files-found: error
@@ -124,12 +125,13 @@ jobs:
       - name: Post to a Slack channel
         id: slack
         if: ${{!contains(steps.nbomber.outputs.log, 'No issues found') || !contains(steps.counters.outputs.log, 'No issues found')}}
-        uses: slackapi/slack-github-action@v1.21.0
+        uses: slackapi/slack-github-action@v4.0.0
         with:
-          channel-id: C0409CMRKA9
-          slack-message: "Automated C#MS smoke tests failed! \nbomber: ${{steps.nbomber.outputs.log}} \ncounters: ${{steps.counters.outputs.log}} \n https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: "C0409CMRKA9"
+            text: "Automated C#MS smoke tests failed! \nbomber: ${{steps.nbomber.outputs.log}} \ncounters: ${{steps.counters.outputs.log}} \n https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
       - name: Fail if checks failed
         if: ${{!contains(steps.nbomber.outputs.log, 'No issues found') || !contains(steps.counters.outputs.log, 'No issues found')}}
         run: |

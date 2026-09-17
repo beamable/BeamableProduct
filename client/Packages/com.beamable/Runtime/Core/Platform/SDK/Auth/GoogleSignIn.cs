@@ -5,6 +5,8 @@ namespace Beamable.Platform.SDK.Auth
 {
 	public class GoogleSignIn
 	{
+		private const string JAVA_CLASS_NAME = "com.beamable.googlesignin.GoogleSignInActivity";
+
 		private readonly GameObject _target;
 		private readonly string _callbackMethod;
 		private readonly string _webClientId;
@@ -15,6 +17,11 @@ namespace Beamable.Platform.SDK.Auth
 		/// UnitySendMessage to call back, we need to know the GameObject and
 		/// callback method name.
 		/// </summary>
+		/// <remarks>
+		/// For new code prefer <see cref="GoogleSignInService"/>, which hosts its own callback
+		/// receiver and returns a <see cref="Beamable.Common.Promise{T}"/> instead of requiring a
+		/// GameObject with a magically-named method.
+		/// </remarks>
 		/// <param name="target">GameObject to use for callback</param>
 		/// <param name="callbackMethod">Name of the method to call back</param>
 		/// <param name="webClientId">Google OAuth client ID - web ID for login on Android devices</param>
@@ -39,7 +46,7 @@ namespace Beamable.Platform.SDK.Auth
             Debug.LogError("Please configure Google Client ID in the AccountManagementConfiguration asset.");
             return;
          }
-         var login = new AndroidJavaClass("com.beamable.googlesignin.GoogleSignInActivity");
+         var login = new AndroidJavaClass(JAVA_CLASS_NAME);
          login.CallStatic("login", _target.name, _callbackMethod, _webClientId);
 #elif UNITY_IOS
          if (string.IsNullOrEmpty(_iosClientId))
@@ -62,22 +69,34 @@ namespace Beamable.Platform.SDK.Auth
 		/// Unpack the response from the Google Sign-In plugin. Call this from
 		/// the GameObject callback.
 		/// </summary>
+		/// <remarks>
+		/// Kept for backwards compatibility, and now a thin shim over
+		/// <see cref="GoogleSignInResult.Parse"/>. This callback shape cannot express the difference
+		/// between "the player cancelled", "there is no cached credential" and "Google Sign-In is
+		/// unavailable here" - they all arrive as <c>callback(null)</c>. Use
+		/// <see cref="GoogleSignInResult.Parse"/> directly, or
+		/// <see cref="GoogleSignInService"/>, when that distinction matters.
+		/// </remarks>
 		/// <param name="message">Response message from the plugin</param>
 		/// <param name="callback">Callback to be invoked when the result is complete</param>
 		/// <param name="errback">Callback to call if authentication failed</param>
 		public static void HandleResponse(string message, Action<string> callback, Action<GoogleInvalidTokenException> errback)
 		{
-			if (message.StartsWith("CANCELED"))
+			var result = GoogleSignInResult.Parse(message);
+
+			if (result.HasIdToken)
 			{
-				callback.Invoke(null);
+				callback.Invoke(result.IdToken);
 			}
-			else if (message.StartsWith("EXCEPTION") || message.StartsWith("UNKNOWN"))
+			else if (result.Status == GoogleSignInStatus.Error)
 			{
 				errback.Invoke(new GoogleInvalidTokenException(message));
 			}
 			else
 			{
-				callback.Invoke(message);
+				// Cancelled, NoCredential and Unavailable all mean "no token, but nothing went
+				// wrong", which this signature can only express as a null token.
+				callback.Invoke(null);
 			}
 		}
 	}

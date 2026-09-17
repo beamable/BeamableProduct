@@ -9,5 +9,6 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         public System.Collections.Generic.List<Beamable.Common.BeamCli.Contracts.ServiceInfo> localServices;
         public System.Collections.Generic.List<Beamable.Common.BeamCli.Contracts.ServiceInfo> localStorages;
+        public System.Collections.Generic.List<Beamable.Common.BeamCli.Contracts.ServiceInfo> localPortalExtensions;
     }
 }

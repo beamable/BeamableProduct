@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `Services.Inventory.GetCurrent()` and `GetCurrent("")` now omit the empty scope query parameter, which could leave inventory requests pending on runtimes 7.1.0 through 7.2.3. `GetCurrent(null)` also treats the scope as omitted instead of throwing before sending the request.
+
+## [7.2.3] - 2026-08-26
+
+### Added
+
+- Cache OpenAPI docs schema on first use.
+
+## [7.2.1] - 2026-06-30
+
+### Fixed
+- Microservice content fetches now retry with bounded exponential backoff and jitter. This applies to both manifest and content entry fetches.
+
 ## [7.2.0] - 2026-05-23
 
 ### Changed

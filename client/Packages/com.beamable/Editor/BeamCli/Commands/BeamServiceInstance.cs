@@ -14,5 +14,6 @@ namespace Beamable.Editor.BeamCli.Commands
         public BeamHostServiceDescriptor latestHostEvent;
         public BeamRemoteServiceDescriptor latestRemoteEvent;
         public BeamRemoteStorageDescriptor latestRemoteStorageEvent;
+        public BeamRemotePortalExtensionDescriptor latestRemotePortalExtensionEvent;
     }
 }

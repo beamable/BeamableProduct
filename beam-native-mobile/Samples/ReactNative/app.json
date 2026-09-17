@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "Beam RN Sample",
+    "slug": "beam-rn-sample",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "beamrnsample",
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "ios": {
+      "bundleIdentifier": "com.beamble.samples.beamfarm",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.beamable.rnsample",
+      "googleServicesFile": "./google-services.json"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-dev-client",
+      "expo-asset",
+      [
+        "@beamable/notifications-react-native",
+        {
+          "appGroup": "group.com.beamable.mobiletest",
+          "enableServiceExtension": true,
+          "iosServicePlugins": [
+            {
+              "file": "./plugins/ios/SampleStyleServicePlugin.swift",
+              "className": "SampleStyleServicePlugin"
+            }
+          ],
+          "enableContentExtension": true,
+          "contentCategories": ["countdown"],
+          "iosContentRenderers": [
+            {
+              "file": "./plugins/ios/SampleCountdownContentRenderer.swift",
+              "className": "SampleCountdownContentRenderer"
+            }
+          ],
+          "enableLiveActivity": true,
+          "iosLiveActivityWidgets": [
+            {
+              "file": "./plugins/ios/SampleWidgetsBundle.swift"
+            },
+            {
+              "file": "./plugins/ios/SampleCountdownLiveActivity.swift"
+            },
+            {
+              "file": "./plugins/ios/SampleActionsLiveActivity.swift"
+            },
+            {
+              "file": "./plugins/ios/SampleAnimatedLiveActivity.swift"
+            }
+          ]
+        }
+      ],
+      "./plugins/withSampleNotificationStyles"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -318,8 +318,8 @@ public class GenerateClientFileCommand
 			{
 				var missingServicesAndExpectedPaths = string.Join(", ", ($"{nonExistentDocs.Select(kvp => kvp.Key)} ({nonExistentDocs.Select(kvp => kvp.Value.ExpectedOpenApiDocPath)})"));
 				var err = $"Missing the generated OAPI for the following Micro Services: {missingServicesAndExpectedPaths}.\n";
-				err += "Please do a clean rebuild of the microservice and verify the file is at the expected location. " +
-				       "If it is not, please report an issue to Beamable attaching your logs (re-run this command with '--logs v').";
+				err += "Please do a clean rebuild of the microservice and verify the file is at the expected location." +
+				       " If it is not, please report an issue to Beamable attaching your logs (re-run this command with '--logs v').";
 
 				throw new CliException(err);
 			}

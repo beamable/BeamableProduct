@@ -3,12 +3,12 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { ServiceDependencyReference } from './ServiceDependencyReference';
+import type { BeamoBasicServiceDependencyReference } from './BeamoBasicServiceDependencyReference';
 
 export type ServiceStatus = { 
   imageId: string; 
   isCurrent: boolean; 
   running: boolean; 
   serviceName: string; 
-  serviceDependencyReferences?: ServiceDependencyReference[]; 
+  serviceDependencyReferences?: BeamoBasicServiceDependencyReference[]; 
 };

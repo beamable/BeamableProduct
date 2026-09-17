@@ -26,6 +26,8 @@ import type { LaunchMessageListResponse } from '@/__generated__/schemas/LaunchMe
 import type { ProjectView } from '@/__generated__/schemas/ProjectView';
 import type { PromoteRealmResponseOld } from '@/__generated__/schemas/PromoteRealmResponseOld';
 import type { RealmConfigChangeRequest } from '@/__generated__/schemas/RealmConfigChangeRequest';
+import type { RealmConfigResponse } from '@/__generated__/schemas/RealmConfigResponse';
+import type { RealmConfigSaveRequest } from '@/__generated__/schemas/RealmConfigSaveRequest';
 import type { RealmsBasicAliasAvailableResponse } from '@/__generated__/schemas/RealmsBasicAliasAvailableResponse';
 import type { RealmsBasicCustomersResponse } from '@/__generated__/schemas/RealmsBasicCustomersResponse';
 import type { RealmsBasicNewCustomerRequest } from '@/__generated__/schemas/RealmsBasicNewCustomerRequest';
@@ -33,8 +35,6 @@ import type { RealmsBasicNewCustomerResponse } from '@/__generated__/schemas/Rea
 import type { RealmsBasicNewGameRequest } from '@/__generated__/schemas/RealmsBasicNewGameRequest';
 import type { RealmsBasicPromoteRealmRequest } from '@/__generated__/schemas/RealmsBasicPromoteRealmRequest';
 import type { RealmsBasicPromoteRealmResponse } from '@/__generated__/schemas/RealmsBasicPromoteRealmResponse';
-import type { RealmsBasicRealmConfigResponse } from '@/__generated__/schemas/RealmsBasicRealmConfigResponse';
-import type { RealmsBasicRealmConfigSaveRequest } from '@/__generated__/schemas/RealmsBasicRealmConfigSaveRequest';
 import type { RealmsBasicRealmConfiguration } from '@/__generated__/schemas/RealmsBasicRealmConfiguration';
 import type { RealmsBasicUpdateGameHierarchyRequest } from '@/__generated__/schemas/RealmsBasicUpdateGameHierarchyRequest';
 import type { RemoveLaunchMessageRequest } from '@/__generated__/schemas/RemoveLaunchMessageRequest';
@@ -249,11 +249,11 @@ export async function realmsGetGamesBasic(requester: HttpRequester, gamertag?: s
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function realmsGetConfigBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<RealmsBasicRealmConfigResponse>> {
+export async function realmsGetConfigBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<RealmConfigResponse>> {
   let endpoint = "/basic/realms/config";
   
   // Make the API request
-  return makeApiRequest<RealmsBasicRealmConfigResponse>({
+  return makeApiRequest<RealmConfigResponse>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -292,15 +292,15 @@ export async function realmsPostConfigBasic(requester: HttpRequester, payload: R
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `RealmsBasicRealmConfigSaveRequest` instance to use for the API request
+ * @param payload - The `RealmConfigSaveRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function realmsPutConfigBasic(requester: HttpRequester, payload: RealmsBasicRealmConfigSaveRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
+export async function realmsPutConfigBasic(requester: HttpRequester, payload: RealmConfigSaveRequest, gamertag?: string): Promise<HttpResponse<CommonResponse>> {
   let endpoint = "/basic/realms/config";
   
   // Make the API request
-  return makeApiRequest<CommonResponse, RealmsBasicRealmConfigSaveRequest>({
+  return makeApiRequest<CommonResponse, RealmConfigSaveRequest>({
     r: requester,
     e: endpoint,
     m: PUT,

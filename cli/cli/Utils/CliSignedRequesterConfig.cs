@@ -34,9 +34,9 @@ public class CliSignedRequesterConfig : ISignedRequesterConfig
         catch (RequesterException ex) when (ex.Status == 401)
         {
             throw new CliException(
-                message: $"The authorization context is not sufficient for the current realm=[{_appContext.ProjectName}]. " +
-                         $"If you have not logged into the current realm, then you must do so. " +
-                         $"Run the `beam login` command and retry. ");
+                message: $"The authorization context is not sufficient for the current realm=[{_appContext.ProjectName}]." +
+                         $" If you have not logged into the current realm, then you must do so." +
+                         $" Run the `beam login` command and retry. ");
         }
     }
 }

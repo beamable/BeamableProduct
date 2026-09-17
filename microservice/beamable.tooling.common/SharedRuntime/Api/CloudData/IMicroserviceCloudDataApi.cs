@@ -14,6 +14,8 @@ namespace Beamable.Server.Api.CloudData
 	/// ![img beamable-logo]
 	/// 
 	/// </summary>
+
+	[RealmScoped]
 	public interface IMicroserviceCloudDataApi : ICloudDataApi
 	{
 		/* put server-side only methods here */

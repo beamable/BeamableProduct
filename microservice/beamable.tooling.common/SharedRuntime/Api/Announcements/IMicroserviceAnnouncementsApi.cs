@@ -14,6 +14,8 @@ namespace Beamable.Server.Api.Announcements
 	/// ![img beamable-logo]
 	/// 
 	/// </summary>
+
+	[RealmScoped]
 	public interface IMicroserviceAnnouncementsApi : IAnnouncementsApi
 	{
 

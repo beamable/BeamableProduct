@@ -5,6 +5,7 @@
 
 import type { CustomerActorAccount } from './CustomerActorAccount';
 import type { Realm } from './Realm';
+import type { Zone } from './Zone';
 import type { ActivationStatus } from './enums/ActivationStatus';
 import type { PaymentStatus } from './enums/PaymentStatus';
 
@@ -22,4 +23,5 @@ export type CustomerActorCustomer = {
   requiresCustomTier?: boolean; 
   stripeCustomerId?: string | null; 
   updated?: Date; 
+  zones?: Zone[]; 
 };

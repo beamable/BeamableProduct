@@ -101,6 +101,30 @@ public class PortalExtensionCommandTests : CLITestExtensions
 		});
 	}
 
+	// A catalog whose page slot uses the "!hub/!pathMatch" form — the page path a user supplies must
+	// be stored verbatim, never prefixed with "!hub/".
+	private void MockRemotePortalConfigHubPage()
+	{
+		Mock<IRemotePortalConfigService>(mock =>
+		{
+			mock.Setup(x => x.GetRemotePortalConfig(It.IsAny<CommandArgs>()))
+				.ReturnsAsync(new RemotePortalConfiguration
+				{
+					mountSites = new List<RemotePortalConfiguration.MountSiteConfig>
+					{
+						new()
+						{
+							path = "!hub/!pathMatch",
+							selectors = new List<RemotePortalConfiguration.MountSiteSelector>
+							{
+								new() { selector = "#extension-page", type = "page" }
+							}
+						}
+					}
+				});
+		});
+	}
+
 	private void InitWorkspace()
 	{
 		SetupMocks(mockBeamoManifest: false, mockAdminMe: false);
@@ -214,6 +238,96 @@ public class PortalExtensionCommandTests : CLITestExtensions
 			"package.json must contain the nav group");
 		Assert.That(packageJson, Does.Contain("TestLabel"),
 			"package.json must contain the nav label");
+	}
+
+	[Test]
+	public void NewPortalExtension_ZoneExtension_ScaffoldsZoneTemplate()
+	{
+		InitWorkspace();
+		SetupBeamoServiceMock();
+		MockRemotePortalConfig();
+
+		Run("project", "new", "portal-extension", "TestZoneExt", "--quiet",
+			"--mount-page", "my-zone-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react",
+			"--zone");
+
+		Assert.That(BFile.Exists("extensions/TestZoneExt/package.json"),
+			"package.json must exist after scaffolding");
+
+		var packageJson = BFile.ReadAllText("extensions/TestZoneExt/package.json");
+		Assert.That(packageJson, Does.Contain("\"serviceScope\": \"zone\""),
+			"a zone extension must mark its backing service as zone-scoped");
+
+		var mainTsx = BFile.ReadAllText("extensions/TestZoneExt/src/main.tsx");
+		Assert.That(mainTsx, Does.Contain("registerReactZoneExtension"),
+			"the zone template must register via the zone-scoped API");
+	}
+
+	[Test]
+	public void NewPortalExtension_ZoneExtension_StoresPageZoneRelative()
+	{
+		InitWorkspace();
+		SetupBeamoServiceMock();
+		MockRemotePortalConfig();
+
+		Run("project", "new", "portal-extension", "TestZonePage", "--quiet",
+			"--mount-page", "my-zone-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react",
+			"--zone");
+
+		var packageJson = BFile.ReadAllText("extensions/TestZonePage/package.json");
+		Assert.That(packageJson, Does.Contain("\"my-zone-page\""),
+			"a zone extension's page is declared zone-relative and stored verbatim");
+		Assert.That(packageJson, Does.Not.Contain(":cid/"),
+			"the portal owns the :cid/zones/:zid/ prefix, so the CLI must not prepend :cid/");
+	}
+
+	[Test]
+	public void NewPortalExtension_ZoneTemplate_DefaultPageIsZoneRelative()
+	{
+		InitWorkspace();
+		SetupBeamoServiceMock();
+		MockRemotePortalConfig();
+
+		// Scaffold from the zone template without overriding the mount page, then inspect the
+		// template's seeded default. The zone template must ship a zone-relative default page.
+		Run("project", "new", "portal-extension", "TestZoneDefault", "--quiet",
+			"--mount-page", "zone-default",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react",
+			"--zone");
+
+		var packageJson = BFile.ReadAllText("extensions/TestZoneDefault/package.json");
+		Assert.That(packageJson, Does.Not.Contain(":cid/"),
+			"the zone template default page must be zone-relative, without a :cid/ prefix");
+	}
+
+	[Test]
+	public void NewPortalExtension_PageExtension_PassesThroughHubPath()
+	{
+		InitWorkspace();
+		SetupBeamoServiceMock();
+		MockRemotePortalConfigHubPage();
+
+		Run("project", "new", "portal-extension", "FerrariExt", "--quiet",
+			"--mount-page", "cars/ferrari",
+			"--mount-group", "Cars",
+			"--mount-label", "Ferrari",
+			"--template", "react");
+
+		var packageJson = BFile.ReadAllText("extensions/FerrariExt/package.json");
+		Assert.That(packageJson, Does.Contain("cars/ferrari"),
+			"the page path must be stored verbatim");
+		Assert.That(packageJson, Does.Not.Contain("!hub"),
+			"the !hub/!pathMatch prefix must not leak into the stored page path");
+		Assert.That(packageJson, Does.Contain("#extension-page"),
+			"the page slot selector must be auto-assigned");
 	}
 
 	#endregion
@@ -334,6 +448,65 @@ public class PortalExtensionCommandTests : CLITestExtensions
 			"package.json must reference the library via a file: specifier");
 		Assert.That(packageJson, Does.Contain("extensions-libs/TestLib"),
 			"the file: specifier must point at the library directory");
+	}
+
+	#endregion
+
+	#region project new portal-extension (name conflicts)
+
+	[Test]
+	public void NewPortalExtension_Fails_WhenNameConflictsWithExistingExtension()
+	{
+		InitWorkspace();
+
+		SetupBeamoServiceMock();
+		MockRemotePortalConfig();
+		Run("project", "new", "portal-extension", "DupExt", "--quiet",
+			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react");
+		_mockObjects.Clear();
+		ResetConfigurator();
+
+		// The name check runs before the remote portal config fetch and any prompts, so only the
+		// pre-Handle manifest init (BeamoService) needs to be mocked here.
+		SetupBeamoServiceMock();
+		var exitCode = RunFull(new[]
+		{
+			"project", "new", "portal-extension", "DupExt", "--quiet",
+			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react"
+		});
+
+		Assert.That(exitCode, Is.EqualTo(1),
+			"creating a portal extension whose name duplicates an existing extension must fail");
+	}
+
+	[Test]
+	public void NewPortalExtension_Fails_WhenNameConflictsWithMicroservice()
+	{
+		InitWorkspace();
+
+		SetupBeamoServiceMock();
+		Run("project", "new", "service", "Collide", "--quiet");
+		_mockObjects.Clear();
+		ResetConfigurator();
+
+		SetupBeamoServiceMock();
+		var exitCode = RunFull(new[]
+		{
+			"project", "new", "portal-extension", "Collide", "--quiet",
+			"--mount-page", "my-ext-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react"
+		});
+
+		Assert.That(exitCode, Is.EqualTo(1),
+			"creating a portal extension whose name collides with a microservice must fail");
 	}
 
 	#endregion

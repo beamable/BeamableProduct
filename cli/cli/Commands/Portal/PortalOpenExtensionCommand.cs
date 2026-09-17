@@ -36,8 +36,12 @@ public class PortalOpenExtensionCommand : AppCommand<PortalOpenExtensionCommandA
 		if (ext == null)
 			throw new CliException($"Portal extension '{args.extension}' not found in the local manifest.");
 
-		var mountPage = BeamoLocalSystem.NormalizePortalExtensionMountPage(
-			ext.PortalExtensionDefinition.Properties?.Mount?.Page);
+		// An extension can declare multiple mounts; open the first one with a
+		// non-empty page. Future enhancement: accept a --mount flag so the
+		// user can pick which mount to open when more than one is declared.
+		var mountPage = ext.PortalExtensionDefinition.Properties?.Mounts?
+			.Select(m => BeamoLocalSystem.NormalizePortalExtensionMountPage(m?.Page))
+			.FirstOrDefault(p => !string.IsNullOrEmpty(p));
 
 		if (string.IsNullOrEmpty(mountPage))
 			throw new CliException($"Portal extension '{args.extension}' has no mount page configured.");

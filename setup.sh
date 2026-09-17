@@ -20,13 +20,15 @@ case "$OSTYPE" in
     darwin*)  ROOT=$(pwd) ;;
     linux*)   ROOT=$(pwd) ;;
     bsd*)     ROOT=$(pwd) ;;
-    msys*)    
-        ROOT=$(pwd -W) 
+    msys*)
+        ROOT=$(pwd -W)
         ROOT="${ROOT:0:2}/${ROOT:2}"
         ;;
-    cygwin*) 
-        ROOT=$(pwd -W) 
-        ROOT="${ROOT:0:2}/${ROOT:2}"
+    cygwin*)
+        # Cygwin's `pwd` builtin has no -W flag, so use cygpath instead.
+        # The short (8.3) form avoids spaces in the path so the unquoted
+        # commands below don't break when the path contains spaces.
+        ROOT=$(cygpath -m -s "$(pwd)")
         ;;
     *)        echo "Should never see this!!" ;;
 esac
@@ -45,7 +47,15 @@ echo "Removing old source (if none exists, you'll see an error 'Unable to find a
 dotnet nuget remove source $FEED_NAME || true
 
 echo "Adding new source!"
-dotnet nuget add source $SOURCE_FOLDER --name $FEED_NAME
+# On Windows, `dotnet nuget add source` rejects forward-slash paths
+# ("origem especificada é inválida"), so convert to a native backslash path.
+# cygpath exists on Cygwin/MSYS (Git Bash); elsewhere use the path as-is.
+if command -v cygpath &> /dev/null; then
+    NUGET_SOURCE_PATH=$(cygpath -w "$SOURCE_FOLDER")
+else
+    NUGET_SOURCE_PATH=$SOURCE_FOLDER
+fi
+dotnet nuget add source "$NUGET_SOURCE_PATH" --name $FEED_NAME
 
 # reset the build number back to zero.
 echo "Creating build number file"

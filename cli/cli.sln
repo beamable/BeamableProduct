@@ -26,12 +26,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicroserviceSourceGen.Tests
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.templates", "beamable.templates\beamable.templates.csproj", "{EFED661A-4C6F-4410-902E-3533BB49F9B4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeamService", "beamable.templates\templates\BeamService\BeamService.csproj", "{EF261D57-B886-47CD-80E0-5AB36C5AC531}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeamStorage", "beamable.templates\templates\BeamStorage\BeamStorage.csproj", "{C07C1A4B-0E5F-4CA8-8189-1892FACB8DB1}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonLibrary", "beamable.templates\templates\CommonLibrary\CommonLibrary.csproj", "{926D9559-C9B5-4CE9-BCEF-DB59E87ABC7E}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.otel.exporter", "beamable.otel.exporter\beamable.otel.exporter.csproj", "{658250C8-C929-428B-8425-EC5D1100B7D1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.microservice.otel.exporter", "beamable.microservice.otel.exporter\beamable.microservice.otel.exporter.csproj", "{79B6E45A-7747-4894-93F5-F70836293D83}"

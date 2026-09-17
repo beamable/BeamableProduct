@@ -32,6 +32,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private Vector2 _horizontalScrollPosition;
 		private int _lastManifestChangedCount;
 		private int _lastProgressUpdateVersion;
+		private int _lastContentHistoryVersion;
 		private EditorGUISplitView _mainSplitter;
 		private bool _importingDefaultContent;
 
@@ -94,16 +95,27 @@ namespace Beamable.Editor.UI.ContentWindow
 		public override void OnEnable()
 		{
 			base.OnEnable();
+			wantsMouseMove = true;
+			wantsMouseEnterLeaveWindow = true;
+			EnsureHistoryCopyManifestContent();
 			EditorApplication.update += OnEditorUpdate;
 		}
 
 		private void OnDisable()
 		{
+			ResetButtonTooltip();
 			EditorApplication.update -= OnEditorUpdate;
+			ResetHistorySelection();
+			_contentService?.StopContentHistory();
 		}
 
 		private void OnEditorUpdate()
 		{
+			if (_buttonTooltipCandidate != null && _buttonTooltipText != null && !_buttonTooltipVisible &&
+			    EditorApplication.timeSinceStartup >= _buttonTooltipShowAt)
+			{
+				Repaint();
+			}
 			// We can use this to force Unity to repaint the window even if it isn't focused, making the Content Window more smoother when renaming and changing contents in the Inspector
 			if (_contentService != null && _contentService.ManifestChangedCount != _lastManifestChangedCount)
 			{
@@ -117,6 +129,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				_lastProgressUpdateVersion = _contentService.ProgressUpdateVersion;
 				Repaint();
 			}
+
+			if (_contentService != null && _contentService.ContentHistoryVersion != _lastContentHistoryVersion)
+			{
+				_lastContentHistoryVersion = _contentService.ContentHistoryVersion;
+				Repaint();
+			}
 		}
 
 		private void ReloadData()
@@ -125,7 +143,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			_allTags = _contentService.TagsCache;
 			SetEditorSelection();
 			
-			if(!_contentService.HasChangedContents && _windowStatus != ContentWindowStatus.SnapshotManager)
+			if(!_contentService.HasChangedContents && _windowStatus != ContentWindowStatus.SnapshotManager && _windowStatus != ContentWindowStatus.History)
 			{
 				ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 			}
@@ -151,6 +169,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		protected override void DrawGUI()
 		{
+			BeginButtonTooltipFrame();
 			BuildHeaderStyles();
 			
 			BuildMigrationStyles();
@@ -184,6 +203,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				ReloadData();
 			}
 			
+			HandleContentSearchInput();
 			DrawHeader();
 			GUILayout.Space(1);
 			switch (_windowStatus)
@@ -203,8 +223,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				case ContentWindowStatus.SnapshotManager:
 					DrawSnapshotManager();
 					break;
+				case ContentWindowStatus.History:
+					DrawContentHistory();
+					break;
 			}
 			
+			DrawButtonTooltip();
 			RunDelayedActions();
 		}
 
@@ -267,7 +291,6 @@ namespace Beamable.Editor.UI.ContentWindow
 			var bottomRect = EditorGUILayout.GetControlRect( GUILayout.Height(30f));
 			
 			var bottomRectController = new EditorGUIRectController(bottomRect);
-
 			var allRenames = _contentService.GetAllRenames();
 			var renamedCreatedIds = new HashSet<string>(allRenames.Select(r => r.CreatedFullId));
 			var renamedDeletedIds = new HashSet<string>(allRenames.Select(r => r.DeletedFullId));
@@ -293,10 +316,18 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (deletedContents.Count > 0)
 			{
 				DrawFooterButton($"{deletedContents.Count}  deleted", BeamGUI.iconStatusDeleted, ContentFilterStatus.Deleted);
+				bottomRectController.ReserveWidth(BASE_PADDING);
 			}
-			
 
-			void DrawFooterButton(string buttonText, Texture buttonIcon, ContentFilterStatus statusEnum)
+			int issueCount = _contentService.EntriesCache.Values.Count(HasContentIssue);
+			if (issueCount > 0)
+			{
+				DrawFooterButton(issueCount == 1 ? "1 issue" : $"{issueCount} issues",
+					BeamGUI.iconStatusInvalid, ContentFilterStatus.Issues,
+					"Items with validation errors or conflicts. Click to review all.");
+			}
+
+			void DrawFooterButton(string buttonText, Texture buttonIcon, ContentFilterStatus statusEnum, string tooltip = null)
 			{
 				float lineSize = EditorGUIUtility.singleLineHeight;
 				GUIStyle buttonStyle = new GUIStyle(EditorStyles.label)
@@ -310,16 +341,38 @@ namespace Beamable.Editor.UI.ContentWindow
 				var btnSize = buttonStyle.CalcSize(btnContent);
 				Rect footerAreaRect = bottomRectController.ReserveWidth(btnSize.x + lineSize + BASE_PADDING * 3);
 				var buttonRect = new Rect(footerAreaRect.x,  footerAreaRect.center.y - lineSize/2f, footerAreaRect.width, btnSize.y);
+				bool isSelected = _activeFilters.TryGetValue(ContentSearchFilterType.Status, out var activeStatuses) &&
+				                  activeStatuses.Contains(StatusMapToString[statusEnum]);
+				if (isSelected && Event.current.type == EventType.Repaint)
+				{
+					var highlightRect = new Rect(buttonRect.x, buttonRect.y - 3f, buttonRect.width, buttonRect.height + 6f);
+					GUI.DrawTexture(highlightRect, _rowSelectedItemStyle.normal.background);
+				}
 				
 				var iconRect = new Rect(buttonRect.xMin + BASE_PADDING + lineSize/2f, buttonRect.center.y - lineSize/2f, lineSize, lineSize);
 				GUI.DrawTexture(iconRect, buttonIcon, ScaleMode.ScaleToFit, true);
 				EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
-				if (GUI.Button(buttonRect, btnContent, buttonStyle))
+				RegisterButtonTooltip(buttonRect, tooltip, above: true);
+
+				if (!GUI.Button(buttonRect, btnContent, buttonStyle))
+				{
+					return;
+				}
+
+				// Issues opens the content list with all previous filters and search text cleared.
+				// Other statuses replace the active filters while preserving the name search.
+				if (statusEnum == ContentFilterStatus.Issues)
+				{
+					ShowContentIssues();
+				}
+				else
 				{
 					_activeFilters.Clear();
-					HashSet<string> statusFilter = GetFilterTypeActiveItems(ContentSearchFilterType.Status);
-					string item = StatusMapToString[statusEnum];
-					statusFilter.Add(item);
+
+					GetFilterTypeActiveItems(ContentSearchFilterType.Status)
+						.Add(StatusMapToString[statusEnum]);
+
+					ClearCaches();
 					UpdateActiveFilterSearchText();
 				}
 			}
@@ -482,8 +535,9 @@ namespace Beamable.Editor.UI.ContentWindow
 		Publish,
 		Building,
 		Revert,
-		Validate,
-		SnapshotManager,
-	}
+			Validate,
+			SnapshotManager,
+			History,
+		}
 	
 }

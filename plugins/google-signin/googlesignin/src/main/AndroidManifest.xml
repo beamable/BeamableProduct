@@ -1,8 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.beamable.googlesignin">
+<!-- The package name lives in googlesignin/build.gradle as `namespace`. The `package` attribute
+     that used to be here is deprecated from AGP 7.3 onwards and removed in AGP 8.
+     No permissions are declared: play-services-auth contributes what it needs through manifest
+     merging, and the consuming app's minSdk/targetSdk govern. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application>
-        <activity android:name=".GoogleSignInActivity" />
+        <!-- configChanges is load-bearing, not a performance tweak. This Activity has no layout and
+             no resources to reload, so it has nothing to gain from being recreated - but it does
+             have plenty to lose. Recreation mid-flight runs onCreate again, which fires a second
+             pre-login signOut() underneath the account chooser already on screen and then launches
+             a second chooser on top of it; and it forces GoogleSignInActivity#onDestroy to suppress
+             its settlement backstop (see isChangingConfigurations there), because the request is
+             still live on the new instance. Handling these configurations here means the common
+             case - a rotation, or the player toggling dark mode while the chooser is up - never
+             reaches either path. The Activity keeps the isChangingConfigurations guard anyway, for
+             the configurations not listed. -->
+        <activity
+            android:name=".GoogleSignInActivity"
+            android:configChanges="density|fontScale|keyboard|keyboardHidden|layoutDirection|locale|navigation|orientation|screenLayout|screenSize|smallestScreenSize|touchscreen|uiMode" />
     </application>
 </manifest>

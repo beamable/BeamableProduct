@@ -211,6 +211,9 @@ public class MicroserviceAuthenticationDaemon
 	
 	async Task<MicroserviceAuthResponse> AuthWithRefreshToken()
 	{
+		// TODO(zones): a zone-scoped service is scoped by cid.zid, not cid.pid. When the service is
+		// BeamServiceScope.Zone, this should be `_env.CustomerID + "." + _env.Zid`. Left as cid.pid for now;
+		// requires the backend to accept a zone:cid authenticated session first.
 		var tempRequester = new MicroserviceHttpRequester(_env, new HttpClient())
 		{
 			ScopeHeader = _env.CustomerID + "." + _env.ProjectName
@@ -218,7 +221,7 @@ public class MicroserviceAuthenticationDaemon
 		var authApi = new AuthApi(tempRequester);
 		var  res = await authApi.PostToken(new TokenRequestWrapper
 		{
-			grant_type = "refresh_token", 
+			grant_type = "refresh_token",
 			refresh_token = _env.RefreshToken
 		});
 		var accessToken = res.access_token.GetOrThrow();
@@ -226,6 +229,8 @@ public class MicroserviceAuthenticationDaemon
 		var req = new MicroserviceAuthRequestWithToken
 		{
 			cid = _env.CustomerID,
+			// TODO(zones): for a zone service, send `zid = _env.Zid` (and omit pid) so the platform
+			// authenticates a zone:cid session. Kept as pid for now (backend zone auth not yet available).
 			pid = _env.ProjectName,
 			token = accessToken,
 			codecs = SocketCompression.SupportedCodecs
@@ -249,6 +254,8 @@ public class MicroserviceAuthenticationDaemon
 		var req = new MicroserviceAuthRequest
 		{
 			cid = _env.CustomerID,
+			// TODO(zones): for a zone service, send `zid = _env.Zid` (and omit pid) to authenticate a
+			// zone:cid session. Kept as pid for now (backend zone auth not yet available).
 			pid = _env.ProjectName,
 			signature = sig,
 			codecs = SocketCompression.SupportedCodecs

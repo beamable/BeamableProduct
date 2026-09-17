@@ -30,6 +30,9 @@ public class InstallAISkillsCommand
 	, IStandaloneCommand
 	, ISkipManifest
 {
+	// Hidden while the Beamable MCP / AI integration is internal-only (see feature/beam-mcp-public).
+	public override bool IsForInternalUse => true;
+
 	private static readonly (string flag, string dirName, string skillsSubPath, string skillFileName)[] KnownAgents =
 	{
 		("claude", ".claude", Path.Combine(".claude", "skills"), "Skill.md"),
@@ -116,9 +119,9 @@ public class InstallAISkillsCommand
 				var fallbackDir = Path.Combine(configDir, ConfigService.LOCAL_FOLDER_NAME, "skills");
 				targets.Add((fallbackDir, "SKILL.md"));
 				fallbackMessage =
-					$"Could not detect an AI agent directory (.claude/, .cursor/, .windsurf/, .opencode/). " +
-					$"Skills were installed to the fallback location: {fallbackDir}. " +
-					$"To install for a specific agent, use --claude, --cursor, --windsurf, or --opencode.";
+					$"Could not detect an AI agent directory (.claude/, .cursor/, .windsurf/, .opencode/)." +
+					$" Skills were installed to the fallback location: {fallbackDir}." +
+					$" To install for a specific agent, use --claude, --cursor, --windsurf, or --opencode.";
 			}
 		}
 

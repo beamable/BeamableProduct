@@ -16,6 +16,8 @@ namespace Beamable.Server.Api.RealmConfig
 	/// ![img beamable-logo]
 	///
 	/// </summary>
+
+	[RealmScoped]
 	public interface IMicroserviceRealmConfigService
 	{
 		Promise<RealmConfig> GetRealmConfigSettings();

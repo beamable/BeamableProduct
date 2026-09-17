@@ -78,8 +78,8 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 			{
 				case 1:
 					args.ServiceName = new ServiceName(serviceDefinitions[0].BeamoId);
-					Log.Debug($"No service-name passed as argument. " +
-					          $"Running command for {args.ServiceName} since it is the only microservice in BeamoManifest.");
+					Log.Debug($"No service-name passed as argument." +
+					          $" Running command for {args.ServiceName} since it is the only microservice in BeamoManifest.");
 					break;
 				case > 1:
 					if (args.Quiet)

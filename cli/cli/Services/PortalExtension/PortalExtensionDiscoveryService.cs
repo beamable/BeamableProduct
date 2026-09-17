@@ -1,6 +1,7 @@
-using Beamable.Server;
+﻿using Beamable.Server;
 using Beamable.Server.Api.Notifications;
 using cli.Portal;
+using cli.Services.Web;
 using cli.Utils;
 using System.IO.Compression;
 using System.Security.Cryptography;
@@ -16,6 +17,14 @@ public class ExtensionBuildMetaData
 	public string Name;
 	public string ToolkitVersion;
 	public PortalExtensionPackageProperties Properties;
+
+	/// <summary>
+	/// The selector names this extension exposes via <c>&lt;BeamExtensionSite selector="..." /&gt;</c>
+	/// (e.g. <c>top</c>, <c>bottom</c>, <c>B-top</c>), scanned once at build time. Combined with
+	/// <see cref="Properties"/>'s <c>mount.page</c>, this tells the CLI/Portal which selectors live at
+	/// which URL. May be null/empty (or absent entirely in metadata built before this field existed).
+	/// </summary>
+	public List<string> ExtensionSites;
 }
 
 public class PortalExtensionDiscoveryService : Microservice
@@ -30,6 +39,22 @@ public class PortalExtensionDiscoveryService : Microservice
 		ExtensionBuildData buildData = observer.GetAppBuild(currentHash);
 
 		return buildData;
+	}
+}
+
+/// <summary>
+/// Zone (cid.zid) variant of <see cref="PortalExtensionDiscoveryService"/>. Used as the route source when a
+/// portal extension declares <c>beamable.serviceScope: "zone"</c>, so its backing service boots as a
+/// <see cref="ZoneMicroservice"/> (no realm SDK). The route body is identical — it only needs
+/// <see cref="ZoneMicroservice.Provider"/> to reach the neutral <see cref="PortalExtensionObserver"/>.
+/// </summary>
+public class PortalExtensionDiscoveryZoneService : ZoneMicroservice
+{
+	[Callable]
+	public ExtensionBuildData RequestPortalExtensionData(string currentHash = "")
+	{
+		var observer = Provider.GetService<PortalExtensionObserver>();
+		return observer.GetAppBuild(currentHash);
 	}
 }
 
@@ -61,6 +86,10 @@ public class PortalExtensionObserver
 	private PortalExtensionBuildHistory _buildHistory;
 
 	private CancellationTokenSource _cancelToken;
+
+	// The watcher raises OnChanged on thread-pool threads with no serialisation, so two events can
+	// reach BuildExtension at once and collide writing metadata.json. Rebuilds are serialised here.
+	private readonly object _buildLock = new object();
 	private IMicroserviceNotificationsApi _notificationsApi;
 	private IMicroserviceAttributes _attributes;
 	private BeamActivity _rootActivity;
@@ -121,6 +150,14 @@ public class PortalExtensionObserver
 
 	public void BuildExtension()
 	{
+		lock (_buildLock)
+		{
+			BuildExtensionUnsafe();
+		}
+	}
+
+	private void BuildExtensionUnsafe()
+	{
 		using var childActivity = _rootActivity.CreateChild("Build extension");
 
 		if (_buildHistory == null)
@@ -133,10 +170,19 @@ public class PortalExtensionObserver
 
 		if (result.exit != 0)
 		{
+			// Bundlers report the failing import/syntax error on stdout as often as on stderr, so keep
+			// whichever one actually carries the message.
+			var buildError = string.IsNullOrWhiteSpace(result.stderr) ? result.stdout : result.stderr;
+
+			// Without this the reason only ever reaches the portal payload, never the terminal the user is
+			// watching, so a broken extension looks like it silently did nothing.
+			Log.Error("Portal extension [{name}] failed to build. npm exited with {exit}.\n{buildError}",
+				_metaData.Name, result.exit, buildError);
+
 			_buildHistory.Add(new PortalExtensionBuild()
 			{
 				 IsError = true,
-				 ErrorMessage = result.stderr,
+				 ErrorMessage = buildError,
 				 Checksum = Guid.NewGuid().ToString() // Just put a random guid here, this is just so it's not confused with an empty string, that means that no build was found
 			});
 			return;
@@ -173,7 +219,12 @@ public class PortalExtensionObserver
 	{
 		using var childActivity = _rootActivity.CreateChild("Install Dependencies");
 
-		StartProcessResult result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
+		// An extension pinning a local developer build of the toolkit (0.0.123-*) can only resolve it from
+		// the local registry — npmjs has never heard of that version — so the install has to be routed
+		// there. Contributes nothing for a normal, published pin.
+		var installArgs = "install" + WebLocalRegistryService.InstallArgsFor(AppFilesPath);
+
+		StartProcessResult result = StartProcessUtil.Run("npm", installArgs, useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
 		if (result.exit != 0)
 		{
 			throw new CliException($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
@@ -184,25 +235,51 @@ public class PortalExtensionObserver
 		// Don't need to track for Duration for install as Activity already does it
 	}
 
-	private void CreateMetaDataFile()
+	/// <summary>
+	/// Writes <c>assets/metadata.json</c>, creating the assets folder if the build has not produced it yet.
+	/// Public so the folder/stale-directory handling can be covered without shelling out to npm.
+	/// </summary>
+	public void CreateMetaDataFile()
 	{
 		var metadataContent = new ExtensionBuildMetaData
 		{
 			Name = ExtensionMetaData.Name,
 			ToolkitVersion = ExtensionMetaData.GetToolkitVersion(),
-			Properties = ExtensionMetaData.Properties
+			Properties = ExtensionMetaData.Properties,
+			// Scan the source once, at build, so listing/creating extensions later never has to.
+			ExtensionSites = RemotePortalConfigService.ScanExtensionSiteSelectors(ExtensionMetaData.AbsolutePath)
 		};
-
-		string metaDataDir = Path.GetDirectoryName(MetadataPath);
-
-		if (!Directory.Exists(metaDataDir))
-		{
-			Directory.CreateDirectory(MetadataPath);
-		}
 
 		var metadataContentJson = JsonConvert.SerializeObject(metadataContent, Formatting.Indented);
 
-		File.WriteAllText(MetadataPath, metadataContentJson);
+		try
+		{
+			string metaDataDir = Path.GetDirectoryName(MetadataPath);
+
+			// Create the *assets* folder, not the metadata file's own path. Creating MetadataPath here left a
+			// directory named "metadata.json" behind, and every later run then failed the write below with
+			// "Access to the path ... is denied" no matter what the build did.
+			if (!string.IsNullOrEmpty(metaDataDir) && !Directory.Exists(metaDataDir))
+			{
+				Directory.CreateDirectory(metaDataDir);
+			}
+
+			// Self-heal a workspace an earlier CLI already poisoned that way. Nothing else ever puts a
+			// directory at this path, so removing it is safe and saves the user a manual delete.
+			if (Directory.Exists(MetadataPath))
+			{
+				Directory.Delete(MetadataPath, true);
+			}
+
+			File.WriteAllText(MetadataPath, metadataContentJson);
+		}
+		catch (Exception e)
+		{
+			// A raw IO exception here escapes the CliException handler that wraps the extension startup and
+			// takes the whole `beam project run` process down; surface it as a CLI error instead.
+			throw new CliException(
+				$"Failed to write the portal extension metadata file at [{MetadataPath}]. Message = [{e.Message}] StackTrace = [{e.StackTrace}]");
+		}
 	}
 
 	public PortalExtensionBuild CreateAppBuildData()
@@ -438,17 +515,30 @@ public class PortalExtensionObserver
 			return; // this case we ignore because these are the build files
 		}
 
-		// build the app since there are new changes in the src files
-		BuildExtension();
+		// A FileSystemWatcher callback runs on a thread-pool thread, so anything that escapes here takes the
+		// whole `beam project run` process down with it — killing every service and extension in the group,
+		// not just this one. A failed rebuild has to stay a failed rebuild.
+		try
+		{
+			// build the app since there are new changes in the src files
+			BuildExtension();
 
-		//TODO: check this back once event subscriptions change
-		_notificationsApi.NotifyServer(true, "notify-portalextension",
-			new PortalExtensionNotifyPayload()
-			{
-				serviceName = _attributes.MicroserviceName ,
-				extensionName = _metaData.Name,
-				extensionProperties = _metaData.Properties
-			});
+			//TODO: check this back once event subscriptions change
+			// TODO(zones): NotifyServer is realm-scoped (IMicroserviceNotificationsApi). A zone extension has no
+			// realm notification channel, so _notificationsApi is null for zone today — hot-reload push is
+			// skipped. Wire up a zone-appropriate notification once the zone event channel exists.
+			_notificationsApi?.NotifyServer(true, "notify-portalextension",
+				new PortalExtensionNotifyPayload()
+				{
+					serviceName = _attributes.MicroserviceName ,
+					extensionName = _metaData.Name,
+					extensionProperties = _metaData.Properties
+				});
+		}
+		catch (Exception ex)
+		{
+			Log.Error($"Portal extension [{_metaData?.Name}] failed to rebuild after a file change: {ex.Message}");
+		}
 	}
 
 	[Serializable]

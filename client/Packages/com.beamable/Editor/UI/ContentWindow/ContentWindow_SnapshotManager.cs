@@ -598,13 +598,27 @@ namespace Beamable.Editor.UI.ContentWindow
 			_selectedSnapshotsPaths.Clear();
 			_snapshotSearchData = new SearchData();
 			_gatheringSnapshots = true;
-			var snapshotListResult = await _contentService.GetContentSnapshots();
-			_sharedSnapshots = snapshotListResult.SharedSnapshots.ToDictionary(item => item.Name, item => item);
-			_localSnapshots = snapshotListResult.LocalSnapshots.ToDictionary(item => item.Name, item => item);
-			_allSnapshots.Clear();
-			_localSnapshots.Values.ToList().ForEach(snapshot => _allSnapshots.Add(snapshot.Path, snapshot));
-			_sharedSnapshots.Values.ToList().ForEach(snapshot => _allSnapshots.Add(snapshot.Path, snapshot));
-			_gatheringSnapshots = false;
+			try
+			{
+				var snapshotListResult = await _contentService.GetContentSnapshots();
+				_sharedSnapshots = BuildSnapshotLookup(snapshotListResult.SharedSnapshots);
+				_localSnapshots = BuildSnapshotLookup(snapshotListResult.LocalSnapshots);
+				_allSnapshots.Clear();
+				_localSnapshots.Values.ToList().ForEach(snapshot => _allSnapshots.Add(snapshot.Path, snapshot));
+				_sharedSnapshots.Values.ToList().ForEach(snapshot => _allSnapshots.Add(snapshot.Path, snapshot));
+			}
+			finally
+			{
+				// Always clear the flag, otherwise the window is stuck on "Loading snapshots".
+				_gatheringSnapshots = false;
+			}
+		}
+
+		// Snapshots in different realm folders can share a file name (auto snapshots are
+		// always named "LastPublished-<manifestId>"), so the lookup must key by path.
+		public static Dictionary<string, BeamManifestSnapshotItem> BuildSnapshotLookup(IEnumerable<BeamManifestSnapshotItem> snapshots)
+		{
+			return snapshots.ToDictionary(item => item.Path, item => item);
 		}
 		
 	}

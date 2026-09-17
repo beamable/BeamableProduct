@@ -8,11 +8,10 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>Only clear logs older than a given value. This string should be in a duration format.
         ///
-        /// The duration format should be a number, followed by a time unit. Valid time units include seconds (s), minutes (m), hours (h), days (d), and months(mo). Please note that the month unit is short-hand for 30 days. Here are a few examples, 
+        ///The duration format should be a number, followed by a time unit. Valid time units include seconds (s), minutes (m), hours (h), days (d), and months(mo). Please note that the month unit is short-hand for 30 days. Here are a few examples,
         ///	--older-than 30m (30 minutes)
-        ///  --older-than 18mo (18 months)
-        ///  --older-than 12d (12 days)
-        ///</summary>
+        ///	--older-than 18mo (18 months)
+        ///	--older-than 12d (12 days)</summary>
         public string olderThan;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()

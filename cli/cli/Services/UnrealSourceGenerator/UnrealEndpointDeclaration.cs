@@ -283,8 +283,8 @@ public struct UnrealEndpointDeclaration
 		if (routeParameterDeclaration.PropertyUnrealType.IsUnrealEnum())
 		{
 			return
-				$"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), " +
-				$"*UBeamJsonUtils::EnumToSerializationName({routeParameterDeclaration.PropertyName}));";
+				$"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\")," +
+				$" *UBeamJsonUtils::EnumToSerializationName({routeParameterDeclaration.PropertyName}));";
 		}
 		
 		else if (routeParameterDeclaration.PropertyUnrealType.IsAnySemanticType())

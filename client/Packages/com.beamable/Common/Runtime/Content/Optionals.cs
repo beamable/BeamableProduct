@@ -374,6 +374,22 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
+	public class OptionalArrayOfArrayOfString : OptionalArray<string[]>
+	{
+		public OptionalArrayOfArrayOfString()
+		{
+
+		}
+
+		public OptionalArrayOfArrayOfString(IEnumerable<string[]> data)
+		{
+			Value = data.ToArray();
+			HasValue = true;
+		}
+	}
+
+	[System.Serializable]
+	[Agnostic]
 	public class OptionalArrayOfFloat : OptionalArray<float> { }
 
 	[System.Serializable]

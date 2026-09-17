@@ -298,14 +298,6 @@ public static class ProjectContextUtil
 		
 		foreach (var definition in definitions)
 		{
-			//TODO: need to implement this for portal extensions
-			{
-				if (definition.Protocol == BeamoProtocolType.PortalExtension)
-				{
-					continue;
-				}
-			}
-			
 			// add all the groups for this definition
 			foreach (var group in definition.ServiceGroupTags)
 			{
@@ -522,6 +514,7 @@ public static class ProjectContextUtil
 				BeamId = buildProject.GetPropertyValue(CliConstants.PROP_BEAMO_ID),
 				Enabled = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_ENABLED),
 				ProjectType = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_PROJECT_TYPE),
+				ServiceScope = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_SERVICE_SCOPE),
 				ServiceGroupString = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_SERVICE_GROUP),
 				StorageDataVolumeName = NullifyIfEmpty(buildProject.GetPropertyValue(CliConstants.PROP_BEAM_STORAGE_DATA_VOLUME_NAME)),
 				StorageFilesVolumeName = NullifyIfEmpty(buildProject.GetPropertyValue(CliConstants.PROP_BEAM_STORAGE_FILES_VOLUME_NAME)),
@@ -800,11 +793,12 @@ public static class ProjectContextUtil
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
 
 		definition.ServiceGroupTags = ExtractServiceGroupTags(project);
-		
+		definition.ServiceScope = project.properties.ServiceScope;
+
 
 		return definition;
 	}
-	
+
 	public static BeamoServiceDefinition ConvertProjectToStorageDefinition(CsharpProjectMetadata project)
 	{
 		if (project.properties.ProjectType != "storage")
@@ -836,6 +830,10 @@ public static class ProjectContextUtil
 		definition.Protocol = BeamoProtocolType.EmbeddedMongoDb;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
 		definition.ServiceGroupTags = ExtractServiceGroupTags(project);
+		// Carry the storage's scope (csproj <BeamServiceScope>) onto the definition so IsZoneScoped is correct
+		// for storages too — used by `project ps` (scope column) and the deploy `--scope` filter, which routes
+		// a zone storage into the zone manifest and a realm storage into the realm manifest.
+		definition.ServiceScope = project.properties.ServiceScope;
 
 		return definition;
 	}
@@ -849,6 +847,10 @@ public static class ProjectContextUtil
 		definition.ProjectPath = def.AbsolutePackageJsonPath;
 		definition.AbsoluteProjectPath = def.AbsolutePath;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.TypescriptReact;
+		definition.ServiceGroupTags = def.Properties?.ServiceGroups?.ToArray() ?? Array.Empty<string>();
+		// Carry the extension's scope (package.json `beamable.serviceScope`) onto the service definition so
+		// IsZoneScoped is correct for portal extensions — used by `project ps` and the deploy `--scope` filter.
+		definition.ServiceScope = def.Properties?.ServiceScope;
 
 		return definition;
 	}
@@ -864,6 +866,9 @@ public static class ProjectContextUtil
 
 		[JsonProperty(CliConstants.PROP_BEAM_PROJECT_TYPE)]
 		public string ProjectType;
+
+		[JsonProperty(CliConstants.PROP_BEAM_SERVICE_SCOPE)]
+		public string ServiceScope;
 
 		[JsonProperty(CliConstants.PROP_BEAM_SERVICE_GROUP)]
 		public string ServiceGroupString;

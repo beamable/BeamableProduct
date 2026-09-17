@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Beamable.Common.Dependencies;
 using Beamable.Server;
 using microservice.Common;
@@ -13,14 +14,32 @@ public static class RouteSourceUtil
 	public static ServiceMethodInstanceData ActivateInstance(Type type, IMicroserviceArgs args, MicroserviceRequestContext context)
 	{
 		IDependencyProviderScope instanceScope = null;
+		var isZone = args.ServiceScope.GetService<IMicroserviceAttributes>()?.GetServiceScope() ==
+		             BeamServiceScope.Zone;
 		instanceScope = args.ServiceScope.Fork(builder =>
 		{
-			// each _request_ gets its own service scope, so we fork the provider again and override certain services. 
+			// each _request_ gets its own service scope, so we fork the provider again and override certain services.
 			builder.AddScoped(context);
 			builder.AddScoped<RequestContext>(context);
 			builder.AddScoped(args);
 
 			builder.AddScoped<IUserScope>(p => new UserRequestDataHandler((IDependencyProviderScope)p));
+
+			if (isZone)
+			{
+				// Zone services have no realm/player; hand them a zone request context (cid + zid) instead of
+				// the realm one. TODO(zones): build this lazily from the JsonElement like
+				// MicroserviceRequestContext, rather than eagerly reading Body/Headers here.
+				var zoned = new ZonedRequestContext(args.CustomerID, args.Zid, context.Id, context.Status,
+					context.Path, context.Method, context.Body, new HashSet<string>(context.Scopes),
+					context.Headers);
+				builder.AddScoped(zoned);
+				builder.AddScoped<IRequestContext>(zoned);
+			}
+			else
+			{
+				builder.AddScoped<IRequestContext>(context);
+			}
 		});
 		
 		// construct the instance from the new scope,

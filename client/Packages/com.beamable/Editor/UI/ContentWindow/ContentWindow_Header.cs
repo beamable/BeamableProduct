@@ -7,18 +7,23 @@ using Beamable.Editor.ContentService;
 using Beamable.Editor.Util;
 using Beamable.Editor.UI2.Utils;
 using System.Collections.Generic;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Util;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Beamable.Editor.UI.ContentWindow
 {
 	public partial class ContentWindow
 	{
 		private const int HEADER_BUTTON_WIDTH = 50;
+		private const string CONTENT_SEARCH_CONTROL = "BeamContentSearch";
+		private Rect _contentSearchScreenRect;
+		private bool _focusContentSearch;
 		private const string REVERT_ALL_MENU_ITEM = "Revert All Local Changes (Modified, Created, Deleted, and Conflicted)";
 		private const string REVERT_MODIFIED_MENU_ITEM = "Revert Modified Local Changes";
 		private const string REVERT_CONFLICTED_MENU_ITEM = "Revert Conflicted Changes Only";
@@ -33,6 +38,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private ContentSortOptionType _currentSortOption;
 		private GUIStyle _lowBarTextStyle;
 		private GUIStyle _lowBarDropdownStyle;
+		private GUIStyle _clearFiltersButtonStyle;
 		
 		private List<string> _oldItemsSelected;
 		
@@ -52,7 +58,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			{ContentFilterStatus.Deleted, "deleted"},
 			{ContentFilterStatus.Modified, "modified"},
 			{ContentFilterStatus.UpToDate, "upToDate"},
-			{ContentFilterStatus.Conflicted, "conflicted"}
+			{ContentFilterStatus.Conflicted, "conflicted"},
+			{ContentFilterStatus.Issues, "issues"}
 		};
 
 		private static readonly Dictionary<string, ContentStatus> FilterStatusToContentStatus = new()
@@ -90,6 +97,13 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void BuildHeaderStyles()
 		{
 			_lowBarTextStyle = new GUIStyle(EditorStyles.boldLabel) {alignment = TextAnchor.MiddleLeft};
+			_clearFiltersButtonStyle = new GUIStyle(EditorStyles.miniButton)
+			{
+				fixedHeight = EditorGUIUtility.singleLineHeight + 6f,
+				alignment = TextAnchor.MiddleCenter,
+				margin = new RectOffset(EditorStyles.miniButton.margin.left, EditorStyles.miniButton.margin.right, 0, 0),
+				padding = new RectOffset(EditorStyles.miniButton.padding.left, EditorStyles.miniButton.padding.right, 3, 3)
+			};
 
 			if (_lowBarDropdownStyle == null || _lowBarDropdownStyle.normal.background == null)
 			{
@@ -110,7 +124,11 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					
 					Application.OpenURL(DocsPageHelper.GetUnityDocsPageUrl("unity/user-reference/beamable-services/profile-storage/content/content-unity/", EditorConstants.UNITY_CURRENT_DOCS_VERSION));
-				}, () => _ = _contentService.Reload());
+				}, () => _ = _contentService.Reload(), (refreshRect, helpRect) =>
+				{
+					RegisterButtonTooltip(refreshRect, "Refresh content status");
+					RegisterButtonTooltip(helpRect, "Open content documentation");
+				});
 			});
 			
 		}
@@ -129,50 +147,30 @@ namespace Beamable.Editor.UI.ContentWindow
 				var hasContentToPublish = _contentService.HasChangedContents;
 				var hasConflictedOrInvalid = _contentService.HasConflictedContent || _contentService.HasInvalidContent;
 
-				string publishTooltip = "Publish Content to Current Realm";
-				string syncTooltip = "Sync contents with Current Realm";
 				string validateTooltip = "Validate Local Changes";
-				if (hasConflictedOrInvalid)
+				string syncTooltip = "Sync contents with Current Realm";
+
+				if (!hasContentToPublish && !hasConflictedOrInvalid)
 				{
-					publishTooltip = "There is Conflicted or Invalid Content, unable to Publish.";
-				}
-				else if (!hasContentToPublish)
-				{
-					publishTooltip = "There is not any modified items to publish. You are up-to-date.";
-					syncTooltip = "There is not any modified items to sync. You are up-to-date.";
+					syncTooltip = "There are no local changes or issues to sync.";
 				}
 
 				if (_windowStatus != ContentWindowStatus.Validate)
 				{
 					
-					if (BeamGUI.HeaderButton("Validate", BeamGUI.iconCheck,
-					                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
-					                                                    tooltip: validateTooltip))
+					if (DrawHeaderButtonWithTooltip("Validate", BeamGUI.iconCheck, validateTooltip))
 					{
 						ChangeToValidateMode();
 					}
 				}
 
 				if (BeamGUI.ShowDisabled(hasContentToPublish || hasConflictedOrInvalid,
-				                         () => BeamGUI.HeaderButton("Sync", BeamGUI.iconSync,
-				                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
-				                                                    tooltip: syncTooltip)))
+				                         () => DrawHeaderButtonWithTooltip("Sync", BeamGUI.iconSync, syncTooltip)))
 				{
 					ShowSyncMenu();
 				}
 
-				var hasPrivs = _cli.Permissions.CanPushContent;
-				if (!hasPrivs)
-				{
-					publishTooltip = $"{_cli?.latestUser?.email ?? "this user"} does not have sufficient permission to publish content on this realm.";
-				}
-				if (BeamGUI.ShowDisabled(hasPrivs && hasContentToPublish && !hasConflictedOrInvalid,
-				                         () => BeamGUI.HeaderButton("Publish", BeamGUI.iconPublish,
-				                                                    width: HEADER_BUTTON_WIDTH, iconPadding: 2,
-				                                                    tooltip: publishTooltip)))
-				{
-					ChangeToPublishMode();
-				}
+				DrawPublishHeaderButton(hasContentToPublish, hasConflictedOrInvalid);
 
 				if (BeamGUI.HeaderButton("Snapshot", BeamGUI.iconContentSnapshotWhite, width: HEADER_BUTTON_WIDTH, iconPadding: 2,
 				                         tooltip: "Manages content snapshots"))
@@ -180,15 +178,176 @@ namespace Beamable.Editor.UI.ContentWindow
 					ChangeToSnapshotManager();
 				}
 
+				if (BeamGUI.HeaderButton("History", BeamGUI.iconRefresh, width: HEADER_BUTTON_WIDTH, iconPadding: 2,
+				                         tooltip: "View published content history"))
+				{
+					ChangeToHistory();
+				}
+
 				if (_windowStatus != ContentWindowStatus.Validate)
 				{
 					EditorGUILayout.Space(5, false);
-					this.DrawSearchBar(_contentSearchData, true);
+					// Target 480px (50% wider than the previous ~320px field), shrinking on narrow windows.
+					float reservedToolbarWidth = 5 * HEADER_BUTTON_WIDTH + 3 * 30 + 60 + 40 +
+					                             _clearFiltersButtonStyle.CalcSize(new GUIContent("Clear all filters")).x;
+					float searchWidth = Mathf.Clamp(position.width - reservedToolbarWidth, 30f, 480f);
+					GUILayout.BeginVertical(GUILayout.Width(searchWidth));
+					this.DrawSearchBar(_contentSearchData, true, CONTENT_SEARCH_CONTROL, OnContentSearchFieldDrawn);
+					GUILayout.EndVertical();
 					DrawFilterButton(ContentSearchFilterType.Tag, BeamGUI.iconTag, _allTags);
 					DrawFilterButton(ContentSearchFilterType.Type, BeamGUI.iconType, _allTypes);
 					DrawFilterButton(ContentSearchFilterType.Status, BeamGUI.iconStatus, AllStatus);
+					GUILayout.BeginVertical(GUILayout.ExpandWidth(false));
+					GUILayout.FlexibleSpace();
+					using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(_contentSearchData.searchText) &&
+					                                  !_activeFilters.Values.Any(values => values.Count > 0)))
+					{
+						if (GUILayout.Button("Clear all filters", _clearFiltersButtonStyle,
+							GUILayout.ExpandWidth(false)))
+							ClearAllContentFilters();
+					}
+					RegisterButtonTooltip(GUILayoutUtility.GetLastRect(), "Clear the name search and all type, tag, and status filters.");
+					GUILayout.FlexibleSpace();
+					GUILayout.EndVertical();
 				}
 			}
+		}
+		private void HandleContentSearchInput()
+		{
+			var evt = Event.current;
+			bool searchFocused = GUI.GetNameOfFocusedControl() == CONTENT_SEARCH_CONTROL;
+			if (_windowStatus != ContentWindowStatus.Normal || NeedsMigration)
+			{
+				_focusContentSearch = false;
+				if (searchFocused) UnfocusContentSearch();
+				return;
+			}
+
+			// Run before toolbar buttons or list rows can consume the click.
+			if (searchFocused && evt.type == EventType.MouseDown &&
+			    !_contentSearchScreenRect.Contains(GUIUtility.GUIToScreenPoint(evt.mousePosition)))
+			{
+				UnfocusContentSearch();
+				// Leave the click available to the control under the pointer.
+			}
+
+			if (focusedWindow != this || evt.type != EventType.KeyDown) return;
+			if (searchFocused && evt.keyCode == KeyCode.Escape)
+			{
+				UnfocusContentSearch();
+				evt.Use();
+			}
+			else if (!searchFocused && !EditorGUIUtility.editingTextField && GUIUtility.hotControl == 0 &&
+			         !evt.control && !evt.command && !evt.alt && !evt.shift &&
+			         (evt.character == '/' || evt.keyCode == KeyCode.Slash) && _contentSearchScreenRect.width > 30f)
+			{
+				_focusContentSearch = true;
+				evt.Use();
+				Repaint();
+			}
+		}
+
+		private void OnContentSearchFieldDrawn(Rect rect)
+		{
+			if (Event.current.type == EventType.Repaint)
+				_contentSearchScreenRect = GUIUtility.GUIToScreenRect(rect);
+
+			// Used and Layout events return placeholder rectangles. Wait until the field
+			// has been drawn with its real bounds before applying the queued shortcut.
+			if (_focusContentSearch && Event.current.type == EventType.Repaint)
+			{
+				_focusContentSearch = false;
+				if (rect.width > 30f && GUI.enabled && focusedWindow == this)
+					EditorGUI.FocusTextInControl(CONTENT_SEARCH_CONTROL);
+				Repaint();
+			}
+		}
+
+		private void UnfocusContentSearch()
+		{
+			GUI.FocusControl(null);
+			EditorGUIUtility.editingTextField = false;
+			_focusContentSearch = false;
+			Repaint();
+		}
+
+		/// <summary>
+		/// Draws Publish with an Issues badge when content problems block publishing.
+		/// Clicking explains blocking issues in a popup or opens the publish panel, depending on eligibility.
+		/// </summary>
+		private void DrawPublishHeaderButton(bool hasContentToPublish, bool hasConflictedOrInvalid)
+		{
+			bool hasPublishPermission = _cli.Permissions.CanPushContent;
+			bool canReviewIssues = hasConflictedOrInvalid;
+			bool canPublish = hasPublishPermission && hasContentToPublish && !canReviewIssues;
+
+			string tooltip;
+
+			if (canReviewIssues)
+			{
+				int issueCount = _contentService.EntriesCache.Values
+				                                .Count(HasContentIssue);
+
+				string summary = issueCount > 0
+					? $"{issueCount} {(issueCount == 1 ? "item needs" : "items need")} attention."
+					: "Content has validation errors or conflicts.";
+
+				tooltip = $"Publishing blocked: {summary}\n" + "Click to review validation errors and conflicts.";
+
+				if (!hasPublishPermission)
+				{
+					tooltip += "\nYou also do not have permission to publish to this realm.";
+				}
+			}
+			else if (!hasPublishPermission)
+			{
+				tooltip = "You do not have permission to publish to this realm.";
+			}
+			else if (!hasContentToPublish)
+			{
+				tooltip = "No local changes to publish.";
+			}
+			else
+			{
+				tooltip = "Publish content to the current realm.";
+			}
+
+			Rect publishButtonRect = default;
+			bool clicked = BeamGUI.ShowDisabled(canPublish || canReviewIssues,
+			                                    () => DrawHeaderButtonWithTooltip("Publish",
+				                                    BeamGUI.iconPublish,
+				                                    tooltip,
+				                                    out publishButtonRect,
+				                                    badge: canReviewIssues ? BeamGUI.iconStatusInvalid : null));
+
+			if (!clicked) return;
+
+			if (canReviewIssues) ShowPublishIssuesPopup(publishButtonRect);
+			else if (canPublish) ChangeToPublishMode();
+		}
+
+		/// <summary>
+		/// Opens the content list filtered to items with validation errors or conflicts.
+		/// Clears existing filters, search text, cached results, and the active tooltip.
+		/// Defers the changes until the current UI draw completes.
+		/// </summary>
+		private void ShowContentIssues()
+		{
+			AddDelayedAction(() =>
+			{
+				ChangeWindowStatus(ContentWindowStatus.Normal);
+
+				_activeFilters.Clear();
+				_contentSearchData.searchText = string.Empty;
+				GUI.FocusControl(null);
+
+				GetFilterTypeActiveItems(ContentSearchFilterType.Status)
+					.Add(StatusMapToString[ContentFilterStatus.Issues]);
+
+				ClearCaches();
+				UpdateActiveFilterSearchText();
+				ResetButtonTooltip();
+			});
 		}
 
 		private void ChangeToPublishMode()
@@ -225,12 +384,31 @@ namespace Beamable.Editor.UI.ContentWindow
 			});
 		}
 
+		private void ChangeToHistory()
+		{
+			AddDelayedAction(() => ChangeWindowStatus(ContentWindowStatus.History));
+		}
+
 		private void ChangeWindowStatus(ContentWindowStatus windowStatus, bool shouldRepaint = true)
 		{
 			if(_windowStatus == windowStatus)
 				return;
 			
+			var previousWindowStatus = _windowStatus;
 			_windowStatus = windowStatus;
+			if (previousWindowStatus == ContentWindowStatus.History && _windowStatus != ContentWindowStatus.History)
+			{
+				ResetHistorySelection();
+			}
+			if (_windowStatus == ContentWindowStatus.History)
+			{
+				ResetHistorySelection();
+				_contentService?.StartContentHistory();
+			}
+			else
+			{
+				_contentService?.StopContentHistory();
+			}
 			if (_windowStatus is ContentWindowStatus.Normal)
 			{
 				var selection = new List<Object> { };
@@ -481,6 +659,14 @@ namespace Beamable.Editor.UI.ContentWindow
 			                                      drawBorder: true,
 			                                      backgroundColor: backgroundColor);
 			Rect buttonRect = GUILayoutUtility.GetLastRect();
+			string tooltip = searchFilterType switch
+			{
+				ContentSearchFilterType.Tag => "Filter by tag",
+				ContentSearchFilterType.Type => "Filter by content type",
+				ContentSearchFilterType.Status => "Filter by status",
+				_ => "Filter content"
+			};
+			RegisterButtonTooltip(buttonRect, tooltip);
 			if (!isClicked)
 			{
 				return;
@@ -490,13 +676,15 @@ namespace Beamable.Editor.UI.ContentWindow
 			var itemStatus = items.ToDictionary(item => item, s => activeItemsOnFilter.Contains(s));
 			ToggleListWindow.Show(buttonRect, new Vector2(200, 250), itemStatus, (item, state) =>
 			{
+				// Resolve the current set: typing or clearing the query can replace it while the popup exists.
+				var currentItems = GetFilterTypeActiveItems(searchFilterType);
 				if (state)
 				{
-					activeItemsOnFilter.Add(item);
+					currentItems.Add(item);
 				}
 				else
 				{
-					activeItemsOnFilter.Remove(item);
+					currentItems.Remove(item);
 				}
 
 				UpdateActiveFilterSearchText();
@@ -505,71 +693,67 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void OnTextChange()
 		{
-			if (string.IsNullOrEmpty(_contentSearchData.searchText))
+			_activeFilters.Clear();
+			foreach (var part in (_contentSearchData.searchText ?? string.Empty).Split(','))
 			{
-				_activeFilters.Clear();
-				return;
-			}
+				if (!TryGetSearchFilter(part, out var type, out var value))
+					continue;
 
-			string searchText = _contentSearchData.searchText;
-			string[] searchTextParts = searchText.Split(",");
-			foreach ((ContentSearchFilterType contentType, string filterTag) in ContentFilterTypeToQueryTag)
-			{
-				foreach (string searchTextPart in searchTextParts)
+				var items = GetFilterTypeActiveItems(type);
+				foreach (var item in value.Split((char[])null, StringSplitOptions.RemoveEmptyEntries))
 				{
-					if (searchTextPart.Contains(filterTag))
-					{
-						var searchItems = searchTextPart.Replace(filterTag, string.Empty).Trim().Split(" ").ToList();
-						if (!_activeFilters.TryGetValue(contentType, out var activeFilter))
-						{
-							activeFilter = new HashSet<string>();
-						}
-						activeFilter.Clear();
-						searchItems.ForEach(searchItem => activeFilter.Add(searchItem));
-						break;
-					}
+					// Preserve unfinished/unknown statuses as filters, but normalize known names for the menus.
+					var normalized = type == ContentSearchFilterType.Status
+						? StatusMapToString.Values.FirstOrDefault(status => string.Equals(status, item, StringComparison.OrdinalIgnoreCase)) ?? item
+						: item;
+					items.Add(normalized);
 				}
 			}
-			
-			AddDelayedAction(Repaint);
-			
+			ClearCaches();
+			Repaint();
 		}
 
 		private void UpdateActiveFilterSearchText()
 		{
-			var searchText = _contentSearchData.searchText ?? string.Empty;
-			var searchTextParts = searchText.Split(',');
-			var newSearchTextParts = new List<string>();
-
-			foreach ((ContentSearchFilterType type, string filterLabel) in ContentFilterTypeToQueryTag)
+			var parts = new List<string>();
+			var name = GetNameSearchPartValue();
+			if (!string.IsNullOrEmpty(name))
+				parts.Add(name);
+			foreach (var pair in ContentFilterTypeToQueryTag)
 			{
-				bool hasFilterToType = _activeFilters.TryGetValue(type, out var filterData) && filterData.Count > 0;
-				HashSet<string> data = filterData ?? new HashSet<string>();
-				string typeSearchString = $"{filterLabel} {string.Join(' ', data.OrderBy(item => item))}";
-				bool isUpdated = false;
-				for (int index = 0; index < searchTextParts.Length; index++)
-				{
-					if (searchTextParts[index].Contains(filterLabel))
-					{
-						searchTextParts[index] = hasFilterToType ? typeSearchString : string.Empty;
-						isUpdated = true;
-						break;
-					}
-				}
-
-				if (isUpdated || !hasFilterToType)
-				{
-					continue;
-				}
-
-				newSearchTextParts.Add(typeSearchString);
+				if (_activeFilters.TryGetValue(pair.Key, out var values) && values.Count > 0)
+					parts.Add($"{pair.Value} {string.Join(" ", values.OrderBy(value => value, StringComparer.Ordinal))}");
 			}
 
-			IEnumerable<string> items = searchTextParts.Concat(newSearchTextParts)
-			                                           .Where(s => !string.IsNullOrEmpty(s))
-			                                           .Select(s => s.Trim());
-			_contentSearchData.searchText = string.Join(", ", items);
+			// Release the focused text editor before changing its text from a tree/menu/button action.
+			GUI.FocusControl(null);
+			_contentSearchData.searchText = string.Join(", ", parts);
+			ClearCaches();
 			Repaint();
+		}
+
+		private void ClearAllContentFilters()
+		{
+			GUI.FocusControl(null);
+			_contentSearchData.searchText = string.Empty;
+			OnTextChange();
+			ResetButtonTooltip();
+		}
+
+		private static bool TryGetSearchFilter(string part, out ContentSearchFilterType type, out string value)
+		{
+			part = part.Trim();
+			foreach (var pair in ContentFilterTypeToQueryTag)
+			{
+				if (!part.StartsWith(pair.Value, StringComparison.OrdinalIgnoreCase))
+					continue;
+				type = pair.Key;
+				value = part.Substring(pair.Value.Length).Trim();
+				return true;
+			}
+			type = default;
+			value = string.Empty;
+			return false;
 		}
 
 		private HashSet<string> GetFilterTypeActiveItems(ContentSearchFilterType type)
@@ -584,17 +768,9 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private string GetNameSearchPartValue()
 		{
-			string searchText = _contentSearchData?.searchText ?? string.Empty;
-			string[] searchTextParts = searchText.Split(',');
-			foreach (string searchTextPart in searchTextParts)
-			{
-				if (ContentFilterTypeToQueryTag.Any(typeQueryTag => searchTextPart.Contains(typeQueryTag.Value)))
-				{
-					continue;
-				}
-				return searchTextPart.Trim();
-			}
-			return string.Empty;
+			return string.Join(", ", (_contentSearchData?.searchText ?? string.Empty).Split(',')
+				.Where(part => !TryGetSearchFilter(part, out _, out _))
+				.Select(part => part.Trim()).Where(part => part.Length > 0));
 		}
 		
 	}

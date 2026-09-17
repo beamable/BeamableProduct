@@ -20,6 +20,8 @@ namespace Beamable.Server.Api.Leaderboards
 	/// ![img beamable-logo]
 	///
 	/// </summary>
+
+	[RealmScoped]
 	public interface IMicroserviceLeaderboardsApi : ILeaderboardApi
 	{
 		/* admin only functions? */

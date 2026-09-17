@@ -17,8 +17,8 @@ public class ContentSaveCommand : AppCommand<ContentSaveCommandArgs>, IEmptyResu
 	private ContentService _contentService;
 
 	public ContentSaveCommand() : base("save",
-		"Saves a serialized content properties JSON-blob into a manifest (expects the blob to be in Beamable's Serialization Format). " +
-		"This command is not meant for manual usage. It is meant for engine integrations and CI/CD content enforcing use-cases." +
+		"Saves a serialized content properties JSON-blob into a manifest (expects the blob to be in Beamable's Serialization Format)." +
+		" This command is not meant for manual usage. It is meant for engine integrations and CI/CD content enforcing use-cases." +
 		"Editing of content is to be made either via engine integrations OR via a JSON text-editor")
 	{
 	}

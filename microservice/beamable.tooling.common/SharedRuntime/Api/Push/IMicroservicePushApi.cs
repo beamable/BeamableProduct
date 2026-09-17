@@ -4,6 +4,8 @@ using Beamable.Common.Api.Push;
 
 namespace Beamable.Server.Api.Push
 {
+
+	[RealmScoped]
 	public interface IMicroservicePushApi : IPushApi
 	{
 		/// <summary>

@@ -3,15 +3,15 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { ServiceReference } from './ServiceReference';
-import type { ServiceStorageReference } from './ServiceStorageReference';
+import type { BeamoBasicServiceReference } from './BeamoBasicServiceReference';
+import type { BeamoBasicServiceStorageReference } from './BeamoBasicServiceStorageReference';
 
 export type ManifestView = { 
   checksum: string; 
   created: bigint | string; 
   id: string; 
-  manifest: ServiceReference[]; 
+  manifest: BeamoBasicServiceReference[]; 
   comments?: string; 
   createdByAccountId?: bigint | string; 
-  storageReference?: ServiceStorageReference[]; 
+  storageReference?: BeamoBasicServiceStorageReference[]; 
 };

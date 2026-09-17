@@ -5,6 +5,7 @@ using beamable.server;
 using Beamable.Server;
 using Beamable.Server.Api.Usage;
 using Beamable.Server.Editor;
+using beamable.tooling.common.Microservice;
 using Beamable.Tooling.Common.OpenAPI;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
@@ -84,19 +85,7 @@ namespace microservice.Common
       [CustomResponseSerializationAttribute]
       public string Docs()
       {
-	      var docs = new ServiceDocGenerator();
-	      var ctx = GlobalProvider.GetService<StartupContext>();
-	      var doc = docs.Generate(ctx, GlobalProvider);
-	     
-	      if (!string.IsNullOrEmpty(PublicHost))
-	      {
-		      doc.Servers.Add(new OpenApiServer { Url = PublicHost });
-	      }
-
-	      var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
-	      
-	      
-	      return outputString;
+		return GlobalProvider.GetService<IServiceOpenApiDocsCache>().GetCachedDocs(PublicHost);
       }
 
       /// <summary>

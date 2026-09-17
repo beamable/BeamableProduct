@@ -354,8 +354,8 @@ public partial class CollectorManager
 	
 	public static Socket GetSocket(int portNumber, ILogger logger)
 	{
-		var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-		var ed = new IPEndPoint(IPAddress.Any, portNumber);
+		var socket = new Socket(System.Net.Sockets.AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+		var ed = new IPEndPoint(System.Net.IPAddress.Any, portNumber);
 
 		logger.LogInformation($"collector discovery acquiring socket address=[{ed}]");
 		socket.ReceiveTimeout = CollectorManager.ReceiveTimeout;

@@ -479,18 +479,31 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		
 		var tagString = string.Join(" ", tags.Select(tag => $"-t {id.ToLowerInvariant()}:{tag}"));
 		var fullDockerfilePath = http.AbsoluteDockerfilePath;
-		var argString = $"buildx build {fullContextPath.EnquotePath()} -f {fullDockerfilePath.EnquotePath()} " +
-		                $"{tagString} " +
-		                $"--progress rawjson " +
-		                $"--build-arg BEAM_DOTNET_VERSION={defaultBaseImageTag} " +
-		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(dockerContextPath, report.outputDirSupport).Replace("\\", "/")} " +
-		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(dockerContextPath,report.outputDirApp).Replace("\\", "/")} " +
-		                $"--build-arg BEAM_APP_DEST=/beamApp/{definition.BeamoId}.dll " +
-		                $"{(forceCpu ? "--platform linux/amd64 " : "")} " +
-		                $"{(noCache ? "--no-cache " : "")}" +
+		var argString = $"buildx build {fullContextPath.EnquotePath()} -f {fullDockerfilePath.EnquotePath()}" +
+		                $" {tagString}" +
+		                $" --progress rawjson" +
+		                // Make the built image id reproducible so `deploy plan` stops reporting an unchanged
+		                // service as "Updating" (the service imageId, and the checksum derived from it, must
+		                // be stable across rebuilds of identical source). Two independent sources of image
+		                // nondeterminism are neutralized:
+		                //  1) --provenance=false --sbom=false: recent buildx attaches a provenance attestation
+		                //     by default whose timestamps change the exported index digest every build.
+		                //  2) SOURCE_DATE_EPOCH: pins the image config `created` timestamp (and clamps layer
+		                //     file timestamps) to a fixed value, so a COLD rebuild (cache miss — which happens
+		                //     across release/cache eviction) produces the same id instead of a fresh timestamp.
+		                // Together these make the id content-addressed and time-independent (verified: two
+		                // --no-cache builds of identical source yield an identical store id).
+		                $" --provenance=false --sbom=false" +
+		                $" --build-arg SOURCE_DATE_EPOCH=0" +
+		                $" --build-arg BEAM_DOTNET_VERSION={defaultBaseImageTag}" +
+		                $" --build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(dockerContextPath, report.outputDirSupport).Replace("\\", "/")}" +
+		                $" --build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(dockerContextPath,report.outputDirApp).Replace("\\", "/")}" +
+		                $" --build-arg BEAM_APP_DEST=/beamApp/{definition.BeamoId}.dll" +
+		                $" {(forceCpu ? "--platform linux/amd64 " : "")}" +
+		                $" {(noCache ? "--no-cache " : "")}" +
 		                $"{(pull ? "--pull " : "")}" +
-		                $"--label \"beamoId={id.ToLowerInvariant()}\" " +
-		                $"--label \"beamVersion={VersionService.GetNugetPackagesForExecutingCliVersion()}\" "
+		                $"--label \"beamoId={id.ToLowerInvariant()}\"" +
+		                $" --label \"beamVersion={VersionService.GetNugetPackagesForExecutingCliVersion()}\" "
 		                ;
 
 		Log.Verbose($"running docker command with args=[{argString}]");
@@ -614,15 +627,45 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		
 		var result = await command.ExecuteAsync();
 
+		// Resolve the built image's canonical store id via `docker inspect` on the tag we just applied.
+		// This is the id that `docker image save` and the registry push accept, and — with attestations
+		// disabled above — it is reproducible across rebuilds of unchanged source, so change-detection no
+		// longer churns. We must NOT rely on the "writing image"/"exporting manifest" status scrape here:
+		// its wording varies by Docker/BuildKit version, and with provenance off it reports a sub-manifest
+		// digest that is not a save-able reference. The scrape stays only as a last-resort fallback.
+		if (result.ExitCode == 0)
+		{
+			try
+			{
+				var primaryTag = $"{id.ToLowerInvariant()}:{tags[0]}";
+				var inspectBuffer = new StringBuilder();
+				await Cli.Wrap(dockerPath)
+					.WithArguments($"inspect {primaryTag} --format {{{{.Id}}}}")
+					.WithValidation(CommandResultValidation.None)
+					.WithStandardOutputPipe(PipeTarget.ToStringBuilder(inspectBuffer))
+					.ExecuteAsync();
+				var inspected = inspectBuffer.ToString().Trim();
+				if (inspected.StartsWith("sha256:"))
+				{
+					imageId = inspected;
+					Log.Verbose($"identified image id for service=[{id}] via docker inspect image=[{imageId}]");
+				}
+			}
+			catch (Exception e)
+			{
+				Log.Verbose($"Could not docker inspect image id for service=[{id}]; falling back to status scrape. {e.Message}");
+			}
+		}
+
 		var isSuccess = result.ExitCode == 0;
-		
+
 		if (isSuccess)
 		{
 			if (string.IsNullOrEmpty(imageId))
 			{
 				isSuccess = false;
-				Log.Error($"While [{id}] build succeeded, Beamable Tools we were not able to identify image ID from status updates. Try running command again with `--logs verbose` to gather more informations. In case services deployment fails with this message, reach out to Beamable team with this message. " +
-				          $"Make sure to gather information about used OS and Docker version." +
+				Log.Error($"While [{id}] build succeeded, Beamable Tools we were not able to identify image ID from status updates. Try running command again with `--logs verbose` to gather more informations. In case services deployment fails with this message, reach out to Beamable team with this message." +
+				          $" Make sure to gather information about used OS and Docker version." +
 				          $"Here are the status updates: {statusBuffer}. Entire buffer=[{entireBuffer}]");
 			}
 			progressMessage?.Invoke(new ServicesBuiltProgress

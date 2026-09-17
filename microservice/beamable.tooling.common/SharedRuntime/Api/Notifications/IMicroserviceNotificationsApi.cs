@@ -10,6 +10,8 @@ namespace Beamable.Server.Api.Notifications
 	/// <summary>
 	/// Microservice API for sending Notifications to clients.
 	/// </summary>
+
+	[RealmScoped]
 	public interface IMicroserviceNotificationsApi
 	{
 		/// <summary>

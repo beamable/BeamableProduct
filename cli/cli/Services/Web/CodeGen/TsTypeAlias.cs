@@ -123,8 +123,8 @@ public class TsTypeAlias : TsNode
 		// 'export default' not allowed on aliases
 		if (Modifiers.HasFlag(TsModifier.Default))
 			throw new InvalidOperationException(
-				"'export default' cannot be applied directly to a type alias (TS1316). " +
-				"Export the alias first, then write 'export { Foo as default }'."
+				"'export default' cannot be applied directly to a type alias (TS1316)." +
+				" Export the alias first, then write 'export { Foo as default }'."
 			);
 
 		// Type must be set
