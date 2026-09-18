@@ -39,7 +39,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool fromLatestPlan;
         /// <summary>An additional tag to advance to the published checksum</summary>
         public string tag;
-        /// <summary>Widen the published checksum's visibility tier (each tier is a superset of the previous, not a list of realms): 'realm' = only this realm; 'org' = every realm in your customer; 'public' = every realm in every customer. A literal <cid>.<pid> / <cid> / * is also accepted</summary>
+        /// <summary>Widen the bundle's visibility tier (each tier is a superset of the previous, not a list of realms): 'realm' = only this realm; 'org' = every realm in your customer; 'public' = every realm in every customer. '*' is also accepted as an alias for 'public'</summary>
         public string scope;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
