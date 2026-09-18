@@ -344,10 +344,10 @@ namespace Beamable.Editor.Content.UI
 			{
 				var errorText = string.Join(",", nameErrors.Select(n => n.Message));
 				var idValidationRect = new Rect(headerRect.x - 5, headerRect.y, 4, headerRect.height);
-				EditorGUI.DrawRect(idValidationRect, Color.red);
+				EditorGUI.DrawRect(idValidationRect, BeamGUI.ContentErrorColor);
 					
 				var redStyle = new GUIStyle(GUI.skin.label);
-				redStyle.normal.textColor = Color.red;
+				redStyle.normal.textColor = BeamGUI.ContentErrorColor;
 				redStyle.fontSize = 10;
 				EditorGUI.LabelField(new Rect(headerRect.x, headerRect.y-5, headerRect.width, 12), $"({errorText})", redStyle);
 					
