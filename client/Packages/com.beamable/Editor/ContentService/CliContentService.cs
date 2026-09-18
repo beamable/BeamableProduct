@@ -162,31 +162,69 @@ namespace Beamable.Editor.ContentService
 			_ = Reload();
 		}
 
-		
+		private string GetContentScopeKey()
+		{
+			var realm = _beamContext.BeamCli.CurrentRealm;
+			var manifestId = GetSelectedManifestIdCliOption() ?? "global";
+			return $"{realm.Cid}/{realm.Pid}/{manifestId}";
+		}
+
 		public void SaveContent(ContentObject selectedContentObject)
+		{
+			SaveContentAsync(selectedContentObject).Error(Debug.LogException);
+		}
+
+		/// <summary>
+		/// Completes after the properties save and any required tag update finish.
+		/// Retiring an object prevents follow-up writes, but does not cancel a command already running.
+		/// </summary>
+		private async Promise SaveContentAsync(ContentObject selectedContentObject)
 		{
 			if (selectedContentObject == null || selectedContentObject.ContentStatus == ContentStatus.Deleted)
 			{
 				return;
 			}
-			
+
+			string contentId = selectedContentObject.Id;
 			string propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
+			// Both commands must use the same edit snapshot, even if the Inspector changes while saving.
+			string[] tags = (selectedContentObject.Tags ?? Array.Empty<string>()).ToArray();
+			string scopeKey = GetContentScopeKey();
 
 			// This prevents save storms when the debounce fires for rapid-fire edits where
 			// the final serialised value is the same as what was already written.
-			if (_lastSavedPropertiesCache.TryGetValue(selectedContentObject.Id, out var lastJson)
+			if (_lastSavedPropertiesCache.TryGetValue(contentId, out var lastJson)
 			    && lastJson == propertiesJson)
 			{
 				return;
 			}
-			_lastSavedPropertiesCache[selectedContentObject.Id] = propertiesJson;
+			_lastSavedPropertiesCache[contentId] = propertiesJson;
 
 			bool hasValidationError = selectedContentObject.HasValidationErrors(GetValidationContext(), out List<string> _);
-			UpdateContentValidationStatus(selectedContentObject.Id, hasValidationError);
-			SaveContent(selectedContentObject.Id, propertiesJson, () => SetContentTags(selectedContentObject.Id, selectedContentObject.Tags));
+			UpdateContentValidationStatus(contentId, hasValidationError);
+			await SaveContentPropertiesAsync(contentId, propertiesJson);
+
+			// The properties command may finish after deletion has retired this object.
+			if (selectedContentObject == null || selectedContentObject.ContentStatus == ContentStatus.Deleted)
+			{
+				return;
+			}
+
+			// A continuation must not send its tags into a newly selected realm or manifest.
+			if (scopeKey != GetContentScopeKey())
+			{
+				return;
+			}
+
+			await SetContentTagsAsync(contentId, tags);
 		}
 
 		public void SaveContent(string contentId, string contentPropertiesJson, Action onCompleted = null)
+		{
+			SaveContentPropertiesAsync(contentId, contentPropertiesJson, onCompleted).Error(Debug.LogException);
+		}
+
+		private async Promise SaveContentPropertiesAsync(string contentId, string contentPropertiesJson, Action onCompleted = null)
 		{
 			var saveCommand = _cli.ContentSave(new ContentSaveArgs()
 			{
@@ -194,7 +232,9 @@ namespace Beamable.Editor.ContentService
 				contentIds = new[] {contentId},
 				contentProperties = new[] {contentPropertiesJson}
 			});
-			saveCommand.Run().Then(_ => { onCompleted?.Invoke(); });
+			await saveCommand.Run();
+			// Kept for existing callers. Async follow-up work must be awaited separately, as above.
+			onCompleted?.Invoke();
 		}
 		
 		public async Task<BeamContentSnapshotListResult> GetContentSnapshots()
@@ -344,36 +384,31 @@ namespace Beamable.Editor.ContentService
 
 		public void SetContentTags(string contentId, string[] tags)
 		{
+			SetContentTagsAsync(contentId, tags).Error(Debug.LogException);
+		}
+
+		/// <summary>
+		/// Awaits the tag command, including direct tag edits that do not save properties first.
+		/// </summary>
+		private async Promise SetContentTagsAsync(string contentId, string[] tags)
+		{
+			tags = (tags ?? Array.Empty<string>()).ToArray();
 			if (EntriesCache.TryGetValue(contentId, out var entry))
 			{
 				entry.Tags = tags;
 				EntriesCache[contentId] = entry;
 			}
 
-			if (tags.Length == 0)
+			bool clearTags = tags.Length == 0;
+			var setContentTagCommand = _cli.ContentTagSet(new ContentTagSetArgs()
 			{
-				var setContentTagCommand = _cli.ContentTagSet(new ContentTagSetArgs()
-				{
-					manifestIds = GetSelectedManifestIdsCliOption(),
-					filterType = ContentFilterType.ExactIds,
-					filter = contentId,
-					clear = true,
-					tag = "<none>"
-				});
-				setContentTagCommand.Run();
-			}
-			else
-			{
-				var setContentTagCommand = _cli.ContentTagSet(new ContentTagSetArgs()
-				{
-					manifestIds = GetSelectedManifestIdsCliOption(),
-					filterType = ContentFilterType.ExactIds,
-					filter = contentId,
-					tag = string.Join(",", tags)
-				});
-				setContentTagCommand.Run();
-			}
-
+				manifestIds = GetSelectedManifestIdsCliOption(),
+				filterType = ContentFilterType.ExactIds,
+				filter = contentId,
+				clear = clearTags,
+				tag = clearTags ? "<none>" : string.Join(",", tags)
+			});
+			await setContentTagCommand.Run();
 		}
 
 		public bool DuplicateContent(LocalContentManifestEntry entry, out ContentObject duplicatedObject)
