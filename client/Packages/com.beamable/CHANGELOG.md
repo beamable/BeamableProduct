@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### UI/UX
 
-- Use a shared soft salmon color for content validation text, error bars, and Content window error messages.
+- Use a shared soft salmon color for content validation text and Content window error messages, retaining bright red error bars.
 - Show Inspector issue badges on unchanged invalid content and validation errors above affected lists, including collapsed lists.
 - Add a shared Issues icon for Content window validation errors and conflicts, an Issues footer filter, and a Publish badge.
 - Explain blocked publishing in a popup with issue counts and an action to view affected items.

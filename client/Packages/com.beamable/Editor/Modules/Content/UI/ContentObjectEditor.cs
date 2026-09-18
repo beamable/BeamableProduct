@@ -344,7 +344,7 @@ namespace Beamable.Editor.Content.UI
 			{
 				var errorText = string.Join(",", nameErrors.Select(n => n.Message));
 				var idValidationRect = new Rect(headerRect.x - 5, headerRect.y, 4, headerRect.height);
-				EditorGUI.DrawRect(idValidationRect, BeamGUI.ContentErrorColor);
+				EditorGUI.DrawRect(idValidationRect, Color.red);
 					
 				var redStyle = new GUIStyle(GUI.skin.label);
 				redStyle.normal.textColor = BeamGUI.ContentErrorColor;

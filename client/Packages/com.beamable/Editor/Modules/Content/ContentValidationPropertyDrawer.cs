@@ -422,7 +422,7 @@ namespace Beamable.Editor.Content
 				WIDTH,
 				position.height + 2);
 
-			EditorGUI.DrawRect(errorBarPosition, BeamGUI.ContentErrorColor);
+			EditorGUI.DrawRect(errorBarPosition, Color.red);
 		}
 	}
 
