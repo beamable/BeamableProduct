@@ -22,6 +22,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -712,6 +713,7 @@ public partial class ContentService
 							Properties = properties,
 							Tags = json.GetProperty(ContentFile.JSON_NAME_TAGS),
 							FetchedFromManifestUid = json.GetProperty(ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID).GetString(),
+							Reference = ReadReference(in json),
 							ReferenceContent = referenceContent,
 						};
 						contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
@@ -1155,6 +1157,12 @@ public partial class ContentService
 				}).ToArray()
 		};
 		
+		// The platform returns the content version it assigned to each item, repeated once per visibility.
+		var publishedVersions = saveContentResponses
+			.SelectMany(response => response.content)
+			.GroupBy(c => c.id)
+			.ToDictionary(g => g.Key, g => g.First().version);
+
 		// Update the local reference manifest
 		try
 		{
@@ -1167,6 +1175,13 @@ public partial class ContentService
 			foreach (ContentFile c in changedContents)
 			{
 				ContentFile contentFile = c;
+
+				// We just uploaded these properties, so our checksum describes the version the platform assigned.
+				if (publishedVersions.TryGetValue(contentFile.Id, out var publishedVersion))
+				{
+					contentFile.Reference = new LocalContentReference(contentFile.PropertiesChecksum, publishedVersion);
+				}
+
 				saveTasks.Add(SaveContentFile(contentFolder, contentFile));
 			}
 
@@ -1382,6 +1397,11 @@ public partial class ContentService
 			contentFile.Properties = j.GetProperty("properties");
 			contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
 			contentFile.FetchedFromManifestUid = targetManifestUid;
+
+			// Hash the downloaded payload ourselves rather than trusting the publisher's manifest checksum. The
+			// file we are about to write is serialized from this same element, so the two agree by construction.
+			contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
+			contentFile.Reference = new LocalContentReference(contentFile.PropertiesChecksum, c.ReferenceContent.version);
 			saveTasks.Add(SaveContentFile(contentFolder, contentFile, cancellationToken));
 		}
 
@@ -1394,6 +1414,13 @@ public partial class ContentService
 			{
 				contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
 			}
+
+			// This set also holds locally modified and created files, whose bytes are not the remote ones.
+			if (c.ReferenceContent != null && contentFile.GetStatus() == ContentStatus.UpToDate)
+			{
+				contentFile.Reference = new LocalContentReference(contentFile.PropertiesChecksum, c.ReferenceContent.version);
+			}
+
 			contentFile.FetchedFromManifestUid = targetManifestUid;
 			saveTasks.Add(SaveContentFile(contentFolder, contentFile, cancellationToken));
 		}
@@ -1953,6 +1980,15 @@ public partial class ContentService
 	}
 
 	/// <summary>
+	/// Reads the locally derived reference off a parsed content file, if it carries one.
+	/// </summary>
+	private static LocalContentReference? ReadReference(in JsonElement json) =>
+		json.TryGetProperty(ContentFile.JSON_NAME_REFERENCE, out var reference)
+		&& LocalContentReference.TryRead(in reference, out var value)
+			? value
+			: null;
+
+	/// <summary>
 	/// Serializes just the <see cref="ContentFile.Properties"/> object.
 	/// We need this because we compute checksums ignoring tags.
 	/// </summary>
@@ -2009,6 +2045,8 @@ public partial class ContentService
 		{
 			WriteIndented = indent,
 			IncludeFields = true,
+			// Pinned: these bytes get hashed, so a change here re-checksums every content item in the realm.
+			Encoder = JavaScriptEncoder.Default,
 			Converters =
 			{
 				new SortedJsonElementConverter(), new SortedSnapshotConverter()
@@ -2188,12 +2226,56 @@ public struct LocalContentFiles
 	public Dictionary<string, ClientManifestJsonResponse> ReferenceManifests;
 }
 
+/// <summary>
+/// A checksum this CLI computed over a remote content payload, paired with the content version identifying
+/// which payload it was. The version is required: without it a stale checksum can mask a real remote change.
+/// </summary>
+[Serializable]
+public struct LocalContentReference
+{
+	public const string JSON_NAME_CHECKSUM = "checksum";
+	public const string JSON_NAME_VERSION = "version";
+
+	[JsonPropertyName(JSON_NAME_CHECKSUM)] public string Checksum;
+	[JsonPropertyName(JSON_NAME_VERSION)] public string Version;
+
+	public LocalContentReference(string checksum, string version)
+	{
+		Checksum = checksum;
+		Version = version;
+	}
+
+	/// <summary>
+	/// Reads a reference, yielding one only when both halves are present.
+	/// </summary>
+	public static bool TryRead(in JsonElement json, out LocalContentReference reference)
+	{
+		reference = default;
+
+		if (!json.TryGetProperty(JSON_NAME_CHECKSUM, out var checksumElement)) return false;
+		if (!json.TryGetProperty(JSON_NAME_VERSION, out var versionElement)) return false;
+
+		var checksum = checksumElement.GetString();
+		var version = versionElement.GetString();
+		if (string.IsNullOrEmpty(checksum) || string.IsNullOrEmpty(version)) return false;
+
+		reference = new LocalContentReference(checksum, version);
+		return true;
+	}
+
+	/// <summary>
+	/// True when this reference was taken from the payload <paramref name="remote"/> points at.
+	/// </summary>
+	public bool Describes(ClientContentInfoJson remote) => Version == remote.version;
+}
+
 [Serializable]
 public struct ContentFile : IEquatable<ContentFile>
 {
 	public const string JSON_NAME_PROPERTIES = "properties";
 	public const string JSON_NAME_TAGS = "tags";
 	public const string JSON_NAME_REFERENCE_MANIFEST_ID = "referenceManifestId";
+	public const string JSON_NAME_REFERENCE = "reference";
 
 	[JsonIgnore] public string Id;
 	[JsonIgnore] public string LocalFilePath;
@@ -2211,16 +2293,35 @@ public struct ContentFile : IEquatable<ContentFile>
 	[JsonPropertyName(JSON_NAME_REFERENCE_MANIFEST_ID)]
 	public string FetchedFromManifestUid;
 
+	/// <summary>
+	/// What the remote payload hashed to when we last synced it, computed by this CLI rather than supplied by
+	/// the publisher. Null on files written before this existed and on snapshot restores, which fall back to
+	/// the manifest checksum.
+	/// </summary>
+	[JsonPropertyName(JSON_NAME_REFERENCE)]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public LocalContentReference? Reference;
+
 
 	public ContentStatus GetStatus()
 	{
 		ContentStatus ret;
 		if (ReferenceContent == null) ret = ContentStatus.Created;
 		else if (string.IsNullOrEmpty(LocalFilePath) || !File.Exists(LocalFilePath)) ret = ContentStatus.Deleted;
-		else if (ReferenceContent.checksum != PropertiesChecksum || IsTagsDiff()) ret = ContentStatus.Modified;
+		else if (IsPropertiesDiff() || IsTagsDiff()) ret = ContentStatus.Modified;
 		else ret = ContentStatus.UpToDate;
 		return ret;
 	}
+
+	/// <summary>
+	/// Compares the local properties against the remote ones we last synced.
+	/// Prefers <see cref="Reference"/> when it describes the manifest entry in hand, since both sides of that
+	/// comparison were canonicalized the same way. Otherwise falls back to the publisher-supplied manifest
+	/// checksum, which is the historical behavior.
+	/// </summary>
+	private bool IsPropertiesDiff() => Reference.HasValue && Reference.Value.Describes(ReferenceContent)
+		? Reference.Value.Checksum != PropertiesChecksum
+		: ReferenceContent.checksum != PropertiesChecksum;
 
 	public long GetLastUpdateAt()
 	{
@@ -2348,7 +2449,10 @@ public class SortedJsonElementConverter : JsonConverter<JsonElement>
 			// Get properties, sort them by name, and then write them
 			case JsonValueKind.Object:
 				writer.WriteStartObject();
-				foreach (var property in element.EnumerateObject().OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase))
+				foreach (var property in element.EnumerateObject()
+				         .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+				         // When using OrdinalIgnoreCase, total byte-level stability requires a tie-breaker.
+				         .ThenBy(p => p.Name, StringComparer.Ordinal))
 				{
 					writer.WritePropertyName(property.Name);
 					WriteSortedJsonElement(writer, property.Value, options);
@@ -2401,7 +2505,10 @@ public class SortedSnapshotConverter : JsonConverter<Dictionary<string, ContentF
 		writer.WriteStartObject();
 
 		// Sort the dictionary keys before writing
-		foreach (var key in value.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase))
+		foreach (var key in value.Keys
+		         .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+		         // When using OrdinalIgnoreCase, total byte-level stability requires a tie-breaker.
+		         .ThenBy(k => k, StringComparer.Ordinal))
 		{
 			writer.WritePropertyName(key);
 			JsonSerializer.Serialize(writer, value[key], options);
