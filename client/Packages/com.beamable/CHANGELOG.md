@@ -14,9 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### UI/UX
 
-- Use a shared soft salmon color for content validation text and Content window error messages, retaining bright red error bars.
-- Show Inspector issue badges on unchanged invalid content and validation errors above affected lists, including collapsed lists.
-- Avoid repeated parent lookups when counting validation errors in large content lists.
+- Improve content validation QOL with clearer Inspector issue badges, errors above collapsed lists, softer error text with bright red bars, and faster validation error counting for large lists.
 - Add a shared Issues icon for Content window validation errors and conflicts, an Issues footer filter, and a Publish badge.
 - Explain blocked publishing in a popup with issue counts and an action to view affected items.
 - Improve Content window tooltips, filter behavior, and toolbar layout.
