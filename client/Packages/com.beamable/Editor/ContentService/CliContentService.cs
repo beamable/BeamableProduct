@@ -192,7 +192,7 @@ namespace Beamable.Editor.ContentService
 
 		/// <summary>
 		/// Completes after the properties save and any required tag update finish.
-		/// Retiring an object prevents follow-up writes, but does not cancel a command already running.
+		/// Tombstoning an object prevents follow-up writes, but does not cancel a command already running.
 		/// </summary>
 		private async Promise SaveContentAsync(ContentObject selectedContentObject)
 		{
@@ -228,7 +228,7 @@ namespace Beamable.Editor.ContentService
 			{
 				await SaveContentPropertiesAsync(contentId, propertiesJson);
 
-				// The properties command may finish after deletion has retired this object.
+				// The properties command may finish after deletion has tombstoned this object.
 				if (selectedContentObject == null || selectedContentObject.ContentStatus == ContentStatus.Deleted)
 				{
 					return;
@@ -629,8 +629,8 @@ namespace Beamable.Editor.ContentService
 		/// and cancels any pending change notification to prevent further autosave requests.
 		/// Does not delete the content file or cancel saves already running.
 		/// </summary>
-		/// <param name="contentId">The full ID of the content object to retire.</param>
-		private void RetireCachedContentObject(string contentId)
+		/// <param name="contentId">The full ID of the content object to tombstone.</param>
+		private void TombstoneCachedContentObject(string contentId)
 		{
 			if (!_contentScriptableCache.TryGetValue(contentId, out var contentObject)
 			    || contentObject == null)
@@ -649,7 +649,7 @@ namespace Beamable.Editor.ContentService
 		}
 
 		/// <summary>
-		/// Retires the object immediately, waits for all its submitted writes, then removes the file.
+		/// Tombstones the object immediately, waits for all its submitted writes, then removes the file.
 		/// Callers must await completion before selecting the deleted placeholder or resuming the watcher.
 		/// </summary>
 		public Promise DeleteContent(string contentId)
@@ -665,7 +665,7 @@ namespace Beamable.Editor.ContentService
 			var path = entry.JsonFilePath;
 			_contentScriptableCache.TryGetValue(contentId, out var contentObject);
 			var onEditorChanged = contentObject != null ? contentObject.OnEditorChanged : null;
-			RetireCachedContentObject(contentId);
+			TombstoneCachedContentObject(contentId);
 			_pendingTagSaves.Remove(writeKey);
 			_lastSavedPropertiesCache.Remove(writeKey);
 			return _contentWrites.Delete(writeKey, () =>
@@ -690,7 +690,7 @@ namespace Beamable.Editor.ContentService
 				if (scopeKey != GetContentScopeKey()) return;
 
 				// The watcher may have refreshed this entry while a command was finishing.
-				RetireCachedContentObject(contentId);
+				TombstoneCachedContentObject(contentId);
 				if (EntriesCache.TryGetValue(contentId, out var current)) RemoveContentFromCache(current);
 				ValidationContext.AllContent.Remove(contentId);
 				_contentScriptableCache.Remove(contentId);
@@ -1247,10 +1247,10 @@ namespace Beamable.Editor.ContentService
 		private void CacheScriptableContent(LocalContentManifestEntry entry)
 		{
 			// In-flight writes can generate Modified events while deletion is waiting.
-			// Do not let those events revive the retired object or schedule another autosave.
+			// Do not let those events revive the tombstoned object or schedule another autosave.
 			if (_contentWrites.IsDeleting(GetContentWriteKey(entry.FullId)) && entry.StatusEnum != ContentStatus.Deleted)
 			{
-				RetireCachedContentObject(entry.FullId);
+				TombstoneCachedContentObject(entry.FullId);
 				return;
 			}
 			if (!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(entry.TypeName, out var type))
@@ -1262,7 +1262,7 @@ namespace Beamable.Editor.ContentService
 			
 			if (entry.StatusEnum is ContentStatus.Deleted)
 			{
-				RetireCachedContentObject(entry.FullId);
+				TombstoneCachedContentObject(entry.FullId);
 				
 				var deletedObject = ScriptableObject.CreateInstance(type) as ContentObject;
 				deletedObject.SetIdAndVersion(entry.FullId, String.Empty);
