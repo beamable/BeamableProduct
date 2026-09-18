@@ -140,7 +140,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					normal = new GUIStyleState
 					{
-						textColor = Color.red
+						textColor = BeamGUI.ContentErrorColor
 					}
 				});
 			}
