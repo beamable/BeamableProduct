@@ -489,6 +489,16 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				["LOG_LEVEL"] = "verbose",
 				["LOG_TYPE"] = "structured+file",
 				["WATCH_TOKEN"] = "false",
+				// A concurrently-running zone portal extension sets BEAM_SKIP_LOCAL_ENV (plus zone
+				// CID/PID/ZID/SECRET) process-globally on THIS orchestrator so its in-process backing
+				// service reads them as-is (see BeamoLocalSystem_PortalExtension.ApplyZoneEnvironment).
+				// A standalone service we launch here inherits this orchestrator env, and a truthy
+				// BEAM_SKIP_LOCAL_ENV makes it skip its own `generate-env` — the step that injects
+				// STORAGE_CONNSTR_<storage>. The result: a zone microservice (e.g. VipServiceZone) boots
+				// with the leaked zone auth but no storage connection string and fails at runtime with
+				// "Connection string for storage '<X>' is null or empty". Clearing it here guarantees each
+				// child service resolves its own env via generate-env, exactly as a `--ids` run does.
+				["BEAM_SKIP_LOCAL_ENV"] = "",
 				[Beamable.Common.Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = args.AppContext.DotnetPath
 			};
 			if (args.requireProcessId > 0)
