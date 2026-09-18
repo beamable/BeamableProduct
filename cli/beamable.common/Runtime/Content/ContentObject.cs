@@ -428,24 +428,24 @@ namespace Beamable.Common.Content
 	      }
       }
 
-      private IEnumerator DelayedValidate()
-      {
-	      double baseTime = EditorApplication.timeSinceStartup;
-	      double elapsed = 0d;
-	      double delay = 0.3d;
-	      
-	      while (elapsed < delay)
-	      {
-		     elapsed = EditorApplication.timeSinceStartup - baseTime;
-		     yield return null;
-	      }
-	      
+		private IEnumerator DelayedValidate()
+		{
+			double baseTime = EditorApplication.timeSinceStartup;
+			double elapsed = 0d;
+			double delay = 0.3d;
+
+			while (elapsed < delay)
+			{
+				elapsed = EditorApplication.timeSinceStartup - baseTime;
+				yield return null;
+			}
+
 			_validateCoroutine = null;
 			if (ContentStatus != ContentStatus.Deleted)
 			{
 				OnEditorChanged?.Invoke();
 			}
-      }
+		}
 
 		public void CancelPendingEditorChangeNotification()
 		{
