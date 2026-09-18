@@ -8,6 +8,7 @@ using Beamable.Editor.ContentService;
 using Beamable.Editor.UI.ContentWindow;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Unity.EditorCoroutines.Editor;
@@ -26,6 +27,11 @@ namespace Beamable.Editor.Content.UI
 		private const float BUTTONS_HEADER_HEIGHT = 90f;
 		private EditorCoroutine _updateNameCoroutine;
 		private EditorCoroutine _updateTagCoroutine;
+		private readonly Dictionary<string, int> _listValidationErrors = new();
+		private bool _hasListValidationCache;
+		private Guid _listValidationRevision;
+		private int _listManifestRevision;
+		private int _listDirtyCount;
 
 		protected override void OnHeaderGUI()
 		{
@@ -79,9 +85,9 @@ namespace Beamable.Editor.Content.UI
 					return;
 				}
 				
+				const float statusIconSize = 15f;
 				if (contentObject.ContentStatus is not ContentStatus.UpToDate)
 				{
-					var statusIconSize = 15f;
 					var statusIconRect = new Rect(
 						iconRect.xMin,
 						iconRect.yMin,
@@ -89,15 +95,16 @@ namespace Beamable.Editor.Content.UI
 						statusIconSize);
 					var icon = ContentWindow.GetIconForStatus(contentObject.IsInConflict, contentObject.ContentStatus);
 					GUI.DrawTexture(statusIconRect, icon, ScaleMode.ScaleToFit);
-					if (contentService.IsContentInvalid(contentObject.Id))
-					{
-						var invalidIconRect = new Rect(
-							iconRect.xMax - statusIconSize/2f, 
-							iconRect.yMin, 
-							statusIconSize, 
-							statusIconSize);
-						GUI.DrawTexture(invalidIconRect, BeamGUI.iconStatusInvalid, ScaleMode.ScaleToFit);
-					}
+				}
+				// A dependency can become invalid without changing this content's own file/status.
+				if (contentService.IsContentInvalid(contentObject.Id))
+				{
+					var invalidIconRect = new Rect(
+						iconRect.xMax - statusIconSize / 2f,
+						iconRect.yMin,
+						statusIconSize,
+						statusIconSize);
+					GUI.DrawTexture(invalidIconRect, BeamGUI.iconStatusInvalid, ScaleMode.ScaleToFit);
 				}
 
 				if (Event.current.type == EventType.MouseDown && iconRect.Contains(Event.current.mousePosition))
@@ -387,9 +394,88 @@ namespace Beamable.Editor.Content.UI
 				EditorGUI.SelectableLabel(rect, $"Checksum: {contentObject.GetEditorDataChecksum()}", checksumStyle);
 			}
 			
-			base.OnInspectorGUI();
+			DrawContentProperties(contentObject);
 			contentObject.CheckForNonDetectedChanges();
 			}
+		}
+
+		private void DrawContentProperties(ContentObject contentObject)
+		{
+			serializedObject.UpdateIfRequiredOrScript();
+			RefreshListValidation(contentObject);
+			var property = serializedObject.GetIterator();
+			bool enterChildren = true;
+			while (property.NextVisible(enterChildren))
+			{
+				enterChildren = false;
+				if (_listValidationErrors.TryGetValue(property.propertyPath, out var count))
+				{
+					var errors = count == 1 ? "1 validation error" : $"{count} validation errors";
+					EditorGUILayout.HelpBox($"{property.displayName} contains {errors}. Expand the list to inspect the affected fields.", MessageType.Error);
+				}
+				// Retain Unity's default list controls and all existing nested property drawers.
+				using (new EditorGUI.DisabledScope(property.propertyPath == "m_Script"))
+				{
+					EditorGUILayout.PropertyField(property, true);
+				}
+			}
+			if (serializedObject.ApplyModifiedProperties()) _hasListValidationCache = false;
+		}
+
+		private void RefreshListValidation(ContentObject contentObject)
+		{
+			if (serializedObject.isEditingMultipleObjects || !BeamEditor.IsInitialized)
+			{
+				_listValidationErrors.Clear();
+				_hasListValidationCache = false;
+				return;
+			}
+			var service = BeamEditorContext.Default.CliContentService;
+			var context = service.GetValidationContext();
+			if (!context.Initialized)
+			{
+				_listValidationErrors.Clear();
+				_hasListValidationCache = false;
+				return;
+			}
+			int dirtyCount = EditorUtility.GetDirtyCount(contentObject);
+			if (_hasListValidationCache && _listValidationRevision == contentObject.ValidationGuid &&
+			    _listManifestRevision == service.ManifestChangedCount && _listDirtyCount == dirtyCount) return;
+
+			// Validate once per edit/manifest change, never once per list on every repaint.
+			_listValidationErrors.Clear();
+			var errors = contentObject.GetMemberValidationErrors(context);
+			var property = serializedObject.GetIterator();
+			bool enterChildren = true;
+			while (property.NextVisible(enterChildren))
+			{
+				enterChildren = false;
+				if (!property.isArray || property.propertyType == SerializedPropertyType.String) continue;
+				int count = CountListValidationErrors(property, errors);
+				if (count > 0) _listValidationErrors[property.propertyPath] = count;
+			}
+			_listValidationRevision = contentObject.ValidationGuid;
+			_listManifestRevision = service.ManifestChangedCount;
+			_listDirtyCount = dirtyCount;
+			_hasListValidationCache = true;
+		}
+
+		internal static int CountListValidationErrors(SerializedProperty list, List<ContentValidationException> errors)
+		{
+			var matches = new HashSet<ContentValidationException>();
+			var property = list.Copy();
+			var end = list.GetEndProperty();
+			do
+			{
+				foreach (var error in errors)
+				{
+					if (error.Info.Field.Name != property.name) continue;
+					var parent = ContentRefPropertyDrawer.GetTargetParentObjectOfProperty(property);
+					if (Equals(error.Info.Target, parent)) matches.Add(error);
+				}
+				// Next (not NextVisible) includes fields hidden inside collapsed list elements.
+			} while (property.Next(true) && !SerializedProperty.EqualContents(property, end));
+			return matches.Count;
 		}
 
 		public string GetTagString(string[] tags)
