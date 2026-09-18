@@ -1,5 +1,6 @@
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
+using Beamable.Editor.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -393,8 +394,8 @@ namespace Beamable.Editor.Content
 			if (_lblStyle == null)
 			{
 				_lblStyle = new GUIStyle(GUI.skin.label) {fontSize = (int)(GUI.skin.label.fontSize * 0.7f)};
-				_lblStyle.normal.textColor = Color.red;
-				_lblStyle.hover.textColor = Color.red;
+				_lblStyle.normal.textColor = BeamGUI.ContentErrorColor;
+				_lblStyle.hover.textColor = BeamGUI.ContentErrorColor;
 			}
 
 			for (var i = 0; i < exceptions.Length; i++)

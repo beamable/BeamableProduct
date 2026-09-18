@@ -459,7 +459,7 @@ namespace Beamable.Editor.UI.ContentWindow
             var realmLabel = new GUIContent("Realm: ");
             EditorGUI.LabelField(rectController.ReserveWidth(boldLabel.CalcSize(realmLabel).x), realmLabel, boldLabel);
             string currentRealmMessage = "(Could not find current realm)";
-            Color messageColor = Color.red;
+            Color messageColor = BeamGUI.ContentErrorColor;
             if (_cli.CurrentRealm != null)
             {
 	            bool isSameRealm = _cli.CurrentRealm.Pid == snapshot.ProjectData.PID;

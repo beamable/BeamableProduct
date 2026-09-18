@@ -5,6 +5,8 @@ namespace Beamable.Editor.Util
 {
 	public partial class BeamGUI
 	{
+		// Soft salmon (#F09B88) keeps content errors consistent across fields, headers, and windows.
+		internal static readonly Color ContentErrorColor = new Color32(240, 155, 136, 255);
 		
 		public static readonly float StandardVerticalSpacing = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
 		

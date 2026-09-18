@@ -112,7 +112,23 @@ jobs:
       DOTNET_CLI_UI_LANGUAGE: ${{ matrix.dotnet-cli-ui-language }}
     steps:
       - name: Check Docker
-        run: docker version
+        shell: pwsh
+        run: |
+          # The Windows daemon is sometimes still starting when the job begins,
+          # which reads as a hard npipe connection failure. Back off and retry.
+          $delay = 2
+          $deadline = (Get-Date).AddSeconds(90)
+          while ($true) {
+            docker version
+            if ($LASTEXITCODE -eq 0) { break }
+            if ((Get-Date) -ge $deadline) {
+              Write-Host "::error::Docker daemon was unreachable for 90 seconds."
+              exit 1
+            }
+            Write-Host "Docker daemon unreachable; retrying in $delay seconds."
+            Start-Sleep -Seconds $delay
+            $delay = [Math]::Min($delay * 2, 15)
+          }
       - name: Check concurrency
         run: echo 'cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{ matrix.runners }}-${{ matrix.test-culture }}'
       - uses: actions/checkout@v5
