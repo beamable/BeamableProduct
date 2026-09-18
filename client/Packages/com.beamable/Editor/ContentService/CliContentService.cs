@@ -165,6 +165,11 @@ namespace Beamable.Editor.ContentService
 		
 		public void SaveContent(ContentObject selectedContentObject)
 		{
+			if (selectedContentObject == null || selectedContentObject.ContentStatus == ContentStatus.Deleted)
+			{
+				return;
+			}
+			
 			string propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
 
 			// This prevents save storms when the debounce fires for rapid-fire edits where
@@ -528,6 +533,25 @@ namespace Beamable.Editor.ContentService
 			return newFullId;
 		}
 
+		/// <summary>
+		/// Marks the cached content object as deleted, detaches its editor change callback,
+		/// and cancels any pending change notification to prevent further autosave requests.
+		/// Does not delete the content file or cancel saves already running.
+		/// </summary>
+		/// <param name="contentId">The full ID of the content object to retire.</param>
+		private void RetireCachedContentObject(string contentId)
+		{
+			if (!_contentScriptableCache.TryGetValue(contentId, out var contentObject)
+			    || contentObject == null)
+			{
+				return;
+			}
+
+			contentObject.ContentStatus = ContentStatus.Deleted;
+			contentObject.OnEditorChanged = null;
+			contentObject.CancelPendingEditorChangeNotification();
+		}
+		
 		private bool ValidateNewContentName(string newName)
 		{
 			return Path.GetInvalidFileNameChars().All(invalidFileNameChar => !newName.Contains(invalidFileNameChar));
@@ -540,6 +564,8 @@ namespace Beamable.Editor.ContentService
 				Debug.LogError($"No Content found with id: {contentId}");
 				return;
 			}
+			
+			RetireCachedContentObject(contentId);
 			
 			if (entry.StatusEnum is not ContentStatus.Created)
 			{
@@ -1104,6 +1130,8 @@ namespace Beamable.Editor.ContentService
 			
 			if (entry.StatusEnum is ContentStatus.Deleted)
 			{
+				RetireCachedContentObject(entry.FullId);
+				
 				var deletedObject = ScriptableObject.CreateInstance(type) as ContentObject;
 				deletedObject.SetIdAndVersion(entry.FullId, String.Empty);
 				deletedObject.Tags = entry.Tags.ToArray();

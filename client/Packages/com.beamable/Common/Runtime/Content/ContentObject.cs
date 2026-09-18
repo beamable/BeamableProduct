@@ -443,17 +443,34 @@ namespace Beamable.Common.Content
 		     yield return null;
 	      }
 	      
-	      OnEditorChanged?.Invoke();
-	      _validateCoroutine = null;
+			_validateCoroutine = null; 
+			if (ContentStatus != ContentStatus.Deleted)
+			{
+			    OnEditorChanged?.Invoke();
+			}
       }
+
+		public void CancelPendingEditorChangeNotification()
+		{
+		    if (_validateCoroutine == null)
+		    {
+		        return;
+		    }
+
+		    EditorCoroutineUtility.StopCoroutine(_validateCoroutine);
+		    _validateCoroutine = null;
+		}
 
 		private void ScheduleDelayedValidate()
 		{
-			if (_validateCoroutine != null)
-			{
-				EditorCoroutineUtility.StopCoroutine(_validateCoroutine);
-			}
-			_validateCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedValidate(), this);
+			CancelPendingEditorChangeNotification();
+
+		    if (ContentStatus == ContentStatus.Deleted)
+		    {
+		        return;
+		    }
+
+		    _validateCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedValidate(), this);
 		}
 
 		private string CalculateDataChecksum()
