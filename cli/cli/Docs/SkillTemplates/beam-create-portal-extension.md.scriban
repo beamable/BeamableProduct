@@ -70,6 +70,18 @@ substitute a real hub name:
 replaced by your hub path, not literally prepended.) For full-page extensions the
 `--mount-selector` is always auto-assigned from the page slot, so you never pass it.
 
+#### Zone (`--zone`) extensions render in the zone view
+
+A `--zone` extension is scoped to `cid.zid` and lives **above realms**, so its hub and
+pages render in the Portal's **zone view** under `/zones/:zid/` rather than inside a realm.
+
+**Declare the mount page zone-relative** — exactly as for a realm extension
+(`--mount-page "dashboards"` or `"dashboards/overview"`). The Portal owns the routing
+prefix: it auto-assumes the full `:cid/zones/:zid/` prefix when rendering a zone
+extension, so the stored `page` in `package.json` is the zone-relative path with **no**
+`:cid/` segment. Do not add a `:cid/` prefix yourself, whether via `--mount-page` or by
+editing the manifest's `page` by hand.
+
 ### 2. Create the extension
 
 For a **page extension** (new navigation page):
@@ -147,6 +159,7 @@ Read the generated TypeScript files in the extension's `node_modules` to discove
 - **Always pass `-q` (quiet mode)** when executing from MCP to avoid interactive prompts that will hang.
 - **Page extensions need `--mount-group` and `--mount-label`** for the sidebar entry. Component extensions do not use these.
 - **Mount page format differs by type**: page extensions use `routePrefix + custom-route`, component extensions use the exact `path` value.
+- **Zone extensions render in the Portal's zone view** under `/zones/:zid/`. Declare their mount `page` **zone-relative** (e.g. `dashboards` or `dashboards/overview`) — the Portal owns the `:cid/zones/:zid/` prefix and auto-assumes it. Do not add a `:cid/` prefix, via `--mount-page` or by hand-editing the manifest.
 - **In React, import components from `@beamable/portal-toolkit/react`** — do NOT use `<beam-*>` web component tags directly in TSX. Use the typed React forwarders instead.
 - **Use Beamable components, not raw HTML.** Portal extensions render inside the Portal UI. Read the generated files in `node_modules/@beamable/portal-toolkit/src/generated/` for available components.
 - **The `--service-directory` for portal extensions is `extensions/`**, not `services/`.

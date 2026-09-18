@@ -5,5 +5,9 @@
 
 import type { CampaignSummaryDto } from './CampaignSummaryDto';
 
-export type ApiCampaignsGetCampaignResponse = CampaignSummaryDto[] & { 
+export type CampaignSummaryDtoCampaignPageDto = { 
+  limit?: number; 
+  records?: CampaignSummaryDto[]; 
+  skip?: number; 
+  total?: bigint | string; 
 };

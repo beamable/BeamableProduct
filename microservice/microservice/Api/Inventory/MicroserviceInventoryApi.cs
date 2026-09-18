@@ -19,7 +19,13 @@ namespace Beamable.Server.Api.Inventory
 
 		public override Promise<InventoryView> GetCurrent(string scope = "")
 		{
-			return InventoryApi.ObjectGet(UserContext.UserId,scope).Map(InventoryViewToAutoGenInventoryView);
+			// Null or empty scope means "the whole inventory". Omit the query parameter, as the pre-7.1.0
+			// BeamableGetApiResource did. Sending `?scope=` can leave the websocket request pending (#4833).
+			Optional<string> scopeArg = string.IsNullOrEmpty(scope)
+				? OptionalString.None
+				: new OptionalString(scope);
+
+			return InventoryApi.ObjectGet(UserContext.UserId, scopeArg).Map(InventoryViewToAutoGenInventoryView);
 		}
 
 		public async Promise SendCurrency(Dictionary<string, long> currencies, long recipientPlayer,

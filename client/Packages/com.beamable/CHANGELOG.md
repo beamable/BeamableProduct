@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### UI/UX
+
+- Add a shared Issues icon for Content window validation errors and conflicts, an Issues footer filter, and a Publish badge.
+- Explain blocked publishing in a popup with issue counts and an action to view affected items.
+- Improve Content window tooltips, filter behavior, and toolbar layout.
+- Add `/` to focus content search and Escape or an outside click to unfocus it.
+
 ## [6.1.0] - 2026-08-26
 
 ### Added
@@ -36,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed the Unity Content window failing to reconcile large local content changes after filesystem watcher overflow, which previously required a manual refresh.
 - Fixed repeated content validation during Unity Inspector repaints, reducing Editor log spam and performance overhead when viewing content.
 - Fixed Unity Editor hitches after editing content properties by avoiding synchronous end-of-stream checks while reading streamed CLI responses.
 

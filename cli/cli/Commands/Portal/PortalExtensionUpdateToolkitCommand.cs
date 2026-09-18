@@ -275,8 +275,9 @@ public class PortalExtensionUpdateToolkitCommand : AtomicCommand<PortalExtension
 	/// <summary>
 	/// Runs <c>npm install</c> in each given directory with a bounded degree of concurrency. The audit and
 	/// funding steps are disabled and the cache is preferred, since neither is needed to refresh a single
-	/// dependency and both add hundreds of milliseconds per call. The registry is passed explicitly so the
-	/// install does not inherit the user's global npm config (which, behind a proxy, may point at verdaccio).
+	/// dependency and both add hundreds of milliseconds per call. No public-registry forcing: verdaccio proxies
+	/// npmjs, so a released target resolves through the configured registry; an explicit <c>--registry</c> is
+	/// passed only when the resolved target lives on verdaccio (a local build, or a verdaccio-only --version).
 	/// </summary>
 	private async Task RunInstallsConcurrently(List<(string name, string directory)> directories, string registry)
 	{
@@ -292,16 +293,27 @@ public class PortalExtensionUpdateToolkitCommand : AtomicCommand<PortalExtension
 			await gate.WaitAsync();
 			try
 			{
-				// A local developer build (0.0.123-*) exists only on the local registry, so the install has
-				// to be routed there or npm 404s against npmjs. --prefer-offline is dropped in that case:
-				// the whole point is to fetch a version that was just published.
-				// A local dev build already carries its own "--registry <local>" in localArgs, so the explicit
-				// --registry is only added on the normal path (where it stops npm inheriting the user's global
-				// config, which behind a proxy may point at verdaccio).
+				// A local developer build (0.0.123-*) exists only on verdaccio, so it must be routed there or
+				// npm 404s against npmjs; it already carries its own "--registry <verdaccio>" in localArgs, and
+				// --prefer-offline is dropped there since the whole point is to fetch a just-published version.
+				//
+				// A released target gets NO public-registry forcing: verdaccio proxies npmjs, so the install
+				// resolves through the configured registry (verdaccio falls back to npmjs on its own). The only
+				// time a released path still needs an explicit --registry is a verdaccio-only --version, which
+				// npmjs cannot serve; a public target inherits the default registry.
 				var localArgs = WebLocalRegistryService.InstallArgsFor(target.directory);
-				var arguments = string.IsNullOrEmpty(localArgs)
-					? $"install --no-audit --no-fund --prefer-offline --registry {registry}"
-					: "install --no-audit --no-fund" + localArgs;
+				string arguments;
+				if (!string.IsNullOrEmpty(localArgs))
+				{
+					arguments = "install --no-audit --no-fund" + localArgs;
+				}
+				else
+				{
+					var explicitRegistry = string.Equals(registry, NPM_REGISTRY, StringComparison.OrdinalIgnoreCase)
+						? string.Empty
+						: $" --registry {registry}";
+					arguments = $"install --no-audit --no-fund --prefer-offline{explicitRegistry}";
+				}
 
 				var handle = StartProcessUtil.Run(
 					"npm",
@@ -337,9 +349,9 @@ public class PortalExtensionUpdateToolkitCommand : AtomicCommand<PortalExtension
 	/// <c>npm install</c> must use for that version: --local uses verdaccio's "local" dist-tag (installed
 	/// from verdaccio), --version validates the version exists in npm or verdaccio (installed from whichever
 	/// registry actually has it), and with no options the public npm registry's "latest" dist-tag is used
-	/// (installed from the public registry). The registry is resolved here — rather than left to the user's
-	/// global npm config — so that, behind a proxy whose default registry points at verdaccio, a non-local
-	/// update still pulls the toolkit from the public npm registry.
+	/// (installed from the public registry). The resolved registry is only used to route installs that npmjs
+	/// cannot serve — a --local target, or a verdaccio-only --version; a public target is left to the default
+	/// registry, since verdaccio proxies npmjs and no longer needs to be forced past.
 	/// </summary>
 	private async Task<(string version, string registry)> ResolveTargetVersion(PortalExtensionUpdateToolkitCommandArgs args)
 	{

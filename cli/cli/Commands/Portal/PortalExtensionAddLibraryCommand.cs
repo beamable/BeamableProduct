@@ -5,6 +5,7 @@ using cli.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.CommandLine;
+using System.Runtime.InteropServices;
 using static Beamable.Common.Constants.Features.PortalExtension;
 
 namespace cli.Portal;
@@ -105,6 +106,10 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 				Log.Warning($"Added library [{args.LibraryName}] to [{extension.Name}], but 'npm install' failed." +
 					$" Run it manually in the extension directory to resolve types. Errors: \n{result.stderr}");
 			}
+
+			// Link the library's own library deps into its node_modules so a library->library import resolves
+			// at build time (npm won't install a file:-linked library's deps for us).
+			LinkTransitiveLibraryDependencies(extension, args.ConfigService.BeamableWorkspace);
 		}
 		catch (CliException)
 		{
@@ -301,6 +306,159 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 		if (changed)
 		{
 			File.WriteAllText(packagePath, root.ToString(Newtonsoft.Json.Formatting.Indented));
+		}
+	}
+
+	// Case-insensitive path comparison on Windows, case-sensitive elsewhere.
+	private static readonly StringComparison PATH_COMPARISON =
+		RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+	/// <summary>
+	/// Ensures a library's own "file:" library dependencies are resolvable from the library's real
+	/// directory by materializing <c>&lt;libDir&gt;/node_modules/&lt;depLib&gt;</c> -> the dep library's real
+	/// directory, transitively across the library graph.
+	///
+	/// Why this is needed: npm does not install the dev/peer deps of a "file:"-linked package, so when an
+	/// extension links library A, nothing links A's own library deps (e.g. A imports B). The extension's
+	/// Vite build resolves A at its REAL path (Rollup canonicalizes symlinks by default), so an A->B import
+	/// walks up from A's real directory and never reaches the extension's node_modules where B is linked,
+	/// failing with "Rollup failed to resolve import". Creating the link inside A's node_modules mirrors what
+	/// npm would do for A's "file:" dep, without a global Vite `preserveSymlinks` change. Scoped strictly to
+	/// portal-extension libraries, so no other npm package is ever linked.
+	/// </summary>
+	public static void LinkTransitiveLibraryDependencies(PortalExtensionDef extension, string workspace)
+	{
+		var packagePath = extension.AbsolutePackageJsonPath;
+		if (!File.Exists(packagePath))
+		{
+			return;
+		}
+
+		// Every portal-extension library in the workspace: name -> absolute real directory.
+		var libraries = LocateAllLibraries(workspace)
+			.GroupBy(l => l.Name, StringComparer.Ordinal)
+			.ToDictionary(g => g.Key, g => g.First().Directory, StringComparer.Ordinal);
+
+		if (libraries.Count == 0)
+		{
+			return;
+		}
+
+		// Walk the library graph starting from the libraries the extension directly depends on.
+		var toVisit = new Stack<string>(ReadLibraryDependencyNames(packagePath, libraries));
+		var visited = new HashSet<string>(StringComparer.Ordinal);
+
+		while (toVisit.Count > 0)
+		{
+			var libName = toVisit.Pop();
+			if (!visited.Add(libName) || !libraries.TryGetValue(libName, out var libDir))
+			{
+				continue;
+			}
+
+			var libPackageJson = Path.Combine(libDir, "package.json");
+			foreach (var depName in ReadLibraryDependencyNames(libPackageJson, libraries))
+			{
+				var depDir = libraries[depName];
+				EnsureLibraryLink(Path.Combine(libDir, "node_modules", depName), depDir, libName, depName);
+				toVisit.Push(depName);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Reads the "dependencies" and "devDependencies" of the package.json at <paramref name="packageJsonPath"/>
+	/// and returns the names that refer to a known portal-extension library in <paramref name="libraries"/>.
+	/// </summary>
+	private static IEnumerable<string> ReadLibraryDependencyNames(string packageJsonPath, IReadOnlyDictionary<string, string> libraries)
+	{
+		if (!File.Exists(packageJsonPath))
+		{
+			yield break;
+		}
+
+		JObject root;
+		try
+		{
+			root = JObject.Parse(File.ReadAllText(packageJsonPath));
+		}
+		catch
+		{
+			yield break;
+		}
+
+		foreach (var block in new[] { EXTENSION_NPM_DEPENDENCIES_PROPERTY_NAME, "devDependencies" })
+		{
+			if (root[block] is not JObject deps)
+			{
+				continue;
+			}
+
+			foreach (var (name, _) in deps)
+			{
+				if (libraries.ContainsKey(name))
+				{
+					yield return name;
+				}
+			}
+		}
+	}
+
+	/// <summary>
+	/// Ensures <paramref name="linkPath"/> is a directory link pointing at <paramref name="targetDir"/>.
+	/// Uses a junction on Windows (npm's own choice for "file:" deps — no Developer Mode/elevation required)
+	/// and a symbolic link elsewhere. A correct existing link is left as-is; a stale/broken link is replaced;
+	/// a real directory already sitting there (e.g. a real install) is left untouched. Best-effort: a failure
+	/// warns rather than aborting the build.
+	/// </summary>
+	private static void EnsureLibraryLink(string linkPath, string targetDir, string fromLib, string depLib)
+	{
+		try
+		{
+			var expected = Path.GetFullPath(targetDir)
+				.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+			if (Directory.Exists(linkPath) || File.Exists(linkPath))
+			{
+				var current = new DirectoryInfo(linkPath).LinkTarget;
+				if (current == null)
+				{
+					// A real directory (not a link) already resolves the import; don't touch user content.
+					return;
+				}
+
+				var currentAbs = Path.GetFullPath(Path.IsPathRooted(current)
+						? current
+						: Path.Combine(Path.GetDirectoryName(linkPath)!, current))
+					.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+				if (string.Equals(currentAbs, expected, PATH_COMPARISON))
+				{
+					return; // already linked correctly
+				}
+
+				Directory.Delete(linkPath); // remove the stale/broken link (safe: it's a reparse point)
+			}
+
+			Directory.CreateDirectory(Path.GetDirectoryName(linkPath)!); // ensure node_modules/ exists
+
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			{
+				var result = StartProcessUtil.Run("cmd", $"/c mklink /J \"{linkPath}\" \"{expected}\"").WaitForResult();
+				if (result.exit != 0)
+				{
+					Log.Warning($"Could not link library [{depLib}] into [{fromLib}]'s node_modules (mklink exit {result.exit})." +
+						$" The extension build may fail to resolve '{depLib}'. Errors: {result.stderr}");
+				}
+			}
+			else
+			{
+				Directory.CreateSymbolicLink(linkPath, expected);
+			}
+		}
+		catch (Exception e)
+		{
+			Log.Warning($"Could not link library [{depLib}] into [{fromLib}]'s node_modules at [{linkPath}]." +
+				$" The extension build may fail to resolve '{depLib}'. Error: {e.Message}");
 		}
 	}
 

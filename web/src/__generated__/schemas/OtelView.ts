@@ -3,13 +3,11 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { ObjectId } from './ObjectId';
-
 export type OtelView = { 
+  accountId: string; 
   name: string; 
-  playerId: string; 
   query: string; 
-  id?: ObjectId; 
+  id?: string | null; 
   isFavorite?: boolean; 
   isPublic?: boolean; 
 };

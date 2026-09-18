@@ -19,8 +19,8 @@ export type Message = {
   bodyRef?: bigint | string; 
   claimedTimeMs?: bigint | string; 
   expires?: bigint | string; 
+  metadata?: Record<string, string>; 
   playerRewards?: PlayerReward; 
   rewards?: MailRewards; 
   subject?: string; 
-  metadata?: Record<string, string>; 
 };
