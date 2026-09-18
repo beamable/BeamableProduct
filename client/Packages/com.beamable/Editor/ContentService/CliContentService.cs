@@ -82,6 +82,7 @@ namespace Beamable.Editor.ContentService
 		}
 
 		private readonly Dictionary<string, ContentSaveSnapshot> _lastSavedPropertiesCache = new();
+		private readonly Dictionary<string, ContentSaveSnapshot> _pendingTagSaves = new();
 		private readonly ContentWriteTracker _contentWrites = new();
 		private readonly Dictionary<string, ContentRenameInfo> _renameRegistry = new();
 		private readonly Dictionary<string, ContentRenameInfo> _explicitRenameTracking = new();
@@ -202,7 +203,7 @@ namespace Beamable.Editor.ContentService
 
 			string contentId = selectedContentObject.Id;
 			string propertiesJson = ClientContentSerializer.SerializeProperties(selectedContentObject);
-			// Both commands must use the same edit snapshot, even if the Inspector changes while saving.
+			// Keep this edit's tags, but discard them if a newer edit supersedes this save.
 			string[] tags = (selectedContentObject.Tags ?? Array.Empty<string>()).ToArray();
 			string scopeKey = GetContentScopeKey();
 			string writeKey = GetContentWriteKey(contentId);
@@ -222,26 +223,37 @@ namespace Beamable.Editor.ContentService
 
 			bool hasValidationError = selectedContentObject.HasValidationErrors(GetValidationContext(), out List<string> _);
 			UpdateContentValidationStatus(contentId, hasValidationError);
-			await SaveContentPropertiesAsync(contentId, propertiesJson);
-
-			// The properties command may finish after deletion has retired this object.
-			if (selectedContentObject == null || selectedContentObject.ContentStatus == ContentStatus.Deleted)
+			_pendingTagSaves[writeKey] = snapshot;
+			try
 			{
-				return;
+				await SaveContentPropertiesAsync(contentId, propertiesJson);
+
+				// The properties command may finish after deletion has retired this object.
+				if (selectedContentObject == null || selectedContentObject.ContentStatus == ContentStatus.Deleted)
+				{
+					return;
+				}
+
+				// A continuation must not send its tags into a newly selected realm or manifest.
+				if (scopeKey != GetContentScopeKey())
+				{
+					return;
+				}
+
+				// Direct tag edits and newer saves own the tags now; an older properties completion must not overwrite them.
+				if (!_pendingTagSaves.TryGetValue(writeKey, out var pending) || !ReferenceEquals(pending, snapshot)) return;
+				await SetContentTagsAsync(contentId, tags);
+				if (selectedContentObject != null && selectedContentObject.ContentStatus != ContentStatus.Deleted &&
+				    scopeKey == GetContentScopeKey() && CanWriteContent(contentId) &&
+				    _lastSavedPropertiesCache.TryGetValue(writeKey, out var currentSave) && ReferenceEquals(currentSave, snapshot))
+				{
+					snapshot.IsSaved = true;
+				}
 			}
-
-			// A continuation must not send its tags into a newly selected realm or manifest.
-			if (scopeKey != GetContentScopeKey())
+			finally
 			{
-				return;
-			}
-
-			await SetContentTagsAsync(contentId, tags);
-			if (selectedContentObject != null && selectedContentObject.ContentStatus != ContentStatus.Deleted &&
-			    scopeKey == GetContentScopeKey() && CanWriteContent(contentId) &&
-			    _lastSavedPropertiesCache.TryGetValue(writeKey, out var currentSave) && ReferenceEquals(currentSave, snapshot))
-			{
-				snapshot.IsSaved = true;
+				if (_pendingTagSaves.TryGetValue(writeKey, out var pending) && ReferenceEquals(pending, snapshot))
+					_pendingTagSaves.Remove(writeKey);
 			}
 		}
 
@@ -429,6 +441,7 @@ namespace Beamable.Editor.ContentService
 		{
 			if (!CanWriteContent(contentId)) return Promise.Success;
 			var key = GetContentWriteKey(contentId);
+			_pendingTagSaves.Remove(key);
 			if (_contentWrites.HasWrites(key)) _lastSavedPropertiesCache.Remove(key);
 			return _contentWrites.Run(key, () => WriteContentTags(contentId, tags));
 		}
@@ -650,12 +663,30 @@ namespace Beamable.Editor.ContentService
 			var scopeKey = GetContentScopeKey();
 			var writeKey = GetContentWriteKey(contentId);
 			var path = entry.JsonFilePath;
+			_contentScriptableCache.TryGetValue(contentId, out var contentObject);
+			var onEditorChanged = contentObject != null ? contentObject.OnEditorChanged : null;
 			RetireCachedContentObject(contentId);
+			_pendingTagSaves.Remove(writeKey);
 			_lastSavedPropertiesCache.Remove(writeKey);
 			return _contentWrites.Delete(writeKey, () =>
 			{
 				// A realm/manifest switch must not redirect this deletion to the newly selected content.
-				File.Delete(path);
+				try
+				{
+					File.Delete(path);
+				}
+				catch
+				{
+					// A failed file removal must leave the surviving object editable, without reviving another scope's object.
+					if (scopeKey == GetContentScopeKey() && contentObject != null &&
+					    _contentScriptableCache.TryGetValue(contentId, out var cached) && ReferenceEquals(cached, contentObject))
+					{
+						contentObject.ContentStatus = EntriesCache.TryGetValue(contentId, out var currentEntry)
+							? currentEntry.StatusEnum : entry.StatusEnum;
+						contentObject.OnEditorChanged = onEditorChanged;
+					}
+					throw;
+				}
 				if (scopeKey != GetContentScopeKey()) return;
 
 				// The watcher may have refreshed this entry while a command was finishing.

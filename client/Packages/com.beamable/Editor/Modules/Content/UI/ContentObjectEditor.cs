@@ -467,10 +467,17 @@ namespace Beamable.Editor.Content.UI
 			var end = list.GetEndProperty();
 			do
 			{
+				object parent = null;
+				bool parentResolved = false;
 				foreach (var error in errors)
 				{
 					if (error.Info.Field.Name != property.name) continue;
-					var parent = ContentRefPropertyDrawer.GetTargetParentObjectOfProperty(property);
+					// Resolving a list element walks its parent path; do it once, even if many errors share this field name.
+					if (!parentResolved)
+					{
+						parent = ContentRefPropertyDrawer.GetTargetParentObjectOfProperty(property);
+						parentResolved = true;
+					}
 					if (Equals(error.Info.Target, parent)) matches.Add(error);
 				}
 				// Next (not NextVisible) includes fields hidden inside collapsed list elements.
