@@ -297,8 +297,13 @@ namespace Beamable.Editor.Content.UI
 						EditorCoroutineUtility.StopCoroutine(_updateTagCoroutine);
 					}
 
+					var scope = contentService.GetContentScopeKey();
 					_updateTagCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedActionEditorRoutine(0.5d, () =>
 					{
+						_updateTagCoroutine = null;
+						// This Inspector debounce is separate from ContentObject's pending autosave.
+						if (contentObject == null || contentObject.ContentStatus == Common.BeamCli.Contracts.ContentStatus.Deleted ||
+						    scope != contentService.GetContentScopeKey()) return;
 						var tags = GetTagsFromString(newTags);
 						contentService.SetContentTags(contentObject.Id, tags);
 						contentObject.Tags = tags.ToArray();

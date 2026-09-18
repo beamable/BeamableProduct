@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep deleted content from being recreated by pending autosaves or running properties/tag writes in the Content window.
+
 ### UI/UX
 
 - Add a shared Issues icon for Content window validation errors and conflicts, an Issues footer filter, and a Publish badge.

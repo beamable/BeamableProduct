@@ -75,7 +75,14 @@ namespace Beamable.Editor.ContentService
 		private List<string> _tagsCache = new();
 		private int syncedContents;
 		private int publishedContents;
-		private readonly Dictionary<string, string> _lastSavedPropertiesCache = new();
+		private sealed class ContentSaveSnapshot
+		{
+			public string PropertiesJson;
+			public bool IsSaved;
+		}
+
+		private readonly Dictionary<string, ContentSaveSnapshot> _lastSavedPropertiesCache = new();
+		private readonly ContentWriteTracker _contentWrites = new();
 		private readonly Dictionary<string, ContentRenameInfo> _renameRegistry = new();
 		private readonly Dictionary<string, ContentRenameInfo> _explicitRenameTracking = new();
 		private static readonly string RenameCachePath =
@@ -162,11 +169,19 @@ namespace Beamable.Editor.ContentService
 			_ = Reload();
 		}
 
-		private string GetContentScopeKey()
+		internal string GetContentScopeKey()
 		{
 			var realm = _beamContext.BeamCli.CurrentRealm;
 			var manifestId = GetSelectedManifestIdCliOption() ?? "global";
 			return $"{realm.Cid}/{realm.Pid}/{manifestId}";
+		}
+
+		private string GetContentWriteKey(string contentId) => $"{GetContentScopeKey()}/{contentId}";
+
+		private bool CanWriteContent(string contentId)
+		{
+			return !_contentWrites.IsDeleting(GetContentWriteKey(contentId)) &&
+			       (!EntriesCache.TryGetValue(contentId, out var entry) || entry.StatusEnum != ContentStatus.Deleted);
 		}
 
 		public void SaveContent(ContentObject selectedContentObject)
@@ -190,15 +205,20 @@ namespace Beamable.Editor.ContentService
 			// Both commands must use the same edit snapshot, even if the Inspector changes while saving.
 			string[] tags = (selectedContentObject.Tags ?? Array.Empty<string>()).ToArray();
 			string scopeKey = GetContentScopeKey();
+			string writeKey = GetContentWriteKey(contentId);
+			if (!CanWriteContent(contentId)) return;
 
 			// This prevents save storms when the debounce fires for rapid-fire edits where
 			// the final serialised value is the same as what was already written.
-			if (_lastSavedPropertiesCache.TryGetValue(contentId, out var lastJson)
-			    && lastJson == propertiesJson)
+			if (!_contentWrites.HasWrites(writeKey) && _lastSavedPropertiesCache.TryGetValue(writeKey, out var lastSave)
+			    && lastSave.IsSaved && lastSave.PropertiesJson == propertiesJson)
 			{
 				return;
 			}
-			_lastSavedPropertiesCache[contentId] = propertiesJson;
+			var snapshot = new ContentSaveSnapshot { PropertiesJson = propertiesJson };
+			// Overlapping commands can finish out of order. Neither save may claim a known disk snapshot.
+			if (_contentWrites.HasWrites(writeKey)) _lastSavedPropertiesCache.Remove(writeKey);
+			else _lastSavedPropertiesCache[writeKey] = snapshot;
 
 			bool hasValidationError = selectedContentObject.HasValidationErrors(GetValidationContext(), out List<string> _);
 			UpdateContentValidationStatus(contentId, hasValidationError);
@@ -217,14 +237,31 @@ namespace Beamable.Editor.ContentService
 			}
 
 			await SetContentTagsAsync(contentId, tags);
+			if (selectedContentObject != null && selectedContentObject.ContentStatus != ContentStatus.Deleted &&
+			    scopeKey == GetContentScopeKey() && CanWriteContent(contentId) &&
+			    _lastSavedPropertiesCache.TryGetValue(writeKey, out var currentSave) && ReferenceEquals(currentSave, snapshot))
+			{
+				snapshot.IsSaved = true;
+			}
 		}
 
 		public void SaveContent(string contentId, string contentPropertiesJson, Action onCompleted = null)
 		{
+			_lastSavedPropertiesCache.Remove(GetContentWriteKey(contentId));
 			SaveContentPropertiesAsync(contentId, contentPropertiesJson, onCompleted).Error(Debug.LogException);
 		}
 
-		private async Promise SaveContentPropertiesAsync(string contentId, string contentPropertiesJson, Action onCompleted = null)
+		private Promise SaveContentPropertiesAsync(string contentId, string contentPropertiesJson, Action onCompleted = null)
+		{
+			if (!CanWriteContent(contentId)) return Promise.Success;
+			return _contentWrites.Run(GetContentWriteKey(contentId), async () =>
+			{
+				await WriteContentProperties(contentId, contentPropertiesJson);
+				onCompleted?.Invoke();
+			});
+		}
+
+		private async Promise WriteContentProperties(string contentId, string contentPropertiesJson)
 		{
 			var saveCommand = _cli.ContentSave(new ContentSaveArgs()
 			{
@@ -233,8 +270,6 @@ namespace Beamable.Editor.ContentService
 				contentProperties = new[] {contentPropertiesJson}
 			});
 			await saveCommand.Run();
-			// Kept for existing callers. Async follow-up work must be awaited separately, as above.
-			onCompleted?.Invoke();
 		}
 		
 		public async Task<BeamContentSnapshotListResult> GetContentSnapshots()
@@ -390,7 +425,15 @@ namespace Beamable.Editor.ContentService
 		/// <summary>
 		/// Awaits the tag command, including direct tag edits that do not save properties first.
 		/// </summary>
-		private async Promise SetContentTagsAsync(string contentId, string[] tags)
+		private Promise SetContentTagsAsync(string contentId, string[] tags)
+		{
+			if (!CanWriteContent(contentId)) return Promise.Success;
+			var key = GetContentWriteKey(contentId);
+			if (_contentWrites.HasWrites(key)) _lastSavedPropertiesCache.Remove(key);
+			return _contentWrites.Run(key, () => WriteContentTags(contentId, tags));
+		}
+
+		private async Promise WriteContentTags(string contentId, string[] tags)
 		{
 			tags = (tags ?? Array.Empty<string>()).ToArray();
 			if (EntriesCache.TryGetValue(contentId, out var entry))
@@ -592,24 +635,40 @@ namespace Beamable.Editor.ContentService
 			return Path.GetInvalidFileNameChars().All(invalidFileNameChar => !newName.Contains(invalidFileNameChar));
 		}
 
-		public void DeleteContent(string contentId)
+		/// <summary>
+		/// Retires the object immediately, waits for all its submitted writes, then removes the file.
+		/// Callers must await completion before selecting the deleted placeholder or resuming the watcher.
+		/// </summary>
+		public Promise DeleteContent(string contentId)
 		{
 			if (!EntriesCache.TryGetValue(contentId, out var entry))
 			{
 				Debug.LogError($"No Content found with id: {contentId}");
-				return;
+				return Promise.Success;
 			}
 			
+			var scopeKey = GetContentScopeKey();
+			var writeKey = GetContentWriteKey(contentId);
+			var path = entry.JsonFilePath;
 			RetireCachedContentObject(contentId);
-			
-			if (entry.StatusEnum is not ContentStatus.Created)
+			_lastSavedPropertiesCache.Remove(writeKey);
+			return _contentWrites.Delete(writeKey, () =>
 			{
-				RemoveContentFromCache(entry);
-				entry.CurrentStatus = (int)ContentStatus.Deleted;
-				AddContentToCache(entry);
-			}
+				// A realm/manifest switch must not redirect this deletion to the newly selected content.
+				File.Delete(path);
+				if (scopeKey != GetContentScopeKey()) return;
 
-			File.Delete(entry.JsonFilePath);
+				// The watcher may have refreshed this entry while a command was finishing.
+				RetireCachedContentObject(contentId);
+				if (EntriesCache.TryGetValue(contentId, out var current)) RemoveContentFromCache(current);
+				ValidationContext.AllContent.Remove(contentId);
+				_contentScriptableCache.Remove(contentId);
+				if (entry.StatusEnum != ContentStatus.Created)
+				{
+					entry.CurrentStatus = (int)ContentStatus.Deleted;
+					AddContentToCache(entry);
+				}
+			});
 		}
 
 		public void ResolveConflict(string contentId, bool useLocal)
@@ -1156,6 +1215,13 @@ namespace Beamable.Editor.ContentService
 
 		private void CacheScriptableContent(LocalContentManifestEntry entry)
 		{
+			// In-flight writes can generate Modified events while deletion is waiting.
+			// Do not let those events revive the retired object or schedule another autosave.
+			if (_contentWrites.IsDeleting(GetContentWriteKey(entry.FullId)) && entry.StatusEnum != ContentStatus.Deleted)
+			{
+				RetireCachedContentObject(entry.FullId);
+				return;
+			}
 			if (!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(entry.TypeName, out var type))
 			{
 				_invalidContents.Remove(entry.FullId);

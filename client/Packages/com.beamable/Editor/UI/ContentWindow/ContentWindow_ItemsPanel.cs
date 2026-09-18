@@ -1,5 +1,6 @@
 ﻿using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
+using Beamable.Common;
 using Beamable.Editor.Util;
 using Beamable.Common.Util;
 using System;
@@ -194,15 +195,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					                                                "Delete", "Cancel");
 					if (shouldDelete)
 					{
-						_contentService.TempDisableWatcher(() =>
-						{
-							foreach (var id in toBeDeleted)
-							{
-								_contentService.DeleteContent(id.FullId);
-							}
-							ClearSelection();
-							
-						});
+						_contentService.TempDisableWatcher(() => DeleteContentEntries(toBeDeleted)).Error(Debug.LogException);
 						
 						Selection.activeObject = null;
 						Event.current.Use();
@@ -212,6 +205,22 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 		
+		private async Promise DeleteContentEntries(IEnumerable<LocalContentManifestEntry> entries)
+		{
+			var scope = _contentService.GetContentScopeKey();
+			// Start every deletion before awaiting, so all targets retain the original scope and block new writes.
+			var deletions = entries.Select(entry => _contentService.DeleteContent(entry.FullId)).ToArray();
+			Exception failure = null;
+			foreach (var deletion in deletions)
+			{
+				try { await deletion; }
+				catch (Exception ex) { failure = failure ?? ex; }
+			}
+			if (scope == _contentService.GetContentScopeKey()) ClearSelection();
+			// Keep the watcher paused until every deletion settles, even if one file cannot be removed.
+			if (failure != null) throw failure;
+		}
+
 		private void DrawGroupNode(string parentPath = "", int indentLevel = 0)
 		{
 			var contentTypeItems = SortContentGroups(_contentTypeHierarchy);
@@ -778,15 +787,14 @@ namespace Beamable.Editor.UI.ContentWindow
 						                                "Are you sure you want to delete this content?", "Delete",
 						                                "Cancel"))
 						{
-							_contentService.DeleteContent(entry.FullId);
-							if (entry.StatusEnum is ContentStatus.Created)
+							var scope = _contentService.GetContentScopeKey();
+							_contentService.DeleteContent(entry.FullId).Then(_ =>
 							{
-								ClearSelection();
-							}
-							else
-							{
-								SetEntryIdAsSelected(entry.FullId);
-							}
+								if (scope != _contentService.GetContentScopeKey()) return;
+								if (entry.StatusEnum is ContentStatus.Created) ClearSelection();
+								else SetEntryIdAsSelected(entry.FullId);
+								Repaint();
+							}).Error(Debug.LogException);
 						}
 
 					});
@@ -837,16 +845,7 @@ namespace Beamable.Editor.UI.ContentWindow
 						                                $"Are you sure you want to delete these {entries.Count} contents?", "Delete",
 						                                "Cancel"))
 						{
-							_contentService.TempDisableWatcher(() =>
-							{
-								foreach (var entry in entries)
-								{
-									_contentService.DeleteContent(entry.FullId);
-								}
-
-								ClearSelection();
-								
-							});
+							_contentService.TempDisableWatcher(() => DeleteContentEntries(entries)).Error(Debug.LogException);
 						}
 					});
 				}
