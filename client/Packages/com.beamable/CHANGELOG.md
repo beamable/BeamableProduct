@@ -7,8 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep deleted content from being recreated by pending autosaves or running properties/tag writes in the Content window.
+- Prevent older property saves from overwriting newer tag edits, and restore editable content after a failed file deletion.
+
 ### UI/UX
 
+- Improve content validation QOL with clearer Inspector issue badges, errors above collapsed lists, softer error text with bright red bars, and faster validation error counting for large lists.
 - Add a shared Issues icon for Content window validation errors and conflicts, an Issues footer filter, and a Publish badge.
 - Explain blocked publishing in a popup with issue counts and an action to view affected items.
 - Improve Content window tooltips, filter behavior, and toolbar layout.
