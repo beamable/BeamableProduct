@@ -167,7 +167,7 @@ public class LocalStackLivenessTests
 		{
 			"java", "javaw", "node", "dotnet", "beam", "Beamable.Tools",
 			"BeamableGateway", "BeamableMessageRailRuntime", "BeamableCampaignRuntime",
-			"BeamableAnalyticsLoader"
+			"BeamableSegmentationRuntime", "BeamableAnalyticsLoader"
 		};
 		if (stackImages.Contains(current, StringComparer.OrdinalIgnoreCase))
 		{

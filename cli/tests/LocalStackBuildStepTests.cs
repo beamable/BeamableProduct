@@ -293,10 +293,12 @@ public class LocalStackBuildStepTests
 	}
 
 	/// <summary>
-	/// The two backend workers are as load-bearing as the gateway, and their absence is silent: without the
+	/// The backend workers are as load-bearing as the gateway, and their absence is silent: without the
 	/// message-rail runtime a send stages and never delivers; without the campaign runtime a campaign
-	/// publishes and then never enrolls, advances or sends. The campaign runtime was in fact missing from
-	/// this template until it was noticed only by a campaign sitting in Launching forever — hence the guard.
+	/// publishes and then never enrolls, advances or sends; without the segmentation runtime a segment ruled
+	/// on a clock-derived attribute gains members and never loses them. Two of the three were in fact missing
+	/// from this template until each was noticed only by its symptom — a campaign sitting in Launching
+	/// forever, an `active-today` count that only ever grew — hence the guard.
 	/// </summary>
 	[Test]
 	public void Emits_the_backend_worker_runtimes_with_their_own_ports()
@@ -307,6 +309,7 @@ public class LocalStackBuildStepTests
 		{
 			("build: c# message rail runtime", "c# message rail runtime", "BeamableMessageRailRuntime"),
 			("build: c# campaign runtime", "c# campaign runtime", "BeamableCampaignRuntime"),
+			("build: c# segmentation runtime", "c# segmentation runtime", "BeamableSegmentationRuntime"),
 			("build: c# analytics loader", "c# analytics loader", "BeamableAnalyticsLoader"),
 		})
 		{
@@ -324,12 +327,15 @@ public class LocalStackBuildStepTests
 			Assert.That(IndexOf(config, buildName), Is.LessThan(IndexOf(config, runName)));
 		}
 
-		// Four .NET hosts share the machine, so each must bind a port of its own. The gateway takes the
+		// Five .NET hosts share the machine, so each must bind a port of its own. The gateway takes the
 		// ASPNETCORE_URLS default, so it has no entry — stand in a sentinel to keep the comparison honest.
 		// This is the assertion that catches a future port collision, which otherwise surfaces as whichever
 		// host started second silently failing to bind.
 		var ports = new[]
-			{ "c# gateway", "c# message rail runtime", "c# campaign runtime", "c# analytics loader" }
+		{
+			"c# gateway", "c# message rail runtime", "c# campaign runtime", "c# segmentation runtime",
+			"c# analytics loader"
+		}
 			.Select(n => Step(config, n))
 			.Select(s => s.environment.TryGetValue("ASPNETCORE_URLS", out var url) ? url : "gateway-default")
 			.ToArray();
@@ -340,12 +346,13 @@ public class LocalStackBuildStepTests
 			Is.LessThan(IndexOf(config, "c# campaign runtime")));
 	}
 
-	/// <summary>The four .NET hosts, as (build step, run step, project) — the set that must stay in lockstep.</summary>
+	/// <summary>The five .NET hosts, as (build step, run step, project) — the set that must stay in lockstep.</summary>
 	private static readonly (string build, string run, string project)[] DotnetHosts =
 	{
 		("build: c# gateway", "c# gateway", "BeamableGateway"),
 		("build: c# message rail runtime", "c# message rail runtime", "BeamableMessageRailRuntime"),
 		("build: c# campaign runtime", "c# campaign runtime", "BeamableCampaignRuntime"),
+		("build: c# segmentation runtime", "c# segmentation runtime", "BeamableSegmentationRuntime"),
 		("build: c# analytics loader", "c# analytics loader", "BeamableAnalyticsLoader"),
 	};
 
