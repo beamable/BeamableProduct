@@ -12,7 +12,7 @@ Each bundle has:
 - A **logical name** `@<alias>/<name>` — the form the API and all output use. `@<alias>` is the *namespace*, your customer's cid alias. The **short name** (`<name>`) is only an input/file-name convenience.
 - One or more **checksums** — a checksum is a `sha256:…` digest the server computes at publish time over the built component images/assets. It is content-addressed: the same components produce the same checksum, and a checksum is immutable.
 - **Tags** — movable pointers to a checksum (`latest` always tracks the newest publish; you can advance your own like `stable`).
-- An **ACL scope** per checksum — who may reference it: `realm` ⊂ `org` ⊂ `public`.
+- An **ACL scope** per checksum — who may reference it: `private` ⊂ `org` ⊂ `public`.
 
 Bundles are **authored** in the workspace as `*.beam.bundle.json` files and **published** to the catalog; the two are distinct — publishing is an explicit build+upload step.
 
@@ -98,7 +98,7 @@ beam_exec("bundles plan checkout-stack -q")
 beam_exec("bundles publish checkout-stack --from-latest-plan -q")
 ```
 Behavior worth knowing (the flags themselves are in the options table below):
-- A bundle name starts at the `realm` ACL tier; you can widen it in the same step or later with `bundles acl` (see *Tags & Visibility*).
+- A bundle name starts at the `private` ACL tier; you can widen it in the same step or later with `bundles acl` (see *Tags & Visibility*).
 - Advancing a tag alongside the publish also moves that tag to the freshly-published checksum (in addition to `latest`).
 - If the diff is a no-op, publish reports "nothing to publish" and makes no change.
 - A saved plan is only valid against the catalog state it was diffed from; if `latest` moved since planning, publish rejects it — re-run `bundles plan`.
@@ -204,8 +204,8 @@ beam_exec("bundles tag checkout-stack@sha256:abc123… stable -q")
 {{ end }}{{ end }}{{ end }}
 
 **ACL scope** controls who may *reference* a checksum. The three tiers are **supersets**, not lists of realms, and you can only ever **widen**:
-- `realm` — only the current realm (`<cid>.<pid>`). This is the default at publish time.
-- `org` — every realm in your customer (`<cid>`).
+- `private` — only the current scope: the realm (`<cid>.<pid>`) for a realm bundle, or the zone (`<cid>.<zid>`) for a zone bundle. This is the default at publish time. (This tier is scope-relative — it was previously named `realm`.)
+- `org` — every realm and zone in your customer (`<cid>`).
 - `public` — every realm in every customer (`*`).
 
 `bundles acl` takes a bundle **name** — no tag or checksum. Visibility belongs to the name, so widening
@@ -284,7 +284,7 @@ beam_exec("bundles prune-yanked -q")
 - **Mixed-scope bundle.** A bundle must be single-scope. Mixing realm-scoped and zone-scoped components — or a `scope` field that disagrees with the components' actual scope — is rejected at creation and before plan/publish/deploy. Split into separate bundles or make the components' scope consistent.
 - **Stale plan on publish.** A saved plan is only valid against the published `latest` it was diffed from. If `latest` moved, publishing from that plan is refused — re-run `bundles plan`.
 - **Yanked but still deployed.** Yank only blocks *new* references. A pin already in `manifest.beam.json` keeps redeploying until you prune it and re-pin.
-- **ACL only widens, and is admin-gated.** You cannot narrow a scope, and you cannot address specific realms — only the `realm`/`org`/`public` tiers. Widening requires an admin token server-side.
+- **ACL only widens, and is admin-gated.** You cannot narrow a scope, and you cannot address specific realms — only the `private`/`org`/`public` tiers. Widening requires an admin token server-side.
 - **`tag` / `yank` need an exact checksum.** These reject a bare name or `@tag`; pass `@sha256:…`. Use `bundles get`/`tags` to resolve a tag to its checksum first.
 - **Always pass `-q`** when executing from MCP to avoid interactive prompts (publish confirms before mutating the catalog otherwise).
 
@@ -305,7 +305,7 @@ The catalog API is the generated `IBeamBeamobundleApi` (`Beamable.Api.Autogenera
 After a bundle workflow, summarize for the user:
 1. **What was published** — the logical name `@<alias>/<name>`, the release version, the resulting checksum, and whether it was new (`bundles get` / `releases` to confirm).
 2. **Which tags moved** — `latest` always, plus any tag you advanced (`bundles tags`).
-3. **Who can see it** — the ACL scope (`realm`/`org`/`public`).
+3. **Who can see it** — the ACL scope (`private`/`org`/`public`).
 4. **What consumes it** — which realm(s) pin the checksum in `manifest.beam.json`, and whether any pins need pruning after a yank.
 
 ## CLI Version Awareness

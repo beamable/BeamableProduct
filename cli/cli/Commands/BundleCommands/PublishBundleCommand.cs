@@ -80,7 +80,7 @@ public class PublishBundleCommand
 			(args, i) => args.fromLastPlan = i);
 		AddOption(new Option<string>(new[] { "--tag" }, "An additional tag to advance to the published checksum"),
 			(args, i) => args.tag = i);
-		AddOption(new Option<string>(new[] { "--scope" }, "Widen the bundle's visibility tier (each tier is a superset of the previous, not a list of realms): 'realm' = only this realm; 'org' = every realm in your customer; 'public' = every realm in every customer. '*' is also accepted as an alias for 'public'"),
+		AddOption(new Option<string>(new[] { "--scope" }, "Widen the bundle's visibility tier (each tier is a superset of the previous, not a list of realms): 'private' = only this scope (the realm, or the zone for a zone bundle); 'org' = every realm and zone in your customer; 'public' = every realm in every customer. '*' is also accepted as an alias for 'public'"),
 			(args, i) => args.scope = i);
 	}
 
@@ -89,9 +89,6 @@ public class PublishBundleCommand
 		var provider = args.DependencyProvider;
 		var bundle = BundleWorkspace.Require(args.ConfigService, args.bundleName);
 		BundleBuild.ValidateComponentsExist(args.BeamoLocalSystem.BeamoManifest, bundle);
-		var ns = await BundleNamespace.Get(args);
-		var fullName = BundleNamespace.Qualify(ns, bundle.name);
-		var bundleApi = provider.GetService<IBeamBeamobundleApi>();
 
 		var isLoadingPlan = !string.IsNullOrEmpty(args.fromPlanFile);
 		if (args.fromLastPlan)
@@ -110,7 +107,10 @@ public class PublishBundleCommand
 			isLoadingPlan = true;
 		}
 
-		DeployablePlan plan;
+		// Determine the deploy scope BEFORE any network call so BEAM_SCOPE is pinned for the whole
+		// operation (build, catalog fetch/publish, and the ACL call). Loading a plan file is a local
+		// read, so it happens here too.
+		DeployablePlan plan = null;
 		BundleDiffResult diff;
 		string plannedAgainstChecksum;
 		if (isLoadingPlan)
@@ -120,16 +120,40 @@ public class PublishBundleCommand
 			plan = planFile.plan;
 			diff = planFile.diff;
 			plannedAgainstChecksum = planFile.publishedChecksum;
+
+			// The plan's scope is authoritative — adopt it so the publish targets the same manifest
+			// (realm vs zone) the plan was built against, mirroring `deploy release --from-plan`.
+			if (args.Scope != plan.scope)
+			{
+				Log.Information($"Publishing with scope [{plan.scope}] from the loaded plan.");
+				args.Scope = plan.scope;
+			}
 		}
 		else
+		{
+			// A zone bundle must build against the zone manifest, or every zone-scoped component is
+			// filtered out and SelectComponents fails. Derive the deploy scope from the bundle's own
+			// scope field (the --scope flag is the visibility tier, not the deploy scope).
+			args.Scope = bundle.IsZoneScoped ? DeployScope.Zone : DeployScope.Realm;
+			diff = null;
+			plannedAgainstChecksum = null;
+		}
+
+		// Pin BEAM_SCOPE to {cid}.{zid} for a zone bundle (no-op for realm), exactly like
+		// `beam deploy --scope zone`.
+		using var scopeHandle = await DeployArgs.ApplyDeployScopeAsync(args, args.Scope);
+
+		var ns = await BundleNamespace.Get(args);
+		var fullName = BundleNamespace.Qualify(ns, bundle.name);
+		var bundleApi = provider.GetService<IBeamBeamobundleApi>();
+
+		if (!isLoadingPlan)
 		{
 			Log.Information($"Generating publish plan for bundle=[{fullName}]...");
 			// Don't exclude bundle components here — this command operates on exactly those components.
 			// Restrict the build to them, so an unrelated local service can't fail (or slow down) the publish.
 			(plan, _) = await this.InteractivePlan(provider, args, excludeAuthoredBundleComponents: false, savePlanToTemp: false,
 				includeOnlyBeamoIds: new HashSet<string>(bundle.components));
-			diff = null;
-			plannedAgainstChecksum = null;
 		}
 
 		var (services, storages, extensions) = BundleBuild.SelectComponents(plan, bundle);
