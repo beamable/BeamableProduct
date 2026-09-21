@@ -1528,8 +1528,13 @@ public partial class DeployUtil
 		if (excludeAuthoredBundleComponents)
 		{
 			foreach (var b in BundleWorkspace.DiscoverAndValidate(provider.GetService<ConfigService>()))
+			{
+				// A bundle must be single-scope; catch a mixed/mislabelled bundle here rather than let its
+				// components leak into (or wrongly out of) the scoped plan.
+				BundleWorkspace.ValidateComponentScope(beamo.BeamoManifest, b);
 				foreach (var c in b.components)
 					bundleComponentIds.Add(c);
+			}
 		}
 
 		var isLoadingManifestFile = !string.IsNullOrEmpty(args.FromManifestFile);

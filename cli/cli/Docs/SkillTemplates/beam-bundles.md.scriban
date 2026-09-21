@@ -44,7 +44,7 @@ Commands that mutate a specific version (`yank`, `tag`) **require** the `@sha256
 
 ## Authoring a Bundle
 
-`bundles new` scaffolds a `<name>.beam.bundle.json` in the workspace. The bundle's short name **is** the file-name stem — it is not stored inside the file. List the beamoIds to include as components (repeatable).
+`bundles new` scaffolds a `<name>.beam.bundle.json` in the workspace. The bundle's short name **is** the file-name stem — it is not stored inside the file. List the beamoIds to include as components (repeatable). `bundles new` loads the manifest to validate the components exist and share one scope, and records the derived scope in the file.
 
 ```
 beam_exec("bundles new checkout-stack -c PaymentService -c OrdersStorage -c CheckoutPanel -q")
@@ -53,11 +53,12 @@ beam_exec("bundles new checkout-stack -c PaymentService -c OrdersStorage -c Chec
 The generated file looks like:
 ```json
 {
+  "scope": "realm",
   "components": ["PaymentService", "OrdersStorage", "CheckoutPanel"],
   "bundleDependencies": {}
 }
 ```
-`components` are the beamoIds that belong to this bundle; `bundleDependencies` maps a bundle name to the range of its releases this one depends on, as `{"@ns/name": {"min": 1, "max": 5}}` (omit `max` for an open range; surfaced, not resolved by the CLI). A beamoId may belong to **at most one** bundle in the workspace, and each bundle file name must be unique.
+`scope` is the bundle's deploy scope, `"realm"` or `"zone"`, derived from the components' own scope (the `<BeamServiceScope>` csproj property for services/storages, or `beamable.serviceScope` in `package.json` for portal extensions). `components` are the beamoIds that belong to this bundle; `bundleDependencies` maps a bundle name to the range of its releases this one depends on, as `{"@ns/name": {"min": 1, "max": 5}}` (omit `max` for an open range; surfaced, not resolved by the CLI). A beamoId may belong to **at most one** bundle in the workspace, and each bundle file name must be unique. A bundle must be **single-scope**: every component must be realm-scoped, or every component zone-scoped — never a mix.
 {{ if commands["bundles new"] }}{{ if (array.size commands["bundles new"].arguments) > 0 }}
 #### `beam bundles new` arguments
 | Argument | Type | Description |
@@ -279,6 +280,8 @@ beam_exec("bundles prune-yanked -q")
 ## Common Pitfalls
 - **Namespace won't resolve.** Bundle names are `@<alias>/<name>`; the alias comes from your customer record. If you are offline or the customer has no alias, commands that must resolve it (`publish`, `plan`) fail — `list`/`new` degrade gracefully and show the short name only.
 - **One beamoId, one bundle.** A component may belong to at most one `*.beam.bundle.json` in the workspace, and each bundle file name must be unique. Both are validated before publish/plan.
+- **Malformed bundle file.** Any command that reads bundles validates each `*.beam.bundle.json` structurally and fails, naming the file, on invalid JSON, an empty file, an unexpected top-level property (e.g. `component` instead of `components`), a wrong-typed field, a duplicate component, or a bad dependency range. Fix the file it names.
+- **Mixed-scope bundle.** A bundle must be single-scope. Mixing realm-scoped and zone-scoped components — or a `scope` field that disagrees with the components' actual scope — is rejected at creation and before plan/publish/deploy. Split into separate bundles or make the components' scope consistent.
 - **Stale plan on publish.** A saved plan is only valid against the published `latest` it was diffed from. If `latest` moved, publishing from that plan is refused — re-run `bundles plan`.
 - **Yanked but still deployed.** Yank only blocks *new* references. A pin already in `manifest.beam.json` keeps redeploying until you prune it and re-pin.
 - **ACL only widens, and is admin-gated.** You cannot narrow a scope, and you cannot address specific realms — only the `realm`/`org`/`public` tiers. Widening requires an admin token server-side.
@@ -292,7 +295,7 @@ beam_exec("bundles prune-yanked -q")
 
 ## Maintainer Notes
 The command surface lives in `cli/Commands/BundleCommands/` (one file per subcommand; `BundlesCommand.cs` also holds the `BundleAclScope` and `BundleRef` parsers). Shared logic is in `cli/Services/Bundles/`:
-- `BundleWorkspace` — discovery/validation of `*.beam.bundle.json` and the one-beamoId-per-bundle rule.
+- `BundleWorkspace` — discovery of `*.beam.bundle.json`, strict per-file structure validation (`ParseBundleFile`), the one-beamoId-per-bundle rule, and the single-scope guard (`ValidateComponentScope`, manifest-aware). The persisted `scope` field lives on `BundleConfigFile`.
 - `BundleNamespace` — alias → `@<alias>` resolution and `@ns/name` splitting.
 - `BundleBuild` / `BundleDiff` — component selection from the deploy plan and the publish diff.
 - `BundlePlanFiles` — saving/loading the temp plan files used by publish.
