@@ -32,6 +32,24 @@ public class LocalStackScalaLaunchTests
 	private static int IndexOf(LocalStackConfig c, string name) => c.steps.FindIndex(s => s.name == name);
 
 	/// <summary>
+	/// `scala: redis` is a docker container the Scala services depend on, NOT one of them — it just shares their
+	/// name prefix, and it is emitted first because the JVMs need it up before they launch. Pinning `command` and
+	/// `shell` here pins the invariant `LocalStackUpCommand.IsScalaServiceLauncher` relies on to tell the two
+	/// apart. Matching on the prefix alone once made the maven preflight derive `tools/redis`, a module that has
+	/// never existed, and abort `beam local up --build` blaming an unresolvable `dependency` plugin prefix.
+	/// </summary>
+	[Test]
+	public void Redis_is_a_docker_step_not_a_maven_backed_launcher()
+	{
+		var redis = Step(Create(), "scala: redis");
+
+		Assert.That(redis.shell, Is.False, "a docker step, so it is not one of the host-JVM launchers");
+		Assert.That(redis.command, Is.EqualTo("docker"));
+		Assert.That(redis.arguments, Does.Not.Contain("dependency:build-classpath"),
+			"redis runs no maven classpath resolve — there is no tools/redis module to resolve one for");
+	}
+
+	/// <summary>
 	/// dbflake serves the dbids every other Scala service fetches at boot. While it took its alphabetical slot
 	/// in the parallel group it started 8th, and the six services ahead of it spent ~15s logging
 	/// `Failed to fetch DBIDs / ServiceClient timeout` before recovering. Being ungrouped is what makes `up`

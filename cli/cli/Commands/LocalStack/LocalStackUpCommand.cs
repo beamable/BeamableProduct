@@ -1267,12 +1267,72 @@ public class LocalStackUpCommand
 	}
 
 	/// <summary>
+	/// The Maven error that — and only that — identifies the plugin-prefix trap
+	/// <see cref="EnsureMavenDependencyPluginResolvableOffline"/> can actually fix by priming the plugin online.
+	/// Every other probe failure has a different cause, so it must not trigger the prefix remediation.
+	/// </summary>
+	private const string MavenMissingPrefixMarker = "No plugin found for prefix";
+
+	/// <summary>
+	/// True when a <c>dependency:help</c> probe failed BECAUSE Maven could not resolve the plugin prefix — the one
+	/// failure <see cref="BuildDependencyPluginRemediation"/> describes and the online prime can fix. Maven's
+	/// wording is "No plugin found for prefix 'dependency' in the current project and in the plugin groups […]",
+	/// so match only the stable leading phrase; a version that rewords the tail still matches. <c>-q</c> does not
+	/// suppress <c>[ERROR]</c>, so the line is present. If it ever were not, this under-fires and the user falls
+	/// back on the launcher's own empty-cache guard, which explains the same cause — a safe degradation, unlike
+	/// over-firing, which aborts the whole stack with a false diagnosis. Public so it can be unit-tested against
+	/// captured mvn output without launching Maven.
+	/// </summary>
+	public static bool IsPluginPrefixFailure(string output) =>
+		!string.IsNullOrEmpty(output)
+		&& output.Contains(MavenMissingPrefixMarker, StringComparison.OrdinalIgnoreCase);
+
+	/// <summary>
+	/// True when <paramref name="step"/> is one of the host-JVM <c>scala: *</c> services — i.e. a step that really
+	/// maps to a <c>tools/$SVC</c> Maven module and whose launcher runs the offline
+	/// <c>mvn -o dependency:build-classpath</c>. Two signals, cheapest first:
+	/// <list type="bullet">
+	/// <item><c>shell</c> — the same narrowing the skill template applies to this prefix
+	/// (<c>LocalStackSkillTemplate.AppendSelection</c>); <c>scala: redis</c> is a <c>command = docker</c> step.</item>
+	/// <item>the launcher fingerprint <c>dependency:build-classpath</c> in <c>arguments</c> — the exact resolve the
+	/// probe protects, and the same string <see cref="MigrateScalaLauncherArguments"/> keys off. It keeps a
+	/// hand-edited manifest from pointing the probe at a module that never runs a classpath resolve.</item>
+	/// </list>
+	/// </summary>
+	private static bool IsScalaServiceLauncher(LocalStackStep step)
+	{
+		if (step == null || !step.enabled || string.IsNullOrEmpty(step.name))
+		{
+			return false;
+		}
+
+		if (!step.name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase))
+		{
+			return false;
+		}
+
+		if (!step.shell || string.IsNullOrEmpty(step.arguments))
+		{
+			return false;
+		}
+
+		return step.arguments.Contains("dependency:build-classpath", StringComparison.Ordinal);
+	}
+
+	/// <summary>
 	/// Pure decision for <see cref="EnsureMavenDependencyPluginResolvableOffline"/>: reads the manifest and decides
 	/// whether the offline maven-dependency-plugin probe should run, and against which module. No filesystem check
 	/// (beyond string validity) and no process launch, so it is unit-testable. The probe is only relevant when a
 	/// <c>scala: *</c> service will launch — those are the steps whose launcher runs <c>mvn -o
 	/// dependency:build-classpath</c>. The module is derived from the launch step's name (<c>scala: account</c> →
 	/// <c>tools/account</c>), exactly the <c>-pl tools/$SVC</c> the launcher uses.
+	/// <para>
+	/// The <c>scala: </c> prefix alone is NOT enough to pick that step: <c>scala: redis</c> shares the prefix but is
+	/// a docker container the Scala services depend on, not one of them — there is no <c>tools/redis</c> module, and
+	/// it sorts FIRST in every generated manifest because the JVMs need it up before they launch. Probing
+	/// <c>-pl tools/redis</c> fails with "Could not find the selected project in the reactor", which has nothing to
+	/// do with the plugin prefix this method exists to check. <see cref="IsScalaServiceLauncher"/> is the narrowing.
+	/// </para>
 	/// </summary>
 	public static MavenDependencyProbePlan PlanDependencyPluginProbe(LocalStackConfig config)
 	{
@@ -1284,12 +1344,17 @@ public class LocalStackUpCommand
 			return plan;
 		}
 
-		var scalaLaunch = config.steps.FirstOrDefault(s =>
-			s != null && s.enabled && !string.IsNullOrEmpty(s.name)
-			&& s.name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase));
+		var scalaLaunch = config.steps.FirstOrDefault(IsScalaServiceLauncher);
 		if (scalaLaunch == null)
 		{
-			plan.skipReason = "no scala launch step";
+			// Report the two misses apart, so a trace says whether this stack runs no Scala services at all or
+			// only ones that own no Maven module — the second is the case that used to fabricate `tools/redis`.
+			var anyScalaPrefixed = config.steps.Any(s =>
+				s != null && s.enabled && !string.IsNullOrEmpty(s.name)
+				&& s.name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase));
+			plan.skipReason = anyScalaPrefixed
+				? "no scala step that maps to a maven module"
+				: "no scala launch step";
 			return plan;
 		}
 
@@ -1337,6 +1402,12 @@ public class LocalStackUpCommand
 		// A manifest can name a BeamableBackend path that isn't checked out on this machine — nothing to run mvn in.
 		if (!Directory.Exists(plan.scalaDir)) return;
 
+		// The module has to be a real reactor module, or `-pl` fails with "Could not find the selected project in
+		// the reactor" no matter what the plugin metadata looks like — a failure this method must not mistake for
+		// the prefix trap. The check lives here rather than in PlanDependencyPluginProbe, which is deliberately
+		// filesystem-free so the decision stays unit-testable.
+		if (!File.Exists(Path.Combine(plan.scalaDir, plan.probeModule, "pom.xml"))) return;
+
 		// Fast path: a previous run already wrote a non-empty classpath cache, which means the offline resolve
 		// demonstrably works here — skip the maven probe so a healthy `up` pays nothing. `--build` wipes that cache
 		// later in Handle, so always probe on a build: it is exactly the run where priming matters.
@@ -1345,6 +1416,19 @@ public class LocalStackUpCommand
 		var offline = RunMavenDependencyGoalProbe(config, plan, online: false);
 		if (!offline.started) return;      // couldn't even launch mvn — let the normal launch path surface that
 		if (offline.exitCode == 0) return; // resolves offline — healthy, nothing to do
+
+		// A non-zero exit only means "this mvn invocation failed" — it is the OUTPUT that says whether the failure
+		// is the prefix trap. Anything else (a broken pom, a missing module, a JDK mismatch) has its own cause and
+		// its own fix, so priming the plugin cannot help and the prefix remediation below would be a lie. Surface
+		// what Maven actually said and let the real launch report it in context.
+		if (!IsPluginPrefixFailure(offline.output))
+		{
+			Log.Verbose($"[maven] the offline '{plan.probeModule}' dependency-plugin probe failed with exit " +
+			            $"{offline.exitCode}, but not with \"{MavenMissingPrefixMarker}\" — so this is not the " +
+			            "plugin-prefix trap and priming it online would not help. Continuing; the Scala launch " +
+			            $"step will report the real cause.\n{offline.output.Trim()}");
+			return;
+		}
 
 		Log.Information(
 			"[maven] the Scala services resolve their classpath with an offline 'mvn dependency:build-classpath', " +

@@ -719,12 +719,52 @@ public class LocalStackDiscoveryTests
 	// plugin prefix offline, so every scala service fails and --build never fixes it).
 	// ----------------------------------------------------------------------------------
 
+	/// <summary>
+	/// A `scala: *` step as the template writes the host-JVM services: a `sh` shell step whose launcher resolves
+	/// its classpath offline. Only such a step maps to a `tools/$SVC` Maven module, so only such a step may be
+	/// picked as the probe module — the fingerprint the planner narrows on.
+	/// </summary>
+	private static LocalStackStep ScalaLauncherStep(string name, bool enabled)
+	{
+		var svc = name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase)
+			? name.Substring("scala: ".Length)
+			: name;
+		return new LocalStackStep
+		{
+			name = name,
+			enabled = enabled,
+			shell = true,
+			shellKind = "sh",
+			arguments = $"set -e; SVC={svc}; \"${{maven}}\" -q -o -pl tools/$SVC -am dependency:build-classpath"
+		};
+	}
+
+	/// <summary>
+	/// `scala: redis` as the template writes it (LocalStackTemplate): a docker container the Scala services depend
+	/// on, sharing their name prefix but owning no `tools/redis` module.
+	/// </summary>
+	private static LocalStackStep ScalaRedisDockerStep(bool enabled) =>
+		new LocalStackStep
+		{
+			name = "scala: redis",
+			enabled = enabled,
+			command = "docker",
+			arguments = "compose up -d --no-deps redis"
+		};
+
 	private static LocalStackConfig ProbeConfig(string scalaDir, string mavenHome, params (string name, bool enabled)[] steps) =>
+		ProbeConfigOf(scalaDir, mavenHome, steps
+			.Select(s => s.name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase)
+				? ScalaLauncherStep(s.name, s.enabled)
+				: new LocalStackStep { name = s.name, enabled = s.enabled })
+			.ToArray());
+
+	private static LocalStackConfig ProbeConfigOf(string scalaDir, string mavenHome, params LocalStackStep[] steps) =>
 		new LocalStackConfig
 		{
 			repos = new LocalStackRepos { scalaDir = scalaDir },
 			toolchain = mavenHome == null ? null : new LocalStackToolchain { maven = mavenHome },
-			steps = steps.Select(s => new LocalStackStep { name = s.name, enabled = s.enabled }).ToList()
+			steps = steps.ToList()
 		};
 
 	[Test]
@@ -767,6 +807,43 @@ public class LocalStackDiscoveryTests
 
 		Assert.That(plan.shouldProbe, Is.False);
 		Assert.That(plan.skipReason, Is.EqualTo("no scala launch step"));
+	}
+
+	[Test]
+	public void PlanDependencyPluginProbe_NeverProbesTheDockerRedisStep()
+	{
+		// Regression: `scala: redis` is a docker container, not a Scala service, and the template puts it FIRST —
+		// the JVMs need it up before they launch. Picking it by name prefix alone made the probe run
+		// `mvn -pl tools/redis`, which dies with "Could not find the selected project in the reactor" and was then
+		// reported to the user as an uncacheable `dependency` plugin prefix, with a remediation that can never work.
+		var config = ProbeConfigOf(Path.GetTempPath(), Path.Combine(Path.GetTempPath(), "mvn-home"),
+			ScalaRedisDockerStep(enabled: true),
+			ScalaLauncherStep("scala: dbflake", enabled: true),
+			ScalaLauncherStep("scala: account", enabled: true));
+
+		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+
+		Assert.That(plan.shouldProbe, Is.True, plan.skipReason);
+		Assert.That(plan.probeModule, Is.EqualTo("tools/dbflake"),
+			"first real service launcher wins — redis owns no tools/ module");
+		Assert.That(plan.probeModule, Is.Not.EqualTo("tools/redis"));
+	}
+
+	[Test]
+	public void PlanDependencyPluginProbe_SkipsWhenTheOnlyScalaStepIsDocker()
+	{
+		// No host JVM will launch, so no launcher runs the offline classpath resolve the probe protects. Probing
+		// anyway can only produce a false alarm, because there is no module to probe against.
+		var config = ProbeConfigOf(Path.GetTempPath(), Path.Combine(Path.GetTempPath(), "mvn-home"),
+			ScalaRedisDockerStep(enabled: true));
+
+		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+
+		Assert.That(plan.shouldProbe, Is.False);
+		Assert.That(plan.probeModule, Is.Null,
+			"no module may be derived from a step that is not a maven module");
+		Assert.That(plan.skipReason, Is.EqualTo("no scala step that maps to a maven module"),
+			"the reason must distinguish 'no scala services' from 'none that maps to a module'");
 	}
 
 	[Test]
