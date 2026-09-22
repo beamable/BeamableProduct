@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Replace `xunit` dependency with `xunit.v3.mtp-off` in version `4.0.1`.
+- Update `Microsoft.CodeAnalysis.CSharp` dependencies to `4.8.0`.
+- Update `Microsoft.CodeAnalysis.CSharp.Analyzer.Testing` dependencies to `1.1.3`.
+- Update `Microsoft.CodeAnalysis.CSharp.CodeFix.Testing` dependencies to `1.1.3`.
 
 ### Fixed
 
