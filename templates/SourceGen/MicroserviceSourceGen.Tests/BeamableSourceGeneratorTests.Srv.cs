@@ -6,7 +6,6 @@ using Microservice.SourceGen.Tests.Dep;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using System;
-using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
@@ -35,9 +34,7 @@ public partial class TunaService : Beamable.Server.Microservice, IFederatedLogin
 }";
 
 		var ctx = new CSharpAnalyzerTest<ServicesAnalyzer, DefaultVerifier>();
-		// Microsoft.CodeAnalysis.Testing v1.1.1 used on tests don't have the Net9 Reference, so we need to manually create it
-		ctx.ReferenceAssemblies = new ReferenceAssemblies("net9.0",
-			new PackageIdentity("Microsoft.NETCore.App.Ref", "9.0.0"), Path.Combine("ref", "net9.0"));
+		ctx.ReferenceAssemblies = ReferenceAssemblies.Net.Net90;
 		PrepareForRun(ctx, UserCode);
 		
 		ctx.TestState.AdditionalReferences.Add(Assembly.GetAssembly(typeof(ExampleFederationId))!);
