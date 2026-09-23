@@ -22,6 +22,7 @@ Microservices (C#)
 - `Promise<T>` is awaitable directly; no `ToTask()` needed.
 - `[ClientCallable]` request/response DTOs use public fields and `[Serializable]`.
 - `Context.UserId` is the calling player's id.
+- Test an endpoint as a player with `project call <Service> <Method> --payload '{"param":1}'`; pass the result's `refreshToken` to `--as` to stay the same player.
 
 Deploying
 - `deploy release` defaults to `--replace`, which removes remote services that are missing locally. Use `--merge` when unsure.

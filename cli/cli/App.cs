@@ -223,6 +223,7 @@ public class App
 		services.AddSingleton<IRealmInfo>(p => p.GetService<IAppContext>());
 		services.AddSingleton<IRealmsApi, RealmsService>();
 		services.AddSingleton<NoAuthHttpRequester>();
+		services.AddSingleton<MicroserviceHttpCaller>();
 		services.AddSingleton<IAliasService, AliasService>(p => new AliasService(p.GetService<NoAuthHttpRequester>()));
 		services.AddSingleton<IBeamableRequester>(provider => provider.GetRequiredService<CliRequester>());
 		services.AddSingleton<CliRequester, CliRequester>();
@@ -632,6 +633,7 @@ public class App
 		Commands.AddSubCommand<AddReplacementTypeCommand, AddReplacementTypeCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<ListReplacementTypeCommand, ListReplacementTypeCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<RemoveReplacementTypeCommand, RemoveReplacementTypeCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<ProjectCallCommand, ProjectCallCommandArgs, ProjectCommand>();
 		
 		Commands.AddSubCommand<GenerateWebClientCommand, GenerateWebClientCommandArgs, ProjectGenerateCommand>();
 		Commands.AddSubCommand<GeneratePortalExtensionClientsCommand, GeneratePortalExtensionClientsCommandArgs, ProjectGenerateCommand>();
