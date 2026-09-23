@@ -713,7 +713,7 @@ public partial class ContentService
 							Properties = properties,
 							Tags = json.GetProperty(ContentFile.JSON_NAME_TAGS),
 							FetchedFromManifestUid = json.GetProperty(ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID).GetString(),
-							Reference = ReadReference(in json),
+							Baseline = ReadBaseline(in json),
 							ReferenceContent = referenceContent,
 						};
 						contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
@@ -1179,7 +1179,7 @@ public partial class ContentService
 				// We just uploaded these properties, so our checksum describes the version the platform assigned.
 				if (publishedVersions.TryGetValue(contentFile.Id, out var publishedVersion))
 				{
-					contentFile.Reference = new LocalContentReference(contentFile.PropertiesChecksum, publishedVersion);
+					contentFile.Baseline = new ContentBaseline(contentFile.PropertiesChecksum, publishedVersion);
 				}
 
 				saveTasks.Add(SaveContentFile(contentFolder, contentFile));
@@ -1401,7 +1401,7 @@ public partial class ContentService
 			// Hash the downloaded payload ourselves rather than trusting the publisher's manifest checksum. The
 			// file we are about to write is serialized from this same element, so the two agree by construction.
 			contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
-			contentFile.Reference = new LocalContentReference(contentFile.PropertiesChecksum, c.ReferenceContent.version);
+			contentFile.Baseline = new ContentBaseline(contentFile.PropertiesChecksum, c.ReferenceContent.version);
 			saveTasks.Add(SaveContentFile(contentFolder, contentFile, cancellationToken));
 		}
 
@@ -1418,7 +1418,7 @@ public partial class ContentService
 			// This set also holds locally modified and created files, whose bytes are not the remote ones.
 			if (c.ReferenceContent != null && contentFile.GetStatus() == ContentStatus.UpToDate)
 			{
-				contentFile.Reference = new LocalContentReference(contentFile.PropertiesChecksum, c.ReferenceContent.version);
+				contentFile.Baseline = new ContentBaseline(contentFile.PropertiesChecksum, c.ReferenceContent.version);
 			}
 
 			contentFile.FetchedFromManifestUid = targetManifestUid;
@@ -1980,11 +1980,12 @@ public partial class ContentService
 	}
 
 	/// <summary>
-	/// Reads the locally derived reference off a parsed content file, if it carries one.
+	/// Reads the locally derived baseline off a parsed content file, if it carries a well-formed one.
 	/// </summary>
-	private static LocalContentReference? ReadReference(in JsonElement json) =>
-		json.TryGetProperty(ContentFile.JSON_NAME_REFERENCE, out var reference)
-		&& LocalContentReference.TryRead(in reference, out var value)
+	private static ContentBaseline? ReadBaseline(in JsonElement json) =>
+		json.TryGetProperty(ContentFile.JSON_NAME_BASELINE, out var baseline)
+		&& baseline.ValueKind == JsonValueKind.String
+		&& ContentBaseline.TryDecode(baseline.GetString(), out var value)
 			? value
 			: null;
 
@@ -2227,40 +2228,30 @@ public struct LocalContentFiles
 }
 
 /// <summary>
-/// A checksum this CLI computed over a remote content payload, paired with the content version identifying
-/// which payload it was. The version is required: without it a stale checksum can mask a real remote change.
+/// The remote payload we last synced: a checksum this CLI computed over it, at the content version naming it.
+/// The version is required: without it a stale checksum can mask a real remote change.
 /// </summary>
-[Serializable]
-public struct LocalContentReference
+/// <remarks>
+/// On disk the pair is one string, <c>{checksum}@{version}</c>, so that no line-level merge can pair one side's
+/// checksum with the other side's version.
+/// </remarks>
+public readonly record struct ContentBaseline(string Checksum, string Version)
 {
-	public const string JSON_NAME_CHECKSUM = "checksum";
-	public const string JSON_NAME_VERSION = "version";
+	private const char SEPARATOR = '@';
 
-	[JsonPropertyName(JSON_NAME_CHECKSUM)] public string Checksum;
-	[JsonPropertyName(JSON_NAME_VERSION)] public string Version;
-
-	public LocalContentReference(string checksum, string version)
-	{
-		Checksum = checksum;
-		Version = version;
-	}
+	public string Encode() => $"{Checksum}{SEPARATOR}{Version}";
 
 	/// <summary>
-	/// Reads a reference, yielding one only when both halves are present.
+	/// Decodes <see cref="Encode"/>'s output, yielding a baseline only when both halves are present.
+	/// Our checksum is hex and never contains the separator, so everything after the first one is the
+	/// platform's version, whatever its format.
 	/// </summary>
-	public static bool TryRead(in JsonElement json, out LocalContentReference reference)
+	public static bool TryDecode(string encoded, out ContentBaseline baseline)
 	{
-		reference = default;
-
-		if (!json.TryGetProperty(JSON_NAME_CHECKSUM, out var checksumElement)) return false;
-		if (!json.TryGetProperty(JSON_NAME_VERSION, out var versionElement)) return false;
-
-		var checksum = checksumElement.GetString();
-		var version = versionElement.GetString();
-		if (string.IsNullOrEmpty(checksum) || string.IsNullOrEmpty(version)) return false;
-
-		reference = new LocalContentReference(checksum, version);
-		return true;
+		var separatorIndex = encoded?.IndexOf(SEPARATOR) ?? -1;
+		var isWellFormed = separatorIndex > 0 && separatorIndex < encoded.Length - 1;
+		baseline = isWellFormed ? new ContentBaseline(encoded[..separatorIndex], encoded[(separatorIndex + 1)..]) : default;
+		return isWellFormed;
 	}
 }
 
@@ -2270,7 +2261,7 @@ public struct ContentFile : IEquatable<ContentFile>
 	public const string JSON_NAME_PROPERTIES = "properties";
 	public const string JSON_NAME_TAGS = "tags";
 	public const string JSON_NAME_REFERENCE_MANIFEST_ID = "referenceManifestId";
-	public const string JSON_NAME_REFERENCE = "reference";
+	public const string JSON_NAME_BASELINE = "baseline";
 
 	[JsonIgnore] public string Id;
 	[JsonIgnore] public string LocalFilePath;
@@ -2293,9 +2284,18 @@ public struct ContentFile : IEquatable<ContentFile>
 	/// the publisher. Null on files written before this existed and on snapshot restores, which fall back to
 	/// the manifest checksum.
 	/// </summary>
-	[JsonPropertyName(JSON_NAME_REFERENCE)]
+	[JsonIgnore] public ContentBaseline? Baseline;
+
+	/// <summary>
+	/// <see cref="Baseline"/> as it appears on disk. A malformed value reads as no baseline.
+	/// </summary>
+	[JsonPropertyName(JSON_NAME_BASELINE)]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public LocalContentReference? Reference;
+	public string EncodedBaseline
+	{
+		get => Baseline?.Encode();
+		set => Baseline = ContentBaseline.TryDecode(value, out var baseline) ? baseline : null;
+	}
 
 
 	public ContentStatus GetStatus()
@@ -2310,12 +2310,12 @@ public struct ContentFile : IEquatable<ContentFile>
 
 	/// <summary>
 	/// Compares the local properties against the remote ones we last synced.
-	/// Prefers <see cref="Reference"/> when it describes the manifest entry in hand, since both sides of that
+	/// Prefers <see cref="Baseline"/> when it describes the manifest entry in hand, since both sides of that
 	/// comparison were canonicalized the same way. Otherwise falls back to the publisher-supplied manifest
 	/// checksum, which is the historical behavior.
 	/// </summary>
-	private bool IsPropertiesDiff() => Reference.HasValue && Reference.Value.Version == ReferenceContent.version
-		? Reference.Value.Checksum != PropertiesChecksum
+	private bool IsPropertiesDiff() => Baseline is { } baseline && baseline.Version == ReferenceContent.version
+		? baseline.Checksum != PropertiesChecksum
 		: ReferenceContent.checksum != PropertiesChecksum;
 
 	public long GetLastUpdateAt()
