@@ -8,7 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>A regex to filter for notification channels</summary>
         public string context;
-        /// <summary>Authenticate as a newly created guest player instead of the logged-in identity. --probe also uses a guest when no one is logged in</summary>
+        /// <summary>Authenticate as a newly created guest player instead of the logged-in identity. --probe uses a guest unless --refresh-token is passed</summary>
         public bool guest;
         /// <summary>Instead of listening, open one realtime session the way the Web SDK does, report the handshake, session-start and frames on the probe channel, then exit</summary>
         public bool probe;

@@ -16,7 +16,7 @@ Web SDK (browser / Node / React Native)
 - `config realm check --for web --fix -q` checks and fixes the realm for the Web SDK. A realm used by the Web SDK needs:
   - realm config `notification|publisher=beamable`: `config realm set --key-values 'notification|publisher::beamable'`
   - a published `global` content manifest: `content publish` (works with no content). Without it `Beam.init` fails with a 404 on `/basic/content/manifest/public/json?id=global`.
-- `Beam.init` waits for the realtime socket to open and send `session-start`. If it hangs or times out, WebSockets are blocked (proxy, firewall, sandbox); `Unsupported websocket provider` means the realm config above is missing.
+- `Beam.init` waits for the realtime socket to open and send `session-start`. If it hangs or times out, WebSockets are blocked (proxy, firewall, sandbox); `Unsupported websocket provider` means the realm config above is missing. `listen player --probe -q` tests the realm's socket from the CLI.
 
 Microservices (C#)
 - `Promise<T>` is awaitable directly; no `ToTask()` needed.
@@ -25,4 +25,4 @@ Microservices (C#)
 - Test an endpoint as a player with `project call <Service> <Method> --payload '{"param":1}'`; pass the result's `refreshToken` to `--as` to stay the same player.
 
 Deploying
-- `deploy release` defaults to `--replace`, which removes remote services that are missing locally. Use `--merge` when unsure.
+- `deploy release` defaults to `--replace`, which removes remote services that are missing locally. Use `--merge` when unsure, and `--wait` to return once the services are running.

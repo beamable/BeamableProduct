@@ -25,7 +25,7 @@ beam_exec("project call MatchService PlayRound --payload '{\"matchId\":\"<id>\",
 ```
 - The payload is a JSON object whose keys are the C# parameter names.
 - The default `--as guest` creates a new guest player. The result includes that player's refresh token; pass it to `--as` so later calls act as the same player.
-- `--target local` calls a service running on this machine (`project run`), `--target remote` calls the deployed one.
+- `--target local` calls a service running on this machine (`project run`), `--target remote` calls the deployed one. The default, `auto`, uses a local instance when one is running and the deployed service otherwise.
 - The result has the HTTP status and the JSON body, so you can play a whole match from the CLI.
 {{ if commands["project call"] }}
 #### `beam project call` options
