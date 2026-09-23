@@ -1007,10 +1007,9 @@ namespace Beamable.Serialization.SmallerJSON
 				{
 					FieldInfo field = fields[i];
 					var hasSerializeField = field.GetCustomAttribute(serializeFieldType) != null;
-					// For now I've disabled the inclusion of the compiler generated fields but it could be enabled later on.
-					// For now it means it will not include BackingField for properties to have feature parity with JsonUtility.
+					// Compiler-generated backing fields are included only when explicitly marked [SerializeField].
 					var isGeneratedByCompiler = field.GetCustomAttribute(compilerGeneratedType) != null;
-					var canBeSerialized = (hasSerializeField || !field.IsNotSerialized) && !isGeneratedByCompiler;
+					var canBeSerialized = (hasSerializeField || !field.IsNotSerialized) && (!isGeneratedByCompiler || hasSerializeField);
 					if (!canBeSerialized)
 						continue;
 					if (!isFirst)
@@ -1184,7 +1183,7 @@ namespace Beamable.Serialization.SmallerJSON
 
 						var hasSerializeField = field.GetCustomAttribute(SerializeFieldType) != null;
 						var isGeneratedByCompiler = field.GetCustomAttribute(CompilerGeneratedType) != null;
-						var canBeSerialized = (hasSerializeField || !field.IsNotSerialized) && !isGeneratedByCompiler;
+						var canBeSerialized = (hasSerializeField || !field.IsNotSerialized) && (!isGeneratedByCompiler || hasSerializeField);
 						if (!canBeSerialized) continue;
 
 						if (!objNode.TryGetValue(field.Name, out var rawValue))
@@ -1249,7 +1248,8 @@ namespace Beamable.Serialization.SmallerJSON
 					{
 						var field = fields[i];
 						var hasSerializeField = field.GetCustomAttribute(SerializeFieldType) != null;
-						var canBeSerialized = (hasSerializeField || !field.IsNotSerialized);
+						var isGeneratedByCompiler = field.GetCustomAttribute(CompilerGeneratedType) != null;
+						var canBeSerialized = (hasSerializeField || !field.IsNotSerialized) && (!isGeneratedByCompiler || hasSerializeField);
 						if (!canBeSerialized) continue;
 						field.SetValue(instance, CreateJsonUtilityDefault(field.FieldType, depth + 1));
 					}
