@@ -82,20 +82,23 @@ public class McpToolExecutor
 
 	private const int DefaultFileReadLimit = 65_536;
 
-	public Task<string> GetSourceCode(string platform = "", string version = "", string filePath = "", int offset = 0, int limit = 0)
+	/// <param name="startDirectory">Directory detection starts from. Defaults to the current directory.</param>
+	public Task<string> GetSourceCode(string platform = "", string version = "", string filePath = "", int offset = 0, int limit = 0, string startDirectory = null)
 	{
 		try
 		{
-			var startDir = Directory.GetCurrentDirectory();
+			var startDir = string.IsNullOrEmpty(startDirectory) ? Directory.GetCurrentDirectory() : startDirectory;
 			var normalizedPlatform = platform?.Trim().ToLowerInvariant() ?? "";
 			var detectedVersion = version?.Trim() ?? "";
+			WebSdkDetection webDetection = null;
 
-			if (string.IsNullOrEmpty(normalizedPlatform) || string.IsNullOrEmpty(detectedVersion))
+			if (string.IsNullOrEmpty(normalizedPlatform))
 			{
 				var detected = TryDetectUnity(startDir)
-				               ?? TryDetectWebSdk(startDir)
+				               ?? TryDetectWebSdk(startDir, scanSubdirectories: false)
 				               ?? TryDetectCli(startDir)
-				               ?? TryDetectUnreal(startDir);
+				               ?? TryDetectUnreal(startDir)
+				               ?? TryDetectWebSdk(startDir, scanSubdirectories: true);
 
 				if (detected == null)
 				{
@@ -109,10 +112,31 @@ public class McpToolExecutor
 					return Task.FromResult(JsonConvert.SerializeObject(result, Formatting.None));
 				}
 
-				if (string.IsNullOrEmpty(normalizedPlatform))
-					normalizedPlatform = detected.Value.platform;
+				normalizedPlatform = detected.Value.platform;
 				if (string.IsNullOrEmpty(detectedVersion))
+				{
 					detectedVersion = detected.Value.version;
+				}
+			}
+			else if (string.IsNullOrEmpty(detectedVersion) && IsKnownPlatform(normalizedPlatform))
+			{
+				// Only accept a version detected for the requested platform. Taking whatever another
+				// detector found (e.g. the CLI version of a workspace that also holds a web project)
+				// reports the wrong version and links a tag that does not exist.
+				if (normalizedPlatform == "web")
+				{
+					webDetection = DetectWebSdk(startDir);
+					detectedVersion = webDetection?.Version ?? "";
+				}
+				else
+				{
+					detectedVersion = TryDetectPlatform(normalizedPlatform, startDir)?.version ?? "";
+				}
+
+				if (string.IsNullOrEmpty(detectedVersion))
+				{
+					return Task.FromResult(BuildVersionNotFoundResponse(normalizedPlatform, startDir, webDetection));
+				}
 			}
 
 			detectedVersion = NormalizeVersion(detectedVersion);
@@ -166,7 +190,8 @@ public class McpToolExecutor
 				}
 				case "web":
 				{
-					var localModules = FindWebSdkLocal(startDir);
+					webDetection ??= DetectWebSdk(startDir);
+					var localModules = webDetection?.LocalSdkDir;
 					if (localModules != null)
 					{
 						sourcePath = localModules;
@@ -175,9 +200,16 @@ public class McpToolExecutor
 					}
 					else
 					{
+						// Web SDK releases are tagged 'web-sdk-{npm version}' (see .github/workflows/release-web.yml).
 						sourcePath = $"https://github.com/beamable/BeamableProduct/tree/web-sdk-{detectedVersion}";
 						commonPaths = new[] { "web/" };
 						hint = "Web SDK local node_modules not found. Falling back to GitHub URL.";
+					}
+
+					if (webDetection != null && webDetection.IsRange && webDetection.Version == detectedVersion)
+					{
+						hint += $" The version was taken from the semver range '{webDetection.Range}' in {webDetection.SourceFile};" +
+						        " the installed version may be newer. Install dependencies or pass version explicitly for an exact match.";
 					}
 					break;
 				}
@@ -253,6 +285,18 @@ public class McpToolExecutor
 				["hint"] = hint
 			};
 
+			if (normalizedPlatform == "web" && webDetection != null && webDetection.Version == detectedVersion)
+			{
+				if (webDetection.IsRange)
+				{
+					responseObj["versionRange"] = webDetection.Range;
+				}
+				if (webDetection.SourceFile != null)
+				{
+					responseObj["versionSource"] = webDetection.SourceFile;
+				}
+			}
+
 			if (fileFull != null)
 				responseObj["filePath"] = fileFull;
 
@@ -300,18 +344,6 @@ public class McpToolExecutor
 		return null;
 	}
 
-	private static string FindWebSdkLocal(string startDir)
-	{
-		var dir = startDir;
-		while (dir != null)
-		{
-			var sdkDir = Path.Combine(dir, "node_modules", "@beamable", "sdk");
-			if (Directory.Exists(sdkDir)) return sdkDir;
-			dir = Path.GetDirectoryName(dir);
-		}
-		return null;
-	}
-
 	private static (string platform, string version)? TryDetectUnity(string startDir)
 	{
 		var dir = startDir;
@@ -340,52 +372,268 @@ public class McpToolExecutor
 		return null;
 	}
 
-	private static (string platform, string version)? TryDetectWebSdk(string startDir)
+	private static bool IsKnownPlatform(string platform)
 	{
-		var dir = startDir;
-		while (dir != null)
+		return platform is "unity" or "cli" or "web" or "unreal";
+	}
+
+	private static (string platform, string version)? TryDetectPlatform(string platform, string startDir)
+	{
+		switch (platform)
 		{
-			var packageJsonPath = Path.Combine(dir, "package.json");
-			if (File.Exists(packageJsonPath))
+			case "unity": return TryDetectUnity(startDir);
+			case "web": return TryDetectWebSdk(startDir, scanSubdirectories: true);
+			case "cli": return TryDetectCli(startDir);
+			case "unreal": return TryDetectUnreal(startDir);
+			default: return null;
+		}
+	}
+
+	private static string BuildVersionNotFoundResponse(string platform, string startDir, WebSdkDetection webDetection)
+	{
+		var hint = platform == "web"
+			? "No installed node_modules/@beamable/sdk and no '@beamable/sdk' entry in the dependencies or devDependencies" +
+			  " of a package.json was found in this directory, its parents, or its subdirectories up to two levels deep." +
+			  " Pass version explicitly (the web SDK version is its npm version, e.g. '1.2.1')," +
+			  " or install the web project's dependencies and run this tool again."
+			: $"No Beamable {platform} SDK version was found from this directory. Pass version explicitly," +
+			  " or run this tool from within a project directory that has Beamable installed.";
+
+		var result = new JObject
+		{
+			["error"] = $"Could not detect the Beamable {platform} SDK version",
+			["platform"] = platform,
+			["detectedVersion"] = JValue.CreateNull(),
+			["hint"] = hint,
+			["searchedFrom"] = startDir
+		};
+
+		if (webDetection != null && webDetection.IsRange)
+		{
+			result["versionRange"] = webDetection.Range;
+			result["versionSource"] = webDetection.SourceFile;
+			result["hint"] = $"Found '@beamable/sdk' range '{webDetection.Range}' in {webDetection.SourceFile}," +
+			                 " which does not name a single version. Pass version explicitly," +
+			                 " or install the web project's dependencies and run this tool again.";
+		}
+
+		return result.ToString(Formatting.None);
+	}
+
+	/// <summary>
+	/// What <see cref="DetectWebSdk"/> found about the Beamable web SDK (<c>@beamable/sdk</c>).
+	/// </summary>
+	public class WebSdkDetection
+	{
+		/// <summary>The installed version, or one taken from a simple semver range. Null when no single version is known.</summary>
+		public string Version;
+
+		/// <summary>The raw dependency spec (e.g. <c>^1.2.1</c>) when the version did not come from an installed package.</summary>
+		public string Range;
+
+		/// <summary>The package.json the version or range was read from.</summary>
+		public string SourceFile;
+
+		/// <summary>The installed <c>node_modules/@beamable/sdk</c> directory, when one exists.</summary>
+		public string LocalSdkDir;
+
+		public bool IsRange => !string.IsNullOrEmpty(Range);
+	}
+
+	private const int WebSdkSubdirectoryScanDepth = 2;
+
+	/// <summary>
+	/// Looks for the Beamable web SDK from <paramref name="startDir"/>, its parents and (when
+	/// <paramref name="scanSubdirectories"/> is set) its subdirectories up to two levels deep, so a
+	/// workspace root finds e.g. <c>web/package.json</c>. An installed
+	/// <c>node_modules/@beamable/sdk/package.json</c> version wins over a range declared in a
+	/// dependent's <c>dependencies</c> or <c>devDependencies</c>. Returns null when nothing is found.
+	/// </summary>
+	public static WebSdkDetection DetectWebSdk(string startDir, bool scanSubdirectories = true)
+	{
+		var searchDirs = GetWebSdkSearchDirectories(startDir, scanSubdirectories);
+		var localSdkDir = searchDirs
+			.Select(d => Path.Combine(d, "node_modules", "@beamable", "sdk"))
+			.FirstOrDefault(Directory.Exists);
+
+		foreach (var dir in searchDirs)
+		{
+			var installedPkg = Path.Combine(dir, "node_modules", "@beamable", "sdk", "package.json");
+			var installed = ReadJsonString(installedPkg, "version");
+			if (!string.IsNullOrEmpty(installed))
 			{
-				try
+				return new WebSdkDetection
 				{
-					var json = JObject.Parse(File.ReadAllText(packageJsonPath));
-					var deps = json["dependencies"] as JObject;
-					var devDeps = json["devDependencies"] as JObject;
+					Version = installed,
+					SourceFile = installedPkg,
+					LocalSdkDir = Path.GetDirectoryName(installedPkg)
+				};
+			}
+		}
 
-					var hasBeamableSdk = deps?["@beamable/sdk"] != null;
-					var hasPortalToolkit = deps?["@beamable/portal-toolkit"] != null
-					                      || devDeps?["@beamable/portal-toolkit"] != null;
-
-					if (hasBeamableSdk || hasPortalToolkit)
-					{
-						// Try to read the installed portal-toolkit package.json for the peer dependency version
-						var toolkitPkgPath = Path.Combine(dir, "node_modules", "@beamable", "portal-toolkit", "package.json");
-						if (File.Exists(toolkitPkgPath))
-						{
-							var toolkitJson = JObject.Parse(File.ReadAllText(toolkitPkgPath));
-							var peerVersion = (toolkitJson["peerDependencies"] as JObject)?["@beamable/sdk"]?.ToString();
-							if (!string.IsNullOrEmpty(peerVersion))
-								return ("web", peerVersion.TrimStart('^', '~'));
-						}
-
-						// Fall back to direct @beamable/sdk version from dependencies
-						var sdkVersion = deps?["@beamable/sdk"]?.ToString();
-						if (!string.IsNullOrEmpty(sdkVersion))
-							return ("web", sdkVersion.TrimStart('^', '~'));
-					}
-				}
-				catch
-				{
-					// ignore parse errors
-				}
+		foreach (var dir in searchDirs)
+		{
+			var spec = ReadDeclaredWebSdkSpec(dir, out var sourceFile);
+			if (string.IsNullOrEmpty(spec))
+			{
+				continue;
 			}
 
-			dir = Path.GetDirectoryName(dir);
+			var resolved = VersionFromRange(spec);
+			return new WebSdkDetection
+			{
+				Version = resolved,
+				Range = resolved == spec ? null : spec,
+				SourceFile = sourceFile,
+				LocalSdkDir = localSdkDir
+			};
+		}
+
+		return localSdkDir == null ? null : new WebSdkDetection { LocalSdkDir = localSdkDir };
+	}
+
+	/// <summary>
+	/// Turns a dependency spec into a single version: exact versions pass through, and a lone
+	/// <c>^</c>, <c>~</c>, <c>=</c>, <c>&gt;=</c> or <c>v</c> prefix is stripped. Returns null for
+	/// anything that does not name one version (compound ranges, wildcards, tags, file/git specs).
+	/// </summary>
+	public static string VersionFromRange(string spec)
+	{
+		if (string.IsNullOrWhiteSpace(spec))
+		{
+			return null;
+		}
+
+		var candidate = spec.Trim();
+		if (candidate.StartsWith(">="))
+		{
+			candidate = candidate.Substring(2);
+		}
+		candidate = candidate.TrimStart('^', '~', '=', 'v', ' ');
+
+		return Regex.IsMatch(candidate, @"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
+			? candidate
+			: null;
+	}
+
+	private static (string platform, string version)? TryDetectWebSdk(string startDir, bool scanSubdirectories)
+	{
+		var detection = DetectWebSdk(startDir, scanSubdirectories);
+		if (string.IsNullOrEmpty(detection?.Version))
+		{
+			return null;
+		}
+
+		return ("web", detection.Version);
+	}
+
+	private static List<string> GetWebSdkSearchDirectories(string startDir, bool scanSubdirectories)
+	{
+		var dirs = new List<string> { startDir };
+
+		if (scanSubdirectories)
+		{
+			var level = new List<string> { startDir };
+			for (var depth = 0; depth < WebSdkSubdirectoryScanDepth; depth++)
+			{
+				var next = new List<string>();
+				foreach (var parent in level)
+				{
+					next.AddRange(GetScannableSubdirectories(parent));
+				}
+				dirs.AddRange(next);
+				level = next;
+			}
+		}
+
+		for (var dir = Path.GetDirectoryName(startDir); dir != null; dir = Path.GetDirectoryName(dir))
+		{
+			dirs.Add(dir);
+		}
+
+		return dirs;
+	}
+
+	private static IEnumerable<string> GetScannableSubdirectories(string dir)
+	{
+		try
+		{
+			return Directory.GetDirectories(dir)
+				.Where(d =>
+				{
+					var name = Path.GetFileName(d);
+					return !name.StartsWith(".") && !name.Equals("node_modules", StringComparison.OrdinalIgnoreCase);
+				})
+				.OrderBy(d => d, StringComparer.Ordinal)
+				.ToList();
+		}
+		catch (UnauthorizedAccessException)
+		{
+			return Array.Empty<string>();
+		}
+		catch (IOException)
+		{
+			return Array.Empty<string>();
+		}
+	}
+
+	private static string ReadDeclaredWebSdkSpec(string dir, out string sourceFile)
+	{
+		sourceFile = null;
+		var packageJsonPath = Path.Combine(dir, "package.json");
+		var json = ReadJson(packageJsonPath);
+		if (json == null)
+		{
+			return null;
+		}
+
+		var deps = json["dependencies"] as JObject;
+		var devDeps = json["devDependencies"] as JObject;
+
+		var sdkSpec = deps?["@beamable/sdk"]?.ToString() ?? devDeps?["@beamable/sdk"]?.ToString();
+		if (!string.IsNullOrEmpty(sdkSpec))
+		{
+			sourceFile = packageJsonPath;
+			return sdkSpec;
+		}
+
+		// Portal extensions depend on the toolkit, which declares the SDK as a peer dependency.
+		var hasPortalToolkit = deps?["@beamable/portal-toolkit"] != null || devDeps?["@beamable/portal-toolkit"] != null;
+		if (hasPortalToolkit)
+		{
+			var toolkitPkgPath = Path.Combine(dir, "node_modules", "@beamable", "portal-toolkit", "package.json");
+			var peerSpec = (ReadJson(toolkitPkgPath)?["peerDependencies"] as JObject)?["@beamable/sdk"]?.ToString();
+			if (!string.IsNullOrEmpty(peerSpec))
+			{
+				sourceFile = toolkitPkgPath;
+				return peerSpec;
+			}
 		}
 
 		return null;
+	}
+
+	private static JObject ReadJson(string path)
+	{
+		if (!File.Exists(path))
+		{
+			return null;
+		}
+
+		try
+		{
+			return JObject.Parse(File.ReadAllText(path));
+		}
+		catch
+		{
+			// ignore unreadable or malformed files
+			return null;
+		}
+	}
+
+	private static string ReadJsonString(string path, string key)
+	{
+		return ReadJson(path)?[key]?.ToString();
 	}
 
 	private static (string platform, string version)? TryDetectCli(string startDir)
