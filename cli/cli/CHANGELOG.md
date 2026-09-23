@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `AbsMailApi` now reports the campaign funnel's `beam_opened` stage automatically when campaign mail moves from `Unread` to `Read`, so a game writes no tracking code of its own. Push gets that stage from the handset echoing the notification payload back; in-game mail has no handset, so this client report *is* the open signal. Ships `MailOpenedFunnelEvent`, shaped like what the iOS and Android push SDKs emit (the reserved `beam_opened` name, keyed on `outreachId`; `trackId` is included when the mail carries one) so the platform attributes it with no ingest change. Best-effort and fire-and-forget: a failed analytics call never makes a mail look unread.
 - `MessageRailContract.DeliveryModeKey` / `DeliveryDurable` — a federation can declare on `MessageRailSendResponse.params` that it delivers *durably* (an accepted message is already in the recipient's possession, e.g. in-game mail waiting in a mailbox), so no separate receipt will ever arrive and the platform emits `Delivered` alongside `Sent` instead of leaving that stage structurally zero. For a durable rail, Sent and Delivered track ~1:1 by design.
 - `IFederatedMessageRail<T>.CheckMessageRailConfig()` — a federation reports whether it is configured well enough to deliver, and the platform consults it *before* a campaign targeting that rail is published, so a realm missing its provider credentials fails at authoring time instead of silently erroring on every send. Ships `MessageRailConfigStatus`, which distinguishes MISSING (`missingKeys`, fully qualified so an operator provisions them in one pass) from INVALID (`invalidReason`) from UNKNOWN (`readable == false`). Unknown never blocks a publish: a credential store that cannot be read is an outage, not a misconfiguration.
+- `project generate web-client --int64-as number|string|bigint-union` chooses how C# `long` (OpenAPI `int64`) fields are typed in the generated TypeScript. The default stays `bigint-union` (`bigint | string`) for compatibility.
+- `project generate web-client --build` builds the microservices before generating, so the clients reflect the current code rather than the OpenAPI documents from the last build. It is opt-in because it runs a `dotnet build` per service.
+
+### Changed
+
+- `project generate web-client` now fails with a clear error instead of silently succeeding with an empty result when `--output-dir` is missing, `--lang` is unsupported, or no client could be generated at all, and it warns (naming the service and the expected `beam_openApi.json` path) for every microservice it skips because it has not been built.
 
 ### Fixed
 
@@ -22,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Report failed MSBuild targets as failed builds, including when compiler diagnostics are empty or missing. Project builds now return a nonzero exit and surface the underlying build output in Unity.
 
 - `beam project run` no longer rewrites a zone portal extension's generated microservice clients to bind to `BeamBase`. They now bind to `BeamZoneSdk` (the object a zone extension receives), matching `generate-portal-extension-clients`, so generated client files stop flipping between the two on every run.
+- `project generate web-client` no longer keeps generation state in static fields, so a JavaScript run, a portal extension client generation, or a generation that wrote no types file can no longer leak types or the output language into a later run in the same process; clients only import `./types` when they use it; and a callable returning an array of a DTO (e.g. `MatchView[]`) is now typed as `Types.MatchView[]` instead of an undefined `MatchView[]`.
 
 ## [7.3.0]
 
