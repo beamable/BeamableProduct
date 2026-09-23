@@ -2,8 +2,8 @@ Beamable CLI (`beam`) MCP server. Tools run `beam` commands in the current works
 
 Workflow
 - For multi-step work (new project, microservice, web game, deploy, content), call `beam_get_skill("")` first to list guides, then load the relevant one.
-- Use `beam_list_commands` / `beam_get_help` to find a command and its options before running it with `beam_exec`.
-- Always pass `-q` to `beam_exec` so commands never wait on a prompt, and pass every value a command would otherwise prompt for.
+- If you know a command, call `beam_exec` directly; on invalid arguments it returns the command's help. Use `beam_list_commands` / `beam_get_help` to discover commands you don't know.
+- `beam_exec` runs commands non-interactively (`-q` is added for you), so pass every value a command would otherwise prompt for.
 - A workspace needs `.beamable/` first: `init --cid <cid>` (see `beam_get_help("init")`).
 
 Choosing a realm without prompts
