@@ -1,0 +1,101 @@
+---
+name: beam-test-and-verify
+description: Verify a Beamable game end to end — call microservice endpoints as a player, probe the realtime session, read deployed logs, inspect storage, and run a browser smoke test.
+---
+
+# Test and Verify
+
+"It compiles" and "the page loaded" are not verification. Check each layer: the realm, the endpoints, the realtime session, the stored data, and finally the browser.
+
+## When to Use This Skill
+- After deploying or changing a microservice
+- When `Beam.init` hangs or fails, or a call from the web client errors
+- Before telling the user a web game works
+
+## 1. Check the realm
+```
+beam_exec("config realm check --for web -q")
+```
+Reports the realtime publisher, the `global` content manifest, deployed service status and whether the socket host is reachable, each with the command that fixes a failure. Add `--fix` to apply the realm fixes.
+
+## 2. Call endpoints as a player
+```
+beam_exec("project call MatchService StartMatch -q")
+beam_exec("project call MatchService PlayRound --payload '{\"matchId\":\"<id>\",\"move\":\"rock\"}' --as <refresh-token> -q")
+```
+- The payload is a JSON object whose keys are the C# parameter names.
+- The default `--as guest` creates a new guest player. The result includes that player's refresh token; pass it to `--as` so later calls act as the same player.
+- `--target local` calls a service running on this machine (`project run`), `--target remote` calls the deployed one.
+- The result has the HTTP status and the JSON body, so you can play a whole match from the CLI.
+{{ if commands["project call"] }}
+#### `beam project call` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["project call"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+## 3. Probe the realtime session
+```
+beam_exec("listen player --probe -q")
+```
+Signs in a guest, exchanges its token for the realtime JWT, connects to the realm's socket with `send-session-start=true`, sends the `session-start` frame and reports the handshake status, time to open and frames received. It exits non-zero when the socket can't open or the server closes it. This is the quickest way to tell "the realm is misconfigured" from "this network blocks WebSockets".
+
+## 4. Read deployed logs
+```
+beam_exec("project remote-logs MatchService -q")
+```
+Filter with `--filter <text>`, `--server-log-level <level>`, `--from`/`--to`. Use `deploy ps` to see whether each service is running and current.
+
+## 5. Inspect storage
+- Locally, with the storage running (`project run`): `beam_exec("project open-mongo MatchStorage -q")` opens Mongo Express.
+- Save a local storage's data: `beam_exec("project storage snapshot MatchStorage -q")`.
+
+## 6. Browser smoke test
+Run a real browser against the built site and fail unless the realtime socket opens, the `session-start` frame is sent and a gameplay call succeeds. A Playwright script (adapted from `web/e2e/smoke.mjs` in https://github.com/ali-beamable/TestGameBeamable):
+```js
+import { chromium } from "playwright";
+
+const BASE_URL = process.env.BASE_URL ?? "http://localhost:4173/";
+const browser = await chromium.launch();
+const page = await browser.newPage();
+
+const socket = { opened: false, sessionStartSent: false, closed: false };
+page.on("websocket", (ws) => {
+  if (!ws.url().includes("/connect")) return;
+  ws.on("framesent", (f) => {
+    socket.opened = true;
+    if (String(f.payload).includes('"session-start"')) socket.sessionStartSent = true;
+  });
+  ws.on("framereceived", () => (socket.opened = true));
+  ws.on("close", () => (socket.closed = true));
+});
+
+let ok = false;
+try {
+  await page.goto(BASE_URL);
+  await page.waitForSelector("#board:not([hidden])", { timeout: 45000 }); // your "Beam.init resolved" marker
+  if (!socket.opened || !socket.sessionStartSent) throw new Error("realtime socket did not open / no session-start frame");
+
+  const played = page.waitForResponse((r) => r.url().includes("/PlayRound"), { timeout: 15000 });
+  await page.click("#moves button[data-move=rock]");
+  const response = await played;
+  if (!response.ok()) throw new Error(`PlayRound failed: HTTP ${response.status()}`);
+  if (socket.closed) throw new Error("realtime socket closed during the session");
+  ok = true;
+} finally {
+  console.log(JSON.stringify({ ok, socket }));
+  await browser.close();
+}
+process.exit(ok ? 0 : 1);
+```
+Serve the build with `npm run build && npx vite preview --port 4173` and run it with `node e2e/smoke.mjs`.
+
+## Sandboxes and proxies break WebSockets
+Agent sandboxes and TLS-intercepting proxies often let HTTP through but block or break browser WebSockets, so `Beam.init` times out even though every REST call works. When that happens:
+- Verify realtime with `listen player --probe` and from CI (e.g. a GitHub Actions job on an open network running the smoke test), not only from the sandbox.
+- **Never stub or mock the WebSocket in a test that claims to verify sessions.** A stubbed socket proves nothing about the realm.
+
+## Related Skills
+- `beam-web-guide` — Realtime session errors and realm prerequisites
+- `beam-build-and-deploy` — deploying and checking service status
+- `beam-web-hosting` — running the smoke test against the hosted site

@@ -72,7 +72,10 @@ Load a skill before attempting complex tasks:
 - `beam-unity-examples` — Unity sample projects and getting started
 - `beam-unreal-guide` — Unreal development guide: custom content, microservices, Blueprints, semantic types
 - `beam-microservice-examples` — Progressive code examples for C# microservices (Stats, Storage, Inventory, Federation)
-- `beam-web-guide` — Web SDK guide: installation, authentication, stats, leaderboards, content, announcements, accounts, and microservice clients
+- `beam-web-guide` — Web SDK guide: installation (`@beamable/sdk`), realm prerequisites, realtime session, authentication, stats, leaderboards, content, announcements, accounts, and generated microservice clients
+- `beam-web-game-quickstart` — end-to-end path from `beam init` to a deployed, hosted web game
+- `beam-test-and-verify` — call endpoints as a player, probe the realtime session, read logs, inspect storage, browser smoke tests
+- `beam-web-hosting` — host a web client as a static site (GitHub Pages), what's safe to ship, CORS
 
 ## Project Structure
 
@@ -82,7 +85,7 @@ Load a skill before attempting complex tasks:
 
 ## Important
 
-- Always pass `-q` (quiet mode) when executing beam commands from an AI agent
+- Always pass `-q` (quiet mode) when executing beam commands from an AI agent (`beam_exec` adds it for you)
 - Run `beam config` to check current CID, PID, and auth state
 - Content publish is irreversible — always check `content status` first
 - `beam deploy release` with `--replace` (default) removes services not in the plan

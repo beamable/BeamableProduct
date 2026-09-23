@@ -1,0 +1,83 @@
+---
+name: beam-web-hosting
+description: Host a Beamable web client (e.g. a Vite build) as a static site — GitHub Pages workflow, one-time setup, public vs private repos, which identifiers are safe to ship, and CORS.
+---
+
+# Hosting a Web Client
+
+A Web SDK client is a static site: the browser talks to the Beamable API and realtime socket directly, so any static host works. This skill uses GitHub Pages as the example.
+
+## When to Use This Skill
+- The user wants to publish a web game or app built with `@beamable/sdk`
+- A hosted build loads but can't reach Beamable
+
+## 1. Build for a static path
+Vite builds assume the site is served from `/`. GitHub Pages serves project sites from `/<repo>/`, so use relative asset paths:
+```ts
+// vite.config.ts
+import { defineConfig } from "vite";
+export default defineConfig({ base: "./" });
+```
+`npm run build` writes the site to `dist/`.
+
+## 2. GitHub Pages workflow
+`.github/workflows/pages.yml` (the web app lives in `web/`):
+{%{```yaml
+name: Deploy web game to GitHub Pages
+on:
+  push:
+    branches: [main]
+    paths: ['web/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
+}%}
+## 3. One-time setup
+- **Enable Pages before the first deploy:** repository **Settings → Pages → Build and deployment → Source: GitHub Actions**. Until then, `actions/deploy-pages` fails with a 404.
+- **Public vs private repositories:** Pages works on public repositories on every plan. Publishing Pages from a private repository needs a paid GitHub plan, and the published site is public unless the organization's plan supports access control.
+
+## 4. What is safe to ship
+- The **CID** and **PID** are public identifiers; it's fine to commit them (e.g. in `web/.env` as `VITE_BEAM_CID` / `VITE_BEAM_PID`) and ship them in the bundle.
+- **Never ship the realm secret** (`beam config secret`, or `RealmSecret` in `org realms`). It grants server-level access. Anything that needs it belongs in a microservice or a server using `BeamServer`, never in browser code or a `VITE_*` variable.
+- Player tokens are created at runtime by `Beam.init` (guest login) and stored in the browser; nothing to configure.
+
+## 5. Origins and CORS
+The browser calls the Beamable API host and the realm's realtime socket host from your site's origin. Before announcing a new host, open the hosted page and check the browser's network panel: the API responses should carry an `Access-Control-Allow-Origin` header that allows your origin, and the socket handshake should succeed (the socket host has been seen answering with `Access-Control-Allow-Origin: *`). Run the smoke test from `beam-test-and-verify` against the hosted URL (`BASE_URL=https://<user>.github.io/<repo>/`) to check both in one go.
+
+## Related Skills
+- `beam-web-game-quickstart` — the full path from `beam init` to a hosted game
+- `beam-test-and-verify` — smoke-testing the hosted site
+- `beam-web-guide` — Web SDK usage
