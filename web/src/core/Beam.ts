@@ -190,6 +190,7 @@ export class Beam extends ClientServicesMixin(BeamBase) {
       pid: this.pid,
       refreshToken,
       apiUrl: this.envConfig.apiUrl,
+      connectTimeoutMs: this.beamConfig.realtime?.connectTimeoutMs,
     });
   }
 

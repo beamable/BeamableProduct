@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   SDK awaits at the start of `connect()` so asynchronously-persisted tokens are loaded before
   the synchronous `isExpired` check.
 - `BeamConfig.realtime.enabled` — opt out of the realtime websocket at init (defaults to `true`). Lets the SDK be used as a pure API client when there's no player to sustain a realtime session.
+- `BeamConfig.realtime.connectTimeoutMs` — how long `Beam.init()` / `connectRealtime()` wait for
+  the realtime socket to open before rejecting with a `BeamWebSocketError` (default `15000`, `0`
+  disables it). The error names the socket host and says WebSockets may be blocked.
 - `Beam.connectRealtime()` / `Beam.disconnectRealtime()` — public methods to start/stop the realtime websocket on demand (e.g. after creating a player via `beam.auth.loginAsGuest()`), and to cleanly tear the connection down.
 - `BeamBaseConfig.host` — pass an explicit platform host URL to `Beam.init()` / `BeamServer.init()`.
   A built-in URL resolves to `dev`/`stg`/`prod` and any other URL becomes a custom environment,
@@ -77,6 +80,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `Beam.init()` always settles. It used to hang forever when the realtime socket stayed
+  CONNECTING (common behind corporate or TLS-intercepting proxies), when a reconnect was cut short
+  by `disconnect()` (which left the socket stuck ignoring later close events), or when a close
+  arrived during a reconnect. A failed initial connection now also stops retrying in the
+  background, and `disconnect()` rejects a connect that is still pending.
+- Realtime connection errors are actionable: a failed handshake reports the HTTP status the server
+  returns for the handshake URL (e.g. 401 for a rejected token) instead of a generic "WebSocket
+  error occurred", a failed refresh-token exchange includes its HTTP status, and a failure loading
+  the realm's websocket config is no longer reported as a missing access token.
 - The realtime websocket no longer fails with close 1006 on a device or emulator when the realm's
   client defaults advertise a loopback socket host. A `localhost` / `127.0.0.1` socket host is now
   retargeted to the configured `apiUrl` host, preserving the socket's own scheme and port.
