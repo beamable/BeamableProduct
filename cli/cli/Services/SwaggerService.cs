@@ -470,7 +470,7 @@ public class SwaggerService
 					if(NamedOpenApiSchema.AreEqual(schema, component.Value, out var schemaDifferences))
 						continue;
 
-					var mergedSchema = MergeSchemasWithExtensionMerge(schema, component.Value, schemaDifferences);
+					MergeSchemasWithExtensionMerge(schema, component.Value, schemaDifferences);
 					Log.Verbose($"Merged schema [{component.Value.Reference.Id}] with extension merge - schema differences: {string.Join(", ", schemaDifferences)}");
 					continue;
 				}
@@ -583,7 +583,8 @@ public class SwaggerService
 				throw new NotImplementedException();
 		}
 	}
-		private static bool ArePathItemsEqual(OpenApiPathItem a, OpenApiPathItem b, out List<string> differences)
+	
+	private static bool ArePathItemsEqual(OpenApiPathItem a, OpenApiPathItem b, out List<string> differences)
 	{
 		differences = new List<string>();
 
