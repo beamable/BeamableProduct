@@ -1758,7 +1758,7 @@ public partial class ContentService
 		{
 			var contentFile = file.ContentFiles.ElementAt(i);
 
-			var referenceContentFile = file.ReferenceManifests.TryGetValue(contentFile.FetchedFromManifestUid, out var m) ? contentFile.ChangeReference(m) : contentFile.ChangeReference(null);
+			var referenceContentFile = contentFile.ChangeReference(file.ReferenceManifests[contentFile.FetchedFromManifestUid]);
 
 			var statusAgainstTarget = contentFile.GetStatus();
 			var statusAgainstReference = referenceContentFile.GetStatus();
@@ -2344,8 +2344,8 @@ public struct ContentFile : IEquatable<ContentFile>
 	{
 		var copy = this;
 		ClientContentInfoJson clientContentInfoJson = newReferenceManifest.entries.FirstOrDefault(j => j.contentId == copy.Id);
-		copy.ReferenceContent = newReferenceManifest == null ? null : clientContentInfoJson;
-		copy.FetchedFromManifestUid = newReferenceManifest != null ? newReferenceManifest.uid : copy.FetchedFromManifestUid;
+		copy.ReferenceContent = clientContentInfoJson;
+		copy.FetchedFromManifestUid = newReferenceManifest.uid;
 		return copy;
 	}
 
