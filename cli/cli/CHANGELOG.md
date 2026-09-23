@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `beam init --realm <name|pid>` and `--game <name|pid>` pick the realm without prompts, and `beam config realm use <name|pid> [--game]` switches an existing workspace to a realm by name. In quiet mode, `init` now prints which game and realm it picked.
 - `beam mcp serve` now sends server instructions to MCP clients during initialize: the skill-first workflow, the `@beamable/sdk` package name, the realm prerequisites for the Web SDK (`notification|publisher=beamable` and a published `global` manifest), microservice basics, and the `deploy release --replace` default. Edit them in `Docs/Mcp/ServerInstructions.md`.
 - `beam deploy release --wait` polls the remote status after releasing until every released service is running and current, then reports each service's status on the `waitResult` channel. `--wait-timeout <seconds>` (default 600) bounds the wait; on timeout the command fails naming the services that are not ready.
+- `project generate web-client --int64-as number|string|bigint-union` chooses how C# `long` (OpenAPI `int64`) fields are typed in the generated TypeScript. The default stays `bigint-union` (`bigint | string`) for compatibility.
+- `project generate web-client --build` builds the microservices before generating, so the clients reflect the current code rather than the OpenAPI documents from the last build. It is opt-in because it runs a `dotnet build` per service.
 
 ### Changed
 - `beam_exec` (MCP) adds `-q` automatically so commands never block on a prompt, and answers invalid arguments with an `Invalid arguments` header followed by the command's help, so a wrong guess costs one call instead of three. The `beam_list_commands` / `beam_get_help` / `beam_exec` descriptions no longer require calling all three tools for every command.
@@ -27,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update `MongoDB.Driver` dependency to `3.11.2`.
 - Update `SharpCompress` dependency to `0.50.4`.
 - Update CLI `OpenTelemetry` dependencies to `1.18.0`.
+- `project generate web-client` now fails with a clear error instead of silently succeeding with an empty result when `--output-dir` is missing, `--lang` is unsupported, or no client could be generated at all, and it warns (naming the service and the expected `beam_openApi.json` path) for every microservice it skips because it has not been built.
 
 ### Fixed
 - The `beam-web-guide` skill used the stale `beamable-sdk` package name and leading-slash microservice endpoints. It now uses `@beamable/sdk`, leads with `beam project generate web-client` (with a live options table), and adds sections on realm prerequisites, the realtime session and its errors, and end-to-end verification.
@@ -40,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A failing `POST /basic/auth/token` no longer mutually recurses into a stack overflow, because auth-token requests are excluded from the token-refresh retry path. Timeout retries are also no longer an unbounded fixed-delay loop, since the retry count is now carried through the internal retry instead of being reset.
 - Web SDK code generation fixes: colliding generated method names are disambiguated with a `By{Param}And{Param}` suffix (they previously emitted duplicate top-level declarations, a `SyntaxError` in the ESM build); duplicate `export type` declarations are collapsed by name and the static type collections are cleared after each generation, so types no longer leak across microservices or across repeated generations in a long-lived process such as the MCP server; and `oneOf` members are routed through the type mapper, fixing a null reference on inline, primitive, and nullable schemas.
 - `beam_get_source` with `platform="web"` no longer reports the CLI version (and a non-existent `web-sdk-<cli version>` tag) when run from a CLI workspace. A version is now only accepted from the requested platform's detector, web detection also looks in workspace subdirectories up to two levels deep (e.g. `web/package.json`) and in `devDependencies`, the installed `node_modules/@beamable/sdk` version wins over a declared semver range, and when no version is found the tool says so instead of guessing.
+- `project generate web-client` no longer keeps generation state in static fields, so a JavaScript run, a portal extension client generation, or a generation that wrote no types file can no longer leak types or the output language into a later run in the same process; clients only import `./types` when they use it; and a callable returning an array of a DTO (e.g. `MatchView[]`) is now typed as `Types.MatchView[]` instead of an undefined `MatchView[]`.
 
 
 ## [7.2.3] - 2026-08-26
