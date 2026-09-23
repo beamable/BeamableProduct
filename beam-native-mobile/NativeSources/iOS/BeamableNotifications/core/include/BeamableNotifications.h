@@ -43,7 +43,6 @@ void bmn_clearAuth(void);                              // call on logout
 // requestJson: OfferTrackRequest {"campaignId":"","nodeId":"","gamerTag":"","accountId":"",
 //                                 "cidPid":"","deeplink":"","offer":{...}}
 void bmn_trackOfferClicked(const char *requestJson);   // emits a "Clicked" funnel event
-void bmn_trackOfferConverted(const char *requestJson); // emits a "Converted" funnel event
 
 // Templates (feature 4) & action-button categories (feature 7).
 // Note: a remote `actions`-style push no longer needs a pre-registered category — the NSE synthesizes

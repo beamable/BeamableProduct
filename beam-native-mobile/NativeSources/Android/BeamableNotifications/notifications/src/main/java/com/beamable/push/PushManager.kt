@@ -641,21 +641,19 @@ object PushManager {
         listener?.let { safe("notification_opened") { it.onNotificationOpened(json) } }
     }
 
-    // ---- Offer / conversion funnel helpers ---------------------------
+    // ---- Offer click funnel helper ----------------------------------
 
     /**
      * Emits a **Clicked** funnel event for an in-app offer click, attributed to the campaign that
      * arrived in the originating notification. [intentDataJson] is the notification's
      * intent-data JSON (as delivered to the engine); [offerJson] is the single clicked offer.
      * No-op unless campaignId + nodeId + scope + gamerTag are present.
+     *
+     * There is deliberately no conversion counterpart: the platform concludes a conversion when
+     * the player meets a campaign objective, and ignores any a device reports.
      */
     fun trackOfferClicked(intentDataJson: String, offerJson: String?) {
         trackOffer(intentDataJson, offerJson, BeamableAnalytics.FunnelType.Clicked)
-    }
-
-    /** Emits a **Converted** funnel event for an offer conversion. See [trackOfferClicked]. */
-    fun trackOfferConverted(intentDataJson: String, offerJson: String?) {
-        trackOffer(intentDataJson, offerJson, BeamableAnalytics.FunnelType.Converted)
     }
 
     private fun trackOffer(

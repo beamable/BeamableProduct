@@ -8,7 +8,8 @@ end to end:
 - **push-token registration** — request permission, register for remote, and register
   the device's APNs/FCM token with Beamable;
 - **listing registered devices** for the player;
-- **tracking `Clicked` / `Converted`** funnel analytics (iOS + Android);
+- **tracking `Clicked`** funnel analytics (iOS + Android), and meeting a campaign objective
+  (which is how a conversion is counted — a device never reports one);
 - **native events** — `notificationOpened`, `notificationReceived`,
   `notificationPresented`, token, delivery receipts, funnel results — in a live log;
 - **deep links** — a tapped notification deep-links into the app (`beamrnsample://details/<id>`);
@@ -159,6 +160,27 @@ would otherwise wipe), and removes the Gradle build output — then runs the nor
 Reach for it after editing the web SDK, after restaging the notifications `.aar`, or whenever
 a change you know you made doesn't show up on device.
 
+### Checking the campaign funnel end to end
+
+The funnel is read in the portal extension, not in this app. Before trusting any number, check
+`.beamable/config.beam.json`: its committed value points at the shared dev environment, which
+may not have the current funnel changes. The funnel then reads zeros, which looks exactly like a
+broken client.
+
+1. Send a campaign to the device. `beam_sent` and `beam_delivered` move.
+2. Open the notification. `beam_opened` moves, and `beam_delivered` is non-zero even if its receipt
+   arrived late (the server backfills delivery from an open).
+3. **Analytics → Track offer clicked** (the Campaign/Node IDs and the `outreachId` auto-fill from
+   the push). `beam_clicked` moves. A click with hand-typed IDs has no `outreachId` and never counts.
+4. **Analytics → Meet objective** sends the objective event configured on that tab. `beam_met_<goal>`
+   moves once the player meets the goal. `beam_goal_<goal>` counts players who fired an observed
+   event of the goal, which is not the same as meeting it for an all-of / any-of goal.
+
+Stages come back as `{ sealed, pending, lagging }`, and the total is `sealed + pending`. Results are
+cached for a short TTL, so wait before believing a zero, and read a `0` under `lagging: true` as
+"unknown", not "none". Every request to `/analytics/events` returns `202`, so a wrong or missing
+`outreachId` fails silently.
+
 ## 3. Run (dev build)
 
 This app uses native modules, so it runs as a **dev build**, not Expo Go:
@@ -188,7 +210,7 @@ Tabs are listed below in bar order; the bar follows the order of the `Tabs.Scree
 | **In-game** (`inbox.tsx`) | Opt in/out of in-game · Inbox (auto-refreshes on focus, ↻ in the corner) | the `ingame` rail and the player's Beamable mailbox |
 | **Email** (`email.tsx`) | Account (read-only) · Add email to account · Opt in/out of email | `beam.account.current()` guest-vs-credentialed state; `addCredentials` → POST `/basic/accounts/register`; the `email` rail |
 | **Segments** (`segments.tsx`) | namespace picker · `CLIENT_LEVEL` card (`beam.stats`) · `PLAYER_LEVEL` card (microservice) · Set/delete any stat in either namespace · Create N players with a stat · My segments (↻) · Recent transitions | the stats → segment loop in both namespaces a rule can read: `beam.stats.set` writes `client.*` directly, `PlayerStatsService.AddToMyStat` writes `game.private`, the backend re-evaluates the Portal rules watching that attribute, and `GET /api/realms/{realmId}/players/{playerId}/segments` (+ `/transitions`) reads the membership back. The screen renders the rule JSON to author, including a cross-namespace one |
-| **Analytics** (`analytics.tsx`) | Campaign/Node ID · Track offer clicked · Track offer converted · Clear native auth | native `Clicked`/`Converted` funnel events (iOS + Android) and the closed-app auth handoff |
+| **Analytics** (`analytics.tsx`) | Objective events · Campaign/Node ID · Track offer clicked · Meet objective · Clear native auth | the native `Clicked` funnel event (iOS + Android), objective events that drive a conversion (`beam_met_<goal>`), and the closed-app auth handoff |
 | **Unity** (`unity.tsx`) | Send message to Unity | the Unity ↔ React WebView bridge. **Web only** — the tab is hidden on native |
 
 A collapsible console is pinned to the bottom of every tab with two streams behind a tab
@@ -373,7 +395,7 @@ app/
     inbox.tsx        # in-game rail + mailbox (auto-refresh on focus)
     email.tsx        # account, add-email, email rail
     segments.tsx     # client + game stat cards, namespace picker, membership + transitions
-    analytics.tsx    # funnel clicked/converted, native auth
+    analytics.tsx    # objective events, funnel clicked, native auth
     unity.tsx        # Unity bridge (web only — hidden tab on native)
   details/[id].tsx   # deep-link target screen
 src/

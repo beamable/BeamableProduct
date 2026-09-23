@@ -331,8 +331,10 @@ namespace Beamable.Notifications
         /// Emits a <c>Clicked</c> funnel <see cref="CoreEvent"/> via the player's Beamable
         /// analytics service. <paramref name="campaign"/> carries the context that arrived in the
         /// notification's intent data (see <see cref="NotificationData.CampaignIntent"/>) so the
-        /// conversion attributes back to the originating notification. No-op when the campaign is
-        /// not tracked (missing campaignId/nodeId,).
+        /// click attributes back to the originating notification — the platform matches it on the
+        /// push's <c>OutreachId</c>. No-op when the campaign is not tracked (missing campaignId/nodeId).
+        /// There is deliberately no conversion counterpart: the platform concludes a conversion when
+        /// the player meets a campaign objective, and ignores any a device reports.
         /// </summary>
         /// <param name="campaign">The campaign intent data the notification carried.</param>
         /// <param name="offer">The single offer that was clicked (optional).</param>
@@ -340,22 +342,11 @@ namespace Beamable.Notifications
             TrackOfferFunnel("Clicked", campaign, offer);
 
         /// <summary>
-        /// Record that an offer click resulted in a conversion. Emits a <c>Converted</c>
-        /// funnel <see cref="CoreEvent"/>. See <see cref="TrackOfferClicked"/> for attribution rules.
-        /// </summary>
-        public static void TrackOfferConverted(NotificationIntentData campaign, Offer offer = null) =>
-            TrackOfferFunnel("Converted", campaign, offer);
-
-        /// <summary>
         /// Convenience overload taking the raw campaign/node ids plus the optional offer, for callers
         /// that only kept the ids from the originating notification.
         /// </summary>
         public static void TrackOfferClicked(string campaignId, string nodeId, Offer offer = null) =>
             TrackOfferFunnel("Clicked", BuildIntent(campaignId, nodeId), offer);
-
-        /// <summary>Convenience overload for conversions (see <see cref="TrackOfferClicked(string,string,Offer)"/>).</summary>
-        public static void TrackOfferConverted(string campaignId, string nodeId, Offer offer = null) =>
-            TrackOfferFunnel("Converted", BuildIntent(campaignId, nodeId), offer);
 
         private static NotificationIntentData BuildIntent(string campaignId, string nodeId) =>
             new NotificationIntentData { CampaignId = campaignId, NodeId = nodeId };

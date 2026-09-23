@@ -137,16 +137,9 @@ object UnrealPush {
         PushManager.trackOfferClicked(intentDataJson, offerJson)
     }
 
-    /** Emits a **Converted** funnel event for an offer conversion. See [trackOfferClicked]. */
-    @JvmStatic
-    fun trackOfferConverted(requestJson: String) {
-        val (intentDataJson, offerJson) = splitOfferTrackRequest(requestJson)
-        PushManager.trackOfferConverted(intentDataJson, offerJson)
-    }
-
     /**
      * Splits a canonical [OfferTrackRequest] JSON into the (intentDataJson, offerJson) pair
-     * [PushManager.trackOfferClicked] / [PushManager.trackOfferConverted] expect. Returns the
+     * [PushManager.trackOfferClicked] expects. Returns the
      * request object (sans `offer`) as the intent data and the `offer` sub-object (or null)
      * as the offer JSON. On a parse failure, falls back to the raw request as intent data.
      */

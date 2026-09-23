@@ -235,7 +235,7 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(received?.offers?.count, 2, "Received carries all carried offers")
         XCTAssertEqual(received?.offers?.first?.itemId, "gold")
 
-        // Clicked/Converted attach ONLY the explicitly-passed offer, not the carried list.
+        // Clicked attaches ONLY the explicitly-passed offer, not the carried list.
         let clicked = BeamableAnalytics.makeEvent(.clicked, intent: intent,
                                                   offer: NotificationOffer(itemId: "silver"))
         XCTAssertEqual(clicked?.offers?.count, 1)
@@ -286,8 +286,9 @@ final class CoreTests: XCTestCase {
     }
 
     func testMakeParamsEchoesTheAttributionStamp() {
-        // CampaignEventProcessor.ProcessAttributedStage reads exactly these two param names; if
-        // either is missing or renamed the stage is silently not counted in the campaign funnel.
+        // The platform matches a stage on outreachId under exactly this param name; if it is missing
+        // or renamed the stage is silently not counted in the campaign funnel. trackId is no longer
+        // read by that path, but it is still pinned here — it is what BI joins on.
         let intent = CampaignIntentData(campaignId: "c", nodeId: "n", gamerTag: "1",
                                         cidPid: "CID.PID",
                                         outreachId: "outreach-1", trackId: "campaign:c:1:send")

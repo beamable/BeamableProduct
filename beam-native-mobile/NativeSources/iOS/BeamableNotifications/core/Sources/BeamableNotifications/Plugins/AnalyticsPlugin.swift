@@ -40,7 +40,7 @@ public final class AnalyticsPlugin: NSObject, NotificationPlugin {
 
     public func onNotificationTapped(_ note: NotificationData, actionId: String?) {
         // A tap on the notification itself is the "Opened" funnel stage. In-app offer
-        // clicks ("Clicked"/"Converted") are emitted separately by the offer-tracking helpers.
+        // clicks ("Clicked") are emitted separately by the offer-tracking helpers.
         emit(.opened, note: note)
     }
 

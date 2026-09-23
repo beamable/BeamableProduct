@@ -105,8 +105,9 @@ class BeamableAnalyticsTest {
 
     @Test
     fun buildCoreEvent_echoesTheAttributionStamp() {
-        // CampaignEventProcessor.ProcessAttributedStage reads exactly these two param names; if
-        // either is missing or renamed the stage is silently not counted in the campaign funnel.
+        // The platform matches a stage on outreachId under exactly this param name; if it is missing
+        // or renamed the stage is silently not counted in the campaign funnel. trackId is no longer
+        // read by that path, but it is still pinned here — it is what BI joins on.
         val p = BeamableAnalytics.buildCoreEvent(
             trackedIntent().copy(outreachId = "outreach-1", trackId = "campaign:camp-1:1:node-7"),
             BeamableAnalytics.FunnelType.Clicked

@@ -206,11 +206,6 @@ namespace BeamNotif
         CallStaticVoidWithString("trackOfferClicked", RequestJson);
     }
 
-    void Android_TrackOfferConverted(const FString& RequestJson)
-    {
-        CallStaticVoidWithString("trackOfferConverted", RequestJson);
-    }
-
     void Android_DeepLinkInitialize()
     {
         CallStaticVoid(kDeepLinkClass, "initialize", "()V");

@@ -253,12 +253,6 @@ export const BeamableNotifications = {
   ): void {
     activeTransport.call('trackOfferClicked', { intent, offer });
   },
-  trackOfferConverted(
-    intent: NotificationIntentData,
-    offer?: NotificationOffer,
-  ): void {
-    activeTransport.call('trackOfferConverted', { intent, offer });
-  },
   scheduleLocalWithDeepLink(opts: {
     id: string;
     title: string;

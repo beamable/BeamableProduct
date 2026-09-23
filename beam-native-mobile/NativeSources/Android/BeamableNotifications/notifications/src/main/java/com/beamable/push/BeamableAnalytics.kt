@@ -58,7 +58,10 @@ object BeamableAnalytics {
         Thread(r, "beamable-analytics").apply { isDaemon = true }
     }
 
-    enum class FunnelType { Sent, Received, Opened, Clicked, Converted }
+    // No Converted: the platform concludes a conversion when the player meets a campaign
+    // objective, and ignores any a device reports. A persisted "Converted" from an older build is
+    // dropped on replay (the name lookup finds no match).
+    enum class FunnelType { Sent, Received, Opened, Clicked }
 
     // ---- Public entry points -------------------------------------------------
 
@@ -68,7 +71,7 @@ object BeamableAnalytics {
      * from the intent's cidPid or, failing that, the stored auth cid/pid (mirroring iOS, which
      * fills cidPid from persisted auth); if neither is known yet the event is persisted for replay
      * once the SDK calls configureAuth. [offer] is the single offer this event concerns
-     * (Clicked/Converted), omitted otherwise.
+     * (Clicked), omitted otherwise.
      */
     fun trackFunnel(
         context: Context,
@@ -396,17 +399,17 @@ object BeamableAnalytics {
         // not send it. Falls back to an explicitly-provided accountId if one is present.
         (intent.accountId ?: intent.gamerTag)?.let { sorted["accountId"] = it }
         intent.cidPid?.let { sorted["cidPid"] = it }
-        // The push's attribution stamp, echoed verbatim. CampaignEventProcessor.ProcessAttributedStage
-        // needs BOTH — trackId to recover the send node, outreachId as the exactly-once dedup key — to
-        // count this stage in the campaign funnel the portal reads. Omitted when the funnel wasn't
-        // triggered by a campaign push; the event is still recorded, just unattributed.
+        // The push's attribution stamp, echoed verbatim. outreachId is the one that decides: the
+        // platform matches it against the send it parked for this recipient, and the campaign and
+        // node coordinates come off that row. trackId rides along for BI. Omitted when the funnel
+        // wasn't triggered by a campaign push; the event is still recorded, just unattributed.
         intent.outreachId?.takeIf { it.isNotEmpty() }?.let { sorted["outreachId"] = it }
         intent.trackId?.takeIf { it.isNotEmpty() }?.let { sorted["trackId"] = it }
         // Offers relevant to this event as a SINGLE flat column holding a stringified JSON
         // array of offer objects (`[{customData,itemId,value}, ...]`). Athena has no nested-object
         // column type, so the whole array is carried as one string the reader JSON-parses — this
         // lets any offer shape (incl. free-form customData) survive intact. Stage events carry every
-        // offer the push held; Clicked/Converted carry a one-element array (set in PendingFunnel.from).
+        // offer the push held; Clicked carries a one-element array (set in PendingFunnel.from).
         intent.offersJson?.let { sorted["offerData"] = it }
         // Free-form campaign metadata, carried verbatim as a stringified JSON object (same flat-
         // column rule as offerData). Present on every stage when the push carried it.
@@ -428,7 +431,7 @@ object BeamableAnalytics {
      * `FunnelEvent`). Captures the campaign coordinates, the offers it concerns (as the wire JSON
      * array string), the free-form campaignData, and a timestamp. [dedupKey] keys on
      * `funnelType|campaignId|nodeId|gamerTag|offersJson` (excludes the timestamp) so the same
-     * stage is never enqueued/replayed twice, while distinct Clicked/Converted events for
+     * stage is never enqueued/replayed twice, while distinct Clicked events for
      * different offers stay separate. `gamerTag` is included so an offline account-switch on a
      * shared device doesn't collapse two players' events.
      */
@@ -457,7 +460,7 @@ object BeamableAnalytics {
          * Stable identity for replay dedup — campaign coordinates + stage + gamerTag + offers (no
          * timestamp). `gamerTag` is included so an offline account-switch on a shared device
          * doesn't collapse two players' otherwise-identical events; `offersJson` keeps distinct
-         * Clicked/Converted events for different offers from collapsing.
+         * Clicked events for different offers from collapsing.
          */
         val dedupKey: String
             get() = listOf(
@@ -510,8 +513,8 @@ object BeamableAnalytics {
                 deeplink = intent.deeplink,
                 outreachId = intent.outreachId,
                 trackId = intent.trackId,
-                // Stage events (offer == null) carry every offer the push held; Clicked/Converted
-                // carry just the single concerned offer. Either way the offers are re-serialized
+                // Stage events (offer == null) carry every offer the push held; Clicked
+                // carries just the single concerned offer. Either way the offers are re-serialized
                 // through [toAnalyticsArray] so customData is guaranteed to be a stringified JSON
                 // string (Athena-safe), regardless of how the sender shaped the wire payload.
                 offersJson = if (offer != null) toAnalyticsArray(listOf(offer))

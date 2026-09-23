@@ -576,7 +576,7 @@ public struct AuthConfig: Codable, Equatable {
 /// assembled by `BeamableAnalytics` when POSTing; this struct is what we persist for replay
 /// when a closed-app POST can't finish in the NSE budget (fallback).
 public struct FunnelEvent: Codable, Equatable {
-    public var funnelType: String          // Sent | Received | Opened | Clicked | Converted
+    public var funnelType: String          // Sent | Received | Opened | Clicked
     public var campaignId: String
     public var nodeId: String
     public var gamerTag: String?
@@ -589,7 +589,7 @@ public struct FunnelEvent: Codable, Equatable {
     public var outreachId: String?
     public var trackId: String?
     /// The offer(s) this event concerns (omitted when none). Stage events (Sent/Received/Opened)
-    /// carry every offer the push held; Clicked/Converted carry only the concerned offer. Emitted
+    /// carry every offer the push held; Clicked carries only the concerned offer. Emitted
     /// as a single `offerData` JSON-array column so any offer shape survives intact.
     public var offers: [NotificationOffer]?
     /// Free-form campaign metadata carried by the push (omitted when absent). Emitted on every
@@ -628,7 +628,7 @@ public struct FunnelEvent: Codable, Equatable {
     /// — once by the NSE safety-timer persist and once by `emit`'s own persist-on-failure —
     /// which would otherwise replay (and double-count) the same funnel stage. Keyed on the
     /// campaign coordinates + funnel stage + gamerTag + the specific offer it concerns (so
-    /// distinct Clicked/Converted events for different offers of the same campaign are NOT
+    /// distinct Clicked events for different offers of the same campaign are NOT
     /// collapsed). `gamerTag` is included so an offline account-switch on a shared device
     /// doesn't collapse two players' otherwise-identical events.
     /// Deliberately excludes `timestamp`, which differs between the two enqueue paths.
@@ -655,17 +655,17 @@ public struct FunnelResult: Codable, Equatable {
     }
 }
 
-/// The five funnel stages.
+/// The device-reported funnel stages. No `converted`: the platform concludes a conversion when
+/// the player meets a campaign objective, and ignores any a device reports.
 public enum FunnelType: String {
     case sent = "Sent"
     case received = "Received"
     case opened = "Opened"
     case clicked = "Clicked"
-    case converted = "Converted"
 }
 
 /// Engine-facing request for the offer-tracking helpers. Carries the campaign
-/// context that arrived in the notification's intent data so an in-app offer click/convert
+/// context that arrived in the notification's intent data so an in-app offer click
 /// can be attributed back to the originating campaign. The `offer` is the single offer the
 /// user acted on. `gamerTag`/`accountId`/`cidPid` are optional here because the helper
 /// falls back to the persisted `AuthConfig` (cid/pid) when the caller omits the scope.

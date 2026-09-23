@@ -170,8 +170,9 @@ export class MailService extends ApiService {
       const outreachId = metadata?.[OUTREACH_KEY];
       const trackId = metadata?.[TRACK_ID_KEY];
 
-      // Both are required downstream: outreachId is the funnel's per-recipient dedup key, trackId is
-      // what the platform parses to find the campaign and node. One without the other is unusable.
+      // outreachId is what the platform matches on. trackId is no longer read by the campaign path
+      // — the coordinates come off the row the outreachId matched — but it is still worth carrying
+      // for BI, and requiring both keeps this gate as strict as it has always been.
       if (!outreachId || !trackId) continue;
 
       if (this.attributed.size >= MAX_REMEMBERED) {
@@ -205,7 +206,8 @@ export class MailService extends ApiService {
       this.attributed.delete(key);
 
       // Byte-identical in shape to what the push SDKs already send, so the platform's campaign
-      // consumer attributes it with no ingest change: it keys on category + trackId + outreachId.
+      // consumer attributes it with no ingest change: it matches on outreachId, and the category
+      // keeps the open from also enrolling the player into a campaign triggered by it.
       analytics.trackSafely({
         name: 'Opened',
         category: FUNNEL_CATEGORY,

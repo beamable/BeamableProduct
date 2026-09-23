@@ -11,7 +11,7 @@ notification callbacks/events, deep links, and closed-app delivery analytics.
   `OnPermissionResult`, `OnTokenReceived/Error`, `OnNotificationPresented/Received/Tapped`,
   `OnPendingNotifications`, `OnDeliveryReceipts`, `OnDeepLink`. Funnel analytics:
   `ConfigureAuth`/`ClearAuth` (persist/clear the player bearer token for native funnel POSTs) and
-  `TrackOfferClicked`/`TrackOfferConverted` (emit offer funnel events).
+  `TrackOfferClicked` (emit the offer Clicked funnel event).
 - **`BeamPlatformNotificationsEditor`** (Editor) — adds the **"iOS + NSE → Device"** toolbar
   button: pick a device, package iOS, graft + sign the closed-app Notification Service Extension,
   install. Runs as a child process streaming to the Output Log (`LogBeamNotif`); flips to Cancel
@@ -83,15 +83,17 @@ All delegates are broadcast on the game thread. For payloads beyond the simple h
 the *Push notifications for Unreal* guide in the Beamable documentation.
 
 ## Funnel analytics
-Campaign funnel events (Sent/Received/Opened/Clicked/Converted) are POSTed natively to Beamable.
+Campaign funnel events (Sent/Received/Opened/Clicked) are POSTed natively to Beamable.
 The native code (the iOS Swift core plus its NSE, and the Android Kotlin core's `PushFirebaseService`)
 authenticates and POSTs even when the engine VM is asleep, using credentials the app supplies:
 - **`ConfigureAuth(AuthJson)`** — persist the player bearer token + realm routing (`cid`/`pid`/
   `host`) so native funnel POSTs can authenticate. Call on login/refresh. **`ClearAuth()`** on logout.
-- **`TrackOfferClicked(RequestJson)` / `TrackOfferConverted(RequestJson)`** — emit a Clicked /
-  Converted funnel event for an in-app offer, attributed back to the originating campaign via the
-  notification's intent data. `RequestJson` is the canonical `OfferTrackRequest`
-  (`{campaignId,nodeId,gamerTag,accountId,cidPid,deeplink,offer:{...}}`).
+- **`TrackOfferClicked(RequestJson)`** — emit a Clicked funnel event for an in-app offer,
+  attributed back to the originating campaign via the notification's intent data (the platform
+  matches on its `outreachId`). `RequestJson` is the canonical `OfferTrackRequest`
+  (`{campaignId,nodeId,gamerTag,accountId,cidPid,deeplink,offer:{...}}`). There is no conversion
+  event: the platform concludes a conversion when the player meets a campaign objective, and
+  ignores any a device reports.
 
 Closed-app receipt funnel events are emitted natively: on **iOS** by the Notification Service Extension
 (see `NSE-SETUP.md`), and on **Android** by `PushFirebaseService` itself, which fires the **Received**

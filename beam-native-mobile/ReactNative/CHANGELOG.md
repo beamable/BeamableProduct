@@ -23,7 +23,7 @@ Android AAR or the iOS xcframework per platform.
 - Deep links and campaign coordinate helpers for notification payloads.
 - Closed-app campaign funnel analytics: `configureAuth` / `clearAuth` write the player auth into
   native shared storage so the funnel keeps reporting while the JS runtime is dead, plus
-  `trackOfferClicked` / `trackOfferConverted`.
+  `trackOfferClicked`.
 - Device-token helpers that adapt to any generated microservice client exposing the device-token
   endpoints.
 - A built-in web build resolved by Metro, so the same import works on iOS, Android, and web — routed

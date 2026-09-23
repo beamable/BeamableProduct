@@ -5,8 +5,8 @@ import Foundation
 ///
 /// Two routes, primary then fallback (identical body — see `postAnalyticsEventsStatus`):
 ///  - `/analytics/events` — the gateway endpoint. Publishes onto `analytics.events`, the bus the
-///    campaign event consumer subscribes to, so this is the only route whose Opened/Clicked/
-///    Converted can be counted in a campaign's funnel.
+///    campaign event consumer subscribes to, so this is the only route whose Opened/Clicked
+///    can be counted in a campaign's funnel.
 ///  - `/report/custom_batch/{cid}/{pid}/{gamerTag}` — the canonical report route shared with
 ///    Unity/CLI/Android. Feeds the warehouse only; used when the gateway endpoint is unavailable
 ///    (an older backend) so the event is still recorded rather than dropped.
@@ -35,10 +35,10 @@ public enum BeamableAnalytics {
         if let v = event.accountId ?? event.gamerTag { p["accountId"] = .string(v) }
         if let v = event.cidPid { p["cidPid"] = .string(v) }
         if let v = event.deeplink { p["deeplink"] = .string(v) }
-        // The push's attribution stamp, echoed verbatim. `CampaignEventProcessor.ProcessAttributedStage`
-        // needs BOTH — trackId to recover the send node, outreachId as the exactly-once dedup key — to
-        // count this stage in the campaign funnel the portal reads. Omitted when the funnel wasn't
-        // triggered by a campaign push; the event is still recorded, just unattributed.
+        // The push's attribution stamp, echoed verbatim. outreachId is the one that decides: the
+        // platform matches it against the send it parked for this recipient, and the campaign and
+        // node coordinates come off that row. trackId rides along for BI. Omitted when the funnel
+        // wasn't triggered by a campaign push; the event is still recorded, just unattributed.
         if let v = event.outreachId, !v.isEmpty { p["outreachId"] = .string(v) }
         if let v = event.trackId, !v.isEmpty { p["trackId"] = .string(v) }
         // Offers as a SINGLE flat column holding a stringified JSON array of offer objects
@@ -92,7 +92,7 @@ public enum BeamableAnalytics {
     // MARK: Build a FunnelEvent from campaign intent + a chosen offer
 
     /// Compose a `FunnelEvent` from the campaign intent data of a notification. When `offer` is
-    /// explicitly passed (Clicked/Converted via `trackOffer*`) only that single offer is attached;
+    /// explicitly passed (Clicked via `trackOfferClicked`) only that single offer is attached;
     /// stage events (Sent/Received/Opened) carry every offer the push held (`intent.offers`). The
     /// free-form `campaignData` is carried on every stage. Returns nil if the intent isn't a
     /// tracked campaign — caller can rely on that to gate emission.
@@ -119,7 +119,7 @@ public enum BeamableAnalytics {
     /// Called once per `emit` with the terminal outcome of the funnel POST. `NotificationManager`
     /// wires this to its `onFunnelResult` callback, which the engine bridges surface as the
     /// `funnelResult` event — the iOS counterpart of Android's `dispatchFunnelResult`, and what
-    /// lets a caller await the real per-press HTTP status of `trackOfferClicked`/`Converted`.
+    /// lets a caller await the real per-press HTTP status of `trackOfferClicked`.
     ///
     /// Set only in the app process; in the NSE (a separate process) it stays nil and the
     /// closed-app funnel is silent, exactly as before.
