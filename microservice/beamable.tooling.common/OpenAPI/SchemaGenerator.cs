@@ -374,13 +374,13 @@ public class SchemaGenerator
 					}
 				};
 			case Type x when IsDictionary(x):
-				var das= GetDictionaryTypes(x);
+				var dictionaryTypes = GetDictionaryTypes(x);
 				return new OpenApiSchema
 				{
 					Type = "object",
 					AdditionalPropertiesAllowed = true,
 					
-					AdditionalProperties = Convert(das.Value.ValueType, ref requiredTypes,depth - 1, sanitizeGenericType),
+					AdditionalProperties = Convert(dictionaryTypes.Value.ValueType, ref requiredTypes,depth - 1, sanitizeGenericType),
 					Extensions = new Dictionary<string, IOpenApiExtension>
 					{
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
