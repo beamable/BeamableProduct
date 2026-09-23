@@ -28,7 +28,7 @@ and an available player.
 
 `beam listen player --probe` checks that the realm's realtime socket works, then exits. It opens one session the same way the Web SDK does:
 
-1. It authenticates as the logged-in player (or the `--refresh-token` you pass). With `--guest`, or when no one is logged in, it creates a new guest player instead.
+1. It creates a new guest player, like a Web SDK client does. Pass `--refresh-token <token>` to probe as that player instead.
 2. It exchanges the refresh token at `/api/auth/tokens/refresh-token` for the JWT the socket accepts. The opaque token from `/basic/auth/token` is rejected by the socket with a 401.
 3. It reads the socket URI from the realm's client defaults (`websocketConfig.uri`), and fails with the error above if the provider is `pubnub`.
 4. It connects to `{uri}/connect?access_token=<jwt>&send-session-start=true`, sends the `session-start` frame, and listens for `--probe-seconds` seconds (default 5).
@@ -38,7 +38,7 @@ The probe succeeds (exit code 0) when the socket opens, the `session-start` fram
 The result is written to the `probe` channel, so tools such as the MCP `beam_exec` tool can read it:
 
 ```
-beam listen player --probe --guest
+beam listen player --probe --probe-seconds 10
 ```
 
 | Field | Meaning |

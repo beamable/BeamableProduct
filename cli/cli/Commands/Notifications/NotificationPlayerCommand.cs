@@ -6,6 +6,7 @@ using Beamable.Common.Content;
 using cli.Utils;
 using Newtonsoft.Json;
 using System.CommandLine;
+using System.CommandLine.Binding;
 using System.Net.WebSockets;
 using System.Text.RegularExpressions;
 using Beamable.Server;
@@ -56,7 +57,7 @@ public class NotificationPlayerCommand : StreamCommand<NotificationPlayerCommand
 	{
 		AddOption(new Option<string>(new string[] { "--context", "-c" }, () => ".*",
 			"A regex to filter for notification channels"), (args, s) => args.contextRegexStr = s);
-		AddOption(new Option<bool>("--guest", "Authenticate as a newly created guest player instead of the logged-in identity. --probe also uses a guest when no one is logged in"),
+		AddOption(new Option<bool>("--guest", "Authenticate as a newly created guest player instead of the logged-in identity. --probe uses a guest unless --refresh-token is passed"),
 			(args, b) => args.guest = b);
 		AddOption(new Option<bool>("--probe", "Instead of listening, open one realtime session the way the Web SDK does, report the handshake, session-start and frames on the probe channel, then exit"),
 			(args, b) => args.probe = b);
@@ -139,7 +140,11 @@ public class NotificationPlayerCommand : StreamCommand<NotificationPlayerCommand
 			throw new CliException("--probe-seconds must be zero or more");
 		}
 
-		var useGuest = args.guest || string.IsNullOrEmpty(args.AppContext.RefreshToken);
+		// Default to a new guest, like a Web SDK client: a developer login often has no player on the realm,
+		// which the socket rejects. An explicit --refresh-token probes as that player instead.
+		var explicitRefreshToken = args.DependencyProvider.GetService<BindingContext>().ParseResult
+			.GetValueForOption(args.DependencyProvider.GetService<RefreshTokenOption>());
+		var useGuest = args.guest || string.IsNullOrEmpty(explicitRefreshToken);
 		var result = new ListenPlayerProbeResult
 		{
 			identity = useGuest ? "guest" : "current",
@@ -179,7 +184,7 @@ public class NotificationPlayerCommand : StreamCommand<NotificationPlayerCommand
 		{
 			FailProbe(result, ListenPlayerProbeResult.STAGE_TOKEN, ex, useGuest
 				? "Could not create a guest player and exchange its refresh token at /api/auth/tokens/refresh-token"
-				: "Could not exchange the logged-in refresh token at /api/auth/tokens/refresh-token. Run `beam login` again, or pass --guest");
+				: "Could not exchange the given refresh token at /api/auth/tokens/refresh-token. Check the token, or drop --refresh-token to probe as a new guest");
 		}
 		if (string.IsNullOrEmpty(accessToken))
 		{
