@@ -2262,11 +2262,6 @@ public struct LocalContentReference
 		reference = new LocalContentReference(checksum, version);
 		return true;
 	}
-
-	/// <summary>
-	/// True when this reference was taken from the payload <paramref name="remote"/> points at.
-	/// </summary>
-	public bool Describes(ClientContentInfoJson remote) => Version == remote.version;
 }
 
 [Serializable]
@@ -2319,7 +2314,7 @@ public struct ContentFile : IEquatable<ContentFile>
 	/// comparison were canonicalized the same way. Otherwise falls back to the publisher-supplied manifest
 	/// checksum, which is the historical behavior.
 	/// </summary>
-	private bool IsPropertiesDiff() => Reference.HasValue && Reference.Value.Describes(ReferenceContent)
+	private bool IsPropertiesDiff() => Reference.HasValue && Reference.Value.Version == ReferenceContent.version
 		? Reference.Value.Checksum != PropertiesChecksum
 		: ReferenceContent.checksum != PropertiesChecksum;
 
