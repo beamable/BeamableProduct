@@ -1,6 +1,4 @@
-using Beamable.Common.Api;
 using Beamable.Common.Content;
-using Beamable.Server;
 using System.CommandLine;
 using System.Text.Json;
 
@@ -59,19 +57,11 @@ public class ContentResolveConflictCommand : AtomicCommand<ContentResolveConflic
 				})));
 			}
 
-			if (args.Use == "realm")
+			if (args.Use == "realm" && conflicts.Length > 0)
 			{
-				saveTasks.AddRange(conflicts.Select(c => Task.Run(async () =>
-				{
-					// Download and overwrite the local content for things that have changed based on the hash or don't exist.
-					Log.Verbose("Downloading content with id. ID={Id}", c.Id);
-					var j = await args.Requester.CustomRequest(Method.GET, c.ReferenceContent.uri, parser: s => JsonSerializer.Deserialize<JsonElement>(s));
-					c.Properties = j.GetProperty("properties");
-					c.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
-					c.FetchedFromManifestUid = latestManifest.uid.GetOrElse("");
-					Log.Verbose("Resolving conflict using realm for content with id. ID={Id}", c.Id);
-					await _contentService.SaveContentFile(contentFolder, c);
-				})));
+				// Taking the realm version is a sync of just the conflicted ids, so let the sync do the download and bookkeeping.
+				await _contentService.SyncLocalContent(latestManifest, lf.ManifestId, ContentFilterType.ExactIds, conflicts.Select(c => c.Id).ToArray(),
+					syncCreated: false, syncModified: false, forceSyncConflicts: true, syncDeleted: false);
 			}
 			// After resolving conflicts we can also update the manifest references for all contents that are not updated
 			var contentToUpdateManifestReference = lf.ContentFiles
