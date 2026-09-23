@@ -8,6 +8,12 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>A regex to filter for notification channels</summary>
         public string context;
+        /// <summary>Authenticate as a newly created guest player instead of the logged-in identity. --probe also uses a guest when no one is logged in</summary>
+        public bool guest;
+        /// <summary>Instead of listening, open one realtime session the way the Web SDK does, report the handshake, session-start and frames on the probe channel, then exit</summary>
+        public bool probe;
+        /// <summary>How many seconds --probe listens for frames after the socket opens</summary>
+        public int probeSeconds;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -17,6 +23,21 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.context != default(string)))
             {
                 genBeamCommandArgs.Add(("--context=" + this.context));
+            }
+            // If the guest value was not default, then add it to the list of args.
+            if ((this.guest != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--guest=" + this.guest));
+            }
+            // If the probe value was not default, then add it to the list of args.
+            if ((this.probe != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--probe=" + this.probe));
+            }
+            // If the probeSeconds value was not default, then add it to the list of args.
+            if ((this.probeSeconds != default(int)))
+            {
+                genBeamCommandArgs.Add(("--probe-seconds=" + this.probeSeconds));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
@@ -52,6 +73,11 @@ namespace Beamable.Editor.BeamCli.Commands
         public virtual ListenPlayerWrapper OnStreamNotificationPlayerOutput(System.Action<ReportDataPoint<BeamNotificationPlayerOutput>> cb)
         {
             this.Command.On("stream", cb);
+            return this;
+        }
+        public virtual ListenPlayerWrapper OnProbeListenPlayerProbeResult(System.Action<ReportDataPoint<BeamListenPlayerProbeResult>> cb)
+        {
+            this.Command.On("probe", cb);
             return this;
         }
     }
