@@ -18,6 +18,10 @@ namespace Beamable.Editor.BeamCli.Commands
         public string refreshToken;
         /// <summary>Ignore the existing pid while initializing</summary>
         public bool ignorePid;
+        /// <summary>The realm to target, by name or pid, instead of prompting (or, with -q, picking the oldest dev realm)</summary>
+        public string realm;
+        /// <summary>The game to pick the realm from, by name or pid, instead of prompting (or, with -q, picking the first game)</summary>
+        public string game;
         /// <summary>Overwrite the stored extra paths for where to find projects</summary>
         public string[] saveExtraPaths;
         /// <summary>Paths to ignore when searching for services</summary>
@@ -68,6 +72,16 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.ignorePid != default(bool)))
             {
                 genBeamCommandArgs.Add(("--ignore-pid=" + this.ignorePid));
+            }
+            // If the realm value was not default, then add it to the list of args.
+            if ((this.realm != default(string)))
+            {
+                genBeamCommandArgs.Add(("--realm=" + this.realm));
+            }
+            // If the game value was not default, then add it to the list of args.
+            if ((this.game != default(string)))
+            {
+                genBeamCommandArgs.Add(("--game=" + this.game));
             }
             // If the saveExtraPaths value was not default, then add it to the list of args.
             if ((this.saveExtraPaths != default(string[])))
