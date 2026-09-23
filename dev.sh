@@ -14,6 +14,8 @@
 #  4. install the latest CLI globally 
 #  5. invalidate the nuget cache for local beamable dev packages, which
 #     means that downstream projects will need to run a `dotnet restore`.
+# Pass --packages-dir DIR after setup.sh to install packages built in another job
+# while keeping the usual template, tool, and Unity generation steps.
 
 compliment=$(awk 'BEGIN{srand()} {a[NR]=$0} END{print a[int(rand()*NR)+1]}' compliments.txt)
 echo "$compliment"
@@ -26,9 +28,18 @@ SHOULD_APPLY_TO_UNITY=true
 SHOULD_APPLY_TO_UNREAL=true
 SHOULD_APPLY_TO_SAMS_SANDBOX=true
 SHOULD_APPLY_TO_AGENTIC_PORTAL=true
+PACKAGES_DIR=""
 while test $# -gt 0
 do
     case "$1" in
+        --packages-dir)
+            if [[ $# -lt 2 || -z "$2" ]]; then
+                echo "--packages-dir requires a directory" >&2
+                exit 1
+            fi
+            PACKAGES_DIR="$2"
+            shift
+            ;;
         --skip-unity) SHOULD_APPLY_TO_UNITY=false
             echo "skipping unity $1 $SHOULD_APPLY_TO_UNITY"
             ;;
@@ -57,20 +68,16 @@ echo $NEXT_BUILD_NUMBER > build-number.txt
 VERSION=0.0.123.$NEXT_BUILD_NUMBER
 PREVIOUS_VERSION=0.0.123.$PREVIOUS_BUILD_NUMBER
 
-# the build solution only has references to the projects that we actually want to publish
-SOLUTION=./build/LocalBuild/LocalBuild.sln
 TMP_BUILD_OUTPUT="TempBuild"
-
-BUILD_ARGS="--configuration Release -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION -p:Warn=0 -p:BeamBuild=true" #-
-PACK_ARGS="--configuration Release --no-build -o $TMP_BUILD_OUTPUT -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION -p:SKIP_GENERATION=true -p:BeamBuild=true"
 PUSH_ARGS="--source $FEED_NAME"
 
-dotnet restore $SOLUTION
-dotnet build $SOLUTION $BUILD_ARGS
-# the copy target runs the CLI via `dotnet run --no-build`, which defaults to Debug;
-# point it at the Release build produced by the solution build above.
-dotnet build cli/beamable.common -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=$SHOULD_APPLY_TO_UNITY -p:BeamCopyCommonFlags="--no-build -c Release"
-dotnet pack $SOLUTION $PACK_ARGS
+if [[ -n "$PACKAGES_DIR" ]]; then
+    bash ./build/bin/check-local-packages.sh "$PACKAGES_DIR" "$VERSION" || exit $?
+    mkdir -p "$TMP_BUILD_OUTPUT" || exit $?
+    cp "$PACKAGES_DIR"/*."$VERSION".nupkg "$TMP_BUILD_OUTPUT"/ || exit $?
+else
+    bash ./build/bin/build-local-packages.sh "$VERSION" "$TMP_BUILD_OUTPUT" "$SHOULD_APPLY_TO_UNITY" || exit $?
+fi
 dotnet nuget push $TMP_BUILD_OUTPUT/*.$VERSION.nupkg $PUSH_ARGS
 
 # remove the old package from the nuget feed, so that we don't accumulate millions of packages over time. 

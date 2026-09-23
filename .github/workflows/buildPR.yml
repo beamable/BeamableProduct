@@ -38,6 +38,31 @@ jobs:
           path: ${{ runner.temp }}/otel-collector.tar.gz
           if-no-files-found: error
           retention-days: 1
+  buildCliPackages:
+    name: Build Beam CLI packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget
+      - name: Build local packages
+        run: |
+          echo 1 > build-number.txt
+          bash ./build/bin/build-local-packages.sh 0.0.123.1 "$RUNNER_TEMP/cli-packages" false
+      - uses: actions/upload-artifact@v6
+        with:
+          name: beam-cli-packages-0.0.123.1
+          path: ${{ runner.temp }}/cli-packages/*.nupkg
+          if-no-files-found: error
+          retention-days: 1
   baseNuget:
     timeout-minutes: 10
     runs-on: ubuntu-latest
@@ -98,7 +123,7 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-restore microservice/microserviceTests
   testCli:
-    needs: buildCollector
+    needs: [buildCollector, buildCliPackages]
     timeout-minutes: 30
     runs-on: ${{ matrix.runners }}
     concurrency:
@@ -173,6 +198,11 @@ jobs:
         with:
           name: otel-collector-0.0.123
           path: otel-collector-prebuilt
+      - name: Download Beam CLI packages
+        uses: actions/download-artifact@v6
+        with:
+          name: beam-cli-packages-0.0.123.1
+          path: cli-packages
       - name: Install local packages
         working-directory: ./
         shell: bash
@@ -180,7 +210,7 @@ jobs:
           BEAM_OTEL_COLLECTOR_ARCHIVE: otel-collector-prebuilt/otel-collector.tar.gz
         run: |
           ./setup.sh
-          ./dev.sh
+          ./dev.sh --packages-dir cli-packages
       - name: Check CLI
         run: |
           cat ./build-number.txt
@@ -233,7 +263,7 @@ jobs:
   # cross-run contention (a second concurrent run on the same serial); raise toward the
   # seat count only behind a license server that gives blocking seat acquisition. ~Claude
   testGroupDefault:
-    needs: buildCollector
+    needs: [buildCollector, buildCliPackages]
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
@@ -290,6 +320,11 @@ jobs:
         with:
           name: otel-collector-0.0.123
           path: otel-collector-prebuilt
+      - name: Download Beam CLI packages
+        uses: actions/download-artifact@v6
+        with:
+          name: beam-cli-packages-0.0.123.1
+          path: cli-packages
       - name: Build and Install BEAM CLI
         working-directory: ./
         env:
@@ -297,7 +332,7 @@ jobs:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
         run: |
           ./setup.sh
-          SKIP_GENERATION=true ./dev.sh --skip-unreal
+          SKIP_GENERATION=true ./dev.sh --packages-dir cli-packages --skip-unreal
       - name: Check Beam CLI
         run: |
           pwd
@@ -305,8 +340,9 @@ jobs:
           beam version
       - name: Apply Nuget Version to Unity SDK
         working-directory: ./cli/beamable.common
-        run: |
-          dotnet build -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true -p:BeamCopyCommonFlags="--no-build -c Release" -v:n
+        env:
+          BEAM_AUTO_SETUP_TELEMETRY: 'false'
+        run: beam unity release-shared-code ../beamable.common/beamable.common.csproj ../../client com.beamable Common . --logs v --no-redirect --emit-log-streams --no-log-file
 
       - name: Apply CLI Versions
         run: jq --arg nextVersion 0.0.123.1 '.nugetPackageVersion = $nextVersion' ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json > localtmpfile && mv localtmpfile ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
@@ -397,7 +433,7 @@ jobs:
   # Second Unity-test shard, pinned to the UNITY_SERIAL_BUILD seat (see the comment
   # above testGroupDefault for the seat-budget rationale). ~Claude
   testGroupBuild:
-    needs: buildCollector
+    needs: [buildCollector, buildCliPackages]
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
@@ -453,6 +489,11 @@ jobs:
         with:
           name: otel-collector-0.0.123
           path: otel-collector-prebuilt
+      - name: Download Beam CLI packages
+        uses: actions/download-artifact@v6
+        with:
+          name: beam-cli-packages-0.0.123.1
+          path: cli-packages
       - name: Build and Install BEAM CLI
         working-directory: ./
         env:
@@ -460,7 +501,7 @@ jobs:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
         run: |
           ./setup.sh
-          SKIP_GENERATION=true ./dev.sh --skip-unreal
+          SKIP_GENERATION=true ./dev.sh --packages-dir cli-packages --skip-unreal
       - name: Check Beam CLI
         run: |
           pwd
@@ -468,8 +509,9 @@ jobs:
           beam version
       - name: Apply Nuget Version to Unity SDK
         working-directory: ./cli/beamable.common
-        run: |
-          dotnet build -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true -p:BeamCopyCommonFlags="--no-build -c Release" -v:n
+        env:
+          BEAM_AUTO_SETUP_TELEMETRY: 'false'
+        run: beam unity release-shared-code ../beamable.common/beamable.common.csproj ../../client com.beamable Common . --logs v --no-redirect --emit-log-streams --no-log-file
 
       - name: Apply CLI Versions
         run: jq --arg nextVersion 0.0.123.1 '.nugetPackageVersion = $nextVersion' ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json > localtmpfile && mv localtmpfile ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
@@ -551,7 +593,7 @@ jobs:
           fi
 
   build:
-    needs: buildCollector
+    needs: [buildCollector, buildCliPackages]
     name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -609,6 +651,11 @@ jobs:
         with:
           name: otel-collector-0.0.123
           path: otel-collector-prebuilt
+      - name: Download Beam CLI packages
+        uses: actions/download-artifact@v6
+        with:
+          name: beam-cli-packages-0.0.123.1
+          path: cli-packages
       - name: Build and Install BEAM CLI
         working-directory: ./
         env:
@@ -616,14 +663,15 @@ jobs:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
         run: |
           ./setup.sh
-          SKIP_GENERATION=true ./dev.sh
+          SKIP_GENERATION=true ./dev.sh --packages-dir cli-packages
       - name: Check Beam CLI
         run: |
           beam version
       - name: Apply Nuget Version to Unity SDK
         working-directory: ./cli/beamable.common
-        run: |
-          dotnet build -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true -p:BeamCopyCommonFlags="--no-build -c Release" -v:n
+        env:
+          BEAM_AUTO_SETUP_TELEMETRY: 'false'
+        run: beam unity release-shared-code ../beamable.common/beamable.common.csproj ../../client com.beamable Common . --logs v --no-redirect --emit-log-streams --no-log-file
 
       - name: Prepare Config-Defaults
         run: |
