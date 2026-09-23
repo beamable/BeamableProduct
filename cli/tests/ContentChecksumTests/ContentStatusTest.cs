@@ -32,7 +32,7 @@ public class ContentStatusTest
 		if (File.Exists(_localFilePath)) File.Delete(_localFilePath);
 	}
 
-	private ContentFile MakeFile(string manifestChecksum, LocalContentReference? reference, string version = RemoteVersion)
+	private ContentFile MakeFile(string manifestChecksum, ContentBaseline? baseline, string version = RemoteVersion)
 	{
 		var file = new ContentFile
 		{
@@ -40,7 +40,7 @@ public class ContentStatusTest
 			LocalFilePath = _localFilePath,
 			Properties = JsonSerializer.Deserialize<JsonElement>(Properties),
 			Tags = JsonSerializer.Deserialize<JsonElement>("[]"),
-			Reference = reference,
+			Baseline = baseline,
 			ReferenceContent = new ClientContentInfoJson
 			{
 				contentId = "items.sword",
@@ -56,22 +56,22 @@ public class ContentStatusTest
 
 	private string OurChecksum => MakeFile(null, null).PropertiesChecksum;
 
-	private LocalContentReference ReferenceTo(string version) => new(OurChecksum, version);
+	private ContentBaseline BaselineAt(string version) => new(OurChecksum, version);
 
 	[Test]
-	public void UpToDate_WhenPublisherChecksumIsUnreproducible_ButLocalReferenceMatches()
+	public void UpToDate_WhenPublisherChecksumIsUnreproducible_ButLocalBaselineMatches()
 	{
 		// The reported bug: a publisher's checksum taken over differently ordered JSON. The values match.
-		var file = MakeFile("a-checksum-we-could-never-compute", ReferenceTo(RemoteVersion));
+		var file = MakeFile("a-checksum-we-could-never-compute", BaselineAt(RemoteVersion));
 
 		Assert.That(file.GetStatus(), Is.EqualTo(ContentStatus.UpToDate));
 	}
 
 	[Test]
-	public void Modified_WhenTheRemotePayloadMovedOnSinceWeRecordedOurReference()
+	public void Modified_WhenTheRemotePayloadMovedOnSinceWeRecordedOurBaseline()
 	{
-		// Our reference describes the payload we downloaded; it must not mask a change to a newer one.
-		var file = MakeFile("a-checksum-we-could-never-compute", ReferenceTo("an-older-remote-version"));
+		// Our baseline describes the payload we downloaded; it must not mask a change to a newer one.
+		var file = MakeFile("a-checksum-we-could-never-compute", BaselineAt("an-older-remote-version"));
 
 		Assert.That(file.GetStatus(), Is.EqualTo(ContentStatus.Modified));
 	}
@@ -79,15 +79,15 @@ public class ContentStatusTest
 	[Test]
 	public void Modified_WhenLocalPropertiesActuallyDiffer()
 	{
-		var file = MakeFile(null, new LocalContentReference("a-checksum-for-different-properties", RemoteVersion));
+		var file = MakeFile(null, new ContentBaseline("a-checksum-for-different-properties", RemoteVersion));
 
 		Assert.That(file.GetStatus(), Is.EqualTo(ContentStatus.Modified));
 	}
 
 	[Test]
-	public void FallsBackToPublisherChecksum_WhenFileHasNoLocalReference()
+	public void FallsBackToPublisherChecksum_WhenFileHasNoLocalBaseline()
 	{
-		// Files written before the reference existed keep the historical comparison until their next sync.
+		// Files written before the baseline existed keep the historical comparison until their next sync.
 		var matching = MakeFile(OurChecksum, null);
 		var notMatching = MakeFile("a-checksum-we-could-never-compute", null);
 
@@ -95,49 +95,64 @@ public class ContentStatusTest
 		Assert.That(notMatching.GetStatus(), Is.EqualTo(ContentStatus.Modified));
 	}
 
-	[TestCase("""{"checksum":"abc"}""", TestName = "version missing")]
-	[TestCase("""{"version":"abc"}""", TestName = "checksum missing")]
-	[TestCase("""{"checksum":"abc","version":""}""", TestName = "version empty")]
-	[TestCase("""{}""", TestName = "both missing")]
-	public void ReferenceIsNotRead_WhenEitherHalfIsMissing(string referenceJson)
+	[TestCase(null, TestName = "absent")]
+	[TestCase("", TestName = "empty")]
+	[TestCase("abc", TestName = "no separator")]
+	[TestCase("@def", TestName = "checksum missing")]
+	[TestCase("abc@", TestName = "version missing")]
+	public void BaselineIsNotDecoded_WhenEitherHalfIsMissing(string encoded)
 	{
-		// Half a reference is not a reference: a checksum without its version names no payload.
-		var json = JsonSerializer.Deserialize<JsonElement>(referenceJson);
-
-		Assert.That(LocalContentReference.TryRead(in json, out _), Is.False);
+		// Half a baseline is not a baseline: a checksum without its version names no payload.
+		Assert.That(ContentBaseline.TryDecode(encoded, out _), Is.False);
 	}
 
 	[Test]
-	public void SerializedFile_NestsTheReferenceUnderOneKey()
+	public void BaselineIsDecoded_WhenBothHalvesArePresent()
 	{
-		// Pins the on-disk shape: both halves under one key, so a file cannot express half a reference.
-		var file = MakeFile(null, new LocalContentReference("the-checksum", "the-version"));
+		Assert.That(ContentBaseline.TryDecode("abc@def", out var baseline), Is.True);
+		Assert.That(baseline, Is.EqualTo(new ContentBaseline("abc", "def")));
+	}
+
+	[Test]
+	public void BaselineDecoding_KeepsEverythingAfterTheFirstSeparatorAsTheVersion()
+	{
+		// We control the checksum but not the platform's version format, so only the checksum may be assumed separator-free.
+		Assert.That(ContentBaseline.TryDecode("abc@def@ghi", out var baseline), Is.True);
+		Assert.That(baseline, Is.EqualTo(new ContentBaseline("abc", "def@ghi")));
+	}
+
+	[Test]
+	public void SerializedFile_WritesTheBaselineAsOneString()
+	{
+		// Pins the on-disk shape: one string on one line, so no line-level merge can split the pair.
+		var file = MakeFile(null, new ContentBaseline("the-checksum", "the-version"));
 
 		var json = JsonSerializer.Serialize(file, ContentService.GetContentFileSerializationOptions(false));
 
 		Assert.That(json, Does.Contain("""
-			"reference":{"checksum":"the-checksum","version":"the-version"}
+			"baseline":"the-checksum@the-version"
 			""".Trim()));
 	}
 
 	[Test]
-	public void SerializedFile_OmitsAnAbsentReferenceEntirely()
+	public void SerializedFile_OmitsAnAbsentBaselineEntirely()
 	{
 		var file = MakeFile(null, null);
 
 		var json = JsonSerializer.Serialize(file, ContentService.GetContentFileSerializationOptions(false));
 
-		// Match the key, not the bare word: "referenceManifestId" contains it as a substring.
-		Assert.That(json, Does.Not.Contain("\"reference\":"));
+		Assert.That(json, Does.Not.Contain("\"baseline\":"));
 	}
 
 	[Test]
-	public void ReferenceIsRead_WhenBothHalvesArePresent()
+	public void DeserializedFile_KeepsItsBaseline()
 	{
-		var json = JsonSerializer.Deserialize<JsonElement>("""{"checksum":"abc","version":"def"}""");
+		// Snapshot and history code deserialize content files directly; a round trip must not drop the baseline.
+		var file = MakeFile(null, new ContentBaseline("the-checksum", "the-version"));
 
-		Assert.That(LocalContentReference.TryRead(in json, out var reference), Is.True);
-		Assert.That(reference.Checksum, Is.EqualTo("abc"));
-		Assert.That(reference.Version, Is.EqualTo("def"));
+		var json = JsonSerializer.Serialize(file, ContentService.GetContentFileSerializationOptions(false));
+		var roundTripped = JsonSerializer.Deserialize<ContentFile>(json, ContentService.GetContentFileSerializationOptions(false));
+
+		Assert.That(roundTripped.Baseline, Is.EqualTo(new ContentBaseline("the-checksum", "the-version")));
 	}
 }
