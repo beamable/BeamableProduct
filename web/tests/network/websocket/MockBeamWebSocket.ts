@@ -10,32 +10,26 @@ export interface MockBeamWebSocketOptions {
 }
 
 export class MockBeamWebSocket {
-  public connectParams: {
-    api: any;
-    url: string;
-    cid: string;
-    pid: string;
-    refreshToken: string;
-  } | null = null;
+  /** Options applied to instances constructed without explicit options (e.g. by `Beam`). */
+  static defaultOptions: MockBeamWebSocketOptions = {};
+  /** The most recently constructed instance. */
+  static lastInstance: MockBeamWebSocket | null = null;
+
+  public connectParams: Record<string, any> | null = null;
   public isConnected = false;
   public disconnectCalled = false;
   private options: MockBeamWebSocketOptions;
 
-  constructor(options: MockBeamWebSocketOptions = {}) {
-    this.options = options;
+  constructor(options?: MockBeamWebSocketOptions) {
+    this.options = options ?? MockBeamWebSocket.defaultOptions;
+    MockBeamWebSocket.lastInstance = this;
   }
 
   /**
    * Simulate opening a WebSocket connection.
    * @returns Promise that resolves or rejects based on options.
    */
-  async connect(param: {
-    api: any;
-    url: string;
-    cid: string;
-    pid: string;
-    refreshToken: string;
-  }): Promise<void> {
+  async connect(param: Record<string, any>): Promise<void> {
     this.connectParams = param;
     if (this.options.connectShouldReject) {
       const err =
