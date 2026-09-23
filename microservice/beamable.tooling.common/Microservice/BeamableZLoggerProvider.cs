@@ -12,7 +12,7 @@ namespace Beamable.Server
 
     public static class Log
     {
-        public static ILogger Default => BeamableZLoggerProvider.LogContext.Value;
+        public static ILogger Default => BeamableZLoggerProvider.CurrentLogger;
         public static ILogger Global => BeamableZLoggerProvider.GlobalLogger;
 
         public static IDisposable BeginScope(Dictionary<string, string> scope)
@@ -135,6 +135,7 @@ namespace Beamable.Server
     {
         public static AsyncLocal<ILogger> LogContext = new AsyncLocal<ILogger>();
         public static ILogger GlobalLogger;
+        public static ILogger CurrentLogger => LogContext.Value ??= GlobalLogger ?? new QueuedLogger();
 
         static BeamableZLoggerProvider()
         {
@@ -158,40 +159,40 @@ namespace Beamable.Server
 
         public override void Info(string message)
         {
-            LogContext.Value.Log(LogLevel.Information, message);
+            CurrentLogger.Log(LogLevel.Information, message);
         }
 
         public override void Info(string message, params object[] args)
         {
-            SafeLogTemplate.Write(LogContext.Value, LogLevel.Information, message, args);
+            SafeLogTemplate.Write(CurrentLogger, LogLevel.Information, message, args);
         }
 
         public override void Warning(string message)
         {
-            LogContext.Value.Log(LogLevel.Warning, message);
+            CurrentLogger.Log(LogLevel.Warning, message);
 
         }
 
         public override void Warning(string message, params object[] args)
         {
-            SafeLogTemplate.Write(LogContext.Value, LogLevel.Warning, message, args);
+            SafeLogTemplate.Write(CurrentLogger, LogLevel.Warning, message, args);
         }
 
         public override void Error(Exception ex)
         {
-            LogContext.Value.LogError(ex, ex.Message);
+            CurrentLogger.LogError(ex, ex.Message);
 
         }
 
         public override void Error(string error)
         {
-            LogContext.Value.Log(LogLevel.Error, error);
+            CurrentLogger.Log(LogLevel.Error, error);
 
         }
 
         public override void Error(string error, params object[] args)
         {
-            SafeLogTemplate.Write(LogContext.Value, LogLevel.Error, error, args);
+            SafeLogTemplate.Write(CurrentLogger, LogLevel.Error, error, args);
         }
     }
 }

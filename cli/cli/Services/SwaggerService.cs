@@ -242,6 +242,7 @@ public class SwaggerService
 
 			foreach ((string _, OpenApiSchema propData) in properties)
 			{
+				if (propData == null) continue;
 				var isPropArray = propData.Type == "array";
 
 				if (isPropArray && propData?.Items?.Reference != null)
@@ -369,7 +370,7 @@ public class SwaggerService
 
 							foreach (var property in schema.Properties)
 							{
-								if (property.Value.Reference?.Id == oldName)
+								if (property.Value?.Reference?.Id == oldName)
 								{
 									property.Value.Reference.Id = newName;
 								}
