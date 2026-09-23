@@ -160,4 +160,22 @@ $@"{{
 		Assert.AreEqual(expected["pid"].Value<string>(), actual["pid"].Value<string>());
 		Assert.AreEqual(expected["host"].Value<string>(), actual["host"].Value<string>());
 	}
+
+	[Test]
+	public void InEmptyDirectory_WithDotnet10RootToolManifest()
+	{
+		// On .NET 10, `dotnet new tool-manifest` writes ./dotnet-tools.json (not .config/) with no tools.
+		// init must still leave a workspace where `dotnet beam` resolves.
+		File.WriteAllText("dotnet-tools.json", "{\n  \"version\": 1,\n  \"isRoot\": true,\n  \"tools\": {}\n}");
+
+		InEmptyDirectory("");
+
+		var configManifest = JObject.Parse(File.ReadAllText(Path.Combine(".config", "dotnet-tools.json")));
+		var version = configManifest["tools"]?["beamable.tools"]?["version"]?.Value<string>();
+		Assert.IsFalse(string.IsNullOrEmpty(version), ".config/dotnet-tools.json must pin beamable.tools");
+
+		var rootManifest = JObject.Parse(File.ReadAllText("dotnet-tools.json"));
+		Assert.AreEqual(version, rootManifest["tools"]?["beamable.tools"]?["version"]?.Value<string>(),
+			"the root manifest must pin the same beamable.tools version");
+	}
 }

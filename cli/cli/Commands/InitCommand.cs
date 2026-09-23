@@ -9,6 +9,7 @@ using System.CommandLine.Binding;
 using System.CommandLine.Invocation;
 using System.Text;
 using Beamable.Common.BeamCli;
+using Beamable.Common.Util;
 using Beamable.Server;
 using Command = System.CommandLine.Command;
 
@@ -236,6 +237,13 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			if (result.ExitCode != 0)
 			{
 				throw new CliException($"Failed to restore Dotnet tools, command output: {buffer}");
+			}
+
+			// Make sure `dotnet beam` actually resolves to this CLI's version from the workspace.
+			var toolProblem = await ConfigService.VerifyLocalBeamTool(_ctx.DotnetPath, args.path, BeamAssemblyVersionUtil.GetVersion<App>());
+			if (toolProblem != null)
+			{
+				throw new CliException($"The workspace's dotnet tool manifest does not pin the Beamable CLI: {toolProblem}");
 			}
 			
 			if(_configService.TryGetProjectBeamableCLIVersion(out var cliVersion))

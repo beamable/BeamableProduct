@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `beam mcp serve` now sends server instructions to MCP clients during initialize: the skill-first workflow, the `@beamable/sdk` package name, the realm prerequisites for the Web SDK (`notification|publisher=beamable` and a published `global` manifest), microservice basics, and the `deploy release --replace` default. Edit them in `Docs/Mcp/ServerInstructions.md`.
 
 ### Changed
+- `beam mcp setup` writes an absolute path to the `dotnet` executable (from `--dotnet-path`, `DOTNET_HOST_PATH`, `DOTNET_ROOT`, the running process or `PATH`), so MCP clients whose `PATH` lacks a `~/.dotnet` install can start the server. It prints what it wrote, runs `dotnet tool restore`, and warns when `dotnet beam --version` fails from the target directory. The `mcp` command group is no longer marked internal.
 - CLI HTTP requests now retry `429 Too Many Requests` up to 5 times with jittered exponential back-off instead of failing the caller.
 - CLI startup network calls (alias/cid resolution and token refresh) are now bounded to 8 seconds and non-fatal, so an unreachable or half-up backend warns and continues offline instead of hanging every command.
 - `beam project run --with-group` now staggers its service fan-out, so parallel `generate-env` calls no longer trip the gateway's rate limiter.
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update CLI `OpenTelemetry` dependencies to `1.18.0`.
 
 ### Fixed
+- `beam init` and `beam mcp setup` now pin `beamable.tools` in a root-level `dotnet-tools.json` as well as `.config/dotnet-tools.json`. On .NET 10, `dotnet new tool-manifest` writes the manifest to the root, which could leave a workspace where `dotnet beam` didn't resolve. `beam init` now checks `dotnet tool list --local` after restoring and fails with an explanation if the tool doesn't resolve at the CLI's version. Updating an existing manifest keeps its other tools and settings.
 - `content ps --watch` now recovers from filesystem watcher overflow by performing an authoritative full rescan instead of leaving consumers with an incomplete local content state.
 - A portal extension whose rebuild throws no longer takes down the whole `beam project run` process. `FileSystemWatcher` callbacks run on thread-pool threads, so an escaping exception killed every service and extension in the group rather than just the failing one; the failure is now logged and the rebuild stays a failed rebuild. Concurrent rebuilds are also serialised, since two file-change events could reach the builder at once and collide writing `metadata.json`.
 - Portal extension scanning no longer excludes sym linked package files
