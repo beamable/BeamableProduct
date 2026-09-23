@@ -1,6 +1,6 @@
 ---
 name: beam-web-guide
-description: Web SDK guide — installation, authentication, stats, leaderboards, content, announcements, accounts, and microservice clients for TypeScript/JavaScript
+description: Web SDK guide — installation, realm prerequisites, realtime session, authentication, stats, leaderboards, content, announcements, accounts, and generated microservice clients for TypeScript/JavaScript
 ---
 
 # Web SDK Guide
@@ -15,14 +15,31 @@ description: Web SDK guide — installation, authentication, stats, leaderboards
 ### Installation
 
 ```bash
-npm install beamable-sdk
+npm install @beamable/sdk
 ```
+
+The package is `@beamable/sdk`. The unscoped `beamable-sdk` package on npm is an old, unmaintained name; don't install it.
+
+### Realm prerequisites
+
+A realm used by the Web SDK needs two things, or `Beam.init()` fails:
+
+1. **Realtime publisher set to `beamable`.** Without it, `Beam.init()` rejects with `Unsupported websocket provider`.
+   ```
+   beam_exec("config realm set --key-values 'notification|publisher::beamable' -q")
+   ```
+2. **A published `global` content manifest.** Without it, `Beam.init()` fails with a 404 on `/basic/content/manifest/public/json?id=global`. Publishing works even when there is no content yet:
+   ```
+   beam_exec("content publish -q")
+   ```
+
+Check the realm config with `beam_exec("config realm -q")`.
 
 ### Initialization
 
 #### ES Modules
 ```ts
-import { Beam } from "beamable-sdk";
+import { Beam } from "@beamable/sdk";
 
 const beam = await Beam.init({
   cid: "YOUR_CUSTOMER_ID",
@@ -33,7 +50,7 @@ console.log(beam.player.id);
 
 #### CommonJS (Node.js)
 ```js
-const { Beam } = require('beamable-sdk');
+const { Beam } = require('@beamable/sdk');
 const beam = await Beam.init({
   cid: 'YOUR_CUSTOMER_ID',
   pid: 'YOUR_PROJECT_ID',
@@ -42,7 +59,7 @@ const beam = await Beam.init({
 
 #### Browser (IIFE)
 ```html
-<script src="https://unpkg.com/beamable-sdk"></script>
+<script src="https://unpkg.com/@beamable/sdk"></script>
 <script>
   const { Beam } = Beamable;
   const beam = await Beam.init({
@@ -52,14 +69,14 @@ const beam = await Beam.init({
 </script>
 ```
 
-`Beam.init()` automatically: authenticates (guest login or restores saved token), fetches account info, sets up WebSocket, syncs content manifests.
+`Beam.init()` automatically: authenticates (guest login or restores saved token), fetches account info, opens the realtime WebSocket and sends its `session-start` frame, and syncs content manifests. It resolves only when all of these succeed (see [Realtime session](#realtime-session)).
 
-CID/PID come from Beamable Portal or `beam config -q`.
+CID/PID come from Beamable Portal or `beam config -q`. In a workspace created by `beam init`, `.beamable/config.beam.json` holds `{ cid, pid, host }` in the shape `Beam.init()` accepts.
 
 ### Service registration
 Auth, Account, and Content are registered by default. Other services must be registered explicitly:
 ```ts
-import { StatsService, LeaderboardsService, AnnouncementsService } from "beamable-sdk";
+import { StatsService, LeaderboardsService, AnnouncementsService } from "@beamable/sdk";
 
 const beam = await Beam.init({
   cid: "YOUR_CUSTOMER_ID",
@@ -78,7 +95,7 @@ const beam = await Beam.init({
 
 ### Handling refresh failures
 ```ts
-import { RefreshAccessTokenError } from "beamable-sdk";
+import { RefreshAccessTokenError } from "@beamable/sdk";
 
 try {
   await beam.someService.someMethod();
@@ -112,7 +129,7 @@ await beam.refresh(token);
 
 ### Third-party login (Google, Facebook, etc.)
 ```ts
-import { ThirdPartyAuthProvider } from "beamable-sdk";
+import { ThirdPartyAuthProvider } from "@beamable/sdk";
 
 const token = await beam.auth.loginWithThirdParty({
   provider: ThirdPartyAuthProvider.Google,
@@ -191,7 +208,7 @@ await beam.account.removeExternalIdentity({
 
 ### Check credential availability
 ```ts
-import { CredentialStatus } from "beamable-sdk";
+import { CredentialStatus } from "@beamable/sdk";
 
 const status = await beam.account.getEmailCredentialStatus({
   email: "player@example.com",
@@ -372,23 +389,61 @@ await beam.announcements.delete({ id: "announcement-id" });
 
 For calling `[ClientCallable]` endpoints from web apps.
 
-### Creating a client
+### Generate typed clients (recommended)
+
+1. Build the services first. The generator reads each service's `beam_openApi.json` from its build output, so a stale build produces stale types:
+   ```
+   beam_exec("project build -q")
+   ```
+2. Generate the clients into your web project:
+   ```
+   beam_exec("project generate web-client --output-dir web/src -q")
+   ```
+   This writes one client per service to `<output-dir>/beamable/clients/<Service>Client.ts`, plus the DTO types in `<output-dir>/beamable/clients/types/`. Re-run both steps whenever a callable's signature or DTO changes.
+{{ if commands["project generate web-client"] }}
+#### `beam project generate web-client` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["project generate web-client"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+3. Register the generated class and call it. A client named `MatchServiceClient` is exposed as `beam.matchServiceClient` (camelCase class name), and each callable becomes a camelCase method that takes the C# parameters as one object:
+   ```ts
+   import { Beam } from "@beamable/sdk";
+   import { MatchServiceClient } from "./beamable/clients/MatchServiceClient";
+
+   const beam = await Beam.init({
+     cid: "YOUR_CUSTOMER_ID",
+     pid: "YOUR_PROJECT_ID",
+     services: (beam) => {
+       beam.use(MatchServiceClient);
+     },
+   });
+
+   // [ClientCallable] public Promise<MatchView> StartMatch(string mode, int rounds)
+   const match = await beam.matchServiceClient.startMatch({ mode: "ranked", rounds: 3 });
+   ```
+
+C# `long` fields are generated as `bigint | string`. If you want plain numbers or strings in TypeScript, use `int`/`string` in the DTO and rebuild before regenerating.
+
+### Hand-written client (fallback)
+
+If you can't run the generator, extend `BeamMicroServiceClient` yourself. The `endpoint` is the `[ClientCallable]` method name with no leading slash (the SDK builds `/basic/{cid}.{pid}.micro_{serviceName}/{endpoint}`):
 ```ts
-import { BeamMicroServiceClient } from "beamable-sdk";
+import { BeamMicroServiceClient } from "@beamable/sdk";
 
 class MyServiceClient extends BeamMicroServiceClient {
   get serviceName() { return "MyService"; }
 
   async getPlayerScore(): Promise<{ score: number }> {
     return this.request({
-      endpoint: "/GetPlayerScore",
+      endpoint: "GetPlayerScore",
       withAuth: true,
     });
   }
 
   async submitScore(score: number): Promise<void> {
     return this.request({
-      endpoint: "/SubmitScore",
+      endpoint: "SubmitScore",
       payload: { score },
       withAuth: true,
     });
@@ -396,24 +451,11 @@ class MyServiceClient extends BeamMicroServiceClient {
 }
 ```
 
-### Registering and using
-```ts
-const beam = await Beam.init({
-  cid: "YOUR_CUSTOMER_ID",
-  pid: "YOUR_PROJECT_ID",
-  services: (beam) => {
-    beam.use(MyServiceClient);
-  },
-});
-
-const result = await beam.myServiceClient.getPlayerScore();
-```
-
-Naming convention: `MyServiceClient` -> accessible as `beam.myServiceClient` (class name -> camelCase with "Client" suffix).
+Register it with `beam.use(MyServiceClient)` and call `beam.myServiceClient.getPlayerScore()`.
 
 ### Request options
-- `endpoint` — the `[ClientCallable]` method name as path (e.g., `"/GetPlayerScore"`)
-- `payload` — request body (serialized to JSON)
+- `endpoint` — the `[ClientCallable]` method name, without a leading slash (e.g. `"GetPlayerScore"`)
+- `payload` — request body (serialized to JSON); keys are the C# parameter names
 - `withAuth: true` — include Bearer token (required for `[ClientCallable]`)
 
 ---
@@ -424,7 +466,7 @@ For Node.js backends and admin tools.
 
 ### Initialization
 ```ts
-import { BeamServer } from "beamable-sdk";
+import { BeamServer } from "@beamable/sdk";
 
 const beamServer = await BeamServer.init({
   cid: "YOUR_CUSTOMER_ID",
@@ -457,7 +499,26 @@ await beamServer.leaderboards(adminId).freeze({ id: "leaderboards.weekly" });
 
 ---
 
-## Real-Time Events
+## Realtime session
+
+`Beam.init()` opens a WebSocket to the realm's realtime server and resolves only after the socket is open and the SDK has sent the `session-start` frame (device info the server needs to start the player session). If the socket can't open, `Beam.init()` rejects with a `BeamWebSocketError` instead of hanging:
+
+- **Timeout.** The socket must open within `realtime.connectTimeoutMs` (default `15000`; `0` disables it). A socket that never opens usually means a proxy, firewall, sandbox or TLS-intercepting gateway is blocking WebSockets while plain HTTP still works.
+  ```ts
+  const beam = await Beam.init({ cid, pid, realtime: { connectTimeoutMs: 30000 } });
+  ```
+- **Skip realtime.** `realtime: { enabled: false }` initializes without the socket (no server events). Call `await beam.connectRealtime()` later to connect.
+
+What the errors mean:
+
+| Error | Cause | Fix |
+|---|---|---|
+| `Unsupported websocket provider` | The realm still uses the `pubnub` publisher | `config realm set --key-values 'notification\|publisher::beamable'` (see [Realm prerequisites](#realm-prerequisites)) |
+| `WebSocket handshake ... was rejected (HTTP 401)` | The realtime access token was rejected | Sign in again; make sure the token belongs to this cid/pid |
+| `Realtime connection to <host> did not open within N ms` | The socket never opened | WebSockets are blocked on this network; test from another network or CI |
+| `Failed to obtain access token for WebSocket connection (HTTP …)` | The refresh-token exchange failed | Check the saved refresh token; clear token storage and log in again |
+
+### Server events
 
 WebSocket subscriptions for live updates:
 ```ts
@@ -471,6 +532,12 @@ beam.on("announcements.refresh", (data) => {
 
 ---
 
+## Verify it end to end
+
+Don't stop at "it compiles". Load the `beam-test-and-verify` skill (`beam_get_skill("beam-test-and-verify")`) for how to call endpoints as a player from the CLI, probe the realtime session, read deployed logs, inspect storage and run a browser smoke test. Don't stub the WebSocket in a test that claims to verify sessions.
+
+---
+
 ## Raw APIs (no service wrapper)
 
 These features have auto-generated API functions but no high-level service wrapper. Use them via the generated API functions with the beam requester:
@@ -480,12 +547,15 @@ These features have auto-generated API functions but no high-level service wrapp
 - **Social/Friends** — `socialGetMyBasic`, `socialPostFriendsInviteBasic`, etc.
 - **Cloud Saving** — `cloudsavingGetBasic`, `cloudsavingPostDataUploadURLBasic`, etc.
 
-Import from `beamable-sdk/api`:
+Import from `@beamable/sdk/api`:
 ```ts
-import { inventoryGetByObjectId } from "beamable-sdk/api";
+import { inventoryGetByObjectId } from "@beamable/sdk/api";
 ```
 
 ## Related Skills
+- `beam-web-game-quickstart` — end-to-end path from `beam init` to a deployed, hosted web game
+- `beam-test-and-verify` — calling endpoints, probing realtime, logs and smoke tests
+- `beam-web-hosting` — hosting the built client (e.g. GitHub Pages)
 - `beam-manage-service` — microservice API patterns and architecture guidance
 - `beam-content-types` — content type creation and validation
 - `beam-content-workflow` — content sync and publish workflows
