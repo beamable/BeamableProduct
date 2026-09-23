@@ -399,7 +399,7 @@ For calling `[ClientCallable]` endpoints from web apps.
    ```
    beam_exec("project generate web-client --output-dir web/src -q")
    ```
-   This writes one client per service to `<output-dir>/beamable/clients/<Service>Client.ts`, plus the DTO types in `<output-dir>/beamable/clients/types/`. Re-run both steps whenever a callable's signature or DTO changes.
+   This writes one client per service to `<output-dir>/beamable/clients/<Service>Client.ts`, plus the DTO types in `<output-dir>/beamable/clients/types/`. Re-run both steps whenever a callable's signature or DTO changes, or pass `--build` to build the services as part of generation. A service with no built OpenAPI document is skipped with a warning, and the command fails if no client could be generated.
 {{ if commands["project generate web-client"] }}
 #### `beam project generate web-client` options
 | Option | Type | Description |
@@ -423,7 +423,7 @@ For calling `[ClientCallable]` endpoints from web apps.
    const match = await beam.matchServiceClient.startMatch({ mode: "ranked", rounds: 3 });
    ```
 
-C# `long` fields are generated as `bigint | string`. If you want plain numbers or strings in TypeScript, use `int`/`string` in the DTO and rebuild before regenerating.
+C# `long` fields are generated as `bigint | string` by default. Pass `--int64-as number` or `--int64-as string` to type them as plain numbers or strings instead (`number` loses precision above 2^53 - 1), or change the DTO field type and rebuild before regenerating.
 
 ### Hand-written client (fallback)
 
