@@ -321,7 +321,7 @@ public class SchemaGenerator
 			case { } x when x == typeof(int):
 				return new OpenApiSchema { Type = "integer", Format = "int32" };
 			case { } x when x == typeof(uint):
-				return new OpenApiSchema { Type = "integer", Format = "int32", Minimum = uint.MinValue, Maximum = uint.MaxValue };
+				return new OpenApiSchema { Type = "integer", Format = "int64", Minimum = uint.MinValue, Maximum = uint.MaxValue };
 			case { } x when x == typeof(long):
 				return new OpenApiSchema { Type = "integer", Format = "int64" };
 			case { } x when x == typeof(ulong):
