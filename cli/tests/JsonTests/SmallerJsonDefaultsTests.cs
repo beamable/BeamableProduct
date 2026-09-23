@@ -1,6 +1,9 @@
 using Beamable.Serialization.SmallerJSON;
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
+using System.Text;
+using UnityEngine;
 
 namespace tests.JsonTests;
 
@@ -25,6 +28,30 @@ public class SmallerJsonDefaultsTests
 		public Dictionary<string, string> lookup;
 		public Nested child;
 		public int number;
+	}
+
+	[Serializable]
+	public class AutoPropertyModel
+	{
+		[field: SerializeField] public int A { get; set; }
+		[field: SerializeField] public string B { get; set; }
+		public int Ignored { get; set; }
+	}
+
+	[Test]
+	public void SerializedAutoPropertyBackingFields_RoundTrip()
+	{
+		var result = Json.Deserialize<AutoPropertyModel>(
+			"{\"<A>k__BackingField\":7,\"<B>k__BackingField\":\"test string\",\"<Ignored>k__BackingField\":9}");
+
+		Assert.That(result.A, Is.EqualTo(7));
+		Assert.That(result.B, Is.EqualTo("test string"));
+		Assert.That(result.Ignored, Is.EqualTo(0));
+
+		var serialized = Json.Serialize(result, new StringBuilder());
+		Assert.That(serialized, Does.Contain("\"<A>k__BackingField\":7"));
+		Assert.That(serialized, Does.Contain("\"<B>k__BackingField\":\"test string\""));
+		Assert.That(serialized, Does.Not.Contain("<Ignored>k__BackingField"));
 	}
 
 	[Test]
