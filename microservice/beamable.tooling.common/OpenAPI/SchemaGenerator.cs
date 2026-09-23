@@ -327,8 +327,8 @@ public class SchemaGenerator
 			case { } x when x == typeof(ulong):
 				return new OpenApiSchema { Type = "integer", Format = "int64", Minimum = ulong.MinValue, Maximum = ulong.MaxValue };
 
-			case { } x when x == typeof(short):
-				return new OpenApiSchema { Type = "integer", Format = "int32" };
+			
+			
 			
 			case { } x when x == typeof(bool):
 				return new OpenApiSchema { Type = "boolean" };
