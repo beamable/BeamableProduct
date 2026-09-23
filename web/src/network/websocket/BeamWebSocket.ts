@@ -16,10 +16,13 @@ interface BeamWebSocketConnectParams {
   cid: string;
   pid: string;
   refreshToken: string;
+  /** The API base URL the SDK is pointed at (used to retarget a loopback socket host). */
+  apiUrl: string;
 }
 
 export class BeamWebSocket {
   private url = '';
+  private apiUrl = '';
   private cid = '';
   private pid = '';
   private refreshToken = '';
@@ -137,7 +140,33 @@ export class BeamWebSocket {
     const url = realmConfig.websocketConfig.uri;
     if (!url) throw new BeamWebSocketError('No websocket URL found');
 
-    this.url = url;
+    this.url = this.retargetLoopbackHost(url);
+  }
+
+  /**
+   * A realm's client-defaults can advertise a loopback websocket host (e.g. a local stack
+   * returns `ws://localhost:8080`). On a phone/emulator `localhost` resolves to the device
+   * itself, so the socket can never connect (close 1006) even though REST works — REST uses
+   * the configured {@link apiUrl}, while this socket URI is taken verbatim from the server.
+   * When the advertised host is loopback but the SDK is talking to a real host, retarget the
+   * socket at that same host. Mirrors BeamServerWebSocket's localhost rewrite.
+   */
+  private retargetLoopbackHost(wsUri: string): string {
+    const loopback = new Set(['localhost', '127.0.0.1']);
+    try {
+      const ws = new URL(wsUri);
+      if (!loopback.has(ws.hostname) || !this.apiUrl) return wsUri;
+
+      const api = new URL(this.apiUrl);
+      if (loopback.has(api.hostname)) return wsUri; // nothing better to point at
+
+      ws.hostname = api.hostname;
+      // Preserve the socket's own scheme/port; drop the trailing slash URL adds so the
+      // downstream `${url}/connect` template doesn't produce a double slash.
+      return ws.toString().replace(/\/$/, '');
+    } catch {
+      return wsUri; // non-URL value — leave it untouched
+    }
   }
 
   private async getAccessToken(): Promise<string | null> {
@@ -174,6 +203,7 @@ export class BeamWebSocket {
     this.cid = params.cid;
     this.pid = params.pid;
     this.refreshToken = params.refreshToken;
+    this.apiUrl = params.apiUrl;
     this.isDisconnecting = false;
     this.reconnectAttempts = 0;
     this.connectPromiseWithResolvers = promiseWithResolvers();

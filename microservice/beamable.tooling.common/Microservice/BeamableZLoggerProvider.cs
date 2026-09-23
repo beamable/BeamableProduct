@@ -27,18 +27,18 @@ namespace Beamable.Server
         
         public static void Debug(string message, params object[] args)
         {
-            Default.LogDebug(message, args);
+            SafeLogTemplate.Write(Default, LogLevel.Debug, message, args);
         }
 
-        
+
         public static void Error(string message)
         {
             Default.LogError(message);
         }
-        
+
         public static void Error(string message, params object[] args)
         {
-            Default.LogError(message, args);
+            SafeLogTemplate.Write(Default, LogLevel.Error, message, args);
         }
 
         public static void Error(Exception ex, string message)
@@ -59,7 +59,7 @@ namespace Beamable.Server
         [Obsolete("Use Critical Instead")]
         public static void Fatal(string message, params object[] args)
         {
-            Default.LogCritical(message, args);
+            SafeLogTemplate.Write(Default, LogLevel.Critical, message, args);
         }
         public static void Critical(string message)
         {
@@ -71,51 +71,51 @@ namespace Beamable.Server
         }
         public static void Critical(string message, params object[] args)
         {
-            Default.LogCritical(message, args);
+            SafeLogTemplate.Write(Default, LogLevel.Critical, message, args);
         }
 
-        
+
         public static void Trace(string message)
         {
             Default.LogTrace(message);
         }
-        
+
         public static void Trace(string message, params object[] args)
         {
-            Default.LogTrace(message, args);
+            SafeLogTemplate.Write(Default, LogLevel.Trace, message, args);
         }
-        
+
         [Obsolete("Use Trace Instead")]
         public static void Verbose(string message)
         {
             Default.LogTrace(message);
         }
-        
+
         [Obsolete("Use Trace Instead")]
         public static void Verbose(string message, params object[] args)
         {
-            Default.LogTrace(message, args);
+            SafeLogTemplate.Write(Default, LogLevel.Trace, message, args);
         }
 
-        
+
         public static void Information(string message)
         {
             Default.LogInformation(message);
         }
-        
+
         public static void Information(string message, params object[] args)
         {
-            Default.LogInformation(message, args);
+            SafeLogTemplate.Write(Default, LogLevel.Information, message, args);
         }
-        
+
         public static void Warning(string message)
         {
             Default.LogWarning(message);
         }
-        
+
         public static void Warning(string message, params object[] args)
         {
-            Default.LogWarning(message, args);
+            SafeLogTemplate.Write(Default, LogLevel.Warning, message, args);
         }
 
         public static void Write(LogLevel level, string message)
@@ -163,8 +163,7 @@ namespace Beamable.Server
 
         public override void Info(string message, params object[] args)
         {
-            LogContext.Value.Log(LogLevel.Information, message, args);
-
+            SafeLogTemplate.Write(LogContext.Value, LogLevel.Information, message, args);
         }
 
         public override void Warning(string message)
@@ -175,8 +174,7 @@ namespace Beamable.Server
 
         public override void Warning(string message, params object[] args)
         {
-            LogContext.Value.Log(LogLevel.Warning, message, args);
-
+            SafeLogTemplate.Write(LogContext.Value, LogLevel.Warning, message, args);
         }
 
         public override void Error(Exception ex)
@@ -193,7 +191,7 @@ namespace Beamable.Server
 
         public override void Error(string error, params object[] args)
         {
-            LogContext.Value.Log(LogLevel.Error, error, args);
+            SafeLogTemplate.Write(LogContext.Value, LogLevel.Error, error, args);
         }
     }
 }

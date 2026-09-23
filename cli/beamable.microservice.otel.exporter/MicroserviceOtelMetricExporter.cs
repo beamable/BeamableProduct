@@ -22,6 +22,7 @@ public class MicroserviceOtelMetricExporter : MicroserviceOtelExporter<Metric>
 		{
 			Endpoint = new Uri(endpoint),
 			Protocol = options.Protocol,
+			MaxRequestSizeBytes = 128 * 1024 * 1024,
 		};
 
 		_exporter = new OtlpMetricExporter(_otlpOptions);

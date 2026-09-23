@@ -155,7 +155,7 @@ public static class ServiceUploadUtil
 
 			memoryImageStream.Position = 0;
 
-			using var imageArchive = TarArchive.Open(memoryImageStream);
+			using var imageArchive = TarArchive.OpenArchive(memoryImageStream);
 
 			var ctx = provider.GetService<IAppContext>();
 
@@ -180,7 +180,11 @@ public static class ServiceUploadUtil
 				Timeout = Timeout.InfiniteTimeSpan,
 				BaseAddress = new Uri(baseUrl),
 				DefaultRequestVersion = HttpVersion.Version20,
-				DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
+				// Prefer HTTP/2 but fall back to HTTP/1.1 when the registry endpoint can't negotiate h2
+				// (some networks/proxies, or a registry path that only speaks HTTP/1.1). RequestVersionExact
+				// would throw "unable to establish HTTP/2 connection" instead of downgrading. The Docker
+				// Registry v2 API works over HTTP/1.1, so the fallback is safe.
+				DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower
 			};
 			// The registry authorizes pushes by (clientid, projectid, token). AppContext.Pid is always the
 			// realm pid, so for a zone deploy derive the effective scope from the requester's override (set to
@@ -202,7 +206,7 @@ public static class ServiceUploadUtil
 			client.DefaultRequestHeaders.Add("x-ks-token", registryRequester.AccessToken.Token);
 
 
-			var (hasManifest, manifestBytes) = await TryGetBytesForEntry(imageArchive, "manifest.json");
+			(bool hasManifest, byte[] manifestBytes) = await TryGetBytesForEntry(imageArchive, "manifest.json");
 			if (!hasManifest)
 				throw new CliException($"unable to find manifest.json entry in archive. service=[{beamoId}] image=[{imageId}]");
 
@@ -577,7 +581,7 @@ public static class ServiceUploadUtil
 		return sb.ToString();
 	}
 
-	static bool TryGetEntry(TarArchive archive, string entryName, out IArchiveEntry entry)
+	static bool TryGetEntry(IArchive archive, string entryName, out IArchiveEntry entry)
 	{
 		entry = archive.Entries.FirstOrDefault(e => e.Key == entryName);
 		return entry != null;
@@ -593,7 +597,7 @@ public static class ServiceUploadUtil
 		return mem.ToArray();
 	}
 	
-	static async Task<(bool, byte[])> TryGetBytesForEntry(TarArchive archive, string entryName)
+	static async Task<(bool, byte[])> TryGetBytesForEntry(IArchive archive, string entryName)
 	{
 		if (!TryGetEntry(archive, entryName, out var entry))
 		{
@@ -605,7 +609,7 @@ public static class ServiceUploadUtil
 		return (true, bytes);
 	}
 
-	public static Task<MemoryStream> OpenEntryAsMemoryStream(this TarArchive archive, string entryName)
+	public static Task<MemoryStream> OpenEntryAsMemoryStream(this IArchive archive, string entryName)
 	{
 		if (!TryGetEntry(archive, entryName, out var entry))
 		{

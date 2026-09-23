@@ -1285,6 +1285,7 @@ public static class MicroserviceStartupUtil
 				// We are using the OtlpExporter for metrics because it already retries sending data after a while, which doesn't happen for traces and logs
 				.AddOtlpExporter((option, reader) =>
 				{
+					option.MaxRequestSizeBytes = 128 * 1024 * 1024;
 					if (!string.IsNullOrEmpty(ctx.args.OtelExporterOtlpEndpoint) &&
 					    !string.IsNullOrEmpty(ctx.args.OtelExporterOtlpProtocol))
 					{

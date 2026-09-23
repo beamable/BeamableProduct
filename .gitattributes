@@ -1,3 +1,7 @@
 # Shell scripts must always use LF, even on Windows with core.autocrlf=true.
 # Otherwise Git rewrites them to CRLF on checkout and bash/cygwin chokes on $'\r'.
 *.sh text eol=lf
+
+# The Gradle wrapper script has no extension, so *.sh does not cover it. With CRLF endings it
+# fails as "bad interpreter: /bin/sh^M" on macOS/Linux after a Windows checkout.
+gradlew text eol=lf

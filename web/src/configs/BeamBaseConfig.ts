@@ -17,6 +17,14 @@ export interface BeamBaseConfig {
    */
   environment?: BeamEnvironmentName;
 
+  /**
+   * Explicit Beamable platform host URL (e.g. imported from `.beamable/config.beam.json`).
+   * Optional. When set, the environment is derived from it: a built-in URL resolves to
+   * 'dev'/'stg'/'prod'; any other URL is treated as a custom host. Takes precedence over
+   * `environment`.
+   */
+  host?: string;
+
   /** Custom HTTP requester implementation. */
   requester?: HttpRequester;
 

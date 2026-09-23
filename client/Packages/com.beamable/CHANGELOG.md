@@ -7,7 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep deleted content from being recreated by pending autosaves or running properties/tag writes in the Content window.
+- Prevent older property saves from overwriting newer tag edits, and restore editable content after a failed file deletion.
+
+### UI/UX
+
+- Improve content validation QOL with clearer Inspector issue badges, errors above collapsed lists, softer error text with bright red bars, and faster validation error counting for large lists.
+- Add a shared Issues icon for Content window validation errors and conflicts, an Issues footer filter, and a Publish badge.
+- Explain blocked publishing in a popup with issue counts and an action to view affected items.
+- Improve Content window tooltips, filter behavior, and toolbar layout.
+- Add `/` to focus content search and Escape or an outside click to unfocus it.
+
+## [6.1.0] - 2026-08-26
+
+### Added
 - Added build-scoped suppression and per-player runtime opt-in for automatic Player Social friend-invitation Mail checks.
+- Fixed `CommerceService.GetCurrent()` waiting indefinitely when called without a store scope; unscoped Commerce requests now fail immediately with a clear error.
+- Content Manifest caching between runs.
+- Added support for silent login to the Google Sign In integration.
+
+### Fixed
+
+- Fixed repeated content validation during Unity Inspector repaints, reducing Editor log spam and performance overhead when viewing content.
+- Fixed Unity Editor hitches after editing content properties by avoiding synchronous end-of-stream checks while reading streamed CLI responses.
+
+### Changed
+
+- Update CLI to 7.2.3
+
+## [6.0.1] - 2026-07-31
+
+### Changed
+
+- Unity In-App Purchasing (UnityIAP) 5.4.2 is now supported. The Beamable Steam store implements `IOrderInfo.PaymentProviders`, which UnityIAP introduced in 5.4.2.
+- The supported UnityIAP 5 range is **5.2.0 through 5.4.2**. UnityIAP 5.0.x and 5.1.x do not compile against Beamable 6.x, because they predate the `StoreController.OnStoreConnected` event that the purchasing integration requires.
+
+- Added build-scoped suppression and per-player runtime opt-in for automatic Player Social friend-invitation Mail checks.
+- Fixed `CommerceService.GetCurrent()` waiting indefinitely when called without a store scope; unscoped Commerce requests now fail immediately with a clear error.
+- Content Manifest caching between runs.
+- Added support for silent login to the Google Sign In integration.
+
+### Fixed
+
+- Fixed the Unity Content window failing to reconcile large local content changes after filesystem watcher overflow, which previously required a manual refresh.
+- Fixed repeated content validation during Unity Inspector repaints, reducing Editor log spam and performance overhead when viewing content.
+- Fixed Unity Editor hitches after editing content properties by avoiding synchronous end-of-stream checks while reading streamed CLI responses.
 
 ## [6.0.1] - 2026-07-31
 
@@ -34,6 +80,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unity SDK version headers were not being sent by default.
 - Fixed `BeamContext` initialization throwing `IndexOutOfRangeException` from its own retry handler when initialization kept failing with infinite context retries enabled, which masked the underlying initialization error.
 - Fixed CLI bootstrap failing when the installed .NET SDK is a supported version newer than the pinned feature band (for example 10.0.301 when the pin is 10.0.100); the generated `global.json` now rolls forward to any compatible installed SDK.
+
+## [5.1.2] - 2026-07-16
+
+### Changed
+
+- Update CLI to 7.2.2
 
 ## [5.1.2] - 2026-07-16
 

@@ -97,5 +97,25 @@ namespace Beamable.Api.Commerce
 		{
 			Refresh(storeSymbol);
 		}
+
+		/// <summary>
+		/// Validates that a Commerce request targets a specific store.
+		/// </summary>
+		/// <param name="scope">The full store content ID, such as <c>stores.default</c>.</param>
+		/// <returns>
+		/// /// <see langword="null"/> when <paramref name="scope"/> identifies a store;
+		/// otherwise, an <see cref="ArgumentException"/> describing the invalid scope.
+		/// </returns>
+		/// /// <remarks>
+		/// Commerce produces one <see cref="PlayerStoreView"/> per store and therefore
+		/// cannot satisfy an unscoped request.
+		/// </remarks>
+		protected override Exception GetInvalidScopeException(string scope)
+		{
+			if (!string.IsNullOrWhiteSpace(scope)) return null;
+			return new ArgumentException("CommerceService requires a store scope. " +
+			                             "Pass a full store content ID, such as 'stores.default'. ",
+			                             nameof(scope));
+		}
 	}
 }

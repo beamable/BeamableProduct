@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/JetBrains/web-types/master/schema/web-types.json",
   "name": "@beamable/portal-toolkit",
-  "version": "0.0.123-local1",
+  "version": "0.5.0",
   "js-types-syntax": "typescript",
   "description-markup": "markdown",
   "contributions": {
@@ -3900,6 +3900,13 @@
           "description": "",
           "attributes": [
             {
+              "name": "with-remove",
+              "description": "Makes the tab removable and shows a remove button.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
               "name": "panel",
               "description": "The name of the tab panel this tab is associated with. The panel must be located in the same tab group.",
               "value": {
@@ -4453,7 +4460,7 @@
           "attributes": [
             {
               "name": "density",
-              "description": "Cell density preset — `compact` (default, 0.5rem vertical) or\n`comfortable` (0.75rem vertical). Setting `--cell-padding-y` /\n`--cell-padding-x` inline overrides this.",
+              "description": "Cell density preset — `compact` (default, 0.5rem vertical) or\r\n`comfortable` (0.75rem vertical). Setting `--cell-padding-y` /\r\n`--cell-padding-x` inline overrides this.",
               "value": {
                 "type": "'compact' | 'comfortable'"
               }
@@ -4515,6 +4522,13 @@
               }
             },
             {
+              "name": "min-group-size",
+              "description": "",
+              "value": {
+                "type": "number"
+              }
+            },
+            {
               "name": "table-title",
               "description": "",
               "value": {
@@ -4523,7 +4537,7 @@
             },
             {
               "name": "has-top-row",
-              "description": "Slots for an external owner (e.g. the React wrapper) to portal content\ninto. When set, the table emits a placeholder with `data-beam-portal-id`\n— `__top-row__` for the top row, `__group-header__:{groupKey}` for each\ngroup's header — and the owner is expected to mount its own DOM there.\nIf unset, the table renders its built-in defaults.",
+              "description": "Slots for an external owner (e.g. the React wrapper) to portal content\r\ninto. When set, the table emits a placeholder with `data-beam-portal-id`\r\n— `__top-row__` for the top row, `__group-header__:{groupKey}` for each\r\ngroup's header — and the owner is expected to mount its own DOM there.\r\nIf unset, the table renders its built-in defaults.",
               "value": {
                 "type": "boolean"
               }
@@ -4531,6 +4545,13 @@
             {
               "name": "has-group-header",
               "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "has-row-detail",
+              "description": "When set, each data row is clickable to expand an inline detail region\r\nrendered beneath it. The table prepends a chevron column, tracks expansion\r\nstate internally, emits a `beam-row-expand` event on toggle, and emits a\r\n`__row-detail__:{rowKey}` portal placeholder for the expanded row so an\r\nexternal owner (the React wrapper) can mount the detail content.",
               "value": {
                 "type": "boolean"
               }
@@ -4557,6 +4578,13 @@
             },
             {
               "name": "no-toolbar",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "show-path",
               "description": "",
               "value": {
                 "type": "boolean"
@@ -4659,7 +4687,7 @@
             },
             {
               "name": "page-size-options",
-              "description": "Optional comma-separated list of page-size choices, e.g. \"10,25,50,100\".\nWhen set, a `<select>` dropdown is rendered to the left of the info text.",
+              "description": "Optional comma-separated list of page-size choices, e.g. \"10,25,50,100\".\r\nWhen set, a `<select>` dropdown is rendered to the left of the info text.",
               "value": {
                 "type": "string"
               }
@@ -4725,6 +4753,27 @@
               "value": {
                 "type": "boolean"
               }
+            },
+            {
+              "name": "wide",
+              "description": "Wide layout for detailed content.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "details",
+              "description": "Secondary detail text below the message.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "show-progress",
+              "description": "Show a drain progress bar that empties over `duration`.",
+              "value": {
+                "type": "boolean"
+              }
             }
           ]
         },
@@ -4736,7 +4785,7 @@
               "name": "placement",
               "description": "Where toasts appear on the screen.",
               "value": {
-                "type": "'top-start' | 'top-end' | 'bottom-start' | 'bottom-end'"
+                "type": "'top-start' | 'top-end' | 'top-center' | 'bottom-start' | 'bottom-end' | 'bottom-center'"
               }
             },
             {
@@ -4837,21 +4886,21 @@
             },
             {
               "name": "inline",
-              "description": "Render the bar inline at the host's normal flow position instead of\nfixed to the bottom of the viewport. Useful for in-page docs/previews\nand for embedding the bar inside a settings panel.",
+              "description": "Render the bar inline at the host's normal flow position instead of\r\nfixed to the bottom of the viewport. Useful for in-page docs/previews\r\nand for embedding the bar inside a settings panel.",
               "value": {
                 "type": "boolean"
               }
             },
             {
               "name": "auto-save",
-              "description": "Auto-save mode. When enabled, the bar dispatches `wa-save` automatically\n(debounced by `auto-save-debounce`) whenever `changes` is dirty AND\n`errors` is empty, and the visible bar UI is hidden. If validation errors\nappear, the bar falls back to its normal interactive state so the user\ncan fix them. The consumer still owns the actual save logic via the\n`wa-save` handler — the bar only schedules the dispatch.",
+              "description": "Auto-save mode. When enabled, the bar dispatches `wa-save` automatically\r\n(debounced by `auto-save-debounce`) whenever `changes` is dirty AND\r\n`errors` is empty, and the visible bar UI is hidden. If validation errors\r\nappear, the bar falls back to its normal interactive state so the user\r\ncan fix them. The consumer still owns the actual save logic via the\r\n`wa-save` handler — the bar only schedules the dispatch.",
               "value": {
                 "type": "boolean"
               }
             },
             {
               "name": "auto-save-debounce",
-              "description": "Debounce window in milliseconds before auto-save dispatches `wa-save`.\nResets every time `changes` updates so rapid edits collapse into one save.",
+              "description": "Debounce window in milliseconds before auto-save dispatches `wa-save`.\r\nResets every time `changes` updates so rapid edits collapse into one save.",
               "value": {
                 "type": "number"
               }
@@ -4892,14 +4941,14 @@
             },
             {
               "name": "tone",
-              "description": "Coloring for the change text. `positive` → success green,\n`negative` → error red, `neutral` → muted gray. Defaults to\n`neutral`.",
+              "description": "Coloring for the change text. `positive` → success green,\r\n`negative` → error red, `neutral` → muted gray. Defaults to\r\n`neutral`.",
               "value": {
                 "type": "'positive' | 'negative' | 'neutral'"
               }
             },
             {
               "name": "icon",
-              "description": "Shortcut for the `icon` slot — set this to a Font Awesome name\n(e.g. `\"bolt\"`, `\"file-lines\"`) and the card renders a softly-tinted\n`<beam-icon>` for you. Slotted content always wins.",
+              "description": "Shortcut for the `icon` slot — set this to a Font Awesome name\r\n(e.g. `\"bolt\"`, `\"file-lines\"`) and the card renders a softly-tinted\r\n`<beam-icon>` for you. Slotted content always wins.",
               "value": {
                 "type": "string"
               }
@@ -4917,7 +4966,7 @@
           "attributes": [
             {
               "name": "tone",
-              "description": "Color treatment. `neutral` (default) uses the muted text color.\n`success` / `warning` / `error` / `info` / `accent` use the matching\nsemantic palette.",
+              "description": "Color treatment. `neutral` (default) uses the muted text color.\r\n`success` / `warning` / `error` / `info` / `accent` use the matching\r\nsemantic palette.",
               "value": {
                 "type": "'success' | 'warning' | 'error' | 'info' | 'accent' | 'neutral'"
               }
@@ -4951,7 +5000,7 @@
             },
             {
               "name": "icon",
-              "description": "Font Awesome icon-name shortcut. If set and nothing is slotted,\nrenders a `<beam-icon name=...>` inside the tile. Slotted content\nwins.",
+              "description": "Font Awesome icon-name shortcut. If set and nothing is slotted,\r\nrenders a `<beam-icon name=...>` inside the tile. Slotted content\r\nwins.",
               "value": {
                 "type": "string"
               }
@@ -4962,6 +5011,181 @@
           "name": "beam-kpi-row",
           "description": "",
           "attributes": []
+        },
+        {
+          "name": "beam-tag-input",
+          "description": "",
+          "attributes": [
+            {
+              "name": "value",
+              "description": "The committed values. A real array, not a delimited string — see the class\r\ncomment for why that distinction is the whole point of this component.",
+              "value": {
+                "type": "string[]"
+              }
+            },
+            {
+              "name": "placeholder",
+              "description": "",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "variant",
+              "description": "Pill color, passed through to the underlying `beam-tag`.",
+              "value": {
+                "type": "'brand' | 'neutral' | 'success' | 'warning' | 'danger'"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-date-picker",
+          "description": "",
+          "attributes": [
+            {
+              "name": "value",
+              "description": "The selected value: `YYYY-MM-DDTHH:mm`, or `YYYY-MM-DD` when `without-time` is\r\nset. Empty string means nothing selected. Same format as a native\r\n`datetime-local` / `date` input, so this is a drop-in replacement for one.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "placeholder",
+              "description": "Text shown on the trigger when there is no value.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "disabled",
+              "description": "",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "without-time",
+              "description": "Date only — hides the time field and drops the time from the value.",
+              "value": {
+                "type": "boolean"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-line-chart",
+          "description": "",
+          "attributes": [
+            {
+              "name": "data",
+              "description": "Rows of data points, e.g. `[{ day: 'Apr 10', sent: 5, opened: 3 }]`.",
+              "value": {
+                "type": "Array<Record<string, unknown>>"
+              }
+            },
+            {
+              "name": "series",
+              "description": "Series to plot, each pulling `key` out of every row.",
+              "value": {
+                "type": "LineSeries[]"
+              }
+            },
+            {
+              "name": "x-key",
+              "description": "Row key for the x-axis category.",
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-bar-chart",
+          "description": "",
+          "attributes": [
+            {
+              "name": "data",
+              "description": "Bars to plot, e.g. `[{ label: 'Sent', value: 120 }]`.",
+              "value": {
+                "type": "BarDatum[]"
+              }
+            },
+            {
+              "name": "palette",
+              "description": "Optional per-bar color override; defaults to the theme categorical palette.",
+              "value": {
+                "type": "string[] | undefined"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-donut-chart",
+          "description": "",
+          "attributes": [
+            {
+              "name": "data",
+              "description": "Slices to plot, e.g. `[{ label: 'Push', value: 45 }]`.",
+              "value": {
+                "type": "DonutDatum[]"
+              }
+            },
+            {
+              "name": "palette",
+              "description": "Optional per-slice color override; defaults to the theme categorical palette.",
+              "value": {
+                "type": "string[] | undefined"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-funnel-chart",
+          "description": "",
+          "attributes": [
+            {
+              "name": "data",
+              "description": "Funnel stages in order, e.g. `[{ label: 'Audience', value: 1000 }, …]`.",
+              "value": {
+                "type": "FunnelDatum[]"
+              }
+            },
+            {
+              "name": "palette",
+              "description": "Optional per-stage color override; defaults to the theme categorical palette.",
+              "value": {
+                "type": "string[] | undefined"
+              }
+            }
+          ]
+        },
+        {
+          "name": "beam-sankey-chart",
+          "description": "",
+          "attributes": [
+            {
+              "name": "nodes",
+              "description": "Nodes, e.g. `[{ name: 'Sent' }, { name: 'Opened' }]`.",
+              "value": {
+                "type": "SankeyNode[]"
+              }
+            },
+            {
+              "name": "links",
+              "description": "Links, e.g. `[{ source: 'Sent', target: 'Opened', value: 80 }]`.",
+              "value": {
+                "type": "SankeyLink[]"
+              }
+            }
+          ]
         }
       ]
     }

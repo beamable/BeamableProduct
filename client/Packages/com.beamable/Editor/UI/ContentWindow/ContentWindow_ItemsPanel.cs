@@ -1,14 +1,12 @@
 ﻿using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
-using Beamable.Common.Content.Serialization;
+using Beamable.Common;
 using Beamable.Editor.Util;
 using Beamable.Common.Util;
-using Beamable.Editor.ContentService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -33,6 +31,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		private readonly Dictionary<(string filterKey, ContentSortOptionType sortOption), List<LocalContentManifestEntry>> _sortedCache = new();
 
 		private Vector2 _itemsPanelScrollPos;
+
+		private readonly ContentWindow_TooltipsHelper _tooltipsHelper = new();
 
 		private List<string> MultiSelectItemIds
 		{
@@ -195,15 +195,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					                                                "Delete", "Cancel");
 					if (shouldDelete)
 					{
-						_contentService.TempDisableWatcher(() =>
-						{
-							foreach (var id in toBeDeleted)
-							{
-								_contentService.DeleteContent(id.FullId);
-							}
-							ClearSelection();
-							
-						});
+						_contentService.TempDisableWatcher(() => DeleteContentEntries(toBeDeleted)).Error(Debug.LogException);
 						
 						Selection.activeObject = null;
 						Event.current.Use();
@@ -213,6 +205,22 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 		
+		private async Promise DeleteContentEntries(IEnumerable<LocalContentManifestEntry> entries)
+		{
+			var scope = _contentService.GetContentScopeKey();
+			// Start every deletion before awaiting, so all targets retain the original scope and block new writes.
+			var deletions = entries.Select(entry => _contentService.DeleteContent(entry.FullId)).ToArray();
+			Exception failure = null;
+			foreach (var deletion in deletions)
+			{
+				try { await deletion; }
+				catch (Exception ex) { failure = failure ?? ex; }
+			}
+			if (scope == _contentService.GetContentScopeKey()) ClearSelection();
+			// Keep the watcher paused until every deletion settles, even if one file cannot be removed.
+			if (failure != null) throw failure;
+		}
+
 		private void DrawGroupNode(string parentPath = "", int indentLevel = 0)
 		{
 			var contentTypeItems = SortContentGroups(_contentTypeHierarchy);
@@ -558,14 +566,13 @@ namespace Beamable.Editor.UI.ContentWindow
 				nameLabel = isEditingName ? nameLabel : $"{entry.Name} (renamed from {renameInfo.OldName})";
 
 			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
-			Texture iconForEntry;
-			if (_contentService.IsContentInvalid(entry.FullId))
-				iconForEntry = BeamGUI.iconStatusInvalid;
-			else if (isRenamed)
-				iconForEntry = BeamGUI.iconStatusModified;
-			else
-				iconForEntry = GetIconForStatus(entry.IsInConflict, entry.StatusEnum);
-			Texture[] icons = {iconForEntry};
+			GUIContent badge = _tooltipsHelper.GetContentStatusBadge(
+				_contentService,
+				entry,
+				renamedFrom: isRenamed ? renameInfo.OldName : null,
+				defaultIcon: GetIconForStatus(entry.IsInConflict, entry.StatusEnum));
+
+			GUIContent[] icons = { badge };
 
 			bool[] isEditable = {isEditingName};
 			string[] editableId = {entry.FullId};
@@ -780,15 +787,14 @@ namespace Beamable.Editor.UI.ContentWindow
 						                                "Are you sure you want to delete this content?", "Delete",
 						                                "Cancel"))
 						{
-							_contentService.DeleteContent(entry.FullId);
-							if (entry.StatusEnum is ContentStatus.Created)
+							var scope = _contentService.GetContentScopeKey();
+							_contentService.DeleteContent(entry.FullId).Then(_ =>
 							{
-								ClearSelection();
-							}
-							else
-							{
-								SetEntryIdAsSelected(entry.FullId);
-							}
+								if (scope != _contentService.GetContentScopeKey()) return;
+								if (entry.StatusEnum is ContentStatus.Created) ClearSelection();
+								else SetEntryIdAsSelected(entry.FullId);
+								Repaint();
+							}).Error(Debug.LogException);
 						}
 
 					});
@@ -839,16 +845,7 @@ namespace Beamable.Editor.UI.ContentWindow
 						                                $"Are you sure you want to delete these {entries.Count} contents?", "Delete",
 						                                "Cancel"))
 						{
-							_contentService.TempDisableWatcher(() =>
-							{
-								foreach (var entry in entries)
-								{
-									_contentService.DeleteContent(entry.FullId);
-								}
-
-								ClearSelection();
-								
-							});
+							_contentService.TempDisableWatcher(() => DeleteContentEntries(entries)).Error(Debug.LogException);
 						}
 					});
 				}
@@ -914,7 +911,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		                              GUIStyle rowStyle,
 		                              GUIStyle fieldStyle,
 		                              Rect fullRect,
-		                              Texture[] icons = null, bool[] isEditLabel = null, string[] fieldID = null)
+		                              GUIContent[] icons = null, bool[] isEditLabel = null, string[] fieldID = null)
 		{
 			if (Event.current.type == EventType.Repaint)
 			{
@@ -931,10 +928,19 @@ namespace Beamable.Editor.UI.ContentWindow
 				if (icons != null && icons.Length > i)
 				{
 					float iconSize = fullRect.height - BASE_PADDING;
-					if (icons[i])
+					var badge = icons[i];
+
+					if (badge?.image != null)
 					{
-						Rect iconRect = new Rect(fullRect.xMin, fullRect.center.y - iconSize / 2f, iconSize, iconSize);
-						GUI.DrawTexture(iconRect, icons[i], ScaleMode.ScaleToFit);
+						Rect iconRect = new Rect(
+							fullRect.xMin,
+							fullRect.center.y - iconSize / 2f,
+							iconSize,
+							iconSize);
+
+						GUI.DrawTexture(iconRect, badge.image, ScaleMode.ScaleToFit);
+
+						GUI.Label(iconRect, new GUIContent(string.Empty, badge.tooltip), GUIStyle.none);
 					}
 					itemWidth -= iconSize;
 					fullRect.xMin += iconSize;
@@ -1072,7 +1078,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			var tags = GetFilterTypeActiveItems(ContentSearchFilterType.Tag);
 			var statuses = GetFilterTypeActiveItems(ContentSearchFilterType.Status);
 			
-			var filterKey = $"{specificType}|{nameSearchPartValue}|{string.Join("-",tags)}|{string.Join("-",statuses)}|{string.Join("-",statuses)}";
+			var filterKey = BuildFilterCacheKey(specificType, nameSearchPartValue, types, tags, statuses);
 
 			if (!_filteredCache.TryGetValue(filterKey, out var filteredItems))
 			{
@@ -1084,6 +1090,20 @@ namespace Beamable.Editor.UI.ContentWindow
 			List<LocalContentManifestEntry> contentManifestEntries = shouldSort ? SortItems(filterKey, filteredItems, _currentSortOption) : filteredItems;
 			return contentManifestEntries;
 		}
+		private static string BuildFilterCacheKey(string specificType, string name,
+			IEnumerable<string> types, IEnumerable<string> tags, IEnumerable<string> statuses)
+		{
+			// Length prefixes keep values containing separators distinct; sorting makes set order irrelevant.
+			string Encode(string value) => $"{value.Length}:{value}";
+			string EncodeSet(IEnumerable<string> values) =>
+				Encode(string.Concat(values.OrderBy(value => value, StringComparer.Ordinal).Select(Encode)));
+			return Encode(specificType) + Encode(name) + EncodeSet(types) + EncodeSet(tags) + EncodeSet(statuses);
+		}
+
+		private bool HasContentIssue(LocalContentManifestEntry entry)
+		{
+			return _contentService.IsContentInvalid(entry.FullId) || entry.IsInConflict;
+		}
 
 		private bool FilterItem(string specificType,
 		                        HashSet<string> types,
@@ -1092,10 +1112,11 @@ namespace Beamable.Editor.UI.ContentWindow
 		                        HashSet<string> statuses,
 		                        string nameSearchPartValue)
 		{
-			// Hide the Deleted side of a detected rename — only the Created side (new name) is shown
+			// Hide the Deleted side of a rename unless Issues needs to show a problem on that entry.
 			if (entry.StatusEnum == ContentStatus.Deleted
 			    && _contentService.TryGetRenameInfo(entry.FullId, out var ri)
-			    && ri.DeletedFullId == entry.FullId)
+			    && ri.DeletedFullId == entry.FullId
+			    && !(statuses.Contains(StatusMapToString[ContentFilterStatus.Issues]) && HasContentIssue(entry)))
 			{
 				return false;
 			}
@@ -1141,6 +1162,11 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			bool ValidateEntryStatus(string status)
 			{
+				if (status == StatusMapToString[ContentFilterStatus.Issues])
+				{
+					return HasContentIssue(entry);
+				}
+
 				if (status == StatusMapToString[ContentFilterStatus.Invalid])
 				{
 					return _contentService.IsContentInvalid(entry.FullId);
@@ -1151,7 +1177,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					return entry.IsInConflict;
 				}
 
-				return FilterStatusToContentStatus[status] == entry.StatusEnum;
+				return FilterStatusToContentStatus.TryGetValue(status, out var contentStatus) && contentStatus == entry.StatusEnum;
 			}
 		}
 

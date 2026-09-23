@@ -1,80 +1,59 @@
-
-buildscript {
-    repositories {**ARTIFACTORYREPOSITORY**
-        mavenCentral()
-        google()
-        jcenter()
-    }
-
-    dependencies {
-        classpath 'com.android.tools.build:gradle:3.4.0'
-**BUILD_SCRIPT_DEPS**}
-}
-
-allprojects {
-    repositories {**ARTIFACTORYREPOSITORY**
-        mavenCentral()
-        google()
-        jcenter()
-        flatDir {
-            dirs 'libs'
-        }
-    }
-}
+// Unity 2022.3's own mainTemplate.gradle, with exactly one addition: the play-services-auth
+// dependency that Beamable's googlesignin-release.aar needs (it declares GMS as `implementation`, so
+// it does not ship it - see plugins/google-signin/README.md).
+//
+// Do not reintroduce a buildscript block, an allprojects repositories block, or buildTypes here.
+// Since Unity 2019.3 this file generates the unityLibrary module only: the classpath lives in
+// baseProjectTemplate.gradle, repositories live in settingsTemplate.gradle (which prefers settings
+// repositories, so anything declared here is ignored and merely warns), and buildTypes plus
+// signingConfigs live in launcherTemplate.gradle. A pre-2019.3 template used here fails with
+// "Could not get unknown property 'release' for SigningConfig container", because the sign-config
+// token expands to a signingConfigs.release reference inside a library module that has none.
+//
+// Also note: Unity substitutes its double-asterisk tokens by plain text replacement, anywhere in the
+// file - comments included, and some expand to more than one line. So never name one in a comment.
 
 apply plugin: 'com.android.library'
 **APPLY_PLUGINS**
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    // ADDED: Dependency to support Google Sign-In 2020-10-19
+    // Required by Beamable's Google Sign-In plugin. Keep the version in step with
+    // plugins/google-signin/googlesignin/build.gradle.
     implementation 'com.google.android.gms:play-services-auth:18.1.0'
-**DEPS**
-}
+**DEPS**}
 
 android {
-	aaptOptions {
-		noCompress = ['.ress', '.resource', '.obb'] + unityStreamingAssets.tokenize(', ')
-		ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~"
-	}
-
+    namespace "com.unity3d.player"
+    ndkPath "**NDKPATH**"
     compileSdkVersion **APIVERSION**
     buildToolsVersion '**BUILDTOOLS**'
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 
     defaultConfig {
-consumerProguardFiles 'proguard-unity.txt'**USER_PROGUARD**
         minSdkVersion **MINSDKVERSION**
         targetSdkVersion **TARGETSDKVERSION**
-        
         ndk {
             abiFilters **ABIFILTERS**
         }
         versionCode **VERSIONCODE**
         versionName '**VERSIONNAME**'
+        consumerProguardFiles 'proguard-unity.txt'**USER_PROGUARD**
     }
 
     lintOptions {
         abortOnError false
     }
 
-    buildTypes {
-        debug {
-            minifyEnabled **MINIFY_DEBUG**
-            
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-unity.txt'**USER_PROGUARD**
-            jniDebuggable true
-        }
-        release {
-            minifyEnabled **MINIFY_RELEASE**
-            
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-unity.txt'**USER_PROGUARD****SIGNCONFIG**
-        }
+    aaptOptions {
+        noCompress = **BUILTIN_NOCOMPRESS** + unityStreamingAssets.tokenize(', ')
+        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~"
     }**PACKAGING_OPTIONS**
-**BUILT_APK_LOCATION**
-    
-}**REPOSITORIES****SOURCE_BUILD_SETUP**
+}
+**IL_CPP_BUILD_SETUP**
+**SOURCE_BUILD_SETUP**
+**EXTERNAL_SOURCES**

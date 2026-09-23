@@ -12,6 +12,18 @@ export abstract class TokenStorage {
   protected refreshToken: string | null = null;
   protected expiresIn: number | null = null;
 
+  /**
+   * Asynchronously loads persisted tokens into memory.
+   *
+   * Called once by the SDK at the start of `connect()`, before any synchronous
+   * read of {@link isExpired}. Implementations backed by a synchronous store
+   * (browser localStorage, Node filesystem) load in their constructor and leave
+   * this a no-op; implementations backed by an asynchronous store (e.g. React
+   * Native AsyncStorage) override it to load their tokens here. Must be
+   * idempotent — the SDK may call it more than once.
+   */
+  async hydrate(): Promise<void> {}
+
   /** Retrieves the stored token data. */
   abstract getTokenData(): Promise<TokenData>;
 

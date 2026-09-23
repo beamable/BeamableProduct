@@ -9,6 +9,7 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         public string service;
         public string serviceType;
+        public string scope;
         public string[] groups;
         public string[] storages;
         public System.Collections.Generic.List<BeamServicesForRouteCollection> availableRoutes;

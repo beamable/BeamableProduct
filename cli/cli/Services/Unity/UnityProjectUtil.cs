@@ -2,6 +2,8 @@ using Beamable.Common.BeamCli.Contracts;
 using cli.UnityCommands;
 using Newtonsoft.Json;
 using System.IO.Compression;
+using System.Net;
+using System.Text.RegularExpressions;
 using Beamable.Server;
 
 namespace cli.Services.Unity;
@@ -16,24 +18,20 @@ public static class UnityProjectUtil
 	/// <param name="csProjPath"></param>
 	/// <param name="targetUnityPath"></param>
 	/// <returns></returns>
-	public static CopyProjectSrcToUnityCommandOutput CopyProject(string srcFolder, string targetUnityPath)
+	public static CopyProjectSrcToUnityCommandOutput CopyProject(string srcFolder, string targetUnityPath, UnityMetaSnapshot snapshot = null)
 	{
 		Log.Debug($"Copying src files from {srcFolder} to {targetUnityPath}");
-		
+
 		// TODO: at some point, this may be too much memory to hold all at once if we are copying an absolutely massive project. In that case, consider a streaming approach.
-		var sourceFiles = Enumerable.ToList<GeneratedFileDescriptor>(GetAllSourceInDirectory(srcFolder)); 
+		var sourceFiles = Enumerable.ToList<GeneratedFileDescriptor>(GetAllSourceInDirectory(srcFolder));
 		var metaFiles = UnityCliGenerator.GenerateMetaFiles(sourceFiles);
-		
-		// need to create meta files for the various folders, too...
-		var uniqueFolders = sourceFiles.Select(x => Path.GetDirectoryName(x.FileName))
-			.Distinct()
-			.Where(x => !string.IsNullOrEmpty(x))
-			.ToList();
-		var metaFolders = UnityCliGenerator.GenerateMetaFiles(uniqueFolders);
 
 		WriteFilesAtDirectory(targetUnityPath, sourceFiles);
 		WriteFilesAtDirectory(targetUnityPath, metaFiles);
-		WriteFilesAtDirectory(targetUnityPath, metaFolders);
+
+		// every folder needs a meta file too, including a folder that holds nothing but other folders.
+		// this runs after the copy, so a folder that still exists keeps the guid it already had.
+		EnsureFolderMetaFiles(targetUnityPath, snapshot);
 		
 		return new CopyProjectSrcToUnityCommandOutput
 		{
@@ -52,13 +50,17 @@ public static class UnityProjectUtil
 		{
 			var fullPath = Path.Combine(targetDirectory, file.FileName);
 			var dir = Path.GetDirectoryName(fullPath);
-
-			// The directory must stay writable while we copy files into it. On Unix a read-only
-			// directory (no write bit) prevents creating files inside it, which fails the copy when
-			// the CLI runs as a non-root user (e.g. the GitHub Actions runner). We only mark the
-			// generated files themselves read-only, never their containing folders.
-			Directory.CreateDirectory(dir);
-
+			
+			if (Directory.Exists(dir))
+			{
+				File.SetAttributes(dir, FileAttributes.None);
+			}
+			else
+			{
+				Directory.CreateDirectory(dir);
+				File.SetAttributes(dir, FileAttributes.ReadOnly);
+			}
+			
 			if (File.Exists(fullPath))
 			{
 				File.SetAttributes(fullPath, FileAttributes.None);
@@ -113,79 +115,167 @@ public static class UnityProjectUtil
 	}
 
 	/// <summary>
+	/// A nuget package that has been fetched into memory, ready to be written into a Unity project.
+	/// </summary>
+	public class FetchedNugetPackage
+	{
+		public string packageId;
+		public string packageVersion;
+		public byte[] archiveBytes;
+
+		/// <summary>
+		/// The comment prepended to every extracted file, recording where the file came from.
+		/// </summary>
+		public string fileHeader;
+	}
+
+	/// <summary>
+	/// Fetch a nuget package into memory without touching the file system.
+	/// </summary>
+	/// <remarks>
+	/// This is deliberately separate from <see cref="WritePackageToUnity"/> so that a caller which is
+	/// about to delete the generated code it is replacing can confirm the replacement exists first.
+	/// A pinned version that has not been published yet would otherwise leave the Unity project with
+	/// its generated source deleted and nothing to put back.
+	/// </remarks>
+	/// <exception cref="CliException">The package version could not be downloaded.</exception>
+	public static async Task<FetchedNugetPackage> FetchPackage(string packageId, string packageVersion)
+	{
+		var packageUrl = $"https://www.nuget.org/api/v2/package/{packageId}/{packageVersion}";
+		var detailUrl = $"https://www.nuget.org/packages/{packageId}/{packageVersion}";
+
+		using (HttpClient client = new HttpClient())
+		{
+			byte[] zipBytes;
+			try
+			{
+				Log.Debug($"Fetching nuget package from {packageUrl}");
+				zipBytes = await client.GetByteArrayAsync(packageUrl);
+			}
+			catch (HttpRequestException ex)
+			{
+				var reason = ex.StatusCode == HttpStatusCode.NotFound
+					? $"No such package version exists on nuget.org. If {packageVersion} has not been published yet, publish it or pin an already published version."
+					: ex.Message;
+				throw new CliException(
+					$"Failed to download nuget package {packageId}@{packageVersion}. {reason} url=[{packageUrl}]");
+			}
+
+			return new FetchedNugetPackage
+			{
+				packageId = packageId,
+				packageVersion = packageVersion,
+				archiveBytes = zipBytes,
+				fileHeader =
+					$"// this file was copied from nuget package {packageId}@{packageVersion}\n// {detailUrl}\n"
+			};
+		}
+	}
+
+	/// <summary>
+	/// Write the source files of an already fetched nuget package into a target unity project.
+	/// This will generate meta files as well.
+	/// </summary>
+	/// <param name="package">A package returned by <see cref="FetchPackage"/>.</param>
+	/// <param name="packageSrc">The path inside the archive to copy from.</param>
+	/// <param name="outputPath">The Unity folder to copy into.</param>
+	/// <param name="snapshot">Meta files captured before the target folder was cleaned, used to keep already established guids stable.</param>
+	/// <exception cref="CliException"></exception>
+	public static async Task WritePackageToUnity(FetchedNugetPackage package, string packageSrc, string outputPath,
+		UnityMetaSnapshot snapshot = null)
+	{
+		// Extract files in memory without saving the entire archive to disk
+		using (MemoryStream memoryStream = new MemoryStream(package.archiveBytes))
+		{
+			using (ZipArchive zipArchive = new ZipArchive(memoryStream))
+			{
+				await ExtractPackageSource(zipArchive, packageSrc, outputPath, package.fileHeader, snapshot);
+			}
+		}
+	}
+
+	/// <summary>
 	/// Download a nuget package from nuget.org and copy the src files into a target unity project.
 	/// This will generate meta files as well.
 	/// </summary>
+	/// <remarks>
+	/// A caller that deletes the code it is replacing should call <see cref="FetchPackage"/> before
+	/// deleting anything, then <see cref="WritePackageToUnity"/>, rather than using this method.
+	/// </remarks>
 	/// <param name="packageId"></param>
 	/// <param name="packageVersion"></param>
 	/// <param name="packageSrc"></param>
 	/// <param name="outputPath"></param>
+	/// <param name="snapshot">Meta files captured before the target folder was cleaned, used to keep already established guids stable.</param>
 	/// <exception cref="CliException"></exception>
-	public static async Task DownloadPackage(string packageId, string packageVersion, string packageSrc, string outputPath)
+	public static async Task DownloadPackage(string packageId, string packageVersion, string packageSrc, string outputPath, UnityMetaSnapshot snapshot = null)
 	{
-		var packageUrl = $"https://www.nuget.org/api/v2/package/{packageId}/{packageVersion}";
-		var detailUrl = $"https://www.nuget.org/packages/{packageId}/{packageVersion}";
-		
+		var package = await FetchPackage(packageId, packageVersion);
+		await WritePackageToUnity(package, packageSrc, outputPath, snapshot);
+	}
 
-		using (HttpClient client = new HttpClient())
+	/// <summary>
+	/// Copy every entry under <paramref name="packageSrc"/> out of a nuget archive and into a Unity folder,
+	/// generating a meta file for each extracted file.
+	/// </summary>
+	/// <remarks>
+	/// A nuget archive holds no directory entries and no meta files, so this recreates directories without
+	/// giving them a meta file. Callers must follow up with <see cref="EnsureFolderMetaFiles"/>.
+	/// </remarks>
+	public static async Task ExtractPackageSource(ZipArchive zipArchive, string packageSrc, string outputPath,
+		string fileHeader, UnityMetaSnapshot snapshot = null)
+	{
+		// Iterate through each entry in the zip archive
+		Log.Debug($"checking log entries for prefix=[{packageSrc}]");
+		foreach (ZipArchiveEntry entry in zipArchive.Entries)
 		{
-			// Download the zip file as a byte array
-			byte[] zipBytes = await client.GetByteArrayAsync(packageUrl);
-
-			// Extract files in memory without saving the entire archive to disk
-			using (MemoryStream memoryStream = new MemoryStream(zipBytes))
+			// Check if the entry is one of the files we want to save
+			if (!entry.FullName.StartsWith(packageSrc))
 			{
-				using (ZipArchive zipArchive = new ZipArchive(memoryStream))
+				Log.Debug($"skipping {entry.FullName}");
+				continue;
+			}
+
+			var relativePath = entry.FullName.Substring(packageSrc.Length);
+			string filePath = Path.Combine(outputPath, relativePath);
+
+			// Ensure the directory for the file exists
+			Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+			// Extract the entry to a file on disk
+			try
+			{
+				if (File.Exists(filePath))
 				{
-					// Iterate through each entry in the zip archive
-					Log.Debug($"checking log entries for prefix=[{packageSrc}]");
-					foreach (ZipArchiveEntry entry in zipArchive.Entries)
-					{
-						// Check if the entry is one of the files we want to save
-						if (!entry.FullName.StartsWith(packageSrc))
-						{
-							Log.Debug($"skipping {entry.FullName}");
-							continue;
-						} 
-						
-						var relativePath = entry.FullName.Substring(packageSrc.Length);
-						string filePath = Path.Combine(outputPath, relativePath);
-
-						// Ensure the directory for the file exists
-						Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-
-						// Extract the entry to a file on disk
-						try
-						{
-							if (File.Exists(filePath)) File.Delete(filePath);
-
-							using (Stream entryStream = entry.Open())
-							using (FileStream fileStream = File.Create(filePath))
-							using (StreamWriter writer = new StreamWriter(fileStream))
-							{
-								await writer.WriteLineAsync(
-									$"// this file was copied from nuget package {packageId}@{packageVersion}\n// {detailUrl}\n");
-								await writer.FlushAsync();
-								await entryStream.CopyToAsync(fileStream);
-							}
-
-							Log.Debug($"Extracted and saved: {entry.FullName} to {filePath}");
-
-							var metaDesc = UnityCliGenerator.GenerateMetaFile(filePath);
-							await File.WriteAllTextAsync(metaDesc.FileName, metaDesc.Content);
-							Log.Debug($"Saved meta file: {metaDesc.FileName}");
-
-						}
-						catch (Exception ex)
-						{
-							Log.Warning($"Failed to handle {entry.FullName}. {ex.GetType().Name} - {ex.Message}");
-							throw new CliException(
-								$"Failed to handle {entry.FullName}. {ex.GetType().Name} - {ex.Message}");
-						}
-
-					}
-
+					File.Delete(filePath);
 				}
+
+				using (Stream entryStream = entry.Open())
+				using (FileStream fileStream = File.Create(filePath))
+				using (StreamWriter writer = new StreamWriter(fileStream))
+				{
+					await writer.WriteLineAsync(fileHeader);
+					await writer.FlushAsync();
+					await entryStream.CopyToAsync(fileStream);
+				}
+
+				Log.Debug($"Extracted and saved: {entry.FullName} to {filePath}");
+
+				// seed the guid from the path relative to the package, never the absolute path, so the
+				// same file gets the same guid on a build machine and in a local checkout.
+				var relativeAssetPath = NormalizeRelativePath(Path.GetRelativePath(outputPath, filePath));
+				var metaGuid = snapshot != null && snapshot.TryGetFileGuid(relativeAssetPath, out var existingGuid)
+					? existingGuid
+					: UnityCliGenerator.ComputeMetaGuid(relativeAssetPath);
+				var metaDesc = UnityCliGenerator.GenerateMetaFileWithGuid(filePath, metaGuid);
+				await File.WriteAllTextAsync(metaDesc.FileName, metaDesc.Content);
+				Log.Debug($"Saved meta file: {metaDesc.FileName}");
+			}
+			catch (Exception ex)
+			{
+				Log.Warning($"Failed to handle {entry.FullName}. {ex.GetType().Name} - {ex.Message}");
+				throw new CliException(
+					$"Failed to handle {entry.FullName}. {ex.GetType().Name} - {ex.Message}");
 			}
 		}
 	}
@@ -299,15 +389,17 @@ public static class UnityProjectUtil
 	}
 
 	/// <summary>
-	/// Deletes files with the specified extensions, then removes any descendant directories left empty.
-	/// Directories containing Unity-owned files, such as assembly definitions, are preserved.
+	/// Delete the generated source files (and their file metas) under <paramref name="folder"/>,
+	/// leaving every directory and every directory meta in place. This is step one of the
+	/// delete -> repopulate -> prune sequence; it must not remove directories, because the
+	/// replacement source has not arrived yet and a directory that survives keeps its meta GUID.
 	/// </summary>
-	/// <param name="folder">The root folder to clean. The root folder itself is never deleted.</param>
-	/// <param name="extensions">The file extensions to delete.</param>
-	public static void DeleteAllFilesWithExtensionsAndEmptyDirectories(string folder, string[] extensions)
+	public static void DeleteGeneratedFiles(string folder, string[] extensions)
 	{
 		if (!Directory.Exists(folder))
+		{
 			return;
+		}
 
 		foreach (var ext in extensions)
 		{
@@ -318,6 +410,20 @@ public static class UnityProjectUtil
 				File.Delete(file);
 			}
 		}
+	}
+
+	/// <summary>
+	/// Delete every directory under <paramref name="folder"/> that is still empty after the
+	/// replacement source has been written, along with its sibling directory meta. This is the
+	/// final step of the delete -> repopulate -> prune sequence, so a directory the new source
+	/// repopulated is left alone and keeps its established GUID.
+	/// </summary>
+	public static void PruneEmptyDirectoriesAndMetaFiles(string folder)
+	{
+		if (!Directory.Exists(folder))
+		{
+			return;
+		}
 
 		var directories = Directory.GetDirectories(folder, "*", SearchOption.AllDirectories)
 			.OrderByDescending(directory => directory.Length);
@@ -325,16 +431,233 @@ public static class UnityProjectUtil
 		foreach (var directory in directories)
 		{
 			if (Directory.EnumerateFileSystemEntries(directory).Any())
+			{
 				continue;
+			}
 
 			Directory.Delete(directory);
 
 			var metaFile = $"{directory}.meta";
 			if (!File.Exists(metaFile))
+			{
 				continue;
+			}
 
 			File.SetAttributes(metaFile, FileAttributes.None);
 			File.Delete(metaFile);
 		}
+	}
+
+	/// <summary>
+	/// Generate a directory meta for every directory under <paramref name="folder"/> that does not
+	/// already have one, so a directory the replacement source introduces is importable by Unity.
+	/// Directories that already have a meta are left untouched, preserving their GUIDs.
+	/// </summary>
+	/// <param name="folder">The root folder to backfill. The root itself never gets a meta.</param>
+	/// <param name="snapshot">
+	/// Optional meta files captured before the folder was regenerated. A directory whose meta was
+	/// captured there gets that exact content back, so a Unity-authored meta keeps its GUID rather
+	/// than being replaced by a generated one.
+	/// </param>
+	/// <returns>
+	/// The relative paths of the directories whose meta file was written. Returned rather than logged,
+	/// so this stays callable from contexts that have no logger configured.
+	/// </returns>
+	public static List<string> EnsureFolderMetaFiles(string folder, UnityMetaSnapshot snapshot = null)
+	{
+		var restored = new List<string>();
+		if (!Directory.Exists(folder))
+		{
+			return restored;
+		}
+
+		foreach (var directory in Directory.GetDirectories(folder, "*", SearchOption.AllDirectories))
+		{
+			var metaFile = $"{directory}.meta";
+			if (File.Exists(metaFile))
+			{
+				continue;
+			}
+
+			var relativePath = NormalizeRelativePath(Path.GetRelativePath(folder, directory));
+			if (IsUnityHiddenPath(relativePath))
+			{
+				continue;
+			}
+
+			string content;
+			if (snapshot != null &&
+			    snapshot.folderMetaContentByRelativePath.TryGetValue(relativePath, out var capturedContent))
+			{
+				content = capturedContent;
+			}
+			else
+			{
+				// nothing to restore, so seed the guid from the package relative path to keep it
+				// identical between a local checkout and a build machine.
+				content = UnityCliGenerator.GenerateFolderMetaFile(directory,
+					UnityCliGenerator.ComputeMetaGuid(relativePath)).Content;
+			}
+
+			WriteFileAllowingReadOnlyParent(metaFile, content);
+			restored.Add(relativePath);
+		}
+
+		return restored;
+	}
+
+	/// <summary>
+	/// The meta files that existed in a Unity folder before it was regenerated.
+	/// Captured so that established asset guids survive a delete-and-replace cycle.
+	/// </summary>
+	public class UnityMetaSnapshot
+	{
+		/// <summary>
+		/// Verbatim content of each directory meta file, keyed by the directory path relative to the
+		/// snapshot root. Stored verbatim so a Unity-authored meta is restored exactly as it was.
+		/// </summary>
+		public readonly Dictionary<string, string> folderMetaContentByRelativePath =
+			new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+		/// <summary>
+		/// The guid of each file meta, keyed by the <i>asset</i> path relative to the snapshot root.
+		/// For example <c>Runtime/Api/AliasHelper.cs</c>, not <c>Runtime/Api/AliasHelper.cs.meta</c>.
+		/// </summary>
+		public readonly Dictionary<string, string> fileGuidByRelativePath =
+			new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+		public bool TryGetFileGuid(string relativeAssetPath, out string guid) =>
+			fileGuidByRelativePath.TryGetValue(NormalizeRelativePath(relativeAssetPath), out guid);
+	}
+
+	/// <summary>
+	/// Relative paths are used as dictionary keys and as guid hash seeds, so they must not depend on
+	/// the host platform's directory separator.
+	/// </summary>
+	private static string NormalizeRelativePath(string relativePath) => relativePath.Replace('\\', '/');
+
+	private static readonly Regex GuidLinePattern =
+		new Regex(@"^\s*guid:\s*([0-9a-fA-F]{32})\s*$", RegexOptions.Multiline);
+
+	/// <summary>
+	/// Record the existing meta files under <paramref name="root"/> before it is regenerated, so that
+	/// <see cref="EnsureFolderMetaFiles"/> and <see cref="ExtractPackageSource"/> can put the same
+	/// guids back rather than minting new ones.
+	/// </summary>
+	public static UnityMetaSnapshot CaptureMetaSnapshot(string root)
+	{
+		var snapshot = new UnityMetaSnapshot();
+		if (!Directory.Exists(root))
+		{
+			return snapshot;
+		}
+
+		foreach (var directory in Directory.GetDirectories(root, "*", SearchOption.AllDirectories))
+		{
+			var metaFile = $"{directory}.meta";
+			if (!File.Exists(metaFile))
+			{
+				continue;
+			}
+
+			var relativePath = NormalizeRelativePath(Path.GetRelativePath(root, directory));
+			snapshot.folderMetaContentByRelativePath[relativePath] = File.ReadAllText(metaFile);
+		}
+
+		foreach (var metaFile in Directory.GetFiles(root, "*.meta", SearchOption.AllDirectories))
+		{
+			var assetPath = metaFile.Substring(0, metaFile.Length - ".meta".Length);
+			if (Directory.Exists(assetPath))
+			{
+				// folder metas were captured above, verbatim
+				continue;
+			}
+
+			var match = GuidLinePattern.Match(File.ReadAllText(metaFile));
+			if (!match.Success)
+			{
+				continue;
+			}
+
+			var relativePath = NormalizeRelativePath(Path.GetRelativePath(root, assetPath));
+			snapshot.fileGuidByRelativePath[relativePath] = match.Groups[1].Value;
+		}
+
+		return snapshot;
+	}
+
+	/// <summary>
+	/// Unity ignores any path segment ending in <c>~</c>, so those directories must not get a meta file.
+	/// </summary>
+	public static bool IsUnityHiddenPath(string relativePath) =>
+		relativePath.Split('/').Any(segment => segment.EndsWith("~"));
+
+	/// <summary>
+	/// Directories written by <see cref="CopyProject"/> are marked read only, which on unix clears the
+	/// write permission bit and would block writing a sibling meta file.
+	/// </summary>
+	private static void WriteFileAllowingReadOnlyParent(string filePath, string content)
+	{
+		var parent = Path.GetDirectoryName(filePath);
+		if (!string.IsNullOrEmpty(parent) && Directory.Exists(parent))
+		{
+			File.SetAttributes(parent, FileAttributes.None);
+		}
+
+		if (File.Exists(filePath))
+		{
+			File.SetAttributes(filePath, FileAttributes.None);
+		}
+
+		File.WriteAllText(filePath, content);
+	}
+
+	/// <summary>
+	/// Find every directory under <paramref name="root"/> that Unity would import but that has no
+	/// sibling meta file. The root itself and Unity-hidden directories are excluded.
+	/// </summary>
+	public static List<string> FindDirectoriesMissingMetaFiles(string root)
+	{
+		var missing = new List<string>();
+		if (!Directory.Exists(root))
+		{
+			return missing;
+		}
+
+		foreach (var directory in Directory.GetDirectories(root, "*", SearchOption.AllDirectories))
+		{
+			var relativePath = NormalizeRelativePath(Path.GetRelativePath(root, directory));
+			if (IsUnityHiddenPath(relativePath))
+			{
+				continue;
+			}
+
+			if (File.Exists($"{directory}.meta"))
+			{
+				continue;
+			}
+
+			missing.Add(relativePath);
+		}
+
+		missing.Sort(StringComparer.Ordinal);
+		return missing;
+	}
+
+	/// <summary>
+	/// Deletes files with the specified extensions, then removes any descendant directories left empty.
+	/// Directories containing Unity-owned files, such as assembly definitions, are preserved.
+	/// </summary>
+	/// <remarks>
+	/// Pruning in the same pass as the delete is what dropped 62 folder metas from the 6.1.0-PREVIEW
+	/// RC1 and RC2 tarballs. Prefer <see cref="DeleteGeneratedFiles"/>, then repopulating the folder,
+	/// then <see cref="EnsureFolderMetaFiles"/> and <see cref="PruneEmptyDirectoriesAndMetaFiles"/>.
+	/// </remarks>
+	/// <param name="folder">The root folder to clean. The root folder itself is never deleted.</param>
+	/// <param name="extensions">The file extensions to delete.</param>
+	public static void DeleteAllFilesWithExtensionsAndEmptyDirectories(string folder, string[] extensions)
+	{
+		DeleteGeneratedFiles(folder, extensions);
+		PruneEmptyDirectoriesAndMetaFiles(folder);
 	}
 }

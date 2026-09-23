@@ -88,6 +88,16 @@ namespace Beamable.Server
       private const int HTTP_STATUS_GONE = 410;
       private const int ShutdownLimitSeconds = 5;
       private const int ShutdownMinCycleTimeMilliseconds = 100;
+
+      /// <summary>
+      /// Attempts for the federation registration PUT, which the platform rejects with a 404 until the
+      /// service binding from our provider registration is queryable. Six attempts with
+      /// <see cref="FEDERATION_REGISTRATION_BACKOFF_MS"/> linear backoff spans ~6s, comfortably past the
+      /// backend's 5s service-binding check interval.
+      /// </summary>
+      private const int FEDERATION_REGISTRATION_MAX_ATTEMPTS = 6;
+
+      private const int FEDERATION_REGISTRATION_BACKOFF_MS = 400;
       private Promise<Unit> _serviceInitialized = new Promise<Unit>();
       private IConnection _connection;
       private Promise<IConnection> _webSocketPromise;
@@ -542,11 +552,17 @@ namespace Beamable.Server
             }
             catch (Exception ex)
             {
-               BeamableLogger.LogError($"Custom service initializer [{initializationMethod.DeclaringType?.FullName}.{initializationMethod.Name}] failed.\n" +
-                                       $"{ex.Message}\n" +
-                                       $"{{stacktrace}}", ex.StackTrace);
-
+               // The real exception is logged first, so that nothing about it can be lost to a formatting
+               // problem in the context line below.
                BeamableLogger.LogException(ex);
+
+               // ex.Message is passed as an argument, never interpolated into the message itself: a message
+               // containing curly braces (json, a format string) would otherwise be read as extra placeholders.
+               BeamableLogger.LogError("Custom service initializer [{typeName}.{methodName}] failed.\n{message}\n{stacktrace}",
+                                       initializationMethod.DeclaringType?.FullName,
+                                       initializationMethod.Name,
+                                       ex.Message,
+                                       ex.StackTrace);
                Environment.Exit(EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK);
             }
          }
@@ -564,11 +580,10 @@ namespace Beamable.Server
 		         }
 		         catch (Exception ex)
 		         {
-			         BeamableLogger.LogError($"Custom service initializer failed.\n" +
-			                                 $"{ex.Message}\n" +
-			                                 $"{{stacktrace}}", ex.StackTrace);
-
 			         BeamableLogger.LogException(ex);
+			         BeamableLogger.LogError("Custom service initializer failed.\n{message}\n{stacktrace}",
+			                                 ex.Message,
+			                                 ex.StackTrace);
 			         Environment.Exit(EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK);
 		         }
 	         }
@@ -589,11 +604,10 @@ namespace Beamable.Server
 			      }
 			      catch (Exception ex)
 			      {
-				      BeamableLogger.LogError($"Custom service setup initializer failed.\n" +
-				                              $"{ex.Message}\n" +
-				                              $"{{stacktrace}}", ex.StackTrace);
-
 				      BeamableLogger.LogException(ex);
+				      BeamableLogger.LogError("Custom service setup initializer failed.\n{message}\n{stacktrace}",
+				                              ex.Message,
+				                              ex.StackTrace);
 				      Environment.Exit(EXIT_CODE_FAILED_CUSTOM_SERVICE_SETUP_INITIALIZATION_HOOK);
 			      }
 		      }
@@ -1120,14 +1134,55 @@ namespace Beamable.Server
 		      federationRequest.routingKey = routingKey;
 	      }
 
+	      // The platform rejects this PUT with 404 ServiceNotFound until the service_topology binding
+	      // created by our `gateway/provider` registration is queryable. That binding write used to be
+	      // scheduled rather than awaited on the backend, so the two raced and roughly half of all local
+	      // starts lost — silently, because this was a bare catch-and-log with no retry, and the service
+	      // went on to report itself ready for traffic with no routable federation.
+	      //
+	      // The backend now orders that write before it ACKs the provider registration. The retry stays
+	      // because services also run against backends we do not control (prod, staging, an older
+	      // platform), where it is the only thing between a lost race and a service that never federates.
+	      var attempts = 0;
 	      try
 	      {
-		      var response = await api.PutMicroserviceFederationTraffic(federationRequest);
-		      Log.Verbose($"Registered federation. result=[{response.result}], routes=[{string.Join(",",response.data.Select(kvp => $"{kvp.Key}->{kvp.Value}"))}]");
+		      var response = await Promise.RetryPromise(
+			      () =>
+			      {
+				      var previousAttempts = attempts++;
+				      if (previousAttempts == 0)
+				      {
+					      return api.PutMicroserviceFederationTraffic(federationRequest);
+				      }
+
+				      Log.Warning(
+					      "Federation registration was rejected because the service binding is not visible yet; retrying. attempt=[{attempt}] of [{maxAttempts}]",
+					      previousAttempts + 1, FEDERATION_REGISTRATION_MAX_ATTEMPTS);
+				      return Task.Delay(TimeSpan.FromMilliseconds(FEDERATION_REGISTRATION_BACKOFF_MS * previousAttempts))
+					      .ToPromise()
+					      .FlatMap(_ => api.PutMicroserviceFederationTraffic(federationRequest));
+			      },
+			      // Only the race is retryable. A 400 (e.g. MissingRoutingKeys, when the realm has no
+			      // local-traffic filtering configured) will fail identically forever, so it surfaces
+			      // immediately instead of after every backoff.
+			      ex => ex is RequesterException requesterException && requesterException.Status == 404,
+			      maxAttempts: FEDERATION_REGISTRATION_MAX_ATTEMPTS);
+
+		      Log.Information(
+			      Constants.Features.Services.Logs.FEDERATION_REGISTERED + " result=[{result}], routes=[{routes}]",
+			      response.result,
+			      string.Join(",", response.data.Select(kvp => $"{kvp.Key}->{kvp.Value}")));
 	      }
 	      catch (Exception ex)
 	      {
-		      Log.Error($"Failed to register federation components. {ex.Message}");
+		      // Deliberately not fatal: throwing here would abort ProvideService before the event provider
+		      // is wired up, leaving a half-registered socket — a worse failure than a service that runs and
+		      // reports itself degraded. The distinct message is what `beam local up` watches for, so this
+		      // no longer disappears into the log.
+		      Log.Error(
+			      Constants.Features.Services.Logs.FEDERATION_REGISTRATION_FAILED +
+			      " The service is running but its federations are NOT routable. attempts=[{attempts}] error=[{error}]",
+			      attempts, ex.Message);
 	      }
       }
 

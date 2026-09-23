@@ -4,9 +4,9 @@
  */
 
 import type { Bundle } from './Bundle';
-import type { BundleTag } from './BundleTag';
 
 export type GetBundleResponse = { 
   bundle?: Bundle; 
-  tags?: BundleTag[]; 
+  tags?: Record<string, string>; 
+  version?: bigint | string; 
 };

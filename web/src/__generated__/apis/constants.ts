@@ -3,6 +3,8 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
+export const eventPlaceholder = "{event}";
+
 export const tokenIdPlaceholder = "{tokenId}";
 
 export const manifestIdPlaceholder = "{manifestId}";
@@ -29,6 +31,10 @@ export const viewIdPlaceholder = "{viewId}";
 
 export const pullRequestIdPlaceholder = "{pullRequestId}";
 
+export const campaignIdPlaceholder = "{campaignId}";
+
+export const versionPlaceholder = "{version}";
+
 export const gameIdPlaceholder = "{gameId}";
 
 export const aliasPlaceholder = "{alias}";
@@ -37,9 +43,13 @@ export const segmentIdPlaceholder = "{segmentId}";
 
 export const playerIdPlaceholder = "{playerId}";
 
-export const idPlaceholder = "{id}";
+export const kindPlaceholder = "{kind}";
 
 export const keyPlaceholder = "{key}";
+
+export const idPlaceholder = "{id}";
+
+export const tokenPlaceholder = "{token}";
 
 export const jobIdPlaceholder = "{jobId}";
 

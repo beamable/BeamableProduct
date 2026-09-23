@@ -1,0 +1,69 @@
+# Builds and verifies the Beamable Google Sign-In Android plugin.
+#
+# The checks in :googlesignin:verifyAar all guard failures that are invisible in this project and
+# fatal in a customer's: bytecode newer than Java 8 cannot be dexed by an older consumer's D8,
+# lambdas depend on the consumer enabling desugaring, a missing proguard.txt lets R8 strip the JNI
+# entry points in a minified release build, and a renamed static method only fails when a player
+# taps the button on a device. See plugins/google-signin/README.md.
+name: Android Plugin PR
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+      - 'staging'
+      - 'production'
+    paths:
+      - 'plugins/google-signin/**'
+      - '.github/workflows/androidPluginPR.yml'
+
+jobs:
+
+  verify:
+    name: Google Sign-In plugin
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: android-plugin-${{ github.head_ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v5
+
+      # JDK 17 is the upper end of the supported window: AGP 7.4.2 refuses to run on anything below
+      # 11, and Gradle 7.6.4 cannot run on 20+. The bytecode the plugin emits is always Java 8
+      # regardless, pinned by compileOptions in googlesignin/build.gradle.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Keep the packages in step with compileSdk / buildToolsVersion in googlesignin/build.gradle.
+      # The runner image ships some Android platforms but not a guaranteed set, and Gradle's failure
+      # when one is missing points at a licence prompt rather than at the missing package.
+      #
+      # This action rather than a plain `sdkmanager` call: sdkmanager is not on the runner's PATH -
+      # it lives under $ANDROID_HOME/cmdline-tools - and the action also accepts the licences, which
+      # is what makes an unattended install possible at all.
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 build-tools;34.0.0'
+
+      - name: Build and verify the .aar
+        working-directory: plugins/google-signin
+        run: ./gradlew --no-daemon :googlesignin:verifyAar
+
+      # Separate from verifyAar: that one checks the artifact this build produced, this one checks
+      # the binary actually committed into the Unity package still matches the Java sources. Nothing
+      # rebuilds it automatically, so a Java fix committed without a rebuilt .aar is inert in Unity.
+      - name: Check the committed .aar is not stale
+        working-directory: plugins/google-signin
+        run: ./gradlew --no-daemon :googlesignin:verifyCommittedAar
+
+      - name: Upload the .aar
+        uses: actions/upload-artifact@v4
+        with:
+          name: googlesignin-release-aar
+          path: plugins/google-signin/googlesignin/build/outputs/aar/googlesignin-release.aar
+          if-no-files-found: error
