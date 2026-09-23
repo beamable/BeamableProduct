@@ -13,7 +13,7 @@ Choosing a realm without prompts
 Web SDK (browser / Node / React Native)
 - The npm package is `@beamable/sdk` (not `beamable-sdk`).
 - Typed microservice clients come from `project generate web-client --output-dir <dir>`. Build the service first (`project build`): the generator reads `beam_openApi.json` from the build output.
-- A realm used by the Web SDK needs:
+- `config realm check --for web --fix -q` checks and fixes the realm for the Web SDK. A realm used by the Web SDK needs:
   - realm config `notification|publisher=beamable`: `config realm set --key-values 'notification|publisher::beamable'`
   - a published `global` content manifest: `content publish` (works with no content). Without it `Beam.init` fails with a 404 on `/basic/content/manifest/public/json?id=global`.
 - `Beam.init` waits for the realtime socket to open and send `session-start`. If it hangs or times out, WebSockets are blocked (proxy, firewall, sandbox); `Unsupported websocket provider` means the realm config above is missing.

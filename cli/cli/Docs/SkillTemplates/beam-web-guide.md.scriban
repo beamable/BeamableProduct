@@ -33,7 +33,11 @@ A realm used by the Web SDK needs two things, or `Beam.init()` fails:
    beam_exec("content publish -q")
    ```
 
-Check the realm config with `beam_exec("config realm -q")`.
+Or check (and fix) both at once, along with deployed services and the realtime socket host:
+```
+beam_exec("config realm check --for web --fix -q")
+```
+Without `--fix` it only reports; each failed check includes the command that fixes it.
 
 ### Initialization
 
