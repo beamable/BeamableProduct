@@ -25,6 +25,8 @@ public class InitCommandArgs : LoginCommandArgs
 	public List<string> pathsToIgnore = new List<string>();
 	public bool ignoreExistingPid;
 	public bool generateAgentsFile;
+	public string realm;
+	public string game;
 }
 
 [Serializable]
@@ -71,6 +73,10 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		AddOption(new Option<bool>("--ignore-pid", "Ignore the existing pid while initializing"),
 			(args, i) => args.ignoreExistingPid = i);
+		AddOption(new Option<string>("--realm", "The realm to target, by name or pid, instead of prompting (or, with -q, picking the oldest dev realm)"),
+			(args, i) => args.realm = i);
+		AddOption(new Option<string>("--game", "The game to pick the realm from, by name or pid, instead of prompting (or, with -q, picking the first game)"),
+			(args, i) => args.game = i);
 		AddOption(
 			new Option<List<string>>(new string[] { "--save-extra-paths" }, () => new List<string>(),
 				"Overwrite the stored extra paths for where to find projects")
@@ -330,6 +336,12 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		
 		// [Tech_debt] This is quite hard to read, lots of duplication calls, could use some refactor, also it does way more stuff
 		//  then just returning the pid and auth
+		if (!string.IsNullOrWhiteSpace(args.realm) || !string.IsNullOrWhiteSpace(args.game))
+		{
+			// an explicit realm or game choice always replaces the pid on disk
+			ignoreExistingPid = true;
+		}
+
 		if (!string.IsNullOrEmpty(_ctx.Pid) && string.IsNullOrEmpty(args.pid) && !ignoreExistingPid)
 		{
 			await _ctx.Set(cid, _ctx.Pid, host);
@@ -400,22 +412,31 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		{
 			return string.Empty; // cannot fetch games without correct credentials
 		}
+		if (!string.IsNullOrWhiteSpace(args.realm))
+		{
+			var (chosenGame, chosenRealm) = await RealmSelection.Resolve(_realmsApi, args.game, args.realm);
+			Log.Information($"Selected game '{RealmSelection.GameLabel(chosenGame)}' and realm '{RealmSelection.RealmLabel(chosenRealm)}'.");
+			return chosenRealm.Pid;
+		}
+
 		var games = await _realmsApi.GetGames().ShowLoading("Fetching games...");
-		var gameChoices = games.Select(g => g.DisplayName.Replace("[PROD]", "")).ToList();
-		var gameSelection = args.Quiet
-			? gameChoices.First()
-			: AnsiConsole.Prompt(
-				new SelectionPrompt<string>()
-					.Title("What [green]game[/] are you using?")
-					.AddChoices(gameChoices)
-					.AddBeamHightlight()
-			);
-		var game = games.FirstOrDefault(g => g.DisplayName.Replace("[PROD]", "") == gameSelection);
+		var gameChoices = games.Select(RealmSelection.GameLabel).ToList();
+		var gameSelection = !string.IsNullOrWhiteSpace(args.game)
+			? RealmSelection.GameLabel(RealmSelection.MatchGame(games, args.game))
+			: args.Quiet
+				? gameChoices.First()
+				: AnsiConsole.Prompt(
+					new SelectionPrompt<string>()
+						.Title("What [green]game[/] are you using?")
+						.AddChoices(gameChoices)
+						.AddBeamHightlight()
+				);
+		var game = games.FirstOrDefault(g => RealmSelection.GameLabel(g) == gameSelection);
 
 		var realms = await _realmsApi.GetRealms(game).ShowLoading("Fetching realms...");
 		var realmChoices = realms
 			.Where(r => !r.Archived)
-			.Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}");
+			.Select(RealmSelection.RealmLabel);
 		var realmSelection = args.Quiet
 			?	FindBestDefaultRealm()
 			: AnsiConsole.Prompt(new SelectionPrompt<string>()
@@ -424,6 +445,11 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 				.AddBeamHightlight()
 			);
 		var realm = realms.FirstOrDefault(g => realmSelection.Contains(g.Pid) && !g.Archived) ?? realms.First(g => g.IsDev);
+		if (args.Quiet)
+		{
+			// quiet mode picks for the user, so say what it picked
+			Log.Information($"Selected game '{RealmSelection.GameLabel(game)}' and realm '{RealmSelection.RealmLabel(realm)}'. Pass --game/--realm (or --pid) to choose another.");
+		}
 		return realm.Pid;
 
 		string FindBestDefaultRealm(int allowedDepth=2) // a depth of 2 signals a "dev" realm. 
@@ -446,7 +472,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			// order the realms by PID, because PIDs are sequentially issued (higher pids mean later creation date)
 			return realmsAtDepth
 				.OrderBy(r => r.Pid)
-				.Select(r => $"{r.DisplayName.Replace("[", "").Replace("]", "")} - {r.Pid}")
+				.Select(RealmSelection.RealmLabel)
 				.First();
 		}
 	}

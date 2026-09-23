@@ -7,7 +7,8 @@ Workflow
 - A workspace needs `.beamable/` first: `init --cid <cid>` (see `beam_get_help("init")`).
 
 Choosing a realm without prompts
-- `org realms -q` lists realms with `RealmName` and `Pid`; then `config set pid <Pid> -q`.
+- `init --cid <cid> --realm <name|pid> -q` (add `--game <name>` if the name is ambiguous). Without a realm, quiet `init` picks the first game's oldest dev realm.
+- Switch later with `config realm use <name|pid> -q`; `org realms -q` lists realms with `RealmName` and `Pid`.
 
 Web SDK (browser / Node / React Native)
 - The npm package is `@beamable/sdk` (not `beamable-sdk`).
