@@ -159,6 +159,31 @@ browser/React Native condition on purpose — importing it into an app bundle fa
 than shipping `node:fs`. It never throws: if nothing is found it returns `{}`, so you can layer
 your own further fallbacks (a committed default, `Beam.init`'s built-in environment, …).
 
+## Realm prerequisites and the realtime connection
+
+`Beam.init` signs the player in, opens a WebSocket to the realm's realtime server and sends a
+`session-start` frame, and it resolves only once that socket is open. The realm needs:
+
+- the `beamable` realtime publisher (realm config `notification|publisher=beamable`); otherwise
+  `Beam.init` rejects with `Unsupported websocket provider`
+- a published `global` content manifest; otherwise `Beam.init` fails with a 404 on
+  `/basic/content/manifest/public/json?id=global`
+
+With the Beamable CLI, `beam config realm check --for web --fix` checks and fixes both.
+
+If the socket can't open within `realtime.connectTimeoutMs` (default `15000`), `Beam.init` rejects
+with a `BeamWebSocketError` that names the socket host. A socket that never opens usually means a
+proxy or firewall is blocking WebSockets. Pass `realtime: { enabled: false }` to initialize without
+realtime and call `beam.connectRealtime()` later.
+
+```ts
+const beam = await Beam.init({
+  cid: 'YOUR_CUSTOMER_ID',
+  pid: 'YOUR_PROJECT_ID',
+  realtime: { connectTimeoutMs: 30000 },
+});
+```
+
 ## Documentation
 
 Find detailed API references, usage examples, and integration guides for the Beam Web SDK:
