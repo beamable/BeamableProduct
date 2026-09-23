@@ -2070,13 +2070,13 @@ public struct ContentHistoryChangelistContentEntry
 	public int ChangeStatus;
 
 	/// <summary>
-	/// The MD5 hash of the new version of the content properties.
-	/// See <see cref="ContentService.CalculateChecksum(in Constants.Features.Content.ContentFile)"/>.
+	/// The manifest checksum of the new version of the content properties, as supplied by its publisher.
+	/// CLI and Unity publishers compute it with <see cref="ContentService.CalculateChecksum(in Constants.Features.Content.ContentFile)"/>, a SHA-1.
 	/// </summary>
 	public string NewHash;
 
 	/// <summary>
-	/// The MD5 hash of the old version of the content properties.
+	/// The manifest checksum of the old version of the content properties, as supplied by its publisher.
 	/// Empty for newly created content.
 	/// </summary>
 	public string OldHash;
