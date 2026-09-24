@@ -229,7 +229,7 @@ beam_exec("bundles acl checkout-stack --scope org -q")
 
 ## Pinning & Lifecycle
 
-A realm consumes a bundle by **pinning** a checksum into its `manifest.beam.json` `references` (`@<alias>/<name>` → `sha256:…`). Pins are what actually get deployed. `bundles pin` resolves a checksum (from a tag by default, or an exact one) and writes it.
+A realm consumes a bundle by **pinning** a checksum into its `manifest.beam.json`. Pins are grouped by deploy scope: the file has a `realm` section and a `zone` section, each a `@<alias>/<name>` → `sha256:…` map. `bundles pin` resolves a checksum (from a tag by default, or an exact one), reads the bundle's scope from the catalog, and writes the pin into the **matching section** — there is no scope flag to pass. A `deploy release` consumes only the section for the scope it targets (a realm deploy uses `realm`, `deploy --scope zone` uses `zone`), so the other scope's pins are ignored for that deploy.
 ```
 beam_exec("bundles pin checkout-stack -q")
 ```
@@ -261,7 +261,7 @@ beam_exec("bundles yank checkout-stack@sha256:abc123… -q")
 {{ for opt in commands["bundles yank"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
 {{ end }}{{ end }}{{ end }}
 
-Because a yanked checksum can linger in a manifest, **`bundles prune-yanked`** scans this workspace's pinned references and reports (or clears) any that point at a yanked checksum — so you can re-pin a newer one before releasing.
+Because a yanked checksum can linger in a manifest, **`bundles prune-yanked`** scans this workspace's pinned references — across both the `realm` and `zone` sections — and reports (or clears) any that point at a yanked checksum, so you can re-pin a newer one before releasing.
 ```
 beam_exec("bundles prune-yanked -q")
 ```

@@ -80,11 +80,11 @@ public static class BundleBuild
 	}
 
 	/// <summary>Fetch the catalog's latest published entry for a bundle, or null if it was never published.</summary>
-	public static async Task<Bundle> FetchLatestPublished(IBeamBeamobundleApi api, string ns, string name)
+	public static async Task<BundleView> FetchLatestPublished(IBeamBeamobundleApi api, string ns, string name)
 	{
 		try
 		{
-			Bundle bundle = (await api.GetBundles(name, ns)).bundle; // implicit Optional<Bundle> -> Bundle
+			BundleView bundle = (await api.GetBundles(name, ns)).bundle; // implicit Optional<BundleView> -> BundleView
 			return bundle;
 		}
 		catch (RequesterException e) when (e.Status == 404)

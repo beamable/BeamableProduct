@@ -1748,8 +1748,10 @@ public partial class DeployUtil
 		// file skip the merge entirely (release won't send references either, so nothing changes for them).
 		var configService = provider.GetService<ConfigService>();
 		var hasManifestReferences = configService.ExistsManifestReferences();
+		// Only the pins for THIS deploy's scope apply: a realm deploy consumes the realm section and a
+		// zone deploy the zone section. The other section is left untouched on disk and dropped from the plan.
 		var localBundleReferences = hasManifestReferences
-			? configService.LoadManifestReferences()?.references ?? new Dictionary<string, string>()
+			? configService.LoadManifestReferences()?.ForScope(args.Scope == DeployScope.Zone) ?? new Dictionary<string, string>()
 			: new Dictionary<string, string>();
 		IDictionary<string, string> remoteBundleReferences = hasManifestReferences
 			? beamoV2Manifest?.references.GetOrElse(new MapOfString()) ?? new MapOfString()

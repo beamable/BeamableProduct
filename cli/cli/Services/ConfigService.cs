@@ -1507,13 +1507,21 @@ public class ConfigService
 		var result = new ManifestReferences
 		{
 			schemaVersion = obj.Value<int?>("schemaVersion") ?? MANIFEST_SCHEMA_VERSION,
-			references = new Dictionary<string, string>()
+			realm = new Dictionary<string, string>(),
+			zone = new Dictionary<string, string>()
 		};
-		if (obj["references"] is JObject refs)
+		if (obj["realm"] is JObject realmRefs)
 		{
-			foreach (var kvp in refs)
+			foreach (var kvp in realmRefs)
 			{
-				result.references[kvp.Key] = kvp.Value?.Value<string>();
+				result.realm[kvp.Key] = kvp.Value?.Value<string>();
+			}
+		}
+		if (obj["zone"] is JObject zoneRefs)
+		{
+			foreach (var kvp in zoneRefs)
+			{
+				result.zone[kvp.Key] = kvp.Value?.Value<string>();
 			}
 		}
 
@@ -1526,7 +1534,8 @@ public class ConfigService
 		var obj = new JObject
 		{
 			["schemaVersion"] = manifest?.schemaVersion ?? MANIFEST_SCHEMA_VERSION,
-			["references"] = JObject.FromObject(manifest?.references ?? new Dictionary<string, string>())
+			["realm"] = JObject.FromObject(manifest?.realm ?? new Dictionary<string, string>()),
+			["zone"] = JObject.FromObject(manifest?.zone ?? new Dictionary<string, string>())
 		};
 		LockedWrite(GetManifestReferencesPath(), obj.ToString(Formatting.Indented));
 	}

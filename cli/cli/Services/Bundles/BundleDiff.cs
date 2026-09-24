@@ -57,7 +57,7 @@ public static class BundleDiff
 		BeamoBasicServiceReference[] localServices,
 		BeamoBasicServiceStorageReference[] localStorages,
 		List<PortalExtensionPlanReference> localExtensions,
-		Bundle published)
+		BundleView published)
 	{
 		var result = new BundleDiffResult();
 

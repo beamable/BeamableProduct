@@ -64,6 +64,13 @@ public static class BundleWorkspace
 	public const string SCOPE_ZONE = "zone";
 
 	/// <summary>
+	/// True when a scope string (e.g. a catalog bundle's <c>scope</c> field) is zone. A null, empty, or
+	/// any non-"zone" value is treated as realm.
+	/// </summary>
+	public static bool IsZoneScope(string scope) =>
+		string.Equals(scope?.Trim(), SCOPE_ZONE, StringComparison.OrdinalIgnoreCase);
+
+	/// <summary>
 	/// Deserialize strictly: an unknown property (at any level) is an error, which is how a typo'd key
 	/// like <c>component</c> is rejected instead of silently ignored.
 	/// </summary>

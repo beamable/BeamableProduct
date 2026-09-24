@@ -47,41 +47,47 @@ public class PruneYankedCommand : AtomicCommand<PruneYankedCommandArgs, PruneYan
 	{
 		var output = new PruneYankedCommandOutput();
 		var manifest = args.ConfigService.LoadManifestReferences();
-		if (manifest == null || manifest.references.Count == 0)
+		if (manifest == null || (manifest.realm.Count == 0 && manifest.zone.Count == 0))
 		{
 			Log.Information($"No bundle references found in {ConfigService.MANIFEST_FILE_NAME}.");
 			return output;
 		}
 
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
-		var yankedKeys = new List<string>();
-		foreach (var kvp in manifest.references)
+		var yanked = new List<(Dictionary<string, string> section, string fullName)>();
+		foreach (var section in new[] { manifest.realm, manifest.zone })
 		{
-			var fullName = kvp.Key;
-			var checksum = kvp.Value;
-			var (ns, name) = BundleWorkspace.SplitBundleName(fullName);
-
-			bool yanked;
-			try
+			foreach (var kvp in section)
 			{
-				var response = await api.GetBundlesChecksums(name, checksum, ns);
-				Bundle bundle = response.bundle; // implicit Optional<Bundle> -> Bundle (null if absent)
-				yanked = bundle?.yanked.GetOrElse(false) ?? false;
-			}
-			catch (RequesterException e) when (e.Status == 404)
-			{
-				Log.Warning($"Reference [{fullName}] → [{checksum}] was not found in the catalog; skipping.");
-				continue;
-			}
+				var fullName = kvp.Key;
+				var checksum = kvp.Value;
+				var (ns, name) = BundleWorkspace.SplitBundleName(fullName);
 
-			if (!yanked) continue;
+				bool isYanked;
+				try
+				{
+					var response = await api.GetBundlesChecksums(name, checksum, ns);
+					BundleView bundle = response.bundle; // implicit Optional<BundleView> -> BundleView (null if absent)
+					isYanked = bundle?.yanked.GetOrElse(false) ?? false;
+				}
+				catch (RequesterException e) when (e.Status == 404)
+				{
+					Log.Warning($"Reference [{fullName}] → [{checksum}] was not found in the catalog; skipping.");
+					continue;
+				}
 
-			yankedKeys.Add(fullName);
-			output.yanked.Add(new PrunedReferenceOutput { name = fullName, checksum = checksum, removed = args.remove });
-			Log.Warning($"Yanked: [{fullName}] → [{checksum}]");
+				if (!isYanked)
+				{
+					continue;
+				}
+
+				yanked.Add((section, fullName));
+				output.yanked.Add(new PrunedReferenceOutput { name = fullName, checksum = checksum, removed = args.remove });
+				Log.Warning($"Yanked: [{fullName}] → [{checksum}]");
+			}
 		}
 
-		if (yankedKeys.Count == 0)
+		if (yanked.Count == 0)
 		{
 			Log.Information("No pinned references point to yanked checksums.");
 			return output;
@@ -89,18 +95,18 @@ public class PruneYankedCommand : AtomicCommand<PruneYankedCommandArgs, PruneYan
 
 		if (args.remove)
 		{
-			foreach (var key in yankedKeys)
+			foreach (var (section, key) in yanked)
 			{
-				manifest.references.Remove(key);
+				section.Remove(key);
 			}
 
 			args.ConfigService.SaveManifestReferences(manifest);
-			Log.Information($"Removed {yankedKeys.Count} yanked reference(s) from {ConfigService.MANIFEST_FILE_NAME}." +
+			Log.Information($"Removed {yanked.Count} yanked reference(s) from {ConfigService.MANIFEST_FILE_NAME}." +
 			                $" Review the change and re-pin a newer checksum before releasing.");
 		}
 		else
 		{
-			Log.Information($"Found {yankedKeys.Count} yanked reference(s). Re-run with --remove to clear them.");
+			Log.Information($"Found {yanked.Count} yanked reference(s). Re-run with --remove to clear them.");
 		}
 
 		return output;

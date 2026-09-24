@@ -65,10 +65,11 @@ public class GetBundleCommand : AtomicCommand<GetBundleCommandArgs, GetBundleCom
 			}
 			else
 			{
+				var isZone = BundleWorkspace.IsZoneScope(info.scope);
 				var manifest = args.ConfigService.LoadManifestReferences() ?? new ManifestReferences();
-				manifest.references[fullName] = info.checksum;
+				manifest.ForScope(isZone)[fullName] = info.checksum;
 				args.ConfigService.SaveManifestReferences(manifest);
-				Log.Information($"Pinned [{fullName}] → [{info.checksum}] in {ConfigService.MANIFEST_FILE_NAME}");
+				Log.Information($"Pinned [{fullName}] → [{info.checksum}] into the {(isZone ? BundleWorkspace.SCOPE_ZONE : BundleWorkspace.SCOPE_REALM)} section of {ConfigService.MANIFEST_FILE_NAME}");
 			}
 		}
 
