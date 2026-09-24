@@ -15,14 +15,14 @@ description: Web SDK guide — installation, authentication, stats, leaderboards
 ### Installation
 
 ```bash
-npm install beamable-sdk
+npm install @beamable/sdk
 ```
 
 ### Initialization
 
 #### ES Modules
 ```ts
-import { Beam } from "beamable-sdk";
+import { Beam } from "@beamable/sdk";
 
 const beam = await Beam.init({
   cid: "YOUR_CUSTOMER_ID",
@@ -33,7 +33,7 @@ console.log(beam.player.id);
 
 #### CommonJS (Node.js)
 ```js
-const { Beam } = require('beamable-sdk');
+const { Beam } = require('@beamable/sdk');
 const beam = await Beam.init({
   cid: 'YOUR_CUSTOMER_ID',
   pid: 'YOUR_PROJECT_ID',
@@ -42,7 +42,7 @@ const beam = await Beam.init({
 
 #### Browser (IIFE)
 ```html
-<script src="https://unpkg.com/beamable-sdk"></script>
+<script src="https://unpkg.com/@beamable/sdk"></script>
 <script>
   const { Beam } = Beamable;
   const beam = await Beam.init({
@@ -59,7 +59,7 @@ CID/PID come from Beamable Portal or `beam config -q`.
 ### Service registration
 Auth, Account, and Content are registered by default. Other services must be registered explicitly:
 ```ts
-import { StatsService, LeaderboardsService, AnnouncementsService } from "beamable-sdk";
+import { StatsService, LeaderboardsService, AnnouncementsService } from "@beamable/sdk";
 
 const beam = await Beam.init({
   cid: "YOUR_CUSTOMER_ID",
@@ -78,7 +78,7 @@ const beam = await Beam.init({
 
 ### Handling refresh failures
 ```ts
-import { RefreshAccessTokenError } from "beamable-sdk";
+import { RefreshAccessTokenError } from "@beamable/sdk";
 
 try {
   await beam.someService.someMethod();
@@ -112,7 +112,7 @@ await beam.refresh(token);
 
 ### Third-party login (Google, Facebook, etc.)
 ```ts
-import { ThirdPartyAuthProvider } from "beamable-sdk";
+import { ThirdPartyAuthProvider } from "@beamable/sdk";
 
 const token = await beam.auth.loginWithThirdParty({
   provider: ThirdPartyAuthProvider.Google,
@@ -191,7 +191,7 @@ await beam.account.removeExternalIdentity({
 
 ### Check credential availability
 ```ts
-import { CredentialStatus } from "beamable-sdk";
+import { CredentialStatus } from "@beamable/sdk";
 
 const status = await beam.account.getEmailCredentialStatus({
   email: "player@example.com",
@@ -374,7 +374,7 @@ For calling `[ClientCallable]` endpoints from web apps.
 
 ### Creating a client
 ```ts
-import { BeamMicroServiceClient } from "beamable-sdk";
+import { BeamMicroServiceClient } from "@beamable/sdk";
 
 class MyServiceClient extends BeamMicroServiceClient {
   get serviceName() { return "MyService"; }
@@ -424,7 +424,7 @@ For Node.js backends and admin tools.
 
 ### Initialization
 ```ts
-import { BeamServer } from "beamable-sdk";
+import { BeamServer } from "@beamable/sdk";
 
 const beamServer = await BeamServer.init({
   cid: "YOUR_CUSTOMER_ID",
@@ -480,9 +480,9 @@ These features have auto-generated API functions but no high-level service wrapp
 - **Social/Friends** — `socialGetMyBasic`, `socialPostFriendsInviteBasic`, etc.
 - **Cloud Saving** — `cloudsavingGetBasic`, `cloudsavingPostDataUploadURLBasic`, etc.
 
-Import from `beamable-sdk/api`:
+Import from `@beamable/sdk/api`:
 ```ts
-import { inventoryGetByObjectId } from "beamable-sdk/api";
+import { inventoryGetByObjectId } from "@beamable/sdk/api";
 ```
 
 ## Related Skills
