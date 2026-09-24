@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => ({
   publicDir: './public',
   resolve: {
     alias: {
-      'beamable-sdk': resolve(sdkSource, 'index.ts'),
+      '@beamable/sdk': resolve(sdkSource, 'index.ts'),
       '@/defaults': resolve(sdkSource, 'defaults.browser.ts'),
       '@/utils/createHash': resolve(sdkSource, 'utils/createHashStub.ts'),
       '@': sdkSource,

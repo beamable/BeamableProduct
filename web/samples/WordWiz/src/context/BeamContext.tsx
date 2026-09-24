@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react';
-import type { Beam } from 'beamable-sdk';
+import type { Beam } from '@beamable/sdk';
 
 // Holds the globally available Beam instance
 export const BeamContext = createContext<Beam | null>(null);
