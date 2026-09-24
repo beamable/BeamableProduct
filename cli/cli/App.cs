@@ -21,7 +21,6 @@ using cli.Content;
 using cli.Content.Tag;
 using cli.BundleCommands;
 using cli.DeploymentCommands;
-using cli.DeploymentCommands.Admin;
 using cli.DockerCommands;
 using cli.Commands.Docs;
 using cli.Docs;
@@ -799,9 +798,6 @@ public class App
 		Commands.AddSubCommandWithHandler<PlanDeploymentCommand, PlanDeploymentCommandArgs, DeploymentCommand>();
 		Commands.AddSubCommandWithHandler<ReleaseDeploymentCommand, ReleaseDeploymentCommandArgs, DeploymentCommand>();
 
-		Commands.AddSubCommand<AdminCommand, CommandGroupArgs, DeploymentCommand>();
-		Commands.AddSubCommandWithHandler<ForceInjectBundleCommand, ForceInjectBundleCommandArgs, AdminCommand>();
-
 		// `bundles` is its own top-level command group: `beam bundles <cmd>`
 		Commands.AddRootCommand<BundlesCommand>();
 		Commands.AddSubCommandWithHandler<NewBundleCommand, NewBundleCommandArgs, BundlesCommand>();
@@ -812,7 +808,8 @@ public class App
 		Commands.AddSubCommandWithHandler<PromoteBundleTagCommand, PromoteBundleTagCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<YankBundleCommand, YankBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<BundleAclCommand, BundleAclCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<PinBundleCommand, PinBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<InstallBundleCommand, InstallBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<UninstallBundleCommand, UninstallBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<PruneYankedCommand, PruneYankedCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<PublishBundleCommand, PublishBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<BundlePlanCommand, BundlePlanCommandArgs, BundlesCommand>();
