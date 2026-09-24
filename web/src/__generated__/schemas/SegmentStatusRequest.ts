@@ -3,7 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type DuplicateSegmentRequest = { 
-  description?: string | null; 
-  displayName?: string | null; 
+export type SegmentStatusRequest = { 
+  segmentIds: string[]; 
+  realmId?: string | null; 
 };
