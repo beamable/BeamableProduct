@@ -24,7 +24,7 @@ The canonical source for the shared common project lives in `/cli/beamable.commo
 The Unity SDK Installer is available under the `/client_installer` directory. This directory contains a Unity project with code for the Beamable Installer and code for packaging that installer into a `.unitypackage`.
 
 ### [Web SDK](https://github.com/beamable/BeamableProduct/tree/main/web)
-The Web SDK is a TypeScript library under the `/web` folder, built for both Node.js and browser environments. It is distributed as `beamable-sdk` on npm and includes samples (e.g., the WordWiz Telegram Mini App demo). See the [Web SDK README](https://github.com/beamable/BeamableProduct/tree/main/web/README.md) for installation and usage.
+The Web SDK is a TypeScript library under the `/web` folder, built for both Node.js and browser environments. It is distributed as `@beamable/sdk` on npm and includes samples (e.g., the WordWiz Telegram Mini App demo). See the [Web SDK README](https://github.com/beamable/BeamableProduct/tree/main/web/README.md) for installation and usage.
 
 ### [Terraform](https://github.com/beamable/BeamableProduct/tree/main/terraform)
 The `/terraform` folder contains Terraform manifests for infrastructure managed by CI workflows. It includes reusable modules (e.g., S3) and environment configurations. The CI workflow at `.github/workflows/runTerraform.yml` runs `terraform init/plan/apply` against the selected environment. See the [Terraform README](https://github.com/beamable/BeamableProduct/tree/main/terraform/README.md) for local usage instructions and prerequisites.
