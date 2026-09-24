@@ -99,7 +99,7 @@ public static class BundleWorkspace
 
 	/// <summary>
 	/// Split a fully-qualified bundle name (<c>&lt;namespace&gt;/&lt;bundle-name&gt;</c>, the form stored in
-	/// <c>manifest.beam.json</c> reference keys) into its namespace and short name.
+	/// <c>bundles.manifest.beam.json</c> reference keys) into its namespace and short name.
 	/// </summary>
 	public static (string ns, string name) SplitBundleName(string fullName)
 	{

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace cli;
 
 /// <summary>
-/// In-memory model of the v2 root manifest file <c>.beamable/manifest.beam.json</c>. It holds the
+/// In-memory model of the v2 root manifest file <c>.beamable/bundles.manifest.beam.json</c>. It holds the
 /// content-addressed bundle references, split by deploy scope, plus the manifest schema version.
 /// A bundle reference lives in <see cref="realm"/> or <see cref="zone"/> depending on the bundle's
 /// scope, so a realm deploy consumes only realm pins and a zone deploy only zone pins.

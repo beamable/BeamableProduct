@@ -12,32 +12,17 @@ public class InstallBundleCommandArgs : CommandArgs
 	public string bundleName;
 	public string tag;
 	public string checksum;
-
-	// --force path (server-side forced-bundle override)
-	public bool force;
-	public string ns;
-	public string cid;
-	public string realmId;
 }
 
 public class InstallBundleCommandOutput
 {
 	public string name;
 	public string checksum;
-
-	/// <summary>True when installed via <c>--force</c> (a server-side override) rather than a local pin.</summary>
-	public bool forced;
-
-	/// <summary>The target cid of the forced-bundle override (only set on the <c>--force</c> path).</summary>
-	public string cid;
-
-	/// <summary>The target realm of the forced-bundle override, or null for a CID-wide override (only set on the <c>--force</c> path).</summary>
-	public string realmId;
 }
 
 public class InstallBundleCommand : AtomicCommand<InstallBundleCommandArgs, InstallBundleCommandOutput>, ISkipManifest
 {
-	public InstallBundleCommand() : base("install", "Install a bundle: pin its checksum into the local manifest, or with --force inject it server-side")
+	public InstallBundleCommand() : base("install", "Install a bundle: pin its checksum into the local manifest")
 	{
 	}
 
@@ -49,28 +34,10 @@ public class InstallBundleCommand : AtomicCommand<InstallBundleCommandArgs, Inst
 			(args, i) => args.tag = i);
 		AddOption(new Option<string>("--checksum", "Install this exact checksum (sha256:<checksum>) instead of a tag"),
 			(args, i) => args.checksum = i);
-		AddOption(new Option<bool>(new[] { "--force" }, "Force-inject the bundle onto a realm or CID-wide server-side instead of pinning it locally (Beamable-internal)"),
-			(args, i) => args.force = i);
-		AddOption(new Option<string>(new[] { "--namespace", "-ns" }, "With --force: the bundle's namespace (a customer alias). Defaults to the current context's customer alias; pass it to force-inject a bundle owned by a different customer"),
-			(args, i) => args.ns = i);
-		AddOption(new Option<string>(new[] { "--target-cid" }, "With --force: the target customer id to force the bundle onto. Defaults to the current project's cid; pass it to force-inject onto a different customer"),
-			(args, i) => args.cid = i);
-		AddOption(new Option<string>(new[] { "--target-realm", "-r" }, "With --force: the target realm id to force the bundle onto. When omitted, the bundle is forced CID-wide as the default for every realm"),
-			(args, i) => args.realmId = i);
 	}
 
 	public override async Task<InstallBundleCommandOutput> GetResult(InstallBundleCommandArgs args)
 	{
-		if (args.force)
-		{
-			var forced = await BundleForcedInject.Apply(args, args.bundleName, args.ns, args.cid, args.realmId, args.checksum, unset: false);
-			Log.Information($"Force-injected [{forced.bundleName}] → [{forced.checksum}] onto {(string.IsNullOrEmpty(forced.realmId) ? $"cid [{forced.cid}] (all realms)" : $"realm [{forced.realmId}]")}");
-			return new InstallBundleCommandOutput
-			{
-				name = forced.bundleName, checksum = forced.checksum, forced = true, cid = forced.cid, realmId = forced.realmId
-			};
-		}
-
 		var (explicitNs, name) = BundleNamespace.SplitName(args.bundleName);
 		BundleWorkspace.ValidateName(name);
 		var ns = await BundleNamespace.Resolve(args, explicitNs);

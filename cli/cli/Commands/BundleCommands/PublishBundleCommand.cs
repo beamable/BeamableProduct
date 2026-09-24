@@ -19,7 +19,7 @@ public class PublishBundleCommandArgs : CommandArgs, IHasDeployPlanArgs
 {
 	public string bundleName;
 	public string tag;
-	public string scope;
+	public string acl;
 	public string fromPlanFile;
 	public bool fromLastPlan;
 
@@ -80,8 +80,8 @@ public class PublishBundleCommand
 			(args, i) => args.fromLastPlan = i);
 		AddOption(new Option<string>(new[] { "--tag" }, "An additional tag to advance to the published checksum"),
 			(args, i) => args.tag = i);
-		AddOption(new Option<string>(new[] { "--scope" }, "Widen the bundle's visibility tier (each tier is a superset of the previous, not a list of realms): 'private' = only this scope (the realm, or the zone for a zone bundle); 'org' = every realm and zone in your customer; 'public' = every realm in every customer. '*' is also accepted as an alias for 'public'"),
-			(args, i) => args.scope = i);
+		AddOption(new Option<string>(new[] { "--acl" }, "Widen the bundle's visibility tier (each tier is a superset of the previous, not a list of realms): 'private' = only this scope (the realm, or the zone for a zone bundle); 'org' = every realm and zone in your customer; 'public' = every realm in every customer. '*' is also accepted as an alias for 'public'"),
+			(args, i) => args.acl = i);
 	}
 
 	public override async Task Handle(PublishBundleCommandArgs args)
@@ -274,9 +274,9 @@ public class PublishBundleCommand
 
 		// Optionally widen the bundle's ACL (publish always defaults to <cid>.<pid>). Visibility
 		// belongs to the name, so this exposes every version ever published under it.
-		if (!string.IsNullOrEmpty(args.scope))
+		if (!string.IsNullOrEmpty(args.acl))
 		{
-			var scope = BundleAclScope.Resolve(args.scope, args.AppContext);
+			var scope = BundleAclScope.Resolve(args.acl, args.AppContext);
 			await bundleApi.PutBundlesAcl(bundle.name, ns, new UpdateBundleAclRequest { scope = scope });
 			Log.Information($"Widened ACL for bundle=[{publishedName}] to scope=[{scope}]. This applies to every version ever published under the name.");
 		}

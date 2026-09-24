@@ -26,7 +26,7 @@ public class PruneYankedCommandOutput
 }
 
 /// <summary>
-/// Scan the local <c>manifest.beam.json</c> references and find any pinned checksum that has been
+/// Scan the local <c>bundles.manifest.beam.json</c> references and find any pinned checksum that has been
 /// yanked in the catalog. Yank only blocks *new* references, so a yanked pin still redeploys — this
 /// is a hygiene/migration aid. Reports by default; <c>--remove</c> deletes the yanked references so
 /// you can review the change and re-pin a newer checksum.
@@ -39,7 +39,7 @@ public class PruneYankedCommand : AtomicCommand<PruneYankedCommandArgs, PruneYan
 
 	public override void Configure()
 	{
-		AddOption(new Option<bool>(new[] { "--remove" }, "Remove the yanked references from manifest.beam.json (otherwise just report them)"),
+		AddOption(new Option<bool>(new[] { "--remove" }, "Remove the yanked references from bundles.manifest.beam.json (otherwise just report them)"),
 			(args, i) => args.remove = i);
 	}
 

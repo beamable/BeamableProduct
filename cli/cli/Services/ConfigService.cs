@@ -41,7 +41,7 @@ public class ConfigService
 	/// The v2 root manifest file (sibling to <see cref="CFG_FILE_NAME"/>). Holds bundle references
 	/// for this realm. Presence of this file = v2 manifest schema; absence = legacy v1.
 	/// </summary>
-	public const string MANIFEST_FILE_NAME = "manifest.beam.json";
+	public const string MANIFEST_FILE_NAME = "bundles.manifest.beam.json";
 	/// <summary>The manifest schemaVersion the CLI authors for v2 workspaces.</summary>
 	public const int MANIFEST_SCHEMA_VERSION = 2;
 	public const string CFG_JSON_FIELD_CLI_VERSION = "cliVersion";
@@ -1493,7 +1493,7 @@ public class ConfigService
 	public bool ExistsManifestReferences() => File.Exists(GetManifestReferencesPath());
 
 	/// <summary>
-	/// Load <c>.beamable/manifest.beam.json</c>, or <c>null</c> if the workspace is legacy v1 (no file).
+	/// Load <c>.beamable/bundles.manifest.beam.json</c>, or <c>null</c> if the workspace is legacy v1 (no file).
 	/// Parsed via <see cref="JObject"/> rather than typed deserialization to avoid Beamable's
 	/// Optional converters on a plain-shaped file.
 	/// </summary>
@@ -1528,7 +1528,7 @@ public class ConfigService
 		return result;
 	}
 
-	/// <summary>Write <c>.beamable/manifest.beam.json</c>, creating it if absent.</summary>
+	/// <summary>Write <c>.beamable/bundles.manifest.beam.json</c>, creating it if absent.</summary>
 	public void SaveManifestReferences(ManifestReferences manifest)
 	{
 		var obj = new JObject

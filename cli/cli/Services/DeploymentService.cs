@@ -235,7 +235,7 @@ public class DeployablePlan : JsonSerializable.ISerializable
 
 	/// <summary>
 	/// v2 bundle references (bundle name → sha256 checksum) that the realm should have after release:
-	/// the pins authored in <c>.beamable/manifest.beam.json</c> merged with the realm's current pins
+	/// the pins authored in <c>.beamable/bundles.manifest.beam.json</c> merged with the realm's current pins
 	/// per the deploy mode (additive keeps remote-only pins, replace drops them). Empty for legacy v1
 	/// workspaces. Passed to the server on release; the server resolves them.
 	/// </summary>
@@ -311,7 +311,7 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 	public List<string> changedPortalExtensions = new List<string>();
 	public List<string> removedPortalExtensions = new List<string>();
 
-	// pinned bundle references (manifest.beam.json) vs the realm's current v2 manifest references.
+	// pinned bundle references (bundles.manifest.beam.json) vs the realm's current v2 manifest references.
 	public List<BundleReferenceChange> addedBundleReferences = new List<BundleReferenceChange>();
 	public List<BundleReferenceChange> changedBundleReferences = new List<BundleReferenceChange>();
 	public List<BundleReferenceChange> removedBundleReferences = new List<BundleReferenceChange>();
@@ -1744,7 +1744,7 @@ public partial class DeployUtil
 		// ── End Portal Extensions ─────────────────────────────────────────────────
 
 		// ── Pinned bundle references ──────────────────────────────────────────────
-		// The locally-authored pins live in .beamable/manifest.beam.json. Legacy workspaces without the
+		// The locally-authored pins live in .beamable/bundles.manifest.beam.json. Legacy workspaces without the
 		// file skip the merge entirely (release won't send references either, so nothing changes for them).
 		var configService = provider.GetService<ConfigService>();
 		var hasManifestReferences = configService.ExistsManifestReferences();
@@ -1972,7 +1972,7 @@ public partial class DeployUtil
 			portalExtensionsToUpload = portalExtensionsToUpload,
 			portalExtensionReferences = nextPortalExtensionRefs,
 			// v2 bundle references, merged per deploy mode from the remote pins and the pins authored
-			// in .beamable/manifest.beam.json (empty for legacy v1).
+			// in .beamable/bundles.manifest.beam.json (empty for legacy v1).
 			references = nextBundleReferences,
 			changeCount = diff.addedStorage.Count
 			              + diff.removedStorage.Count
