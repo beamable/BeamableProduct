@@ -1259,11 +1259,6 @@ public partial class ContentService
 			.Where(c => syncCreated && c.GetStatus().HasFlag(ContentStatus.Created))
 			.ToArray();
 
-		// Get the list of content that is up-to-date but the referenceManifestUid is not pointing at the latest one (so we can update the reference).
-		var contentToUpdateManifestReference = localContentRelativeToNewManifest.ContentFiles
-			.Where(c => c.CanUpdateReferenceWithTarget)
-			.ToArray();
-
 		// Update our sync report with what we intended to do
 		report.ConflictingContents = localContentRelativeToNewManifest.ContentFiles.Where(c => c.IsInConflict).Select(c => c.Id).ToArray();
 		report.AutoSynchedContents = localContentRelativeToNewManifest.ContentFiles.Where(c => c.CanAutoSync).Select(c => c.Id).ToArray();
@@ -1406,24 +1401,7 @@ public partial class ContentService
 		}
 
 		// Make the Up-to-Date content files reference the manifest to which we just synchronized.
-		foreach (var c in contentToUpdateManifestReference)
-		{
-			var contentFile = c;
-			// In some cases of conflict resolution the Reference Content could be null.
-			if (c.ReferenceContent != null)
-			{
-				contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
-			}
-
-			// This set also holds locally modified and created files, whose bytes are not the remote ones.
-			if (c.ReferenceContent != null && contentFile.GetStatus() == ContentStatus.UpToDate)
-			{
-				contentFile.Baseline = new ContentBaseline(contentFile.PropertiesChecksum, c.ReferenceContent.version);
-			}
-
-			contentFile.FetchedFromManifestUid = targetManifestUid;
-			saveTasks.Add(SaveContentFile(contentFolder, contentFile, cancellationToken));
-		}
+		saveTasks.Add(AdvanceManifestReferences(contentFolder, localContentRelativeToNewManifest.ContentFiles, targetManifestUid, cancellationToken));
 
 		// If any problem happens while we are saving to disk, let's undo the pull operation and log out the exceptions.
 		try
@@ -1923,6 +1901,30 @@ public partial class ContentService
 	/// <summary>
 	/// Utility function that saves the given <see cref="ContentFile"/> to the given folder.
 	/// </summary>
+	/// <summary>
+	/// Points every file marked <see cref="ContentFile.CanUpdateReferenceWithTarget"/> at <paramref name="targetManifestUid"/>
+	/// without downloading it, adopting the target's tags and, for files that match the target, a new <see cref="ContentFile.Baseline"/>.
+	/// </summary>
+	public Task AdvanceManifestReferences(string contentFolder, IEnumerable<ContentFile> files, string targetManifestUid, CancellationToken token = default) =>
+		Task.WhenAll(files.Where(c => c.CanUpdateReferenceWithTarget).Select(c =>
+		{
+			var contentFile = c;
+			// In some cases of conflict resolution the Reference Content could be null.
+			if (c.ReferenceContent != null)
+			{
+				contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
+			}
+
+			// This set also holds locally modified and created files, whose bytes are not the remote ones.
+			if (c.ReferenceContent != null && contentFile.GetStatus() == ContentStatus.UpToDate)
+			{
+				contentFile.Baseline = new ContentBaseline(contentFile.PropertiesChecksum, c.ReferenceContent.version);
+			}
+
+			contentFile.FetchedFromManifestUid = targetManifestUid;
+			return SaveContentFile(contentFolder, contentFile, token);
+		}));
+
 	public async Task SaveContentFile(string contentFolder, ContentFile f, CancellationToken token = default)
 	{
 		try

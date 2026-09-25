@@ -1,6 +1,5 @@
 using Beamable.Common.Content;
 using System.CommandLine;
-using System.Text.Json;
 
 namespace cli.Content;
 
@@ -64,20 +63,7 @@ public class ContentResolveConflictCommand : AtomicCommand<ContentResolveConflic
 					syncCreated: false, syncModified: false, forceSyncConflicts: true, syncDeleted: false);
 			}
 			// After resolving conflicts we can also update the manifest references for all contents that are not updated
-			var contentToUpdateManifestReference = lf.ContentFiles
-				.Where(c => c.CanUpdateReferenceWithTarget)
-				.ToArray();
-			foreach (ContentFile c in contentToUpdateManifestReference)
-			{
-				ContentFile contentFile = c;
-				// In some cases of conflict resolution the Reference Content could be null.
-				if (c.ReferenceContent != null)
-				{
-					contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
-				}
-				contentFile.FetchedFromManifestUid = latestManifest.uid.GetOrElse("");
-				saveTasks.Add(_contentService.SaveContentFile(contentFolder, contentFile));
-			}
+			saveTasks.Add(_contentService.AdvanceManifestReferences(contentFolder, lf.ContentFiles, latestManifest.uid.GetOrElse("")));
 		}
 
 		await Task.WhenAll(saveTasks);
