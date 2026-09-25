@@ -42,6 +42,10 @@
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.18.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.18.0-rc.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.18.0" />
+    <!-- OpenTelemetry 1.18 pulls Logging.Abstractions 8.0/9.0 on net8/net9 but 10.0 on netstandard, so
+         beamable.tooling.common (netstandard2.1) compiles against 10.0. Pin it here so every TFM agrees
+         (otherwise CS1705 on net8.0/net9.0). -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
     <PackageReference Include="SharpCompress" Version="0.50.4" />
     <PackageReference Include="System.Threading.RateLimiting" Version="9.0.1" />
     <PackageReference Include="MongoDB.Driver" Version="3.11.2" />
