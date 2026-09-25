@@ -235,7 +235,7 @@ public class DeployablePlan : JsonSerializable.ISerializable
 
 	/// <summary>
 	/// v2 bundle references (bundle name → sha256 checksum) that the realm should have after release:
-	/// the pins authored in <c>.beamable/manifest.beam.json</c> merged with the realm's current pins
+	/// the pins authored in <c>.beamable/bundles.manifest.beam.json</c> merged with the realm's current pins
 	/// per the deploy mode (additive keeps remote-only pins, replace drops them). Empty for legacy v1
 	/// workspaces. Passed to the server on release; the server resolves them.
 	/// </summary>
@@ -311,7 +311,7 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 	public List<string> changedPortalExtensions = new List<string>();
 	public List<string> removedPortalExtensions = new List<string>();
 
-	// pinned bundle references (manifest.beam.json) vs the realm's current v2 manifest references.
+	// pinned bundle references (bundles.manifest.beam.json) vs the realm's current v2 manifest references.
 	public List<BundleReferenceChange> addedBundleReferences = new List<BundleReferenceChange>();
 	public List<BundleReferenceChange> changedBundleReferences = new List<BundleReferenceChange>();
 	public List<BundleReferenceChange> removedBundleReferences = new List<BundleReferenceChange>();
@@ -1528,8 +1528,13 @@ public partial class DeployUtil
 		if (excludeAuthoredBundleComponents)
 		{
 			foreach (var b in BundleWorkspace.DiscoverAndValidate(provider.GetService<ConfigService>()))
+			{
+				// A bundle must be single-scope; catch a mixed/mislabelled bundle here rather than let its
+				// components leak into (or wrongly out of) the scoped plan.
+				BundleWorkspace.ValidateComponentScope(beamo.BeamoManifest, b);
 				foreach (var c in b.components)
 					bundleComponentIds.Add(c);
+			}
 		}
 
 		var isLoadingManifestFile = !string.IsNullOrEmpty(args.FromManifestFile);
@@ -1739,12 +1744,14 @@ public partial class DeployUtil
 		// ── End Portal Extensions ─────────────────────────────────────────────────
 
 		// ── Pinned bundle references ──────────────────────────────────────────────
-		// The locally-authored pins live in .beamable/manifest.beam.json. Legacy workspaces without the
+		// The locally-authored pins live in .beamable/bundles.manifest.beam.json. Legacy workspaces without the
 		// file skip the merge entirely (release won't send references either, so nothing changes for them).
 		var configService = provider.GetService<ConfigService>();
 		var hasManifestReferences = configService.ExistsManifestReferences();
+		// Only the pins for THIS deploy's scope apply: a realm deploy consumes the realm section and a
+		// zone deploy the zone section. The other section is left untouched on disk and dropped from the plan.
 		var localBundleReferences = hasManifestReferences
-			? configService.LoadManifestReferences()?.references ?? new Dictionary<string, string>()
+			? configService.LoadManifestReferences()?.ForScope(args.Scope == DeployScope.Zone) ?? new Dictionary<string, string>()
 			: new Dictionary<string, string>();
 		IDictionary<string, string> remoteBundleReferences = hasManifestReferences
 			? beamoV2Manifest?.references.GetOrElse(new MapOfString()) ?? new MapOfString()
@@ -1816,6 +1823,16 @@ public partial class DeployUtil
 		foreach (var id in await ResolvePinnedBundleComponentIds(provider, nextBundleReferences, beamoV2Manifest))
 		{
 			bundleComponentIds.Add(id);
+		}
+
+		// `bundles plan`/`publish` restrict the build to a single bundle's components via includeOnlyBeamoIds
+		// in order to diff exactly those. When that bundle is itself already pinned in bundles.manifest, the
+		// strip above would resolve its published components and remove the very entries we just built —
+		// SelectComponents would then report them as "not built". Keep the explicitly-requested components in
+		// the plan; other pinned bundles' components are still stripped correctly.
+		if (includeOnlyBeamoIds != null)
+		{
+			bundleComponentIds.ExceptWith(includeOnlyBeamoIds);
 		}
 
 		if (bundleComponentIds.Count > 0)
@@ -1965,7 +1982,7 @@ public partial class DeployUtil
 			portalExtensionsToUpload = portalExtensionsToUpload,
 			portalExtensionReferences = nextPortalExtensionRefs,
 			// v2 bundle references, merged per deploy mode from the remote pins and the pins authored
-			// in .beamable/manifest.beam.json (empty for legacy v1).
+			// in .beamable/bundles.manifest.beam.json (empty for legacy v1).
 			references = nextBundleReferences,
 			changeCount = diff.addedStorage.Count
 			              + diff.removedStorage.Count

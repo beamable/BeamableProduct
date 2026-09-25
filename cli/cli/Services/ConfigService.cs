@@ -41,7 +41,7 @@ public class ConfigService
 	/// The v2 root manifest file (sibling to <see cref="CFG_FILE_NAME"/>). Holds bundle references
 	/// for this realm. Presence of this file = v2 manifest schema; absence = legacy v1.
 	/// </summary>
-	public const string MANIFEST_FILE_NAME = "manifest.beam.json";
+	public const string MANIFEST_FILE_NAME = "bundles.manifest.beam.json";
 	/// <summary>The manifest schemaVersion the CLI authors for v2 workspaces.</summary>
 	public const int MANIFEST_SCHEMA_VERSION = 2;
 	public const string CFG_JSON_FIELD_CLI_VERSION = "cliVersion";
@@ -1493,7 +1493,7 @@ public class ConfigService
 	public bool ExistsManifestReferences() => File.Exists(GetManifestReferencesPath());
 
 	/// <summary>
-	/// Load <c>.beamable/manifest.beam.json</c>, or <c>null</c> if the workspace is legacy v1 (no file).
+	/// Load <c>.beamable/bundles.manifest.beam.json</c>, or <c>null</c> if the workspace is legacy v1 (no file).
 	/// Parsed via <see cref="JObject"/> rather than typed deserialization to avoid Beamable's
 	/// Optional converters on a plain-shaped file.
 	/// </summary>
@@ -1507,26 +1507,35 @@ public class ConfigService
 		var result = new ManifestReferences
 		{
 			schemaVersion = obj.Value<int?>("schemaVersion") ?? MANIFEST_SCHEMA_VERSION,
-			references = new Dictionary<string, string>()
+			realm = new Dictionary<string, string>(),
+			zone = new Dictionary<string, string>()
 		};
-		if (obj["references"] is JObject refs)
+		if (obj["realm"] is JObject realmRefs)
 		{
-			foreach (var kvp in refs)
+			foreach (var kvp in realmRefs)
 			{
-				result.references[kvp.Key] = kvp.Value?.Value<string>();
+				result.realm[kvp.Key] = kvp.Value?.Value<string>();
+			}
+		}
+		if (obj["zone"] is JObject zoneRefs)
+		{
+			foreach (var kvp in zoneRefs)
+			{
+				result.zone[kvp.Key] = kvp.Value?.Value<string>();
 			}
 		}
 
 		return result;
 	}
 
-	/// <summary>Write <c>.beamable/manifest.beam.json</c>, creating it if absent.</summary>
+	/// <summary>Write <c>.beamable/bundles.manifest.beam.json</c>, creating it if absent.</summary>
 	public void SaveManifestReferences(ManifestReferences manifest)
 	{
 		var obj = new JObject
 		{
 			["schemaVersion"] = manifest?.schemaVersion ?? MANIFEST_SCHEMA_VERSION,
-			["references"] = JObject.FromObject(manifest?.references ?? new Dictionary<string, string>())
+			["realm"] = JObject.FromObject(manifest?.realm ?? new Dictionary<string, string>()),
+			["zone"] = JObject.FromObject(manifest?.zone ?? new Dictionary<string, string>())
 		};
 		LockedWrite(GetManifestReferencesPath(), obj.ToString(Formatting.Indented));
 	}

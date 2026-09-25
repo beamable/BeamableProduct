@@ -8,8 +8,8 @@ using cli.Services.Bundles;
 namespace cli.BundleCommands;
 
 /// <summary>
-/// CLI-owned projection of a catalog <see cref="Bundle"/> for command output. The generated
-/// <see cref="Bundle"/> transitively exposes runtime serialization types (e.g. MapOfString) that
+/// CLI-owned projection of a catalog <see cref="BundleView"/> for command output. The generated
+/// <see cref="BundleView"/> transitively exposes runtime serialization types (e.g. MapOfString) that
 /// don't live in the CLI assembly; the CLI output contract must be defined here instead so that
 /// changes to the generated shape can't silently become breaking changes. Only the scalar summary
 /// fields are surfaced — the full component refs stay server-side.
@@ -29,6 +29,9 @@ public class BundleInfo
 	public bool yanked;
 	public long publishedAt;
 
+	/// <summary>Deploy scope of the bundle: "realm" or "zone". Empty when the publisher scope is unknown.</summary>
+	public string scope = "";
+
 	/// <summary>Absolute path of the authored config file. Empty for a published catalog bundle.</summary>
 	public string filePath = "";
 
@@ -42,7 +45,7 @@ public class BundleInfo
 	/// </summary>
 	public Dictionary<string, string> bundleDependencies = new Dictionary<string, string>();
 
-	public static BundleInfo FromBundle(Bundle bundle)
+	public static BundleInfo FromBundle(BundleView bundle)
 	{
 		if (bundle == null) return null;
 
@@ -60,6 +63,7 @@ public class BundleInfo
 			checksum = bundle.checksum.GetOrElse(""),
 			yanked = bundle.yanked.GetOrElse(false),
 			publishedAt = bundle.publishedAt.GetOrElse(0),
+			scope = bundle.scope.GetOrElse(""),
 			serviceNames = bundle.serviceReferences.GetOrElse(Array.Empty<ServiceReference>())
 				.Select(s => s.serviceName.GetOrElse("")).ToArray(),
 			storageIds = bundle.storageReferences.GetOrElse(Array.Empty<ServiceStorageReference>())
