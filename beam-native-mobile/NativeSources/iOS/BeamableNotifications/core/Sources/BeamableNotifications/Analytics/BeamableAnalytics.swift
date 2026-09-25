@@ -5,8 +5,8 @@ import Foundation
 ///
 /// Two routes, primary then fallback (identical body — see `postAnalyticsEventsStatus`):
 ///  - `/analytics/events` — the gateway endpoint. Publishes onto `analytics.events`, the bus the
-///    campaign event consumer subscribes to, so this is the only route whose Opened/Clicked/
-///    Converted can be counted in a campaign's funnel.
+///    campaign event consumer subscribes to, so this is the only route whose Opened/Clicked
+///    can be counted in a campaign's funnel.
 ///  - `/report/custom_batch/{cid}/{pid}/{gamerTag}` — the canonical report route shared with
 ///    Unity/CLI/Android. Feeds the warehouse only; used when the gateway endpoint is unavailable
 ///    (an older backend) so the event is still recorded rather than dropped.
@@ -22,7 +22,8 @@ public enum BeamableAnalytics {
 
     /// Build the params bag (`p`) for a single funnel event. Matches the cross-platform
     /// contract: campaignId, nodeId, gamerTag, accountId, cidPid, optional offerData,
-    /// deeplink, funnelType.
+    /// deeplink, funnelType. `funnelType` is the human-readable stage label (`Opened`), not the
+    /// `beam_*` event name — it is a display dimension the Portal renders as its "Step" column.
     public static func makeParams(for event: FunnelEvent) -> [String: JSONValue] {
         var p: [String: JSONValue] = [
             "campaignId": .string(event.campaignId),
@@ -35,10 +36,10 @@ public enum BeamableAnalytics {
         if let v = event.accountId ?? event.gamerTag { p["accountId"] = .string(v) }
         if let v = event.cidPid { p["cidPid"] = .string(v) }
         if let v = event.deeplink { p["deeplink"] = .string(v) }
-        // The push's attribution stamp, echoed verbatim. `CampaignEventProcessor.ProcessAttributedStage`
-        // needs BOTH — trackId to recover the send node, outreachId as the exactly-once dedup key — to
-        // count this stage in the campaign funnel the portal reads. Omitted when the funnel wasn't
-        // triggered by a campaign push; the event is still recorded, just unattributed.
+        // The push's attribution stamp, echoed verbatim. outreachId is the one that decides: the
+        // platform matches it against the send it parked for this recipient, and the campaign and
+        // node coordinates come off that row. trackId rides along for BI. Omitted when the funnel
+        // wasn't triggered by a campaign push; the event is still recorded, just unattributed.
         if let v = event.outreachId, !v.isEmpty { p["outreachId"] = .string(v) }
         if let v = event.trackId, !v.isEmpty { p["trackId"] = .string(v) }
         // Offers as a SINGLE flat column holding a stringified JSON array of offer objects
@@ -64,12 +65,14 @@ public enum BeamableAnalytics {
         return p
     }
 
-    /// One Beamable `CoreEvent`: `{"op":"g.core","e":<funnelType>,"c":"notification_funnel","p":{...}}`.
+    /// One Beamable `CoreEvent`: `{"op":"g.core","e":<beam_* stage>,"p":{...}}`.
+    ///
+    /// No `c` (category): the platform no longer reads it. What keeps a stage from being mistaken
+    /// for an authored game event is the reserved `beam_` name itself, which no campaign may author.
     public static func makeCoreEvent(for event: FunnelEvent) -> JSONValue {
         .object([
             "op": .string("g.core"),
-            "e": .string(event.funnelType),
-            "c": .string(funnelCategory),
+            "e": .string(event.eventName),
             "p": .object(makeParams(for: event))
         ])
     }
@@ -79,8 +82,6 @@ public enum BeamableAnalytics {
         let array = JSONValue.array(events.map { makeCoreEvent(for: $0) })
         return try? JSON.encoder.encode(array)
     }
-
-    public static let funnelCategory = "notification_funnel"
 
     /// Compact JSON string for a `JSONValue` — carries free-form customData as a flat string.
     private static func jsonString(_ value: JSONValue) -> String {
@@ -92,8 +93,8 @@ public enum BeamableAnalytics {
     // MARK: Build a FunnelEvent from campaign intent + a chosen offer
 
     /// Compose a `FunnelEvent` from the campaign intent data of a notification. When `offer` is
-    /// explicitly passed (Clicked/Converted via `trackOffer*`) only that single offer is attached;
-    /// stage events (Sent/Received/Opened) carry every offer the push held (`intent.offers`). The
+    /// explicitly passed (Clicked via `trackOfferClicked`) only that single offer is attached;
+    /// stage events (Sent/Delivered/Opened) carry every offer the push held (`intent.offers`). The
     /// free-form `campaignData` is carried on every stage. Returns nil if the intent isn't a
     /// tracked campaign — caller can rely on that to gate emission.
     public static func makeEvent(_ type: FunnelType,
@@ -101,7 +102,7 @@ public enum BeamableAnalytics {
                                  offer: NotificationOffer? = nil) -> FunnelEvent? {
         guard intent.isTrackedCampaign,
               let campaignId = intent.campaignId, let nodeId = intent.nodeId else { return nil }
-        return FunnelEvent(funnelType: type.rawValue,
+        return FunnelEvent(funnelType: type.label,
                            campaignId: campaignId,
                            nodeId: nodeId,
                            gamerTag: intent.gamerTag,
@@ -119,7 +120,7 @@ public enum BeamableAnalytics {
     /// Called once per `emit` with the terminal outcome of the funnel POST. `NotificationManager`
     /// wires this to its `onFunnelResult` callback, which the engine bridges surface as the
     /// `funnelResult` event — the iOS counterpart of Android's `dispatchFunnelResult`, and what
-    /// lets a caller await the real per-press HTTP status of `trackOfferClicked`/`Converted`.
+    /// lets a caller await the real per-press HTTP status of `trackOfferClicked`.
     ///
     /// Set only in the app process; in the NSE (a separate process) it stays nil and the
     /// closed-app funnel is silent, exactly as before.
@@ -303,7 +304,7 @@ public enum BeamableAnalytics {
     /// onto `analytics.events`. Mirrors Android's `BeamableAnalytics.primaryUrl`.
     ///
     /// The body is identical to the legacy route's — the gateway's `ClientAnalyticsEvent` has the
-    /// same `{op,e,c,p}` shape as the CoreEvent `makeBody` builds — so this is purely a URL swap.
+    /// same `{op,e,p}` shape as the CoreEvent `makeBody` builds — so this is purely a URL swap.
     public static func postAnalyticsEventsStatus(events: [FunnelEvent],
                                                  host: String,
                                                  cidPid: String,

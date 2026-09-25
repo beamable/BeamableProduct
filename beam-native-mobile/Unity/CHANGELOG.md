@@ -16,7 +16,7 @@ Initial release of `com.beamable.notifications`, the Beamable notifications pack
 - Local and remote push (APNs/FCM), notification templates, categories and action buttons, and rich
   media.
 - Deep links, captured natively on both cold and warm start.
-- Closed-app campaign funnel analytics (Sent, Received, Opened, Clicked, Converted). `ConfigureAuth`
+- Closed-app campaign funnel analytics (Sent, Received, Opened, Clicked). `ConfigureAuth`
   persists the player token into native shared storage so events still post while the app is killed.
 - Editor tooling: a **Tools ▸ Beamable ▸ Notifications** setup window, plus iOS post-build and
   Android manifest/Gradle processing that wires up entitlements, the Notification Service Extension,

@@ -15,8 +15,8 @@ Initial release of `BeamPlatformNotifications`, the Beamable notifications plugi
   (APNs/FCM), deep links, and closed-app delivery analytics, exposed through Blueprint-assignable
   delegates that broadcast on the game thread. A no-op on editor and desktop targets, so it always
   compiles.
-- Campaign funnel analytics: `ConfigureAuth` / `ClearAuth` and `TrackOfferClicked` /
-  `TrackOfferConverted`. Closed-app receipts are emitted natively, so no game-side receive handler is
+- Campaign funnel analytics: `ConfigureAuth` / `ClearAuth` and `TrackOfferClicked`.
+  Closed-app receipts are emitted natively, so no game-side receive handler is
   needed.
 - An **iOS + NSE → Device** editor toolbar button that packages iOS, grafts and signs the closed-app
   Notification Service Extension, and installs to a chosen device.

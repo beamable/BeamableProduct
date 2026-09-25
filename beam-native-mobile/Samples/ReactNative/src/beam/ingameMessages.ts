@@ -7,7 +7,7 @@
  * client, "in-game messages" are just the player's mailbox.
  *
  * This goes through `beam.mail` rather than the low-level Mail API. The difference that matters:
- * marking a message read through the service reports the campaign funnel's `Opened` stage
+ * marking a message read through the service reports the campaign funnel's `beam_opened` stage
  * **automatically**, so a campaign delivered over this rail shows real engagement in Campaign
  * Analytics. Calling the raw endpoint yourself skips that, and the campaign then looks as though
  * nobody ever read it.
@@ -34,7 +34,7 @@ export async function listInGameMessages() {
 /**
  * Marks a message as read.
  *
- * There is deliberately no analytics call here. The SDK reports the campaign funnel's `Opened` for
+ * There is deliberately no analytics call here. The SDK reports the campaign funnel's `beam_opened` for
  * you on the Unread -> Read transition, exactly as the native SDKs already do when a player taps a
  * push notification. A game should not have to know that campaigns exist in order to be measured by
  * one.

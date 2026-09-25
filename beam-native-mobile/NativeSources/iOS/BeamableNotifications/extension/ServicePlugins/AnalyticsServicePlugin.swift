@@ -57,10 +57,10 @@ public final class AnalyticsServicePlugin: NotificationServicePlugin, FunnelDefe
         if case .object(let obj) = JSONValue(any: content.userInfo) { info = obj }
         shared.appendReceipt(DeliveryReceipt(id: id, timestamp: now(), source: "nse", userInfo: info))
 
-        // 2) Best-effort funnel "Received" for tracked campaigns. Kicked as a tracked task —
+        // 2) Best-effort funnel `beam_delivered` for tracked campaigns. Kicked as a tracked task —
         // it does NOT gate `completion`, so the chain (and RichMedia) proceeds without delay.
         let intent = info.bmnCampaignIntent
-        guard let event = BeamableAnalytics.makeEvent(.received, intent: intent) else {
+        guard let event = BeamableAnalytics.makeEvent(.delivered, intent: intent) else {
             completion(content)
             return
         }

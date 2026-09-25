@@ -26,7 +26,6 @@ extern "C" {
     void bmn_configureAuth(const char* configJson);
     void bmn_clearAuth();
     void bmn_trackOfferClicked(const char* requestJson);
-    void bmn_trackOfferConverted(const char* requestJson);
     void bmn_getDeliveryReceipts();
     void bmn_registerTemplate(const char* templateJson);
     void bmn_registerCategory(const char* categoryJson);
@@ -297,15 +296,6 @@ void UBeamPlatformNotificationsSubsystem::TrackOfferClicked(const FString& Reque
     bmn_trackOfferClicked(BMN_CSTR(RequestJson));
 #elif PLATFORM_ANDROID
     BeamNotif::Android_TrackOfferClicked(RequestJson);
-#endif
-}
-
-void UBeamPlatformNotificationsSubsystem::TrackOfferConverted(const FString& RequestJson)
-{
-#if PLATFORM_IOS
-    bmn_trackOfferConverted(BMN_CSTR(RequestJson));
-#elif PLATFORM_ANDROID
-    BeamNotif::Android_TrackOfferConverted(RequestJson);
 #endif
 }
 

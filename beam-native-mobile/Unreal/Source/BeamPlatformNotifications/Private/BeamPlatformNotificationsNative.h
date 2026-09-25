@@ -31,7 +31,6 @@ namespace BeamNotif
     void    Android_ConfigureAuth(const FString& AuthJson);
     void    Android_ClearAuth();
     void    Android_TrackOfferClicked(const FString& RequestJson);
-    void    Android_TrackOfferConverted(const FString& RequestJson);
 
     // Deep links (com.beamable.deeplink.unreal.UnrealDeepLink)
     void    Android_DeepLinkInitialize();

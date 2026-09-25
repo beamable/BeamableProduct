@@ -79,6 +79,6 @@ ships and works automatically once `ConfigureAuth` has run at least once.
 
 ## Offer funnel events (both platforms)
 
-Beyond the native Received/Opened stages, the app emits offer **Clicked**/**Converted** funnel events
-via `TrackOfferClicked`/`TrackOfferConverted` (passing an `OfferTrackRequest`), attributed back to the
+Beyond the native Received/Opened stages, the app emits the offer **Clicked** funnel event
+via `TrackOfferClicked` (passing an `OfferTrackRequest`), attributed back to the
 originating campaign. These go through the same authenticated `/report/custom_batch` POST.

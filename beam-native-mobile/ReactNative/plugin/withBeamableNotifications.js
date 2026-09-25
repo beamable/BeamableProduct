@@ -226,7 +226,7 @@ function declaredAttributesTypes(projectRoot, liveActivityWidgets) {
 }
 // Extension-safe core subset the NSE compiles. All Foundation-only (no UIApplication),
 // required by AnalyticsServicePlugin.swift to log delivery receipts and fire the funnel
-// "Received" event: Models.swift (JSONValue/DeliveryReceipt/FunnelEvent/AuthConfig +
+// `beam_delivered` event: Models.swift (JSONValue/DeliveryReceipt/FunnelEvent/AuthConfig +
 // bmnCampaignIntent), SharedConfig.swift (App Group store), and the funnel itself
 // (BeamableAnalytics.makeEvent/emit). Listed by basename — `copyCoreFile`/`nseSwiftFileNames`
 // resolve each one recursively under CORE_SOURCE_DIR (BeamableAnalytics.swift is nested in

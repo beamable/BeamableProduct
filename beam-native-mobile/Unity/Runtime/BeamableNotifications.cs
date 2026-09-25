@@ -323,45 +323,51 @@ namespace Beamable.Notifications
 
         // MARK: Offer / conversion analytics helpers
 
-        /// <summary>Funnel stage names matching the shared contract.</summary>
-        private const string FunnelCategory = "notification_funnel";
+        /// <summary>
+        /// The click stage, spelled as the platform watches it. Cross-platform wire contract, matched by
+        /// iOS/Android <c>FunnelType.Clicked</c> and the web SDK's <c>FunnelStage.Clicked</c>. Every
+        /// platform-emitted name lives under the reserved <c>beam_</c> prefix; the old unprefixed
+        /// <c>Clicked</c> is no longer watched and silently counts nothing.
+        /// </summary>
+        private const string ClickedStage = "beam_clicked";
+
+        /// <summary>Human-readable label sent as the <c>funnelType</c> param (a BI/Portal display dimension).</summary>
+        private const string ClickedLabel = "Clicked";
+
+        /// <summary>
+        /// Low-cardinality producer label. The platform no longer routes on the category — the reserved
+        /// stage name is what marks a funnel event — so this is a BI descriptor only.
+        /// </summary>
+        private const string OfferCategory = "notification";
 
         /// <summary>
         /// Record that the player clicked an offer that came from a campaign notification.
-        /// Emits a <c>Clicked</c> funnel <see cref="CoreEvent"/> via the player's Beamable
+        /// Emits a <c>beam_clicked</c> funnel <see cref="CoreEvent"/> via the player's Beamable
         /// analytics service. <paramref name="campaign"/> carries the context that arrived in the
         /// notification's intent data (see <see cref="NotificationData.CampaignIntent"/>) so the
-        /// conversion attributes back to the originating notification. No-op when the campaign is
-        /// not tracked (missing campaignId/nodeId,).
+        /// click attributes back to the originating notification — the platform matches it on the
+        /// push's <c>OutreachId</c>. No-op when the campaign is not tracked (missing campaignId/nodeId).
+        /// There is deliberately no conversion counterpart: the platform concludes a conversion when
+        /// the player meets a campaign objective, and ignores any a device reports.
         /// </summary>
         /// <param name="campaign">The campaign intent data the notification carried.</param>
         /// <param name="offer">The single offer that was clicked (optional).</param>
         public static void TrackOfferClicked(NotificationIntentData campaign, Offer offer = null) =>
-            TrackOfferFunnel("Clicked", campaign, offer);
-
-        /// <summary>
-        /// Record that an offer click resulted in a conversion. Emits a <c>Converted</c>
-        /// funnel <see cref="CoreEvent"/>. See <see cref="TrackOfferClicked"/> for attribution rules.
-        /// </summary>
-        public static void TrackOfferConverted(NotificationIntentData campaign, Offer offer = null) =>
-            TrackOfferFunnel("Converted", campaign, offer);
+            TrackOfferFunnel(ClickedStage, ClickedLabel, campaign, offer);
 
         /// <summary>
         /// Convenience overload taking the raw campaign/node ids plus the optional offer, for callers
         /// that only kept the ids from the originating notification.
         /// </summary>
         public static void TrackOfferClicked(string campaignId, string nodeId, Offer offer = null) =>
-            TrackOfferFunnel("Clicked", BuildIntent(campaignId, nodeId), offer);
-
-        /// <summary>Convenience overload for conversions (see <see cref="TrackOfferClicked(string,string,Offer)"/>).</summary>
-        public static void TrackOfferConverted(string campaignId, string nodeId, Offer offer = null) =>
-            TrackOfferFunnel("Converted", BuildIntent(campaignId, nodeId), offer);
+            TrackOfferFunnel(ClickedStage, ClickedLabel, BuildIntent(campaignId, nodeId), offer);
 
         private static NotificationIntentData BuildIntent(string campaignId, string nodeId) =>
             new NotificationIntentData { CampaignId = campaignId, NodeId = nodeId };
 
         // Builds the funnel CoreEvent and sends it through the player's analytics service.
-        private static void TrackOfferFunnel(string funnelType, NotificationIntentData campaign, Offer offer)
+        // `stage` is the event name the platform watches; `funnelType` is the readable label it carries.
+        private static void TrackOfferFunnel(string stage, string funnelType, NotificationIntentData campaign, Offer offer)
         {
             if (campaign == null || !campaign.IsTrackedCampaign)
             {
@@ -397,7 +403,7 @@ namespace Beamable.Notifications
                                      "offer " + funnelType + " event was not sent.");
                     return;
                 }
-                var coreEvent = new CoreEvent(FunnelCategory, funnelType, p);
+                var coreEvent = new CoreEvent(OfferCategory, stage, p);
                 analytics.SendAnalyticsEvent(analytics.BuildRequest(coreEvent));
             }
             catch (Exception e)
