@@ -1,4 +1,4 @@
-import { AccountService, AuthService, Beam, StatsService } from 'beamable-sdk';
+import { AccountService, AuthService, Beam, StatsService } from '@beamable/sdk';
 import { DAILY_STREAK, ENDLESS_STREAK } from '@app/game/constants.ts';
 import { GameStore } from '@app/game/state/store.ts';
 

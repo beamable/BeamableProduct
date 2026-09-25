@@ -8,7 +8,7 @@
  *   /{package}@{version}/{file}
  *
  * Examples:
- *   /beamable-sdk@0.6.0/dist/browser/index.global.js
+ *   /@beamable/sdk@1.0.0/dist/browser/index.iife.js
  *   /@beamable/portal-toolkit@0.1.2/package.json
  *
  * Resolved files are cached in memory. Local dev republishes the SAME version

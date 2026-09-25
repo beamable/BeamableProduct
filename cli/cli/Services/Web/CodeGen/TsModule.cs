@@ -18,7 +18,7 @@ public class TsModule : TsNode
 	/// <summary>
 	/// Creates a new module.
 	/// </summary>
-	/// <param name="name">The name of the module (e.g., 'beamable-sdk').</param>
+	/// <param name="name">The name of the module, such as '@beamable/sdk'.</param>
 	public TsModule(string name)
 	{
 		Name = name;
