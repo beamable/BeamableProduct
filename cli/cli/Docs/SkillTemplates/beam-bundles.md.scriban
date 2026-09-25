@@ -1,18 +1,18 @@
 ---
 name: beam-bundles
-description: Author, publish, tag, pin, and govern beamo manifest bundles — the `beam bundles` command family. Build a bundle of services, storages, and portal extensions, publish it to the catalog, move tags, widen its ACL scope, pin checksums into a realm, and yank/prune retired versions.
+description: Author, publish, tag, install, and govern beamo manifest bundles — the `beam bundles` command family. Build a bundle of services, storages, and portal extensions, publish it to the catalog, move tags, widen its ACL scope, install checksums into a realm, and yank/prune retired versions.
 ---
 
 # Working with Bundles
 
 ## What a Bundle Is
-A **bundle** is a named, versioned, content-addressed set of beamo components — microservices, storages, and portal extensions — published to the catalog and reused across realms and customers. Where a `deploy release` pushes your local manifest to *one* realm, a bundle is authored once, published to the catalog, and then **referenced** (by checksum) from any realm's `manifest.beam.json`.
+A **bundle** is a named, versioned, content-addressed set of beamo components — microservices, storages, and portal extensions — published to the catalog and reused across realms and customers. Where a `deploy release` pushes your local manifest to *one* realm, a bundle is authored once, published to the catalog, and then **referenced** (by checksum) from any realm's `bundles.manifest.beam.json`.
 
 Each bundle has:
 - A **logical name** `@<alias>/<name>` — the form the API and all output use. `@<alias>` is the *namespace*, your customer's cid alias. The **short name** (`<name>`) is only an input/file-name convenience.
 - One or more **checksums** — a checksum is a `sha256:…` digest the server computes at publish time over the built component images/assets. It is content-addressed: the same components produce the same checksum, and a checksum is immutable.
 - **Tags** — movable pointers to a checksum (`latest` always tracks the newest publish; you can advance your own like `stable`).
-- An **ACL scope** per checksum — who may reference it: `realm` ⊂ `org` ⊂ `public`.
+- An **ACL scope** per checksum — who may reference it: `private` ⊂ `org` ⊂ `public`.
 
 Bundles are **authored** in the workspace as `*.beam.bundle.json` files and **published** to the catalog; the two are distinct — publishing is an explicit build+upload step.
 
@@ -22,7 +22,7 @@ Bundles are **authored** in the workspace as `*.beam.bundle.json` files and **pu
 - Packaging a set of services/storages/portal extensions to reuse across realms or share with another customer.
 - Publishing a bundle and diffing it against what is already published (`bundles plan` / `bundles publish`).
 - Moving a tag, widening visibility (`bundles tag` / `bundles acl`).
-- Pinning a specific bundle checksum into a realm's manifest (`bundles pin`), and cleaning up after a version is retired (`bundles yank` / `bundles prune-yanked`).
+- Installing a specific bundle checksum into a realm's manifest (`bundles install`) or removing it (`bundles uninstall`), and cleaning up after a version is retired (`bundles yank` / `bundles prune-yanked`).
 - Inspecting the catalog: what exists, its releases, and its tags (`bundles list` / `get` / `releases` / `tags`).
 
 If you instead want to deploy your local services to a single realm, that is `deploy plan` / `deploy release`, not bundles.
@@ -44,7 +44,7 @@ Commands that mutate a specific version (`yank`, `tag`) **require** the `@sha256
 
 ## Authoring a Bundle
 
-`bundles new` scaffolds a `<name>.beam.bundle.json` in the workspace. The bundle's short name **is** the file-name stem — it is not stored inside the file. List the beamoIds to include as components (repeatable).
+`bundles new` scaffolds a `<name>.beam.bundle.json` in the workspace. The bundle's short name **is** the file-name stem — it is not stored inside the file. List the beamoIds to include as components (repeatable). `bundles new` loads the manifest to validate the components exist and share one scope, and records the derived scope in the file.
 
 ```
 beam_exec("bundles new checkout-stack -c PaymentService -c OrdersStorage -c CheckoutPanel -q")
@@ -53,11 +53,12 @@ beam_exec("bundles new checkout-stack -c PaymentService -c OrdersStorage -c Chec
 The generated file looks like:
 ```json
 {
+  "scope": "realm",
   "components": ["PaymentService", "OrdersStorage", "CheckoutPanel"],
   "bundleDependencies": {}
 }
 ```
-`components` are the beamoIds that belong to this bundle; `bundleDependencies` maps a bundle name to the range of its releases this one depends on, as `{"@ns/name": {"min": 1, "max": 5}}` (omit `max` for an open range; surfaced, not resolved by the CLI). A beamoId may belong to **at most one** bundle in the workspace, and each bundle file name must be unique.
+`scope` is the bundle's deploy scope, `"realm"` or `"zone"`, derived from the components' own scope (the `<BeamServiceScope>` csproj property for services/storages, or `beamable.serviceScope` in `package.json` for portal extensions). `components` are the beamoIds that belong to this bundle; `bundleDependencies` maps a bundle name to the range of its releases this one depends on, as `{"@ns/name": {"min": 1, "max": 5}}` (omit `max` for an open range; surfaced, not resolved by the CLI). A beamoId may belong to **at most one** bundle in the workspace, and each bundle file name must be unique. A bundle must be **single-scope**: every component must be realm-scoped, or every component zone-scoped — never a mix.
 {{ if commands["bundles new"] }}{{ if (array.size commands["bundles new"].arguments) > 0 }}
 #### `beam bundles new` arguments
 | Argument | Type | Description |
@@ -97,7 +98,7 @@ beam_exec("bundles plan checkout-stack -q")
 beam_exec("bundles publish checkout-stack --from-latest-plan -q")
 ```
 Behavior worth knowing (the flags themselves are in the options table below):
-- A bundle name starts at the `realm` ACL tier; you can widen it in the same step or later with `bundles acl` (see *Tags & Visibility*).
+- A bundle name starts at the `private` ACL tier; you can widen it in the same step or later with `bundles acl` (see *Tags & Visibility*).
 - Advancing a tag alongside the publish also moves that tag to the freshly-published checksum (in addition to `latest`).
 - If the diff is a no-op, publish reports "nothing to publish" and makes no change.
 - A saved plan is only valid against the catalog state it was diffed from; if `latest` moved since planning, publish rejects it — re-run `bundles plan`.
@@ -203,8 +204,8 @@ beam_exec("bundles tag checkout-stack@sha256:abc123… stable -q")
 {{ end }}{{ end }}{{ end }}
 
 **ACL scope** controls who may *reference* a checksum. The three tiers are **supersets**, not lists of realms, and you can only ever **widen**:
-- `realm` — only the current realm (`<cid>.<pid>`). This is the default at publish time.
-- `org` — every realm in your customer (`<cid>`).
+- `private` — only the current scope: the realm (`<cid>.<pid>`) for a realm bundle, or the zone (`<cid>.<zid>`) for a zone bundle. This is the default at publish time. (This tier is scope-relative — it was previously named `realm`.)
+- `org` — every realm and zone in your customer (`<cid>`).
 - `public` — every realm in every customer (`*`).
 
 `bundles acl` takes a bundle **name** — no tag or checksum. Visibility belongs to the name, so widening
@@ -226,25 +227,41 @@ beam_exec("bundles acl checkout-stack --scope org -q")
 {{ for opt in commands["bundles acl"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
 {{ end }}{{ end }}{{ end }}
 
-## Pinning & Lifecycle
+## Installing & Lifecycle
 
-A realm consumes a bundle by **pinning** a checksum into its `manifest.beam.json` `references` (`@<alias>/<name>` → `sha256:…`). Pins are what actually get deployed. `bundles pin` resolves a checksum (from a tag by default, or an exact one) and writes it.
+A realm consumes a bundle by **installing** a checksum into its `bundles.manifest.beam.json`. Installs are grouped by deploy scope: the file has a `realm` section and a `zone` section, each a `@<alias>/<name>` → `sha256:…` map. `bundles install` resolves a checksum (from a tag by default, or an exact one), reads the bundle's scope from the catalog, and writes the reference into the **matching section** — there is no scope flag to pass. A `deploy release` consumes only the section for the scope it targets (a realm deploy uses `realm`, `deploy --scope zone` uses `zone`), so the other scope's references are ignored for that deploy.
 ```
-beam_exec("bundles pin checkout-stack -q")
+beam_exec("bundles install checkout-stack -q")
 ```
-{{ if commands["bundles pin"] }}{{ if (array.size commands["bundles pin"].arguments) > 0 }}
-#### `beam bundles pin` arguments
+{{ if commands["bundles install"] }}{{ if (array.size commands["bundles install"].arguments) > 0 }}
+#### `beam bundles install` arguments
 | Argument | Type | Description |
 |---|---|---|
-{{ for arg in commands["bundles pin"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles pin"].options) > 0 }}
-#### `beam bundles pin` options
+{{ for arg in commands["bundles install"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
+{{ end }}{{ end }}{{ if (array.size commands["bundles install"].options) > 0 }}
+#### `beam bundles install` options
 | Option | Type | Description |
 |---|---|---|
-{{ for opt in commands["bundles pin"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
+{{ for opt in commands["bundles install"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
 {{ end }}{{ end }}{{ end }}
 
-**Yank** retires a checksum so it can no longer be *newly* referenced. Crucially, yank **does not** break existing pins — an already-pinned yanked checksum still redeploys. Yank requires the exact `@sha256:…` reference.
+**`bundles uninstall`** is the inverse: it removes a bundle's reference from `bundles.manifest.beam.json` (from whichever section — `realm` or `zone` — holds it).
+```
+beam_exec("bundles uninstall checkout-stack -q")
+```
+{{ if commands["bundles uninstall"] }}{{ if (array.size commands["bundles uninstall"].arguments) > 0 }}
+#### `beam bundles uninstall` arguments
+| Argument | Type | Description |
+|---|---|---|
+{{ for arg in commands["bundles uninstall"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
+{{ end }}{{ end }}{{ if (array.size commands["bundles uninstall"].options) > 0 }}
+#### `beam bundles uninstall` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["bundles uninstall"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
+{{ end }}{{ end }}{{ end }}
+
+**Yank** retires a checksum so it can no longer be *newly* referenced. Crucially, yank **does not** break existing installs — an already-installed yanked checksum still redeploys. Yank requires the exact `@sha256:…` reference.
 ```
 beam_exec("bundles yank checkout-stack@sha256:abc123… -q")
 ```
@@ -260,7 +277,7 @@ beam_exec("bundles yank checkout-stack@sha256:abc123… -q")
 {{ for opt in commands["bundles yank"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
 {{ end }}{{ end }}{{ end }}
 
-Because a yanked checksum can linger in a manifest, **`bundles prune-yanked`** scans this workspace's pinned references and reports (or clears) any that point at a yanked checksum — so you can re-pin a newer one before releasing.
+Because a yanked checksum can linger in a manifest, **`bundles prune-yanked`** scans this workspace's installed references — across both the `realm` and `zone` sections — and reports (or clears) any that point at a yanked checksum, so you can re-install a newer one before releasing.
 ```
 beam_exec("bundles prune-yanked -q")
 ```
@@ -279,31 +296,32 @@ beam_exec("bundles prune-yanked -q")
 ## Common Pitfalls
 - **Namespace won't resolve.** Bundle names are `@<alias>/<name>`; the alias comes from your customer record. If you are offline or the customer has no alias, commands that must resolve it (`publish`, `plan`) fail — `list`/`new` degrade gracefully and show the short name only.
 - **One beamoId, one bundle.** A component may belong to at most one `*.beam.bundle.json` in the workspace, and each bundle file name must be unique. Both are validated before publish/plan.
+- **Malformed bundle file.** Any command that reads bundles validates each `*.beam.bundle.json` structurally and fails, naming the file, on invalid JSON, an empty file, an unexpected top-level property (e.g. `component` instead of `components`), a wrong-typed field, a duplicate component, or a bad dependency range. Fix the file it names.
+- **Mixed-scope bundle.** A bundle must be single-scope. Mixing realm-scoped and zone-scoped components — or a `scope` field that disagrees with the components' actual scope — is rejected at creation and before plan/publish/deploy. Split into separate bundles or make the components' scope consistent.
 - **Stale plan on publish.** A saved plan is only valid against the published `latest` it was diffed from. If `latest` moved, publishing from that plan is refused — re-run `bundles plan`.
-- **Yanked but still deployed.** Yank only blocks *new* references. A pin already in `manifest.beam.json` keeps redeploying until you prune it and re-pin.
-- **ACL only widens, and is admin-gated.** You cannot narrow a scope, and you cannot address specific realms — only the `realm`/`org`/`public` tiers. Widening requires an admin token server-side.
+- **Yanked but still deployed.** Yank only blocks *new* references. A reference already in `bundles.manifest.beam.json` keeps redeploying until you prune it (or `bundles uninstall` it) and re-install.
+- **ACL only widens, and is admin-gated.** You cannot narrow a scope, and you cannot address specific realms — only the `private`/`org`/`public` tiers. Widening requires an admin token server-side.
 - **`tag` / `yank` need an exact checksum.** These reject a bare name or `@tag`; pass `@sha256:…`. Use `bundles get`/`tags` to resolve a tag to its checksum first.
 - **Always pass `-q`** when executing from MCP to avoid interactive prompts (publish confirms before mutating the catalog otherwise).
 
 ## Out of Scope
-- **`beam admin force-inject`** — a Beamable-internal, SuperAdmin-only override used by the portal-extension PR-preview workflow. Not part of normal bundle management.
 - **General (non-bundle) deploy** — pushing local services to one realm is `deploy plan`/`deploy release`.
 - **Authoring the components themselves** — creating services/storages/portal extensions and their Docker images is covered by the `project` commands; a bundle only *references* existing beamoIds.
 
 ## Maintainer Notes
 The command surface lives in `cli/Commands/BundleCommands/` (one file per subcommand; `BundlesCommand.cs` also holds the `BundleAclScope` and `BundleRef` parsers). Shared logic is in `cli/Services/Bundles/`:
-- `BundleWorkspace` — discovery/validation of `*.beam.bundle.json` and the one-beamoId-per-bundle rule.
+- `BundleWorkspace` — discovery of `*.beam.bundle.json`, strict per-file structure validation (`ParseBundleFile`), the one-beamoId-per-bundle rule, and the single-scope guard (`ValidateComponentScope`, manifest-aware). The persisted `scope` field lives on `BundleConfigFile`.
 - `BundleNamespace` — alias → `@<alias>` resolution and `@ns/name` splitting.
 - `BundleBuild` / `BundleDiff` — component selection from the deploy plan and the publish diff.
 - `BundlePlanFiles` — saving/loading the temp plan files used by publish.
-The catalog API is the generated `IBeamBeamobundleApi` (`Beamable.Api.Autogenerated.Beamobundle`); forced-bundle overrides use `IBeamBeamoforcedbundleApi`.
+The catalog API is the generated `IBeamBeamobundleApi` (`Beamable.Api.Autogenerated.Beamobundle`).
 
 ## Wrap-Up
 After a bundle workflow, summarize for the user:
 1. **What was published** — the logical name `@<alias>/<name>`, the release version, the resulting checksum, and whether it was new (`bundles get` / `releases` to confirm).
 2. **Which tags moved** — `latest` always, plus any tag you advanced (`bundles tags`).
-3. **Who can see it** — the ACL scope (`realm`/`org`/`public`).
-4. **What consumes it** — which realm(s) pin the checksum in `manifest.beam.json`, and whether any pins need pruning after a yank.
+3. **Who can see it** — the ACL scope (`private`/`org`/`public`).
+4. **What consumes it** — which realm(s) install the checksum in `bundles.manifest.beam.json`, and whether any references need pruning after a yank.
 
 ## CLI Version Awareness
 If the CLI version has changed (check `.config/dotnet-tools.json`), re-run `beam_list_commands()` and `beam_get_help()` to get up-to-date command information. Command options and behavior may have changed between versions.

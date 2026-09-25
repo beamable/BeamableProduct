@@ -40,7 +40,10 @@ public class YankBundleCommand : AtomicCommand<YankBundleCommandArgs, YankBundle
 		// Yank only blocks *new* references — an already-pinned checksum still redeploys. Warn if this
 		// workspace currently pins the yanked checksum so the user can migrate off it (see `prune-yanked`).
 		var manifest = args.ConfigService.LoadManifestReferences();
-		if (manifest != null && manifest.references.TryGetValue(fullName, out var pinned) && pinned == checksum)
+		var pinnedToChecksum = manifest != null &&
+		                       ((manifest.realm.TryGetValue(fullName, out var realmPinned) && realmPinned == checksum) ||
+		                        (manifest.zone.TryGetValue(fullName, out var zonePinned) && zonePinned == checksum));
+		if (pinnedToChecksum)
 		{
 			Log.Warning($"[{fullName}] is pinned to this yanked checksum in {ConfigService.MANIFEST_FILE_NAME}." +
 			            $" Existing deploys keep working, but you can't newly reference it. Run `beam bundles prune-yanked` to review/clear.");
