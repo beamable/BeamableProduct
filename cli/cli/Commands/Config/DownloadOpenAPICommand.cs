@@ -66,10 +66,16 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>
 				Log.Information(json);
 				return;
 			}
-
+			
+			const string defaultFilename = "beam-oapi.json";
 			if (string.IsNullOrEmpty(args.OutputPath))
 			{
-				args.OutputPath = "beam-oapi.json";
+				args.OutputPath = defaultFilename;
+			}
+			// If OutputPath is an existing directory without a filename, append the default filename
+			if (Directory.Exists(args.OutputPath))
+			{
+				args.OutputPath = Path.Combine(args.OutputPath, defaultFilename);
 			}
 			var dir = Path.GetDirectoryName(args.OutputPath);
 			if (!string.IsNullOrEmpty(dir))
