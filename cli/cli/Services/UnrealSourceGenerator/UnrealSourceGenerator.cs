@@ -1,10 +1,12 @@
-﻿using Beamable.Common;
+using Beamable.Common;
 using Beamable.Server;
 using Docker.DotNet.Models;
 using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Writers;
 using Newtonsoft.Json;
+using Swan;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
@@ -2379,6 +2381,24 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			case (_, _, _, _) when string.Equals(semType, "StatsType", StringComparison.InvariantCultureIgnoreCase):
 				return new(nonOverridenType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_STATSTYPE : UNREAL_U_SEMTYPE_STATSTYPE);
 
+      case ("object", _, _, _) when schema.Reference == null && !schema.AdditionalPropertiesAllowed:
+      {
+        if (!string.IsNullOrEmpty(schema.Title) &&
+            (parentDoc.Components.Schemas.TryGetValue(schema.Title, out var innerSchema) ||
+             parentDoc.Components.Schemas.TryGetValue(Uri.EscapeDataString(schema.Title), out innerSchema)))
+        {
+          return GetUnrealTypeForField(
+            out nonOverridenType,
+            context,
+            parentDoc,
+            innerSchema,
+            fieldDeclarationHandle,
+            flags);
+        }
+
+        throw new Exception(
+          "Object fields must either reference some other schema or must be a map/dictionary!");
+      }
 			case (_, _, _, _) when isArbitraryJsonObject:
 				return new UnrealType(nonOverridenType = UNREAL_JSON);
 

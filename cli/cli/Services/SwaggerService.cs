@@ -7,6 +7,7 @@ using Microsoft.OpenApi;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Exceptions;
 using Microsoft.OpenApi.Extensions;
+using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 using Microsoft.OpenApi.Writers;
@@ -66,7 +67,7 @@ public class SwaggerService
 		BeamableApis.BasicService("mail"),
 		BeamableApis.ObjectService("mail"),
 		BeamableApis.BasicService("session").WithRename("User", "SessionUser"),
-		// INFO: At the moment, this is unsupported in UE-generation due to it generating a recursively referenced type (which breaks due to circular #includes).
+		// INFO: At the moment, this is unsupported in UE-generation due to it generating a recursively referenced type (which breaks due to circular #includes). 
 		BeamableApis.BasicService("trials").WithRename("\"ref\"", "\"reference\"").WithoutSDKs(TARGET_ENGINE_NAME_UNREAL),
 	};
 
@@ -212,7 +213,7 @@ public class SwaggerService
 				GatherSchemaRefs(doc.Components.Schemas, schemaName, schemaName, schemaRefCount);
 
 				// We fail loudly if we ever get two schemas with the same name in the same document.
-				// This means we can't properly disambiguate between them.
+				// This means we can't properly disambiguate between them.   
 				if (!schemaRecursiveRefs.TryAdd(namedOpenApiSchemaHandle, schemaRefCount))
 					throw new Exception($"Schema Name {schemaName} Clashing with another document's Schema!");
 
@@ -241,6 +242,7 @@ public class SwaggerService
 
 			foreach ((string _, OpenApiSchema propData) in properties)
 			{
+				if (propData == null) continue;
 				var isPropArray = propData.Type == "array";
 
 				if (isPropArray && propData?.Items?.Reference != null)
@@ -368,7 +370,7 @@ public class SwaggerService
 
 							foreach (var property in schema.Properties)
 							{
-								if (property.Value.Reference?.Id == oldName)
+								if (property.Value?.Reference?.Id == oldName)
 								{
 									property.Value.Reference.Id = newName;
 								}
@@ -433,10 +435,32 @@ public class SwaggerService
 		var combinedDocument = new OpenApiDocument(apis.FirstOrDefault()!.Document);
 		foreach (var documentResult in apis.Skip(1))
 		{
+			if (documentResult.Document.Info.Extensions != null)
+			{
+				foreach (var extension in documentResult.Document.Info.Extensions)
+				{
+					if (!combinedDocument.Info.Extensions.ContainsKey(extension.Key))
+					{
+						combinedDocument.Info.Extensions.Add(extension);
+					}
+				}
+			}
 			foreach (var path in documentResult.Document.Paths)
 			{
 				if(combinedDocument.Paths.ContainsKey(path.Key))
+				{
+					var existingPath = combinedDocument.Paths[path.Key];
+					var areEqual = ArePathItemsEqual(existingPath, path.Value, out var pathDifferences);
+					if (areEqual)
+					{
+						Log.Verbose($"Skipping duplicate path [{path.Key}] - path items are identical");
+					}
+					else
+					{
+						Log.Information($"Cannot merge path [{path.Key}] - different operations exist. Keeping original. Differences: {string.Join(", ", pathDifferences)}");
+					}
 					continue;
+				}
 				combinedDocument.Paths.Add(path.Key, path.Value);
 			}
 
@@ -444,8 +468,12 @@ public class SwaggerService
 			{
 				if(combinedDocument.Components.Schemas.TryGetValue(component.Value.Reference.Id, out var schema))
 				{
-					if(NamedOpenApiSchema.AreEqual(schema, component.Value, out _))
+					if(NamedOpenApiSchema.AreEqual(schema, component.Value, out var schemaDifferences))
 						continue;
+
+					MergeSchemasWithExtensionMerge(schema, component.Value, schemaDifferences);
+					Log.Verbose($"Merged schema [{component.Value.Reference.Id}] with extension merge - schema differences: {string.Join(", ", schemaDifferences)}");
+					continue;
 				}
 
 				if (combinedDocument.Components.Schemas.ContainsKey(component.Value.Reference.Id))
@@ -525,9 +553,10 @@ public class SwaggerService
 		return combinedDocument;
 	}
 
+
 	public static async Task<(string url, string content)> GetOapiStringReader(
-		IAppContext context,
-		ISwaggerStreamDownloader downloader,
+		IAppContext context, 
+		ISwaggerStreamDownloader downloader, 
 		BeamableApiDescriptor api)
 	{
 		switch (api.Location)
@@ -556,6 +585,79 @@ public class SwaggerService
 		}
 	}
 	
+	private static bool ArePathItemsEqual(OpenApiPathItem a, OpenApiPathItem b, out List<string> differences)
+	{
+		differences = new List<string>();
+
+		if (a.Operations.Count != b.Operations.Count)
+		{
+			differences.Add($"operation count differs: {a.Operations.Count} vs {b.Operations.Count}");
+		}
+
+		var aMethods = new HashSet<OperationType>(a.Operations.Keys);
+		var bMethods = new HashSet<OperationType>(b.Operations.Keys);
+
+		if (!aMethods.SetEquals(bMethods))
+		{
+			differences.Add($"HTTP methods differ");
+			return false;
+		}
+
+		foreach (var method in aMethods)
+		{
+			var aOp = a.Operations[method];
+			var bOp = b.Operations[method];
+
+			if (aOp.RequestBody == null && bOp.RequestBody != null)
+			{
+				differences.Add($"[{method}] request body exists only in second document");
+			}
+			else if (aOp.RequestBody != null && bOp.RequestBody == null)
+			{
+				differences.Add($"[{method}] request body exists only in first document");
+			}
+			else if (aOp.RequestBody != null && bOp.RequestBody != null)
+			{
+				var aContent = aOp.RequestBody.Content;
+				var bContent = bOp.RequestBody.Content;
+
+				if (aContent.Count != bContent.Count)
+				{
+					differences.Add($"[{method}] content type count differs");
+				}
+			}
+
+			if (aOp.Responses.Count != bOp.Responses.Count)
+			{
+				differences.Add($"[{method}] response count differs: {aOp.Responses.Count} vs {bOp.Responses.Count}");
+			}
+		}
+
+		return differences.Count == 0;
+	}
+
+	private static OpenApiSchema MergeSchemasWithExtensionMerge(OpenApiSchema original, OpenApiSchema incoming, List<string> schemaDifferences)
+	{
+		var mergedExtensions = new Dictionary<string, IOpenApiExtension>(original.Extensions);
+
+		foreach (var ext in incoming.Extensions)
+		{
+			if (!mergedExtensions.ContainsKey(ext.Key))
+			{
+				mergedExtensions.Add(ext.Key, ext.Value);
+				Log.Verbose($"Added extension [{ext.Key}] to schema [{original.Reference?.Id ?? "inline"}]");
+			}
+		}
+
+		original.Extensions.Clear();
+		foreach (var ext in mergedExtensions)
+		{
+			original.Extensions.Add(ext.Key, ext.Value);
+		}
+
+		return original;
+	}
+
 	/// <summary>
 	/// Download a set of open api documents given the <see cref="openApiUrls"/>
 	/// </summary>
@@ -1648,7 +1750,7 @@ public class NamedOpenApiSchema
 	public OpenApiSchema RawSchema;
 
 	/// <summary>
-	/// List of openAPI Schemas that this depends on.
+	/// List of openAPI Schemas that this depends on. 
 	/// </summary>
 	public List<OpenApiSchema> DependsOnSchema;
 
@@ -1791,6 +1893,52 @@ public class NamedOpenApiSchema
 			differences.Add("a has properties, but b doesn't");
 		}
 
+		if (!AreExtensionsEqual(a.Extensions, b.Extensions, out var extDifferences))
+		{
+			differences.AddRange(extDifferences);
+		}
+
+		return differences.Count == 0;
+	}
+
+	private static bool AreExtensionsEqual(
+		IDictionary<string, IOpenApiExtension> a,
+		IDictionary<string, IOpenApiExtension> b,
+		out List<string> differences)
+	{
+		differences = new List<string>();
+
+		if (a.Count != b.Count)
+		{
+			differences.Add($"extension count differs: {a.Count} vs {b.Count}");
+		}
+
+		var allKeys = new HashSet<string>(a.Keys);
+		allKeys.UnionWith(b.Keys);
+
+		foreach (var key in allKeys)
+		{
+			var aHasKey = a.TryGetValue(key, out var aExt);
+			var bHasKey = b.TryGetValue(key, out var bExt);
+
+			if (!aHasKey && bHasKey)
+			{
+				differences.Add($"extension [{key}] missing in first schema");
+			}
+			else if (aHasKey && !bHasKey)
+			{
+				differences.Add($"extension [{key}] missing in second schema");
+			}
+			else if (aHasKey && bHasKey)
+			{
+				var aVal = aExt?.ToString() ?? "";
+				var bVal = bExt?.ToString() ?? "";
+				if (aVal != bVal)
+				{
+					differences.Add($"extension [{key}] values differ: [{aVal}] vs [{bVal}]");
+				}
+			}
+		}
 
 		return differences.Count == 0;
 	}

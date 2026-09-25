@@ -177,7 +177,26 @@ public class Tests : CLITest
 		Console.WriteLine("----- OUTPUT ----");
 		Console.WriteLine(string.Join("\n", descriptors.Select(d => $"{d.FileName}\n\n{d.Content}\n")));
 
-		Assert.AreEqual(15, descriptors.Count);
+		var generatedFiles = descriptors.Select(d => d.FileName).ToArray();
+		CollectionAssert.AllItemsAreUnique(generatedFiles);
+		CollectionAssert.IsSubsetOf(new[]
+		{
+			"/AutoGen/AddRequestArgs.h",
+			"/AutoGen/AddRequestArgs.cpp",
+			"/AutoGen/AddRequestArgsLibrary.h",
+			"/AutoGen/AddRequestArgsLibrary.cpp",
+			"/AutoGen/TroublesomeAddResponse.h",
+			"/AutoGen/TroublesomeAddResponse.cpp",
+			"/AutoGen/TroublesomeAddResponseLibrary.h",
+			"/AutoGen/TroublesomeAddResponseLibrary.cpp",
+			"/AutoGen/SubSystems/BeamTroublesomeApi.h",
+			"/AutoGen/SubSystems/BeamTroublesomeApi.cpp",
+			"/AutoGen/SubSystems/Troublesome/TroublesomeAddRequest.h",
+			"/AutoGen/SubSystems/Troublesome/TroublesomeAddRequest.cpp",
+			"/Public/AutoGen/Troublesome/K2BeamNode_ApiRequest_TroublesomeAdd.h",
+			"/Private/AutoGen/Troublesome/K2BeamNode_ApiRequest_TroublesomeAdd.cpp",
+			"BeamableCore_GenerationPass.json",
+		}, generatedFiles);
 	}
 
 	[Microservice("troublesome")]
