@@ -724,7 +724,16 @@ public class LocalStackDiscoveryTests
 		{
 			repos = new LocalStackRepos { scalaDir = scalaDir },
 			toolchain = mavenHome == null ? null : new LocalStackToolchain { maven = mavenHome },
-			steps = steps.Select(s => new LocalStackStep { name = s.name, enabled = s.enabled }).ToList()
+			steps = steps.Select(s => new LocalStackStep
+			{
+				name = s.name,
+				enabled = s.enabled,
+				// A genuine scala launcher carries the offline classpath resolve in its script; that argument is
+				// the discriminator PlanDependencyPluginProbe matches on, not the step name alone.
+				arguments = s.name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase)
+					? "& '${maven}' -q -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\""
+					: null
+			}).ToList()
 		};
 
 	[Test]
@@ -753,7 +762,7 @@ public class LocalStackDiscoveryTests
 		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
 
 		Assert.That(plan.shouldProbe, Is.False);
-		Assert.That(plan.skipReason, Is.EqualTo("no scala launch step"));
+		Assert.That(plan.skipReason, Is.EqualTo("no scala maven launch step"));
 	}
 
 	[Test]
@@ -766,7 +775,7 @@ public class LocalStackDiscoveryTests
 		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
 
 		Assert.That(plan.shouldProbe, Is.False);
-		Assert.That(plan.skipReason, Is.EqualTo("no scala launch step"));
+		Assert.That(plan.skipReason, Is.EqualTo("no scala maven launch step"));
 	}
 
 	[Test]

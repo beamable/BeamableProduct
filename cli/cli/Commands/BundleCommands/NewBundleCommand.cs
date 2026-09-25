@@ -21,7 +21,7 @@ public class NewBundleCommandOutput
 	public string filePath;
 }
 
-public class NewBundleCommand : AtomicCommand<NewBundleCommandArgs, NewBundleCommandOutput>, ISkipManifest
+public class NewBundleCommand : AtomicCommand<NewBundleCommandArgs, NewBundleCommandOutput>
 {
 	public NewBundleCommand() : base("new", "Scaffold a new bundle config file in the workspace")
 	{
@@ -56,14 +56,29 @@ public class NewBundleCommand : AtomicCommand<NewBundleCommandArgs, NewBundleCom
 		var fileName = args.bundleName + BundleWorkspace.BUNDLE_FILE_SUFFIX;
 		var fullPath = Path.Combine(args.ConfigService.BeamableWorkspace, fileName);
 
+		// Resolve the bundle's scope from its components. A bundle must be single-scope; validate the
+		// components exist and share a scope, then persist the derived scope in the file. With no
+		// components, default to realm (the only publishable scope today, and the default deploy scope).
+		var manifest = args.BeamoLocalSystem.BeamoManifest;
+		var scope = BundleWorkspace.SCOPE_REALM;
+		if (args.components.Count > 0)
+		{
+			var draft = new BundleConfigFile { name = args.bundleName, filePath = fullPath, components = args.components };
+			BundleBuild.ValidateComponentsExist(manifest, draft);
+			var anyZone = args.components.Any(c =>
+				manifest.ServiceDefinitions.Any(d => d.BeamoId == c && d.IsZoneScoped));
+			scope = anyZone ? BundleWorkspace.SCOPE_ZONE : BundleWorkspace.SCOPE_REALM;
+		}
+
 		// the bundle's name is the file name itself; it is not stored inside the file.
 		var json = new JObject
 		{
+			["scope"] = scope,
 			["components"] = new JArray(args.components),
 			["bundleDependencies"] = new JObject()
 		};
 		File.WriteAllText(fullPath, json.ToString(Formatting.Indented));
-		Log.Information($"Created bundle config [{fullName}] at [{fullPath}]");
+		Log.Information($"Created bundle config [{fullName}] scope=[{scope}] at [{fullPath}]");
 
 		return new NewBundleCommandOutput { name = fullName, filePath = fullPath };
 	}

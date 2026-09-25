@@ -1284,12 +1284,19 @@ public class LocalStackUpCommand
 			return plan;
 		}
 
+		// Only a genuine Maven launcher is probe-worthy: its script runs `mvn -o dependency:build-classpath
+		// -pl tools/<svc>`, which is exactly the resolve we are validating. Not every `scala: *` step is that —
+		// e.g. `scala: redis` is a Docker step (`compose up -d --no-deps redis`) with no `tools/redis` module at
+		// all, so probing it would `-pl` a nonexistent module and fail for a reason unrelated to the plugin
+		// prefix. Match on the launcher's own command, the same discriminator MigrateScalaLauncherArguments uses.
 		var scalaLaunch = config.steps.FirstOrDefault(s =>
 			s != null && s.enabled && !string.IsNullOrEmpty(s.name)
-			&& s.name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase));
+			&& s.name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase)
+			&& !string.IsNullOrEmpty(s.arguments)
+			&& s.arguments.Contains("dependency:build-classpath", StringComparison.Ordinal));
 		if (scalaLaunch == null)
 		{
-			plan.skipReason = "no scala launch step";
+			plan.skipReason = "no scala maven launch step";
 			return plan;
 		}
 
