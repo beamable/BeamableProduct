@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Allow top-level JSON arrays in microservice requests when handlers have no body-bound parameters, including handlers with injected dependencies. Handlers can deserialize the array through `Context.Body`; handlers with body-bound parameters receive an explanatory 400 response.
 - `Services.Inventory.GetCurrent()` and `GetCurrent("")` now omit the empty scope query parameter, which could leave inventory requests pending on runtimes 7.1.0 through 7.2.3. `GetCurrent(null)` also treats the scope as omitted instead of throwing before sending the request.
 
 ## [7.2.3] - 2026-08-26
