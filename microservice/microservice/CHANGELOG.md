@@ -7,8 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Load shedding: a service instance now answers with a `503` (`serviceBusy`) instead of queueing when more than `BEAM_MAX_CONCURRENT_REQUESTS` (default 500) client requests are in flight, so the gateway retries on another instance right away. `0` disables the limit.
+- Requests that are already past the deadline the gateway stamped on them (`X-BEAM-DEADLINE`) are dropped without doing any work, since the gateway has already timed them out. `BEAM_DISABLE_STALE_REQUEST_DROP=true` restores the old behaviour. The deadline also sizes the request's cancellation token.
+- Requests from the service to the platform time out after `BEAM_PLATFORM_REQUEST_TIMEOUT_SECONDS` (default 30) instead of waiting forever for a response that will never arrive. `0` disables the timeout.
+- The thread pool minimum is raised to `BEAM_MIN_THREADPOOL_THREADS` (default 32) worker and IO threads. On a 0.25 vCPU task the runtime default is a single thread, which let one blocking call stall every other request.
+- On `net9.0` and later the websocket aborts and reconnects when the gateway does not answer a ping within `WS_KEEP_ALIVE_TIMEOUT_SECONDS` (default 30), instead of waiting for the OS to give up on a dead TCP connection. `0` disables the check.
+
 ### Changed
 
+- A request received while the instance is draining for shutdown is answered with a `503` (`draining`) instead of being silently dropped.
+- Reconnecting to the gateway starts after 250ms (with jitter) instead of 5 seconds, since every second offline is lost capacity.
+- Writes to a websocket that has closed fail immediately instead of hanging the handler that produced them; pending platform requests are failed when their connection is lost, so request handlers awaiting them can finish.
+- The websocket read loop no longer slows down when the process is busy. Throttling reads never reduced the work to be done, it only pushed it past the gateway's deadline; overload is handled by the explicit load shedding above.
+- A request the gateway rejects with a `403` re-authenticates and retries at most 3 times before the error is surfaced, instead of retrying forever.
 - Replace `xunit` dependency with `xunit.v3.mtp-off` in version `4.0.1`.
 - Update `Microsoft.CodeAnalysis.CSharp` dependencies to `4.8.0`.
 - Update `Microsoft.CodeAnalysis.CSharp.Analyzer.Testing` dependencies to `1.1.3`.
@@ -17,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The shutdown handler registered for `ProcessExit` ran asynchronously and returned at its first `await`, so the process could exit in the middle of the drain. It now blocks until the drain completes.
+- Receiving a message larger than 85KB no longer schedules a full compacting garbage collection.
 - `Services.Inventory.GetCurrent()` and `GetCurrent("")` now omit the empty scope query parameter, which could leave inventory requests pending on runtimes 7.1.0 through 7.2.3. `GetCurrent(null)` also treats the scope as omitted instead of throwing before sending the request.
 
 ## [7.2.3] - 2026-08-26

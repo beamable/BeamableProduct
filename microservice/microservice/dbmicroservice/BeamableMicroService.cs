@@ -86,6 +86,35 @@ namespace Beamable.Server
       private const int EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK = 110;
       private const int EXIT_CODE_FAILED_CUSTOM_SERVICE_SETUP_INITIALIZATION_HOOK = 111;
       private const int HTTP_STATUS_GONE = 410;
+      private const int HTTP_STATUS_SERVICE_UNAVAILABLE = 503;
+
+      /// <summary>
+      /// Header stamped by the gateway on every request it forwards to a microservice: the epoch-millisecond
+      /// deadline after which the gateway will have answered the caller with a timeout and will discard any
+      /// late response. Older gateways do not send it, in which case no deadline handling happens.
+      /// </summary>
+      public const string GATEWAY_DEADLINE_HEADER = "X-BEAM-DEADLINE";
+
+      /// <summary>
+      /// Slack added to a gateway deadline before a request is considered stale, to absorb clock skew between
+      /// the gateway and the container.
+      /// </summary>
+      private const long STALE_REQUEST_GRACE_MS = 2000;
+
+      /// <summary>
+      /// Upper bound for the per-request cancellation token when it is derived from the gateway deadline.
+      /// </summary>
+      private const long MAX_DEADLINE_CANCELLATION_MS = 10 * 60 * 1000;
+
+      // process wide, because every connection of this process shares the same CPU budget.
+      private static long _inflightClientRequests = 0;
+
+      /// <summary>
+      /// The number of client requests currently being handled by this process, across all of its connections.
+      /// </summary>
+      public static long InflightClientRequests => Interlocked.Read(ref _inflightClientRequests);
+
+      private static readonly Random _reconnectJitter = new Random();
       private const int ShutdownLimitSeconds = 5;
       private const int ShutdownMinCycleTimeMilliseconds = 100;
 
@@ -142,15 +171,15 @@ namespace Beamable.Server
       private CancellationTokenSource _serviceShutdownTokenSource;
       private Task _socketDaemen;
       private string Host => InstanceArgs.Host;
-      private int[] _retryIntervalsInSeconds = new[]
+      private readonly int[] _retryIntervalsInMilliseconds = new[]
       {
-         5,
-         5,
-         10,
-         10,
-         15,
-         45,
-         60
+         250,
+         500,
+         1000,
+         2000,
+         5000,
+         10000,
+         30000
       };
 
       /// <summary>
@@ -184,7 +213,7 @@ namespace Beamable.Server
          _serviceAttribute = startupContext.attributes;
          _adminPrefix = _serviceAttribute.GetQualifiedName() + "/admin/";
 
-         _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
+         _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise, args.PlatformRequestTimeoutSeconds);
          InstanceArgs = args.Copy(conf =>
          {
 	         conf.ServiceScope = conf.ServiceScope.Fork(builder =>
@@ -260,9 +289,22 @@ namespace Beamable.Server
 
       public async Task RunForever()
       {
-         AppDomain.CurrentDomain.ProcessExit += async (sender, args) =>
+         AppDomain.CurrentDomain.ProcessExit += (sender, args) =>
          {
-            await OnShutdown(sender, args);
+            // Already drained (or draining) through another path; nothing left to do.
+            if (IsShuttingDown) return;
+
+            // ProcessExit does not observe an async handler: at its first incomplete await the handler
+            // returns and the runtime tears the process down in the middle of the drain. Block instead, so
+            // the provider is unregistered and in-flight requests get their grace period.
+            try
+            {
+               OnShutdown(sender, args).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+               Log.Error("Shutdown failed. {message} {stack}", ex.Message, ex.StackTrace);
+            }
          };
 
          await Task.Delay(-1);
@@ -640,13 +682,20 @@ namespace Beamable.Server
                if (promise.IsCompleted) return; // ignore, this handler has no purpose anymore.
                if (wasClean) return;
 
-               // try again!
-               var retryDelay = connectionAttempt < _retryIntervalsInSeconds.Length
-                  ? _retryIntervalsInSeconds[connectionAttempt]
-                  : _retryIntervalsInSeconds[^1]; // last one.
+               // try again! Start fast: every second this instance is disconnected is a second of lost
+               // capacity, and the gateway has already forgotten about the old session. Jitter keeps a fleet
+               // that lost the same gateway node from reconnecting in lock step.
+               var baseDelay = connectionAttempt < _retryIntervalsInMilliseconds.Length
+                  ? _retryIntervalsInMilliseconds[connectionAttempt]
+                  : _retryIntervalsInMilliseconds[^1]; // last one.
+               int retryDelay;
+               lock (_reconnectJitter)
+               {
+                  retryDelay = baseDelay + _reconnectJitter.Next(0, Math.Max(1, baseDelay / 2));
+               }
                connectionAttempt++;
-               Log.Error("connection could not be re-established. Will attempt connection {attempt} in {delay} seconds", connectionAttempt, retryDelay);
-               await Task.Delay(retryDelay * 1000);
+               Log.Error("connection could not be re-established. Will attempt connection {attempt} in {delay} ms", connectionAttempt, retryDelay);
+               await Task.Delay(retryDelay);
                Attempt();
             });
 
@@ -723,6 +772,50 @@ namespace Beamable.Server
 	      }
       }
       
+      /// <summary>
+      /// Reads the deadline the gateway stamped on the request (see <see cref="GATEWAY_DEADLINE_HEADER"/>).
+      /// </summary>
+      /// <returns>false when the header is absent or unparseable</returns>
+      private static bool TryGetGatewayDeadline(MicroserviceRequestContext ctx, out long deadlineEpochMs)
+      {
+	      deadlineEpochMs = 0;
+	      try
+	      {
+		      var headers = ctx.Headers;
+		      return headers != null &&
+		             headers.TryGetValue(GATEWAY_DEADLINE_HEADER, out var raw) &&
+		             long.TryParse(raw, out deadlineEpochMs) &&
+		             deadlineEpochMs > 0;
+	      }
+	      catch (Exception ex)
+	      {
+		      Log.Debug("Could not read request headers while looking for the gateway deadline. {message}", ex.Message);
+		      return false;
+	      }
+      }
+
+      /// <summary>
+      /// Answer a client request with a 503 without doing any work on it. The gateway treats a 503 from a
+      /// microservice as "try another instance", so this converts a request that would otherwise sit in a
+      /// backlog until the gateway's timeout into an immediate retry elsewhere.
+      /// </summary>
+      private Promise SendServiceUnavailableResponse(MicroserviceRequestContext ctx, Stopwatch sw, string error, string message)
+      {
+	      var response = new GatewayErrorResponse
+	      {
+		      id = ctx.Id,
+		      status = HTTP_STATUS_SERVICE_UNAVAILABLE,
+		      body = new WebsocketErrorResponse
+		      {
+			      status = HTTP_STATUS_SERVICE_UNAVAILABLE,
+			      service = MicroserviceName,
+			      error = error,
+			      message = message
+		      }
+	      };
+	      return _socketRequesterContext.SendMessageSafely(JsonConvert.SerializeObject(response), sw: sw);
+      }
+
       async Task HandleClientMessage(MicroserviceRequestContext ctx, Stopwatch sw, BeamActivity activity)
       {
 	      // using var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_WS_CLIENT,
@@ -730,12 +823,51 @@ namespace Beamable.Server
 	      // activity.Start();
 	      if (RefuseNewClientMessages)
 	      {
-		      Log.Warning("Received a message after service began draining. id={id}", ctx.Id);
-		      // TODO modify activity.
+		      // Answer instead of silently dropping: a dropped message costs the caller the full gateway timeout,
+		      // while a 503 is retried on another instance right away.
+		      Log.Warning("Received a message after service began draining; answering 503 so the gateway retries elsewhere. id={id}", ctx.Id);
 		      activity.SetStatus(ActivityStatusCode.Error);
-		      return; // let this message die.
+		      await SendServiceUnavailableResponse(ctx, sw, "draining", "This service instance is shutting down. Retry on another instance.");
+		      return;
 	      }
 
+	      if (!InstanceArgs.DisableStaleRequestDrop && TryGetGatewayDeadline(ctx, out var deadlineEpochMs))
+	      {
+		      var overdueMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - deadlineEpochMs;
+		      if (overdueMs > STALE_REQUEST_GRACE_MS)
+		      {
+			      // The gateway has already answered the caller with a timeout and will discard whatever we
+			      // send, so working on this request only delays the requests behind it. This is what lets an
+			      // instance that fell behind during a burst catch up instead of timing out indefinitely.
+			      Log.Warning("Dropping request that is {overdueMs}ms past its gateway deadline. id={id} path={path}", overdueMs, ctx.Id, ctx.Path);
+			      activity.SetStatus(ActivityStatusCode.Error);
+			      return;
+		      }
+	      }
+
+	      var inflight = Interlocked.Increment(ref _inflightClientRequests);
+	      try
+	      {
+		      var limit = InstanceArgs.MaxConcurrentRequests;
+		      if (limit > 0 && inflight > limit)
+		      {
+			      Log.Warning("Shedding request: {inflight} requests are already in flight (limit={limit}). id={id} path={path}", inflight, limit, ctx.Id, ctx.Path);
+			      activity.SetStatus(ActivityStatusCode.Error);
+			      await SendServiceUnavailableResponse(ctx, sw, "serviceBusy",
+				      $"This service instance has {inflight} requests in flight (limit {limit}). Retry on another instance.");
+			      return;
+		      }
+
+		      await HandleClientMessageInternal(ctx, sw, activity);
+	      }
+	      finally
+	      {
+		      Interlocked.Decrement(ref _inflightClientRequests);
+	      }
+      }
+
+      async Task HandleClientMessageInternal(MicroserviceRequestContext ctx, Stopwatch sw, BeamActivity activity)
+      {
 	      try
 	      {
 		      var route = ctx.Path.Substring(QualifiedName.Length + 1);
@@ -846,7 +978,19 @@ namespace Beamable.Server
 	      MicroserviceRequestContext ctx = null;
 	      using (var requestActivity = _activityProvider.Create(Otel.TRACE_CONSTRUCT_CTX, importance: TelemetryImportance.VERBOSE))
 	      {
-		      if (!document.TryBuildRequestContext(InstanceArgs, out ctx))
+		      bool built;
+		      try
+		      {
+			      built = document.TryBuildRequestContext(InstanceArgs, out ctx);
+		      }
+		      finally
+		      {
+			      // the context clones the parts of the document it keeps (body, headers); the document's own
+			      // pooled buffer can go back to the pool now instead of waiting for the GC.
+			      document.Dispose();
+		      }
+
+		      if (!built)
 		      {
 			      requestActivity.SetStatus(ActivityStatusCode.Error);
 			      Log.Debug("WS Message contains no data. Cannot handle. Skipping message.");
@@ -976,7 +1120,16 @@ namespace Beamable.Server
 	      {
 		      using var tokenSource = new CancellationTokenSource();
 		      ctx.CancellationToken = tokenSource.Token;
-		      tokenSource.CancelAfter(TimeSpan.FromSeconds(InstanceArgs.RequestCancellationTimeoutSeconds));
+		      // When the gateway told us its deadline, that is the real budget for this request (it may be
+		      // longer than the default when the caller sent an X-BEAM-TIMEOUT header, or shorter when the
+		      // request already spent time in a backlog).
+		      var cancellationMs = InstanceArgs.RequestCancellationTimeoutSeconds * 1000L;
+		      if (TryGetGatewayDeadline(ctx, out var deadlineEpochMs))
+		      {
+			      var remainingMs = deadlineEpochMs - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+			      cancellationMs = Math.Clamp(remainingMs, 1000L, MAX_DEADLINE_CANCELLATION_MS);
+		      }
+		      tokenSource.CancelAfter(TimeSpan.FromMilliseconds(cancellationMs));
 		      if (_socketRequesterContext.IsPlatformMessage(ctx))
 		      {
 			      // the request is a platform request.
@@ -1035,6 +1188,12 @@ namespace Beamable.Server
       private async Task CloseConnection(IConnection ws, bool wasClean)
       {
          Log.Debug("Closing socket connection... clean=[{clean}] isShuttingDown=[{shuttingDown}]", wasClean, IsShuttingDown);
+
+         // Anything still waiting on a reply over this socket will never get one: the gateway session that
+         // owned those request ids died with the socket. Fail them now so the handlers awaiting them can
+         // finish (and be counted as finished by the shutdown drain) instead of hanging forever.
+         _socketRequesterContext.FailAllPendingRequests("the websocket connection to the gateway was lost");
+
          if (!IsShuttingDown)
          {
             Log.Debug("ws connection dropped...");

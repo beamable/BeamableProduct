@@ -165,6 +165,7 @@ public static class MicroserviceStartupUtil
 		}
 
 		ConfigureRequiredProcessIdWatcher(startupCtx);
+		ConfigureThreadPool(startupCtx);
 
 		await ConfigureOtelCollector(startupCtx);
 
@@ -992,6 +993,35 @@ public static class MicroserviceStartupUtil
 				startupContext.logger.LogError(e, e.Message);
 			}
 		});
+	}
+
+	/// <summary>
+	/// Raise the thread pool's minimum thread counts to <see cref="IMicroserviceArgs.MinThreadPoolThreads"/>.
+	/// <para/>
+	/// The runtime default minimum is the processor count, which is 1 inside a 0.25 vCPU task. With a minimum
+	/// of 1, any request handler that blocks (a synchronous database call, a <c>.Result</c>, a lock) stalls
+	/// every other request while the pool injects new threads at roughly one per second -- which is how a
+	/// small burst turns into a wall of gateway timeouts. Idle threads cost nothing, so a higher floor is
+	/// free insurance.
+	/// </summary>
+	public static void ConfigureThreadPool(StartupContext ctx)
+	{
+		var floor = ctx.args.MinThreadPoolThreads;
+		if (floor <= 0) return;
+
+		ThreadPool.GetMinThreads(out var workerThreads, out var ioThreads);
+		var desiredWorkers = Math.Max(workerThreads, floor);
+		var desiredIo = Math.Max(ioThreads, floor);
+		if (desiredWorkers == workerThreads && desiredIo == ioThreads) return;
+
+		if (ThreadPool.SetMinThreads(desiredWorkers, desiredIo))
+		{
+			ctx.logger.ZLogDebug($"Thread pool minimum raised. workers=[{workerThreads}->{desiredWorkers}] io=[{ioThreads}->{desiredIo}] processors=[{Environment.ProcessorCount}]");
+		}
+		else
+		{
+			ctx.logger.ZLogWarning($"Could not raise the thread pool minimum. workers=[{desiredWorkers}] io=[{desiredIo}]");
+		}
 	}
 
 	public static void ConfigureRequiredProcessIdWatcher(StartupContext startupContext)

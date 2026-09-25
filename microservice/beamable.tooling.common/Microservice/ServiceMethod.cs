@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using Beamable.Common.Dependencies;
@@ -122,6 +124,29 @@ namespace Beamable.Server
 			}
 		}
 
+		// task runtime type -> compiled accessor for its Result property. Looking the property up and invoking
+		// it through reflection on every request is measurable on a small task; the compiled delegate is not.
+		private static readonly ConcurrentDictionary<Type, Func<Task, object>> _resultAccessors =
+			new ConcurrentDictionary<Type, Func<Task, object>>();
+
+		private static Func<Task, object> GetResultAccessor(Type taskType)
+		{
+			return _resultAccessors.GetOrAdd(taskType, type =>
+			{
+				var resultProperty = type.GetProperty("Result");
+				if (resultProperty == null)
+				{
+					return _ => null;
+				}
+
+				var taskParameter = Expression.Parameter(typeof(Task), "task");
+				var body = Expression.Convert(
+					Expression.Property(Expression.Convert(taskParameter, type), resultProperty),
+					typeof(object));
+				return Expression.Lambda<Func<Task, object>>(body, taskParameter).Compile();
+			});
+		}
+
 		/// <summary>
 		/// Executes the service method with the provided request context and parameter provider.
 		/// </summary>
@@ -138,11 +163,7 @@ namespace Beamable.Server
 				{
 					await task;
 
-					var resultProperty = task.GetType().GetProperty("Result");
-					var result =
-						resultProperty
-							.GetValue(
-								task); // TODO: XXX It stinks that there is active reflection going on the callpath
+					var result = GetResultAccessor(task.GetType())(task);
 
 					if (result is string strResult)
 					{

@@ -1334,6 +1334,13 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                    MessageMatcher.WithReqId(1).WithStatus(200).WithPayload<string>(n => n == fakeEmail),
                    MessageResponder.NoResponse(),
                    MessageFrequency.OnlyOnce()
+                )
+                // a request that arrives after the drain started is refused with a 503 (instead of being dropped
+                // on the floor), so the gateway retries it on another instance right away.
+                .AddMessageHandler(
+                   MessageMatcher.WithReqId(2).WithStatus(503).WithBody<WebsocketErrorResponse>(b => b.error == "draining"),
+                   MessageResponder.NoResponse(),
+                   MessageFrequency.OnlyOnce()
                 );
 
             }), contentResolver);
@@ -1348,8 +1355,8 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
             var shutdownTask = ms.OnShutdown(this, null); // one request should be processed durring the shutdown
 
-            // this request should be ignored...
-            // also, Thorium should never send it, so this is a bit of defensive programming.
+            // this request must not be processed; it is answered with a 503 so the caller is not left waiting
+            // for the gateway timeout. (Thorium should never send it, so this is a bit of defensive programming.)
             testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 2, 1, dbid));
             await shutdownTask;
 

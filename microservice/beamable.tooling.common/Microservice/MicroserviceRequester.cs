@@ -145,8 +145,22 @@ namespace Beamable.Server
 
       public IActivityProvider ActivityProvider { get; set; }
       private ConcurrentDictionary<long, IWebsocketResponseListener> _pendingMessages = new ConcurrentDictionary<long, IWebsocketResponseListener>();
+      // requestId -> Environment.TickCount64 deadline. Only populated when a request timeout is configured.
+      private readonly ConcurrentDictionary<long, long> _pendingDeadlines = new ConcurrentDictionary<long, long>();
       private ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>> _subscriptions = new ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>>();
       private long _lastRequestId = 0;
+      private readonly long _requestTimeoutMs;
+      private readonly Timer _timeoutSweeper;
+      private const int TIMEOUT_SWEEP_INTERVAL_MS = 1000;
+      private const int TIMEOUT_STATUS = 504;
+
+      // monotonic milliseconds; Environment.TickCount64 is not available on netstandard2.1
+      private static long NowMs => Stopwatch.GetTimestamp() / (Stopwatch.Frequency / 1000);
+
+      /// <summary>
+      /// The number of requests sent to the platform that have not received a response yet.
+      /// </summary>
+      public int PendingRequestCount => _pendingMessages.Count;
 
       // default is false, set 1 for true.
       private int _hasSocketClosedFlag = 1; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
@@ -160,7 +174,16 @@ namespace Beamable.Server
          }
       }
 
-      public SocketRequesterContext(Func<Promise<IConnection>> socketGetter)
+      public SocketRequesterContext(Func<Promise<IConnection>> socketGetter) : this(socketGetter, 0)
+      {
+      }
+
+      /// <param name="socketGetter">produces the promise for the current connection</param>
+      /// <param name="requestTimeoutSeconds">
+      /// how long a request to the platform may wait for its response before it is failed with a 504.
+      /// A value of 0 or less disables the timeout.
+      /// </param>
+      public SocketRequesterContext(Func<Promise<IConnection>> socketGetter, int requestTimeoutSeconds)
       {
 	      _socketGetter = () =>
          {
@@ -170,6 +193,74 @@ namespace Beamable.Server
             }
             return socketGetter();
          };
+	      _requestTimeoutMs = requestTimeoutSeconds > 0 ? requestTimeoutSeconds * 1000L : 0;
+	      if (_requestTimeoutMs > 0)
+	      {
+		      _timeoutSweeper = new Timer(SweepExpiredRequests, null, TIMEOUT_SWEEP_INTERVAL_MS, TIMEOUT_SWEEP_INTERVAL_MS);
+	      }
+      }
+
+      /// <summary>
+      /// Fail every request that is still waiting on a response from the platform.
+      /// <para/>
+      /// This must happen whenever the connection those requests went out on is lost: the gateway session that
+      /// owned the request ids died with the socket, so the responses can never arrive. Without this, any
+      /// request handler awaiting a platform call would hang forever, which pins the shutdown grace period and
+      /// leaks the handler's task.
+      /// </summary>
+      /// <param name="reason">a human readable reason, included in the failure</param>
+      /// <returns>the number of requests that were failed</returns>
+      public int FailAllPendingRequests(string reason)
+      {
+	      var failed = 0;
+	      foreach (var id in _pendingMessages.Keys)
+	      {
+		      if (!_pendingMessages.TryRemove(id, out var listener)) continue;
+		      _pendingDeadlines.TryRemove(id, out _);
+		      failed++;
+		      // a status of 0 is the existing "noconnection" signal understood by the response listener.
+		      ResolveWithFailure(listener, 0, reason);
+	      }
+
+	      if (failed > 0)
+	      {
+		      BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"Failed {failed} pending platform request(s). reason=[{reason}]");
+	      }
+	      return failed;
+      }
+
+      private void SweepExpiredRequests(object state)
+      {
+	      try
+	      {
+		      var now = NowMs;
+		      foreach (var kvp in _pendingDeadlines)
+		      {
+			      if (kvp.Value > now) continue;
+			      if (!_pendingDeadlines.TryRemove(kvp.Key, out _)) continue;
+			      if (!_pendingMessages.TryRemove(kvp.Key, out var listener)) continue;
+
+			      BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"Platform request timed out after {_requestTimeoutMs}ms. id=[{kvp.Key}] method=[{listener.Method}] path=[{listener.Path}]");
+			      ResolveWithFailure(listener, TIMEOUT_STATUS, $"no response from the platform within {_requestTimeoutMs}ms");
+		      }
+	      }
+	      catch (Exception ex)
+	      {
+		      BeamableZLoggerProvider.LogContext.Value.ZLogError($"Error while sweeping expired platform requests. type=[{ex.GetType().Name}] message=[{ex.Message}]");
+	      }
+      }
+
+      private static void ResolveWithFailure(IWebsocketResponseListener listener, int status, string message)
+      {
+	      try
+	      {
+		      var ctx = new RequestContext(string.Empty, string.Empty, listener.Id, status, 0, listener.Path, listener.Method, message);
+		      listener.Resolve(ctx);
+	      }
+	      catch (Exception ex)
+	      {
+		      BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Failed to resolve listener {listener.Id} with a failure. type=[{ex.GetType().Name}] message=[{ex.Message}]");
+	      }
       }
 
 
@@ -409,6 +500,10 @@ namespace Beamable.Server
          {
             promise.CompleteError(new Exception("request Id has already been taken in socket context. id=" +requestId));
          }
+         else if (_requestTimeoutMs > 0)
+         {
+	         _pendingDeadlines[requestId] = NowMs + _requestTimeoutMs;
+         }
          return promise;
       }
 
@@ -417,12 +512,19 @@ namespace Beamable.Server
          return _pendingMessages.TryGetValue(id, out listener);
       }
 
-      public void Remove(long id)
+      /// <summary>
+      /// Forget about a pending request. Returns false when the request was already removed (it may have
+      /// timed out, or been failed by a disconnect, before its response arrived).
+      /// </summary>
+      public bool Remove(long id)
       {
-         if (!_pendingMessages.TryRemove(id, out _))
-         {
-            throw new Exception("request Id could not be removed from the socket context. id=" +id);
-         }
+	      _pendingDeadlines.TryRemove(id, out _);
+	      if (!_pendingMessages.TryRemove(id, out _))
+	      {
+		      BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"request Id could not be removed from the socket context; it was already resolved. id=[{id}]");
+		      return false;
+	      }
+	      return true;
       }
 
 
@@ -515,6 +617,14 @@ namespace Beamable.Server
       }
 
       public static AsyncLocal<BeamActivity> ContextActivity { get; set; } = new AsyncLocal<BeamActivity>();
+
+      /// <summary>
+      /// How many times a request that the gateway rejected with a 403 will re-authenticate and retry before
+      /// the 403 is surfaced to the caller. Without a bound, a session the gateway has permanently invalidated
+      /// produces an endless auth/retry loop.
+      /// </summary>
+      public const int MAX_AUTH_RETRIES = 3;
+
       public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
 	      Func<string, T> parser = null, bool useCache = false)
       {
@@ -564,6 +674,11 @@ namespace Beamable.Server
       }
 
       public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> beamReq)
+      {
+	      return BeamableRequest(beamReq, 0);
+      }
+
+      private Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> beamReq, int authAttempt)
       {
 	      
          var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_REQUEST, ContextActivity.Value);
@@ -660,18 +775,18 @@ namespace Beamable.Server
          
          var wrappedResult = firstAttempt.RecoverWith(ex =>
          {
-            if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
+            if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway" && authAttempt < MAX_AUTH_RETRIES)
             {
                // need to wait for authentication to finish...
                BeamableZLoggerProvider.LogContext.Value.ZLogDebug(
-                  $"Request {req.id} and {truncatedMsg} failed with 403. Will reauth and and retry.");
+                  $"Request {req.id} and {truncatedMsg} failed with 403. Will reauth and and retry. attempt=[{authAttempt + 1}/{MAX_AUTH_RETRIES}]");
 
                _socketContext.Daemon.WakeAuthThread();
                var waitForAuth = WaitForAuthorization(message: msg).ToPromise();
                return waitForAuth
                      .FlatMap(x =>
                      {
-                        return BeamableRequest<T>(beamReq);
+                        return BeamableRequest<T>(beamReq, authAttempt + 1);
                         // return Request(method, uri, body, beamReq.includeAuthHeader, beamReq.parser, beamReq.useCache);
 
                      })

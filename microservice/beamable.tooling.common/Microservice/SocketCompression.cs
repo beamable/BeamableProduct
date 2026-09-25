@@ -36,6 +36,33 @@ public static class SocketCompression
         };
     }
 
+    /// <summary>
+    /// Decompress a binary websocket frame straight to UTF-8 bytes (no intermediate string), so the caller
+    /// can hand the bytes to a JSON parser without a second transcode.
+    /// </summary>
+    /// <param name="data">the frame, including the 1 byte codec prefix</param>
+    /// <param name="length">the number of valid bytes in <paramref name="data"/></param>
+    public static byte[] DecompressToBytes(byte[] data, int length)
+    {
+        if (length <= 0)
+            return Array.Empty<byte>();
+
+        var prefix = data[0];
+        var payload = new ReadOnlySpan<byte>(data, 1, length - 1);
+
+        return prefix switch
+        {
+            BinaryPrefixZstd => DecompressZstdToBytes(payload),
+            _ => throw new ArgumentException($"Unknown compression prefix: {prefix}")
+        };
+    }
+
+    private static byte[] DecompressZstdToBytes(ReadOnlySpan<byte> data)
+    {
+        using var decompressor = new Decompressor();
+        return decompressor.Unwrap(data).ToArray();
+    }
+
     private static byte[] CompressZstd(byte[] data)
     {
         using var compressor = new Compressor();

@@ -64,6 +64,11 @@ namespace Beamable.Server
 		public int MaxUniqueEventBindingCount { get; set; }
 		public bool SkipLocalEnv { get; set; }
 		public bool SkipAliasResolve { get; set; }
+		public int PlatformRequestTimeoutSeconds { get; set; }
+		public int MaxConcurrentRequests { get; set; }
+		public int MinThreadPoolThreads { get; set; }
+		public bool DisableStaleRequestDrop { get; set; }
+		public int WebsocketKeepAliveTimeoutSeconds { get; set; }
 
 		public void SetResolvedCid(string resolvedCid)
 		{
@@ -127,6 +132,11 @@ namespace Beamable.Server
 				SkipAliasResolve = args.SkipAliasResolve,
 				MaxUniqueEventBindingCount = args.MaxUniqueEventBindingCount,
 				AllowStartupWithoutBeamableSettings = args.AllowStartupWithoutBeamableSettings,
+				PlatformRequestTimeoutSeconds = args.PlatformRequestTimeoutSeconds,
+				MaxConcurrentRequests = args.MaxConcurrentRequests,
+				MinThreadPoolThreads = args.MinThreadPoolThreads,
+				DisableStaleRequestDrop = args.DisableStaleRequestDrop,
+				WebsocketKeepAliveTimeoutSeconds = args.WebsocketKeepAliveTimeoutSeconds,
 			};
 			configurator?.Invoke(next);
 			return next;
@@ -316,6 +326,12 @@ namespace Beamable.Server
 		
 		public bool SkipLocalEnv => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_SKIP_LOCAL_ENV"));
 		public bool SkipAliasResolve => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_SKIP_ALIAS_RESOLVE"));
+
+		public int PlatformRequestTimeoutSeconds => GetIntFromEnvironmentVariable("BEAM_PLATFORM_REQUEST_TIMEOUT_SECONDS", 30);
+		public int MaxConcurrentRequests => GetIntFromEnvironmentVariable("BEAM_MAX_CONCURRENT_REQUESTS", 500);
+		public int MinThreadPoolThreads => GetIntFromEnvironmentVariable("BEAM_MIN_THREADPOOL_THREADS", 32);
+		public bool DisableStaleRequestDrop => IsEnvironmentVariableTrue("BEAM_DISABLE_STALE_REQUEST_DROP");
+		public int WebsocketKeepAliveTimeoutSeconds => GetIntFromEnvironmentVariable("WS_KEEP_ALIVE_TIMEOUT_SECONDS", 30);
 	}
 
 }

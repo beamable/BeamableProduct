@@ -31,7 +31,9 @@ namespace microserviceTests.microservice
 
 		public async Task Start<T>(TestArgs dudArgs=null, Action<IDependencyBuilder> configurator=null) where T : Microservice
 		{
-			var args = new TestArgs();
+			// tests that need non-default args (a concurrency limit, a request timeout) pass them in; everything
+			// else gets the defaults.
+			var args = dudArgs ?? new TestArgs();
 		
 
 			var attr = typeof(T).GetCustomAttribute<MicroserviceAttribute>();
@@ -232,6 +234,11 @@ namespace microserviceTests.microservice
 	  public int MaxUniqueEventBindingCount => 100;
 	  public bool SkipLocalEnv => true;
 	  public bool SkipAliasResolve => true;
+	  public int PlatformRequestTimeoutSeconds { get; set; } = 30;
+	  public int MaxConcurrentRequests { get; set; } = 0;
+	  public int MinThreadPoolThreads { get; set; } = 0;
+	  public bool DisableStaleRequestDrop { get; set; } = false;
+	  public int WebsocketKeepAliveTimeoutSeconds { get; set; } = 0;
 
 	  public void SetResolvedCid(string resolvedCid)
 	  {
