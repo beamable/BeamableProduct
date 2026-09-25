@@ -89,7 +89,7 @@ public class BundlePlanCommand
 		var (services, storages, extensions) = BundleBuild.SelectComponents(plan, bundle);
 
 		var published = await BundleBuild.FetchLatestPublished(provider.GetService<IBeamBeamobundleApi>(), ns, bundle.name);
-		var diff = BundleDiff.Compute(services, storages, extensions, published);
+		var diff = BundleDiff.Compute(services, storages, extensions, bundle.bundleDependencies, published);
 		BundleDiff.Print(diff, fullName);
 
 		var planPath = await BundlePlanUtil.SaveBundlePlanToTempFolder(provider, new BundlePlanFile

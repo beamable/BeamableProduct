@@ -172,7 +172,7 @@ public class PublishBundleCommand
 		}
 		else
 		{
-			diff = BundleDiff.Compute(services, storages, extensions, published);
+			diff = BundleDiff.Compute(services, storages, extensions, bundle.bundleDependencies, published);
 			var planPath = await BundlePlanUtil.SaveBundlePlanToTempFolder(provider, new BundlePlanFile
 			{
 				bundleName = bundle.name,

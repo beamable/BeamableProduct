@@ -1825,6 +1825,16 @@ public partial class DeployUtil
 			bundleComponentIds.Add(id);
 		}
 
+		// `bundles plan`/`publish` restrict the build to a single bundle's components via includeOnlyBeamoIds
+		// in order to diff exactly those. When that bundle is itself already pinned in bundles.manifest, the
+		// strip above would resolve its published components and remove the very entries we just built —
+		// SelectComponents would then report them as "not built". Keep the explicitly-requested components in
+		// the plan; other pinned bundles' components are still stripped correctly.
+		if (includeOnlyBeamoIds != null)
+		{
+			bundleComponentIds.ExceptWith(includeOnlyBeamoIds);
+		}
+
 		if (bundleComponentIds.Count > 0)
 		{
 			remote.manifest = remote.manifest.Where(s => !bundleComponentIds.Contains(s.serviceName)).ToArray();
