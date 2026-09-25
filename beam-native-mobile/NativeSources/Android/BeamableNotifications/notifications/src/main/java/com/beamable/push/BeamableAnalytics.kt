@@ -39,7 +39,6 @@ object BeamableAnalytics {
 
     /** CoreEvent constants. */
     private const val CORE_OP = "g.core"
-    private const val FUNNEL_CATEGORY = "notification_funnel"
 
     /** Short fire-and-forget timeouts (ms) — must stay well within the FCM ~10s budget. */
     private const val CONNECT_TIMEOUT_MS = 4_000
@@ -58,10 +57,33 @@ object BeamableAnalytics {
         Thread(r, "beamable-analytics").apply { isDaemon = true }
     }
 
-    // No Converted: the platform concludes a conversion when the player meets a campaign
-    // objective, and ignores any a device reports. A persisted "Converted" from an older build is
-    // dropped on replay (the name lookup finds no match).
-    enum class FunnelType { Sent, Received, Opened, Clicked }
+    /**
+     * A funnel stage. [wire] is the CoreEvent name (`e`) the platform watches — every platform-
+     * emitted name lives in the reserved `beam_` namespace, and an event under any other spelling is
+     * simply never matched (the request still returns 202). [label] is the human-readable
+     * `funnelType` param the Portal renders as the "Step" column; it is a display dimension, not
+     * what the funnel counts, so it keeps the pre-`beam_` spellings (delivery is still "Received").
+     *
+     * No Converted: the platform concludes a conversion when the player meets a campaign
+     * objective, and ignores any a device reports.
+     */
+    enum class FunnelType(val wire: String, val label: String) {
+        Sent("beam_sent", "Sent"),
+        Delivered("beam_delivered", "Received"),
+        Opened("beam_opened", "Opened"),
+        Clicked("beam_clicked", "Clicked");
+
+        companion object {
+            /**
+             * Resolves a persisted or bridged stage name. Accepts the member name, the wire name and
+             * the label, so events queued for replay by an older build (which stored "Received")
+             * still resolve.
+             */
+            fun fromName(value: String?): FunnelType? =
+                if (value.isNullOrEmpty()) null
+                else values().firstOrNull { it.name == value || it.wire == value || it.label == value }
+        }
+    }
 
     // ---- Public entry points -------------------------------------------------
 
@@ -143,7 +165,7 @@ object BeamableAnalytics {
             // resolvable once the SDK calls configureAuth, so persist for replay rather than drop.
             Log.i(TAG, "no cid/pid scope yet; persisting funnel for replay")
             if (persistOnFailure) appendPendingFunnel(context, event)
-            PushManager.dispatchFunnelResult(event.funnelType.name, false, 0, "no scope; queued for replay")
+            PushManager.dispatchFunnelResult(event.funnelType.label, false, 0, "no scope; queued for replay")
             return
         }
         val gamerTag = intent.gamerTag ?: return
@@ -151,7 +173,7 @@ object BeamableAnalytics {
             // Unrecoverable for now (not connected to Beamable yet): persist for replay.
             Log.i(TAG, "no host in prefs; persisting funnel for replay")
             if (persistOnFailure) appendPendingFunnel(context, event)
-            PushManager.dispatchFunnelResult(event.funnelType.name, false, 0, "no host; queued for replay")
+            PushManager.dispatchFunnelResult(event.funnelType.label, false, 0, "no host; queued for replay")
             return
         }
 
@@ -163,7 +185,7 @@ object BeamableAnalytics {
             // No usable token (and refresh failed/absent): persist for replay once connected.
             Log.i(TAG, "no access token; persisting funnel for replay")
             if (persistOnFailure) appendPendingFunnel(context, event)
-            PushManager.dispatchFunnelResult(event.funnelType.name, false, 0, "no token; queued for replay")
+            PushManager.dispatchFunnelResult(event.funnelType.label, false, 0, "no token; queued for replay")
             return
         }
         var accessToken = auth.token
@@ -191,13 +213,13 @@ object BeamableAnalytics {
                 // got rejected, so refreshing again would not help. Persist for replay.
                 Log.w(TAG, "funnel POST rejected after proactive refresh; persisting for replay")
                 if (persistOnFailure) appendPendingFunnel(context, event)
-                PushManager.dispatchFunnelResult(event.funnelType.name, false, code, "auth rejected; queued for replay")
+                PushManager.dispatchFunnelResult(event.funnelType.label, false, code, "auth rejected; queued for replay")
                 return
             }
             // Token looked valid but the server rejected it; refresh ONCE and retry the POST ONCE.
             val refreshed = refreshAccessToken(prefs, host, cid, pid) ?: run {
                 if (persistOnFailure) appendPendingFunnel(context, event)
-                PushManager.dispatchFunnelResult(event.funnelType.name, false, code, "token refresh failed; queued for replay")
+                PushManager.dispatchFunnelResult(event.funnelType.label, false, code, "token refresh failed; queued for replay")
                 return
             }
             accessToken = refreshed
@@ -216,9 +238,9 @@ object BeamableAnalytics {
         if (code !in 200..299) {
             Log.w(TAG, "funnel POST unrecoverable (HTTP $code); persisting for replay")
             if (persistOnFailure) appendPendingFunnel(context, event)
-            PushManager.dispatchFunnelResult(event.funnelType.name, false, code, "HTTP $code; queued for replay")
+            PushManager.dispatchFunnelResult(event.funnelType.label, false, code, "HTTP $code; queued for replay")
         } else {
-            PushManager.dispatchFunnelResult(event.funnelType.name, true, code, "ok")
+            PushManager.dispatchFunnelResult(event.funnelType.label, true, code, "ok")
         }
     }
 
@@ -372,14 +394,14 @@ object BeamableAnalytics {
         type: FunnelType
     ): JSONArray = JSONArray().put(buildCoreEvent(intent, type))
 
-    /** Builds one CoreEvent: {"op":"g.core","e":<funnelType>,"c":"notification_funnel","p":{...}}. */
+    /** Builds one CoreEvent: {"op":"g.core","e":<FunnelType.wire>,"p":{...}}. No category: the
+     *  platform routes on the reserved `beam_` event name alone. */
     internal fun buildCoreEvent(
         intent: NotificationIntentData,
         type: FunnelType
     ): JSONObject = JSONObject()
         .put("op", CORE_OP)
-        .put("e", type.name)
-        .put("c", FUNNEL_CATEGORY)
+        .put("e", type.wire)
         .put("p", buildParams(intent, type))
 
     /** Builds the funnel event params bag (the CoreEvent `p`). Keys are emitted in alphabetical
@@ -415,7 +437,7 @@ object BeamableAnalytics {
         // column rule as offerData). Present on every stage when the push carried it.
         intent.campaignDataJson?.let { sorted["campaignData"] = it }
         intent.deeplink?.let { sorted["deeplink"] = it }
-        sorted["funnelType"] = type.name
+        sorted["funnelType"] = type.label
 
         val params = JSONObject()
         for ((k, v) in sorted) params.put(k, v)
@@ -545,8 +567,7 @@ object BeamableAnalytics {
 
             fun fromJson(obj: JSONObject): PendingFunnel {
                 val typeName = obj.optString("funnelType")
-                val type = FunnelType.values().firstOrNull { it.name == typeName }
-                    ?: FunnelType.Received
+                val type = FunnelType.fromName(typeName) ?: FunnelType.Delivered
                 return PendingFunnel(
                     funnelType = type,
                     campaignId = obj.optStringOrNull("campaignId"),

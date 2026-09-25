@@ -93,7 +93,7 @@ public:
     // Beamable funnel analytics (auth + offer tracking) — works on iOS and Android.
 
     /// Persist the player's bearer token + realm routing so the native code can authenticate
-    /// the funnel POSTs (Clicked) even when the engine VM is asleep. Call on
+    /// the funnel POSTs (beam_clicked) even when the engine VM is asleep. Call on
     /// login/refresh. `AuthJson` is the canonical AuthConfig:
     /// {"accessToken":"","refreshToken":"","accessTokenExpiresAt":<epoch-ms>,"cid":"","pid":"","host":"https://..."}.
     UFUNCTION(BlueprintCallable, Category = "Notifications")
@@ -103,7 +103,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Notifications")
     void ClearAuth();
 
-    /// Emit a "Clicked" funnel event for an offer the player acted on, attributed back to the
+    /// Emit a "beam_clicked" funnel event for an offer the player acted on, attributed back to the
     /// originating campaign. `RequestJson` is the canonical OfferTrackRequest:
     /// {"campaignId":"","nodeId":"","gamerTag":"","accountId":"","cidPid":"","deeplink":"","offer":{...}}.
     /// There is deliberately no conversion counterpart: the platform concludes a conversion when

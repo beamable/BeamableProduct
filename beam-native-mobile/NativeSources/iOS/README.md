@@ -90,7 +90,7 @@ equivalent — the closed-app path is a **Notification Service Extension**:
 
 - The push must carry `mutable-content: 1`; iOS then wakes the NSE (`extension/NotificationService.swift`)
   before display, and its service plugins run — `RichMediaServicePlugin` (attachments) and
-  `AnalyticsServicePlugin` (fires the funnel "Received" event and logs a delivery receipt into the
+  `AnalyticsServicePlugin` (fires the funnel `beam_delivered` event and logs a delivery receipt into the
   App Group store).
 - Read receipts back in-app via `getDeliveryReceipts`.
 

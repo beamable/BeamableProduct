@@ -572,11 +572,13 @@ public struct AuthConfig: Codable, Equatable {
     }
 }
 
-/// One funnel event — the engine-facing / wire param bag. `op`/`e`/`c`/`p` are
+/// One funnel event — the engine-facing / wire param bag. `op`/`e`/`p` are
 /// assembled by `BeamableAnalytics` when POSTing; this struct is what we persist for replay
 /// when a closed-app POST can't finish in the NSE budget (fallback).
 public struct FunnelEvent: Codable, Equatable {
-    public var funnelType: String          // Sent | Received | Opened | Clicked
+    /// The stage LABEL (`FunnelType.label`: Sent | Received | Opened | Clicked), emitted as the
+    /// `funnelType` param. The event name on the wire is `eventName`, never this.
+    public var funnelType: String
     public var campaignId: String
     public var nodeId: String
     public var gamerTag: String?
@@ -624,6 +626,13 @@ public struct FunnelEvent: Codable, Equatable {
         self.timestamp = timestamp
     }
 
+    /// The analytics event name (`e`) this stage is reported under — the `beam_*` wire name. Derived
+    /// rather than stored so events persisted for replay by an older build (which stored only the
+    /// label) still go out under the name the platform watches. An unknown value passes through.
+    public var eventName: String {
+        FunnelType.from(funnelType)?.rawValue ?? funnelType
+    }
+
     /// Stable identity for replay dedup. The same Received event can be enqueued twice
     /// — once by the NSE safety-timer persist and once by `emit`'s own persist-on-failure —
     /// which would otherwise replay (and double-count) the same funnel stage. Keyed on the
@@ -657,11 +666,38 @@ public struct FunnelResult: Codable, Equatable {
 
 /// The device-reported funnel stages. No `converted`: the platform concludes a conversion when
 /// the player meets a campaign objective, and ignores any a device reports.
-public enum FunnelType: String {
-    case sent = "Sent"
-    case received = "Received"
-    case opened = "Opened"
-    case clicked = "Clicked"
+///
+/// The raw value is the analytics event NAME (`e`) the platform watches. Every platform-emitted
+/// name lives in the reserved `beam_` namespace, so an authored game event can never collide with
+/// a stage. The handset's arrival receipt and the rail's delivery ack are one fact, one name:
+/// `beam_delivered`. An old spelling is not an error on the server — it is simply never watched,
+/// so the funnel reads zero while the POST still returns 202.
+public enum FunnelType: String, CaseIterable {
+    case sent = "beam_sent"
+    case delivered = "beam_delivered"
+    case opened = "beam_opened"
+    case clicked = "beam_clicked"
+
+    /// The human-readable stage label carried in the `funnelType` PARAM and in `FunnelResult`. Kept
+    /// at its pre-`beam_` spelling on purpose: the Portal renders it as the analytics detail
+    /// table's "Step" column, and engine wrappers surface it on `funnelResult`.
+    public var label: String {
+        switch self {
+        case .sent: return "Sent"
+        case .delivered: return "Received"
+        case .opened: return "Opened"
+        case .clicked: return "Clicked"
+        }
+    }
+
+    /// Resolve a stage from either spelling: the wire name (`beam_opened`) or a label (`Opened`).
+    /// Labels matter because `FunnelEvent.funnelType` stores the label, and events persisted for
+    /// replay by an older build do too. `Delivered` is accepted as the rail's spelling of `Received`.
+    public static func from(_ value: String) -> FunnelType? {
+        if let type = FunnelType(rawValue: value) { return type }
+        if value == "Delivered" { return .delivered }
+        return allCases.first { $0.label == value }
+    }
 }
 
 /// Engine-facing request for the offer-tracking helpers. Carries the campaign

@@ -629,7 +629,7 @@ object PushManager {
     }
 
     internal fun dispatchNotificationOpened(json: String) {
-        // Funnel: a notification tap is an "Opened" event. Fired natively, gated on a
+        // Funnel: a notification tap is a `beam_opened` event. Fired natively, gated on a
         // tracked campaign + scope/gamerTag inside trackFunnel.
         appContext?.let { ctx ->
             try {
@@ -693,7 +693,7 @@ object PushManager {
 
     /**
      * Reports the outcome of a native funnel-analytics POST to the listener. [funnelType] is the
-     * funnel stage name, [ok] whether it succeeded, [statusCode] the HTTP code (0 when no network
+     * stage's display label ([BeamableAnalytics.FunnelType.label]), [ok] whether it succeeded, [statusCode] the HTTP code (0 when no network
      * attempt), [message] a short human description. Mirrors [dispatchError]'s guarded direct call.
      */
     internal fun dispatchFunnelResult(funnelType: String, ok: Boolean, statusCode: Int, message: String) {

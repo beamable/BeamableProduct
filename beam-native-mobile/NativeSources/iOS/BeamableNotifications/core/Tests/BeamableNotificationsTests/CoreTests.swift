@@ -191,7 +191,7 @@ final class CoreTests: XCTestCase {
     // MARK: Beamable funnel CoreEvent
 
     func testCoreEventShapeMatchesContract() {
-        let event = FunnelEvent(funnelType: FunnelType.received.rawValue,
+        let event = FunnelEvent(funnelType: FunnelType.delivered.label,
                                 campaignId: "camp-1", nodeId: "node-1",
                                 gamerTag: "123", accountId: "acct-1", cidPid: "CID.PID",
                                 deeplink: "game://x",
@@ -199,13 +199,17 @@ final class CoreTests: XCTestCase {
                                 timestamp: 0)
         let core = BeamableAnalytics.makeCoreEvent(for: event)
         XCTAssertEqual(core["op"]?.stringValue, "g.core")
-        XCTAssertEqual(core["e"]?.stringValue, "Received")
-        XCTAssertEqual(core["c"]?.stringValue, "notification_funnel")
+        // The event name is the reserved `beam_*` stage the platform watches; an old spelling is
+        // accepted with a 202 and silently never counted.
+        XCTAssertEqual(core["e"]?.stringValue, "beam_delivered")
+        // No category: the platform stopped reading it, and the reserved name does its job.
+        XCTAssertNil(core["c"])
         let p = core["p"]
         XCTAssertEqual(p?["campaignId"]?.stringValue, "camp-1")
         XCTAssertEqual(p?["nodeId"]?.stringValue, "node-1")
         XCTAssertEqual(p?["gamerTag"]?.stringValue, "123")
         XCTAssertEqual(p?["cidPid"]?.stringValue, "CID.PID")
+        // The param stays the human-readable label — the Portal's "Step" column reads it.
         XCTAssertEqual(p?["funnelType"]?.stringValue, "Received")
         // offerData is a single column: a stringified JSON array of offer objects.
         let offers = p?["offerData"]?.stringValue.flatMap { JSON.decode([NotificationOffer].self, from: $0) }
@@ -218,19 +222,46 @@ final class CoreTests: XCTestCase {
         }
     }
 
+    func testFunnelTypeWireNamesAreReserved() {
+        // Pinned against the platform's CampaignFunnelStages / RailFunnelStages. A drift here is
+        // silent: the event is accepted and never counted.
+        XCTAssertEqual(FunnelType.sent.rawValue, "beam_sent")
+        XCTAssertEqual(FunnelType.delivered.rawValue, "beam_delivered")
+        XCTAssertEqual(FunnelType.opened.rawValue, "beam_opened")
+        XCTAssertEqual(FunnelType.clicked.rawValue, "beam_clicked")
+        for type in FunnelType.allCases { XCTAssertTrue(type.rawValue.hasPrefix("beam_")) }
+    }
+
+    func testFunnelTypeResolvesEitherSpelling() {
+        XCTAssertEqual(FunnelType.from("beam_opened"), .opened)
+        XCTAssertEqual(FunnelType.from("Opened"), .opened)
+        XCTAssertEqual(FunnelType.from("Received"), .delivered)
+        XCTAssertEqual(FunnelType.from("Delivered"), .delivered)
+        XCTAssertNil(FunnelType.from("Converted"))
+    }
+
+    func testReplayedLegacyEventGoesOutUnderTheBeamName() {
+        // An event persisted for replay by an older build stored only the label. It must still be
+        // POSTed under the name the platform watches, not the label.
+        let legacy = FunnelEvent(funnelType: "Clicked", campaignId: "c", nodeId: "n", timestamp: 0)
+        let core = BeamableAnalytics.makeCoreEvent(for: legacy)
+        XCTAssertEqual(core["e"]?.stringValue, "beam_clicked")
+        XCTAssertEqual(core["p"]?["funnelType"]?.stringValue, "Clicked")
+    }
+
     func testMakeEventReturnsNilForUntrackedCampaign() {
         let intent = CampaignIntentData(campaignId: "c") // missing nodeId
-        XCTAssertNil(BeamableAnalytics.makeEvent(.received, intent: intent))
+        XCTAssertNil(BeamableAnalytics.makeEvent(.delivered, intent: intent))
     }
 
     func testMakeEventCarriesOffersForStagesAndSingleOfferForActions() {
         // Stage events (Received/Opened) carry every offer the push held, so the funnel rows are
-        // consistent with the microservice "Sent" event.
+        // consistent with the rail's `beam_sent` event.
         let intent = CampaignIntentData(campaignId: "c", nodeId: "n", gamerTag: "1",
                                         cidPid: "CID.PID",
                                         offers: [NotificationOffer(itemId: "gold"),
                                                  NotificationOffer(itemId: "gem")])
-        let received = BeamableAnalytics.makeEvent(.received, intent: intent)
+        let received = BeamableAnalytics.makeEvent(.delivered, intent: intent)
         XCTAssertNotNil(received)
         XCTAssertEqual(received?.offers?.count, 2, "Received carries all carried offers")
         XCTAssertEqual(received?.offers?.first?.itemId, "gold")

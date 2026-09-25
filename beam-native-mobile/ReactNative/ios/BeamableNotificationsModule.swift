@@ -90,9 +90,9 @@ final class BeamableNotificationsModule: RCTEventEmitter {
     /// `LaunchTracker`, and the JS `initialize()` flushes it once the callbacks are wired.
     @objc static func bmnInstallAtLaunch() {
         // Register the default app-side funnel analytics plugin BEFORE initialize(), so a
-        // tapped notification emits the "Opened" funnel stage. This mirrors the NSE, which
-        // hardcodes AnalyticsServicePlugin for "Received": without an app-side counterpart
-        // the funnel is only half-wired (Received reports, Opened never does). Registration
+        // tapped notification emits the `beam_opened` funnel stage. This mirrors the NSE, which
+        // hardcodes AnalyticsServicePlugin for `beam_delivered`: without an app-side counterpart
+        // the funnel is only half-wired (delivery reports, the open never does). Registration
         // dedupes by plugin id, so calling it here and in `initialize()` is safe.
         PluginRegistry.shared.register(AnalyticsPlugin())
         NotificationManager.shared.initialize()

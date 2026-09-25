@@ -34,13 +34,13 @@ public final class AnalyticsPlugin: NSObject, NotificationPlugin {
     }
 
     public func onNotificationReceived(_ note: NotificationData) {
-        // Foreground receipt while the app is alive.
-        emit(.received, note: note)
+        // Foreground receipt while the app is alive — the `beam_delivered` stage.
+        emit(.delivered, note: note)
     }
 
     public func onNotificationTapped(_ note: NotificationData, actionId: String?) {
-        // A tap on the notification itself is the "Opened" funnel stage. In-app offer
-        // clicks ("Clicked") are emitted separately by the offer-tracking helpers.
+        // A tap on the notification itself is the `beam_opened` funnel stage. In-app offer
+        // clicks (`beam_clicked`) are emitted separately by the offer-tracking helpers.
         emit(.opened, note: note)
     }
 

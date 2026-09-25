@@ -22,7 +22,8 @@ public enum BeamableAnalytics {
 
     /// Build the params bag (`p`) for a single funnel event. Matches the cross-platform
     /// contract: campaignId, nodeId, gamerTag, accountId, cidPid, optional offerData,
-    /// deeplink, funnelType.
+    /// deeplink, funnelType. `funnelType` is the human-readable stage label (`Opened`), not the
+    /// `beam_*` event name — it is a display dimension the Portal renders as its "Step" column.
     public static func makeParams(for event: FunnelEvent) -> [String: JSONValue] {
         var p: [String: JSONValue] = [
             "campaignId": .string(event.campaignId),
@@ -64,12 +65,14 @@ public enum BeamableAnalytics {
         return p
     }
 
-    /// One Beamable `CoreEvent`: `{"op":"g.core","e":<funnelType>,"c":"notification_funnel","p":{...}}`.
+    /// One Beamable `CoreEvent`: `{"op":"g.core","e":<beam_* stage>,"p":{...}}`.
+    ///
+    /// No `c` (category): the platform no longer reads it. What keeps a stage from being mistaken
+    /// for an authored game event is the reserved `beam_` name itself, which no campaign may author.
     public static func makeCoreEvent(for event: FunnelEvent) -> JSONValue {
         .object([
             "op": .string("g.core"),
-            "e": .string(event.funnelType),
-            "c": .string(funnelCategory),
+            "e": .string(event.eventName),
             "p": .object(makeParams(for: event))
         ])
     }
@@ -79,8 +82,6 @@ public enum BeamableAnalytics {
         let array = JSONValue.array(events.map { makeCoreEvent(for: $0) })
         return try? JSON.encoder.encode(array)
     }
-
-    public static let funnelCategory = "notification_funnel"
 
     /// Compact JSON string for a `JSONValue` — carries free-form customData as a flat string.
     private static func jsonString(_ value: JSONValue) -> String {
@@ -93,7 +94,7 @@ public enum BeamableAnalytics {
 
     /// Compose a `FunnelEvent` from the campaign intent data of a notification. When `offer` is
     /// explicitly passed (Clicked via `trackOfferClicked`) only that single offer is attached;
-    /// stage events (Sent/Received/Opened) carry every offer the push held (`intent.offers`). The
+    /// stage events (Sent/Delivered/Opened) carry every offer the push held (`intent.offers`). The
     /// free-form `campaignData` is carried on every stage. Returns nil if the intent isn't a
     /// tracked campaign — caller can rely on that to gate emission.
     public static func makeEvent(_ type: FunnelType,
@@ -101,7 +102,7 @@ public enum BeamableAnalytics {
                                  offer: NotificationOffer? = nil) -> FunnelEvent? {
         guard intent.isTrackedCampaign,
               let campaignId = intent.campaignId, let nodeId = intent.nodeId else { return nil }
-        return FunnelEvent(funnelType: type.rawValue,
+        return FunnelEvent(funnelType: type.label,
                            campaignId: campaignId,
                            nodeId: nodeId,
                            gamerTag: intent.gamerTag,
@@ -303,7 +304,7 @@ public enum BeamableAnalytics {
     /// onto `analytics.events`. Mirrors Android's `BeamableAnalytics.primaryUrl`.
     ///
     /// The body is identical to the legacy route's — the gateway's `ClientAnalyticsEvent` has the
-    /// same `{op,e,c,p}` shape as the CoreEvent `makeBody` builds — so this is purely a URL swap.
+    /// same `{op,e,p}` shape as the CoreEvent `makeBody` builds — so this is purely a URL swap.
     public static func postAnalyticsEventsStatus(events: [FunnelEvent],
                                                  host: String,
                                                  cidPid: String,

@@ -80,7 +80,7 @@ const DEFAULT_PARAM_JSON = `{
 
 /**
  * Analytics tab: emitting arbitrary events to validate campaign objectives, the native
- * Clicked funnel event, and the native-side auth those events use when the JS runtime isn't
+ * beam_clicked funnel event, and the native-side auth those events use when the JS runtime isn't
  * running. There is no device-reported conversion: the platform concludes one when the player
  * meets an objective, so the funnel's conversion stage is driven by an objective event.
  */
@@ -212,7 +212,7 @@ export default function AnalyticsTab() {
 
       <Section title="Funnel: clicked / converted">
         <Hint>
-          Emits the native Clicked funnel event for a test offer (iOS & Android). The native call
+          Emits the native beam_clicked funnel event for a test offer (iOS & Android). The native call
           is fire-and-forget, so the button waits for the matching funnelResult event and reports
           its HTTP status below.{'\n'}
           Open the app from a campaign push and these fields auto-fill from its payload. IDs typed
@@ -239,7 +239,7 @@ export default function AnalyticsTab() {
         <Hint>
           On connect the app hands the player's tokens to the native side
           (BeamNotifications.configureAuth) so the CLOSED-APP funnel can authenticate when the JS
-          runtime is not running — that's how a Clicked event survives a push tapped from a killed
+          runtime is not running — that's how a beam_clicked event survives a push tapped from a killed
           app.
         </Hint>
         <Hint>

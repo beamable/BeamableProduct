@@ -67,10 +67,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
         val payload = template.effectivePayload()
         val intentData = NotificationIntentData.fromDataMap(payload)
 
-        // Native funnel "Received" — local notifications are part of the same funnel as remote.
+        // Native funnel delivery (`beam_delivered`) — local notifications are part of the same funnel as remote.
         try {
             BeamableAnalytics.trackFunnel(
-                appContext, intentData, BeamableAnalytics.FunnelType.Received
+                appContext, intentData, BeamableAnalytics.FunnelType.Delivered
             )
         } catch (_: Throwable) { /* best-effort */ }
 

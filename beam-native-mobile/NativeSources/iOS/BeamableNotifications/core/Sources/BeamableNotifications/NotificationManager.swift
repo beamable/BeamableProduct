@@ -253,7 +253,7 @@ public final class NotificationManager: NSObject {
         SharedConfig.shared.clearAuthConfig()
     }
 
-    /// Emit a **Clicked** funnel event for an in-app offer click, attributed to the
+    /// Emit a **`beam_clicked`** funnel event for an in-app offer click, attributed to the
     /// originating campaign. There is deliberately no conversion counterpart: the platform
     /// concludes a conversion when the player meets a campaign objective, and ignores any a
     /// device reports.
@@ -265,10 +265,12 @@ public final class NotificationManager: NSObject {
         let auth = SharedConfig.shared.loadAuthConfig()
         let intent = request.intent(fallbackAuth: auth)
         guard let event = BeamableAnalytics.makeEvent(type, intent: intent, offer: request.offer) else {
-            NSLog("[BeamableNotifications] trackOffer %@ skipped: missing campaign/scope", type.rawValue)
+            NSLog("[BeamableNotifications] trackOffer %@ skipped: missing campaign/scope", type.label)
             // Still report: this call never reaches `BeamableAnalytics.emit`, so without it a
             // caller awaiting `onFunnelResult` would just time out with no reason.
-            let result = FunnelResult(funnelType: type.rawValue, ok: false, statusCode: 0,
+            // The label, not the wire name: every other `FunnelResult` reports `event.funnelType`,
+            // which is the label, and a caller matching on it must see one spelling.
+            let result = FunnelResult(funnelType: type.label, ok: false, statusCode: 0,
                                       message: "skipped: missing campaignId/nodeId")
             dispatch { self.onFunnelResult?(result) }
             return

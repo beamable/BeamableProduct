@@ -36,12 +36,13 @@ class BeamableAnalyticsTest {
     @Test
     fun buildCoreEvent_hasCoreShape() {
         val event = BeamableAnalytics.buildCoreEvent(
-            trackedIntent(), BeamableAnalytics.FunnelType.Received
+            trackedIntent(), BeamableAnalytics.FunnelType.Delivered
         )
 
         assertEquals("g.core", event.getString("op"))
-        assertEquals("Received", event.getString("e"))
-        assertEquals("notification_funnel", event.getString("c"))
+        // The event name is the reserved wire name the platform watches; no category is sent.
+        assertEquals("beam_delivered", event.getString("e"))
+        assertFalse(event.has("c"))
 
         val p = event.getJSONObject("p")
         assertEquals("camp-1", p.getString("campaignId"))
@@ -50,6 +51,7 @@ class BeamableAnalyticsTest {
         assertEquals("acc-9", p.getString("accountId"))
         assertEquals("CID.PID", p.getString("cidPid"))
         assertEquals("game://x", p.getString("deeplink"))
+        // funnelType stays the human-readable label the Portal renders as the "Step" column.
         assertEquals("Received", p.getString("funnelType"))
         // No offers/campaignData on the intent → both omitted.
         assertFalse(p.has("offerData"))
@@ -62,7 +64,7 @@ class BeamableAnalyticsTest {
         val campaignData = """{"season":"summer"}"""
         val event = BeamableAnalytics.buildCoreEvent(
             trackedIntent(offersJson = offers, campaignDataJson = campaignData),
-            BeamableAnalytics.FunnelType.Received
+            BeamableAnalytics.FunnelType.Delivered
         )
         val p = event.getJSONObject("p")
         // offerData is the verbatim wire array string — a single flat column.
@@ -135,7 +137,7 @@ class BeamableAnalyticsTest {
         // microservice via SortedDictionary) so the funnel JSON matches across the board.
         val p = BeamableAnalytics.buildCoreEvent(
             trackedIntent(offersJson = """[{"itemId":"x"}]""", campaignDataJson = """{"k":"v"}"""),
-            BeamableAnalytics.FunnelType.Received
+            BeamableAnalytics.FunnelType.Delivered
         ).getJSONObject("p")
         val keys = p.keys().asSequence().toList()
         assertEquals(keys.sorted(), keys)
@@ -148,11 +150,11 @@ class BeamableAnalyticsTest {
 
     @Test
     fun stageEvents_carryAllCarriedOffers() {
-        // Received/Opened/Sent now carry every offer the push held (built in PendingFunnel.from),
+        // Delivered/Opened/Sent now carry every offer the push held (built in PendingFunnel.from),
         // not blank — fixing the funnel inconsistency with the microservice "Sent" event.
         val offers = """[{"itemId":"sword","value":"1"},{"itemId":"shield","value":"2"}]"""
         for (type in listOf(
-            BeamableAnalytics.FunnelType.Received,
+            BeamableAnalytics.FunnelType.Delivered,
             BeamableAnalytics.FunnelType.Opened,
             BeamableAnalytics.FunnelType.Sent
         )) {
@@ -185,12 +187,41 @@ class BeamableAnalyticsTest {
     }
 
     @Test
+    fun funnelType_wireNamesAreReservedAndLabelsUnchanged() {
+        assertEquals("beam_sent", BeamableAnalytics.FunnelType.Sent.wire)
+        assertEquals("beam_delivered", BeamableAnalytics.FunnelType.Delivered.wire)
+        assertEquals("beam_opened", BeamableAnalytics.FunnelType.Opened.wire)
+        assertEquals("beam_clicked", BeamableAnalytics.FunnelType.Clicked.wire)
+        assertEquals(listOf("Sent", "Received", "Opened", "Clicked"), BeamableAnalytics.FunnelType.values().map { it.label })
+    }
+
+    @Test
+    fun funnelType_fromName_acceptsMemberWireAndLegacyLabel() {
+        assertEquals(BeamableAnalytics.FunnelType.Delivered, BeamableAnalytics.FunnelType.fromName("Delivered"))
+        assertEquals(BeamableAnalytics.FunnelType.Delivered, BeamableAnalytics.FunnelType.fromName("beam_delivered"))
+        // An event queued for replay by an older build persisted "Received".
+        assertEquals(BeamableAnalytics.FunnelType.Delivered, BeamableAnalytics.FunnelType.fromName("Received"))
+        assertEquals(BeamableAnalytics.FunnelType.Clicked, BeamableAnalytics.FunnelType.fromName("beam_clicked"))
+        assertEquals(null, BeamableAnalytics.FunnelType.fromName("Converted"))
+        assertEquals(null, BeamableAnalytics.FunnelType.fromName(""))
+    }
+
+    @Test
+    fun drain_replaysLegacyReceivedAsDelivered() {
+        val legacy = org.json.JSONObject()
+            .put("funnelType", "Received").put("campaignId", "camp-1").put("nodeId", "node-7")
+        val e = BeamableAnalytics.PendingFunnel.fromJson(legacy)
+        assertEquals(BeamableAnalytics.FunnelType.Delivered, e.funnelType)
+        assertEquals("beam_delivered", BeamableAnalytics.buildCoreEvent(e.toIntentData(), e.funnelType).getString("e"))
+    }
+
+    @Test
     fun buildBatch_isJsonArrayOfOne() {
         val batch = BeamableAnalytics.buildBatch(
             trackedIntent(), BeamableAnalytics.FunnelType.Opened
         )
         assertEquals(1, batch.length())
-        assertEquals("Opened", batch.getJSONObject(0).getString("e"))
+        assertEquals("beam_opened", batch.getJSONObject(0).getString("e"))
     }
 
     // ---- C1: persist-and-replay -------------------------------------------------
@@ -203,7 +234,7 @@ class BeamableAnalyticsTest {
     }
 
     private fun pending(
-        type: BeamableAnalytics.FunnelType = BeamableAnalytics.FunnelType.Received,
+        type: BeamableAnalytics.FunnelType = BeamableAnalytics.FunnelType.Delivered,
         offer: NotificationOffer? = null,
         offersJson: String? = null,
         campaignDataJson: String? = null
@@ -222,7 +253,7 @@ class BeamableAnalyticsTest {
 
         assertEquals(1, drained.size)
         val e = drained.first()
-        assertEquals(BeamableAnalytics.FunnelType.Received, e.funnelType)
+        assertEquals(BeamableAnalytics.FunnelType.Delivered, e.funnelType)
         assertEquals("camp-1", e.campaignId)
         assertEquals("node-7", e.nodeId)
         assertEquals("12345", e.gamerTag)
@@ -235,7 +266,7 @@ class BeamableAnalyticsTest {
         assertEquals(campaignData, e.campaignDataJson)
         // The persisted event rebuilds a usable CoreEvent body that carries both.
         val core = BeamableAnalytics.buildCoreEvent(e.toIntentData(), e.funnelType)
-        assertEquals("Received", core.getString("e"))
+        assertEquals("beam_delivered", core.getString("e"))
         val p = core.getJSONObject("p")
         assertEquals("camp-1", p.getString("campaignId"))
         assertEquals("sword", JSONArray(p.getString("offerData")).getJSONObject(0).getString("itemId"))

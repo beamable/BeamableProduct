@@ -5,34 +5,45 @@ namespace Beamable.Api.Analytics
 	/// <summary>
 	/// The engagement signal for an in-game mail sent by a campaign message rail: the player moved it
 	/// from Unread to Read.
-	/// <para>Deliberately byte-identical in shape to what the native push SDKs already emit — same
-	/// <c>notification_funnel</c> category, same <c>outreachId</c>/<c>trackId</c> params — so the
-	/// platform's campaign consumer attributes it with no ingest change at all. Push gets this stage
-	/// from the handset echoing the notification payload; in-game mail has no handset, so this client
-	/// report IS the Opened signal.</para>
+	/// <para>Same shape as what the native push SDKs emit — the reserved <c>beam_opened</c> name and
+	/// an <c>outreachId</c> param — so the platform's campaign consumer attributes it with no ingest
+	/// change at all. Push gets this stage from the handset echoing the notification payload; in-game
+	/// mail has no handset, so this client report IS the open signal. An unprefixed name here is never
+	/// watched and silently counts nothing.</para>
 	/// </summary>
 	public class MailOpenedFunnelEvent : CoreEvent
 	{
 		/// <summary>
-		/// Cross-platform wire contract, matched by iOS <c>BeamableAnalytics.funnelCategory</c> and
-		/// Android <c>FUNNEL_CATEGORY</c>. The platform routes on it, so it must not drift.
+		/// Low-cardinality producer label. The platform no longer routes on the category — the reserved
+		/// stage name is what marks a funnel event — so this is a BI descriptor only.
 		/// </summary>
-		public const string FunnelCategory = "notification_funnel";
+		public const string MailCategory = "mail";
 
-		/// <summary>The funnel stage. The event NAME is the stage — the category names the producer.</summary>
-		public const string OpenedStage = "Opened";
+		/// <summary>
+		/// The funnel stage, as the platform watches it. Cross-platform wire contract, matched by iOS and
+		/// Android <c>FunnelType.Opened</c> and the web SDK's <c>FunnelStage.Opened</c>. Every
+		/// platform-emitted name lives under the reserved <c>beam_</c> prefix, which no authored event
+		/// may use.
+		/// </summary>
+		public const string OpenedStage = "beam_opened";
 
 		public MailOpenedFunnelEvent(string outreachId, string trackId, long mailId)
-			: base(FunnelCategory, OpenedStage, new Dictionary<string, object>
+			: base(MailCategory, OpenedStage, BuildParams(outreachId, trackId, mailId))
+		{
+		}
+
+		private static Dictionary<string, object> BuildParams(string outreachId, string trackId, long mailId)
+		{
+			// outreachId is the only key the platform matches on; the campaign and node come off the row
+			// it matched. trackId is no longer read by the campaign path, so it rides along for BI only.
+			var p = new Dictionary<string, object>
 			{
-				// The per-recipient dedup key, and the campaign/node ref the consumer parses. Both are
-				// required: without trackId the stage is dropped as `no_track_ref`.
 				{ "outreachId", outreachId },
-				{ "trackId", trackId },
 				{ "funnelType", "ingame" },
 				{ "mailId", mailId.ToString() }
-			})
-		{
+			};
+			if (!string.IsNullOrEmpty(trackId)) p["trackId"] = trackId;
+			return p;
 		}
 	}
 }
