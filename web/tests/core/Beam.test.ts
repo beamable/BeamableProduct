@@ -256,6 +256,7 @@ describe('Beam', () => {
 
     it('survives a malformed payload without killing other handlers', async () => {
       const { beam, ws } = await initBeam();
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const seen: unknown[] = [];
       beam.on('segments.transition', () => {
         throw new Error('handler blew up');
@@ -264,6 +265,12 @@ describe('Beam', () => {
 
       expect(() => ws.emit('segments.transition', change)).not.toThrow();
       expect(seen).toEqual([change]);
+      // Caught and logged inside the async listener, not left as an unhandled rejection.
+      expect(warn).toHaveBeenCalledWith(
+        'A websocket message listener threw:',
+        expect.objectContaining({ message: 'handler blew up' }),
+      );
+      warn.mockRestore();
     });
 
     it('off(context, handler) removes only that handler', async () => {

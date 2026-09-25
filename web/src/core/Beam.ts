@@ -271,33 +271,39 @@ export class Beam extends ClientServicesMixin(BeamBase) {
     const abortController = new AbortController();
     const isRefreshable = this.isRefreshableContext(context);
     const listener = async (e: MessageEvent) => {
-      const eventData = JSON.parse(e.data) as {
-        context: string;
-        messageFull: string;
-      };
-      // ignore the message if the context does not match
-      if (eventData.context !== context) return;
+      try {
+        const eventData = JSON.parse(e.data) as {
+          context: string;
+          messageFull: string;
+        };
+        // ignore the message if the context does not match
+        if (eventData.context !== context) return;
 
-      // A notification context carries its data directly: the payload *is* the event, so it goes
-      // straight to the handler. parseSocketMessage is deliberately not used here — it extracts the
-      // payload by taking the first key that is not `scopes`/`delay`, which is right for a refresh
-      // envelope and returns nonsense for an object that is itself the data.
-      if (!isRefreshable) {
-        handler(
-          JSON.parse(
-            eventData.messageFull,
-            BeamJsonUtils.reviver,
-          ) as BeamClientContextData<K>,
+        // A notification context carries its data directly: the payload *is* the event, so it goes
+        // straight to the handler. parseSocketMessage is deliberately not used here — it extracts the
+        // payload by taking the first key that is not `scopes`/`delay`, which is right for a refresh
+        // envelope and returns nonsense for an object that is itself the data.
+        if (!isRefreshable) {
+          handler(
+            JSON.parse(
+              eventData.messageFull,
+              BeamJsonUtils.reviver,
+            ) as BeamClientContextData<K>,
+          );
+          return;
+        }
+
+        await this.dispatchRefresh(
+          context as keyof RefreshableServiceMap,
+          eventData.messageFull,
+          abortController.signal,
+          handler as (data: unknown) => void,
         );
-        return;
+      } catch (err) {
+        // The listener is async, so the socket's per-listener try/catch only ever sees a rejected
+        // promise; without this a throwing handler becomes an unhandled rejection.
+        console.warn('A websocket message listener threw:', err);
       }
-
-      await this.dispatchRefresh(
-        context as keyof RefreshableServiceMap,
-        eventData.messageFull,
-        abortController.signal,
-        handler as (data: unknown) => void,
-      );
     };
 
     // Registered on the socket wrapper, not on `rawSocket`: `reconnect()` replaces the underlying

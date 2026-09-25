@@ -92,6 +92,7 @@ describe('BeamWebSocket', () => {
       cid: 'cid-1',
       pid: 'pid-2',
       refreshToken: 'refresh-123',
+      apiUrl: 'http://localhost:8080',
     });
 
     // advance the fake timers so the constructor `setTimeout` in MockWebSocket fires
@@ -110,6 +111,7 @@ describe('BeamWebSocket', () => {
       cid: 'cid-1',
       pid: 'pid-2',
       refreshToken: 'refresh-123',
+      apiUrl: 'http://localhost:8080',
     });
     await vi.runAllTimersAsync();
 
@@ -138,6 +140,7 @@ describe('BeamWebSocket', () => {
       cid: 'cid-1',
       pid: 'pid-2',
       refreshToken: 'refresh-123',
+      apiUrl: 'http://localhost:8080',
     });
 
     await expect(p).rejects.toThrow(
@@ -154,6 +157,7 @@ describe('BeamWebSocket', () => {
       cid: 'cid-1',
       pid: 'pid-2',
       refreshToken: 'refresh-123',
+      apiUrl: 'http://localhost:8080',
     });
     await vi.runAllTimersAsync();
     await expect(connectPromise).resolves.toBeUndefined();
@@ -173,6 +177,7 @@ describe('BeamWebSocket', () => {
       cid: 'cid-1',
       pid: 'pid-2',
       refreshToken: 'refresh-123',
+      apiUrl: 'http://localhost:8080',
     });
     await vi.runAllTimersAsync();
 
