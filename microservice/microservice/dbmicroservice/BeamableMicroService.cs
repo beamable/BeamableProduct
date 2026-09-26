@@ -89,6 +89,19 @@ namespace Beamable.Server
       private const int HTTP_STATUS_SERVICE_UNAVAILABLE = 503;
 
       /// <summary>
+      /// Error code of the 503 answered when <see cref="IMicroserviceArgs.MaxConcurrentRequests"/> is exceeded.
+      /// The gateway retries the request on another instance and logs and counts the refusal by this code
+      /// (MicroserviceRefusal.SERVICE_BUSY in the backend), so it must not change without changing both sides.
+      /// </summary>
+      public const string SERVICE_BUSY_ERROR_CODE = "serviceBusy";
+
+      /// <summary>
+      /// Error code of the 503 answered while the instance is draining for shutdown
+      /// (MicroserviceRefusal.DRAINING in the backend).
+      /// </summary>
+      public const string DRAINING_ERROR_CODE = "draining";
+
+      /// <summary>
       /// Header stamped by the gateway on every request it forwards to a microservice: the epoch-millisecond
       /// deadline after which the gateway will have answered the caller with a timeout and will discard any
       /// late response. Older gateways do not send it, in which case no deadline handling happens.
@@ -827,7 +840,7 @@ namespace Beamable.Server
 		      // while a 503 is retried on another instance right away.
 		      Log.Warning("Received a message after service began draining; answering 503 so the gateway retries elsewhere. id={id}", ctx.Id);
 		      activity.SetStatus(ActivityStatusCode.Error);
-		      await SendServiceUnavailableResponse(ctx, sw, "draining", "This service instance is shutting down. Retry on another instance.");
+		      await SendServiceUnavailableResponse(ctx, sw, DRAINING_ERROR_CODE, "This service instance is shutting down. Retry on another instance.");
 		      return;
 	      }
 
@@ -853,7 +866,7 @@ namespace Beamable.Server
 		      {
 			      Log.Warning("Shedding request: {inflight} requests are already in flight (limit={limit}). id={id} path={path}", inflight, limit, ctx.Id, ctx.Path);
 			      activity.SetStatus(ActivityStatusCode.Error);
-			      await SendServiceUnavailableResponse(ctx, sw, "serviceBusy",
+			      await SendServiceUnavailableResponse(ctx, sw, SERVICE_BUSY_ERROR_CODE,
 				      $"This service instance has {inflight} requests in flight (limit {limit}). Retry on another instance.");
 			      return;
 		      }

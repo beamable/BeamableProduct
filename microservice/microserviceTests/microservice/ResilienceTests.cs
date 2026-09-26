@@ -82,7 +82,7 @@ namespace microserviceTests.microservice
 						MessageMatcher
 							.WithReqId(1)
 							.WithStatus(503)
-							.WithBody<WebsocketErrorResponse>(body => body.error == "draining" && body.status == 503),
+							.WithBody<WebsocketErrorResponse>(body => body.error == BeamableMicroService.DRAINING_ERROR_CODE && body.status == 503),
 						MessageResponder.NoResponse(),
 						MessageFrequency.OnlyOnce(),
 						desc: "503 while draining"
@@ -178,7 +178,7 @@ namespace microserviceTests.microservice
 						MessageMatcher
 							.WithReqId(2)
 							.WithStatus(503)
-							.WithBody<WebsocketErrorResponse>(body => body.error == "serviceBusy" && body.status == 503),
+							.WithBody<WebsocketErrorResponse>(body => body.error == BeamableMicroService.SERVICE_BUSY_ERROR_CODE && body.status == 503),
 						MessageResponder.Custom(_ =>
 						{
 							shedSeen.TrySetResult(true);
