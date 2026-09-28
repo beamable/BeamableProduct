@@ -35,6 +35,11 @@ namespace Beamable.Server
 	   /// <inheritdoc />
 	   public object[] GetParameters(ServiceMethod method, IDependencyProvider provider)
 	   {
+		   if (_ctx.BodyElement.ValueKind == JsonValueKind.Array)
+		   {
+			   return GetParametersForArrayBody(method, provider);
+		   }
+		   
 		   var hasPayloadProperty = _ctx.BodyElement.TryGetProperty("payload", out var payloadElem);
 
 		   var isPayloadArray = hasPayloadProperty && payloadElem.ValueKind == JsonValueKind.Array;
@@ -63,6 +68,36 @@ namespace Beamable.Server
 		   }
 
 		   return internalProvider.GetParameters(method, provider);
+	   }
+	   
+	   /// <summary>
+	   /// Resolves injected parameters for a top-level JSON array request.
+	   /// Handlers must read and deserialize the array through Context.Body.
+	   /// </summary>
+	   /// <param name="method">The service method being invoked.</param>
+	   /// <param name="provider">The provider used to resolve injected dependencies.</param>
+	   /// <returns>
+	   /// The resolved dependencies, or an empty argument array for a parameterless handler.
+	   /// </returns>
+	   /// <exception cref="MicroserviceException">
+	   /// Thrown with status 400 when the method declares a non-injected parameter.
+	   /// </exception>
+	   private object[] GetParametersForArrayBody(ServiceMethod method, IDependencyProvider provider)
+	   {
+		   foreach (var parameterName in method.ParameterNames)
+		   {
+			   if (method.ParameterSources[parameterName] != ParameterSource.Injection)
+			   {
+				   throw new MicroserviceException(
+					   400,
+					   "inputParameterFailure",
+					   "Top-level JSON arrays require a handler with no body-bound " +
+					   "parameters. Read the array from Context.Body, or send a JSON " +
+					   "object containing the named method parameters.");
+			   }
+		   }
+
+		   return new NamedParameterProvider(_ctx).GetParameters(method, provider);
 	   }
    }
 
