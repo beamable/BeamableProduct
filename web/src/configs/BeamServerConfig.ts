@@ -27,7 +27,7 @@ export interface BeamServerConfig extends BeamBaseConfig {
    *
    * @example
    * ```ts
-   * import { serverServices } from "beamable-sdk";
+   * import { serverServices } from "@beamable/sdk";
    *
    * const config: BeamServerConfig = {
    *   services: serverServices,

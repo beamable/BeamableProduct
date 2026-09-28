@@ -70,6 +70,14 @@ public class BundlePlanCommand
 		var provider = args.DependencyProvider;
 		var bundle = BundleWorkspace.Require(args.ConfigService, args.bundleName);
 		BundleBuild.ValidateComponentsExist(args.BeamoLocalSystem.BeamoManifest, bundle);
+
+		// A zone bundle must be built against the zone manifest, or every zone-scoped component is
+		// filtered out of the plan and SelectComponents fails. Derive the deploy scope from the
+		// bundle's own scope field (no --scope flag — that name is taken by the visibility tier) and
+		// pin BEAM_SCOPE to {cid}.{zid} for the build, exactly like `beam deploy --scope zone`.
+		args.Scope = bundle.IsZoneScoped ? DeployScope.Zone : DeployScope.Realm;
+		using var scopeHandle = await DeployArgs.ApplyDeployScopeAsync(args, args.Scope);
+
 		var ns = await BundleNamespace.Get(args);
 		var fullName = BundleNamespace.Qualify(ns, bundle.name);
 
@@ -81,7 +89,7 @@ public class BundlePlanCommand
 		var (services, storages, extensions) = BundleBuild.SelectComponents(plan, bundle);
 
 		var published = await BundleBuild.FetchLatestPublished(provider.GetService<IBeamBeamobundleApi>(), ns, bundle.name);
-		var diff = BundleDiff.Compute(services, storages, extensions, published);
+		var diff = BundleDiff.Compute(services, storages, extensions, bundle.bundleDependencies, published);
 		BundleDiff.Print(diff, fullName);
 
 		var planPath = await BundlePlanUtil.SaveBundlePlanToTempFolder(provider, new BundlePlanFile

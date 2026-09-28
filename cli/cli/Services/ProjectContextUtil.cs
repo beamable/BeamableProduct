@@ -347,10 +347,45 @@ public static class ProjectContextUtil
 	/// A shared collection was tried and broken cached <see cref="Project"/> references after
 	/// re-parses (UnloadProject detaches the live instance another caller still holds).
 	/// </summary>
+	// A concurrent build (e.g. every service's own `dotnet beam ... generate pe-client` during a
+	// `beam project run --with-group`) can be (re)writing a project's obj/*.g.props / *.g.targets while
+	// we evaluate it here. With the default load settings MSBuild THROWS InvalidProjectFileException on a
+	// momentarily-missing generated import, which aborts manifest generation and can silently drop a
+	// service's storage dependency. The marker/reference properties we read (BeamProjectType,
+	// BeamServiceScope, BeamId, ProjectReference) are plain top-level csproj elements that do not depend
+	// on the generated imports, so tolerating a missing/invalid/empty import lets them still evaluate.
+	const ProjectLoadSettings LOAD_SETTINGS_TOLERANT_OF_CONCURRENT_BUILDS =
+		ProjectLoadSettings.IgnoreMissingImports
+		| ProjectLoadSettings.IgnoreInvalidImports
+		| ProjectLoadSettings.IgnoreEmptyImports;
+
 	static Project LoadProjectFresh(string fullPath)
 	{
-		var collection = new ProjectCollection { IsBuildEnabled = true };
-		return collection.LoadProject(fullPath);
+		// The tolerant settings stop a *missing/invalid* generated import from throwing, but a file caught
+		// truly mid-write (partial XML) can still surface a transient parse/IO error; a short backoff lets
+		// the concurrent writer finish and we re-evaluate cleanly. Steady state (no concurrent build) hits
+		// the first attempt and behaves exactly as before.
+		const int maxAttempts = 5;
+		Exception lastError = null;
+		for (var attempt = 0; attempt < maxAttempts; attempt++)
+		{
+			var collection = new ProjectCollection { IsBuildEnabled = true };
+			try
+			{
+				return new Project(fullPath, globalProperties: null, toolsVersion: null, collection,
+					LOAD_SETTINGS_TOLERANT_OF_CONCURRENT_BUILDS);
+			}
+			catch (Exception ex) when (ex is Microsoft.Build.Exceptions.InvalidProjectFileException
+			                           || ex is System.IO.IOException)
+			{
+				lastError = ex;
+				collection.UnloadAllProjects();
+				System.Threading.Thread.Sleep(50 * (attempt + 1));
+			}
+		}
+
+		throw lastError ?? new Microsoft.Build.Exceptions.InvalidProjectFileException(
+			$"Failed to evaluate project [{fullPath}] after {maxAttempts} attempts.");
 	}
 
 	static bool TryGetCachedProject(string path, out CsharpProjectMetadata metadata)

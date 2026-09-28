@@ -13,25 +13,31 @@ public class BundlesCommand : CommandGroup
 /// <summary>
 /// Resolves an ACL scope argument into the literal value the catalog expects
 /// (<c>&lt;cid&gt;.&lt;pid&gt;</c>, <c>&lt;cid&gt;</c>, or <c>*</c>). Accepts the friendly keywords
-/// <c>realm</c> / <c>org</c> / <c>public</c> (expanded from the current context) or a literal value,
+/// <c>private</c> / <c>org</c> / <c>public</c> (expanded from the current context) or a literal value,
 /// which is validated for shape. Throws <see cref="CliException"/> on an unrecognized value. The
 /// server still enforces authorization (you can only widen within your own cid, admin-gated).
+/// <para>
+/// <c>private</c> maps to the <c>&lt;cid&gt;.&lt;pid&gt;</c> wire token, which the server expands to the
+/// caller's current scope: the realm for a realm bundle, or the zone (<c>&lt;cid&gt;.&lt;zid&gt;</c>) when
+/// the request is zone-scoped. It is scope-relative, which is why the keyword is <c>private</c> rather
+/// than <c>realm</c>.
+/// </para>
 /// </summary>
 public static class BundleAclScope
 {
-	public const string Realm = "realm";
+	public const string Private = "private";
 	public const string Org = "org";
 	public const string Public = "public";
 
 	public static string Resolve(string scope, IAppContext ctx)
 	{
 		if (string.IsNullOrWhiteSpace(scope))
-			throw new CliException("--scope is required. Use 'realm', 'org', or 'public'.");
+			throw new CliException("--scope is required. Use 'private', 'org', or 'public'.");
 
 		var value = scope.Trim();
 		switch (value.ToLowerInvariant())
 		{
-			case Realm: return "cid.pid";
+			case Private: return "cid.pid";
 			case Org: return "cid";
 			case Public:
 			case "*":
@@ -41,7 +47,7 @@ public static class BundleAclScope
 		// A literal value must be '*', a bare '<cid>', or '<cid>.<pid>' (cids/pids contain no dots).
 		if (value == "*") return value;
 
-		throw new CliException($"Invalid --scope=[{scope}]. Use 'realm', 'org', or 'public'.");
+		throw new CliException($"Invalid --scope=[{scope}]. Use 'private', 'org', or 'public'.");
 	}
 }
 

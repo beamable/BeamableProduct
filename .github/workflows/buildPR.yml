@@ -112,7 +112,23 @@ jobs:
       DOTNET_CLI_UI_LANGUAGE: ${{ matrix.dotnet-cli-ui-language }}
     steps:
       - name: Check Docker
-        run: docker version
+        shell: pwsh
+        run: |
+          # The Windows daemon is sometimes still starting when the job begins,
+          # which reads as a hard npipe connection failure. Back off and retry.
+          $delay = 2
+          $deadline = (Get-Date).AddSeconds(90)
+          while ($true) {
+            docker version
+            if ($LASTEXITCODE -eq 0) { break }
+            if ((Get-Date) -ge $deadline) {
+              Write-Host "::error::Docker daemon was unreachable for 90 seconds."
+              exit 1
+            }
+            Write-Host "Docker daemon unreachable; retrying in $delay seconds."
+            Start-Sleep -Seconds $delay
+            $delay = [Math]::Min($delay * 2, 15)
+          }
       - name: Check concurrency
         run: echo 'cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{ matrix.runners }}-${{ matrix.test-culture }}'
       - uses: actions/checkout@v5
@@ -314,8 +330,8 @@ jobs:
       # Pinned to the last-good SHA (Sept 7 run). The moving @v4 tag was re-pointed to a
       # revision that shells out to the game-ci Go CLI, which aborts with
       # "[WARN] Unknown argument: version" and exit 1 before Unity ever launches.
-      # Revert to @v4 once that upstream regression is fixed.
-      - uses: game-ci/unity-test-runner@0ff419b913a3630032cbe0de48a0099b5a9f0ed9 # v4.3.1 -- pinned; see commit message
+      # Revert to @v4 once that upstream regression is fixed. ~Claude
+      - uses: game-ci/unity-test-runner@0ff419b913a3630032cbe0de48a0099b5a9f0ed9 # v4
         id: tests
         timeout-minutes: 30
         env:
@@ -473,8 +489,8 @@ jobs:
       # Pinned to the last-good SHA (Sept 7 run). The moving @v4 tag was re-pointed to a
       # revision that shells out to the game-ci Go CLI, which aborts with
       # "[WARN] Unknown argument: version" and exit 1 before Unity ever launches.
-      # Revert to @v4 once that upstream regression is fixed.
-      - uses: game-ci/unity-test-runner@0ff419b913a3630032cbe0de48a0099b5a9f0ed9 # v4.3.1 -- pinned; see commit message
+      # Revert to @v4 once that upstream regression is fixed. ~Claude
+      - uses: game-ci/unity-test-runner@0ff419b913a3630032cbe0de48a0099b5a9f0ed9 # v4
         id: tests
         timeout-minutes: 30
         env:

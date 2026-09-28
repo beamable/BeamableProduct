@@ -12,18 +12,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `MailMessage.metadata` — the opaque per-message map a campaign message rail stamps its `beam_outreach` / `trackId` attribution onto, now carried on the generated `Message`, `SendMailRequest` and `SendMailObjectRequest` models and surfaced on `MailMessage`. Null for ordinary game mail, which is the normal case.
 - `AbsMailApi` now reports the campaign funnel's `Opened` automatically when campaign mail moves from `Unread` to `Read`, so a game writes no tracking code of its own. Push gets that stage from the handset echoing the notification payload back; in-game mail has no handset, so this client report *is* the Opened signal. Ships `MailOpenedFunnelEvent`, shaped identically to what the iOS and Android push SDKs already emit (same `notification_funnel` category, same `outreachId` / `trackId` params) so the platform attributes it with no ingest change. Best-effort and fire-and-forget: a failed analytics call never makes a mail look unread.
 - `MessageRailContract.DeliveryModeKey` / `DeliveryDurable` — a federation can declare on `MessageRailSendResponse.params` that it delivers *durably* (an accepted message is already in the recipient's possession, e.g. in-game mail waiting in a mailbox), so no separate receipt will ever arrive and the platform emits `Delivered` alongside `Sent` instead of leaving that stage structurally zero. For a durable rail, Sent and Delivered track ~1:1 by design.
+- `IFederatedMessageRail<T>.CheckMessageRailConfig()` — a federation reports whether it is configured well enough to deliver, and the platform consults it *before* a campaign targeting that rail is published, so a realm missing its provider credentials fails at authoring time instead of silently erroring on every send. Ships `MessageRailConfigStatus`, which distinguishes MISSING (`missingKeys`, fully qualified so an operator provisions them in one pass) from INVALID (`invalidReason`) from UNKNOWN (`readable == false`). Unknown never blocks a publish: a credential store that cannot be read is an outage, not a misconfiguration.
 
 ### Changed
 - CLI HTTP requests now retry `429 Too Many Requests` up to 5 times with jittered exponential back-off instead of failing the caller.
 - CLI startup network calls (alias/cid resolution and token refresh) are now bounded to 8 seconds and non-fatal, so an unreachable or half-up backend warns and continues offline instead of hanging every command.
 - `beam project run --with-group` now staggers its service fan-out, so parallel `generate-env` calls no longer trip the gateway's rate limiter.
 - Portal extension "open in browser" landing URLs now honor the `--portal-url` override.
+- Update `MongoDB.Driver` dependency to `3.11.2`.
+- Update `SharpCompress` dependency to `0.50.4`.
+- Update CLI `OpenTelemetry` dependencies to `1.18.0`.
 
 ### Fixed
 - `content ps --watch` now recovers from filesystem watcher overflow by performing an authoritative full rescan instead of leaving consumers with an incomplete local content state.
 - A portal extension whose rebuild throws no longer takes down the whole `beam project run` process. `FileSystemWatcher` callbacks run on thread-pool threads, so an escaping exception killed every service and extension in the group rather than just the failing one; the failure is now logged and the rebuild stays a failed rebuild. Concurrent rebuilds are also serialised, since two file-change events could reach the builder at once and collide writing `metadata.json`.
 - Portal extension scanning no longer excludes sym linked package files
 - Fixed orphaned Unity .meta files left behind when cleaning generated Beamable source directories.
+- Improve OpenAPI schema population
 - `beam project run` no longer hangs silently when a portal extension or embedded-Mongo service fails to start. Those faults were unobservable behind infinite sibling tasks; they now log, emit a terminal stream update, and release the waiting consumer.
 - `beam project run` progress no longer freezes at "Bundling Beamable Properties…" when a service dies during `generate-env`; both the structured and plain-text milestone tables are now consulted on both transports.
 - A failing `POST /basic/auth/token` no longer mutually recurses into a stack overflow, because auth-token requests are excluded from the token-refresh retry path. Timeout retries are also no longer an unbounded fixed-delay loop, since the retry count is now carried through the internal retry instead of being reset.

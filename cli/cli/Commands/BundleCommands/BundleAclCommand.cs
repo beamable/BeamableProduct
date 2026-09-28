@@ -32,7 +32,7 @@ public class BundleAclCommand : AtomicCommand<BundleAclCommandArgs, BundleAclCom
 	{
 		AddArgument(new Argument<string>("bundle-name", "The bundle to widen, optionally namespaced as @<namespace>/<bundle-name>. Visibility applies to the whole name, so no tag or checksum is accepted"),
 			(args, i) => args.bundleName = i);
-		AddOption(new Option<string>("--scope", "Visibility tier to widen to (each tier is a superset of the previous, not a list of realms): 'realm' = only this realm; 'org' = every realm in your customer; 'public' = every realm in every customer. '*' is also accepted as an alias for 'public'"),
+		AddOption(new Option<string>("--scope", "Visibility tier to widen to (each tier is a superset of the previous, not a list of realms): 'private' = only this scope (the realm, or the zone for a zone bundle); 'org' = every realm and zone in your customer; 'public' = every realm in every customer. '*' is also accepted as an alias for 'public'"),
 			(args, i) => args.scope = i);
 	}
 

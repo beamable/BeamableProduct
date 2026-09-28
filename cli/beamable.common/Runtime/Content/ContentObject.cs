@@ -428,28 +428,45 @@ namespace Beamable.Common.Content
 	      }
       }
 
-      private IEnumerator DelayedValidate()
-      {
-	      double baseTime = EditorApplication.timeSinceStartup;
-	      double elapsed = 0d;
-	      double delay = 0.3d;
-	      
-	      while (elapsed < delay)
-	      {
-		     elapsed = EditorApplication.timeSinceStartup - baseTime;
-		     yield return null;
-	      }
-	      
-	      OnEditorChanged?.Invoke();
-	      _validateCoroutine = null;
-      }
+		private IEnumerator DelayedValidate()
+		{
+			double baseTime = EditorApplication.timeSinceStartup;
+			double elapsed = 0d;
+			double delay = 0.3d;
+
+			while (elapsed < delay)
+			{
+				elapsed = EditorApplication.timeSinceStartup - baseTime;
+				yield return null;
+			}
+
+			_validateCoroutine = null;
+			if (ContentStatus != ContentStatus.Deleted)
+			{
+				OnEditorChanged?.Invoke();
+			}
+		}
+
+		public void CancelPendingEditorChangeNotification()
+		{
+			if (_validateCoroutine == null)
+			{
+				return;
+			}
+
+			EditorCoroutineUtility.StopCoroutine(_validateCoroutine);
+			_validateCoroutine = null;
+		}
 
 		private void ScheduleDelayedValidate()
 		{
-			if (_validateCoroutine != null)
+			CancelPendingEditorChangeNotification();
+
+			if (ContentStatus == ContentStatus.Deleted)
 			{
-				EditorCoroutineUtility.StopCoroutine(_validateCoroutine);
+				return;
 			}
+
 			_validateCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedValidate(), this);
 		}
 
