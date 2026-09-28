@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `beam.on('segments.transition', handler)` — subscribe to segment membership changes. The handler
+  receives a `SegmentMembershipChanged` (`segmentId`, `kind`, `cause`, `ruleVersion`, `timestamp`).
+  It is an advisory signal to re-read, not a source of truth: delivery is best-effort, filtered
+  server-side to players who appear connected, and not stored for an offline player — re-read the
+  membership endpoints on receipt.
+- `NotificationEventMap` / `SegmentMembershipChanged` types. `beam.on` / `beam.off` now accept both
+  refreshable-service contexts and pass-through notification contexts. For a notification context
+  the payload is handed to the handler as-is; no service `refresh()` is called.
 - Native **React Native** build target (`dist/react-native`), selected automatically by Metro
   via the package `exports` `"react-native"` condition. Ships AsyncStorage-backed token,
   config, and content storage (`ReactNativeTokenStorage`, `ReactNativeConfigStorage`,
@@ -41,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recompute on `SegmentsApi`.
 - `beam.analytics` / `beamServer.analytics(playerId)` — an `AnalyticsService` with `track(event)`,
   `trackBatch(events)` and the never-throwing `trackSafely(event)`, plus the `AnalyticsEvent` type
-  and the `FUNNEL_CATEGORY` constant. The SDK could previously only *query* analytics
+  and the `FUNNEL_CATEGORY` constant. The SDK could previously only _query_ analytics
   (`analyticsPostQuery`) and had no way to emit at all, so a web or React Native game could not
   report campaign funnel stages the way Unity and the native push SDKs do.
 - `beam.mail` / `beamServer.mail(playerId)` — a `MailService` with `list(params)`, `get(id)`,
@@ -77,6 +85,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Realtime subscriptions no longer stop firing after a reconnect. `beam.on` handlers were attached
+  to the `WebSocket` instance current at subscribe time, and reconnecting replaces that instance —
+  so every subscription silently died on the first dropped connection. `BeamWebSocket` now owns its
+  message listeners (`addListener` / `removeListener`) and re-attaches them to the new socket.
+- A throwing message handler no longer prevents other handlers for the same context from running.
 - The realtime websocket no longer fails with close 1006 on a device or emulator when the realm's
   client defaults advertise a loopback socket host. A `localhost` / `127.0.0.1` socket host is now
   retargeted to the configured `apiUrl` host, preserving the socket's own scheme and port.
