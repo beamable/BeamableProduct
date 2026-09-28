@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A portal extension whose rebuild throws no longer takes down the whole `beam project run` process. `FileSystemWatcher` callbacks run on thread-pool threads, so an escaping exception killed every service and extension in the group rather than just the failing one; the failure is now logged and the rebuild stays a failed rebuild. Concurrent rebuilds are also serialised, since two file-change events could reach the builder at once and collide writing `metadata.json`.
 - Portal extension scanning no longer excludes sym linked package files
 - Fixed orphaned Unity .meta files left behind when cleaning generated Beamable source directories.
+- Improve OpenAPI schema population
 - `beam project run` no longer hangs silently when a portal extension or embedded-Mongo service fails to start. Those faults were unobservable behind infinite sibling tasks; they now log, emit a terminal stream update, and release the waiting consumer.
 - `beam project run` progress no longer freezes at "Bundling Beamable Properties…" when a service dies during `generate-env`; both the structured and plain-text milestone tables are now consulted on both transports.
 - A failing `POST /basic/auth/token` no longer mutually recurses into a stack overflow, because auth-token requests are excluded from the token-refresh retry path. Timeout retries are also no longer an unbounded fixed-delay loop, since the retry count is now carried through the internal retry instead of being reset.
