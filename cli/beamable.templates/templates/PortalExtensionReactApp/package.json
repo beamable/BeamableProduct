@@ -6,6 +6,7 @@
   "beamable": {
     "version": "1.0.0",
     "portalExtension": true,
+    "serviceScope": "realm",
     "microserviceDependencies": [],
     "mounts": [
       {

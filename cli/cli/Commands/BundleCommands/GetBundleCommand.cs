@@ -10,13 +10,16 @@ namespace cli.BundleCommands;
 public class GetBundleCommandArgs : CommandArgs
 {
 	public string bundleRef;
-	public bool pin;
+	public bool install;
 }
 
 public class GetBundleCommandOutput
 {
 	public BundleInfo bundle;
 	public BundleTagInfo[] tags;
+
+	/// <summary>The release version this content was published as.</summary>
+	public long version;
 }
 
 public class GetBundleCommand : AtomicCommand<GetBundleCommandArgs, GetBundleCommandOutput>, ISkipManifest
@@ -29,8 +32,8 @@ public class GetBundleCommand : AtomicCommand<GetBundleCommandArgs, GetBundleCom
 	{
 		AddArgument(new Argument<string>("bundle-ref", "The bundle name, optionally @<tag> or @sha256:<checksum>, and optionally namespaced as @<namespace>/<bundle-name> to read another customer's bundle"),
 			(args, i) => args.bundleRef = i);
-		AddOption(new Option<bool>(new[] { "--pin" }, "Also pin the fetched checksum into the local manifest.beam.json references"),
-			(args, i) => args.pin = i);
+		AddOption(new Option<bool>(new[] { "--install" }, "Also install the fetched checksum into the local bundles.manifest.beam.json references"),
+			(args, i) => args.install = i);
 	}
 
 	public override async Task<GetBundleCommandOutput> GetResult(GetBundleCommandArgs args)
@@ -54,21 +57,25 @@ public class GetBundleCommand : AtomicCommand<GetBundleCommandArgs, GetBundleCom
 
 		var info = BundleInfo.FromBundle(response.bundle);
 
-		if (args.pin)
+		if (args.install)
 		{
 			if (string.IsNullOrEmpty(info?.checksum))
 			{
-				Log.Warning("Could not pin: the fetched bundle has no checksum.");
+				Log.Warning("Could not install: the fetched bundle has no checksum.");
 			}
 			else
 			{
+				var isZone = BundleWorkspace.IsZoneScope(info.scope);
 				var manifest = args.ConfigService.LoadManifestReferences() ?? new ManifestReferences();
-				manifest.references[fullName] = info.checksum;
+				manifest.ForScope(isZone)[fullName] = info.checksum;
 				args.ConfigService.SaveManifestReferences(manifest);
-				Log.Information($"Pinned [{fullName}] → [{info.checksum}] in {ConfigService.MANIFEST_FILE_NAME}");
+				Log.Information($"Installed [{fullName}] → [{info.checksum}] into the {(isZone ? BundleWorkspace.SCOPE_ZONE : BundleWorkspace.SCOPE_REALM)} section of {ConfigService.MANIFEST_FILE_NAME}");
 			}
 		}
 
-		return new GetBundleCommandOutput { bundle = info, tags = response.tags.ToTagInfos() };
+		return new GetBundleCommandOutput
+		{
+			bundle = info, tags = response.tags.ToTagInfos(), version = response.version.GetOrElse(0)
+		};
 	}
 }

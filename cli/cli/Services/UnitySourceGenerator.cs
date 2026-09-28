@@ -1881,7 +1881,6 @@ public static class UnityHelper
 		if (!hasMethod) return null;
 
 
-		var varRef = new CodeSnippetExpression($"ref {field.Name}");
 		var referenceField = new CodeVariableReferenceExpression(field.Name);
 		var serializeName = new CodePrimitiveExpression(apiFieldName);
 
@@ -1890,7 +1889,7 @@ public static class UnityHelper
 		// if the field is required, we can simply return the usage of the serialization method...
 		if (isRequired)
 		{
-			methodParams = new List<CodeExpression> { serializeName, varRef };
+			methodParams = new List<CodeExpression> { serializeName, new CodeDirectionExpression(FieldDirection.Ref, referenceField) };
 			methodParams.AddRange(extraParameters);
 			return new CodeExpressionStatement(new CodeMethodInvokeExpression(invokeSerializationMethod, methodParams.ToArray()));
 		}
@@ -1917,7 +1916,7 @@ public static class UnityHelper
 		methodParams = new List<CodeExpression>
 		{
 			serializeName,
-			new CodeFieldReferenceExpression(varRef, nameof(Optional<int>.Value))
+			new CodeDirectionExpression(FieldDirection.Ref, new CodeFieldReferenceExpression(referenceField, nameof(Optional<int>.Value)))
 		};
 		methodParams.AddRange(extraParameters);
 

@@ -14,10 +14,12 @@ import { PUT } from '@/constants';
 import { realmIdPlaceholder } from '@/__generated__/apis/constants';
 import { segmentIdPlaceholder } from '@/__generated__/apis/constants';
 import type { ApiCustomersRealmsSegmentsAttributesGetSegmentsResponse } from '@/__generated__/schemas/ApiCustomersRealmsSegmentsAttributesGetSegmentsResponse';
+import type { ApiCustomersRealmsSegmentsPropertiesRealmsGetSegmentsResponse } from '@/__generated__/schemas/ApiCustomersRealmsSegmentsPropertiesRealmsGetSegmentsResponse';
 import type { AudienceRequest } from '@/__generated__/schemas/AudienceRequest';
 import type { BulkMembershipResponse } from '@/__generated__/schemas/BulkMembershipResponse';
 import type { CreateSegmentRequest } from '@/__generated__/schemas/CreateSegmentRequest';
 import type { DuplicateSegmentRequest } from '@/__generated__/schemas/DuplicateSegmentRequest';
+import type { FlowBucketUnit } from '@/__generated__/schemas/enums/FlowBucketUnit';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
 import type { ListMutationRequest } from '@/__generated__/schemas/ListMutationRequest';
@@ -30,6 +32,7 @@ import type { RealmReconcileResult } from '@/__generated__/schemas/RealmReconcil
 import type { SegmentAuditInfoCursorPagedResult } from '@/__generated__/schemas/SegmentAuditInfoCursorPagedResult';
 import type { SegmentClearResponse } from '@/__generated__/schemas/SegmentClearResponse';
 import type { SegmentCountResponse } from '@/__generated__/schemas/SegmentCountResponse';
+import type { SegmentFlowResponse } from '@/__generated__/schemas/SegmentFlowResponse';
 import type { SegmentMemberInfoCursorPagedResult } from '@/__generated__/schemas/SegmentMemberInfoCursorPagedResult';
 import type { SegmentReconcileResult } from '@/__generated__/schemas/SegmentReconcileResult';
 import type { SegmentResponse } from '@/__generated__/schemas/SegmentResponse';
@@ -261,6 +264,31 @@ export async function customersPostRealmsSegmentsReconcileByCustomerIdAndRealmId
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
+export async function customersGetRealmsSegmentsProperties(requester: HttpRequester, customerId: string, realmId: string, segmentId: string, gamertag?: string): Promise<HttpResponse<ApiCustomersRealmsSegmentsPropertiesRealmsGetSegmentsResponse>> {
+  let endpoint = "/api/customers/{customerId}/realms/{realmId}/segments/{segmentId}/properties/realms".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId)).replace(segmentIdPlaceholder, endpointEncoder(segmentId));
+  
+  // Make the API request
+  return makeApiRequest<ApiCustomersRealmsSegmentsPropertiesRealmsGetSegmentsResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param customerId - The `customerId` parameter to include in the API request.
+ * @param realmId - The `realmId` parameter to include in the API request.
+ * @param segmentId - The `segmentId` parameter to include in the API request.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
 export async function customersPostRealmsSegmentsPropertiesRecompute(requester: HttpRequester, customerId: string, realmId: string, segmentId: string, gamertag?: string): Promise<HttpResponse<SegmentResponse>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/segments/{segmentId}/properties/recompute".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId)).replace(segmentIdPlaceholder, endpointEncoder(segmentId));
   
@@ -282,10 +310,15 @@ export async function customersPostRealmsSegmentsPropertiesRecompute(requester: 
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param customerId - The `customerId` parameter to include in the API request.
  * @param realmId - The `realmId` parameter to include in the API request.
+ * @param custom - The `custom` parameter to include in the API request.
+ * @param domain - The `domain` parameter to include in the API request.
+ * @param namespace - The `namespace` parameter to include in the API request.
+ * @param refresh - The `refresh` parameter to include in the API request.
+ * @param visibility - The `visibility` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersGetRealmsSegmentsAttributes(requester: HttpRequester, customerId: string, realmId: string, gamertag?: string): Promise<HttpResponse<ApiCustomersRealmsSegmentsAttributesGetSegmentsResponse>> {
+export async function customersGetRealmsSegmentsAttributes(requester: HttpRequester, customerId: string, realmId: string, custom?: boolean, domain?: string, namespace?: string[], refresh?: boolean, visibility?: string, gamertag?: string): Promise<HttpResponse<ApiCustomersRealmsSegmentsAttributesGetSegmentsResponse>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/segments/attributes".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId));
   
   // Make the API request
@@ -293,6 +326,13 @@ export async function customersGetRealmsSegmentsAttributes(requester: HttpReques
     r: requester,
     e: endpoint,
     m: GET,
+    q: {
+      custom,
+      domain,
+      namespace,
+      refresh,
+      visibility
+    },
     g: gamertag,
     w: true
   });
@@ -436,11 +476,12 @@ export async function customersPutRealmsSegmentsState(requester: HttpRequester, 
  * @param customerId - The `customerId` parameter to include in the API request.
  * @param realmId - The `realmId` parameter to include in the API request.
  * @param segmentId - The `segmentId` parameter to include in the API request.
+ * @param asOf - The `asOf` parameter to include in the API request.
  * @param cursor - The `cursor` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function customersGetRealmsSegmentsMembers(requester: HttpRequester, customerId: string, realmId: string, segmentId: string, cursor?: string, gamertag?: string): Promise<HttpResponse<SegmentMemberInfoCursorPagedResult>> {
+export async function customersGetRealmsSegmentsMembers(requester: HttpRequester, customerId: string, realmId: string, segmentId: string, asOf?: Date, cursor?: string, gamertag?: string): Promise<HttpResponse<SegmentMemberInfoCursorPagedResult>> {
   let endpoint = "/api/customers/{customerId}/realms/{realmId}/segments/{segmentId}/members".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId)).replace(segmentIdPlaceholder, endpointEncoder(segmentId));
   
   // Make the API request
@@ -449,6 +490,7 @@ export async function customersGetRealmsSegmentsMembers(requester: HttpRequester
     e: endpoint,
     m: GET,
     q: {
+      asOf,
       cursor
     },
     g: gamertag,
@@ -610,6 +652,41 @@ export async function customersPostRealmsSegmentsExcludesRemove(requester: HttpR
     e: endpoint,
     m: POST,
     p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param customerId - The `customerId` parameter to include in the API request.
+ * @param realmId - The `realmId` parameter to include in the API request.
+ * @param segmentId - The `segmentId` parameter to include in the API request.
+ * @param bucket - The `bucket` parameter to include in the API request.
+ * @param days - The `days` parameter to include in the API request.
+ * @param from - The `from` parameter to include in the API request.
+ * @param to - The `to` parameter to include in the API request.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function customersGetRealmsSegmentsFlow(requester: HttpRequester, customerId: string, realmId: string, segmentId: string, bucket?: FlowBucketUnit, days?: number, from?: Date, to?: Date, gamertag?: string): Promise<HttpResponse<SegmentFlowResponse>> {
+  let endpoint = "/api/customers/{customerId}/realms/{realmId}/segments/{segmentId}/flow".replace(customerIdPlaceholder, endpointEncoder(customerId)).replace(realmIdPlaceholder, endpointEncoder(realmId)).replace(segmentIdPlaceholder, endpointEncoder(segmentId));
+  
+  // Make the API request
+  return makeApiRequest<SegmentFlowResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      bucket,
+      days,
+      from,
+      to
+    },
     g: gamertag,
     w: true
   });

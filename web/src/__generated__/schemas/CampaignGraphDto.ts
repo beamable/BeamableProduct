@@ -3,11 +3,13 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
+import type { CampaignAuditDto } from './CampaignAuditDto';
 import type { CampaignConfigDto } from './CampaignConfigDto';
 import type { GraphEdgeDto } from './GraphEdgeDto';
 import type { GraphNodeDto } from './GraphNodeDto';
 
 export type CampaignGraphDto = { 
+  audit?: CampaignAuditDto; 
   campaignId?: string; 
   config?: CampaignConfigDto; 
   edges?: GraphEdgeDto[]; 

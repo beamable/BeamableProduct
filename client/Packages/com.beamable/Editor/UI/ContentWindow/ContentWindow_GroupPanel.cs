@@ -86,9 +86,10 @@ namespace Beamable.Editor.UI.ContentWindow
 				Rect contentRect = new Rect(rowRect);
 				
 				contentRect.xMin += INDENT_WIDTH;
-				GUI.Label(contentRect, "Show all");
+				GUI.Label(contentRect, "All content types");
+				RegisterButtonTooltip(rowRect, "Show all content types. Keep the name, tag, and status filters.");
 
-				if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
+				if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && rowRect.Contains(Event.current.mousePosition))
 				{
 					SelectedContentType.Clear();
 					UpdateActiveFilterSearchText();

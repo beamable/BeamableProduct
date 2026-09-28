@@ -47,7 +47,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/scripts/beam-cli.sh"
 
-PUBLISH_ARGS=(web publish --product-dir "$SCRIPT_DIR")
+# --product-dir is read by the .NET CLI, so pass a native Windows path (no-op off Cygwin/MSYS).
+PUBLISH_ARGS=(web publish --product-dir "$(beam_native_path "$SCRIPT_DIR")")
 
 # Translate the friendly --build alias (and BEAM_FULL_BUILD=1) into the CLI's --force-install, and
 # pass everything else through untouched.
@@ -77,7 +78,8 @@ if [ -n "$BEAM_SKIP_UPDATE" ]; then
   echo "BEAM_SKIP_UPDATE set — your extensions still have the PREVIOUS build installed."
   echo "Run 'beam web use' in the repo holding them to pick this one up."
 else
-  WORKSPACE="${BEAM_WORKSPACE:-$SCRIPT_DIR}"
+  # --workspace is read by the .NET CLI, so pass a native Windows path (no-op off Cygwin/MSYS).
+  WORKSPACE="$(beam_native_path "${BEAM_WORKSPACE:-$SCRIPT_DIR}")"
   echo ""
   echo "--- Refreshing extensions in [$WORKSPACE] ---"
   # `beam web use` force-reinstalls: the pin is already 0.0.123 after the first run, so a plain install

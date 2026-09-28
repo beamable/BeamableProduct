@@ -2,6 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
+        <OutputType>Exe</OutputType>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
 
@@ -11,12 +12,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing.XUnit" Version="1.1.1"/>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="1.1.1"/>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.1"/>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.2"/>
-        <PackageReference Include="xunit" Version="2.4.2"/>
-        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="1.1.3"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.3"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1"/>
+        <PackageReference Include="xunit.v3.mtp-off" Version="4.0.1"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
@@ -28,5 +28,21 @@
         <ProjectReference Include="..\..\MicroserviceSourceGen\MicroserviceSourceGen\MicroserviceSourceGen.csproj"/>
         <ProjectReference Include="..\MicroserviceSourceGen.Tests.DepTest\MicroserviceSourceGen.Tests.DepTest.csproj" />
     </ItemGroup>
+
+    <!-- The analyzer project exposes these assemblies as compile-only, but the standalone test executable needs them in its dependency manifest. -->
+    <Target Name="IncludeBeamableReferencesAsRuntimeDependencies" AfterTargets="ResolveAssemblyReferences">
+        <ItemGroup>
+            <ReferencePath Update="@(ReferencePath)"
+                           Condition="'%(ReferencePath.Filename)' == 'Unity.Beamable.Runtime.Common'"
+                           IncludeRuntimeDependency="true"
+                           MSBuildSourceProjectFile="$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../../../cli/beamable.common/beamable.common.csproj'))"
+                           NuGetPackageId="Beamable.Common" />
+            <ReferencePath Update="@(ReferencePath)"
+                           Condition="'%(ReferencePath.Filename)' == 'beamable.tooling.common'"
+                           IncludeRuntimeDependency="true"
+                           MSBuildSourceProjectFile="$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../../../microservice/beamable.tooling.common/beamable.tooling.common.csproj'))"
+                           NuGetPackageId="Beamable.Tooling.Common" />
+        </ItemGroup>
+    </Target>
 
 </Project>

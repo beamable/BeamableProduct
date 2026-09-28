@@ -100,6 +100,7 @@ namespace Beamable.Server
 				[nameof(IFederatedMessageRail<DummyThirdParty>.SendMessageBatch)] = "SendMessageBatch",
 				[nameof(IFederatedMessageRail<DummyThirdParty>.RegisterUserWithMessageRail)] = "RegisterUserWithMessageRail",
 				[nameof(IFederatedMessageRail<DummyThirdParty>.UnregisterUserWithMessageRail)] = "UnregisterUserWithMessageRail",
+				[nameof(IFederatedMessageRail<DummyThirdParty>.CheckMessageRailConfig)] = "CheckMessageRailConfig",
 				// Virtual-offer methods route on the literal method name too, for the same reason: the
 				// backend POSTs {federationId}/GrantOffer (see BeamableAPI CampaignOfferFederation).
 				//

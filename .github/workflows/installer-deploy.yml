@@ -36,7 +36,7 @@ jobs:
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
-      - uses: game-ci/unity-test-runner@v4
+      - uses: game-ci/unity-test-runner@0ff419b913a3630032cbe0de48a0099b5a9f0ed9 # v4.3.1 -- pinned; see commit message
         id: tests
         timeout-minutes: 20
         env:

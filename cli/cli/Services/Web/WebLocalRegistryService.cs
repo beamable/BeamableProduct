@@ -36,6 +36,9 @@ public class WebLocalRegistryService
 	public const string DefaultRegistry = "http://localhost:4873";
 	public const string DefaultCdn = "http://localhost:4874";
 
+	/// <summary>The public npm registry a released <c>@beamable</c> pin must always resolve against.</summary>
+	public const string PublicRegistry = "https://registry.npmjs.org/";
+
 	/// <summary>Directory inside the product repo holding the registry's docker-compose file.</summary>
 	public const string LocaldevDirName = "portal-localdev";
 
@@ -259,18 +262,26 @@ public class WebLocalRegistryService
 	}
 
 	/// <summary>
-	/// The npm arguments needed to install a project whose <c>@beamable/portal-toolkit</c> pin is a local
-	/// developer build — the local registry bound to the <c>@beamable</c> scope, plus its auth token.
-	/// Returns an empty string for every other project, so a normal install is completely untouched.
-	///
+	/// The npm arguments needed to install a project's <c>@beamable/portal-toolkit</c> pin, chosen from the
+	/// pinned version:
+	/// <list type="bullet">
+	/// <item>
+	/// A local developer build (<c>0.0.123-*</c>) exists only on the local registry, so the local registry is
+	/// bound to the <c>@beamable</c> scope, plus its auth token. Required, not an optimisation: a plain
+	/// <c>npm install</c> would resolve it against npmjs, 404, and fail the build.
+	/// </item>
+	/// <item>
+	/// A released build gets no special routing — an empty string. verdaccio proxies npmjs (see
+	/// <c>portal-localdev/verdaccio/config.yml</c>), so a released <c>@beamable</c> spec resolves through
+	/// whatever registry is configured: verdaccio when the default points there (it falls back to npmjs on
+	/// its own), or npmjs directly otherwise. The old <c>--@beamable:registry=&lt;public&gt;</c> override was
+	/// removed so verdaccio owns the fallback.
+	/// </item>
+	/// </list>
 	/// <para>
-	/// Required, not an optimisation: a local-dev version exists only on the local registry, so a plain
-	/// <c>npm install</c> resolves it against npmjs, 404s, and fails the build.
-	/// </para>
-	/// <para>
-	/// This used to route the *whole* install at the local registry, on the reasoning that the registry
-	/// proxies everything else to npmjs anyway. It does — but that also made a dev-only container and its
-	/// cache of the upstream a hard dependency of every package in the tree, and a few truncated cache
+	/// The local-dev case used to route the *whole* install at the local registry, on the reasoning that the
+	/// registry proxies everything else to npmjs anyway. It does — but that also made a dev-only container and
+	/// its cache of the upstream a hard dependency of every package in the tree, and a few truncated cache
 	/// entries were enough to turn a seconds-long step into a ten-minute one. See
 	/// <see cref="ScopedRegistryFlag"/>.
 	/// </para>
@@ -280,6 +291,7 @@ public class WebLocalRegistryService
 		var pinned = ReadPinnedVersion(Path.Combine(projectDir, "package.json"), ToolkitPackage);
 		if (!IsLocalDevVersion(pinned))
 		{
+			Log.Verbose($"[{projectDir}] pins the released {ToolkitPackage}@{pinned}; installing from the default registry (verdaccio proxies npmjs)");
 			return string.Empty;
 		}
 

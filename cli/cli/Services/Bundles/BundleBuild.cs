@@ -21,6 +21,7 @@ public static class BundleBuild
 	/// Validate that every component the bundle lists exists as a local component, before the
 	/// (potentially expensive) build. BeamoIds are case-sensitive, so a mis-cased component would
 	/// otherwise fail late and without a hint — this suggests the case-insensitive near match.
+	/// Also enforces that the bundle is single-scope (see <see cref="BundleWorkspace.ValidateComponentScope"/>).
 	/// </summary>
 	public static void ValidateComponentsExist(BeamoLocalManifest localManifest, BundleConfigFile bundle)
 	{
@@ -43,6 +44,9 @@ public static class BundleBuild
 				$"Bundle=[{bundle.name}] lists unknown components. Fix {Path.GetFileName(bundle.filePath)}:\n - " +
 				string.Join("\n - ", problems));
 		}
+
+		// All components exist locally; now enforce they share one scope (and match a declared scope).
+		BundleWorkspace.ValidateComponentScope(localManifest, bundle);
 	}
 
 	/// <summary>
@@ -76,11 +80,11 @@ public static class BundleBuild
 	}
 
 	/// <summary>Fetch the catalog's latest published entry for a bundle, or null if it was never published.</summary>
-	public static async Task<Bundle> FetchLatestPublished(IBeamBeamobundleApi api, string ns, string name)
+	public static async Task<BundleView> FetchLatestPublished(IBeamBeamobundleApi api, string ns, string name)
 	{
 		try
 		{
-			Bundle bundle = (await api.GetBundles(name, ns)).bundle; // implicit Optional<Bundle> -> Bundle
+			BundleView bundle = (await api.GetBundles(name, ns)).bundle; // implicit Optional<BundleView> -> BundleView
 			return bundle;
 		}
 		catch (RequesterException e) when (e.Status == 404)
