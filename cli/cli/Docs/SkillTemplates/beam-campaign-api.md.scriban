@@ -1,0 +1,371 @@
+---
+name: beam-campaign-api
+description: Use the Campaign HTTP API — author and publish a campaign graph, drive its lifecycle, and read the send funnel, the way the Portal campaigns extension does.
+---
+
+# Use the Campaign API
+
+A **campaign** is an immutable node/edge graph that walks players through a journey: enrol them,
+send outreach on a message rail, evaluate goals, and route on the outcome. This skill is about
+*consuming* the API — authoring a graph, publishing it, driving its lifecycle, and reading the
+funnel. It is written from the Portal campaigns extension, which is the reference client.
+
+> For building the rail a send node delivers on, load `beam-message-rail-federation`.
+
+## The three things that surprise people
+
+1. **Validation failures are HTTP 200 with `ok: false`.** Only a malformed DTO or bad paging
+   args are 4xx. Always check `ok` before trusting `version`.
+2. **Funnel stage keys are `beam_*`** (`beam_sent`, `beam_opened`, …) and each value is an
+   **object** `{sealed, pending, lagging}`, not a number. The generated SDK client has not caught
+   up on either — see [SDK drift](#sdk-drift).
+3. **Campaign graphs are CID-scoped.** Every route needs only a CID-scoped requester; none of
+   them takes a realm in the path. Omitting `realm` on the list returns every realm's campaigns.
+
+## Auth and prefixes
+
+All routes live under **`/api/campaigns`**. CID/PID come from the request context, never the URL.
+
+- Every action carries `[RequirePermission("Campaigns", Read|Write)]` →
+  **Admin, Developer, Tester** (and SuperAdmin, which short-circuits everything). Below Tester is
+  a 403.
+- One extra rule: a **`Write` from a zone-scoped request requires Admin**, whatever the role
+  matrix says. The Portal campaigns extension is a zone extension, so its writes take that path.
+- Headers: `Authorization: Bearer <operator token>`, the requester's scope header
+  (`{cid}.{pid|ZONE_*}`), `Content-Type: application/json`.
+- Author identity on writes comes from the token's **`accountId`**, not its `PlayerId` — an
+  operator token often has no PlayerId for the realm. `audit` is **response-only**; sending it is
+  silently ignored, so a client cannot claim authorship.
+
+JSON is camelCase and enums serialize as strings.
+
+## The surface
+
+| Route | Auth | Purpose |
+|---|---|---|
+| `POST /api/campaigns/draft` | Write | Save a draft; also the cheap validation probe |
+| `POST /api/campaigns/publish` | Write | Publish — in place, or as a new version |
+| `GET /api/campaigns` | Read | List, filter, page |
+| `GET /api/campaigns/{id}/{version}` | Read | Fetch the graph |
+| `GET /api/campaigns/{id}/{version}/status` | Read | Current lifecycle phase |
+| `GET /api/campaigns/{id}/{version}/funnel?live=` | Read | Per-node send funnel |
+| `POST /api/campaigns/{id}/{version}/deactivate` | Write | Drain or hard-stop |
+| `POST /api/campaigns/{id}/{version}/archive` | Write | Retire a drained campaign |
+| `POST /api/campaigns/{id}/{version}/reactivate` | Write | Restart an inactive one |
+| `DELETE /api/campaigns/{id}/{version}` | Write | Delete an **unpublished** draft |
+
+### `POST /draft`
+
+Body is a raw `CampaignGraphDto`. Returns `SaveDraftResponseDto { ok, errors[] }`.
+
+Validation runs first and **nothing is written** when it fails, which makes this the natural
+"check my graph" call — it returns the full error list without publishing. A draft creates **no
+directory row**: it is invisible to the runtime and `/status` 404s for it.
+
+The save is a **whole-document replace**. Never build a graph from a partial read and save it.
+
+### `POST /publish`
+
+```jsonc
+{ "graph": { /* CampaignGraphDto */ }, "priorMode": "Drain" }   // or "Hard"
+```
+
+Returns `PublishResponseDto { ok, version, isNewVersion, errors[], changes[] }`.
+
+Publish does three things a client must understand:
+
+- **It validates the graph**, exactly like `/draft`.
+- **It asks each send node's rail whether it is configured in this realm.** Only a *definite*
+  "not configured" yields `RailNotConfigured`; an unreachable rail is UNKNOWN and lets the publish
+  through. The message names every missing key at once.
+- **It classifies the change.** A `Content` edit (a message/offer ref, cosmetic config) applies
+  **in place** at the same version — `isNewVersion: false`. A `Structural` change (shape, timing,
+  targeting) publishes a **new version** and atomically cuts the prior one over to `WindingDown`
+  (`priorMode: "Drain"`) or `Halting` (`priorMode: "Hard"`).
+
+`changes[]` tells you which it was: `{ kind: "Structural" | "Content", message, node, edge, field }`.
+
+### `GET /api/campaigns` — list
+
+All query params optional; filters AND together. Offset paging with a total, not a cursor.
+
+| param | type | default | notes |
+|---|---|---|---|
+| `campaignId` | string | — | exact |
+| `name` | string | — | case-insensitive **prefix** match |
+| `phase` | enum | — | **repeatable**: `?phase=Draft&phase=Active` |
+| `createdBy` / `publishedBy` | string | — | matches the account id **or** the stored email |
+| `tag` | string | — | |
+| `realm` | string | — | campaigns whose `acceptedRealms` contains this PID |
+| `createdAfter` / `createdBefore` | ISO-8601 | — | |
+| `publishedAfter` / `publishedBefore` | ISO-8601 | — | |
+| `sort` | enum | `CreatedAt` | `CreatedAt`, `PublishedAt`, `LastUpdatedAt`, `Name`, `CampaignId` |
+| `descending` | bool | `true` | |
+| `skip` | int | `0` | must be ≥ 0 |
+| `limit` | int | `50` | 1–200 |
+
+`limit > 200` and `skip < 0` are **rejected as 400**, not clamped — so a caller asking for more
+than is served learns about it instead of quietly paging wrong.
+
+```json
+{ "records": [ { "campaignId": "cmp-7f3a91c2", "version": 2, "name": "Lapsed whales",
+                 "phase": "Active",
+                 "createdBy": { "accountId": "112233", "email": "ops@studio.com", "kind": "User" },
+                 "createdAt": "2026-09-01T12:04:11.000Z",
+                 "publishedBy": { "accountId": "112233", "email": "ops@studio.com", "kind": "User" },
+                 "publishedAt": "2026-09-03T09:41:02.000Z" } ],
+  "total": 37, "skip": 0, "limit": 50 }
+```
+
+`total` is the count matching the same filter **before** the window. There is **one row per
+(campaign, version)**, drafts included — a version with no directory row reports `"Draft"`. To
+resolve "the current version", take the max version for that `campaignId`.
+
+### `GET /{id}/{version}` and `/status`
+
+`/{id}/{version}` returns the full `CampaignGraphDto` with `audit` populated; **404** if there is
+no stored graph. `/status` returns `{ campaignId, version, phase }`; **404 for an unpublished
+draft** — that 404 is the documented way to tell Draft from published.
+
+`/status` is what you poll after every lifecycle command, because each one is an async
+desired-state write.
+
+## The lifecycle
+
+```
+Draft ──publish──▶ Launching ──(system: backfill drained)──▶ Active
+                       │                                       │
+                       ├──deactivate Drain──▶ WindingDown ◀─────┤
+                       └──deactivate Hard───▶ Halting  ◀────────┘
+                                    │              │
+                    (MaxDrainDuration or deactivate Hard)
+                                    ▼              ▼
+                              (system: drained) Inactive ──archive──▶ Archived
+                                                    └──reactivate──▶ Launching
+```
+
+`Launching → Active`, `WindingDown → Inactive` and `Halting → Inactive` are **system**
+transitions with no endpoint — poll `/status`.
+
+Runtime gates worth knowing: a player can be **enrolled** only in `Launching`/`Active`; in-flight
+players keep **progressing** through `WindingDown` but stop at `Halting`; `Inactive`/`Archived`
+are terminal and dropped from the runtime at zero cost.
+
+### The lifecycle commands
+
+All take no body except `deactivate`, and all return **200 with an empty body, or 409**.
+
+- `deactivate` — `{"mode": "Drain"}` stops new enrolment and lets in-flight players finish;
+  `{"mode": "Hard"}` force-exits them. `WindingDown → Halting` is a legal escalation.
+- `archive` — `Inactive → Archived` only. Drain it first.
+- `reactivate` — `Inactive → Launching`, a fresh era.
+- `DELETE` — refuses once the version has been published (409); a live version is retired through
+  the lifecycle, not deleted.
+
+**409 is the expected answer to an inapplicable command, not a failure.** The commands are
+idempotent: re-issuing one that already took effect returns 200 (`WindingDown→WindingDown`,
+`Halting→Halting`, `Archived→Archived`, `Launching→Launching`).
+
+## Reading the funnel
+
+```
+GET /api/campaigns/{id}/{version}/funnel            # live=true (default)
+GET /api/campaigns/{id}/{version}/funnel?live=false # sealed only, one query, pending == 0
+```
+
+```json
+{ "campaignId": "cmp-7f3a91c2", "version": 1,
+  "nodes": [ { "node": "send-1-1-1",
+    "stages": {
+      "beam_queued":    { "sealed": 120, "pending": 3, "lagging": false },
+      "beam_sent":      { "sealed": 118, "pending": 2, "lagging": false },
+      "beam_delivered": { "sealed": 112, "pending": 1, "lagging": false },
+      "beam_opened":    { "sealed":  41, "pending": 0, "lagging": false },
+      "beam_clicked":   { "sealed":  12, "pending": 0, "lagging": false },
+      "beam_converted": { "sealed":   7, "pending": 0, "lagging": false },
+      "beam_goal_purchase@DE_1234": { "sealed": 9, "pending": 0, "lagging": false },
+      "beam_met_purchase@DE_1234":  { "sealed": 7, "pending": 0, "lagging": false } } } ] }
+```
+
+### The stage keys
+
+| key | meaning |
+|---|---|
+| `beam_queued` | the campaign handed the send to the rail — its own counter, never from outside |
+| `beam_sent` | the rail federation acked it |
+| `beam_delivered` · `beam_opened` · `beam_clicked` | progressively deeper engagement |
+| `beam_converted` | runtime-produced when a player met an objective |
+| `beam_goal_{label}` | players who **fired** one of that goal's observing leaves |
+| `beam_met_{label}` | players who actually **met** that objective |
+
+**`beam_goal_*` and `beam_met_*` are not the same number.** They coincide only for a single-leaf
+`EventOccurred` goal; for `AllOf`/`AnyOf` they diverge. Label the first "goal events observed",
+never "conversions", and never merge them.
+
+`beam_` is the platform's reserved namespace — a graph whose authored event names sit inside it is
+refused at publish with `ReservedEventName`.
+
+### Reading a stage value
+
+Display count is **`sealed + pending`**. Write a tolerant reader, because the value used to be a
+bare number and your client and the gateway deploy independently:
+
+```ts
+type StageValue =
+  | bigint | string
+  | { sealed?: bigint | string | null; pending?: bigint | string | null; lagging?: boolean | null }
+  | null | undefined;
+
+const asNumber = (v: bigint | string | null | undefined) =>
+  v == null ? 0 : (Number.isFinite(Number(v)) ? Number(v) : 0);
+
+const toCount = (v: StageValue) =>
+  v == null ? 0 : typeof v === 'object' ? asNumber(v.sealed) + asNumber(v.pending) : asNumber(v);
+
+const isLagging = (v: StageValue) => v != null && typeof v === 'object' && v.lagging === true;
+```
+
+**`lagging: true` means the number is a floor, not a total.** The pending slice was not measured
+because the rollup watermark trailed too far behind. A `0` under `lagging` means *unknown*, not
+*none* — never render it as a plain zero. It is set campaign-wide and applied to every stage,
+including stages with no counter at all.
+
+`live=false` reports `pending: 0` — that zero means *not asked for*, not *nothing outstanding*.
+Use it on any view that is not watching a campaign in flight: the live branch's second query scans
+the collection the event firehose is writing to.
+
+### Eventual consistency
+
+A count lands in `pending` first and migrates into `sealed`. The write buffer flushes every ~2 s,
+the rollup seals every ~5 s behind a ~5 s safety margin, and the composed read is cached ~3 s per
+`(cid, instance, live)` — so polling faster than about 3 s returns the identical object.
+
+### The shape is decided by the graph
+
+A node the runtime has never touched still reports its **full** stage list as zeros. So an
+all-zero funnel is real data meaning "nothing sent yet" — it is **404** that means "no such
+version". Never conflate them.
+
+If you aggregate across versions, walk newest-first and stop at the first version with nodes; an
+older version's counters beat no counters at all.
+
+## The graph DTO
+
+```
+CampaignGraphDto { campaignId, version, config, nodes[], edges[], audit? }
+
+config: { name, options[], acceptedRealms[], tags[], maxDrainDurationMs? }
+        options ∈ "AllowSimultaneousLanes" | "AllowCidLevelSegments"
+
+node:   { id, lane?, body, outcomes[], incomingDecorators[], outgoingDecorators[] }
+        outcomes[] = { key, timing: "Immediate" | "Delayed" }
+
+body:   { kind: "Entry"|"Segment"|"Conditional"|"Schedule"|"Send",
+          entry? | segment? | conditional? | schedule? | send?, customProperties? }
+
+  entry       { trigger: { kind: "AutoSegment"|"Event"|"Inaction", segment?, event?, windowMs? },
+                requalify: { kind: "Never"|"Immediately"|"After", cooldownMs? } }
+  segment     { segment, evaluationWindowMs? }
+  conditional { expression: Condition, maxWaitMs? }
+  schedule    { kind: "DelayFor"|"SendNow"|"AtDateTime", delayMs?, when? }
+  send        { railFederationId, targetPid, message, offer?, goals[],
+                maxWaitMs, deliveryMaxWaitMs? }
+
+edge:   { id, from, outcome, to, decorators[] }
+```
+
+`maxWaitMs` is the **conversion** window, measured from the rail's Sent ack. `deliveryMaxWaitMs`
+is the rail's **delivery** ceiling (default 900 000 ms = 15 min). They are different promises and
+both must be positive. A goal's `timerMs` must be ≤ `maxWaitMs`; leave it null to inherit.
+
+### Two rules that will bite you
+
+**Every PID any node references must be in `config.acceptedRealms`** — including a per-leaf
+`observePid` override — or you get `PidNotInAcceptedRealms`.
+
+**Never write a default you did not mean.** Omit `propertiesMode: "All"`, `target: "Value"`, empty
+`values`/`properties` arrays, and null `withinMs`/`observePid`. Writing them changes the serialized
+bytes, the change classifier reads that as **Structural**, and you fork a new immutable campaign
+version over nothing.
+
+**Goal labels become Mongo field names.** No `.`, no leading `$` (`InvalidGoalLabel`); unique
+within a node (`DuplicateGoalLabel`). Derive them from a stable id, never a display name — the
+label keys `beam_met_{label}`, so renaming orphans the conversion history. The Portal convention is
+`{goalId}@{pid}` per scope, bare `{goalId}` for a cross-scope `AllOf`.
+
+## Validation errors
+
+Returned inside a **200** body with `ok: false`, as
+`{ code, message, node?, edge?, goalLabel? }`. Read the coordinates; never parse the message.
+
+Graph shape: `DuplicateNodeId`, `DuplicateEdgeId`, `EdgeReferencesUnknownNode`,
+`EdgeOutcomeNotDeclared`, `GraphHasCycle`, `NodeUnreachable`,
+`LaneHasMultipleAutoSegmentEntries`.
+
+Targeting: `SendTargetPidRequired`, `GoalObservePidRequired`, `PidNotInAcceptedRealms`,
+`CidLevelSegmentNotAllowed`.
+
+Goals: `GoalPredicateEmpty`, `GoalAbsenceWindowInvalid`, `GoalTimerExceedsMaxWait`,
+`GoalPropertyBoundInvalid`, `DuplicateGoalLabel`, `InvalidGoalLabel`, `ReservedEventName`.
+
+Windows: `SendDeliveryWindowInvalid`, `SendConversionWindowInvalid`.
+
+Publish only: **`RailNotConfigured`** — the rail exists but reports itself unconfigured in this
+realm.
+
+HTTP-level: `400 InvalidCampaignGraph` (a DTO whose `kind` tag and populated branch disagree),
+`400 InvalidCampaignPageLimit` / `InvalidCampaignPageSkip`, `401`, `403`, `404`, `409`.
+
+## SDK drift
+
+The generated web SDK client (`campaignsPostDraft`, `campaignsPostPublish`, `campaignsGet`,
+`campaignsGetByCampaignIdAndVersion`, `campaignsDelete`, `campaignsGetStatus`,
+`campaignsGetFunnel`, `campaignsPostDeactivate`, `campaignsPostArchive`, `campaignsPostReactivate`)
+is generated from an OpenAPI document published on its own cadence, so it trails the gateway.
+Known gaps to compensate for by hand:
+
+| gap | consequence |
+|---|---|
+| `campaignsGetFunnel` has no `live` argument | every generated funnel read is the expensive live path; reach `live=false` through the raw requester |
+| `CampaignNodeFunnelDto.stages` is typed `Record<string, bigint \| string>` | there is **no generated `CampaignStageFunnelDto`** — declare the union yourself |
+| `PropertyBoundDto` lacks `setOp`, `values`, `target` | hand-augment the type |
+| `GoalPredicateDto` lacks `observePid` | hand-augment the type |
+| `sort` on `campaignsGet` is `unknown` | pass the string yourself |
+
+General shape caveats: **every generated field is optional**, 64-bit fields arrive as
+`bigint | string`, and date fields arrive as `Date`. **Never `Number()` a `bigint | string` id** —
+ids exceed the safe integer range. Counters are small populations, so a checked conversion is fine
+for them.
+
+Reference client layout (Portal campaigns extension): a single transport module owning every SDK
+call, a domain layer over it, and one `wire.ts` boundary that re-exports the generated types and
+holds the hand-written augmentations, each marked "delete once the generated DTO has it".
+
+## End to end
+
+```http
+GET  /api/campaigns?realm=DE_1234&phase=Active&sort=CreatedAt&descending=true&limit=50
+POST /api/campaigns/draft      { …CampaignGraphDto… }        → 200 { "ok": true, "errors": [] }
+POST /api/campaigns/publish    { "graph": {…}, "priorMode": "Drain" }
+                                                             → 200 { "ok": true, "version": 1,
+                                                                     "isNewVersion": true }
+GET  /api/campaigns/cmp-7f3a91c2/1/status                    → poll "Launching" → "Active"
+GET  /api/campaigns/cmp-7f3a91c2/1/funnel                    → per-node stages
+POST /api/campaigns/cmp-7f3a91c2/1/deactivate { "mode": "Drain" }
+GET  /api/campaigns/cmp-7f3a91c2/1/status                    → poll until "Inactive"
+POST /api/campaigns/cmp-7f3a91c2/1/archive
+```
+
+## Checklist
+
+- [ ] Check `ok` on every draft/publish response before trusting `version`
+- [ ] Read funnel stage values as objects, summing `sealed + pending`, and honour `lagging`
+- [ ] Never render a `lagging` zero as a confident zero
+- [ ] Treat 404 as "no such version" and an all-zero funnel as "nothing sent yet"
+- [ ] Treat 409 from a lifecycle command as the expected answer, not an error
+- [ ] Pass `realm` on the list unless you really want every realm in the CID
+- [ ] Omit defaults you did not mean, or you will fork a campaign version over nothing
+- [ ] Put every referenced PID in `config.acceptedRealms`
+- [ ] Derive goal labels from stable ids, with no `.` and no leading `$`
+- [ ] Poll `/status` after each lifecycle command rather than assuming it applied
+- [ ] Use `live=false` on any view not watching a campaign in flight
