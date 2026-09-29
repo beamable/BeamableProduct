@@ -22,7 +22,7 @@ namespace Beamable.Editor.UI.OptionDialogWindow
 			bool modalResult = false;
 			if (Application.isBatchMode)
 			{
-				Debug.LogError($"Failed to show modal window with title: \"{title}\" and message: \"{message}\".");
+				Debug.LogError($"Failed to show modal window due to running in batch mode, modal title: \"{title}\" and message: \"{message}\".");
 				Debug.LogError("Returning false as if the window was closed.");
 				return false;
 			}
