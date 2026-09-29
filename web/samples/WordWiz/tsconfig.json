@@ -12,8 +12,8 @@
     "noUnusedParameters": true,
     "paths": {
       "@app/*": ["./src/*"],
-      "beamable-sdk": ["../../src/index.ts"],
-      "beamable-sdk/*": ["../../src/*"],
+      "@beamable/sdk": ["../../src/index.ts"],
+      "@beamable/sdk/*": ["../../src/*"],
       "@/defaults": ["../../src/defaults.browser.ts"],
       "@/utils/createHash": ["../../src/utils/createHashStub.ts"],
       "@/*": ["../../src/*"]

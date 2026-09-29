@@ -4,7 +4,6 @@
  */
 
 export type DuplicateSegmentRequest = { 
-  newSegmentId: string; 
   description?: string | null; 
   displayName?: string | null; 
 };

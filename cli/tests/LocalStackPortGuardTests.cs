@@ -174,6 +174,8 @@ public class LocalStackPortGuardTests
 		// 5045: 5040 is held exclusively by Windows' Connected Devices Platform service, and 5050/5031 are
 		// already claimed by BeamableAPI's own launchSettings (BeamableScheduler.Loader/.Dispatcher use 5050).
 		Assert.That(Step("c# campaign runtime").port, Is.EqualTo(5045));
+		// 5055 rather than the 5050 its own launchSettings declares, for that same BeamableScheduler clash.
+		Assert.That(Step("c# segmentation runtime").port, Is.EqualTo(5055));
 		Assert.That(Step("portal frontend").port, Is.EqualTo(4950));
 		Assert.That(Step("scala: gateway").port, Is.EqualTo(9002),
 			"the scala gateway binds 9002 even though its readiness gate is the Caddy host");
