@@ -58,7 +58,8 @@ export class CampaignOfferService extends ApiService {
    * A retry MUST reuse its predecessor's transaction id. The provider treats the same id on an
    * already-redeemed grant as a success ("Already redeemed.") but a *different* id on that grant
    * as a double-claim and refuses it — so minting a fresh id per attempt turns an innocent
-   * double-tap into a failure. Keyed by federation as well as grant, because two stores may mint
+   * double-tap into a failure. Never dropped on any answer, `purchase-pending` included: that
+   * status is the store asking for a retry with this very id. Keyed by federation as well as grant, because two stores may mint
    * the same grant id.
    */
   private readonly transactionIds = new Map<string, string>();
@@ -145,6 +146,12 @@ export class CampaignOfferService extends ApiService {
    * Surface `message` rather than a generic "could not claim": the most likely real failure is a
    * payout id that is not in the realm's published content manifest, and the server's message is
    * the only thing that says so.
+   *
+   * **Retry on `status: 'purchase-pending'`.** It means the store could not tell whether the
+   * purchase went through (a commerce timeout, 5xx or dropped connection). The claim is kept, not
+   * refused: call `redeem` again for the same grant and the store answers the real outcome once it
+   * knows. The retry must carry the **same** transaction id — this service keeps the one it minted
+   * for the grant, so a plain retry does; if you supplied `options.transactionId`, pass it again.
    * @example
    * ```ts
    * const res = await beam.campaignOffer.redeem('beamable_virtual_store', grantId);

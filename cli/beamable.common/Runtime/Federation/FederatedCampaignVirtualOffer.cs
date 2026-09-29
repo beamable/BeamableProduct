@@ -55,9 +55,16 @@ namespace Beamable.Common
 		/// </para>
 		///
 		/// <para>
-		/// Must be safe to call again for the same <see cref="CampaignOfferGrantContext.outreachId"/>: the
+		/// Must be safe to call again for the same <see cref="CampaignOfferGrantContext.idempotencyKey"/>: the
 		/// send is retried on any retriable failure downstream, and a store that double-grants would pay out
 		/// twice for one outreach. Return the existing grant rather than a second one.
+		/// </para>
+		///
+		/// <para>
+		/// Deduplicate on <see cref="CampaignOfferGrantContext.idempotencyKey"/>, not on
+		/// <see cref="CampaignOfferGrantContext.outreachId"/>: one send node can carry several offers under a
+		/// single outreach, so keying on the outreach would collapse distinct offers into one grant. When the
+		/// key is empty (an older backend that does not send it), fall back to the outreach id.
 		/// </para>
 		/// </summary>
 		Promise<CampaignOfferGrantResponse> GrantOffer(string playerId, string offerId, CampaignOfferGrantContext context);
@@ -88,6 +95,13 @@ namespace Beamable.Common
 		/// <para>
 		/// The gateway refuses a redeem whose campaign condition is unmet before dispatching here, so an
 		/// implementation only has to enforce its <em>own</em> store rules.
+		/// </para>
+		///
+		/// <para>
+		/// When the store cannot tell whether a purchase went through (commerce timeout, 5xx, no
+		/// connection), answer <see cref="CampaignOfferContract.PurchasePendingStatus"/> and keep the claim:
+		/// the client retries with the same <see cref="CampaignOfferRedeemRequest.transactionId"/>, and the
+		/// store answers the real outcome once it knows.
 		/// </para>
 		/// </summary>
 		Promise<CampaignOfferRedeemResponse> RedeemOffer(string playerId, string grantId, CampaignOfferRedeemRequest request);
@@ -441,6 +455,18 @@ namespace Beamable.Common
 		/// </para>
 		/// </summary>
 		public List<CampaignOfferState> states = new List<CampaignOfferState>();
+
+		/// <summary>
+		/// Which grants to return. <b>Empty means no constraint.</b> Non-empty returns only these grants,
+		/// ANDed with <see cref="states"/> (so an empty <see cref="states"/> means these grants in any state).
+		///
+		/// <para>
+		/// The gateway uses it on redeem to fetch exactly one grant instead of depending on the listing cap.
+		/// A store must honour it; an older store that ignores it still works only if the grant is within
+		/// its normal listing.
+		/// </para>
+		/// </summary>
+		public List<string> grantIds = new List<string>();
 	}
 
 	[Serializable]
@@ -477,10 +503,20 @@ namespace Beamable.Common
 		public string nodeId;
 
 		/// <summary>
-		/// The per-recipient join key the campaign and the message rail share. Also the idempotency key for
-		/// <see cref="IFederatedCampaignVirtualOffer{T}.GrantOffer"/> — see that method's remarks.
+		/// The per-recipient join key the campaign and the message rail share. Correlation only: it joins this
+		/// grant to the rail delivery for the same outreach. It is <b>not</b> unique per grant — a send node
+		/// can carry several offers under one outreach — so do not deduplicate on it; use
+		/// <see cref="idempotencyKey"/>.
 		/// </summary>
 		public string outreachId;
+
+		/// <summary>
+		/// The store's idempotency key for <see cref="IFederatedCampaignVirtualOffer{T}.GrantOffer"/>, unique
+		/// per (recipient, offer). A send node may carry several offers under one <see cref="outreachId"/>,
+		/// so deduplicate on this, not on the outreach id. Empty when sent by an older backend that predates
+		/// it — fall back to <see cref="outreachId"/> then.
+		/// </summary>
+		public string idempotencyKey;
 
 		/// <summary>
 		/// The store's own authored fields from the campaign send, keyed under
@@ -655,6 +691,14 @@ namespace Beamable.Common
 
 		/// <summary>No such grant, or it does not belong to this player.</summary>
 		public const string UnknownGrantStatus = "unknown-grant";
+
+		/// <summary>
+		/// The store could not tell whether the purchase went through (commerce timeout, 5xx, no
+		/// connection). The claim is kept; the client must retry with the <b>same</b>
+		/// <see cref="CampaignOfferRedeemRequest.transactionId"/>, and the store answers the real outcome
+		/// once it knows.
+		/// </summary>
+		public const string PurchasePendingStatus = "purchase-pending";
 
 		// --- Entitlement states, as they appear on the wire -----------------
 		//

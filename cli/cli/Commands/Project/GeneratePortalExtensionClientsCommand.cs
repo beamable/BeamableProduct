@@ -115,11 +115,13 @@ public class GeneratePortalExtensionClientsCommand : AppCommand<GeneratePortalEx
 		// first throws a NullReferenceException for every service no extension depends on: the build
 		// compiles, the post-build target dies, and the service never starts.
 		if (clientDirectories.IsEmpty || !WebClientCodeGenerator.IsTypeScript)
-			return;
-
-		foreach (var clientsOutputDirectory in clientDirectories.Keys)
 		{
-			WebClientCodeGenerator.GenerateClientTypes(Path.Combine(clientsOutputDirectory, "types"));
+			return;
 		}
+
+		// One call for every directory, not one per directory: the accumulator is drained once the
+		// types are written, so a loop gave the first extension every type and each later one none.
+		WebClientCodeGenerator.GenerateClientTypes(
+			clientDirectories.Keys.Select(clientsOutputDirectory => Path.Combine(clientsOutputDirectory, "types")));
 	}
 }

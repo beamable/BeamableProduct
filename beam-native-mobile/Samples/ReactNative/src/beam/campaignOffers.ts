@@ -3,10 +3,10 @@
  *
  * A campaign lane can attach an offer to the message it sends: the operator authors it in the
  * Portal, the campaign runtime grants it to each recipient as the send goes out, and the player
- * claims it here. Which store the offer comes from is a *federation* — an extension point, not a
- * Beamable feature. `beamable_virtual_store` is the default provider Beamable ships; a game with
- * its own virtual economy implements the same interface under its own id and is reached through
- * these same two calls.
+ * claims it here. Which provider the offer comes from is a *federation* — an extension point, not
+ * a Beamable feature. Beamable ships three (see `KNOWN_FEDERATIONS`): a store whose offers are
+ * bought, a free currency/item reward, and a free badge. A game with its own virtual economy
+ * implements the same interface under its own id and is reached through these same two calls.
  *
  * **Virtual means soft currency.** A price here is a currency symbol and an amount, never real
  * money — a real-money offer is a separate federation, with its own contract, and it is not
@@ -17,6 +17,8 @@
  *
  *  - **The federation id is always a parameter.** Nothing here may branch on which store it is
  *    talking to — that is why the screen offers it as an input rather than hardcoding the default.
+ *    What differs between offers is read off the OFFER (a cost or none, a reward's `type`), so a
+ *    third-party provider that sends the same shapes renders the same way.
  *  - **The offer id is opaque.** Only the store that minted it can interpret it, which is why the
  *    federation id travels with it everywhere. Never parse it, show it as a name, or key anything
  *    durable on its shape.
@@ -25,12 +27,11 @@
  * and claim one of them. Granting, revoking, the catalog and purchase settlement are all
  * operator or server-to-server concerns and are permission-scoped away from a game client.
  *
- * **Claiming is not how the player gets the goods.** An offer IS a storefront listing: the price
- * and the bundle both move through the platform's commerce flow, and the claim only settles the
- * grant afterwards (and forfeits any siblings it was an alternative to). So the flow this app
- * performs is buy-then-claim — see `commerce.ts`. A different store's provider is free to fulfil
- * at claim time instead; nothing here may assume either way, which is why the screen reads the
- * inventory back rather than trusting the claim's response.
+ * **Claiming is how the player gets the goods** — the provider delivers at redeem time, as the
+ * player. For the store that means the claim IS the purchase (commerce debits the price and credits
+ * the bundle in one transaction); for the reward it is one inventory update; for the badge it is a
+ * `game.public` stat write. The response carries none of what moved, which is why the screen reads
+ * the wallet (or the stat) back rather than trusting it.
  *
  * `CampaignOfferService` is registered in `beamClient.ts`.
  */
@@ -50,8 +51,28 @@ function requireBeam() {
   return beam;
 }
 
-/** The provider Beamable ships. It is the screen's default, never an assumption in the code. */
+/** The store Beamable ships. It is the screen's default, never an assumption in the code. */
 export const DEFAULT_STORE: CampaignOfferFederationId = 'beamable_virtual_store';
+
+/**
+ * The providers Beamable ships, for the screen's picker — a convenience, not a whitelist: any id
+ * works, which is why the picker also takes a typed one.
+ *
+ *  - `beamable_virtual_store` — an offer is a commerce listing; claiming BUYS it with soft currency.
+ *  - `beamable_reward` — free (`cost = []`); pays out `currency.*` / `items.*` amounts.
+ *  - `beamable_badge` — free; pays out one `badge` reward, delivered as a `game.public` stat.
+ */
+export const KNOWN_FEDERATIONS = [
+  { id: 'beamable_virtual_store', label: 'Store' },
+  { id: 'beamable_reward', label: 'Reward' },
+  { id: 'beamable_badge', label: 'Badge' },
+] as const satisfies readonly { id: CampaignOfferFederationId; label: string }[];
+
+/**
+ * The reward `type` the badge provider describes its payout with — a type of its own, which the
+ * open `type` string allows. The stat key is the `symbol`; where it lands is in `properties`.
+ */
+export const BADGE_REWARD_TYPE = 'badge';
 
 /**
  * The reserved campaign-payload key carrying the grant id for a send.
@@ -61,6 +82,13 @@ export const DEFAULT_STORE: CampaignOfferFederationId = 'beamable_virtual_store'
  * to. A client only ever **reads** it.
  */
 export const OFFER_GRANT_KEY = 'beam_offer_grant';
+
+/**
+ * The redeem status for "the provider could not tell whether delivery went through" — retry the
+ * same claim. `CampaignOfferContract.PurchasePendingStatus` on the server; every provider uses it,
+ * not only the store, despite the name.
+ */
+export const PURCHASE_PENDING = 'purchase-pending';
 
 /** One thing an offer gives the player. A bundle is a list of these. */
 export type Reward = {
@@ -72,10 +100,12 @@ export type Reward = {
   type: string;
   /** The store's own opaque reference for the thing granted. */
   symbol: string;
-  /** `0` means "not known until fulfilment" (a loot roll) — never "nothing". */
+  /** A real quantity. A badge is `1`; its stat value is a property, not an amount. */
   amount: number;
   /** Display name where the store has one, else the symbol's tail. */
   label: string;
+  /** Empty when the store has none — the card draws a fallback. */
+  imageUrl: string;
   /** The store's own extras — item properties, a rarity, a duration. */
   properties: Record<string, string>;
 };
@@ -150,21 +180,30 @@ export async function listCampaignOffers(
 }
 
 /**
- * Claims a grant — which for a virtual offer IS the purchase — returning the message to show.
+ * Claims a grant, returning the message to show. The provider delivers during this call.
  *
- * The provider spends on the player's behalf: commerce debits the price and credits the payout in
- * one inventory transaction. So this is **one call, not a buy followed by a settle**. There is
- * nothing for this client to purchase first, and doing so would charge the player twice.
+ * For the store it IS the purchase: the provider spends on the player's behalf, and commerce
+ * debits the price and credits the payout in one inventory transaction. So this is **one call,
+ * not a buy followed by a settle** — buying the listing first would charge the player twice. For
+ * a free offer (reward, badge) it is simply the claim.
  *
  * The endpoint answers **200 with `success: false`** for an expired, revoked, already-claimed or
  * unknown grant, or one whose campaign gate is not met yet — a resolved promise is not a success.
  * Throwing the server's own `message` is deliberate: it is the only sentence that says what to fix.
+ *
+ * The one exception is `purchase-pending`: the store could not tell whether the purchase went
+ * through, and kept the claim open. That is not a refusal — pressing the button again retries the
+ * SAME claim (the SDK reuses the grant's transaction id), and the store answers the real outcome
+ * once it knows. So it gets its own "still confirming" message instead of the server's.
  */
 export async function claimGrant(
   federationId: CampaignOfferFederationId,
   grantId: string,
 ): Promise<string> {
   const res = await requireBeam().campaignOffer.redeem(federationId, grantId);
+  if (res.status === PURCHASE_PENDING) {
+    throw new Error('Still confirming this claim with the provider — try again in a moment.');
+  }
   if (!res.success) {
     throw new Error(res.message || `The store refused this claim (${res.status ?? 'no status'})`);
   }
@@ -219,7 +258,8 @@ function normalize(e: CampaignOfferDto): CampaignOffer {
   return {
     grantId: e.grantId ?? '',
     offerId: e.offerId ?? '',
-    state: e.state ?? 'Granted',
+    // No default: a missing state is unknown, not claimable. `describeState` shows it as such.
+    state: e.state ?? '',
     grantedAt: Number(e.grantedAtUnixSeconds ?? 0),
     expiresAt: Number(e.expiresAtUnixSeconds ?? 0),
     offer: e.offer
@@ -253,6 +293,7 @@ function normalizeAmount(r: CampaignOfferAmount): Reward {
     // The store's own title wins; the symbol's tail is the fallback, since an opaque id is a poor
     // thing to show a player who is about to pay for it.
     label: r.title || shortSymbol(symbol),
+    imageUrl: r.imageUrl ?? '',
     properties: r.properties ?? {},
   };
 }
@@ -264,7 +305,36 @@ function shortSymbol(symbol: string): string {
 }
 
 /**
- * Whether the sample can act on this grant — the single Buy button on the card.
+ * A free offer: embedded, with nothing to pay. The contract says "free" with an empty `cost`, so
+ * this is the Claim-vs-Buy switch — read off the offer, never off the federation id. A grant with
+ * no embedded offer is neither: its price is unknown, so the card shows a plain Claim.
+ */
+export function isFree(e: CampaignOffer): boolean {
+  return !!e.offer && e.offer.cost.length === 0;
+}
+
+/** The badge payouts on an offer — what the screen reads back from stats after a claim. */
+export function badgeRewards(e: CampaignOffer): Reward[] {
+  return (e.offer?.rewards ?? []).filter((r) => r.type === BADGE_REWARD_TYPE);
+}
+
+/**
+ * Reads a badge's stat back after a claim, via `beam.stats.get`.
+ *
+ * Where it lives comes from the reward's own `statDomain` / `statAccess` properties rather than
+ * being assumed (the badge provider writes `game.public`). A `game.public` stat of the CURRENT
+ * player is client-readable — it is the private game domain that needs a service (`segments.ts`).
+ * Returns `undefined` when the stat is not there (yet).
+ */
+export async function readBadgeStat(reward: Reward): Promise<string | undefined> {
+  const domainType = reward.properties.statDomain === 'client' ? 'client' : 'game';
+  const accessType = reward.properties.statAccess === 'private' ? 'private' : 'public';
+  const stats = await requireBeam().stats.get({ domainType, accessType, stats: [reward.symbol] });
+  return stats[reward.symbol];
+}
+
+/**
+ * Whether the sample can act on this grant — the single Buy / Claim button on the card.
  *
  * `available` rather than merely `state`, because a Granted offer can still be gated — by a store
  * requirement or by the campaign's own condition — and that gate is re-evaluated on every read, so

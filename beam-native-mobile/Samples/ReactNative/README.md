@@ -187,7 +187,7 @@ Tabs are listed below in bar order; the bar follows the order of the `Tabs.Scree
 | **Deep links** (`deeplinks.tsx`) | Simulate · Navigate directly · Open any URL · Last received | OS-routed deep link, in-app navigation, `normalizeDeepLink`'s schemeless back-stop |
 | **In-game** (`inbox.tsx`) | Opt in/out of in-game · Inbox (auto-refreshes on focus, ↻ in the corner) | the `ingame` rail and the player's Beamable mailbox |
 | **Email** (`email.tsx`) | Account (read-only) · Add email to account · Opt in/out of email | `beam.account.current()` guest-vs-credentialed state; `addCredentials` → POST `/basic/accounts/register`; the `email` rail |
-| **Offers** (`offers.tsx`) | Store federation id · Wallet with a **⊕ per currency** that grants the amount in the field (↻) · Campaign Offers with the offer, its price and **what the bundle contains** (↻) · **Buy** · Claim · Claim from the last push | the **virtual offer federation** (`IFederatedCampaignVirtualOffer`) end to end, for an offer bought with soft currency. `beam.campaignOffer.getCampaignOffers(federationId)` → GET `/api/campaign-offer/campaign-offers` and `beam.campaignOffer.redeem(federationId, grantId)` → POST `/api/campaign-offer/redeem` — the only two routes a player token can reach. The store embeds the whole offer in each grant (title, the price as a currency and an amount, and `rewards`), so one call renders the screen. **An offer IS a storefront listing**, and claiming buys it: the provider spends on the player's behalf through `POST /object/commerce/{playerId}/purchase`, which debits the price and credits the bundle in one inventory transaction. "What you received" is a wallet diff around it, not the purchase response — so cost and gain read together. Real-money offers are a separate federation and are not in this sample. The wallet's ⊕ grants currency through the **`DebugWalletService`** microservice — it exists because every price here is soft currency, so a fresh player has nothing to pay with and every claim is refused for insufficient funds. It is a service call rather than a client one because `CurrencyContent.clientPermission.write_self` gates inventory writes and is off for anything worth holding: reading this wallet is client-side, crediting it can never be. Also the deep-link: a campaign that attaches an offer writes the grant id into the push under the reserved `beam_offer_grant` key, and the last section claims straight from it |
+| **Offers** (`offers.tsx`) | Federation picker (Store · Reward · Badge · Custom id) · Wallet with a **⊕ per currency** that grants the amount in the field (↻) · Campaign Offers with the offer, its price and **what it pays out** (↻) · **Buy** (priced) or **Claim** (free) · Claim from the last push | the **virtual offer federation** (`IFederatedCampaignVirtualOffer`) end to end, against each of the three providers Beamable ships (see [Offers: three federations](#offers-three-federations)). `beam.campaignOffer.getCampaignOffers(federationId)` → GET `/api/campaign-offer/campaign-offers` and `beam.campaignOffer.redeem(federationId, grantId)` → POST `/api/campaign-offer/redeem` — the only two routes a player token can reach. Each grant embeds the whole offer (title, cost, `rewards`), so one call renders the screen, and the card is drawn from the offer itself — a cost means Buy, an empty cost means a free Claim, a `badge` reward draws as a badge — never from the federation id. After a claim, "what you received" is a wallet diff around it (and, for a badge, the stat read back), not the redeem response. Real-money offers are a separate federation and are not in this sample. The wallet's ⊕ grants currency through the **`DebugWalletService`** microservice — still needed because store prices are soft currency, so a fresh player has nothing to pay with and every Buy is refused for insufficient funds. Also the deep-link: a campaign that attaches an offer writes the grant id into the push under the reserved `beam_offer_grant` key, and the last section claims straight from it against the selected federation |
 | **Segments** (`segments.tsx`) | namespace picker · `CLIENT_LEVEL` card (`beam.stats`) · `PLAYER_LEVEL` card (microservice) · Set/delete any stat in either namespace · Create N players with a stat · My segments (↻) · Recent transitions | the stats → segment loop in both namespaces a rule can read: `beam.stats.set` writes `client.*` directly, `PlayerStatsService.AddToMyStat` writes `game.private`, the backend re-evaluates the Portal rules watching that attribute, and `GET /api/realms/{realmId}/players/{playerId}/segments` (+ `/transitions`) reads the membership back. The screen renders the rule JSON to author, including a cross-namespace one |
 | **Analytics** (`analytics.tsx`) | Campaign/Node ID · Track offer clicked · Track offer converted · Clear native auth | native `Clicked`/`Converted` funnel events (iOS + Android) and the closed-app auth handoff |
 | **Unity** (`unity.tsx`) | Send message to Unity | the Unity ↔ React WebView bridge. **Web only** — the tab is hidden on native |
@@ -366,6 +366,26 @@ The service must be reachable in the realm this sample connects to
 
 ---
 
+## Offers: three federations
+
+The Offers tab's picker covers the three offer providers the agentic-portal workspace ships
+(`bundles/features/message-rail/microservices/`); **Custom** takes any other id, since the
+federation is an extension point and nothing in the tab branches on the value. All three are
+authored in the Portal's **Campaigns** builder — a lane attaches the offer to its message, through
+the `beamable-campaign-offer`, `beamable-reward-offer` or `beamable-badge-offer` extension — and the
+campaign grants it to each recipient as the send goes out.
+
+| Federation id | The offer | What claiming does | What the tab shows after |
+|---|---|---|---|
+| `beamable_virtual_store` | a commerce listing, priced in soft currency | **buys it**: the provider calls `POST /object/commerce/{playerId}/purchase` as the player, debiting the price and crediting the bundle in one transaction | the wallet diff — price and payout together |
+| `beamable_reward` | free (`cost = []`); `rewards` are `currency.*` / `items.*` amounts | one inventory update as the player, crediting them | the wallet diff (items land in inventory; the wallet lists currency) |
+| `beamable_badge` | free; one `badge` reward whose `symbol` is the stat key (`badge_*`) and whose `properties` say where it lands (`statDomain: game`, `statAccess: public`, `statValue`) | writes that stat to `game.public` | "Badge earned: *title* (stat *key* = *value*)", read back with `beam.stats.get({ domainType: 'game', accessType: 'public' })` — a player's own public game stats are client-readable. A failed read is shown on the card; the claim still succeeded |
+
+Every claim is the one `redeem` call — for the store, that call IS the purchase, so the sample
+never posts to commerce itself (that would charge twice). If a provider cannot tell whether
+delivery went through, redeem answers `purchase-pending`; the tab says "still confirming" and
+pressing the button again retries the same claim.
+
 ## The `DebugWalletService` microservice
 
 The Offers tab's wallet ⊕ calls **`DebugWalletService`**, which credits the caller's currency:
@@ -410,7 +430,7 @@ app/
     deeplinks.tsx    # simulate / open any URL / last received
     inbox.tsx        # in-game rail + mailbox (auto-refresh on focus)
     email.tsx        # account, add-email, email rail
-    offers.tsx       # offer federation: campaign offers, claim, claim-from-push, wallet top-up
+    offers.tsx       # offer federations (store / reward / badge): list, buy or claim, claim-from-push, wallet top-up
     segments.tsx     # client + game stat cards, namespace picker, membership + transitions
     analytics.tsx    # funnel clicked/converted, native auth
     unity.tsx        # Unity bridge (web only — hidden tab on native)
@@ -427,7 +447,7 @@ src/
                      #   DebugWalletService)
     pushNotifications.ts # binds device register/list to CampaignServiceClient
     segments.ts      # namespace model + rule JSON, beam.stats and PlayerStatsService writes, segment reads
-    campaignOffers.ts   # offer federation bindings over beam.campaignOffer (list + claim)
+    campaignOffers.ts   # offer federation bindings over beam.campaignOffer (list + claim) + badge stat read-back
     inventory.ts     # currency balances, the DebugWalletService grant, and the diff that
                      #   answers "what did I receive"
     commerce.ts      # buying a virtual listing: one call, price debited and payout credited together

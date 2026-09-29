@@ -4,11 +4,13 @@ import { useFocusEffect } from 'expo-router';
 
 import {
   DEFAULT_STORE,
+  KNOWN_FEDERATIONS,
   OFFER_GRANT_KEY,
+  badgeRewards,
   claimGrant,
-  isClaimable,
   isPurchasable,
   listCampaignOffers,
+  readBadgeStat,
   type CampaignOffer,
 } from '../../src/beam/campaignOffers';
 import {
@@ -21,7 +23,6 @@ import {
   parseAmount,
   readBalances,
   type Balance,
-  type BalanceDelta,
 } from '../../src/beam/inventory';
 import { useBeam } from '../../src/state/beamContext';
 import { useLogActions } from '../../src/state/logContext';
@@ -31,29 +32,32 @@ import BalanceRow from '../../src/ui/BalanceRow';
 import Collapsible from '../../src/ui/Collapsible';
 import Field from '../../src/ui/Field';
 import { Hint, Value } from '../../src/ui/Hint';
-import OfferCard from '../../src/ui/OfferCard';
+import OfferCard, { type OfferReceipt } from '../../src/ui/OfferCard';
 import RefreshButton from '../../src/ui/RefreshButton';
 import Screen from '../../src/ui/Screen';
 import Section from '../../src/ui/Section';
+import TabStrip from '../../src/ui/TabStrip';
 import { colors, mono, radius, space } from '../../src/ui/theme';
 
 /**
  * Offers tab: the player half of the **virtual offer federation**.
  *
  * A campaign lane attaches an offer to the message it sends; the campaign runtime grants it to
- * each recipient as the send goes out; this screen is where the player acts on it. Which store
+ * each recipient as the send goes out; this screen is where the player acts on it. Which provider
  * answers is a federation — an extension point, not a Beamable feature — so the federation id is
- * an input and nothing here branches on its value.
+ * an input (a picker of the three Beamable ships, or a typed id) and nothing here branches on its
+ * value. What differs is read off the offer: a price means Buy, an empty cost means a free Claim,
+ * and a `badge` reward is read back from stats after the claim.
  *
- * **What "acting on it" means, and why there is one button.** An offer IS a storefront listing,
- * and redeeming the grant is what pays for it: the provider debits the price and credits the
- * bundle in a single inventory transaction, then forfeits the siblings this one was an alternative
- * to. Claiming and buying are therefore the same call, so a row shows **Buy** and nothing else —
- * two buttons posting one request reads as two different acts and makes the player guess.
+ * **What "acting on it" means, and why there is one button.** Redeeming the grant is what
+ * delivers it. For a store offer that is the purchase — the provider debits the price and credits
+ * the bundle in a single inventory transaction, then forfeits the siblings this one was an
+ * alternative to — so a row shows **Buy** and nothing else: two buttons posting one request read as
+ * two different acts. A free offer (reward, badge) shows **Claim** instead, for the same reason.
  *
- * The wallet sits above the offers deliberately: a purchase should read before → action → after
+ * The wallet sits above the offers deliberately: a claim should read before → action → after
  * in one downward glance, and "what did I actually receive" is answered by diffing the wallet
- * around the purchase, not by the purchase response (which carries no deltas on this route).
+ * around the claim, not by the redeem response (which carries no deltas).
  *
  * The wallet can also grant. Every offer below is priced in soft currency, so a fresh player holds
  * nothing to pay with and every claim is refused for insufficient funds — which reads as a broken
@@ -67,11 +71,19 @@ export default function OffersTab() {
   const { isReady } = useBeam();
   const { lastOfferGrantId } = useNotifications();
 
-  const [federationId, setFederationId] = useState<string>(DEFAULT_STORE);
+  // A known federation, or `custom` — which reads the typed id below. The store is the default.
+  const [choice, setChoice] = useState<FederationChoice>(KNOWN_FEDERATIONS[0].id);
+  // The typed id, and the one committed on return/blur. Only the committed one is read, so typing
+  // does not fire a list call per keystroke against half an id.
+  const [customDraft, setCustomDraft] = useState('');
+  const [customId, setCustomId] = useState('');
   const [campaignOffers, setCampaignOffers] = useState<CampaignOffer[]>([]);
+  // The federation `campaignOffers` came from. The row actions claim against THIS, not the
+  // picker: a claim must go to the provider that minted the grant, even mid-switch.
+  const [listedFrom, setListedFrom] = useState<string>(DEFAULT_STORE);
   const [balances, setBalances] = useState<Balance[]>([]);
   const [walletDeltas, setWalletDeltas] = useState<Record<string, bigint>>({});
-  const [receipts, setReceipts] = useState<Record<string, BalanceDelta[]>>({});
+  const [receipts, setReceipts] = useState<Record<string, OfferReceipt>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Tracked separately from `error`: the wallet and the campaign-offer list fail for different
@@ -86,15 +98,24 @@ export default function OffersTab() {
   // A third error line, for the same reason `walletError` is a second one: "could not read the
   // wallet" and "the platform refused this grant" are different sentences with different fixes.
   const [grantError, setGrantError] = useState<string | null>(null);
-  const inFlight = useRef(false);
+  // Latest-wins rather than a drop-while-busy guard: switching federation mid-read must not leave
+  // the previous federation's list on screen under the new picker.
+  const readSeq = useRef(0);
 
-  const store = federationId.trim() || DEFAULT_STORE;
-  const claimable = useMemo(() => campaignOffers.filter(isClaimable).length, [campaignOffers]);
+  // Empty only for a blank custom id — then there is nothing to ask, rather than a silent default.
+  const store = choice === CUSTOM ? customId.trim() : choice;
+  // Switching clears the list at once: the rows belong to the provider that minted them, and
+  // leaving them under another federation's picker until the read lands would misattribute them.
+  const selectFederation = useCallback((next: FederationChoice) => {
+    setChoice(next);
+    setCampaignOffers([]);
+  }, []);
+  const claimable = useMemo(() => campaignOffers.filter(isPurchasable).length, [campaignOffers]);
 
   /**
-   * One read for the whole screen, under a single in-flight guard so a focus change cannot
-   * interleave two of them. Campaign offers are never cached across a session: expiry is evaluated
-   * server-side on read, so a stale list is wrong by construction.
+   * One read for the whole screen; only the latest one lands, so a focus change or a federation
+   * switch cannot interleave two. Campaign offers are never cached across a session: expiry is
+   * evaluated server-side on read, so a stale list is wrong by construction.
    *
    * `silent` suppresses the "not connected" line and the loading chatter, so the automatic
    * on-focus refresh doesn't spam the Activity log every time you switch tabs.
@@ -105,8 +126,14 @@ export default function OffersTab() {
         if (!silent) append('Campaign offers: Beamable is not connected yet');
         return;
       }
-      if (inFlight.current) return;
-      inFlight.current = true;
+      const seq = ++readSeq.current;
+      if (!store) {
+        setCampaignOffers([]);
+        setListedFrom('');
+        setError(null);
+        setBusy(false); // an earlier read may still be out; it no longer owns the spinner
+        return;
+      }
       setBusy(true);
       setError(null);
       // A manual refresh is the user asking "what is true now", so the change chips from an
@@ -134,19 +161,24 @@ export default function OffersTab() {
           ),
           knownCurrencyIds(),
         ]);
+        if (seq !== readSeq.current) return;
 
         setCampaignOffers(held);
+        setListedFrom(store);
         setBalances(mergeKnownCurrencies(wallet, knownIds));
         if (!silent) append(`Campaign offers (${store}): ${held.length}`);
       } catch (e) {
+        if (seq !== readSeq.current) return;
         const msg = e instanceof Error ? e.message : String(e);
         // Shown in the section, not just the collapsed console — the on-focus refresh is
         // silent, so a failure would otherwise be indistinguishable from "you hold nothing".
+        // The list is cleared so the rows cannot be mistaken for this federation's.
+        setCampaignOffers([]);
+        setListedFrom(store);
         setError(msg);
-        append(`Campaign offers error: ${msg}`);
+        append(`Campaign offers error (${store}): ${msg}`);
       } finally {
-        inFlight.current = false;
-        setBusy(false);
+        if (seq === readSeq.current) setBusy(false);
       }
     },
     [isReady, store, append],
@@ -160,10 +192,14 @@ export default function OffersTab() {
     }, [refresh]),
   );
 
-  /** Settle a grant, then re-read so the row flips to its new state in place. */
+  /**
+   * Claim a grant by id alone — the push deep-link's case when the grant is not in the list on
+   * screen — then re-read so the row flips to its new state in place.
+   */
   const claim = useCallback(
     (grantId: string) => async () => {
       if (!isReady) throw new Error('Beamable is not connected yet');
+      if (!store) throw new Error('Type a federation id first');
       try {
         return await claimGrant(store, grantId);
       } finally {
@@ -187,7 +223,7 @@ export default function OffersTab() {
    * live on the screen rather than under the button — `addingId` swaps that one row's ⊕ for a
    * spinner, and `grantError` renders once above the list however many rows there are.
    *
-   * The wallet is read either side and diffed, exactly as `buy` does below. The service does
+   * The wallet is read either side and diffed, exactly as `redeem` does below. The service does
    * return the new balance, but the whole list has to be re-read anyway to be sure nothing else
    * moved — so one mechanism answers "what moved" for both actions, and the ⊕ lights up the same
    * green chip a purchase does.
@@ -231,59 +267,96 @@ export default function OffersTab() {
   );
 
   /**
-   * Buy an offer — one button, one call, one receipt.
+   * Buy or claim an offer — one button, one call, one receipt.
    *
-   * **The claim IS the purchase.** The provider spends on the player's behalf: commerce debits the
-   * price and credits the payout in one inventory transaction. So this screen must NOT buy the
-   * listing itself first — doing so charges the player twice, or gets refused by a purchase limit
-   * and then reports the refusal as "bought, but the grant did not settle", which points at exactly
-   * the wrong cause.
+   * **For a priced offer the claim IS the purchase.** The provider spends on the player's behalf:
+   * commerce debits the price and credits the payout in one inventory transaction. So this screen
+   * must NOT buy the listing itself first — doing so charges the player twice, or gets refused by a
+   * purchase limit and then reports the refusal as "bought, but the grant did not settle", which
+   * points at exactly the wrong cause. A free offer is the same call with nothing debited.
    *
-   * The wallet is read either side because `InventoryUpdateResponse.deltas` is not populated on
-   * this path, so the diff is the only truthful account of what moved — and it captures the price
-   * as well as the payout, since for a virtual offer both are currency.
+   * The wallet is read either side because the redeem response carries no deltas, so the diff is
+   * the only truthful account of what moved — the price and the payout for the store, the payout
+   * for a reward. A `badge` reward is not in the wallet at all, so its stat is read back instead;
+   * that read failing is reported on the card, not as a failed claim, because the claim succeeded.
    */
-  const buy = useCallback(
-    (campaignOffer: CampaignOffer) => async () => {
+  const redeem = useCallback(
+    (campaignOffer: CampaignOffer, federationId: string) => async () => {
       if (!isReady) throw new Error('Beamable is not connected yet');
 
       const before = await readBalances().catch(() => [] as Balance[]);
 
-      const settled = await claimGrant(store, campaignOffer.grantId);
+      // Throws "still confirming" on `purchase-pending`; pressing the button again retries the
+      // same claim, whichever provider it is.
+      const settled = await claimGrant(federationId, campaignOffer.grantId);
 
       const after = await readBalances().catch(() => before);
       const moved = diffBalances(before, after);
+      const badges: OfferReceipt['badges'] = await Promise.all(
+        badgeRewards(campaignOffer).map(async (reward) => {
+          const badge: OfferReceipt['badges'][number] = { key: reward.symbol, title: reward.label };
+          try {
+            return { ...badge, value: await readBadgeStat(reward) };
+          } catch (e) {
+            return { ...badge, error: e instanceof Error ? e.message : String(e) };
+          }
+        }),
+      );
 
       setBalances((current) => mergeKnownCurrencies(after, current.map((b) => b.id)));
       setWalletDeltas(Object.fromEntries(moved.map((d) => [d.id, d.change])));
-      setReceipts((current) => ({ ...current, [campaignOffer.grantId]: moved }));
+      setReceipts((current) => ({ ...current, [campaignOffer.grantId]: { moved, badges } }));
 
       void refresh(true);
 
-      const summary = moved.length
-        ? moved.map((d) => `${d.change > 0n ? '+' : ''}${formatAmount(d.change)} ${d.label}`).join(', ')
-        : 'no wallet change';
-      return `${settled} — ${summary}`;
+      const parts = [
+        ...moved.map((d) => `${d.change > 0n ? '+' : ''}${formatAmount(d.change)} ${d.label}`),
+        ...badges.map((b) =>
+          b.error
+            ? `badge ${b.title} claimed, but stat ${b.key} could not be read: ${b.error}`
+            : `Badge earned: ${b.title} (stat ${b.key} = ${b.value ?? '(not set yet)'})`,
+        ),
+      ];
+      return `${settled} — ${parts.length ? parts.join(', ') : 'no wallet change'}`;
     },
-    [isReady, store, refresh],
+    [isReady, refresh],
   );
+
+  // The pushed grant, if the list on screen holds it: then it gets the full receipt, as a row does.
+  const pushed = lastOfferGrantId
+    ? campaignOffers.find((e) => e.grantId === lastOfferGrantId)
+    : undefined;
 
   return (
     <Screen>
-      <Section title="Store">
+      <Section title="Federation">
         <Hint>
-          Which store answers is a federation — a microservice implementing
-          IFederatedCampaignVirtualOffer under its own id. `beamable_virtual_store` is the default
-          Beamable ships; a game with its own virtual economy deploys its own and is reached by
-          these same two calls. Nothing on this screen branches on the value, which is why it is an
-          input.
+          Which provider answers is a federation — a microservice implementing
+          IFederatedCampaignVirtualOffer under its own id. Beamable ships three:
+          `beamable_virtual_store` (an offer is a listing, and claiming buys it),
+          `beamable_reward` (free currency and items) and `beamable_badge` (a free badge, written
+          as a `game.public` stat). A game deploys its own under another id and is reached by these
+          same two calls — Custom takes it. Nothing on this screen branches on the value.
         </Hint>
-        <Field
-          value={federationId}
-          onChangeText={setFederationId}
-          placeholder={DEFAULT_STORE}
-          accessibilityLabel="Store federation id"
+        <TabStrip
+          tone="light"
+          tabs={FEDERATION_TABS}
+          active={choice}
+          onChange={selectFederation}
         />
+        {choice === CUSTOM ? (
+          <Field
+            value={customDraft}
+            onChangeText={setCustomDraft}
+            onSubmitEditing={() => setCustomId(customDraft.trim())}
+            onBlur={() => setCustomId(customDraft.trim())}
+            placeholder="my_offer_federation — return to list"
+            returnKeyType="go"
+            accessibilityLabel="Custom federation id"
+          />
+        ) : (
+          <Value label="id">{choice}</Value>
+        )}
       </Section>
 
       <Section
@@ -292,9 +365,9 @@ export default function OffersTab() {
       >
         <Hint>
           Reads GET /object/inventory/{'{playerId}'}/?scope=currency. Every currency the realm
-          publishes is listed, including ones you hold none of — a purchase needs a row to move.
-          It changes when you Buy — which for a virtual offer moves this twice, once to pay and
-          once to receive, because the redeem behind that button is the purchase.
+          publishes is listed, including ones you hold none of — a claim needs a row to move.
+          Buying a store offer moves this twice, once to pay and once to receive, because the
+          redeem behind that button is the purchase; claiming a reward only credits it.
         </Hint>
         {walletError && (
           <Text style={styles.error} selectable>
@@ -373,9 +446,11 @@ export default function OffersTab() {
         )}
         {campaignOffers.length === 0 ? (
           <Hint>
-            {error
-              ? 'Campaign offers not loaded.'
-              : `Nothing granted by "${store}" yet. Publish a campaign lane with an offer and enrol this player.`}
+            {!store
+              ? 'Type a federation id above to list its offers.'
+              : error
+                ? 'Campaign offers not loaded.'
+                : `Nothing granted by "${store}" yet. Publish a campaign lane with an offer and enrol this player.`}
           </Hint>
         ) : (
           <>
@@ -387,7 +462,7 @@ export default function OffersTab() {
                 key={e.grantId}
                 campaignOffer={e}
                 receipt={receipts[e.grantId]}
-                buy={isPurchasable(e) ? buy(e) : undefined}
+                act={isPurchasable(e) ? redeem(e, listedFrom) : undefined}
               />
             ))}
           </>
@@ -403,11 +478,15 @@ export default function OffersTab() {
         {lastOfferGrantId ? (
           <>
             <Value label="grant">{lastOfferGrantId}</Value>
-            <AsyncButton label="Claim from push" run={claim(lastOfferGrantId)} />
+            <AsyncButton
+              label="Claim from push"
+              run={pushed ? redeem(pushed, listedFrom) : claim(lastOfferGrantId)}
+            />
             <Hint>
-              Claim settles a grant you have already paid for. A push deep-link cannot buy on its
-              own — the listing to charge for lives on the grant, so a paid offer is bought
-              from the list above.
+              The payload carries the grant id only, so this claims against the federation
+              selected above — pick the one the campaign's offer came from. It is the same redeem as
+              the row's button: for a store offer the claim IS the purchase (the price is debited
+              now), for a reward or a badge it is a free claim.
             </Hint>
           </>
         ) : (
@@ -420,13 +499,24 @@ export default function OffersTab() {
         )}
       </Section>
 
-      <Section title="How buying works">
-        <Collapsible title="One call, one inventory transaction">
+      <Section title="How claiming works">
+        <Collapsible title="One call; the provider delivers">
           <Hint>
-            Claiming IS the purchase. This screen makes one call — redeem — and the provider spends
-            on your behalf: commerce debits the price and credits the payout in a single inventory
-            transaction, then forfeits any offers this one was an alternative to. This sample never
-            posts to commerce itself; doing so would charge you twice.
+            Every button here makes one call — redeem — and the provider delivers as you. For a
+            store offer claiming IS the purchase: commerce debits the price and credits the payout in
+            a single inventory transaction, then forfeits any offers this one was an alternative to.
+            This sample never posts to commerce itself; doing so would charge you twice.
+          </Hint>
+          <Hint>
+            A reward is free (its cost is empty): the claim is one inventory update, so the currency
+            shows up in the wallet diff. Items land in inventory too, but the wallet only lists
+            currency. A badge is free as well and is not inventory at all: the claim writes its stat
+            key to `game.public`, and this screen reads that stat back to show what you earned.
+          </Hint>
+          <Hint>
+            "Still confirming" means the provider could not tell whether delivery went through and
+            kept the claim open. Press the button again: it retries the same claim, and the provider
+            answers the real outcome once it knows.
           </Hint>
           <Hint>
             The provider buys rather than checking that a client already did, because redeem is
@@ -450,6 +540,14 @@ export default function OffersTab() {
     </Screen>
   );
 }
+
+/** The picker's `Custom` key — never a real federation id, since those use underscores. */
+const CUSTOM = 'custom';
+type FederationChoice = (typeof KNOWN_FEDERATIONS)[number]['id'] | typeof CUSTOM;
+const FEDERATION_TABS: { key: FederationChoice; label: string }[] = [
+  ...KNOWN_FEDERATIONS.map((f) => ({ key: f.id, label: f.label })),
+  { key: CUSTOM, label: 'Custom' },
+];
 
 const styles = StyleSheet.create({
   grantRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },

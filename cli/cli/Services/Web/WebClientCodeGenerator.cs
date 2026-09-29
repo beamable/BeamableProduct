@@ -389,6 +389,61 @@ public class WebClientCodeGenerator
 
 	public static string GenerateClientTypes(string typesOutputDirectory)
 	{
+		var written = GenerateClientTypes(new[] { typesOutputDirectory });
+		return written.Count > 0 ? written[0] : string.Empty;
+	}
+
+	/// <summary>
+	/// Writes the same `index.ts` of every collected type into each of <paramref name="typesOutputDirectories" />,
+	/// then clears the accumulators.
+	///
+	/// <para>
+	/// Render once, write N times, clear once. The accumulators are drained at the end of a generation, so
+	/// a caller looping the single-directory overload over several directories would give the first one
+	/// every type and every later one none — leaving those clients importing a `./types` that was never
+	/// written.
+	/// </para>
+	/// </summary>
+	/// <returns>The written file paths, in input order; empty when nothing was collected.</returns>
+	public static List<string> GenerateClientTypes(IEnumerable<string> typesOutputDirectories)
+	{
+		var written = new List<string>();
+		try
+		{
+			var rendered = RenderClientTypes(out var fileName);
+			if (rendered == null)
+			{
+				return written;
+			}
+
+			foreach (var typesOutputDirectory in typesOutputDirectories)
+			{
+				Directory.CreateDirectory(typesOutputDirectory);
+				var clientTypeFilePath = Path.Combine(typesOutputDirectory, $"{fileName}.ts");
+				File.WriteAllText(clientTypeFilePath, rendered);
+				written.Add(clientTypeFilePath);
+			}
+
+			return written;
+		}
+		finally
+		{
+			// ModuleTypes/ClientTypes are static, so without clearing they leak types across repeated
+			// generations within a long-lived process (e.g. the MCP server) and across microservices.
+			lock (TypeAccumulatorLock)
+			{
+				ModuleTypes.Clear();
+				ClientTypes.Clear();
+			}
+		}
+	}
+
+	/// <summary>
+	/// Renders the types file for everything collected so far, without clearing it.
+	/// </summary>
+	/// <returns>The file content, or null when no type was collected.</returns>
+	private static string RenderClientTypes(out string fileName)
+	{
 		// Fold first, and that ordering is load-bearing.
 		//
 		// `ProcessClientTypes` also runs from the CONSTRUCTOR, which is before `GenerateClientCode` has
@@ -400,12 +455,18 @@ public class WebClientCodeGenerator
 		// Snapshot under the lock and work off the copy: this runs after the parallel pass, but taking
 		// a copy keeps the reader independent of any late writer rather than relying on that ordering.
 		TsTypeAlias[] clientTypes;
-		lock (TypeAccumulatorLock) clientTypes = ClientTypes.ToArray();
-
-		if (clientTypes.Length == 0)
-			return string.Empty;
+		lock (TypeAccumulatorLock)
+		{
+			clientTypes = ClientTypes.ToArray();
+		}
 
 		var tsClientTypeFile = new TsFile("index");
+		fileName = tsClientTypeFile.FileName;
+
+		if (clientTypes.Length == 0)
+		{
+			return null;
+		}
 
 		// A type reachable from more than one endpoint (e.g. a request/response DTO shared by two
 		// callables) is added to ClientTypes once per referencing endpoint — the set keys by
@@ -415,20 +476,13 @@ public class WebClientCodeGenerator
 		foreach (var clientType in clientTypes)
 		{
 			if (!seenTypeNames.Add(clientType.Name))
+			{
 				continue;
+			}
 			tsClientTypeFile.AddDeclaration(clientType);
 		}
 
-		Directory.CreateDirectory(typesOutputDirectory);
-		var clientTypeFilePath = Path.Combine(typesOutputDirectory, $"{tsClientTypeFile.FileName}.ts");
-		File.WriteAllText(clientTypeFilePath, tsClientTypeFile.Render());
-
-		// ModuleTypes/ClientTypes are static, so without clearing they leak types across repeated
-		// generations within a long-lived process (e.g. the MCP server) and across microservices.
-		ModuleTypes.Clear();
-		ClientTypes.Clear();
-
-		return clientTypeFilePath;
+		return tsClientTypeFile.Render();
 	}
 
 	/// <summary>

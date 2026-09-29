@@ -175,6 +175,27 @@ describe('CampaignOfferService', () => {
         '0',
       );
     });
+    it('sends a state filter as one repeated `states` key per state', async () => {
+      // Through the real generated API and makeApiRequest, not a spy on the API: the gateway binds
+      // `[FromQuery] CampaignOfferState[] states`, which reads repeated keys and not a comma list — a
+      // `states=Granted%2CRedeemed` would fail to bind and the filter would silently not apply.
+      const request = vi.fn().mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: { playerId: '0', offers: [] },
+      });
+      const requester = { request } as unknown as HttpRequester;
+      const beam = { cid: 'cid', pid: 'pid', requester } as unknown as BeamBase;
+      const service = new CampaignOfferService({ beam, getPlayer: () => new PlayerService() });
+
+      await service.getCampaignOffers('beamable_virtual_store', ['Granted', 'Redeemed']);
+
+      expect(request).toHaveBeenCalledTimes(1);
+      const url: string = request.mock.calls[0][0].url;
+      expect(url).toBe(
+        '/api/campaign-offer/campaign-offers?federationId=beamable_virtual_store&playerId=0&states=Granted&states=Redeemed',
+      );
+    });
   });
 
   describe('redeem', () => {
@@ -209,6 +230,32 @@ describe('CampaignOfferService', () => {
       await service.redeem('beamable_virtual_store', 'bsg_1');
       await service.redeem('beamable_virtual_store', 'bsg_1');
 
+      expect(sentRedeemPayload(1).request?.transactionId).toBe(
+        sentRedeemPayload(0).request?.transactionId,
+      );
+    });
+
+    it('keeps the transaction id across a purchase-pending answer, so the retry settles the same claim', async () => {
+      // purchase-pending: the store could not tell whether commerce took the money. The claim is
+      // kept, and only a retry with the SAME id can learn the real outcome — a fresh id would be read
+      // as a second claim on the grant.
+      const pending: CampaignOfferRedeemResponse = {
+        grantId: 'bsg_1',
+        success: false,
+        status: 'purchase-pending',
+        message: 'Still confirming the purchase.',
+      };
+      vi.spyOn(apis, 'campaignOfferPostRedeem')
+        .mockResolvedValueOnce({ status: 200, headers: {}, body: pending })
+        .mockResolvedValueOnce({ status: 200, headers: {}, body: ok });
+
+      const service = makeService();
+      const first = await service.redeem('beamable_virtual_store', 'bsg_1');
+      expect(first.status).toBe('purchase-pending');
+      const retry = await service.redeem('beamable_virtual_store', 'bsg_1');
+      expect(retry.success).toBe(true);
+
+      expect(sentRedeemPayload(0).request?.transactionId).toBeTruthy();
       expect(sentRedeemPayload(1).request?.transactionId).toBe(
         sentRedeemPayload(0).request?.transactionId,
       );
