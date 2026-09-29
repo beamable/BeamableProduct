@@ -69,7 +69,38 @@ public partial class BeamoLocalSystem
 		}
 
 		token.ThrowIfCancellationRequested();
-		_ = await CreateContainer(image, containerName, healthConfig, autoRemoveWhenStopped, portBindings, volumes, bindMounts, environmentVars);
+		try
+		{
+			_ = await CreateContainer(image, containerName, healthConfig, autoRemoveWhenStopped, portBindings, volumes, bindMounts, environmentVars);
+		}
+		catch (DockerApiException dockerEx) when (dockerEx.StatusCode == System.Net.HttpStatusCode.Conflict)
+		{
+			// A container with this name already exists in Docker but wasn't in our in-memory
+			// ExistingLocalServiceInstances list (which is populated reactively by the Docker event
+			// listener). This happens when a leftover container from a previous run is still
+			// auto-removing, or was created before our listener caught up. Reconcile with the real
+			// Docker state instead of failing the deploy.
+			Log.Verbose($"container name=[{containerName}] already exists in Docker; reconciling. reason=[{dockerEx.Message}]");
+			var existing = await FindContainerByName(containerName);
+			if (existing != null && string.Equals(existing.State, "running", StringComparison.OrdinalIgnoreCase))
+			{
+				// Something already has this exact name up and running; reuse it rather than tearing it down.
+				return true;
+			}
+
+			// A stale/stopped leftover (often a previous run's container mid auto-remove). Remove and recreate.
+			try
+			{
+				await DeleteContainer(containerName);
+			}
+			catch (DockerApiException removeEx) when (removeEx.StatusCode == System.Net.HttpStatusCode.NotFound)
+			{
+				// Already gone (finished auto-removing between our lookup and delete calls); fine to proceed.
+			}
+
+			token.ThrowIfCancellationRequested();
+			_ = await CreateContainer(image, containerName, healthConfig, autoRemoveWhenStopped, portBindings, volumes, bindMounts, environmentVars);
+		}
 
 		token.ThrowIfCancellationRequested();
 		var didRun = await RunContainer(containerName);
@@ -179,7 +210,11 @@ public partial class BeamoLocalSystem
 		}
 		catch (Exception e)
 		{
-			BeamableLogger.LogError(JsonConvert.SerializeObject(e, Formatting.Indented));
+			// The caller decides how to surface this: some failures (like a container-name conflict) are
+			// transient and handled by CreateAndRunContainer. Keep the full detail at verbose so normal
+			// runs aren't spammed with a serialized stack trace for a recoverable error.
+			Log.Verbose($"CreateContainer failed for containerName=[{containerName}] image=[{image}]: {e.Message}");
+			Log.Verbose(JsonConvert.SerializeObject(e, Formatting.Indented));
 			throw;
 		}
 	}
@@ -256,6 +291,27 @@ public partial class BeamoLocalSystem
 	public Task<string> PullAndCreateImage(string publicImageName, Action<float> progressUpdateHandler)
 	{
 		return _client.PullAndCreateImage(publicImageName, progressUpdateHandler);
+	}
+
+	/// <summary>
+	/// Looks up a container directly in Docker by its exact name, regardless of state (running or stopped).
+	/// Unlike <see cref="BeamoLocalRuntime.ExistingLocalServiceInstances"/> — which is populated reactively by
+	/// the Docker event listener and can lag behind reality — this queries the Docker daemon as the source of
+	/// truth. Returns <c>null</c> when no container with that exact name exists.
+	/// </summary>
+	private async Task<ContainerListResponse> FindContainerByName(string containerName)
+	{
+		var containers = await _client.Containers.ListContainersAsync(new ContainersListParameters
+		{
+			All = true,
+			Filters = new Dictionary<string, IDictionary<string, bool>>
+			{
+				["name"] = new Dictionary<string, bool> { [containerName] = true }
+			}
+		});
+		// The Docker name filter matches substrings, so match the exact name (container names are reported
+		// with a leading '/') to avoid picking up e.g. "NCStorage_mongoDb2".
+		return containers.FirstOrDefault(c => c.Names.Any(n => n == "/" + containerName));
 	}
 
 	/// <summary>

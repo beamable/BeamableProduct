@@ -129,6 +129,10 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 
 	public override async Task Handle(RunProjectCommandArgs args)
 	{
+		// A SECRET in the environment `beam project run` was started from is the user's secret override. Read it
+		// before any service starts, so it is never confused with a value something set on this process later.
+		var secretOverride = Environment.GetEnvironmentVariable(RunScopeIdentity.ENV_SECRET);
+
 		ProjectCommand.FinalizeServicesArg(args,
 			withTags: args.withServiceTags,
 			withoutTags: args.withoutServiceTags,
@@ -182,8 +186,25 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			serviceTable.Add(serviceName, serviceDefinition);
 		}
 
+		// Decide which scope (realm pid, or zone) and secret each service authenticates with, and validate a SECRET
+		// override against the scopes being run, before anything builds. Each service gets its identity explicitly
+		// (per-process env for microservices, its own args object for in-process portal extensions), so one
+		// service's scope can never leak into another's.
+		var identities = await RunScopeIdentity.Resolve(args, serviceTable.Values, secretOverride);
+
+		// Make sure every storage the selected services need is running before any of them starts, and hand each
+		// service the resolved connection strings. Left to each service's own `generate-env --auto-deploy`, services
+		// sharing a storage would race to create the same container.
+		var storageFailures = new Dictionary<string, string>();
+		var storageEnvByService = await EnsureRequiredStorages(args, serviceTable, storageFailures);
+
 		foreach (var service in args.services)
-			SendUpdate(service, "starting...", 0);
+		{
+			if (!storageFailures.ContainsKey(service))
+			{
+				SendUpdate(service, "starting...", 0);
+			}
+		}
 
 		// For each of the filtered list of services, start a process that'll run it.
 		var runTasks = new List<Task>();
@@ -214,6 +235,13 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		{
 			var name = serviceName;
 
+			// Storages were already started by EnsureRequiredStorages, and services whose storage failed to start
+			// already received their terminal failure update.
+			if (serviceDef.Protocol == BeamoProtocolType.EmbeddedMongoDb || storageFailures.ContainsKey(name))
+			{
+				continue;
+			}
+
 			// Stagger starts. Launching N services in the same tick is what trips the gateway's rate
 			// limiter during each service's generate-env (every one of them calls accounts/admin/me).
 			// `beam local up` already spaces its individual --ids steps by GroupLaunchStagger; a
@@ -233,6 +261,13 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			switch (serviceDef.Protocol)
 			{
 				case BeamoProtocolType.HttpMicroservice:
+				{
+					var serviceEnv = identities[name].ToProcessEnvironment();
+					foreach ((string key, string value) in storageEnvByService.GetValueOrDefault(name) ?? new Dictionary<string, string>())
+					{
+						serviceEnv[key] = value;
+					}
+
 					runTasks.Add(RunService(args, serviceName, new CancellationTokenSource(), buildFlags, runFlags,
 						OnLogReceived, (errorReport, exitCode) =>
 						{
@@ -242,15 +277,9 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 						}, (progress, message) =>
 						{
 							SendUpdate(name, message, progress);
-						}));
+						}, serviceEnv));
 					break;
-				case BeamoProtocolType.EmbeddedMongoDb:
-					runTasks.Add(Guarded(name, args.BeamoLocalSystem.RunLocalEmbeddedMongoDb(serviceDef,
-						beamoLocalManifest.EmbeddedMongoDbLocalProtocols[serviceDef.BeamoId], () =>
-						{
-							SendUpdate(name, progress: 1f);
-						})));
-					break;
+				}
 				case BeamoProtocolType.PortalExtension:
 				{
 					var cToken = new CancellationTokenSource();
@@ -293,6 +322,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 						var portalBaseUrl = cli.Portal.PortalCommand.GetPortalBaseUrl(args);
 						runTasks.Add(Guarded(name, args.BeamoLocalSystem.RunLocalPortalExtension(
 							serviceDef, args.BeamoLocalSystem, portalExtensionConfig, args.AppContext, beamActivity,
+							identities[name],
 							portalBaseUrl: portalBaseUrl,
 							onProgress: (progress, message) => SendUpdate(name, message, progress),
 							token: cToken.Token)));
@@ -312,6 +342,117 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				payload = new RunFailErrorOutput { compilerErrors = failedTasks.Select(x => x.Value).ToList() }
 			};
 		}
+
+		if (storageFailures.Count > 0)
+		{
+			throw new CliException("failed to start all services: " +
+			                       string.Join("; ", storageFailures.Select(kvp => $"{kvp.Key}: {kvp.Value}")));
+		}
+	}
+
+	/// <summary>
+	/// Works out which storages the services in <paramref name="serviceTable"/> need (their dependencies, plus any
+	/// storage passed directly), checks them all against Docker at once, and starts the missing ones in parallel.
+	/// Returns, per microservice, the env vars carrying its storages' connection strings (see
+	/// <see cref="BeamoLocalSystem.ENV_PRERESOLVED_STORAGE_CONNSTR_PREFIX"/>). Every requested service that cannot
+	/// start because of a storage failure is added to <paramref name="storageFailures"/> and sent a terminal update.
+	/// </summary>
+	async Task<Dictionary<string, Dictionary<string, string>>> EnsureRequiredStorages(RunProjectCommandArgs args,
+		Dictionary<string, BeamoServiceDefinition> serviceTable, Dictionary<string, string> storageFailures)
+	{
+		var envByService = new Dictionary<string, Dictionary<string, string>>();
+
+		// storage id -> the requested services that depend on it
+		var storageDependents = new Dictionary<string, List<string>>();
+		foreach ((string serviceName, BeamoServiceDefinition serviceDef) in serviceTable)
+		{
+			if (serviceDef.Protocol == BeamoProtocolType.EmbeddedMongoDb)
+			{
+				storageDependents.TryAdd(serviceName, new List<string>());
+				continue;
+			}
+
+			if (serviceDef.Protocol != BeamoProtocolType.HttpMicroservice)
+			{
+				continue;
+			}
+
+			foreach (var dependency in args.BeamoLocalSystem.GetDependencies(serviceName))
+			{
+				if (!storageDependents.TryGetValue(dependency.name, out var dependents))
+				{
+					dependents = new List<string>();
+					storageDependents[dependency.name] = dependents;
+				}
+
+				dependents.Add(serviceName);
+			}
+		}
+
+		if (storageDependents.Count == 0)
+		{
+			return envByService;
+		}
+
+		if (!await args.BeamoLocalSystem.CheckIsRunning())
+		{
+			throw CliExceptions.DOCKER_NOT_RUNNING;
+		}
+
+		foreach (var dependents in storageDependents.Values)
+		{
+			foreach (var service in dependents)
+			{
+				SendUpdate(service, "checking storages...", -MIN_PROGRESS * .5f);
+			}
+		}
+
+		Log.Debug("Ensuring storages are running. STORAGES={Storages}", string.Join(",", storageDependents.Keys));
+		var resolutions = await args.BeamoLocalSystem.EnsureLocalStorages(storageDependents.Keys,
+			onUpdate: (storageId, message, progress) =>
+			{
+				// Only storages the caller asked for by id are tracked on the stream.
+				if (serviceTable.ContainsKey(storageId))
+				{
+					SendUpdate(storageId, message, progress);
+				}
+			},
+			token: args.Lifecycle.CancellationToken);
+
+		foreach ((string storageId, LocalStorageResolution resolution) in resolutions)
+		{
+			if (!resolution.Succeeded)
+			{
+				var reason = $"storage=[{storageId}] failed to start: {resolution.Error.Message}";
+				Log.Error(reason);
+				if (serviceTable.ContainsKey(storageId))
+				{
+					storageFailures[storageId] = reason;
+					SendUpdate(storageId, $"failed: {reason}", 1);
+				}
+
+				foreach (var service in storageDependents[storageId])
+				{
+					storageFailures[service] = reason;
+					SendUpdate(service, $"failed: {reason}", 1);
+				}
+
+				continue;
+			}
+
+			foreach (var service in storageDependents[storageId])
+			{
+				if (!envByService.TryGetValue(service, out var env))
+				{
+					env = new Dictionary<string, string>();
+					envByService[service] = env;
+				}
+
+				env[BeamoLocalSystem.ENV_PRERESOLVED_STORAGE_CONNSTR_PREFIX + storageId] = resolution.ConnectionString;
+			}
+		}
+
+		return envByService;
 	}
 
 	private void OnLogReceived(ProjectRunLogData data)
@@ -419,7 +560,8 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		ProjectService.RunFlags runFlags,
 		Action<ProjectRunLogData> onLog = null,
 		Action<ProjectErrorReport, int> onFailure = null,
-		Action<float, string> onProgress = null)
+		Action<float, string> onProgress = null,
+		IReadOnlyDictionary<string, string> additionalEnvVars = null)
 	{
 		var tokenSource =
 			CancellationTokenSource.CreateLinkedTokenSource(args.Lifecycle.CancellationToken, serviceToken.Token);
@@ -489,22 +631,26 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				["LOG_LEVEL"] = "verbose",
 				["LOG_TYPE"] = "structured+file",
 				["WATCH_TOKEN"] = "false",
-				// A concurrently-running zone portal extension sets BEAM_SKIP_LOCAL_ENV (plus zone
-				// CID/PID/ZID/SECRET) process-globally on THIS orchestrator so its in-process backing
-				// service reads them as-is (see BeamoLocalSystem_PortalExtension.ApplyZoneEnvironment).
-				// A standalone service we launch here inherits this orchestrator env, and a truthy
-				// BEAM_SKIP_LOCAL_ENV makes it skip its own `generate-env` — the step that injects
-				// STORAGE_CONNSTR_<storage>. The result: a zone microservice (e.g. VipServiceZone) boots
-				// with the leaked zone auth but no storage connection string and fails at runtime with
-				// "Connection string for storage '<X>' is null or empty". Clearing it here guarantees each
-				// child service resolves its own env via generate-env, exactly as a `--ids` run does.
-				["BEAM_SKIP_LOCAL_ENV"] = "",
+				// A truthy BEAM_SKIP_LOCAL_ENV inherited from whatever launched the CLI would make the service
+				// skip its own `generate-env`, the step that injects STORAGE_CONNSTR_<storage> (a zone
+				// microservice would then fail at runtime with "Connection string for storage '<X>' is null or
+				// empty"). Removing it guarantees each child resolves its env via generate-env, exactly as a
+				// `--ids` run does. Its scope and secret are set explicitly through additionalEnvVars.
+				["BEAM_SKIP_LOCAL_ENV"] = null,
 				[Beamable.Common.Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = args.AppContext.DotnetPath
 			};
 			if (args.requireProcessId > 0)
 			{
 				envVars[Beamable.Common.Constants.EnvironmentVariables.BEAM_REQUIRE_PROCESS_ID] =
 					args.requireProcessId.ToString();
+			}
+
+			if (additionalEnvVars != null)
+			{
+				foreach ((string key, string value) in additionalEnvVars)
+				{
+					envVars[key] = value;
+				}
 			}
 
 			var handle = StartProcessUtil.Run(

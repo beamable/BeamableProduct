@@ -68,7 +68,7 @@ public static class StartProcessUtil
 	/// <param name="args">Command-line arguments.</param>
 	/// <param name="isDetach">When true, wraps the command so the child process outlives the parent.</param>
 	/// <param name="useShell">When true, wraps the command through the platform shell for PATH resolution.</param>
-	/// <param name="environmentVariables">Optional extra environment variables to set on the child process.</param>
+	/// <param name="environmentVariables">Optional extra environment variables to set on the child process. A null value removes that variable from the child's environment.</param>
 	/// <param name="onStdout">Called for every stdout line received (may be null).</param>
 	/// <param name="onStderr">Called for every stderr line received (may be null).</param>
 	/// <param name="workingDirectoryPath">Optional working directory.</param>
@@ -124,7 +124,15 @@ public static class StartProcessUtil
 		{
 			foreach (var (key, value) in environmentVariables)
 			{
-				psi.Environment[key] = value;
+				// A null value removes the variable, so the child does not inherit it from this process.
+				if (value == null)
+				{
+					psi.Environment.Remove(key);
+				}
+				else
+				{
+					psi.Environment[key] = value;
+				}
 			}
 		}
 
