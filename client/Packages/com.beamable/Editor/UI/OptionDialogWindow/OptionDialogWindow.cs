@@ -20,7 +20,12 @@ namespace Beamable.Editor.UI.OptionDialogWindow
 		                                   params ButtonInfo[] buttons)
 		{
 			bool modalResult = false;
-			
+			if (Application.isBatchMode)
+			{
+				Debug.LogError($"Failed to show modal window with title: \"{title}\" and message: \"{message}\".");
+				Debug.LogError("Returning false as if the window was closed.");
+				return false;
+			}
 			var window = CreateInstance<OptionDialogWindow>();
 			window._message = message;
 			window._buttons = buttons;
