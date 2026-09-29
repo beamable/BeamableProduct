@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Detect if Unity is running in batch mode and do not attempt to show OptionDialogWindow if that is the case.
+
 ### Fixed
 
 - Keep deleted content from being recreated by pending autosaves or running properties/tag writes in the Content window.
