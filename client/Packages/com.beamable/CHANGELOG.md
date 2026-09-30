@@ -7,12 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added build-scoped suppression and per-player runtime opt-in for automatic Player Social friend-invitation Mail checks.
+
 ### Changed
 
 - Detect if Unity is running in batch mode and do not attempt to show OptionDialogWindow if that is the case.
 
 ### Fixed
 
+- Fixed the Unity Content window failing to reconcile large local content changes after filesystem watcher overflow, which previously required a manual refresh.
 - Keep deleted content from being recreated by pending autosaves or running properties/tag writes in the Content window.
 - Prevent older property saves from overwriting newer tag edits, and restore editable content after a failed file deletion.
 
@@ -27,7 +32,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [6.1.0] - 2026-08-26
 
 ### Added
-- Added build-scoped suppression and per-player runtime opt-in for automatic Player Social friend-invitation Mail checks.
 - Fixed `CommerceService.GetCurrent()` waiting indefinitely when called without a store scope; unscoped Commerce requests now fail immediately with a clear error.
 - Content Manifest caching between runs.
 - Added support for silent login to the Google Sign In integration.
@@ -40,24 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update CLI to 7.2.3
-
-## [6.0.1] - 2026-07-31
-
-### Changed
-
-- Unity In-App Purchasing (UnityIAP) 5.4.2 is now supported. The Beamable Steam store implements `IOrderInfo.PaymentProviders`, which UnityIAP introduced in 5.4.2.
-- The supported UnityIAP 5 range is **5.2.0 through 5.4.2**. UnityIAP 5.0.x and 5.1.x do not compile against Beamable 6.x, because they predate the `StoreController.OnStoreConnected` event that the purchasing integration requires.
-
-- Added build-scoped suppression and per-player runtime opt-in for automatic Player Social friend-invitation Mail checks.
-- Fixed `CommerceService.GetCurrent()` waiting indefinitely when called without a store scope; unscoped Commerce requests now fail immediately with a clear error.
-- Content Manifest caching between runs.
-- Added support for silent login to the Google Sign In integration.
-
-### Fixed
-
-- Fixed the Unity Content window failing to reconcile large local content changes after filesystem watcher overflow, which previously required a manual refresh.
-- Fixed repeated content validation during Unity Inspector repaints, reducing Editor log spam and performance overhead when viewing content.
-- Fixed Unity Editor hitches after editing content properties by avoiding synchronous end-of-stream checks while reading streamed CLI responses.
 
 ## [6.0.1] - 2026-07-31
 
