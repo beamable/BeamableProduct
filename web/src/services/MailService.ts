@@ -1,6 +1,6 @@
 import type { Message } from '@/__generated__/schemas';
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
-import { FUNNEL_CATEGORY } from '@/services/AnalyticsService';
+import { FunnelStage } from '@/services/AnalyticsService';
 import {
   mailGetDetailByObjectId,
   mailPostSearchByObjectId,
@@ -47,7 +47,7 @@ const MAX_REMEMBERED = 256;
 /**
  * The player's in-game mailbox.
  *
- * Beyond wrapping the mail endpoints, this reports the campaign funnel's `Opened` stage
+ * Beyond wrapping the mail endpoints, this reports the campaign funnel's `beam_opened` stage
  * **automatically** when a mail sent by a campaign moves from Unread to Read. Games write no
  * analytics code: reading mail through this service is enough.
  *
@@ -67,7 +67,7 @@ export class MailService extends ApiService {
    * Attribution for mail this session has seen, keyed by message id, so a state change can be
    * reported without the caller handing the message back.
    */
-  private readonly attributed = new Map<string, { outreachId: string; trackId: string }>();
+  private readonly attributed = new Map<string, { outreachId: string; trackId?: string }>();
 
   constructor(props: ApiServiceProps) {
     super(props);
@@ -170,9 +170,10 @@ export class MailService extends ApiService {
       const outreachId = metadata?.[OUTREACH_KEY];
       const trackId = metadata?.[TRACK_ID_KEY];
 
-      // Both are required downstream: outreachId is the funnel's per-recipient dedup key, trackId is
-      // what the platform parses to find the campaign and node. One without the other is unusable.
-      if (!outreachId || !trackId) continue;
+      // outreachId is the only key the platform matches on. trackId is no longer read by the campaign
+      // path — the coordinates come off the row the outreachId matched — so it is carried for BI when
+      // the rail stamped one, but its absence must not drop an open that would count.
+      if (!outreachId) continue;
 
       if (this.attributed.size >= MAX_REMEMBERED) {
         // Insertion-order eviction. An exact LRU is not worth a second data structure for what is a
@@ -181,12 +182,12 @@ export class MailService extends ApiService {
         if (!oldest.done) this.attributed.delete(oldest.value);
       }
 
-      this.attributed.set(String(message.id), { outreachId, trackId });
+      this.attributed.set(String(message.id), trackId ? { outreachId, trackId } : { outreachId });
     }
   }
 
   /**
-   * Emits one `Opened` per campaign mail in the batch.
+   * Emits one `beam_opened` per campaign mail in the batch.
    *
    * Deliberately not awaited and never throws: a failed metrics call must not make a mail look
    * unread. The platform also dedupes on (outreachId, stage), so a re-read cannot double count —
@@ -204,14 +205,14 @@ export class MailService extends ApiService {
       if (!attribution) continue;
       this.attributed.delete(key);
 
-      // Byte-identical in shape to what the push SDKs already send, so the platform's campaign
-      // consumer attributes it with no ingest change: it keys on category + trackId + outreachId.
+      // Same shape as what the push SDKs send, so the platform attributes it with no ingest change:
+      // it matches on the name and outreachId. In-game mail has no handset, so this is the ONLY
+      // producer of an open for this rail — an unprefixed name here would silently count zero.
       analytics.trackSafely({
-        name: 'Opened',
-        category: FUNNEL_CATEGORY,
+        name: FunnelStage.Opened,
         params: {
           outreachId: attribution.outreachId,
-          trackId: attribution.trackId,
+          ...(attribution.trackId ? { trackId: attribution.trackId } : {}),
           funnelType: 'ingame',
           mailId: key,
         },

@@ -13,7 +13,7 @@ The flows this covers, end to end:
 
 1. **Push-token registration** — get the device's APNs/FCM token and register it with Beamable.
 2. **List registered devices** — read back the player's device registrations.
-3. **Track `Clicked` / `Converted`** — emit native funnel analytics for a campaign offer (iOS + Android).
+3. **Track `Clicked`** — emit native funnel analytics for a campaign offer (iOS + Android).
 4. **Native events** — observe `notificationOpened`, `notificationReceived`, `notificationPresented`, etc.
 
 ```
@@ -24,7 +24,7 @@ The flows this covers, end to end:
 │  ├─ CampaignServiceClient           ├─ registerForRemote() ─► token     │
 │  │   registerDeviceToken() ◄────────┤  (tokenReceived event)            │
 │  │   listMyDevices()                ├─ addListener(...) native events    │
-│  └─ tokenStorage (AsyncStorage)     └─ trackOfferClicked/Converted()     │
+│  └─ tokenStorage (AsyncStorage)     └─ trackOfferClicked()               │
 │                                                                         │
 └── Beamable realm ───────────────────────────────────────────────────────┘
      CampaignService microservice · apns_push / fcm_push credentials ·
@@ -273,18 +273,23 @@ useEffect(() => {
 > `await BeamNotifications.requestPermission()`, `await BeamNotifications.registerForRemote()`,
 > and `BeamNotifications.addListener('notificationOpened', …)` / `getLaunchNotification()`.
 
-### Track Clicked / Converted (funnel analytics)
+### Track Clicked (funnel analytics)
 
-These emit **native** analytics through the Beamable analytics endpoint (iOS + Android)
+This emits **native** analytics through the Beamable analytics endpoint (iOS + Android)
 — they are not Web SDK HTTP calls:
 
 ```ts
-const intent = { campaignId, nodeId, gamerTag: String(beam.player.id), cidPid: `${cid}.${pid}`, deeplink };
+// Spread the push's coords — outreachId is what the platform matches the click on.
+const coords = BeamNotifications.campaignCoordsFromNotification(notification);
+const intent = { ...coords, gamerTag: String(beam.player.id), cidPid: `${cid}.${pid}`, deeplink };
 const offer  = { itemId: 'sword_01', value: 100, customData: { tier: 'gold' } };
 BeamNotifications.trackOfferClicked(intent, offer);
-BeamNotifications.trackOfferConverted(intent, offer);
 // outcome arrives on the funnelResult event (both platforms)
 ```
+
+There is no conversion call. The platform concludes a conversion when the player meets a
+campaign objective (an ordinary analytics event, sent with no category) and ignores any a
+device reports.
 
 ### Closed-app analytics auth
 
@@ -330,7 +335,8 @@ On a **physical device** with a **dev build**:
 4. Opt in to push, then List my registered devices → your token comes back.
 5. **Push → Debug** → Fire local now, background the app, tap it → `notificationOpened` fires
    **exactly once** in the Native events stream and the app deep-links into `details/<id>`.
-6. **Analytics** tab → Track clicked / converted → `funnelResult` reports the send.
+6. **Analytics** tab → Track offer clicked → `funnelResult` reports the send; Meet objective
+   sends the configured objective event.
 7. **In-game** tab → switch away and back; the mailbox refreshes on focus with no tap.
 
 > Optional: the web build can also run inside a **Unity WebView**, where the same calls route

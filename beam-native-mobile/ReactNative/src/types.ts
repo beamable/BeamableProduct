@@ -134,9 +134,10 @@ export interface NotificationIntentData<
   cidPid?: string;
   /**
    * The push's attribution stamp — the per-recipient join key (carried on the push as
-   * `beam_outreach`) and the send's coordinates (`trackId`). Pass them back on `trackOffer*` and
-   * the campaign runtime counts the Clicked/Converted against the send node that produced the
-   * push, which is what makes the stage visible in the portal's campaign funnel. Both are absent
+   * `beam_outreach`) and the send's coordinates (`trackId`). Pass them back on `trackOfferClicked`:
+   * the platform matches `outreachId` against the send it made to this recipient and counts the
+   * click against that send node, which is what makes the stage visible in the portal's campaign
+   * funnel. `trackId` is no longer needed to count, but still rides along for BI. Both are absent
    * on a notification that did not come from a campaign send.
    */
   outreachId?: string;
@@ -162,7 +163,7 @@ export interface NotificationData {
   gamerTag?: string;
   accountId?: string;
   cidPid?: string;
-  /** Attribution stamp (see {@link NotificationIntentData}) — echo these back on `trackOffer*`. */
+  /** Attribution stamp (see {@link NotificationIntentData}) — echo these back on `trackOfferClicked`. */
   outreachId?: string;
   trackId?: string;
   offers?: NotificationOffer[];
@@ -199,7 +200,7 @@ export type EventMap = {
   pendingNotifications: NotificationData[];
   deliveryReceipts: DeliveryReceipt[];
   /**
-   * Result of a native analytics funnel send (Received/Opened/Sent/Clicked/Converted).
+   * Result of a native analytics funnel send (Received/Opened/Sent/Clicked).
    * Emitted on both platforms: Android's native `onFunnelResult`, iOS's `funnelResult`.
    * `statusCode` is 0 when no HTTP attempt was made (e.g. no native auth configured) — the
    * `message` then says why.

@@ -56,7 +56,7 @@ class PushFirebaseService : FirebaseMessagingService() {
     }
 
     /**
-     * Builds the receive event, fires the native **Received** funnel event, then dispatches
+     * Builds the receive event, fires the native delivery (`beam_delivered`) funnel event, then dispatches
      * to EVERY registered handler with each handler's failure isolated. Never throws out.
      */
     private fun invokeNotificationReceived(
@@ -66,9 +66,9 @@ class PushFirebaseService : FirebaseMessagingService() {
     ): PushReceivedEvent? {
         return try {
             val intentData = NotificationIntentData.fromDataMap(data)
-            // Native funnel "Received" — works in foreground AND closed-app data path.
+            // Native funnel delivery (`beam_delivered`) — works in foreground AND closed-app data path.
             BeamableAnalytics.trackFunnel(
-                applicationContext, intentData, BeamableAnalytics.FunnelType.Received
+                applicationContext, intentData, BeamableAnalytics.FunnelType.Delivered
             )
             val event = PushReceivedEvent(
                 messageId = remoteMessage.messageId,
