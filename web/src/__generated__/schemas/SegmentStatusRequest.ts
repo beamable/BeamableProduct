@@ -3,9 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type BundleTag = { 
-  bundleName?: string; 
-  checksum?: string; 
-  tag?: string; 
-  updatedAt?: bigint | string; 
+export type SegmentStatusRequest = { 
+  segmentIds: string[]; 
+  realmId?: string | null; 
 };

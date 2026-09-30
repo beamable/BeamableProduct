@@ -8,7 +8,8 @@ end to end:
 - **push-token registration** — request permission, register for remote, and register
   the device's APNs/FCM token with Beamable;
 - **listing registered devices** for the player;
-- **tracking `Clicked` / `Converted`** funnel analytics (iOS + Android);
+- **tracking `Clicked`** funnel analytics (iOS + Android), and meeting a campaign objective
+  (which is how a conversion is counted — a device never reports one);
 - **native events** — `notificationOpened`, `notificationReceived`,
   `notificationPresented`, token, delivery receipts, funnel results — in a live log;
 - **deep links** — a tapped notification deep-links into the app (`beamrnsample://details/<id>`);
@@ -63,22 +64,55 @@ For **remote** push you also need provider credentials on your realm — `apns_p
 
 ### Pointing at a local stack
 
-To run against a local Beamable backend (e.g. `beam local up` over your LAN), do two things.
+To run against a local Beamable backend (e.g. `beam local up` over your LAN), do three things.
 
-**1. Point at the backend** — create an uncommitted `env.local` at the project root:
+**1. Point at the realm** — edit `.beamable/config.beam.json` with the cid, pid and host of your
+local stack:
 
+```json
+{
+  "cid": "95633677400146944",
+  "pid": "DE_95633677402244098",
+  "host": "http://192.168.x.x:8080"
+}
 ```
+
+This file is the **only** thing that sets the SDK's realm and host: `src/beam/config.ts` imports it
+directly and `beamClient.ts` passes it to `Beam.init`. `env.local` / `VITE_API_BASE` does **not**
+change the SDK host — that path exists for the web/Unity-WebView variant only. Point `env.local` at
+a local URL and leave this file on its committed defaults and every request still goes to
+`api.beamable.com`, which shows up as `400 InvalidScopeError: Invalid scope: <cid>.<pid>` because
+your local realm does not exist there.
+
+`host` must be reachable **from the device**, not from your dev machine — `localhost` means the
+phone itself:
+
+| Target | host |
+|---|---|
+| Android emulator | `http://10.0.2.2:8080` (alias for the host loopback) |
+| Physical device / iPad | your dev machine's LAN IP, e.g. `http://192.168.x.x:8080` |
+
+`beam local up` rewrites the *portal's* config on every stack reset, but **not this file** — and a
+reset mints a brand-new cid/pid, so re-copy them after one.
+
+**2. Make sure the SDK is built.** The sample links `@beamable/sdk` straight at the monorepo
+(`file:../../../web`), and it bundles `web/dist`, which is **git-ignored** — a fresh clone has none.
+`dotnet beam local up --build` builds and publishes it (the plain `beam local up` skips that step),
+or build it directly:
+
+```bash
+cd ../../../web && npm run build
 # env.local — git-ignored, never committed
 VITE_API_BASE=http://192.168.x.x:8080
 # Only needed while microservices run via `beam project run` — see below.
 BEAM_ROUTING_KEY=<output of `beam fed local-key`>
 ```
 
-`app.config.js` reads it and surfaces the URL to the app (`src/beam/config.ts` flips
-`environment` to `local`). `env.local` only chooses *which* URL to target — it works for
-`http://` or `https://` and does not by itself change any native setting.
+A stale `dist` is worse than a missing one: custom-host support lives in `web/src/core/BeamBase.ts`,
+so an old bundle silently ignores `host` and falls back to prod. Verify with
+`grep -oE "fromHost|findByApiUrl" ../../../web/dist/react-native/index.mjs` — both must appear.
 
-**2. Build with the local variant** — a LAN backend is plain HTTP, which Android blocks by
+**3. Build with the local variant** — a LAN backend is plain HTTP, which Android blocks by
 default, so use the **`:local`** scripts:
 
 ```bash
@@ -93,8 +127,14 @@ and is **not** inferred from the URL — so the build *variant*, not a config va
 the native security posture. A plain `npm run android` (no `:local`) always stays TLS-only,
 and cleartext never reaches remote/release builds.
 
-> If you set an `http://` `env.local` but forget `:local`, the app builds fine but Android
-> blocks the traffic — run the `:local` variant instead.
+> If you set an `http://` host but forget `:local`, the app builds fine but Android blocks the
+> traffic — run the `:local` variant instead. On iOS the same omission trips App Transport
+> Security, which fails the request before it leaves the device, so it looks like a connection
+> problem rather than a config one.
+
+> **Config is read at BUNDLE time.** After editing `config.beam.json` or rebuilding the SDK, restart
+> Metro with a cleared cache (`node scripts/with-local.js start --dev-client -c`) or you will keep
+> running the previous realm.
 
 Re-run `expo prebuild --clean` (or a fresh `expo run:*`) when switching variants so the
 regenerated Android manifest picks up the change. (iOS uses ATS and is unaffected by the
@@ -119,6 +159,27 @@ would otherwise wipe), and removes the Gradle build output — then runs the nor
 
 Reach for it after editing the web SDK, after restaging the notifications `.aar`, or whenever
 a change you know you made doesn't show up on device.
+
+### Checking the campaign funnel end to end
+
+The funnel is read in the portal extension, not in this app. Before trusting any number, check
+`.beamable/config.beam.json`: its committed value points at the shared dev environment, which
+may not have the current funnel changes. The funnel then reads zeros, which looks exactly like a
+broken client.
+
+1. Send a campaign to the device. `beam_sent` and `beam_delivered` move.
+2. Open the notification. `beam_opened` moves, and `beam_delivered` is non-zero even if its receipt
+   arrived late (the server backfills delivery from an open).
+3. **Analytics → Track offer clicked** (the Campaign/Node IDs and the `outreachId` auto-fill from
+   the push). `beam_clicked` moves. A click with hand-typed IDs has no `outreachId` and never counts.
+4. **Analytics → Meet objective** sends the objective event configured on that tab. `beam_met_<goal>`
+   moves once the player meets the goal. `beam_goal_<goal>` counts players who fired an observed
+   event of the goal, which is not the same as meeting it for an all-of / any-of goal.
+
+Stages come back as `{ sealed, pending, lagging }`, and the total is `sealed + pending`. Results are
+cached for a short TTL, so wait before believing a zero, and read a `0` under `lagging: true` as
+"unknown", not "none". Every request to `/analytics/events` returns `202`, so a wrong or missing
+`outreachId` fails silently.
 
 ## 3. Run (dev build)
 
@@ -149,7 +210,7 @@ Tabs are listed below in bar order; the bar follows the order of the `Tabs.Scree
 | **In-game** (`inbox.tsx`) | Opt in/out of in-game · Inbox (auto-refreshes on focus, ↻ in the corner) | the `ingame` rail and the player's Beamable mailbox |
 | **Email** (`email.tsx`) | Account (read-only) · Add email to account · Opt in/out of email | `beam.account.current()` guest-vs-credentialed state; `addCredentials` → POST `/basic/accounts/register`; the `email` rail |
 | **Segments** (`segments.tsx`) | namespace picker · `CLIENT_LEVEL` card (`beam.stats`) · `PLAYER_LEVEL` card (microservice) · Set/delete any stat in either namespace · Create N players with a stat · My segments (↻) · Recent transitions | the stats → segment loop in both namespaces a rule can read: `beam.stats.set` writes `client.*` directly, `PlayerStatsService.AddToMyStat` writes `game.private`, the backend re-evaluates the Portal rules watching that attribute, and `GET /api/realms/{realmId}/players/{playerId}/segments` (+ `/transitions`) reads the membership back. The screen renders the rule JSON to author, including a cross-namespace one |
-| **Analytics** (`analytics.tsx`) | Campaign/Node ID · Track offer clicked · Track offer converted · Clear native auth | native `Clicked`/`Converted` funnel events (iOS + Android) and the closed-app auth handoff |
+| **Analytics** (`analytics.tsx`) | Objective events · Campaign/Node ID · Track offer clicked · Meet objective · Clear native auth | the native `Clicked` funnel event (iOS + Android), objective events that drive a conversion (`beam_met_<goal>`), and the closed-app auth handoff |
 | **Unity** (`unity.tsx`) | Send message to Unity | the Unity ↔ React WebView bridge. **Web only** — the tab is hidden on native |
 
 A collapsible console is pinned to the bottom of every tab with two streams behind a tab
@@ -334,7 +395,7 @@ app/
     inbox.tsx        # in-game rail + mailbox (auto-refresh on focus)
     email.tsx        # account, add-email, email rail
     segments.tsx     # client + game stat cards, namespace picker, membership + transitions
-    analytics.tsx    # funnel clicked/converted, native auth
+    analytics.tsx    # objective events, funnel clicked, native auth
     unity.tsx        # Unity bridge (web only — hidden tab on native)
   details/[id].tsx   # deep-link target screen
 src/

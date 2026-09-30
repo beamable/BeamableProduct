@@ -54,14 +54,24 @@ public static class MetricsSerializer
 	private static readonly ConstructorInfo? _metricCtor;
 	private static readonly ConstructorInfo? _identityCtor;
 	private static readonly ConstructorInfo? _aggStoreCtor;
-	private static readonly ConstructorInfo? _tagsCollCtor;
 	private static readonly ConstructorInfo? _metricPointCtor;
+	private static readonly ConstructorInfo? _histogramBoundsCtor;
+	private static readonly FieldInfo _metricPointsField;
+	private static readonly FieldInfo _currentMetricPointBatchField;
+	private static readonly FieldInfo _batchSizeField;
+	private static readonly FieldInfo _aggregatorStoreField;
+	private static readonly FieldInfo _aggregationTypeField;
+	private static readonly FieldInfo _metricAggregatorField;
+	private static readonly PropertyInfo _startTimeProperty;
+	private static readonly PropertyInfo _endTimeProperty;
 
 	private static readonly Type _aggregatorStoreType;
 
 	static MetricsSerializer()
 	{
 		Type? identityType = Type.GetType("OpenTelemetry.Metrics.MetricStreamIdentity, OpenTelemetry");
+		if (identityType == null)
+			throw new InvalidOperationException("OpenTelemetry internal type [MetricStreamIdentity] not found; telemetry metric serialization is incompatible with this OpenTelemetry version.");
 		_identityCtor = identityType?.GetConstructor(new[] { typeof(Instrument), typeof(MetricStreamConfiguration) });
 
 		if (_identityCtor == null)
@@ -70,17 +80,13 @@ public static class MetricsSerializer
 		}
 
 		Type? metricType = Type.GetType("OpenTelemetry.Metrics.Metric, OpenTelemetry");
+		if (metricType == null)
+			throw new InvalidOperationException("OpenTelemetry internal type [Metric] not found; telemetry metric serialization is incompatible with this OpenTelemetry version.");
 
-		_metricCtor = metricType
-			?.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
-			.FirstOrDefault(c =>
-			{
-				var parameters = c.GetParameters();
-				return parameters.Length == 5 &&
-				       parameters[0].ParameterType.FullName == "OpenTelemetry.Metrics.MetricStreamIdentity" &&
-				       parameters[1].ParameterType == typeof(AggregationTemporality) &&
-				       parameters[2].ParameterType == typeof(int);
-			});
+		_metricCtor = metricType?.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null,
+			new[] { identityType!, typeof(AggregationTemporality), typeof(int),
+				Type.GetType("System.Nullable`1[[OpenTelemetry.Metrics.ExemplarFilterType, OpenTelemetry]]")!,
+				Type.GetType("System.Func`1[[OpenTelemetry.Metrics.ExemplarReservoir, OpenTelemetry]]")! }, null);
 
 		if (_metricCtor == null)
 		{
@@ -88,23 +94,51 @@ public static class MetricsSerializer
 		}
 
 		var asm = typeof(Metric).Assembly;
-		_aggregatorStoreType = asm.GetType("OpenTelemetry.Metrics.AggregatorStore");
-		_aggStoreCtor = _aggregatorStoreType?.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
-			.FirstOrDefault(c => c.GetParameters().Length >= 4); //TODO change this to check types and make sure it's the constructor we are expecting
+		_aggregatorStoreType = asm.GetType("OpenTelemetry.Metrics.AggregatorStore")
+			?? throw new InvalidOperationException("OpenTelemetry internal type [AggregatorStore] not found; telemetry metric serialization is incompatible with this OpenTelemetry version.");
+		var aggregationType = asm.GetType("OpenTelemetry.Metrics.AggregationType")
+			?? throw new InvalidOperationException("OpenTelemetry internal type [AggregationType] not found; telemetry metric serialization is incompatible with this OpenTelemetry version.");
+		_aggStoreCtor = _aggregatorStoreType?.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null,
+			new[] { identityType!, aggregationType, typeof(AggregationTemporality), typeof(int),
+				Type.GetType("System.Nullable`1[[OpenTelemetry.Metrics.ExemplarFilterType, OpenTelemetry]]")!,
+				Type.GetType("System.Func`1[[OpenTelemetry.Metrics.ExemplarReservoir, OpenTelemetry]]")! }, null);
 
 		if (_aggStoreCtor == null)
 		{
 			throw new InvalidOperationException("Constructor of type=[AggregatorStore] not found");
 		}
 
-		var mpType = asm.GetType("OpenTelemetry.Metrics.MetricPoint");
-		_metricPointCtor = mpType?.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
-			.FirstOrDefault(c => c.GetParameters().Length >= 7);
+		var mpType = asm.GetType("OpenTelemetry.Metrics.MetricPoint")
+			?? throw new InvalidOperationException("OpenTelemetry internal type [MetricPoint] not found; telemetry metric serialization is incompatible with this OpenTelemetry version.");
+		var histogramBoundsType = asm.GetType("OpenTelemetry.Metrics.HistogramExplicitBounds")
+			?? throw new InvalidOperationException("OpenTelemetry internal type [HistogramExplicitBounds] not found; telemetry metric serialization is incompatible with this OpenTelemetry version.");
+		_histogramBoundsCtor = histogramBoundsType?.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null,
+			new[] { typeof(double[]), typeof(double[]) }, null);
+		_metricPointCtor = mpType?.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null,
+			new[] { _aggregatorStoreType!, aggregationType, typeof(KeyValuePair<string, object?>[]), histogramBoundsType!, typeof(int), typeof(int),
+				asm.GetType("OpenTelemetry.Metrics.LookupData")! }, null);
 
 		if (_metricPointCtor == null)
 		{
 			throw new InvalidOperationException("Constructor of type=[MetricPoint] not found");
 		}
+		if (_histogramBoundsCtor == null) throw new InvalidOperationException("Constructor of type=[HistogramExplicitBounds] not found");
+		_metricPointsField = _aggregatorStoreType.GetField("metricPoints", BindingFlags.NonPublic | BindingFlags.Instance)
+			?? throw new InvalidOperationException("Field [metricPoints] not found on AggregatorStore");
+		_currentMetricPointBatchField = _aggregatorStoreType.GetField("currentMetricPointBatch", BindingFlags.NonPublic | BindingFlags.Instance)
+			?? throw new InvalidOperationException("Field [currentMetricPointBatch] not found on AggregatorStore");
+		_batchSizeField = _aggregatorStoreType.GetField("batchSize", BindingFlags.NonPublic | BindingFlags.Instance)
+			?? throw new InvalidOperationException("Field [batchSize] not found on AggregatorStore");
+		_aggregatorStoreField = mpType.GetField("aggregatorStore", BindingFlags.NonPublic | BindingFlags.Instance)
+			?? throw new InvalidOperationException("Field [aggregatorStore] not found on MetricPoint");
+		_aggregationTypeField = mpType.GetField("aggType", BindingFlags.NonPublic | BindingFlags.Instance)
+			?? throw new InvalidOperationException("Field [aggType] not found on MetricPoint");
+		_metricAggregatorField = metricType.GetField("AggregatorStore", BindingFlags.NonPublic | BindingFlags.Instance)
+			?? throw new InvalidOperationException("Field [AggregatorStore] not found on Metric");
+		_startTimeProperty = _aggregatorStoreType.GetProperty("StartTimeExclusive", BindingFlags.NonPublic | BindingFlags.Instance)
+			?? throw new InvalidOperationException("Property [StartTimeExclusive] not found on AggregatorStore");
+		_endTimeProperty = _aggregatorStoreType.GetProperty("EndTimeInclusive", BindingFlags.NonPublic | BindingFlags.Instance)
+			?? throw new InvalidOperationException("Property [EndTimeInclusive] not found on AggregatorStore");
 	}
 
 	public static SerializableMetric SerializeMetric(Metric metric)
@@ -164,11 +198,7 @@ public static class MetricsSerializer
 			break;
 		}
 
-		var field = typeof(MetricPoint).GetField("aggType", BindingFlags.NonPublic | BindingFlags.Instance);
-		if (field != null)
-		{
-			metricData.AggregationType = field.GetValue(firstPoint)?.ToString() ?? "";
-		}
+		metricData.AggregationType = _aggregationTypeField.GetValue(firstPoint)?.ToString() ?? "";
 
 		return metricData;
 	}
@@ -208,11 +238,12 @@ public static class MetricsSerializer
 		for (int i = 0; i < serializedMetric.Points.Count; i++)
 		{
 			KeyValuePair<string, object?>[]? tags = serializedMetric.Points[i].Tags.Select(kv => new KeyValuePair<string, object?>(kv.Key, kv.Value)).ToArray();
-			var mpFields = new object[] {
-				aggregatorStore,
-				aggregationType,
-				tags,
-				DefaultHistogramBoundsLongSeconds,
+				var histogramBounds = _histogramBoundsCtor.Invoke(new object[] { DefaultHistogramBoundsLongSeconds, DefaultHistogramBoundsLongSeconds });
+				var mpFields = new object[] {
+					aggregatorStore,
+					aggregationType,
+					tags,
+					histogramBounds,
 				DefaultExponentialHistogramMaxBuckets,
 				DefaultExponentialHistogramMaxScale,
 				null
@@ -238,20 +269,12 @@ public static class MetricsSerializer
 			endTimeOffset = new DateTimeOffset(serializedMetric.Points[i].EndTimeUtc,
 				serializedMetric.Points[i].EndTimeOffset);
 
-			var aggregatorStoreField = mpType.GetField("aggregatorStore", BindingFlags.NonPublic | BindingFlags.Instance);
-			aggregatorStoreField.SetValueDirect(__makeref(point), aggregatorStore);
+			_aggregatorStoreField.SetValueDirect(__makeref(point), aggregatorStore);
 
 			metricsPoints.Add(point);
 		}
 
-		var metricPointsField = _aggregatorStoreType.GetField("metricPoints", BindingFlags.NonPublic | BindingFlags.Instance);
-
-		if (metricPointsField == null)
-		{
-			throw new Exception("Could not get field [metricPoints] from the AggregatorStore");
-		}
-
-		var metricPointsArray = (Array)metricPointsField.GetValue(aggregatorStore);
+		var metricPointsArray = (Array)_metricPointsField.GetValue(aggregatorStore)!;
 		int[] currentMetricPointBatch = new int[metricPointsArray.Length];
 
 		for (int i = 2; i < metricsPoints.Count + 2; i++)
@@ -262,19 +285,11 @@ public static class MetricsSerializer
 			currentMetricPointBatch[i - 2] = i;
 		}
 
-		metricPointsField.SetValueDirect(__makeref(aggregatorStore), metricPointsArray);
-
-		var batchSizeField = _aggregatorStoreType.GetField("batchSize", BindingFlags.NonPublic | BindingFlags.Instance);
-		batchSizeField.SetValueDirect(__makeref(aggregatorStore), serializedMetric.Points.Count);
-
-		var currentMetricPointBatchField = _aggregatorStoreType.GetField("currentMetricPointBatch", BindingFlags.NonPublic | BindingFlags.Instance);
-		currentMetricPointBatchField.SetValueDirect(__makeref(aggregatorStore), currentMetricPointBatch);
-
-		var startTimeProperty = _aggregatorStoreType.GetProperty("StartTimeExclusive", BindingFlags.NonPublic | BindingFlags.Instance);
-		startTimeProperty.SetValue(aggregatorStore, startTimeOffset);
-
-		var endTimeProperty = _aggregatorStoreType.GetProperty("EndTimeInclusive", BindingFlags.NonPublic | BindingFlags.Instance);
-		endTimeProperty.SetValue(aggregatorStore, endTimeOffset);
+		_metricPointsField.SetValue(aggregatorStore, metricPointsArray);
+		_batchSizeField.SetValue(aggregatorStore, serializedMetric.Points.Count);
+		_currentMetricPointBatchField.SetValue(aggregatorStore, currentMetricPointBatch);
+		_startTimeProperty.SetValue(aggregatorStore, startTimeOffset);
+		_endTimeProperty.SetValue(aggregatorStore, endTimeOffset);
 
 		var fields = new object[] {
 			identity,
@@ -286,9 +301,7 @@ public static class MetricsSerializer
 
 		var metric = (Metric)_metricCtor?.Invoke(fields)!;
 
-		var aggregatorField =
-			metric.GetType().GetField("AggregatorStore", BindingFlags.NonPublic | BindingFlags.Instance);
-		aggregatorField.SetValue(metric, aggregatorStore);
+		_metricAggregatorField.SetValue(metric, aggregatorStore);
 
 
 		return metric;

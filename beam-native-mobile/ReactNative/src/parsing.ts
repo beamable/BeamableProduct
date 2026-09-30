@@ -35,9 +35,8 @@ export function deepLinkFromNotification(n: {
  * `userInfo` (where outreachId is still spelled `beam_outreach`, its wire key). Returns only the
  * keys actually present.
  *
- * Pass the whole result back into `trackOfferClicked` / `trackOfferConverted` — without the stamp
- * the funnel event cannot be attributed to a send node, so the portal's campaign funnel will not
- * count it.
+ * Pass the whole result back into `trackOfferClicked` — without `outreachId` the funnel event
+ * cannot be matched to a send, so the portal's campaign funnel will not count it.
  */
 export function campaignCoordsFromNotification(n: {
   campaignId?: string;

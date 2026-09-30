@@ -3,6 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type BundlePeerDep = { 
-  type?: string; 
+export type BundleDepRange = { 
+  max?: bigint | string | null; 
+  min?: bigint | string; 
 };

@@ -267,6 +267,48 @@ public class PortalExtensionCommandTests : CLITestExtensions
 	}
 
 	[Test]
+	public void NewPortalExtension_ZoneExtension_StoresPageZoneRelative()
+	{
+		InitWorkspace();
+		SetupBeamoServiceMock();
+		MockRemotePortalConfig();
+
+		Run("project", "new", "portal-extension", "TestZonePage", "--quiet",
+			"--mount-page", "my-zone-page",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react",
+			"--zone");
+
+		var packageJson = BFile.ReadAllText("extensions/TestZonePage/package.json");
+		Assert.That(packageJson, Does.Contain("\"my-zone-page\""),
+			"a zone extension's page is declared zone-relative and stored verbatim");
+		Assert.That(packageJson, Does.Not.Contain(":cid/"),
+			"the portal owns the :cid/zones/:zid/ prefix, so the CLI must not prepend :cid/");
+	}
+
+	[Test]
+	public void NewPortalExtension_ZoneTemplate_DefaultPageIsZoneRelative()
+	{
+		InitWorkspace();
+		SetupBeamoServiceMock();
+		MockRemotePortalConfig();
+
+		// Scaffold from the zone template without overriding the mount page, then inspect the
+		// template's seeded default. The zone template must ship a zone-relative default page.
+		Run("project", "new", "portal-extension", "TestZoneDefault", "--quiet",
+			"--mount-page", "zone-default",
+			"--mount-group", "TestGroup",
+			"--mount-label", "TestLabel",
+			"--template", "react",
+			"--zone");
+
+		var packageJson = BFile.ReadAllText("extensions/TestZoneDefault/package.json");
+		Assert.That(packageJson, Does.Not.Contain(":cid/"),
+			"the zone template default page must be zone-relative, without a :cid/ prefix");
+	}
+
+	[Test]
 	public void NewPortalExtension_PageExtension_PassesThroughHubPath()
 	{
 		InitWorkspace();

@@ -8,12 +8,40 @@ import { endpointEncoder } from '@/utils/endpointEncoder';
 import { GET } from '@/constants';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { playerIdPlaceholder } from '@/__generated__/apis/constants';
+import { POST } from '@/constants';
 import { segmentIdPlaceholder } from '@/__generated__/apis/constants';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
 import type { MembershipCheckResponse } from '@/__generated__/schemas/MembershipCheckResponse';
 import type { SegmentCountResponse } from '@/__generated__/schemas/SegmentCountResponse';
 import type { SegmentMemberInfoCursorPagedResult } from '@/__generated__/schemas/SegmentMemberInfoCursorPagedResult';
+import type { SegmentStatusBatchResponse } from '@/__generated__/schemas/SegmentStatusBatchResponse';
+import type { SegmentStatusRequest } from '@/__generated__/schemas/SegmentStatusRequest';
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `SegmentStatusRequest` instance to use for the API request
+ * @param customerId - The `customerId` parameter to include in the API request.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function customersPostSegmentsStatusByCustomerId(requester: HttpRequester, customerId: string, payload: SegmentStatusRequest, gamertag?: string): Promise<HttpResponse<SegmentStatusBatchResponse>> {
+  let endpoint = "/api/customers/{customerId}/segments/status".replace(customerIdPlaceholder, endpointEncoder(customerId));
+  
+  // Make the API request
+  return makeApiRequest<SegmentStatusBatchResponse, SegmentStatusRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
 
 /**
  * @remarks

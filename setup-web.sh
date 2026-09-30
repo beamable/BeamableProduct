@@ -24,7 +24,10 @@ echo ""
 echo "=== Beamable Web Local Dev Setup ==="
 echo ""
 
-beam_cli "$SCRIPT_DIR" web reset --product-dir "$SCRIPT_DIR" "$@"
+# --product-dir is read by the .NET CLI, so pass a native Windows path (no-op off Cygwin/MSYS).
+PRODUCT_DIR_NATIVE="$(beam_native_path "$SCRIPT_DIR")"
+
+beam_cli "$SCRIPT_DIR" web reset --product-dir "$PRODUCT_DIR_NATIVE" "$@"
 
 echo ""
 echo "Setup complete. Run ./dev-web.sh to build and publish the local web packages."

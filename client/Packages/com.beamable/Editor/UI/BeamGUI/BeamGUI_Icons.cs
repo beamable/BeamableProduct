@@ -308,16 +308,17 @@ namespace Beamable.Editor.Util
 
 				if (!iconStatusConflicted)
 				{
+					// Conflicts and validation failures share the Issues icon; tooltips explain the cause.
 					iconStatusConflicted =
 						EditorResources.Load<Texture>(
-							"Packages/com.beamable/Editor/UI/Common/Icons/IconLogs_WarningMsg.png");
+							"Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Validation_B.png");
 				}
 
 				if (!iconStatusInvalid)
 				{
 					iconStatusInvalid =
 						EditorResources.Load<Texture>(
-							"Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Invalid.png");
+							"Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Validation_B.png");
 				}
 
 				if (!iconSync)

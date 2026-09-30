@@ -714,6 +714,167 @@ public class LocalStackDiscoveryTests
 	}
 
 	// ----------------------------------------------------------------------------------
+	// Offline maven-dependency-plugin probe (the second half of the negative-cache trap:
+	// core is present, but `mvn -o dependency:build-classpath` can't resolve the `dependency`
+	// plugin prefix offline, so every scala service fails and --build never fixes it).
+	// ----------------------------------------------------------------------------------
+
+	/// <summary>
+	/// A `scala: *` step as the template writes the host-JVM services: a `sh` shell step whose launcher resolves
+	/// its classpath offline. Only such a step maps to a `tools/$SVC` Maven module, so only such a step may be
+	/// picked as the probe module — the fingerprint the planner narrows on.
+	/// </summary>
+	private static LocalStackStep ScalaLauncherStep(string name, bool enabled)
+	{
+		var svc = name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase)
+			? name.Substring("scala: ".Length)
+			: name;
+		return new LocalStackStep
+		{
+			name = name,
+			enabled = enabled,
+			shell = true,
+			shellKind = "sh",
+			arguments = $"set -e; SVC={svc}; \"${{maven}}\" -q -o -pl tools/$SVC -am dependency:build-classpath"
+		};
+	}
+
+	/// <summary>
+	/// `scala: redis` as the template writes it (LocalStackTemplate): a docker container the Scala services depend
+	/// on, sharing their name prefix but owning no `tools/redis` module.
+	/// </summary>
+	private static LocalStackStep ScalaRedisDockerStep(bool enabled) =>
+		new LocalStackStep
+		{
+			name = "scala: redis",
+			enabled = enabled,
+			command = "docker",
+			arguments = "compose up -d --no-deps redis"
+		};
+
+	private static LocalStackConfig ProbeConfig(string scalaDir, string mavenHome, params (string name, bool enabled)[] steps) =>
+		ProbeConfigOf(scalaDir, mavenHome, steps
+			.Select(s => s.name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase)
+				? ScalaLauncherStep(s.name, s.enabled)
+				: new LocalStackStep { name = s.name, enabled = s.enabled })
+			.ToArray());
+
+	private static LocalStackConfig ProbeConfigOf(string scalaDir, string mavenHome, params LocalStackStep[] steps) =>
+		new LocalStackConfig
+		{
+			repos = new LocalStackRepos { scalaDir = scalaDir },
+			toolchain = mavenHome == null ? null : new LocalStackToolchain { maven = mavenHome },
+			steps = steps.ToList()
+		};
+
+	[Test]
+	public void PlanDependencyPluginProbe_DerivesModuleFromScalaLaunchStep()
+	{
+		// A scala service will launch, so the launcher's offline classpath resolve will run — the probe is relevant.
+		// The module it targets mirrors the launcher's `-pl tools/$SVC`, derived from the step name after "scala: ".
+		var config = ProbeConfig(Path.GetTempPath(), Path.Combine(Path.GetTempPath(), "mvn-home"),
+			("build: scala", true), ("scala: account", true), ("scala: dbflake", true));
+
+		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+
+		Assert.That(plan.shouldProbe, Is.True, plan.skipReason);
+		Assert.That(plan.probeModule, Is.EqualTo("tools/account"), "first scala launch step wins");
+		Assert.That(plan.scalaDir, Is.EqualTo(Path.GetTempPath()));
+		Assert.That(plan.mvnCommand, Does.Contain("mvn"), "resolves the toolchain's mvn from ${maven}");
+	}
+
+	[Test]
+	public void PlanDependencyPluginProbe_SkipsWhenNoScalaLaunchStep()
+	{
+		// No scala service means no launcher, so the offline classpath resolve never runs — don't pay for a probe.
+		var config = ProbeConfig(Path.GetTempPath(), Path.Combine(Path.GetTempPath(), "mvn-home"),
+			("build: scala", true), ("docker: api deps + caddy", true));
+
+		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+
+		Assert.That(plan.shouldProbe, Is.False);
+		Assert.That(plan.skipReason, Is.EqualTo("no scala launch step"));
+	}
+
+	[Test]
+	public void PlanDependencyPluginProbe_SkipsWhenScalaStepIsDisabled()
+	{
+		// A disabled scala step won't launch, so it must not drag the probe in.
+		var config = ProbeConfig(Path.GetTempPath(), Path.Combine(Path.GetTempPath(), "mvn-home"),
+			("scala: account", false));
+
+		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+
+		Assert.That(plan.shouldProbe, Is.False);
+		Assert.That(plan.skipReason, Is.EqualTo("no scala launch step"));
+	}
+
+	[Test]
+	public void PlanDependencyPluginProbe_NeverProbesTheDockerRedisStep()
+	{
+		// Regression: `scala: redis` is a docker container, not a Scala service, and the template puts it FIRST —
+		// the JVMs need it up before they launch. Picking it by name prefix alone made the probe run
+		// `mvn -pl tools/redis`, which dies with "Could not find the selected project in the reactor" and was then
+		// reported to the user as an uncacheable `dependency` plugin prefix, with a remediation that can never work.
+		var config = ProbeConfigOf(Path.GetTempPath(), Path.Combine(Path.GetTempPath(), "mvn-home"),
+			ScalaRedisDockerStep(enabled: true),
+			ScalaLauncherStep("scala: dbflake", enabled: true),
+			ScalaLauncherStep("scala: account", enabled: true));
+
+		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+
+		Assert.That(plan.shouldProbe, Is.True, plan.skipReason);
+		Assert.That(plan.probeModule, Is.EqualTo("tools/dbflake"),
+			"first real service launcher wins — redis owns no tools/ module");
+		Assert.That(plan.probeModule, Is.Not.EqualTo("tools/redis"));
+	}
+
+	[Test]
+	public void PlanDependencyPluginProbe_SkipsWhenTheOnlyScalaStepIsDocker()
+	{
+		// No host JVM will launch, so no launcher runs the offline classpath resolve the probe protects. Probing
+		// anyway can only produce a false alarm, because there is no module to probe against.
+		var config = ProbeConfigOf(Path.GetTempPath(), Path.Combine(Path.GetTempPath(), "mvn-home"),
+			ScalaRedisDockerStep(enabled: true));
+
+		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+
+		Assert.That(plan.shouldProbe, Is.False);
+		Assert.That(plan.probeModule, Is.Null,
+			"no module may be derived from a step that is not a maven module");
+		Assert.That(plan.skipReason, Is.EqualTo("no scala step that maps to a maven module"),
+			"the reason must distinguish 'no scala services' from 'none that maps to a module'");
+	}
+
+	[Test]
+	public void PlanDependencyPluginProbe_SkipsWhenScalaDirIsAPlaceholder()
+	{
+		// An un-edited manifest carries the EditPlaceholder for repo paths; there's no real dir to run mvn in.
+		var config = ProbeConfig("<" + "EDIT-ME" + ">", Path.Combine(Path.GetTempPath(), "mvn-home"),
+			("scala: account", true));
+		// Force the actual placeholder token in case the constant differs from the guess above.
+		config.repos.scalaDir = LocalStackConfigIO.EditPlaceholder;
+
+		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+
+		Assert.That(plan.shouldProbe, Is.False);
+		Assert.That(plan.skipReason, Is.EqualTo("no BeamableBackend path on the manifest"));
+	}
+
+	[Test]
+	public void PlanDependencyPluginProbe_ResolvesBareMvn_WithoutAToolchain()
+	{
+		// No toolchain (never ran `beam local setup`): ${maven} falls back to the bare command, which is still a
+		// valid thing to probe with — it resolves via PATH just like the reactor step would.
+		var config = ProbeConfig(Path.GetTempPath(), mavenHome: null, ("scala: account", true));
+
+		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+
+		Assert.That(plan.shouldProbe, Is.True, plan.skipReason);
+		Assert.That(plan.mvnCommand, Does.Contain("mvn"));
+	}
+
+	// ----------------------------------------------------------------------------------
 	// In-memory manifest migration for pre-Maven-cache-fix arguments
 	// ----------------------------------------------------------------------------------
 

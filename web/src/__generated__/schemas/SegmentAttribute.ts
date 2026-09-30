@@ -6,7 +6,11 @@
 export type SegmentAttribute = { 
   computed: boolean; 
   description: string; 
+  domain: string; 
   key: string; 
+  namespace: string; 
   type: string; 
+  visibility: string; 
+  custom?: boolean; 
   unit?: string | null; 
 };

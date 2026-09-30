@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { BeamNotifications } from '@beamable/notifications-react-native';
 import type {
@@ -10,6 +10,13 @@ import type {
 
 import { getBeam } from '../../src/beam/beamClient';
 import { BEAM_CONFIG } from '../../src/beam/config';
+import {
+  describeSend,
+  emitObjectiveEvent,
+  paramsFromRows,
+  parseParamsJson,
+  type ParamRow,
+} from '../../src/beam/objectiveEvents';
 import { buildAuthPayload, describeAuthPayload } from '../../src/beam/nativeAuth';
 import { detailsUrl } from '../../src/linking/links';
 import { useBeam } from '../../src/state/beamContext';
@@ -17,8 +24,10 @@ import { useNotifications } from '../../src/state/notificationContext';
 import AsyncButton from '../../src/ui/AsyncButton';
 import Field from '../../src/ui/Field';
 import { Hint } from '../../src/ui/Hint';
+import ParamRows from '../../src/ui/ParamRows';
 import Screen from '../../src/ui/Screen';
 import Section from '../../src/ui/Section';
+import Button from '../../src/ui/Button';
 import { colors, mono, radius, space } from '../../src/ui/theme';
 
 const OFFER: NotificationOffer = {
@@ -31,7 +40,7 @@ const OFFER: NotificationOffer = {
 const FUNNEL_TIMEOUT_MS = 10_000;
 
 /**
- * `trackOfferClicked` / `trackOfferConverted` are fire-and-forget on the native side: the HTTP
+ * `trackOfferClicked` is fire-and-forget on the native side: the HTTP
  * result comes back later on the `funnelResult` event, not from the call. Subscribing BEFORE
  * firing and awaiting the next event turns that into a real per-press outcome.
  */
@@ -58,14 +67,34 @@ function nextFunnelResult(): Promise<EventMap['funnelResult']> {
   });
 }
 
+/** Starting rows for the objective emitter — a worked example of a value-conditioned goal. */
+const DEFAULT_PARAM_ROWS: ParamRow[] = [
+  { key: 'currency', value: 'USD' },
+  { key: 'amount', value: '25' },
+];
+
+const DEFAULT_PARAM_JSON = `{
+  "currency": "USD",
+  "details": { "price": 25 }
+}`;
+
 /**
- * Analytics tab: the native Clicked / Converted funnel events, and the native-side auth those
- * events use when the JS runtime isn't running.
+ * Analytics tab: emitting arbitrary events to validate campaign objectives, the native
+ * beam_clicked funnel event, and the native-side auth those events use when the JS runtime isn't
+ * running. There is no device-reported conversion: the platform concludes one when the player
+ * meets an objective, so the funnel's conversion stage is driven by an objective event.
  */
 export default function AnalyticsTab() {
   const { isReady } = useBeam();
   const { campaignId, nodeId, setCampaignId, setNodeId, outreachId, trackId } = useNotifications();
   const [authView, setAuthView] = useState<string | null>(null);
+
+  // Objective emitter state.
+  const [eventName, setEventName] = useState('purchase');
+  const [rawMode, setRawMode] = useState(false);
+  const [paramRows, setParamRows] = useState<ParamRow[]>(DEFAULT_PARAM_ROWS);
+  const [paramJson, setParamJson] = useState(DEFAULT_PARAM_JSON);
+  const [recent, setRecent] = useState<string[]>([]);
 
   // Funnel coordinates live in the notification context, so a campaign push that arrives while
   // another tab is active still fills these in.
@@ -81,7 +110,7 @@ export default function AnalyticsTab() {
     trackId: trackId ?? undefined,
   });
 
-  const track = (kind: 'clicked' | 'converted') => async () => {
+  const trackClicked = async () => {
     if (!isReady) throw new Error('Beamable is not connected yet');
     if (!campaignId.trim() || !nodeId.trim())
       throw new Error('Enter a Campaign ID and a Node ID first');
@@ -89,13 +118,25 @@ export default function AnalyticsTab() {
     const intent = buildIntent();
     // Subscribe before firing — the native round trip can beat a later subscription.
     const pending = nextFunnelResult();
-    if (kind === 'clicked') BeamNotifications.trackOfferClicked(intent, OFFER);
-    else BeamNotifications.trackOfferConverted(intent, OFFER);
+    BeamNotifications.trackOfferClicked(intent, OFFER);
 
     const result = await pending;
     const detail = `${result.funnelType} · HTTP ${result.statusCode}${result.message ? ` — ${result.message}` : ''}`;
     if (!result.ok) throw new Error(detail);
     return detail;
+  };
+
+  const sendObjectiveEvent = async () => {
+    if (!isReady) throw new Error('Beamable is not connected yet');
+
+    // Parsing before sending means a malformed brace surfaces as a red outcome on the button, not
+    // as a send that quietly did nothing.
+    const params = rawMode ? parseParamsJson(paramJson) : paramsFromRows(paramRows);
+    await emitObjectiveEvent(eventName, params);
+
+    const summary = describeSend(eventName.trim(), params);
+    setRecent((prev) => [summary, ...prev].slice(0, 5));
+    return `Sent ${summary}`;
   };
 
   const viewNativeAuth = async () => {
@@ -112,13 +153,71 @@ export default function AnalyticsTab() {
 
   return (
     <Screen>
+      <Section title="Objective events">
+        <Hint>
+          Emits an analytics event as this player, so a campaign lane's watched-analytics objective
+          can be validated end to end. Send once above a goal's threshold and once below it, and
+          only the first should convert.{'\n'}
+          No category is sent: category routes the campaign FUNNEL, while an objective matches on
+          the event name and its params.
+        </Hint>
+        <Hint>
+          Sending an event also registers it (and its param names) in the realm's observed-event
+          catalog, which is where the Portal's field picker gets its list — so an event has to be
+          fired at least once before you can pick its fields when authoring the goal.
+        </Hint>
+
+        <Field placeholder="Event name (e.g. purchase)" value={eventName} onChangeText={setEventName} />
+
+        <View style={styles.modeRow}>
+          <Button
+            label="Key / value"
+            variant={rawMode ? 'secondary' : 'primary'}
+            onPress={() => setRawMode(false)}
+          />
+          <Button
+            label="Raw JSON"
+            variant={rawMode ? 'primary' : 'secondary'}
+            onPress={() => setRawMode(true)}
+          />
+        </View>
+
+        {rawMode ? (
+          <>
+            <Hint>
+              Raw JSON is the only way to send a NESTED object. The platform flattens those into
+              dot-notation keys (details.price), which is a different code path from typing a dotted
+              key directly — worth exercising if a goal condition targets a nested field.
+            </Hint>
+            <Field
+              style={styles.json}
+              placeholder='{"currency":"USD"}'
+              value={paramJson}
+              onChangeText={setParamJson}
+              multiline
+            />
+          </>
+        ) : (
+          <ParamRows rows={paramRows} onChange={setParamRows} />
+        )}
+
+        <AsyncButton label="Send event" run={sendObjectiveEvent} />
+
+        {recent.length > 0 && (
+          <Text style={styles.recent} selectable>
+            {recent.join('\n')}
+          </Text>
+        )}
+      </Section>
+
       <Section title="Funnel: clicked / converted">
         <Hint>
-          Emits native Clicked / Converted funnel analytics for a test offer (iOS & Android). The
-          native call is fire-and-forget, so each button waits for the matching funnelResult event
-          and reports its HTTP status below.{'\n'}
-          Type any Campaign / Node ID, or open the app from a campaign push and these fields
-          auto-fill from its payload.
+          Emits the native beam_clicked funnel event for a test offer (iOS & Android). The native call
+          is fire-and-forget, so the button waits for the matching funnelResult event and reports
+          its HTTP status below.{'\n'}
+          Open the app from a campaign push and these fields auto-fill from its payload. IDs typed
+          by hand carry no outreachId, so the click is recorded but the campaign funnel won't count
+          it.
         </Hint>
         <Field
           placeholder="Campaign ID (e.g. test_campaign)"
@@ -126,15 +225,21 @@ export default function AnalyticsTab() {
           onChangeText={setCampaignId}
         />
         <Field placeholder="Node ID (e.g. test_node)" value={nodeId} onChangeText={setNodeId} />
-        <AsyncButton label="Track offer clicked" run={track('clicked')} />
-        <AsyncButton label="Track offer converted" run={track('converted')} />
+        <AsyncButton label="Track offer clicked" run={trackClicked} />
+        <Hint>
+          A device never reports a conversion; the platform ignores one by design. It concludes the
+          conversion itself when the player meets the campaign's objective, which the funnel shows
+          as beam_met_&lt;goal&gt;. Meet objective sends the event configured under Objective
+          events above.
+        </Hint>
+        <AsyncButton label="Meet objective" run={sendObjectiveEvent} />
       </Section>
 
       <Section title="Native auth">
         <Hint>
           On connect the app hands the player's tokens to the native side
           (BeamNotifications.configureAuth) so the CLOSED-APP funnel can authenticate when the JS
-          runtime is not running — that's how a Clicked event survives a push tapped from a killed
+          runtime is not running — that's how a beam_clicked event survives a push tapped from a killed
           app.
         </Hint>
         <Hint>
@@ -155,6 +260,14 @@ export default function AnalyticsTab() {
 }
 
 const styles = StyleSheet.create({
+  modeRow: { flexDirection: 'row', gap: space.sm },
+  json: { minHeight: 96, fontFamily: mono, fontSize: 12, textAlignVertical: 'top' },
+  recent: {
+    color: colors.muted,
+    fontSize: 11,
+    fontFamily: mono,
+    paddingTop: space.xs,
+  },
   authBlock: {
     color: colors.consoleInk,
     backgroundColor: colors.console,

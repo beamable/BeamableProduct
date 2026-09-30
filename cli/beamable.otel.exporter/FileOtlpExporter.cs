@@ -13,6 +13,7 @@ namespace beamable.otel.exporter;
 
 public class FileOtlpExporter
 {
+	private const int MaxRequestSizeBytes = 128 * 1024 * 1024;
 	public static async Task<(ExportResult resultStatus, string errorMessage)> ExportLogs(string filesPath, string endpoint)
 	{
 		string errorMessage = string.Empty;
@@ -21,10 +22,9 @@ public class FileOtlpExporter
 		var logExporterOptions = new OtlpExporterOptions
 		{
 			Endpoint = new Uri($"{endpoint}/v1/logs"),
-			Protocol = OtlpExportProtocol.HttpProtobuf
+			Protocol = OtlpExportProtocol.HttpProtobuf,
+			MaxRequestSizeBytes = MaxRequestSizeBytes,
 		};
-
-		OtlpLogExporter otlpLogExporter = new OtlpLogExporter(logExporterOptions);
 
 		var result = ExportResult.Success;
 		
@@ -43,6 +43,7 @@ public class FileOtlpExporter
 		{
 			if(deserializedBatch == null)
 				continue;
+			using var otlpLogExporter = new OtlpLogExporter(logExporterOptions);
 			var logRecords = deserializedBatch.AllRecords.Select(LogRecordSerializer.DeserializeLogRecord).ToArray();
 			var logsBatch = new Batch<LogRecord>(logRecords, logRecords.Length);
 
@@ -79,9 +80,8 @@ public class FileOtlpExporter
 		{
 			Endpoint = new Uri($"{endpoint}/v1/traces"),
 			Protocol = OtlpExportProtocol.HttpProtobuf,
+			MaxRequestSizeBytes = MaxRequestSizeBytes,
 		};
-
-		OtlpTraceExporter otlpTraceExporter = new OtlpTraceExporter(options);
 
 		var result = ExportResult.Success;
 		List<(string, ActivityBatch?)> allBatches;
@@ -99,6 +99,7 @@ public class FileOtlpExporter
 		{
 			if(deserializedBatch == null)
 				continue;
+			using var otlpTraceExporter = new OtlpTraceExporter(options);
 			
 			var activities = deserializedBatch.AllTraces.Select(ActivitySerializer.DeserializeActivity).ToArray();
 			var activitiesBatch = new Batch<Activity>(activities, activities.Length);
@@ -137,9 +138,8 @@ public class FileOtlpExporter
 		{
 			Endpoint = new Uri($"{endpoint}/v1/metrics"),
 			Protocol = OtlpExportProtocol.HttpProtobuf,
+			MaxRequestSizeBytes = MaxRequestSizeBytes,
 		};
-
-		OtlpMetricExporter otlpMetricsExporter = new OtlpMetricExporter(options);
 
 		var result = ExportResult.Success;
 		
@@ -158,6 +158,7 @@ public class FileOtlpExporter
 		{
 			if(deserializedBatch == null)
 				continue;
+			using var otlpMetricsExporter = new OtlpMetricExporter(options);
 			var metrics = deserializedBatch.AllMetrics.Select(MetricsSerializer.DeserializeMetric).ToArray();
 			var metricsBatch = new Batch<Metric>(metrics, metrics.Length);
 

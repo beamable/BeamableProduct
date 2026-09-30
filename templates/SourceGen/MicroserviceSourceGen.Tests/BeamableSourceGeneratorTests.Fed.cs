@@ -235,6 +235,8 @@ public partial class SomeUserMicroservice : Microservice, IFederatedPlayerInit<M
 }
 ";
 		var ctx = new CSharpCodeFixTest<FederationAnalyzer, FederationDefaultIDFixer, DefaultVerifier>();
+		// The analyzer reports this diagnostic on the referenced federation type while analyzing the microservice type.
+		ctx.CodeFixTestBehaviors = CodeFixTestBehaviors.SkipLocalDiagnosticCheck;
 		
 		PrepareForRun(ctx, UserCode, FixedCode);
 
@@ -291,6 +293,8 @@ public partial class SomeUserMicroservice : Microservice, IFederatedGameServer<M
 }
 ";
 		var ctx = new CSharpCodeFixTest<FederationAnalyzer, FederationIdNameFixer, DefaultVerifier>();
+		// The analyzer reports this diagnostic on the referenced federation type while analyzing the microservice type.
+		ctx.CodeFixTestBehaviors = CodeFixTestBehaviors.SkipLocalDiagnosticCheck;
 		
 		PrepareForRun(ctx, UserCode, FixedCode);
 

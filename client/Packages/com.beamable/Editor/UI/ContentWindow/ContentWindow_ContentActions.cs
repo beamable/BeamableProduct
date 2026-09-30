@@ -88,7 +88,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			var errorStyle = new GUIStyle(EditorStyles.label)
 			{
-				normal = {textColor = Color.red},
+				normal = {textColor = BeamGUI.ContentErrorColor},
 				wordWrap = true
 			};
 

@@ -23,7 +23,8 @@ namespace Beamable.Editor.Util
 			Action drawTopBarGui,
 			Action<Rect> drawLowBarGui,
 			Action onClickedHelp,
-			Action onClickedRefresh
+			Action onClickedRefresh,
+			Action<Rect, Rect> onUtilityButtonsDrawn = null
 			)
 		{
 			{ // hopefully a no-op, but we should make sure the icons are all ready to rock
@@ -46,12 +47,14 @@ namespace Beamable.Editor.Util
 					                                      padding: 4,
 					                                      iconPadding: 3,
 					                                      drawBorder: false);
+					var refreshRect = GUILayoutUtility.GetLastRect();
 
 					clickedHelp = BeamGUI.HeaderButton(null, iconHelp,
 					                                   width: 30,
 					                                   padding: 4,
 					                                   iconPadding: 1,
 					                                   drawBorder: false);
+					onUtilityButtonsDrawn?.Invoke(refreshRect, GUILayoutUtility.GetLastRect());
 				}
 
 				EditorGUILayout.Space(12, false);

@@ -77,6 +77,14 @@ public static class LocalStackTemplate
 		// BeamableAPI's own launchSettings already claim (BeamableScheduler.Loader/.Dispatcher default to 5050).
 		// 5045 is unused across BeamableAPI and this CLI.
 		public string campaignRuntimeUrl = "http://localhost:5045";
+		// The analytics loader. 5020 is not an arbitrary pick like the two above: it is the port the project's
+		// OWN launchSettings.json already declares, so it is reserved for this process across BeamableAPI and
+		// cannot collide with the gateway (5000), the message rail (5030) or the campaign runtime (5045).
+		public string analyticsLoaderUrl = "http://localhost:5020";
+		// The segmentation runtime. NOT 5050, which is what its own launchSettings.json declares: the two
+		// BeamableScheduler function profiles (Loader, Dispatcher) already default to --port 5050, the same
+		// collision that sent the campaign runtime to 5045. 5055 is unused across BeamableAPI and this CLI.
+		public string segmentationRuntimeUrl = "http://localhost:5055";
 		public string apiDir;
 		public string scalaDir;
 		public string portalDir;
@@ -538,6 +546,34 @@ public static class LocalStackTemplate
 		AddDotnetHost(config, apiDir, "c# campaign runtime", "BeamableCampaignRuntime",
 			o.campaignRuntimeUrl, o.campaignRuntimeUrl);
 
+		// The segmentation runtime — the sole owner of the two reconciliation cadences: the hourly expiry pass
+		// and the nightly full sweep (SegmentSweepHost). The gateway only evaluates segments in reaction to a
+		// stat write, and for a rule built on a clock-derived attribute that fan-out can only ever ADD: a player
+		// who stops playing writes no stat, wakes no listener, and is never re-evaluated. So without this host
+		// the seeded segments that age (`active-today`, `dormant`, `first-time-payer`) gain members and never
+		// lose them, and the count in the portal drifts upward in silence until someone edits the rule or POSTs
+		// /reconcile — which looks like a broken number rather than a missing process. The scheduler cannot
+		// backstop it locally either (its dispatcher runs remotely and cannot call localhost back). Same shape
+		// as the workers above: cluster Member, own ASPNETCORE_URLS, ready on /health.
+		AddDotnetHost(config, apiDir, "c# segmentation runtime", "BeamableSegmentationRuntime",
+			o.segmentationRuntimeUrl, o.segmentationRuntimeUrl);
+
+		// The analytics loader — the competing consumer that drains the analytics event stream and lands it as
+		// Parquet in S3, which the gateway's commit timer then folds into the Iceberg tables Athena reads.
+		// Without it, events reach ActiveMQ and stop there: `POST /analytics/query` returns nothing and anything
+		// built on the warehouse (the Campaign builder's analytics-event picker, Campaign Analytics) is empty
+		// locally for no visible reason.
+		//
+		// This is the ONE step in the stack that talks to real AWS. There is no local emulator for S3 Tables or
+		// Athena, so it uses a dedicated shared `local` analytics environment (the beamable-local-analytics*
+		// buckets and the beamable-analytics-local workgroups; see BeamableAPI's appsettings.Local.json and its
+		// README's "Analytics in Local Development"). That means it needs credentials that can assume the
+		// analytics roles — run `beam local setup --only aws` to check. Without them the host still starts and
+		// serves /health; it just logs AWS errors and lands nothing. To opt out entirely, set this step's
+		// "enabled": false in the manifest.
+		AddDotnetHost(config, apiDir, "c# analytics loader", "BeamableAnalyticsLoader",
+			o.analyticsLoaderUrl, o.analyticsLoaderUrl);
+
 		// 2. Portal frontend (Vite dev server). Placed BEFORE the Scala group because it only serves the
 		//    frontend (the browser talks to the backend at runtime) — so it comes up in ~1s instead of waiting
 		//    behind the Scala services' readiness.
@@ -919,7 +955,7 @@ public static class LocalStackTemplate
 			"{ [ -s \"$CPF\" ] && [ \"$CPF\" -nt core/pom.xml ]; } || JAVA_HOME=\"$JHOME\" \"" + MavenToken + "\" -q -o -pl tools/$SVC -am dependency:build-classpath -Dmdep.outputFile=\"$CPF\" || true; " +
 			// An empty cache means the mvn above failed. Launching anyway starts a JVM with only the module's own
 			// classes on the classpath, which dies deep in classloading — say what actually went wrong instead.
-			"[ -s \"$CPF\" ] || { echo \"beam: classpath cache $CPF is empty — offline 'mvn dependency:build-classpath' failed for tools/$SVC. The usual cause is that com.kickstand:core is not in your local Maven repository (~/.m2/repository/com/kickstand/core/1.0-SNAPSHOT/). Fix: (1) run 'beam local up --build' (the reactor uses -U and 'mvn install', which invalidates any cached miss and writes core to ~/.m2). If that ALSO fails, (2) delete ~/.m2/repository/com/kickstand/ (locally-built artifacts only, safe to remove) and re-run 'beam local up --build'.\" >&2; exit 1; }; " +
+			"[ -s \"$CPF\" ] || { echo \"beam: classpath cache $CPF is empty — offline 'mvn dependency:build-classpath' failed for tools/$SVC. The usual cause is that com.kickstand:core is not in your local Maven repository (~/.m2/repository/com/kickstand/core/1.0-SNAPSHOT/). Fix: (1) run 'beam local up --build' (the reactor uses -U and 'mvn install', which invalidates any cached miss and writes core to ~/.m2). If that ALSO fails, (2) delete ~/.m2/repository/com/kickstand/ (locally-built artifacts only, safe to remove) and re-run 'beam local up --build'. Second cause: Maven cannot resolve the 'dependency' plugin prefix OFFLINE (its plugin metadata was never cached) — '--build' does NOT fix that. Fix: run once online from this repo: mvn -U dependency:build-classpath -pl tools/$SVC ; then re-run 'beam local up'. If it still fails, delete ~/.m2/repository/org/apache/maven/plugins/maven-dependency-plugin/*/*.lastUpdated and retry.\" >&2; exit 1; }; " +
 			"CP=\"tools/$SVC/target/classes:core/target/classes:$JAR:$(cat \"$CPF\")\"; " +
 			// $JVM_ARGS unquoted on purpose: it must word-split into separate flags.
 			"exec \"$JHOME/bin/java\" $JVM_ARGS -cp \"$CP\" \"$MAIN\"";
@@ -984,7 +1020,7 @@ public static class LocalStackTemplate
 			"$deps = ''",
 			"if (Test-Path $cpf) { $raw = Get-Content $cpf -Raw; if ($raw) { $deps = $raw.Trim() } }",
 			"if (-not $deps) {",
-			"  Write-Host \"beam: classpath cache $cpf is empty - offline 'mvn dependency:build-classpath' failed for tools/$svc. The usual cause is that com.kickstand:core is not in your local Maven repository ($env:USERPROFILE\\.m2\\repository\\com\\kickstand\\core\\1.0-SNAPSHOT\\). Fix: (1) run 'beam local up --build' (the reactor uses -U and 'mvn install', which invalidates any cached miss and writes core to ~/.m2). If that ALSO fails, (2) delete $env:USERPROFILE\\.m2\\repository\\com\\kickstand\\ (locally-built artifacts only, safe to remove) and re-run 'beam local up --build'.\"",
+			"  Write-Host \"beam: classpath cache $cpf is empty - offline 'mvn dependency:build-classpath' failed for tools/$svc. The usual cause is that com.kickstand:core is not in your local Maven repository ($env:USERPROFILE\\.m2\\repository\\com\\kickstand\\core\\1.0-SNAPSHOT\\). Fix: (1) run 'beam local up --build' (the reactor uses -U and 'mvn install', which invalidates any cached miss and writes core to ~/.m2). If that ALSO fails, (2) delete $env:USERPROFILE\\.m2\\repository\\com\\kickstand\\ (locally-built artifacts only, safe to remove) and re-run 'beam local up --build'. Second cause: Maven cannot resolve the 'dependency' plugin prefix OFFLINE (its plugin metadata was never cached) - '--build' does NOT fix that. Fix: run once online from this repo: mvn -U dependency:build-classpath -pl tools/$svc ; then re-run 'beam local up'. If it still fails, delete $env:USERPROFILE\\.m2\\repository\\org\\apache\\maven\\plugins\\maven-dependency-plugin\\*\\*.lastUpdated and retry.\"",
 			"  exit 1 }",
 			"$cp = \"tools/$svc/target/classes;core/target/classes;$jar;\" + $deps",
 			"& \"$jhome\\bin\\java.exe\" @jvmArgs -cp $cp $main",

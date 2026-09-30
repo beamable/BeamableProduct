@@ -13,6 +13,16 @@ namespace Beamable.Common
 		Promise<MessageRailSendResponse> SendMessageBatch(List<MessageRailRecipient> recipients, MessageRailPayload payload);
 		Promise<MessageRailRegistrationResponse> RegisterUserWithMessageRail(string playerId, Dictionary<string, string> registrationData);
 		Promise<MessageRailRegistrationResponse> UnregisterUserWithMessageRail(string playerId);
+
+		/// <summary>
+		/// Whether this federation is configured well enough to deliver at all, for the platform to
+		/// consult BEFORE a campaign that targets this rail is published. Report only what is knowable
+		/// cheaply: no provider round-trips, because a publish waits on this.
+		/// <para>Set <see cref="MessageRailConfigStatus.readable"/> false when the answer is genuinely
+		/// UNKNOWN (the credential store could not be read). The platform treats unknown as "allow" -
+		/// only a definite <c>configured == false</c> blocks a publish.</para>
+		/// </summary>
+		Promise<MessageRailConfigStatus> CheckMessageRailConfig();
 	}
 
 	[Serializable]
@@ -27,6 +37,22 @@ namespace Beamable.Common
 		/// back to this exact recipient. Optional on the wire (empty when the producer omits it).
 		/// </summary>
 		public string outreachId;
+
+		/// <summary>
+		/// Ready-made open-tracking pixel URL for this recipient. A rendering federation places it as
+		/// <c>&lt;img src="..." width="1" height="1" alt=""&gt;</c> and needs to understand nothing
+		/// about it — the URL is opaque, signed by the platform, and identifies this one recipient.
+		/// <para>EMPTY means tracking is not configured, and empty must render NO pixel at all: a
+		/// broken image in someone's inbox is worse than a missing metric.</para>
+		/// <para>Only rails whose engagement signal arrives out of band need this. Push gets Opened
+		/// from the handset echoing <see cref="MessageRailContract.OutreachKey"/>, so a push federation
+		/// can ignore it; email has no handset, which is why the pixel is the only signal available.</para>
+		/// <para>Do NOT build this URL yourself. It carries a signed token whose payload includes the
+		/// recipient's gamer tag, which the campaign funnel needs to resolve an account — a
+		/// federation-built copy cannot be signed and has historically dropped that field, which makes
+		/// every open it records invisible to the campaign funnel.</para>
+		/// </summary>
+		public string openTrackingUrl;
 	}
 
 	[Serializable]
@@ -72,6 +98,48 @@ namespace Beamable.Common
 	}
 
 	/// <summary>
+	/// A federation's answer to "could you deliver right now?" - the publish-time preflight
+	/// (<see cref="IFederatedMessageRail{T}.CheckMessageRailConfig" />).
+	/// <para>Three states, and the difference between the last two matters: MISSING
+	/// (<see cref="configured" /> false with <see cref="missingKeys" /> populated) is a definite no and
+	/// blocks a publish; INVALID (<see cref="configured" /> false, no missing keys, and
+	/// <see cref="invalidReason" /> set) is also a definite no; UNKNOWN
+	/// (<see cref="readable" /> false) must never block, because a credential store that cannot be
+	/// read is an outage, not a misconfiguration.</para>
+	/// </summary>
+	[Serializable]
+	public class MessageRailConfigStatus
+	{
+		/// <summary>True when the federation believes it can deliver.</summary>
+		public bool configured;
+
+		/// <summary>
+		/// Every required setting that has no value, FULLY QUALIFIED as the operator would find it in
+		/// the credential store (e.g. <c>postmark_email/server_token</c>). All of them, not the first -
+		/// this list is what an operator provisions from, and reporting one key at a time turns a single
+		/// setup into as many round-trips as there are keys.
+		/// </summary>
+		public List<string> missingKeys = new List<string>();
+
+		/// <summary>
+		/// Why a COMPLETE configuration still does not work (a malformed key, a credential the provider
+		/// rejected). Empty when nothing is wrong, and also empty when the problem is simply that keys
+		/// are missing - <see cref="missingKeys" /> says that.
+		/// </summary>
+		public string invalidReason = "";
+
+		/// <summary>
+		/// False when the federation could not READ its own configuration (auth, network, 5xx) and so
+		/// cannot answer. Defaults TRUE so an older federation build, which never sets this field,
+		/// deserializes as "the answer is meaningful" rather than as a permanent outage.
+		/// </summary>
+		public bool readable = true;
+
+		/// <summary>Operator-facing summary. Display only; never parsed.</summary>
+		public string message = "";
+	}
+
+	/// <summary>
 	/// Shared wire vocabulary for the message-rail federation contract, so the SDK-side federation and
 	/// the Beamable backend agree on the exact strings. The backend mirrors these values
 	/// (<c>RailReconcile.OverCapacityStatus</c> and the rendered-payload outreach key).
@@ -90,5 +158,21 @@ namespace Beamable.Common
 		/// Opened/Clicked so the funnel attributes back to the exact recipient.
 		/// </summary>
 		public const string OutreachKey = "beam_outreach";
+
+		/// <summary>
+		/// Ack param a federation sets on <c>MessageRailSendResponse.params</c> to declare how delivery
+		/// works for it. Absent means the default: the message is in flight and a receipt may follow.
+		/// </summary>
+		public const string DeliveryModeKey = "delivery";
+
+		/// <summary>
+		/// The federation delivers DURABLY: an accepted message is already in the recipient's possession
+		/// (in-game mail lands in a mailbox and waits there), so there is no in-flight state and no
+		/// separate receipt will ever arrive. The platform emits <c>Delivered</c> alongside <c>Sent</c>
+		/// for such a send rather than leaving the stage structurally zero forever.
+		/// <para>Consequence worth surfacing in any UI: for a durable rail Sent and Delivered track ~1:1.
+		/// That is honest, not a bug — the two genuinely coincide when there is no transport in between.</para>
+		/// </summary>
+		public const string DeliveryDurable = "durable";
 	}
 }
