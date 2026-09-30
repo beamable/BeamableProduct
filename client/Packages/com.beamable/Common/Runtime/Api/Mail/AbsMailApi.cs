@@ -143,12 +143,13 @@ namespace Beamable.Common.Api.Mail
 
 				mail.metadata.TryGetValue(OutreachKey, out var outreachId);
 				mail.metadata.TryGetValue(TrackIdKey, out var trackId);
-				if (string.IsNullOrEmpty(outreachId) || string.IsNullOrEmpty(trackId)) continue;
+				// outreachId is the only key the platform matches on; trackId is optional (BI only).
+				if (string.IsNullOrEmpty(outreachId)) continue;
 
 				try
 				{
-					// Byte-identical in shape to what the push SDKs already send, so platform ingest needs
-					// no change: the campaign consumer keys on category + trackId + outreachId.
+					// Same shape as what the push SDKs send, so platform ingest needs no change: the
+					// campaign consumer keys on the reserved stage name + outreachId.
 					var analytics = Provider.GetService<IBeamAnalyticsService>();
 					analytics.SendAnalyticsEvent(
 						analytics.BuildRequest(new MailOpenedFunnelEvent(outreachId, trackId, mail.id)));

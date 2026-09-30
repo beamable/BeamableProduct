@@ -81,6 +81,10 @@ public static class LocalStackTemplate
 		// OWN launchSettings.json already declares, so it is reserved for this process across BeamableAPI and
 		// cannot collide with the gateway (5000), the message rail (5030) or the campaign runtime (5045).
 		public string analyticsLoaderUrl = "http://localhost:5020";
+		// The segmentation runtime. NOT 5050, which is what its own launchSettings.json declares: the two
+		// BeamableScheduler function profiles (Loader, Dispatcher) already default to --port 5050, the same
+		// collision that sent the campaign runtime to 5045. 5055 is unused across BeamableAPI and this CLI.
+		public string segmentationRuntimeUrl = "http://localhost:5055";
 		public string apiDir;
 		public string scalaDir;
 		public string portalDir;
@@ -541,6 +545,18 @@ public static class LocalStackTemplate
 		// own ASPNETCORE_URLS, ready on /health.
 		AddDotnetHost(config, apiDir, "c# campaign runtime", "BeamableCampaignRuntime",
 			o.campaignRuntimeUrl, o.campaignRuntimeUrl);
+
+		// The segmentation runtime — the sole owner of the two reconciliation cadences: the hourly expiry pass
+		// and the nightly full sweep (SegmentSweepHost). The gateway only evaluates segments in reaction to a
+		// stat write, and for a rule built on a clock-derived attribute that fan-out can only ever ADD: a player
+		// who stops playing writes no stat, wakes no listener, and is never re-evaluated. So without this host
+		// the seeded segments that age (`active-today`, `dormant`, `first-time-payer`) gain members and never
+		// lose them, and the count in the portal drifts upward in silence until someone edits the rule or POSTs
+		// /reconcile — which looks like a broken number rather than a missing process. The scheduler cannot
+		// backstop it locally either (its dispatcher runs remotely and cannot call localhost back). Same shape
+		// as the workers above: cluster Member, own ASPNETCORE_URLS, ready on /health.
+		AddDotnetHost(config, apiDir, "c# segmentation runtime", "BeamableSegmentationRuntime",
+			o.segmentationRuntimeUrl, o.segmentationRuntimeUrl);
 
 		// The analytics loader — the competing consumer that drains the analytics event stream and lands it as
 		// Parquet in S3, which the gateway's commit timer then folds into the Iceberg tables Athena reads.

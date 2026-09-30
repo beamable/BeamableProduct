@@ -16,6 +16,7 @@ import {
   crossNamespaceRuleJson,
   deleteClientStat,
   deleteStat,
+  describeSegmentChange,
   describeSegmentError,
   formatWhen,
   listMySegments,
@@ -26,6 +27,7 @@ import {
   setClientStat,
   setStat,
   statNumber,
+  watchMySegments,
   type ClientNamespace,
   type PlayerSegment,
   type SegmentTransition,
@@ -100,6 +102,9 @@ export default function SegmentsTab() {
   const statsInFlight = useRef(false);
   const clientInFlight = useRef(false);
   const segmentsInFlight = useRef(false);
+
+  // The last few live membership changes, newest first — proof the socket delivered something.
+  const [liveChanges, setLiveChanges] = useState<string[]>([]);
 
   /** `silent` keeps the on-focus refresh out of the Activity log — see the Inbox tab. */
   const refreshStats = useCallback(
@@ -201,6 +206,27 @@ export default function SegmentsTab() {
     },
     [isReady, append],
   );
+
+  // Live membership changes over the realtime socket.
+  //
+  // The notification is only a trigger: `watchMySegments` re-reads the membership and hands both
+  // over, and this writes the freshly-read list into state rather than patching it from the
+  // payload. Delivery is best-effort — the server drops it for a player who looks offline — so the
+  // ↻ button above stays the reliable path and this is the convenience on top of it.
+  useEffect(() => {
+    if (!isReady) return;
+    let stop: (() => void) | undefined;
+    try {
+      stop = watchMySegments((change, mine) => {
+        setSegments(mine);
+        setLiveChanges((prev) => [describeSegmentChange(change), ...prev].slice(0, 5));
+        append(`Segment change: ${describeSegmentChange(change)}`);
+      });
+    } catch (e) {
+      append(`Could not watch segments: ${describeSegmentError(e)}`);
+    }
+    return () => stop?.();
+  }, [isReady, append]);
 
   // Both reads run on focus, and re-run when the connection lands (`isReady` flips the
   // callbacks' identity), so a tab opened before init completes fills itself in.
@@ -568,6 +594,24 @@ export default function SegmentsTab() {
               body={`Entered ${formatWhen(s.enteredAt)}`}
               meta={`source: ${s.sources.join(', ') || 'unknown'}`}
             />
+          ))
+        )}
+      </Section>
+
+      <Section title={`Live changes (${liveChanges.length})`}>
+        <Hint>
+          Pushed over the realtime socket as membership changes, without pressing ↻. The
+          notification only says *that* something changed — the list above is re-read from the
+          server on each one, because the endpoint is the truth and the push is best-effort.
+        </Hint>
+        {liveChanges.length === 0 ? (
+          <Hint>
+            Nothing yet. Bump a stat that a segment rule watches and a line appears here within
+            seconds.
+          </Hint>
+        ) : (
+          liveChanges.map((line, i) => (
+            <MessageCard key={`${line}-${i}`} subject={line} body="via segments.transition" />
           ))
         )}
       </Section>
