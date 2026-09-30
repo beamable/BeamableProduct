@@ -1916,7 +1916,8 @@ public partial class ContentService
 			}
 
 			// This set also holds locally modified and created files, whose bytes are not the remote ones.
-			if (c.ReferenceContent != null && contentFile.GetStatus() == ContentStatus.UpToDate)
+			// The baseline describes the properties only, so only they need to match the target.
+			if (c.ReferenceContent != null && !contentFile.IsPropertiesDiff())
 			{
 				contentFile.Baseline = new ContentBaseline(contentFile.PropertiesChecksum, c.ReferenceContent.version);
 			}
@@ -2316,7 +2317,7 @@ public struct ContentFile : IEquatable<ContentFile>
 	/// comparison were canonicalized the same way. Otherwise falls back to the publisher-supplied manifest
 	/// checksum, which is the historical behavior.
 	/// </summary>
-	private bool IsPropertiesDiff() => Baseline is { } baseline && baseline.Version == ReferenceContent.version
+	internal bool IsPropertiesDiff() => Baseline is { } baseline && baseline.Version == ReferenceContent.version
 		? baseline.Checksum != PropertiesChecksum
 		: ReferenceContent.checksum != PropertiesChecksum;
 
