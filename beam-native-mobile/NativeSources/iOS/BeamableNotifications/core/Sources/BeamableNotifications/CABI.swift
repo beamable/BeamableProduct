@@ -126,13 +126,6 @@ public func bmn_trackOfferClicked(_ requestJson: UnsafePointer<CChar>?) {
     NotificationManager.shared.trackOfferClicked(request)
 }
 
-/// Emit a **Converted** funnel event when an offer click converts.
-@_cdecl("bmn_trackOfferConverted")
-public func bmn_trackOfferConverted(_ requestJson: UnsafePointer<CChar>?) {
-    guard let request = JSON.decode(OfferTrackRequest.self, from: cString(requestJson)) else { return }
-    NotificationManager.shared.trackOfferConverted(request)
-}
-
 // MARK: - Templates & categories (feature 4, 7)
 
 @_cdecl("bmn_registerTemplate")

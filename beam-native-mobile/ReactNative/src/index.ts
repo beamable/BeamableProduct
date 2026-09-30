@@ -421,22 +421,16 @@ function buildIosOfferRequest(
   });
 }
 
-function trackOffer(
-  kind: 'clicked' | 'converted',
+function sendOfferClicked(
   intent: NotificationIntentData,
   offer?: NotificationOffer,
 ): void {
   if (IS_IOS) {
-    const requestJson = buildIosOfferRequest(intent, offer);
-    if (kind === 'clicked') IosNative.trackOfferClicked(requestJson);
-    else IosNative.trackOfferConverted(requestJson);
+    IosNative.trackOfferClicked(buildIosOfferRequest(intent, offer));
     return;
   }
   // Android: PushManager.trackOfferClicked(intentDataJson, offerJson)
-  const intentJson = JSON.stringify(intent);
-  const offerJson = offer ? JSON.stringify(offer) : null;
-  if (kind === 'clicked') BeamablePush.trackOfferClicked(intentJson, offerJson);
-  else BeamablePush.trackOfferConverted(intentJson, offerJson);
+  BeamablePush.trackOfferClicked(JSON.stringify(intent), offer ? JSON.stringify(offer) : null);
 }
 
 // ---------------------------------------------------------------------------
@@ -805,21 +799,16 @@ export const BeamableNotifications = {
   /**
    * Record that the user clicked an offer from a campaign in-app, attributed to the
    * originating notification's intent data. Emits a `Clicked` funnel event natively.
+   *
+   * There is deliberately no conversion counterpart: the platform concludes a conversion when the
+   * player meets a campaign objective, and ignores any a device reports.
    */
   trackOfferClicked(
     intent: NotificationIntentData,
     offer?: NotificationOffer,
   ): void {
     if (!isBeamableNotificationsSupported) return;
-    trackOffer('clicked', intent, offer);
-  },
-  /** Record that an offer click converted. Emits a `Converted` funnel event. */
-  trackOfferConverted(
-    intent: NotificationIntentData,
-    offer?: NotificationOffer,
-  ): void {
-    if (!isBeamableNotificationsSupported) return;
-    trackOffer('converted', intent, offer);
+    sendOfferClicked(intent, offer);
   },
 
   /**
