@@ -26,8 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `content ps --watch` now recovers from filesystem watcher overflow by performing an authoritative full rescan instead of leaving consumers with an incomplete local content state.
 - A portal extension whose rebuild throws no longer takes down the whole `beam project run` process. `FileSystemWatcher` callbacks run on thread-pool threads, so an escaping exception killed every service and extension in the group rather than just the failing one; the failure is now logged and the rebuild stays a failed rebuild. Concurrent rebuilds are also serialised, since two file-change events could reach the builder at once and collide writing `metadata.json`.
-- Portal extension scanning no longer excludes sym linked package files
-- Fixed orphaned Unity .meta files left behind when cleaning generated Beamable source directories.
 - Improve OpenAPI schema population
 - `beam project run` no longer hangs silently when a portal extension or embedded-Mongo service fails to start. Those faults were unobservable behind infinite sibling tasks; they now log, emit a terminal stream update, and release the waiting consumer.
 - `beam project run` progress no longer freezes at "Bundling Beamable Properties…" when a service dies during `generate-env`; both the structured and plain-text milestone tables are now consulted on both transports.
@@ -47,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed generated Unity `.meta` guids being derived from the absolute output path, so the same file now gets the same guid on a build machine and in a local checkout. Guids already present in the Unity tree are reused rather than recomputed.
 - Fixed generated folder `.meta` files using the script `MonoImporter` template instead of `folderAsset: yes` with `DefaultImporter`.
 - Fix logging unexpected curly-brace expressions.
+- Portal extension scanning no longer excludes sym linked package files
+- Fixed orphaned Unity .meta files left behind when cleaning generated Beamable source directories.
 
 ## [7.2.2] - 2026-07-16
 

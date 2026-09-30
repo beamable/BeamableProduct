@@ -77,12 +77,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update CLI to 7.2.2
 
-## [5.1.2] - 2026-07-16
-
-### Changed
-
-- Update CLI to 7.2.2
-
 ## [5.1.1] - 2026-06-30
 
 ### Added
