@@ -101,8 +101,8 @@ public partial class BeamoLocalSystem
 		
 		var hostPort = await GetStorageHostPort(storageName);
 
-		var str = $"mongodb://{localStorage.RootUsername}:{localStorage.RootPassword}@{host}:{hostPort}";
-		var key = $"STORAGE_CONNSTR_{storageName}";
+		var str = BuildLocalStorageConnectionString(localStorage, host, hostPort);
+		var key = GetStorageConnectionStringVarName(storageName);
 
 		return new DockerEnvironmentVariable { VariableName = key, Value = str };
 	}
