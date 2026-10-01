@@ -15,18 +15,25 @@ import { getBeam } from './beamClient';
 const NOT_CONNECTED =
   'Not connected - Beamable connects automatically on launch; wait for it, or use Retry connection.';
 
+/**
+ * The namespace every platform-emitted event lives in (`beam_sent`, `beam_opened`, `beam_goal_*`...).
+ * Mirrors `CampaignNodeEvents.ReservedPrefix` on the server.
+ */
+export const RESERVED_EVENT_PREFIX = 'beam_';
+
 /** Param values are string-valued on the wire, which is how they arrive from a real client. */
 export type EventParams = Record<string, unknown>;
 
 /**
  * Emits one analytics event for the current player.
  *
- * Deliberately sends NO `category`. Category is what routes an event to the campaign funnel
- * consumer (`notification_funnel` / `message_rail_funnel`); an objective goal matches on the event
- * NAME and its params instead. Setting one here would file a test event as a funnel stage and
- * corrupt the very funnel you are trying to read.
+ * What keeps a test event out of the campaign funnel is its NAME: every funnel stage is a reserved
+ * `beam_` name only the platform may emit, and the platform refuses to publish a campaign whose
+ * goals or triggers watch one — so an authored objective event can never be mistaken for a stage.
+ * That rule is enforced on the GRAPH, not on the event: firing `beam_opened` from here would still be
+ * accepted (`202`) and quietly miscount a live funnel, so this refuses reserved names locally.
  *
- * @throws When Beamable is not connected, or the request fails.
+ * @throws When Beamable is not connected, the name is reserved, or the request fails.
  */
 export async function emitObjectiveEvent(name: string, params: EventParams): Promise<void> {
   const beam = getBeam();
@@ -34,6 +41,12 @@ export async function emitObjectiveEvent(name: string, params: EventParams): Pro
 
   const trimmed = name.trim();
   if (!trimmed) throw new Error('Event name is required.');
+  if (trimmed.startsWith(RESERVED_EVENT_PREFIX)) {
+    throw new Error(
+      `"${trimmed}" is reserved: names starting with "${RESERVED_EVENT_PREFIX}" are platform funnel ` +
+        'stages. Firing one here would miscount a live campaign funnel, and no objective can watch it.',
+    );
+  }
 
   // `track`, not `trackSafely`: this screen exists to tell you whether the event landed, and a
   // swallowed failure would render as a successful send that never shows up in the catalog.

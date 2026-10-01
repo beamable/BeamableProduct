@@ -3,12 +3,12 @@ import * as apis from '@/__generated__/apis';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { Message } from '@/__generated__/schemas';
 import { MailService, MailState } from '@/services/MailService';
-import { FUNNEL_CATEGORY } from '@/services/AnalyticsService';
+import { FunnelStage } from '@/services/AnalyticsService';
 import { BeamBase } from '@/core/BeamBase';
 
 /**
  * The behaviour that matters here is the IMPLICIT funnel reporting: a game reading mail through this
- * service must get the campaign `Opened` stage for free. If that stops happening, campaigns delivered
+ * service must get the campaign `beam_opened` stage for free. If that stops happening, campaigns delivered
  * over the in-game rail silently report no engagement — which looks like "nobody read it" rather than
  * like a bug, so it is worth pinning precisely.
  */
@@ -58,7 +58,7 @@ describe('MailService', () => {
     expect(apis.mailPostSearchByObjectId).toHaveBeenCalled();
   });
 
-  it('reports the campaign Opened stage when campaign mail is marked read', async () => {
+  it('reports the campaign beam_opened stage when campaign mail is marked read', async () => {
     mockSearch([mail('1', { beam_outreach: 'outreach-1', trackId: 'campaign:c1:1:send' })]);
     const update = vi
       .spyOn(apis, 'mailPutBulkByObjectId')
@@ -70,11 +70,10 @@ describe('MailService', () => {
 
     expect(update).toHaveBeenCalled();
     expect(tracked).toHaveLength(1);
-    // Shape must match what the push SDKs send, or the platform's campaign consumer drops it: it
-    // routes on the category and needs BOTH the outreach id and the track ref to attribute a stage.
+    // Shape must match what the push SDKs send, or the platform never watches it: it matches on the
+    // reserved `beam_` stage name and the outreach id. An unprefixed `Opened` would count nothing.
     expect(tracked[0]).toMatchObject({
-      name: 'Opened',
-      category: FUNNEL_CATEGORY,
+      name: 'beam_opened',
       params: {
         outreachId: 'outreach-1',
         trackId: 'campaign:c1:1:send',
@@ -82,6 +81,8 @@ describe('MailService', () => {
         mailId: '1',
       },
     });
+    expect(tracked[0].name).toBe(FunnelStage.Opened);
+    expect(tracked[0]).not.toHaveProperty('category');
   });
 
   it('reports nothing for ordinary game mail', async () => {
@@ -99,10 +100,27 @@ describe('MailService', () => {
     expect(tracked).toHaveLength(0);
   });
 
-  it('reports nothing when only half the attribution is present', async () => {
-    // outreachId without trackId is unusable: the consumer parses trackId to find the campaign and
-    // node, and drops the stage as `no_track_ref` without it. Better to send nothing than noise.
+  it('reports the open when the mail carries an outreachId but no trackId', async () => {
+    // outreachId is the only key the platform matches on; the campaign and node come off the row it
+    // matched. Requiring trackId as well would drop opens that count.
     mockSearch([mail('1', { beam_outreach: 'outreach-1' })]);
+    vi.spyOn(apis, 'mailPutBulkByObjectId').mockResolvedValue({
+      status: 200,
+      headers: {},
+      body: {},
+    } as any);
+    const { service, tracked } = build();
+
+    await service.list();
+    await service.markAsRead('1');
+
+    expect(tracked).toHaveLength(1);
+    expect(tracked[0]).toMatchObject({ name: 'beam_opened', params: { outreachId: 'outreach-1' } });
+    expect(tracked[0].params).not.toHaveProperty('trackId');
+  });
+
+  it('reports nothing when the mail carries a trackId but no outreachId', async () => {
+    mockSearch([mail('1', { trackId: 'campaign:c1:1:send' })]);
     vi.spyOn(apis, 'mailPutBulkByObjectId').mockResolvedValue({
       status: 200,
       headers: {},

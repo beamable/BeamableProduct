@@ -27,11 +27,11 @@ public final class NotificationManager: NSObject {
     /// JSON array string of DeliveryReceipt.
     public var onDeliveryReceipts: ((String) -> Void)?
 
-    /// Outcome of a native funnel-analytics POST (Sent/Received/Opened/Clicked/Converted).
+    /// Outcome of a native funnel-analytics POST (Sent/Received/Opened/Clicked).
     /// The iOS counterpart of Android's `onFunnelResult`: the funnel POST is fire-and-forget,
     /// so this is the only place its HTTP status surfaces. Assigning it installs the
     /// `BeamableAnalytics` hook, so every funnel emit from this process reports here —
-    /// including the ones `trackOfferClicked`/`trackOfferConverted` skip before any network
+    /// including the ones `trackOfferClicked` skips before any network
     /// call, which would otherwise leave a caller awaiting the event forever.
     public var onFunnelResult: ((FunnelResult) -> Void)? {
         didSet {
@@ -253,25 +253,24 @@ public final class NotificationManager: NSObject {
         SharedConfig.shared.clearAuthConfig()
     }
 
-    /// Emit a **Clicked** funnel event for an in-app offer click, attributed to the
-    /// originating campaign.
+    /// Emit a **`beam_clicked`** funnel event for an in-app offer click, attributed to the
+    /// originating campaign. There is deliberately no conversion counterpart: the platform
+    /// concludes a conversion when the player meets a campaign objective, and ignores any a
+    /// device reports.
     public func trackOfferClicked(_ request: OfferTrackRequest) {
         emitOfferFunnel(.clicked, request: request)
-    }
-
-    /// Emit a **Converted** funnel event when an offer click results in a conversion.
-    public func trackOfferConverted(_ request: OfferTrackRequest) {
-        emitOfferFunnel(.converted, request: request)
     }
 
     private func emitOfferFunnel(_ type: FunnelType, request: OfferTrackRequest) {
         let auth = SharedConfig.shared.loadAuthConfig()
         let intent = request.intent(fallbackAuth: auth)
         guard let event = BeamableAnalytics.makeEvent(type, intent: intent, offer: request.offer) else {
-            NSLog("[BeamableNotifications] trackOffer %@ skipped: missing campaign/scope", type.rawValue)
+            NSLog("[BeamableNotifications] trackOffer %@ skipped: missing campaign/scope", type.label)
             // Still report: this call never reaches `BeamableAnalytics.emit`, so without it a
             // caller awaiting `onFunnelResult` would just time out with no reason.
-            let result = FunnelResult(funnelType: type.rawValue, ok: false, statusCode: 0,
+            // The label, not the wire name: every other `FunnelResult` reports `event.funnelType`,
+            // which is the label, and a caller matching on it must see one spelling.
+            let result = FunnelResult(funnelType: type.label, ok: false, statusCode: 0,
                                       message: "skipped: missing campaignId/nodeId")
             dispatch { self.onFunnelResult?(result) }
             return

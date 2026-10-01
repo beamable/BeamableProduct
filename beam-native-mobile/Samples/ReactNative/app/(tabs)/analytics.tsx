@@ -40,7 +40,7 @@ const OFFER: NotificationOffer = {
 const FUNNEL_TIMEOUT_MS = 10_000;
 
 /**
- * `trackOfferClicked` / `trackOfferConverted` are fire-and-forget on the native side: the HTTP
+ * `trackOfferClicked` is fire-and-forget on the native side: the HTTP
  * result comes back later on the `funnelResult` event, not from the call. Subscribing BEFORE
  * firing and awaiting the next event turns that into a real per-press outcome.
  */
@@ -80,8 +80,9 @@ const DEFAULT_PARAM_JSON = `{
 
 /**
  * Analytics tab: emitting arbitrary events to validate campaign objectives, the native
- * Clicked / Converted funnel events, and the native-side auth those events use when the JS
- * runtime isn't running.
+ * beam_clicked funnel event, and the native-side auth those events use when the JS runtime isn't
+ * running. There is no device-reported conversion: the platform concludes one when the player
+ * meets an objective, so the funnel's conversion stage is driven by an objective event.
  */
 export default function AnalyticsTab() {
   const { isReady } = useBeam();
@@ -109,7 +110,7 @@ export default function AnalyticsTab() {
     trackId: trackId ?? undefined,
   });
 
-  const track = (kind: 'clicked' | 'converted') => async () => {
+  const trackClicked = async () => {
     if (!isReady) throw new Error('Beamable is not connected yet');
     if (!campaignId.trim() || !nodeId.trim())
       throw new Error('Enter a Campaign ID and a Node ID first');
@@ -117,8 +118,7 @@ export default function AnalyticsTab() {
     const intent = buildIntent();
     // Subscribe before firing — the native round trip can beat a later subscription.
     const pending = nextFunnelResult();
-    if (kind === 'clicked') BeamNotifications.trackOfferClicked(intent, OFFER);
-    else BeamNotifications.trackOfferConverted(intent, OFFER);
+    BeamNotifications.trackOfferClicked(intent, OFFER);
 
     const result = await pending;
     const detail = `${result.funnelType} · HTTP ${result.statusCode}${result.message ? ` — ${result.message}` : ''}`;
@@ -212,11 +212,12 @@ export default function AnalyticsTab() {
 
       <Section title="Funnel: clicked / converted">
         <Hint>
-          Emits native Clicked / Converted funnel analytics for a test offer (iOS & Android). The
-          native call is fire-and-forget, so each button waits for the matching funnelResult event
-          and reports its HTTP status below.{'\n'}
-          Type any Campaign / Node ID, or open the app from a campaign push and these fields
-          auto-fill from its payload.
+          Emits the native beam_clicked funnel event for a test offer (iOS & Android). The native call
+          is fire-and-forget, so the button waits for the matching funnelResult event and reports
+          its HTTP status below.{'\n'}
+          Open the app from a campaign push and these fields auto-fill from its payload. IDs typed
+          by hand carry no outreachId, so the click is recorded but the campaign funnel won't count
+          it.
         </Hint>
         <Field
           placeholder="Campaign ID (e.g. test_campaign)"
@@ -224,15 +225,21 @@ export default function AnalyticsTab() {
           onChangeText={setCampaignId}
         />
         <Field placeholder="Node ID (e.g. test_node)" value={nodeId} onChangeText={setNodeId} />
-        <AsyncButton label="Track offer clicked" run={track('clicked')} />
-        <AsyncButton label="Track offer converted" run={track('converted')} />
+        <AsyncButton label="Track offer clicked" run={trackClicked} />
+        <Hint>
+          A device never reports a conversion; the platform ignores one by design. It concludes the
+          conversion itself when the player meets the campaign's objective, which the funnel shows
+          as beam_met_&lt;goal&gt;. Meet objective sends the event configured under Objective
+          events above.
+        </Hint>
+        <AsyncButton label="Meet objective" run={sendObjectiveEvent} />
       </Section>
 
       <Section title="Native auth">
         <Hint>
           On connect the app hands the player's tokens to the native side
           (BeamNotifications.configureAuth) so the CLOSED-APP funnel can authenticate when the JS
-          runtime is not running — that's how a Clicked event survives a push tapped from a killed
+          runtime is not running — that's how a beam_clicked event survives a push tapped from a killed
           app.
         </Hint>
         <Hint>

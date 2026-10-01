@@ -629,7 +629,7 @@ object PushManager {
     }
 
     internal fun dispatchNotificationOpened(json: String) {
-        // Funnel: a notification tap is an "Opened" event. Fired natively, gated on a
+        // Funnel: a notification tap is a `beam_opened` event. Fired natively, gated on a
         // tracked campaign + scope/gamerTag inside trackFunnel.
         appContext?.let { ctx ->
             try {
@@ -641,21 +641,19 @@ object PushManager {
         listener?.let { safe("notification_opened") { it.onNotificationOpened(json) } }
     }
 
-    // ---- Offer / conversion funnel helpers ---------------------------
+    // ---- Offer click funnel helper ----------------------------------
 
     /**
      * Emits a **Clicked** funnel event for an in-app offer click, attributed to the campaign that
      * arrived in the originating notification. [intentDataJson] is the notification's
      * intent-data JSON (as delivered to the engine); [offerJson] is the single clicked offer.
      * No-op unless campaignId + nodeId + scope + gamerTag are present.
+     *
+     * There is deliberately no conversion counterpart: the platform concludes a conversion when
+     * the player meets a campaign objective, and ignores any a device reports.
      */
     fun trackOfferClicked(intentDataJson: String, offerJson: String?) {
         trackOffer(intentDataJson, offerJson, BeamableAnalytics.FunnelType.Clicked)
-    }
-
-    /** Emits a **Converted** funnel event for an offer conversion. See [trackOfferClicked]. */
-    fun trackOfferConverted(intentDataJson: String, offerJson: String?) {
-        trackOffer(intentDataJson, offerJson, BeamableAnalytics.FunnelType.Converted)
     }
 
     private fun trackOffer(
@@ -695,7 +693,7 @@ object PushManager {
 
     /**
      * Reports the outcome of a native funnel-analytics POST to the listener. [funnelType] is the
-     * funnel stage name, [ok] whether it succeeded, [statusCode] the HTTP code (0 when no network
+     * stage's display label ([BeamableAnalytics.FunnelType.label]), [ok] whether it succeeded, [statusCode] the HTTP code (0 when no network
      * attempt), [message] a short human description. Mirrors [dispatchError]'s guarded direct call.
      */
     internal fun dispatchFunnelResult(funnelType: String, ok: Boolean, statusCode: Int, message: String) {
