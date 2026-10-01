@@ -17,7 +17,7 @@ public enum PortalType
 	Console
 }
 
-public class PortalCommand : AppCommand<PortalCommandArgs>
+public class PortalCommand : AppCommand<PortalCommandArgs>, IEmptyResult
 {
 	public PortalCommand() : base("portal", "Open the Beamable Portal in a browser, auto-logged in with the current CID, PID and account credentials")
 	{

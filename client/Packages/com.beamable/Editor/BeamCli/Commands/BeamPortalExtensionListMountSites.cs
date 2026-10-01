@@ -19,13 +19,14 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual PortalExtensionListMountSitesWrapper PortalExtensionListMountSites()
+        public virtual PortalExtensionListMountSitesWrapper PortalExtensionListMountSites(PortalArgs portalArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
             genBeamCommandArgs.Add("portal");
+            genBeamCommandArgs.Add(portalArgs.Serialize());
             genBeamCommandArgs.Add("extension");
             genBeamCommandArgs.Add("list-mount-sites");
             // Create an instance of an IBeamCommand

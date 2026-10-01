@@ -27,13 +27,14 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual PortalExtensionAddMicroserviceWrapper PortalExtensionAddMicroservice(PortalExtensionAddMicroserviceArgs addMicroserviceArgs)
+        public virtual PortalExtensionAddMicroserviceWrapper PortalExtensionAddMicroservice(PortalArgs portalArgs, PortalExtensionAddMicroserviceArgs addMicroserviceArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
             genBeamCommandArgs.Add("portal");
+            genBeamCommandArgs.Add(portalArgs.Serialize());
             genBeamCommandArgs.Add("extension");
             genBeamCommandArgs.Add("add-microservice");
             genBeamCommandArgs.Add(addMicroserviceArgs.Serialize());
