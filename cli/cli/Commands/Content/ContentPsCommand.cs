@@ -167,22 +167,7 @@ public class ContentPsCommand
 
 						
 						// If a content referenceId was changed and can be updated we don't need to wait for a content ps to be called again to reset it
-						var saveTasks = new List<Task>();
-						var contentToUpdateManifestReference = localContentAgainstLatest.Result.ContentFiles
-							.Where(c => c.CanUpdateReferenceWithTarget)
-							.ToArray();
-						foreach (ContentFile c in contentToUpdateManifestReference)
-						{
-							ContentFile contentFile = c;
-							// In some cases of conflict resolution the Reference Content could be null.
-							if (c.ReferenceContent != null)
-							{
-								contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
-							}
-							contentFile.FetchedFromManifestUid = latestManifestId;
-							saveTasks.Add(contentService.SaveContentFile(contentFolder, contentFile));
-						}
-						await Task.WhenAll(saveTasks);
+						await contentService.AdvanceManifestReferences(contentFolder, localContentAgainstLatest.Result.ContentFiles, latestManifestId);
 						
 						// Prepare a new Manifest to push out with only the changed entries.
 						var fileChangeManifestToEmit = new ContentPsCommandEvent()
