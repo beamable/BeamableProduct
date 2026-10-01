@@ -14,7 +14,7 @@ namespace BeamCampaignIntent
 			TEXT("deeplink"), TEXT("deepLink"), TEXT("deep_link"),
 			TEXT("outreachId"), TEXT("beam_outreach"), TEXT("trackId"),
 			TEXT("offers"), TEXT("campaignData"),
-			TEXT("beam_offer_grant"), TEXT("beam_offer_grants"),
+			TEXT("beam_offer_grants"),
 			// Fields ParseNotification already lifted onto FBMNNotificationData.
 			TEXT("userInfo"), TEXT("dataPayload"), TEXT("id"), TEXT("actionId"), TEXT("wasLaunch"),
 		};
@@ -194,8 +194,7 @@ FBeamCampaignIntentData UBeamCampaignIntentLibrary::ParseFromRawJson(const FStri
 		}
 	}
 
-	// Grants: a single id, or a comma-joined list. Either may be the only one present.
-	Intent.OfferGrantId = FirstNonEmpty(Buckets, {TEXT("beam_offer_grant")});
+	// Grants: every grant id for this send, comma-joined.
 	const FString GrantList = FirstNonEmpty(Buckets, {TEXT("beam_offer_grants")});
 	if (!GrantList.IsEmpty())
 	{
@@ -207,7 +206,6 @@ FBeamCampaignIntentData UBeamCampaignIntentLibrary::ParseFromRawJson(const FStri
 			if (!Part.IsEmpty()) Intent.OfferGrantIds.Add(Part);
 		}
 	}
-	if (Intent.OfferGrantId.IsEmpty() && Intent.OfferGrantIds.Num() > 0) Intent.OfferGrantId = Intent.OfferGrantIds[0];
 
 	// Everything else, coerced to string. Earlier buckets win so the top level stays authoritative.
 	for (const TSharedPtr<FJsonObject>& Bucket : Buckets)

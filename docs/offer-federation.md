@@ -96,7 +96,10 @@ Four repos. This is the map worth memorising.
 **Contract — the source of truth for every DTO**
 
 - `BeamableProduct/cli/beamable.common/Runtime/Federation/FederatedCampaignVirtualOffer.cs`
-  - `IFederatedCampaignVirtualOffer<T>` — the four methods
+  - `IFederatedCampaignVirtualOffer<T>` — the four methods: `GrantOffers` (batch only — a page of
+    `CampaignOfferGrantItem` in, one `CampaignOfferGrantResponse` per item out, same order, routed at
+    `{federationId}/GrantOffers` with body `{"grants":[...]}`), `RevokeOffer`, `RedeemOffer`,
+    `GetCampaignOffers`. There is no per-player grant.
   - `CampaignOfferItem` — an offer as a store describes it
   - `CampaignOfferPrice` — a soft-currency `symbol` + `amount`, plus a display `label`
   - `CampaignOfferReward` — what the offer *contains*
@@ -113,8 +116,10 @@ Four repos. This is the map worth memorising.
 **Gateway — `BeamableAPI/BeamableGateway/Controllers/CampaignOfferController.cs`**
 
 **Campaign runtime — `BeamableAPI/BeamableShared/Services/Campaigns/Runtime/CampaignSendDispatcher.cs`**
-- `TryGrantOffers` (`:248`) → `GrantOne` (`:458`). Grants happen **before** the message reaches the
-  rail, so the grant id can ride the same payload.
+- `TryGrantOffers` → one `GrantOffers` federation call per page of recipients. Grants happen
+  **before** the message reaches the rail, so the grant id can ride the same payload. Each item's
+  outcome is read from its own response (matched by position), so one item failing does not fail the
+  page.
 - Three deliberately distinct outcomes: granted → id in the payload; *retriable* failure → the send
   stays pending and nothing ships; *terminal* failure → **the message ships anyway with no offer**. A
   sold-out offer degrades the outreach, it does not swallow it.
@@ -645,7 +650,7 @@ Carried here so they are not rediscovered. RFC 004 §4/§7 is the authority.
 - **`Redeem` is not atomic across the spend.** The claim is committed, then the purchase runs, then
   forfeiture is written. A crash mid-sequence costs the player the offer rather than double-charging
   them, which is the deliberate choice, but it is not a transaction.
-- **The in-game rail cannot carry `beam_offer_grant`.** `InGameMessageRailService.ParsePayload` drops
+- **The in-game rail cannot carry `beam_offer_grants`.** `InGameMessageRailService.ParsePayload` drops
   unknown keys and Beamable mail has no extras field. The deep link works on push only.
 - **The Portal picker drops everything but `priceLabel`.** (Now its own service's problem rather than
   the federation's.) It cannot show the operator the price

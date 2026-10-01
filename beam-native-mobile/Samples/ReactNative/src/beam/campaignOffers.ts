@@ -75,13 +75,19 @@ export const KNOWN_FEDERATIONS = [
 export const BADGE_REWARD_TYPE = 'badge';
 
 /**
- * The reserved campaign-payload key carrying the grant id for a send.
+ * The reserved per-recipient key carrying every grant id made for a send, comma-separated.
  *
- * The campaign writes it (`CampaignSendPayload.ReservedKeys`) so a rail can deep-link the player
+ * The campaign writes it (`CampaignOfferContract.GrantsKey`) so a rail can deep-link the player
  * straight to what they were given — the offer *ref* alone is not something a player can be sent
- * to. A client only ever **reads** it.
+ * to. A send node can carry several offers, hence a list. A client only ever **reads** it.
  */
-export const OFFER_GRANT_KEY = 'beam_offer_grant';
+export const OFFER_GRANTS_KEY = 'beam_offer_grants';
+
+/** Splits a `beam_offer_grants` value into its grant ids, dropping blanks and duplicates. */
+export function parseOfferGrantIds(raw: unknown): string[] {
+  if (typeof raw !== 'string') return [];
+  return [...new Set(raw.split(',').map((id) => id.trim()).filter(Boolean))];
+}
 
 /**
  * The redeem status for "the provider could not tell whether delivery went through" — retry the

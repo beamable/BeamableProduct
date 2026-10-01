@@ -5,8 +5,8 @@ namespace Beamable.Common
 {
 	/// <summary>
 	/// Federation for a store's <b>virtual</b> offers — ones a player buys with soft currency. A microservice
-	/// implements this to grant / revoke / redeem those offers for a player, and to report what a player
-	/// currently holds.
+	/// implements this to grant those offers to players (in batches — a campaign send grants a page of
+	/// recipients per call), revoke and redeem them, and report what a player currently holds.
 	/// </summary>
 	/// <remarks>
 	/// <para>
@@ -44,9 +44,24 @@ namespace Beamable.Common
 	public interface IFederatedCampaignVirtualOffer<in T> : IFederation where T : IFederationId, new()
 	{
 		/// <summary>
-		/// Entitle a player to an offer, returning the grant that represents it. Called by the campaign
-		/// runtime as a send goes out, so the resulting <see cref="CampaignOfferGrantResponse.grantId"/> can
-		/// ride the message the player receives.
+		/// Entitle players to offers, one page at a time, returning the grant that represents each. Called by
+		/// the campaign runtime as a send goes out — a send walks its audience a page at a time, so grants
+		/// arrive in batches — and each resulting <see cref="CampaignOfferGrantResponse.grantId"/> rides the
+		/// message its player receives. This is the only grant entry point; there is no per-player grant.
+		///
+		/// <para>
+		/// Return <b>exactly one</b> <see cref="CampaignOfferGrantResponse"/> per entry of
+		/// <paramref name="grants"/>, in the <b>same order</b> — the caller matches responses to requests by
+		/// position. An implementation must name this parameter <c>grants</c>: it is the body field the backend
+		/// posts (<c>{"grants":[...]}</c>).
+		/// </para>
+		///
+		/// <para>
+		/// <b>Each item is evaluated independently.</b> One item failing must not fail the page — report it on
+		/// that item's response (<see cref="CampaignOfferGrantResponse.success"/>,
+		/// <see cref="CampaignOfferGrantResponse.retriable"/>) and carry on with the rest. Batch on your side
+		/// (one storage round trip for many players) wherever you can; that is the point of the shape.
+		/// </para>
 		///
 		/// <para>
 		/// <b>Grant unconditionally.</b> A campaign condition is no longer a filter that decides whether to
@@ -55,9 +70,10 @@ namespace Beamable.Common
 		/// </para>
 		///
 		/// <para>
-		/// Must be safe to call again for the same <see cref="CampaignOfferGrantContext.idempotencyKey"/>: the
-		/// send is retried on any retriable failure downstream, and a store that double-grants would pay out
-		/// twice for one outreach. Return the existing grant rather than a second one.
+		/// Must be safe to call again for the same item <see cref="CampaignOfferGrantContext.idempotencyKey"/>:
+		/// a page is retried on any retriable failure downstream (possibly regrouped with different items), and
+		/// a store that double-grants would pay out twice for one outreach. Return the existing grant rather
+		/// than a second one.
 		/// </para>
 		///
 		/// <para>
@@ -67,7 +83,7 @@ namespace Beamable.Common
 		/// key is empty (an older backend that does not send it), fall back to the outreach id.
 		/// </para>
 		/// </summary>
-		Promise<CampaignOfferGrantResponse> GrantOffer(string playerId, string offerId, CampaignOfferGrantContext context);
+		Promise<List<CampaignOfferGrantResponse>> GrantOffers(List<CampaignOfferGrantItem> grants);
 
 		/// <summary>
 		/// Withdraw grants that have not been redeemed. Called when a campaign reaches a terminal state —
@@ -75,8 +91,8 @@ namespace Beamable.Common
 		///
 		/// <para>
 		/// <b>A list, because the caller has one.</b> The halt's force-exit walks accounts a page at a time,
-		/// so revokes arrive in batches. Unlike <see cref="GrantOffer"/>, whose caller is per-account by
-		/// construction, this one genuinely has many players in hand at once.
+		/// so revokes arrive in batches, exactly like <see cref="GrantOffers"/>. Return one response per
+		/// entry, in the same order.
 		/// </para>
 		///
 		/// <para>
@@ -201,8 +217,8 @@ namespace Beamable.Common
 	public class CampaignOfferItem
 	{
 		/// <summary>
-		/// The store's own reference for this offer, and the value written to a campaign send node's
-		/// <c>Offer</c>. Opaque to everything outside the store that issued it — do not parse it, show it as
+		/// The store's own reference for this offer, and the value written to an offer entry on a
+		/// campaign send node. Opaque to everything outside the store that issued it — do not parse it, show it as
 		/// a name, or key anything durable on its shape.
 		///
 		/// <para>
@@ -511,7 +527,7 @@ namespace Beamable.Common
 		public string outreachId;
 
 		/// <summary>
-		/// The store's idempotency key for <see cref="IFederatedCampaignVirtualOffer{T}.GrantOffer"/>, unique
+		/// The store's idempotency key for a <see cref="IFederatedCampaignVirtualOffer{T}.GrantOffers"/> item, unique
 		/// per (recipient, offer). A send node may carry several offers under one <see cref="outreachId"/>,
 		/// so deduplicate on this, not on the outreach id. Empty when sent by an older backend that predates
 		/// it — fall back to <see cref="outreachId"/> then.
@@ -519,13 +535,14 @@ namespace Beamable.Common
 		public string idempotencyKey;
 
 		/// <summary>
-		/// The store's own authored fields from the campaign send, keyed under
-		/// <see cref="CampaignOfferContract.KeyPrefix"/> — never the message rail's.
+		/// The store's own authored fields for this offer: the extra data of this offer's entry on the
+		/// campaign send node, passed through as authored. Never contains the message rail's payload. Keys
+		/// conventionally start with <see cref="CampaignOfferContract.KeyPrefix"/>.
 		///
 		/// <para>
 		/// For a provider that serves a catalog this is optional colour. For one that mints an offer per
 		/// campaign — authoring it in its Portal extension rather than looking it up — <b>this is the offer
-		/// itself</b>, and <see cref="IFederatedCampaignVirtualOffer{T}.GrantOffer"/> has nothing to grant
+		/// itself</b>, and <see cref="IFederatedCampaignVirtualOffer{T}.GrantOffers"/> has nothing to grant
 		/// without it.
 		/// </para>
 		/// </summary>
@@ -607,6 +624,16 @@ namespace Beamable.Common
 		public string grantId;
 	}
 
+	/// <summary>One entry of a <see cref="IFederatedCampaignVirtualOffer{T}.GrantOffers"/> batch: who gets which
+	/// offer, and why.</summary>
+	[Serializable]
+	public class CampaignOfferGrantItem
+	{
+		public string playerId;
+		public string offerId;
+		public CampaignOfferGrantContext context;
+	}
+
 	[Serializable]
 	public class CampaignOfferRedeemRequest
 	{
@@ -646,30 +673,23 @@ namespace Beamable.Common
 		public const int Version = 1;
 
 		/// <summary>
-		/// The campaign payload key carrying the authored offer reference. Reserved by the campaign — mirrors
-		/// <c>CampaignSendPayload.ReservedKeys</c> in the Beamable backend.
+		/// The per-recipient data key (<c>MessageRailRecipient.data</c>) carrying every
+		/// <see cref="CampaignOfferGrantResponse.grantId"/> made for this send, comma-separated and in the
+		/// send node's offer order, so the message rail can deep-link the player straight to what they were
+		/// given. Reserved by the campaign — a rail must not emit it. Mirrors <c>CampaignOfferKeys.Grants</c>
+		/// in the Beamable backend.
 		/// </summary>
-		public const string OfferKey = "offer";
-
-		/// <summary>
-		/// The campaign payload key carrying the <see cref="CampaignOfferGrantResponse.grantId"/> of the first
-		/// grant made for this send, so the message rail can deep-link the player straight to what they were
-		/// given. Also reserved — a rail must not emit it.
-		/// </summary>
-		public const string GrantKey = "beam_offer_grant";
-
-		/// <summary>Every grant id for this send, comma-separated. Also reserved.</summary>
 		public const string GrantsKey = "beam_offer_grants";
 
 		/// <summary>
-		/// The namespace every offer provider's authored fields sit in inside a campaign send's payload.
+		/// The conventional prefix for an offer provider's own authored keys.
 		///
 		/// <para>
-		/// Load-bearing, not cosmetic: a lane's message rail and its offer provider spread their authored
-		/// data into the <b>same</b> <c>customProperties</c> map, and nothing else in a stored graph tells the
-		/// two apart. This prefix is what routes each half back to the extension that wrote it when a
-		/// campaign is reopened, and what lets the campaign runtime hand a store its own fields — and only
-		/// its own — in <see cref="CampaignOfferGrantContext.extraDataFed"/>.
+		/// A naming convention only, not a routing mechanism: each offer entry on a campaign send node carries
+		/// its own extra data, separate from the message rail's payload, and the campaign runtime hands a store
+		/// exactly that entry's data in <see cref="CampaignOfferGrantContext.extraDataFed"/>. Providers are
+		/// encouraged to prefix their keys with it so they read unambiguously in logs and stored graphs; the
+		/// backend neither requires nor strips it.
 		/// </para>
 		/// </summary>
 		public const string KeyPrefix = "offer_";

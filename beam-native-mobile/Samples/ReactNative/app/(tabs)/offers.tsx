@@ -5,7 +5,7 @@ import { useFocusEffect } from 'expo-router';
 import {
   DEFAULT_STORE,
   KNOWN_FEDERATIONS,
-  OFFER_GRANT_KEY,
+  OFFER_GRANTS_KEY,
   badgeRewards,
   claimGrant,
   isPurchasable,
@@ -69,7 +69,7 @@ import { colors, mono, radius, space } from '../../src/ui/theme';
 export default function OffersTab() {
   const { append } = useLogActions();
   const { isReady } = useBeam();
-  const { lastOfferGrantId } = useNotifications();
+  const { lastOfferGrantIds } = useNotifications();
 
   // A known federation, or `custom` — which reads the typed id below. The store is the default.
   const [choice, setChoice] = useState<FederationChoice>(KNOWN_FEDERATIONS[0].id);
@@ -322,10 +322,8 @@ export default function OffersTab() {
     [isReady, refresh],
   );
 
-  // The pushed grant, if the list on screen holds it: then it gets the full receipt, as a row does.
-  const pushed = lastOfferGrantId
-    ? campaignOffers.find((e) => e.grantId === lastOfferGrantId)
-    : undefined;
+  // A pushed grant the list on screen holds gets the full receipt, as a row does.
+  const pushedOffer = (grantId: string) => campaignOffers.find((e) => e.grantId === grantId);
 
   return (
     <Screen>
@@ -471,27 +469,35 @@ export default function OffersTab() {
 
       <Section title="From the last push">
         <Hint>
-          A campaign that attaches an offer writes the grant id into the send's payload under the
-          reserved `{OFFER_GRANT_KEY}` key, so the message can deep-link straight to what you were
-          given. This reads it off the received notification — no campaign-offer list needed.
+          A campaign that attaches offers writes their grant ids, comma-separated, into the send's
+          per-recipient data under the reserved `{OFFER_GRANTS_KEY}` key, so the message can
+          deep-link straight to what you were given. This reads them off the received notification —
+          no campaign-offer list needed.
         </Hint>
-        {lastOfferGrantId ? (
+        {lastOfferGrantIds.length > 0 ? (
           <>
-            <Value label="grant">{lastOfferGrantId}</Value>
-            <AsyncButton
-              label="Claim from push"
-              run={pushed ? redeem(pushed, listedFrom) : claim(lastOfferGrantId)}
-            />
+            {lastOfferGrantIds.map((grantId) => {
+              const pushed = pushedOffer(grantId);
+              return (
+                <View key={grantId}>
+                  <Value label="grant">{grantId}</Value>
+                  <AsyncButton
+                    label="Claim from push"
+                    run={pushed ? redeem(pushed, listedFrom) : claim(grantId)}
+                  />
+                </View>
+              );
+            })}
             <Hint>
-              The payload carries the grant id only, so this claims against the federation
-              selected above — pick the one the campaign's offer came from. It is the same redeem as
+              The payload carries grant ids only, so each claims against the federation
+              selected above — pick the one the campaign's offers came from. It is the same redeem as
               the row's button: for a store offer the claim IS the purchase (the price is debited
               now), for a reward or a badge it is a free claim.
             </Hint>
           </>
         ) : (
           <Hint>
-            No push received this session carried `{OFFER_GRANT_KEY}`. Most pushes do not — only a
+            No push received this session carried `{OFFER_GRANTS_KEY}`. Most pushes do not — only a
             campaign send whose lane has an offer does. Note the in-game rail cannot carry it at
             all: Beamable mail has no field for it, so an in-game recipient claims from the list
             above.

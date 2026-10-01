@@ -97,11 +97,10 @@ struct BEAMPLATFORMNOTIFICATIONS_API FBeamCampaignIntentData
 	UPROPERTY(BlueprintReadOnly, Category="Notifications|Campaign")
 	FString CampaignDataJson;
 
-	/** The grant this notification points at --- the deep-link target for an offer screen. */
-	UPROPERTY(BlueprintReadOnly, Category="Notifications|Campaign")
-	FString OfferGrantId;
-
-	/** Every grant the push carried, when it templated in more than one. */
+	/**
+	 * Every grant id the push carried (the comma-separated `beam_offer_grants` key), in the send
+	 * node's offer order --- the deep-link targets for an offer screen. Empty when no offer was attached.
+	 */
 	UPROPERTY(BlueprintReadOnly, Category="Notifications|Campaign")
 	TArray<FString> OfferGrantIds;
 
