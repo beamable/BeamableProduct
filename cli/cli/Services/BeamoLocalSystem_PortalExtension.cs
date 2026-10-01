@@ -72,14 +72,8 @@ public partial class BeamoLocalSystem
 			Log.Debug($"Could not resolve the current account for the portal extension: {ex.Message}");
 		}
 
-		if (!identity.IsZone)
-		{
-			// The otel auth-writer endpoint is realm-scoped (zone services skip it, as generate-env does).
-			await EnsureOtelCredentialsInEnvironment();
-		}
-
 		var logLevel = Environment.GetEnvironmentVariable("LOG_LEVEL");
-		return new EnvironmentArgs().Copy(args =>
+		var serviceArgs = new EnvironmentArgs().Copy(args =>
 		{
 			args.CustomerID = identity.Cid;
 			args.ProjectName = identity.Pid;
@@ -96,15 +90,27 @@ public partial class BeamoLocalSystem
 			args.LogLevel = string.IsNullOrEmpty(logLevel) ? "debug" : logLevel;
 			args.SkipLocalEnv = true;
 		});
+
+		// Only the standard otel collector setup reads these credentials, and the service only runs it when
+		// OtelExporterStandardEnabled (in-process extensions are never in docker, so: BEAM_LOCAL_OTEL=true). The
+		// otel auth-writer endpoint is realm-scoped, so zone services skip it, as generate-env does.
+		if (!identity.IsZone && serviceArgs.OtelExporterStandardEnabled)
+		{
+			await EnsureOtelCredentialsInEnvironment();
+		}
+
+		return serviceArgs;
 	}
 
 	private Task _otelCredentialsTask;
 	private readonly object _otelCredentialsLock = new object();
 
 	/// <summary>
-	/// The service's otel collector setup reads the clickhouse writer credentials from the process environment (and
-	/// otherwise fetches them with whatever identity the environment holds). They are the same for every realm
-	/// service, so fetch them once and publish them process-wide, as `generate-env` did for each extension.
+	/// The service's otel collector setup reads the clickhouse writer credentials from the process environment. When
+	/// they are missing it fetches them itself with a requester built from the process environment's HOST/CID/PID,
+	/// which nothing sets for in-process extensions (they skip generate-env), so that fallback would fail. The
+	/// credentials are the same for every realm service, so fetch them once and publish them process-wide, as
+	/// `generate-env` did for each extension.
 	/// </summary>
 	private Task EnsureOtelCredentialsInEnvironment()
 	{
