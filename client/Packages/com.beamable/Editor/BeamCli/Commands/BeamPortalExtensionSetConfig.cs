@@ -30,13 +30,14 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual PortalExtensionSetConfigWrapper PortalExtensionSetConfig(PortalExtensionSetConfigArgs setConfigArgs)
+        public virtual PortalExtensionSetConfigWrapper PortalExtensionSetConfig(PortalArgs portalArgs, PortalExtensionSetConfigArgs setConfigArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
             genBeamCommandArgs.Add("portal");
+            genBeamCommandArgs.Add(portalArgs.Serialize());
             genBeamCommandArgs.Add("extension");
             genBeamCommandArgs.Add("set-config");
             genBeamCommandArgs.Add(setConfigArgs.Serialize());

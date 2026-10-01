@@ -14,8 +14,7 @@ public class HostOption : ConfigurableOption
 public class PortalUrlOption : Option<string>
 {
 	public static PortalUrlOption Instance { get; } = new PortalUrlOption();
-	private PortalUrlOption() : base("--portal-url", "Overrides the default portal url.")
+	private PortalUrlOption() : base("--portal-url", "Overrides the portal url the portal commands open, e.g. http://localhost:4950 for a local portal or a deployed portal url")
 	{
-		IsHidden = true;
 	}
 }
