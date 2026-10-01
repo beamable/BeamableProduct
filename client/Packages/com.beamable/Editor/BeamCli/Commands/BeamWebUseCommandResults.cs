@@ -10,5 +10,6 @@ namespace Beamable.Editor.BeamCli.Commands
         public string version;
         public System.Collections.Generic.List<BeamWebUsedProject> updated;
         public System.Collections.Generic.List<string> skipped;
+        public System.Collections.Generic.List<string> failed;
     }
 }

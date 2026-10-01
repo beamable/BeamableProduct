@@ -5,13 +5,11 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common.BeamCli;
     
     [System.SerializableAttribute()]
-    public partial class BeamLocalStackDependencyCheck
+    public partial class BeamLocalStackSetupStepResult
     {
         public string name;
-        public bool ok;
+        public string status;
         public string detail;
-        public string source;
-        public string version;
-        public bool warning;
+        public bool ok;
     }
 }

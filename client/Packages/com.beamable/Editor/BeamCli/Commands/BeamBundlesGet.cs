@@ -8,8 +8,8 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>The bundle name, optionally @<tag> or @sha256:<checksum>, and optionally namespaced as @<namespace>/<bundle-name> to read another customer's bundle</summary>
         public string bundleRef;
-        /// <summary>Also pin the fetched checksum into the local manifest.beam.json references</summary>
-        public bool pin;
+        /// <summary>Also install the fetched checksum into the local bundles.manifest.beam.json references</summary>
+        public bool install;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -17,10 +17,10 @@ namespace Beamable.Editor.BeamCli.Commands
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             // Add the bundleRef value to the list of args.
             genBeamCommandArgs.Add(this.bundleRef.ToString());
-            // If the pin value was not default, then add it to the list of args.
-            if ((this.pin != default(bool)))
+            // If the install value was not default, then add it to the list of args.
+            if ((this.install != default(bool)))
             {
-                genBeamCommandArgs.Add(("--pin=" + this.pin));
+                genBeamCommandArgs.Add(("--install=" + this.install));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
