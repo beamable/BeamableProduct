@@ -15,6 +15,29 @@ env:
   DOCKER_REGISTRY: ghcr.io
 
 jobs:
+  buildCollector:
+    name: Build Otel Collector
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
+      - name: Build and archive collector
+        working-directory: ./otel-collector
+        shell: bash
+        run: |
+          OUTPUT_DIRECTORY="$RUNNER_TEMP/otel-collector" ./build.sh --version 0.0.123
+          tar -czf "$RUNNER_TEMP/otel-collector.tar.gz" -C "$RUNNER_TEMP/otel-collector" .
+      - uses: actions/upload-artifact@v6
+        with:
+          name: otel-collector-0.0.123
+          path: ${{ runner.temp }}/otel-collector.tar.gz
+          if-no-files-found: error
+          retention-days: 1
   baseNuget:
     timeout-minutes: 10
     runs-on: ubuntu-latest
@@ -45,11 +68,6 @@ jobs:
           name: Microservice Nuget Package
           path: ./nuget-build
           retention-days: 1
-      - name: Install Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: 1.24.1
-          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
   testMicroserviceBaseImage:
     timeout-minutes: 10
     runs-on: ubuntu-latest
@@ -80,6 +98,7 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-restore microservice/microserviceTests
   testCli:
+    needs: buildCollector
     timeout-minutes: 30
     runs-on: ${{ matrix.runners }}
     concurrency:
@@ -149,14 +168,16 @@ jobs:
           sudo locale-gen ${{ matrix.lang }}
           echo "LANG=${{ matrix.lang }}" >> "$GITHUB_ENV"
           echo "LC_ALL=${{ matrix.lang }}" >> "$GITHUB_ENV"
-      - name: Install Go
-        uses: actions/setup-go@v6
+      - name: Download collector
+        uses: actions/download-artifact@v6
         with:
-          go-version: 1.24.1
-          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
+          name: otel-collector-0.0.123
+          path: otel-collector-prebuilt
       - name: Install local packages
         working-directory: ./
         shell: bash
+        env:
+          BEAM_OTEL_COLLECTOR_ARCHIVE: otel-collector-prebuilt/otel-collector.tar.gz
         run: |
           ./setup.sh
           ./dev.sh
@@ -212,6 +233,7 @@ jobs:
   # cross-run contention (a second concurrent run on the same serial); raise toward the
   # seat count only behind a license server that gives blocking seat acquisition. ~Claude
   testGroupDefault:
+    needs: buildCollector
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
@@ -263,18 +285,19 @@ jobs:
             10.0.x
             9.0.x
             8.0.302
-      - name: Install Go
-        uses: actions/setup-go@v6
+      - name: Download collector
+        uses: actions/download-artifact@v6
         with:
-          go-version: 1.24.1
-          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
+          name: otel-collector-0.0.123
+          path: otel-collector-prebuilt
       - name: Build and Install BEAM CLI
         working-directory: ./
+        env:
+          BEAM_OTEL_COLLECTOR_ARCHIVE: otel-collector-prebuilt/otel-collector.tar.gz
+          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
         run: |
           ./setup.sh
           SKIP_GENERATION=true ./dev.sh --skip-unreal
-        env:
-          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
         run: |
           pwd
@@ -374,6 +397,7 @@ jobs:
   # Second Unity-test shard, pinned to the UNITY_SERIAL_BUILD seat (see the comment
   # above testGroupDefault for the seat-budget rationale). ~Claude
   testGroupBuild:
+    needs: buildCollector
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
@@ -424,18 +448,19 @@ jobs:
             10.0.x
             9.0.x
             8.0.302
-      - name: Install Go
-        uses: actions/setup-go@v6
+      - name: Download collector
+        uses: actions/download-artifact@v6
         with:
-          go-version: 1.24.1
-          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
+          name: otel-collector-0.0.123
+          path: otel-collector-prebuilt
       - name: Build and Install BEAM CLI
         working-directory: ./
+        env:
+          BEAM_OTEL_COLLECTOR_ARCHIVE: otel-collector-prebuilt/otel-collector.tar.gz
+          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
         run: |
           ./setup.sh
           SKIP_GENERATION=true ./dev.sh --skip-unreal
-        env:
-          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
         run: |
           pwd
@@ -526,6 +551,7 @@ jobs:
           fi
 
   build:
+    needs: buildCollector
     name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -578,18 +604,19 @@ jobs:
           registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install Go
-        uses: actions/setup-go@v6
+      - name: Download collector
+        uses: actions/download-artifact@v6
         with:
-          go-version: 1.24.1
-          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
+          name: otel-collector-0.0.123
+          path: otel-collector-prebuilt
       - name: Build and Install BEAM CLI
         working-directory: ./
+        env:
+          BEAM_OTEL_COLLECTOR_ARCHIVE: otel-collector-prebuilt/otel-collector.tar.gz
+          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
         run: |
           ./setup.sh
           SKIP_GENERATION=true ./dev.sh
-        env:
-          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
         run: |
           beam version

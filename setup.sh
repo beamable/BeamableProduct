@@ -86,6 +86,8 @@ EOF
 
 
 
+# CI installs the shared archive, so only a source build needs Go.
+if [[ -z "${BEAM_OTEL_COLLECTOR_ARCHIVE:-}" ]]; then
 GO_VERSION="1.24"
 CURRENT_OS="windows"
 
@@ -151,11 +153,20 @@ if [[ "$GO_INSTALLED" == "0" ]]; then
         fi
     fi
 fi
+fi
 
 
-# Builds all the otel collector binaries
+# Build the collector locally, or install the archive produced by the PR workflow.
+COLLECTOR_ARCHIVE="${BEAM_OTEL_COLLECTOR_ARCHIVE:-}"
+if [[ -n "$COLLECTOR_ARCHIVE" && "$COLLECTOR_ARCHIVE" != /* ]]; then
+    COLLECTOR_ARCHIVE="$(pwd)/$COLLECTOR_ARCHIVE"
+fi
 cd ./otel-collector/
-./build.sh --version 0.0.123
+if [[ -n "$COLLECTOR_ARCHIVE" ]]; then
+    ./build.sh --archive "$COLLECTOR_ARCHIVE" || exit $?
+else
+    ./build.sh --version 0.0.123 || exit $?
+fi
 cd ..
 
 
