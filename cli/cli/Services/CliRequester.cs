@@ -78,6 +78,21 @@ public class CliRequester : IRequester
 		return string.IsNullOrEmpty(pid) ? cid : $"{cid}.{pid}";
 	}
 
+	/// <summary>
+	/// The cid and scope id the next request targets: parsed from <see cref="BeamScopeOverride"/> when set (a zone
+	/// deploy's <c>{cid}.{zid}</c> gives the zid), otherwise the current cid and pid.
+	/// </summary>
+	public (string cid, string scopeId) GetEffectiveScopeIds()
+	{
+		if (string.IsNullOrEmpty(BeamScopeOverride))
+		{
+			return (AccessToken?.Cid ?? Cid, AccessToken?.Pid ?? Pid);
+		}
+
+		var scopeParts = BeamScopeOverride.Split('.', 2);
+		return (scopeParts[0], scopeParts.Length > 1 ? scopeParts[1] : AccessToken?.Pid ?? Pid);
+	}
+
 	private sealed class ScopeResetter : IDisposable
 	{
 		private readonly CliRequester _requester;

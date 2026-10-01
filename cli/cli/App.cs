@@ -1454,6 +1454,15 @@ public class App
 					Console.Error.WriteLine("\nLogs at\n  " + Path.GetFullPath(logFile));
 				}
 			}
+
+			// console-only: a CliException's message can end up above a long stack trace (e.g. when wrapped in an
+			// AggregateException during manifest init), so repeat it last, in red, where it's seen without scrolling.
+			var cliError = ex as CliException ??
+			               (ex as AggregateException)?.Flatten().InnerExceptions.OfType<CliException>().FirstOrDefault();
+			if (cliError != null && !appContext.UsePipeOutput && !appContext.ShowRawOutput)
+			{
+				AnsiConsole.MarkupLine($"\n[red]{Markup.Escape(cliError.Message)}[/]");
+			}
 		});
 		
 		
