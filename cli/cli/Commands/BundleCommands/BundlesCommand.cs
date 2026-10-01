@@ -5,6 +5,8 @@ namespace cli.BundleCommands;
 
 public class BundlesCommand : CommandGroup
 {
+	public override bool IsForInternalUse => true;
+
 	public BundlesCommand() : base("bundles", "Commands for managing beamo manifest bundles")
 	{
 	}

@@ -7,6 +7,8 @@ namespace cli;
 
 public class PrCommand : CommandGroup
 {
+	public override bool IsForInternalUse => true;
+
 	public PrCommand() : base("pr", "Commands for manifest pull requests")
 	{
 	}
