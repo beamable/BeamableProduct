@@ -2448,9 +2448,7 @@ public class SortedJsonElementConverter : JsonConverter<JsonElement>
 			case JsonValueKind.Object:
 				writer.WriteStartObject();
 				foreach (var property in element.EnumerateObject()
-				         .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
-				         // When using OrdinalIgnoreCase, total byte-level stability requires a tie-breaker.
-				         .ThenBy(p => p.Name, StringComparer.Ordinal))
+				         .OrderBy(p => p.Name, AlphabeticThenOrdinal.Instance))
 				{
 					writer.WritePropertyName(property.Name);
 					WriteSortedJsonElement(writer, property.Value, options);
@@ -2504,9 +2502,7 @@ public class SortedSnapshotConverter : JsonConverter<Dictionary<string, ContentF
 
 		// Sort the dictionary keys before writing
 		foreach (var key in value.Keys
-		         .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
-		         // When using OrdinalIgnoreCase, total byte-level stability requires a tie-breaker.
-		         .ThenBy(k => k, StringComparer.Ordinal))
+		         .OrderBy(k => k, AlphabeticThenOrdinal.Instance))
 		{
 			writer.WritePropertyName(key);
 			JsonSerializer.Serialize(writer, value[key], options);
