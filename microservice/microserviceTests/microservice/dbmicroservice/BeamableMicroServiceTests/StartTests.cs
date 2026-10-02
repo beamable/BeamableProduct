@@ -8,6 +8,8 @@ using Beamable.Common.Api.Inventory;
 using Beamable.Common.Inventory;
 using Beamable.Common.Leaderboards;
 using Beamable.Server;
+using Beamable.Server.Api;
+using Beamable.Common.Api.Stats;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server.Content;
 using microserviceTests.microservice.Util;
@@ -503,6 +505,91 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.OnShutdown(this, null);
             //Assert.IsTrue(testSocket.AllMocksCalled());
 
+        }
+
+        [Microservice("authservice", EnableEagerContentLoading = false)]
+        public class AuthMicroservice : Microservice
+        {
+            [ClientCallable]
+            public async Task<string> BatchAccounts(int count)
+            {
+                var response = await Services.Auth.BatchAccounts(new BatchAccountsRequest
+                {
+                    // One duplicate on top, which must not count towards the paging.
+                    playerIds = Enumerable.Range(1, count).Select(i => (long)i).Append(1).ToList(),
+                    filter = BatchAccountsStatsFilter.For(StatsDomainType.Game, StatsAccessType.Public,
+                        BatchAccountsCriteria.Eq("email_delivery_enabled", "true")),
+                    stats = { BatchAccountsStats.For(StatsDomainType.Game, StatsAccessType.Private, "apns_devices") }
+                });
+
+                var player = response.players.Single();
+                return string.Join("|",
+                    player.playerId,
+                    player.account.email,
+                    player.GetStat(StatsDomainType.Game, StatsAccessType.Private, "apns_devices"),
+                    string.Join(",", response.filteredOut),
+                    string.Join(",", response.notFound));
+            }
+        }
+
+        private static bool IsPage(JObject body, int size, long first) =>
+            body["playerIds"] is JArray ids
+            && ids.Count == size
+            && ids[0].Value<long>() == first
+            && body["filter"]?["domain"]?.Value<string>() == "game"
+            && body["filter"]?["visibility"]?.Value<string>() == "public"
+            && body["filter"]?["itemType"]?.Value<string>() == "player"
+            && body["filter"]?["criteria"]?[0]?["stat"]?.Value<string>() == "email_delivery_enabled"
+            && body["filter"]?["criteria"]?[0]?["rel"]?.Value<string>() == "eq"
+            && body["filter"]?["criteria"]?[0]?["value"]?.Value<string>() == "true"
+            && body["stats"]?[0]?["keys"]?[0]?.Value<string>() == "apns_devices";
+
+        [Test]
+        [NonParallelizable]
+        public async Task BatchAccounts_PagesAndMergesTheResponses()
+        {
+            TestSocket testSocket = null;
+            var ms = new TestSetup(new TestSocketProvider(socket =>
+            {
+                testSocket = socket;
+                socket.AddStandardMessageHandlers()
+                    .AddMessageHandler(
+                        MessageMatcher
+                            .WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST)
+                            .WithPost()
+                            .WithRouteContains("api/accounts/batch")
+                            .WithBody<JObject>(body => IsPage(body, BatchAccountsRequest.MaxPlayersPerRequest, 1)),
+                        MessageResponder.Success(
+                            "{\"players\":[{\"playerId\":1,\"account\":{\"id\":1,\"accountId\":9,\"email\":\"a@b.c\"}," +
+                            "\"stats\":{\"game.private\":{\"apns_devices\":\"[\\\"t\\\"]\"}}}]," +
+                            "\"filteredOut\":[2],\"notFound\":[]}"),
+                        MessageFrequency.OnlyOnce())
+                    .AddMessageHandler(
+                        MessageMatcher
+                            .WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST - 1)
+                            .WithPost()
+                            .WithRouteContains("api/accounts/batch")
+                            .WithBody<JObject>(body => IsPage(body, 1, BatchAccountsRequest.MaxPlayersPerRequest + 1)),
+                        MessageResponder.Success("{\"players\":[],\"filteredOut\":[],\"notFound\":[501]}"),
+                        MessageFrequency.OnlyOnce())
+                    .AddMessageHandler(
+                        MessageMatcher
+                            .WithReqId(1)
+                            .WithStatus(200)
+                            .WithPayload("1|a@b.c|[\"t\"]|2|501"),
+                        MessageResponder.NoResponse(),
+                        MessageFrequency.OnlyOnce());
+            }));
+
+            await ms.Start<AuthMicroservice>(new TestArgs());
+            Assert.IsTrue(ms.HasInitialized);
+
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_authservice",
+                nameof(AuthMicroservice.BatchAccounts), 1, 1, BatchAccountsRequest.MaxPlayersPerRequest + 1));
+
+            // simulate shutdown event...
+            await ms.OnShutdown(this, null);
+            Assert.IsTrue(testSocket.AllMocksCalled());
         }
 
         [Test]
