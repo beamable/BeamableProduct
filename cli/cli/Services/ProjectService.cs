@@ -728,21 +728,30 @@ public class ProjectService
 			commandStr += " -p:GenerateClientCode=false";
 		}
 		
-		using var cts = new CancellationTokenSource();
-
 		var envVars = new Dictionary<string, string> { ["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1", ["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1", };
 		if (!string.IsNullOrWhiteSpace(serviceStopReason))
 		{
 			envVars.Add("BEAM_STOP_SERVICE_REASON", serviceStopReason.Replace("\"", ""));
 		}
-		var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
-			.WithEnvironmentVariables(envVars)
+		await ExecuteBuild(CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
+			.WithEnvironmentVariables(envVars), errorPath, onReport);
+	}
+
+	public static async Task ExecuteBuild(Command buildCommand, string errorPath, Action<ProjectErrorReport> onReport)
+	{
+		// Compiler SARIF is not an MSBuild result, and an incremental build may not recreate it.
+		File.Delete(errorPath);
+		var output = new BuildOutputBuffer();
+		using var cts = new CancellationTokenSource();
+		var command = buildCommand
 			.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
 			{
+				output.Add(line);
 				Log.Information(line);
 			}))
 			.WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
 			{
+				output.Add(line);
 				Log.Error(line);
 			}))
 			.WithValidation(CommandResultValidation.None)
@@ -754,11 +763,38 @@ public class ProjectService
 		var exitCode = res.ExitCode;
 		if (exitCode != 0)
 		{
-			Log.Error($"Failed to build command=[{args.AppContext.DotnetPath} {commandStr}]");
+			Log.Error($"Failed to build command=[{buildCommand}]");
 		}
 
-		var report = ReadErrorReport(errorPath);
+		var report = ReadBuildErrorReport(errorPath, exitCode, $"Command: {buildCommand}\n{output}");
 		onReport?.Invoke(report);
+		if (!report.isSuccess)
+		{
+			throw new CliException($"Build failed (exit code {exitCode}). " +
+				string.Join("\n", report.errors.Select(error => error.formattedMessage)), 2, true);
+		}
+	}
+
+	public static ProjectErrorReport ReadBuildErrorReport(string errorPath, int exitCode, string processOutput)
+	{
+		if (exitCode == 0) return new ProjectErrorReport { isSuccess = true };
+		var report = new ProjectErrorReport();
+		if (File.Exists(errorPath))
+		{
+			try { report = ReadErrorReport(errorPath); }
+			catch (CliException) { /* A broken diagnostic file must not hide the process failure. */ }
+		}
+		report.isSuccess = false;
+		if (report.errors.Count == 0)
+		{
+			report.errors.Add(new ProjectErrorResult
+			{
+				level = "Error",
+				formattedMessage = $"Build process exited with code {exitCode}.\n{processOutput}",
+				uri = ""
+			});
+		}
+		return report;
 	}
 
 	public static ProjectErrorReport ReadErrorReport(string errorLogPath)
@@ -791,6 +827,24 @@ public class ProjectService
 			throw new CliException($"Failed to read SARIF report. type=[{ex.GetType().Name}] message=[{ex.Message}] stack=[{ex.StackTrace}] ", 2, false);
 		}
 	}
+}
+
+// Both process streams can arrive concurrently. Keep useful diagnostics without retaining
+// an unbounded build log (or, for project run, a long-running service's entire output).
+internal sealed class BuildOutputBuffer
+{
+	private const int MaxCharacters = 16384;
+	private readonly StringBuilder _text = new();
+	public void Add(string line)
+	{
+		if (line == null) return;
+		lock (_text)
+		{
+			_text.AppendLine(line.Length > MaxCharacters ? line[^MaxCharacters..] : line);
+			if (_text.Length > MaxCharacters) _text.Remove(0, _text.Length - MaxCharacters);
+		}
+	}
+	public override string ToString() { lock (_text) return _text.ToString(); }
 }
 
 [Serializable]

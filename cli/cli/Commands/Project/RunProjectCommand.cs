@@ -841,6 +841,8 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				$"{serviceName}.json");
 			var errorPathDir = Path.GetDirectoryName(errorPath);
 			Directory.CreateDirectory(errorPathDir);
+			File.Delete(errorPath);
+			var buildOutput = new BuildOutputBuffer();
 
 			var exe = args.AppContext.DotnetPath;
 			var commandStr =
@@ -890,10 +892,16 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				isDetach: isDetach,
 				environmentVariables: envVars,
 				onStdout: line =>
+				{
+					buildOutput.Add(line);
 					HandleOutputLine(line, currentProgress, serviceLogProgressTable, nonServiceLogProgressTable,
-						onProgress, onLog),
+						onProgress, onLog);
+				},
 				onStderr: line =>
-					HandleErrorLine(line, onLog));
+				{
+					buildOutput.Add(line);
+					HandleErrorLine(line, onLog);
+				});
 
 			var proc = handle.Process;
 			var shouldAutoKill = false;
@@ -939,7 +947,9 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			}
 			else if (proc.HasExited && proc.ExitCode != 0)
 			{
-				var report = ProjectService.ReadErrorReport(errorPath);
+				// Process.Exited can precede the last asynchronous stdout/stderr callbacks.
+				proc.WaitForExit();
+				var report = ProjectService.ReadBuildErrorReport(errorPath, proc.ExitCode, buildOutput.ToString());
 				onFailure?.Invoke(report, proc.ExitCode);
 			}
 		}
