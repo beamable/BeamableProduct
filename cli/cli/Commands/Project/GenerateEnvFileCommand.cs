@@ -238,8 +238,10 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 			var deps = args.BeamoLocalSystem.GetDependencies(service.BeamoId);
 			if (deps.Count > 0)
 			{
-				// Docker is required to be running in the case where there are dependencies
-				var isDockerRunning = await args.BeamoLocalSystem.CheckIsRunning();
+				// Docker is required to be running in the case where there are dependencies, unless every one of them
+				// was already resolved by the `beam project run` that launched this service.
+				var allDepsPreresolved = !args.useRemoteDeps && deps.All(d => GetPreresolvedConnectionString(d.name) != null);
+				var isDockerRunning = allDepsPreresolved || await args.BeamoLocalSystem.CheckIsRunning();
 				if (!isDockerRunning)
 				{
 					throw CliExceptions.DOCKER_NOT_RUNNING;
@@ -276,6 +278,18 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 
 			foreach (var dependency in deps)
 			{
+				// `beam project run` already verified (or started) this storage and handed us its connection string;
+				// trust it rather than looking the container up in Docker again.
+				var preresolved = GetPreresolvedConnectionString(dependency.name);
+				if (preresolved != null)
+				{
+					Log.Trace($"using pre-resolved connection string for storage=[{dependency.name}]");
+					output.envVars.Add(EnvVarOutput.Create(
+						name: BeamoLocalSystem.GetStorageConnectionStringVarName(dependency.name),
+						value: preresolved));
+					continue;
+				}
+
 				try
 				{
 					var connEnvVar =
@@ -344,6 +358,16 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 			}
 		}
 		return output;
+	}
+
+	/// <summary>
+	/// The connection string `beam project run` resolved for <paramref name="storageName"/> and passed down through
+	/// <see cref="BeamoLocalSystem.ENV_PRERESOLVED_STORAGE_CONNSTR_PREFIX"/>, or null when it did not provide one.
+	/// </summary>
+	static string GetPreresolvedConnectionString(string storageName)
+	{
+		var value = Environment.GetEnvironmentVariable(BeamoLocalSystem.ENV_PRERESOLVED_STORAGE_CONNSTR_PREFIX + storageName);
+		return string.IsNullOrEmpty(value) ? null : value;
 	}
 
 	/// <summary>

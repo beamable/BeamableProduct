@@ -30,5 +30,5 @@ then
     echo "Not running due to dry run."
     exit $?
 else
-    dotnet nuget push $BUILD_OUTPUT/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
+    dotnet nuget push $BUILD_OUTPUT/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY} --skip-duplicate --timeout 3600
 fi

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.2.0]
+
 ### Added
 
 - Added build-scoped suppression and per-player runtime opt-in for automatic Player Social friend-invitation Mail checks.
@@ -14,12 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Detect if Unity is running in batch mode and do not attempt to show OptionDialogWindow if that is the case.
+- Update CLI to 7.3.0
 
 ### Fixed
 
 - Fixed the Unity Content window failing to reconcile large local content changes after filesystem watcher overflow, which previously required a manual refresh.
 - Keep deleted content from being recreated by pending autosaves or running properties/tag writes in the Content window.
 - Prevent older property saves from overwriting newer tag edits, and restore editable content after a failed file deletion.
+- Content checksums use definite ordering of fields now, for robustness even when published content is unsorted or sorted differently.
 
 ### UI/UX
 
