@@ -42,6 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A failing `POST /basic/auth/token` no longer mutually recurses into a stack overflow, because auth-token requests are excluded from the token-refresh retry path. Timeout retries are also no longer an unbounded fixed-delay loop, since the retry count is now carried through the internal retry instead of being reset.
 - Web SDK code generation fixes: colliding generated method names are disambiguated with a `By{Param}And{Param}` suffix (they previously emitted duplicate top-level declarations, a `SyntaxError` in the ESM build); duplicate `export type` declarations are collapsed by name and the static type collections are cleared after each generation, so types no longer leak across microservices or across repeated generations in a long-lived process such as the MCP server; and `oneOf` members are routed through the type mapper, fixing a null reference on inline, primitive, and nullable schemas.
 - Content checksums use definite ordering by way of `Ordinal` sorting as a tie-breaker on `OrdinalIgnoreCase` sorting, and always recalculate checksums of incoming content items in case the published content has a differently-calculated checksum. This prevents identical entries from showing as different.
+- Improved Microservice ID calculation to reduce container image rebuilds when the code is identical.
+- Allow tuples in C# Microservice callable parameters.
+- Improved output sequencing for concurrent CLI commands so that errors and command output reach Unity intact.
+- Preserve log context across Promise `await` boundaries.
 
 ## [7.2.3] - 2026-08-26
 
