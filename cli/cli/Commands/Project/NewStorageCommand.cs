@@ -67,6 +67,8 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 	public override async Task Handle(NewStorageCommandArgs args)
 	{
 		await args.CreateConfigIfNeeded(_initCommand);
+		StorageNameValidator.ValidateNewStorage(args.AppContext.Cid, await ResolveTargetScope(args), args.ProjectName,
+			args.IsZone);
 		var newMicroserviceInfo = await args.ProjectService.CreateNewStorage(args);
 		Log.Information(
 			$"Registering local project... 'beam services register --id {args.ProjectName} --type EmbeddedMongoDb'");
@@ -116,6 +118,30 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 
 		var sequence = Promise.Sequence(promises);
 		await sequence;
+	}
+
+	// The id the storage's database name will be scoped by: the pid for a realm storage, the zid for a zone storage.
+	// Null when it can't be resolved (e.g. not logged in), in which case the name check only warns.
+	private static async Task<string> ResolveTargetScope(NewStorageCommandArgs args)
+	{
+		if (!args.IsZone)
+		{
+			return args.AppContext.Pid;
+		}
+
+		var localZid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_ZID);
+		try
+		{
+			return await ZoneResolver.ResolveZid(args.DependencyProvider, args.AppContext.Cid, args.AppContext.Pid,
+				localZid);
+		}
+		catch (Exception ex)
+		{
+			// a selected realm's zone binding is authoritative, so don't guess with the local zid; an unresolved
+			// zone leaves the name check warn-only.
+			Log.Debug($"Could not resolve the zone for the storage name check: {ex.Message}");
+			return null;
+		}
 	}
 
 	private async Promise UpdateDependencyDockerFile(NewStorageCommandArgs args, BeamoServiceDefinition definition)
