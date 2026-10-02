@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Services.Auth.BatchAccounts(request)` looks up many players in one call. It can narrow them by a stat filter, and returns each remaining player's account and the requested stat values. Requests over 500 players are paged automatically.
+
 ### Changed
 
 - Replace `xunit` dependency with `xunit.v3.mtp-off` in version `4.0.1`.

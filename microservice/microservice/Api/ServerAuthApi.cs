@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
@@ -25,6 +26,28 @@ namespace Beamable.Server.Api
          {
             gamerTag = gamerTag
          });
+      }
+
+      public async Promise<BatchAccountsResponse> BatchAccounts(BatchAccountsRequest request)
+      {
+         var ids = request.playerIds.Distinct().ToList();
+         var merged = new BatchAccountsResponse();
+         for (var i = 0; i < ids.Count; i += BatchAccountsRequest.MaxPlayersPerRequest)
+         {
+            var page = await Requester.Request<BatchAccountsResponse>(Method.POST, "/api/accounts/batch",
+               new BatchAccountsRequest
+               {
+                  playerIds = ids.GetRange(i, Math.Min(BatchAccountsRequest.MaxPlayersPerRequest, ids.Count - i)),
+                  filter = request.filter,
+                  includeAccount = request.includeAccount,
+                  stats = request.stats
+               });
+            merged.players.AddRange(page.players);
+            merged.filteredOut.AddRange(page.filteredOut);
+            merged.notFound.AddRange(page.notFound);
+         }
+
+         return merged;
       }
 
       public Promise<AccountId> GetAccountId() => 
