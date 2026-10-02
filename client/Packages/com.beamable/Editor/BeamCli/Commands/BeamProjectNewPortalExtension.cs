@@ -12,7 +12,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public string sln;
         /// <summary>Relative path to directory where project should be created. Defaults to "SOLUTION_DIR/services"</summary>
         public string serviceDirectory;
-        /// <summary>The portal page to mount on. For page extensions use routePrefix + your custom route; for component extensions use the page path. Run 'portal extension list-extension-options' to see all valid values</summary>
+        /// <summary>The portal page to mount on. For page extensions use routePrefix + your custom route; for component extensions use the page path. A --zone extension is declared with a zone-relative page path and renders inside the portal's zone view (/zones/:zid/) — the portal owns the prefix. Run 'portal extension list-extension-options' to see all valid values</summary>
         public string mountPage;
         /// <summary>The mount slot on the page. Required for component extensions; omit for page extensions (auto-assigned). Run 'portal extension list-extension-options' to see valid selectors per page</summary>
         public string mountSelector;
