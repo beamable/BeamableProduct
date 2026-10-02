@@ -372,6 +372,20 @@ namespace Beamable.Server
             // TODO that will not boot correctly.
             if (!_ranCustomUserInitializationHooks)
             {
+               if (IsRealmScoped)
+               {
+                  var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
+                  var config = await realmService.GetRealmConfigSettings();
+                  var contentService = Provider.GetService<ContentService>();
+                  bool BakingDisabled(RealmConfig settings) =>
+                     bool.TryParse(settings.GetSetting(ContentService.BakeConfigNamespace, ContentService.BakeDisableKey), out var disabled) && disabled;
+                  contentService.ConfigureBakedContent(InstanceArgs.CustomerID, InstanceArgs.ProjectName, !BakingDisabled(config));
+                  if (realmService is RealmConfigService concrete)
+                  {
+                     concrete.ConfigChanged += updated => contentService.ConfigureBakedContent(
+                        InstanceArgs.CustomerID, InstanceArgs.ProjectName, !BakingDisabled(updated));
+                  }
+               }
 	            _ranCustomUserInitializationHooks = true;
 	            if (!InstanceArgs.DisableCustomInitializationHooks)
 	            {
@@ -385,13 +399,6 @@ namespace Beamable.Server
 		            await ResolveCustomInitializationHook();
 	            }
 				await RunServiceSetupCallbacks();
-            }
-
-            if (IsRealmScoped)
-            {
-            	// Realm config is only registered for realm-scoped services.
-            	var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
-            	await realmService.GetRealmConfigSettings();
             }
 
             // Beamo log-context is realm-scoped; zone services have no realm beamo api.

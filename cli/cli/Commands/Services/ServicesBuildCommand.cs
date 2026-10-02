@@ -217,6 +217,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		var beamoLocal = provider.GetService<BeamoLocalSystem>();
 		var app = provider.GetService<IAppContext>();
 		var config = provider.GetService<ConfigService>();
+		var requester = provider.GetService<CliRequester>();
 
 		var dotnetPath = app.DotnetPath;
 		
@@ -269,7 +270,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		var runtimeArg = forceCpu
 			? $"--runtime unix-x64 -p:BeamPlatform=lin -p:BeamRunningArchitecture=x64 -p:BeamPublish=\"true\" -p:BeamCollectorPlatformArchArg=\"--platform {DownloadCollectorCommand.OS_LINUX} --arch {DownloadCollectorCommand.ARCH_X64}\" "
 			: $"--use-current-runtime ";
-		var buildArgs = $"publish {definition.AbsoluteProjectPath.EnquotePath()} --verbosity minimal --no-self-contained {runtimeArg} --disable-build-servers --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" {productionArgs} -o {buildDirSupport.EnquotePath()}";
+		var buildArgs = $"publish {definition.AbsoluteProjectPath.EnquotePath()} --verbosity minimal --no-self-contained {runtimeArg} --disable-build-servers --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" -p:BeamBakeCid={requester.Cid.EnquotePath()} -p:BeamBakePid={requester.Pid.EnquotePath()} {productionArgs} -o {buildDirSupport.EnquotePath()}";
 		Log.Verbose($"Running dotnet publish {buildArgs}");
 		using var cts = new CancellationTokenSource();
 
