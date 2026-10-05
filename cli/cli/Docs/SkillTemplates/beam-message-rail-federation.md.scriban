@@ -1,0 +1,240 @@
+---
+name: beam-message-rail-federation
+description: Build a message rail — a microservice implementing IFederatedMessageRail that delivers a campaign's push, email, or in-game messages and reports a per-recipient funnel result.
+---
+
+# Message Rail Federation
+
+> General microservice workflow: `beam-manage-service`. Bundling: `beam-bundles`. Campaign side: `beam-campaign-api`.
+
+## High-Level Architecture
+
+```
+Campaign Send node ──▶ Message Rail runtime: stage → coalesce → page by maxBatchSize
+                                       │
+                                       ▼  SendMessageBatch(recipients, payload)
+                         customer rail microservice ──▶ provider (APNs / ESP / mailbox)
+                                       │
+                                       ▼  MessageRailSendResponse (per-recipient sent / error)
+                       Message Rail runtime: reconcile → retry retriable / stop terminal
+                                       │
+                                       ▼
+                       funnel stages (Sent, Delivered, Retry…) ──▶ campaign funnel
+Player opens/clicks ──(beam_outreach / openTrackingUrl)──▶ analytics ──▶ Opened / Clicked
+
+Campaign publish ──▶ CheckMessageRailConfig ──▶ OK / MISSING / INVALID / UNKNOWN
+```
+
+## Code Mapping
+
+| Part | File |
+|---|---|
+| Interface, DTOs, `MessageRailContract` constants | BeamableProduct `cli/beamable.common/Runtime/Federation/FederatedMessageRail.cs` |
+| Route mounting (skips `[Callable]` federation methods) | BeamableProduct `microservice/beamable.tooling.common/Microservice/ServiceMethodHelper.cs` |
+| Federation discovery / registration | BeamableProduct `microservice/beamable.tooling.common/Microservice/FederatedComponentGenerator.cs` |
+| Federation id validation | BeamableProduct `templates/MicroserviceSourceGen/MicroserviceSourceGen/Analyzers/FederationAnalyzer.cs` |
+| Client mail attribution (`beam_outreach`) | BeamableProduct `cli/beamable.common/Runtime/Api/Mail/AbsMailApi.cs` |
+| Platform → rail federation calls (send, config check) | BeamableAPI `BeamableShared/Federation/MessageRail/MessageRailFederation.cs` |
+| Staging / reconcile | BeamableAPI `BeamableShared/Services/MessageRail/Core/RailCore.cs` |
+| Dispatch + rate limit | BeamableAPI `BeamableShared/Services/MessageRail/Runtime/RailDispatch.cs` |
+| Delivery consumer, retries, DLQ | BeamableAPI `BeamableShared/Services/MessageRail/Runtime/RailDelivery.cs` |
+| Rail discovery | BeamableAPI `BeamableShared/Services/MessageRail/Runtime/RailFederationDiscovery.cs` |
+| Open-tracking pixel token | BeamableAPI `BeamableShared/Services/MessageRail/Analytics/RailOpenTracking.cs` |
+| Runtime host | BeamableAPI `BeamableMessageRailRuntime/Program.cs` |
+| Reference rails (email, push, in-game) | agentic-portal `bundles/features/message-rail/microservices/{Email,Push,InGame}MessageRailService/` |
+
+## Business Goals Constraints
+
+- A rail is the last mile of campaign outreach. Beamable ships no rail; every rail is a customer microservice, so studios choose their own provider and keep their own credentials.
+- The rail owns only **provider I/O** and **truthful per-recipient reporting**. Batching, retries, back-off, dedup and funnel counting are the platform's, driven by that report.
+- The federation id names the **channel** (`push`, `email`, `sms`), not the vendor: producers target the id, so swapping providers must not change it.
+- Publish-time preflight exists so a campaign cannot launch onto a rail missing credentials.
+- Attribution (`outreachId`, `openTrackingUrl`) is how Opened/Clicked join back to a recipient and campaign node.
+
+## Performance Constraints
+
+- **Dispatch**: per-CID token bucket 500/s (burst 1000); priority/default lanes drain ~4:1 (8 vs 2 concurrent work items), default never starved.
+- **Send call timeout**: 30 s per federation call. Size `maxBatchSize` so one provider page fits comfortably.
+- **Config check timeout**: 5 s — it must read local configuration only, no provider round-trip.
+- **Retries**: up to 5 delivery attempts, then DLQ (7-day retention). Retriable failures stay pending; terminal stop.
+
+## Usage Guide
+
+### 1. Create the service
+
+```
+beam_exec("project new service <Name>MessageRailService -q")
+```
+{{ if commands["project new service"] }}
+#### `beam project new service` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["project new service"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+Storage only if needed (push: device tokens; email/in-game keep consent in stats):
+
+```
+beam_exec("project new storage <Name>RailStorage -q")
+beam_exec("project deps add <Name>MessageRailService <Name>RailStorage")
+```
+
+### 2. Federation id
+
+```csharp
+[FederationId(Id)]
+public class SmsRailId : IFederationId
+{
+    public const string Id = "sms";
+}
+```
+
+Starts with a letter; letters, digits, `_` only. It is the route segment producers target, so changing it breaks them.
+
+### 3. Implement all five members
+
+```csharp
+[Microservice("SmsMessageRailService")]
+public class SmsMessageRailService : Microservice, IFederatedMessageRail<SmsRailId>
+{
+    async Promise<MessageRailSendResponse> IFederatedMessageRail<SmsRailId>.SendMessage(
+        MessageRailRecipient recipient, MessageRailPayload payload)
+        => await DeliverBatch(new List<MessageRailRecipient> { recipient }, payload);
+
+    async Promise<MessageRailSendResponse> IFederatedMessageRail<SmsRailId>.SendMessageBatch(
+        List<MessageRailRecipient> recipients, MessageRailPayload payload)
+        => await DeliverBatch(recipients, payload);
+
+    async Promise<MessageRailRegistrationResponse> IFederatedMessageRail<SmsRailId>.RegisterUserWithMessageRail(
+        string playerId, Dictionary<string, string> registrationData) { /* opt in */ }
+
+    async Promise<MessageRailRegistrationResponse> IFederatedMessageRail<SmsRailId>.UnregisterUserWithMessageRail(
+        string playerId) { /* opt out */ }
+
+    async Promise<MessageRailConfigStatus> IFederatedMessageRail<SmsRailId>.CheckMessageRailConfig()
+        { /* step 6 */ }
+}
+```
+
+- Explicit interface implementations.
+- **No `[Callable]` on federation methods** — route mounting skips them; the rail registers but is unreachable.
+- The platform only calls `SendMessageBatch`; `SendMessage` delegates to the same `DeliverBatch`.
+- Registration is automatic via reflection; no CLI command (`beam federation add` throws).
+
+`Program.cs` is stock: `BeamServer.Create().IncludeRoutes<SmsMessageRailService>(routePrefix: "").RunForever()`. The generated `.csproj` needs nothing extra; set `<BeamServiceGroup>` by hand if the group name contains a hyphen.
+
+### 4. Per-recipient result
+
+```csharp
+var response = new MessageRailSendResponse();
+response.@params["provider"] = "twilio";
+response.@params["delivery"] = "durable";   // only if no delivery receipt will ever follow
+response.maxBatchSize = 500;                // provider cap; 0 = unlimited
+
+response.sentPlayers.Add(gamerTag.ToString());
+response.sentPayloadFed[gamerTag.ToString()] = payload.extraDataFed;
+
+response.errorPlayersWithStatus.Add(new MessageRailErrorPlayerStatus
+{
+    playerId = gamerTag.ToString(), status = "network", message = "provider timed out", retriable = true,
+});
+```
+
+- Every input player exactly once across `sentPlayers` / `errorPlayersWithStatus`; a missing player is silently retried.
+- Classify retriable vs terminal where the failure is detected.
+- Set `params` once at construction, not per return path; without `delivery = "durable"` the Delivered stage stays zero.
+- Overflow past `maxBatchSize` → `MessageRailContract.OverCapacityStatus`, `retriable = true`. The platform caches the cap and resends in right-sized pages.
+- Nothing throws out of `DeliverBatch`: an escaped exception discards outcomes already earned and redelivers the whole batch.
+- Order: payload + credential checks (batch-wide) → per-recipient gates (consent, address) → one provider call per page.
+
+| status | retriable | means |
+|---|---|---|
+| `network` | true | 5xx, timeout, transport, failed credential read |
+| `over-capacity` | true | past `maxBatchSize` |
+| `notConfigured` | true if store unreadable; false if credentials rejected | cannot deliver |
+| `invalid` | false | bad payload, no address, 4xx, dead token |
+| `optedOut` | false | no consent on this rail |
+| `unknown` | false | nothing to deliver to |
+
+### 5. Attribution and tracking pixel
+
+Both arrive per recipient on `MessageRailRecipient`.
+
+- **`outreachId`** — embed in the rendered message/deep link under `MessageRailContract.OutreachKey` (`beam_outreach`), with the payload's `analyticsTrackRef` as `trackId`. Without them Opened/Clicked cannot attribute.
+- **`openTrackingUrl`** — render verbatim as a 1x1 image; render nothing when empty (tracking off). Never build it yourself: it carries a platform-signed token with the gamer tag.
+- Turn the provider's own open/click tracking **off** (second pixel, rewritten CTA href).
+- Push ignores the pixel; the handset echoes `beam_outreach`.
+
+```csharp
+if (!string.IsNullOrWhiteSpace(pixelUrl))
+{
+    var pixel = $"<img src=\"{HtmlEscape(pixelUrl)}\" width=\"1\" height=\"1\" border=\"0\" alt=\"\">";
+    var closing = body.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
+    body = closing >= 0 ? body.Insert(closing, pixel) : body + pixel;
+}
+```
+
+### 6. Publish preflight
+
+```csharp
+return new MessageRailConfigStatus
+{
+    configured = false,
+    missingKeys = new List<string> { "twilio_sms/account_sid", "twilio_sms/auth_token" },
+    message = "Set the Twilio credentials in Realm Secrets.",
+};
+```
+
+| State | Fields | Publish |
+|---|---|---|
+| OK | `configured = true` | proceeds |
+| MISSING | `configured = false`, `missingKeys` | blocked |
+| INVALID | `configured = false`, `invalidReason` | blocked |
+| UNKNOWN | `readable = false` | never blocked (outage, not misconfiguration) |
+
+List **every** missing key, fully qualified. `readable` defaults to `true`.
+
+### 7. Credentials and consent
+
+Realm Secrets via the raw path (the generated client escapes `/` in the key → 400). Swallow only 404 so MISSING stays distinct from UNKNOWN:
+
+```csharp
+private async Task<string> TryGetRealmSecret(string key)
+{
+    try
+    {
+        return await Requester.Request<string>(
+            Method.GET,
+            $"/api/customers/{Context.Cid}/realms/{Context.Pid}/secrets/values/{key}",
+            parser: json =>
+            {
+                using var doc = JsonDocument.Parse(json);
+                return doc.RootElement.TryGetProperty("value", out var v) &&
+                       v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+            });
+    }
+    catch (RequesterException ex) when (ex.Status == 404)
+    {
+        return null;
+    }
+}
+```
+
+Consent in a public game stat (searchable roster); absent = blocked:
+
+```csharp
+await Services.Stats.SetStat(StatsDomainType.Game, StatsAccessType.Public,
+    playerId, "sms_delivery_enabled", enabled ? "true" : "false");
+```
+
+Refusing an opt-in is `success = false` on a 200, not an exception.
+
+### 8. Run and verify
+
+Add the service (and storage) to the bundle manifest `components` (`beam-bundles`), then:
+
+```
+beam_exec("project run --ids <Name>MessageRailService")
+```
+
+The OpenAPI document must contain `<federationId>/SendMessage`, `SendMessageBatch`, `RegisterUserWithMessageRail`, `UnregisterUserWithMessageRail`, `CheckMessageRailConfig`. Sends that stay staged with the service never called mean the platform's message-rail runtime is not running.
