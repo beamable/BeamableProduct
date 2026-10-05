@@ -39,12 +39,15 @@ BeamableAPI repo:
 | List filters | `BeamableShared/Services/Campaigns/Model/CampaignListQuery.cs` |
 | Lifecycle state machine | `BeamableShared/Services/Campaigns/Runtime/CampaignLifecycleMachine.cs` |
 | Graph walk / node behaviour | `BeamableShared/Services/Campaigns/Engine/` |
-| Send dispatch to rails | `BeamableShared/Services/Campaigns/Runtime/CampaignSendDispatcher.cs` |
+| Send queueing (lease, pace) | `BeamableShared/Services/Campaigns/Runtime/Nodes/Send/CampaignSendDirectorHost.cs` |
+| Send dispatch to rails, offer grants | `BeamableShared/Services/Campaigns/Runtime/Nodes/Send/CampaignSendDispatcher.cs` |
+| Rail backpressure | `BeamableShared/Services/Campaigns/Runtime/Nodes/Send/CampaignRailBreaker.cs` |
+| Dispatch throttle, write budget | `BeamableShared/Services/Campaigns/Runtime/CampaignDispatchThrottle.cs`, `CampaignWriteBudget.cs` |
 | Funnel model | `BeamableShared/Services/Campaigns/Model/Funnel.cs` |
 | Funnel write buffer / storage | `BeamableShared/Services/Campaigns/Storage/BufferedCampaignFunnelStorage.cs`, `MongoCampaignFunnelStorage.cs` |
 | Funnel rollup | `BeamableShared/Services/Campaigns/Runtime/CampaignFunnelRollupHost.cs` |
-| Tunables | `BeamableShared/Services/Campaigns/Runtime/CampaignThrottleOptions.cs`, `Runtime/CampaignLifecycleOptions.cs`, `Storage/CampaignFunnelOptions.cs` |
-| Runtime host | `BeamableCampaignRuntime/Program.cs` |
+| Tunables (every `Campaigns:*` section) | `BeamableShared/Services/Campaigns/Runtime/CampaignRuntimeOptions.cs` |
+| Runtime host, shipped config | `BeamableCampaignRuntime/Program.cs`, `appsettings.json` |
 
 agentic-portal repo (reference client), `bundles/features/player-engagement/portal-extensions/campaigns/src/`:
 
@@ -66,12 +69,13 @@ agentic-portal repo (reference client), `bundles/features/player-engagement/port
 
 ## Performance Constraints
 
-- **Enrolment/dispatch**: batches of 500, per-CID token bucket 500/s (burst 1000), max 8 outstanding batches per worker.
+- **Enrolment/dispatch**: batches of 500 from a per-CID token bucket that adapts to Mongo write latency. Code defaults: 500/s (burst 1000), 8 outstanding batches per worker; the runtime ships 3000/s (burst 6000), 64 batches.
+- **Sends**: queued per CID at 500/s by default (the runtime ships 300/s), and paused while the rail's backlog for the CID would take longer than 300 s to drain. A player waits at most `SendQueueMaxWaitMs` (1 h default, 4 h shipped) to be handed to the rail, then routes `NotSent`.
+- **Send retries**: a send that fails or is lost is queued again when its 120 s lease expires, up to 10 failures; the player then waits for the deadline and routes `NotSent`.
 - **Funnel freshness**: writes buffer ~2 s, rollup seals every ~5 s behind a ~5 s safety margin, composed read cached ~3 s per `(cid, instance, live)`. Polling faster than ~3 s returns the same object.
 - **`live=true`** adds a second query over the collection the event firehose writes to. Use `live=false` (sealed only, one query) on any view not watching a campaign in flight.
 - **Pending window cap**: 30 s. When the rollup watermark trails further than that, the pending slice is not scanned and the read reports `lagging`.
 - **Drain**: `MaxDrainDurationMs` defaults to 30 days, after which `WindingDown` escalates to `Halting`.
-- **Send retries**: every 60 s, up to 10 attempts.
 - **Publish preflight**: rail config check has a 5 s timeout; an unreachable rail is UNKNOWN and does not block.
 
 ## Usage Guide
@@ -171,9 +175,17 @@ body:   { kind: "Entry"|"Segment"|"Conditional"|"Schedule"|"Send", entry?|segmen
   segment     { segment, evaluationWindowMs? }
   conditional { expression: Condition, maxWaitMs? }
   schedule    { kind: "DelayFor"|"SendNow"|"AtDateTime", delayMs?, when? }
-  send        { railFederationId, targetPid, message, offer?, goals[], maxWaitMs, deliveryMaxWaitMs? }
+  send        { railFederationId, targetPid, message, goals[], maxWaitMs, deliveryMaxWaitMs?,
+                campaignOffers?[], campaignOfferGroups?[] }
+    offer     { entryId, offerId, federationId, label?, invalidatesEntryIds?[], condition?, extraData? }
+      condition { payload (segmentation rule, flat REST encoding), lockedMessage? }
+    group     { id, memberEntryIds[], mode: "All"|"Exclusive", invalidation: "None"|"Single"|"Group", label? }
 edge:   { id, from, outcome, to, decorators[] }
 ```
+
+- Every recipient of a send is granted every offer of the node, on the store federation named by `federationId`. A `condition` is a gate, not a filter: the offer reports itself unavailable until the player qualifies.
+- A group's `mode`: `All` = members stack, `Exclusive` = members are alternatives. `invalidation` = what a purchase forfeits: `None` (the only value valid for `All`), `Single` (each member forfeits the entries in its `invalidatesEntryIds`), `Group` (buying any member forfeits every other member).
+- Limits per graph: 500 nodes, 2000 edges; per send node: 32 goals, 48 offers, 48 offer groups.
 
 - `kind` must match the populated branch, else `400 InvalidCampaignGraph`.
 - `maxWaitMs` = conversion window from the rail's Sent ack; `deliveryMaxWaitMs` = delivery ceiling (default 15 min). Both > 0. Goal `timerMs` ≤ `maxWaitMs` (null inherits).
@@ -188,7 +200,9 @@ edge:   { id, from, outcome, to, decorators[] }
 - Targeting: `SendTargetPidRequired`, `GoalObservePidRequired`, `PidNotInAcceptedRealms`, `CidLevelSegmentNotAllowed`
 - Goals: `GoalPredicateEmpty`, `GoalAbsenceWindowInvalid`, `GoalTimerExceedsMaxWait`, `GoalPropertyBoundInvalid`, `DuplicateGoalLabel`, `InvalidGoalLabel`, `ReservedEventName`
 - Windows: `SendDeliveryWindowInvalid`, `SendConversionWindowInvalid`
-- Publish only: `RailNotConfigured` (names every missing key)
+- Offers: `OfferEntryIdDuplicate`, `OfferReferenceIncomplete`, `OfferGroupMemberUnknown`, `OfferGroupTooSmall`, `OfferGroupModeConflictsWithInvalidation`, `OfferGroupInvalidationUnconfigured`, `OfferInMultipleGroups`, `OfferSelfInvalidation`, `OfferForfeitsAcrossFederations`, `OfferConditionRuleInvalid`
+- Size: `GraphTooLarge`, `SendNodeTooLarge`, `PropertyTooLarge`
+- Publish only: `RailNotConfigured` (names every missing key), `OfferFederationNotRegistered`
 - HTTP: `400 InvalidCampaignGraph`, `400 InvalidCampaignPageLimit`/`InvalidCampaignPageSkip`, 401, 403, 404, 409
 
 ### End to end

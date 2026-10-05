@@ -53,7 +53,8 @@ Campaign publish ──▶ CheckMessageRailConfig ──▶ OK / MISSING / INVAL
 
 ## Performance Constraints
 
-- **Dispatch**: per-CID token bucket 500/s (burst 1000); priority/default lanes drain ~4:1 (8 vs 2 concurrent work items), default never starved.
+- **Dispatch**: per-CID token bucket 500/s (burst 1000) by default; priority and default lanes run 16 and 8 concurrent work items, so default is never starved. The message-rail runtime ships 2000/s (burst 4000) and 32/32.
+- **Pages in flight**: up to 4 pages of one batch and 8 per federation at once by default (the runtime ships 16 and 32). Your service sees that many concurrent `SendMessageBatch` calls; size its own provider concurrency for it.
 - **Send call timeout**: 30 s per federation call. Size `maxBatchSize` so one provider page fits comfortably.
 - **Config check timeout**: 5 s — it must read local configuration only, no provider round-trip.
 - **Retries**: up to 5 delivery attempts, then DLQ (7-day retention). Retriable failures stay pending; terminal stop.
