@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Generate valid OpenAPI component IDs for tuple callables and preserve their C# types in generated clients, including nested tuples and tuple collections.
+- Report failed MSBuild targets as failed builds, including when compiler diagnostics are empty or missing. Project builds now return a nonzero exit and surface the underlying build output in Unity.
+
 - `beam project run` no longer rewrites a zone portal extension's generated microservice clients to bind to `BeamBase`. They now bind to `BeamZoneSdk` (the object a zone extension receives), matching `generate-portal-extension-clients`, so generated client files stop flipping between the two on every run.
 
 ## [7.3.0]

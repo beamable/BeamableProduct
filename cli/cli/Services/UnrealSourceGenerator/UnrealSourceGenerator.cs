@@ -2383,9 +2383,26 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
       case ("object", _, _, _) when schema.Reference == null && !schema.AdditionalPropertiesAllowed:
       {
-        if (!string.IsNullOrEmpty(schema.Title) &&
-            (parentDoc.Components.Schemas.TryGetValue(schema.Title, out var innerSchema) ||
-             parentDoc.Components.Schemas.TryGetValue(Uri.EscapeDataString(schema.Title), out innerSchema)))
+        // Generated component IDs no longer double as C# type names. Content references
+        // are inline objects whose title contains their C# name; resolve that metadata too.
+        OpenApiSchema innerSchema = null;
+        if (!string.IsNullOrEmpty(schema.Title))
+        {
+          parentDoc.Components.Schemas.TryGetValue(schema.Title, out innerSchema);
+          if (innerSchema == null)
+            parentDoc.Components.Schemas.TryGetValue(Uri.EscapeDataString(schema.Title), out innerSchema);
+        }
+        if (innerSchema == null &&
+            schema.Extensions.TryGetValue(MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME, out var inlineName) &&
+            inlineName is OpenApiString inlineType)
+        {
+          innerSchema = parentDoc.Components.Schemas.Values.FirstOrDefault(candidate =>
+            candidate.Reference != null &&
+            candidate.Extensions.TryGetValue(MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME, out var typeName) &&
+            typeName is OpenApiString qualifiedName &&
+            Uri.UnescapeDataString(qualifiedName.Value) == Uri.UnescapeDataString(inlineType.Value));
+        }
+        if (innerSchema != null)
         {
           return GetUnrealTypeForField(
             out nonOverridenType,
