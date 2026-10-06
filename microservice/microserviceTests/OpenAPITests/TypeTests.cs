@@ -132,12 +132,12 @@ public class TypeTests
 				Schemas = new Dictionary<string, OpenApiSchema>()
 			}
 		};
-		doc.Components.Schemas.Add(SchemaGenerator.GetQualifiedReferenceName(typeof(SampleGenericField)), schema);
+		doc.Components.Schemas.Add(SchemaGenerator.GetSchemaId(typeof(SampleGenericField)), schema);
 		SchemaGenerator.TryAddMissingSchemaTypes(ref doc, requiredFields);
 		
 		Assert.AreEqual("this is a sample", schema.Description);
 		Assert.AreEqual(1, schema.Properties.Count);
-		Assert.AreEqual(doc.Components.Schemas[typeof(Result<string>).GetSanitizedFullName()].Properties[nameof(Result<string>.Field)].Type, "string");
+		Assert.AreEqual(doc.Components.Schemas[schema.Properties[nameof(SampleGenericField.theOnlyField)].Reference.Id].Properties[nameof(Result<string>.Field)].Type, "string");
 	}
 
 	[Test]

@@ -467,6 +467,8 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				$"{serviceName}.json");
 			var errorPathDir = Path.GetDirectoryName(errorPath);
 			Directory.CreateDirectory(errorPathDir);
+			File.Delete(errorPath);
+			var buildOutput = new BuildOutputBuffer();
 
 			var exe = args.AppContext.DotnetPath;
 			var commandStr =
@@ -512,10 +514,16 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				isDetach: isDetach,
 				environmentVariables: envVars,
 				onStdout: line =>
+				{
+					buildOutput.Add(line);
 					HandleOutputLine(line, currentProgress, serviceLogProgressTable, nonServiceLogProgressTable,
-						onProgress, onLog),
+						onProgress, onLog);
+				},
 				onStderr: line =>
-					HandleErrorLine(line, onLog));
+				{
+					buildOutput.Add(line);
+					HandleErrorLine(line, onLog);
+				});
 
 			var proc = handle.Process;
 			var shouldAutoKill = false;
@@ -561,14 +569,35 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			}
 			else if (proc.HasExited && proc.ExitCode != 0)
 			{
-				var report = ProjectService.ReadErrorReport(errorPath);
-				onFailure?.Invoke(report, proc.ExitCode);
+				// Process.Exited can precede the last asynchronous stdout/stderr callbacks.
+				proc.WaitForExit();
+				ReportMicroserviceFailure(errorPath, proc.ExitCode, buildOutput.ToString(),
+					serviceName, projectPath, onProgress, onFailure);
 			}
 		}
 		catch (Exception e)
 		{
 			Log.Error(e.Message);
 		}
+	}
+
+	internal static void ReportMicroserviceFailure(string errorPath, int exitCode, string output,
+		string serviceName, string projectPath, Action<float, string> onProgress,
+		Action<ProjectErrorReport, int> onFailure)
+	{
+		var detail = string.IsNullOrWhiteSpace(output) ? "The process produced no output." : output;
+		var report = ProjectService.ReadBuildErrorReport(errorPath, exitCode,
+			$"Service [{serviceName}]. Last output:{Environment.NewLine}{detail}");
+		foreach (var error in report.errors)
+		{
+			// Fallback diagnostics should identify the project; preserve compiler source locations.
+			if (string.IsNullOrEmpty(error.uri)) error.uri = projectPath;
+		}
+		Log.Error($"Service [{serviceName}] exited with code {exitCode}. " +
+			string.Join(Environment.NewLine, report.errors.Select(error => error.formattedMessage)));
+		// Complete the progress stream even when a group run is still awaiting other services.
+		onProgress?.Invoke(1f, $"failed: exited with code {exitCode}");
+		onFailure?.Invoke(report, exitCode);
 	}
 
 	/// <summary>

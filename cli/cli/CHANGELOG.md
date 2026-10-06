@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Allow tuples in C# Microservice callable parameters.
 - Improved output sequencing for concurrent CLI commands so that errors and command output reach Unity intact.
 - Preserve log context across Promise `await` boundaries.
+- Generate valid OpenAPI component IDs for tuple callables and preserve their C# types in generated clients, including nested tuples and tuple collections.
+- Report failed MSBuild targets as failed builds, including when compiler diagnostics are empty or missing. Project builds now return a nonzero exit and surface the underlying build output in Unity.
 
 ## [7.2.3] - 2026-08-26
 
