@@ -167,6 +167,8 @@ your own further fallbacks (a committed default, `Beam.init`'s built-in environm
 - a published `global` content manifest; otherwise `Beam.init` fails with a 404 on
   `/basic/content/manifest/public/json?id=global`
 
+With the Beamable CLI, `beam config realm check --for web --fix` checks and fixes both.
+
 If the socket can't open within `realtime.connectTimeoutMs` (default `15000`), `Beam.init` rejects
 with a `BeamWebSocketError` that names the socket host. A socket that never opens usually means a
 proxy or firewall is blocking WebSockets. Pass `realtime: { enabled: false }` to initialize without

@@ -1,0 +1,154 @@
+---
+name: beam-web-game-quickstart
+description: End-to-end path for a web game on Beamable — init, MCP, realm preflight, microservice + storage, generated TypeScript client, Vite app, deploy, verify, and host.
+---
+
+# Web Game Quickstart
+
+The whole path from an empty folder to a deployed, hosted browser game backed by a C# microservice and a Mongo microstorage. Each step names the skill with the details.
+
+The worked example is a Rock-Paper-Scissors game: https://github.com/ali-beamable/TestGameBeamable (`services/MatchService`, `services/MatchStorage`, `web/`).
+
+## When to Use This Skill
+- The user wants a new browser (or Node) game or app that talks to Beamable
+- The user wants server-authoritative game logic behind a web client
+
+## Prerequisites
+- .NET 10 SDK, Docker (to build service images when deploying), Node.js 22+
+- The user's CID (or alias) and which realm to use
+
+## Steps
+
+### 1. Create the workspace
+```
+beam_exec("init --cid <CID> --realm <RealmName> -q")
+```
+Pass `--pid <PID>` instead of `--realm` if you know it, and `--game <GameName>` when several games have a realm with that name. Without a realm, quiet `init` picks the first game's oldest dev realm and prints which. Check it with `beam_exec("config -q")`. Details: `beam-initialize-project`.
+
+### 2. Register the MCP server (optional)
+```
+beam_exec("mcp setup -q")
+```
+Writes `.mcp.json` with an absolute path to `dotnet`, restores the local `beam` tool and warns if `dotnet beam` doesn't start from the workspace.
+
+### 3. Prepare the realm for the Web SDK
+```
+beam_exec("config realm check --for web --fix -q")
+```
+Sets the realtime publisher to `beamable` and publishes the `global` content manifest. Without these, `Beam.init` fails with `Unsupported websocket provider` or a 404 on the `global` manifest. Details: `beam-web-guide` → Realm prerequisites.
+
+### 4. Create a storage and a service linked to it
+```
+beam_exec("project new storage MatchStorage -q")
+beam_exec("project new service MatchService --link-to MatchStorage -q")
+```
+{{ if commands["project new service"] }}
+#### `beam project new service` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["project new service"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+### 5. Write the endpoints and the stored document
+A document lives in the storage project and extends `StorageDocument`:
+```csharp
+[BsonIgnoreExtraElements]
+public class MatchRecord : StorageDocument
+{
+	public const string CollectionName = "matches";
+	public long PlayerId;
+	public string Status = "in_progress";
+	public int PlayerWins;
+	public int CpuWins;
+}
+```
+The service gets the typed collection through the generated `Storage.<StorageName>Collection<T>(name)` extension, and uses `Context.UserId` for the calling player:
+```csharp
+public partial class MatchService : Microservice
+{
+	[ClientCallable]
+	public async Task<MatchView> StartMatch()
+	{
+		var matches = await Storage.MatchStorageCollection<MatchRecord>(MatchRecord.CollectionName);
+		var match = new MatchRecord { PlayerId = Context.UserId };
+		await matches.InsertOneAsync(match);
+		return MatchView.From(match);
+	}
+
+	[ClientCallable]
+	public async Task<RoundResult> PlayRound(string matchId, string move) { /* ... */ }
+}
+
+[Serializable]
+public class MatchView
+{
+	public string matchId;
+	public string status;
+	public int playerWins;
+	public int cpuWins;
+}
+```
+- Request/response DTOs use **public fields** and `[Serializable]`.
+- `Promise<T>` is awaitable directly; `Task<T>` works too.
+- Prefer `int`/`string` over `long` in DTOs the web client reads (a `long` becomes `bigint | string` in TypeScript unless you generate with `--int64-as`).
+- Throw `MicroserviceException(status, error, message)` for client errors.
+
+More patterns: `beam-microservice-examples`, `beam-manage-service`.
+
+### 6. Build, then generate the TypeScript client
+```
+beam_exec("project build -q")
+beam_exec("project generate web-client --output-dir web/src -q")
+```
+The generator reads `beam_openApi.json` from the build output, so build first (or pass `--build`). It writes `web/src/beamable/clients/MatchServiceClient.ts` and `web/src/beamable/clients/types/`.
+
+### 7. Create the Vite + TypeScript client
+```bash
+npm create vite@latest web -- --template vanilla-ts
+cd web && npm install @beamable/sdk
+```
+Set `base: './'` in `vite.config.ts` so the build works from any static path. Put the public identifiers in `web/.env`:
+```
+VITE_BEAM_CID=<CID>
+VITE_BEAM_PID=<PID>
+```
+```ts
+import { Beam } from "@beamable/sdk";
+import { MatchServiceClient } from "./beamable/clients/MatchServiceClient";
+
+// Signs the browser in as a guest (tokens persist), opens the realtime socket and sends session-start.
+const beam = await Beam.init({
+  cid: import.meta.env.VITE_BEAM_CID,
+  pid: import.meta.env.VITE_BEAM_PID,
+});
+beam.use(MatchServiceClient);
+
+const match = await beam.matchServiceClient.startMatch();
+const round = await beam.matchServiceClient.playRound({ matchId: match.matchId, move: "rock" });
+```
+Details: `beam-web-guide`.
+
+### 8. Deploy and wait until the services are running
+```
+beam_exec("deploy release --merge --wait -q")
+```
+`--merge` keeps remote services that aren't in this workspace; the default `--replace` removes them. `--wait` returns once every released service is running and current. Details: `beam-build-and-deploy`.
+
+### 9. Verify
+Play the game from the CLI and prove the realtime session works before trusting a browser:
+```
+beam_exec("project call MatchService StartMatch -q")
+beam_exec("listen player --probe -q")
+```
+Details and a browser smoke test: `beam-test-and-verify`.
+
+### 10. Host the client
+Build with `npm run build` and publish `web/dist`, e.g. to GitHub Pages. Details: `beam-web-hosting`.
+
+## Related Skills
+- `beam-initialize-project` — workspace setup and realm selection
+- `beam-web-guide` — Web SDK usage, realm prerequisites, realtime session
+- `beam-microservice-examples` — C# microservice patterns
+- `beam-build-and-deploy` — building and releasing services
+- `beam-test-and-verify` — verifying endpoints, realtime and storage
+- `beam-web-hosting` — static hosting for the web client
