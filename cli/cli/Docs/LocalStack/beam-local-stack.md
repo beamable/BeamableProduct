@@ -151,5 +151,20 @@ no longer have).
 5. A "port already in use" failure is reported before launch; find the older process (a previous `up`
    that was killed rather than stopped) and `beam local stop` it.
 6. After a `stop --purge`, the local database is empty — the next `up` recreates the realm.
+7. A .NET host runs from its build output, with the `appsettings.json` copied there at build time. A
+   plain `up` skips its build step once the binary exists, so an `appsettings.json` change takes effect
+   only after `up --build` or a `dotnet build` of that host.
+
+## Under load
+
+- **The broker runs with the image's default heap, 1 GB** (`-Xmx1G` in the ActiveMQ container's
+  `bin/env`). Most of it is taken by the Scala services' RPC queues; tens of thousands of unconsumed
+  messages on top push it into back-to-back full GCs, and every consumer in every service stalls with
+  it. Watch it over Jolokia: `GET http://localhost:8161/api/jolokia/read/java.lang:type=Memory/HeapMemoryUsage`
+  (basic auth `admin`/`admin`, header `Origin: http://localhost`). A container restart clears it; the
+  services reconnect on their own.
+- **`Consumer.csharp-bridge.VirtualTopic.platform_metric_reports.general` has no consumer locally**
+  and grows for as long as the stack runs. Purge it before a load run with the `purge()` operation on
+  that queue's MBean (`org.apache.activemq:type=Broker,brokerName=localhost,destinationType=Queue,destinationName=…`).
 
 {{THIS_STACK}}

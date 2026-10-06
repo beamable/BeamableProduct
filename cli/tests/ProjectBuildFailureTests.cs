@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using cli;
 using cli.Services;
+using cli.Commands.Project;
+using System.Collections.Generic;
 using CliWrap;
 using NUnit.Framework;
 
@@ -11,6 +13,13 @@ namespace tests;
 
 public class ProjectBuildFailureTests
 {
+	private static void ReportMicroserviceFailure(string errorPath, int exitCode, string output,
+		string serviceName, string projectPath, Action<float, string> onProgress,
+		Action<ProjectErrorReport, int> onFailure) =>
+		typeof(RunProjectCommand).GetMethod("ReportMicroserviceFailure",
+			System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
+			.Invoke(null, new object[] { errorPath, exitCode, output, serviceName, projectPath, onProgress, onFailure });
+
 	private string _directory = null!;
 	private string ErrorPath => Path.Combine(_directory, "compiler.sarif");
 
@@ -64,6 +73,41 @@ public class ProjectBuildFailureTests
 		Assert.That(report.errors.Single().formattedMessage, Does.Contain("ACTIONABLE_BUILD_FAILURE"));
 	}
 
+	[TestCase("missing")]
+	[TestCase("empty")]
+	[TestCase("malformed")]
+	public void ServiceFailure_PreservesContextAndCompletesProgressBeforeFailure(string diagnostics)
+	{
+		if (diagnostics != "missing")
+			File.WriteAllText(ErrorPath, diagnostics == "empty"
+				? "{\"version\":\"2.1.0\",\"runs\":[]}" : "invalid JSON");
+		var events = new List<string>();
+		ReportMicroserviceFailure(ErrorPath, 7, "POST_BUILD_FAILURE",
+			"Probe", "Probe.csproj", (progress, message) =>
+			{
+				Assert.That(progress, Is.EqualTo(1f));
+				Assert.That(message, Does.Contain("failed").And.Contain("7"));
+				events.Add("progress");
+			}, (report, code) =>
+			{
+				Assert.That(code, Is.EqualTo(7));
+				Assert.That(report.isSuccess, Is.False);
+				Assert.That(report.errors.Single().uri, Is.EqualTo("Probe.csproj"));
+				Assert.That(report.errors.Single().formattedMessage,
+					Does.Contain("Probe").And.Contain("POST_BUILD_FAILURE"));
+				events.Add("failure");
+			});
+		Assert.That(events, Is.EqualTo(new[] { "progress", "failure" }));
+	}
+
+	[Test]
+	public void SilentServiceFailure_ReportsNoOutput_WithOptionalProgressCallback()
+	{
+		ReportMicroserviceFailure(ErrorPath, 1, " ", "Probe", "Probe.csproj",
+			null!, (report, _) => Assert.That(report.errors.Single().formattedMessage,
+				Does.Contain("The process produced no output.")));
+	}
+
 	[Test]
 	public async Task CompilerFailure_PreservesLocation_AndDoesNotLeakIntoNextBuild()
 	{
@@ -71,6 +115,13 @@ public class ProjectBuildFailureTests
 		ProjectErrorReport? report = null;
 		Assert.ThrowsAsync<CliException>(async () => await ProjectService.ExecuteBuild(BuildCommand(), ErrorPath, r => report = r));
 		Assert.That(report!.errors.Any(e => e.line == 1 && e.formattedMessage.Contains("CS0246")), Is.True);
+
+		ReportMicroserviceFailure(ErrorPath, 1, "ignored fallback", "Probe", "Probe.csproj",
+			(_, _) => { }, (serviceReport, _) =>
+			{
+				Assert.That(serviceReport.errors.Any(e => e.line == 1 && e.formattedMessage.Contains("CS0246")), Is.True);
+				Assert.That(serviceReport.errors.First().uri, Does.Contain("Valid.cs"));
+			});
 
 		// The next failure happens before compilation; the old compiler report must not hide it.
 		WriteProject("<Target Name=\"FailEarly\" BeforeTargets=\"CoreCompile\"><Error Text=\"PRE_COMPILE_FAILURE\" /></Target>");

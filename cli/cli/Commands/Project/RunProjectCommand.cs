@@ -949,14 +949,33 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			{
 				// Process.Exited can precede the last asynchronous stdout/stderr callbacks.
 				proc.WaitForExit();
-				var report = ProjectService.ReadBuildErrorReport(errorPath, proc.ExitCode, buildOutput.ToString());
-				onFailure?.Invoke(report, proc.ExitCode);
+				ReportMicroserviceFailure(errorPath, proc.ExitCode, buildOutput.ToString(),
+					serviceName, projectPath, onProgress, onFailure);
 			}
 		}
 		catch (Exception e)
 		{
 			Log.Error(e.Message);
 		}
+	}
+
+	internal static void ReportMicroserviceFailure(string errorPath, int exitCode, string output,
+		string serviceName, string projectPath, Action<float, string> onProgress,
+		Action<ProjectErrorReport, int> onFailure)
+	{
+		var detail = string.IsNullOrWhiteSpace(output) ? "The process produced no output." : output;
+		var report = ProjectService.ReadBuildErrorReport(errorPath, exitCode,
+			$"Service [{serviceName}]. Last output:{Environment.NewLine}{detail}");
+		foreach (var error in report.errors)
+		{
+			// Fallback diagnostics should identify the project; preserve compiler source locations.
+			if (string.IsNullOrEmpty(error.uri)) error.uri = projectPath;
+		}
+		Log.Error($"Service [{serviceName}] exited with code {exitCode}. " +
+			string.Join(Environment.NewLine, report.errors.Select(error => error.formattedMessage)));
+		// Complete the progress stream even when a group run is still awaiting other services.
+		onProgress?.Invoke(1f, $"failed: exited with code {exitCode}");
+		onFailure?.Invoke(report, exitCode);
 	}
 
 	/// <summary>
