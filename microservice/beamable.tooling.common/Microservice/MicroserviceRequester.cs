@@ -301,10 +301,16 @@ namespace Beamable.Server
 			};
 
 			var subscriptionList = _subscriptions.GetOrAdd(eventName, _ => new List<IPlatformSubscription>());
-			lock (subscriptionList) subscriptionList.Add(subscription);
+			lock (subscriptionList)
+			{
+				subscriptionList.Add(subscription);
+			}
 			var unsub = new Action(() =>
 			{
-				lock (subscriptionList) subscriptionList.Remove(subscription);
+				lock (subscriptionList)
+				{
+					subscriptionList.Remove(subscription);
+				}
 			});
 			subscription.Unsubscribe = unsub;
 
@@ -353,7 +359,10 @@ namespace Beamable.Server
 					await using IUserScope scope = new UserRequestDataHandler(fork);
 					// snapshot at the moment the event is processed; later subscribers are too late, and unsubscribing mid-loop is safe.
 					IPlatformSubscription[] snapshot;
-					lock (subscriptions) snapshot = subscriptions.ToArray();
+					lock (subscriptions)
+					{
+						snapshot = subscriptions.ToArray();
+					}
 					foreach (var subscription in snapshot)
 					{
 						await subscription.Resolve(scope);
