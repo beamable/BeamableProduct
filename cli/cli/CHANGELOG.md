@@ -17,12 +17,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `IFederatedMessageRail<T>.CheckMessageRailConfig()` — a federation reports whether it is configured well enough to deliver, and the platform consults it *before* a campaign targeting that rail is published, so a realm missing its provider credentials fails at authoring time instead of silently erroring on every send. Ships `MessageRailConfigStatus`, which distinguishes MISSING (`missingKeys`, fully qualified so an operator provisions them in one pass) from INVALID (`invalidReason`) from UNKNOWN (`readable == false`). Unknown never blocks a publish: a credential store that cannot be read is an outage, not a misconfiguration.
 - `beam mcp serve` now sends server instructions to MCP clients during initialize: the skill-first workflow, the `@beamable/sdk` package name, the realm prerequisites for the Web SDK (`notification|publisher=beamable` and a published `global` manifest), microservice basics, and the `deploy release --replace` default. Edit them in `Docs/Mcp/ServerInstructions.md`.
 
+### Changed
+
+- `beam mcp setup` writes an absolute path to the `dotnet` executable (from `--dotnet-path`, `DOTNET_HOST_PATH`, `DOTNET_ROOT`, the running process or `PATH`), so MCP clients whose `PATH` lacks a `~/.dotnet` install can start the server. It prints what it wrote, runs `dotnet tool restore`, and warns when `dotnet beam --version` fails from the target directory. The `mcp` command group is no longer marked internal.
+
 ### Fixed
 
 - Generate valid OpenAPI component IDs for tuple callables and preserve their C# types in generated clients, including nested tuples and tuple collections.
 - Report failed MSBuild targets as failed builds, including when compiler diagnostics are empty or missing. Project builds now return a nonzero exit and surface the underlying build output in Unity.
 
 - `beam project run` no longer rewrites a zone portal extension's generated microservice clients to bind to `BeamBase`. They now bind to `BeamZoneSdk` (the object a zone extension receives), matching `generate-portal-extension-clients`, so generated client files stop flipping between the two on every run.
+- `beam init` and `beam mcp setup` now pin `beamable.tools` in a root-level `dotnet-tools.json` as well as `.config/dotnet-tools.json`. On .NET 10, `dotnet new tool-manifest` writes the manifest to the root, which could leave a workspace where `dotnet beam` didn't resolve. `beam init` now checks `dotnet tool list --local` after restoring and fails with an explanation if the tool doesn't resolve at the CLI's version. Updating an existing manifest keeps its other tools and settings.
 
 ## [7.3.0]
 
