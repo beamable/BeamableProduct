@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `beam mcp setup` writes an absolute path to the `dotnet` executable (from `--dotnet-path`, `DOTNET_HOST_PATH`, `DOTNET_ROOT`, the running process or `PATH`), so MCP clients whose `PATH` lacks a `~/.dotnet` install can start the server. It prints what it wrote, runs `dotnet tool restore`, and warns when `dotnet beam --version` fails from the target directory. The `mcp` command group is no longer marked internal.
+- `project generate web-client --int64-as number|string|bigint-union` chooses how C# `long` (OpenAPI `int64`) fields are typed in the generated TypeScript. The default stays `bigint-union` (`bigint | string`) for compatibility.
+- `project generate web-client --build` builds the microservices before generating, so the clients reflect the current code rather than the OpenAPI documents from the last build. It is opt-in because it runs a `dotnet build` per service.
+
+### Changed
+
+- `project generate web-client` now fails with a clear error instead of silently succeeding with an empty result when `--output-dir` is missing, `--lang` is unsupported, or no client could be generated at all, and it warns (naming the service and the expected `beam_openApi.json` path) for every microservice it skips because it has not been built.
 
 ### Fixed
 
@@ -29,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `beam project run` no longer rewrites a zone portal extension's generated microservice clients to bind to `BeamBase`. They now bind to `BeamZoneSdk` (the object a zone extension receives), matching `generate-portal-extension-clients`, so generated client files stop flipping between the two on every run.
 - `beam init` and `beam mcp setup` now pin `beamable.tools` in a root-level `dotnet-tools.json` as well as `.config/dotnet-tools.json`. On .NET 10, `dotnet new tool-manifest` writes the manifest to the root, which could leave a workspace where `dotnet beam` didn't resolve. `beam init` now checks `dotnet tool list --local` after restoring and fails with an explanation if the tool doesn't resolve at the CLI's version. Updating an existing manifest keeps its other tools and settings.
 - The `beam-web-guide` skill showed microservice endpoints with a leading slash, which made the SDK request `//Method`. It now leads with `beam project generate web-client` (with a live options table) and adds sections on realm prerequisites and the realtime session and its errors.
+- `project generate web-client` no longer keeps generation state in static fields, so a JavaScript run, a portal extension client generation, or a generation that wrote no types file can no longer leak types or the output language into a later run in the same process; clients only import `./types` when they use it; and a callable returning an array of a DTO (e.g. `MatchView[]`) is now typed as `Types.MatchView[]` instead of an undefined `MatchView[]`.
 
 ## [7.3.0]
 
