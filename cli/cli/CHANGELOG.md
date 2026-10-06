@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `beam_exec` (MCP) adds `-q` automatically so commands never block on a prompt, and answers invalid arguments with an `Invalid arguments` header followed by the command's help, so a wrong guess costs one call instead of three. The `beam_list_commands` / `beam_get_help` / `beam_exec` descriptions no longer require calling all three tools for every command.
 - `beam init --realm <name|pid>` and `--game <name|pid>` pick the realm without prompts, and `beam config realm use <name|pid> [--game]` switches an existing workspace to a realm by name. In quiet mode, `init` now prints which game and realm it picked.
+- `beam deploy release --wait` polls the remote status after releasing until every released service is running and current, then reports each service's status on the `waitResult` channel. `--wait-timeout <seconds>` (default 600) bounds the wait; on timeout the command fails naming the services that are not ready.
 
 ### Fixed
 
