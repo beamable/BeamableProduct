@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `beam project run` no longer rewrites a zone portal extension's generated microservice clients to bind to `BeamBase`. They now bind to `BeamZoneSdk` (the object a zone extension receives), matching `generate-portal-extension-clients`, so generated client files stop flipping between the two on every run.
 - `beam init` and `beam mcp setup` now pin `beamable.tools` in a root-level `dotnet-tools.json` as well as `.config/dotnet-tools.json`. On .NET 10, `dotnet new tool-manifest` writes the manifest to the root, which could leave a workspace where `dotnet beam` didn't resolve. `beam init` now checks `dotnet tool list --local` after restoring and fails with an explanation if the tool doesn't resolve at the CLI's version. Updating an existing manifest keeps its other tools and settings.
+- The `beam-web-guide` skill showed microservice endpoints with a leading slash, which made the SDK request `//Method`. It now leads with `beam project generate web-client` (with a live options table) and adds sections on realm prerequisites and the realtime session and its errors.
 
 ## [7.3.0]
 
