@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `beam_exec` (MCP) adds `-q` automatically so commands never block on a prompt, and answers invalid arguments with an `Invalid arguments` header followed by the command's help, so a wrong guess costs one call instead of three. The `beam_list_commands` / `beam_get_help` / `beam_exec` descriptions no longer require calling all three tools for every command.
+- `beam init --realm <name|pid>` and `--game <name|pid>` pick the realm without prompts, and `beam config realm use <name|pid> [--game]` switches an existing workspace to a realm by name. In quiet mode, `init` now prints which game and realm it picked.
 
 ### Fixed
 
