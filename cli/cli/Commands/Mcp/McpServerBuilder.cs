@@ -102,10 +102,10 @@ public class BeamMcpTools
 	[McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false,
 		Title = "Discover beam CLI commands")]
 	[Description(
-		"Step 1 of 3 — Discover available commands." +
-		" Call this FIRST, before beam_get_help or beam_exec, whenever you are about to perform any Beamable task." +
+		"Discover available beam commands." +
+		" Use this when you don't yet know which command does what you need." +
 		" Pass an empty string to list all root commands; pass a command name (e.g. 'project', 'services', 'content') to list its subcommands." +
-		" Navigate the command tree until you find the exact command you need, then proceed to beam_get_help.")]
+		" Once you know the command, call beam_get_help for its options, or beam_exec directly if you already know them.")]
 	public async Task<string> beam_list_commands(
 		McpServer server,
 		[Description("Command prefix to filter by, e.g. 'project', 'content', 'services'. Leave empty to list all root commands.")] string prefix = "")
@@ -117,10 +117,9 @@ public class BeamMcpTools
 	[McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false,
 		Title = "Get beam command documentation")]
 	[Description(
-		"Step 2 of 3 — Read the full docs for a command before running it." +
-		" Call this after beam_list_commands identifies the exact command path you need." +
-		" Returns all arguments, options, defaults, and the output schema." +
-		" You MUST call this for every command before calling beam_exec — never assume argument names or syntax." +
+		"Read the full docs for a command: all arguments, options, defaults, and the output schema." +
+		" Call this when you are unsure of a command's arguments — don't guess option names." +
+		" (beam_exec also returns this help when it is called with invalid arguments.)" +
 		" If working in a new project directory, start with beam_get_help('init'): the 'init' command creates the .beamable workspace folder that all other commands require.")]
 	public async Task<string> beam_get_help(
 		McpServer server,
@@ -133,11 +132,12 @@ public class BeamMcpTools
 	[McpServerTool(ReadOnly = false, Destructive = true, Idempotent = false, OpenWorld = true,
 		Title = "Execute a beam CLI command")]
 	[Description(
-		"Step 3 of 3 — Execute a beam command." +
-		" Only call this AFTER completing Step 1 (beam_list_commands) and Step 2 (beam_get_help) for the command you intend to run." +
-		" Never guess arguments or assume command syntax." +
-		" Pass everything after 'beam', e.g. 'init --cid MyCid --pid MyPid' or 'project new microservice --name Foo'." +
-		" If the .beamable workspace folder does not exist yet, run 'init' first (see beam_get_help('init') for required arguments)." +
+		"Execute a beam command." +
+		" Pass everything after 'beam', e.g. 'init --cid MyCid --pid MyPid' or 'project new service Foo'." +
+		" If you already know the command and its arguments, call this directly." +
+		" If the arguments are invalid, the response starts with 'Invalid arguments' followed by the command's help; fix the arguments and call again." +
+		" Commands run non-interactively ('-q' is added automatically), so pass every value a command would otherwise prompt for." +
+		" If the .beamable workspace folder does not exist yet, run 'init' first." +
 		" For multi-step workflows, call beam_get_skill first to load a step-by-step guide.")]
 	public async Task<string> beam_exec(
 		McpServer server,

@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `project generate web-client` now fails with a clear error instead of silently succeeding with an empty result when `--output-dir` is missing, `--lang` is unsupported, or no client could be generated at all, and it warns (naming the service and the expected `beam_openApi.json` path) for every microservice it skips because it has not been built.
 
+### Changed
+
+- `beam_exec` (MCP) adds `-q` automatically so commands never block on a prompt, and answers invalid arguments with an `Invalid arguments` header followed by the command's help, so a wrong guess costs one call instead of three. The `beam_list_commands` / `beam_get_help` / `beam_exec` descriptions no longer require calling all three tools for every command.
+
 ### Fixed
 
 - Generate valid OpenAPI component IDs for tuple callables and preserve their C# types in generated clients, including nested tuples and tuple collections.
