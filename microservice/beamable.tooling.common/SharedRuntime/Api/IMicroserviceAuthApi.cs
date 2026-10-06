@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Stats;
+using Newtonsoft.Json;
 
 namespace Beamable.Server.Api
 {
@@ -167,16 +169,29 @@ namespace Beamable.Server.Api
 		/// </summary>
 		public User account;
 
-		/// <summary>Requested stat values keyed by namespace (<c>{domain}.{visibility}</c>), then stat key.</summary>
-		public Dictionary<string, Dictionary<string, string>> stats = new Dictionary<string, Dictionary<string, string>>();
+		/// <summary>
+		/// Requested stat values keyed by namespace (<c>{domain}.{visibility}</c>), then stat key, in the stat's own
+		/// type: a string, long, double, bool or list.
+		/// </summary>
+		public Dictionary<string, Dictionary<string, object>> stats = new Dictionary<string, Dictionary<string, object>>();
 
-		/// <summary>A requested stat value, or null when the player has none.</summary>
+		/// <summary>
+		/// A requested stat value as text (numbers in the invariant culture, booleans as <c>true</c>/<c>false</c>,
+		/// lists as JSON), or null when the player has none.
+		/// </summary>
 		public string GetStat(StatsDomainType domain, StatsAccessType access, string key)
 		{
 			var ns = $"{BatchAccountsNames.Domain(domain)}.{BatchAccountsNames.Access(access)}";
-			return stats != null && stats.TryGetValue(ns, out var values) && values.TryGetValue(key, out var value)
-				? value
-				: null;
+			if (stats == null || !stats.TryGetValue(ns, out var values) || !values.TryGetValue(key, out var value) || value == null)
+				return null;
+
+			switch (value)
+			{
+				case string text: return text;
+				case bool flag: return flag ? "true" : "false";
+				case IFormattable number: return number.ToString(null, CultureInfo.InvariantCulture);
+				default: return JsonConvert.SerializeObject(value);
+			}
 		}
 	}
 

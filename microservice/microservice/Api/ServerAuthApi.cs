@@ -4,6 +4,8 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Serialization.SmallerJSON;
+using Beamable.Server.Common;
+using Newtonsoft.Json;
 
 namespace Beamable.Server.Api
 {
@@ -13,6 +15,11 @@ namespace Beamable.Server.Api
       public const string OBJECT_SERVICE = "/object/accounts";
 
       public RequestContext Context { get; }
+
+      // BatchAccounts stat values arrive in their own JSON type, so they deserialize into object; keep a
+      // date-shaped string stat as the string it is instead of letting Newtonsoft turn it into a DateTime.
+      private static readonly JsonSerializerSettings BatchAccountsJson =
+         new JsonSerializerSettings(UnitySerializationSettings.Instance) { DateParseHandling = DateParseHandling.None };
 
       public ServerAuthApi(IRequester requester, RequestContext context) : base(requester)
       {
@@ -41,7 +48,8 @@ namespace Beamable.Server.Api
                   filter = request.filter,
                   includeAccount = request.includeAccount,
                   stats = request.stats
-               });
+               },
+               parser: json => JsonConvert.DeserializeObject<BatchAccountsResponse>(json, BatchAccountsJson));
             merged.players.AddRange(page.players);
             merged.filteredOut.AddRange(page.filteredOut);
             merged.notFound.AddRange(page.notFound);

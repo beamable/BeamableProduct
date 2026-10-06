@@ -527,6 +527,11 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                     player.playerId,
                     player.account.email,
                     player.GetStat(StatsDomainType.Game, StatsAccessType.Private, "apns_devices"),
+                    // Values keep their JSON type; GetStat renders them invariantly, and a date-shaped
+                    // string stays the string it was.
+                    player.GetStat(StatsDomainType.Game, StatsAccessType.Private, "level"),
+                    player.GetStat(StatsDomainType.Game, StatsAccessType.Private, "vip"),
+                    player.GetStat(StatsDomainType.Game, StatsAccessType.Private, "seen_at"),
                     string.Join(",", response.filteredOut),
                     string.Join(",", response.notFound));
             }
@@ -561,7 +566,8 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                             .WithBody<JObject>(body => IsPage(body, BatchAccountsRequest.MaxPlayersPerRequest, 1)),
                         MessageResponder.Success(
                             "{\"players\":[{\"playerId\":1,\"account\":{\"id\":1,\"accountId\":9,\"email\":\"a@b.c\"}," +
-                            "\"stats\":{\"game.private\":{\"apns_devices\":\"[\\\"t\\\"]\"}}}]," +
+                            "\"stats\":{\"game.private\":{\"apns_devices\":\"[\\\"t\\\"]\",\"level\":4,\"vip\":true," +
+                            "\"seen_at\":\"2026-10-06T11:00:00Z\"}}}]," +
                             "\"filteredOut\":[2],\"notFound\":[]}"),
                         MessageFrequency.OnlyOnce())
                     .AddMessageHandler(
@@ -576,7 +582,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                         MessageMatcher
                             .WithReqId(1)
                             .WithStatus(200)
-                            .WithPayload("1|a@b.c|[\"t\"]|2|501"),
+                            .WithPayload("1|a@b.c|[\"t\"]|4|true|2026-10-06T11:00:00Z|2|501"),
                         MessageResponder.NoResponse(),
                         MessageFrequency.OnlyOnce());
             }));
