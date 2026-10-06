@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Detect if Unity is running in batch mode and do not attempt to show OptionDialogWindow if that is the case.
+- Improved Microservice build failure reporting: a build that fails without compiler errors, such as in a post-build step, now reports the failure and its build output in Unity instead of the service silently never starting.
 - Update CLI to 7.3.0
 
 ### Fixed
