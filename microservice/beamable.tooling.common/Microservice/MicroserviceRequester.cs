@@ -145,6 +145,7 @@ namespace Beamable.Server
 
 		public IActivityProvider ActivityProvider { get; set; }
 		private ConcurrentDictionary<long, IWebsocketResponseListener> _pendingMessages = new ConcurrentDictionary<long, IWebsocketResponseListener>();
+		// lock sites rely on locking the same list instance, so never remove entries; just leave empty lists in place
 		private ConcurrentDictionary<string, List<IPlatformSubscription>> _subscriptions = new ConcurrentDictionary<string, List<IPlatformSubscription>>();
 		private long _lastRequestId = 0;
 
