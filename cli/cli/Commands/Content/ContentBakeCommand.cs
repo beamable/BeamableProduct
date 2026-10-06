@@ -17,12 +17,12 @@ public class ContentBakeCommand : AtomicCommand<ContentBakeCommandArgs, ContentB
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("--source", () => "published", "published or local"), (args, value) => args.Source = value);
-		AddOption(new Option<string>("--format", () => "server", "server or unity"), (args, value) => args.Format = value);
+		AddOption(new Option<string>("--source", () => "published", "Content source: published or local"), (args, value) => args.Source = value);
+		AddOption(new Option<string>("--format", () => "server", "Output format: server or unity"), (args, value) => args.Format = value);
 		AddOption(new Option<string>("--manifest-id", () => "global", "Manifest to bake"), (args, value) => args.ManifestId = value);
 		AddOption(new Option<string>("--output-dir", "Directory for bakedContent.bytes and bakedManifest.bytes"), (args, value) => args.OutputDir = value);
-		AddOption(new Option<string>("--local-changes", () => "fail", "fail or skip when local content differs from the published manifest"), (args, value) => args.LocalChanges = value);
-		AddOption(new Option<string>("--compression", () => "gzip", "gzip or none"), (args, value) => args.Compression = value);
+		AddOption(new Option<string>("--local-changes", () => "fail", "Action when local content differs from the published manifest: fail or skip"), (args, value) => args.LocalChanges = value);
+		AddOption(new Option<string>("--compression", () => "gzip", "Compression mode: gzip or none"), (args, value) => args.Compression = value);
 	}
 
 	public override async Task<ContentBakeResult> GetResult(ContentBakeCommandArgs args)

@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Content;
 using Beamable.Editor.BeamCli.Commands;
