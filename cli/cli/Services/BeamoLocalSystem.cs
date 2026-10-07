@@ -129,8 +129,8 @@ public partial class BeamoLocalSystem
 		// it was renamed by hand rather than through the CLI. In-memory only: zone storages use the local zid, and
 		// are skipped (left to the deploy check and the runtime guard) when none is set.
 		var localZid = _configService.GetConfigString(ConfigService.CFG_JSON_FIELD_ZID);
-		StorageNameValidator.ThrowIfAny(
-			StorageNameValidator.FindTooLong(BeamoManifest.ServiceDefinitions, _ctx.Cid, _ctx.Pid, localZid));
+		ProjectService.ThrowIfStorageNamesTooLong(
+			ProjectService.FindTooLongStorageNames(BeamoManifest.ServiceDefinitions, _ctx.Cid, _ctx.Pid, localZid));
 	}
 	
 	private static Uri GetLocalDockerEndpoint(ConfigService config)

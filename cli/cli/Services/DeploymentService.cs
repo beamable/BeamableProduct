@@ -1597,7 +1597,7 @@ public partial class DeployUtil
 				// only this scope's storages are deployed, so the one scope id serves as both pid and zid.
 				var scopedDefinitions = beamo.BeamoManifest.ServiceDefinitions
 					.Where(d => d.IsZoneScoped == (args.Scope == DeployScope.Zone));
-				StorageNameValidator.ThrowIfAny(StorageNameValidator.FindTooLong(
+				ProjectService.ThrowIfStorageNamesTooLong(ProjectService.FindTooLongStorageNames(
 					scopedDefinitions, targetCid, targetScopeId, targetScopeId, includeOnlyBeamoIds));
 			}
 
