@@ -45,24 +45,24 @@ public class EasyWebSocketTest : CommonTest
 		await Task.Delay(10);
 		
 		var sendMessageCount = 10_000;
-		var tasks = new List<Task>();
 		// The test server (websocket-sharp) reads frames through nested synchronous continuations, and
-		// overflows its stack when tens of thousands of tiny frames are already buffered. Send in short
-		// bursts with a pause between them so the server's reader gets to unwind; the client itself no
-		// longer paces its writes.
+		// overflows its stack when too many tiny frames are buffered at once. The client no longer paces
+		// its own writes, so the test does: a burst of concurrent sends is awaited (so it has been written)
+		// before a pause lets the server's reader unwind, and only then does the next burst start. Timer
+		// based staggering is not enough, because coalesced timers merge bursts under CPU contention.
 		const int burstSize = 8;
-		for (var i = 0; i < sendMessageCount; i++)
+		for (var start = 0; start < sendMessageCount; start += burstSize)
 		{
-			var index = i; // capture i.
-			var task = Task.Run(async () =>
+			var burst = new List<Task>();
+			for (var i = start; i < Math.Min(start + burstSize, sendMessageCount); i++)
 			{
-				await Task.Delay(index / burstSize); // ~burstSize messages per millisecond tick
-				await client.SendMessage("msg " + index);
-			});
-			tasks.Add(task);
-		}
+				var index = i; // capture i.
+				burst.Add(Task.Run(() => client.SendMessage("msg " + index)));
+			}
 
-		await Task.WhenAll(tasks);
+			await Task.WhenAll(burst);
+			await Task.Delay(1);
+		}
 		await Task.Delay(10);
 
 		await client.Close();
