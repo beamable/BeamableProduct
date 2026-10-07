@@ -21,9 +21,24 @@ describe('makeQueryString()', () => {
     expect(qs).toBe('?b=null&c=x');
   });
 
-  it('should stringify arrays using String()', () => {
+  it('should emit one repeated key per array element', () => {
     const qs = makeQueryString({ arr: [1, 2, 3] });
-    expect(qs).toBe('?arr=1%2C2%2C3');
+    expect(qs).toBe('?arr=1&arr=2&arr=3');
+  });
+
+  it('should encode each array element on its own', () => {
+    const qs = makeQueryString({ states: ['Granted', 'a,b c'], x: 'y' });
+    expect(qs).toBe('?states=Granted&states=a%2Cb%20c&x=y');
+  });
+
+  it('should skip undefined array elements but keep null ones', () => {
+    const qs = makeQueryString({ arr: ['a', undefined, null, 'b'] });
+    expect(qs).toBe('?arr=a&arr=null&arr=b');
+  });
+
+  it('should drop an empty array entirely', () => {
+    expect(makeQueryString({ arr: [], c: 'x' })).toBe('?c=x');
+    expect(makeQueryString({ arr: [] })).toBe('');
   });
 
   it('should return empty string for all undefined values', () => {
