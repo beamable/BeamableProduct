@@ -1588,6 +1588,19 @@ public partial class DeployUtil
 		}
 		else
 		{
+			// A storage whose MongoDB database name doesn't fit the target would only fail once the manifest is
+			// posted or the service first touches it; stop before building anything. The target is the requester's
+			// scope: `{cid}.{zid}` for a zone deploy (resolved by ApplyDeployScopeAsync), else the realm's cid/pid.
+			{
+				var (targetCid, targetScopeId) = provider.GetService<CliRequester>().GetEffectiveScopeIds();
+
+				// only this scope's storages are deployed, so the one scope id serves as both pid and zid.
+				var scopedDefinitions = beamo.BeamoManifest.ServiceDefinitions
+					.Where(d => d.IsZoneScoped == (args.Scope == DeployScope.Zone));
+				ProjectService.ThrowIfStorageNamesTooLong(ProjectService.FindTooLongStorageNames(
+					scopedDefinitions, targetCid, targetScopeId, targetScopeId, includeOnlyBeamoIds));
+			}
+
 			// Docker is only needed to build service images. A filtered plan whose set contains no
 			// local microservice (e.g. a portal-extension-only bundle) can run without the daemon.
 			var needsServiceBuild = beamo.BeamoManifest.ServiceDefinitions.Any(d =>

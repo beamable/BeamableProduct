@@ -339,6 +339,8 @@ public class ProjectService
 
 	public async Task<NewServiceInfo> CreateNewStorage(NewStorageCommandArgs args)
 	{
+		ValidateNewStorageName(args.AppContext.Cid, await ResolveNewStorageScope(args), args.ProjectName, args.IsZone);
+
 		string usedVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
 		var microserviceInfo = new NewServiceInfo();
 		// check that we have the templates available
@@ -420,6 +422,129 @@ public class ProjectService
 		string[] lines = File.ReadAllLines(csprojPath);
 		File.WriteAllLines(csprojPath, lines.Skip(1).ToArray());
 	}
+
+	// ── Storage name length ─────────────────────────────────────────────────────────────────────
+	// A storage maps to the MongoDB database {cid}{scope}_{storageName} (see StorageDatabaseName), where the scope is
+	// the pid for a realm storage and the zid for a zone storage, so how long a storage name may be depends on the
+	// target cid and scope. MongoDB rejects the name locally and remotely alike, so these checks guard creation,
+	// manifest init (local runs) and deploys.
+
+	// The id the new storage's database name will be scoped by: the pid for a realm storage, the zid for a zone
+	// storage. Null when it can't be resolved (e.g. not logged in), in which case the name check only warns.
+	private static async Task<string> ResolveNewStorageScope(NewStorageCommandArgs args)
+	{
+		if (!args.IsZone)
+		{
+			return args.AppContext.Pid;
+		}
+
+		var localZid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_ZID);
+		try
+		{
+			return await ZoneResolver.ResolveZid(args.DependencyProvider, args.AppContext.Cid, args.AppContext.Pid,
+				localZid);
+		}
+		catch (Exception ex)
+		{
+			// a selected realm's zone binding is authoritative, so don't guess with the local zid; an unresolved
+			// zone leaves the name check warn-only.
+			Log.Debug($"Could not resolve the zone for the storage name check: {ex.Message}");
+			return null;
+		}
+	}
+
+	/// <summary>
+	/// Validates the name of a storage about to be created. With a known cid and scope (pid, or zid for a zone
+	/// storage) a name that doesn't fit throws; without them, the name is only compared against the worst-case
+	/// budget and a warning is logged, since the target isn't known yet.
+	/// </summary>
+	public static void ValidateNewStorageName(string cid, string scope, string storageName, bool isZone)
+	{
+		if (IsNumericCid(cid) && !string.IsNullOrEmpty(scope))
+		{
+			if (StorageDatabaseName.IsTooLong(cid, scope, storageName))
+			{
+				ThrowIfStorageNamesTooLong(new List<string> { StorageDatabaseName.DescribeTooLong(cid, scope, storageName) });
+			}
+
+			return;
+		}
+
+		// Worst-case ids are snowflake longs of up to 19 digits: cid (19), pid "DE_" + 19, zid "ZONE_" + 19.
+		const int worstCaseCidLength = 19;
+		var worstCaseScopeLength = isZone ? 24 : 22;
+		var worstCase = StorageDatabaseName.MaxLength - worstCaseCidLength - worstCaseScopeLength - 1;
+		if (storageName.Length > worstCase)
+		{
+			Log.Warning($"Storage [{storageName}] is {storageName.Length} characters long. Its MongoDB database name " +
+			            $"is {{cid}}{{{(isZone ? "zid" : "pid")}}}_{{storageName}} (at most {StorageDatabaseName.MaxLength} " +
+			            $"characters), and the {(isZone ? "zone" : "realm")} isn't known yet, so it can't be checked. " +
+			            $"Names up to {worstCase} characters always fit; a longer name may fail once you run or deploy it.");
+		}
+	}
+
+	/// <summary>
+	/// Returns one message per local storage whose database name would be too long. Realm storages are checked
+	/// against <paramref name="pid"/> and zone storages against <paramref name="zid"/>; a storage whose scope id is
+	/// unknown (null/empty) is skipped, as is everything when <paramref name="cid"/> isn't a numeric customer id.
+	/// </summary>
+	/// <param name="definitions">The manifest's definitions; only local storages are checked.</param>
+	/// <param name="includeOnlyBeamoIds">When set, only these storages are checked.</param>
+	public static List<string> FindTooLongStorageNames(
+		IEnumerable<BeamoServiceDefinition> definitions,
+		string cid,
+		string pid,
+		string zid,
+		ICollection<string> includeOnlyBeamoIds = null)
+	{
+		var errors = new List<string>();
+		if (!IsNumericCid(cid))
+		{
+			return errors;
+		}
+
+		foreach (var definition in definitions)
+		{
+			if (!definition.IsLocal || definition.Protocol != BeamoProtocolType.EmbeddedMongoDb)
+				continue;
+			if (includeOnlyBeamoIds != null && !includeOnlyBeamoIds.Contains(definition.BeamoId))
+				continue;
+
+			var scope = definition.IsZoneScoped ? zid : pid;
+			if (string.IsNullOrEmpty(scope))
+			{
+				Log.Trace($"Skipping storage name length check for storage=[{definition.BeamoId}]; no " +
+				          $"{(definition.IsZoneScoped ? "zid" : "pid")} is known.");
+				continue;
+			}
+
+			if (StorageDatabaseName.IsTooLong(cid, scope, definition.BeamoId))
+			{
+				errors.Add(StorageDatabaseName.DescribeTooLong(cid, scope, definition.BeamoId));
+			}
+		}
+
+		return errors;
+	}
+
+	/// <summary>
+	/// Throws a single <see cref="CliException"/> listing every storage in <paramref name="errors"/>, if any.
+	/// </summary>
+	public static void ThrowIfStorageNamesTooLong(List<string> errors)
+	{
+		if (errors.Count == 0)
+		{
+			return;
+		}
+
+		var lines = string.Join(Environment.NewLine, errors.Select(e => "  - " + e));
+		throw new CliException(
+			$"Some storage names are too long for MongoDB:{Environment.NewLine}{lines}{Environment.NewLine}" +
+			"Rename these storages to fit: change the <BeamId> property (or the .csproj name when <BeamId> isn't set) " +
+			"and the matching [StorageObject] attribute name.");
+	}
+
+	private static bool IsNumericCid(string cid) => !string.IsNullOrEmpty(cid) && cid.All(char.IsDigit);
 
 	public async Task<NewServiceInfo> CreateNewMicroservice(NewMicroserviceArgs args)
 	{
