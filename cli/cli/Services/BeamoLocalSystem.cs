@@ -905,7 +905,18 @@ public class PortalExtensionDef
 
 	public string AbsolutePackageJsonPath => Path.Combine(AbsolutePath, "package.json");
 
-	public List<string> MicroserviceDependencies => Properties.MicroserviceDependencies;
+	/// <summary>
+	/// The microservices this extension depends on, never null.
+	/// <para>An extension's package.json may omit "microserviceDependencies" entirely, and the
+	/// generated assets/metadata.json then serializes it as an explicit <c>null</c> — so a field
+	/// initializer on <see cref="PortalExtensionPackageProperties"/> is not enough, because Json.NET
+	/// assigns the null over it. Normalising here, at the one accessor every caller goes through,
+	/// keeps a dependency-free extension from NREing at the use site: one such extension made
+	/// `project generate pe-client` throw for EVERY microservice in the workspace (it scans all
+	/// extensions per service), which failed the post-build target and left the whole tier unable
+	/// to start. The <c>??=</c> writes back, so callers that mutate the list still mutate Properties.</para>
+	/// </summary>
+	public List<string> MicroserviceDependencies => Properties.MicroserviceDependencies ??= new List<string>();
 	public PortalExtensionPackageProperties Properties;
 
 	private string ToolkitNodeModulesPackageJsonPath =>

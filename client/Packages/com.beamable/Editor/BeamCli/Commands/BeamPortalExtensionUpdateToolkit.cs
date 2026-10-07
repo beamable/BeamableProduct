@@ -58,13 +58,14 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual PortalExtensionUpdateToolkitWrapper PortalExtensionUpdateToolkit(PortalExtensionUpdateToolkitArgs updateToolkitArgs)
+        public virtual PortalExtensionUpdateToolkitWrapper PortalExtensionUpdateToolkit(PortalArgs portalArgs, PortalExtensionUpdateToolkitArgs updateToolkitArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
             genBeamCommandArgs.Add("portal");
+            genBeamCommandArgs.Add(portalArgs.Serialize());
             genBeamCommandArgs.Add("extension");
             genBeamCommandArgs.Add("update-toolkit");
             genBeamCommandArgs.Add(updateToolkitArgs.Serialize());

@@ -1,3 +1,36 @@
+## Unreleased
+
+### Breaking
+
+- **The campaign-offer contract was reshaped.** `getEntitlements` becomes
+  `getCampaignOffers(federationId, states?)`, and the route it calls becomes
+  `GET /api/campaign-offer/campaign-offers`. `states` filters by lifecycle — omit it for everything,
+  pass `['Granted']` for what a store screen wants. "Unredeemed" was never a state: it would also
+  include revoked and expired.
+- `CampaignOfferEntitlement` → `CampaignOffer`; `CampaignOfferEntitlementsResponse` →
+  `CampaignOffersResponse`. `state` is now a closed union (`'Granted' | 'Redeemed' | 'Revoked' |
+  'Expired'`) rather than an open string, and it is **capitalised** — the platform owns this state
+  machine, so a store cannot invent a fifth value.
+- **`CampaignOfferListingRef` and `CampaignOfferPrice` are gone**, and `CampaignOfferReward` is now
+  `CampaignOfferAmount`. An offer carries `cost` and `rewards` as two lists of the same shape, at the
+  same level — the two halves of one trade. The price used to hang off a storefront-listing wrapper,
+  which meant a provider without a storefront had nowhere to say what its offer cost at all.
+  Read `offer.cost[0].symbol` / `.amount` where you read `offer.listings[0].price` before.
+- `amount` is now always a real quantity. A loot roll is `1` roll, not `0` of a prize; a store that
+  cannot enumerate its payout leaves `rewards` empty instead.
+
+### Changed
+
+- **Claiming IS the purchase.** The provider spends on the player's behalf, so `redeem` is one call —
+  not a commerce purchase followed by a settle. A client that buys first now charges the player twice.
+- **`available` is re-evaluated on every read.** A campaign can gate an offer, and the gate is checked
+  when the list is read — so an offer the player could not claim yesterday unlocks by itself, with no
+  new message. Never cache the list across a session.
+- `unavailableReasons[].properties` carries structured facts (`attribute`, `target`, `current`) so a
+  client can render progress, or decide to hide a row rather than show it locked. Prefer them over
+  `message`, which was authored for an operator.
+- Responses carry `contractVersion`, so skew is detectable rather than discovered as a parse bug.
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -7,8 +40,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The offer federation is now explicitly the *virtual* offer federation.**
+  `IFederatedCampaignOffer` is renamed `IFederatedCampaignVirtualOffer` and the default provider's
+  id `beamable_store` becomes `beamable_virtual_store`. Real-money offers become a separate
+  federation with its own contract, because they need platform product ids, a native purchase flow,
+  receipt verification and an external settlement callback — none of which a soft-currency offer
+  has any use for, and all of which every virtual provider was inheriting as fields it could not
+  fill.
+
+  Consequently `CampaignOfferPrice` drops `realPriceCents`, `currencyCode` and `productIds`: a
+  price is now a currency `symbol` and `amount`. The gateway route, the reserved campaign payload
+  keys and the `CampaignOffer*` type names are unchanged — those are shared dispatch vocabulary
+  across offer federations, in the same way one message-rail route serves push, email and ingame.
+
+- **A campaign condition has one evaluator: the platform.** `VerifyConditions` is removed from
+  `IFederatedCampaignVirtualOffer` (four methods now), along with `CampaignConditionCheck` /
+  `CampaignConditionVerdict` and the Portal's `offer-condition` extension site. A condition could name
+  a federation of its own, which the gateway asked over HTTP; it bought a yes/no verdict about an
+  opaque payload — no progress, no message of its own — and cost a method every provider had to
+  implement, which Beamable's own store could only stub out as an empty verdict. **A store that wants a
+  gate of its own reports it on `available` / `unavailableReasons`**, in `GetCampaignOffers` and
+  `RedeemOffer`, where it can also say *why*.
+
+  None of this is client-reachable: `VerifyConditions` was gateway→service only and was never a
+  generated route, so `beam.campaignOffer` is unaffected. `conditionToken` still round-trips through a
+  store opaquely, and an unmet gate's reason now carries `attribute`, `target` and `current`, so a
+  client can render "Level 3 / 10" instead of only an operator's sentence — `current` travels only from
+  a public stats namespace.
+
 ### Added
 
+- `CampaignOfferService` (`beam.campaignOffer`) — the player half of the **virtual offer
+  federation** (`IFederatedCampaignVirtualOffer`): `getEntitlements(federationId)` and
+  `redeem(federationId, grantId)`, the only two campaign-offer routes a player token can reach. The
+  federation id is always a parameter; `'beamable_virtual_store'` is the default provider Beamable
+  ships, not a special case. `redeem` resolves for a refused claim — check `success` on the body.
+  Claiming does not pay out: a virtual offer is bought with soft currency through
+  `POST /object/commerce/{playerId}/purchase`, and the claim settles the grant afterwards.
+- `CampaignOfferEntitlement` now carries the offer inline: `offer`, `listings`, `available` and
+  `unavailableReasons`. One `getEntitlements` call is enough to render a store screen, instead of
+  a `GetOffer` fan-out per row. All optional — a provider may omit `offer` and the client falls
+  back to the opaque `offerId`.
+- `CampaignOfferReward` and `CampaignOfferItem.rewards` — what an offer actually gives the player,
+  itemised, so a bundle can disclose its contents instead of reaching the player as a title and a
+  price. `type` is an **open string** (`currency`, `item`, `entitlement`, `lootRoll`,
+  or a store's own), so never switch on it exhaustively; render what you know and fall back to
+  `title`/`symbol`. It is disclosure, not a receipt — never reconcile it against what landed, and
+  an empty list means "this store cannot enumerate its payout", not "gives nothing".
+- `CampaignOfferCatalogResponse.properties` — a catalog-level escape hatch, with two well-known keys
+  (`withheldCount`, `withheldReason`). An empty `offers` list cannot distinguish "nothing authored yet"
+  from "this store has listings but none it can offer here", and only the provider knows which; these
+  let it say so in a sentence a surface renders verbatim. Absence means nothing was withheld.
+- New campaign-offer schemas: `CampaignOfferItem`, `CampaignOfferListingRef`, `CampaignOfferPrice`
+  (a soft-currency `symbol` and `amount`, plus a display `label`), `CampaignOfferReason`,
+  `CampaignOfferReward`, `CampaignOfferText`. Each of
+  `CampaignOfferListingRef`, `CampaignOfferPrice`, `CampaignOfferReason` and `CampaignOfferReward`
+  carries a `properties` escape hatch, so a third-party store can extend the contract without a
+  version bump.
+- `beam.on('segments.transition', handler)` — subscribe to segment membership changes. The handler
+  receives a `SegmentMembershipChanged` (`segmentId`, `kind`, `cause`, `ruleVersion`, `timestamp`).
+  It is an advisory signal to re-read, not a source of truth: delivery is best-effort, filtered
+  server-side to players who appear connected, and not stored for an offline player — re-read the
+  membership endpoints on receipt.
+- `NotificationEventMap` / `SegmentMembershipChanged` types. `beam.on` / `beam.off` now accept both
+  refreshable-service contexts and pass-through notification contexts. For a notification context
+  the payload is handed to the handler as-is; no service `refresh()` is called.
 - Native **React Native** build target (`dist/react-native`), selected automatically by Metro
   via the package `exports` `"react-native"` condition. Ships AsyncStorage-backed token,
   config, and content storage (`ReactNativeTokenStorage`, `ReactNativeConfigStorage`,
@@ -41,13 +139,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recompute on `SegmentsApi`.
 - `beam.analytics` / `beamServer.analytics(playerId)` — an `AnalyticsService` with `track(event)`,
   `trackBatch(events)` and the never-throwing `trackSafely(event)`, plus the `AnalyticsEvent` type
-  and the `FUNNEL_CATEGORY` constant. The SDK could previously only *query* analytics
+  and the `FunnelStage` constant (`beam_delivered` / `beam_opened` / `beam_clicked` — the reserved
+  names the campaign funnel watches). The SDK could previously only *query* analytics
   (`analyticsPostQuery`) and had no way to emit at all, so a web or React Native game could not
   report campaign funnel stages the way Unity and the native push SDKs do.
 - `beam.mail` / `beamServer.mail(playerId)` — a `MailService` with `list(params)`, `get(id)`,
   `markAsRead(id)` and `update(params)`, plus the `MailState` constant object and the
   `MailStateValue`, `MailListParams` and `MailUpdateParams` types.
-- Campaign funnel `Opened` is now reported **automatically** when mail sent by a campaign moves
+- Campaign funnel `beam_opened` is now reported **automatically** when mail sent by a campaign moves
   from `Unread` to `Read` through `MailService`, so a game writes no tracking code of its own.
   Push gets that stage from the handset echoing the notification payload back; in-game mail has no
   handset, so this is the equivalent interception point. Reporting is fire-and-forget and never
@@ -77,6 +176,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Realtime subscriptions no longer stop firing after a reconnect. `beam.on` handlers were attached
+  to the `WebSocket` instance current at subscribe time, and reconnecting replaces that instance —
+  so every subscription silently died on the first dropped connection. `BeamWebSocket` now owns its
+  message listeners (`addListener` / `removeListener`) and re-attaches them to the new socket.
+- A throwing message handler no longer prevents other handlers for the same context from running.
 - The realtime websocket no longer fails with close 1006 on a device or emulator when the realm's
   client defaults advertise a loopback socket host. A `localhost` / `127.0.0.1` socket host is now
   retargeted to the configured `apiUrl` host, preserving the socket's own scheme and port.

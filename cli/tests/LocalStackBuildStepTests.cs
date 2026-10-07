@@ -66,6 +66,49 @@ public class LocalStackBuildStepTests
 		Assert.That(IndexOf(config, "build: scala"), Is.LessThan(IndexOf(config, "scala: gateway")));
 	}
 
+	/// <summary>
+	/// The Vite dep-optimizer cache is dropped before the dev server starts, on EVERY run.
+	///
+	/// Vite's `browserHash` — the `?v=` on every optimized dep URL — comes from the lockfile and the Vite
+	/// config, not from the chunk split. So a re-bundle re-chunks shared code while that hash stays put,
+	/// and anything holding the old module graph asks for a `chunk-*.js` that no longer exists: the portal
+	/// serves a blank page and "The file does not exist at .../deps/chunk-XXXX.js?v=YYYY". Starting each
+	/// run from an empty cache is what stops it arising.
+	/// </summary>
+	[Test]
+	public void Vite_cache_is_cleared_before_the_portal_dev_server_starts()
+	{
+		var config = CreateWithRepos();
+		var step = Step(config, LocalStackTemplate.ViteCacheStepName);
+
+		Assert.That(IndexOf(config, LocalStackTemplate.ViteCacheStepName),
+			Is.LessThan(IndexOf(config, "portal frontend")),
+			"clearing after the dev server has started would leave it serving the stale graph it booted with");
+
+		// NOT a build step: `--build` is occasional, and this has to happen every time node_modules may
+		// have moved under the optimizer (a fresh `npm install`, or `beam web use` repinning extensions).
+		Assert.That(step.build, Is.False, "must run on every up, not just --build");
+		Assert.That(step.waitForExit, Is.True, "the dev server must not start against a half-deleted cache");
+		Assert.That(step.shell, Is.True);
+		Assert.That(step.arguments, Does.Contain(".vite"));
+
+		// UNCONDITIONAL. Skipping the clear when Vite's own invalidation inputs (installed-tree lockfile,
+		// resolved config) look unchanged was tried, and it brought the blank page back within one run: a
+		// self-consistent cache on disk says nothing about the module graph a BROWSER is still holding, and
+		// keeping the cache keeps `browserHash`, so that stale graph is never retired. Only a full delete
+		// forces the re-optimize whose fresh timestamp moves the hash. Do not re-add a staleness guard.
+		Assert.That(step.arguments, Does.Not.Contain("_metadata.json"),
+			"a staleness guard here keeps a cache whose browserHash a stale browser graph still matches");
+
+		// Addressable by `--skip` / `--only`, and not swept up by `init --update-services`, which owns only
+		// the microservice/extension/group prefixes.
+		Assert.That(LocalStackTemplate.IsWebStep(LocalStackTemplate.ViteCacheStepName), Is.False);
+		Assert.That(LocalStackTemplate.ViteCacheStepName,
+			Does.Not.StartWith(LocalStackTemplate.MicroservicePrefix)
+				.And.Not.StartWith(LocalStackTemplate.ExtensionPrefix)
+				.And.Not.StartWith(LocalStackTemplate.GroupPrefix));
+	}
+
 	[Test]
 	public void Gateway_build_runs_dotnet_build_in_the_api_repo()
 	{
@@ -293,10 +336,12 @@ public class LocalStackBuildStepTests
 	}
 
 	/// <summary>
-	/// The two backend workers are as load-bearing as the gateway, and their absence is silent: without the
+	/// The backend workers are as load-bearing as the gateway, and their absence is silent: without the
 	/// message-rail runtime a send stages and never delivers; without the campaign runtime a campaign
-	/// publishes and then never enrolls, advances or sends. The campaign runtime was in fact missing from
-	/// this template until it was noticed only by a campaign sitting in Launching forever — hence the guard.
+	/// publishes and then never enrolls, advances or sends; without the segmentation runtime a segment ruled
+	/// on a clock-derived attribute gains members and never loses them. Two of the three were in fact missing
+	/// from this template until each was noticed only by its symptom — a campaign sitting in Launching
+	/// forever, an `active-today` count that only ever grew — hence the guard.
 	/// </summary>
 	[Test]
 	public void Emits_the_backend_worker_runtimes_with_their_own_ports()
@@ -307,6 +352,7 @@ public class LocalStackBuildStepTests
 		{
 			("build: c# message rail runtime", "c# message rail runtime", "BeamableMessageRailRuntime"),
 			("build: c# campaign runtime", "c# campaign runtime", "BeamableCampaignRuntime"),
+			("build: c# segmentation runtime", "c# segmentation runtime", "BeamableSegmentationRuntime"),
 			("build: c# analytics loader", "c# analytics loader", "BeamableAnalyticsLoader"),
 		})
 		{
@@ -324,12 +370,15 @@ public class LocalStackBuildStepTests
 			Assert.That(IndexOf(config, buildName), Is.LessThan(IndexOf(config, runName)));
 		}
 
-		// Four .NET hosts share the machine, so each must bind a port of its own. The gateway takes the
+		// Five .NET hosts share the machine, so each must bind a port of its own. The gateway takes the
 		// ASPNETCORE_URLS default, so it has no entry — stand in a sentinel to keep the comparison honest.
 		// This is the assertion that catches a future port collision, which otherwise surfaces as whichever
 		// host started second silently failing to bind.
 		var ports = new[]
-			{ "c# gateway", "c# message rail runtime", "c# campaign runtime", "c# analytics loader" }
+		{
+			"c# gateway", "c# message rail runtime", "c# campaign runtime", "c# segmentation runtime",
+			"c# analytics loader"
+		}
 			.Select(n => Step(config, n))
 			.Select(s => s.environment.TryGetValue("ASPNETCORE_URLS", out var url) ? url : "gateway-default")
 			.ToArray();
@@ -340,12 +389,13 @@ public class LocalStackBuildStepTests
 			Is.LessThan(IndexOf(config, "c# campaign runtime")));
 	}
 
-	/// <summary>The four .NET hosts, as (build step, run step, project) — the set that must stay in lockstep.</summary>
+	/// <summary>The five .NET hosts, as (build step, run step, project) — the set that must stay in lockstep.</summary>
 	private static readonly (string build, string run, string project)[] DotnetHosts =
 	{
 		("build: c# gateway", "c# gateway", "BeamableGateway"),
 		("build: c# message rail runtime", "c# message rail runtime", "BeamableMessageRailRuntime"),
 		("build: c# campaign runtime", "c# campaign runtime", "BeamableCampaignRuntime"),
+		("build: c# segmentation runtime", "c# segmentation runtime", "BeamableSegmentationRuntime"),
 		("build: c# analytics loader", "c# analytics loader", "BeamableAnalyticsLoader"),
 	};
 

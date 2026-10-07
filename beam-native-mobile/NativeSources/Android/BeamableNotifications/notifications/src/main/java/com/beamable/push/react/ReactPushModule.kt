@@ -168,7 +168,7 @@ class ReactPushModule(
     @ReactMethod fun cancelAll() = PushManager.cancelAll()
 
     /**
-     * Offer / conversion funnel tracking. Emits a **Clicked** funnel event for an
+     * Offer click funnel tracking. Emits a **Clicked** funnel event for an
      * in-app offer click, attributed to the originating notification's intent data.
      * [intentDataJson] is the notification's intent-data JSON; [offerJson] the single clicked
      * offer (nullable). No-op unless campaignId + nodeId + scope + gamerTag are present.
@@ -176,11 +176,6 @@ class ReactPushModule(
     @ReactMethod
     fun trackOfferClicked(intentDataJson: String, offerJson: String?) =
         PushManager.trackOfferClicked(intentDataJson, offerJson)
-
-    /** Emits a **Converted** funnel event for an offer conversion. See [trackOfferClicked]. */
-    @ReactMethod
-    fun trackOfferConverted(intentDataJson: String, offerJson: String?) =
-        PushManager.trackOfferConverted(intentDataJson, offerJson)
 
     /**
      * Persists the player's auth credentials so the native funnel can POST (see

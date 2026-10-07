@@ -81,6 +81,10 @@ public static class LocalStackTemplate
 		// OWN launchSettings.json already declares, so it is reserved for this process across BeamableAPI and
 		// cannot collide with the gateway (5000), the message rail (5030) or the campaign runtime (5045).
 		public string analyticsLoaderUrl = "http://localhost:5020";
+		// The segmentation runtime. NOT 5050, which is what its own launchSettings.json declares: the two
+		// BeamableScheduler function profiles (Loader, Dispatcher) already default to --port 5050, the same
+		// collision that sent the campaign runtime to 5045. 5055 is unused across BeamableAPI and this CLI.
+		public string segmentationRuntimeUrl = "http://localhost:5055";
 		public string apiDir;
 		public string scalaDir;
 		public string portalDir;
@@ -542,6 +546,18 @@ public static class LocalStackTemplate
 		AddDotnetHost(config, apiDir, "c# campaign runtime", "BeamableCampaignRuntime",
 			o.campaignRuntimeUrl, o.campaignRuntimeUrl);
 
+		// The segmentation runtime — the sole owner of the two reconciliation cadences: the hourly expiry pass
+		// and the nightly full sweep (SegmentSweepHost). The gateway only evaluates segments in reaction to a
+		// stat write, and for a rule built on a clock-derived attribute that fan-out can only ever ADD: a player
+		// who stops playing writes no stat, wakes no listener, and is never re-evaluated. So without this host
+		// the seeded segments that age (`active-today`, `dormant`, `first-time-payer`) gain members and never
+		// lose them, and the count in the portal drifts upward in silence until someone edits the rule or POSTs
+		// /reconcile — which looks like a broken number rather than a missing process. The scheduler cannot
+		// backstop it locally either (its dispatcher runs remotely and cannot call localhost back). Same shape
+		// as the workers above: cluster Member, own ASPNETCORE_URLS, ready on /health.
+		AddDotnetHost(config, apiDir, "c# segmentation runtime", "BeamableSegmentationRuntime",
+			o.segmentationRuntimeUrl, o.segmentationRuntimeUrl);
+
 		// The analytics loader — the competing consumer that drains the analytics event stream and lands it as
 		// Parquet in S3, which the gateway's commit timer then folds into the Iceberg tables Athena reads.
 		// Without it, events reach ActiveMQ and stop there: `POST /analytics/query` returns nothing and anything
@@ -578,6 +594,56 @@ public static class LocalStackTemplate
 			requiredOutput = Path.Combine(portalDir, "node_modules"),
 			waitForExit = true,
 			readyTimeoutSeconds = 600
+		});
+		// Drop Vite's dep-optimizer cache before the dev server starts.
+		//
+		// Vite's `browserHash` — the `?v=` on every optimized dep URL — is derived from the lockfile and
+		// the Vite config, NOT from the chunk split. So when the optimizer re-bundles (a dep discovered
+		// mid-session, or node_modules changed by `build: portal deps` / `beam web use` since the last
+		// run), the shared code is re-chunked into new `chunk-*.js` names while that hash stays the same.
+		// Anything holding the old module graph keeps asking for a chunk that no longer exists:
+		//
+		//   The file does not exist at ".../node_modules/.vite/deps/chunk-XXXX.js?v=YYYY" which is in
+		//   the optimize deps directory.
+		//
+		// The portal then serves a blank page, and because the regenerated cache has the SAME browserHash,
+		// clearing it by hand mid-session does not fix a browser already in that state. Starting every run
+		// from an empty cache is what keeps it from arising: the optimize pass that follows is the first
+		// one of the session, so nothing is holding a stale graph against it.
+		//
+		// Not a `build` step — this must run on EVERY `up`, not just `--build`. Cheap (an rm of a cache
+		// directory) and a no-op when the directory is absent, which is the normal case on a fresh clone.
+		//
+		// UNCONDITIONAL, deliberately. It is tempting to skip the clear when neither of Vite's own
+		// invalidation inputs (the installed-tree lockfile, the resolved config) has changed since the
+		// cache was written — it is ~1.2s and ~40MB of rewrites otherwise wasted on most runs. That was
+		// tried and it reintroduced the blank page within one run, because the thing that has to be
+		// invalidated is not on disk:
+		//
+		//   The cache on disk can be perfectly self-consistent while a BROWSER still holds a module graph
+		//   from an earlier generation of it. `browserHash` is preserved across a re-bundle whenever
+		//   `needsReload` is false (it keys on dep fileHashes, never on chunk names), so the previous
+		//   session's re-chunk renamed every `chunk-*.js` behind an unchanged `?v=`. Keeping the cache
+		//   keeps that hash, so the stale graph is never invalidated and every one of its chunk requests
+		//   404s. Deleting the directory forces a full re-optimize with a fresh timestamp, which is what
+		//   actually moves `browserHash` and retires the old graph.
+		//
+		// So the clear is not an optimisation to be skipped when inputs look unchanged; the input that
+		// matters is one the server cannot see. 1.2s is the price of that, and it is noise next to the
+		// steps around it.
+		var clearViteOnWindows = OperatingSystem.IsWindows();
+		config.steps.Add(new LocalStackStep
+		{
+			name = ViteCacheStepName,
+			workingDirectory = portalDir,
+			shell = true,
+			shellKind = clearViteOnWindows ? "powershell" : "sh",
+			arguments = clearViteOnWindows
+				// -ErrorAction SilentlyContinue so an absent cache is not a failed step.
+				? @"Remove-Item -Recurse -Force -ErrorAction SilentlyContinue node_modules\.vite"
+				: "rm -rf node_modules/.vite",
+			waitForExit = true,
+			readyTimeoutSeconds = 60
 		});
 		config.steps.Add(new LocalStackStep
 		{
@@ -716,10 +782,16 @@ public static class LocalStackTemplate
 			};
 			if (isGateway)
 			{
-				// The gateway exposes /metadata (PR#632) once it is serving; use it as a stronger, backend-confirmed
-				// readiness gate, with the log substring above as fallback. Its readiness URL is the Caddy host, so
-				// name the port it actually binds separately.
-				step.readyWhenHttp200 = "${host}/metadata";
+				// The gateway exposes /metadata (PR#632) once it is serving; use it as a stronger,
+				// backend-confirmed readiness gate, with the log substring above as fallback.
+				//
+				// Probed DIRECTLY on the port it binds, not through Caddy — for the same reason
+				// analytics-gateway is below, plus a harder one: Caddy has no /metadata route at all. Its
+				// route table (BeamableAPI/docker/caddy/routes.caddy) handles /basic/*, /object/*, /socket,
+				// /report/* and /wingman/*, and everything else falls to a catch-all pointing at the C#
+				// gateway on :5000 — which does not serve /metadata either. So `${host}/metadata` is a
+				// permanent 404 and this gate could never fire; readiness passed only on the log substring.
+				step.readyWhenHttp200 = $"http://localhost:{o.scalaGatewayPort}/metadata";
 				step.port = o.scalaGatewayPort;
 			}
 			else if (tool.name.Equals("analytics-gateway", StringComparison.OrdinalIgnoreCase))
@@ -816,6 +888,14 @@ public static class LocalStackTemplate
 
 	/// <summary>Readiness probe for <see cref="WebRegistryStepName"/> — Verdaccio's default address.</summary>
 	public const string WebRegistryReadyUrl = "http://localhost:4873";
+
+	/// <summary>
+	/// Name of the step that drops Vite's dep-optimizer cache before the portal dev server starts. Named,
+	/// not inlined, so <c>beam local up --skip</c> can address it and the tests can assert its placement.
+	/// Deliberately avoids the microservice/extension/group prefixes below, so
+	/// <c>beam local init --update-services</c> leaves it alone.
+	/// </summary>
+	public const string ViteCacheStepName = "portal: clear vite cache";
 
 	/// <summary>
 	/// Names of the optional web-package steps. Like <see cref="WebRegistryStepName"/> these deliberately

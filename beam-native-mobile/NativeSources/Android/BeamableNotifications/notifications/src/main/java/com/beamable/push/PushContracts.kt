@@ -45,8 +45,9 @@ interface PushListener {
     fun onError(stage: String, message: String)
 
     /**
-     * Result of a native funnel-analytics POST: [funnelType] is the funnel stage name
-     * (e.g. "Clicked"), [ok] whether the POST succeeded, [statusCode] the HTTP status
+     * Result of a native funnel-analytics POST: [funnelType] is the stage's display label
+     * ([BeamableAnalytics.FunnelType.label], e.g. "Clicked" — not the `beam_*` wire name),
+     * [ok] whether the POST succeeded, [statusCode] the HTTP status
      * (or 0 when no network attempt was made), and [message] a short human description.
      *
      * Default no-op so existing implementers (Unity/Unreal bridges, tests) keep compiling.

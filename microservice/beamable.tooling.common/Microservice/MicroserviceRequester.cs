@@ -17,807 +17,807 @@ using ZLogger;
 
 namespace Beamable.Server
 {
-   public class WebsocketRequest
-   {
-      public long id;
-      public string method;
-      public string path;
-      public object body;
-      public long? from;
-      public string[] scopes;
-      public Dictionary<string, string> headers;
-   }
-
-   public class WebsocketReply
-   {
-      public long id;
-      public long status;
-      public object body;
-   }
-
-   public interface IPlatformSubscription
-   {
-      Task Resolve(IUserScope scope);
-   }
-   public class PlatformSubscription<T> : IPlatformSubscription
-   {
-      public string EventName;
-      public Action Unsubscribe;
-      public Func<IUserScope, T, Task> OnEvent;
-
-      public async Task Resolve(IUserScope scope)
-      {
-         var ctx = scope.Context;
-         var data = JsonConvert.DeserializeObject<T>(ctx.Body, UnitySerializationSettings.Instance);
-         if (OnEvent == null) return;
-         await OnEvent.Invoke(scope, data);
-      }
-   }
-
-
-   public class WebsocketRequesterException : RequesterException
-   {
-      public WebsocketRequesterException(string method, string uri, long responseCode, string responsePayload) : base(Constants.Requester.ERROR_PREFIX_WEBSOCKET_RES, method,
-         uri, responseCode, responsePayload)
-      {
-
-      }
-   }
-
-   public class UnauthenticatedException : WebsocketRequesterException
-   {
-      public WebsocketErrorResponse Error { get; }
-
-      public UnauthenticatedException(WebsocketErrorResponse error, string method, string uri, long responseCode, string responsePayload) : base(method, uri, responseCode, responsePayload)
-      {
-         Error = error;
-      }
-   }
-
-   public interface IWebsocketResponseListener
-   {
-      long Id { get; set; }
-      string Path { get; set; }
-      string Method { get; set; }
-      BeamActivity Activity { get; set; }
-      void Resolve(RequestContext ctx);
-   }
-   public class WebsocketResponseListener<T> : IWebsocketResponseListener
-   {
-      public Promise<T> OnDone;
-
-      public long Id { get; set; }
-      public string Path { get; set; }
-      public string Uri { get; set; }
-      public string Method { get; set; }
-      public BeamActivity Activity { get; set; }
-      public Func<string, T> Parser { get; set; }
-
-      public void Resolve(RequestContext ctx)
-      {
-         if (ctx.Status == 0)
-         {
-            OnDone.CompleteError(new WebsocketRequesterException(Method, Uri, ctx.Status, "noconnection"));
-         }
-         else if (ctx.Status == 403)
-         {
-            var error = JsonConvert.DeserializeObject<WebsocketErrorResponse>(ctx.Body, UnitySerializationSettings.Instance);
-            OnDone.CompleteError(new UnauthenticatedException(error, Method, Uri, ctx.Status, ctx.Body));
-         }
-         else if (ctx.Status != 200)
-         {
-            OnDone.CompleteError(new WebsocketRequesterException(Method, Uri, ctx.Status, ctx.Body));
-         }
-         else
-         {
-            // parse out the data from ctx.
-
-            if (Parser == null)
-            {
-               T DefaultParser(string json)
-               {
-                  return JsonConvert.DeserializeObject<T>(json, UnitySerializationSettings.Instance);
-               }
-               Parser = DefaultParser;
-            }
-
-            try
-            {
-               var result = Parser(ctx.Body);
-               ctx.ActivityContext?.StopAndDispose(ActivityStatusCode.Ok);
-               OnDone.CompleteSuccess(result);
-
-            }
-            catch (Exception ex)
-            {
-               ctx.ActivityContext?.StopAndDispose(ex);
-               OnDone.CompleteError(ex);
-            }
-         }
-      }
-   }
-
-   public class SocketRequesterContext
-   {
-	   public MicroserviceAuthenticationDaemon Daemon { get; set; }
-	   private readonly Func<Promise<IConnection>> _socketGetter;
-      public Promise<IConnection> Socket => _socketGetter();
-
-      public IActivityProvider ActivityProvider { get; set; }
-      private ConcurrentDictionary<long, IWebsocketResponseListener> _pendingMessages = new ConcurrentDictionary<long, IWebsocketResponseListener>();
-      // requestId -> Environment.TickCount64 deadline. Only populated when a request timeout is configured.
-      private readonly ConcurrentDictionary<long, long> _pendingDeadlines = new ConcurrentDictionary<long, long>();
-      private ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>> _subscriptions = new ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>>();
-      private long _lastRequestId = 0;
-      private readonly long _requestTimeoutMs;
-      private readonly Timer _timeoutSweeper;
-      private const int TIMEOUT_SWEEP_INTERVAL_MS = 1000;
-      private const int TIMEOUT_STATUS = 504;
-
-      // monotonic milliseconds; Environment.TickCount64 is not available on netstandard2.1
-      private static long NowMs => Stopwatch.GetTimestamp() / (Stopwatch.Frequency / 1000);
-
-      /// <summary>
-      /// The number of requests sent to the platform that have not received a response yet.
-      /// </summary>
-      public int PendingRequestCount => _pendingMessages.Count;
-
-      // default is false, set 1 for true.
-      private int _hasSocketClosedFlag = 1; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
-      public bool HasSocketClosed
-      {
-         get => (Interlocked.CompareExchange(ref _hasSocketClosedFlag, 1, 1) == 1);
-         private set
-         {
-            if (value) Interlocked.CompareExchange(ref _hasSocketClosedFlag, 1, 0);
-            else Interlocked.CompareExchange(ref _hasSocketClosedFlag, 0, 1);
-         }
-      }
-
-      public SocketRequesterContext(Func<Promise<IConnection>> socketGetter) : this(socketGetter, 0)
-      {
-      }
-
-      /// <param name="socketGetter">produces the promise for the current connection</param>
-      /// <param name="requestTimeoutSeconds">
-      /// how long a request to the platform may wait for its response before it is failed with a 504.
-      /// A value of 0 or less disables the timeout.
-      /// </param>
-      public SocketRequesterContext(Func<Promise<IConnection>> socketGetter, int requestTimeoutSeconds)
-      {
-	      _socketGetter = () =>
-         {
-            if (!HasSocketClosed)
-            {
-               throw new Exception("socket has closed");
-            }
-            return socketGetter();
-         };
-	      _requestTimeoutMs = requestTimeoutSeconds > 0 ? requestTimeoutSeconds * 1000L : 0;
-	      if (_requestTimeoutMs > 0)
-	      {
-		      _timeoutSweeper = new Timer(SweepExpiredRequests, null, TIMEOUT_SWEEP_INTERVAL_MS, TIMEOUT_SWEEP_INTERVAL_MS);
-	      }
-      }
-
-      /// <summary>
-      /// Fail every request that is still waiting on a response from the platform.
-      /// <para/>
-      /// This must happen whenever the connection those requests went out on is lost: the gateway session that
-      /// owned the request ids died with the socket, so the responses can never arrive. Without this, any
-      /// request handler awaiting a platform call would hang forever, which pins the shutdown grace period and
-      /// leaks the handler's task.
-      /// </summary>
-      /// <param name="reason">a human readable reason, included in the failure</param>
-      /// <returns>the number of requests that were failed</returns>
-      public int FailAllPendingRequests(string reason)
-      {
-	      var failed = 0;
-	      foreach (var id in _pendingMessages.Keys)
-	      {
-		      if (!_pendingMessages.TryRemove(id, out var listener)) continue;
-		      _pendingDeadlines.TryRemove(id, out _);
-		      failed++;
-		      // a status of 0 is the existing "noconnection" signal understood by the response listener.
-		      ResolveWithFailure(listener, 0, reason);
-	      }
-
-	      if (failed > 0)
-	      {
-		      BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"Failed {failed} pending platform request(s). reason=[{reason}]");
-	      }
-	      return failed;
-      }
-
-      private void SweepExpiredRequests(object state)
-      {
-	      try
-	      {
-		      var now = NowMs;
-		      foreach (var kvp in _pendingDeadlines)
-		      {
-			      if (kvp.Value > now) continue;
-			      if (!_pendingDeadlines.TryRemove(kvp.Key, out _)) continue;
-			      if (!_pendingMessages.TryRemove(kvp.Key, out var listener)) continue;
-
-			      BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"Platform request timed out after {_requestTimeoutMs}ms. id=[{kvp.Key}] method=[{listener.Method}] path=[{listener.Path}]");
-			      ResolveWithFailure(listener, TIMEOUT_STATUS, $"no response from the platform within {_requestTimeoutMs}ms");
-		      }
-	      }
-	      catch (Exception ex)
-	      {
-		      BeamableZLoggerProvider.LogContext.Value.ZLogError($"Error while sweeping expired platform requests. type=[{ex.GetType().Name}] message=[{ex.Message}]");
-	      }
-      }
-
-      private static void ResolveWithFailure(IWebsocketResponseListener listener, int status, string message)
-      {
-	      try
-	      {
-		      var ctx = new RequestContext(string.Empty, string.Empty, listener.Id, status, 0, listener.Path, listener.Method, message);
-		      listener.Resolve(ctx);
-	      }
-	      catch (Exception ex)
-	      {
-		      BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Failed to resolve listener {listener.Id} with a failure. type=[{ex.GetType().Name}] message=[{ex.Message}]");
-	      }
-      }
-
-
-      public async Task WaitForAuthorization(TimeSpan timeout=default, string message=null)
-      {
-	      var startTime = DateTime.UtcNow;
-	      if (timeout <= default(TimeSpan))
-	      {
-		      timeout = TimeSpan.FromSeconds(10);
-	      }
-
-	      if (Daemon.AuthorizationCounter <= 0)
-	      {
-		      BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Waiting for authorization, but auth is already done. message=[{message}]");
-		      return;
-	      }
-
-	      var enteringCount = Daemon.AuthorizationCounter;
-	      while (Daemon.AuthorizationCounter > 0)
-	      {
-		      var totalWaitedTime = DateTime.UtcNow - startTime;
-		      if (totalWaitedTime > timeout)
-		      {
-			      var exitCount = Daemon.AuthorizationCounter;
-			      throw new TimeoutException($"waited for authorization for too long. enter-count=[{enteringCount}] exit-count=[{exitCount}] Waited for [{totalWaitedTime}] started=[{startTime}] message=[{message}]");
-		      }
-		      await Task.Delay(100);
-	      }
-         BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Leaving wait for send. message=[{message}]");
-      }
-
-      public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10, Stopwatch sw=null, bool disableCompression=false)
-      {
-         var failures = new List<Exception>();
-         for (var retry = 0; retry < retryCount; retry++)
-         {
-	         try
-	         {
-		         var connection = await Socket;
-		         if (awaitAuthorization)
-		         {
-			        await WaitForAuthorization( message: message);
-		         }
-
-		         // authorization needs to be complete if this is any message _other_ than auth related
-		         // Use compression if negotiated and message is large enough
-		         var codec = Daemon?.NegotiatedCodec;
-		         if (codec != null && !disableCompression && SocketCompression.ShouldCompress(message))
-		         {
-			         var compressed = SocketCompression.Compress(message, codec);
-			         await connection.SendBinaryMessage(compressed, sw);
-		         }
-		         else
-		         {
-			         await connection.SendMessage(message, sw);
-		         }
-		         return;
-	         }
-	         catch (Exception ex)
-	         {
-		         failures.Add(ex);
-		         await Task.Delay(
-			         250); // wait awhile before trying again; so that its likely authorization has finished.
-	         }
-         }
-         // all attempts have failed : (
-         var finalEx = new SocketClosedException(failures);
-         BeamableZLoggerProvider.LogContext.Value.ZLogError($"Exception {finalEx.GetType().Name}: {finalEx.Message} - {finalEx.Source} \n {finalEx.StackTrace}");
-
-         for (var i = 0 ; i < failures.Count; i ++)
-         {
-            var failure = failures[i];
-            BeamableZLoggerProvider.LogContext.Value.ZLogError($"  Failure {i} {finalEx.GetType().Name}: {failure.Message} - {failure.Source} \n {failure.StackTrace}");
-         }
-
-         throw finalEx;
-      }
-
-      public void HandleCloseConnection()
-      {
-         HasSocketClosed = false;
-
-      }
-
-      private long GetNextRequestId()
-      {
-         lock (this)
-         {
-            return Interlocked.Decrement(ref _lastRequestId);
-         }
-      }
-
-      public PlatformSubscription<T> Subscribe<T>(string eventName, Action<T> callback)
-      {
-         return Subscribe<T>(eventName, (_, data) =>
-         {
-            callback?.Invoke(data);
-            return Task.CompletedTask;
-         });
-      }
-      
-      public PlatformSubscription<T> Subscribe<T>(string eventName, Func<T, Task> callback)
-      {
-         return Subscribe<T>(eventName, async (_, data) =>
-         {
-            var res = callback?.Invoke(data);
-            if (res != null)
-            {
-               await res;
-            }
-         });
-      }
-      
-      public PlatformSubscription<T> Subscribe<T>(string eventName, Action<IUserScope, T> callback)
-      {
-         return Subscribe<T>(eventName, (scope, data) =>
-         {
-            callback?.Invoke(scope, data);
-            return Task.CompletedTask;
-         });
-      }
-      
-      public PlatformSubscription<T> Subscribe<T>(string eventName, Func<IUserScope, T, Task> callback)
-      {
-         var subscription = new PlatformSubscription<T>
-         {
-            EventName = eventName,
-            OnEvent = callback
-         };
-
-         _subscriptions.TryAdd(eventName, new SynchronizedCollection<IPlatformSubscription>());
-
-         var subscriptionList = _subscriptions[eventName];
-         subscriptionList.Add(subscription);
-         var unsub = new Action(() =>
-         {
-            subscriptionList.Remove(subscription);
-         });
-         subscription.Unsubscribe = unsub;
-
-         return subscription;
-      }
-
-      private bool TryGetEventSubscriptions(string eventName, out SynchronizedCollection<IPlatformSubscription> subscriptions)
-      {
-         return _subscriptions.TryGetValue(eventName, out subscriptions);
-      }
-
-      public bool IsPlatformMessage(RequestContext ctx)
-      {
-         return string.IsNullOrEmpty(ctx.Path) || ctx.Path.StartsWith("event/");
-      }
-
-      public async Task HandleMessage(IDependencyProvider provider, MicroserviceRequestContext ctx, BeamActivity parentActivity=null)
-      {
-         if (parentActivity == null)
-         {
-            parentActivity = BeamActivity.Noop;
-         }
-         
-         if (ctx.IsEvent)
-         {
-            var eventName = ctx.Path.Substring("event/".Length);
-            parentActivity.SetDisplay($"On{eventName}");
-
-            if (TryGetEventSubscriptions(eventName, out var subscriptions))
-            {
-               var fork =
-                  provider == null
-                     ? new DependencyBuilder()
-                        .AddSingleton<RequestContext>(ctx)
-                        .AddSingleton<IBeamableRequester>(p => null)
-                        .AddSingleton<IBeamableServices>(p => null)
-                        .Build()
-                     : provider.Fork(b =>
-                     {
-                        b.RemoveIfExists<RequestContext>();
-                        b.RemoveIfExists<MicroserviceRequestContext>();
-                        b.AddScoped<RequestContext>(ctx);
-                        b.AddScoped<MicroserviceRequestContext>(ctx);
-                     });
-               
-               await using IUserScope scope = new UserRequestDataHandler(fork);
-               var startCount = subscriptions.Count; // take the count at the moment the event is processed. If something else subscribes at the same frame, they're too late.
-               for (var i = 0; i < startCount; i++) // TODO: there is still a bug with multi-threaded access; if an item is removed/ unsub
-               {
-                  await subscriptions[i].Resolve(scope);
-               }
-            }
-
-            //</color> <color=blue>BaseGet [{"id":1,"method":"post","path":"event/content.manifest","body":{"categories":["tournaments","announcements","listings","items","stores","sagamap","skus","currency","leaderboards","emails","game_types"]}}
-
-         } else if (TryGetListener(ctx.Id, out var listener))
-         {
-            // this is a response to some pending request...
-            try
-            {
-               parentActivity.SetDisplay($"Response ({ctx.Id})");
-               listener.Resolve(ctx);
-            }
-            finally
-            {               
-               Remove(ctx.Id);
-            }
-         }
-         else
-         {
-            BeamableLogger.LogError("There was no listener for request {id}", ctx.Id);
-         }
-      }
-
-
-      public Promise<T> AddListener<T>(WebsocketRequest req, string uri, Func<string, T> parser, BeamActivity parentActivity)
-      {
-         var requestId = GetNextRequestId();
-         if (_pendingMessages.ContainsKey(requestId))
-         {
-            BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"The request {requestId} was already taken");
-            return AddListener(req, uri, parser, parentActivity); // try again.
-         }
-
-         var promise = new Promise<T>();
-
-         req.id = requestId;
-         var listener = new WebsocketResponseListener<T>
-         {
-            Id = requestId,
-            OnDone = promise,
-            Parser = parser,
-            Uri = uri,
-            Method = req.method,
-            Path = req.path,
-            Activity = parentActivity
-         };
-
-         if (!_pendingMessages.TryAdd(requestId, listener))
-         {
-            promise.CompleteError(new Exception("request Id has already been taken in socket context. id=" +requestId));
-         }
-         else if (_requestTimeoutMs > 0)
-         {
-	         _pendingDeadlines[requestId] = NowMs + _requestTimeoutMs;
-         }
-         return promise;
-      }
-
-      public bool TryGetListener(long id, out IWebsocketResponseListener listener)
-      {
-         return _pendingMessages.TryGetValue(id, out listener);
-      }
-
-      /// <summary>
-      /// Forget about a pending request. Returns false when the request was already removed (it may have
-      /// timed out, or been failed by a disconnect, before its response arrived).
-      /// </summary>
-      public bool Remove(long id)
-      {
-	      _pendingDeadlines.TryRemove(id, out _);
-	      if (!_pendingMessages.TryRemove(id, out _))
-	      {
-		      BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"request Id could not be removed from the socket context; it was already resolved. id=[{id}]");
-		      return false;
-	      }
-	      return true;
-      }
-
-
-      public HashSet<string> EventNames
-      {
-         get
-         {
-            // TODO: handle locking? 
-            return new HashSet<string>(_subscriptions.Keys);
-         }
-      }
-   }
-
-   public class MicroserviceRequester : IRequester
-   {
-      private readonly IMicroserviceArgs _env;
-      protected readonly RequestContext _requestContext;
-
-      private readonly SocketRequesterContext _socketContext;
-      private readonly IActivityProvider _activityProvider;
-      private readonly bool _waitForAuthorization;
-
-      // TODO how do we handle Timeout errors?
-      // TODO what does concurrency look like?
-      public string Cid => _requestContext.Cid;
-      public string Pid => _requestContext.Pid;
-
-      // [Obsolete]
-      public MicroserviceRequester(
-         IMicroserviceArgs env, 
-         RequestContext requestContext, 
-         SocketRequesterContext socketContext,  
-         bool waitForAuthorization,
-         IActivityProvider activityProvider)
-      {
-         _env = env;
-         _requestContext = requestContext;
-         _socketContext = socketContext;
-         _waitForAuthorization = waitForAuthorization;
-         _activityProvider = activityProvider;
-      }
-
-      public IAccessToken AccessToken { get; }
-
-      /// <summary>
-      /// When set (e.g. <c>"cid.pid"</c>), every outgoing request stamps this value as the
-      /// <see cref="Constants.Requester.HEADER_SCOPE"/> (<c>X-BEAM-SCOPE</c>) header, overriding the scope the
-      /// socket authenticated with. A zone service's socket authenticates as <c>cid.zid</c>; an
-      /// <c>AssumeRealm</c> fork sets this to the realm's <c>cid.pid</c> so the gateway routes the request to
-      /// the realm instead of the zone (requires the backend to honor the per-request scope header). Left null
-      /// for ordinary requests, which inherit the socket's authenticated scope.
-      /// </summary>
-      public string ScopeOverride { get; set; }
-
-      public Task WaitForAuthorization(TimeSpan timeout = default, string message=null) => _socketContext.WaitForAuthorization(timeout, message);
-
-      /// <summary>
-      /// Acknowledge a message from the websocket.
-      /// </summary>
-      /// <param name="ctx">The request you wish to ack</param>
-      /// <param name="error">an error, or null for a 200 ack.</param>
-      /// <returns></returns>
-      public Promise<Unit> Acknowledge(RequestContext ctx, WebsocketErrorResponse error=null)
-      {
-         // only ack if the original request context was spawned from an event
-         if (!ctx.IsEvent)
-         {
-            return Promise<Unit>.Successful(PromiseBase.Unit);
-         }
-
-         var req = new WebsocketReply
-         {
-            id = ctx.Id,
-            status = error?.status ?? 200,
-            body = error
-         };
-         var dict = new ArrayDict
-         {
-            [nameof(req.id)] = req.id,
-            [nameof(req.status)] = req.status,
-            [nameof(req.body)] = new RawJsonProvider {Json = JsonConvert.SerializeObject(error, UnitySerializationSettings.Instance)}
-         };
-         var msg = "";
-         using (var stringBuilder = StringBuilderPool.StaticPool.Spawn())
-         {
-            msg = Json.Serialize(dict, stringBuilder.Builder);
-         }
-
-         return _socketContext.SendMessageSafely(msg, disableCompression: _env.DisableOutboundWsCompression);
-      }
-
-      public static AsyncLocal<BeamActivity> ContextActivity { get; set; } = new AsyncLocal<BeamActivity>();
-
-      /// <summary>
-      /// How many times a request that the gateway rejected with a 403 will re-authenticate and retry before
-      /// the 403 is surfaced to the caller. Without a bound, a session the gateway has permanently invalidated
-      /// produces an endless auth/retry loop.
-      /// </summary>
-      public const int MAX_AUTH_RETRIES = 3;
-
-      public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
-	      Func<string, T> parser = null, bool useCache = false)
-      {
-         return BeamableRequest(new SDKRequesterOptions<T>
-         {
-            method = method,
-            uri = uri,
-            body = body,
-            includeAuthHeader = includeAuthHeader,
-            parser = parser, 
-            useCache = useCache
-         });
-      }
-
-      public static readonly string[] DefaultEventNames = new string[]
-      {
-         Constants.Features.Services.CONTENT_UPDATE_EVENT,
-         Constants.Features.Services.REALM_CONFIG_UPDATE_EVENT,
-         Constants.Features.Services.LOGGING_CONTEXT_UPDATE_EVENT
-      };
-      /// <summary>
-      /// Each socket only needs to set up one subscription to the server.
-      /// All events will get piped to the client.
-      /// It's the client job to filter the events, and decide what is valuable.
-      /// </summary>
-      /// <returns></returns>
-      public Promise<EmptyResponse> InitializeSubscription()
-      {
-         return InitializeSubscription(DefaultEventNames, Array.Empty<string>());
-      }
-
-      public Promise<EmptyResponse> InitializeSubscription(IEnumerable<string> eventNames, IEnumerable<string> uniqueBindings)
-      {
-         var req = new MicroserviceEventProviderRequest
-         {
-            type = "event",
-            evtWhitelist = eventNames?.Distinct().ToArray() ?? Array.Empty<string>(),
-            evtUniqueBindings = uniqueBindings?.Distinct().ToArray() ?? Array.Empty<string>()
-         };
-         var promise = Request<MicroserviceProviderResponse>(Method.POST, "gateway/provider", req);
-         return promise.Map(_ => new EmptyResponse());
-      }
-
-      public IBeamableRequester WithAccessToken(TokenResponse tokenResponse)
-      {
-         throw new NotImplementedException();
-      }
-
-      public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> beamReq)
-      {
-	      return BeamableRequest(beamReq, 0);
-      }
-
-      private Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> beamReq, int authAttempt)
-      {
-	      
-         var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_REQUEST, ContextActivity.Value);
-        
-         var uri = beamReq.uri;
-         var body = beamReq.body;
-         var method = beamReq.method;
-         
-         // peel off the first slash of the uri, because socket paths are not relative, they are absolute. // TODO: xxx gross.
-         if (uri.StartsWith('/'))
-         {
-            uri = uri.Substring(1);
-         }
-         
-         if (body == null)
-         {
-            body = new { }; // empty object.
-         }
-
-         // build websocket request...
-
-         object bodyWrapper;
-         if (body is string bodyJson)
-         {
-            // serialize this as a raw json object
-            bodyWrapper = new RawJsonProvider {Json = bodyJson};
-         }
-         else
-         {
-            var json = JsonConvert.SerializeObject(body, UnitySerializationSettings.Instance);
-
-            bodyWrapper = new RawJsonProvider {Json = json};
-         }
-
-         var req = new WebsocketRequest
-         {
-            method = method.ToString().ToLower(),
-            body = body,
-            path = uri,
-            headers = new Dictionary<string, string>()
-         };
-         if (beamReq.headerInterceptor != null)
-         {
-            req.headers = beamReq.headerInterceptor.Invoke(req.headers);
-         }
-
-         // Stamp the scope override (if any) last so a per-request headerInterceptor can't drop it. This lets an
-         // AssumeRealm fork target a realm (cid.pid) over the zone's (cid.zid) socket.
-         if (!string.IsNullOrEmpty(ScopeOverride))
-         {
-            req.headers ??= new Dictionary<string, string>();
-            req.headers[Constants.Requester.HEADER_SCOPE] = ScopeOverride;
-         }
-
-         if (_requestContext != null &&
-             !_requestContext.IsInvalidUser && // Check to see if the requester has an invalid user --- if it does, the request is being made during
-                                               // the initialization process without an Microservice.AssumeUser call being made before.
-             _requestContext.UserId > 0 && // '0' is not a valid playerId, and represents a null value.
-             beamReq.includeAuthHeader)
-         {
-            req.from = _requestContext.UserId;
-         }
-
-         var firstAttempt = _socketContext.AddListener(req, uri, beamReq.parser, activity);
-
-         var dict = new ArrayDict
-         {
-            [nameof(req.id)] = req.id,
-            [nameof(req.method)] = req.method,
-            [nameof(req.path)] = req.path,
-            [nameof(req.from)] = req.from,
-            [nameof(req.body)] = bodyWrapper,
-            [nameof(req.headers)] = req.headers
-         };
-         activity.SetDisplay($"{method} {req.path} ({req.id})");
-         activity.SetTags(new TelemetryAttributeCollection()
-            .With(TelemetryAttributes.RequestPath(req.path))
-            .With(TelemetryAttributes.RequestPlayerId(req.from ?? 0))
-            .With(TelemetryAttributes.ConnectionRequestId(req.id)));
-         
-         var requestActivity = _activityProvider.Create(Constants.Features.Otel.TRACE_REQUEST_SEND, activity);
-
-         requestActivity.SetDisplay($"Request ({req.id})");
-
-         var msg = "";
-         using (var stringBuilder = StringBuilderPool.StaticPool.Spawn())
-         {
-            msg = Json.Serialize(dict, stringBuilder.Builder);
-         }
-
-         var truncatedMsg = msg.Substring(0, Math.Min(_env.LogTruncateLimit, msg.Length));
-         BeamableZLoggerProvider.LogContext.Value.LogDebug("sending request " + truncatedMsg);
-         _socketContext.Daemon.BumpRequestCounter();
-         
-         var wrappedResult = firstAttempt.RecoverWith(ex =>
-         {
-            if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway" && authAttempt < MAX_AUTH_RETRIES)
-            {
-               // need to wait for authentication to finish...
-               BeamableZLoggerProvider.LogContext.Value.ZLogDebug(
-                  $"Request {req.id} and {truncatedMsg} failed with 403. Will reauth and and retry. attempt=[{authAttempt + 1}/{MAX_AUTH_RETRIES}]");
-
-               _socketContext.Daemon.WakeAuthThread();
-               var waitForAuth = WaitForAuthorization(message: msg).ToPromise();
-               return waitForAuth
-                     .FlatMap(x =>
-                     {
-                        return BeamableRequest<T>(beamReq, authAttempt + 1);
-                        // return Request(method, uri, body, beamReq.includeAuthHeader, beamReq.parser, beamReq.useCache);
-
-                     })
-                  ;
-            }
-
-            _socketContext.Daemon.BumpRequestProcessedCounter();
-            activity.StopAndDispose(ex);
-            requestActivity.StopAndDispose(ex);
-            throw ex;
-         });
-         
-         return _socketContext.SendMessageSafely(msg, _waitForAuthorization, disableCompression: _env.DisableOutboundWsCompression)
-            .FlatMap(_ =>
-            {
-               requestActivity.StopAndDispose(ActivityStatusCode.Ok);
-
-               return wrappedResult;
-            })
-	         .Then(_ =>
-            {
-               activity.StopAndDispose(ActivityStatusCode.Ok);
-               _socketContext.Daemon.BumpRequestProcessedCounter();
-            });
-         
-         
-      }
-
-      public string EscapeURL(string url)
-      {
-         return System.Web.HttpUtility.UrlEncode(url);
-      }
-   }
+	public class WebsocketRequest
+	{
+		public long id;
+		public string method;
+		public string path;
+		public object body;
+		public long? from;
+		public string[] scopes;
+		public Dictionary<string, string> headers;
+	}
+
+	public class WebsocketReply
+	{
+		public long id;
+		public long status;
+		public object body;
+	}
+
+	public interface IPlatformSubscription
+	{
+		Task Resolve(IUserScope scope);
+	}
+	public class PlatformSubscription<T> : IPlatformSubscription
+	{
+		public string EventName;
+		public Action Unsubscribe;
+		public Func<IUserScope, T, Task> OnEvent;
+
+		public async Task Resolve(IUserScope scope)
+		{
+			var ctx = scope.Context;
+			var data = JsonConvert.DeserializeObject<T>(ctx.Body, UnitySerializationSettings.Instance);
+			if (OnEvent == null) return;
+			await OnEvent.Invoke(scope, data);
+		}
+	}
+
+
+	public class WebsocketRequesterException : RequesterException
+	{
+		public WebsocketRequesterException(string method, string uri, long responseCode, string responsePayload) : base(Constants.Requester.ERROR_PREFIX_WEBSOCKET_RES, method,
+			uri, responseCode, responsePayload)
+		{
+
+		}
+	}
+
+	public class UnauthenticatedException : WebsocketRequesterException
+	{
+		public WebsocketErrorResponse Error { get; }
+
+		public UnauthenticatedException(WebsocketErrorResponse error, string method, string uri, long responseCode, string responsePayload) : base(method, uri, responseCode, responsePayload)
+		{
+			Error = error;
+		}
+	}
+
+	public interface IWebsocketResponseListener
+	{
+		long Id { get; set; }
+		string Path { get; set; }
+		string Method { get; set; }
+		BeamActivity Activity { get; set; }
+		void Resolve(RequestContext ctx);
+	}
+	public class WebsocketResponseListener<T> : IWebsocketResponseListener
+	{
+		public Promise<T> OnDone;
+
+		public long Id { get; set; }
+		public string Path { get; set; }
+		public string Uri { get; set; }
+		public string Method { get; set; }
+		public BeamActivity Activity { get; set; }
+		public Func<string, T> Parser { get; set; }
+
+		public void Resolve(RequestContext ctx)
+		{
+			if (ctx.Status == 0)
+			{
+				OnDone.CompleteError(new WebsocketRequesterException(Method, Uri, ctx.Status, "noconnection"));
+			}
+			else if (ctx.Status == 403)
+			{
+				var error = JsonConvert.DeserializeObject<WebsocketErrorResponse>(ctx.Body, UnitySerializationSettings.Instance);
+				OnDone.CompleteError(new UnauthenticatedException(error, Method, Uri, ctx.Status, ctx.Body));
+			}
+			else if (ctx.Status != 200)
+			{
+				OnDone.CompleteError(new WebsocketRequesterException(Method, Uri, ctx.Status, ctx.Body));
+			}
+			else
+			{
+				// parse out the data from ctx.
+
+				if (Parser == null)
+				{
+					T DefaultParser(string json)
+					{
+						return JsonConvert.DeserializeObject<T>(json, UnitySerializationSettings.Instance);
+					}
+					Parser = DefaultParser;
+				}
+
+				try
+				{
+					var result = Parser(ctx.Body);
+					ctx.ActivityContext?.StopAndDispose(ActivityStatusCode.Ok);
+					OnDone.CompleteSuccess(result);
+
+				}
+				catch (Exception ex)
+				{
+					ctx.ActivityContext?.StopAndDispose(ex);
+					OnDone.CompleteError(ex);
+				}
+			}
+		}
+	}
+
+	public class SocketRequesterContext
+	{
+		public MicroserviceAuthenticationDaemon Daemon { get; set; }
+		private readonly Func<Promise<IConnection>> _socketGetter;
+		public Promise<IConnection> Socket => _socketGetter();
+
+		public IActivityProvider ActivityProvider { get; set; }
+		private ConcurrentDictionary<long, IWebsocketResponseListener> _pendingMessages = new ConcurrentDictionary<long, IWebsocketResponseListener>();
+		// requestId -> Environment.TickCount64 deadline. Only populated when a request timeout is configured.
+		private readonly ConcurrentDictionary<long, long> _pendingDeadlines = new ConcurrentDictionary<long, long>();
+		private ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>> _subscriptions = new ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>>();
+		private long _lastRequestId = 0;
+		private readonly long _requestTimeoutMs;
+		private readonly Timer _timeoutSweeper;
+		private const int TIMEOUT_SWEEP_INTERVAL_MS = 1000;
+		private const int TIMEOUT_STATUS = 504;
+
+		// monotonic milliseconds; Environment.TickCount64 is not available on netstandard2.1
+		private static long NowMs => Stopwatch.GetTimestamp() / (Stopwatch.Frequency / 1000);
+
+		/// <summary>
+		/// The number of requests sent to the platform that have not received a response yet.
+		/// </summary>
+		public int PendingRequestCount => _pendingMessages.Count;
+
+		// default is false, set 1 for true.
+		private int _hasSocketClosedFlag = 1; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
+		public bool HasSocketClosed
+		{
+			get => (Interlocked.CompareExchange(ref _hasSocketClosedFlag, 1, 1) == 1);
+			private set
+			{
+				if (value) Interlocked.CompareExchange(ref _hasSocketClosedFlag, 1, 0);
+				else Interlocked.CompareExchange(ref _hasSocketClosedFlag, 0, 1);
+			}
+		}
+
+		public SocketRequesterContext(Func<Promise<IConnection>> socketGetter) : this(socketGetter, 0)
+		{
+		}
+
+		/// <param name="socketGetter">produces the promise for the current connection</param>
+		/// <param name="requestTimeoutSeconds">
+		/// how long a request to the platform may wait for its response before it is failed with a 504.
+		/// A value of 0 or less disables the timeout.
+		/// </param>
+		public SocketRequesterContext(Func<Promise<IConnection>> socketGetter, int requestTimeoutSeconds)
+		{
+			_socketGetter = () =>
+			{
+				if (!HasSocketClosed)
+				{
+					throw new Exception("socket has closed");
+				}
+				return socketGetter();
+			};
+			_requestTimeoutMs = requestTimeoutSeconds > 0 ? requestTimeoutSeconds * 1000L : 0;
+			if (_requestTimeoutMs > 0)
+			{
+				_timeoutSweeper = new Timer(SweepExpiredRequests, null, TIMEOUT_SWEEP_INTERVAL_MS, TIMEOUT_SWEEP_INTERVAL_MS);
+			}
+		}
+
+		/// <summary>
+		/// Fail every request that is still waiting on a response from the platform.
+		/// <para/>
+		/// This must happen whenever the connection those requests went out on is lost: the gateway session that
+		/// owned the request ids died with the socket, so the responses can never arrive. Without this, any
+		/// request handler awaiting a platform call would hang forever, which pins the shutdown grace period and
+		/// leaks the handler's task.
+		/// </summary>
+		/// <param name="reason">a human readable reason, included in the failure</param>
+		/// <returns>the number of requests that were failed</returns>
+		public int FailAllPendingRequests(string reason)
+		{
+			var failed = 0;
+			foreach (var id in _pendingMessages.Keys)
+			{
+				if (!_pendingMessages.TryRemove(id, out var listener)) continue;
+				_pendingDeadlines.TryRemove(id, out _);
+				failed++;
+				// a status of 0 is the existing "noconnection" signal understood by the response listener.
+				ResolveWithFailure(listener, 0, reason);
+			}
+
+			if (failed > 0)
+			{
+				BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"Failed {failed} pending platform request(s). reason=[{reason}]");
+			}
+			return failed;
+		}
+
+		private void SweepExpiredRequests(object state)
+		{
+			try
+			{
+				var now = NowMs;
+				foreach (var kvp in _pendingDeadlines)
+				{
+					if (kvp.Value > now) continue;
+					if (!_pendingDeadlines.TryRemove(kvp.Key, out _)) continue;
+					if (!_pendingMessages.TryRemove(kvp.Key, out var listener)) continue;
+
+					BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"Platform request timed out after {_requestTimeoutMs}ms. id=[{kvp.Key}] method=[{listener.Method}] path=[{listener.Path}]");
+					ResolveWithFailure(listener, TIMEOUT_STATUS, $"no response from the platform within {_requestTimeoutMs}ms");
+				}
+			}
+			catch (Exception ex)
+			{
+				BeamableZLoggerProvider.LogContext.Value.ZLogError($"Error while sweeping expired platform requests. type=[{ex.GetType().Name}] message=[{ex.Message}]");
+			}
+		}
+
+		private static void ResolveWithFailure(IWebsocketResponseListener listener, int status, string message)
+		{
+			try
+			{
+				var ctx = new RequestContext(string.Empty, string.Empty, listener.Id, status, 0, listener.Path, listener.Method, message);
+				listener.Resolve(ctx);
+			}
+			catch (Exception ex)
+			{
+				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Failed to resolve listener {listener.Id} with a failure. type=[{ex.GetType().Name}] message=[{ex.Message}]");
+			}
+		}
+
+
+		public async Task WaitForAuthorization(TimeSpan timeout=default, string message=null)
+		{
+			var startTime = DateTime.UtcNow;
+			if (timeout <= default(TimeSpan))
+			{
+				timeout = TimeSpan.FromSeconds(10);
+			}
+
+			if (Daemon.AuthorizationCounter <= 0)
+			{
+				BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Waiting for authorization, but auth is already done. message=[{message}]");
+				return;
+			}
+
+			var enteringCount = Daemon.AuthorizationCounter;
+			while (Daemon.AuthorizationCounter > 0)
+			{
+				var totalWaitedTime = DateTime.UtcNow - startTime;
+				if (totalWaitedTime > timeout)
+				{
+					var exitCount = Daemon.AuthorizationCounter;
+					throw new TimeoutException($"waited for authorization for too long. enter-count=[{enteringCount}] exit-count=[{exitCount}] Waited for [{totalWaitedTime}] started=[{startTime}] message=[{message}]");
+				}
+				await Task.Delay(100);
+			}
+			BeamableZLoggerProvider.LogContext.Value.ZLogTrace($"Leaving wait for send. message=[{message}]");
+		}
+
+		public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10, Stopwatch sw=null, bool disableCompression=false)
+		{
+			var failures = new List<Exception>();
+			for (var retry = 0; retry < retryCount; retry++)
+			{
+				try
+				{
+					var connection = await Socket;
+					if (awaitAuthorization)
+					{
+						await WaitForAuthorization( message: message);
+					}
+
+					// authorization needs to be complete if this is any message _other_ than auth related
+					// Use compression if negotiated and message is large enough
+					var codec = Daemon?.NegotiatedCodec;
+					if (codec != null && !disableCompression && SocketCompression.ShouldCompress(message))
+					{
+						var compressed = SocketCompression.Compress(message, codec);
+						await connection.SendBinaryMessage(compressed, sw);
+					}
+					else
+					{
+						await connection.SendMessage(message, sw);
+					}
+					return;
+				}
+				catch (Exception ex)
+				{
+					failures.Add(ex);
+					await Task.Delay(
+						250); // wait awhile before trying again; so that its likely authorization has finished.
+				}
+			}
+			// all attempts have failed : (
+			var finalEx = new SocketClosedException(failures);
+			BeamableZLoggerProvider.LogContext.Value.ZLogError($"Exception {finalEx.GetType().Name}: {finalEx.Message} - {finalEx.Source} \n {finalEx.StackTrace}");
+
+			for (var i = 0 ; i < failures.Count; i ++)
+			{
+				var failure = failures[i];
+				BeamableZLoggerProvider.LogContext.Value.ZLogError($"  Failure {i} {finalEx.GetType().Name}: {failure.Message} - {failure.Source} \n {failure.StackTrace}");
+			}
+
+			throw finalEx;
+		}
+
+		public void HandleCloseConnection()
+		{
+			HasSocketClosed = false;
+
+		}
+
+		private long GetNextRequestId()
+		{
+			lock (this)
+			{
+				return Interlocked.Decrement(ref _lastRequestId);
+			}
+		}
+
+		public PlatformSubscription<T> Subscribe<T>(string eventName, Action<T> callback)
+		{
+			return Subscribe<T>(eventName, (_, data) =>
+			{
+				callback?.Invoke(data);
+				return Task.CompletedTask;
+			});
+		}
+
+		public PlatformSubscription<T> Subscribe<T>(string eventName, Func<T, Task> callback)
+		{
+			return Subscribe<T>(eventName, async (_, data) =>
+			{
+				var res = callback?.Invoke(data);
+				if (res != null)
+				{
+					await res;
+				}
+			});
+		}
+
+		public PlatformSubscription<T> Subscribe<T>(string eventName, Action<IUserScope, T> callback)
+		{
+			return Subscribe<T>(eventName, (scope, data) =>
+			{
+				callback?.Invoke(scope, data);
+				return Task.CompletedTask;
+			});
+		}
+
+		public PlatformSubscription<T> Subscribe<T>(string eventName, Func<IUserScope, T, Task> callback)
+		{
+			var subscription = new PlatformSubscription<T>
+			{
+				EventName = eventName,
+				OnEvent = callback
+			};
+
+			_subscriptions.TryAdd(eventName, new SynchronizedCollection<IPlatformSubscription>());
+
+			var subscriptionList = _subscriptions[eventName];
+			subscriptionList.Add(subscription);
+			var unsub = new Action(() =>
+			{
+				subscriptionList.Remove(subscription);
+			});
+			subscription.Unsubscribe = unsub;
+
+			return subscription;
+		}
+
+		private bool TryGetEventSubscriptions(string eventName, out SynchronizedCollection<IPlatformSubscription> subscriptions)
+		{
+			return _subscriptions.TryGetValue(eventName, out subscriptions);
+		}
+
+		public bool IsPlatformMessage(RequestContext ctx)
+		{
+			return string.IsNullOrEmpty(ctx.Path) || ctx.Path.StartsWith("event/");
+		}
+
+		public async Task HandleMessage(IDependencyProvider provider, MicroserviceRequestContext ctx, BeamActivity parentActivity=null)
+		{
+			if (parentActivity == null)
+			{
+				parentActivity = BeamActivity.Noop;
+			}
+
+			if (ctx.IsEvent)
+			{
+				var eventName = ctx.Path.Substring("event/".Length);
+				parentActivity.SetDisplay($"On{eventName}");
+
+				if (TryGetEventSubscriptions(eventName, out var subscriptions))
+				{
+					var fork =
+						provider == null
+							? new DependencyBuilder()
+								.AddSingleton<RequestContext>(ctx)
+								.AddSingleton<IBeamableRequester>(p => null)
+								.AddSingleton<IBeamableServices>(p => null)
+								.Build()
+							: provider.Fork(b =>
+							{
+								b.RemoveIfExists<RequestContext>();
+								b.RemoveIfExists<MicroserviceRequestContext>();
+								b.AddScoped<RequestContext>(ctx);
+								b.AddScoped<MicroserviceRequestContext>(ctx);
+							});
+
+					await using IUserScope scope = new UserRequestDataHandler(fork);
+					var startCount = subscriptions.Count; // take the count at the moment the event is processed. If something else subscribes at the same frame, they're too late.
+					for (var i = 0; i < startCount; i++) // TODO: there is still a bug with multi-threaded access; if an item is removed/ unsub
+					{
+						await subscriptions[i].Resolve(scope);
+					}
+				}
+
+				//</color> <color=blue>BaseGet [{"id":1,"method":"post","path":"event/content.manifest","body":{"categories":["tournaments","announcements","listings","items","stores","sagamap","skus","currency","leaderboards","emails","game_types"]}}
+
+			} else if (TryGetListener(ctx.Id, out var listener))
+			{
+				// this is a response to some pending request...
+				try
+				{
+					parentActivity.SetDisplay($"Response ({ctx.Id})");
+					listener.Resolve(ctx);
+				}
+				finally
+				{
+					Remove(ctx.Id);
+				}
+			}
+			else
+			{
+				BeamableLogger.LogError("There was no listener for request {id}", ctx.Id);
+			}
+		}
+
+
+		public Promise<T> AddListener<T>(WebsocketRequest req, string uri, Func<string, T> parser, BeamActivity parentActivity)
+		{
+			var requestId = GetNextRequestId();
+			if (_pendingMessages.ContainsKey(requestId))
+			{
+				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"The request {requestId} was already taken");
+				return AddListener(req, uri, parser, parentActivity); // try again.
+			}
+
+			var promise = new Promise<T>();
+
+			req.id = requestId;
+			var listener = new WebsocketResponseListener<T>
+			{
+				Id = requestId,
+				OnDone = promise,
+				Parser = parser,
+				Uri = uri,
+				Method = req.method,
+				Path = req.path,
+				Activity = parentActivity
+			};
+
+			if (!_pendingMessages.TryAdd(requestId, listener))
+			{
+				promise.CompleteError(new Exception("request Id has already been taken in socket context. id=" +requestId));
+			}
+			else if (_requestTimeoutMs > 0)
+			{
+				_pendingDeadlines[requestId] = NowMs + _requestTimeoutMs;
+			}
+			return promise;
+		}
+
+		public bool TryGetListener(long id, out IWebsocketResponseListener listener)
+		{
+			return _pendingMessages.TryGetValue(id, out listener);
+		}
+
+		/// <summary>
+		/// Forget about a pending request. Returns false when the request was already removed (it may have
+		/// timed out, or been failed by a disconnect, before its response arrived).
+		/// </summary>
+		public bool Remove(long id)
+		{
+			_pendingDeadlines.TryRemove(id, out _);
+			if (!_pendingMessages.TryRemove(id, out _))
+			{
+				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"request Id could not be removed from the socket context; it was already resolved. id=[{id}]");
+				return false;
+			}
+			return true;
+		}
+
+
+		public HashSet<string> EventNames
+		{
+			get
+			{
+				// TODO: handle locking?
+				return new HashSet<string>(_subscriptions.Keys);
+			}
+		}
+	}
+
+	public class MicroserviceRequester : IRequester
+	{
+		private readonly IMicroserviceArgs _env;
+		protected readonly RequestContext _requestContext;
+
+		private readonly SocketRequesterContext _socketContext;
+		private readonly IActivityProvider _activityProvider;
+		private readonly bool _waitForAuthorization;
+
+		// TODO how do we handle Timeout errors?
+		// TODO what does concurrency look like?
+		public string Cid => _requestContext.Cid;
+		public string Pid => _requestContext.Pid;
+
+		// [Obsolete]
+		public MicroserviceRequester(
+			IMicroserviceArgs env,
+			RequestContext requestContext,
+			SocketRequesterContext socketContext,
+			bool waitForAuthorization,
+			IActivityProvider activityProvider)
+		{
+			_env = env;
+			_requestContext = requestContext;
+			_socketContext = socketContext;
+			_waitForAuthorization = waitForAuthorization;
+			_activityProvider = activityProvider;
+		}
+
+		public IAccessToken AccessToken { get; }
+
+		/// <summary>
+		/// When set (e.g. <c>"cid.pid"</c>), every outgoing request stamps this value as the
+		/// <see cref="Constants.Requester.HEADER_SCOPE"/> (<c>X-BEAM-SCOPE</c>) header, overriding the scope the
+		/// socket authenticated with. A zone service's socket authenticates as <c>cid.zid</c>; an
+		/// <c>AssumeRealm</c> fork sets this to the realm's <c>cid.pid</c> so the gateway routes the request to
+		/// the realm instead of the zone (requires the backend to honor the per-request scope header). Left null
+		/// for ordinary requests, which inherit the socket's authenticated scope.
+		/// </summary>
+		public string ScopeOverride { get; set; }
+
+		public Task WaitForAuthorization(TimeSpan timeout = default, string message=null) => _socketContext.WaitForAuthorization(timeout, message);
+
+		/// <summary>
+		/// Acknowledge a message from the websocket.
+		/// </summary>
+		/// <param name="ctx">The request you wish to ack</param>
+		/// <param name="error">an error, or null for a 200 ack.</param>
+		/// <returns></returns>
+		public Promise<Unit> Acknowledge(RequestContext ctx, WebsocketErrorResponse error=null)
+		{
+			// only ack if the original request context was spawned from an event
+			if (!ctx.IsEvent)
+			{
+				return Promise<Unit>.Successful(PromiseBase.Unit);
+			}
+
+			var req = new WebsocketReply
+			{
+				id = ctx.Id,
+				status = error?.status ?? 200,
+				body = error
+			};
+			var dict = new ArrayDict
+			{
+				[nameof(req.id)] = req.id,
+				[nameof(req.status)] = req.status,
+				[nameof(req.body)] = new RawJsonProvider {Json = JsonConvert.SerializeObject(error, UnitySerializationSettings.Instance)}
+			};
+			var msg = "";
+			using (var stringBuilder = StringBuilderPool.StaticPool.Spawn())
+			{
+				msg = Json.Serialize(dict, stringBuilder.Builder);
+			}
+
+			return _socketContext.SendMessageSafely(msg, disableCompression: _env.DisableOutboundWsCompression);
+		}
+
+		public static AsyncLocal<BeamActivity> ContextActivity { get; set; } = new AsyncLocal<BeamActivity>();
+
+		/// <summary>
+		/// How many times a request that the gateway rejected with a 403 will re-authenticate and retry before
+		/// the 403 is surfaced to the caller. Without a bound, a session the gateway has permanently invalidated
+		/// produces an endless auth/retry loop.
+		/// </summary>
+		public const int MAX_AUTH_RETRIES = 3;
+
+		public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
+			Func<string, T> parser = null, bool useCache = false)
+		{
+			return BeamableRequest(new SDKRequesterOptions<T>
+			{
+				method = method,
+				uri = uri,
+				body = body,
+				includeAuthHeader = includeAuthHeader,
+				parser = parser,
+				useCache = useCache
+			});
+		}
+
+		public static readonly string[] DefaultEventNames = new string[]
+		{
+			Constants.Features.Services.CONTENT_UPDATE_EVENT,
+			Constants.Features.Services.REALM_CONFIG_UPDATE_EVENT,
+			Constants.Features.Services.LOGGING_CONTEXT_UPDATE_EVENT
+		};
+		/// <summary>
+		/// Each socket only needs to set up one subscription to the server.
+		/// All events will get piped to the client.
+		/// It's the client job to filter the events, and decide what is valuable.
+		/// </summary>
+		/// <returns></returns>
+		public Promise<EmptyResponse> InitializeSubscription()
+		{
+			return InitializeSubscription(DefaultEventNames, Array.Empty<string>());
+		}
+
+		public Promise<EmptyResponse> InitializeSubscription(IEnumerable<string> eventNames, IEnumerable<string> uniqueBindings)
+		{
+			var req = new MicroserviceEventProviderRequest
+			{
+				type = "event",
+				evtWhitelist = eventNames?.Distinct().ToArray() ?? Array.Empty<string>(),
+				evtUniqueBindings = uniqueBindings?.Distinct().ToArray() ?? Array.Empty<string>()
+			};
+			var promise = Request<MicroserviceProviderResponse>(Method.POST, "gateway/provider", req);
+			return promise.Map(_ => new EmptyResponse());
+		}
+
+		public IBeamableRequester WithAccessToken(TokenResponse tokenResponse)
+		{
+			throw new NotImplementedException();
+		}
+
+		public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> beamReq)
+		{
+			return BeamableRequest(beamReq, 0);
+		}
+
+		private Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> beamReq, int authAttempt)
+		{
+
+			var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_REQUEST, ContextActivity.Value);
+
+			var uri = beamReq.uri;
+			var body = beamReq.body;
+			var method = beamReq.method;
+
+			// peel off the first slash of the uri, because socket paths are not relative, they are absolute. // TODO: xxx gross.
+			if (uri.StartsWith('/'))
+			{
+				uri = uri.Substring(1);
+			}
+
+			if (body == null)
+			{
+				body = new { }; // empty object.
+			}
+
+			// build websocket request...
+
+			object bodyWrapper;
+			if (body is string bodyJson)
+			{
+				// serialize this as a raw json object
+				bodyWrapper = new RawJsonProvider {Json = bodyJson};
+			}
+			else
+			{
+				var json = JsonConvert.SerializeObject(body, UnitySerializationSettings.Instance);
+
+				bodyWrapper = new RawJsonProvider {Json = json};
+			}
+
+			var req = new WebsocketRequest
+			{
+				method = method.ToString().ToLower(),
+				body = body,
+				path = uri,
+				headers = new Dictionary<string, string>()
+			};
+			if (beamReq.headerInterceptor != null)
+			{
+				req.headers = beamReq.headerInterceptor.Invoke(req.headers);
+			}
+
+			// Stamp the scope override (if any) last so a per-request headerInterceptor can't drop it. This lets an
+			// AssumeRealm fork target a realm (cid.pid) over the zone's (cid.zid) socket.
+			if (!string.IsNullOrEmpty(ScopeOverride))
+			{
+				req.headers ??= new Dictionary<string, string>();
+				req.headers[Constants.Requester.HEADER_SCOPE] = ScopeOverride;
+			}
+
+			if (_requestContext != null &&
+			    !_requestContext.IsInvalidUser && // Check to see if the requester has an invalid user --- if it does, the request is being made during
+			                                      // the initialization process without an Microservice.AssumeUser call being made before.
+			    _requestContext.UserId > 0 && // '0' is not a valid playerId, and represents a null value.
+			    beamReq.includeAuthHeader)
+			{
+				req.from = _requestContext.UserId;
+			}
+
+			var firstAttempt = _socketContext.AddListener(req, uri, beamReq.parser, activity);
+
+			var dict = new ArrayDict
+			{
+				[nameof(req.id)] = req.id,
+				[nameof(req.method)] = req.method,
+				[nameof(req.path)] = req.path,
+				[nameof(req.from)] = req.from,
+				[nameof(req.body)] = bodyWrapper,
+				[nameof(req.headers)] = req.headers
+			};
+			activity.SetDisplay($"{method} {req.path} ({req.id})");
+			activity.SetTags(new TelemetryAttributeCollection()
+				.With(TelemetryAttributes.RequestPath(req.path))
+				.With(TelemetryAttributes.RequestPlayerId(req.from ?? 0))
+				.With(TelemetryAttributes.ConnectionRequestId(req.id)));
+
+			var requestActivity = _activityProvider.Create(Constants.Features.Otel.TRACE_REQUEST_SEND, activity);
+
+			requestActivity.SetDisplay($"Request ({req.id})");
+
+			var msg = "";
+			using (var stringBuilder = StringBuilderPool.StaticPool.Spawn())
+			{
+				msg = Json.Serialize(dict, stringBuilder.Builder);
+			}
+
+			var truncatedMsg = msg.Substring(0, Math.Min(_env.LogTruncateLimit, msg.Length));
+			BeamableZLoggerProvider.LogContext.Value.LogDebug("sending request " + truncatedMsg);
+			_socketContext.Daemon.BumpRequestCounter();
+
+			var wrappedResult = firstAttempt.RecoverWith(ex =>
+			{
+				if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway" && authAttempt < MAX_AUTH_RETRIES)
+				{
+					// need to wait for authentication to finish...
+					BeamableZLoggerProvider.LogContext.Value.ZLogDebug(
+						$"Request {req.id} and {truncatedMsg} failed with 403. Will reauth and and retry. attempt=[{authAttempt + 1}/{MAX_AUTH_RETRIES}]");
+
+					_socketContext.Daemon.WakeAuthThread();
+					var waitForAuth = WaitForAuthorization(message: msg).ToPromise();
+					return waitForAuth
+							.FlatMap(x =>
+							{
+								return BeamableRequest<T>(beamReq, authAttempt + 1);
+								// return Request(method, uri, body, beamReq.includeAuthHeader, beamReq.parser, beamReq.useCache);
+
+							})
+						;
+				}
+
+				_socketContext.Daemon.BumpRequestProcessedCounter();
+				activity.StopAndDispose(ex);
+				requestActivity.StopAndDispose(ex);
+				throw ex;
+			});
+
+			return _socketContext.SendMessageSafely(msg, _waitForAuthorization, disableCompression: _env.DisableOutboundWsCompression)
+				.FlatMap(_ =>
+				{
+					requestActivity.StopAndDispose(ActivityStatusCode.Ok);
+
+					return wrappedResult;
+				})
+				.Then(_ =>
+				{
+					activity.StopAndDispose(ActivityStatusCode.Ok);
+					_socketContext.Daemon.BumpRequestProcessedCounter();
+				});
+
+
+		}
+
+		public string EscapeURL(string url)
+		{
+			return System.Web.HttpUtility.UrlEncode(url);
+		}
+	}
 }

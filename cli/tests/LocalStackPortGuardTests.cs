@@ -114,6 +114,38 @@ public class LocalStackPortGuardTests
 		}
 	}
 
+	/// <summary>
+	/// A port held by a leftover from a previous stack must get the remedy that actually works.
+	///
+	/// The generic advice is `beam local stop`, and for this case it is worse than useless: `stop` reads
+	/// .beamable/local-stack.run.json, which only a DETACHED run writes. An attached run that was Ctrl+C'd
+	/// or died mid-bring-up leaves every process it had started with no run-state behind them, so `stop`
+	/// answers "No running local stack recorded" while ~20 ports stay held and the next `up` fails the same
+	/// way. Sending someone to a command that silently does nothing is the expensive part.
+	/// </summary>
+	[Test]
+	public void A_leftover_stack_process_is_recognised_so_the_remedy_is_not_beam_local_stop()
+	{
+		// The owner strings DescribeOwner produces: "pid <n> (<processName>)".
+		Assert.That(LocalStackPortGuard.LooksLikeStackLeftover("pid 33313 (java)"), Is.True,
+			"the Scala services and the portal run under shared runtimes");
+		Assert.That(LocalStackPortGuard.LooksLikeStackLeftover("pid 32881 (node)"), Is.True);
+		Assert.That(LocalStackPortGuard.LooksLikeStackLeftover("pid 32833 (BeamableGateway)"), Is.True);
+		Assert.That(LocalStackPortGuard.LooksLikeStackLeftover("pid 32852 (BeamableCampaignRuntime)"), Is.True);
+		Assert.That(LocalStackPortGuard.LooksLikeStackLeftover("pid 32844 (BeamableMessageRailRuntime)"), Is.True);
+
+		// Unrelated applications keep the generic remedy.
+		Assert.That(LocalStackPortGuard.LooksLikeStackLeftover("pid 1 (ControlCenter)"), Is.False);
+		Assert.That(LocalStackPortGuard.LooksLikeStackLeftover("pid 1 (Docker)"), Is.False);
+		Assert.That(LocalStackPortGuard.LooksLikeStackLeftover("pid 1"), Is.False,
+			"an unidentified owner must not be guessed at");
+		Assert.That(LocalStackPortGuard.LooksLikeStackLeftover(null), Is.False);
+
+		// Matched on the parenthesised process name, not anywhere in the string — a step name or path that
+		// merely contains "node" must not be mistaken for one.
+		Assert.That(LocalStackPortGuard.LooksLikeStackLeftover("pid 5 (my-node-tool)"), Is.False);
+	}
+
 	[Test]
 	public void A_free_port_produces_no_conflict()
 	{
@@ -174,6 +206,8 @@ public class LocalStackPortGuardTests
 		// 5045: 5040 is held exclusively by Windows' Connected Devices Platform service, and 5050/5031 are
 		// already claimed by BeamableAPI's own launchSettings (BeamableScheduler.Loader/.Dispatcher use 5050).
 		Assert.That(Step("c# campaign runtime").port, Is.EqualTo(5045));
+		// 5055 rather than the 5050 its own launchSettings declares, for that same BeamableScheduler clash.
+		Assert.That(Step("c# segmentation runtime").port, Is.EqualTo(5055));
 		Assert.That(Step("portal frontend").port, Is.EqualTo(4950));
 		Assert.That(Step("scala: gateway").port, Is.EqualTo(9002),
 			"the scala gateway binds 9002 even though its readiness gate is the Caddy host");

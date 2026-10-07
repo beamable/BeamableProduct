@@ -91,6 +91,10 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 	public static void GenerateDependenciesClients(string extensionPath, BeamoLocalManifest manifest)
 	{ //TODO: could also use better error handling here
 		var dependencies = GetDependenciesFromPath(extensionPath);
+		// A zone extension's `context.beam` is a BeamZoneSdk, which does not extend BeamBase, so its clients must
+		// bind to BeamZoneSdk — the same choice `generate-portal-extension-clients` makes. `project run` regenerates
+		// through here on every start, so getting it wrong rewrites zone extensions' clients to BeamBase.
+		var augmentType = IsZoneExtension(extensionPath) ? "BeamZoneSdk" : "BeamBase";
 
 		foreach ((string beamId, HttpMicroserviceLocalProtocol localProtocol) in manifest.HttpMicroserviceLocalProtocols)
 		{
@@ -105,7 +109,7 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 				continue;
 			}
 
-			var generator = new WebClientCodeGenerator(localProtocol.OpenApiDoc, "ts");
+			var generator = new WebClientCodeGenerator(localProtocol.OpenApiDoc, "ts", augmentType);
 			var clientsOutputDirectory = Path.Combine(extensionPath, "beamable/clients");
 			generator.GenerateClientCode(clientsOutputDirectory);
 		}
@@ -126,5 +130,13 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 		}
 
 		return new List<string>();
+	}
+
+	/// <summary>True when the extension's package.json declares <c>"beamable": { "serviceScope": "zone" }</c>.</summary>
+	public static bool IsZoneExtension(string extensionPath)
+	{
+		var root = JObject.Parse(File.ReadAllText(Path.Combine(extensionPath, "package.json")));
+		var scope = root[EXTENSION_BEAMABLE_PROPERTY_NAME]?["serviceScope"]?.ToString();
+		return string.Equals(scope?.Trim(), "zone", StringComparison.OrdinalIgnoreCase);
 	}
 }

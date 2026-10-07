@@ -22,6 +22,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -712,6 +713,7 @@ public partial class ContentService
 							Properties = properties,
 							Tags = json.GetProperty(ContentFile.JSON_NAME_TAGS),
 							FetchedFromManifestUid = json.GetProperty(ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID).GetString(),
+							Baseline = ReadBaseline(in json),
 							ReferenceContent = referenceContent,
 						};
 						contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
@@ -1155,6 +1157,12 @@ public partial class ContentService
 				}).ToArray()
 		};
 		
+		// The platform returns the content version it assigned to each item, repeated once per visibility.
+		var publishedVersions = saveContentResponses
+			.SelectMany(response => response.content)
+			.GroupBy(c => c.id)
+			.ToDictionary(g => g.Key, g => g.First().version);
+
 		// Update the local reference manifest
 		try
 		{
@@ -1167,6 +1175,13 @@ public partial class ContentService
 			foreach (ContentFile c in changedContents)
 			{
 				ContentFile contentFile = c;
+
+				// We just uploaded these properties, so our checksum describes the version the platform assigned.
+				if (publishedVersions.TryGetValue(contentFile.Id, out var publishedVersion))
+				{
+					contentFile.Baseline = new ContentBaseline(contentFile.PropertiesChecksum, publishedVersion);
+				}
+
 				saveTasks.Add(SaveContentFile(contentFolder, contentFile));
 			}
 
@@ -1242,11 +1257,6 @@ public partial class ContentService
 		// Get the list of created content we need to delete (if requested).
 		var contentToDelete = localContentRelativeToNewManifest.ContentFiles
 			.Where(c => syncCreated && c.GetStatus().HasFlag(ContentStatus.Created))
-			.ToArray();
-
-		// Get the list of content that is up-to-date but the referenceManifestUid is not pointing at the latest one (so we can update the reference).
-		var contentToUpdateManifestReference = localContentRelativeToNewManifest.ContentFiles
-			.Where(c => c.CanUpdateReferenceWithTarget)
 			.ToArray();
 
 		// Update our sync report with what we intended to do
@@ -1382,21 +1392,16 @@ public partial class ContentService
 			contentFile.Properties = j.GetProperty("properties");
 			contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
 			contentFile.FetchedFromManifestUid = targetManifestUid;
+
+			// Hash the downloaded payload ourselves rather than trusting the publisher's manifest checksum. The
+			// file we are about to write is serialized from this same element, so the two agree by construction.
+			contentFile.PropertiesChecksum = CalculateChecksum(in contentFile);
+			contentFile.Baseline = new ContentBaseline(contentFile.PropertiesChecksum, c.ReferenceContent.version);
 			saveTasks.Add(SaveContentFile(contentFolder, contentFile, cancellationToken));
 		}
 
 		// Make the Up-to-Date content files reference the manifest to which we just synchronized.
-		foreach (var c in contentToUpdateManifestReference)
-		{
-			var contentFile = c;
-			// In some cases of conflict resolution the Reference Content could be null.
-			if (c.ReferenceContent != null)
-			{
-				contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
-			}
-			contentFile.FetchedFromManifestUid = targetManifestUid;
-			saveTasks.Add(SaveContentFile(contentFolder, contentFile, cancellationToken));
-		}
+		saveTasks.Add(AdvanceManifestReferences(contentFolder, localContentRelativeToNewManifest.ContentFiles, targetManifestUid, cancellationToken));
 
 		// If any problem happens while we are saving to disk, let's undo the pull operation and log out the exceptions.
 		try
@@ -1731,7 +1736,7 @@ public partial class ContentService
 		{
 			var contentFile = file.ContentFiles.ElementAt(i);
 
-			var referenceContentFile = file.ReferenceManifests.TryGetValue(contentFile.FetchedFromManifestUid, out var m) ? contentFile.ChangeReference(m) : contentFile.ChangeReference(null);
+			var referenceContentFile = contentFile.ChangeReference(file.ReferenceManifests[contentFile.FetchedFromManifestUid]);
 
 			var statusAgainstTarget = contentFile.GetStatus();
 			var statusAgainstReference = referenceContentFile.GetStatus();
@@ -1896,6 +1901,31 @@ public partial class ContentService
 	/// <summary>
 	/// Utility function that saves the given <see cref="ContentFile"/> to the given folder.
 	/// </summary>
+	/// <summary>
+	/// Points every file marked <see cref="ContentFile.CanUpdateReferenceWithTarget"/> at <paramref name="targetManifestUid"/>
+	/// without downloading it, adopting the target's tags and, for files that match the target, a new <see cref="ContentFile.Baseline"/>.
+	/// </summary>
+	public Task AdvanceManifestReferences(string contentFolder, IEnumerable<ContentFile> files, string targetManifestUid, CancellationToken token = default) =>
+		Task.WhenAll(files.Where(c => c.CanUpdateReferenceWithTarget).Select(c =>
+		{
+			var contentFile = c;
+			// In some cases of conflict resolution the Reference Content could be null.
+			if (c.ReferenceContent != null)
+			{
+				contentFile.Tags = JsonSerializer.SerializeToElement(c.ReferenceContent.tags);
+			}
+
+			// This set also holds locally modified and created files, whose bytes are not the remote ones.
+			// The baseline describes the properties only, so only they need to match the target.
+			if (c.ReferenceContent != null && !contentFile.IsPropertiesDiff())
+			{
+				contentFile.Baseline = new ContentBaseline(contentFile.PropertiesChecksum, c.ReferenceContent.version);
+			}
+
+			contentFile.FetchedFromManifestUid = targetManifestUid;
+			return SaveContentFile(contentFolder, contentFile, token);
+		}));
+
 	public async Task SaveContentFile(string contentFolder, ContentFile f, CancellationToken token = default)
 	{
 		try
@@ -1951,6 +1981,16 @@ public partial class ContentService
 			};
 		});
 	}
+
+	/// <summary>
+	/// Reads the locally derived baseline off a parsed content file, if it carries a well-formed one.
+	/// </summary>
+	private static ContentBaseline? ReadBaseline(in JsonElement json) =>
+		json.TryGetProperty(ContentFile.JSON_NAME_BASELINE, out var baseline)
+		&& baseline.ValueKind == JsonValueKind.String
+		&& ContentBaseline.TryDecode(baseline.GetString(), out var value)
+			? value
+			: null;
 
 	/// <summary>
 	/// Serializes just the <see cref="ContentFile.Properties"/> object.
@@ -2009,6 +2049,8 @@ public partial class ContentService
 		{
 			WriteIndented = indent,
 			IncludeFields = true,
+			// Pinned: these bytes get hashed, so a change here re-checksums every content item in the realm.
+			Encoder = JavaScriptEncoder.Default,
 			Converters =
 			{
 				new SortedJsonElementConverter(), new SortedSnapshotConverter()
@@ -2188,12 +2230,41 @@ public struct LocalContentFiles
 	public Dictionary<string, ClientManifestJsonResponse> ReferenceManifests;
 }
 
+/// <summary>
+/// The remote payload we last synced: a checksum this CLI computed over it, at the content version naming it.
+/// The version is required: without it a stale checksum can mask a real remote change.
+/// </summary>
+/// <remarks>
+/// On disk the pair is one string, <c>{checksum}@{version}</c>, so that no line-level merge can pair one side's
+/// checksum with the other side's version.
+/// </remarks>
+public readonly record struct ContentBaseline(string Checksum, string Version)
+{
+	private const char SEPARATOR = '@';
+
+	public string Encode() => $"{Checksum}{SEPARATOR}{Version}";
+
+	/// <summary>
+	/// Decodes <see cref="Encode"/>'s output, yielding a baseline only when both halves are present.
+	/// Our checksum is hex and never contains the separator, so everything after the first one is the
+	/// platform's version, whatever its format.
+	/// </summary>
+	public static bool TryDecode(string encoded, out ContentBaseline baseline)
+	{
+		var separatorIndex = encoded?.IndexOf(SEPARATOR) ?? -1;
+		var isWellFormed = separatorIndex > 0 && separatorIndex < encoded.Length - 1;
+		baseline = isWellFormed ? new ContentBaseline(encoded[..separatorIndex], encoded[(separatorIndex + 1)..]) : default;
+		return isWellFormed;
+	}
+}
+
 [Serializable]
 public struct ContentFile : IEquatable<ContentFile>
 {
 	public const string JSON_NAME_PROPERTIES = "properties";
 	public const string JSON_NAME_TAGS = "tags";
 	public const string JSON_NAME_REFERENCE_MANIFEST_ID = "referenceManifestId";
+	public const string JSON_NAME_BASELINE = "baseline";
 
 	[JsonIgnore] public string Id;
 	[JsonIgnore] public string LocalFilePath;
@@ -2211,16 +2282,44 @@ public struct ContentFile : IEquatable<ContentFile>
 	[JsonPropertyName(JSON_NAME_REFERENCE_MANIFEST_ID)]
 	public string FetchedFromManifestUid;
 
+	/// <summary>
+	/// What the remote payload hashed to when we last synced it, computed by this CLI rather than supplied by
+	/// the publisher. Null on files written before this existed and on snapshot restores, which fall back to
+	/// the manifest checksum.
+	/// </summary>
+	[JsonIgnore] public ContentBaseline? Baseline;
+
+	/// <summary>
+	/// <see cref="Baseline"/> as it appears on disk. A malformed value reads as no baseline.
+	/// </summary>
+	[JsonPropertyName(JSON_NAME_BASELINE)]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string EncodedBaseline
+	{
+		get => Baseline?.Encode();
+		set => Baseline = ContentBaseline.TryDecode(value, out var baseline) ? baseline : null;
+	}
+
 
 	public ContentStatus GetStatus()
 	{
 		ContentStatus ret;
 		if (ReferenceContent == null) ret = ContentStatus.Created;
 		else if (string.IsNullOrEmpty(LocalFilePath) || !File.Exists(LocalFilePath)) ret = ContentStatus.Deleted;
-		else if (ReferenceContent.checksum != PropertiesChecksum || IsTagsDiff()) ret = ContentStatus.Modified;
+		else if (IsPropertiesDiff() || IsTagsDiff()) ret = ContentStatus.Modified;
 		else ret = ContentStatus.UpToDate;
 		return ret;
 	}
+
+	/// <summary>
+	/// Compares the local properties against the remote ones we last synced.
+	/// Prefers <see cref="Baseline"/> when it describes the manifest entry in hand, since both sides of that
+	/// comparison were canonicalized the same way. Otherwise falls back to the publisher-supplied manifest
+	/// checksum, which is the historical behavior.
+	/// </summary>
+	internal bool IsPropertiesDiff() => Baseline is { } baseline && baseline.Version == ReferenceContent.version
+		? baseline.Checksum != PropertiesChecksum
+		: ReferenceContent.checksum != PropertiesChecksum;
 
 	public long GetLastUpdateAt()
 	{
@@ -2248,8 +2347,8 @@ public struct ContentFile : IEquatable<ContentFile>
 	{
 		var copy = this;
 		ClientContentInfoJson clientContentInfoJson = newReferenceManifest.entries.FirstOrDefault(j => j.contentId == copy.Id);
-		copy.ReferenceContent = newReferenceManifest == null ? null : clientContentInfoJson;
-		copy.FetchedFromManifestUid = newReferenceManifest != null ? newReferenceManifest.uid : copy.FetchedFromManifestUid;
+		copy.ReferenceContent = clientContentInfoJson;
+		copy.FetchedFromManifestUid = newReferenceManifest.uid;
 		return copy;
 	}
 
@@ -2348,7 +2447,8 @@ public class SortedJsonElementConverter : JsonConverter<JsonElement>
 			// Get properties, sort them by name, and then write them
 			case JsonValueKind.Object:
 				writer.WriteStartObject();
-				foreach (var property in element.EnumerateObject().OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase))
+				foreach (var property in element.EnumerateObject()
+				         .OrderBy(p => p.Name, AlphabeticThenOrdinal.Instance))
 				{
 					writer.WritePropertyName(property.Name);
 					WriteSortedJsonElement(writer, property.Value, options);
@@ -2401,7 +2501,8 @@ public class SortedSnapshotConverter : JsonConverter<Dictionary<string, ContentF
 		writer.WriteStartObject();
 
 		// Sort the dictionary keys before writing
-		foreach (var key in value.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase))
+		foreach (var key in value.Keys
+		         .OrderBy(k => k, AlphabeticThenOrdinal.Instance))
 		{
 			writer.WritePropertyName(key);
 			JsonSerializer.Serialize(writer, value[key], options);

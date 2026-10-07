@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import Ionicons from '@expo/vector-icons/Ionicons';
 
 import {
   CLIENT_DEMO_STAT,
@@ -16,6 +15,7 @@ import {
   crossNamespaceRuleJson,
   deleteClientStat,
   deleteStat,
+  describeSegmentChange,
   describeSegmentError,
   formatWhen,
   listMySegments,
@@ -26,6 +26,7 @@ import {
   setClientStat,
   setStat,
   statNumber,
+  watchMySegments,
   type ClientNamespace,
   type PlayerSegment,
   type SegmentTransition,
@@ -36,6 +37,7 @@ import AsyncButton from '../../src/ui/AsyncButton';
 import Field from '../../src/ui/Field';
 import { Hint } from '../../src/ui/Hint';
 import MessageCard from '../../src/ui/MessageCard';
+import RefreshButton from '../../src/ui/RefreshButton';
 import Screen from '../../src/ui/Screen';
 import Section from '../../src/ui/Section';
 import StatCard from '../../src/ui/StatCard';
@@ -100,6 +102,9 @@ export default function SegmentsTab() {
   const statsInFlight = useRef(false);
   const clientInFlight = useRef(false);
   const segmentsInFlight = useRef(false);
+
+  // The last few live membership changes, newest first — proof the socket delivered something.
+  const [liveChanges, setLiveChanges] = useState<string[]>([]);
 
   /** `silent` keeps the on-focus refresh out of the Activity log — see the Inbox tab. */
   const refreshStats = useCallback(
@@ -201,6 +206,27 @@ export default function SegmentsTab() {
     },
     [isReady, append],
   );
+
+  // Live membership changes over the realtime socket.
+  //
+  // The notification is only a trigger: `watchMySegments` re-reads the membership and hands both
+  // over, and this writes the freshly-read list into state rather than patching it from the
+  // payload. Delivery is best-effort — the server drops it for a player who looks offline — so the
+  // ↻ button above stays the reliable path and this is the convenience on top of it.
+  useEffect(() => {
+    if (!isReady) return;
+    let stop: (() => void) | undefined;
+    try {
+      stop = watchMySegments((change, mine) => {
+        setSegments(mine);
+        setLiveChanges((prev) => [describeSegmentChange(change), ...prev].slice(0, 5));
+        append(`Segment change: ${describeSegmentChange(change)}`);
+      });
+    } catch (e) {
+      append(`Could not watch segments: ${describeSegmentError(e)}`);
+    }
+    return () => stop?.();
+  }, [isReady, append]);
 
   // Both reads run on focus, and re-run when the connection lands (`isReady` flips the
   // callbacks' identity), so a tab opened before init completes fills itself in.
@@ -317,20 +343,9 @@ export default function SegmentsTab() {
     return key;
   }
 
-  const refreshButton = (busy: boolean, onPress: () => void, label: string) =>
-    busy ? (
-      <ActivityIndicator size="small" />
-    ) : (
-      <Pressable
-        onPress={onPress}
-        hitSlop={10}
-        style={({ pressed }) => [styles.refresh, pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-      >
-        <Ionicons name="refresh" size={18} color={colors.primary} />
-      </Pressable>
-    );
+  const refreshButton = (busy: boolean, onPress: () => void, label: string) => (
+    <RefreshButton busy={busy} onPress={onPress} label={label} />
+  );
 
   // Keys the player has that aren't one of the four cards — usually stats this realm's own
   // segments watch, written by a game server or another service.
@@ -572,6 +587,24 @@ export default function SegmentsTab() {
         )}
       </Section>
 
+      <Section title={`Live changes (${liveChanges.length})`}>
+        <Hint>
+          Pushed over the realtime socket as membership changes, without pressing ↻. The
+          notification only says *that* something changed — the list above is re-read from the
+          server on each one, because the endpoint is the truth and the push is best-effort.
+        </Hint>
+        {liveChanges.length === 0 ? (
+          <Hint>
+            Nothing yet. Bump a stat that a segment rule watches and a line appears here within
+            seconds.
+          </Hint>
+        ) : (
+          liveChanges.map((line, i) => (
+            <MessageCard key={`${line}-${i}`} subject={line} body="via segments.transition" />
+          ))
+        )}
+      </Section>
+
       <Section title="Recent transitions">
         <Hint>
           Enter/exit history for this player — the proof a stat write did something. A row with
@@ -601,8 +634,6 @@ export default function SegmentsTab() {
 }
 
 const styles = StyleSheet.create({
-  refresh: { padding: space.xs },
-  pressed: { opacity: 0.5 },
   error: {
     color: colors.errorInk,
     backgroundColor: colors.errorBg,

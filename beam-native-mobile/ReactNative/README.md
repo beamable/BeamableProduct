@@ -81,7 +81,6 @@ const sub = BeamNotifications.addListener('notificationOpened', (n) => {
 BeamNotifications.scheduleLocalWithDeepLink({ id: 'x', title: 'Hi', body: '…', url: myUrl });
 
 BeamNotifications.trackOfferClicked(intent, offer);
-BeamNotifications.trackOfferConverted(intent, offer);
 
 // Support / platform info:
 BeamNotifications.isSupported;                  // boolean

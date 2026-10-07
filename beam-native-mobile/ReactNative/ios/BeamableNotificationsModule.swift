@@ -35,8 +35,8 @@ final class BeamableNotificationsModule: RCTEventEmitter {
             "notificationPresented", "notificationReceived", "notificationTapped",
             "pendingNotifications", "deliveryReceipts",
             // Outcome of a native funnel-analytics POST. The funnel call itself is
-            // fire-and-forget, so this is how `trackOfferClicked` / `trackOfferConverted`
-            // report their HTTP status back to JS (parity with Android's onFunnelResult).
+            // fire-and-forget, so this is how `trackOfferClicked` reports its HTTP
+            // status back to JS (parity with Android's onFunnelResult).
             "funnelResult",
             // Live Activity push-to-start (iOS 17.2+): the app forwards these tokens to the push rail
             // (`message-rail/register`) so the backend can start/update/end Live Activities via APNs.
@@ -90,9 +90,9 @@ final class BeamableNotificationsModule: RCTEventEmitter {
     /// `LaunchTracker`, and the JS `initialize()` flushes it once the callbacks are wired.
     @objc static func bmnInstallAtLaunch() {
         // Register the default app-side funnel analytics plugin BEFORE initialize(), so a
-        // tapped notification emits the "Opened" funnel stage. This mirrors the NSE, which
-        // hardcodes AnalyticsServicePlugin for "Received": without an app-side counterpart
-        // the funnel is only half-wired (Received reports, Opened never does). Registration
+        // tapped notification emits the `beam_opened` funnel stage. This mirrors the NSE, which
+        // hardcodes AnalyticsServicePlugin for `beam_delivered`: without an app-side counterpart
+        // the funnel is only half-wired (delivery reports, the open never does). Registration
         // dedupes by plugin id, so calling it here and in `initialize()` is safe.
         PluginRegistry.shared.register(AnalyticsPlugin())
         NotificationManager.shared.initialize()
@@ -193,9 +193,9 @@ final class BeamableNotificationsModule: RCTEventEmitter {
         }
     }
 
-    // MARK: Offer / conversion funnel
-    // New bridge methods (additive) — the core already exposes the API via the C ABI
-    // (bmn_trackOfferClicked / bmn_trackOfferConverted) and NotificationManager; here we
+    // MARK: Offer click funnel
+    // New bridge method (additive) — the core already exposes the API via the C ABI
+    // (bmn_trackOfferClicked) and NotificationManager; here we
     // surface it to React Native. The JS arg is an `OfferTrackRequest` JSON string
     // (campaign context + the single offer), matching the iOS core model.
 
@@ -203,12 +203,6 @@ final class BeamableNotificationsModule: RCTEventEmitter {
     func trackOfferClicked(_ requestJson: NSString) {
         guard let req = decodeJson(OfferTrackRequest.self, requestJson as String) else { return }
         NotificationManager.shared.trackOfferClicked(req)
-    }
-
-    @objc(trackOfferConverted:)
-    func trackOfferConverted(_ requestJson: NSString) {
-        guard let req = decodeJson(OfferTrackRequest.self, requestJson as String) else { return }
-        NotificationManager.shared.trackOfferConverted(req)
     }
 
     // MARK: Auth (closed-app analytics funnel)

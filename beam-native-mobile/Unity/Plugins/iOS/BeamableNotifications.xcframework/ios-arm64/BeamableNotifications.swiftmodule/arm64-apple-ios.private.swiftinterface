@@ -50,10 +50,6 @@ public enum BeamableAnalytics {
   #if compiler(>=5.3) && $NonescapableTypes
   public static func makeBody(for events: [BeamableNotifications.FunnelEvent]) -> Foundation.Data?
   #endif
-  public static let funnelCategory: Swift.String
-  public static let funnelSlackMicroservice: Swift.String
-  public static let funnelSlackEndpoint: Swift.String
-  public static func forwardFunnelToSlack(_ event: BeamableNotifications.FunnelEvent, host: Swift.String, cidPid: Swift.String, accessToken: Swift.String, session: Foundation.URLSession = .shared)
   #if compiler(>=5.3) && $NonescapableTypes
   public static func makeEvent(_ type: BeamableNotifications.FunnelType, intent: BeamableNotifications.CampaignIntentData, offer: BeamableNotifications.NotificationOffer? = nil) -> BeamableNotifications.FunnelEvent?
   #endif
@@ -118,10 +114,6 @@ public func bmn_clearAuth()
 #if compiler(>=5.3) && $NonescapableTypes
 @_cdecl("bmn_trackOfferClicked")
 public func bmn_trackOfferClicked(_ requestJson: Swift.UnsafePointer<Swift.CChar>?)
-#endif
-#if compiler(>=5.3) && $NonescapableTypes
-@_cdecl("bmn_trackOfferConverted")
-public func bmn_trackOfferConverted(_ requestJson: Swift.UnsafePointer<Swift.CChar>?)
 #endif
 #if compiler(>=5.3) && $NonescapableTypes
 @_cdecl("bmn_registerTemplate")
@@ -601,6 +593,9 @@ public struct FunnelEvent : Swift.Codable, Swift.Equatable {
   #if compiler(>=5.3) && $NonescapableTypes
   public init(funnelType: Swift.String, campaignId: Swift.String, nodeId: Swift.String, gamerTag: Swift.String? = nil, accountId: Swift.String? = nil, cidPid: Swift.String? = nil, deeplink: Swift.String? = nil, outreachId: Swift.String? = nil, trackId: Swift.String? = nil, offers: [BeamableNotifications.NotificationOffer]? = nil, campaignData: [Swift.String : BeamableNotifications.JSONValue]? = nil, timestamp: Swift.Double = Date().timeIntervalSince1970)
   #endif
+  public var eventName: Swift.String {
+    get
+  }
   public var dedupKey: Swift.String {
     get
   }
@@ -618,16 +613,25 @@ public struct FunnelResult : Swift.Codable, Swift.Equatable {
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
 }
-public enum FunnelType : Swift.String {
+public enum FunnelType : Swift.String, Swift.CaseIterable {
   case sent
-  case received
+  case delivered
   case opened
   case clicked
-  case converted
+  public var label: Swift.String {
+    get
+  }
+  #if compiler(>=5.3) && $NonescapableTypes
+  public static func from(_ value: Swift.String) -> BeamableNotifications.FunnelType?
+  #endif
   #if compiler(>=5.3) && $NonescapableTypes
   public init?(rawValue: Swift.String)
   #endif
+  public typealias AllCases = [BeamableNotifications.FunnelType]
   public typealias RawValue = Swift.String
+  nonisolated public static var allCases: [BeamableNotifications.FunnelType] {
+    get
+  }
   public var rawValue: Swift.String {
     get
   }
@@ -690,7 +694,6 @@ public enum JSON {
   final public func configureAuth(_ json: Swift.String)
   final public func clearAuth()
   final public func trackOfferClicked(_ request: BeamableNotifications.OfferTrackRequest)
-  final public func trackOfferConverted(_ request: BeamableNotifications.OfferTrackRequest)
   final public func emitDeliveryReceipts()
   @objc override dynamic public init()
   @objc deinit

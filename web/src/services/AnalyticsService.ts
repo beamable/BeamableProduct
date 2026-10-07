@@ -6,7 +6,7 @@ import { POST } from '@/constants';
  * One analytics event, in the platform's compact wire shape.
  *
  * The field names are single letters because that is the contract the platform parses, not a size
- * optimisation on our side: `ClientAnalyticsEvent` on the server binds `e`/`p`/`time`/`c`.
+ * optimisation on our side: `ClientAnalyticsEvent` on the server binds `e`/`p`/`time`.
  */
 export interface AnalyticsEvent {
   /** The event name. This is the field a campaign conversion goal matches on. */
@@ -16,23 +16,24 @@ export interface AnalyticsEvent {
    * which is what a goal's value conditions are evaluated against.
    */
   params?: Record<string, unknown>;
-  /**
-   * Low-cardinality producer label. Mostly optional — but the campaign funnel routes on it, so a
-   * funnel stage MUST set it (see {@link FUNNEL_CATEGORY}).
-   */
-  category?: string;
   /** Event time in epoch milliseconds. Defaults to the server's receive time when omitted. */
   time?: number;
 }
 
 /**
- * The category every campaign funnel stage reported by a client must carry.
+ * The campaign funnel stages a client may report, spelled as they go on the wire.
  *
- * A cross-platform wire contract: iOS `BeamableAnalytics.funnelCategory`, Android `FUNNEL_CATEGORY`
- * and Unity all send exactly this string, and `CampaignEventProcessor` routes on it. An event without
- * it is treated as ordinary gameplay traffic and never attributed to a campaign.
+ * Every name the platform itself emits lives under the reserved `beam_` prefix, so a game's own event
+ * can never be mistaken for a funnel stage: the platform refuses to publish a campaign that watches a
+ * `beam_` name, and a stage arriving under one is therefore proof of its producer. A cross-platform
+ * contract — iOS `FunnelType`, Android `FunnelType` and Unity send exactly these strings. The old
+ * unprefixed names (`Opened`, `Received`, ...) are no longer watched and count nothing.
  */
-export const FUNNEL_CATEGORY = 'notification_funnel';
+export const FunnelStage = {
+  Delivered: 'beam_delivered',
+  Opened: 'beam_opened',
+  Clicked: 'beam_clicked',
+} as const;
 
 /**
  * Sends analytics events to the platform.
@@ -100,7 +101,6 @@ function toWire(event: AnalyticsEvent) {
   return {
     e: event.name,
     p: event.params ?? {},
-    ...(event.category ? { c: event.category } : {}),
     ...(event.time ? { time: event.time } : {}),
   };
 }

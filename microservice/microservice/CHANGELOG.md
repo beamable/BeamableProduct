@@ -22,6 +22,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Writes to a websocket that has closed fail immediately instead of hanging the handler that produced them; pending platform requests are failed when their connection is lost, so request handlers awaiting them can finish.
 - The websocket read loop no longer slows down when the process is busy. Throttling reads never reduced the work to be done, it only pushed it past the gateway's deadline; overload is handled by the explicit load shedding above.
 - A request the gateway rejects with a `403` re-authenticates and retries at most 3 times before the error is surfaced, instead of retrying forever.
+
+### Fixed
+
+- Generate valid OpenAPI component keys and references for tuple callable types, while preserving C# type metadata. Invalid generated schemas now report their validation errors directly.
+- The shutdown handler registered for `ProcessExit` ran asynchronously and returned at its first `await`, so the process could exit in the middle of the drain. It now blocks until the drain completes.
+- Receiving a message larger than 85KB no longer schedules a full compacting garbage collection.
+
+## [7.3.0]
+
+### Changed
+
 - Replace `xunit` dependency with `xunit.v3.mtp-off` in version `4.0.1`.
 - Update `Microsoft.CodeAnalysis.CSharp` dependencies to `4.8.0`.
 - Update `Microsoft.CodeAnalysis.CSharp.Analyzer.Testing` dependencies to `1.1.3`.
@@ -30,8 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- The shutdown handler registered for `ProcessExit` ran asynchronously and returned at its first `await`, so the process could exit in the middle of the drain. It now blocks until the drain completes.
-- Receiving a message larger than 85KB no longer schedules a full compacting garbage collection.
+- Allow top-level `JSON arrays` (request bodies using [] rather than {}) in microservice requests when handlers have no body-bound parameters, including handlers with injected dependencies. Handlers can deserialize the array through `Context.Body`; handlers with body-bound parameters receive an explanatory `400 response`.
 - `Services.Inventory.GetCurrent()` and `GetCurrent("")` now omit the empty scope query parameter, which could leave inventory requests pending on runtimes 7.1.0 through 7.2.3. `GetCurrent(null)` also treats the scope as omitted instead of throwing before sending the request.
 
 ## [7.2.3] - 2026-08-26

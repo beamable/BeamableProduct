@@ -8,7 +8,6 @@ import type { SegmentPropertyInput } from './SegmentPropertyInput';
 import type { SegmentScope } from './enums/SegmentScope';
 
 export type CreateSegmentRequest = { 
-  segmentId: string; 
   description?: string | null; 
   displayName?: string | null; 
   excludes?: (bigint | string)[] | null; 
