@@ -12,7 +12,7 @@ namespace tests;
 /// name that doesn't fit before running or deploying it.
 /// </summary>
 [TestFixture]
-public class StorageNameValidatorTests
+public class StorageNameLengthTests
 {
 	const string Cid = "1706624984549280";        // 16
 	const string Pid = "DE_1706624984549283";     // 19 -> realm budget 63 - 16 - 19 - 1 = 27
@@ -75,14 +75,14 @@ public class StorageNameValidatorTests
 		Assert.That(message, Does.Contain("at most 23 characters"));
 	}
 
-	// ---- FindTooLong ----
+	// ---- FindTooLongStorageNames ----
 
 	[Test]
-	public void FindTooLong_ChecksRealmStoragesAgainstPidAndZoneStoragesAgainstZid()
+	public void FindTooLongStorageNames_ChecksRealmStoragesAgainstPidAndZoneStoragesAgainstZid()
 	{
 		// 25 characters fits the realm (27) but not the zone (23).
 		var name = new string('a', 25);
-		var errors = StorageNameValidator.FindTooLong(
+		var errors = ProjectService.FindTooLongStorageNames(
 			new[] { Storage(name), Storage("Z" + name, zone: true) }, Cid, Pid, Zid);
 
 		Assert.That(errors, Has.Count.EqualTo(1));
@@ -90,88 +90,80 @@ public class StorageNameValidatorTests
 	}
 
 	[Test]
-	public void FindTooLong_SkipsZoneStoragesWhenNoZidIsKnown()
+	public void FindTooLongStorageNames_SkipsZoneStoragesWhenNoZidIsKnown()
 	{
-		var errors = StorageNameValidator.FindTooLong(
+		var errors = ProjectService.FindTooLongStorageNames(
 			new[] { Storage(new string('a', 40), zone: true) }, Cid, Pid, zid: null);
 
 		Assert.That(errors, Is.Empty);
 	}
 
 	[Test]
-	public void FindTooLong_SkipsEverythingWithoutANumericCid()
+	public void FindTooLongStorageNames_SkipsEverythingWithoutANumericCid()
 	{
 		var definitions = new[] { Storage(new string('a', 40)) };
 
-		Assert.That(StorageNameValidator.FindTooLong(definitions, null, Pid, Zid), Is.Empty);
-		Assert.That(StorageNameValidator.FindTooLong(definitions, "my-alias", Pid, Zid), Is.Empty);
+		Assert.That(ProjectService.FindTooLongStorageNames(definitions, null, Pid, Zid), Is.Empty);
+		Assert.That(ProjectService.FindTooLongStorageNames(definitions, "my-alias", Pid, Zid), Is.Empty);
 	}
 
 	[Test]
-	public void FindTooLong_IgnoresServicesAndRemoteOnlyStorages()
+	public void FindTooLongStorageNames_IgnoresServicesAndRemoteOnlyStorages()
 	{
 		var longName = new string('a', 40);
-		var errors = StorageNameValidator.FindTooLong(
+		var errors = ProjectService.FindTooLongStorageNames(
 			new[] { Service(longName), Storage("R" + longName, local: false) }, Cid, Pid, Zid);
 
 		Assert.That(errors, Is.Empty);
 	}
 
 	[Test]
-	public void FindTooLong_OnlyChecksIncludedStorages()
+	public void FindTooLongStorageNames_OnlyChecksIncludedStorages()
 	{
 		var tooLong = new string('a', 30);
 		var definitions = new[] { Storage(tooLong), Storage("Other") };
 
-		Assert.That(StorageNameValidator.FindTooLong(definitions, Cid, Pid, Zid, new HashSet<string> { "Other" }),
+		Assert.That(ProjectService.FindTooLongStorageNames(definitions, Cid, Pid, Zid, new HashSet<string> { "Other" }),
 			Is.Empty);
 	}
 
 	[Test]
-	public void ThrowIfAny_ListsEveryOffenderInOneError()
+	public void ThrowIfStorageNamesTooLong_ListsEveryOffenderInOneError()
 	{
-		var errors = StorageNameValidator.FindTooLong(
+		var errors = ProjectService.FindTooLongStorageNames(
 			new[] { Storage(new string('a', 30)), Storage(new string('b', 30)) }, Cid, Pid, Zid);
 
-		var ex = Assert.Throws<CliException>(() => StorageNameValidator.ThrowIfAny(errors));
+		var ex = Assert.Throws<CliException>(() => ProjectService.ThrowIfStorageNamesTooLong(errors));
 		Assert.That(ex!.Message, Does.Contain(new string('a', 30)));
 		Assert.That(ex.Message, Does.Contain(new string('b', 30)));
 	}
 
 	[Test]
-	public void ThrowIfAny_WithNoErrors_DoesNothing()
+	public void ThrowIfStorageNamesTooLong_WithNoErrors_DoesNothing()
 	{
-		Assert.DoesNotThrow(() => StorageNameValidator.ThrowIfAny(new List<string>()));
+		Assert.DoesNotThrow(() => ProjectService.ThrowIfStorageNamesTooLong(new List<string>()));
 	}
 
-	// ---- ValidateNewStorage ----
+	// ---- ValidateNewStorageName ----
 
 	[Test]
-	public void ValidateNewStorage_WithKnownTarget_ThrowsWhenTooLong()
+	public void ValidateNewStorageName_WithKnownTarget_ThrowsWhenTooLong()
 	{
 		Assert.Throws<CliException>(() =>
-			StorageNameValidator.ValidateNewStorage(Cid, Zid, new string('a', 24), isZone: true));
+			ProjectService.ValidateNewStorageName(Cid, Zid, new string('a', 24), isZone: true));
 	}
 
 	[Test]
-	public void ValidateNewStorage_WithKnownTarget_PassesAtTheLimit()
+	public void ValidateNewStorageName_WithKnownTarget_PassesAtTheLimit()
 	{
 		Assert.DoesNotThrow(() =>
-			StorageNameValidator.ValidateNewStorage(Cid, Zid, new string('a', 23), isZone: true));
+			ProjectService.ValidateNewStorageName(Cid, Zid, new string('a', 23), isZone: true));
 	}
 
 	[Test]
-	public void ValidateNewStorage_WithoutTarget_OnlyWarns()
+	public void ValidateNewStorageName_WithoutTarget_OnlyWarns()
 	{
 		Assert.DoesNotThrow(() =>
-			StorageNameValidator.ValidateNewStorage(null, null, new string('a', 40), isZone: true));
-	}
-
-	[Test]
-	public void WorstCaseBudgets_MatchTheLongestPossibleIds()
-	{
-		// cid 19 digits, pid "DE_" + 19, zid "ZONE_" + 19.
-		Assert.That(StorageNameValidator.WorstCaseRealmStorageNameLength, Is.EqualTo(21));
-		Assert.That(StorageNameValidator.WorstCaseZoneStorageNameLength, Is.EqualTo(19));
+			ProjectService.ValidateNewStorageName(null, null, new string('a', 40), isZone: true));
 	}
 }
