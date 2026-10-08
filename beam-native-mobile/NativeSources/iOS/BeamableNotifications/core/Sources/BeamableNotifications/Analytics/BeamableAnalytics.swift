@@ -4,7 +4,7 @@ import Foundation
 /// authenticated with the persisted player bearer token + realm scope (Decision Q5).
 ///
 /// Two routes, primary then fallback (identical body — see `postAnalyticsEventsStatus`):
-///  - `/analytics/events` — the gateway endpoint. Publishes onto `analytics.events`, the bus the
+///  - `/api/analytics/events` — the gateway endpoint. Publishes onto `analytics.events`, the bus the
 ///    campaign event consumer subscribes to, so this is the only route whose Opened/Clicked
 ///    can be counted in a campaign's funnel.
 ///  - `/report/custom_batch/{cid}/{pid}/{gamerTag}` — the canonical report route shared with
@@ -312,7 +312,9 @@ public enum BeamableAnalytics {
                                                  session: URLSession = .shared,
                                                  completion: @escaping (Int) -> Void) {
         // The player id comes from the token claim here, not the URL, so no gamerTag path segment.
-        post(events: events, path: "/analytics/events", host: host, cidPid: cidPid,
+        // The `/api` prefix is required: the bare `/analytics/events` 404s on the gateway, which
+        // drops the event into the warehouse-only fallback and out of every campaign funnel.
+        post(events: events, path: "/api/analytics/events", host: host, cidPid: cidPid,
              accessToken: accessToken, session: session, completion: completion)
     }
 
