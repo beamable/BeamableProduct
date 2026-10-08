@@ -45,8 +45,12 @@ namespace Beamable.Server.Api
 
 		/// <summary>
 		/// A filter keeping only the players whose stats in the namespace satisfy every criterion. A player with no stats
-		/// in the namespace never matches.
+		/// in the namespace never matches. The filter's item type is always <c>player</c>: the platform requires it on
+		/// every stats search, and a batch lookup only accepts players.
 		/// </summary>
+		/// <param name="domain">The stats domain, sent as <c>game</c> or <c>client</c>.</param>
+		/// <param name="access">The stats visibility, sent as <c>Public</c> or <c>Private</c>.</param>
+		/// <param name="criteria">The comparisons every kept player satisfies, see <see cref="Eq"/> and its siblings.</param>
 		public static AuthV2StatsSearchRequest StatsFilter(StatsDomainType domain, StatsAccessType access,
 			params AuthV2StatsSearchCriteria[] criteria) => new AuthV2StatsSearchRequest
 		{
@@ -57,18 +61,54 @@ namespace Beamable.Server.Api
 		};
 
 		/// <summary>
-		/// One stat comparison. <paramref name="rel"/> takes the same operators as stats search: eq, neq, lt, lte, gt, gte,
-		/// in, nin and nonexistent. Comparisons are type-exact, so a string stat only equals a string value.
+		/// One stat comparison. Prefer the helper for the operator (<see cref="Eq"/>, <see cref="Neq"/>, <see cref="Lt"/>,
+		/// <see cref="Lte"/>, <see cref="Gt"/>, <see cref="Gte"/>, <see cref="In{T}"/>, <see cref="Nin{T}"/>,
+		/// <see cref="Nonexistent"/>). Comparisons are type-exact, so a string stat only equals a string value.
 		/// </summary>
+		/// <param name="stat">
+		/// The stat key, e.g. <c>email_delivery_enabled</c>; not a full stats object id. The namespace comes from the
+		/// filter's domain and visibility.
+		/// </param>
+		/// <param name="rel">
+		/// <c>eq</c> (or <c>equal</c>), <c>neq</c> (<c>notequal</c>), <c>lt</c> (<c>lessthan</c>), <c>lte</c>
+		/// (<c>lessthanequal</c>), <c>gt</c> (<c>greaterthan</c>), <c>gte</c> (<c>greaterthanequal</c>), <c>in</c>,
+		/// <c>nin</c> (<c>notin</c>) or <c>nonexistent</c>.
+		/// </param>
 		/// <param name="value">A string, integer, floating point number, bool, or a list of those (for in and nin).</param>
 		public static AuthV2StatsSearchCriteria Criteria(string stat, string rel, object value) =>
 			new AuthV2StatsSearchCriteria { stat = stat, rel = rel, value = ToStatsValue(value) };
 
+		/// <summary>The stat equals <paramref name="value"/>.</summary>
 		public static AuthV2StatsSearchCriteria Eq(string stat, object value) => Criteria(stat, "eq", value);
 
+		/// <summary>The stat differs from <paramref name="value"/>.</summary>
 		public static AuthV2StatsSearchCriteria Neq(string stat, object value) => Criteria(stat, "neq", value);
 
-		/// <summary>The stat values to return for each player. No keys returns every stat in the namespace.</summary>
+		/// <summary>The stat is less than <paramref name="value"/>.</summary>
+		public static AuthV2StatsSearchCriteria Lt(string stat, object value) => Criteria(stat, "lt", value);
+
+		/// <summary>The stat is less than or equal to <paramref name="value"/>.</summary>
+		public static AuthV2StatsSearchCriteria Lte(string stat, object value) => Criteria(stat, "lte", value);
+
+		/// <summary>The stat is greater than <paramref name="value"/>.</summary>
+		public static AuthV2StatsSearchCriteria Gt(string stat, object value) => Criteria(stat, "gt", value);
+
+		/// <summary>The stat is greater than or equal to <paramref name="value"/>.</summary>
+		public static AuthV2StatsSearchCriteria Gte(string stat, object value) => Criteria(stat, "gte", value);
+
+		/// <summary>The stat equals one of <paramref name="values"/>.</summary>
+		public static AuthV2StatsSearchCriteria In<T>(string stat, params T[] values) => Criteria(stat, "in", values);
+
+		/// <summary>The stat equals none of <paramref name="values"/>.</summary>
+		public static AuthV2StatsSearchCriteria Nin<T>(string stat, params T[] values) => Criteria(stat, "nin", values);
+
+		/// <summary>The player has no value for the stat.</summary>
+		public static AuthV2StatsSearchCriteria Nonexistent(string stat) => Criteria(stat, "nonexistent", null);
+
+		/// <summary>The stat values to return for each player.</summary>
+		/// <param name="domain">The stats domain, sent as <c>game</c> or <c>client</c>.</param>
+		/// <param name="access">The stats visibility, sent as <c>Public</c> or <c>Private</c>.</param>
+		/// <param name="keys">The stat keys to return. None returns every stat in the namespace.</param>
 		public static AuthV2BatchAccountsStats Stats(StatsDomainType domain, StatsAccessType access, params string[] keys) =>
 			new AuthV2BatchAccountsStats
 			{
