@@ -90,7 +90,7 @@ public class PortalExtensionObserver
 	// The watcher raises OnChanged on thread-pool threads with no serialisation, so two events can
 	// reach BuildExtension at once and collide writing metadata.json. Rebuilds are serialised here.
 	private readonly object _buildLock = new object();
-	private IMicroserviceNotificationsApi _notificationsApi;
+	private IMicroserviceServerNotificationsApi _notificationsApi;
 	private IMicroserviceAttributes _attributes;
 	private BeamActivity _rootActivity;
 	private BeamoLocalManifest _manifest;
@@ -134,7 +134,7 @@ public class PortalExtensionObserver
 		_cancelToken.Cancel();
 	}
 
-	public void ConfigureServiceData(IMicroserviceNotificationsApi notificationApi, IMicroserviceAttributes attributes, BeamActivity beamActivity, BeamoLocalManifest manifest)
+	public void ConfigureServiceData(IMicroserviceServerNotificationsApi notificationApi, IMicroserviceAttributes attributes, BeamActivity beamActivity, BeamoLocalManifest manifest)
 	{
 		_notificationsApi = notificationApi;
 		_attributes = attributes;
@@ -524,9 +524,6 @@ public class PortalExtensionObserver
 			BuildExtension();
 
 			//TODO: check this back once event subscriptions change
-			// TODO(zones): NotifyServer is realm-scoped (IMicroserviceNotificationsApi). A zone extension has no
-			// realm notification channel, so _notificationsApi is null for zone today — hot-reload push is
-			// skipped. Wire up a zone-appropriate notification once the zone event channel exists.
 			_notificationsApi?.NotifyServer(true, "notify-portalextension",
 				new PortalExtensionNotifyPayload()
 				{
