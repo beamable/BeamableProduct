@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Generate valid OpenAPI component keys and references for tuple callable types, while preserving C# type metadata. Invalid generated schemas now report their validation errors directly.
 
-## [7.3.0]
+## [7.3.0] - 2026-10-08
 
 ### Changed
 
