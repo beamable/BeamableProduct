@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Detect if Unity is running in batch mode and do not attempt to show OptionDialogWindow if that is the case.
 - Improved Microservice build failure reporting: a build that fails without compiler errors, such as in a post-build step, now reports the failure and its build output in Unity instead of the service silently never starting.
+- Improve content validation QOL with clearer Inspector issue badges, errors above collapsed lists, softer error text with bright red bars, and faster validation error counting for large lists.
+- Add a shared Issues icon for Content window validation errors and conflicts, an Issues footer filter, and a Publish badge.
+- Explain blocked publishing in a popup with issue counts and an action to view affected items.
+- Improve Content window tooltips, filter behavior, and toolbar layout.
+- Add `/` to focus content search and Escape or an outside click to unfocus it.
 - Update CLI to 7.3.0
 
 ### Fixed
@@ -24,14 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prevent older property saves from overwriting newer tag edits, and restore editable content after a failed file deletion.
 - Content checksums use definite ordering of fields now, for robustness even when published content is unsorted or sorted differently.
 - Fixed Microservice client calls that return a list or array of tuples resolving with `null` instead of the result.
-
-### UI/UX
-
-- Improve content validation QOL with clearer Inspector issue badges, errors above collapsed lists, softer error text with bright red bars, and faster validation error counting for large lists.
-- Add a shared Issues icon for Content window validation errors and conflicts, an Issues footer filter, and a Publish badge.
-- Explain blocked publishing in a popup with issue counts and an action to view affected items.
-- Improve Content window tooltips, filter behavior, and toolbar layout.
-- Add `/` to focus content search and Escape or an outside click to unfocus it.
 
 ## [6.1.0] - 2026-08-26
 
