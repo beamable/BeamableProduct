@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `Services.Auth.BatchAccounts(request)` looks up many players in one call. It can narrow them by a stat filter, and returns each remaining player's account and the requested stat values, in each stat's own type (`GetStat` reads one as text). Requests over 500 players are paged automatically.
+- `Services.Auth.BatchAccounts(request)` looks up many players in one call. It can narrow them by a stat filter, and returns each remaining player's account and the requested stat values, in each stat's own type. The request and response are the generated `AuthV2BatchAccountsRequest` and `AuthV2BatchAccountsResponse`; `BatchAccountsHelper` builds the filter, criteria and stats to request, and its `GetStat` extension reads a value back as text. Requests over 500 players are paged automatically.
+- The generated `IBeamAuthApi` has `PostBatch` for the `POST /api/accounts/batch` endpoint.
 
 ## [7.3.0]
 
