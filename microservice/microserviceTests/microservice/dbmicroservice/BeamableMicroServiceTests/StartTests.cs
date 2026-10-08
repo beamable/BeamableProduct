@@ -8,6 +8,8 @@ using Beamable.Common.Api.Inventory;
 using Beamable.Common.Inventory;
 using Beamable.Common.Leaderboards;
 using Beamable.Server;
+using Beamable.Server.Api;
+using Beamable.Common.Api.Stats;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server.Content;
 using microserviceTests.microservice.Util;
@@ -503,6 +505,104 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.OnShutdown(this, null);
             //Assert.IsTrue(testSocket.AllMocksCalled());
 
+        }
+
+        [Microservice("authservice", EnableEagerContentLoading = false)]
+        public class AuthMicroservice : Microservice
+        {
+            [ClientCallable]
+            public async Task<string> BatchAccounts(int count)
+            {
+                var response = await Services.Auth.BatchAccounts(BatchAccountsHelper.Request(
+                    // One duplicate on top, which must not count towards the paging.
+                    Enumerable.Range(1, count).Select(i => (long)i).Append(1),
+                    BatchAccountsHelper.StatsFilter(StatsDomainType.Game, StatsAccessType.Public,
+                        BatchAccountsHelper.Eq("email_delivery_enabled", "true")),
+                    stats: BatchAccountsHelper.Stats(StatsDomainType.Game, StatsAccessType.Private, "apns_devices")));
+
+                var player = response.players.Single();
+                return string.Join("|",
+                    player.playerId,
+                    player.GetEmail(),
+                    player.GetStat(StatsDomainType.Game, StatsAccessType.Private, "apns_devices"),
+                    // Values keep their JSON type; GetStat renders them invariantly, a date-shaped string
+                    // stays the string it was, and a public stat of the same key is told apart.
+                    player.GetStat(StatsDomainType.Game, StatsAccessType.Private, "level"),
+                    player.GetStat(StatsDomainType.Game, StatsAccessType.Private, "vip"),
+                    player.GetStat(StatsDomainType.Game, StatsAccessType.Private, "seen_at"),
+                    player.GetStat(StatsDomainType.Game, StatsAccessType.Public, "level"),
+                    string.Join(",", response.filteredOut),
+                    string.Join(",", response.notFound));
+            }
+        }
+
+        private static string Stat(string visibility, string key, string jsonValue) =>
+            $"{{\"domain\":\"game\",\"visibility\":\"{visibility}\",\"key\":\"{key}\",\"value\":{jsonValue}}}";
+
+        private static bool IsPage(JObject body, int size, long first) =>
+            body["playerIds"] is JArray ids
+            && ids.Count == size
+            && ids[0].Value<long>() == first
+            && body["includeAccount"]?.Value<bool>() == true
+            && body["filter"]?["domain"]?.Value<string>() == "game"
+            && body["filter"]?["visibility"]?.Value<string>() == "Public"
+            && body["filter"]?["itemType"]?.Value<string>() == "player"
+            && body["filter"]?["criteria"]?[0]?["stat"]?.Value<string>() == "email_delivery_enabled"
+            && body["filter"]?["criteria"]?[0]?["rel"]?.Value<string>() == "eq"
+            && body["filter"]?["criteria"]?[0]?["value"]?.Value<string>() == "true"
+            && body["stats"]?[0]?["visibility"]?.Value<string>() == "Private"
+            && body["stats"]?[0]?["keys"]?[0]?.Value<string>() == "apns_devices";
+
+        [Test]
+        [NonParallelizable]
+        public async Task BatchAccounts_PagesAndMergesTheResponses()
+        {
+            TestSocket testSocket = null;
+            var ms = new TestSetup(new TestSocketProvider(socket =>
+            {
+                testSocket = socket;
+                socket.AddStandardMessageHandlers()
+                    .AddMessageHandler(
+                        MessageMatcher
+                            .WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST)
+                            .WithPost()
+                            .WithRouteContains("api/accounts/batch")
+                            .WithBody<JObject>(body => IsPage(body, BatchAccountsHelper.MaxPlayersPerRequest, 1)),
+                        MessageResponder.Success(
+                            "{\"players\":[{\"playerId\":1,\"account\":{\"id\":9,\"email\":\"a@b.c\"},\"stats\":[" +
+                            Stat("Private", "apns_devices", "\"[\\\"t\\\"]\"") + "," +
+                            Stat("Private", "level", "4") + "," +
+                            Stat("Private", "vip", "true") + "," +
+                            Stat("Private", "seen_at", "\"2026-10-06T11:00:00Z\"") + "," +
+                            Stat("Public", "level", "0.5") + "]}]," +
+                            "\"filteredOut\":[2],\"notFound\":[]}"),
+                        MessageFrequency.OnlyOnce())
+                    .AddMessageHandler(
+                        MessageMatcher
+                            .WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST - 1)
+                            .WithPost()
+                            .WithRouteContains("api/accounts/batch")
+                            .WithBody<JObject>(body => IsPage(body, 1, BatchAccountsHelper.MaxPlayersPerRequest + 1)),
+                        MessageResponder.Success("{\"players\":[],\"filteredOut\":[],\"notFound\":[501]}"),
+                        MessageFrequency.OnlyOnce())
+                    .AddMessageHandler(
+                        MessageMatcher
+                            .WithReqId(1)
+                            .WithStatus(200)
+                            .WithPayload("1|a@b.c|[\"t\"]|4|true|2026-10-06T11:00:00Z|0.5|2|501"),
+                        MessageResponder.NoResponse(),
+                        MessageFrequency.OnlyOnce());
+            }));
+
+            await ms.Start<AuthMicroservice>(new TestArgs());
+            Assert.IsTrue(ms.HasInitialized);
+
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_authservice",
+                nameof(AuthMicroservice.BatchAccounts), 1, 1, BatchAccountsHelper.MaxPlayersPerRequest + 1));
+
+            // simulate shutdown event...
+            await ms.OnShutdown(this, null);
+            Assert.IsTrue(testSocket.AllMocksCalled());
         }
 
         [Test]
