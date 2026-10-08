@@ -29,6 +29,16 @@
         <BeamStopServiceReason Condition="'$(BeamStopServiceReason)'==''">Stopped service to generate new build.</BeamStopServiceReason>
     </PropertyGroup>
 
+    <!-- The service publish directory becomes BEAM_SUPPORT_SRC_PATH in the Docker image. -->
+    <Target Name="BeamBakeServerContent" AfterTargets="Publish"
+            Condition="'$(BeamProjectType)'=='service' AND '$(BeamBakeServerContent)'=='true'">
+        <PropertyGroup>
+            <BeamBakeRealmArgs Condition="'$(BeamBakeCid)'!='' AND '$(BeamBakePid)'!=''">--cid &quot;$(BeamBakeCid)&quot; --pid &quot;$(BeamBakePid)&quot;</BeamBakeRealmArgs>
+        </PropertyGroup>
+        <Exec Command="$(BeamableDotnetPath) $(BeamableTool) content bake --source published --format server --manifest-id global --output-dir &quot;$(PublishDir)&quot; $(BeamBakeRealmArgs)"
+              EnvironmentVariables="MSBUILDTERMINALLOGGER=off" />
+    </Target>
+
     <!-- This imports customer specific csproj files in the .beamable/temp/localDev project -->
     <Import Label="Load Beamable Local Developer Settings"
             Condition="'$(BeamProjectType)'=='storage' OR '$(BeamProjectType)'=='service'"
