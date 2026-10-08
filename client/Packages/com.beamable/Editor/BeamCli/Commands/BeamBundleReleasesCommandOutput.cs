@@ -5,10 +5,9 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common.BeamCli;
     
     [System.SerializableAttribute()]
-    public partial class BeamGetBundleCommandOutput
+    public partial class BeamBundleReleasesCommandOutput
     {
-        public BeamBundleInfo bundle;
+        public BeamBundleReleaseInfo[] releases;
         public Beamable.Common.BeamCli.Contracts.BundleTagInfo[] tags;
-        public long version;
     }
 }
