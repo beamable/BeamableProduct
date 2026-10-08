@@ -74,9 +74,12 @@ export class AnalyticsService extends ApiService {
   async trackBatch(events: AnalyticsEvent[]): Promise<void> {
     if (events.length === 0) return;
 
+    // Hand-written, so nothing generated guards the prefix: a deployed environment routes `/api/*`
+    // to the C# gateway, and the bare `/analytics/events` 404s - which `trackSafely` swallows, so
+    // every implicit funnel stage would silently count nothing.
     await makeApiRequest<void, ReturnType<typeof toWire>[]>({
       r: this.requester,
-      e: '/analytics/events',
+      e: '/api/analytics/events',
       m: POST,
       p: events.map(toWire),
       w: true,

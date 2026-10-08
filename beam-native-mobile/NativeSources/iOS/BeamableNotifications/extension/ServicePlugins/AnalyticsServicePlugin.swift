@@ -6,8 +6,9 @@ import BeamableNotifications
 /// app is terminated — and:
 ///   1. ALWAYS logs a delivery receipt to the App Group (the reliable signal the app
 ///      replays on next launch), and
-///   2. fires a Beamable funnel **Received** event via a best-effort authenticated POST to
-///      `/report/custom_batch/...`, so a received-but-never-opened notification still
+///   2. fires a Beamable funnel `beam_delivered` event via a best-effort authenticated POST to
+///      `/api/analytics/events` (falling back to `/report/custom_batch/...`, which feeds the
+///      warehouse only), so a received-but-never-opened notification still
 ///      reports. If the refresh+POST can't finish within the NSE's ~30s budget, the event is
 ///      persisted to the App Group for authenticated replay on next app open (fallback).
 ///
