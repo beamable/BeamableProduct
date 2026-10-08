@@ -16,28 +16,7 @@ env:
 
 jobs:
   buildCollector:
-    name: Build Otel Collector
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v5
-      - name: Install Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: 1.24.1
-          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
-      - name: Build and archive collector
-        working-directory: ./otel-collector
-        shell: bash
-        run: |
-          OUTPUT_DIRECTORY="$RUNNER_TEMP/otel-collector" ./build.sh --version 0.0.123
-          tar -czf "$RUNNER_TEMP/otel-collector.tar.gz" -C "$RUNNER_TEMP/otel-collector" .
-      - uses: actions/upload-artifact@v6
-        with:
-          name: otel-collector-0.0.123
-          path: ${{ runner.temp }}/otel-collector.tar.gz
-          if-no-files-found: error
-          retention-days: 1
+    uses: ./.github/workflows/buildDevOtelCollector.yml
   baseNuget:
     timeout-minutes: 10
     runs-on: ubuntu-latest
