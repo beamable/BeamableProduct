@@ -272,24 +272,34 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		var buildArgs = $"publish {definition.AbsoluteProjectPath.EnquotePath()} --verbosity minimal --no-self-contained {runtimeArg} --disable-build-servers --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" {productionArgs} -o {buildDirSupport.EnquotePath()}";
 		Log.Verbose($"Running dotnet publish {buildArgs}");
 		using var cts = new CancellationTokenSource();
+		File.Delete(errorPath);
+		var buildOutput = new BuildOutputBuffer();
 
 		var command = CliExtensions.GetDotnetCommand(dotnetPath, buildArgs)
 			.WithEnvironmentVariables(new Dictionary<string, string> { ["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1", ["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1", })
 			.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
 			{
 				if (line == null) return;
+				buildOutput.Add(line);
 				logMessage?.Invoke(new ServicesBuildCommandOutput
 				{
 					message = line
 				});
 			}))
+			.WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
+			{
+				buildOutput.Add(line);
+				logMessage?.Invoke(new ServicesBuildCommandOutput { message = line });
+			}))
 			.WithValidation(CommandResultValidation.None)
 			.ExecuteAsync(cts.Token);
 		
-		await command;
+		var result = await command;
+		var report = ProjectService.ReadBuildErrorReport(errorPath, result.ExitCode, buildOutput.ToString());
 
 		// move some files from the build output into a different folder,
 		// so they can be copied in as separate docker copy instructions
+		if (report.isSuccess)
 		{
 			var filesToMove = Directory.GetFiles(buildDirSupport, id + ".*", SearchOption.TopDirectoryOnly);
 			foreach (var fileToMove in filesToMove)
@@ -299,7 +309,6 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			}
 		}
 		
-		var report = ProjectService.ReadErrorReport(errorPath);
 		return new BuildImageSourceOutput
 		{
 			service = id,

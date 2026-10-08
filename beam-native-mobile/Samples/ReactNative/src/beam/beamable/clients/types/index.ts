@@ -474,3 +474,16 @@ export type SetPlayerStatRequestArgs = {
   key: string; 
   value: string; 
 };
+
+export type CurrencyGrantResult = { 
+  success: boolean; 
+  currencyId: string; 
+  granted: bigint | string; 
+  balance: bigint | string; 
+  message: string; 
+};
+
+export type AddCurrencyRequestArgs = { 
+  currencyId: string; 
+  amount: bigint | string; 
+};

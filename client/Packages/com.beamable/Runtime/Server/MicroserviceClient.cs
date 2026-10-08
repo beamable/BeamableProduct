@@ -246,6 +246,12 @@ namespace Beamable.Server
 
 			if (json.StartsWith("[") && json.EndsWith("]"))
 			{
+				// JsonUtility cannot populate ValueTuple elements and silently yields null items.
+				if (IsValueTuple(GetCollectionElementType(type)))
+				{
+					return Json.Deserialize<T>(json);
+				}
+
 				string rawJson = json;
 				json = $"{{\"items\": {json}}}";
 				var wrapped = JsonUtility.FromJson<JsonUtilityWrappedList<T>>(json);
@@ -279,6 +285,21 @@ namespace Beamable.Server
 			}
 			
 			return Json.Deserialize<T>(json);
+		}
+
+		private static Type GetCollectionElementType(Type type)
+		{
+			if (type.IsArray)
+			{
+				return type.GetElementType();
+			}
+
+			return type.IsGenericType ? type.GetGenericArguments()[0] : null;
+		}
+
+		private static bool IsValueTuple(Type type)
+		{
+			return type != null && type.IsGenericType && type.FullName.StartsWith("System.ValueTuple`");
 		}
 
 		public static Dictionary<string, T> ConvertArrayDictToDictionary<T>(ArrayDict arrayDict)

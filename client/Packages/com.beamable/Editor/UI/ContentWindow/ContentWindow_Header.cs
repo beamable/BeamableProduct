@@ -29,19 +29,19 @@ namespace Beamable.Editor.UI.ContentWindow
 		private const string REVERT_CONFLICTED_MENU_ITEM = "Revert Conflicted Changes Only";
 		private const string REVERT_DELETED_MENU_ITEM = "Revert Deleted Contents Only";
 		private const string REVERT_NEW_CONTENTS_MENU_ITEM = "Delete All New Created Changes";
-		
-		
+
+
 		private readonly Dictionary<ContentSearchFilterType, HashSet<string>> _activeFilters = new();
 		private List<string> _allTypes = new();
 		private List<string> _allTags = new();
-		
+
 		private ContentSortOptionType _currentSortOption;
 		private GUIStyle _lowBarTextStyle;
 		private GUIStyle _lowBarDropdownStyle;
 		private GUIStyle _clearFiltersButtonStyle;
-		
+
 		private List<string> _oldItemsSelected;
-		
+
 		private static List<string> AllStatus => StatusMapToString.Values.ToList();
 
 		private static readonly Dictionary<ContentSearchFilterType, string> ContentFilterTypeToQueryTag = new()
@@ -50,7 +50,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			{ContentSearchFilterType.Status, "status:"},
 			{ContentSearchFilterType.Type, "type:"}
 		};
-		
+
 		private static readonly Dictionary<ContentFilterStatus, string> StatusMapToString = new()
 		{
 			{ContentFilterStatus.Invalid, "invalid"},
@@ -79,18 +79,18 @@ namespace Beamable.Editor.UI.ContentWindow
 			{ContentSortOptionType.Status, "Status"},
 			{ContentSortOptionType.ValidStatus, "Validation Status"}
 		};
-		
-		
+
+
 
 		private void BuildHeaderFilters()
 		{
 			_contentSearchData = new SearchData() {onEndCheck = OnTextChange};
-			
+
 			_allTypes = _contentTypeReflectionCache.GetAll()
 			                                       .OrderBy(pair => pair.Name)
 			                                       .Select(pair => pair.Name)
 			                                       .ToList();
-			
+
 			_allTags = _contentService.TagsCache;
 		}
 
@@ -122,7 +122,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				BeamGUI.DrawHeaderSection(this, ActiveContext, DrawTopBarHeader, DrawLowBarHeader, () =>
 				{
-					
+
 					Application.OpenURL(DocsPageHelper.GetUnityDocsPageUrl("unity/user-reference/beamable-services/profile-storage/content/content-unity/", EditorConstants.UNITY_CURRENT_DOCS_VERSION));
 				}, () => _ = _contentService.Reload(), (refreshRect, helpRect) =>
 				{
@@ -130,7 +130,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					RegisterButtonTooltip(helpRect, "Open content documentation");
 				});
 			});
-			
+
 		}
 
 		private void DrawTopBarHeader()
@@ -157,7 +157,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 				if (_windowStatus != ContentWindowStatus.Validate)
 				{
-					
+
 					if (DrawHeaderButtonWithTooltip("Validate", BeamGUI.iconCheck, validateTooltip))
 					{
 						ChangeToValidateMode();
@@ -199,7 +199,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					DrawFilterButton(ContentSearchFilterType.Status, BeamGUI.iconStatus, AllStatus);
 					GUILayout.BeginVertical(GUILayout.ExpandWidth(false));
 					GUILayout.FlexibleSpace();
-					using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(_contentSearchData.searchText) &&
+					using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(_contentSearchData?.searchText ?? "") &&
 					                                  !_activeFilters.Values.Any(values => values.Count > 0)))
 					{
 						if (GUILayout.Button("Clear all filters", _clearFiltersButtonStyle,
@@ -358,7 +358,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				_statusToDraw = ContentStatus.Modified | ContentStatus.Created | ContentStatus.Deleted;
 			});
 		}
-		
+
 		private void ChangeToValidateMode()
 		{
 			AddDelayedAction(() =>
@@ -367,14 +367,14 @@ namespace Beamable.Editor.UI.ContentWindow
 				_statusToDraw = ContentStatus.Invalid;
 			});
 		}
-		
+
 		private void ChangeToRevertAll()
 		{
 			ChangeWindowStatus(ContentWindowStatus.Revert);
 			_statusToDraw = ContentStatus.Modified | ContentStatus.Created | ContentStatus.Deleted;
 			_revertAction = RevertAllContents;
 		}
-		
+
 		private void ChangeToSnapshotManager()
 		{
 			AddDelayedAction(() =>
@@ -393,7 +393,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			if(_windowStatus == windowStatus)
 				return;
-			
+
 			var previousWindowStatus = _windowStatus;
 			_windowStatus = windowStatus;
 			if (previousWindowStatus == ContentWindowStatus.History && _windowStatus != ContentWindowStatus.History)
@@ -454,21 +454,21 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void DrawLowBarHeader(Rect rect)
 		{
 			if (NeedsMigration) return;
-			
+
 			if (_windowStatus is not ContentWindowStatus.Normal)
 			{
 				GUILayout.Space(40);
 				return;
 			}
-				
-			
+
+
 			GUILayout.Space(15);
 
 			GUIStyle lowBarTextStyle = _lowBarTextStyle ?? EditorStyles.boldLabel;
-			
+
 			int filteredItemsCount = GetFilteredItems().Count;
 			int totalItems = GetCachedManifestEntries().Count;
-			
+
 			var itemsCounts = new GUIContent($"{filteredItemsCount}/{totalItems}");
 			var itemsCountsSize = lowBarTextStyle.CalcSize(itemsCounts);
 
@@ -479,7 +479,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			contentTreeLabelValue += SelectedContentType.Count == 0
 				? ""
 				: $" > {string.Join(" | ", SelectedContentType.OrderBy(item => item).Select(item => item.Replace(".", ">")))}";
-			
+
 			GUI.Label(itemsFilterLabelRect, $"{filteredItemsCount}/{totalItems}", lowBarTextStyle);
 			GUI.Label(contentTreeLabelRect, contentTreeLabelValue, lowBarTextStyle);
 			EditorGUILayout.Space(1, true);
@@ -511,10 +511,10 @@ namespace Beamable.Editor.UI.ContentWindow
 					menu.ShowAsContext();
 				}
 			}
-			
+
 
 			EditorGUILayout.Space(6, false);
-			
+
 			if (BeamGUI.LayoutDropDownButton(dropdownContent))
 			{
 				GenericMenu menu = new GenericMenu();
@@ -532,14 +532,14 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.Space(4, false);
 
 		}
-		
+
 		private void ShowSyncMenu()
 		{
 			bool hasModified = _contentService.GetAllContentFromStatus(ContentStatus.Modified).Count > 0;
 			bool hasNewItems = _contentService.GetAllContentFromStatus(ContentStatus.Created).Count > 0;
 			bool hasDeleted = _contentService.GetAllContentFromStatus(ContentStatus.Deleted).Count > 0;
 			bool hasConflictedItems = _contentService.HasConflictedContent;
-			
+
 			GenericMenu menu = new GenericMenu();
 			if (hasModified || hasNewItems || hasConflictedItems || hasDeleted)
 			{
@@ -577,7 +577,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				menu.AddDisabledItem(new GUIContent(REVERT_CONFLICTED_MENU_ITEM), false);
 			}
-			
+
 			if (hasDeleted)
 			{
 				menu.AddItem(new GUIContent(REVERT_DELETED_MENU_ITEM), false, () =>
@@ -645,7 +645,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			await _contentService.SyncContentsWithProgress(false, true, false, false, showUnityModalProgress: false);
 		}
 
-		
+
 
 
 		private void DrawFilterButton(ContentSearchFilterType searchFilterType, Texture icon, IEnumerable<string> items)
@@ -772,6 +772,6 @@ namespace Beamable.Editor.UI.ContentWindow
 				.Where(part => !TryGetSearchFilter(part, out _, out _))
 				.Select(part => part.Trim()).Where(part => part.Length > 0));
 		}
-		
+
 	}
 }
