@@ -6,17 +6,17 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class BundlesAclArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>The bundle reference: <bundle-name>, <bundle-name>@<tag>, or <bundle-name>@sha256:<checksum> (a name or tag resolves to its checksum; a bare name means @latest). Optionally namespaced as @<namespace>/<bundle-name></summary>
-        public string bundleRef;
-        /// <summary>Visibility tier to widen to (each tier is a superset of the previous, not a list of realms): 'realm' = only this realm; 'org' = every realm in your customer; 'public' = every realm in every customer. A literal <cid>.<pid> / <cid> / * is also accepted</summary>
+        /// <summary>The bundle to widen, optionally namespaced as @<namespace>/<bundle-name>. Visibility applies to the whole name, so no tag or checksum is accepted</summary>
+        public string bundleName;
+        /// <summary>Visibility tier to widen to (each tier is a superset of the previous, not a list of realms): 'private' = only this scope (the realm, or the zone for a zone bundle); 'org' = every realm and zone in your customer; 'public' = every realm in every customer. '*' is also accepted as an alias for 'public'</summary>
         public string scope;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-            // Add the bundleRef value to the list of args.
-            genBeamCommandArgs.Add(this.bundleRef.ToString());
+            // Add the bundleName value to the list of args.
+            genBeamCommandArgs.Add(this.bundleName.ToString());
             // If the scope value was not default, then add it to the list of args.
             if ((this.scope != default(string)))
             {
