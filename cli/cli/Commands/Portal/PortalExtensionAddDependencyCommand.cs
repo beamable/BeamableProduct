@@ -91,10 +91,7 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 	public static void GenerateDependenciesClients(string extensionPath, BeamoLocalManifest manifest)
 	{ //TODO: could also use better error handling here
 		var dependencies = GetDependenciesFromPath(extensionPath);
-		// A zone extension's `context.beam` is a BeamZoneSdk, which does not extend BeamBase, so its clients must
-		// bind to BeamZoneSdk — the same choice `generate-portal-extension-clients` makes. `project run` regenerates
-		// through here on every start, so getting it wrong rewrites zone extensions' clients to BeamBase.
-		var augmentType = IsZoneExtension(extensionPath) ? "BeamZoneSdk" : "BeamBase";
+		var isZoneExtension = IsZoneExtension(extensionPath);
 
 		foreach ((string beamId, HttpMicroserviceLocalProtocol localProtocol) in manifest.HttpMicroserviceLocalProtocols)
 		{
@@ -109,7 +106,16 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 				continue;
 			}
 
-			var generator = new WebClientCodeGenerator(localProtocol.OpenApiDoc, "ts", augmentType);
+			// The client binds to the SDK type that routes to the service's own scope, whatever the extension's scope
+			// is: a zone extension calls a realm service through assumeRealm's BeamServer (a BeamBase), the same choice
+			// `generate-portal-extension-clients` makes. `project run` regenerates through here on every start.
+			var service = manifest.ServiceDefinitions.FirstOrDefault(d => d.BeamoId == beamId);
+			if (service?.IsZoneScoped == true && !isZoneExtension)
+			{
+				Log.Warning($"Realm-scoped portal extension at {extensionPath} depends on zone-scoped microservice {beamId}; a realm extension has no zone SDK to call it with.");
+			}
+
+			var generator = new WebClientCodeGenerator(localProtocol.OpenApiDoc, "ts", WebClientCodeGenerator.AugmentTypeFor(service));
 			var clientsOutputDirectory = Path.Combine(extensionPath, "beamable/clients");
 			generator.GenerateClientCode(clientsOutputDirectory);
 		}

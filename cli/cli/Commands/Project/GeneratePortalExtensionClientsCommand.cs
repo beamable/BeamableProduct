@@ -71,20 +71,22 @@ public class GeneratePortalExtensionClientsCommand : AppCommand<GeneratePortalEx
 				return;
 			}
 
+			// The client binds to the SDK type that routes to the service's own scope, whatever the
+			// extension's scope is (a zone extension calls a realm service via assumeRealm's BeamBase).
+			var augmentType = WebClientCodeGenerator.AugmentTypeFor(ms);
+
 			foreach (var extension in extensionsToUpdate)
 			{
 				var extensionPath = extension.PortalExtensionDefinition.AbsolutePath;
 				var clientsOutputDirectory = Path.Combine(extensionPath, "beamable/clients");
 
-				// A zone extension's `context.beam` is a BeamZoneSdk, not a Beam, so its
-				// generated client must bind to BeamZoneSdk (constructor param + the
-				// `declare module` augmentation that types `beam.<name>Client`). Realm
-				// extensions bind to BeamBase as before.
-				var isZone = string.Equals(
-					extension.PortalExtensionDefinition.Properties?.ServiceScope?.Trim(),
-					"zone",
-					StringComparison.OrdinalIgnoreCase);
-				var augmentType = isZone ? "BeamZoneSdk" : "BeamBase";
+				if (ms.IsZoneScoped && !extension.IsZoneScoped)
+				{
+					Log.Warning("Realm-scoped portal extension {extension} depends on zone-scoped microservice {beamoId}; " +
+					            "a realm extension has no zone SDK to call it with.",
+						new object[] { extension.BeamoId, ms.BeamoId });
+				}
+
 				var generator = new WebClientCodeGenerator(document, "ts", augmentType);
 
 				object pathLock = _pathLocks.GetOrAdd(clientsOutputDirectory, _ => new object());
