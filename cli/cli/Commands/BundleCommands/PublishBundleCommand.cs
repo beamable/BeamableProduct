@@ -245,6 +245,10 @@ public class PublishBundleCommand
 		{
 			request.tag = args.tag;
 		}
+		if (!string.IsNullOrEmpty(args.Comment))
+		{
+			request.comment = args.Comment;
+		}
 
 		if (bundle.bundleDependencies.Count > 0)
 		{
