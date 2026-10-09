@@ -110,18 +110,20 @@ public static class LocalStackSkillTemplate
 	{
 		config ??= new LocalStackConfig();
 		var steps = config.steps ?? new List<LocalStackStep>();
+		var root = WorkspaceRoot(manifestPath);
 		var sb = new StringBuilder();
 
 		sb.AppendLine("## This workspace's stack");
 		sb.AppendLine();
-		sb.AppendLine("Generated from the manifest below. Everything in this section is specific to this machine.");
+		sb.AppendLine("Generated from the manifest below. Paths are relative to this workspace (or to `~`), so the");
+		sb.AppendLine("section carries no machine-specific folder layout.");
 		sb.AppendLine();
-		sb.AppendLine($"- **Manifest**: `{Display(manifestPath)}`");
+		sb.AppendLine($"- **Manifest**: `{DisplayPath(manifestPath, root)}`");
 		sb.AppendLine($"- **Steps**: {steps.Count} ({steps.Count(s => s.enabled)} enabled, {steps.Count(s => s.build)} build-only)");
 		sb.AppendLine();
 
-		AppendRepositories(sb, config.repos);
-		AppendEndpoints(sb, config);
+		AppendRepositories(sb, config.repos, root);
+		AppendEndpoints(sb, config, root);
 		AppendSelection(sb, config, steps);
 		AppendPlaceholders(sb, steps, config.repos);
 		AppendSteps(sb, steps);
@@ -129,7 +131,7 @@ public static class LocalStackSkillTemplate
 		return sb.ToString().TrimEnd();
 	}
 
-	private static void AppendRepositories(StringBuilder sb, LocalStackRepos repos)
+	private static void AppendRepositories(StringBuilder sb, LocalStackRepos repos, string root)
 	{
 		sb.AppendLine("### Repositories this manifest points at");
 		sb.AppendLine();
@@ -146,15 +148,15 @@ public static class LocalStackSkillTemplate
 
 		sb.AppendLine("| Repository | Path |");
 		sb.AppendLine("|---|---|");
-		sb.AppendLine($"| BeamableAPI (C# gateway + docker deps) | `{Display(repos.apiDir)}` |");
-		sb.AppendLine($"| BeamableBackend (Scala services) | `{Display(repos.scalaDir)}` |");
-		sb.AppendLine($"| Portal frontend | `{Display(repos.portalDir)}` |");
-		sb.AppendLine($"| portal-localdev (web registry) | {DisplayOptional(repos.webRegistryDir)} |");
-		sb.AppendLine($"| BeamableProduct (web packages) | {DisplayOptional(repos.productDir)} |");
+		sb.AppendLine($"| BeamableAPI (C# gateway + docker deps) | `{DisplayPath(repos.apiDir, root)}` |");
+		sb.AppendLine($"| BeamableBackend (Scala services) | `{DisplayPath(repos.scalaDir, root)}` |");
+		sb.AppendLine($"| Portal frontend | `{DisplayPath(repos.portalDir, root)}` |");
+		sb.AppendLine($"| portal-localdev (web registry) | {DisplayOptional(repos.webRegistryDir, root)} |");
+		sb.AppendLine($"| BeamableProduct (web packages) | {DisplayOptional(repos.productDir, root)} |");
 		sb.AppendLine();
 	}
 
-	private static void AppendEndpoints(StringBuilder sb, LocalStackConfig config)
+	private static void AppendEndpoints(StringBuilder sb, LocalStackConfig config, string root)
 	{
 		sb.AppendLine("### Endpoints");
 		sb.AppendLine();
@@ -162,7 +164,7 @@ public static class LocalStackSkillTemplate
 		sb.AppendLine($"- **Portal** (`${{portalUrl}}`): `{Display(config.portalUrl)}`");
 		sb.AppendLine(string.IsNullOrWhiteSpace(config.javaHome)
 			? "- **Java 8 home** (`${java}`): not baked in — resolved at run time from `--java-path` / `BEAM_JAVA_HOME` / auto-detection"
-			: $"- **Java 8 home** (`${{java}}`): `{config.javaHome}`");
+			: $"- **Java 8 home** (`${{java}}`): `{DisplayPath(config.javaHome, root)}`");
 		sb.AppendLine();
 	}
 
@@ -304,8 +306,67 @@ public static class LocalStackSkillTemplate
 
 	/// <summary>A null optional path means that part of the stack is not included, which is not the same as
 	/// "unset" — say so rather than rendering an empty cell.</summary>
-	private static string DisplayOptional(string value) =>
-		string.IsNullOrWhiteSpace(value) ? "_not part of this stack_" : $"`{value}`";
+	private static string DisplayOptional(string value, string root) =>
+		string.IsNullOrWhiteSpace(value) ? "_not part of this stack_" : $"`{DisplayPath(value, root)}`";
+
+	/// <summary>
+	/// The folder holding <c>.beamable</c> — the manifest lives at <c>&lt;root&gt;/.beamable/local-stack.json</c>.
+	/// A manifest written somewhere else (<c>--config</c>) is treated as its own root.
+	/// </summary>
+	private static string WorkspaceRoot(string manifestPath)
+	{
+		if (string.IsNullOrWhiteSpace(manifestPath))
+		{
+			return null;
+		}
+
+		var dir = Path.GetDirectoryName(Path.GetFullPath(manifestPath));
+		return Path.GetFileName(dir) == ".beamable" ? Path.GetDirectoryName(dir) : dir;
+	}
+
+	/// <summary>
+	/// The skill sits inside the workspace and is often committed with it, so it must not carry this
+	/// machine's folder layout. Paths inside the workspace, or in a sibling checkout next to it (the layout
+	/// <c>beam local init</c> expects), are written relative to the workspace root; anything else under the
+	/// home folder is written with <c>~</c>. Only a path outside both stays absolute.
+	/// </summary>
+	private static string DisplayPath(string value, string root)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+		{
+			return "(unset)";
+		}
+
+		if (HasPlaceholder(value) || !Path.IsPathRooted(value))
+		{
+			return value;
+		}
+
+		var full = Path.GetFullPath(value);
+		if (!string.IsNullOrEmpty(root))
+		{
+			var relative = Path.GetRelativePath(root, full);
+			var parentHops = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+				.TakeWhile(part => part == "..")
+				.Count();
+			if (!Path.IsPathRooted(relative) && parentHops <= 1)
+			{
+				return relative == "." ? "." : relative.Replace(Path.DirectorySeparatorChar, '/');
+			}
+		}
+
+		var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+		if (!string.IsNullOrEmpty(home))
+		{
+			var fromHome = Path.GetRelativePath(home, full);
+			if (!Path.IsPathRooted(fromHome) && !fromHome.StartsWith("..", StringComparison.Ordinal))
+			{
+				return "~/" + fromHome.Replace(Path.DirectorySeparatorChar, '/');
+			}
+		}
+
+		return full;
+	}
 
 	private static string ReadEmbeddedTemplate()
 	{

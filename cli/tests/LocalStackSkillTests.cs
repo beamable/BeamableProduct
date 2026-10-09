@@ -52,13 +52,45 @@ public class LocalStackSkillTests
 	{
 		var section = LocalStackSkillTemplate.RenderThisStack(Config(), ManifestPath);
 
-		Assert.That(section, Does.Contain(ApiDir));
-		Assert.That(section, Does.Contain(ScalaDir));
-		Assert.That(section, Does.Contain(PortalDir));
-		Assert.That(section, Does.Contain(WebRegistryDir));
+		// The checkouts sit next to the workspace (Root/game), so they are named relative to it.
+		Assert.That(section, Does.Contain("`../BeamableAPI`"));
+		Assert.That(section, Does.Contain("`../BeamableBackend`"));
+		Assert.That(section, Does.Contain("`../agentic-portal`"));
+		Assert.That(section, Does.Contain("`../BeamableProduct/portal-localdev`"));
 		// Derived from the portal-localdev path rather than prompted for.
-		Assert.That(section, Does.Contain(ProductDir));
-		Assert.That(section, Does.Contain(ManifestPath));
+		Assert.That(section, Does.Contain("`../BeamableProduct`"));
+		Assert.That(section, Does.Contain("`.beamable/local-stack.json`"));
+	}
+
+	/// <summary>
+	/// The skill lands inside the workspace and is often committed with it, so it must not leak the folder
+	/// layout of the machine that ran init: no absolute repo paths, and the home folder written as `~`.
+	/// </summary>
+	[Test]
+	public void Generated_section_carries_no_machine_specific_paths()
+	{
+		var config = Config();
+		var home = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
+		config.javaHome = Path.Combine(home, ".beamable-toolchain", "jdk8");
+
+		var section = LocalStackSkillTemplate.RenderThisStack(config, ManifestPath);
+
+		Assert.That(section, Does.Not.Contain(Root));
+		Assert.That(section, Does.Not.Contain(home));
+		Assert.That(section, Does.Contain("`~/.beamable-toolchain/jdk8`"));
+	}
+
+	/// <summary>A checkout that is neither next to the workspace nor under home has no shorter honest name.</summary>
+	[Test]
+	public void Paths_far_from_the_workspace_stay_absolute()
+	{
+		var config = Config();
+		var elsewhere = Path.Combine(Path.GetPathRoot(Root) ?? "/", "elsewhere", "BeamableAPI");
+		config.repos.apiDir = elsewhere;
+
+		var section = LocalStackSkillTemplate.RenderThisStack(config, ManifestPath);
+
+		Assert.That(section, Does.Contain($"`{elsewhere}`"));
 	}
 
 	[Test]
@@ -190,7 +222,7 @@ public class LocalStackSkillTests
 		Assert.That(content, Does.Contain("description:"));
 		Assert.That(content, Does.Not.Contain(LocalStackSkillTemplate.ThisStackToken));
 		Assert.That(content, Does.Contain("This workspace's stack"));
-		Assert.That(content, Does.Contain(ApiDir));
+		Assert.That(content, Does.Contain("`../BeamableAPI`"));
 	}
 
 	[Test]
