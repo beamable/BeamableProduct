@@ -1,10 +1,15 @@
 name: Build Dev Otel Collector
 
-# Builds the 0.0.123 collector that PR builds install through setup.sh. The binaries are cached by a
-# hash of the collector sources, so Go only runs when the collector changes. Pushes to main seed the
-# cache, because caches saved by pull_request runs are visible only to that pull request.
+# Builds the 0.0.123 collector archive that PR builds install through setup.sh. The archive is cached by
+# a hash of the collector sources, so Go only runs when the collector changes, and callers restore it
+# with actions/cache/restore using the cache-key output. Pushes to main seed the cache, because caches
+# saved by pull_request runs are visible only to that pull request.
 on:
   workflow_call:
+    outputs:
+      cache-key:
+        description: Cache key of the collector archive at otel-collector-prebuilt/otel-collector.tar.gz
+        value: ${{ jobs.buildCollector.outputs.cache-key }}
   workflow_dispatch:
   push:
     branches:
@@ -21,31 +26,31 @@ jobs:
     name: Build Otel Collector
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      cache-key: ${{ steps.key.outputs.key }}
     steps:
       - uses: actions/checkout@v5
-      - name: Restore collector binaries
+      - name: Compute cache key
+        id: key
+        run: echo "key=otel-collector-0.0.123-go${{ env.GO_VERSION }}-${{ hashFiles('otel-collector/**') }}" >> "$GITHUB_OUTPUT"
+      - name: Restore collector archive
         id: cache
         uses: actions/cache@v6
         with:
-          path: ${{ runner.temp }}/otel-collector
-          key: otel-collector-0.0.123-go${{ env.GO_VERSION }}-${{ hashFiles('otel-collector/**') }}
+          key: ${{ steps.key.outputs.key }}
+          path: otel-collector-prebuilt/otel-collector.tar.gz
+          enableCrossOsArchive: true
+          lookup-only: true
       - name: Install Go
         if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: ./otel-collector/beamable-collector/go.sum
-      - name: Build collector
+      - name: Build and archive collector
         if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: ./otel-collector
         shell: bash
-        run: OUTPUT_DIRECTORY="$RUNNER_TEMP/otel-collector" ./build.sh --version 0.0.123
-      - name: Archive collector
-        shell: bash
-        run: tar -czf "$RUNNER_TEMP/otel-collector.tar.gz" -C "$RUNNER_TEMP/otel-collector" .
-      - uses: actions/upload-artifact@v6
-        with:
-          name: otel-collector-0.0.123
-          path: ${{ runner.temp }}/otel-collector.tar.gz
-          if-no-files-found: error
-          retention-days: 1
+        run: |
+          (cd otel-collector && OUTPUT_DIRECTORY="$RUNNER_TEMP/otel-collector" ./build.sh --version 0.0.123)
+          mkdir -p otel-collector-prebuilt
+          tar -czf otel-collector-prebuilt/otel-collector.tar.gz -C "$RUNNER_TEMP/otel-collector" .
