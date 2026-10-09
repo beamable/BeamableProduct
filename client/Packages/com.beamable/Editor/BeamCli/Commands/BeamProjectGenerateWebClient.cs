@@ -10,6 +10,10 @@ namespace Beamable.Editor.BeamCli.Commands
         public string outputDir;
         /// <summary>The language of the generated code. Valid values are: `typescript` (default), `ts`, `javascript`, `js`</summary>
         public string lang;
+        /// <summary>How C# `long` (OpenAPI int64) fields are typed in the generated TypeScript. Valid values are: `bigint-union` (default, `bigint | string`), `number`, `string`</summary>
+        public string int64As;
+        /// <summary>Build the microservices first so the generated clients match the current code, instead of using the OpenAPI documents from their last build</summary>
+        public bool build;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -24,6 +28,16 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.lang != default(string)))
             {
                 genBeamCommandArgs.Add(("--lang=" + this.lang));
+            }
+            // If the int64As value was not default, then add it to the list of args.
+            if ((this.int64As != default(string)))
+            {
+                genBeamCommandArgs.Add(("--int64-as=" + this.int64As));
+            }
+            // If the build value was not default, then add it to the list of args.
+            if ((this.build != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--build=" + this.build));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
