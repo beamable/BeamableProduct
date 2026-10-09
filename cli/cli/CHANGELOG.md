@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Report failed MSBuild targets as failed builds, including when compiler diagnostics are empty or missing. Project builds now return a nonzero exit and surface the underlying build output in Unity.
 
 - `beam project run` no longer rewrites a zone portal extension's generated microservice clients to bind to `BeamBase`. They now bind to `BeamZoneSdk` (the object a zone extension receives), matching `generate-portal-extension-clients`, so generated client files stop flipping between the two on every run.
+- The `beam-web-guide` skill showed microservice endpoints with a leading slash, which made the SDK request `//Method`. It now leads with `beam project generate web-client` (with a live options table) and adds sections on realm prerequisites and the realtime session and its errors.
 
 ## [7.3.0] - 2026-10-08
 
