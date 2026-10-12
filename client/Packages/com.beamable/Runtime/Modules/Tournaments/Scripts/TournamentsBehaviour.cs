@@ -513,11 +513,13 @@ namespace Beamable.Tournaments
 
 		private void RefreshColorConstraints()
 		{
-			#if UNITY_6000_0_OR_NEWER
-			var colorConstraints = Object.FindObjectsByType<TournamentColorConstraint>(FindObjectsSortMode.None);;
-			#else
+#if UNITY_6000_7_OR_NEWER
+			var colorConstraints = FindObjectsByType<TournamentColorConstraint>();
+#elif UNITY_6000_0_OR_NEWER
+			var colorConstraints = FindObjectsByType<TournamentColorConstraint>(FindObjectsSortMode.None);
+#else
 			var colorConstraints = FindObjectsOfType<TournamentColorConstraint>();
-			#endif
+#endif
 			foreach (var constrained in colorConstraints)
 			{
 				if (constrained.isActiveAndEnabled)

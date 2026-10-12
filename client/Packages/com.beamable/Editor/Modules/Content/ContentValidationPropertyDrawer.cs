@@ -7,6 +7,11 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+#if UNITY_6000_7_OR_NEWER
+using UnityObjectId = UnityEngine.EntityId;
+#else
+using UnityObjectId = System.Int32;
+#endif
 
 namespace Beamable.Editor.Content
 {
@@ -27,10 +32,10 @@ namespace Beamable.Editor.Content
 
 		private readonly struct ValidationCacheKey : IEquatable<ValidationCacheKey>
 		{
-			public readonly int TargetInstanceId;
+			public readonly UnityObjectId  TargetInstanceId;
 			public readonly string PropertyPath;
 
-			public ValidationCacheKey(int targetInstanceId, string propertyPath)
+			public ValidationCacheKey(UnityObjectId  targetInstanceId, string propertyPath)
 			{
 				TargetInstanceId = targetInstanceId;
 				PropertyPath = propertyPath;
@@ -51,7 +56,7 @@ namespace Beamable.Editor.Content
 			{
 				unchecked
 				{
-					return (TargetInstanceId * 397) ^
+					return (TargetInstanceId.GetHashCode() * 397) ^
 					       (PropertyPath != null ? PropertyPath.GetHashCode() : 0);
 				}
 			}
@@ -138,6 +143,15 @@ namespace Beamable.Editor.Content
 			}
 		}
 
+		private static UnityObjectId GetObjectId(UnityEngine.Object target)
+		{
+#if UNITY_6000_7_OR_NEWER
+			return target.GetEntityId();
+#else
+			return target.GetInstanceID();
+#endif
+		}
+
 		#endregion
 
 		#region Cache LifeCycle Cleanup
@@ -156,8 +170,8 @@ namespace Beamable.Editor.Content
 				return;
 			}
 
-			var key = new ValidationCacheKey(property.serializedObject.targetObject.GetInstanceID(),
-				property.propertyPath);
+			var objectId = GetObjectId(property.serializedObject.targetObject);
+			var key = new ValidationCacheKey(objectId, property.propertyPath);
 
 			_validationCache.Remove(key);
 		}
@@ -190,7 +204,7 @@ namespace Beamable.Editor.Content
 				return ValidationResult.Empty;
 			}
 
-			var key = new ValidationCacheKey(contentObject.GetInstanceID(), property.propertyPath);
+			var key = new ValidationCacheKey(GetObjectId(contentObject), property.propertyPath);
 			var propertyRevision = ValidationRevision.Create(property, contentObject);
 			var currentManifestRevision = contentService.ManifestChangedCount;
 

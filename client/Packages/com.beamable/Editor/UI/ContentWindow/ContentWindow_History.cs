@@ -15,6 +15,11 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
+#if UNITY_6000_7_OR_NEWER
+using UnityObjectId = UnityEngine.EntityId;
+#else
+using UnityObjectId = System.Int32;
+#endif
 
 [assembly: InternalsVisibleTo("Unity.Beamable.Tests.Editor")]
 
@@ -1224,26 +1229,26 @@ namespace Beamable.Editor.UI.ContentWindow
 
 	public static class ContentHistoryInspectorPreview
 	{
-		private static readonly HashSet<int> PreviewInstanceIds = new();
+		private static readonly HashSet<UnityObjectId> PreviewInstanceIds = new();
 
 		public static void Register(ContentObject content)
 		{
 			if (content != null)
 			{
-				PreviewInstanceIds.Add(content.GetInstanceID());
+				PreviewInstanceIds.Add(GetObjectId(content));
 			}
 		}
 
 		public static bool IsReadOnly(ContentObject content)
 		{
-			return content != null && PreviewInstanceIds.Contains(content.GetInstanceID());
+			return content != null && PreviewInstanceIds.Contains(GetObjectId(content));
 		}
 
 		public static void Release(ContentObject content)
 		{
 			if (content != null)
 			{
-				PreviewInstanceIds.Remove(content.GetInstanceID());
+				PreviewInstanceIds.Remove(GetObjectId(content));
 			}
 		}
 
@@ -1298,6 +1303,15 @@ namespace Beamable.Editor.UI.ContentWindow
 				exception = caughtException;
 				return false;
 			}
+		}
+
+		private static UnityObjectId GetObjectId(UnityEngine.Object target)
+		{
+#if UNITY_6000_7_OR_NEWER
+			return target.GetEntityId();
+#else
+		return target.GetInstanceID();
+#endif
 		}
 	}
 
