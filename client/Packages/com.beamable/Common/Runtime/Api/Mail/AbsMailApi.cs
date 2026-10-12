@@ -380,19 +380,28 @@ namespace Beamable.Common.Api.Mail
 		/// <summary>
 		/// An optional player id that selects mail coming from the specific player.
 		/// </summary>
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1001
 		public long? forSender;
+#pragma warning restore UAC1001
 
 		/// <summary>
 		/// An optional maximum number of <see cref="MailMessage"/> to accept in the resulting <see cref="SearchMailResponseClause.content"/> list.
 		/// This will also max out the <see cref="SearchMailResponseClause.count"/> field.
 		/// This can be used with the <see cref="start"/> field to page the player's mail.
 		/// </summary>
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1001
 		public long? limit;
+#pragma warning restore UAC1001
 
 		/// <summary>
 		/// An optional offset into the players mail. This can be used with the <see cref="limit"/> field to page the player's mail.
 		/// </summary>
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1001
 		public long? start;
+#pragma warning restore UAC1001
 
 		public ArrayDict Serialize()
 		{

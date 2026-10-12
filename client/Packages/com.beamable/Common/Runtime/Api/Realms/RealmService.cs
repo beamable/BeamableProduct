@@ -274,7 +274,10 @@ namespace Beamable.Common.Api.Realms
 	public class RealmConfigView
 	{
 		public string Namespace;
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1015
 		public Dictionary<string, string> Config;
+#pragma warning restore UAC1015
 	}
 
 
@@ -304,6 +307,8 @@ namespace Beamable.Common.Api.Realms
 		public string ProjectName;
 		public bool Archived;
 		public List<RealmView> Children = new List<RealmView>();
+		// Runtime back-reference; ProcessProjects reconstructs it from the parent pid.
+		[NonSerialized]
 		public RealmView Parent;
 		public int Depth { get; set; }
 		public string DisplayName { get => IsProduction ? $"[PROD] {ProjectName}" : ProjectName; }
@@ -403,6 +408,9 @@ namespace Beamable.Common.Api.Realms
 	[System.Serializable]
 	public class GetRealmConfigDTO
 	{
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1015
 		public Dictionary<string, string> config;
+#pragma warning restore UAC1015
 	}
 }

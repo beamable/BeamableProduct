@@ -14,6 +14,7 @@ namespace Beamable.Editor.Microservice.UI2
 {
 	public partial class UsamWindow : BeamEditorWindow<UsamWindow>
 	{
+		[System.NonSerialized]
 		public UsamService usam;
 
 		public CardButton selectedCard;
