@@ -390,9 +390,15 @@ namespace Beamable.Common.Reflection
 					perAttributeLists.AttributeMappings.Add(attributesOfInterest[i], new List<MemberAttribute>());
 				}
 			}
-
-			// TODO: Use TypeCache in editor and Unity 2019 and above... This path should go through BEAMABLE_MICROSERVICE || DB_MICROSERVICE so we can use the reflection cache stuff in the base image.
+			
+#if UNITY_6000_7_OR_NEWER
+			//Enumerate Unity's active assemblies, excluding unloading contexts.
+			var assemblies = UnityEngine.Assemblies.CurrentAssemblies
+				.GetLoadedAssemblies()
+				.ToArray();
+#else			
 			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+#endif
 
 			// Groups by whether or not the assembly is one we care about sweeping.
 
