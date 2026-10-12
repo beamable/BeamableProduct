@@ -11,6 +11,7 @@ namespace Beamable.Editor.Library
 	{
 		public Vector2 sampleScrollPosition;
 
+		[System.NonSerialized]
 		public Dictionary<string, Texture> loadedTextures = new Dictionary<string, Texture>();
 
 		Texture LoadTexture(string path)

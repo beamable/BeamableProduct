@@ -45,11 +45,17 @@ namespace Beamable.Common.Shop
 	{
 		[Tooltip(ContentObject.TooltipOptional0 + "The id for the Apple iTunes store")]
 		[CannotBeBlank]
+		// Preserve the old-type migration alias and the current content field name.
+#pragma warning disable UAC1018
 		public OptionalString itunes;
+#pragma warning restore UAC1018
 
 		[Tooltip(ContentObject.TooltipOptional0 + "The id for the Google Play store")]
 		[CannotBeBlank]
+		// Preserve the old-type migration alias and the current content field name.
+#pragma warning disable UAC1018
 		public OptionalString googleplay;
+#pragma warning restore UAC1018
 
 		[Tooltip(ContentObject.TooltipOptional0 + "The id for the Valve Steam store")]
 		[CannotBeBlank]

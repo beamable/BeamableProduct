@@ -11,7 +11,9 @@ namespace Beamable.Editor.Microservice.UI2
 {
 	public partial class UsamWindow
 	{
+		[System.NonSerialized]
 		public List<SerializedObject> serviceSettings = new List<SerializedObject>();
+		[System.NonSerialized]
 		public List<SerializedObject> storageSettings = new List<SerializedObject>();
 		public Vector2 settingsScrollPosition;
 		[NonSerialized]
