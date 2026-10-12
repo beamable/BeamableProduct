@@ -15,8 +15,12 @@ namespace UnityEngine.UDP.Editor
                 return m_TypeCache[name];
             }
 
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
+#if UNITY_6000_7_OR_NEWER
+            var assemblies =
+	            global::UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
+#else
+			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+#endif
             foreach (var assembly in assemblies)
             {
                 if (!AllowLookupForAssembly(assembly.FullName))
