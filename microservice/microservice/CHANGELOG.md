@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Services.Secrets` for realm and zone microservices: get, set, delete and list secrets in the service's own scope (the realm's secrets in a `Microservice`, the zone's in a `ZoneMicroservice`). From a zone service, `AssumeRealm(pid).Services.Secrets` reaches that realm's secrets.
+
 ### Fixed
 
 - Generate valid OpenAPI component keys and references for tuple callable types, while preserving C# type metadata. Invalid generated schemas now report their validation errors directly.
