@@ -273,7 +273,7 @@ public static class RunScopeIdentity
 		}
 	}
 
-	static async Task<string> FetchZoneSecret(CommandArgs args, string cid, string zid)
+	public static async Task<string> FetchZoneSecret(CommandArgs args, string cid, string zid)
 	{
 		try
 		{

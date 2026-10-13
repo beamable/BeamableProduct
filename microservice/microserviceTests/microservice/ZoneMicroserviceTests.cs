@@ -3,6 +3,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
 using Beamable.Server.Api.Inventory;
+using Beamable.Server.Api.Notifications;
 using NUnit.Framework;
 
 namespace microserviceTests.microservice
@@ -43,6 +44,27 @@ namespace microserviceTests.microservice
 			builder.AddScoped(typeof(ZoneTestService));
 
 			Assert.DoesNotThrow(() => builder.Build());
+		}
+
+		[Test]
+		public void ZoneContainer_AcceptsServerNotificationsApi()
+		{
+			var builder = new ScopedDependencyBuilder(BeamServiceScope.Zone);
+			// Server events carry no realm-only surface, so a zone service may publish them (cid.zid).
+			builder.AddScoped<IMicroserviceServerNotificationsApi, MicroserviceServerNotificationApi>(_ => null);
+
+			Assert.DoesNotThrow(() => builder.Build());
+		}
+
+		[Test]
+		public void ZoneContainer_RejectsRealmNotificationsApi_EvenAsServerNotifications()
+		{
+			var builder = new ScopedDependencyBuilder(BeamServiceScope.Zone);
+			// The full notifications API (NotifyPlayer/NotifyGame) stays [RealmScoped], whatever it's registered as.
+			builder.AddScoped<IMicroserviceServerNotificationsApi, MicroserviceNotificationApi>(_ => null);
+
+			var ex = Assert.Throws<ScopeValidationException>(() => builder.Build());
+			StringAssert.Contains(nameof(MicroserviceNotificationApi), ex.Message);
 		}
 
 		[Test]

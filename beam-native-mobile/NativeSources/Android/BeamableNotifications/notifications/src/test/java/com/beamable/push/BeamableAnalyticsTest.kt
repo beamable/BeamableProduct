@@ -77,13 +77,20 @@ class BeamableAnalyticsTest {
 
     @Test
     fun analyticsUrl_isTheGatewayRoute() {
-        // The PRIMARY route must stay `/analytics/events`. That endpoint publishes onto the
+        // The PRIMARY route must stay `/api/analytics/events`. That endpoint publishes onto the
         // `analytics.events` bus the campaign event consumer subscribes to; `/report/custom_batch`
         // publishes to `platform_metric_reports.general`, which only feeds the warehouse loader and
         // is never republished. Posting to the wrong one still returns 2xx, so nothing else in the
         // stack notices — a shipped build that did exactly that is what this test exists to catch.
-        assertEquals("https://api.example.com/analytics/events",
+        // The bare `/analytics/events` (no `/api`) 404s on the gateway and lands in that fallback.
+        assertEquals("https://api.example.com/api/analytics/events",
             BeamableAnalytics.analyticsUrl("https://api.example.com"))
+    }
+
+    @Test
+    fun analyticsUrl_toleratesTrailingSlashHost() {
+        assertEquals("https://api.example.com/api/analytics/events",
+            BeamableAnalytics.analyticsUrl("https://api.example.com/"))
     }
 
     @Test

@@ -20,6 +20,12 @@ public class BundleReleaseInfo
 	/// </summary>
 	public long publishedAt;
 
+	/// <summary>The note given with <c>bundles publish --comment</c>, or null.</summary>
+	public string comment;
+
+	/// <summary>The account that published this release, or 0 when the API did not record one.</summary>
+	public long publishedByAccountId;
+
 	public static BundleReleaseInfo FromRelease(BundleRelease release)
 	{
 		if (release == null) return null;
@@ -29,6 +35,8 @@ public class BundleReleaseInfo
 		{
 			version = release.version.GetOrElse(0),
 			checksum = release.checksum.GetOrElse(""),
+			comment = release.comment.GetOrElse((string)null),
+			publishedByAccountId = release.publishedByAccountId.GetOrElse(0),
 			publishedAt = published == default
 				? 0
 				: new DateTimeOffset(published.ToUniversalTime(), TimeSpan.Zero).ToUnixTimeSeconds(),

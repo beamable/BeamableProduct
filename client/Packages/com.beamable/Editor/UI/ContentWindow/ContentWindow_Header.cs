@@ -199,7 +199,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					DrawFilterButton(ContentSearchFilterType.Status, BeamGUI.iconStatus, AllStatus);
 					GUILayout.BeginVertical(GUILayout.ExpandWidth(false));
 					GUILayout.FlexibleSpace();
-					using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(_contentSearchData.searchText) &&
+					using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(_contentSearchData?.searchText ?? "") &&
 					                                  !_activeFilters.Values.Any(values => values.Count > 0)))
 					{
 						if (GUILayout.Button("Clear all filters", _clearFiltersButtonStyle,

@@ -15,7 +15,7 @@ import java.util.concurrent.Executors
  *
  * Fires Beamable CoreEvent funnel events directly from native code so they work even when the
  * JS/C# VM is dead (closed-app FCM path). Events are POSTed fire-and-forget with a short timeout
- * to `/report/custom_batch/{cid}/{pid}/{gamerTag}`.
+ * to `/api/analytics/events`, falling back to `/report/custom_batch/{cid}/{pid}/{gamerTag}`.
  *
  * Auth (Decision Q5): the SDK persists the player's access + refresh token into shared prefs
  * (readable here because the FCM handler runs in the app process). Native attaches
@@ -373,14 +373,18 @@ object BeamableAnalytics {
     // ---- Route builders ----------------------------------------------
     //
     // Pure and `internal` so the route order is unit-testable without a Context, prefs or a socket.
-    // Which URL is PRIMARY is a correctness contract, not a preference: only `/analytics/events`
+    // Which URL is PRIMARY is a correctness contract, not a preference: only `/api/analytics/events`
     // publishes onto the `analytics.events` bus the campaign consumer reads, so a build that
     // silently posts to the report route instead records the event for the warehouse and drops it
     // from every campaign funnel — with a 2xx and no error anywhere. That is exactly how a stale
     // binary shipped undetected; these two functions exist so a test can pin it.
+    //
+    // The `/api` prefix is required: the C# gateway's routes are served under it, and the bare
+    // `/analytics/events` 404s — which falls through to the report route below and loses the event
+    // for the campaign the same silent way.
 
     /** PRIMARY: the gateway endpoint whose events can reach a campaign funnel. */
-    internal fun analyticsUrl(host: String): String = "$host/analytics/events"
+    internal fun analyticsUrl(host: String): String = "${host.trimEnd('/')}/api/analytics/events"
 
     /** FALLBACK: the canonical report route (shared with Unity/CLI/iOS). Warehouse only. */
     internal fun reportUrl(host: String, cid: String, pid: String, gamerTag: String): String =
