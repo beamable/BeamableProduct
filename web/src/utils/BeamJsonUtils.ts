@@ -6,11 +6,8 @@ export class BeamJsonUtils {
   // Regex to match a purely numeric string, optionally negative (e.g., "1234567890123", "-1234567890123")
   private static readonly NUMBER_STRING_REGEX = /^-?\d+$/;
 
-  // Matches JSON integer values longer than 10 digits that would lose precision
-  // as JavaScript Numbers. Quotes them so they arrive at the reviver as strings.
-  // Uses negative lookbehind/lookahead to avoid matching inside quoted strings.
-  private static readonly UNSAFE_INT_REGEX =
-    /(?<=[:,[{]\s*)-?\d{11,}(?=\s*[,\]}])/g;
+  // Integers with more digits than this may lose precision as JavaScript Numbers.
+  private static readonly MAX_SAFE_DIGITS = 10;
 
   /**
    * Replacer function for JSON.stringify that:
@@ -29,9 +26,40 @@ export class BeamJsonUtils {
   /**
    * Pre-processes raw JSON text by quoting large integers (>10 digits)
    * so they are not silently rounded by JSON.parse.
+   *
+   * Scans the text rather than matching a pattern, so digits inside a string
+   * value are never touched — including a string that itself holds JSON
+   * (e.g. `"payload":"{\"id\":70820408384930816}"`), where quoting would
+   * insert unescaped quotes and break the whole document.
    */
   static quoteLargeInts(text: string): string {
-    return text.replace(BeamJsonUtils.UNSAFE_INT_REGEX, '"$&"');
+    let out = '';
+    let start = 0;
+    let inString = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inString) {
+        if (c === '\\') i++;
+        else if (c === '"') inString = false;
+        continue;
+      }
+      if (c === '"') {
+        inString = true;
+        continue;
+      }
+      if (c !== '-' && (c < '0' || c > '9')) continue;
+
+      let end = i + 1;
+      while (end < text.length && /[0-9.eE+-]/.test(text[end])) end++;
+      const token = text.slice(i, end);
+      const digits = token.startsWith('-') ? token.length - 1 : token.length;
+      if (/^-?\d+$/.test(token) && digits > BeamJsonUtils.MAX_SAFE_DIGITS) {
+        out += text.slice(start, i) + '"' + token + '"';
+        start = end;
+      }
+      i = end - 1;
+    }
+    return out + text.slice(start);
   }
 
   /**

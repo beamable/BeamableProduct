@@ -125,4 +125,23 @@ describe('quoteLargeInts', () => {
     const output = BeamJsonUtils.quoteLargeInts(input);
     expect(output).toBe('{"id":"70820408384930816"}');
   });
+
+  it('leaves a large integer inside a string holding JSON untouched', () => {
+    const input = '{"payload":"{\\"accountId\\":70820408384930816}","id":70820408384930816}';
+    const result = BeamJsonUtils.parse(input);
+    expect(result.id).toBe(70820408384930816n);
+    expect(result.payload).toBe('{"accountId":70820408384930816}');
+  });
+
+  it('leaves bracketed digits inside a string untouched', () => {
+    const input = '{"msg":"account [70820408384930816] and {70820408384930816}"}';
+    expect(BeamJsonUtils.quoteLargeInts(input)).toBe(input);
+  });
+
+  it('quotes large integers in arrays and negative values, not decimals', () => {
+    const input = '[70820408384930816,-70820408384930816,1.70820408384930816e5]';
+    expect(BeamJsonUtils.quoteLargeInts(input)).toBe(
+      '["70820408384930816","-70820408384930816",1.70820408384930816e5]',
+    );
+  });
 });

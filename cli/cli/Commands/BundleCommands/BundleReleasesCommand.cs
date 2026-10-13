@@ -101,6 +101,7 @@ public class BundleReleasesCommand
 		table.AddColumn("Published At");
 		table.AddColumn("Checksum");
 		table.AddColumn("Tags");
+		table.AddColumn("Comment");
 
 		foreach (var release in output.releases)
 		{
@@ -108,7 +109,8 @@ public class BundleReleasesCommand
 				Markup.Escape(release.version.ToString()),
 				Markup.Escape(BundleInfo.FormatPublishedAt(release.publishedAt)),
 				Markup.Escape(release.checksum),
-				Markup.Escape(tagsByChecksum.TryGetValue(release.checksum, out var t) ? t : "-"));
+				Markup.Escape(tagsByChecksum.TryGetValue(release.checksum, out var t) ? t : "-"),
+				Markup.Escape(string.IsNullOrEmpty(release.comment) ? "-" : release.comment));
 		}
 
 		AnsiConsole.Write(table);
