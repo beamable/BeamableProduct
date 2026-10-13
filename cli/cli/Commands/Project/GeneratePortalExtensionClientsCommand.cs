@@ -1,5 +1,6 @@
 using Beamable.Server;
 using cli.Dotnet;
+using cli.Portal;
 using cli.Services;
 using cli.Services.Web;
 using Microsoft.OpenApi.Models;
@@ -46,39 +47,43 @@ public class GeneratePortalExtensionClientsCommand : AppCommand<GeneratePortalEx
 		var allExtensions = allServices.Where((s) => s.Protocol == BeamoProtocolType.PortalExtension).ToList();
 
 		var micros = allServices
-			.Where(s => s.Protocol == BeamoProtocolType.HttpMicroservice && args.services.Contains(s.BeamoId))
+			.Where(s => s.Protocol == BeamoProtocolType.HttpMicroservice)
+			.ToDictionary(s => s.BeamoId);
+
+		// Null-safe on the definition as well as the list: this predicate runs against EVERY
+		// extension in the workspace, so a single malformed extension throws here for all of them,
+		// fails the post-build `generate pe-client` target, and stops the entire microservice tier
+		// from starting.
+		var extensionsToUpdate = allExtensions
+			.Where(e => e.PortalExtensionDefinition?.MicroserviceDependencies.Any(args.services.Contains) == true)
 			.ToList();
 
 		var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 8 };
 
-		await Parallel.ForEachAsync(micros, parallelOptions, async (ms, cancellationToken) =>
+		// Per extension rather than per service: `types/index.ts` is shared by all of an extension's
+		// clients, so every dependency's client is regenerated with it, not only the requested services.
+		await Parallel.ForEachAsync(extensionsToUpdate, parallelOptions, async (extension, cancellationToken) =>
 		{
-			// Null-safe on the definition as well as the list: this predicate runs against EVERY
-			// extension in the workspace for EVERY microservice, so a single malformed extension
-			// throws here for all of them, fails the post-build `generate pe-client` target, and
-			// stops the entire microservice tier from starting.
-			var extensionsToUpdate = allExtensions
-				.Where(e => e.PortalExtensionDefinition?.MicroserviceDependencies.Contains(ms.BeamoId) == true)
-				.ToList();
+			var extensionPath = extension.PortalExtensionDefinition.AbsolutePath;
+			var clientsOutputDirectory = Path.Combine(extensionPath, "beamable/clients");
+			var generators = new List<WebClientCodeGenerator>();
+			var skippedDependencies = new List<string>();
 
-			if (extensionsToUpdate.Count == 0) return;
-
-			(bool hasOpenApiDocument, OpenApiDocument document) = await BeamoServiceDefinition.TryGetOpenApiDocument(ms.OpenApiPath);
-
-			if (!hasOpenApiDocument)
+			foreach (var dependency in extension.PortalExtensionDefinition.MicroserviceDependencies)
 			{
-				Log.Warning("Could not find any open API document: {path} for service {beamoId}", new object[] { ms.OpenApiPath, ms.BeamoId });
-				return;
-			}
+				if (!micros.TryGetValue(dependency, out var ms))
+				{
+					continue;
+				}
 
-			// The client binds to the SDK type that routes to the service's own scope, whatever the
-			// extension's scope is (a zone extension calls a realm service via assumeRealm's BeamBase).
-			var augmentType = WebClientCodeGenerator.AugmentTypeFor(ms);
+				(bool hasOpenApiDocument, OpenApiDocument document) = await BeamoServiceDefinition.TryGetOpenApiDocument(ms.OpenApiPath);
 
-			foreach (var extension in extensionsToUpdate)
-			{
-				var extensionPath = extension.PortalExtensionDefinition.AbsolutePath;
-				var clientsOutputDirectory = Path.Combine(extensionPath, "beamable/clients");
+				if (!hasOpenApiDocument)
+				{
+					Log.Warning("Could not find any open API document: {path} for service {beamoId}", new object[] { ms.OpenApiPath, ms.BeamoId });
+					skippedDependencies.Add(ms.BeamoId);
+					continue;
+				}
 
 				if (ms.IsZoneScoped && !extension.IsZoneScoped)
 				{
@@ -87,15 +92,22 @@ public class GeneratePortalExtensionClientsCommand : AppCommand<GeneratePortalEx
 						new object[] { extension.BeamoId, ms.BeamoId });
 				}
 
-				var generator = new WebClientCodeGenerator(document, "ts", augmentType);
+				// The client binds to the SDK type that routes to the service's own scope, whatever the
+				// extension's scope is (a zone extension calls a realm service via assumeRealm's BeamBase).
+				generators.Add(new WebClientCodeGenerator(document, "ts", WebClientCodeGenerator.AugmentTypeFor(ms)));
+			}
 
-				object pathLock = _pathLocks.GetOrAdd(clientsOutputDirectory, _ => new object());
+			object pathLock = _pathLocks.GetOrAdd(clientsOutputDirectory, _ => new object());
 
-				// Multiple microservices might try to generate client to the same extension, so we lock this by path
-				lock (pathLock)
+			// Concurrent runs in the same process (e.g. the MCP server) might generate into the same extension, so we lock this by path
+			lock (pathLock)
+			{
+				foreach (var generator in generators)
 				{
 					generator.GenerateClientCode(clientsOutputDirectory);
 				}
+
+				PortalExtensionAddDependencyCommand.WriteClientTypes(extensionPath, generators, skippedDependencies);
 			}
 		});
 	}

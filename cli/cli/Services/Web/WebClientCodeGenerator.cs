@@ -33,8 +33,8 @@ public class WebClientCodeGenerator
 	private readonly TsFile _clientFile;
 	private List<string> _modules = new();
 	private readonly HashSet<string> _schemas = new();
-	private static readonly HashSet<TsTypeAlias> ClientTypes = new();
-	private static readonly List<(TsTypeAlias, List<string>)> ModuleTypes = new(); // (typeAlias, deps)
+	// The DTO types this client references as `Types.X`; written to `types/index.ts` by GenerateClientTypes.
+	private readonly List<TsTypeAlias> _clientTypes = new();
 
 	private static readonly List<string> CallableMethodsToGenerate = new()
 	{
@@ -87,7 +87,6 @@ public class WebClientCodeGenerator
 
 		if (IsTypeScript)
 		{
-			ProcessClientTypes();
 			GenerateBeamSDKModuleDeclaration(_clientFile, tsClass, _augmentType);
 		}
 
@@ -109,7 +108,7 @@ public class WebClientCodeGenerator
 			_clientFile.AddImport(tsBeamSchemaImport);
 		}
 
-		if (ClientTypes.Count > 0)
+		if (_clientTypes.Count > 0)
 		{
 			var tsClientTypesImport = new TsImport("./types", defaultImport: "* as Types", typeImportOnly: true);
 			_clientFile.AddImport(tsClientTypesImport);
@@ -287,10 +286,10 @@ public class WebClientCodeGenerator
 		if (typeRender.EndsWith("[]"))
 			typeRender = typeRender.Substring(0, typeRender.Length - 2);
 
-		ModuleTypes.Add(
-			(new TsTypeAlias(typeRender)
+		_clientTypes.Add(
+			new TsTypeAlias(typeRender)
 				.AddModifier(TsModifier.Export)
-				.SetType(TsType.Object(objectPropTypes.ToArray())), modules));
+				.SetType(TsType.Object(objectPropTypes.ToArray())));
 	}
 
 	private TsType HandleAutoGenSchema(OpenApiSchema schema, string schemaRefId)
@@ -301,12 +300,6 @@ public class WebClientCodeGenerator
 		var schemaType = TsType.Of(schemaName);
 		schemaType = isNullable ? TsType.Union(schemaType, TsType.Null) : schemaType;
 		return schemaType;
-	}
-	
-	private static void ProcessClientTypes()
-	{
-		foreach (var (moduleType, _) in ModuleTypes)
-			ClientTypes.Add(moduleType);
 	}
 
 	private static void GenerateBeamSDKModuleDeclaration(TsFile clientFile, TsClass tsClass, string augmentType)
@@ -336,33 +329,31 @@ public class WebClientCodeGenerator
 		return clientFilePath;
 	}
 
-	public static string GenerateClientTypes(string typesOutputDirectory)
+	/// <summary>
+	/// Writes the shared <c>types/index.ts</c> for the clients of <paramref name="generators"/>, which must be
+	/// every client generated into the same <c>beamable/clients</c> directory.
+	/// </summary>
+	public static string GenerateClientTypes(IEnumerable<WebClientCodeGenerator> generators, string typesOutputDirectory)
 	{
-		if (ClientTypes.Count == 0)
-			return string.Empty;
-
 		var tsClientTypeFile = new TsFile("index");
 
 		// A type reachable from more than one endpoint (e.g. a request/response DTO shared by two
-		// callables) is added to ClientTypes once per referencing endpoint — the set keys by
-		// reference, not by type name — which would emit duplicate `export type` declarations that
-		// fail to compile. Collapse by type name, keeping the first occurrence.
+		// callables) is collected once per referencing endpoint, which would emit duplicate
+		// `export type` declarations that fail to compile. Collapse by type name, keeping the first occurrence.
 		var seenTypeNames = new HashSet<string>();
-		foreach (var clientType in ClientTypes)
+		foreach (var clientType in generators.SelectMany(g => g._clientTypes))
 		{
 			if (!seenTypeNames.Add(clientType.Name))
 				continue;
 			tsClientTypeFile.AddDeclaration(clientType);
 		}
 
+		if (seenTypeNames.Count == 0)
+			return string.Empty;
+
 		Directory.CreateDirectory(typesOutputDirectory);
 		var clientTypeFilePath = Path.Combine(typesOutputDirectory, $"{tsClientTypeFile.FileName}.ts");
 		File.WriteAllText(clientTypeFilePath, tsClientTypeFile.Render());
-
-		// ModuleTypes/ClientTypes are static, so without clearing they leak types across repeated
-		// generations within a long-lived process (e.g. the MCP server) and across microservices.
-		ModuleTypes.Clear();
-		ClientTypes.Clear();
 
 		return clientTypeFilePath;
 	}

@@ -92,6 +92,9 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 	{ //TODO: could also use better error handling here
 		var dependencies = GetDependenciesFromPath(extensionPath);
 		var isZoneExtension = IsZoneExtension(extensionPath);
+		var clientsOutputDirectory = Path.Combine(extensionPath, "beamable/clients");
+		var generators = new List<WebClientCodeGenerator>();
+		var skippedDependencies = new List<string>();
 
 		foreach ((string beamId, HttpMicroserviceLocalProtocol localProtocol) in manifest.HttpMicroserviceLocalProtocols)
 		{
@@ -103,6 +106,7 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 			if (localProtocol.OpenApiDoc == null)
 			{
 				Log.Warning($"Client generation for {beamId} is being skipped because there is no API doc. Try running {beamId} once to make it available and try again.");
+				skippedDependencies.Add(beamId);
 				continue;
 			}
 
@@ -116,9 +120,27 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 			}
 
 			var generator = new WebClientCodeGenerator(localProtocol.OpenApiDoc, "ts", WebClientCodeGenerator.AugmentTypeFor(service));
-			var clientsOutputDirectory = Path.Combine(extensionPath, "beamable/clients");
 			generator.GenerateClientCode(clientsOutputDirectory);
+			generators.Add(generator);
 		}
+
+		WriteClientTypes(extensionPath, generators, skippedDependencies);
+	}
+
+	/// <summary>
+	/// Writes the extension's <c>beamable/clients/types/index.ts</c> from the clients of all its dependencies. If a
+	/// dependency's client could not be generated, its existing client file may still import types from
+	/// <c>index.ts</c>, so the file is left as-is rather than rewritten without them.
+	/// </summary>
+	public static void WriteClientTypes(string extensionPath, List<WebClientCodeGenerator> generators, List<string> skippedDependencies)
+	{
+		if (skippedDependencies.Count > 0)
+		{
+			Log.Warning($"Client types for extension at {extensionPath} were not regenerated because these dependencies have no API doc: {string.Join(", ", skippedDependencies)}.");
+			return;
+		}
+
+		WebClientCodeGenerator.GenerateClientTypes(generators, Path.Combine(extensionPath, "beamable/clients/types"));
 	}
 
 	public static List<string> GetDependenciesFromPath(string extensionPath)
