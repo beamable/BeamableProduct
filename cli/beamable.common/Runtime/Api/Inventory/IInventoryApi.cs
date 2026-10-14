@@ -300,10 +300,9 @@ namespace Beamable.Common.Api.Inventory
 		/// <summary>
 		/// The dynamic properties of the inventory item instance.
 		/// </summary>
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1015
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
+			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, string> Properties;
-#pragma warning restore UAC1015
 
 		/// <summary>
 		/// The id of the item within the inventory group.
@@ -366,10 +365,9 @@ namespace Beamable.Common.Api.Inventory
 	public class InventoryUpdateRequest
 	{
 		public string transaction; // will be set by api
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1015
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
+			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, long> currencies;
-#pragma warning restore UAC1015
 	}
 
 	/// <summary>
@@ -782,18 +780,15 @@ namespace Beamable.Common.Api.Inventory
 	[Serializable]
 	public class InventoryView
 	{
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1015
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
+			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, long> currencies = new Dictionary<string, long>();
-#pragma warning restore UAC1015
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1015
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
+			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, List<CurrencyProperty>> currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
-#pragma warning restore UAC1015
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1015
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
+			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, List<ItemView>> items = new Dictionary<string, List<ItemView>>();
-#pragma warning restore UAC1015
 		public InventoryFilterView itemFilters = new InventoryFilterView();
 		public string scope;
 		
@@ -867,10 +862,9 @@ namespace Beamable.Common.Api.Inventory
 	public class ItemView
 	{
 		public long id;
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1015
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
+			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, string> properties = new Dictionary<string, string>();
-#pragma warning restore UAC1015
 		public long createdAt;
 		public long updatedAt;
 		public string contentId;
