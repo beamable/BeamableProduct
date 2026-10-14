@@ -22,6 +22,12 @@ using UnityEngine.Networking;
 
 namespace Beamable.Player.CloudSaving
 {
+	/// <summary>Implements player save files, conflict handling, and cloud synchronization.</summary>
+	/// <remarks>Use <see cref="BeamContext.CloudSaving"/> to access the context's service through
+	/// <see cref="ICloudSavingService"/>. Initialize explicitly and inspect the returned status.
+	/// Local writes complete independently of cloud uploads.</remarks>
+	/// <seealso cref="ICloudSavingService.Init"/>
+	/// <seealso cref="ICloudSavingService.SetConflictResolverOverride"/>
 	public class PlayerCloudSaving : ICloudSavingService
 	{
 		private const string DataReplacedNotification = "cloudsaving.refresh";
@@ -43,9 +49,37 @@ namespace Beamable.Player.CloudSaving
 		private Promise<Unit> _downloadPromise;
 		private int _pollingIntervalSeconds;
 
+		/// <inheritdoc cref="ICloudSavingService.LocalDataFullPath"/>
+		/// <summary>
+		/// The path to the device's folder that contains all the save files.
+		/// <para>
+		/// The data folder is located inside <see cref="Application.persistentDataPath"/>.
+		/// </para>
+		/// <para>
+		/// This is intended for debugging and inspection only. To save a file, use <see cref="SaveData{T}"/>, <see cref="SaveData(string,string)"/> or <see cref="SaveData(string,byte[])"/>.
+		/// To load a file, use <see cref="LoadData{T}"/> or <see cref="LoadDataString"/>.
+		/// </para>
+		/// </summary>
+		/// <seealso cref="ICloudSavingService.LocalDataFullPath"/>
 		public string LocalDataFullPath => _localSaveInformation.DataPath;
+		/// <inheritdoc cref="ICloudSavingService.OnManifestUpdated"/>
+		/// <summary>
+		/// Event triggered when the player's cloud save files are updated by another device or from the Portal.
+		/// </summary>
+		/// <seealso cref="ICloudSavingService.OnManifestUpdated"/>
 		public Action<CloudSavingManifest> OnManifestUpdated { get; set; }
+		/// <inheritdoc cref="ICloudSavingService.OnCloudSavingError"/>
+		/// <summary>
+		/// Event triggered when an error occurs in the <see cref="PlayerCloudSaving"/>.
+		/// </summary>
+		/// <seealso cref="ICloudSavingService.OnCloudSavingError"/>
 		public Action<CloudSavingError> OnCloudSavingError { get; set; }
+		/// <inheritdoc cref="ICloudSavingService.ServiceStatus"/>
+		/// <summary>Gets the current initialization and conflict state of this save service.</summary>
+		/// <value>The service's current <see cref="CloudSaveStatus"/>.</value>
+		/// <remarks>Save and load operations accept Initialized and ConflictedData. Forced upload and download
+		/// require Initialized. Check this status again after resolving conflicts.</remarks>
+		/// <seealso cref="ICloudSavingService.ServiceStatus"/>
 		public CloudSaveStatus ServiceStatus { get; private set; }
 
 		private CloudSavingManifest CloudManifest
@@ -81,6 +115,14 @@ namespace Beamable.Player.CloudSaving
 #endif
 		}
 
+		/// <inheritdoc cref="ICloudSavingService.Init"/>
+		/// <summary>Initializes local saves, retrieves cloud data, and attempts conflict resolution.</summary>
+		/// <param name="pollingIntervalSeconds">The synchronization polling interval in seconds; the default is 10.</param>
+		/// <returns>The resulting status, normally Initialized or ConflictedData; I/O and request failures can reject the promise.</returns>
+		/// <remarks>Only starts from Inactive. Other states are returned unchanged, so completion does not
+		/// always mean readiness. A competing save service can prevent initialization and leave the status Inactive.
+		/// Polling starts after initialization completes. Configure a conflict resolver before calling this method.</remarks>
+		/// <seealso cref="ICloudSavingService.Init"/>
 		public async Promise<CloudSaveStatus> Init(int pollingIntervalSeconds = 10)
 		{
 			if (ServiceStatus != CloudSaveStatus.Inactive)
@@ -122,6 +164,13 @@ namespace Beamable.Player.CloudSaving
 			return ServiceStatus;
 		}
 
+		/// <inheritdoc cref="ICloudSavingService.ReInit"/>
+		/// <summary>Restarts synchronization for an initialized save service.</summary>
+		/// <param name="pollingIntervalSeconds">The synchronization polling interval in seconds; the default is 10.</param>
+		/// <returns>The resulting initialization status. If the service is not Initialized, returns its current status unchanged.</returns>
+		/// <remarks>This stops the active service and calls <see cref="Init"/> again. It does not clear all local files.
+		/// Resolve conflicts before calling it; failures during initialization can reject the promise.</remarks>
+		/// <seealso cref="ICloudSavingService.ReInit"/>
 		public Promise<CloudSaveStatus> ReInit(int pollingIntervalSeconds = 10)
 		{
 			if (ServiceStatus is not CloudSaveStatus.Initialized)
@@ -135,6 +184,14 @@ namespace Beamable.Player.CloudSaving
 			return Init(pollingIntervalSeconds);
 		}
 
+		/// <inheritdoc cref="ICloudSavingService.ForceUploadLocalData"/>
+		/// <summary>Uploads pending local changes and waits for synchronization to finish.</summary>
+		/// <returns>A promise that completes after pending changes are processed, or rejects on failure.</returns>
+		/// <remarks>Requires <see cref="CloudSaveStatus.Initialized"/>. Other states produce a rejected promise.
+		/// Waits for an active update before processing changes. Local writes completed through
+		/// <see cref="SaveData(string,string)"/> are not, by themselves, proof of a completed cloud upload.</remarks>
+		/// <seealso cref="Init"/>
+		/// <seealso cref="ICloudSavingService.ForceUploadLocalData"/>
 		public async Promise<Unit> ForceUploadLocalData()
 		{
 			if (ServiceStatus != CloudSaveStatus.Initialized)
@@ -157,6 +214,12 @@ namespace Beamable.Player.CloudSaving
 			return await _updatePromise;
 		}
 
+		/// <inheritdoc cref="ICloudSavingService.ForceDownloadCloudData"/>
+		/// <summary>Downloads cloud save data to the local device.</summary>
+		/// <returns>A promise that completes after download and local manifest update, or rejects on failure.</returns>
+		/// <remarks>Requires Initialized; other statuses reject the promise. This operation can replace local data.
+		/// Use <see cref="GetDataConflictDetails"/> and <see cref="ResolveDataConflict"/> for pending conflicts first.</remarks>
+		/// <seealso cref="ICloudSavingService.ForceDownloadCloudData"/>
 		public async Promise<Unit> ForceDownloadCloudData()
 		{
 			if (ServiceStatus != CloudSaveStatus.Initialized)
@@ -172,11 +235,25 @@ namespace Beamable.Player.CloudSaving
 			return PromiseBase.Unit;
 		}
 
+		/// <inheritdoc cref="ICloudSavingService.GetDataConflictDetails"/>
+		/// <summary>Gets the currently unresolved file conflicts.</summary>
+		/// <returns>A read-only view of the current conflicts, empty when none remain.</returns>
+		/// <remarks>The view changes as conflicts are resolved. Copy it before iterating and invoking
+		/// <see cref="ResolveDataConflict"/>, which removes entries from the underlying list.</remarks>
+		/// <seealso cref="SetConflictResolverOverride"/>
+		/// <seealso cref="ICloudSavingService.GetDataConflictDetails"/>
 		public IReadOnlyList<DataConflictDetail> GetDataConflictDetails()
 		{
 			return _currentConflicts.AsReadOnly();
 		}
 
+		/// <summary>Attempts to keep the selected local or cloud version of one conflicting file.</summary>
+		/// <param name="conflictDetail">A current conflict obtained from <see cref="GetDataConflictDetails"/>.</param>
+		/// <param name="resolveType">Whether to keep the local or cloud version; the other version is replaced.</param>
+		/// <remarks>Unknown conflicts are ignored with a warning. Resolution failures are logged and leave the conflict
+		/// unresolved. Recheck conflicts and <see cref="ServiceStatus"/> afterward. Resolving the final conflict
+		/// can finish initialization. Local save/load operations accept ConflictedData; forced synchronization requires Initialized.</remarks>
+		/// <seealso cref="ICloudSavingService.ResolveDataConflict"/>
 		public void ResolveDataConflict(DataConflictDetail conflictDetail, ConflictResolveType resolveType)
 		{
 			string fileName = conflictDetail.FileName;
@@ -217,36 +294,100 @@ namespace Beamable.Player.CloudSaving
 			FinishInitService();
 		}
 
+		/// <inheritdoc cref="ICloudSavingService.SaveData(string,string)"/>
+		/// <summary>Writes a string to a local save file and updates the local manifest.</summary>
+		/// <param name="fileName">The file name, sanitized by the service before use.</param>
+		/// <param name="content">The string content to write; the caller controls serialization.</param>
+		/// <returns>A promise that completes after the local file and manifest are saved, or rejects on failure.</returns>
+		/// <remarks>Accepts Initialized or ConflictedData; other states reject the promise. Completion does not
+		/// confirm cloud upload. Resolve outstanding conflicts and await <see cref="ForceUploadLocalData"/>
+		/// when upload completion is required.</remarks>
+		/// <seealso cref="Init"/>
+		/// <seealso cref="ICloudSavingService.SaveData(string,string)"/>
 		public async Promise<Unit> SaveData(string fileName, string content)
 		{
 			return await BaseSaveData(fileName, content, true);
 		}
 
+		/// <inheritdoc cref="ICloudSavingService.SaveData(string,byte[])"/>
+		/// <summary>Writes bytes to a local save file and updates the local manifest.</summary>
+		/// <param name="fileName">The file name, sanitized by the service before use.</param>
+		/// <param name="content">The bytes to write; the caller controls serialization.</param>
+		/// <returns>A promise that completes after the local file and manifest are saved, or rejects on failure.</returns>
+		/// <remarks>Accepts Initialized or ConflictedData. This does not wait for upload; use
+		/// <see cref="ForceUploadLocalData"/> after resolving conflicts to await cloud synchronization.</remarks>
+		/// <seealso cref="Init"/>
+		/// <seealso cref="ICloudSavingService.SaveData(string,byte[])"/>
 		public async Promise<Unit> SaveData(string fileName, byte[] content)
 		{
 			return await BaseSaveData(fileName, content, true);
 		}
 
+		/// <inheritdoc cref="ICloudSavingService.SaveData{T}"/>
+		/// <summary>Writes an object to a local JSON save file and updates the local manifest.</summary>
+		/// <typeparam name="T">The serializable type of the saved value.</typeparam>
+		/// <param name="fileName">The file name, sanitized by the service before use.</param>
+		/// <param name="contentData">The value to serialize.</param>
+		/// <returns>A promise that completes after the local file and manifest are saved, or rejects on failure.</returns>
+		/// <remarks>Accepts Initialized or ConflictedData. Uses
+		/// <see cref="PlayerCloudSavingConfiguration.CustomSerializer"/> when configured, otherwise Unity JsonUtility.
+		/// Strings and byte arrays are written directly. This does not wait for cloud upload.</remarks>
+		/// <seealso cref="ForceUploadLocalData"/>
+		/// <seealso cref="Init"/>
+		/// <seealso cref="ICloudSavingService.SaveData{T}"/>
 		public async Promise<Unit> SaveData<T>(string fileName, T contentData)
 		{
 			return await BaseSaveData(fileName, contentData, true);
 		}
 
+		/// <inheritdoc cref="ICloudSavingService.LoadDataString"/>
+		/// <summary>Reads a local save file as a string.</summary>
+		/// <param name="fileName">The file name, sanitized by the service before use.</param>
+		/// <returns>A promise containing the file's text, or an empty string if the file does not exist. Other read failures reject it.</returns>
+		/// <remarks>Accepts Initialized or ConflictedData. This reads local data and does not fetch the latest
+		/// cloud version. Use <see cref="ForceDownloadCloudData"/> when an explicit download is required.</remarks>
+		/// <seealso cref="Init"/>
+		/// <seealso cref="ICloudSavingService.LoadDataString"/>
 		public Promise<string> LoadDataString(string fileName)
 		{
 			return BaseLoadData<string>(fileName);
 		}
 
+		/// <inheritdoc cref="ICloudSavingService.LoadDataByte"/>
+		/// <summary>
+		/// Loads a file and returns its content as a byte array.
+		/// </summary>
+		/// <param name="fileName">The name of the file to load.</param>
+		/// <returns>A <see cref="Promise"/> containing the file content as a byte array.</returns>
+		/// <seealso cref="ICloudSavingService.LoadDataByte"/>
 		public Promise<byte[]> LoadDataByte(string fileName)
 		{
 			return BaseLoadData<byte[]>(fileName);
 		}
 
+		/// <inheritdoc cref="ICloudSavingService.LoadData{T}"/>
+		/// <summary>
+		/// Loads a file and deserializes its content into an object of type <typeparamref name="T"/>.
+		/// <para>
+		/// If no custom deserializer is provided in <see cref="PlayerCloudSavingConfiguration.CustomDeserializer"/>, the default deserializer (JsonUtility) is used.
+		/// </para>
+		/// </summary>
+		/// <typeparam name="T">The type of the object being deserialized.</typeparam>
+		/// <param name="fileName">The name of the file to load.</param>
+		/// <returns>A <see cref="Promise"/> containing the deserialized object.</returns>
+		/// <seealso cref="ICloudSavingService.LoadData{T}"/>
 		public Promise<T> LoadData<T>(string fileName)
 		{
 			return BaseLoadData<T>(fileName);
 		}
 
+		/// <inheritdoc cref="ICloudSavingService.Update"/>
+		/// <summary>
+		/// Updates cloud save data using the provided update builder.
+		/// </summary>
+		/// <param name="builder">An <see cref="Action"/> that configures the update process.</param>
+		/// <returns>A <see cref="Promise"/> that completes when the update is finished.</returns>
+		/// <seealso cref="ICloudSavingService.Update"/>
 		public Promise<Unit> Update(Action<CloudDataUpdateBuilder> builder)
 		{
 			if (ServiceStatus is not CloudSaveStatus.Initialized)
@@ -260,6 +401,13 @@ namespace Beamable.Player.CloudSaving
 			return Update(cloudDataUpdateBuilder);
 		}
 
+		/// <inheritdoc cref="ICloudSavingService.SetConflictResolverOverride"/>
+		/// <summary>Replaces the conflict-resolution callback used during synchronization.</summary>
+		/// <param name="resolverOverride">The callback to use, or null to restore the default resolver.</param>
+		/// <remarks>Set before <see cref="Init"/> to handle initial conflicts. The callback is synchronous and
+		/// receives the conflicts discovered by that synchronization attempt. Setting it does not immediately
+		/// resolve existing conflicts. Choose which version to keep explicitly; resolution can replace data.</remarks>
+		/// <seealso cref="ICloudSavingService.SetConflictResolverOverride"/>
 		public void SetConflictResolverOverride(ICloudSavingService.ConflictResolver resolverOverride)
 		{
 			_configuration.HandleConflicts = resolverOverride;
