@@ -2039,16 +2039,11 @@ public static class UnityHelper
 				var type = match.Groups["type"].Value;
 				var diagnostic = type.StartsWith("System.Collections.Generic.Dictionary<") ? "UAC1015"
 					: type == "OptionalJsonString" ? "UAC1001" : "UAC1009";
-				if (diagnostic != "UAC1015")
-				{
-					return match.Groups["indent"].Value + "[System.Diagnostics.CodeAnalysis.SuppressMessage(\"Serialization\", \"" + diagnostic
-						+ "\", Justification = \"Explicit and reflection JSON require this field.\")]"
-						+ Environment.NewLine + match.Value;
-				}
-				return match.Groups["indent"].Value + "// JSON contract: this field is not persisted by Unity's scene/asset serializer."
-					+ Environment.NewLine + "#pragma warning disable " + diagnostic
-					+ Environment.NewLine + match.Value
-					+ Environment.NewLine + "#pragma warning restore " + diagnostic;
+				var justification = diagnostic == "UAC1015" ? "Reflection JSON requires this dictionary."
+					: "Explicit and reflection JSON require this field.";
+				return match.Groups["indent"].Value + "[System.Diagnostics.CodeAnalysis.SuppressMessage(\"Serialization\", \"" + diagnostic
+					+ "\", Justification = \"" + justification + "\")]"
+					+ Environment.NewLine + match.Value;
 			});
 	}
 

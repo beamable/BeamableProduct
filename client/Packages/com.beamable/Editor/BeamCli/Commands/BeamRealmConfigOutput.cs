@@ -7,9 +7,7 @@ namespace Beamable.Editor.BeamCli.Commands
     [System.SerializableAttribute()]
     public partial class BeamRealmConfigOutput
     {
-        // JSON contract: this field is not persisted by Unity's scene/asset serializer.
-#pragma warning disable UAC1015
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015", Justification = "Reflection JSON requires this dictionary.")]
         public System.Collections.Generic.Dictionary<string, string> Config;
-#pragma warning restore UAC1015
     }
 }

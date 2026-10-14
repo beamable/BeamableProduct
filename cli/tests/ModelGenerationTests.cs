@@ -30,11 +30,10 @@ public class ModelGenerationTests
 		unit.Namespaces.Add(new CodeNamespace("Test") { Types = { type } });
 		var original = UnityHelper.GenerateCsharp(unit);
 		var generated = UnityHelper.GenerateJsonModelCsharp(unit);
-		StringAssert.Contains("#pragma warning disable UAC1015", generated);
+		StringAssert.Contains("SuppressMessage(\"Serialization\", \"UAC1015\"", generated);
 		StringAssert.Contains("SuppressMessage(\"Serialization\", \"UAC1001\"", generated);
 		StringAssert.Contains("SuppressMessage(\"Serialization\", \"UAC1009\"", generated);
-		StringAssert.DoesNotContain("#pragma warning disable UAC1001", generated);
-		StringAssert.DoesNotContain("#pragma warning disable UAC1009", generated);
+		StringAssert.DoesNotContain("#pragma warning", generated);
 		StringAssert.DoesNotContain("NonSerialized", generated);
 		// Suppression metadata must not change the payload API.
 		var stripped = System.Text.RegularExpressions.Regex.Replace(generated,
