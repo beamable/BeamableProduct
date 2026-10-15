@@ -6,10 +6,16 @@ using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Beamable.Editor.ContentService
 {
+	/// <summary>
+	/// Editor-thread-owned snapshot and Unity objects. Only the isolated filesystem loader
+	/// runs on worker threads; public methods and disposal must run on the editor thread.
+	/// </summary>
 	public class EditorLocalContentSource : ILocalContentSource, IDisposable
 	{
 		private readonly bool _enabled;
@@ -23,9 +29,14 @@ namespace Beamable.Editor.ContentService
 		private readonly Dictionary<string, ContentObject> _objects = new Dictionary<string, ContentObject>(StringComparer.Ordinal);
 		private readonly Dictionary<string, Promise<IContentObject>> _inFlight = new Dictionary<string, Promise<IContentObject>>(StringComparer.Ordinal);
 		private bool _disposed;
+		private readonly int _workerCount;
+		private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
+		private Task<Snapshot> _snapshotTask;
 
-		public EditorLocalContentSource(bool enabled, string configDirectory, string cid, string pid, string manifestId)
+		public EditorLocalContentSource(bool enabled, string configDirectory, string cid, string pid, string manifestId, int workerCount = 4)
 		{
+			if (workerCount < 1 || workerCount > 4) throw new ArgumentOutOfRangeException(nameof(workerCount));
+			_workerCount = workerCount;
 			_enabled = enabled;
 			_configDirectory = configDirectory;
 			_cid = cid;
@@ -51,7 +62,8 @@ namespace Beamable.Editor.ContentService
 					throw new InvalidOperationException($"Local content does not handle namespace '{manifestId}'.");
 				}
 
-				EnsureSnapshot();
+				if (_disposed) throw new ObjectDisposedException(nameof(EditorLocalContentSource));
+				if (_entries == null) return LoadManifest(manifestId, query);
 
 				var entries = query == null ? new List<ClientContentInfo>(_manifestEntries.Count) : new List<ClientContentInfo>();
 
@@ -96,7 +108,8 @@ namespace Beamable.Editor.ContentService
 
 				if (string.IsNullOrWhiteSpace(contentId)) throw new ContentNotFoundException(contentId);
 
-				EnsureSnapshot();
+				if (_disposed) throw new ObjectDisposedException(nameof(EditorLocalContentSource));
+				if (_entries == null) return LoadContent(contentId, contentType, manifestId);
 
 				if (!_entries.TryGetValue(contentId, out var entry)) throw new ContentNotFoundException(contentId);
 
@@ -163,6 +176,24 @@ namespace Beamable.Editor.ContentService
 			}
 		}
 
+		private async Promise<ClientManifest> LoadManifest(string manifestId, ContentQuery query)
+		{
+			await EnsureSnapshot();
+			return await GetManifest(manifestId, query);
+		}
+
+		private async Promise<IContentObject> LoadContent(string contentId, Type contentType, string manifestId)
+		{
+			await EnsureSnapshot();
+			return await GetContent(contentId, contentType, manifestId);
+		}
+
+		private sealed class Snapshot
+		{
+			public Dictionary<string, LocalEntry> Entries;
+			public List<ClientContentInfo> Metadata;
+		}
+
 		private class LocalEntry
 		{
 			public string Id;
@@ -176,7 +207,7 @@ namespace Beamable.Editor.ContentService
 		/// Loads local JSON content once, retaining the snapshot only if every file
 		/// loads successfully. Does not modify files or synchronize with the realm.
 		/// </summary>
-		private void EnsureSnapshot()
+		internal async Task EnsureSnapshot()
 		{
 			if (_disposed) throw new ObjectDisposedException(nameof(EditorLocalContentSource));
 			//Reuse the successfully loaded snapshot
@@ -205,9 +236,37 @@ namespace Beamable.Editor.ContentService
 					$"Invalid local content namespace {_manifestId}: {validationMessage}");
 			}
 
-			// Match the CLI's ConfigService.CONTENT_DIR working-copy layout.
-			var directory = Path.Combine(_configDirectory, "local", "content", _pid, _manifestId);
+			if (_snapshotTask == null)
+			{
+				// Capture immutable input on the editor thread; workers never use Unity APIs.
+				// Match the CLI's ConfigService.CONTENT_DIR working-copy layout.
+				var directory = Path.Combine(_configDirectory, "local", "content", _pid, _manifestId);
+				var token = _cancellation.Token;
+				_snapshotTask = Task.Run(() => ReadSnapshot(directory, _manifestId, _workerCount, token), token);
+			}
 
+			var loading = _snapshotTask;
+			try
+			{
+				// Always hand cold completion back through the editor context, including tiny snapshots
+				// that finish before we await them. Warm requests remain synchronous.
+				await Task.Yield();
+				var snapshot = await loading;
+				if (_disposed) throw new ObjectDisposedException(nameof(EditorLocalContentSource));
+				_manifestEntries = snapshot.Metadata;
+				_entries = snapshot.Entries;
+			}
+			catch
+			{
+				// A failed attempt can be retried; an older waiter must not clear a newer attempt.
+				if (ReferenceEquals(_snapshotTask, loading)) _snapshotTask = null;
+				throw;
+			}
+		}
+
+		private static Snapshot ReadSnapshot(string directory, string manifestId, int workerCount, CancellationToken token)
+		{
+			token.ThrowIfCancellationRequested();
 			if (!Directory.Exists(directory))
 			{
 				throw new InvalidOperationException($"Local content directory {directory} does not exist.");
@@ -220,8 +279,14 @@ namespace Beamable.Editor.ContentService
 			//Stable Ordering makes manifest output predictable
 			Array.Sort(paths, StringComparer.Ordinal);
 
-			foreach (string path in paths)
+			var loaded = new LocalEntry[paths.Length];
+			var errors = new Exception[paths.Length];
+			Parallel.For(0, paths.Length, new ParallelOptions
 			{
+				MaxDegreeOfParallelism = workerCount, CancellationToken = token
+			}, fileIndex =>
+			{
+				var path = paths[fileIndex];
 				try
 				{
 					var id = Path.GetFileNameWithoutExtension(path);
@@ -254,19 +319,26 @@ namespace Beamable.Editor.ContentService
 						tags[index] = tag;
 					}
 
-					entries.Add(id, new LocalEntry
+					loaded[fileIndex] = new LocalEntry
 					{
 						Id = id,
 						Path = path,
 						Json = json,
 						Version = "local:" + ClientContentSerializer.CalculateChecksum(json),
 						Tags = tags
-					});
+					};
 				}
 				catch (Exception e)
 				{
-					throw new InvalidOperationException($"Failed to load local content file '{path}'.", e);
+					errors[fileIndex] = new InvalidOperationException($"Failed to load local content file '{path}'.", e);
 				}
+			});
+			token.ThrowIfCancellationRequested();
+			// Preserve deterministic ordering and error selection regardless of worker scheduling.
+			for (var index = 0; index < loaded.Length; index++)
+			{
+				if (errors[index] != null) throw errors[index];
+				entries.Add(loaded[index].Id, loaded[index]);
 			}
 
 			// Build and sort private metadata once. Query results copy only matching entries.
@@ -274,19 +346,20 @@ namespace Beamable.Editor.ContentService
 			foreach (var entry in entries.Values)
 				metadata.Add(new ClientContentInfo
 				{
-					contentId = entry.Id, manifestID = _manifestId, version = entry.Version,
+					contentId = entry.Id, manifestID = manifestId, version = entry.Version,
 					tags = entry.Tags, visibility = ContentVisibility.Public, uri = string.Empty
 				});
 			metadata.Sort((left, right) => string.CompareOrdinal(left.contentId, right.contentId));
-			// Publish only after every file has loaded successfully.
-			_manifestEntries = metadata;
-			_entries = entries;
+			return new Snapshot { Entries = entries, Metadata = metadata };
 		}
 
 		public void Dispose()
 		{
 			if (_disposed) return;
 			_disposed = true;
+			_cancellation.Cancel();
+			_cancellation.Dispose();
+			_snapshotTask = null;
 			foreach (var content in _objects.Values)
 			{
 				if (content == null) continue;
