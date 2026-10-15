@@ -43,7 +43,7 @@ namespace Beamable.Content
 		[Tooltip("When enabled, content checksum will be calculated based on default object property order.")]
 		public bool EnablePropertyOrderDependenceForContentChecksum = true;
 
-		[Tooltip("When enabled, any content requests for the editor manifest will be resolved using your on-disk Scriptable Object content items, and any content from another manifest will be fetched from the remote realm. When disabled, all content is fetched from the remote realm.")]
+		[Tooltip("In Play Mode, resolve the editor namespace from a read-only snapshot of the local JSON working copy, including unpublished items. Other namespaces use realm content. Restart Play Mode after changing this setting, namespace, or local files. Missing local content fails without realm fallback. This does not disable automatic editor synchronization or affect player builds.")]
 		public bool EnableLocalContentInEditor = false;
 
 		[Tooltip("When using Local Content Mode In Editor, simulate how long each content reference will take to fetch.")]
