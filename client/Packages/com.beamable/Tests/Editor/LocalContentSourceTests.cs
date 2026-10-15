@@ -17,6 +17,7 @@ namespace Beamable.Editor.Tests
 		private string _root;
 		private string _directory;
 		private readonly List<EditorLocalContentSource> _sources = new List<EditorLocalContentSource>();
+		private readonly List<ContentObject> _callbackObjects = new List<ContentObject>();
 
 		[SetUp]
 		public void SetUp()
@@ -30,7 +31,11 @@ namespace Beamable.Editor.Tests
 		[TearDown]
 		public void TearDown()
 		{
+			LocalReentrantRegressionContent.AfterDeserialize = null;
 			foreach (var source in _sources) source.Dispose();
+			foreach (var content in _callbackObjects)
+				if (content != null) UnityEngine.Object.DestroyImmediate(content);
+			_callbackObjects.Clear();
 			_sources.Clear();
 			if (Directory.Exists(_root)) Directory.Delete(_root, true);
 		}
@@ -77,6 +82,105 @@ namespace Beamable.Editor.Tests
 			var source = Source();
 			var content = (LocalSourceRegressionContent)source.GetContent(ContentId, typeof(ContentObject), Namespace).GetResult();
 			Assert.That(content.amount, Is.EqualTo(17));
+		}
+
+		[Test]
+		public void ReentrantResolutionWaitsForOneFullyInitializedOwnedObject()
+		{
+			const string id = "localReentrantRegression.self";
+			Write(id, Json(17));
+			var source = Source();
+			Promise<IContentObject> nested = null;
+			LocalReentrantRegressionContent.AfterDeserialize = content =>
+			{
+				_callbackObjects.Add(content);
+				if (_callbackObjects.Count == 1)
+				{
+					nested = source.GetContent(id, typeof(ContentObject), Namespace);
+					Assert.That(nested.IsCompleted, Is.False, "Do not expose a partially deserialized object.");
+				}
+			};
+			var outer = source.GetContent(id, typeof(ContentObject), Namespace).GetResult();
+			Assert.That(nested.GetResult(), Is.SameAs(outer));
+			Assert.That(_callbackObjects.Count, Is.EqualTo(1));
+			Assert.That(outer.Version, Does.StartWith("local:"));
+			source.Dispose();
+			Assert.That((ContentObject)outer == null, Is.True);
+		}
+
+		[Test]
+		public void ReentrantFailureSettlesWaitersAndAllowsRetry()
+		{
+			const string id = "localReentrantRegression.self";
+			Write(id, Json(17));
+			var source = Source();
+			Promise<IContentObject> nested = null;
+			var expected = new InvalidOperationException("callback failed");
+			LocalReentrantRegressionContent.AfterDeserialize = content =>
+			{
+				_callbackObjects.Add(content);
+				if (_callbackObjects.Count == 1)
+				{
+					nested = source.GetContent(id, typeof(ContentObject), Namespace);
+					nested.Error(_ => { });
+					throw expected;
+				}
+			};
+			Assert.That(Failure(source.GetContent(id, typeof(ContentObject), Namespace)), Is.SameAs(expected));
+			Assert.That(Failure(nested), Is.SameAs(expected));
+			Assert.That(_callbackObjects.Single() == null, Is.True);
+			LocalReentrantRegressionContent.AfterDeserialize = null;
+			Assert.That(source.GetContent(id, typeof(ContentObject), Namespace).GetResult(), Is.Not.Null);
+		}
+
+		[Test]
+		public void CyclicDeserializationCompletesBothObjectsWithoutReconstruction()
+		{
+			const string first = "localReentrantRegression.first";
+			const string second = "localReentrantRegression.second";
+			Write(first, Json(1));
+			Write(second, Json(2));
+			var source = Source();
+			var resolutions = new List<Promise<IContentObject>>();
+			LocalReentrantRegressionContent.AfterDeserialize = content =>
+			{
+				_callbackObjects.Add(content);
+				Assert.That(_callbackObjects.Count, Is.LessThanOrEqualTo(2), "Cycle must not construct another object.");
+				resolutions.Add(source.GetContent(content.Id == first ? second : first, typeof(ContentObject), Namespace));
+			};
+			var result = source.GetContent(first, typeof(ContentObject), Namespace).GetResult();
+			Assert.That(_callbackObjects.Count, Is.EqualTo(2));
+			Assert.That(resolutions.All(p => p.IsCompleted), Is.True);
+			Assert.That(resolutions.Single(p => p.GetResult().Id == first).GetResult(), Is.SameAs(result));
+			source.Dispose();
+			Assert.That(_callbackObjects.All(c => c == null), Is.True);
+		}
+
+		[TestCase("")]
+		[TestCase("tag:draft")]
+		[TestCase("tag:missing")]
+		[TestCase("t:localSourceRegression")]
+		[TestCase("id:other")]
+		[TestCase("t:localSourceRegression tag:draft id:unpublished")]
+		public void FilteredSnapshotsMatchManifestQuerySemanticsAndIsolateMutations(string filter)
+		{
+			Write(ContentId, Json(17));
+			Write("localSourceRegression.other", Json(4, "other"));
+			Write("localSourceRegression.other.child", Json(5, "other"));
+			var source = Source();
+			var query = ContentQuery.Parse(filter);
+			var expected = source.GetManifest(Namespace).GetResult().Filter(query);
+			var result = source.GetManifest(Namespace, query).GetResult();
+			Assert.That(result.entries.Select(e => e.contentId), Is.EqualTo(expected.entries.Select(e => e.contentId)));
+			foreach (var entry in result.entries)
+			{
+				entry.contentId = "mutated";
+				entry.tags[0] = "mutated";
+			}
+			result.entries.Clear();
+			var repeated = source.GetManifest(Namespace, query).GetResult();
+			Assert.That(repeated.entries.Select(e => e.contentId), Is.EqualTo(expected.entries.Select(e => e.contentId)));
+			Assert.That(source.GetManifest(Namespace).GetResult().entries.Count, Is.EqualTo(3));
 		}
 
 		[Test]
@@ -208,5 +312,14 @@ namespace Beamable.Editor.Tests
 	public class LocalSourceRegressionContent : ContentObject
 	{
 		public int amount;
+	}
+
+	[ContentType("localReentrantRegression")]
+	public class LocalReentrantRegressionContent : ContentObject, ISerializationCallbackReceiver
+	{
+		public int amount;
+		public static Action<LocalReentrantRegressionContent> AfterDeserialize;
+		public void OnBeforeSerialize() { }
+		public void OnAfterDeserialize() => AfterDeserialize?.Invoke(this);
 	}
 }

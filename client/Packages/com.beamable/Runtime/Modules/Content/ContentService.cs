@@ -126,6 +126,8 @@ namespace Beamable.Content
 		/// <returns>A <see cref="Promise{ClientManifest}"/> representing the network call.</returns>
 		public Promise<ClientManifest> GetManifest(ContentQuery query)
 		{
+			if (_localContentSource.HandlesManifest(ManifestID))
+				return _localContentSource.GetManifest(ManifestID, query);
 			return GetManifest().Map(manifest => manifest.Filter(query));
 		}
 
@@ -136,6 +138,8 @@ namespace Beamable.Content
 		/// <returns>A <see cref="Promise{ClientManifest}"/> representing the network call.</returns>
 		public Promise<ClientManifest> GetManifest(string filter)
 		{
+			if (_localContentSource.HandlesManifest(ManifestID))
+				return _localContentSource.GetManifest(ManifestID, ContentQuery.Parse(filter));
 			return GetManifest().Map(manifest => manifest.Filter(filter));
 		}
 

@@ -105,7 +105,7 @@ namespace Beamable.Editor.Tests
 				.Invoke(session, new object[] { 60f });
 			Assert.That(waiting.IsCompleted, Is.False);
 			session.OnDispose();
-			for (var frame = 0; frame < 30 && !waiting.IsCompleted; frame++) yield return null;
+			yield return WaitForCompletion(waiting);
 			Assert.That(waiting.IsCanceled, Is.True);
 		}
 
@@ -129,7 +129,7 @@ namespace Beamable.Editor.Tests
 			var waiting = WaitForReady(session, readiness);
 			Assert.That(waiting.IsCompleted, Is.False);
 			session.OnDispose();
-			for (var frame = 0; frame < 30 && !waiting.IsCompleted; frame++) yield return null;
+			yield return WaitForCompletion(waiting);
 			Assert.That(waiting.IsCanceled, Is.True);
 			Assert.That(readiness.IsCompleted, Is.False, "Disposal must not complete or cancel the shared editor readiness promise.");
 			Assert.DoesNotThrow(() => readiness.CompleteSuccess());
@@ -143,7 +143,7 @@ namespace Beamable.Editor.Tests
 			var waiting = WaitForReady(session, readiness);
 			var error = new InvalidOperationException("configuration failed");
 			readiness.CompleteError(error);
-			for (var frame = 0; frame < 30 && !waiting.IsCompleted; frame++) yield return null;
+			yield return WaitForCompletion(waiting);
 			Assert.That(waiting.IsFaulted, Is.True);
 			Assert.That(waiting.Exception.InnerException, Is.SameAs(error));
 		}
@@ -152,6 +152,13 @@ namespace Beamable.Editor.Tests
 		public void AlreadyReadyConfigurationCompletesWithoutDelay()
 		{
 			Assert.That(WaitForReady(Session(), Promise.Success).IsCompleted, Is.True);
+		}
+
+		private static IEnumerator WaitForCompletion(Task task)
+		{
+			// EditMode ticks can exhaust a frame budget before a Task continuation is scheduled.
+			var timeout = System.Diagnostics.Stopwatch.StartNew();
+			while (!task.IsCompleted && timeout.Elapsed.TotalSeconds < 5) yield return null;
 		}
 
 		private EditorLocalContentSession Session()
