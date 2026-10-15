@@ -161,6 +161,95 @@ namespace Beamable.Editor.Tests
 			while (!task.IsCompleted && timeout.Elapsed.TotalSeconds < 5) yield return null;
 		}
 
+		[Test]
+		public void CompletedSnapshotWithUnchangedIdentityRemainsUsable()
+		{
+			var session = SessionWithSource(out _, out var source);
+			Assert.DoesNotThrow(() => ValidateSource(session, source, "workspace-before", "customer-before"));
+			Assert.That(SessionField("_source").GetValue(session), Is.SameAs(source));
+			Assert.That(SourceIsDisposed(source), Is.False);
+		}
+
+		[TestCase("runtime customer")]
+		[TestCase("runtime realm")]
+		[TestCase("workspace directory")]
+		[TestCase("editor customer")]
+		public void IdentityChangeRejectsCompletedSnapshotAndReleasesItsSource(string changedIdentity)
+		{
+			var session = SessionWithSource(out var runtime, out var source);
+			var directory = "workspace-before";
+			var editorCid = "customer-before";
+			switch (changedIdentity)
+			{
+				case "runtime customer": runtime.Cid = "customer-after"; break;
+				case "runtime realm": runtime.Pid = "realm-after"; break;
+				case "workspace directory": directory = "workspace-after"; break;
+				case "editor customer": editorCid = "customer-after"; break;
+			}
+
+			var error = Assert.Throws<TargetInvocationException>(() => ValidateSource(session, source, directory, editorCid));
+			Assert.That(error.InnerException, Is.InstanceOf<OperationCanceledException>());
+			Assert.That(SourceIsDisposed(source), Is.True);
+			Assert.That(SessionField("_source").GetValue(session), Is.Null);
+		}
+
+		[Test]
+		public void OlderCompletionCannotClearOrDisposeReplacementSource()
+		{
+			var session = SessionWithSource(out _, out var olderSource);
+			var replacement = new EditorLocalContentSource(true, "workspace-before", "customer-before", "realm-before", "local-test");
+			SessionField("_source").SetValue(session, replacement);
+			try
+			{
+				var error = Assert.Throws<TargetInvocationException>(() =>
+					ValidateSource(session, olderSource, "workspace-before", "customer-before"));
+				Assert.That(error.InnerException, Is.InstanceOf<OperationCanceledException>());
+				Assert.That(SourceIsDisposed(olderSource), Is.True);
+				Assert.That(SessionField("_source").GetValue(session), Is.SameAs(replacement));
+				Assert.That(SourceIsDisposed(replacement), Is.False);
+			}
+			finally
+			{
+				olderSource.Dispose();
+			}
+		}
+
+		[Test]
+		public void CompletionAfterSessionDisposalIsRejected()
+		{
+			var session = SessionWithSource(out _, out var source);
+			session.OnDispose();
+			var error = Assert.Throws<TargetInvocationException>(() =>
+				ValidateSource(session, source, "workspace-before", "customer-before"));
+			Assert.That(error.InnerException, Is.InstanceOf<ObjectDisposedException>());
+			Assert.That(SourceIsDisposed(source), Is.True);
+			Assert.That(SessionField("_source").GetValue(session), Is.Null);
+		}
+
+		private EditorLocalContentSession SessionWithSource(out TestConfigProvider runtime, out EditorLocalContentSource source)
+		{
+			// Exercise the post-await identity gate without initializing the real editor singleton.
+			runtime = new TestConfigProvider { Cid = "customer-before", Pid = "realm-before" };
+			var session = new EditorLocalContentSession(_config, runtime);
+			_sessions.Add(session);
+			source = new EditorLocalContentSource(true, "workspace-before", runtime.Cid, runtime.Pid, "local-test");
+			SessionField("_source").SetValue(session, source);
+			SessionField("_directory").SetValue(session, "workspace-before");
+			SessionField("_cid").SetValue(session, runtime.Cid);
+			SessionField("_pid").SetValue(session, runtime.Pid);
+			return session;
+		}
+
+		private static FieldInfo SessionField(string name) =>
+			typeof(EditorLocalContentSession).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
+
+		private static bool SourceIsDisposed(EditorLocalContentSource source) =>
+			(bool)typeof(EditorLocalContentSource).GetField("_disposed", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(source);
+
+		private static void ValidateSource(EditorLocalContentSession session, EditorLocalContentSource source, string directory, string editorCid) =>
+			typeof(EditorLocalContentSession).GetMethod("ValidateSource", BindingFlags.Instance | BindingFlags.NonPublic)
+				.Invoke(session, new object[] { source, directory, editorCid });
+
 		private EditorLocalContentSession Session()
 		{
 			var session = new EditorLocalContentSession(_config, new TestConfigProvider());

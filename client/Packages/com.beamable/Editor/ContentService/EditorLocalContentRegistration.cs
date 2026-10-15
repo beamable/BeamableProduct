@@ -60,12 +60,14 @@ namespace Beamable.Editor.ContentService
         public async Promise<ClientManifest> GetManifest(string manifestId, ContentQuery query = null)
         {
             var source = await GetSource(manifestId, _manifestDelay);
+            await PrepareSource(source);
             return await source.GetManifest(manifestId, query);
         }
 
         public async Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestId)
         {
             var source = await GetSource(manifestId, _contentDelay);
+            await PrepareSource(source);
             return await source.GetContent(contentId, contentType, manifestId);
         }
 
@@ -97,6 +99,27 @@ namespace Beamable.Editor.ContentService
                 _pid = pid;
             }
             return _source;
+        }
+
+        private async Task PrepareSource(EditorLocalContentSource source)
+        {
+            await source.EnsureSnapshot();
+            var editor = BeamEditorContext.Default;
+            ValidateSource(source, editor.BeamCli.latestConfig?.configPath, editor.BeamCli.Cid);
+        }
+
+        private void ValidateSource(EditorLocalContentSource source, string directory, string editorCid)
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(EditorLocalContentSession));
+            // Realm/workspace changes can occur while the background read is pending,
+            // even if no subsequent request has replaced the source yet.
+            if (!ReferenceEquals(_source, source) || directory != _directory ||
+                _runtimeConfig.Cid != _cid || _runtimeConfig.Pid != _pid || editorCid != _cid)
+            {
+                source.Dispose();
+                if (ReferenceEquals(_source, source)) _source = null;
+                throw new OperationCanceledException("The local content workspace or realm changed while loading.");
+            }
         }
 
         private async Task WaitForReady(Promise ready)
