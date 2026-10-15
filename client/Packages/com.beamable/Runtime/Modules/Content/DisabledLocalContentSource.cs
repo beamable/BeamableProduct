@@ -8,7 +8,7 @@ namespace Beamable.Content
 	{
 		public bool HandlesManifest(string manifestId) => false;
 
-		public Promise<ClientManifest> GetManifest(string manifestId)
+		public Promise<ClientManifest> GetManifest(string manifestId, ContentQuery query = null)
 		{
 			return Promise<ClientManifest>.Failed(new InvalidOperationException("Local content resolution is unavailable."));
 		}

@@ -19,7 +19,9 @@ namespace Beamable.Editor.ContentService
 		private readonly string _manifestId;
 
 		private Dictionary<string, LocalEntry> _entries;
+		private List<ClientContentInfo> _manifestEntries;
 		private readonly Dictionary<string, ContentObject> _objects = new Dictionary<string, ContentObject>(StringComparer.Ordinal);
+		private readonly Dictionary<string, Promise<IContentObject>> _inFlight = new Dictionary<string, Promise<IContentObject>>(StringComparer.Ordinal);
 		private bool _disposed;
 
 		public EditorLocalContentSource(bool enabled, string configDirectory, string cid, string pid, string manifestId)
@@ -40,7 +42,7 @@ namespace Beamable.Editor.ContentService
 		/// <summary>
 		/// Returns a manifest describing the captured local content.
 		/// </summary>
-		public Promise<ClientManifest> GetManifest(string manifestId)
+		public Promise<ClientManifest> GetManifest(string manifestId, ContentQuery query = null)
 		{
 			try
 			{
@@ -51,22 +53,21 @@ namespace Beamable.Editor.ContentService
 
 				EnsureSnapshot();
 
-				var entries = new List<ClientContentInfo>(_entries.Count);
+				var entries = query == null ? new List<ClientContentInfo>(_manifestEntries.Count) : new List<ClientContentInfo>();
 
-				foreach (var entry in _entries.Values)
+				foreach (var entry in _manifestEntries)
 				{
+					if (query != null && !query.Accept(entry)) continue;
 					entries.Add(new ClientContentInfo
 					{
-						contentId = entry.Id,
-						manifestID = _manifestId,
-						version = entry.Version,
-						tags = (string[])entry.Tags.Clone(),
+						contentId = entry.contentId,
+						manifestID = entry.manifestID,
+						version = entry.version,
+						tags = (string[])entry.tags.Clone(),
 						visibility = ContentVisibility.Public,
 						uri = string.Empty
 					});
 				}
-
-				entries.Sort((left, right) => string.CompareOrdinal(left.contentId, right.contentId));
 
 				return Promise<ClientManifest>.Successful(new ClientManifest {entries = entries});
 			}
@@ -82,6 +83,7 @@ namespace Beamable.Editor.ContentService
 		public Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestId)
 		{
 			ContentObject instance = null;
+			Promise<IContentObject> pending = null;
 
 			try
 			{
@@ -112,12 +114,22 @@ namespace Beamable.Editor.ContentService
 
 				if (_objects.TryGetValue(contentId, out var cached) && cached != null)
 					return Promise<IContentObject>.Successful(cached);
+				if (_inFlight.TryGetValue(contentId, out var existing)) return existing;
+
+				// Serialization callbacks and eager ContentLinks can resolve this ID again.
+				// Share completion, never a partially initialized ScriptableObject.
+				pending = new Promise<IContentObject>();
+				// Completion can fail synchronously before the caller receives this promise.
+				// Keep the internal completion observed; callers still receive its failure.
+				pending.Error(_ => { });
+				_inFlight.Add(contentId, pending);
 
 				instance = (ContentObject)ScriptableObject.CreateInstance(actualType);
 				instance.hideFlags = HideFlags.HideAndDontSave;
 
 				ClientContentSerializer.DeserializeContentFromCli(entry.Json, instance, entry.Id,
 				                                                  out var schemaDifference, disableExceptions: false);
+				if (_disposed) throw new ObjectDisposedException(nameof(EditorLocalContentSource));
 
 				instance.SetIdAndVersion(entry.Id, entry.Version);
 				instance.SetManifestID(_manifestId);
@@ -130,7 +142,9 @@ namespace Beamable.Editor.ContentService
 				}
 
 				_objects[contentId] = instance;
-				return Promise<IContentObject>.Successful(instance);
+				_inFlight.Remove(contentId);
+				pending.CompleteSuccess(instance);
+				return pending;
 			}
 			catch (Exception exception)
 			{
@@ -142,7 +156,10 @@ namespace Beamable.Editor.ContentService
 						UnityEngine.Object.DestroyImmediate(instance);
 				}
 
-				return Promise<IContentObject>.Failed(exception);
+				if (pending == null) return Promise<IContentObject>.Failed(exception);
+				_inFlight.Remove(contentId);
+				pending.CompleteError(exception);
+				return pending;
 			}
 		}
 
@@ -252,7 +269,17 @@ namespace Beamable.Editor.ContentService
 				}
 			}
 
+			// Build and sort private metadata once. Query results copy only matching entries.
+			var metadata = new List<ClientContentInfo>(entries.Count);
+			foreach (var entry in entries.Values)
+				metadata.Add(new ClientContentInfo
+				{
+					contentId = entry.Id, manifestID = _manifestId, version = entry.Version,
+					tags = entry.Tags, visibility = ContentVisibility.Public, uri = string.Empty
+				});
+			metadata.Sort((left, right) => string.CompareOrdinal(left.contentId, right.contentId));
 			// Publish only after every file has loaded successfully.
+			_manifestEntries = metadata;
 			_entries = entries;
 		}
 
@@ -269,6 +296,7 @@ namespace Beamable.Editor.ContentService
 			}
 			_objects.Clear();
 			_entries = null;
+			_manifestEntries = null;
 		}
 	}
 }

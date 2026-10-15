@@ -88,6 +88,7 @@ namespace Beamable.Editor.Tests
 			}
 			Assert.That(result.GetResult().entries[0].contentId, Is.EqualTo("local.item"));
 			Assert.That(_local.ManifestCalls, Is.EqualTo(1));
+			if (overload != 0) Assert.That(_local.LastQuery, Is.Not.Null, "Filter before copying local metadata.");
 		}
 
 		[Test]
@@ -213,6 +214,7 @@ namespace Beamable.Editor.Tests
 		{
 			public bool Enabled = true;
 			public int ManifestCalls;
+			public ContentQuery LastQuery;
 			public string LastNamespace;
 			public string LastContentId;
 			public Type LastType;
@@ -226,11 +228,12 @@ namespace Beamable.Editor.Tests
 				}
 			};
 			public bool HandlesManifest(string manifestId) => Enabled && manifestId == "global";
-			public Promise<ClientManifest> GetManifest(string manifestId)
+			public Promise<ClientManifest> GetManifest(string manifestId, ContentQuery query = null)
 			{
 				ManifestCalls++;
+				LastQuery = query;
 				LastNamespace = manifestId;
-				return Error == null ? Promise<ClientManifest>.Successful(Manifest) : Promise<ClientManifest>.Failed(Error);
+				return Error == null ? Promise<ClientManifest>.Successful(query == null ? Manifest : Manifest.Filter(query)) : Promise<ClientManifest>.Failed(Error);
 			}
 			public Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestId)
 			{

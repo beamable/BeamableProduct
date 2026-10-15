@@ -8,7 +8,8 @@ namespace Beamable.Content
 	{
 		bool HandlesManifest(string manifestId);
 
-		Promise<ClientManifest> GetManifest(string manifestId);
+		/// <summary>Return isolated metadata, filtering before copying when a query is supplied.</summary>
+		Promise<ClientManifest> GetManifest(string manifestId, ContentQuery query = null);
 
 		Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestId);
 	}

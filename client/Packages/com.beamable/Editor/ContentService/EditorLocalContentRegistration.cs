@@ -57,10 +57,10 @@ namespace Beamable.Editor.ContentService
         public bool HandlesManifest(string manifestId) =>
             _enabled && string.Equals(_manifestId, manifestId, StringComparison.Ordinal);
 
-        public async Promise<ClientManifest> GetManifest(string manifestId)
+        public async Promise<ClientManifest> GetManifest(string manifestId, ContentQuery query = null)
         {
             var source = await GetSource(manifestId, _manifestDelay);
-            return await source.GetManifest(manifestId);
+            return await source.GetManifest(manifestId, query);
         }
 
         public async Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestId)
