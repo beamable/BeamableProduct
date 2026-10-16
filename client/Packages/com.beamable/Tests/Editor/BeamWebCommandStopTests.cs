@@ -1,0 +1,254 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Reflection;
+using System.Runtime.Serialization;
+using System.Text;
+using System.Threading.Tasks;
+using Beamable.Common;
+using Beamable.Common.Dependencies;
+using Beamable.Editor.BeamCli;
+using Beamable.Editor.Utility;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
+
+namespace Beamable.Editor.Tests
+{
+	public class BeamWebCommandStopTests
+	{
+		[UnityTest]
+		public IEnumerator StopBeforeRegistrationWaitsForServerAcknowledgementAndCallbacks()
+		{
+			using var fixture = new Fixture();
+			var callbackRan = false;
+			fixture.Command.On(_ => callbackRan = true);
+			var run = fixture.Command.Run();
+			run.Error(_ => { });
+			var stop = fixture.Command.StopAsync();
+			stop.Error(_ => { });
+			Assert.That(fixture.Command.StopAsync(), Is.SameAs(stop));
+			Assert.That(stop.IsCompleted, Is.False);
+			fixture.Discover();
+			yield return WaitFor(() => fixture.ExecuteReceived.Task.IsCompleted);
+			Assert.That(fixture.StopReceived.Task.IsCompleted, Is.False, "Stop must wait for registration.");
+			fixture.AllowHeaders.TrySetResult(true);
+			yield return WaitFor(() => fixture.StopReceived.Task.IsCompleted);
+			Assert.That(fixture.StopId, Is.EqualTo(fixture.Command.id));
+			Assert.That(stop.IsCompleted, Is.False, "The worker is still held.");
+			fixture.ReleaseWorker.TrySetResult(true);
+			yield return WaitFor(() => run.IsCompleted);
+			Assert.That(callbackRan, Is.True, "The real dispatcher must deliver the final output.");
+			Assert.That(stop.IsCompleted, Is.False, "EOF alone is not a stop acknowledgement.");
+			fixture.AllowAcknowledgement.TrySetResult(true);
+			yield return WaitFor(() => stop.IsCompleted);
+			Assert.That(stop.IsFailed, Is.False);
+			yield return WaitFor(() => fixture.ServerTask.IsCompleted);
+			Assert.That(fixture.ServerTask.IsFaulted, Is.False, fixture.ServerTask.Exception?.ToString());
+		}
+
+		[UnityTest]
+		public IEnumerator StopAcknowledgementWaitsForQueuedCallbacks()
+		{
+			using var fixture = new Fixture();
+			var callbackRan = false;
+			fixture.Command.On(_ => callbackRan = true);
+			fixture.Command.Run().Error(_ => { });
+			fixture.Discover();
+			fixture.AllowHeaders.TrySetResult(true);
+			var stop = fixture.Command.StopAsync();
+			stop.Error(_ => { });
+			yield return WaitFor(() => fixture.StopReceived.Task.IsCompleted);
+			fixture.PauseCallbacks();
+			fixture.ReleaseWorker.TrySetResult(true);
+			fixture.AllowAcknowledgement.TrySetResult(true);
+			yield return WaitFor(() => fixture.ServerTask.IsCompleted && fixture.CallbacksQueued);
+			Assert.That(fixture.ServerTask.IsFaulted, Is.False, fixture.ServerTask.Exception?.ToString());
+			Assert.That(callbackRan, Is.False);
+			Assert.That(stop.IsCompleted, Is.False, "Server acknowledgement must also drain queued Unity callbacks.");
+			fixture.ResumeCallbacks();
+			yield return WaitFor(() => stop.IsCompleted);
+			Assert.That(stop.IsFailed, Is.False);
+			Assert.That(callbackRan, Is.True);
+		}
+
+		[UnityTest]
+		public IEnumerator StopAfterLegacyCancelStillWaitsForServer()
+		{
+			using var fixture = new Fixture { WriteOutput = false };
+			var run = fixture.Command.Run();
+			run.Error(_ => { });
+			fixture.Discover();
+			fixture.AllowHeaders.TrySetResult(true);
+			var registration = (TaskCompletionSource<string>)Get(fixture.Command, "_stopUrl");
+			yield return WaitFor(() => registration.Task.IsCompleted);
+			fixture.Command.Cancel();
+			var stop = fixture.Command.StopAsync();
+			stop.Error(_ => { });
+			yield return WaitFor(() => fixture.StopReceived.Task.IsCompleted);
+			Assert.That(stop.IsCompleted, Is.False);
+			fixture.ReleaseWorker.TrySetResult(true);
+			fixture.AllowAcknowledgement.TrySetResult(true);
+			yield return WaitFor(() => stop.IsCompleted);
+			Assert.That(stop.IsFailed, Is.False);
+		}
+
+		[UnityTest]
+		public IEnumerator FailedStopAcknowledgementDoesNotReportSuccess()
+		{
+			using var fixture = new Fixture { StopStatus = 500 };
+			fixture.Command.Run().Error(_ => { });
+			fixture.Discover();
+			fixture.AllowHeaders.TrySetResult(true);
+			var stop = fixture.Command.StopAsync();
+			Exception failure = null;
+			stop.Error(error => failure = error);
+			yield return WaitFor(() => fixture.StopReceived.Task.IsCompleted);
+			fixture.ReleaseWorker.TrySetResult(true);
+			fixture.AllowAcknowledgement.TrySetResult(true);
+			yield return WaitFor(() => stop.IsCompleted);
+			Assert.That(stop.IsFailed, Is.True);
+			Assert.That(failure, Is.Not.Null);
+		}
+
+		[Test]
+		public void StopBeforeRunPreventsLaterExecution()
+		{
+			using var fixture = new Fixture();
+			var stop = fixture.Command.StopAsync();
+			Assert.That(stop.IsCompleted, Is.True);
+			Assert.That(fixture.Command.Run(), Is.SameAs(stop));
+			Assert.That(fixture.Factory.discoveryRequest, Is.Zero);
+		}
+
+		private static IEnumerator WaitFor(Func<bool> ready)
+		{
+			var deadline = DateTime.UtcNow.AddSeconds(10);
+			while (!ready() && DateTime.UtcNow < deadline) yield return null;
+			Assert.That(ready(), Is.True, "Timed out waiting for controlled transport gate.");
+		}
+
+		private static object Get(object target, string field) => target.GetType()
+			.GetField(field, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(target);
+		private static void Set(object target, string field, object value) => target.GetType()
+			.GetField(field, BindingFlags.Instance | BindingFlags.NonPublic).SetValue(target, value);
+		private static TaskCompletionSource<bool> Signal() => new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+		private sealed class Fixture : IDisposable
+		{
+			private readonly HttpListener _listener = new HttpListener();
+			private readonly BeamWebCommandFactoryOptions _options;
+			private readonly BeamableDispatcher _dispatcher = new BeamableDispatcher();
+			private readonly IDependencyProviderScope _provider;
+			public readonly BeamWebCommandFactory Factory;
+			public readonly BeamWebCommand Command;
+			public readonly TaskCompletionSource<bool> ExecuteReceived = Signal();
+			public readonly TaskCompletionSource<bool> AllowHeaders = Signal();
+			public readonly TaskCompletionSource<bool> StopReceived = Signal();
+			public readonly TaskCompletionSource<bool> ReleaseWorker = Signal();
+			public readonly TaskCompletionSource<bool> AllowAcknowledgement = Signal();
+			public readonly Task ServerTask;
+			public string StopId;
+			public bool WriteOutput = true;
+			public int StopStatus = 204;
+
+			public Fixture()
+			{
+				var reservation = new TcpListener(IPAddress.Loopback, 0);
+				reservation.Start();
+				var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+				reservation.Stop();
+				_listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+				_listener.Start();
+				_options = ScriptableObject.CreateInstance<BeamWebCommandFactoryOptions>();
+				_options.port = port;
+				// Keep history logging in memory without starting telemetry, discovery, or CLI processes.
+				var otel = (UnityOtelManager)FormatterServices.GetUninitializedObject(typeof(UnityOtelManager));
+				foreach (var name in new[] { "_cachedLogs", "_cachedTimestamps" })
+				{
+					var field = typeof(UnityOtelManager).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
+					field.SetValue(otel, Activator.CreateInstance(field.FieldType));
+				}
+				Set(otel, "_lastTimeFlush", double.MaxValue);
+				_provider = new DependencyBuilder().AddSingleton(otel).Build();
+				var history = new BeamWebCliCommandHistory(_options, _provider);
+				history.OnAfterLoadState();
+				Factory = (BeamWebCommandFactory)FormatterServices.GetUninitializedObject(typeof(BeamWebCommandFactory));
+				Set(Factory, "_options", _options);
+				Set(Factory, "serverReadyCallbacks", new List<Action>());
+				Factory.dispatcher = _dispatcher;
+				Command = new BeamWebCommand(Factory, history);
+				Command.SetCommand("beam content ps --watch");
+				ServerTask = Serve();
+				_ = ServerTask.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+			}
+
+			private Queue<BeamableDispatcher.WorkItem> CallbackQueue =>
+				((Dictionary<string, Queue<BeamableDispatcher.WorkItem>>)Get(_dispatcher, "_workQueues"))[BeamableDispatcher.DEFAULT_QUEUE_NAME];
+			public bool CallbacksQueued => CallbackQueue.Count > 0;
+			private Queue<BeamableDispatcher.WorkItem> _pausedQueue;
+			public void PauseCallbacks()
+			{
+				_pausedQueue = CallbackQueue;
+				((Dictionary<string, Queue<BeamableDispatcher.WorkItem>>)Get(_dispatcher, "_workQueues"))[BeamableDispatcher.DEFAULT_QUEUE_NAME] = new Queue<BeamableDispatcher.WorkItem>();
+			}
+			public void ResumeCallbacks()
+			{
+				var held = CallbackQueue;
+				lock (held)
+					lock (_pausedQueue)
+						while (held.Count > 0) _pausedQueue.Enqueue(held.Dequeue());
+				((Dictionary<string, Queue<BeamableDispatcher.WorkItem>>)Get(_dispatcher, "_workQueues"))[BeamableDispatcher.DEFAULT_QUEUE_NAME] = _pausedQueue;
+			}
+
+
+			public void Discover()
+			{
+				var callbacks = (List<Action>)Get(Factory, "serverReadyCallbacks");
+				foreach (var callback in callbacks.ToArray()) callback();
+				callbacks.Clear();
+			}
+
+			private async Task Serve()
+			{
+				var execute = await _listener.GetContextAsync();
+				using var executeReader = new StreamReader(execute.Request.InputStream);
+				var request = JsonUtility.FromJson<BeamWebCommandRequest>(await executeReader.ReadToEndAsync());
+				ExecuteReceived.TrySetResult(true);
+				await AllowHeaders.Task;
+				execute.Response.Headers.Set("X-Beam-Request-Id", request.requestId);
+				var ready = Encoding.UTF8.GetBytes(": ready\n");
+				await execute.Response.OutputStream.WriteAsync(ready, 0, ready.Length);
+				await execute.Response.OutputStream.FlushAsync();
+				var stop = await _listener.GetContextAsync();
+				using var stopReader = new StreamReader(stop.Request.InputStream);
+				StopId = JsonUtility.FromJson<BeamWebCommandRequest>(await stopReader.ReadToEndAsync()).requestId;
+				StopReceived.TrySetResult(true);
+				await ReleaseWorker.Task;
+				if (WriteOutput)
+				{
+					var output = Encoding.UTF8.GetBytes("data: {\"type\":\"test\",\"data\":{},\"ts\":1}\n");
+					await execute.Response.OutputStream.WriteAsync(output, 0, output.Length);
+				}
+				execute.Response.Close();
+				await AllowAcknowledgement.Task;
+				stop.Response.StatusCode = StopStatus;
+				stop.Response.Close();
+			}
+
+			public void Dispose()
+			{
+				AllowHeaders.TrySetResult(true);
+				ReleaseWorker.TrySetResult(true);
+				AllowAcknowledgement.TrySetResult(true);
+				Command.Cancel();
+				_listener.Close();
+				_dispatcher.OnDispose();
+				UnityEngine.Object.DestroyImmediate(_options);
+			}
+		}
+	}
+}

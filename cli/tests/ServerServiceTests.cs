@@ -171,13 +171,20 @@ public class ServerServiceTests
 		// does not contaminate later tests (including runs against the original buggy implementation).
 		var registry = (List<string>)typeof(ServerService)
 			.GetField("cliInvocations", PrivateStatic | BindingFlags.Public)!.GetValue(null)!;
+		var stoppable = (System.Collections.IDictionary)typeof(ServerService)
+			.GetField("_stoppableInvocations", PrivateStatic)!.GetValue(null)!;
 		try
 		{
-			Assert.That(registry, Is.Empty, "All completed requests must have been removed.");
+			Assert.Multiple(() =>
+			{
+				Assert.That(registry, Is.Empty, "All completed requests must have been removed.");
+				Assert.That(stoppable, Is.Empty, "Stop registrations must not accumulate after completion.");
+			});
 		}
 		finally
 		{
 			registry.Clear();
+			stoppable.Clear();
 		}
 	}
 
@@ -345,6 +352,158 @@ public class ServerServiceTests
 		server.AssertNoErrors();
 	}
 
+	[TestCase(false)]
+	[TestCase(true)]
+	public async Task Stop_targets_one_identical_invocation_and_waits_for_its_cleanup(bool failAfterCancellation)
+	{
+		var entered = Signal();
+		var cancelled = Signal();
+		var release = Signal();
+		var secondRelease = Signal();
+		var secondEntered = Signal();
+		CancellationToken secondToken = default;
+		var count = 0;
+		await using var server = new TestServer(() =>
+		{
+			ControlledApp app = null!;
+			app = new ControlledApp(async (_, _) =>
+			{
+				var index = Interlocked.Increment(ref count);
+				if (index == 1)
+				{
+					using var registration = app.CommandProvider.GetService<AppLifecycle>().CancellationToken
+						.Register(() => cancelled.TrySetResult(true));
+					entered.TrySetResult(true);
+					await release.Task;
+					if (failAfterCancellation) throw new InvalidOperationException("cleanup failure");
+				}
+				else
+				{
+					secondToken = app.CommandProvider.GetService<AppLifecycle>().CancellationToken;
+					secondEntered.TrySetResult(true);
+					await secondRelease.Task;
+				}
+				return 0;
+			});
+			return app;
+		});
+		using var executeBody = new StringContent(JsonConvert.SerializeObject(new { commandLine = "same", requestId = "first" }), Encoding.UTF8, "application/json");
+		using var executeRequest = new HttpRequestMessage(HttpMethod.Post, "execute") { Content = executeBody };
+		var responseTask = server.Client.SendAsync(executeRequest, HttpCompletionOption.ResponseHeadersRead);
+		Task<string>? second = null;
+		try
+		{
+			await entered.Task.WaitAsync(Deadline);
+			using var response = await responseTask.WaitAsync(Deadline);
+			Assert.That(response.Headers.Contains("X-Beam-Request-Id"), Is.True, "Registration must be acknowledged before a stop can be sent.");
+			second = server.Execute("same", "second");
+			await secondEntered.Task.WaitAsync(Deadline);
+			async Task<HttpResponseMessage> Stop() => await server.Client.PostAsync("stop",
+				new StringContent("{\"requestId\":\"first\"}", Encoding.UTF8, "application/json"));
+			var stop = Stop();
+			var repeated = Stop();
+			await cancelled.Task.WaitAsync(Deadline);
+			Assert.That(stop.IsCompleted, Is.False, "Cancellation is not completion: cleanup is held.");
+			Assert.That(repeated.IsCompleted, Is.False);
+			release.TrySetResult(true);
+			using var stopped = await stop.WaitAsync(Deadline);
+			using var stoppedAgain = await repeated.WaitAsync(Deadline);
+			Assert.That(stopped.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+			Assert.That(stoppedAgain.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+			Assert.That(second.IsCompleted, Is.False, "Identical command text must not cancel the other invocation.");
+			Assert.That(secondToken.IsCancellationRequested, Is.False);
+			var output = await response.Content.ReadAsStringAsync();
+			Assert.That(output.Contains("cleanup failure"), Is.EqualTo(failAfterCancellation));
+			Assert.That((await Snapshot()).inflightCommands, Has.Count.EqualTo(1));
+			using var afterCompletion = await Stop();
+			Assert.That(afterCompletion.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+		}
+		finally
+		{
+			release.TrySetResult(true);
+			secondRelease.TrySetResult(true);
+			using var response = await responseTask;
+			if (second != null) await second;
+		}
+		server.AssertNoErrors();
+	}
+
+	[Test]
+	public async Task Stop_after_registration_is_visible_to_work_that_has_not_started()
+	{
+		var entered = Signal();
+		var cancelled = Signal();
+		var release = Signal();
+		var sawCancellation = false;
+		ControlledApp app = null!;
+		await using var server = new TestServer(() => app = new ControlledApp(async (_, _) =>
+		{
+			entered.TrySetResult(true);
+			await release.Task; // Delay command work until after the stop has arrived.
+			sawCancellation = app.CommandProvider.GetService<AppLifecycle>().IsCancelled;
+			return 0;
+		}));
+		var execute = server.Execute("starting", "starting-id");
+		try
+		{
+			await entered.Task.WaitAsync(Deadline);
+			using var registration = app.CommandProvider.GetService<AppLifecycle>().CancellationToken
+				.Register(() => cancelled.TrySetResult(true));
+			using var body = new StringContent("{\"requestId\":\"starting-id\"}", Encoding.UTF8, "application/json");
+			var stop = server.Client.PostAsync("stop", body);
+			await cancelled.Task.WaitAsync(Deadline);
+			Assert.That(stop.IsCompleted, Is.False);
+			release.TrySetResult(true);
+			using var response = await stop.WaitAsync(Deadline);
+			Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+			await execute;
+			Assert.That(sawCancellation, Is.True);
+			server.AssertNoErrors();
+		}
+		finally
+		{
+			release.TrySetResult(true);
+			await execute;
+		}
+	}
+
+	[Test]
+	public async Task Completed_invocation_stops_its_reporter_monitor_before_disposing_lifecycle()
+	{
+		var previousLogger = App.GlobalLogger;
+		var logger = new MonitorLogger();
+		App.GlobalLogger = logger;
+		Task monitor = Task.CompletedTask;
+		try
+		{
+			await using var server = new TestServer(() => new ControlledApp(async (_, reporter) =>
+			{
+				monitor = (Task)typeof(ServerReporterService).GetField("_connectionMonitorTask", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(reporter)!;
+				// Give the production monitor time to enter its one-second heartbeat delay.
+				await Task.Delay(100);
+				return 0;
+			}));
+			await server.Execute("monitor-shutdown", "monitor-id");
+			var completedWithInvocation = monitor.IsCompleted;
+			await monitor.WaitAsync(Deadline);
+			Assert.That(completedWithInvocation, Is.True, "The reporter monitor must not outlive its invocation and disposed lifecycle.");
+			Assert.That(logger.Failures, Is.Empty, "Normal completion must not write to a closed response or cancel a disposed lifecycle.");
+			server.AssertNoErrors();
+		}
+		finally { App.GlobalLogger = previousLogger; }
+	}
+
+	private sealed class MonitorLogger : ILogger
+	{
+		public readonly ConcurrentQueue<string> Failures = new();
+		public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+		public bool IsEnabled(LogLevel level) => true;
+		public void Log<TState>(LogLevel level, EventId id, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+		{
+			if (level >= LogLevel.Error) Failures.Enqueue(formatter(state, exception));
+		}
+	}
+
 	// Keep the real handler, DI registration and ServerReporterService. Only command work is controlled.
 	private sealed class ControlledApp : App, IDisposable
 	{
@@ -417,9 +576,11 @@ public class ServerServiceTests
 			_accept = Accept();
 		}
 
-		public async Task<string> Execute(string command)
+		public Task<string> Execute(string command) => Execute(command, null);
+
+		public async Task<string> Execute(string command, string? requestId)
 		{
-			using var body = new StringContent(JsonConvert.SerializeObject(new ServerRequest { commandLine = command }),
+			using var body = new StringContent(JsonConvert.SerializeObject(new ServerRequest { commandLine = command, requestId = requestId }),
 				Encoding.UTF8, "application/json");
 			using var response = await Client.PostAsync("execute", body);
 			return await response.Content.ReadAsStringAsync();

@@ -367,6 +367,7 @@ namespace Beamable.Editor.BeamCli
 	public class BeamWebCommandRequest
 	{
 		public string commandLine;
+		public string requestId;
 	}
 	
 	public class BeamWebCommand : IBeamCommand
@@ -381,6 +382,8 @@ namespace Beamable.Editor.BeamCli
 		private CancellationTokenSource _cts;
 		private BeamWebCliCommandHistory _history;
 		private Promise _runPromise;
+		private Promise _stopPromise;
+		private readonly TaskCompletionSource<string> _stopUrl = new TaskCompletionSource<string>();
 		private const int MaxPreResponseTransportRetries = 2;
 
 		public BeamWebCommand(BeamWebCommandFactory factory, BeamWebCliCommandHistory history)
@@ -401,6 +404,7 @@ namespace Beamable.Editor.BeamCli
 		
 		public Promise Run()
 		{
+			if (_stopPromise != null) return _stopPromise;
 			_runPromise = RunImpl();
 			return _runPromise;
 		}
@@ -409,29 +413,37 @@ namespace Beamable.Editor.BeamCli
 		{
 			_history.UpdateResolvingHostTime(id);
 
-			for (var attempt = 0;; attempt++)
+			try
 			{
-				try
+				for (var attempt = 0;; attempt++)
 				{
-					await RunHttpRequestOnce();
-					return;
-				}
-				catch (PreResponseTransportException ex) when (attempt < MaxPreResponseTransportRetries)
-				{
-					if (attempt == 0)
+					try
 					{
-						_history.AddCustomLog(id,
-							$"[Unity] local CLI transport failed before response; confirming server before retry. attempt=[{attempt + 1}]");
-						await _factory.EnsureServerIsRunning();
+						await RunHttpRequestOnce();
+						return;
 					}
-					else
+					catch (PreResponseTransportException ex) when (attempt < MaxPreResponseTransportRetries)
 					{
-						_history.AddCustomLog(id,
-							$"[Unity] local CLI transport failed before response; invalidating server before retry. attempt=[{attempt + 1}]");
-						await _factory.InvalidateServer(ex.InnerException ?? ex);
+						if (attempt == 0)
+						{
+							_history.AddCustomLog(id,
+								$"[Unity] local CLI transport failed before response; confirming server before retry. attempt=[{attempt + 1}]");
+							await _factory.EnsureServerIsRunning();
+						}
+						else
+						{
+							_history.AddCustomLog(id,
+								$"[Unity] local CLI transport failed before response; invalidating server before retry. attempt=[{attempt + 1}]");
+							await _factory.InvalidateServer(ex.InnerException ?? ex);
+						}
 					}
 				}
 			}
+			finally
+			{
+				_stopUrl.TrySetResult(null);
+			}
+
 		}
 
 		private async Promise RunHttpRequestOnce()
@@ -441,8 +453,9 @@ namespace Beamable.Editor.BeamCli
 			_history.UpdateStartTime(id, _factory.ExecuteUrl);
 			_history.AddCustomLog(id, "[Unity] starting request...");
 
-			var req = new HttpRequestMessage(HttpMethod.Post, _factory.ExecuteUrl);
-			var json = JsonUtility.ToJson(new BeamWebCommandRequest {commandLine = commandString});
+			var executeUrl = _factory.ExecuteUrl;
+			var req = new HttpRequestMessage(HttpMethod.Post, executeUrl);
+			var json = JsonUtility.ToJson(new BeamWebCommandRequest {commandLine = commandString, requestId = id});
 			req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 			CliLogger.Log("Sending cli web request, " + json);
 			var dispatchedIds = new List<long>();
@@ -462,6 +475,8 @@ namespace Beamable.Editor.BeamCli
 
 				using HttpResponseMessage response = await sendTask;
 				responseStarted = true;
+				_stopUrl.TrySetResult(response.Headers.TryGetValues("X-Beam-Request-Id", out var requestIds) && requestIds.Contains(id)
+					? new Uri(new Uri(executeUrl), "stop").ToString() : "");
 				_history.AddCustomLog(id, "[Unity] opened response...");
 
 				using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
@@ -507,6 +522,7 @@ namespace Beamable.Editor.BeamCli
 
 					// remove life-cycle zero-width character
 					line = line.Replace("\u200b", "");
+					if (line.StartsWith(":")) continue; // SSE registration/keepalive comments.
 					if (!line.StartsWith("data: "))
 					{
 						Debug.LogWarning(
@@ -548,6 +564,28 @@ namespace Beamable.Editor.BeamCli
 
 			
 			await p;
+		}
+
+		/// <summary>Cancel this server invocation and wait for its workers and dispatched callbacks to finish.</summary>
+		public Promise StopAsync()
+		{
+			return _stopPromise ??= _runPromise == null ? Promise.Success : StopImpl();
+		}
+
+		private async Promise StopImpl()
+		{
+			// Registration is acknowledged before the response headers are sent. Never race /execute with /stop.
+			var url = await _stopUrl.Task;
+			if (url == "") throw new InvalidOperationException("The CLI server does not support acknowledged command shutdown. Update the CLI before switching content modes.");
+			if (url != null)
+			{
+				using var client = new HttpClient { Timeout = TimeSpan.FromDays(7) };
+				using var body = new StringContent(JsonUtility.ToJson(new BeamWebCommandRequest { requestId = id }), Encoding.UTF8, "application/json");
+				using var response = await client.PostAsync(url, body);
+				response.EnsureSuccessStatusCode();
+			}
+			// Run already drains the dispatcher in its finally block.
+			await _runPromise;
 		}
 
 		public void Cancel()
