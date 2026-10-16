@@ -86,10 +86,9 @@ namespace Beamable.Common.Content
 
 		[Tooltip(ContentObject.TooltipTeamContent1)]
 		[CannotBeEmpty]
-		// Preserve the old-type migration alias and the current content field name.
-#pragma warning disable UAC1018
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1018",
+			Justification = "Keep the legacy alias for existing content assets.")]
 		public TeamContentList teams;
-#pragma warning restore UAC1018
 
 		[Tooltip(ContentObject.TooltipMatchmakingRule1)]
 		public List<NumericMatchmakingRule> numericRules;

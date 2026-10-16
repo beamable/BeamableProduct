@@ -146,10 +146,9 @@ namespace Beamable.Common.Api.Events
 	public class EventItem
 	{
 		public string id;
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1015
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
+			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, string> properties;
-#pragma warning restore UAC1015
 	}
 
 	[Serializable]
