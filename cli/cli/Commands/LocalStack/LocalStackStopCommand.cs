@@ -159,6 +159,8 @@ public class LocalStackStopCommand
 			};
 			foreach (var a in stopArguments.Split(' ', StringSplitOptions.RemoveEmptyEntries))
 				psi.ArgumentList.Add(a);
+			foreach (var (k, v) in entry.environment ?? new Dictionary<string, string>())
+				psi.Environment[k] = v;
 			if (!string.IsNullOrEmpty(entry.workingDirectory) && Directory.Exists(entry.workingDirectory))
 				psi.WorkingDirectory = entry.workingDirectory;
 
