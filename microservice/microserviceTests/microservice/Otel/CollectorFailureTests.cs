@@ -31,15 +31,16 @@ public class CollectorFailureTests
     }
 
     [Test]
-    public void CollectorUnavailable_DisablesExporterRetry()
+    public void CollectorUnavailable_DisablesRetryForTheCollectorEndpointOnly()
     {
-        MicroserviceStartupUtil.OnCollectorUnavailable(NullLogger.Instance, new Exception("The collector couldn't start."));
+        MicroserviceStartupUtil.OnCollectorUnavailable(NullLogger.Instance, new Exception("The collector couldn't start."), "http://127.0.0.1:4318");
 
-        Assert.That(MicroserviceOtelRetry.Disabled, Is.True);
+        Assert.That(MicroserviceOtelRetry.IsDisabledFor("http://127.0.0.1:4318"), Is.True);
+        Assert.That(MicroserviceOtelRetry.IsDisabledFor("https://otel.example.com:4318"), Is.False, "a custom OTLP endpoint keeps retrying");
     }
 
     [Test]
-    public void FailedExports_StopQueueing_OnceRetryIsDisabled()
+    public void FailedExports_StopQueueing_OnceRetryIsDisabledForTheirEndpoint()
     {
         // Nothing listens on port 1, so every export fails, as it does when the collector is gone.
         var exporter = new MicroserviceOtelActivityExporter(new MicroserviceOtelExporterOptions
@@ -47,7 +48,7 @@ public class CollectorFailureTests
             OtlpEndpoint = "http://127.0.0.1:1",
             Protocol = OtlpExportProtocol.HttpProtobuf
         });
-        using var source = new ActivitySource(nameof(FailedExports_StopQueueing_OnceRetryIsDisabled));
+        using var source = new ActivitySource(nameof(FailedExports_StopQueueing_OnceRetryIsDisabledForTheirEndpoint));
         using var provider = Sdk.CreateTracerProviderBuilder()
             .AddSource(source.Name)
             .AddProcessor(new SimpleActivityExportProcessor(exporter))
@@ -64,7 +65,12 @@ public class CollectorFailureTests
         ExportOneFailedActivity();
         Assert.That(exporter.QueuedBatchCount, Is.EqualTo(2), "with retry on, failed batches are queued");
 
-        MicroserviceOtelRetry.Disable();
+        // A failed collector somewhere else doesn't affect this exporter.
+        MicroserviceOtelRetry.DisableFor("http://127.0.0.1:4318");
+        ExportOneFailedActivity();
+        Assert.That(exporter.QueuedBatchCount, Is.EqualTo(3), "retry is still on for this exporter's endpoint");
+
+        MicroserviceOtelRetry.DisableFor("http://127.0.0.1:1");
         ExportOneFailedActivity();
         ExportOneFailedActivity();
         Assert.That(exporter.QueuedBatchCount, Is.EqualTo(0), "with retry off, the queue is dropped and stays empty");

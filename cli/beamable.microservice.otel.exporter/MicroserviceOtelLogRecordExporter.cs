@@ -13,6 +13,7 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 	private readonly OtlpExporterOptions _otlpOptions;
 	private OtlpLogExporter _exporter;
 	private bool _shouldRetry;
+	private readonly string _endpoint;
 
 	private LimitedQueue<LogRecordQueueData> _logRecordsToFlush;
 
@@ -36,6 +37,7 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 		_exporter = new OtlpLogExporter(_otlpOptions);
 		_logRecordsToFlush = new LimitedQueue<LogRecordQueueData>(options.RetryQueueMaxSize);
 		_shouldRetry = options.ShouldRetry;
+		_endpoint = options.OtlpEndpoint;
 	}
 
 	public class LogRecordAccessors
@@ -109,7 +111,7 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 
 		var result = _exporter.Export(copyBatch);
 
-		if (!_shouldRetry || MicroserviceOtelRetry.Disabled)
+		if (!_shouldRetry || MicroserviceOtelRetry.IsDisabledFor(_endpoint))
 		{
 			FreeRecords(records.ToList());
 			_logRecordsToFlush.Clear();
