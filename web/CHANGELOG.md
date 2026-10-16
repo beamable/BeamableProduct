@@ -2,6 +2,10 @@
 
 ### Breaking
 
+- **The campaign `Conditional` node is gone, and `AnalyticsGate` replaces it.** `NodeKind.Conditional`,
+  `ConditionalBodyDto`, `ConditionDto` and `ConditionKind` are removed, and `NodeBodyDto.conditional`
+  becomes `NodeBodyDto.analyticsGate` (`AnalyticsGateBodyDto { filter, observePid, maxWaitMs? }`).
+
 - **The campaign-offer contract was reshaped.** `getEntitlements` becomes
   `getCampaignOffers(federationId, states?)`, and the route it calls becomes
   `GET /api/campaign-offer/campaign-offers`. `states` filters by lifecycle — omit it for everything,
