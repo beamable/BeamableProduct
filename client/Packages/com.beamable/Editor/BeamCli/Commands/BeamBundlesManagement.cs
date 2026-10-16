@@ -4,17 +4,27 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common;
     using Beamable.Common.BeamCli;
     
-    public partial class BundlesHistoryArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+    public partial class BundlesManagementArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>The bundle name, optionally namespaced as @<namespace>/<bundle-name></summary>
-        public string bundleName;
+        /// <summary>Do not open the portal; print its url instead</summary>
+        public bool noBrowser;
+        /// <summary>The portal extension in this workspace that renders the Bundles page; it is served from here, like `project run`. Pass an empty value to serve only the API</summary>
+        public string extension;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-            // Add the bundleName value to the list of args.
-            genBeamCommandArgs.Add(this.bundleName.ToString());
+            // If the noBrowser value was not default, then add it to the list of args.
+            if ((this.noBrowser != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--no-browser=" + this.noBrowser));
+            }
+            // If the extension value was not default, then add it to the list of args.
+            if ((this.extension != default(string)))
+            {
+                genBeamCommandArgs.Add(("--extension=" + this.extension));
+            }
             string genBeamCommandStr = "";
             // Join all the args with spaces
             genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
@@ -23,33 +33,28 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual BundlesHistoryWrapper BundlesHistory(BundlesHistoryArgs historyArgs)
+        public virtual BundlesManagementWrapper BundlesManagement(BundlesManagementArgs managementArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
             genBeamCommandArgs.Add("bundles");
-            genBeamCommandArgs.Add("history");
-            genBeamCommandArgs.Add(historyArgs.Serialize());
+            genBeamCommandArgs.Add("management");
+            genBeamCommandArgs.Add(managementArgs.Serialize());
             // Create an instance of an IBeamCommand
             Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
             // Join all the command paths and args into one string
             string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
             // Configure the command with the command string
             command.SetCommand(genBeamCommandStr);
-            BundlesHistoryWrapper genBeamCommandWrapper = new BundlesHistoryWrapper();
+            BundlesManagementWrapper genBeamCommandWrapper = new BundlesManagementWrapper();
             genBeamCommandWrapper.Command = command;
             // Return the command!
             return genBeamCommandWrapper;
         }
     }
-    public partial class BundlesHistoryWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+    public partial class BundlesManagementWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual BundlesHistoryWrapper OnStreamBundleHistoryCommandOutput(System.Action<ReportDataPoint<BeamBundleHistoryCommandOutput>> cb)
-        {
-            this.Command.On("stream", cb);
-            return this;
-        }
     }
 }

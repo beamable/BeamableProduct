@@ -22,7 +22,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool quiet;
         /// <summary>This option defines the target Beamable environment. Needed for private cloud customers to target their exclusive Beamable environment. Ignorable by everyone else. Stored in '.beamable/config.beam.json'</summary>
         public string host;
-        /// <summary>Overrides the default portal url.</summary>
+        /// <summary>Overrides the portal url the portal commands open, e.g. http://localhost:4950 for a local portal or a deployed portal url</summary>
         public string portalUrl;
         /// <summary>The access token to use for the requests. It overwrites the logged in user stored in auth.beam.json for THIS INVOCATION ONLY</summary>
         public string accessToken;
