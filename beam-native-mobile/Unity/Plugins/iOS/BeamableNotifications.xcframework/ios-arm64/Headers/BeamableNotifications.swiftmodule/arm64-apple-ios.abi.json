@@ -1130,201 +1130,6 @@
             "funcSelfKind": "NonMutating"
           },
           {
-            "kind": "Var",
-            "name": "funnelCategory",
-            "printedName": "funnelCategory",
-            "children": [
-              {
-                "kind": "TypeNominal",
-                "name": "String",
-                "printedName": "Swift.String",
-                "usr": "s:SS"
-              }
-            ],
-            "declKind": "Var",
-            "usr": "s:21BeamableNotifications0A9AnalyticsO14funnelCategorySSvpZ",
-            "mangledName": "$s21BeamableNotifications0A9AnalyticsO14funnelCategorySSvpZ",
-            "moduleName": "BeamableNotifications",
-            "static": true,
-            "declAttributes": [
-              "HasInitialValue",
-              "HasStorage",
-              "AccessControl"
-            ],
-            "isLet": true,
-            "hasStorage": true,
-            "accessors": [
-              {
-                "kind": "Accessor",
-                "name": "Get",
-                "printedName": "Get()",
-                "children": [
-                  {
-                    "kind": "TypeNominal",
-                    "name": "String",
-                    "printedName": "Swift.String",
-                    "usr": "s:SS"
-                  }
-                ],
-                "declKind": "Accessor",
-                "usr": "s:21BeamableNotifications0A9AnalyticsO14funnelCategorySSvgZ",
-                "mangledName": "$s21BeamableNotifications0A9AnalyticsO14funnelCategorySSvgZ",
-                "moduleName": "BeamableNotifications",
-                "static": true,
-                "implicit": true,
-                "accessorKind": "get"
-              }
-            ]
-          },
-          {
-            "kind": "Var",
-            "name": "funnelSlackMicroservice",
-            "printedName": "funnelSlackMicroservice",
-            "children": [
-              {
-                "kind": "TypeNominal",
-                "name": "String",
-                "printedName": "Swift.String",
-                "usr": "s:SS"
-              }
-            ],
-            "declKind": "Var",
-            "usr": "s:21BeamableNotifications0A9AnalyticsO23funnelSlackMicroserviceSSvpZ",
-            "mangledName": "$s21BeamableNotifications0A9AnalyticsO23funnelSlackMicroserviceSSvpZ",
-            "moduleName": "BeamableNotifications",
-            "static": true,
-            "declAttributes": [
-              "HasInitialValue",
-              "HasStorage",
-              "AccessControl",
-              "RawDocComment"
-            ],
-            "isLet": true,
-            "hasStorage": true,
-            "accessors": [
-              {
-                "kind": "Accessor",
-                "name": "Get",
-                "printedName": "Get()",
-                "children": [
-                  {
-                    "kind": "TypeNominal",
-                    "name": "String",
-                    "printedName": "Swift.String",
-                    "usr": "s:SS"
-                  }
-                ],
-                "declKind": "Accessor",
-                "usr": "s:21BeamableNotifications0A9AnalyticsO23funnelSlackMicroserviceSSvgZ",
-                "mangledName": "$s21BeamableNotifications0A9AnalyticsO23funnelSlackMicroserviceSSvgZ",
-                "moduleName": "BeamableNotifications",
-                "static": true,
-                "implicit": true,
-                "accessorKind": "get"
-              }
-            ]
-          },
-          {
-            "kind": "Var",
-            "name": "funnelSlackEndpoint",
-            "printedName": "funnelSlackEndpoint",
-            "children": [
-              {
-                "kind": "TypeNominal",
-                "name": "String",
-                "printedName": "Swift.String",
-                "usr": "s:SS"
-              }
-            ],
-            "declKind": "Var",
-            "usr": "s:21BeamableNotifications0A9AnalyticsO19funnelSlackEndpointSSvpZ",
-            "mangledName": "$s21BeamableNotifications0A9AnalyticsO19funnelSlackEndpointSSvpZ",
-            "moduleName": "BeamableNotifications",
-            "static": true,
-            "declAttributes": [
-              "HasInitialValue",
-              "HasStorage",
-              "AccessControl"
-            ],
-            "isLet": true,
-            "hasStorage": true,
-            "accessors": [
-              {
-                "kind": "Accessor",
-                "name": "Get",
-                "printedName": "Get()",
-                "children": [
-                  {
-                    "kind": "TypeNominal",
-                    "name": "String",
-                    "printedName": "Swift.String",
-                    "usr": "s:SS"
-                  }
-                ],
-                "declKind": "Accessor",
-                "usr": "s:21BeamableNotifications0A9AnalyticsO19funnelSlackEndpointSSvgZ",
-                "mangledName": "$s21BeamableNotifications0A9AnalyticsO19funnelSlackEndpointSSvgZ",
-                "moduleName": "BeamableNotifications",
-                "static": true,
-                "implicit": true,
-                "accessorKind": "get"
-              }
-            ]
-          },
-          {
-            "kind": "Function",
-            "name": "forwardFunnelToSlack",
-            "printedName": "forwardFunnelToSlack(_:host:cidPid:accessToken:session:)",
-            "children": [
-              {
-                "kind": "TypeNominal",
-                "name": "Void",
-                "printedName": "()"
-              },
-              {
-                "kind": "TypeNominal",
-                "name": "FunnelEvent",
-                "printedName": "BeamableNotifications.FunnelEvent",
-                "usr": "s:21BeamableNotifications11FunnelEventV"
-              },
-              {
-                "kind": "TypeNominal",
-                "name": "String",
-                "printedName": "Swift.String",
-                "usr": "s:SS"
-              },
-              {
-                "kind": "TypeNominal",
-                "name": "String",
-                "printedName": "Swift.String",
-                "usr": "s:SS"
-              },
-              {
-                "kind": "TypeNominal",
-                "name": "String",
-                "printedName": "Swift.String",
-                "usr": "s:SS"
-              },
-              {
-                "kind": "TypeNominal",
-                "name": "URLSession",
-                "printedName": "Foundation.URLSession",
-                "hasDefaultArg": true,
-                "usr": "c:objc(cs)NSURLSession"
-              }
-            ],
-            "declKind": "Func",
-            "usr": "s:21BeamableNotifications0A9AnalyticsO20forwardFunnelToSlack_4host6cidPid11accessToken7sessionyAA0E5EventV_S3SSo12NSURLSessionCtFZ",
-            "mangledName": "$s21BeamableNotifications0A9AnalyticsO20forwardFunnelToSlack_4host6cidPid11accessToken7sessionyAA0E5EventV_S3SSo12NSURLSessionCtFZ",
-            "moduleName": "BeamableNotifications",
-            "static": true,
-            "declAttributes": [
-              "AccessControl",
-              "RawDocComment"
-            ],
-            "funcSelfKind": "NonMutating"
-          },
-          {
             "kind": "Function",
             "name": "makeEvent",
             "printedName": "makeEvent(_:intent:offer:)",
@@ -2789,50 +2594,6 @@
         "declKind": "Func",
         "usr": "c:(cm)bmn_trackOfferClicked:",
         "mangledName": "$s21BeamableNotifications21bmn_trackOfferClickedyySPys4Int8VGSgF",
-        "moduleName": "BeamableNotifications",
-        "declAttributes": [
-          "AccessControl",
-          "CDecl",
-          "RawDocComment"
-        ],
-        "funcSelfKind": "NonMutating"
-      },
-      {
-        "kind": "Function",
-        "name": "bmn_trackOfferConverted",
-        "printedName": "bmn_trackOfferConverted(_:)",
-        "children": [
-          {
-            "kind": "TypeNominal",
-            "name": "Void",
-            "printedName": "()"
-          },
-          {
-            "kind": "TypeNominal",
-            "name": "Optional",
-            "printedName": "Swift.UnsafePointer<Swift.Int8>?",
-            "children": [
-              {
-                "kind": "TypeNominal",
-                "name": "UnsafePointer",
-                "printedName": "Swift.UnsafePointer<Swift.Int8>",
-                "children": [
-                  {
-                    "kind": "TypeNominal",
-                    "name": "Int8",
-                    "printedName": "Swift.Int8",
-                    "usr": "s:s4Int8V"
-                  }
-                ],
-                "usr": "s:SP"
-              }
-            ],
-            "usr": "s:Sq"
-          }
-        ],
-        "declKind": "Func",
-        "usr": "c:(cm)bmn_trackOfferConverted:",
-        "mangledName": "$s21BeamableNotifications23bmn_trackOfferConvertedyySPys4Int8VGSgF",
         "moduleName": "BeamableNotifications",
         "declAttributes": [
           "AccessControl",
@@ -23986,7 +23747,8 @@
             "moduleName": "BeamableNotifications",
             "declAttributes": [
               "HasStorage",
-              "AccessControl"
+              "AccessControl",
+              "RawDocComment"
             ],
             "hasStorage": true,
             "accessors": [
@@ -24071,8 +23833,7 @@
             "moduleName": "BeamableNotifications",
             "declAttributes": [
               "HasStorage",
-              "AccessControl",
-              "RawDocComment"
+              "AccessControl"
             ],
             "hasStorage": true,
             "accessors": [
@@ -25449,6 +25210,47 @@
           },
           {
             "kind": "Var",
+            "name": "eventName",
+            "printedName": "eventName",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:21BeamableNotifications11FunnelEventV9eventNameSSvp",
+            "mangledName": "$s21BeamableNotifications11FunnelEventV9eventNameSSvp",
+            "moduleName": "BeamableNotifications",
+            "declAttributes": [
+              "AccessControl",
+              "RawDocComment"
+            ],
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:21BeamableNotifications11FunnelEventV9eventNameSSvg",
+                "mangledName": "$s21BeamableNotifications11FunnelEventV9eventNameSSvg",
+                "moduleName": "BeamableNotifications",
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
             "name": "dedupKey",
             "printedName": "dedupKey",
             "children": [
@@ -26182,8 +25984,8 @@
           },
           {
             "kind": "Var",
-            "name": "received",
-            "printedName": "received",
+            "name": "delivered",
+            "printedName": "delivered",
             "children": [
               {
                 "kind": "TypeFunc",
@@ -26213,8 +26015,8 @@
               }
             ],
             "declKind": "EnumElement",
-            "usr": "s:21BeamableNotifications10FunnelTypeO8receivedyA2CmF",
-            "mangledName": "$s21BeamableNotifications10FunnelTypeO8receivedyA2CmF",
+            "usr": "s:21BeamableNotifications10FunnelTypeO9deliveredyA2CmF",
+            "mangledName": "$s21BeamableNotifications10FunnelTypeO9deliveredyA2CmF",
             "moduleName": "BeamableNotifications"
           },
           {
@@ -26293,40 +26095,81 @@
           },
           {
             "kind": "Var",
-            "name": "converted",
-            "printedName": "converted",
+            "name": "label",
+            "printedName": "label",
             "children": [
               {
-                "kind": "TypeFunc",
-                "name": "Function",
-                "printedName": "(BeamableNotifications.FunnelType.Type) -> BeamableNotifications.FunnelType",
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:21BeamableNotifications10FunnelTypeO5labelSSvp",
+            "mangledName": "$s21BeamableNotifications10FunnelTypeO5labelSSvp",
+            "moduleName": "BeamableNotifications",
+            "declAttributes": [
+              "AccessControl",
+              "RawDocComment"
+            ],
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:21BeamableNotifications10FunnelTypeO5labelSSvg",
+                "mangledName": "$s21BeamableNotifications10FunnelTypeO5labelSSvg",
+                "moduleName": "BeamableNotifications",
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Function",
+            "name": "from",
+            "printedName": "from(_:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "BeamableNotifications.FunnelType?",
                 "children": [
                   {
                     "kind": "TypeNominal",
                     "name": "FunnelType",
                     "printedName": "BeamableNotifications.FunnelType",
                     "usr": "s:21BeamableNotifications10FunnelTypeO"
-                  },
-                  {
-                    "kind": "TypeNominal",
-                    "name": "Metatype",
-                    "printedName": "BeamableNotifications.FunnelType.Type",
-                    "children": [
-                      {
-                        "kind": "TypeNominal",
-                        "name": "FunnelType",
-                        "printedName": "BeamableNotifications.FunnelType",
-                        "usr": "s:21BeamableNotifications10FunnelTypeO"
-                      }
-                    ]
                   }
-                ]
+                ],
+                "usr": "s:Sq"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
               }
             ],
-            "declKind": "EnumElement",
-            "usr": "s:21BeamableNotifications10FunnelTypeO9convertedyA2CmF",
-            "mangledName": "$s21BeamableNotifications10FunnelTypeO9convertedyA2CmF",
-            "moduleName": "BeamableNotifications"
+            "declKind": "Func",
+            "usr": "s:21BeamableNotifications10FunnelTypeO4fromyACSgSSFZ",
+            "mangledName": "$s21BeamableNotifications10FunnelTypeO4fromyACSgSSFZ",
+            "moduleName": "BeamableNotifications",
+            "static": true,
+            "declAttributes": [
+              "AccessControl",
+              "RawDocComment"
+            ],
+            "funcSelfKind": "NonMutating"
           },
           {
             "kind": "Constructor",
@@ -26399,6 +26242,66 @@
                 "accessorKind": "get"
               }
             ]
+          },
+          {
+            "kind": "Var",
+            "name": "allCases",
+            "printedName": "allCases",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Array",
+                "printedName": "[BeamableNotifications.FunnelType]",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "FunnelType",
+                    "printedName": "BeamableNotifications.FunnelType",
+                    "usr": "s:21BeamableNotifications10FunnelTypeO"
+                  }
+                ],
+                "usr": "s:Sa"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:21BeamableNotifications10FunnelTypeO8allCasesSayACGvpZ",
+            "mangledName": "$s21BeamableNotifications10FunnelTypeO8allCasesSayACGvpZ",
+            "moduleName": "BeamableNotifications",
+            "static": true,
+            "implicit": true,
+            "declAttributes": [
+              "Nonisolated"
+            ],
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Array",
+                    "printedName": "[BeamableNotifications.FunnelType]",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "FunnelType",
+                        "printedName": "BeamableNotifications.FunnelType",
+                        "usr": "s:21BeamableNotifications10FunnelTypeO"
+                      }
+                    ],
+                    "usr": "s:Sa"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:21BeamableNotifications10FunnelTypeO8allCasesSayACGvgZ",
+                "mangledName": "$s21BeamableNotifications10FunnelTypeO8allCasesSayACGvgZ",
+                "moduleName": "BeamableNotifications",
+                "static": true,
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
           }
         ],
         "declKind": "Enum",
@@ -26460,6 +26363,36 @@
             ],
             "usr": "s:SY",
             "mangledName": "$sSY"
+          },
+          {
+            "kind": "Conformance",
+            "name": "CaseIterable",
+            "printedName": "CaseIterable",
+            "children": [
+              {
+                "kind": "TypeWitness",
+                "name": "AllCases",
+                "printedName": "AllCases",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Array",
+                    "printedName": "[BeamableNotifications.FunnelType]",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "FunnelType",
+                        "printedName": "BeamableNotifications.FunnelType",
+                        "usr": "s:21BeamableNotifications10FunnelTypeO"
+                      }
+                    ],
+                    "usr": "s:Sa"
+                  }
+                ]
+              }
+            ],
+            "usr": "s:s12CaseIterableP",
+            "mangledName": "$ss12CaseIterableP"
           }
         ]
       },
@@ -29715,34 +29648,6 @@
             "declKind": "Func",
             "usr": "s:21BeamableNotifications19NotificationManagerC17trackOfferClickedyyAA0F12TrackRequestVF",
             "mangledName": "$s21BeamableNotifications19NotificationManagerC17trackOfferClickedyyAA0F12TrackRequestVF",
-            "moduleName": "BeamableNotifications",
-            "declAttributes": [
-              "Final",
-              "AccessControl",
-              "RawDocComment"
-            ],
-            "funcSelfKind": "NonMutating"
-          },
-          {
-            "kind": "Function",
-            "name": "trackOfferConverted",
-            "printedName": "trackOfferConverted(_:)",
-            "children": [
-              {
-                "kind": "TypeNominal",
-                "name": "Void",
-                "printedName": "()"
-              },
-              {
-                "kind": "TypeNominal",
-                "name": "OfferTrackRequest",
-                "printedName": "BeamableNotifications.OfferTrackRequest",
-                "usr": "s:21BeamableNotifications17OfferTrackRequestV"
-              }
-            ],
-            "declKind": "Func",
-            "usr": "s:21BeamableNotifications19NotificationManagerC19trackOfferConvertedyyAA0F12TrackRequestVF",
-            "mangledName": "$s21BeamableNotifications19NotificationManagerC19trackOfferConvertedyyAA0F12TrackRequestVF",
             "moduleName": "BeamableNotifications",
             "declAttributes": [
               "Final",
@@ -33122,434 +33027,406 @@
   },
   "ConstValues": [
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/ActionButton.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/ActionButton.swift",
       "kind": "StringLiteral",
       "offset": 1694,
       "length": 9,
       "value": "\"default\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/ActionButtons.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/ActionButtons.swift",
       "kind": "IntegerLiteral",
       "offset": 740,
       "length": 1,
       "value": "2"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/ActionButtons.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/ActionButtons.swift",
       "kind": "StringLiteral",
       "offset": 881,
       "length": 9,
       "value": "\"buttons\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/ActionButtons.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/ActionButtons.swift",
       "kind": "StringLiteral",
       "offset": 1034,
       "length": 15,
       "value": "\"beam_actions_\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/ActionButtons.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/ActionButtons.swift",
       "kind": "StringLiteral",
       "offset": 1396,
       "length": 14,
       "value": "\"beam_actions\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Analytics\/BeamableAnalytics.swift",
-      "kind": "StringLiteral",
-      "offset": 4737,
-      "length": 21,
-      "value": "\"notification_funnel\""
-    },
-    {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Analytics\/BeamableAnalytics.swift",
-      "kind": "StringLiteral",
-      "offset": 5058,
-      "length": 17,
-      "value": "\"CampaignService\""
-    },
-    {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Analytics\/BeamableAnalytics.swift",
-      "kind": "StringLiteral",
-      "offset": 5120,
-      "length": 22,
-      "value": "\"ForwardFunnelToSlack\""
-    },
-    {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Analytics\/BeamableAnalytics.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Analytics\/BeamableAnalytics.swift",
       "kind": "BooleanLiteral",
-      "offset": 10724,
+      "offset": 8698,
       "length": 5,
       "value": "false"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Analytics\/BeamableAnalytics.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Analytics\/BeamableAnalytics.swift",
       "kind": "IntegerLiteral",
-      "offset": 10782,
+      "offset": 8756,
       "length": 2,
       "value": "25"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/CategoryStore.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/CategoryStore.swift",
       "kind": "IntegerLiteral",
       "offset": 1238,
       "length": 2,
       "value": "32"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/CategoryStore.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/CategoryStore.swift",
       "kind": "Dictionary",
       "offset": 1305,
       "length": 3,
       "value": "[]"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/CategoryStore.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/CategoryStore.swift",
       "kind": "Array",
       "offset": 1433,
       "length": 2,
       "value": "[]"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/CategoryStore.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/CategoryStore.swift",
       "kind": "BooleanLiteral",
       "offset": 2760,
       "length": 4,
       "value": "true"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/CategoryStore.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/CategoryStore.swift",
       "kind": "IntegerLiteral",
       "offset": 7188,
       "length": 1,
       "value": "8"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/CategoryStore.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/CategoryStore.swift",
       "kind": "FloatLiteral",
       "offset": 7259,
       "length": 4,
       "value": "0.03"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LaunchTracker.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LaunchTracker.swift",
       "kind": "Array",
       "offset": 673,
       "length": 2,
       "value": "[]"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/ActionsLiveActivityAttributes.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/ActionsLiveActivityAttributes.swift",
       "kind": "Array",
       "offset": 2447,
       "length": 2,
       "value": "[]"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/ActionsLiveActivityAttributes.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/ActionsLiveActivityAttributes.swift",
       "kind": "BooleanLiteral",
       "offset": 2490,
       "length": 5,
       "value": "false"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/AnimatedLiveActivityAttributes.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/AnimatedLiveActivityAttributes.swift",
       "kind": "IntegerLiteral",
       "offset": 2022,
       "length": 3,
       "value": "900"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/AnimatedLiveActivityAttributes.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/AnimatedLiveActivityAttributes.swift",
       "kind": "IntegerLiteral",
       "offset": 2066,
       "length": 1,
       "value": "0"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/CountdownLiveActivityAttributes.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/CountdownLiveActivityAttributes.swift",
       "kind": "BooleanLiteral",
       "offset": 1755,
       "length": 5,
       "value": "false"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityActionIntent.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityActionIntent.swift",
       "kind": "StringLiteral",
       "offset": 3043,
       "length": 27,
       "value": "\"Beam Live Activity Action\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityActionIntent.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityActionIntent.swift",
       "kind": "StringLiteral",
       "offset": 3281,
       "length": 8,
       "value": "\"Action\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
       "kind": "StringLiteral",
       "offset": 5202,
       "length": 22,
       "value": "\"BMNLiveActivityTypes\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
       "kind": "Array",
       "offset": 5578,
       "length": 175,
       "value": "[(\"actions\", \"BeamActionsActivityAttributes\"), (\"animated\", \"BeamAnimatedActivityAttributes\"), (\"countdown\", \"BeamCountdownActivityAttributes\")]"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
       "kind": "BooleanLiteral",
       "offset": 6674,
       "length": 5,
       "value": "false"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
       "kind": "StringLiteral",
       "offset": 6737,
       "length": 7,
       "value": "\"appex\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
       "kind": "StringLiteral",
       "offset": 6847,
       "length": 13,
       "value": "\"NSExtension\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
       "kind": "StringLiteral",
       "offset": 6915,
       "length": 28,
       "value": "\"NSExtensionPointIdentifier\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
       "kind": "StringLiteral",
       "offset": 6998,
       "length": 31,
       "value": "\"com.apple.widgetkit-extension\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
       "kind": "BooleanLiteral",
       "offset": 7039,
       "length": 4,
       "value": "true"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCapability.swift",
       "kind": "BooleanLiteral",
       "offset": 7071,
       "length": 5,
       "value": "false"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCoordinator.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCoordinator.swift",
       "kind": "BooleanLiteral",
       "offset": 2519,
       "length": 5,
       "value": "false"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCoordinator.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCoordinator.swift",
       "kind": "Dictionary",
       "offset": 3307,
       "length": 3,
       "value": "[]"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCoordinator.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/LiveActivity\/LiveActivityCoordinator.swift",
       "kind": "Array",
       "offset": 3862,
       "length": 2,
       "value": "[]"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
       "kind": "StringLiteral",
       "offset": 4416,
       "length": 36,
       "value": "\"^([a-zA-Z][a-zA-Z0-9+.-]*):\/\/(.*)$\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
       "kind": "Array",
       "offset": 4497,
       "length": 25,
       "value": "[\"deeplink\", \"deep_link\"]"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
       "kind": "StringLiteral",
       "offset": 5884,
       "length": 18,
       "value": "\"CFBundleURLTypes\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
       "kind": "StringLiteral",
       "offset": 6026,
       "length": 20,
       "value": "\"CFBundleURLSchemes\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
       "kind": "Dictionary",
       "offset": 16415,
       "length": 3,
       "value": "[]"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
       "kind": "IntegerLiteral",
       "offset": 23440,
       "length": 2,
       "value": "60"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
       "kind": "StringLiteral",
-      "offset": 28117,
-      "length": 6,
-      "value": "\"Sent\""
-    },
-    {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
-      "kind": "StringLiteral",
-      "offset": 28144,
-      "length": 10,
-      "value": "\"Received\""
-    },
-    {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
-      "kind": "StringLiteral",
-      "offset": 28173,
-      "length": 8,
-      "value": "\"Opened\""
-    },
-    {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
-      "kind": "StringLiteral",
-      "offset": 28201,
-      "length": 9,
-      "value": "\"Clicked\""
-    },
-    {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
-      "kind": "StringLiteral",
-      "offset": 28232,
+      "offset": 29236,
       "length": 11,
-      "value": "\"Converted\""
+      "value": "\"beam_sent\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/NotificationManager.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
+      "kind": "StringLiteral",
+      "offset": 29269,
+      "length": 16,
+      "value": "\"beam_delivered\""
+    },
+    {
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
+      "kind": "StringLiteral",
+      "offset": 29304,
+      "length": 13,
+      "value": "\"beam_opened\""
+    },
+    {
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/Models.swift",
+      "kind": "StringLiteral",
+      "offset": 29337,
+      "length": 14,
+      "value": "\"beam_clicked\""
+    },
+    {
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/NotificationManager.swift",
       "kind": "BooleanLiteral",
       "offset": 667,
       "length": 5,
       "value": "false"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/PluginRegistry.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/PluginRegistry.swift",
       "kind": "Array",
       "offset": 2997,
       "length": 2,
       "value": "[]"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/RemotePush.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/RemotePush.swift",
       "kind": "BooleanLiteral",
       "offset": 659,
       "length": 5,
       "value": "false"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/RemotePush.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/RemotePush.swift",
       "kind": "Dictionary",
       "offset": 890,
       "length": 3,
       "value": "[]"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/RemotePush.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/RemotePush.swift",
       "kind": "StringLiteral",
       "offset": 5009,
       "length": 7,
       "value": "\"v@:@@\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/RemotePush.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/RemotePush.swift",
       "kind": "StringLiteral",
       "offset": 5701,
       "length": 7,
       "value": "\"v@:@@\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/RemotePush.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/RemotePush.swift",
       "kind": "StringLiteral",
       "offset": 6606,
       "length": 9,
       "value": "\"v@:@@@?\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/SharedConfig.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/SharedConfig.swift",
       "kind": "StringLiteral",
       "offset": 650,
       "length": 22,
       "value": "\"bmn.deliveryReceipts\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/SharedConfig.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/SharedConfig.swift",
       "kind": "StringLiteral",
       "offset": 706,
       "length": 16,
       "value": "\"bmn.authConfig\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/SharedConfig.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/SharedConfig.swift",
       "kind": "StringLiteral",
       "offset": 765,
       "length": 25,
       "value": "\"bmn.pendingFunnelEvents\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/SharedConfig.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/SharedConfig.swift",
       "kind": "IntegerLiteral",
       "offset": 897,
       "length": 3,
       "value": "200"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/SharedConfig.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/SharedConfig.swift",
       "kind": "IntegerLiteral",
       "offset": 1015,
       "length": 3,
       "value": "200"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/SharedConfig.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/SharedConfig.swift",
       "kind": "StringLiteral",
       "offset": 1069,
       "length": 27,
       "value": "\"bmn.synthesizedCategories\""
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/SharedConfig.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/SharedConfig.swift",
       "kind": "IntegerLiteral",
       "offset": 1250,
       "length": 2,
       "value": "32"
     },
     {
-      "filePath": "\/Users\/felipearruda\/Documents\/Work\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/TemplateStore.swift",
+      "filePath": "\/Users\/felipearruda\/Documents\/Work\/Stack\/BeamableProduct\/beam-native-mobile\/NativeSources\/iOS\/BeamableNotifications\/core\/Sources\/BeamableNotifications\/TemplateStore.swift",
       "kind": "Dictionary",
       "offset": 456,
       "length": 3,

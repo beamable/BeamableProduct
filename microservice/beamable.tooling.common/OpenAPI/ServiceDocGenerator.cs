@@ -350,9 +350,7 @@ public class ServiceDocGenerator
 		doc.Extensions.Add(Constants.Features.Services.MICROSERVICE_METHODS_TO_SKIP_GENERATION_KEY, skippedForClientCodeGenArray);
 
 		var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
-		doc = new OpenApiStringReader().Read(outputString, out var diag);
-
-		return doc;
+		return ReadGeneratedDocument(outputString);
 	}
 
 	/// <summary>
@@ -377,13 +375,25 @@ public class ServiceDocGenerator
 		{
 			var schema = SchemaGenerator.Convert(type, ref requiredTypes);
 			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Adding Schema to Microservice OAPI docs. Type={type.FullName}");
-			doc.Components.Schemas.Add(SchemaGenerator.GetQualifiedReferenceName(type), schema);
+			doc.Components.Schemas.Add(SchemaGenerator.GetSchemaId(type), schema);
 		}
 
+		SchemaGenerator.TryAddMissingSchemaTypes(ref doc, requiredTypes);
 		var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
-		doc = new OpenApiStringReader().Read(outputString, out var diag);
+		doc = ReadGeneratedDocument(outputString);
 
 		return doc;
+	}
+
+	private static OpenApiDocument ReadGeneratedDocument(string json)
+	{
+		var document = new OpenApiStringReader().Read(json, out var diagnostic);
+		if (diagnostic.Errors.Count > 0)
+		{
+			throw new InvalidOperationException("Generated invalid OpenAPI: " +
+				string.Join("; ", diagnostic.Errors.Select(error => $"{error.Message} ({error.Pointer})")));
+		}
+		return document;
 	}
 
 	/// <summary>

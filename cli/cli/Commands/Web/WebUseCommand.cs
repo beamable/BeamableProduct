@@ -4,6 +4,7 @@ using cli.Portal;
 using cli.Services;
 using cli.Services.Web;
 using cli.Utils;
+using Newtonsoft.Json.Linq;
 using System.CommandLine;
 
 namespace cli.Web;
@@ -98,6 +99,12 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 
 		Log.Information($"Pointing {projects.Count} project(s) under [{workspace}] at {WebLocalRegistryService.ToolkitPackage}@{version}");
 
+		// One packument read for the whole run: the integrity the registry is currently serving for the
+		// version being pinned. Null when it cannot be determined (unreachable registry, unexpected shape),
+		// which simply disables the skip and restores the previous always-reinstall behaviour.
+		var registryIntegrity = await ResolveRegistryIntegrity(args, registry, version);
+		var alreadyCurrent = 0;
+
 		var directoriesToInstall = new List<(string name, string directory)>();
 		foreach (var (name, packageJsonPath) in projects)
 		{
@@ -122,15 +129,32 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 
 			var directory = Path.GetDirectoryName(packageJsonPath);
 
-			// Deliberately NO "already pins this version, skip" shortcut. The version is fixed, so after the
-			// first run every project already pins it — skipping on that basis would skip everything and
-			// never deliver a new build. The pin edit is a no-op from then on; the reinstall is the point.
 			results.updated.Add(new WebUsedProject
 			{
 				name = name,
 				directory = directory,
 				previousVersion = previousVersion
 			});
+
+			// Deliberately NO "already pins this version, skip" shortcut. The version is a fixed sentinel, so
+			// after the first run every project already pins it — skipping on that basis would skip everything
+			// and never deliver a new build. The pin edit is a no-op from then on; the reinstall is the point.
+			//
+			// What CAN be skipped is a project whose installed copy is already byte-identical to what the
+			// registry is serving right now. That keys on content, not on the version string, so it stays
+            // correct under a republished sentinel: the moment `beam web publish` changes the tarball, the
+			// integrity changes, every project misses, and every project reinstalls exactly as before.
+			// Without this the step reinstalls ~70 projects on every single `beam local up` to deliver a
+			// build that is, in the overwhelmingly common case, already there.
+			if (registryIntegrity != null
+				&& registryIntegrity == WebLocalRegistryService.InstalledIntegrity(directory, WebLocalRegistryService.ToolkitPackage))
+			{
+				Log.Verbose($"[{name}] already has {WebLocalRegistryService.ToolkitPackage}@{version} " +
+					"with the integrity the registry is serving - no reinstall needed");
+				alreadyCurrent++;
+				continue;
+			}
+
 			directoriesToInstall.Add((name, directory));
 		}
 
@@ -160,6 +184,7 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 		}
 
 		Log.Information($"Updated {results.updated.Count} project(s); skipped {results.skipped.Count}" +
+			$"; already current {alreadyCurrent}" +
 			(installFailures.Count > 0 ? $"; install failed in {installFailures.Count}." : "."));
 		if (results.updated.Count > 0)
 		{
@@ -194,6 +219,36 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 		}
 
 		return local;
+	}
+
+	/// <summary>
+	/// The <c>dist.integrity</c> the registry currently serves for <paramref name="version"/>.
+	///
+	/// <para>
+	/// Returns null on any failure rather than throwing. This drives an optimisation, not correctness: a
+	/// null just means every project reinstalls, which is what happened before this existed.
+	/// </para>
+	/// </summary>
+	private static async Task<string> ResolveRegistryIntegrity(WebUseCommandArgs args, string registry, string version)
+	{
+		try
+		{
+			var versionService = args.Provider.GetService<VersionService>();
+			var packument = await versionService.GetNpmPackument(
+				WebLocalRegistryService.ToolkitPackage, registry, throwOnError: false);
+
+			if (packument?.Versions == null || !packument.Versions.TryGetValue(version, out var entry))
+			{
+				return null;
+			}
+
+			return (entry as JObject)?["dist"]?["integrity"]?.ToString();
+		}
+		catch (Exception e)
+		{
+			Log.Verbose($"Could not read the registry integrity for {WebLocalRegistryService.ToolkitPackage}@{version}: {e.Message}");
+			return null;
+		}
 	}
 
 	/// <summary>

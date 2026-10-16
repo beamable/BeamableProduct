@@ -10,13 +10,62 @@ using EmptyResponse = Beamable.Common.Api.EmptyResponse;
 
 namespace Beamable.Server.Api.Notifications
 {
-    public class MicroserviceNotificationApi : IMicroserviceNotificationsApi
+    /// <summary>
+    /// Server-event half of <see cref="MicroserviceNotificationApi"/>. Carries no realm-only surface, so
+    /// zone containers can register it (<see cref="IMicroserviceServerNotificationsApi"/>).
+    /// </summary>
+    public class MicroserviceServerNotificationApi : IMicroserviceServerNotificationsApi
     {
-	    private readonly INotificationApi _notificationApi;
+	    protected readonly INotificationApi _notificationApi;
 
-        public MicroserviceNotificationApi(INotificationApi notificationApi)
+        public MicroserviceServerNotificationApi(INotificationApi notificationApi)
         {
 	        _notificationApi = notificationApi;
+        }
+
+        #region Notify Server
+
+        public async Promise<EmptyResponse> NotifyServer<T>(CustomEvent<T> evt, T payload)
+        {
+	        var req = new ServerEvent
+	        {
+		        eventKey = evt.EventName,
+		        payload = JsonConvert.SerializeObject(payload, Formatting.None, UnitySerializationSettings.Instance),
+		        toAll = evt.ToAll
+	        };
+	        await _notificationApi.PostService(req);
+	        return EmptyResponse.Unit;
+        }
+
+        public async Promise<EmptyResponse> NotifyServer(bool toAll, string eventName, string messagePayload)
+        {
+	        var req = new ServerEvent
+	        {
+		        payload = new OptionalString(messagePayload), eventKey = eventName, toAll = toAll
+	        };
+	        await _notificationApi.PostService(req);
+	        return EmptyResponse.Unit;
+        }
+        public async Promise<EmptyResponse> NotifyServer<T>(bool toAll, string eventName, T messagePayload)
+        {
+	        var json = JsonConvert.SerializeObject(messagePayload, Formatting.None, UnitySerializationSettings.Instance);
+	        var req = new ServerEvent { payload = new OptionalString(json), eventKey = eventName, toAll = toAll };
+	        await _notificationApi.PostService(req);
+	        return EmptyResponse.Unit;
+        }
+        public async Promise<EmptyResponse> NotifyServer(bool toAll, string eventName)
+        {
+	        var req = new ServerEvent { eventKey = eventName, toAll = toAll };
+	        await _notificationApi.PostService(req);
+	        return EmptyResponse.Unit;
+        }
+        #endregion
+    }
+
+    public class MicroserviceNotificationApi : MicroserviceServerNotificationApi, IMicroserviceNotificationsApi
+    {
+        public MicroserviceNotificationApi(INotificationApi notificationApi) : base(notificationApi)
+        {
         }
 
         #region Notify Player
@@ -71,44 +120,6 @@ namespace Beamable.Server.Api.Notifications
         
         #endregion
 
-        #region Notify Server
-
-        public async Promise<EmptyResponse> NotifyServer<T>(CustomEvent<T> evt, T payload)
-        {
-	        var req = new ServerEvent
-	        {
-		        eventKey = evt.EventName,
-		        payload = JsonConvert.SerializeObject(payload, Formatting.None, UnitySerializationSettings.Instance),
-		        toAll = evt.ToAll
-	        };
-	        await _notificationApi.PostService(req);
-	        return EmptyResponse.Unit;
-        }
-        
-        public async Promise<EmptyResponse> NotifyServer(bool toAll, string eventName, string messagePayload)
-        {
-	        var req = new ServerEvent
-	        {
-		        payload = new OptionalString(messagePayload), eventKey = eventName, toAll = toAll
-	        };
-	        await _notificationApi.PostService(req);
-	        return EmptyResponse.Unit;
-        }
-        public async Promise<EmptyResponse> NotifyServer<T>(bool toAll, string eventName, T messagePayload)
-        {
-	        var json = JsonConvert.SerializeObject(messagePayload, Formatting.None, UnitySerializationSettings.Instance);
-	        var req = new ServerEvent { payload = new OptionalString(json), eventKey = eventName, toAll = toAll };
-	        await _notificationApi.PostService(req);
-	        return EmptyResponse.Unit;
-        }
-        public async Promise<EmptyResponse> NotifyServer(bool toAll, string eventName)
-        {
-	        var req = new ServerEvent { eventKey = eventName, toAll = toAll };
-	        await _notificationApi.PostService(req);
-	        return EmptyResponse.Unit;
-        }
-        #endregion
-        
         private PrimitiveStringPayload CreateStringPayload(string message)
         {
             return new PrimitiveStringPayload

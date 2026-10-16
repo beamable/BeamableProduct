@@ -173,6 +173,36 @@ namespace Beamable.Server.Tests.Runtime
 		}
 
 		[UnityTest]
+		public IEnumerator CanDeserializeList_OfTuples()
+		{
+			var client = new TestClient(ROUTE, MockRequester);
+
+			MockRequester.MockRequest<List<(int, string)>>(Method.POST,
+				  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+			   .WithRawResponse("[{\"Item1\":0,\"Item2\":\"item0\"},{\"Item1\":1,\"Item2\":\"item1\"}]");
+
+			var req = client.Request<List<(int, string)>>(ROUTE, new string[] { });
+
+			yield return req.ToYielder();
+			Assert.AreEqual(new List<(int, string)> { (0, "item0"), (1, "item1") }, req.GetResult());
+		}
+
+		[UnityTest]
+		public IEnumerator CanDeserializeArray_OfTuples()
+		{
+			var client = new TestClient(ROUTE, MockRequester);
+
+			MockRequester.MockRequest<(int, string)[]>(Method.POST,
+				  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+			   .WithRawResponse("[{\"Item1\":0,\"Item2\":\"item0\"},{\"Item1\":1,\"Item2\":\"item1\"}]");
+
+			var req = client.Request<(int, string)[]>(ROUTE, new string[] { });
+
+			yield return req.ToYielder();
+			Assert.AreEqual(new[] { (0, "item0"), (1, "item1") }, req.GetResult());
+		}
+
+		[UnityTest]
 		public IEnumerator CanNotDeserializePolymorphicList()
 		{
 			var client = new TestClient(ROUTE, MockRequester);

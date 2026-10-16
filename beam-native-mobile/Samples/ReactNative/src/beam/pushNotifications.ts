@@ -51,16 +51,62 @@ function service() {
   return svc;
 }
 
+/** Attempts for a device registration, including the first. */
+const REGISTER_ATTEMPTS = 4;
+/** Base backoff between registration attempts; doubles each time (0.5s, 1s, 2s). */
+const REGISTER_BACKOFF_MS = 500;
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Whether a failed registration is worth retrying.
+ *
+ * The rail resolves its federation microservice through a TTL'd heartbeat, so while that service
+ * is restarting the gateway answers 503 — routinely, on every local stack restart. That is the
+ * transient case, and it is the one that matters: a dropped registration is not retried by
+ * anything else, so the token is lost until the app happens to ask again, and the player silently
+ * stops receiving every campaign push. A 4xx is the opposite — a rejected token or the wrong
+ * player — and repeating it just delays the error the caller needs to see.
+ */
+function isTransientRegistrationFailure(error: unknown): boolean {
+  const status = (error as { context?: { response?: { status?: unknown } } })?.context?.response
+    ?.status;
+  if (typeof status === 'number') {
+    return status >= 500 || status === 429;
+  }
+  // No status at all means the request never completed — a transport fault, always worth a retry.
+  return true;
+}
+
 /**
  * Registers (or refreshes) this device's push token with the backend `push` rail.
  * `registrationData` keys (`token`/`platform`/`environment`) are what the push federation reads.
+ *
+ * Retries transient backend failures — see {@link isTransientRegistrationFailure}. The call is
+ * idempotent (the federation upserts on the token), so a retry after an ambiguous failure is safe.
  */
-export function registerDevice(
+export async function registerDevice(
   token: string,
   platform: PushPlatform = DEVICE_PLATFORM,
   environment: ApnsEnvironment = DEFAULT_APNS_ENVIRONMENT,
 ): Promise<MessageRailRegistrationResponse> {
-  return messageRail().optIn('push', { token, platform, environment });
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < REGISTER_ATTEMPTS; attempt += 1) {
+    try {
+      return await messageRail().optIn('push', { token, platform, environment });
+    } catch (error) {
+      lastError = error;
+      const isLastAttempt = attempt === REGISTER_ATTEMPTS - 1;
+      if (isLastAttempt || !isTransientRegistrationFailure(error)) {
+        throw error;
+      }
+      await delay(REGISTER_BACKOFF_MS * 2 ** attempt);
+    }
+  }
+
+  // Unreachable: the loop either returns or throws. Kept so the function is total for the checker.
+  throw lastError;
 }
 
 /** Removes the player's registration from the `push` rail (e.g. on logout). */

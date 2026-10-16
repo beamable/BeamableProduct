@@ -128,6 +128,12 @@ namespace Beamable.Server
 
 		private async Promise<IMongoDatabase> GetDatabaseByStorageName(string storageName)
 		{
+			// MongoDB would reject the name on the first call with a bare InvalidNamespace; fail early and explain why.
+			if (StorageDatabaseName.IsTooLong(_realmInfo.CustomerID, _realmInfo.ProjectName, storageName))
+			{
+				throw new StorageNameTooLongException(_realmInfo.CustomerID, _realmInfo.ProjectName, storageName);
+			}
+
 			var connStr = await GetConnectionString(storageName);
 
 			var clientSettings = MongoClientSettings.FromConnectionString(connStr);
@@ -140,7 +146,7 @@ namespace Beamable.Server
 			};
 			var client = new MongoClient(clientSettings);
 			
-			var db = client.GetDatabase($"{_realmInfo.CustomerID}{_realmInfo.ProjectName}_{storageName}");
+			var db = client.GetDatabase(StorageDatabaseName.Compose(_realmInfo.CustomerID, _realmInfo.ProjectName, storageName));
 			return db;
 		}
 
@@ -178,5 +184,52 @@ namespace Beamable.Server
 		{
 			public ConnectionStringException(string storageName) : base(500, "InvalidConnectionString", $"Connection string for storage name '{storageName}' is null or empty.") { }
 		}
+
+		[Serializable]
+		public class StorageNameTooLongException : MicroserviceException
+		{
+			public StorageNameTooLongException(string cid, string scope, string storageName) : base(500, "StorageNameTooLong", StorageDatabaseName.DescribeTooLong(cid, scope, storageName)) { }
+		}
+	}
+
+	/// <summary>
+	/// The MongoDB database name a storage object maps to: <c>{cid}{scope}_{storageName}</c>, where the scope is the
+	/// pid for a realm-scoped storage and the zid for a zone-scoped one. MongoDB rejects database names longer than
+	/// <see cref="MaxLength"/> characters (locally and on Atlas), so a storage name only fits when the whole composed
+	/// name does. Shared by the microservice runtime and the CLI so both apply the same rule.
+	/// </summary>
+	public static class StorageDatabaseName
+	{
+		/// <summary>
+		/// The longest database name MongoDB accepts.
+		/// </summary>
+		public const int MaxLength = 63;
+
+		public static string Compose(string cid, string scope, string storageName) => $"{cid}{scope}_{storageName}";
+
+		public static bool IsTooLong(string cid, string scope, string storageName) =>
+			Compose(cid, scope, storageName).Length > MaxLength;
+
+		/// <summary>
+		/// The longest storage name that still fits for the given cid and scope (pid or zid).
+		/// </summary>
+		public static int MaxStorageNameLength(string cid, string scope) =>
+			Math.Max(0, MaxLength - (cid?.Length ?? 0) - (scope?.Length ?? 0) - 1);
+
+		/// <summary>
+		/// A human-readable explanation of why the storage name doesn't fit, naming the composed database name,
+		/// its length, and the longest storage name allowed for this cid and scope.
+		/// </summary>
+		public static string DescribeTooLong(string cid, string scope, string storageName)
+		{
+			var databaseName = Compose(cid, scope, storageName);
+			var scopeKind = IsZoneId(scope) ? "zone" : "realm";
+			return $"Storage [{storageName}] is too long for {scopeKind} [{scope}]: its MongoDB database name " +
+			       $"[{databaseName}] would be {databaseName.Length} characters, but MongoDB allows at most {MaxLength}. " +
+			       $"Storage names in this {scopeKind} can be at most {MaxStorageNameLength(cid, scope)} characters.";
+		}
+
+		private static bool IsZoneId(string scope) =>
+			scope != null && scope.StartsWith("ZONE_", StringComparison.OrdinalIgnoreCase);
 	}
 }

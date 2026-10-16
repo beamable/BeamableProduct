@@ -20,6 +20,10 @@ public static class TypeExtensions
 
 	public static string GetSanitizedFullName(this Type type)
 	{
+		if (type.IsArray)
+		{
+			return type.GetElementType().GetSanitizedFullName() + "[" + new string(',', type.GetArrayRank() - 1) + "]";
+		}
 		if (type.IsGenericType)
 		{
 			string typeName = type.FullName?.Split('`')[0] ?? type.Name.Split('`')[0];

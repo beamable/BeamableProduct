@@ -124,6 +124,13 @@ public partial class BeamoLocalSystem
 		{
 			Log.Warning(conflict);
 		}
+
+		// A storage name that makes its MongoDB database name too long breaks both local runs and deploys, even when
+		// it was renamed by hand rather than through the CLI. In-memory only: zone storages use the local zid, and
+		// are skipped (left to the deploy check and the runtime guard) when none is set.
+		var localZid = _configService.GetConfigString(ConfigService.CFG_JSON_FIELD_ZID);
+		ProjectService.ThrowIfStorageNamesTooLong(
+			ProjectService.FindTooLongStorageNames(BeamoManifest.ServiceDefinitions, _ctx.Cid, _ctx.Pid, localZid));
 	}
 	
 	private static Uri GetLocalDockerEndpoint(ConfigService config)
@@ -905,7 +912,18 @@ public class PortalExtensionDef
 
 	public string AbsolutePackageJsonPath => Path.Combine(AbsolutePath, "package.json");
 
-	public List<string> MicroserviceDependencies => Properties.MicroserviceDependencies;
+	/// <summary>
+	/// The microservices this extension depends on, never null.
+	/// <para>An extension's package.json may omit "microserviceDependencies" entirely, and the
+	/// generated assets/metadata.json then serializes it as an explicit <c>null</c> — so a field
+	/// initializer on <see cref="PortalExtensionPackageProperties"/> is not enough, because Json.NET
+	/// assigns the null over it. Normalising here, at the one accessor every caller goes through,
+	/// keeps a dependency-free extension from NREing at the use site: one such extension made
+	/// `project generate pe-client` throw for EVERY microservice in the workspace (it scans all
+	/// extensions per service), which failed the post-build target and left the whole tier unable
+	/// to start. The <c>??=</c> writes back, so callers that mutate the list still mutate Properties.</para>
+	/// </summary>
+	public List<string> MicroserviceDependencies => Properties.MicroserviceDependencies ??= new List<string>();
 	public PortalExtensionPackageProperties Properties;
 
 	private string ToolkitNodeModulesPackageJsonPath =>

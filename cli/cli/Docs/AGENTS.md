@@ -59,6 +59,8 @@ If the AI agent cannot reach Beamable tools:
 Load a skill before attempting complex tasks:
 - `beam-initialize-project` — set up a new workspace
 - `beam-manage-service` — create, configure, and remove microservices with storage/federation
+- `beam-message-rail-federation` — build a message rail: deliver a campaign's push/email/in-game messages and report the per-recipient funnel result
+- `beam-campaign-api` — use the Campaign HTTP API: author and publish a campaign graph, drive its lifecycle, read the send funnel
 - `beam-diagnose-project` — troubleshoot common local dev issues
 - `beam-build-and-deploy` — Docker build and cloud deployment
 - `beam-create-portal-extension` — portal UI extensions

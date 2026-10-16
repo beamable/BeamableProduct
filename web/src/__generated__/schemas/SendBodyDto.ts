@@ -11,6 +11,7 @@ export type SendBodyDto = {
   maxWaitMs?: bigint | string; 
   message?: string; 
   offer?: string | null; 
+  offerFederationId?: string | null; 
   railFederationId?: string; 
   targetPid?: string; 
 };

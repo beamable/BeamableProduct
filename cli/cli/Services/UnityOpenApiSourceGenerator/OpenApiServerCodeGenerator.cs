@@ -463,6 +463,11 @@ namespace Beamable.Server.Generator
 
 		private static string GetObjectType(OpenApiSchema schema)
 		{
+			if (schema.Extensions.TryGetValue(SCHEMA_QUALIFIED_NAME_KEY, out var metadata) &&
+			    metadata is OpenApiString qualifiedName)
+			{
+				return Uri.UnescapeDataString(qualifiedName.Value);
+			}
 			if (schema.Reference != null && !string.IsNullOrEmpty(schema.Reference.Id))
 			{
 				return schema.Reference.Id;

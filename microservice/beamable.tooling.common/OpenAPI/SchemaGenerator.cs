@@ -9,6 +9,8 @@ using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using System.Collections;
 using System.Reflection;
+using System.Text;
+using System.Globalization;
 using Beamable.Common.Semantics;
 using UnityEngine;
 using ZLogger;
@@ -217,7 +219,7 @@ public class SchemaGenerator
 			// Otherwise, even if just a single usage of the type wants the client code to be generated, we do generate it.
 			// That's what this thing does.
 			var type = oapiTypes[i].Type;
-			var key = GetQualifiedReferenceName(type);
+			var key = GetSchemaId(type);
 			var schema = Convert(type, ref requiredTypes);
 			schema.AddExtension(METHOD_SKIP_CLIENT_GENERATION_KEY, new OpenApiBoolean(shouldGenerateClientCode));
 			BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Adding Schema to Microservice OAPI docs. Type={type.FullName}, WillGenClient={shouldGenerateClientCode}");
@@ -266,11 +268,11 @@ public class SchemaGenerator
 		var newRequiredTypes = new HashSet<Type>();
 		foreach (Type requiredType in requiredTypes)
 		{
-			if (requiredType.IsBasicType())
+			if (requiredType.IsBasicType() && !requiredType.IsEnum)
 			{
 				continue;
 			}
-			var key = requiredType.GetSanitizedFullName();
+			var key = GetSchemaId(requiredType);
 			if(oapiDoc.Components.Schemas.ContainsKey(key))
 				continue;
 			var schema = Convert(requiredType, ref newRequiredTypes);
@@ -414,7 +416,7 @@ public class SchemaGenerator
 					{
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(t),
-						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(sanitizeGenericType ? runtimeType.GetSanitizedFullName() : GetQualifiedReferenceName(runtimeType)),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(runtimeType.GetSanitizedFullName()),
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString())
 					}
@@ -424,7 +426,7 @@ public class SchemaGenerator
 				if (!ServiceDocGenerator.IsEmptyResponseType(runtimeType))
 				{
 					requiredTypes.Add(runtimeType);				
-					return new OpenApiSchema { Type = "object", Reference = new OpenApiReference { Id = GetQualifiedReferenceName(runtimeType), Type = ReferenceType.Schema } };
+					return new OpenApiSchema { Type = "object", Reference = new OpenApiReference { Id = GetSchemaId(runtimeType), Type = ReferenceType.Schema } };
 				}
 				else
 				{
@@ -440,7 +442,7 @@ public class SchemaGenerator
 					{
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(runtimeType.Name),
-						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(GetQualifiedReferenceName(runtimeType)),
+						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(runtimeType.GetSanitizedFullName()),
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
 						[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString())
 					}
@@ -463,7 +465,7 @@ public class SchemaGenerator
 				{
 					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
 					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(typeName),
-					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(sanitizeGenericType ? runtimeType.GetSanitizedFullName() : GetQualifiedReferenceName(runtimeType)),
+					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(runtimeType.GetSanitizedFullName()),
 					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
 					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString())
 				};
@@ -513,7 +515,37 @@ public class SchemaGenerator
 	}
 
 	/// <summary>
-	/// Gets the fully qualified reference name for a runtime type.
+	/// Gets an OpenAPI component ID, separately from the C# type metadata. Escape the
+	/// escape marker as well so punctuation cannot collide with literal encoded text.
+	/// Ordinary namespace-qualified names keep their existing IDs.
+	/// </summary>
+	public static string GetSchemaId(Type runtimeType)
+	{
+		var result = new StringBuilder();
+		// C# display names can omit nested generic type names. Use the CLR definition
+		// and recursively named arguments for constructed types, without assembly versions.
+		var name = runtimeType.IsGenericType ? GetSchemaTypeIdentity(runtimeType) : runtimeType.GetSanitizedFullName();
+		foreach (var c in name)
+		{
+			if (c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '.' or '_')
+				result.Append(c);
+			else
+				result.Append('-').Append(((int)c).ToString("X4", CultureInfo.InvariantCulture));
+		}
+		return result.ToString();
+	}
+
+	private static string GetSchemaTypeIdentity(Type type)
+	{
+		if (type.IsArray)
+			return GetSchemaTypeIdentity(type.GetElementType()) + "[" + new string(',', type.GetArrayRank() - 1) + "]";
+		return type.IsGenericType
+			? type.GetGenericTypeDefinition().FullName + "<" + string.Join(",", type.GetGenericArguments().Select(GetSchemaTypeIdentity)) + ">"
+			: type.FullName ?? type.Name;
+	}
+
+	/// <summary>
+	/// Gets the legacy URI-escaped C# name. This is not an OpenAPI component ID.
 	/// </summary>
 	public static string GetQualifiedReferenceName(Type runtimeType)
 	{

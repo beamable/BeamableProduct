@@ -544,6 +544,13 @@ namespace Beamable.Server.Generator
 
 		private static string GetObjectType(OpenApiSchema schema)
 		{
+			// Component IDs are opaque OpenAPI identifiers, not necessarily valid C# types.
+			// Older documents may contain URI-escaped type metadata.
+			if (schema.Extensions.TryGetValue(SCHEMA_QUALIFIED_NAME_KEY, out var metadata) &&
+			    metadata is OpenApiString qualifiedName)
+			{
+				return Uri.UnescapeDataString(qualifiedName.Value);
+			}
 			if (schema.Reference != null && !string.IsNullOrEmpty(schema.Reference.Id))
 			{
 				return schema.Reference.Id;
@@ -673,7 +680,14 @@ namespace Beamable.Server.Generator
 			sb.Append(nameBase.Contains("{0}")
 				? string.Format(nameBase, parameterClassName)
 				: nameBase);
-			return sb.ToString().Replace(".", "_").Replace(",","_").Replace(" ", "");
+			var name = sb.ToString();
+			if (name.Contains('<') || name.Contains('>') || name.Contains('[') || name.Contains(']'))
+			{
+				// A generic C# type is not a class identifier. Encode every character to avoid
+				// collisions between different constructed types and punctuation/underscore names.
+				return "ParameterGeneric_" + string.Concat(name.Select(c => ((int)c).ToString("X4", System.Globalization.CultureInfo.InvariantCulture)));
+			}
+			return name.Replace(".", "_").Replace(",","_").Replace(" ", "");
 		}
 
 		private string GetCSharpCodeString()

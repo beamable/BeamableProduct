@@ -24,6 +24,8 @@ public static class FederatedComponentGenerator
 				return FederationType.IFederatedPlayerInit;
 			case "IFederatedMessageRail":
 				return FederationType.IFederatedMessageRail;
+			case "IFederatedCampaignVirtualOffer":
+				return FederationType.IFederatedCampaignVirtualOffer;
 			default:
 				throw new InvalidOperationException(
 					$"the given federation name=[{federationName}] is not mapped to a federation enum value");

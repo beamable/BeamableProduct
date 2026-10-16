@@ -143,6 +143,7 @@ public class ListBundlesCommand : AtomicCommand<ListBundlesCommandArgs, ListBund
 		{
 			name = ns == null ? bundle.name : BundleNamespace.Qualify(ns, bundle.name),
 			filePath = bundle.filePath,
+			scope = bundle.IsZoneScoped ? BundleWorkspace.SCOPE_ZONE : BundleWorkspace.SCOPE_REALM,
 			serviceNames = services.ToArray(),
 			storageIds = storages.ToArray(),
 			portalExtensionNames = extensions.ToArray(),

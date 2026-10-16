@@ -813,6 +813,7 @@ public class App
 		Commands.AddSubCommandWithHandler<PruneYankedCommand, PruneYankedCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<PublishBundleCommand, PublishBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<BundlePlanCommand, BundlePlanCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<BundlesManagementCommand, BundlesManagementCommandArgs, BundlesCommand>();
 
 		Commands.AddRootCommand<ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentBakeCommand, ContentBakeCommandArgs, ContentCommand>();
@@ -1454,6 +1455,15 @@ public class App
 					Log.Error(ex.ToString());
 					Console.Error.WriteLine("\nLogs at\n  " + Path.GetFullPath(logFile));
 				}
+			}
+
+			// console-only: a CliException's message can end up above a long stack trace (e.g. when wrapped in an
+			// AggregateException during manifest init), so repeat it last, in red, where it's seen without scrolling.
+			var cliError = ex as CliException ??
+			               (ex as AggregateException)?.Flatten().InnerExceptions.OfType<CliException>().FirstOrDefault();
+			if (cliError != null && !appContext.UsePipeOutput && !appContext.ShowRawOutput)
+			{
+				AnsiConsole.MarkupLine($"\n[red]{Markup.Escape(cliError.Message)}[/]");
 			}
 		});
 		

@@ -185,11 +185,9 @@ public partial class BeamoLocalSystem
 					try
 					{
 						var observer = provider.GetService<PortalExtensionObserver>();
-						// TODO(zones): IMicroserviceNotificationsApi is realm-scoped and is not registered in a zone
-						// container; a zone extension has no realm notification channel yet.
-						var notification = isZone
-							? null
-							: provider.GetService<IMicroserviceNotificationsApi>();
+						// Registered for both scopes: a realm extension notifies on cid.pid, a zone extension on cid.zid
+						// (which a portal socket opened with pid = zid receives).
+						var notification = provider.GetService<IMicroserviceServerNotificationsApi>();
 						var attributes = provider.GetService<MicroserviceAttribute>();
 						observer.ConfigureServiceData(notification, attributes, beamActivity, localSystem.BeamoManifest);
 

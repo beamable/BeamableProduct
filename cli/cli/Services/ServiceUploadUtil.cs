@@ -191,14 +191,9 @@ public static class ServiceUploadUtil
 			// `{cid}.{zid}`) and send the zone id in the SAME x-ks-projectid header — no new headers. The repo
 			// itself is already the scoped one returned by /api/beamo/registry-uri for this scope.
 			var registryRequester = provider.GetService<IBeamableRequester>();
-			var registryClientId = ctx.Cid;
-			var registryProjectId = ctx.Pid;
-			if (registryRequester is CliRequester cliRequester && !string.IsNullOrEmpty(cliRequester.BeamScopeOverride))
-			{
-				var scopeParts = cliRequester.BeamScopeOverride.Split('.', 2);
-				registryClientId = scopeParts[0];
-				if (scopeParts.Length > 1) registryProjectId = scopeParts[1];
-			}
+			var (registryClientId, registryProjectId) = registryRequester is CliRequester cliRequester
+				? cliRequester.GetEffectiveScopeIds()
+				: (ctx.Cid, ctx.Pid);
 
 			Log.Information($"[{beamoId}] registry auth headers: x-ks-clientid=[{registryClientId}] x-ks-projectid=[{registryProjectId}]");
 			client.DefaultRequestHeaders.Add("x-ks-clientid", registryClientId);
