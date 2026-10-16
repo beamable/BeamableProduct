@@ -137,7 +137,7 @@ namespace Beamable.Editor.Tests
 			.GetField(field, BindingFlags.Instance | BindingFlags.NonPublic).SetValue(target, value);
 		private static TaskCompletionSource<bool> Signal() => new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-		private sealed class Fixture : IDisposable
+		internal sealed class Fixture : IDisposable
 		{
 			private readonly HttpListener _listener = new HttpListener();
 			private readonly BeamWebCommandFactoryOptions _options;

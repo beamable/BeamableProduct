@@ -79,6 +79,8 @@ namespace Beamable.Editor.ContentService
             if (completion == null) return;
             try { await completion; }
             catch (OperationCanceledException) { }
+            // StopAsync above already confirmed server cleanup and drained this failed run.
+            catch (Exception) when (command is BeamWebCommand) { }
         }
 
         private static async Task AwaitCommand(Promise run) => await run;

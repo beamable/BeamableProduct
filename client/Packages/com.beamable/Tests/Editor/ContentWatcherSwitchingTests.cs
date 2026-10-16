@@ -1,8 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
 using Beamable.Common;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.BeamCli;
@@ -47,6 +49,8 @@ namespace Beamable.Editor.Tests
             Set(service, "_beamContext", context);
             Set(service, "_provider", provider);
             Set(service, "_contentConfiguration", config);
+            Set(service, "_contentHistoryChangesRequest", new ContentHistoryRequestSlot<ContentHistorySyncChangelistWrapper>(request => request.Cancel()));
+            Set(service, "_contentHistoryPreviewRequest", new ContentHistoryRequestSlot<ContentHistorySyncContentWrapper>(request => request.Cancel()));
             var cache = typeof(CliContentService).GetField("_contentHistoryEntryCache", Fields);
             cache.SetValue(service, Activator.CreateInstance(cache.FieldType));
             service.manifestIdOverride = "global";
@@ -55,6 +59,43 @@ namespace Beamable.Editor.Tests
         [UnityTest] public IEnumerator NormalToLocalWaitsForBothWatchers() => Switch(false, true);
         [UnityTest] public IEnumerator LocalToNormalWaitsForBothWatchers() => Switch(true, true);
         [UnityTest] public IEnumerator SwitchingKeepsInactiveHistoryStopped() => Switch(false, false);
+
+        [UnityTest] public IEnumerator ContentFailureCanRetryAfterAcknowledgedShutdown() => RetryFailedWatcher(false);
+        [UnityTest] public IEnumerator HistoryFailureCanRetryAfterAcknowledgedShutdown() => RetryFailedWatcher(true);
+
+        IEnumerator RetryFailedWatcher(bool history)
+        {
+            using var transport = new BeamWebCommandStopTests.Fixture();
+            var failure = new IOException("Controlled command completion failure");
+            // Fail the real command's terminal callback, after its HTTP stream and dispatcher drain.
+            transport.Command.OnTerminate(_ => throw failure);
+            commands.FirstWebCommand = transport.Command;
+            var initial = history ? service.StartContentHistory() : service.Reload();
+            initial.Error(_ => { });
+            var run = (Promise)transport.Command.GetType().GetField("_runPromise", Fields).GetValue(transport.Command);
+            Exception observed = null;
+            run.Error(error => observed = error);
+            transport.Discover();
+            transport.AllowHeaders.TrySetResult(true);
+            var stop = transport.Command.StopAsync();
+            stop.Error(_ => { });
+            if (history) LogAssert.Expect(LogType.Error, new Regex("Content History operation failed"));
+            transport.ReleaseWorker.TrySetResult(true);
+            yield return Wait(run);
+            Assert.That(observed, Is.SameAs(failure), "Shutdown must not erase the original command failure.");
+            Assert.That(stop.IsCompleted, Is.False, "A failed stream does not prove server shutdown.");
+
+            var retry = history ? service.RestartContentHistory() : service.Reload();
+            retry.Error(_ => { });
+            Assert.That(commands.Content.Count + commands.History.Count, Is.Zero, "Retry must await acknowledgement.");
+            transport.AllowAcknowledgement.TrySetResult(true);
+            yield return Wait(retry);
+            Assert.That(retry.IsFailed, Is.False, "Confirmed shutdown must allow retry despite the earlier command failure.");
+            Assert.That(commands.Content.Count + commands.History.Count, Is.EqualTo(1));
+            Assert.That(run.IsFailed, Is.True);
+            Assert.That(stop.IsFailed, Is.False);
+            if (history) Assert.That(service.IsContentHistoryWatching, Is.True);
+        }
 
         [UnityTest]
         public IEnumerator RapidChangesUseLatestModeWithoutRestartingTwice()
@@ -227,9 +268,16 @@ namespace Beamable.Editor.Tests
             public readonly List<HeldCommand> Content = new();
             public readonly List<HeldCommand> History = new();
             public bool DelayInitialContent;
+            public BeamCli.BeamWebCommand FirstWebCommand;
             public Commands() : base(null, null) { }
             public override ContentPsWrapper ContentPs(ContentPsArgs args)
             {
+                if (FirstWebCommand != null)
+                {
+                    var web = FirstWebCommand;
+                    FirstWebCommand = null;
+                    return new ContentPsWrapper { Command = web };
+                }
                 var command = new HeldCommand(args.noAutoSync, new BeamContentPsCommandEvent
                 {
                     EventType = 0, RelevantManifestsAgainstLatest = new List<LocalContentManifest>(),
@@ -241,6 +289,12 @@ namespace Beamable.Editor.Tests
             }
             public override ContentHistoryWrapper ContentHistory(ContentHistoryArgs args)
             {
+                if (FirstWebCommand != null)
+                {
+                    var web = FirstWebCommand;
+                    FirstWebCommand = null;
+                    return new ContentHistoryWrapper { Command = web };
+                }
                 var command = new HeldCommand(args.noAutoSync, null);
                 History.Add(command);
                 return new ContentHistoryWrapper { Command = command };

@@ -585,7 +585,12 @@ namespace Beamable.Editor.BeamCli
 				response.EnsureSuccessStatusCode();
 			}
 			// Run already drains the dispatcher in its finally block.
-			await _runPromise;
+			try { await _runPromise; }
+			catch (Exception) when (url != null)
+			{
+				// The server acknowledged cleanup. Keep the run failed for its callers,
+				// but do not turn that original failure into a shutdown failure.
+			}
 		}
 
 		public void Cancel()
