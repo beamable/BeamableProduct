@@ -77,6 +77,14 @@
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/CloudDataToMicroServices_Violet@3x.png",
       "docsUrl": "https://help.beamable.com/Unity-Latest/unity/samples/lightbeam-cloud/",
       "relativeMainAssetPath": "Sample_CloudSaving.unity"
+    },
+    {
+      "displayName": "QA Smoke Kit",
+      "description": "Internal QA harness: BeamContext readiness, Accounts.OnReady and BeamContext retry-buffer fault checks, and a MustReferenceContent test content type. See the included README for the smoke-test procedure.",
+      "path": "SAMPLES_PATH/QASmokeKit",
+      "subText": "qa",
+      "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/CloudDataToMicroServices_Violet@3x.png",
+      "relativeMainAssetPath": "QASmokeKit.unity"
     }
   ]
 }
