@@ -38,7 +38,11 @@ namespace Beamable.Editor.Tests
 				cache.SetValue(service, Activator.CreateInstance(cache.FieldType));
 				service.manifestIdOverride = "test-namespace";
 				if (history)
-					Assert.Throws<TransportBoundaryException>(() => service.StartContentHistory());
+					{
+					Exception observed = null;
+					service.StartContentHistory().Error(error => observed = error);
+					Assert.That(observed, Is.TypeOf<TransportBoundaryException>());
+				}
 				else
 				{
 					Exception observed = null;

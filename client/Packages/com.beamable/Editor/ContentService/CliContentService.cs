@@ -47,7 +47,7 @@ namespace Beamable.Editor.ContentService
 		public float Progress;
 	}
 
-	public partial class CliContentService : IStorageHandler<CliContentService>, ILoadWithContext
+	public partial class CliContentService : IStorageHandler<CliContentService>, ILoadWithContext, IBeamableDisposableOrder
 	{
 		private const string SYNC_OPERATION_TITLE = "Sync Contents";
 		private const string SYNC_OPERATION_SUCCESS_BASE_MESSAGE = "{0} sync complete. {1}/{2} items synced.";
@@ -166,6 +166,8 @@ namespace Beamable.Editor.ContentService
 			ContentObject.ValidationContext = ValidationContext;
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			_contentConfiguration = contentConfiguration;
+			_observedLocalContentMode = contentConfiguration.EnableLocalContentInEditor;
+			EditorApplication.update += CheckLocalContentMode;
 			LoadRenameCache();
 			_ = Reload();
 		}
@@ -302,11 +304,7 @@ namespace Beamable.Editor.ContentService
 		public async Promise RestoreSnapshot(string snapshotPath, bool isAdditiveRestore, bool deleteAfterRestore)
 		{
 			// Disable watcher when doing a restore
-			if (_contentWatcher != null)
-			{
-				_contentWatcher.Cancel();
-				_contentWatcher = null;
-			}
+			await StopContentWatcher();
 
 			var restoreWrapper = _cli.ContentRestore(new ContentRestoreArgs() {manifestId = GetSelectedManifestIdCliOption(), name = snapshotPath, deleteAfterRestore = deleteAfterRestore, additiveRestore = isAdditiveRestore});
 			
@@ -319,11 +317,7 @@ namespace Beamable.Editor.ContentService
 		public async Promise TakeSnapshot(string snapshotName, bool isLocal)
 		{
 			// Disable watcher when creating a snapshot to prevent changes on files during snapshot
-			if (_contentWatcher != null)
-			{
-				_contentWatcher.Cancel();
-				_contentWatcher = null;
-			}
+			await StopContentWatcher();
 
 			var snapshotWrapper = _cli.ContentSnapshot(new ContentSnapshotArgs()
 			{
@@ -348,11 +342,7 @@ namespace Beamable.Editor.ContentService
 		{
 			try
 			{
-				if (_contentWatcher != null)
-				{
-					_contentWatcher.Cancel();
-					_contentWatcher = null;
-				}
+				await StopContentWatcher();
 
 				await withoutWatcher();
 			}
@@ -375,11 +365,7 @@ namespace Beamable.Editor.ContentService
 			BeginActionProgress(SYNC_OPERATION_TITLE, "Synchronizing contents...", showUnityModalProgress);
 			try
 			{
-				if (_contentWatcher != null)
-				{
-					_contentWatcher.Cancel();
-					_contentWatcher = null;
-				}
+				await StopContentWatcher();
 				var contentSyncCommand = _cli.ContentSync(new ContentSyncArgs()
 				{
 					manifestIds = GetSelectedManifestIdsCliOption(),
@@ -818,14 +804,25 @@ namespace Beamable.Editor.ContentService
 
 		public async Promise Reload()
 		{
+			Task ready = Task.CompletedTask;
+			await WatcherGate.WaitAsync();
+			try { if (!_watchersDisposed) ready = await StartContentWatcher(); }
+			finally { WatcherGate.Release(); }
+			await ready;
+		}
+
+		// Release the transition gate after startup; a slow first response must remain cancellable.
+		private async Task<Task> StartContentWatcher()
+		{
 			isReloading = true;
 			try
 			{
 				ClearCaches();
-				if (_contentWatcher != null)
+				await StopContentWatcher();
+				if (_watchersDisposed)
 				{
-					_contentWatcher.Cancel();
-					_contentWatcher = null;
+					isReloading = false;
+					return Task.CompletedTask;
 				}
 
 				TaskCompletionSource<bool> manifestIsFetchedTaskCompletion = new TaskCompletionSource<bool>();
@@ -838,8 +835,11 @@ namespace Beamable.Editor.ContentService
 					watch = true
 				});
 
+				_contentWatcherLocalMode = _contentConfiguration.EnableLocalContentInEditor;
+				var watcher = _contentWatcher;
 				void OnDataReceived(ReportDataPoint<BeamContentPsCommandEvent> report)
 				{
+					if (!ReferenceEquals(_contentWatcher, watcher)) return;
 					string currentCid = _beamContext.BeamCli.CurrentRealm.Cid;
 					string currentPid = _beamContext.BeamCli.CurrentRealm.Pid;
 
@@ -910,13 +910,14 @@ namespace Beamable.Editor.ContentService
 				}
 
 				_contentWatcher.OnStreamContentPsCommandEvent(OnDataReceived);
-				_contentWatcher.OnProgressStreamContentPsProgressMessage(dp => { LatestProgressUpdate = dp.data; });
-				_ = _contentWatcher.Command.Run();
+				_contentWatcher.OnProgressStreamContentPsProgressMessage(dp => { if (ReferenceEquals(_contentWatcher, watcher)) LatestProgressUpdate = dp.data; });
+				var completion = _contentWatcherCompletion = AwaitCommand(_contentWatcher.Command.Run());
 
 				RemoteManifestsLoaded = false;
 				RemoteManifestsErrored = false;
 				var getAvailableManifestsPromise = _cli.ContentListManifests(new ContentListManifestsArgs()).OnStreamContentListManifestsCommandResults(dp =>
 				{
+					if (!ReferenceEquals(_contentWatcher, watcher)) return;
 					var manifestIds = new HashSet<string>();
 					foreach (var id in dp.data.localManifests)
 					{
@@ -939,18 +940,34 @@ namespace Beamable.Editor.ContentService
 					availableManifestIds = manifestIds.ToList();
 				}).OnError(dp =>
 				{
+					if (!ReferenceEquals(_contentWatcher, watcher)) return;
 					RemoteManifestsErrored = true;
 					Debug.LogError(dp.data.message);
 				}).Run();
 
-				await manifestIsFetchedTaskCompletion.Task;
-				await getAvailableManifestsPromise;
+				return FinishReload();
 
-				ManifestChangedCount++;
+				async Task FinishReload()
+				{
+					try
+					{
+						if (await Task.WhenAny(manifestIsFetchedTaskCompletion.Task, completion) == completion)
+						{
+							await completion;
+							if (!ReferenceEquals(_contentWatcher, watcher)) return;
+							throw new InvalidOperationException("Content watcher ended before its initial content response.");
+						}
+						await manifestIsFetchedTaskCompletion.Task;
+						await getAvailableManifestsPromise;
+						if (ReferenceEquals(_contentWatcher, watcher)) ManifestChangedCount++;
+					}
+					finally { if (ReferenceEquals(_contentWatcher, watcher)) isReloading = false; }
+				}
 			}
-			finally
+			catch
 			{
 				isReloading = false;
+				throw;
 			}
 		}
 

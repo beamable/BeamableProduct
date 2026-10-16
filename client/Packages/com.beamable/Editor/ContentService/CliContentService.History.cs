@@ -1,4 +1,5 @@
 using Beamable.Editor.BeamCli.Commands;
+using Beamable.Common;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -42,7 +43,18 @@ namespace Beamable.Editor.ContentService
 		/// Starts a process-bound CLI history watcher for the selected manifests and clears the previous in-memory entries.
 		/// The CLI maintains its own on-disk cache; this method only resets the editor-side view of that cache.
 		/// </summary>
-		public void StartContentHistory()
+		public async Promise StartContentHistory()
+		{
+			await WatcherGate.WaitAsync();
+			try
+			{
+				await (_historyStop ?? Task.CompletedTask);
+				if (!_watchersDisposed) StartContentHistoryCore();
+			}
+			finally { WatcherGate.Release(); }
+		}
+
+		private void StartContentHistoryCore()
 		{
 			if (_contentHistoryWatcher != null)
 			{
@@ -60,32 +72,34 @@ namespace Beamable.Editor.ContentService
 				watch = true,
 				requireProcessId = Process.GetCurrentProcess().Id
 			});
-			_contentHistoryWatcher.Command.On(report => OnContentHistoryEvent(report.json));
-			_ = RunContentHistoryWatcher(_contentHistoryWatcher);
+			_historyWatcherLocalMode = _contentConfiguration.EnableLocalContentInEditor;
+			var watcher = _contentHistoryWatcher;
+			watcher.Command.On(report => { if (ReferenceEquals(_contentHistoryWatcher, watcher)) OnContentHistoryEvent(report.json); });
+			_historyWatcherCompletion = AwaitCommand(watcher.Run());
+			_ = RunContentHistoryWatcher(watcher, _historyWatcherCompletion);
 		}
 
 		/// <summary>
 		/// Stops a failed watcher, if any, and starts a new watcher with a fresh editor-side cache.
 		/// </summary>
-		public void RestartContentHistory()
+		public async Promise RestartContentHistory()
 		{
-			StopContentHistory();
-			StartContentHistory();
+			await WatcherGate.WaitAsync();
+			try
+			{
+				CancelContentHistoryRequests();
+				await StopHistoryWatcher();
+				if (!_watchersDisposed) StartContentHistoryCore();
+			}
+			finally { WatcherGate.Release(); }
 		}
 
-		/// <summary>
-		/// Cancels the active history watcher. It does not clear the CLI's on-disk history cache.
-		/// </summary>
-		public void StopContentHistory()
+		/// <summary>Stops the watcher without clearing the CLI's on-disk history cache.</summary>
+		public async Promise StopContentHistory()
 		{
-			CancelContentHistoryRequests();
-			if (_contentHistoryWatcher == null)
-			{
-				return;
-			}
-
-			_contentHistoryWatcher.Cancel();
-			_contentHistoryWatcher = null;
+			await WatcherGate.WaitAsync();
+			try { CancelContentHistoryRequests(); await StopHistoryWatcher(); }
+			finally { WatcherGate.Release(); }
 		}
 
 		/// <summary>
@@ -251,11 +265,11 @@ namespace Beamable.Editor.ContentService
 			}
 		}
 
-		private async Task RunContentHistoryWatcher(ContentHistoryWrapper watcher)
+		private async Task RunContentHistoryWatcher(ContentHistoryWrapper watcher, Task completion)
 		{
 			try
 			{
-				await watcher.Run();
+				await completion;
 				if (ReferenceEquals(_contentHistoryWatcher, watcher))
 				{
 					SetContentHistoryWatcherError(new ContentHistoryOperationException(
@@ -284,7 +298,8 @@ namespace Beamable.Editor.ContentService
 
 		private void SetContentHistoryWatcherError(ContentHistoryOperationException error)
 		{
-			_contentHistoryWatcher = null;
+			// Retain the shutdown acknowledgement even when the stream failed first.
+			_ = StopHistoryWatcher();
 			ContentHistoryWatcherError = error;
 			ContentHistoryVersion++;
 			UnityEngine.Debug.LogError(error.Diagnostic);
@@ -311,7 +326,7 @@ namespace Beamable.Editor.ContentService
 					return;
 				}
 
-				_contentHistoryWatcher.Cancel();
+				_ = StopHistoryWatcher();
 				SetContentHistoryWatcherError(new ContentHistoryOperationException(
 					"Watch publish history",
 					"Unable to load published history. Check your connection and try again.",
