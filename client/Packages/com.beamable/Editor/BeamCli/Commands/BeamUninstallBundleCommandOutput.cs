@@ -5,8 +5,9 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common.BeamCli;
     
     [System.SerializableAttribute()]
-    public partial class BeamBundleHistoryCommandOutput
+    public partial class BeamUninstallBundleCommandOutput
     {
-        public BeamBundleInfo[] history;
+        public string name;
+        public bool removed;
     }
 }
