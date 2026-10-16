@@ -8,6 +8,8 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>When true, the command will run forever and watch the state of the program</summary>
         public bool watch;
+        /// <summary>Observe content changes without automatically updating local content files</summary>
+        public bool noAutoSync;
         /// <summary>Inform a subset of ','-separated manifest ids for which to return data. By default, will return just the global manifest</summary>
         public string[] manifestIds;
         /// <summary>Listens to the given process id. Terminates this long-running command when the it no longer is running</summary>
@@ -21,6 +23,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.watch != default(bool)))
             {
                 genBeamCommandArgs.Add(("--watch=" + this.watch));
+            }
+            // If the noAutoSync value was not default, then add it to the list of args.
+            if ((this.noAutoSync != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--no-auto-sync=" + this.noAutoSync));
             }
             // If the manifestIds value was not default, then add it to the list of args.
             if ((this.manifestIds != default(string[])))

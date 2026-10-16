@@ -12,6 +12,7 @@ namespace cli.Content;
 public class ContentHistoryCommandArgs : CommandArgs
 {
 	public bool Watch;
+	public bool NoAutoSync;
 	public int RequireProcessId;
 	public string ManifestId;
 	public long? FromDate;
@@ -108,6 +109,8 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 	public override void Configure()
 	{
 		ProjectCommand.AddWatchOption(this, (args, i) => args.Watch = i);
+		AddOption(new Option<bool>("--no-auto-sync", "Update history without automatically updating local content files"),
+			(args, value) => args.NoAutoSync = value);
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestId = s[0]);
 		AddOption(new RequireProcessIdOption(), (args, i) => args.RequireProcessId = i);
 		AddOption(new Option<long?>("--from-date", "Filter entries from this Unix timestamp (milliseconds)"), (args, l) => args.FromDate = l);
@@ -298,7 +301,7 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 			{
 				try
 				{
-					await foreach (var _ in contentService.ListenToRemoteContentPublishes(args, manifestId, args.Lifecycle.Source.Token))
+					await foreach (var _ in contentService.ListenToRemoteContentPublishes(args, manifestId, args.Lifecycle.Source.Token, autoSync: !args.NoAutoSync))
 					{
 						await watchSemaphore.WaitAsync();
 						try

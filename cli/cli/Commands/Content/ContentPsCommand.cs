@@ -8,6 +8,7 @@ using Beamable.Server;
 using cli.Dotnet;
 using Spectre.Console;
 using Spectre.Console.Json;
+using System.CommandLine;
 using System.Text.Json;
 
 namespace cli.Content;
@@ -34,6 +35,8 @@ public class ContentPsCommand
 	public override void Configure()
 	{
 		ProjectCommand.AddWatchOption(this, (args, i) => args.Watch = i);
+		AddOption(new Option<bool>("--no-auto-sync", "Observe content changes without automatically updating local content files"),
+			(args, value) => args.NoAutoSync = value);
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestId = s[0]);
 		AddOption(new RequireProcessIdOption(), (args, i) => args.RequireProcessId = i);
 	}
@@ -71,12 +74,12 @@ public class ContentPsCommand
 		// If we are just creating the local representation for this realm+manifest combo, let's reset our state to match the remote state.
 		
 		var contentFolder = contentService.EnsureContentPathForRealmExists(out var created, pid, manifestId);
-		if (created)
+		if (!args.NoAutoSync && created)
 		{
 			await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, onContentSyncProgressUpdate: OnMessage, cancellationToken: args.Lifecycle.CancellationToken);
 		}
 		// Auto-sync with latest like when we react to a published manifest.
-		else
+		else if (!args.NoAutoSync)
 		{
 			_ = await contentService.SyncLocalContent(latestManifest.GetResult(), manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false, onContentSyncProgressUpdate: OnMessage, cancellationToken: args.Lifecycle.CancellationToken);
 		}
@@ -167,7 +170,10 @@ public class ContentPsCommand
 
 						
 						// If a content referenceId was changed and can be updated we don't need to wait for a content ps to be called again to reset it
-						await contentService.AdvanceManifestReferences(contentFolder, localContentAgainstLatest.Result.ContentFiles, latestManifestId);
+						if (!args.NoAutoSync)
+						{
+							await contentService.AdvanceManifestReferences(contentFolder, localContentAgainstLatest.Result.ContentFiles, latestManifestId);
+						}
 						
 						// Prepare a new Manifest to push out with only the changed entries.
 						var fileChangeManifestToEmit = new ContentPsCommandEvent()
@@ -229,7 +235,7 @@ public class ContentPsCommand
 			// Set up a task that will emit a RemotePublished event every time someone THAT IS NOT YOU publish a manifest to this realm+manifestid handle.
 			var remoteManifestPublishTask = Task.Run(async () =>
 			{
-				await foreach (var remoteContentPublished in contentService.ListenToRemoteContentPublishes(args, manifestId, args.Lifecycle.Source.Token))
+				await foreach (var remoteContentPublished in contentService.ListenToRemoteContentPublishes(args, manifestId, args.Lifecycle.Source.Token, autoSync: !args.NoAutoSync))
 				{
 					await watchSemaphore.WaitAsync();
 					try
@@ -263,7 +269,7 @@ public class ContentPsCommand
 							ToRemoveLocalEntries = new(),
 							PublisherEmail = remoteContentPublished.PublisherEmail,
 							PublisherAccountId = remoteContentPublished.PublisherAccountId,
-							SyncReports = new() { remoteContentPublished.AutoSyncReport, },
+							SyncReports = remoteContentPublished.AutoSyncReport == null ? new() : new() { remoteContentPublished.AutoSyncReport, },
 						};
 
 						// Send it out.
@@ -338,6 +344,7 @@ public class ContentPsCommand
 public class ContentPsCommandArgs : CommandArgs
 {
 	public bool Watch;
+	public bool NoAutoSync;
 	public int RequireProcessId;
 	public string ManifestId;
 }

@@ -834,6 +834,7 @@ namespace Beamable.Editor.ContentService
 				_contentWatcher = _cli.ContentPs(new ContentPsArgs()
 				{
 					manifestIds = GetSelectedManifestIdsCliOption(),
+					noAutoSync = _contentConfiguration.EnableLocalContentInEditor,
 					watch = true
 				});
 

@@ -48,6 +48,7 @@ public struct RemoteContentPublished
 	public string PublisherEmail;
 	public string ReferenceUid;
 
+	// Null when the listener observes publications without synchronizing local files.
 	public ContentSyncReport AutoSyncReport;
 }
 
@@ -481,7 +482,7 @@ public partial class ContentService
 		}
 	}
 
-	public async IAsyncEnumerable<RemoteContentPublished> ListenToRemoteContentPublishes(CommandArgs args, string manifestId = "global", [EnumeratorCancellation] CancellationToken token = default)
+	public async IAsyncEnumerable<RemoteContentPublished> ListenToRemoteContentPublishes(CommandArgs args, string manifestId = "global", [EnumeratorCancellation] CancellationToken token = default, bool autoSync = true)
 	{
 		// Subscribe to the content refresh notification for the realm we are targeting.
 		var listenTask = Task.Run(async () =>
@@ -558,11 +559,15 @@ public partial class ContentService
 				Log.Verbose("Found Email for Publisher. MANIFEST_ID={0}, EMAIL={1}", manifestId, email);
 				Log.Verbose("Found New Published Manifest. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
 
-				// Let's sync the local content without synching created or modified files and ignoring conflicts.
-				Log.Verbose("Sync'ing manifest. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
 				try
 				{
-					var syncReport = await SyncLocalContent(newManifest, manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false, cancellationToken: token);
+					ContentSyncReport syncReport = null;
+					if (autoSync)
+					{
+						// Preserve the existing selective sync policy unless this listener is observation-only.
+						Log.Verbose("Sync'ing manifest. MANIFEST_ID={0}, UID={1}", manifestId, manifestUid);
+						syncReport = await SyncLocalContent(newManifest, manifestId, syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false, cancellationToken: token);
+					}
 
 					// Put this on the channel so it gets picked up below.
 					_channelRemoteContentPublishes.Writer.TryWrite(new RemoteContentPublished()
@@ -588,7 +593,7 @@ public partial class ContentService
 					throw;
 				}
 
-				Log.Verbose("Sync'ed manifest. Sending out event. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
+				Log.Verbose("Processed published manifest. Sending out event. MANIFEST_ID={0}, UID={1}", manifestId, manifestFetchTask.Result.uid.GetOrElse(""));
 			}
 		}
 	}

@@ -56,6 +56,7 @@ namespace Beamable.Editor.ContentService
 			_contentHistoryWatcher = _cli.ContentHistory(new ContentHistoryArgs
 			{
 				manifestIds = GetSelectedManifestIdsCliOption(),
+				noAutoSync = _contentConfiguration.EnableLocalContentInEditor,
 				watch = true,
 				requireProcessId = Process.GetCurrentProcess().Id
 			});

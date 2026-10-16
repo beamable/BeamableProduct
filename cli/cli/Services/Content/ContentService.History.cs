@@ -514,8 +514,8 @@ public partial class ContentService
 
 
 	/// <summary>
-	/// Synchronizes content history entries from the remote Beamable API to local storage, fetching only new entries not already cached.
-	/// Walks backwards through history in pages until all new entries are downloaded or cancellation occurs.
+	/// Synchronizes content history entries from the remote Beamable API to local storage, saving only entries not already cached.
+	/// Fetches history by offset until all pages are processed or cancellation occurs.
 	/// Invokes an optional progress callback after each page is processed.
 	/// </summary>
 	/// <param name="pid">The realm id (PID) to sync entries for</param>
@@ -527,8 +527,8 @@ public partial class ContentService
 	/// Edge cases:
 	/// - Uses semaphore to prevent file system races during concurrent writes
 	/// - Skips entries that already exist locally (based on CreatedDate)
-	/// - Starts from the current time or continues from the oldest local entry (localStartDate - 1)
-	/// - Stops when hasMore=false or when minCreatedInPage doesn't advance (all pages exhausted)
+	/// - Starts at offset zero so new publications are included even when history is already cached
+	/// - Stops when the API reports hasMore=false
 	/// - Logs errors for individual entry save failures but continues with remaining entries
 	/// - Returns partial results if cancellation occurs mid-sync
 	/// - Page limit is hardcoded to 100 entries per API call
@@ -538,14 +538,12 @@ public partial class ContentService
 		// Ensure local entries folder exists
 		var entriesPath = EnsureContentHistoryEntriesFolderExists(out _, pid, manifestId);
 
-		// Load locally cached entries so we can avoid re-fetching duplicates and determine where to continue from
+		// Load locally cached entries so we can avoid rewriting duplicates.
 		var allLocallyCachedEntries = await GetAllContentHistoryLocalEntries(pid, manifestId);
 		var existingCreatedDates = new HashSet<long>();
-		long? localStartDate = null;
 		if (allLocallyCachedEntries.Entries.Count > 0)
 		{
 			existingCreatedDates.UnionWith(allLocallyCachedEntries.Entries.Select(e => e.CreatedDate));
-			localStartDate = allLocallyCachedEntries.StartDate;
 		}
 
 		// Collector for all entries we actually fetched during this call
@@ -553,15 +551,14 @@ public partial class ContentService
 
 		int greedyPageLimit = 100;
 		bool hasMore = true;
-		long toDateCursor = localStartDate.HasValue ? localStartDate.Value - 1 : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+		int offset = 0;
 
 		try
 		{
 			while (hasMore && !cancellationToken.IsCancellationRequested)
 			{
-				var fetchResult = await _contentApi.GetManifestDiffs(manifestId, toDate: toDateCursor, limit: greedyPageLimit, offset: 0);
+				var fetchResult = await _contentApi.GetManifestDiffs(manifestId, limit: greedyPageLimit, offset: offset);
 
-				long minCreatedInPage = long.MaxValue;
 				var pageEntries = new List<ContentHistoryEntry>();
 
 				// Acquire entries semaphore while writing files for this page to avoid races with readers/listeners
@@ -572,7 +569,6 @@ public partial class ContentService
 					{
 						if (diff == null) continue;
 						var createdDate = diff.createdDate;
-						minCreatedInPage = Math.Min(minCreatedInPage, createdDate);
 						if (existingCreatedDates.Contains(createdDate)) continue;
 
 						var entry = ContentHistoryEntry.FromManifestDiff(diff);
@@ -605,16 +601,9 @@ public partial class ContentService
 					onProgress(new ContentHistoryFetchReport() { Entries = pageEntries });
 				}
 
-				// Prepare cursor for next page: go strictly older than the minimum createdDate we saw
-				if (minCreatedInPage == long.MaxValue)
-				{
-					hasMore = false;
-				}
-				else
-				{
-					toDateCursor = minCreatedInPage - 1;
-					hasMore = fetchResult.hasMore;
-				}
+				// Stored-diff pagination uses offset/limit; toDate alone does not filter this endpoint.
+				offset += greedyPageLimit;
+				hasMore = fetchResult.hasMore;
 			}
 		}
 		catch (OperationCanceledException)
