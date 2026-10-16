@@ -36,7 +36,6 @@ namespace Beamable.Editor
 
 		#region COMPUTED PROPERTIES
 		
-		public LightbeamSampleType SampleType { get; set; }
 		public Object ExistingPrefabInstance { get; set; }
 		public Object PrefabObject { get; set; }
 		public bool HasDocsUrl { get; set; }
@@ -108,55 +107,28 @@ namespace Beamable.Editor
 		
 		public void OpenSample(LightbeamSampleInfo lb)
 		{
-			var needsRefresh = false;
 			try
 			{
 				AssetDatabase.DisallowAutoRefresh();
 				if (!lb.isLocal)
 				{
-					needsRefresh = true;
 					CopySampleIntoProject(lb);
 				}
 			}
 			finally
 			{
 				AssetDatabase.AllowAutoRefresh();
-				if (needsRefresh)
-				{
-					AssetDatabase.Refresh();
-				}
+				AssetDatabase.Refresh();
 				
 				// if the scene has changes, we don't want to just SWITCH.
-
-				switch (lb.SampleType)
+				if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
 				{
-					case LightbeamSampleType.SCENE:
-						if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-						{
-							EditorSceneManager.OpenScene(lb.localCandidateAssetPath, OpenSceneMode.Single);
-							EditorWindow.GetWindow<SceneView>();
-							ShowInProject(lb);
+					EditorSceneManager.OpenScene(lb.localCandidateAssetPath, OpenSceneMode.Single);
+					EditorWindow.GetWindow<SceneView>();
+					ShowInProject(lb);
+					EditorUtility.RequestScriptReload();
 
-							if (needsRefresh)
-							{
-								EditorUtility.RequestScriptReload();
-							}
-						}
-
-						break;
-					case LightbeamSampleType.PREFAB:
-						if (lb.ExistingPrefabInstance == null)
-						{
-							GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(lb.localCandidateAssetPath);
-							lb.PrefabObject = existing;
-							lb.ExistingPrefabInstance = PrefabUtility.InstantiatePrefab(lb.PrefabObject);
-						}
-						EditorGUIUtility.PingObject(lb.ExistingPrefabInstance);
-
-						break;
 				}
-				
-				
 			}
 			
 		}
@@ -282,27 +254,6 @@ namespace Beamable.Editor
 				lightbeam.localCandidateFolderMetafile = lightbeam.localCandidateFolder + ".meta";
 
 				lightbeam.HasDocsUrl = !string.IsNullOrEmpty(lightbeam.docsUrl);
-
-				if (lightbeam.relativeMainAssetPath.EndsWith(".unity"))
-				{
-					lightbeam.SampleType = LightbeamSampleType.SCENE;
-				} else if (lightbeam.relativeMainAssetPath.EndsWith(".prefab"))
-				{
-					lightbeam.SampleType = LightbeamSampleType.PREFAB;
-
-					if (lightbeam.isLocal)
-					{
-						GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(lightbeam.localCandidateAssetPath);
-						lightbeam.PrefabObject = existing;
-						lightbeam.ExistingPrefabInstance =
-							PrefabUtility.FindAllInstancesOfPrefab(existing)?.FirstOrDefault();
-					
-					}
-				}
-				else
-				{
-					Debug.LogError($"Unknown sample type. name=[{lightbeam.name}] assetPath=[{lightbeam.relativeMainAssetPath}]");
-				}
 				
 				lightbeams.Add(lightbeam);
 			}
