@@ -66,7 +66,14 @@ namespace Beamable.ConsoleCommands
 
 		private IEnumerable<Type> ScanTypes()
 		{
+#if UNITY_6000_7_OR_NEWER
+			//Enumerate Unity's active assemblies, excluding unloading contexts.
+			var assemblies = UnityEngine.Assemblies.CurrentAssemblies
+			                            .GetLoadedAssemblies()
+			                            .ToArray();
+#else
 			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+#endif
 			foreach (var assembly in assemblies)
 			{
 				foreach (var type in assembly.GetTypes())

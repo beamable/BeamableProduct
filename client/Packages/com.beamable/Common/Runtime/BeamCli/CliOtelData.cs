@@ -21,6 +21,9 @@ namespace Beamable.Common.BeamCli.Contracts
 		public string Body;
 		public string ExceptionMessage;
 		public string ExceptionStackTrace;
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1015
 		public Dictionary<string, string> Attributes;
+#pragma warning restore UAC1015
 	}
 }

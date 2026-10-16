@@ -25,6 +25,7 @@ namespace Beamable.Tournaments
 
 	public class TournamentEntryBehavior : MonoBehaviour, IViewFor<TournamentEntryViewData>
 	{
+		[System.NonSerialized]
 		public TournamentEntryViewData Data;
 
 		public Image MainBackgroundImage;

@@ -37,6 +37,7 @@ namespace Beamable.Common.Player
 		public T2 Data;
 	}
 
+	[Serializable]
 	public class DefaultObservable : IObservable
 	{
 		/// <summary>
@@ -87,6 +88,7 @@ namespace Beamable.Common.Player
 		}
 	}
 
+	[Serializable]
 	public abstract class AbsRefreshableObservable : DefaultObservable, IRefreshable
 	{
 		/// <summary>
@@ -164,6 +166,7 @@ namespace Beamable.Common.Player
 		public static implicit operator ObservableString(string data) => new ObservableString { Value = data };
 	}
 
+	[Serializable]
 	public class Observable<T> : AbsRefreshableObservable
 	{
 		[SerializeField]
@@ -247,6 +250,7 @@ namespace Beamable.Common.Player
 		void CheckForUpdate();
 	}
 
+	[Serializable]
 	public abstract class AbsObservableReadonlyList<T> : AbsRefreshableObservable, IObservableReadonlyList<T>,
 														 IGetProtectedDataList<T>
 	{
@@ -359,6 +363,7 @@ namespace Beamable.Common.Player
 		void IGetProtectedDataList<T>.CheckForUpdate() => TriggerUpdate();
 	}
 
+	[Serializable]
 	public abstract class AbsObservableReadonlyDictionary<TValue, TDict>
 		: AbsRefreshableObservable, IObservableReadonlyDictionary<string, TValue>
 		where TDict : SerializableDictionaryStringToSomething<TValue>, new()
@@ -425,6 +430,7 @@ namespace Beamable.Common.Player
 		}
 	}
 
+	[Serializable]
 	public class ObservableReadonlyList<T> : AbsObservableReadonlyList<T>
 	{
 		private readonly Func<Promise<List<T>>> _refresh;

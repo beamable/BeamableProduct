@@ -103,7 +103,10 @@ namespace Beamable.Common.Content
 
 		[CannotBeEmpty]
 		[Tooltip(ContentObject.TooltipPhase1)]
+		// Preserve the old-type migration alias and the current content field name.
+#pragma warning disable UAC1018
 		public PhaseList phases;
+#pragma warning restore UAC1018
 
 		[Tooltip(ContentObject.TooltipScoreReward1)]
 		[FormerlySerializedAs("score_rewards")]

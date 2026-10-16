@@ -20,7 +20,10 @@ namespace Beamable.Experimental.Api.Matchmaking
 	{
 		public string[] matchTypes;
 
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1001
 		public int? maxWaitDurationSecs;
+#pragma warning restore UAC1001
 
 		public string team;
 

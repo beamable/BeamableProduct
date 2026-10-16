@@ -27,8 +27,14 @@ namespace Beamable.Common
 	[Serializable]
 	public class FederatedInventoryProxyState
 	{
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1015
 		public Dictionary<string, long> currencies;
+#pragma warning restore UAC1015
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1015
 		public Dictionary<string, List<FederatedItemProxy>> items;
+#pragma warning restore UAC1015
 	}
 
 	[Serializable]
