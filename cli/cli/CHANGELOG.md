@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Report failed MSBuild targets as failed builds, including when compiler diagnostics are empty or missing. Project builds now return a nonzero exit and surface the underlying build output in Unity.
 
 - `beam project run` no longer rewrites a zone portal extension's generated microservice clients to bind to `BeamBase`. They now bind to `BeamZoneSdk` (the object a zone extension receives), matching `generate-portal-extension-clients`, so generated client files stop flipping between the two on every run.
+- `beam_get_source` with `platform="web"` no longer reports the CLI version (and a non-existent `web-sdk-<cli version>` tag) when run from a CLI workspace. A version is now only accepted from the requested platform's detector, web detection also looks in workspace subdirectories up to two levels deep (e.g. `web/package.json`) and in `devDependencies`, the installed `node_modules/@beamable/sdk` version wins over a declared semver range, and when no version is found the tool says so instead of guessing.
 
 ## [7.3.0] - 2026-10-08
 

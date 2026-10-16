@@ -15,7 +15,7 @@ When you need to understand Beamable SDK internals, look up API signatures, or d
 |---|---|---|
 | Unity | `Library/PackageCache/com.beamable@{version}/` | `Packages/manifest.json` has `com.beamable` |
 | Unreal | `Plugins/BeamableCore/` | Directory exists in the project root |
-| WebSDK | `node_modules/@beamable/sdk/` | `package.json` has `@beamable/sdk` |
+| WebSDK | `node_modules/@beamable/sdk/` | `package.json` has `@beamable/sdk` in `dependencies` or `devDependencies` (searched in the current directory, its parents, and subdirectories up to two levels deep such as `web/`) |
 | CLI/Microservice | `~/.nuget/packages/beamable.common/{ver}/content/sourceCode/Runtime/` | `.config/dotnet-tools.json` has `beamable.tools` |
 
 ### NuGet cache packages (CLI and Microservices)
@@ -31,6 +31,13 @@ The NuGet global cache contains additional SDK source:
 | `beamable.microservice.runtime` (build) | `~/.nuget/packages/beamable.microservice.runtime/{ver}/build/` | MSBuild targets for OAPI gen, build validation, collector resolution |
 
 To find the exact version, check the project file (`.csproj`) for PackageReference versions, or check `.config/dotnet-tools.json` for the CLI tool version.
+
+### WebSDK version detection
+
+- The installed version in `node_modules/@beamable/sdk/package.json` is preferred over the range declared in a dependent `package.json`.
+- If only a range such as `^1.2.1` is declared, the tool strips the operator and reports `detectedVersion: "1.2.1"` plus `versionRange: "^1.2.1"`; the installed version may be newer.
+- When `platform: "web"` is passed, only a web SDK version is accepted. If none is found, the response has an `error` and `detectedVersion: null` — pass `version` explicitly (the npm version, e.g. `1.2.1`).
+- Without a local `node_modules`, `sourcePath` links the `web-sdk-{version}` GitHub tag.
 
 ## Workflow
 
