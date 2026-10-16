@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Services.Auth.BatchAccounts(request)` looks up many players in one call. It can narrow them by a stat filter, and returns each remaining player's account and the requested stat values, in each stat's own type. The request and response are the generated `AuthV2BatchAccountsRequest` and `AuthV2BatchAccountsResponse`; `BatchAccountsHelper` builds the filter, criteria and stats to request, and its `GetStat` extension reads a value back as text. Requests over 500 players are paged automatically.
 - The generated `IBeamAuthApi` has `PostBatch` for the `POST /api/accounts/batch` endpoint.
 ### Fixed
+- A microservice no longer exits when its OTEL collector can't start or stops running (for example, when its ClickHouse endpoint is unreachable). It logs a warning and keeps serving without standard telemetry, and its exporters stop queueing failed exports for retry so they don't build up in memory. The CLI's `otel` commands still exit on collector failure.
 - Generate valid OpenAPI component keys and references for tuple callable types, while preserving C# type metadata. Invalid generated schemas now report their validation errors directly.
 
 ## [7.3.0] - 2026-10-08

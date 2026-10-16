@@ -13,6 +13,8 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 
 	private LimitedQueue<ActivityQueueData> _activitiesToFlush;
 
+	internal int QueuedBatchCount => _activitiesToFlush.Count;
+
 	public MicroserviceOtelActivityExporter(MicroserviceOtelExporterOptions options) : base(options)
 	{
 		var endpoint = $"{options.OtlpEndpoint}";
@@ -56,8 +58,9 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 
 		var result = _exporter.Export(copyBatch);
 
-		if (!_shouldRetry)
+		if (!_shouldRetry || MicroserviceOtelRetry.Disabled)
 		{
+			_activitiesToFlush.Clear();
 			return result;
 		}
 

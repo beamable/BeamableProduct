@@ -16,6 +16,8 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 
 	private LimitedQueue<LogRecordQueueData> _logRecordsToFlush;
 
+	internal int QueuedBatchCount => _logRecordsToFlush.Count;
+
 	public MicroserviceOtelLogRecordExporter(MicroserviceOtelExporterOptions options) : base(options)
 	{
 		var endpoint = $"{options.OtlpEndpoint}";
@@ -107,9 +109,10 @@ public class MicroserviceOtelLogRecordExporter : MicroserviceOtelExporter<LogRec
 
 		var result = _exporter.Export(copyBatch);
 
-		if (!_shouldRetry)
+		if (!_shouldRetry || MicroserviceOtelRetry.Disabled)
 		{
 			FreeRecords(records.ToList());
+			_logRecordsToFlush.Clear();
 			return result;
 		}
 

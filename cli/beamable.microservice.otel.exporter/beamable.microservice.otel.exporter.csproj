@@ -15,4 +15,8 @@
       <ProjectReference Include="..\beamable.otel.common\beamable.otel.common.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="BeamableMicroserviceBaseTests" />
+    </ItemGroup>
+
 </Project>

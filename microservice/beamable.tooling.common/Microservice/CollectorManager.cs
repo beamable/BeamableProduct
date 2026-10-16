@@ -368,13 +368,17 @@ public partial class CollectorManager
 		return socket;
 	}
 
+	/// <param name="onDiscoveryFailed">
+	/// Called when the collector can't be started or found. Without it, the process exits.
+	/// </param>
 	public static async Task StartCollector(
 		string absBasePath,
 		bool allowDownload,
 		bool detach,
 		CancellationTokenSource cts,
 		ILogger logger,
-		string otlpEndpoint = null)
+		string otlpEndpoint = null,
+		Action<Exception> onDiscoveryFailed = null)
 	{
 		AddDefaultCollectorHostAndPortFallback();
 
@@ -405,10 +409,7 @@ public partial class CollectorManager
 			}
 			catch (Exception ex)
 			{
-				logger.LogError($"Collector discovery failed! ({ex.GetType().Name}) {ex.Message}\n{ex.StackTrace}");
-
-				Environment.Exit(1);
-				throw;
+				HandleDiscoveryFailure(ex, logger, onDiscoveryFailed);
 			}
 		});
 	}
@@ -450,16 +451,29 @@ public partial class CollectorManager
 			}
 			catch (Exception ex)
 			{
-				logger.LogError($"Collector discovery failed! ({ex.GetType().Name}) {ex.Message}\n{ex.StackTrace}");
-
-				Environment.Exit(1);
-				throw;
+				HandleDiscoveryFailure(ex, logger, null);
 			}
 		});
 
 		var collectorStatus = await connectedPromise; // the first time we wait for the collector to be up before continuing
 
 		return collectorStatus;
+	}
+
+	/// <summary>
+	/// Without a callback, a failed collector takes the whole process down (the CLI's behaviour). With one,
+	/// the caller decides what happens instead.
+	/// </summary>
+	internal static void HandleDiscoveryFailure(Exception ex, ILogger logger, Action<Exception> onDiscoveryFailed)
+	{
+		if (onDiscoveryFailed != null)
+		{
+			onDiscoveryFailed(ex);
+			return;
+		}
+
+		logger.LogError($"Collector discovery failed! ({ex.GetType().Name}) {ex.Message}\n{ex.StackTrace}");
+		Environment.Exit(1);
 	}
 
 	public static void AddDefaultCollectorHostAndPortFallback()
@@ -572,7 +586,7 @@ public partial class CollectorManager
 			{
 				if (alarmCounter > attemptsBeforeFailing)
 				{
-					throw new Exception("The collector couldn't start, terminating the microservice.");
+					throw new Exception("The collector couldn't start.");
 				}
 				alarmCounter++;
 			}
