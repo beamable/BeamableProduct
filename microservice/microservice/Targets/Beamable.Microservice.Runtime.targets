@@ -33,9 +33,11 @@
     <Target Name="BeamBakeServerContent" AfterTargets="Publish"
             Condition="'$(BeamProjectType)'=='service' AND '$(BeamBakeServerContent)'=='true'">
         <PropertyGroup>
+            <!-- Forward slashes are accepted on Windows and cannot escape the closing quote. -->
+            <_BeamBakeOutputDir>$(PublishDir.Replace('\', '/'))</_BeamBakeOutputDir>
             <BeamBakeRealmArgs Condition="'$(BeamBakeCid)'!='' AND '$(BeamBakePid)'!=''">--cid &quot;$(BeamBakeCid)&quot; --pid &quot;$(BeamBakePid)&quot;</BeamBakeRealmArgs>
         </PropertyGroup>
-        <Exec Command="$(BeamableDotnetPath) $(BeamableTool) content bake --source published --format server --manifest-id global --output-dir &quot;$(PublishDir)&quot; $(BeamBakeRealmArgs)"
+        <Exec Command="$(BeamableDotnetPath) $(BeamableTool) content bake --source published --format server --manifest-id global --output-dir &quot;$(_BeamBakeOutputDir)&quot; $(BeamBakeRealmArgs)"
               EnvironmentVariables="MSBUILDTERMINALLOGGER=off" />
     </Target>
 

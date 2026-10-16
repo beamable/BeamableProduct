@@ -367,25 +367,26 @@ namespace Beamable.Server
          {
 	         _socketRequesterContext.Daemon.WakeAuthThread();
             await _requester.WaitForAuthorization(TimeSpan.FromMinutes(2), "Registering services event.");
+            // Refresh settings on every connection to recover updates missed while disconnected.
+            if (IsRealmScoped)
+            {
+               var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
+               var config = await realmService.GetRealmConfigSettings();
+               var contentService = Provider.GetService<ContentService>();
+               bool BakingDisabled(RealmConfig settings) =>
+                  bool.TryParse(settings.GetSetting(ContentService.BakeConfigNamespace, ContentService.BakeDisableKey), out var disabled) && disabled;
+               contentService.ConfigureBakedContent(InstanceArgs.CustomerID, InstanceArgs.ProjectName, !BakingDisabled(config));
+               if (!_ranCustomUserInitializationHooks && realmService is RealmConfigService concrete)
+               {
+                  concrete.ConfigChanged += updated => contentService.ConfigureBakedContent(
+                     InstanceArgs.CustomerID, InstanceArgs.ProjectName, !BakingDisabled(updated));
+               }
+            }
             // We can disable custom initialization hooks from running. This is so we can verify the image works (outside of the custom hooks) before a publish.
             // TODO This is not ideal. There's an open ticket with some ideas on how we can improve the publish process to guarantee it's impossible to publish an image
             // TODO that will not boot correctly.
             if (!_ranCustomUserInitializationHooks)
             {
-               if (IsRealmScoped)
-               {
-                  var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
-                  var config = await realmService.GetRealmConfigSettings();
-                  var contentService = Provider.GetService<ContentService>();
-                  bool BakingDisabled(RealmConfig settings) =>
-                     bool.TryParse(settings.GetSetting(ContentService.BakeConfigNamespace, ContentService.BakeDisableKey), out var disabled) && disabled;
-                  contentService.ConfigureBakedContent(InstanceArgs.CustomerID, InstanceArgs.ProjectName, !BakingDisabled(config));
-                  if (realmService is RealmConfigService concrete)
-                  {
-                     concrete.ConfigChanged += updated => contentService.ConfigureBakedContent(
-                        InstanceArgs.CustomerID, InstanceArgs.ProjectName, !BakingDisabled(updated));
-                  }
-               }
 	            _ranCustomUserInitializationHooks = true;
 	            if (!InstanceArgs.DisableCustomInitializationHooks)
 	            {

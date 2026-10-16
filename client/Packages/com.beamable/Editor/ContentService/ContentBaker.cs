@@ -52,27 +52,25 @@ namespace Beamable.Editor.ContentService
 			var configuration = ContentConfiguration.Instance;
 			var manifestId = configuration.RuntimeManifestID;
 
-			if (!skipCheck)
+			// ContentPs synchronizes published changes before reporting local status. Always await it,
+			// including automatic builds, and use the runtime manifest rather than the editor selection.
+			bool hasLocalChanges = false;
+			var status = api.Cli.ContentPs(new ContentPsArgs {manifestIds = new[] {manifestId}});
+			status.OnStreamContentPsCommandEvent(report =>
 			{
-				// Check the runtime manifest, independently of the manifest selected in the content editor.
-				bool hasLocalChanges = false;
-				var status = api.Cli.ContentPs(new ContentPsArgs {manifestIds = new[] {manifestId}});
-				status.OnStreamContentPsCommandEvent(report =>
-				{
-					hasLocalChanges |= report.data.RelevantManifestsAgainstLatest
-						.Any(manifest => manifest.Entries.Any(entry => entry.StatusEnum != ContentStatus.UpToDate));
-				});
-				await status.Run();
+				hasLocalChanges |= report.data.RelevantManifestsAgainstLatest
+					.Any(manifest => manifest.Entries.Any(entry => entry.StatusEnum != ContentStatus.UpToDate));
+			});
+			await status.Run();
 
-				if (hasLocalChanges && !EditorUtility.DisplayDialog("Local changes",
-					    "You have local changes in your content. " +
-					    "Do you want to proceed with baking using only the unchanged data?", "Yes", "No"))
-				{
-					return;
-				}
+			if (!skipCheck && hasLocalChanges && !EditorUtility.DisplayDialog("Local changes",
+				    "You have local changes in your content. " +
+				    "Do you want to proceed with baking using only the unchanged data?", "Yes", "No"))
+			{
+				return;
 			}
 
-			var bake = BeamEditorContext.Default.Cli.ContentBake(new ContentBakeArgs
+			var bake = api.Cli.ContentBake(new ContentBakeArgs
 			{
 				source = "local",
 				format = "unity",
