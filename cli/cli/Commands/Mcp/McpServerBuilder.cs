@@ -14,6 +14,28 @@ public class McpServerBuilder
 	// the flag prevents redundant roots requests after the first successful resolution.
 	private static int _workspaceResolved;
 
+	/// <summary>
+	/// Embedded markdown sent to MCP clients as the server's <c>instructions</c> during initialize.
+	/// Edit <c>cli/cli/Docs/Mcp/ServerInstructions.md</c> to change it.
+	/// </summary>
+	public const string InstructionsResourceName = "cli.Docs.Mcp.ServerInstructions.md";
+
+	/// <summary>Reads the server instructions from the embedded markdown resource.</summary>
+	public static string GetServerInstructions()
+	{
+		var assembly = typeof(McpServerBuilder).Assembly;
+		using var stream = assembly.GetManifestResourceStream(InstructionsResourceName);
+		if (stream == null) return string.Empty;
+		using var reader = new StreamReader(stream);
+		return reader.ReadToEnd().Trim();
+	}
+
+	/// <summary>Applies the Beamable server options (instructions) to an MCP server.</summary>
+	public static void ConfigureServerOptions(McpServerOptions options)
+	{
+		options.ServerInstructions = GetServerInstructions();
+	}
+
 	public static async Task EnsureWorkspaceFromRootsAsync(McpServer server)
 	{
 		if (Interlocked.CompareExchange(ref _workspaceResolved, 1, 0) != 0)
@@ -53,7 +75,7 @@ public class McpServerBuilder
 		{
 			var hostBuilder = Host.CreateApplicationBuilder();
 			hostBuilder.Services
-				.AddMcpServer()
+				.AddMcpServer(ConfigureServerOptions)
 				.WithStdioServerTransport()
 				.WithTools<BeamMcpTools>(tools, null);
 
