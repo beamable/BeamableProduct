@@ -17,9 +17,11 @@ using Tag = Beamable.Experimental.Api.Lobbies.Tag;
 
 namespace Beamable.Player
 {
-	/// <summary>
-	/// Experimental API around managing a player's lobby state.
-	/// </summary>
+	/// <summary>Provides experimental lobby membership and notifications for a player.</summary>
+	/// <remarks>Access through <see cref="BeamContext.Lobby"/> after context readiness.
+	/// Check <see cref="IsInLobby"/> before reading lobby details. Inherited <c>OnUpdated</c> notifications
+	/// signal local state changes, not guaranteed initialization or delivery of every remote event.
+	/// Detach handlers when their consumer is disposed. A lobby is a grouping mechanism; this API does not establish a gameplay transport.</remarks>
 	[Serializable]
 	public class PlayerLobby : Observable<Lobby>, IDisposable
 	{
@@ -50,6 +52,11 @@ namespace Beamable.Player
 
 		private static string UpdateName(string lobbyId) => $"lobbies.update.{lobbyId}";
 
+		/// <summary>Gets or replaces this context's locally tracked lobby.</summary>
+		/// <value>The current lobby, or null when there is no tracked membership.</value>
+		/// <remarks>Replacing the value updates the lobby notification subscription and broadcasts changes through
+		/// inherited <c>OnUpdated</c>. Assigning this property does not create, join, or leave a server lobby;
+		/// use <see cref="Create(string,LobbyRestriction,string,string,List{Tag},int?,int?,Dictionary{string,string})"/>, <see cref="Join"/>, and <see cref="Leave"/> instead.</remarks>
 		public override Lobby Value
 		{
 			get => base.Value;
@@ -69,41 +76,41 @@ namespace Beamable.Player
 			}
 		}
 
-		/// <summary>
-		/// Checks if the player is in a lobby.
-		/// </summary>
+		/// <summary>Gets whether a lobby is currently tracked for this player.</summary>
+		/// <value>True when <see cref="Value"/> is not null.</value>
+		/// <remarks>Check this before accessing lobby detail properties. This reads local state, not a server membership check.</remarks>
 		public bool IsInLobby => Value != null;
 
 		/// <inheritdoc cref="Lobby.lobbyId"/>
-		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
+		/// <para>This references the data in the <see cref="Value"/> field, which is the player's current lobby.</para>
 		public string Id => SafeAccess(Value?.lobbyId);
 
 		/// <inheritdoc cref="Lobby.name"/>
-		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
+		/// <para>This references the data in the <see cref="Value"/> field, which is the player's current lobby.</para>
 		public string Name => SafeAccess(Value?.name);
 
 		/// <inheritdoc cref="Lobby.description"/>
-		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
+		/// <para>This references the data in the <see cref="Value"/> field, which is the player's current lobby.</para>
 		public string Description => SafeAccess(Value?.description);
 
 		/// <inheritdoc cref="Lobby.Restriction"/>
-		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
+		/// <para>This references the data in the <see cref="Value"/> field, which is the player's current lobby.</para>
 		public LobbyRestriction Restriction => SafeAccess(Value.Restriction);
 
 		/// <inheritdoc cref="Lobby.host"/>
-		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
+		/// <para>This references the data in the <see cref="Value"/> field, which is the player's current lobby.</para>
 		public string Host => SafeAccess(Value?.host);
 
 		/// <inheritdoc cref="Lobby.players"/>
-		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
+		/// <para>This references the data in the <see cref="Value"/> field, which is the player's current lobby.</para>
 		public List<LobbyPlayer> Players => SafeAccess(Value?.players);
 
 		/// <inheritdoc cref="Lobby.passcode"/>
-		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
+		/// <para>This references the data in the <see cref="Value"/> field, which is the player's current lobby.</para>
 		public string Passcode => SafeAccess(Value?.passcode);
 
 		/// <inheritdoc cref="Lobby.maxPlayers"/>
-		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
+		/// <para>This references the data in the <see cref="Value"/> field, which is the player's current lobby.</para>
 		public int MaxPlayers => SafeAccess(Value.maxPlayers);
 
 		private T SafeAccess<T>(T value)
@@ -116,7 +123,11 @@ namespace Beamable.Player
 			return value;
 		}
 
-		/// <inheritdoc cref="ILobbyApi.FindLobbies"/>
+		/// <summary>Queries discoverable lobbies without changing this player's membership.</summary>
+		/// <returns>A promise containing the query response; request failures reject it.</returns>
+		/// <remarks>Closed lobbies are hidden from discovery. Join a known lobby through <see cref="Join"/>
+		/// or <see cref="JoinByPasscode"/>.</remarks>
+		/// <seealso cref="Create(string,LobbyRestriction,string,string,List{Tag},int?,int?,Dictionary{string,string})"/>
 		public Promise<LobbyQueryResponse> FindLobbies()
 		{
 			return _lobbyApi.FindLobbies();
@@ -128,7 +139,66 @@ namespace Beamable.Player
 			return _lobbyApi.FindLobbiesOfType(matchType, limit, skip);
 		}
 
-		/// <inheritdoc cref="Api.Autogenerated.Models.CreateLobby"/>
+		/// <summary>Creates a lobby and tracks the creating player as its host.</summary>
+		/// <param name="name">The lobby's display name.</param>
+		/// <param name="restriction">Whether the lobby is open for discovery or closed and joined by passcode.</param>
+		/// <param name="gameTypeId">The game type content ID, or an empty string when no game type is used.</param>
+		/// <param name="description">An optional lobby description.</param>
+		/// <param name="playerTags">Optional tags for the host player.</param>
+		/// <param name="maxPlayers">An optional capacity override.</param>
+		/// <param name="passcodeLength">An optional generated passcode length.</param>
+		/// <param name="data">Optional custom lobby data.</param>
+		/// <returns>A promise that completes after creation and local membership assignment; failures reject it.</returns>
+		/// <remarks>This is the current overload taking a string game type ID. The overload taking a
+		/// <see cref="SimGameTypeRef"/> is obsolete. Both contexts in this example must use the same realm
+		/// and different player accounts, and must not already be in a lobby.</remarks>
+		/// <example>
+		/// <para>Example: create a lobby, join with another player, and clean up membership. Supply two ready player contexts.</para>
+		/// <code>
+		/// using System;
+		/// using System.Threading.Tasks;
+		/// using Beamable;
+		/// using Beamable.Experimental.Api.Lobbies;
+		/// using UnityEngine;
+		///
+		/// public static class CreateAndJoinLobbyExample
+		/// {
+		///     public static async Task Run(BeamContext host, BeamContext guest)
+		///     {
+		///         try
+		///         {
+		///             await host.OnReady;
+		///             await guest.OnReady;
+		///             if (host.PlayerId == guest.PlayerId || host.Pid != guest.Pid || host.Cid != guest.Cid)
+		///                 throw new ArgumentException("Use distinct players in the same realm.");
+		///             if (host.Lobby.IsInLobby || guest.Lobby.IsInLobby)
+		///                 throw new InvalidOperationException("Both players must start outside a lobby.");
+		///             await host.Lobby.Create("Example lobby", LobbyRestriction.Open, "");
+		///             try
+		///             {
+		///                 await guest.Lobby.Join(host.Lobby.Id);
+		///                 Debug.Log($"Joined {guest.Lobby.Name}");
+		///             }
+		///             finally
+		///             {
+		///                 try
+		///                 {
+		///                     await guest.Lobby.Leave();
+		///                 }
+		///                 finally
+		///                 {
+		///                     await host.Lobby.Leave();
+		///                 }
+		///             }
+		///         }
+		///         catch (Exception exception)
+		///         {
+		///             Debug.LogException(exception);
+		///         }
+		///     }
+		/// }
+		/// </code>
+		/// </example>
 		public async Promise Create(string name,
 									LobbyRestriction restriction,
 									string gameTypeId,
@@ -217,13 +287,24 @@ namespace Beamable.Player
 		} 
 
 
-		/// <inheritdoc cref="ILobbyApi.JoinLobby"/>
+		/// <summary>Joins a lobby by ID and updates local lobby membership.</summary>
+		/// <param name="lobbyId">The lobby ID obtained from discovery or shared by the host.</param>
+		/// <param name="playerTags">Optional tags for the joining player.</param>
+		/// <returns>A promise that completes after joining and assigning <see cref="Value"/>; failures reject it.</returns>
+		/// <remarks>Membership restrictions and capacity are checked by the server. Use
+		/// <see cref="JoinByPasscode"/> for a closed lobby's passcode.</remarks>
+		/// <seealso cref="Create(string,LobbyRestriction,string,string,List{Tag},int?,int?,Dictionary{string,string})"/>
 		public async Promise Join(string lobbyId, List<Tag> playerTags = null)
 		{
 			Value = await _lobbyApi.JoinLobby(lobbyId, playerTags);
 		}
 
-		/// <inheritdoc cref="ILobbyApi.JoinLobbyByPasscode"/>
+		/// <summary>Joins a lobby using its passcode and updates local membership.</summary>
+		/// <param name="passcode">The passcode shared by the lobby host.</param>
+		/// <param name="playerTags">Optional tags for the joining player.</param>
+		/// <returns>A promise that completes after joining and assigning <see cref="Value"/>; failures reject it.</returns>
+		/// <remarks>Invalid passcodes and capacity restrictions cause request failures.</remarks>
+		/// <seealso cref="Join"/>
 		public async Promise JoinByPasscode(string passcode, List<Tag> playerTags = null)
 		{
 			Value = await _lobbyApi.JoinLobbyByPasscode(passcode, playerTags);
@@ -246,12 +327,48 @@ namespace Beamable.Player
 			Value = await _lobbyApi.KickPlayer(Value.lobbyId, playerId);
 		}
 
-		/// <summary>
-		/// Leave the lobby if the player is in a lobby.
-		/// </summary>
-		/// <remarks>The implemented behavior is that when the lobby host leaves, the lobby is destroyed.
-		/// If there’s a need for the host to leave the lobby without destroying it,
-		/// the host should first appoint a new lobby host using the Update method.</remarks>
+		/// <summary>Leaves the tracked lobby and clears local lobby state.</summary>
+		/// <returns>A promise that completes after leaving, or immediately if no lobby is tracked.</returns>
+		/// <remarks>When a host leaves, the lobby is destroyed unless a new host was appointed first through
+		/// <see cref="Update"/>. Local <see cref="Value"/> is cleared even if the leave request fails;
+		/// a rejection therefore does not establish that server membership was removed.</remarks>
+		/// <example>
+		/// <para>Example: observe state changes while leaving an existing lobby and always detach the handler.</para>
+		/// <code>
+		/// using System;
+		/// using System.Threading.Tasks;
+		/// using Beamable;
+		/// using UnityEngine;
+		///
+		/// public static class LeaveLobbyExample
+		/// {
+		///     public static async Task Run(BeamContext context)
+		///     {
+		///         try
+		///         {
+		///             await context.OnReady;
+		///             var lobby = context.Lobby;
+		///             Action onUpdated = () =&gt; Debug.Log(
+		///                 lobby.IsInLobby ? $"Lobby: {lobby.Id}" : "No local lobby");
+		///             lobby.OnUpdated += onUpdated;
+		///             try
+		///             {
+		///                 if (lobby.IsInLobby)
+		///                     await lobby.Leave();
+		///             }
+		///             finally
+		///             {
+		///                 lobby.OnUpdated -= onUpdated;
+		///             }
+		///         }
+		///         catch (Exception exception)
+		///         {
+		///             Debug.LogException(exception);
+		///         }
+		///     }
+		/// }
+		/// </code>
+		/// </example>
 		public async Promise Leave()
 		{
 			if (Value == null)

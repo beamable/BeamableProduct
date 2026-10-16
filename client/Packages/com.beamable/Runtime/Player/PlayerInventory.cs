@@ -52,11 +52,11 @@ namespace Beamable.Player
 
 	}
 
-	/// <summary>
-	/// <para>
-	/// The player's inventory can have <see cref="Currencies"/>, and items, which can be accessed via <see cref="GetItems"/>
-	/// </para>
-	/// </summary>
+	/// <summary>Provides observable item and currency groups for the authorized player.</summary>
+	/// <remarks>Get methods return local objects immediately and can start background refreshes.
+	/// Use the Load methods to await refreshed groups before reading them. Group scopes include their
+	/// subtypes. Persist changes through <see cref="Update(Action{InventoryUpdateBuilder},string)"/>;
+	/// changing a local item's properties or a currency amount does not submit a server update.</remarks>
 	[Serializable]
 	public class PlayerInventory : IStorageHandler<PlayerInventory>, IServiceStorable
 	{
@@ -71,6 +71,9 @@ namespace Beamable.Player
 		private readonly SdkEventConsumer _consumer;
 		private HashSet<string> nextScopes = new HashSet<string>();
 
+		/// <summary>Gets the observable group containing all currencies.</summary>
+		/// <value>The root currency group, which may still be refreshing.</value>
+		/// <remarks>Await <see cref="PlayerCurrencyGroup.OnReady"/> before reading its initial data.</remarks>
 		public PlayerCurrencyGroup Currencies { get; }
 
 		/// <summary>
@@ -451,11 +454,12 @@ namespace Beamable.Player
 			var _ = _consumer.RunAfterReconnection(new SdkEvent(nameof(PlayerInventory), "commit"));
 		}
 
-		/// <summary>
-		/// Get a player's currency data for a given type.
-		/// </summary>
-		/// <param name="currencyRef">A <see cref="CurrencyRef"/> for the type of currency to get. </param>
-		/// <returns>A <see cref="PlayerCurrency"/> object for the given currencyRef</returns>
+		/// <summary>Gets the local currency object for a currency content reference.</summary>
+		/// <param name="currencyRef">The reference identifying a specific currency, such as <c>currency.coins</c>.</param>
+		/// <returns>The observable currency object, which may initially have zero amount and no content.</returns>
+		/// <remarks>If no local currency exists, a placeholder is inserted and the group refreshes in the background.
+		/// Await <see cref="LoadCurrencies(CurrencyRef)"/> for refreshed data before relying on its amount.
+		/// Use <see cref="PlayerCurrency.OnAmountUpdated"/> to observe later changes.</remarks>
 		public PlayerCurrency GetCurrency(CurrencyRef currencyRef)
 		{
 			var group = GetCurrencies(currencyRef);
@@ -477,16 +481,18 @@ namespace Beamable.Player
 		}
 
 		/// <inheritdoc cref="GetCurrency(Beamable.Common.Inventory.CurrencyRef)"/>
+		/// <summary>Gets the local currency object for a currency content ID.</summary>
+		/// <param name="currencyRef">The currency content ID.</param>
+		/// <returns>The observable currency object, possibly a zero-valued placeholder while loading.</returns>
+		/// <remarks>Loading may continue in the background; await LoadCurrencies before relying on its amount.</remarks>
+		/// <seealso cref="GetCurrency(Beamable.Common.Inventory.CurrencyRef)"/>
 		public PlayerCurrency GetCurrency(string currencyRef) => GetCurrency(new CurrencyRef(currencyRef));
 
-		/// <summary>
-		/// Get a category of <see cref="PlayerItem"/> for a given type.
-		/// If you have subtypes of <see cref="ItemContent"/>,
-		/// and you get an item group for a basetype of <see cref="ItemContent"/>,
-		/// the resultant <see cref="PlayerItemGroup"/> will have all instances from all subclasses of the given type.
-		/// </summary>
-		/// <param name="itemRef">An <see cref="ItemRef"/> for the type of item to get. </param>
-		/// <returns>a <see cref="PlayerItemGroup"/> object for the given itemRef</returns>
+		/// <summary>Gets an observable group of local items matching a content scope.</summary>
+		/// <param name="itemRef">The item scope, or null for all items under <c>items</c>.</param>
+		/// <returns>A cached group for the scope, including items of its subtypes.</returns>
+		/// <remarks>A newly created group starts refreshing in the background. It may be empty until
+		/// <see cref="PlayerItemGroup.OnReady"/> completes. Use <see cref="LoadItems(ItemRef)"/> to await a refresh.</remarks>
 		public PlayerItemGroup GetItems(ItemRef itemRef = null)
 		{
 			itemRef = itemRef ?? "items";
@@ -501,12 +507,47 @@ namespace Beamable.Player
 		}
 
 		/// <inheritdoc cref="GetItems(Beamable.Common.Inventory.ItemRef)"/>
+		/// <summary>Gets a local observable item group for a content scope.</summary>
+		/// <param name="itemRef">The content scope ID, including its type prefix.</param>
+		/// <returns>A cached item group including matching subtypes.</returns>
+		/// <remarks>New groups refresh in the background; await OnReady or use LoadItems before reading initial data.</remarks>
+		/// <seealso cref="GetItems(Beamable.Common.Inventory.ItemRef)"/>
 		public PlayerItemGroup GetItems(string itemRef) => GetItems(new ItemRef(itemRef));
 
-		/// <inheritdoc cref="GetItems(Beamable.Common.Inventory.ItemRef)"/>
-		/// This method will is similar to <see cref="GetItems(Beamable.Common.Inventory.ItemRef)"/>, however it will make sure that the
-		/// <see cref="PlayerItemGroup"/> has been refreshed before completing the resulting promise.
-		/// <returns> A <see cref="Promise"/> containing the updated <see cref="PlayerItemGroup"/></returns>
+		/// <summary>Gets an item group after its refresh completes.</summary>
+		/// <param name="itemRef">The item scope, or null for all items under <c>items</c>.</param>
+		/// <returns>A promise containing the refreshed observable group; refresh failures reject it.</returns>
+		/// <remarks>The group includes matching subtypes. Data availability when offline follows the inventory offline configuration.</remarks>
+		/// <example>
+		/// <para>Example: await item and currency loading before enumerating the groups.</para>
+		/// <code>
+		/// using System;
+		/// using System.Threading.Tasks;
+		/// using Beamable;
+		/// using UnityEngine;
+		///
+		/// public static class LoadInventoryExample
+		/// {
+		///     public static async Task Run()
+		///     {
+		///         try
+		///         {
+		///             var context = await BeamContext.Default.Instance;
+		///             var items = await context.Inventory.LoadItems();
+		///             foreach (var item in items)
+		///                 Debug.Log($"Item {item.ItemId}: {item.ContentId}");
+		///             var currencies = await context.Inventory.LoadCurrencies();
+		///             foreach (var currency in currencies)
+		///                 Debug.Log($"{currency.CurrencyId}: {currency.Amount}");
+		///         }
+		///         catch (Exception exception)
+		///         {
+		///             Debug.LogException(exception);
+		///         }
+		///     }
+		/// }
+		/// </code>
+		/// </example>
 		public async Promise<PlayerItemGroup> LoadItems(ItemRef itemRef = null)
 		{
 			var items = GetItems(itemRef);
@@ -515,16 +556,18 @@ namespace Beamable.Player
 		}
 
 		/// <inheritdoc cref="LoadItems(Beamable.Common.Inventory.ItemRef)"/>
+		/// <summary>Gets an item group after its refresh completes.</summary>
+		/// <param name="itemRef">The content scope ID, including its type prefix.</param>
+		/// <returns>A promise containing the refreshed group; refresh failures reject it.</returns>
+		/// <remarks>Includes matching subtypes. Data availability when offline follows the inventory offline configuration.</remarks>
+		/// <seealso cref="LoadItems(Beamable.Common.Inventory.ItemRef)"/>
 		public Promise<PlayerItemGroup> LoadItems(string itemRef) => LoadItems(new ItemRef(itemRef));
 
-		/// <summary>
-		/// Get a category of <see cref="PlayerCurrency"/> for a given type.
-		/// If you have subtypes of <see cref="CurrencyRef"/>,
-		/// and you get an item group for a basetype of <see cref="CurrencyRef"/>,
-		/// the resultant <see cref="PlayerCurrencyGroup"/> will have all instances from all subclasses of the given type.
-		/// </summary>
-		/// <param name="currencyRef">An <see cref="CurrencyRef"/> for the type of a currency to get. </param>
-		/// <returns>a <see cref="PlayerCurrencyGroup"/> object for the given currencyRef</returns>
+		/// <summary>Gets an observable group of local currencies matching a content scope.</summary>
+		/// <param name="currencyRef">The currency scope, or null for all currencies under <c>currency</c>.</param>
+		/// <returns>A cached group for the scope, including currencies of its subtypes.</returns>
+		/// <remarks>A newly created group starts refreshing in the background. Await its
+		/// <see cref="PlayerCurrencyGroup.OnReady"/> or use <see cref="LoadCurrencies(CurrencyRef)"/> before relying on its data.</remarks>
 		public PlayerCurrencyGroup GetCurrencies(CurrencyRef currencyRef = null)
 		{
 			currencyRef = currencyRef ?? "currency";
@@ -539,12 +582,18 @@ namespace Beamable.Player
 		}
 
 		/// <inheritdoc cref="GetCurrencies(Beamable.Common.Inventory.CurrencyRef)"/>
+		/// <summary>Gets a local observable currency group for a content scope.</summary>
+		/// <param name="currencyRef">The content scope ID, including its type prefix.</param>
+		/// <returns>A cached currency group including matching subtypes.</returns>
+		/// <remarks>New groups refresh in the background; await OnReady or use LoadCurrencies before reading initial data.</remarks>
+		/// <seealso cref="GetCurrencies(Beamable.Common.Inventory.CurrencyRef)"/>
 		public PlayerCurrencyGroup GetCurrencies(string currencyRef) => GetCurrencies(new CurrencyRef(currencyRef));
 
-		/// <inheritdoc cref="GetCurrencies(Beamable.Common.Inventory.CurrencyRef)"/>
-		/// This method will is similar to <see cref="GetCurrencies(Beamable.Common.Inventory.CurrencyRef)"/>, however it will make sure that the
-		/// <see cref="PlayerCurrencyGroup"/> has been refreshed before completing the resulting promise.
-		/// <returns> A <see cref="Promise"/> containing the updated <see cref="PlayerCurrencyGroup"/></returns>
+		/// <summary>Gets a currency group after its refresh completes.</summary>
+		/// <param name="currencyRef">The currency scope, or null for all currencies under <c>currency</c>.</param>
+		/// <returns>A promise containing the refreshed observable group; refresh failures reject it.</returns>
+		/// <remarks>The group includes matching subtypes. This does not assign currency amounts.</remarks>
+		/// <seealso cref="LoadItems(ItemRef)"/>
 		public async Promise<PlayerCurrencyGroup> LoadCurrencies(CurrencyRef currencyRef = null)
 		{
 			var currencies = GetCurrencies(currencyRef);
@@ -553,15 +602,61 @@ namespace Beamable.Player
 		}
 
 		/// <inheritdoc cref="LoadCurrencies(Beamable.Common.Inventory.CurrencyRef)"/>
+		/// <summary>Gets a currency group after its refresh completes.</summary>
+		/// <param name="currencyRef">The content scope ID, including its type prefix.</param>
+		/// <returns>A promise containing the refreshed group; refresh failures reject it.</returns>
+		/// <remarks>Includes matching subtypes. This does not assign currency amounts.</remarks>
+		/// <seealso cref="LoadCurrencies(Beamable.Common.Inventory.CurrencyRef)"/>
 		public Promise<PlayerCurrencyGroup> LoadCurrencies(string currencyRef) => LoadCurrencies(new CurrencyRef(currencyRef));
 
 
-		/// <summary>
-		/// <inheritdoc cref="Update(Beamable.Common.Api.Inventory.InventoryUpdateBuilder,string)"/>
-		/// </summary>
-		/// <param name="updateBuilder">An action that gives you a <see cref="InventoryUpdateBuilder"/> to configure with actions to apply to the player's inventory</param>
-		/// <param name="transaction">An optional transaction id for the operation. </param>
-		/// <returns>A promise representing the success of the operation.</returns>
+		/// <summary>Submits an inventory update for the authorized player.</summary>
+		/// <remarks>Content must allow client writes through its client permissions, or the server rejects the update.
+		/// Completion and offline behavior follow <see cref="CoreConfiguration.InventoryOfflineMode"/> and the SDK event queue.
+		/// A completed offline update does not prove that the server has received it.
+		/// Use observable groups to display subsequent state changes; assigning local fields does not persist them.</remarks>
+		/// <param name="updateBuilder">A callback configuring the changes to submit; null submits an empty builder.</param>
+		/// <param name="transaction">An optional transaction identifier sent with the inventory update.</param>
+		/// <returns>A promise representing processing of the update by the SDK event queue; processing failures reject it.</returns>
+		/// <example>
+		/// <para>Example: change a writable currency and detach the observer after the operation. Supply a published currency ID whose client permissions allow writes.</para>
+		/// <code>
+		/// using System;
+		/// using System.Threading.Tasks;
+		/// using Beamable;
+		/// using UnityEngine;
+		///
+		/// public static class UpdateCurrencyExample
+		/// {
+		///     public static async Task Run(string currencyId, long amountToAdd)
+		///     {
+		///         try
+		///         {
+		///             var context = await BeamContext.Default.Instance;
+		///             await context.Inventory.LoadCurrencies(currencyId);
+		///             var currency = context.Inventory.GetCurrency(currencyId);
+		///             Action&lt;long&gt; onAmount = amount =&gt; Debug.Log($"Amount: {amount}");
+		///             currency.OnAmountUpdated += onAmount;
+		///             try
+		///             {
+		///                 await context.Inventory.Update(builder =&gt;
+		///                     builder.CurrencyChange(currencyId, amountToAdd));
+		///                 await context.Inventory.LoadCurrencies(currencyId);
+		///                 Debug.Log($"Current amount: {currency.Amount}");
+		///             }
+		///             finally
+		///             {
+		///                 currency.OnAmountUpdated -= onAmount;
+		///             }
+		///         }
+		///         catch (Exception exception)
+		///         {
+		///             Debug.LogException(exception);
+		///         }
+		///     }
+		/// }
+		/// </code>
+		/// </example>
 		public Promise Update(Action<InventoryUpdateBuilder> updateBuilder, string transaction = null)
 		{
 			var builder = new InventoryUpdateBuilder();
@@ -617,22 +712,14 @@ namespace Beamable.Player
 			return Update(builder);
 		}
 
-		/// <summary>
-		/// Make an atomic update to the player's inventory state.
-		/// If you are offline, then this function changes based on your <see cref="CoreConfiguration.InventoryOfflineMode"/> setting.
-		///
-		/// <para>
-		/// Configure the <see cref="InventoryUpdateBuilder"/> with the modifications you'd like to make to the player's inventory.
-		/// </para>
-		/// <para>
-		/// Note that by default, you cannot update currency or items, because they can only be set from Beamable Microservices, or
-		/// the Beamable Platform itself. However, you can mark individual <see cref="CurrencyContent"/> and <see cref="ItemContent"/>
-		/// objects as editable by setting their <see cref="CurrencyContent.clientPermission"/> writeSelf property.
-		/// </para>
-		/// </summary>
-		/// <param name="updateBuilder">A <see cref="InventoryUpdateBuilder"/> containing actions to apply to the player's inventory</param>
-		/// <param name="transaction">An optional transaction id for the operation. </param>
-		/// <returns>A promise representing the success of the operation.</returns>
+		/// <summary>Submits an inventory update for the authorized player.</summary>
+		/// <remarks>Content must allow client writes through its client permissions, or the server rejects the update.
+		/// Completion and offline behavior follow <see cref="CoreConfiguration.InventoryOfflineMode"/> and the SDK event queue.
+		/// A completed offline update does not prove that the server has received it.
+		/// Use observable groups to display subsequent state changes; assigning local fields does not persist them.</remarks>
+		/// <param name="updateBuilder">The configured inventory changes to submit.</param>
+		/// <param name="transaction">An optional transaction identifier sent with the inventory update.</param>
+		/// <returns>A promise representing processing of the update by the SDK event queue; processing failures reject it.</returns>
 		public async Promise Update(InventoryUpdateBuilder updateBuilder, string transaction = null)
 		{
 			if (_pendingUpdate != null)

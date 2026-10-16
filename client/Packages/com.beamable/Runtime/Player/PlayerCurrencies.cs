@@ -7,16 +7,15 @@ using UnityEngine;
 
 namespace Beamable.Player
 {
-	/// <summary>
-	/// The <see cref="PlayerCurrency"/> represents one currency of a player. The <see cref="Amount"/> shows the current value of the currency.
-	/// </summary>
+	/// <summary>Represents a currency's current local amount, content, and properties for a player.</summary>
+	/// <remarks>Instances can start as zero-valued placeholders while loading. Await
+	/// <see cref="PlayerInventory.LoadCurrencies(Beamable.Common.Inventory.CurrencyRef)"/> before relying on initial amounts.
+	/// Observe <see cref="OnAmountUpdated"/> for changes and remove handlers when no longer needed.</remarks>
 	[Serializable]
 	public class PlayerCurrency : DefaultObservable
 	{
-		/// <summary>
-		/// An event that happens whenever the <see cref="Amount"/> changes
-		/// this event happens after <see cref="DefaultObservable.OnUpdated"/>
-		/// </summary>
+		/// <summary>Occurs when a currency update is broadcast, providing the current amount.</summary>
+		/// <remarks>Updates can also reflect changes to other currency data. Detach event handlers when their consumer is disposed.</remarks>
 		public event Action<long> OnAmountUpdated;
 
 		/// <summary>
@@ -27,13 +26,11 @@ namespace Beamable.Player
 		[SerializeField]
 		private long _amount;
 
-		/// <summary>
-		/// The current amount of the currency. This value can change over time, and will get realtime updates from the server.
-		/// Use the <see cref="OnAmountUpdated"/> event to be notified when that happens.
-		/// <para>
-		/// You can set this currency locally, but isn't recommended.
-		/// </para>
-		/// </summary>
+		/// <summary>Gets or sets the amount held in this local currency object.</summary>
+		/// <value>The local amount, possibly zero while the currency is loading.</value>
+		/// <remarks>Setting this property only changes local state and triggers change detection; it does not persist
+		/// an inventory change. Use <see cref="PlayerInventory.Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/>
+		/// with <see cref="Beamable.Common.Api.Inventory.InventoryUpdateBuilder.CurrencyChange"/> to submit changes.</remarks>
 		public long Amount
 		{
 			get => _amount;
@@ -50,10 +47,9 @@ namespace Beamable.Player
 		[NonSerialized]
 		public CurrencyContent Content;
 
-		/// <summary>
-		/// Currencies may have a set of properties in dictionary format.
-		/// To edit this value, use the <see cref="PlayerInventory.Update()"/> function
-		/// </summary>
+		/// <summary>The locally cached properties associated with this currency.</summary>
+		/// <remarks>Mutating this dictionary does not persist changes. Submit changes through
+		/// <see cref="PlayerInventory.Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/>.</remarks>
 		public SerializableDictionaryStringToString Properties = new SerializableDictionaryStringToString();
 
 
@@ -92,15 +88,17 @@ namespace Beamable.Player
 	}
 
 
-	/// <summary>
-	/// The <see cref="PlayerCurrencyGroup"/> is a readonly observable list of currencies for a player.
-	/// It represents <b>all</b> currencies for a player.
-	/// </summary>
+	/// <summary>Contains observable player currencies under a content scope, including its subtypes.</summary>
+	/// <remarks>Obtain groups through <see cref="PlayerInventory.GetCurrencies(Beamable.Common.Inventory.CurrencyRef)"/>.
+	/// Await <see cref="OnReady"/> before reading initial data. Use inherited <c>OnUpdated</c> notifications
+	/// to observe changes and detach handlers when their consumer is disposed.</remarks>
 	[Serializable]
 	public class PlayerCurrencyGroup : AbsObservableReadonlyList<PlayerCurrency>
 	{
 		private readonly CurrencyRef _rootRef;
 		private readonly PlayerInventory _inventory;
+		/// <summary>A promise that completes after this group's initial refresh.</summary>
+		/// <remarks>Refresh failures reject it. Use <see cref="Beamable.Common.Player.IRefreshable.Refresh"/> for subsequent refreshes.</remarks>
 		public Promise OnReady;
 
 		/// <summary>
