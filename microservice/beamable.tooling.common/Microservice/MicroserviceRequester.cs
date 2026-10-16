@@ -145,7 +145,8 @@ namespace Beamable.Server
 
 		public IActivityProvider ActivityProvider { get; set; }
 		private ConcurrentDictionary<long, IWebsocketResponseListener> _pendingMessages = new ConcurrentDictionary<long, IWebsocketResponseListener>();
-		private ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>> _subscriptions = new ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>>();
+		// lock sites rely on locking the same list instance, so never remove entries; just leave empty lists in place
+		private ConcurrentDictionary<string, List<IPlatformSubscription>> _subscriptions = new ConcurrentDictionary<string, List<IPlatformSubscription>>();
 		private long _lastRequestId = 0;
 
 		// default is false, set 1 for true.
@@ -300,20 +301,24 @@ namespace Beamable.Server
 				OnEvent = callback
 			};
 
-			_subscriptions.TryAdd(eventName, new SynchronizedCollection<IPlatformSubscription>());
-
-			var subscriptionList = _subscriptions[eventName];
-			subscriptionList.Add(subscription);
+			var subscriptionList = _subscriptions.GetOrAdd(eventName, _ => new List<IPlatformSubscription>());
+			lock (subscriptionList)
+			{
+				subscriptionList.Add(subscription);
+			}
 			var unsub = new Action(() =>
 			{
-				subscriptionList.Remove(subscription);
+				lock (subscriptionList)
+				{
+					subscriptionList.Remove(subscription);
+				}
 			});
 			subscription.Unsubscribe = unsub;
 
 			return subscription;
 		}
 
-		private bool TryGetEventSubscriptions(string eventName, out SynchronizedCollection<IPlatformSubscription> subscriptions)
+		private bool TryGetEventSubscriptions(string eventName, out List<IPlatformSubscription> subscriptions)
 		{
 			return _subscriptions.TryGetValue(eventName, out subscriptions);
 		}
@@ -353,10 +358,15 @@ namespace Beamable.Server
 							});
 
 					await using IUserScope scope = new UserRequestDataHandler(fork);
-					var startCount = subscriptions.Count; // take the count at the moment the event is processed. If something else subscribes at the same frame, they're too late.
-					for (var i = 0; i < startCount; i++) // TODO: there is still a bug with multi-threaded access; if an item is removed/ unsub
+					// snapshot at the moment the event is processed; later subscribers are too late, and unsubscribing mid-loop is safe.
+					IPlatformSubscription[] snapshot;
+					lock (subscriptions)
 					{
-						await subscriptions[i].Resolve(scope);
+						snapshot = subscriptions.ToArray();
+					}
+					foreach (var subscription in snapshot)
+					{
+						await subscription.Resolve(scope);
 					}
 				}
 

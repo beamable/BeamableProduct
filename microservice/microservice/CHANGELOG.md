@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The generated `IBeamAuthApi` has `PostBatch` for the `POST /api/accounts/batch` endpoint.
 ### Fixed
 - Generate valid OpenAPI component keys and references for tuple callable types, while preserving C# type metadata. Invalid generated schemas now report their validation errors directly.
+- Unsubscribing from a platform event while that event is being dispatched no longer makes the dispatch skip a subscriber or fail.
+
+### Security
+
+- Remove the `System.ServiceModel.Primitives` dependency from `Beamable.Tooling.Common`. It brought in `System.Security.Cryptography.Xml` 8.0.2, which has known high-severity vulnerabilities and made every microservice build report NU1903 warnings.
 
 ## [7.3.0] - 2026-10-08
 
