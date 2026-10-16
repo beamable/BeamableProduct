@@ -179,7 +179,7 @@ public partial class ContentService
 	/// <remarks>
 	/// Edge cases:
 	/// - Uses event disambiguation based on LastWrite timestamps to prevent duplicate events (Windows fires both Created and Changed for new files)
-	/// - Only one watcher per (pid, manifestId) tuple is stored in the dictionary (overwrites if called multiple times)
+	/// - Only one active watcher per (pid, manifestId) tuple is stored; iterator exit removes the registration
 	/// - Breaks and yields when cancellation is requested
 	/// - All file paths must end with .json extension
 	/// - Renamed events include both old and new file information
@@ -190,7 +190,8 @@ public partial class ContentService
 		var contentFolder = EnsureContentHistoryEntriesFolderExists(out _, _requester.Pid, manifestId);
 
 		// Create the file watcher
-		_contentHistoryEntryWatchers.Add((pid, manifestId), new FileSystemWatcher());
+		using var watcher = new FileSystemWatcher();
+		_contentHistoryEntryWatchers.Add((pid, manifestId), watcher);
 
 		// We need to keep track of the "LastWrite" time for each content entry to disambiguate multiple events firing simultaneously for the same file.
 		// For example, on Windows, a Created event is always fired alongside a Changed event of the same file (because of "reasons", I guess)
@@ -198,59 +199,64 @@ public partial class ContentService
 		var eventDisambiguationHelper = new Dictionary<string, long>();
 
 		// Set up the file watcher...
-		var watcher = _contentHistoryEntryWatchers[(pid, manifestId)];
-		watcher.BeginInit();
-		watcher.Path = contentFolder;
-		watcher.IncludeSubdirectories = true;
-		watcher.Filter = "*.json";
-		watcher.EnableRaisingEvents = true;
-		watcher.NotifyFilter = (NotifyFilters.Attributes |
-		                        NotifyFilters.CreationTime |
-		                        NotifyFilters.DirectoryName |
-		                        NotifyFilters.FileName |
-		                        NotifyFilters.LastWrite);
-		watcher.Error += (_, e) => Log.Error(e.GetException().ToString());
-		watcher.Disposed += (_, e) => Log.Error($"Disposed {e}");
-		watcher.Created += (_, e) => { OnFilesChanged(e); };
-		watcher.Deleted += (_, e) => { OnFilesChanged(e); };
-		watcher.Renamed += (_, e) => { OnFilesChanged(e); };
-		watcher.Changed += (_, e) => { OnFilesChanged(e); };
-		watcher.EndInit();
-
-		// Keep waiting for messages from the set up file watcher.
-		var reader = _channelContentHistoryEntries.Reader;
-
-		while (true)
+		try
 		{
-			// If the operation was canceled, we break out.
-			if (token.IsCancellationRequested)
+			watcher.BeginInit();
+			watcher.Path = contentFolder;
+			watcher.IncludeSubdirectories = true;
+			watcher.Filter = "*.json";
+			watcher.EnableRaisingEvents = true;
+			watcher.NotifyFilter = (NotifyFilters.Attributes |
+			                        NotifyFilters.CreationTime |
+			                        NotifyFilters.DirectoryName |
+			                        NotifyFilters.FileName |
+			                        NotifyFilters.LastWrite);
+			watcher.Error += (_, e) => Log.Error(e.GetException().ToString());
+			watcher.Created += (_, e) => { OnFilesChanged(e); };
+			watcher.Deleted += (_, e) => { OnFilesChanged(e); };
+			watcher.Renamed += (_, e) => { OnFilesChanged(e); };
+			watcher.Changed += (_, e) => { OnFilesChanged(e); };
+			watcher.EndInit();
+
+			// Keep waiting for messages from the set up file watcher.
+			var reader = _channelContentHistoryEntries.Reader;
+
+			while (true)
 			{
-				break;
+				// If the operation was canceled, we break out.
+				if (token.IsCancellationRequested)
+				{
+					break;
+				}
+
+				try
+				{
+					await reader.WaitToReadAsync(token);
+
+					// For the case which multiple files are edited at the same time, the watcher triggers one message for each one.
+					// So to batch it together, we wait 100 ms and then try to read from the buffer.
+					await Task.Delay(100, token);
+				}
+				catch (OperationCanceledException)
+				{
+					Log.Debug($"{nameof(ListenToLocalContentFileChanges)} was cancelled");
+					break;
+				}
+
+				// Get all the files that were changed respecting the PID filter.
+				var batchedChanges = new LocalContentHistoryEntryFileChanges() { AllFileChanges = new() };
+				while (reader.TryRead(out var changed))
+				{
+					batchedChanges.AllFileChanges.Add(changed);
+				}
+
+
+				yield return batchedChanges;
 			}
-
-			try
-			{
-				await reader.WaitToReadAsync(token);
-
-				// For the case which multiple files are edited at the same time, the watcher triggers one message for each one.
-				// So to batch it together, we wait 100 ms and then try to read from the buffer.
-				await Task.Delay(100, token);
-			}
-			catch (OperationCanceledException)
-			{
-				Log.Debug($"{nameof(ListenToLocalContentFileChanges)} was cancelled");
-				break;
-			}
-
-			// Get all the files that were changed respecting the PID filter.
-			var batchedChanges = new LocalContentHistoryEntryFileChanges() { AllFileChanges = new() };
-			while (reader.TryRead(out var changed))
-			{
-				batchedChanges.AllFileChanges.Add(changed);
-			}
-
-
-			yield return batchedChanges;
+		}
+		finally
+		{
+			_contentHistoryEntryWatchers.Remove((pid, manifestId));
 		}
 
 		yield break;
@@ -365,60 +371,66 @@ public partial class ContentService
 		var changelistsFolder = EnsureContentHistoryChangelistsFolderExists(out _, pid, manifestId);
 
 		// Create the file watcher
-		_contentHistoryChangelistWatchers.Add((pid, manifestId), new FileSystemWatcher());
+		using var watcher = new FileSystemWatcher();
+		_contentHistoryChangelistWatchers.Add((pid, manifestId), watcher);
 
 		// Disambiguation helper for simultaneous events
 		var eventDisambiguationHelper = new Dictionary<string, long>();
 
 		// Set up the file watcher...
-		var watcher = _contentHistoryChangelistWatchers[(pid, manifestId)];
-		watcher.BeginInit();
-		watcher.Path = changelistsFolder;
-		watcher.IncludeSubdirectories = true;
-		watcher.Filter = "*.json";
-		watcher.EnableRaisingEvents = true;
-		watcher.NotifyFilter = (NotifyFilters.Attributes |
-		                        NotifyFilters.CreationTime |
-		                        NotifyFilters.DirectoryName |
-		                        NotifyFilters.FileName |
-		                        NotifyFilters.LastWrite |
-		                        NotifyFilters.LastAccess);
-		watcher.Error += (_, e) => Log.Error(e.GetException().ToString());
-		watcher.Disposed += (_, e) => Log.Error($"Disposed {e}");
-		watcher.Created += (_, e) => { OnFilesChanged(e); };
-		watcher.Deleted += (_, e) => { OnFilesChanged(e); };
-		watcher.Renamed += (_, e) => { OnFilesChanged(e); };
-		watcher.Changed += (_, e) => { OnFilesChanged(e); };
-		watcher.EndInit();
-
-		// Keep waiting for messages from the set up file watcher.
-		var reader = _channelContentHistoryChangelists.Reader;
-
-		while (true)
+		try
 		{
-			if (token.IsCancellationRequested)
-			{
-				break;
-			}
+			watcher.BeginInit();
+			watcher.Path = changelistsFolder;
+			watcher.IncludeSubdirectories = true;
+			watcher.Filter = "*.json";
+			watcher.EnableRaisingEvents = true;
+			watcher.NotifyFilter = (NotifyFilters.Attributes |
+			                        NotifyFilters.CreationTime |
+			                        NotifyFilters.DirectoryName |
+			                        NotifyFilters.FileName |
+			                        NotifyFilters.LastWrite |
+			                        NotifyFilters.LastAccess);
+			watcher.Error += (_, e) => Log.Error(e.GetException().ToString());
+			watcher.Created += (_, e) => { OnFilesChanged(e); };
+			watcher.Deleted += (_, e) => { OnFilesChanged(e); };
+			watcher.Renamed += (_, e) => { OnFilesChanged(e); };
+			watcher.Changed += (_, e) => { OnFilesChanged(e); };
+			watcher.EndInit();
 
-			try
-			{
-				await reader.WaitToReadAsync(token);
-				await Task.Delay(100, token);
-			}
-			catch (OperationCanceledException)
-			{
-				Log.Debug($"{nameof(ListenToContentHistoryChangelists)} was cancelled");
-				break;
-			}
+			// Keep waiting for messages from the set up file watcher.
+			var reader = _channelContentHistoryChangelists.Reader;
 
-			var batchedChanges = new LocalContentHistoryChangelistFileChanges() { AllFileChanges = new() };
-			while (reader.TryRead(out var changed))
+			while (true)
 			{
-				batchedChanges.AllFileChanges.Add(changed);
-			}
+				if (token.IsCancellationRequested)
+				{
+					break;
+				}
 
-			yield return batchedChanges;
+				try
+				{
+					await reader.WaitToReadAsync(token);
+					await Task.Delay(100, token);
+				}
+				catch (OperationCanceledException)
+				{
+					Log.Debug($"{nameof(ListenToContentHistoryChangelists)} was cancelled");
+					break;
+				}
+
+				var batchedChanges = new LocalContentHistoryChangelistFileChanges() { AllFileChanges = new() };
+				while (reader.TryRead(out var changed))
+				{
+					batchedChanges.AllFileChanges.Add(changed);
+				}
+
+				yield return batchedChanges;
+			}
+		}
+		finally
+		{
+			_contentHistoryChangelistWatchers.Remove((pid, manifestId));
 		}
 
 		yield break;

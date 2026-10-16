@@ -215,10 +215,12 @@ public partial class ContentPsNoAutoSyncWatchTests
             lifecycle.Cancel();
             try { if (commandTask != null) await commandTask.WaitAsync(Timeout); }
             finally {
-                // Production currently leaves the watcher allocated after iterator cancellation.
-                foreach (var watcher in Watchers) watcher.Dispose();
+                // Capture before fallback cleanup so command-level cancellation/failure cannot hide a leak.
+                var remaining = Watchers.ToArray();
+                foreach (var watcher in remaining) watcher.Dispose();
                 await Server.DisposeAsync(); lifecycle.Source.Dispose();
                 if (Directory.Exists(root)) Directory.Delete(root, true);
+                Assert.That(remaining, Is.Empty, "Command completion must release filesystem watchers.");
             }
         }
     }

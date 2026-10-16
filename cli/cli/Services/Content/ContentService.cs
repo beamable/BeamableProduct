@@ -344,7 +344,8 @@ public partial class ContentService
 		var contentFolder = EnsureContentPathForRealmExists(out var created, _requester.Pid, manifestId);
 		Debug.Assert(!created, "This should never happen. If does, this is a bug --- please report it to Beamable.");
 
-		_watchers.Add((pid, manifestId), new FileSystemWatcher());
+		using var watcher = new FileSystemWatcher();
+		_watchers.Add((pid, manifestId), watcher);
 
 		// We need to keep track of the last write time for each content file in order to disambiguate multiple events firing simultaneously for the same file.
 		// For example, on Windows, a Created event is always fired alongside a Changed event of the same file (because of "reasons", I guess)
@@ -352,65 +353,70 @@ public partial class ContentService
 		var eventDisambiguationHelper = new Dictionary<string, long>();
 		
 		// Set up the file watcher...
-		var watcher = _watchers[(pid, manifestId)];
-		watcher.BeginInit();
-		watcher.Path = contentFolder;
-		watcher.IncludeSubdirectories = true;
-		watcher.Filter = "*.json";
-		watcher.EnableRaisingEvents = true;
-		watcher.NotifyFilter = (NotifyFilters.Attributes |
-		                        NotifyFilters.CreationTime |
-		                        NotifyFilters.DirectoryName |
-		                        NotifyFilters.FileName |
-		                        NotifyFilters.LastWrite);
-		watcher.Error += (_, e) =>
+		try
 		{
-			HandleWatcherError(e.GetException(), pid, manifestId, Log.Default, _channelChangedContentFiles.Writer);
-		};
-		watcher.Disposed += (_, e) => Log.Error($"Disposed {e}");
-		watcher.Created += (_, e) => { OnLocalRealmContentFilesChanged(e); };
-		watcher.Deleted += (_, e) => { OnLocalRealmContentFilesChanged(e); };
-		watcher.Renamed += (_, e) => { OnLocalRealmContentFilesChanged(e); };
-		watcher.Changed += (_, e) => { OnLocalRealmContentFilesChanged(e); };
-		watcher.EndInit();
+			watcher.BeginInit();
+			watcher.Path = contentFolder;
+			watcher.IncludeSubdirectories = true;
+			watcher.Filter = "*.json";
+			watcher.EnableRaisingEvents = true;
+			watcher.NotifyFilter = (NotifyFilters.Attributes |
+			                        NotifyFilters.CreationTime |
+			                        NotifyFilters.DirectoryName |
+			                        NotifyFilters.FileName |
+			                        NotifyFilters.LastWrite);
+			watcher.Error += (_, e) =>
+			{
+				HandleWatcherError(e.GetException(), pid, manifestId, Log.Default, _channelChangedContentFiles.Writer);
+			};
+			watcher.Created += (_, e) => { OnLocalRealmContentFilesChanged(e); };
+			watcher.Deleted += (_, e) => { OnLocalRealmContentFilesChanged(e); };
+			watcher.Renamed += (_, e) => { OnLocalRealmContentFilesChanged(e); };
+			watcher.Changed += (_, e) => { OnLocalRealmContentFilesChanged(e); };
+			watcher.EndInit();
 
-		// Keep waiting for messages from the set up file watcher.
-		var reader = _channelChangedContentFiles.Reader;
-		
-		while (true)
+			// Keep waiting for messages from the set up file watcher.
+			var reader = _channelChangedContentFiles.Reader;
+
+			while (true)
+			{
+				// If the operation was cancelled, we break out.
+				if (token.IsCancellationRequested)
+				{
+					break;
+				}
+
+				try
+				{
+					await reader.WaitToReadAsync(token);
+
+					// For the case which multiple files are edited at the same time, the watcher triggers one message for each one.
+					// So to batch it together we wait 100 ms and then try to read from the buffer.
+					await Task.Delay(100, token);
+				}
+				catch (OperationCanceledException)
+				{
+					Log.Debug($"{nameof(ListenToLocalContentFileChanges)} was cancelled");
+					break;
+				}
+
+				// Get all the files that were changed respecting the watcher filters.
+				var drainedChanges = new List<ChangedContentFile>();
+				while (reader.TryRead(out var changed))
+				{
+					drainedChanges.Add(changed);
+				}
+				var batchedChanges = BatchLocalFileChanges(drainedChanges, pid, manifestId);
+
+				if (batchedChanges.RequiresFullRescan || batchedChanges.AllFileChanges.Count > 0)
+				{
+					yield return batchedChanges;
+				}
+			}
+		}
+		finally
 		{
-			// If the operation was cancelled, we break out.
-			if (token.IsCancellationRequested)
-			{
-				break;
-			}
-
-			try
-			{
-				await reader.WaitToReadAsync(token);
-
-				// For the case which multiple files are edited at the same time, the watcher triggers one message for each one.
-				// So to batch it together we wait 100 ms and then try to read from the buffer.
-				await Task.Delay(100, token);
-			}
-			catch (OperationCanceledException)
-			{
-				Log.Debug($"{nameof(ListenToLocalContentFileChanges)} was cancelled");
-				break;
-			}
-
-			// Get all the files that were changed respecting the watcher filters.
-			var drainedChanges = new List<ChangedContentFile>();
-			while (reader.TryRead(out var changed))
-			{
-				drainedChanges.Add(changed);
-			}
-			var batchedChanges = BatchLocalFileChanges(drainedChanges, pid, manifestId);
-
-			if (batchedChanges.RequiresFullRescan || batchedChanges.AllFileChanges.Count > 0)
-			{
-				yield return batchedChanges;
-			}
+			_watchers.Remove((pid, manifestId));
 		}
 
 		yield break;
