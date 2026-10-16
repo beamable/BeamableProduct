@@ -207,13 +207,37 @@ jobs:
               "production": "production"
             }')[github.event.inputs.releaseType] }}
 
-      - name: Create Release
+      # Mints the release tag. Created via the API rather than git tag/push so the tag
+      # lands on exactly ${{ github.sha }} and stays lightweight, matching every prior
+      # tag - release-unity.yml checks out inputs.commit, which need not be github.sha.
+      # Every downstream consumer (LightBeam aliases, the docs version table) keys off
+      # this tag, not off the GitHub Release created below.
+      - name: Create release tag
         if: ${{ inputs.dryRun == false }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "cli-${{ steps.version.outputs.VERSION }}" \
-            --target "${{ github.sha }}" \
+          gh api "repos/${{ github.repository }}/git/refs" \
+            -f ref="refs/tags/cli-${{ steps.version.outputs.VERSION }}" \
+            -f sha="${{ github.sha }}"
+
+      # A GitHub Release is created for production only. Nightly and RC tags stay bare:
+      # a Release per preview build is what made the previous 999 of them noise. The
+      # notes are a machine-generated verbatim slice of this version's CHANGELOG.md
+      # section, for the lanes this workflow publishes - the same COPY_* lanes declared
+      # for Publish Changelog above. Warns rather than fails on a missing section, so a
+      # changelog nobody updated cannot red-X a release whose packages already shipped.
+      - name: Create GitHub Release
+        if: ${{ inputs.dryRun == false && inputs.releaseType == 'production' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          TAG: cli-${{ steps.version.outputs.VERSION }}
+          COPY_UNITY_SDK: 'false'
+          COPY_CLI: 'true'
+          COPY_WEB_SDK: 'false'
+        run: |
+          bash ./build/bin/release-notes.sh
+          gh release create "$TAG" --verify-tag \
             --title "CLI ${{ steps.version.outputs.VERSION }}" \
-            --notes "CLI Release ${{ steps.version.outputs.VERSION }}" \
-            ${{ inputs.releaseType != 'production' && '--prerelease' || '' }}
+            --notes-file "$RUNNER_TEMP/release-notes.md"
