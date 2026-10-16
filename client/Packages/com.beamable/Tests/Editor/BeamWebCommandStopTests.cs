@@ -124,6 +124,32 @@ namespace Beamable.Editor.Tests
 			Assert.That(fixture.Factory.discoveryRequest, Is.Zero);
 		}
 
+		[UnityTest]
+		public IEnumerator FailedAcknowledgementCanRetryWithoutDuplicatingPendingOrSuccessfulStop()
+		{
+			using var fixture = new Fixture { StopStatus = 500, RetryStop = true };
+			fixture.Command.Run().Error(_ => { });
+			fixture.Discover();
+			fixture.AllowHeaders.TrySetResult(true);
+			fixture.ReleaseWorker.TrySetResult(true);
+			fixture.AllowAcknowledgement.TrySetResult(true);
+			var first = fixture.Command.StopAsync();
+			first.Error(_ => { });
+			yield return WaitFor(() => first.IsCompleted);
+			Assert.That(first.IsFailed, Is.True);
+			var retry = fixture.Command.StopAsync();
+			retry.Error(_ => { });
+			Assert.That(retry, Is.Not.SameAs(first));
+			Assert.That(fixture.Command.StopAsync(), Is.SameAs(retry));
+			yield return WaitFor(() => fixture.RetryReceived.Task.IsCompleted);
+			Assert.That(fixture.StopId, Is.EqualTo(fixture.Command.id));
+			Assert.That(retry.IsCompleted, Is.False);
+			fixture.AllowRetryAcknowledgement.TrySetResult(true);
+			yield return WaitFor(() => retry.IsCompleted);
+			Assert.That(retry.IsFailed, Is.False);
+			Assert.That(fixture.Command.StopAsync(), Is.SameAs(retry));
+		}
+
 		private static IEnumerator WaitFor(Func<bool> ready)
 		{
 			var deadline = DateTime.UtcNow.AddSeconds(10);
@@ -154,6 +180,9 @@ namespace Beamable.Editor.Tests
 			public string StopId;
 			public bool WriteOutput = true;
 			public int StopStatus = 204;
+			public bool RetryStop;
+			public readonly TaskCompletionSource<bool> RetryReceived = Signal();
+			public readonly TaskCompletionSource<bool> AllowRetryAcknowledgement = Signal();
 
 			public Fixture()
 			{
@@ -237,6 +266,16 @@ namespace Beamable.Editor.Tests
 				await AllowAcknowledgement.Task;
 				stop.Response.StatusCode = StopStatus;
 				stop.Response.Close();
+				if (RetryStop)
+				{
+					var retry = await _listener.GetContextAsync();
+					using var reader = new StreamReader(retry.Request.InputStream);
+					StopId = JsonUtility.FromJson<BeamWebCommandRequest>(await reader.ReadToEndAsync()).requestId;
+					RetryReceived.TrySetResult(true);
+					await AllowRetryAcknowledgement.Task;
+					retry.Response.StatusCode = 204;
+					retry.Response.Close();
+				}
 			}
 
 			public void Dispose()
@@ -244,6 +283,7 @@ namespace Beamable.Editor.Tests
 				AllowHeaders.TrySetResult(true);
 				ReleaseWorker.TrySetResult(true);
 				AllowAcknowledgement.TrySetResult(true);
+				AllowRetryAcknowledgement.TrySetResult(true);
 				Command.Cancel();
 				_listener.Close();
 				_dispatcher.OnDispose();

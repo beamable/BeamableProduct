@@ -48,7 +48,7 @@ namespace Beamable.Editor.ContentService
 			await WatcherGate.WaitAsync();
 			try
 			{
-				await (_historyStop ?? Task.CompletedTask);
+				if (_contentHistoryWatcher == null) await StopHistoryWatcher();
 				if (!_watchersDisposed) StartContentHistoryCore();
 			}
 			finally { WatcherGate.Release(); }
@@ -98,7 +98,12 @@ namespace Beamable.Editor.ContentService
 		public async Promise StopContentHistory()
 		{
 			await WatcherGate.WaitAsync();
-			try { CancelContentHistoryRequests(); await StopHistoryWatcher(); }
+			try
+			{
+				_restartHistoryAfterModeSwitch = false;
+				CancelContentHistoryRequests();
+				await StopHistoryWatcher();
+			}
 			finally { WatcherGate.Release(); }
 		}
 

@@ -569,6 +569,8 @@ namespace Beamable.Editor.BeamCli
 		/// <summary>Cancel this server invocation and wait for its workers and dispatched callbacks to finish.</summary>
 		public Promise StopAsync()
 		{
+			// Share an in-flight or acknowledged stop, but let the caller retry a failed acknowledgement.
+			if (_stopPromise?.IsFailed == true) _stopPromise = null;
 			return _stopPromise ??= _runPromise == null ? Promise.Success : StopImpl();
 		}
 

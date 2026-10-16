@@ -63,6 +63,51 @@ namespace Beamable.Editor.Tests
         [UnityTest] public IEnumerator ContentFailureCanRetryAfterAcknowledgedShutdown() => RetryFailedWatcher(false);
         [UnityTest] public IEnumerator HistoryFailureCanRetryAfterAcknowledgedShutdown() => RetryFailedWatcher(true);
 
+        [UnityTest] public IEnumerator ContentRetainsOwnershipAfterFailedAcknowledgement() => RetryFailedAcknowledgement(false);
+        [UnityTest] public IEnumerator HistoryRetainsOwnershipAfterFailedAcknowledgement() => RetryFailedAcknowledgement(true);
+        [UnityTest] public IEnumerator ModeSwitchCanRetryFailedAcknowledgement() => RetryFailedAcknowledgement(false, true);
+        [UnityTest] public IEnumerator ExplicitHistoryStopCancelsPendingModeRestart() => RetryFailedAcknowledgement(false, true, true);
+
+        IEnumerator RetryFailedAcknowledgement(bool history, bool switching = false, bool stopHistory = false)
+        {
+            using var transport = new BeamWebCommandStopTests.Fixture { StopStatus = 500, RetryStop = true };
+            commands.FirstWebCommand = transport.Command;
+            var initial = history ? service.StartContentHistory() : service.Reload();
+            initial.Error(_ => { });
+            transport.Discover();
+            transport.AllowHeaders.TrySetResult(true);
+            if (switching)
+            {
+                yield return Wait(service.StartContentHistory());
+                config.EnableLocalContentInEditor = true;
+            }
+            var first = switching ? ApplyMode() : history ? service.RestartContentHistory() : service.Reload();
+            first.Error(_ => { });
+            if (switching) commands.History[0].Completion.CompleteSuccess();
+            transport.ReleaseWorker.TrySetResult(true);
+            transport.AllowAcknowledgement.TrySetResult(true);
+            yield return Wait(first);
+            Assert.That(first.IsFailed, Is.True);
+            Assert.That(commands.Content.Count + commands.History.Count, Is.EqualTo(switching ? 1 : 0));
+            if (stopHistory) yield return Wait(service.StopContentHistory());
+
+            var retry = switching ? ApplyMode() : history ? service.RestartContentHistory() : service.Reload();
+            retry.Error(_ => { });
+            Assert.That(retry.IsFailed, Is.False, "Retry must contact the server again, not reuse a failed shutdown.");
+            Assert.That(commands.Content.Count + commands.History.Count, Is.EqualTo(switching ? 1 : 0), "The retiring command still owns shutdown.");
+            transport.AllowRetryAcknowledgement.TrySetResult(true);
+            yield return Wait(retry);
+            Assert.That(transport.RetryReceived.Task.IsCompleted, Is.True);
+            Assert.That(transport.StopId, Is.EqualTo(transport.Command.id));
+            Assert.That(retry.IsFailed, Is.False);
+            Assert.That(commands.Content.Count + commands.History.Count, Is.EqualTo(switching ? (stopHistory ? 2 : 3) : 1));
+            if (switching)
+            {
+                Assert.That(commands.Content[0].Local, Is.True);
+                if (!stopHistory) Assert.That(commands.History[1].Local, Is.True);
+            }
+        }
+
         IEnumerator RetryFailedWatcher(bool history)
         {
             using var transport = new BeamWebCommandStopTests.Fixture();
