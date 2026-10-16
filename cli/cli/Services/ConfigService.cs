@@ -5,6 +5,7 @@ using Beamable.Serialization.SmallerJSON;
 using Beamable.Server;
 using cli.Commands.Project;
 using cli.Options;
+using cli.Services;
 using cli.Unreal;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
@@ -477,76 +478,170 @@ public class ConfigService
 		pathToToolsManifest = EnsureDotNetToolsManifest(projectRoot);
 	}
 
+	/// <summary>The NuGet package id of the Beamable CLI dotnet tool.</summary>
+	public const string BEAM_TOOL_PACKAGE_ID = "beamable.tools";
+
 	/// <summary>
 	/// Creates or updates .config/dotnet-tools.json under the given directory with the current CLI version.
+	/// If a root-level dotnet-tools.json also exists in that directory, it is pinned to the same version.
 	/// </summary>
+	/// <returns>The path to .config/dotnet-tools.json.</returns>
 	public static string EnsureDotNetToolsManifest(string targetDir)
 	{
+		var versionStr = BeamAssemblyVersionUtil.GetVersion<App>();
+
 		var configFolder = Path.Combine(targetDir, ".config");
 		if (!Directory.Exists(configFolder))
 			Directory.CreateDirectory(configFolder);
 
+		// Service projects read BeamableVersion from .config/dotnet-tools.json, so it is always the canonical manifest.
 		var manifestPath = Path.Combine(configFolder, "dotnet-tools.json");
-		string manifestString;
+		WriteBeamToolToManifest(manifestPath, versionStr);
 
-		var versionStr = BeamAssemblyVersionUtil.GetVersion<App>();
-		// Create the file if it doesn't exist with our default local tool and its correct version.
-		if (!File.Exists(manifestPath))
+		// Since .NET 10, `dotnet new tool-manifest` (and `dotnet tool install --local` without a manifest) writes
+		// dotnet-tools.json in the directory itself instead of under .config/. Keep that file pinned too, so the
+		// workspace doesn't end up with two manifests that disagree about beamable.tools.
+		var rootManifestPath = Path.Combine(targetDir, "dotnet-tools.json");
+		if (File.Exists(rootManifestPath))
+			WriteBeamToolToManifest(rootManifestPath, versionStr);
+
+		return manifestPath;
+	}
+
+	/// <summary>
+	/// Creates the manifest at <paramref name="manifestPath"/>, or adds/updates its beamable.tools entry,
+	/// preserving every other tool and property.
+	/// </summary>
+	public static void WriteBeamToolToManifest(string manifestPath, string versionStr)
+	{
+		JObject manifest;
+		if (File.Exists(manifestPath))
 		{
-			manifestString = $@"{{
-  ""version"": 1,
-  ""isRoot"": true,
-  ""tools"": {{
-    ""beamable.tools"": {{
-      ""version"": ""{versionStr}"",
-      ""commands"": [
-        ""beam""
-      ]
-    }}
-  }}
-}}";
+			try
+			{
+				manifest = JObject.Parse(File.ReadAllText(manifestPath));
+			}
+			catch (JsonReaderException ex)
+			{
+				throw new CliException($"DotNet tool manifest {manifestPath} is not valid json ({ex.Message}). Please correct it or remove it and re-run `beam init` so we can regenerate it.");
+			}
 		}
-		// If the file is already there, make a best effort to update just the beamable version.
 		else
 		{
-			var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+.*?)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
-			manifestString = File.ReadAllText(manifestPath);
+			manifest = new JObject { ["version"] = 1, ["isRoot"] = true };
+		}
 
-			if (versionMatching.IsMatch(manifestString))
+		if (manifest["tools"] is not JObject tools)
+		{
+			if (manifest["tools"] != null)
+				throw new CliException($"DotNet tool manifest {manifestPath} has an invalid \"tools\" entry. Please correct it or remove it and re-run `beam init` so we can regenerate it.");
+			tools = new JObject();
+			manifest["tools"] = tools;
+		}
+
+		// Tool ids are case-insensitive; reuse whatever casing is already there.
+		var existing = tools.Properties()
+			.FirstOrDefault(p => string.Equals(p.Name, BEAM_TOOL_PACKAGE_ID, StringComparison.OrdinalIgnoreCase));
+		// "version" goes first: TryGetProjectBeamableCLIVersion and the service .csproj match `"version": "…",`.
+		var entry = new JObject
+		{
+			["version"] = versionStr,
+			["commands"] = new JArray("beam"),
+		};
+		if (existing?.Value is JObject previous)
+		{
+			// keep any other settings on the entry (e.g. rollForward)
+			foreach (var prop in previous.Properties())
 			{
-				// Replace the group within the full match with version number of the executing CLI
-				manifestString = versionMatching.Replace(manifestString, match =>
-				{
-					var fullMatch = match.Value;
-					return fullMatch.Replace(match.Groups[1].Value, versionStr);
-				});
+				if (prop.Name != "version" && prop.Name != "commands")
+					entry[prop.Name] = prop.Value;
 			}
-			else
+		}
+		var toolName = existing?.Name ?? BEAM_TOOL_PACKAGE_ID;
+		if (existing != null) existing.Value = entry;
+		else tools[toolName] = entry;
+
+		File.WriteAllText(manifestPath, manifest.ToString(Formatting.Indented));
+	}
+
+	/// <summary>
+	/// Runs <c>dotnet tool list --local</c> in <paramref name="workingDirectory"/> and checks that beamable.tools
+	/// resolves at <paramref name="expectedVersion"/>.
+	/// </summary>
+	/// <returns><c>null</c> when it does; otherwise a message describing what dotnet resolved instead.</returns>
+	public static async Task<string> VerifyLocalBeamTool(string dotnetPath, string workingDirectory, string expectedVersion)
+	{
+		var (result, buffer) = await CliExtensions.RunWithOutput(dotnetPath, "tool list --local --format json", workingDirectory);
+		var output = buffer.ToString();
+		string resolvedVersion = null;
+		string resolvedManifest = null;
+		var parsed = false;
+
+		if (result.ExitCode == 0)
+		{
+			var jsonStart = output.IndexOf('{');
+			if (jsonStart >= 0)
 			{
-				if (!Json.IsValidJson(manifestString))
-					throw new CliException("DotNet tool manifest is not valid json. Please correct it or remove it and re-run `beam init` so we can regenerate it.");
-
-				var manifest = (ArrayDict)Json.Deserialize(manifestString);
-
-				if (!manifest.ContainsKey("tools"))
-					throw new CliException("DotNet tool manifest is not valid json. Please correct it or remove it and re-run `beam init` so we can regenerate it.");
-
-				// Prepare the correct value for the "beamable.tools" entry into the manifest file.
-				var toolsDict = new ArrayDict();
-				toolsDict.Add("version", versionStr);
-				toolsDict.Add("commands", new[] { "beam" });
-
-				// Update the tools JSON object
-				var tools = (ArrayDict)manifest["tools"];
-				tools["beamable.tools"] = toolsDict;
-
-				// Serialize the manifest back
-				manifestString = Json.Serialize(manifest, new StringBuilder());
+				try
+				{
+					var json = JObject.Parse(output.Substring(jsonStart));
+					parsed = true;
+					var tool = (json["data"] as JArray)?.OfType<JObject>().FirstOrDefault(t =>
+						string.Equals((string)t["packageId"], BEAM_TOOL_PACKAGE_ID, StringComparison.OrdinalIgnoreCase));
+					resolvedVersion = (string)tool?["version"];
+					resolvedManifest = (string)tool?["manifest"];
+				}
+				catch (JsonReaderException)
+				{
+					// fall back to the table output below
+				}
 			}
 		}
 
-		File.WriteAllText(manifestPath, manifestString);
-		return manifestPath;
+		if (!parsed)
+		{
+			// Older SDKs don't support --format; parse the table instead.
+			(result, buffer) = await CliExtensions.RunWithOutput(dotnetPath, "tool list --local", workingDirectory);
+			output = buffer.ToString();
+			if (result.ExitCode != 0)
+				return $"`dotnet tool list --local` failed in {workingDirectory}: {output.Trim()}";
+
+			foreach (var line in output.Split('\n'))
+			{
+				var columns = line.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+				if (columns.Length >= 2 && string.Equals(columns[0], BEAM_TOOL_PACKAGE_ID, StringComparison.OrdinalIgnoreCase))
+				{
+					resolvedVersion = columns[1];
+					resolvedManifest = columns.Length >= 4 ? columns[^1] : null;
+					break;
+				}
+			}
+		}
+
+		if (resolvedVersion == null)
+			return $"`dotnet tool list --local` in {workingDirectory} does not list {BEAM_TOOL_PACKAGE_ID}, so `dotnet beam` will not resolve. Check for another dotnet-tools.json in this directory or a parent that marks itself \"isRoot\" without {BEAM_TOOL_PACKAGE_ID}.";
+
+		if (!string.Equals(NormalizeNuGetVersion(resolvedVersion), NormalizeNuGetVersion(expectedVersion), StringComparison.OrdinalIgnoreCase))
+			return $"`dotnet tool list --local` in {workingDirectory} resolves {BEAM_TOOL_PACKAGE_ID} {resolvedVersion} from {resolvedManifest ?? "an unknown manifest"}, expected {expectedVersion}.";
+
+		return null;
+	}
+
+	/// <summary>
+	/// Normalizes a version the way NuGet does for comparison: drops build metadata and a zero fourth
+	/// component, so "0.0.123.0" (what the manifest holds) equals "0.0.123" (what `dotnet tool list` prints).
+	/// </summary>
+	public static string NormalizeNuGetVersion(string version)
+	{
+		if (string.IsNullOrWhiteSpace(version)) return version;
+		var withoutMetadata = version.Trim().Split('+')[0];
+		var dash = withoutMetadata.IndexOf('-');
+		var release = dash >= 0 ? withoutMetadata.Substring(0, dash) : withoutMetadata;
+		var prerelease = dash >= 0 ? withoutMetadata.Substring(dash) : "";
+		var parts = release.Split('.').ToList();
+		if (parts.Count == 4 && parts[3].TrimStart('0') == "")
+			parts.RemoveAt(3);
+		return string.Join(".", parts.Select(p => int.TryParse(p, out var n) ? n.ToString() : p)) + prerelease;
 	}
 
 	public bool TryGetProjectBeamableCLIVersion(out string version)
