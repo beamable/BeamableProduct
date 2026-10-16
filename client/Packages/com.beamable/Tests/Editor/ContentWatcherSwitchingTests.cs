@@ -68,6 +68,71 @@ namespace Beamable.Editor.Tests
         [UnityTest] public IEnumerator ModeSwitchCanRetryFailedAcknowledgement() => RetryFailedAcknowledgement(false, true);
         [UnityTest] public IEnumerator ExplicitHistoryStopCancelsPendingModeRestart() => RetryFailedAcknowledgement(false, true, true);
 
+        [UnityTest]
+        public IEnumerator FailedHistoryCloseRemainsClosedAfterModeSwitch()
+        {
+            using var transport = new BeamWebCommandStopTests.Fixture { StopStatus = 500, RetryStop = true };
+            commands.FirstWebCommand = transport.Command;
+            yield return Wait(service.StartContentHistory());
+            transport.Discover();
+            transport.AllowHeaders.TrySetResult(true);
+            var close = service.StopContentHistory();
+            close.Error(_ => { });
+            transport.ReleaseWorker.TrySetResult(true);
+            transport.AllowAcknowledgement.TrySetResult(true);
+            yield return Wait(close);
+            Assert.That(close.IsFailed, Is.True);
+
+            config.EnableLocalContentInEditor = true;
+            var switching = ApplyMode();
+            switching.Error(_ => { });
+            Assert.That(commands.History.Count, Is.Zero);
+            transport.AllowRetryAcknowledgement.TrySetResult(true);
+            yield return Wait(switching);
+            switching.GetResult();
+            Assert.That(transport.RetryReceived.Task.IsCompleted, Is.True, "Closed History still owes cleanup.");
+            Assert.That(commands.History.Count, Is.Zero, "Cleanup ownership must not reopen History.");
+            Assert.That(service.IsContentHistoryWatching, Is.False);
+            yield return Wait(service.StartContentHistory());
+            Assert.That(commands.History.Count, Is.EqualTo(1), "An explicit reopen must still work.");
+        }
+
+        [UnityTest]
+        public IEnumerator HistoryCloseDuringModeSwitchPreventsReplacement()
+        {
+            yield return Wait(service.Reload());
+            yield return Wait(service.StartContentHistory());
+            config.EnableLocalContentInEditor = true;
+            var switching = ApplyMode();
+            var close = service.StopContentHistory();
+            commands.Content[0].Completion.CompleteSuccess();
+            commands.History[0].Completion.CompleteSuccess();
+            yield return Wait(switching);
+            Assert.That(commands.History.Count, Is.EqualTo(1), "Close intent must take effect before queued cleanup acquires the gate.");
+            yield return Wait(close);
+            Assert.That(commands.Content.Count, Is.EqualTo(2));
+        }
+
+        [UnityTest]
+        public IEnumerator ModeSwitchDoesNotResumeTemporarilyDisabledContent()
+        {
+            yield return Wait(service.Reload());
+            var operation = new Promise();
+            var started = false;
+            var pause = service.TempDisableWatcher(() => { started = true; return operation; });
+            config.EnableLocalContentInEditor = true;
+            var switching = ApplyMode();
+            commands.Content[0].Completion.CompleteSuccess();
+            yield return Wait(switching);
+            Assert.That(started, Is.True);
+            Assert.That(commands.Content.Count, Is.EqualTo(1), "A temporary operation owns the pause until it finishes.");
+            operation.CompleteSuccess();
+            yield return Wait(pause);
+            yield return null;
+            Assert.That(commands.Content.Count, Is.EqualTo(2));
+            Assert.That(commands.Content[1].Local, Is.True);
+        }
+
         IEnumerator RetryFailedAcknowledgement(bool history, bool switching = false, bool stopHistory = false)
         {
             using var transport = new BeamWebCommandStopTests.Fixture { StopStatus = 500, RetryStop = true };

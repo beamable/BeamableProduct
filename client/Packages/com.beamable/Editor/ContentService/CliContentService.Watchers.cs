@@ -19,8 +19,9 @@ namespace Beamable.Editor.ContentService
         private Task _historyStop = Task.CompletedTask;
         private IBeamCommand _retiringContentCommand;
         private IBeamCommand _retiringHistoryCommand;
-        private bool _restartContentAfterModeSwitch;
-        private bool _restartHistoryAfterModeSwitch;
+        // Requested activity is independent of active commands and pending cleanup.
+        private bool _contentWatchRequested;
+        private bool _historyWatchRequested;
         private bool _observedLocalContentMode;
         private bool _contentWatcherLocalMode;
         private bool _historyWatcherLocalMode;
@@ -46,27 +47,27 @@ namespace Beamable.Editor.ContentService
             {
                 if (_watchersDisposed) return;
                 var local = _contentConfiguration.EnableLocalContentInEditor;
-                if (!_restartContentAfterModeSwitch && !_restartHistoryAfterModeSwitch &&
-                    _retiringContentCommand == null && _retiringHistoryCommand == null &&
-                    (_contentWatcher == null || _contentWatcherLocalMode == local) &&
-                    (_contentHistoryWatcher == null || _historyWatcherLocalMode == local)) return;
-                // Keep restart intent if only one shutdown succeeds before the other fails.
-                _restartContentAfterModeSwitch |= _contentWatcher != null || _retiringContentCommand != null;
-                _restartHistoryAfterModeSwitch |= _contentHistoryWatcher != null || _retiringHistoryCommand != null;
-                await Task.WhenAll(StopContentWatcher(), StopHistoryWatcher());
+                var contentMatches = _contentWatchRequested
+                    ? _contentWatcher != null && _contentWatcherLocalMode == local
+                    : _contentWatcher == null;
+                var historyMatches = _historyWatchRequested
+                    ? _contentHistoryWatcher != null && _historyWatcherLocalMode == local
+                    : _contentHistoryWatcher == null;
+                if (contentMatches && historyMatches &&
+                    _retiringContentCommand == null && _retiringHistoryCommand == null) return;
+                await Task.WhenAll(StopContentWatcher(preserveRequest: true), StopHistoryWatcher());
                 if (_watchersDisposed) return;
-                // Read the setting after shutdown: rapid changes use the latest requested mode.
-                if (_restartHistoryAfterModeSwitch) StartContentHistoryCore();
-                if (_restartContentAfterModeSwitch) ready = await StartContentWatcher();
-                _restartHistoryAfterModeSwitch = false;
-                _restartContentAfterModeSwitch = false;
+                // Read intent and mode after shutdown: closes and rapid toggles may arrive while waiting.
+                if (_historyWatchRequested) StartContentHistoryCore();
+                if (_contentWatchRequested) ready = await StartContentWatcher();
             }
             finally { WatcherGate.Release(); }
             await ready;
         }
 
-        private async Task StopContentWatcher()
+        private async Task StopContentWatcher(bool preserveRequest = false)
         {
+            if (!preserveRequest) _contentWatchRequested = false;
             var watcher = _contentWatcher;
             _contentWatcher = null; // Reject callbacks from the retiring command.
             if (watcher != null)
@@ -115,6 +116,8 @@ namespace Beamable.Editor.ContentService
         public async Promise OnDispose()
         {
             _watchersDisposed = true;
+            _contentWatchRequested = false;
+            _historyWatchRequested = false;
             EditorApplication.update -= CheckLocalContentMode;
             await WatcherGate.WaitAsync();
             try { await Task.WhenAll(StopContentWatcher(), StopHistoryWatcher()); }

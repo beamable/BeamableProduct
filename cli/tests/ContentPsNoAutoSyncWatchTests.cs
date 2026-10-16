@@ -106,6 +106,22 @@ public partial class ContentPsNoAutoSyncWatchTests
         if (noAutoSync) Assert.That(File.ReadAllBytes(fixture.FilePath), Is.EqualTo(original));
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task History_watch_cancellation_stops_requesting_pages(bool duringPublication)
+    {
+        await using var fixture = new Fixture(true, history: true, cancelHistoryOnPublication: duringPublication);
+        if (duringPublication)
+        {
+            await fixture.Start();
+            await fixture.Server.Publish();
+            await fixture.HistoryCancellationRequested.Task.WaitAsync(Timeout);
+        }
+        else await fixture.StartWithoutWaitingForSocket();
+        await fixture.Completion.WaitAsync(Timeout);
+        Assert.That(fixture.CancellationPhaseHistoryRequests, Is.EqualTo(1),
+            "After cancellation during a history request, the watcher must not request the next page.");
+    }
     private sealed class Fixture : IAsyncDisposable
     {
         private readonly string root = Path.Combine(Path.GetTempPath(), "beam4866-watch-" + Guid.NewGuid().ToString("N"));
@@ -128,7 +144,9 @@ public partial class ContentPsNoAutoSyncWatchTests
         public void ReleasePublication() => HeldPublication.CompleteSuccess(publicationManifest);
         public void Cancel() => lifecycle.Cancel();
         public Task Completion => commandTask!;
-        public Fixture(bool noAutoSync, bool history = false, bool populatedHistory = false, bool holdPublication = false)
+        public readonly TaskCompletionSource<bool> HistoryCancellationRequested = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public int CancellationPhaseHistoryRequests { get; private set; }
+        public Fixture(bool noAutoSync, bool history = false, bool populatedHistory = false, bool holdPublication = false, bool? cancelHistoryOnPublication = null)
         {
             this.history = history;
             Directory.CreateDirectory(Path.Combine(root, ConfigService.CFG_FOLDER));
@@ -161,6 +179,17 @@ public partial class ContentPsNoAutoSyncWatchTests
                         // 139-154: without fromDate/fromUid, toDate is ignored; results use offset pagination.
                         if (toDate != null && toDate.HasValue && toDate.Value < DateTimeOffset.UtcNow.AddDays(-365).ToUnixTimeMilliseconds())
                             throw new InvalidOperationException("Backend rejects toDate more than one year ago");
+                        if (cancelHistoryOnPublication.HasValue && Server.Published == cancelHistoryOnPublication.Value)
+                        {
+                            CancellationPhaseHistoryRequests++;
+                            lifecycle.Cancel();
+                            HistoryCancellationRequested.TrySetResult(true);
+                            return Promise<GetManifestDiffsResponse>.Successful(new GetManifestDiffsResponse
+                            {
+                                diffs = Array.Empty<ManifestDiffSummary>(),
+                                hasMore = CancellationPhaseHistoryRequests == 1
+                            });
+                        }
                         var stored = new List<ManifestDiffSummary>();
                         if (Server.Published) stored.Add(new ManifestDiffSummary { manifestUid = "after", createdDate = historyCreated + 1000, affectedContentIds = new[] { Id } });
                         if (populatedHistory) stored.Add(new ManifestDiffSummary { manifestUid = "current", createdDate = historyCreated, affectedContentIds = new[] { Id } });
@@ -201,6 +230,11 @@ public partial class ContentPsNoAutoSyncWatchTests
         public Task<ContentHistoryEntriesPage> ReadHistory() => service.GetAllContentHistoryLocalEntries("pid", "global");
         public Task<ContentHistoryFetchReport> SeedHistory() => service.SyncContentHistoryEntries("pid", "global");
         public Task Save(int damage, string reference, string tag) => service.SaveContentFile(folder, new ContentFile { Id = Id, Properties = Props(damage), Tags = JsonSerializer.SerializeToElement(new[] { tag }), FetchedFromManifestUid = reference });
+        public async Task StartWithoutWaitingForSocket()
+        {
+            await Save(10, "current", "published");
+            commandTask = runCommand();
+        }
         public async Task Start()
         {
             await Save(10, "current", "published");
@@ -296,4 +330,3 @@ public partial class ContentPsNoAutoSyncWatchTests
         public async ValueTask DisposeAsync() { stop.Cancel(); listener.Stop(); socket?.Abort(); await accept.WaitAsync(Timeout); await Task.WhenAll(connections).WaitAsync(Timeout); stop.Dispose(); }
     }
 }
-

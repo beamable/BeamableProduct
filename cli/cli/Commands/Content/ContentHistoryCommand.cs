@@ -299,7 +299,7 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 
 			// Kick off a task that will greedily sync all the history entries until right now.
 			// Once that's done, kick off a task that will listen for remote content publishes and will resync the content history
-			var report = await contentService.SyncContentHistoryEntries(pid, manifestId);
+			var report = await contentService.SyncContentHistoryEntries(pid, manifestId, cancellationToken: watch.Token);
 			var remotePublishTask = watch.Run(async () =>
 			{
 				try
@@ -310,7 +310,7 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 						try
 						{
 							// We re-sync only from the date of the last known local content.
-							report = await contentService.SyncContentHistoryEntries(pid, manifestId);
+							report = await contentService.SyncContentHistoryEntries(pid, manifestId, cancellationToken: watch.Token);
 						}
 						finally
 						{

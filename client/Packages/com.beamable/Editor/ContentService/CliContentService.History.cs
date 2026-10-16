@@ -45,6 +45,8 @@ namespace Beamable.Editor.ContentService
 		/// </summary>
 		public async Promise StartContentHistory()
 		{
+			if (_watchersDisposed) return;
+			_historyWatchRequested = true;
 			await WatcherGate.WaitAsync();
 			try
 			{
@@ -56,7 +58,7 @@ namespace Beamable.Editor.ContentService
 
 		private void StartContentHistoryCore()
 		{
-			if (_contentHistoryWatcher != null)
+			if (!_historyWatchRequested || _watchersDisposed || _contentHistoryWatcher != null)
 			{
 				return;
 			}
@@ -84,6 +86,8 @@ namespace Beamable.Editor.ContentService
 		/// </summary>
 		public async Promise RestartContentHistory()
 		{
+			if (_watchersDisposed) return;
+			_historyWatchRequested = true;
 			await WatcherGate.WaitAsync();
 			try
 			{
@@ -97,10 +101,11 @@ namespace Beamable.Editor.ContentService
 		/// <summary>Stops the watcher without clearing the CLI's on-disk history cache.</summary>
 		public async Promise StopContentHistory()
 		{
+			// Record close intent immediately, even when a mode transition owns the gate.
+			_historyWatchRequested = false;
 			await WatcherGate.WaitAsync();
 			try
 			{
-				_restartHistoryAfterModeSwitch = false;
 				CancelContentHistoryRequests();
 				await StopHistoryWatcher();
 			}

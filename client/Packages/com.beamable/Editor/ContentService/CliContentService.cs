@@ -804,6 +804,8 @@ namespace Beamable.Editor.ContentService
 
 		public async Promise Reload()
 		{
+			if (_watchersDisposed) return;
+			_contentWatchRequested = true;
 			Task ready = Task.CompletedTask;
 			await WatcherGate.WaitAsync();
 			try { if (!_watchersDisposed) ready = await StartContentWatcher(); }
@@ -814,12 +816,13 @@ namespace Beamable.Editor.ContentService
 		// Release the transition gate after startup; a slow first response must remain cancellable.
 		private async Task<Task> StartContentWatcher()
 		{
+			if (!_contentWatchRequested || _watchersDisposed) return Task.CompletedTask;
 			isReloading = true;
 			try
 			{
 				ClearCaches();
-				await StopContentWatcher();
-				if (_watchersDisposed)
+				await StopContentWatcher(preserveRequest: true);
+				if (!_contentWatchRequested || _watchersDisposed)
 				{
 					isReloading = false;
 					return Task.CompletedTask;
