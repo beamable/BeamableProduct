@@ -484,8 +484,10 @@ public partial class ContentService
 
 	public async IAsyncEnumerable<RemoteContentPublished> ListenToRemoteContentPublishes(CommandArgs args, string manifestId = "global", [EnumeratorCancellation] CancellationToken token = default, bool autoSync = true)
 	{
+		await using var watch = new ContentWatchScope(token);
+		token = watch.Token;
 		// Subscribe to the content refresh notification for the realm we are targeting.
-		var listenTask = Task.Run(async () =>
+		var listenTask = watch.Run(async () =>
 		{
 			try
 			{
@@ -493,7 +495,7 @@ public partial class ContentService
 				await WebsocketUtil.RunServerNotificationListenLoop(handle, message =>
 				{
 					Log.Verbose("Received Content Publish Notification");
-					Task.Run(async () => await OnContentPublished(message.body, args.Lifecycle));
+					watch.Run(async () => await OnContentPublished(message.body, args.Lifecycle));
 				}, token);
 			}
 			catch (Exception e)
@@ -553,6 +555,7 @@ public partial class ContentService
 				var emailFetchTask = GetAccountEmail(publisherAccountId);
 				var manifestFetchTask = GetManifest(publishedManifestId, manifestUid, replaceLatest: true);
 
+				await Task.WhenAll(emailFetchTask, manifestFetchTask);
 				var email = await emailFetchTask;
 				var newManifest = await manifestFetchTask;
 

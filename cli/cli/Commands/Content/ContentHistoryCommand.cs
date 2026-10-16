@@ -171,22 +171,24 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 			this.SendResults(initialEvt);
 
 			// This ensures that only one of the event streams will resolve at a time.
-			var watchSemaphore = new SemaphoreSlim(1, 1);
+			using var watchSemaphore = new SemaphoreSlim(1, 1);
+			await using var watch = new cli.Services.ContentWatchScope(args.Lifecycle.Source.Token);
 
 			// Kick off task to listen for new entries
-			var newEntriesTask = Task.Run(async () =>
+			var newEntriesTask = watch.Run(async () =>
 			{
 				try
 				{
-					await foreach (var entryFileChanges in contentService.ListenToContentHistoryEntries(pid, manifestId, args.Lifecycle.Source.Token))
+					await foreach (var entryFileChanges in contentService.ListenToContentHistoryEntries(pid, manifestId, watch.Token))
 					{
 						try
 						{
-							await watchSemaphore.WaitAsync(args.Lifecycle.Source.Token);
+							await watchSemaphore.WaitAsync(watch.Token);
 						}
 						catch (OperationCanceledException)
 						{
 							Log.Information("content history command was cancelled.");
+							break;
 						}
 
 						try
@@ -228,19 +230,20 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 				}
 			});
 
-			var newChangelistTask = Task.Run(async () =>
+			var newChangelistTask = watch.Run(async () =>
 			{
 				try
 				{
-					await foreach (var changelistFileChanges in contentService.ListenToContentHistoryChangelists(pid, manifestId, args.Lifecycle.Source.Token))
+					await foreach (var changelistFileChanges in contentService.ListenToContentHistoryChangelists(pid, manifestId, watch.Token))
 					{
 						try
 						{
-							await watchSemaphore.WaitAsync(args.Lifecycle.Source.Token);
+							await watchSemaphore.WaitAsync(watch.Token);
 						}
 						catch (OperationCanceledException)
 						{
 							Log.Information("content history command was cancelled.");
+							break;
 						}
 
 						try
@@ -297,11 +300,11 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 			// Kick off a task that will greedily sync all the history entries until right now.
 			// Once that's done, kick off a task that will listen for remote content publishes and will resync the content history
 			var report = await contentService.SyncContentHistoryEntries(pid, manifestId);
-			var remotePublishTask = Task.Run(async () =>
+			var remotePublishTask = watch.Run(async () =>
 			{
 				try
 				{
-					await foreach (var _ in contentService.ListenToRemoteContentPublishes(args, manifestId, args.Lifecycle.Source.Token, autoSync: !args.NoAutoSync))
+					await foreach (var _ in contentService.ListenToRemoteContentPublishes(args, manifestId, watch.Token, autoSync: !args.NoAutoSync))
 					{
 						await watchSemaphore.WaitAsync();
 						try
@@ -322,9 +325,7 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 				}
 			});
 
-			await newEntriesTask;
-			await newChangelistTask;
-			await remotePublishTask;
+			await Task.WhenAll(newEntriesTask, newChangelistTask, remotePublishTask);
 		}
 	}
 }

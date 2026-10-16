@@ -97,22 +97,24 @@ public class ContentPsCommand
 		if (args.Watch)
 		{
 			// This ensure that only one of the two event streams will resolve at a time.
-			var watchSemaphore = new SemaphoreSlim(1, 1);
+			using var watchSemaphore = new SemaphoreSlim(1, 1);
+			await using var watch = new cli.Services.ContentWatchScope(args.Lifecycle.Source.Token);
 
 			// Set up a task that will emit a ChangedContent event every time local files for this realm+manifestid handle are changed.
 			// The events will only contain the entries for the modified content objects and expects the engine integration to only rebuild their in-memory representation of the modified object.
-			var localFileChangesTask = Task.Run(async () =>
+			var localFileChangesTask = watch.Run(async () =>
 			{
-				await foreach (var batchedLocalFileChanges in contentService.ListenToLocalContentFileChanges(pid, manifestId, args.Lifecycle.Source.Token))
+				await foreach (var batchedLocalFileChanges in contentService.ListenToLocalContentFileChanges(pid, manifestId, watch.Token))
 				{
 					try
 					{
-						await watchSemaphore.WaitAsync(args.Lifecycle.Source.Token);
+						await watchSemaphore.WaitAsync(watch.Token);
 					}
 					catch (OperationCanceledException)
 					{
 						// let it go. 
 						Log.Information("content ps command was cancelled. ");
+						break;
 					}
 
 					try
@@ -233,9 +235,9 @@ public class ContentPsCommand
 
 
 			// Set up a task that will emit a RemotePublished event every time someone THAT IS NOT YOU publish a manifest to this realm+manifestid handle.
-			var remoteManifestPublishTask = Task.Run(async () =>
+			var remoteManifestPublishTask = watch.Run(async () =>
 			{
-				await foreach (var remoteContentPublished in contentService.ListenToRemoteContentPublishes(args, manifestId, args.Lifecycle.Source.Token, autoSync: !args.NoAutoSync))
+				await foreach (var remoteContentPublished in contentService.ListenToRemoteContentPublishes(args, manifestId, watch.Token, autoSync: !args.NoAutoSync))
 				{
 					await watchSemaphore.WaitAsync();
 					try
@@ -283,8 +285,7 @@ public class ContentPsCommand
 				}
 			});
 
-			await localFileChangesTask;
-			await remoteManifestPublishTask;
+			await Task.WhenAll(localFileChangesTask, remoteManifestPublishTask);
 		}
 	}
 

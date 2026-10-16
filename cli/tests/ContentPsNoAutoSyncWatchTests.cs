@@ -24,7 +24,7 @@ using NUnit.Framework;
 
 namespace tests;
 
-public class ContentPsNoAutoSyncWatchTests
+public partial class ContentPsNoAutoSyncWatchTests
 {
     private const string Id = "items.sword";
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
@@ -122,7 +122,13 @@ public class ContentPsNoAutoSyncWatchTests
             (history ? new[] { "_contentHistoryEntryWatchers", "_contentHistoryChangelistWatchers" } : new[] { "_watchers" })
                 .SelectMany(name => ((Dictionary<(string, string), FileSystemWatcher>)typeof(ContentService)
                     .GetField(name, BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(service)!).Values);
-        public Fixture(bool noAutoSync, bool history = false, bool populatedHistory = false)
+        public readonly TaskCompletionSource<bool> PublicationEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public readonly Promise<ClientManifestJsonResponse> HeldPublication = new();
+        private ClientManifestJsonResponse publicationManifest;
+        public void ReleasePublication() => HeldPublication.CompleteSuccess(publicationManifest);
+        public void Cancel() => lifecycle.Cancel();
+        public Task Completion => commandTask!;
+        public Fixture(bool noAutoSync, bool history = false, bool populatedHistory = false, bool holdPublication = false)
         {
             this.history = history;
             Directory.CreateDirectory(Path.Combine(root, ConfigService.CFG_FOLDER));
@@ -134,9 +140,16 @@ public class ContentPsNoAutoSyncWatchTests
                 return new() { uid = uid, entries = new[] { new ClientContentInfoJson { contentId = Id, version = damage.ToString(), checksum = ContentService.CalculateChecksum(in properties), tags = new[] { "published" }, uri = Server.Host + "/content" } } };
             }
             var before = Manifest("before", 10); var current = Manifest("current", 10); var after = Manifest("after", 20);
+            publicationManifest = after;
             var api = new Mock<IContentApi>(MockBehavior.Strict);
             api.Setup(x => x.GetManifestPublicJson(It.IsAny<Optional<string>>(), It.IsAny<Optional<bool>>(), It.IsAny<Optional<string>>(), true))
-                .Returns((Optional<string> id, Optional<bool> omit, Optional<string> uid, bool auth) => Promise<ClientManifestJsonResponse>.Successful(uid?.Value == "after" ? after : uid?.Value == "before" ? before : current));
+                .Returns((Optional<string> id, Optional<bool> omit, Optional<string> uid, bool auth) => {
+                    if (uid?.Value == "after" && holdPublication) {
+                        PublicationEntered.TrySetResult(true);
+                        return HeldPublication;
+                    }
+                    return Promise<ClientManifestJsonResponse>.Successful(uid?.Value == "after" ? after : uid?.Value == "before" ? before : current);
+                });
             if (history)
             {
                 var historyCreated = DateTimeOffset.UtcNow.AddMinutes(-1).ToUnixTimeMilliseconds();
