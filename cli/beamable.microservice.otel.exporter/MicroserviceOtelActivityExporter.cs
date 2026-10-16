@@ -10,8 +10,11 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 	private readonly OtlpExporterOptions _otlpOptions;
 	private OtlpTraceExporter _exporter;
 	private bool _shouldRetry;
+	private readonly string _endpoint;
 
 	private LimitedQueue<ActivityQueueData> _activitiesToFlush;
+
+	internal int QueuedBatchCount => _activitiesToFlush.Count;
 
 	public MicroserviceOtelActivityExporter(MicroserviceOtelExporterOptions options) : base(options)
 	{
@@ -30,6 +33,7 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 		_exporter = new OtlpTraceExporter(_otlpOptions);
 		_activitiesToFlush = new LimitedQueue<ActivityQueueData>(options.RetryQueueMaxSize);
 		_shouldRetry = options.ShouldRetry;
+		_endpoint = options.OtlpEndpoint;
 	}
 
 	public override ExportResult Export(in Batch<Activity> batch)
@@ -56,8 +60,9 @@ public class MicroserviceOtelActivityExporter : MicroserviceOtelExporter<Activit
 
 		var result = _exporter.Export(copyBatch);
 
-		if (!_shouldRetry)
+		if (!_shouldRetry || MicroserviceOtelRetry.IsDisabledFor(_endpoint))
 		{
+			_activitiesToFlush.Clear();
 			return result;
 		}
 

@@ -50,6 +50,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="BeamableMicroserviceBaseTests" />
+    </ItemGroup>
+
+    <ItemGroup>
         <None Include="$(MSBuildThisFileDirectory)/../../LICENSE.txt" Pack="true" PackagePath=""/>
         <None Include="$(MSBuildThisFileDirectory)/../../icon.jpg" Pack="true" PackagePath=""/>
 

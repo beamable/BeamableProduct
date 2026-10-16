@@ -338,9 +338,22 @@ public static class MicroserviceStartupUtil
 			}
 
 			ctx.logger.ZLogInformation($"Starting otel collector discovery event...");
-			await CollectorManager.StartCollector("", false, false, tokenSource, ctx.logger, ctx.otlpEndpoint);
+			await CollectorManager.StartCollector("", false, false, tokenSource, ctx.logger, ctx.otlpEndpoint,
+				ex => OnCollectorUnavailable(ctx.logger, ex, ctx.otlpEndpoint));
 		}
 
+	}
+
+	/// <summary>
+	/// Telemetry is best effort: a collector that can't run (for example, because its ClickHouse is
+	/// unreachable) must not take the service down. Keep serving, and stop queueing exports to the
+	/// collector's endpoint, which can't be delivered. Exporters configured with a custom OTLP endpoint
+	/// aren't affected.
+	/// </summary>
+	internal static void OnCollectorUnavailable(ILogger logger, Exception ex, string collectorEndpoint)
+	{
+		logger.ZLogWarning($"The OTEL collector isn't running, so the service will keep running without exporting standard telemetry. reason=[{ex.Message}]");
+		MicroserviceOtelRetry.DisableFor(collectorEndpoint);
 	}
 
 	private static void ConfigureOtelData(StartupContext startupCtx)
