@@ -31,12 +31,22 @@ public class ShowCurrentBeamoStatusCommand : AtomicCommand<ShowCurrentBeamoStatu
 	public override async Task<ShowCurrentBeamoStatusCommandOutput> GetResult(ShowCurrentBeamoStatusCommandArgs args)
 	{
 		var api = args.DependencyProvider.GetService<IBeamoApi>();
+		var status = await FetchStatus(api, args.showArchived);
+		return new ShowCurrentBeamoStatusCommandOutput { status = status };
+	}
+
+	/// <summary>
+	/// Fetch the remote service status, filtered down to the services in the current manifest.
+	/// Shared with <c>deploy release --wait</c>, which polls this until the released services are ready.
+	/// </summary>
+	public static async Task<GetStatusResponse> FetchStatus(IBeamoApi api, bool showArchived)
+	{
 		try
 		{
 			var currentTask = api.GetManifestCurrent(archived: false);
 
 			Promise<GetCurrentManifestResponse> currentArchivedTask=null;
-			if (args.showArchived)
+			if (showArchived)
 			{
 				currentArchivedTask = api.GetManifestCurrent(archived: true);
 			}
@@ -62,15 +72,15 @@ public class ShowCurrentBeamoStatusCommand : AtomicCommand<ShowCurrentBeamoStatu
 
 			status.services = finalServices.ToArray();
 			
-			return new ShowCurrentBeamoStatusCommandOutput { status = status };
+			return status;
 		}
 		catch (RequesterException ex) when (ex.Status == 404)
 		{
-			return new ShowCurrentBeamoStatusCommandOutput { status = new GetStatusResponse
+			return new GetStatusResponse
 			{
 				// there is nothing, but that is "correct"
 				isCurrent = true
-			} };
+			};
 		}
 	}
 }

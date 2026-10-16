@@ -37,6 +37,10 @@ namespace Beamable.Editor.BeamCli.Commands
         public string sln;
         /// <summary>Use the most recent plan generated from the plan command</summary>
         public bool fromLatestPlan;
+        /// <summary>After releasing, poll the remote status until every released service is running and current, or until --wait-timeout expires</summary>
+        public bool wait;
+        /// <summary>The maximum number of seconds --wait will poll before failing</summary>
+        public int waitTimeout;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -121,6 +125,16 @@ namespace Beamable.Editor.BeamCli.Commands
             {
                 genBeamCommandArgs.Add(("--from-latest-plan=" + this.fromLatestPlan));
             }
+            // If the wait value was not default, then add it to the list of args.
+            if ((this.wait != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--wait=" + this.wait));
+            }
+            // If the waitTimeout value was not default, then add it to the list of args.
+            if ((this.waitTimeout != default(int)))
+            {
+                genBeamCommandArgs.Add(("--wait-timeout=" + this.waitTimeout));
+            }
             string genBeamCommandStr = "";
             // Join all the args with spaces
             genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
@@ -165,6 +179,11 @@ namespace Beamable.Editor.BeamCli.Commands
         public virtual DeploymentReleaseWrapper OnProgressPlanReleaseProgress(System.Action<ReportDataPoint<BeamPlanReleaseProgress>> cb)
         {
             this.Command.On("progress", cb);
+            return this;
+        }
+        public virtual DeploymentReleaseWrapper OnWaitResultReleaseWaitResult(System.Action<ReportDataPoint<BeamReleaseWaitResult>> cb)
+        {
+            this.Command.On("waitResult", cb);
             return this;
         }
     }
