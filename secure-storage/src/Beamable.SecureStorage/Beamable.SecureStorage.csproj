@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <Description>Buffered encrypted storage for Unity, backed by Apple Keychain or Windows DPAPI.</Description>
+    <DefineConstants Condition="'$(SecureStorageIOS)' == 'true'">$(DefineConstants);BEAMABLE_SECURE_STORAGE_IOS</DefineConstants>
+  </PropertyGroup>
+</Project>

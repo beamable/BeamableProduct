@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Beamable.SecureStorage/Beamable.SecureStorage.csproj" />
+    <None Include="../../artifacts/native/libBeamableSecureStorage.dylib"
+          Condition="Exists('../../artifacts/native/libBeamableSecureStorage.dylib')"
+          Link="libBeamableSecureStorage.dylib" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

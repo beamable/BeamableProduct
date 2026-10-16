@@ -224,12 +224,7 @@ namespace Beamable
 				provider.GetService<IUserContext>()));
 			DependencyBuilder.AddSingleton<IBeamAnalyticsService>(p => p.GetService<AnalyticsService>());
 			DependencyBuilder.AddSingleton<AnalyticsService>();
-			DependencyBuilder.AddSingleton<AnalyticsTracker>(provider =>
-																 new AnalyticsTracker(
-																	 provider.GetService<IBeamAnalyticsService>(),
-																	 provider.GetService<CoroutineService>(), 30, 10)
-			);
-			DependencyBuilder.AddSingleton<IAnalyticsTracker>(provider => provider.GetService<AnalyticsTracker>());
+			AnalyticsDependencyRegistration.Register(DependencyBuilder);
 			DependencyBuilder.AddSingleton<MailService>();
 			DependencyBuilder.AddSingleton<PushService>();
 			DependencyBuilder.AddSingleton<CommerceService>();

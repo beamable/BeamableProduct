@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <GuardPlatform Condition="'$(GuardPlatform)' == ''">UNITY_ANDROID</GuardPlatform>
+    <DefineConstants>$(GuardPlatform)</DefineConstants>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Deliberately no Unity, SDK, or secure DLL references. Unsupported targets must exclude the integration. -->
+    <Compile Include="../../unity/Analytics/*.cs" Link="%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

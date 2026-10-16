@@ -62,9 +62,19 @@ namespace Beamable.Api.Analytics.Batch
 			{
 				// Start checking periodically
 				_isActive = true;
+				// Unity advances a coroutine to its first yield inside StartCoroutine.
+				// Restore persistent state before that first heartbeat can save or expire it.
+				try
+				{
+					OnStart();
+				}
+				catch
+				{
+					_isActive = false;
+					throw;
+				}
 				_heatbeatCoroutine = Heartbeat();
 				_coroutineService.StartCoroutine(_heatbeatCoroutine);
-				OnStart();
 			}
 		}
 
@@ -129,7 +139,7 @@ namespace Beamable.Api.Analytics.Batch
 
 		public void SetHeartbeat(float heatbeatInterval)
 		{
-			// FIXME: restarting the heartbeat has the side effect of duplicating events
+			// Persistent managers restore once, so changing the interval cannot replay the snapshot.
 			if (heatbeatInterval != _heartbeatSeconds)
 			{
 				_heartbeatSeconds = heatbeatInterval;

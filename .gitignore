@@ -197,3 +197,4 @@ web/temp
 
 /client/UserSettings/EditorUserSettings.asset
 /client/UserSettings/Layouts/*.dwlt
+secure-storage/SecureStorage.zip

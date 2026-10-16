@@ -1,5 +1,7 @@
 using Beamable.Api.Analytics.Batch;
+using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Spew;
 using Beamable.Coroutines;
 using Beamable.Serialization;
@@ -85,7 +87,7 @@ namespace Beamable.Api.Analytics
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public class AnalyticsTracker : IAnalyticsTracker
+	public class AnalyticsTracker : IAnalyticsTracker, IBeamableDisposableOrder
 	{
 		/// <summary>
 		/// The storage key used to persist batches to disk.
@@ -120,8 +122,14 @@ namespace Beamable.Api.Analytics
 		/// <param name="batchTimeoutSeconds">Batch timeout seconds before expiration.</param>
 		/// <param name="batchMaxSize">Batch max size before expiration.</param>
 		public AnalyticsTracker(IBeamAnalyticsService analyticsService, CoroutineService coroutineService, int batchTimeoutSeconds, int batchMaxSize)
+			: this(analyticsService, coroutineService, batchTimeoutSeconds, batchMaxSize, new PlayerPrefsBatchStorage())
 		{
-			batchManager = new PersistentBatchManager<AnalyticsEventRequest>(coroutineService, _storageKey, _defaultBatchCapacity, _defaultBatchTimeout);
+		}
+
+		/// <summary>Creates the normal tracker with one queue and an explicitly selected persistence backend.</summary>
+		public AnalyticsTracker(IBeamAnalyticsService analyticsService, CoroutineService coroutineService, int batchTimeoutSeconds, int batchMaxSize, IAnalyticsBatchStorage storage)
+		{
+			batchManager = new PersistentBatchManager<AnalyticsEventRequest>(coroutineService, _storageKey, _defaultBatchCapacity, _defaultBatchTimeout, storage);
 
 			_analyticsService = analyticsService;
 
@@ -132,7 +140,7 @@ namespace Beamable.Api.Analytics
 
 			batchManager.OnBatchExpired += OnBatchExpired;
 			if (usingDefaultSettings)
-				UpdateBatchSettings(_defaultBatchSettings);
+				UpdateBatchSettingsInternal(_defaultBatchSettings, false, true);
 
 			// Add Saved events into batch now that we have a proper player id to assign them to.
 			AnalyticsLogger.LogFormat("Backfilling early requests: {0} total", _earlyRequests.Count);
@@ -144,8 +152,17 @@ namespace Beamable.Api.Analytics
 			_earlyRequests.Clear();
 
 
-			batchManager.Flush();
 			batchManager.Start();
+		}
+
+		/// <summary>Stop and persist the queue before its storage service is disposed.</summary>
+		public int DisposeOrder => -100;
+
+		public Promise OnDispose()
+		{
+			batchManager.Stop();
+			batchManager.SavePendingBatch();
+			return Promise.Success;
 		}
 
 		public void TrackEvent(IAnalyticsEvent analyticsEvent, bool sendImmediately = false)

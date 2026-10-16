@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <DefineConstants>$(DefineConstants);UNITY_EDITOR;UNITY_EDITOR_OSX;DISABLE_BEAMABLE_ASYNCMETHODBUILDER</DefineConstants>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CS0169;CS0649</NoWarn>
+    <SdkRoot>../../../client/Packages/com.beamable</SdkRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Beamable.SecureStorage/Beamable.SecureStorage.csproj" />
+    <Compile Include="$(SdkRoot)/Runtime/Core/Platform/SDK/Analytics/Batch/*.cs" Link="Sdk/Batch/%(Filename)%(Extension)" />
+    <Compile Include="$(SdkRoot)/Runtime/Core/Platform/SDK/Analytics/AnalyticsTracker.cs" Link="Sdk/AnalyticsTracker.cs" />
+    <Compile Include="$(SdkRoot)/Runtime/Core/Platform/SDK/Analytics/AnalyticsDependencyRegistration.cs" Link="Sdk/AnalyticsDependencyRegistration.cs" />
+    <Compile Include="$(SdkRoot)/Common/Runtime/Api/Analytics/AnalyticsEventRequest.cs" Link="Sdk/AnalyticsEventRequest.cs" />
+    <Compile Include="$(SdkRoot)/Common/Runtime/Api/Analytics/IBeamAnalyticsService.cs" Link="Sdk/IBeamAnalyticsService.cs" />
+    <Compile Include="$(SdkRoot)/Common/Runtime/Api/Analytics/Models/IAnalyticsEvent.cs" Link="Sdk/IAnalyticsEvent.cs" />
+    <Compile Include="$(SdkRoot)/Common/Runtime/Dependencies/DependencyBuilder.cs" Link="Sdk/DependencyBuilder.cs" />
+    <Compile Include="$(SdkRoot)/Common/Runtime/Dependencies/DependencyProvider.cs" Link="Sdk/DependencyProvider.cs" />
+    <Compile Include="$(SdkRoot)/Common/Runtime/Dependencies/Utils.cs" Link="Sdk/DependencyUtils.cs" />
+    <Compile Include="$(SdkRoot)/Common/Runtime/Dependencies/Exceptions.cs" Link="Sdk/DependencyExceptions.cs" />
+    <Compile Include="$(SdkRoot)/Common/Runtime/Promise.cs" Link="Sdk/Promise.cs" />
+    <Compile Include="$(SdkRoot)/Common/Runtime/Collections/ConcurrentDictionary.cs" Link="Sdk/ConcurrentDictionary.cs" />
+    <Compile Include="$(SdkRoot)/Common/Runtime/Collections/ConcurrentBag.cs" Link="Sdk/ConcurrentBag.cs" />
+    <Compile Include="../../unity/Analytics/*.cs" Link="Integration/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
