@@ -43,7 +43,8 @@ namespace Beamable.Server
 
 		/// <summary>
 		/// The zone service surface — the zone analog of the realm <see cref="Microservice"/>'s <c>Services</c>.
-		/// Use <c>Services.Customer</c> to query the customer's realms and zones. There is no player/realm SDK
+		/// Use <c>Services.Customer</c> to query the customer's realms and zones, and <c>Services.Secrets</c> for the
+		/// zone's secrets. There is no player/realm SDK
 		/// here; to act within a realm, use <see cref="AssumeRealm"/>.
 		/// </summary>
 		protected IZoneServices Services => _serviceProvider.GetService<IZoneServices>();
