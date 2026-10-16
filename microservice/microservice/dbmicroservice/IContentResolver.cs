@@ -15,6 +15,7 @@ namespace Beamable.Server
 
    public class DefaultContentResolver : IContentResolver
    {
+	   private const string BeamableSuffix = ".beamable.com";
 	   private const int MaxAttempts = 3;
 	   private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromSeconds(2);
 
@@ -28,21 +29,7 @@ namespace Beamable.Server
 
 	   internal DefaultContentResolver(IMicroserviceArgs args, HttpClient httpClient)
 	   {
-		   if (string.IsNullOrEmpty(args?.Host) || args.Host.Contains("localhost"))
-		   {
-			   _suffixFilter = ".beamable.com";
-		   } else
-		   {
-			   var hostLike = args.Host.Replace("dev.api", "dev-api");
-			   _suffixFilter = "." + string.Join(".", hostLike
-				   .Split(".")
-				   .Skip(1));
-			   
-			   // trim off any pathing in the host 
-			   int idx = _suffixFilter.IndexOf('/');
-			   if (idx != -1)
-				   _suffixFilter = _suffixFilter.Substring(0, idx);
-		   }
+		   _suffixFilter = GetContentHostSuffix(args?.Host);
 
 		   if (httpClient != null)
 		   {
@@ -57,11 +44,51 @@ namespace Beamable.Server
 		   _client = new HttpClient(handler);
 	   }
 
+	   /// <summary>
+	   /// The domain suffix that content hosts must share with HOST. A HOST under beamable.com, however
+	   /// many labels deep, serves content from *.beamable.com; a private cloud serves it from the parent
+	   /// domain of its API host.
+	   /// </summary>
+	   internal static string GetContentHostSuffix(string host)
+	   {
+		   if (string.IsNullOrEmpty(host) || host.Contains("localhost"))
+		   {
+			   return BeamableSuffix;
+		   }
+
+		   // HOST is normally a URI (wss://api.beamable.com/socket), but a bare host name, with or
+		   // without a port or path, is accepted too.
+		   var hostName = Uri.TryCreate(host, UriKind.Absolute, out var uri) && !string.IsNullOrEmpty(uri.Host)
+			   ? uri.Host
+			   : host.Split('/')[0].Split(':')[0];
+
+		   if (hostName == "beamable.com" || hostName.EndsWith(BeamableSuffix))
+		   {
+			   return BeamableSuffix;
+		   }
+
+		   return "." + string.Join(".", hostName.Split('.').Skip(1));
+	   }
+
 	   public bool ServerCertificateCustomValidationCallback(HttpRequestMessage msg, X509Certificate2 cert, X509Chain chain, SslPolicyErrors errors)
 	   {
-		   // the URI must start with the Beamable URI, otherwise an invalid URI may have been passed in, and this resolver is only valid for Beamable content.
-		   var isBeamableAddr = msg.RequestUri.Host.EndsWith(_suffixFilter);
-		   return isBeamableAddr;
+		   // This resolver is only valid for content in the stack's own domain; any other host means an
+		   // invalid URI was passed in.
+		   var host = msg.RequestUri.Host;
+		   if (!host.EndsWith(_suffixFilter))
+		   {
+			   return false;
+		   }
+
+		   // Beamable's content CDNs serve publicly trusted certificates, so validate them. Private clouds
+		   // may serve content with certificates the container doesn't trust, so their domains still skip
+		   // validation.
+		   if (host.EndsWith(BeamableSuffix))
+		   {
+			   return errors == SslPolicyErrors.None;
+		   }
+
+		   return true;
 	   }
 
 	   /// <summary>

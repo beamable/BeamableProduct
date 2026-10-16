@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The generated `IBeamAuthApi` has `PostBatch` for the `POST /api/accounts/batch` endpoint.
 ### Fixed
 - Generate valid OpenAPI component keys and references for tuple callable types, while preserving C# type metadata. Invalid generated schemas now report their validation errors directly.
+- Content downloads no longer fail when `HOST` is more than one label under `beamable.com` (for example `wss://dev.ms-local.beamable.com/socket`) or includes a port. The content host check now parses `HOST` as a URI, and any `HOST` under `beamable.com` accepts content from `*.beamable.com`.
+
+### Security
+- Content downloads from `*.beamable.com` now validate the server's TLS certificate. Previously the content resolver accepted any certificate from a host in the stack's domain. Private-cloud domains still skip validation, unchanged.
 
 ## [7.3.0] - 2026-10-08
 
