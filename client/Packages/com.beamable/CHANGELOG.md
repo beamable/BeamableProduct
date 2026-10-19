@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `ChatService.GetRoomHistory(roomId, limit)` gets a chat room's latest messages from Beamable, on realms that send notifications over the Beamable websocket.
+
+### Fixed
+
+- Chat rooms work on realms that send notifications over the Beamable websocket: `RoomHandle.Subscribe()` completes, messages arrive over the websocket, and the room's history loads from Beamable instead of PubNub. Previously the subscription waited on PubNub, which those realms never connect to.
+
 ## [6.2.0] - 2026-10-08
 
 ### Added

@@ -6,6 +6,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Experimental.Api.Chat
@@ -148,6 +149,7 @@ namespace Beamable.Experimental.Api.Chat
 		private ChatService ChatService => _dependencyProvider.GetService<ChatService>();
 		private IPubnubSubscriptionManager Pubnub => _dependencyProvider.GetService<IPubnubSubscriptionManager>();
 		private INotificationService NotificationService => _dependencyProvider.GetService<INotificationService>();
+		private NotificationTransport Transport => _dependencyProvider.GetService<NotificationTransport>();
 
 		public RoomHandle(RoomInfo room, IDependencyProvider dependencyProvider)
 		{
@@ -183,11 +185,22 @@ namespace Beamable.Experimental.Api.Chat
 			});
 
 
-			Pubnub.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpSubscribe, Id, () =>
+			Transport.IsUsingBeamableNotifications.Then(usingBeamable =>
 			{
-				NotificationService.Subscribe(ChatEvent, OnChatEvent);
-				promise.CompleteSuccess(PromiseBase.Unit);
-			}), shouldRunNextOp: true);
+				if (usingBeamable)
+				{
+					// The websocket brings the player the messages of all their rooms; there is no room channel to join.
+					NotificationService.Subscribe(ChatEvent, OnChatEvent);
+					promise.CompleteSuccess(PromiseBase.Unit);
+					return;
+				}
+
+				Pubnub.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpSubscribe, Id, () =>
+				{
+					NotificationService.Subscribe(ChatEvent, OnChatEvent);
+					promise.CompleteSuccess(PromiseBase.Unit);
+				}), shouldRunNextOp: true);
+			});
 
 			return _subscribe;
 		}
@@ -201,12 +214,23 @@ namespace Beamable.Experimental.Api.Chat
 		{
 			var promise = new Promise<Unit>();
 
-			Pubnub.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpUnsubscribe, Id, () =>
+			Transport.IsUsingBeamableNotifications.Then(usingBeamable =>
 			{
-				_subscribe = null;
-				NotificationService.Unsubscribe(ChatEvent, OnChatEvent);
-				promise.CompleteSuccess(PromiseBase.Unit);
-			}), shouldRunNextOp: true);
+				if (usingBeamable)
+				{
+					_subscribe = null;
+					NotificationService.Unsubscribe(ChatEvent, OnChatEvent);
+					promise.CompleteSuccess(PromiseBase.Unit);
+					return;
+				}
+
+				Pubnub.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpUnsubscribe, Id, () =>
+				{
+					_subscribe = null;
+					NotificationService.Unsubscribe(ChatEvent, OnChatEvent);
+					promise.CompleteSuccess(PromiseBase.Unit);
+				}), shouldRunNextOp: true);
+			});
 
 			return promise;
 		}
@@ -243,6 +267,30 @@ namespace Beamable.Experimental.Api.Chat
 		}
 
 		private Promise<Unit> LoadHistory()
+		{
+			return Transport.IsUsingBeamableNotifications.FlatMap(usingBeamable =>
+				usingBeamable ? LoadServerHistory() : LoadPubnubHistory());
+		}
+
+		private Promise<Unit> LoadServerHistory()
+		{
+			return ChatService.GetRoomHistory(Id).Map(history =>
+			{
+				// Keep the messages received while the history loaded; the history has the others.
+				var received = Messages.Where(m => history.All(h => h.messageId != m.messageId)).ToList();
+				Messages.Clear();
+				Messages.AddRange(history);
+				Messages.AddRange(received);
+				return PromiseBase.Unit;
+			}).Recover(error =>
+			{
+				// Realms whose chat has not moved to the websocket yet keep no history.
+				Debug.LogWarning($"Unable to load the history of chat room {Id}: {error.Message}");
+				return PromiseBase.Unit;
+			});
+		}
+
+		private Promise<Unit> LoadPubnubHistory()
 		{
 			var promise = new Promise<Unit>();
 			Pubnub.LoadChannelHistory(Id, 50,
