@@ -1,8 +1,10 @@
 using Beamable.Common;
+using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Content;
 using Beamable.Editor.BeamCli.Commands;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
@@ -61,7 +63,7 @@ namespace Beamable.Editor.ContentService
 				hasLocalChanges |= report.data.RelevantManifestsAgainstLatest
 					.Any(manifest => manifest.Entries.Any(entry => entry.StatusEnum != ContentStatus.UpToDate));
 			});
-			await status.Run();
+			await RunCommand(status, "content ps");
 
 			if (!skipCheck && hasLocalChanges && !EditorUtility.DisplayDialog("Local changes",
 				    "You have local changes in your content. " +
@@ -82,8 +84,21 @@ namespace Beamable.Editor.ContentService
 			});
 			bake.OnStreamContentBakeResult(report =>
 				Debug.Log($"[Bake Content] Baked {report.data.Count} content objects to '{report.data.ContentPath}'"));
-			await bake.Run();
+			await RunCommand(bake, "content bake");
 			AssetDatabase.Refresh();
+		}
+
+		private static async Task RunCommand(BeamCommandWrapper command, string commandName)
+		{
+			// BeamWebCommand dispatches CLI errors without rejecting its completion promise.
+			// Its completion waits for dispatched callbacks, so inspect errors after awaiting it.
+			var errors = new List<ErrorOutput>();
+			command.OnError(report => errors.Add(report.data));
+			await command.Run();
+			if (errors.Count > 0)
+			{
+				throw new CliInvocationException(commandName, errors);
+			}
 		}
 	}
 }
