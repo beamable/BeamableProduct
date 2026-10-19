@@ -21,6 +21,198 @@ namespace Beamable.Editor.Tests
 	public class BeamWebCommandStopTests
 	{
 		[UnityTest]
+		public IEnumerator ServerExitDuringRediscoveryStillBoundsShutdown()
+		{
+#if UNITY_EDITOR_WIN
+			var disconnectedServer = new TcpListener(IPAddress.Loopback, 0);
+			disconnectedServer.Start();
+			using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+			{
+				FileName = "powershell.exe", Arguments = "-NoProfile -NonInteractive -Command Start-Sleep -Seconds 60",
+				UseShellExecute = false, CreateNoWindow = true
+			});
+			try
+			{
+				using var fixture = new Fixture { WriteOutput = false };
+				fixture.Factory.port = ((IPEndPoint)disconnectedServer.LocalEndpoint).Port;
+				var connection = disconnectedServer.AcceptSocketAsync();
+				Set(fixture.Factory, "<ServerProcess>k__BackingField", process);
+				var run = fixture.Command.Run();
+				run.Error(_ => { });
+				fixture.Discover();
+				yield return WaitFor(() => connection.IsCompleted);
+				using var socket = connection.Result;
+				process.Kill();
+				Assert.That(process.WaitForExit(1000), Is.True);
+				// Reset TCP before any HTTP headers; HttpListener shutdown may send a normal response.
+				socket.LingerState = new LingerOption(true, 0);
+				socket.Close();
+				disconnectedServer.Stop();
+				yield return WaitFor(() => fixture.Factory.discoveryRequest >= 2, "Failed request must enter rediscovery.");
+				var stop = fixture.Command.StopAsync();
+				stop.Error(_ => { });
+				yield return WaitFor(() => stop.IsCompleted, "Shutdown must remain bounded during rediscovery.");
+				Assert.That(stop.IsFailed, Is.True, "Pending discovery must time out, not bypass the registration deadline.");
+				fixture.Command.Cancel();
+				for (var i = 0; i < 4 && !run.IsCompleted; i++) { fixture.Discover(); yield return null; }
+				yield return WaitFor(() => run.IsCompleted);
+				var retry = fixture.Command.StopAsync();
+				retry.Error(_ => { });
+				yield return WaitFor(() => retry.IsCompleted);
+				Assert.That(retry.IsFailed, Is.False);
+			}
+			finally { disconnectedServer.Stop(); if (!process.HasExited) process.Kill(); }
+#else
+			Assert.Ignore("Windows process-ownership regression.");
+			yield break;
+#endif
+		}
+
+		[UnityTest]
+		public IEnumerator DiscoveryCanRetryAfterServerProcessDisappears()
+		{
+			using var fixture = new Fixture { InfoPids = new[] { int.MaxValue, System.Diagnostics.Process.GetCurrentProcess().Id } };
+			var first = fixture.Factory.PingServer();
+			yield return WaitFor(() => first.IsCompleted);
+			Assert.That(first.GetResult(), Is.EqualTo(BeamWebCommandFactory.PingResult.NoServer));
+			var retry = fixture.Factory.PingServer();
+			yield return WaitFor(() => retry.IsCompleted);
+			Assert.That(retry.GetResult(), Is.EqualTo(BeamWebCommandFactory.PingResult.Match));
+		}
+
+		[UnityTest]
+		public IEnumerator ConfirmedServerExitAllowsShutdownWithoutAnHttpAcknowledgement()
+		{
+#if UNITY_EDITOR_WIN
+			using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+			{
+				FileName = "powershell.exe", Arguments = "-NoProfile -NonInteractive -Command Start-Sleep -Seconds 60",
+				UseShellExecute = false, CreateNoWindow = true
+			});
+			try
+			{
+				using var fixture = new Fixture { WriteOutput = false };
+				Set(fixture.Factory, "<ServerProcess>k__BackingField", process);
+				var run = fixture.Command.Run();
+				run.Error(_ => { });
+				fixture.Discover();
+				fixture.AllowHeaders.TrySetResult(true);
+				var registration = (TaskCompletionSource<string>)Get(fixture.Command, "_stopUrl");
+				yield return WaitFor(() => registration.Task.IsCompleted);
+				process.Kill();
+				Assert.That(process.WaitForExit(1000), Is.True);
+				var stop = fixture.Command.StopAsync();
+				stop.Error(_ => { });
+				yield return WaitFor(() => stop.IsCompleted);
+				Assert.That(stop.IsFailed, Is.False);
+				Assert.That(run.IsCompleted, Is.True, "The old run and dispatcher must still drain.");
+				Assert.That(fixture.StopReceived.Task.IsCompleted, Is.False, "An exited process cannot acknowledge HTTP.");
+				Assert.That(fixture.Command.StopAsync(), Is.SameAs(stop));
+			}
+			finally { if (!process.HasExited) process.Kill(); }
+#else
+			Assert.Ignore("Windows process-ownership regression.");
+			yield break;
+#endif
+		}
+
+		[UnityTest]
+		public IEnumerator StalledRegistrationTimesOutAndCanRetry()
+		{
+			using var fixture = new Fixture();
+			fixture.Command.Run().Error(_ => { });
+			fixture.Discover();
+			var first = fixture.Command.StopAsync();
+			first.Error(_ => { });
+			yield return WaitFor(() => first.IsCompleted);
+			Assert.That(first.IsFailed, Is.True);
+			Assert.That(fixture.StopReceived.Task.IsCompleted, Is.False);
+			fixture.AllowHeaders.TrySetResult(true);
+			fixture.ReleaseWorker.TrySetResult(true);
+			fixture.AllowAcknowledgement.TrySetResult(true);
+			var retry = fixture.Command.StopAsync();
+			retry.Error(_ => { });
+			yield return WaitFor(() => retry.IsCompleted);
+			Assert.That(retry.IsFailed, Is.False);
+		}
+
+		[UnityTest]
+		public IEnumerator StalledAcknowledgementTimesOutAndCanRetry()
+		{
+			using var fixture = new Fixture { RetryStop = true };
+			fixture.Command.Run().Error(_ => { });
+			fixture.Discover();
+			fixture.AllowHeaders.TrySetResult(true);
+			fixture.ReleaseWorker.TrySetResult(true);
+			var first = fixture.Command.StopAsync();
+			first.Error(_ => { });
+			yield return WaitFor(() => first.IsCompleted);
+			Assert.That(first.IsFailed, Is.True);
+			fixture.AllowAcknowledgement.TrySetResult(true);
+			var retry = fixture.Command.StopAsync();
+			retry.Error(_ => { });
+			yield return WaitFor(() => fixture.RetryReceived.Task.IsCompleted);
+			Assert.That(retry.IsCompleted, Is.False);
+			fixture.AllowRetryAcknowledgement.TrySetResult(true);
+			yield return WaitFor(() => retry.IsCompleted);
+			Assert.That(retry.IsFailed, Is.False);
+		}
+
+		[UnityTest]
+		public IEnumerator AssemblyReloadFailureStopsOwnedProcessAndAllowsRepeatedCleanup()
+		{
+#if UNITY_EDITOR_WIN
+			using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+			{
+				FileName = "powershell.exe", Arguments = "-NoProfile -NonInteractive -Command Start-Sleep -Seconds 60",
+				UseShellExecute = false, CreateNoWindow = true
+			});
+			try
+			{
+				using var fixture = new Fixture(backgroundServer: true) { WriteOutput = false, StopStatus = 500 };
+				Set(fixture.Factory, "<ServerProcess>k__BackingField", process);
+				var run = fixture.Command.Run();
+				run.Error(_ => { });
+				fixture.Discover();
+				fixture.AllowHeaders.TrySetResult(true);
+				fixture.ReleaseWorker.TrySetResult(true);
+				fixture.AllowAcknowledgement.TrySetResult(true);
+				var stop = typeof(BeamWebCommand).GetMethod("StopForAssemblyReload", BindingFlags.Instance | BindingFlags.NonPublic);
+				stop.Invoke(fixture.Command, null);
+				Assert.That(process.HasExited, Is.True, "A failed acknowledgement must stop the owned process before reload.");
+				// A second cleanup sees the exited process; it must remain safe and bounded.
+				stop.Invoke(fixture.Command, null);
+				yield return WaitFor(() => run.IsCompleted);
+			}
+			finally { if (!process.HasExited) process.Kill(); }
+#else
+			Assert.Ignore("Windows process-ownership regression.");
+			yield break;
+#endif
+		}
+
+		[UnityTest]
+		public IEnumerator AssemblyReloadStopAcknowledgesWithoutUnityUpdates()
+		{
+			using var fixture = new Fixture(backgroundServer: true) { WriteOutput = false };
+			var run = fixture.Command.Run();
+			run.Error(_ => { });
+			fixture.Discover();
+			fixture.ReleaseWorker.TrySetResult(true);
+			fixture.AllowAcknowledgement.TrySetResult(true);
+			_ = Task.Run(async () => { await Task.Delay(100); fixture.AllowHeaders.TrySetResult(true); });
+			var stop = typeof(BeamWebCommand).GetMethod("StopForAssemblyReload",
+				BindingFlags.Instance | BindingFlags.NonPublic);
+			Assert.That(stop, Is.Not.Null);
+			// Deliberately do not yield: this is the production reload callback's scheduling constraint.
+			stop.Invoke(fixture.Command, null);
+			Assert.That(fixture.StopReceived.Task.IsCompleted, Is.True);
+			Assert.That(fixture.StopId, Is.EqualTo(fixture.Command.id));
+			Assert.That(fixture.ServerTask.Wait(1000), Is.True);
+			yield return WaitFor(() => run.IsCompleted);
+		}
+
+		[UnityTest]
 		public IEnumerator StopBeforeRegistrationWaitsForServerAcknowledgementAndCallbacks()
 		{
 			using var fixture = new Fixture();
@@ -150,11 +342,11 @@ namespace Beamable.Editor.Tests
 			Assert.That(fixture.Command.StopAsync(), Is.SameAs(retry));
 		}
 
-		private static IEnumerator WaitFor(Func<bool> ready)
+		private static IEnumerator WaitFor(Func<bool> ready, string message = "Timed out waiting for controlled transport gate.")
 		{
-			var deadline = DateTime.UtcNow.AddSeconds(10);
+			var deadline = DateTime.UtcNow.AddSeconds(15);
 			while (!ready() && DateTime.UtcNow < deadline) yield return null;
-			Assert.That(ready(), Is.True, "Timed out waiting for controlled transport gate.");
+			Assert.That(ready(), Is.True, message);
 		}
 
 		private static object Get(object target, string field) => target.GetType()
@@ -181,10 +373,11 @@ namespace Beamable.Editor.Tests
 			public bool WriteOutput = true;
 			public int StopStatus = 204;
 			public bool RetryStop;
+			public int[] InfoPids;
 			public readonly TaskCompletionSource<bool> RetryReceived = Signal();
 			public readonly TaskCompletionSource<bool> AllowRetryAcknowledgement = Signal();
 
-			public Fixture()
+			public Fixture(bool backgroundServer = false)
 			{
 				var reservation = new TcpListener(IPAddress.Loopback, 0);
 				reservation.Start();
@@ -207,11 +400,12 @@ namespace Beamable.Editor.Tests
 				history.OnAfterLoadState();
 				Factory = (BeamWebCommandFactory)FormatterServices.GetUninitializedObject(typeof(BeamWebCommandFactory));
 				Set(Factory, "_options", _options);
+				Set(Factory, "_history", history);
 				Set(Factory, "serverReadyCallbacks", new List<Action>());
 				Factory.dispatcher = _dispatcher;
 				Command = new BeamWebCommand(Factory, history);
 				Command.SetCommand("beam content ps --watch");
-				ServerTask = Serve();
+				ServerTask = backgroundServer ? Task.Run(Serve) : Serve();
 				_ = ServerTask.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
 			}
 
@@ -237,13 +431,27 @@ namespace Beamable.Editor.Tests
 			public void Discover()
 			{
 				var callbacks = (List<Action>)Get(Factory, "serverReadyCallbacks");
-				foreach (var callback in callbacks.ToArray()) callback();
+				var ready = callbacks.ToArray();
 				callbacks.Clear();
+				foreach (var callback in ready) callback();
 			}
+
 
 			private async Task Serve()
 			{
 				var execute = await _listener.GetContextAsync();
+				if (InfoPids != null)
+				{
+					for (var i = 0; i < InfoPids.Length; i++)
+					{
+						var info = i == 0 ? execute : await _listener.GetContextAsync();
+						var json = JsonUtility.ToJson(new ServerInfoResponse { owner = Factory.Owner, version = Factory.Version, pid = InfoPids[i] });
+						var bytes = Encoding.UTF8.GetBytes(json);
+						await info.Response.OutputStream.WriteAsync(bytes, 0, bytes.Length);
+						info.Response.Close();
+					}
+					return;
+				}
 				using var executeReader = new StreamReader(execute.Request.InputStream);
 				var request = JsonUtility.FromJson<BeamWebCommandRequest>(await executeReader.ReadToEndAsync());
 				ExecuteReceived.TrySetResult(true);

@@ -38,6 +38,7 @@ namespace Beamable.Editor.BeamCli
 		/// some other Unity-client, or a user mode.
 		/// </summary>
 		public string owner;
+		public int pid;
 	}
 
 	public class BeamWebCommandFactoryOptions : ScriptableObject
@@ -92,6 +93,7 @@ namespace Beamable.Editor.BeamCli
 
 		public Promise onReady = null;
 		private ServerServeWrapper _serverCommand;
+		internal Process ServerProcess { get; private set; }
 
 		public BeamWebCommandFactory(
 			BeamableDispatcher dispatcher,
@@ -321,7 +323,7 @@ namespace Beamable.Editor.BeamCli
 			var p = new Promise();
 			PingResult pingResult = PingResult.NoServer;
 			
-			op.completed += _ =>
+			op.completed += operation =>
 			{
 				if (req.responseCode != 200)
 				{
@@ -347,6 +349,28 @@ namespace Beamable.Editor.BeamCli
 					return;
 				}
 
+				try
+				{
+					if (ServerProcess == null || ServerProcess.HasExited || ServerProcess.Id != res.pid)
+					{
+						var process = Process.GetProcessById(res.pid);
+						_ = process.Handle; // Retain this process identity, not a PID that can be reused.
+						ServerProcess = process;
+					}
+				}
+				catch (Exception error) when (error is ArgumentException || error is InvalidOperationException)
+				{
+					pingResult = PingResult.NoServer;
+					p.CompleteSuccess();
+					return;
+				}
+				catch (Exception error)
+				{
+					_history.AddServerEvent($"Cannot own CLI process at port=[{port}]: {error.Message}");
+					pingResult = PingResult.Mismatch;
+					p.CompleteSuccess();
+					return;
+				}
 				pingResult = PingResult.Match;
 				p.CompleteSuccess();
 			};
@@ -384,6 +408,9 @@ namespace Beamable.Editor.BeamCli
 		private Promise _runPromise;
 		private Promise _stopPromise;
 		private readonly TaskCompletionSource<string> _stopUrl = new TaskCompletionSource<string>();
+		private Task<HttpResponseMessage> _responseTask;
+		private Process _requestServer;
+		private string _requestUrl;
 		private const int MaxPreResponseTransportRetries = 2;
 
 		public BeamWebCommand(BeamWebCommandFactory factory, BeamWebCliCommandHistory history)
@@ -470,7 +497,9 @@ namespace Beamable.Editor.BeamCli
 				// poisoned half-closed socket); a fresh client per command
 				// avoids that.
 				using var client = new HttpClient { Timeout = TimeSpan.FromDays(7) };
-				var sendTask = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, _cts.Token);
+				_requestServer = _factory.ServerProcess;
+				_requestUrl = executeUrl;
+				var sendTask = _responseTask = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, _cts.Token);
 				_history.AddCustomLog(id, "[Unity] sent request...");
 
 				using HttpResponseMessage response = await sendTask;
@@ -574,17 +603,78 @@ namespace Beamable.Editor.BeamCli
 			return _stopPromise ??= _runPromise == null ? Promise.Success : StopImpl();
 		}
 
+		internal void StopForAssemblyReload()
+		{
+			using var timeout = new CancellationTokenSource(3000);
+			try
+			{
+				if (_responseTask == null) return; // Still waiting for discovery; no request was sent.
+				var body = JsonUtility.ToJson(new BeamWebCommandRequest { requestId = id });
+				var stop = StopTransportForReload(_responseTask, _requestUrl, id, body, timeout.Token);
+				_ = stop.ContinueWith(task => { _ = task.Exception; }, CancellationToken.None,
+					TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+				if (!stop.Wait(3000)) throw new TimeoutException("CLI reload shutdown timed out.");
+			}
+			catch
+			{
+				// A broken transport cannot acknowledge cleanup. Stop the verified server that
+				// received this request (the Windows launcher may only be a cmd.exe parent).
+				if (_requestServer == null) throw;
+				if (!_requestServer.HasExited)
+				{
+					_requestServer.Kill();
+					if (!_requestServer.WaitForExit(1000))
+						throw new TimeoutException("The CLI process did not exit during assembly reload.");
+				}
+			}
+			finally { timeout.Cancel(); Cancel(); }
+		}
+
+		private static async Task StopTransportForReload(Task<HttpResponseMessage> responseTask,
+			string executeUrl, string requestId, string body, CancellationToken cancellationToken)
+		{
+			// This path must not capture Unity's synchronization context or wait for its dispatcher.
+			var response = await responseTask.ConfigureAwait(false);
+			if (!response.Headers.TryGetValues("X-Beam-Request-Id", out var ids) || !ids.Contains(requestId))
+				throw new InvalidOperationException("The CLI did not acknowledge request registration.");
+			using var client = new HttpClient();
+			using var content = new StringContent(body, Encoding.UTF8, "application/json");
+			using var stopped = await client.PostAsync(new Uri(new Uri(executeUrl), "stop"), content,
+				cancellationToken).ConfigureAwait(false);
+			stopped.EnsureSuccessStatusCode();
+		}
+
 		private async Promise StopImpl()
 		{
-			// Registration is acknowledged before the response headers are sent. Never race /execute with /stop.
-			var url = await _stopUrl.Task;
-			if (url == "") throw new InvalidOperationException("The CLI server does not support acknowledged command shutdown. Update the CLI before switching content modes.");
-			if (url != null)
+			if (_requestServer?.HasExited == true && _stopUrl.Task.IsCompleted)
 			{
-				using var client = new HttpClient { Timeout = TimeSpan.FromDays(7) };
-				using var body = new StringContent(JsonUtility.ToJson(new BeamWebCommandRequest { requestId = id }), Encoding.UTF8, "application/json");
-				using var response = await client.PostAsync(url, body);
-				response.EnsureSuccessStatusCode();
+				// Registration has settled, so no discovery retry remains. Process exit proves its workers are gone.
+				Cancel();
+				try { await _runPromise; }
+				catch (Exception) { }
+				return;
+			}
+			// Registration is acknowledged before the response headers are sent. Never race /execute with /stop.
+			string url;
+			using (var timeout = new CancellationTokenSource())
+			{
+				timeout.CancelAfter(10000);
+				try
+				{
+					var deadline = Task.Delay(Timeout.Infinite, timeout.Token);
+					if (await Task.WhenAny(_stopUrl.Task, deadline) != _stopUrl.Task)
+						throw new TimeoutException("CLI command registration timed out during shutdown. Retry shutdown before restarting the watcher.");
+					url = await _stopUrl.Task;
+					if (url == "") throw new InvalidOperationException("The CLI server does not support acknowledged command shutdown. Update the CLI before switching content modes.");
+					if (url != null)
+					{
+						using var client = new HttpClient();
+						using var body = new StringContent(JsonUtility.ToJson(new BeamWebCommandRequest { requestId = id }), Encoding.UTF8, "application/json");
+						using var response = await client.PostAsync(url, body, timeout.Token);
+						response.EnsureSuccessStatusCode();
+					}
+				}
+				finally { timeout.Cancel(); }
 			}
 			// Run already drains the dispatcher in its finally block.
 			try { await _runPromise; }

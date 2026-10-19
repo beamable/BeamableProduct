@@ -310,6 +310,29 @@ namespace Beamable.Editor.Tests
             finally { dispatcher.OnDispose(); command.Completion.CompleteSuccess(); }
         }
 
+        [UnityTest]
+        public IEnumerator AssemblyReloadDisposalDoesNotWaitForGateOrEditorCallbacks()
+        {
+            yield return Wait(service.Reload());
+            yield return Wait(service.StartContentHistory());
+            config.EnableLocalContentInEditor = true;
+            var switching = ApplyMode();
+            // Both commands now belong to pending shutdown, with the gate still held.
+            var prepare = typeof(CliContentService).GetMethod("PrepareForAssemblyReload",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(prepare, Is.Not.Null, "Reload needs teardown that can finish without editor updates.");
+            prepare.Invoke(service, null);
+            var disposal = service.OnDispose();
+            Assert.That(disposal.IsCompleted, Is.True, "Assembly reload blocks the editor update loop.");
+            disposal.GetResult();
+            Assert.That(service.IsContentHistoryWatching, Is.False);
+            commands.Content[0].Completion.CompleteSuccess();
+            commands.History[0].Completion.CompleteSuccess();
+            yield return Wait(switching);
+            Assert.That(commands.Content.Count, Is.EqualTo(1));
+            Assert.That(commands.History.Count, Is.EqualTo(1));
+        }
+
         IEnumerator Switch(bool initial, bool history)
         {
             config.EnableLocalContentInEditor = initial;

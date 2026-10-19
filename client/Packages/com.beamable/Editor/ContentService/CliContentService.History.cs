@@ -308,8 +308,8 @@ namespace Beamable.Editor.ContentService
 
 		private void SetContentHistoryWatcherError(ContentHistoryOperationException error)
 		{
-			// Retain the shutdown acknowledgement even when the stream failed first.
-			_ = StopHistoryWatcher();
+			// Report the watcher error below; retain shutdown failure in _historyStop for retry.
+			_ = StopHistoryWatcher().ToPromise().Error(_ => { });
 			ContentHistoryWatcherError = error;
 			ContentHistoryVersion++;
 			UnityEngine.Debug.LogError(error.Diagnostic);
@@ -336,7 +336,6 @@ namespace Beamable.Editor.ContentService
 					return;
 				}
 
-				_ = StopHistoryWatcher();
 				SetContentHistoryWatcherError(new ContentHistoryOperationException(
 					"Watch publish history",
 					"Unable to load published history. Check your connection and try again.",

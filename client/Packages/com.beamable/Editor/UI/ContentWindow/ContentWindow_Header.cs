@@ -403,11 +403,11 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (_windowStatus == ContentWindowStatus.History)
 			{
 				ResetHistorySelection();
-				_contentService?.StartContentHistory();
+				_contentService?.StartContentHistory().Error(error => Debug.LogException(error));
 			}
 			else
 			{
-				_contentService?.StopContentHistory();
+				_contentService?.StopContentHistory().Error(error => Debug.LogException(error));
 			}
 			if (_windowStatus is ContentWindowStatus.Normal)
 			{

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
@@ -26,6 +27,7 @@ namespace Beamable.Editor.ContentService
         private bool _contentWatcherLocalMode;
         private bool _historyWatcherLocalMode;
         private bool _watchersDisposed;
+        private bool _preparedForAssemblyReload;
 
         // Stop commands while the dispatcher can still deliver their final callbacks.
         public int DisposeOrder => -1;
@@ -113,8 +115,35 @@ namespace Beamable.Editor.ContentService
 
         private static async Task AwaitCommand(Promise run) => await run;
 
+        internal void PrepareForAssemblyReload()
+        {
+            if (_preparedForAssemblyReload) return;
+            _preparedForAssemblyReload = true;
+            _watchersDisposed = true;
+            _contentWatchRequested = _historyWatchRequested = false;
+            EditorApplication.update -= CheckLocalContentMode;
+            var commands = new[] { _contentWatcher?.Command, _contentHistoryWatcher?.Command,
+                _retiringContentCommand, _retiringHistoryCommand };
+            _contentWatcher = null;
+            _contentHistoryWatcher = null;
+            _retiringContentCommand = _retiringHistoryCommand = null;
+            CancelContentHistoryRequests();
+            // Reload cannot pump the gate, Unity continuations, or dispatched callbacks.
+            foreach (var command in commands.Distinct())
+            {
+                try
+                {
+                    if (command is BeamWebCommand web) web.StopForAssemblyReload();
+                    else command?.Cancel();
+                }
+                catch (Exception error) { Debug.LogException(error); }
+            }
+        }
+
         public async Promise OnDispose()
         {
+            if (BeamEditor.IsReloading) PrepareForAssemblyReload();
+            if (_preparedForAssemblyReload) return;
             _watchersDisposed = true;
             _contentWatchRequested = false;
             _historyWatchRequested = false;

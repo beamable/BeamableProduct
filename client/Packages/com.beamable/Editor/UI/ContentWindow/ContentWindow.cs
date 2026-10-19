@@ -106,7 +106,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			ResetButtonTooltip();
 			EditorApplication.update -= OnEditorUpdate;
 			ResetHistorySelection();
-			_contentService?.StopContentHistory();
+			_contentService?.StopContentHistory().Error(error => Debug.LogException(error));
 		}
 
 		private void OnEditorUpdate()
