@@ -37,7 +37,8 @@ public partial class ContentPsNoAutoSyncWatchTests
         await fixture.Start();
         // This simulates a user restoring/editing a file after startup, against its earlier reference.
         await fixture.Save(30, "before", "local-tag");
-        await fixture.Events.Next(ContentPsCommandEvent.EVT_TYPE_ChangedContent);
+        var notification = await fixture.Events.Next(ContentPsCommandEvent.EVT_TYPE_ChangedContent);
+        Assert.That(notification.RelevantManifestsAgainstLatest.Single().Entries.Single().ChangeKind, Is.EqualTo(2));
         var document = JsonDocument.Parse(File.ReadAllText(fixture.FilePath)).RootElement;
         Assert.That(document.GetProperty("properties").GetProperty("damage").GetProperty("data").GetInt32(), Is.EqualTo(30));
         Assert.That(document.GetProperty("referenceManifestId").GetString(), Is.EqualTo(noAutoSync ? "before" : "current"));
@@ -53,6 +54,7 @@ public partial class ContentPsNoAutoSyncWatchTests
         var original = File.ReadAllBytes(fixture.FilePath);
         await fixture.Server.Publish();
         var notification = await fixture.Events.Next(ContentPsCommandEvent.EVT_TYPE_RemotePublished);
+        Assert.That(notification.RelevantManifestsAgainstLatest.Single().Entries.Single().ChangeKind, Is.EqualTo(noAutoSync ? 3 : 1));
         Assert.That(notification.SyncReports.Count, Is.EqualTo(noAutoSync ? 0 : 1));
         Assert.That(fixture.Server.Downloads, Is.EqualTo(noAutoSync ? 0 : 1));
         if (noAutoSync) Assert.That(File.ReadAllBytes(fixture.FilePath), Is.EqualTo(original));

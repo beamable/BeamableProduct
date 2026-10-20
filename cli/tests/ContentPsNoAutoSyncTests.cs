@@ -72,6 +72,7 @@ public class ContentPsNoAutoSyncTests
         await command.Handle(args);
 
         Assert.That(command.Result!.RelevantManifestsAgainstLatest.Single().Entries.Single().FullId, Is.EqualTo(file.Id));
+        Assert.That(command.Result.RelevantManifestsAgainstLatest.Single().Entries.Single().ChangeKind, Is.EqualTo(noAutoSync ? 2 : 1));
         if (noAutoSync)
             Assert.That(File.ReadAllBytes(path), Is.EqualTo(original));
         else

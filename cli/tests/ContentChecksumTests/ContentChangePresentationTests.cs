@@ -82,13 +82,26 @@ public class ContentChangePresentationTests
         AssertKind(entry, 0);
     }
 
-    private static void AssertKind(LocalContentManifestEntry entry, int expected)
+    [Test]
+    public void Rename_pair_keeps_created_deleted_statuses_and_neutral_direction()
     {
-        // Reflection keeps the red test compilable before the additive wire field exists.
-        var field = typeof(LocalContentManifestEntry).GetField("ChangeKind");
-        Assert.That(field, Is.Not.Null, "CLI status is missing the local-versus-published presentation metadata.");
-        Assert.That(Convert.ToInt32(field.GetValue(entry)), Is.EqualTo(expected));
+        var files = CreateFiles(40, 40, 40);
+        var original = files.ContentFiles[0];
+        var renamed = original;
+        original.LocalFilePath = "";
+        renamed.Id = "currency.renamed";
+        renamed.ReferenceContent = null;
+        files.ContentFiles = new List<ContentFile> { original, renamed };
+        ContentService.ComputeCorrectSyncOp(files, false, false, new HashSet<string>(), out var conflicts, out _, out _);
+        var entries = ContentService.ContentFileToLocalContentManifestEntries(files.ContentFiles).ToArray();
+        Assert.That(conflicts, Is.Empty);
+        Assert.That(entries[0].StatusEnum, Is.EqualTo(ContentStatus.Deleted));
+        Assert.That(entries[1].StatusEnum, Is.EqualTo(ContentStatus.Created));
+        Assert.That(entries.All(entry => entry.ChangeKind == 0), Is.True);
     }
+
+    private static void AssertKind(LocalContentManifestEntry entry, int expected) =>
+        Assert.That(entry.ChangeKind, Is.EqualTo(expected));
 
     private LocalContentFiles CreateFiles(int local, int saved, int published)
     {
