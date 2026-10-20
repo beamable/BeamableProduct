@@ -65,6 +65,25 @@ namespace Beamable.Editor.Tests
         [UnityTest] public IEnumerator NamespaceTransportFailureDoesNotBlockNormalContent() => DelayedNamespaces(false, true);
         [UnityTest] public IEnumerator NamespaceTransportFailureDoesNotBlockLocalContent() => DelayedNamespaces(true, true);
 
+        [UnityTest]
+        public IEnumerator Failed_mode_start_can_retry_without_changing_the_preference()
+        {
+            config.EnableLocalContentInEditor = false;
+            yield return Wait(service.Reload());
+            config.EnableLocalContentInEditor = true;
+            commands.FailNextContentStart = true;
+            var switching = ApplyMode().Error(_ => { });
+            commands.Content[0].Completion.CompleteSuccess();
+            yield return Wait(switching);
+            Assert.That(switching.IsFailed, Is.True);
+            AssertMode("Failed");
+            var retry = ApplyMode();
+            yield return Wait(retry);
+            retry.GetResult();
+            AssertMode("Paused");
+            Assert.That(config.EnableLocalContentInEditor, Is.True);
+        }
+
         IEnumerator DelayedNamespaces(bool initialLocal, bool transportFailure)
         {
             commands.DelayManifests = true;
@@ -88,11 +107,13 @@ namespace Beamable.Editor.Tests
             Assert.That(commands.Content[1].Local, Is.EqualTo(!initialLocal));
             Assert.That(commands.History[1].Local, Is.EqualTo(!initialLocal));
 
+            var metadataVersion = MetadataVersion();
             commands.Manifests[0].Emit();
             commands.Manifests[0].ReportError();
             commands.Manifests[0].Completion.CompleteError(new InvalidOperationException("retired namespace request"));
             Assert.That(service.RemoteManifestsLoaded, Is.False, "Retired responses cannot update the new watcher.");
             Assert.That(service.RemoteManifestsErrored, Is.False);
+            Assert.That(MetadataVersion(), Is.EqualTo(metadataVersion), "Retired requests must not repaint current metadata.");
 
             if (transportFailure)
             {
@@ -107,6 +128,7 @@ namespace Beamable.Editor.Tests
             }
             yield return null;
             Assert.That(service.RemoteManifestsErrored, Is.True);
+            Assert.That(MetadataVersion(), Is.GreaterThan(metadataVersion), "A late error must notify the window.");
             Assert.That(service.RemoteManifestsLoaded, Is.False, "A failed request must not imply an empty realm.");
             Assert.That(service.isReloading, Is.False);
             Assert.That(commands.Content[1].Cancelled, Is.False);
@@ -116,11 +138,27 @@ namespace Beamable.Editor.Tests
             commands.Content[1].Completion.CompleteSuccess();
             yield return Wait(retry);
             retry.GetResult();
+            metadataVersion = MetadataVersion();
             commands.Manifests[2].Emit();
             commands.Manifests[2].Completion.CompleteSuccess();
             Assert.That(service.availableManifestIds, Does.Contain("global"));
             Assert.That(service.RemoteManifestsLoaded, Is.True);
             Assert.That(service.RemoteManifestsErrored, Is.False);
+            Assert.That(MetadataVersion(), Is.GreaterThan(metadataVersion), "A late namespace result must notify the window.");
+        }
+
+        int MetadataVersion()
+        {
+            var property = typeof(CliContentService).GetProperty("ContentMetadataVersion");
+            Assert.That(property, Is.Not.Null, "Metadata completion needs its own repaint signal.");
+            return (int)property.GetValue(service);
+        }
+
+        void AssertMode(string expected)
+        {
+            var property = typeof(CliContentService).GetProperty("AutoSyncState");
+            Assert.That(property, Is.Not.Null, "The UI must use acknowledged watcher state.");
+            Assert.That(property.GetValue(service).ToString(), Is.EqualTo(expected));
         }
 
         [UnityTest] public IEnumerator ContentFailureCanRetryAfterAcknowledgedShutdown() => RetryFailedWatcher(false);
@@ -216,11 +254,13 @@ namespace Beamable.Editor.Tests
             transport.AllowAcknowledgement.TrySetResult(true);
             yield return Wait(first);
             Assert.That(first.IsFailed, Is.True);
+            AssertMode("Failed");
             Assert.That(commands.Content.Count + commands.History.Count, Is.EqualTo(switching ? 1 : 0));
             if (stopHistory) yield return Wait(service.StopContentHistory());
 
             var retry = switching ? ApplyMode() : history ? service.RestartContentHistory() : service.Reload();
             retry.Error(_ => { });
+            AssertMode("Switching");
             Assert.That(retry.IsFailed, Is.False, "Retry must contact the server again, not reuse a failed shutdown.");
             Assert.That(commands.Content.Count + commands.History.Count, Is.EqualTo(switching ? 1 : 0), "The retiring command still owns shutdown.");
             transport.AllowRetryAcknowledgement.TrySetResult(true);
@@ -228,6 +268,7 @@ namespace Beamable.Editor.Tests
             Assert.That(transport.RetryReceived.Task.IsCompleted, Is.True);
             Assert.That(transport.StopId, Is.EqualTo(transport.Command.id));
             Assert.That(retry.IsFailed, Is.False);
+            AssertMode(config.EnableLocalContentInEditor ? "Paused" : "Enabled");
             Assert.That(commands.Content.Count + commands.History.Count, Is.EqualTo(switching ? (stopHistory ? 2 : 3) : 1));
             if (switching)
             {
@@ -401,10 +442,13 @@ namespace Beamable.Editor.Tests
             config.EnableLocalContentInEditor = initial;
             yield return Wait(service.Reload());
             if (history) service.StartContentHistory();
+            AssertMode(initial ? "Paused" : "Enabled");
             var oldContent = commands.Content[0];
             var oldHistory = history ? commands.History[0] : null;
             config.EnableLocalContentInEditor = !initial;
+            AssertMode("Switching");
             var switching = ApplyMode();
+            AssertMode("Switching");
             Assert.That(oldContent.Cancelled, Is.True);
             if (history) Assert.That(oldHistory.Cancelled, Is.True);
             Assert.That(commands.Content.Count, Is.EqualTo(1), "No replacement before shutdown acknowledgement.");
@@ -413,11 +457,13 @@ namespace Beamable.Editor.Tests
             yield return null;
             if (history)
             {
+                AssertMode("Switching");
                 Assert.That(commands.Content.Count, Is.EqualTo(1), "Content must also wait for history shutdown.");
                 oldHistory.Completion.CompleteSuccess();
             }
             yield return Wait(switching);
             switching.GetResult();
+            AssertMode(initial ? "Enabled" : "Paused");
             Assert.That(commands.Content.Count, Is.EqualTo(2));
             Assert.That(commands.Content[1].Local, Is.EqualTo(!initial));
             Assert.That(commands.History.Count, Is.EqualTo(history ? 2 : 0));
@@ -467,10 +513,16 @@ namespace Beamable.Editor.Tests
             public readonly List<HeldCommand> Manifests = new();
             public bool DelayInitialContent;
             public bool DelayManifests;
+            public bool FailNextContentStart;
             public BeamCli.BeamWebCommand FirstWebCommand;
             public Commands() : base(null, null) { }
             public override ContentPsWrapper ContentPs(ContentPsArgs args)
             {
+                if (FailNextContentStart)
+                {
+                    FailNextContentStart = false;
+                    throw new IOException("Controlled watcher startup failure");
+                }
                 if (FirstWebCommand != null)
                 {
                     var web = FirstWebCommand;

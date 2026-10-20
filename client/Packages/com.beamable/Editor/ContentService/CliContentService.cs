@@ -93,6 +93,7 @@ namespace Beamable.Editor.ContentService
 		[NonSerialized]
 		public bool isReloading;
 		public List<string> availableManifestIds;
+		public int ContentMetadataVersion { get; private set; }
 
 		/// <summary>
 		/// True once the most recent <see cref="Reload"/> has finished fetching the realm's remote
@@ -942,15 +943,18 @@ namespace Beamable.Editor.ContentService
 					RemoteManifestsLoaded = true;
 
 					availableManifestIds = manifestIds.ToList();
+					ContentMetadataVersion++;
 				}).OnError(dp =>
 				{
 					if (!ReferenceEquals(_contentWatcher, watcher)) return;
 					RemoteManifestsErrored = true;
+					ContentMetadataVersion++;
 					Debug.LogError(dp.data.message);
 				}).Run().Error(error =>
 				{
 					if (!ReferenceEquals(_contentWatcher, watcher)) return;
 					RemoteManifestsErrored = true;
+					ContentMetadataVersion++;
 					Debug.LogException(error);
 				});
 

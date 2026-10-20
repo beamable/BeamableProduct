@@ -106,6 +106,48 @@ namespace Beamable.Editor.Tests
             Assert.That(method, Is.Not.Null, "Shared presentation mapping is missing");
             return method.Invoke(null, args);
         }
+
+        [TestCase(202f)]
+        [TestCase(280f)]
+        [TestCase(450f)]
+        [TestCase(900f)]
+        public void Local_mode_layout_reserves_warning_before_adjacent_controls(float available)
+        {
+            var method = typeof(ContentWindow).GetMethod("CalculateLocalModeWidths", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null);
+            var widths = (float[])method.Invoke(null, new object[] { available, true });
+            Assert.That(widths[0], Is.GreaterThanOrEqualTo(30), "Switch must remain operable.");
+            Assert.That(widths[1], Is.GreaterThanOrEqualTo(24), "Sync state must remain visible.");
+            Assert.That(widths[2], Is.GreaterThanOrEqualTo(100), "Reserve the icon and Local Mode On label.");
+            Assert.That(widths[0] + widths[1] + widths[2] + 8, Is.LessThanOrEqualTo(available));
+        }
+
+        [TestCase(0f, true)]
+        [TestCase(70f, true)]
+        [TestCase(120f, true)]
+        [TestCase(202f, false)]
+        public void Extremely_narrow_mode_controls_never_overlap_existing_controls(float available, bool local)
+        {
+            var method = typeof(ContentWindow).GetMethod("CalculateLocalModeWidths", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null);
+            var widths = (float[])method.Invoke(null, new object[] { available, local });
+            Assert.That(Array.TrueForAll(widths, width => width >= 0), Is.True);
+            Assert.That(widths[0] + widths[1] + widths[2], Is.LessThanOrEqualTo(available));
+            if (!local) Assert.That(widths[2], Is.Zero);
+        }
+
+        [TestCase("Switching", false, "Switching...")]
+        [TestCase("Switching", true, "Switching...")]
+        [TestCase("Failed", false, "Sync failed - Retry")]
+        [TestCase("Failed", true, "Retry")]
+        [TestCase("Paused", false, "Auto-sync paused")]
+        [TestCase("Enabled", false, "Auto-sync enabled")]
+        public void Auto_sync_labels_distinguish_requested_from_acknowledged_mode(string state, bool compact, string expected)
+        {
+            var method = typeof(ContentWindow).GetMethod("GetAutoSyncLabel", BindingFlags.Static | BindingFlags.NonPublic);
+            var stateType = typeof(global::Beamable.Editor.ContentService.CliContentService).GetProperty("AutoSyncState").PropertyType;
+            Assert.That(method.Invoke(null, new object[] { Enum.Parse(stateType, state), compact }), Is.EqualTo(expected));
+        }
     }
 
     public class ContentLocalModeDialogTests

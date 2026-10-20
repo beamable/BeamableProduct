@@ -33,6 +33,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		private int _lastManifestChangedCount;
 		private int _lastProgressUpdateVersion;
 		private int _lastContentHistoryVersion;
+		private int _lastContentMetadataVersion;
+		private ContentAutoSyncState _lastAutoSyncState;
 		private EditorGUISplitView _mainSplitter;
 		private bool _importingDefaultContent;
 
@@ -111,6 +113,13 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void OnEditorUpdate()
 		{
+			if (_contentService != null &&
+			    (_contentService.ContentMetadataVersion != _lastContentMetadataVersion || _contentService.AutoSyncState != _lastAutoSyncState))
+			{
+				_lastContentMetadataVersion = _contentService.ContentMetadataVersion;
+				_lastAutoSyncState = _contentService.AutoSyncState;
+				Repaint();
+			}
 			if (_buttonTooltipCandidate != null && _buttonTooltipText != null && !_buttonTooltipVisible &&
 			    EditorApplication.timeSinceStartup >= _buttonTooltipShowAt)
 			{

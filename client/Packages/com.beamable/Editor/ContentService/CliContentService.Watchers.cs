@@ -10,6 +10,8 @@ using UnityEngine;
 
 namespace Beamable.Editor.ContentService
 {
+    public enum ContentAutoSyncState { Enabled, Paused, Switching, Failed }
+
     public partial class CliContentService
     {
         private SemaphoreSlim _watcherGate;
@@ -28,6 +30,37 @@ namespace Beamable.Editor.ContentService
         private bool _historyWatcherLocalMode;
         private bool _watchersDisposed;
         private bool _preparedForAssemblyReload;
+        private Exception _localContentModeError;
+
+        public ContentAutoSyncState AutoSyncState
+        {
+            get
+            {
+                // A saved preference is not proof that the previous commands have stopped.
+                if ((_retiringContentCommand != null && (_contentStop?.IsFaulted == true || _contentStop?.IsCanceled == true)) ||
+                    (_retiringHistoryCommand != null && (_historyStop?.IsFaulted == true || _historyStop?.IsCanceled == true)))
+                    return ContentAutoSyncState.Failed;
+                if (_retiringContentCommand != null || _retiringHistoryCommand != null)
+                    return ContentAutoSyncState.Switching;
+                var local = _contentConfiguration.EnableLocalContentInEditor;
+                if (WatchersMatchMode(local))
+                    return local ? ContentAutoSyncState.Paused : ContentAutoSyncState.Enabled;
+                if ((_localContentModeError != null && !isReloading) ||
+                    (_contentWatcher != null && _contentWatcherCompletion?.IsCompleted == true) ||
+                    (_historyWatchRequested && ContentHistoryWatcherError != null) ||
+                    (_contentHistoryWatcher != null && _historyWatcherCompletion?.IsCompleted == true))
+                    return ContentAutoSyncState.Failed;
+                return ContentAutoSyncState.Switching;
+            }
+        }
+
+        private bool WatchersMatchMode(bool local) =>
+            (_contentWatchRequested
+                ? _contentWatcher != null && _contentWatcherLocalMode == local && _contentWatcherCompletion?.IsCompleted != true
+                : _contentWatcher == null) &&
+            (_historyWatchRequested
+                ? _contentHistoryWatcher != null && _historyWatcherLocalMode == local && _historyWatcherCompletion?.IsCompleted != true
+                : _contentHistoryWatcher == null);
 
         // Stop commands while the dispatcher can still deliver their final callbacks.
         public int DisposeOrder => -1;
@@ -48,14 +81,9 @@ namespace Beamable.Editor.ContentService
             try
             {
                 if (_watchersDisposed) return;
+                _localContentModeError = null;
                 var local = _contentConfiguration.EnableLocalContentInEditor;
-                var contentMatches = _contentWatchRequested
-                    ? _contentWatcher != null && _contentWatcherLocalMode == local
-                    : _contentWatcher == null;
-                var historyMatches = _historyWatchRequested
-                    ? _contentHistoryWatcher != null && _historyWatcherLocalMode == local
-                    : _contentHistoryWatcher == null;
-                if (contentMatches && historyMatches &&
+                if (WatchersMatchMode(local) &&
                     _retiringContentCommand == null && _retiringHistoryCommand == null) return;
                 await Task.WhenAll(StopContentWatcher(preserveRequest: true), StopHistoryWatcher());
                 if (_watchersDisposed) return;
@@ -63,6 +91,7 @@ namespace Beamable.Editor.ContentService
                 if (_historyWatchRequested) StartContentHistoryCore();
                 if (_contentWatchRequested) ready = await StartContentWatcher();
             }
+            catch (Exception error) { _localContentModeError = error; throw; }
             finally { WatcherGate.Release(); }
             await ready;
         }

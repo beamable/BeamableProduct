@@ -479,8 +479,9 @@ namespace Beamable.Editor.UI.ContentWindow
 				var typeLabel = "All Content" + (SelectedContentType.Count == 0 ? "" :
 					$" > {string.Join(" | ", SelectedContentType.OrderBy(item => item).Select(item => item.Replace(".", ">")))}");
 				// Truncate the type breadcrumb before allowing it to displace the mode or existing controls.
+				var minimumModeWidth = _contentConfiguration != null && _contentConfiguration.EnableLocalContentInEditor ? 202 : 146;
 				var typeWidth = Mathf.Min(style.CalcSize(new GUIContent(typeLabel)).x, 350,
-					Mathf.Max(90, modeRight - modeLeft - 330));
+					Mathf.Max(0, modeRight - modeLeft - minimumModeWidth - 8));
 				GUI.Label(new Rect(modeLeft, rect.y, typeWidth, rect.height), new GUIContent(typeLabel, typeLabel), style);
 				modeLeft += typeWidth + 8;
 			}
@@ -516,17 +517,23 @@ namespace Beamable.Editor.UI.ContentWindow
 			_modeToggleStyle ??= new GUIStyle(_modeLabelStyle) { padding = new RectOffset(36, 0, 0, 0) };
 			_modeWarningStyle ??= new GUIStyle(_modeLabelStyle) { padding = new RectOffset(5, 5, 0, 0), normal = { textColor = new Color(1f, .82f, .3f) } };
 			var local = _contentConfiguration.EnableLocalContentInEditor;
+			var state = _contentService.AutoSyncState;
+			var widths = CalculateLocalModeWidths(rect.width, local);
 			// Clip only this area, so even very narrow docks cannot paint over count or sorting.
 			GUI.BeginGroup(rect);
-			var toggleRect = new Rect(0, 0, 104, rect.height);
-			var requested = GUI.Toggle(toggleRect, local, new GUIContent("Local Mode", "Use local content in the Unity client. Restart Play Mode after changing the content source."), _modeToggleStyle);
+			var toggleRect = new Rect(0, 0, widths[0], rect.height);
+			var requested = GUI.Toggle(toggleRect, local, new GUIContent(widths[0] >= 104 ? "Local Mode" : "",
+				"Local Mode: use local content in the Unity client. Restart Play Mode after changing the content source."), _modeToggleStyle);
 			if (Event.current.type == EventType.Repaint)
 			{
-				var track = new Rect(0, (rect.height - 16) * .5f, 30, 16);
+				var track = new Rect(0, (rect.height - 16) * .5f, Mathf.Min(30, widths[0]), 16);
 				var trackColor = local ? new Color(.2f, .55f, .85f) : new Color(.4f, .4f, .4f);
 				GUI.DrawTexture(track, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0, trackColor, 0, 8);
-				var thumb = new Rect(track.x + (local ? 16 : 2), track.y + 2, 12, 12);
-				GUI.DrawTexture(thumb, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0, Color.white, 0, 6);
+				if (track.width >= 16)
+				{
+					var thumb = new Rect(track.x + (local ? track.width - 14 : 2), track.y + 2, 12, 12);
+					GUI.DrawTexture(thumb, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0, Color.white, 0, 6);
+				}
 			}
 			if (requested != local)
 			{
@@ -538,19 +545,47 @@ namespace Beamable.Editor.UI.ContentWindow
 					Repaint();
 				};
 			}
-			GUI.Label(new Rect(108, 0, 112, rect.height), new GUIContent(local ? "Auto-sync paused" : "Auto-sync enabled",
-				"History continues receiving publications in either mode."), _modeLabelStyle);
-			if (local && rect.width > 224)
+			var stateRect = new Rect(widths[0] + 4, 0, widths[1], rect.height);
+			var stateLabel = GetAutoSyncLabel(state, widths[1] < 112);
+			if (widths[1] < 64) stateLabel = state == ContentAutoSyncState.Failed ? "!" : "...";
+			var stateContent = new GUIContent(stateLabel, GetAutoSyncLabel(state, false) +
+				(state == ContentAutoSyncState.Failed ? ". Click to retry the watcher transition." : ". History updates are independent of auto-sync."));
+			if (state == ContentAutoSyncState.Failed)
 			{
-				var warningRect = new Rect(224, 3, rect.width - 224, rect.height - 6);
+				if (GUI.Button(stateRect, stateContent, EditorStyles.miniButton))
+					EditorApplication.delayCall += () => { _ = _contentService.ApplyLocalContentMode().Error(Debug.LogException); };
+			}
+			else GUI.Label(stateRect, stateContent, _modeLabelStyle);
+			if (local && widths[2] > 0)
+			{
+				var warningRect = new Rect(widths[0] + widths[1] + 8, 3, widths[2], rect.height - 6);
 				var warning = new GUIContent(ContentLocalModeWindow.Warning, EditorGUIUtility.IconContent("console.warnicon.sml").image, ContentLocalModeWindow.Warning);
 				if (_modeWarningStyle.CalcSize(warning).x > warningRect.width) warning.text = "Local Mode On — services use published content";
 				if (_modeWarningStyle.CalcSize(warning).x > warningRect.width) warning.text = "Local Mode On";
+				if (_modeWarningStyle.CalcSize(warning).x > warningRect.width) warning.text = "";
 				EditorGUI.DrawRect(warningRect, new Color(.5f, .36f, .04f, .28f));
 				GUI.Label(warningRect, warning, _modeWarningStyle);
 			}
 			GUI.EndGroup();
 		}
+
+		// Toggle, sync state, warning. Reserve the minimum warning before expanding adjacent controls.
+		private static float[] CalculateLocalModeWidths(float available, bool local)
+		{
+			var budget = Mathf.Max(0, available - 8);
+			var warningMinimum = local ? Mathf.Min(100, Mathf.Max(0, budget - 54)) : 0;
+			var toggle = Mathf.Min(available >= (local ? 324 : 224) ? 104 : 30, budget - warningMinimum);
+			var state = Mathf.Min(112, Mathf.Max(0, budget - warningMinimum - toggle));
+			return new[] { toggle, state, local ? Mathf.Max(0, budget - toggle - state) : 0 };
+		}
+
+		private static string GetAutoSyncLabel(ContentAutoSyncState state, bool compact) => state switch
+		{
+			ContentAutoSyncState.Paused => compact ? "Paused" : "Auto-sync paused",
+			ContentAutoSyncState.Enabled => compact ? "Enabled" : "Auto-sync enabled",
+			ContentAutoSyncState.Failed => compact ? "Retry" : "Sync failed - Retry",
+			_ => "Switching..."
+		};
 
 		private void ShowSyncMenu()
 		{
