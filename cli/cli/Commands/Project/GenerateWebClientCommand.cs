@@ -49,23 +49,26 @@ public class GenerateWebClientCommand :
 		}
 
 		BeamoLocalManifest beamoLocalManifest = args.BeamoLocalSystem.BeamoManifest;
-		foreach ((_, HttpMicroserviceLocalProtocol localProtocol) in beamoLocalManifest.HttpMicroserviceLocalProtocols)
+		var generators = new List<WebClientCodeGenerator>();
+		foreach ((string beamId, HttpMicroserviceLocalProtocol localProtocol) in beamoLocalManifest.HttpMicroserviceLocalProtocols)
 		{
 			var openApiDoc = localProtocol.OpenApiDoc;
 			if (openApiDoc == null)
 				continue;
 
-			var generator = new WebClientCodeGenerator(openApiDoc, args.lang);
+			var service = beamoLocalManifest.ServiceDefinitions.FirstOrDefault(d => d.BeamoId == beamId);
+			var generator = new WebClientCodeGenerator(openApiDoc, args.lang, WebClientCodeGenerator.AugmentTypeFor(service));
 			var clientsOutputDirectory = Path.Combine(args.outputDirectory, "beamable/clients");
 			var clientFilePath = generator.GenerateClientCode(clientsOutputDirectory);
 			result.Clients.Add(clientFilePath);
+			generators.Add(generator);
 		}
 
 		if (!WebClientCodeGenerator.IsTypeScript)
 			return Task.FromResult(result);
 
 		var typesOutputDirectory = Path.Combine(args.outputDirectory, "beamable/clients/types");
-		var clientTypeFilePath = WebClientCodeGenerator.GenerateClientTypes(typesOutputDirectory);
+		var clientTypeFilePath = WebClientCodeGenerator.GenerateClientTypes(generators, typesOutputDirectory);
 		if (string.IsNullOrEmpty(clientTypeFilePath))
 			return Task.FromResult(result);
 
