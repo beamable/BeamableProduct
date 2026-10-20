@@ -452,6 +452,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		}
 
 		private GUIStyle _modeLabelStyle;
+		private GUIStyle _modeToggleStyle;
 		private GUIStyle _modeWarningStyle;
 
 		private void DrawLowBarHeader(Rect rect)
@@ -512,27 +513,36 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			if (_contentConfiguration == null || rect.width <= 0) return;
 			_modeLabelStyle ??= new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft, clipping = TextClipping.Clip };
+			_modeToggleStyle ??= new GUIStyle(_modeLabelStyle) { padding = new RectOffset(36, 0, 0, 0) };
 			_modeWarningStyle ??= new GUIStyle(_modeLabelStyle) { padding = new RectOffset(5, 5, 0, 0), normal = { textColor = new Color(1f, .82f, .3f) } };
 			var local = _contentConfiguration.EnableLocalContentInEditor;
 			// Clip only this area, so even very narrow docks cannot paint over count or sorting.
 			GUI.BeginGroup(rect);
-			var toggleRect = new Rect(0, 5, 90, rect.height - 10);
-			var requested = GUI.Toggle(toggleRect, local, new GUIContent("Local Mode", "Use local content in the Unity client. Restart Play Mode after changing the content source."));
+			var toggleRect = new Rect(0, 0, 104, rect.height);
+			var requested = GUI.Toggle(toggleRect, local, new GUIContent("Local Mode", "Use local content in the Unity client. Restart Play Mode after changing the content source."), _modeToggleStyle);
+			if (Event.current.type == EventType.Repaint)
+			{
+				var track = new Rect(0, (rect.height - 16) * .5f, 30, 16);
+				var trackColor = local ? new Color(.2f, .55f, .85f) : new Color(.4f, .4f, .4f);
+				GUI.DrawTexture(track, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0, trackColor, 0, 8);
+				var thumb = new Rect(track.x + (local ? 16 : 2), track.y + 2, 12, 12);
+				GUI.DrawTexture(thumb, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0, Color.white, 0, 6);
+			}
 			if (requested != local)
 			{
 				// Open the modal outside the active IMGUI layout pass.
 				EditorApplication.delayCall += () =>
 				{
-					if (requested) ContentLocalModeWindow.RequestEnable(_contentConfiguration);
+					if (requested) ContentLocalModeWindow.RequestEnable(_contentConfiguration, position);
 					else ContentLocalModeWindow.SetEnabled(_contentConfiguration, false);
 					Repaint();
 				};
 			}
-			GUI.Label(new Rect(94, 0, 112, rect.height), new GUIContent(local ? "Auto-sync paused" : "Auto-sync enabled",
+			GUI.Label(new Rect(108, 0, 112, rect.height), new GUIContent(local ? "Auto-sync paused" : "Auto-sync enabled",
 				"History continues receiving publications in either mode."), _modeLabelStyle);
-			if (local && rect.width > 210)
+			if (local && rect.width > 224)
 			{
-				var warningRect = new Rect(210, 3, rect.width - 210, rect.height - 6);
+				var warningRect = new Rect(224, 3, rect.width - 224, rect.height - 6);
 				var warning = new GUIContent(ContentLocalModeWindow.Warning, EditorGUIUtility.IconContent("console.warnicon.sml").image, ContentLocalModeWindow.Warning);
 				if (_modeWarningStyle.CalcSize(warning).x > warningRect.width) warning.text = "Local Mode On — services use published content";
 				if (_modeWarningStyle.CalcSize(warning).x > warningRect.width) warning.text = "Local Mode On";

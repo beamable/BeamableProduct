@@ -13,7 +13,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private bool _suppress;
 		private GUIStyle _bodyStyle;
 
-		internal static void RequestEnable(ContentConfiguration configuration)
+		internal static void RequestEnable(ContentConfiguration configuration, Rect ownerPosition)
 		{
 			if (configuration == null || configuration.EnableLocalContentInEditor) return;
 			if (SessionState.GetBool(SuppressionKey, false))
@@ -25,6 +25,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			window._configuration = configuration;
 			window.titleContent = new GUIContent("Enable Local Mode?");
 			window.minSize = window.maxSize = new Vector2(520, 320);
+			window.position = new Rect(ownerPosition.center - window.minSize * .5f, window.minSize);
 			window.ShowModalUtility();
 		}
 
