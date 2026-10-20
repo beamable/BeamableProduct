@@ -435,7 +435,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			headerRect.width -= BASE_PADDING * 3;
 			headerRect.xMin += indentLevel * INDENT_WIDTH;
 			
-			string[] labels = { "Name", "Tags", "Latest Update"};
+			string[] labels = { "Name", "Tags", "Status", "Latest Update"};
     
 			GUIStyle itemPanelHeaderRowStyle = _itemPanelHeaderRowStyle ?? EditorStyles.toolbar;
 			GUIStyle itemFieldStyle = _itemPanelHeaderFieldStyle ?? EditorStyles.boldLabel;
@@ -565,14 +565,13 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (isRenamed)
 				nameLabel = isEditingName ? nameLabel : $"{entry.Name} (renamed from {renameInfo.OldName})";
 
-			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
+			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", isRenamed ? "Renamed" : ContentWindow_TooltipsHelper.GetStatusLabel(entry), lastUpdateDate};
 			GUIContent badge = _tooltipsHelper.GetContentStatusBadge(
 				_contentService,
 				entry,
-				renamedFrom: isRenamed ? renameInfo.OldName : null,
-				defaultIcon: GetIconForStatus(entry.IsInConflict, entry.StatusEnum));
+				renamedFrom: isRenamed ? renameInfo.OldName : null);
 
-			GUIContent[] icons = { badge };
+			GUIContent[] icons = { null, null, badge };
 
 			bool[] isEditable = {isEditingName};
 			string[] editableId = {entry.FullId};
@@ -925,7 +924,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				string labelValue = labels[i];
 				float itemWidth = columnWidths[i];
 				fullRect.xMin += BASE_PADDING;
-				if (icons != null && icons.Length > i)
+				if (icons != null && icons.Length > i && icons[i]?.image != null)
 				{
 					float iconSize = fullRect.height - BASE_PADDING;
 					var badge = icons[i];
@@ -964,7 +963,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 				else
 				{
-					EditorGUI.LabelField(nameRect, labelValue, fieldStyle);
+					EditorGUI.LabelField(nameRect, new GUIContent(labelValue, icons != null && icons.Length > i ? icons[i]?.tooltip : labelValue), fieldStyle);
 				}
 
 				fullRect.xMin += itemWidth;
@@ -1233,9 +1232,9 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		private static float[] CalculateColumnWidths(float totalAvailableWidth)
 		{
-			// Name, Tags, Last Modified
-			float[] minWidths = {200f, 100f, 100f};
-			float[] weights = {2f, 1.25f, 1f};
+			// Name, Tags, Status, Last Modified
+			float[] minWidths = {200f, 80f, 130f, 100f};
+			float[] weights = {2f, 1f, 1f, 1f};
 
 			totalAvailableWidth -= BASE_PADDING * 2 * minWidths.Length;
 			totalAvailableWidth -= SEPARATOR_WIDTH_AREA * Mathf.Max(0, minWidths.Length - 1);
@@ -1250,7 +1249,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			float[] widths = new float[minWidths.Length];
 			for (int i = 0; i < widths.Length; i++)
 			{
-				widths[i] = minWidths[i] + (remainingWidth * (weights[i] / totalWeight));
+				widths[i] = minWidths[i] * Mathf.Clamp01(totalAvailableWidth / totalMinWidth) + (remainingWidth * (weights[i] / totalWeight));
 			}
 
 			return widths;

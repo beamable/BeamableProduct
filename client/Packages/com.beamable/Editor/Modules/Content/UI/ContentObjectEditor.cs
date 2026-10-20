@@ -86,14 +86,14 @@ namespace Beamable.Editor.Content.UI
 				}
 				
 				const float statusIconSize = 15f;
-				if (contentObject.ContentStatus is not ContentStatus.UpToDate)
+				if (!ContentHistoryInspectorPreview.IsReadOnly(contentObject) && contentObject.ContentStatus is not ContentStatus.UpToDate)
 				{
 					var statusIconRect = new Rect(
 						iconRect.xMin,
 						iconRect.yMin,
 						statusIconSize,
 						statusIconSize);
-					var icon = ContentWindow.GetIconForStatus(contentObject.IsInConflict, contentObject.ContentStatus);
+					var icon = ContentWindow_TooltipsHelper.GetStatusIcon(GetCachedEntry(contentObject));
 					GUI.DrawTexture(statusIconRect, icon, ScaleMode.ScaleToFit);
 				}
 				// A dependency can become invalid without changing this content's own file/status.
@@ -366,6 +366,7 @@ namespace Beamable.Editor.Content.UI
 			if (contentObject.ContentStatus is Common.BeamCli.Contracts.ContentStatus.Deleted)
 			{
 				EditorGUILayout.HelpBox("This content has been deleted.", MessageType.Info);
+				DrawContentStatus();
 				return;
 			}
 
@@ -397,6 +398,51 @@ namespace Beamable.Editor.Content.UI
 			DrawContentProperties(contentObject);
 			contentObject.CheckForNonDetectedChanges();
 			}
+			DrawContentStatus();
+		}
+
+		private GUIStyle _statusMessageStyle;
+		private int _statusManifestRevision = -1;
+
+		public override bool RequiresConstantRepaint()
+		{
+			if (!BeamEditor.IsInitialized) return false;
+			// Unity already asks Inspectors whether to repaint. Read only the existing cache revision.
+			var revision = BeamEditorContext.Default.CliContentService.ManifestChangedCount;
+			if (_statusManifestRevision == revision) return false;
+			_statusManifestRevision = revision;
+			return true;
+		}
+
+		private static LocalContentManifestEntry GetCachedEntry(ContentObject content)
+		{
+			if (content != null && !string.IsNullOrEmpty(content.Id) && BeamEditor.IsInitialized &&
+				BeamEditorContext.Default.CliContentService.EntriesCache.TryGetValue(content.Id, out var entry)) return entry;
+			return default;
+		}
+
+		private void DrawContentStatus()
+		{
+			var entries = new List<LocalContentManifestEntry>(targets.Length);
+			var historical = 0;
+			foreach (var selected in targets)
+			{
+				var content = selected as ContentObject;
+				if (ContentHistoryInspectorPreview.IsReadOnly(content)) historical++;
+				else entries.Add(GetCachedEntry(content));
+			}
+			var message = ContentWindow_TooltipsHelper.GetSelectionDescription(entries, historical,
+				ContentConfiguration.Instance.EnableLocalContentInEditor, out var conflict);
+			_statusMessageStyle ??= new GUIStyle(EditorStyles.wordWrappedLabel) { padding = new RectOffset(8, 8, 8, 8) };
+			GUILayout.Space(8);
+			var text = new GUIContent(message);
+			var width = Mathf.Max(60, EditorGUIUtility.currentViewWidth - 60);
+			var height = Mathf.Max(42, _statusMessageStyle.CalcHeight(text, width));
+			var rect = EditorGUILayout.GetControlRect(false, height);
+			EditorGUI.DrawRect(rect, conflict ? new Color(.7f, .15f, .15f, .24f) : new Color(.15f, .4f, .75f, .24f));
+			GUI.Label(new Rect(rect.x + 6, rect.y + 8, 20, 20), EditorGUIUtility.IconContent(conflict ? "console.erroricon.sml" : "console.infoicon.sml"));
+			rect.xMin += 28;
+			GUI.Label(rect, text, _statusMessageStyle);
 		}
 
 		private void DrawContentProperties(ContentObject contentObject)

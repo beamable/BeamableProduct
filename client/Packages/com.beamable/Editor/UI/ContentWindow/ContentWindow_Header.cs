@@ -451,86 +451,95 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorApplication.delayCall += () => ChangeWindowStatus(windowStatus);
 		}
 
+		private GUIStyle _modeLabelStyle;
+		private GUIStyle _modeWarningStyle;
+
 		private void DrawLowBarHeader(Rect rect)
 		{
 			if (NeedsMigration) return;
-
-			if (_windowStatus is not ContentWindowStatus.Normal)
+			var style = _lowBarTextStyle ?? EditorStyles.boldLabel;
+			var normal = _windowStatus == ContentWindowStatus.Normal;
+			var sortContent = new GUIContent(SortTypeNameMap[_currentSortOption]);
+			var manifestId = string.IsNullOrEmpty(_contentService?.manifestIdOverride) ? "global" : _contentService.manifestIdOverride;
+			var showNamespace = normal && _contentService?.availableManifestIds?.Count > 1;
+			var sortWidth = normal ? EditorStyles.toolbarDropDown.CalcSize(sortContent).x + 8 : 0;
+			var namespaceWidth = showNamespace ? Mathf.Clamp(EditorStyles.toolbarDropDown.CalcSize(new GUIContent(manifestId)).x + 8, 70, 150) : 0;
+			var rightEdge = rect.xMax - 4;
+			var sortRect = new Rect(rightEdge - sortWidth, rect.y + 4, sortWidth, rect.height - 8);
+			var namespaceRect = new Rect(sortRect.x - namespaceWidth - 6, sortRect.y, namespaceWidth, sortRect.height);
+			var modeRight = normal ? (showNamespace ? namespaceRect.x : sortRect.x) - 8 : rightEdge;
+			var modeLeft = rect.x + 6;
+			if (normal)
 			{
-				GUILayout.Space(40);
-				return;
+				var counts = new GUIContent($"{GetFilteredItems().Count}/{GetCachedManifestEntries().Count}");
+				var countWidth = style.CalcSize(counts).x;
+				GUI.Label(new Rect(modeLeft, rect.y, countWidth, rect.height), counts, style);
+				modeLeft += countWidth + 6;
+				var typeLabel = "All Content" + (SelectedContentType.Count == 0 ? "" :
+					$" > {string.Join(" | ", SelectedContentType.OrderBy(item => item).Select(item => item.Replace(".", ">")))}");
+				// Truncate the type breadcrumb before allowing it to displace the mode or existing controls.
+				var typeWidth = Mathf.Min(style.CalcSize(new GUIContent(typeLabel)).x, 350,
+					Mathf.Max(90, modeRight - modeLeft - 330));
+				GUI.Label(new Rect(modeLeft, rect.y, typeWidth, rect.height), new GUIContent(typeLabel, typeLabel), style);
+				modeLeft += typeWidth + 8;
 			}
+			DrawLocalModeBar(new Rect(modeLeft, rect.y, Mathf.Max(0, modeRight - modeLeft), rect.height));
 
-
-			GUILayout.Space(15);
-
-			GUIStyle lowBarTextStyle = _lowBarTextStyle ?? EditorStyles.boldLabel;
-
-			int filteredItemsCount = GetFilteredItems().Count;
-			int totalItems = GetCachedManifestEntries().Count;
-
-			var itemsCounts = new GUIContent($"{filteredItemsCount}/{totalItems}");
-			var itemsCountsSize = lowBarTextStyle.CalcSize(itemsCounts);
-
-			var itemsFilterLabelRect = new Rect(rect.x + 4, rect.y, itemsCountsSize.x, rect.height);
-			var contentTreeLabelRect = new Rect(itemsFilterLabelRect.xMax + 2, rect.y, 350, rect.height);
-
-			string contentTreeLabelValue = "All Content";
-			contentTreeLabelValue += SelectedContentType.Count == 0
-				? ""
-				: $" > {string.Join(" | ", SelectedContentType.OrderBy(item => item).Select(item => item.Replace(".", ">")))}";
-
-			GUI.Label(itemsFilterLabelRect, $"{filteredItemsCount}/{totalItems}", lowBarTextStyle);
-			GUI.Label(contentTreeLabelRect, contentTreeLabelValue, lowBarTextStyle);
-			EditorGUILayout.Space(1, true);
-			GUIContent dropdownContent = new GUIContent($"{SortTypeNameMap[_currentSortOption]}"); // ▼
-
-
-			if (_contentService?.availableManifestIds?.Count > 1)
+			if (!normal) return;
+			if (showNamespace && GUI.Button(namespaceRect, new GUIContent(manifestId, "Content Namespace: " + manifestId), EditorStyles.toolbarDropDown))
 			{
-				var manifestId = _contentService.manifestIdOverride;
-				if (string.IsNullOrEmpty(manifestId))
+				var menu = new GenericMenu();
+				foreach (var id in _contentService.availableManifestIds)
 				{
-					manifestId =  "global";
-				}
-
-				if (BeamGUI.LayoutDropDownButton(new GUIContent(manifestId), tooltip: "Content Namespace"))
-				{
-					var menu = new GenericMenu();
-
-					for (var i = 0; i < _contentService.availableManifestIds.Count; i++)
+					menu.AddItem(new GUIContent(id), id == manifestId, () =>
 					{
-						var id = _contentService.availableManifestIds[i];
-						var enabled = id == manifestId;
-						menu.AddItem(new GUIContent(id), enabled, () =>
-						{
-							_contentService.SetManifestId(id);
-							GUI.changed = true;
-						});
-					}
-					menu.ShowAsContext();
-				}
-			}
-
-
-			EditorGUILayout.Space(6, false);
-
-			if (BeamGUI.LayoutDropDownButton(dropdownContent))
-			{
-				GenericMenu menu = new GenericMenu();
-				foreach ((ContentSortOptionType type, string stringValue) in SortTypeNameMap)
-				{
-					menu.AddItem(new GUIContent(stringValue), _currentSortOption == type, () =>
-					{
-						_currentSortOption = type;
-						Repaint();
+						_contentService.SetManifestId(id);
+						GUI.changed = true;
 					});
 				}
 				menu.ShowAsContext();
 			}
+			if (GUI.Button(sortRect, sortContent, EditorStyles.toolbarDropDown))
+			{
+				var menu = new GenericMenu();
+				foreach ((ContentSortOptionType type, string label) in SortTypeNameMap)
+					menu.AddItem(new GUIContent(label), _currentSortOption == type, () => { _currentSortOption = type; Repaint(); });
+				menu.ShowAsContext();
+			}
+		}
 
-			EditorGUILayout.Space(4, false);
-
+		private void DrawLocalModeBar(Rect rect)
+		{
+			if (_contentConfiguration == null || rect.width <= 0) return;
+			_modeLabelStyle ??= new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft, clipping = TextClipping.Clip };
+			_modeWarningStyle ??= new GUIStyle(_modeLabelStyle) { padding = new RectOffset(5, 5, 0, 0), normal = { textColor = new Color(1f, .82f, .3f) } };
+			var local = _contentConfiguration.EnableLocalContentInEditor;
+			// Clip only this area, so even very narrow docks cannot paint over count or sorting.
+			GUI.BeginGroup(rect);
+			var toggleRect = new Rect(0, 5, 90, rect.height - 10);
+			var requested = GUI.Toggle(toggleRect, local, new GUIContent("Local Mode", "Use local content in the Unity client. Restart Play Mode after changing the content source."));
+			if (requested != local)
+			{
+				// Open the modal outside the active IMGUI layout pass.
+				EditorApplication.delayCall += () =>
+				{
+					if (requested) ContentLocalModeWindow.RequestEnable(_contentConfiguration);
+					else ContentLocalModeWindow.SetEnabled(_contentConfiguration, false);
+					Repaint();
+				};
+			}
+			GUI.Label(new Rect(94, 0, 112, rect.height), new GUIContent(local ? "Auto-sync paused" : "Auto-sync enabled",
+				"History continues receiving publications in either mode."), _modeLabelStyle);
+			if (local && rect.width > 210)
+			{
+				var warningRect = new Rect(210, 3, rect.width - 210, rect.height - 6);
+				var warning = new GUIContent(ContentLocalModeWindow.Warning, EditorGUIUtility.IconContent("console.warnicon.sml").image, ContentLocalModeWindow.Warning);
+				if (_modeWarningStyle.CalcSize(warning).x > warningRect.width) warning.text = "Local Mode On — services use published content";
+				if (_modeWarningStyle.CalcSize(warning).x > warningRect.width) warning.text = "Local Mode On";
+				EditorGUI.DrawRect(warningRect, new Color(.5f, .36f, .04f, .28f));
+				GUI.Label(warningRect, warning, _modeWarningStyle);
+			}
+			GUI.EndGroup();
 		}
 
 		private void ShowSyncMenu()
