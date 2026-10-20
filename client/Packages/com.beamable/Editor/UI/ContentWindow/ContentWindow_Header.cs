@@ -522,8 +522,9 @@ namespace Beamable.Editor.UI.ContentWindow
 			// Clip only this area, so even very narrow docks cannot paint over count or sorting.
 			GUI.BeginGroup(rect);
 			var toggleRect = new Rect(0, 0, widths[0], rect.height);
-			var requested = GUI.Toggle(toggleRect, local, new GUIContent(widths[0] >= 104 ? "Local Mode" : "",
-				"Local Mode: use local content in the Unity client. Restart Play Mode after changing the content source."), _modeToggleStyle);
+			RegisterButtonTooltip(toggleRect,
+				"Local Mode: use local content in the Unity client. Restart Play Mode after changing the content source.");
+			var requested = GUI.Toggle(toggleRect, local, new GUIContent(widths[0] >= 104 ? "Local Mode" : ""), _modeToggleStyle);
 			if (Event.current.type == EventType.Repaint)
 			{
 				var track = new Rect(0, (rect.height - 16) * .5f, Mathf.Min(30, widths[0]), 16);
