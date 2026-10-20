@@ -1773,6 +1773,14 @@ public partial class ContentService
 
 			// If all the above is true, this is a conflict.
 			var wasConflict = localChangeExisted && localChangeDoesNotMatch && wasChangedFromReference;
+			// Reuse the comparisons for display only; do not let presentation affect sync policy.
+			contentFile.ChangeKind = wasConflict ? ContentChangeKind.Conflict
+				: statusAgainstTarget == ContentStatus.UpToDate ? ContentChangeKind.UpToDate
+				: statusAgainstTarget != ContentStatus.Modified ? ContentChangeKind.Unknown
+				: statusAgainstReference == ContentStatus.UpToDate ? ContentChangeKind.IncomingChange
+				: statusAgainstReference == ContentStatus.Modified ? ContentChangeKind.LocalEdit
+				: ContentChangeKind.Unknown;
+			file.ContentFiles[i] = contentFile;
 			if (wasConflict)
 			{
 				conflictedContent.Add(contentFile.Id);
@@ -1995,6 +2003,7 @@ public partial class ContentService
 				Tags = tags,
 				TagsStatus = tags.Select(t => (int)tagStatus[t]).ToArray(),
 				CurrentStatus = (int)file.GetStatus(),
+				ChangeKind = (int)file.ChangeKind,
 				IsInConflict = file.IsInConflict,
 				JsonFilePath = file.LocalFilePath,
 				ReferenceManifestUid = file.FetchedFromManifestUid,
@@ -2292,6 +2301,7 @@ public struct ContentFile : IEquatable<ContentFile>
 	[JsonIgnore] public string PropertiesChecksum;
 	[JsonIgnore] public ClientContentInfoJson ReferenceContent;
 	[JsonIgnore] public bool IsInConflict;
+	[JsonIgnore] public ContentChangeKind ChangeKind;
 	[JsonIgnore] public bool CanAutoSync;
 	[JsonIgnore] public bool CanUpdateReferenceWithTarget;
 

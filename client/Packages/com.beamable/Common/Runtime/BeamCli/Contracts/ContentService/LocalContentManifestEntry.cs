@@ -30,6 +30,12 @@ namespace Beamable.Common.BeamCli.Contracts
 		public int CurrentStatus;
 
 		/// <summary>
+		/// Presentation of the local/reference/latest comparison. Unknown for older CLI payloads
+		/// and cases where direction cannot be established. Does not control synchronization.
+		/// </summary>
+		public int ChangeKind;
+
+		/// <summary>
 		/// Whether this content was modified on top of a <see cref="ReferenceManifestUid"/>
 		/// that is no longer the latest AND that it was modified in the latest one relative to the reference one.
 		/// </summary>
@@ -72,5 +78,15 @@ namespace Beamable.Common.BeamCli.Contracts
 		/// So... we declare this as a helper.
 		/// </summary>
 		public ContentStatus StatusEnum => (ContentStatus)CurrentStatus;
+	}
+
+	[CliContractType]
+	public enum ContentChangeKind
+	{
+		Unknown = 0,
+		UpToDate = 1,
+		LocalEdit = 2,
+		IncomingChange = 3,
+		Conflict = 4
 	}
 }
