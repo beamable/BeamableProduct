@@ -41,6 +41,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			ContentChangeKind.Conflict => EditorGUIUtility.IconContent("console.erroricon.sml").image,
 			ContentChangeKind.LocalEdit => BeamGUI.iconStatusModified,
+			ContentChangeKind.IncomingChange => BeamGUI.iconStatusIncoming,
 			_ => EditorGUIUtility.IconContent("console.infoicon.sml").image
 		};
 

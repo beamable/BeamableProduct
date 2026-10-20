@@ -38,6 +38,7 @@ namespace Beamable.Editor.Util
 		public static Texture iconStatus;
 		public static Texture iconDelete;
 		public static Texture iconStatusModified;
+		public static Texture iconStatusIncoming;
 		public static Texture iconStatusAdded;
 		public static Texture iconStatusDeleted;
 		public static Texture iconStatusConflicted;
@@ -290,6 +291,13 @@ namespace Beamable.Editor.Util
 					iconStatusModified =
 						EditorResources.Load<Texture>(
 							"Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Modified.png");
+				}
+
+				if (!iconStatusIncoming)
+				{
+					iconStatusIncoming =
+						EditorResources.Load<Texture>(
+							"Packages/com.beamable/Editor/UI/Common/Icons/IconStatus_Incoming.png");
 				}
 
 				if (!iconStatusAdded)

@@ -426,15 +426,21 @@ namespace Beamable.Editor.Content.UI
 			var entries = new List<LocalContentManifestEntry>(targets.Length);
 			var historical = 0;
 			var hasChanges = false;
+			var onlyIncoming = targets.Length > 0;
 			foreach (var selected in targets)
 			{
 				var content = selected as ContentObject;
-				if (ContentHistoryInspectorPreview.IsReadOnly(content)) historical++;
+				if (ContentHistoryInspectorPreview.IsReadOnly(content))
+				{
+					historical++;
+					onlyIncoming = false;
+				}
 				else
 				{
 					var entry = GetCachedEntry(content);
 					entries.Add(entry);
 					var kind = ContentWindow_TooltipsHelper.GetChangeKind(entry);
+					onlyIncoming &= kind == ContentChangeKind.IncomingChange;
 					hasChanges |= kind is ContentChangeKind.LocalEdit or ContentChangeKind.IncomingChange ||
 						(kind == ContentChangeKind.Unknown && entry.StatusEnum is ContentStatus.Modified or ContentStatus.Created or ContentStatus.Deleted);
 				}
@@ -449,7 +455,9 @@ namespace Beamable.Editor.Content.UI
 			var rect = EditorGUILayout.GetControlRect(false, height);
 			EditorGUI.DrawRect(rect, conflict ? new Color(.7f, .15f, .15f, .24f) : new Color(.15f, .4f, .75f, .24f));
 			var icon = conflict ? "console.erroricon.sml" : hasChanges ? "console.warnicon.sml" : "console.infoicon.sml";
-			GUI.Label(new Rect(rect.x + 6, rect.y + 8, 20, 20), EditorGUIUtility.IconContent(icon));
+			GUI.Label(new Rect(rect.x + 6, rect.y + 8, 20, 20), onlyIncoming
+				? new GUIContent(ContentWindow_TooltipsHelper.GetStatusIcon(entries[0]))
+				: EditorGUIUtility.IconContent(icon));
 			rect.xMin += 28;
 			GUI.Label(rect, text, _statusMessageStyle);
 		}
