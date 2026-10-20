@@ -121,7 +121,8 @@ namespace Beamable.Player.CloudSaving
 		/// <returns>The resulting status, normally Initialized or ConflictedData; I/O and request failures can reject the promise.</returns>
 		/// <remarks>Only starts from Inactive. Other states are returned unchanged, so completion does not
 		/// always mean readiness. A competing save service can prevent initialization and leave the status Inactive.
-		/// Polling starts after initialization completes. Configure a conflict resolver before calling this method.</remarks>
+		/// Polling starts after initialization completes.
+		/// To override the default newest-file policy, configure a conflict resolver before calling this method.</remarks>
 		/// <seealso cref="ICloudSavingService.Init"/>
 		public async Promise<CloudSaveStatus> Init(int pollingIntervalSeconds = 10)
 		{
@@ -289,7 +290,7 @@ namespace Beamable.Player.CloudSaving
 			{
 				return;
 			}
-			
+
 			// Conflicts are resolved, start Watcher files and Enable Service if it isn't initializing already
 			FinishInitService();
 		}
@@ -425,7 +426,7 @@ namespace Beamable.Player.CloudSaving
 			ArchiveSaves(cloudDataUpdateBuilder.FilesToArchive);
 
 			ForgetSaves(cloudDataUpdateBuilder.FilesToForget);
-			
+
 			foreach ((string fileName, object content) in cloudDataUpdateBuilder.FilesToSave)
 			{
 				await BaseSaveData(fileName, content, false);
@@ -872,13 +873,13 @@ namespace Beamable.Player.CloudSaving
 			var fileExpectedCheckSum = GenerateCheckSum(contentData);
 			string tempFilePath = GetTempSavingFilePath(fileName, fileExpectedCheckSum);
 			string finalFilePath = Path.Combine(_localSaveInformation.DataPath, fileName);
-			
+
 			_localManifest.savingFiles.Add(new SavingFileEntry
 			{
 				FileName = fileName, ExpectedChecksum = fileExpectedCheckSum
 			});
 			await WriteLocalManifest();
-			
+
 			Promise<FileInfo> promise = contentData switch
 			{
 				string stringContent => BeamUnityFileUtils.WriteStringFile(tempFilePath, stringContent),
@@ -888,7 +889,7 @@ namespace Beamable.Player.CloudSaving
 
 			await promise.Error(ProvideErrorCallback(nameof(BaseSaveData)));
 			var fileInfo = MoveSavingFileToFinalDestination(tempFilePath, finalFilePath);
-			
+
 			_localManifest.savingFiles.RemoveAll(item => item.FileName == fileName);
 			AddOrUpdateLocalManifestEntry(fileInfo);
 			if (saveLocalManifest)
@@ -898,7 +899,7 @@ namespace Beamable.Player.CloudSaving
 			return PromiseBase.Unit;
 		}
 
-		
+
 
 		private string GetTempSavingFilePath(string fileName, string fileExpectedCheckSum)
 		{
@@ -981,10 +982,10 @@ namespace Beamable.Player.CloudSaving
 					                            ? JsonUtility.ToJson(data)
 					                            : _configuration.CustomSerializer(data))
 			};
-    
+
 			if(inputBytes.Length == 0)
 				return string.Empty;
-    
+
 			using (var md5 = MD5.Create())
 			{
 				byte[] hashBytes = md5.ComputeHash(inputBytes);
@@ -1176,7 +1177,7 @@ namespace Beamable.Player.CloudSaving
 			_localManifest = CloudManifest;
 			await WriteLocalManifest();
 		}
-		
+
 		private async Promise<FileInfo> WriteLocalManifest()
 		{
 			return await BeamUnityFileUtils.WriteJsonContent(_localSaveInformation.ManifestPath, _localManifest,

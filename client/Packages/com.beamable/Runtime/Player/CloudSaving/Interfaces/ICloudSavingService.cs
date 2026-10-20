@@ -49,7 +49,7 @@ namespace Beamable.Player.CloudSaving
 		/// <returns>The resulting status, normally Initialized or ConflictedData; I/O and request failures can reject the promise.</returns>
 		/// <remarks>Only starts from Inactive. Other states are returned unchanged, so completion does not
 		/// always mean readiness. A competing save service can prevent initialization and leave the status Inactive.
-		/// Polling starts after initialization completes. Configure a conflict resolver before calling this method.</remarks>
+		/// Polling starts after initialization completes.</remarks>
 		/// <example>
 		/// <para>Example: initialize, save and read a local string, then explicitly await its cloud upload.</para>
 		/// <code>
@@ -189,7 +189,7 @@ namespace Beamable.Player.CloudSaving
 		/// <param name="builder">An <see cref="Action"/> that configures the update process.</param>
 		/// <returns>A <see cref="Promise"/> that completes when the update is finished.</returns>
 		public Promise<Unit> Update(Action<CloudDataUpdateBuilder> builder);
-		
+
 		/// <summary>Replaces the conflict-resolution callback used during synchronization.</summary>
 		/// <param name="resolverOverride">The callback to use, or null to restore the default resolver.</param>
 		/// <remarks>Set before <see cref="Init"/> to handle initial conflicts. The callback is synchronous and
