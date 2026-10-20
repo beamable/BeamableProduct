@@ -918,7 +918,8 @@ namespace Beamable.Editor.ContentService
 
 				RemoteManifestsLoaded = false;
 				RemoteManifestsErrored = false;
-				var getAvailableManifestsPromise = _cli.ContentListManifests(new ContentListManifestsArgs()).OnStreamContentListManifestsCommandResults(dp =>
+				// Namespace discovery must not hold content readiness hostage to a separate remote request.
+				_ = _cli.ContentListManifests(new ContentListManifestsArgs()).OnStreamContentListManifestsCommandResults(dp =>
 				{
 					if (!ReferenceEquals(_contentWatcher, watcher)) return;
 					var manifestIds = new HashSet<string>();
@@ -946,7 +947,12 @@ namespace Beamable.Editor.ContentService
 					if (!ReferenceEquals(_contentWatcher, watcher)) return;
 					RemoteManifestsErrored = true;
 					Debug.LogError(dp.data.message);
-				}).Run();
+				}).Run().Error(error =>
+				{
+					if (!ReferenceEquals(_contentWatcher, watcher)) return;
+					RemoteManifestsErrored = true;
+					Debug.LogException(error);
+				});
 
 				return FinishReload();
 
@@ -961,7 +967,6 @@ namespace Beamable.Editor.ContentService
 							throw new InvalidOperationException("Content watcher ended before its initial content response.");
 						}
 						await manifestIsFetchedTaskCompletion.Task;
-						await getAvailableManifestsPromise;
 						if (ReferenceEquals(_contentWatcher, watcher)) ManifestChangedCount++;
 					}
 					finally { if (ReferenceEquals(_contentWatcher, watcher)) isReloading = false; }

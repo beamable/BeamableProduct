@@ -60,6 +60,69 @@ namespace Beamable.Editor.Tests
         [UnityTest] public IEnumerator LocalToNormalWaitsForBothWatchers() => Switch(true, true);
         [UnityTest] public IEnumerator SwitchingKeepsInactiveHistoryStopped() => Switch(false, false);
 
+        [UnityTest] public IEnumerator SlowNamespaceRequestDoesNotBlockNormalContent() => DelayedNamespaces(false, false);
+        [UnityTest] public IEnumerator SlowNamespaceRequestDoesNotBlockLocalContent() => DelayedNamespaces(true, false);
+        [UnityTest] public IEnumerator NamespaceTransportFailureDoesNotBlockNormalContent() => DelayedNamespaces(false, true);
+        [UnityTest] public IEnumerator NamespaceTransportFailureDoesNotBlockLocalContent() => DelayedNamespaces(true, true);
+
+        IEnumerator DelayedNamespaces(bool initialLocal, bool transportFailure)
+        {
+            commands.DelayManifests = true;
+            config.EnableLocalContentInEditor = initialLocal;
+            var loading = service.Reload();
+            yield return null;
+            Assert.That(service.isReloading, Is.False, "The content snapshot is ready even while namespace discovery is pending.");
+            Assert.That(loading.IsCompleted, Is.True, "Content readiness must not depend on namespace discovery.");
+            loading.GetResult();
+            Assert.That(service.RemoteManifestsLoaded, Is.False);
+            Assert.That(service.RemoteManifestsErrored, Is.False);
+
+            yield return Wait(service.StartContentHistory());
+            config.EnableLocalContentInEditor = !initialLocal;
+            var switching = ApplyMode();
+            commands.Content[0].Completion.CompleteSuccess();
+            commands.History[0].Completion.CompleteSuccess();
+            yield return Wait(switching);
+            switching.GetResult();
+            Assert.That(service.isReloading, Is.False);
+            Assert.That(commands.Content[1].Local, Is.EqualTo(!initialLocal));
+            Assert.That(commands.History[1].Local, Is.EqualTo(!initialLocal));
+
+            commands.Manifests[0].Emit();
+            commands.Manifests[0].ReportError();
+            commands.Manifests[0].Completion.CompleteError(new InvalidOperationException("retired namespace request"));
+            Assert.That(service.RemoteManifestsLoaded, Is.False, "Retired responses cannot update the new watcher.");
+            Assert.That(service.RemoteManifestsErrored, Is.False);
+
+            if (transportFailure)
+            {
+                LogAssert.Expect(LogType.Exception, new Regex("InvalidOperationException: namespace transport failed"));
+                commands.Manifests[1].Completion.CompleteError(new InvalidOperationException("namespace transport failed"));
+            }
+            else
+            {
+                LogAssert.Expect(LogType.Error, "namespace request failed");
+                commands.Manifests[1].ReportError();
+                commands.Manifests[1].Completion.CompleteSuccess();
+            }
+            yield return null;
+            Assert.That(service.RemoteManifestsErrored, Is.True);
+            Assert.That(service.RemoteManifestsLoaded, Is.False, "A failed request must not imply an empty realm.");
+            Assert.That(service.isReloading, Is.False);
+            Assert.That(commands.Content[1].Cancelled, Is.False);
+            Assert.That(commands.History[1].Cancelled, Is.False);
+
+            var retry = service.Reload();
+            commands.Content[1].Completion.CompleteSuccess();
+            yield return Wait(retry);
+            retry.GetResult();
+            commands.Manifests[2].Emit();
+            commands.Manifests[2].Completion.CompleteSuccess();
+            Assert.That(service.availableManifestIds, Does.Contain("global"));
+            Assert.That(service.RemoteManifestsLoaded, Is.True);
+            Assert.That(service.RemoteManifestsErrored, Is.False);
+        }
+
         [UnityTest] public IEnumerator ContentFailureCanRetryAfterAcknowledgedShutdown() => RetryFailedWatcher(false);
         [UnityTest] public IEnumerator HistoryFailureCanRetryAfterAcknowledgedShutdown() => RetryFailedWatcher(true);
 
@@ -392,6 +455,7 @@ namespace Beamable.Editor.Tests
             Set(service, "_contentWatcher", null);
             foreach (var command in commands.Content.ToArray()) command.Completion.CompleteSuccess();
             foreach (var command in commands.History.ToArray()) command.Completion.CompleteSuccess();
+            foreach (var command in commands.Manifests.ToArray()) command.Completion.CompleteSuccess();
             UnityEngine.Object.DestroyImmediate(config);
         }
         static void Set(object target, string name, object value) => target.GetType().GetField(name, Fields).SetValue(target, value);
@@ -400,7 +464,9 @@ namespace Beamable.Editor.Tests
         {
             public readonly List<HeldCommand> Content = new();
             public readonly List<HeldCommand> History = new();
+            public readonly List<HeldCommand> Manifests = new();
             public bool DelayInitialContent;
+            public bool DelayManifests;
             public BeamCli.BeamWebCommand FirstWebCommand;
             public Commands() : base(null, null) { }
             public override ContentPsWrapper ContentPs(ContentPsArgs args)
@@ -432,9 +498,14 @@ namespace Beamable.Editor.Tests
                 History.Add(command);
                 return new ContentHistoryWrapper { Command = command };
             }
-            public override ContentListManifestsWrapper ContentListManifests(ContentListManifestsArgs args) =>
-                new ContentListManifestsWrapper { Command = new HeldCommand(false, new BeamContentListManifestsCommandResults
-                { localManifests = new List<string>(), remoteManifests = new List<string>() }, true) };
+            public override ContentListManifestsWrapper ContentListManifests(ContentListManifestsArgs args)
+            {
+                var command = new HeldCommand(false, new BeamContentListManifestsCommandResults
+                { localManifests = new List<string> { "global" }, remoteManifests = new List<string> { "global" } }, true)
+                { DelayInitial = DelayManifests };
+                Manifests.Add(command);
+                return new ContentListManifestsWrapper { Command = command };
+            }
         }
         class HeldCommand : IBeamCommand
         {
@@ -446,10 +517,12 @@ namespace Beamable.Editor.Tests
             readonly object data;
             readonly bool finite;
             Action emit = () => { };
+            Action<ReportDataPoint<ErrorOutput>> error;
             public HeldCommand(bool local, object data, bool finite = false) { Local = local; this.data = data; this.finite = finite; }
             public void SetCommand(string command) { }
-            public Promise Run() { if (!DelayInitial) Emit(); if (finite) Completion.CompleteSuccess(); return Completion; }
+            public Promise Run() { if (!DelayInitial) { Emit(); if (finite) Completion.CompleteSuccess(); } return Completion; }
             public void Emit() => emit();
+            public void ReportError() => error?.Invoke(new ReportDataPoint<ErrorOutput> { data = new ErrorOutput { message = "namespace request failed" } });
             public void Cancel() { Cancelled = true; OnCancel?.Invoke(); }
             public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> callback)
             {
@@ -461,7 +534,7 @@ namespace Beamable.Editor.Tests
                 emit += () => callback(new ReportDataPointDescription { json = "{\"ts\":1,\"type\":\"stream\",\"data\":{\"EventType\":0,\"EntriesPage\":{\"Entries\":[]},\"EntriesToRemove\":[]}}" });
                 return this;
             }
-            public IBeamCommand OnError(Action<ReportDataPoint<ErrorOutput>> callback) => this;
+            public IBeamCommand OnError(Action<ReportDataPoint<ErrorOutput>> callback) { error += callback; return this; }
             public IBeamCommand OnTerminate(Action<ReportDataPoint<EofOutput>> callback) => this;
         }
     }
