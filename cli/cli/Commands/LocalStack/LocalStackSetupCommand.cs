@@ -107,7 +107,7 @@ public class LocalStackSetupCommand
 		AddOption(new Option<string>("--aws-region", () => AwsPreflightService.DefaultRegion,
 				"Region the AWS preflight checks the secret, buckets and queue in"),
 			(args, v) => args.awsRegion = v);
-		AddOption(new Option<string>("--config", "Path to the local-stack manifest to update (defaults to .beamable/local-stack.json)"),
+		AddOption(new Option<string>("--config", "Path to the local-stack manifest to update (defaults to .beamable/local/stack-settings.json)"),
 			(args, v) => args.configPath = v);
 		AddOption(new Option<string>("--scala-dir", "Absolute path to the BeamableBackend (Scala) repo; only needed when the manifest does not record it yet"),
 			(args, v) => args.scalaDir = v);

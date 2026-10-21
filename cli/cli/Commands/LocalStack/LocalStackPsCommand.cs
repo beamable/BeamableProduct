@@ -45,7 +45,7 @@ public class LocalStackPsCommand
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("--config", "Path to the manifest whose run-state to read (defaults to .beamable/local-stack.json)"),
+		AddOption(new Option<string>("--config", "Path to the manifest whose run-state to read (defaults to .beamable/local/stack-settings.json)"),
 			(args, v) => args.configPath = v);
 		AddOption(new Option<bool>("--watch", "Continuously re-render the status until cancelled"),
 			(args, v) => args.watch = v);

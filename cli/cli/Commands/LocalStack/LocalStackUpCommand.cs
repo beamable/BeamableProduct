@@ -72,7 +72,7 @@ public class LocalStackUpCommand
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("--config", "Path to the manifest (defaults to .beamable/local-stack.json)"),
+		AddOption(new Option<string>("--config", "Path to the manifest (defaults to .beamable/local/stack-settings.json)"),
 			(args, v) => args.configPath = v);
 		AddOption(new Option<string>("--host", "Override the manifest backend host"),
 			(args, v) => args.host = v);
@@ -254,7 +254,7 @@ public class LocalStackUpCommand
 		if (!string.IsNullOrWhiteSpace(args.portalUrl)) config.portalUrl = args.portalUrl;
 		config.javaHome = ResolveJavaHome(args, config);
 
-		// The manifest at .beamable/local-stack.json is written ONCE by `beam local init` and read verbatim
+		// The manifest at .beamable/local/stack-settings.json is written ONCE by `beam local init` and read verbatim
 		// on every `up` — so a step's `arguments` string carries whatever verb+flags the CLI version that ran
 		// `init` chose. When that version predates the Maven-cache fixes (commit 5d469e98d / this session),
 		// the reactor still runs `clean package` (which leaves core out of ~/.m2) and the per-service launcher
@@ -262,6 +262,15 @@ public class LocalStackUpCommand
 		// circuit every service). Rewrite those two arguments IN-MEMORY here so a stale manifest self-heals
 		// without asking every existing user to re-run `beam local init`.
 		MigrateStaleScalaArguments(config);
+
+		// A variable that refers back to itself can't be resolved, and every step using it would fail on its own.
+		var cycles = LocalStackConfigIO.FindVariableCycles(config);
+		if (cycles.Count > 0)
+			throw new CliException("The manifest's variables can't be resolved:\n  " + string.Join("\n  ", cycles));
+
+		// Keep the portal workspace's CLI pins on this CLI before anything restores or builds against them.
+		LocalStackCliVersions.Report(
+			LocalStackCliVersions.Check(config.repos?.portalDir, LocalStackCliVersions.RunningVersion(), fix: true));
 
 		var only = NameSet(args.only);
 		var skip = NameSet(args.skip);

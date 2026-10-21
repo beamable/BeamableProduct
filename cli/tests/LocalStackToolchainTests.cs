@@ -390,12 +390,43 @@ public class LocalStackToolchainTests
 	}
 
 	[Test]
+	public void RepoDiscoveryPrefersTheSameNameSuffix()
+	{
+		// Repo folders can sit next to each other as <Repo> and <Repo>_<suffix>; a stack set up from a suffixed
+		// one must use the siblings with the same suffix, not the plain-named repos also in the parent folder.
+		var dir = Directory.CreateTempSubdirectory("beam-repo-discovery");
+		try
+		{
+			string Make(string name) => Directory.CreateDirectory(Path.Combine(dir.FullName, name)).FullName;
+			Make(LocalStackCommand.ApiRepoName);
+			Make(LocalStackCommand.PortalRepoName);
+			var scala = Make(LocalStackCommand.ScalaRepoName);
+			var api = Make(LocalStackCommand.ApiRepoName + "_feat");
+			var portal = Make(LocalStackCommand.PortalRepoName + "_feat");
+			var nested = Directory.CreateDirectory(Path.Combine(portal, "bundles")).FullName;
+
+			Assert.That(LocalStackCommand.FindRepoSuffix(nested), Is.EqualTo("feat"));
+			Assert.That(LocalStackCommand.FindRepoDir(portal, LocalStackCommand.PortalRepoName), Is.EqualTo(portal));
+			Assert.That(LocalStackCommand.FindRepoDir(nested, LocalStackCommand.PortalRepoName), Is.EqualTo(portal));
+			Assert.That(LocalStackCommand.FindRepoDir(nested, LocalStackCommand.ApiRepoName), Is.EqualTo(api));
+			// No BeamableBackend_feat: the plain-named repo is used.
+			Assert.That(LocalStackCommand.FindRepoDir(nested, LocalStackCommand.ScalaRepoName), Is.EqualTo(scala));
+			// A plain-named repo has no suffix.
+			Assert.That(LocalStackCommand.FindRepoSuffix(Path.Combine(dir.FullName, LocalStackCommand.ApiRepoName)), Is.Null);
+		}
+		finally
+		{
+			dir.Delete(recursive: true);
+		}
+	}
+
+	[Test]
 	public void InitTargetsADotBeamableFolderWhenThereIsNoWorkspace()
 	{
 		// A loose local-stack.json in the current directory is not a workspace as far as the rest of the CLI is
 		// concerned, so `init` targets `.beamable/` and creates it.
 		var expected = Path.GetFullPath(Path.Combine(
-			Directory.GetCurrentDirectory(), ".beamable", "local-stack.json"));
+			Directory.GetCurrentDirectory(), ".beamable", "local", "stack-settings.json"));
 
 		Assert.That(LocalStackCommand.ResolveManifestPathForInit(null, null), Is.EqualTo(expected));
 		// An explicit --config still wins outright.
@@ -470,5 +501,253 @@ public class LocalStackToolchainTests
 		{
 			File.Delete(file);
 		}
+	}
+
+	// ---- Path variables and custom variables -------------------------------------------------------------
+
+	[Test]
+	public void PathVariablesResolveAgainstTheWorkspaceRoot()
+	{
+		// Repo folders are stored relative to the workspace, so the same settings work wherever the checkouts live.
+		var root = Path.Combine(Root, "ws", "agentic-portal");
+		var config = new LocalStackConfig
+		{
+			workspaceRoot = root,
+			paths = new Dictionary<string, string> { [LocalStackConfigIO.ApiPathVar] = "../BeamableAPI" },
+		};
+
+		var expected = Path.GetFullPath(Path.Combine(root, "../BeamableAPI")) + "/BeamableGateway";
+		Assert.That(LocalStackConfigIO.Substitute("${BeamAPIPath}/BeamableGateway", config), Is.EqualTo(expected));
+	}
+
+	[Test]
+	public void CustomVariablesNestAndUseBuiltInTokens()
+	{
+		var root = Path.Combine(Root, "ws", "agentic-portal");
+		var config = new LocalStackConfig
+		{
+			workspaceRoot = root,
+			paths = new Dictionary<string, string> { [LocalStackConfigIO.PortalPathVar] = "." },
+			variables = new Dictionary<string, string>
+			{
+				["FixturesPath"] = "${PortalPath}/fixtures",
+				["SeedUrl"] = "${host}/seed",
+				["SeedArgs"] = "--from ${FixturesPath} --to ${SeedUrl}",
+			},
+		};
+
+		var portal = Path.GetFullPath(root);
+		Assert.That(LocalStackConfigIO.Substitute("${SeedArgs}", config),
+			Is.EqualTo($"--from {portal}/fixtures --to http://localhost:8080/seed"));
+	}
+
+	[Test]
+	public void UnknownVariablesAreLeftAsWrittenAndReported()
+	{
+		// An unknown name may be intended, so it is never an error, but `validate` lists it. Shell steps are not
+		// scanned: a script can use ${NAME} for its own variables.
+		var config = new LocalStackConfig
+		{
+			steps = new List<LocalStackStep>
+			{
+				new LocalStackStep { name = "seed", command = "node", arguments = "seed.js ${SeedOrg}" },
+				new LocalStackStep { name = "script", shell = true, arguments = "echo ${HOME}" },
+			},
+		};
+
+		Assert.That(LocalStackConfigIO.Substitute("seed.js ${SeedOrg}", config), Is.EqualTo("seed.js ${SeedOrg}"));
+		Assert.That(LocalStackConfigIO.FindUnknownVariables(config),
+			Is.EqualTo(new[] { ("step 'seed'", "SeedOrg") }));
+	}
+
+	[Test]
+	public void AVariableCycleIsReportedAndCannotBeSubstituted()
+	{
+		var config = new LocalStackConfig
+		{
+			variables = new Dictionary<string, string> { ["A"] = "${B}/x", ["B"] = "${A}/y" },
+		};
+
+		var cycles = LocalStackConfigIO.FindVariableCycles(config);
+		Assert.That(cycles, Has.Count.EqualTo(1));
+		Assert.That(cycles[0], Does.Contain("${A}").And.Contain("${B}"));
+		Assert.Throws<VariableCycleException>(() => LocalStackConfigIO.Substitute("${A}", config));
+	}
+
+	// ---- Saving and converting manifests --------------------------------------------------------------------
+
+	[Test]
+	public void SaveStoresEachRepoFolderOnceAsAPathVariable()
+	{
+		var root = Directory.CreateTempSubdirectory("beam-path-vars").FullName;
+		try
+		{
+			var portal = Path.Combine(root, "agentic-portal");
+			var api = Path.Combine(root, "BeamableAPI");
+			var product = Path.Combine(root, "BeamableProduct");
+			var registry = Path.Combine(product, "portal-localdev");
+			var settings = Path.Combine(portal, ".beamable", "local", "stack-settings.json");
+
+			var config = new LocalStackConfig
+			{
+				repos = new LocalStackRepos { portalDir = portal, apiDir = api, productDir = product, webRegistryDir = registry },
+				steps = new List<LocalStackStep>
+				{
+					new LocalStackStep { name = "c# gateway", workingDirectory = Path.Combine(api, "BeamableGateway") },
+					new LocalStackStep { name = "docker: web registry", workingDirectory = registry.Replace('\\', '/') },
+					// A sibling whose name starts with a repo's name is a different folder and must stay as written.
+					new LocalStackStep { name = "other", arguments = $"--dir \"{api}_payments\"" },
+				},
+			};
+
+			LocalStackConfigIO.Save(settings, config);
+			var json = File.ReadAllText(settings);
+			var saved = LocalStackConfigIO.Load(settings);
+
+			Assert.That(json, Does.Not.Contain("\"repos\""));
+			Assert.That(saved.paths[LocalStackConfigIO.PortalPathVar], Is.EqualTo("."));
+			Assert.That(saved.paths[LocalStackConfigIO.ApiPathVar], Is.EqualTo("../BeamableAPI"));
+			Assert.That(saved.paths[LocalStackConfigIO.WebRegistryPathVar], Is.EqualTo("${BeamProductPath}/portal-localdev"));
+
+			Assert.That(saved.steps[0].workingDirectory, Is.EqualTo("${BeamAPIPath}" + Path.DirectorySeparatorChar + "BeamableGateway"));
+			Assert.That(saved.steps[1].workingDirectory, Is.EqualTo("${WebRegistryPath}"));
+			Assert.That(saved.steps[2].arguments, Does.Contain(api + "_payments"));
+
+			// Loading gives the in-memory repos view back, as absolute folders.
+			Assert.That(saved.repos.apiDir, Is.EqualTo(api));
+			Assert.That(saved.repos.webRegistryDir, Is.EqualTo(registry));
+			Assert.That(LocalStackConfigIO.Substitute(saved.steps[0].workingDirectory, saved),
+				Is.EqualTo(Path.Combine(api, "BeamableGateway")));
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[TestCase("build: c# gateway", "Build C# gateway", new[] { "build", "csharp" })]
+	[TestCase("scala: auth", "Scala service auth", new[] { "scala" })]
+	[TestCase("docker: api deps + caddy", "Docker api deps + caddy", new[] { "docker" })]
+	[TestCase("docker: web registry", "Docker web registry", new[] { "web-registry" })]
+	[TestCase("build: web packages", "Build web packages", new[] { "build", "web-registry" })]
+	[TestCase("build: scala", "Build Scala", new[] { "build", "scala" })]
+	[TestCase("build: portal deps", "Build portal deps", new[] { "build", "portal" })]
+	[TestCase("portal frontend", "Portal frontend", new[] { "portal" })]
+	[TestCase("portal extension: campaigns", "Portal extension campaigns", new[] { "extensions" })]
+	[TestCase("microservice: CampaignService", "Microservice CampaignService", new[] { "extensions" })]
+	public void StepsGetALabelAndTagsFromTheirName(string name, string label, string[] tags)
+	{
+		Assert.That(LocalStackConfigIO.InferLabel(name), Is.EqualTo(label));
+		Assert.That(LocalStackConfigIO.InferTags(name), Is.EqualTo(tags));
+	}
+
+	// ---- CLI version pins ----------------------------------------------------------------------------------------
+
+	private const string Running = "0.0.123.3001";
+
+	private static string ToolManifest(string version) =>
+		"{\n  \"version\": 1,\n  \"isRoot\": true,\n  \"tools\": {\n    \"beamable.tools\": {\n      \"version\": \"" + version
+		+ "\",\n      \"commands\": [\"beam\"],\n      \"rollForward\": false\n    }\n  }\n}";
+
+	private static string WritePortal(string root, string version)
+	{
+		var portal = Path.Combine(root, "agentic-portal");
+		Directory.CreateDirectory(Path.Combine(portal, ".config"));
+		Directory.CreateDirectory(Path.Combine(portal, "bundles", ".config"));
+		Directory.CreateDirectory(Path.Combine(portal, ".beamable"));
+		Directory.CreateDirectory(Path.Combine(portal, "bundles", "services", "Svc"));
+		Directory.CreateDirectory(Path.Combine(portal, "node_modules", "pkg", ".config"));
+
+		File.WriteAllText(Path.Combine(portal, ".config", "dotnet-tools.json"), ToolManifest(version));
+		File.WriteAllText(Path.Combine(portal, "bundles", ".config", "dotnet-tools.json"), ToolManifest(version));
+		File.WriteAllText(Path.Combine(portal, ".beamable", "config.beam.json"),
+			"{\n  \"cliVersion\": \"" + version + "\",\n  \"keep\": \"me\"\n}");
+		File.WriteAllText(Path.Combine(portal, "bundles", "services", "Svc", "Svc.csproj"),
+			"<Project><ItemGroup><PackageReference Include=\"Beamable.Microservice.Runtime\" Version=\"$(BeamableVersion)\" /></ItemGroup></Project>");
+		// Dependencies are never searched.
+		File.WriteAllText(Path.Combine(portal, "node_modules", "pkg", ".config", "dotnet-tools.json"), ToolManifest(version));
+		return portal;
+	}
+
+	[Test]
+	public void LocalBuildPinsMoveToTheRunningLocalBuild()
+	{
+		var root = Directory.CreateTempSubdirectory("beam-cli-pins").FullName;
+		try
+		{
+			var portal = WritePortal(root, "0.0.123.5");
+			var calls = new List<string>();
+			var result = LocalStackCliVersions.Check(portal, Running, fix: true, run: (file, arguments, dir) =>
+			{
+				calls.Add($"{file} {arguments} @ {Path.GetFileName(dir)}");
+				return new cli.Utils.StartProcessResult { exit = 0 };
+			});
+
+			Assert.That(result.pins, Has.Count.EqualTo(3));
+			Assert.That(result.pins.Select(p => p.status), Is.All.EqualTo("repinned"));
+			Assert.That(File.ReadAllText(Path.Combine(portal, "bundles", ".config", "dotnet-tools.json")), Does.Contain(Running));
+			var config = File.ReadAllText(Path.Combine(portal, ".beamable", "config.beam.json"));
+			Assert.That(config, Does.Contain(Running).And.Contain("\"keep\": \"me\""));
+
+			Assert.That(calls, Does.Contain("dotnet tool restore @ agentic-portal"));
+			Assert.That(calls, Does.Contain("dotnet tool restore @ bundles"));
+			Assert.That(calls.Count(c => c.Contains("Svc.csproj")), Is.EqualTo(1));
+			Assert.That(result.restored, Has.Count.EqualTo(1));
+			Assert.That(File.ReadAllText(Path.Combine(portal, "node_modules", "pkg", ".config", "dotnet-tools.json")),
+				Does.Contain("0.0.123.5"), "node_modules is never touched");
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Test]
+	public void APublishedPinIsOnlyReported()
+	{
+		var root = Directory.CreateTempSubdirectory("beam-cli-pins").FullName;
+		try
+		{
+			var portal = WritePortal(root, "5.2.0");
+			var calls = 0;
+			var result = LocalStackCliVersions.Check(portal, Running, fix: true, run: (_, _, _) =>
+			{
+				calls++;
+				return new cli.Utils.StartProcessResult { exit = 0 };
+			});
+
+			Assert.That(result.pins.Select(p => p.status), Is.All.EqualTo("mismatch"));
+			Assert.That(File.ReadAllText(Path.Combine(portal, ".config", "dotnet-tools.json")), Does.Contain("5.2.0"));
+			Assert.That(calls, Is.Zero);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Test]
+	public void WithoutFixDriftIsReportedButNothingChanges()
+	{
+		var root = Directory.CreateTempSubdirectory("beam-cli-pins").FullName;
+		try
+		{
+			var portal = WritePortal(root, "0.0.123.5");
+			var result = LocalStackCliVersions.Check(portal, Running, fix: false);
+
+			Assert.That(result.pins.Select(p => p.status), Is.All.EqualTo("mismatch"));
+			Assert.That(File.ReadAllText(Path.Combine(portal, ".config", "dotnet-tools.json")), Does.Contain("0.0.123.5"));
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Test]
+	public void NoPortalMeansNoPins()
+	{
+		Assert.That(LocalStackCliVersions.Check(null, Running, fix: true).pins, Is.Empty);
+		Assert.That(LocalStackCliVersions.Check(Path.Combine(Root, "does-not-exist"), Running, fix: true).pins, Is.Empty);
 	}
 }

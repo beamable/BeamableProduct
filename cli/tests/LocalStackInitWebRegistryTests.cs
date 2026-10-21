@@ -30,7 +30,7 @@ public class LocalStackInitWebRegistryTests : CLITest
 		// --quiet: the test console reports itself as interactive, so without it `init` would try to prompt.
 		Run(new[] { "local", "init", "--quiet", "--force" }.Concat(extraArgs).ToArray());
 
-		var path = Path.Combine(WorkingDir, ".beamable", LocalStackConfigIO.DefaultFileName);
+		var path = LocalStackCommand.SettingsPath(Path.Combine(WorkingDir, ".beamable"));
 		Assert.That(File.Exists(path), Is.True, $"init wrote no manifest at {path}");
 		return LocalStackConfigIO.Load(path);
 	}
@@ -139,7 +139,7 @@ public class LocalStackInitWebRegistryTests : CLITest
 
 		Run("local", "init", "--quiet", "--update-services");
 
-		var path = Path.Combine(WorkingDir, ".beamable", LocalStackConfigIO.DefaultFileName);
+		var path = LocalStackCommand.SettingsPath(Path.Combine(WorkingDir, ".beamable"));
 		Assert.That(LocalStackConfigIO.Load(path).webRegistry, Is.True);
 	}
 }

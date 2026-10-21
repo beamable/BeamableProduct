@@ -46,7 +46,7 @@ public class LocalStackStopCommand
 	{
 		AddArgument(new Argument<string>("step", () => null, "The step name to stop (default: the whole stack)"),
 			(args, v) => args.step = v);
-		AddOption(new Option<string>("--config", "Path to the manifest whose run-state to read (defaults to .beamable/local-stack.json)"),
+		AddOption(new Option<string>("--config", "Path to the manifest whose run-state to read (defaults to .beamable/local/stack-settings.json)"),
 			(args, v) => args.configPath = v);
 		AddOption(new Option<bool>(new[] { "--purge", "--clean" },
 				"DESTRUCTIVE: reverse docker steps with `compose down -v` (removing the containers and their "

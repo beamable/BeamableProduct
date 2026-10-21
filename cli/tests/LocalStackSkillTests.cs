@@ -26,7 +26,7 @@ public class LocalStackSkillTests
 	private static readonly string ProductDir = Path.Combine(Root, "BeamableProduct");
 	private static readonly string WebRegistryDir = Path.Combine(ProductDir, "portal-localdev");
 	private static readonly string ManifestPath =
-		Path.Combine(Root, "game", ".beamable", LocalStackConfigIO.DefaultFileName);
+		cli.Commands.LocalStack.LocalStackCommand.SettingsPath(Path.Combine(Root, "game", ".beamable"));
 
 	private static LocalStackConfig Config(
 		bool includeWebRegistry = true, bool withRepoPaths = true, bool webRegistry = true) =>
@@ -194,13 +194,14 @@ public class LocalStackSkillTests
 	}
 
 	[Test]
-	public void Skill_path_is_under_the_manifest_parent_when_there_is_no_workspace()
+	public void Skill_path_is_at_the_workspace_root_when_there_is_no_workspace()
 	{
 		// No ConfigService: `beam local init` is IStandaloneCommand, so it can run outside a workspace and the
-		// skill still has to land next to the stack it documents.
+		// skill still has to land next to the stack it documents: in the folder holding `.beamable`, where an
+		// agent looks for `.claude/skills`, not inside `.beamable/local` where the manifest sits.
 		var path = LocalStackSkillTemplate.ResolveSkillPath(null, ManifestPath);
 		var expected = Path.Combine(
-			Path.GetDirectoryName(Path.GetFullPath(ManifestPath)),
+			Path.Combine(Root, "game"),
 			LocalStackSkillTemplate.AgentDirName,
 			LocalStackSkillTemplate.SkillsDirName,
 			LocalStackSkillTemplate.SkillName,
@@ -218,7 +219,7 @@ public class LocalStackSkillTests
 		var root = Path.Combine(Path.GetTempPath(), "beam-skill-test-" + Path.GetRandomFileName());
 		try
 		{
-			var manifestPath = Path.Combine(root, ".beamable", LocalStackConfigIO.DefaultFileName);
+			var manifestPath = cli.Commands.LocalStack.LocalStackCommand.SettingsPath(Path.Combine(root, ".beamable"));
 			var skillPath = LocalStackSkillTemplate.ResolveSkillPath(null, manifestPath);
 			Directory.CreateDirectory(Path.GetDirectoryName(skillPath));
 			// A marker that cannot occur in the template's own prose, so this can never pass or fail on wording.

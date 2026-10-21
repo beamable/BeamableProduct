@@ -33,7 +33,7 @@ public class LocalStackLogsCommand
 	{
 		AddArgument(new Argument<string>("step", () => null, "The step name to tail (default: all recorded steps)"),
 			(args, v) => args.step = v);
-		AddOption(new Option<string>("--config", "Path to the manifest whose run-state to read (defaults to .beamable/local-stack.json)"),
+		AddOption(new Option<string>("--config", "Path to the manifest whose run-state to read (defaults to .beamable/local/stack-settings.json)"),
 			(args, v) => args.configPath = v);
 		var follow = new Option<bool>("--follow", "Keep streaming new log lines until cancelled");
 		follow.AddAlias("-f");

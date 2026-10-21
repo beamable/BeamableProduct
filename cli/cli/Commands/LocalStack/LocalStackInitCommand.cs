@@ -67,7 +67,7 @@ public class LocalStackInitCommand
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("--config", "Path to write the manifest to (defaults to .beamable/local-stack.json)"),
+		AddOption(new Option<string>("--config", "Path to write the manifest to (defaults to .beamable/local/stack-settings.json)"),
 			(args, v) => args.configPath = v);
 		AddOption(new Option<bool>("--force", "Overwrite an existing manifest without asking"),
 			(args, v) => args.force = v);
@@ -175,7 +175,7 @@ public class LocalStackInitCommand
 			return args.webRegistryDir;
 		}
 
-		var productDir = FindRepoDir(startDir, "BeamableProduct");
+		var productDir = LocalStackCommand.FindRepoDir(startDir, LocalStackCommand.ProductRepoName);
 		var detected = productDir == null ? null : Path.Combine(productDir, "portal-localdev");
 		if (detected != null && !Directory.Exists(detected))
 		{
@@ -190,28 +190,6 @@ public class LocalStackInitCommand
 		// Empty is allowed: the template writes an <EDIT: ...> placeholder, matching the other repo paths.
 		return Ask("Absolute path to the [green]portal-localdev[/] web registry directory [grey](empty = placeholder)[/]:",
 			null, detected, quiet, allowEmpty: true);
-	}
-
-	/// <summary>
-	/// Looks for a folder named <paramref name="name"/> in <paramref name="startDir"/> and its ancestors (up to
-	/// <paramref name="maxLevels"/> levels up), returning the first match — used to auto-fill the repo paths
-	/// (BeamableAPI / BeamableBackend / agentic-portal) that typically sit as siblings a level or two up.
-	/// </summary>
-	private static string FindRepoDir(string startDir, string name, int maxLevels = 3)
-	{
-		try
-		{
-			var dir = new DirectoryInfo(string.IsNullOrEmpty(startDir) ? Directory.GetCurrentDirectory() : startDir);
-			for (var i = 0; i <= maxLevels && dir != null; i++)
-			{
-				var candidate = Path.Combine(dir.FullName, name);
-				if (Directory.Exists(candidate)) return candidate;
-				dir = dir.Parent;
-			}
-		}
-		catch { /* best-effort discovery */ }
-
-		return null;
 	}
 
 	/// <summary>Ensures the manifest directory's <c>.gitignore</c> ignores the generated run-state + logs.</summary>
@@ -620,7 +598,7 @@ public class LocalStackInitCommand
 		var quiet = args.Quiet || !AnsiConsole.Profile.Capabilities.Interactive;
 		var defaults = new LocalStackTemplate.Options();
 
-		// Where the manifest lives. With no workspace this defaults to `<cwd>/.beamable/local-stack.json` — a real
+		// Where the manifest lives. With no workspace this defaults to `<cwd>/.beamable/local/stack-settings.json` — a real
 		// workspace folder rather than a loose file the rest of the CLI would not recognise as one.
 		var defaultPath = LocalStackCommand.ResolveManifestPathForInit(args.ConfigService, args.configPath);
 		var path = Path.GetFullPath(Ask("Where is the manifest?",
@@ -668,11 +646,11 @@ public class LocalStackInitCommand
 		// shown as the default; leaving empty writes an <EDIT: ...> placeholder.
 		var startDir = args.ConfigService?.WorkingDirectory ?? Directory.GetCurrentDirectory();
 		var apiDir = Ask("Absolute path to the [green]BeamableAPI[/] (C# gateway) repo [grey](empty = placeholder)[/]:",
-			args.apiDir, FindRepoDir(startDir, "BeamableAPI"), quiet, allowEmpty: true);
+			args.apiDir, LocalStackCommand.FindRepoDir(startDir, LocalStackCommand.ApiRepoName), quiet, allowEmpty: true);
 		var scalaDir = Ask("Absolute path to the [green]BeamableBackend[/] (Scala) repo [grey](empty = placeholder)[/]:",
-			args.scalaDir, FindRepoDir(startDir, "BeamableBackend"), quiet, allowEmpty: true);
+			args.scalaDir, LocalStackCommand.FindRepoDir(startDir, LocalStackCommand.ScalaRepoName), quiet, allowEmpty: true);
 		var portalDir = Ask("Absolute path to the [green]portal frontend[/] repo [grey](empty = placeholder)[/]:",
-			args.portalDir, FindRepoDir(startDir, "agentic-portal"), quiet, allowEmpty: true);
+			args.portalDir, LocalStackCommand.FindRepoDir(startDir, LocalStackCommand.PortalRepoName), quiet, allowEmpty: true);
 
 		// Local web package registry — the steps are always written, and this is the standing choice of whether
 		// `beam local up` runs them. It lives in the manifest precisely so it survives until the next `init`:

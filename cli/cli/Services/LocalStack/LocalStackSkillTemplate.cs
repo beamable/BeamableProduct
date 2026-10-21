@@ -51,14 +51,14 @@ public static class LocalStackSkillTemplate
 	/// <summary>
 	/// Where the skill is written: <c>&lt;workspace&gt;/.claude/skills/beam-local-stack/SKILL.md</c>. The
 	/// workspace root is the folder holding <c>.beamable</c>; <c>beam local init</c> is an
-	/// <c>IStandaloneCommand</c>, so when it runs outside a workspace the manifest's own directory is used
-	/// instead — the skill always lands next to the stack it documents.
+	/// <c>IStandaloneCommand</c>, so when it runs outside a registered workspace the root is found from the
+	/// manifest's own location instead — the skill always lands next to the stack it documents.
 	/// </summary>
 	public static string ResolveSkillPath(ConfigService configService, string manifestPath)
 	{
 		var root = configService?.DirectoryExists == true && !string.IsNullOrEmpty(configService.BeamableWorkspace)
 			? configService.BeamableWorkspace
-			: Path.GetDirectoryName(Path.GetFullPath(manifestPath));
+			: LocalStackConfigIO.FindWorkspaceRoot(manifestPath);
 
 		if (string.IsNullOrEmpty(root))
 		{

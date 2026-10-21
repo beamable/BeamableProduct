@@ -65,7 +65,7 @@ public class LocalStackValidateCommand
 		AddOption(new Option<string>("--toolchain-dir",
 				$"Toolchain directory to inspect (default: ~/{ToolchainService.DefaultDirName}, or ${ToolchainService.EnvVarToolchainDir})"),
 			(args, v) => args.toolchainDir = v);
-		AddOption(new Option<string>("--config", "Path to the local-stack manifest to validate against (defaults to .beamable/local-stack.json)"),
+		AddOption(new Option<string>("--config", "Path to the local-stack manifest to validate against (defaults to .beamable/local/stack-settings.json)"),
 			(args, v) => args.configPath = v);
 		AddOption(new Option<bool>("--with-aws", "Also run the AWS preflight (credentials, assume-role, the JWT signing secret, buckets, scheduler queue)"),
 			(args, v) => args.withAws = v);
@@ -99,12 +99,90 @@ public class LocalStackValidateCommand
 		// The portal's .env.local — same class of gap, and its absence is far more confusing.
 		result.checks.Add(CheckPortalEnv(config?.repos?.portalDir, config?.host));
 
+		if (config != null)
+		{
+			result.checks.Add(CheckVariables(config));
+			result.checks.AddRange(CheckCliPins(config.repos?.portalDir));
+		}
+
 		if (args.withAws)
 			result.checks.AddRange(CheckAws(config?.repos?.scalaDir, config?.repos?.apiDir));
 
 		result.allOk = result.checks.All(c => c.ok || c.warning);
 		Render(result, args.withAws);
 		return result;
+	}
+
+	/// <summary>
+	/// Variable cycles make the stack unrunnable. A <c>${Name}</c> that matches nothing is only a warning: it is
+	/// left as written, which may be intended.
+	/// </summary>
+	private static LocalStackDependencyCheck CheckVariables(LocalStackConfig config)
+	{
+		var check = new LocalStackDependencyCheck { name = "variables" };
+		var cycles = LocalStackConfigIO.FindVariableCycles(config);
+		var unknown = LocalStackConfigIO.FindUnknownVariables(config);
+
+		if (cycles.Count > 0)
+		{
+			check.ok = false;
+			check.detail = string.Join("; ", cycles);
+		}
+		else if (unknown.Count > 0)
+		{
+			check.ok = true;
+			check.warning = true;
+			check.detail = "unknown: " + string.Join(", ", unknown.Select(u => "${" + u.name + "} in " + u.where));
+		}
+		else
+		{
+			check.ok = true;
+			var count = (config.paths?.Count ?? 0) + (config.variables?.Count ?? 0);
+			check.detail = $"{count} defined, all resolve";
+		}
+
+		return check;
+	}
+
+	/// <summary>
+	/// Re-pins the portal workspace's local CLI pins to this CLI, the same way <c>up</c> does, and reports each pin.
+	/// </summary>
+	private static IEnumerable<LocalStackDependencyCheck> CheckCliPins(string portalDir)
+	{
+		var result = LocalStackCliVersions.Check(portalDir, LocalStackCliVersions.RunningVersion(), fix: true);
+		foreach (var pin in result.pins)
+		{
+			yield return new LocalStackDependencyCheck
+			{
+				name = "cli pin " + DisplayPath(pin.file, portalDir),
+				ok = pin.status is "ok" or "repinned" or "mismatch",
+				warning = pin.status == "mismatch",
+				source = pin.kind,
+				version = pin.version,
+				detail = pin.detail,
+			};
+		}
+
+		if (result.restored.Count > 0)
+			yield return new LocalStackDependencyCheck
+			{
+				name = "cli restore", ok = true, detail = $"{result.restored.Count} microservice project(s) restored"
+			};
+
+		foreach (var error in result.errors)
+			yield return new LocalStackDependencyCheck { name = "cli restore", ok = false, detail = error };
+	}
+
+	private static string DisplayPath(string file, string root)
+	{
+		try
+		{
+			return string.IsNullOrEmpty(root) ? file : Path.GetRelativePath(root, file).Replace('\\', '/');
+		}
+		catch
+		{
+			return file;
+		}
 	}
 
 	/// <summary>

@@ -32,8 +32,8 @@ public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 
 	/// <summary>
 	/// Resolves the manifest path: the explicit <paramref name="overridePath"/> if given, otherwise
-	/// <c>&lt;.beamable&gt;/local-stack.json</c> when a workspace exists, otherwise
-	/// <c>local-stack.json</c> in the current working directory.
+	/// <c>&lt;.beamable&gt;/local/stack-settings.json</c> when a workspace exists, otherwise the same file under a
+	/// <c>.beamable</c> folder in the current directory.
 	/// </summary>
 	public static string ResolveManifestPath(ConfigService configService, string overridePath)
 	{
@@ -43,25 +43,17 @@ public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 		if (configService?.DirectoryExists == true
 		    && !string.IsNullOrEmpty(configService.ConfigDirectoryPath)
 		    && !IsHomeWorkspace(configService.ConfigDirectoryPath))
-			return Path.Combine(configService.ConfigDirectoryPath, LocalStackConfigIO.DefaultFileName);
+			return SettingsPath(configService.ConfigDirectoryPath);
 
-		// No workspace was registered at startup. Prefer a manifest inside a `.beamable` folder in the current
-		// directory — that is where `init` writes one, and the folder can have been created AFTER the ConfigService
-		// was built (by an `init` in this same shell), so DirectoryExists above would not have seen it.
-		var localWorkspaceManifest = Path.GetFullPath(
-			Path.Combine(ConfigService.CFG_FOLDER, LocalStackConfigIO.DefaultFileName));
-		if (File.Exists(localWorkspaceManifest))
-			return localWorkspaceManifest;
-
-		// Finally, a bare manifest sitting in the current directory (how it worked before `.beamable` was the default).
-		return Path.GetFullPath(LocalStackConfigIO.DefaultFileName);
+		// No workspace was registered at startup. Use the `.beamable` folder in the current directory — that is where
+		// `init` writes one, and the folder can have been created AFTER the ConfigService was built (by an `init` in
+		// this same shell), so DirectoryExists above would not have seen it.
+		return SettingsPath(Path.GetFullPath(ConfigService.CFG_FOLDER));
 	}
 
 	/// <summary>
 	/// Where <c>beam local init</c> should WRITE a manifest. Same as <see cref="ResolveManifestPath"/> except that,
-	/// with no workspace, it targets <c>&lt;cwd&gt;/.beamable/local-stack.json</c> rather than a bare
-	/// <c>local-stack.json</c> — so a fresh directory gets a proper workspace folder instead of a loose file that
-	/// the rest of the CLI does not recognise as one.
+	/// with no workspace, the <c>.beamable</c> folder is taken in the working directory the CLI was started in.
 	///
 	/// The directory is not created here; <see cref="EnsureManifestDirectory"/> does that, so the caller can
 	/// confirm first.
@@ -74,12 +66,16 @@ public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 		if (configService?.DirectoryExists == true
 		    && !string.IsNullOrEmpty(configService.ConfigDirectoryPath)
 		    && !IsHomeWorkspace(configService.ConfigDirectoryPath))
-			return Path.Combine(configService.ConfigDirectoryPath, LocalStackConfigIO.DefaultFileName);
+			return SettingsPath(configService.ConfigDirectoryPath);
 
 		var workingDirectory = configService?.WorkingDirectory ?? Directory.GetCurrentDirectory();
-		return Path.GetFullPath(
-			Path.Combine(workingDirectory, ConfigService.CFG_FOLDER, LocalStackConfigIO.DefaultFileName));
+		return SettingsPath(Path.GetFullPath(Path.Combine(workingDirectory, ConfigService.CFG_FOLDER)));
 	}
+
+	/// <summary>The manifest path inside a <c>.beamable</c> folder: <c>&lt;.beamable&gt;/local/stack-settings.json</c>.</summary>
+	public static string SettingsPath(string beamableFolder) =>
+		Path.Combine(beamableFolder, LocalStackConfigIO.SettingsFolder, LocalStackConfigIO.SettingsFileName);
+
 
 	/// <summary>
 	/// Makes sure the directory a manifest is about to be written into exists, creating it when the caller allows.
@@ -158,20 +154,54 @@ public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 	///
 	/// Shared by <c>init</c> and <c>setup</c>: setup has to find the checkouts on its own, because it is meant to
 	/// run BEFORE a manifest exists and therefore cannot read the paths from one.
+	///
+	/// Repo folders may carry a name suffix (<c>&lt;Repo&gt;_&lt;suffix&gt;</c>, see <see cref="FindRepoSuffix"/>).
+	/// From inside one, the sibling with the same suffix wins, so <c>agentic-portal_x</c> gets
+	/// <c>BeamableAPI_x</c>; a repo with no such sibling falls back to its plain name.
 	/// </summary>
 	public static string FindRepoDir(string startDir, string name, int maxLevels = 3)
 	{
 		try
 		{
-			var dir = new DirectoryInfo(string.IsNullOrEmpty(startDir) ? Directory.GetCurrentDirectory() : startDir);
-			for (var i = 0; i <= maxLevels && dir != null; i++)
-			{
-				var candidate = Path.Combine(dir.FullName, name);
-				if (Directory.Exists(candidate)) return candidate;
-				dir = dir.Parent;
-			}
+			var start = new DirectoryInfo(string.IsNullOrEmpty(startDir) ? Directory.GetCurrentDirectory() : startDir);
+			var suffix = FindRepoSuffix(start.FullName);
+			return (suffix == null ? null : FindDir(start, $"{name}_{suffix}", maxLevels)) ?? FindDir(start, name, maxLevels);
 		}
 		catch { /* best-effort discovery */ }
+
+		return null;
+	}
+
+	/// <summary>
+	/// The name suffix of the repo folder <paramref name="path"/> is in: the <c>x</c> of a folder named
+	/// <c>&lt;Repo&gt;_x</c> for one of the well-known repo names, or null when the folder has the plain name.
+	/// </summary>
+	public static string FindRepoSuffix(string path)
+	{
+		string[] repos = { ApiRepoName, ScalaRepoName, PortalRepoName, ProductRepoName };
+		for (var dir = new DirectoryInfo(path); dir != null; dir = dir.Parent)
+		{
+			foreach (var repo in repos)
+			{
+				if (dir.Name.Length > repo.Length + 1 && dir.Name.StartsWith(repo + "_", StringComparison.OrdinalIgnoreCase))
+					return dir.Name.Substring(repo.Length + 1);
+			}
+		}
+
+		return null;
+	}
+
+	private static string FindDir(DirectoryInfo start, string name, int maxLevels)
+	{
+		var dir = start;
+		for (var i = 0; i <= maxLevels && dir != null; i++)
+		{
+			// The checkout itself counts: from inside agentic-portal_x, the portal is agentic-portal_x.
+			if (string.Equals(dir.Name, name, StringComparison.OrdinalIgnoreCase)) return dir.FullName;
+			var candidate = Path.Combine(dir.FullName, name);
+			if (Directory.Exists(candidate)) return candidate;
+			dir = dir.Parent;
+		}
 
 		return null;
 	}

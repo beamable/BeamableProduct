@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System.Text.RegularExpressions;
 
 namespace cli.Services.LocalStack;
 
@@ -8,8 +9,9 @@ namespace cli.Services.LocalStack;
 /// readiness gate. This is the C# equivalent of the <c>scripts/run-local-stack.sh</c>
 /// orchestrator, but driven entirely by a JSON manifest so it is not tied to any one machine.
 ///
-/// The manifest lives (by default) at <c>&lt;workspace&gt;/.beamable/local-stack.json</c> and is
-/// created by <c>beam local init</c>. Edit the paths/commands to match your machine.
+/// The manifest lives (by default) at <c>&lt;workspace&gt;/.beamable/local/stack-settings.json</c> and is
+/// created by <c>beam local init</c>. Repo folders live only in <see cref="paths"/>; every step refers to them
+/// as <c>${PortalPath}</c>, <c>${BeamAPIPath}</c> and so on.
 /// </summary>
 public class LocalStackConfig
 {
@@ -24,6 +26,43 @@ public class LocalStackConfig
 	/// extensions so their "open in browser" landing URL points at the local portal.
 	/// </summary>
 	public string portalUrl = "http://localhost:4950";
+
+	/// <summary>
+	/// Where each repo checkout lives on this machine, by variable name: <c>PortalPath</c>, <c>BeamProductPath</c>,
+	/// <c>BeamAPIPath</c>, <c>BeamBackendPath</c> and <c>WebRegistryPath</c>. Steps refer to them as <c>${Name}</c>,
+	/// so this is the only place a repo folder is written. A value may be relative to the workspace root (the
+	/// folder holding <c>.beamable</c>) and may refer to another variable.
+	///
+	/// <see cref="repos"/> is the in-memory view of the same data: <see cref="LocalStackConfigIO.Load"/> fills it
+	/// from here, and <see cref="LocalStackConfigIO.Save"/> writes it back here, so code that reads
+	/// <c>repos.apiDir</c> keeps working. Null on a manifest written before this existed.
+	/// </summary>
+	public Dictionary<string, string> paths;
+
+	/// <summary>
+	/// Named values a team or developer adds, usable as <c>${Name}</c> anywhere a token is substituted. A value may
+	/// refer to other variables and to <see cref="paths"/>. Built-in tokens (<c>${host}</c>, <c>${java}</c>, ...)
+	/// win over a variable of the same name.
+	/// </summary>
+	public Dictionary<string, string> variables;
+
+	/// <summary>
+	/// Named backends a stack can run against (<c>local</c>, <c>dev</c>, <c>staging</c>, ...). Stored only for now:
+	/// nothing reads it yet.
+	/// </summary>
+	public Dictionary<string, LocalStackTarget> targets;
+
+	/// <summary>Shift applied to every step port and to the host and portal URLs, so several stacks can run side by side.
+	/// Stored only for now: nothing applies it yet.</summary>
+	public int portOffset;
+
+	/// <summary>How many days local logs and traces are kept. Stored only for now: nothing applies it yet.</summary>
+	public int logRetentionDays = 5;
+
+	/// <summary>The folder holding the workspace's <c>.beamable</c> folder; relative <see cref="paths"/> are taken
+	/// against it. Set by <see cref="LocalStackConfigIO.Load"/> and <see cref="LocalStackConfigIO.Save"/>.</summary>
+	[JsonIgnore]
+	public string workspaceRoot;
 
 	/// <summary>
 	/// The Java 8 <c>JAVA_HOME</c> the Scala backend runs under. Substituted via the <c>${java}</c> token
@@ -110,6 +149,36 @@ public class LocalStackRepos
 	public string productDir;
 }
 
+/// <summary>Thrown when a variable refers back to itself, directly or through other variables.</summary>
+public class VariableCycleException : InvalidOperationException
+{
+	/// <summary>The variables in the cycle, in reference order.</summary>
+	public readonly List<string> cycle;
+
+	public VariableCycleException(List<string> cycle) : base(Describe(cycle)) => this.cycle = cycle;
+
+	/// <summary>The message for this cycle started from its alphabetically first name, so A→B→A and B→A→B match.</summary>
+	public string CanonicalMessage
+	{
+		get
+		{
+			var first = cycle.IndexOf(cycle.Min(StringComparer.Ordinal));
+			return Describe(cycle.Skip(first).Concat(cycle.Take(first)).ToList());
+		}
+	}
+
+	private static string Describe(List<string> cycle) =>
+		"Variable cycle: " + string.Join(" -> ", cycle.Append(cycle[0]).Select(n => "${" + n + "}"));
+}
+
+/// <summary>A backend a stack can run against: the API host and, for a remote one, the realm to use.</summary>
+public class LocalStackTarget
+{
+	public string host;
+	public string cid;
+	public string pid;
+}
+
 /// <summary>
 /// The private, pinned toolchain a manifest runs against, written by <c>beam local setup</c>. Each value is a
 /// tool <em>home</em> (the directory whose <c>bin/</c> holds the executables), matching
@@ -153,6 +222,15 @@ public class LocalStackStep
 {
 	/// <summary>Human-readable label shown in progress output and log prefixes.</summary>
 	public string name;
+
+	/// <summary>A readable name for the step ("Scala service auth"). Inferred from <see cref="name"/> when the
+	/// manifest is saved and none is set.</summary>
+	public string label;
+
+	/// <summary>What kind of step this is (<c>docker</c>, <c>csharp</c>, <c>scala</c>, <c>portal</c>, <c>extensions</c>,
+	/// <c>web-registry</c>, <c>build</c>), so stacks can select steps by kind. Inferred from <see cref="name"/> when the
+	/// manifest is saved and none are set.</summary>
+	public List<string> tags;
 
 	/// <summary>When false, the step is skipped entirely.</summary>
 	public bool enabled = true;
@@ -296,7 +374,27 @@ public class LocalStackStep
 /// <summary>Loads/saves <see cref="LocalStackConfig"/> and applies <c>${...}</c> token substitution.</summary>
 public static class LocalStackConfigIO
 {
-	public const string DefaultFileName = "local-stack.json";
+	/// <summary>The manifest's file name. It lives in <see cref="SettingsFolder"/> under the workspace's
+	/// <c>.beamable</c> folder, which holds per-machine files.</summary>
+	public const string SettingsFileName = "stack-settings.json";
+
+	/// <inheritdoc cref="SettingsFileName"/>
+	public const string SettingsFolder = "local";
+
+	/// <summary>The path variables a manifest's repo folders are stored under (see <see cref="LocalStackConfig.paths"/>).</summary>
+	public const string PortalPathVar = "PortalPath";
+
+	/// <inheritdoc cref="PortalPathVar"/>
+	public const string ProductPathVar = "BeamProductPath";
+
+	/// <inheritdoc cref="PortalPathVar"/>
+	public const string ApiPathVar = "BeamAPIPath";
+
+	/// <inheritdoc cref="PortalPathVar"/>
+	public const string BackendPathVar = "BeamBackendPath";
+
+	/// <inheritdoc cref="PortalPathVar"/>
+	public const string WebRegistryPathVar = "WebRegistryPath";
 
 	/// <summary>
 	/// Marker `beam local init` writes in place of a path it could not resolve (<c>&lt;EDIT: absolute path to
@@ -311,6 +409,15 @@ public static class LocalStackConfigIO
 		DefaultValueHandling = DefaultValueHandling.Include
 	};
 
+	/// <summary>A <c>${Name}</c> reference to a variable.</summary>
+	private static readonly Regex VariableToken = new Regex(@"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", RegexOptions.Compiled);
+
+	/// <summary>Tokens with fixed meanings. <c>${mainClass}</c> is substituted per step at launch time.</summary>
+	private static readonly HashSet<string> BuiltInTokens = new HashSet<string>(StringComparer.Ordinal)
+	{
+		"host", "portalUrl", "java", "maven", "npm", "node", "dotnet", "mainClass"
+	};
+
 	public static LocalStackConfig Load(string path)
 	{
 		var json = File.ReadAllText(path);
@@ -318,30 +425,81 @@ public static class LocalStackConfigIO
 		if (config == null)
 			throw new InvalidOperationException($"Could not parse local-stack manifest at {path}");
 		config.steps ??= new List<LocalStackStep>();
+		config.workspaceRoot = FindWorkspaceRoot(path);
+		ApplyPathsToRepos(config);
 		return config;
 	}
 
+	/// <summary>
+	/// Writes the manifest. Repo folders are stored once, as <see cref="LocalStackConfig.paths"/>: every step value
+	/// that contains one is rewritten to use its <c>${Name}</c> variable, and steps get an inferred label and tags
+	/// when they have none. <see cref="LocalStackConfig.repos"/> is only written by a manifest without paths.
+	/// </summary>
 	public static void Save(string path, LocalStackConfig config)
 	{
 		var dir = Path.GetDirectoryName(path);
 		if (!string.IsNullOrEmpty(dir))
 			Directory.CreateDirectory(dir);
-		File.WriteAllText(path, JsonConvert.SerializeObject(config, Settings));
+
+		config.workspaceRoot ??= FindWorkspaceRoot(path);
+		UseRepoPathVariables(config);
+		InferLabelsAndTags(config);
+
+		var repos = config.repos;
+		if (config.paths?.Count > 0)
+			config.repos = null;
+		try
+		{
+			File.WriteAllText(path, JsonConvert.SerializeObject(config, Settings));
+		}
+		finally
+		{
+			config.repos = repos;
+		}
+	}
+
+	/// <summary>
+	/// The folder holding the <c>.beamable</c> folder the manifest sits in (at any depth), or the manifest's own
+	/// folder when it isn't inside one. Relative <see cref="LocalStackConfig.paths"/> are taken against it.
+	/// </summary>
+	public static string FindWorkspaceRoot(string manifestPath)
+	{
+		try
+		{
+			var start = new DirectoryInfo(Path.GetDirectoryName(Path.GetFullPath(manifestPath)) ?? ".");
+			for (var dir = start; dir != null; dir = dir.Parent)
+			{
+				if (string.Equals(dir.Name, ConfigService.CFG_FOLDER, StringComparison.OrdinalIgnoreCase))
+					return dir.Parent?.FullName ?? dir.FullName;
+			}
+
+			return start.FullName;
+		}
+		catch
+		{
+			return null;
+		}
 	}
 
 	/// <summary>
 	/// Replaces the manifest tokens in a value: <c>${host}</c>, <c>${portalUrl}</c>, <c>${java}</c> (a JAVA_HOME
-	/// <em>directory</em>) and the toolchain command tokens <c>${maven}</c>, <c>${npm}</c>, <c>${node}</c>,
-	/// <c>${dotnet}</c> (absolute <em>executables</em>).
+	/// <em>directory</em>), the toolchain command tokens <c>${maven}</c>, <c>${npm}</c>, <c>${node}</c>,
+	/// <c>${dotnet}</c> (absolute <em>executables</em>), and every <see cref="LocalStackConfig.variables"/> and
+	/// <see cref="LocalStackConfig.paths"/> entry by name. A path variable becomes an absolute folder.
 	///
 	/// The command tokens fall back to the bare command name when no toolchain is recorded, so a manifest written
 	/// with them still runs on a machine where <c>beam local setup</c> was never used — it just resolves through
-	/// <c>PATH</c> as it always did.
+	/// <c>PATH</c> as it always did. An unknown <c>${Name}</c> is left as it is; <see cref="FindUnknownVariables"/>
+	/// reports it. A variable that refers back to itself throws.
 	/// </summary>
 	public static string Substitute(string value, LocalStackConfig config)
 	{
 		if (string.IsNullOrEmpty(value)) return value;
-		return value
+		return SubstituteVariables(ReplaceBuiltInTokens(value, config), config, new List<string>());
+	}
+
+	private static string ReplaceBuiltInTokens(string value, LocalStackConfig config) =>
+		value
 			.Replace("${host}", config.host ?? string.Empty)
 			.Replace("${portalUrl}", config.portalUrl ?? string.Empty)
 			.Replace("${java}", config.javaHome ?? string.Empty)
@@ -349,6 +507,403 @@ public static class LocalStackConfigIO
 			.Replace("${npm}", NpmCommand(config))
 			.Replace("${node}", NodeCommand(config))
 			.Replace("${dotnet}", DotnetCommand(config));
+
+	private static string SubstituteVariables(string value, LocalStackConfig config, List<string> chain)
+	{
+		if (string.IsNullOrEmpty(value) || !value.Contains("${", StringComparison.Ordinal)) return value;
+		if ((config.variables == null || config.variables.Count == 0) && (config.paths == null || config.paths.Count == 0))
+			return value;
+
+		// A MatchEvaluator, not a replacement string: "${Name}" in a replacement string means a regex group.
+		return VariableToken.Replace(value, m => ResolveVariable(m.Groups[1].Value, config, chain) ?? m.Value);
+	}
+
+	/// <summary>The value of one variable or path variable, fully substituted, or null when no such name exists.</summary>
+	private static string ResolveVariable(string name, LocalStackConfig config, List<string> chain)
+	{
+		if (BuiltInTokens.Contains(name)) return null;
+
+		string raw;
+		bool isPath;
+		if (config.variables != null && config.variables.TryGetValue(name, out raw))
+			isPath = false;
+		else if (config.paths != null && config.paths.TryGetValue(name, out raw))
+			isPath = true;
+		else
+			return null;
+
+		if (chain.Contains(name))
+			throw new VariableCycleException(chain.SkipWhile(n => n != name).ToList());
+
+		chain.Add(name);
+		try
+		{
+			var value = SubstituteVariables(ReplaceBuiltInTokens(raw ?? string.Empty, config), config, chain);
+			return isPath ? ToAbsoluteFolder(value, config) : value;
+		}
+		finally
+		{
+			chain.RemoveAt(chain.Count - 1);
+		}
+	}
+
+	private static string ToAbsoluteFolder(string value, LocalStackConfig config)
+	{
+		if (string.IsNullOrWhiteSpace(value) || value.Contains(EditPlaceholder, StringComparison.Ordinal))
+			return value;
+
+		try
+		{
+			return Path.IsPathRooted(value)
+				? Path.GetFullPath(value)
+				: Path.GetFullPath(Path.Combine(config.workspaceRoot ?? Directory.GetCurrentDirectory(), value));
+		}
+		catch
+		{
+			return value;
+		}
+	}
+
+	/// <summary>Every variable cycle in the manifest, one message each. Empty when there are none.</summary>
+	public static List<string> FindVariableCycles(LocalStackConfig config)
+	{
+		var cycles = new List<string>();
+		var names = (config.variables?.Keys ?? Enumerable.Empty<string>())
+			.Concat(config.paths?.Keys ?? Enumerable.Empty<string>());
+		foreach (var name in names)
+		{
+			try
+			{
+				ResolveVariable(name, config, new List<string>());
+			}
+			catch (VariableCycleException e)
+			{
+				// The same cycle is found from each of its members; report it once, from its first name.
+				if (!cycles.Contains(e.CanonicalMessage)) cycles.Add(e.CanonicalMessage);
+			}
+		}
+
+		return cycles;
+	}
+
+	/// <summary>
+	/// <c>${Name}</c> references that match no built-in token, variable or path variable, as
+	/// <c>(where, name)</c>. Shell steps are skipped: a shell script can use <c>${NAME}</c> for its own variables.
+	/// </summary>
+	public static List<(string where, string name)> FindUnknownVariables(LocalStackConfig config)
+	{
+		var unknown = new List<(string, string)>();
+
+		bool Known(string name) =>
+			BuiltInTokens.Contains(name)
+			|| config.variables?.ContainsKey(name) == true
+			|| config.paths?.ContainsKey(name) == true;
+
+		void Scan(string where, string value)
+		{
+			if (string.IsNullOrEmpty(value)) return;
+			foreach (Match m in VariableToken.Matches(value))
+			{
+				var name = m.Groups[1].Value;
+				if (!Known(name) && !unknown.Contains((where, name))) unknown.Add((where, name));
+			}
+		}
+
+		foreach (var (name, value) in config.variables ?? new Dictionary<string, string>())
+			Scan($"variable {name}", value);
+		foreach (var (name, value) in config.paths ?? new Dictionary<string, string>())
+			Scan($"path {name}", value);
+
+		foreach (var step in config.steps.Where(s => !s.shell))
+		{
+			var where = $"step '{step.name}'";
+			foreach (var value in StepValues(step))
+				Scan(where, value);
+		}
+
+		return unknown;
+	}
+
+	/// <summary>Fills <see cref="LocalStackConfig.repos"/> from <see cref="LocalStackConfig.paths"/>.</summary>
+	private static void ApplyPathsToRepos(LocalStackConfig config)
+	{
+		if (config.paths == null || config.paths.Count == 0) return;
+
+		string Folder(string name)
+		{
+			try
+			{
+				return ResolveVariable(name, config, new List<string>());
+			}
+			catch (InvalidOperationException)
+			{
+				return null; // a cycle: `local validate` reports it
+			}
+		}
+
+		config.repos ??= new LocalStackRepos();
+		config.repos.portalDir = Folder(PortalPathVar) ?? config.repos.portalDir;
+		config.repos.productDir = Folder(ProductPathVar) ?? config.repos.productDir;
+		config.repos.apiDir = Folder(ApiPathVar) ?? config.repos.apiDir;
+		config.repos.scalaDir = Folder(BackendPathVar) ?? config.repos.scalaDir;
+		config.repos.webRegistryDir = Folder(WebRegistryPathVar) ?? config.repos.webRegistryDir;
+	}
+
+	/// <summary>
+	/// Records the repo folders as path variables and rewrites every step value that contains one of those folders
+	/// to use the variable instead, so the manifest holds each folder exactly once.
+	/// </summary>
+	private static void UseRepoPathVariables(LocalStackConfig config)
+	{
+		var repos = config.repos;
+		if (repos != null)
+		{
+			config.paths ??= new Dictionary<string, string>();
+			SetPath(config, PortalPathVar, repos.portalDir);
+			SetPath(config, ProductPathVar, repos.productDir);
+			SetPath(config, ApiPathVar, repos.apiDir);
+			SetPath(config, BackendPathVar, repos.scalaDir);
+			SetPath(config, WebRegistryPathVar, repos.webRegistryDir);
+		}
+
+		if (config.paths == null || config.paths.Count == 0)
+		{
+			config.paths = null;
+			return;
+		}
+
+		// Longest folder first, so a folder nested in another (portal-localdev inside BeamableProduct) gets its own
+		// variable rather than the outer one's.
+		var folders = new List<(string name, string folder)>();
+		foreach (var name in config.paths.Keys)
+		{
+			string folder;
+			try
+			{
+				folder = ResolveVariable(name, config, new List<string>());
+			}
+			catch (InvalidOperationException)
+			{
+				continue;
+			}
+
+			if (!string.IsNullOrWhiteSpace(folder) && Path.IsPathRooted(folder)
+			                                       && !folder.Contains(EditPlaceholder, StringComparison.Ordinal))
+				folders.Add((name, folder.TrimEnd('\\', '/')));
+		}
+
+		folders = folders.OrderByDescending(f => f.folder.Length).ToList();
+		if (folders.Count == 0) return;
+
+		foreach (var step in config.steps)
+		{
+			step.workingDirectory = ReplaceFolders(step.workingDirectory, folders);
+			step.command = ReplaceFolders(step.command, folders);
+			step.arguments = ReplaceFolders(step.arguments, folders);
+			step.requiredOutput = ReplaceFolders(step.requiredOutput, folders);
+			step.stopArguments = ReplaceFolders(step.stopArguments, folders);
+			step.purgeStopArguments = ReplaceFolders(step.purgeStopArguments, folders);
+			if (step.environment != null)
+			{
+				foreach (var key in step.environment.Keys.ToList())
+					step.environment[key] = ReplaceFolders(step.environment[key], folders);
+			}
+		}
+	}
+
+	private static IEnumerable<string> StepValues(LocalStackStep step)
+	{
+		yield return step.workingDirectory;
+		yield return step.command;
+		yield return step.arguments;
+		yield return step.requiredOutput;
+		yield return step.stopArguments;
+		yield return step.purgeStopArguments;
+		yield return step.readyWhenHttpOk;
+		yield return step.readyWhenHttp200;
+		foreach (var value in step.environment?.Values ?? Enumerable.Empty<string>())
+			yield return value;
+	}
+
+	/// <summary>
+	/// Stores <paramref name="folder"/> as path variable <paramref name="name"/>, relative to the workspace root when
+	/// it can be. An existing value that already points at the same folder is kept as written.
+	/// </summary>
+	private static void SetPath(LocalStackConfig config, string name, string folder)
+	{
+		if (string.IsNullOrWhiteSpace(folder)) return;
+
+		if (folder.Contains(EditPlaceholder, StringComparison.Ordinal))
+		{
+			config.paths[name] = folder;
+			return;
+		}
+
+		string absolute;
+		try
+		{
+			absolute = Path.GetFullPath(folder);
+		}
+		catch
+		{
+			config.paths[name] = folder;
+			return;
+		}
+
+		if (config.paths.ContainsKey(name))
+		{
+			try
+			{
+				if (SameFolder(ResolveVariable(name, config, new List<string>()), absolute)) return;
+			}
+			catch (InvalidOperationException)
+			{
+				// a cycle: overwrite it with the real folder
+			}
+		}
+
+		// The web registry folder sits inside BeamableProduct; say so, so it follows that checkout around.
+		if (name == WebRegistryPathVar && config.paths.ContainsKey(ProductPathVar))
+		{
+			var product = ResolveVariable(ProductPathVar, config, new List<string>());
+			if (!string.IsNullOrEmpty(product) && Path.IsPathRooted(product))
+			{
+				var inside = Path.GetRelativePath(product, absolute);
+				if (!inside.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(inside))
+				{
+					config.paths[name] = "${" + ProductPathVar + "}/" + inside.Replace('\\', '/');
+					return;
+				}
+			}
+		}
+
+		config.paths[name] = Relativize(absolute, config.workspaceRoot);
+	}
+
+	private static string Relativize(string absolute, string root)
+	{
+		if (string.IsNullOrEmpty(root)) return absolute;
+		try
+		{
+			var relative = Path.GetRelativePath(root, absolute);
+			return Path.IsPathRooted(relative) ? absolute : relative.Replace('\\', '/');
+		}
+		catch
+		{
+			return absolute;
+		}
+	}
+
+	private static bool SameFolder(string a, string b)
+	{
+		if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b)) return false;
+		try
+		{
+			return string.Equals(Path.GetFullPath(a).TrimEnd('\\', '/'), Path.GetFullPath(b).TrimEnd('\\', '/'),
+				OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+					? StringComparison.OrdinalIgnoreCase
+					: StringComparison.Ordinal);
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+	/// <summary>Replaces each folder in <paramref name="value"/> with its <c>${Name}</c>, in either slash style.</summary>
+	private static string ReplaceFolders(string value, List<(string name, string folder)> folders)
+	{
+		if (string.IsNullOrEmpty(value)) return value;
+
+		var options = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+			? RegexOptions.IgnoreCase
+			: RegexOptions.None;
+
+		foreach (var (name, folder) in folders)
+		{
+			foreach (var variant in new[] { folder, folder.Replace('\\', '/'), folder.Replace('/', '\\') }.Distinct())
+			{
+				// Only a whole folder: "BeamableAPI" must not match the start of "BeamableAPI_payments".
+				var pattern = Regex.Escape(variant) + @"(?=$|[\\/""'\s;,:)\]}])";
+				value = Regex.Replace(value, pattern, _ => "${" + name + "}", options);
+			}
+		}
+
+		return value;
+	}
+
+	/// <summary>Gives every step without them an inferred <see cref="LocalStackStep.label"/> and <see cref="LocalStackStep.tags"/>.</summary>
+	private static void InferLabelsAndTags(LocalStackConfig config)
+	{
+		foreach (var step in config.steps)
+		{
+			if (string.IsNullOrWhiteSpace(step.name)) continue;
+			step.label ??= InferLabel(step.name);
+			if (step.tags == null || step.tags.Count == 0)
+				step.tags = InferTags(step.name);
+		}
+	}
+
+	/// <summary>The tags a step gets from its name: <c>build: c# gateway</c> is <c>build</c> + <c>csharp</c>.</summary>
+	public static List<string> InferTags(string stepName)
+	{
+		var tags = new List<string>();
+		var rest = stepName.Trim();
+		if (rest.StartsWith("build:", StringComparison.OrdinalIgnoreCase))
+		{
+			tags.Add("build");
+			rest = rest.Substring("build:".Length).Trim();
+		}
+
+		bool Starts(string prefix) => rest.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+
+		if (Starts("web ") || rest.Equals(LocalStackTemplate.WebRegistryStepName, StringComparison.OrdinalIgnoreCase))
+			tags.Add("web-registry");
+		else if (Starts("docker:"))
+			tags.Add("docker");
+		else if (Starts("c#"))
+			tags.Add("csharp");
+		else if (Starts("scala"))
+			tags.Add("scala");
+		else if (Starts(LocalStackTemplate.ExtensionPrefix) || Starts(LocalStackTemplate.MicroservicePrefix)
+		         || Starts(LocalStackTemplate.GroupPrefix))
+			tags.Add("extensions");
+		else if (Starts("portal"))
+			tags.Add("portal");
+
+		return tags;
+	}
+
+	/// <summary>The readable label a step gets from its name: <c>scala: auth</c> is "Scala service auth".</summary>
+	public static string InferLabel(string stepName)
+	{
+		var name = stepName.Trim();
+		var prefixes = new (string prefix, string label)[]
+		{
+			("build:", "Build "),
+			("scala:", "Scala service "),
+			(LocalStackTemplate.ExtensionPrefix.Trim(), "Portal extension "),
+			(LocalStackTemplate.MicroservicePrefix.Trim(), "Microservice "),
+			(LocalStackTemplate.GroupPrefix.Trim(), "Service group "),
+			("docker:", "Docker "),
+			("portal:", "Portal "),
+		};
+
+		foreach (var (prefix, label) in prefixes)
+		{
+			if (!name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
+			var rest = name.Substring(prefix.Length).Trim();
+			if (prefix != "build:") return label + rest;
+
+			// "Build web packages", but "Build C# gateway" and "Build Scala": names keep their capital.
+			var inner = InferLabel(rest);
+			return inner.Length == 0 || inner.StartsWith("C#", StringComparison.Ordinal)
+			                         || inner.StartsWith("Scala", StringComparison.Ordinal)
+				? label + inner
+				: label + char.ToLowerInvariant(inner[0]) + inner.Substring(1);
+		}
+
+		return name.Length == 0 ? name : char.ToUpperInvariant(name[0]) + name.Substring(1);
 	}
 
 	/// <summary>The <c>mvn</c> to invoke: the toolchain's when there is one, otherwise the bare command.</summary>
