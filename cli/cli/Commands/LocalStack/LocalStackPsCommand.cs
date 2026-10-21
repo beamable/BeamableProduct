@@ -20,10 +20,26 @@ public class LocalStackPsEntry
 	public string kind;
 	public bool running;
 	public string logPath;
+
+	/// <summary>The step's readable name, as the board shows it.</summary>
+	public string label;
+
+	/// <summary>Its row on the board (see <see cref="LocalStackStepState"/>); null for a stack started before the board.</summary>
+	public string state;
+
+	public int elapsedSeconds;
+	public int port;
+	public string detail;
 }
 
 public class LocalStackPsCommandResult
 {
+	/// <summary>The stack that is running, when <c>beam local run</c> recorded its board.</summary>
+	public string stack;
+
+	/// <summary>True when the stack belongs to an attached <c>beam local run</c> that is still in its terminal.</summary>
+	public bool attached;
+
 	public string host;
 	public string portalUrl;
 	public bool backendHealthy;
@@ -31,9 +47,10 @@ public class LocalStackPsCommandResult
 }
 
 /// <summary>
-/// Reports the status of the local stack recorded by <c>beam local run</c>: which recorded steps are still
-/// alive (by pid), plus a backend-health probe of <c>${host}/metadata</c> (PR#632). <c>--watch</c> re-renders
-/// on an interval until cancelled.
+/// Reports the status of the local stack started by <c>beam local run</c>, as the same board the run shows: each
+/// step with its state, time and port. A detached step that was up and whose process is gone shows as stopped.
+/// Also probes the backend's <c>${host}/metadata</c> (PR#632). <c>--watch</c> re-renders on an interval until
+/// cancelled. A stack started by a CLI from before the board gets the older table of pids.
 /// </summary>
 public class LocalStackPsCommand
 	: AtomicCommand<LocalStackPsCommandArgs, LocalStackPsCommandResult>
@@ -74,6 +91,15 @@ public class LocalStackPsCommand
 	{
 		var result = new LocalStackPsCommandResult();
 		var state = LocalStackRunStateIO.Load(runStatePath);
+		var board = LocalStackBoardIO.Load(LocalStackBoardIO.PathFor(runStatePath));
+		if (board != null && !LocalStackBoardIO.IsStale(board))
+		{
+			Merge(result, board, state);
+			if (!string.IsNullOrWhiteSpace(result.host))
+				result.backendHealthy = await ProbeMetadata(result.host);
+			return result;
+		}
+
 		if (state == null) return result;
 
 		result.host = state.host;
@@ -108,6 +134,46 @@ public class LocalStackPsCommand
 	}
 
 
+	/// <summary>
+	/// The board's rows, with what the run-state knows on top: a detached step the board shows as up whose process
+	/// is gone is <see cref="LocalStackStepState.Stopped"/>, since nobody is left to update the board for it.
+	/// </summary>
+	public static void Merge(LocalStackPsCommandResult result, LocalStackBoardSnapshot board, LocalStackRunState state,
+		Func<LocalStackRunEntry, bool> isRunning = null)
+	{
+		isRunning ??= entry =>
+		{
+			var tokens = LocalStackStopCommand.BuildKillTokens(entry);
+			return LocalStackLiveness.IsEntryRunning(entry, tokens)
+			       || (!entry.waitForExit && LocalStackProcess.FindByCommandLine(tokens, LocalStackProcess.ServiceImages).Count > 0);
+		};
+
+		result.stack = board.stack;
+		result.attached = board.attached;
+		result.host = board.host;
+		result.portalUrl = board.portalUrl;
+		var now = DateTime.UtcNow;
+		foreach (var row in board.rows)
+		{
+			var entry = state?.steps.FirstOrDefault(e => string.Equals(e.name, row.name, StringComparison.OrdinalIgnoreCase));
+			var up = row.state is LocalStackStepState.Ready or LocalStackStepState.Running or LocalStackStepState.Degraded;
+			var running = entry != null ? isRunning(entry) : up;
+			if (!board.attached && up && entry != null && !entry.adopted && !running)
+			{
+				row.state = LocalStackStepState.Stopped;
+				row.detail = "its process is gone";
+				row.changedUtc = now;
+			}
+
+			result.steps.Add(new LocalStackPsEntry
+			{
+				name = row.name, label = row.label, state = row.state.ToString(), elapsedSeconds = row.ElapsedSeconds(now),
+				port = row.port, detail = row.detail, running = running,
+				group = entry?.group, pid = entry?.pid ?? 0, kind = entry?.kind, logPath = entry?.stdoutLog
+			});
+		}
+	}
+
 	private static async Task<bool> ProbeMetadata(string host)
 	{
 		try
@@ -135,6 +201,25 @@ public class LocalStackPsCommand
 			return;
 		}
 
+		var backendLine = $"backend={Markup.Escape(result.host ?? "?")} ({(result.backendHealthy ? "[green]healthy[/]" : "[yellow]no /metadata response[/]")})  portal={Markup.Escape(result.portalUrl ?? "?")}";
+		if (result.stack != null)
+		{
+			// The same board `beam local run` shows, as a snapshot: every row, however tall.
+			var snapshot = new LocalStackBoardSnapshot
+			{
+				stack = result.stack,
+				rows = result.steps.Select(s => new LocalStackBoardRow
+				{
+					name = s.name, label = s.label, port = s.port, detail = s.detail,
+					state = Enum.TryParse<LocalStackStepState>(s.state, out var parsed) ? parsed : LocalStackStepState.Waiting,
+					startedUtc = DateTime.UtcNow.AddSeconds(-s.elapsedSeconds), changedUtc = DateTime.UtcNow
+				}).ToList()
+			};
+			AnsiConsole.Write(LocalStackBoard.Render(snapshot, AnsiConsole.Profile.Width, DateTime.UtcNow));
+			AnsiConsole.MarkupLine(backendLine + (result.attached ? "  [grey](attached to its terminal)[/]" : string.Empty));
+			return;
+		}
+
 		var table = new Table();
 		table.Border(TableBorder.Simple);
 		table.AddColumn("[bold]step[/]");
@@ -157,7 +242,6 @@ public class LocalStackPsCommand
 		}
 
 		AnsiConsole.Write(table);
-		var backend = result.backendHealthy ? "[green]healthy[/]" : "[yellow]no /metadata response[/]";
-		AnsiConsole.MarkupLine($"backend={Markup.Escape(result.host ?? "?")} ({backend})  portal={Markup.Escape(result.portalUrl ?? "?")}");
+		AnsiConsole.MarkupLine(backendLine);
 	}
 }

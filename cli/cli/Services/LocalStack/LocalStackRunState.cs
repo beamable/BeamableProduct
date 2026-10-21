@@ -334,9 +334,11 @@ public static class LocalStackRunStateIO
 		File.WriteAllText(path, JsonConvert.SerializeObject(state, Settings));
 	}
 
+	/// <summary>Removes the run-state, and the board <c>beam local ps</c> shows for it.</summary>
 	public static void Clear(string path)
 	{
 		try { if (File.Exists(path)) File.Delete(path); }
 		catch { /* best-effort */ }
+		LocalStackBoardIO.Clear(LocalStackBoardIO.PathFor(path));
 	}
 }

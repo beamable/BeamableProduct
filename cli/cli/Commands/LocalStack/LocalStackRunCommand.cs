@@ -1,3 +1,4 @@
+using Beamable.Common.BeamCli;
 using Beamable.Server;
 using cli.Services.LocalStack;
 using cli.Services.Web;
@@ -7,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using CliWrap;
+using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using ServiceLogs = Beamable.Common.Constants.Features.Services.Logs;
 
@@ -24,6 +26,9 @@ public class LocalStackRunCommandArgs : CommandArgs
 	public string portalUrl;
 	public bool runDetached;
 	public bool saveLogs;
+
+	/// <summary>Stream every step's own output instead of the progress board.</summary>
+	public bool verbose;
 	public bool noCreateRealm;
 	public string realmCustomer;
 	public string realmProject;
@@ -45,6 +50,86 @@ public class LocalStackRunResultStream
 
 	/// <summary>0..1 across the whole bring-up.</summary>
 	public float progressRatio;
+
+	/// <summary>The step's readable name, as the board shows it.</summary>
+	public string label;
+
+	/// <summary>The step's row on the board after this update: Waiting, Building, Starting, Restarting, Ready, Running,
+	/// Degraded, Done or Failed (see <see cref="LocalStackStepState"/>).</summary>
+	public string state;
+
+	/// <summary>Seconds since the step started, up to when it settled.</summary>
+	public int elapsedSeconds;
+}
+
+public class LocalStackRunListingChannel : IResultChannel
+{
+	public string ChannelName => "stacks";
+}
+
+/// <summary>What a bare <c>beam local run</c> lists, as data for a piped caller.</summary>
+public class LocalStackRunListing
+{
+	public List<LocalStackRunListedStack> stacks = new List<LocalStackRunListedStack>();
+
+	/// <summary>The variants every stack has, such as <c>build</c> and <c>web</c>.</summary>
+	public List<string> builtInVariants = new List<string>();
+}
+
+public class LocalStackRunListedStack
+{
+	public string name;
+	public string description;
+
+	/// <summary>built-in, shared or local: the layer that defines it first.</summary>
+	public string layer;
+
+	public List<string> changedBy = new List<string>();
+	public List<LocalStackRunListedVariant> variants = new List<LocalStackRunListedVariant>();
+}
+
+public class LocalStackRunListedVariant
+{
+	public string name;
+	public string description;
+	public string layer;
+}
+
+public class LocalStackDryRunChannel : IResultChannel
+{
+	public string ChannelName => "dryRun";
+}
+
+/// <summary>What <c>--dry-run</c> prints, as data for a piped caller.</summary>
+public class LocalStackDryRun
+{
+	public string stack;
+	public string description;
+	public List<LocalStackDryRunStep> steps = new List<LocalStackDryRunStep>();
+	public List<LocalStackDryRunVariable> variables = new List<LocalStackDryRunVariable>();
+	public List<LocalStackDependencyCheck> checks = new List<LocalStackDependencyCheck>();
+}
+
+public class LocalStackDryRunStep
+{
+	public string name;
+	public string label;
+
+	/// <summary>What happens to it: starts, runs once, builds, or why it is skipped.</summary>
+	public string runs;
+
+	/// <summary>False when the run skips it.</summary>
+	public bool selected;
+
+	public int port;
+	public string folder;
+}
+
+public class LocalStackDryRunVariable
+{
+	public string name;
+	public string value;
+	public string source;
 }
 
 /// <summary>
@@ -53,17 +138,30 @@ public class LocalStackRunResultStream
 /// creates the settings file when there is none, checks what the stack needs and runs the parts of
 /// <c>beam local setup</c> that are missing; <c>--dry-run</c> prints the steps and those checks and stops there.
 ///
-/// Every resolved step comes up in order, waiting for each readiness gate and streaming progress. Attached by
-/// default: logs stream live and the stack stops with the command (Ctrl+C). <c>--detach</c> launches long-running
+/// Every resolved step comes up in order, waiting for each readiness gate. In a terminal a progress board shows one
+/// row per step (see <see cref="LocalStackBoard"/>); without one, each state change is one line; piped as data, the
+/// result stream carries the states. <c>--verbose</c> streams every step's own output instead. Each step's output
+/// also goes to a log file for the run. Attached by default: the stack stops with the command (Ctrl+C). <c>--detach</c> launches long-running
 /// services with their output in per-step log files and records them in a run-state file, so they survive this
 /// command returning — like <c>docker compose up -d</c>. Use <c>beam local ps</c> / <c>logs</c> / <c>stop</c> to
 /// manage them.
 /// </summary>
 public class LocalStackRunCommand
 	: StreamCommand<LocalStackRunCommandArgs, LocalStackRunResultStream>
+	, IResultSteam<LocalStackRunListingChannel, LocalStackRunListing>
+	, IResultSteam<LocalStackDryRunChannel, LocalStackDryRun>
 	, IStandaloneCommand, ISkipManifest
 {
 	private readonly object _launchedLock = new object();
+
+	/// <summary>The board for this run; null before the first step launches.</summary>
+	private LocalStackBoard _board;
+
+	private bool _attached;
+	private bool _verbose;
+
+	/// <summary>True when the board prints (a terminal, or lines without one): failures are on the board, not warned twice.</summary>
+	private bool Showing => _board != null && _board.Mode != LocalStackBoardMode.Silent;
 
 	public LocalStackRunCommand() : base("run", "Start a local stack by name, like `npm run`: `beam local run` lists the stacks, `beam local run <stack>[:variant...]` starts one")
 	{
@@ -79,12 +177,14 @@ public class LocalStackRunCommand
 			(args, v) => args.host = v);
 		AddOption(new Option<string>("--portal-url", "Override the settings' portal URL"),
 			(args, v) => args.portalUrl = v);
-		var detach = new Option<bool>("--detach", "Return the prompt and keep the stack running; manage it with `beam local ps`/`logs`/`stop`. Default runs attached — logs stream live and the stack stops when `run` exits (Ctrl+C)");
+		var detach = new Option<bool>("--detach", "Return the prompt and keep the stack running; manage it with `beam local ps`/`logs`/`stop`. Default runs attached: the progress board shows while it starts, and the stack stops when `run` exits (Ctrl+C)");
 		detach.AddAlias("-d");
 		AddOption(detach, (args, v) => args.runDetached = v);
 
 		AddOption(new Option<bool>("--save-logs", "Persist per-run logs under the workspace (.beamable/local-stack-logs/run-<id>); without it logs go to a temp folder and are removed on `beam local stop`"),
 			(args, v) => args.saveLogs = v);
+		AddOption(new Option<bool>("--verbose", "Stream every step's own output, prefixed with the step name, instead of the progress board"),
+			(args, v) => args.verbose = v);
 
 		AddOption(new Option<bool>("--no-create-realm", "Do not auto-create a local realm when the saved login is invalid — just warn (by default `run` creates one after a docker cleanup)"),
 			(args, v) => args.noCreateRealm = v);
@@ -167,16 +267,30 @@ public class LocalStackRunCommand
 			: value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 				.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+	private static string LayerName(LocalStackLayer layer) => layer switch
+	{
+		LocalStackLayer.BuiltIn => "built-in",
+		LocalStackLayer.Shared => "shared",
+		_ => "local"
+	};
+
+	/// <summary>The listing as data: what a piped <c>beam local run</c> sends on the <c>stacks</c> channel.</summary>
+	public static LocalStackRunListing Listing(LocalStackStacks stacks) => new LocalStackRunListing
+	{
+		stacks = stacks.List().Select(s => new LocalStackRunListedStack
+		{
+			name = s.name,
+			description = s.description,
+			layer = LayerName(s.layer),
+			changedBy = s.changedBy.Select(LayerName).ToList(),
+			variants = s.variants.Select(v => new LocalStackRunListedVariant { name = v.name, description = v.description, layer = LayerName(v.layer) }).ToList()
+		}).ToList(),
+		builtInVariants = stacks.BuiltInVariants.Keys.ToList()
+	};
+
 	/// <summary>The listing a bare <c>beam local run</c> prints, like <c>npm run</c>: stacks by layer, each with its variants.</summary>
 	private static void PrintStacks(LocalStackStacks stacks)
 	{
-		static string LayerName(LocalStackLayer layer) => layer switch
-		{
-			LocalStackLayer.BuiltIn => "built-in",
-			LocalStackLayer.Shared => "shared",
-			_ => "local"
-		};
-
 		var listing = stacks.List();
 		var width = listing.SelectMany(s => s.variants.Select(v => v.name.Length + 3).Append(s.name.Length + 1)).DefaultIfEmpty(10).Max() + 2;
 
@@ -203,13 +317,41 @@ public class LocalStackRunCommand
 	}
 
 	/// <summary>
-	/// What <c>--dry-run</c> prints: each step in order with what will happen to it, its folder and port, then every
+	/// What <c>--dry-run</c> shows: each step in order with what will happen to it, its folder and port, then every
 	/// variable the steps use with its value and where the value comes from, then the checks.
 	/// </summary>
-	private static void PrintDryRun(LocalStackResolvedStack resolved, List<LocalStackStep> selected, HashSet<LocalStackStep> autoBuild,
+	public static LocalStackDryRun DryRun(LocalStackResolvedStack resolved, List<LocalStackStep> selected, HashSet<LocalStackStep> autoBuild,
 		LocalStackConfig config, HashSet<string> fromDefaults, List<LocalStackDependencyCheck> checks)
 	{
-		AnsiConsole.MarkupLine($"[bold]{Markup.Escape(resolved.name)}[/]: {Markup.Escape(resolved.description ?? string.Empty)}");
+		var dryRun = new LocalStackDryRun { stack = resolved.name, description = resolved.description, checks = checks };
+		foreach (var step in resolved.steps)
+		{
+			string runs;
+			if (!selected.Contains(step))
+				runs = "skipped: output is there (add :build)";
+			else if (!step.build)
+				runs = step.waitForExit ? "runs once" : "starts";
+			else if (resolved.forceBuild || resolved.requested.Contains(step))
+				runs = "builds";
+			else
+				runs = autoBuild.Contains(step) ? "builds: output missing" : "builds";
+
+			dryRun.steps.Add(new LocalStackDryRunStep
+			{
+				name = step.name, label = LocalStackCreateCommand.Label(step), runs = runs, selected = selected.Contains(step),
+				port = step.port, folder = step.workingDirectory
+			});
+		}
+
+		foreach (var (name, value, source) in LocalStackConfigIO.DescribeVariables(selected, config))
+			dryRun.variables.Add(new LocalStackDryRunVariable { name = name, value = value, source = fromDefaults.Contains(name) ? "stack default" : source });
+
+		return dryRun;
+	}
+
+	private static void PrintDryRun(LocalStackDryRun dryRun)
+	{
+		AnsiConsole.MarkupLine($"[bold]{Markup.Escape(dryRun.stack)}[/]: {Markup.Escape(dryRun.description ?? string.Empty)}");
 
 		var steps = new Table().Border(TableBorder.Simple);
 		steps.AddColumn("[bold]#[/]");
@@ -219,24 +361,14 @@ public class LocalStackRunCommand
 		steps.AddColumn("[bold]folder[/]");
 
 		var index = 0;
-		foreach (var step in resolved.steps)
+		foreach (var step in dryRun.steps)
 		{
-			string runs;
-			if (!selected.Contains(step))
-				runs = "[grey]skipped: output is there (add :build)[/]";
-			else if (!step.build)
-				runs = step.waitForExit ? "runs once" : "starts";
-			else if (resolved.forceBuild || resolved.requested.Contains(step))
-				runs = "builds";
-			else
-				runs = autoBuild.Contains(step) ? "builds: output missing" : "builds";
-
 			steps.AddRow(
-				new Markup(selected.Contains(step) ? (++index).ToString() : string.Empty),
+				new Markup(step.selected ? (++index).ToString() : string.Empty),
 				new Markup(Markup.Escape(step.name ?? string.Empty)),
-				new Markup(runs),
+				new Markup(step.selected ? Markup.Escape(step.runs) : $"[grey]{Markup.Escape(step.runs)}[/]"),
 				new Markup(step.port > 0 ? step.port.ToString() : string.Empty),
-				new Markup(Markup.Escape(step.workingDirectory ?? string.Empty)));
+				new Markup(Markup.Escape(step.folder ?? string.Empty)));
 		}
 
 		AnsiConsole.Write(steps);
@@ -245,15 +377,12 @@ public class LocalStackRunCommand
 		variables.AddColumn("[bold]variable[/]");
 		variables.AddColumn("[bold]value[/]");
 		variables.AddColumn("[bold]from[/]");
-		foreach (var (name, value, source) in LocalStackConfigIO.DescribeVariables(selected, config))
-		{
-			var from = fromDefaults.Contains(name) ? "stack default" : source;
-			variables.AddRow(Markup.Escape("${" + name + "}"), Markup.Escape(value ?? string.Empty), Markup.Escape(from));
-		}
+		foreach (var variable in dryRun.variables)
+			variables.AddRow(Markup.Escape("${" + variable.name + "}"), Markup.Escape(variable.value ?? string.Empty), Markup.Escape(variable.source ?? string.Empty));
 
 		AnsiConsole.Write(variables);
-		LocalStackPreflight.Render(checks);
-		Log.Information($"Dry run: nothing was started. `beam local run {resolved.name}` starts these {selected.Count} steps.");
+		LocalStackPreflight.Render(dryRun.checks);
+		Log.Information($"Dry run: nothing was started. `beam local run {dryRun.stack}` starts these {index} steps.");
 	}
 
 	/// <summary>
@@ -336,6 +465,7 @@ public class LocalStackRunCommand
 		if (string.IsNullOrWhiteSpace(args.stack))
 		{
 			PrintStacks(stacks);
+			this.SendResults<LocalStackRunListingChannel, LocalStackRunListing>(Listing(stacks));
 			return;
 		}
 
@@ -453,7 +583,9 @@ public class LocalStackRunCommand
 		var steps = SelectSteps(resolved, autoBuild);
 		if (args.dryRun)
 		{
-			PrintDryRun(resolved, steps, autoBuild, config, fromDefaults, checks);
+			var dryRun = DryRun(resolved, steps, autoBuild, config, fromDefaults, checks);
+			PrintDryRun(dryRun);
+			this.SendResults<LocalStackDryRunChannel, LocalStackDryRun>(dryRun);
 			return;
 		}
 
@@ -584,6 +716,39 @@ public class LocalStackRunCommand
 		// even on a terminal close / IDE stop / hard kill that skips the graceful teardown (Windows only; no-op
 		// elsewhere). Held for the command's lifetime; disposed in the teardown paths below.
 		var job = attached ? LocalStackJobObject.CreateKillOnClose() : null;
+
+		// The board: one row per step, live in a terminal, a line per change without one, and a file `ps` reads.
+		// While it shows, the runner's own progress messages would only repeat it, so only warnings and errors
+		// print (unless --logs asked for more).
+		_attached = attached;
+		_verbose = args.verbose;
+		var boardPath = LocalStackBoardIO.PathFor(runStatePath);
+		_board = new LocalStackBoard(new LocalStackBoardSnapshot
+		{
+			stack = resolved.name, runnerPid = Environment.ProcessId, attached = attached,
+			host = config.host, portalUrl = config.portalUrl, startedUtc = DateTime.UtcNow,
+			rows = steps.Select(s => new LocalStackBoardRow
+			{
+				name = s.name, label = LocalStackCreateCommand.Label(s), port = s.port,
+				timeoutSeconds = s.readyTimeoutSeconds, once = s.waitForExit || s.build, changedUtc = DateTime.UtcNow
+			}).ToList()
+		}, BoardMode(args), boardPath);
+
+		var logSwitch = args.AppContext?.LogSwitch;
+		var quietedLogs = Showing && logSwitch != null && logSwitch.Level == LogLevel.Information;
+		if (quietedLogs) logSwitch.Level = LogLevel.Warning;
+		var live = _board.ShowLive(token);
+
+		// Takes the board off the screen (once) and brings the logs back, before anything is printed about the end.
+		async Task EndBoard()
+		{
+			_board.Complete();
+			try { await live; }
+			catch { /* the board never fails the run */ }
+
+			if (quietedLogs) logSwitch.Level = LogLevel.Information;
+			quietedLogs = false;
+		}
 
 		// Launch a step and record it in the run-state (upsert by name, so a retry replaces the dead entry
 		// rather than duplicating it). Returned as a local function so readiness can relaunch on early exit.
@@ -719,7 +884,8 @@ public class LocalStackRunCommand
 					// Already running from a previous `up`? Leave it alone.
 					if (aliveByName.TryGetValue(step.name, out var running))
 					{
-						Send(step.name, "running", $"already running (pid={running.pid}) — skipping", baseProgress + 1f / steps.Count);
+						Send(step.name, "running", $"already running (pid={running.pid}) — skipping", baseProgress + 1f / steps.Count,
+							LocalStackStepState.Ready, "already running");
 						Log.Information($"[{step.name}] already running (pid={running.pid}) — skipping.");
 						continue;
 					}
@@ -731,7 +897,8 @@ public class LocalStackRunCommand
 					if (await AlreadyServing(step, config, token))
 					{
 						AdoptAlreadyServing(step);
-						Send(step.name, "running", "already serving — skipping launch", baseProgress + 1f / steps.Count);
+						Send(step.name, "running", "already serving — skipping launch", baseProgress + 1f / steps.Count,
+							LocalStackStepState.Ready, "already serving");
 						Log.Information($"[{step.name}] already serving at its readiness endpoint — skipping launch " +
 						                "(adopted into the run-state, so `beam local stop` will still stop it).");
 						continue;
@@ -745,8 +912,8 @@ public class LocalStackRunCommand
 					var blocked = CannotStartReason(step, config);
 					if (blocked != null)
 					{
-						Send(step.name, "failed", blocked, baseProgress);
-						Log.Warning($"[{step.name}] {blocked}");
+						Send(step.name, "failed", blocked, baseProgress, LocalStackStepState.Failed, "can't start", hint: blocked);
+						if (!Showing) Log.Warning($"[{step.name}] {blocked}");
 						continue;
 					}
 
@@ -762,12 +929,15 @@ public class LocalStackRunCommand
 					// An unrequested build is surprising unless it says why, and the stream channel is what the
 					// user (and the Unity/portal tooling) actually sees.
 					var launching = $"launching ({idx + 1}/{steps.Count})";
+					string why = null;
 					if (autoBuild.Contains(step) && !resolved.requested.Contains(step) && !resolved.forceBuild)
 					{
 						launching += " — its output is missing, so it builds even without :build";
+						why = "output missing";
 					}
 
-					Send(step.name, "starting", launching, baseProgress);
+					Send(step.name, "starting", launching, baseProgress,
+						step.build ? LocalStackStepState.Building : LocalStackStepState.Starting, why);
 
 					var stepToRun = step;
 					var l = LaunchAndRegister(stepToRun);
@@ -793,21 +963,27 @@ public class LocalStackRunCommand
 			if (!realmEnsured)
 				await EnsureRealmAndLogin(args, config);
 
+			await EndBoard();
 			Send(string.Empty, "running",
 				$"Stack is up. Backend={config.host} Portal={config.portalUrl}.", 1f);
-			Log.Information($"Stack is up. Backend={config.host}  Portal={config.portalUrl}");
+			if (Showing)
+				PrintSummary(config, args.runDetached);
+			else
+				Log.Information($"Stack is up. Backend={config.host}  Portal={config.portalUrl}");
 
 			if (args.runDetached)
 			{
 				// Fire-and-return (docker compose up -d style). NOTE: don't use this from an IDE run-config —
 				// when this process exits the IDE ends the run session and kills the child process tree.
-				Log.Information("Detached — the stack keeps running. Manage it with: beam local ps | beam local logs | beam local stop");
+				if (!Showing)
+					Log.Information("Detached — the stack keeps running. Manage it with: beam local ps | beam local logs | beam local stop");
 			}
 			else
 			{
-				// Attached (default): logs already stream live from each child. Hold the foreground until the
-				// user stops (Ctrl+C) or all long-running services exit, then tear the whole stack down.
-				Log.Information("Attached — streaming logs. Press Ctrl+C to stop the stack.");
+				// Attached (default): hold the foreground until the user stops (Ctrl+C) or all long-running services
+				// exit, then tear the whole stack down. With --verbose the children's output keeps streaming.
+				if (!Showing)
+					Log.Information("Attached — streaming logs. Press Ctrl+C to stop the stack.");
 				try { await WaitAttached(launched, steps, config, token); }
 				catch (OperationCanceledException) { /* Ctrl+C — fall through to teardown */ }
 				Log.Information("Stopping the local stack...");
@@ -817,6 +993,7 @@ public class LocalStackRunCommand
 		}
 		catch (OperationCanceledException)
 		{
+			await EndBoard();
 			if (args.runDetached)
 			{
 				// Detached: cancellation during bring-up leaves the stack running; run-state lets `stop` bring it down.
@@ -834,6 +1011,7 @@ public class LocalStackRunCommand
 		catch (Exception)
 		{
 			// A genuine bring-up failure: tear down what we started to avoid orphans, and clear detached run-state.
+			await EndBoard();
 			TearDown(launched);
 			if (args.runDetached) LocalStackRunStateIO.Clear(runStatePath);
 			// Don't leave an empty temp log dir behind for a run that never came up.
@@ -845,7 +1023,48 @@ public class LocalStackRunCommand
 			// Closing the job kills anything still assigned (attached only) — belt-and-suspenders on top of the
 			// OS's own kill-on-close when the process exits.
 			job?.Dispose();
+
+			// An attached stack is gone with this command, so its board is too; a detached one's lasts until `stop`.
+			if (attached) LocalStackBoardIO.Clear(boardPath);
 		}
+	}
+
+	/// <summary>
+	/// How the board reaches the person: full screen in a terminal, a line per change without one, nothing when the output is
+	/// piped as data (the result stream carries the states), and nothing with <c>--verbose</c>, which streams the
+	/// steps' own output instead.
+	/// </summary>
+	private static LocalStackBoardMode BoardMode(LocalStackRunCommandArgs args)
+	{
+		var app = args.AppContext;
+		if (args.verbose || (app != null && (app.UsePipeOutput || app.ShowRawOutput) && !app.ShowPrettyOutput))
+			return LocalStackBoardMode.Silent;
+
+		// The full-screen board needs the terminal's alternate screen; a terminal without one gets the lines.
+		var capabilities = AnsiConsole.Profile.Capabilities;
+		return capabilities.Interactive && capabilities.Ansi && capabilities.AlternateBuffer
+			? LocalStackBoardMode.Live
+			: LocalStackBoardMode.Lines;
+	}
+
+	/// <summary>
+	/// What replaces the board once the stack is up: how many steps are ready, where the portal and the backend are,
+	/// each step that failed with why, and how to stop or manage the stack. After this only warnings and errors print.
+	/// </summary>
+	private void PrintSummary(LocalStackConfig config, bool detached)
+	{
+		var rows = _board.Rows;
+		var failed = rows.Where(r => r.state == LocalStackStepState.Failed).ToList();
+		var colour = failed.Count > 0 ? "yellow" : "green";
+		AnsiConsole.MarkupLine($"[{colour}]Stack {Markup.Escape(_board.Name)} is up[/]: {Markup.Escape(LocalStackBoard.Summary(rows))}  "
+		                       + $"Portal {Markup.Escape(config.portalUrl ?? string.Empty)}  Backend {Markup.Escape(config.host ?? string.Empty)}");
+		foreach (var row in failed.Concat(rows.Where(r => r.state == LocalStackStepState.Degraded)))
+			AnsiConsole.MarkupLine($"  [{LocalStackBoard.Colour(row.state)}]{row.state}[/] {Markup.Escape(row.label ?? row.name)}"
+			                       + (string.IsNullOrWhiteSpace(row.detail) ? string.Empty : $" [grey]({Markup.Escape(row.detail)})[/]"));
+
+		AnsiConsole.MarkupLine(detached
+			? "[grey]It keeps running. `beam local ps` shows it, `beam local logs <step>` reads a step, `beam local stop` stops it.[/]"
+			: "[grey]Ctrl+C stops the stack. `beam local ps` in another terminal shows this board.[/]");
 	}
 
 	/// <summary>
@@ -949,7 +1168,7 @@ public class LocalStackRunCommand
 		               $"(exit {container.exitCode}) — {container.Explain()}";
 
 		Log.Error(headline);
-		Send(target.step.name, "failed", headline, 1f);
+		Send(target.step.name, "failed", headline, 1f, LocalStackStepState.Failed, $"container {container.name} died", announce: false);
 
 		var tail = LocalStackDockerWatchdog.LogTail(dockerPath, container.name, 20);
 		if (!string.IsNullOrWhiteSpace(tail))
@@ -1112,11 +1331,46 @@ public class LocalStackRunCommand
 		catch { /* best-effort — never fail bring-up over log cleanup */ }
 	}
 
-	private void Send(string step, string status, string message, float progress) =>
+	/// <summary>
+	/// Reports one update on the result stream. With <paramref name="state"/>, the step's board row moves there too;
+	/// a failure passes its last log lines (<paramref name="tail"/>) and where the rest is (<paramref name="hint"/>),
+	/// which the board prints unless <paramref name="announce"/> is false (something else already said it).
+	/// </summary>
+	private void Send(string step, string status, string message, float progress, LocalStackStepState? state = null,
+		string detail = null, IReadOnlyList<string> tail = null, string hint = null, bool announce = true)
+	{
+		LocalStackBoardRow row = null;
+		if (_board != null && !string.IsNullOrEmpty(step))
+		{
+			if (state != null)
+				_board.Set(step, state.Value, detail, tail, hint, announce);
+			row = _board.Row(step);
+		}
+
 		SendResults(new LocalStackRunResultStream
 		{
-			step = step, status = status, message = message, progressRatio = Math.Clamp(progress, 0f, 1f)
+			step = step, status = status, message = message, progressRatio = Math.Clamp(progress, 0f, 1f),
+			label = row?.label, state = row?.state.ToString(), elapsedSeconds = row?.ElapsedSeconds(DateTime.UtcNow) ?? 0
 		});
+	}
+
+	/// <summary>The last lines a failed step wrote, from whichever of its two log files it wrote to last.</summary>
+	private static List<string> Tail(Launched l, int count = 6)
+	{
+		var file = new[] { l.StdoutLog, l.StderrLog }
+			.Where(f => !string.IsNullOrEmpty(f) && File.Exists(f) && new FileInfo(f).Length > 0)
+			.OrderByDescending(File.GetLastWriteTimeUtc)
+			.FirstOrDefault();
+		if (file == null) return new List<string>();
+
+		return ReadTail(file, 8192).Split('\n').Select(x => x.TrimEnd('\r')).Where(x => !string.IsNullOrWhiteSpace(x))
+			.TakeLast(count).Select(x => Trim(x, 200)).ToList();
+	}
+
+	/// <summary>Where a step's whole log is: <c>beam local logs</c> for a detached stack, the file for an attached one
+	/// (kept with --save-logs; the run's temp folder goes when the run ends).</summary>
+	private string LogHint(Launched l) =>
+		_attached ? $"log: {l.StdoutLog}" : $"beam local logs \"{l.Step.name}\"";
 
 	/// <summary>
 	/// Runs once before the first beam step: with <c>--create-realm</c>, bootstraps a fresh local realm and
@@ -2037,13 +2291,10 @@ public class LocalStackRunCommand
 		var safe = SafeName(step.name);
 		var stdoutLog = Path.Combine(logsDir, safe + ".log");
 		var stderrLog = Path.Combine(logsDir, safe + ".err.log");
-		// Detached (and attached --save-logs) redirect/tee to log files, so reset them for this run's lifetime.
-		// Attached without --save-logs pipes straight to the console and writes no log files.
-		if (!attached || saveLogs)
-		{
-			ResetLog(stdoutLog);
-			ResetLog(stderrLog);
-		}
+		// Every run writes each step's output to its log files: detached redirects to them, attached tees to them
+		// (the board shows no output, and a failure shows the file's last lines). Reset them for this run.
+		ResetLog(stdoutLog);
+		ResetLog(stderrLog);
 
 		var kind = ResolveKind(step);
 
@@ -2133,11 +2384,11 @@ public class LocalStackRunCommand
 			// Detach stdin so the child never blocks reading the console.
 			try { proc.StandardInput.Close(); } catch { /* some children don't open stdin */ }
 
-			// Pipe stdout/stderr live: to the console (prefixed), to the readiness buffer, and — under
-			// --save-logs — tee to the log files. No file is required for the stack to run.
+			// Pipe stdout/stderr live: to the readiness buffer, to the log files, and with --verbose to the console
+			// (prefixed with the step name).
 			buffer = new StreamLineBuffer();
-			_ = PumpAsync(proc.StandardOutput, step.name, isError: false, buffer, saveLogs ? stdoutLog : null, health);
-			_ = PumpAsync(proc.StandardError, step.name, isError: true, buffer, saveLogs ? stderrLog : null, health);
+			_ = PumpAsync(proc.StandardOutput, step.name, isError: false, buffer, stdoutLog, health, _verbose);
+			_ = PumpAsync(proc.StandardError, step.name, isError: true, buffer, stderrLog, health, _verbose);
 		}
 
 		return new Launched
@@ -2177,19 +2428,19 @@ public class LocalStackRunCommand
 		return cmd;
 	}
 
-	/// <summary>Attached mode: streams one of a child's piped readers to the console (prefixed with the step
-	/// name), feeds the readiness buffer, and — when <paramref name="teePath"/> is set (--save-logs) — appends
-	/// each line to the log file.</summary>
+	/// <summary>Attached mode: feeds the readiness buffer from one of a child's piped readers, appends each line to
+	/// the log file at <paramref name="teePath"/>, and with <paramref name="echo"/> (--verbose) prints it, prefixed
+	/// with the step name.</summary>
 	private static async Task PumpAsync(StreamReader reader, string name, bool isError, StreamLineBuffer buffer,
-		string teePath, StepHealth health = null)
+		string teePath, StepHealth health = null, bool echo = true)
 	{
 		try
 		{
 			string line;
 			while ((line = await reader.ReadLineAsync()) != null)
 			{
-				if (isError) Log.Warning($"[{name}] {line}");
-				else Log.Information($"[{name}] {line}");
+				if (echo && isError) Log.Warning($"[{name}] {line}");
+				else if (echo) Log.Information($"[{name}] {line}");
 				buffer.Append(line);
 
 				// Substring match on the raw line: the runtime logs structured JSON under
@@ -2341,7 +2592,7 @@ public class LocalStackRunCommand
 		{
 			Send(step.name, "degraded",
 				"running, but its federation components failed to register — see `beam local logs`",
-				baseProgress + 1f / totalSteps);
+				baseProgress + 1f / totalSteps, LocalStackStepState.Degraded, "federation didn't register");
 			Log.Warning($"[{step.name}] running, but federation registration failed — this service will not "
 			            + "receive federated traffic. See `beam local logs` for the platform's rejection.");
 		});
@@ -2371,12 +2622,14 @@ public class LocalStackRunCommand
 		if (l.ExitedTask.IsCompleted)
 		{
 			var code = SafeExitCode(l);
-			Send(step.name, "failed", $"exited on startup (code {code}) — see `beam local logs`", baseProgress);
-			Log.Warning($"[{step.name}] exited on startup (code {code}). Last log: {LastLogLine(l)}");
+			Send(step.name, "failed", $"exited on startup (code {code}) — see `beam local logs`", baseProgress,
+				LocalStackStepState.Failed, $"exit {code} on startup", Tail(l), LogHint(l));
+			if (!Showing) Log.Warning($"[{step.name}] exited on startup (code {code}). Last log: {LastLogLine(l)}");
 			return;
 		}
 
-		Send(step.name, "running", "no readiness gate; assuming up", baseProgress + 1f / totalSteps);
+		Send(step.name, "running", "no readiness gate; assuming up", baseProgress + 1f / totalSteps,
+			LocalStackStepState.Running, "no readiness check");
 	}
 
 	private async Task AwaitCompletion(LocalStackStep step, Launched l, LocalStackConfig config, float baseProgress)
@@ -2386,14 +2639,18 @@ public class LocalStackRunCommand
 		var done = await Task.WhenAny(l.ExitedTask, Task.Delay(timeout));
 		if (done != l.ExitedTask)
 		{
-			Send(step.name, "failed", $"did not complete within {step.readyTimeoutSeconds}s", baseProgress);
-			Log.Warning($"[{step.name}] did not complete within {step.readyTimeoutSeconds}s — continuing.");
+			Send(step.name, "failed", $"did not complete within {step.readyTimeoutSeconds}s", baseProgress,
+				LocalStackStepState.Failed, $"didn't finish in {step.readyTimeoutSeconds}s", Tail(l), LogHint(l));
+			if (!Showing) Log.Warning($"[{step.name}] did not complete within {step.readyTimeoutSeconds}s — continuing.");
 			return;
 		}
 
 		var code = SafeExitCode(l);
 		if (code != 0)
-			throw new CliException($"Step '{step.name}' exited with code {code}. Last log: {LastLogLine(l)}");
+		{
+			Send(step.name, "failed", $"exited with code {code}", baseProgress, LocalStackStepState.Failed, $"exit {code}", Tail(l), LogHint(l));
+			throw new CliException($"Step '{step.name}' exited with code {code}, so the stack was stopped. Last log: {LastLogLine(l)}");
+		}
 
 		// A build that exits 0 without producing what it declared is the reference script's `[[ -x $BIN ]] ||
 		// die`: the run step after it would launch a binary that isn't there and the stack would come up
@@ -2401,12 +2658,13 @@ public class LocalStackRunCommand
 		var output = LocalStackConfigIO.ResolveRequiredOutput(step, config);
 		if (output != null && !File.Exists(output) && !Directory.Exists(output))
 		{
+			Send(step.name, "failed", $"did not produce {output}", baseProgress, LocalStackStepState.Failed, "no output", hint: $"expected {output}");
 			throw new CliException(
 				$"Step '{step.name}' completed but did not produce '{output}'. Check the step's command and " +
 				"working directory in the settings (or recreate them with `beam local setup --only settings --force`).");
 		}
 
-		Send(step.name, "ready", "completed", baseProgress);
+		Send(step.name, "ready", "completed", baseProgress, LocalStackStepState.Done);
 	}
 
 	private async Task AwaitReadiness(LocalStackStep step, Launched l, LocalStackConfig config, float baseProgress,
@@ -2463,7 +2721,8 @@ public class LocalStackRunCommand
 							? $"hung with port {step.port} unbound — retrying ({retriesLeft} left)"
 							: $"lost Mongo connect race — retrying ({retriesLeft} left)";
 						Log.Warning($"[{step.name}] {reason}; killing and retrying ({retriesLeft} left). Last log: {LastLogLine(l)}");
-						Send(step.name, "starting", progressMsg, baseProgress);
+						Send(step.name, "starting", progressMsg, baseProgress, LocalStackStepState.Restarting,
+							$"retry {Math.Max(0, step.readyRetries) - retriesLeft} of {Math.Max(0, step.readyRetries)}, {(deadOnPort ? "hung" : "Mongo race")}");
 
 						// Kill first: unlike the exit path below, this process is still alive, and leaving it behind
 						// orphans a JVM that would race the relaunch for the same port.
@@ -2480,7 +2739,8 @@ public class LocalStackRunCommand
 						continue;
 					}
 
-					Send(step.name, "running", $"did not signal ready within {timeout}s; continuing", baseProgress);
+					Send(step.name, "running", $"did not signal ready within {timeout}s; continuing", baseProgress,
+						LocalStackStepState.Running, $"no ready signal in {timeout}s");
 					Log.Warning($"[{step.name}] did not signal ready within {timeout}s — continuing anyway.");
 					return;
 				}
@@ -2492,7 +2752,8 @@ public class LocalStackRunCommand
 					{
 						retriesLeft--;
 						Log.Warning($"[{step.name}] exited early (code {code}); retrying ({retriesLeft} left). Last log: {LastLogLine(l)}");
-						Send(step.name, "starting", $"exited early (code {code}) — retrying ({retriesLeft} left)", baseProgress);
+						Send(step.name, "starting", $"exited early (code {code}) — retrying ({retriesLeft} left)", baseProgress,
+							LocalStackStepState.Restarting, $"retry {Math.Max(0, step.readyRetries) - retriesLeft} of {Math.Max(0, step.readyRetries)}, exit {code}");
 						try { await Task.Delay(3000, token); }
 						catch (OperationCanceledException) { return; }
 
@@ -2507,8 +2768,9 @@ public class LocalStackRunCommand
 						continue;
 					}
 
-					Send(step.name, "failed", $"process exited early (code {code})", baseProgress);
-					Log.Warning($"[{step.name}] exited before becoming ready (code {code}). Last log: {LastLogLine(l)}");
+					Send(step.name, "failed", $"process exited early (code {code})", baseProgress,
+						LocalStackStepState.Failed, $"exit {code}", Tail(l), LogHint(l));
+					if (!Showing) Log.Warning($"[{step.name}] exited before becoming ready (code {code}). Last log: {LastLogLine(l)}");
 					return;
 				}
 
@@ -2520,7 +2782,7 @@ public class LocalStackRunCommand
 						lastLine = line;
 						if (line.Contains(step.readyWhenLogContains))
 						{
-							Send(step.name, "ready", $"ready after {waited}s", baseProgress);
+							Send(step.name, "ready", $"ready after {waited}s", baseProgress, LocalStackStepState.Ready);
 							Log.Information($"[{step.name}] ready after {waited}s.");
 							return;
 						}
@@ -2529,14 +2791,14 @@ public class LocalStackRunCommand
 
 				if (!string.IsNullOrEmpty(http200Url) && await HttpStatusOk(http, http200Url, require200: true, token))
 				{
-					Send(step.name, "ready", $"ready after {waited}s (200)", baseProgress);
+					Send(step.name, "ready", $"ready after {waited}s (200)", baseProgress, LocalStackStepState.Ready);
 					Log.Information($"[{step.name}] ready after {waited}s (HTTP 200).");
 					return;
 				}
 
 				if (!string.IsNullOrEmpty(httpUrl) && await HttpStatusOk(http, httpUrl, require200: false, token))
 				{
-					Send(step.name, "ready", $"ready after {waited}s", baseProgress);
+					Send(step.name, "ready", $"ready after {waited}s", baseProgress, LocalStackStepState.Ready);
 					Log.Information($"[{step.name}] ready after {waited}s.");
 					return;
 				}

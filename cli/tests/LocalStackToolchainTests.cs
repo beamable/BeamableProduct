@@ -5,6 +5,7 @@ using System.Linq;
 using cli.Commands.LocalStack;
 using cli.Services.LocalStack;
 using NUnit.Framework;
+using Spectre.Console.Testing;
 
 namespace tests;
 
@@ -1131,5 +1132,309 @@ public class LocalStackToolchainTests
 			Throws.InstanceOf<LocalStackStackException>().With.Message.Contains("full:x"));
 
 		Assert.That(() => stacks.Add("mine", LocalStackLayer.Local, "mine.json", Def(include: new[] { "docker" })), Throws.Nothing);
+	}
+
+	// ----------------------------------------------------------------------------------
+	// The progress board
+	// ----------------------------------------------------------------------------------
+
+	private static readonly DateTime BoardStart = new DateTime(2026, 10, 21, 12, 0, 0, DateTimeKind.Utc);
+
+	private static LocalStackBoardRow BoardRow(string name, LocalStackStepState state = LocalStackStepState.Waiting,
+		int startedSecondsAgo = -1, int timeout = 0, bool once = false) => new LocalStackBoardRow
+	{
+		name = name, label = "Label " + name, state = state, timeoutSeconds = timeout, once = once,
+		startedUtc = startedSecondsAgo < 0 ? null : BoardStart.AddSeconds(-startedSecondsAgo), changedUtc = BoardStart
+	};
+
+	/// <summary>A board in lines mode on a clock the test moves, with what it prints collected.</summary>
+	private static (LocalStackBoard board, List<string> lines, Action<int> advance) LinesBoard(params LocalStackBoardRow[] rows)
+	{
+		var now = BoardStart;
+		var lines = new List<string>();
+		var board = new LocalStackBoard(new LocalStackBoardSnapshot { stack = "test", rows = rows.ToList() },
+			LocalStackBoardMode.Lines, file: null, now: () => now);
+		board.WriteLine = lines.Add;
+		return (board, lines, seconds => now = now.AddSeconds(seconds));
+	}
+
+	/// <summary>Without a terminal each real change is one line with its time, and a repeat of the same state is not.</summary>
+	[Test]
+	public void Board_prints_one_line_per_state_change_without_a_terminal()
+	{
+		var (board, lines, advance) = LinesBoard(BoardRow("scala: auth", timeout: 180));
+
+		board.Set("scala: auth", LocalStackStepState.Starting);
+		advance(41);
+		board.Set("scala: auth", LocalStackStepState.Starting, "still starting");
+		board.Set("scala: auth", LocalStackStepState.Ready);
+
+		Assert.That(lines, Has.Count.EqualTo(2));
+		Assert.That(lines[0], Does.EndWith("Label scala: auth  Waiting -> Starting"));
+		Assert.That(lines[1], Does.EndWith("Label scala: auth  Starting -> Ready (41s)"));
+		Assert.That(lines[1], Does.Match(@"^\d\d:\d\d:\d\d  "));
+	}
+
+	/// <summary>A failure says what failed, shows its last log lines and where the rest is; a quiet one only moves the row.</summary>
+	[Test]
+	public void Board_prints_a_failure_with_its_last_lines_and_where_to_look()
+	{
+		var (board, lines, _) = LinesBoard(BoardRow("scala: notification"), BoardRow("csharp: gateway"));
+
+		board.Set("scala: notification", LocalStackStepState.Failed, "exit 1",
+			new[] { "ERROR Could not connect to broker at localhost:61616" }, "beam local logs \"scala: notification\"");
+		board.Set("csharp: gateway", LocalStackStepState.Failed, "container died", announce: false);
+
+		Assert.That(lines, Is.EqualTo(new[]
+		{
+			lines[0],
+			"x Label scala: notification failed: exit 1",
+			"    ERROR Could not connect to broker at localhost:61616",
+			"    beam local logs \"scala: notification\""
+		}));
+		Assert.That(board.Row("csharp: gateway").state, Is.EqualTo(LocalStackStepState.Failed));
+		Assert.That(board.Summary(), Is.EqualTo("0 of 2 ready, 2 failed"));
+	}
+
+	[Test]
+	public void Board_bar_and_time_follow_the_state()
+	{
+		var starting = BoardRow("portal", LocalStackStepState.Starting, startedSecondsAgo: 30, timeout: 120);
+		Assert.That(LocalStackBoard.Time(starting, BoardStart), Is.EqualTo("30s / 120s"));
+		Assert.That(LocalStackBoard.Bar(starting, BoardStart), Is.EqualTo("[yellow]#####[/][grey]---------------[/]"));
+
+		var waiting = BoardRow("mail");
+		Assert.That(LocalStackBoard.Time(waiting, BoardStart), Is.Empty);
+		Assert.That(LocalStackBoard.Bar(waiting, BoardStart), Is.EqualTo("[grey][/][grey]--------------------[/]"));
+
+		// Settled: the time stops when the state was reached, the bar is full.
+		var ready = BoardRow("docker", LocalStackStepState.Ready, startedSecondsAgo: 38, timeout: 300);
+		Assert.That(LocalStackBoard.Time(ready, BoardStart.AddMinutes(5)), Is.EqualTo("38s"));
+		Assert.That(LocalStackBoard.Bar(ready, BoardStart), Is.EqualTo("[green]####################[/][grey][/]"));
+
+		// A build can't report how far it is: a block slides along instead.
+		var building = BoardRow("build: scala", LocalStackStepState.Building, startedSecondsAgo: 2, once: true);
+		Assert.That(LocalStackBoard.Bar(building, BoardStart), Is.EqualTo("[blue]--#####-------------[/]"));
+		Assert.That(LocalStackBoard.Time(building, BoardStart), Is.EqualTo("2s"));
+	}
+
+	/// <summary>A narrow terminal gets the name and the state only.</summary>
+	[Test]
+	public void Board_drops_the_bar_and_time_when_narrow()
+	{
+		var snapshot = new LocalStackBoardSnapshot
+		{
+			stack = "backend",
+			rows = { BoardRow("scala: auth", LocalStackStepState.Starting, startedSecondsAgo: 41, timeout: 180), BoardRow("scala: mail") }
+		};
+		snapshot.rows[0].port = 9002;
+
+		string Draw(int width)
+		{
+			var console = new TestConsole().Width(width);
+			console.Write(LocalStackBoard.Render(snapshot, width, BoardStart));
+			return console.Output;
+		}
+
+		var wide = Draw(120);
+		Assert.That(wide, Does.Contain("Running stack backend"));
+		Assert.That(wide, Does.Contain("41s / 180s"));
+		Assert.That(wide, Does.Contain(":9002"));
+		Assert.That(wide, Does.Contain("#####"));
+		Assert.That(wide, Does.Contain("0 of 2 ready"));
+
+		var narrow = Draw(60);
+		Assert.That(narrow, Does.Contain("Label scala: auth"));
+		Assert.That(narrow, Does.Contain("Starting"));
+		Assert.That(narrow, Does.Not.Contain("41s"));
+		Assert.That(narrow, Does.Not.Contain(":9002"));
+		Assert.That(narrow, Does.Not.Contain("###"));
+	}
+
+	/// <summary>A stack of 14 steps: 6 ready, 1 failed, 1 starting, 6 waiting.</summary>
+	private static List<LocalStackBoardRow> TallBoard()
+	{
+		var rows = new List<LocalStackBoardRow>();
+		for (var i = 0; i < 6; i++) rows.Add(BoardRow("ready " + i, LocalStackStepState.Ready));
+		rows.Add(BoardRow("failed", LocalStackStepState.Failed));
+		rows.Add(BoardRow("starting", LocalStackStepState.Starting, startedSecondsAgo: 5, timeout: 60));
+		for (var i = 0; i < 6; i++) rows.Add(BoardRow("waiting " + i));
+		return rows;
+	}
+
+	/// <summary>Following, the view keeps the step in progress near the top, with two rows of what came before.</summary>
+	[Test]
+	public void Board_follows_the_step_in_progress()
+	{
+		var rows = TallBoard();
+		Assert.That(LocalStackBoard.FollowOffset(rows, 5), Is.EqualTo(5), "two rows above 'starting', at index 7");
+		Assert.That(LocalStackBoard.FollowOffset(rows, 20), Is.EqualTo(0), "everything fits");
+
+		// Nothing in progress: the first waiting step; nothing left at all: the end.
+		rows[7].state = LocalStackStepState.Ready;
+		Assert.That(LocalStackBoard.FollowOffset(rows, 5), Is.EqualTo(6));
+		foreach (var row in rows) row.state = LocalStackStepState.Ready;
+		Assert.That(LocalStackBoard.FollowOffset(rows, 5), Is.EqualTo(9), "the last full page");
+	}
+
+	/// <summary>Every row can be reached with the keys; a scroll stops following until F.</summary>
+	[Test]
+	public void Board_scrolls_with_the_keys()
+	{
+		var rows = TallBoard();
+		var view = new LocalStackBoardView();
+		ConsoleKeyInfo Key(ConsoleKey key) => new ConsoleKeyInfo('\0', key, false, false, false);
+
+		Assert.That(view.Following, Is.True);
+		Assert.That(view.Offset(rows, 5), Is.EqualTo(5));
+
+		view.Press(Key(ConsoleKey.Home), rows, 5);
+		Assert.That((view.Following, view.Offset(rows, 5)), Is.EqualTo((false, 0)));
+		view.Press(Key(ConsoleKey.UpArrow), rows, 5);
+		Assert.That(view.Offset(rows, 5), Is.EqualTo(0), "can't go above the top");
+		view.Press(Key(ConsoleKey.PageDown), rows, 5);
+		view.Press(Key(ConsoleKey.DownArrow), rows, 5);
+		Assert.That(view.Offset(rows, 5), Is.EqualTo(6));
+		view.Press(Key(ConsoleKey.End), rows, 5);
+		Assert.That(view.Offset(rows, 5), Is.EqualTo(9), "the last 5 of 14");
+		view.Press(Key(ConsoleKey.PageDown), rows, 5);
+		Assert.That(view.Offset(rows, 5), Is.EqualTo(9), "can't go past the end");
+
+		// A step moving on doesn't move a view the person scrolled.
+		rows[7].state = LocalStackStepState.Ready;
+		Assert.That(view.Offset(rows, 5), Is.EqualTo(9));
+
+		view.Press(Key(ConsoleKey.F), rows, 5);
+		Assert.That((view.Following, view.Offset(rows, 5)), Is.EqualTo((true, 6)));
+		view.Press(Key(ConsoleKey.A), rows, 5);
+		Assert.That(view.Following, Is.True, "other keys do nothing");
+	}
+
+	/// <summary>A frame shows which rows it holds, the summary, the latest messages and the keys, within the screen.</summary>
+	[Test]
+	public void Board_frame_fits_the_screen()
+	{
+		var snapshot = new LocalStackBoardSnapshot { stack = "full", rows = TallBoard() };
+		var messages = new List<string> { "WRN [scala: mail] exited early (code 1); retrying (2 left)" };
+		var visible = LocalStackBoard.VisibleCount(10, messages.Count);
+		Assert.That(visible, Is.EqualTo(6), "10 lines less the title, summary, one message and the keys");
+
+		var console = new TestConsole().Width(120);
+		console.Write(LocalStackBoard.Frame(snapshot, 120, 5, visible, messages, following: true, BoardStart));
+		var lines = console.Output.TrimEnd('\n').Split('\n');
+
+		Assert.That(lines, Has.Length.EqualTo(10));
+		Assert.That(lines[0], Does.Contain("Running stack full").And.Contain("rows 6-11 of 14, following"));
+		Assert.That(lines[1], Does.Contain("Label ready 5"));
+		Assert.That(lines[6], Does.Contain("Label waiting 2"));
+		Assert.That(lines[7], Does.Contain("6 of 14 ready, 1 failed"));
+		Assert.That(lines[8], Does.Contain("exited early"));
+		Assert.That(lines[9], Does.Contain("PgUp/PgDn").And.Contain("Ctrl+C stops the stack"));
+
+		Assert.That(LocalStackBoard.LastLines("a\r\n\r\nb\nc\nd\n", 3), Is.EqualTo(new[] { "b", "c", "d" }));
+	}
+
+	/// <summary>The message pane shows what was written, from any number of threads, not the writer's type name.</summary>
+	[Test]
+	public void Board_messages_keep_what_was_written()
+	{
+		var messages = new LocalStackBoardMessages();
+		System.Threading.Tasks.Parallel.For(0, 50, i => messages.Writer.WriteLine($"warning {i}"));
+
+		var lines = LocalStackBoard.LastLines(messages.Text, 100);
+		Assert.That(lines, Is.EquivalentTo(Enumerable.Range(0, 50).Select(i => $"warning {i}")));
+		Assert.That(messages.Text, Does.Not.Contain("TextWriter"));
+	}
+
+	/// <summary>
+	/// `ps` prints the run's board: an attached run's board goes with its process, and a detached step that was up
+	/// whose process is gone shows as stopped.
+	/// </summary>
+	[Test]
+	public void Ps_shows_the_board_and_what_stopped_since()
+	{
+		var board = new LocalStackBoardSnapshot
+		{
+			stack = "backend", runnerPid = 4242, attached = false, host = "http://localhost:8080",
+			rows =
+			{
+				BoardRow("scala: auth", LocalStackStepState.Ready, startedSecondsAgo: 40),
+				BoardRow("scala: mail", LocalStackStepState.Ready, startedSecondsAgo: 30),
+				BoardRow("docker: deps", LocalStackStepState.Done, startedSecondsAgo: 50),
+			}
+		};
+		var state = new LocalStackRunState
+		{
+			steps =
+			{
+				new LocalStackRunEntry { name = "scala: auth", pid = 11 },
+				new LocalStackRunEntry { name = "scala: mail", pid = 12 },
+			}
+		};
+
+		var result = new LocalStackPsCommandResult();
+		LocalStackPsCommand.Merge(result, board, state, entry => entry.pid == 11);
+
+		Assert.That(result.stack, Is.EqualTo("backend"));
+		Assert.That(result.steps.Select(s => s.state), Is.EqualTo(new[] { "Ready", "Stopped", "Done" }));
+		Assert.That(result.steps[1].running, Is.False);
+		Assert.That(result.steps[0].label, Is.EqualTo("Label scala: auth"));
+
+		Assert.That(LocalStackBoardIO.IsStale(board, _ => false), Is.False, "a detached board lasts until stop");
+		board.attached = true;
+		Assert.That(LocalStackBoardIO.IsStale(board, pid => pid == 4242), Is.False);
+		Assert.That(LocalStackBoardIO.IsStale(board, _ => false), Is.True, "the attached run is gone");
+	}
+
+	/// <summary>The board file round-trips, and clearing the run-state takes it away with it.</summary>
+	[Test]
+	public void Board_file_is_written_on_every_change_and_cleared_with_the_run_state()
+	{
+		var dir = Path.Combine(Path.GetTempPath(), "board-test-" + Guid.NewGuid().ToString("N"));
+		var runState = Path.Combine(dir, LocalStackRunStateIO.RunStateFileName);
+		var file = LocalStackBoardIO.PathFor(runState);
+		try
+		{
+			LocalStackRunStateIO.Save(runState, new LocalStackRunState());
+			var board = new LocalStackBoard(new LocalStackBoardSnapshot { stack = "full", rows = { BoardRow("portal") } },
+				LocalStackBoardMode.Silent, file);
+			board.Set("portal", LocalStackStepState.Starting);
+
+			var saved = LocalStackBoardIO.Load(file);
+			Assert.That(saved.stack, Is.EqualTo("full"));
+			Assert.That(saved.rows.Single().state, Is.EqualTo(LocalStackStepState.Starting));
+			Assert.That(File.ReadAllText(file), Does.Contain("\"Starting\""), "states are written by name");
+
+			LocalStackRunStateIO.Clear(runState);
+			Assert.That(File.Exists(file), Is.False);
+		}
+		finally
+		{
+			if (Directory.Exists(dir)) Directory.Delete(dir, true);
+		}
+	}
+
+	/// <summary>Piped, a bare run and a dry run send their content as data instead of printing nothing.</summary>
+	[Test]
+	public void Listing_and_dry_run_are_data_too()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var listing = LocalStackRunCommand.Listing(stacks);
+		Assert.That(listing.stacks.Select(s => s.name), Does.Contain("full").And.Contain("csharp-portal"));
+		Assert.That(listing.stacks.First(s => s.name == "web-dev").variants.Select(v => v.name), Does.Contain("non-publish"));
+		Assert.That(listing.stacks.Select(s => s.layer).Distinct(), Is.EqualTo(new[] { "built-in" }));
+		Assert.That(listing.builtInVariants, Does.Contain("build").And.Contain("web"));
+
+		var config = StackCatalogue();
+		var resolved = stacks.Resolve("backend", config);
+		var selected = resolved.steps.Where(s => !s.build).ToList();
+		var dryRun = LocalStackRunCommand.DryRun(resolved, selected, new HashSet<LocalStackStep>(), config,
+			new HashSet<string>(), new List<LocalStackDependencyCheck>());
+		Assert.That(dryRun.stack, Is.EqualTo("backend"));
+		Assert.That(dryRun.steps, Has.Count.EqualTo(resolved.steps.Count));
+		var build = dryRun.steps.First(s => resolved.steps.First(r => r.name == s.name).build);
+		Assert.That(build.selected, Is.False);
+		Assert.That(build.runs, Does.StartWith("skipped"));
+		Assert.That(dryRun.steps.First(s => s.selected).label, Is.Not.Empty);
 	}
 }

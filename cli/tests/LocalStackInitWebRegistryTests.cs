@@ -475,4 +475,43 @@ public class LocalStackInitWebRegistryTests : CLITest
 		Assert.That((string)written["description"], Is.EqualTo("Edited"));
 		Assert.That((string)written["extends"], Is.EqualTo("backend"));
 	}
+
+	// ----------------------------------------------------------------------------------
+	// beam local run, ps and stop: the board
+	// ----------------------------------------------------------------------------------
+
+	/// <summary>
+	/// End to end, on a stack of one step that only prints something: a detached run records its board, `ps` reads
+	/// it back as the same rows, and `stop` clears it.
+	/// </summary>
+	[Test]
+	public void Run_records_a_board_that_ps_reads_and_stop_clears()
+	{
+		SetupAndLoad();
+		Run("local", "setup", "--quiet", "--add-step", "hello: print", "--step-shell",
+			OperatingSystem.IsWindows() ? "Write-Output hello" : "echo hello", "--step-once", "--step-label", "Say hello");
+		Run("local", "create", "hello", "--quiet", "--include", "hello: print");
+
+		// --pretty: the test's output is redirected, which would otherwise make the board silent (data only).
+		var exit = RunFull(new[] { "local", "run", "hello", "--detach", "--no-create-realm", "--quiet", "--pretty" });
+		TestContext.WriteLine(Ansi.Output);
+		Assert.That(exit, Is.EqualTo(0));
+		// The test console counts as a terminal, so this is the live board, then the summary that replaces it.
+		Assert.That(Ansi.Output, Does.Contain("Running stack hello").And.Contain("Say hello"));
+		Assert.That(Ansi.Output, Does.Contain("Stack hello is up").And.Contain("1 of 1 ready"));
+
+		var runState = LocalStackRunStateIO.ResolveRunStatePath(SettingsPath);
+		var board = LocalStackBoardIO.Load(LocalStackBoardIO.PathFor(runState));
+		Assert.That(board, Is.Not.Null, "a detached run keeps its board for `ps`");
+		Assert.That(board.stack, Is.EqualTo("hello"));
+		var row = board.rows.Single();
+		Assert.That(row.label, Is.EqualTo("Say hello"));
+		Assert.That(row.state, Is.EqualTo(LocalStackStepState.Done));
+
+		Assert.That(RunFull(new[] { "local", "ps", "--quiet" }), Is.EqualTo(0));
+		Assert.That(Ansi.Output, Does.Contain("Running stack hello").And.Contain("Say hello"));
+
+		Run("local", "stop", "--quiet");
+		Assert.That(File.Exists(LocalStackBoardIO.PathFor(runState)), Is.False);
+	}
 }
