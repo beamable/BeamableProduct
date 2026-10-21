@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed local content mode in Play Mode to resolve the editor namespace from a read-only snapshot of local JSON, including unpublished items, with background loading to keep the editor responsive.
+
 ## [6.2.0] - 2026-10-08
 
 ### Added
