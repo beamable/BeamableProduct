@@ -59,7 +59,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			{ContentFilterStatus.Modified, "modified"},
 			{ContentFilterStatus.UpToDate, "upToDate"},
 			{ContentFilterStatus.Conflicted, "conflicted"},
-			{ContentFilterStatus.Issues, "issues"}
+			{ContentFilterStatus.Issues, "issues"},
+			{ContentFilterStatus.Incoming, "incoming"}
 		};
 
 		private static readonly Dictionary<string, ContentStatus> FilterStatusToContentStatus = new()
@@ -278,7 +279,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void DrawPublishHeaderButton(bool hasContentToPublish, bool hasConflictedOrInvalid)
 		{
 			bool hasPublishPermission = _cli.Permissions.CanPushContent;
-			bool canReviewIssues = hasConflictedOrInvalid;
+			bool hasIncoming = _contentService.EntriesCache.Values.Any(ContentWindow_TooltipsHelper.NeedsReconciliation);
+			bool canReviewIssues = hasConflictedOrInvalid || hasIncoming;
 			bool canPublish = hasPublishPermission && hasContentToPublish && !canReviewIssues;
 
 			string tooltip;
@@ -292,7 +294,9 @@ namespace Beamable.Editor.UI.ContentWindow
 					? $"{issueCount} {(issueCount == 1 ? "item needs" : "items need")} attention."
 					: "Content has validation errors or conflicts.";
 
-				tooltip = $"Publishing blocked: {summary}\n" + "Click to review validation errors and conflicts.";
+				tooltip = hasConflictedOrInvalid
+					? $"Publishing blocked: {summary}\nClick to review validation errors and conflicts."
+					: "Publishing blocked: reconcile incoming or unverified content. Click to review.";
 
 				if (!hasPublishPermission)
 				{
@@ -331,18 +335,19 @@ namespace Beamable.Editor.UI.ContentWindow
 		/// Clears existing filters, search text, cached results, and the active tooltip.
 		/// Defers the changes until the current UI draw completes.
 		/// </summary>
-		private void ShowContentIssues()
+		private void ShowContentIssues(bool incoming = false)
 		{
 			AddDelayedAction(() =>
 			{
 				ChangeWindowStatus(ContentWindowStatus.Normal);
 
 				_activeFilters.Clear();
+				SelectedContentType.Clear();
 				_contentSearchData.searchText = string.Empty;
 				GUI.FocusControl(null);
 
 				GetFilterTypeActiveItems(ContentSearchFilterType.Status)
-					.Add(StatusMapToString[ContentFilterStatus.Issues]);
+					.Add(StatusMapToString[incoming ? ContentFilterStatus.Incoming : ContentFilterStatus.Issues]);
 
 				ClearCaches();
 				UpdateActiveFilterSearchText();

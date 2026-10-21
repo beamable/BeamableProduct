@@ -1115,7 +1115,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (entry.StatusEnum == ContentStatus.Deleted
 			    && _contentService.TryGetRenameInfo(entry.FullId, out var ri)
 			    && ri.DeletedFullId == entry.FullId
-			    && !(statuses.Contains(StatusMapToString[ContentFilterStatus.Issues]) && HasContentIssue(entry)))
+			    && !(statuses.Contains(StatusMapToString[ContentFilterStatus.Issues]) && HasContentIssue(entry))
+			    && !ContentWindow_TooltipsHelper.NeedsReconciliation(entry))
 			{
 				return false;
 			}
@@ -1161,6 +1162,8 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			bool ValidateEntryStatus(string status)
 			{
+				if (status == StatusMapToString[ContentFilterStatus.Incoming]) return ContentWindow_TooltipsHelper.NeedsReconciliation(entry);
+
 				if (status == StatusMapToString[ContentFilterStatus.Issues])
 				{
 					return HasContentIssue(entry);

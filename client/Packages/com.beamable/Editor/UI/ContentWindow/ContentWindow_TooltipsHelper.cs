@@ -12,14 +12,25 @@ namespace Beamable.Editor.UI.ContentWindow
 	{
 		public static ContentChangeKind GetChangeKind(LocalContentManifestEntry entry) => entry.IsInConflict
 			? ContentChangeKind.Conflict
-			: entry.ChangeKind >= (int)ContentChangeKind.UpToDate && entry.ChangeKind <= (int)ContentChangeKind.Conflict
+			: entry.ChangeKind >= (int)ContentChangeKind.UpToDate && entry.ChangeKind <= (int)ContentChangeKind.IncomingDeletion
 				? (ContentChangeKind)entry.ChangeKind : ContentChangeKind.Unknown;
+
+		public static bool IsIncoming(ContentChangeKind kind) => kind is ContentChangeKind.IncomingChange or ContentChangeKind.IncomingAddition or ContentChangeKind.IncomingDeletion;
+
+		public static bool NeedsReconciliation(LocalContentManifestEntry entry) => !entry.IsInConflict &&
+			(GetChangeKind(entry) == ContentChangeKind.Unknown || IsIncoming(GetChangeKind(entry)));
+
+		private static string AutoSyncDescription(bool localMode) => localMode
+			? "Auto-sync is paused while Local Mode is on. Review this item before publishing."
+			: "Auto-sync is enabled; reconciliation may still be pending.";
 
 		public static string GetStatusLabel(LocalContentManifestEntry entry) => GetChangeKind(entry) switch
 		{
 			ContentChangeKind.UpToDate => "Up to date",
 			ContentChangeKind.LocalEdit => "Local edit",
 			ContentChangeKind.IncomingChange => "Incoming change",
+			ContentChangeKind.IncomingAddition => "Incoming addition",
+			ContentChangeKind.IncomingDeletion => "Incoming deletion",
 			ContentChangeKind.Conflict => "Conflict",
 			_ => entry.StatusEnum is ContentStatus.Modified or ContentStatus.Created or ContentStatus.Deleted
 				? "Differs from publication" : "Status unavailable"
@@ -31,6 +42,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			ContentChangeKind.LocalEdit => "Your local copy has unpublished changes.",
 			ContentChangeKind.IncomingChange => "Published content changed; your local copy is unchanged. " +
 				(localMode ? "Auto-sync is paused while Local Mode is on." : "Auto-sync is enabled; synchronization may still be pending."),
+			ContentChangeKind.IncomingAddition => "This item was added in the realm and has not been reconciled locally. " + AutoSyncDescription(localMode),
+			ContentChangeKind.IncomingDeletion => "This item was deleted from the realm; your local copy is unchanged. " + AutoSyncDescription(localMode),
 			ContentChangeKind.Conflict => "Both your local copy and the published version changed. Resolve the conflict before publishing.",
 			_ => entry.StatusEnum is ContentStatus.Modified or ContentStatus.Created or ContentStatus.Deleted
 				? "Differs from latest publication. The origin of this difference is unavailable."
@@ -41,7 +54,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			ContentChangeKind.Conflict => EditorGUIUtility.IconContent("console.erroricon.sml").image,
 			ContentChangeKind.LocalEdit => BeamGUI.iconStatusModified,
-			ContentChangeKind.IncomingChange => BeamGUI.iconStatusIncoming,
+			ContentChangeKind.IncomingChange or ContentChangeKind.IncomingAddition or ContentChangeKind.IncomingDeletion => BeamGUI.iconStatusIncoming,
 			_ => EditorGUIUtility.IconContent("console.infoicon.sml").image
 		};
 
@@ -56,7 +69,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			if (historicalCount > 0 && entries.Count == 0)
 				return "Historical preview\nShowing published content from the selected History entry, not the current working copy.";
-			var counts = new int[5];
+			var counts = new int[7];
 			foreach (var entry in entries) counts[(int)GetChangeKind(entry)]++;
 			conflict = counts[(int)ContentChangeKind.Conflict] > 0;
 			var parts = new List<string>();
@@ -65,7 +78,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (historicalCount > 0) parts.Add($"{historicalCount} Historical preview");
 			var description = $"{entries.Count + historicalCount} selected: " + string.Join("; ", parts) + ".";
 			if (conflict) description += " Resolve conflicts before publishing.";
-			if (counts[(int)ContentChangeKind.IncomingChange] > 0)
+			if (counts[(int)ContentChangeKind.IncomingChange] + counts[(int)ContentChangeKind.IncomingAddition] + counts[(int)ContentChangeKind.IncomingDeletion] > 0)
 				description += localMode ? " Auto-sync is paused while Local Mode is on." : " Auto-sync is enabled; synchronization may still be pending.";
 			return description;
 		}

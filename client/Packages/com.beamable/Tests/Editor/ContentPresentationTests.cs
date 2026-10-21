@@ -11,10 +11,35 @@ namespace Beamable.Editor.Tests
 {
     public class ContentPresentationTests
     {
+        [Test]
+        public void Reconciliation_command_carries_selected_namespace_item_and_reviewed_publication()
+        {
+            var args = new global::Beamable.Editor.BeamCli.Commands.ContentResolveArgs
+            {
+                manifestIds = new[] { "seasonal" }, filter = "currency.coins",
+                filterType = global::Beamable.Common.Content.ContentFilterType.ExactIds,
+                use = "local", expectedManifestUid = "reviewed-uid"
+            };
+            var command = args.Serialize();
+            Assert.That(command, Does.Contain("--manifest-ids=seasonal"));
+            Assert.That(command, Does.Contain("--filter=currency.coins"));
+            Assert.That(command, Does.Contain("--use=local"));
+            Assert.That(command, Does.Contain("--expected-manifest-uid=reviewed-uid"));
+        }
+
+        [Test]
+        public void Unknown_history_requires_reconciliation_even_when_values_match()
+        {
+            var entry = new LocalContentManifestEntry { ChangeKind = 0, CurrentStatus = (int)ContentStatus.UpToDate };
+            Assert.That(ContentWindow_TooltipsHelper.NeedsReconciliation(entry), Is.True);
+        }
+
         [TestCase(1, "Up to date", "matches the last known publication")]
         [TestCase(2, "Local edit", "unpublished changes")]
         [TestCase(3, "Incoming change", "your local copy is unchanged")]
         [TestCase(4, "Conflict", "Resolve the conflict before publishing")]
+        [TestCase(5, "Incoming addition", "added in the realm")]
+        [TestCase(6, "Incoming deletion", "deleted from the realm")]
         [TestCase(0, "Differs from publication", "Differs from latest publication")]
         [TestCase(98, "Differs from publication", "Differs from latest publication")]
         public void Uses_authoritative_presentation(int kind, string label, string explanation)
@@ -83,6 +108,17 @@ namespace Beamable.Editor.Tests
             Assert.That(message, Does.Contain("2 selected"));
             Assert.That(message, Does.Contain("1 Historical preview"));
             Assert.That(message, Does.Contain("1 Local edit"));
+        }
+
+        [Test]
+        public void Incoming_additions_and_deletions_are_included_in_multi_selection()
+        {
+            var entries = new[] { new LocalContentManifestEntry { ChangeKind = 5 }, new LocalContentManifestEntry { ChangeKind = 6 } };
+            var message = ContentWindow_TooltipsHelper.GetSelectionDescription(entries, 0, true, out var conflict);
+            Assert.That(conflict, Is.False);
+            Assert.That(message, Does.Contain("1 Incoming addition"));
+            Assert.That(message, Does.Contain("1 Incoming deletion"));
+            Assert.That(message, Does.Contain("Auto-sync is paused"));
         }
 
         [TestCase(350f)]

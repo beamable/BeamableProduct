@@ -691,19 +691,28 @@ namespace Beamable.Editor.ContentService
 
 		public void ResolveConflict(string contentId, bool useLocal)
 		{
-			var resolveCommand = _cli.ContentResolve(new ContentResolveArgs()
-			{
-				manifestIds = GetSelectedManifestIdsCliOption(),
-				filter = contentId,
-				filterType = ContentFilterType.ExactIds,
-				use = useLocal ? "local" : "realm"
-			});
-			resolveCommand.Run();
-			var content = EntriesCache[contentId];
-			content.IsInConflict = false;
-			EntriesCache[contentId] = content;
+			ReconcileContentWithProgress(contentId, useLocal).Error(Debug.LogException);
 		}
-		
+
+		public async Promise ReconcileContentWithProgress(string contentId, bool useLocal)
+		{
+			if (!EntriesCache.TryGetValue(contentId, out var entry) || string.IsNullOrEmpty(entry.TargetManifestUid))
+				throw new InvalidOperationException("Refresh content with the updated CLI before reconciling this item.");
+			var args = new ContentResolveArgs
+			{
+				manifestIds = GetSelectedManifestIdsCliOption(), filter = contentId,
+				filterType = ContentFilterType.ExactIds, use = useLocal ? "local" : "realm",
+				expectedManifestUid = entry.TargetManifestUid
+			};
+			BeginActionProgress("Reconcile Content", "Reconciling selected content...", false);
+			try
+			{
+				await StopContentWatcher();
+				await _cli.ContentResolve(args).Run();
+			}
+			finally { FinishActionProgress(); }
+		}
+
 		public async Promise PublishContentsWithProgress()
 		{
 			BeginActionProgress(PUBLISH_OPERATION_TITLE, "Publishing contents...", true);

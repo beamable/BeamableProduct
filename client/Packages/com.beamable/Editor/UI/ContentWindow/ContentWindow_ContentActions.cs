@@ -31,7 +31,8 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void DrawPublishPanel()
 		{
-			if (_contentService.HasConflictedContent || _contentService.HasInvalidContent || !_contentService.HasChangedContents)
+			if (_contentService.HasConflictedContent || _contentService.HasInvalidContent || !_contentService.HasChangedContents ||
+			    _contentService.EntriesCache.Values.Any(ContentWindow_TooltipsHelper.NeedsReconciliation))
 			{
 				ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 				return;
@@ -46,7 +47,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					_contentService.PublishContentsWithProgress().Then(_ =>
 					{
 						ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
-					});
+					}).Error(error => EditorUtility.DisplayDialog("Publish did not complete", error.Message, "Close"));
 				}
 			}
 

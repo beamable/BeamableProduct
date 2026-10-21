@@ -46,7 +46,8 @@ namespace Beamable.Editor.Content.UI
 			var boldLabelFieldStyle =
 				new GUIStyle(EditorStyles.boldLabel) {fixedHeight = EditorGUIUtility.singleLineHeight};
 
-			var isModified = contentObject.ContentStatus is ContentStatus.Modified or ContentStatus.Created or ContentStatus.Deleted;
+			var isModified = contentObject.ContentStatus is ContentStatus.Modified or ContentStatus.Created or ContentStatus.Deleted ||
+				(contentService.EntriesCache.TryGetValue(contentObject.Id, out var headerEntry) && ContentWindow_TooltipsHelper.NeedsReconciliation(headerEntry));
 			var isInConflict = contentObject.IsInConflict;
 
 			var headerHeight = (isModified || isInConflict) && !isEditingMultiple ? BUTTONS_HEADER_HEIGHT : HEADER_HEIGHT;
@@ -140,11 +141,13 @@ namespace Beamable.Editor.Content.UI
 				alignment = TextAnchor.MiddleLeft,     
 				padding = new RectOffset(10, 5, 5, 5),
 			};
-			bool hasModifiedButton = content.ContentStatus is ContentStatus.Deleted or ContentStatus.Modified or ContentStatus.Created;
+			bool incoming = contentService.EntriesCache.TryGetValue(content.Id, out var entry) &&
+				ContentWindow_TooltipsHelper.NeedsReconciliation(entry);
+			bool hasModifiedButton = incoming || content.ContentStatus is ContentStatus.Deleted or ContentStatus.Modified or ContentStatus.Created;
 			bool hasConflictSolveButton = content.IsInConflict;
 			if (hasModifiedButton)
 			{
-				var revertContent = new GUIContent("Revert");
+				var revertContent = new GUIContent(incoming ? "Reconcile" : "Revert");
 				
 				var revertButtonRect = new Rect(
 					buttonsRect.xMin,
@@ -153,7 +156,17 @@ namespace Beamable.Editor.Content.UI
 					buttonsRect.height);
 				if (GUI.Button(revertButtonRect, revertContent, buttonStyle))
 				{
-					if (EditorUtility.DisplayDialog("Revert Content", 
+					if (incoming)
+					{
+						var choice = EditorUtility.DisplayDialogComplex("Reconcile Content",
+							ContentWindow_TooltipsHelper.GetStatusDescription(entry, ContentConfiguration.Instance.EnableLocalContentInEditor) +
+							"\n\nUse Realm makes this item match the realm, including accepting a deletion. Keep Local preserves your local version or deletion for a later publish. Only this item is affected.",
+							"Use Realm", "Cancel", "Keep Local");
+						if (choice != 1)
+							contentService.ReconcileContentWithProgress(content.Id, choice == 2)
+								.Error(error => EditorUtility.DisplayDialog("Reconciliation did not complete", error.Message, "Close"));
+					}
+					else if (EditorUtility.DisplayDialog("Revert Content",
 					                                "Are you sure you want to revert this content?", "Revert", "Cancel"))
 					{
 						_ = contentService.SyncContentsWithProgress(true, true, true, true, content.Id, ContentFilterType.ExactIds);
@@ -193,10 +206,6 @@ namespace Beamable.Editor.Content.UI
 							contentService.ResolveConflict(content.Id, true);
 						});	
 					}
-					conflictResolveMenu.AddItem(new GUIContent("Use Local"), false, () =>
-					{
-						contentService.ResolveConflict(content.Id, true);
-					});
 					conflictResolveMenu.AddItem(new GUIContent("Use Realm"), false, () =>
 					{
 						contentService.ResolveConflict(content.Id, false);
@@ -440,8 +449,8 @@ namespace Beamable.Editor.Content.UI
 					var entry = GetCachedEntry(content);
 					entries.Add(entry);
 					var kind = ContentWindow_TooltipsHelper.GetChangeKind(entry);
-					onlyIncoming &= kind == ContentChangeKind.IncomingChange;
-					hasChanges |= kind is ContentChangeKind.LocalEdit or ContentChangeKind.IncomingChange ||
+					onlyIncoming &= ContentWindow_TooltipsHelper.IsIncoming(kind);
+					hasChanges |= kind == ContentChangeKind.LocalEdit || ContentWindow_TooltipsHelper.IsIncoming(kind) ||
 						(kind == ContentChangeKind.Unknown && entry.StatusEnum is ContentStatus.Modified or ContentStatus.Created or ContentStatus.Deleted);
 				}
 			}

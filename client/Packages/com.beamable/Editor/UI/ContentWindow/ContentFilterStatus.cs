@@ -8,6 +8,7 @@
 		Modified,
 		UpToDate,
 		Conflicted,
-		Issues
+		Issues,
+		Incoming
 	}
 }
