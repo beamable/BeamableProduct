@@ -26,7 +26,7 @@ public class CreatedRealm
 }
 
 /// <summary>
-/// Bootstraps and validates the local realm/login for <c>beam local up</c>. The CLI can't create a realm
+/// Bootstraps and validates the local realm/login for <c>beam local run</c>. The CLI can't create a realm
 /// (<c>beam new</c> only opens the web signup), but the backend accepts a direct
 /// <c>POST {host}/basic/realms/customer</c> that creates a customer + realm + account and returns the
 /// cid/pid/token — which we write into the workspace config so subsequent beam commands (and the local

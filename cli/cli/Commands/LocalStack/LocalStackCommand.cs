@@ -1,34 +1,20 @@
 using cli.Services;
 using cli.Services.LocalStack;
-using System.CommandLine;
-using System.CommandLine.Binding;
 
 namespace cli.Commands.LocalStack;
 
 /// <summary>
-/// Parent group for the local-stack orchestrator (<c>beam local ...</c>). Brings up a full local
-/// Beamable loop — backend, portal, microservices and portal extensions — from a generic,
-/// machine-agnostic JSON manifest.
+/// Parent group for the local-stack orchestrator (<c>beam local ...</c>). Brings up a local Beamable loop —
+/// backend, portal, microservices and portal extensions — by stack name, like <c>npm run</c>:
+/// <c>setup</c>, <c>run</c>, <c>create</c>, <c>edit</c>, <c>delete</c>, <c>ps</c>, <c>logs</c> and <c>stop</c>.
 /// </summary>
 public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 {
 	public override bool IsForInternalUse { get; } = true;
 
-	public LocalStackCommand() : base("local", "Orchestrate a full local Beamable stack from a manifest")
+	public LocalStackCommand() : base("local", "Run a local Beamable stack by name: `beam local run` lists the stacks, `beam local run <stack>[:variant...]` starts one")
 	{
 	}
-
-	/// <summary>
-	/// Whether an option was actually written on the command line, as opposed to merely having its type
-	/// default handed to the binder.
-	///
-	/// Binders run for EVERY declared option on every invocation, receiving <c>default(bool)</c> when the flag
-	/// is absent — so by value alone an absent flag is indistinguishable from an explicit <c>--flag false</c>.
-	/// That matters for the web-registry flags, where "absent" means "defer to the manifest" and an explicit
-	/// <c>false</c> means "turn it off": collapsing the two would silently ignore the second.
-	/// </summary>
-	public static bool WasSupplied(BindingContext context, Option option) =>
-		context.ParseResult.FindResultFor(option) is { IsImplicit: false };
 
 	/// <summary>
 	/// Resolves the manifest path: the explicit <paramref name="overridePath"/> if given, otherwise
@@ -52,7 +38,7 @@ public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 	}
 
 	/// <summary>
-	/// Where <c>beam local init</c> should WRITE a manifest. Same as <see cref="ResolveManifestPath"/> except that,
+	/// Where <c>beam local setup</c> should WRITE a manifest. Same as <see cref="ResolveManifestPath"/> except that,
 	/// with no workspace, the <c>.beamable</c> folder is taken in the working directory the CLI was started in.
 	///
 	/// The directory is not created here; <see cref="EnsureManifestDirectory"/> does that, so the caller can

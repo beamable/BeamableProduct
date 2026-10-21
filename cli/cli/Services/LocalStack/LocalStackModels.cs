@@ -10,7 +10,7 @@ namespace cli.Services.LocalStack;
 /// orchestrator, but driven entirely by a JSON manifest so it is not tied to any one machine.
 ///
 /// The manifest lives (by default) at <c>&lt;workspace&gt;/.beamable/local/stack-settings.json</c> and is
-/// created by <c>beam local init</c>. Repo folders live only in <see cref="paths"/>; every step refers to them
+/// created by <c>beam local setup</c>. Repo folders live only in <see cref="paths"/>; every step refers to them
 /// as <c>${PortalPath}</c>, <c>${BeamAPIPath}</c> and so on.
 /// </summary>
 public class LocalStackConfig
@@ -66,7 +66,7 @@ public class LocalStackConfig
 
 	/// <summary>
 	/// The Java 8 <c>JAVA_HOME</c> the Scala backend runs under. Substituted via the <c>${java}</c> token
-	/// (e.g. <c>${java}/bin/java</c>). Resolved by <c>beam local up</c> from <c>--java-path</c> /
+	/// (e.g. <c>${java}/bin/java</c>). Resolved by <c>beam local run</c> from <c>--java-path</c> /
 	/// <c>BEAM_JAVA_HOME</c> / auto-detection when left null, so a shared manifest stays machine-agnostic.
 	/// </summary>
 	public string javaHome;
@@ -82,7 +82,7 @@ public class LocalStackConfig
 	public LocalStackToolchain toolchain;
 
 	/// <summary>
-	/// How often (seconds) an attached <c>beam local up</c> re-checks that the containers its
+	/// How often (seconds) an attached <c>beam local run</c> re-checks that the containers its
 	/// <c>docker compose up</c> steps started are still running. 0 disables the check.
 	///
 	/// Docker steps are run-to-completion, so their containers are invisible to the attached wait: one can die
@@ -92,24 +92,11 @@ public class LocalStackConfig
 	public int dockerWatchdogSeconds = 15;
 
 	/// <summary>
-	/// The standing web-registry choice <c>beam local init</c> recorded: whether <c>beam local up</c> runs the
-	/// local web package registry steps (Verdaccio + local-unpkg) without being asked to. The steps themselves
-	/// are always written to the manifest, so this is the switch — flipping it is what <c>init</c> does, and
-	/// <c>--with-web-registry[=true|false]</c> overrides it for a single run WITHOUT writing back
-	/// here. Re-run <c>beam local init</c> to change the standing choice.
-	///
-	/// Null on a manifest written before this field existed, which reads as TRUE: those manifests only contain
-	/// the web steps when their author asked for them, and <c>up</c> ran them by default, so an existing
-	/// workspace keeps behaving exactly as it did until it is re-initialised.
-	/// </summary>
-	public bool? webRegistry;
-
-	/// <summary>
 	/// The repository checkouts this manifest was generated against. Documentation-only metadata: the steps
 	/// carry their own absolute <see cref="LocalStackStep.workingDirectory"/> values and nothing in the
 	/// orchestrator reads this. It exists so the generated <c>beam-local-stack</c> agent skill (see
 	/// <see cref="LocalStackSkillTemplate"/>) can name the repos without reverse-engineering step names —
-	/// which also keeps it correct for <c>beam local init --update-services</c>, where the repo paths are
+	/// which also keeps it correct for <c>beam local setup --update-services</c>, where the repo paths are
 	/// never prompted for.
 	///
 	/// Null on manifests written before this field existed (and omitted from the JSON when null), so readers
@@ -127,7 +114,7 @@ public class LocalStackConfig
 /// <summary>
 /// The repository checkouts a <see cref="LocalStackConfig"/> was generated against. Every value may hold an
 /// unedited <c>&lt;EDIT: ...&gt;</c> placeholder (see <see cref="LocalStackConfigIO.EditPlaceholder"/>) when
-/// <c>beam local init</c> could not resolve it, or be null when that part of the stack is not included.
+/// <c>beam local setup</c> could not resolve it, or be null when that part of the stack is not included.
 /// </summary>
 public class LocalStackRepos
 {
@@ -236,7 +223,13 @@ public class LocalStackStep
 	public bool enabled = true;
 
 	/// <summary>
-	/// When true, this is a build/compile step: it only runs when <c>beam local up --build</c> is passed
+	/// True for a step added with <c>beam local setup --add-step</c> rather than generated: it is kept when the
+	/// generated catalogue is recreated, and it is the only kind <c>--remove-step</c> removes. Omitted otherwise.
+	/// </summary>
+	public bool? custom;
+
+	/// <summary>
+	/// When true, this is a build/compile step: it only runs when <c>beam local run &lt;stack&gt;:build</c> is passed
 	/// (skipped otherwise). Build steps are run-to-completion (<see cref="waitForExit"/>) and are not tracked
 	/// in the run-state — they compile a component before its run step, they are not a running service.
 	/// </summary>
@@ -244,7 +237,7 @@ public class LocalStackStep
 
 	/// <summary>
 	/// For a build step: the file (or directory) the build is expected to produce. When set and missing, the
-	/// step runs even <b>without</b> <c>beam local up --build</c> — so a fresh clone (or a project nobody has
+	/// step runs even <b>without</b> <c>beam local run &lt;stack&gt;:build</c> — so a fresh clone (or a project nobody has
 	/// built yet) self-heals instead of launching a binary that isn't there, and <c>up</c> fails loudly when a
 	/// build "succeeds" without producing it. Mirrors the reference <c>scripts/run-local-stack.sh</c>, which
 	/// builds each gateway/worker binary when it is missing. Absolute, or relative to
@@ -256,7 +249,7 @@ public class LocalStackStep
 	/// For the Scala reactor build step: the module directories it produces output for, relative to
 	/// <see cref="workingDirectory"/> (e.g. <c>core</c>, <c>tools/auth</c>).
 	///
-	/// <c>beam local up</c> runs this build WITHOUT <c>--build</c> when any listed module has never been compiled.
+	/// <c>beam local run</c> runs this build WITHOUT <c>:build</c> when any listed module has never been compiled.
 	/// A plain first `up` on a fresh clone otherwise launched JVMs against modules with no classes, which does not
 	/// fail cleanly — the service starts, half the stack proxies through it, and the result is a "malfunctioning"
 	/// backend rather than an obvious build error. A single <see cref="requiredOutput"/> cannot express this
@@ -290,7 +283,7 @@ public class LocalStackStep
 	/// <summary>
 	/// For a shell step, which shell the <see cref="arguments"/> script targets: <c>"sh"</c> (the
 	/// default when null/empty — POSIX sh, used on macOS/Linux) or <c>"powershell"</c> (Windows).
-	/// Set by <c>beam local init</c> to the generating OS so <c>up</c> runs the script with the right
+	/// Set by <c>beam local setup</c> to the generating OS so <c>up</c> runs the script with the right
 	/// interpreter. A POSIX-sh script cannot be run by <c>cmd.exe</c>, so this must match the script.
 	/// </summary>
 	public string shellKind;
@@ -316,7 +309,7 @@ public class LocalStackStep
 
 	/// <summary>
 	/// The TCP port this step's process binds, when known (0 = unknown, no check). Before launching,
-	/// <c>beam local up</c> fails fast when this port is already held by something that is <em>not</em> this
+	/// <c>beam local run</c> fails fast when this port is already held by something that is <em>not</em> this
 	/// service — otherwise the process loses the bind and the failure surfaces much later as a readiness
 	/// timeout, a 502, or a service that "struggles to start". Declared explicitly rather than parsed out of a
 	/// readiness URL because the two differ (the Scala gateway binds 9002 but is health-checked through Caddy).
@@ -397,7 +390,7 @@ public static class LocalStackConfigIO
 	public const string WebRegistryPathVar = "WebRegistryPath";
 
 	/// <summary>
-	/// Marker `beam local init` writes in place of a path it could not resolve (<c>&lt;EDIT: absolute path to
+	/// Marker `beam local setup` writes in place of a path it could not resolve (<c>&lt;EDIT: absolute path to
 	/// ...&gt;</c>). A value still holding it is "not filled in yet", never a real path.
 	/// </summary>
 	public const string EditPlaceholder = "<EDIT:";
@@ -622,6 +615,46 @@ public static class LocalStackConfigIO
 		}
 
 		return unknown;
+	}
+
+	/// <summary>
+	/// Every <c>${Name}</c> the steps use, in first-use order, with its value and where the value comes from:
+	/// <c>built-in</c>, <c>paths</c> or <c>variables</c>. In shell steps only known names count, since a shell
+	/// script can use <c>${NAME}</c> for its own variables; an unknown name elsewhere is listed as not set.
+	/// </summary>
+	public static List<(string name, string value, string source)> DescribeVariables(IEnumerable<LocalStackStep> steps, LocalStackConfig config)
+	{
+		var described = new List<(string name, string value, string source)>();
+		var seen = new HashSet<string>(StringComparer.Ordinal);
+		foreach (var step in steps)
+		{
+			foreach (var value in StepValues(step).Where(v => !string.IsNullOrEmpty(v)))
+			{
+				foreach (Match m in VariableToken.Matches(value))
+				{
+					var name = m.Groups[1].Value;
+					var source = BuiltInTokens.Contains(name) ? "built-in"
+						: config.variables?.ContainsKey(name) == true ? "variables"
+						: config.paths?.ContainsKey(name) == true ? "paths"
+						: null;
+					if ((source == null && step.shell) || !seen.Add(name)) continue;
+
+					string resolved;
+					try
+					{
+						resolved = source == null ? "(not set)" : Substitute("${" + name + "}", config);
+					}
+					catch (VariableCycleException e)
+					{
+						resolved = e.CanonicalMessage;
+					}
+
+					described.Add((name, resolved, source ?? "not set"));
+				}
+			}
+		}
+
+		return described;
 	}
 
 	/// <summary>Fills <see cref="LocalStackConfig.repos"/> from <see cref="LocalStackConfig.paths"/>.</summary>
@@ -1025,8 +1058,8 @@ public static class LocalStackConfigIO
 	}
 
 	/// <summary>
-	/// True when a build step declares an output that does not exist yet. <c>beam local up</c> runs such a step
-	/// even without <c>--build</c>, so the run step that follows it has a binary to launch.
+	/// True when a build step declares an output that does not exist yet. <c>beam local run</c> runs such a step
+	/// even without <c>:build</c>, so the run step that follows it has a binary to launch.
 	/// </summary>
 	public static bool BuildOutputMissing(LocalStackStep step, LocalStackConfig config)
 	{

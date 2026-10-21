@@ -22,7 +22,7 @@ public class LocalStackStopCommandResult
 }
 
 /// <summary>
-/// Stops the local stack recorded by <c>beam local up</c>. Long-running processes are killed
+/// Stops the local stack recorded by <c>beam local run</c>. Long-running processes are killed
 /// (whole process tree, in reverse start order); run-to-completion steps that declared a
 /// <c>stopArguments</c> reversal (e.g. <c>docker compose stop</c>) are reversed. With a step name, only
 /// that step is stopped; otherwise the whole stack is stopped and the run-state cleared.
@@ -121,7 +121,7 @@ public class LocalStackStopCommand
 	{
 		// An adopted step was already serving when `up` ran, so `up` recorded it without launching it (and
 		// without a pid). Say so before stopping it: the process predates this stack's bring-up, so if the user
-		// started it themselves — from an IDE, or a `beam local up` they since forgot about — this line is the
+		// started it themselves — from an IDE, or a `beam local run` they since forgot about — this line is the
 		// only warning that `stop` is about to take it down as part of the stack.
 		if (entry.adopted)
 			Log.Information($"[{entry.name}] was adopted (already serving when the stack came up) — stopping it too");

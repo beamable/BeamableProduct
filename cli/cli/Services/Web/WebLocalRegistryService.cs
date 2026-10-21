@@ -481,7 +481,7 @@ public class WebLocalRegistryService
 	}
 
 	/// <summary>
-	/// Preflight for <c>beam local up</c> and any direct <c>beam web publish</c>: when the recorded
+	/// Preflight for <c>beam local run</c> and any direct <c>beam web publish</c>: when the recorded
 	/// <paramref name="productDir"/> is a git checkout that has had <c>web/</c> or <c>beam-portal-toolkit/</c>
 	/// wiped from the working tree, restore them from HEAD instead of letting <c>beam web publish</c> fail
 	/// minutes into the run — the stack has spun up 20+ services by then and cascades a full shutdown.

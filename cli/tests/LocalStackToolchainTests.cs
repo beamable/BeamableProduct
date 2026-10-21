@@ -750,4 +750,386 @@ public class LocalStackToolchainTests
 		Assert.That(LocalStackCliVersions.Check(null, Running, fix: true).pins, Is.Empty);
 		Assert.That(LocalStackCliVersions.Check(Path.Combine(Root, "does-not-exist"), Running, fix: true).pins, Is.Empty);
 	}
+
+	// ----------------------------------------------------------------------------------
+	// Stacks: the layers, extends, variants and how a name resolves to steps
+	// ----------------------------------------------------------------------------------
+
+	/// <summary>A catalogue as `beam local setup` writes one, with one extension and one service group.</summary>
+	private static LocalStackConfig StackCatalogue() =>
+		LocalStackTemplate.Create(new LocalStackTemplate.Options
+		{
+			apiDir = Path.Combine(Root, "BeamableAPI"),
+			scalaDir = Path.Combine(Root, "BeamableBackend"),
+			portalDir = Path.Combine(Root, "portal"),
+			includeWebRegistry = true,
+			webRegistryDir = Path.Combine(Root, "BeamableProduct", "portal-localdev"),
+			extensions = new List<string> { "my-ext" },
+			groups = new List<string> { "player-engagement" },
+		});
+
+	private static List<string> StepNames(LocalStackResolvedStack resolved) => resolved.steps.Select(s => s.name).ToList();
+
+	private static LocalStackStackDef Def(string description = null, string extends = null, string[] include = null,
+		string[] exclude = null, string[] extensions = null) =>
+		new LocalStackStackDef
+		{
+			description = description,
+			extends = extends,
+			include = include?.ToList(),
+			exclude = exclude?.ToList(),
+			extensions = extensions?.ToList(),
+		};
+
+	private static Dictionary<string, LocalStackVariantDef> Variant(string name, string[] before = null, string[] after = null,
+		string[] remove = null) =>
+		new Dictionary<string, LocalStackVariantDef>
+		{
+			[name] = new LocalStackVariantDef
+			{
+				description = name, before = before?.ToList(), after = after?.ToList(), remove = remove?.ToList()
+			}
+		};
+
+	[Test]
+	public void BuiltInStacksSelectByTag()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var config = StackCatalogue();
+
+		var backend = StepNames(stacks.Resolve("backend", config));
+		Assert.That(backend, Does.Contain("c# gateway").And.Contain("scala: auth").And.Contain("docker: api deps + caddy"));
+		Assert.That(backend, Does.Not.Contain("portal frontend"));
+		Assert.That(backend, Does.Not.Contain(LocalStackTemplate.WebRegistryStepName), "web steps only run when a stack asks for them");
+
+		var full = StepNames(stacks.Resolve("full", config));
+		Assert.That(full, Does.Contain("portal frontend").And.Contain("portal extension: my-ext").And.Contain("group: player-engagement"));
+
+		// The catalogue's order is kept: readiness gates depend on it.
+		var catalogueOrder = config.steps.Select(s => s.name).Where(full.Contains).ToList();
+		Assert.That(full, Is.EqualTo(catalogueOrder));
+	}
+
+	[Test]
+	public void ScalaCoreIsTheMinimalLoginSet()
+	{
+		var names = StepNames(LocalStackStacks.BuiltIn().Resolve("csharp-portal", StackCatalogue()));
+
+		Assert.That(names, Does.Contain("scala: auth").And.Contain("scala: account").And.Contain("scala: gateway")
+			.And.Contain("scala: dbflake").And.Contain("build: scala"));
+		Assert.That(names, Does.Not.Contain("scala: stats"));
+		Assert.That(names, Does.Contain("portal frontend"));
+	}
+
+	[Test]
+	public void HigherLayerFieldsWinAndVariantsMerge()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		stacks.Add("team", LocalStackLayer.Shared, "shared.json", new LocalStackStackDef
+		{
+			description = "Team stack", include = new List<string> { "docker" },
+			variants = Variant("with-portal", after: new[] { "portal" })
+		});
+		// A personal entry changes the selection and adds its own variant, without copying the shared one.
+		stacks.Add("team", LocalStackLayer.Local, "mine.json", new LocalStackStackDef
+		{
+			include = new List<string> { "csharp" },
+			variants = Variant("mine", after: new[] { "scala: auth" })
+		});
+
+		var config = StackCatalogue();
+		var team = stacks.Resolve("team", config);
+		Assert.That(team.description, Is.EqualTo("Team stack"), "an unset field falls through to the lower layer");
+		Assert.That(StepNames(team), Does.Contain("c# gateway").And.Not.Contain("docker: api deps + caddy"),
+			"the local include replaces the shared one");
+
+		Assert.That(StepNames(stacks.Resolve("team:with-portal", config)), Does.Contain("portal frontend"));
+		Assert.That(StepNames(stacks.Resolve("team:mine", config)), Does.Contain("scala: auth"));
+
+		var listed = stacks.List().Single(s => s.name == "team");
+		Assert.That(listed.layer, Is.EqualTo(LocalStackLayer.Shared));
+		Assert.That(listed.changedBy, Is.EqualTo(new[] { LocalStackLayer.Local }));
+		Assert.That(listed.variants.Single(v => v.name == "mine").layer, Is.EqualTo(LocalStackLayer.Local));
+	}
+
+	[Test]
+	public void VariantsChainLeftToRight()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var def = Def("Chain", include: new[] { "docker", "csharp" });
+		def.variants = new Dictionary<string, LocalStackVariantDef>
+		{
+			["a"] = new LocalStackVariantDef { before = new List<string> { "scala: redis" }, after = new List<string> { "portal frontend" } },
+			["b"] = new LocalStackVariantDef
+			{
+				before = new List<string> { "scala: dbflake", "scala: redis" },
+				after = new List<string> { "scala: auth" },
+				remove = new List<string> { "c# analytics loader" }
+			},
+		};
+		stacks.Add("chain", LocalStackLayer.Local, "chain.json", def);
+
+		var names = StepNames(stacks.Resolve("chain:a:b", StackCatalogue()));
+
+		// a.before, b.before, the stack's own steps, a.after, b.after. scala: redis is listed twice and runs once,
+		// at its first position.
+		Assert.That(names.Take(2), Is.EqualTo(new[] { "scala: redis", "scala: dbflake" }));
+		Assert.That(names.TakeLast(2), Is.EqualTo(new[] { "portal frontend", "scala: auth" }));
+		Assert.That(names.Count(n => n == "scala: redis"), Is.EqualTo(1));
+		Assert.That(names, Does.Not.Contain("c# analytics loader"), "b's remove applies to the stack's own steps");
+		Assert.That(names, Does.Contain("c# gateway"));
+	}
+
+	[Test]
+	public void RemovePlusBeforeOverridesAStep()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var def = Def("Debug gateway", extends: "backend");
+		def.steps = new Dictionary<string, LocalStackStep>
+		{
+			["c# gateway (debug)"] = new LocalStackStep { command = "dotnet", arguments = "run", workingDirectory = "${BeamAPIPath}" }
+		};
+		def.variants = Variant("debug", before: new[] { "c# gateway (debug)" }, remove: new[] { "c# gateway" });
+		stacks.Add("gw", LocalStackLayer.Local, "gw.json", def);
+
+		var config = StackCatalogue();
+		var names = StepNames(stacks.Resolve("gw:debug", config));
+
+		Assert.That(names, Does.Not.Contain("c# gateway"));
+		Assert.That(names[0], Is.EqualTo("c# gateway (debug)"));
+
+		// The custom step only runs when something asks for it.
+		Assert.That(StepNames(stacks.Resolve("gw", config)), Does.Not.Contain("c# gateway (debug)"));
+	}
+
+	[Test]
+	public void ExtendsAddsAndExcludesAndExtensionsNarrow()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		stacks.Add("campaigns", LocalStackLayer.Shared, "campaigns.json",
+			Def("Campaigns", extends: "full", exclude: new[] { "c# analytics loader" }, extensions: new[] { "player-engagement" }));
+
+		var names = StepNames(stacks.Resolve("campaigns", StackCatalogue()));
+
+		Assert.That(names, Does.Contain("c# gateway").And.Contain("portal frontend"), "inherited from full");
+		Assert.That(names, Does.Not.Contain("c# analytics loader"));
+		Assert.That(names, Does.Contain("group: player-engagement"));
+		Assert.That(names, Does.Not.Contain("portal extension: my-ext"), "extensions narrows the extension steps");
+	}
+
+	[Test]
+	public void BuildStepsAreRequestedOnlyWhenAskedFor()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		stacks.Add("named", LocalStackLayer.Local, "named.json", Def(include: new[] { "build: scala", "scala: auth" }));
+		var config = StackCatalogue();
+
+		var named = stacks.Resolve("named", config);
+		Assert.That(named.requested.Select(s => s.name), Is.EquivalentTo(new[] { "build: scala", "scala: auth" }));
+
+		// Selected through the `scala` tag, a build step is only there to run when its output is missing.
+		var backend = stacks.Resolve("backend", config);
+		Assert.That(backend.requested, Is.Empty);
+		Assert.That(stacks.Resolve("backend:build", config).forceBuild, Is.True);
+	}
+
+	[Test]
+	public void ProblemsAreReportedBeforeAnythingRuns()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var config = StackCatalogue();
+		stacks.Add("typo", LocalStackLayer.Local, "typo.json", Def(include: new[] { "c# gatewy" }));
+		stacks.Add("loop-a", LocalStackLayer.Local, "loop.json", Def(extends: "loop-b"));
+		stacks.Add("loop-b", LocalStackLayer.Local, "loop.json", Def(extends: "loop-a"));
+
+		Assert.That(() => stacks.Resolve("typo", config),
+			Throws.InstanceOf<LocalStackStackException>().With.Message.Contains("no step or tag 'c# gatewy'"));
+		Assert.That(() => stacks.Resolve("nope", config),
+			Throws.InstanceOf<LocalStackStackException>().With.Message.Contains("No stack named 'nope'"));
+		Assert.That(() => stacks.Resolve("full:nope", config),
+			Throws.InstanceOf<LocalStackStackException>().With.Message.Contains("no variant 'nope'"));
+		Assert.That(() => stacks.Resolve("full::web", config),
+			Throws.InstanceOf<LocalStackStackException>().With.Message.Contains("not a stack name"));
+		Assert.That(() => stacks.Resolve("loop-a", config),
+			Throws.InstanceOf<LocalStackStackException>().With.Message.Contains("loop"));
+
+		// A tag no step has yet, such as the log forwarding `:no-logs` removes, is not an error.
+		Assert.That(StepNames(stacks.Resolve("full:no-logs", config)), Is.EqualTo(StepNames(stacks.Resolve("full", config))));
+	}
+
+	[Test]
+	public void OneFolderCantDefineAStackTwice()
+	{
+		var dir = Directory.CreateTempSubdirectory("beam-stacks");
+		try
+		{
+			File.WriteAllText(Path.Combine(dir.FullName, "a.json"), "{ \"mine\": { \"include\": [\"docker\"] } }");
+			File.WriteAllText(Path.Combine(dir.FullName, "b.json"), "{ \"mine\": { \"include\": [\"csharp\"] } }");
+
+			var stacks = LocalStackStacks.BuiltIn();
+			Assert.That(() => stacks.LoadFolder(dir.FullName, LocalStackLayer.Local),
+				Throws.InstanceOf<LocalStackStackException>().With.Message.Contains("a.json").And.Message.Contains("b.json"));
+		}
+		finally
+		{
+			dir.Delete(recursive: true);
+		}
+	}
+
+	[Test]
+	public void CreateOffersWhatAVariantCanAddOrRemove()
+	{
+		var config = StackCatalogue();
+		var running = LocalStackStacks.BuiltIn().Resolve("backend", config).steps;
+
+		var addable = LocalStackCreateCommand.AddableSteps(config, running).Select(s => s.name).ToList();
+		Assert.That(addable, Does.Contain("portal frontend"));
+		Assert.That(addable, Does.Not.Contain("c# gateway"), "the stack already runs it");
+
+		Assert.That(LocalStackCreateCommand.RemovableSteps(running).Select(s => s.name), Is.EqualTo(running.Select(s => s.name)));
+	}
+
+	[Test]
+	public void CreateGroupsStepsByDomain()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var config = StackCatalogue();
+		string Domain(string name) => LocalStackCreateCommand.DomainOf(stacks, config.steps.Single(s => s.name == name));
+
+		Assert.That(Domain("docker: api deps + caddy"), Is.EqualTo("docker"));
+		Assert.That(Domain("build: c# gateway"), Is.EqualTo("csharp"), "a build step sits with what it builds");
+		Assert.That(Domain("scala: auth"), Is.EqualTo("scala"));
+		Assert.That(Domain("portal frontend"), Is.EqualTo("portal"));
+		Assert.That(Domain(LocalStackTemplate.WebPublishStepName), Is.EqualTo("web-registry"), "not with the other builds");
+		Assert.That(Domain("portal extension: my-ext"), Is.EqualTo("extensions"));
+		Assert.That(Domain("group: player-engagement"), Is.EqualTo("extensions"));
+
+		// A custom step sits with the others someone added, whatever else it is tagged.
+		var custom = new LocalStackStep { name = "seed: data", custom = true, tags = new List<string> { "custom", "portal" } };
+		Assert.That(LocalStackCreateCommand.DomainOf(stacks, custom), Is.EqualTo("custom"));
+	}
+
+	[Test]
+	public void CreateWritesAWholeTagAsTheTag()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var config = StackCatalogue();
+		var all = config.steps;
+		HashSet<string> Names(Func<LocalStackStep, bool> where) => all.Where(where).Select(s => s.name).ToHashSet();
+
+		// Every docker step ticked is the tag; one scala step is just that step.
+		var picked = LocalStackCreateCommand.CollapseToTags(stacks, all, all,
+			Names(s => stacks.TagsOf(s).Contains("docker") || s.name == "scala: stats"));
+		Assert.That(picked, Is.EqualTo(new[] { "docker", "scala: stats" }));
+
+		// The whole login set, without the rest of Scala, is scala-core.
+		picked = LocalStackCreateCommand.CollapseToTags(stacks, all, all, Names(s => stacks.TagsOf(s).Contains("scala-core")));
+		Assert.That(picked, Is.EqualTo(new[] { "scala-core" }));
+
+		// Offered only part of a tag (the rest is already in the stack): all of it ticked is still single steps, or
+		// the tag would pull in the steps that weren't offered.
+		var addable = all.Where(s => s.name != "c# gateway").ToList();
+		picked = LocalStackCreateCommand.CollapseToTags(stacks, all, addable,
+			addable.Where(s => stacks.TagsOf(s).Contains("csharp")).Select(s => s.name).ToHashSet());
+		Assert.That(picked, Does.Not.Contain("csharp").And.Contain("build: c# gateway"));
+	}
+
+	/// <summary>A scripted wizard: each question answers from <paramref name="moves"/>, recording that it was asked.</summary>
+	private static (LocalStackWizard wizard, List<string> asked) ScriptedWizard(Queue<LocalStackWizardMove> moves,
+		params (string group, Func<bool> applies)[] questions)
+	{
+		var wizard = new LocalStackWizard();
+		var asked = new List<string>();
+		foreach (var (group, applies) in questions)
+		{
+			var name = group;
+			wizard.questions.Add(new LocalStackWizard.Question
+			{
+				group = name, applies = applies ?? (() => true),
+				ask = _ => { asked.Add(name); return moves.Dequeue(); }
+			});
+		}
+
+		return (wizard, asked);
+	}
+
+	[Test]
+	public void WizardBackGoesToThePreviousQuestionThatApplies()
+	{
+		var next = LocalStackWizardMove.Next;
+		var back = LocalStackWizardMove.Back;
+		var (wizard, asked) = ScriptedWizard(new Queue<LocalStackWizardMove>(new[] { next, next, back, next, next }),
+			("a", null), ("skipped", () => false), ("b", null), ("c", null));
+
+		Assert.That(wizard.Run(), Is.True);
+		// a, b, then back from c to b (skipping the one that doesn't apply), b again, c.
+		Assert.That(asked, Is.EqualTo(new[] { "a", "b", "c", "b", "c" }));
+	}
+
+	[Test]
+	public void WizardRevisitsOneGroupAndReturnsOnBack()
+	{
+		var (wizard, asked) = ScriptedWizard(new Queue<LocalStackWizardMove>(new[]
+			{
+				LocalStackWizardMove.Next, LocalStackWizardMove.Next, // first pass
+				LocalStackWizardMove.Next,                           // change b
+				LocalStackWizardMove.Back                            // change a, then back out to the review
+			}),
+			("a", null), ("b", null));
+
+		wizard.Run();
+		Assert.That(wizard.Run(1, "b"), Is.True);
+		Assert.That(wizard.Run(0, "a"), Is.False, "back from the first question of a revisited group returns to the review");
+		Assert.That(asked, Is.EqualTo(new[] { "a", "b", "b", "a" }));
+		Assert.That(wizard.Groups(), Is.EqualTo(new[] { "a", "b" }));
+	}
+
+	[Test]
+	public void ExtendedByFindsTheStacksBuiltOnAnother()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		stacks.Add("mine", LocalStackLayer.Local, "mine.json", Def(extends: "backend"));
+
+		Assert.That(stacks.ExtendedBy("backend"), Is.EqualTo(new[] { "mine" }));
+		Assert.That(stacks.ExtendedBy("mine"), Is.Empty);
+	}
+
+	[Test]
+	public void EveryKnownTagIsExplained()
+	{
+		foreach (var tag in LocalStackStacks.KnownTags)
+			Assert.That(LocalStackStacks.TagDescriptions.ContainsKey(tag), Is.True, $"no description for '{tag}'");
+	}
+
+	/// <summary>`create` previews and checks a draft; the draft must never leak into the set it was checked against.</summary>
+	[Test]
+	public void ResolvingADraftLeavesTheStacksUnchanged()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var draft = Def("Draft", extends: "backend", exclude: new[] { "c# analytics loader" });
+
+		var resolved = stacks.ResolveDraft("draft", LocalStackLayer.Local, "draft.json", draft, StackCatalogue());
+
+		Assert.That(StepNames(resolved), Does.Contain("c# gateway").And.Not.Contain("c# analytics loader"));
+		Assert.That(stacks.Contains("draft"), Is.False);
+	}
+
+	[Test]
+	public void SharedStacksAndVariantsNeedADescription()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+
+		Assert.That(() => stacks.Add("team", LocalStackLayer.Shared, "team.json", Def(include: new[] { "docker" })),
+			Throws.InstanceOf<LocalStackStackException>().With.Message.Contains("needs a description"));
+
+		// A shared entry adding to a built-in stack needs no description of its own, but its variants do.
+		var undescribed = new LocalStackStackDef
+		{
+			variants = new Dictionary<string, LocalStackVariantDef> { ["x"] = new LocalStackVariantDef { after = new List<string> { "portal" } } }
+		};
+		Assert.That(() => stacks.Add("full", LocalStackLayer.Shared, "full.json", undescribed),
+			Throws.InstanceOf<LocalStackStackException>().With.Message.Contains("full:x"));
+
+		Assert.That(() => stacks.Add("mine", LocalStackLayer.Local, "mine.json", Def(include: new[] { "docker" })), Throws.Nothing);
+	}
 }

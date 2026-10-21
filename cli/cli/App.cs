@@ -571,12 +571,13 @@ public class App
 
 		Commands.AddRootCommand<LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackSetupCommand, LocalStackSetupCommandArgs, LocalStackCommand>();
-		Commands.AddSubCommand<LocalStackInitCommand, LocalStackInitCommandArgs, LocalStackCommand>();
-		Commands.AddSubCommand<LocalStackUpCommand, LocalStackUpCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackRunCommand, LocalStackRunCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackCreateCommand, LocalStackCreateCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackEditCommand, LocalStackCreateCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackDeleteCommand, LocalStackDeleteCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackPsCommand, LocalStackPsCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackLogsCommand, LocalStackLogsCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackStopCommand, LocalStackStopCommandArgs, LocalStackCommand>();
-		Commands.AddSubCommand<LocalStackValidateCommand, LocalStackValidateCommandArgs, LocalStackCommand>();
 
 
 		Commands.AddRootCommand<ProjectCommand>();

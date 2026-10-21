@@ -140,6 +140,10 @@
 
     <!-- Beamable content-type schema snapshots for MCP type discovery (split per section + combined) -->
     <EmbeddedResource Include="Resources\beamable-types*.json" />
+
+    <!-- The stacks every `beam local run` can start, versioned with the CLI. -->
+    <None Remove="Services\LocalStack\BuiltInStacks.json" />
+    <EmbeddedResource Include="Services\LocalStack\BuiltInStacks.json" />
   </ItemGroup>
 
   <!-- Regenerate the type schema snapshot after each build so it stays current.

@@ -134,7 +134,7 @@ public class WebPublishCommand : AtomicCommand<WebPublishCommandArgs, WebPublish
 		if (!await service.IsRegistryReachable(registry))
 		{
 			throw new CliException(
-				$"The local registry at [{registry}] is not reachable. Start it with 'beam local up' (when initialized with --with-web-registry), " +
+				$"The local registry at [{registry}] is not reachable. Start it with the :web variant of a stack (for example 'beam local run full:web'), " +
 				$"or run 'docker compose up -d' in [{Path.Combine(productDir, "portal-localdev")}]");
 		}
 
@@ -422,7 +422,7 @@ public class WebPublishCommand : AtomicCommand<WebPublishCommandArgs, WebPublish
 		{
 			// Say WHERE it looked and WHICH marker is missing. The old message named neither, so a partial or
 			// moved checkout produced "could not find a checkout" while standing in the checkout — with nothing
-			// to act on. `beam local up` now passes --product-dir explicitly, so reaching this means a direct
+			// to act on. `beam local run` now passes --product-dir explicitly, so reaching this means a direct
 			// invocation, where the working directory is the only clue available.
 			var missing = DescribeMissingMarkers(startDir);
 			throw new CliException(

@@ -391,7 +391,7 @@ public class DefaultAppContext : IAppContext
 		await Set(cid, pid, host);
 		// if the token we got from the config file is expired, try to refresh it — again time-bounded and
 		// non-fatal, so a down/unreachable backend can't hang or crash every command. Standalone/offline
-		// commands (e.g. `beam local init`) don't need auth; commands that do will surface a clear error later.
+		// commands (e.g. `beam local setup`) don't need auth; commands that do will surface a clear error later.
 		if (isExpiredToken && !hasTokenOverride)
 		{
 			try

@@ -34,7 +34,7 @@ public class LocalStackScalaLaunchTests
 	/// <summary>
 	/// `scala: redis` is a docker container the Scala services depend on, NOT one of them — it just shares their
 	/// name prefix, and it is emitted first because the JVMs need it up before they launch. Pinning `command` and
-	/// `shell` here pins the invariant `LocalStackUpCommand.IsScalaServiceLauncher` relies on to tell the two
+	/// `shell` here pins the invariant `LocalStackRunCommand.IsScalaServiceLauncher` relies on to tell the two
 	/// apart. Matching on the prefix alone once made the maven preflight derive `tools/redis`, a module that has
 	/// never existed, and abort `beam local up --build` blaming an unresolvable `dependency` plugin prefix.
 	/// </summary>

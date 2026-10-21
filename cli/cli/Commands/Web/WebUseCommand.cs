@@ -144,7 +144,7 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 			// registry is serving right now. That keys on content, not on the version string, so it stays
             // correct under a republished sentinel: the moment `beam web publish` changes the tarball, the
 			// integrity changes, every project misses, and every project reinstalls exactly as before.
-			// Without this the step reinstalls ~70 projects on every single `beam local up` to deliver a
+			// Without this the step reinstalls ~70 projects on every single `beam local run` to deliver a
 			// build that is, in the overwhelmingly common case, already there.
 			if (registryIntegrity != null
 				&& registryIntegrity == WebLocalRegistryService.InstalledIntegrity(directory, WebLocalRegistryService.ToolkitPackage))
@@ -171,8 +171,8 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 			// no visible cause. Say it plainly instead.
 			results.failed = installFailures;
 
-			// Exit NON-ZERO. `beam local up` runs this step on every start (it is in the forced-web set, not
-			// gated on --build) and treats a non-zero build step as fatal — which is exactly the signal wanted
+			// Exit NON-ZERO. `beam local run` runs this step on every start (it is in the forced-web set, not
+			// gated on :build) and treats a non-zero build step as fatal — which is exactly the signal wanted
 			// here. Exiting 0 with a warning is what made a broken install invisible: the step "succeeded", the
 			// stack came up, and the extensions silently never started with no error anywhere to point at.
 			// Every other build step (mvn, npm install) already aborts the stack this way; this was the anomaly.

@@ -350,7 +350,7 @@ public class LocalStackDiscoveryTests
 			// code OVERWRITES it rather than skipping when it is already set.
 			psi.Environment["DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR"] = "/some/other/dotnet";
 
-			LocalStackUpCommand.ApplyToolchainDotnetEnvironment(psi, config);
+			LocalStackRunCommand.ApplyToolchainDotnetEnvironment(psi, config);
 
 			// Removed outright, not set to empty — an empty value is still a path to the resolver.
 			Assert.That(psi.Environment.ContainsKey("MSBuildSDKsPath"), Is.False);
@@ -389,7 +389,7 @@ public class LocalStackDiscoveryTests
 		psi.Environment.Remove("DOTNET_ROOT");
 		psi.Environment["MSBuildSDKsPath"] = "/keep/me";
 
-		LocalStackUpCommand.ApplyToolchainDotnetEnvironment(psi, new LocalStackConfig());
+		LocalStackRunCommand.ApplyToolchainDotnetEnvironment(psi, new LocalStackConfig());
 
 		Assert.That(psi.Environment["MSBuildSDKsPath"], Is.EqualTo("/keep/me"));
 		Assert.That(psi.Environment.ContainsKey("DOTNET_ROOT"), Is.False);
@@ -405,7 +405,7 @@ public class LocalStackDiscoveryTests
 		psi.Environment.Remove("DOTNET_ROOT");
 		psi.Environment["MSBuildSDKsPath"] = "/keep/me";
 
-		LocalStackUpCommand.ApplyToolchainDotnetEnvironment(psi, new LocalStackConfig
+		LocalStackRunCommand.ApplyToolchainDotnetEnvironment(psi, new LocalStackConfig
 		{
 			toolchain = new LocalStackToolchain { dotnet = Path.Combine(Path.GetTempPath(), "no-such-dotnet") }
 		});
@@ -666,7 +666,7 @@ public class LocalStackDiscoveryTests
 		var autoBuild = new HashSet<LocalStackStep>();
 
 		var jarPath = Path.Combine(Path.GetTempPath(), "no-such-core-" + Guid.NewGuid() + ".jar");
-		var result = LocalStackUpCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
+		var result = LocalStackRunCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
 
 		Assert.That(result, Is.Not.Null, "missing core with a scala launch step should force build: scala");
 		Assert.That(result.name, Is.EqualTo("build: scala"));
@@ -689,7 +689,7 @@ public class LocalStackDiscoveryTests
 		var autoBuild = new HashSet<LocalStackStep> { buildStep };
 
 		var jarPath = Path.Combine(Path.GetTempPath(), "no-such-core-" + Guid.NewGuid() + ".jar");
-		var result = LocalStackUpCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
+		var result = LocalStackRunCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
 		Assert.That(result, Is.Null);
 	}
 
@@ -709,7 +709,7 @@ public class LocalStackDiscoveryTests
 		var autoBuild = new HashSet<LocalStackStep>();
 
 		var jarPath = Path.Combine(Path.GetTempPath(), "no-such-core-" + Guid.NewGuid() + ".jar");
-		var result = LocalStackUpCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
+		var result = LocalStackRunCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
 		Assert.That(result, Is.Null);
 	}
 
@@ -775,7 +775,7 @@ public class LocalStackDiscoveryTests
 		var config = ProbeConfig(Path.GetTempPath(), Path.Combine(Path.GetTempPath(), "mvn-home"),
 			("build: scala", true), ("scala: account", true), ("scala: dbflake", true));
 
-		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+		var plan = LocalStackRunCommand.PlanDependencyPluginProbe(config);
 
 		Assert.That(plan.shouldProbe, Is.True, plan.skipReason);
 		Assert.That(plan.probeModule, Is.EqualTo("tools/account"), "first scala launch step wins");
@@ -790,7 +790,7 @@ public class LocalStackDiscoveryTests
 		var config = ProbeConfig(Path.GetTempPath(), Path.Combine(Path.GetTempPath(), "mvn-home"),
 			("build: scala", true), ("docker: api deps + caddy", true));
 
-		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+		var plan = LocalStackRunCommand.PlanDependencyPluginProbe(config);
 
 		Assert.That(plan.shouldProbe, Is.False);
 		Assert.That(plan.skipReason, Is.EqualTo("no scala launch step"));
@@ -803,7 +803,7 @@ public class LocalStackDiscoveryTests
 		var config = ProbeConfig(Path.GetTempPath(), Path.Combine(Path.GetTempPath(), "mvn-home"),
 			("scala: account", false));
 
-		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+		var plan = LocalStackRunCommand.PlanDependencyPluginProbe(config);
 
 		Assert.That(plan.shouldProbe, Is.False);
 		Assert.That(plan.skipReason, Is.EqualTo("no scala launch step"));
@@ -821,7 +821,7 @@ public class LocalStackDiscoveryTests
 			ScalaLauncherStep("scala: dbflake", enabled: true),
 			ScalaLauncherStep("scala: account", enabled: true));
 
-		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+		var plan = LocalStackRunCommand.PlanDependencyPluginProbe(config);
 
 		Assert.That(plan.shouldProbe, Is.True, plan.skipReason);
 		Assert.That(plan.probeModule, Is.EqualTo("tools/dbflake"),
@@ -837,7 +837,7 @@ public class LocalStackDiscoveryTests
 		var config = ProbeConfigOf(Path.GetTempPath(), Path.Combine(Path.GetTempPath(), "mvn-home"),
 			ScalaRedisDockerStep(enabled: true));
 
-		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+		var plan = LocalStackRunCommand.PlanDependencyPluginProbe(config);
 
 		Assert.That(plan.shouldProbe, Is.False);
 		Assert.That(plan.probeModule, Is.Null,
@@ -855,7 +855,7 @@ public class LocalStackDiscoveryTests
 		// Force the actual placeholder token in case the constant differs from the guess above.
 		config.repos.scalaDir = LocalStackConfigIO.EditPlaceholder;
 
-		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+		var plan = LocalStackRunCommand.PlanDependencyPluginProbe(config);
 
 		Assert.That(plan.shouldProbe, Is.False);
 		Assert.That(plan.skipReason, Is.EqualTo("no BeamableBackend path on the manifest"));
@@ -868,7 +868,7 @@ public class LocalStackDiscoveryTests
 		// valid thing to probe with — it resolves via PATH just like the reactor step would.
 		var config = ProbeConfig(Path.GetTempPath(), mavenHome: null, ("scala: account", true));
 
-		var plan = LocalStackUpCommand.PlanDependencyPluginProbe(config);
+		var plan = LocalStackRunCommand.PlanDependencyPluginProbe(config);
 
 		Assert.That(plan.shouldProbe, Is.True, plan.skipReason);
 		Assert.That(plan.mvnCommand, Does.Contain("mvn"));
@@ -884,7 +884,7 @@ public class LocalStackDiscoveryTests
 		// The exact string an older CLI wrote into local-stack.json. Rewriting only in-memory (never on disk)
 		// lets an existing manifest self-heal without asking every user to re-run `beam local init`.
 		var before = "-q -pl core,tools/dbflake,tools/gateway -am clean package -DskipTests";
-		var after = LocalStackUpCommand.MigrateBuildScalaArguments(before);
+		var after = LocalStackRunCommand.MigrateBuildScalaArguments(before);
 		Assert.That(after, Does.Contain("clean install -DskipTests"),
 			"install (not package) is what writes core to ~/.m2 — the load-bearing part of the migration");
 		Assert.That(after, Does.Contain("-U "),
@@ -898,9 +898,9 @@ public class LocalStackDiscoveryTests
 	{
 		// The migration runs on every `up`; running it twice on the same input must not double-add -U or
 		// re-swap install back. Otherwise a stray retry loop could produce nonsense arguments.
-		var first = LocalStackUpCommand.MigrateBuildScalaArguments(
+		var first = LocalStackRunCommand.MigrateBuildScalaArguments(
 			"-q -pl core,tools/dbflake -am clean package -DskipTests");
-		var second = LocalStackUpCommand.MigrateBuildScalaArguments(first);
+		var second = LocalStackRunCommand.MigrateBuildScalaArguments(first);
 		Assert.That(second, Is.EqualTo(first));
 	}
 
@@ -908,7 +908,7 @@ public class LocalStackDiscoveryTests
 	public void MigrateBuildScala_NoOp_OnAlreadyMigrated()
 	{
 		var current = "-q -U -pl core,tools/dbflake -am clean install -DskipTests";
-		Assert.That(LocalStackUpCommand.MigrateBuildScalaArguments(current), Is.EqualTo(current));
+		Assert.That(LocalStackRunCommand.MigrateBuildScalaArguments(current), Is.EqualTo(current));
 	}
 
 	[Test]
@@ -919,11 +919,11 @@ public class LocalStackDiscoveryTests
 		// doesn't matter to Maven, so this is safe.
 		var before =
 			"if ($stale) { & '${maven}' -q -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\" }";
-		var after = LocalStackUpCommand.MigrateScalaLauncherArguments(before);
+		var after = LocalStackRunCommand.MigrateScalaLauncherArguments(before);
 		Assert.That(after, Does.Contain("-o dependency:build-classpath"),
 			"launcher must run offline — sidesteps any stale negative-cache entry for com.kickstand:core");
 		// Idempotence.
-		Assert.That(LocalStackUpCommand.MigrateScalaLauncherArguments(after), Is.EqualTo(after));
+		Assert.That(LocalStackRunCommand.MigrateScalaLauncherArguments(after), Is.EqualTo(after));
 	}
 
 	[Test]
@@ -931,15 +931,15 @@ public class LocalStackDiscoveryTests
 	{
 		var already =
 			"& '${maven}' -q -o -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\"";
-		Assert.That(LocalStackUpCommand.MigrateScalaLauncherArguments(already), Is.EqualTo(already));
+		Assert.That(LocalStackRunCommand.MigrateScalaLauncherArguments(already), Is.EqualTo(already));
 	}
 
 	[Test]
 	public void MigrateScalaLauncher_NoOp_OnEmptyOrUnrelatedContent()
 	{
-		Assert.That(LocalStackUpCommand.MigrateScalaLauncherArguments(null), Is.Null);
-		Assert.That(LocalStackUpCommand.MigrateScalaLauncherArguments(string.Empty), Is.EqualTo(string.Empty));
-		Assert.That(LocalStackUpCommand.MigrateScalaLauncherArguments("echo hi"), Is.EqualTo("echo hi"),
+		Assert.That(LocalStackRunCommand.MigrateScalaLauncherArguments(null), Is.Null);
+		Assert.That(LocalStackRunCommand.MigrateScalaLauncherArguments(string.Empty), Is.EqualTo(string.Empty));
+		Assert.That(LocalStackRunCommand.MigrateScalaLauncherArguments("echo hi"), Is.EqualTo("echo hi"),
 			"a launcher that doesn't call mvn should be left alone");
 	}
 
@@ -975,7 +975,7 @@ public class LocalStackDiscoveryTests
 			}
 		};
 
-		LocalStackUpCommand.MigrateStaleScalaArguments(config);
+		LocalStackRunCommand.MigrateStaleScalaArguments(config);
 
 		Assert.That(config.steps[0].arguments, Does.Contain("-U ").And.Contains("clean install"));
 		Assert.That(config.steps[1].arguments, Does.Contain("-o dependency:build-classpath"));
@@ -1000,7 +1000,7 @@ public class LocalStackDiscoveryTests
 		var jarPath = Path.GetTempFileName();
 		try
 		{
-			var result = LocalStackUpCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
+			var result = LocalStackRunCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
 			Assert.That(result, Is.Null,
 				"a machine with core already installed to ~/.m2 does not need an unrequested rebuild");
 		}
@@ -1029,7 +1029,7 @@ public class LocalStackDiscoveryTests
 				MongoTimeoutLine + "\n" +
 				"[scala: leaderboards]   at com.mongodb.internal.connection.BaseCluster.getDescription(BaseCluster.java:185)\n" +
 				"[scala: leaderboards] still starting — 60/120s\n");
-			Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(log), Is.True);
+			Assert.That(LocalStackRunCommand.LogTailShowsMongoStartupFailure(log), Is.True);
 		}
 		finally { File.Delete(log); }
 	}
@@ -1047,7 +1047,7 @@ public class LocalStackDiscoveryTests
 				MongoTimeoutLine + "\n" +
 				"[scala: leaderboards] INFO reconnected to mongo, continuing startup\n" +
 				"[scala: leaderboards] INFO basic Service Started: leaderboards\n");
-			Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(log), Is.False);
+			Assert.That(LocalStackRunCommand.LogTailShowsMongoStartupFailure(log), Is.False);
 		}
 		finally { File.Delete(log); }
 	}
@@ -1063,7 +1063,7 @@ public class LocalStackDiscoveryTests
 			File.WriteAllText(log,
 				MongoTimeoutLine + "\n" +
 				"[scala: gateway] INFO Serving traffic on 0.0.0.0:9002\n");
-			Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(log), Is.False);
+			Assert.That(LocalStackRunCommand.LogTailShowsMongoStartupFailure(log), Is.False);
 		}
 		finally { File.Delete(log); }
 	}
@@ -1079,7 +1079,7 @@ public class LocalStackDiscoveryTests
 			File.WriteAllText(log,
 				"[scala: account] INFO Preloaded signing key and cookie\n" +
 				"[scala: account] INFO basic Service Started: account\n");
-			Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(log), Is.False);
+			Assert.That(LocalStackRunCommand.LogTailShowsMongoStartupFailure(log), Is.False);
 		}
 		finally { File.Delete(log); }
 	}
@@ -1089,15 +1089,15 @@ public class LocalStackDiscoveryTests
 	{
 		// Detached runs may not have flushed anything yet; missing/empty files must NOT be treated as failure,
 		// or the retry would fire against every fresh launch.
-		Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(null), Is.False);
-		Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(string.Empty), Is.False);
-		Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(
+		Assert.That(LocalStackRunCommand.LogTailShowsMongoStartupFailure(null), Is.False);
+		Assert.That(LocalStackRunCommand.LogTailShowsMongoStartupFailure(string.Empty), Is.False);
+		Assert.That(LocalStackRunCommand.LogTailShowsMongoStartupFailure(
 			Path.Combine(Path.GetTempPath(), "no-such-file-" + Guid.NewGuid())), Is.False);
 
 		var empty = Path.GetTempFileName();
 		try
 		{
-			Assert.That(LocalStackUpCommand.LogTailShowsMongoStartupFailure(empty), Is.False);
+			Assert.That(LocalStackRunCommand.LogTailShowsMongoStartupFailure(empty), Is.False);
 		}
 		finally { File.Delete(empty); }
 	}

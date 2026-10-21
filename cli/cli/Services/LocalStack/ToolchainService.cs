@@ -62,7 +62,7 @@ public class ToolchainResult
 
 /// <summary>
 /// Provisions the pinned toolchain (<see cref="ToolchainPins"/>) into a private directory and records what it
-/// installed, so <c>beam local up</c> can run the stack against exactly those versions rather than whatever is
+/// installed, so <c>beam local run</c> can run the stack against exactly those versions rather than whatever is
 /// on <c>PATH</c>.
 ///
 /// Everything is keyed off the directory, so pointing several workspaces at one <c>--toolchain-dir</c> shares a
@@ -787,7 +787,7 @@ public class ToolchainService
 	// ----------------------------------------------------------------------------------
 
 	/// <summary>
-	/// Projects the installed tools into the block a local-stack manifest carries, so <c>beam local up</c> can
+	/// Projects the installed tools into the block a local-stack manifest carries, so <c>beam local run</c> can
 	/// substitute <c>${java}</c>/<c>${maven}</c>/<c>${node}</c>/<c>${dotnet}</c> and build a <c>PATH</c> without
 	/// re-probing anything.
 	/// </summary>

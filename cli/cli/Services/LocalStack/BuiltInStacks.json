@@ -1,0 +1,62 @@
+{
+  "tags": {
+    "scala-core": [
+      "scala: redis",
+      "build: scala",
+      "scala: dbflake",
+      "scala: gateway",
+      "scala: auth",
+      "scala: account"
+    ]
+  },
+  "variants": {
+    "build": {
+      "description": "Rebuild everything this stack runs, even what hasn't changed.",
+      "forceBuild": true
+    },
+    "no-build": {
+      "description": "Start without building, even when a build output is missing.",
+      "remove": [ "build" ]
+    },
+    "web": {
+      "description": "Use your local SDK and toolkit builds: start the local registry, publish them and point the extensions at them.",
+      "before": [ "web-registry" ]
+    },
+    "no-logs": {
+      "description": "Don't forward logs to Grafana. Terminal and files only.",
+      "remove": [ "observability" ]
+    }
+  },
+  "stacks": {
+    "full": {
+      "description": "Everything on this machine: Docker dependencies, C# hosts, all Scala services, the portal and its extensions.",
+      "include": [ "docker", "csharp", "scala", "portal", "extensions" ]
+    },
+    "backend": {
+      "description": "The API only: Docker dependencies, C# hosts and all Scala services. No portal.",
+      "include": [ "docker", "csharp", "scala" ]
+    },
+    "csharp-portal": {
+      "description": "C# hosts with the minimal Scala set for login, plus the portal and its extensions.",
+      "include": [ "docker", "csharp", "scala-core", "portal", "extensions" ]
+    },
+    "portal-extensions": {
+      "description": "The portal and its extensions against the remote dev backend. Nothing else runs locally.",
+      "include": [ "portal", "extensions" ]
+    },
+    "web-dev": {
+      "description": "Local SDK and toolkit builds, the portal and its extensions, against the remote dev backend.",
+      "include": [ "web-registry", "portal", "extensions" ],
+      "variants": {
+        "non-publish": {
+          "description": "Type-check loop: start the registry, never publish the packages or repoint the extensions.",
+          "remove": [ "build: web packages", "build: web extension pins" ]
+        }
+      }
+    },
+    "remote": {
+      "description": "This workspace's microservices and portal extensions, registered against a remote realm and used from the hosted portal.",
+      "include": [ "extensions" ]
+    }
+  }
+}

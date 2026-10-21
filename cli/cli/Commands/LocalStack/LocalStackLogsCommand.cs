@@ -18,7 +18,7 @@ public class LocalStackLogsCommandResult
 }
 
 /// <summary>
-/// Tails the per-step log files written by <c>beam local up</c>. With no step name, tails every recorded
+/// Tails the per-step log files written by <c>beam local run</c>. With no step name, tails every recorded
 /// step; <c>--follow</c> keeps streaming new lines until cancelled; <c>--lines</c> sets how much history to show.
 /// </summary>
 public class LocalStackLogsCommand
@@ -48,7 +48,7 @@ public class LocalStackLogsCommand
 		var runStatePath = LocalStackCommand.ResolveRunStatePath(args.ConfigService, args.configPath);
 		var state = LocalStackRunStateIO.Load(runStatePath);
 		if (state == null || state.steps.Count == 0)
-			throw new CliException($"No running local stack recorded at {runStatePath}. Run `beam local up` first.");
+			throw new CliException($"No running local stack recorded at {runStatePath}. Start one with `beam local run <stack>`.");
 
 		var selected = string.IsNullOrWhiteSpace(args.step)
 			? state.steps

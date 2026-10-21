@@ -31,7 +31,7 @@ public class LocalStackPsCommandResult
 }
 
 /// <summary>
-/// Reports the status of the local stack recorded by <c>beam local up</c>: which recorded steps are still
+/// Reports the status of the local stack recorded by <c>beam local run</c>: which recorded steps are still
 /// alive (by pid), plus a backend-health probe of <c>${host}/metadata</c> (PR#632). <c>--watch</c> re-renders
 /// on an interval until cancelled.
 /// </summary>
@@ -131,7 +131,7 @@ public class LocalStackPsCommand
 
 		if (result.steps.Count == 0)
 		{
-			Log.Information($"No running local stack recorded at {runStatePath}. Run `beam local up` first.");
+			Log.Information($"No running local stack recorded at {runStatePath}. Start one with `beam local run <stack>`.");
 			return;
 		}
 

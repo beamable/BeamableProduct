@@ -6,7 +6,7 @@ using System.Text;
 namespace cli.Services.LocalStack;
 
 /// <summary>
-/// The record of a running local stack, written by <c>beam local up</c> and read by
+/// The record of a running local stack, written by <c>beam local run</c> and read by
 /// <c>beam local ps</c> / <c>logs</c> / <c>stop</c>. It lives next to the manifest at
 /// <c>&lt;dir&gt;/local-stack.run.json</c> and lets the lifecycle commands find the processes and log
 /// files of a stack that was brought up (and detached) by a previous CLI invocation.
