@@ -880,27 +880,10 @@ namespace Beamable
 		/// <param name="c">The component whose GameObject and parents are searched.</param>
 		/// <returns>The discovered context, or <see cref="Default"/>. Initialization may still be pending.</returns>
 		/// <example>
-		/// <para>Example: initialize from a Unity component and handle initialization failure.</para>
+		/// <para>Example: initialize from a Unity component and log the player ID.</para>
 		/// <code>
-		/// using System;
-		/// using Beamable;
-		/// using UnityEngine;
-		///
-		/// public sealed class GameplayContextExample : MonoBehaviour
-		/// {
-		///     private async void Start()
-		///     {
-		///         try
-		///         {
-		///             var context = await BeamContext.InParent(this).Instance;
-		///             Debug.Log($"Ready for player {context.PlayerId}");
-		///         }
-		///         catch (Exception exception)
-		///         {
-		///             Debug.LogException(exception);
-		///         }
-		///     }
-		/// }
+		/// var context = await BeamContext.InParent(this).Instance;
+		/// Debug.Log($"Ready for player {context.PlayerId}");
 		/// </code>
 		/// </example>
 		public static BeamContext InParent(Component c) => c.GetBeamable();
@@ -913,30 +896,15 @@ namespace Beamable
 		/// <example>
 		/// <para>Example: own a named slot and stop it after use, including when initialization fails.</para>
 		/// <code>
-		/// using System;
-		/// using System.Threading.Tasks;
-		/// using Beamable;
-		/// using UnityEngine;
-		///
-		/// public static class NamedContextExample
+		/// var context = BeamContext.ForPlayer("documentation-player");
+		/// try
 		/// {
-		///     public static async Task Run()
-		///     {
-		///         var context = BeamContext.ForPlayer("documentation-player");
-		///         try
-		///         {
-		///             await context.OnReady;
-		///             Debug.Log($"Ready for player {context.PlayerId}");
-		///         }
-		///         catch (Exception exception)
-		///         {
-		///             Debug.LogException(exception);
-		///         }
-		///         finally
-		///         {
-		///             await context.Stop();
-		///         }
-		///     }
+		///     await context.OnReady;
+		///     Debug.Log($"Ready for player {context.PlayerId}");
+		/// }
+		/// finally
+		/// {
+		///     await context.Stop();
 		/// }
 		/// </code>
 		/// </example>

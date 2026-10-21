@@ -155,46 +155,27 @@ namespace Beamable.Player
 		/// <example>
 		/// <para>Example: create a lobby, join with another player, and clean up membership. Supply two ready player contexts.</para>
 		/// <code>
-		/// using System;
-		/// using System.Threading.Tasks;
-		/// using Beamable;
-		/// using Beamable.Experimental.Api.Lobbies;
-		/// using UnityEngine;
-		///
-		/// public static class CreateAndJoinLobbyExample
+		/// await host.OnReady;
+		/// await guest.OnReady;
+		/// if (host.PlayerId == guest.PlayerId || host.Pid != guest.Pid || host.Cid != guest.Cid)
+		///     throw new ArgumentException("Use distinct players in the same realm.");
+		/// if (host.Lobby.IsInLobby || guest.Lobby.IsInLobby)
+		///     throw new InvalidOperationException("Both players must start outside a lobby.");
+		/// await host.Lobby.Create("Example lobby", LobbyRestriction.Open, "");
+		/// try
 		/// {
-		///     public static async Task Run(BeamContext host, BeamContext guest)
+		///     await guest.Lobby.Join(host.Lobby.Id);
+		///     Debug.Log($"Joined {guest.Lobby.Name}");
+		/// }
+		/// finally
+		/// {
+		///     try
 		///     {
-		///         try
-		///         {
-		///             await host.OnReady;
-		///             await guest.OnReady;
-		///             if (host.PlayerId == guest.PlayerId || host.Pid != guest.Pid || host.Cid != guest.Cid)
-		///                 throw new ArgumentException("Use distinct players in the same realm.");
-		///             if (host.Lobby.IsInLobby || guest.Lobby.IsInLobby)
-		///                 throw new InvalidOperationException("Both players must start outside a lobby.");
-		///             await host.Lobby.Create("Example lobby", LobbyRestriction.Open, "");
-		///             try
-		///             {
-		///                 await guest.Lobby.Join(host.Lobby.Id);
-		///                 Debug.Log($"Joined {guest.Lobby.Name}");
-		///             }
-		///             finally
-		///             {
-		///                 try
-		///                 {
-		///                     await guest.Lobby.Leave();
-		///                 }
-		///                 finally
-		///                 {
-		///                     await host.Lobby.Leave();
-		///                 }
-		///             }
-		///         }
-		///         catch (Exception exception)
-		///         {
-		///             Debug.LogException(exception);
-		///         }
+		///         await guest.Lobby.Leave();
+		///     }
+		///     finally
+		///     {
+		///         await host.Lobby.Leave();
 		///     }
 		/// }
 		/// </code>
@@ -335,37 +316,19 @@ namespace Beamable.Player
 		/// <example>
 		/// <para>Example: observe state changes while leaving an existing lobby and always detach the handler.</para>
 		/// <code>
-		/// using System;
-		/// using System.Threading.Tasks;
-		/// using Beamable;
-		/// using UnityEngine;
-		///
-		/// public static class LeaveLobbyExample
+		/// await context.OnReady;
+		/// var lobby = context.Lobby;
+		/// Action onUpdated = () =&gt; Debug.Log(
+		///     lobby.IsInLobby ? $"Lobby: {lobby.Id}" : "No local lobby");
+		/// lobby.OnUpdated += onUpdated;
+		/// try
 		/// {
-		///     public static async Task Run(BeamContext context)
-		///     {
-		///         try
-		///         {
-		///             await context.OnReady;
-		///             var lobby = context.Lobby;
-		///             Action onUpdated = () =&gt; Debug.Log(
-		///                 lobby.IsInLobby ? $"Lobby: {lobby.Id}" : "No local lobby");
-		///             lobby.OnUpdated += onUpdated;
-		///             try
-		///             {
-		///                 if (lobby.IsInLobby)
-		///                     await lobby.Leave();
-		///             }
-		///             finally
-		///             {
-		///                 lobby.OnUpdated -= onUpdated;
-		///             }
-		///         }
-		///         catch (Exception exception)
-		///         {
-		///             Debug.LogException(exception);
-		///         }
-		///     }
+		///     if (lobby.IsInLobby)
+		///         await lobby.Leave();
+		/// }
+		/// finally
+		/// {
+		///     lobby.OnUpdated -= onUpdated;
 		/// }
 		/// </code>
 		/// </example>

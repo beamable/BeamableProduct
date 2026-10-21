@@ -53,37 +53,18 @@ namespace Beamable.Player.CloudSaving
 		/// <example>
 		/// <para>Example: initialize, save and read a local string, then explicitly await its cloud upload.</para>
 		/// <code>
-		/// using System;
-		/// using System.Threading.Tasks;
-		/// using Beamable;
-		/// using Beamable.Player.CloudSaving;
-		/// using UnityEngine;
-		///
-		/// public static class SaveAndUploadExample
+		/// var context = await BeamContext.Default.Instance;
+		/// var saves = context.CloudSaving;
+		/// var status = await saves.Init();
+		/// if (status != CloudSaveStatus.Initialized)
 		/// {
-		///     public static async Task Run()
-		///     {
-		///         try
-		///         {
-		///             var context = await BeamContext.Default.Instance;
-		///             var saves = context.CloudSaving;
-		///             var status = await saves.Init();
-		///             if (status != CloudSaveStatus.Initialized)
-		///             {
-		///                 Debug.LogWarning($"Resolve initialization or conflicts first: {status}");
-		///                 return;
-		///             }
-		///             await saves.SaveData("progress.txt", "level=2");
-		///             Debug.Log(await saves.LoadDataString("progress.txt"));
-		///             // Local-save completion alone does not confirm a cloud upload.
-		///             await saves.ForceUploadLocalData();
-		///         }
-		///         catch (Exception exception)
-		///         {
-		///             Debug.LogException(exception);
-		///         }
-		///     }
+		///     Debug.LogWarning($"Resolve initialization or conflicts first: {status}");
+		///     return;
 		/// }
+		/// await saves.SaveData("progress.txt", "level=2");
+		/// Debug.Log(await saves.LoadDataString("progress.txt"));
+		/// // Local-save completion alone does not confirm a cloud upload.
+		/// await saves.ForceUploadLocalData();
 		/// </code>
 		/// </example>
 		public Promise<CloudSaveStatus> Init(int pollingIntervalSeconds = 10);
@@ -198,50 +179,30 @@ namespace Beamable.Player.CloudSaving
 		/// <example>
 		/// <para>Example: leave conflicts pending during initialization, then apply a local/cloud choice supplied by the player. This example owns the resolver override for the operation.</para>
 		/// <code>
-		/// using System;
-		/// using System.Linq;
-		/// using System.Threading.Tasks;
-		/// using Beamable;
-		/// using Beamable.Player.CloudSaving;
-		/// using UnityEngine;
-		///
-		/// public static class ResolveSaveConflictsExample
+		/// var context = await BeamContext.Default.Instance;
+		/// var saves = context.CloudSaving;
+		/// // Install before the first Init to prevent automatic resolution.
+		/// saves.SetConflictResolverOverride(resolver =&gt; { });
+		/// try
 		/// {
-		///     public static async Task Run(ConflictResolveType playerChoice)
+		///     var status = await saves.Init();
+		///     if (status != CloudSaveStatus.ConflictedData)
 		///     {
-		///         try
-		///         {
-		///             var context = await BeamContext.Default.Instance;
-		///             var saves = context.CloudSaving;
-		///             // Install before the first Init to prevent automatic resolution.
-		///             saves.SetConflictResolverOverride(resolver =&gt; { });
-		///             try
-		///             {
-		///                 var status = await saves.Init();
-		///                 if (status != CloudSaveStatus.ConflictedData)
-		///                 {
-		///                     Debug.Log($"Save status: {status}");
-		///                     return;
-		///                 }
-		///                 foreach (var conflict in saves.GetDataConflictDetails().ToArray())
-		///                     saves.ResolveDataConflict(conflict, playerChoice);
-		///                 if (saves.ServiceStatus != CloudSaveStatus.Initialized)
-		///                 {
-		///                     Debug.LogWarning("Some conflicts remain unresolved.");
-		///                     return;
-		///                 }
-		///                 await saves.ForceUploadLocalData();
-		///             }
-		///             finally
-		///             {
-		///                 saves.SetConflictResolverOverride(null);
-		///             }
-		///         }
-		///         catch (Exception exception)
-		///         {
-		///             Debug.LogException(exception);
-		///         }
+		///         Debug.Log($"Save status: {status}");
+		///         return;
 		///     }
+		///     foreach (var conflict in saves.GetDataConflictDetails().ToArray())
+		///         saves.ResolveDataConflict(conflict, playerChoice);
+		///     if (saves.ServiceStatus != CloudSaveStatus.Initialized)
+		///     {
+		///         Debug.LogWarning("Some conflicts remain unresolved.");
+		///         return;
+		///     }
+		///     await saves.ForceUploadLocalData();
+		/// }
+		/// finally
+		/// {
+		///     saves.SetConflictResolverOverride(null);
 		/// }
 		/// </code>
 		/// </example>

@@ -271,27 +271,9 @@ namespace Beamable.Player
 		/// <example>
 		/// <para>Example: send an invitation to a known gamer tag, enabling checks for this context.</para>
 		/// <code>
-		/// using System;
-		/// using System.Threading.Tasks;
-		/// using Beamable;
-		/// using UnityEngine;
-		///
-		/// public static class SendFriendInviteExample
-		/// {
-		///     public static async Task Run(long recipientGamerTag)
-		///     {
-		///         try
-		///         {
-		///             var context = await BeamContext.Default.Instance;
-		///             await context.Social.EnableFriendInvitationMailChecks();
-		///             await context.Social.Invite(recipientGamerTag);
-		///         }
-		///         catch (Exception exception)
-		///         {
-		///             Debug.LogException(exception);
-		///         }
-		///     }
-		/// }
+		/// var context = await BeamContext.Default.Instance;
+		/// await context.Social.EnableFriendInvitationMailChecks();
+		/// await context.Social.Invite(recipientGamerTag);
 		/// </code>
 		/// </example>
 		public async Promise Invite(long playerId)
@@ -314,37 +296,18 @@ namespace Beamable.Player
 		/// <example>
 		/// <para>Example: accept an invitation from a known sender on the recipient device or context.</para>
 		/// <code>
-		/// using System;
-		/// using System.Linq;
-		/// using System.Threading.Tasks;
-		/// using Beamable;
-		/// using UnityEngine;
-		///
-		/// public static class AcceptFriendInviteExample
+		/// var context = await BeamContext.Default.Instance;
+		/// var social = context.Social;
+		/// await social.EnableFriendInvitationMailChecks();
+		/// await social.Refresh();
+		/// var invite = social.ReceivedInvites.FirstOrDefault(
+		///     entry =&gt; entry.invitingPlayerId == senderGamerTag);
+		/// if (invite == null)
 		/// {
-		///     public static async Task Run(long senderGamerTag)
-		///     {
-		///         try
-		///         {
-		///             var context = await BeamContext.Default.Instance;
-		///             var social = context.Social;
-		///             await social.EnableFriendInvitationMailChecks();
-		///             await social.Refresh();
-		///             var invite = social.ReceivedInvites.FirstOrDefault(
-		///                 entry =&gt; entry.invitingPlayerId == senderGamerTag);
-		///             if (invite == null)
-		///             {
-		///                 Debug.LogWarning("No invitation from this player is available yet.");
-		///                 return;
-		///             }
-		///             await social.AcceptInviteFrom(invite.invitingPlayerId);
-		///         }
-		///         catch (Exception exception)
-		///         {
-		///             Debug.LogException(exception);
-		///         }
-		///     }
+		///     Debug.LogWarning("No invitation from this player is available yet.");
+		///     return;
 		/// }
+		/// await social.AcceptInviteFrom(invite.invitingPlayerId);
 		/// </code>
 		/// </example>
 		public async Promise AcceptInviteFrom(long playerId)

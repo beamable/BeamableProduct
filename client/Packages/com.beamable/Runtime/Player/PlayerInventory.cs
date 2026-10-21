@@ -521,31 +521,13 @@ namespace Beamable.Player
 		/// <example>
 		/// <para>Example: await item and currency loading before enumerating the groups.</para>
 		/// <code>
-		/// using System;
-		/// using System.Threading.Tasks;
-		/// using Beamable;
-		/// using UnityEngine;
-		///
-		/// public static class LoadInventoryExample
-		/// {
-		///     public static async Task Run()
-		///     {
-		///         try
-		///         {
-		///             var context = await BeamContext.Default.Instance;
-		///             var items = await context.Inventory.LoadItems();
-		///             foreach (var item in items)
-		///                 Debug.Log($"Item {item.ItemId}: {item.ContentId}");
-		///             var currencies = await context.Inventory.LoadCurrencies();
-		///             foreach (var currency in currencies)
-		///                 Debug.Log($"{currency.CurrencyId}: {currency.Amount}");
-		///         }
-		///         catch (Exception exception)
-		///         {
-		///             Debug.LogException(exception);
-		///         }
-		///     }
-		/// }
+		/// var context = await BeamContext.Default.Instance;
+		/// var items = await context.Inventory.LoadItems();
+		/// foreach (var item in items)
+		///     Debug.Log($"Item {item.ItemId}: {item.ContentId}");
+		/// var currencies = await context.Inventory.LoadCurrencies();
+		/// foreach (var currency in currencies)
+		///     Debug.Log($"{currency.CurrencyId}: {currency.Amount}");
 		/// </code>
 		/// </example>
 		public async Promise<PlayerItemGroup> LoadItems(ItemRef itemRef = null)
@@ -621,39 +603,21 @@ namespace Beamable.Player
 		/// <example>
 		/// <para>Example: change a writable currency and detach the observer after the operation. Supply a published currency ID whose client permissions allow writes.</para>
 		/// <code>
-		/// using System;
-		/// using System.Threading.Tasks;
-		/// using Beamable;
-		/// using UnityEngine;
-		///
-		/// public static class UpdateCurrencyExample
+		/// var context = await BeamContext.Default.Instance;
+		/// await context.Inventory.LoadCurrencies(currencyId);
+		/// var currency = context.Inventory.GetCurrency(currencyId);
+		/// Action&lt;long&gt; onAmount = amount =&gt; Debug.Log($"Amount: {amount}");
+		/// currency.OnAmountUpdated += onAmount;
+		/// try
 		/// {
-		///     public static async Task Run(string currencyId, long amountToAdd)
-		///     {
-		///         try
-		///         {
-		///             var context = await BeamContext.Default.Instance;
-		///             await context.Inventory.LoadCurrencies(currencyId);
-		///             var currency = context.Inventory.GetCurrency(currencyId);
-		///             Action&lt;long&gt; onAmount = amount =&gt; Debug.Log($"Amount: {amount}");
-		///             currency.OnAmountUpdated += onAmount;
-		///             try
-		///             {
-		///                 await context.Inventory.Update(builder =&gt;
-		///                     builder.CurrencyChange(currencyId, amountToAdd));
-		///                 await context.Inventory.LoadCurrencies(currencyId);
-		///                 Debug.Log($"Current amount: {currency.Amount}");
-		///             }
-		///             finally
-		///             {
-		///                 currency.OnAmountUpdated -= onAmount;
-		///             }
-		///         }
-		///         catch (Exception exception)
-		///         {
-		///             Debug.LogException(exception);
-		///         }
-		///     }
+		///     await context.Inventory.Update(builder =&gt;
+		///         builder.CurrencyChange(currencyId, amountToAdd));
+		///     await context.Inventory.LoadCurrencies(currencyId);
+		///     Debug.Log($"Current amount: {currency.Amount}");
+		/// }
+		/// finally
+		/// {
+		///     currency.OnAmountUpdated -= onAmount;
 		/// }
 		/// </code>
 		/// </example>

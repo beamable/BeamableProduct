@@ -1180,33 +1180,15 @@ namespace Beamable.Player
 		/// <example>
 		/// <para>Example: recover an account and explicitly select it after checking for failure.</para>
 		/// <code>
-		/// using System;
-		/// using System.Threading.Tasks;
-		/// using Beamable;
-		/// using UnityEngine;
-		///
-		/// public static class RecoverAccountExample
+		/// var context = await BeamContext.Default.Instance;
+		/// var result = await context.Accounts.RecoverAccountWithEmail(email, password);
+		/// if (!result.isSuccess)
 		/// {
-		///     public static async Task Run(string email, string password)
-		///     {
-		///         try
-		///         {
-		///             var context = await BeamContext.Default.Instance;
-		///             var result = await context.Accounts.RecoverAccountWithEmail(email, password);
-		///             if (!result.isSuccess)
-		///             {
-		///                 Debug.LogWarning($"Account recovery failed: {result.error}");
-		///                 return;
-		///             }
-		///             await result.SwitchToAccount();
-		///             Debug.Log($"Selected player {context.PlayerId}");
-		///         }
-		///         catch (Exception exception)
-		///         {
-		///             Debug.LogException(exception);
-		///         }
-		///     }
+		///     Debug.LogWarning($"Account recovery failed: {result.error}");
+		///     return;
 		/// }
+		/// await result.SwitchToAccount();
+		/// Debug.Log($"Selected player {context.PlayerId}");
 		/// </code>
 		/// </example>
 		public Promise<PlayerRecoveryOperation> RecoverAccountWithEmail(string email, string password)
@@ -1876,32 +1858,14 @@ namespace Beamable.Player
 		/// <example>
 		/// <para>Example: attach credentials supplied by your account form and inspect the result.</para>
 		/// <code>
-		/// using System;
-		/// using System.Threading.Tasks;
-		/// using Beamable;
-		/// using UnityEngine;
-		///
-		/// public static class RegisterEmailExample
+		/// var context = await BeamContext.Default.Instance;
+		/// var result = await context.Accounts.AddEmail(email, password);
+		/// if (!result.isSuccess)
 		/// {
-		///     public static async Task Run(string email, string password)
-		///     {
-		///         try
-		///         {
-		///             var context = await BeamContext.Default.Instance;
-		///             var result = await context.Accounts.AddEmail(email, password);
-		///             if (!result.isSuccess)
-		///             {
-		///                 Debug.LogWarning($"Email registration failed: {result.error}");
-		///                 return;
-		///             }
-		///             Debug.Log($"Credentials attached to {result.account.GamerTag}");
-		///         }
-		///         catch (Exception exception)
-		///         {
-		///             Debug.LogException(exception);
-		///         }
-		///     }
+		///     Debug.LogWarning($"Email registration failed: {result.error}");
+		///     return;
 		/// }
+		/// Debug.Log($"Credentials attached to {result.account.GamerTag}");
 		/// </code>
 		/// </example>
 		public async Promise<RegistrationResult> AddEmail(string email, string password, PlayerAccount account = null)
