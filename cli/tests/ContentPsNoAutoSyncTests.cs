@@ -54,7 +54,7 @@ public class ContentPsNoAutoSyncTests
 
     [TestCase(true)]
     [TestCase(false)]
-    public async Task Startup_preserves_local_tags_and_reference_when_auto_sync_is_disabled(bool noAutoSync)
+    public async Task Startup_preserves_local_tags_in_both_modes_and_reference_when_auto_sync_is_disabled(bool noAutoSync)
     {
         var props = JsonSerializer.SerializeToElement(new { damage = new { data = 10 } });
         var file = new ContentFile { Id = "items.sword", Properties = props,
@@ -72,13 +72,13 @@ public class ContentPsNoAutoSyncTests
         await command.Handle(args);
 
         Assert.That(command.Result!.RelevantManifestsAgainstLatest.Single().Entries.Single().FullId, Is.EqualTo(file.Id));
-        Assert.That(command.Result.RelevantManifestsAgainstLatest.Single().Entries.Single().ChangeKind, Is.EqualTo(noAutoSync ? 2 : 1));
+        Assert.That(command.Result.RelevantManifestsAgainstLatest.Single().Entries.Single().ChangeKind, Is.EqualTo(2));
         if (noAutoSync)
             Assert.That(File.ReadAllBytes(path), Is.EqualTo(original));
         else
         {
             using var saved = JsonDocument.Parse(File.ReadAllText(path));
-            Assert.That(saved.RootElement.GetProperty("tags")[0].GetString(), Is.EqualTo("published"));
+            Assert.That(saved.RootElement.GetProperty("tags")[0].GetString(), Is.EqualTo("designer-local"));
             Assert.That(saved.RootElement.GetProperty("referenceManifestId").GetString(), Is.EqualTo("after"));
         }
     }

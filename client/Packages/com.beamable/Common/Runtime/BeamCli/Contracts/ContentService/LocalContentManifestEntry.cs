@@ -30,8 +30,8 @@ namespace Beamable.Common.BeamCli.Contracts
 		public int CurrentStatus;
 
 		/// <summary>
-		/// Presentation of the local/reference/latest comparison. Unknown for older CLI payloads
-		/// and cases where direction cannot be established. Does not control synchronization.
+		/// Authoritative local/reference/latest classification. Unknown for older CLI payloads
+		/// and cases where direction cannot be established. Used for display and reconciliation guards.
 		/// </summary>
 		public int ChangeKind;
 
@@ -68,6 +68,9 @@ namespace Beamable.Common.BeamCli.Contracts
 		/// </summary>
 		public string ReferenceManifestUid;
 
+		/// <summary>The publication reviewed by this status report, used to reject stale reconciliation choices.</summary>
+		public string TargetManifestUid;
+
 		/// <summary>
 		/// The latest time that this content were changed
 		/// </summary>
@@ -87,6 +90,8 @@ namespace Beamable.Common.BeamCli.Contracts
 		UpToDate = 1,
 		LocalEdit = 2,
 		IncomingChange = 3,
-		Conflict = 4
+		Conflict = 4,
+		IncomingAddition = 5,
+		IncomingDeletion = 6
 	}
 }

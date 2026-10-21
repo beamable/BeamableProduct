@@ -174,7 +174,7 @@ public class ContentPsCommand
 						// If a content referenceId was changed and can be updated we don't need to wait for a content ps to be called again to reset it
 						if (!args.NoAutoSync)
 						{
-							await contentService.AdvanceManifestReferences(contentFolder, localContentAgainstLatest.Result.ContentFiles, latestManifestId);
+							await contentService.AdvanceManifestReferences(contentFolder, localContentAgainstLatest.Result.ContentFiles, latestManifestId, manifestId: manifestId);
 						}
 						
 						// Prepare a new Manifest to push out with only the changed entries.

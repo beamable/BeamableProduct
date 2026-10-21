@@ -1,4 +1,5 @@
 using Beamable.Common.Content;
+using Beamable.Common.BeamCli.Contracts;
 using System.CommandLine;
 
 namespace cli.Content;
@@ -13,6 +14,7 @@ public class ContentResolveConflictCommand : AtomicCommand<ContentResolveConflic
 
 	public override void Configure()
 	{
+		AddOption(new Option<string>("--expected-manifest-uid", "Reject reconciliation if the reviewed publication is no longer latest."), (args, s) => args.ExpectedManifestUid = s);
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestIdsToReset = s);
 		AddOption(ContentCommand.FILTER_TYPE_OPTION, (args, s) => args.FilterType = s);
 		AddOption(ContentCommand.FILTER_OPTION, (args, s) => args.Filter = string.IsNullOrEmpty(s) ? Array.Empty<string>() : s.Split(','));
@@ -29,48 +31,20 @@ public class ContentResolveConflictCommand : AtomicCommand<ContentResolveConflic
 		if (args.Use is not ("local" or "realm"))
 			throw new CliException("\'--use\' must be \"local\" or \"realm\".", 2, true);
 
-		// Fetches the state relative to the latest manifest
-		var latestManifest = await _contentService.GetManifest(replaceLatest: true);
-		var fileTasks = new List<Task<LocalContentFiles>>();
+		var resolved = new List<string>();
 		foreach (var manifestId in args.ManifestIdsToReset)
 		{
-			var task = _contentService.GetAllContentFiles(latestManifest, manifestId, args.FilterType, args.Filter);
-			fileTasks.Add(task);
+			var latest = await _contentService.GetManifest(manifestId, replaceLatest: true);
+			var files = await _contentService.GetAllContentFiles(latest, manifestId, args.FilterType, args.Filter);
+			// Without a selection preserve the old command's conflict-only scope.
+			var ids = files.ContentFiles.Where(c => c.IsInConflict ||
+				(args.Filter?.Length > 0 && c.ChangeKind is ContentChangeKind.Unknown or ContentChangeKind.IncomingChange or ContentChangeKind.IncomingAddition or ContentChangeKind.IncomingDeletion))
+				.Select(c => c.Id).ToArray();
+			if (ids.Length == 0) continue;
+			resolved.AddRange(await _contentService.ReconcileContent(manifestId, ids, args.Use == "local", args.Lifecycle.CancellationToken,
+				args.ExpectedManifestUid ?? latest.uid.GetOrElse("")));
 		}
-
-		// Update the local files based on the use flag.
-		var files = await Task.WhenAll(fileTasks);
-		var saveTasks = new List<Task>();
-		var allConflicts = new List<string>();
-		foreach (LocalContentFiles lf in files)
-		{
-			var contentFolder = _contentService.EnsureContentPathForRealmExists(out _, args.AppContext.Pid, lf.ManifestId);
-			var conflicts = lf.ContentFiles.Where(c => c.IsInConflict).ToArray();
-			allConflicts.AddRange(conflicts.Select(c => c.Id));
-			if (args.Use == "local")
-			{
-				saveTasks.AddRange(conflicts.Select(c => Task.Run(async () =>
-				{
-					c.FetchedFromManifestUid = latestManifest.uid.GetOrElse("");
-					await _contentService.SaveContentFile(contentFolder, c);
-				})));
-			}
-
-			if (args.Use == "realm" && conflicts.Length > 0)
-			{
-				// Taking the realm version is a sync of just the conflicted ids, so let the sync do the download and bookkeeping.
-				await _contentService.SyncLocalContent(latestManifest, lf.ManifestId, ContentFilterType.ExactIds, conflicts.Select(c => c.Id).ToArray(),
-					syncCreated: false, syncModified: false, forceSyncConflicts: true, syncDeleted: false);
-			}
-			// After resolving conflicts we can also update the manifest references for all contents that are not updated
-			saveTasks.Add(_contentService.AdvanceManifestReferences(contentFolder, lf.ContentFiles, latestManifest.uid.GetOrElse("")));
-		}
-
-		await Task.WhenAll(saveTasks);
-		return new()
-		{
-			ResolvedContentIds = allConflicts.ToArray(),
-		};
+		return new() { ResolvedContentIds = resolved.ToArray() };
 	}
 }
 
@@ -82,6 +56,7 @@ public class ContentResolveConflictCommandArgs : CommandArgs
 	public string[] Filter;
 
 	public string Use;
+	public string ExpectedManifestUid;
 }
 
 public class ContentResolveConflictResult

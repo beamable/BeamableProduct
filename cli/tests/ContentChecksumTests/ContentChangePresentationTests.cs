@@ -63,7 +63,7 @@ public class ContentChangePresentationTests
 
     [TestCase(true)]
     [TestCase(false)]
-    public void Creation_or_deletion_does_not_guess_change_direction(bool missingOnRemote)
+    public void Known_reference_distinguishes_remote_deletion_from_local_deletion(bool missingOnRemote)
     {
         var files = CreateFiles(40, 40, 40);
         var file = files.ContentFiles[0];
@@ -71,7 +71,7 @@ public class ContentChangePresentationTests
         else file.LocalFilePath = "";
         files.ContentFiles[0] = file;
         ContentService.ComputeCorrectSyncOp(files, false, false, new HashSet<string>(), out _, out _, out _);
-        AssertKind(ContentService.ContentFileToLocalContentManifestEntries(files.ContentFiles).Single(), 0);
+        AssertKind(ContentService.ContentFileToLocalContentManifestEntries(files.ContentFiles).Single(), missingOnRemote ? 6 : 2);
     }
 
     [Test]
@@ -83,7 +83,7 @@ public class ContentChangePresentationTests
     }
 
     [Test]
-    public void Rename_pair_keeps_created_deleted_statuses_and_neutral_direction()
+    public void Rename_pair_keeps_created_deleted_statuses_and_local_direction()
     {
         var files = CreateFiles(40, 40, 40);
         var original = files.ContentFiles[0];
@@ -97,7 +97,7 @@ public class ContentChangePresentationTests
         Assert.That(conflicts, Is.Empty);
         Assert.That(entries[0].StatusEnum, Is.EqualTo(ContentStatus.Deleted));
         Assert.That(entries[1].StatusEnum, Is.EqualTo(ContentStatus.Created));
-        Assert.That(entries.All(entry => entry.ChangeKind == 0), Is.True);
+        Assert.That(entries.All(entry => entry.ChangeKind == 2), Is.True);
     }
 
     private static void AssertKind(LocalContentManifestEntry entry, int expected) =>

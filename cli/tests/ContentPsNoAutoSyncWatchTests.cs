@@ -31,7 +31,7 @@ public partial class ContentPsNoAutoSyncWatchTests
 
     [TestCase(true)]
     [TestCase(false)]
-    public async Task Local_event_preserves_reference_and_tags_only_when_auto_sync_is_disabled(bool noAutoSync)
+    public async Task Local_event_preserves_tags_in_both_modes_and_reference_when_auto_sync_is_disabled(bool noAutoSync)
     {
         await using var fixture = new Fixture(noAutoSync);
         await fixture.Start();
@@ -42,7 +42,7 @@ public partial class ContentPsNoAutoSyncWatchTests
         var document = JsonDocument.Parse(File.ReadAllText(fixture.FilePath)).RootElement;
         Assert.That(document.GetProperty("properties").GetProperty("damage").GetProperty("data").GetInt32(), Is.EqualTo(30));
         Assert.That(document.GetProperty("referenceManifestId").GetString(), Is.EqualTo(noAutoSync ? "before" : "current"));
-        Assert.That(document.GetProperty("tags")[0].GetString(), Is.EqualTo(noAutoSync ? "local-tag" : "published"));
+        Assert.That(document.GetProperty("tags")[0].GetString(), Is.EqualTo("local-tag"));
     }
 
     [TestCase(true)]

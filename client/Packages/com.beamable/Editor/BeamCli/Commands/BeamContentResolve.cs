@@ -20,6 +20,8 @@ namespace Beamable.Editor.BeamCli.Commands
         ///This applies to ALL matching elements of the filter that are conflicted.
         ///Value must be "local" or "realm"</summary>
         public string use;
+        /// <summary>Reject reconciliation if the reviewed publication is no longer latest.</summary>
+        public string expectedManifestUid;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -49,6 +51,7 @@ namespace Beamable.Editor.BeamCli.Commands
             {
                 genBeamCommandArgs.Add(("--use=" + this.use));
             }
+            if (this.expectedManifestUid != null) genBeamCommandArgs.Add("--expected-manifest-uid=" + this.expectedManifestUid);
             string genBeamCommandStr = "";
             // Join all the args with spaces
             genBeamCommandStr = string.Join(" ", genBeamCommandArgs);

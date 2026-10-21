@@ -19,7 +19,7 @@ using NUnit.Framework;
 
 namespace tests;
 
-// Characterization repros: assertions intentionally describe current behavior, not the proposed fix.
+// Regression coverage for the original Local Content reproductions.
 public class ContentLocal4866ReproTests
 {
     private string root = null!, folder = null!;
@@ -75,44 +75,46 @@ public class ContentLocal4866ReproTests
         before = Manifest("before", Entry(Id, 10, "v1")); after = Manifest("after"); await Seed(10);
         var oldBytes = File.ReadAllBytes(PathFor()); await AutoSync(); Assert.That(File.ReadAllBytes(PathFor()), Is.EqualTo(oldBytes));
     }
-    [Test] public async Task Local_property_edit_survives_but_reference_advance_replaces_local_tags()
+    [Test] public async Task Reference_advance_preserves_local_properties_and_tags()
     {
         before = Manifest("before", Entry(Id, 10, "v1", new[] { "published" })); after = Manifest("after", Entry(Id, 10, "v1", new[] { "published" })); await Seed(30, "local-only");
         var report = await AutoSync(); var data = JsonDocument.Parse(File.ReadAllText(PathFor())).RootElement;
         Assert.That(report.ReferenceUpdatedContents, Does.Contain(Id));
         Assert.That(data.GetProperty("properties").GetProperty("damage").GetProperty("data").GetInt32(), Is.EqualTo(30));
-        Assert.That(data.GetProperty("tags").EnumerateArray().Select(x => x.GetString()), Is.EqualTo(new[] { "published" }));
+        Assert.That(data.GetProperty("tags").EnumerateArray().Select(x => x.GetString()), Is.EqualTo(new[] { "local-only" }));
         Assert.That(data.GetProperty("referenceManifestId").GetString(), Is.EqualTo("after"));
     }
-    [Test] public async Task Publish_replacement_omits_a_remote_item_that_was_never_local()
+    [Test] public async Task Publish_blocks_a_remote_item_that_was_never_local()
     {
         before = Manifest("before", Entry(Id, 10, "v1")); after = Manifest("after", Entry(Id, 10, "v1"), Entry("items.unseen", 99, "v2")); await Seed(10);
         SaveContentRequest? sentContent = null; SaveManifestRequest? sentManifest = null;
         api.Setup(x => x.Post(It.IsAny<SaveContentRequest>(), true)).Returns((SaveContentRequest req, bool auth) => {
             sentContent = req; return Promise<SaveContentResponse>.Successful(new SaveContentResponse { content = req.content.Select(c => new ContentReference { id = c.id, version = "saved", checksum = c.checksum, tags = Array.Empty<string>(), uri = "http://127.0.0.1:1/fake" }).ToArray() }); });
         api.Setup(x => x.PostManifest(It.IsAny<SaveManifestRequest>(), true)).Returns((SaveManifestRequest req, bool auth) => { sentManifest = req; return Promise<SaveManifestResponse>.Successful(new SaveManifestResponse()); });
-        await service.PublishContent(AutoSnapshotType.None, 0);
-        Assert.That(sentContent!.content.Select(c => c.id), Is.EqualTo(new[] { Id }));
-        Assert.That(sentManifest!.references.Select(c => c.id), Is.EqualTo(new[] { Id }));
+        Assert.ThrowsAsync<CliException>(() => service.PublishContent(AutoSnapshotType.None, 0));
+        Assert.That(sentContent, Is.Null);
+        Assert.That(sentManifest, Is.Null);
         Assert.That(after.entries.Select(c => c.contentId), Does.Contain("items.unseen"));
     }
-    [Test] public async Task Cancellation_after_download_can_report_success_without_saving_the_download()
+    [Test] public async Task Cancellation_after_download_is_reported_without_saving_the_download()
     {
         before = Manifest("before", Entry(Id, 10, "v1")); after = Manifest("after", Entry(Id, 20, "v2")); await Seed(10);
         using var server = new OneResponseServer("{\"properties\":{\"damage\":{\"data\":20}}}"); after.entries[0].uri = server.Url;
         using var cancel = new CancellationTokenSource(); var oldBytes = File.ReadAllBytes(PathFor());
-        var report = await service.SyncLocalContent(after, "global", syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false,
+        Assert.That(async () => await service.SyncLocalContent(after, "global", syncCreated: false, syncModified: false, forceSyncConflicts: false, syncDeleted: false,
             cancellationToken: cancel.Token, onContentSyncProgressUpdate: progress => {
                 if (progress.EventType == ContentProgressUpdateData.EVT_TYPE_SyncComplete) cancel.Cancel();
-            });
+            }), Throws.InstanceOf<OperationCanceledException>());
         await server.Finished;
         Assert.That(cancel.IsCancellationRequested, Is.True);
-        Assert.That(report.AutoSynchedContents, Does.Contain(Id), "report lists intended sync even though its save was cancelled");
+
         Assert.That(File.ReadAllBytes(PathFor()), Is.EqualTo(oldBytes));
     }
     [Test] public async Task Production_scan_and_decision_select_a_known_remote_addition_without_sync_deleted()
     {
-        before = Manifest("before", Entry(Id, 10, "v1")); after = Manifest("after", Entry(Id, 10, "v1"), Entry("items.unseen", 99, "v2")); await Seed(10);
+        before = Manifest("before", Entry(Id, 10, "v1")); after = before; await Seed(10);
+        await service.GetAllContentFiles(before, "global");
+        after = Manifest("after", Entry(Id, 10, "v1"), Entry("items.unseen", 99, "v2"));
         var files = await service.GetAllContentFiles(after, "global");
         // The real history endpoint normally supplies this set. This test isolates its decision consumer.
         ContentService.ComputeCorrectSyncOp(files, false, false, new System.Collections.Generic.HashSet<string> { "items.unseen" }, out var conflicts, out var downloads, out _);
@@ -134,7 +136,7 @@ public class ContentLocal4866ReproTests
         await server.Finished;
         Assert.That(JsonDocument.Parse(File.ReadAllText(PathFor())).RootElement.GetProperty("properties").GetProperty("damage").GetProperty("data").GetInt32(), Is.EqualTo(20));
     }
-    private sealed class OneResponseServer : IDisposable
+    internal sealed class OneResponseServer : IDisposable
     {
         private readonly TcpListener listener;
         public string Url { get; }
