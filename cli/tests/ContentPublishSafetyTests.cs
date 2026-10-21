@@ -69,6 +69,51 @@ public class ContentPublishSafetyTests
     private string FilePath(string id = Id) => Path.Combine(folder, id + ".json");
     private async Task<int> Kind(string id = Id) => (int)(await service.GetAllContentFiles(latest)).ContentFiles.Single(x => x.Id == id).ChangeKind;
 
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task Incoming_unknown_type_can_be_reconciled_using_reported_id_and_publication(bool keepLocal)
+    {
+        const string remoteId = "remote_only.item";
+        before = latest = Manifest("before"); await Seed(7, "currency.local_new");
+        await service.GetAllContentFiles(latest);
+        latest = Manifest("after", Entry(remoteId, 20));
+        var unchanged = File.ReadAllBytes(FilePath("currency.local_new"));
+        var report = ContentService.ContentFileToLocalContentManifestEntries((await service.GetAllContentFiles(latest)).ContentFiles)
+            .Single(entry => entry.FullId == remoteId);
+        Assert.That(report.TypeName, Is.EqualTo("remote_only"));
+        Assert.That(report.ChangeKind, Is.EqualTo(5));
+        using var server = keepLocal ? null : new ContentLocal4866ReproTests.OneResponseServer("{\"properties\":{\"startingAmount\":{\"data\":20}}}");
+        if (server != null) latest.entries[0].uri = server.Url;
+        await service.ReconcileContent("global", new[] { report.FullId }, keepLocal, expectedManifestUid: report.TargetManifestUid);
+        Assert.That(await Kind(remoteId), Is.EqualTo(keepLocal ? 2 : 1));
+        Assert.That(File.Exists(FilePath(remoteId)), Is.EqualTo(!keepLocal));
+        Assert.That(File.ReadAllBytes(FilePath("currency.local_new")), Is.EqualTo(unchanged));
+    }
+
+    [Test]
+    public async Task Conflicts_only_sync_accepts_remote_deletion_without_deleting_unrelated_local_creation()
+    {
+        await Seed(15); await Seed(7, "currency.local_new");
+        latest = Manifest("after");
+        Assert.That(await Kind(), Is.EqualTo(4));
+        await service.SyncLocalContent(latest, "global", syncCreated: false, syncModified: false,
+            forceSyncConflicts: true, syncDeleted: false);
+        Assert.That(File.Exists(FilePath()), Is.False, "Conflicts-only sync must accept the realm deletion.");
+        Assert.That(File.Exists(FilePath("currency.local_new")), Is.True, "Unrelated local creations must survive.");
+        Assert.That(await Kind("currency.local_new"), Is.EqualTo(2));
+    }
+
+    [Test]
+    public async Task Created_only_sync_does_not_delete_a_conflict()
+    {
+        await Seed(15); await Seed(7, "currency.local_new"); latest = Manifest("after");
+        await service.SyncLocalContent(latest, "global", syncCreated: true, syncModified: false,
+            forceSyncConflicts: false, syncDeleted: false);
+        Assert.That(File.Exists(FilePath()), Is.True);
+        Assert.That(await Kind(), Is.EqualTo(4));
+        Assert.That(File.Exists(FilePath("currency.local_new")), Is.False);
+    }
+
     [Test]
     public async Task Report_carries_reviewed_publication_without_persisting_presentation_metadata()
     {

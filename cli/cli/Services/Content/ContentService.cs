@@ -1295,7 +1295,7 @@ public partial class ContentService
 
 		// Get the list of created content we need to delete (if requested).
 		var contentToDelete = localContentRelativeToNewManifest.ContentFiles
-			.Where(c => syncCreated && (!c.IsInConflict || forceSyncConflicts) && c.GetStatus().HasFlag(ContentStatus.Created))
+			.Where(c => (c.IsInConflict ? forceSyncConflicts : syncCreated) && c.GetStatus().HasFlag(ContentStatus.Created))
 			.ToArray();
 
 		// Update our sync report with what we intended to do

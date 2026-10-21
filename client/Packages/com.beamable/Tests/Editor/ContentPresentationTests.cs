@@ -12,6 +12,38 @@ namespace Beamable.Editor.Tests
     public class ContentPresentationTests
     {
         [Test]
+        public void Content_groups_include_types_present_only_in_cached_entries()
+        {
+            var method = typeof(ContentWindow).GetMethod("GetVisibleContentTypes", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(method, Is.Not.Null, "Incoming types must be visible even without a Unity class.");
+            var types = (System.Collections.Generic.IEnumerable<string>)method.Invoke(null, new object[]
+            {
+                new[] { "currency", "items" }, new[] { "remote_only.child", "currency" }
+            });
+            Assert.That(types, Is.EqualTo(new[] { "currency", "items", "remote_only.child" }));
+            var refreshed = (System.Collections.Generic.IEnumerable<string>)method.Invoke(null, new object[]
+            {
+                new[] { "currency", "items" }, new[] { "another_remote_type" }
+            });
+            Assert.That(refreshed, Does.Contain("another_remote_type"));
+            Assert.That(refreshed, Does.Not.Contain("remote_only.child"));
+        }
+
+        [TestCase(0, true)]
+        [TestCase(1, false)]
+        [TestCase(2, false)]
+        [TestCase(3, true)]
+        [TestCase(4, true)]
+        [TestCase(5, true)]
+        [TestCase(6, true)]
+        public void Row_reconciliation_is_available_without_a_typed_Inspector(int kind, bool expected)
+        {
+            var entry = new LocalContentManifestEntry { FullId = "remote_only.item", TypeName = "remote_only",
+                ChangeKind = kind, IsInConflict = kind == 4, TargetManifestUid = "reviewed" };
+            Assert.That(Call("CanReviewEntry", entry), Is.EqualTo(expected));
+        }
+
+        [Test]
         public void Reconciliation_command_carries_selected_namespace_item_and_reviewed_publication()
         {
             var args = new global::Beamable.Editor.BeamCli.Commands.ContentResolveArgs

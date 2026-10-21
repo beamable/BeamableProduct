@@ -148,6 +148,8 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void ReloadData()
 		{
+			// Publications can introduce types that have no class in this Unity project.
+			if (_contentTypeReflectionCache != null) BuildContentTypeHierarchy();
 			ClearCaches();
 			_allTags = _contentService.TagsCache;
 			SetEditorSelection();

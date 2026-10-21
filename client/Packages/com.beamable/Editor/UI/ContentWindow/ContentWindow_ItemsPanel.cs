@@ -309,9 +309,9 @@ namespace Beamable.Editor.UI.ContentWindow
 
 				float buttonSize = 20;
 				var buttonCreateRect = new Rect(contentRect.xMax - contentRect.height, contentRect.center.y - buttonSize/2f, buttonSize, buttonSize);
-				if (GUI.Button(buttonCreateRect, BeamGUI.iconPlus, EditorStyles.iconButton))
+				using (new EditorGUI.DisabledScope(!_contentTypeReflectionCache.ContentTypeToClass.ContainsKey(contentType)))
 				{
-					CreateNewItem(contentType);
+					if (GUI.Button(buttonCreateRect, BeamGUI.iconPlus, EditorStyles.iconButton)) CreateNewItem(contentType);
 				}
 
 
@@ -350,10 +350,10 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void ShowTypeMenu(string contentType)
 		{
 			var menu = new GenericMenu();
-			menu.AddItem(new GUIContent($"Create {contentType} Content"), false, () =>
-			{
-				CreateNewItem(contentType);
-			});
+			var createLabel = new GUIContent($"Create {contentType} Content");
+			if (_contentTypeReflectionCache.ContentTypeToClass.ContainsKey(contentType))
+				menu.AddItem(createLabel, false, () => CreateNewItem(contentType));
+			else menu.AddDisabledItem(createLabel);
 			menu.AddSeparator("");
 
 			menu.AddItem(new GUIContent("Open Settings"), false, () =>
@@ -579,7 +579,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		EditorGUI.BeginChangeCheck();
 			if (isEditingName)
 			{
-				_editLabels = DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId);
+				_editLabels = DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId,
+					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null);
 				
 				bool isEditLabelFocused = GUI.GetNameOfFocusedControl() == entry.FullId;
 				if (isEditLabelFocused && Event.current.type is EventType.KeyDown or EventType.KeyUp &&
@@ -601,10 +602,17 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			else
 			{
-				DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId);
+				DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId,
+					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null);
 			}
 
 			_itemContentIdToRowRect[entry.FullId] = (int)rowRect.center.y;
+			// Untyped entries are reviewed through their status button, without creating a fake Inspector object.
+			if (!_contentTypeReflectionCache.ContentTypeToClass.ContainsKey(entry.TypeName))
+			{
+				RegisterButtonTooltip(rowRect, $"No Unity content class for {entry.TypeName}. Click its status to reconcile incoming changes or conflicts.");
+				return;
+			}
 			
 			if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
 			{
@@ -910,7 +918,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		                              GUIStyle rowStyle,
 		                              GUIStyle fieldStyle,
 		                              Rect fullRect,
-		                              GUIContent[] icons = null, bool[] isEditLabel = null, string[] fieldID = null)
+		                              GUIContent[] icons = null, bool[] isEditLabel = null, string[] fieldID = null, LocalContentManifestEntry? reviewEntry = null)
 		{
 			if (Event.current.type == EventType.Repaint)
 			{
@@ -959,6 +967,19 @@ namespace Beamable.Editor.UI.ContentWindow
 					{
 						GUI.FocusControl(controlName);
 						EditorGUI.FocusTextInControl(controlName);
+					}
+				}
+				else if (i == 2 && reviewEntry.HasValue)
+				{
+					if (GUI.Button(nameRect, new GUIContent(labelValue, "Click to review this item and choose Use Realm or Keep Local."), EditorStyles.miniButton))
+					{
+						var entry = reviewEntry.Value;
+						var scope = _contentService.GetContentScopeKey();
+						AddDelayedAction(() =>
+						{
+							if (scope == _contentService.GetContentScopeKey())
+								ContentWindow_TooltipsHelper.ShowReconciliationDialog(_contentService, entry);
+						});
 					}
 				}
 				else

@@ -158,13 +158,7 @@ namespace Beamable.Editor.Content.UI
 				{
 					if (incoming)
 					{
-						var choice = EditorUtility.DisplayDialogComplex("Reconcile Content",
-							ContentWindow_TooltipsHelper.GetStatusDescription(entry, ContentConfiguration.Instance.EnableLocalContentInEditor) +
-							"\n\nUse Realm makes this item match the realm, including accepting a deletion. Keep Local preserves your local version or deletion for a later publish. Only this item is affected.",
-							"Use Realm", "Cancel", "Keep Local");
-						if (choice != 1)
-							contentService.ReconcileContentWithProgress(content.Id, choice == 2)
-								.Error(error => EditorUtility.DisplayDialog("Reconciliation did not complete", error.Message, "Close"));
+						ContentWindow_TooltipsHelper.ShowReconciliationDialog(contentService, entry);
 					}
 					else if (EditorUtility.DisplayDialog("Revert Content",
 					                                "Are you sure you want to revert this content?", "Revert", "Cancel"))
