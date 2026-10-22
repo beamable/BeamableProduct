@@ -29,6 +29,8 @@ public static class RemoteMicroservices
 	public const string AccountId = "386048776778";
 	public const string TunnelRoleArn = "arn:aws:iam::" + AccountId + ":role/beamable-local-remote-ms-tunnel-user";
 	public const string TunnelInstanceName = "beamable-local-remote-ms-tunnel";
+	/// <summary>The SSM session document the tunnel role may use: SSH, port 22 only (the caller can't pick a port).</summary>
+	public const string SshDocumentName = "beamable-local-remote-ms-ssh";
 	public const string TunnelUser = "tunnel";
 
 	/// <summary>BeamableAPI's compose override that adds the registry and its Caddy site.</summary>
@@ -246,6 +248,7 @@ public static class RemoteMicroservices
 		$"dev='{dev}'",
 		$"role='{TunnelRoleArn}'",
 		$"region='{Region}'",
+		$"ssh_document='{SshDocumentName}'",
 		$"instance_name='{TunnelInstanceName}'",
 		$"user='{TunnelUser}'",
 		"keydir=$(mktemp -d)",
@@ -265,7 +268,7 @@ public static class RemoteMicroservices
 		"  ssh -N -F /dev/null -i \"$keydir/key\" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR \\",
 		"    -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes \\",
 		$"    -o PermitLocalCommand=yes -o 'LocalCommand=echo {TunnelReadyMarker}' \\",
-		"    -o \"ProxyCommand=aws ssm start-session --region $region --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p\" \\",
+		"    -o \"ProxyCommand=aws ssm start-session --region $region --target %h --document-name $ssh_document\" \\",
 		"    -R \"/run/tunnels/$dev.sock:127.0.0.1:8080\" -R \"/run/tunnels/$dev-registry.sock:127.0.0.1:5002\" \\",
 		"    \"$user@$instance\"",
 		"  echo \"tunnel closed (ssh exit $?); reconnecting in 5s\"",

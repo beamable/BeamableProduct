@@ -154,6 +154,10 @@ public class LocalStackRemoteMicroservicesTests
 		Assert.That(script, Does.Contain("-R \"/run/tunnels/$dev.sock:127.0.0.1:8080\""));
 		Assert.That(script, Does.Contain("-R \"/run/tunnels/$dev-registry.sock:127.0.0.1:5002\""));
 		Assert.That(script, Does.Contain("LocalCommand=echo " + RemoteMicroservices.TunnelReadyMarker));
+		// The tunnel role may only start sessions with this document, which fixes the port at 22.
+		Assert.That(script, Does.Contain($"ssh_document='{RemoteMicroservices.SshDocumentName}'"));
+		Assert.That(script, Does.Contain("--document-name $ssh_document\""));
+		Assert.That(script, Does.Not.Contain("portNumber"));
 		// Step arguments go through LocalStackConfigIO.Substitute, which rewrites ${...} tokens.
 		Assert.That(script, Does.Not.Contain("${"));
 	}
