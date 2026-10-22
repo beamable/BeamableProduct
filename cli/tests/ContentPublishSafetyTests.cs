@@ -166,6 +166,88 @@ public class ContentPublishSafetyTests
     }
 
     [Test]
+    public async Task First_selective_sync_downloads_additions_since_the_shared_local_reference()
+    {
+        const string addedId = "currency.new";
+        await Seed();
+        latest = Manifest("after", Entry(Id, 10), Entry(addedId, 20));
+        using var server = new ContentLocal4866ReproTests.OneResponseServer("{\"properties\":{\"startingAmount\":{\"data\":20}}}");
+        latest.entries[1].uri = server.Url;
+
+        // This is the first scan of an existing workspace: no prior observation sidecar exists.
+        await service.SyncLocalContent(latest, "global", syncCreated: false, syncModified: false,
+            forceSyncConflicts: false, syncDeleted: false);
+
+        Assert.That(File.Exists(FilePath(addedId)), Is.True);
+        Assert.That(await Kind(addedId), Is.EqualTo((int)ContentChangeKind.UpToDate));
+    }
+
+    [Test]
+    public async Task First_scan_keeps_missing_preexisting_items_unknown()
+    {
+        const string missingId = "currency.missing";
+        before = Manifest("before", Entry(Id, 10), Entry(missingId, 20));
+        latest = Manifest("after", Entry(Id, 10), Entry(missingId, 20));
+        await Seed();
+
+        await service.SyncLocalContent(latest, "global", syncCreated: false, syncModified: false,
+            forceSyncConflicts: false, syncDeleted: false);
+
+        Assert.That(File.Exists(FilePath(missingId)), Is.False);
+        Assert.That(await Kind(missingId), Is.EqualTo((int)ContentChangeKind.Unknown));
+    }
+
+    [Test]
+    public async Task First_scan_does_not_infer_additions_from_mixed_local_references()
+    {
+        const string otherId = "currency.other", missingId = "currency.new";
+        await Seed();
+        latest = Manifest("after", Entry(Id, 10), Entry(otherId, 10), Entry(missingId, 20));
+        await service.SaveContentFile(folder, new ContentFile { Id = otherId, Properties = Props(10),
+            Tags = JsonSerializer.SerializeToElement(Array.Empty<string>()), FetchedFromManifestUid = "after" });
+
+        await service.SyncLocalContent(latest, "global", syncCreated: false, syncModified: false,
+            forceSyncConflicts: false, syncDeleted: false);
+
+        Assert.That(File.Exists(FilePath(missingId)), Is.False);
+        Assert.That(await Kind(missingId), Is.EqualTo((int)ContentChangeKind.Unknown));
+    }
+
+    [Test]
+    public async Task First_filtered_scan_does_not_use_a_partial_workspace_as_its_baseline()
+    {
+        const string otherId = "currency.other", missingId = "currency.new";
+        await Seed();
+        latest = Manifest("after", Entry(Id, 10), Entry(otherId, 10), Entry(missingId, 20));
+        await service.SaveContentFile(folder, new ContentFile { Id = otherId, Properties = Props(10),
+            Tags = JsonSerializer.SerializeToElement(Array.Empty<string>()), FetchedFromManifestUid = "after" });
+
+        var files = await service.GetAllContentFiles(latest, filters: new[] { Id, missingId });
+
+        Assert.That(files.ContentFiles.Single(file => file.Id == missingId).ChangeKind, Is.EqualTo(ContentChangeKind.Unknown));
+        Assert.That(await Kind(missingId), Is.EqualTo((int)ContentChangeKind.Unknown));
+    }
+
+    [Test]
+    public async Task Keeping_local_remembers_completed_items_when_a_later_write_fails()
+    {
+        const string otherId = "currency.other";
+        before = Manifest("before", Entry(Id, 10), Entry(otherId, 10));
+        latest = Manifest("after", Entry(Id, 20), Entry(otherId, 20));
+        await Seed(); await Seed(10, otherId);
+        var order = (await service.GetAllContentFiles(latest)).ContentFiles.Select(file => file.Id).ToArray();
+
+        using (var held = new FileStream(FilePath(order[1]), FileMode.Open, FileAccess.Read, FileShare.Read))
+            Assert.ThrowsAsync<IOException>(() => service.ReconcileContent("global", order, true));
+
+        // The successful acknowledgement must survive even if its file disappears before another scan.
+        File.Delete(FilePath(order[0]));
+        service = CreateService();
+        Assert.That(await Kind(order[0]), Is.EqualTo((int)ContentChangeKind.LocalEdit));
+        Assert.That(await Kind(order[1]), Is.EqualTo((int)ContentChangeKind.IncomingChange));
+    }
+
+    [Test]
     public async Task Deleting_every_local_file_retains_intent_across_service_restart()
     {
         await Seed(); await service.GetAllContentFiles(latest); File.Delete(FilePath());

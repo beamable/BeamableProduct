@@ -55,12 +55,13 @@ public partial class ContentService
 	}
 
 	private Task<ReconciliationState> RememberReferences(string manifestId, IEnumerable<ContentFile> files,
-		string observedUid, CancellationToken token = default, ISet<string> remoteIds = null, bool confirmed = false) => UpdateReconciliation(manifestId, state =>
+		string observedUid, CancellationToken token = default, ISet<string> remoteIds = null, bool confirmed = false,
+		string initialObservedUid = null) => UpdateReconciliation(manifestId, state =>
 	{
 		bool changed = false;
 		if (string.IsNullOrEmpty(state.ObservedManifestUid))
 		{
-			state.ObservedManifestUid = observedUid;
+			state.ObservedManifestUid = initialObservedUid ?? observedUid;
 			changed = true;
 		}
 		foreach (var file in files)
@@ -141,15 +142,24 @@ public partial class ContentService
 		}
 		else
 		{
-			foreach (var file in pending)
+			var completed = new List<ContentFile>();
+			try
 			{
-				token.ThrowIfCancellationRequested();
-				var acknowledged = file;
-				acknowledged.FetchedFromManifestUid = latest.uid.GetOrElse("");
-				acknowledged.ReferenceIsUnknown = false;
-				if (!string.IsNullOrEmpty(file.LocalFilePath) && File.Exists(file.LocalFilePath))
-					await SaveContentFile(folder, acknowledged, token);
-				await RememberReferences(manifestId, new[] { acknowledged }, latest.uid.GetOrElse(""), token, confirmed: true);
+				foreach (var file in pending)
+				{
+					token.ThrowIfCancellationRequested();
+					var acknowledged = file;
+					acknowledged.FetchedFromManifestUid = latest.uid.GetOrElse("");
+					acknowledged.ReferenceIsUnknown = false;
+					if (!string.IsNullOrEmpty(file.LocalFilePath) && File.Exists(file.LocalFilePath))
+						await SaveContentFile(folder, acknowledged, token);
+					completed.Add(acknowledged);
+				}
+			}
+			finally
+			{
+				// Persist the batch once, including successful items before a failure or cancellation.
+				if (completed.Count > 0) await RememberReferences(manifestId, completed, latest.uid.GetOrElse(""), confirmed: true);
 			}
 		}
 		return pending.Select(c => c.Id).ToArray();
