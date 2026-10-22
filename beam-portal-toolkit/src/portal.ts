@@ -113,51 +113,6 @@ export interface ExtensionMountPoint {
 }
 
 /**
- * Tone vocabulary for sidebar nav badges. Mirrors the host portal's
- * `badge-pill` color palette: `info` (cyan), `warning` (amber),
- * `error` (red), `accent` (purple).
- */
-export type BadgeTone = 'info' | 'warning' | 'error' | 'accent';
-
-/**
- * A sidebar nav badge value. `value` is a count or a short label like
- * `"LIVE"` / `"PENDING"`. Pass `null` to clear an existing badge.
- *
- * String values default to `accent` tone unless the extension supplies
- * one — count tones default to `info`.
- */
-export interface BadgeValue {
-  value: number | string;
-  tone?: BadgeTone;
-}
-
-/**
- * Shared shape for the limited context handed to `getBadge`, parametrized over the
- * SDK type. Deliberately narrower than {@link ExtensionContext} — the badge pull runs
- * *outside* the extension's mount lifecycle (no shadow DOM, no React tree, no URL
- * params) so the extension must never reach for `params` / `location` / `navigate` /
- * `mount` here.
- */
-export interface BaseBadgeContext<TBeam> {
-  cid: string;
-  beam: Promise<TBeam>;
-  config: ExtensionConfig;
-}
-
-/** Badge context for a realm-scoped extension. */
-export interface BadgeContext extends BaseBadgeContext<Beam> {
-  realm: string;
-}
-
-/**
- * Badge context for a zone-scoped extension. Carries a `zid` instead of a `realm`, and
- * a {@link BeamZoneSdk} instead of a full {@link Beam}.
- */
-export interface ZoneBadgeContext extends BaseBadgeContext<BeamZoneSdk> {
-  zid: string;
-}
-
-/**
  * A handle to one of this extension's own mount sites, accepted by
  * {@link ExtensionContext.getMountSiteCandidates}: either the site's
  * `selector` string, or the mount-site element itself — the
@@ -223,14 +178,6 @@ export interface BaseExtensionContext<TBeam> extends Map<any, any> {
    * timezone preference, logged-in account).
    */
   config: ExtensionConfig;
-  /**
-   * Push the extension's sidebar nav-item badge. Pass `null` to clear.
-   * Only valid while this extension is mounted — the value sticks in the
-   * portal's badge store after unmount until the next page load. Pair with
-   * the pull-side `getBadge` (on `Portal.registerExtension`) for cases where
-   * the badge must appear even when the user hasn't visited the page yet.
-   */
-  updateBadge: (value: BadgeValue | null) => void;
   /**
    * Data supplied by the parent that mounted this extension, if any. Value
    * comes from the `siteData` prop on the parent's `<BeamExtensionSite>` or
@@ -331,38 +278,12 @@ export interface RegisterExtensionOptions {
    * @param instance - The instance object returned by the corresponding `onMount` call.
    */
   onUnmount: (instance: unknown) => void | Promise<void>;
-
-  /**
-   * Optional sidebar nav-badge supplier. Invoked once per page-load by
-   * the portal when the extension's nav item first scrolls into view.
-   * MUST NOT depend on the extension's React tree or shadow DOM (the
-   * extension may not be mounted yet) — only read from the supplied
-   * {@link BadgeContext}.
-   *
-   * Return `null` to clear / suppress the badge.
-   *
-   * For live updates while the extension is mounted, use the push channel
-   * on the mount context: {@link ExtensionContext.updateBadge}.
-   *
-   * @example
-   *   Portal.registerExtension({
-   *     beamId: 'tickets',
-   *     onMount(...) { ... },
-   *     onUnmount(...) { ... },
-   *     getBadge: async (context) => {
-   *       const beam = await context.beam;
-   *       const n = await beam.tickets.getUnreadCount();
-   *       return n > 0 ? { value: n, tone: 'warning' } : null;
-   *     },
-   *   });
-   */
-  getBadge?: (context: BadgeContext) => Promise<BadgeValue | null>;
 }
 
 /**
  * Options passed to {@link Portal.registerZoneExtension}. The zone-scoped analog of
- * {@link RegisterExtensionOptions}: identical shape, but `onMount` / `getBadge` receive
- * the zone context ({@link ZoneExtensionContext} / {@link ZoneBadgeContext}) and thus a
+ * {@link RegisterExtensionOptions}: identical shape, but `onMount` receives
+ * the zone context ({@link ZoneExtensionContext}) and thus a
  * {@link BeamZoneSdk} instead of a full {@link Beam}.
  */
 export interface RegisterZoneExtensionOptions {
@@ -372,16 +293,13 @@ export interface RegisterZoneExtensionOptions {
   onMount: (container: HTMLElement, context: ZoneExtensionContext) => unknown | Promise<unknown>;
   /** Called when the portal is about to remove this extension from the DOM. */
   onUnmount: (instance: unknown) => void | Promise<void>;
-  /** Optional sidebar nav-badge supplier — see {@link RegisterExtensionOptions.getBadge}. */
-  getBadge?: (context: ZoneBadgeContext) => Promise<BadgeValue | null>;
 }
 
 /**
  * Shared shape published on `window[beamId]` by the register* helpers, parametrized over
- * the mount/badge context types. The portal reads this back to invoke mount/unmount and
- * (separately, with a narrower context) the badge pull.
+ * the mount context type. The portal reads this back to invoke mount/unmount.
  */
-export interface BaseWindowExtensionRegistration<TCtx, TBadgeCtx> {
+export interface BaseWindowExtensionRegistration<TCtx> {
   /**
    * Discriminates which SDK/context the portal must build for this extension: `realm`
    * gets an {@link ExtensionContext} (full {@link Beam}); `zone` gets a
@@ -391,18 +309,17 @@ export interface BaseWindowExtensionRegistration<TCtx, TBadgeCtx> {
   scope: 'realm' | 'zone';
   mount: (targetElement: HTMLElement, context: TCtx) => unknown | Promise<unknown>;
   unmount: (instance: unknown) => void | Promise<void>;
-  getBadge?: (context: TBadgeCtx) => Promise<BadgeValue | null>;
 }
 
 /** Registration published by {@link Portal.registerExtension} (realm-scoped). */
 export interface RealmWindowExtensionRegistration
-  extends BaseWindowExtensionRegistration<ExtensionContext, BadgeContext> {
+  extends BaseWindowExtensionRegistration<ExtensionContext> {
   scope: 'realm';
 }
 
 /** Registration published by {@link Portal.registerZoneExtension} (zone-scoped). */
 export interface ZoneWindowExtensionRegistration
-  extends BaseWindowExtensionRegistration<ZoneExtensionContext, ZoneBadgeContext> {
+  extends BaseWindowExtensionRegistration<ZoneExtensionContext> {
   scope: 'zone';
 }
 
@@ -443,7 +360,6 @@ function registerExtension(options: RegisterExtensionOptions): void {
     scope: 'realm',
     mount: (targetElement, context) => options.onMount(targetElement, context),
     unmount: (instance) => options.onUnmount(instance),
-    ...(options.getBadge ? { getBadge: options.getBadge } : {}),
   };
   (window as unknown as Record<string, WindowExtensionRegistration>)[options.beamId] = registration;
 }
@@ -476,7 +392,6 @@ function registerZoneExtension(options: RegisterZoneExtensionOptions): void {
     scope: 'zone',
     mount: (targetElement, context) => options.onMount(targetElement, context),
     unmount: (instance) => options.onUnmount(instance),
-    ...(options.getBadge ? { getBadge: options.getBadge } : {}),
   };
   (window as unknown as Record<string, WindowExtensionRegistration>)[options.beamId] = registration;
 }
