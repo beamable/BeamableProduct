@@ -737,8 +737,11 @@ namespace Beamable.Editor.ContentService
 			BeginActionProgress("Reconcile Content", "Reconciling selected content...", false);
 			try
 			{
+				// A write can fail and leave the tracker while watcher shutdown is still pending.
+				var pendingWrites = _contentWrites.WaitForWrites(writeKey);
+				_ = pendingWrites.Error(_ => { }); // Observe now; the await below still propagates the failure.
 				await StopContentWatcher();
-				await _contentWrites.WaitForWrites(writeKey);
+				await pendingWrites;
 				RequireReviewedContent();
 				RequireSavedInspectorEdits(contentId);
 				var command = _cli.ContentResolve(args);

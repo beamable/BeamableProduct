@@ -2,6 +2,8 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
@@ -20,6 +22,67 @@ namespace Beamable.Editor.Tests
 {
     public class ContentReconciliationFeedbackTests
     {
+        [TestCase(false, "success")]
+        [TestCase(true, "success")]
+        [TestCase(false, "reported failure")]
+        [TestCase(true, "reported failure")]
+        [TestCase(false, "transport failure")]
+        [TestCase(true, "transport failure")]
+        public void Reconciliation_retains_write_outcomes_during_delayed_watcher_shutdown(bool tags, string outcome)
+        {
+            // Controlled completions run inline, independent of the Editor's synchronization context.
+            var previousContext = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(null);
+            try
+            {
+                var commands = new ResolveCommands();
+                var service = CreateService(commands);
+                var shutdown = new TaskCompletionSource<bool>();
+                const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(CliContentService).GetField("_contentWatcher", fields)
+                    .SetValue(service, new ContentPsWrapper { Command = new ResolveCommand() });
+                typeof(CliContentService).GetField("_contentWatcherCompletion", fields).SetValue(service, shutdown.Task);
+                var method = typeof(CliContentService).GetMethod(tags ? "SetContentTagsAsync" : "SaveContentPropertiesAsync", fields);
+                var args = tags ? new object[] { "currency.test", new[] { "new" } } : new object[] { "currency.test", "{}", null };
+                var write = (Promise)method.Invoke(service, args);
+                write.Error(_ => { });
+                var operation = service.ReconcileContentWithProgress("currency.test", false);
+                Exception observed = null;
+                operation.Error(error => observed = error);
+
+                if (outcome == "transport failure") commands.Pending.Completion.CompleteError(new InvalidOperationException("Edit failed."));
+                else
+                {
+                    if (outcome == "reported failure") commands.Pending.ReportError("Edit failed.");
+                    commands.Pending.Completion.CompleteSuccess();
+                }
+                Assert.That(write.IsCompleted, Is.True);
+                Assert.That(operation.IsCompleted, Is.False, "Reconciliation must still await shutdown.");
+                Assert.That(service.CurrentProgress.IsActive, Is.True);
+                Assert.That(commands.Calls, Is.Zero);
+                commands.Pending = new ResolveCommand();
+                shutdown.SetResult(true);
+
+                if (outcome == "success")
+                {
+                    Assert.That(commands.Calls, Is.EqualTo(1));
+                    commands.Pending.Completion.CompleteSuccess();
+                    Assert.That(operation.IsCompleted && !operation.IsFailed, Is.True);
+                }
+                else
+                {
+                    Assert.That(commands.Calls, Is.Zero, "A failed edit must not be forgotten during shutdown.");
+                    Assert.That(observed, Is.Not.Null);
+                    Assert.That(observed.Message, Does.Contain("Edit failed."));
+                    var retry = service.ReconcileContentWithProgress("currency.test", false);
+                    commands.Pending.Completion.CompleteSuccess();
+                    Assert.That(retry.IsCompleted && !retry.IsFailed, Is.True);
+                }
+                Assert.That(service.CurrentProgress.IsActive, Is.False);
+            }
+            finally { SynchronizationContext.SetSynchronizationContext(previousContext); }
+        }
+
         [Test]
         public void Deselecting_an_inspector_keeps_both_pending_header_guards_without_flushing_writes()
         {
