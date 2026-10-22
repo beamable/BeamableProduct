@@ -10,7 +10,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using Moq;
 using System;
+using System.CommandLine;
+using System.CommandLine.Binding;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -41,6 +44,71 @@ public class ServerServiceTests
 
 	private static TaskCompletionSource<bool> Signal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 	private static Task<ServerInfoResponse> Snapshot() => HandleInfo(Args, 0);
+
+	[TestCase(false)]
+	[TestCase(true)]
+	public async Task Real_app_releases_console_cancellation_subscription_after_execution(bool failDuringSetup)
+	{
+		// Inspect the actual Console event without raising Ctrl+C: App's handler schedules process exit.
+		var callbacksField = typeof(Console).GetFields(PrivateStatic)
+			.Single(field => field.FieldType == typeof(ConsoleCancelEventHandler));
+		Delegate[] Callbacks() => ((Delegate?)callbacksField.GetValue(null))?.GetInvocationList() ?? Array.Empty<Delegate>();
+		var before = Callbacks();
+		Delegate[] during = Array.Empty<Delegate>();
+		var originalDirectory = Directory.GetCurrentDirectory();
+		var originalExitCode = Environment.ExitCode;
+		var directory = Path.Combine(Path.GetTempPath(), "beam-console-lifecycle-" + Guid.NewGuid().ToString("N"));
+		Directory.CreateDirectory(directory);
+		var lifecycle = new AppLifecycle();
+		var context = new Mock<IAppContext>();
+		context.SetupGet(value => value.LogSwitch).Returns(new BeamLogSwitch());
+		context.Setup(value => value.Apply(It.IsAny<BindingContext>())).Returns(() =>
+		{
+			during = Callbacks().Except(before).ToArray();
+			return failDuringSetup ? Task.FromException(new InvalidOperationException("controlled context setup failure")) : Task.CompletedTask;
+		});
+		try
+		{
+			Directory.SetCurrentDirectory(directory);
+			var app = new App();
+			app.Configure(builder =>
+			{
+				builder.Remove<IAppContext>();
+				builder.AddSingleton(context.Object);
+				builder.Remove<AppLifecycle>();
+				builder.AddSingleton(lifecycle);
+			}, configureLogger: _ => { });
+			app.Build();
+			var command = new ConsoleLifecycleCommand();
+			var handled = false;
+			command.SetHandler(() => handled = true);
+			app.CommandProvider.GetService<RootCommand>().AddCommand(command);
+			var exitCode = await app.RunWithSingleString(command.Name, true);
+			// Match the server's completion boundary before a later console cancellation.
+			lifecycle.Cancel();
+			lifecycle.Source.Dispose();
+			Assert.Multiple(() =>
+			{
+				Assert.That(during, Has.Length.EqualTo(1), "The real invocation middleware must install its handler.");
+				Assert.That(exitCode, Is.EqualTo(failDuringSetup ? 1 : 0));
+				Assert.That(handled, Is.EqualTo(!failDuringSetup));
+				Assert.That(Callbacks().Except(before), Is.Empty, "Completed invocations must not retain a handler targeting their disposed lifecycle.");
+			});
+		}
+		finally
+		{
+			foreach (var callback in Callbacks().Except(before)) Console.CancelKeyPress -= (ConsoleCancelEventHandler)callback;
+			lifecycle.Source.Dispose();
+			Directory.SetCurrentDirectory(originalDirectory);
+			Directory.Delete(directory, true);
+			Environment.ExitCode = originalExitCode;
+		}
+	}
+
+	private sealed class ConsoleLifecycleCommand : Command, ISkipManifest
+	{
+		public ConsoleLifecycleCommand() : base("console-lifecycle-probe") { }
+	}
 
 	[TestCase("{broken")]
 	[TestCase("null")]
