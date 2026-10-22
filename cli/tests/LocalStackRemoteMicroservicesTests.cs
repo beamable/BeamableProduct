@@ -42,7 +42,8 @@ public class LocalStackRemoteMicroservicesTests
 		var name = RemoteMicroservices.DeriveName("arn:aws:iam::1:user/" + new string('a', 80));
 
 		Assert.That(RemoteMicroservices.ValidateName(name), Is.Null);
-		Assert.That(RemoteMicroservices.RegistryHost(name).Split('.')[0].Length, Is.LessThanOrEqualTo(63));
+		// <dev>-clickhouse is the longest of the developer's names.
+		Assert.That(RemoteMicroservices.ClickHouseHost(name).Split('.')[0].Length, Is.EqualTo(63));
 	}
 
 	[TestCase("justin", true)]
@@ -53,6 +54,7 @@ public class LocalStackRemoteMicroservicesTests
 	[TestCase("Justin", false)]
 	[TestCase("jus_tin", false)]
 	[TestCase("bob-registry", false)] // would collide with bob's registry name
+	[TestCase("bob-clickhouse", false)] // would collide with bob's ClickHouse name
 	public void ValidateName(string name, bool valid)
 	{
 		Assert.That(RemoteMicroservices.ValidateName(name) == null, Is.EqualTo(valid));
@@ -71,6 +73,7 @@ public class LocalStackRemoteMicroservicesTests
 		Assert.That(docker.stopArguments, Is.EqualTo(files + "stop"));
 		Assert.That(docker.purgeStopArguments, Is.EqualTo(files + "down -v"));
 		Assert.That(docker.environment["MS_REGISTRY_HOST"], Is.EqualTo("justin-registry.ms-local.beamable.com"));
+		Assert.That(docker.environment["MS_CLICKHOUSE_HOST"], Is.EqualTo("justin-clickhouse.ms-local.beamable.com"));
 	}
 
 	[Test]
@@ -84,6 +87,10 @@ public class LocalStackRemoteMicroservicesTests
 		Assert.That(env["BEAMABLE_Beamo__WebsocketUri"], Is.EqualTo("wss://justin.ms-local.beamable.com/socket"));
 		Assert.That(env["BEAMABLE_Beamo__DockerRegistryHostAndPort"], Is.EqualTo("justin-registry.ms-local.beamable.com:443"));
 		Assert.That(env["BEAMABLE_Beamo__DockerRegistryProtocol"], Is.EqualTo("https"));
+		// Deployed services' collectors are handed this endpoint, so their telemetry reaches the local ClickHouse.
+		Assert.That(env["BEAMABLE_Beamo__Otel__ClickHouse__Endpoint__Host"], Is.EqualTo("justin-clickhouse.ms-local.beamable.com"));
+		Assert.That(env["BEAMABLE_Beamo__Otel__ClickHouse__Endpoint__Port"], Is.EqualTo("443"));
+		Assert.That(env["BEAMABLE_Beamo__Otel__ClickHouse__Endpoint__Protocol"], Is.EqualTo("https"));
 		Assert.That(env["ASPNETCORE_ENVIRONMENT"], Is.EqualTo("Local"), "the template's own settings stay");
 	}
 
@@ -142,17 +149,19 @@ public class LocalStackRemoteMicroservicesTests
 
 		Assert.That(docker["MS_REGISTRY_HOST"], Is.EqualTo("justin-registry.ms-local.beamable.com"),
 			"stop runs the override too, which won't parse without it");
+		Assert.That(docker["MS_CLICKHOUSE_HOST"], Is.EqualTo("justin-clickhouse.ms-local.beamable.com"));
 		Assert.That(gateway, Is.Null, "the gateway has no reversal, so nothing is recorded");
 	}
 
 	[Test]
-	public void TunnelScript_ForwardsBothSocketsAndSurvivesTokenSubstitution()
+	public void TunnelScript_ForwardsAllThreeSocketsAndSurvivesTokenSubstitution()
 	{
 		var script = RemoteMicroservices.TunnelScript("justin");
 
 		Assert.That(script, Does.Contain("dev='justin'"));
 		Assert.That(script, Does.Contain("-R \"/run/tunnels/$dev.sock:127.0.0.1:8080\""));
 		Assert.That(script, Does.Contain("-R \"/run/tunnels/$dev-registry.sock:127.0.0.1:5002\""));
+		Assert.That(script, Does.Contain("-R \"/run/tunnels/$dev-clickhouse.sock:127.0.0.1:8123\""));
 		Assert.That(script, Does.Contain("LocalCommand=echo " + RemoteMicroservices.TunnelReadyMarker));
 		// The tunnel role may only start sessions with this document, which fixes the port at 22.
 		Assert.That(script, Does.Contain($"ssh_document='{RemoteMicroservices.SshDocumentName}'"));

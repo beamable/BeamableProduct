@@ -11,12 +11,12 @@ namespace cli.Services.LocalStack;
 /// tasks that dial back to this machine. Design: DesignDocs/infra/local-stack/remote-microservice-deploy.md. The
 /// shared AWS side is BeamablePrivateCloud's terraform-modules/remote-microservices.
 ///
-/// Nothing in AWS is per developer. The developer's name, &lt;dev&gt;, picks two host names under
-/// <see cref="Domain"/>: &lt;dev&gt; for the websocket and API, and &lt;dev&gt;-registry for image pulls. On
-/// <c>up</c>:
+/// Nothing in AWS is per developer. The developer's name, &lt;dev&gt;, picks three host names under
+/// <see cref="Domain"/>: &lt;dev&gt; for the websocket and API, &lt;dev&gt;-registry for image pulls, and
+/// &lt;dev&gt;-clickhouse for deployed services' telemetry, which lands in the local ClickHouse. On <c>up</c>:
 /// <list type="number">
 /// <item><see cref="Preflight"/> checks AWS access, local tools and DNS, and works out &lt;dev&gt;.</item>
-/// <item><see cref="Apply"/> layers the registry onto the docker step, points the gateway at the two names, and
+/// <item><see cref="Apply"/> layers the registry onto the docker step, points the gateway at the names, and
 /// adds the tunnel step that keeps <c>ssh -R</c> open to the shared tunnel host.</item>
 /// <item><see cref="EnsureCaddyCaTrusted"/> runs once Caddy is up.</item>
 /// </list>
@@ -45,10 +45,19 @@ public static class RemoteMicroservices
 	public const string GatewayStepName = "c# gateway";
 
 	private const string RegistrySuffix = "-registry";
-	private const int MaxNameLength = 63 - 9; // <dev>-registry must fit in one 63-character DNS label
+	private const string ClickHouseSuffix = "-clickhouse";
+	private static readonly string[] ReservedSuffixes = { RegistrySuffix, ClickHouseSuffix };
+	private const int MaxNameLength = 63 - 11; // <dev>-clickhouse must fit in one 63-character DNS label
 
 	public static string GatewayHost(string dev) => $"{dev}.{Domain}";
 	public static string RegistryHost(string dev) => $"{dev}{RegistrySuffix}.{Domain}";
+
+	/// <summary>
+	/// The gateway's ClickHouse endpoint while remote microservices are on. It's handed to deployed services'
+	/// OTEL collectors as well as used on this machine, so it has to resolve on both sides: to Caddy here, to the
+	/// tunnel host in Fargate.
+	/// </summary>
+	public static string ClickHouseHost(string dev) => $"{dev}{ClickHouseSuffix}.{Domain}";
 
 	/// <summary>
 	/// &lt;dev&gt; from the caller's ARN: an SSO session's email local part
@@ -90,10 +99,12 @@ public static class RemoteMicroservices
 			return "it must be lowercase letters, digits and hyphens, and can't start or end with a hyphen";
 		}
 
-		// <x>-registry is x's registry name, so a <dev> ending in -registry would collide with someone else's.
-		if (name.EndsWith(RegistrySuffix))
+		// <x>-registry and <x>-clickhouse are x's other names, so a <dev> ending in either would collide with
+		// someone else's.
+		var reserved = ReservedSuffixes.FirstOrDefault(name.EndsWith);
+		if (reserved != null)
 		{
-			return $"it can't end with {RegistrySuffix}";
+			return $"it can't end with {reserved}";
 		}
 
 		return null;
@@ -161,14 +172,15 @@ public static class RemoteMicroservices
 			problems.Add("ssh and ssh-keygen have to be on your PATH.");
 		}
 
-		var registryHost = RegistryHost(dev);
-		if (!ResolvesToLoopback(registryHost))
+		// Public DNS has *.ms-local.beamable.com → 127.0.0.1, but some routers and corporate resolvers drop
+		// public names that point at 127.0.0.1 (DNS rebinding protection).
+		var unresolved = new[] { RegistryHost(dev), ClickHouseHost(dev) }.Where(h => !ResolvesToLoopback(h)).ToList();
+		if (unresolved.Count > 0)
 		{
-			// Public DNS has *.ms-local.beamable.com → 127.0.0.1, but some routers and corporate resolvers drop
-			// public names that point at 127.0.0.1 (DNS rebinding protection).
+			var (verb, pronoun) = unresolved.Count == 1 ? ("doesn't", "it") : ("don't", "them");
 			problems.Add(
-				$"{registryHost} doesn't resolve to 127.0.0.1 here; your DNS resolver may block names that point at " +
-				$"127.0.0.1. Add it to /etc/hosts: echo \"127.0.0.1 {registryHost}\" | sudo tee -a /etc/hosts");
+				$"{string.Join(" and ", unresolved)} {verb} resolve to 127.0.0.1 here; your DNS resolver may block names " +
+				$"that point at 127.0.0.1. Add {pronoun} to /etc/hosts: echo \"127.0.0.1 {string.Join(" ", unresolved)}\" | sudo tee -a /etc/hosts");
 		}
 
 		if (problems.Count > 0)
@@ -194,11 +206,16 @@ public static class RemoteMicroservices
 		docker.environment ??= new Dictionary<string, string>();
 		// The override won't even parse without it, so `beam local stop` needs it too (the run state records it).
 		docker.environment["MS_REGISTRY_HOST"] = RegistryHost(dev);
+		docker.environment["MS_CLICKHOUSE_HOST"] = ClickHouseHost(dev);
 
 		gateway.environment ??= new Dictionary<string, string>();
 		gateway.environment["BEAMABLE_Beamo__WebsocketUri"] = $"wss://{GatewayHost(dev)}/socket";
 		gateway.environment["BEAMABLE_Beamo__DockerRegistryHostAndPort"] = $"{RegistryHost(dev)}:443";
 		gateway.environment["BEAMABLE_Beamo__DockerRegistryProtocol"] = "https";
+		// Deployed services' collectors export here, so their logs and traces land in the local ClickHouse.
+		gateway.environment["BEAMABLE_Beamo__Otel__ClickHouse__Endpoint__Host"] = ClickHouseHost(dev);
+		gateway.environment["BEAMABLE_Beamo__Otel__ClickHouse__Endpoint__Port"] = "443";
+		gateway.environment["BEAMABLE_Beamo__Otel__ClickHouse__Endpoint__Protocol"] = "https";
 
 		if (config.steps.Any(s => s.name == TunnelStepName))
 		{
@@ -237,7 +254,7 @@ public static class RemoteMicroservices
 	}
 
 	/// <summary>
-	/// The tunnel step: a POSIX sh loop that keeps two <c>ssh -R</c> forwards open to the shared tunnel host over
+	/// The tunnel step: a POSIX sh loop that keeps three <c>ssh -R</c> forwards open to the shared tunnel host over
 	/// SSM Session Manager, reconnecting whenever ssh exits. Each pass assumes the tunnel role afresh and pushes a
 	/// 60-second EC2 Instance Connect key, so nothing long-lived is stored. The step's arguments go through token
 	/// substitution, so the script must not contain a dollar sign followed by a brace.
@@ -270,6 +287,7 @@ public static class RemoteMicroservices
 		$"    -o PermitLocalCommand=yes -o 'LocalCommand=echo {TunnelReadyMarker}' \\",
 		"    -o \"ProxyCommand=aws ssm start-session --region $region --target %h --document-name $ssh_document\" \\",
 		"    -R \"/run/tunnels/$dev.sock:127.0.0.1:8080\" -R \"/run/tunnels/$dev-registry.sock:127.0.0.1:5002\" \\",
+		"    -R \"/run/tunnels/$dev-clickhouse.sock:127.0.0.1:8123\" \\",
 		"    \"$user@$instance\"",
 		"  echo \"tunnel closed (ssh exit $?); reconnecting in 5s\"",
 		"  sleep 5",
