@@ -144,24 +144,6 @@ public class LocalStackSkillTests
 			Does.Not.Contain("Not runnable yet"));
 	}
 
-	/// <summary>
-	/// `repos` was added after the first manifests were written, and it is documentation-only — an older
-	/// manifest must still render (pointing the reader at the step list) rather than throw mid-init.
-	/// </summary>
-	[Test]
-	public void Manifest_without_recorded_repos_still_renders()
-	{
-		var json = JsonConvert.SerializeObject(Config());
-		var config = JsonConvert.DeserializeObject<LocalStackConfig>(json);
-		config.repos = null;
-
-		var section = LocalStackSkillTemplate.RenderThisStack(config, ManifestPath);
-
-		Assert.That(section, Does.Contain("predates the recorded repository paths"));
-		// The step list is the fallback source of the paths, so it must still be there.
-		Assert.That(section, Does.Contain(LocalStackTemplate.WebRegistryStepName));
-	}
-
 	[Test]
 	public void Empty_config_renders_without_throwing()
 	{

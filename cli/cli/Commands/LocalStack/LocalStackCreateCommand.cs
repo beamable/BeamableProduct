@@ -17,11 +17,24 @@ public class LocalStackCreateCommandArgs : CommandArgs
 	public string file;
 	public string description;
 
+	/// <summary>The backend it runs against: a target's name or an http(s) address; empty to inherit.</summary>
+	public string target;
+
 	// A stack.
 	public string extends;
 	public string include;
 	public string exclude;
+
+	/// <summary>This workspace's microservices, portal extensions and service groups the stack runs, by id.</summary>
+	public string services;
 	public string extensions;
+	public string groups;
+
+	/// <summary>A command of the stack's own, described by the <c>--step-*</c> options as for <c>beam local setup --add-step</c>.</summary>
+	public LocalStackSetupCommandArgs command = new LocalStackSetupCommandArgs();
+
+	/// <summary>With <c>--add-step</c>: the command runs before every other step.</summary>
+	public bool stepFirst;
 
 	// A variant.
 	public string before;
@@ -35,6 +48,9 @@ public class LocalStackCreateCommandResult
 	public string path;
 
 	public string name;
+
+	/// <summary>The steps added because something the stack runs needs them, with why.</summary>
+	public List<string> added;
 }
 
 /// <summary>Where a question sequence goes after one answer.</summary>
@@ -150,6 +166,9 @@ public class LocalStackCreateCommand
 	: AtomicCommand<LocalStackCreateCommandArgs, LocalStackCreateCommandResult>
 	, IStandaloneCommand, ISkipManifest
 {
+	// It prints its own readable output; the result object still reaches tools through the data channel.
+	public override bool AutoLogOutput => false;
+
 	public LocalStackCreateCommand() : base("create",
 		"Write a stack, or a variant with <stack>:<variant>, to the local stacks folder (or the shared one with --shared), checked against this machine's settings first; asks for what isn't passed")
 	{
@@ -177,14 +196,40 @@ public class LocalStackCreateCommand
 				(args, v) => args.file = v);
 		AddOption(new Option<string>("--description", "What the stack or variant is for; shown by `beam local run`"),
 			(args, v) => args.description = v);
+		AddOption(new Option<string>("--target", "The backend it runs against: local, lan, dev, staging, prod, a target from the settings, or an http(s) address (default: what it extends or changes runs against)"),
+			(args, v) => args.target = v);
 		AddOption(new Option<string>("--extends", "A stack: another stack to start from"),
 			(args, v) => args.extends = v);
 		AddOption(new Option<string>("--include", "A stack: comma separated tags or step names to add"),
 			(args, v) => args.include = v);
 		AddOption(new Option<string>("--exclude", "A stack: comma separated tags or step names to take out"),
 			(args, v) => args.exclude = v);
-		AddOption(new Option<string>("--extensions", "A stack: comma separated extension, microservice or service group ids to narrow the extension steps to"),
+		AddOption(new Option<string>("--services", "A stack: comma separated microservices of this workspace to run (`beam project list` names them)"),
+			(args, v) => args.services = v);
+		AddOption(new Option<string>("--extensions", "A stack: comma separated portal extensions of this workspace to run"),
 			(args, v) => args.extensions = v);
+		AddOption(new Option<string>("--groups", "A stack: comma separated service groups of this workspace to run (every microservice and extension in them)"),
+			(args, v) => args.groups = v);
+
+		// A command of the stack's own; several are added one per call, or with the questions.
+		AddOption(new Option<string>("--add-step", "A stack: add a command of its own with this name, described by the --step-* options"),
+			(args, v) => args.command.addStep = v);
+		AddOption(new Option<string>("--step-command", "Own command: the program to run (with --step-args)"), (args, v) => args.command.stepCommand = v);
+		AddOption(new Option<string>("--step-args", "Own command: the program's arguments"), (args, v) => args.command.stepArgs = v);
+		AddOption(new Option<string>("--step-shell", "Own command: a shell script to run instead of a program"), (args, v) => args.command.stepShell = v);
+		AddOption(new Option<string>("--step-shell-kind", "Own command: the shell for --step-shell, sh or powershell"), (args, v) => args.command.stepShellKind = v);
+		AddOption(new Option<string>("--step-beam", "Own command: a beam command to run with this CLI, such as \"content publish\""), (args, v) => args.command.stepBeam = v);
+		AddOption(new Option<string>("--step-dir", "Own command: the folder it runs in; may use variables such as ${PortalPath}"), (args, v) => args.command.stepDir = v);
+		AddOption(new Option<string[]>("--step-env", "Own command: an environment value, KEY=VALUE; repeat for more") { AllowMultipleArgumentsPerToken = true },
+			(args, v) => args.command.stepEnv = v);
+		AddOption(new Option<bool>("--step-once", "Own command: it runs to completion instead of staying up"), (args, v) => args.command.stepOnce = v);
+		AddOption(new Option<string>("--step-ready-url", "Own command: it is ready once this URL answers"), (args, v) => args.command.stepReadyUrl = v);
+		AddOption(new Option<string>("--step-ready-log", "Own command: it is ready once its output contains this text"), (args, v) => args.command.stepReadyLog = v);
+		AddOption(new Option<int>("--step-port", "Own command: the port it binds, checked before it starts"), (args, v) => args.command.stepPort = v);
+		AddOption(new Option<int>("--step-timeout", () => 120, "Own command: seconds to wait for it to be ready"), (args, v) => args.command.stepTimeout = v);
+		AddOption(new Option<string>("--step-label", "Own command: a readable name for listings"), (args, v) => args.command.stepLabel = v);
+		AddOption(new Option<string>("--step-after", "Own command: the step it runs after (default: after every other step)"), (args, v) => args.command.stepAfter = v);
+		AddOption(new Option<bool>("--step-first", "Own command: it runs before every other step"), (args, v) => args.stepFirst = v);
 		AddOption(new Option<string>("--before", "A variant: comma separated tags or step names to run before the stack's own steps"),
 			(args, v) => args.before = v);
 		AddOption(new Option<string>("--after", "A variant: comma separated tags or step names to start once the stack's own steps are ready"),
@@ -206,10 +251,24 @@ public class LocalStackCreateCommand
 		public string variant;
 		public bool shared;
 		public string description;
+		public string target;
 		public string extends;
 		public List<string> include;
 		public List<string> exclude;
+
+		/// <summary>The narrowing of extension steps that isn't about the stack's own services: kept from the entry.</summary>
 		public List<string> extensions;
+
+		// What the stack runs from this workspace, by id, and its own commands.
+		public List<string> services = new List<string>();
+		public List<string> portalExtensions = new List<string>();
+		public List<string> groups = new List<string>();
+		public List<LocalStackStep> commands = new List<LocalStackStep>();
+
+		/// <summary>The steps added because something the stack runs needs them, with why.</summary>
+		public List<string> added = new List<string>();
+
+		public WorkspaceServices workspace = new WorkspaceServices();
 		public HashSet<string> changes = new HashSet<string>();
 		public List<string> before;
 		public List<string> after;
@@ -222,6 +281,7 @@ public class LocalStackCreateCommand
 		public bool inherits;
 
 		public bool IsVariant => variant != null;
+		public bool HasServices => services.Count + portalExtensions.Count + groups.Count > 0;
 		public bool IsEdit => editFile != null;
 		public string FullName => IsVariant ? $"{stack}:{variant}" : stack;
 		public LocalStackLayer Layer => shared ? LocalStackLayer.Shared : LocalStackLayer.Local;
@@ -235,7 +295,7 @@ public class LocalStackCreateCommand
 	/// <summary>Shown on every question that can go back to the previous one.</summary>
 	private const string BackHint = "[grey](Shift+Tab goes back)[/]";
 
-	public override Task<LocalStackCreateCommandResult> GetResult(LocalStackCreateCommandArgs args)
+	public override async Task<LocalStackCreateCommandResult> GetResult(LocalStackCreateCommandArgs args)
 	{
 		var quiet = args.Quiet || !AnsiConsole.Profile.Capabilities.Interactive;
 		var settingsPath = LocalStackCommand.ResolveManifestPath(args.ConfigService, null);
@@ -250,10 +310,13 @@ public class LocalStackCreateCommand
 		{
 			shared = args.shared,
 			description = args.description,
+			target = string.IsNullOrWhiteSpace(args.target) ? null : args.target.Trim().TrimEnd('/'),
 			extends = args.extends,
 			include = List(args.include),
 			exclude = List(args.exclude),
-			extensions = List(args.extensions),
+			services = List(args.services) ?? new List<string>(),
+			portalExtensions = List(args.extensions) ?? new List<string>(),
+			groups = List(args.groups) ?? new List<string>(),
 			before = List(args.before),
 			after = List(args.after),
 			remove = List(args.remove),
@@ -261,14 +324,16 @@ public class LocalStackCreateCommand
 		if (draft.before != null) draft.changes.Add(ChangeBefore);
 		if (draft.after != null) draft.changes.Add(ChangeAfter);
 		if (draft.remove != null) draft.changes.Add(ChangeRemove);
+		draft.workspace = await WorkspaceServices.Find(args, config);
 
 		if (Editing)
 		{
 			LoadForEdit(draft, args, stacks, quiet);
 
-			if (quiet && args.description == null && args.extends == null && args.include == null && args.exclude == null
-			    && args.extensions == null && args.before == null && args.after == null && args.remove == null)
-				throw new CliException($"Pass what to change in {draft.FullName}: --description, and --extends, --include, --exclude, --extensions for a stack, or --before, --after, --remove for a variant (an empty value clears it). In an interactive terminal it shows the entry and asks.");
+			if (quiet && args.description == null && args.target == null && args.extends == null && args.include == null && args.exclude == null
+			    && args.services == null && args.extensions == null && args.groups == null && args.command.addStep == null
+			    && args.before == null && args.after == null && args.remove == null)
+				throw new CliException($"Pass what to change in {draft.FullName}: --description, --target, and --extends, --include, --exclude, --services, --extensions, --groups, --add-step for a stack, or --before, --after, --remove for a variant (an empty value clears it). In an interactive terminal it shows the entry and asks.");
 		}
 		else if (!string.IsNullOrWhiteSpace(args.name))
 		{
@@ -284,8 +349,15 @@ public class LocalStackCreateCommand
 			throw new CliException("Pass what to create: `beam local create <stack>` for a stack, `beam local create <stack>:<variant>` for a variant. In an interactive terminal it is asked.");
 		}
 
+		if (args.command.addStep != null)
+			AddCommand(draft, config, args);
+		CheckServices(draft);
+
 		if (quiet)
 		{
+			foreach (var note in AddDependencies(draft, stacks, config, root))
+				Log.Information(note);
+
 			var (file, entry) = Build(draft, stacks, root);
 			try
 			{
@@ -299,16 +371,16 @@ public class LocalStackCreateCommand
 			if (draft.IsEdit && !WriteEdit(file, draft, entry))
 			{
 				Log.Information($"Nothing was changed: {draft.FullName} already says that.");
-				return Task.FromResult(new LocalStackCreateCommandResult { name = draft.FullName });
+				return new LocalStackCreateCommandResult { name = draft.FullName };
 			}
 
 			if (!draft.IsEdit) Write(file, draft.stack, draft.variant, entry);
 			Log.Information($"{(draft.IsEdit ? "Saved" : "Wrote")} {draft.FullName} {(draft.IsEdit ? "in" : "to")} {file}. Check it with `beam local run {draft.FullName} --dry-run`.");
-			return Task.FromResult(new LocalStackCreateCommandResult { path = file, name = draft.FullName });
+			return new LocalStackCreateCommandResult { path = file, name = draft.FullName, added = draft.added };
 		}
 
 		var wizard = Questions(draft, stacks, config, args);
-		wizard.beforeEach = () => Frame(wizard, draft);
+		wizard.beforeEach = () => Frame(draft);
 
 		LocalStackCreateCommandResult result = null;
 		InWizardScreen(() =>
@@ -321,13 +393,285 @@ public class LocalStackCreateCommand
 		if (result.path == null)
 		{
 			Log.Information(draft.IsEdit ? "Nothing was changed." : "Nothing was written.");
-			return Task.FromResult(result);
+			return result;
 		}
 
 		foreach (var group in wizard.Groups())
 			AnsiConsole.MarkupLine($"  [grey]{Markup.Escape(group)}:[/] {Markup.Escape(Summary(group, draft))}");
+		foreach (var note in draft.added)
+			AnsiConsole.MarkupLine($"  [grey]{Markup.Escape(note)}[/]");
 		Log.Information($"{(draft.IsEdit ? "Saved" : "Wrote")} {draft.FullName} {(draft.IsEdit ? "in" : "to")} {result.path}. Check it with `beam local run {draft.FullName} --dry-run`.");
-		return Task.FromResult(result);
+		result.added = draft.added;
+		return result;
+	}
+
+	/// <summary>The names of the steps an entry defines that the questions manage: its services and its own commands.</summary>
+	private static List<string> OwnStepNames(LocalStackStackDef def) =>
+		(def?.steps ?? new Dictionary<string, LocalStackStep>())
+		.Where(kv => IsServiceStep(kv.Key) || kv.Value?.custom == true)
+		.Select(kv => kv.Key)
+		.ToList();
+
+	private static bool IsServiceStep(string name) =>
+		new[] { LocalStackTemplate.MicroservicePrefix, LocalStackTemplate.ExtensionPrefix, LocalStackTemplate.GroupPrefix }
+			.Any(prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+
+	/// <summary>
+	/// The steps the draft's services and commands become, by name. A service runs with <c>beam project run</c>, tagged
+	/// <c>microservices</c> or <c>extensions</c> (a group both) so a variant can turn them off by kind; an extension (or a group) depends on the microservices
+	/// its package.json says it calls, so they are added when missing.
+	/// </summary>
+	private static Dictionary<string, LocalStackStep> OwnSteps(Draft draft)
+	{
+		var steps = new Dictionary<string, LocalStackStep>(StringComparer.OrdinalIgnoreCase);
+		void Put(LocalStackStep step, IEnumerable<string> calls)
+		{
+			var name = step.name;
+			step.name = null; // the key names it
+			step.tags = LocalStackStacks.ServiceTagsFor(name);
+			var needs = calls.Select(c => LocalStackTemplate.MicroservicePrefix + c).ToList();
+			step.dependsOn = needs.Count > 0 ? needs : null;
+			steps[name] = step;
+		}
+
+		var workspace = draft.workspace;
+		foreach (var group in draft.groups)
+		{
+			var members = workspace.groups.TryGetValue(group, out var m) ? m : Array.Empty<string>();
+			Put(LocalStackTemplate.GroupStep(group), members.SelectMany(workspace.CallsOf).Where(c => !members.Contains(c, StringComparer.OrdinalIgnoreCase)).Distinct());
+		}
+
+		foreach (var service in draft.services) Put(LocalStackTemplate.MicroserviceStep(service), Array.Empty<string>());
+		foreach (var extension in draft.portalExtensions) Put(LocalStackTemplate.ExtensionStep(extension), workspace.CallsOf(extension));
+		foreach (var command in draft.commands)
+		{
+			var copy = JsonConvert.DeserializeObject<LocalStackStep>(JsonConvert.SerializeObject(command));
+			var name = copy.name;
+			copy.name = null;
+			steps[name] = copy;
+		}
+
+		return steps;
+	}
+
+	/// <summary><paramref name="include"/> with the stack's own steps named in it, so they run whatever else it selects.</summary>
+	private static List<string> WithOwn(List<string> include, IEnumerable<string> own)
+	{
+		var all = (include ?? new List<string>()).Concat(own.Where(o => include?.Contains(o, StringComparer.OrdinalIgnoreCase) != true)).ToList();
+		return all.Count > 0 ? all : include;
+	}
+
+	/// <summary>
+	/// The extension narrowing to write: what the entry already narrowed to, and the stack's own services. With
+	/// services picked, the catalogue's other extension steps (from <c>setup --services</c>) stay out of the stack, as
+	/// the shared stacks do it.
+	/// </summary>
+	private static List<string> Narrowing(Draft draft)
+	{
+		var ids = (draft.extensions ?? new List<string>()).Concat(draft.groups).Concat(draft.services).Concat(draft.portalExtensions)
+			.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+		return ids.Count > 0 ? ids : null;
+	}
+
+	public const string GroupKey = "group:", ServiceKey = "microservice:", ExtensionKey = "extension:";
+
+	/// <summary>The service picker's choices: groups first, then microservices, then extensions; what the draft already
+	/// runs is offered even when this workspace doesn't have it.</summary>
+	private static List<string> ServiceChoices(Draft draft)
+	{
+		var w = draft.workspace;
+		return w.groups.Keys.Concat(draft.groups).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(g => g, StringComparer.OrdinalIgnoreCase).Select(g => GroupKey + g)
+			.Concat(w.services.Concat(draft.services).Distinct(StringComparer.OrdinalIgnoreCase).Select(x => ServiceKey + x))
+			.Concat(w.extensions.Concat(draft.portalExtensions).Distinct(StringComparer.OrdinalIgnoreCase).Select(x => ExtensionKey + x))
+			.ToList();
+	}
+
+	private static List<string> PickedServices(Draft draft) =>
+		draft.groups.Select(g => GroupKey + g).Concat(draft.services.Select(x => ServiceKey + x)).Concat(draft.portalExtensions.Select(x => ExtensionKey + x)).ToList();
+
+	private static void SetServices(Draft draft, List<string> picked)
+	{
+		List<string> Of(string prefix) => picked.Where(p => p.StartsWith(prefix, StringComparison.Ordinal)).Select(p => p.Substring(prefix.Length)).ToList();
+		draft.groups = Of(GroupKey);
+		draft.services = Of(ServiceKey);
+		draft.portalExtensions = Of(ExtensionKey);
+	}
+
+	private const string SectionKey = "\u0001section:";
+
+	/// <summary>
+	/// The service picker: one section each for service groups, microservices and portal extensions (ticking a section
+	/// ticks all of it), one line per row whatever the terminal's width. A group says how many microservices and
+	/// extensions it runs rather than naming them, and an extension which microservices it calls, cut to fit.
+	/// </summary>
+	private static List<string> PickServices(Draft draft, string title, bool back)
+	{
+		var choices = ServiceChoices(draft);
+		var width = Math.Max(40, AnsiConsole.Profile.Width - 8);
+		var sections = new[] { ("Service groups", GroupKey), ("Microservices", ServiceKey), ("Portal extensions", ExtensionKey) };
+		var prompt = new MultiSelectionPrompt<string>()
+			.Title(title)
+			.PageSize(20)
+			.Mode(SelectionMode.Leaf)
+			.MoreChoicesText("[grey](move up/down to reveal more)[/]")
+			.InstructionsText(back
+				? "[grey](press [blue]<space>[/] to toggle, [green]<enter>[/] to accept, [blue]Shift+Tab[/] to go back)[/]"
+				: "[grey](press [blue]<space>[/] to toggle, [green]<enter>[/] to accept)[/]")
+			.UseConverter(key => key.StartsWith(SectionKey, StringComparison.Ordinal)
+				? $"[bold]{Markup.Escape(key.Substring(SectionKey.Length))}[/]"
+				: ServiceRow(draft.workspace, key, width))
+			.AddBeamHightlight()
+			.NotRequired();
+
+		var current = PickedServices(draft);
+		foreach (var (name, prefix) in sections)
+		{
+			var rows = choices.Where(c => c.StartsWith(prefix, StringComparison.Ordinal)).ToList();
+			if (rows.Count == 0) continue;
+			prompt.AddChoiceGroup($"{SectionKey}{name} ({rows.Count})", rows);
+			foreach (var row in rows.Where(r => current.Contains(r, StringComparer.OrdinalIgnoreCase)))
+				prompt.Select(row);
+		}
+
+		return Ask(prompt, back, out var picked) ? picked.Where(p => !p.StartsWith(SectionKey, StringComparison.Ordinal)).ToList() : null;
+	}
+
+	/// <summary>One picker row (markup), on one line of at most <paramref name="width"/> characters of text.</summary>
+	public static string ServiceRow(WorkspaceServices w, string key, int width)
+	{
+		string Row(string name, string detail)
+		{
+			var room = width - name.Length - 2;
+			if (string.IsNullOrEmpty(detail) || room < 8) return Markup.Escape(Fit(name, width));
+			return $"{Markup.Escape(name)}  [grey]{Markup.Escape(Fit(detail, room))}[/]";
+		}
+
+		if (key.StartsWith(GroupKey, StringComparison.Ordinal))
+		{
+			var group = key.Substring(GroupKey.Length);
+			if (!w.groups.TryGetValue(group, out var members)) return Row(group, "not in this workspace");
+			var services = members.Count(m => w.services.Contains(m, StringComparer.OrdinalIgnoreCase));
+			var extensions = members.Length - services;
+			return Row(group, string.Join(", ", new[]
+			{
+				services > 0 ? $"{services} microservice{(services == 1 ? "" : "s")}" : null,
+				extensions > 0 ? $"{extensions} extension{(extensions == 1 ? "" : "s")}" : null
+			}.Where(x => x != null)));
+		}
+
+		if (key.StartsWith(ServiceKey, StringComparison.Ordinal))
+			return Row(key.Substring(ServiceKey.Length), null);
+
+		var extension = key.Substring(ExtensionKey.Length);
+		var calls = w.CallsOf(extension).ToList();
+		return Row(extension, calls.Count > 0 ? "calls " + string.Join(", ", calls) : null);
+	}
+
+	/// <summary><paramref name="text"/> cut to <paramref name="width"/> characters, ending in "..." when cut.</summary>
+	private static string Fit(string text, int width) =>
+		text.Length <= width ? text : text.Substring(0, Math.Max(1, width - 3)) + "...";
+
+	/// <summary>Services named by flags that this workspace doesn't have. Unchecked when nothing was found, outside a
+	/// workspace.</summary>
+	private static void CheckServices(Draft draft)
+	{
+		var w = draft.workspace;
+		if (!w.Any) return;
+		var unknown = draft.services.Where(x => !w.services.Contains(x, StringComparer.OrdinalIgnoreCase)).Select(x => $"microservice '{x}'")
+			.Concat(draft.portalExtensions.Where(x => !w.extensions.Contains(x, StringComparer.OrdinalIgnoreCase)).Select(x => $"extension '{x}'"))
+			.Concat(draft.groups.Where(x => !w.groups.ContainsKey(x)).Select(x => $"service group '{x}'"))
+			.ToList();
+		if (unknown.Count > 0)
+			throw new CliException($"This workspace has no {string.Join(", ", unknown)}. It has the microservices {string.Join(", ", w.services)}; the extensions {string.Join(", ", w.extensions)}; the groups {string.Join(", ", w.groups.Keys)}.");
+	}
+
+	/// <summary>Adds the command the <c>--add-step</c> and <c>--step-*</c> options describe.</summary>
+	private static void AddCommand(Draft draft, LocalStackConfig config, LocalStackCreateCommandArgs args)
+	{
+		if (draft.IsVariant)
+			throw new CliException("A variant can't have commands of its own. Add the command to the stack, or to the catalogue with `beam local setup --add-step`.");
+
+		var (step, after) = LocalStackCustomSteps.FromFlags(args.command);
+		var problem = CommandNameProblem(config, draft, step.name);
+		if (problem != null) throw new CliException(problem);
+		step.first = args.stepFirst ? true : null;
+		step.after = args.stepFirst ? null : after;
+		draft.commands.Add(step);
+	}
+
+	/// <summary>Why a command of the stack can't have <paramref name="name"/>, or null.</summary>
+	private static string CommandNameProblem(LocalStackConfig config, Draft draft, string name) =>
+		LocalStackCustomSteps.NameProblem(config, name)
+		?? (draft.commands.Any(c => string.Equals(c.name, name?.Trim(), StringComparison.OrdinalIgnoreCase)) ? $"The stack already has a command named '{name.Trim()}'." : null);
+
+	/// <summary>The steps a new command can be placed after: what the stack runs as answered so far.</summary>
+	private static List<LocalStackStep> PlacingAmong(Draft draft, LocalStackStacks stacks, LocalStackConfig config)
+	{
+		try
+		{
+			var (file, entry) = Build(draft, stacks, config.workspaceRoot ?? Directory.GetCurrentDirectory());
+			return stacks.ResolveDraft(draft.FullName ?? "draft", draft.Layer, file, entry, config, replace: draft.IsEdit).steps;
+		}
+		catch (Exception e) when (e is CliException or LocalStackStackException)
+		{
+			return config.steps.ToList();
+		}
+	}
+
+	/// <summary>
+	/// Adds what the stack's steps need and it doesn't run (see <see cref="LocalStackDependencies"/>): a catalogue step
+	/// to <c>include</c> (and out of <c>exclude</c>), a microservice an extension calls to its services. Repeats until
+	/// nothing is missing, since what is added can need more. Each addition is noted in <see cref="Draft.added"/>, with
+	/// why. Variants are left alone. Returns the new notes.
+	/// </summary>
+	private static List<string> AddDependencies(Draft draft, LocalStackStacks stacks, LocalStackConfig config, string root)
+	{
+		var notes = new List<string>();
+		if (draft.IsVariant || draft.stack == null) return notes;
+
+		for (var round = 0; round < 10; round++)
+		{
+			LocalStackResolvedStack resolved;
+			Dictionary<string, LocalStackStep> own;
+			try
+			{
+				var (file, entry) = Build(draft, stacks, root);
+				resolved = stacks.ResolveDraft(draft.FullName, draft.Layer, file, entry, config, replace: draft.IsEdit);
+				own = OwnSteps(draft);
+			}
+			catch (Exception e) when (e is CliException or LocalStackStackException)
+			{
+				return notes; // the review says what's wrong
+			}
+
+			var catalogue = config.steps.Concat(own.Select(kv => { kv.Value.name = kv.Key; return kv.Value; })).ToList();
+			var missing = LocalStackDependencies.Missing(resolved.steps, catalogue, stacks.TagsOf, LocalStackTargets.RunsLocal(resolved.target, config));
+			if (missing.Count == 0) return notes;
+
+			foreach (var m in missing)
+			{
+				if (m.step == null)
+				{
+					var service = LocalStackStacks.ExtensionId(m.name);
+					if (!draft.services.Contains(service, StringComparer.OrdinalIgnoreCase)) draft.services.Add(service);
+				}
+				else
+				{
+					draft.exclude?.RemoveAll(e => string.Equals(e, m.name, StringComparison.OrdinalIgnoreCase));
+					draft.include ??= new List<string>();
+					if (!draft.include.Contains(m.name, StringComparer.OrdinalIgnoreCase)) draft.include.Add(m.name);
+				}
+
+				var note = $"Added {(m.step != null ? Label(m.step) : m.name)}: {m.reason}.";
+				if (!draft.added.Contains(note))
+				{
+					draft.added.Add(note);
+					notes.Add(note);
+				}
+			}
+		}
+
+		return notes;
 	}
 
 	/// <summary>
@@ -397,16 +741,39 @@ public class LocalStackCreateCommand
 		{
 			var def = found.def;
 			draft.description = Value(args.description, def.description);
+			draft.target = Value(args.target, def.target)?.TrimEnd('/');
 			draft.extends = Value(args.extends, def.extends);
-			draft.include = Items(args.include, def.include);
+
+			// The stack's own services and commands come back as answers; the include names they added aren't the
+			// person's picks, and neither is the narrowing to their ids.
+			var own = OwnStepNames(def);
+			var ids = own.Select(LocalStackStacks.ExtensionId).ToHashSet(StringComparer.OrdinalIgnoreCase);
+			draft.include = Items(args.include, def.include?.Where(i => !own.Contains(i, StringComparer.OrdinalIgnoreCase)).ToList());
+			if (draft.include?.Count == 0 && args.include == null && def.include != null && own.Count > 0) draft.include = null;
 			draft.exclude = Items(args.exclude, def.exclude);
-			draft.extensions = Items(args.extensions, def.extensions);
+			draft.extensions = def.extensions?.Where(id => !ids.Contains(id)).ToList() is { Count: > 0 } kept ? kept : null;
+			foreach (var (key, step) in def.steps ?? new Dictionary<string, LocalStackStep>())
+			{
+				if (key.StartsWith(LocalStackTemplate.MicroservicePrefix, StringComparison.OrdinalIgnoreCase)) draft.services.Add(LocalStackStacks.ExtensionId(key));
+				else if (key.StartsWith(LocalStackTemplate.ExtensionPrefix, StringComparison.OrdinalIgnoreCase)) draft.portalExtensions.Add(LocalStackStacks.ExtensionId(key));
+				else if (key.StartsWith(LocalStackTemplate.GroupPrefix, StringComparison.OrdinalIgnoreCase)) draft.groups.Add(LocalStackStacks.ExtensionId(key));
+				else if (step?.custom == true)
+				{
+					step.name = key;
+					draft.commands.Add(step);
+				}
+			}
+
+			if (args.services != null) draft.services = List(args.services) ?? new List<string>();
+			if (args.extensions != null) draft.portalExtensions = List(args.extensions) ?? new List<string>();
+			if (args.groups != null) draft.groups = List(args.groups) ?? new List<string>();
 			return;
 		}
 
 		draft.variant = found.def.variants.Keys.First(v => Same(v, variantName));
 		var variant = found.def.variants[draft.variant] ?? new LocalStackVariantDef();
 		draft.description = Value(args.description, variant.description);
+		draft.target = Value(args.target, variant.target)?.TrimEnd('/');
 		draft.before = Items(args.before, variant.before);
 		draft.after = Items(args.after, variant.after);
 		draft.remove = Items(args.remove, variant.remove);
@@ -468,13 +835,14 @@ public class LocalStackCreateCommand
 		}
 	}
 
-	/// <summary>Clears the screen for the next question: the title, then every answer given so far.</summary>
-	private static void Frame(LocalStackWizard wizard, Draft draft)
+	/// <summary>
+	/// Clears the screen for the next question, leaving just the title: the answers, with their lists of steps, are
+	/// on the review, whose "See every step" is the one place that lists them all.
+	/// </summary>
+	private static void Frame(Draft draft)
 	{
 		AnsiConsole.Clear();
-		AnsiConsole.MarkupLine($"[bold]beam local {draft.Verb}[/]{(draft.IsEdit ? $" [bold]{Markup.Escape(draft.FullName)}[/]" : "")} [grey](Enter to answer, Shift+Tab to go back)[/]");
-		foreach (var group in wizard.AnsweredGroups())
-			AnsiConsole.MarkupLine($"  [grey]{Markup.Escape(group)}:[/] {Markup.Escape(Summary(group, draft))}");
+		LocalStackStyle.H1($"beam local {draft.Verb}{(draft.IsEdit ? " " + draft.FullName : string.Empty)}", "Enter to answer, Shift+Tab to go back");
 		AnsiConsole.WriteLine();
 	}
 
@@ -510,16 +878,19 @@ public class LocalStackCreateCommand
 		{
 			if (existingFile != null)
 				throw new CliException($"Stack '{draft.stack}' is already defined in {existingFile}. Change it with `beam local edit {draft.stack}{(draft.shared ? " --shared" : "")}`, or add a variant with `beam local create {draft.stack}:<variant>`.");
-			if (draft.extends == null && draft.include == null)
-				throw new CliException("A stack needs something to run: pass --extends, --include, or both.");
+			var own = OwnSteps(draft);
+			if (draft.extends == null && draft.include == null && own.Count == 0)
+				throw new CliException("A stack needs something to run: pass --extends, --include, --services, --extensions, --groups or --add-step.");
 
 			return (file, new LocalStackStackDef
 			{
 				description = draft.description,
+				target = draft.target,
 				extends = draft.extends,
-				include = draft.include,
+				include = WithOwn(draft.include, own.Keys),
 				exclude = draft.extends != null || draft.include != null ? draft.exclude : null,
-				extensions = draft.extensions,
+				extensions = Narrowing(draft),
+				steps = own.Count > 0 ? own : null,
 			});
 		}
 
@@ -531,12 +902,13 @@ public class LocalStackCreateCommand
 		var variant = new LocalStackVariantDef
 		{
 			description = draft.description,
+			target = draft.target,
 			before = draft.changes.Contains(ChangeBefore) ? draft.before : null,
 			after = draft.changes.Contains(ChangeAfter) ? draft.after : null,
 			remove = draft.changes.Contains(ChangeRemove) ? draft.remove : null,
 		};
-		if (variant.before == null && variant.after == null && variant.remove == null)
-			throw new CliException("A variant needs to change something: pass --before, --after, --remove, or a mix.");
+		if (variant.before == null && variant.after == null && variant.remove == null && variant.target == null)
+			throw new CliException("A variant needs to change something: pass --before, --after, --remove, --target, or a mix.");
 
 		return (file, new LocalStackStackDef
 		{
@@ -553,24 +925,34 @@ public class LocalStackCreateCommand
 		var entry = JsonConvert.DeserializeObject<LocalStackStackDef>(JsonConvert.SerializeObject(draft.original));
 		if (!draft.IsVariant)
 		{
-			if (!draft.inherits && draft.extends == null && draft.include == null)
-				throw new CliException("A stack needs something to run: it needs --extends, --include, or both.");
+			var own = OwnSteps(draft);
+			if (!draft.inherits && draft.extends == null && draft.include == null && own.Count == 0)
+				throw new CliException("A stack needs something to run: it needs --extends, --include, --services, --extensions, --groups or --add-step.");
+
+			// The entry's other steps (replacements of catalogue steps) stay; its services and commands are the answers.
+			var steps = (entry.steps ?? new Dictionary<string, LocalStackStep>())
+				.Where(kv => !OwnStepNames(draft.original).Contains(kv.Key, StringComparer.OrdinalIgnoreCase))
+				.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+			foreach (var (name, step) in own) steps[name] = step;
 
 			entry.description = draft.description;
+			entry.target = draft.target;
 			entry.extends = draft.extends;
-			entry.include = draft.include;
+			entry.include = WithOwn(draft.include, own.Keys);
 			entry.exclude = draft.exclude;
-			entry.extensions = draft.extensions;
+			entry.extensions = Narrowing(draft);
+			entry.steps = steps.Count > 0 ? steps : null;
 			return entry;
 		}
 
 		var variant = entry.variants[draft.variant] ?? new LocalStackVariantDef();
 		variant.description = draft.description;
+		variant.target = draft.target;
 		variant.before = draft.changes.Contains(ChangeBefore) ? draft.before : null;
 		variant.after = draft.changes.Contains(ChangeAfter) ? draft.after : null;
 		variant.remove = draft.changes.Contains(ChangeRemove) ? draft.remove : null;
-		if (variant.before == null && variant.after == null && variant.remove == null)
-			throw new CliException("A variant needs to change something: it needs --before, --after, --remove, or a mix. To drop it, use `beam local delete`.");
+		if (variant.before == null && variant.after == null && variant.remove == null && variant.target == null)
+			throw new CliException("A variant needs to change something: it needs --before, --after, --remove, --target, or a mix. To drop it, use `beam local delete`.");
 
 		entry.variants[draft.variant] = variant;
 		return entry;
@@ -581,7 +963,7 @@ public class LocalStackCreateCommand
 	{
 		var wizard = new LocalStackWizard();
 		var named = !string.IsNullOrWhiteSpace(args.name);
-		void Redraw() => Frame(wizard, draft);
+		void Redraw() => Frame(draft);
 		string Title() => Markup.Escape(draft.FullName ?? draft.stack ?? "it");
 
 		// An edit starts with every answer given, from the entry, so it opens on the review; what it is and where it
@@ -687,26 +1069,63 @@ public class LocalStackCreateCommand
 			return move;
 		}, args.exclude != null, () => !draft.IsVariant && (draft.extends != null || draft.inherits));
 
-		Add("Narrows to", back =>
+		// This workspace's microservices, extensions and service groups, as steps of the stack's own.
+		Add("Services", back =>
 		{
-			var ids = ExtensionIds(stacks, config, draft);
-			var picked = MultiSelect("Run only some of the extensions, microservices and service groups? [grey](select none to run them all)[/]",
-				ids, draft.extensions, back, Markup.Escape);
+			var picked = PickServices(draft, $"Which of this workspace's service groups, microservices and portal extensions should [green]{Title()}[/] run? [grey](select none for none)[/]", back);
 			if (picked == null) return LocalStackWizardMove.Back;
-			draft.extensions = picked.Count == 0 ? null : picked;
+			SetServices(draft, picked);
 			return LocalStackWizardMove.Next;
-		}, args.extensions != null,
-			() => !draft.IsVariant && ExtensionIds(stacks, config, draft).Count > 1);
+		}, args.services != null || args.extensions != null || args.groups != null,
+			() => !draft.IsVariant && (draft.workspace.Any || draft.HasServices));
+
+		// Commands of the stack's own: a seed, a watcher, a script. Several, each asked like `setup --add-step` asks.
+		// The screen shows only these commands: after a big service pick the answers so far no longer fit, and the
+		// wizard's screen can't scroll.
+		Add("Own commands", back =>
+		{
+			const string done = "No, go on";
+			const string add = "Add a command";
+			const string removePrefix = "Remove ";
+			while (true)
+			{
+				AnsiConsole.Clear();
+				LocalStackStyle.H1($"beam local {draft.Verb} {draft.FullName ?? draft.stack}", "Enter to answer, Shift+Tab to go back");
+				LocalStackStyle.H2($"Commands of {draft.FullName ?? draft.stack}");
+				if (draft.commands.Count == 0) AnsiConsole.MarkupLine("  [grey]None yet.[/]");
+				foreach (var command in draft.commands)
+					AnsiConsole.MarkupLine($"  {LocalStackStyle.H3(command.name)}  {Markup.Escape(LocalStackCustomSteps.Describe(command))}");
+				AnsiConsole.WriteLine();
+
+				var choices = new List<string> { done, add }.Concat(draft.commands.Select(c => removePrefix + c.name)).ToList();
+				var choice = Select($"Add a command of its own to [green]{Title()}[/]? [grey](a data seed, a watcher, a script)[/]",
+					choices, back, done, Markup.Escape);
+				if (choice == null) return LocalStackWizardMove.Back;
+				if (choice == done) return LocalStackWizardMove.Next;
+				if (choice.StartsWith(removePrefix, StringComparison.Ordinal))
+				{
+					draft.commands.RemoveAll(c => c.name == choice.Substring(removePrefix.Length));
+					continue;
+				}
+
+				var (step, after) = LocalStackCustomSteps.AskForStep(config, null, $"beam local {draft.Verb} {draft.FullName ?? draft.stack}: new command",
+					"the stack", PlacingAmong(draft, stacks, config), v => CommandNameProblem(config, draft, v), ownScreen: false);
+				if (step == null) continue;
+				if (after == LocalStackCustomSteps.AtTheStart) step.first = true;
+				else step.after = after;
+				draft.commands.Add(step);
+			}
+		}, args.command.addStep != null, () => !draft.IsVariant);
 
 		// A variant.
 		Add("Changes", back =>
 		{
-			var picked = MultiSelect($"What should [green]{Title()}[/] do?", new[] { ChangeBefore, ChangeAfter, ChangeRemove },
-				draft.changes.ToList(), back, Markup.Escape, required: true);
+			var picked = MultiSelect($"What should [green]{Title()}[/] do? [grey](pick none when it only changes the backend)[/]", new[] { ChangeBefore, ChangeAfter, ChangeRemove },
+				draft.changes.ToList(), back, Markup.Escape, required: false);
 			if (picked == null) return LocalStackWizardMove.Back;
 			draft.changes = picked.ToHashSet();
 			return LocalStackWizardMove.Next;
-		}, draft.changes.Count > 0, () => draft.IsVariant);
+		}, draft.changes.Count > 0 || draft.target != null, () => draft.IsVariant);
 
 		Add("Runs before", back =>
 		{
@@ -731,6 +1150,43 @@ public class LocalStackCreateCommand
 			if (move == LocalStackWizardMove.Next) draft.remove = picked;
 			return move;
 		}, draft.remove != null, () => draft.IsVariant && draft.changes.Contains(ChangeRemove));
+
+		// The backend: every target with where it is, the stack's or the base's as the default, or an address.
+		Add("Backend", back =>
+		{
+			const string another = "Another address...";
+			var inherited = Inherits(stacks, draft);
+			var same = inherited.from == null ? null : $"Same as {inherited.from}";
+			var choices = new List<string>();
+			if (same != null) choices.Add(same);
+			choices.AddRange(LocalStackTargets.Names(config));
+			if (draft.target != null && LocalStackTargets.IsAddress(draft.target)) choices.Add(draft.target);
+			choices.Add(another);
+
+			var current = draft.target == null ? same ?? LocalStackTargets.Local
+				: choices.FirstOrDefault(c => string.Equals(c, draft.target, StringComparison.OrdinalIgnoreCase)) ?? another;
+			var choice = Select($"Which backend does [green]{Title()}[/] run against?", choices, back, current,
+				c => c == same ? $"{Markup.Escape(c)} [grey]({Markup.Escape(inherited.target)})[/]"
+					: c == another ? Markup.Escape(c) + " [grey](a gateway's http(s) address)[/]"
+					: $"{Markup.Escape(c)} [grey]{Markup.Escape(TargetHint(c, config))}[/]");
+			if (choice == null) return LocalStackWizardMove.Back;
+
+			if (choice == another)
+			{
+				var address = Text("Backend address [grey](such as https://my-gateway.example.com)[/]:", back,
+					LocalStackTargets.IsAddress(draft.target) ? draft.target : null, allowEmpty: false,
+					validate: v => LocalStackTargets.IsAddress(v) ? null : "Give an http:// or https:// address.");
+				if (address == null) return LocalStackWizardMove.Back;
+				draft.target = address.Trim().TrimEnd('/');
+			}
+			else
+			{
+				// The inherited backend is written as nothing, so the entry keeps following its base.
+				draft.target = choice == same || (same == null && choice == LocalStackTargets.Local && draft.target == null) ? null : choice;
+			}
+
+			return LocalStackWizardMove.Next;
+		}, args.target != null);
 
 		Add("Description", back =>
 		{
@@ -765,6 +1221,7 @@ public class LocalStackCreateCommand
 			string problem = null;
 			try
 			{
+				AddDependencies(draft, stacks, config, root);
 				(file, entry) = Build(draft, stacks, root);
 				resolved = stacks.ResolveDraft(draft.FullName, draft.Layer, file, entry, config, replace: draft.IsEdit);
 			}
@@ -774,37 +1231,61 @@ public class LocalStackCreateCommand
 			}
 
 			AnsiConsole.Clear();
-			AnsiConsole.MarkupLine($"[bold]beam local {draft.Verb}[/] [grey]review[/] [bold]{Markup.Escape(draft.FullName ?? "(no name yet)")}[/]"
-			                       + (draft.IsEdit ? $" [grey]({LayerWord(draft.Layer)}, {Markup.Escape(Path.GetFileName(draft.editFile))})[/]" : ""));
+			LocalStackStyle.H1($"beam local {draft.Verb}: review {draft.FullName ?? "(no name yet)"}",
+				draft.IsEdit ? $"{LayerWord(draft.Layer)}, {Path.GetFileName(draft.editFile)}" : null);
+			// One line per answer, per kind of step and at most three notes; the full lists are in "See every step".
+			var width = Math.Max(40, AnsiConsole.Profile.Width - 2);
+			var lines = new List<string> { LocalStackStyle.H2Text("Your answers") };
 			foreach (var group in wizard.Groups())
-				AnsiConsole.MarkupLine($"  [grey]{Markup.Escape(group)}:[/] {Markup.Escape(Summary(group, draft))}");
-			AnsiConsole.WriteLine();
+				lines.Add($"  {LocalStackStyle.H3(group)}  {Markup.Escape(Fit(Summary(group, draft), width - group.Length - 4))}");
+			if (draft.added.Count > 0)
+			{
+				lines.AddRange(new[] { string.Empty, LocalStackStyle.H2Text("Added because something needs it") });
+				lines.AddRange(draft.added.Take(3).Select(note => $"  [yellow]{Markup.Escape(Fit(note, width - 2))}[/]"));
+				if (draft.added.Count > 3)
+					lines.Add($"  [yellow]...and {draft.added.Count - 3} more.[/]");
+			}
 
+			lines.Add(string.Empty);
 			if (resolved != null)
 			{
-				AnsiConsole.MarkupLine($"It runs {resolved.steps.Count} step(s):");
-				var index = 0;
-				foreach (var step in resolved.steps)
-					AnsiConsole.MarkupLine($"  {++index,3}. {Markup.Escape(Label(step))} [grey]({Markup.Escape(step.name)})[/]");
+				var summary = StepSummary(stacks, resolved.steps, width);
+				lines.Add(LocalStackStyle.H2Text(Markup.Remove(summary[0]).TrimEnd(':')));
+				lines.AddRange(summary.Skip(1));
 			}
 			else
 			{
-				AnsiConsole.MarkupLine($"[red]Can't be written yet:[/] {Markup.Escape(problem)}");
+				lines.Add(LocalStackStyle.H2Text("Can't be written yet"));
+				lines.Add($"  [red]{Markup.Escape(Fit(problem, width - 2))}[/]");
 			}
 
+			var seeAll = resolved == null ? null : $"See every step, in the order they run ({resolved.steps.Count})";
 			var choices = new List<string>();
 			if (resolved != null) choices.Add(write);
+			if (seeAll != null) choices.Add(seeAll);
 			choices.AddRange(wizard.Groups().Select(g => changePrefix + g));
 			choices.Add(cancel);
+
+			// The screen can't scroll back, so on a short one the choices page and what doesn't fit is said, not lost.
+			var (shown, pageSize) = FitReview(lines, choices.Count, AnsiConsole.Profile.Height);
+			foreach (var line in shown) AnsiConsole.MarkupLine(line);
+			AnsiConsole.WriteLine();
 
 			var choice = AnsiConsole.Prompt(new SelectionPrompt<string>()
 				.Title(resolved == null ? "What do you want to change?"
 					: draft.IsEdit ? $"Save the changes to [green]{Markup.Escape(draft.FullName)}[/] in {Markup.Escape(file)}?"
 					: $"Write [green]{Markup.Escape(draft.FullName)}[/] to {Markup.Escape(file)}?")
-				.PageSize(15)
+				.PageSize(pageSize)
+				.MoreChoicesText("[grey](move up/down for more)[/]")
 				.AddChoices(choices)
 				.UseConverter(Markup.Escape)
 				.AddBeamHightlight());
+
+			if (choice == seeAll)
+			{
+				ShowEveryStep(draft, resolved.steps);
+				continue;
+			}
 
 			// The caller reports either outcome, back on the normal screen; an edit that changed nothing writes nothing.
 			if (choice == write)
@@ -826,6 +1307,69 @@ public class LocalStackCreateCommand
 		}
 	}
 
+	/// <summary>
+	/// What of the review fits a screen <paramref name="height"/> lines tall, with its choices below: the lines to show
+	/// (when some don't fit, the last one says how many were left out) and the choices' page size, at least three rows.
+	/// </summary>
+	public static (List<string> lines, int pageSize) FitReview(IReadOnlyList<string> lines, int choices, int height)
+	{
+		// The title rule, a blank line, the question, the "more" line and the line the cursor waits on.
+		const int around = 5;
+		var pageSize = Math.Clamp(height - around - lines.Count, 3, Math.Max(3, choices));
+		var room = Math.Max(1, height - around - pageSize);
+		if (lines.Count <= room) return (lines.ToList(), pageSize);
+
+		var shown = lines.Take(room - 1).ToList();
+		shown.Add($"[grey]...{lines.Count - shown.Count} more lines; a taller window shows them[/]");
+		return (shown, pageSize);
+	}
+
+	/// <summary>
+	/// What a stack runs, one line per kind (Docker, C# hosts, Scala services...) with how many and their names cut to
+	/// <paramref name="width"/>, so the review fits the screen whatever the stack's size. Builds are counted apart:
+	/// they come with their steps and only build when needed.
+	/// </summary>
+	public static List<string> StepSummary(LocalStackStacks stacks, IReadOnlyList<LocalStackStep> steps, int width)
+	{
+		var runs = steps.Where(s => !s.build).ToList();
+		var builds = steps.Count - runs.Count;
+		var lines = new List<string>
+		{
+			$"It runs {runs.Count} step{(runs.Count == 1 ? "" : "s")}" + (builds > 0 ? $" (+{builds} build{(builds == 1 ? "" : "s")} when needed):" : ":")
+		};
+		foreach (var (tag, name) in Domains)
+		{
+			var inKind = runs.Where(s => DomainOf(stacks, s) == tag).ToList();
+			if (inKind.Count == 0) continue;
+			var head = $"  {name} ({inKind.Count})  ";
+			// The kind is on the line already, so "Scala service auth" reads as "auth" there.
+			var names = string.Join(", ", inKind.Select(s => Label(s) is var label && label.StartsWith("Scala service ", StringComparison.Ordinal)
+				? label.Substring("Scala service ".Length) : Label(s)));
+			var room = width - head.Length;
+			if (names.Length > room) names = names.Substring(0, Math.Max(1, room - 3)) + "...";
+			lines.Add($"  {LocalStackStyle.H3(name)} [grey]({inKind.Count})[/]  {Markup.Escape(names)}");
+		}
+
+		return lines;
+	}
+
+	/// <summary>Every step, in the order it runs, as a list that scrolls; any key that picks returns to the review.</summary>
+	private static void ShowEveryStep(Draft draft, IReadOnlyList<LocalStackStep> steps)
+	{
+		const string back = "Back to the review";
+		var rows = new List<string> { back };
+		rows.AddRange(steps.Select((s, i) => $"{i + 1,3}. {Label(s)} ({s.name}){(s.build ? "  build, only when needed" : string.Empty)}"));
+		AnsiConsole.Clear();
+		LocalStackStyle.H1($"Every step of {draft.FullName ?? draft.stack ?? "the stack"}", "in the order they run");
+		AnsiConsole.Prompt(new SelectionPrompt<string>()
+			.Title("[grey](Enter goes back)[/]")
+			.PageSize(Math.Max(5, AnsiConsole.Profile.Height - 4))
+			.MoreChoicesText("[grey](move up/down to see more)[/]")
+			.AddChoices(rows)
+			.UseConverter(Markup.Escape)
+			.AddBeamHightlight());
+	}
+
 	/// <summary>The review screen's one-line summary of a group's answer.</summary>
 	private static string Summary(string group, Draft draft)
 	{
@@ -838,14 +1382,44 @@ public class LocalStackCreateCommand
 			"Starts from" => draft.extends ?? "nothing",
 			"Adds" => Join(draft.include),
 			"Leaves out" => Join(draft.exclude),
-			"Narrows to" => draft.extensions == null ? "all of them" : Join(draft.extensions),
+			"Services" => draft.HasServices
+				? string.Join(", ", draft.groups.Select(g => $"group {g}").Concat(draft.services).Concat(draft.portalExtensions))
+				: "none",
+			"Own commands" => draft.commands.Count == 0 ? "none" : string.Join(", ", draft.commands.Select(c => c.name)),
 			"Changes" => draft.changes.Count == 0 ? "nothing" : string.Join("; ", draft.changes.Select(c => c.Split(" (")[0])),
 			"Runs before" => Join(draft.before),
 			"Starts after" => Join(draft.after),
 			"Turns off" => Join(draft.remove),
+			"Backend" => draft.target ?? "the same as what it builds on",
 			"Description" => draft.description ?? "none",
 			_ => string.Empty
 		};
+	}
+
+	/// <summary>What the entry runs against when it names no backend, and what it gets it from (null: nothing, so local).</summary>
+	private static (string from, string target) Inherits(LocalStackStacks stacks, Draft draft)
+	{
+		if (draft.IsVariant) return (draft.stack, stacks.TargetOf(draft.stack));
+		if (draft.extends != null) return (draft.extends, stacks.TargetOf(draft.extends));
+		return (null, LocalStackTargets.Local);
+	}
+
+	/// <summary>Where a target is, for the backend question.</summary>
+	private static string TargetHint(string name, LocalStackConfig config)
+	{
+		if (string.Equals(name, LocalStackTargets.Local, StringComparison.OrdinalIgnoreCase))
+			return $"this machine ({config.host})";
+		try
+		{
+			var target = LocalStackTargets.Get(name, config);
+			return target.local == true ? $"this machine at {target.host}, for phones and other machines"
+				: target.confirm == true ? $"{target.host}, asks before every run"
+				: target.host;
+		}
+		catch (LocalStackStackException e)
+		{
+			return e.Message;
+		}
 	}
 
 	/// <summary>The steps an existing stack runs, or none when it doesn't resolve on this machine (the review says why).</summary>
@@ -893,7 +1467,7 @@ public class LocalStackCreateCommand
 				{
 					description = draft.stack, extends = draft.extends, include = draft.include ?? (draft.inherits ? null : new List<string>()), exclude = draft.exclude
 				}, config, replace: draft.IsEdit).steps;
-			return running.Where(s => stacks.TagsOf(s).Contains("extensions", StringComparer.OrdinalIgnoreCase))
+			return running.Where(s => stacks.TagsOf(s).Any(LocalStackStacks.IsServiceTag))
 				.Select(s => LocalStackStacks.ExtensionId(s.name))
 				.Distinct(StringComparer.OrdinalIgnoreCase)
 				.ToList();
@@ -1044,14 +1618,14 @@ public class LocalStackCreateCommand
 	private static readonly (string tag, string name)[] Domains =
 	{
 		("docker", "Docker"), ("csharp", "C# hosts"), ("scala", "Scala services"), ("portal", "Portal"),
-		("web-registry", "Web packages"), ("extensions", "Extensions"), ("custom", "Custom steps"), ("", "Other")
+		("web-registry", "Web packages"), ("microservices", "Microservices"), ("extensions", "Extensions"), ("custom", "Custom steps"), ("", "Other")
 	};
 
 	/// <summary>Marks a picker row as a group header rather than a step; step names never start with it.</summary>
 	private const string GroupRow = "\u0001group:";
 
 	/// <summary>
-	/// One picker over <paramref name="steps"/>, grouped by tag (Docker, C# hosts, Scala services with the login set
+	/// One picker over <paramref name="steps"/> (build steps left out), grouped by tag (Docker, C# hosts, Scala services with the login set
 	/// inside, portal, web packages, extensions), each group saying what the tag means and how many steps it has, and
 	/// each step shown by its readable label. Ticking a group ticks all of its steps. What was ticked is written as
 	/// tags where a whole tag was ticked, and as step names otherwise (see <see cref="CollapseToTags"/>). The current
@@ -1060,6 +1634,9 @@ public class LocalStackCreateCommand
 	private static (LocalStackWizardMove move, List<string> picked) PickSteps(LocalStackStacks stacks, List<LocalStackStep> catalogue,
 		List<LocalStackStep> steps, List<string> current, bool back, string title, Action frame)
 	{
+		// Builds aren't picked: a stack builds what its steps need when it's needed (`:build` forces it, `:no-build`
+		// skips it), so a build in the list would only be a way to get that wrong.
+		steps = steps.Where(s => !s.build).ToList();
 		if (steps.Count == 0) return (LocalStackWizardMove.Next, null);
 
 		var byName = steps.ToDictionary(s => s.name, StringComparer.OrdinalIgnoreCase);
@@ -1232,6 +1809,7 @@ public class LocalStackCreateCommand
 			target = Child(Child(target, "variants"), draft.variant);
 			var variant = entry.variants[draft.variant];
 			fields["description"] = variant.description;
+			fields["target"] = variant.target;
 			fields["before"] = variant.before;
 			fields["after"] = variant.after;
 			fields["remove"] = variant.remove;
@@ -1239,16 +1817,23 @@ public class LocalStackCreateCommand
 		else
 		{
 			fields["description"] = entry.description;
+			fields["target"] = entry.target;
+			fields["steps"] = entry.steps;
 			fields["extends"] = entry.extends;
 			fields["include"] = entry.include;
 			fields["exclude"] = entry.exclude;
 			fields["extensions"] = entry.extensions;
 		}
 
+		var serializer = JsonSerializer.Create(new JsonSerializerSettings
+		{
+			NullValueHandling = NullValueHandling.Ignore,
+			DefaultValueHandling = DefaultValueHandling.Ignore
+		});
 		foreach (var (field, value) in fields)
 		{
 			if (value == null) target.Remove(field);
-			else target[field] = JToken.FromObject(value);
+			else target[field] = JToken.FromObject(value, serializer);
 		}
 
 		if (JToken.DeepEquals(before, root)) return false;
@@ -1306,6 +1891,9 @@ public class LocalStackDeleteCommand
 	: AtomicCommand<LocalStackDeleteCommandArgs, LocalStackDeleteCommandResult>
 	, IStandaloneCommand, ISkipManifest
 {
+	// It prints its own readable output; the result object still reaches tools through the data channel.
+	public override bool AutoLogOutput => false;
+
 	public LocalStackDeleteCommand() : base("delete",
 		"Delete a stack, or a variant with <stack>:<variant>, from the local stacks folder (or the shared one with --shared)")
 	{
@@ -1440,7 +2028,8 @@ public class LocalStackDeleteCommand
 			var inLayer = entries.Where(e => e.layer == layer).OrderBy(e => e.name, StringComparer.OrdinalIgnoreCase).ToList();
 			if (inLayer.Count == 0) continue;
 
-			AnsiConsole.MarkupLine($"[bold]{(layer == LocalStackLayer.Shared ? "shared" : "local")}[/]");
+			LocalStackStyle.H2(layer == LocalStackLayer.Shared ? "Shared stacks" : "Your stacks",
+				layer == LocalStackLayer.Shared ? ".beamable/shared/stacks, committed" : ".beamable/local/stacks");
 			foreach (var (name, _, file, def) in inLayer)
 			{
 				var owner = stacks.Definitions().Where(d => string.Equals(d.name, name, StringComparison.OrdinalIgnoreCase) && d.layer < layer)
@@ -1495,5 +2084,38 @@ public class LocalStackDeleteCommand
 			.DefaultIfEmpty(LocalStackLayer.BuiltIn)
 			.First();
 		return lower == LocalStackLayer.BuiltIn ? "built-in" : lower == LocalStackLayer.Shared ? "shared" : "local";
+	}
+}
+
+/// <summary>
+/// The microservices, portal extensions and service groups of the workspace <c>beam local create</c> runs in (its
+/// beamo manifest, plus the extensions under the portal checkout), and the microservices each extension calls.
+/// </summary>
+public class WorkspaceServices
+{
+	public List<string> services = new List<string>();
+	public List<string> extensions = new List<string>();
+	public Dictionary<string, string[]> groups = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+	public Dictionary<string, List<string>> calls = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+	public bool Any => services.Count + extensions.Count + groups.Count > 0;
+
+	/// <summary>
+	/// The microservices <paramref name="extension"/> calls that this workspace has. A package.json can name one it
+	/// doesn't (campaigns names CampaignServiceZone), and adding a step for it would only fail.
+	/// </summary>
+	public IEnumerable<string> CallsOf(string extension) =>
+		calls.TryGetValue(extension, out var c) ? c.Where(s => services.Contains(s, StringComparer.OrdinalIgnoreCase)) : Enumerable.Empty<string>();
+
+	public static async Task<WorkspaceServices> Find(CommandArgs args, LocalStackConfig config)
+	{
+		var found = new WorkspaceServices();
+		var (services, extensions, groups) = await LocalStackSetupCommand.DiscoverWorkspaceServices(args);
+		(extensions, groups) = LocalStackSetupCommand.MergePortalExtensions(config.repos?.portalDir, extensions, groups);
+		found.services = services;
+		found.extensions = extensions;
+		found.groups = new Dictionary<string, string[]>(groups, StringComparer.OrdinalIgnoreCase);
+		found.calls = LocalStackTemplate.ExtensionMicroservices(config.repos?.portalDir);
+		return found;
 	}
 }

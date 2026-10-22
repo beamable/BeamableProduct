@@ -6,7 +6,7 @@ namespace cli.Commands.LocalStack;
 /// <summary>
 /// Parent group for the local-stack orchestrator (<c>beam local ...</c>). Brings up a local Beamable loop —
 /// backend, portal, microservices and portal extensions — by stack name, like <c>npm run</c>:
-/// <c>setup</c>, <c>run</c>, <c>create</c>, <c>edit</c>, <c>delete</c>, <c>ps</c>, <c>logs</c> and <c>stop</c>.
+/// <c>setup</c>, <c>run</c>, <c>create</c>, <c>edit</c>, <c>delete</c>, <c>ps</c>, <c>logs</c>, <c>restart</c>, <c>start</c> and <c>stop</c>.
 /// </summary>
 public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 {

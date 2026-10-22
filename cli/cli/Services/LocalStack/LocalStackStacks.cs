@@ -16,6 +16,13 @@ public class LocalStackStackDef
 	/// <summary>Another stack, in any layer, that this one starts from.</summary>
 	public string extends;
 
+	/// <summary>
+	/// The backend the stack runs against: <c>local</c>, or a target from the settings (<c>dev</c>, <c>staging</c>,
+	/// ...). Inherited through <see cref="extends"/>; unset means <c>local</c>. A variant named after a target
+	/// switches it for one run: <c>portal-extensions:local</c>.
+	/// </summary>
+	public string target;
+
 	/// <summary>Tags or exact step names added to the selection.</summary>
 	public List<string> include;
 
@@ -68,6 +75,9 @@ public class LocalStackVariantDef
 
 	/// <summary>Runs every build step the stack selects, even when its output is already there.</summary>
 	public bool forceBuild;
+
+	/// <summary>Switches the backend the stack runs against (see <see cref="LocalStackStackDef.target"/>).</summary>
+	public string target;
 }
 
 /// <summary>Where a stack definition comes from. Higher layers win: local over shared over built-in.</summary>
@@ -105,6 +115,9 @@ public class LocalStackResolvedStack
 	/// <summary>Set by a variant such as <c>:build</c>: every selected build step runs.</summary>
 	public bool forceBuild;
 
+	/// <summary>The backend it runs against: the last variant naming one, else the stack's, else <c>local</c>.</summary>
+	public string target = LocalStackTargets.Local;
+
 	/// <summary>The team variables the stack declares, by name.</summary>
 	public Dictionary<string, LocalStackStackVariable> variables = new Dictionary<string, LocalStackStackVariable>(StringComparer.Ordinal);
 }
@@ -120,6 +133,9 @@ public class LocalStackStackListing
 
 	/// <summary>Higher layers that change the stack.</summary>
 	public List<LocalStackLayer> changedBy = new List<LocalStackLayer>();
+
+	/// <summary>The backend it runs against unless a variant names another.</summary>
+	public string target = LocalStackTargets.Local;
 
 	public List<(string name, string description, LocalStackLayer layer)> variants = new List<(string, string, LocalStackLayer)>();
 }
@@ -141,8 +157,28 @@ public class LocalStackStacks
 	/// <summary>The tags a step can carry. A list item that is one of these never fails, even when no step has it yet.</summary>
 	public static readonly string[] KnownTags =
 	{
-		"docker", "csharp", "scala-core", "scala", "portal", "extensions", "web-registry", "observability", "build", "native", "custom"
+		"docker", "csharp", "scala-core", "scala-csharp", "scala", "portal", MicroservicesTag, ExtensionsTag, "web-registry", "observability", "build", "native", "custom"
 	};
+
+	public const string MicroservicesTag = "microservices";
+	public const string ExtensionsTag = "extensions";
+
+	/// <summary>
+	/// The tags of a step running this workspace's services, from its name: a microservice is <c>microservices</c>, a
+	/// portal extension <c>extensions</c>, and a service group, which runs both, has both. Empty for other steps.
+	/// </summary>
+	public static List<string> ServiceTagsFor(string stepName)
+	{
+		bool Starts(string prefix) => (stepName ?? string.Empty).Trim().StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+		if (Starts(LocalStackTemplate.MicroservicePrefix)) return new List<string> { MicroservicesTag };
+		if (Starts(LocalStackTemplate.ExtensionPrefix)) return new List<string> { ExtensionsTag };
+		if (Starts(LocalStackTemplate.GroupPrefix)) return new List<string> { MicroservicesTag, ExtensionsTag };
+		return new List<string>();
+	}
+
+	/// <summary>True for a tag of this workspace's services: <c>microservices</c> or <c>extensions</c>.</summary>
+	public static bool IsServiceTag(string tag) =>
+		string.Equals(tag, MicroservicesTag, StringComparison.OrdinalIgnoreCase) || string.Equals(tag, ExtensionsTag, StringComparison.OrdinalIgnoreCase);
 
 	/// <summary>What each tag selects, for the pickers in <c>beam local create</c>.</summary>
 	public static readonly IReadOnlyDictionary<string, string> TagDescriptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -150,9 +186,11 @@ public class LocalStackStacks
 		["docker"] = "API dependencies and Caddy (Mongo, Redis, ActiveMQ and so on)",
 		["csharp"] = "C# gateway and C# runtimes",
 		["scala-core"] = "the Scala services needed to log in",
+		["scala-csharp"] = "the Scala services the C# hosts call (content, messaging, notification, session, stats)",
 		["scala"] = "every Scala service",
 		["portal"] = "portal dependencies, Vite cache clear and the portal frontend",
-		["extensions"] = "portal extensions, microservices and service groups",
+		[MicroservicesTag] = "this workspace's microservices (a service group has this tag and extensions)",
+		[ExtensionsTag] = "this workspace's portal extensions (a service group has this tag and microservices)",
 		["web-registry"] = "local SDK and toolkit packages: registry, publish, repoint the extensions",
 		["observability"] = "log forwarding to Grafana",
 		["build"] = "compile steps",
@@ -348,6 +386,7 @@ public class LocalStackStacks
 				name = name,
 				layer = entries[0].layer,
 				description = Merge(name).description,
+				target = TargetOf(name),
 				changedBy = entries.Skip(1).Select(e => e.layer).Where(l => l != entries[0].layer).Distinct().ToList()
 			};
 
@@ -404,6 +443,21 @@ public class LocalStackStacks
 			else catalogue.Add(step);
 		}
 
+		// A stack's own step runs where it says: first, after a named step, or (by default) last.
+		foreach (var step in effective.steps.Values.Where(s => s != null && (s.first == true || !string.IsNullOrWhiteSpace(s.after))).Reverse())
+		{
+			catalogue.Remove(step);
+			var at = step.first == true ? 0
+				: catalogue.FindIndex(s => string.Equals(s.name, step.after.Trim(), StringComparison.OrdinalIgnoreCase)) + 1;
+			if (at <= 0 && step.first != true)
+			{
+				errors.Add($"{stackName}: step '{step.name}' runs after '{step.after}', which isn't a step on this machine.");
+				at = catalogue.Count;
+			}
+
+			catalogue.Insert(at, step);
+		}
+
 		List<LocalStackStep> Match(string item, string where, out bool requests)
 		{
 			requests = false;
@@ -425,6 +479,7 @@ public class LocalStackStacks
 
 		var selected = new HashSet<LocalStackStep>();
 		var requested = new HashSet<LocalStackStep>();
+		var excluded = new HashSet<LocalStackStep>();
 		foreach (var (stack, include, exclude) in effective.selections)
 		{
 			foreach (var item in include ?? new List<string>())
@@ -442,6 +497,7 @@ public class LocalStackStacks
 				{
 					selected.Remove(step);
 					requested.Remove(step);
+					excluded.Add(step);
 				}
 			}
 		}
@@ -458,11 +514,21 @@ public class LocalStackStacks
 			                          && !effective.extensions.Contains(ExtensionId(s.name), StringComparer.OrdinalIgnoreCase));
 		}
 
+		// A step's build comes with it, so a stack never has to name builds: the C# gateway brings `build: c# gateway`,
+		// a Scala service the reactor build, the portal its dependencies. Whether it then builds is the run's call (only
+		// when needed; `:build` forces it, `:no-build` removes it below). A build the stack excludes stays out.
+		foreach (var step in selected.Where(s => !s.build).ToList())
+		{
+			foreach (var build in LocalStackControl.BuildsFor(step, catalogue, TagsOf).Where(b => b.enabled && !excluded.Contains(b)))
+				selected.Add(build);
+		}
+
 		var resolved = new LocalStackResolvedStack
 		{
 			name = fullName,
 			description = effective.description,
-			variables = effective.variables
+			variables = effective.variables,
+			target = string.IsNullOrWhiteSpace(effective.target) ? LocalStackTargets.Local : effective.target.Trim()
 		};
 
 		var removed = new HashSet<LocalStackStep>();
@@ -470,12 +536,18 @@ public class LocalStackStacks
 		var after = new List<LocalStackStep>();
 		foreach (var variantName in parts.Skip(1).Select(p => p.Trim()))
 		{
-			// The stack's own variant shadows a built-in one of the same name.
+			// The stack's own variant shadows a built-in one of the same name, and both shadow a target's.
+			var targets = LocalStackTargets.Names(config);
 			if (!effective.variants.TryGetValue(variantName, out var variant) && !_builtInVariants.TryGetValue(variantName, out variant))
 			{
-				var available = effective.variants.Keys.Concat(_builtInVariants.Keys).Distinct(StringComparer.OrdinalIgnoreCase);
-				throw new LocalStackStackException(
-					$"Stack '{stackName}' has no variant '{variantName}'. Its variants: {string.Join(", ", available.Select(v => ":" + v))}.");
+				if (!targets.Contains(variantName, StringComparer.OrdinalIgnoreCase))
+				{
+					var available = effective.variants.Keys.Concat(_builtInVariants.Keys).Concat(targets).Distinct(StringComparer.OrdinalIgnoreCase);
+					throw new LocalStackStackException(
+						$"Stack '{stackName}' has no variant '{variantName}'. Its variants: {string.Join(", ", available.Select(v => ":" + v))}.");
+				}
+
+				variant = new LocalStackVariantDef { target = targets.First(t => string.Equals(t, variantName, StringComparison.OrdinalIgnoreCase)) };
 			}
 
 			variant ??= new LocalStackVariantDef();
@@ -488,7 +560,11 @@ public class LocalStackStacks
 				after.AddRange(Match(item, $"{where}: after", out _));
 
 			resolved.forceBuild |= variant.forceBuild;
+			if (!string.IsNullOrWhiteSpace(variant.target)) resolved.target = variant.target.Trim();
 		}
+
+		if (!LocalStackTargets.IsKnown(resolved.target, config))
+			errors.Add($"its backend '{resolved.target}' isn't a target: use {string.Join(", ", LocalStackTargets.Names(config))}, or an http(s) address");
 
 		if (errors.Count > 0)
 			throw new LocalStackStackException($"'{fullName}' can't be resolved:\n  " + string.Join("\n  ", errors.Distinct()));
@@ -529,7 +605,7 @@ public class LocalStackStacks
 		|| _tagGroups.ContainsKey(name)
 		|| catalogue.Any(s => s.tags?.Contains(name, StringComparer.OrdinalIgnoreCase) == true);
 
-	private bool IsExtensionStep(LocalStackStep step) => TagsOf(step).Contains("extensions", StringComparer.OrdinalIgnoreCase);
+	private bool IsExtensionStep(LocalStackStep step) => TagsOf(step).Any(IsServiceTag);
 
 	/// <summary>The id a stack's <c>extensions</c> list matches: the step name without its <c>portal extension: </c>,
 	/// <c>microservice: </c> or <c>group: </c> prefix.</summary>
@@ -547,11 +623,26 @@ public class LocalStackStacks
 	private class EffectiveStack
 	{
 		public string description;
+		public string target;
 		public List<(string stack, List<string> include, List<string> exclude)> selections = new List<(string, List<string>, List<string>)>();
 		public List<string> extensions;
 		public Dictionary<string, LocalStackStackVariable> variables = new Dictionary<string, LocalStackStackVariable>(StringComparer.Ordinal);
 		public Dictionary<string, LocalStackStep> steps = new Dictionary<string, LocalStackStep>(StringComparer.OrdinalIgnoreCase);
 		public Dictionary<string, LocalStackVariantDef> variants = new Dictionary<string, LocalStackVariantDef>(StringComparer.OrdinalIgnoreCase);
+	}
+
+	/// <summary>The target a stack runs against, following <c>extends</c>; <c>local</c> when unset or when the chain is broken.</summary>
+	public string TargetOf(string name)
+	{
+		try
+		{
+			var target = Effective(name, new List<string>()).target;
+			return string.IsNullOrWhiteSpace(target) ? LocalStackTargets.Local : target.Trim();
+		}
+		catch (LocalStackStackException)
+		{
+			return LocalStackTargets.Local;
+		}
 	}
 
 	/// <summary>A stack with its layers merged and its <c>extends</c> chain followed; the base comes first.</summary>
@@ -574,6 +665,7 @@ public class LocalStackStacks
 		chain.RemoveAt(chain.Count - 1);
 
 		effective.description = def.description ?? effective.description;
+		effective.target = def.target ?? effective.target;
 		effective.selections.Add((name, def.include, def.exclude));
 		effective.extensions = def.extensions ?? effective.extensions;
 		foreach (var (key, value) in def.variables ?? new Dictionary<string, LocalStackStackVariable>())
@@ -594,6 +686,7 @@ public class LocalStackStacks
 			var def = entry.def;
 			merged.description = def.description ?? merged.description;
 			merged.extends = def.extends ?? merged.extends;
+			merged.target = def.target ?? merged.target;
 			merged.include = def.include ?? merged.include;
 			merged.exclude = def.exclude ?? merged.exclude;
 			merged.extensions = def.extensions ?? merged.extensions;
@@ -612,5 +705,101 @@ public class LocalStackStacks
 		foreach (var (key, value) in higher)
 			merged[key] = value;
 		return merged;
+	}
+}
+
+/// <summary>A step a stack needs and doesn't run: what to add, and why.</summary>
+public class LocalStackMissingStep
+{
+	/// <summary>The step to add: a catalogue step's name, or a service step to write (<c>microservice: X</c>).</summary>
+	public string name;
+
+	/// <summary>The catalogue step, or null when the stack has to define it itself (a microservice an extension calls).</summary>
+	public LocalStackStep step;
+
+	/// <summary>The step that needs it, by its readable name.</summary>
+	public string neededBy;
+
+	/// <summary>Why, in a few words: "C# gateway needs it".</summary>
+	public string reason;
+}
+
+/// <summary>
+/// What a stack's steps need that it doesn't run. A step names what it needs in <see cref="LocalStackStep.dependsOn"/>
+/// (a step name, or a tag for every step that has it). On the local backend, a microservice, an extension or a service
+/// group also needs the backend it logs into: the docker dependencies, the C# gateway and the Scala services needed
+/// to log in; and an extension or group needs the portal to show it. What a missing step needs is followed too.
+/// </summary>
+public static class LocalStackDependencies
+{
+	public const string ApiDepsStep = "docker: api deps + caddy";
+	public const string GatewayStep = "c# gateway";
+	public const string LoginServicesTag = "scala-core";
+
+	/// <summary>What <paramref name="step"/> needs, by name or tag.</summary>
+	public static List<string> Needs(LocalStackStep step, bool localBackend)
+	{
+		var needs = new List<string>(step.dependsOn ?? new List<string>());
+		var name = step.name ?? string.Empty;
+		var isService = name.StartsWith(LocalStackTemplate.MicroservicePrefix, StringComparison.OrdinalIgnoreCase);
+		var isExtension = name.StartsWith(LocalStackTemplate.ExtensionPrefix, StringComparison.OrdinalIgnoreCase)
+		                  || name.StartsWith(LocalStackTemplate.GroupPrefix, StringComparison.OrdinalIgnoreCase);
+		if (localBackend && (isService || isExtension))
+		{
+			needs.Add(ApiDepsStep);
+			needs.Add(GatewayStep);
+			needs.Add(LoginServicesTag);
+			if (isExtension) needs.Add(LocalStackTemplate.PortalFrontendStepName);
+		}
+
+		return needs.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+	}
+
+	/// <summary>
+	/// The steps <paramref name="running"/> needs and doesn't have, each once, in the order they were found. A need
+	/// is looked up in <paramref name="catalogue"/> by name, then by tag. A <c>microservice: X</c> the catalogue doesn't
+	/// have comes back without a step, for the stack to define.
+	/// </summary>
+	public static List<LocalStackMissingStep> Missing(IReadOnlyList<LocalStackStep> running, IReadOnlyList<LocalStackStep> catalogue,
+		Func<LocalStackStep, IEnumerable<string>> tagsOf, bool localBackend)
+	{
+		bool Same(string a, string b) => string.Equals(a?.Trim(), b?.Trim(), StringComparison.OrdinalIgnoreCase);
+		var have = running.Select(s => s.name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+		var missing = new List<LocalStackMissingStep>();
+		var queue = new Queue<LocalStackStep>(running);
+		while (queue.Count > 0)
+		{
+			var step = queue.Dequeue();
+			var label = string.IsNullOrWhiteSpace(step.label) ? LocalStackConfigIO.InferLabel(step.name ?? string.Empty) : step.label;
+			foreach (var need in Needs(step, localBackend))
+			{
+				// Builds come with the steps that need them (see Resolve), so they are never a missing step.
+				var byName = catalogue.Where(s => Same(s.name, need)).ToList();
+				var candidates = (byName.Count > 0
+					? byName
+					: catalogue.Where(s => s.enabled && !Same(s.name, step.name) && tagsOf(s).Contains(need, StringComparer.OrdinalIgnoreCase)).ToList())
+					.Where(s => !s.build).ToList();
+
+				if (candidates.Count == 0 && need.StartsWith(LocalStackTemplate.MicroservicePrefix, StringComparison.OrdinalIgnoreCase) && have.Add(need))
+				{
+					missing.Add(new LocalStackMissingStep { name = need, neededBy = label, reason = $"{label} calls it" });
+					continue;
+				}
+
+				foreach (var candidate in candidates.Where(c => c.enabled && have.Add(c.name)))
+				{
+					missing.Add(new LocalStackMissingStep
+					{
+						name = candidate.name, step = candidate, neededBy = label,
+						reason = Needs(step, false).Contains(need, StringComparer.OrdinalIgnoreCase) ? $"{label} needs it"
+							: Same(need, LocalStackTemplate.PortalFrontendStepName) ? $"{label} is shown in it"
+							: $"{label} logs into the local backend, which needs it"
+					});
+					queue.Enqueue(candidate);
+				}
+			}
+		}
+
+		return missing;
 	}
 }

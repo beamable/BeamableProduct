@@ -183,8 +183,7 @@ public class LocalStackToolchainTests
 	[Test]
 	public void CommandTokensFallBackToBareCommandsWithoutAToolchain()
 	{
-		// A manifest that predates `beam local setup`, or a machine where it was never run, must behave exactly as
-		// before: the tokens resolve to bare names and PATH does the rest.
+		// Without a toolchain the tokens resolve to bare names and PATH does the rest.
 		var config = new LocalStackConfig();
 
 		Assert.That(LocalStackConfigIO.MavenCommand(config),
@@ -635,11 +634,23 @@ public class LocalStackToolchainTests
 	[TestCase("build: portal deps", "Build portal deps", new[] { "build", "portal" })]
 	[TestCase("portal frontend", "Portal frontend", new[] { "portal" })]
 	[TestCase("portal extension: campaigns", "Portal extension campaigns", new[] { "extensions" })]
-	[TestCase("microservice: CampaignService", "Microservice CampaignService", new[] { "extensions" })]
+	[TestCase("microservice: CampaignService", "Microservice CampaignService", new[] { "microservices" })]
+	[TestCase("group: player-engagement", "Service group player-engagement", new[] { "microservices", "extensions" })]
 	public void StepsGetALabelAndTagsFromTheirName(string name, string label, string[] tags)
 	{
 		Assert.That(LocalStackConfigIO.InferLabel(name), Is.EqualTo(label));
 		Assert.That(LocalStackConfigIO.InferTags(name), Is.EqualTo(tags));
+	}
+
+	/// <summary>The built-in stacks that run this workspace's services name both kinds, so microservices still run.</summary>
+	[Test]
+	public void Full_runs_the_workspace_microservices_and_extensions()
+	{
+		var config = StackCatalogue();
+		config.steps.Add(LocalStackTemplate.MicroserviceStep("CampaignService"));
+		var names = LocalStackStacks.BuiltIn().Resolve("full", config).steps.Select(s => s.name).ToList();
+
+		Assert.That(names, Does.Contain("microservice: CampaignService").And.Contain("portal extension: my-ext").And.Contain("group: player-engagement"));
 	}
 
 	// ---- CLI version pins ----------------------------------------------------------------------------------------
@@ -811,14 +822,16 @@ public class LocalStackToolchainTests
 		Assert.That(full, Is.EqualTo(catalogueOrder));
 	}
 
+	/// <summary>csharp-portal runs the Scala login set and the Scala services the C# hosts call, and no other.</summary>
 	[Test]
-	public void ScalaCoreIsTheMinimalLoginSet()
+	public void CsharpPortalRunsTheScalaTheCsharpHostsNeed()
 	{
 		var names = StepNames(LocalStackStacks.BuiltIn().Resolve("csharp-portal", StackCatalogue()));
 
 		Assert.That(names, Does.Contain("scala: auth").And.Contain("scala: account").And.Contain("scala: gateway")
 			.And.Contain("scala: dbflake").And.Contain("build: scala"));
-		Assert.That(names, Does.Not.Contain("scala: stats"));
+		Assert.That(names, Does.Contain("scala: stats").And.Contain("scala: content").And.Contain("scala: session"), "the C# gateway calls them");
+		Assert.That(names, Does.Not.Contain("scala: leaderboards"));
 		Assert.That(names, Does.Contain("portal frontend"));
 	}
 
@@ -1003,7 +1016,7 @@ public class LocalStackToolchainTests
 		Assert.That(Domain("portal frontend"), Is.EqualTo("portal"));
 		Assert.That(Domain(LocalStackTemplate.WebPublishStepName), Is.EqualTo("web-registry"), "not with the other builds");
 		Assert.That(Domain("portal extension: my-ext"), Is.EqualTo("extensions"));
-		Assert.That(Domain("group: player-engagement"), Is.EqualTo("extensions"));
+		Assert.That(Domain("group: player-engagement"), Is.EqualTo("microservices"), "a group runs microservices and extensions");
 
 		// A custom step sits with the others someone added, whatever else it is tagged.
 		var custom = new LocalStackStep { name = "seed: data", custom = true, tags = new List<string> { "custom", "portal" } };
@@ -1317,19 +1330,19 @@ public class LocalStackToolchainTests
 		var snapshot = new LocalStackBoardSnapshot { stack = "full", rows = TallBoard() };
 		var messages = new List<string> { "WRN [scala: mail] exited early (code 1); retrying (2 left)" };
 		var visible = LocalStackBoard.VisibleCount(10, messages.Count);
-		Assert.That(visible, Is.EqualTo(6), "10 lines less the title, summary, one message and the keys");
+		Assert.That(visible, Is.EqualTo(5), "10 lines less the title, summary, one message, the keys and the empty last row");
 
 		var console = new TestConsole().Width(120);
 		console.Write(LocalStackBoard.Frame(snapshot, 120, 5, visible, messages, following: true, BoardStart));
 		var lines = console.Output.TrimEnd('\n').Split('\n');
 
-		Assert.That(lines, Has.Length.EqualTo(10));
-		Assert.That(lines[0], Does.Contain("Running stack full").And.Contain("rows 6-11 of 14, following"));
+		Assert.That(lines, Has.Length.EqualTo(9));
+		Assert.That(lines[0], Does.Contain("Running stack full").And.Contain("rows 6-10 of 14, following"));
 		Assert.That(lines[1], Does.Contain("Label ready 5"));
-		Assert.That(lines[6], Does.Contain("Label waiting 2"));
-		Assert.That(lines[7], Does.Contain("6 of 14 ready, 1 failed"));
-		Assert.That(lines[8], Does.Contain("exited early"));
-		Assert.That(lines[9], Does.Contain("PgUp/PgDn").And.Contain("Ctrl+C stops the stack"));
+		Assert.That(lines[5], Does.Contain("Label waiting 1"));
+		Assert.That(lines[6], Does.Contain("6 of 14 ready, 1 failed"));
+		Assert.That(lines[7], Does.Contain("exited early"));
+		Assert.That(lines[8], Does.Contain("PgUp/PgDn").And.Contain("Ctrl+C stops the stack"));
 
 		Assert.That(LocalStackBoard.LastLines("a\r\n\r\nb\nc\nd\n", 3), Is.EqualTo(new[] { "b", "c", "d" }));
 	}
@@ -1434,7 +1447,860 @@ public class LocalStackToolchainTests
 		Assert.That(dryRun.steps, Has.Count.EqualTo(resolved.steps.Count));
 		var build = dryRun.steps.First(s => resolved.steps.First(r => r.name == s.name).build);
 		Assert.That(build.selected, Is.False);
-		Assert.That(build.runs, Does.StartWith("skipped"));
+		Assert.That(build.runs, Does.StartWith("up to date"));
 		Assert.That(dryRun.steps.First(s => s.selected).label, Is.Not.Empty);
+	}
+
+	// ----------------------------------------------------------------------------------
+	// Builds: only what changed
+	// ----------------------------------------------------------------------------------
+
+	private static string RunGit(string dir, params string[] args)
+	{
+		var psi = new System.Diagnostics.ProcessStartInfo("git") { WorkingDirectory = dir, RedirectStandardOutput = true, RedirectStandardError = true };
+		foreach (var arg in args) psi.ArgumentList.Add(arg);
+		using var process = System.Diagnostics.Process.Start(psi)!;
+		var output = process.StandardOutput.ReadToEnd();
+		process.StandardError.ReadToEnd();
+		process.WaitForExit();
+		Assert.That(process.ExitCode, Is.EqualTo(0), $"git {string.Join(" ", args)}");
+		return output;
+	}
+
+	/// <summary>A git repo with a committed src/ folder and README, and a build step that compiles src/.</summary>
+	private static (string repo, LocalStackStep step, LocalStackConfig config) BuildRepo()
+	{
+		var repo = Path.Combine(Path.GetTempPath(), "build-inputs-" + Guid.NewGuid().ToString("N"), "MyRepo");
+		Directory.CreateDirectory(Path.Combine(repo, "src"));
+		RunGit(repo, "init", "-q");
+		RunGit(repo, "config", "user.email", "test@example.com");
+		RunGit(repo, "config", "user.name", "test");
+		File.WriteAllText(Path.Combine(repo, "src", "a.cs"), "class A {}");
+		File.WriteAllText(Path.Combine(repo, "README.md"), "readme");
+		RunGit(repo, "add", ".");
+		RunGit(repo, "commit", "-q", "-m", "first");
+
+		var step = new LocalStackStep { name = "build: thing", build = true, waitForExit = true, workingDirectory = repo, inputs = new List<string> { "src" } };
+		return (repo, step, new LocalStackConfig { steps = new List<LocalStackStep> { step } });
+	}
+
+	/// <summary>
+	/// The fingerprint follows what the step compiles: an edit, a second edit of the same file, a new file and a commit
+	/// change it; undoing the edit brings it back; a change outside the inputs doesn't touch it.
+	/// </summary>
+	[Test]
+	public void Build_fingerprint_follows_the_inputs_only()
+	{
+		var (repo, step, config) = BuildRepo();
+		try
+		{
+			string Print() => LocalStackBuilds.Fingerprint(step, config, out _);
+			var clean = Print();
+			Assert.That(clean, Is.Not.Null);
+			Assert.That(Print(), Is.EqualTo(clean), "stable");
+
+			File.WriteAllText(Path.Combine(repo, "README.md"), "changed outside the inputs");
+			Assert.That(Print(), Is.EqualTo(clean));
+
+			var file = Path.Combine(repo, "src", "a.cs");
+			File.WriteAllText(file, "class A { int x; }");
+			var edited = Print();
+			Assert.That(edited, Is.Not.EqualTo(clean));
+			File.WriteAllText(file, "class A { int y; }");
+			Assert.That(Print(), Is.Not.EqualTo(edited), "a second edit of an already changed file counts");
+
+			File.WriteAllText(file, "class A {}");
+			Assert.That(Print(), Is.EqualTo(clean), "undone");
+
+			File.WriteAllText(Path.Combine(repo, "src", "b.cs"), "class B {}");
+			var added = Print();
+			Assert.That(added, Is.Not.EqualTo(clean), "a new file");
+
+			RunGit(repo, "add", ".");
+			RunGit(repo, "commit", "-q", "-m", "second");
+			var committed = Print();
+			Assert.That(committed, Is.Not.EqualTo(clean), "a commit (or a pull) changes the tree");
+			Assert.That(committed, Is.Not.EqualTo(added));
+		}
+		finally
+		{
+			DeleteTree(Path.GetDirectoryName(repo));
+		}
+	}
+
+	/// <summary>A step builds until it has built once, then only when its inputs change; the reason names the repo.</summary>
+	[Test]
+	public void Build_runs_when_never_built_or_changed_and_not_otherwise()
+	{
+		var (repo, step, config) = BuildRepo();
+		var stateFile = Path.Combine(Path.GetDirectoryName(repo)!, LocalStackBuilds.FileName);
+		try
+		{
+			var state = LocalStackBuilds.Load(stateFile);
+			Assert.That(LocalStackBuilds.WhyBuild(step, config, state), Is.EqualTo("not built by beam local run yet"));
+
+			LocalStackBuilds.Record(step, config, state, stateFile);
+			state = LocalStackBuilds.Load(stateFile);
+			Assert.That(LocalStackBuilds.WhyBuild(step, config, state), Is.Null, "up to date");
+			Assert.That(LocalStackBuilds.WhyBuild(new LocalStackStep { name = "BUILD: THING", build = true, workingDirectory = repo, inputs = step.inputs },
+				config, state), Is.Null, "step names compare without case");
+
+			File.WriteAllText(Path.Combine(repo, "src", "a.cs"), "class A { }");
+			Assert.That(LocalStackBuilds.WhyBuild(step, config, state), Is.EqualTo("MyRepo changed since the last build"));
+
+			// Outside git, or without inputs, there is nothing to compare: the old rule (output missing) applies.
+			var plain = new LocalStackStep { name = "build: plain", build = true, workingDirectory = Path.GetTempPath(), inputs = new List<string> { "." } };
+			var outside = Path.Combine(Path.GetTempPath(), "no-git-" + Guid.NewGuid().ToString("N"));
+			Directory.CreateDirectory(outside);
+			plain.workingDirectory = outside;
+			Assert.That(LocalStackBuilds.WhyBuild(plain, config, state), Is.Null);
+			Directory.Delete(outside);
+			Assert.That(LocalStackBuilds.WhyBuild(new LocalStackStep { name = "build: x", build = true, workingDirectory = repo }, config, state), Is.Null);
+		}
+		finally
+		{
+			DeleteTree(Path.GetDirectoryName(repo));
+		}
+	}
+
+	[Test]
+	public void Build_status_parsing_and_declared_inputs()
+	{
+		Assert.That(LocalStackBuilds.ChangedFiles(" M src/b.cs\0?? src/a.cs\0R  src/new.cs\0src/old.cs\0"),
+			Is.EqualTo(new[] { "src/a.cs", "src/b.cs", "src/new.cs" }));
+		Assert.That(LocalStackBuilds.ChangedFiles(string.Empty), Is.Empty);
+
+		// The generated catalogue declares what each build compiles.
+		var catalogue = StackCatalogue();
+		Assert.That(catalogue.steps.Where(s => s.build && s.name.StartsWith("build: c# ")).Select(s => s.inputs), Has.All.EqualTo(new[] { "." }));
+		Assert.That(catalogue.steps.Single(s => s.name == "build: portal deps").inputs, Is.EqualTo(new[] { "package.json", "package-lock.json" }));
+
+		Assert.That(LocalStackBoard.Text(LocalStackStepState.UpToDate), Is.EqualTo("Up to date"));
+		Assert.That(LocalStackBoard.Summary(new[] { BoardRow("a", LocalStackStepState.UpToDate), BoardRow("b") }), Is.EqualTo("1 of 2 ready"));
+	}
+
+	private static void DeleteTree(string dir)
+	{
+		if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
+		// git marks its objects read-only.
+		foreach (var file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
+			File.SetAttributes(file, FileAttributes.Normal);
+		Directory.Delete(dir, true);
+	}
+
+	// ----------------------------------------------------------------------------------
+	// Backend targets
+	// ----------------------------------------------------------------------------------
+
+	/// <summary>
+	/// A flag beats its environment override, which beats the .beamable files; only host, cid, pid and the tokens
+	/// can be overridden, as BEAM_HOST, BEAM_CID, BEAM_PID, BEAM_REFRESH_TOKEN and BEAM_ACCESS_TOKEN.
+	/// </summary>
+	[Test]
+	public void Environment_overrides_sit_between_flags_and_config()
+	{
+		Assert.That(cli.ConfigService.EnvironmentVariableFor("refresh-token"), Is.EqualTo("BEAM_REFRESH_TOKEN"));
+		Assert.That(cli.ConfigService.EnvironmentVariableFor("host"), Is.EqualTo("BEAM_HOST"));
+
+		var previous = Environment.GetEnvironmentVariable("BEAM_HOST");
+		var previousEngine = Environment.GetEnvironmentVariable("BEAM_ENGINE");
+		try
+		{
+			Environment.SetEnvironmentVariable("BEAM_HOST", null);
+			Assert.That(cli.ConfigService.PickSetting(null, "host", () => "from-config"), Is.EqualTo("from-config"));
+
+			Environment.SetEnvironmentVariable("BEAM_HOST", "https://dev.api.beamable.com");
+			Assert.That(cli.ConfigService.PickSetting(null, "host", () => "from-config"), Is.EqualTo("https://dev.api.beamable.com"));
+			Assert.That(cli.ConfigService.PickSetting("from-flag", "host", () => "from-config"), Is.EqualTo("from-flag"));
+
+			// Anything else ignores the environment.
+			Environment.SetEnvironmentVariable("BEAM_ENGINE", "unity");
+			Assert.That(cli.ConfigService.EnvironmentOverride("engine"), Is.Null);
+			Assert.That(cli.ConfigService.PickSetting(null, "engine", () => "from-config"), Is.EqualTo("from-config"));
+		}
+		finally
+		{
+			Environment.SetEnvironmentVariable("BEAM_HOST", previous);
+			Environment.SetEnvironmentVariable("BEAM_ENGINE", previousEngine);
+		}
+	}
+
+	/// <summary>A stack runs against its target; a variant named after a target switches it; the listing says which.</summary>
+	[Test]
+	public void Stacks_run_against_their_target_and_a_variant_switches_it()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var config = StackCatalogue();
+		config.targets = new Dictionary<string, LocalStackTarget> { ["staging"] = new LocalStackTarget { host = "https://staging.example" } };
+
+		Assert.That(stacks.Resolve("full", config).target, Is.EqualTo("local"));
+		Assert.That(stacks.Resolve("portal-extensions", config).target, Is.EqualTo("dev"));
+		Assert.That(stacks.Resolve("web-dev", config).target, Is.EqualTo("dev"));
+		Assert.That(stacks.Resolve("remote", config).target, Is.EqualTo("dev"));
+		Assert.That(stacks.Resolve("portal-extensions:local", config).target, Is.EqualTo("local"));
+		Assert.That(stacks.Resolve("full:dev", config).target, Is.EqualTo("dev"));
+		Assert.That(stacks.Resolve("full:build:staging", config).target, Is.EqualTo("staging"));
+		Assert.That(stacks.Resolve("full:STAGING", config).target, Is.EqualTo("staging"), "names compare without case");
+
+		// A target variant changes only the backend, not the steps.
+		Assert.That(StepNames(stacks.Resolve("full:dev", config)), Is.EqualTo(StepNames(stacks.Resolve("full", config))));
+
+		Assert.That(() => stacks.Resolve("full:nope", config),
+			Throws.InstanceOf<LocalStackStackException>().With.Message.Contains(":dev").And.Message.Contains(":staging"));
+
+		var listing = stacks.List();
+		Assert.That(listing.First(s => s.name == "portal-extensions").target, Is.EqualTo("dev"));
+		Assert.That(listing.First(s => s.name == "full").target, Is.EqualTo("local"));
+		Assert.That(LocalStackRunCommand.Listing(stacks, config).targets, Is.EqualTo(new[] { "local", "lan", "dev", "staging", "prod" }));
+	}
+
+	/// <summary>A user's stack can name a target, and a stack extending it inherits it.</summary>
+	[Test]
+	public void A_stack_names_its_target_and_extends_passes_it_on()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		stacks.Add("mine", LocalStackLayer.Local, "mine.json", new LocalStackStackDef { extends = "backend", target = "dev" });
+		stacks.Add("child", LocalStackLayer.Local, "child.json", new LocalStackStackDef { extends = "mine" });
+		var config = StackCatalogue();
+
+		Assert.That(stacks.Resolve("mine", config).target, Is.EqualTo("dev"));
+		Assert.That(stacks.Resolve("child", config).target, Is.EqualTo("dev"));
+		Assert.That(stacks.Resolve("child:local", config).target, Is.EqualTo("local"));
+	}
+
+	/// <summary>
+	/// Where a target points: local is the settings' host, dev is built in, the settings add or change targets; a
+	/// login becomes the environment of a stack's beam steps, without the access token.
+	/// </summary>
+	[Test]
+	public void Targets_resolve_and_become_the_beam_steps_environment()
+	{
+		var config = new LocalStackConfig { host = "http://localhost:8080" };
+		Assert.That(LocalStackTargets.Get("local", config).host, Is.EqualTo("http://localhost:8080"));
+		Assert.That(LocalStackTargets.Get("dev", config).host, Is.EqualTo("https://dev.api.beamable.com"));
+		Assert.That(() => LocalStackTargets.Get("nope", config), Throws.InstanceOf<LocalStackStackException>().With.Message.Contains("local, lan, dev"));
+
+		config.targets = new Dictionary<string, LocalStackTarget>
+		{
+			["DEV"] = new LocalStackTarget { cid = "my-org", pid = "DE_1" },
+			["staging"] = new LocalStackTarget { host = "https://staging.example/" },
+			["broken"] = new LocalStackTarget()
+		};
+		var dev = LocalStackTargets.Get("dev", config);
+		Assert.That((dev.host, dev.cid, dev.pid), Is.EqualTo(("https://dev.api.beamable.com", "my-org", "DE_1")), "settings fill in the built-in target");
+		Assert.That(LocalStackTargets.Get("staging", config).host, Is.EqualTo("https://staging.example"));
+		Assert.That(() => LocalStackTargets.Get("broken", config), Throws.InstanceOf<LocalStackStackException>().With.Message.Contains("host"));
+
+		var login = new LocalStackTargetLogin { host = "https://dev.api.beamable.com", cid = "123", pid = "DE_1", accessToken = "access", refreshToken = "refresh" };
+		Assert.That(LocalStackTargets.Environment(login), Is.EquivalentTo(new Dictionary<string, string>
+		{
+			["BEAM_HOST"] = "https://dev.api.beamable.com", ["BEAM_CID"] = "123", ["BEAM_PID"] = "DE_1", ["BEAM_REFRESH_TOKEN"] = "refresh"
+		}));
+		Assert.That(LocalStackTargets.Environment(null), Is.Empty, "no login yet: the steps use the workspace's");
+
+		var root = Path.Combine(Path.GetTempPath(), "targets-" + Guid.NewGuid().ToString("N"));
+		try
+		{
+			LocalStackTargets.Save(root, "Dev", login);
+			Assert.That(File.Exists(Path.Combine(root, ".beamable", "local", "targets", "dev", "login.json")), Is.True);
+			Assert.That(LocalStackTargets.Load(root, "dev").refreshToken, Is.EqualTo("refresh"));
+			Assert.That(LocalStackTargets.Load(root, "staging"), Is.Null);
+		}
+		finally
+		{
+			if (Directory.Exists(root)) Directory.Delete(root, true);
+		}
+	}
+
+	// ----------------------------------------------------------------------------------
+	// Restarting steps and changing a running stack
+	// ----------------------------------------------------------------------------------
+
+	/// <summary>Steps are named by name, label or tag; a tag leaves the build steps out; order follows the stack.</summary>
+	[Test]
+	public void Running_steps_are_matched_by_name_label_or_tag()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var steps = stacks.Resolve("full", StackCatalogue()).steps;
+
+		Assert.That(LocalStackControl.Match(new[] { "portal frontend" }, steps, stacks.TagsOf).Select(s => s.name), Is.EqualTo(new[] { "portal frontend" }));
+		Assert.That(LocalStackControl.Match(new[] { "C# GATEWAY" }, steps, stacks.TagsOf).Select(s => s.name), Is.EqualTo(new[] { "c# gateway" }));
+		Assert.That(LocalStackControl.Match(new[] { "Scala service auth" }, steps, stacks.TagsOf).Select(s => s.name), Is.EqualTo(new[] { "scala: auth" }), "by label");
+
+		var portal = LocalStackControl.Match(new[] { "portal" }, steps, stacks.TagsOf).Select(s => s.name).ToList();
+		Assert.That(portal, Does.Contain("portal frontend"));
+		Assert.That(portal, Has.None.StartsWith("build:"), "builds come through the build check");
+
+		var two = LocalStackControl.Match(new[] { "scala: auth", "c# gateway" }, steps, stacks.TagsOf).Select(s => s.name).ToList();
+		Assert.That(two, Is.EqualTo(new[] { "c# gateway", "scala: auth" }), "stack order");
+
+		Assert.That(() => LocalStackControl.Match(new[] { "nope" }, steps, stacks.TagsOf),
+			Throws.InstanceOf<cli.CliException>().With.Message.Contains("isn't a step, label or tag"));
+	}
+
+	/// <summary>A step's own build: the one named after it, otherwise the one of its kind.</summary>
+	[Test]
+	public void A_step_is_rebuilt_by_its_own_build()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var steps = stacks.Resolve("full", StackCatalogue()).steps;
+		List<string> Builds(string name) => LocalStackControl.BuildsFor(steps.Single(s => s.name == name), steps, stacks.TagsOf).Select(s => s.name).ToList();
+
+		Assert.That(Builds("c# gateway"), Is.EqualTo(new[] { "build: c# gateway" }));
+		Assert.That(Builds("c# campaign runtime"), Is.EqualTo(new[] { "build: c# campaign runtime" }));
+		Assert.That(Builds("scala: auth"), Is.EqualTo(new[] { "build: scala" }));
+		Assert.That(Builds("portal frontend"), Is.EqualTo(new[] { "build: portal deps" }));
+		Assert.That(Builds("docker: api deps + caddy"), Is.Empty);
+	}
+
+	/// <summary>A request is a file the running stack takes, answers, and the asker reads.</summary>
+	[Test]
+	public async System.Threading.Tasks.Task Control_requests_are_taken_and_answered()
+	{
+		var dir = Path.Combine(Path.GetTempPath(), "control-" + Guid.NewGuid().ToString("N"));
+		var runState = Path.Combine(dir, LocalStackRunStateIO.RunStateFileName);
+		Directory.CreateDirectory(dir);
+		try
+		{
+			var runner = System.Threading.Tasks.Task.Run(async () =>
+			{
+				for (var i = 0; i < 100; i++)
+				{
+					foreach (var request in LocalStackControl.Take(runState))
+					{
+						LocalStackControl.Answer(runState, new LocalStackControlResponse
+						{
+							id = request.id, ok = true, message = $"{request.action} {string.Join("+", request.items)}", steps = request.items
+						});
+						return;
+					}
+
+					await System.Threading.Tasks.Task.Delay(50);
+				}
+			});
+
+			var answer = await LocalStackControl.Ask(runState, new LocalStackControlRequest { action = "restart", items = { "portal", "scala" } },
+				TimeSpan.FromSeconds(10), System.Threading.CancellationToken.None);
+			await runner;
+
+			Assert.That(answer, Is.Not.Null);
+			Assert.That(answer.message, Is.EqualTo("restart portal+scala"));
+			Assert.That(Directory.GetFiles(LocalStackControl.DirFor(runState)), Is.Empty, "both files are gone");
+
+			var none = await LocalStackControl.Ask(runState, new LocalStackControlRequest { action = "stop" }, TimeSpan.FromMilliseconds(300),
+				System.Threading.CancellationToken.None);
+			Assert.That(none, Is.Null, "nobody answered");
+			Assert.That(Directory.GetFiles(LocalStackControl.DirFor(runState)), Is.Empty, "an unanswered request is taken back");
+		}
+		finally
+		{
+			Directory.Delete(dir, true);
+		}
+	}
+
+	[Test]
+	public void Board_rows_follow_a_changed_stack()
+	{
+		var board = new LocalStackBoard(new LocalStackBoardSnapshot { stack = "a", rows = { BoardRow("one"), BoardRow("two") } },
+			LocalStackBoardMode.Silent, file: null);
+		board.AddRows(new[] { BoardRow("two"), BoardRow("three") });
+		board.RemoveRows(new[] { "ONE" });
+		board.Rename("a:web");
+
+		Assert.That(board.Name, Is.EqualTo("a:web"));
+		Assert.That(board.Rows.Select(r => r.name), Is.EqualTo(new[] { "two", "three" }));
+	}
+
+	/// <summary>
+	/// The local org gets the zones dev, staging and prod: the ones it lacks are created (dev and prod come with the
+	/// first zone call, so a fresh org lacks staging), and every realm in use is bound to its tier's zone.
+	/// </summary>
+	[Test]
+	public void The_local_org_gets_a_zone_per_realm_tier()
+	{
+		Beamable.Common.Api.Realms.RealmView Realm(string pid, int depth, bool archived = false) =>
+			new Beamable.Common.Api.Realms.RealmView { Pid = pid, Depth = depth, Archived = archived };
+		var realms = new[] { Realm("prod-pid", 0), Realm("staging-pid", 1), Realm("dev-pid", 2), Realm("old-pid", 2, archived: true) };
+
+		var (create, bind) = LocalStackTargets.ZonePlan(realms, new[] { "dev", "prod" });
+
+		Assert.That(create, Is.EqualTo(new[] { "staging" }));
+		Assert.That(bind, Is.EqualTo(new[] { ("prod-pid", "prod"), ("staging-pid", "staging"), ("dev-pid", "dev") }));
+		Assert.That(LocalStackTargets.ZonePlan(realms, new[] { "Dev", "staging", "prod" }).create, Is.Empty, "names match in any case");
+	}
+
+	/// <summary>
+	/// lan is the local backend at this machine's LAN address; staging and prod are Beamable's, and prod asks first;
+	/// an address is a backend of its own, whose login gets a folder named after its host.
+	/// </summary>
+	[Test]
+	public void Targets_include_lan_staging_prod_and_addresses()
+	{
+		var config = new LocalStackConfig { host = "http://localhost:8080" };
+
+		var lan = LocalStackTargets.Get("lan", config, () => "192.168.1.20");
+		Assert.That((lan.host, lan.local), Is.EqualTo(("http://192.168.1.20:8080", (bool?)true)));
+		Assert.That(() => LocalStackTargets.Get("lan", config, () => null),
+			Throws.InstanceOf<LocalStackStackException>().With.Message.Contains("No LAN address"));
+		config.targets = new Dictionary<string, LocalStackTarget> { ["lan"] = new LocalStackTarget { host = "http://10.0.0.5:8080" } };
+		Assert.That(LocalStackTargets.Get("lan", config, () => throw new InvalidOperationException("not asked")).host,
+			Is.EqualTo("http://10.0.0.5:8080"), "the settings pin it");
+
+		Assert.That(LocalStackTargets.Get("staging", config).host, Is.EqualTo("https://staging.api.beamable.com"));
+		var prod = LocalStackTargets.Get("prod", config);
+		Assert.That((prod.host, prod.confirm), Is.EqualTo(("https://api.beamable.com", (bool?)true)));
+
+		var address = LocalStackTargets.Get("https://gw.example.com/", config);
+		Assert.That((address.host, address.local), Is.EqualTo(("https://gw.example.com", (bool?)null)));
+		Assert.That(LocalStackTargets.FolderName("https://gw.example.com/"), Is.EqualTo("gw.example.com_443"));
+		Assert.That(LocalStackTargets.FolderName("Dev"), Is.EqualTo("dev"));
+
+		Assert.That(LocalStackTargets.RunsLocal("local", config), Is.True);
+		Assert.That(LocalStackTargets.RunsLocal("lan", config), Is.True, "the settings' lan keeps the built-in's local");
+		Assert.That(LocalStackTargets.RunsLocal("dev", config), Is.False);
+		Assert.That(LocalStackTargets.RunsLocal("https://gw.example.com", config), Is.False);
+
+		Assert.That(LocalStackTargets.IsVirtualAdapter("vEthernet (WSL)", "Hyper-V Virtual Ethernet Adapter"), Is.True);
+		Assert.That(LocalStackTargets.IsVirtualAdapter("Ethernet 2", "VirtualBox Host-Only Ethernet Adapter"), Is.True);
+		Assert.That(LocalStackTargets.IsVirtualAdapter("Wi-Fi", "Intel(R) Wi-Fi 6E AX211 160MHz"), Is.False);
+		Assert.That(LocalStackTargets.WithAddress("http://localhost:8080", "192.168.1.20"), Is.EqualTo("http://192.168.1.20:8080"));
+	}
+
+	/// <summary>A stack can name a backend by address; one that is neither a target nor an address doesn't resolve.</summary>
+	[Test]
+	public void A_backend_is_a_target_or_an_address()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		stacks.Add("gw", LocalStackLayer.Local, "gw.json", new LocalStackStackDef { extends = "backend", target = "https://gw.example.com" });
+		stacks.Add("odd", LocalStackLayer.Local, "odd.json", new LocalStackStackDef { extends = "backend", target = "nowhere" });
+		var config = StackCatalogue();
+
+		Assert.That(stacks.Resolve("gw", config).target, Is.EqualTo("https://gw.example.com"));
+		Assert.That(stacks.Resolve("full:prod", config).target, Is.EqualTo("prod"));
+		Assert.That(() => stacks.Resolve("odd", config),
+			Throws.InstanceOf<LocalStackStackException>().With.Message.Contains("'nowhere' isn't a target"));
+	}
+
+	// ----------------------------------------------------------------------------------
+	// Builds side by side
+	// ----------------------------------------------------------------------------------
+
+	/// <summary>One lane per folder: the C# hosts share BeamableAPI's, the Scala reactor and the portal have their own.</summary>
+	[Test]
+	public void Builds_run_in_one_lane_per_folder()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var config = StackCatalogue();
+
+		var lanes = LocalStackRunCommand.BuildLanes(stacks.Resolve("full", config).steps, config)
+			.Select(l => l.Select(s => s.name).ToList()).ToList();
+		var csharp = lanes.Single(l => l.Any(n => n.StartsWith("build: c# ")));
+		Assert.That(csharp, Is.EqualTo(csharp.OrderBy(n => stacks.Resolve("full", config).steps.FindIndex(s => s.name == n)).ToList()), "stack order");
+		Assert.That(csharp, Has.All.StartsWith("build: c# "));
+		Assert.That(lanes, Has.Some.EqualTo(new[] { "build: scala" }));
+		Assert.That(lanes, Has.Some.EqualTo(new[] { "build: portal deps" }));
+
+		var web = LocalStackRunCommand.BuildLanes(stacks.Resolve("full:web", config).steps, config)
+			.Select(l => l.Select(s => s.name).ToList()).ToList();
+		Assert.That(web, Has.Some.EqualTo(new[] { LocalStackTemplate.WebRefreshStepName, "build: portal deps" }),
+			"the extension repoint runs in the portal's folder, before its npm install");
+		Assert.That(LocalStackRunCommand.WaitsForItsPlace(stacks.Resolve("full:web", config).steps.First(s => s.name == LocalStackTemplate.WebPublishStepName)),
+			Is.True);
+	}
+
+	/// <summary>Lanes run side by side and each lane's builds in order; a failed build fails the rest of its lane unrun.</summary>
+	[Test]
+	public async System.Threading.Tasks.Task Lanes_run_side_by_side_and_in_order()
+	{
+		LocalStackStep Build(string name) => new LocalStackStep { name = name, build = true };
+		var (a1, a2, b1) = (Build("a1"), Build("a2"), Build("b1"));
+		var ran = new System.Collections.Concurrent.ConcurrentQueue<string>();
+		var b1Started = new System.Threading.Tasks.TaskCompletionSource();
+
+		var tasks = LocalStackRunCommand.RunInLanes(new[] { new List<LocalStackStep> { a1, a2 }, new List<LocalStackStep> { b1 } }, async step =>
+		{
+			ran.Enqueue(step.name);
+			if (step == b1) b1Started.TrySetResult();
+			// a1 only finishes once b1 has started: one after the other, this would never end.
+			if (step == a1) await b1Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+			if (step == a2) throw new InvalidOperationException("a2 failed");
+		});
+
+		await tasks[a1];
+		await tasks[b1];
+		Assert.That(async () => await tasks[a2], Throws.InstanceOf<InvalidOperationException>());
+		Assert.That(ran.ToList().IndexOf("a1"), Is.LessThan(ran.ToList().IndexOf("a2")));
+
+		var c1 = Build("c1");
+		var c2 = Build("c2");
+		var after = new List<string>();
+		var failing = LocalStackRunCommand.RunInLanes(new[] { new List<LocalStackStep> { c1, c2 } }, step =>
+		{
+			after.Add(step.name);
+			return step == c1 ? System.Threading.Tasks.Task.FromException(new InvalidOperationException("c1 failed")) : System.Threading.Tasks.Task.CompletedTask;
+		});
+		Assert.That(async () => await failing[c2], Throws.InstanceOf<InvalidOperationException>().With.Message.EqualTo("c1 failed"));
+		Assert.That(after, Is.EqualTo(new[] { "c1" }), "c2 never ran");
+	}
+
+	// ----------------------------------------------------------------------------------
+	// Restarting from a list, and from the board
+	// ----------------------------------------------------------------------------------
+
+	/// <summary>
+	/// What restart lists when nothing is named: the services by tag in the known order, no builds or run-once
+	/// steps; as text a service shows under each of its tags, in the picker only under its first.
+	/// </summary>
+	[Test]
+	public void Restart_lists_the_services_by_tag()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var steps = stacks.Resolve("full", StackCatalogue()).steps;
+		var rows = steps.Select(s => new LocalStackBoardRow
+		{
+			name = s.name, label = s.label, once = s.build || s.waitForExit,
+			state = s.name == "portal frontend" ? LocalStackStepState.Stopped : LocalStackStepState.Ready
+		}).ToList();
+
+		var text = LocalStackPsCommand.Choices(rows, steps, stacks.TagsOf, starting: false, firstTagOnly: false);
+		var tags = text.Select(c => c.tag).ToList();
+		Assert.That(tags, Does.Not.Contain("build"));
+		Assert.That(tags, Is.EqualTo(tags.OrderBy(t => Array.IndexOf(LocalStackStacks.KnownTags, t) is var i && i < 0 ? int.MaxValue : i).ToList()));
+		var all = text.SelectMany(c => c.steps).Select(s => s.name).ToList();
+		Assert.That(all, Has.None.StartsWith("build:"));
+		Assert.That(all, Does.Not.Contain("docker: api deps + caddy"), "runs once");
+		Assert.That(text.First(c => c.tag == "scala").steps.Select(s => s.name), Does.Contain("scala: auth"));
+		Assert.That(text.First(c => c.tag == "scala-core").steps.Select(s => s.name), Does.Contain("scala: auth"));
+
+		var picker = LocalStackPsCommand.Choices(rows, steps, stacks.TagsOf, starting: false, firstTagOnly: true);
+		var listed = picker.SelectMany(c => c.steps).Select(s => s.name).ToList();
+		Assert.That(listed, Is.Unique);
+		Assert.That(picker.First(c => c.tag == "scala").steps.Select(s => s.name), Does.Not.Contain("scala: auth"), "already under scala-core");
+
+		var start = LocalStackPsCommand.Choices(rows, steps, stacks.TagsOf, starting: true, firstTagOnly: true);
+		Assert.That(start.SelectMany(c => c.steps).Select(s => s.name), Is.EqualTo(new[] { "portal frontend" }), "only what isn't up");
+	}
+
+	/// <summary>
+	/// On a board that can act, the arrows select a row and keep it on screen; Space asks what to do with it, Enter
+	/// does it (S stops instead), Esc drops it; a build, or anything before the stack is up, only says why not.
+	/// </summary>
+	[Test]
+	public void Board_keys_select_a_row_and_act_on_it()
+	{
+		var rows = TallBoard();
+		rows[0].once = true;
+		rows[3].state = LocalStackStepState.Stopped;
+		ConsoleKeyInfo Key(ConsoleKey key) => new ConsoleKeyInfo(key == ConsoleKey.Spacebar ? ' ' : '\0', key, false, false, false);
+		var view = new LocalStackBoardView { Actions = true };
+
+		Assert.That(view.Press(Key(ConsoleKey.Spacebar), rows, 5, stackUp: true), Is.Null);
+		Assert.That(view.Bar, Does.Contain("Select a step"));
+
+		view.Press(Key(ConsoleKey.Home), rows, 5);
+		Assert.That(view.SelectedName(rows), Is.EqualTo(rows[0].name));
+		view.Press(Key(ConsoleKey.Spacebar), rows, 5, stackUp: true);
+		Assert.That(view.Bar, Does.Contain("runs once"));
+
+		view.Press(Key(ConsoleKey.DownArrow), rows, 5);
+		view.Press(Key(ConsoleKey.Spacebar), rows, 5, stackUp: false);
+		Assert.That(view.Bar, Does.Contain("Wait until the stack is up"));
+		Assert.That(view.Press(Key(ConsoleKey.Enter), rows, 5, stackUp: false), Is.Null, "nothing was asked");
+
+		view.Press(Key(ConsoleKey.Spacebar), rows, 5, stackUp: true);
+		Assert.That(view.Bar, Does.StartWith("Restart"));
+		Assert.That(view.Press(Key(ConsoleKey.Enter), rows, 5, stackUp: true), Is.EqualTo(("restart", rows[1].name)));
+		Assert.That(view.Bar, Is.Null);
+
+		view.Press(Key(ConsoleKey.Spacebar), rows, 5, stackUp: true);
+		Assert.That(view.Press(Key(ConsoleKey.S), rows, 5, stackUp: true), Is.EqualTo(("stop", rows[1].name)));
+		view.Press(Key(ConsoleKey.Spacebar), rows, 5, stackUp: true);
+		Assert.That(view.Press(Key(ConsoleKey.Escape), rows, 5, stackUp: true), Is.Null);
+
+		view.Press(Key(ConsoleKey.DownArrow), rows, 5);
+		view.Press(Key(ConsoleKey.DownArrow), rows, 5);
+		view.Press(Key(ConsoleKey.Spacebar), rows, 5, stackUp: true);
+		Assert.That(view.Bar, Does.StartWith("Start"));
+		Assert.That(view.Press(Key(ConsoleKey.Enter), rows, 5, stackUp: true), Is.EqualTo(("start", rows[3].name)));
+
+		view.Press(Key(ConsoleKey.End), rows, 5);
+		Assert.That(view.SelectedName(rows), Is.EqualTo(rows[^1].name));
+		Assert.That(view.Offset(rows, 5), Is.EqualTo(rows.Count - 5), "the selection stays on screen");
+		view.Press(Key(ConsoleKey.F), rows, 5);
+		Assert.That((view.Following, view.SelectedName(rows)), Is.EqualTo((true, (string)null)));
+	}
+
+	/// <summary>A frame marks the selected row, shows the question and the keys it was given, and once up, where the stack is.</summary>
+	[Test]
+	public void Board_frame_marks_the_selection_and_asks()
+	{
+		var snapshot = new LocalStackBoardSnapshot { stack = "full", rows = TallBoard(), up = true, portalUrl = "http://localhost:4950", host = "http://localhost:8080" };
+		var console = new TestConsole().Width(140);
+		console.Write(LocalStackBoard.Frame(snapshot, 140, 0, 5, new List<string>(), following: false, BoardStart,
+			selected: snapshot.rows[1].name, bar: "Restart Label 1?  Enter restart, S stop, Esc cancel", keys: LocalStackBoardView.ActionKeys));
+		var lines = console.Output.TrimEnd('\n').Split('\n');
+
+		Assert.That(lines[2], Does.Contain("> "));
+		Assert.That(lines[1], Does.Not.Contain("> "));
+		Assert.That(lines[^3], Does.Contain("portal http://localhost:4950").And.Contain("backend http://localhost:8080"));
+		Assert.That(lines[^2], Does.Contain("Restart Label 1?"));
+		Assert.That(lines[^1], Does.Contain("Space acts on it"));
+	}
+
+	/// <summary>
+	/// A drawn frame stays off the screen's last column and last row, selected or not, with the question or without:
+	/// a line reaching either made the terminal wrap or scroll, and the board flickered blank on the arrow keys.
+	/// </summary>
+	[Test]
+	public void A_drawn_board_never_reaches_the_screens_edge()
+	{
+		var rows = TallBoard().Concat(TallBoard().Select(r => { r.name += " again"; r.detail = new string('x', 300); return r; })).ToList();
+		var snapshot = new LocalStackBoardSnapshot { stack = "full", rows = rows, up = true, portalUrl = "http://localhost:4950", host = "http://localhost:8080" };
+		var messages = new List<string> { new string('m', 400) };
+		foreach (var width in new[] { 60, 100, 200 })
+		foreach (var height in new[] { 10, 30 })
+		foreach (var (selected, bar) in new[] { ((string)null, (string)null), (rows[3].name, (string)null), (rows[3].name, "Restart it?  Enter restart, S stop, Esc cancel") })
+		{
+			var visible = LocalStackBoard.VisibleCount(height, messages.Count + (bar != null ? 1 : 0));
+			var frame = LocalStackBoard.Frame(snapshot, width, 0, visible, messages, following: false, BoardStart, selected, bar,
+				LocalStackBoardView.ActionKeys, marks: true);
+			var drawn = LocalStackBoard.Draw(frame, new TestConsole().Width(width), width, height);
+			var lines = System.Text.RegularExpressions.Regex.Replace(drawn, "\u001b\\[[0-9;?]*[A-Za-z]", string.Empty).Split('\n');
+
+			Assert.That(lines.Length, Is.LessThan(height), $"{width}x{height}, selected {selected}, bar {bar != null}");
+			Assert.That(lines.Max(l => l.Length), Is.LessThan(width), $"{width}x{height}, selected {selected}, bar {bar != null}");
+		}
+	}
+
+	/// <summary>
+	/// The web packages publish declares its sources, so it can be up to date; the extension repoint gets enough
+	/// time to reinstall every extension, whatever older settings say; the installs run a few at a time.
+	/// </summary>
+	[Test]
+	public void The_web_steps_build_only_when_needed_and_get_enough_time()
+	{
+		var config = StackCatalogue();
+		var publish = config.steps.First(s => s.name == LocalStackTemplate.WebPublishStepName);
+		var pins = config.steps.First(s => s.name == LocalStackTemplate.WebRefreshStepName);
+
+		Assert.That(publish.inputs, Is.EqualTo(new[] { "web", "beam-portal-toolkit" }));
+		Assert.That(pins.readyTimeoutSeconds, Is.EqualTo(LocalStackTemplate.WebRefreshTimeoutSeconds));
+		Assert.That(LocalStackRunCommand.SkipsWhenUnchanged(publish), Is.True);
+
+		Assert.That(cli.Web.WebUseCommand.MaxParallelInstalls, Is.InRange(2, 6));
+
+		// A requested build that is up to date says so in the dry run, and why it may still publish.
+		var stacks = LocalStackStacks.BuiltIn();
+		var resolved = stacks.Resolve("full:web", config);
+		var step = resolved.steps.First(s => s.name == publish.name);
+		var dryRun = LocalStackRunCommand.DryRun(resolved, resolved.steps, new HashSet<LocalStackStep>(), config, new HashSet<string>(),
+			new List<LocalStackDependencyCheck>(), new Dictionary<LocalStackStep, string>(), new HashSet<LocalStackStep> { step });
+		Assert.That(dryRun.steps.First(s => s.name == publish.name).runs, Does.StartWith("up to date while the registry has the build"));
+		Assert.That(dryRun.steps.First(s => s.name == pins.name).runs, Is.EqualTo("builds"));
+	}
+
+	// ----------------------------------------------------------------------------------
+	// What steps need
+	// ----------------------------------------------------------------------------------
+
+	/// <summary>
+	/// A step's needs are followed through: the C# gateway needs the docker deps and its build; a Scala service
+	/// needs Redis, the reactor, dbflake and the gateway; a microservice on the local backend needs the backend to
+	/// log into; an extension needs the microservices it calls. On a remote backend a service needs nothing local.
+	/// </summary>
+	[Test]
+	public void Missing_dependencies_are_found_and_followed()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var catalogue = StackCatalogue().steps;
+		LocalStackStep Step(string name) => catalogue.First(s => s.name == name);
+		List<string> Missing(bool local, params LocalStackStep[] running) =>
+			LocalStackDependencies.Missing(running, catalogue, stacks.TagsOf, local).Select(m => m.name).ToList();
+
+		var gateway = Missing(true, Step("c# gateway"));
+		Assert.That(gateway, Does.Contain(LocalStackDependencies.ApiDepsStep).And.Contain("scala: auth"));
+		Assert.That(gateway, Has.None.StartsWith("build:"), "builds come with their steps");
+
+		var scala = Missing(true, Step("scala: auth"));
+		Assert.That(scala, Is.SupersetOf(new[] { "scala: redis", "scala: dbflake", "c# gateway", LocalStackDependencies.ApiDepsStep }));
+		Assert.That(scala, Has.None.StartsWith("build:"), "builds come with their steps");
+
+		var service = new LocalStackStep { name = LocalStackTemplate.MicroservicePrefix + "Stats", beam = true };
+		var forService = Missing(true, service);
+		Assert.That(forService, Does.Contain("c# gateway").And.Contain("scala: auth").And.Contain("scala: account"), "the services needed to log in");
+		Assert.That(forService, Does.Not.Contain(LocalStackTemplate.PortalFrontendStepName), "a microservice isn't shown in the portal");
+		Assert.That(Missing(false, service), Is.Empty, "against dev nothing local is needed");
+
+		var extension = new LocalStackStep { name = LocalStackTemplate.ExtensionPrefix + "stats-page", dependsOn = new List<string> { "microservice: Stats" } };
+		var forExtension = LocalStackDependencies.Missing(new[] { extension }, catalogue, stacks.TagsOf, false);
+		Assert.That(forExtension.Single().name, Is.EqualTo("microservice: Stats"));
+		Assert.That(forExtension.Single().step, Is.Null, "the stack has to define it");
+		Assert.That(forExtension.Single().reason, Does.Contain("calls it"));
+		Assert.That(Missing(true, extension), Does.Contain(LocalStackTemplate.PortalFrontendStepName));
+	}
+
+	/// <summary>
+	/// Picking the C# hosts brings the Scala services they call: the gateway the login set and the services behind its
+	/// requests, the workers the Scala gateway, the campaign runtime the message rail runtime.
+	/// </summary>
+	[Test]
+	public void The_csharp_hosts_bring_the_scala_services_they_call()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var catalogue = StackCatalogue().steps;
+		List<string> Missing(params string[] names) =>
+			LocalStackDependencies.Missing(catalogue.Where(s => names.Contains(s.name)).ToList(), catalogue, stacks.TagsOf, true).Select(m => m.name).ToList();
+
+		Assert.That(Missing("c# gateway"), Is.SupersetOf(new[] { "scala: auth", "scala: account", "scala: gateway", "scala: content", "scala: notification", "scala: session", "scala: stats" }));
+		Assert.That(Missing("c# campaign runtime"), Does.Contain("scala: gateway").And.Contain("c# message rail runtime"));
+		Assert.That(Missing("c# segmentation runtime"), Does.Contain("scala: notification").And.Contain("c# gateway"));
+		Assert.That(Missing("c# analytics loader"), Does.Contain("c# gateway"));
+	}
+
+	/// <summary>The built-in stacks run everything their steps need.</summary>
+	[Test]
+	public void The_built_in_stacks_miss_nothing()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var config = StackCatalogue();
+		foreach (var name in new[] { "full", "backend", "csharp-portal", "portal-extensions", "web-dev", "remote", "full:web" })
+		{
+			var resolved = stacks.Resolve(name, config);
+			var missing = LocalStackDependencies.Missing(resolved.steps, config.steps, stacks.TagsOf, LocalStackTargets.RunsLocal(resolved.target, config));
+			Assert.That(missing.Select(m => $"{m.name} ({m.reason})"), Is.Empty, name);
+		}
+	}
+
+	/// <summary>Each built-in stack says which work it is for, then what it runs, like the shared ones.</summary>
+	[Test]
+	public void Built_in_descriptions_name_the_work_first()
+	{
+		foreach (var stack in LocalStackStacks.BuiltIn().List())
+			Assert.That(stack.description, Does.Match(@"^[A-Z][^:]+ work[^:]*: "), stack.name);
+	}
+
+	/// <summary>
+	/// A stack gets the builds of the steps it runs without naming them; `:no-build` drops them, and a build the
+	/// stack excludes stays out.
+	/// </summary>
+	[Test]
+	public void A_steps_build_comes_with_it()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		stacks.Add("gw", LocalStackLayer.Local, "gw.json", new LocalStackStackDef { include = new List<string> { "docker", "c# gateway", "portal frontend", "scala: auth" } });
+		stacks.Add("gw-prebuilt", LocalStackLayer.Local, "gw-prebuilt.json", new LocalStackStackDef { extends = "gw", exclude = new List<string> { "build: c# gateway" } });
+		var config = StackCatalogue();
+
+		var names = StepNames(stacks.Resolve("gw", config));
+		Assert.That(names, Does.Contain("build: c# gateway").And.Contain("build: portal deps").And.Contain("build: scala"));
+		Assert.That(names, Does.Not.Contain("build: c# campaign runtime"));
+		Assert.That(StepNames(stacks.Resolve("gw:no-build", config)), Has.None.StartsWith("build:"));
+		Assert.That(StepNames(stacks.Resolve("gw-prebuilt", config)), Does.Not.Contain("build: c# gateway"));
+	}
+
+	/// <summary>A stack's own step runs where it says: first, after a named step, or last.</summary>
+	[Test]
+	public void A_stacks_own_steps_run_where_they_say()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		stacks.Add("mine", LocalStackLayer.Local, "mine.json", new LocalStackStackDef
+		{
+			include = new List<string> { "docker", "seed", "watch", "smoke" },
+			steps = new Dictionary<string, LocalStackStep>
+			{
+				["seed"] = new LocalStackStep { shell = true, arguments = "echo", first = true },
+				["watch"] = new LocalStackStep { shell = true, arguments = "echo", after = LocalStackDependencies.ApiDepsStep },
+				["smoke"] = new LocalStackStep { shell = true, arguments = "echo" },
+			}
+		});
+
+		var names = StepNames(stacks.Resolve("mine", StackCatalogue()));
+		Assert.That(names.First(), Is.EqualTo("seed"));
+		Assert.That(names.IndexOf("watch"), Is.EqualTo(names.IndexOf(LocalStackDependencies.ApiDepsStep) + 1));
+		Assert.That(names.Last(), Is.EqualTo("smoke"));
+	}
+
+	/// <summary>
+	/// Each row of the service picker is one line that fits the terminal: a group says how many microservices and
+	/// extensions it runs instead of naming them, an extension's calls are cut to fit.
+	/// </summary>
+	[Test]
+	public void Service_picker_rows_fit_on_one_line()
+	{
+		var members = Enumerable.Range(1, 20).Select(i => $"PlayerEngagementService{i}").Concat(Enumerable.Range(1, 30).Select(i => $"core-development-extension-{i}")).ToArray();
+		var workspace = new WorkspaceServices
+		{
+			services = members.Take(20).ToList(),
+			extensions = members.Skip(20).ToList(),
+			groups = new Dictionary<string, string[]> { ["player-engagement"] = members },
+			calls = new Dictionary<string, List<string>> { ["core-development-extension-1"] = members.Take(20).ToList() }
+		};
+		string Text(string key, int width) => Spectre.Console.Markup.Remove(LocalStackCreateCommand.ServiceRow(workspace, key, width));
+
+		Assert.That(Text(LocalStackCreateCommand.GroupKey + "player-engagement", 80), Is.EqualTo("player-engagement  20 microservices, 30 extensions"));
+		foreach (var width in new[] { 40, 80, 120 })
+		{
+			var calls = Text(LocalStackCreateCommand.ExtensionKey + "core-development-extension-1", width);
+			Assert.That(calls.Length, Is.LessThanOrEqualTo(width), $"{width}: {calls}");
+			Assert.That(calls, Does.StartWith("core-development-extension-1  calls P"));
+			Assert.That(calls, Does.Not.Contain("\n"));
+		}
+
+		Assert.That(Text(LocalStackCreateCommand.ServiceKey + "PlayerEngagementService1", 80), Is.EqualTo("PlayerEngagementService1"));
+	}
+
+	/// <summary>A microservice an extension's package.json names but this workspace doesn't have isn't one it calls here.</summary>
+	[Test]
+	public void An_extension_calls_only_the_workspaces_microservices()
+	{
+		var workspace = new WorkspaceServices
+		{
+			services = new List<string> { "CampaignService" },
+			calls = new Dictionary<string, List<string>> { ["campaigns"] = new List<string> { "CampaignServiceZone", "campaignservice" } }
+		};
+
+		Assert.That(workspace.CallsOf("campaigns"), Is.EqualTo(new[] { "campaignservice" }));
+	}
+
+	/// <summary>
+	/// The review fits a short screen: the choices keep three rows and page, the rest of the screen shows what fits,
+	/// and the last line shown says how many were left out. A tall screen shows everything and every choice.
+	/// </summary>
+	[Test]
+	public void The_review_fits_the_screen()
+	{
+		var lines = Enumerable.Range(1, 20).Select(i => $"line {i}").ToList();
+
+		var (shown, pageSize) = LocalStackCreateCommand.FitReview(lines, 12, 15);
+		Assert.That(pageSize, Is.EqualTo(3));
+		Assert.That(shown, Has.Count.EqualTo(15 - 5 - 3));
+		Assert.That(shown[^1], Does.Contain("14 more lines"));
+
+		(shown, pageSize) = LocalStackCreateCommand.FitReview(lines, 12, 60);
+		Assert.That((shown.Count, pageSize), Is.EqualTo((20, 12)));
+	}
+
+	/// <summary>A program typed with its arguments is split into the program and the arguments, the typed ones first.</summary>
+	[Test]
+	public void A_program_typed_with_its_arguments_is_split()
+	{
+		Assert.That(LocalStackCustomSteps.SplitProgram("echo \"Hello\"", ""), Is.EqualTo(("echo", "\"Hello\"")));
+		Assert.That(LocalStackCustomSteps.SplitProgram("npx vite", "--port 5173"), Is.EqualTo(("npx", "vite --port 5173")));
+		Assert.That(LocalStackCustomSteps.SplitProgram("\"C:\\Program Files\\node\\node.exe\" app.js", null), Is.EqualTo(("C:\\Program Files\\node\\node.exe", "app.js")));
+		Assert.That(LocalStackCustomSteps.SplitProgram("node", "app.js"), Is.EqualTo(("node", "app.js")));
+	}
+
+	/// <summary>The review sums a big stack up in one line per kind that fits the screen, builds counted apart.</summary>
+	[Test]
+	public void Review_sums_a_big_stack_up_to_fit_the_screen()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var steps = stacks.Resolve("full", StackCatalogue()).steps;
+		var lines = LocalStackCreateCommand.StepSummary(stacks, steps, 60).Select(Spectre.Console.Markup.Remove).ToList();
+
+		Assert.That(lines.Count, Is.LessThanOrEqualTo(8), string.Join("\n", lines));
+		Assert.That(lines, Has.All.Length.LessThanOrEqualTo(60));
+		Assert.That(lines[0], Does.Match(@"It runs \d+ steps \(\+\d+ builds when needed\):"));
+		Assert.That(lines, Has.Some.Contains("Scala services (").And.Some.Contains("C# hosts ("));
 	}
 }

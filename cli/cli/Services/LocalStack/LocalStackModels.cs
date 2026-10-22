@@ -35,7 +35,7 @@ public class LocalStackConfig
 	///
 	/// <see cref="repos"/> is the in-memory view of the same data: <see cref="LocalStackConfigIO.Load"/> fills it
 	/// from here, and <see cref="LocalStackConfigIO.Save"/> writes it back here, so code that reads
-	/// <c>repos.apiDir</c> keeps working. Null on a manifest written before this existed.
+	/// <c>repos.apiDir</c> keeps working.
 	/// </summary>
 	public Dictionary<string, string> paths;
 
@@ -75,9 +75,8 @@ public class LocalStackConfig
 	/// The pinned toolchain <c>beam local setup</c> provisioned, if any: private installs of JDK 8, Maven, the
 	/// .NET SDK and Node that the steps below resolve their commands from instead of <c>PATH</c>.
 	///
-	/// Null on a manifest that predates <c>setup</c> (and omitted from the JSON when null), in which case every
-	/// token falls back to the bare command name and the stack behaves exactly as it did before — so an existing
-	/// manifest keeps working untouched.
+	/// Null when setup provisioned none (and omitted from the JSON then): every token falls back to the bare
+	/// command name on <c>PATH</c>.
 	/// </summary>
 	public LocalStackToolchain toolchain;
 
@@ -99,8 +98,7 @@ public class LocalStackConfig
 	/// which also keeps it correct for <c>beam local setup --update-services</c>, where the repo paths are
 	/// never prompted for.
 	///
-	/// Null on manifests written before this field existed (and omitted from the JSON when null), so readers
-	/// must treat it as optional.
+	/// Optional (omitted from the JSON when null), so readers treat it as such.
 	/// </summary>
 	public LocalStackRepos repos;
 
@@ -161,9 +159,25 @@ public class VariableCycleException : InvalidOperationException
 /// <summary>A backend a stack can run against: the API host and, for a remote one, the realm to use.</summary>
 public class LocalStackTarget
 {
+	/// <summary>The backend's API host, such as <c>https://dev.api.beamable.com</c>.</summary>
 	public string host;
+
+	/// <summary>The org: its alias or cid. Asked for at the first login when unset.</summary>
 	public string cid;
+
+	/// <summary>The realm. Picked at the first login when unset.</summary>
 	public string pid;
+
+	/// <summary>
+	/// True when the target is this workspace's own backend, reached at another address: the stack runs it, and logs
+	/// into the local realm instead of asking for a login. <c>lan</c> is one: the same backend at this machine's LAN
+	/// address, which phones and other machines can reach and <c>localhost</c> can't.
+	/// </summary>
+	public bool? local;
+
+	/// <summary>True to ask before every run against it, as <c>prod</c> does: the services started there serve the
+	/// realm's live traffic.</summary>
+	public bool? confirm;
 }
 
 /// <summary>
@@ -219,6 +233,23 @@ public class LocalStackStep
 	/// manifest is saved and none are set.</summary>
 	public List<string> tags;
 
+	/// <summary>
+	/// Steps this one can't work without, by name or tag (a tag means every step that has it): the C# gateway
+	/// needs the docker dependencies, a Scala service needs Redis, dbflake and the gateway, an extension needs the
+	/// microservices it calls. <c>beam local create</c> adds what a stack is missing, and <c>beam local run</c> warns
+	/// about it. Omitted when there are none.
+	/// </summary>
+	public List<string> dependsOn;
+
+	/// <summary>
+	/// For a step a stack defines itself: the step it runs after, by name. Unset, it runs after every other step; see
+	/// also <see cref="first"/>. Catalogue steps keep the catalogue's order and don't use it.
+	/// </summary>
+	public string after;
+
+	/// <summary>For a step a stack defines itself: true to run it before every other step.</summary>
+	public bool? first;
+
 	/// <summary>When false, the step is skipped entirely.</summary>
 	public bool enabled = true;
 
@@ -246,6 +277,13 @@ public class LocalStackStep
 	public string requiredOutput;
 
 	/// <summary>
+	/// For a build step: the folders and files it compiles, relative to <see cref="workingDirectory"/> (or with path
+	/// variables). <c>beam local run</c> builds the step when they changed since its last successful build, and shows
+	/// it as up to date otherwise. Without inputs a build step only builds when its output is missing.
+	/// </summary>
+	public List<string> inputs;
+
+	/// <summary>
 	/// For the Scala reactor build step: the module directories it produces output for, relative to
 	/// <see cref="workingDirectory"/> (e.g. <c>core</c>, <c>tools/auth</c>).
 	///
@@ -254,8 +292,6 @@ public class LocalStackStep
 	/// fail cleanly — the service starts, half the stack proxies through it, and the result is a "malfunctioning"
 	/// backend rather than an obvious build error. A single <see cref="requiredOutput"/> cannot express this
 	/// because one step builds ~18 modules.
-	///
-	/// Null on manifests written before this existed, which simply keeps the old behaviour.
 	/// </summary>
 	public List<string> scalaModules;
 
@@ -734,6 +770,7 @@ public static class LocalStackConfigIO
 			step.command = ReplaceFolders(step.command, folders);
 			step.arguments = ReplaceFolders(step.arguments, folders);
 			step.requiredOutput = ReplaceFolders(step.requiredOutput, folders);
+			step.inputs = step.inputs?.Select(i => ReplaceFolders(i, folders)).ToList();
 			step.stopArguments = ReplaceFolders(step.stopArguments, folders);
 			step.purgeStopArguments = ReplaceFolders(step.purgeStopArguments, folders);
 			if (step.environment != null)
@@ -750,6 +787,8 @@ public static class LocalStackConfigIO
 		yield return step.command;
 		yield return step.arguments;
 		yield return step.requiredOutput;
+		foreach (var input in step.inputs ?? Enumerable.Empty<string>())
+			yield return input;
 		yield return step.stopArguments;
 		yield return step.purgeStopArguments;
 		yield return step.readyWhenHttpOk;
@@ -898,9 +937,8 @@ public static class LocalStackConfigIO
 			tags.Add("csharp");
 		else if (Starts("scala"))
 			tags.Add("scala");
-		else if (Starts(LocalStackTemplate.ExtensionPrefix) || Starts(LocalStackTemplate.MicroservicePrefix)
-		         || Starts(LocalStackTemplate.GroupPrefix))
-			tags.Add("extensions");
+		else if (LocalStackStacks.ServiceTagsFor(rest) is { Count: > 0 } service)
+			tags.AddRange(service);
 		else if (Starts("portal"))
 			tags.Add("portal");
 
@@ -1074,77 +1112,13 @@ public static class LocalStackConfigIO
 			return true;
 		}
 
-		// An `npm install` step produces node_modules. Inferring that covers manifests written before the step
-		// declared it, so an existing stack self-heals without being regenerated — which matters because the
-		// symptom (`Cannot find package 'vite'`) looks nothing like "dependencies were never installed".
-		var path = ResolveRequiredOutput(step, config) ?? ImplicitNpmInstallOutput(step, config);
+		var path = ResolveRequiredOutput(step, config);
 		if (path == null)
 		{
 			return false;
 		}
 
 		return !File.Exists(path) && !Directory.Exists(path);
-	}
-
-	/// <summary>
-	/// <c>&lt;workingDirectory&gt;/node_modules</c> for a build step that runs <c>npm install</c>, or null for
-	/// anything else. Only consulted when the step declares no <see cref="LocalStackStep.requiredOutput"/>.
-	/// </summary>
-	private static string ImplicitNpmInstallOutput(LocalStackStep step, LocalStackConfig config)
-	{
-		if (step?.build != true || step.beam || step.shell) return null;
-
-		var command = step.command ?? string.Empty;
-		var isNpm = command.Contains(LocalStackTemplate.NpmToken, StringComparison.Ordinal)
-		            || Path.GetFileName(command.Trim().Trim('"')) is "npm" or "npm.cmd";
-
-		if (!isNpm) return null;
-
-		// `install` only — `npm run dev` and friends produce nothing to check for.
-		var arguments = (step.arguments ?? string.Empty).Trim();
-		if (!arguments.Equals("install", StringComparison.OrdinalIgnoreCase)
-		    && !arguments.StartsWith("install ", StringComparison.OrdinalIgnoreCase))
-		{
-			return null;
-		}
-
-		var workDir = Substitute(step.workingDirectory, config);
-		if (string.IsNullOrWhiteSpace(workDir)
-		    || workDir.Contains(EditPlaceholder, StringComparison.Ordinal))
-		{
-			return null;
-		}
-
-		try
-		{
-			return Path.Combine(Path.GetFullPath(workDir), "node_modules");
-		}
-		catch
-		{
-			return null;
-		}
-	}
-
-	/// <summary>
-	/// The module list from a Maven <c>-pl a,b,c</c> argument, so a manifest written before
-	/// <see cref="LocalStackStep.scalaModules"/> existed still gets the never-built check.
-	/// </summary>
-	private static List<string> ScalaModulesFromMavenArguments(LocalStackStep step)
-	{
-		var arguments = step?.arguments;
-		if (string.IsNullOrWhiteSpace(arguments)) return null;
-
-		var tokens = arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-		for (var i = 0; i < tokens.Length - 1; i++)
-		{
-			if (!tokens[i].Equals("-pl", StringComparison.Ordinal)) continue;
-
-			return tokens[i + 1]
-				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-				.ToList();
-		}
-
-		return null;
 	}
 
 	/// <summary>
@@ -1158,11 +1132,7 @@ public static class LocalStackConfigIO
 	/// </summary>
 	public static string FirstUnbuiltScalaModule(LocalStackStep step, LocalStackConfig config)
 	{
-		// Fall back to the modules named in the mvn `-pl` list. Manifests written before `scalaModules` existed
-		// still carry them there, so an existing stack gets this check without having to be regenerated.
-		var modules = step?.scalaModules != null && step.scalaModules.Count > 0
-			? step.scalaModules
-			: ScalaModulesFromMavenArguments(step);
+		var modules = step?.scalaModules;
 
 		if (modules == null || modules.Count == 0) return null;
 

@@ -356,9 +356,17 @@ public class DefaultAppContext : IAppContext
 		}
 		// Detect whether the caller explicitly supplied a token on the command line (or via config
 		// override). When they did, the stored login in the token file must not override it.
-		var hasAccessTokenOverride = !string.IsNullOrEmpty(bindingContext.ParseResult.GetValueForOption(_accessTokenOption));
-		var hasRefreshTokenOverride = !string.IsNullOrEmpty(bindingContext.ParseResult.GetValueForOption(_refreshTokenOption));
+		// A token given as an environment override counts the same as one on the command line.
+		var hasAccessTokenOverride = !string.IsNullOrEmpty(bindingContext.ParseResult.GetValueForOption(_accessTokenOption)
+		                                                   ?? ConfigService.EnvironmentOverride(_accessTokenOption.OptionName));
+		var hasRefreshTokenOverride = !string.IsNullOrEmpty(bindingContext.ParseResult.GetValueForOption(_refreshTokenOption)
+		                                                    ?? ConfigService.EnvironmentOverride(_refreshTokenOption.OptionName));
 		var hasTokenOverride = hasAccessTokenOverride || hasRefreshTokenOverride;
+		_tokenIsOverride = hasTokenOverride;
+
+		var overridden = ConfigService.EnvironmentOverridable.Where(o => ConfigService.EnvironmentOverride(o) != null).ToList();
+		if (overridden.Count > 0)
+			Log.Debug($"Using {string.Join(", ", overridden.Select(ConfigService.EnvironmentVariableFor))} from the environment instead of the .beamable config.");
 
 		// If an access token is supplied without a matching refresh token, don't inherit the stored
 		// user's refresh token: it belongs to a different identity, and the requester retry path would
@@ -465,10 +473,18 @@ public class DefaultAppContext : IAppContext
 		_token = new CliToken(tokenResponse, _cid, _pid);
 	}
 
+	/// <summary>
+	/// Saves the current token as the workspace's login, unless it came from <c>--refresh-token</c>,
+	/// <c>--access-token</c> or their environment overrides: those are for one invocation, and saving a refreshed
+	/// one would replace the workspace's login with somebody else's.
+	/// </summary>
 	public void SaveCurrentTokenToFile()
 	{
+		if (_tokenIsOverride) return;
 		_configService.SaveTokenToFile(_token);
 	}
+
+	private bool _tokenIsOverride;
 
 	string IRealmInfo.CustomerID => _cid;
 

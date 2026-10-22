@@ -281,6 +281,8 @@ public class LocalStackInitWebRegistryTests : CLITest
 		Ansi.Input.PushKey(ConsoleKey.Enter);          // Starts from again: "(start from nothing)"
 		Ansi.Input.PushKey(ConsoleKey.Spacebar);       // Adds: the Docker group, which ticks all of its steps
 		Ansi.Input.PushKey(ConsoleKey.Enter);
+		Ansi.Input.PushKey(ConsoleKey.Enter);          // Own commands: Done
+		Ansi.Input.PushKey(ConsoleKey.Enter);          // Backend: local
 		Ansi.Input.PushTextWithEnter("Mine");          // Description
 		Ansi.Input.PushKey(ConsoleKey.Enter);          // Review: "Write it"
 
@@ -291,6 +293,25 @@ public class LocalStackInitWebRegistryTests : CLITest
 		var written = JObject.Parse(File.ReadAllText(Path.Combine(LocalStacksDir, "bbbb.json")))["bbbb"]!;
 		Assert.That(written["include"]!.Select(t => (string)t), Is.EqualTo(new[] { "docker" }));
 		Assert.That((string)written["description"], Is.EqualTo("Mine"));
+		Assert.That(written["target"], Is.Null, "local is what a stack runs against when it names nothing");
+	}
+
+	/// <summary>A stack or a variant can name its backend, as a target or as an address; an unknown one isn't written.</summary>
+	[Test]
+	public void Create_names_the_backend()
+	{
+		SetupAndLoad();
+
+		Run("local", "create", "remote-gw", "--quiet", "--extends", "backend", "--target", "https://gw.example.com/");
+		Run("local", "create", "backend:phones", "--quiet", "--target", "lan");
+		Assert.That(RunFull(new[] { "local", "create", "odd", "--quiet", "--extends", "backend", "--target", "nowhere" }), Is.Not.EqualTo(0));
+
+		var stacks = LocalStackStacks.Load(WorkingDir);
+		var config = LocalStackConfigIO.Load(SettingsPath);
+		Assert.That(stacks.Resolve("remote-gw", config).target, Is.EqualTo("https://gw.example.com"));
+		Assert.That(stacks.Resolve("backend:phones", config).target, Is.EqualTo("lan"));
+		Assert.That(stacks.Contains("odd"), Is.False);
+		Assert.That(stacks.List().First(l => l.name == "remote-gw").target, Is.EqualTo("https://gw.example.com"));
 	}
 
 	/// <summary>Without a terminal there is nobody to ask, so a missing name fails instead of prompting.</summary>
@@ -513,5 +534,319 @@ public class LocalStackInitWebRegistryTests : CLITest
 
 		Run("local", "stop", "--quiet");
 		Assert.That(File.Exists(LocalStackBoardIO.PathFor(runState)), Is.False);
+	}
+
+	/// <summary>Setup only reports what .env.local says: stacks give the portal its host, so the file is never written.</summary>
+	[Test]
+	public void Portal_config_leaves_env_local_alone()
+	{
+		var portal = Path.Combine(WorkingDir, "portal-for-env");
+		Directory.CreateDirectory(portal);
+		var env = Path.Combine(portal, PortalEnvService.EnvFileName);
+
+		Run("local", "setup", "--only", "portal-config", "--quiet", "--portal-dir", portal);
+		Assert.That(File.Exists(env), Is.False, "not created");
+
+		File.WriteAllText(env, "VITE_API_BASE=https://dev.api.beamable.com\nVITE_WINGMAN_URL=http://localhost:4960\n");
+		var before = File.ReadAllText(env);
+		Run("local", "setup", "--only", "portal-config", "--quiet", "--portal-dir", portal, "--force");
+		Assert.That(File.ReadAllText(env), Is.EqualTo(before), "not rewritten, even with --force");
+	}
+
+	/// <summary>
+	/// End to end on a detached stack of two steps that only sleep: running another stack name changes the running
+	/// stack in place (a step it adds starts, one it drops stops, the rest keeps its process), a restart replaces
+	/// one step's process, and stop takes everything down.
+	/// </summary>
+	[Test]
+	public void A_running_stack_is_changed_in_place_and_a_step_restarted()
+	{
+		if (!OperatingSystem.IsWindows()) Assert.Ignore("The sleeping steps are PowerShell.");
+
+		SetupAndLoad();
+		Run("local", "setup", "--quiet", "--add-step", "sleep: a", "--step-shell", "Start-Sleep -Seconds 600");
+		Run("local", "setup", "--quiet", "--add-step", "sleep: b", "--step-shell", "Start-Sleep -Seconds 600");
+		Run("local", "create", "one", "--quiet", "--include", "sleep: a");
+		Run("local", "create", "both", "--quiet", "--include", "sleep: a,sleep: b");
+
+		var runStatePath = LocalStackRunStateIO.ResolveRunStatePath(SettingsPath);
+		int Pid(string step) => LocalStackRunStateIO.Load(runStatePath)?.steps.FirstOrDefault(e => e.name == step)?.pid ?? 0;
+		try
+		{
+			Run("local", "run", "one", "--detach", "--no-create-realm", "--quiet");
+			var a = Pid("sleep: a");
+			Assert.That(a, Is.GreaterThan(0));
+
+			Run("local", "run", "both", "--detach", "--no-create-realm", "--quiet");
+			Assert.That(Pid("sleep: a"), Is.EqualTo(a), "kept running");
+			Assert.That(Pid("sleep: b"), Is.GreaterThan(0), "added");
+
+			Run("local", "run", "one", "--no-create-realm", "--quiet");
+			Assert.That(Pid("sleep: b"), Is.EqualTo(0), "dropped, even though this run asked to be attached: the running stack stays detached");
+			Assert.That(Pid("sleep: a"), Is.EqualTo(a));
+
+			Run("local", "ps", "--restart", "Sleep: a", "--quiet");
+			Assert.That(Pid("sleep: a"), Is.Not.EqualTo(a).And.GreaterThan(0), "a new process");
+
+			// Nothing named: the list of what can be named, and nothing restarted.
+			a = Pid("sleep: a");
+			var from = Ansi.Output.Length;
+			Run("local", "ps", "--restart", "--quiet");
+			var listed = Ansi.Output.Substring(from);
+			Assert.That(listed, Does.Contain("custom").And.Contain("(sleep: a)").And.Contain("--all"));
+			Assert.That(Pid("sleep: a"), Is.EqualTo(a), "nothing restarted");
+
+			// ps prints the board, not its result as JSON; --json prints only that.
+			from = Ansi.Output.Length;
+			Run("local", "ps", "--quiet");
+			Assert.That(Ansi.Output.Substring(from), Does.Contain("Sleep").And.Not.Contain("\"steps\""));
+
+			Run("local", "run", "both", "--detach", "--no-create-realm", "--quiet");
+			var b = Pid("sleep: b");
+			Run("local", "ps", "--restart", "--all", "--quiet");
+			Assert.That((Pid("sleep: a"), Pid("sleep: b")), Is.Not.EqualTo((a, b)));
+			Assert.That(Pid("sleep: a"), Is.Not.EqualTo(a).And.GreaterThan(0), "everything restarted");
+			Assert.That(Pid("sleep: b"), Is.Not.EqualTo(b).And.GreaterThan(0));
+		}
+		finally
+		{
+			var started = new[] { Pid("sleep: a"), Pid("sleep: b") }.Where(p => p > 0).ToList();
+			RunFull(new[] { "local", "stop", "--quiet" });
+
+			// A stopped process can take a moment to let go of the test folder, which the teardown then deletes.
+			bool Alive(int pid)
+			{
+				try { return !System.Diagnostics.Process.GetProcessById(pid).HasExited; }
+				catch (ArgumentException) { return false; }
+			}
+
+			for (var i = 0; i < 100 && started.Any(Alive); i++) System.Threading.Thread.Sleep(100);
+		}
+
+		Assert.That(LocalStackRunStateIO.Load(runStatePath), Is.Null);
+	}
+
+	/// <summary>
+	/// Builds in different folders run at the same time: the first one waits for a file that only the second one
+	/// writes, so one after the other it would give up and fail the run.
+	/// </summary>
+	[Test]
+	public void Builds_in_different_folders_run_at_the_same_time()
+	{
+		if (!OperatingSystem.IsWindows()) Assert.Ignore("The build steps are PowerShell.");
+
+		SetupAndLoad();
+		var first = Path.Combine(WorkingDir, "repo-one");
+		var second = Path.Combine(WorkingDir, "repo-two");
+		Directory.CreateDirectory(first);
+		Directory.CreateDirectory(second);
+		var marker = Path.Combine(WorkingDir, "second-built.txt");
+
+		Run("local", "setup", "--quiet", "--add-step", "build: one", "--step-once", "--step-dir", first, "--step-shell",
+			$"$n = 0; while (-not (Test-Path '{marker}') -and $n -lt 150) {{ Start-Sleep -Milliseconds 100; $n++ }}; if (-not (Test-Path '{marker}')) {{ exit 3 }}");
+		Run("local", "setup", "--quiet", "--add-step", "build: two", "--step-once", "--step-dir", second, "--step-shell",
+			$"Set-Content -Path '{marker}' -Value built");
+		var config = LocalStackConfigIO.Load(SettingsPath);
+		foreach (var step in config.steps.Where(s => s.name is "build: one" or "build: two"))
+			step.build = true;
+		LocalStackConfigIO.Save(SettingsPath, config);
+		Run("local", "create", "builds", "--quiet", "--include", "build: one,build: two");
+
+		try
+		{
+			Assert.That(RunFull(new[] { "local", "run", "builds:build", "--detach", "--no-create-realm", "--quiet" }), Is.EqualTo(0));
+			Assert.That(File.Exists(marker), Is.True);
+			Assert.That(BoardState("build: one"), Is.EqualTo(LocalStackStepState.Done), "it saw the file the other build wrote");
+		}
+		finally
+		{
+			RunFull(new[] { "local", "stop", "--quiet" });
+		}
+	}
+
+	private LocalStackStepState? BoardState(string step) =>
+		LocalStackBoardIO.Load(LocalStackBoardIO.PathFor(LocalStackRunStateIO.ResolveRunStatePath(SettingsPath)))?.rows
+			.FirstOrDefault(r => r.name == step)?.state;
+
+	/// <summary>
+	/// A step that fails doesn't stop the stack: it is marked failed, a step that needs it can't start, and the
+	/// others start.
+	/// </summary>
+	[Test]
+	public void A_failed_step_is_marked_and_the_rest_start()
+	{
+		if (!OperatingSystem.IsWindows()) Assert.Ignore("The steps are PowerShell.");
+
+		SetupAndLoad();
+		Run("local", "setup", "--quiet", "--add-step", "seed", "--step-once", "--step-shell", "exit 3");
+		Run("local", "setup", "--quiet", "--add-step", "needs seed", "--step-shell", "Start-Sleep -Seconds 600");
+		Run("local", "setup", "--quiet", "--add-step", "sleep: a", "--step-shell", "Start-Sleep -Seconds 600");
+		var config = LocalStackConfigIO.Load(SettingsPath);
+		config.steps.First(s => s.name == "needs seed").dependsOn = new List<string> { "seed" };
+		LocalStackConfigIO.Save(SettingsPath, config);
+		Run("local", "create", "mixed", "--quiet", "--include", "seed,needs seed,sleep: a");
+
+		var runStatePath = LocalStackRunStateIO.ResolveRunStatePath(SettingsPath);
+		try
+		{
+			Assert.That(RunFull(new[] { "local", "run", "mixed", "--detach", "--no-create-realm", "--quiet" }), Is.EqualTo(0));
+			Assert.That(BoardState("seed"), Is.EqualTo(LocalStackStepState.Failed));
+			Assert.That(BoardState("needs seed"), Is.EqualTo(LocalStackStepState.Failed), "it can't start without the seed");
+			Assert.That(LocalStackRunStateIO.Load(runStatePath)?.steps.FirstOrDefault(e => e.name == "sleep: a")?.pid ?? 0, Is.GreaterThan(0), "the rest started");
+		}
+		finally
+		{
+			var started = LocalStackRunStateIO.Load(runStatePath)?.steps.Select(e => e.pid).Where(p => p > 0).ToList() ?? new List<int>();
+			RunFull(new[] { "local", "stop", "--quiet" });
+			bool Alive(int pid)
+			{
+				try { return !System.Diagnostics.Process.GetProcessById(pid).HasExited; }
+				catch (ArgumentException) { return false; }
+			}
+
+			for (var i = 0; i < 100 && started.Any(Alive); i++) System.Threading.Thread.Sleep(100);
+		}
+	}
+
+	/// <summary>Adds a custom step and marks it a build, which <c>--add-step</c> can't.</summary>
+	private void AddBuildStep(string name, string dir, string script, int timeout = 120, List<string> inputs = null)
+	{
+		Run("local", "setup", "--quiet", "--add-step", name, "--step-once", "--step-dir", dir, "--step-timeout", timeout.ToString(),
+			"--step-shell", script);
+		var config = LocalStackConfigIO.Load(SettingsPath);
+		var step = config.steps.First(s => s.name == name);
+		step.build = true;
+		step.inputs = inputs;
+		LocalStackConfigIO.Save(SettingsPath, config);
+	}
+
+	private static void Git(string dir, params string[] args)
+	{
+		var psi = new System.Diagnostics.ProcessStartInfo("git") { WorkingDirectory = dir, RedirectStandardOutput = true, RedirectStandardError = true };
+		foreach (var arg in args) psi.ArgumentList.Add(arg);
+		using var git = System.Diagnostics.Process.Start(psi)!;
+		git.WaitForExit();
+		Assert.That(git.ExitCode, Is.EqualTo(0), $"git {string.Join(" ", args)}: {git.StandardError.ReadToEnd()}");
+	}
+
+	/// <summary>
+	/// A build the stack names outright builds the first time, is up to date while its sources stay the same, and
+	/// builds again once they change.
+	/// </summary>
+	[Test]
+	public void A_named_build_is_skipped_while_its_sources_are_unchanged()
+	{
+		if (!OperatingSystem.IsWindows()) Assert.Ignore("The build step is PowerShell.");
+
+		SetupAndLoad();
+		var repo = Path.Combine(WorkingDir, "sources");
+		Directory.CreateDirectory(repo);
+		Git(repo, "init", "-q");
+		File.WriteAllText(Path.Combine(repo, "a.txt"), "one");
+		Git(repo, "add", ".");
+		Git(repo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "one");
+
+		var count = Path.Combine(WorkingDir, "builds.txt");
+		AddBuildStep("build: sources", repo, $"Add-Content -Path '{count}' -Value built", inputs: new List<string> { "." });
+		Run("local", "create", "src", "--quiet", "--include", "build: sources");
+		int Builds() => File.Exists(count) ? File.ReadAllLines(count).Length : 0;
+
+		try
+		{
+			Run("local", "run", "src", "--detach", "--no-create-realm", "--quiet");
+			Assert.That(Builds(), Is.EqualTo(1), "never built by beam local run");
+			RunFull(new[] { "local", "stop", "--quiet" });
+
+			Run("local", "run", "src", "--detach", "--no-create-realm", "--quiet");
+			Assert.That(Builds(), Is.EqualTo(1), "unchanged: up to date");
+			RunFull(new[] { "local", "stop", "--quiet" });
+
+			File.WriteAllText(Path.Combine(repo, "a.txt"), "two");
+			Run("local", "run", "src", "--detach", "--no-create-realm", "--quiet");
+			Assert.That(Builds(), Is.EqualTo(2), "changed: builds");
+		}
+		finally
+		{
+			RunFull(new[] { "local", "stop", "--quiet" });
+		}
+	}
+
+	/// <summary>A build that runs out of time is stopped and marked failed, instead of running on unwatched; the run goes on.</summary>
+	[Test]
+	public void A_build_that_runs_out_of_time_is_stopped()
+	{
+		if (!OperatingSystem.IsWindows()) Assert.Ignore("The build step is PowerShell.");
+
+		SetupAndLoad();
+		var dir = Path.Combine(WorkingDir, "slow");
+		Directory.CreateDirectory(dir);
+		var pidFile = Path.Combine(WorkingDir, "slow.pid");
+		AddBuildStep("build: slow", dir, $"Set-Content -Path '{pidFile}' -Value $PID; Start-Sleep -Seconds 120", timeout: 3);
+		Run("local", "create", "slow", "--quiet", "--include", "build: slow");
+
+		try
+		{
+			var watch = System.Diagnostics.Stopwatch.StartNew();
+			Assert.That(RunFull(new[] { "local", "run", "slow:build", "--detach", "--no-create-realm", "--quiet" }), Is.EqualTo(0), "a failed step doesn't fail the run");
+			Assert.That(watch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(60)));
+			Assert.That(BoardState("build: slow"), Is.EqualTo(LocalStackStepState.Failed));
+
+			Assert.That(File.Exists(pidFile), Is.True);
+			var pid = int.Parse(File.ReadAllText(pidFile).Trim());
+			bool Alive()
+			{
+				try { return !System.Diagnostics.Process.GetProcessById(pid).HasExited; }
+				catch (ArgumentException) { return false; }
+			}
+
+			for (var i = 0; i < 50 && Alive(); i++) System.Threading.Thread.Sleep(100);
+			Assert.That(Alive(), Is.False, "the build's process was stopped");
+		}
+		finally
+		{
+			RunFull(new[] { "local", "stop", "--quiet" });
+		}
+	}
+
+	/// <summary>Create adds what the picked steps need, and says so.</summary>
+	[Test]
+	public void Create_adds_what_the_picked_steps_need()
+	{
+		SetupAndLoad();
+		Run("local", "create", "gw", "--quiet", "--include", "c# gateway");
+
+		var written = JObject.Parse(File.ReadAllText(Path.Combine(LocalStacksDir, "gw.json")))["gw"]!;
+		var include = written["include"]!.Select(t => (string)t).ToList();
+		Assert.That(include, Is.SupersetOf(new[] { "c# gateway", LocalStackDependencies.ApiDepsStep, "scala: auth", "scala: content" }),
+			"the docker deps, the Scala login set and the Scala services the gateway calls");
+		Assert.That(include, Has.None.StartsWith("build:"), "its build isn't named: it comes with it");
+		var steps = LocalStackStacks.Load(WorkingDir).Resolve("gw", LocalStackConfigIO.Load(SettingsPath)).steps.Select(s => s.name);
+		Assert.That(steps, Does.Contain("build: c# gateway"));
+	}
+
+	/// <summary>
+	/// A stack can run this workspace's microservices as steps of its own, narrowed to them, with the backend they
+	/// log into added; and have commands of its own, placed where they say.
+	/// </summary>
+	[Test]
+	public void Create_runs_services_and_own_commands()
+	{
+		SetupAndLoad();
+		Run("local", "create", "svc", "--quiet", "--services", "Stats");
+		var svc = JObject.Parse(File.ReadAllText(Path.Combine(LocalStacksDir, "svc.json")))["svc"]!;
+		Assert.That(svc["steps"]![LocalStackTemplate.MicroservicePrefix + "Stats"]!["arguments"]!.ToString(), Does.Contain("--ids Stats"));
+		Assert.That(svc["extensions"]!.Select(t => (string)t), Is.EqualTo(new[] { "Stats" }));
+		Assert.That(svc["include"]!.Select(t => (string)t), Does.Contain(LocalStackTemplate.MicroservicePrefix + "Stats").And.Contain("c# gateway"));
+
+		Run("local", "create", "own", "--quiet", "--extends", "backend", "--add-step", "seed", "--step-shell", "echo seeded", "--step-once", "--step-first");
+		Run("local", "edit", "own", "--quiet", "--add-step", "watch", "--step-command", "node", "--step-args", "watch.js");
+
+		var stacks = LocalStackStacks.Load(WorkingDir);
+		var steps = stacks.Resolve("own", LocalStackConfigIO.Load(SettingsPath)).steps.Select(s => s.name).ToList();
+		Assert.That(steps.First(), Is.EqualTo("seed"));
+		Assert.That(steps.Last(), Is.EqualTo("watch"));
+		var own = JObject.Parse(File.ReadAllText(Path.Combine(LocalStacksDir, "own.json")))["own"]!;
+		Assert.That((bool)own["steps"]!["seed"]!["custom"]!, Is.True);
+		Assert.That(RunFull(new[] { "local", "edit", "own", "--quiet", "--add-step", "seed", "--step-command", "node" }), Is.Not.EqualTo(0), "names are unique");
 	}
 }

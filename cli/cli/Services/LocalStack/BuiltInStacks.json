@@ -7,6 +7,13 @@
       "scala: gateway",
       "scala: auth",
       "scala: account"
+    ],
+    "scala-csharp": [
+      "scala: content",
+      "scala: messaging",
+      "scala: notification",
+      "scala: session",
+      "scala: stats"
     ]
   },
   "variants": {
@@ -29,24 +36,26 @@
   },
   "stacks": {
     "full": {
-      "description": "Everything on this machine: Docker dependencies, C# hosts, all Scala services, the portal and its extensions.",
-      "include": [ "docker", "csharp", "scala", "portal", "extensions" ]
+      "description": "Full-stack work: Docker dependencies, C# hosts, all Scala services, the portal and its extensions, all on this machine.",
+      "include": [ "docker", "csharp", "scala", "portal", "microservices", "extensions" ]
     },
     "backend": {
-      "description": "The API only: Docker dependencies, C# hosts and all Scala services. No portal.",
+      "description": "Backend work: Docker dependencies, C# hosts and all Scala services. No portal.",
       "include": [ "docker", "csharp", "scala" ]
     },
     "csharp-portal": {
-      "description": "C# hosts with the minimal Scala set for login, plus the portal and its extensions.",
-      "include": [ "docker", "csharp", "scala-core", "portal", "extensions" ]
+      "description": "C# and portal work: Docker dependencies, C# hosts, the Scala services they call and the ones needed to log in, the portal and its extensions.",
+      "include": [ "docker", "csharp", "scala-core", "scala-csharp", "portal", "microservices", "extensions" ]
     },
     "portal-extensions": {
-      "description": "The portal and its extensions against the remote dev backend. Nothing else runs locally.",
-      "include": [ "portal", "extensions" ]
+      "description": "Portal and extension work: the portal and its extensions against the dev backend. Nothing else runs on this machine.",
+      "target": "dev",
+      "include": [ "portal", "microservices", "extensions" ]
     },
     "web-dev": {
-      "description": "Local SDK and toolkit builds, the portal and its extensions, against the remote dev backend.",
-      "include": [ "web-registry", "portal", "extensions" ],
+      "description": "Web SDK and toolkit work: the local package registry, your SDK and toolkit builds, the portal and its extensions, against the dev backend.",
+      "target": "dev",
+      "include": [ "web-registry", "portal", "microservices", "extensions" ],
       "variants": {
         "non-publish": {
           "description": "Type-check loop: start the registry, never publish the packages or repoint the extensions.",
@@ -55,8 +64,9 @@
       }
     },
     "remote": {
-      "description": "This workspace's microservices and portal extensions, registered against a remote realm and used from the hosted portal.",
-      "include": [ "extensions" ]
+      "description": "Microservice and extension work on a remote realm: this workspace's microservices and portal extensions, registered against dev and used from the hosted portal.",
+      "target": "dev",
+      "include": [ "microservices", "extensions" ]
     }
   }
 }

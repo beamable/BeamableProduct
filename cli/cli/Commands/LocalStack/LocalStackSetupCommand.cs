@@ -141,6 +141,9 @@ public class LocalStackSetupCommand
 	: AtomicCommand<LocalStackSetupCommandArgs, LocalStackSetupCommandResult>
 	, IStandaloneCommand, ISkipManifest
 {
+	// It prints its own readable output; the result object still reaches tools through the data channel.
+	public override bool AutoLogOutput => false;
+
 	public LocalStackSetupCommand() : base("setup",
 		"Prepare this machine for `beam local run`: a private toolchain (JDK 8, Maven, .NET SDK, Node), the settings file with its step catalogue, the backend config files and the AWS prerequisites")
 	{
@@ -768,7 +771,7 @@ public class LocalStackSetupCommand
 	/// workspace by loading the beamo manifest (no network). Best-effort: returns empty results when run outside
 	/// a workspace or if the manifest can't be read, so setup stays usable anywhere.
 	/// </summary>
-	private static async Task<(List<string> services, List<string> extensions, Dictionary<string, string[]> groups)> DiscoverWorkspaceServices(LocalStackSetupCommandArgs args)
+	public static async Task<(List<string> services, List<string> extensions, Dictionary<string, string[]> groups)> DiscoverWorkspaceServices(CommandArgs args)
 	{
 		var services = new List<string>();
 		var extensions = new List<string>();
@@ -806,7 +809,7 @@ public class LocalStackSetupCommand
 	/// rather than "you are standing somewhere else". Scanning the checkout that was actually pointed at fixes that
 	/// for both the interactive flow and <c>--update-services</c>.
 	/// </summary>
-	private static (List<string> extensions, Dictionary<string, string[]> groups) MergePortalExtensions(
+	public static (List<string> extensions, Dictionary<string, string[]> groups) MergePortalExtensions(
 		string portalDir, List<string> discoveredExtensions, Dictionary<string, string[]> discoveredGroups)
 	{
 		var (scannedExtensions, scannedGroups) = LocalStackTemplate.DiscoverPortalExtensions(portalDir);
@@ -1141,11 +1144,9 @@ public class LocalStackSetupCommand
 	}
 
 	/// <summary>
-	/// Points the portal's gitignored <c>.env.local</c> at the local backend.
-	///
-	/// Without it the portal's <c>API_BASE</c> falls back to <c>https://api.beamable.com</c>, so a portal served
-	/// from localhost sends its login to PRODUCTION — where the local seed account does not exist. The stack looks
-	/// completely healthy and login just fails, which is indistinguishable from a broken backend.
+	/// Reports what the portal's gitignored <c>.env.local</c> says about the backend, without changing it. A stack
+	/// gives the portal its API host as a process variable, which Vite puts ahead of the file, so the file only
+	/// decides where a plain <c>npm run dev</c> goes. Unset, that is production, so it says so.
 	/// </summary>
 	private static LocalStackSetupStepResult EnsurePortalEnv(LocalStackSetupCommandArgs args, LocalStackConfig config,
 		string portalDir)
@@ -1161,49 +1162,16 @@ public class LocalStackSetupCommand
 			};
 		}
 
-		// With no manifest yet, fall back to the reference host the template would write, so portal-config
-		// still points the portal at the local backend rather than being skipped.
-		var host = string.IsNullOrWhiteSpace(config?.host) ? new LocalStackTemplate.Options().host : config.host;
-
-		if (args.dryRun)
-		{
-			var current = PortalEnvService.ReadApiBase(portalDir);
-			return new LocalStackSetupStepResult
-			{
-				name = ToolchainPins.PortalConfig,
-				status = "would install",
-				ok = true,
-				detail = current == null
-					? $"would set {PortalEnvService.ApiBaseKey}={host} in {PortalEnvService.EnvFileName} " +
-					  "(currently unset, so the portal would log in against production)"
-					: $"{PortalEnvService.ApiBaseKey} is already {current}"
-			};
-		}
-
-		var outcome = new PortalEnvService().Ensure(portalDir, host, args.force);
-		if (!outcome.ok)
-		{
-			return new LocalStackSetupStepResult
-			{
-				name = ToolchainPins.PortalConfig, status = "failed", ok = false, detail = outcome.error
-			};
-		}
-
-		// "kept" with a value that is not the manifest host means the developer deliberately points elsewhere
-		// (dev/staging). Surface it rather than silently retargeting their portal.
-		var pointsElsewhere = outcome.action == "kept"
-		                      && !string.Equals(outcome.apiBase?.TrimEnd('/'), host?.TrimEnd('/'),
-			                      StringComparison.OrdinalIgnoreCase);
-
+		var current = PortalEnvService.ReadApiBase(portalDir);
 		return new LocalStackSetupStepResult
 		{
 			name = ToolchainPins.PortalConfig,
-			status = pointsElsewhere ? "warning" : "ok",
+			status = current == null ? "warning" : "ok",
 			ok = true,
-			detail = pointsElsewhere
-				? $"{PortalEnvService.ApiBaseKey}={outcome.apiBase} does NOT match the stack host {host} — the " +
-				  "portal will log in against that host instead. Use --force to repoint it."
-				: $"{outcome.action}: {PortalEnvService.ApiBaseKey}={outcome.apiBase}"
+			detail = current == null
+				? $"{PortalEnvService.ApiBaseKey} isn't set in {PortalEnvService.EnvFileName}: a plain npm run dev would use " +
+				  $"{PortalEnvService.ProductionApiBase}. Stacks give the portal their own host, so this only matters outside a stack."
+				: $"{PortalEnvService.ApiBaseKey}={current} in {PortalEnvService.EnvFileName}, for a plain npm run dev; stacks give the portal their own host"
 		};
 	}
 
@@ -1244,6 +1212,7 @@ public class LocalStackSetupCommand
 
 	private static void Render(LocalStackSetupCommandResult result, bool dryRun)
 	{
+		LocalStackStyle.H1(dryRun ? "beam local setup: what it would do" : "beam local setup");
 		var table = new Table();
 		table.Border(TableBorder.Simple);
 		table.AddColumn("[bold]step[/]");
@@ -1357,8 +1326,7 @@ public static class LocalStackCustomSteps
 		var step = NewStep(args.addStep.Trim());
 		if (args.stepCommand != null)
 		{
-			step.command = args.stepCommand;
-			step.arguments = args.stepArgs ?? string.Empty;
+			(step.command, step.arguments) = SplitProgram(args.stepCommand, args.stepArgs ?? string.Empty);
 		}
 		else if (args.stepShell != null)
 		{
@@ -1392,6 +1360,38 @@ public static class LocalStackCustomSteps
 	}
 
 	private static string DefaultShellKind => OperatingSystem.IsWindows() ? "powershell" : "sh";
+
+	/// <summary>
+	/// A program typed with its arguments (<c>echo "Hello"</c>, <c>npx vite --port 5173</c>) as the program alone and
+	/// the arguments, the typed ones first. Left as it is when it names an existing file (a path with spaces) or has
+	/// no arguments. Without this the whole line was quoted as one program name, and Windows answered
+	/// <c>'"echo \"Hello\""' is not recognized as an internal or external command</c>.
+	/// </summary>
+	public static (string program, string arguments) SplitProgram(string program, string arguments)
+	{
+		var text = program?.Trim() ?? string.Empty;
+		if (text.Length == 0 || File.Exists(text.Trim('"'))) return (text, arguments);
+
+		int end;
+		string first;
+		if (text[0] == '"')
+		{
+			end = text.IndexOf('"', 1);
+			if (end < 0) return (text, arguments);
+			first = text.Substring(1, end - 1);
+			end++;
+		}
+		else
+		{
+			end = text.IndexOfAny(new[] { ' ', '\t' });
+			if (end < 0) return (text, arguments);
+			first = text.Substring(0, end);
+		}
+
+		var rest = text.Substring(end).Trim();
+		if (rest.Length == 0) return (first, arguments);
+		return (first, string.IsNullOrWhiteSpace(arguments) ? rest : $"{rest} {arguments.Trim()}");
+	}
 
 	private static LocalStackStep NewStep(string name) => new LocalStackStep { name = name, custom = true, tags = new List<string> { Tag } };
 
@@ -1480,6 +1480,7 @@ public static class LocalStackCustomSteps
 
 	private static void Print(List<LocalStackCatalogueEntry> catalogue)
 	{
+		LocalStackStyle.H1("Step catalogue", "every step a stack can run on this machine");
 		var table = new Table().Border(TableBorder.Simple);
 		table.AddColumn("[bold]step[/]");
 		table.AddColumn("[bold]label[/]");
@@ -1517,12 +1518,21 @@ public static class LocalStackCustomSteps
 	private const string ReadyLog = "Ready once its output contains some text";
 	private const string AtTheEnd = "(at the end)";
 
+	/// <summary>What <see cref="AskForStep"/> returns as the place of a step that goes before every other one.</summary>
+	public const string AtTheStart = "(at the start)";
+
 	/// <summary>
 	/// The custom step as a wizard, like <c>beam local create</c>: each question replaces the last, Shift+Tab goes back,
 	/// and a last screen shows the step to add it, change any answer, or cancel. Returns a null step when cancelled.
+	/// <c>beam local create</c> asks the same for a stack's own commands: then <paramref name="placeAmong"/> are the
+	/// stack's steps (and <see cref="AtTheStart"/> is offered), <paramref name="nameProblem"/> also checks the stack's
+	/// own names, and it is already on the alternate screen.
 	/// </summary>
-	private static (LocalStackStep step, string after) AskForStep(LocalStackConfig config, string name)
+	public static (LocalStackStep step, string after) AskForStep(LocalStackConfig config, string name, string heading = "beam local setup --add-step",
+		string addTo = "the catalogue", IReadOnlyList<LocalStackStep> placeAmong = null, Func<string, string> nameProblem = null, bool ownScreen = true)
 	{
+		nameProblem ??= v => NameProblem(config, v);
+		var places = placeAmong ?? config.steps;
 		var draft = new Draft { step = NewStep(name?.Trim() ?? string.Empty), kind = KindProgram, readiness = ReadyNone };
 		draft.step.workingDirectory = "${" + LocalStackConfigIO.PortalPathVar + "}";
 		var wizard = new LocalStackWizard();
@@ -1536,7 +1546,7 @@ public static class LocalStackCustomSteps
 		{
 			var answer = LocalStackCreateCommand.Text("Name of the step (stacks and `beam local logs` use it):", back,
 				string.IsNullOrEmpty(draft.step.name) ? null : draft.step.name, allowEmpty: false,
-				validate: v => NameProblem(config, v));
+				validate: nameProblem);
 			if (answer != null) draft.step.name = answer.Trim();
 			return Move(answer);
 		}, !string.IsNullOrWhiteSpace(name));
@@ -1550,9 +1560,9 @@ public static class LocalStackCustomSteps
 
 		Add("Runs", back =>
 		{
-			var answer = LocalStackCreateCommand.Text("The program [grey](node, npx, dotnet, a path...)[/]:", back,
+			var answer = LocalStackCreateCommand.Text("The program [grey](node, npx, dotnet, a path...; arguments can follow it)[/]:", back,
 				draft.step.command, allowEmpty: false, validate: v => string.IsNullOrWhiteSpace(v) ? "Name a program." : null);
-			if (answer != null) draft.step.command = answer.Trim();
+			if (answer != null) (draft.step.command, draft.step.arguments) = SplitProgram(answer, draft.step.arguments);
 			return Move(answer);
 		}, applies: () => draft.kind == KindProgram);
 
@@ -1619,7 +1629,7 @@ public static class LocalStackCustomSteps
 		{
 			var choices = LocalStackStacks.KnownTags.Where(t => t != Tag).ToList();
 			var answer = LocalStackCreateCommand.MultiSelect(
-				$"Tags besides [green]{Tag}[/], so stacks can pick it by kind [grey](select none to keep just {Tag})[/]", choices,
+				$"Kinds it belongs to besides [green]{Tag}[/]: a stack or [green]ps --restart <kind>[/] can name the kind instead of each step [grey](none keeps just {Tag})[/]", choices,
 				draft.step.tags, back,
 				t => $"{Markup.Escape(t)} [grey]{Markup.Escape(LocalStackStacks.TagDescriptions.TryGetValue(t, out var d) ? d : string.Empty)}[/]");
 			if (answer != null) draft.step.tags = new[] { Tag }.Concat(answer).ToList();
@@ -1628,9 +1638,10 @@ public static class LocalStackCustomSteps
 
 		Add("Place", back =>
 		{
-			var answer = LocalStackCreateCommand.Select("Where does it go in the catalogue? A stack runs it in this order.",
-				new[] { AtTheEnd }.Concat(config.steps.Select(s => s.name)), back, draft.after ?? AtTheEnd,
-				n => n == AtTheEnd ? AtTheEnd : $"after {Markup.Escape(LocalStackCreateCommand.Label(config.steps.First(s => s.name == n)))} [grey]({Markup.Escape(n)})[/]");
+			var choices = new[] { AtTheEnd }.Concat(placeAmong != null ? new[] { AtTheStart } : Array.Empty<string>()).Concat(places.Select(s => s.name));
+			var answer = LocalStackCreateCommand.Select(placeAmong != null ? "When does it run among the stack's steps?" : "Where does it go in the catalogue? A stack runs it in this order.",
+				choices, back, draft.after ?? AtTheEnd,
+				n => n is AtTheEnd or AtTheStart ? n : $"after {Markup.Escape(LocalStackCreateCommand.Label(places.First(s => s.name == n)))} [grey]({Markup.Escape(n)})[/]");
 			if (answer != null) draft.after = answer == AtTheEnd ? null : answer;
 			return Move(answer);
 		});
@@ -1638,15 +1649,15 @@ public static class LocalStackCustomSteps
 		void Frame()
 		{
 			AnsiConsole.Clear();
-			AnsiConsole.MarkupLine("[bold]beam local setup --add-step[/] [grey](Enter to answer, Shift+Tab to go back)[/]");
+			LocalStackStyle.H1(heading, "Enter to answer, Shift+Tab to go back");
 			foreach (var group in wizard.AnsweredGroups())
-				AnsiConsole.MarkupLine($"  [grey]{Markup.Escape(group)}:[/] {Markup.Escape(Summary(group, draft))}");
+				AnsiConsole.MarkupLine($"  {LocalStackStyle.H3(group)}  {Markup.Escape(Summary(group, draft))}");
 			AnsiConsole.WriteLine();
 		}
 
 		wizard.beforeEach = Frame;
 		(LocalStackStep, string) result = (null, null);
-		LocalStackCreateCommand.InWizardScreen(() =>
+		void Ask()
 		{
 			wizard.Run();
 			while (true)
@@ -1657,13 +1668,13 @@ public static class LocalStackCustomSteps
 
 				Finish(draft);
 				AnsiConsole.Clear();
-				AnsiConsole.MarkupLine($"[bold]beam local setup --add-step[/] [grey]review[/] [bold]{Markup.Escape(draft.step.name)}[/]");
+				LocalStackStyle.H1($"{heading}: review {draft.step.name}");
 				foreach (var group in wizard.Groups())
-					AnsiConsole.MarkupLine($"  [grey]{Markup.Escape(group)}:[/] {Markup.Escape(Summary(group, draft))}");
+					AnsiConsole.MarkupLine($"  {LocalStackStyle.H3(group)}  {Markup.Escape(Summary(group, draft))}");
 				AnsiConsole.WriteLine();
 
 				var choice = AnsiConsole.Prompt(new SelectionPrompt<string>()
-					.Title($"Add [green]{Markup.Escape(draft.step.name)}[/] to the catalogue?")
+					.Title($"Add [green]{Markup.Escape(draft.step.name)}[/] to {Markup.Escape(addTo)}?")
 					.AddChoices(new[] { add }.Concat(wizard.Groups().Select(g => change + g)).Append(cancel))
 					.UseConverter(Markup.Escape)
 					.AddBeamHightlight());
@@ -1680,9 +1691,18 @@ public static class LocalStackCustomSteps
 				if (wizard.Run(wizard.questions.FindIndex(q => q.group == revisit), revisit))
 					wizard.AskUnanswered();
 			}
-		});
+		}
 
+		if (ownScreen) LocalStackCreateCommand.InWizardScreen(Ask);
+		else Ask();
 		return result;
+	}
+
+	/// <summary>What a custom step runs and whether it finishes, on one line: "echo "Hello", runs to completion".</summary>
+	public static string Describe(LocalStackStep step)
+	{
+		var runs = step.beam ? $"beam {step.arguments}" : step.shell ? $"{step.shellKind ?? DefaultShellKind}: {step.arguments}" : $"{step.command} {step.arguments}".Trim();
+		return $"{runs}, {(step.waitForExit ? "runs to completion" : "keeps running")}";
 	}
 
 	/// <summary>Turns the wizard's answers into the step's fields for the chosen kind.</summary>

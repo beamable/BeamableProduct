@@ -152,6 +152,39 @@ public static class LocalStackTemplate
 	/// standing in the wrong folder". Scanning the checkout that was just pointed at with <c>--portal-dir</c> is
 	/// both what the user meant and independent of where they happen to be.
 	/// </summary>
+	/// <summary>
+	/// The microservices each portal extension under <paramref name="portalDir"/> calls: its package.json's
+	/// <c>beamable.microserviceDependencies</c>, by extension name. Extensions that call none are left out.
+	/// </summary>
+	public static Dictionary<string, List<string>> ExtensionMicroservices(string portalDir)
+	{
+		var needs = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+		if (string.IsNullOrWhiteSpace(portalDir) || portalDir.Contains(LocalStackConfigIO.EditPlaceholder, StringComparison.Ordinal)
+		    || !Directory.Exists(portalDir))
+			return needs;
+
+		foreach (var packageJson in EnumeratePackageJsonFiles(portalDir))
+		{
+			try
+			{
+				var json = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(packageJson));
+				var beamable = json["beamable"];
+				if ((bool?)beamable?["portalExtension"] != true) continue;
+
+				var name = (string)json["name"];
+				var services = (beamable["microserviceDependencies"] ?? new Newtonsoft.Json.Linq.JArray())
+					.Select(t => (string)t).Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+				if (!string.IsNullOrWhiteSpace(name) && services.Count > 0) needs[name] = services;
+			}
+			catch
+			{
+				// A malformed package.json is that extension's problem.
+			}
+		}
+
+		return needs;
+	}
+
 	public static (List<string> extensions, Dictionary<string, string[]> groups) DiscoverPortalExtensions(string portalDir)
 	{
 		var extensions = new List<string>();
@@ -373,6 +406,32 @@ public static class LocalStackTemplate
 	/// directory are derived from.</summary>
 	private const string DotnetHostTfm = "net10.0";
 
+	/// <summary>The step that runs the portal's dev server; a stack hands it its API host (see <c>beam local run</c>).</summary>
+	public const string PortalFrontendStepName = "portal frontend";
+
+	// What the generated build steps compile. The whole repo for the hosts and the reactor: a host builds against
+	// the repo's shared projects, and `-am` builds the modules' dependencies too. A rebuild is cheap for the hosts
+	// (dotnet build is incremental); for Scala it is a clean reactor build, so it only runs when the repo changed.
+	private static List<string> CSharpHostInputs() => new List<string> { "." };
+	private static List<string> ScalaInputs() => new List<string> { "." };
+	private static List<string> PortalDepsInputs() => new List<string> { "package.json", "package-lock.json" };
+
+	/// <summary>The Scala gateway every C# call into the Scala backend goes through (on :9002).</summary>
+	private const string ScalaGatewayStep = "scala: gateway";
+
+	/// <summary>The tag of the Scala services the C# hosts call (a built-in tag group).</summary>
+	private const string ScalaForCSharpTag = "scala-csharp";
+
+	/// <summary>The sources of the two web packages, relative to the BeamableProduct checkout the publish runs in.</summary>
+	private static List<string> WebPackagesInputs() => new List<string> { "web", "beam-portal-toolkit" };
+
+	/// <summary>
+	/// How long <c>build: web extension pins</c> may take. When the toolkit changed, every extension in the portal
+	/// repo (~70) reinstalls it, and each <c>npm install</c> resolves that project's whole dependency tree; that has
+	/// taken twenty minutes. A build that runs out of time stops the stack, so this is generous.
+	/// </summary>
+	public const int WebRefreshTimeoutSeconds = 1800;
+
 	/// <summary>
 	/// Adds the build+run pair for one of the BeamableAPI .NET hosts (gateway / message-rail runtime /
 	/// campaign runtime): <c>dotnet build &lt;project&gt; -c Debug</c>, then the produced binary run from its
@@ -384,8 +443,9 @@ public static class LocalStackTemplate
 	/// <paramref name="aspnetUrls"/> is null for the gateway, which takes the ASPNETCORE_URLS default; the
 	/// workers each bind a port of their own so all three can coexist.
 	/// </summary>
+	/// <paramref name="needs"/> are what the host calls besides the docker deps (see <see cref="LocalStackStep.dependsOn"/>).
 	private static void AddDotnetHost(LocalStackConfig config, string apiDir, string label, string project,
-		string healthUrl, string aspnetUrls)
+		string healthUrl, string aspnetUrls, params string[] needs)
 	{
 		var outDir = Path.Combine(apiDir, project, "bin", "Debug", DotnetHostTfm);
 		config.steps.Add(new LocalStackStep
@@ -400,6 +460,7 @@ public static class LocalStackTemplate
 			build = true,
 			// The apphost `dotnet build` produces: <project>.exe on Windows, an extension-less binary elsewhere.
 			requiredOutput = Path.Combine(outDir, OperatingSystem.IsWindows() ? project + ".exe" : project),
+			inputs = CSharpHostInputs(),
 			waitForExit = true,
 			readyTimeoutSeconds = 300
 		});
@@ -413,6 +474,8 @@ public static class LocalStackTemplate
 		config.steps.Add(new LocalStackStep
 		{
 			name = label,
+			// Mongo and ActiveMQ come from the docker deps. (Its build comes with it on its own.)
+			dependsOn = new[] { LocalStackDependencies.ApiDepsStep }.Concat(needs).ToList(),
 			workingDirectory = outDir,
 			command = OperatingSystem.IsWindows() ? project + ".exe" : "./" + project,
 			environment = environment,
@@ -516,14 +579,18 @@ public static class LocalStackTemplate
 		});
 		// The C# gateway. Its build step declares the binary as its requiredOutput, so `beam local run` builds
 		// it when it is missing even without :build (see AddDotnetHost).
-		AddDotnetHost(config, apiDir, "c# gateway", "BeamableGateway", o.gatewayUrl, aspnetUrls: null);
+		// It logs players in through the Scala login services, and per request calls content (the manifest cache),
+		// messaging (email), notification, session (the websocket heartbeat) and stats, all through the Scala gateway.
+		AddDotnetHost(config, apiDir, "c# gateway", "BeamableGateway", o.gatewayUrl, aspnetUrls: null,
+			LocalStackDependencies.LoginServicesTag, ScalaForCSharpTag);
 
 		// The message-rail runtime — a dedicated backend worker (sibling to the gateway) that drains the
 		// message-rail Mongo staging and delivers to the last-mile federations. Without it, message-rail
 		// sends stage but never deliver. Modeled on the gateway steps; run as a binary with an explicit
 		// ASPNETCORE_URLS so it doesn't collide with the gateway's :5000.
+		// Delivers to the rail microservices through the Scala gateway.
 		AddDotnetHost(config, apiDir, "c# message rail runtime", "BeamableMessageRailRuntime",
-			o.messageRailUrl, o.messageRailUrl);
+			o.messageRailUrl, o.messageRailUrl, ScalaGatewayStep);
 
 		// The campaign runtime — the worker that actually *runs* campaigns. The gateway only authors them
 		// (validate, store the graph, write the directory row); enrolling the entry segment, walking each
@@ -533,8 +600,9 @@ public static class LocalStackTemplate
 		// thing you have to know to start. Same shape as the message-rail runtime: joins the actor cluster
 		// as a Member (so it needs Mongo + ActiveMQ from the docker step above), run as a binary with its
 		// own ASPNETCORE_URLS, ready on /health.
+		// Grants offers through the Scala gateway, and hands its sends to the message rail runtime.
 		AddDotnetHost(config, apiDir, "c# campaign runtime", "BeamableCampaignRuntime",
-			o.campaignRuntimeUrl, o.campaignRuntimeUrl);
+			o.campaignRuntimeUrl, o.campaignRuntimeUrl, ScalaGatewayStep, "c# message rail runtime");
 
 		// The segmentation runtime — the sole owner of the two reconciliation cadences: the hourly expiry pass
 		// and the nightly full sweep (SegmentSweepHost). The gateway only evaluates segments in reaction to a
@@ -545,8 +613,10 @@ public static class LocalStackTemplate
 		// /reconcile — which looks like a broken number rather than a missing process. The scheduler cannot
 		// backstop it locally either (its dispatcher runs remotely and cannot call localhost back). Same shape
 		// as the workers above: cluster Member, own ASPNETCORE_URLS, ready on /health.
+		// Pushes "entered segment" notifications through the Scala gateway, and reads cluster state and presence from the
+		// actors the C# gateway hosts locally.
 		AddDotnetHost(config, apiDir, "c# segmentation runtime", "BeamableSegmentationRuntime",
-			o.segmentationRuntimeUrl, o.segmentationRuntimeUrl);
+			o.segmentationRuntimeUrl, o.segmentationRuntimeUrl, ScalaGatewayStep, "scala: notification", LocalStackDependencies.GatewayStep);
 
 		// The analytics loader — the competing consumer that drains the analytics event stream and lands it as
 		// Parquet in S3, which the gateway's commit timer then folds into the Iceberg tables Athena reads.
@@ -561,8 +631,9 @@ public static class LocalStackTemplate
 		// analytics roles — run `beam local setup --only aws` to check. Without them the host still starts and
 		// serves /health; it just logs AWS errors and lands nothing. To opt out entirely, set this step's
 		// "enabled": false in the manifest.
+		// Applies stat writes to the stats actors the C# gateway hosts locally.
 		AddDotnetHost(config, apiDir, "c# analytics loader", "BeamableAnalyticsLoader",
-			o.analyticsLoaderUrl, o.analyticsLoaderUrl);
+			o.analyticsLoaderUrl, o.analyticsLoaderUrl, LocalStackDependencies.GatewayStep);
 
 		// 2. Portal frontend (Vite dev server). Placed BEFORE the Scala group because it only serves the
 		//    frontend (the browser talks to the backend at runtime) — so it comes up in ~1s instead of waiting
@@ -582,6 +653,7 @@ public static class LocalStackTemplate
 			// with no dependencies and dies with `Cannot find package 'vite'`, which reads as a broken portal
 			// rather than "npm install was never run here".
 			requiredOutput = Path.Combine(portalDir, "node_modules"),
+			inputs = PortalDepsInputs(),
 			waitForExit = true,
 			readyTimeoutSeconds = 600
 		});
@@ -637,7 +709,8 @@ public static class LocalStackTemplate
 		});
 		config.steps.Add(new LocalStackStep
 		{
-			name = "portal frontend",
+			name = PortalFrontendStepName,
+			dependsOn = new List<string> { ViteCacheStepName },
 			workingDirectory = portalDir,
 			command = NpmToken,
 			arguments = "run dev",
@@ -704,6 +777,7 @@ public static class LocalStackTemplate
 				// of them has never been compiled, so a first `beam local run` on a fresh clone builds itself
 				// instead of launching JVMs against empty target/classes.
 				scalaModules = new List<string>(modules),
+				inputs = ScalaInputs(),
 				// `clean` so a shared-module API change can't leave cross-module classes skewed (NoSuchMethodError).
 				// `install`, not `package` — this is what BeamableBackend's own README prescribes (`mvn install`), and
 				// the per-service launcher below depends on it: `dependency:build-classpath` resolves
@@ -714,13 +788,7 @@ public static class LocalStackTemplate
                 //    interval has elapsed"
 				// which then breaks every service launch. It works on a long-lived machine only because some
 				// earlier manual `mvn install` populated ~/.m2.
-				//
-				// `-U` (--update-snapshots) forces Maven to re-check remote for SNAPSHOTs even when
-				// `resolver-status.properties` says "recently checked", which is what invalidates the cached miss
-				// on a machine that has ALREADY been trapped by an older CLI whose `build: scala` ran `package`
-				// instead of `install` (so `core` was never installed to ~/.m2 and every subsequent resolve short-
-				// circuits on the cached 404). The upgraded CLI alone can't undo that history without `-U`.
-				arguments = $"-q -U -pl {string.Join(",", modules)} -am clean install -DskipTests",
+				arguments = $"-q -pl {string.Join(",", modules)} -am clean install -DskipTests",
 				// Scala runs under Java 8; ${java} is substituted to that JAVA_HOME by `up` (as for the launch shells).
 				environment = new Dictionary<string, string> { ["JAVA_HOME"] = "${java}" },
 				build = true,
@@ -750,6 +818,11 @@ public static class LocalStackTemplate
 			var step = new LocalStackStep
 			{
 				name = $"scala: {tool.name}",
+				// Mongo from the docker deps, Redis, dbflake's ids (except for dbflake itself), and the C# gateway the
+				// backend is reached through. (The reactor build comes with it on its own.)
+				dependsOn = new List<string> { LocalStackDependencies.ApiDepsStep, "scala: redis", LocalStackDependencies.GatewayStep }
+					.Concat(string.Equals(tool.name, ScalaDbidService, StringComparison.OrdinalIgnoreCase) ? Array.Empty<string>() : new[] { $"scala: {ScalaDbidService}" })
+					.ToList(),
 				// Grouped steps launch in parallel (they're independent backing services). dbflake is emitted
 				// ungrouped and first, so `up` has it ready before the group that depends on it starts.
 				group = grouped ? "scala" : null,
@@ -832,6 +905,10 @@ public static class LocalStackTemplate
 				beam = true,
 				arguments = "web publish",
 				build = true,
+				// A stack that asks for the web packages runs this every time, and every publish makes every extension
+				// reinstall the toolkit. With its sources declared, it is skipped while they haven't changed and the
+				// registry still has the build.
+				inputs = WebPackagesInputs(),
 				waitForExit = true,
 				// Two tsdown builds plus two publishes; generous, and a non-zero exit aborts the stack rather
 				// than letting extensions build against a stale toolkit.
@@ -846,7 +923,7 @@ public static class LocalStackTemplate
 				arguments = "web use",
 				build = true,
 				waitForExit = true,
-				readyTimeoutSeconds = 600
+				readyTimeoutSeconds = WebRefreshTimeoutSeconds
 			});
 		}
 

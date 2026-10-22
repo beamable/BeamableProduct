@@ -6,6 +6,46 @@ using System.Diagnostics;
 
 namespace cli.Services.LocalStack;
 
+/// <summary>
+/// The headings every <c>beam local</c> command prints, so a screen reads at a glance, in the portal's colours: H1 for
+/// the command or what it shows (a purple rule across the screen), H2 for a section (cyan, underlined), H3 for a group
+/// inside a section (amber). The rule is plain ASCII: Windows consoles printed box-drawing characters as '?'.
+/// </summary>
+public static class LocalStackStyle
+{
+	public const string H1Colour = "#9580D8";
+	public const string H2Colour = "#04C6F1";
+	public const string H3Colour = "#EFA42C";
+
+	/// <summary>A rule across the screen with <paramref name="title"/> in it, and a grey <paramref name="note"/>.</summary>
+	public static void H1(string title, string note = null) =>
+		AnsiConsole.Write(H1Rule(title, note));
+
+	public static Rule H1Rule(string title, string note = null) =>
+		new Rule($"[bold {H1Colour}]{Markup.Escape(title)}[/]" + (string.IsNullOrEmpty(note) ? string.Empty : $" [grey]{Markup.Escape(note)}[/]"))
+		{
+			Justification = Justify.Left,
+			Border = BoxBorder.Ascii,
+			Style = Style.Parse(H1Colour)
+		};
+
+	/// <summary>The H1 colour on a title that has to stay one line of markup (the live board's).</summary>
+	public static string H1Text(string title) => $"[bold {H1Colour}]{Markup.Escape(title)}[/]";
+
+	/// <summary>A section heading, after a blank line.</summary>
+	public static void H2(string title, string note = null)
+	{
+		AnsiConsole.WriteLine();
+		AnsiConsole.MarkupLine(H2Text(title, note));
+	}
+
+	public static string H2Text(string title, string note = null) =>
+		$"[bold underline {H2Colour}]{Markup.Escape(title)}[/]" + (string.IsNullOrEmpty(note) ? string.Empty : $" [grey]{Markup.Escape(note)}[/]");
+
+	/// <summary>A group heading inside a section, as markup to start a line with.</summary>
+	public static string H3(string title) => $"[bold {H3Colour}]{Markup.Escape(title)}[/]";
+}
+
 /// <summary>Where a step is while a stack starts: one value per row of the progress board.</summary>
 [JsonConverter(typeof(StringEnumConverter))]
 public enum LocalStackStepState
@@ -15,6 +55,9 @@ public enum LocalStackStepState
 
 	/// <summary>A build step is running.</summary>
 	Building,
+
+	/// <summary>A build step that doesn't need to build: what it compiles hasn't changed since its last build.</summary>
+	UpToDate,
 
 	/// <summary>The process is up and its readiness gate hasn't passed yet.</summary>
 	Starting,
@@ -72,7 +115,7 @@ public class LocalStackBoardRow
 	/// <summary>True when the state is one the step stays in: its time stops counting.</summary>
 	[JsonIgnore]
 	public bool Settled => state is LocalStackStepState.Ready or LocalStackStepState.Running or LocalStackStepState.Degraded
-		or LocalStackStepState.Done or LocalStackStepState.Failed or LocalStackStepState.Stopped;
+		or LocalStackStepState.Done or LocalStackStepState.UpToDate or LocalStackStepState.Failed or LocalStackStepState.Stopped;
 
 	/// <summary>Seconds since the step started, up to when it settled.</summary>
 	public int ElapsedSeconds(DateTime nowUtc) =>
@@ -94,6 +137,9 @@ public class LocalStackBoardSnapshot
 	public string host;
 	public string portalUrl;
 	public DateTime startedUtc;
+
+	/// <summary>True once the stack has come up: from then on its services can be restarted from the board.</summary>
+	public bool up;
 	public List<LocalStackBoardRow> rows = new List<LocalStackBoardRow>();
 }
 
@@ -215,18 +261,77 @@ public class LocalStackBoard
 		}
 	}
 
+	/// <summary>The stack changed to another name while running (<c>beam local run</c> of another name).</summary>
+	public void Rename(string stack)
+	{
+		lock (_lock)
+		{
+			_snapshot.stack = stack;
+			Save();
+		}
+	}
+
+	/// <summary>The stack is up: the board says where it is, and its services can be restarted from it.</summary>
+	public void MarkUp()
+	{
+		lock (_lock)
+		{
+			_snapshot.up = true;
+			Save();
+		}
+	}
+
+	/// <summary>Shows <paramref name="snapshot"/> instead, as <c>beam local ps --watch</c> does when the board file changes.</summary>
+	public void Load(LocalStackBoardSnapshot snapshot)
+	{
+		lock (_lock)
+		{
+			_snapshot.stack = snapshot.stack;
+			_snapshot.attached = snapshot.attached;
+			_snapshot.host = snapshot.host;
+			_snapshot.portalUrl = snapshot.portalUrl;
+			_snapshot.up = snapshot.up;
+			_snapshot.rows = snapshot.rows.Select(Copy).ToList();
+		}
+	}
+
+	/// <summary>Adds rows for steps a changed stack runs that weren't on the board, in the order given.</summary>
+	public void AddRows(IEnumerable<LocalStackBoardRow> rows)
+	{
+		lock (_lock)
+		{
+			foreach (var row in rows.Where(r => Find(r.name) == null))
+				_snapshot.rows.Add(row);
+			Save();
+		}
+	}
+
+	/// <summary>Takes the rows of steps a changed stack no longer runs off the board.</summary>
+	public void RemoveRows(IEnumerable<string> steps)
+	{
+		var names = steps.ToHashSet(StringComparer.OrdinalIgnoreCase);
+		lock (_lock)
+		{
+			_snapshot.rows.RemoveAll(r => names.Contains(r.name));
+			Save();
+		}
+	}
+
 	private LocalStackBoardRow Find(string step) =>
 		_snapshot.rows.FirstOrDefault(r => string.Equals(r.name, step, StringComparison.OrdinalIgnoreCase));
 
 	/// <summary>
 	/// Shows the board full screen, on the terminal's alternate screen, until <see cref="Complete"/> (or
-	/// <paramref name="token"/>), then puts the normal screen back. Every row stays reachable: the arrow keys,
-	/// PgUp/PgDn and Home/End scroll, and until one of them is pressed the view follows the steps in progress (F
-	/// follows again). What else is written while it shows (warnings, a failure's lines) goes to a pane at its
-	/// bottom, and is printed again on the normal screen when the board closes, so it stays in the terminal's
-	/// history. Ctrl+C puts the normal screen back too. Lines and silent mode return at once.
+	/// <paramref name="token"/>), then puts the normal screen back. Every row stays reachable: the arrow keys select
+	/// a row, PgUp/PgDn and Home/End move by a page or to the ends, and until one of them is pressed the view follows
+	/// the steps in progress (F follows again). With <paramref name="onAction"/>, Space on the selected row offers
+	/// what can be done with it once the stack is up (restart, stop or start), and Enter does it: the callback gets
+	/// the action and the step, and what it answers goes to the message pane. What else is written while it shows
+	/// (warnings, a failure's lines) goes to that pane at its bottom, and is printed again on the normal screen when
+	/// the board closes, so it stays in the terminal's history. Ctrl+C puts the normal screen back too. Lines and
+	/// silent mode return at once.
 	/// </summary>
-	public async Task ShowLive(CancellationToken token)
+	public async Task ShowLive(CancellationToken token, Func<string, string, Task<string>> onAction = null, string keys = null)
 	{
 		if (_mode != LocalStackBoardMode.Live) return;
 
@@ -254,21 +359,39 @@ public class LocalStackBoard
 		output.Write(enter);
 		try
 		{
-			var view = new LocalStackBoardView();
+			var view = new LocalStackBoardView { Actions = onAction != null };
+			string last = null;
 			while (!_done.Task.IsCompleted && !token.IsCancellationRequested)
 			{
 				int width = Math.Max(20, console.Profile.Width), height = Math.Max(8, console.Profile.Height);
 				LocalStackBoardSnapshot snapshot;
-				lock (_lock) snapshot = new LocalStackBoardSnapshot { stack = _snapshot.stack, rows = _snapshot.rows.Select(Copy).ToList() };
+				lock (_lock)
+					snapshot = new LocalStackBoardSnapshot
+					{
+						stack = _snapshot.stack, up = _snapshot.up, host = _snapshot.host, portalUrl = _snapshot.portalUrl,
+						rows = _snapshot.rows.Select(Copy).ToList()
+					};
 
 				var recent = LastLines(messages.Text, 3);
-				var visible = VisibleCount(height, recent.Count);
 				foreach (var key in ReadKeys(console))
-					view.Press(key, snapshot.rows, visible);
+				{
+					var action = view.Press(key, snapshot.rows, VisibleCount(height, recent.Count + (view.Bar != null ? 1 : 0)), snapshot.up);
+					if (action != null) _ = Act(action.Value.action, action.Value.step);
+				}
 
-				output.Write(Draw(Frame(snapshot, width, view.Offset(snapshot.rows, visible), visible, recent, view.Following, _now()),
-					console, width, height));
-				output.Flush();
+				// Sized after the keys, which can add or drop the bar line, so the frame never outgrows the screen.
+				var visible = VisibleCount(height, recent.Count + (view.Bar != null ? 1 : 0));
+				var frame = Draw(Frame(snapshot, width, view.Offset(snapshot.rows, visible), visible, recent, view.Following, _now(),
+					view.SelectedName(snapshot.rows), view.Bar, keys, marks: view.Actions), console, width, height);
+
+				// Repainting an unchanged frame is what flickers; the terminal paints a changed one in one go.
+				if (frame != last)
+				{
+					output.Write("\u001b[?2026h" + frame + "\u001b[?2026l");
+					output.Flush();
+					last = frame;
+				}
+
 				await Task.WhenAny(_done.Task, Task.Delay(150, CancellationToken.None));
 			}
 		}
@@ -282,6 +405,20 @@ public class LocalStackBoard
 			var text = messages.Text;
 			if (!string.IsNullOrWhiteSpace(text))
 				output.Write(text.EndsWith('\n') ? text : text + Environment.NewLine);
+		}
+
+		// Off the frame loop, so the board keeps drawing (Restarting, then Ready) while the action runs.
+		async Task Act(string action, string step)
+		{
+			try
+			{
+				var answer = await Task.Run(() => onAction(action, step));
+				if (!string.IsNullOrWhiteSpace(answer)) messages.Writer.WriteLine(answer);
+			}
+			catch (Exception e)
+			{
+				messages.Writer.WriteLine($"Couldn't {action} {step}: {e.Message}");
+			}
 		}
 	}
 
@@ -304,9 +441,10 @@ public class LocalStackBoard
 
 	/// <summary>
 	/// Draws a frame over the previous one: from the top-left corner, each line cleared to its end, and everything
-	/// below the last line cleared, so nothing from the previous frame is left and nothing flickers.
+	/// below the last line cleared, so nothing from the previous frame is left. It stays off the last column and the
+	/// last row: writing there makes the terminal wrap or scroll the screen, which showed as a blank frame.
 	/// </summary>
-	private static string Draw(IRenderable frame, IAnsiConsole console, int width, int height)
+	public static string Draw(IRenderable frame, IAnsiConsole console, int width, int height)
 	{
 		var buffer = new StringWriter();
 		var painter = AnsiConsole.Create(new AnsiConsoleSettings
@@ -316,10 +454,10 @@ public class LocalStackBoard
 			Interactive = InteractionSupport.No,
 			Out = new AnsiConsoleOutput(buffer)
 		});
-		painter.Profile.Width = width;
+		painter.Profile.Width = width - 1;
 		painter.Write(frame);
 
-		var lines = buffer.ToString().Replace("\r", string.Empty).TrimEnd('\n').Split('\n').Take(height);
+		var lines = buffer.ToString().Replace("\r", string.Empty).TrimEnd('\n').Split('\n').Take(height - 1);
 		return "\u001b[H" + string.Join("\u001b[K\n", lines) + "\u001b[K\u001b[J";
 	}
 
@@ -335,7 +473,7 @@ public class LocalStackBoard
 	public static string Summary(IReadOnlyCollection<LocalStackBoardRow> rows)
 	{
 		var up = rows.Count(r => r.state is LocalStackStepState.Ready or LocalStackStepState.Running
-			or LocalStackStepState.Degraded or LocalStackStepState.Done);
+			or LocalStackStepState.Degraded or LocalStackStepState.Done or LocalStackStepState.UpToDate);
 		var text = $"{up} of {rows.Count} ready";
 		var failed = rows.Count(r => r.state == LocalStackStepState.Failed);
 		if (failed > 0) text += $", {failed} failed";
@@ -347,15 +485,17 @@ public class LocalStackBoard
 	}
 
 	/// <summary>Rows of the board that fit on a screen <paramref name="height"/> lines tall, besides the title, the
-	/// summary, the help line and <paramref name="messages"/> message lines.</summary>
-	public static int VisibleCount(int height, int messages) => Math.Max(1, height - 3 - messages);
+	/// summary, the help line, <paramref name="messages"/> message lines and the last row, which is left empty.</summary>
+	public static int VisibleCount(int height, int messages) => Math.Max(1, height - 4 - messages);
 
 	/// <summary>
 	/// One full-screen frame: the title with which rows show, <paramref name="visible"/> rows from
-	/// <paramref name="offset"/>, the summary, the latest messages and the keys.
+	/// <paramref name="offset"/> with the <paramref name="selected"/> one marked, the summary (and where the stack is,
+	/// once it is up), the latest messages, the <paramref name="bar"/> asking about the selected row, and the keys.
 	/// </summary>
 	public static IRenderable Frame(LocalStackBoardSnapshot snapshot, int width, int offset, int visible,
-		IReadOnlyList<string> messages, bool following, DateTime nowUtc)
+		IReadOnlyList<string> messages, bool following, DateTime nowUtc, string selected = null, string bar = null, string keys = null,
+		bool marks = false)
 	{
 		var count = snapshot.rows.Count;
 		offset = Math.Clamp(offset, 0, Math.Max(0, count - visible));
@@ -364,16 +504,28 @@ public class LocalStackBoard
 
 		var parts = new List<IRenderable>
 		{
-			new Markup($"[bold]Running stack {Markup.Escape(snapshot.stack ?? string.Empty)}[/]{range}"),
-			Grid(snapshot.rows.Skip(offset).Take(shown).ToList(), snapshot.rows, width, nowUtc),
-			new Markup($"[grey]{Markup.Escape(Summary(snapshot.rows))}[/]")
+			new Markup(LocalStackStyle.H1Text($"Running stack {snapshot.stack ?? string.Empty}") + range),
+			Grid(snapshot.rows.Skip(offset).Take(shown).ToList(), snapshot.rows, width, nowUtc, selected, marks || selected != null),
+			new Markup($"[grey]{Markup.Escape(Fit(Summary(snapshot.rows) + Where(snapshot), width - 1).TrimEnd())}[/]")
 		};
 		foreach (var message in messages)
 			parts.Add(new Markup($"[yellow]{Markup.Escape(Fit(message, width - 1).TrimEnd())}[/]"));
+		if (bar != null)
+			parts.Add(new Markup($"[bold]{Markup.Escape(Fit(bar, width - 1).TrimEnd())}[/]"));
 
-		const string keys = "Up/Down, PgUp/PgDn, Home/End scroll; F follows the steps in progress; Ctrl+C stops the stack";
+		keys ??= "Up/Down, PgUp/PgDn, Home/End scroll; F follows the steps in progress; Ctrl+C stops the stack";
 		parts.Add(new Markup($"[grey]{Markup.Escape(Fit(keys, width - 1).TrimEnd())}[/]"));
 		return new Rows(parts);
+	}
+
+	/// <summary>Once the stack is up, where it is: what the summary printed after the board used to say.</summary>
+	private static string Where(LocalStackBoardSnapshot snapshot)
+	{
+		if (!snapshot.up) return string.Empty;
+		var parts = new List<string>();
+		if (!string.IsNullOrWhiteSpace(snapshot.portalUrl)) parts.Add("portal " + snapshot.portalUrl);
+		if (!string.IsNullOrWhiteSpace(snapshot.host)) parts.Add("backend " + snapshot.host);
+		return parts.Count == 0 ? ". Up." : ". Up: " + string.Join(", ", parts) + ".";
 	}
 
 	/// <summary>The last <paramref name="count"/> non-empty lines of <paramref name="text"/>.</summary>
@@ -397,13 +549,17 @@ public class LocalStackBoard
 	/// <summary>The whole board for <paramref name="snapshot"/>, every row: what <c>beam local ps</c> prints.</summary>
 	public static IRenderable Render(LocalStackBoardSnapshot snapshot, int width, DateTime nowUtc) =>
 		new Rows(
-			new Markup($"[bold]Running stack {Markup.Escape(snapshot.stack ?? string.Empty)}[/]"),
+			LocalStackStyle.H1Rule($"Running stack {snapshot.stack ?? string.Empty}"),
 			Grid(snapshot.rows, snapshot.rows, width, nowUtc),
 			new Markup($"[grey]{Markup.Escape(Summary(snapshot.rows))}[/]"));
 
-	/// <summary><paramref name="rows"/> as a grid, sized for all of <paramref name="all"/> so scrolling doesn't move the columns.</summary>
-	private static Grid Grid(IReadOnlyList<LocalStackBoardRow> rows, IReadOnlyList<LocalStackBoardRow> all, int width, DateTime nowUtc)
+	/// <summary><paramref name="rows"/> as a grid, sized for all of <paramref name="all"/> so scrolling doesn't move the
+	/// columns. With <paramref name="marks"/> every row keeps room for the marker, so selecting one doesn't widen the
+	/// rows; the <paramref name="selected"/> row is marked with <c>&gt;</c> and shown inverted.</summary>
+	private static Grid Grid(IReadOnlyList<LocalStackBoardRow> rows, IReadOnlyList<LocalStackBoardRow> all, int width, DateTime nowUtc,
+		string selected = null, bool marks = false)
 	{
+		var marker = marks ? 2 : 0;
 		var narrow = width < NarrowWidth;
 		var grid = new Grid();
 		grid.AddColumn(new GridColumn().NoWrap().PadRight(2));
@@ -416,13 +572,15 @@ public class LocalStackBoard
 			grid.AddColumn(new GridColumn().NoWrap());
 		}
 
-		var labelWidth = Math.Min(narrow ? Math.Max(10, width - 14) : 34,
+		var labelWidth = Math.Min(narrow ? Math.Max(10, width - 14 - marker) : 34,
 			all.Select(r => (r.label ?? r.name ?? string.Empty).Length).DefaultIfEmpty(10).Max());
 
 		foreach (var row in rows)
 		{
-			var label = new Markup(Markup.Escape(Fit(row.label ?? row.name ?? string.Empty, labelWidth)));
-			var state = new Markup($"[{Colour(row.state)}]{Fit(row.state.ToString(), 10)}[/]");
+			var text = Markup.Escape(Fit(row.label ?? row.name ?? string.Empty, labelWidth));
+			var isSelected = selected != null && string.Equals(row.name, selected, StringComparison.OrdinalIgnoreCase);
+			var label = new Markup(!marks ? text : isSelected ? $"[invert]> {text}[/]" : $"  {text}");
+			var state = new Markup($"[{Colour(row.state)}]{Fit(Text(row.state), 10)}[/]");
 			if (narrow)
 			{
 				grid.AddRow(label, state);
@@ -434,7 +592,7 @@ public class LocalStackBoard
 				state,
 				new Markup(Markup.Escape(Fit(Time(row, nowUtc), 10))),
 				new Markup(Fit(row.port > 0 ? $":{row.port}" : string.Empty, 6)),
-				new Markup($"[grey]{Markup.Escape(Fit(row.detail ?? string.Empty, Math.Max(10, width - labelWidth - 54)).TrimEnd())}[/]"));
+				new Markup($"[grey]{Markup.Escape(Fit(row.detail ?? string.Empty, Math.Max(10, width - labelWidth - marker - 54)).TrimEnd())}[/]"));
 		}
 
 		return grid;
@@ -476,7 +634,7 @@ public class LocalStackBoard
 	/// <summary>"41s / 180s" while starting against a timeout, "38s" otherwise, nothing while waiting.</summary>
 	public static string Time(LocalStackBoardRow row, DateTime nowUtc)
 	{
-		if (row.startedUtc == null) return string.Empty;
+		if (row.startedUtc == null || row.state == LocalStackStepState.UpToDate) return string.Empty;
 		var elapsed = row.ElapsedSeconds(nowUtc);
 		return row.state is LocalStackStepState.Starting or LocalStackStepState.Restarting && row.timeoutSeconds > 0 && !row.once
 			? $"{elapsed}s / {row.timeoutSeconds}s"
@@ -486,7 +644,7 @@ public class LocalStackBoard
 	/// <summary>One state change without a terminal: <c>12:01:44  Scala service auth  Starting -> Ready (41s)  detail</c>.</summary>
 	public static string Line(LocalStackBoardRow row, LocalStackStepState from, DateTime nowUtc)
 	{
-		var line = $"{nowUtc.ToLocalTime():HH:mm:ss}  {row.label ?? row.name}  {from} -> {row.state}";
+		var line = $"{nowUtc.ToLocalTime():HH:mm:ss}  {row.label ?? row.name}  {Text(from)} -> {Text(row.state)}";
 		if (row.Settled) line += $" ({row.ElapsedSeconds(nowUtc)}s)";
 		if (!string.IsNullOrWhiteSpace(row.detail)) line += $"  {row.detail}";
 		return line;
@@ -502,6 +660,9 @@ public class LocalStackBoard
 			lines.Add("    " + hint);
 		return lines;
 	}
+
+	/// <summary>How a state reads on the board: its name, with "Up to date" spelled out.</summary>
+	public static string Text(LocalStackStepState state) => state == LocalStackStepState.UpToDate ? "Up to date" : state.ToString();
 
 	public static string Colour(LocalStackStepState state) => state switch
 	{
@@ -560,42 +721,141 @@ public sealed class LocalStackBoardMessages
 	}
 }
 
-/// <summary>Where the full-screen board is scrolled to, and whether it follows the steps in progress.</summary>
+/// <summary>
+/// Where the full-screen board is scrolled to, whether it follows the steps in progress, which row is selected, and
+/// what the bar above the keys asks about it.
+/// </summary>
 public class LocalStackBoardView
 {
 	private int _offset;
+	private int? _selected;
+	private (string action, string step)? _pending;
 
 	public bool Following { get; private set; } = true;
+
+	/// <summary>True when the rows can be acted on (Space, Enter): the board was given something to do it with.</summary>
+	public bool Actions { get; set; }
+
+	/// <summary>The line above the keys: what Enter would do to the selected row, or why it can't be acted on.</summary>
+	public string Bar { get; private set; }
+
+	/// <summary>The keys line of a board whose rows can be acted on.</summary>
+	public const string ActionKeys = "Up/Down select, Space acts on it, PgUp/PgDn/Home/End, F follows, Ctrl+C stops the stack";
 
 	/// <summary>The first row to show: where it follows to, or where it was scrolled to.</summary>
 	public int Offset(IReadOnlyList<LocalStackBoardRow> rows, int visible) =>
 		Following ? LocalStackBoard.FollowOffset(rows, visible) : Math.Clamp(_offset, 0, Math.Max(0, rows.Count - visible));
 
-	/// <summary>Scrolls for a key. Any scroll stops following, from where the view is; F follows again.</summary>
-	public void Press(ConsoleKeyInfo key, IReadOnlyList<LocalStackBoardRow> rows, int visible)
+	/// <summary>The selected row's step, or null when none is.</summary>
+	public string SelectedName(IReadOnlyList<LocalStackBoardRow> rows) =>
+		_selected is { } index && rows.Count > 0 ? rows[Math.Clamp(index, 0, rows.Count - 1)].name : null;
+
+	/// <summary>
+	/// Handles a key. The arrows select a row (on a board without actions they only scroll) and PgUp/PgDn/Home/End
+	/// move by a page or to the ends, keeping the selection on screen; any of them stops following, from where the
+	/// view is, and F follows again. Space asks about the selected row, Enter does what was asked (S stops instead of
+	/// restarting), anything else drops the question. Returns the action to run, or null.
+	/// </summary>
+	public (string action, string step)? Press(ConsoleKeyInfo key, IReadOnlyList<LocalStackBoardRow> rows, int visible, bool stackUp = false)
 	{
+		if (_pending is { } pending)
+		{
+			_pending = null;
+			Bar = null;
+			if (key.Key == ConsoleKey.Enter) return pending;
+			if (key.Key == ConsoleKey.S && pending.action == "restart") return ("stop", pending.step);
+			return null;
+		}
+
+		Bar = null;
 		if (key.Key == ConsoleKey.F)
 		{
 			Following = true;
-			return;
+			_selected = null;
+			return null;
 		}
 
-		var current = Offset(rows, visible);
-		var last = Math.Max(0, rows.Count - visible);
-		int? to = key.Key switch
+		if (key.Key == ConsoleKey.Spacebar && Actions)
 		{
-			ConsoleKey.UpArrow => current - 1,
-			ConsoleKey.DownArrow => current + 1,
+			var name = SelectedName(rows);
+			var row = rows.FirstOrDefault(r => r.name == name);
+			if (row == null)
+			{
+				Bar = "Select a step with Up/Down first.";
+				return null;
+			}
+
+			var (action, text) = ActionFor(row, stackUp);
+			Bar = text;
+			if (action != null) _pending = (action, row.name);
+			return null;
+		}
+
+		var top = Offset(rows, visible);
+		var last = Math.Max(0, rows.Count - visible);
+		if (!Actions)
+		{
+			int? to = key.Key switch
+			{
+				ConsoleKey.UpArrow => top - 1,
+				ConsoleKey.DownArrow => top + 1,
+				ConsoleKey.PageUp => top - visible,
+				ConsoleKey.PageDown => top + visible,
+				ConsoleKey.Home => 0,
+				ConsoleKey.End => last,
+				_ => null
+			};
+			if (to == null) return null;
+
+			Following = false;
+			_offset = Math.Clamp(to.Value, 0, last);
+			return null;
+		}
+
+		if (rows.Count == 0) return null;
+		var current = _selected ?? top;
+		int? next = key.Key switch
+		{
+			// The first press selects the top row on screen rather than moving past it.
+			ConsoleKey.UpArrow => _selected == null ? current : current - 1,
+			ConsoleKey.DownArrow => _selected == null ? current : current + 1,
 			ConsoleKey.PageUp => current - visible,
 			ConsoleKey.PageDown => current + visible,
 			ConsoleKey.Home => 0,
-			ConsoleKey.End => last,
+			ConsoleKey.End => rows.Count - 1,
 			_ => null
 		};
-		if (to == null) return;
+		if (next == null) return null;
 
 		Following = false;
-		_offset = Math.Clamp(to.Value, 0, last);
+		_offset = top;
+		_selected = Math.Clamp(next.Value, 0, rows.Count - 1);
+		if (_selected < _offset) _offset = _selected.Value;
+		if (_selected >= _offset + visible) _offset = _selected.Value - visible + 1;
+		_offset = Math.Clamp(_offset, 0, last);
+		return null;
+	}
+
+	/// <summary>
+	/// What Space offers for <paramref name="row"/>: a service that is up can be restarted (or stopped), one that is
+	/// down can be started. A build or a step that runs once isn't restarted on its own, and nothing is while the
+	/// stack or the step is still on its way up. The action is null when there is nothing to do; the text says why.
+	/// </summary>
+	public static (string action, string text) ActionFor(LocalStackBoardRow row, bool stackUp)
+	{
+		var label = row.label ?? row.name;
+		if (row.once)
+			return (null, $"{label} runs once. Restart the service that uses it.");
+		if (!stackUp)
+			return (null, "Wait until the stack is up.");
+		return row.state switch
+		{
+			LocalStackStepState.Ready or LocalStackStepState.Running or LocalStackStepState.Degraded
+				=> ("restart", $"Restart {label}?  Enter restart, S stop, Esc cancel"),
+			LocalStackStepState.Stopped or LocalStackStepState.Failed
+				=> ("start", $"Start {label}?  Enter start, Esc cancel"),
+			_ => (null, $"Wait until {label} is up.")
+		};
 	}
 }
 

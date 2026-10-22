@@ -252,9 +252,14 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 	}
 
 	/// <summary>
-	/// Installs in each updated project, bounded by processor count. Each has its own node_modules so the
-	/// installs are independent; only npm's cache is shared, and npm locks that itself.
+	/// Installs in each updated project, a few at a time. Each has its own node_modules so the installs are
+	/// independent, but they share npm's cache and the disk, and each one resolves its project's whole dependency
+	/// tree. One per processor (32 on a developer machine) made them queue on each other: installs that each
+	/// needed a few seconds of CPU sat for ten minutes, and ~70 projects took twenty.
 	/// </summary>
+	/// <summary>How many npm installs run at once.</summary>
+	public static int MaxParallelInstalls => Math.Clamp(Environment.ProcessorCount / 4, 2, 6);
+
 	private static List<string> RunInstalls(List<(string name, string directory)> directories, string version, string registry)
 	{
 		var failures = new System.Collections.Concurrent.ConcurrentBag<string>();
@@ -266,7 +271,7 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 		Log.Information($"Installing {WebLocalRegistryService.ToolkitPackage}@{version} in {directories.Count} project(s) from [{registry}]");
 
 		Parallel.ForEach(directories,
-			new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount) },
+			new ParallelOptions { MaxDegreeOfParallelism = MaxParallelInstalls },
 			target =>
 			{
 				try

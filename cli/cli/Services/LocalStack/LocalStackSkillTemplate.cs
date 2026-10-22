@@ -134,15 +134,7 @@ public static class LocalStackSkillTemplate
 		sb.AppendLine("### Repositories this manifest points at");
 		sb.AppendLine();
 
-		if (repos == null)
-		{
-			// Manifests written before `repos` existed. The step list further down still carries the paths,
-			// so say where to look rather than guessing them back out of step names.
-			sb.AppendLine("This manifest predates the recorded repository paths. Read them off the");
-			sb.AppendLine("`workingDirectory` of the steps listed below, or run `beam local setup --only settings --force` to record them.");
-			sb.AppendLine();
-			return;
-		}
+		if (repos == null) return;
 
 		sb.AppendLine("| Repository | Path |");
 		sb.AppendLine("|---|---|");

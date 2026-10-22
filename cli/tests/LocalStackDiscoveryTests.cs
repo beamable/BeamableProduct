@@ -214,33 +214,7 @@ public class LocalStackDiscoveryTests
 	}
 
 	[Test]
-	public void ManifestsWithoutScalaModulesFallBackToTheMavenModuleList()
-	{
-		// An existing manifest predates `scalaModules`, but still names its modules in the mvn `-pl` list — so the
-		// never-built check works without regenerating the manifest.
-		var root = Directory.CreateTempSubdirectory("beam-scala-legacy");
-		try
-		{
-			Directory.CreateDirectory(Path.Combine(root.FullName, "tools", "auth"));
-			var step = new LocalStackStep
-			{
-				name = "build: scala",
-				build = true,
-				workingDirectory = root.FullName,
-				arguments = "-q -pl core,tools/auth -am clean package -DskipTests"
-			};
-
-			Assert.That(LocalStackConfigIO.FirstUnbuiltScalaModule(step, new LocalStackConfig()), Is.EqualTo("core"));
-			Assert.That(LocalStackConfigIO.BuildOutputMissing(step, new LocalStackConfig()), Is.True);
-		}
-		finally
-		{
-			root.Delete(recursive: true);
-		}
-	}
-
-	[Test]
-	public void AStepWithNoModulesAndNoMavenListIsNeverUnbuilt()
+	public void AStepWithNoModulesIsNeverUnbuilt()
 	{
 		var step = new LocalStackStep { name = "build: portal deps", build = true, workingDirectory = Path.GetTempPath() };
 
@@ -274,50 +248,6 @@ public class LocalStackDiscoveryTests
 		{
 			portal.Delete(recursive: true);
 		}
-	}
-
-	[Test]
-	public void AnOlderManifestInfersNodeModulesFromTheNpmInstallStep()
-	{
-		// Manifests written before requiredOutput was set on this step must self-heal too, without regenerating.
-		var portal = Directory.CreateTempSubdirectory("beam-portal-legacy");
-		try
-		{
-			var step = new LocalStackStep
-			{
-				name = "build: portal deps",
-				build = true,
-				command = LocalStackTemplate.NpmToken,
-				arguments = "install",
-				workingDirectory = portal.FullName
-			};
-
-			Assert.That(LocalStackConfigIO.BuildOutputMissing(step, new LocalStackConfig()), Is.True);
-
-			Directory.CreateDirectory(Path.Combine(portal.FullName, "node_modules"));
-			Assert.That(LocalStackConfigIO.BuildOutputMissing(step, new LocalStackConfig()), Is.False);
-		}
-		finally
-		{
-			portal.Delete(recursive: true);
-		}
-	}
-
-	[Test]
-	public void NpmRunStepsAreNotTreatedAsInstalls()
-	{
-		// `npm run dev` is the long-running portal step - it produces nothing and must never be mistaken for a
-		// build whose output is missing, or `up` would try to "build" the dev server on every start.
-		var step = new LocalStackStep
-		{
-			name = "portal frontend",
-			build = false,
-			command = LocalStackTemplate.NpmToken,
-			arguments = "run dev",
-			workingDirectory = Path.GetTempPath()
-		};
-
-		Assert.That(LocalStackConfigIO.BuildOutputMissing(step, new LocalStackConfig()), Is.False);
 	}
 
 	// ----------------------------------------------------------------------------------
@@ -587,20 +517,14 @@ public class LocalStackDiscoveryTests
 	// ----------------------------------------------------------------------------------
 
 	[Test]
-	public void BuildScala_ForcesSnapshotUpdate()
+	public void BuildScala_InstallsCore()
 	{
-		// The reactor build has to run with -U so a machine that inherited a cached "com.kickstand:core was
-		// not found in nexus" miss (from an older CLI that used `mvn package`) can re-resolve. Without -U,
-		// the cached miss short-circuits every subsequent resolve and no amount of `beam local up --build`
-		// helps — the specific failure the user hit on Pedro's box.
+		// The per-service launchers resolve `core` from ~/.m2, so the reactor build has to install, not package.
 		var scalaDir = Path.Combine(Path.GetPathRoot(Path.GetTempPath()) ?? "/", "repos", "BeamableBackend");
 		var config = LocalStackTemplate.Create(new LocalStackTemplate.Options { scalaDir = scalaDir });
 		var step = config.steps.FirstOrDefault(s => s.name == "build: scala");
 		Assert.That(step, Is.Not.Null, "the scala build step should exist");
-		Assert.That(step.arguments, Does.Contain(" -U "),
-			"-U forces re-check of remote for SNAPSHOTs and invalidates the cached miss");
-		Assert.That(step.arguments, Does.Contain("install"),
-			"install (not package) is what writes core to ~/.m2 — the -U is only load-bearing paired with install");
+		Assert.That(step.arguments, Does.Contain("clean install"), "install (not package) is what writes core to ~/.m2");
 	}
 
 	[Test]
@@ -647,70 +571,6 @@ public class LocalStackDiscoveryTests
 		var result = m!.Invoke(null, new object[] { svc, mainClass, jvmArgs });
 		Assert.That(result, Is.Not.Null);
 		return (string)result!;
-	}
-
-	[Test]
-	public void MissingCoreInM2_ForcesBuildScalaWhenScalaLaunchIsPresent()
-	{
-		// The exact state Pedro's box was in: build: scala exists in the manifest, target/classes is populated
-		// (from an older CLI's `mvn package`), and ~/.m2 has no core. Without this preflight, autoBuild stays
-		// empty on a plain `beam local up`, and the launcher hits the negative-cache trap.
-		var config = new LocalStackConfig
-		{
-			steps = new List<LocalStackStep>
-			{
-				new LocalStackStep { name = "build: scala", enabled = true, build = true },
-				new LocalStackStep { name = "scala: dbflake", enabled = true },
-			}
-		};
-		var autoBuild = new HashSet<LocalStackStep>();
-
-		var jarPath = Path.Combine(Path.GetTempPath(), "no-such-core-" + Guid.NewGuid() + ".jar");
-		var result = LocalStackRunCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
-
-		Assert.That(result, Is.Not.Null, "missing core with a scala launch step should force build: scala");
-		Assert.That(result.name, Is.EqualTo("build: scala"));
-	}
-
-	[Test]
-	public void MissingCoreInM2_LeftAlone_WhenBuildScalaIsAlreadyInAutoBuild()
-	{
-		// With --build (autoBuild starts empty) or when BuildOutputMissing already picked build: scala, this
-		// preflight has no work to do — it must not duplicate.
-		var buildStep = new LocalStackStep { name = "build: scala", enabled = true, build = true };
-		var config = new LocalStackConfig
-		{
-			steps = new List<LocalStackStep>
-			{
-				buildStep,
-				new LocalStackStep { name = "scala: dbflake", enabled = true },
-			}
-		};
-		var autoBuild = new HashSet<LocalStackStep> { buildStep };
-
-		var jarPath = Path.Combine(Path.GetTempPath(), "no-such-core-" + Guid.NewGuid() + ".jar");
-		var result = LocalStackRunCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
-		Assert.That(result, Is.Null);
-	}
-
-	[Test]
-	public void MissingCoreInM2_LeftAlone_WhenNoScalaLaunchStep()
-	{
-		// A stack with no scala services (--skip "scala: *", or an init that never included them) shouldn't
-		// have a Scala reactor forced on it just because ~/.m2 lacks an artifact that's never going to be used.
-		var config = new LocalStackConfig
-		{
-			steps = new List<LocalStackStep>
-			{
-				new LocalStackStep { name = "build: scala", enabled = true, build = true },
-				new LocalStackStep { name = "docker: api deps + caddy", enabled = true },
-			}
-		};
-		var autoBuild = new HashSet<LocalStackStep>();
-
-		var jarPath = Path.Combine(Path.GetTempPath(), "no-such-core-" + Guid.NewGuid() + ".jar");
-		var result = LocalStackRunCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
-		Assert.That(result, Is.Null);
 	}
 
 	// ----------------------------------------------------------------------------------
@@ -877,135 +737,6 @@ public class LocalStackDiscoveryTests
 	// ----------------------------------------------------------------------------------
 	// In-memory manifest migration for pre-Maven-cache-fix arguments
 	// ----------------------------------------------------------------------------------
-
-	[Test]
-	public void MigrateBuildScala_SwapsPackageForInstallAndAddsU()
-	{
-		// The exact string an older CLI wrote into local-stack.json. Rewriting only in-memory (never on disk)
-		// lets an existing manifest self-heal without asking every user to re-run `beam local init`.
-		var before = "-q -pl core,tools/dbflake,tools/gateway -am clean package -DskipTests";
-		var after = LocalStackRunCommand.MigrateBuildScalaArguments(before);
-		Assert.That(after, Does.Contain("clean install -DskipTests"),
-			"install (not package) is what writes core to ~/.m2 — the load-bearing part of the migration");
-		Assert.That(after, Does.Contain("-U "),
-			"-U invalidates any cached 'not found in nexus' entry — the reason --build didn't help on Pedro's box");
-		Assert.That(after, Does.StartWith("-q -U "),
-			"flag order should match what the current template emits so diffs stay readable");
-	}
-
-	[Test]
-	public void MigrateBuildScala_IsIdempotent()
-	{
-		// The migration runs on every `up`; running it twice on the same input must not double-add -U or
-		// re-swap install back. Otherwise a stray retry loop could produce nonsense arguments.
-		var first = LocalStackRunCommand.MigrateBuildScalaArguments(
-			"-q -pl core,tools/dbflake -am clean package -DskipTests");
-		var second = LocalStackRunCommand.MigrateBuildScalaArguments(first);
-		Assert.That(second, Is.EqualTo(first));
-	}
-
-	[Test]
-	public void MigrateBuildScala_NoOp_OnAlreadyMigrated()
-	{
-		var current = "-q -U -pl core,tools/dbflake -am clean install -DskipTests";
-		Assert.That(LocalStackRunCommand.MigrateBuildScalaArguments(current), Is.EqualTo(current));
-	}
-
-	[Test]
-	public void MigrateScalaLauncher_InsertsOfflineFlagOnce()
-	{
-		// The launcher script (a whole PowerShell / sh program) has exactly one `dependency:build-classpath`
-		// call. Inserting `-o` right before that goal is the least intrusive rewrite — order of `mvn` flags
-		// doesn't matter to Maven, so this is safe.
-		var before =
-			"if ($stale) { & '${maven}' -q -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\" }";
-		var after = LocalStackRunCommand.MigrateScalaLauncherArguments(before);
-		Assert.That(after, Does.Contain("-o dependency:build-classpath"),
-			"launcher must run offline — sidesteps any stale negative-cache entry for com.kickstand:core");
-		// Idempotence.
-		Assert.That(LocalStackRunCommand.MigrateScalaLauncherArguments(after), Is.EqualTo(after));
-	}
-
-	[Test]
-	public void MigrateScalaLauncher_NoOp_WhenAlreadyOffline()
-	{
-		var already =
-			"& '${maven}' -q -o -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\"";
-		Assert.That(LocalStackRunCommand.MigrateScalaLauncherArguments(already), Is.EqualTo(already));
-	}
-
-	[Test]
-	public void MigrateScalaLauncher_NoOp_OnEmptyOrUnrelatedContent()
-	{
-		Assert.That(LocalStackRunCommand.MigrateScalaLauncherArguments(null), Is.Null);
-		Assert.That(LocalStackRunCommand.MigrateScalaLauncherArguments(string.Empty), Is.EqualTo(string.Empty));
-		Assert.That(LocalStackRunCommand.MigrateScalaLauncherArguments("echo hi"), Is.EqualTo("echo hi"),
-			"a launcher that doesn't call mvn should be left alone");
-	}
-
-	[Test]
-	public void MigrateStaleScalaArguments_RewritesBuildScalaAndEveryScalaLauncher()
-	{
-		// End-to-end shape: the whole manifest walk should hit the reactor step and every scala: launcher step,
-		// but leave unrelated steps (docker, c#, portal frontend) untouched.
-		var config = new LocalStackConfig
-		{
-			steps = new List<LocalStackStep>
-			{
-				new LocalStackStep
-				{
-					name = "build: scala",
-					arguments = "-q -pl core,tools/dbflake -am clean package -DskipTests"
-				},
-				new LocalStackStep
-				{
-					name = "scala: dbflake",
-					arguments = "& '${maven}' -q -pl \"tools/$svc\" -am dependency:build-classpath \"-Dmdep.outputFile=$cpf\""
-				},
-				new LocalStackStep
-				{
-					name = "scala: gateway",
-					arguments = "mvn -q -pl tools/$SVC -am dependency:build-classpath -Dmdep.outputFile=$CPF"
-				},
-				new LocalStackStep
-				{
-					name = "docker: api deps + caddy",
-					arguments = "compose up -d --wait"
-				},
-			}
-		};
-
-		LocalStackRunCommand.MigrateStaleScalaArguments(config);
-
-		Assert.That(config.steps[0].arguments, Does.Contain("-U ").And.Contains("clean install"));
-		Assert.That(config.steps[1].arguments, Does.Contain("-o dependency:build-classpath"));
-		Assert.That(config.steps[2].arguments, Does.Contain("-o dependency:build-classpath"));
-		Assert.That(config.steps[3].arguments, Is.EqualTo("compose up -d --wait"),
-			"unrelated docker/c#/frontend steps must be left alone");
-	}
-
-	[Test]
-	public void MissingCoreInM2_LeftAlone_WhenCoreJarPresent()
-	{
-		var config = new LocalStackConfig
-		{
-			steps = new List<LocalStackStep>
-			{
-				new LocalStackStep { name = "build: scala", enabled = true, build = true },
-				new LocalStackStep { name = "scala: dbflake", enabled = true },
-			}
-		};
-		var autoBuild = new HashSet<LocalStackStep>();
-
-		var jarPath = Path.GetTempFileName();
-		try
-		{
-			var result = LocalStackRunCommand.ShouldForceBuildScalaForMissingCore(config, autoBuild, jarPath);
-			Assert.That(result, Is.Null,
-				"a machine with core already installed to ~/.m2 does not need an unrequested rebuild");
-		}
-		finally { File.Delete(jarPath); }
-	}
 
 	// ----------------------------------------------------------------------------------
 	// Scala Mongo-startup-race retry heuristic

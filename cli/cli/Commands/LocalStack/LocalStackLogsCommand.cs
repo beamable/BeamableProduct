@@ -25,6 +25,9 @@ public class LocalStackLogsCommand
 	: AtomicCommand<LocalStackLogsCommandArgs, LocalStackLogsCommandResult>
 	, IStandaloneCommand, ISkipManifest
 {
+	// It prints its own readable output; the result object still reaches tools through the data channel.
+	public override bool AutoLogOutput => false;
+
 	public LocalStackLogsCommand() : base("logs", "Tail the log files of the running local stack")
 	{
 	}

@@ -356,6 +356,25 @@ public class WebLocalRegistryService
 	/// interrupted run broke. Requiring the directory too makes those projects miss and heal.
 	/// </para>
 	/// </summary>
+	/// <summary>
+	/// True when <paramref name="registry"/> answers and serves a build of <paramref name="package"/> under the
+	/// <c>local</c> dist-tag; false when it doesn't (never published, or the registry was purged), or can't be asked.
+	/// </summary>
+	public static async Task<bool> HasLocalBuild(string package, string registry, CancellationToken token)
+	{
+		try
+		{
+			using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+			var json = await http.GetStringAsync($"{registry.TrimEnd('/')}/{package.Replace("/", "%2f")}", token);
+			return !string.IsNullOrEmpty(JObject.Parse(json)["dist-tags"]?[LocalDistTag]?.ToString());
+		}
+		catch (Exception e) when (e is not OperationCanceledException)
+		{
+			Log.Verbose($"Could not ask [{registry}] for {package}: {e.Message}");
+			return false;
+		}
+	}
+
 	public static string InstalledIntegrity(string directory, string package)
 	{
 		var relative = $"node_modules/{package}";
