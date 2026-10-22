@@ -21,6 +21,8 @@ public class FederationCommonCopyTests
 		var output = Path.Combine(Path.GetTempPath(), "beam-federation-copy-tests", Guid.NewGuid().ToString("N"));
 		try
 		{
+			// release-shared-code preserves the existing Common directories.
+			Directory.CreateDirectory(output);
 			// Exercise the same producer as release-shared-code.
 			UnityProjectUtil.CopyProject(source, output);
 			Assert.That(File.Exists(committed), Is.True, $"Missing Unity copy: {fileName}");
