@@ -24,6 +24,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		public static void ShowReconciliationDialog(CliContentService service, LocalContentManifestEntry entry)
 		{
+			if (service.CurrentProgress.IsActive) return;
 			var scope = service.GetContentScopeKey();
 			var choice = EditorUtility.DisplayDialogComplex("Reconcile Content",
 				entry.FullId + "\n\n" + GetStatusDescription(entry, ContentConfiguration.Instance.EnableLocalContentInEditor) +
@@ -41,8 +42,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				EditorUtility.DisplayDialog("Invalid content", "Fix validation errors before keeping the local version of this conflict.", "Close");
 				return;
 			}
-			service.ReconcileContentWithProgress(entry.FullId, choice == 2)
-				.Error(error => EditorUtility.DisplayDialog("Reconciliation did not complete", error.Message, "Close"));
+			service.ResolveConflict(entry.FullId, choice == 2);
 		}
 
 		private static string AutoSyncDescription(bool localMode) => localMode

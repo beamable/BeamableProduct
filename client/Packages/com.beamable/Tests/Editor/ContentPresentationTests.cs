@@ -1,7 +1,13 @@
 using System;
 using System.Reflection;
+using System.Collections.Generic;
+using System.Runtime.Serialization;
+using Beamable.Common;
+using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Content;
+using Beamable.Editor.BeamCli.Commands;
+using Beamable.Editor.ContentService;
 using Beamable.Editor.UI.ContentWindow;
 using NUnit.Framework;
 using UnityEditor;
@@ -9,8 +15,132 @@ using UnityEngine;
 
 namespace Beamable.Editor.Tests
 {
+    public class ContentReconciliationFeedbackTests
+    {
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Reported_failure_is_visible_and_retry_releases_progress(bool transportFailure)
+        {
+            var commands = new ResolveCommands();
+            var service = CreateService(commands);
+            Exception observed = null;
+            var operation = service.ReconcileContentWithProgress("currency.test", false);
+            operation.Error(error => observed = error);
+            Assert.That(service.CurrentProgress.IsActive, Is.True);
+            Assert.That(operation.IsCompleted, Is.False);
+            const string message = "The realm changed. Refresh and review this item again.";
+            if (transportFailure) commands.Pending.Completion.CompleteError(new InvalidOperationException(message));
+            else { commands.Pending.ReportError(message); commands.Pending.Completion.CompleteSuccess(); }
+            Assert.That(operation.IsCompleted, Is.True);
+            Assert.That(observed, Is.Not.Null);
+            Assert.That(observed.Message, Does.Contain(message));
+            Assert.That(service.CurrentProgress.IsActive, Is.False);
+            commands.Pending = new ResolveCommand();
+            var retry = service.ReconcileContentWithProgress("currency.test", false);
+            commands.Pending.Completion.CompleteSuccess();
+            Assert.That(retry.IsCompleted && !retry.IsFailed, Is.True);
+            Assert.That(service.CurrentProgress.IsActive, Is.False);
+            Assert.That(service.EntriesCache["currency.test"].TargetManifestUid, Is.EqualTo("reviewed"));
+        }
+
+        [Test]
+        public void Repeated_resolution_does_not_start_another_command_or_clear_active_progress()
+        {
+            var commands = new ResolveCommands();
+            var service = CreateService(commands);
+            var first = service.ReconcileContentWithProgress("currency.test", false);
+            Exception rejected = null;
+            var duplicate = service.ReconcileContentWithProgress("currency.test", true);
+            duplicate.Error(error => rejected = error);
+            Assert.That(commands.Calls, Is.EqualTo(1));
+            Assert.That(rejected, Is.Not.Null);
+            Assert.That(service.CurrentProgress.IsActive, Is.True);
+            commands.Pending.Completion.CompleteSuccess();
+            Assert.That(first.IsCompleted && !first.IsFailed, Is.True);
+            Assert.That(service.CurrentProgress.IsActive, Is.False);
+        }
+
+        static CliContentService CreateService(ResolveCommands commands)
+        {
+            var service = (CliContentService)FormatterServices.GetUninitializedObject(typeof(CliContentService));
+            const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+            void Set(string name, object value) => typeof(CliContentService).GetField(name, fields).SetValue(service, value);
+            Set("_cli", commands);
+            Set("<CurrentProgress>k__BackingField", new ContentOperationProgress());
+            Set("<EntriesCache>k__BackingField", new Dictionary<string, LocalContentManifestEntry> {
+                ["currency.test"] = new LocalContentManifestEntry { FullId = "currency.test", TargetManifestUid = "reviewed" }
+            });
+            // Exercise the real operation without starting native Editor watchers in this isolated test.
+            Set("_watchersDisposed", true);
+            service.manifestIdOverride = "global";
+            return service;
+        }
+
+        class ResolveCommands : BeamCommands
+        {
+            public ResolveCommand Pending = new();
+            public int Calls;
+            public ResolveCommands() : base(null, null) { }
+            public override ContentResolveWrapper ContentResolve(ContentResolveArgs args)
+            {
+                Calls++;
+                Assert.That(args.expectedManifestUid, Is.EqualTo("reviewed"));
+                Assert.That(args.filter, Is.EqualTo("currency.test"));
+                return new ContentResolveWrapper { Command = Pending };
+            }
+        }
+
+        class ResolveCommand : IBeamCommand
+        {
+            public readonly Promise Completion = new();
+            Action<ReportDataPoint<ErrorOutput>> error;
+            public void ReportError(string message) => error?.Invoke(new ReportDataPoint<ErrorOutput> { data = new ErrorOutput { message = message } });
+            public void SetCommand(string command) { }
+            public Promise Run() => Completion;
+            public void Cancel() { }
+            public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> callback) => this;
+            public IBeamCommand On(Action<ReportDataPointDescription> callback) => this;
+            public IBeamCommand OnError(Action<ReportDataPoint<ErrorOutput>> callback) { error += callback; return this; }
+            public IBeamCommand OnTerminate(Action<ReportDataPoint<EofOutput>> callback) => this;
+        }
+    }
+
     public class ContentPresentationTests
     {
+        [TestCase(300f, 5)]
+        [TestCase(450f, 5)]
+        [TestCase(700f, 5)]
+        [TestCase(1200f, 5)]
+        [TestCase(300f, 1)]
+        public void Footer_controls_fit_without_hiding_the_last_filter(float available, int count)
+        {
+            var method = typeof(ContentWindow).GetMethod("CalculateFooterButtonWidth", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null);
+            var width = (float)method.Invoke(null, new object[] { available, count, 160f });
+            Assert.That(width, Is.GreaterThanOrEqualTo(44f), "Leave room for the icon and count.");
+            Assert.That(width, Is.LessThanOrEqualTo(160f));
+            // The production footer reserves BASE_PADDING (5) between controls.
+            Assert.That(width * count + 5f * (count - 1), Is.LessThanOrEqualTo(available));
+        }
+
+        [Test]
+        public void Incoming_footer_counts_all_reviewable_entries_but_not_conflicts_or_local_edits()
+        {
+            var entries = new[] {
+                new LocalContentManifestEntry { ChangeKind = 1 },
+                new LocalContentManifestEntry { ChangeKind = 2 },
+                new LocalContentManifestEntry { ChangeKind = 3 },
+                new LocalContentManifestEntry { ChangeKind = 5 },
+                new LocalContentManifestEntry { ChangeKind = 6 },
+                new LocalContentManifestEntry { ChangeKind = 3, IsInConflict = true },
+                default(LocalContentManifestEntry)
+            };
+            var method = typeof(ContentWindow).GetMethod("CountIncomingEntries", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null);
+            Assert.That(method.Invoke(null, new object[] { entries }), Is.EqualTo(4));
+            Assert.That(method.Invoke(null, new object[] { Array.Empty<LocalContentManifestEntry>() }), Is.EqualTo(0));
+        }
+
         [Test]
         public void Content_groups_include_types_present_only_in_cached_entries()
         {

@@ -133,14 +133,21 @@ namespace Beamable.Editor.Content.UI
 			}
 		}
 
+		private GUIStyle _contentActionButtonStyle;
 		private void DrawContentButtons(ContentObject content, Rect buttonsRect, CliContentService contentService)
 		{
-			var modifiedButtonWidth = 80f;
-			GUIStyle buttonStyle = new GUIStyle(GUI.skin.button)
+			if (contentService.CurrentProgress.IsActive)
+			{
+				EditorGUI.ProgressBar(buttonsRect, contentService.CurrentProgress.Progress, contentService.CurrentProgress.Description);
+				return;
+			}
+			_contentActionButtonStyle ??= new GUIStyle(GUI.skin.button)
 			{
 				alignment = TextAnchor.MiddleLeft,     
-				padding = new RectOffset(10, 5, 5, 5),
+				padding = new RectOffset(10, 36, 5, 5),
 			};
+			var buttonStyle = _contentActionButtonStyle;
+			float modifiedButtonWidth = 0;
 			bool incoming = contentService.EntriesCache.TryGetValue(content.Id, out var entry) &&
 				ContentWindow_TooltipsHelper.NeedsReconciliation(entry);
 			bool hasModifiedButton = incoming || content.ContentStatus is ContentStatus.Deleted or ContentStatus.Modified or ContentStatus.Created;
@@ -148,6 +155,7 @@ namespace Beamable.Editor.Content.UI
 			if (hasModifiedButton)
 			{
 				var revertContent = new GUIContent(incoming ? "Reconcile" : "Revert");
+				modifiedButtonWidth = buttonStyle.CalcSize(revertContent).x;
 				
 				var revertButtonRect = new Rect(
 					buttonsRect.xMin,
@@ -184,7 +192,7 @@ namespace Beamable.Editor.Content.UI
 				var conflictSolveButtonRect = new Rect(
 					buttonsRect.xMin + extraInitPos,
 					buttonsRect.y,
-					120f,
+					buttonStyle.CalcSize(conflictContent).x,
 					buttonsRect.height);
 				if (GUI.Button(conflictSolveButtonRect, conflictContent, buttonStyle))
 				{
@@ -406,14 +414,17 @@ namespace Beamable.Editor.Content.UI
 
 		private GUIStyle _statusMessageStyle;
 		private int _statusManifestRevision = -1;
+		private int _statusProgressRevision = -1;
 
 		public override bool RequiresConstantRepaint()
 		{
 			if (!BeamEditor.IsInitialized) return false;
 			// Unity already asks Inspectors whether to repaint. Read only the existing cache revision.
-			var revision = BeamEditorContext.Default.CliContentService.ManifestChangedCount;
-			if (_statusManifestRevision == revision) return false;
+			var service = BeamEditorContext.Default.CliContentService;
+			var revision = service.ManifestChangedCount;
+			if (_statusManifestRevision == revision && _statusProgressRevision == service.ProgressUpdateVersion) return false;
 			_statusManifestRevision = revision;
+			_statusProgressRevision = service.ProgressUpdateVersion;
 			return true;
 		}
 

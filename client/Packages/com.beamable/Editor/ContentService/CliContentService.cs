@@ -691,11 +691,14 @@ namespace Beamable.Editor.ContentService
 
 		public void ResolveConflict(string contentId, bool useLocal)
 		{
-			ReconcileContentWithProgress(contentId, useLocal).Error(Debug.LogException);
+			ReconcileContentWithProgress(contentId, useLocal).Error(error =>
+				EditorUtility.DisplayDialog("Reconciliation did not complete", error.Message, "Close"));
 		}
 
 		public async Promise ReconcileContentWithProgress(string contentId, bool useLocal)
 		{
+			if (CurrentProgress.IsActive)
+				throw new InvalidOperationException("A content operation is already running. Wait for it to finish before reconciling.");
 			if (!EntriesCache.TryGetValue(contentId, out var entry) || string.IsNullOrEmpty(entry.TargetManifestUid))
 				throw new InvalidOperationException("Refresh content with the updated CLI before reconciling this item.");
 			var args = new ContentResolveArgs
@@ -708,7 +711,12 @@ namespace Beamable.Editor.ContentService
 			try
 			{
 				await StopContentWatcher();
-				await _cli.ContentResolve(args).Run();
+				var command = _cli.ContentResolve(args);
+				Exception reportedError = null;
+				command.OnError(report => reportedError ??= new InvalidOperationException(report.data.message));
+				await command.Run();
+				// Successful transport completion can still carry a rejected CLI operation.
+				if (reportedError != null) throw reportedError;
 			}
 			finally { FinishActionProgress(); }
 		}

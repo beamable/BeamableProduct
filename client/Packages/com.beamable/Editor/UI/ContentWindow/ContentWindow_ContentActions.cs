@@ -17,7 +17,6 @@ namespace Beamable.Editor.UI.ContentWindow
 {
 	public partial class ContentWindow
 	{
-		private const float ACTION_PANEL_MIN_WIDTH = 900f;
 
 		private Dictionary<string, bool> _foldoutStates = new()
 		{
@@ -216,8 +215,6 @@ namespace Beamable.Editor.UI.ContentWindow
 			allCreated = allCreated.Where(e => !renamedCreatedIds.Contains(e.FullId)).ToList();
 			allDeleted = allDeleted.Where(e => !renamedDeletedIds.Contains(e.FullId)).ToList();
 
-			float screenWidth = EditorGUIUtility.currentViewWidth;
-			float availableSpace = Mathf.Max(screenWidth, ACTION_PANEL_MIN_WIDTH);
 
 			EditorGUILayout.BeginVertical();
 
@@ -235,18 +232,16 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.Space(12);
 
 			_mainScrollPosition = EditorGUILayout.BeginScrollView(_mainScrollPosition, GUILayout.ExpandWidth(true));
-			const int widthOfAUnityScrollBar = 25;
-			availableSpace -= widthOfAUnityScrollBar + NESTED_CONTENT_PADDING*2;
 
 			EditorGUILayout.BeginVertical();
 
 
-			DrawChangedContents(availableSpace, "Created Contents", BeamGUI.iconStatusAdded, allCreated, showRevert);
-			DrawChangedContents(availableSpace, "Modified Contents", BeamGUI.iconStatusModified, allModified, showRevert);
-			DrawChangedContents(availableSpace, "Deleted Contents", BeamGUI.iconStatusDeleted, allDeleted, showRevert);
+			DrawChangedContents("Created Contents", BeamGUI.iconStatusAdded, allCreated, showRevert);
+			DrawChangedContents("Modified Contents", BeamGUI.iconStatusModified, allModified, showRevert);
+			DrawChangedContents("Deleted Contents", BeamGUI.iconStatusDeleted, allDeleted, showRevert);
 			if (allRenames.Count > 0)
 			{
-				DrawRenamedContents(availableSpace, "Renamed Contents", BeamGUI.iconStatusModified, allRenames, showRevert);
+				DrawRenamedContents("Renamed Contents", BeamGUI.iconStatusModified, allRenames, showRevert);
 			}
 
 			EditorGUILayout.EndVertical();
@@ -314,8 +309,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			return true;
 		}
 
-		private void DrawChangedContents(float width,
-		                                 string headerName,
+		private void DrawChangedContents(string headerName,
 		                                 Texture icon,
 		                                 List<LocalContentManifestEntry> itemList, bool showRevert = false)
 		{
@@ -330,7 +324,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.BeginVertical();
 			var rectController =
 				new EditorGUIRectController(
-					EditorGUILayout.GetControlRect(GUILayout.Width(width), GUILayout.Height(heightSize)));
+					EditorGUILayout.GetControlRect(false, heightSize, GUILayout.MinWidth(0), GUILayout.ExpandWidth(true)));
 
 			GUI.Box(rectController.rect, GUIContent.none, EditorStyles.helpBox);
 			var headerRect = new EditorGUIRectController(rectController.ReserveHeight(BeamGUI.StandardVerticalSpacing * 1.5f));
@@ -403,7 +397,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.EndVertical();
 		}
 
-		private void DrawRenamedContents(float width, string headerName, Texture icon,
+		private void DrawRenamedContents(string headerName, Texture icon,
 			List<ContentRenameInfo> renames, bool showRevert)
 		{
 			if (renames.Count == 0) return;
@@ -414,7 +408,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			EditorGUILayout.BeginVertical();
 			var rectController =
 				new EditorGUIRectController(
-					EditorGUILayout.GetControlRect(GUILayout.Width(width), GUILayout.Height(heightSize)));
+					EditorGUILayout.GetControlRect(false, heightSize, GUILayout.MinWidth(0), GUILayout.ExpandWidth(true)));
 
 			GUI.Box(rectController.rect, GUIContent.none, EditorStyles.helpBox);
 			var headerRect = new EditorGUIRectController(rectController.ReserveHeight(BeamGUI.StandardVerticalSpacing * 1.5f));
