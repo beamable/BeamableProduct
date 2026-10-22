@@ -31,7 +31,7 @@ namespace Beamable.Editor
 			// var tmpPath = packageFullPath + "/Package Resources/TMP Essential Resources.unitypackage";
 			if (File.Exists(tmpPath))
 			{
-#if UNITY_6000_7_OR_NEWER
+#if UNITY_6000_6_OR_NEWER
 				UnityEditor.AssetPackage.Package.Import(tmpPath, false);
 #else
 				AssetDatabase.ImportPackage(tmpPath, false);

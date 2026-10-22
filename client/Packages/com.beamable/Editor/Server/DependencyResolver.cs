@@ -138,7 +138,7 @@ namespace Beamable.Server
 			}
 			catch
 			{
-#if UNITY_6000_7_OR_NEWER
+#if UNITY_6000_6_OR_NEWER
 				var assemblyPath = t.Assembly.GetLoadedAssemblyPath();
 #else
 				var assemblyPath = t.Assembly.Location;

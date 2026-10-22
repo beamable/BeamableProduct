@@ -15,7 +15,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
-#if UNITY_6000_7_OR_NEWER
+#if UNITY_6000_3_OR_NEWER
 using UnityObjectId = UnityEngine.EntityId;
 #else
 using UnityObjectId = System.Int32;
@@ -1307,7 +1307,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private static UnityObjectId GetObjectId(UnityEngine.Object target)
 		{
-#if UNITY_6000_7_OR_NEWER
+#if UNITY_6000_3_OR_NEWER
 			return target.GetEntityId();
 #else
 		return target.GetInstanceID();

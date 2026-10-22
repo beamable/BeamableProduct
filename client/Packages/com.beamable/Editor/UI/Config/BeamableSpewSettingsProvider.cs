@@ -130,7 +130,7 @@ namespace Beamable.Spew
 	{
 		public static List<Type> GetClassesInAllAssemblies<TAttr>(bool inherit = true) where TAttr : Attribute
 		{
-#if UNITY_6000_7_OR_NEWER
+#if UNITY_6000_6_OR_NEWER
 			return GetClassesInAssemblies<TAttr>(
 				new List<Assembly>(UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies()),
 				inherit);

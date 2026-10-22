@@ -15,7 +15,7 @@ namespace UnityEngine.UDP.Editor
                 return m_TypeCache[name];
             }
 
-#if UNITY_6000_7_OR_NEWER
+#if UNITY_6000_6_OR_NEWER
             var assemblies =
 	            global::UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
 #else

@@ -59,7 +59,7 @@ namespace Beamable.Editor.Config
 		public static List<ConfigModuleDescriptor> GetConfigDescriptors()
 		{
 			var descriptors = new List<ConfigModuleDescriptor>();
-#if UNITY_6000_7_OR_NEWER
+#if UNITY_6000_6_OR_NEWER
 			var assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
 #else
 			var assemblies = AppDomain.CurrentDomain.GetAssemblies();

@@ -393,12 +393,12 @@ namespace Beamable.Common.Reflection
 					perAttributeLists.AttributeMappings.Add(attributesOfInterest[i], new List<MemberAttribute>());
 				}
 			}
-
-#if UNITY_6000_7_OR_NEWER
+			
+#if UNITY_6000_6_OR_NEWER
 			//Enumerate Unity's active assemblies, excluding unloading contexts.
 			var assemblies = UnityEngine.Assemblies.CurrentAssemblies
-			                            .GetLoadedAssemblies()
-			                            .ToArray();
+				.GetLoadedAssemblies()
+				.ToArray();
 #else			
 			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 #endif

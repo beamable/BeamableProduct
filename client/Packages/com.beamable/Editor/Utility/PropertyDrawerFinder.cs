@@ -165,7 +165,7 @@ namespace Beamable.Editor
 			// - Original, search all assemblies and classes: 250 msec
 			// - Wappen optimized, search only specific name assembly and classes: 5 msec
 
-#if UNITY_6000_7_OR_NEWER
+#if UNITY_6000_6_OR_NEWER
 			var assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
 #else
 			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
