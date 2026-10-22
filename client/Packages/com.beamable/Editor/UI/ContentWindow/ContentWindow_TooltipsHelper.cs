@@ -64,6 +64,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		public static string GetStatusDescription(LocalContentManifestEntry entry, bool localMode) => GetChangeKind(entry) switch
 		{
 			ContentChangeKind.UpToDate => "Your local copy matches the last known publication.",
+			ContentChangeKind.LocalEdit when entry.StatusEnum == ContentStatus.Deleted =>
+				"Your local copy has been deleted. This deletion has not been published.",
 			ContentChangeKind.LocalEdit => "Your local copy has unpublished changes.",
 			ContentChangeKind.IncomingChange => "Published content changed; your local copy is unchanged. " +
 				(localMode ? "Auto-sync is paused while Local Mode is on." : "Auto-sync is enabled; synchronization may still be pending."),

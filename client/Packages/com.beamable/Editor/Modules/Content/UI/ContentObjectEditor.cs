@@ -431,7 +431,7 @@ namespace Beamable.Editor.Content.UI
 
 			if (contentObject.ContentStatus is Common.BeamCli.Contracts.ContentStatus.Deleted)
 			{
-				EditorGUILayout.HelpBox("This content has been deleted.", MessageType.Info);
+				// Deleted also represents incoming additions with no local file; use the authoritative presentation.
 				DrawContentStatus();
 				return;
 			}

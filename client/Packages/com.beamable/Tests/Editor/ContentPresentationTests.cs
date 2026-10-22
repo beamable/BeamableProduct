@@ -605,6 +605,83 @@ namespace Beamable.Editor.Tests
             Assert.That(Call("GetStatusLabel", entry), Is.EqualTo("Conflict"));
         }
 
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Incoming_addition_placeholder_is_not_described_as_deleted(bool localMode)
+        {
+            // The CLI retains Deleted for an absent local file, including a new realm item.
+            var entry = new LocalContentManifestEntry
+            {
+                CurrentStatus = (int)ContentStatus.Deleted,
+                ChangeKind = (int)ContentChangeKind.IncomingAddition
+            };
+            var message = ContentWindow_TooltipsHelper.GetSelectionDescription(new[] { entry }, 0, localMode, out var conflict);
+            Assert.That(message, Does.StartWith("Incoming addition\n"));
+            Assert.That(message, Does.Contain("added in the realm"));
+            Assert.That(message, Does.Contain(localMode ? "Auto-sync is paused" : "Auto-sync is enabled"));
+            Assert.That(message, Does.Not.Contain("deleted"));
+            Assert.That(conflict, Is.False);
+        }
+
+        [Test]
+        public void Confirmed_local_deletion_retains_an_explicit_unpublished_deletion_explanation()
+        {
+            var entry = new LocalContentManifestEntry
+            {
+                CurrentStatus = (int)ContentStatus.Deleted,
+                ChangeKind = (int)ContentChangeKind.LocalEdit
+            };
+            var message = ContentWindow_TooltipsHelper.GetSelectionDescription(new[] { entry }, 0, true, out var conflict);
+            Assert.That(message, Does.StartWith("Local edit\n"));
+            Assert.That(message, Does.Contain("Your local copy has been deleted."));
+            Assert.That(message, Does.Contain("This deletion has not been published."));
+            Assert.That(conflict, Is.False);
+        }
+
+        [TestCase(0)]
+        [TestCase(98)]
+        public void Missing_placeholder_history_does_not_infer_a_deletion(int kind)
+        {
+            var entry = new LocalContentManifestEntry { CurrentStatus = (int)ContentStatus.Deleted, ChangeKind = kind };
+            var message = ContentWindow_TooltipsHelper.GetSelectionDescription(new[] { entry }, 0, true, out _);
+            Assert.That(message, Does.Contain("origin of this difference is unavailable"));
+            Assert.That(message, Does.Not.Contain("deleted"));
+            Assert.That(message, Does.Not.Contain("Incoming addition"));
+        }
+
+        [Test]
+        public void Conflicted_placeholder_is_described_as_a_conflict_before_a_local_deletion()
+        {
+            var entry = new LocalContentManifestEntry
+            {
+                CurrentStatus = (int)ContentStatus.Deleted,
+                ChangeKind = (int)ContentChangeKind.LocalEdit,
+                IsInConflict = true
+            };
+            var message = ContentWindow_TooltipsHelper.GetSelectionDescription(new[] { entry }, 0, true, out var conflict);
+            Assert.That(message, Does.StartWith("Conflict\n"));
+            Assert.That(message, Does.Contain("Resolve the conflict before publishing"));
+            Assert.That(message, Does.Not.Contain("Your local copy has been deleted."));
+            Assert.That(conflict, Is.True);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Mixed_placeholders_are_aggregated_regardless_of_selection_order(bool reverse)
+        {
+            var entries = new[]
+            {
+                new LocalContentManifestEntry { CurrentStatus = (int)ContentStatus.Deleted, ChangeKind = (int)ContentChangeKind.IncomingAddition },
+                new LocalContentManifestEntry { CurrentStatus = (int)ContentStatus.Deleted, ChangeKind = (int)ContentChangeKind.LocalEdit }
+            };
+            if (reverse) Array.Reverse(entries);
+            var message = ContentWindow_TooltipsHelper.GetSelectionDescription(entries, 0, true, out _);
+            Assert.That(message, Does.StartWith("2 selected:"));
+            Assert.That(message, Does.Contain("1 Incoming addition"));
+            Assert.That(message, Does.Contain("1 Local edit"));
+            Assert.That(message, Does.Not.Contain("Your local copy has been deleted."));
+        }
+
         [TestCase(true, "paused")]
         [TestCase(false, "enabled")]
         public void Incoming_explains_auto_sync_without_promising_a_download(bool local, string state)
