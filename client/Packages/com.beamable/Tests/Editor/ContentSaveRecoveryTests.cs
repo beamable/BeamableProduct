@@ -49,6 +49,8 @@ namespace Beamable.Editor.Tests
 			Set(_service, "_beamContext", context);
 			Set(_service, "_provider", provider);
 			Set(_service, "_contentWrites", new ContentWriteTracker());
+			Set(_service, "<CurrentProgress>k__BackingField", new ContentOperationProgress());
+			Set(_service, "_watchersDisposed", true);
 			_service.manifestIdOverride = "global";
 			_content = ScriptableObject.CreateInstance<SaveRecoveryContent>();
 			_content.SetIdAndVersion("saveRecovery.test", "");
@@ -66,6 +68,74 @@ namespace Beamable.Editor.Tests
 			_content.CancelPendingEditorChangeNotification();
 			UnityEngine.Object.DestroyImmediate(_content);
 			if (_path != null && File.Exists(_path)) File.Delete(_path);
+		}
+
+		[TestCase(false)]
+		[TestCase(true)]
+		public void Reconciliation_preserves_a_pending_or_running_property_save(bool commandStarted)
+		{
+			PrepareFile();
+			var entry = _service.EntriesCache[_content.Id];
+			entry.TargetManifestUid = "reviewed";
+			_service.EntriesCache[_content.Id] = entry;
+			_content.amount = 25;
+			if (commandStarted) Save();
+			else _content.CheckForNonDetectedChanges();
+			Exception observed = null;
+			_service.ReconcileContentWithProgress(_content.Id, false).Error(error => observed = error);
+			Assert.That(observed?.Message, Does.Contain("still being saved"));
+			Assert.That(_content.amount, Is.EqualTo(25));
+			Assert.That(_service.CurrentProgress.IsActive, Is.False);
+			Assert.That(_content.HasPendingEditorChangeNotification, Is.EqualTo(!commandStarted));
+		}
+
+		[TestCase("_pendingNameEdit")]
+		[TestCase("_pendingTagEdit")]
+		public void Inspector_header_debounce_blocks_reconciliation_until_its_callback_finishes(string field)
+		{
+			PrepareFile();
+			var entry = _service.EntriesCache[_content.Id];
+			entry.TargetManifestUid = "reviewed";
+			_service.EntriesCache[_content.Id] = entry;
+			var editor = UnityEditor.Editor.CreateEditor(_content, typeof(ContentObjectEditor));
+			int edits = 0;
+			try
+			{
+				typeof(ContentObjectEditor).GetMethod("ObservePendingEdits", Fields).Invoke(editor, new object[] { _service });
+				Set(editor, field, (Action)(() => edits++));
+				Exception observed = null;
+				_service.ReconcileContentWithProgress(_content.Id, false).Error(error => observed = error);
+				Assert.That(observed?.Message, Does.Contain("still being saved"));
+				Assert.That(edits, Is.Zero);
+			}
+			finally { UnityEngine.Object.DestroyImmediate(editor); }
+			Assert.That(edits, Is.Zero, "Deselecting must not flush delayed edits out of order.");
+			Assert.That(Get(_service, "HasPendingInspectorEdits"), Is.Not.Null);
+			typeof(ContentObjectEditor).GetMethod("CompleteHeaderEdit", Fields).Invoke(editor, new object[] { field == "_pendingNameEdit" });
+			Assert.That(edits, Is.EqualTo(1));
+			Assert.That(Get(_service, "HasPendingInspectorEdits"), Is.Null, "Destroyed Inspectors must release their subscription.");
+		}
+
+		[Test]
+		public void Inspector_guard_follows_the_same_target_after_its_id_changes()
+		{
+			var editor = UnityEditor.Editor.CreateEditor(_content, typeof(ContentObjectEditor));
+			var observe = typeof(ContentObjectEditor).GetMethod("ObservePendingEdits", Fields);
+			var pending = typeof(ContentObjectEditor).GetMethod("HasPendingEdits", Fields);
+			try
+			{
+				observe.Invoke(editor, new object[] { _service });
+				_content.SetContentName("renamed");
+				observe.Invoke(editor, new object[] { _service });
+				Set(editor, "_pendingTagEdit", (Action)(() => { }));
+				Assert.That(pending.Invoke(editor, new object[] { _content.Id }), Is.True);
+				Assert.That(pending.Invoke(editor, new object[] { "saveRecovery.test" }), Is.False);
+			}
+			finally
+			{
+				Set(editor, "_pendingTagEdit", null);
+				UnityEngine.Object.DestroyImmediate(editor);
+			}
 		}
 
 		[TestCase(false)]

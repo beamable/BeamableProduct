@@ -27,6 +27,47 @@ namespace Beamable.Editor.Content.UI
 		private const float BUTTONS_HEADER_HEIGHT = 90f;
 		private EditorCoroutine _updateNameCoroutine;
 		private EditorCoroutine _updateTagCoroutine;
+		private Action _pendingNameEdit;
+		private Action _pendingTagEdit;
+		private CliContentService _editingService;
+		private string _editingContentId;
+		private bool _editorDisabled;
+
+		private void ObservePendingEdits(CliContentService service)
+		{
+			_editorDisabled = false;
+			_editingContentId = (target as ContentObject)?.Id;
+			if (ReferenceEquals(_editingService, service)) return;
+			if (_editingService != null) _editingService.HasPendingInspectorEdits -= HasPendingEdits;
+			_editingService = service;
+			service.HasPendingInspectorEdits += HasPendingEdits;
+		}
+
+		private bool HasPendingEdits(string contentId) => _editingContentId == contentId &&
+			(_pendingNameEdit != null || _pendingTagEdit != null);
+
+		private void CompleteHeaderEdit(bool name)
+		{
+			var pending = name ? _pendingNameEdit : _pendingTagEdit;
+			if (name) { _pendingNameEdit = null; _updateNameCoroutine = null; }
+			else { _pendingTagEdit = null; _updateTagCoroutine = null; }
+			try { pending?.Invoke(); }
+			finally { ReleasePendingEditsObserver(); }
+		}
+
+		private void OnDisable()
+		{
+			// Keep the guard until already-scheduled callbacks finish; don't reorder their writes on deselection.
+			_editorDisabled = true;
+			ReleasePendingEditsObserver();
+		}
+
+		private void ReleasePendingEditsObserver()
+		{
+			if (!_editorDisabled || _pendingNameEdit != null || _pendingTagEdit != null) return;
+			if (_editingService != null) _editingService.HasPendingInspectorEdits -= HasPendingEdits;
+			_editingService = null;
+		}
 		private readonly Dictionary<string, int> _listValidationErrors = new();
 		private bool _hasListValidationCache;
 		private Guid _listValidationRevision;
@@ -37,11 +78,11 @@ namespace Beamable.Editor.Content.UI
 		{
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
-			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject)))
+			var contentService = BeamEditorContext.Default.ServiceScope.GetService<CliContentService>();
+			ObservePendingEdits(contentService);
+			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject) || contentService.CurrentProgress.IsActive))
 			{
 			var isEditingMultiple = targets.Length > 1;
-
-			var contentService = BeamEditorContext.Default.ServiceScope.GetService<CliContentService>();
 
 			var boldLabelFieldStyle =
 				new GUIStyle(EditorStyles.boldLabel) {fixedHeight = EditorGUIUtility.singleLineHeight};
@@ -197,6 +238,9 @@ namespace Beamable.Editor.Content.UI
 				if (GUI.Button(conflictSolveButtonRect, conflictContent, buttonStyle))
 				{
 					GenericMenu conflictResolveMenu = new GenericMenu();
+					var reviewedId = content.Id;
+					var reviewedScope = contentService.GetContentScopeKey();
+					var reviewedUid = contentService.EntriesCache.TryGetValue(reviewedId, out var reviewed) ? reviewed.TargetManifestUid : "";
 					if (contentService.IsContentInvalid(content.Id))
 					{
 						conflictResolveMenu.AddDisabledItem(new GUIContent("Use local", "Cannot resolve using local because it is invalid"));
@@ -205,12 +249,12 @@ namespace Beamable.Editor.Content.UI
 					{
 						conflictResolveMenu.AddItem(new GUIContent("Use Local"), false, () =>
 						{
-							contentService.ResolveConflict(content.Id, true);
+							contentService.ResolveConflict(reviewedId, true, reviewedScope, reviewedUid);
 						});	
 					}
 					conflictResolveMenu.AddItem(new GUIContent("Use Realm"), false, () =>
 					{
-						contentService.ResolveConflict(content.Id, false);
+							contentService.ResolveConflict(reviewedId, false, reviewedScope, reviewedUid);
 					});
 					conflictResolveMenu.ShowAsContext();
 				}
@@ -262,11 +306,18 @@ namespace Beamable.Editor.Content.UI
 						EditorCoroutineUtility.StopCoroutine(_updateNameCoroutine);
 					}
 
-					_updateNameCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedActionEditorRoutine(0.5d, () =>
+					var scope = contentService.GetContentScopeKey();
+					_pendingNameEdit = () =>
 					{
+						if (contentObject == null || contentObject.ContentStatus == ContentStatus.Deleted ||
+						    scope != contentService.GetContentScopeKey()) return;
 						contentService.RenameContent(contentObject.Id, newName);
 						contentObject.SetContentName(newName);
 						EditorUtility.SetDirty(contentObject);
+					};
+					_updateNameCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedActionEditorRoutine(0.5d, () =>
+					{
+						CompleteHeaderEdit(true);
 					}), contentObject);
 
 
@@ -316,9 +367,8 @@ namespace Beamable.Editor.Content.UI
 					}
 
 					var scope = contentService.GetContentScopeKey();
-					_updateTagCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedActionEditorRoutine(0.5d, () =>
+					_pendingTagEdit = () =>
 					{
-						_updateTagCoroutine = null;
 						// This Inspector debounce is separate from ContentObject's pending autosave.
 						if (contentObject == null || contentObject.ContentStatus == Common.BeamCli.Contracts.ContentStatus.Deleted ||
 						    scope != contentService.GetContentScopeKey()) return;
@@ -326,6 +376,10 @@ namespace Beamable.Editor.Content.UI
 						contentService.SetContentTags(contentObject.Id, tags);
 						contentObject.Tags = tags.ToArray();
 						EditorUtility.SetDirty(contentObject);
+					};
+					_updateTagCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedActionEditorRoutine(0.5d, () =>
+					{
+						CompleteHeaderEdit(false);
 					}), contentObject);
 
 				}
@@ -371,7 +425,8 @@ namespace Beamable.Editor.Content.UI
 		{
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
-			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject)))
+			var busy = BeamEditorContext.Default.CliContentService.CurrentProgress.IsActive;
+			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject) || busy))
 			{
 
 			if (contentObject.ContentStatus is Common.BeamCli.Contracts.ContentStatus.Deleted)
@@ -407,7 +462,7 @@ namespace Beamable.Editor.Content.UI
 			}
 			
 			DrawContentProperties(contentObject);
-			contentObject.CheckForNonDetectedChanges();
+			if (!busy) contentObject.CheckForNonDetectedChanges();
 			}
 			DrawContentStatus();
 		}

@@ -284,7 +284,10 @@ namespace Beamable.Editor.ContentService
 				contentIds = new[] {contentId},
 				contentProperties = new[] {contentPropertiesJson}
 			});
+			Exception reportedError = null;
+			saveCommand.OnError(report => reportedError ??= new InvalidOperationException(report.data.message));
 			await saveCommand.Run();
+			if (reportedError != null) throw reportedError;
 		}
 		
 		public async Task<BeamContentSnapshotListResult> GetContentSnapshots()
@@ -451,7 +454,10 @@ namespace Beamable.Editor.ContentService
 				clear = clearTags,
 				tag = clearTags ? "<none>" : string.Join(",", tags)
 			});
+			Exception reportedError = null;
+			setContentTagCommand.OnError(report => reportedError ??= new InvalidOperationException(report.data.message));
 			await setContentTagCommand.Run();
+			if (reportedError != null) throw reportedError;
 		}
 
 		public bool DuplicateContent(LocalContentManifestEntry entry, out ContentObject duplicatedObject)
@@ -689,18 +695,39 @@ namespace Beamable.Editor.ContentService
 			});
 		}
 
-		public void ResolveConflict(string contentId, bool useLocal)
+		internal event Func<string, bool> HasPendingInspectorEdits;
+
+		private void RequireSavedInspectorEdits(string contentId)
 		{
-			ReconcileContentWithProgress(contentId, useLocal).Error(error =>
+			if ((_contentScriptableCache.TryGetValue(contentId, out var content) && content != null && content.HasPendingEditorChangeNotification) ||
+			    _pendingTagSaves.ContainsKey(GetContentWriteKey(contentId)) ||
+			    (HasPendingInspectorEdits?.GetInvocationList().Any(callback => ((Func<string, bool>)callback)(contentId)) ?? false))
+				throw new InvalidOperationException("Content edits are still being saved. Wait for them to finish, then reconcile again.");
+		}
+
+		public void ResolveConflict(string contentId, bool useLocal, string reviewedScope = null, string reviewedManifestUid = null)
+		{
+			ReconcileContentWithProgress(contentId, useLocal, reviewedScope, reviewedManifestUid).Error(error =>
 				EditorUtility.DisplayDialog("Reconciliation did not complete", error.Message, "Close"));
 		}
 
-		public async Promise ReconcileContentWithProgress(string contentId, bool useLocal)
+		public async Promise ReconcileContentWithProgress(string contentId, bool useLocal, string reviewedScope = null, string reviewedManifestUid = null)
 		{
 			if (CurrentProgress.IsActive)
 				throw new InvalidOperationException("A content operation is already running. Wait for it to finish before reconciling.");
 			if (!EntriesCache.TryGetValue(contentId, out var entry) || string.IsNullOrEmpty(entry.TargetManifestUid))
 				throw new InvalidOperationException("Refresh content with the updated CLI before reconciling this item.");
+			reviewedScope ??= GetContentScopeKey();
+			reviewedManifestUid ??= entry.TargetManifestUid;
+			void RequireReviewedContent()
+			{
+				if (reviewedScope != GetContentScopeKey() || !EntriesCache.TryGetValue(contentId, out var current) ||
+				    current.TargetManifestUid != reviewedManifestUid)
+					throw new InvalidOperationException("Content changed. Refresh and review this item again before reconciling.");
+			}
+			RequireReviewedContent();
+			RequireSavedInspectorEdits(contentId);
+			var writeKey = GetContentWriteKey(contentId);
 			var args = new ContentResolveArgs
 			{
 				manifestIds = GetSelectedManifestIdsCliOption(), filter = contentId,
@@ -711,6 +738,9 @@ namespace Beamable.Editor.ContentService
 			try
 			{
 				await StopContentWatcher();
+				await _contentWrites.WaitForWrites(writeKey);
+				RequireReviewedContent();
+				RequireSavedInspectorEdits(contentId);
 				var command = _cli.ContentResolve(args);
 				Exception reportedError = null;
 				command.OnError(report => reportedError ??= new InvalidOperationException(report.data.message));
@@ -721,9 +751,9 @@ namespace Beamable.Editor.ContentService
 			finally { FinishActionProgress(); }
 		}
 
-		public async Promise PublishContentsWithProgress()
+		public async Promise PublishContentsWithProgress(bool showUnityModalProgress = true)
 		{
-			BeginActionProgress(PUBLISH_OPERATION_TITLE, "Publishing contents...", true);
+			BeginActionProgress(PUBLISH_OPERATION_TITLE, "Publishing contents...", showUnityModalProgress);
 			publishedContents = 0;
 			
 			try
@@ -738,12 +768,15 @@ namespace Beamable.Editor.ContentService
 					contentPublishArgs.maxLocalSnapshots = _contentConfiguration.MaxLocalAutoSnapshot.Value;
 				}
 				var publishCommand = _cli.ContentPublish(contentPublishArgs);
+				Exception reportedError = null;
+				publishCommand.OnError(report => reportedError ??= new InvalidOperationException(report.data.message));
 				publishCommand.OnProgressStreamContentProgressUpdateData(report =>
 				{
 					HandleProgressUpdate(report.data, PUBLISH_OPERATION_TITLE, PUBLISH_OPERATION_SUCCESS_BASE_MESSAGE,
 					                     ERROR_PUBLISH_OPERATION_ERROR_BASE_MESSAGE, ref publishedContents);
 				});
 				await publishCommand.Run();
+				if (reportedError != null) throw reportedError;
 			}
 			finally
 			{

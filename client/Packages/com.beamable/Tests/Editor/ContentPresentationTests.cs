@@ -3,6 +3,9 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Beamable.Common;
+using Beamable.Common.Api.Realms;
+using Beamable.Common.Dependencies;
+using Beamable.Common.Content;
 using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Content;
@@ -17,6 +20,194 @@ namespace Beamable.Editor.Tests
 {
     public class ContentReconciliationFeedbackTests
     {
+        [Test]
+        public void Deselecting_an_inspector_keeps_both_pending_header_guards_without_flushing_writes()
+        {
+            var service = CreateService(new ResolveCommands());
+            var type = typeof(global::Beamable.Editor.Content.UI.ContentObjectEditor);
+            var editor = FormatterServices.GetUninitializedObject(type);
+            const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic;
+            var completed = new List<string>();
+            type.GetField("_editingService", fields).SetValue(editor, service);
+            type.GetField("_editingContentId", fields).SetValue(editor, "currency.test");
+            type.GetField("_pendingNameEdit", fields).SetValue(editor, (Action)(() => completed.Add("name")));
+            type.GetField("_pendingTagEdit", fields).SetValue(editor, (Action)(() => completed.Add("tags")));
+            var observer = (Func<string, bool>)Delegate.CreateDelegate(typeof(Func<string, bool>), editor,
+                type.GetMethod("HasPendingEdits", fields));
+            service.HasPendingInspectorEdits += observer;
+            type.GetMethod("OnDisable", fields).Invoke(editor, null);
+            Assert.That(completed, Is.Empty);
+            Assert.That(observer("currency.test"), Is.True);
+            type.GetMethod("CompleteHeaderEdit", fields).Invoke(editor, new object[] { false });
+            Assert.That(completed, Is.EqualTo(new[] { "tags" }));
+            Assert.That(observer("currency.test"), Is.True);
+            type.GetMethod("CompleteHeaderEdit", fields).Invoke(editor, new object[] { true });
+            Assert.That(completed, Is.EqualTo(new[] { "tags", "name" }));
+            Assert.That(observer("currency.test"), Is.False);
+            Assert.That(typeof(CliContentService).GetField("HasPendingInspectorEdits", fields).GetValue(service), Is.Null);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Reported_write_rejection_aborts_waiting_reconciliation(bool tags)
+        {
+            var commands = new ResolveCommands();
+            var service = CreateService(commands);
+            var method = typeof(CliContentService).GetMethod(tags ? "SetContentTagsAsync" : "SaveContentPropertiesAsync",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            var args = tags ? new object[] { "currency.test", new[] { "new" } } : new object[] { "currency.test", "{}", null };
+            var write = (Promise)method.Invoke(service, args);
+            write.Error(_ => { });
+            var operation = service.ReconcileContentWithProgress("currency.test", false);
+            Exception observed = null;
+            operation.Error(error => observed = error);
+            commands.Pending.ReportError("The file could not be saved.");
+            commands.Pending.Completion.CompleteSuccess();
+            Assert.That(write.IsFailed, Is.True);
+            Assert.That(observed?.Message, Does.Contain("could not be saved"));
+            Assert.That(commands.Calls, Is.Zero);
+            Assert.That(service.CurrentProgress.IsActive, Is.False);
+        }
+
+        [TestCase("realm")]
+        [TestCase("publication")]
+        [TestCase("missing item")]
+        public void Inspector_resolution_rejects_a_menu_choice_from_an_old_review(string change)
+        {
+            var commands = new ResolveCommands();
+            var service = CreateService(commands);
+            var scope = service.GetContentScopeKey();
+            var uid = service.EntriesCache["currency.test"].TargetManifestUid;
+            // Capture exactly the data held by the Inspector menu, before the callback runs.
+            Func<Promise> chooseRealm = () => service.ReconcileContentWithProgress("currency.test", false, scope, uid);
+            if (change == "realm") service.manifestIdOverride = "another";
+            else if (change == "missing item") service.EntriesCache.Remove("currency.test");
+            else
+            {
+                var updated = service.EntriesCache["currency.test"];
+                updated.TargetManifestUid = "new-publication";
+                service.EntriesCache["currency.test"] = updated;
+            }
+            var result = chooseRealm();
+            result.Error(_ => { });
+            Assert.That(result.IsFailed, Is.True);
+            Assert.That(commands.Calls, Is.Zero);
+            Assert.That(service.CurrentProgress.IsActive, Is.False);
+        }
+
+        [Test]
+        public void Pending_inspector_edits_are_preserved_and_require_retry_after_saving()
+        {
+            var commands = new ResolveCommands();
+            var service = CreateService(commands);
+            bool pending = true;
+            service.HasPendingInspectorEdits += id => pending && id == "currency.test";
+            Exception observed = null;
+            service.ReconcileContentWithProgress("currency.test", false).Error(error => observed = error);
+            Assert.That(observed?.Message, Does.Contain("still being saved"));
+            Assert.That(pending, Is.True, "Reconciliation must not discard the edit.");
+            Assert.That(commands.Calls, Is.Zero);
+            Assert.That(service.CurrentProgress.IsActive, Is.False);
+            pending = false;
+            var retry = service.ReconcileContentWithProgress("currency.test", false);
+            commands.Pending.Completion.CompleteSuccess();
+            Assert.That(retry.IsCompleted && !retry.IsFailed, Is.True);
+        }
+
+        [TestCase("scope")]
+        [TestCase("publication")]
+        public void Review_is_checked_again_after_submitted_writes_finish(string change)
+        {
+            var commands = new ResolveCommands();
+            var service = CreateService(commands);
+            var writes = (ContentWriteTracker)typeof(CliContentService)
+                .GetField("_contentWrites", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(service);
+            var pending = new Promise();
+            writes.Run("test/realm/global/currency.test", () => pending);
+            var result = service.ReconcileContentWithProgress("currency.test", false);
+            result.Error(_ => { });
+            if (change == "scope") service.manifestIdOverride = "another";
+            else
+            {
+                var entry = service.EntriesCache["currency.test"];
+                entry.TargetManifestUid = "new-publication";
+                service.EntriesCache["currency.test"] = entry;
+            }
+            pending.CompleteSuccess();
+            Assert.That(result.IsFailed, Is.True);
+            Assert.That(commands.Calls, Is.Zero);
+            Assert.That(service.CurrentProgress.IsActive, Is.False);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Publish_rejection_is_reported_and_retry_releases_progress(bool transportFailure)
+        {
+            var commands = new ResolveCommands();
+            var service = CreateService(commands);
+            var result = service.PublishContentsWithProgress(false);
+            Exception observed = null;
+            result.Error(error => observed = error);
+            const string message = "Publication changed; reconcile before publishing.";
+            if (transportFailure) commands.Pending.Completion.CompleteError(new InvalidOperationException(message));
+            else { commands.Pending.ReportError(message); commands.Pending.Completion.CompleteSuccess(); }
+            Assert.That(observed?.Message, Does.Contain(message));
+            Assert.That(result.IsFailed, Is.True);
+            Assert.That(service.CurrentProgress.IsActive, Is.False);
+            commands.Pending = new ResolveCommand();
+            var retry = service.PublishContentsWithProgress(false);
+            commands.Pending.Completion.CompleteSuccess();
+            Assert.That(retry.IsCompleted && !retry.IsFailed, Is.True);
+            Assert.That(service.CurrentProgress.IsActive, Is.False);
+        }
+
+        [Test]
+        public void Reconciliation_waits_for_submitted_content_edits_before_running_the_command()
+        {
+            var commands = new ResolveCommands();
+            var service = CreateService(commands);
+            var writes = (ContentWriteTracker)typeof(CliContentService)
+                .GetField("_contentWrites", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(service);
+            var pendingEdit = new Promise();
+            var write = writes.Run("test/realm/global/currency.test", () => pendingEdit);
+
+            var operation = service.ReconcileContentWithProgress("currency.test", true);
+
+            Assert.That(commands.Calls, Is.Zero, "Reconciliation must not read content before its submitted edits finish.");
+            Assert.That(service.CurrentProgress.IsActive, Is.True);
+            pendingEdit.CompleteSuccess();
+            Assert.That(write.IsCompleted, Is.True);
+            Assert.That(commands.Calls, Is.EqualTo(1));
+            commands.Pending.Completion.CompleteSuccess();
+            Assert.That(operation.IsCompleted && !operation.IsFailed, Is.True);
+        }
+
+        [Test]
+        public void Failed_submitted_edit_aborts_reconciliation_and_allows_retry()
+        {
+            var commands = new ResolveCommands();
+            var service = CreateService(commands);
+            var writes = (ContentWriteTracker)typeof(CliContentService)
+                .GetField("_contentWrites", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(service);
+            var pending = new Promise();
+            writes.Run("test/realm/global/currency.test", () => pending).Error(_ => { });
+            var second = new Promise();
+            writes.Run("test/realm/global/currency.test", () => second);
+            var operation = service.ReconcileContentWithProgress("currency.test", false);
+            Exception observed = null;
+            operation.Error(error => observed = error);
+            pending.CompleteError(new InvalidOperationException("The edit could not be saved."));
+            Assert.That(operation.IsCompleted, Is.False, "Failure must not release busy state while another write is running.");
+            Assert.That(service.CurrentProgress.IsActive, Is.True);
+            second.CompleteSuccess();
+            Assert.That(observed?.Message, Does.Contain("could not be saved"));
+            Assert.That(commands.Calls, Is.Zero);
+            Assert.That(service.CurrentProgress.IsActive, Is.False);
+            var retry = service.ReconcileContentWithProgress("currency.test", false);
+            commands.Pending.Completion.CompleteSuccess();
+            Assert.That(retry.IsCompleted && !retry.IsFailed, Is.True);
+        }
+
         [Test]
         public void Busy_window_cannot_begin_a_rename()
         {
@@ -182,6 +373,20 @@ namespace Beamable.Editor.Tests
             const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
             void Set(string name, object value) => typeof(CliContentService).GetField(name, fields).SetValue(service, value);
             Set("_cli", commands);
+            var cli = (global::Beamable.Editor.BeamCli.BeamCli)FormatterServices.GetUninitializedObject(typeof(global::Beamable.Editor.BeamCli.BeamCli));
+            cli.latestConfig = new BeamConfigCommandResult { cid = "test", pid = "realm" };
+            cli.pidToRealm = new Dictionary<string, RealmView> { ["realm"] = new RealmView { Cid = "test", Pid = "realm" } };
+            var context = new BeamEditorContext();
+            typeof(BeamEditorContext).GetField("<ServiceScope>k__BackingField", fields)
+                .SetValue(context, new DependencyBuilder().AddSingleton(cli).Build());
+            Set("_beamContext", context);
+            Set("_contentWrites", new ContentWriteTracker());
+            Set("_contentScriptableCache", new Dictionary<string, ContentObject>());
+            Set("_pendingTagSaves", Activator.CreateInstance(typeof(CliContentService).GetField("_pendingTagSaves", fields).FieldType));
+            Set("_lastSavedPropertiesCache", Activator.CreateInstance(typeof(CliContentService).GetField("_lastSavedPropertiesCache", fields).FieldType));
+            var configuration = (ContentConfiguration)FormatterServices.GetUninitializedObject(typeof(ContentConfiguration));
+            configuration.MaxLocalAutoSnapshot = new OptionalInt();
+            Set("_contentConfiguration", configuration);
             Set("<CurrentProgress>k__BackingField", new ContentOperationProgress());
             Set("<EntriesCache>k__BackingField", new Dictionary<string, LocalContentManifestEntry> {
                 ["currency.test"] = new LocalContentManifestEntry { FullId = "currency.test", TargetManifestUid = "reviewed" }
@@ -197,6 +402,9 @@ namespace Beamable.Editor.Tests
             public ResolveCommand Pending = new();
             public int Calls;
             public ResolveCommands() : base(null, null) { }
+            public override ContentPublishWrapper ContentPublish(ContentPublishArgs args) => new() { Command = Pending };
+            public override ContentSaveWrapper ContentSave(ContentSaveArgs args) => new() { Command = Pending };
+            public override ContentTagSetWrapper ContentTagSet(ContentTagSetArgs args) => new() { Command = Pending };
             public override ContentResolveWrapper ContentResolve(ContentResolveArgs args)
             {
                 Calls++;
