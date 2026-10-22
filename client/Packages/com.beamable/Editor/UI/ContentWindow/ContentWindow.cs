@@ -339,18 +339,18 @@ namespace Beamable.Editor.UI.ContentWindow
 				bottomRectController.ReserveWidth(BASE_PADDING);
 			}
 
-			if (incomingCount > 0)
-			{
-				DrawFooterButton($"{incomingCount}  incoming", BeamGUI.iconStatusIncoming, ContentFilterStatus.Incoming,
-					"Incoming changes and items with unverified change history. Click to review all.");
-				bottomRectController.ReserveWidth(BASE_PADDING);
-			}
-
 			if (issueCount > 0)
 			{
 				DrawFooterButton(issueCount == 1 ? "1 issue" : $"{issueCount} issues",
 					BeamGUI.iconStatusInvalid, ContentFilterStatus.Issues,
 					"Items with validation errors or conflicts. Click to review all.");
+				bottomRectController.ReserveWidth(BASE_PADDING);
+			}
+
+			if (incomingCount > 0)
+			{
+				DrawFooterButton($"{incomingCount}  incoming", BeamGUI.iconStatusIncoming, ContentFilterStatus.Incoming,
+					"Incoming changes and items with unverified change history. Click to review all.");
 			}
 
 			void DrawFooterButton(string buttonText, Texture buttonIcon, ContentFilterStatus statusEnum, string tooltip = null)
