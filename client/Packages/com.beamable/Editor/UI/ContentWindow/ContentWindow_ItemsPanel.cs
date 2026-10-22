@@ -165,7 +165,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			GUILayout.EndVertical();
 			
-			if (MultiSelectItemIds.Count > 0 && Event.current.type == EventType.KeyDown &&
+			if (CanHandleContentInput && MultiSelectItemIds.Count > 0 && Event.current.type == EventType.KeyDown &&
 			    (Event.current.keyCode == KeyCode.Delete || Event.current.keyCode == KeyCode.Backspace))
 			{
 				
@@ -190,9 +190,9 @@ namespace Beamable.Editor.UI.ContentWindow
 						? "Are you sure you want to delete this content?"
 						: $"Are you sure you want to delete these {toBeDeleted.Count} contents?";
 					
-					bool shouldDelete = EditorUtility.DisplayDialog("Delete Content",
+					bool shouldDelete = ConfirmContentInput(() => EditorUtility.DisplayDialog("Delete Content",
 					                                                message,
-					                                                "Delete", "Cancel");
+					                                                "Delete", "Cancel"));
 					if (shouldDelete)
 					{
 						_contentService.TempDisableWatcher(() => DeleteContentEntries(toBeDeleted)).Error(Debug.LogException);
@@ -207,6 +207,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		private async Promise DeleteContentEntries(IEnumerable<LocalContentManifestEntry> entries)
 		{
+			// The watcher may have taken time to stop since the deletion was requested.
+			if (!CanHandleContentInput) return;
 			var scope = _contentService.GetContentScopeKey();
 			// Start every deletion before awaiting, so all targets retain the original scope and block new writes.
 			var deletions = entries.Select(entry => _contentService.DeleteContent(entry.FullId)).ToArray();
@@ -349,6 +351,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void ShowTypeMenu(string contentType)
 		{
+			if (!CanHandleContentInput) return;
 			var menu = new GenericMenu();
 			var createLabel = new GUIContent($"Create {contentType} Content");
 			if (_contentTypeReflectionCache.ContentTypeToClass.ContainsKey(contentType))
@@ -389,6 +392,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		private void CreateNewItem(string itemType)
 		{
+			if (!CanHandleContentInput) return;
 			if(!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(itemType, out var type))
 			{
 				return;
@@ -614,7 +618,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				return;
 			}
 			
-			if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
+			if (CanHandleContentInput && Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
 			{
 				var isShiftClick = Event.current.shift;
 				var isLeftClick = Event.current.button == 0;
@@ -739,8 +743,21 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 
+		private bool CanHandleContentInput => !_contentService.CurrentProgress.IsActive;
+
+		// Menus can outlive the GUI event that opened them. Check at invocation, not registration.
+		private GenericMenu.MenuFunction GuardContentInput(GenericMenu.MenuFunction action) => () =>
+		{
+			if (CanHandleContentInput) action();
+		};
+
+		// A modal confirmation can pump Editor callbacks that start another operation.
+		private bool ConfirmContentInput(Func<bool> confirm) =>
+			CanHandleContentInput && confirm() && CanHandleContentInput;
+
 		private void RenameEntry(string entryId, string newName)
 		{
+			if (!CanHandleContentInput) return;
 			_editItemId = string.Empty;
 			var newId = _contentService.RenameContent(entryId, newName);
 			SetEntryIdAsSelected(newId);
@@ -749,6 +766,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void ShowItemOptionsMenu(Vector2 screenPosition)
 		{
+			if (!CanHandleContentInput) return;
 			GenericMenu menu = new GenericMenu();
 
 			var selection = Selection.objects;
@@ -777,22 +795,22 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					menu.AddItem(new GUIContent("Open File Item"), false,
 					             () => { InternalEditorUtility.OpenFileAtLineExternal(entry.JsonFilePath, 1); });
-					menu.AddItem(new GUIContent("Duplicate Item"), false, () =>
+					menu.AddItem(new GUIContent("Duplicate Item"), false, GuardContentInput(() =>
 					{
 						DuplicateContent(entry);
-					});
+					}));
 
-					menu.AddItem(new GUIContent("Rename Item"), false, () =>
+					menu.AddItem(new GUIContent("Rename Item"), false, GuardContentInput(() =>
 					{
 						StartEditEntryName(entry);
-					});
+					}));
 
 
-					menu.AddItem(new GUIContent("Delete Item"), false, () =>
+					menu.AddItem(new GUIContent("Delete Item"), false, GuardContentInput(() =>
 					{
-						if (EditorUtility.DisplayDialog("Delete Content",
+						if (ConfirmContentInput(() => EditorUtility.DisplayDialog("Delete Content",
 						                                "Are you sure you want to delete this content?", "Delete",
-						                                "Cancel"))
+						                                "Cancel")))
 						{
 							var scope = _contentService.GetContentScopeKey();
 							_contentService.DeleteContent(entry.FullId).Then(_ =>
@@ -804,28 +822,28 @@ namespace Beamable.Editor.UI.ContentWindow
 							}).Error(Debug.LogException);
 						}
 
-					});
+					}));
 				}
 
 				if (_contentService.TryGetRenameInfo(entry.FullId, out var ctxRenameInfo)
 				    && ctxRenameInfo.CreatedFullId == entry.FullId)
 				{
 					menu.AddItem(new GUIContent($"Revert Item (renamed from {ctxRenameInfo.OldName})"), false,
-					             () =>
+					             GuardContentInput(() =>
 					             {
 						             var bothIds = $"{ctxRenameInfo.CreatedFullId},{ctxRenameInfo.DeletedFullId}";
 						             _ = _contentService.SyncContentsWithProgress(
 							             true, true, true, true, bothIds, ContentFilterType.ExactIds);
-					             });
+					             }));
 				}
 				else if (entry.StatusEnum is not ContentStatus.UpToDate and not ContentStatus.Created)
 				{
 					menu.AddItem(new GUIContent("Revert Item"), false,
-					             () =>
+					             GuardContentInput(() =>
 					             {
 						             _ = _contentService.SyncContentsWithProgress(
 							             true, true, true, true, entry.FullId, ContentFilterType.ExactIds);
-					             });
+					             }));
 				}
 				else
 				{
@@ -846,18 +864,18 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 				else
 				{
-					menu.AddItem(new GUIContent("Delete Existing Items"), false, () =>
+					menu.AddItem(new GUIContent("Delete Existing Items"), false, GuardContentInput(() =>
 					{
-						if (EditorUtility.DisplayDialog("Delete Content",
+						if (ConfirmContentInput(() => EditorUtility.DisplayDialog("Delete Content",
 						                                $"Are you sure you want to delete these {entries.Count} contents?", "Delete",
-						                                "Cancel"))
+						                                "Cancel")))
 						{
 							_contentService.TempDisableWatcher(() => DeleteContentEntries(entries)).Error(Debug.LogException);
 						}
-					});
+					}));
 				}
 
-				menu.AddItem(new GUIContent("Duplicate Items"), false, () =>
+				menu.AddItem(new GUIContent("Duplicate Items"), false, GuardContentInput(() =>
 				{
 					ClearSelection();
 
@@ -878,7 +896,7 @@ namespace Beamable.Editor.UI.ContentWindow
 						}
 					}
 
-				});
+				}));
 
 				if (allUpToDate)
 				{
@@ -886,11 +904,11 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 				else
 				{
-					menu.AddItem(new GUIContent("Revert changed Items"), false, () =>
+					menu.AddItem(new GUIContent("Revert changed Items"), false, GuardContentInput(() =>
 					{
 						_ = _contentService.SyncContentsWithProgress(
 							true, true, true, true, string.Join(",",entries.Select(e => e.FullId)), ContentFilterType.ExactIds);
-					});
+					}));
 				}
 				
 			}
@@ -900,6 +918,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void DuplicateContent(LocalContentManifestEntry entry)
 		{
+			if (!CanHandleContentInput) return;
 			if (_contentService.DuplicateContent(entry, out var duplicatedObject))
 			{
 				SetEntryIdAsSelected(duplicatedObject.Id);
@@ -909,6 +928,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void StartEditEntryName(LocalContentManifestEntry entry)
 		{
+			if (!CanHandleContentInput) return;
 			_editItemId = entry.FullId;
 			_editLabels = new[] {entry.Name};
 		}
@@ -977,7 +997,7 @@ namespace Beamable.Editor.UI.ContentWindow
 						var scope = _contentService.GetContentScopeKey();
 						AddDelayedAction(() =>
 						{
-							if (scope == _contentService.GetContentScopeKey())
+							if (CanHandleContentInput && scope == _contentService.GetContentScopeKey())
 								ContentWindow_TooltipsHelper.ShowReconciliationDialog(_contentService, entry);
 						});
 					}

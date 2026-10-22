@@ -17,6 +17,122 @@ namespace Beamable.Editor.Tests
 {
     public class ContentReconciliationFeedbackTests
     {
+        [Test]
+        public void Busy_window_cannot_begin_a_rename()
+        {
+            var service = CreateService(new ResolveCommands());
+            var window = CreateWindow(service);
+            service.ReconcileContentWithProgress("currency.test", false);
+
+            InvokeWindow(window, "StartEditEntryName", service.EntriesCache["currency.test"]);
+
+            Assert.That(typeof(ContentWindow).GetField("_editItemId", BindingFlags.Instance | BindingFlags.NonPublic)
+                .GetValue(window), Is.Null, "Busy input must not begin editing the selected content.");
+            Assert.That(service.CurrentProgress.IsActive, Is.True);
+        }
+
+        [TestCase("RenameEntry")]
+        [TestCase("DuplicateContent")]
+        [TestCase("ShowItemOptionsMenu")]
+        [TestCase("ShowTypeMenu")]
+        [TestCase("CreateNewItem")]
+        [TestCase("DeleteContentEntries")]
+        public void Busy_window_blocks_direct_and_delayed_mutation_entry_points(string method)
+        {
+            var service = CreateService(new ResolveCommands());
+            var window = CreateWindow(service);
+            service.ReconcileContentWithProgress("currency.test", false);
+            var entry = service.EntriesCache["currency.test"];
+            object[] args = method switch
+            {
+                "RenameEntry" => new object[] { entry.FullId, "renamed" },
+                "ShowItemOptionsMenu" => new object[] { Vector2.zero },
+                "ShowTypeMenu" or "CreateNewItem" => new object[] { "currency" },
+                "DeleteContentEntries" => new object[] { new[] { entry } },
+                _ => new object[] { entry }
+            };
+
+            var result = InvokeWindow(window, method, args);
+
+            if (result is Promise deletion)
+                Assert.That(deletion.IsCompleted && !deletion.IsFailed, Is.True);
+            Assert.That(service.CurrentProgress.IsActive, Is.True);
+            Assert.That(typeof(ContentWindow).GetField("_editItemId", BindingFlags.Instance | BindingFlags.NonPublic)
+                .GetValue(window), Is.Null);
+        }
+
+        [TestCase("success")]
+        [TestCase("reported failure")]
+        [TestCase("transport failure")]
+        public void Menu_callback_checks_busy_at_invocation_and_resumes_only_on_new_input(string outcome)
+        {
+            var commands = new ResolveCommands();
+            var service = CreateService(commands);
+            var window = CreateWindow(service);
+            int calls = 0;
+            var callback = (GenericMenu.MenuFunction)InvokeWindow(window, "GuardContentInput",
+                new GenericMenu.MenuFunction(() => calls++));
+            callback();
+            Assert.That(calls, Is.EqualTo(1), "Idle behavior is unchanged.");
+
+            var operation = service.ReconcileContentWithProgress("currency.test", false);
+            operation.Error(_ => { });
+            callback();
+            callback();
+            Assert.That(calls, Is.EqualTo(1), "An already-open menu must respect the current busy state.");
+            Assert.That(service.CurrentProgress.IsActive, Is.True);
+            Assert.That(commands.Calls, Is.EqualTo(1));
+
+            if (outcome == "transport failure")
+                commands.Pending.Completion.CompleteError(new InvalidOperationException("controlled failure"));
+            else
+            {
+                if (outcome == "reported failure") commands.Pending.ReportError("controlled failure");
+                commands.Pending.Completion.CompleteSuccess();
+            }
+
+            Assert.That(service.CurrentProgress.IsActive, Is.False);
+            Assert.That(calls, Is.EqualTo(1), "Blocked input must not be queued for later execution.");
+            callback();
+            Assert.That(calls, Is.EqualTo(2));
+            InvokeWindow(window, "StartEditEntryName", service.EntriesCache["currency.test"]);
+            Assert.That(typeof(ContentWindow).GetField("_editItemId", BindingFlags.Instance | BindingFlags.NonPublic)
+                .GetValue(window), Is.EqualTo("currency.test"));
+        }
+
+        [TestCase(false, false, true, true, 1)]
+        [TestCase(false, false, false, false, 1)]
+        [TestCase(true, false, true, false, 0)]
+        [TestCase(false, true, true, false, 1)]
+        public void Delete_confirmation_rechecks_busy_before_accepting_the_choice(
+            bool initiallyBusy, bool becomesBusy, bool confirmed, bool expected, int expectedPrompts)
+        {
+            var service = CreateService(new ResolveCommands());
+            var window = CreateWindow(service);
+            if (initiallyBusy) service.ReconcileContentWithProgress("currency.test", false);
+            int prompts = 0;
+            var accepted = (bool)InvokeWindow(window, "ConfirmContentInput", new Func<bool>(() =>
+            {
+                prompts++;
+                if (becomesBusy) service.ReconcileContentWithProgress("currency.test", false);
+                return confirmed;
+            }));
+            Assert.That(accepted, Is.EqualTo(expected));
+            Assert.That(prompts, Is.EqualTo(expectedPrompts));
+        }
+
+        static ContentWindow CreateWindow(CliContentService service)
+        {
+            var window = (ContentWindow)FormatterServices.GetUninitializedObject(typeof(ContentWindow));
+            typeof(ContentWindow).GetField("_contentService", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(window, service);
+            return window;
+        }
+
+        static object InvokeWindow(ContentWindow window, string method, params object[] args) =>
+            typeof(ContentWindow).GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic)
+                .Invoke(window, args);
+
         [TestCase(false)]
         [TestCase(true)]
         public void Reported_failure_is_visible_and_retry_releases_progress(bool transportFailure)
