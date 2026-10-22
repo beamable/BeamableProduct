@@ -17,12 +17,86 @@ namespace Beamable.Common.Content.Validation
 	public class MustBeComparatorString : MustBeOneOf
 	{
 		public const string EQUALS = "eq";
-		public const string NOT_EQUALS = "ne";
+		public const string EQUALS_ALTERNATIVE = "equal";
+		public const string NOT_EQUALS = "neq";
+		public const string NOT_EQUALS_ALTERNATIVE = "notequal";
 		public const string GREATER_THAN = "gt";
-		public const string GREATER_THAN_OR_EQUAL = "ge";
+		public const string GREATER_THAN_ALTERNATIVE = "greaterthan";
+		public const string GREATER_THAN_OR_EQUAL = "gte";
+		public const string GREATER_THAN_OR_EQUAL_ALTERNATIVE = "greaterthanequal";
 		public const string LESS_THAN = "lt";
-		public const string LESS_THAN_OR_EQUAL = "le";
-		public MustBeComparatorString() : base(EQUALS, NOT_EQUALS, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN, LESS_THAN_OR_EQUAL)
+		public const string LESS_THAN_ALTERNATIVE = "lessthan";
+		public const string LESS_THAN_OR_EQUAL = "lte";
+		public const string LESS_THAN_OR_EQUAL_ALTERNATIVE = "lessthanequal";
+		public const string IN = "in";
+		public const string NOT_IN = "nin";
+		public const string NOT_IN_ALTERNATIVE = "notin";
+		/// <summary>
+		/// Describes one canonical comparator value, used by editor tooling to present a picker.
+		/// </summary>
+		public class ComparatorOption
+		{
+			public string Value { get; }
+			public string Symbol { get; }
+			public string DisplayName { get; }
+			public string Description { get; }
+			public string[] Aliases { get; }
+
+			public ComparatorOption(string value, string symbol, string displayName, string description, params string[] aliases)
+			{
+				Value = value;
+				Symbol = symbol;
+				DisplayName = displayName;
+				Description = description;
+				Aliases = aliases;
+			}
+		}
+
+		/// <summary>
+		/// The canonical comparator values, in display order. Each alias is also accepted by validation.
+		/// </summary>
+		public static readonly ComparatorOption[] Options =
+		{
+			new ComparatorOption(EQUALS, "=", "Equal", "The player's value must equal the target value.", EQUALS_ALTERNATIVE),
+			new ComparatorOption(NOT_EQUALS, "!=", "Not equal", "The player's value must not equal the target value.", NOT_EQUALS_ALTERNATIVE),
+			new ComparatorOption(GREATER_THAN, ">", "Greater than", "The player's value must be greater than the target value.", GREATER_THAN_ALTERNATIVE),
+			new ComparatorOption(GREATER_THAN_OR_EQUAL, ">=", "Greater than or equal", "The player's value must be greater than or equal to the target value.", GREATER_THAN_OR_EQUAL_ALTERNATIVE),
+			new ComparatorOption(LESS_THAN, "<", "Less than", "The player's value must be less than the target value.", LESS_THAN_ALTERNATIVE),
+			new ComparatorOption(LESS_THAN_OR_EQUAL, "<=", "Less than or equal", "The player's value must be less than or equal to the target value.", LESS_THAN_OR_EQUAL_ALTERNATIVE),
+			new ComparatorOption(IN, "in", "In", "The player must be in the given set (e.g. a member of the cohort)."),
+			new ComparatorOption(NOT_IN, "not in", "Not in", "The player must not be in the given set (e.g. not a member of the cohort).", NOT_IN_ALTERNATIVE),
+		};
+
+		/// <summary>
+		/// Finds the <see cref="ComparatorOption"/> whose canonical value or alias exactly matches <paramref name="value"/>, mirroring the case-sensitive validation.
+		/// </summary>
+		public static bool TryGetOption(string value, out ComparatorOption option)
+		{
+			option = null;
+			if (string.IsNullOrEmpty(value)) return false;
+
+			foreach (var candidate in Options)
+			{
+				if (string.Equals(candidate.Value, value, System.StringComparison.Ordinal))
+				{
+					option = candidate;
+					return true;
+				}
+
+				foreach (var alias in candidate.Aliases)
+				{
+					if (string.Equals(alias, value, System.StringComparison.Ordinal))
+					{
+						option = candidate;
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+
+		public MustBeComparatorString() : base(EQUALS, EQUALS_ALTERNATIVE, NOT_EQUALS, NOT_EQUALS_ALTERNATIVE, GREATER_THAN, GREATER_THAN_ALTERNATIVE, GREATER_THAN_OR_EQUAL, GREATER_THAN_OR_EQUAL_ALTERNATIVE, LESS_THAN, LESS_THAN_ALTERNATIVE, LESS_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL_ALTERNATIVE, IN, NOT_IN, NOT_IN_ALTERNATIVE)
 		{
 
 		}
