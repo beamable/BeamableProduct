@@ -69,5 +69,3 @@ namespace Beamable.Editor.Tests
         }
     }
 }
-
-

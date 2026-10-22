@@ -162,4 +162,3 @@ namespace Beamable.Editor.Tests
     [ContentType("issue4866New")]
     public class Issue4866NewContent : ContentObject { public int damage; public int newModelOnly; }
 }
-
