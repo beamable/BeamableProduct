@@ -55,13 +55,13 @@ public partial class ContentService
 	}
 
 	private Task<ReconciliationState> RememberReferences(string manifestId, IEnumerable<ContentFile> files,
-		string observedUid, CancellationToken token = default, ISet<string> remoteIds = null, bool confirmed = false,
-		string initialObservedUid = null) => UpdateReconciliation(manifestId, state =>
+		string observedUid, CancellationToken token = default, ISet<string> remoteIds = null, bool confirmed = false) => UpdateReconciliation(manifestId, state =>
 	{
 		bool changed = false;
 		if (string.IsNullOrEmpty(state.ObservedManifestUid))
 		{
-			state.ObservedManifestUid = initialObservedUid ?? observedUid;
+			// Start at the actual observation. Surviving files cannot prove the history of missing files.
+			state.ObservedManifestUid = observedUid;
 			changed = true;
 		}
 		foreach (var file in files)

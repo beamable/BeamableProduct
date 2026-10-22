@@ -753,25 +753,9 @@ public partial class ContentService
 				// state before deciding which remote entries need deletion placeholders.
 				.Where(contentFile => File.Exists(contentFile.LocalFilePath))
 				.ToList();
-			string initialObservedUid = null;
-			if (!getLocalStateOnly && filters.Length == 0 && !File.Exists(ReconciliationPath(manifestId)))
-			{
-				// An existing workspace can predate reconciliation bookkeeping. A shared, available
-				// local reference establishes which IDs were absent before its first observation here.
-				// Mixed or filtered references cannot establish a workspace-wide starting point.
-				var localReferences = existingLocalFiles.Select(file => file.FetchedFromManifestUid).Distinct().Take(2).ToArray();
-				if (localReferences.Length == 1 && !string.IsNullOrEmpty(localReferences[0]))
-				{
-					var reference = await GetManifest(manifestId, localReferences[0]);
-					if (reference.uid.GetOrElse("") == localReferences[0] &&
-					    !_unavailableManifests.ContainsKey(GetCacheKeyForManifest(_requester.Cid, _requester.Pid, manifestId, localReferences[0])))
-						initialObservedUid = localReferences[0];
-				}
-			}
 			var reconciliation = !getLocalStateOnly
 				? await RememberReferences(manifestId, existingLocalFiles, localFiles.TargetManifest.uid.GetOrElse(""),
-					remoteIds: filters.Length == 0 ? localFiles.TargetManifest.entries.Select(entry => entry.contentId).ToHashSet() : null,
-					initialObservedUid: initialObservedUid)
+					remoteIds: filters.Length == 0 ? localFiles.TargetManifest.entries.Select(entry => entry.contentId).ToHashSet() : null)
 				: null;
 			existingLocalFiles = existingLocalFiles.Where(file => File.Exists(file.LocalFilePath)).ToList();
 			var existingLocalContentIds = existingLocalFiles

@@ -165,21 +165,48 @@ public class ContentPublishSafetyTests
         Assert.That(publications, Is.Zero);
     }
 
-    [Test]
-    public async Task First_selective_sync_downloads_additions_since_the_shared_local_reference()
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task Selective_sync_downloads_additions_only_after_a_recorded_observation(bool observedBeforeAddition)
     {
         const string addedId = "currency.new";
         await Seed();
+        if (observedBeforeAddition) await service.GetAllContentFiles(latest);
         latest = Manifest("after", Entry(Id, 10), Entry(addedId, 20));
         using var server = new ContentLocal4866ReproTests.OneResponseServer("{\"properties\":{\"startingAmount\":{\"data\":20}}}");
         latest.entries[1].uri = server.Url;
 
-        // This is the first scan of an existing workspace: no prior observation sidecar exists.
+        // Surviving file references alone are not proof that a missing item was never downloaded.
         await service.SyncLocalContent(latest, "global", syncCreated: false, syncModified: false,
             forceSyncConflicts: false, syncDeleted: false);
 
-        Assert.That(File.Exists(FilePath(addedId)), Is.True);
-        Assert.That(await Kind(addedId), Is.EqualTo((int)ContentChangeKind.UpToDate));
+        Assert.That(File.Exists(FilePath(addedId)), Is.EqualTo(observedBeforeAddition));
+        Assert.That(await Kind(addedId), Is.EqualTo((int)(observedBeforeAddition ? ContentChangeKind.UpToDate : ContentChangeKind.Unknown)));
+    }
+
+    [Test]
+    public async Task First_scan_preserves_a_deleted_item_downloaded_after_the_surviving_reference()
+    {
+        const string deletedId = "currency.later";
+        await Seed();
+        latest = Manifest("after", Entry(Id, 10), Entry(deletedId, 20));
+        // Reproduce the legacy producer: only the selectively downloaded file advances its reference.
+        // No reconciliation sidecar existed in that CLI version.
+        await service.SaveContentFile(folder, new ContentFile { Id = deletedId, Properties = Props(20),
+            Tags = JsonSerializer.SerializeToElement(Array.Empty<string>()), FetchedFromManifestUid = "after" });
+        File.Delete(FilePath(deletedId));
+        service = CreateService();
+        using var server = new ContentLocal4866ReproTests.OneResponseServer("{\"properties\":{\"startingAmount\":{\"data\":20}}}");
+        latest.entries[1].uri = server.Url;
+
+        await service.SyncLocalContent(latest, "global", syncCreated: false, syncModified: false,
+            forceSyncConflicts: false, syncDeleted: false);
+
+        Assert.That(File.Exists(FilePath(deletedId)), Is.False, "An upgrade must not restore an intentional local deletion.");
+        Assert.That(await Kind(deletedId), Is.EqualTo((int)ContentChangeKind.Unknown));
+        // Once explicitly reviewed, keeping the deletion establishes intent and makes it a local edit.
+        await service.ReconcileContent("global", new[] { deletedId }, true);
+        Assert.That(await Kind(deletedId), Is.EqualTo((int)ContentChangeKind.LocalEdit));
     }
 
     [Test]
