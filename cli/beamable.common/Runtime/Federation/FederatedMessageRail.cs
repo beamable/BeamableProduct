@@ -62,6 +62,7 @@ namespace Beamable.Common
 		/// for this player — a campaign's offer grant ids
 		/// (<c>beam_offer_grants</c>, comma-separated) arrive this way.</para>
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015", Justification = "Federation JSON requires this field.")]
 		public Dictionary<string, string> data = new Dictionary<string, string>();
 	}
 

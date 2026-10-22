@@ -56,6 +56,17 @@ namespace Beamable.Common
 		/// every open it records invisible to the campaign funnel.</para>
 		/// </summary>
 		public string openTrackingUrl;
+
+		/// <summary>
+		/// Values for THIS recipient only, beside the shared <see cref="MessageRailPayload.extraDataFed"/>.
+		/// Empty when the producer sent none (and when an older backend omits the field).
+		/// <para>The shared payload is what the backend coalesces batches on, so anything that differs
+		/// per player travels here instead. A rendering federation merges these over the payload's keys
+		/// for this player — a campaign's offer grant ids
+		/// (<c>beam_offer_grants</c>, comma-separated) arrive this way.</para>
+		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015", Justification = "Federation JSON requires this field.")]
+		public Dictionary<string, string> data = new Dictionary<string, string>();
 	}
 
 	[Serializable]
