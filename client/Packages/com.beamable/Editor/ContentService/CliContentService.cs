@@ -711,7 +711,33 @@ namespace Beamable.Editor.ContentService
 				EditorUtility.DisplayDialog("Reconciliation did not complete", error.Message, "Close"));
 		}
 
-		public async Promise ReconcileContentWithProgress(string contentId, bool useLocal, string reviewedScope = null, string reviewedManifestUid = null)
+		internal ContentResolveWrapper CreateReconciliationPreview(string contentId, string reviewedScope, string reviewedManifestUid)
+		{
+			if (CurrentProgress.IsActive)
+				throw new InvalidOperationException("A content operation is already running. Wait for it to finish before reviewing.");
+			RequireReviewedContent(contentId, reviewedScope, reviewedManifestUid);
+			RequireSavedInspectorEdits(contentId);
+			var key = GetContentWriteKey(contentId);
+			if (_contentWrites.HasWrites(key) || _contentWrites.IsDeleting(key))
+				throw new InvalidOperationException("Content edits are still being saved. Wait for them to finish, then refresh the review.");
+			return _cli.ContentResolve(new ContentResolveArgs
+			{
+				preview = true, manifestIds = GetSelectedManifestIdsCliOption(), filter = contentId,
+				filterType = ContentFilterType.ExactIds, expectedManifestUid = reviewedManifestUid
+			});
+		}
+
+		internal bool HasContentType(string typeName) => _contentTypeReflectionCache.TryGetType(typeName, out _);
+
+		private void RequireReviewedContent(string contentId, string reviewedScope, string reviewedManifestUid)
+		{
+			if (string.IsNullOrEmpty(reviewedManifestUid) || reviewedScope != GetContentScopeKey() ||
+			    !EntriesCache.TryGetValue(contentId, out var current) || current.TargetManifestUid != reviewedManifestUid)
+				throw new InvalidOperationException("Content changed. Refresh and review this item again before reconciling.");
+		}
+
+		public async Promise ReconcileContentWithProgress(string contentId, bool useLocal, string reviewedScope = null, string reviewedManifestUid = null,
+			string reviewedLocalRevision = null)
 		{
 			if (CurrentProgress.IsActive)
 				throw new InvalidOperationException("A content operation is already running. Wait for it to finish before reconciling.");
@@ -719,20 +745,16 @@ namespace Beamable.Editor.ContentService
 				throw new InvalidOperationException("Refresh content with the updated CLI before reconciling this item.");
 			reviewedScope ??= GetContentScopeKey();
 			reviewedManifestUid ??= entry.TargetManifestUid;
-			void RequireReviewedContent()
-			{
-				if (reviewedScope != GetContentScopeKey() || !EntriesCache.TryGetValue(contentId, out var current) ||
-				    current.TargetManifestUid != reviewedManifestUid)
-					throw new InvalidOperationException("Content changed. Refresh and review this item again before reconciling.");
-			}
-			RequireReviewedContent();
+			RequireReviewedContent(contentId, reviewedScope, reviewedManifestUid);
+			if (useLocal && entry.IsInConflict && IsContentInvalid(contentId))
+				throw new InvalidOperationException("Fix validation errors before keeping the local version of this conflict.");
 			RequireSavedInspectorEdits(contentId);
 			var writeKey = GetContentWriteKey(contentId);
 			var args = new ContentResolveArgs
 			{
 				manifestIds = GetSelectedManifestIdsCliOption(), filter = contentId,
 				filterType = ContentFilterType.ExactIds, use = useLocal ? "local" : "realm",
-				expectedManifestUid = entry.TargetManifestUid
+				expectedManifestUid = reviewedManifestUid, expectedLocalRevision = reviewedLocalRevision
 			};
 			BeginActionProgress("Reconcile Content", "Reconciling selected content...", false);
 			try
@@ -742,7 +764,7 @@ namespace Beamable.Editor.ContentService
 				_ = pendingWrites.Error(_ => { }); // Observe now; the await below still propagates the failure.
 				await StopContentWatcher();
 				await pendingWrites;
-				RequireReviewedContent();
+				RequireReviewedContent(contentId, reviewedScope, reviewedManifestUid);
 				RequireSavedInspectorEdits(contentId);
 				var command = _cli.ContentResolve(args);
 				Exception reportedError = null;

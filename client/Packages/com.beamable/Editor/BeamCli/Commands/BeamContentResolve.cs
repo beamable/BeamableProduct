@@ -6,6 +6,10 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class ContentResolveArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
+        /// <summary>Preview one selected item's local and realm values without reconciling.</summary>
+        public bool preview;
+        /// <summary>Reject reconciliation if the reviewed local file or realm values changed.</summary>
+        public string expectedLocalRevision;
         /// <summary>Inform a subset of ','-separated manifest ids for which to return data. By default, will return just the global manifest</summary>
         public string[] manifestIds;
         /// <summary>Defines the semantics for the `filter` argument. When no filters are given, affects all existing content.
@@ -27,6 +31,8 @@ namespace Beamable.Editor.BeamCli.Commands
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
+            if (this.preview) genBeamCommandArgs.Add("--preview=True");
+            if (this.expectedLocalRevision != null) genBeamCommandArgs.Add("--expected-local-revision=" + this.expectedLocalRevision);
             // If the manifestIds value was not default, then add it to the list of args.
             if ((this.manifestIds != default(string[])))
             {

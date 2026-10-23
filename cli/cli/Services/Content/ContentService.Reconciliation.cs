@@ -143,6 +143,8 @@ public partial class ContentService
 		else
 		{
 			var completed = new List<ContentFile>();
+			token.ThrowIfCancellationRequested();
+			await _fileSystemOperationSemaphore.WaitAsync(token);
 			try
 			{
 				foreach (var file in pending)
@@ -159,7 +161,11 @@ public partial class ContentService
 			finally
 			{
 				// Persist the batch once, including successful items before a failure or cancellation.
-				if (completed.Count > 0) await RememberReferences(manifestId, completed, latest.uid.GetOrElse(""), confirmed: true);
+				try
+				{
+					if (completed.Count > 0) await RememberReferences(manifestId, completed, latest.uid.GetOrElse(""), confirmed: true);
+				}
+				finally { _fileSystemOperationSemaphore.Release(); }
 			}
 		}
 		return pending.Select(c => c.Id).ToArray();

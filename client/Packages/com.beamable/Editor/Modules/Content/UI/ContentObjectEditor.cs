@@ -237,26 +237,8 @@ namespace Beamable.Editor.Content.UI
 					buttonsRect.height);
 				if (GUI.Button(conflictSolveButtonRect, conflictContent, buttonStyle))
 				{
-					GenericMenu conflictResolveMenu = new GenericMenu();
-					var reviewedId = content.Id;
-					var reviewedScope = contentService.GetContentScopeKey();
-					var reviewedUid = contentService.EntriesCache.TryGetValue(reviewedId, out var reviewed) ? reviewed.TargetManifestUid : "";
-					if (contentService.IsContentInvalid(content.Id))
-					{
-						conflictResolveMenu.AddDisabledItem(new GUIContent("Use local", "Cannot resolve using local because it is invalid"));
-					}
-					else
-					{
-						conflictResolveMenu.AddItem(new GUIContent("Use Local"), false, () =>
-						{
-							contentService.ResolveConflict(reviewedId, true, reviewedScope, reviewedUid);
-						});	
-					}
-					conflictResolveMenu.AddItem(new GUIContent("Use Realm"), false, () =>
-					{
-							contentService.ResolveConflict(reviewedId, false, reviewedScope, reviewedUid);
-					});
-					conflictResolveMenu.ShowAsContext();
+					if (contentService.EntriesCache.TryGetValue(content.Id, out var reviewed))
+						ContentWindow_TooltipsHelper.ShowReconciliationDialog(contentService, reviewed);
 				}
 
 				float iconSize = 16;

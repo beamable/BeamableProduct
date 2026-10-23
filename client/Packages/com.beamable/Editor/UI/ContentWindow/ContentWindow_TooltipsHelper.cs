@@ -25,24 +25,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		public static void ShowReconciliationDialog(CliContentService service, LocalContentManifestEntry entry)
 		{
 			if (service.CurrentProgress.IsActive) return;
-			var scope = service.GetContentScopeKey();
-			var choice = EditorUtility.DisplayDialogComplex("Reconcile Content",
-				entry.FullId + "\n\n" + GetStatusDescription(entry, ContentConfiguration.Instance.EnableLocalContentInEditor) +
-				"\n\nUse Realm makes this item match the realm, including accepting a deletion. Keep Local preserves your local version or deletion for a later publish. Only this item is affected.",
-				"Use Realm", "Cancel", "Keep Local");
-			if (choice == 1) return;
-			if (scope != service.GetContentScopeKey() || !service.EntriesCache.TryGetValue(entry.FullId, out var current) ||
-				current.TargetManifestUid != entry.TargetManifestUid)
-			{
-				EditorUtility.DisplayDialog("Content changed", "Refresh and review this item again before reconciling.", "Close");
-				return;
-			}
-			if (choice == 2 && current.IsInConflict && service.IsContentInvalid(entry.FullId))
-			{
-				EditorUtility.DisplayDialog("Invalid content", "Fix validation errors before keeping the local version of this conflict.", "Close");
-				return;
-			}
-			service.ResolveConflict(entry.FullId, choice == 2);
+			ContentReconciliationWindow.Open(service, entry);
 		}
 
 		private static string AutoSyncDescription(bool localMode) => localMode

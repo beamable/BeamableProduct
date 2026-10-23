@@ -444,6 +444,7 @@ namespace Beamable.Editor.Tests
                 .SetValue(context, new DependencyBuilder().AddSingleton(cli).Build());
             Set("_beamContext", context);
             Set("_contentWrites", new ContentWriteTracker());
+            Set("_invalidContents", new Dictionary<string, LocalContentManifestEntry>());
             Set("_contentScriptableCache", new Dictionary<string, ContentObject>());
             Set("_pendingTagSaves", Activator.CreateInstance(typeof(CliContentService).GetField("_pendingTagSaves", fields).FieldType));
             Set("_lastSavedPropertiesCache", Activator.CreateInstance(typeof(CliContentService).GetField("_lastSavedPropertiesCache", fields).FieldType));
@@ -464,17 +465,85 @@ namespace Beamable.Editor.Tests
         {
             public ResolveCommand Pending = new();
             public int Calls;
+            public ContentResolveArgs LastArgs;
             public ResolveCommands() : base(null, null) { }
             public override ContentPublishWrapper ContentPublish(ContentPublishArgs args) => new() { Command = Pending };
             public override ContentSaveWrapper ContentSave(ContentSaveArgs args) => new() { Command = Pending };
             public override ContentTagSetWrapper ContentTagSet(ContentTagSetArgs args) => new() { Command = Pending };
             public override ContentResolveWrapper ContentResolve(ContentResolveArgs args)
             {
+                LastArgs = args;
                 Calls++;
                 Assert.That(args.expectedManifestUid, Is.EqualTo("reviewed"));
                 Assert.That(args.filter, Is.EqualTo("currency.test"));
                 return new ContentResolveWrapper { Command = Pending };
             }
+        }
+
+        [Test]
+        public void Preview_is_scoped_read_only_and_does_not_start_an_action()
+        {
+            var commands = new ResolveCommands();
+            var service = CreateService(commands);
+            service.CreateReconciliationPreview("currency.test", "test/realm/global", "reviewed");
+            Assert.That(commands.LastArgs.preview, Is.True);
+            Assert.That(commands.LastArgs.manifestIds, Is.EqualTo(new[] { "global" }));
+            Assert.That(commands.LastArgs.filterType, Is.EqualTo(ContentFilterType.ExactIds));
+            Assert.That(service.CurrentProgress.IsActive, Is.False);
+        }
+
+        [TestCase("scope")]
+        [TestCase("publication")]
+        [TestCase("busy")]
+        [TestCase("unsaved")]
+        [TestCase("write")]
+        public void Preview_rejects_stale_or_unsettled_content_before_dispatch(string reason)
+        {
+            var commands = new ResolveCommands();
+            var service = CreateService(commands);
+            var pending = new Promise();
+            if (reason == "scope") service.manifestIdOverride = "different";
+            if (reason == "publication") service.EntriesCache.Clear();
+            if (reason == "busy") service.CurrentProgress.IsActive = true;
+            if (reason == "unsaved") service.HasPendingInspectorEdits += _ => true;
+            if (reason == "write")
+            {
+                var writes = (ContentWriteTracker)typeof(CliContentService).GetField("_contentWrites", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(service);
+                _ = writes.Run("test/realm/global/currency.test", () => pending);
+            }
+            Assert.Throws<InvalidOperationException>(() => service.CreateReconciliationPreview("currency.test", "test/realm/global", "reviewed"));
+            Assert.That(commands.Calls, Is.Zero);
+            pending.CompleteSuccess();
+        }
+
+        [Test]
+        public void Apply_passes_the_reviewed_local_revision_to_the_cli()
+        {
+            var commands = new ResolveCommands();
+            var service = CreateService(commands);
+            var operation = service.ReconcileContentWithProgress("currency.test", false, "test/realm/global", "reviewed", "revision");
+            Assert.That(commands.LastArgs.expectedLocalRevision, Is.EqualTo("revision"));
+            Assert.That(commands.LastArgs.preview, Is.False);
+            commands.Pending.Completion.CompleteSuccess();
+            Assert.That(operation.IsCompleted && !operation.IsFailed, Is.True);
+        }
+
+        [Test]
+        public void Review_cannot_keep_an_invalid_conflict_but_can_accept_the_realm()
+        {
+            var commands = new ResolveCommands();
+            var service = CreateService(commands);
+            var entry = service.EntriesCache["currency.test"];
+            entry.IsInConflict = true;
+            service.EntriesCache["currency.test"] = entry;
+            service.UpdateContentValidationStatus("currency.test", true);
+            Exception observed = null;
+            service.ReconcileContentWithProgress("currency.test", true).Error(error => observed = error);
+            Assert.That(observed?.Message, Does.Contain("Fix validation errors"));
+            Assert.That(commands.Calls, Is.Zero);
+            var operation = service.ReconcileContentWithProgress("currency.test", false);
+            commands.Pending.Completion.CompleteSuccess();
+            Assert.That(operation.IsCompleted && !operation.IsFailed, Is.True);
         }
 
         class ResolveCommand : IBeamCommand
@@ -494,6 +563,76 @@ namespace Beamable.Editor.Tests
 
     public class ContentPresentationTests
     {
+        [TestCase(0f, 240f, 100000, 0, 11)]
+        [TestCase(2400f, 240f, 100000, 100, 111)]
+        [TestCase(2399976f, 240f, 100000, 99999, 100000)]
+        [TestCase(0f, 240f, 0, 0, 0)]
+        public void Review_scrolling_limits_rendering_to_visible_rows(float scroll, float height, int count, int expectedFirst, int expectedEnd)
+        {
+            ContentReconciliationWindow.VisibleRows(scroll, height, count, out var first, out var end);
+            Assert.That(first, Is.EqualTo(expectedFirst));
+            Assert.That(end, Is.EqualTo(expectedEnd));
+        }
+
+        [TestCase(false, true, ContentChangeKind.IncomingAddition, "Added in the realm")]
+        [TestCase(true, false, ContentChangeKind.IncomingDeletion, "Deleted from the realm")]
+        [TestCase(false, true, ContentChangeKind.Conflict, "Only in the published realm")]
+        [TestCase(true, false, ContentChangeKind.Unknown, "Only present locally")]
+        public void Review_summary_only_attributes_history_when_known(bool local, bool realm, ContentChangeKind kind, string title)
+        {
+            Assert.That(ContentReconciliationWindow.SummaryTitle(local, realm, kind), Is.EqualTo(title));
+        }
+
+        [TestCase(false, true, true, "a later publish will delete it")]
+        [TestCase(false, true, false, "Add the published item")]
+        [TestCase(true, false, true, "Keep your local copy")]
+        [TestCase(true, false, false, "Delete this item from your local content")]
+        [TestCase(true, true, false, "Replace your local copy")]
+        [TestCase(false, false, false, "Keep this item absent locally")]
+        [TestCase(false, false, true, "Keep this item absent locally")]
+        public void Review_explains_whole_item_choices_including_rejected_additions(bool local, bool realm, bool keepLocal, string expected)
+        {
+            Assert.That(ContentReconciliationWindow.ActionExplanation(local, realm, keepLocal), Does.Contain(expected));
+        }
+
+        [TestCase("none")]
+        [TestCase("item")]
+        [TestCase("manifest")]
+        [TestCase("revision")]
+        [TestCase("local")]
+        [TestCase("realm")]
+        [TestCase("differences")]
+        public void Incomplete_or_mismatched_reviews_cannot_enable_actions(string missing)
+        {
+            var preview = new ContentReconciliationPreview {
+                ContentId = "currency.test", ManifestUid = "reviewed", LocalRevision = "revision",
+                LocalExists = true, RealmExists = true, LocalJson = "{}", RealmJson = "{}",
+                Differences = Array.Empty<ContentReconciliationDifference>()
+            };
+            Assert.DoesNotThrow(() => ContentReconciliationWindow.ValidatePreview(preview, "currency.test", "reviewed"));
+            switch (missing)
+            {
+                case "none": preview = null; break;
+                case "item": preview.ContentId = "another"; break;
+                case "manifest": preview.ManifestUid = "newer"; break;
+                case "revision": preview.LocalRevision = null; break;
+                case "local": preview.LocalJson = null; break;
+                case "realm": preview.RealmJson = null; break;
+                case "differences": preview.Differences = null; break;
+            }
+            Assert.Throws<InvalidOperationException>(() => ContentReconciliationWindow.ValidatePreview(preview, "currency.test", "reviewed"));
+        }
+
+        [Test]
+        public void Preview_and_review_revision_are_additive_command_arguments()
+        {
+            Assert.That(new ContentResolveArgs().Serialize(), Does.Not.Contain("--preview"));
+            Assert.That(new ContentResolveArgs().Serialize(), Does.Not.Contain("--expected-local-revision"));
+            var serialized = new ContentResolveArgs { preview = true, expectedLocalRevision = "token" }.Serialize();
+            Assert.That(serialized, Does.Contain("--preview=True"));
+            Assert.That(serialized, Does.Contain("--expected-local-revision=token"));
+        }
+
         [TestCase(300f, 5)]
         [TestCase(450f, 5)]
         [TestCase(700f, 5)]
