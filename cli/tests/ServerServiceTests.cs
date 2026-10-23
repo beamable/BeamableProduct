@@ -65,6 +65,35 @@ public class ServerServiceTests
 		server.AssertNoErrors();
 	}
 
+	[Test]
+	public async Task Attached_collector_exit_reports_failure_and_server_remains_usable()
+	{
+		await using var child = await AttachedCollectorCommandTests.HeldChild.Start();
+		var waiting = Signal();
+		var healthyCommandRan = false;
+		await using var server = new TestServer(() => new ControlledApp(async (command, _) =>
+		{
+			if (command == "attached-collector")
+			{
+				var wait = AttachedCollectorCommandTests.WaitForCollectorExit(child.Id, CancellationToken.None);
+				waiting.TrySetResult(true);
+				await wait;
+			}
+			else healthyCommandRan = true;
+			return 0;
+		}));
+		var request = server.Execute("attached-collector");
+		await server.WaitForCommands(waiting.Task, request);
+		await child.Exit();
+		var error = AssertErrorReport(await request.WaitAsync(TimeSpan.FromSeconds(3)));
+		Assert.That(error.message, Does.Contain(child.Id.ToString()).And.Contain("exited"));
+		using var info = await server.Client.GetAsync("info");
+		Assert.That(info.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+		await server.Execute("healthy-command");
+		Assert.That(healthyCommandRan, Is.True);
+		server.AssertNoErrors();
+	}
+
 	[TestCase(false)]
 	[TestCase(true)]
 	public async Task Real_app_releases_console_cancellation_subscription_after_execution(bool failDuringSetup)
