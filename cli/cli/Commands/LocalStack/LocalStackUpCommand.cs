@@ -36,6 +36,8 @@ public class LocalStackUpCommandArgs : CommandArgs
 	public string realmEmail;
 	public string realmAlias;
 	public string realmPassword;
+	public bool remoteMicroservices;
+	public string remoteMicroservicesName;
 }
 
 public class LocalStackUpResultStream
@@ -125,6 +127,11 @@ public class LocalStackUpCommand
 			(args, v) => args.realmAlias = v);
 		AddOption(new Option<string>("--realm-password", () => "123456", "Account password to use when creating the local realm"),
 			(args, v) => args.realmPassword = v);
+
+		AddOption(new Option<bool>("--remote-microservices", "Deploy microservices to real Fargate tasks that call back to this stack through the shared tunnel host (macOS and Linux; needs AWS access)"),
+			(args, v) => args.remoteMicroservices = v);
+		AddOption(new Option<string>("--remote-microservices-name", "Your name in the remote microservice host names (<name>.ms-local.beamable.com); defaults to one derived from your AWS identity"),
+			(args, v) => args.remoteMicroservicesName = v);
 	}
 
 	/// <summary>
@@ -243,6 +250,16 @@ public class LocalStackUpCommand
 			: value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 				.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+	/// <summary>
+	/// The environment <c>beam local stop</c> needs to reverse <paramref name="step"/>, or null when it has no
+	/// reversal. Only those steps record theirs, so the run state carries nothing it doesn't use.
+	/// </summary>
+	public static Dictionary<string, string> ReversalEnvironment(LocalStackStep step, LocalStackConfig config) =>
+		string.IsNullOrWhiteSpace(step.stopArguments) && string.IsNullOrWhiteSpace(step.purgeStopArguments)
+		|| step.environment == null || step.environment.Count == 0
+			? null
+			: step.environment.ToDictionary(kv => kv.Key, kv => LocalStackConfigIO.Substitute(kv.Value, config));
+
 	public override async Task Handle(LocalStackUpCommandArgs args)
 	{
 		var path = LocalStackCommand.ResolveManifestPath(args.ConfigService, args.configPath);
@@ -253,6 +270,16 @@ public class LocalStackUpCommand
 		if (!string.IsNullOrWhiteSpace(args.host)) config.host = args.host;
 		if (!string.IsNullOrWhiteSpace(args.portalUrl)) config.portalUrl = args.portalUrl;
 		config.javaHome = ResolveJavaHome(args, config);
+
+		// Before anything launches: fail fast on missing AWS access or tools, then point this run's copy of the
+		// manifest at the remote pieces (registry, gateway settings, tunnel step).
+		string remoteDev = null;
+		if (args.remoteMicroservices)
+		{
+			remoteDev = RemoteMicroservices.Preflight(args.remoteMicroservicesName);
+			RemoteMicroservices.Apply(config, remoteDev);
+			Log.Information($"Remote microservices on: deployed services connect back through {RemoteMicroservices.GatewayHost(remoteDev)} and pull from {RemoteMicroservices.RegistryHost(remoteDev)}.");
+		}
 
 		// The manifest at .beamable/local-stack.json is written ONCE by `beam local init` and read verbatim
 		// on every `up` — so a step's `arguments` string carries whatever verb+flags the CLI version that ran
@@ -517,6 +544,7 @@ public class LocalStackUpCommand
 					entry.command = LocalStackConfigIO.Substitute(step.command, config);
 				entry.stopArguments = LocalStackConfigIO.Substitute(step.stopArguments, config);
  				entry.purgeStopArguments = LocalStackConfigIO.Substitute(step.purgeStopArguments, config);
+				entry.environment = ReversalEnvironment(step, config);
 				entry.waitForExit = step.waitForExit;
 				LocalStackRunStateIO.Save(runStatePath, runState);
 			}
@@ -568,6 +596,7 @@ public class LocalStackUpCommand
 				entry.command = step.command;
 				entry.stopArguments = LocalStackConfigIO.Substitute(step.stopArguments, config);
 				entry.purgeStopArguments = LocalStackConfigIO.Substitute(step.purgeStopArguments, config);
+				entry.environment = ReversalEnvironment(step, config);
 				entry.waitForExit = step.waitForExit;
 				entry.adopted = true;
 				LocalStackRunStateIO.Save(runStatePath, runState);
@@ -681,6 +710,10 @@ public class LocalStackUpCommand
 			// No beam steps ran the hook above — still ensure/validate the realm once the backend is up.
 			if (!realmEnsured)
 				await EnsureRealmAndLogin(args, config);
+
+			// Caddy is up now, so its local CA exists to be trusted.
+			if (remoteDev != null)
+				await RemoteMicroservices.EnsureCaddyCaTrusted(config, remoteDev, token);
 
 			Send(string.Empty, "running",
 				$"Stack is up. Backend={config.host} Portal={config.portalUrl}.", 1f);
