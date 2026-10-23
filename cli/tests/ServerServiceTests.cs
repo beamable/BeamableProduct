@@ -45,6 +45,26 @@ public class ServerServiceTests
 	private static TaskCompletionSource<bool> Signal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 	private static Task<ServerInfoResponse> Snapshot() => HandleInfo(Args, 0);
 
+	// Called only in CollectorDiscoveryTests' child process: the old collector code exits the process.
+	internal static async Task VerifyCollectorFailureDoesNotStopServer(string directory, CancellationTokenSource cancellation)
+	{
+		var healthyCommandRan = false;
+		await using var server = new TestServer(() => new ControlledApp(async (command, _) =>
+		{
+			if (command == "collector-start")
+				await CollectorManager.StartCollectorAndWait(directory, false, true, cancellation, NullLogger.Instance);
+			else healthyCommandRan = true;
+			return 0;
+		}));
+		var error = AssertErrorReport(await server.Execute("collector-start"));
+		Assert.That(error.message, Does.Contain("Collector binary not found"));
+		using var info = await server.Client.GetAsync("info");
+		Assert.That(info.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+		await server.Execute("healthy-command");
+		Assert.That(healthyCommandRan, Is.True);
+		server.AssertNoErrors();
+	}
+
 	[TestCase(false)]
 	[TestCase(true)]
 	public async Task Real_app_releases_console_cancellation_subscription_after_execution(bool failDuringSetup)

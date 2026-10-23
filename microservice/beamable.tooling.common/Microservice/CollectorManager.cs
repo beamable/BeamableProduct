@@ -421,6 +421,7 @@ public partial class CollectorManager
 		ILogger logger,
 		string otlpEndpoint = null)
 	{
+		cts.Token.ThrowIfCancellationRequested();
 		AddDefaultCollectorHostAndPortFallback();
 
 		var port = Environment.GetEnvironmentVariable(Otel.ENV_COLLECTOR_PORT);
@@ -437,29 +438,30 @@ public partial class CollectorManager
 		logger.ZLogInformation($"Starting listening to otel collector in port [{portNumber}]...");
 
 		var collectorInfo = await ResolveCollector(absBasePath, allowDownload);
-		
-		var connectedPromise = new Promise<CollectorStatus>();
-
-		Socket socket = GetSocket(portNumber, logger);
-
-		var backgroundTask = Task.Run(async () =>
+		cts.Token.ThrowIfCancellationRequested();
+		using var socket = GetSocket(portNumber, logger);
+		using var readiness = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
+		readiness.CancelAfter(TimeSpan.FromSeconds(15));
+		try
 		{
-			try
+			var status = await IsCollectorRunning(socket, readiness.Token, logger);
+			readiness.Token.ThrowIfCancellationRequested();
+			if (!status.isRunning)
+				StartCollectorProcess(collectorInfo.filePath, detach, logger, cts, otlpEndpoint);
+
+			while (!status.isReady)
 			{
-				await CollectorDiscovery(collectorInfo.filePath, socket, detach, cts, connectedPromise, logger, otlpEndpoint);
+				await Task.Delay(delayBeforeNewMessage, readiness.Token);
+				status = await IsCollectorRunning(socket, readiness.Token, logger);
+				readiness.Token.ThrowIfCancellationRequested();
 			}
-			catch (Exception ex)
-			{
-				logger.LogError($"Collector discovery failed! ({ex.GetType().Name}) {ex.Message}\n{ex.StackTrace}");
-
-				Environment.Exit(1);
-				throw;
-			}
-		});
-
-		var collectorStatus = await connectedPromise; // the first time we wait for the collector to be up before continuing
-
-		return collectorStatus;
+			// CLI commands own only this readiness wait, not a process-wide watchdog.
+			return status;
+		}
+		catch (OperationCanceledException) when (!cts.IsCancellationRequested)
+		{
+			throw new TimeoutException("Timed out waiting for the collector to become ready.");
+		}
 	}
 
 	public static void AddDefaultCollectorHostAndPortFallback()
@@ -684,14 +686,15 @@ public partial class CollectorManager
 			throw new Exception("Invalid value for port");
 		}
 
-		Socket socket = GetSocket(portNumber, logger);
+		using var socket = GetSocket(portNumber, logger);
 
 		return await IsCollectorRunning(socket, token, logger);
 	}
 
 	public static async Task<CollectorStatus> IsCollectorRunning(Socket socket, CancellationToken token, ILogger logger)
 	{
-		for (int i = 0; i < attemptsToConnect; i++)
+		var elapsed = Stopwatch.StartNew();
+		while (!token.IsCancellationRequested && elapsed.ElapsedMilliseconds < attemptsToConnect * delayBeforeNewMessage)
 		{
 			var runningResult = await GetRunningCollectorMessage(socket, token);
 
@@ -706,7 +709,8 @@ public partial class CollectorManager
 			// We check if the version of the found collector matches the version supported
 			if (collector.version != Version)
 			{
-				await Task.Delay(delayBeforeNewMessage);
+				// Other collector versions share this port. Drain their queued announcements
+				// without spending the discovery window waiting after every packet.
 				continue;
 			}
 
