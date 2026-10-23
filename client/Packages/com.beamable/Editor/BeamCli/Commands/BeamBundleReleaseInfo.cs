@@ -5,12 +5,12 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common.BeamCli;
     
     [System.SerializableAttribute()]
-    public partial class BeamForceInjectBundleCommandOutput
+    public partial class BeamBundleReleaseInfo
     {
-        public string bundleName;
-        public string cid;
-        public string realmId;
+        public long version;
         public string checksum;
-        public bool removed;
+        public long publishedAt;
+        public string comment;
+        public long publishedByAccountId;
     }
 }

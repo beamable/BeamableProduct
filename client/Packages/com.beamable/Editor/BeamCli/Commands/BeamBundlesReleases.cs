@@ -4,14 +4,12 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common;
     using Beamable.Common.BeamCli;
     
-    public partial class BundlesPinArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+    public partial class BundlesReleasesArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
         /// <summary>The bundle name, optionally namespaced as @<namespace>/<bundle-name></summary>
         public string bundleName;
-        /// <summary>Resolve the checksum from this tag</summary>
-        public string tag;
-        /// <summary>Pin this exact checksum (sha256:<checksum>) instead of a tag</summary>
-        public string checksum;
+        /// <summary>Stop after this many releases, newest first. 0 (the default) walks the whole log</summary>
+        public int limit;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -19,15 +17,10 @@ namespace Beamable.Editor.BeamCli.Commands
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             // Add the bundleName value to the list of args.
             genBeamCommandArgs.Add(this.bundleName.ToString());
-            // If the tag value was not default, then add it to the list of args.
-            if ((this.tag != default(string)))
+            // If the limit value was not default, then add it to the list of args.
+            if ((this.limit != default(int)))
             {
-                genBeamCommandArgs.Add(("--tag=" + this.tag));
-            }
-            // If the checksum value was not default, then add it to the list of args.
-            if ((this.checksum != default(string)))
-            {
-                genBeamCommandArgs.Add(("--checksum=" + this.checksum));
+                genBeamCommandArgs.Add(("--limit=" + this.limit));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
@@ -37,30 +30,30 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual BundlesPinWrapper BundlesPin(BundlesPinArgs pinArgs)
+        public virtual BundlesReleasesWrapper BundlesReleases(BundlesReleasesArgs releasesArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
             genBeamCommandArgs.Add("bundles");
-            genBeamCommandArgs.Add("pin");
-            genBeamCommandArgs.Add(pinArgs.Serialize());
+            genBeamCommandArgs.Add("releases");
+            genBeamCommandArgs.Add(releasesArgs.Serialize());
             // Create an instance of an IBeamCommand
             Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
             // Join all the command paths and args into one string
             string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
             // Configure the command with the command string
             command.SetCommand(genBeamCommandStr);
-            BundlesPinWrapper genBeamCommandWrapper = new BundlesPinWrapper();
+            BundlesReleasesWrapper genBeamCommandWrapper = new BundlesReleasesWrapper();
             genBeamCommandWrapper.Command = command;
             // Return the command!
             return genBeamCommandWrapper;
         }
     }
-    public partial class BundlesPinWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+    public partial class BundlesReleasesWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual BundlesPinWrapper OnStreamPinBundleCommandOutput(System.Action<ReportDataPoint<BeamPinBundleCommandOutput>> cb)
+        public virtual BundlesReleasesWrapper OnStreamBundleReleasesCommandOutput(System.Action<ReportDataPoint<BeamBundleReleasesCommandOutput>> cb)
         {
             this.Command.On("stream", cb);
             return this;

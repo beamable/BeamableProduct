@@ -9,5 +9,6 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         public BeamBundleInfo bundle;
         public Beamable.Common.BeamCli.Contracts.BundleTagInfo[] tags;
+        public long version;
     }
 }
