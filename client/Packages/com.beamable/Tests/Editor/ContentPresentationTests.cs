@@ -563,6 +563,30 @@ namespace Beamable.Editor.Tests
 
     public class ContentPresentationTests
     {
+        [TestCase("Unrecognized command or argument '--preview=True'.", true)]
+        [TestCase("Unrecognized command or argument '--preview'.", true)]
+        [TestCase("Unrecognized command or argument '--expected-local-revision=abc123'.", true)]
+        [TestCase("Unrecognized command or argument '--expected-local-revision'.", true)]
+        [TestCase("An error occurred while sending the request.", false)]
+        [TestCase("The realm changed after this item was reviewed.", false)]
+        [TestCase("Unrecognized command or argument '--preview-other=True'.", false)]
+        public void Review_errors_distinguish_unsupported_cli_options_from_retryable_failures(string error, bool needsUpdate)
+        {
+            var message = ContentReconciliationWindow.ReviewErrorMessage(error);
+            Assert.That(message, Does.Contain(error), "Keep the original diagnostic available.");
+            if (needsUpdate)
+            {
+                Assert.That(message, Does.Contain("Update the CLI"));
+                Assert.That(message, Does.Contain("restart Unity"));
+                Assert.That(message, Does.Not.Contain("Refresh and review before choosing again."));
+            }
+            else
+            {
+                Assert.That(message, Does.Contain("Refresh and review before choosing again."));
+                Assert.That(message, Does.Not.Contain("Update the CLI"));
+            }
+        }
+
         [TestCase(560f, 2000f)]
         [TestCase(760f, 6000f)]
         [TestCase(1200f, 10000f)]

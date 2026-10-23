@@ -106,6 +106,18 @@ namespace Beamable.Editor.UI.ContentWindow
 				throw new InvalidOperationException("The CLI did not return a complete review. Update the CLI, then refresh this review.");
 		}
 
+		internal static string ReviewErrorMessage(string error)
+		{
+			// Match the parser diagnostic, not an unrelated failure mentioning a preview option.
+			var unsupported = error.IndexOf("Unrecognized command or argument '--preview=", StringComparison.Ordinal) >= 0 ||
+			                  error.IndexOf("Unrecognized command or argument '--preview'", StringComparison.Ordinal) >= 0 ||
+			                  error.IndexOf("Unrecognized command or argument '--expected-local-revision=", StringComparison.Ordinal) >= 0 ||
+			                  error.IndexOf("Unrecognized command or argument '--expected-local-revision'", StringComparison.Ordinal) >= 0;
+			return unsupported
+				? "The installed Beam CLI does not support this reconciliation review. Update the CLI used by this Unity project, restart Unity, then reopen this review.\n\n" + error
+				: error + "\nRefresh and review before choosing again.";
+		}
+
 		private static GUIContent Cell(string value)
 		{
 			value ??= string.Empty;
@@ -179,7 +191,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					else DrawPreview();
 					if (_error != null)
 					{
-						EditorGUILayout.HelpBox(_error + "\nRefresh and review before choosing again.", MessageType.Warning);
+						EditorGUILayout.HelpBox(ReviewErrorMessage(_error), MessageType.Warning);
 						using (new EditorGUI.DisabledScope(_applying || _service.CurrentProgress.IsActive))
 							if (GUILayout.Button("Refresh review", GUILayout.Height(26))) _ = LoadPreview();
 					}
