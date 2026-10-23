@@ -197,6 +197,7 @@ namespace Beamable.Editor.Content
 		public string DisplayName;
 		public string DisplayNameLower;
 		public string Id;
+		public string Tooltip;
 	}
 
 	/// <summary>
@@ -347,7 +348,7 @@ namespace Beamable.Editor.Content
 			{
 				var rowRect = new Rect(0, i * rowHeight, contentRect.width, rowHeight);
 				var style = i == _selectedIndex ? _activeStyle : _normalStyle;
-				if (GUI.Button(rowRect, _filtered[i].DisplayName, style))
+				if (GUI.Button(rowRect, new GUIContent(_filtered[i].DisplayName, _filtered[i].Tooltip), style))
 				{
 					clicked = i;
 				}
@@ -514,6 +515,55 @@ namespace Beamable.Editor.Content
 		{
 			Property.stringValue = option.Id;
 			Property.serializedObject.ApplyModifiedProperties();
+		}
+	}
+
+	/// <summary>
+	/// Dropdown popup for <see cref="string"/> fields decorated with
+	/// <see cref="Beamable.Common.Content.Validation.MustBeComparatorString"/>. Lists the canonical comparators,
+	/// each with a tooltip describing what it means and which aliases it accepts.
+	/// </summary>
+	public class ComparatorSearchWindow : ContentSearchWindowBase
+	{
+		protected override string SearchControlName => "comparatorSearchBar";
+
+		protected override string CurrentId =>
+			Beamable.Common.Content.Validation.MustBeComparatorString.TryGetOption(Property.stringValue, out var option) ? option.Value : Property.stringValue;
+
+		protected override List<ContentSearchOption> BuildOptions()
+		{
+			var options = new List<ContentSearchOption>();
+			foreach (var comparator in Beamable.Common.Content.Validation.MustBeComparatorString.Options)
+			{
+				var displayName = GetDisplayName(comparator);
+				options.Add(new ContentSearchOption
+				{
+					Id = comparator.Value,
+					DisplayName = displayName,
+					DisplayNameLower = displayName.ToLower(),
+					Tooltip = GetTooltip(comparator)
+				});
+			}
+
+			return options;
+		}
+
+		protected override void ApplySelection(ContentSearchOption option)
+		{
+			Property.stringValue = option.Id;
+			Property.serializedObject.ApplyModifiedProperties();
+		}
+
+		public static string GetDisplayName(Beamable.Common.Content.Validation.MustBeComparatorString.ComparatorOption comparator)
+		{
+			return $"{comparator.Value}   ({comparator.Symbol})   {comparator.DisplayName}";
+		}
+
+		public static string GetTooltip(Beamable.Common.Content.Validation.MustBeComparatorString.ComparatorOption comparator)
+		{
+			return comparator.Aliases.Length == 0
+				? comparator.Description
+				: $"{comparator.Description}\nAliases: {string.Join(", ", comparator.Aliases)}";
 		}
 	}
 

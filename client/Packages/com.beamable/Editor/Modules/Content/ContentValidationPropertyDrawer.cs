@@ -336,6 +336,64 @@ namespace Beamable.Editor.Content
 			return true;
 		}
 
+		/// <summary>
+		/// For <see cref="string"/> fields (including <c>List&lt;string&gt;</c> elements) decorated with
+		/// <see cref="MustBeComparatorString"/>, draws a dropdown button that opens a list of the canonical
+		/// comparators, each with a tooltip explaining it. Returns <c>false</c> for anything else so the caller
+		/// falls back to the next drawing strategy.
+		/// </summary>
+		private bool TryDrawComparatorDropdown(Rect position, SerializedProperty property, GUIContent label)
+		{
+			if (property.propertyType != SerializedPropertyType.String)
+			{
+				return false;
+			}
+
+			if (fieldInfo.GetCustomAttribute<MustBeComparatorString>() == null)
+			{
+				return false;
+			}
+
+			var lineHeight = EditorGUIUtility.singleLineHeight;
+			var labelRect = new Rect(position.x, position.y, EditorGUIUtility.labelWidth, lineHeight);
+			var fieldX = position.x + EditorGUIUtility.labelWidth;
+			var fieldWidth = position.width - EditorGUIUtility.labelWidth;
+			var buttonRect = new Rect(fieldX, position.y, fieldWidth, lineHeight);
+
+			EditorGUI.PrefixLabel(labelRect, label);
+
+			var value = property.stringValue;
+			GUIContent buttonContent;
+			if (MustBeComparatorString.TryGetOption(value, out var comparator))
+			{
+				var text = comparator.Value == value
+					? ComparatorSearchWindow.GetDisplayName(comparator)
+					: $"{value}   ({comparator.Symbol} {comparator.Value})";
+				buttonContent = new GUIContent(text, ComparatorSearchWindow.GetTooltip(comparator));
+			}
+			else
+			{
+				var text = string.IsNullOrEmpty(value) ? "<select comparator>" : value;
+				buttonContent = new GUIContent(text, label.tooltip);
+			}
+
+			if (EditorGUI.DropdownButton(buttonRect, buttonContent, FocusType.Keyboard, EditorStyles.popup))
+			{
+				var wnd = ScriptableObject.CreateInstance<ComparatorSearchWindow>();
+				wnd.Property = property;
+				wnd.Object = property.serializedObject.targetObject;
+				wnd.Init();
+
+				// Toolbar plus one row per option, with a little padding.
+				var popupHeight = 30f + lineHeight * (MustBeComparatorString.Options.Length + 1);
+				var xy = EditorGUIUtility.GUIToScreenPoint(new Vector2(buttonRect.x, buttonRect.y));
+				wnd.ShowAsDropDown(new Rect((int)xy.x, (int)xy.y + (int)lineHeight, 0, 0),
+				   new Vector2(fieldWidth, popupHeight));
+			}
+
+			return true;
+		}
+
 		protected bool TryGetArrayIndex(SerializedProperty property, out int arrayIndex)
 		{
 			arrayIndex = 0;
@@ -369,7 +427,8 @@ namespace Beamable.Editor.Content
 
 			EditorGUI.BeginChangeCheck();
 
-			if (!TryDrawContentDropdown(position, property, label))
+			if (!TryDrawComparatorDropdown(position, property, label) &&
+			    !TryDrawContentDropdown(position, property, label))
 			{
 				RefEditorGUI.DefaultPropertyField(position, property, label);
 			}
