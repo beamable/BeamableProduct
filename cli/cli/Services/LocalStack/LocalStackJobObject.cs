@@ -8,7 +8,7 @@ namespace cli.Services.LocalStack;
 /// A Windows Job Object configured with <c>JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE</c>: every process assigned to
 /// it is killed by the OS the moment the last handle to the job closes — which happens automatically when the
 /// owning process (this CLI) exits by <em>any</em> means (clean exit, Ctrl+C, terminal close, IDE stop, or a
-/// hard <c>TerminateProcess</c>). Attached <c>beam local up</c> uses this so the whole stack — the
+/// hard <c>TerminateProcess</c>). Attached <c>beam local run</c> uses this so the whole stack — the
 /// <c>cmd → powershell → java</c> Scala trees, <c>BeamableGateway.exe</c>, and the beam <c>Beamable.Tools</c>
 /// microservice hosts — dies with the CLI instead of being orphaned. Job membership is inherited by child
 /// processes, so assigning the launched wrapper covers its entire subtree.

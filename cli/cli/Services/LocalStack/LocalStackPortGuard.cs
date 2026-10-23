@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace cli.Services.LocalStack;
 
 /// <summary>
-/// Answers "is this port already taken, and by whom?" for <c>beam local up</c>'s pre-launch check.
+/// Answers "is this port already taken, and by whom?" for <c>beam local run</c>'s pre-launch check.
 ///
 /// A squatted port is one of the most expensive failures in the local stack because it never says so: the
 /// service loses the bind and dies (or never serves), and what the user sees is a readiness timeout, a Caddy

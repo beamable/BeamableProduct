@@ -1,5 +1,9 @@
 # Local Web SDK & Portal Toolkit — development guide
 
+> **Replaced.** The scripts, the `beam web` commands and the fixed `0.0.123` version this guide describes are gone.
+> Run a stack with the `:web` variant instead (`beam local run csharp-portal:web`, or the `web-dev` stack); see
+> [portal-localdev/README.md](../portal-localdev/README.md). The inject-host appendix still applies.
+
 How to develop an **unpublished, local build** of `@beamable/sdk` or `@beamable/portal-toolkit` and see it
 running in the Portal and in portal extensions.
 

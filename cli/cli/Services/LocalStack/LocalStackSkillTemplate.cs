@@ -3,7 +3,7 @@ using System.Text;
 namespace cli.Services.LocalStack;
 
 /// <summary>
-/// Builds the <c>beam-local-stack</c> agent skill that <c>beam local init</c> writes alongside the manifest:
+/// Builds the <c>beam-local-stack</c> agent skill that <c>beam local setup</c> writes alongside the manifest:
 /// a hand-written prose guide (embedded from <c>Docs/LocalStack/beam-local-stack.md</c>) with a generated
 /// section describing the manifest that was just written — the repositories it spans, the endpoints, the
 /// services selected, and anything still left to fill in.
@@ -50,15 +50,15 @@ public static class LocalStackSkillTemplate
 
 	/// <summary>
 	/// Where the skill is written: <c>&lt;workspace&gt;/.claude/skills/beam-local-stack/SKILL.md</c>. The
-	/// workspace root is the folder holding <c>.beamable</c>; <c>beam local init</c> is an
-	/// <c>IStandaloneCommand</c>, so when it runs outside a workspace the manifest's own directory is used
-	/// instead — the skill always lands next to the stack it documents.
+	/// workspace root is the folder holding <c>.beamable</c>; <c>beam local setup</c> is an
+	/// <c>IStandaloneCommand</c>, so when it runs outside a registered workspace the root is found from the
+	/// manifest's own location instead — the skill always lands next to the stack it documents.
 	/// </summary>
 	public static string ResolveSkillPath(ConfigService configService, string manifestPath)
 	{
 		var root = configService?.DirectoryExists == true && !string.IsNullOrEmpty(configService.BeamableWorkspace)
 			? configService.BeamableWorkspace
-			: Path.GetDirectoryName(Path.GetFullPath(manifestPath));
+			: LocalStackConfigIO.FindWorkspaceRoot(manifestPath);
 
 		if (string.IsNullOrEmpty(root))
 		{
@@ -134,15 +134,7 @@ public static class LocalStackSkillTemplate
 		sb.AppendLine("### Repositories this manifest points at");
 		sb.AppendLine();
 
-		if (repos == null)
-		{
-			// Manifests written before `repos` existed. The step list further down still carries the paths,
-			// so say where to look rather than guessing them back out of step names.
-			sb.AppendLine("This manifest predates the recorded repository paths. Read them off the");
-			sb.AppendLine("`workingDirectory` of the steps listed below, or re-run `beam local init` to record them.");
-			sb.AppendLine();
-			return;
-		}
+		if (repos == null) return;
 
 		sb.AppendLine("| Repository | Path |");
 		sb.AppendLine("|---|---|");
@@ -182,12 +174,10 @@ public static class LocalStackSkillTemplate
 		AppendIdList(sb, $"Microservices ({services.Count})", services);
 		AppendIdList(sb, $"Portal extensions ({extensions.Count})", extensions);
 		AppendIdList(sb, $"Service groups ({groups.Count})", groups);
-		// The steps are in every generated manifest now, so what decides this is the standing `webRegistry`
-		// choice, not their presence. Saying "included" for a stack whose registry is switched off would
-		// describe a bring-up that does not happen.
-		sb.AppendLine(webSteps.Count > 0 && config.webRegistry != false
-			? $"- **Local web registry**: on ({string.Join(", ", webSteps.Select(n => $"`{n}`"))}). `beam local up --with-web-registry=false` skips them for one run."
-			: "- **Local web registry**: off — the portal resolves `@beamable/*` from the published packages, not your local build. `beam local up --with-web-registry` turns it on for one run; re-run `beam local init` to change the standing choice.");
+		// The steps are in every generated catalogue; a stack runs them only through the `web-registry` tag.
+		sb.AppendLine(webSteps.Count > 0
+			? $"- **Local web registry** ({string.Join(", ", webSteps.Select(n => $"`{n}`"))}): runs when the stack asks for the `web-registry` tag, such as with the `:web` variant (`beam local run full:web`). Without it the portal resolves `@beamable/*` from the published packages, not your local build."
+			: "- **Local web registry**: not in this catalogue. `beam local setup --only settings --force` writes it.");
 		sb.AppendLine();
 	}
 
@@ -231,8 +221,8 @@ public static class LocalStackSkillTemplate
 
 		sb.AppendLine("### ⚠️ Not runnable yet");
 		sb.AppendLine();
-		sb.AppendLine("These still hold an unedited `<EDIT: ...>` placeholder. Fill them in (or re-run");
-		sb.AppendLine("`beam local init` with the right `--*-dir` option) before `beam local up`:");
+		sb.AppendLine("These still hold an unedited `<EDIT: ...>` placeholder. Fill them in (or run");
+		sb.AppendLine("`beam local setup --only settings --force` with the right `--*-dir` option) before `beam local run`:");
 		sb.AppendLine();
 		foreach (var entry in unresolved.Distinct())
 		{
@@ -246,8 +236,8 @@ public static class LocalStackSkillTemplate
 	{
 		sb.AppendLine("### Steps, in order");
 		sb.AppendLine();
-		sb.AppendLine("These are the exact names `beam local up --only` / `--skip`, `beam local logs` and");
-		sb.AppendLine("`beam local stop` take.");
+		sb.AppendLine("These are the exact names a stack's `include` / `exclude`, a variant's `before` / `after` /");
+		sb.AppendLine("`remove`, `beam local logs` and `beam local stop` take. Lists also take tags.");
 		sb.AppendLine();
 
 		if (steps.Count == 0)

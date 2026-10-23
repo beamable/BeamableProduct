@@ -1,5 +1,8 @@
+using Beamable.Common.Util;
 using Beamable.Server;
+using cli.Utils;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO.Compression;
@@ -59,7 +62,7 @@ public class ToolchainResult
 
 /// <summary>
 /// Provisions the pinned toolchain (<see cref="ToolchainPins"/>) into a private directory and records what it
-/// installed, so <c>beam local up</c> can run the stack against exactly those versions rather than whatever is
+/// installed, so <c>beam local run</c> can run the stack against exactly those versions rather than whatever is
 /// on <c>PATH</c>.
 ///
 /// Everything is keyed off the directory, so pointing several workspaces at one <c>--toolchain-dir</c> shares a
@@ -784,7 +787,7 @@ public class ToolchainService
 	// ----------------------------------------------------------------------------------
 
 	/// <summary>
-	/// Projects the installed tools into the block a local-stack manifest carries, so <c>beam local up</c> can
+	/// Projects the installed tools into the block a local-stack manifest carries, so <c>beam local run</c> can
 	/// substitute <c>${java}</c>/<c>${maven}</c>/<c>${node}</c>/<c>${dotnet}</c> and build a <c>PATH</c> without
 	/// re-probing anything.
 	/// </summary>
@@ -899,5 +902,321 @@ public class ToolchainService
 
 		var all = output.TrimEnd().Split('\n');
 		return string.Join("\n", all.Skip(Math.Max(0, all.Length - lines)).Select(l => l.TrimEnd()));
+	}
+}
+
+/// <summary>One place in a workspace that pins the beam CLI version.</summary>
+public class CliPin
+{
+	/// <summary>The file holding the pin.</summary>
+	public string file;
+
+	/// <summary><c>tool-manifest</c> (a <c>.config/dotnet-tools.json</c>) or <c>workspace-config</c>
+	/// (<c>cliVersion</c> in <c>.beamable/config.beam.json</c>).</summary>
+	public string kind;
+
+	/// <summary>The pinned version, as found.</summary>
+	public string version;
+
+	/// <summary><c>ok</c>, <c>repinned</c>, <c>mismatch</c>, <c>missing</c> or <c>failed</c>.</summary>
+	public string status;
+
+	/// <summary>What was found or done, in a sentence.</summary>
+	public string detail;
+}
+
+/// <summary>What one <see cref="LocalStackCliVersions.Check"/> found and did.</summary>
+public class CliVersionCheckResult
+{
+	/// <summary>The version of the CLI that ran the check, without build metadata.</summary>
+	public string runningVersion;
+
+	public List<CliPin> pins = new List<CliPin>();
+
+	/// <summary>The project files restored after a re-pin.</summary>
+	public List<string> restored = new List<string>();
+
+	/// <summary>Restores that failed, one message each.</summary>
+	public List<string> errors = new List<string>();
+
+	public bool repinned => pins.Any(p => p.status == "repinned");
+}
+
+/// <summary>
+/// Keeps a workspace's CLI pins on the CLI that is running the local stack.
+///
+/// A portal workspace pins the CLI in several gitignored places: the root and <c>bundles/</c>
+/// <c>.config/dotnet-tools.json</c>, and <c>cliVersion</c> in <c>.beamable/config.beam.json</c>. Microservices
+/// take their Beamable package version from the nearest tool manifest. After a new local build, <c>dev.sh</c>
+/// re-pins only the root manifest and deletes the previous build from the local feed and the NuGet cache, so the
+/// other pins are left on a version that no longer exists and restores fail.
+///
+/// The rule: a local build (<c>0.0.123.x</c>) pin that differs from a running local build is moved to it, the
+/// tools are restored and the microservice projects re-restored. A published pin is only reported: switching a
+/// project between a release and a local build is a deliberate choice.
+/// </summary>
+public static class LocalStackCliVersions
+{
+	/// <summary>Every local CLI build's version starts with this.</summary>
+	public const string LocalDevPrefix = "0.0.123";
+
+	/// <summary>The CLI's package id in a tool manifest.</summary>
+	public const string ToolPackageId = "beamable.tools";
+
+	/// <summary>Folders never searched for pins or projects: dependencies, build output, VCS data.</summary>
+	private static readonly HashSet<string> SkippedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+	{
+		"node_modules", ".git", "bin", "obj", "dist", "Library", "Temp"
+	};
+
+	public static bool IsLocalDev(string version) =>
+		!string.IsNullOrEmpty(version) && version.StartsWith(LocalDevPrefix, StringComparison.Ordinal);
+
+	/// <summary>The running CLI's version, without the <c>+commit</c> build metadata.</summary>
+	public static string RunningVersion()
+	{
+		var version = BeamAssemblyVersionUtil.GetVersion<App>() ?? string.Empty;
+		var plus = version.IndexOf('+');
+		return plus >= 0 ? version.Substring(0, plus) : version;
+	}
+
+	/// <summary>Every CLI pin in <paramref name="workspaceDir"/> and its sub-folders, up to <paramref name="maxDepth"/> levels down.</summary>
+	public static List<CliPin> FindPins(string workspaceDir, int maxDepth = 2)
+	{
+		var pins = new List<CliPin>();
+		if (string.IsNullOrWhiteSpace(workspaceDir) || !Directory.Exists(workspaceDir)) return pins;
+
+		foreach (var dir in Folders(workspaceDir, maxDepth))
+		{
+			var toolManifest = Path.Combine(dir, ".config", "dotnet-tools.json");
+			var toolVersion = ReadToolManifestVersion(toolManifest);
+			if (toolVersion != null)
+				pins.Add(new CliPin { file = toolManifest, kind = "tool-manifest", version = toolVersion });
+
+			var workspaceConfig = Path.Combine(dir, ConfigService.CFG_FOLDER, ConfigService.CFG_FILE_NAME);
+			var cliVersion = ReadCliVersion(workspaceConfig);
+			if (cliVersion != null)
+				pins.Add(new CliPin { file = workspaceConfig, kind = "workspace-config", version = cliVersion });
+		}
+
+		return pins;
+	}
+
+	/// <summary>
+	/// Compares every pin in <paramref name="workspaceDir"/> with <paramref name="runningVersion"/>. With
+	/// <paramref name="fix"/>, local-build pins that differ are re-pinned, then <c>dotnet tool restore</c> runs next to
+	/// each changed tool manifest and every project that uses <c>$(BeamableVersion)</c> is restored.
+	/// <paramref name="run"/> runs a process as <c>(file, arguments, workingDirectory)</c>; tests replace it.
+	/// </summary>
+	public static CliVersionCheckResult Check(string workspaceDir, string runningVersion, bool fix,
+		Func<string, string, string, StartProcessResult> run = null)
+	{
+		run ??= (file, arguments, dir) => StartProcessUtil.Run(file, arguments, workingDirectoryPath: dir).WaitForResult();
+		var result = new CliVersionCheckResult { runningVersion = runningVersion, pins = FindPins(workspaceDir) };
+
+		foreach (var pin in result.pins)
+		{
+			if (pin.version == runningVersion)
+			{
+				pin.status = "ok";
+				pin.detail = $"on {runningVersion}";
+			}
+			else if (IsLocalDev(pin.version) && IsLocalDev(runningVersion))
+			{
+				if (!fix)
+				{
+					pin.status = "mismatch";
+					pin.detail = $"pinned to local build {pin.version}; this CLI is local build {runningVersion}";
+					continue;
+				}
+
+				try
+				{
+					WritePin(pin, runningVersion);
+					pin.status = "repinned";
+					pin.detail = $"{pin.version} -> {runningVersion}";
+				}
+				catch (Exception e)
+				{
+					pin.status = "failed";
+					pin.detail = $"could not re-pin: {e.Message}";
+				}
+			}
+			else if (IsLocalDev(pin.version))
+			{
+				var cached = InNuGetCache(pin.version);
+				pin.status = cached ? "mismatch" : "missing";
+				pin.detail = cached
+					? $"pinned to local build {pin.version}; this CLI is the published {runningVersion}. Left as is."
+					: $"pinned to local build {pin.version}, which is no longer in the NuGet cache. Run the stack with your newest local CLI build to re-pin it.";
+			}
+			else
+			{
+				pin.status = "mismatch";
+				pin.detail = $"pinned to published {pin.version}; this CLI is {runningVersion}. Left as is: a published pin is a deliberate choice.";
+			}
+		}
+
+		if (!fix || !result.repinned) return result;
+
+		var toolDirs = result.pins
+			.Where(p => p.status == "repinned" && p.kind == "tool-manifest")
+			.Select(p => Path.GetDirectoryName(Path.GetDirectoryName(p.file)))
+			.Distinct(StringComparer.OrdinalIgnoreCase);
+		foreach (var dir in toolDirs)
+		{
+			var restore = run("dotnet", "tool restore", dir);
+			if (restore.exit != 0)
+				result.errors.Add($"dotnet tool restore failed in {dir}: {LastLine(restore)}");
+		}
+
+		foreach (var project in FindBeamableProjects(workspaceDir))
+		{
+			var restore = run("dotnet", $"restore \"{project}\"", Path.GetDirectoryName(project));
+			if (restore.exit == 0)
+				result.restored.Add(project);
+			else
+				result.errors.Add($"dotnet restore failed for {project}: {LastLine(restore)}");
+		}
+
+		return result;
+	}
+
+	/// <summary>Logs what <see cref="Check"/> found: re-pins and restores as information, the rest as warnings.</summary>
+	public static void Report(CliVersionCheckResult result)
+	{
+		foreach (var pin in result.pins)
+		{
+			switch (pin.status)
+			{
+				case "repinned":
+					Log.Information($"[cli: versions] re-pinned {pin.file}: {pin.detail}");
+					break;
+				case "mismatch":
+				case "missing":
+				case "failed":
+					Log.Warning($"[cli: versions] {pin.file}: {pin.detail}");
+					break;
+			}
+		}
+
+		if (result.restored.Count > 0)
+			Log.Information($"[cli: versions] restored {result.restored.Count} microservice project(s) on {result.runningVersion}.");
+		foreach (var error in result.errors)
+			Log.Warning($"[cli: versions] {error}");
+	}
+
+	/// <summary>Project files under <paramref name="workspaceDir"/> whose Beamable packages follow the tool manifest.</summary>
+	public static List<string> FindBeamableProjects(string workspaceDir)
+	{
+		var projects = new List<string>();
+		if (string.IsNullOrWhiteSpace(workspaceDir) || !Directory.Exists(workspaceDir)) return projects;
+
+		foreach (var dir in Folders(workspaceDir, int.MaxValue))
+		{
+			foreach (var project in Directory.EnumerateFiles(dir, "*.csproj"))
+			{
+				try
+				{
+					if (File.ReadAllText(project).Contains("$(BeamableVersion)", StringComparison.Ordinal))
+						projects.Add(project);
+				}
+				catch
+				{
+					// unreadable project file: nothing to restore
+				}
+			}
+		}
+
+		return projects;
+	}
+
+	private static IEnumerable<string> Folders(string root, int maxDepth)
+	{
+		var queue = new Queue<(string dir, int depth)>();
+		queue.Enqueue((root, 0));
+		while (queue.Count > 0)
+		{
+			var (dir, depth) = queue.Dequeue();
+			yield return dir;
+			if (depth >= maxDepth) continue;
+
+			List<string> children;
+			try
+			{
+				children = Directory.EnumerateDirectories(dir).ToList();
+			}
+			catch
+			{
+				continue;
+			}
+
+			foreach (var child in children)
+			{
+				var name = Path.GetFileName(child);
+				if (SkippedFolders.Contains(name) || name.StartsWith('.')) continue;
+				queue.Enqueue((child, depth + 1));
+			}
+		}
+	}
+
+	private static string ReadToolManifestVersion(string path)
+	{
+		try
+		{
+			if (!File.Exists(path)) return null;
+			var tools = JObject.Parse(File.ReadAllText(path))["tools"] as JObject;
+			var tool = tools?.Properties().FirstOrDefault(p => p.Name.Equals(ToolPackageId, StringComparison.OrdinalIgnoreCase));
+			return tool?.Value["version"]?.ToString();
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+	private static string ReadCliVersion(string path)
+	{
+		try
+		{
+			if (!File.Exists(path)) return null;
+			var version = JObject.Parse(File.ReadAllText(path))[ConfigService.CFG_JSON_FIELD_CLI_VERSION]?.ToString();
+			return string.IsNullOrWhiteSpace(version) ? null : version;
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+	private static void WritePin(CliPin pin, string version)
+	{
+		var json = JObject.Parse(File.ReadAllText(pin.file));
+		if (pin.kind == "tool-manifest")
+		{
+			var tools = (JObject)json["tools"];
+			var tool = tools.Properties().First(p => p.Name.Equals(ToolPackageId, StringComparison.OrdinalIgnoreCase));
+			tool.Value["version"] = version;
+		}
+		else
+		{
+			json[ConfigService.CFG_JSON_FIELD_CLI_VERSION] = version;
+		}
+
+		File.WriteAllText(pin.file, json.ToString(Formatting.Indented));
+	}
+
+	private static bool InNuGetCache(string version)
+	{
+		var packages = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+		if (string.IsNullOrWhiteSpace(packages))
+			packages = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
+		return Directory.Exists(Path.Combine(packages, ToolPackageId, version));
+	}
+
+	private static string LastLine(StartProcessResult result)
+	{
+		var output = string.IsNullOrWhiteSpace(result.stderr) ? result.stdout : result.stderr;
+		return output?.Trim().Split('\n').LastOrDefault()?.Trim() ?? $"exit code {result.exit}";
 	}
 }

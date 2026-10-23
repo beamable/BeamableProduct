@@ -46,7 +46,7 @@ public sealed class StreamLineBuffer : ILineSource
 
 /// <summary>
 /// Helpers for reading append-only child log files: seek to the last N lines, and follow a growing file
-/// line-by-line. Used by <c>beam local up</c> (readiness + <c>--attach</c>) and <c>beam local logs</c>.
+/// line-by-line. Used by <c>beam local run</c> (readiness + <c>--attach</c>) and <c>beam local logs</c>.
 /// The line-count seek is ported from #4258 <c>BackendLogCommand.SeekToLastNLines</c>.
 /// </summary>
 public static class LogTail

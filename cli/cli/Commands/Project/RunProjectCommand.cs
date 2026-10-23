@@ -476,7 +476,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 
 			// Stagger starts. Launching N services in the same tick is what trips the gateway's rate
 			// limiter during each service's generate-env (every one of them calls accounts/admin/me).
-			// `beam local up` already spaces its individual --ids steps by GroupLaunchStagger; a
+			// `beam local run` already spaces its individual --ids steps by GroupLaunchStagger; a
 			// --with-group run is a single process that fans out internally, so it needs its own.
 			if (startedCount > 0)
 			{

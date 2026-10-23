@@ -5,7 +5,7 @@ namespace cli.Services.LocalStack;
 /// <summary>
 /// The toolchain the local stack is built and run with: which tools, which versions, and where each
 /// platform's archive comes from. <see cref="ToolchainService"/> downloads these into a private directory so
-/// <c>beam local up</c> never depends on whatever happens to be installed on the machine.
+/// <c>beam local run</c> never depends on whatever happens to be installed on the machine.
 ///
 /// Pinning is the whole point. Left to <c>PATH</c>, the stack picks up whatever is there and fails in ways
 /// that look like product bugs: Maven running under a JDK 21 from an IDE bundle, a Node major the portal was
@@ -29,8 +29,9 @@ public static class ToolchainPins
 	public const string Pnpm = "pnpm";
 
 	/// <summary>
-	/// Non-tool setup ids, also accepted by <c>--only</c>/<c>--skip</c>: the generated BeamableBackend config
-	/// files, the portal's .env.local, and the AWS preflight. They install nothing into the toolchain dir.
+	/// Non-tool setup ids, also accepted by <c>--only</c>/<c>--skip</c>: the Docker check, the settings file with
+	/// its step catalogue, the generated BeamableBackend config files, the portal's .env.local, and the AWS
+	/// preflight. They install nothing into the toolchain dir.
 	/// </summary>
 	public const string ScalaConfig = "scala-config";
 
@@ -40,6 +41,12 @@ public static class ToolchainPins
 	/// <inheritdoc cref="ScalaConfig"/>
 	public const string Aws = "aws";
 
+	/// <inheritdoc cref="ScalaConfig"/>
+	public const string Docker = "docker";
+
+	/// <inheritdoc cref="ScalaConfig"/>
+	public const string Settings = "settings";
+
 	/// <summary>
 	/// The tool ids, in install order (fast/independent first). <see cref="Pnpm"/> is LAST because it is installed
 	/// by the toolchain's own npm, so Node has to be in place before it runs.
@@ -47,7 +54,7 @@ public static class ToolchainPins
 	public static readonly string[] ToolIds = { Jdk, Maven, Dotnet, Node, Pnpm };
 
 	/// <summary>Every id <c>--only</c>/<c>--skip</c> accepts, tools plus the non-tool setup steps.</summary>
-	public static readonly string[] AllStepIds = { Jdk, Maven, Dotnet, Node, Pnpm, ScalaConfig, PortalConfig, Aws };
+	public static readonly string[] AllStepIds = { Docker, Jdk, Maven, Dotnet, Node, Pnpm, Settings, ScalaConfig, PortalConfig, Aws };
 
 	/// <summary>
 	/// Maven version the Scala reactor is built with. 3.9.x is what BeamableBackend's README documents;

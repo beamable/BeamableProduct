@@ -6,7 +6,7 @@ namespace cli.Services.LocalStack;
 
 /// <summary>
 /// Watches the containers a manifest's <c>docker compose up</c> steps brought up, for as long as
-/// <c>beam local up</c> stays attached.
+/// <c>beam local run</c> stays attached.
 ///
 /// The attached wait (<c>LocalStackUpCommand.WaitAttached</c>) only races the <em>host process</em> exit tasks.
 /// Docker steps are <see cref="LocalStackStep.waitForExit"/> run-to-completion steps — the compose CLI exits

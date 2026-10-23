@@ -37,7 +37,7 @@ public class ScalaLocalVarsResult
 /// This is a port of the repo's own <c>bin/set-local-vars</c>, which is a Python script with a
 /// <c>#!.venv/bin/python</c> shebang — so it needs Python plus a committed virtualenv and <b>cannot run on
 /// Windows at all</b>. Doing it here removes that dependency, and means <c>beam local setup</c> can perform a
-/// step the stack has always required but <c>beam local up</c> never ran, leaving a fresh clone to fail with a
+/// step the stack has always required but <c>beam local run</c> never ran, leaving a fresh clone to fail with a
 /// missing-config error nobody could act on.
 ///
 /// The templates are pure <c>{{ VAR }}</c> substitution — no Liquid tags, filters or control flow — which is why
@@ -287,7 +287,7 @@ public class ScalaLocalVarsService
 	}
 
 	/// <summary>
-	/// The config files that are still missing from a checkout — used by <c>beam local validate</c> to report the
+	/// The config files that are still missing from a checkout — used by <c>beam local run --dry-run</c> to report the
 	/// gap without needing a token or a network call.
 	/// </summary>
 	public static List<string> MissingConfigFiles(string scalaDir)

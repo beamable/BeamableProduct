@@ -1,5 +1,6 @@
 using Beamable.Server;
 using cli.Services.LocalStack;
+using cli.Services.Web;
 using System.CommandLine;
 using System.Diagnostics;
 
@@ -22,10 +23,12 @@ public class LocalStackStopCommandResult
 }
 
 /// <summary>
-/// Stops the local stack recorded by <c>beam local up</c>. Long-running processes are killed
+/// Stops the local stack started by <c>beam local run</c>. Long-running processes are killed
 /// (whole process tree, in reverse start order); run-to-completion steps that declared a
-/// <c>stopArguments</c> reversal (e.g. <c>docker compose stop</c>) are reversed. With a step name, only
-/// that step is stopped; otherwise the whole stack is stopped and the run-state cleared.
+/// <c>stopArguments</c> reversal (e.g. <c>docker compose stop</c>) are reversed. With steps (by name, label or
+/// tag, comma separated), only those stop; otherwise the whole stack stops and the run-state is cleared. A stack
+/// attached to another terminal is asked to do it (see <see cref="LocalStackControl"/>), since its services live
+/// in that process.
 /// <para>
 /// Stopping is NON-DESTRUCTIVE by default: docker steps are reversed with <c>compose stop</c>, so the
 /// containers and their volumes survive and the next <c>up</c> reuses the existing database. Pass
@@ -38,15 +41,18 @@ public class LocalStackStopCommand
 	: AtomicCommand<LocalStackStopCommandArgs, LocalStackStopCommandResult>
 	, IStandaloneCommand, ISkipManifest
 {
+	// It prints its own readable output; the result object still reaches tools through the data channel.
+	public override bool AutoLogOutput => false;
+
 	public LocalStackStopCommand() : base("stop", "Stop the running local stack (or a single step)")
 	{
 	}
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("step", () => null, "The step name to stop (default: the whole stack)"),
+		AddArgument(new Argument<string>("step", () => null, "The steps to stop, by name, label or tag, comma separated (default: the whole stack)"),
 			(args, v) => args.step = v);
-		AddOption(new Option<string>("--config", "Path to the manifest whose run-state to read (defaults to .beamable/local-stack.json)"),
+		AddOption(new Option<string>("--config", "Path to the manifest whose run-state to read (defaults to .beamable/local/stack-settings.json)"),
 			(args, v) => args.configPath = v);
 		AddOption(new Option<bool>(new[] { "--purge", "--clean" },
 				"DESTRUCTIVE: reverse docker steps with `compose down -v` (removing the containers and their "
@@ -55,19 +61,39 @@ public class LocalStackStopCommand
 			(args, v) => args.purge = v);
 	}
 
-	public override Task<LocalStackStopCommandResult> GetResult(LocalStackStopCommandArgs args)
+	public override async Task<LocalStackStopCommandResult> GetResult(LocalStackStopCommandArgs args)
 	{
 		var runStatePath = LocalStackCommand.ResolveRunStatePath(args.ConfigService, args.configPath);
+		var items = LocalStackPsCommand.Items(args.step);
+
+		// A stack attached to another terminal owns its services: ask it.
+		var answer = await LocalStackPsCommand.AskAttached(runStatePath, "stop", items, args.Lifecycle.CancellationToken);
+		if (answer != null)
+			return new LocalStackStopCommandResult { stopped = answer.steps.ToArray() };
+
 		var state = LocalStackRunStateIO.Load(runStatePath);
 		if (state == null || state.steps.Count == 0)
 			throw new CliException($"No running local stack recorded at {runStatePath}. Nothing to stop.");
 
-		var targeting = string.IsNullOrWhiteSpace(args.step)
-			? state.steps.ToList()
-			: state.steps.Where(s => string.Equals(s.name, args.step, StringComparison.OrdinalIgnoreCase)).ToList();
+		var names = items.Count == 0
+			? null
+			: LocalStackPsCommand.MatchRecorded(args, runStatePath, state, items).Select(s => s.name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+		var (stopped, remaining) = Stop(runStatePath, state, e => names == null || names.Contains(e.name), args.purge);
+		if (names == null)
+			WebPackagesService.RemoveOverlay(args.ConfigService.BeamableWorkspace);
 
-		if (targeting.Count == 0)
-			throw new CliException($"No recorded step named '{args.step}'. Known steps: {string.Join(", ", state.steps.Select(s => s.name))}");
+		Log.Information($"Stopped {stopped.Count} step(s). {remaining} still recorded.");
+		return new LocalStackStopCommandResult { stopped = stopped.ToArray(), remaining = remaining };
+	}
+
+	/// <summary>
+	/// Stops the recorded steps <paramref name="which"/> picks, in reverse start order, and updates the run-state:
+	/// steps that are down are forgotten, and when none is left the run-state (and the run's temp logs) go.
+	/// </summary>
+	public static (List<string> stopped, int remaining) Stop(string runStatePath, LocalStackRunState state,
+		Func<LocalStackRunEntry, bool> which, bool purge)
+	{
+		var targeting = state.steps.Where(which).ToList();
 
 		// Reverse start order: services before the infrastructure they depend on.
 		var stopped = new List<string>();
@@ -75,7 +101,7 @@ public class LocalStackStopCommand
 		for (var i = targeting.Count - 1; i >= 0; i--)
 		{
 			var entry = targeting[i];
-			var outcome = StopEntry(entry, args.purge);
+			var outcome = StopEntry(entry, purge);
 			if (outcome == StopOutcome.Stopped)
 				stopped.Add(entry.name);
 
@@ -98,14 +124,23 @@ public class LocalStackStopCommand
 			}
 		}
 		else
-			LocalStackRunStateIO.Save(runStatePath, state);
-
-		Log.Information($"Stopped {stopped.Count} step(s). {state.steps.Count} still recorded.");
-		return Task.FromResult(new LocalStackStopCommandResult
 		{
-			stopped = stopped.ToArray(),
-			remaining = state.steps.Count
-		});
+			LocalStackRunStateIO.Save(runStatePath, state);
+			var board = LocalStackBoardIO.Load(LocalStackBoardIO.PathFor(runStatePath));
+			if (board != null)
+			{
+				foreach (var row in board.rows.Where(r => forget.Contains(r.name)))
+				{
+					row.state = LocalStackStepState.Stopped;
+					row.detail = "stopped by beam local stop";
+					row.changedUtc = DateTime.UtcNow;
+				}
+
+				LocalStackBoardIO.Save(LocalStackBoardIO.PathFor(runStatePath), board);
+			}
+		}
+
+		return (stopped, state.steps.Count);
 	}
 
 	/// <summary>What happened to one step: whether it was brought down, was already down, or could neither be
@@ -121,7 +156,7 @@ public class LocalStackStopCommand
 	{
 		// An adopted step was already serving when `up` ran, so `up` recorded it without launching it (and
 		// without a pid). Say so before stopping it: the process predates this stack's bring-up, so if the user
-		// started it themselves — from an IDE, or a `beam local up` they since forgot about — this line is the
+		// started it themselves — from an IDE, or a `beam local run` they since forgot about — this line is the
 		// only warning that `stop` is about to take it down as part of the stack.
 		if (entry.adopted)
 			Log.Information($"[{entry.name}] was adopted (already serving when the stack came up) — stopping it too");
@@ -198,8 +233,7 @@ public class LocalStackStopCommand
 
 		// 2) Fallback: the Windows wrapper chain (cmd → powershell → java, cmd → npm → node, cmd → dotnet) can
 		//    die and orphan the real runtime, leaving the recorded pid dead/reused. Find the runtime by a
-		//    stack-specific identity string on its command line and kill it. Also self-heals runtimes orphaned
-		//    by older CLI builds that recorded only the wrapper pid. Strictly token-gated so unrelated
+		//    stack-specific identity string on its command line and kill it. Strictly token-gated so unrelated
 		//    java/node/dotnet processes (Rider, MSBuild, MCP) are never touched. No-op on non-Windows.
 		//    This is the ONLY path that stops a non-docker ADOPTED step: it has no pid by design (`up` never
 		//    launched it), so step 1 is skipped and its identity on the command line is all there is to go on.

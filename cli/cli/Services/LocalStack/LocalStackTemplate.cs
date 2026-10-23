@@ -1,3 +1,6 @@
+using cli.Commands.LocalStack;
+using cli.Services.Web;
+
 namespace cli.Services.LocalStack;
 
 /// <summary>
@@ -128,18 +131,11 @@ public static class LocalStackTemplate
 		public int analyticsGatewayPort = 9003;
 		/// <summary>
 		/// Whether to EMIT the local web package registry steps (Verdaccio + local-unpkg) at all.
-		/// <c>beam local init</c> always sets this, so the steps are always in the manifest and can be turned
-		/// on later without regenerating it; whether they actually RUN is <see cref="webRegistry"/>. Only a
-		/// caller that wants a manifest structurally without them (the tests) leaves this false.
+		/// <c>beam local setup</c> always sets this, so the steps are always in the catalogue; a stack runs them
+		/// through the <c>web-registry</c> tag, such as the <c>:web</c> variant. Only a caller that wants a manifest
+		/// structurally without them (the tests) leaves this false.
 		/// </summary>
 		public bool includeWebRegistry;
-
-		/// <summary>
-		/// The standing choice to record in <see cref="LocalStackConfig.webRegistry"/>: whether
-		/// <c>beam local up</c> runs the web-registry steps without being asked to. Only meaningful together
-		/// with <see cref="includeWebRegistry"/> — there is nothing to run when the steps were not emitted.
-		/// </summary>
-		public bool webRegistry;
 
 		/// <summary>
 		/// The <c>portal-localdev</c> directory holding the web registry's docker-compose file. Only read when
@@ -154,11 +150,44 @@ public static class LocalStackTemplate
 	/// declares.
 	///
 	/// This exists because the beamo manifest only covers the workspace the command is RUN in. Running
-	/// <c>beam local init</c> anywhere other than the portal repo therefore discovered nothing, and the extension
+	/// <c>beam local setup</c> anywhere other than the portal repo therefore discovered nothing, and the extension
 	/// picker came up empty — which looks exactly like "this workspace has no extensions" rather than "you are
 	/// standing in the wrong folder". Scanning the checkout that was just pointed at with <c>--portal-dir</c> is
 	/// both what the user meant and independent of where they happen to be.
 	/// </summary>
+	/// <summary>
+	/// The microservices each portal extension under <paramref name="portalDir"/> calls: its package.json's
+	/// <c>beamable.microserviceDependencies</c>, by extension name. Extensions that call none are left out.
+	/// </summary>
+	public static Dictionary<string, List<string>> ExtensionMicroservices(string portalDir)
+	{
+		var needs = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+		if (string.IsNullOrWhiteSpace(portalDir) || portalDir.Contains(LocalStackConfigIO.EditPlaceholder, StringComparison.Ordinal)
+		    || !Directory.Exists(portalDir))
+			return needs;
+
+		foreach (var packageJson in EnumeratePackageJsonFiles(portalDir))
+		{
+			try
+			{
+				var json = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(packageJson));
+				var beamable = json["beamable"];
+				if ((bool?)beamable?["portalExtension"] != true) continue;
+
+				var name = (string)json["name"];
+				var services = (beamable["microserviceDependencies"] ?? new Newtonsoft.Json.Linq.JArray())
+					.Select(t => (string)t).Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+				if (!string.IsNullOrWhiteSpace(name) && services.Count > 0) needs[name] = services;
+			}
+			catch
+			{
+				// A malformed package.json is that extension's problem.
+			}
+		}
+
+		return needs;
+	}
+
 	public static (List<string> extensions, Dictionary<string, string[]> groups) DiscoverPortalExtensions(string portalDir)
 	{
 		var extensions = new List<string>();
@@ -293,12 +322,15 @@ public static class LocalStackTemplate
 	}
 
 	/// <summary>Scans a tool folder's Scala sources for the first <c>object X extends MicroService</c> and
-	/// returns its fully-qualified name (<c>package.X</c>), or null if none is found.</summary>
+	/// returns its fully-qualified name (<c>package.X</c>). A tool without one runs as a daemon from an object's own
+	/// <c>main</c> (messaging's <c>MessageDaemon</c>), so the first such object is the fallback. Null when neither is found.</summary>
 	private static string FindScalaMainClass(string toolFolder)
 	{
+		string daemon = null;
 		foreach (var srcFile in Directory.EnumerateFiles(toolFolder, "*.scala", SearchOption.AllDirectories))
 		{
 			var package = "";
+			string lastObject = null;
 			foreach (var raw in File.ReadLines(srcFile))
 			{
 				var line = raw.Trim();
@@ -307,6 +339,11 @@ public static class LocalStackTemplate
 					package = line.Substring("package ".Length).Trim();
 					continue;
 				}
+
+				if (line.StartsWith("object ", StringComparison.Ordinal))
+					lastObject = line.Substring("object ".Length).Split(' ', '{')[0];
+				if (daemon == null && lastObject != null && line.StartsWith("def main(", StringComparison.Ordinal))
+					daemon = string.IsNullOrEmpty(package) ? lastObject : $"{package}.{lastObject}";
 
 				var idxObject = line.IndexOf("object ", StringComparison.Ordinal);
 				var idxExtends = line.IndexOf("extends MicroService", StringComparison.Ordinal);
@@ -319,7 +356,7 @@ public static class LocalStackTemplate
 			}
 		}
 
-		return null;
+		return daemon;
 	}
 
 	/// <summary>
@@ -327,7 +364,7 @@ public static class LocalStackTemplate
 	/// the <c>tools/pom.xml</c> aggregator. A folder can hold a pom and a launchable MicroService yet not be
 	/// registered in the reactor (e.g. <c>disruptor-bot</c>, <c>gatling</c>), and passing one to <c>-pl</c>
 	/// fails the *entire* build with "Could not find the selected project in the reactor" — which aborts
-	/// <c>up --build</c> and rolls the whole stack back. Returns an empty set when the aggregator pom is
+	/// <c>run &lt;stack&gt;:build</c> and rolls the whole stack back. Returns an empty set when the aggregator pom is
 	/// missing or holds no modules; callers treat that as "don't filter", so a parse problem can never
 	/// silently drop every module and turn a working build into a no-op.
 	/// </summary>
@@ -380,6 +417,56 @@ public static class LocalStackTemplate
 	/// directory are derived from.</summary>
 	private const string DotnetHostTfm = "net10.0";
 
+	/// <summary>The step that runs the portal's dev server; a stack hands it its API host (see <c>beam local run</c>).</summary>
+	public const string PortalFrontendStepName = "portal frontend";
+
+	// What the generated build steps compile. The whole repo for the hosts and the reactor: a host builds against
+	// the repo's shared projects, and `-am` builds the modules' dependencies too. A rebuild is cheap for the hosts
+	// (dotnet build is incremental); for Scala it is a clean reactor build, so it only runs when the repo changed.
+	private static List<string> CSharpHostInputs() => new List<string> { "." };
+	private static List<string> ScalaInputs() => new List<string> { "." };
+	private static List<string> PortalDepsInputs() => new List<string> { "package.json", "package-lock.json" };
+
+	/// <summary>The Scala gateway every C# call into the Scala backend goes through (on :9002).</summary>
+	private const string ScalaGatewayStep = "scala: gateway";
+
+	/// <summary>The tag of the Scala services the C# hosts call (a built-in tag group).</summary>
+	private const string ScalaForCSharpTag = "scala-csharp";
+
+	/// <summary>The sources of the two web packages, relative to the BeamableProduct checkout the publish runs in.</summary>
+	/// <summary>
+	/// The local web package steps after the registry, each a hidden <c>beam local web</c> action (see
+	/// <see cref="LocalStackWebCommand"/>). They get their folders as environment variables, since arguments are split
+	/// on spaces. None logs in, so they don't trigger the realm check either.
+	/// </summary>
+	public static List<LocalStackStep> WebPackageSteps()
+	{
+		LocalStackStep Web(string name, string action, bool once) => new LocalStackStep
+		{
+			name = name,
+			beam = true,
+			arguments = $"local web {action}",
+			workingDirectory = "${" + LocalStackConfigIO.PortalPathVar + "}",
+			environment = new Dictionary<string, string>
+			{
+				[WebPackagesService.ProductDirVariable] = "${" + LocalStackConfigIO.ProductPathVar + "}",
+				[WebPackagesService.WorkspaceVariable] = "${" + LocalStackConfigIO.PortalPathVar + "}"
+			},
+			waitForExit = once
+		};
+
+		var build = Web(WebBuildStepName, LocalStackWebCommand.Build, once: true);
+		// Two tsdown builds when both packages changed, and a first pnpm install.
+		build.readyTimeoutSeconds = 900;
+		return new List<LocalStackStep>
+		{
+			build,
+			Web(WebPublishStepName, LocalStackWebCommand.Publish, once: true),
+			Web(WebInstallStepName, LocalStackWebCommand.Install, once: true),
+			Web(WebWatchStepName, LocalStackWebCommand.Watch, once: false)
+		};
+	}
+
 	/// <summary>
 	/// Adds the build+run pair for one of the BeamableAPI .NET hosts (gateway / message-rail runtime /
 	/// campaign runtime): <c>dotnet build &lt;project&gt; -c Debug</c>, then the produced binary run from its
@@ -387,12 +474,13 @@ public static class LocalStackTemplate
 	///
 	/// Both steps come from one place on purpose: the build step declares the binary as its
 	/// <see cref="LocalStackStep.requiredOutput"/>, so <c>up</c> builds it when it is missing even without
-	/// <c>--build</c> — and that path can never drift from the path the run step actually launches.
+	/// <c>:build</c> — and that path can never drift from the path the run step actually launches.
 	/// <paramref name="aspnetUrls"/> is null for the gateway, which takes the ASPNETCORE_URLS default; the
 	/// workers each bind a port of their own so all three can coexist.
 	/// </summary>
+	/// <paramref name="needs"/> are what the host calls besides the docker deps (see <see cref="LocalStackStep.dependsOn"/>).
 	private static void AddDotnetHost(LocalStackConfig config, string apiDir, string label, string project,
-		string healthUrl, string aspnetUrls)
+		string healthUrl, string aspnetUrls, params string[] needs)
 	{
 		var outDir = Path.Combine(apiDir, project, "bin", "Debug", DotnetHostTfm);
 		config.steps.Add(new LocalStackStep
@@ -407,6 +495,7 @@ public static class LocalStackTemplate
 			build = true,
 			// The apphost `dotnet build` produces: <project>.exe on Windows, an extension-less binary elsewhere.
 			requiredOutput = Path.Combine(outDir, OperatingSystem.IsWindows() ? project + ".exe" : project),
+			inputs = CSharpHostInputs(),
 			waitForExit = true,
 			readyTimeoutSeconds = 300
 		});
@@ -420,6 +509,8 @@ public static class LocalStackTemplate
 		config.steps.Add(new LocalStackStep
 		{
 			name = label,
+			// Mongo and ActiveMQ come from the docker deps. (Its build comes with it on its own.)
+			dependsOn = new[] { LocalStackDependencies.ApiDepsStep }.Concat(needs).ToList(),
 			workingDirectory = outDir,
 			command = OperatingSystem.IsWindows() ? project + ".exe" : "./" + project,
 			environment = environment,
@@ -464,10 +555,7 @@ public static class LocalStackTemplate
 
 		var config = new LocalStackConfig
 		{
-			host = o.host, portalUrl = o.portalUrl, javaHome = o.javaHome, toolchain = o.toolchain,
-			// The standing web-registry choice. Only recorded when the steps exist to be run: a manifest
-			// without them would otherwise claim a choice that has nothing to act on.
-			webRegistry = o.includeWebRegistry ? o.webRegistry : null
+			host = o.host, portalUrl = o.portalUrl, javaHome = o.javaHome, toolchain = o.toolchain
 		};
 
 		// Documentation-only metadata, recorded so the generated agent skill can name the repos this manifest
@@ -483,11 +571,9 @@ public static class LocalStackTemplate
 			productDir = o.includeWebRegistry ? Dir(WebProductDir(o.webRegistryDir), "BeamableProduct (web packages repo)") : null,
 		};
 
-		// 0. Local web package registry. Always written by `beam local init`; whether it RUNS is the
-		//    `webRegistry` choice above (see LocalStackUpCommand.ResolveNoWebRegistry). Placed first
-		//    because `build: portal deps` and the portal extension steps below run npm installs that may
-		//    need to resolve locally published @beamable packages from it. Independent of everything else
-		//    and fast to come up, so it costs nothing to have early.
+		// 0. Local web package registry. Always written by `beam local setup`; a stack runs it through the
+		//    `web-registry` tag (the `:web` variant). Independent of everything else and fast to come up, so it
+		//    costs nothing to have early, and web: publish below needs it.
 		if (o.includeWebRegistry)
 		{
 			config.steps.Add(new LocalStackStep
@@ -524,16 +610,20 @@ public static class LocalStackTemplate
 			waitForExit = true,
 			readyTimeoutSeconds = 300
 		});
-		// The C# gateway. Its build step declares the binary as its requiredOutput, so `beam local up` builds
-		// it when it is missing even without --build (see AddDotnetHost).
-		AddDotnetHost(config, apiDir, "c# gateway", "BeamableGateway", o.gatewayUrl, aspnetUrls: null);
+		// The C# gateway. Its build step declares the binary as its requiredOutput, so `beam local run` builds
+		// it when it is missing even without :build (see AddDotnetHost).
+		// It logs players in through the Scala login services, and per request calls content (the manifest cache),
+		// messaging (email), notification, session (the websocket heartbeat) and stats, all through the Scala gateway.
+		AddDotnetHost(config, apiDir, "c# gateway", "BeamableGateway", o.gatewayUrl, aspnetUrls: null,
+			LocalStackDependencies.LoginServicesTag, ScalaForCSharpTag);
 
 		// The message-rail runtime — a dedicated backend worker (sibling to the gateway) that drains the
 		// message-rail Mongo staging and delivers to the last-mile federations. Without it, message-rail
 		// sends stage but never deliver. Modeled on the gateway steps; run as a binary with an explicit
 		// ASPNETCORE_URLS so it doesn't collide with the gateway's :5000.
+		// Delivers to the rail microservices through the Scala gateway.
 		AddDotnetHost(config, apiDir, "c# message rail runtime", "BeamableMessageRailRuntime",
-			o.messageRailUrl, o.messageRailUrl);
+			o.messageRailUrl, o.messageRailUrl, ScalaGatewayStep);
 
 		// The campaign runtime — the worker that actually *runs* campaigns. The gateway only authors them
 		// (validate, store the graph, write the directory row); enrolling the entry segment, walking each
@@ -543,8 +633,9 @@ public static class LocalStackTemplate
 		// thing you have to know to start. Same shape as the message-rail runtime: joins the actor cluster
 		// as a Member (so it needs Mongo + ActiveMQ from the docker step above), run as a binary with its
 		// own ASPNETCORE_URLS, ready on /health.
+		// Grants offers through the Scala gateway, and hands its sends to the message rail runtime.
 		AddDotnetHost(config, apiDir, "c# campaign runtime", "BeamableCampaignRuntime",
-			o.campaignRuntimeUrl, o.campaignRuntimeUrl);
+			o.campaignRuntimeUrl, o.campaignRuntimeUrl, ScalaGatewayStep, "c# message rail runtime");
 
 		// The segmentation runtime — the sole owner of the two reconciliation cadences: the hourly expiry pass
 		// and the nightly full sweep (SegmentSweepHost). The gateway only evaluates segments in reaction to a
@@ -555,8 +646,10 @@ public static class LocalStackTemplate
 		// /reconcile — which looks like a broken number rather than a missing process. The scheduler cannot
 		// backstop it locally either (its dispatcher runs remotely and cannot call localhost back). Same shape
 		// as the workers above: cluster Member, own ASPNETCORE_URLS, ready on /health.
+		// Pushes "entered segment" notifications through the Scala gateway, and reads cluster state and presence from the
+		// actors the C# gateway hosts locally.
 		AddDotnetHost(config, apiDir, "c# segmentation runtime", "BeamableSegmentationRuntime",
-			o.segmentationRuntimeUrl, o.segmentationRuntimeUrl);
+			o.segmentationRuntimeUrl, o.segmentationRuntimeUrl, ScalaGatewayStep, "scala: notification", LocalStackDependencies.GatewayStep);
 
 		// The analytics loader — the competing consumer that drains the analytics event stream and lands it as
 		// Parquet in S3, which the gateway's commit timer then folds into the Iceberg tables Athena reads.
@@ -571,13 +664,14 @@ public static class LocalStackTemplate
 		// analytics roles — run `beam local setup --only aws` to check. Without them the host still starts and
 		// serves /health; it just logs AWS errors and lands nothing. To opt out entirely, set this step's
 		// "enabled": false in the manifest.
+		// Applies stat writes to the stats actors the C# gateway hosts locally.
 		AddDotnetHost(config, apiDir, "c# analytics loader", "BeamableAnalyticsLoader",
-			o.analyticsLoaderUrl, o.analyticsLoaderUrl);
+			o.analyticsLoaderUrl, o.analyticsLoaderUrl, LocalStackDependencies.GatewayStep);
 
 		// 2. Portal frontend (Vite dev server). Placed BEFORE the Scala group because it only serves the
 		//    frontend (the browser talks to the backend at runtime) — so it comes up in ~1s instead of waiting
 		//    behind the Scala services' readiness.
-		// Install the portal's node deps before `npm run dev` — only when `beam local up --build` is passed.
+		// Install the portal's node deps before `npm run dev` — only when `beam local run <stack>:build` is passed.
 		config.steps.Add(new LocalStackStep
 		{
 			name = "build: portal deps",
@@ -587,11 +681,12 @@ public static class LocalStackTemplate
 			command = NpmToken,
 			arguments = "install",
 			build = true,
-			// Declaring node_modules as the output makes `up` run this WITHOUT --build when it is missing — the
+			// Declaring node_modules as the output makes `run` build this WITHOUT :build when it is missing — the
 			// same self-heal the .NET hosts get. Otherwise a fresh clone launches the Vite step against a portal
 			// with no dependencies and dies with `Cannot find package 'vite'`, which reads as a broken portal
 			// rather than "npm install was never run here".
 			requiredOutput = Path.Combine(portalDir, "node_modules"),
+			inputs = PortalDepsInputs(),
 			waitForExit = true,
 			readyTimeoutSeconds = 600
 		});
@@ -611,7 +706,7 @@ public static class LocalStackTemplate
 		// from an empty cache is what keeps it from arising: the optimize pass that follows is the first
 		// one of the session, so nothing is holding a stale graph against it.
 		//
-		// Not a `build` step — this must run on EVERY `up`, not just `--build`. Cheap (an rm of a cache
+		// Not a `build` step — this must run on EVERY `up`, not just `:build`. Cheap (an rm of a cache
 		// directory) and a no-op when the directory is absent, which is the normal case on a fresh clone.
 		//
 		// UNCONDITIONAL, deliberately. It is tempting to skip the clear when neither of Vite's own
@@ -647,7 +742,8 @@ public static class LocalStackTemplate
 		});
 		config.steps.Add(new LocalStackStep
 		{
-			name = "portal frontend",
+			name = PortalFrontendStepName,
+			dependsOn = new List<string> { ViteCacheStepName },
 			workingDirectory = portalDir,
 			command = NpmToken,
 			arguments = "run dev",
@@ -672,7 +768,7 @@ public static class LocalStackTemplate
 			readyTimeoutSeconds = 120
 		});
 		// Compile `core` plus the selected Scala services so target/classes + jars exist before the JVMs
-		// launch — only when `beam local up --build` is passed.
+		// launch — only when `beam local run <stack>:build` is passed.
 		// Only hand Maven the folders its reactor knows about: one unregistered folder in `-pl` fails the
 		// whole build and rolls the stack back. An unreadable aggregator pom yields an empty set, which
 		// deliberately falls through to the old unfiltered list rather than building nothing.
@@ -710,10 +806,11 @@ public static class LocalStackTemplate
 				// the reactor build itself, and the fact that Maven picks its JDK from JAVA_HOME/PATH, so an
 				// unpinned mvn can compile Scala 2.11 sources under a JDK 17/21 it was never meant to see.
 				command = MavenToken,
-				// The modules this reactor build produces output for. `up` runs the step without --build when any
-				// of them has never been compiled, so a first `beam local up` on a fresh clone builds itself
+				// The modules this reactor build produces output for. `up` runs the step without :build when any
+				// of them has never been compiled, so a first `beam local run` on a fresh clone builds itself
 				// instead of launching JVMs against empty target/classes.
 				scalaModules = new List<string>(modules),
+				inputs = ScalaInputs(),
 				// `clean` so a shared-module API change can't leave cross-module classes skewed (NoSuchMethodError).
 				// `install`, not `package` — this is what BeamableBackend's own README prescribes (`mvn install`), and
 				// the per-service launcher below depends on it: `dependency:build-classpath` resolves
@@ -724,13 +821,7 @@ public static class LocalStackTemplate
                 //    interval has elapsed"
 				// which then breaks every service launch. It works on a long-lived machine only because some
 				// earlier manual `mvn install` populated ~/.m2.
-				//
-				// `-U` (--update-snapshots) forces Maven to re-check remote for SNAPSHOTs even when
-				// `resolver-status.properties` says "recently checked", which is what invalidates the cached miss
-				// on a machine that has ALREADY been trapped by an older CLI whose `build: scala` ran `package`
-				// instead of `install` (so `core` was never installed to ~/.m2 and every subsequent resolve short-
-				// circuits on the cached 404). The upgraded CLI alone can't undo that history without `-U`.
-				arguments = $"-q -U -pl {string.Join(",", modules)} -am clean install -DskipTests",
+				arguments = $"-q -pl {string.Join(",", modules)} -am clean install -DskipTests",
 				// Scala runs under Java 8; ${java} is substituted to that JAVA_HOME by `up` (as for the launch shells).
 				environment = new Dictionary<string, string> { ["JAVA_HOME"] = "${java}" },
 				build = true,
@@ -760,6 +851,11 @@ public static class LocalStackTemplate
 			var step = new LocalStackStep
 			{
 				name = $"scala: {tool.name}",
+				// Mongo from the docker deps, Redis, dbflake's ids (except for dbflake itself), and the C# gateway the
+				// backend is reached through. (The reactor build comes with it on its own.)
+				dependsOn = new List<string> { LocalStackDependencies.ApiDepsStep, "scala: redis", LocalStackDependencies.GatewayStep }
+					.Concat(string.Equals(tool.name, ScalaDbidService, StringComparison.OrdinalIgnoreCase) ? Array.Empty<string>() : new[] { $"scala: {ScalaDbidService}" })
+					.ToList(),
 				// Grouped steps launch in parallel (they're independent backing services). dbflake is emitted
 				// ungrouped and first, so `up` has it ready before the group that depends on it starts.
 				group = grouped ? "scala" : null,
@@ -822,46 +918,12 @@ public static class LocalStackTemplate
 			config.steps.Add(ScalaStep(tool, grouped: true));
 		}
 
-		// 4. Local web packages — only under `--build`, and only when the web registry is part of this stack.
-		//    Publishes @beamable/sdk + @beamable/portal-toolkit as the local-dev version and refreshes the
-		//    projects that consume them, so the extension steps below build against what was just built.
-		//
-		//    Placed here, after the Scala group, for two reasons: `beam local up` runs EnsureRealmAndLogin
-		//    before the first `beam` step, and that authenticates through the Scala auth service — putting
-		//    these earlier would trigger a login against a backend that isn't up yet. And extensions must be
-		//    refreshed before `project run` builds them, which happens immediately below.
-		//
-		//    Paths go in workingDirectory, never in arguments: the runner splits arguments on whitespace with
-		//    no quote handling, so a path containing a space would be torn into separate argv entries. Both
-		//    commands default to their working directory, so nothing is lost.
+		// 4. Local web packages, run by a stack that asks for the `web-registry` tag (the `:web` variant runs them
+		//    before the stack, and the watch after it): build @beamable/sdk and @beamable/portal-toolkit where they
+		//    changed, publish them to the local registry, and point the extensions below at them. Nothing is
+		//    written to a tracked file (see WebPackagesService).
 		if (o.includeWebRegistry)
-		{
-			var productDir = Dir(WebProductDir(o.webRegistryDir), "BeamableProduct (web packages repo)");
-
-			config.steps.Add(new LocalStackStep
-			{
-				name = WebPublishStepName,
-				workingDirectory = productDir,
-				beam = true,
-				arguments = "web publish",
-				build = true,
-				waitForExit = true,
-				// Two tsdown builds plus two publishes; generous, and a non-zero exit aborts the stack rather
-				// than letting extensions build against a stale toolkit.
-				readyTimeoutSeconds = 900
-			});
-			config.steps.Add(new LocalStackStep
-			{
-				name = WebRefreshStepName,
-				// The repo holding the extensions to repoint — the same one the portal frontend runs from.
-				workingDirectory = portalDir,
-				beam = true,
-				arguments = "web use",
-				build = true,
-				waitForExit = true,
-				readyTimeoutSeconds = 600
-			});
-		}
+			config.steps.AddRange(WebPackageSteps());
 
 		// 5. Microservices — via the current beam CLI (exe auto-resolved). After Scala so the backend they
 		//    call is up.
@@ -884,43 +946,43 @@ public static class LocalStackTemplate
 	/// is exactly one, and the "update services" flow leaves it alone because it matches none of the
 	/// microservice/extension/group prefixes below.
 	/// </summary>
-	public const string WebRegistryStepName = "docker: web registry";
+	public const string WebRegistryStepName = "web: registry";
 
 	/// <summary>Readiness probe for <see cref="WebRegistryStepName"/> — Verdaccio's default address.</summary>
 	public const string WebRegistryReadyUrl = "http://localhost:4873";
 
 	/// <summary>
 	/// Name of the step that drops Vite's dep-optimizer cache before the portal dev server starts. Named,
-	/// not inlined, so <c>beam local up --skip</c> can address it and the tests can assert its placement.
+	/// not inlined, so a stack's <c>exclude</c> can address it and the tests can assert its placement.
 	/// Deliberately avoids the microservice/extension/group prefixes below, so
-	/// <c>beam local init --update-services</c> leaves it alone.
+	/// <c>beam local setup --update-services</c> leaves it alone.
 	/// </summary>
 	public const string ViteCacheStepName = "portal: clear vite cache";
 
 	/// <summary>
-	/// Names of the optional web-package steps. Like <see cref="WebRegistryStepName"/> these deliberately
-	/// avoid the microservice/extension/group prefixes below, so <c>beam local init --update-services</c>
-	/// leaves them alone.
+	/// Names of the local web package steps. Like <see cref="WebRegistryStepName"/> they avoid the
+	/// microservice/extension/group prefixes below, so <c>beam local setup --update-services</c> leaves them alone.
 	/// </summary>
-	public const string WebPublishStepName = "build: web packages";
+	public const string WebBuildStepName = "web: build";
 
-	/// <inheritdoc cref="WebPublishStepName"/>
-	public const string WebRefreshStepName = "build: web extension pins";
+	/// <inheritdoc cref="WebBuildStepName"/>
+	public const string WebPublishStepName = "web: publish";
+
+	/// <inheritdoc cref="WebBuildStepName"/>
+	public const string WebInstallStepName = "web: install";
+
+	/// <inheritdoc cref="WebBuildStepName"/>
+	public const string WebWatchStepName = "web: watch";
 
 	/// <summary>
-	/// True when <paramref name="name"/> is one of the three local web-registry steps. Both
-	/// <see cref="WebPublishStepName"/> and <see cref="WebRefreshStepName"/> are build steps with no
-	/// <c>requiredOutput</c>, so <c>beam local up</c> cannot self-heal them the way it does a missing binary —
-	/// <c>--with-web-registry</c> uses this to opt them in explicitly.
+	/// True when <paramref name="name"/> is one of the local web package steps. They need no login, so <c>run</c>
+	/// uses this to keep them from triggering the realm check.
 	/// </summary>
-	public static bool IsWebStep(string name) =>
-		string.Equals(name, WebRegistryStepName, StringComparison.OrdinalIgnoreCase)
-		|| string.Equals(name, WebPublishStepName, StringComparison.OrdinalIgnoreCase)
-		|| string.Equals(name, WebRefreshStepName, StringComparison.OrdinalIgnoreCase);
+	public static bool IsWebStep(string name) => (name ?? string.Empty).StartsWith("web:", StringComparison.OrdinalIgnoreCase);
 
 	/// <summary>
 	/// The product repo holding <c>web/</c> and <c>beam-portal-toolkit/</c>, derived from the
-	/// <c>portal-localdev</c> path so <c>beam local init</c> needs no extra option for it.
+	/// <c>portal-localdev</c> path so <c>beam local setup</c> needs no extra option for it.
 	/// </summary>
 	public static string WebProductDir(string webRegistryDir) =>
 		string.IsNullOrWhiteSpace(webRegistryDir) ? null : Path.GetDirectoryName(webRegistryDir);
@@ -937,11 +999,16 @@ public static class LocalStackTemplate
 	/// <summary>Builds the beam step that runs a microservice against the local backend.</summary>
 	public static LocalStackStep MicroserviceStep(string svc) => new LocalStackStep
 	{
-		// No workingDirectory: beam steps run from the .beamable workspace `beam local up` is
+		// No workingDirectory: beam steps run from the .beamable workspace `beam local run` is
 		// invoked in (set one explicitly here only if the service lives in a different workspace).
 		name = $"{MicroservicePrefix}{svc}",
 		beam = true,
 		arguments = $"project run --ids {svc} --host ${{host}} --logs v --no-log-file",
+		// Ready once it serves traffic, so the next one starts after it: `project run` builds first, and microservices
+		// built at the same time collide on the projects they share (CS2012 on a storage both reference).
+		readyWhenLogContains = Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX,
+		// A build and a start; the first one can restore every package.
+		readyTimeoutSeconds = 300,
 		// These launch LAST, as a burst of a dozen `beam project run` processes each doing its own
 		// restore/build, and a service that loses that scramble EXITS rather than hanging — which is the
 		// one condition `readyRetries` reliably catches (the hung path needs a `port`, and these declare
@@ -953,7 +1020,7 @@ public static class LocalStackTemplate
 	/// <summary>Builds the beam step that runs a portal extension, pointing its landing URL at the local portal.</summary>
 	public static LocalStackStep ExtensionStep(string ext) => new LocalStackStep
 	{
-		// No workingDirectory: runs from the .beamable workspace `beam local up` is invoked in.
+		// No workingDirectory: runs from the .beamable workspace `beam local run` is invoked in.
 		name = $"{ExtensionPrefix}{ext}",
 		beam = true,
 		arguments = $"project run --ids {ext} --host ${{host}} --portal-url ${{portalUrl}} --logs v --no-log-file",
@@ -996,11 +1063,11 @@ public static class LocalStackTemplate
 			// `core`, and a freshly built core against day-old tools/* classes makes every other service die
 			// with `NoSuchMethodError: com.kickstand.core.RequestContext.copy(...)` the moment it handles a
 			// request — the whole stack proxies through gateway, so one stray -am build silently bricks it.
-			// Whole-reactor rebuilds belong to the `build: scala` step (`--build`), which keeps core and every
+			// Whole-reactor rebuilds belong to the `build: scala` step (`:build`), which keeps core and every
 			// tools/* module binary-consistent.
 			"CLASSES=\"tools/$SVC/target/classes\"; " +
 			"HAS_CLASSES=$(find \"$CLASSES\" -name '*.class' -print -quit 2>/dev/null); " +
-			"{ [ -n \"$HAS_CLASSES\" ] || [ -n \"$JAR\" ]; } || { echo \"beam: tools/$SVC has no compiled output (target/classes is empty and no jar) — re-run 'beam local up --build' to build the Scala reactor. Do NOT build this module alone with -am: that rebuilds core and breaks every other already-built service.\" >&2; exit 1; }; " +
+			"{ [ -n \"$HAS_CLASSES\" ] || [ -n \"$JAR\" ]; } || { echo \"beam: tools/$SVC has no compiled output (target/classes is empty and no jar) — run the stack with :build (beam local run <stack>:build) to build the Scala reactor. Do NOT build this module alone with -am: that rebuilds core and breaks every other already-built service.\" >&2; exit 1; }; " +
 			"CPF=\"${TMPDIR:-/tmp}/beam-scala-cp/cp-$SVC.txt\"; mkdir -p \"$(dirname \"$CPF\")\"; " +
 			// Rebuild the cached classpath when it is missing/empty OR older than core/pom.xml (so a dep newly
 			// added to core lands on it). `-am` builds `core` in the reactor and resolves its transitive deps
@@ -1019,7 +1086,7 @@ public static class LocalStackTemplate
 			"{ [ -s \"$CPF\" ] && [ \"$CPF\" -nt core/pom.xml ]; } || JAVA_HOME=\"$JHOME\" \"" + MavenToken + "\" -q -o -pl tools/$SVC -am dependency:build-classpath -Dmdep.outputFile=\"$CPF\" || true; " +
 			// An empty cache means the mvn above failed. Launching anyway starts a JVM with only the module's own
 			// classes on the classpath, which dies deep in classloading — say what actually went wrong instead.
-			"[ -s \"$CPF\" ] || { echo \"beam: classpath cache $CPF is empty — offline 'mvn dependency:build-classpath' failed for tools/$SVC. The usual cause is that com.kickstand:core is not in your local Maven repository (~/.m2/repository/com/kickstand/core/1.0-SNAPSHOT/). Fix: (1) run 'beam local up --build' (the reactor uses -U and 'mvn install', which invalidates any cached miss and writes core to ~/.m2). If that ALSO fails, (2) delete ~/.m2/repository/com/kickstand/ (locally-built artifacts only, safe to remove) and re-run 'beam local up --build'. Second cause: Maven cannot resolve the 'dependency' plugin prefix OFFLINE (its plugin metadata was never cached) — '--build' does NOT fix that. Fix: run once online from this repo: mvn -U dependency:build-classpath -pl tools/$SVC ; then re-run 'beam local up'. If it still fails, delete ~/.m2/repository/org/apache/maven/plugins/maven-dependency-plugin/*/*.lastUpdated and retry.\" >&2; exit 1; }; " +
+			"[ -s \"$CPF\" ] || { echo \"beam: classpath cache $CPF is empty — offline 'mvn dependency:build-classpath' failed for tools/$SVC. The usual cause is that com.kickstand:core is not in your local Maven repository (~/.m2/repository/com/kickstand/core/1.0-SNAPSHOT/). Fix: (1) run 'beam local run <stack>:build' (the reactor uses -U and 'mvn install', which invalidates any cached miss and writes core to ~/.m2). If that ALSO fails, (2) delete ~/.m2/repository/com/kickstand/ (locally-built artifacts only, safe to remove) and re-run 'beam local run <stack>:build'. Second cause: Maven cannot resolve the 'dependency' plugin prefix OFFLINE (its plugin metadata was never cached) — ':build' does NOT fix that. Fix: run once online from this repo: mvn -U dependency:build-classpath -pl tools/$SVC ; then re-run 'beam local run <stack>'. If it still fails, delete ~/.m2/repository/org/apache/maven/plugins/maven-dependency-plugin/*/*.lastUpdated and retry.\" >&2; exit 1; }; " +
 			"CP=\"tools/$SVC/target/classes:core/target/classes:$JAR:$(cat \"$CPF\")\"; " +
 			// $JVM_ARGS unquoted on purpose: it must word-split into separate flags.
 			"exec \"$JHOME/bin/java\" $JVM_ARGS -cp \"$CP\" \"$MAIN\"";
@@ -1057,12 +1124,12 @@ public static class LocalStackTemplate
 			// `core`, and a freshly built core against day-old tools/* classes makes every other service die
 			// with `NoSuchMethodError: com.kickstand.core.RequestContext.copy(...)` the moment it handles a
 			// request — the whole stack proxies through gateway, so one stray -am build silently bricks it.
-			// Whole-reactor rebuilds belong to the `build: scala` step (`--build`), which keeps core and every
+			// Whole-reactor rebuilds belong to the `build: scala` step (`:build`), which keeps core and every
 			// tools/* module binary-consistent.
 			"$classes = \"tools/$svc/target/classes\"",
 			"$hasClasses = (Test-Path $classes) -and $null -ne (Get-ChildItem -Path $classes -Filter '*.class' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1)",
 			"if (-not $hasClasses -and -not $jar) {",
-			"  Write-Host \"beam: tools/$svc has no compiled output (target/classes is empty and no jar) - re-run 'beam local up --build' to build the Scala reactor. Do NOT build this module alone with -am: that rebuilds core and breaks every other already-built service.\"",
+			"  Write-Host \"beam: tools/$svc has no compiled output (target/classes is empty and no jar) - run the stack with :build (beam local run <stack>:build) to build the Scala reactor. Do NOT build this module alone with -am: that rebuilds core and breaks every other already-built service.\"",
 			"  exit 1 }",
 			"$cpf = Join-Path $env:TEMP \"beam-scala-cp/cp-$svc.txt\"",
 			"New-Item -ItemType Directory -Force -Path (Split-Path $cpf) | Out-Null",
@@ -1084,7 +1151,7 @@ public static class LocalStackTemplate
 			"$deps = ''",
 			"if (Test-Path $cpf) { $raw = Get-Content $cpf -Raw; if ($raw) { $deps = $raw.Trim() } }",
 			"if (-not $deps) {",
-			"  Write-Host \"beam: classpath cache $cpf is empty - offline 'mvn dependency:build-classpath' failed for tools/$svc. The usual cause is that com.kickstand:core is not in your local Maven repository ($env:USERPROFILE\\.m2\\repository\\com\\kickstand\\core\\1.0-SNAPSHOT\\). Fix: (1) run 'beam local up --build' (the reactor uses -U and 'mvn install', which invalidates any cached miss and writes core to ~/.m2). If that ALSO fails, (2) delete $env:USERPROFILE\\.m2\\repository\\com\\kickstand\\ (locally-built artifacts only, safe to remove) and re-run 'beam local up --build'. Second cause: Maven cannot resolve the 'dependency' plugin prefix OFFLINE (its plugin metadata was never cached) - '--build' does NOT fix that. Fix: run once online from this repo: mvn -U dependency:build-classpath -pl tools/$svc ; then re-run 'beam local up'. If it still fails, delete $env:USERPROFILE\\.m2\\repository\\org\\apache\\maven\\plugins\\maven-dependency-plugin\\*\\*.lastUpdated and retry.\"",
+			"  Write-Host \"beam: classpath cache $cpf is empty - offline 'mvn dependency:build-classpath' failed for tools/$svc. The usual cause is that com.kickstand:core is not in your local Maven repository ($env:USERPROFILE\\.m2\\repository\\com\\kickstand\\core\\1.0-SNAPSHOT\\). Fix: (1) run 'beam local run <stack>:build' (the reactor uses -U and 'mvn install', which invalidates any cached miss and writes core to ~/.m2). If that ALSO fails, (2) delete $env:USERPROFILE\\.m2\\repository\\com\\kickstand\\ (locally-built artifacts only, safe to remove) and re-run 'beam local run <stack>:build'. Second cause: Maven cannot resolve the 'dependency' plugin prefix OFFLINE (its plugin metadata was never cached) - ':build' does NOT fix that. Fix: run once online from this repo: mvn -U dependency:build-classpath -pl tools/$svc ; then re-run 'beam local run <stack>'. If it still fails, delete $env:USERPROFILE\\.m2\\repository\\org\\apache\\maven\\plugins\\maven-dependency-plugin\\*\\*.lastUpdated and retry.\"",
 			"  exit 1 }",
 			"$cp = \"tools/$svc/target/classes;core/target/classes;$jar;\" + $deps",
 			"& \"$jhome\\bin\\java.exe\" @jvmArgs -cp $cp $main",

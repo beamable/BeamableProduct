@@ -1,3 +1,4 @@
+using Beamable.Common.BeamCli;
 using Beamable.Server;
 using cli.Services.LocalStack;
 using cli.Services.Web;
@@ -6,31 +7,32 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using CliWrap;
+using Microsoft.Extensions.Logging;
+using Spectre.Console;
 using ServiceLogs = Beamable.Common.Constants.Features.Services.Logs;
 
 namespace cli.Commands.LocalStack;
 
-public class LocalStackUpCommandArgs : CommandArgs
+public class LocalStackRunCommandArgs : CommandArgs
 {
-	public string configPath;
+	/// <summary>The stack to start, as <c>&lt;stack&gt;[:variant…]</c>. Null lists the stacks instead.</summary>
+	public string stack;
+
+	/// <summary>Print what would run and check what it needs, starting nothing.</summary>
+	public bool dryRun;
+
 	public string host;
 	public string portalUrl;
-	public string only;
-	public string skip;
 	public bool runDetached;
-	public bool build;
-
-	/// <summary>
-	/// This run's web-registry override, from <c>--with-web-registry[=true|false]</c>, or null when the flag
-	/// was not passed — where the standing choice <c>beam local init</c> recorded in the manifest decides.
-	///
-	/// Nullable because there are THREE outcomes to represent, not two: force on, force off, and defer to the
-	/// manifest. A plain <c>bool</c> cannot tell "passed false" from "not passed", so the manifest's choice
-	/// could never be the default. See <see cref="LocalStackUpCommand.ResolveNoWebRegistry"/>.
-	/// </summary>
-	public bool? webRegistry;
 	public bool saveLogs;
+
+	/// <summary>Stream every step's own output instead of the progress board.</summary>
+	public bool verbose;
 	public bool noCreateRealm;
+
+	/// <summary>Runs against a target that asks before every run (prod) without asking, for scripts and agents.</summary>
+	public bool confirmTarget;
 	public string realmCustomer;
 	public string realmProject;
 	public string realmEmail;
@@ -38,7 +40,7 @@ public class LocalStackUpCommandArgs : CommandArgs
 	public string realmPassword;
 }
 
-public class LocalStackUpResultStream
+public class LocalStackRunResultStream
 {
 	/// <summary>The step this update is about (empty for stack-level messages).</summary>
 	public string step;
@@ -51,70 +53,184 @@ public class LocalStackUpResultStream
 
 	/// <summary>0..1 across the whole bring-up.</summary>
 	public float progressRatio;
+
+	/// <summary>The step's readable name, as the board shows it.</summary>
+	public string label;
+
+	/// <summary>The step's row on the board after this update: Waiting, Building, Starting, Restarting, Ready, Running,
+	/// Degraded, Done or Failed (see <see cref="LocalStackStepState"/>).</summary>
+	public string state;
+
+	/// <summary>Seconds since the step started, up to when it settled.</summary>
+	public int elapsedSeconds;
+}
+
+public class LocalStackRunListingChannel : IResultChannel
+{
+	public string ChannelName => "stacks";
+}
+
+/// <summary>What a bare <c>beam local run</c> lists, as data for a piped caller.</summary>
+public class LocalStackRunListing
+{
+	public List<LocalStackRunListedStack> stacks = new List<LocalStackRunListedStack>();
+
+	/// <summary>The variants every stack has, such as <c>build</c> and <c>web</c>.</summary>
+	public List<string> builtInVariants = new List<string>();
+
+	/// <summary>The backends a stack can run against; each is also a variant (<c>:dev</c>).</summary>
+	public List<string> targets = new List<string>();
+}
+
+public class LocalStackRunListedStack
+{
+	public string name;
+	public string description;
+
+	/// <summary>built-in, shared or local: the layer that defines it first.</summary>
+	public string layer;
+
+	/// <summary>The backend it runs against unless a variant names another.</summary>
+	public string target;
+
+	public List<string> changedBy = new List<string>();
+	public List<LocalStackRunListedVariant> variants = new List<LocalStackRunListedVariant>();
+}
+
+public class LocalStackRunListedVariant
+{
+	public string name;
+	public string description;
+	public string layer;
+}
+
+public class LocalStackDryRunChannel : IResultChannel
+{
+	public string ChannelName => "dryRun";
+}
+
+/// <summary>What <c>--dry-run</c> prints, as data for a piped caller.</summary>
+public class LocalStackDryRun
+{
+	public string stack;
+	public string description;
+	public List<LocalStackDryRunStep> steps = new List<LocalStackDryRunStep>();
+	public List<LocalStackDryRunVariable> variables = new List<LocalStackDryRunVariable>();
+	public List<LocalStackDependencyCheck> checks = new List<LocalStackDependencyCheck>();
+}
+
+public class LocalStackDryRunStep
+{
+	public string name;
+	public string label;
+
+	/// <summary>What happens to it: starts, runs once, builds, or why it is skipped.</summary>
+	public string runs;
+
+	/// <summary>False when the run skips it.</summary>
+	public bool selected;
+
+	public int port;
+	public string folder;
+}
+
+public class LocalStackDryRunVariable
+{
+	public string name;
+	public string value;
+	public string source;
 }
 
 /// <summary>
-/// Brings up every enabled step in the manifest in order, waiting for each readiness gate and streaming
-/// progress. Long-running services are launched <b>detached</b> (their stdout/stderr redirected to per-step
-/// log files) and recorded in a run-state file, so they survive this command returning — like
-/// <c>docker compose up -d</c>. Use <c>beam local ps</c> / <c>logs</c> / <c>stop</c> to manage them, or pass
-/// <c>--attach</c> to tail the logs in the foreground (Ctrl+C detaches; the stack keeps running).
+/// Starts a stack: <c>beam local run &lt;stack&gt;[:variant…]</c>, like <c>npm run</c>. The name alone decides what
+/// runs (see <see cref="LocalStackStacks"/>); a bare <c>beam local run</c> lists the stacks. Before starting, it
+/// creates the settings file when there is none, checks what the stack needs and runs the parts of
+/// <c>beam local setup</c> that are missing; <c>--dry-run</c> prints the steps and those checks and stops there.
+///
+/// Every resolved step comes up in order, waiting for each readiness gate. In a terminal a progress board shows one
+/// row per step (see <see cref="LocalStackBoard"/>); without one, each state change is one line; piped as data, the
+/// result stream carries the states. <c>--verbose</c> streams every step's own output instead. Each step's output
+/// also goes to a log file for the run. Attached by default: the stack stops with the command (Ctrl+C). <c>--detach</c> launches long-running
+/// services with their output in per-step log files and records them in a run-state file, so they survive this
+/// command returning — like <c>docker compose up -d</c>. Use <c>beam local ps</c> / <c>logs</c> / <c>stop</c> to
+/// manage them.
 /// </summary>
-public class LocalStackUpCommand
-	: StreamCommand<LocalStackUpCommandArgs, LocalStackUpResultStream>
+public class LocalStackRunCommand
+	: StreamCommand<LocalStackRunCommandArgs, LocalStackRunResultStream>
+	, IResultSteam<LocalStackRunListingChannel, LocalStackRunListing>
+	, IResultSteam<LocalStackDryRunChannel, LocalStackDryRun>
 	, IStandaloneCommand, ISkipManifest
 {
 	private readonly object _launchedLock = new object();
 
-	public LocalStackUpCommand() : base("up", "Bring up the local stack from the manifest and tail it (use --detach to return immediately)")
+	/// <summary>The board for this run; null before the first step launches.</summary>
+	private LocalStackBoard _board;
+
+	private bool _attached;
+	private bool _verbose;
+
+	// What each build step compiled when it last built, and where that is saved. Compared on the next run so a build
+	// runs when its sources changed, rather than only when its output is missing or :build rebuilds everything.
+	private LocalStackBuildState _builds;
+	private string _buildsPath;
+
+	// The stack's target login: handed to its beam steps as environment overrides, so running a stack against a
+	// backend never rewrites the workspace's .beamable config that every other beam command uses. Null until known: a
+	// remote target's before anything starts, the local realm's once the backend is up.
+	private LocalStackTargetLogin _targetLogin;
+
+	// The target's name, which its login is saved under: local and lan reach the same realm, each from its own address.
+	private string _targetName = LocalStackTargets.Local;
+
+	/// <summary>True when this run points the extensions at the local web packages, and the portal loads them too.</summary>
+	private bool _localWebPackages;
+
+	/// <summary>
+	/// Why there is no working login to the local realm, or null when there is one. Beam steps don't start without it:
+	/// they fell back to the workspace's own login, and with that one's refresh token rejected, every microservice and
+	/// extension retried it many times a second until the gateway stopped answering.
+	/// </summary>
+	private string _noLogin;
+
+	/// <summary>True for a step that logs in to the stack's backend: a beam step other than the web packages.</summary>
+	private static bool NeedsLogin(LocalStackStep step) => step.beam && !LocalStackTemplate.IsWebStep(step.name);
+	private string _workspaceRoot;
+
+	/// <summary>True when the board prints (a terminal, or lines without one): failures are on the board, not warned twice.</summary>
+	private bool Showing => _board != null && _board.Mode != LocalStackBoardMode.Silent;
+
+	// The steps that ran to completion and failed (or couldn't start), with why. A failed step doesn't stop the stack:
+	// the steps that need it are skipped, and the rest carry on.
+	private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _failed =
+		new System.Collections.Concurrent.ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+	public LocalStackRunCommand() : base("run", "Start a local stack by name, like `npm run`: `beam local run` lists the stacks, `beam local run <stack>[:variant...]` starts one")
 	{
 	}
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("--config", "Path to the manifest (defaults to .beamable/local-stack.json)"),
-			(args, v) => args.configPath = v);
-		AddOption(new Option<string>("--host", "Override the manifest backend host"),
+		AddArgument(new Argument<string>("stack", () => null, "The stack to start, with variants applied left to right: <stack>[:<variant>...]. Leave it out to list the stacks and their variants"),
+			(args, v) => args.stack = v);
+		AddOption(new Option<bool>("--dry-run", "Print the resolved steps, their folders and ports, the variables they use and the checks for what the stack needs, then stop without starting anything"),
+			(args, v) => args.dryRun = v);
+		AddOption(new Option<string>("--host", "Override the settings' backend host"),
 			(args, v) => args.host = v);
-		AddOption(new Option<string>("--portal-url", "Override the manifest portal URL"),
+		AddOption(new Option<string>("--portal-url", "Override the settings' portal URL"),
 			(args, v) => args.portalUrl = v);
-		AddOption(new Option<string>("--only", "Run only these steps (comma/space separated names)"),
-			(args, v) => args.only = v);
-		AddOption(new Option<string>("--skip", "Skip these steps (comma/space separated names)"),
-			(args, v) => args.skip = v);
-		var detach = new Option<bool>("--run-detached", "Run the stack detached: services keep running after `up` returns; manage with `beam local ps`/`logs`/`stop`. Default runs attached — logs stream live and the stack stops when `up` exits (Ctrl+C)");
-		detach.AddAlias("--detach");
+		var detach = new Option<bool>("--detach", "Return the prompt and keep the stack running; manage it with `beam local ps`/`logs`/`stop`. Default runs attached: the progress board shows while it starts, and the stack stops when `run` exits (Ctrl+C)");
 		detach.AddAlias("-d");
 		AddOption(detach, (args, v) => args.runDetached = v);
 
-		AddOption(new Option<bool>("--build", "Rebuild the C# hosts, Scala services, and portal deps before launching (a manifest that declares a build output also builds that step on its own when the output is missing; microservices/extensions always build via project run)"),
-			(args, v) => args.build = v);
-
-		// Whether the web-registry steps run is the standing choice `beam local init` recorded in the manifest
-		// (`webRegistry`). This flag overrides it for a single run and never writes back — the point is that
-		// nobody has to remember a flag on every `up`. Skipping the steps leaves the portal's extensions pinned
-		// at a published toolkit, which silently resolves their SDK from unpkg instead of the local build, so a
-		// plain `up` that "succeeded" could still be running the wrong code.
-		//
-		// It takes an OPTIONAL VALUE (`--with-web-registry`, `--with-web-registry=false`,
-		// `--with-web-registry true`), which is what lets ONE flag express both answers. Only a flag actually
-		// written on the command line writes to args: an absent flag has to leave the manifest in charge, and a
-		// binder cannot tell "absent" from "--with-web-registry false" by value alone, since it receives
-		// default(bool) either way.
-		var withWebRegistry = new Option<bool>("--with-web-registry", "Run the local web-registry steps for this run whatever `beam local init` chose, or skip them with --with-web-registry=false (skipping is the fast path, but the portal then runs against the PUBLISHED web SDK rather than your local build)");
-		AddOption(withWebRegistry, (args, ctx, v) =>
-		{
-			if (LocalStackCommand.WasSupplied(ctx, withWebRegistry))
-			{
-				args.webRegistry = v;
-			}
-		});
-
 		AddOption(new Option<bool>("--save-logs", "Persist per-run logs under the workspace (.beamable/local-stack-logs/run-<id>); without it logs go to a temp folder and are removed on `beam local stop`"),
 			(args, v) => args.saveLogs = v);
+		AddOption(new Option<bool>("--verbose", "Stream every step's own output, prefixed with the step name, instead of the progress board"),
+			(args, v) => args.verbose = v);
 
-		AddOption(new Option<bool>("--no-create-realm", "Do not auto-create a local realm when the saved login is invalid — just warn (by default `up` creates one after a docker cleanup)"),
+		AddOption(new Option<bool>("--no-create-realm", "Do not auto-create a local realm when the saved login is invalid — just warn (by default `run` creates one after a docker cleanup)"),
 			(args, v) => args.noCreateRealm = v);
+		AddOption(new Option<bool>("--confirm-target", "Run against a backend that asks first (prod) without asking; required without a terminal"),
+			(args, v) => args.confirmTarget = v);
 		AddOption(new Option<string>("--realm-customer", () => "beam", "Customer name to use when creating the local realm"),
 			(args, v) => args.realmCustomer = v);
 		AddOption(new Option<string>("--realm-project", () => "beam-project", "Project name to use when creating the local realm"),
@@ -128,113 +244,79 @@ public class LocalStackUpCommand
 	}
 
 	/// <summary>
-	/// The local registry only helps if the portal's extensions actually PIN the local build: the portal reads
-	/// each extension's built <c>ToolkitVersion</c>, and for a published version it resolves the sdk from
-	/// unpkg rather than the local CDN — so a stale pin silently runs against the published sdk and any API
-	/// that only exists in the local build fails at runtime as "not a function". Bringing the registry up
-	/// without refreshing the pins is a valid thing to do, so this warns rather than throwing.
+	/// Which of a resolved stack's steps this run starts. Every non-build step runs. A build step runs when the
+	/// name forces builds (<c>:build</c>), when it asks for that step outright (by name, by the <c>build</c> or
+	/// <c>web-registry</c> tag, or through a variant), or when the step's output is missing.
+	///
+	/// Pure so the gate is testable: a step silently NOT selected is the failure mode this guards — the web steps
+	/// used to be skipped on a run that still reported success, leaving the portal on a published toolkit pin.
 	/// </summary>
-	private static void WarnOnStaleExtensionPins(LocalStackConfig config, List<LocalStackStep> steps, bool noWebRegistry)
-	{
-		// Nothing to say to someone who has deliberately turned the registry off — the pins are then supposed
-		// to be published versions. The steps are in every generated manifest now, so their mere presence is
-		// no longer evidence that this stack wants the local registry.
-		if (noWebRegistry)
-		{
-			return;
-		}
-
-		// Only meaningful for a stack that uses the local registry at all.
-		if (!config.steps.Any(s => s.enabled && s.name == LocalStackTemplate.WebRegistryStepName))
-		{
-			return;
-		}
-
-		// If the refresh step is running, it is about to fix the pins — nothing to warn about.
-		if (steps.Any(s => s.name == LocalStackTemplate.WebRefreshStepName))
-		{
-			return;
-		}
-
-		var refresh = config.steps.FirstOrDefault(s => s.name == LocalStackTemplate.WebRefreshStepName);
-		var portalDir = refresh?.workingDirectory;
-		if (string.IsNullOrWhiteSpace(portalDir) || !Directory.Exists(portalDir))
-		{
-			return;
-		}
-
-		var stale = WebLocalRegistryService.FindExtensionProjects(portalDir)
-			.Select(p => WebLocalRegistryService.ReadPinnedVersion(p.packageJsonPath, WebLocalRegistryService.ToolkitPackage))
-			.Where(v => !string.IsNullOrWhiteSpace(v) && !WebLocalRegistryService.IsLocalDevVersion(v))
+	/// <param name="autoBuild">Build steps whose declared output is missing, so they build anyway.</param>
+	public static List<LocalStackStep> SelectSteps(LocalStackResolvedStack resolved, HashSet<LocalStackStep> autoBuild) =>
+		resolved.steps
+			.Where(s => !s.build || resolved.forceBuild || autoBuild.Contains(s) || resolved.requested.Contains(s))
 			.ToList();
 
-		if (stale.Count == 0)
+	/// <summary>
+	/// The build steps of <paramref name="steps"/> grouped into lanes, one per working folder, in stack order. The
+	/// lanes run side by side and each lane's builds one after another. Builds in one folder compile the same
+	/// projects: the C# hosts all build BeamableShared into the same obj/bin, and building them at once fails on
+	/// locked files (MSB3021). Builds in different repos share nothing, and running them one after another made a
+	/// full build wait for the sum of them, a cold Scala reactor build alone being ~15 minutes.
+	/// </summary>
+	public static List<List<LocalStackStep>> BuildLanes(IEnumerable<LocalStackStep> steps, LocalStackConfig config) =>
+		steps.Where(s => s.build)
+			.GroupBy(s => LaneOf(s, config), StringComparer.OrdinalIgnoreCase)
+			.Select(g => g.ToList())
+			.ToList();
+
+	private static string LaneOf(LocalStackStep step, LocalStackConfig config)
+	{
+		var dir = LocalStackConfigIO.Substitute(step.workingDirectory, config) ?? string.Empty;
+		try
 		{
-			return;
+			return Path.GetFullPath(string.IsNullOrWhiteSpace(dir) ? "." : dir).TrimEnd('/', '\\');
+		}
+		catch (Exception)
+		{
+			return dir;
+		}
+	}
+
+	/// <summary>
+	/// Runs <paramref name="run"/> for each build of <paramref name="lanes"/>: the lanes side by side, each lane's
+	/// builds in order. Returns each build's task. When <paramref name="run"/> throws, the builds after it in its lane
+	/// fail the same way without running. (A build that fails doesn't throw: it is marked failed and the next one runs.)
+	/// </summary>
+	public static Dictionary<LocalStackStep, Task> RunInLanes(IEnumerable<List<LocalStackStep>> lanes, Func<LocalStackStep, Task> run)
+	{
+		var tasks = new Dictionary<LocalStackStep, Task>();
+		foreach (var lane in lanes)
+		{
+			var previous = Task.CompletedTask;
+			foreach (var build in lane)
+			{
+				previous = After(previous, build);
+				tasks[build] = previous;
+			}
 		}
 
-		var versions = string.Join(", ", stale.Distinct().OrderBy(v => v));
-		Log.Warning(
-			$"{stale.Count} extension(s) under [{portalDir}] still pin {WebLocalRegistryService.ToolkitPackage}@{versions} "
-			+ $"instead of the local build {WebLocalRegistryService.LocalDevVersion}, so the portal will load the published "
-			+ "sdk from unpkg and any API that only exists in your local build will fail at runtime. Re-run with "
-			+ $"`--with-web-registry` (or `beam web use --workspace {portalDir}`).");
+		return tasks;
+
+		async Task After(Task previous, LocalStackStep build)
+		{
+			await previous;
+			// Off the caller, so starting one lane's process never holds up the next lane.
+			await Task.Yield();
+			await run(build);
+		}
 	}
 
 	/// <summary>
-	/// Whether this run skips the web-registry steps: the flag for this run if one was passed, otherwise the
-	/// standing choice <c>beam local init</c> recorded in <see cref="LocalStackConfig.webRegistry"/>.
-	///
-	/// A manifest with no choice recorded (null) runs them, which is what every manifest written before that
-	/// field did — so upgrading the CLI never silently turns the registry off underneath an existing workspace.
-	///
-	/// Pure so the precedence is testable without a stack: getting it wrong means either a flag that does
-	/// nothing or a bring-up that ignores what the user chose at <c>init</c>.
+	/// True for a build that has to wait for its place in the stack instead of starting with the run: one that runs a
+	/// beam command, which may need the steps before it.
 	/// </summary>
-	/// <param name="flag">The run override from the two flags, or null when neither was passed.</param>
-	public static bool ResolveNoWebRegistry(LocalStackConfig config, bool? flag) =>
-		!(flag ?? config?.webRegistry ?? true);
-
-	/// <summary>
-	/// The enabled web-registry steps, which run unless the resolved choice opts out. Empty when
-	/// <paramref name="noWebRegistry"/> is set, where <see cref="SelectSteps"/> excludes them outright rather
-	/// than merely leaving them un-forced.
-	/// </summary>
-	public static HashSet<LocalStackStep> ForcedWebSteps(LocalStackConfig config, bool noWebRegistry) =>
-		noWebRegistry
-			? new HashSet<LocalStackStep>()
-			: config.steps.Where(s => s.enabled && LocalStackTemplate.IsWebStep(s.name)).ToHashSet();
-
-	/// <summary>
-	/// Which steps this invocation runs. Pure so the gate is testable: a step silently NOT selected is the
-	/// failure mode this guards — the web steps used to be skipped on a plain <c>up</c> that still reported
-	/// success, leaving the portal on a published toolkit pin.
-	/// </summary>
-	/// <param name="autoBuild">Build steps whose declared output is missing, so they build without --build.</param>
-	/// <param name="forcedWeb">Web steps to run without --build, from <see cref="ForcedWebSteps"/>.</param>
-	/// <param name="noWebRegistry">Opt out: excludes every web step, including the non-build registry container.</param>
-	public static List<LocalStackStep> SelectSteps(
-		LocalStackConfig config,
-		bool build,
-		HashSet<LocalStackStep> autoBuild,
-		HashSet<LocalStackStep> forcedWeb,
-		HashSet<string> only,
-		HashSet<string> skip,
-		bool noWebRegistry = false)
-	{
-		bool Included(LocalStackStep s) =>
-			s.enabled
-			// Opting out drops all three web steps. `docker: web registry` is not a build step, so without
-			// this it would keep coming up and the opt-out would only be half-honoured.
-			&& !(noWebRegistry && LocalStackTemplate.IsWebStep(s.name))
-			// build steps run under --build, when their output is missing, when they are web steps (the
-			// default), or when --only asks for them by name — naming a step is already an explicit request.
-			&& (!s.build || build || autoBuild.Contains(s) || forcedWeb.Contains(s) || only?.Contains(s.name) == true)
-			&& (only == null || only.Contains(s.name))
-			&& (skip == null || !skip.Contains(s.name));
-
-		return config.steps.Where(Included).ToList();
-	}
+	public static bool WaitsForItsPlace(LocalStackStep build) => build.beam;
 
 	public static HashSet<string> NameSet(string value) =>
 		string.IsNullOrWhiteSpace(value)
@@ -243,133 +325,490 @@ public class LocalStackUpCommand
 			: value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 				.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-	public override async Task Handle(LocalStackUpCommandArgs args)
+	private static string LayerName(LocalStackLayer layer) => layer switch
 	{
-		var path = LocalStackCommand.ResolveManifestPath(args.ConfigService, args.configPath);
+		LocalStackLayer.BuiltIn => "built-in",
+		LocalStackLayer.Shared => "shared",
+		_ => "local"
+	};
+
+	/// <summary>The listing as data: what a piped <c>beam local run</c> sends on the <c>stacks</c> channel.</summary>
+	public static LocalStackRunListing Listing(LocalStackStacks stacks, LocalStackConfig config = null) => new LocalStackRunListing
+	{
+		targets = LocalStackTargets.Names(config),
+		stacks = stacks.List().Select(s => new LocalStackRunListedStack
+		{
+			name = s.name,
+			description = s.description,
+			layer = LayerName(s.layer),
+			target = s.target,
+			changedBy = s.changedBy.Select(LayerName).ToList(),
+			variants = s.variants.Select(v => new LocalStackRunListedVariant { name = v.name, description = v.description, layer = LayerName(v.layer) }).ToList()
+		}).ToList(),
+		builtInVariants = stacks.BuiltInVariants.Keys.ToList()
+	};
+
+	/// <summary>The listing a bare <c>beam local run</c> prints, like <c>npm run</c>: stacks by layer, each with its variants.</summary>
+	private static void PrintStacks(LocalStackStacks stacks, LocalStackConfig config)
+	{
+		var listing = stacks.List();
+		var width = listing.SelectMany(s => s.variants.Select(v => v.name.Length + 3).Append(s.name.Length + 1)).DefaultIfEmpty(10).Max() + 2;
+
+		LocalStackStyle.H1("Stacks", "beam local run <stack>[:variant...]");
+		foreach (var layer in listing.Select(s => s.layer).Distinct())
+		{
+			LocalStackStyle.H2(layer switch { LocalStackLayer.BuiltIn => "Built in", LocalStackLayer.Shared => "Shared with the team", _ => "Yours" },
+				LayerName(layer));
+			foreach (var stack in listing.Where(s => s.layer == layer))
+			{
+				var changed = stack.changedBy.Count == 0
+					? string.Empty
+					: $" [grey](changed in {string.Join(", ", stack.changedBy.Select(LayerName))})[/]";
+				var against = string.Equals(stack.target, LocalStackTargets.Local, StringComparison.OrdinalIgnoreCase)
+					? string.Empty
+					: $" [blue](against {Markup.Escape(stack.target)})[/]";
+				AnsiConsole.MarkupLine($"  [green]{Markup.Escape(stack.name.PadRight(width))}[/]{Markup.Escape(stack.description ?? string.Empty)}{against}{changed}");
+
+				foreach (var (name, description, variantLayer) in stack.variants)
+				{
+					var from = variantLayer > stack.layer ? $" [grey]({LayerName(variantLayer)})[/]" : string.Empty;
+					AnsiConsole.MarkupLine($"    {Markup.Escape((":" + name).PadRight(width - 2))}{Markup.Escape(description ?? string.Empty)}{from}");
+				}
+			}
+		}
+
+		AnsiConsole.MarkupLine($"[grey]every stack also has {string.Join(", ", stacks.BuiltInVariants.Keys.Select(k => ":" + k))}, and one variant per backend: "
+		                       + $"{string.Join(", ", LocalStackTargets.Names(config).Select(t => ":" + t))}[/]");
+		AnsiConsole.MarkupLine("[grey]start one with `beam local run <stack>[[:variant...]]`; `--dry-run` shows what it would run[/]");
+	}
+
+	/// <summary>
+	/// What <c>--dry-run</c> shows: each step in order with what will happen to it, its folder and port, then every
+	/// variable the steps use with its value and where the value comes from, then the checks.
+	/// </summary>
+	public static LocalStackDryRun DryRun(LocalStackResolvedStack resolved, List<LocalStackStep> selected, HashSet<LocalStackStep> autoBuild,
+		LocalStackConfig config, HashSet<string> fromDefaults, List<LocalStackDependencyCheck> checks,
+		IReadOnlyDictionary<LocalStackStep, string> buildReasons = null, HashSet<LocalStackStep> upToDate = null)
+	{
+		var dryRun = new LocalStackDryRun { stack = resolved.name, description = resolved.description, checks = checks };
+		foreach (var step in resolved.steps)
+		{
+			string runs;
+			if (!selected.Contains(step))
+				runs = "up to date (add :build to build anyway)";
+			else if (!step.build)
+				runs = step.waitForExit ? "runs once" : "starts";
+			else if (resolved.forceBuild)
+				runs = "builds: :build";
+			else if (resolved.requested.Contains(step) && upToDate?.Contains(step) == true)
+				runs = "up to date (add :build to build anyway)";
+			else if (resolved.requested.Contains(step))
+				runs = "builds";
+			else
+				runs = buildReasons != null && buildReasons.TryGetValue(step, out var reason) ? $"builds: {reason}" : "builds";
+
+			dryRun.steps.Add(new LocalStackDryRunStep
+			{
+				name = step.name, label = LocalStackCreateCommand.Label(step), runs = runs, selected = selected.Contains(step),
+				port = step.port, folder = step.workingDirectory
+			});
+		}
+
+		foreach (var (name, value, source) in LocalStackConfigIO.DescribeVariables(selected, config))
+			dryRun.variables.Add(new LocalStackDryRunVariable { name = name, value = value, source = fromDefaults.Contains(name) ? "stack default" : source });
+
+		return dryRun;
+	}
+
+	private static void PrintDryRun(LocalStackDryRun dryRun)
+	{
+		LocalStackStyle.H1($"Dry run of {dryRun.stack}");
+		if (!string.IsNullOrWhiteSpace(dryRun.description)) AnsiConsole.MarkupLine($"[grey]{Markup.Escape(dryRun.description)}[/]");
+
+		LocalStackStyle.H2("Steps", "in the order they start");
+		var steps = new Table().Border(TableBorder.Simple);
+		steps.AddColumn("[bold]#[/]");
+		steps.AddColumn("[bold]step[/]");
+		steps.AddColumn("[bold]runs[/]");
+		steps.AddColumn("[bold]port[/]");
+		steps.AddColumn("[bold]folder[/]");
+
+		var index = 0;
+		foreach (var step in dryRun.steps)
+		{
+			steps.AddRow(
+				new Markup(step.selected ? (++index).ToString() : string.Empty),
+				new Markup(Markup.Escape(step.name ?? string.Empty)),
+				new Markup(step.selected ? Markup.Escape(step.runs) : $"[grey]{Markup.Escape(step.runs)}[/]"),
+				new Markup(step.port > 0 ? step.port.ToString() : string.Empty),
+				new Markup(Markup.Escape(step.folder ?? string.Empty)));
+		}
+
+		AnsiConsole.Write(steps);
+
+		LocalStackStyle.H2("Variables", "what the steps' ${...} resolve to");
+		var variables = new Table().Border(TableBorder.Simple);
+		variables.AddColumn("[bold]variable[/]");
+		variables.AddColumn("[bold]value[/]");
+		variables.AddColumn("[bold]from[/]");
+		foreach (var variable in dryRun.variables)
+			variables.AddRow(Markup.Escape("${" + variable.name + "}"), Markup.Escape(variable.value ?? string.Empty), Markup.Escape(variable.source ?? string.Empty));
+
+		AnsiConsole.Write(variables);
+		LocalStackStyle.H2("Checks", "what the stack needs on this machine");
+		LocalStackPreflight.Render(dryRun.checks);
+		Log.Information($"Dry run: nothing was started. `beam local run {dryRun.stack}` starts these {index} steps.");
+	}
+
+	/// <summary>
+	/// Gives every variable the stack declares a value: the settings' own value wins, then the stack's default; a
+	/// variable with neither is asked for and saved to the settings, or fails the run when nobody can be asked.
+	/// Returns the names that took the stack's default, so the dry run can say so.
+	/// </summary>
+	private static HashSet<string> ApplyStackVariables(LocalStackResolvedStack resolved, LocalStackConfig config, string path, bool canAsk)
+	{
+		var fromDefaults = new HashSet<string>(StringComparer.Ordinal);
+		var missing = new List<(string name, LocalStackStackVariable declaration)>();
+		foreach (var (name, declaration) in resolved.variables)
+		{
+			if (config.variables?.ContainsKey(name) == true || config.paths?.ContainsKey(name) == true)
+				continue;
+
+			if (declaration?.defaultValue != null)
+			{
+				config.variables ??= new Dictionary<string, string>();
+				config.variables[name] = declaration.defaultValue;
+				fromDefaults.Add(name);
+				continue;
+			}
+
+			missing.Add((name, declaration));
+		}
+
+		if (missing.Count == 0)
+			return fromDefaults;
+
+		string Describe((string name, LocalStackStackVariable declaration) v) =>
+			string.IsNullOrWhiteSpace(v.declaration?.description) ? "${" + v.name + "}" : "${" + v.name + "} (" + v.declaration.description + ")";
+
+		if (!canAsk)
+			throw new CliException(
+				$"'{resolved.name}' needs a value for {string.Join(", ", missing.Select(Describe))}. Add it under \"variables\" in {path}, or run this in an interactive terminal to be asked.");
+
+		var saved = LocalStackConfigIO.Load(path);
+		saved.variables ??= new Dictionary<string, string>();
+		foreach (var variable in missing)
+		{
+			var value = AnsiConsole.Prompt(new TextPrompt<string>($"Value for [green]{Markup.Escape(Describe(variable))}[/]:"));
+			saved.variables[variable.name] = value;
+			config.variables ??= new Dictionary<string, string>();
+			config.variables[variable.name] = value;
+		}
+
+		LocalStackConfigIO.Save(path, saved);
+		Log.Information($"Saved {missing.Count} variable(s) to {path}.");
+		return fromDefaults;
+	}
+
+	/// <summary>Runs the given <c>beam local setup</c> steps in this process, as <c>--only</c> would.</summary>
+	private static async Task<LocalStackSetupCommandResult> RunSetup(LocalStackRunCommandArgs args, IEnumerable<string> ids)
+	{
+		var setupArgs = args.Create<LocalStackSetupCommandArgs>();
+		setupArgs.Quiet = args.Quiet;
+		setupArgs.only = string.Join(",", ids);
+		// What the options default to when setup runs from the command line.
+		setupArgs.githubRepo = ScalaLocalVarsService.DefaultRepo;
+		setupArgs.awsRegion = AwsPreflightService.DefaultRegion;
+		setupArgs.scalaJvmArgs = LocalStackTemplate.DefaultScalaJvmArgs;
+		return await new LocalStackSetupCommand().GetResult(setupArgs);
+	}
+
+	public override async Task Handle(LocalStackRunCommandArgs args)
+	{
+		var path = LocalStackCommand.ResolveManifestPath(args.ConfigService, null);
+
+		LocalStackStacks stacks;
+		try
+		{
+			stacks = LocalStackStacks.Load(LocalStackConfigIO.FindWorkspaceRoot(path));
+		}
+		catch (LocalStackStackException e)
+		{
+			throw new CliException(e.Message);
+		}
+
+		if (string.IsNullOrWhiteSpace(args.stack))
+		{
+			var settings = File.Exists(path) ? LocalStackConfigIO.Load(path) : null;
+			PrintStacks(stacks, settings);
+			this.SendResults<LocalStackRunListingChannel, LocalStackRunListing>(Listing(stacks, settings));
+			return;
+		}
+
+		// Setup runs itself: a first run on this machine creates the settings, asking for what it can't detect.
 		if (!File.Exists(path))
-			throw new CliException($"No local-stack manifest at {path}. Run `beam local init` to create one.");
+		{
+			if (args.dryRun)
+				throw new CliException($"No settings at {path} yet. `beam local run {args.stack}` creates them, or run `beam local setup`.");
 
-		var config = LocalStackConfigIO.Load(path);
-		if (!string.IsNullOrWhiteSpace(args.host)) config.host = args.host;
-		if (!string.IsNullOrWhiteSpace(args.portalUrl)) config.portalUrl = args.portalUrl;
-		config.javaHome = ResolveJavaHome(args, config);
+			Log.Information($"No settings at {path} yet. Creating them.");
+			await RunSetup(args, new[] { ToolchainPins.Settings });
+			if (!File.Exists(path))
+				throw new CliException($"Setup didn't create {path}. Run `beam local setup` to see why.");
+		}
 
-		// The manifest at .beamable/local-stack.json is written ONCE by `beam local init` and read verbatim
-		// on every `up` — so a step's `arguments` string carries whatever verb+flags the CLI version that ran
-		// `init` chose. When that version predates the Maven-cache fixes (commit 5d469e98d / this session),
-		// the reactor still runs `clean package` (which leaves core out of ~/.m2) and the per-service launcher
-		// still hits `dependency:build-classpath` online (which lets a cached "not found in nexus" miss short-
-		// circuit every service). Rewrite those two arguments IN-MEMORY here so a stale manifest self-heals
-		// without asking every existing user to re-run `beam local init`.
-		MigrateStaleScalaArguments(config);
+		LocalStackConfig config = null;
+		LocalStackResolvedStack resolved = null;
+		HashSet<string> fromDefaults = null;
+		LocalStackTarget target = null;
+		_workspaceRoot = LocalStackConfigIO.FindWorkspaceRoot(path);
 
-		var only = NameSet(args.only);
-		var skip = NameSet(args.skip);
+		// The workspace's microservices and extensions, as they are now: a new one runs without setup.
+		var found = await WorkspaceServices.Find(args, LocalStackConfigIO.Load(path));
+		Log.Information($"Found {found.services.Count} microservice(s) and {found.extensions.Count} portal extension(s) in this workspace.");
 
-		// A build step that declares an output runs even without --build when that output is missing: the run
-		// step after it launches a PRE-BUILT binary, so without it `up` would retry a nonexistent executable
+		void LoadAndResolve()
+		{
+			config = LocalStackConfigIO.Load(path);
+			found.AddTo(config.steps);
+			if (!string.IsNullOrWhiteSpace(args.host)) config.host = args.host;
+			if (!string.IsNullOrWhiteSpace(args.portalUrl)) config.portalUrl = args.portalUrl;
+			config.javaHome = ResolveJavaHome(args, config);
+
+			// A variable that refers back to itself can't be resolved, and every step using it would fail on its own.
+			var cycles = LocalStackConfigIO.FindVariableCycles(config);
+			if (cycles.Count > 0)
+				throw new CliException("The settings' variables can't be resolved:\n  " + string.Join("\n  ", cycles));
+
+			try
+			{
+				resolved = stacks.Resolve(args.stack, config);
+			}
+			catch (LocalStackStackException e)
+			{
+				throw new CliException(e.Message);
+			}
+
+			fromDefaults = ApplyStackVariables(resolved, config, path,
+				canAsk: !args.dryRun && !args.Quiet && AnsiConsole.Profile.Capabilities.Interactive);
+
+			// The backend it runs against: a remote target's host replaces the settings' one for this run, so
+			// ${host} (the beam steps' --host, the portal's API base) follows it. --host still wins.
+			try
+			{
+				target = LocalStackTargets.Get(resolved.target, config);
+			}
+			catch (LocalStackStackException e)
+			{
+				throw new CliException(e.Message);
+			}
+
+			// For local itself that is the same host; for lan, the same backend at this machine's LAN address.
+			if (string.IsNullOrWhiteSpace(args.host))
+				config.host = target.host;
+			_targetName = string.IsNullOrWhiteSpace(resolved.target) ? LocalStackTargets.Local : resolved.target;
+		}
+
+		LoadAndResolve();
+
+		// A stack already running here is changed to this name instead of being started a second time, which would
+		// fight the running one for its ports, or making you stop everything to add or drop a few steps. One
+		// attached to another terminal owns its services, so it is asked to do it. A detached one is changed by this
+		// run: what the new name drops stops, what it adds starts, the rest stays up; and it stays detached.
+		var runStatePath = LocalStackRunStateIO.ResolveRunStatePath(path);
+		var runningBoard = LocalStackBoardIO.Load(LocalStackBoardIO.PathFor(runStatePath));
+		if (!args.dryRun && runningBoard is { attached: true } && !LocalStackBoardIO.IsStale(runningBoard)
+		    && runningBoard.runnerPid != Environment.ProcessId)
+		{
+			Log.Information($"'{runningBoard.stack}' is running in another terminal (pid {runningBoard.runnerPid}); changing it to '{args.stack}'...");
+			var answer = await LocalStackControl.Ask(runStatePath, new LocalStackControlRequest { action = "adjust", stack = args.stack },
+				TimeSpan.FromMinutes(30), args.Lifecycle.CancellationToken);
+			if (answer == null)
+				throw new CliException($"The stack in the other terminal (pid {runningBoard.runnerPid}) didn't answer. Is it still starting? Try again once it's up.");
+			if (!answer.ok)
+				throw new CliException(answer.message);
+			Log.Information(answer.message);
+			return;
+		}
+
+		var previousRun = args.dryRun ? null : LocalStackRunStateIO.Load(runStatePath);
+		var stillRunning = (previousRun?.steps ?? new List<LocalStackRunEntry>())
+			.Where(e => LocalStackLiveness.Check(e, LocalStackStopCommand.BuildKillTokens(e)) != LocalStackLiveness.Liveness.Stopped)
+			.Select(e => e.name)
+			.ToHashSet(StringComparer.OrdinalIgnoreCase);
+		if (stillRunning.Count > 0 && !args.runDetached)
+		{
+			Log.Information("A detached stack is running here, so this changes it, and it stays detached.");
+			args.runDetached = true;
+		}
+
+		bool UsesTag(string tag) => resolved.steps.Any(s => stacks.TagsOf(s).Contains(tag, StringComparer.OrdinalIgnoreCase));
+
+		// What the stack needs: tools, generated config files, the portal's env, variables. A dry run prints it all;
+		// a real run sets up whatever is missing before anything starts.
+		var checks = await LocalStackPreflight.Check(config, resolved.steps, stacks, withCliPins: args.dryRun);
+
+		// What the stack's steps need and it doesn't run. `beam local create` adds it; a stack written by hand, or one
+		// whose base changed, can still miss it, and then a step fails in a way that doesn't say why (a C# host
+		// without Mongo, a Scala service without dbflake's ids).
+		var missingSteps = LocalStackDependencies.Missing(resolved.steps, config.steps, stacks.TagsOf, LocalStackTargets.RunsLocal(resolved.target, config));
+		if (missingSteps.Count > 0)
+			checks.Add(new LocalStackDependencyCheck
+			{
+				name = "dependencies", ok = false, warning = true,
+				detail = $"'{args.stack}' doesn't run {string.Join("; ", missingSteps.Select(m => $"{m.name} ({m.reason})"))}. "
+				         + $"Add them with `beam local edit {args.stack.Split(':')[0]}`."
+			});
+		if (!args.dryRun)
+		{
+			var missing = checks.Where(c => !c.ok && c.setupId != null).Select(c => c.setupId).Distinct().ToList();
+			if (missing.Count > 0)
+			{
+				Log.Information($"'{args.stack}' needs setup first: {string.Join(", ", missing)}.");
+
+				// A tool that gets installed has to be wired into the settings too, which is the settings step's job.
+				if (missing.Any(id => ToolchainPins.ToolIds.Contains(id)))
+					missing.Add(ToolchainPins.Settings);
+
+				var setup = await RunSetup(args, missing);
+				if (!setup.allOk)
+					throw new CliException($"Setup couldn't finish, so '{args.stack}' wasn't started. Fix the rows marked failed above, then run it again.");
+
+				LoadAndResolve();
+			}
+
+			foreach (var check in checks.Where(c => !c.ok && c.setupId == null))
+				Log.Warning($"{check.name}: {check.detail}");
+
+			// Keep the portal workspace's CLI pins on this CLI before anything restores or builds against them.
+			LocalStackCliVersions.Report(
+				LocalStackCliVersions.Check(config.repos?.portalDir, LocalStackCliVersions.RunningVersion(), fix: true));
+		}
+
+		// A build step that declares an output runs even without :build when that output is missing: the run step
+		// after it launches a PRE-BUILT binary, so without it the run would retry a nonexistent executable
 		// `readyRetries` times and then report the stack as up minus that service. Mirrors the reference
 		// scripts/run-local-stack.sh, which builds each gateway/worker binary when it isn't there.
-		var autoBuild = args.build
-			? new HashSet<LocalStackStep>()
-			: config.steps.Where(s => s.enabled && LocalStackConfigIO.BuildOutputMissing(s, config)).ToHashSet();
-
-		// Add `build: scala` to autoBuild when `~/.m2` has never held `com.kickstand:core`. The BuildOutputMissing
-		// check above is satisfied by any `target/classes` — but an earlier `mvn package` (or an older CLI, before
-		// commit 5d469e98d) populates target/classes without writing core to ~/.m2. In that state, every Scala
-		// service launcher fails to resolve `com.kickstand:core:jar:1.0-SNAPSHOT`, hits remote nexus, gets 404,
-		// and Maven caches the miss — trapping every subsequent run. Force the reactor to run once here, which
-		// runs `mvn install -U` and refills ~/.m2, escaping the trap.
-		EnsureScalaCoreInLocalMavenRepo(config, autoBuild);
-
-		// Second half of the offline-classpath trap. EnsureScalaCoreInLocalMavenRepo above guarantees `core` is in
-		// ~/.m2, but the per-service launcher's `mvn -o dependency:build-classpath` ALSO needs Maven to resolve the
-		// `dependency` plugin PREFIX offline — which requires the maven-dependency-plugin's plugin-group metadata
-		// (org/apache/maven/plugins/maven-metadata-*.xml) to be cached. On a machine where that was never cached (or
-		// was cached as a miss), the offline resolve dies with "No plugin found for prefix 'dependency'" even with
-		// core present — and `--build` does NOT fix it, because the reactor resolves every plugin by explicit
-		// version and never touches the prefix metadata. Probe it, and prime it online once if it is missing.
-		EnsureMavenDependencyPluginResolvableOffline(config, args.build);
-
-		// Say WHY a build is being run that was not asked for. "Building the Scala reactor" out of nowhere on a
-		// plain `up` is confusing unless it names the module that has never been compiled.
-		foreach (var step in autoBuild)
+		//
+		// It also builds when what it compiles changed since its last successful build. Without that, a stack kept
+		// running stale binaries after a pull until someone remembered :build, which rebuilds everything (a cold
+		// Scala reactor build alone is ~15 minutes). Now, after a pull or an
+		// edit, the C# hosts rebuild (incrementally, in seconds) and the Scala reactor only when BeamableBackend
+		// changed. Everything else shows as up to date.
+		_buildsPath = LocalStackBuilds.PathFor(path);
+		_builds = LocalStackBuilds.Load(_buildsPath);
+		var buildReasons = new Dictionary<LocalStackStep, string>();
+		var upToDate = new HashSet<LocalStackStep>();
+		if (!resolved.forceBuild)
 		{
-			var unbuilt = LocalStackConfigIO.FirstUnbuiltScalaModule(step, config);
-			if (unbuilt != null)
+			var gitAnswers = new Dictionary<string, string>();
+			foreach (var s in resolved.steps.Where(s => s.enabled && s.build))
 			{
-				Log.Information(
-					$"[{step.name}] running without --build: '{unbuilt}' has never been compiled. " +
-					"Building the reactor once so the services have classes to run.");
+				var reason = LocalStackConfigIO.BuildOutputMissing(s, config)
+					? "output missing"
+					: LocalStackBuilds.WhyBuild(s, config, _builds, gitAnswers);
+				if (reason != null) buildReasons[s] = reason;
+				else if (LocalStackBuilds.IsUpToDate(s, config, _builds, gitAnswers)) upToDate.Add(s);
 			}
 		}
 
-		// The web-registry steps are build steps with no `requiredOutput`, so the self-healing set above can
-		// never reach them. They therefore run whenever the resolved choice says so: skipping them left the
-		// portal loading the PUBLISHED sdk from unpkg instead of the local build, on an `up` that reported
-		// success. The standing choice comes from `beam local init`; the two flags override it for this run.
-		var noWebRegistry = ResolveNoWebRegistry(config, args.webRegistry);
-		var forcedWeb = ForcedWebSteps(config, noWebRegistry);
+		var autoBuild = buildReasons.Keys.ToHashSet();
+		_buildReasons = buildReasons;
 
-		var steps = SelectSteps(config, args.build, autoBuild, forcedWeb, only, skip, noWebRegistry);
+		if (UsesTag("scala"))
+		{
+			// The per-service launcher's `mvn -o dependency:build-classpath` needs Maven to resolve the `dependency`
+			// plugin PREFIX offline — which requires the maven-dependency-plugin's plugin-group metadata to be cached.
+			// On a machine where that was never cached (or was cached as a miss), the offline resolve dies with "No
+			// plugin found for prefix 'dependency'" even with core present — and `:build` does NOT fix it, because the
+			// reactor resolves every plugin by explicit version and never touches the prefix metadata. Probe it, and
+			// prime it online once if it is missing. Not on a dry run, which changes nothing.
+			if (!args.dryRun)
+				EnsureMavenDependencyPluginResolvableOffline(config, resolved.forceBuild);
+		}
+
+		var steps = SelectSteps(resolved, autoBuild);
+
+		// The extensions install the local web packages only while a stack that points them there runs; a run
+		// without it drops what an earlier one left, so they install their locked versions again.
+		_localWebPackages = steps.Any(s => string.Equals(s.name, LocalStackTemplate.WebInstallStepName, StringComparison.OrdinalIgnoreCase));
+		if (!_localWebPackages && _workspaceRoot != null && File.Exists(WebPackagesService.OverlayPath(_workspaceRoot)))
+			File.Delete(WebPackagesService.OverlayPath(_workspaceRoot));
+
+		// Changing a running detached stack: stop what the new name drops, and skip a build whose services all still
+		// run. Rebuilding a running host fails on its locked files, and the running service would keep the old code
+		// anyway; `beam local restart` rebuilds it.
+		var buildsOfRunning = new HashSet<LocalStackStep>();
+		if (stillRunning.Count > 0)
+		{
+			var dropped = previousRun.steps.Where(e => stillRunning.Contains(e.name)
+			                                           && !resolved.steps.Any(s => string.Equals(s.name, e.name, StringComparison.OrdinalIgnoreCase)))
+				.Select(e => e.name)
+				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			if (dropped.Count > 0)
+			{
+				LocalStackStopCommand.Stop(runStatePath, previousRun, e => dropped.Contains(e.name), purge: false);
+				Log.Information($"Stopped {string.Join(", ", dropped)}: '{args.stack}' doesn't run them.");
+			}
+
+			foreach (var build in steps.Where(s => s.build).ToList())
+			{
+				var users = resolved.steps.Where(s => !s.build && LocalStackControl.BuildsFor(s, resolved.steps, stacks.TagsOf).Contains(build)).ToList();
+				if (users.Count > 0 && users.All(u => stillRunning.Contains(u.name)))
+				{
+					steps.Remove(build);
+					buildsOfRunning.Add(build);
+				}
+			}
+		}
+		if (args.dryRun)
+		{
+			var dryRun = DryRun(resolved, steps, autoBuild, config, fromDefaults, checks, buildReasons, upToDate);
+			PrintDryRun(dryRun);
+			this.SendResults<LocalStackDryRunChannel, LocalStackDryRun>(dryRun);
+			return;
+		}
+
 		if (steps.Count == 0)
 		{
-			throw new CliException("No steps to run (all disabled or filtered out).");
+			throw new CliException($"'{args.stack}' has no steps to run on this machine.");
 		}
 
-		// Say WHY a build is running when the user didn't ask for one, so it never looks like a mystery step.
-		// The per-step reason also rides along on the stream message when it launches (see the loop below).
-		foreach (var s in steps.Where(autoBuild.Contains))
+		// A remote target needs its login before anything starts: asked for once in the terminal, then saved for
+		// this workspace's stacks. The local realm can only be logged into once the backend is up (see below).
+		// A backend whose services serve live traffic (prod) is only used when someone says so, every time.
+		if (target.confirm == true)
 		{
-			Log.Information($"[{s.name}] {LocalStackConfigIO.ResolveRequiredOutput(s, config)} is missing — building it (pass --build to rebuild everything).");
-		}
-
-		// These are slow (a pnpm rebuild of the web packages, then a reinstall per extension) and nobody asked
-		// for them explicitly, so say why they are running and how to turn them off.
-		foreach (var s in steps.Where(forcedWeb.Contains).Where(s => s.build))
-		{
-			Log.Information($"[{s.name}] running because the local web registry is on for this workspace (pass --with-web-registry=false to skip it for this run, or `beam local init` to turn it off for good).");
-		}
-
-		// Opting out is legitimate, but it is the thing that leaves the portal on a published toolkit pin, so
-		// it should never be a silent choice. An EXPLICIT --with-web-registry=false is a per-run surprise and
-		// gets a warning; the manifest's standing choice was made deliberately at `init` time, so warning about
-		// it on every single `up` would be noise — it just says where the choice came from and how to change it.
-		if (noWebRegistry && config.steps.Any(s => s.enabled && LocalStackTemplate.IsWebStep(s.name)))
-		{
-			const string consequence =
-				"skipping the local web registry, so the portal's extensions keep whatever toolkit version they "
-				+ "already pin. If that is a published version, the portal loads the published web SDK from unpkg "
-				+ "rather than your local build.";
-
-			if (args.webRegistry == false)
+			var question = $"Run '{resolved.name}' against {resolved.target} ({target.host})? The services you start here serve that realm's live traffic.";
+			if (!args.confirmTarget)
 			{
-				Log.Warning($"--with-web-registry=false: {consequence}");
-			}
-			else
-			{
-				Log.Information(
-					$"`beam local init` turned the local web registry off for this workspace: {consequence} "
-					+ "Pass --with-web-registry to run it for this run, or re-run `beam local init` to turn it back on.");
+				if (args.Quiet || !AnsiConsole.Profile.Capabilities.Interactive)
+					throw new CliException($"'{resolved.name}' runs against {resolved.target} ({target.host}). Pass --confirm-target to run it without a terminal.");
+				if (!AnsiConsole.Confirm(question, false))
+					throw new CliException("Not started.");
 			}
 		}
 
-		WarnOnStaleExtensionPins(config, steps, noWebRegistry);
+		if (target.local != true)
+		{
+			_targetLogin = await LocalStackTargets.EnsureRemote(_workspaceRoot, resolved.target, target,
+				canAsk: !args.Quiet && AnsiConsole.Profile.Capabilities.Interactive, args.Lifecycle.CancellationToken);
+			Log.Information($"Running against {resolved.target}: {_targetLogin.host}, cid {_targetLogin.cid}, pid {_targetLogin.pid}.");
+		}
 
-		// Manifests generated before build steps existed won't have any — tell the user how to get them.
-		if (args.build && !config.steps.Any(s => s.build))
-			Log.Warning("--build was passed but this manifest has no build steps. Re-run `beam local init` to regenerate it with build steps (or add them by hand).");
-
-		// The self-healing build and the port pre-flight are both driven by manifest fields (`requiredOutput`,
-		// `port`) that only `beam local init` writes. A manifest generated before them gets neither, so say so
-		// rather than letting the user believe protections are running that aren't.
-		if (!config.steps.Any(s => s.build && !string.IsNullOrWhiteSpace(s.requiredOutput))
-		    && !config.steps.Any(s => s.port > 0))
-			Log.Warning("This manifest predates automatic builds and port-conflict checks (no `requiredOutput` or `port` on any step), so neither will run. Re-run `beam local init` to regenerate it.");
+		// Say WHY a build is running when nobody asked for one, so it never looks like a mystery step. The per-step
+		// reason also rides along on the stream message when it launches (see the loop below).
+		foreach (var s in steps.Where(s => autoBuild.Contains(s) && !resolved.requested.Contains(s)))
+		{
+			var unbuilt = LocalStackConfigIO.FirstUnbuiltScalaModule(s, config);
+			Log.Information(unbuilt != null
+				? $"[{s.name}] '{unbuilt}' has never been compiled. Building the reactor once so the services have classes to run."
+				: $"[{s.name}] building: {Reason(s)} (add :no-build to skip, :build to rebuild everything).");
+		}
 
 		// A clean build should re-resolve deps too: drop the shared Scala classpath cache so each service's
 		// launch rebuilds it (the cache otherwise only refreshes when core/pom.xml changes).
-		if (args.build)
+		if (resolved.forceBuild && UsesTag("scala"))
 			TryDeleteDir(Path.Combine(Path.GetTempPath(), "beam-scala-cp"));
 
 		// Fail fast if the stack needs Docker but its daemon isn't running — otherwise the first docker step
@@ -387,8 +826,8 @@ public class LocalStackUpCommand
 			throw new CliException(reservedDockerPorts);
 
 		// Fail fast (or auto-repair) when the product checkout is missing web/ or beam-portal-toolkit/. Without
-		// this, the stack builds, launches every docker/scala/c# service, and only THEN fails at `beam web
-		// publish` — cascading a full shutdown minutes in. The wipe is common enough (an unrelated `git clean`,
+		// this, the stack builds, launches every docker/scala/c# service, and only THEN fails at web: build —
+		// cascading a full shutdown minutes in. The wipe is common enough (an unrelated `git clean`,
 		// a manual delete) that the recovery is worth automating.
 		if (steps.Any(s => LocalStackTemplate.IsWebStep(s.name)))
 		{
@@ -405,7 +844,6 @@ public class LocalStackUpCommand
 		// keeps the file-based model (services survive `up`, managed via ps/logs/stop).
 		var attached = !args.runDetached;
 
-		var runStatePath = LocalStackRunStateIO.ResolveRunStatePath(path);
 		// A unique per-run dir (temp by default, workspace under --save-logs) holding launcher scripts and — in
 		// detached or --save-logs runs — the log files. Unique paths mean a fresh run never collides with a log a
 		// leftover wrapper from a crashed run still holds open.
@@ -456,7 +894,8 @@ public class LocalStackUpCommand
 
 		var launched = new List<Launched>();
 		var token = args.Lifecycle.CancellationToken;
-		var realmEnsured = false;
+		// A remote target is already logged into; only the local realm is ensured once the backend is up.
+		var realmEnsured = target.local != true;
 
 		// Port pre-flight, BEFORE anything is launched and before the try/catch below. A squatted port is
 		// otherwise invisible until the service loses the bind and shows up as a readiness timeout, a Caddy 502,
@@ -470,6 +909,51 @@ public class LocalStackUpCommand
 		// even on a terminal close / IDE stop / hard kill that skips the graceful teardown (Windows only; no-op
 		// elsewhere). Held for the command's lifetime; disposed in the teardown paths below.
 		var job = attached ? LocalStackJobObject.CreateKillOnClose() : null;
+
+		// The board: one row per step, live in a terminal, a line per change without one, and a file `ps` reads.
+		// While it shows, the runner's own progress messages would only repeat it, so only warnings and errors
+		// print (unless --logs asked for more).
+		_attached = attached;
+		_verbose = args.verbose;
+		var boardPath = LocalStackBoardIO.PathFor(runStatePath);
+		// Every step the stack resolves to has a row, the build steps that don't need to build too, as up to date.
+		_board = new LocalStackBoard(new LocalStackBoardSnapshot
+		{
+			stack = resolved.name, runnerPid = Environment.ProcessId, attached = attached,
+			host = config.host, portalUrl = config.portalUrl, startedUtc = DateTime.UtcNow, logsDir = logsDir,
+			rows = resolved.steps.Where(s => steps.Contains(s) || s.build).Select(s => new LocalStackBoardRow
+			{
+				name = s.name, label = LocalStackCreateCommand.Label(s), port = s.port,
+				timeoutSeconds = s.readyTimeoutSeconds, once = s.waitForExit || s.build, changedUtc = DateTime.UtcNow
+			}).ToList()
+		}, BoardMode(args), boardPath);
+		foreach (var skipped in resolved.steps.Where(s => s.build && !steps.Contains(s)))
+			_board.Set(skipped.name, LocalStackStepState.UpToDate,
+				buildsOfRunning.Contains(skipped) ? "its services are running (restart them to rebuild)"
+				: skipped.inputs != null ? "unchanged since the last build" : "output is there");
+
+		var logSwitch = args.AppContext?.LogSwitch;
+		var quietedLogs = Showing && logSwitch != null && logSwitch.Level == LogLevel.Information;
+		if (quietedLogs) logSwitch.Level = LogLevel.Warning;
+		// In an attached terminal the board stays up once the stack is, and its keys act on it: Space on a service
+		// offers to restart, stop or start it, through the same requests another terminal sends (set up below, once
+		// they can be answered).
+		Func<string, string, Task<string>> boardAction = null;
+		var keepBoard = attached && _board.Mode == LocalStackBoardMode.Live;
+		var live = _board.ShowLive(token,
+			keepBoard ? (action, step) => boardAction?.Invoke(action, step) ?? Task.FromResult("The stack can't take that yet.") : null,
+			keepBoard ? LocalStackBoardView.ActionKeys : null);
+
+		// Takes the board off the screen (once) and brings the logs back, before anything is printed about the end.
+		async Task EndBoard()
+		{
+			_board.Complete();
+			try { await live; }
+			catch { /* the board never fails the run */ }
+
+			if (quietedLogs) logSwitch.Level = LogLevel.Information;
+			quietedLogs = false;
+		}
 
 		// Launch a step and record it in the run-state (upsert by name, so a retry replaces the dead entry
 		// rather than duplicating it). Returned as a local function so readiness can relaunch on early exit.
@@ -525,12 +1009,217 @@ public class LocalStackUpCommand
 			return l;
 		}
 
+		// Requests from another terminal while the stack runs attached: restart, start or stop steps, stop the whole
+		// stack, or change it to another stack name. Its services are children of this process, so only it can stop
+		// and relaunch them without orphaning them; before this, restarting one service meant stopping the whole stack.
+		var current = steps.ToList();
+
+		Launched Latest(LocalStackStep step)
+		{
+			lock (_launchedLock)
+				return launched.LastOrDefault(l => string.Equals(l.Step.name, step.name, StringComparison.OrdinalIgnoreCase));
+		}
+
+		bool IsRunning(LocalStackStep step)
+		{
+			var l = Latest(step);
+			return l != null && !l.Step.waitForExit && !l.ExitedTask.IsCompleted;
+		}
+
+		void Say(LocalStackStep step)
+		{
+			var row = _board.Row(step.name);
+			if (row != null && _board.Mode != LocalStackBoardMode.Silent)
+				AnsiConsole.MarkupLine($"[grey]{DateTime.Now:HH:mm:ss}[/]  {Markup.Escape(row.label ?? row.name)}: "
+				                       + $"[{LocalStackBoard.Colour(row.state)}]{LocalStackBoard.Text(row.state)}[/]"
+				                       + (string.IsNullOrWhiteSpace(row.detail) ? string.Empty : $" [grey]({Markup.Escape(row.detail)})[/]"));
+		}
+
+		void StopRunning(LocalStackStep step, string why)
+		{
+			var l = Latest(step);
+			if (l == null || l.Step.waitForExit || l.ExitedTask.IsCompleted) return;
+			KillLaunched(l);
+			l.ExitedTask.Wait(TimeSpan.FromSeconds(15));
+			_board.Set(step.name, LocalStackStepState.Stopped, why, announce: false);
+			Say(step);
+		}
+
+		// Starts steps again: first each one's build check (a build whose inputs changed or whose output is missing
+		// builds, unless another service still running uses it), then the steps, run-once steps in order and
+		// services together, each waiting for its readiness like at startup.
+		async Task StartAll(List<LocalStackStep> toStart, string source)
+		{
+			// The backend may have come back since the login failed: try again before starting anything that logs in.
+			if (_noLogin != null && target.local == true && toStart.Any(NeedsLogin))
+				await EnsureRealmAndLogin(args, config, steps);
+			foreach (var step in toStart.Where(s => NeedsLogin(s) && _noLogin != null))
+				NoLogin(step, 1f);
+			toStart = toStart.Where(s => !NeedsLogin(s) || _noLogin == null).ToList();
+
+			var builds = toStart.SelectMany(s => LocalStackControl.BuildsFor(s, resolved.steps, stacks.TagsOf)).Distinct().ToList();
+			var reasons = new Dictionary<LocalStackStep, string>();
+			foreach (var build in builds)
+			{
+				var why = LocalStackConfigIO.BuildOutputMissing(build, config) ? "output missing" : LocalStackBuilds.WhyBuild(build, config, _builds);
+				if (why == null) continue;
+
+				var users = resolved.steps.Where(s => !s.build && LocalStackControl.BuildsFor(s, resolved.steps, stacks.TagsOf).Contains(build));
+				var others = users.Where(u => !toStart.Contains(u) && IsRunning(u)).Select(u => u.name).ToList();
+				if (others.Count > 0)
+				{
+					Log.Warning($"[{build.name}] {why}, but {string.Join(", ", others)} still run on it; restart them together to rebuild.");
+					continue;
+				}
+
+				reasons[build] = why;
+			}
+
+			var rebuilds = RunInLanes(BuildLanes(reasons.Keys, config), async build =>
+			{
+				_board.AddRows(new[] { new LocalStackBoardRow { name = build.name, label = LocalStackCreateCommand.Label(build), once = true, changedUtc = DateTime.UtcNow } });
+				Send(build.name, "starting", reasons[build], 1f, LocalStackStepState.Building, reasons[build]);
+				await AwaitStep(build, LaunchAndRegister(build), config, 1f, current.Count, token, null);
+				Say(build);
+			});
+			await Task.WhenAll(rebuilds.Values);
+
+			var waits = new List<(LocalStackStep step, Task task)>();
+			foreach (var step in toStart)
+			{
+				if (step.waitForExit)
+				{
+					await Task.WhenAll(waits.Select(w => w.task));
+					await AwaitStep(step, LaunchAndRegister(step), config, 1f, current.Count, token, null);
+					Say(step);
+					continue;
+				}
+
+				Send(step.name, "starting", "restarting", 1f, LocalStackStepState.Restarting, source);
+				var stepToRun = step;
+				waits.Add((step, AwaitStep(step, LaunchAndRegister(step), config, 1f, current.Count, token, () => LaunchAndRegister(stepToRun))));
+				if (toStart.Count > 1) await Task.Delay(GroupLaunchStagger, token);
+			}
+
+			await Task.WhenAll(waits.Select(w => w.task));
+			foreach (var (step, _) in waits) Say(step);
+		}
+
+		async Task<LocalStackControlResponse> Adjust(string stackName, LocalStackControlResponse response)
+		{
+			LocalStackResolvedStack next;
+			try
+			{
+				next = stacks.Resolve(stackName, config);
+			}
+			catch (LocalStackStackException e)
+			{
+				return new LocalStackControlResponse { ok = false, message = e.Message };
+			}
+
+			if (!string.Equals(next.target, resolved.target, StringComparison.OrdinalIgnoreCase))
+				return new LocalStackControlResponse
+				{
+					ok = false,
+					message = $"'{stackName}' runs against {next.target}, and the running stack against {resolved.target}. Stop it first (Ctrl+C in its terminal, or `beam local stop`)."
+				};
+
+			bool In(IEnumerable<LocalStackStep> list, LocalStackStep step) =>
+				list.Any(s => string.Equals(s.name, step.name, StringComparison.OrdinalIgnoreCase));
+
+			var drop = current.Where(s => !s.build && !In(next.steps, s)).Reverse().ToList();
+			foreach (var step in drop) StopRunning(step, $"not in {stackName}");
+			_board.RemoveRows(drop.Select(s => s.name));
+
+			var add = next.steps.Where(s => !s.build && !In(current, s)).ToList();
+			_board.AddRows(add.Select(s => new LocalStackBoardRow
+			{
+				name = s.name, label = LocalStackCreateCommand.Label(s), port = s.port, timeoutSeconds = s.readyTimeoutSeconds,
+				once = s.waitForExit, changedUtc = DateTime.UtcNow
+			}));
+
+			resolved = next;
+			current = next.steps.Where(s => !s.build || In(current, s)).ToList();
+			_board.Rename(stackName);
+			await StartAll(add, "added to the stack");
+
+			response.steps = add.Concat(drop).Select(s => s.name).ToList();
+			response.message = $"Now running {stackName}: started {(add.Count == 0 ? "nothing" : string.Join(", ", add.Select(s => s.name)))}; "
+			                   + $"stopped {(drop.Count == 0 ? "nothing" : string.Join(", ", drop.Select(s => s.name)))}; the rest stayed up.";
+			AnsiConsole.MarkupLine(Markup.Escape(response.message));
+			return response;
+		}
+
+		// <paramref name="source"/> is who asked, for the board: another terminal, or a key on this one's board.
+		async Task<LocalStackControlResponse> Control(LocalStackControlRequest request, string source)
+		{
+			var response = new LocalStackControlResponse { id = request.id, ok = true };
+			switch (request.action)
+			{
+				case "stop" when request.items.Count == 0:
+					response.message = "Stopping the whole stack.";
+					return response;
+				case "stop":
+				{
+					var matched = LocalStackControl.Match(request.items, current, stacks.TagsOf);
+					foreach (var step in Enumerable.Reverse(matched)) StopRunning(step, "stopped " + source);
+					response.steps = matched.Select(s => s.name).ToList();
+					response.message = $"Stopped {string.Join(", ", response.steps)}.";
+					return response;
+				}
+				case "start":
+				case "restart":
+				{
+					// Nothing named (`restart --all`): every service. Run-once steps aren't stopped, so docker's
+					// containers stay up.
+					var matched = request.items.Count == 0
+						? current.Where(s => !s.build && !s.waitForExit).ToList()
+						: LocalStackControl.Match(request.items, current, stacks.TagsOf);
+					var toStart = request.action == "start" ? matched.Where(s => !IsRunning(s)).ToList() : matched;
+					if (request.action == "restart")
+					{
+						foreach (var step in Enumerable.Reverse(matched)) StopRunning(step, "restarting");
+					}
+
+					await StartAll(toStart, source);
+					response.steps = toStart.Select(s => s.name).ToList();
+					response.message = toStart.Count == 0
+						? "Nothing to start: all of it is running."
+						: $"{(request.action == "restart" ? "Restarted" : "Started")} {string.Join(", ", response.steps)}.";
+					return response;
+				}
+				case "adjust":
+					return await Adjust(request.stack, response);
+				default:
+					return new LocalStackControlResponse { ok = false, message = $"Unknown request '{request.action}'." };
+			}
+		}
+
+		// Requests from another terminal and keys on this one's board are done one at a time, so the two never act on
+		// the same steps at once.
+		var controlGate = new SemaphoreSlim(1, 1);
+		async Task<LocalStackControlResponse> Controlled(LocalStackControlRequest request, string source)
+		{
+			await controlGate.WaitAsync(token);
+			try
+			{
+				return await Control(request, source);
+			}
+			finally
+			{
+				controlGate.Release();
+			}
+		}
+
+		boardAction = async (action, step) =>
+			(await Controlled(new LocalStackControlRequest { action = action, items = { step } }, "from the board")).message;
+
 		// Record a step this `up` did NOT launch because it was already answering its readiness endpoint, so the
 		// stack it is part of can still be stopped as a whole.
 		//
 		// Without this the step becomes an untracked orphan: `stop` brings down everything it launched, honestly
 		// reports "0 still recorded", and leaves the carried-over process running. That is not just untidy — the
-		// survivor holds its build outputs open, so the NEXT `up --build` dies in a build step
+		// survivor holds its build outputs open, so the NEXT `run <stack>:build` dies in a build step
 		// (MSB3021 "Unable to copy file ...dll" for the .NET hosts, maven-clean "Failed to delete ...jar" for a
 		// Scala service), and a failed build step tears the whole stack down. Observed end to end on 2026-08-13.
 		//
@@ -574,8 +1263,113 @@ public class LocalStackUpCommand
 			}
 		}
 
+		// The step a failed step leaves without what it needs: its build, or a step it depends on (by name or tag).
+		// Null when nothing it needs failed.
+		var localBackend = LocalStackTargets.RunsLocal(resolved.target, config);
+		string FailedNeed(LocalStackStep step)
+		{
+			var needs = LocalStackControl.BuildsFor(step, steps, stacks.TagsOf).Select(b => b.name)
+				.Concat(LocalStackDependencies.Needs(step, localBackend).SelectMany(need =>
+					steps.Where(s => string.Equals(s.name, need, StringComparison.OrdinalIgnoreCase)
+					                 || stacks.TagsOf(s).Contains(need, StringComparer.OrdinalIgnoreCase)).Select(s => s.name)));
+			return needs.FirstOrDefault(n => !string.Equals(n, step.name, StringComparison.OrdinalIgnoreCase) && _failed.ContainsKey(n));
+		}
+
+		// Marks a step that logs in as unable to start while there is no login to the local realm.
+		void NoLogin(LocalStackStep step, float baseProgress)
+		{
+			_failed[step.name] = "no login";
+			var why = $"can't start: no login to the local realm ({_noLogin})";
+			Send(step.name, "failed", why, baseProgress, LocalStackStepState.Failed, "can't start: no login", hint: why);
+			if (!Showing) Log.Warning($"[{step.name}] {why}");
+		}
+
+		// Marks a step that can't start because something it needs failed; the steps that need it are skipped in turn.
+		void CantStart(LocalStackStep step, string failedNeed, float baseProgress)
+		{
+			_failed[step.name] = $"{failedNeed} failed";
+			Send(step.name, "failed", $"can't start: {failedNeed} failed", baseProgress, LocalStackStepState.Failed, $"can't start: {failedNeed} failed");
+			if (!Showing) Log.Warning($"[{step.name}] can't start: {failedNeed} failed.");
+		}
+
+		// What a step's start says, and why an unrequested build builds: a build nobody asked for is surprising unless
+		// it says why, and the stream channel is what the user (and the Unity/portal tooling) actually sees.
+		string Launching(LocalStackStep step, int idx, out string why)
+		{
+			var launching = $"launching ({idx + 1}/{steps.Count})";
+			why = null;
+			if (autoBuild.Contains(step) && !resolved.requested.Contains(step) && !resolved.forceBuild)
+			{
+				why = Reason(step);
+				launching += $" — {why}, so it builds";
+			}
+
+			return launching;
+		}
+
+		// Builds start with the run instead of at their place in the stack, one lane per folder (see BuildLanes), so
+		// the C# hosts, the Scala reactor and the portal's dependencies compile at the same time, and alongside the
+		// docker deps coming up. The loop below still waits for each build at its place, so a service never starts
+		// before its own build, and one whose build failed is skipped. An unexpected error in a lane (not a failed
+		// build) stops the bring-up at once rather than when the loop gets to it.
+		var buildFailed = new TaskCompletionSource<Exception>(TaskCreationOptions.RunContinuationsAsynchronously);
+		var buildReached = steps.Where(s => s.build)
+			.ToDictionary(s => s, _ => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously));
+		using var stopBuilds = CancellationTokenSource.CreateLinkedTokenSource(token);
+		var buildTasks = new Dictionary<LocalStackStep, Task>();
+
+		async Task Build(LocalStackStep build)
+		{
+			try
+			{
+				if (WaitsForItsPlace(build))
+					await buildReached[build].Task.WaitAsync(stopBuilds.Token);
+				stopBuilds.Token.ThrowIfCancellationRequested();
+
+				var idx = steps.IndexOf(build);
+				var baseProgress = (float)idx / steps.Count;
+
+				if (FailedNeed(build) is { } failedNeed)
+				{
+					CantStart(build, failedNeed, baseProgress);
+					return;
+				}
+
+				// A build the stack asks for outright (by name or the build tag) still doesn't build when what it
+				// compiles hasn't changed since its last build.
+				if (!resolved.forceBuild && resolved.requested.Contains(build) && upToDate.Contains(build))
+				{
+					Send(build.name, "ready", "unchanged since the last build", baseProgress, LocalStackStepState.UpToDate,
+						"unchanged since the last build");
+					return;
+				}
+
+				var blocked = CannotStartReason(build, config);
+				if (blocked != null)
+				{
+					Send(build.name, "failed", blocked, baseProgress, LocalStackStepState.Failed, "can't start", hint: blocked);
+					if (!Showing) Log.Warning($"[{build.name}] {blocked}");
+					return;
+				}
+
+				Send(build.name, "starting", Launching(build, idx, out var why), baseProgress, LocalStackStepState.Building, why);
+				await AwaitStep(build, LaunchAndRegister(build), config, baseProgress, steps.Count, token, null);
+			}
+			catch (Exception e) when (e is not OperationCanceledException)
+			{
+				buildFailed.TrySetResult(e);
+				throw;
+			}
+		}
+
 		try
 		{
+			var lanes = BuildLanes(steps, config);
+			if (lanes.Count > 1)
+				Log.Information("Building in parallel: " + string.Join(", ", lanes.Select(l =>
+					Path.GetFileName(LaneOf(l[0], config)) + (l.Count > 1 ? $" ({l.Count})" : string.Empty))) + ".");
+			buildTasks = RunInLanes(lanes, Build);
+
 			var i = 0;
 			while (i < steps.Count)
 			{
@@ -602,10 +1396,27 @@ public class LocalStackUpCommand
 					var step = steps[idx];
 					var baseProgress = (float)idx / steps.Count;
 
+					// A build already started in its lane: its place in the stack is where the steps after it wait
+					// for it, and where one that waits for its place may start.
+					if (buildTasks.TryGetValue(step, out var buildTask))
+					{
+						buildReached[step].TrySetResult();
+						awaits.Add(buildTask);
+						continue;
+					}
+
+					// Something it needs failed (its build, the docker deps, a seed): it can't work, so it's marked and skipped.
+					if (FailedNeed(step) is { } failedNeed)
+					{
+						CantStart(step, failedNeed, baseProgress);
+						continue;
+					}
+
 					// Already running from a previous `up`? Leave it alone.
 					if (aliveByName.TryGetValue(step.name, out var running))
 					{
-						Send(step.name, "running", $"already running (pid={running.pid}) — skipping", baseProgress + 1f / steps.Count);
+						Send(step.name, "running", $"already running (pid={running.pid}) — skipping", baseProgress + 1f / steps.Count,
+							LocalStackStepState.Ready, "already running");
 						Log.Information($"[{step.name}] already running (pid={running.pid}) — skipping.");
 						continue;
 					}
@@ -617,7 +1428,8 @@ public class LocalStackUpCommand
 					if (await AlreadyServing(step, config, token))
 					{
 						AdoptAlreadyServing(step);
-						Send(step.name, "running", "already serving — skipping launch", baseProgress + 1f / steps.Count);
+						Send(step.name, "running", "already serving — skipping launch", baseProgress + 1f / steps.Count,
+							LocalStackStepState.Ready, "already serving");
 						Log.Information($"[{step.name}] already serving at its readiness endpoint — skipping launch " +
 						                "(adopted into the run-state, so `beam local stop` will still stop it).");
 						continue;
@@ -631,32 +1443,28 @@ public class LocalStackUpCommand
 					var blocked = CannotStartReason(step, config);
 					if (blocked != null)
 					{
-						Send(step.name, "failed", blocked, baseProgress);
-						Log.Warning($"[{step.name}] {blocked}");
+						Send(step.name, "failed", blocked, baseProgress, LocalStackStepState.Failed, "can't start", hint: blocked);
+						if (!Showing) Log.Warning($"[{step.name}] {blocked}");
 						continue;
 					}
 
 					// Ensure a valid local realm/login before the first beam step — microservices and
-					// extensions authenticate against the local backend on startup.
-					if (step.beam && !realmEnsured)
+					// extensions authenticate against the local backend on startup. The web package steps don't
+					// log in, and `:web` runs them before the backend is up, so they don't trigger it.
+					if (NeedsLogin(step) && !realmEnsured)
 					{
 						realmEnsured = true;
-						await EnsureRealmAndLogin(args, config);
+						await EnsureRealmAndLogin(args, config, steps);
 					}
 
-					// An unrequested build is surprising unless it says why, and the stream channel is what the
-					// user (and the Unity/portal tooling) actually sees.
-					var launching = $"launching ({idx + 1}/{steps.Count})";
-					if (autoBuild.Contains(step))
+					if (NeedsLogin(step) && _noLogin != null)
 					{
-						launching += " — its output is missing, so it builds even without --build";
-					}
-					else if (step.build && forcedWeb.Contains(step))
-					{
-						launching += " — the local web registry is on for this workspace, so it builds even without --build";
+						NoLogin(step, baseProgress);
+						continue;
 					}
 
-					Send(step.name, "starting", launching, baseProgress);
+					Send(step.name, "starting", Launching(step, idx, out var why), baseProgress,
+						step.build ? LocalStackStepState.Building : LocalStackStepState.Starting, why);
 
 					var stepToRun = step;
 					var l = LaunchAndRegister(stepToRun);
@@ -669,7 +1477,12 @@ public class LocalStackUpCommand
 						await Task.Delay(GroupLaunchStagger, token);
 				}
 
-				await Task.WhenAll(awaits);
+				// A build failing in its lane ends the bring-up now, even while this batch is still waiting on
+				// something else.
+				var batchDone = Task.WhenAll(awaits);
+				if (await Task.WhenAny(batchDone, buildFailed.Task) != batchDone)
+					System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(buildFailed.Task.Result);
+				await batchDone;
 			}
 
 			// Detached only: on Windows the tracked pid is the cmd.exe wrapper, not the service (cmd → powershell
@@ -680,25 +1493,38 @@ public class LocalStackUpCommand
 
 			// No beam steps ran the hook above — still ensure/validate the realm once the backend is up.
 			if (!realmEnsured)
-				await EnsureRealmAndLogin(args, config);
+				await EnsureRealmAndLogin(args, config, steps);
 
+			// From here the board says where the stack is. An attached terminal keeps it up for its keys; otherwise it
+			// closes and the summary says it instead.
+			_board.MarkUp();
+			if (!keepBoard) await EndBoard();
 			Send(string.Empty, "running",
-				$"Stack is up. Backend={config.host} Portal={config.portalUrl}.", 1f);
-			Log.Information($"Stack is up. Backend={config.host}  Portal={config.portalUrl}");
+				$"Stack is up. Backend={config.host} ({resolved.target}) Portal={config.portalUrl}.", 1f);
+			if (!Showing)
+				Log.Information($"Stack is up. Backend={config.host}  Portal={config.portalUrl}");
+			if (!_failed.IsEmpty && !Showing)
+				Log.Warning($"{_failed.Count} step(s) failed and the stack carried on without them: "
+				            + string.Join(", ", _failed.Select(f => $"{f.Key} ({f.Value})")) + ". `beam local logs <step>` shows why.");
+			else if (!keepBoard)
+				PrintSummary(config, args.runDetached);
 
 			if (args.runDetached)
 			{
 				// Fire-and-return (docker compose up -d style). NOTE: don't use this from an IDE run-config —
 				// when this process exits the IDE ends the run session and kills the child process tree.
-				Log.Information("Detached — the stack keeps running. Manage it with: beam local ps | beam local logs | beam local stop");
+				if (!Showing)
+					Log.Information("Detached — the stack keeps running. Manage it with: beam local ps | beam local logs | beam local stop");
 			}
 			else
 			{
-				// Attached (default): logs already stream live from each child. Hold the foreground until the
-				// user stops (Ctrl+C) or all long-running services exit, then tear the whole stack down.
-				Log.Information("Attached — streaming logs. Press Ctrl+C to stop the stack.");
-				try { await WaitAttached(launched, steps, config, token); }
+				// Attached (default): hold the foreground until the user stops (Ctrl+C) or all long-running services
+				// exit, then tear the whole stack down. With --verbose the children's output keeps streaming.
+				if (!Showing)
+					Log.Information("Attached — streaming logs. Press Ctrl+C to stop the stack.");
+				try { await WaitAttached(launched, steps, config, token, r => Controlled(r, "from another terminal"), runStatePath); }
 				catch (OperationCanceledException) { /* Ctrl+C — fall through to teardown */ }
+				await EndBoard();
 				Log.Information("Stopping the local stack...");
 				TearDown(launched);
 				if (!args.saveLogs) TryDeleteDir(logsDir);
@@ -706,6 +1532,8 @@ public class LocalStackUpCommand
 		}
 		catch (OperationCanceledException)
 		{
+			stopBuilds.Cancel();
+			await EndBoard();
 			if (args.runDetached)
 			{
 				// Detached: cancellation during bring-up leaves the stack running; run-state lets `stop` bring it down.
@@ -723,6 +1551,9 @@ public class LocalStackUpCommand
 		catch (Exception)
 		{
 			// A genuine bring-up failure: tear down what we started to avoid orphans, and clear detached run-state.
+			// No lane starts another build once the teardown is under way.
+			stopBuilds.Cancel();
+			await EndBoard();
 			TearDown(launched);
 			if (args.runDetached) LocalStackRunStateIO.Clear(runStatePath);
 			// Don't leave an empty temp log dir behind for a run that never came up.
@@ -734,7 +1565,51 @@ public class LocalStackUpCommand
 			// Closing the job kills anything still assigned (attached only) — belt-and-suspenders on top of the
 			// OS's own kill-on-close when the process exits.
 			job?.Dispose();
+
+			// An attached stack is gone with this command, so its board is too; a detached one's lasts until `stop`.
+			if (attached) LocalStackBoardIO.Clear(boardPath);
 		}
+	}
+
+	/// <summary>
+	/// How the board reaches the person: full screen in a terminal, a line per change without one, nothing when the output is
+	/// piped as data (the result stream carries the states), and nothing with <c>--verbose</c>, which streams the
+	/// steps' own output instead.
+	/// </summary>
+	private static LocalStackBoardMode BoardMode(LocalStackRunCommandArgs args)
+	{
+		var app = args.AppContext;
+		if (args.verbose || (app != null && (app.UsePipeOutput || app.ShowRawOutput) && !app.ShowPrettyOutput))
+			return LocalStackBoardMode.Silent;
+
+		// The full-screen board needs the terminal's alternate screen; a terminal without one gets the lines.
+		var capabilities = AnsiConsole.Profile.Capabilities;
+		return capabilities.Interactive && capabilities.Ansi && capabilities.AlternateBuffer
+			? LocalStackBoardMode.Live
+			: LocalStackBoardMode.Lines;
+	}
+
+	/// <summary>
+	/// What replaces the board once the stack is up: how many steps are ready, where the portal and the backend are,
+	/// each step that failed with why, and how to stop or manage the stack. After this only warnings and errors print.
+	/// </summary>
+	private void PrintSummary(LocalStackConfig config, bool detached)
+	{
+		var rows = _board.Rows;
+		var failed = rows.Where(r => r.state == LocalStackStepState.Failed).ToList();
+		LocalStackStyle.H1($"Stack {_board.Name} is up", LocalStackBoard.Summary(rows));
+		AnsiConsole.MarkupLine($"  {LocalStackStyle.H3("Portal")}   {Markup.Escape(config.portalUrl ?? string.Empty)}");
+		AnsiConsole.MarkupLine($"  {LocalStackStyle.H3("Backend")}  {Markup.Escape(config.host ?? string.Empty)}"
+		                       + (_targetLogin != null ? $" [grey](cid {Markup.Escape(_targetLogin.cid ?? "?")}, pid {Markup.Escape(_targetLogin.pid ?? "?")})[/]" : string.Empty));
+		if (failed.Count > 0 || rows.Any(r => r.state == LocalStackStepState.Degraded))
+			LocalStackStyle.H2("Needs a look");
+		foreach (var row in failed.Concat(rows.Where(r => r.state == LocalStackStepState.Degraded)))
+			AnsiConsole.MarkupLine($"  [{LocalStackBoard.Colour(row.state)}]{row.state}[/] {Markup.Escape(row.label ?? row.name)}"
+			                       + (string.IsNullOrWhiteSpace(row.detail) ? string.Empty : $" [grey]({Markup.Escape(row.detail)})[/]"));
+
+		AnsiConsole.MarkupLine(detached
+			? "[grey]It keeps running. `beam local ps` shows it, `beam local logs <step>` reads a step, `beam local stop` stops it.[/]"
+			: "[grey]Ctrl+C stops the stack. `beam local ps` in another terminal shows this board.[/]");
 	}
 
 	/// <summary>
@@ -747,27 +1622,50 @@ public class LocalStackUpCommand
 	/// and has no foreground to poll from.
 	/// </summary>
 	private async Task WaitAttached(List<Launched> launched, List<LocalStackStep> steps, LocalStackConfig config,
-		CancellationToken token)
+		CancellationToken token, Func<LocalStackControlRequest, Task<LocalStackControlResponse>> control, string runStatePath)
 	{
-		List<Task> longRunning;
-		lock (_launchedLock)
-			longRunning = launched.Where(l => !l.Step.waitForExit).Select(l => l.ExitedTask).ToList();
-
 		// Stops the watchdog when the wait ends for any reason, so it can't outlive the run it is watching.
 		using var watchdogStop = CancellationTokenSource.CreateLinkedTokenSource(token);
 		var watchdog = WatchDockerContainers(steps, config, watchdogStop.Token);
 
 		try
 		{
-			if (longRunning.Count == 0)
+			while (true)
 			{
-				// No long-running services to hold the foreground — just wait for Ctrl+C.
-				await Task.Delay(Timeout.Infinite, token);
-				return;
-			}
+				token.ThrowIfCancellationRequested();
 
-			await Task.WhenAny(Task.WhenAll(longRunning), Task.Delay(Timeout.Infinite, token));
-			token.ThrowIfCancellationRequested();
+				// Requests from another terminal (beam local restart/start/stop, or run of another name), one at a time.
+				foreach (var request in LocalStackControl.Take(runStatePath))
+				{
+					LocalStackControlResponse response;
+					try
+					{
+						response = await control(request);
+					}
+					catch (Exception e) when (e is not OperationCanceledException)
+					{
+						response = new LocalStackControlResponse { ok = false, message = e.Message };
+					}
+
+					response.id = request.id;
+					LocalStackControl.Answer(runStatePath, response);
+					if (response.ok && request.action == "stop" && request.items.Count == 0)
+						return;
+				}
+
+				// Every service down (exited, or stopped from another terminal): the run is over. With none ever
+				// started, only Ctrl+C ends it.
+				List<Launched> services;
+				lock (_launchedLock)
+					services = launched.Where(l => !l.Step.waitForExit)
+						.GroupBy(l => l.Step.name, StringComparer.OrdinalIgnoreCase)
+						.Select(g => g.Last())
+						.ToList();
+				if (services.Count > 0 && services.All(l => l.ExitedTask.IsCompleted))
+					return;
+
+				await Task.Delay(1000, token);
+			}
 		}
 		finally
 		{
@@ -838,7 +1736,7 @@ public class LocalStackUpCommand
 		               $"(exit {container.exitCode}) — {container.Explain()}";
 
 		Log.Error(headline);
-		Send(target.step.name, "failed", headline, 1f);
+		Send(target.step.name, "failed", headline, 1f, LocalStackStepState.Failed, $"container {container.name} died", announce: false);
 
 		var tail = LocalStackDockerWatchdog.LogTail(dockerPath, container.name, 20);
 		if (!string.IsNullOrWhiteSpace(tail))
@@ -869,7 +1767,7 @@ public class LocalStackUpCommand
 		{
 			gaveUp.Add(step);
 			Log.Error($"[{step}] its containers have been restarted {used}/{budget} times and are still dying — " +
-			          "giving up on them. Fix the underlying crash, then re-run `beam local up`.");
+			          "giving up on them. Fix the underlying crash, then run the stack again.");
 			return;
 		}
 
@@ -886,7 +1784,7 @@ public class LocalStackUpCommand
 
 		Log.Warning($"[{step}] containers restarted, but the services that were already connected to them still " +
 		            "hold dead connections and will not recover on their own — stop this run (Ctrl+C) and " +
-		            "re-run `beam local up`.");
+		            "run the stack again.");
 	}
 
 	/// <summary>
@@ -960,11 +1858,11 @@ public class LocalStackUpCommand
 			return null;
 		}
 
-		// Deliberately does NOT tell the user to pass --build: when this is a build output folder, its build step
+		// Deliberately does NOT tell the user to pass :build: when this is a build output folder, its build step
 		// has already run (or been filtered out), so the honest advice is to look at why it produced nothing.
 		return $"working directory '{workDir}' does not exist, so this step cannot start. If it is a build "
 		       + "output folder, its build step failed, timed out, or was skipped (see `beam local logs`); "
-		       + "otherwise fix the path in the manifest (or re-run `beam local init`)";
+		       + "otherwise fix the path in the settings (or recreate them with `beam local setup --only settings --force`)";
 	}
 
 	/// <summary>Best-effort recursive delete of a directory (used to clean up ephemeral temp log dirs).</summary>
@@ -1001,34 +1899,93 @@ public class LocalStackUpCommand
 		catch { /* best-effort — never fail bring-up over log cleanup */ }
 	}
 
-	private void Send(string step, string status, string message, float progress) =>
-		SendResults(new LocalStackUpResultStream
+	/// <summary>
+	/// Reports one update on the result stream. With <paramref name="state"/>, the step's board row moves there too;
+	/// a failure passes its last log lines (<paramref name="tail"/>) and where the rest is (<paramref name="hint"/>),
+	/// which the board prints unless <paramref name="announce"/> is false (something else already said it).
+	/// </summary>
+	private void Send(string step, string status, string message, float progress, LocalStackStepState? state = null,
+		string detail = null, IReadOnlyList<string> tail = null, string hint = null, bool announce = true)
+	{
+		LocalStackBoardRow row = null;
+		if (_board != null && !string.IsNullOrEmpty(step))
 		{
-			step = step, status = status, message = message, progressRatio = Math.Clamp(progress, 0f, 1f)
+			if (state != null)
+				_board.Set(step, state.Value, detail, tail, hint, announce);
+			row = _board.Row(step);
+		}
+
+		SendResults(new LocalStackRunResultStream
+		{
+			step = step, status = status, message = message, progressRatio = Math.Clamp(progress, 0f, 1f),
+			label = row?.label, state = row?.state.ToString(), elapsedSeconds = row?.ElapsedSeconds(DateTime.UtcNow) ?? 0
 		});
+	}
+
+	/// <summary>Why a build step builds this run, for the board and the logs.</summary>
+	private string Reason(LocalStackStep step) => _buildReasons != null && _buildReasons.TryGetValue(step, out var reason)
+		? reason
+		: "needed by the services that run on it";
+
+	private Dictionary<LocalStackStep, string> _buildReasons;
+
+	/// <summary>The last lines a failed step wrote, from whichever of its two log files it wrote to last.</summary>
+	private static List<string> Tail(Launched l, int count = 6)
+	{
+		var file = new[] { l.StdoutLog, l.StderrLog }
+			.Where(f => !string.IsNullOrEmpty(f) && File.Exists(f) && new FileInfo(f).Length > 0)
+			.OrderByDescending(File.GetLastWriteTimeUtc)
+			.FirstOrDefault();
+		if (file == null) return new List<string>();
+
+		return ReadTail(file, 8192).Split('\n').Select(x => x.TrimEnd('\r')).Where(x => !string.IsNullOrWhiteSpace(x))
+			.TakeLast(count).Select(x => Trim(x, 200)).ToList();
+	}
+
+	/// <summary>Where a step's whole log is: <c>beam local logs</c> for a detached stack, the file for an attached one
+	/// (kept with --save-logs; the run's temp folder goes when the run ends).</summary>
+	private string LogHint(Launched l) =>
+		_attached ? $"log: {l.StdoutLog}" : $"beam local logs \"{l.Step.name}\"";
 
 	/// <summary>
-	/// Runs once before the first beam step: with <c>--create-realm</c>, bootstraps a fresh local realm and
-	/// writes the workspace config; otherwise validates the saved login (reusing cid/pid + refreshing the
-	/// token) and warns if it's invalid. Never aborts the stack — realm issues are surfaced, not fatal.
+	/// Runs once, before the first beam step of a stack on the local backend: reuses the local target's saved login
+	/// while its token still works, and otherwise creates the local realm (or logs into it when it exists) and saves
+	/// that login under <c>.beamable/local/targets/local/</c>. The stack's beam steps get it as environment
+	/// overrides; the workspace's own <c>.beamable</c> login is never changed. When the stack runs the C# gateway, the
+	/// org's realms are then bound to the zones dev, staging and prod. Never aborts the stack — realm issues
+	/// are surfaced, not fatal.
 	/// </summary>
-	private async Task EnsureRealmAndLogin(LocalStackUpCommandArgs args, LocalStackConfig config)
+	private async Task EnsureRealmAndLogin(LocalStackRunCommandArgs args, LocalStackConfig config, IReadOnlyList<LocalStackStep> steps)
 	{
 		try
 		{
-			// Reuse the existing login only if the workspace is already pointed at the local backend and its
-			// token still resolves — otherwise (e.g. config points at a dev server) fall through and re-point it.
-			if (await LocalRealmService.IsLoginValidAsync(args, config.host))
+			var token = args.Lifecycle.CancellationToken;
+			var saved = await LocalStackTargets.Saved(_workspaceRoot, _targetName, config.host, token);
+			if (saved != null)
 			{
+				// A login saved on another realm (prod, when only the games' roots were listed) moves to the dev realm;
+				// its token is the org's, so only the realm changes.
+				var realm = LocalStackTargets.LocalRealm(await LocalStackTargets.Realms(config.host, saved, token));
+				if (realm != null && realm.Pid != saved.pid)
+				{
+					Log.Information($"The saved local login was on realm {saved.pid}; using {realm.Pid} ({realm.ProjectName}).");
+					saved.pid = realm.Pid;
+					LocalStackTargets.Save(_workspaceRoot, _targetName, saved);
+				}
+
+				_targetLogin = saved;
+				_noLogin = null;
 				Log.Information("Local login OK.");
+				await EnsureZones(args, config, steps, saved, token);
 				return;
 			}
 
-			// Invalid (e.g. the realm was wiped by a docker cleanup). By default, bootstrap a fresh realm so
-			// the microservices/extensions can authenticate; --no-create-realm turns this into a warning.
+			// None yet, or it stopped working (e.g. the realm was wiped by a docker cleanup). By default, create the
+			// realm so the microservices/extensions can authenticate; --no-create-realm turns this into a warning.
 			if (args.noCreateRealm)
 			{
-				Log.Warning("Local login is invalid (the realm may have been wiped). Run `beam init`, or drop --no-create-realm to auto-create one.");
+				Log.Warning("There is no working login to the local realm (it may have been wiped). Drop --no-create-realm to create it, or log in to it.");
+				_noLogin = "--no-create-realm, and the saved one doesn't work";
 				Send(string.Empty, "running", "local login invalid — create skipped (--no-create-realm)", 1f);
 				return;
 			}
@@ -1042,13 +1999,47 @@ public class LocalStackUpCommand
 				alias = args.realmAlias ?? "beam-project",
 				password = args.realmPassword ?? "123456",
 			};
-			var realm = await LocalRealmService.EnsureRealmAsync(args, config.host, opts);
-			Send(string.Empty, "running", $"local realm ready cid={realm.cid} pid={realm.pid}", 1f);
+			var login = await LocalRealmService.EnsureRealmAsync(config.host, opts, token);
+			LocalStackTargets.Save(_workspaceRoot, _targetName, login);
+			_targetLogin = login;
+			_noLogin = null;
+			Send(string.Empty, "running", $"local realm ready cid={login.cid} pid={login.pid}", 1f);
+			await EnsureZones(args, config, steps, login, token);
 		}
 		catch (Exception e)
 		{
 			// Don't tear down an otherwise-healthy stack over a realm/login problem — surface it and continue.
 			Log.Warning($"Realm/login setup issue: {e.Message}");
+			_noLogin = e.Message;
+		}
+	}
+
+	/// <summary>
+	/// Binds the local org's realms to the zones dev, staging and prod (see <see cref="LocalStackTargets.EnsureZones"/>)
+	/// when the stack runs the C# gateway, which serves the zone calls. A login whose token may not change zones is
+	/// replaced, for these calls only, by the org's password login. A failure is a warning.
+	/// </summary>
+	private static async Task EnsureZones(LocalStackRunCommandArgs args, LocalStackConfig config, IReadOnlyList<LocalStackStep> steps,
+		LocalStackTargetLogin login, CancellationToken token)
+	{
+		if (!steps.Any(s => string.Equals(s.name, LocalStackDependencies.GatewayStep, StringComparison.OrdinalIgnoreCase))) return;
+		try
+		{
+			try
+			{
+				await LocalStackTargets.EnsureZones(config.host, login, token);
+			}
+			catch (CliException e) when (e.Message.Contains("(401)") || e.Message.Contains("(403)"))
+			{
+				var admin = await LocalStackTargets.Login(config.host, login.cid, args.realmEmail ?? "beam@beamable.com", args.realmPassword ?? "123456", token);
+				await LocalStackTargets.EnsureZones(config.host, admin, token);
+			}
+
+			Log.Information($"Local zones ready: {string.Join(", ", LocalStackTargets.ZoneTiers)}, each bound to its realm.");
+		}
+		catch (Exception e) when (e is not OperationCanceledException)
+		{
+			Log.Warning($"Couldn't set up the local zones ({e.Message}). Zone-scoped services and extensions won't find a zone.");
 		}
 	}
 
@@ -1072,176 +2063,6 @@ public class LocalStackUpCommand
 	/// completes well within the timeout. Readiness waits still overlap — only the launches are spaced out.
 	/// </summary>
 	private static readonly TimeSpan GroupLaunchStagger = TimeSpan.FromMilliseconds(2000);
-
-	/// <summary>
-	/// In-memory migration for manifests written by a pre-Maven-cache-fix CLI. See the call site in
-	/// <see cref="Handle"/> for the WHY. Two rewrites, each conditional so a fresh manifest is a no-op:
-	/// <list type="bullet">
-	/// <item><c>build: scala</c> — swap <c>clean package</c> for <c>clean install</c> (so <c>core</c> lands in
-	/// <c>~/.m2</c>) and add <c>-U</c> (so any cached "not found in nexus" miss is invalidated on this run).</item>
-	/// <item>Every <c>scala: *</c> launcher script — insert <c>-o</c> before <c>dependency:build-classpath</c>
-	/// so the classpath resolve runs offline and cannot short-circuit on a stale <c>_remote.repositories</c>.</item>
-	/// </list>
-	/// Purely string-level, and each replacement is idempotent — running the migration twice cannot re-double
-	/// a flag. That matters because the manifest itself is not rewritten; every future <c>up</c> re-migrates.
-	/// </summary>
-	public static void MigrateStaleScalaArguments(LocalStackConfig config)
-	{
-		if (config?.steps == null) return;
-
-		foreach (var step in config.steps)
-		{
-			if (step == null || string.IsNullOrEmpty(step.arguments)) continue;
-
-			if (string.Equals(step.name, "build: scala", StringComparison.OrdinalIgnoreCase))
-			{
-				step.arguments = MigrateBuildScalaArguments(step.arguments);
-			}
-			else if (step.name != null
-			         && step.name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase))
-			{
-				step.arguments = MigrateScalaLauncherArguments(step.arguments);
-			}
-		}
-	}
-
-	/// <summary>
-	/// <c>-q -pl … -am clean package -DskipTests</c> → <c>-q -U -pl … -am clean install -DskipTests</c>.
-	/// Idempotent: the <c>-U</c> add and the <c>package</c>→<c>install</c> swap both check for the target state
-	/// first, so a manifest already on the new form comes out unchanged.
-	/// </summary>
-	public static string MigrateBuildScalaArguments(string arguments)
-	{
-		if (string.IsNullOrEmpty(arguments)) return arguments;
-		var updated = arguments;
-
-		// Verb swap. Only when it is followed by `-DskipTests` so we don't accidentally hit a user string that
-		// happens to contain the word "package" (e.g. inside a -pl path). The full phrase is a template fingerprint.
-		if (!updated.Contains("clean install", StringComparison.Ordinal)
-		    && updated.Contains("clean package -DskipTests", StringComparison.Ordinal))
-		{
-			updated = updated.Replace("clean package -DskipTests", "clean install -DskipTests", StringComparison.Ordinal);
-		}
-
-		// Add -U. Insert right after the leading `-q ` so the flag order matches what the current template emits.
-		// If the manifest happens not to lead with `-q`, prepend `-U ` at the very start — same effect, Maven does
-		// not care about order.
-		if (!ContainsFlag(updated, "-U"))
-		{
-			if (updated.StartsWith("-q ", StringComparison.Ordinal))
-			{
-				updated = "-q -U " + updated.Substring(3);
-			}
-			else
-			{
-				updated = "-U " + updated;
-			}
-		}
-
-		return updated;
-	}
-
-	/// <summary>
-	/// Insert <c>-o </c> (offline) before <c>dependency:build-classpath</c> in the launcher script, if it is
-	/// not already present in the same <c>mvn</c> invocation. Also patches the empty-cache guard message so
-	/// the user sees the current instructions rather than the pre-fix ones.
-	/// </summary>
-	public static string MigrateScalaLauncherArguments(string arguments)
-	{
-		if (string.IsNullOrEmpty(arguments)) return arguments;
-		if (!arguments.Contains("dependency:build-classpath", StringComparison.Ordinal)) return arguments;
-		if (ContainsFlag(arguments, "-o")) return arguments; // already migrated (or user hand-added it)
-
-		// The launcher's mvn call is the ONLY line that contains `dependency:build-classpath`, so inserting `-o`
-		// right in front of that goal is unambiguous. Same result on the sh and PowerShell shells.
-		return arguments.Replace("dependency:build-classpath", "-o dependency:build-classpath", StringComparison.Ordinal);
-	}
-
-	/// <summary>
-	/// True when <paramref name="arguments"/> passes <paramref name="flag"/> (e.g. <c>-U</c>, <c>-o</c>) as a
-	/// whole token — so <c>-U</c> is NOT reported for a string that contains <c>-UserHome</c> or <c>-Unpin</c>.
-	/// The check is a whitespace boundary on either side, or start/end of string.
-	/// </summary>
-	private static bool ContainsFlag(string arguments, string flag)
-	{
-		if (string.IsNullOrEmpty(arguments) || string.IsNullOrEmpty(flag)) return false;
-		var idx = 0;
-		while ((idx = arguments.IndexOf(flag, idx, StringComparison.Ordinal)) >= 0)
-		{
-			var before = idx == 0 || char.IsWhiteSpace(arguments[idx - 1]);
-			var afterIdx = idx + flag.Length;
-			var after = afterIdx >= arguments.Length || char.IsWhiteSpace(arguments[afterIdx]);
-			if (before && after) return true;
-			idx = afterIdx;
-		}
-		return false;
-	}
-
-	/// <summary>
-	/// Local Maven repo path that must hold <c>com.kickstand:core:jar:1.0-SNAPSHOT</c> for the per-service
-	/// launcher's offline <c>dependency:build-classpath</c> to succeed. Written by <c>build: scala</c>'s
-	/// <c>mvn install</c>. Public so <see cref="ShouldForceBuildScalaForMissingCore"/> can be exercised in tests
-	/// with an arbitrary path.
-	/// </summary>
-	public static string ScalaCoreLocalMavenJarPath { get; } = Path.Combine(
-		Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) ?? string.Empty,
-		".m2", "repository", "com", "kickstand", "core", "1.0-SNAPSHOT", "core-1.0-SNAPSHOT.jar");
-
-	/// <summary>
-	/// If the run includes a Scala launch step and <c>com.kickstand:core</c> is not in <c>~/.m2</c>, force the
-	/// existing <c>build: scala</c> step into <paramref name="autoBuild"/>. The reactor's <c>mvn install -U</c>
-	/// puts core there and invalidates any cached "not found in nexus" miss on machines that were previously
-	/// trapped by an older CLI's <c>mvn package</c> step.
-	///
-	/// The wider <see cref="LocalStackConfigIO.BuildOutputMissing"/> check the caller ran above already catches
-	/// <em>never-compiled</em> modules (empty <c>target/classes</c>). It does NOT catch a machine whose
-	/// <c>target/classes</c> is populated by an earlier <c>mvn package</c> — because <c>package</c> writes
-	/// <c>target/classes</c> and <c>target/*.jar</c> but never <c>~/.m2</c>. This preflight is the second half
-	/// of the "is it actually built and installed?" question.
-	/// </summary>
-	private static void EnsureScalaCoreInLocalMavenRepo(LocalStackConfig config, HashSet<LocalStackStep> autoBuild)
-	{
-		var step = ShouldForceBuildScalaForMissingCore(config, autoBuild, ScalaCoreLocalMavenJarPath);
-		if (step == null) return;
-
-		autoBuild.Add(step);
-		Log.Information(
-			$"[{step.name}] running without --build: 'com.kickstand:core' is not in your local Maven " +
-			$"repository ({ScalaCoreLocalMavenJarPath}). Building the Scala reactor once so the per-service " +
-			"launcher's offline classpath resolve can find it.");
-	}
-
-	/// <summary>
-	/// Pure decision helper for <see cref="EnsureScalaCoreInLocalMavenRepo"/> — no logging, no side effects,
-	/// no reference to the process user profile. Returns the <c>build: scala</c> step that should be added to
-	/// autoBuild, or null when nothing should change.
-	/// </summary>
-	public static LocalStackStep ShouldForceBuildScalaForMissingCore(LocalStackConfig config,
-		HashSet<LocalStackStep> autoBuild, string coreJarPath)
-	{
-		if (config?.steps == null) return null;
-		if (autoBuild == null) return null;
-		if (string.IsNullOrWhiteSpace(coreJarPath)) return null;
-
-		var buildScala = config.steps.FirstOrDefault(s =>
-			s != null
-			&& s.enabled
-			&& s.build
-			&& string.Equals(s.name, "build: scala", StringComparison.OrdinalIgnoreCase));
-		if (buildScala == null) return null;
-
-		// Already going to run — either via --build (empty set at the call site) or via BuildOutputMissing.
-		if (autoBuild.Contains(buildScala)) return null;
-
-		var hasScalaLaunch = config.steps.Any(s =>
-			s != null && s.enabled && !string.IsNullOrEmpty(s.name)
-			&& s.name.StartsWith("scala: ", StringComparison.OrdinalIgnoreCase));
-		if (!hasScalaLaunch) return null;
-
-		if (File.Exists(coreJarPath)) return null;
-
-		return buildScala;
-	}
 
 	/// <summary>
 	/// Inputs for the offline maven-dependency-plugin probe, resolved from the manifest by
@@ -1295,7 +2116,7 @@ public class LocalStackUpCommand
 	/// <item><c>shell</c> — the same narrowing the skill template applies to this prefix
 	/// (<c>LocalStackSkillTemplate.AppendSelection</c>); <c>scala: redis</c> is a <c>command = docker</c> step.</item>
 	/// <item>the launcher fingerprint <c>dependency:build-classpath</c> in <c>arguments</c> — the exact resolve the
-	/// probe protects, and the same string <see cref="MigrateScalaLauncherArguments"/> keys off. It keeps a
+	/// probe protects. It keeps a
 	/// hand-edited manifest from pointing the probe at a module that never runs a classpath resolve.</item>
 	/// </list>
 	/// </summary>
@@ -1392,7 +2213,7 @@ public class LocalStackUpCommand
 	/// <c>dependency</c> plugin prefix. Probes it offline; if that fails, primes the plugin once ONLINE (which
 	/// downloads the plugin-group metadata and clears any cached "not found" miss), re-probes, and — if it still
 	/// cannot be made to work (no network, a blocked Maven repo) — throws with the exact manual fix. See the call
-	/// site in <see cref="Handle"/> for why <c>--build</c> alone does not cover this.
+	/// site in <see cref="Handle"/> for why <c>:build</c> alone does not cover this.
 	/// </summary>
 	private static void EnsureMavenDependencyPluginResolvableOffline(LocalStackConfig config, bool forceBuild)
 	{
@@ -1409,7 +2230,7 @@ public class LocalStackUpCommand
 		if (!File.Exists(Path.Combine(plan.scalaDir, plan.probeModule, "pom.xml"))) return;
 
 		// Fast path: a previous run already wrote a non-empty classpath cache, which means the offline resolve
-		// demonstrably works here — skip the maven probe so a healthy `up` pays nothing. `--build` wipes that cache
+		// demonstrably works here — skip the maven probe so a healthy `up` pays nothing. `:build` wipes that cache
 		// later in Handle, so always probe on a build: it is exactly the run where priming matters.
 		if (!forceBuild && HasNonEmptyScalaClasspathCache()) return;
 
@@ -1541,7 +2362,7 @@ public class LocalStackUpCommand
 	/// <summary>
 	/// True when a previous run left a non-empty <c>cp-*.txt</c> in the shared Scala classpath cache
 	/// (<c>&lt;temp&gt;/beam-scala-cp</c>) — proof the offline resolve works on this machine, so the probe can be
-	/// skipped. Mirrors the temp location the launcher scripts write to and that <c>up</c> wipes on <c>--build</c>.
+	/// skipped. Mirrors the temp location the launcher scripts write to and that <c>up</c> wipes on <c>:build</c>.
 	/// </summary>
 	private static bool HasNonEmptyScalaClasspathCache()
 	{
@@ -1560,7 +2381,7 @@ public class LocalStackUpCommand
 
 	/// <summary>
 	/// The fail-fast message when the offline resolve is broken and the automatic online prime could not fix it.
-	/// Names the real cause, says plainly that <c>--build</c> does not fix it, and gives the exact online command
+	/// Names the real cause, says plainly that <c>:build</c> does not fix it, and gives the exact online command
 	/// plus the cached-miss cleanup — the same guidance the per-service launcher's empty-cache guard prints.
 	/// </summary>
 	private static string BuildDependencyPluginRemediation(MavenDependencyProbePlan plan)
@@ -1574,10 +2395,10 @@ public class LocalStackUpCommand
 			"The Scala services can't start: Maven can't resolve the 'dependency' plugin prefix offline, so each " +
 			"service's classpath step ('mvn -o dependency:build-classpath') fails with \"No plugin found for prefix " +
 			"'dependency'\" — even though com.kickstand:core is present in ~/.m2.\n\n" +
-			"'beam local up --build' does NOT fix this: the reactor resolves plugins by version, never by prefix, so " +
+			"Adding :build does NOT fix this: the reactor resolves plugins by version, never by prefix, so " +
 			"it never caches the plugin-prefix metadata this needs. Beam tried to prime it online automatically and " +
 			"could not (usually no network, or a blocked Maven repo).\n\n" +
-			"Fix it by priming the plugin once, online, then re-run 'beam local up':\n" +
+			"Fix it by priming the plugin once, online, then run the stack again:\n" +
 			$"  cd \"{plan.scalaDir}\"\n" +
 			$"  {mvnDisplay} -U dependency:build-classpath -pl {plan.probeModule}\n\n" +
 			"If it still fails, delete the cached-miss markers and retry:\n" +
@@ -1636,7 +2457,7 @@ public class LocalStackUpCommand
 			}
 
 			if (proc.ExitCode != 0)
-				throw new CliException("Docker does not appear to be running. Start Docker Desktop (or the Docker daemon), then re-run `beam local up`.");
+				throw new CliException("Docker does not appear to be running. Start Docker Desktop (or the Docker daemon), then run the stack again.");
 
 			Log.Information("Docker daemon is running.");
 		}
@@ -1646,7 +2467,7 @@ public class LocalStackUpCommand
 		}
 		catch (Exception e)
 		{
-			throw new CliException($"Failed to verify Docker is running ({dockerPath}): {e.Message}. Start Docker and re-run `beam local up`.");
+			throw new CliException($"Failed to verify Docker is running ({dockerPath}): {e.Message}. Start Docker and re-run `beam local run`.");
 		}
 	}
 
@@ -1780,7 +2601,7 @@ public class LocalStackUpCommand
 		var envHome = ConfigService.CustomJavaHome;
 		if (!string.IsNullOrWhiteSpace(envHome)) return envHome;
 
-		// 3. Manifest-pinned path (stored by beam local init — the user's chosen version)
+		// 3. Manifest-pinned path (stored by beam local setup — the user's chosen version)
 		if (!string.IsNullOrWhiteSpace(config.javaHome)) return config.javaHome;
 
 		// 4. The toolchain `beam local setup` provisioned. `setup` also mirrors this into javaHome above, so this
@@ -1910,7 +2731,7 @@ public class LocalStackUpCommand
 		// executables — or back to the bare command name when no toolchain was provisioned.
 		var command = LocalStackConfigIO.Substitute(step.command, config);
 
-		// `--build` always does a CLEAN Scala build: an incremental `mvn package` can leave cross-module classes
+		// `:build` always does a CLEAN Scala build: an incremental `mvn package` can leave cross-module classes
 		// skewed (the NoSuchMethodError class of failure). Inject `clean` for manifests generated before this
 		// whose mvn build step only says `package`; new manifests already include it.
 		if (step.build && IsMvn(command) && !argsText.Contains("clean"))
@@ -1926,13 +2747,10 @@ public class LocalStackUpCommand
 		var safe = SafeName(step.name);
 		var stdoutLog = Path.Combine(logsDir, safe + ".log");
 		var stderrLog = Path.Combine(logsDir, safe + ".err.log");
-		// Detached (and attached --save-logs) redirect/tee to log files, so reset them for this run's lifetime.
-		// Attached without --save-logs pipes straight to the console and writes no log files.
-		if (!attached || saveLogs)
-		{
-			ResetLog(stdoutLog);
-			ResetLog(stderrLog);
-		}
+		// Every run writes each step's output to its log files: detached redirects to them, attached tees to them
+		// (the board shows no output, and a failure shows the file's last lines). Reset them for this run.
+		ResetLog(stdoutLog);
+		ResetLog(stderrLog);
 
 		var kind = ResolveKind(step);
 
@@ -1980,6 +2798,24 @@ public class LocalStackUpCommand
 		// developer's PATH, which is the drift the toolchain exists to remove.
 		ApplyToolchainEnvironment(psi, config);
 
+		// The stack's target. Beam steps get it as environment overrides, which `project run`, the services it starts
+		// and their generate-env all read instead of the workspace's .beamable config. The portal gets its API host as
+		// a process variable, which Vite puts ahead of .env.local, so that file is never rewritten. Rewriting both
+		// used to repoint every other beam command and the portal too, and left them there after the stack stopped.
+		if (step.beam)
+		{
+			foreach (var (k, v) in LocalStackTargets.Environment(_targetLogin))
+				psi.Environment[k] = v;
+		}
+
+		if (string.Equals(step.name, LocalStackTemplate.PortalFrontendStepName, StringComparison.OrdinalIgnoreCase))
+		{
+			psi.Environment[PortalEnvService.ApiBaseKey] = config.host;
+			// The extensions' SDK comes from the local CDN, which serves local builds and proxies the published ones.
+			if (_localWebPackages)
+				psi.Environment[PortalEnvService.SdkCdnBaseKey] = PortalEnvService.LocalSdkCdnBase;
+		}
+
 		foreach (var (k, v) in step.environment)
 			psi.Environment[k] = LocalStackConfigIO.Substitute(v, config);
 
@@ -2022,11 +2858,11 @@ public class LocalStackUpCommand
 			// Detach stdin so the child never blocks reading the console.
 			try { proc.StandardInput.Close(); } catch { /* some children don't open stdin */ }
 
-			// Pipe stdout/stderr live: to the console (prefixed), to the readiness buffer, and — under
-			// --save-logs — tee to the log files. No file is required for the stack to run.
+			// Pipe stdout/stderr live: to the readiness buffer, to the log files, and with --verbose to the console
+			// (prefixed with the step name).
 			buffer = new StreamLineBuffer();
-			_ = PumpAsync(proc.StandardOutput, step.name, isError: false, buffer, saveLogs ? stdoutLog : null, health);
-			_ = PumpAsync(proc.StandardError, step.name, isError: true, buffer, saveLogs ? stderrLog : null, health);
+			_ = PumpAsync(proc.StandardOutput, step.name, isError: false, buffer, stdoutLog, health, _verbose);
+			_ = PumpAsync(proc.StandardError, step.name, isError: true, buffer, stderrLog, health, _verbose);
 		}
 
 		return new Launched
@@ -2066,19 +2902,19 @@ public class LocalStackUpCommand
 		return cmd;
 	}
 
-	/// <summary>Attached mode: streams one of a child's piped readers to the console (prefixed with the step
-	/// name), feeds the readiness buffer, and — when <paramref name="teePath"/> is set (--save-logs) — appends
-	/// each line to the log file.</summary>
+	/// <summary>Attached mode: feeds the readiness buffer from one of a child's piped readers, appends each line to
+	/// the log file at <paramref name="teePath"/>, and with <paramref name="echo"/> (--verbose) prints it, prefixed
+	/// with the step name.</summary>
 	private static async Task PumpAsync(StreamReader reader, string name, bool isError, StreamLineBuffer buffer,
-		string teePath, StepHealth health = null)
+		string teePath, StepHealth health = null, bool echo = true)
 	{
 		try
 		{
 			string line;
 			while ((line = await reader.ReadLineAsync()) != null)
 			{
-				if (isError) Log.Warning($"[{name}] {line}");
-				else Log.Information($"[{name}] {line}");
+				if (echo && isError) Log.Warning($"[{name}] {line}");
+				else if (echo) Log.Information($"[{name}] {line}");
 				buffer.Append(line);
 
 				// Substring match on the raw line: the runtime logs structured JSON under
@@ -2112,7 +2948,11 @@ public class LocalStackUpCommand
 		if (step.beam)
 			parts = new[] { beamExe }.Concat(beamLeading).Concat(SplitArgs(argsText));
 		else
-			parts = new[] { ResolveExecutable(command, workDir) }.Concat(SplitArgs(argsText));
+		{
+			// A program saved with its arguments in it runs as the program and those arguments.
+			var (program, arguments) = LocalStackCustomSteps.SplitProgram(command, argsText);
+			parts = new[] { ResolveExecutable(program, workDir) }.Concat(SplitArgs(arguments));
+		}
 
 		if (OperatingSystem.IsWindows())
 			return string.Join(" ", parts.Select(WinQuote));
@@ -2120,7 +2960,8 @@ public class LocalStackUpCommand
 		return "exec " + string.Join(" ", parts.Select(Sq));
 	}
 
-	private static string SafeName(string name)
+	/// <summary>A step's name as its log files are named.</summary>
+	public static string SafeName(string name)
 	{
 		var cleaned = Regex.Replace(name ?? "step", @"[^A-Za-z0-9._-]+", "_").Trim('_');
 		return string.IsNullOrEmpty(cleaned) ? "step" : cleaned;
@@ -2178,8 +3019,8 @@ public class LocalStackUpCommand
 		{
 			throw new CliException(
 				$"Could not reset log '{path}': {e.Message}. It may be held by another process — a previous " +
-				"`beam local up` that is still running or was interrupted. Run `beam local stop`, close any other " +
-				"`beam local up`, or kill the leftover process, then retry.");
+				"`beam local run` that is still running or was interrupted. Run `beam local stop`, close any other " +
+				"`beam local run`, or kill the leftover process, then retry.");
 		}
 	}
 
@@ -2230,7 +3071,7 @@ public class LocalStackUpCommand
 		{
 			Send(step.name, "degraded",
 				"running, but its federation components failed to register — see `beam local logs`",
-				baseProgress + 1f / totalSteps);
+				baseProgress + 1f / totalSteps, LocalStackStepState.Degraded, "federation didn't register");
 			Log.Warning($"[{step.name}] running, but federation registration failed — this service will not "
 			            + "receive federated traffic. See `beam local logs` for the platform's rejection.");
 		});
@@ -2260,42 +3101,76 @@ public class LocalStackUpCommand
 		if (l.ExitedTask.IsCompleted)
 		{
 			var code = SafeExitCode(l);
-			Send(step.name, "failed", $"exited on startup (code {code}) — see `beam local logs`", baseProgress);
-			Log.Warning($"[{step.name}] exited on startup (code {code}). Last log: {LastLogLine(l)}");
+			Send(step.name, "failed", $"exited on startup (code {code}) — see `beam local logs`", baseProgress,
+				LocalStackStepState.Failed, $"exit {code} on startup", Tail(l), LogHint(l));
+			if (!Showing) Log.Warning($"[{step.name}] exited on startup (code {code}). Last log: {LastLogLine(l)}");
 			return;
 		}
 
-		Send(step.name, "running", "no readiness gate; assuming up", baseProgress + 1f / totalSteps);
+		Send(step.name, "running", "no readiness gate; assuming up", baseProgress + 1f / totalSteps,
+			LocalStackStepState.Running, "no readiness check");
+	}
+
+	/// <summary>Marks a step that ran to completion as failed, for the board and for the steps that need it.</summary>
+	private void Fail(LocalStackStep step, string detail, string message, float baseProgress, Launched l)
+	{
+		_failed[step.name] = detail;
+		Send(step.name, "failed", message, baseProgress, LocalStackStepState.Failed, detail, Tail(l), LogHint(l));
+		if (!Showing) Log.Warning($"[{step.name}] {message}; the stack carries on without it. Last log: {LastLogLine(l)}");
 	}
 
 	private async Task AwaitCompletion(LocalStackStep step, Launched l, LocalStackConfig config, float baseProgress)
 	{
 		Send(step.name, "starting", "waiting for completion", baseProgress);
-		var timeout = TimeSpan.FromSeconds(Math.Max(1, step.readyTimeoutSeconds));
-		var done = await Task.WhenAny(l.ExitedTask, Task.Delay(timeout));
+		var seconds = Math.Max(1, step.readyTimeoutSeconds);
+		var done = await Task.WhenAny(l.ExitedTask, Task.Delay(TimeSpan.FromSeconds(seconds)));
 		if (done != l.ExitedTask)
 		{
-			Send(step.name, "failed", $"did not complete within {step.readyTimeoutSeconds}s", baseProgress);
-			Log.Warning($"[{step.name}] did not complete within {step.readyTimeoutSeconds}s — continuing.");
+			// Stopped, so it doesn't run on unwatched: the extension repoint once kept reinstalling packages for ten
+			// more minutes after the stack said it was up, while the services that need them had already started.
+			KillLaunched(l);
+			Fail(step, $"didn't finish in {seconds}s", $"did not complete within {seconds}s, so it was stopped", baseProgress, l);
 			return;
 		}
 
+		// A step that fails is marked failed and the stack carries on: the steps that need it are skipped when their
+		// turn comes (see FailedNeed), and everything else still starts. Stopping the whole stack for one failed seed
+		// or one host's build took everything down with it.
 		var code = SafeExitCode(l);
 		if (code != 0)
-			throw new CliException($"Step '{step.name}' exited with code {code}. Last log: {LastLogLine(l)}");
+		{
+			Fail(step, $"exit {code}", $"exited with code {code}", baseProgress, l);
+			return;
+		}
 
 		// A build that exits 0 without producing what it declared is the reference script's `[[ -x $BIN ]] ||
-		// die`: the run step after it would launch a binary that isn't there and the stack would come up
-		// silently missing a service, so fail here instead.
+		// die`: the run step after it would launch a binary that isn't there, so it counts as failed.
 		var output = LocalStackConfigIO.ResolveRequiredOutput(step, config);
 		if (output != null && !File.Exists(output) && !Directory.Exists(output))
 		{
-			throw new CliException(
-				$"Step '{step.name}' completed but did not produce '{output}'. Check the step's command and " +
-				"working directory in the manifest (or re-run `beam local init`).");
+			_failed[step.name] = "no output";
+			Send(step.name, "failed", $"did not produce {output}", baseProgress, LocalStackStepState.Failed, "no output", hint: $"expected {output}");
+			if (!Showing) Log.Warning($"[{step.name}] completed but did not produce '{output}'. Check its command and working directory in the settings.");
+			return;
 		}
 
-		Send(step.name, "ready", "completed", baseProgress);
+		// What it compiled, for the next run to compare against. Read after the build: it may have changed tracked
+		// files (npm install rewrites package-lock.json).
+		if (step.build && _builds != null)
+		{
+			try
+			{
+				lock (_launchedLock) LocalStackBuilds.Record(step, config, _builds, _buildsPath);
+			}
+			catch (Exception e)
+			{
+				Log.Debug($"[{step.name}] could not record the build: {e.Message}");
+			}
+		}
+
+		Send(step.name, "ready", "completed", baseProgress, LocalStackStepState.Done);
+		if (string.Equals(step.name, LocalStackTemplate.WebInstallStepName, StringComparison.OrdinalIgnoreCase))
+			_board?.SetWebPackages(WebPackagesService.LoadOverlay(_workspaceRoot)?.packages);
 	}
 
 	private async Task AwaitReadiness(LocalStackStep step, Launched l, LocalStackConfig config, float baseProgress,
@@ -2352,7 +3227,8 @@ public class LocalStackUpCommand
 							? $"hung with port {step.port} unbound — retrying ({retriesLeft} left)"
 							: $"lost Mongo connect race — retrying ({retriesLeft} left)";
 						Log.Warning($"[{step.name}] {reason}; killing and retrying ({retriesLeft} left). Last log: {LastLogLine(l)}");
-						Send(step.name, "starting", progressMsg, baseProgress);
+						Send(step.name, "starting", progressMsg, baseProgress, LocalStackStepState.Restarting,
+							$"retry {Math.Max(0, step.readyRetries) - retriesLeft} of {Math.Max(0, step.readyRetries)}, {(deadOnPort ? "hung" : "Mongo race")}");
 
 						// Kill first: unlike the exit path below, this process is still alive, and leaving it behind
 						// orphans a JVM that would race the relaunch for the same port.
@@ -2369,7 +3245,8 @@ public class LocalStackUpCommand
 						continue;
 					}
 
-					Send(step.name, "running", $"did not signal ready within {timeout}s; continuing", baseProgress);
+					Send(step.name, "running", $"did not signal ready within {timeout}s; continuing", baseProgress,
+						LocalStackStepState.Running, $"no ready signal in {timeout}s");
 					Log.Warning($"[{step.name}] did not signal ready within {timeout}s — continuing anyway.");
 					return;
 				}
@@ -2381,7 +3258,8 @@ public class LocalStackUpCommand
 					{
 						retriesLeft--;
 						Log.Warning($"[{step.name}] exited early (code {code}); retrying ({retriesLeft} left). Last log: {LastLogLine(l)}");
-						Send(step.name, "starting", $"exited early (code {code}) — retrying ({retriesLeft} left)", baseProgress);
+						Send(step.name, "starting", $"exited early (code {code}) — retrying ({retriesLeft} left)", baseProgress,
+							LocalStackStepState.Restarting, $"retry {Math.Max(0, step.readyRetries) - retriesLeft} of {Math.Max(0, step.readyRetries)}, exit {code}");
 						try { await Task.Delay(3000, token); }
 						catch (OperationCanceledException) { return; }
 
@@ -2396,8 +3274,9 @@ public class LocalStackUpCommand
 						continue;
 					}
 
-					Send(step.name, "failed", $"process exited early (code {code})", baseProgress);
-					Log.Warning($"[{step.name}] exited before becoming ready (code {code}). Last log: {LastLogLine(l)}");
+					Send(step.name, "failed", $"process exited early (code {code})", baseProgress,
+						LocalStackStepState.Failed, $"exit {code}", Tail(l), LogHint(l));
+					if (!Showing) Log.Warning($"[{step.name}] exited before becoming ready (code {code}). Last log: {LastLogLine(l)}");
 					return;
 				}
 
@@ -2409,7 +3288,7 @@ public class LocalStackUpCommand
 						lastLine = line;
 						if (line.Contains(step.readyWhenLogContains))
 						{
-							Send(step.name, "ready", $"ready after {waited}s", baseProgress);
+							Send(step.name, "ready", $"ready after {waited}s", baseProgress, LocalStackStepState.Ready);
 							Log.Information($"[{step.name}] ready after {waited}s.");
 							return;
 						}
@@ -2418,14 +3297,14 @@ public class LocalStackUpCommand
 
 				if (!string.IsNullOrEmpty(http200Url) && await HttpStatusOk(http, http200Url, require200: true, token))
 				{
-					Send(step.name, "ready", $"ready after {waited}s (200)", baseProgress);
+					Send(step.name, "ready", $"ready after {waited}s (200)", baseProgress, LocalStackStepState.Ready);
 					Log.Information($"[{step.name}] ready after {waited}s (HTTP 200).");
 					return;
 				}
 
 				if (!string.IsNullOrEmpty(httpUrl) && await HttpStatusOk(http, httpUrl, require200: false, token))
 				{
-					Send(step.name, "ready", $"ready after {waited}s", baseProgress);
+					Send(step.name, "ready", $"ready after {waited}s", baseProgress, LocalStackStepState.Ready);
 					Log.Information($"[{step.name}] ready after {waited}s.");
 					return;
 				}
@@ -2648,6 +3527,9 @@ public class LocalStackUpCommand
 				Log.Warning($"[{l.Step.name}] failed to stop: {e.Message}");
 			}
 		}
+
+		if (_localWebPackages)
+			WebPackagesService.RemoveOverlay(_workspaceRoot);
 	}
 
 	private static void KillPid(int pid)
@@ -2734,5 +3616,403 @@ public class LocalStackUpCommand
 			if (changed)
 				LocalStackRunStateIO.Save(runStatePath, runState);
 		}
+	}
+}
+
+
+/// <summary>One row of the checks a run makes before it starts anything.</summary>
+public class LocalStackDependencyCheck
+{
+	public string name;
+	public bool ok;
+	public string detail;
+
+	/// <summary>Where the dependency came from: <c>toolchain</c>, <c>system</c>, or null when not applicable.</summary>
+	public string source;
+
+	/// <summary>The version that was found, when one could be read.</summary>
+	public string version;
+
+	/// <summary>True when the finding is worth reporting but does not make the stack unrunnable.</summary>
+	public bool warning;
+
+	/// <summary>The <c>beam local setup</c> step that fixes a failed check, or null when setup can't.</summary>
+	public string setupId;
+}
+
+/// <summary>
+/// What a stack needs before it can start: the pinned tools for the kinds of steps it runs (JDK 8 and Maven for
+/// Scala, the .NET SDK for C# hosts and microservices, Node for the portal and extensions, pnpm for the web
+/// packages), the Docker daemon, the generated BeamableBackend config files, the portal's <c>.env.local</c> and
+/// the variables. <c>beam local run</c> fixes the failures it can by running the matching <c>beam local setup</c>
+/// step; <c>--dry-run</c> prints them all.
+///
+/// The important column is <b>source</b>: a dependency satisfied by the <c>toolchain</c> is pinned and
+/// reproducible, while one satisfied by the <c>system</c> is whatever that machine happens to have — which is how
+/// a Maven running under a JDK 21 from an IDE bundle, or a Node major the portal was never built against, gets
+/// used without anyone noticing.
+/// </summary>
+public static class LocalStackPreflight
+{
+	/// <summary>The checks for <paramref name="steps"/>. <paramref name="withCliPins"/> adds one row per CLI pin, reported without changing it.</summary>
+	public static async Task<List<LocalStackDependencyCheck>> Check(LocalStackConfig config, List<LocalStackStep> steps,
+		LocalStackStacks stacks, bool withCliPins)
+	{
+		bool Uses(string tag) => steps.Any(s => stacks.TagsOf(s).Contains(tag, StringComparer.OrdinalIgnoreCase));
+
+		var checks = new List<LocalStackDependencyCheck>();
+		var toolchain = ToolchainService.LoadManifest(Path.Combine(ToolchainService.ResolveDir(null), ToolchainService.ManifestFileName));
+
+		// docker (via the CLI's resolver) — the daemon, not just the binary.
+		if (steps.Any(s => string.Equals(s.command, "docker", StringComparison.OrdinalIgnoreCase)))
+		{
+			if (DockerPathOption.TryGetDockerPath(out var dockerPath, out var dockerErr))
+				checks.Add(await CheckProgram("docker", dockerPath, "--version",
+					hint: "install Docker Desktop from https://docs.docker.com/get-docker/"));
+			else
+				checks.Add(new LocalStackDependencyCheck { name = "docker", ok = false, detail = dockerErr });
+		}
+
+		var tools = new List<string>();
+		if (Uses("scala")) tools.AddRange(new[] { ToolchainPins.Jdk, ToolchainPins.Maven });
+		if (Uses("csharp") || Uses("microservices") || Uses("extensions")) tools.Add(ToolchainPins.Dotnet);
+		if (Uses("portal") || Uses("extensions") || Uses("web-registry")) tools.Add(ToolchainPins.Node);
+		if (Uses("web-registry")) tools.Add(ToolchainPins.Pnpm);
+
+		// Each pinned tool is reported with where it came from and how its version compares to the pin.
+		foreach (var toolId in ToolchainPins.ToolIds.Where(tools.Contains))
+			checks.Add(CheckTool(toolId, toolchain, config));
+
+		// The generated BeamableBackend config files, which are gitignored and therefore missing on a fresh clone.
+		if (Uses("scala"))
+			checks.Add(CheckScalaConfig(config?.repos?.scalaDir));
+
+		// The portal's .env.local — same class of gap, and its absence is far more confusing.
+		if (Uses("portal"))
+			checks.Add(CheckPortalEnv(config?.repos?.portalDir, config?.host));
+
+		checks.Add(CheckVariables(config));
+
+		if (withCliPins)
+			checks.AddRange(CheckCliPins(config?.repos?.portalDir));
+
+		return checks;
+	}
+
+	public static void Render(List<LocalStackDependencyCheck> checks)
+	{
+		var table = new Table();
+		table.Border(TableBorder.Simple);
+		table.AddColumn("[bold]check[/]");
+		table.AddColumn("[bold]status[/]");
+		table.AddColumn("[bold]source[/]");
+		table.AddColumn("[bold]detail[/]");
+
+		foreach (var c in checks)
+		{
+			var status = c.ok
+				? (c.warning ? "[yellow]ok[/]" : "[green]ok[/]")
+				: c.setupId != null ? "[red]missing[/] [grey](run sets it up)[/]" : "[red]missing[/]";
+
+			// A system-sourced dependency is highlighted: it works today and can change under you tomorrow.
+			var source = c.source switch
+			{
+				"system" => "[yellow]system[/]",
+				null => "",
+				_ => $"[green]{Markup.Escape(c.source)}[/]"
+			};
+
+			table.AddRow(
+				new Markup(Markup.Escape(c.name)),
+				new Markup(status),
+				new Markup(source),
+				new Markup(Markup.Escape(c.detail ?? "")));
+		}
+
+		AnsiConsole.Write(table);
+	}
+
+	/// <summary>
+	/// Variable cycles make the stack unrunnable. A <c>${Name}</c> that matches nothing is only a warning: it is
+	/// left as written, which may be intended.
+	/// </summary>
+	private static LocalStackDependencyCheck CheckVariables(LocalStackConfig config)
+	{
+		var check = new LocalStackDependencyCheck { name = "variables" };
+		var cycles = LocalStackConfigIO.FindVariableCycles(config);
+		var unknown = LocalStackConfigIO.FindUnknownVariables(config);
+
+		if (cycles.Count > 0)
+		{
+			check.ok = false;
+			check.detail = string.Join("; ", cycles);
+		}
+		else if (unknown.Count > 0)
+		{
+			check.ok = true;
+			check.warning = true;
+			check.detail = "unknown: " + string.Join(", ", unknown.Select(u => "${" + u.name + "} in " + u.where));
+		}
+		else
+		{
+			check.ok = true;
+			var count = (config.paths?.Count ?? 0) + (config.variables?.Count ?? 0);
+			check.detail = $"{count} defined, all resolve";
+		}
+
+		return check;
+	}
+
+	/// <summary>
+	/// The portal workspace's CLI pins as they are, one row each. A real run re-pins local builds before it starts;
+	/// a dry run only reports.
+	/// </summary>
+	private static IEnumerable<LocalStackDependencyCheck> CheckCliPins(string portalDir)
+	{
+		var result = LocalStackCliVersions.Check(portalDir, LocalStackCliVersions.RunningVersion(), fix: false);
+		foreach (var pin in result.pins)
+		{
+			yield return new LocalStackDependencyCheck
+			{
+				name = "cli pin " + DisplayPath(pin.file, portalDir),
+				ok = pin.status is "ok" or "repinned" or "mismatch",
+				warning = pin.status == "mismatch",
+				source = pin.kind,
+				version = pin.version,
+				detail = pin.detail,
+			};
+		}
+
+		foreach (var error in result.errors)
+			yield return new LocalStackDependencyCheck { name = "cli restore", ok = false, detail = error };
+	}
+
+	private static string DisplayPath(string file, string root)
+	{
+		try
+		{
+			return string.IsNullOrEmpty(root) ? file : Path.GetRelativePath(root, file).Replace('\\', '/');
+		}
+		catch
+		{
+			return file;
+		}
+	}
+
+	/// <summary>
+	/// Resolves one pinned tool the same way the run will: the toolchain first, then the settings, then the
+	/// system. Reporting the source is the point — "ok" against a system tool of the wrong version is exactly the
+	/// state this exists to make visible.
+	/// </summary>
+	private static LocalStackDependencyCheck CheckTool(string toolId, ToolchainManifest toolchain, LocalStackConfig config)
+	{
+		var check = new LocalStackDependencyCheck { name = toolId };
+
+		// 1. Installed in the toolchain.
+		if (toolchain.tools.TryGetValue(toolId, out var entry) && !string.IsNullOrEmpty(entry?.home))
+		{
+			var exe = ToolchainService.ExecutablePath(toolId, entry.home);
+			if (exe != null && File.Exists(exe))
+			{
+				var version = ToolchainService.ReadVersion(toolId, entry.home) ?? entry.version;
+				var matches = ToolchainService.SatisfiesPin(toolId, version);
+				check.ok = true;
+				check.source = entry.source ?? "toolchain";
+				check.version = version;
+				check.warning = !matches;
+				check.detail = matches
+					? $"{version} — {entry.home}"
+					: $"{version} does not match the pin — {entry.home} (run `beam local setup --only {toolId} --force`)";
+				return check;
+			}
+		}
+
+		// 2. Recorded in the settings but not in the toolchain (hand-edited settings).
+		var settingsHome = toolId switch
+		{
+			ToolchainPins.Jdk => config?.toolchain?.java ?? config?.javaHome,
+			ToolchainPins.Maven => config?.toolchain?.maven,
+			ToolchainPins.Dotnet => config?.toolchain?.dotnet,
+			ToolchainPins.Node => config?.toolchain?.node,
+			ToolchainPins.Pnpm => config?.toolchain?.pnpm,
+			_ => null
+		};
+
+		if (!string.IsNullOrWhiteSpace(settingsHome)
+		    && !settingsHome.Contains(LocalStackConfigIO.EditPlaceholder, StringComparison.Ordinal)
+		    && File.Exists(ToolchainService.ExecutablePath(toolId, settingsHome) ?? string.Empty))
+		{
+			check.ok = true;
+			check.source = "settings";
+			check.version = ToolchainService.ReadVersion(toolId, settingsHome);
+			check.detail = $"{check.version ?? "?"} — {settingsHome}";
+			return check;
+		}
+
+		// 3. Whatever is on the machine. Usable, but unpinned — say so.
+		var systemVersion = ReadSystemVersion(toolId, out var systemHome);
+		if (systemVersion != null)
+		{
+			var matches = ToolchainService.SatisfiesPin(toolId, systemVersion);
+			check.ok = true;
+			check.source = "system";
+			check.version = systemVersion;
+			check.warning = true;
+			check.detail = matches
+				? $"{systemVersion} — {systemHome} (unpinned; `beam local setup` installs a private copy)"
+				: $"{systemVersion} — {systemHome} — does NOT match the pin ({PinOf(toolId)}); run `beam local setup --only {toolId}`";
+			return check;
+		}
+
+		check.ok = false;
+		check.setupId = toolId;
+		check.detail = $"not found — `beam local setup --only {toolId}` installs {PinOf(toolId)}";
+		return check;
+	}
+
+	/// <summary>The pinned version, for the "what you should have" half of a mismatch message.</summary>
+	private static string PinOf(string toolId) => toolId switch
+	{
+		ToolchainPins.Jdk => $"JDK {ToolchainPins.JavaFeatureVersion}",
+		ToolchainPins.Maven => $"Maven {ToolchainPins.MavenVersion}",
+		ToolchainPins.Dotnet => $".NET SDK {ToolchainPins.DotnetVersion}",
+		ToolchainPins.Node => $"Node {ToolchainPins.NodeMajor}",
+		ToolchainPins.Pnpm => $"pnpm {ToolchainPins.PnpmVersion}",
+		_ => toolId
+	};
+
+	/// <summary>
+	/// The version of a tool as installed on the machine, plus the home it was found at. For the JDK this reuses
+	/// the CLI's existing Java 8 discovery so the answer matches what the run would resolve.
+	/// </summary>
+	private static string ReadSystemVersion(string toolId, out string home)
+	{
+		home = null;
+
+		if (toolId == ToolchainPins.Jdk)
+		{
+			if (!JavaPathOption.TryGetJavaHome(out var javaHome, out _)) return null;
+
+			home = javaHome;
+			return ToolchainService.ReadVersion(toolId, javaHome) ?? "8";
+		}
+
+		foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? string.Empty)
+			         .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+		{
+			string candidate;
+			try
+			{
+				candidate = Path.Combine(dir.Trim(), ToolchainService.ProbeExecutable(toolId));
+			}
+			catch
+			{
+				continue;
+			}
+
+			if (!File.Exists(candidate)) continue;
+
+			var binDir = Path.GetDirectoryName(Path.GetFullPath(candidate));
+			var candidateHome = string.IsNullOrEmpty(ToolchainService.BinSubdir(toolId))
+				? binDir
+				: Path.GetDirectoryName(binDir);
+
+			var version = ToolchainService.ReadVersion(toolId, candidateHome);
+			if (version == null) continue;
+
+			home = candidateHome;
+			return version;
+		}
+
+		return null;
+	}
+
+	/// <summary>
+	/// Reports the generated BeamableBackend config files. These are gitignored, so a fresh clone never has them,
+	/// and a stack missing them starts the Scala services and then fails on config nobody told the developer to
+	/// generate.
+	/// </summary>
+	private static LocalStackDependencyCheck CheckScalaConfig(string scalaDir)
+	{
+		var check = new LocalStackDependencyCheck { name = "backend config" };
+
+		if (string.IsNullOrWhiteSpace(scalaDir)
+		    || scalaDir.Contains(LocalStackConfigIO.EditPlaceholder, StringComparison.Ordinal)
+		    || !Directory.Exists(scalaDir))
+		{
+			check.ok = true;
+			check.warning = true;
+			check.detail = "no BeamableBackend path in the settings — cannot check the generated conf files";
+			return check;
+		}
+
+		var missing = ScalaLocalVarsService.MissingConfigFiles(scalaDir);
+		if (missing.Count == 0)
+		{
+			check.ok = true;
+			check.detail = $"all {ScalaLocalVarsService.RelativeConfPaths.Length} generated conf files present";
+			return check;
+		}
+
+		check.ok = false;
+		check.setupId = ToolchainPins.ScalaConfig;
+		check.detail = $"missing {string.Join(", ", missing.Select(Path.GetFileName))} — " +
+		               "`beam local setup --only scala-config` renders them";
+		return check;
+	}
+
+	/// <summary>
+	/// Reports where the portal will send its API calls. This is a FAILURE, not a warning, when
+	/// <c>VITE_API_BASE</c> is unset: the portal then falls back to <c>https://api.beamable.com</c> and logs in
+	/// against production, so the local seed account appears not to exist while every local service is healthy.
+	/// That symptom is indistinguishable from a broken backend, which is exactly why it needs naming here.
+	/// </summary>
+	private static LocalStackDependencyCheck CheckPortalEnv(string portalDir, string host)
+	{
+		var check = new LocalStackDependencyCheck { name = "portal env" };
+
+		if (string.IsNullOrWhiteSpace(portalDir)
+		    || portalDir.Contains(LocalStackConfigIO.EditPlaceholder, StringComparison.Ordinal)
+		    || !Directory.Exists(portalDir))
+		{
+			check.ok = true;
+			check.warning = true;
+			check.detail = "no portal path in the settings — cannot check .env.local";
+			return check;
+		}
+
+		// The stack passes the API host to the portal itself, so .env.local only matters for a plain `npm run dev`.
+		var apiBase = PortalEnvService.ReadApiBase(portalDir);
+		check.ok = true;
+		check.detail = $"the stack gives the portal {PortalEnvService.ApiBaseKey}={host}; {PortalEnvService.EnvFileName} is left as it is"
+		               + (apiBase == null ? string.Empty : $" ({apiBase} there, for a plain npm run dev)");
+		return check;
+	}
+
+	private static async Task<LocalStackDependencyCheck> CheckProgram(string name, string program, string arguments, string hint)
+	{
+		var check = new LocalStackDependencyCheck { name = name };
+		var output = new StringBuilder();
+		try
+		{
+			var res = await CliWrap.Cli.Wrap(program)
+				.WithArguments(arguments)
+				.WithStandardOutputPipe(PipeTarget.ToStringBuilder(output))
+				.WithStandardErrorPipe(PipeTarget.ToStringBuilder(output))
+				.WithValidation(CommandResultValidation.None)
+				.ExecuteAsync();
+
+			check.ok = res.ExitCode == 0;
+			check.detail = check.ok
+				? output.ToString().Split('\n').FirstOrDefault()?.Trim()
+				: $"'{program}' exited {res.ExitCode} — {hint}";
+		}
+		catch (Exception)
+		{
+			check.ok = false;
+			check.detail = $"'{program}' not found — {hint}";
+		}
+
+		return check;
 	}
 }

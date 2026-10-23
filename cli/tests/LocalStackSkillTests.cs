@@ -26,17 +26,15 @@ public class LocalStackSkillTests
 	private static readonly string ProductDir = Path.Combine(Root, "BeamableProduct");
 	private static readonly string WebRegistryDir = Path.Combine(ProductDir, "portal-localdev");
 	private static readonly string ManifestPath =
-		Path.Combine(Root, "game", ".beamable", LocalStackConfigIO.DefaultFileName);
+		cli.Commands.LocalStack.LocalStackCommand.SettingsPath(Path.Combine(Root, "game", ".beamable"));
 
-	private static LocalStackConfig Config(
-		bool includeWebRegistry = true, bool withRepoPaths = true, bool webRegistry = true) =>
+	private static LocalStackConfig Config(bool includeWebRegistry = true, bool withRepoPaths = true) =>
 		LocalStackTemplate.Create(new LocalStackTemplate.Options
 		{
 			apiDir = withRepoPaths ? ApiDir : null,
 			scalaDir = withRepoPaths ? ScalaDir : null,
 			portalDir = withRepoPaths ? PortalDir : null,
 			includeWebRegistry = includeWebRegistry,
-			webRegistry = webRegistry,
 			webRegistryDir = withRepoPaths ? WebRegistryDir : null,
 			services = new List<string> { "MyService" },
 			extensions = new List<string> { "MyExtension" },
@@ -110,25 +108,19 @@ public class LocalStackSkillTests
 	}
 
 	/// <summary>
-	/// Turning the web registry off is the one choice that silently changes which code the portal runs, so the
-	/// doc has to say which way this manifest went. Since `beam local init` now always WRITES the steps, the
-	/// doc has to read the standing choice rather than infer it from their presence — otherwise every stack
-	/// would be described as running a registry it may have switched off.
+	/// The web registry is the one part that silently changes which code the portal runs, so the doc has to say
+	/// how a stack turns it on: the steps are in the catalogue, and only the `web-registry` tag (`:web`) runs them.
 	/// </summary>
 	[Test]
-	public void Web_registry_state_is_reported_either_way()
+	public void Web_registry_is_explained_either_way()
 	{
-		var on = LocalStackSkillTemplate.RenderThisStack(Config(webRegistry: true), ManifestPath);
-		Assert.That(on, Does.Contain(LocalStackTemplate.WebRegistryStepName));
-		Assert.That(on, Does.Contain("**Local web registry**: on"));
-
-		// Steps present, choice off — the case the presence check used to get wrong.
-		var off = LocalStackSkillTemplate.RenderThisStack(Config(webRegistry: false), ManifestPath);
-		Assert.That(off, Does.Contain("**Local web registry**: off"));
+		var with = LocalStackSkillTemplate.RenderThisStack(Config(), ManifestPath);
+		Assert.That(with, Does.Contain(LocalStackTemplate.WebRegistryStepName));
+		Assert.That(with, Does.Contain(":web"));
 
 		var without = LocalStackSkillTemplate.RenderThisStack(Config(includeWebRegistry: false), ManifestPath);
 		Assert.That(without, Does.Not.Contain(LocalStackTemplate.WebRegistryStepName));
-		Assert.That(without, Does.Contain("**Local web registry**: off"));
+		Assert.That(without, Does.Contain("**Local web registry**: not in this catalogue"));
 	}
 
 	/// <summary>
@@ -150,24 +142,6 @@ public class LocalStackSkillTests
 	{
 		Assert.That(LocalStackSkillTemplate.RenderThisStack(Config(), ManifestPath),
 			Does.Not.Contain("Not runnable yet"));
-	}
-
-	/// <summary>
-	/// `repos` was added after the first manifests were written, and it is documentation-only — an older
-	/// manifest must still render (pointing the reader at the step list) rather than throw mid-init.
-	/// </summary>
-	[Test]
-	public void Manifest_without_recorded_repos_still_renders()
-	{
-		var json = JsonConvert.SerializeObject(Config());
-		var config = JsonConvert.DeserializeObject<LocalStackConfig>(json);
-		config.repos = null;
-
-		var section = LocalStackSkillTemplate.RenderThisStack(config, ManifestPath);
-
-		Assert.That(section, Does.Contain("predates the recorded repository paths"));
-		// The step list is the fallback source of the paths, so it must still be there.
-		Assert.That(section, Does.Contain(LocalStackTemplate.WebRegistryStepName));
 	}
 
 	[Test]
@@ -194,13 +168,14 @@ public class LocalStackSkillTests
 	}
 
 	[Test]
-	public void Skill_path_is_under_the_manifest_parent_when_there_is_no_workspace()
+	public void Skill_path_is_at_the_workspace_root_when_there_is_no_workspace()
 	{
 		// No ConfigService: `beam local init` is IStandaloneCommand, so it can run outside a workspace and the
-		// skill still has to land next to the stack it documents.
+		// skill still has to land next to the stack it documents: in the folder holding `.beamable`, where an
+		// agent looks for `.claude/skills`, not inside `.beamable/local` where the manifest sits.
 		var path = LocalStackSkillTemplate.ResolveSkillPath(null, ManifestPath);
 		var expected = Path.Combine(
-			Path.GetDirectoryName(Path.GetFullPath(ManifestPath)),
+			Path.Combine(Root, "game"),
 			LocalStackSkillTemplate.AgentDirName,
 			LocalStackSkillTemplate.SkillsDirName,
 			LocalStackSkillTemplate.SkillName,
@@ -218,7 +193,7 @@ public class LocalStackSkillTests
 		var root = Path.Combine(Path.GetTempPath(), "beam-skill-test-" + Path.GetRandomFileName());
 		try
 		{
-			var manifestPath = Path.Combine(root, ".beamable", LocalStackConfigIO.DefaultFileName);
+			var manifestPath = cli.Commands.LocalStack.LocalStackCommand.SettingsPath(Path.Combine(root, ".beamable"));
 			var skillPath = LocalStackSkillTemplate.ResolveSkillPath(null, manifestPath);
 			Directory.CreateDirectory(Path.GetDirectoryName(skillPath));
 			// A marker that cannot occur in the template's own prose, so this can never pass or fail on wording.

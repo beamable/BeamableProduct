@@ -18,13 +18,16 @@ public class LocalStackLogsCommandResult
 }
 
 /// <summary>
-/// Tails the per-step log files written by <c>beam local up</c>. With no step name, tails every recorded
+/// Tails the per-step log files written by <c>beam local run</c>. With no step name, tails every recorded
 /// step; <c>--follow</c> keeps streaming new lines until cancelled; <c>--lines</c> sets how much history to show.
 /// </summary>
 public class LocalStackLogsCommand
 	: AtomicCommand<LocalStackLogsCommandArgs, LocalStackLogsCommandResult>
 	, IStandaloneCommand, ISkipManifest
 {
+	// It prints its own readable output; the result object still reaches tools through the data channel.
+	public override bool AutoLogOutput => false;
+
 	public LocalStackLogsCommand() : base("logs", "Tail the log files of the running local stack")
 	{
 	}
@@ -33,7 +36,7 @@ public class LocalStackLogsCommand
 	{
 		AddArgument(new Argument<string>("step", () => null, "The step name to tail (default: all recorded steps)"),
 			(args, v) => args.step = v);
-		AddOption(new Option<string>("--config", "Path to the manifest whose run-state to read (defaults to .beamable/local-stack.json)"),
+		AddOption(new Option<string>("--config", "Path to the manifest whose run-state to read (defaults to .beamable/local/stack-settings.json)"),
 			(args, v) => args.configPath = v);
 		var follow = new Option<bool>("--follow", "Keep streaming new log lines until cancelled");
 		follow.AddAlias("-f");
@@ -48,7 +51,9 @@ public class LocalStackLogsCommand
 		var runStatePath = LocalStackCommand.ResolveRunStatePath(args.ConfigService, args.configPath);
 		var state = LocalStackRunStateIO.Load(runStatePath);
 		if (state == null || state.steps.Count == 0)
-			throw new CliException($"No running local stack recorded at {runStatePath}. Run `beam local up` first.");
+			state = FromAttachedBoard(runStatePath);
+		if (state == null || state.steps.Count == 0)
+			throw new CliException($"No running local stack recorded at {runStatePath}. Start one with `beam local run <stack>`.");
 
 		var selected = string.IsNullOrWhiteSpace(args.step)
 			? state.steps
@@ -77,6 +82,27 @@ public class LocalStackLogsCommand
 		catch (OperationCanceledException) { /* expected on Ctrl+C */ }
 
 		return new LocalStackLogsCommandResult { steps = selected.Select(s => s.name).ToArray() };
+	}
+
+	/// <summary>
+	/// An attached stack keeps no run-state, only its board, which says where the run writes each step's output. Its
+	/// steps with a log file, as entries this command reads; null when no attached stack's board is there.
+	/// </summary>
+	public static LocalStackRunState FromAttachedBoard(string runStatePath)
+	{
+		var board = LocalStackBoardIO.Load(LocalStackBoardIO.PathFor(runStatePath));
+		if (board == null || LocalStackBoardIO.IsStale(board) || string.IsNullOrEmpty(board.logsDir) || !Directory.Exists(board.logsDir))
+			return null;
+
+		var state = new LocalStackRunState();
+		foreach (var row in board.rows)
+		{
+			var log = Path.Combine(board.logsDir, LocalStackRunCommand.SafeName(row.name));
+			if (File.Exists(log + ".log") || File.Exists(log + ".err.log"))
+				state.steps.Add(new LocalStackRunEntry { name = row.name, stdoutLog = log + ".log", stderrLog = log + ".err.log" });
+		}
+
+		return state;
 	}
 
 	private static void DumpTail(string name, string path, bool isErr, int lines)

@@ -5,7 +5,8 @@ using NUnit.Framework;
 namespace tests;
 
 /// <summary>
-/// Covers the portal's gitignored <c>.env.local</c>, which decides which backend the portal logs in against.
+/// Covers reading the portal's gitignored <c>.env.local</c>, which decides which backend a plain <c>npm run dev</c>
+/// logs in against. Stacks don't use it: they give the portal its API host as a process variable.
 ///
 /// The failure this guards is deliberately specific: with no <c>VITE_API_BASE</c>, the portal's <c>API_BASE</c>
 /// falls back to <c>https://api.beamable.com</c>, so a portal served from localhost sends its login to
@@ -15,94 +16,6 @@ namespace tests;
 public class LocalStackPortalEnvTests
 {
 	private const string Host = "http://localhost:8080";
-
-	[Test]
-	public void CreatesTheFileWhenItIsMissing()
-	{
-		// The fresh-clone / copied-folder case: .env.local is gitignored so it is simply not there.
-		var dir = Directory.CreateTempSubdirectory("beam-portal-env");
-		try
-		{
-			var result = new PortalEnvService().Ensure(dir.FullName, Host, force: false);
-
-			Assert.That(result.ok, Is.True, result.error);
-			Assert.That(result.action, Is.EqualTo("created"));
-			Assert.That(PortalEnvService.ReadApiBase(dir.FullName), Is.EqualTo(Host));
-		}
-		finally
-		{
-			dir.Delete(recursive: true);
-		}
-	}
-
-	[Test]
-	public void AppendsTheKeyWhenTheFileExistsWithoutIt()
-	{
-		// The nastiest variant: the file EXISTS (for some other override) but has no VITE_API_BASE, so an
-		// existence check alone would report everything fine while the portal still talks to production.
-		var dir = Directory.CreateTempSubdirectory("beam-portal-env");
-		try
-		{
-			var path = Path.Combine(dir.FullName, PortalEnvService.EnvFileName);
-			File.WriteAllText(path, "# mine\nVITE_WINGMAN_URL=http://localhost:4960\n");
-
-			var result = new PortalEnvService().Ensure(dir.FullName, Host, force: false);
-
-			Assert.That(result.action, Is.EqualTo("added-key"));
-			Assert.That(PortalEnvService.ReadApiBase(dir.FullName), Is.EqualTo(Host));
-			// The developer's other overrides must survive.
-			Assert.That(File.ReadAllText(path), Does.Contain("VITE_WINGMAN_URL=http://localhost:4960"));
-		}
-		finally
-		{
-			dir.Delete(recursive: true);
-		}
-	}
-
-	[Test]
-	public void LeavesAnAlreadyCorrectValueAlone()
-	{
-		var dir = Directory.CreateTempSubdirectory("beam-portal-env");
-		try
-		{
-			File.WriteAllText(Path.Combine(dir.FullName, PortalEnvService.EnvFileName),
-				$"{PortalEnvService.ApiBaseKey}={Host}\n");
-
-			var result = new PortalEnvService().Ensure(dir.FullName, Host, force: false);
-
-			Assert.That(result.action, Is.EqualTo("kept"));
-			Assert.That(result.apiBase, Is.EqualTo(Host));
-		}
-		finally
-		{
-			dir.Delete(recursive: true);
-		}
-	}
-
-	[Test]
-	public void DoesNotRetargetADeliberateDifferentHostWithoutForce()
-	{
-		// Pointing the portal at dev/staging on purpose is legitimate. Setup reports it rather than silently
-		// rewriting it out from under the developer.
-		var dir = Directory.CreateTempSubdirectory("beam-portal-env");
-		try
-		{
-			File.WriteAllText(Path.Combine(dir.FullName, PortalEnvService.EnvFileName),
-				$"{PortalEnvService.ApiBaseKey}=https://dev.api.beamable.com\n");
-
-			var kept = new PortalEnvService().Ensure(dir.FullName, Host, force: false);
-			Assert.That(kept.action, Is.EqualTo("kept"));
-			Assert.That(kept.apiBase, Is.EqualTo("https://dev.api.beamable.com"));
-
-			var forced = new PortalEnvService().Ensure(dir.FullName, Host, force: true);
-			Assert.That(forced.action, Is.EqualTo("rewritten"));
-			Assert.That(PortalEnvService.ReadApiBase(dir.FullName), Is.EqualTo(Host));
-		}
-		finally
-		{
-			dir.Delete(recursive: true);
-		}
-	}
 
 	[Test]
 	public void ReadApiBaseIgnoresCommentsAndBlankLines()
@@ -160,15 +73,6 @@ public class LocalStackPortalEnvTests
 		{
 			dir.Delete(recursive: true);
 		}
-	}
-
-	[Test]
-	public void ReportsAnErrorForAMissingPortalDirectory()
-	{
-		var result = new PortalEnvService().Ensure(Path.Combine(Path.GetTempPath(), "no-such-portal"), Host, false);
-
-		Assert.That(result.ok, Is.False);
-		Assert.That(result.error, Does.Contain("Portal checkout not found"));
 	}
 
 	[Test]
