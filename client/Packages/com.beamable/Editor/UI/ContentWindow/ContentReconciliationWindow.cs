@@ -25,6 +25,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		private float _localWidth, _realmWidth;
 		private GUIStyle _body, _heading, _cell, _json;
 		private GUIStyle _localHeading, _realmHeading;
+		private GUIStyle _idLabel, _scopeLabel;
+		internal static readonly GUILayoutOption[] HeaderLabelOptions = { GUILayout.MinWidth(0), GUILayout.ExpandWidth(true) };
 		private static readonly string[] DiffTabs = { "Properties", "JSON" };
 		private static readonly string[] SummaryTabs = { "Summary", "JSON" };
 		private const float RowHeight = 24;
@@ -138,6 +140,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			_json = new GUIStyle(EditorStyles.label) { richText = false, wordWrap = false, padding = new RectOffset(6, 6, 3, 3) };
 			_localHeading = new GUIStyle(EditorStyles.boldLabel);
 			_realmHeading = new GUIStyle(EditorStyles.boldLabel);
+			_idLabel = new GUIStyle(EditorStyles.boldLabel) { clipping = TextClipping.Clip };
+			_scopeLabel = new GUIStyle(EditorStyles.miniLabel) { clipping = TextClipping.Clip };
 			_localHeading.normal.textColor = EditorGUIUtility.isProSkin ? new Color(1, .77f, .24f) : new Color(.48f, .31f, 0);
 			_realmHeading.normal.textColor = EditorGUIUtility.isProSkin ? new Color(.18f, .75f, 1) : new Color(0, .34f, .55f);
 		}
@@ -160,8 +164,9 @@ namespace Beamable.Editor.UI.ContentWindow
 				using (new EditorGUILayout.VerticalScope())
 				{
 					GUILayout.Label("Reconcile Content", _heading);
-					GUILayout.Label(_contentId, EditorStyles.boldLabel);
-					GUILayout.Label("Realm / namespace: " + _scope, EditorStyles.miniLabel);
+					GUILayout.Label(new GUIContent(_contentId, _contentId), _idLabel, HeaderLabelOptions);
+					var scopeLabel = "Realm / namespace: " + _scope;
+					GUILayout.Label(new GUIContent(scopeLabel, scopeLabel), _scopeLabel, HeaderLabelOptions);
 					using (new EditorGUILayout.HorizontalScope())
 					{
 						GUILayout.Label(ContentWindow_TooltipsHelper.GetStatusLabel(_entry), _realmHeading);

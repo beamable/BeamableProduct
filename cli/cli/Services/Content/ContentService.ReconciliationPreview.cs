@@ -34,8 +34,8 @@ public partial class ContentService
         try
         {
             var localText = await ReadReviewedLocal(path, token);
-            var current = CreateReconciliationPreview(manifestId, contentId, manifest, localText, remote);
-            if (!string.Equals(current.LocalRevision, expectedLocalRevision, StringComparison.Ordinal))
+            var currentRevision = ReconciliationRevision(manifestId, contentId, manifest.uid.GetOrElse(""), localText, remote);
+            if (!string.Equals(currentRevision, expectedLocalRevision, StringComparison.Ordinal))
                 throw StaleReconciliation("The local file or realm values changed after this item was reviewed.");
             token.ThrowIfCancellationRequested();
             var file = localText == null ? new ContentFile() : JsonSerializer.Deserialize<ContentFile>(localText, GetContentFileSerializationOptions());
@@ -103,17 +103,22 @@ public partial class ContentService
             local = ContentEnvelope(parsed.GetProperty(ContentFile.JSON_NAME_PROPERTIES), parsed.GetProperty(ContentFile.JSON_NAME_TAGS));
         }
         var uid = manifest.uid.GetOrElse("");
-        // Framed JSON avoids ambiguous concatenation. Raw local JSON also protects baseline/reference changes.
-        var review = JsonSerializer.Serialize(new { cid = _requester.Cid, pid = _requester.Pid, manifestId, id, uid,
-            localText, remote = remote.HasValue ? JsonSerializer.Serialize(remote.Value, GetContentFileSerializationOptions(false)) : null });
         return new ContentReconciliationPreview
         {
             ContentId = id, ManifestUid = uid, LocalExists = local.HasValue, RealmExists = remote.HasValue,
             LocalJson = local.HasValue ? JsonSerializer.Serialize(local.Value, GetContentFileSerializationOptions()) : null,
             RealmJson = remote.HasValue ? JsonSerializer.Serialize(remote.Value, GetContentFileSerializationOptions()) : null,
-            LocalRevision = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(review))).ToLowerInvariant(),
+            LocalRevision = ReconciliationRevision(manifestId, id, uid, localText, remote),
             Differences = local.HasValue && remote.HasValue ? ReconciliationDifferences(local.Value, remote.Value) : Array.Empty<ContentReconciliationDifference>()
         };
+    }
+
+    private string ReconciliationRevision(string manifestId, string id, string uid, string localText, JsonElement? remote)
+    {
+        // Keep the review format stable. Raw local JSON also protects baseline/reference changes.
+        var review = JsonSerializer.Serialize(new { cid = _requester.Cid, pid = _requester.Pid, manifestId, id, uid,
+            localText, remote = remote.HasValue ? JsonSerializer.Serialize(remote.Value, GetContentFileSerializationOptions(false)) : null });
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(review))).ToLowerInvariant();
     }
 
     private static ContentReconciliationDifference[] ReconciliationDifferences(JsonElement local, JsonElement realm)

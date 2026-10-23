@@ -563,6 +563,26 @@ namespace Beamable.Editor.Tests
 
     public class ContentPresentationTests
     {
+        [TestCase(560f, 2000f)]
+        [TestCase(760f, 6000f)]
+        [TestCase(1200f, 10000f)]
+        public void Review_headers_allow_long_text_to_shrink_to_the_available_width(float windowWidth, float textWidth)
+        {
+            const BindingFlags fields = BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            var optionsField = typeof(ContentReconciliationWindow).GetField("HeaderLabelOptions", fields);
+            Assert.That(optionsField, Is.Not.Null, "Header labels must override their intrinsic text minimum width.");
+            // Exercise Unity's real layout-option consumer, without needing a native GUIStyle or Editor window.
+            var entryType = typeof(GUILayoutUtility).Assembly.GetType("UnityEngine.GUILayoutEntry", true);
+            var entry = FormatterServices.GetUninitializedObject(entryType);
+            entryType.GetField("minWidth", fields).SetValue(entry, textWidth);
+            entryType.GetField("maxWidth", fields).SetValue(entry, textWidth);
+            entryType.GetMethod("ApplyOptions", fields).Invoke(entry, new[] { optionsField.GetValue(null) });
+            var minimum = (float)entryType.GetField("minWidth", fields).GetValue(entry);
+            Assert.That(minimum, Is.Zero);
+            Assert.That(minimum, Is.LessThan(windowWidth - 28), "Leave the existing outer padding inside the window.");
+            Assert.That(entryType.GetField("stretchWidth", fields).GetValue(entry), Is.EqualTo(1));
+        }
+
         [TestCase(0f, 240f, 100000, 0, 11)]
         [TestCase(2400f, 240f, 100000, 100, 111)]
         [TestCase(2399976f, 240f, 100000, 99999, 100000)]

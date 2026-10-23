@@ -78,6 +78,21 @@ public class ContentReconciliationPreviewTests
     private void SetRemote(string url) => latest.entries = new[]
         { new ClientContentInfoJson { contentId = Id, version = "v2", uri = url, tags = new[] { "realm" } } };
 
+    [Test]
+    public async Task Revision_format_remains_compatible_when_apply_skips_presentation()
+    {
+        await Seed("[\"mine\"]");
+        using var server = new ScriptedServer(_ => Task.FromResult("{\"properties\":{\"startingAmount\":{\"data\":20}}}"));
+        SetRemote(server.Url);
+        var preview = await service.PreviewReconciliation("global", Id, "reviewed");
+        // Captured from the original preview implementation at 22663887a using this fixture.
+        const string originalRevision = "c5379cd43abd745540bced30d5ed81ab065914e294813288a5eb09d3b1090329";
+        Assert.That(preview.LocalRevision, Is.EqualTo(originalRevision));
+        await Apply(preview, false);
+        using var saved = JsonDocument.Parse(File.ReadAllText(FilePath));
+        Assert.That(saved.RootElement.GetProperty("properties").GetProperty("startingAmount").GetProperty("data").GetInt32(), Is.EqualTo(20));
+    }
+
     private ContentResolveConflictCommandArgs CommandArgs()
     {
         var provider = new Mock<IServiceProvider>();
