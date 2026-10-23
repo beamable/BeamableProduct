@@ -462,6 +462,16 @@ public static class LocalStackBuilds
 		return Sha(string.Join("\n", parts));
 	}
 
+	/// <summary>A folder's sources as one hash, the way a build input is fingerprinted; null outside git.</summary>
+	public static string FolderFingerprint(string folder)
+	{
+		if (!Directory.Exists(folder)) return null;
+		var top = Git(folder, "rev-parse", "--show-toplevel")?.Trim();
+		if (string.IsNullOrEmpty(top)) return null;
+		top = Path.GetFullPath(top);
+		return Sha(InputPart(top, Path.GetRelativePath(top, Path.GetFullPath(folder)).Replace('\\', '/')));
+	}
+
 	/// <summary>One input: its tree (or blob) id at HEAD, and a hash of each changed or new file under it.</summary>
 	private static string InputPart(string top, string rel)
 	{

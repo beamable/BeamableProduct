@@ -26,8 +26,9 @@
       "remove": [ "build" ]
     },
     "web": {
-      "description": "Use your local SDK and toolkit builds: start the local registry, publish them and point the extensions at them.",
-      "before": [ "web-registry" ]
+      "description": "Use your local SDK and toolkit builds: start the local registry, build and publish them, point the extensions at them, and rebuild on every save.",
+      "before": [ "web: registry", "web: build", "web: publish", "web: install" ],
+      "after": [ "web: watch" ]
     },
     "no-logs": {
       "description": "Don't forward logs to Grafana. Terminal and files only.",
@@ -58,8 +59,8 @@
       "include": [ "web-registry", "portal", "microservices", "extensions" ],
       "variants": {
         "non-publish": {
-          "description": "Type-check loop: start the registry, never publish the packages or repoint the extensions.",
-          "remove": [ "build: web packages", "build: web extension pins" ]
+          "description": "Type-check loop: build the packages, never publish them or point the extensions at them.",
+          "remove": [ "web: publish", "web: install", "web: watch" ]
         }
       }
     },

@@ -75,7 +75,7 @@ public class LocalStackToolchainTests
 	[Test]
 	public void PnpmIsOnThePathPrefixBecauseItHasNoToken()
 	{
-		// `beam web publish` shells out to a bare `pnpm`, so there is no token to substitute — the only thing that
+		// web: build shells out to a bare `pnpm`, so there is no token to substitute — the only thing that
 		// makes it resolvable is the step's PATH.
 		var dir = Directory.CreateTempSubdirectory("beam-pnpm-path");
 		try
@@ -628,8 +628,8 @@ public class LocalStackToolchainTests
 	[TestCase("build: c# gateway", "Build C# gateway", new[] { "build", "csharp" })]
 	[TestCase("scala: auth", "Scala service auth", new[] { "scala" })]
 	[TestCase("docker: api deps + caddy", "Docker api deps + caddy", new[] { "docker" })]
-	[TestCase("docker: web registry", "Docker web registry", new[] { "web-registry" })]
-	[TestCase("build: web packages", "Build web packages", new[] { "build", "web-registry" })]
+	[TestCase("web: registry", "Web packages registry", new[] { "web-registry" })]
+	[TestCase("web: build", "Web packages build", new[] { "web-registry" })]
 	[TestCase("build: scala", "Build Scala", new[] { "build", "scala" })]
 	[TestCase("build: portal deps", "Build portal deps", new[] { "build", "portal" })]
 	[TestCase("portal frontend", "Portal frontend", new[] { "portal" })]
@@ -640,6 +640,32 @@ public class LocalStackToolchainTests
 	{
 		Assert.That(LocalStackConfigIO.InferLabel(name), Is.EqualTo(label));
 		Assert.That(LocalStackConfigIO.InferTags(name), Is.EqualTo(tags));
+	}
+
+	/// <summary>
+	/// The workspace's services found when a stack is resolved become steps: one per microservice and extension, an
+	/// extension depending on the microservices it calls, no groups, and a step of that name in the settings wins.
+	/// </summary>
+	[Test]
+	public void Found_services_become_steps_unless_the_settings_have_them()
+	{
+		var steps = new List<LocalStackStep> { new LocalStackStep { name = "microservice: Edited", arguments = "mine" } };
+		var found = new WorkspaceServices
+		{
+			services = new List<string> { "Edited", "CampaignService" },
+			extensions = new List<string> { "campaigns" },
+			groups = new Dictionary<string, string[]> { ["player-engagement"] = new[] { "campaigns" } },
+			calls = new Dictionary<string, List<string>> { ["campaigns"] = new List<string> { "CampaignService" } }
+		};
+
+		found.AddTo(steps);
+
+		Assert.That(steps.Select(s => s.name), Is.EqualTo(new[] { "microservice: Edited", "microservice: CampaignService", "portal extension: campaigns" }));
+		Assert.That(steps[0].arguments, Is.EqualTo("mine"));
+		Assert.That(steps[2].dependsOn, Is.EqualTo(new[] { "microservice: CampaignService" }));
+
+		var full = LocalStackStacks.BuiltIn().Resolve("full", new LocalStackConfig { steps = steps }).steps.Select(s => s.name);
+		Assert.That(full, Does.Contain("microservice: CampaignService").And.Contain("portal extension: campaigns"));
 	}
 
 	/// <summary>The built-in stacks that run this workspace's services name both kinds, so microservices still run.</summary>
@@ -1812,6 +1838,44 @@ public class LocalStackToolchainTests
 	}
 
 	/// <summary>
+	/// An alias lookup's answer names the org by its cid. The local backend answers an alias in use with its cid and
+	/// "available": true; reading that as "no such org" left a stack without a login to the local realm.
+	/// </summary>
+	[Test]
+	public void An_alias_lookup_finds_the_org_by_its_cid()
+	{
+		Assert.That(LocalStackTargets.CidOfAlias(Newtonsoft.Json.Linq.JObject.Parse("{\"alias\":\"beam-project\",\"available\":true,\"cid\":106100219883553792}")),
+			Is.EqualTo("106100219883553792"));
+		Assert.That(LocalStackTargets.CidOfAlias(Newtonsoft.Json.Linq.JObject.Parse("{\"alias\":\"x\",\"available\":false,\"cid\":\"42\"}")), Is.EqualTo("42"));
+		Assert.That(LocalStackTargets.CidOfAlias(Newtonsoft.Json.Linq.JObject.Parse("{\"alias\":\"free\",\"available\":true}")), Is.Null);
+		Assert.That(LocalStackTargets.CidOfAlias(Newtonsoft.Json.Linq.JObject.Parse("{\"alias\":\"free\",\"cid\":null}")), Is.Null);
+	}
+
+	/// <summary>
+	/// The org's realms come from its customer listing, which has all three: the games listing has only each game's
+	/// root, so the stack's login used to land on prod, and only prod got its zone.
+	/// </summary>
+	[Test]
+	public void The_local_stack_logs_in_to_the_dev_realm_and_every_realm_gets_its_zone()
+	{
+		var customer = Newtonsoft.Json.Linq.JObject.Parse(@"{""customer"":{""cid"":1,""alias"":""beam-project"",""projects"":[
+			{""projectName"":""beam-project-prod"",""pid"":""DE_44"",""children"":[""DE_45""],""archived"":false},
+			{""projectName"":""beam-project-staging"",""pid"":""DE_45"",""parent"":""DE_44"",""children"":[""DE_46""],""archived"":false},
+			{""projectName"":""beam-project-dev"",""pid"":""DE_46"",""parent"":""DE_45"",""children"":[],""archived"":false}]}}");
+
+		var realms = LocalStackTargets.RealmsOf("1", customer);
+
+		Assert.That(realms.Select(r => r.Pid).OrderBy(p => p), Is.EqualTo(new[] { "DE_44", "DE_45", "DE_46" }));
+		Assert.That(LocalStackTargets.LocalRealm(realms).Pid, Is.EqualTo("DE_46"));
+		Assert.That(LocalStackTargets.RealmChoices(realms, LocalStackTargets.LocalRealm(realms)).Select(r => r.Pid), Is.EqualTo(new[] { "DE_46", "DE_45", "DE_44" }),
+			"a remote target's realm picker offers dev first, then up to prod");
+		Assert.That(LocalStackTargets.RealmChoices(realms, realms.First(r => r.Pid == "DE_44")).Select(r => r.Pid), Is.EqualTo(new[] { "DE_44", "DE_46", "DE_45" }),
+			"the realm in use comes first when changing it");
+		Assert.That(LocalStackTargets.ZonePlan(realms, new[] { "dev", "staging", "prod" }).bind.OrderBy(b => b.pid),
+			Is.EqualTo(new[] { ("DE_44", "prod"), ("DE_45", "staging"), ("DE_46", "dev") }));
+	}
+
+	/// <summary>
 	/// The local org gets the zones dev, staging and prod: the ones it lacks are created (dev and prod come with the
 	/// first zone call, so a fresh org lacks staging), and every realm in use is bound to its tier's zone.
 	/// </summary>
@@ -1900,12 +1964,6 @@ public class LocalStackToolchainTests
 		Assert.That(lanes, Has.Some.EqualTo(new[] { "build: scala" }));
 		Assert.That(lanes, Has.Some.EqualTo(new[] { "build: portal deps" }));
 
-		var web = LocalStackRunCommand.BuildLanes(stacks.Resolve("full:web", config).steps, config)
-			.Select(l => l.Select(s => s.name).ToList()).ToList();
-		Assert.That(web, Has.Some.EqualTo(new[] { LocalStackTemplate.WebRefreshStepName, "build: portal deps" }),
-			"the extension repoint runs in the portal's folder, before its npm install");
-		Assert.That(LocalStackRunCommand.WaitsForItsPlace(stacks.Resolve("full:web", config).steps.First(s => s.name == LocalStackTemplate.WebPublishStepName)),
-			Is.True);
 	}
 
 	/// <summary>Lanes run side by side and each lane's builds in order; a failed build fails the rest of its lane unrun.</summary>
@@ -2048,6 +2106,60 @@ public class LocalStackToolchainTests
 	}
 
 	/// <summary>
+	/// An attached stack keeps no run-state, so `beam local logs` finds its steps' output through the board, which says
+	/// where the run writes it: a step with a log file is listed, one without isn't.
+	/// </summary>
+	[Test]
+	public void Logs_find_an_attached_stacks_output_through_its_board()
+	{
+		var dir = Directory.CreateTempSubdirectory("beam-attached-logs");
+		try
+		{
+			var runStatePath = Path.Combine(dir.FullName, "local-stack.run.json");
+			var logsDir = Directory.CreateDirectory(Path.Combine(dir.FullName, "run")).FullName;
+			File.WriteAllText(Path.Combine(logsDir, LocalStackRunCommand.SafeName("portal extension: campaigns") + ".err.log"), "boom");
+			LocalStackBoardIO.Save(LocalStackBoardIO.PathFor(runStatePath), new LocalStackBoardSnapshot
+			{
+				stack = "full", attached = true, runnerPid = Environment.ProcessId, logsDir = logsDir,
+				rows = new List<LocalStackBoardRow> { new LocalStackBoardRow { name = "portal extension: campaigns" }, new LocalStackBoardRow { name = "never started" } }
+			});
+
+			var state = LocalStackLogsCommand.FromAttachedBoard(runStatePath);
+
+			Assert.That(state.steps.Select(s => s.name), Is.EqualTo(new[] { "portal extension: campaigns" }));
+			Assert.That(File.ReadAllText(state.steps[0].stderrLog), Is.EqualTo("boom"));
+			Assert.That(LocalStackLogsCommand.FromAttachedBoard(Path.Combine(dir.FullName, "elsewhere", "local-stack.run.json")), Is.Null);
+		}
+		finally
+		{
+			dir.Delete(recursive: true);
+		}
+	}
+
+	/// <summary>The local web package versions get a line of their own, on the live board and on ps's snapshot.</summary>
+	[Test]
+	public void The_local_web_packages_get_their_own_line()
+	{
+		var snapshot = new LocalStackBoardSnapshot
+		{
+			stack = "full:web", rows = TallBoard(),
+			webPackages = new Dictionary<string, string> { ["@beamable/portal-toolkit"] = "0.6.0-0.20261023132716", ["@beamable/sdk"] = "1.4.0-0.20261023132716" }
+		};
+		const string line = "Local web packages: @beamable/portal-toolkit 0.6.0-0.20261023132716, @beamable/sdk 1.4.0-0.20261023132716";
+
+		var live = new TestConsole().Width(140);
+		live.Write(LocalStackBoard.Frame(snapshot, 140, 0, 5, new List<string>(), following: false, BoardStart));
+		Assert.That(live.Output, Does.Contain(line));
+
+		var once = new TestConsole().Width(140);
+		once.Write(LocalStackBoard.Render(snapshot, 140, BoardStart));
+		Assert.That(once.Output, Does.Contain(line));
+
+		snapshot.webPackages = null;
+		Assert.That(LocalStackBoard.WebPackagesLine(snapshot), Is.Null);
+	}
+
+	/// <summary>
 	/// A drawn frame stays off the screen's last column and last row, selected or not, with the question or without:
 	/// a line reaching either made the terminal wrap or scroll, and the board flickered blank on the arrow keys.
 	/// </summary>
@@ -2070,33 +2182,6 @@ public class LocalStackToolchainTests
 			Assert.That(lines.Length, Is.LessThan(height), $"{width}x{height}, selected {selected}, bar {bar != null}");
 			Assert.That(lines.Max(l => l.Length), Is.LessThan(width), $"{width}x{height}, selected {selected}, bar {bar != null}");
 		}
-	}
-
-	/// <summary>
-	/// The web packages publish declares its sources, so it can be up to date; the extension repoint gets enough
-	/// time to reinstall every extension, whatever older settings say; the installs run a few at a time.
-	/// </summary>
-	[Test]
-	public void The_web_steps_build_only_when_needed_and_get_enough_time()
-	{
-		var config = StackCatalogue();
-		var publish = config.steps.First(s => s.name == LocalStackTemplate.WebPublishStepName);
-		var pins = config.steps.First(s => s.name == LocalStackTemplate.WebRefreshStepName);
-
-		Assert.That(publish.inputs, Is.EqualTo(new[] { "web", "beam-portal-toolkit" }));
-		Assert.That(pins.readyTimeoutSeconds, Is.EqualTo(LocalStackTemplate.WebRefreshTimeoutSeconds));
-		Assert.That(LocalStackRunCommand.SkipsWhenUnchanged(publish), Is.True);
-
-		Assert.That(cli.Web.WebUseCommand.MaxParallelInstalls, Is.InRange(2, 6));
-
-		// A requested build that is up to date says so in the dry run, and why it may still publish.
-		var stacks = LocalStackStacks.BuiltIn();
-		var resolved = stacks.Resolve("full:web", config);
-		var step = resolved.steps.First(s => s.name == publish.name);
-		var dryRun = LocalStackRunCommand.DryRun(resolved, resolved.steps, new HashSet<LocalStackStep>(), config, new HashSet<string>(),
-			new List<LocalStackDependencyCheck>(), new Dictionary<LocalStackStep, string>(), new HashSet<LocalStackStep> { step });
-		Assert.That(dryRun.steps.First(s => s.name == publish.name).runs, Does.StartWith("up to date while the registry has the build"));
-		Assert.That(dryRun.steps.First(s => s.name == pins.name).runs, Is.EqualTo("builds"));
 	}
 
 	// ----------------------------------------------------------------------------------

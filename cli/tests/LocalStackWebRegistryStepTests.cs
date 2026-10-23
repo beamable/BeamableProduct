@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -35,8 +36,10 @@ public class LocalStackWebRegistryStepTests
 	private static readonly string[] WebSteps =
 	{
 		LocalStackTemplate.WebRegistryStepName,
+		LocalStackTemplate.WebBuildStepName,
 		LocalStackTemplate.WebPublishStepName,
-		LocalStackTemplate.WebRefreshStepName,
+		LocalStackTemplate.WebInstallStepName,
+		LocalStackTemplate.WebWatchStepName,
 	};
 
 	/// <summary>Mirrors what <c>beam local run &lt;name&gt;</c> does: resolve the name, then apply the build gate.</summary>
@@ -73,7 +76,7 @@ public class LocalStackWebRegistryStepTests
 	{
 		var names = Run(Catalogue(), "full:web");
 
-		Assert.That(names.Take(3), Is.EqualTo(WebSteps), "`:web` adds them before the stack's own steps");
+		Assert.That(names.Take(4), Is.EqualTo(WebSteps.Take(4)), "`:web` adds them before the stack's own steps");
 		Assert.That(names, Does.Contain("portal frontend"));
 	}
 
@@ -122,7 +125,8 @@ public class LocalStackWebRegistryStepTests
 	{
 		var names = Run(Catalogue(), "full:web:no-build");
 
-		Assert.That(names.Take(3), Is.EqualTo(WebSteps));
+		Assert.That(names.Take(4), Is.EqualTo(WebSteps.Take(4)));
+		Assert.That(names, Does.Contain(LocalStackTemplate.WebWatchStepName));
 		Assert.That(names, Does.Not.Contain("build: portal deps"));
 	}
 
@@ -140,13 +144,25 @@ public class LocalStackWebRegistryStepTests
 	}
 
 	[Test]
-	public void Web_dev_non_publish_keeps_only_the_registry()
+	public void Web_dev_non_publish_builds_but_never_publishes_or_installs()
 	{
 		var names = Run(Catalogue(), "web-dev:non-publish");
 
-		Assert.That(names, Does.Contain(LocalStackTemplate.WebRegistryStepName));
+		Assert.That(names, Does.Contain(LocalStackTemplate.WebRegistryStepName).And.Contain(LocalStackTemplate.WebBuildStepName));
 		Assert.That(names, Does.Not.Contain(LocalStackTemplate.WebPublishStepName));
-		Assert.That(names, Does.Not.Contain(LocalStackTemplate.WebRefreshStepName));
+		Assert.That(names, Does.Not.Contain(LocalStackTemplate.WebInstallStepName));
+		Assert.That(names, Does.Not.Contain(LocalStackTemplate.WebWatchStepName));
+	}
+
+	/// <summary>:web builds, publishes and points the extensions at the build before the stack, and watches after it.</summary>
+	[Test]
+	public void The_web_variant_runs_the_package_loop_around_the_stack()
+	{
+		var names = Run(Catalogue(), "full:web");
+		var web = new[] { LocalStackTemplate.WebRegistryStepName, LocalStackTemplate.WebBuildStepName, LocalStackTemplate.WebPublishStepName, LocalStackTemplate.WebInstallStepName };
+
+		Assert.That(names.Take(4), Is.EqualTo(web));
+		Assert.That(names.IndexOf(LocalStackTemplate.WebWatchStepName), Is.GreaterThan(names.IndexOf("portal extension: my-ext")));
 	}
 
 	/// <summary>Disabled steps stay out no matter how they are asked for.</summary>
@@ -167,11 +183,10 @@ public class LocalStackWebRegistryStepTests
 	}
 
 	[Test]
-	public void IsWebStep_matches_exactly_the_three_web_steps()
+	public void IsWebStep_matches_the_web_steps()
 	{
-		Assert.That(LocalStackTemplate.IsWebStep(LocalStackTemplate.WebRegistryStepName), Is.True);
-		Assert.That(LocalStackTemplate.IsWebStep(LocalStackTemplate.WebPublishStepName), Is.True);
-		Assert.That(LocalStackTemplate.IsWebStep(LocalStackTemplate.WebRefreshStepName), Is.True);
+		foreach (var name in WebSteps)
+			Assert.That(LocalStackTemplate.IsWebStep(name), Is.True, name);
 
 		Assert.That(LocalStackTemplate.IsWebStep("build: scala"), Is.False);
 		Assert.That(LocalStackTemplate.IsWebStep("portal frontend"), Is.False);
@@ -215,15 +230,36 @@ public class LocalStackWebRegistryStepTests
 		}
 	}
 
-	/// <summary>A published pin is stale; only the local dev version (bare or ranged) counts as the local build.</summary>
+	/// <summary>
+	/// A local build is the next minor after the highest version on npmjs, then -0. and the time: newer than every
+	/// release so far, older than the next one's prereleases, and never the same twice.
+	/// </summary>
 	[Test]
-	public void Published_pins_are_recognised_as_not_the_local_build()
+	public void Local_builds_get_a_version_of_their_own()
 	{
-		Assert.That(WebLocalRegistryService.IsLocalDevVersion("0.4.0"), Is.False);
-		Assert.That(WebLocalRegistryService.IsLocalDevVersion("1.3.0-rc.1"), Is.False);
-		Assert.That(WebLocalRegistryService.IsLocalDevVersion(null), Is.False);
+		Assert.That(WebPackagesService.NextBase(new[] { "0.4.0", "0.5.0-rc.8", "0.4.2", "not-a-version" }), Is.EqualTo("0.6.0"));
+		Assert.That(WebPackagesService.NextBase(new[] { "1.3.0", "1.2.9" }), Is.EqualTo("1.4.0"));
+		Assert.That(WebPackagesService.NextBase(new string[0]), Is.Null);
 
-		Assert.That(WebLocalRegistryService.IsLocalDevVersion(WebLocalRegistryService.LocalDevVersion), Is.True);
-		Assert.That(WebLocalRegistryService.IsLocalDevVersion("^" + WebLocalRegistryService.LocalDevVersion), Is.True);
+		var version = WebPackagesService.LocalVersion("0.6.0", new DateTime(2026, 10, 23, 9, 5, 7, DateTimeKind.Utc));
+		Assert.That(version, Is.EqualTo("0.6.0-0.20261023090507"));
+		Assert.That(cli.Utils.NpmSemver.TrySatisfies(version, ">0.5.0-rc.8 <0.6.0-dev.0", out var between) && between, Is.True,
+			"above the last release candidate, below the next minor's dev builds");
+	}
+
+	/// <summary>The overlay goes in with --no-save, from the local registry for the @beamable scope only.</summary>
+	[Test]
+	public void The_overlay_installs_without_saving_from_the_local_registry()
+	{
+		var overlay = new WebPackagesOverlay
+		{
+			registry = WebLocalRegistryService.DefaultRegistry,
+			packages = { [WebLocalRegistryService.ToolkitPackage] = "0.6.0-0.20261023090507", [WebLocalRegistryService.SdkPackage] = "1.4.0-0.20261023090507" }
+		};
+		var args = WebPackagesService.OverlayInstallArgs(overlay);
+
+		Assert.That(args, Does.StartWith("install --no-save "));
+		Assert.That(args, Does.Contain("@beamable/portal-toolkit@0.6.0-0.20261023090507").And.Contain("@beamable/sdk@1.4.0-0.20261023090507"));
+		Assert.That(args, Does.Contain("--@beamable:registry=http://localhost:4873").And.Not.Contain(" --registry"));
 	}
 }

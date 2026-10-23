@@ -2,6 +2,7 @@ using Beamable.Server;
 using cli.Services;
 using Newtonsoft.Json;
 using cli.Services.LocalStack;
+using cli.Services.Web;
 using Spectre.Console;
 using System.CommandLine;
 using System.Diagnostics;
@@ -60,6 +61,9 @@ public class LocalStackPsCommandResult
 
 	/// <summary>True once the stack has come up.</summary>
 	public bool up;
+
+	/// <summary>The local builds of the web packages the stack's extensions use, by package; null without them.</summary>
+	public Dictionary<string, string> webPackages;
 
 	/// <summary>With <c>--restart</c> or <c>--start</c>: the steps acted on, and what was said about it.</summary>
 	public string[] acted;
@@ -239,6 +243,7 @@ public class LocalStackPsCommand
 	private static LocalStackBoardSnapshot ToBoard(LocalStackPsCommandResult result) => new LocalStackBoardSnapshot
 	{
 		stack = result.stack, attached = result.attached, host = result.host, portalUrl = result.portalUrl, up = result.up,
+		webPackages = result.webPackages,
 		rows = result.steps.Select(s => new LocalStackBoardRow
 		{
 			name = s.name, label = s.label, port = s.port, detail = s.detail, once = s.once,
@@ -254,9 +259,20 @@ public class LocalStackPsCommand
 		if (board == null || LocalStackBoardIO.IsStale(board)) return result;
 
 		Merge(result, board, LocalStackRunStateIO.Load(runStatePath));
+		ShowWebPackages(result, WebPackagesService.LoadOverlay(LocalStackConfigIO.FindWorkspaceRoot(runStatePath)));
 		if (probe && !string.IsNullOrWhiteSpace(result.host))
 			result.backendHealthy = await ProbeMetadata(result.host);
 		return result;
+	}
+
+	/// <summary>Which local builds the extensions use: the versions go on the board's own line (see
+	/// <see cref="LocalStackBoard.WebPackagesLine"/>), and the <c>web: install</c> row that pointed them there says so.</summary>
+	public static void ShowWebPackages(LocalStackPsCommandResult result, WebPackagesOverlay overlay)
+	{
+		result.webPackages = overlay?.packages;
+		var install = result.steps.FirstOrDefault(s => string.Equals(s.name, LocalStackTemplate.WebInstallStepName, StringComparison.OrdinalIgnoreCase));
+		if (install != null && overlay != null)
+			install.detail = "extensions use the local builds";
 	}
 
 	/// <summary>
@@ -527,6 +543,7 @@ public class LocalStackPsCommand
 		{
 			var settings = LocalStackCommand.ResolveManifestPath(args.ConfigService, null);
 			var config = LocalStackConfigIO.Load(settings);
+			WorkspaceServices.AddFound(args, config).GetAwaiter().GetResult();
 			var stacks = LocalStackStacks.Load(LocalStackConfigIO.FindWorkspaceRoot(settings));
 			if (board?.stack != null)
 				return (stacks.Resolve(board.stack, config).steps, stacks.TagsOf);
@@ -552,6 +569,7 @@ public class LocalStackPsCommand
 		{
 			var settings = LocalStackCommand.ResolveManifestPath(args.ConfigService, null);
 			var config = LocalStackConfigIO.Load(settings);
+			WorkspaceServices.AddFound(args, config).GetAwaiter().GetResult();
 			var stacks = LocalStackStacks.Load(LocalStackConfigIO.FindWorkspaceRoot(settings));
 			if (board?.stack != null)
 			{

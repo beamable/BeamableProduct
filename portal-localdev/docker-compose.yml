@@ -1,6 +1,6 @@
 services:
   verdaccio:
-    image: verdaccio/verdaccio:5
+    image: verdaccio/verdaccio:6
     container_name: beamable-verdaccio
     ports:
       - "4873:4873"

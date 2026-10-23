@@ -1,5 +1,6 @@
 using Beamable.Server;
 using cli.Services.LocalStack;
+using cli.Services.Web;
 using System.CommandLine;
 using System.Diagnostics;
 
@@ -78,6 +79,8 @@ public class LocalStackStopCommand
 			? null
 			: LocalStackPsCommand.MatchRecorded(args, runStatePath, state, items).Select(s => s.name).ToHashSet(StringComparer.OrdinalIgnoreCase);
 		var (stopped, remaining) = Stop(runStatePath, state, e => names == null || names.Contains(e.name), args.purge);
+		if (names == null)
+			WebPackagesService.RemoveOverlay(args.ConfigService.BeamableWorkspace);
 
 		Log.Information($"Stopped {stopped.Count} step(s). {remaining} still recorded.");
 		return new LocalStackStopCommandResult { stopped = stopped.ToArray(), remaining = remaining };

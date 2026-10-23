@@ -324,7 +324,7 @@ public class LocalStackCreateCommand
 		if (draft.before != null) draft.changes.Add(ChangeBefore);
 		if (draft.after != null) draft.changes.Add(ChangeAfter);
 		if (draft.remove != null) draft.changes.Add(ChangeRemove);
-		draft.workspace = await WorkspaceServices.Find(args, config);
+		draft.workspace = await WorkspaceServices.AddFound(args, config);
 
 		if (Editing)
 		{
@@ -2116,6 +2116,38 @@ public class WorkspaceServices
 		found.extensions = extensions;
 		found.groups = new Dictionary<string, string[]>(groups, StringComparer.OrdinalIgnoreCase);
 		found.calls = LocalStackTemplate.ExtensionMicroservices(config.repos?.portalDir);
+		return found;
+	}
+
+	/// <summary>
+	/// Adds a step to <paramref name="steps"/> for each microservice and portal extension found that isn't there yet,
+	/// so stacks run what the workspace has now, without setup: a step of that name already in the settings wins. An
+	/// extension's step depends on the microservices it calls. No group steps: a group runs members that are already
+	/// here, so a group stays something a stack picks.
+	/// </summary>
+	public void AddTo(List<LocalStackStep> steps)
+	{
+		var have = steps.Select(s => s.name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+		foreach (var service in services)
+		{
+			var step = LocalStackTemplate.MicroserviceStep(service);
+			if (have.Add(step.name)) steps.Add(step);
+		}
+
+		foreach (var extension in extensions)
+		{
+			var step = LocalStackTemplate.ExtensionStep(extension);
+			var calls = CallsOf(extension).Select(c => LocalStackTemplate.MicroservicePrefix + c).ToList();
+			step.dependsOn = calls.Count > 0 ? calls : null;
+			if (have.Add(step.name)) steps.Add(step);
+		}
+	}
+
+	/// <summary>Finds the workspace's services and adds them to <paramref name="config"/>'s steps (see <see cref="AddTo"/>).</summary>
+	public static async Task<WorkspaceServices> AddFound(CommandArgs args, LocalStackConfig config)
+	{
+		var found = await Find(args, config);
+		found.AddTo(config.steps);
 		return found;
 	}
 }

@@ -51,6 +51,8 @@ public class LocalStackLogsCommand
 		var runStatePath = LocalStackCommand.ResolveRunStatePath(args.ConfigService, args.configPath);
 		var state = LocalStackRunStateIO.Load(runStatePath);
 		if (state == null || state.steps.Count == 0)
+			state = FromAttachedBoard(runStatePath);
+		if (state == null || state.steps.Count == 0)
 			throw new CliException($"No running local stack recorded at {runStatePath}. Start one with `beam local run <stack>`.");
 
 		var selected = string.IsNullOrWhiteSpace(args.step)
@@ -80,6 +82,27 @@ public class LocalStackLogsCommand
 		catch (OperationCanceledException) { /* expected on Ctrl+C */ }
 
 		return new LocalStackLogsCommandResult { steps = selected.Select(s => s.name).ToArray() };
+	}
+
+	/// <summary>
+	/// An attached stack keeps no run-state, only its board, which says where the run writes each step's output. Its
+	/// steps with a log file, as entries this command reads; null when no attached stack's board is there.
+	/// </summary>
+	public static LocalStackRunState FromAttachedBoard(string runStatePath)
+	{
+		var board = LocalStackBoardIO.Load(LocalStackBoardIO.PathFor(runStatePath));
+		if (board == null || LocalStackBoardIO.IsStale(board) || string.IsNullOrEmpty(board.logsDir) || !Directory.Exists(board.logsDir))
+			return null;
+
+		var state = new LocalStackRunState();
+		foreach (var row in board.rows)
+		{
+			var log = Path.Combine(board.logsDir, LocalStackRunCommand.SafeName(row.name));
+			if (File.Exists(log + ".log") || File.Exists(log + ".err.log"))
+				state.steps.Add(new LocalStackRunEntry { name = row.name, stdoutLog = log + ".log", stderrLog = log + ".err.log" });
+		}
+
+		return state;
 	}
 
 	private static void DumpTail(string name, string path, bool isErr, int lines)

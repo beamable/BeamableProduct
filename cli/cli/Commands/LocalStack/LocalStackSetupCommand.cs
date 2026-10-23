@@ -35,9 +35,6 @@ public class LocalStackSetupCommandArgs : CommandArgs
 	public string host;
 	public string portalUrl;
 	public string scalaServices;
-	public string services;
-	public string extensions;
-	public bool updateServices;
 	public string scalaJvmArgs;
 	public string webRegistryDir;
 
@@ -124,7 +121,8 @@ public class LocalStackSetupCommandResult
 /// <item>The <b>settings file</b>, <c>.beamable/local/stack-settings.json</c>: repo path variables, host and
 /// portal URL, and the step catalogue every stack selects from (see <see cref="LocalStackTemplate"/>). Created
 /// on the first run; afterwards only its toolchain block is updated, unless <c>--force</c> recreates the
-/// catalogue or <c>--update-services</c> changes the microservice and extension steps.</item>
+/// catalogue. The workspace's microservices and extensions aren't in it: they're found each time a stack is
+/// resolved (see <see cref="WorkspaceServices"/>).</item>
 /// <item>The <b>generated BeamableBackend config files</b>, which are gitignored and so absent from every fresh
 /// clone. See <see cref="ScalaLocalVarsService"/>.</item>
 /// <item>An <b>AWS preflight</b>, because the Scala <c>auth</c> service reads its JWT signing key from Secrets
@@ -193,12 +191,6 @@ public class LocalStackSetupCommand
 			(args, v) => args.portalUrl = v);
 		AddOption(new Option<string>("--scala-services", "Comma/space separated Scala tools/* services for the step catalogue ('default' and 'all' expand)"),
 			(args, v) => args.scalaServices = v);
-		AddOption(new Option<string>("--services", "Comma/space separated microservice ids for the step catalogue"),
-			(args, v) => args.services = v);
-		AddOption(new Option<string>("--extensions", "Comma/space separated portal extension ids for the step catalogue"),
-			(args, v) => args.extensions = v);
-		AddOption(new Option<bool>("--update-services", "Only change the microservice, extension and service group steps of the existing settings"),
-			(args, v) => args.updateServices = v);
 		AddOption(new Option<string>("--scala-jvm-args", () => LocalStackTemplate.DefaultScalaJvmArgs,
 				"JVM flags each Scala service is launched with; the heap cap keeps ~18 JDK 8 JVMs from each reserving a quarter of physical RAM"),
 			(args, v) => args.scalaJvmArgs = v);
@@ -467,18 +459,12 @@ public class LocalStackSetupCommand
 		{
 			var plan = config == null ? $"would create {path}"
 				: args.force ? $"would recreate the step catalogue in {path}"
-				: args.updateServices ? $"would update the microservice and extension steps in {path}"
 				: $"would point {path} at the toolchain";
 			return (new LocalStackSetupStepResult { name = ToolchainPins.Settings, status = "would install", ok = true, detail = plan }, config, null);
 		}
 
 		string detail;
-		if (config != null && args.updateServices)
-		{
-			config = await UpdateServices(args, path, config, quiet);
-			detail = $"updated the microservice and extension steps ({config.steps.Count} steps)";
-		}
-		else if (config == null || args.force)
+		if (config == null || args.force)
 		{
 			if (config != null && !quiet && !AnsiConsole.Confirm($"Recreate the step catalogue in [yellow]{path}[/]? Its variables, targets and port offset are kept.", defaultValue: false))
 				return (new LocalStackSetupStepResult { name = ToolchainPins.Settings, status = "skipped", ok = true, detail = "kept the existing settings" }, config, null);
@@ -508,8 +494,9 @@ public class LocalStackSetupCommand
 
 	/// <summary>
 	/// Builds a new settings file: repo paths found next to the workspace (asked for when interactive), the host and
-	/// portal URL, and the step catalogue with the Scala services, microservices, extensions and service groups
-	/// picked here. Recreating keeps what only a person writes: variables, targets, port offset and log retention.
+	/// portal URL, and the step catalogue with the curated Scala services found in BeamableBackend (or
+	/// <c>--scala-services</c>). Nothing about what runs is asked: stacks choose that, and the workspace's microservices
+	/// and extensions are found each time one is resolved. Recreating keeps what only a person writes: variables, targets, port offset and log retention.
 	/// </summary>
 	private static async Task<LocalStackConfig> CreateSettings(LocalStackSetupCommandArgs args, string path,
 		LocalStackConfig existing, LocalStackToolchain toolchain, bool quiet)
@@ -521,10 +508,6 @@ public class LocalStackSetupCommand
 			    confirm: dir => quiet || AnsiConsole.Confirm($"[green]{dir}[/] does not exist yet. Create it?", defaultValue: true),
 			    out var settingsDir))
 			throw new CliException($"Aborted — {settingsDir} was not created, so there is nowhere to write the settings.");
-
-		// Discover the microservices/portal extensions/service groups in the current .beamable workspace so they
-		// can be offered as defaults (empty when run outside a workspace).
-		var (discoveredServices, discoveredExtensions, discoveredGroups) = await DiscoverWorkspaceServices(args);
 
 		// Repo paths: found by searching parent folders for the well-known repo names, shown as the default; an
 		// empty answer writes an <EDIT: ...> placeholder.
@@ -550,25 +533,11 @@ public class LocalStackSetupCommand
 		if (discovered.Count > 0)
 			Log.Information($"Discovered {discovered.Count} Scala tools under {scalaDir}.");
 
-		(discoveredExtensions, discoveredGroups) =
-			MergePortalExtensions(NullIfEmpty(portalDir), discoveredExtensions, discoveredGroups);
-
-		LogDiscovered("microservice", discoveredServices);
-		LogDiscovered("portal extension", discoveredExtensions);
-		LogDiscovered("group", discoveredGroups.Keys.OrderBy(x => x).ToList());
-
-		// Scala services default to the curated/discovered set (small, known-good). Microservices and extensions
-		// are opt-in: discovered ids are offered to pick from, but nothing is selected by default (a workspace can
-		// have dozens of extensions — running them all is rarely what you want).
+		// The curated set found in the repo: tools/ also holds bots, load tests and retired services.
 		var discoveredNames = discovered.Select(t => t.name).ToList();
-		var scalaServices = AskScalaSelection("Select the [green]Scala[/] services to run:",
-			args.scalaServices, discoveredNames, defaultScalaNames, quiet);
-		var selectedServices = Split(AskServiceSelection("Select the [green]microservices[/] to run:",
-			args.services, discoveredServices, preselected: null, quiet, quietDefault: string.Empty)) ?? new List<string>();
-		// The extension picker also lists service groups (prefixed "GROUP "); selecting a group runs all its members.
-		var (selectedGroups, selectedExtensions) = AskExtensionSelection("Select the [green]portal extensions / groups[/] to run:",
-			args.extensions, discoveredGroups, discoveredExtensions,
-			preselectedGroups: null, preselectedExtensions: null, quiet, quietGroups: null, quietExtensions: null);
+		var scalaServices = args.scalaServices != null
+			? ExpandScalaKeywords(args.scalaServices, discoveredNames, defaultScalaNames)
+			: string.Join(" ", defaultScalaNames);
 
 		var config = LocalStackTemplate.Create(new LocalStackTemplate.Options
 		{
@@ -578,10 +547,6 @@ public class LocalStackSetupCommand
 			scalaDir = NullIfEmpty(scalaDir),
 			portalDir = NullIfEmpty(portalDir),
 			scalaTools = ToScalaTools(Split(scalaServices), discovered),
-			// Don't run an id individually if a selected group already covers it.
-			services = ExcludeGroupMembers(selectedServices, selectedGroups, discoveredGroups),
-			extensions = ExcludeGroupMembers(selectedExtensions, selectedGroups, discoveredGroups),
-			groups = selectedGroups,
 			toolchain = toolchain,
 			javaHome = toolchain?.java,
 			scalaJvmArgs = args.scalaJvmArgs ?? defaults.scalaJvmArgs,
@@ -619,66 +584,6 @@ public class LocalStackSetupCommand
 		var productDir = LocalStackCommand.FindRepoDir(startDir, LocalStackCommand.ProductRepoName);
 		var detected = productDir == null ? null : Path.Combine(productDir, "portal-localdev");
 		return detected != null && Directory.Exists(detected) ? detected : null;
-	}
-
-	/// <summary>
-	/// Rewrites only the microservice/extension/group steps of the existing settings, leaving every other step
-	/// (docker, gateway, Scala, portal) and all edits untouched. The prompts default to the current selection, or —
-	/// when it has none — the ids discovered in the workspace. An empty answer removes all steps of that kind.
-	/// </summary>
-	private static async Task<LocalStackConfig> UpdateServices(LocalStackSetupCommandArgs args, string path,
-		LocalStackConfig config, bool quiet)
-	{
-		var (discoveredServices, discoveredExtensions, discoveredGroups) = await DiscoverWorkspaceServices(args);
-
-		// This path never prompts for repo paths, so scan the portal checkout the settings already point at too.
-		// Without this, `--update-services` — what you reach for precisely when you want to ADD extensions — could
-		// only offer what the workspace it runs in happens to know about.
-		(discoveredExtensions, discoveredGroups) =
-			MergePortalExtensions(NullIfEmpty(config.repos?.portalDir), discoveredExtensions, discoveredGroups);
-
-		bool IsMicroservice(LocalStackStep s) => s.name?.StartsWith(LocalStackTemplate.MicroservicePrefix) == true;
-		bool IsExtension(LocalStackStep s) => s.name?.StartsWith(LocalStackTemplate.ExtensionPrefix) == true;
-		bool IsGroup(LocalStackStep s) => s.name?.StartsWith(LocalStackTemplate.GroupPrefix) == true;
-
-		var currentServiceList = config.steps.Where(IsMicroservice)
-			.Select(s => s.name.Substring(LocalStackTemplate.MicroservicePrefix.Length)).ToList();
-		var currentExtensionList = config.steps.Where(IsExtension)
-			.Select(s => s.name.Substring(LocalStackTemplate.ExtensionPrefix.Length)).ToList();
-		var currentGroupList = config.steps.Where(IsGroup)
-			.Select(s => s.name.Substring(LocalStackTemplate.GroupPrefix.Length)).ToList();
-
-		// Offer the current ids plus anything discovered in the workspace; preselect what's already there so an empty
-		// answer keeps the current set (in quiet mode it is kept verbatim).
-		var serviceChoices = currentServiceList.Union(discoveredServices, StringComparer.OrdinalIgnoreCase).ToList();
-		var extensionChoices = currentExtensionList.Union(discoveredExtensions, StringComparer.OrdinalIgnoreCase).ToList();
-		// Groups offered = discovered ∪ current (so an already-configured group stays selectable even if not discovered).
-		var groupChoices = new Dictionary<string, string[]>(discoveredGroups ?? new Dictionary<string, string[]>(), StringComparer.OrdinalIgnoreCase);
-		foreach (var g in currentGroupList) groupChoices.TryAdd(g, Array.Empty<string>());
-
-		var services = Split(AskServiceSelection("Select the [green]microservices[/] to run:",
-			args.services, serviceChoices, preselected: currentServiceList, quiet,
-			quietDefault: string.Join(" ", currentServiceList))) ?? new List<string>();
-		var (selectedGroups, selectedExtensions) = AskExtensionSelection("Select the [green]portal extensions / groups[/] to run:",
-			args.extensions, groupChoices, extensionChoices,
-			preselectedGroups: currentGroupList, preselectedExtensions: currentExtensionList,
-			quiet, quietGroups: currentGroupList, quietExtensions: currentExtensionList);
-
-		var finalServices = ExcludeGroupMembers(services, selectedGroups, discoveredGroups);
-		var finalExtensions = ExcludeGroupMembers(selectedExtensions, selectedGroups, discoveredGroups);
-
-		// Drop the old beam steps and append the new set (microservices, then extensions, then groups).
-		config.steps.RemoveAll(s => IsMicroservice(s) || IsExtension(s) || IsGroup(s));
-		foreach (var svc in finalServices)
-			config.steps.Add(LocalStackTemplate.MicroserviceStep(svc));
-		foreach (var ext in finalExtensions)
-			config.steps.Add(LocalStackTemplate.ExtensionStep(ext));
-		foreach (var group in selectedGroups)
-			config.steps.Add(LocalStackTemplate.GroupStep(group));
-
-		LocalStackConfigIO.Save(path, config);
-		Log.Information($"Updated microservice/extension/group steps in {path} ({config.steps.Count} steps total).");
-		return config;
 	}
 
 	/// <summary>Ensures the settings directory's <c>.gitignore</c> ignores the generated run-state + logs.</summary>
@@ -806,8 +711,7 @@ public class LocalStackSetupCommand
 	///
 	/// The beamo manifest only covers the workspace the command RUNS in, so running setup anywhere but the portal
 	/// repo discovered nothing and the picker came up empty — which reads as "this project has no extensions"
-	/// rather than "you are standing somewhere else". Scanning the checkout that was actually pointed at fixes that
-	/// for both the interactive flow and <c>--update-services</c>.
+	/// rather than "you are standing somewhere else". Scanning the checkout that was actually pointed at fixes that.
 	/// </summary>
 	public static (List<string> extensions, Dictionary<string, string[]> groups) MergePortalExtensions(
 		string portalDir, List<string> discoveredExtensions, Dictionary<string, string[]> discoveredGroups)
@@ -864,121 +768,6 @@ public class LocalStackSetupCommand
 		return AnsiConsole.Prompt(prompt);
 	}
 
-	/// <summary>
-	/// Prompts the user to pick from a discovered set of ids (space-separated result). A passed option wins
-	/// verbatim (even ""); in quiet / non-interactive mode or when nothing was discovered, returns
-	/// <paramref name="quietDefault"/> (empty for new settings, the current set for an update). Interactively,
-	/// shows a multi-select with <paramref name="preselected"/> ticked.
-	/// </summary>
-	private static string AskServiceSelection(string title, string passed, List<string> choices,
-		IEnumerable<string> preselected, bool quiet, string quietDefault)
-	{
-		if (passed != null) return passed;
-		if (quiet || choices == null || choices.Count == 0) return quietDefault ?? string.Empty;
-
-		var prompt = new MultiSelectionPrompt<string>()
-			.Title(title)
-			.PageSize(15)
-			.MoreChoicesText("[grey](move up/down to reveal more)[/]")
-			.InstructionsText("[grey](press [blue]<space>[/] to toggle, [green]<enter>[/] to accept; select none to skip)[/]")
-			.AddChoices(choices)
-			.AddBeamHightlight()
-			.NotRequired();
-
-		var preselectSet = new HashSet<string>(preselected ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
-		foreach (var c in choices)
-			if (preselectSet.Contains(c))
-				prompt.Select(c);
-
-		return string.Join(" ", AnsiConsole.Prompt(prompt));
-	}
-
-	/// <summary>Display prefix for service-group entries in the extension multi-select (per the "GROUP name" ask).</summary>
-	private const string GroupDisplayPrefix = "GROUP ";
-
-	/// <summary>Meta-choice in the Scala picker that expands to the curated <see cref="LocalStackTemplate.DefaultScalaServices"/> set.</summary>
-	private const string ScalaDefaultChoice = "DEFAULT (curated set)";
-
-	/// <summary>Meta-choice in the Scala picker that expands to every discovered <c>tools/*</c> service.</summary>
-	private const string ScalaAllChoice = "ALL (every discovered service)";
-
-	/// <summary>
-	/// Scala-services picker. Offers two meta-choices — DEFAULT (the curated <see cref="LocalStackTemplate.DefaultScalaServices"/>
-	/// set, preselected) and ALL (every discovered tool) — followed by each discovered service so the user can
-	/// add services individually on top of DEFAULT. ALL wins over everything; otherwise the result is the union of
-	/// DEFAULT (if ticked) and any individually-ticked services, de-duplicated (case-insensitive, order-preserving).
-	/// A passed --scala-services value wins verbatim (with the "default"/"all" keywords expanded for scripting parity);
-	/// quiet / non-interactive mode returns the default set.
-	/// </summary>
-	private static string AskScalaSelection(string title, string passed,
-		List<string> discoveredNames, List<string> defaultNames, bool quiet)
-	{
-		if (passed != null) return ExpandScalaKeywords(passed, discoveredNames, defaultNames);
-		if (quiet) return string.Join(" ", defaultNames);
-
-		var choices = new List<string> { ScalaDefaultChoice };
-		if (discoveredNames.Count > 0) choices.Add(ScalaAllChoice);
-		choices.AddRange(discoveredNames);
-
-		var prompt = new MultiSelectionPrompt<string>()
-			.Title(title)
-			.PageSize(15)
-			.MoreChoicesText("[grey](move up/down to reveal more)[/]")
-			.InstructionsText("[grey](press [blue]<space>[/] to toggle, [green]<enter>[/] to accept; DEFAULT + any extras are combined)[/]")
-			.AddChoices(choices)
-			.AddBeamHightlight()
-			.NotRequired();
-		prompt.Select(ScalaDefaultChoice); // DEFAULT ticked out of the box (today's behavior)
-
-		return ResolveScalaSelection(AnsiConsole.Prompt(prompt), discoveredNames, defaultNames);
-	}
-
-	/// <summary>Turns the picked Scala choices into a space-separated, de-duplicated name list: ALL wins over
-	/// everything; otherwise DEFAULT (if ticked) is unioned with the individually-ticked services.</summary>
-	private static string ResolveScalaSelection(List<string> selected,
-		List<string> discoveredNames, List<string> defaultNames)
-	{
-		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		var ordered = new List<string>();
-		void Add(string n)
-		{
-			if (seen.Add(n))
-			{
-				ordered.Add(n);
-			}
-		}
-
-		if (selected.Contains(ScalaAllChoice))
-		{
-			foreach (var n in discoveredNames)
-			{
-				Add(n);
-			}
-		}
-		else
-		{
-			if (selected.Contains(ScalaDefaultChoice))
-			{
-				foreach (var n in defaultNames)
-				{
-					Add(n);
-				}
-			}
-
-			foreach (var s in selected)
-			{
-				if (s == ScalaDefaultChoice || s == ScalaAllChoice)
-				{
-					continue;
-				}
-
-				Add(s);
-			}
-		}
-
-		return string.Join(" ", ordered);
-	}
-
 	/// <summary>Expands the "default"/"all" keywords in a passed --scala-services value to their name sets and
 	/// de-duplicates the result (so e.g. "default auth" = the curated set plus auth, with no repeats).</summary>
 	private static string ExpandScalaKeywords(string passed,
@@ -1020,71 +809,6 @@ public class LocalStackSetupCommand
 		}
 
 		return string.Join(" ", ordered);
-	}
-
-	/// <summary>
-	/// Portal-extension picker that also lists service groups (prefixed "GROUP ") at the top. Returns the
-	/// selected group names and individual extension ids separately. A passed <c>--extensions</c> value wins
-	/// (extensions only, no groups); in quiet mode / nothing to show, returns the quiet defaults.
-	/// </summary>
-	private static (List<string> groups, List<string> extensions) AskExtensionSelection(
-		string title, string passed, Dictionary<string, string[]> groupsMap, List<string> extensionChoices,
-		IEnumerable<string> preselectedGroups, IEnumerable<string> preselectedExtensions,
-		bool quiet, List<string> quietGroups, List<string> quietExtensions)
-	{
-		if (passed != null)
-			return (new List<string>(), Split(passed) ?? new List<string>());
-
-		var groupNames = groupsMap?.Keys.OrderBy(x => x).ToList() ?? new List<string>();
-		extensionChoices ??= new List<string>();
-		if (quiet || (groupNames.Count == 0 && extensionChoices.Count == 0))
-			return (quietGroups ?? new List<string>(), quietExtensions ?? new List<string>());
-
-		var choices = groupNames.Select(g => GroupDisplayPrefix + g).Concat(extensionChoices).ToList();
-		var prompt = new MultiSelectionPrompt<string>()
-			.Title(title)
-			.PageSize(15)
-			.MoreChoicesText("[grey](move up/down to reveal more)[/]")
-			.InstructionsText("[grey](press [blue]<space>[/] to toggle, [green]<enter>[/] to accept; select none to skip)[/]")
-			.AddChoices(choices)
-			.AddBeamHightlight()
-			.NotRequired();
-
-		var pre = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		foreach (var g in preselectedGroups ?? Enumerable.Empty<string>()) pre.Add(GroupDisplayPrefix + g);
-		foreach (var e in preselectedExtensions ?? Enumerable.Empty<string>()) pre.Add(e);
-		foreach (var c in choices)
-			if (pre.Contains(c))
-				prompt.Select(c);
-
-		var selected = AnsiConsole.Prompt(prompt);
-		var groups = selected.Where(s => s.StartsWith(GroupDisplayPrefix, StringComparison.Ordinal))
-			.Select(s => s.Substring(GroupDisplayPrefix.Length)).ToList();
-		var extensions = selected.Where(s => !s.StartsWith(GroupDisplayPrefix, StringComparison.Ordinal)).ToList();
-		return (groups, extensions);
-	}
-
-	/// <summary>Removes ids that are already covered by a selected group (so we don't run them twice).</summary>
-	private static List<string> ExcludeGroupMembers(IEnumerable<string> ids, IEnumerable<string> selectedGroups,
-		Dictionary<string, string[]> groupsMap)
-	{
-		var members = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		foreach (var g in selectedGroups ?? Enumerable.Empty<string>())
-			if (groupsMap != null && groupsMap.TryGetValue(g, out var ids2) && ids2 != null)
-				foreach (var id in ids2)
-					members.Add(id);
-
-		return (ids ?? Enumerable.Empty<string>()).Where(id => !members.Contains(id)).ToList();
-	}
-
-	/// <summary>Logs the discovered ids so scripted (quiet) users can see what's available to pass explicitly.</summary>
-	private static void LogDiscovered(string label, List<string> ids)
-	{
-		if (ids == null || ids.Count == 0) return;
-		const int cap = 15;
-		var shown = string.Join(", ", ids.Take(cap));
-		if (ids.Count > cap) shown += $", … (+{ids.Count - cap} more)";
-		Log.Information($"Discovered {ids.Count} {label}(s): {shown}");
 	}
 
 	private static async Task<LocalStackSetupStepResult> RenderScalaConfig(LocalStackSetupCommandArgs args, string scalaDir)
@@ -1410,7 +1134,7 @@ public static class LocalStackCustomSteps
 		foreach (var prefix in new[] { LocalStackTemplate.MicroservicePrefix, LocalStackTemplate.ExtensionPrefix, LocalStackTemplate.GroupPrefix })
 		{
 			if (name.Trim().StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-				return $"Names starting with '{prefix.Trim()}' belong to the steps `--update-services` writes. Pick another.";
+				return $"Names starting with '{prefix.Trim()}' belong to the workspace's services, found when a stack runs. Pick another.";
 		}
 
 		return null;

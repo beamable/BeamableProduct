@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using cli.Services.LocalStack;
+using cli.Services.Web;
 using NUnit.Framework;
 
 namespace tests;
@@ -86,7 +87,7 @@ public class LocalStackBuildStepTests
 			"clearing after the dev server has started would leave it serving the stale graph it booted with");
 
 		// NOT a build step: `--build` is occasional, and this has to happen every time node_modules may
-		// have moved under the optimizer (a fresh `npm install`, or `beam web use` repinning extensions).
+		// have moved under the optimizer (a fresh `npm install`, or local web package builds installed into extensions).
 		Assert.That(step.build, Is.False, "must run on every up, not just --build");
 		Assert.That(step.waitForExit, Is.True, "the dev server must not start against a half-deleted cache");
 		Assert.That(step.shell, Is.True);
@@ -265,44 +266,37 @@ public class LocalStackBuildStepTests
 
 		foreach (var name in new[]
 			{
-				LocalStackTemplate.WebRegistryStepName,
-				LocalStackTemplate.WebPublishStepName,
-				LocalStackTemplate.WebRefreshStepName
+				LocalStackTemplate.WebRegistryStepName, LocalStackTemplate.WebBuildStepName, LocalStackTemplate.WebPublishStepName,
+				LocalStackTemplate.WebInstallStepName, LocalStackTemplate.WebWatchStepName
 			})
 		{
 			Assert.That(Step(config, name), Is.Null, $"{name} must not be emitted by default");
 		}
 	}
 
+	/// <summary>
+	/// Each web package step runs a hidden `beam local web` action from the portal workspace, and gets the product and
+	/// workspace folders as environment variables: the runner splits arguments on spaces. All but the watch finish.
+	/// </summary>
 	[Test]
-	public void Web_package_steps_are_build_steps_that_run_to_completion()
+	public void Web_package_steps_are_beam_actions_with_their_folders_in_the_environment()
 	{
 		var config = CreateWithWebRegistry();
 
-		foreach (var name in new[] { LocalStackTemplate.WebPublishStepName, LocalStackTemplate.WebRefreshStepName })
+		foreach (var (name, action) in new[]
+			{
+				(LocalStackTemplate.WebBuildStepName, "build"), (LocalStackTemplate.WebPublishStepName, "publish"),
+				(LocalStackTemplate.WebInstallStepName, "install"), (LocalStackTemplate.WebWatchStepName, "watch")
+			})
 		{
 			var step = Step(config, name);
 			Assert.That(step, Is.Not.Null, $"missing {name}");
-			// Still flagged `build` in the catalogue; a stack that asks for the `web-registry` tag, such as with
-			// `:web`, runs them anyway (see LocalStackWebRegistryStepTests).
-			Assert.That(step.build, Is.True, $"{name} must be a build step");
-			Assert.That(step.waitForExit, Is.True, $"{name} must run to completion");
-			Assert.That(step.beam, Is.True, $"{name} must invoke the beam CLI");
-			// Paths must travel via workingDirectory: the runner splits arguments on whitespace.
-			Assert.That(step.arguments, Does.Not.Contain(Root), $"{name} must keep paths out of its arguments");
+			Assert.That((step.beam, step.build, step.arguments), Is.EqualTo((true, false, $"local web {action}")), name);
+			Assert.That(step.waitForExit, Is.EqualTo(name != LocalStackTemplate.WebWatchStepName), name);
+			Assert.That(step.workingDirectory, Is.EqualTo("${PortalPath}"), name);
+			Assert.That(step.environment[WebPackagesService.ProductDirVariable], Is.EqualTo("${BeamProductPath}"), name);
+			Assert.That(step.environment[WebPackagesService.WorkspaceVariable], Is.EqualTo("${PortalPath}"), name);
 		}
-	}
-
-	[Test]
-	public void Web_package_steps_run_in_the_right_repos()
-	{
-		var config = CreateWithWebRegistry();
-
-		// Derived from the portal-localdev path rather than a separate option.
-		Assert.That(Step(config, LocalStackTemplate.WebPublishStepName).workingDirectory,
-			Is.EqualTo(ProductDir));
-		Assert.That(Step(config, LocalStackTemplate.WebRefreshStepName).workingDirectory,
-			Is.EqualTo(PortalDir));
 	}
 
 	[Test]
@@ -315,10 +309,12 @@ public class LocalStackBuildStepTests
 		Assert.That(IndexOf(config, "scala: auth"),
 			Is.LessThan(IndexOf(config, LocalStackTemplate.WebPublishStepName)));
 
-		// Publish, then repoint, then run the extension that was repointed.
+		// Build, publish, point the extensions at it, then run the extension.
+		Assert.That(IndexOf(config, LocalStackTemplate.WebBuildStepName),
+			Is.LessThan(IndexOf(config, LocalStackTemplate.WebPublishStepName)));
 		Assert.That(IndexOf(config, LocalStackTemplate.WebPublishStepName),
-			Is.LessThan(IndexOf(config, LocalStackTemplate.WebRefreshStepName)));
-		Assert.That(IndexOf(config, LocalStackTemplate.WebRefreshStepName),
+			Is.LessThan(IndexOf(config, LocalStackTemplate.WebInstallStepName)));
+		Assert.That(IndexOf(config, LocalStackTemplate.WebInstallStepName),
 			Is.LessThan(IndexOf(config, "portal extension: my-ext")));
 
 		// The registry itself comes up first of all.
@@ -459,11 +455,7 @@ public class LocalStackBuildStepTests
 		// so a fresh clone installs them without --build: npm install is a ~minute, it fires only when they are
 		// absent (so once), and without it the Vite step dies with `Cannot find package 'vite'` — a stack that
 		// cannot run at all is worse than a short, one-time install.
-		foreach (var name in new[]
-			{
-				"build: scala",
-				LocalStackTemplate.WebPublishStepName, LocalStackTemplate.WebRefreshStepName
-			})
+		foreach (var name in new[] { "build: scala" })
 		{
 			Assert.That(Step(config, name).requiredOutput, Is.Null.Or.Empty,
 				$"{name} must not opt into building without --build");

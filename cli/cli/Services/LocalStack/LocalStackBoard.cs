@@ -138,9 +138,16 @@ public class LocalStackBoardSnapshot
 	public string portalUrl;
 	public DateTime startedUtc;
 
+	/// <summary>Where the run writes each step's output (<c>&lt;step&gt;.log</c>, <c>&lt;step&gt;.err.log</c>); how
+	/// <c>beam local logs</c> finds an attached stack's, which keeps no run-state.</summary>
+	public string logsDir;
+
 	/// <summary>True once the stack has come up: from then on its services can be restarted from the board.</summary>
 	public bool up;
 	public List<LocalStackBoardRow> rows = new List<LocalStackBoardRow>();
+
+	/// <summary>The local builds of the web packages the extensions use, by package; null without them.</summary>
+	public Dictionary<string, string> webPackages;
 }
 
 /// <summary>How the board reaches the person running the stack.</summary>
@@ -281,6 +288,16 @@ public class LocalStackBoard
 		}
 	}
 
+	/// <summary>Records which local builds of the web packages the extensions use (see <see cref="WebPackagesLine"/>).</summary>
+	public void SetWebPackages(Dictionary<string, string> packages)
+	{
+		lock (_lock)
+		{
+			_snapshot.webPackages = packages;
+			Save();
+		}
+	}
+
 	/// <summary>Shows <paramref name="snapshot"/> instead, as <c>beam local ps --watch</c> does when the board file changes.</summary>
 	public void Load(LocalStackBoardSnapshot snapshot)
 	{
@@ -291,6 +308,7 @@ public class LocalStackBoard
 			_snapshot.host = snapshot.host;
 			_snapshot.portalUrl = snapshot.portalUrl;
 			_snapshot.up = snapshot.up;
+			_snapshot.webPackages = snapshot.webPackages;
 			_snapshot.rows = snapshot.rows.Select(Copy).ToList();
 		}
 	}
@@ -369,18 +387,20 @@ public class LocalStackBoard
 					snapshot = new LocalStackBoardSnapshot
 					{
 						stack = _snapshot.stack, up = _snapshot.up, host = _snapshot.host, portalUrl = _snapshot.portalUrl,
+						webPackages = _snapshot.webPackages,
 						rows = _snapshot.rows.Select(Copy).ToList()
 					};
 
 				var recent = LastLines(messages.Text, 3);
+				var extra = recent.Count + (snapshot.webPackages != null ? 1 : 0);
 				foreach (var key in ReadKeys(console))
 				{
-					var action = view.Press(key, snapshot.rows, VisibleCount(height, recent.Count + (view.Bar != null ? 1 : 0)), snapshot.up);
+					var action = view.Press(key, snapshot.rows, VisibleCount(height, extra + (view.Bar != null ? 1 : 0)), snapshot.up);
 					if (action != null) _ = Act(action.Value.action, action.Value.step);
 				}
 
 				// Sized after the keys, which can add or drop the bar line, so the frame never outgrows the screen.
-				var visible = VisibleCount(height, recent.Count + (view.Bar != null ? 1 : 0));
+				var visible = VisibleCount(height, extra + (view.Bar != null ? 1 : 0));
 				var frame = Draw(Frame(snapshot, width, view.Offset(snapshot.rows, visible), visible, recent, view.Following, _now(),
 					view.SelectedName(snapshot.rows), view.Bar, keys, marks: view.Actions), console, width, height);
 
@@ -508,6 +528,8 @@ public class LocalStackBoard
 			Grid(snapshot.rows.Skip(offset).Take(shown).ToList(), snapshot.rows, width, nowUtc, selected, marks || selected != null),
 			new Markup($"[grey]{Markup.Escape(Fit(Summary(snapshot.rows) + Where(snapshot), width - 1).TrimEnd())}[/]")
 		};
+		if (WebPackagesLine(snapshot) is { } web)
+			parts.Add(new Markup($"[grey]{Markup.Escape(Fit(web, width - 1).TrimEnd())}[/]"));
 		foreach (var message in messages)
 			parts.Add(new Markup($"[yellow]{Markup.Escape(Fit(message, width - 1).TrimEnd())}[/]"));
 		if (bar != null)
@@ -548,10 +570,19 @@ public class LocalStackBoard
 
 	/// <summary>The whole board for <paramref name="snapshot"/>, every row: what <c>beam local ps</c> prints.</summary>
 	public static IRenderable Render(LocalStackBoardSnapshot snapshot, int width, DateTime nowUtc) =>
-		new Rows(
+		new Rows(new IRenderable[]
+		{
 			LocalStackStyle.H1Rule($"Running stack {snapshot.stack ?? string.Empty}"),
 			Grid(snapshot.rows, snapshot.rows, width, nowUtc),
-			new Markup($"[grey]{Markup.Escape(Summary(snapshot.rows))}[/]"));
+			new Markup($"[grey]{Markup.Escape(Summary(snapshot.rows))}[/]")
+		}.Concat(WebPackagesLine(snapshot) is { } web ? new[] { new Markup($"[grey]{Markup.Escape(web)}[/]") } : Array.Empty<IRenderable>()));
+
+	/// <summary>Which local builds the extensions use, on a line of its own: a row's last column is too narrow for
+	/// two versions. Null without local web packages.</summary>
+	public static string WebPackagesLine(LocalStackBoardSnapshot snapshot) =>
+		snapshot.webPackages is { Count: > 0 } packages
+			? "Local web packages: " + string.Join(", ", packages.Select(p => $"{p.Key} {p.Value}"))
+			: null;
 
 	/// <summary><paramref name="rows"/> as a grid, sized for all of <paramref name="all"/> so scrolling doesn't move the
 	/// columns. With <paramref name="marks"/> every row keeps room for the marker, so selecting one doesn't widen the

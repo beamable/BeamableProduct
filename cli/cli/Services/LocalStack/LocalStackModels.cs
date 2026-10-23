@@ -929,7 +929,7 @@ public static class LocalStackConfigIO
 
 		bool Starts(string prefix) => rest.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
 
-		if (Starts("web ") || rest.Equals(LocalStackTemplate.WebRegistryStepName, StringComparison.OrdinalIgnoreCase))
+		if (LocalStackTemplate.IsWebStep(rest))
 			tags.Add("web-registry");
 		else if (Starts("docker:"))
 			tags.Add("docker");
@@ -958,6 +958,7 @@ public static class LocalStackConfigIO
 			(LocalStackTemplate.GroupPrefix.Trim(), "Service group "),
 			("docker:", "Docker "),
 			("portal:", "Portal "),
+			("web:", "Web packages "),
 		};
 
 		foreach (var (prefix, label) in prefixes)

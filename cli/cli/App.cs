@@ -40,7 +40,6 @@ using cli.Unreal;
 using cli.UnrealCommands;
 using cli.Utils;
 using cli.Version;
-using cli.Web;
 using CliWrap;
 using Errata;
 using Microsoft.Build.Locator;
@@ -255,7 +254,6 @@ public class App
 		services.AddSingleton<IUserContext, SimpleUserContext>(_ => new SimpleUserContext(0) );
 		services.AddSingleton<ProcessFileLocker>();
 		services.AddSingleton<IRemotePortalConfigService, RemotePortalConfigService>();
-		services.AddSingleton<WebLocalRegistryService>();
 
 		services.AddSingleton<DefaultActivityProvider>(DefaultActivityProvider.CreateCliServiceProvider());
 		services.AddSingleton<ResourceBuilder>(p =>
@@ -578,6 +576,7 @@ public class App
 		Commands.AddSubCommand<LocalStackPsCommand, LocalStackPsCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackLogsCommand, LocalStackLogsCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackStopCommand, LocalStackStopCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackWebCommand, LocalStackWebCommandArgs, LocalStackCommand>();
 
 
 		Commands.AddRootCommand<ProjectCommand>();
@@ -690,13 +689,6 @@ public class App
 				PortalExtensionCommand>();
 		Commands.AddSubCommandWithHandler<ListMountSitesCommand, ListMountSitesCommandArgs, PortalExtensionCommand>();
 		Commands.AddSubCommandWithHandler<ListPortalExtensionOptionsCommand, ListPortalExtensionOptionsCommandArgs, PortalExtensionCommand>();
-
-		Commands.AddRootCommand<WebCommand, WebCommandArgs>();
-		Commands.AddSubCommandWithHandler<WebPublishCommand, WebPublishCommandArgs, WebCommand>();
-		Commands.AddSubCommandWithHandler<WebUseCommand, WebUseCommandArgs, WebCommand>();
-		Commands.AddSubCommandWithHandler<WebResetCommand, WebResetCommandArgs, WebCommand>();
-		Commands.AddSubCommandWithHandler<WebStopCommand, WebStopCommandArgs, WebCommand>();
-		Commands.AddSubCommandWithHandler<WebStatusCommand, WebStatusCommandArgs, WebCommand>();
 
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();

@@ -1,3 +1,6 @@
+using cli.Commands.LocalStack;
+using cli.Services.Web;
+
 namespace cli.Services.LocalStack;
 
 /// <summary>
@@ -319,12 +322,15 @@ public static class LocalStackTemplate
 	}
 
 	/// <summary>Scans a tool folder's Scala sources for the first <c>object X extends MicroService</c> and
-	/// returns its fully-qualified name (<c>package.X</c>), or null if none is found.</summary>
+	/// returns its fully-qualified name (<c>package.X</c>). A tool without one runs as a daemon from an object's own
+	/// <c>main</c> (messaging's <c>MessageDaemon</c>), so the first such object is the fallback. Null when neither is found.</summary>
 	private static string FindScalaMainClass(string toolFolder)
 	{
+		string daemon = null;
 		foreach (var srcFile in Directory.EnumerateFiles(toolFolder, "*.scala", SearchOption.AllDirectories))
 		{
 			var package = "";
+			string lastObject = null;
 			foreach (var raw in File.ReadLines(srcFile))
 			{
 				var line = raw.Trim();
@@ -333,6 +339,11 @@ public static class LocalStackTemplate
 					package = line.Substring("package ".Length).Trim();
 					continue;
 				}
+
+				if (line.StartsWith("object ", StringComparison.Ordinal))
+					lastObject = line.Substring("object ".Length).Split(' ', '{')[0];
+				if (daemon == null && lastObject != null && line.StartsWith("def main(", StringComparison.Ordinal))
+					daemon = string.IsNullOrEmpty(package) ? lastObject : $"{package}.{lastObject}";
 
 				var idxObject = line.IndexOf("object ", StringComparison.Ordinal);
 				var idxExtends = line.IndexOf("extends MicroService", StringComparison.Ordinal);
@@ -345,7 +356,7 @@ public static class LocalStackTemplate
 			}
 		}
 
-		return null;
+		return daemon;
 	}
 
 	/// <summary>
@@ -423,14 +434,38 @@ public static class LocalStackTemplate
 	private const string ScalaForCSharpTag = "scala-csharp";
 
 	/// <summary>The sources of the two web packages, relative to the BeamableProduct checkout the publish runs in.</summary>
-	private static List<string> WebPackagesInputs() => new List<string> { "web", "beam-portal-toolkit" };
-
 	/// <summary>
-	/// How long <c>build: web extension pins</c> may take. When the toolkit changed, every extension in the portal
-	/// repo (~70) reinstalls it, and each <c>npm install</c> resolves that project's whole dependency tree; that has
-	/// taken twenty minutes. A build that runs out of time stops the stack, so this is generous.
+	/// The local web package steps after the registry, each a hidden <c>beam local web</c> action (see
+	/// <see cref="LocalStackWebCommand"/>). They get their folders as environment variables, since arguments are split
+	/// on spaces. None logs in, so they don't trigger the realm check either.
 	/// </summary>
-	public const int WebRefreshTimeoutSeconds = 1800;
+	public static List<LocalStackStep> WebPackageSteps()
+	{
+		LocalStackStep Web(string name, string action, bool once) => new LocalStackStep
+		{
+			name = name,
+			beam = true,
+			arguments = $"local web {action}",
+			workingDirectory = "${" + LocalStackConfigIO.PortalPathVar + "}",
+			environment = new Dictionary<string, string>
+			{
+				[WebPackagesService.ProductDirVariable] = "${" + LocalStackConfigIO.ProductPathVar + "}",
+				[WebPackagesService.WorkspaceVariable] = "${" + LocalStackConfigIO.PortalPathVar + "}"
+			},
+			waitForExit = once
+		};
+
+		var build = Web(WebBuildStepName, LocalStackWebCommand.Build, once: true);
+		// Two tsdown builds when both packages changed, and a first pnpm install.
+		build.readyTimeoutSeconds = 900;
+		return new List<LocalStackStep>
+		{
+			build,
+			Web(WebPublishStepName, LocalStackWebCommand.Publish, once: true),
+			Web(WebInstallStepName, LocalStackWebCommand.Install, once: true),
+			Web(WebWatchStepName, LocalStackWebCommand.Watch, once: false)
+		};
+	}
 
 	/// <summary>
 	/// Adds the build+run pair for one of the BeamableAPI .NET hosts (gateway / message-rail runtime /
@@ -537,10 +572,8 @@ public static class LocalStackTemplate
 		};
 
 		// 0. Local web package registry. Always written by `beam local setup`; a stack runs it through the
-		//    `web-registry` tag (the `:web` variant). Placed first because `build: portal deps` and the portal
-		//    extension steps below run npm installs that may need to resolve locally published @beamable
-		//    packages from it. Independent of everything else and fast to come up, so it costs nothing to have
-		//    early.
+		//    `web-registry` tag (the `:web` variant). Independent of everything else and fast to come up, so it
+		//    costs nothing to have early, and web: publish below needs it.
 		if (o.includeWebRegistry)
 		{
 			config.steps.Add(new LocalStackStep
@@ -886,46 +919,11 @@ public static class LocalStackTemplate
 		}
 
 		// 4. Local web packages, run by a stack that asks for the `web-registry` tag (the `:web` variant runs them
-		//    before everything else). Publishes @beamable/sdk + @beamable/portal-toolkit as the local-dev version
-		//    and refreshes the projects that consume them, so the extension steps below build against what was
-		//    just built. Neither needs a login, so `beam local run` doesn't ensure the realm for them; extensions
-		//    must be refreshed before `project run` builds them, which happens immediately below.
-		//
-		//    Paths go in workingDirectory, never in arguments: the runner splits arguments on whitespace with
-		//    no quote handling, so a path containing a space would be torn into separate argv entries. Both
-		//    commands default to their working directory, so nothing is lost.
+		//    before the stack, and the watch after it): build @beamable/sdk and @beamable/portal-toolkit where they
+		//    changed, publish them to the local registry, and point the extensions below at them. Nothing is
+		//    written to a tracked file (see WebPackagesService).
 		if (o.includeWebRegistry)
-		{
-			var productDir = Dir(WebProductDir(o.webRegistryDir), "BeamableProduct (web packages repo)");
-
-			config.steps.Add(new LocalStackStep
-			{
-				name = WebPublishStepName,
-				workingDirectory = productDir,
-				beam = true,
-				arguments = "web publish",
-				build = true,
-				// A stack that asks for the web packages runs this every time, and every publish makes every extension
-				// reinstall the toolkit. With its sources declared, it is skipped while they haven't changed and the
-				// registry still has the build.
-				inputs = WebPackagesInputs(),
-				waitForExit = true,
-				// Two tsdown builds plus two publishes; generous, and a non-zero exit aborts the stack rather
-				// than letting extensions build against a stale toolkit.
-				readyTimeoutSeconds = 900
-			});
-			config.steps.Add(new LocalStackStep
-			{
-				name = WebRefreshStepName,
-				// The repo holding the extensions to repoint — the same one the portal frontend runs from.
-				workingDirectory = portalDir,
-				beam = true,
-				arguments = "web use",
-				build = true,
-				waitForExit = true,
-				readyTimeoutSeconds = WebRefreshTimeoutSeconds
-			});
-		}
+			config.steps.AddRange(WebPackageSteps());
 
 		// 5. Microservices — via the current beam CLI (exe auto-resolved). After Scala so the backend they
 		//    call is up.
@@ -948,7 +946,7 @@ public static class LocalStackTemplate
 	/// is exactly one, and the "update services" flow leaves it alone because it matches none of the
 	/// microservice/extension/group prefixes below.
 	/// </summary>
-	public const string WebRegistryStepName = "docker: web registry";
+	public const string WebRegistryStepName = "web: registry";
 
 	/// <summary>Readiness probe for <see cref="WebRegistryStepName"/> — Verdaccio's default address.</summary>
 	public const string WebRegistryReadyUrl = "http://localhost:4873";
@@ -962,26 +960,25 @@ public static class LocalStackTemplate
 	public const string ViteCacheStepName = "portal: clear vite cache";
 
 	/// <summary>
-	/// Names of the optional web-package steps. Like <see cref="WebRegistryStepName"/> these deliberately
-	/// avoid the microservice/extension/group prefixes below, so <c>beam local setup --update-services</c>
-	/// leaves them alone.
+	/// Names of the local web package steps. Like <see cref="WebRegistryStepName"/> they avoid the
+	/// microservice/extension/group prefixes below, so <c>beam local setup --update-services</c> leaves them alone.
 	/// </summary>
-	public const string WebPublishStepName = "build: web packages";
+	public const string WebBuildStepName = "web: build";
 
-	/// <inheritdoc cref="WebPublishStepName"/>
-	public const string WebRefreshStepName = "build: web extension pins";
+	/// <inheritdoc cref="WebBuildStepName"/>
+	public const string WebPublishStepName = "web: publish";
+
+	/// <inheritdoc cref="WebBuildStepName"/>
+	public const string WebInstallStepName = "web: install";
+
+	/// <inheritdoc cref="WebBuildStepName"/>
+	public const string WebWatchStepName = "web: watch";
 
 	/// <summary>
-	/// True when <paramref name="name"/> is one of the three local web-registry steps. Both
-	/// <see cref="WebPublishStepName"/> and <see cref="WebRefreshStepName"/> are build steps with no
-	/// <c>requiredOutput</c>, so <c>beam local run</c> cannot self-heal them the way it does a missing binary; a
-	/// stack runs them by asking for the <c>web-registry</c> tag. They need no login, so <c>run</c> uses this to
-	/// keep them from triggering the realm check.
+	/// True when <paramref name="name"/> is one of the local web package steps. They need no login, so <c>run</c>
+	/// uses this to keep them from triggering the realm check.
 	/// </summary>
-	public static bool IsWebStep(string name) =>
-		string.Equals(name, WebRegistryStepName, StringComparison.OrdinalIgnoreCase)
-		|| string.Equals(name, WebPublishStepName, StringComparison.OrdinalIgnoreCase)
-		|| string.Equals(name, WebRefreshStepName, StringComparison.OrdinalIgnoreCase);
+	public static bool IsWebStep(string name) => (name ?? string.Empty).StartsWith("web:", StringComparison.OrdinalIgnoreCase);
 
 	/// <summary>
 	/// The product repo holding <c>web/</c> and <c>beam-portal-toolkit/</c>, derived from the
@@ -1007,6 +1004,11 @@ public static class LocalStackTemplate
 		name = $"{MicroservicePrefix}{svc}",
 		beam = true,
 		arguments = $"project run --ids {svc} --host ${{host}} --logs v --no-log-file",
+		// Ready once it serves traffic, so the next one starts after it: `project run` builds first, and microservices
+		// built at the same time collide on the projects they share (CS2012 on a storage both reference).
+		readyWhenLogContains = Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX,
+		// A build and a start; the first one can restore every package.
+		readyTimeoutSeconds = 300,
 		// These launch LAST, as a burst of a dozen `beam project run` processes each doing its own
 		// restore/build, and a service that loses that scramble EXITS rather than hanging — which is the
 		// one condition `readyRetries` reliably catches (the hung path needs a `port`, and these declare

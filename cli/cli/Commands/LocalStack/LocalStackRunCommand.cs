@@ -181,6 +181,19 @@ public class LocalStackRunCommand
 
 	// The target's name, which its login is saved under: local and lan reach the same realm, each from its own address.
 	private string _targetName = LocalStackTargets.Local;
+
+	/// <summary>True when this run points the extensions at the local web packages, and the portal loads them too.</summary>
+	private bool _localWebPackages;
+
+	/// <summary>
+	/// Why there is no working login to the local realm, or null when there is one. Beam steps don't start without it:
+	/// they fell back to the workspace's own login, and with that one's refresh token rejected, every microservice and
+	/// extension retried it many times a second until the gateway stopped answering.
+	/// </summary>
+	private string _noLogin;
+
+	/// <summary>True for a step that logs in to the stack's backend: a beam step other than the web packages.</summary>
+	private static bool NeedsLogin(LocalStackStep step) => step.beam && !LocalStackTemplate.IsWebStep(step.name);
 	private string _workspaceRoot;
 
 	/// <summary>True when the board prints (a terminal, or lines without one): failures are on the board, not warned twice.</summary>
@@ -228,52 +241,6 @@ public class LocalStackRunCommand
 			(args, v) => args.realmAlias = v);
 		AddOption(new Option<string>("--realm-password", () => "123456", "Account password to use when creating the local realm"),
 			(args, v) => args.realmPassword = v);
-	}
-
-	/// <summary>
-	/// The local registry only helps if the portal's extensions actually PIN the local build: the portal reads
-	/// each extension's built <c>ToolkitVersion</c>, and for a published version it resolves the sdk from
-	/// unpkg rather than the local CDN — so a stale pin silently runs against the published sdk and any API
-	/// that only exists in the local build fails at runtime as "not a function". Bringing the registry up
-	/// without refreshing the pins is a valid thing to do, so this warns rather than throwing.
-	/// </summary>
-	private static void WarnOnStaleExtensionPins(LocalStackConfig config, List<LocalStackStep> steps)
-	{
-		// Only meaningful for a run that brings the local registry up at all.
-		if (!steps.Any(s => s.name == LocalStackTemplate.WebRegistryStepName))
-		{
-			return;
-		}
-
-		// If the refresh step is running, it is about to fix the pins — nothing to warn about.
-		if (steps.Any(s => s.name == LocalStackTemplate.WebRefreshStepName))
-		{
-			return;
-		}
-
-		var refresh = config.steps.FirstOrDefault(s => s.name == LocalStackTemplate.WebRefreshStepName);
-		var portalDir = LocalStackConfigIO.Substitute(refresh?.workingDirectory, config);
-		if (string.IsNullOrWhiteSpace(portalDir) || !Directory.Exists(portalDir))
-		{
-			return;
-		}
-
-		var stale = WebLocalRegistryService.FindExtensionProjects(portalDir)
-			.Select(p => WebLocalRegistryService.ReadPinnedVersion(p.packageJsonPath, WebLocalRegistryService.ToolkitPackage))
-			.Where(v => !string.IsNullOrWhiteSpace(v) && !WebLocalRegistryService.IsLocalDevVersion(v))
-			.ToList();
-
-		if (stale.Count == 0)
-		{
-			return;
-		}
-
-		var versions = string.Join(", ", stale.Distinct().OrderBy(v => v));
-		Log.Warning(
-			$"{stale.Count} extension(s) under [{portalDir}] still pin {WebLocalRegistryService.ToolkitPackage}@{versions} "
-			+ $"instead of the local build {WebLocalRegistryService.LocalDevVersion}, so the portal will load the published "
-			+ "sdk from unpkg and any API that only exists in your local build will fail at runtime. Add the `:web` variant "
-			+ $"(or run `beam web use --workspace {portalDir}`).");
 	}
 
 	/// <summary>
@@ -347,21 +314,9 @@ public class LocalStackRunCommand
 
 	/// <summary>
 	/// True for a build that has to wait for its place in the stack instead of starting with the run: one that runs a
-	/// beam command (the web packages publish, which needs the registry running, and the extension repoint after it).
+	/// beam command, which may need the steps before it.
 	/// </summary>
 	public static bool WaitsForItsPlace(LocalStackStep build) => build.beam;
-
-	/// <summary>
-	/// True for a build whose result lives outside its folder, so unchanged sources aren't enough to skip it: the web
-	/// packages publish into the local registry, which a purge empties. It is skipped only while the registry still
-	/// serves the build.
-	/// </summary>
-	public static bool SkipsWhenUnchanged(LocalStackStep build) => build.name == LocalStackTemplate.WebPublishStepName;
-
-	/// <summary>True when what the web packages publish is still in the local registry.</summary>
-	private static async Task<bool> RegistryHasTheBuild(CancellationToken token) =>
-		await WebLocalRegistryService.HasLocalBuild(WebLocalRegistryService.SdkPackage, WebLocalRegistryService.DefaultRegistry, token)
-		&& await WebLocalRegistryService.HasLocalBuild(WebLocalRegistryService.ToolkitPackage, WebLocalRegistryService.DefaultRegistry, token);
 
 	public static HashSet<string> NameSet(string value) =>
 		string.IsNullOrWhiteSpace(value)
@@ -446,9 +401,7 @@ public class LocalStackRunCommand
 			else if (resolved.forceBuild)
 				runs = "builds: :build";
 			else if (resolved.requested.Contains(step) && upToDate?.Contains(step) == true)
-				runs = SkipsWhenUnchanged(step)
-					? "up to date while the registry has the build (add :build to build anyway)"
-					: "up to date (add :build to build anyway)";
+				runs = "up to date (add :build to build anyway)";
 			else if (resolved.requested.Contains(step))
 				runs = "builds";
 			else
@@ -610,9 +563,14 @@ public class LocalStackRunCommand
 		LocalStackTarget target = null;
 		_workspaceRoot = LocalStackConfigIO.FindWorkspaceRoot(path);
 
+		// The workspace's microservices and extensions, as they are now: a new one runs without setup.
+		var found = await WorkspaceServices.Find(args, LocalStackConfigIO.Load(path));
+		Log.Information($"Found {found.services.Count} microservice(s) and {found.extensions.Count} portal extension(s) in this workspace.");
+
 		void LoadAndResolve()
 		{
 			config = LocalStackConfigIO.Load(path);
+			found.AddTo(config.steps);
 			if (!string.IsNullOrWhiteSpace(args.host)) config.host = args.host;
 			if (!string.IsNullOrWhiteSpace(args.portalUrl)) config.portalUrl = args.portalUrl;
 			config.javaHome = ResolveJavaHome(args, config);
@@ -771,6 +729,12 @@ public class LocalStackRunCommand
 
 		var steps = SelectSteps(resolved, autoBuild);
 
+		// The extensions install the local web packages only while a stack that points them there runs; a run
+		// without it drops what an earlier one left, so they install their locked versions again.
+		_localWebPackages = steps.Any(s => string.Equals(s.name, LocalStackTemplate.WebInstallStepName, StringComparison.OrdinalIgnoreCase));
+		if (!_localWebPackages && _workspaceRoot != null && File.Exists(WebPackagesService.OverlayPath(_workspaceRoot)))
+			File.Delete(WebPackagesService.OverlayPath(_workspaceRoot));
+
 		// Changing a running detached stack: stop what the new name drops, and skip a build whose services all still
 		// run. Rebuilding a running host fails on its locked files, and the running service would keep the old code
 		// anyway; `beam local restart` rebuilds it.
@@ -842,8 +806,6 @@ public class LocalStackRunCommand
 				: $"[{s.name}] building: {Reason(s)} (add :no-build to skip, :build to rebuild everything).");
 		}
 
-		WarnOnStaleExtensionPins(config, steps);
-
 		// A clean build should re-resolve deps too: drop the shared Scala classpath cache so each service's
 		// launch rebuilds it (the cache otherwise only refreshes when core/pom.xml changes).
 		if (resolved.forceBuild && UsesTag("scala"))
@@ -864,8 +826,8 @@ public class LocalStackRunCommand
 			throw new CliException(reservedDockerPorts);
 
 		// Fail fast (or auto-repair) when the product checkout is missing web/ or beam-portal-toolkit/. Without
-		// this, the stack builds, launches every docker/scala/c# service, and only THEN fails at `beam web
-		// publish` — cascading a full shutdown minutes in. The wipe is common enough (an unrelated `git clean`,
+		// this, the stack builds, launches every docker/scala/c# service, and only THEN fails at web: build —
+		// cascading a full shutdown minutes in. The wipe is common enough (an unrelated `git clean`,
 		// a manual delete) that the recovery is worth automating.
 		if (steps.Any(s => LocalStackTemplate.IsWebStep(s.name)))
 		{
@@ -958,7 +920,7 @@ public class LocalStackRunCommand
 		_board = new LocalStackBoard(new LocalStackBoardSnapshot
 		{
 			stack = resolved.name, runnerPid = Environment.ProcessId, attached = attached,
-			host = config.host, portalUrl = config.portalUrl, startedUtc = DateTime.UtcNow,
+			host = config.host, portalUrl = config.portalUrl, startedUtc = DateTime.UtcNow, logsDir = logsDir,
 			rows = resolved.steps.Where(s => steps.Contains(s) || s.build).Select(s => new LocalStackBoardRow
 			{
 				name = s.name, label = LocalStackCreateCommand.Label(s), port = s.port,
@@ -1088,6 +1050,13 @@ public class LocalStackRunCommand
 		// services together, each waiting for its readiness like at startup.
 		async Task StartAll(List<LocalStackStep> toStart, string source)
 		{
+			// The backend may have come back since the login failed: try again before starting anything that logs in.
+			if (_noLogin != null && target.local == true && toStart.Any(NeedsLogin))
+				await EnsureRealmAndLogin(args, config, steps);
+			foreach (var step in toStart.Where(s => NeedsLogin(s) && _noLogin != null))
+				NoLogin(step, 1f);
+			toStart = toStart.Where(s => !NeedsLogin(s) || _noLogin == null).ToList();
+
 			var builds = toStart.SelectMany(s => LocalStackControl.BuildsFor(s, resolved.steps, stacks.TagsOf)).Distinct().ToList();
 			var reasons = new Dictionary<LocalStackStep, string>();
 			foreach (var build in builds)
@@ -1306,6 +1275,15 @@ public class LocalStackRunCommand
 			return needs.FirstOrDefault(n => !string.Equals(n, step.name, StringComparison.OrdinalIgnoreCase) && _failed.ContainsKey(n));
 		}
 
+		// Marks a step that logs in as unable to start while there is no login to the local realm.
+		void NoLogin(LocalStackStep step, float baseProgress)
+		{
+			_failed[step.name] = "no login";
+			var why = $"can't start: no login to the local realm ({_noLogin})";
+			Send(step.name, "failed", why, baseProgress, LocalStackStepState.Failed, "can't start: no login", hint: why);
+			if (!Showing) Log.Warning($"[{step.name}] {why}");
+		}
+
 		// Marks a step that can't start because something it needs failed; the steps that need it are skipped in turn.
 		void CantStart(LocalStackStep step, string failedNeed, float baseProgress)
 		{
@@ -1357,12 +1335,9 @@ public class LocalStackRunCommand
 					return;
 				}
 
-				// A build the stack asks for outright (the web packages, by their tag) still doesn't build when what
-				// it compiles hasn't changed since its last build. Every publish made every extension reinstall the
-				// toolkit, so publishing unchanged sources on each start cost minutes for nothing. One whose result
-				// lives elsewhere is checked there too: a purged registry needs the publish again.
-				if (!resolved.forceBuild && resolved.requested.Contains(build) && upToDate.Contains(build)
-				    && (!SkipsWhenUnchanged(build) || await RegistryHasTheBuild(stopBuilds.Token)))
+				// A build the stack asks for outright (by name or the build tag) still doesn't build when what it
+				// compiles hasn't changed since its last build.
+				if (!resolved.forceBuild && resolved.requested.Contains(build) && upToDate.Contains(build))
 				{
 					Send(build.name, "ready", "unchanged since the last build", baseProgress, LocalStackStepState.UpToDate,
 						"unchanged since the last build");
@@ -1476,10 +1451,16 @@ public class LocalStackRunCommand
 					// Ensure a valid local realm/login before the first beam step — microservices and
 					// extensions authenticate against the local backend on startup. The web package steps don't
 					// log in, and `:web` runs them before the backend is up, so they don't trigger it.
-					if (step.beam && !LocalStackTemplate.IsWebStep(step.name) && !realmEnsured)
+					if (NeedsLogin(step) && !realmEnsured)
 					{
 						realmEnsured = true;
 						await EnsureRealmAndLogin(args, config, steps);
+					}
+
+					if (NeedsLogin(step) && _noLogin != null)
+					{
+						NoLogin(step, baseProgress);
+						continue;
 					}
 
 					Send(step.name, "starting", Launching(step, idx, out var why), baseProgress,
@@ -1982,7 +1963,18 @@ public class LocalStackRunCommand
 			var saved = await LocalStackTargets.Saved(_workspaceRoot, _targetName, config.host, token);
 			if (saved != null)
 			{
+				// A login saved on another realm (prod, when only the games' roots were listed) moves to the dev realm;
+				// its token is the org's, so only the realm changes.
+				var realm = LocalStackTargets.LocalRealm(await LocalStackTargets.Realms(config.host, saved, token));
+				if (realm != null && realm.Pid != saved.pid)
+				{
+					Log.Information($"The saved local login was on realm {saved.pid}; using {realm.Pid} ({realm.ProjectName}).");
+					saved.pid = realm.Pid;
+					LocalStackTargets.Save(_workspaceRoot, _targetName, saved);
+				}
+
 				_targetLogin = saved;
+				_noLogin = null;
 				Log.Information("Local login OK.");
 				await EnsureZones(args, config, steps, saved, token);
 				return;
@@ -1993,6 +1985,7 @@ public class LocalStackRunCommand
 			if (args.noCreateRealm)
 			{
 				Log.Warning("There is no working login to the local realm (it may have been wiped). Drop --no-create-realm to create it, or log in to it.");
+				_noLogin = "--no-create-realm, and the saved one doesn't work";
 				Send(string.Empty, "running", "local login invalid — create skipped (--no-create-realm)", 1f);
 				return;
 			}
@@ -2009,6 +2002,7 @@ public class LocalStackRunCommand
 			var login = await LocalRealmService.EnsureRealmAsync(config.host, opts, token);
 			LocalStackTargets.Save(_workspaceRoot, _targetName, login);
 			_targetLogin = login;
+			_noLogin = null;
 			Send(string.Empty, "running", $"local realm ready cid={login.cid} pid={login.pid}", 1f);
 			await EnsureZones(args, config, steps, login, token);
 		}
@@ -2016,6 +2010,7 @@ public class LocalStackRunCommand
 		{
 			// Don't tear down an otherwise-healthy stack over a realm/login problem — surface it and continue.
 			Log.Warning($"Realm/login setup issue: {e.Message}");
+			_noLogin = e.Message;
 		}
 	}
 
@@ -2814,7 +2809,12 @@ public class LocalStackRunCommand
 		}
 
 		if (string.Equals(step.name, LocalStackTemplate.PortalFrontendStepName, StringComparison.OrdinalIgnoreCase))
+		{
 			psi.Environment[PortalEnvService.ApiBaseKey] = config.host;
+			// The extensions' SDK comes from the local CDN, which serves local builds and proxies the published ones.
+			if (_localWebPackages)
+				psi.Environment[PortalEnvService.SdkCdnBaseKey] = PortalEnvService.LocalSdkCdnBase;
+		}
 
 		foreach (var (k, v) in step.environment)
 			psi.Environment[k] = LocalStackConfigIO.Substitute(v, config);
@@ -2960,7 +2960,8 @@ public class LocalStackRunCommand
 		return "exec " + string.Join(" ", parts.Select(Sq));
 	}
 
-	private static string SafeName(string name)
+	/// <summary>A step's name as its log files are named.</summary>
+	public static string SafeName(string name)
 	{
 		var cleaned = Regex.Replace(name ?? "step", @"[^A-Za-z0-9._-]+", "_").Trim('_');
 		return string.IsNullOrEmpty(cleaned) ? "step" : cleaned;
@@ -3168,6 +3169,8 @@ public class LocalStackRunCommand
 		}
 
 		Send(step.name, "ready", "completed", baseProgress, LocalStackStepState.Done);
+		if (string.Equals(step.name, LocalStackTemplate.WebInstallStepName, StringComparison.OrdinalIgnoreCase))
+			_board?.SetWebPackages(WebPackagesService.LoadOverlay(_workspaceRoot)?.packages);
 	}
 
 	private async Task AwaitReadiness(LocalStackStep step, Launched l, LocalStackConfig config, float baseProgress,
@@ -3524,6 +3527,9 @@ public class LocalStackRunCommand
 				Log.Warning($"[{l.Step.name}] failed to stop: {e.Message}");
 			}
 		}
+
+		if (_localWebPackages)
+			WebPackagesService.RemoveOverlay(_workspaceRoot);
 	}
 
 	private static void KillPid(int pid)

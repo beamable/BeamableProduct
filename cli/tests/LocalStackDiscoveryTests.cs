@@ -846,4 +846,36 @@ public class LocalStackDiscoveryTests
 		foreach (var module in step.scalaModules)
 			Assert.That(step.arguments, Does.Contain(module), $"'{module}' should be in the mvn -pl list");
 	}
+
+	/// <summary>
+	/// A Scala tool is found by its MicroService object, or, for one that runs as a daemon (messaging), by an object
+	/// with its own main; a folder with neither isn't a tool to run.
+	/// </summary>
+	[Test]
+	public void Scala_tools_are_found_by_their_service_or_their_main()
+	{
+		var root = Directory.CreateTempSubdirectory("beam-scala-tools");
+		try
+		{
+			void Source(string tool, string text)
+			{
+				var dir = Path.Combine(root.FullName, "tools", tool, "src");
+				Directory.CreateDirectory(dir);
+				File.WriteAllText(Path.Combine(dir, "App.scala"), text);
+			}
+
+			Source("auth", "package com.x.auth\nobject AuthApp extends MicroService {\n}\n");
+			Source("messaging", "package com.x.messaging\nobject Senders extends Logging {\n}\nobject MessageDaemon extends Logging {\n  def main(args: Array[String]) {\n  }\n}\n");
+			Source("lib", "package com.x.lib\nobject Helpers {\n}\n");
+
+			var tools = LocalStackTemplate.DiscoverScalaTools(root.FullName);
+
+			Assert.That(tools.Select(t => (t.name, t.mainClass)),
+				Is.EqualTo(new[] { ("auth", "com.x.auth.AuthApp"), ("messaging", "com.x.messaging.MessageDaemon") }));
+		}
+		finally
+		{
+			root.Delete(recursive: true);
+		}
+	}
 }

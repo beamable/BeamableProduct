@@ -18,6 +18,12 @@ public class PortalEnvService
 	/// <summary>The variable the portal reads to decide which backend to talk to.</summary>
 	public const string ApiBaseKey = "VITE_API_BASE";
 
+	/// <summary>Where the portal loads an extension's SDK from; unpkg.com when unset.</summary>
+	public const string SdkCdnBaseKey = "VITE_SDK_CDN_BASE";
+
+	/// <summary>The portal's proxy to the local CDN, which reads from the local registry.</summary>
+	public const string LocalSdkCdnBase = "/local-unpkg";
+
 	/// <summary>The value the portal falls back to when <see cref="ApiBaseKey"/> is unset.</summary>
 	public const string ProductionApiBase = "https://api.beamable.com";
 

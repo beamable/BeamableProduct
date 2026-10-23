@@ -43,41 +43,19 @@ Prereqs: `dotnet` (8+), and a POSIX shell for the provided scripts (or use WSL o
 - Run the repo-level scripts from the repository root. See `cli/` README for how to run CLI-specific projects after running the scripts.
 
 ### Web local dev (Portal Toolkit & Web SDK)
-Prereqs: Node.js 22+, `pnpm`, and Docker. **Full guide: [web/LOCAL_DEV.md](web/LOCAL_DEV.md).**
+Prereqs: Node.js 22+, `pnpm`, and Docker. Run from the portal workspace (agentic-portal):
 
-Both packages are published to a local Verdaccio registry as version **`0.0.123`** — the same "developer
-build" sentinel the .NET packages use (`dev.sh` publishes `0.0.123.<N>`). Any package at that version is
-treated as a local-dev build: the Portal recognises it and loads it from the local CDN with **no
-configuration**.
+```bash
+beam local run csharp-portal:web   # any stack with the :web variant
+beam local run web-dev             # just the package loop, the portal and its extensions, against dev
+beam local stop                    # extensions go back to the versions their lockfiles pin
+```
 
-- `./setup-web.sh` (run once) — starts the local Verdaccio registry and local-unpkg CDN from
-  `portal-localdev/`, wiping anything previously published.
-- `./dev-web.sh` — builds and publishes both packages, then refreshes the projects that consume them. Set
-  `BEAM_WORKSPACE=/path/to/repo-with-your-extensions`. Add `--build` to reinstall the packages'
-  dependencies first, `--only sdk|toolkit` to rebuild just one (both are still published — their versions
-  have to match).
-- `./teardown-web.sh` — stops the local stack and deletes the published packages.
-
-Because the version never changes, the pin is a **one-time** edit rather than per-build — but keeping the
-build fresh does mean forcing a reinstall, which `beam web use` handles.
-
-⚠️ That pin lives in your extensions' `package.json` and lock files — tracked files. Revert at the end of a
-session: `git restore '**/package.json' '**/package-lock.json'`.
-
-The scripts are thin wrappers that `dotnet run` the CLI, so there is one implementation and it behaves the
-same on Windows, macOS and Linux. The commands they call can also be used directly:
-
-| Command | Purpose |
-|---|---|
-| `beam web publish` | Build + publish both packages as `0.0.123` (`--only sdk\|toolkit` to rebuild one) |
-| `beam web use` | Pin `0.0.123` in the extensions under a directory and force-refresh the install |
-| `beam web status` | Is the registry/CDN up, what's published, and when it was published |
-| `beam web reset` | Wipe the registry and restart it empty |
-| `beam web stop` | Stop the registry (`--wipe` to also delete packages) |
-
-`beam local init --with-web-registry` wires all of this into `beam local up`: the registry starts with the
-rest of the local stack, and `beam local up --build` also publishes the packages and refreshes the
-extensions before running them. See [web/LOCAL_DEV.md](web/LOCAL_DEV.md).
+The `:web` steps build `@beamable/sdk` and `@beamable/portal-toolkit` where they changed, publish them to a local
+Verdaccio registry (`portal-localdev/`) under a version of their own (`<next minor>-0.<yyyymmddHHMMSS>`, never
+reused), and install them into the stack's extensions without saving them, so no `package.json` or lockfile
+changes. `web: watch` rebuilds on every save in `web/src` or `beam-portal-toolkit/src` and restarts the extensions.
+The portal loads the SDK from the local CDN (`VITE_SDK_CDN_BASE=/local-unpkg`, set by the stack).
 
 If the Portal's `.env.local` has `VITE_INJECT_HOST_SDK=true`, comment it out — that's a different approach
 and it takes precedence over the local CDN.

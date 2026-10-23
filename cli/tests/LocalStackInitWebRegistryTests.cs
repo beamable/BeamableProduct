@@ -20,8 +20,10 @@ public class LocalStackInitWebRegistryTests : CLITest
 	private static readonly string[] WebSteps =
 	{
 		LocalStackTemplate.WebRegistryStepName,
+		LocalStackTemplate.WebBuildStepName,
 		LocalStackTemplate.WebPublishStepName,
-		LocalStackTemplate.WebRefreshStepName,
+		LocalStackTemplate.WebInstallStepName,
+		LocalStackTemplate.WebWatchStepName,
 	};
 
 	private string SettingsPath => LocalStackCommand.SettingsPath(Path.Combine(WorkingDir, ".beamable"));
@@ -91,15 +93,16 @@ public class LocalStackInitWebRegistryTests : CLITest
 		Assert.That(recreated.portOffset, Is.EqualTo(100));
 	}
 
+	/// <summary>Setup writes no microservice, extension or group steps: they're found each time a stack is resolved.</summary>
 	[Test]
-	public void Update_services_only_changes_the_service_steps()
+	public void Setup_leaves_the_workspace_services_out_of_the_catalogue()
 	{
-		SetupAndLoad();
+		var names = SetupAndLoad().steps.Select(s => s.name).ToList();
 
-		var updated = SetupAndLoad("--update-services", "--services", "MyService");
-
-		Assert.That(updated.steps.Select(s => s.name), Does.Contain(LocalStackTemplate.MicroservicePrefix + "MyService"));
-		Assert.That(updated.steps.Select(s => s.name), Does.Contain("portal frontend"));
+		Assert.That(names, Has.None.StartsWith(LocalStackTemplate.MicroservicePrefix)
+			.And.None.StartsWith(LocalStackTemplate.ExtensionPrefix)
+			.And.None.StartsWith(LocalStackTemplate.GroupPrefix));
+		Assert.That(names, Does.Contain("portal frontend"));
 	}
 
 	// ----------------------------------------------------------------------------------
@@ -155,7 +158,7 @@ public class LocalStackInitWebRegistryTests : CLITest
 		Assert.That(RunFull(new[] { "local", "setup", "--quiet", "--add-step", "portal frontend", "--step-command", "node" }), Is.Not.EqualTo(0),
 			"a name already in the catalogue");
 		Assert.That(RunFull(new[] { "local", "setup", "--quiet", "--add-step", "microservice: x", "--step-command", "node" }), Is.Not.EqualTo(0),
-			"a name --update-services owns");
+			"a name the workspace's services use");
 		Assert.That(RunFull(new[] { "local", "setup", "--quiet", "--add-step", "x", "--step-command", "node", "--step-after", "no such step" }), Is.Not.EqualTo(0));
 
 		Assert.That(File.ReadAllText(SettingsPath), Is.EqualTo(before));

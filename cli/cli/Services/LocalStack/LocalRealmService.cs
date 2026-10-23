@@ -1,5 +1,6 @@
 using Beamable.Common.Api.Realms;
 using Beamable.Server;
+using cli.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Spectre.Console;
@@ -81,17 +82,26 @@ public static class LocalRealmService
 		});
 
 		using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-		using var content = new StringContent(body, Encoding.UTF8, "application/json");
-		content.Headers.TryAddWithoutValidation("accept", "application/json");
 
-		HttpResponseMessage res;
-		try
+		// Tried again while the backend warms up (see LocalStackTargets' requests): a second try at a realm the first
+		// one created answers that it exists, which logs in to it.
+		HttpResponseMessage res = null;
+		var until = DateTime.UtcNow + TimeSpan.FromMinutes(3);
+		for (var attempt = 1; res == null; attempt++)
 		{
-			res = await http.PostAsync(url, content, token);
-		}
-		catch (Exception e)
-		{
-			throw new CliException($"Failed to reach the local backend to create a realm ({url}): {e.Message}");
+			using var content = new StringContent(body, Encoding.UTF8, "application/json");
+			content.Headers.TryAddWithoutValidation("accept", "application/json");
+			try
+			{
+				res = await http.PostAsync(url, content, token);
+			}
+			catch (Exception e) when (e is not OperationCanceledException || !token.IsCancellationRequested)
+			{
+				if (DateTime.UtcNow >= until)
+					throw new CliException($"Failed to reach the local backend to create a realm ({url}) in {attempt} tries: {e.Message}");
+				Log.Information($"{url} didn't answer ({e.Message}); trying again (try {attempt}).");
+				await Task.Delay(TimeSpan.FromSeconds(5), token);
+			}
 		}
 
 		var payload = await res.Content.ReadAsStringAsync();
@@ -131,10 +141,7 @@ public static class LocalRealmService
 	{
 		var cid = await LocalStackTargets.ResolveCid(host, o.alias, token);
 		var login = await LocalStackTargets.Login(host, cid, o.email, o.password, token);
-		var realms = await LocalStackTargets.Realms(host, login, token);
-		var realm = realms.FirstOrDefault(r => r.IsDev && !r.Archived)
-		            ?? realms.FirstOrDefault(r => !r.Archived)
-		            ?? realms.FirstOrDefault();
+		var realm = LocalStackTargets.LocalRealm(await LocalStackTargets.Realms(host, login, token));
 		if (realm == null)
 			throw new CliException($"Local customer '{o.alias}' has no realms to select.");
 
@@ -360,15 +367,28 @@ public static class LocalStackTargets
 
 	/// <summary>
 	/// A login to a remote target: the saved one while it works, otherwise a new one, asked for in the terminal the
-	/// first time (org, email, password, and the realm when the target doesn't name one). Without a terminal there
-	/// is nobody to ask, so it fails with what to do.
+	/// first time (org, email, password, and the realm when the target doesn't name one). In a terminal, a saved login
+	/// on a realm the target doesn't name is confirmed on every run, since its services register on that realm and
+	/// it's easy to be on the wrong one. Without a terminal there is nobody to ask, so a new login fails with what to do.
 	/// </summary>
 	public static async Task<LocalStackTargetLogin> EnsureRemote(string workspaceRoot, string name, LocalStackTarget target,
 		bool canAsk, CancellationToken token)
 	{
 		var saved = await Saved(workspaceRoot, name, target.host, token);
 		if (saved != null && (string.IsNullOrEmpty(target.pid) || saved.pid == target.pid))
+		{
+			if (!canAsk || !string.IsNullOrEmpty(target.pid)) return saved;
+
+			var realms = (await Realms(target.host, saved, token)).Where(r => !r.Archived).ToList();
+			var current = realms.FirstOrDefault(r => r.Pid == saved.pid);
+			if (current != null && AnsiConsole.Confirm(
+				    $"Run against [green]{Markup.Escape(name)}[/] ({Markup.Escape(target.host)}) on realm [green]{Markup.Escape(current.DisplayPath())}[/] [grey]{Markup.Escape(current.Pid)}[/]?", defaultValue: true))
+				return saved;
+
+			saved.pid = PickRealm(realms, current ?? LocalRealm(realms), name).Pid;
+			Save(workspaceRoot, name, saved);
 			return saved;
+		}
 
 		if (!canAsk)
 			throw new CliException(
@@ -390,19 +410,29 @@ public static class LocalStackTargets
 		else
 		{
 			var realms = (await Realms(target.host, login, token)).Where(r => !r.Archived).ToList();
-			if (realms.Count == 0)
-				throw new CliException($"The org '{org}' on {name} has no realms.");
-			var realm = AnsiConsole.Prompt(new SelectionPrompt<RealmView>()
-				.Title("Which realm should the stack use?")
-				.PageSize(15)
-				.AddChoices(realms)
-				.UseConverter(r => $"{Markup.Escape(r.DisplayPath())} [grey]{Markup.Escape(r.Pid)}[/]"));
-			login.pid = realm.Pid;
+			login.pid = PickRealm(realms, LocalRealm(realms), name).Pid;
 		}
 
 		Save(workspaceRoot, name, login);
 		return login;
 	}
+
+	/// <summary>Asks which realm a stack uses, <paramref name="first"/> (the current one, or a dev realm) offered first.</summary>
+	private static RealmView PickRealm(List<RealmView> realms, RealmView first, string name)
+	{
+		if (realms.Count == 0)
+			throw new CliException($"The org has no realms on {name}.");
+		return AnsiConsole.Prompt(new SelectionPrompt<RealmView>()
+			.Title($"Which realm should the stack use on [green]{Markup.Escape(name)}[/]? [grey](its services register there)[/]")
+			.PageSize(15)
+			.AddChoices(RealmChoices(realms, first))
+			.UseConverter(r => $"{Markup.Escape(r.DisplayPath())} [grey]{Markup.Escape(r.Pid)}[/]")
+			.AddBeamHightlight());
+	}
+
+	/// <summary>The realms to pick from, <paramref name="first"/> first, then each game's realms from dev up to prod.</summary>
+	public static List<RealmView> RealmChoices(IEnumerable<RealmView> realms, RealmView first) =>
+		realms.OrderBy(r => r == first ? 0 : 1).ThenBy(r => r.GamePid).ThenByDescending(r => r.Depth).ToList();
 
 	/// <summary>The cid of <paramref name="cidOrAlias"/>: as is when numeric, else looked up as an alias.</summary>
 	public static async Task<string> ResolveCid(string host, string cidOrAlias, CancellationToken token)
@@ -411,10 +441,16 @@ public static class LocalStackTargets
 
 		var json = await Request(HttpMethod.Get, $"{host.TrimEnd('/')}/basic/realms/customer/alias/available?alias={Uri.EscapeDataString(cidOrAlias)}",
 			null, null, null, token);
-		if (json["available"]?.Value<bool>() == true || json["cid"] == null)
-			throw new CliException($"No org with the alias '{cidOrAlias}' at {host}.");
-		return json["cid"].ToString();
+		return CidOfAlias(json) ?? throw new CliException($"No org with the alias '{cidOrAlias}' at {host}.");
 	}
+
+	/// <summary>
+	/// The org's cid in an alias lookup's answer, or null when there is none. The cid decides, not <c>available</c>:
+	/// the local backend answers an alias in use with its cid and <c>"available": true</c>, and reading that as "no
+	/// such org" left the stack without a login to the local realm.
+	/// </summary>
+	public static string CidOfAlias(JObject answer) =>
+		answer?["cid"] is { Type: not JTokenType.Null } cid && cid.ToString().Length > 0 ? cid.ToString() : null;
 
 	/// <summary>Logs in to the org with a password; the login has no realm yet.</summary>
 	public static async Task<LocalStackTargetLogin> Login(string host, string cid, string email, string password, CancellationToken token)
@@ -485,42 +521,65 @@ public static class LocalStackTargets
 		}
 	}
 
-	/// <summary>Every realm of every game in the login's org.</summary>
+	/// <summary>The realm a local stack runs on: a dev realm when there is one, else any realm in use.</summary>
+	public static RealmView LocalRealm(IReadOnlyList<RealmView> realms) =>
+		realms.FirstOrDefault(r => r.IsDev && !r.Archived) ?? realms.FirstOrDefault(r => !r.Archived) ?? realms.FirstOrDefault();
+
+	/// <summary>
+	/// Every realm of every game in the login's org. From the customer's listing: <c>/basic/realms/games</c> lists
+	/// only each game's root (prod), so a dev realm was never found and the login, and every service started with it,
+	/// landed on prod, and only prod got its zone.
+	/// </summary>
 	public static async Task<List<RealmView>> Realms(string host, LocalStackTargetLogin login, CancellationToken token)
 	{
-		var json = await Request(HttpMethod.Get, $"{host.TrimEnd('/')}/basic/realms/games", login.cid, login.accessToken, null, token);
-		var projects = json["projects"]?.ToObject<List<ProjectViewDTO>>() ?? new List<ProjectViewDTO>();
-		var all = new List<RealmView>();
-		void Walk(RealmView realm)
-		{
-			all.Add(realm);
-			foreach (var child in realm.Children ?? new List<RealmView>()) Walk(child);
-		}
-
-		foreach (var game in RealmsService.ProcessProjects(login.cid, projects)) Walk(game);
-		return all;
+		var json = await Request(HttpMethod.Get, $"{host.TrimEnd('/')}/basic/realms/customer", login.cid, login.accessToken, null, token);
+		return RealmsOf(login.cid, json);
 	}
+
+	/// <summary>The realms in a <c>/basic/realms/customer</c> answer, each with its depth (prod, staging, dev).</summary>
+	public static List<RealmView> RealmsOf(string cid, JObject customer) =>
+		RealmsService.ProcessProjects(cid, customer?["customer"]?["projects"]?.ToObject<List<ProjectViewDTO>>() ?? new List<ProjectViewDTO>());
 
 	private static string DisplayPath(this RealmView realm) =>
 		realm.Parent == null ? realm.ProjectName : $"{realm.Parent.DisplayPath()} / {realm.ProjectName}";
 
+	/// <summary>How long a call keeps being tried while the backend doesn't answer.</summary>
+	private static readonly TimeSpan WarmUp = TimeSpan.FromMinutes(3);
+
 	private static async Task<JObject> Request(HttpMethod method, string url, string scope, string bearer, object body, CancellationToken token)
 	{
 		using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-		using var request = new HttpRequestMessage(method, url);
-		request.Headers.TryAddWithoutValidation("accept", "application/json");
-		if (!string.IsNullOrEmpty(scope)) request.Headers.TryAddWithoutValidation("X-BEAM-SCOPE", scope);
-		if (!string.IsNullOrEmpty(bearer)) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
-		if (body != null) request.Content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
+		HttpResponseMessage response = null;
+		// Tried again while the backend doesn't answer, for a few minutes: the login runs right after the Scala services
+		// come up, and its first requests there took longer than the timeout while later ones answered in a second. Each
+		// call here is safe to repeat: a grant has no side effect, and creating a realm that exists says so.
+		var until = DateTime.UtcNow + WarmUp;
+		for (var attempt = 1; response == null; attempt++)
+		{
+			using var request = new HttpRequestMessage(method, url);
+			request.Headers.TryAddWithoutValidation("accept", "application/json");
+			if (!string.IsNullOrEmpty(scope)) request.Headers.TryAddWithoutValidation("X-BEAM-SCOPE", scope);
+			if (!string.IsNullOrEmpty(bearer)) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
+			if (body != null) request.Content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
 
-		HttpResponseMessage response;
-		try
-		{
-			response = await http.SendAsync(request, token);
-		}
-		catch (Exception e) when (e is not OperationCanceledException || !token.IsCancellationRequested)
-		{
-			throw new CliException($"Could not reach {url}: {e.Message}");
+			try
+			{
+				response = await http.SendAsync(request, token);
+				if (DateTime.UtcNow < until && (int)response.StatusCode is 502 or 503 or 504)
+				{
+					Log.Information($"{url} answered {(int)response.StatusCode}; trying again (try {attempt}).");
+					response.Dispose();
+					response = null;
+					await Task.Delay(TimeSpan.FromSeconds(5), token);
+				}
+			}
+			catch (Exception e) when (e is not OperationCanceledException || !token.IsCancellationRequested)
+			{
+				if (DateTime.UtcNow >= until)
+					throw new CliException($"Could not reach {url} in {attempt} tries over {WarmUp.TotalMinutes:0} minutes: {e.Message}");
+				Log.Information($"{url} didn't answer ({e.Message}); trying again (try {attempt}).");
+				await Task.Delay(TimeSpan.FromSeconds(5), token);
+			}
 		}
 
 		var text = await response.Content.ReadAsStringAsync(token);
