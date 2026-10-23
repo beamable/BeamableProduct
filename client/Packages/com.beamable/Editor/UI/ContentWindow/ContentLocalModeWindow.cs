@@ -8,7 +8,7 @@ namespace Beamable.Editor.UI.ContentWindow
 	internal sealed class ContentLocalModeWindow : EditorWindow
 	{
 		internal const string SuppressionKey = "Beamable.Content.LocalMode.SuppressWarning";
-		internal const string Warning = "Local Mode On. Microservices and some beamable service can still use published content";
+		internal const string Warning = "Local Mode On. Microservices and Beamable services can still use published content";
 		private ContentConfiguration _configuration;
 		private bool _suppress;
 		private GUIStyle _bodyStyle;
@@ -24,7 +24,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			var window = CreateInstance<ContentLocalModeWindow>();
 			window._configuration = configuration;
 			window.titleContent = new GUIContent("Enable Local Mode?");
-			window.minSize = window.maxSize = new Vector2(520, 320);
+			window.minSize = window.maxSize = new Vector2(520, 400);
 			window.position = new Rect(ownerPosition.center - window.minSize * .5f, window.minSize);
 			window.ShowModalUtility();
 		}
@@ -63,7 +63,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUILayout.Space(10);
 			GUILayout.Label("The Unity client uses your local content snapshot for the selected namespace, including unpublished edits. Auto-sync pauses; History continues receiving publications.", _bodyStyle);
 			GUILayout.Space(10);
-			EditorGUILayout.HelpBox("Microservices, inventory, and commerce still use published realm content. Client and server values can differ.", MessageType.Warning);
+			EditorGUILayout.HelpBox("Microservices and Beamable services still use published realm content.\nBeamable services include:\n\u2022 Inventory\n\u2022 Commerce\n\u2022 Events\n\nClient and server values can differ.", MessageType.Warning);
 			GUILayout.Space(10);
 			GUILayout.Label("Publishing still changes the realm. Restart Play Mode after changing the content source.", _bodyStyle);
 			GUILayout.FlexibleSpace();
