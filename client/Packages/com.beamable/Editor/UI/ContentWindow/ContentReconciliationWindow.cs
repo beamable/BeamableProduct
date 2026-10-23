@@ -101,9 +101,13 @@ namespace Beamable.Editor.UI.ContentWindow
 		internal static void ValidatePreview(ContentReconciliationPreview preview, string contentId, string manifestUid)
 		{
 			if (preview == null || preview.ContentId != contentId || preview.ManifestUid != manifestUid ||
-			    string.IsNullOrEmpty(preview.LocalRevision) || preview.LocalExists != (preview.LocalJson != null) ||
-			    preview.RealmExists != (preview.RealmJson != null) || preview.Differences == null)
+			    string.IsNullOrEmpty(preview.LocalRevision) || preview.LocalExists != !string.IsNullOrEmpty(preview.LocalJson) ||
+			    preview.RealmExists != !string.IsNullOrEmpty(preview.RealmJson) || preview.Differences == null)
 				throw new InvalidOperationException("The CLI did not return a complete review. Update the CLI, then refresh this review.");
+			// JsonUtility reads null string fields as empty strings. Keep absent sides consistent
+			// for JSON placeholders and Copy JSON, after rejecting contradictory presence/payloads.
+			if (!preview.LocalExists) preview.LocalJson = null;
+			if (!preview.RealmExists) preview.RealmJson = null;
 		}
 
 		internal static string ReviewErrorMessage(string error)

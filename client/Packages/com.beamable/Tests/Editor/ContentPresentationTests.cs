@@ -639,6 +639,34 @@ namespace Beamable.Editor.Tests
             Assert.That(ContentReconciliationWindow.ActionExplanation(local, realm, keepLocal), Does.Contain(expected));
         }
 
+        [TestCase(false, true, null, "{}", true)]
+        [TestCase(false, true, "", "{}", true)]
+        [TestCase(true, false, "{}", null, true)]
+        [TestCase(true, false, "{}", "", true)]
+        [TestCase(false, false, "", "", true)]
+        [TestCase(true, true, "{}", "{}", true)]
+        [TestCase(true, true, "", "{}", false)]
+        [TestCase(true, true, "{}", "", false)]
+        [TestCase(false, true, "{}", "{}", false)]
+        [TestCase(true, false, "{}", "{}", false)]
+        public void Review_validates_presence_and_normalizes_absent_json(bool localExists, bool realmExists,
+            string localJson, string realmJson, bool valid)
+        {
+            var preview = new ContentReconciliationPreview {
+                ContentId = "currency.test", ManifestUid = "reviewed", LocalRevision = "revision",
+                LocalExists = localExists, RealmExists = realmExists, LocalJson = localJson, RealmJson = realmJson,
+                Differences = Array.Empty<ContentReconciliationDifference>()
+            };
+            if (!valid)
+            {
+                Assert.Throws<InvalidOperationException>(() => ContentReconciliationWindow.ValidatePreview(preview, "currency.test", "reviewed"));
+                return;
+            }
+            ContentReconciliationWindow.ValidatePreview(preview, "currency.test", "reviewed");
+            Assert.That(preview.LocalJson, Is.EqualTo(localExists ? localJson : null), "Absent local content must use the placeholder and disable Copy JSON.");
+            Assert.That(preview.RealmJson, Is.EqualTo(realmExists ? realmJson : null), "Absent realm content must use the placeholder and disable Copy JSON.");
+        }
+
         [TestCase("none")]
         [TestCase("item")]
         [TestCase("manifest")]
@@ -1093,6 +1121,83 @@ namespace Beamable.Editor.Tests
             Assert.That(type, Is.Not.Null, "Local Mode confirmation dialog is missing");
             type.GetMethod("ApplyChoice", BindingFlags.Static | BindingFlags.NonPublic)
                 .Invoke(null, new object[] { config, confirm, suppress });
+        }
+    }
+
+    // Runs in Unity: managed-only checks do not exercise the native JsonUtility serializer.
+    public class ContentReconciliationSerializationTests
+    {
+        // Captured from ContentService.PreviewReconciliation with the CLI reporter's
+        // UnitySerializationSettings (0.0.123.25), using controlled local/realm content.
+        private const string Update = @"{
+  ""ContentId"": ""currency.coins"",
+  ""ManifestUid"": ""reviewed"",
+  ""LocalRevision"": ""0807cf41b2ffd934b9cba416998f412e2c0f84fcd0eb9b49a0cac08ce8689369"",
+  ""LocalExists"": true,
+  ""RealmExists"": true,
+  ""LocalJson"": ""{\r\n  \""properties\"": {\r\n    \""startingAmount\"": {\r\n      \""data\"": 10\r\n    }\r\n  },\r\n  \""tags\"": []\r\n}"",
+  ""RealmJson"": ""{\r\n  \""properties\"": {\r\n    \""startingAmount\"": {\r\n      \""data\"": 20\r\n    }\r\n  },\r\n  \""tags\"": [\r\n    \""realm\""\r\n  ]\r\n}"",
+  ""Differences"": [
+    {
+      ""Property"": ""startingAmount"",
+      ""LocalValue"": ""10"",
+      ""RealmValue"": ""20""
+    },
+    {
+      ""Property"": ""Tags"",
+      ""LocalValue"": ""[]"",
+      ""RealmValue"": ""[\""realm\""]""
+    }
+  ]
+}";
+
+        private const string Addition = @"{
+  ""ContentId"": ""currency.coins"",
+  ""ManifestUid"": ""reviewed"",
+  ""LocalRevision"": ""c4d7738295a1a672911beae946f3875988edfee51ae3355f85c766777fb532b6"",
+  ""LocalExists"": false,
+  ""RealmExists"": true,
+  ""LocalJson"": null,
+  ""RealmJson"": ""{\r\n  \""properties\"": {\r\n    \""startingAmount\"": {\r\n      \""data\"": 20\r\n    }\r\n  },\r\n  \""tags\"": [\r\n    \""realm\""\r\n  ]\r\n}"",
+  ""Differences"": []
+}";
+
+        private const string Deletion = @"{
+  ""ContentId"": ""currency.coins"",
+  ""ManifestUid"": ""reviewed"",
+  ""LocalRevision"": ""b3a10ce959cc8d7bfcfe9c19cc527a4bfada18feddc3924795e983d9c57c7bff"",
+  ""LocalExists"": true,
+  ""RealmExists"": false,
+  ""LocalJson"": ""{\r\n  \""properties\"": {\r\n    \""startingAmount\"": {\r\n      \""data\"": 10\r\n    }\r\n  },\r\n  \""tags\"": []\r\n}"",
+  ""RealmJson"": null,
+  ""Differences"": []
+}";
+
+        private const string Absent = @"{
+  ""ContentId"": ""currency.coins"",
+  ""ManifestUid"": ""reviewed"",
+  ""LocalRevision"": ""01b62fed87cc0b6107fc840c5c6bc8d26e3b5383205d2ad41979559a852fa93c"",
+  ""LocalExists"": false,
+  ""RealmExists"": false,
+  ""LocalJson"": null,
+  ""RealmJson"": null,
+  ""Differences"": []
+}";
+
+        [TestCase(Update, true, true)]
+        [TestCase(Addition, false, true)]
+        [TestCase(Deletion, true, false)]
+        [TestCase(Absent, false, false)]
+        public void Cli_preview_survives_native_unity_deserialization(string payload, bool localExists, bool realmExists)
+        {
+            var preview = JsonUtility.FromJson<ContentReconciliationPreview>(payload);
+            Assert.That(preview.LocalExists, Is.EqualTo(localExists));
+            Assert.That(preview.RealmExists, Is.EqualTo(realmExists));
+            ContentReconciliationWindow.ValidatePreview(preview, "currency.coins", "reviewed");
+            Assert.That(string.IsNullOrEmpty(preview.LocalJson), Is.EqualTo(!localExists));
+            Assert.That(string.IsNullOrEmpty(preview.RealmJson), Is.EqualTo(!realmExists));
+            if (!localExists) Assert.That(preview.LocalJson, Is.Null, "Absent local content must use its JSON placeholder.");
+            if (!realmExists) Assert.That(preview.RealmJson, Is.Null, "Absent realm content must use its JSON placeholder.");
         }
     }
 
