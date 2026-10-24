@@ -20,6 +20,88 @@ using UnityEngine;
 
 namespace Beamable.Editor.Tests
 {
+    public class ContentJsonComparisonTests
+    {
+        [TestCase("head\nold\ntail", "head\nnew\ntail", "head|old|tail", "head|new|tail")]
+        [TestCase("head\ntail", "head\nadded\ntail", "head|<gap>|tail", "head|added|tail")]
+        [TestCase("head\nremoved\ntail", "head\ntail", "head|removed|tail", "head|<gap>|tail")]
+        [TestCase("head\nold\ntail", "head\nnew\nextra\ntail", "head|old|<gap>|tail", "head|new|extra|tail")]
+        [TestCase(null, "{\n}", "<gap>|<gap>", "{|}")]
+        [TestCase("{\n}", null, "{|}", "<gap>|<gap>")]
+        [TestCase(null, null, "", "")]
+        [TestCase("same\n", "same\n", "same|", "same|")]
+        [TestCase("", "new", "", "new")]
+        [TestCase("{\r\n  \"text\": \"<b>café</b>\\n\"\r\n}", "{\n  \"text\": \"<b>café</b>\\n\"\n}", "{|  \"text\": \"<b>café</b>\\n\"|}", "{|  \"text\": \"<b>café</b>\\n\"|}")]
+        public void Aligns_changed_and_missing_lines_without_editing_values(string local, string realm, string left, string right)
+        {
+            var result = ContentReconciliationWindow.CompareJson(local, realm);
+            Assert.That(Display(result.Local), Is.EqualTo(left));
+            Assert.That(Display(result.Realm), Is.EqualTo(right));
+            Assert.That(result.Simplified, Is.False);
+            Assert.That(result.Changed.Length, Is.EqualTo(result.Local.Length));
+            for (int i = 0; i < result.Changed.Length; i++)
+                Assert.That(result.Changed[i], Is.EqualTo(result.Local[i] != result.Realm[i]));
+            AssertPreserved(local, result.Local);
+            AssertPreserved(realm, result.Realm);
+        }
+
+        [Test]
+        public void Repeated_braces_and_separate_edits_keep_unchanged_lines_aligned()
+        {
+            var result = ContentReconciliationWindow.CompareJson("{\na\n}\n{\nb\n}\n{\nc\n}", "{\nA\n}\n{\nb\n}\n{\nC\n}");
+            Assert.That(result.Local.Length, Is.EqualTo(9));
+            for (int i = 0; i < 9; i++) Assert.That(result.Local[i] == result.Realm[i], Is.EqualTo(i != 1 && i != 7));
+        }
+
+        [Test]
+        public void Large_disjoint_inputs_bound_alignment_work_without_losing_lines()
+        {
+            var local = new string[5000];
+            var realm = new string[6000];
+            for (int i = 0; i < local.Length; i++) local[i] = "local " + i;
+            for (int i = 0; i < realm.Length; i++) realm[i] = "realm " + i;
+            var result = ContentReconciliationWindow.CompareJson(string.Join("\n", local), string.Join("\n", realm));
+            Assert.That(result.Simplified, Is.True);
+            Assert.That(result.Local.Length, Is.EqualTo(result.Realm.Length));
+            CollectionAssert.AreEqual(local, Array.FindAll(result.Local, x => x != null));
+            CollectionAssert.AreEqual(realm, Array.FindAll(result.Realm, x => x != null));
+        }
+
+        [Test]
+        public void Large_common_prefix_and_suffix_need_no_simplification()
+        {
+            var local = new string[20000];
+            for (int i = 0; i < local.Length; i++) local[i] = "line " + i;
+            var realm = (string[])local.Clone();
+            realm[10000] = "changed";
+            var result = ContentReconciliationWindow.CompareJson(string.Join("\n", local), string.Join("\n", realm));
+            Assert.That(result.Simplified, Is.False);
+            Assert.That(result.Local.Length, Is.EqualTo(local.Length));
+            CollectionAssert.AreEqual(local, result.Local);
+            CollectionAssert.AreEqual(realm, result.Realm);
+        }
+
+        [TestCase(999, false)]
+        [TestCase(1000, true)]
+        public void Alignment_budget_boundary_is_explicit(int localCount, bool simplified)
+        {
+            var local = new string[localCount];
+            var realm = new string[999];
+            for (int i = 0; i < local.Length; i++) local[i] = "local " + i;
+            for (int i = 0; i < realm.Length; i++) realm[i] = "realm " + i;
+            var result = ContentReconciliationWindow.CompareJson(string.Join("\n", local), string.Join("\n", realm));
+            Assert.That(result.Simplified, Is.EqualTo(simplified));
+            Assert.That(Array.TrueForAll(result.Changed, x => x), Is.True);
+        }
+
+        static string Display(string[] lines) => string.Join("|", Array.ConvertAll(lines, x => x ?? "<gap>"));
+        static void AssertPreserved(string input, string[] aligned)
+        {
+            var expected = input == null ? Array.Empty<string>() : input.Replace("\r\n", "\n").Split('\n');
+            CollectionAssert.AreEqual(expected, Array.FindAll(aligned, x => x != null));
+        }
+    }
+
     public class ContentReconciliationFeedbackTests
     {
         [TestCase(false, "success")]
@@ -1142,7 +1224,7 @@ namespace Beamable.Editor.Tests
         }
     }
 
-    // Runs in Unity: managed-only checks do not exercise the native JsonUtility serializer.
+    // Runs in Unity: managed-only checks do not exercise native IMGUI layout and scrolling.
     public class ContentReconciliationLayoutTests
     {
         const BindingFlags InstanceFields = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
@@ -1171,6 +1253,89 @@ namespace Beamable.Editor.Tests
         public void Existing_item_review_remains_usable_with_long_errors(int tab)
         {
             CheckLayout(560, 500, false, false, new string('x', 4000), tab, true);
+        }
+
+        [TestCase(560, 0)]
+        [TestCase(560, 240)]
+        [TestCase(1200, 240)]
+        [TestCase(1200, 2000)]
+        public void Json_columns_share_vertical_scroll_and_clamp_on_resize(int width, int offset)
+        {
+            var window = ScriptableObject.CreateInstance<ContentReconciliationWindow>();
+            var previousEvent = Event.current;
+            try
+            {
+                window.position = new Rect(0, 0, width, 360);
+                var lines = new List<string>();
+                for (int i = 0; i < 120; i++) lines.Add("  \"" + i + new string('x', i == 0 ? 400 : 0) + "\"");
+                var localJson = "[\r\n" + string.Join(",\r\n", lines) + "\r\n]";
+                lines.Insert(40, "  \"incoming\"");
+                var realmJson = "[\r\n" + string.Join(",\r\n", lines) + "\r\n]";
+                var comparison = ContentReconciliationWindow.CompareJson(localJson, realmJson);
+                void Set(string field, object value) => typeof(ContentReconciliationWindow).GetField(field, InstanceFields).SetValue(window, value);
+                object Get(string field) => typeof(ContentReconciliationWindow).GetField(field, InstanceFields).GetValue(window);
+                Set("_preview", new ContentReconciliationPreview { LocalExists = true, RealmExists = true, LocalJson = localJson, RealmJson = realmJson });
+                Set("_localLines", comparison.Local);
+                Set("_realmLines", comparison.Realm);
+                Set("_jsonChangedLines", comparison.Changed);
+                Rect viewport = default;
+                void Draw(Event input)
+                {
+                    typeof(GUIUtility).GetMethod("BeginContainerFromOwner", StaticFields).Invoke(null, new object[] { window });
+                    try
+                    {
+                        Event.current = input;
+                        typeof(GUIUtility).GetMethod("BeginGUI", StaticFields).Invoke(null, new object[] { 1, window.GetInstanceID(), 1 });
+                        // The normal Editor event loop resets layout cursors between events.
+                        var layoutCache = typeof(GUILayoutUtility).GetField("current", StaticFields).GetValue(null);
+                        layoutCache.GetType().GetMethod("ResetCursor").Invoke(layoutCache, null);
+                        typeof(ContentReconciliationWindow).GetMethod("EnsureStyles", InstanceFields).Invoke(window, null);
+                        typeof(ContentReconciliationWindow).GetMethod("DrawJsonComparison", InstanceFields).Invoke(window, null);
+                        if (input.type == EventType.Layout)
+                            typeof(GUILayoutUtility).GetMethod("LayoutFromContainer", StaticFields).Invoke(null, new object[] { (float)width, window.position.height });
+                        var cache = typeof(GUILayoutUtility).GetField("current", StaticFields).GetValue(null);
+                        var root = cache.GetType().GetField("topLevel").GetValue(cache);
+                        var viewports = new List<Rect>();
+                        bool scrollable = false;
+                        InspectLayout(root, viewports, ref scrollable);
+                        Assert.That(viewports.Count, Is.EqualTo(1), "Both columns must share a single vertical viewport.");
+                        viewport = viewports[0];
+
+                    }
+                    finally { typeof(GUIUtility).GetMethod("EndContainer", StaticFields).Invoke(null, null); }
+                }
+                Draw(new Event { type = EventType.Layout });
+                Draw(new Event { type = EventType.Repaint });
+                Assert.That(((GUIStyle)Get("_json")).richText, Is.False, "JSON must be displayed literally, not interpreted as markup.");
+                Set("_jsonScroll", new Vector2(0, offset));
+                Draw(new Event { type = EventType.Repaint });
+                var scroll = (Vector2)Get("_jsonScroll");
+                Assert.That(scroll.y, Is.EqualTo(offset));
+                Assert.That(scroll.x, Is.Zero);
+                Assert.That((float)Get("_localScroll"), Is.Zero);
+                Assert.That((float)Get("_realmScroll"), Is.Zero);
+
+                // Long lines scroll horizontally without moving the other column or changing vertical alignment.
+                Set("_localScroll", 100f);
+                Draw(new Event { type = EventType.Repaint });
+                Assert.That((float)Get("_localScroll"), Is.EqualTo(100f));
+                Assert.That((float)Get("_realmScroll"), Is.Zero);
+                Assert.That(((Vector2)Get("_jsonScroll")).y, Is.EqualTo(scroll.y));
+                Set("_jsonScroll", new Vector2(0, float.MaxValue));
+                Draw(new Event { type = EventType.Repaint });
+                Assert.That(((Vector2)Get("_jsonScroll")).y, Is.EqualTo(comparison.Local.Length * 24 - viewport.height).Within(1));
+                window.position = new Rect(0, 0, width, 500);
+                Draw(new Event { type = EventType.Layout });
+                Draw(new Event { type = EventType.Repaint });
+                Assert.That(((Vector2)Get("_jsonScroll")).y, Is.EqualTo(comparison.Local.Length * 24 - viewport.height).Within(1));
+
+
+            }
+            finally
+            {
+                Event.current = previousEvent;
+                UnityEngine.Object.DestroyImmediate(window);
+            }
         }
 
         static void CheckLayout(int width, int height, bool deletion, bool missingScript, string error, int tab, bool both = false)
@@ -1209,6 +1374,7 @@ namespace Beamable.Editor.Tests
                 Set("_rows", new[] { new[] { new GUIContent("amount"), new GUIContent("10"), new GUIContent("20") } });
                 Set("_localLines", new[] { "{}" });
                 Set("_realmLines", new[] { "{}" });
+                Set("_jsonChangedLines", new[] { false });
 
                 Rect footer = default;
                 foreach (var eventType in new[] { EventType.Layout, EventType.Repaint })
@@ -1236,7 +1402,7 @@ namespace Beamable.Editor.Tests
                     Assert.That(scrollable, Is.True, "Overflowing review details must remain reachable by scrolling.");
                 if (tab == 1 || both)
                 {
-                    Assert.That(viewports.Count, Is.EqualTo(tab == 1 ? 2 : 1), "JSON columns or the property viewport must be laid out.");
+                    Assert.That(viewports.Count, Is.EqualTo(1), "The shared JSON viewport or property viewport must be laid out.");
                     foreach (var viewport in viewports)
                         Assert.That(viewport.height, Is.GreaterThanOrEqualTo(96), "Content needs room for at least four lines, independently of warning/error height.");
                 }
@@ -1338,6 +1504,19 @@ namespace Beamable.Editor.Tests
             Assert.That(string.IsNullOrEmpty(preview.RealmJson), Is.EqualTo(!realmExists));
             if (!localExists) Assert.That(preview.LocalJson, Is.Null, "Absent local content must use its JSON placeholder.");
             if (!realmExists) Assert.That(preview.RealmJson, Is.Null, "Absent realm content must use its JSON placeholder.");
+            var comparison = ContentReconciliationWindow.CompareJson(preview.LocalJson, preview.RealmJson);
+            Assert.That(comparison.Local.Length, Is.EqualTo(comparison.Realm.Length));
+            foreach (var side in new[] { (preview.LocalJson, comparison.Local), (preview.RealmJson, comparison.Realm) })
+                CollectionAssert.AreEqual(side.Item1?.Replace("\r\n", "\n").Split('\n') ?? Array.Empty<string>(), Array.FindAll(side.Item2, x => x != null));
+            if (localExists && realmExists)
+            {
+                int localValue = Array.FindIndex(comparison.Local, x => x != null && x.Contains("\"data\": 10"));
+                Assert.That(localValue, Is.GreaterThanOrEqualTo(0));
+                Assert.That(comparison.Realm[localValue], Does.Contain("\"data\": 20"));
+                int realmTag = Array.FindIndex(comparison.Realm, x => x != null && x.Contains("\"realm\""));
+                Assert.That(realmTag, Is.GreaterThanOrEqualTo(0));
+                Assert.That(comparison.Local[realmTag], Is.Null);
+            }
         }
     }
 

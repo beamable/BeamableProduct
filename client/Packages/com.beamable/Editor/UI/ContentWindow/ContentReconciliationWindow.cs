@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Content;
@@ -20,9 +21,12 @@ namespace Beamable.Editor.UI.ContentWindow
 		private ContentResolveWrapper _request;
 		private int _generation, _tab;
 		private bool _loading, _applying, _missingType;
-		private Vector2 _propertyScroll, _localScroll, _realmScroll, _reviewScroll;
+		private Vector2 _propertyScroll, _jsonScroll, _reviewScroll;
+		private float _localScroll, _realmScroll;
+		private bool _simplifiedJson;
 		private GUIContent[][] _rows;
 		private string[] _localLines, _realmLines;
+		private bool[] _jsonChangedLines;
 		private float _localWidth, _realmWidth;
 		private GUIStyle _body, _heading, _cell, _json;
 		private GUIStyle _localHeading, _realmHeading;
@@ -70,7 +74,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			_preview = null;
 			_error = null;
 			_loading = true;
-			_propertyScroll = _localScroll = _realmScroll = _reviewScroll = Vector2.zero;
+			_propertyScroll = _jsonScroll = _reviewScroll = Vector2.zero;
+			_localScroll = _realmScroll = 0;
 			try
 			{
 				// A refresh may accept a newer publication, but never silently move to another realm/namespace.
@@ -92,8 +97,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				_rows = new GUIContent[differences.Length][];
 				for (var i = 0; i < differences.Length; i++)
 					_rows[i] = new[] { Cell(differences[i].Property), Cell(differences[i].LocalValue), Cell(differences[i].RealmValue) };
-				_localLines = (preview.LocalJson ?? "Not present locally.").Split('\n');
-				_realmLines = (preview.RealmJson ?? "Not present in the published realm.").Split('\n');
+				(_localLines, _realmLines, _jsonChangedLines, _simplifiedJson) = CompareJson(preview.LocalJson, preview.RealmJson);
 				_localWidth = _realmWidth = 0;
 				_preview = preview;
 			}
@@ -151,6 +155,71 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		internal static string PresenceLabel(bool exists, bool realm, ContentChangeKind kind) => exists ? "Present"
 			: realm && kind == ContentChangeKind.IncomingDeletion ? "Deleted" : "Not present";
+
+		// Presentation only: originals remain untouched for copying and reconciliation revision checks.
+		internal static (string[] Local, string[] Realm, bool[] Changed, bool Simplified) CompareJson(string local, string realm)
+		{
+			var left = local?.Replace("\r\n", "\n").Split('\n') ?? Array.Empty<string>();
+			var right = realm?.Replace("\r\n", "\n").Split('\n') ?? Array.Empty<string>();
+			var localRows = new List<string>();
+			var realmRows = new List<string>();
+			int prefix = 0, suffix = 0;
+			while (prefix < Math.Min(left.Length, right.Length) && left[prefix] == right[prefix])
+			{
+				localRows.Add(left[prefix]); realmRows.Add(right[prefix++]);
+			}
+			while (suffix < Math.Min(left.Length, right.Length) - prefix &&
+			       left[left.Length - suffix - 1] == right[right.Length - suffix - 1]) suffix++;
+			int n = left.Length - prefix - suffix, m = right.Length - prefix - suffix;
+			int a = prefix, b = prefix;
+			void AppendBlock(int endA, int endB)
+			{
+				while (a < endA || b < endB)
+				{
+					localRows.Add(a < endA ? left[a++] : null);
+					realmRows.Add(b < endB ? right[b++] : null);
+				}
+			}
+			// Bound both CPU and the alignment table (at most 4 MB). Large changed regions use
+			// positional alignment, explicitly labelled in the UI; no source lines are discarded.
+			var simplified = n > 0 && m > 0 && (long)(n + 1) * (m + 1) > 1000000;
+			if (n > 0 && m > 0 && !simplified)
+			{
+				// Compare IDs in the quadratic loop so long JSON strings are hashed outside it.
+				var ids = new Dictionary<string, int>(StringComparer.Ordinal);
+				int Id(string line)
+				{
+					if (!ids.TryGetValue(line, out var id)) ids.Add(line, id = ids.Count);
+					return id;
+				}
+				var leftIds = new int[n]; var rightIds = new int[m];
+				for (int i = 0; i < n; i++) leftIds[i] = Id(left[prefix + i]);
+				for (int j = 0; j < m; j++) rightIds[j] = Id(right[prefix + j]);
+				int stride = m + 1;
+				var matches = new int[(n + 1) * stride];
+				for (int i = n - 1; i >= 0; i--)
+					for (int j = m - 1; j >= 0; j--)
+						matches[i * stride + j] = leftIds[i] == rightIds[j] ? 1 + matches[(i + 1) * stride + j + 1]
+							: Math.Max(matches[(i + 1) * stride + j], matches[i * stride + j + 1]);
+				int x = 0, y = 0;
+				while (x < n && y < m)
+				{
+					if (leftIds[x] == rightIds[y])
+					{
+						AppendBlock(prefix + x, prefix + y);
+						localRows.Add(left[a++]); realmRows.Add(right[b++]);
+						x++; y++;
+					}
+					else if (matches[(x + 1) * stride + y] >= matches[x * stride + y + 1]) x++;
+					else y++;
+				}
+			}
+			AppendBlock(left.Length - suffix, right.Length - suffix);
+			while (suffix-- > 0) { localRows.Add(left[a++]); realmRows.Add(right[b++]); }
+			var changed = new bool[localRows.Count];
+			for (int i = 0; i < changed.Length; i++) changed[i] = localRows[i] != realmRows[i];
+			return (localRows.ToArray(), realmRows.ToArray(), changed, simplified);
+		}
 
 		// Shared by the property and JSON views: render only visible fixed-height rows, regardless of item size.
 		internal static void VisibleRows(float scroll, float height, int count, out int first, out int end)
@@ -246,11 +315,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			var both = _preview.LocalExists && _preview.RealmExists;
 			if (_tab == 1)
 			{
-				using (new EditorGUILayout.HorizontalScope())
-				{
-					DrawJson("Local", _preview.LocalJson, _localLines, ref _localScroll, ref _localWidth);
-					DrawJson("Published realm", _preview.RealmJson, _realmLines, ref _realmScroll, ref _realmWidth);
-				}
+				DrawJsonComparison();
 			}
 			else if (both) DrawProperties();
 			else DrawSummary();
@@ -365,28 +430,71 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (_rows.Length == 0) GUILayout.Label("No property or tag differences.", _body);
 		}
 
-		private void DrawJson(string title, string json, string[] lines, ref Vector2 scroll, ref float contentWidth)
+		private void DrawJsonComparison()
 		{
-			using (new EditorGUILayout.VerticalScope(GUILayout.ExpandWidth(true)))
+			var explanation = !_preview.LocalExists && !_preview.RealmExists ? "Item is absent in both versions."
+				: !_preview.LocalExists ? "Not present locally · published lines shown in blue"
+				: !_preview.RealmExists ? "Not present in the published realm · local lines shown in amber"
+				: _simplifiedJson ? "Large diff: simplified line alignment · highlighted lines differ"
+				: "Highlighted lines differ · blank cells have no matching line";
+			GUILayout.Label(explanation, EditorStyles.miniLabel);
+			var header = GUILayoutUtility.GetRect(0, RowHeight, GUILayout.ExpandWidth(true));
+			var gutter = GUI.skin.verticalScrollbar.fixedWidth + GUI.skin.verticalScrollbar.margin.left;
+			var width = Math.Max(1, (header.width - gutter - 8) / 2);
+			DrawJsonHeader(new Rect(header.x, header.y, width, RowHeight), "Local", _preview.LocalJson, _localHeading);
+			DrawJsonHeader(new Rect(header.x + width + 8, header.y, width, RowHeight), "Published realm", _preview.RealmJson, _realmHeading);
+			var viewport = GUILayoutUtility.GetRect(0, 0, GUILayout.MinHeight(RowHeight * 4), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+			var view = new Rect(0, 0, Math.Max(1, viewport.width - gutter), _localLines.Length * RowHeight);
+			// One vertical scroll owner prevents wheel/drag events or differing line widths from desynchronizing panes.
+			_jsonScroll = GUI.BeginScrollView(viewport, _jsonScroll, view, false, true);
+			VisibleRows(_jsonScroll.y, viewport.height, _localLines.Length, out var first, out var end);
+			DrawJsonLines(new Rect(0, 0, width, view.height), _localLines, _localScroll, _localHeading.normal.textColor, first, end);
+			DrawJsonLines(new Rect(width + 8, 0, width, view.height), _realmLines, _realmScroll, _realmHeading.normal.textColor, first, end);
+			GUI.EndScrollView();
+			var bars = GUILayoutUtility.GetRect(0, GUI.skin.horizontalScrollbar.fixedHeight, GUILayout.ExpandWidth(true));
+			DrawJsonHorizontal(new Rect(bars.x, bars.y, width, bars.height), _localLines, ref _localScroll, ref _localWidth);
+			DrawJsonHorizontal(new Rect(bars.x + width + 8, bars.y, width, bars.height), _realmLines, ref _realmScroll, ref _realmWidth);
+		}
+
+		private static void DrawJsonHeader(Rect rect, string title, string json, GUIStyle style)
+		{
+			GUI.Label(new Rect(rect.x, rect.y, rect.width - 84, rect.height), new GUIContent(title, json == null ? "Not present" : title), style);
+			using (new EditorGUI.DisabledScope(json == null))
+				if (GUI.Button(new Rect(rect.xMax - 80, rect.y, 80, 20), "Copy JSON", EditorStyles.miniButton)) EditorGUIUtility.systemCopyBuffer = json;
+		}
+
+		private void DrawJsonLines(Rect rect, string[] lines, float horizontalScroll, Color color, int first, int end)
+		{
+			GUI.BeginGroup(rect);
+			for (int i = first; i < end; i++)
 			{
-				using (new EditorGUILayout.HorizontalScope())
+				var row = new Rect(0, i * RowHeight, rect.width, RowHeight);
+				if (_jsonChangedLines[i] && lines[i] != null)
 				{
-					GUILayout.Label(title, EditorStyles.boldLabel);
-					using (new EditorGUI.DisabledScope(json == null))
-						if (GUILayout.Button("Copy JSON", EditorStyles.miniButton, GUILayout.Width(80))) EditorGUIUtility.systemCopyBuffer = json;
+					EditorGUI.DrawRect(new Rect(0, row.y, 3, RowHeight - 1), color);
+					color.a = .16f;
+					EditorGUI.DrawRect(row, color);
+					color.a = 1;
 				}
-				if (contentWidth == 0)
-				{
-					contentWidth = 1;
-					foreach (var line in lines) contentWidth = Math.Max(contentWidth, _json.CalcSize(new GUIContent(line)).x);
-				}
-				var viewport = GUILayoutUtility.GetRect(0, 0, GUILayout.MinHeight(RowHeight * 4), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-				var view = new Rect(0, 0, Math.Max(contentWidth, viewport.width - 16), lines.Length * RowHeight);
-				scroll = GUI.BeginScrollView(viewport, scroll, view);
-				VisibleRows(scroll.y, viewport.height, lines.Length, out var first, out var end);
-				for (var i = first; i < end; i++) GUI.Label(new Rect(0, i * RowHeight, view.width, RowHeight), lines[i], _json);
-				GUI.EndScrollView();
+				GUI.Label(new Rect(-horizontalScroll, row.y, rect.width + horizontalScroll, RowHeight), lines[i] ?? string.Empty, _json);
 			}
+			GUI.EndGroup();
+		}
+
+		private void DrawJsonHorizontal(Rect rect, string[] lines, ref float scroll, ref float contentWidth)
+		{
+			if (contentWidth == 0)
+			{
+				contentWidth = 1;
+				var content = new GUIContent();
+				foreach (var line in lines)
+				{
+					content.text = line;
+					contentWidth = Math.Max(contentWidth, _json.CalcSize(content).x);
+				}
+			}
+			using (new EditorGUI.DisabledScope(contentWidth <= rect.width))
+				scroll = GUI.HorizontalScrollbar(rect, scroll, Math.Min(rect.width, contentWidth), 0, contentWidth);
 		}
 
 		private void DrawActions()
