@@ -618,13 +618,31 @@ namespace Beamable.Editor.Tests
             Assert.That(end, Is.EqualTo(expectedEnd));
         }
 
-        [TestCase(false, true, ContentChangeKind.IncomingAddition, "Added in the realm")]
+        [TestCase(false, true, ContentChangeKind.IncomingAddition, "New item in the realm")]
         [TestCase(true, false, ContentChangeKind.IncomingDeletion, "Deleted from the realm")]
         [TestCase(false, true, ContentChangeKind.Conflict, "Only in the published realm")]
         [TestCase(true, false, ContentChangeKind.Unknown, "Only present locally")]
         public void Review_summary_only_attributes_history_when_known(bool local, bool realm, ContentChangeKind kind, string title)
         {
             Assert.That(ContentReconciliationWindow.SummaryTitle(local, realm, kind), Is.EqualTo(title));
+        }
+
+        [TestCase(false, true, ContentChangeKind.IncomingAddition, "New custom content in the realm")]
+        [TestCase(false, true, ContentChangeKind.Conflict, "Only in the published realm")]
+        [TestCase(true, false, ContentChangeKind.IncomingDeletion, "Deleted from the realm")]
+        public void Missing_script_summary_preserves_known_change_direction(bool local, bool realm, ContentChangeKind kind, string title)
+        {
+            Assert.That(ContentReconciliationWindow.SummaryTitle(local, realm, kind, true), Is.EqualTo(title));
+        }
+
+        [TestCase(false, true, ContentChangeKind.IncomingDeletion, "Deleted")]
+        [TestCase(false, false, ContentChangeKind.IncomingAddition, "Not present")]
+        [TestCase(false, true, ContentChangeKind.Unknown, "Not present")]
+        [TestCase(false, true, ContentChangeKind.LocalEdit, "Not present")]
+        [TestCase(true, true, ContentChangeKind.IncomingDeletion, "Present")]
+        public void Presence_only_calls_an_absent_realm_item_deleted_when_authoritative(bool exists, bool realm, ContentChangeKind kind, string label)
+        {
+            Assert.That(ContentReconciliationWindow.PresenceLabel(exists, realm, kind), Is.EqualTo(label));
         }
 
         [TestCase(false, true, true, "a later publish will delete it")]

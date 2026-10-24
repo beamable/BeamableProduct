@@ -4,6 +4,7 @@ using Beamable.Common.BeamCli.Contracts;
 using Beamable.Content;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.ContentService;
+using Beamable.Editor.Util;
 using UnityEditor;
 using UnityEngine;
 
@@ -26,6 +27,10 @@ namespace Beamable.Editor.UI.ContentWindow
 		private GUIStyle _body, _heading, _cell, _json;
 		private GUIStyle _localHeading, _realmHeading;
 		private GUIStyle _idLabel, _scopeLabel;
+		private GUIStyle _presence, _dangerHeading, _summaryHeading, _primaryButton;
+		private GUIContent _missingTypeMessage, _keepLocalLabel, _useRealmLabel;
+		private static readonly Color AdditionColor = new Color(.12f, .78f, .52f);
+		private static readonly Color DeletionColor = new Color(.95f, .25f, .30f);
 		internal static readonly GUILayoutOption[] HeaderLabelOptions = { GUILayout.MinWidth(0), GUILayout.ExpandWidth(true) };
 		private static readonly string[] DiffTabs = { "Properties", "JSON" };
 		private static readonly string[] SummaryTabs = { "Summary", "JSON" };
@@ -36,9 +41,12 @@ namespace Beamable.Editor.UI.ContentWindow
 			var owner = focusedWindow;
 			var window = GetWindow<ContentReconciliationWindow>(true, "Beam Content — Reconcile", true);
 			if (window._applying) { window.Focus(); return; }
-			window.minSize = new Vector2(560, 500);
+			var kind = ContentWindow_TooltipsHelper.GetChangeKind(entry);
+			var summary = kind == ContentChangeKind.IncomingAddition || kind == ContentChangeKind.IncomingDeletion;
+			window.minSize = new Vector2(560, summary ? 380 : 500);
+			var size = new Vector2(760, summary ? 430 : 600);
 			if (owner != null && owner != window)
-				window.position = new Rect(owner.position.center - new Vector2(380, 300), new Vector2(760, 600));
+				window.position = new Rect(owner.position.center - size / 2, size);
 			window._service = service;
 			window._contentId = entry.FullId;
 			window._entry = entry;
@@ -79,6 +87,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				if (reportedError != null) throw reportedError;
 				ValidatePreview(preview, _contentId, _entry.TargetManifestUid);
 				_missingType = preview.RealmExists && !_service.HasContentType(_entry.TypeName);
+				_missingTypeMessage = null;
 				var differences = preview.Differences ?? Array.Empty<ContentReconciliationDifference>();
 				_rows = new GUIContent[differences.Length][];
 				for (var i = 0; i < differences.Length; i++)
@@ -135,10 +144,13 @@ namespace Beamable.Editor.UI.ContentWindow
 			: realmExists ? localExists ? "Replace your local copy with the published version." : "Add the published item to your local content."
 			: localExists ? "Delete this item from your local content." : "Keep this item absent locally.";
 
-		internal static string SummaryTitle(bool localExists, bool realmExists, ContentChangeKind kind) =>
-			!localExists && realmExists ? kind == ContentChangeKind.IncomingAddition ? "Added in the realm" : "Only in the published realm"
+		internal static string SummaryTitle(bool localExists, bool realmExists, ContentChangeKind kind, bool missingType = false) =>
+			!localExists && realmExists ? kind == ContentChangeKind.IncomingAddition ? missingType ? "New custom content in the realm" : "New item in the realm" : "Only in the published realm"
 			: localExists && !realmExists ? kind == ContentChangeKind.IncomingDeletion ? "Deleted from the realm" : "Only present locally"
 			: "Absent in both versions";
+
+		internal static string PresenceLabel(bool exists, bool realm, ContentChangeKind kind) => exists ? "Present"
+			: realm && kind == ContentChangeKind.IncomingDeletion ? "Deleted" : "Not present";
 
 		// Shared by the property and JSON views: render only visible fixed-height rows, regardless of item size.
 		internal static void VisibleRows(float scroll, float height, int count, out int first, out int end)
@@ -160,6 +172,18 @@ namespace Beamable.Editor.UI.ContentWindow
 			_scopeLabel = new GUIStyle(EditorStyles.miniLabel) { clipping = TextClipping.Clip };
 			_localHeading.normal.textColor = EditorGUIUtility.isProSkin ? new Color(1, .77f, .24f) : new Color(.48f, .31f, 0);
 			_realmHeading.normal.textColor = EditorGUIUtility.isProSkin ? new Color(.18f, .75f, 1) : new Color(0, .34f, .55f);
+			_presence = new GUIStyle(EditorStyles.label) { richText = true, clipping = TextClipping.Clip };
+			_dangerHeading = new GUIStyle(EditorStyles.boldLabel);
+			_dangerHeading.normal.textColor = EditorGUIUtility.isProSkin ? DeletionColor : new Color(.65f, .08f, .12f);
+			_summaryHeading = new GUIStyle(_heading) { wordWrap = true };
+			_primaryButton = new GUIStyle(GUI.skin.button);
+			_primaryButton.normal.background = Texture2D.whiteTexture;
+			foreach (var state in new[] { _primaryButton.normal, _primaryButton.hover, _primaryButton.active, _primaryButton.focused })
+			{
+				state.textColor = Color.white;
+			}
+			_keepLocalLabel = new GUIContent(" Keep Local", EditorGUIUtility.IconContent("BuildSettings.Standalone.Small").image);
+			_useRealmLabel = new GUIContent(" Use Realm", BeamGUI.iconStatusIncoming);
 		}
 
 		private void OnGUI()
@@ -185,9 +209,10 @@ namespace Beamable.Editor.UI.ContentWindow
 					GUILayout.Label(new GUIContent(scopeLabel, scopeLabel), _scopeLabel, HeaderLabelOptions);
 					using (new EditorGUILayout.HorizontalScope())
 					{
-						GUILayout.Label(ContentWindow_TooltipsHelper.GetStatusLabel(_entry), _realmHeading);
+						Badge(ContentWindow_TooltipsHelper.GetStatusLabel(_entry), _realmHeading);
 						GUILayout.FlexibleSpace();
-						GUILayout.Label(ContentConfiguration.Instance.EnableLocalContentInEditor ? "Local Mode On · Auto-sync paused" : "Auto-sync enabled", EditorStyles.miniLabel);
+						if (ContentConfiguration.Instance.EnableLocalContentInEditor) Badge("Local Mode On · Auto-sync paused", _localHeading);
+						else GUILayout.Label("Auto-sync enabled", EditorStyles.miniLabel);
 					}
 					GUILayout.Space(8);
 					if (_loading) { GUILayout.Label("Loading local and published versions…", _body); GUILayout.FlexibleSpace(); }
@@ -223,27 +248,84 @@ namespace Beamable.Editor.UI.ContentWindow
 			else
 			{
 				_summaryScroll = EditorGUILayout.BeginScrollView(_summaryScroll, GUILayout.ExpandHeight(true));
-				GUILayout.Label(SummaryTitle(_preview.LocalExists, _preview.RealmExists, ContentWindow_TooltipsHelper.GetChangeKind(_entry)), _heading);
-				GUILayout.Space(12);
-				using (new EditorGUILayout.HorizontalScope())
-				{
-					Presence("Local", _preview.LocalExists);
-					Presence("Published realm", _preview.RealmExists);
-				}
-				GUILayout.Space(12);
-				GUILayout.Label("This decision applies to the whole item. Open JSON to inspect its contents.", _body);
+				DrawSummary();
 				EditorGUILayout.EndScrollView();
 			}
-			if (_missingType)
-				EditorGUILayout.HelpBox($"Content script not found locally for '{_entry.TypeName}'. Use Realm imports the JSON, but the Inspector cannot show all properties until the matching content script is added and compiled.", MessageType.Warning);
+			if (_missingType && (_tab == 1 || both)) DrawMissingType();
 		}
 
-		private void Presence(string title, bool exists)
+		private void DrawSummary()
 		{
-			using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox, GUILayout.ExpandWidth(true)))
+			var kind = ContentWindow_TooltipsHelper.GetChangeKind(_entry);
+			var addition = !_preview.LocalExists && _preview.RealmExists && kind == ContentChangeKind.IncomingAddition;
+			var deletion = _preview.LocalExists && !_preview.RealmExists && kind == ContentChangeKind.IncomingDeletion;
+			using (new EditorGUILayout.HorizontalScope())
 			{
-				GUILayout.Label(title, EditorStyles.boldLabel);
-				GUILayout.Label(exists ? "Present" : "Not present");
+				if (addition || deletion)
+				{
+					var icon = GUILayoutUtility.GetRect(28, 28, GUILayout.Width(28));
+					// Reuse the Content Window's status artwork; labels carry the meaning without color.
+					var texture = addition ? BeamGUI.iconStatusAdded : BeamGUI.iconStatusDeleted;
+					if (texture != null) GUI.DrawTexture(icon, texture, ScaleMode.ScaleToFit);
+					else { EditorGUI.DrawRect(icon, addition ? AdditionColor : DeletionColor); GUI.Label(icon, addition ? "+" : "−", _heading); }
+				}
+				using (new EditorGUILayout.VerticalScope())
+				{
+					GUILayout.Label(SummaryTitle(_preview.LocalExists, _preview.RealmExists, kind, _missingType), _summaryHeading);
+					GUILayout.Label(addition ? "This item does not exist locally. Choose whether to import it."
+						: deletion ? "Your local copy still exists. Choose whether to keep it or accept the deletion."
+						: "This decision applies to the whole item. Open JSON to inspect its contents.", _body);
+				}
+			}
+			GUILayout.Space(8);
+			var presence = GUILayoutUtility.GetRect(0, 32, GUILayout.ExpandWidth(true));
+			EditorGUI.DrawRect(presence, new Color(.5f, .5f, .5f, .10f));
+			Presence(new Rect(presence.x + 8, presence.y + 6, presence.width / 2 - 16, 20), "Local", _preview.LocalExists, false, kind);
+			Presence(new Rect(presence.center.x + 8, presence.y + 6, presence.width / 2 - 16, 20), "Published realm", _preview.RealmExists, true, kind);
+			EditorGUI.DrawRect(new Rect(presence.center.x, presence.y + 7, 1, 18), new Color(.5f, .5f, .5f, .25f));
+			if (_missingType) { GUILayout.Space(8); DrawMissingType(); }
+			GUILayout.Space(8);
+			DrawChoiceCards();
+		}
+
+		private void Presence(Rect rect, string title, bool exists, bool realm, ContentChangeKind kind)
+		{
+			var color = ColorUtility.ToHtmlStringRGB((exists ? _realmHeading : _dangerHeading).normal.textColor);
+			GUI.Label(rect, $"{title}: <color=#{color}><b>{PresenceLabel(exists, realm, kind)}</b></color>", _presence);
+		}
+
+		private void DrawMissingType()
+		{
+			if (_missingTypeMessage == null)
+			{
+				var typeName = _entry.TypeName ?? "unknown";
+				// Bound the inline identifier so a long custom type cannot push JSON/actions out of the window.
+				var displayName = typeName.Length > 60 ? typeName.Substring(0, 57) + "…" : typeName;
+				_missingTypeMessage = new GUIContent($"Use Realm imports the JSON. The full Inspector requires the matching '{displayName}' content script to be added and compiled.", typeName);
+			}
+			using (var panel = new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+			{
+				DrawPanel(panel.rect, _localHeading.normal.textColor);
+				GUILayout.Label("⚠ Matching Unity script is missing", _localHeading);
+				GUILayout.Label(_missingTypeMessage, _body);
+			}
+		}
+
+		private static void DrawPanel(Rect rect, Color color)
+		{
+			if (Event.current.type != EventType.Repaint) return;
+			EditorGUI.DrawRect(rect, new Color(color.r, color.g, color.b, .45f));
+			var inner = new Rect(rect.x + 1, rect.y + 1, Math.Max(0, rect.width - 2), Math.Max(0, rect.height - 2));
+			EditorGUI.DrawRect(inner, EditorGUIUtility.isProSkin ? new Color(.15f, .16f, .17f) : new Color(.82f, .83f, .84f));
+			EditorGUI.DrawRect(inner, new Color(color.r, color.g, color.b, .08f));
+		}
+
+		private static void Badge(string text, GUIStyle style)
+		{
+			using (var panel = new EditorGUILayout.VerticalScope(EditorStyles.helpBox, GUILayout.ExpandWidth(false)))
+			{
+				DrawPanel(panel.rect, style.normal.textColor);
+				GUILayout.Label(text, style);
 			}
 		}
 
@@ -297,14 +379,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void DrawActions()
 		{
 			GUILayout.Space(10);
-			if (_preview != null)
-			{
-				using (new EditorGUILayout.HorizontalScope())
-				{
-					ActionSummary("Keep Local", true, _localHeading);
-					ActionSummary("Use Realm", false, _realmHeading);
-				}
-			}
+			if (_preview != null && (_tab == 1 || (_preview.LocalExists && _preview.RealmExists))) DrawChoiceCards();
 			GUILayout.Label(_applying ? "Reconciling… Please wait." : "Only this item is affected. Nothing is published.", EditorStyles.miniLabel);
 			using (new EditorGUILayout.HorizontalScope())
 			{
@@ -317,19 +392,30 @@ namespace Beamable.Editor.UI.ContentWindow
 					using (new EditorGUI.DisabledScope(invalid))
 						if (GUILayout.Button(new GUIContent("Keep Local", invalid ? "Fix local validation errors before keeping this conflict." : ""), GUILayout.Width(130), GUILayout.Height(30))) _ = Apply(true);
 					var color = GUI.backgroundColor;
-					GUI.backgroundColor = _preview != null && !_preview.RealmExists ? new Color(1, .65f, .65f) : new Color(.45f, .78f, 1);
-					if (GUILayout.Button("Use Realm", GUILayout.Width(130), GUILayout.Height(30))) _ = Apply(false);
+					GUI.backgroundColor = _preview != null && _preview.LocalExists && !_preview.RealmExists ? DeletionColor : new Color(0, .46f, .68f);
+					if (GUILayout.Button("Use Realm", _primaryButton, GUILayout.Width(130), GUILayout.Height(30))) _ = Apply(false);
 					GUI.backgroundColor = color;
 				}
 			}
 		}
 
-		private void ActionSummary(string title, bool keepLocal, GUIStyle heading)
+		private void ActionSummary(GUIContent title, bool keepLocal, GUIStyle heading)
 		{
-			using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox, GUILayout.ExpandWidth(true)))
+			using (var panel = new EditorGUILayout.VerticalScope(EditorStyles.helpBox, GUILayout.MinWidth(0), GUILayout.ExpandWidth(true)))
 			{
-				GUILayout.Label(title, heading);
+				DrawPanel(panel.rect, heading.normal.textColor);
+				GUILayout.Label(title, heading, GUILayout.Height(20));
 				GUILayout.Label(ActionExplanation(_preview.LocalExists, _preview.RealmExists, keepLocal), _body);
+				if (!keepLocal && _missingType) GUILayout.Label("Inspector support is limited.", _body);
+			}
+		}
+
+		private void DrawChoiceCards()
+		{
+			using (new EditorGUILayout.HorizontalScope())
+			{
+				ActionSummary(_keepLocalLabel, true, _localHeading);
+				ActionSummary(_useRealmLabel, false, _realmHeading);
 			}
 		}
 
