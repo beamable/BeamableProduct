@@ -1143,6 +1143,128 @@ namespace Beamable.Editor.Tests
     }
 
     // Runs in Unity: managed-only checks do not exercise the native JsonUtility serializer.
+    public class ContentReconciliationLayoutTests
+    {
+        const BindingFlags InstanceFields = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+        const BindingFlags StaticFields = BindingFlags.Static | BindingFlags.NonPublic;
+
+        [TestCase(560, 380, false, false, false)]
+        [TestCase(560, 380, false, true, false)]
+        [TestCase(560, 380, false, true, true)]
+        [TestCase(560, 380, true, false, true)]
+        [TestCase(760, 430, false, true, true)]
+        [TestCase(1200, 600, false, true, true)]
+        public void Json_review_keeps_usable_viewports_and_footer_inside_window(int width, int height, bool deletion, bool missingScript, bool error)
+        {
+            CheckLayout(width, height, deletion, missingScript, error ? "The realm changed after this item was reviewed." : null, 1);
+        }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        public void Long_review_errors_scroll_without_displacing_footer(int tab)
+        {
+            CheckLayout(560, 380, false, true, new string('x', 4000), tab);
+        }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        public void Existing_item_review_remains_usable_with_long_errors(int tab)
+        {
+            CheckLayout(560, 500, false, false, new string('x', 4000), tab, true);
+        }
+
+        static void CheckLayout(int width, int height, bool deletion, bool missingScript, string error, int tab, bool both = false)
+        {
+            // Execute the real window in Unity's IMGUI container without showing a window,
+            // connecting a CLI, or using the project's configuration/content objects.
+            var window = ScriptableObject.CreateInstance<ContentReconciliationWindow>();
+            var config = ScriptableObject.CreateInstance<ContentConfiguration>();
+            var configs = (System.Collections.IDictionary)typeof(ContentConfiguration).BaseType.BaseType
+                .GetField("_typeToConfig", StaticFields).GetValue(null);
+            var previousConfig = configs[typeof(ContentConfiguration)];
+            var previousEvent = Event.current;
+            try
+            {
+                config.EnableLocalContentInEditor = true;
+                configs[typeof(ContentConfiguration)] = config;
+                window.position = new Rect(0, 0, width, height);
+                var service = (CliContentService)FormatterServices.GetUninitializedObject(typeof(CliContentService));
+                typeof(CliContentService).GetField("<CurrentProgress>k__BackingField", InstanceFields)
+                    .SetValue(service, new ContentOperationProgress());
+                void Set(string field, object value) => typeof(ContentReconciliationWindow).GetField(field, InstanceFields).SetValue(window, value);
+                Set("_service", service);
+                Set("_contentId", "currency.layout_test");
+                Set("_scope", "test/realm/global");
+                Set("_entry", new LocalContentManifestEntry {
+                    TypeName = new string('w', 500),
+                    ChangeKind = (int)(both ? ContentChangeKind.IncomingChange : deletion ? ContentChangeKind.IncomingDeletion : ContentChangeKind.IncomingAddition)
+                });
+                Set("_preview", new ContentReconciliationPreview {
+                    LocalExists = both || deletion, RealmExists = !deletion,
+                    LocalJson = both || deletion ? "{}" : null, RealmJson = deletion ? null : "{}"
+                });
+                Set("_missingType", missingScript);
+                Set("_error", error);
+                Set("_tab", tab);
+                Set("_rows", new[] { new[] { new GUIContent("amount"), new GUIContent("10"), new GUIContent("20") } });
+                Set("_localLines", new[] { "{}" });
+                Set("_realmLines", new[] { "{}" });
+
+                Rect footer = default;
+                foreach (var eventType in new[] { EventType.Layout, EventType.Repaint })
+                {
+                    // Same native container/layout lifecycle used by Unity's IMGUIContainer.
+                    typeof(GUIUtility).GetMethod("BeginContainerFromOwner", StaticFields).Invoke(null, new object[] { window });
+                    try
+                    {
+                        Event.current = new Event { type = eventType };
+                        typeof(GUIUtility).GetMethod("BeginGUI", StaticFields).Invoke(null, new object[] { 1, window.GetInstanceID(), 1 });
+                        typeof(ContentReconciliationWindow).GetMethod("OnGUI", InstanceFields).Invoke(window, null);
+                        if (eventType == EventType.Layout)
+                            typeof(GUILayoutUtility).GetMethod("LayoutFromContainer", StaticFields).Invoke(null, new object[] { (float)width, (float)height });
+                        else footer = GUILayoutUtility.GetLastRect();
+                    }
+                    finally { typeof(GUIUtility).GetMethod("EndContainer", StaticFields).Invoke(null, null); }
+                }
+                Assert.That(footer.yMax, Is.LessThanOrEqualTo(height), "Footer must remain inside the window even when review details overflow.");
+                var cache = typeof(GUILayoutUtility).GetField("current", StaticFields).GetValue(null);
+                var root = cache.GetType().GetField("topLevel").GetValue(cache);
+                var viewports = new List<Rect>();
+                bool scrollable = false;
+                InspectLayout(root, viewports, ref scrollable);
+                if (error?.Length > 1000)
+                    Assert.That(scrollable, Is.True, "Overflowing review details must remain reachable by scrolling.");
+                if (tab == 1 || both)
+                {
+                    Assert.That(viewports.Count, Is.EqualTo(tab == 1 ? 2 : 1), "JSON columns or the property viewport must be laid out.");
+                    foreach (var viewport in viewports)
+                        Assert.That(viewport.height, Is.GreaterThanOrEqualTo(96), "Content needs room for at least four lines, independently of warning/error height.");
+                }
+            }
+            finally
+            {
+                Event.current = previousEvent;
+                if (previousConfig == null) configs.Remove(typeof(ContentConfiguration));
+                else configs[typeof(ContentConfiguration)] = previousConfig;
+                UnityEngine.Object.DestroyImmediate(window);
+                UnityEngine.Object.DestroyImmediate(config);
+            }
+        }
+
+        static void InspectLayout(object entry, List<Rect> viewports, ref bool scrollable)
+        {
+            var type = entry.GetType();
+            var rect = (Rect)type.GetField("rect").GetValue(entry);
+            if (type.Name == "GUILayoutEntry" && rect.width > 0 && (int)type.GetField("stretchHeight").GetValue(entry) > 0)
+                viewports.Add(rect);
+            // EditorGUILayout passes clientHeight and rect.height to the native scroll view.
+            if (type.Name == "GUIScrollGroup" && (float)type.GetField("clientHeight").GetValue(entry) > rect.height)
+                scrollable = true;
+            if (type.GetField("entries")?.GetValue(entry) is System.Collections.IEnumerable children)
+                foreach (var child in children) InspectLayout(child, viewports, ref scrollable);
+        }
+    }
+
     public class ContentReconciliationSerializationTests
     {
         // Captured from ContentService.PreviewReconciliation with the CLI reporter's

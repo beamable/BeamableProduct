@@ -20,7 +20,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private ContentResolveWrapper _request;
 		private int _generation, _tab;
 		private bool _loading, _applying, _missingType;
-		private Vector2 _propertyScroll, _localScroll, _realmScroll, _summaryScroll;
+		private Vector2 _propertyScroll, _localScroll, _realmScroll, _reviewScroll;
 		private GUIContent[][] _rows;
 		private string[] _localLines, _realmLines;
 		private float _localWidth, _realmWidth;
@@ -70,7 +70,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			_preview = null;
 			_error = null;
 			_loading = true;
-			_propertyScroll = _localScroll = _realmScroll = _summaryScroll = Vector2.zero;
+			_propertyScroll = _localScroll = _realmScroll = _reviewScroll = Vector2.zero;
 			try
 			{
 				// A refresh may accept a newer publication, but never silently move to another realm/namespace.
@@ -215,6 +215,14 @@ namespace Beamable.Editor.UI.ContentWindow
 						else GUILayout.Label("Auto-sync enabled", EditorStyles.miniLabel);
 					}
 					GUILayout.Space(8);
+					if (_preview != null)
+					{
+						var tab = GUILayout.Toolbar(_tab, _preview.LocalExists && _preview.RealmExists ? DiffTabs : SummaryTabs, GUILayout.Height(26));
+						if (tab != _tab) { _tab = tab; _reviewScroll = Vector2.zero; }
+						GUILayout.Space(8);
+					}
+					// Only the review body scrolls: long warnings/errors cannot displace the tabs or action footer.
+					_reviewScroll = EditorGUILayout.BeginScrollView(_reviewScroll, GUILayout.ExpandHeight(true));
 					if (_loading) { GUILayout.Label("Loading local and published versions…", _body); GUILayout.FlexibleSpace(); }
 					else if (_preview == null) GUILayout.FlexibleSpace();
 					else DrawPreview();
@@ -224,6 +232,8 @@ namespace Beamable.Editor.UI.ContentWindow
 						using (new EditorGUI.DisabledScope(_applying || _service.CurrentProgress.IsActive))
 							if (GUILayout.Button("Refresh review", GUILayout.Height(26))) _ = LoadPreview();
 					}
+					if (_preview != null && (_tab == 1 || (_preview.LocalExists && _preview.RealmExists))) DrawChoiceCards();
+					EditorGUILayout.EndScrollView();
 					DrawActions();
 				}
 				GUILayout.Space(14);
@@ -234,8 +244,6 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void DrawPreview()
 		{
 			var both = _preview.LocalExists && _preview.RealmExists;
-			_tab = GUILayout.Toolbar(_tab, both ? DiffTabs : SummaryTabs, GUILayout.Height(26));
-			GUILayout.Space(8);
 			if (_tab == 1)
 			{
 				using (new EditorGUILayout.HorizontalScope())
@@ -245,12 +253,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 			}
 			else if (both) DrawProperties();
-			else
-			{
-				_summaryScroll = EditorGUILayout.BeginScrollView(_summaryScroll, GUILayout.ExpandHeight(true));
-				DrawSummary();
-				EditorGUILayout.EndScrollView();
-			}
+			else DrawSummary();
 			if (_missingType && (_tab == 1 || both)) DrawMissingType();
 		}
 
@@ -337,7 +340,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUI.Label(new Rect(header.x, header.y, width, RowHeight), "Property", EditorStyles.boldLabel);
 			GUI.Label(new Rect(header.x + width, header.y, width, RowHeight), "Local", _localHeading);
 			GUI.Label(new Rect(header.x + width * 2, header.y, width, RowHeight), "Published realm", _realmHeading);
-			var viewport = GUILayoutUtility.GetRect(0, 0, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+			var viewport = GUILayoutUtility.GetRect(0, 0, GUILayout.MinHeight(RowHeight * 4), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
 			var view = new Rect(0, 0, Math.Max(1, viewport.width - 16), _rows.Length * RowHeight);
 			_propertyScroll = GUI.BeginScrollView(viewport, _propertyScroll, view);
 			VisibleRows(_propertyScroll.y, viewport.height, _rows.Length, out var first, out var end);
@@ -367,7 +370,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					contentWidth = 1;
 					foreach (var line in lines) contentWidth = Math.Max(contentWidth, _json.CalcSize(new GUIContent(line)).x);
 				}
-				var viewport = GUILayoutUtility.GetRect(0, 0, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+				var viewport = GUILayoutUtility.GetRect(0, 0, GUILayout.MinHeight(RowHeight * 4), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
 				var view = new Rect(0, 0, Math.Max(contentWidth, viewport.width - 16), lines.Length * RowHeight);
 				scroll = GUI.BeginScrollView(viewport, scroll, view);
 				VisibleRows(scroll.y, viewport.height, lines.Length, out var first, out var end);
@@ -379,7 +382,6 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void DrawActions()
 		{
 			GUILayout.Space(10);
-			if (_preview != null && (_tab == 1 || (_preview.LocalExists && _preview.RealmExists))) DrawChoiceCards();
 			GUILayout.Label(_applying ? "Reconciling… Please wait." : "Only this item is affected. Nothing is published.", EditorStyles.miniLabel);
 			using (new EditorGUILayout.HorizontalScope())
 			{
