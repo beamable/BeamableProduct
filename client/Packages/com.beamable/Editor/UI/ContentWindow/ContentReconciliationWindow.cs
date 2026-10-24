@@ -337,9 +337,16 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUILayout.Label($"{_rows.Length} changed properties · unchanged properties hidden", EditorStyles.miniLabel);
 			var header = GUILayoutUtility.GetRect(0, RowHeight, GUILayout.ExpandWidth(true));
 			var width = (header.width - 16) / 3;
-			GUI.Label(new Rect(header.x, header.y, width, RowHeight), "Property", EditorStyles.boldLabel);
-			GUI.Label(new Rect(header.x + width, header.y, width, RowHeight), "Local", _localHeading);
-			GUI.Label(new Rect(header.x + width * 2, header.y, width, RowHeight), "Published realm", _realmHeading);
+			var localColor = _localHeading.normal.textColor;
+			var realmColor = _realmHeading.normal.textColor;
+			localColor.a = realmColor.a = .14f;
+			EditorGUI.DrawRect(new Rect(header.x + width + 2, header.y, width - 4, RowHeight), localColor);
+			EditorGUI.DrawRect(new Rect(header.x + width * 2 + 2, header.y, width - 4, RowHeight), realmColor);
+			EditorGUI.DrawRect(new Rect(header.x + width + 2, header.yMax - 2, width - 4, 2), _localHeading.normal.textColor);
+			EditorGUI.DrawRect(new Rect(header.x + width * 2 + 2, header.yMax - 2, width - 4, 2), _realmHeading.normal.textColor);
+			GUI.Label(new Rect(header.x + 8, header.y, width - 8, RowHeight), "Property", EditorStyles.boldLabel);
+			GUI.Label(new Rect(header.x + width + 8, header.y, width - 8, RowHeight), "Local", _localHeading);
+			GUI.Label(new Rect(header.x + width * 2 + 8, header.y, width - 8, RowHeight), "Published realm", _realmHeading);
 			var viewport = GUILayoutUtility.GetRect(0, 0, GUILayout.MinHeight(RowHeight * 4), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
 			var view = new Rect(0, 0, Math.Max(1, viewport.width - 16), _rows.Length * RowHeight);
 			_propertyScroll = GUI.BeginScrollView(viewport, _propertyScroll, view);
@@ -347,7 +354,10 @@ namespace Beamable.Editor.UI.ContentWindow
 			for (var i = first; i < end; i++)
 			{
 				var row = new Rect(0, i * RowHeight, view.width, RowHeight);
-				if (i % 2 == 0) EditorGUI.DrawRect(row, new Color(0, 0, 0, .08f));
+				localColor.a = realmColor.a = i % 2 == 0 ? .10f : .06f;
+				EditorGUI.DrawRect(new Rect(0, row.y, width - 2, RowHeight - 1), new Color(.5f, .5f, .5f, i % 2 == 0 ? .10f : .05f));
+				EditorGUI.DrawRect(new Rect(width + 2, row.y, width - 4, RowHeight - 1), localColor);
+				EditorGUI.DrawRect(new Rect(width * 2 + 2, row.y, width - 4, RowHeight - 1), realmColor);
 				for (var column = 0; column < 3; column++)
 					GUI.Label(new Rect(column * width, row.y, width, RowHeight), _rows[i][column], _cell);
 			}
