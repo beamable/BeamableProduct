@@ -32,7 +32,10 @@ namespace Beamable.Common.BeamCli
 	{
 		public long ts;
 		public string type;
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1001
 		public object data;
+#pragma warning restore UAC1001
 	}
 
 	[Serializable]

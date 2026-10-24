@@ -224,7 +224,7 @@ public static class UnityHelper
 		}
 
 
-		return new GeneratedFileDescriptor { FileName = "Models.gs.cs", Content = UnityHelper.GenerateCsharp(unit) };
+		return new GeneratedFileDescriptor { FileName = "Models.gs.cs", Content = UnityHelper.GenerateJsonModelCsharp(unit) };
 	}
 
 
@@ -2027,6 +2027,25 @@ public static class UnityHelper
 					nameof(JsonSerializable.IStreamSerializer.Serialize));
 				return true;
 		}
+	}
+
+	public static string GenerateJsonModelCsharp(CodeCompileUnit unit)
+	{
+		// These fields use the JSON contract, not Unity's scene/asset serializer.
+		// NonSerialized would change reflection-based JSON payloads; preserve the fields
+		// and limit the Unity diagnostic exception to the unsupported declaration.
+		return Regex.Replace(GenerateCsharp(unit),
+			@"(?m)^(?<indent>[ \t]*)public (?<type>System.Collections.Generic.Dictionary<[^\r\n;]+>|OptionalJsonString|string\[\]\[\]) [^\r\n;]+;",
+			match =>
+			{
+				var type = match.Groups["type"].Value;
+				var diagnostic = type.StartsWith("System.Collections.Generic.Dictionary<") ? "UAC1015"
+					: type == "OptionalJsonString" ? "UAC1001" : "UAC1009";
+				return match.Groups["indent"].Value + "// JSON contract: this field is not persisted by Unity's scene/asset serializer."
+					+ Environment.NewLine + "#pragma warning disable " + diagnostic
+					+ Environment.NewLine + match.Value
+					+ Environment.NewLine + "#pragma warning restore " + diagnostic;
+			});
 	}
 
 	public static string GenerateCsharp(CodeCompileUnit unit)

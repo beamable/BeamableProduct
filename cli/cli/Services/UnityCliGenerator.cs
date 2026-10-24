@@ -71,7 +71,7 @@ public class UnityCliGenerator : ICliGenerator
 
 			var decl = GenerateResultStreamType(resultType);
 			root.Types.Add(decl);
-			var srcCode = UnityHelper.GenerateCsharp(unit);
+			var srcCode = UnityHelper.GenerateJsonModelCsharp(unit);
 
 			var fileName = ConvertToSnakeCase(decl.Name) + ".cs";
 			files.Add(new GeneratedFileDescriptor

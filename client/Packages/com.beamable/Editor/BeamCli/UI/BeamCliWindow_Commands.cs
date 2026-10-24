@@ -533,7 +533,10 @@ namespace Beamable.Editor.BeamCli.UI
 	[Serializable]
 	public class CommandStringData
 	{
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1001
 		public ArrayDict arguments;
+#pragma warning restore UAC1001
 		public string command;
 	}
 }

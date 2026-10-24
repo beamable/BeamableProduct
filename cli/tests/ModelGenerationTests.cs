@@ -18,6 +18,27 @@ public static class TestExtensions
 
 public class ModelGenerationTests
 {
+	[Test]
+	public void JsonModelDiagnosticsPreservePayloadFields()
+	{
+		var type = new CodeTypeDeclaration("JsonPayload");
+		type.Members.Add(new CodeMemberField(typeof(Dictionary<string, string>), "data") { Attributes = MemberAttributes.Public });
+		type.Members.Add(new CodeMemberField("OptionalJsonString", "settings") { Attributes = MemberAttributes.Public });
+		type.Members.Add(new CodeMemberField(typeof(string[][]), "include") { Attributes = MemberAttributes.Public });
+		type.Members.Add(new CodeMemberField(typeof(string), "name") { Attributes = MemberAttributes.Public });
+		var unit = new CodeCompileUnit();
+		unit.Namespaces.Add(new CodeNamespace("Test") { Types = { type } });
+		var original = UnityHelper.GenerateCsharp(unit);
+		var generated = UnityHelper.GenerateJsonModelCsharp(unit);
+		StringAssert.Contains("#pragma warning disable UAC1015", generated);
+		StringAssert.Contains("#pragma warning disable UAC1001", generated);
+		StringAssert.Contains("#pragma warning disable UAC1009", generated);
+		StringAssert.DoesNotContain("NonSerialized", generated);
+		// Removing only comments/directives must leave the entire payload API unchanged.
+		var stripped = System.Text.RegularExpressions.Regex.Replace(generated,
+			@"(?m)^[ \t]*(?:// JSON contract:[^\r\n]*|#pragma warning (?:disable|restore) UAC\d+)[\r\n]+", "");
+		stripped.AssertSrc(original);
+	}
 
 	[Test]
 	public void OptionalObjectType()

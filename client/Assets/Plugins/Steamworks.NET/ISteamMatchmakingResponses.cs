@@ -12,9 +12,12 @@
 #if !DISABLESTEAMWORKS
 
 // Unity 32bit Mono on Windows crashes with ThisCall for some reason, StdCall without the 'this' ptr is the only thing that works..?
+// Preserve the vendor DLL/callback ABI selection. Revisit before Unity removes UNITY_64.
+#pragma warning disable UAC0008
 #if (UNITY_EDITOR_WIN && !UNITY_EDITOR_64) || (!UNITY_EDITOR && UNITY_STANDALONE_WIN && !UNITY_64)
 	#define NOTHISPTR
 #endif
+#pragma warning restore UAC0008
 
 using System;
 using System.Runtime.InteropServices;

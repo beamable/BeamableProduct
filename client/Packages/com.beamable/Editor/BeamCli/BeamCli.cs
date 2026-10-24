@@ -60,6 +60,7 @@ namespace Beamable.Editor.BeamCli
 		[NonSerialized]
 		public Dictionary<string, RealmView> pidToRealm = new Dictionary<string, RealmView>();
 
+		[System.NonSerialized]
 		public AccessToken latestToken;
 		public EditorUser latestUser;
 		public BeamConfigRoutesCommandResults latestRouteInfo;

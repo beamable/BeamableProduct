@@ -11,11 +11,14 @@
 
 #if !DISABLESTEAMWORKS
 
+// Preserve the vendor DLL/callback ABI selection. Revisit before Unity removes UNITY_64.
+#pragma warning disable UAC0008
 #if UNITY_EDITOR_64 || (UNITY_STANDALONE && !UNITY_EDITOR && UNITY_64)
 	#define STEAMWORKS_X64
 #elif UNITY_EDITOR_32 || (UNITY_STANDALONE && !UNITY_EDITOR && !UNITY_64)
 	#define STEAMWORKS_X86
 #endif
+#pragma warning restore UAC0008
 
 #if UNITY_EDITOR_WIN
 	#define STEAMWORKS_WIN
