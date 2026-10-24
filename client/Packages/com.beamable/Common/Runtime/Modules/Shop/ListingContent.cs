@@ -115,10 +115,9 @@ namespace Beamable.Common.Shop
 	[Agnostic]
 	public class OfferObtainCurrency : ISerializationCallbackReceiver
 	{
-		// Preserve the old-type migration alias and the current content field name.
-#pragma warning disable UAC1018
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1018",
+			Justification = "Keep the legacy alias for existing content assets.")]
 		public CurrencyRef symbol;
-#pragma warning restore UAC1018
 		public int amount;
 
 		#region backwards compatability
@@ -152,10 +151,9 @@ namespace Beamable.Common.Shop
 	[System.Serializable]
 	public class OfferObtainItem : ISerializationCallbackReceiver
 	{
-		// Preserve the old-type migration alias and the current content field name.
-#pragma warning disable UAC1018
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1018",
+			Justification = "Keep the legacy alias for existing content assets.")]
 		public ItemRef contentId;
-#pragma warning restore UAC1018
 		public List<OfferObtainItemProperty> properties;
 
 		#region backwards compatability

@@ -79,14 +79,12 @@ namespace Beamable.Common
 	public class MessageRailSendResponse
 	{
 		public List<string> sentPlayers = new List<string>();
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1015
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
+			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, string> sentPayloadFed = new Dictionary<string, string>();
-#pragma warning restore UAC1015
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1015
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
+			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, string> @params = new Dictionary<string, string>();
-#pragma warning restore UAC1015
 		public List<MessageRailErrorPlayerStatus> errorPlayersWithStatus = new List<MessageRailErrorPlayerStatus>();
 
 		/// <summary>

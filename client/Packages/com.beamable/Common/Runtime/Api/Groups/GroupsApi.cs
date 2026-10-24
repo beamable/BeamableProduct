@@ -667,10 +667,9 @@ namespace Beamable.Common.Api.Groups
 		/// <summary>
 		/// This field will be removed in a future version of Beamable. Please do not use.
 		/// </summary>
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1001
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
+			Justification = "Explicit and reflection JSON require this nullable field.")]
 		public long? requirement;
-#pragma warning restore UAC1001
 
 		/// <summary>
 		/// The new name for the group. The name must be unique, and at least 3 characters long.

@@ -42,19 +42,17 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// Optional number of max players allowed for this lobby. The team configuration in the `matchType` WILL
 		/// override this property.
 		/// </summary>
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1001
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
+			Justification = "Reflection JSON requires this field.")]
 		public int? maxPlayers;
-#pragma warning restore UAC1001
 
 		/// <summary>
 		/// Configurable value to specify how long a generated passcode should be. Defaults to 6 AlphaNumeric characters
 		/// on the server.
 		/// </summary>
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1001
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
+			Justification = "Reflection JSON requires this field.")]
 		public int? passcodeLength;
-#pragma warning restore UAC1001
 
 		public CreateLobbyRequest(
 		  string name,
