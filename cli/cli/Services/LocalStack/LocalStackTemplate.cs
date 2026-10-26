@@ -996,6 +996,45 @@ public static class LocalStackTemplate
 	/// <summary>Name prefix identifying service-group steps (used by the "update services" flow).</summary>
 	public const string GroupPrefix = "group: ";
 
+	/// <summary>The parallel group of the workspace's microservice steps: they start together, after
+	/// <see cref="MicroservicesBuildStepName"/> has compiled what they share.</summary>
+	public const string MicroservicesGroup = "microservices";
+
+	/// <summary>The parallel group of the workspace's portal extension steps, started a few at a time.</summary>
+	public const string ExtensionsGroup = "extensions";
+
+	/// <summary>The build of every microservice the workspace has, in one MSBuild run.</summary>
+	public const string MicroservicesBuildStepName = "build: microservices";
+
+	/// <summary>
+	/// The environment microservice builds get in a stack. MSBuild reads it as a property: it skips the Beamable check
+	/// that asks Windows' Restart Manager about every dll in the output folder and stops a running copy of the service.
+	/// The stack has stopped its own copy already, and a dozen checks at once take a minute and a half each.
+	/// </summary>
+	public static Dictionary<string, string> MicroserviceBuildEnvironment() =>
+		new Dictionary<string, string> { ["BeamDisableOutputLockCheck"] = "true" };
+
+	/// <summary>
+	/// Builds every microservice in <paramref name="solution"/> at once, before they start. Each one's
+	/// <c>project run</c> builds it again, and those builds run together: the projects they share must already be
+	/// compiled, or they compile them at the same time and collide (CS2012 on a storage both reference).
+	/// <paramref name="inputs"/> are the projects' folders and those of the projects they reference.
+	/// </summary>
+	public static LocalStackStep MicroservicesBuildStep(string solution, List<string> inputs) => new LocalStackStep
+	{
+		name = MicroservicesBuildStepName,
+		tags = new List<string> { "build", LocalStackStacks.MicroservicesTag },
+		workingDirectory = Path.GetDirectoryName(solution),
+		command = DotnetToken,
+		// Debug: the output `project run`'s `dotnet run` uses, so its own build only checks it.
+		arguments = $"build \"{solution}\" -c Debug --verbosity minimal",
+		environment = MicroserviceBuildEnvironment(),
+		build = true,
+		inputs = inputs,
+		waitForExit = true,
+		readyTimeoutSeconds = 600
+	};
+
 	/// <summary>Builds the beam step that runs a microservice against the local backend.</summary>
 	public static LocalStackStep MicroserviceStep(string svc) => new LocalStackStep
 	{
@@ -1004,8 +1043,9 @@ public static class LocalStackTemplate
 		name = $"{MicroservicePrefix}{svc}",
 		beam = true,
 		arguments = $"project run --ids {svc} --host ${{host}} --logs v --no-log-file",
-		// Ready once it serves traffic, so the next one starts after it: `project run` builds first, and microservices
-		// built at the same time collide on the projects they share (CS2012 on a storage both reference).
+		// They start together once build: microservices compiled what they share (see MicroservicesBuildStep).
+		group = MicroservicesGroup,
+		environment = MicroserviceBuildEnvironment(),
 		readyWhenLogContains = Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX,
 		// A build and a start; the first one can restore every package.
 		readyTimeoutSeconds = 300,
@@ -1024,6 +1064,11 @@ public static class LocalStackTemplate
 		name = $"{ExtensionPrefix}{ext}",
 		beam = true,
 		arguments = $"project run --ids {ext} --host ${{host}} --portal-url ${{portalUrl}} --logs v --no-log-file",
+		// A few at a time: each installs its dependencies and builds its bundle before it is up.
+		group = ExtensionsGroup,
+		readyWhenLogContains = Beamable.Common.Constants.Features.Services.Logs.PORTAL_EXTENSION_RUNNING,
+		// An npm install and a bundle build, among others doing the same; the first install can take minutes.
+		readyTimeoutSeconds = 600,
 		// Same rationale as MicroserviceStep: these run last and die outright when `${host}` is briefly
 		// unreachable — a Docker Desktop restart mid-bring-up is enough, and Caddy returning ~1 minute
 		// later is well inside 3 retries at 3s plus each attempt's own build time.

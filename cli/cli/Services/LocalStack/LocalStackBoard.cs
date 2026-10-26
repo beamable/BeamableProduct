@@ -899,19 +899,14 @@ public static class LocalStackBoardIO
 	public static string PathFor(string runStatePath) =>
 		Path.Combine(Path.GetDirectoryName(runStatePath) ?? ".", FileName);
 
-	public static void Save(string path, LocalStackBoardSnapshot snapshot)
-	{
-		Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-		var temp = path + ".tmp";
-		File.WriteAllText(temp, JsonConvert.SerializeObject(snapshot, Formatting.Indented));
-		File.Move(temp, path, overwrite: true);
-	}
+	public static void Save(string path, LocalStackBoardSnapshot snapshot) =>
+		LocalStackRunStateIO.WriteShared(path, JsonConvert.SerializeObject(snapshot, Formatting.Indented));
 
 	public static LocalStackBoardSnapshot Load(string path)
 	{
 		try
 		{
-			return File.Exists(path) ? JsonConvert.DeserializeObject<LocalStackBoardSnapshot>(File.ReadAllText(path)) : null;
+			return File.Exists(path) ? JsonConvert.DeserializeObject<LocalStackBoardSnapshot>(LocalStackRunStateIO.ReadShared(path)) : null;
 		}
 		catch
 		{

@@ -263,6 +263,30 @@ public class LocalStackWebRegistryStepTests
 		Assert.That(args, Does.Contain("--@beamable:registry=http://localhost:4873").And.Not.Contain(" --registry"));
 	}
 
+	/// <summary>A toolkit build with the portal's components unchanged reuses the saved manifest: generating it writes
+	/// files the portal's dev server watches, which reloads every open portal tab.</summary>
+	[Test]
+	public void An_unchanged_component_manifest_is_not_generated_again()
+	{
+		var workspace = Path.Combine(Path.GetTempPath(), "web-manifest-tests", Path.GetRandomFileName());
+		var saved = Path.Combine(workspace, ".beamable", "local", "custom-elements.json");
+		Directory.CreateDirectory(Path.GetDirectoryName(saved)!);
+		File.WriteAllText(saved, "{\"saved\":true}");
+		try
+		{
+			// No portal here: generating would run `npm run generate:cem` and fail, so only the saved one can come back.
+			var manifest = WebPackagesService.ComponentManifestFor(workspace, new WebPackagesState { components = "print" }, "print", force: false);
+			Assert.That(System.Text.Encoding.UTF8.GetString(manifest), Is.EqualTo("{\"saved\":true}"));
+
+			Assert.Throws<CliException>(() => WebPackagesService.ComponentManifestFor(workspace, new WebPackagesState { components = "print" }, "changed", force: false),
+				"changed components generate again");
+		}
+		finally
+		{
+			Directory.Delete(workspace, true);
+		}
+	}
+
 	/// <summary>A version the registry has already is published, not a failure, even when the check before missed it.</summary>
 	[Test]
 	public void A_conflict_on_publish_means_already_published()

@@ -11,6 +11,9 @@ public class WebPackagesState
 {
 	public WebPackageBuild sdk;
 	public WebPackageBuild toolkit;
+
+	/// <summary>The fingerprint of the portal's component sources the saved manifest was generated from.</summary>
+	public string components;
 }
 
 public class WebPackageBuild
@@ -131,9 +134,10 @@ public static class WebPackagesService
 		var state = Load<WebPackagesState>(statePath) ?? new WebPackagesState();
 		var sdkPrint = LocalStackBuilds.FolderFingerprint(Path.Combine(productDir, Sdk.dir));
 		var components = PortalComponents(workspace);
+		var componentsPrint = components != null ? LocalStackBuilds.FolderFingerprint(components) : null;
 		var toolkitPrint = LocalStackBuilds.FolderFingerprint(Path.Combine(productDir, Toolkit.dir));
 		// A component added or changed in the portal is a toolkit change too.
-		if (toolkitPrint != null && components != null) toolkitPrint += LocalStackBuilds.FolderFingerprint(components);
+		if (toolkitPrint != null && components != null) toolkitPrint += componentsPrint;
 
 		var buildSdk = force || Stale(productDir, Sdk, state.sdk, sdkPrint);
 		var buildToolkit = buildSdk || Stale(productDir, Toolkit, state.toolkit, toolkitPrint);
@@ -153,10 +157,31 @@ public static class WebPackagesService
 		}
 
 		var toolkitVersion = LocalVersion(await BaseFor(productDir, Toolkit, state.toolkit, token), now);
-		BuildPackage(productDir, Toolkit, toolkitVersion, state.sdk.version, components != null ? GenerateComponentManifest(workspace) : null);
+		var manifest = components != null ? ComponentManifestFor(workspace, state, componentsPrint, force) : null;
+		BuildPackage(productDir, Toolkit, toolkitVersion, state.sdk.version, manifest);
 		state.toolkit = new WebPackageBuild { version = toolkitVersion, fingerprint = toolkitPrint };
 		Save(statePath, state);
 		return state;
+	}
+
+	/// <summary>
+	/// The portal's component manifest: the one saved by the last generation while the component sources are the same,
+	/// else a new one. Generating writes files in the portal its dev server watches, and every write reloads each open
+	/// portal tab, so a toolkit-only change shouldn't cause one.
+	/// shortcut: only src/beam-components is fingerprinted; after editing scripts/generate-cem.mjs alone or upgrading
+	/// Web Awesome, delete the saved manifest (.beamable/local/custom-elements.json) to regenerate.
+	/// </summary>
+	public static byte[] ComponentManifestFor(string workspace, WebPackagesState state, string componentsPrint, bool force)
+	{
+		var saved = Path.Combine(workspace, ".beamable", "local", ComponentManifest);
+		if (!force && componentsPrint != null && state.components == componentsPrint && File.Exists(saved))
+			return File.ReadAllBytes(saved);
+
+		var manifest = GenerateComponentManifest(workspace);
+		Directory.CreateDirectory(Path.GetDirectoryName(saved)!);
+		File.WriteAllBytes(saved, manifest);
+		state.components = componentsPrint;
+		return manifest;
 	}
 
 	private static bool Stale(string productDir, Package package, WebPackageBuild last, string fingerprint) =>
@@ -373,13 +398,18 @@ public static class WebPackagesService
 	/// <summary>
 	/// Watches the SDK's, the toolkit's and the portal's component sources. After a burst of saves settles, builds what changed, publishes it,
 	/// points the overlay at it and calls <paramref name="changed"/> (the stack restarts its extensions, which install
-	/// the new build). A failed build is reported and the watch goes on. Runs until <paramref name="token"/> ends.
+	/// the new build). A save while that restart runs cancels it, and the next round restarts them on the newer build;
+	/// a save while a build runs builds again before restarting. A failed build is reported and the watch goes on.
+	/// Runs until <paramref name="token"/> ends.
 	/// </summary>
-	public static async Task Watch(string productDir, string workspace, string registry, Func<Task> changed, CancellationToken token)
+	public static async Task Watch(string productDir, string workspace, string registry, Func<CancellationToken, Task> changed,
+		CancellationToken token)
 	{
 		var lastChange = DateTime.MinValue;
 		var pending = new SemaphoreSlim(0);
-		var building = false;
+		CancellationTokenSource restarting = null;
+		// The toolkit the extensions last started on: a build they haven't been restarted on yet still restarts them.
+		var restartedOn = LoadOverlay(workspace)?.packages.GetValueOrDefault(Toolkit.npmName);
 		var watchers = new List<FileSystemWatcher>();
 		var folders = new[] { Sdk, Toolkit }.Select(p => Path.Combine(productDir, p.dir, "src")).Append(PortalComponents(workspace));
 		foreach (var folder in folders.Where(Directory.Exists))
@@ -388,9 +418,10 @@ public static class WebPackagesService
 			FileSystemEventHandler onChange = (_, e) =>
 			{
 				// The toolkit's build regenerates src/generated; that is the build's own output, not an edit.
-				if (building || e.FullPath.Replace('\\', '/').Contains("/generated/", StringComparison.Ordinal)) return;
+				if (e.FullPath.Replace('\\', '/').Contains("/generated/", StringComparison.Ordinal)) return;
 				lastChange = DateTime.UtcNow;
 				pending.Release();
+				restarting?.Cancel();
 			};
 			watcher.Changed += onChange;
 			watcher.Created += onChange;
@@ -409,22 +440,34 @@ public static class WebPackagesService
 					await Task.Delay(250, token);
 				while (pending.CurrentCount > 0) pending.Wait(0);
 
-				building = true;
 				try
 				{
-					var before = LoadOverlay(workspace)?.packages.GetValueOrDefault(Toolkit.npmName);
 					await Build(productDir, workspace, force: false, token);
 					await Publish(productDir, workspace, registry, token);
-					if (WriteOverlay(workspace, registry).packages[Toolkit.npmName] != before)
-						await changed();
+					var version = WriteOverlay(workspace, registry).packages[Toolkit.npmName];
+					// Saved again while this built: build that first, and restart once, on the newest.
+					if (version == restartedOn || pending.CurrentCount > 0) continue;
+
+					using var restart = CancellationTokenSource.CreateLinkedTokenSource(token);
+					restarting = restart;
+					if (pending.CurrentCount > 0) restart.Cancel();
+					try
+					{
+						await changed(restart.Token);
+						restartedOn = version;
+					}
+					catch (OperationCanceledException) when (!token.IsCancellationRequested)
+					{
+						Log.Information("Saved again during the restart: building that and restarting the extensions on it.");
+					}
+					finally
+					{
+						restarting = null;
+					}
 				}
 				catch (CliException e)
 				{
 					Log.Error($"{e.Message}\nWatching for the next change.");
-				}
-				finally
-				{
-					building = false;
 				}
 			}
 		}

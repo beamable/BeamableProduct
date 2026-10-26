@@ -62,10 +62,10 @@ public class LocalStackWebCommand
 			case Watch:
 				// The stack's extensions install the overlay when they start, so restarting them is what delivers a build.
 				var runStatePath = LocalStackCommand.ResolveRunStatePath(args.ConfigService, null);
-				await WebPackagesService.Watch(productDir, workspace, registry, async () =>
+				await WebPackagesService.Watch(productDir, workspace, registry, async restarting =>
 				{
 					var (steps, message) = await LocalStackPsCommand.Act(args, runStatePath, "restart",
-						new List<string> { LocalStackStacks.ExtensionsTag }, all: false, quiet: true);
+						new List<string> { LocalStackStacks.ExtensionsTag }, all: false, quiet: true, restarting);
 					Log.Information(steps.Length == 0 ? "No extension of the stack is running to restart." : message);
 				}, token);
 				break;

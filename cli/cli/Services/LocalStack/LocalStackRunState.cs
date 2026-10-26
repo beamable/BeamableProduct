@@ -322,16 +322,69 @@ public static class LocalStackRunStateIO
 	public static LocalStackRunState Load(string path)
 	{
 		if (!File.Exists(path)) return null;
-		var state = JsonConvert.DeserializeObject<LocalStackRunState>(File.ReadAllText(path));
+		var state = JsonConvert.DeserializeObject<LocalStackRunState>(ReadShared(path));
 		if (state != null) state.steps ??= new List<LocalStackRunEntry>();
 		return state;
 	}
 
-	public static void Save(string path, LocalStackRunState state)
+	public static void Save(string path, LocalStackRunState state) =>
+		WriteShared(path, JsonConvert.SerializeObject(state, Settings));
+
+	/// <summary>
+	/// Writes <paramref name="content"/> to <paramref name="path"/> through a temp file of its own, so a reader never
+	/// sees half of it. While another process has the file open (`beam local ps` reading it, a restart run elsewhere
+	/// writing it) Windows refuses the write; it is tried again for a moment instead of failing the run, which tore the
+	/// whole stack down.
+	/// </summary>
+	public static void WriteShared(string path, string content)
 	{
 		var dir = Path.GetDirectoryName(path);
 		if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-		File.WriteAllText(path, JsonConvert.SerializeObject(state, Settings));
+		var temp = $"{path}.{Guid.NewGuid():N}.tmp";
+		File.WriteAllText(temp, content);
+		try
+		{
+			Retry(() => File.Move(temp, path, overwrite: true));
+		}
+		finally
+		{
+			if (File.Exists(temp)) File.Delete(temp);
+		}
+	}
+
+	/// <summary>Reads <paramref name="path"/> without keeping a writer from replacing it, trying again for a moment while
+	/// the writer has it open.</summary>
+	public static string ReadShared(string path)
+	{
+		string text = null;
+		Retry(() =>
+		{
+			using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+			using var reader = new StreamReader(stream);
+			text = reader.ReadToEnd();
+		});
+		return text;
+	}
+
+	private static void Retry(Action action)
+	{
+		for (var attempt = 1; ; attempt++)
+		{
+			try
+			{
+				action();
+				return;
+			}
+			catch (IOException e) when (e is not FileNotFoundException and not DirectoryNotFoundException && attempt < 20)
+			{
+				Thread.Sleep(50);
+			}
+			catch (UnauthorizedAccessException) when (attempt < 20)
+			{
+				// A replace over a file another process has open can surface as access denied too.
+				Thread.Sleep(50);
+			}
+		}
 	}
 
 	/// <summary>Removes the run-state, and the board <c>beam local ps</c> shows for it.</summary>
@@ -675,7 +728,7 @@ public static class LocalStackControl
 	/// <summary>
 	/// The build steps that build what <paramref name="step"/> runs: the one named after it (<c>build: c# gateway</c>
 	/// for <c>c# gateway</c>), otherwise the ones of its kind before it (<c>build: scala</c> for a Scala service,
-	/// <c>build: portal deps</c> for the portal).
+	/// <c>build: portal deps</c> for the portal, <c>build: microservices</c> for a microservice).
 	/// </summary>
 	public static List<LocalStackStep> BuildsFor(LocalStackStep step, IReadOnlyList<LocalStackStep> steps, Func<LocalStackStep, IEnumerable<string>> tagsOf)
 	{
@@ -683,7 +736,7 @@ public static class LocalStackControl
 		var named = steps.Where(s => s.build && string.Equals(s.name, "build: " + step.name, StringComparison.OrdinalIgnoreCase)).ToList();
 		if (named.Count > 0) return named;
 
-		var kinds = tagsOf(step).Where(t => t is "scala" or "portal").ToList();
+		var kinds = tagsOf(step).Where(t => t is "scala" or "portal" or LocalStackStacks.MicroservicesTag).ToList();
 		var index = steps.ToList().IndexOf(step);
 		return steps.Take(index < 0 ? steps.Count : index)
 			.Where(s => s.build && tagsOf(s).Any(t => kinds.Contains(t, StringComparer.OrdinalIgnoreCase))

@@ -347,11 +347,14 @@ public class LocalStackPsCommand
 	/// <summary>
 	/// Does <paramref name="action"/> (<c>restart</c> or <c>start</c>) to the steps <paramref name="items"/> name, or
 	/// to every service with <paramref name="all"/>, in the running stack; the board's keys use it too. Returns the steps acted on and what to say about it.
+	/// <paramref name="cancel"/> stops waiting for it, and in a detached stack stops starting the rest (an attached stack
+	/// carries on until a newer restart of the same steps replaces it).
 	/// </summary>
 	public static async Task<(string[] steps, string message)> Act(CommandArgs args, string runStatePath, string action, List<string> items,
-		bool all, bool quiet)
+		bool all, bool quiet, CancellationToken cancel = default)
 	{
-		var answer = await AskAttached(runStatePath, action, all ? new List<string>() : items, args.Lifecycle.CancellationToken);
+		using var linked = CancellationTokenSource.CreateLinkedTokenSource(args.Lifecycle.CancellationToken, cancel);
+		var answer = await AskAttached(runStatePath, action, all ? new List<string>() : items, linked.Token);
 		if (answer != null)
 			return (answer.steps.ToArray(), answer.message);
 
@@ -373,9 +376,12 @@ public class LocalStackPsCommand
 		run.stack = board.stack;
 		run.runDetached = true;
 		run.Quiet = quiet;
+		run.cancel = cancel;
 		var runCommand = new LocalStackRunCommand();
 		((IResultProvider)runCommand).Reporter = args.Provider.GetService<IDataReporterService>();
 		await runCommand.Handle(run);
+		// A cancelled detached run returns as if it were done; what it hadn't started yet is still stopped.
+		cancel.ThrowIfCancellationRequested();
 
 		var message = $"{(action == "restart" ? "Restarted" : "Started")} {(all && action == "start" ? "what wasn't running" : string.Join(", ", names))}.";
 		Log.Information(message);

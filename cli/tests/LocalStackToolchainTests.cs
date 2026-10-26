@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using cli.Commands.LocalStack;
 using cli.Services.LocalStack;
 using NUnit.Framework;
@@ -666,6 +668,149 @@ public class LocalStackToolchainTests
 
 		var full = LocalStackStacks.BuiltIn().Resolve("full", new LocalStackConfig { steps = steps }).steps.Select(s => s.name);
 		Assert.That(full, Does.Contain("microservice: CampaignService").And.Contain("portal extension: campaigns"));
+	}
+
+	/// <summary>
+	/// The microservices found are built together first, so their starts, together, don't compile what they share at
+	/// the same time; extensions start a few at a time and are up once they say so.
+	/// </summary>
+	[Test]
+	public void Found_microservices_are_built_together_then_start_together()
+	{
+		var workspace = Path.Combine(Path.GetTempPath(), "local-stack-build-tests", Path.GetRandomFileName());
+		string Project(string folder, string reference = null)
+		{
+			var path = Path.Combine(workspace, folder, folder + ".csproj");
+			Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+			File.WriteAllText(path, "<Project Sdk=\"Microsoft.NET.Sdk\"><ItemGroup>"
+			                        + (reference == null ? "" : $"<ProjectReference Include=\"..\\{reference}\\{reference}.csproj\" />")
+			                        + "</ItemGroup></Project>");
+			return path;
+		}
+
+		try
+		{
+			Project("Storage");
+			var found = new WorkspaceServices
+			{
+				workspace = workspace,
+				services = new List<string> { "A", "B" },
+				extensions = new List<string> { "ext" },
+				projects = new Dictionary<string, string> { ["A"] = Project("A", "Storage"), ["B"] = Project("B", "Storage") }
+			};
+			var steps = new List<LocalStackStep>();
+			found.AddTo(steps);
+
+			Assert.That(steps.Select(s => s.name), Is.EqualTo(new[] { "build: microservices", "microservice: A", "microservice: B", "portal extension: ext" }));
+			var build = steps[0];
+			Assert.That(build.build && build.waitForExit, Is.True);
+			Assert.That(LocalStackRunCommand.WaitsForItsPlace(build), Is.True, "it generates clients from the backend, so not before it is up");
+			Assert.That(build.inputs.Select(Path.GetFileName), Is.EqualTo(new[] { "A", "B", "Storage" }), "each project's folder and the shared one");
+			var solution = File.ReadAllText(Path.Combine(workspace, ".beamable", "temp", "local-stack", "microservices.slnx"));
+			Assert.That(solution, Does.Contain("A.csproj").And.Contain("B.csproj").And.Not.Contain("Storage.csproj"));
+
+			Assert.That(steps[1].group, Is.EqualTo(LocalStackTemplate.MicroservicesGroup));
+			Assert.That(steps[3].group, Is.EqualTo(LocalStackTemplate.ExtensionsGroup));
+			Assert.That(steps[3].readyWhenLogContains, Does.StartWith("Portal extension started successfully"));
+
+			// The build comes with the microservices in a stack, and it's what restarting one of them would build.
+			var config = new LocalStackConfig { steps = steps };
+			var stacks = LocalStackStacks.BuiltIn();
+			Assert.That(stacks.Resolve("full", config).steps.Select(s => s.name), Does.Contain("build: microservices"));
+			Assert.That(LocalStackControl.BuildsFor(steps[1], steps, stacks.TagsOf).Select(s => s.name), Is.EqualTo(new[] { "build: microservices" }));
+			Assert.That(LocalStackControl.BuildsFor(steps[3], steps, stacks.TagsOf), Is.Empty);
+		}
+		finally
+		{
+			Directory.Delete(workspace, true);
+		}
+	}
+
+	/// <summary>Without microservice projects (outside a workspace, or none found) there's nothing to build.</summary>
+	[Test]
+	public void No_microservices_build_without_projects()
+	{
+		var steps = new List<LocalStackStep>();
+		new WorkspaceServices { services = new List<string> { "A" } }.AddTo(steps);
+		Assert.That(steps.Select(s => s.name), Is.EqualTo(new[] { "microservice: A" }));
+	}
+
+	/// <summary>
+	/// A group with a start limit never has more steps coming up than the limit, starts the next one as soon as one is
+	/// up (or failed), and an item that started nothing takes no slot.
+	/// </summary>
+	[Test]
+	public async Task Pooled_starts_keep_to_the_limit()
+	{
+		var gates = Enumerable.Range(0, 6).Select(_ => new TaskCompletionSource()).ToList();
+		var inFlight = 0;
+		var most = 0;
+		var started = new List<int>();
+		var run = LocalStackRunCommand.RunPooled(Enumerable.Range(0, 7).ToList(), 2, _ => TimeSpan.Zero, i =>
+		{
+			if (i == 3) return Task.FromResult<Task>(null); // already running: nothing started
+			started.Add(i);
+			most = Math.Max(most, ++inFlight);
+			var gate = gates[i < 3 ? i : i - 1].Task;
+			return Task.FromResult<Task>(gate.ContinueWith(_ => inFlight--));
+		}, CancellationToken.None);
+
+		Assert.That(started, Is.EqualTo(new[] { 0, 1 }), "two at a time");
+		gates[1].SetResult();
+		await Task.Delay(50);
+		Assert.That(started, Is.EqualTo(new[] { 0, 1, 2 }), "one up, the next starts");
+		gates[2].SetException(new Exception("failed")); // a failure frees its slot too
+		await Task.Delay(50);
+		Assert.That(started, Is.EqualTo(new[] { 0, 1, 2, 4 }), "3 started nothing and took no slot");
+		foreach (var gate in gates) gate.TrySetResult();
+		await run;
+
+		Assert.That(started, Is.EqualTo(new[] { 0, 1, 2, 4, 5, 6 }));
+		Assert.That(most, Is.LessThanOrEqualTo(2));
+	}
+
+	/// <summary>
+	/// Saving the run-state while another process reads it (`beam local ps`, opened the old way, without letting a
+	/// writer replace it) waits for the reader instead of failing: a failed save ended the run and tore the stack down.
+	/// </summary>
+	[Test]
+	public async Task Run_state_saves_wait_for_a_reader()
+	{
+		var path = Path.Combine(Path.GetTempPath(), "local-stack-io-tests", Path.GetRandomFileName(), "local-stack.run.json");
+		LocalStackRunStateIO.Save(path, new LocalStackRunState());
+		try
+		{
+			var reader = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+			var release = Task.Delay(300).ContinueWith(_ => reader.Dispose());
+			LocalStackRunStateIO.Save(path, new LocalStackRunState { steps = { new LocalStackRunEntry { name = "saved" } } });
+			await release;
+
+			Assert.That(LocalStackRunStateIO.Load(path).steps.Single().name, Is.EqualTo("saved"));
+			Assert.That(Directory.GetFiles(Path.GetDirectoryName(path)!), Has.Length.EqualTo(1), "no temp file left behind");
+		}
+		finally
+		{
+			Directory.Delete(Path.GetDirectoryName(path)!, true);
+		}
+	}
+
+	/// <summary>A restart a newer one replaces stops starting steps as soon as it is cancelled, and says it didn't finish.</summary>
+	[Test]
+	public async Task Pooled_starts_stop_when_cancelled()
+	{
+		var never = new TaskCompletionSource();
+		var started = new List<int>();
+		using var cancel = new CancellationTokenSource();
+		var run = LocalStackRunCommand.RunPooled(Enumerable.Range(0, 5).ToList(), 2, _ => TimeSpan.Zero, i =>
+		{
+			started.Add(i);
+			return Task.FromResult<Task>(never.Task.WaitAsync(cancel.Token).ContinueWith(_ => { }));
+		}, cancel.Token);
+
+		Assert.That(started, Is.EqualTo(new[] { 0, 1 }), "waiting for a slot");
+		cancel.Cancel();
+		Assert.ThrowsAsync<TaskCanceledException>(async () => await run);
+		Assert.That(started, Is.EqualTo(new[] { 0, 1 }), "nothing more started");
 	}
 
 	/// <summary>The built-in stacks that run this workspace's services name both kinds, so microservices still run.</summary>

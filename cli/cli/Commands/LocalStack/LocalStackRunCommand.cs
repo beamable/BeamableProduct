@@ -19,6 +19,10 @@ public class LocalStackRunCommandArgs : CommandArgs
 	/// <summary>The stack to start, as <c>&lt;stack&gt;[:variant…]</c>. Null lists the stacks instead.</summary>
 	public string stack;
 
+	/// <summary>For a run started from code (a restart): also stop starting steps when this is cancelled. A detached
+	/// run leaves what it started running.</summary>
+	public CancellationToken cancel;
+
 	/// <summary>Print what would run and check what it needs, starting nothing.</summary>
 	public bool dryRun;
 
@@ -314,9 +318,11 @@ public class LocalStackRunCommand
 
 	/// <summary>
 	/// True for a build that has to wait for its place in the stack instead of starting with the run: one that runs a
-	/// beam command, which may need the steps before it.
+	/// beam command, which may need the steps before it. Building microservices runs one too: it generates the
+	/// extensions' clients from the backend's beamo manifest (`dotnet beam project generate pe-client`).
 	/// </summary>
-	public static bool WaitsForItsPlace(LocalStackStep build) => build.beam;
+	public static bool WaitsForItsPlace(LocalStackStep build) =>
+		build.beam || build.name == LocalStackTemplate.MicroservicesBuildStepName;
 
 	public static HashSet<string> NameSet(string value) =>
 		string.IsNullOrWhiteSpace(value)
@@ -751,14 +757,19 @@ public class LocalStackRunCommand
 				Log.Information($"Stopped {string.Join(", ", dropped)}: '{args.stack}' doesn't run them.");
 			}
 
+			// A build several services share (the Scala reactor, the microservices) is skipped as soon as one of them
+			// still runs: it would rewrite files that one holds open. The others start on what is built, as StartAll does.
 			foreach (var build in steps.Where(s => s.build).ToList())
 			{
 				var users = resolved.steps.Where(s => !s.build && LocalStackControl.BuildsFor(s, resolved.steps, stacks.TagsOf).Contains(build)).ToList();
-				if (users.Count > 0 && users.All(u => stillRunning.Contains(u.name)))
-				{
-					steps.Remove(build);
-					buildsOfRunning.Add(build);
-				}
+				var running = users.Where(u => stillRunning.Contains(u.name)).Select(u => u.name).ToList();
+				if (running.Count == 0) continue;
+
+				steps.Remove(build);
+				buildsOfRunning.Add(build);
+				// A microservice builds itself when it starts; the shared build is only for starting them all together.
+				if (running.Count < users.Count && build.name != LocalStackTemplate.MicroservicesBuildStepName)
+					Log.Warning($"[{build.name}] skipped: {string.Join(", ", running)} still run on it; restart them together to rebuild.");
 			}
 		}
 		if (args.dryRun)
@@ -893,7 +904,8 @@ public class LocalStackRunCommand
 		PruneStaleTempLogs(path, logsDir, aliveByName.Values.Select(e => Path.GetDirectoryName(e.stdoutLog)));
 
 		var launched = new List<Launched>();
-		var token = args.Lifecycle.CancellationToken;
+		using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(args.Lifecycle.CancellationToken, args.cancel);
+		var token = cancelled.Token;
 		// A remote target is already logged into; only the local realm is ensured once the backend is up.
 		var realmEnsured = target.local != true;
 
@@ -1047,12 +1059,17 @@ public class LocalStackRunCommand
 
 		// Starts steps again: first each one's build check (a build whose inputs changed or whose output is missing
 		// builds, unless another service still running uses it), then the steps, run-once steps in order and
-		// services together, each waiting for its readiness like at startup.
-		async Task StartAll(List<LocalStackStep> toStart, string source)
+		// services together, each waiting for its readiness like at startup. <paramref name="starting"/> cancelled stops
+		// starting services (a newer restart of the same steps replaced this one); builds always finish.
+		async Task StartAll(List<LocalStackStep> toStart, string source, CancellationToken starting)
 		{
 			// The backend may have come back since the login failed: try again before starting anything that logs in.
 			if (_noLogin != null && target.local == true && toStart.Any(NeedsLogin))
+			{
+				foreach (var step in toStart.Where(NeedsLogin))
+					Send(step.name, "starting", LoggingIn, 1f, LocalStackStepState.Starting, LoggingIn);
 				await EnsureRealmAndLogin(args, config, steps);
+			}
 			foreach (var step in toStart.Where(s => NeedsLogin(s) && _noLogin != null))
 				NoLogin(step, 1f);
 			toStart = toStart.Where(s => !NeedsLogin(s) || _noLogin == null).ToList();
@@ -1068,7 +1085,9 @@ public class LocalStackRunCommand
 				var others = users.Where(u => !toStart.Contains(u) && IsRunning(u)).Select(u => u.name).ToList();
 				if (others.Count > 0)
 				{
-					Log.Warning($"[{build.name}] {why}, but {string.Join(", ", others)} still run on it; restart them together to rebuild.");
+					// A microservice builds itself when it starts; the shared build is only for starting them all together.
+					if (build.name != LocalStackTemplate.MicroservicesBuildStepName)
+						Log.Warning($"[{build.name}] {why}, but {string.Join(", ", others)} still run on it; restart them together to rebuild.");
 					continue;
 				}
 
@@ -1084,25 +1103,36 @@ public class LocalStackRunCommand
 			});
 			await Task.WhenAll(rebuilds.Values);
 
-			var waits = new List<(LocalStackStep step, Task task)>();
+			// Services start paced like at startup (StartLimit, StartSpacing); a run-once step waits for those before it.
+			var services = new List<LocalStackStep>();
+			async Task StartServices()
+			{
+				if (services.Count == 0) return;
+				var limit = services.Select(s => StartLimit(s.group)).Where(n => n > 0).DefaultIfEmpty(0).Min();
+				await RunPooled(services, limit, s => StartSpacing(s.group), step =>
+				{
+					Send(step.name, "starting", "restarting", 1f, LocalStackStepState.Restarting, source);
+					return Task.FromResult(AwaitStep(step, LaunchAndRegister(step), config, 1f, current.Count, starting, () => LaunchAndRegister(step)));
+				}, starting);
+				foreach (var step in services) Say(step);
+				services.Clear();
+			}
+
 			foreach (var step in toStart)
 			{
-				if (step.waitForExit)
+				if (!step.waitForExit)
 				{
-					await Task.WhenAll(waits.Select(w => w.task));
-					await AwaitStep(step, LaunchAndRegister(step), config, 1f, current.Count, token, null);
-					Say(step);
+					services.Add(step);
 					continue;
 				}
 
-				Send(step.name, "starting", "restarting", 1f, LocalStackStepState.Restarting, source);
-				var stepToRun = step;
-				waits.Add((step, AwaitStep(step, LaunchAndRegister(step), config, 1f, current.Count, token, () => LaunchAndRegister(stepToRun))));
-				if (toStart.Count > 1) await Task.Delay(GroupLaunchStagger, token);
+				await StartServices();
+				starting.ThrowIfCancellationRequested();
+				await AwaitStep(step, LaunchAndRegister(step), config, 1f, current.Count, token, null);
+				Say(step);
 			}
 
-			await Task.WhenAll(waits.Select(w => w.task));
-			foreach (var (step, _) in waits) Say(step);
+			await StartServices();
 		}
 
 		async Task<LocalStackControlResponse> Adjust(string stackName, LocalStackControlResponse response)
@@ -1141,13 +1171,35 @@ public class LocalStackRunCommand
 			resolved = next;
 			current = next.steps.Where(s => !s.build || In(current, s)).ToList();
 			_board.Rename(stackName);
-			await StartAll(add, "added to the stack");
+			await StartAll(add, "added to the stack", token);
 
 			response.steps = add.Concat(drop).Select(s => s.name).ToList();
 			response.message = $"Now running {stackName}: started {(add.Count == 0 ? "nothing" : string.Join(", ", add.Select(s => s.name)))}; "
 			                   + $"stopped {(drop.Count == 0 ? "nothing" : string.Join(", ", drop.Select(s => s.name)))}; the rest stayed up.";
 			AnsiConsole.MarkupLine(Markup.Escape(response.message));
 			return response;
+		}
+
+		// The restart or start under way, while it is still starting its steps (see Controlled).
+		(List<LocalStackStep> steps, CancellationTokenSource cancel)? startingNow = null;
+
+		// The services a restart or start names: nothing named means every service.
+		List<LocalStackStep> Named(LocalStackControlRequest request) =>
+			request.items.Count == 0
+				? current.Where(s => !s.build && !s.waitForExit).ToList()
+				: LocalStackControl.Match(request.items, current, stacks.TagsOf);
+
+		bool Covers(LocalStackControlRequest request, List<LocalStackStep> steps)
+		{
+			try
+			{
+				var named = Named(request);
+				return steps.All(named.Contains);
+			}
+			catch (CliException)
+			{
+				return false;
+			}
 		}
 
 		// <paramref name="source"/> is who asked, for the board: another terminal, or a key on this one's board.
@@ -1172,16 +1224,32 @@ public class LocalStackRunCommand
 				{
 					// Nothing named (`restart --all`): every service. Run-once steps aren't stopped, so docker's
 					// containers stay up.
-					var matched = request.items.Count == 0
-						? current.Where(s => !s.build && !s.waitForExit).ToList()
-						: LocalStackControl.Match(request.items, current, stacks.TagsOf);
+					var matched = Named(request);
 					var toStart = request.action == "start" ? matched.Where(s => !IsRunning(s)).ToList() : matched;
 					if (request.action == "restart")
 					{
 						foreach (var step in Enumerable.Reverse(matched)) StopRunning(step, "restarting");
 					}
 
-					await StartAll(toStart, source);
+					using (var starting = CancellationTokenSource.CreateLinkedTokenSource(token))
+					{
+						startingNow = (toStart, starting);
+						try
+						{
+							await StartAll(toStart, source, starting.Token);
+						}
+						catch (OperationCanceledException) when (!token.IsCancellationRequested)
+						{
+							response.steps = toStart.Select(s => s.name).ToList();
+							response.message = $"A newer {request.action} of the same steps replaced this one.";
+							return response;
+						}
+						finally
+						{
+							startingNow = null;
+						}
+					}
+
 					response.steps = toStart.Select(s => s.name).ToList();
 					response.message = toStart.Count == 0
 						? "Nothing to start: all of it is running."
@@ -1200,6 +1268,11 @@ public class LocalStackRunCommand
 		var controlGate = new SemaphoreSlim(1, 1);
 		async Task<LocalStackControlResponse> Controlled(LocalStackControlRequest request, string source)
 		{
+			// A restart of every step one in progress is still starting replaces it, rather than waiting minutes behind
+			// it (`web: watch` asks again when a newer build lands): that one stops starting more, and this one starts all.
+			var inProgress = startingNow;
+			if (inProgress != null && request.action is "restart" or "start" && Covers(request, inProgress.Value.steps))
+				inProgress.Value.cancel.Cancel();
 			await controlGate.WaitAsync(token);
 			try
 			{
@@ -1386,13 +1459,14 @@ public class LocalStackRunCommand
 				}
 				i++;
 
+				var limit = StartLimit(groupName);
 				if (batch.Count > 1)
-					Log.Information($"Starting {batch.Count} '{groupName}' steps in parallel.");
+					Log.Information($"Starting {batch.Count} '{groupName}' steps in parallel{(limit > 0 && batch.Count > limit ? $", {limit} at a time" : string.Empty)}.");
 
-				var awaits = new List<Task>();
-				foreach (var idx in batch)
+				// What has to happen one step at a time (its checks, the login, the launch); returns what to wait on for
+				// it to be up, or null when nothing was started.
+				async Task<Task> StartOne(int idx)
 				{
-					token.ThrowIfCancellationRequested();
 					var step = steps[idx];
 					var baseProgress = (float)idx / steps.Count;
 
@@ -1401,15 +1475,14 @@ public class LocalStackRunCommand
 					if (buildTasks.TryGetValue(step, out var buildTask))
 					{
 						buildReached[step].TrySetResult();
-						awaits.Add(buildTask);
-						continue;
+						return buildTask;
 					}
 
 					// Something it needs failed (its build, the docker deps, a seed): it can't work, so it's marked and skipped.
 					if (FailedNeed(step) is { } failedNeed)
 					{
 						CantStart(step, failedNeed, baseProgress);
-						continue;
+						return null;
 					}
 
 					// Already running from a previous `up`? Leave it alone.
@@ -1418,7 +1491,7 @@ public class LocalStackRunCommand
 						Send(step.name, "running", $"already running (pid={running.pid}) — skipping", baseProgress + 1f / steps.Count,
 							LocalStackStepState.Ready, "already running");
 						Log.Information($"[{step.name}] already running (pid={running.pid}) — skipping.");
-						continue;
+						return null;
 					}
 
 					// Already serving on its HTTP readiness endpoint (e.g. a gateway/portal from a previous
@@ -1432,7 +1505,7 @@ public class LocalStackRunCommand
 							LocalStackStepState.Ready, "already serving");
 						Log.Information($"[{step.name}] already serving at its readiness endpoint — skipping launch " +
 						                "(adopted into the run-state, so `beam local stop` will still stop it).");
-						continue;
+						return null;
 					}
 
 					// Can this step even start? A missing working directory (a build output folder whose build
@@ -1445,7 +1518,7 @@ public class LocalStackRunCommand
 					{
 						Send(step.name, "failed", blocked, baseProgress, LocalStackStepState.Failed, "can't start", hint: blocked);
 						if (!Showing) Log.Warning($"[{step.name}] {blocked}");
-						continue;
+						return null;
 					}
 
 					// Ensure a valid local realm/login before the first beam step — microservices and
@@ -1454,13 +1527,16 @@ public class LocalStackRunCommand
 					if (NeedsLogin(step) && !realmEnsured)
 					{
 						realmEnsured = true;
+						// It waits for the backend to answer, which can take minutes after a slow start: say so, or
+						// the row sits on "waiting" as if the run were stuck.
+						Send(step.name, "starting", LoggingIn, baseProgress, LocalStackStepState.Starting, LoggingIn);
 						await EnsureRealmAndLogin(args, config, steps);
 					}
 
 					if (NeedsLogin(step) && _noLogin != null)
 					{
 						NoLogin(step, baseProgress);
-						continue;
+						return null;
 					}
 
 					Send(step.name, "starting", Launching(step, idx, out var why), baseProgress,
@@ -1468,18 +1544,14 @@ public class LocalStackRunCommand
 
 					var stepToRun = step;
 					var l = LaunchAndRegister(stepToRun);
-					awaits.Add(AwaitStep(stepToRun, l, config, baseProgress, steps.Count, token,
-						() => LaunchAndRegister(stepToRun)));
-
-					// Within a large parallel group (the "scala" batch), space out launches so ~34 JVMs don't
-					// storm the Mongo port-proxy at once. Skip the delay after the batch's last launch.
-					if (batch.Count > 1 && idx != batch[^1])
-						await Task.Delay(GroupLaunchStagger, token);
+					return AwaitStep(stepToRun, l, config, baseProgress, steps.Count, token,
+						() => LaunchAndRegister(stepToRun));
 				}
 
-				// A build failing in its lane ends the bring-up now, even while this batch is still waiting on
+				// Launches in a group are spaced out (StartSpacing), so ~34 JVMs don't storm the Mongo port-proxy at
+				// once. A build failing in its lane ends the bring-up now, even while this batch is still waiting on
 				// something else.
-				var batchDone = Task.WhenAll(awaits);
+				var batchDone = RunPooled(batch, limit, _ => StartSpacing(groupName), StartOne, token);
 				if (await Task.WhenAny(batchDone, buildFailed.Task) != batchDone)
 					System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(buildFailed.Task.Result);
 				await batchDone;
@@ -2063,6 +2135,52 @@ public class LocalStackRunCommand
 	/// completes well within the timeout. Readiness waits still overlap — only the launches are spaced out.
 	/// </summary>
 	private static readonly TimeSpan GroupLaunchStagger = TimeSpan.FromMilliseconds(2000);
+
+	/// <summary>What a step that logs in shows while the run logs in to the local realm before starting it.</summary>
+	private const string LoggingIn = "logging in to the local realm (waits for the backend to answer)";
+
+	/// <summary>
+	/// How many steps of <paramref name="group"/> may be coming up at once; 0 for no limit. Portal extensions each
+	/// install their dependencies and build a bundle before they are up, and dozens at once only slow each other down.
+	/// </summary>
+	public static int StartLimit(string group) =>
+		group == LocalStackTemplate.ExtensionsGroup ? Math.Clamp(Environment.ProcessorCount / 3, 2, 10) : 0;
+
+	/// <summary>The wait after launching a step of <paramref name="group"/> before the next. Extensions are paced by
+	/// <see cref="StartLimit"/> already.</summary>
+	public static TimeSpan StartSpacing(string group) =>
+		group == LocalStackTemplate.ExtensionsGroup ? TimeSpan.FromMilliseconds(500) : GroupLaunchStagger;
+
+	/// <summary>
+	/// Starts <paramref name="items"/> in order and waits for all of them. <paramref name="start"/> does what has to
+	/// happen one at a time and returns the task to wait on for that item (null when it started nothing). At most
+	/// <paramref name="limit"/> of those are waited on at once (0: no limit), and after an item that started something
+	/// the next waits <paramref name="spacing"/> for it.
+	/// </summary>
+	public static async Task RunPooled<T>(IReadOnlyList<T> items, int limit, Func<T, TimeSpan> spacing, Func<T, Task<Task>> start,
+		CancellationToken token)
+	{
+		var all = new List<Task>();
+		var running = new List<Task>();
+		var wait = TimeSpan.Zero;
+		foreach (var item in items)
+		{
+			token.ThrowIfCancellationRequested();
+			while (limit > 0 && running.Count >= limit)
+				running.Remove(await Task.WhenAny(running).WaitAsync(token));
+			if (wait > TimeSpan.Zero) await Task.Delay(wait, token);
+
+			var task = await start(item);
+			wait = task != null ? spacing(item) : TimeSpan.Zero;
+			if (task == null) continue;
+			all.Add(task);
+			running.Add(task);
+		}
+
+		await Task.WhenAll(all);
+		// The readiness waits end early when cancelled, as if the steps were up: they weren't.
+		token.ThrowIfCancellationRequested();
+	}
 
 	/// <summary>
 	/// Inputs for the offline maven-dependency-plugin probe, resolved from the manifest by

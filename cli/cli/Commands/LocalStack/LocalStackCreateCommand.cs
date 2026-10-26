@@ -2098,6 +2098,12 @@ public class WorkspaceServices
 	public Dictionary<string, string[]> groups = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
 	public Dictionary<string, List<string>> calls = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
+	/// <summary>Each microservice's .csproj, by id, from the beamo manifest.</summary>
+	public Dictionary<string, string> projects = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>The workspace folder (the one holding .beamable); null when not in one.</summary>
+	public string workspace;
+
 	public bool Any => services.Count + extensions.Count + groups.Count > 0;
 
 	/// <summary>
@@ -2116,6 +2122,22 @@ public class WorkspaceServices
 		found.extensions = extensions;
 		found.groups = new Dictionary<string, string[]>(groups, StringComparer.OrdinalIgnoreCase);
 		found.calls = LocalStackTemplate.ExtensionMicroservices(config.repos?.portalDir);
+		try
+		{
+			if (args.ConfigService?.DirectoryExists == true)
+			{
+				found.workspace = args.ConfigService.BeamableWorkspace;
+				var protocols = args.BeamoLocalSystem.BeamoManifest?.HttpMicroserviceLocalProtocols;
+				foreach (var id in found.services)
+					if (protocols != null && protocols.TryGetValue(id, out var local) && !string.IsNullOrEmpty(local?.Metadata?.absolutePath))
+						found.projects[id] = local.Metadata.absolutePath;
+			}
+		}
+		catch (Exception e)
+		{
+			Log.Verbose($"Couldn't read the microservices' projects: {e.Message}");
+		}
+
 		return found;
 	}
 
@@ -2123,11 +2145,13 @@ public class WorkspaceServices
 	/// Adds a step to <paramref name="steps"/> for each microservice and portal extension found that isn't there yet,
 	/// so stacks run what the workspace has now, without setup: a step of that name already in the settings wins. An
 	/// extension's step depends on the microservices it calls. No group steps: a group runs members that are already
-	/// here, so a group stays something a stack picks.
+	/// here, so a group stays something a stack picks. The microservices come after <c>build: microservices</c>,
+	/// which compiles them together (see <see cref="LocalStackTemplate.MicroservicesBuildStep"/>).
 	/// </summary>
 	public void AddTo(List<LocalStackStep> steps)
 	{
 		var have = steps.Select(s => s.name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+		if (MicroservicesBuild() is { } build && have.Add(build.name)) steps.Add(build);
 		foreach (var service in services)
 		{
 			var step = LocalStackTemplate.MicroserviceStep(service);
@@ -2141,6 +2165,53 @@ public class WorkspaceServices
 			step.dependsOn = calls.Count > 0 ? calls : null;
 			if (have.Add(step.name)) steps.Add(step);
 		}
+	}
+
+	/// <summary>
+	/// The build of every microservice found: a solution listing their projects, written under .beamable/temp (the
+	/// workspace's own may not list them all), and a step that builds it. Null without microservice projects.
+	/// </summary>
+	private LocalStackStep MicroservicesBuild()
+	{
+		var paths = services.Where(projects.ContainsKey).Select(s => Path.GetFullPath(projects[s])).ToList();
+		if (string.IsNullOrEmpty(workspace) || paths.Count == 0) return null;
+
+		var solution = Path.Combine(workspace, ".beamable", "temp", "local-stack", "microservices.slnx");
+		var content = "<Solution>\n" + string.Concat(paths.Select(p => $"  <Project Path=\"{System.Security.SecurityElement.Escape(p)}\" />\n")) + "</Solution>\n";
+		if (!File.Exists(solution) || File.ReadAllText(solution) != content)
+		{
+			Directory.CreateDirectory(Path.GetDirectoryName(solution)!);
+			File.WriteAllText(solution, content);
+		}
+
+		return LocalStackTemplate.MicroservicesBuildStep(solution, ProjectFolders(paths));
+	}
+
+	/// <summary>The folders of <paramref name="csprojs"/> and of every project they reference, transitively.</summary>
+	public static List<string> ProjectFolders(IEnumerable<string> csprojs)
+	{
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var queue = new Queue<string>(csprojs.Select(p => Path.GetFullPath(p)));
+		while (queue.Count > 0)
+		{
+			var project = queue.Dequeue();
+			if (!File.Exists(project) || !seen.Add(project)) continue;
+			try
+			{
+				foreach (var reference in System.Xml.Linq.XDocument.Load(project).Descendants()
+					         .Where(e => e.Name.LocalName == "ProjectReference")
+					         .Select(e => (string)e.Attribute("Include"))
+					         .Where(i => !string.IsNullOrWhiteSpace(i)))
+					queue.Enqueue(Path.GetFullPath(Path.Combine(Path.GetDirectoryName(project)!, reference.Replace('\\', Path.DirectorySeparatorChar))));
+			}
+			catch (System.Xml.XmlException e)
+			{
+				Log.Verbose($"Couldn't read the project references of {project}: {e.Message}");
+			}
+		}
+
+		return seen.Select(p => Path.GetDirectoryName(p)!).Distinct(StringComparer.OrdinalIgnoreCase)
+			.OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
 	}
 
 	/// <summary>Finds the workspace's services and adds them to <paramref name="config"/>'s steps (see <see cref="AddTo"/>).</summary>
