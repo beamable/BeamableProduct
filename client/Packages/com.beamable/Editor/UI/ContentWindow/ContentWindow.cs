@@ -307,22 +307,22 @@ namespace Beamable.Editor.UI.ContentWindow
 			var bottomRect = EditorGUILayout.GetControlRect( GUILayout.Height(30f));
 			
 			var bottomRectController = new EditorGUIRectController(bottomRect);
-			var allRenames = _contentService.GetAllRenames();
-			var renamedCreatedIds = new HashSet<string>(allRenames.Select(r => r.CreatedFullId));
-			var renamedDeletedIds = new HashSet<string>(allRenames.Select(r => r.DeletedFullId));
-
-			var createdContents = _contentService.GetAllContentFromStatus(ContentStatus.Created)
-				.Where(e => !renamedCreatedIds.Contains(e.FullId)).ToList();
-			var modifiedContents = _contentService.GetAllContentFromStatus(ContentStatus.Modified);
-			int modifiedCount = modifiedContents.Count + allRenames.Count;
-			var deletedContents = _contentService.GetAllContentFromStatus(ContentStatus.Deleted)
-				.Where(e => !renamedDeletedIds.Contains(e.FullId)).ToList();
-			int issueCount = _contentService.EntriesCache.Values.Count(HasContentIssue);
-			int footerCount = (createdContents.Count > 0 ? 1 : 0) + (modifiedCount > 0 ? 1 : 0) +
-				(deletedContents.Count > 0 ? 1 : 0) + (issueCount > 0 ? 1 : 0);
-			if (createdContents.Count > 0)
+			int createdCount = 0, modifiedCount = 0, deletedCount = 0, issueCount = 0;
+			foreach (var entry in _contentService.EntriesCache.Values)
 			{
-				DrawFooterButton($"{createdContents.Count}  created", BeamGUI.iconStatusAdded, ContentFilterStatus.Created);
+				switch (GetLocalFilterStatus(entry))
+				{
+					case ContentStatus.Created: createdCount++; break;
+					case ContentStatus.Modified: modifiedCount++; break;
+					case ContentStatus.Deleted: deletedCount++; break;
+				}
+				if (HasContentIssue(entry)) issueCount++;
+			}
+			int footerCount = (createdCount > 0 ? 1 : 0) + (modifiedCount > 0 ? 1 : 0) +
+				(deletedCount > 0 ? 1 : 0) + (issueCount > 0 ? 1 : 0);
+			if (createdCount > 0)
+			{
+				DrawFooterButton($"{createdCount}  created", BeamGUI.iconStatusAdded, ContentFilterStatus.Created);
 				bottomRectController.ReserveWidth(BASE_PADDING);
 			}
 
@@ -332,9 +332,9 @@ namespace Beamable.Editor.UI.ContentWindow
 				bottomRectController.ReserveWidth(BASE_PADDING);
 			}
 
-			if (deletedContents.Count > 0)
+			if (deletedCount > 0)
 			{
-				DrawFooterButton($"{deletedContents.Count}  deleted", BeamGUI.iconStatusDeleted, ContentFilterStatus.Deleted);
+				DrawFooterButton($"{deletedCount}  deleted", BeamGUI.iconStatusDeleted, ContentFilterStatus.Deleted);
 				bottomRectController.ReserveWidth(BASE_PADDING);
 			}
 

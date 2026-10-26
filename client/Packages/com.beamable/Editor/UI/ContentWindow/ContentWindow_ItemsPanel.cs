@@ -685,7 +685,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			bool isInvalid = _contentService.IsContentInvalid(entry.FullId);
 			bool schemaMismatch = _contentService.GetSchemaDifference(entry.FullId) != SchemaDifference.None;
-			string[] values = {nameLabel, isRenamed && !isInvalid && !schemaMismatch ? "Renamed" : ContentWindow_TooltipsHelper.GetStatusLabel(entry, isInvalid, schemaMismatch), entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
+			string[] values = {nameLabel, ContentWindow_TooltipsHelper.GetStatusLabel(entry, isInvalid, schemaMismatch, isRenamed), entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
 			GUIContent badge = _tooltipsHelper.GetContentStatusBadge(
 				_contentService,
 				entry,
@@ -1243,6 +1243,20 @@ namespace Beamable.Editor.UI.ContentWindow
 			       ContentWindow_TooltipsHelper.NeedsReconciliation(entry);
 		}
 
+		// Footer counts and local-status filters must classify the same entries. The CLI's
+		// raw Created/Deleted statuses can also describe incoming realm presence changes.
+		private ContentStatus? GetLocalFilterStatus(LocalContentManifestEntry entry)
+		{
+			var kind = ContentWindow_TooltipsHelper.GetChangeKind(entry);
+			if (kind == ContentChangeKind.Unknown || ContentWindow_TooltipsHelper.IsIncoming(kind)) return null;
+			if (_contentService.TryGetRenameInfo(entry.FullId, out var rename))
+			{
+				if (rename.DeletedFullId == entry.FullId) return null;
+				if (rename.CreatedFullId == entry.FullId) return ContentStatus.Modified;
+			}
+			return entry.StatusEnum;
+		}
+
 		private bool FilterItem(string specificType,
 		                        HashSet<string> types,
 		                        LocalContentManifestEntry entry,
@@ -1316,7 +1330,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					return entry.IsInConflict;
 				}
 
-				return FilterStatusToContentStatus.TryGetValue(status, out var contentStatus) && contentStatus == entry.StatusEnum;
+				return FilterStatusToContentStatus.TryGetValue(status, out var contentStatus) && contentStatus == GetLocalFilterStatus(entry);
 			}
 		}
 

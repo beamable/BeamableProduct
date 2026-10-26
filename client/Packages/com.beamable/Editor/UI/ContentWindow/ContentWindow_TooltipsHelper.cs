@@ -33,11 +33,13 @@ namespace Beamable.Editor.UI.ContentWindow
 			? "Auto-sync is paused while Local Mode is on. Review this item before publishing."
 			: "Auto-sync is enabled; reconciliation may still be pending.";
 
-		public static string GetStatusLabel(LocalContentManifestEntry entry, bool isInvalid = false, bool schemaMismatch = false) =>
-			isInvalid ? "Validation Error" : schemaMismatch && GetChangeKind(entry) != ContentChangeKind.Conflict ? "Schema mismatch" : GetChangeKind(entry) switch
+		public static string GetStatusLabel(LocalContentManifestEntry entry, bool isInvalid = false, bool schemaMismatch = false, bool isRenamed = false) =>
+			isInvalid ? "Validation Error" : schemaMismatch && GetChangeKind(entry) != ContentChangeKind.Conflict ? "Schema mismatch" :
+			isRenamed && !schemaMismatch && GetChangeKind(entry) == ContentChangeKind.LocalEdit ? "Renamed" : GetChangeKind(entry) switch
 		{
 			ContentChangeKind.UpToDate => "Up to date",
 			ContentChangeKind.LocalEdit when entry.StatusEnum == ContentStatus.Deleted => "Deleted",
+			ContentChangeKind.LocalEdit when entry.StatusEnum == ContentStatus.Created => "Created",
 			ContentChangeKind.LocalEdit => "Local edit",
 			ContentChangeKind.IncomingChange => "Incoming change",
 			ContentChangeKind.IncomingAddition => "Incoming addition",
@@ -69,6 +71,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			ContentChangeKind.UpToDate => "Your local copy matches the last known publication.",
 			ContentChangeKind.LocalEdit when entry.StatusEnum == ContentStatus.Deleted =>
 				"Your local copy has been deleted. This deletion has not been published.",
+			ContentChangeKind.LocalEdit when entry.StatusEnum == ContentStatus.Created =>
+				"Your local copy is not in the latest publication. Publish to add it to the realm.",
 			ContentChangeKind.LocalEdit => "Your local copy has unpublished changes.",
 			ContentChangeKind.IncomingChange => "Published content changed; your local copy is unchanged. " +
 				(localMode ? "Auto-sync is paused while Local Mode is on." : "Auto-sync is enabled; synchronization may still be pending."),
@@ -80,10 +84,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				: "Content status is unavailable. The local copy has not been confirmed against the last known publication."
 		};
 
-		public static Texture GetStatusIcon(LocalContentManifestEntry entry) => GetChangeKind(entry) switch
+		public static Texture GetStatusIcon(LocalContentManifestEntry entry, bool isRenamed = false) => GetChangeKind(entry) switch
 		{
 			ContentChangeKind.Conflict => EditorGUIUtility.IconContent("console.erroricon.sml").image,
+			ContentChangeKind.LocalEdit when isRenamed => BeamGUI.iconStatusModified,
 			ContentChangeKind.LocalEdit when entry.StatusEnum == ContentStatus.Deleted => BeamGUI.iconStatusDeleted,
+			ContentChangeKind.LocalEdit when entry.StatusEnum == ContentStatus.Created => BeamGUI.iconStatusAdded,
 			ContentChangeKind.LocalEdit => BeamGUI.iconStatusModified,
 			ContentChangeKind.IncomingChange or ContentChangeKind.IncomingAddition or ContentChangeKind.IncomingDeletion => BeamGUI.iconStatusIncoming,
 			_ => EditorGUIUtility.IconContent("console.infoicon.sml").image
@@ -110,10 +116,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				return "Historical preview\nShowing published content from the selected History entry, not the current working copy.";
 			var counts = new int[7];
 			var deletedCount = 0;
+			var createdCount = 0;
 			foreach (var entry in entries)
 			{
 				var kind = GetChangeKind(entry);
 				if (kind == ContentChangeKind.LocalEdit && entry.StatusEnum == ContentStatus.Deleted) deletedCount++;
+				else if (kind == ContentChangeKind.LocalEdit && entry.StatusEnum == ContentStatus.Created) createdCount++;
 				else counts[(int)kind]++;
 			}
 			conflict = counts[(int)ContentChangeKind.Conflict] > 0;
@@ -121,6 +129,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			for (var i = 0; i < counts.Length; i++)
 				if (counts[i] > 0) parts.Add($"{counts[i]} {GetStatusLabel(new LocalContentManifestEntry { ChangeKind = i })}");
 			if (deletedCount > 0) parts.Add($"{deletedCount} Deleted");
+			if (createdCount > 0) parts.Add($"{createdCount} Created");
 			if (historicalCount > 0) parts.Add($"{historicalCount} Historical preview");
 			var description = $"{entries.Count + historicalCount} selected: " + string.Join("; ", parts) + ".";
 			if (invalidCount > 0) description = $"Validation Error\n{invalidCount} selected item(s) have validation errors. Inspect each item and fix the highlighted fields before publishing.\n" + description;
@@ -143,7 +152,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (renamedFrom != null) messages.Add($"Renamed from \"{renamedFrom}\".");
 			messages.Add(GetStatusDescription(entry, ContentConfiguration.Instance.EnableLocalContentInEditor));
 			return new GUIContent(string.Empty, isInvalid || (schemaDifference != SchemaDifference.None && !isConflicted)
-				? BeamGUI.iconStatusInvalid : GetStatusIcon(entry), string.Join("\n", messages));
+				? BeamGUI.iconStatusInvalid : GetStatusIcon(entry, renamedFrom != null), string.Join("\n", messages));
 		}
 	}
 }

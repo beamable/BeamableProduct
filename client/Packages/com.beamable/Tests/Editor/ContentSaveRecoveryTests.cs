@@ -190,6 +190,8 @@ namespace Beamable.Editor.Tests
 		public void FileDeleteFailureRestoresStatusAndSaveCallback()
 		{
 			PrepareFile();
+			var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+			Set(_service, "_contentConfiguration", config);
 			var revision = _service.ManifestChangedCount;
 			((Dictionary<string, (SchemaDifference, string)>)Get(_service, "_schemaDifferences"))[_content.Id] =
 				(SchemaDifference.UnknownFieldsInJson, null);
@@ -210,7 +212,7 @@ namespace Beamable.Editor.Tests
 				_content.OnEditorChanged();
 				Assert.That(_commands.Properties.Count, Is.EqualTo(1));
 			}
-			finally { Directory.Delete(_path); }
+			finally { Directory.Delete(_path); UnityEngine.Object.DestroyImmediate(config); }
 		}
 
 		[TestCase(ContentStatus.Created)]
@@ -351,7 +353,11 @@ namespace Beamable.Editor.Tests
 				Assert.That(_service.GetSchemaDifference("another.item"), Is.EqualTo(SchemaDifference.None));
 				if (change == "reference") entry.ReferenceManifestUid = "new";
 				if (change == "deleted") entry.CurrentStatus = (int)ContentStatus.Deleted;
-				if (change == "disabled") config.validateSchemaDifference = false;
+				if (change == "disabled")
+				{
+					config.validateSchemaDifference = false;
+					Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None), "Disabling the check must hide cached warnings without a reload.");
+				}
 				if (change == "reload") typeof(CliContentService).GetMethod("ClearCaches", Fields).Invoke(_service, null);
 				else _service.UpdateSchemaDifference(entry, SchemaDifference.None);
 				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));

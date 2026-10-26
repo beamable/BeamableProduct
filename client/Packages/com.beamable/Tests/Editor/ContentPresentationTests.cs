@@ -336,6 +336,36 @@ namespace Beamable.Editor.Tests
             Assert.That(Total(window), Is.EqualTo(1));
         }
 
+        [TestCase(ContentChangeKind.IncomingAddition, ContentStatus.Deleted, "deleted", false)]
+        [TestCase(ContentChangeKind.IncomingDeletion, ContentStatus.Created, "created", false)]
+        [TestCase(ContentChangeKind.IncomingChange, ContentStatus.Modified, "modified", false)]
+        [TestCase(ContentChangeKind.Unknown, ContentStatus.Deleted, "deleted", false)]
+        [TestCase(ContentChangeKind.LocalEdit, ContentStatus.Deleted, "deleted", true)]
+        [TestCase(ContentChangeKind.LocalEdit, ContentStatus.Created, "created", true)]
+        [TestCase(ContentChangeKind.LocalEdit, ContentStatus.Modified, "modified", true)]
+        [TestCase(ContentChangeKind.Conflict, ContentStatus.Deleted, "deleted", true)]
+        [TestCase(ContentChangeKind.UpToDate, ContentStatus.UpToDate, "upToDate", true)]
+        public void Local_filters_do_not_misrepresent_remote_or_unverified_changes(ContentChangeKind kind, ContentStatus status, string filter, bool matches)
+        {
+            var entry = Entry("item", kind, kind == ContentChangeKind.Conflict);
+            entry.CurrentStatus = (int)status;
+            var window = Window(new[] { entry }, Array.Empty<string>());
+            Assert.That(Call(window, "FilterItem", "", new HashSet<string>(), entry, new HashSet<string>(), new HashSet<string> { filter }, ""), Is.EqualTo(matches));
+        }
+
+        [Test]
+        public void Rename_is_counted_and_filtered_as_one_modification_not_a_creation()
+        {
+            var entry = Entry("new", ContentChangeKind.LocalEdit);
+            entry.CurrentStatus = (int)ContentStatus.Created;
+            var window = Window(new[] { entry }, Array.Empty<string>());
+            var service = (CliContentService)typeof(ContentWindow).GetField("_contentService", Members).GetValue(window);
+            var renames = (Dictionary<string, ContentRenameInfo>)typeof(CliContentService).GetField("_renameRegistry", Members).GetValue(service);
+            renames[entry.FullId] = new ContentRenameInfo { CreatedFullId = entry.FullId, DeletedFullId = "currency.old" };
+            Assert.That(Call(window, "FilterItem", "", new HashSet<string>(), entry, new HashSet<string>(), new HashSet<string> { "modified" }, ""), Is.True);
+            Assert.That(Call(window, "FilterItem", "", new HashSet<string>(), entry, new HashSet<string>(), new HashSet<string> { "created" }, ""), Is.False);
+        }
+
         [Test]
         public void Combined_summary_counts_items_once_and_shows_all_blocker_categories()
         {
@@ -1419,6 +1449,29 @@ namespace Beamable.Editor.Tests
             Assert.That(conflict, Is.False);
         }
 
+        [Test]
+        public void New_local_item_is_created_in_single_and_multi_selection()
+        {
+            var created = new LocalContentManifestEntry { ChangeKind = (int)ContentChangeKind.LocalEdit, CurrentStatus = (int)ContentStatus.Created };
+            Assert.That(ContentWindow_TooltipsHelper.GetStatusLabel(created), Is.EqualTo("Created"));
+            Assert.That(ContentWindow_TooltipsHelper.GetSelectionDescription(new[] { created }, 0, true, out _), Does.StartWith("Created\n"));
+            var mixed = new[] { created, new LocalContentManifestEntry { ChangeKind = (int)ContentChangeKind.LocalEdit, CurrentStatus = (int)ContentStatus.Modified } };
+            var description = ContentWindow_TooltipsHelper.GetSelectionDescription(mixed, 0, true, out _);
+            Assert.That(description, Does.Contain("1 Created"));
+            Assert.That(description, Does.Contain("1 Local edit"));
+        }
+
+        [TestCase(ContentChangeKind.LocalEdit, "Renamed")]
+        [TestCase(ContentChangeKind.Conflict, "Conflict")]
+        [TestCase(ContentChangeKind.IncomingChange, "Incoming change")]
+        [TestCase(ContentChangeKind.Unknown, "Differs from publication")]
+        public void Rename_label_does_not_hide_an_item_that_still_needs_review(ContentChangeKind kind, string label)
+        {
+            var entry = new LocalContentManifestEntry { ChangeKind = (int)kind, CurrentStatus = (int)ContentStatus.Created };
+            Assert.That(ContentWindow_TooltipsHelper.GetStatusLabel(entry, false, false, true), Is.EqualTo(label));
+            Assert.That(ContentWindow_TooltipsHelper.GetStatusLabel(entry, true, false, true), Is.EqualTo("Validation Error"));
+        }
+
         [TestCase(0)]
         [TestCase(98)]
         public void Missing_placeholder_history_does_not_infer_a_deletion(int kind)
@@ -1770,6 +1823,26 @@ namespace Beamable.Editor.Tests
 
     public class ContentValidationStatusTests
     {
+        [Test]
+        public void Created_item_uses_add_icon_and_rename_keeps_modified_icon()
+        {
+            var previous = global::Beamable.Editor.Util.BeamGUI.iconStatusAdded;
+            var sentinel = new Texture2D(1, 1);
+            try
+            {
+                global::Beamable.Editor.Util.BeamGUI.iconStatusAdded = sentinel;
+                var entry = new LocalContentManifestEntry { CurrentStatus = (int)ContentStatus.Created, ChangeKind = (int)ContentChangeKind.LocalEdit };
+                Assert.That(ContentWindow_TooltipsHelper.GetStatusIcon(entry), Is.SameAs(sentinel));
+                Assert.That(ContentWindow_TooltipsHelper.GetStatusIcon(entry, true), Is.SameAs(global::Beamable.Editor.Util.BeamGUI.iconStatusModified));
+                Assert.That(ContentWindow_TooltipsHelper.GetStatusIcon(entry, true), Is.Not.SameAs(sentinel));
+            }
+            finally
+            {
+                global::Beamable.Editor.Util.BeamGUI.iconStatusAdded = previous;
+                UnityEngine.Object.DestroyImmediate(sentinel);
+            }
+        }
+
         [Test]
         public void Confirmed_local_deletion_uses_the_footer_delete_icon_but_incoming_addition_keeps_its_cloud()
         {

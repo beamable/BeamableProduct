@@ -135,7 +135,7 @@ namespace Beamable.Editor.ContentService
 		public bool HasInvalidContent => _invalidContents.Count > 0;
 
 		internal SchemaDifference GetSchemaDifference(string contentId) =>
-			!string.IsNullOrEmpty(contentId) && _schemaDifferences.TryGetValue(contentId, out var warning)
+			_contentConfiguration.validateSchemaDifference && !string.IsNullOrEmpty(contentId) && _schemaDifferences.TryGetValue(contentId, out var warning)
 				? warning.Difference : SchemaDifference.None;
 
 		internal void UpdateSchemaDifference(LocalContentManifestEntry entry, SchemaDifference difference)
