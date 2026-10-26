@@ -8,6 +8,7 @@ using Beamable.Common;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Content;
+using Beamable.Common.Content.Validation;
 using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Content;
@@ -1010,15 +1011,65 @@ namespace Beamable.Editor.Tests
         public void Uses_authoritative_presentation(int kind, string label, string explanation)
         {
             var entry = new LocalContentManifestEntry { CurrentStatus = (int)ContentStatus.Modified, ChangeKind = kind };
-            Assert.That(Call("GetStatusLabel", entry), Is.EqualTo(label));
+            Assert.That(ContentWindow_TooltipsHelper.GetStatusLabel(entry), Is.EqualTo(label));
             Assert.That(Call("GetStatusDescription", entry, true), Does.Contain(explanation));
+        }
+
+        [TestCase(ContentChangeKind.UpToDate)]
+        [TestCase(ContentChangeKind.LocalEdit)]
+        [TestCase(ContentChangeKind.IncomingChange)]
+        [TestCase(ContentChangeKind.IncomingAddition)]
+        [TestCase(ContentChangeKind.IncomingDeletion)]
+        [TestCase(ContentChangeKind.Conflict)]
+        [TestCase(ContentChangeKind.Unknown)]
+        public void Validation_label_takes_priority_without_changing_sync_state(ContentChangeKind kind)
+        {
+            var entry = new LocalContentManifestEntry { ChangeKind = (int)kind };
+            Assert.That(ContentWindow_TooltipsHelper.GetStatusLabel(entry, true), Is.EqualTo("Validation Error"));
+            Assert.That(ContentWindow_TooltipsHelper.GetChangeKind(entry), Is.EqualTo(kind));
+            Assert.That(ContentWindow_TooltipsHelper.GetStatusLabel(entry, false), Is.Not.EqualTo("Validation Error"));
+        }
+
+        [TestCase(ContentChangeKind.LocalEdit, false)]
+        [TestCase(ContentChangeKind.Conflict, true)]
+        [TestCase(ContentChangeKind.IncomingChange, false)]
+        public void Invalid_inspector_explains_actual_errors_and_retains_other_blockers(ContentChangeKind kind, bool expectedConflict)
+        {
+            var entry = new LocalContentManifestEntry { ChangeKind = (int)kind };
+            var message = ContentWindow_TooltipsHelper.GetSelectionDescription(new[] { entry }, 0, true, out var conflict,
+                1, "Summary: Cannot be empty string");
+            Assert.That(message, Does.StartWith("Validation Error\n"));
+            Assert.That(message, Does.Contain("Summary: Cannot be empty string"));
+            Assert.That(message, Does.Contain("before publishing"));
+            Assert.That(conflict, Is.EqualTo(expectedConflict));
+            if (expectedConflict) Assert.That(message, Does.Contain("Resolve the conflict"));
+            if (kind == ContentChangeKind.IncomingChange) Assert.That(message, Does.Contain("Auto-sync is paused"));
+        }
+
+        [Test]
+        public void Invalid_multi_selection_aggregates_without_misattributing_first_item_details()
+        {
+            var entries = new[] { new LocalContentManifestEntry { ChangeKind = 1 }, new LocalContentManifestEntry { ChangeKind = 2 } };
+            var message = ContentWindow_TooltipsHelper.GetSelectionDescription(entries, 1, false, out _, 1, "Summary: test error");
+            Assert.That(message, Does.StartWith("Validation Error\n1 selected item(s)"));
+            Assert.That(message, Does.Contain("Historical preview"));
+            Assert.That(message, Does.Not.Contain("Summary: test error"));
+        }
+
+        [Test]
+        public void Historical_preview_never_inherits_current_validation_errors()
+        {
+            var message = ContentWindow_TooltipsHelper.GetSelectionDescription(Array.Empty<LocalContentManifestEntry>(), 1,
+                false, out _, 1, "Summary: test error");
+            Assert.That(message, Does.StartWith("Historical preview"));
+            Assert.That(message, Does.Not.Contain("Validation Error"));
         }
 
         [Test]
         public void Conflict_flag_wins_over_stale_or_missing_metadata()
         {
             var entry = new LocalContentManifestEntry { ChangeKind = 1, IsInConflict = true };
-            Assert.That(Call("GetStatusLabel", entry), Is.EqualTo("Conflict"));
+            Assert.That(ContentWindow_TooltipsHelper.GetStatusLabel(entry), Is.EqualTo("Conflict"));
         }
 
         [TestCase(true)]
@@ -1111,7 +1162,7 @@ namespace Beamable.Editor.Tests
         [Test]
         public void Missing_metadata_never_infers_clean_from_legacy_status()
         {
-            Assert.That(Call("GetStatusLabel", default(LocalContentManifestEntry)), Is.EqualTo("Status unavailable"));
+            Assert.That(ContentWindow_TooltipsHelper.GetStatusLabel(default), Is.EqualTo("Status unavailable"));
         }
 
         [Test]
@@ -1225,6 +1276,45 @@ namespace Beamable.Editor.Tests
             var method = typeof(ContentWindow).GetMethod("GetAutoSyncLabel", BindingFlags.Static | BindingFlags.NonPublic);
             var stateType = typeof(global::Beamable.Editor.ContentService.CliContentService).GetProperty("AutoSyncState").PropertyType;
             Assert.That(method.Invoke(null, new object[] { Enum.Parse(stateType, state), compact }), Is.EqualTo(expected));
+        }
+    }
+
+    // Uses real content validators and native Unity objects; run inside Unity.
+    public class ContentValidationStatusTests
+    {
+        [Test]
+        public void Announcement_summary_error_is_readable_and_clears_after_correction()
+        {
+            var content = ScriptableObject.CreateInstance<global::Beamable.Common.Announcements.AnnouncementContent>();
+            try
+            {
+                content.summary = "";
+                var context = new ValidationContext();
+                var errors = content.GetMemberValidationErrors(context);
+                var details = global::Beamable.Editor.Content.UI.ContentObjectEditor.FormatValidationDetails(content, errors);
+                Assert.That(details, Does.Contain("Summary: Cannot be empty string"));
+                Assert.That(details, Does.Not.Contain("System.String"));
+                content.summary = "Valid summary";
+                Assert.That(global::Beamable.Editor.Content.UI.ContentObjectEditor.FormatValidationDetails(content,
+                    content.GetMemberValidationErrors(context)), Is.Empty);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(content); }
+        }
+
+        [Test]
+        public void Many_nested_errors_are_bounded_but_not_silently_dropped()
+        {
+            var content = ScriptableObject.CreateInstance<SaveRecoveryContent>();
+            try
+            {
+                for (int i = 0; i < 500; i++) content.rows.Add(new SaveRecoveryRow { amount = -1 });
+                var errors = content.GetMemberValidationErrors(new ValidationContext());
+                var details = global::Beamable.Editor.Content.UI.ContentObjectEditor.FormatValidationDetails(content, errors);
+                Assert.That(details.Split('\n').Length, Is.EqualTo(6));
+                Assert.That(details, Does.Contain("495 more validation errors"));
+                Assert.That(details, Does.Contain("Amount:"));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(content); }
         }
     }
 

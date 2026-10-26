@@ -569,7 +569,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (isRenamed)
 				nameLabel = isEditingName ? nameLabel : $"{entry.Name} (renamed from {renameInfo.OldName})";
 
-			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", isRenamed ? "Renamed" : ContentWindow_TooltipsHelper.GetStatusLabel(entry), lastUpdateDate};
+			bool isInvalid = _contentService.IsContentInvalid(entry.FullId);
+			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", isRenamed && !isInvalid ? "Renamed" : ContentWindow_TooltipsHelper.GetStatusLabel(entry, isInvalid), lastUpdateDate};
 			GUIContent badge = _tooltipsHelper.GetContentStatusBadge(
 				_contentService,
 				entry,

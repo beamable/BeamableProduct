@@ -32,7 +32,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			? "Auto-sync is paused while Local Mode is on. Review this item before publishing."
 			: "Auto-sync is enabled; reconciliation may still be pending.";
 
-		public static string GetStatusLabel(LocalContentManifestEntry entry) => GetChangeKind(entry) switch
+		public static string GetStatusLabel(LocalContentManifestEntry entry, bool isInvalid = false) => isInvalid ? "Validation Error" : GetChangeKind(entry) switch
 		{
 			ContentChangeKind.UpToDate => "Up to date",
 			ContentChangeKind.LocalEdit => "Local edit",
@@ -69,12 +69,20 @@ namespace Beamable.Editor.UI.ContentWindow
 		};
 
 		public static string GetSelectionDescription(IReadOnlyList<LocalContentManifestEntry> entries, int historicalCount,
-			bool localMode, out bool conflict)
+			bool localMode, out bool conflict, int invalidCount = 0, string validationDetails = null)
 		{
 			conflict = false;
 			if (entries.Count == 1 && historicalCount == 0)
 			{
 				conflict = GetChangeKind(entries[0]) == ContentChangeKind.Conflict;
+				if (invalidCount > 0)
+				{
+					var message = GetStatusLabel(entries[0], true) + "\n" +
+						(string.IsNullOrEmpty(validationDetails) ? "Check the highlighted fields in the Inspector." : validationDetails) +
+						"\nFix validation errors before publishing.";
+					if (conflict || IsIncoming(GetChangeKind(entries[0]))) message += "\n" + GetStatusDescription(entries[0], localMode);
+					return message;
+				}
 				return GetStatusLabel(entries[0]) + "\n" + GetStatusDescription(entries[0], localMode);
 			}
 			if (historicalCount > 0 && entries.Count == 0)
@@ -87,6 +95,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				if (counts[i] > 0) parts.Add($"{counts[i]} {GetStatusLabel(new LocalContentManifestEntry { ChangeKind = i })}");
 			if (historicalCount > 0) parts.Add($"{historicalCount} Historical preview");
 			var description = $"{entries.Count + historicalCount} selected: " + string.Join("; ", parts) + ".";
+			if (invalidCount > 0) description = $"Validation Error\n{invalidCount} selected item(s) have validation errors. Inspect each item and fix the highlighted fields before publishing.\n" + description;
 			if (conflict) description += " Resolve conflicts before publishing.";
 			if (counts[(int)ContentChangeKind.IncomingChange] + counts[(int)ContentChangeKind.IncomingAddition] + counts[(int)ContentChangeKind.IncomingDeletion] > 0)
 				description += localMode ? " Auto-sync is paused while Local Mode is on." : " Auto-sync is enabled; synchronization may still be pending.";
@@ -99,7 +108,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			bool isInvalid = contentService.IsContentInvalid(entry.FullId);
 			bool isConflicted = GetChangeKind(entry) == ContentChangeKind.Conflict;
 			var messages = new List<string>();
-			if (isInvalid) messages.Add("Validation failed. Select Validate to view the errors.");
+			if (isInvalid) messages.Add("Validation Error. Inspect this item to view the invalid fields.");
 			if (isInvalid || isConflicted) messages.Add("Publishing is blocked.");
 			if (renamedFrom != null) messages.Add($"Renamed from \"{renamedFrom}\".");
 			messages.Add(GetStatusDescription(entry, ContentConfiguration.Instance.EnableLocalContentInEditor));

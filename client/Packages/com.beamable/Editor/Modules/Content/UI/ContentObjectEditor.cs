@@ -73,6 +73,7 @@ namespace Beamable.Editor.Content.UI
 		private Guid _listValidationRevision;
 		private int _listManifestRevision;
 		private int _listDirtyCount;
+		private string _validationStatusDetails;
 
 		protected override void OnHeaderGUI()
 		{
@@ -476,6 +477,7 @@ namespace Beamable.Editor.Content.UI
 		{
 			var entries = new List<LocalContentManifestEntry>(targets.Length);
 			var historical = 0;
+			var invalidCount = 0;
 			var hasChanges = false;
 			var onlyIncoming = targets.Length > 0;
 			foreach (var selected in targets)
@@ -490,6 +492,8 @@ namespace Beamable.Editor.Content.UI
 				{
 					var entry = GetCachedEntry(content);
 					entries.Add(entry);
+					if (!string.IsNullOrEmpty(entry.FullId) && BeamEditor.IsInitialized &&
+					    BeamEditorContext.Default.CliContentService.IsContentInvalid(entry.FullId)) invalidCount++;
 					var kind = ContentWindow_TooltipsHelper.GetChangeKind(entry);
 					onlyIncoming &= ContentWindow_TooltipsHelper.IsIncoming(kind);
 					hasChanges |= kind == ContentChangeKind.LocalEdit || ContentWindow_TooltipsHelper.IsIncoming(kind) ||
@@ -497,16 +501,18 @@ namespace Beamable.Editor.Content.UI
 				}
 			}
 			var message = ContentWindow_TooltipsHelper.GetSelectionDescription(entries, historical,
-				ContentConfiguration.Instance.EnableLocalContentInEditor, out var conflict);
+				ContentConfiguration.Instance.EnableLocalContentInEditor, out var conflict, invalidCount,
+				_hasListValidationCache && targets.Length == 1 && (target as ContentObject)?.ContentStatus != ContentStatus.Deleted
+					? _validationStatusDetails : null);
 			_statusMessageStyle ??= new GUIStyle(EditorStyles.wordWrappedLabel) { padding = new RectOffset(8, 8, 8, 8) };
 			GUILayout.Space(8);
 			var text = new GUIContent(message);
 			var width = Mathf.Max(60, EditorGUIUtility.currentViewWidth - 60);
 			var height = Mathf.Max(42, _statusMessageStyle.CalcHeight(text, width));
 			var rect = EditorGUILayout.GetControlRect(false, height);
-			EditorGUI.DrawRect(rect, conflict ? new Color(.7f, .15f, .15f, .24f) : new Color(.15f, .4f, .75f, .24f));
-			var icon = conflict ? "console.erroricon.sml" : hasChanges ? "console.warnicon.sml" : "console.infoicon.sml";
-			GUI.Label(new Rect(rect.x + 6, rect.y + 8, 20, 20), onlyIncoming
+			EditorGUI.DrawRect(rect, conflict || invalidCount > 0 ? new Color(.7f, .15f, .15f, .24f) : new Color(.15f, .4f, .75f, .24f));
+			var icon = conflict || invalidCount > 0 ? "console.erroricon.sml" : hasChanges ? "console.warnicon.sml" : "console.infoicon.sml";
+			GUI.Label(new Rect(rect.x + 6, rect.y + 8, 20, 20), onlyIncoming && invalidCount == 0
 				? new GUIContent(ContentWindow_TooltipsHelper.GetStatusIcon(entries[0]))
 				: EditorGUIUtility.IconContent(icon));
 			rect.xMin += 28;
@@ -559,6 +565,7 @@ namespace Beamable.Editor.Content.UI
 			// Validate once per edit/manifest change, never once per list on every repaint.
 			_listValidationErrors.Clear();
 			var errors = contentObject.GetMemberValidationErrors(context);
+			_validationStatusDetails = FormatValidationDetails(contentObject, errors);
 			var property = serializedObject.GetIterator();
 			bool enterChildren = true;
 			while (property.NextVisible(enterChildren))
@@ -572,6 +579,23 @@ namespace Beamable.Editor.Content.UI
 			_listManifestRevision = service.ManifestChangedCount;
 			_listDirtyCount = dirtyCount;
 			_hasListValidationCache = true;
+		}
+
+		internal static string FormatValidationDetails(ContentObject content, List<ContentValidationException> errors)
+		{
+			var messages = new List<string>(5);
+			var total = errors.Count;
+			if (content.ContentName != null && ContentNameValidationException.HasNameValidationErrors(content, content.ContentName, out var names))
+			{
+				total += names.Count;
+				messages.AddRange(names.Take(5).Select(error => error.FriendlyMessage));
+			}
+			foreach (var error in errors.Take(5 - messages.Count))
+				messages.Add($"{ObjectNames.NicifyVariableName(error.Info.Field.Name)}: {error.FriendlyMessage ?? error.Message}");
+			// Keep large nested/list failures readable. Their full errors remain on the affected fields.
+			var summary = string.Join("\n", messages);
+			if (total > 5) summary += $"\n{total - 5} more validation errors. See the highlighted fields.";
+			return summary;
 		}
 
 		internal static int CountListValidationErrors(SerializedProperty list, List<ContentValidationException> errors)
