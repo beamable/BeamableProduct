@@ -189,6 +189,17 @@ public class LocalStackBoard
 	/// <summary>The lines written in <see cref="LocalStackBoardMode.Lines"/> mode go here (the console by default).</summary>
 	public Action<string> WriteLine = line => AnsiConsole.Console.WriteLine(line);
 
+	/// <summary>Opens Grafana's dashboards list (the "Local stack" folder has one per kind of step) and says what it did.</summary>
+	private static string OpenGrafana(LocalStackBoardSnapshot snapshot)
+	{
+		if (!snapshot.rows.Any(r => r.name == LocalStackTemplate.LogsForwardStepName))
+			return "This stack doesn't send its logs to Grafana (it runs with :no-logs, or its settings predate logs: forward).";
+
+		var url = LocalStackTemplate.LocalGrafanaUrl + "/dashboards";
+		cli.Utils.MachineHelper.OpenBrowser(url);
+		return $"Opened Grafana: {url}";
+	}
+
 	public LocalStackBoard(LocalStackBoardSnapshot snapshot, LocalStackBoardMode mode, string file, Func<DateTime> now = null)
 	{
 		_snapshot = snapshot;
@@ -396,7 +407,10 @@ public class LocalStackBoard
 				foreach (var key in ReadKeys(console))
 				{
 					var action = view.Press(key, snapshot.rows, VisibleCount(height, extra + (view.Bar != null ? 1 : 0)), snapshot.up);
-					if (action != null) _ = Act(action.Value.action, action.Value.step);
+					if (action?.action == LocalStackBoardView.GrafanaAction)
+						capture.WriteLine(OpenGrafana(snapshot));
+					else if (action != null)
+						_ = Act(action.Value.action, action.Value.step);
 				}
 
 				// Sized after the keys, which can add or drop the bar line, so the frame never outgrows the screen.
@@ -535,7 +549,7 @@ public class LocalStackBoard
 		if (bar != null)
 			parts.Add(new Markup($"[bold]{Markup.Escape(Fit(bar, width - 1).TrimEnd())}[/]"));
 
-		keys ??= "Up/Down, PgUp/PgDn, Home/End scroll; F follows the steps in progress; Ctrl+C stops the stack";
+		keys ??= "Up/Down, PgUp/PgDn, Home/End scroll; F follows the steps in progress; L opens Grafana; Ctrl+C stops the stack";
 		parts.Add(new Markup($"[grey]{Markup.Escape(Fit(keys, width - 1).TrimEnd())}[/]"));
 		return new Rows(parts);
 	}
@@ -771,7 +785,10 @@ public class LocalStackBoardView
 	public string Bar { get; private set; }
 
 	/// <summary>The keys line of a board whose rows can be acted on.</summary>
-	public const string ActionKeys = "Up/Down select, Space acts on it, PgUp/PgDn/Home/End, F follows, Ctrl+C stops the stack";
+	public const string ActionKeys = "Up/Down select, Space acts on it, PgUp/PgDn/Home/End, F follows, L opens Grafana, Ctrl+C stops the stack";
+
+	/// <summary>What L returns: open Grafana's dashboards.</summary>
+	public const string GrafanaAction = "grafana";
 
 	/// <summary>The first row to show: where it follows to, or where it was scrolled to.</summary>
 	public int Offset(IReadOnlyList<LocalStackBoardRow> rows, int visible) =>
@@ -799,6 +816,9 @@ public class LocalStackBoardView
 		}
 
 		Bar = null;
+		if (key.Key == ConsoleKey.L)
+			return (GrafanaAction, null);
+
 		if (key.Key == ConsoleKey.F)
 		{
 			Following = true;

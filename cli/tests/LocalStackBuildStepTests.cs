@@ -291,7 +291,7 @@ public class LocalStackBuildStepTests
 		{
 			var step = Step(config, name);
 			Assert.That(step, Is.Not.Null, $"missing {name}");
-			Assert.That((step.beam, step.build, step.arguments), Is.EqualTo((true, false, $"local web {action}")), name);
+			Assert.That((step.beam, step.build, step.arguments), Is.EqualTo((true, false, $"local web {action} --pretty")), name);
 			Assert.That(step.waitForExit, Is.EqualTo(name != LocalStackTemplate.WebWatchStepName), name);
 			Assert.That(step.workingDirectory, Is.EqualTo("${PortalPath}"), name);
 			Assert.That(step.environment[WebPackagesService.ProductDirVariable], Is.EqualTo("${BeamProductPath}"), name);

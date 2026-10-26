@@ -109,6 +109,13 @@ public sealed class LineTailer : ILineSource
 	/// <summary>Returns the complete lines that have become available since the last call.</summary>
 	public IEnumerable<string> ReadAvailableLines()
 	{
+		// Truncated (a relaunched step starts its log again): follow it from the start.
+		if (_fs.Length < _fs.Position)
+		{
+			_fs.Position = 0;
+			_partial = "";
+		}
+
 		var available = _fs.Length - _fs.Position;
 		if (available <= 0) yield break;
 

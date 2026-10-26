@@ -445,7 +445,9 @@ public static class LocalStackTemplate
 		{
 			name = name,
 			beam = true,
-			arguments = $"local web {action}",
+			// --pretty: piped, the CLI prints none of its own messages without it; with it they go to stderr, which
+			// the step's log keeps.
+			arguments = $"local web {action} --pretty",
 			workingDirectory = "${" + LocalStackConfigIO.PortalPathVar + "}",
 			environment = new Dictionary<string, string>
 			{
@@ -595,7 +597,7 @@ public static class LocalStackTemplate
 		//    the service-discovery the Scala services resolve against, so it must be up before them.
 		config.steps.Add(new LocalStackStep
 		{
-			name = "docker: api deps + caddy",
+			name = ApiDepsStepName,
 			workingDirectory = apiDir,
 			command = "docker",
 			// --wait blocks until the containers are running/healthy (uses the broker healthcheck), so the
@@ -607,9 +609,12 @@ public static class LocalStackTemplate
 			// and the next `compose up -d --wait` just restarts them. Use `stop --purge` for a clean slate.
 			stopArguments = "compose stop",
 			purgeStopArguments = "compose down -v",
+			// How long Loki and Tempo keep what they get (BeamableAPI's docker/loki and docker/tempo read it).
+			environment = new Dictionary<string, string> { [LogRetentionVariable] = "${logRetention}" },
 			waitForExit = true,
 			readyTimeoutSeconds = 300
 		});
+		config.steps.Add(LogsForwardStep());
 		// The C# gateway. Its build step declares the binary as its requiredOutput, so `beam local run` builds
 		// it when it is missing even without :build (see AddDotnetHost).
 		// It logs players in through the Scala login services, and per request calls content (the manifest cache),
@@ -986,6 +991,35 @@ public static class LocalStackTemplate
 	/// </summary>
 	public static string WebProductDir(string webRegistryDir) =>
 		string.IsNullOrWhiteSpace(webRegistryDir) ? null : Path.GetDirectoryName(webRegistryDir);
+
+	/// <summary>BeamableAPI's compose: Mongo, Redis, ActiveMQ, Caddy, and the observability services (the collector,
+	/// Loki, Tempo, Prometheus, Grafana).</summary>
+	public const string ApiDepsStepName = "docker: api deps + caddy";
+
+	/// <summary>The environment variable BeamableAPI's compose passes to Loki and Tempo as their retention.</summary>
+	public const string LogRetentionVariable = "LOCAL_LOG_RETENTION";
+
+	public const string LogsForwardStepName = "logs: forward";
+
+	/// <summary>The Grafana BeamableAPI's compose starts, with the "Local stack" dashboards.</summary>
+	public const string LocalGrafanaUrl = "http://localhost:3001";
+
+	/// <summary>Where the stack's OpenTelemetry collector takes OTLP over HTTP (BeamableAPI's compose).</summary>
+	public const string LocalOtlpEndpoint = "http://localhost:4318";
+
+	/// <summary>
+	/// Sends every step's output to the local Loki, through the collector the docker step starts: a hidden
+	/// <c>beam local logs --forward</c> that follows each step's log files, those of later restarts too. The
+	/// <c>observability</c> tag, so <c>:no-logs</c> leaves it out; the terminal and the files are the same either way.
+	/// </summary>
+	public static LocalStackStep LogsForwardStep() => new LocalStackStep
+	{
+		name = LogsForwardStepName,
+		tags = new List<string> { "observability" },
+		beam = true,
+		arguments = $"local logs --forward {LocalOtlpEndpoint}",
+		dependsOn = new List<string> { ApiDepsStepName }
+	};
 
 	/// <summary>Name prefix identifying microservice steps (used by the "update services" flow).</summary>
 	public const string MicroservicePrefix = "microservice: ";

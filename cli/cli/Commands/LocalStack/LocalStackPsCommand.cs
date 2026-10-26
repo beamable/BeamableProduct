@@ -201,7 +201,7 @@ public class LocalStackPsCommand
 
 		var board = new LocalStackBoard(ToBoard(result), LocalStackBoardMode.Live, file: null);
 		var live = board.ShowLive(token, (action, step) => Act(args, runStatePath, action, step),
-			"Up/Down select, Space acts on it, PgUp/PgDn/Home/End, F follows, Ctrl+C leaves (the stack keeps running)");
+			"Up/Down select, Space acts on it, PgUp/PgDn/Home/End, F follows, L opens Grafana, Ctrl+C leaves (the stack keeps running)");
 		while (!live.IsCompleted)
 		{
 			try { await Task.Delay(500, token); }

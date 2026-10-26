@@ -13,6 +13,7 @@ public class LocalStackSetupCommandArgs : CommandArgs
 	public string only;
 	public string skip;
 	public bool force;
+	public int logRetentionDays;
 	public bool preferSystem;
 	public bool offline;
 	public bool dryRun;
@@ -158,6 +159,8 @@ public class LocalStackSetupCommand
 			(args, v) => args.only = v);
 		AddOption(new Option<string>("--skip", "Skip these steps (same ids as --only)"),
 			(args, v) => args.skip = v);
+		AddOption(new Option<int>("--log-retention-days", "How many days the local Loki and Tempo keep logs and traces (default 5); applied on the next start of the docker dependencies"),
+			(args, v) => args.logRetentionDays = v);
 		AddOption(new Option<bool>("--force", "Re-download and re-install even when a dependency is already present, overwrite generated config files, and recreate the settings' step catalogue (its variables, targets and port offset are kept)"),
 			(args, v) => args.force = v);
 		AddOption(new Option<bool>("--prefer-system", "Adopt an already-installed dependency when its version matches the pin, instead of downloading a private copy"),
@@ -486,6 +489,13 @@ public class LocalStackSetupCommand
 
 			LocalStackConfigIO.Save(path, config);
 			detail = toolchain != null ? "uses the toolchain" : "kept as is (no toolchain installed)";
+		}
+
+		if (args.logRetentionDays > 0 && config.logRetentionDays != args.logRetentionDays)
+		{
+			config.logRetentionDays = args.logRetentionDays;
+			LocalStackConfigIO.Save(path, config);
+			detail += $"; logs and traces kept {config.logRetentionDays} days";
 		}
 
 		var skillPath = WriteSkill(args, path, config);

@@ -38,15 +38,15 @@
   "stacks": {
     "full": {
       "description": "Full-stack work: Docker dependencies, C# hosts, all Scala services, the portal and its extensions, all on this machine.",
-      "include": [ "docker", "csharp", "scala", "portal", "microservices", "extensions" ]
+      "include": [ "docker", "observability", "csharp", "scala", "portal", "microservices", "extensions" ]
     },
     "backend": {
       "description": "Backend work: Docker dependencies, C# hosts and all Scala services. No portal.",
-      "include": [ "docker", "csharp", "scala" ]
+      "include": [ "docker", "observability", "csharp", "scala" ]
     },
     "csharp-portal": {
       "description": "C# and portal work: Docker dependencies, C# hosts, the Scala services they call and the ones needed to log in, the portal and its extensions.",
-      "include": [ "docker", "csharp", "scala-core", "scala-csharp", "portal", "microservices", "extensions" ]
+      "include": [ "docker", "observability", "csharp", "scala-core", "scala-csharp", "portal", "microservices", "extensions" ]
     },
     "portal-extensions": {
       "description": "Portal and extension work: the portal and its extensions against the dev backend. Nothing else runs on this machine.",

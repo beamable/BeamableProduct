@@ -197,7 +197,10 @@ public class LocalStackRunCommand
 	private string _noLogin;
 
 	/// <summary>True for a step that logs in to the stack's backend: a beam step other than the web packages.</summary>
-	private static bool NeedsLogin(LocalStackStep step) => step.beam && !LocalStackTemplate.IsWebStep(step.name);
+	/// <summary>A beam step that logs in to the backend: not the `beam local …` ones (the web packages, the log
+	/// forwarding), which only work on this machine.</summary>
+	private static bool NeedsLogin(LocalStackStep step) =>
+		step.beam && !(step.arguments ?? string.Empty).TrimStart().StartsWith("local ", StringComparison.Ordinal);
 	private string _workspaceRoot;
 
 	/// <summary>True when the board prints (a terminal, or lines without one): failures are on the board, not warned twice.</summary>
@@ -1339,6 +1342,14 @@ public class LocalStackRunCommand
 		// The step a failed step leaves without what it needs: its build, or a step it depends on (by name or tag).
 		// Null when nothing it needs failed.
 		var localBackend = LocalStackTargets.RunsLocal(resolved.target, config);
+		// Against this machine's backend the workspace's services send their own logs and traces to the local
+		// collector, so they land in Grafana next to the C# hosts'; against a remote one they keep Beamable's. Not with
+		// :no-logs, which leaves the stack's logs out of Grafana.
+		if (localBackend && steps.Any(s => s.name == LocalStackTemplate.LogsForwardStepName))
+		{
+			foreach (var step in steps.Where(IsWorkspaceService))
+				step.environment = WithLocalTelemetry(step.environment);
+		}
 		string FailedNeed(LocalStackStep step)
 		{
 			var needs = LocalStackControl.BuildsFor(step, steps, stacks.TagsOf).Select(b => b.name)
@@ -1946,29 +1957,36 @@ public class LocalStackRunCommand
 
 	/// <summary>
 	/// Deletes stale <c>run-*</c> temp log dirs for this workspace, so temp logs from previous crashed or
-	/// detached runs don't accumulate. Keeps <paramref name="currentLogsDir"/> and any dir in
+	/// detached runs don't accumulate. Keeps <paramref name="currentLogsDir"/> (if any) and any dir in
 	/// <paramref name="keepDirs"/> (the log dirs of carried-over live services). Best-effort — a dir still
-	/// held open by a leftover wrapper is skipped rather than failing the run.
+	/// held open by a leftover wrapper is skipped rather than failing the run. Returns how many it deleted.
 	/// </summary>
-	private static void PruneStaleTempLogs(string manifestPath, string currentLogsDir, IEnumerable<string> keepDirs)
+	public static int PruneStaleTempLogs(string manifestPath, string currentLogsDir, IEnumerable<string> keepDirs)
 	{
+		var deleted = 0;
 		try
 		{
 			var baseDir = LocalStackRunStateIO.ResolveTempLogsBase(manifestPath);
-			if (!Directory.Exists(baseDir)) return;
+			if (!Directory.Exists(baseDir)) return 0;
 
-			var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { Path.GetFullPath(currentLogsDir) };
-			foreach (var d in keepDirs)
+			var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			foreach (var d in keepDirs.Append(currentLogsDir))
 				if (!string.IsNullOrEmpty(d)) keep.Add(Path.GetFullPath(d));
 
 			foreach (var d in Directory.GetDirectories(baseDir))
 			{
 				if (keep.Contains(Path.GetFullPath(d))) continue;
-				try { Directory.Delete(d, recursive: true); }
+				try
+				{
+					Directory.Delete(d, recursive: true);
+					deleted++;
+				}
 				catch { /* a live run or leftover wrapper may still hold a handle — skip it */ }
 			}
 		}
 		catch { /* best-effort — never fail bring-up over log cleanup */ }
+
+		return deleted;
 	}
 
 	/// <summary>
@@ -2135,6 +2153,25 @@ public class LocalStackRunCommand
 	/// completes well within the timeout. Readiness waits still overlap — only the launches are spaced out.
 	/// </summary>
 	private static readonly TimeSpan GroupLaunchStagger = TimeSpan.FromMilliseconds(2000);
+
+	/// <summary>The microservice, portal extension and service group steps: <c>beam project run</c>s of this workspace.</summary>
+	private static bool IsWorkspaceService(LocalStackStep step) =>
+		new[] { LocalStackTemplate.MicroservicePrefix, LocalStackTemplate.ExtensionPrefix, LocalStackTemplate.GroupPrefix }
+			.Any(p => (step.name ?? string.Empty).StartsWith(p, StringComparison.OrdinalIgnoreCase));
+
+	/// <summary><paramref name="environment"/> plus what points a Beamable service's telemetry at the local collector
+	/// (see <c>MicroserviceArgs</c>). Outside docker a service sets up no exporter without BEAM_LOCAL_OTEL, and that
+	/// alone would also start Beamable's own collector (ClickHouse credentials from the backend); the standard setup is
+	/// turned off, so the endpoint below gets it all. A value already set wins.</summary>
+	public static Dictionary<string, string> WithLocalTelemetry(Dictionary<string, string> environment)
+	{
+		var result = new Dictionary<string, string>(environment ?? new Dictionary<string, string>());
+		result.TryAdd("BEAM_LOCAL_OTEL", "true");
+		result.TryAdd("BEAM_DISABLE_STANDARD_OTEL", "true");
+		result.TryAdd("BEAM_OTEL_EXPORTER_OTLP_ENDPOINT", LocalStackTemplate.LocalOtlpEndpoint);
+		result.TryAdd("BEAM_OTEL_EXPORTER_OTLP_PROTOCOL", "HttpProtobuf");
+		return result;
+	}
 
 	/// <summary>What a step that logs in shows while the run logs in to the local realm before starting it.</summary>
 	private const string LoggingIn = "logging in to the local realm (waits for the backend to answer)";

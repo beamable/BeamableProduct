@@ -1138,8 +1138,52 @@ public class LocalStackToolchainTests
 		Assert.That(() => stacks.Resolve("loop-a", config),
 			Throws.InstanceOf<LocalStackStackException>().With.Message.Contains("loop"));
 
-		// A tag no step has yet, such as the log forwarding `:no-logs` removes, is not an error.
-		Assert.That(StepNames(stacks.Resolve("full:no-logs", config)), Is.EqualTo(StepNames(stacks.Resolve("full", config))));
+		// `:no-logs` leaves out the log forwarding, and nothing else.
+		Assert.That(StepNames(stacks.Resolve("full:no-logs", config)),
+			Is.EqualTo(StepNames(stacks.Resolve("full", config)).Where(n => n != LocalStackTemplate.LogsForwardStepName)));
+	}
+
+	/// <summary>
+	/// The log forwarding runs after the docker dependencies (the collector), in the local stacks, and doesn't log in;
+	/// each line goes out as an OTLP record with the stack, workspace, step and kind, at the level it names.
+	/// </summary>
+	[Test]
+	public void Logs_are_forwarded_with_their_step()
+	{
+		var config = StackCatalogue();
+		var names = config.steps.Select(s => s.name).ToList();
+		Assert.That(names.IndexOf(LocalStackTemplate.LogsForwardStepName), Is.EqualTo(names.IndexOf("docker: api deps + caddy") + 1));
+		var forward = config.steps.Single(s => s.name == LocalStackTemplate.LogsForwardStepName);
+		Assert.That((forward.beam, forward.arguments, forward.tags.Single()), Is.EqualTo((true, "local logs --forward http://localhost:4318", "observability")));
+		Assert.That(StepNames(LocalStackStacks.BuiltIn().Resolve("csharp-portal", config)), Does.Contain(LocalStackTemplate.LogsForwardStepName));
+
+		var payload = LogForwarder.Payload(new[] { ("scala: auth", "2026 ERROR boom"), ("scala: auth", "started"), ("c# gateway", "WARN slow") },
+			"full", "agentic-portal", new DateTime(2026, 10, 26, 12, 0, 0, DateTimeKind.Utc));
+		var resources = payload["resourceLogs"]!;
+		Assert.That(resources.Count(), Is.EqualTo(2), "one resource per step");
+		var auth = resources[0]!;
+		string Attr(string key) => auth["resource"]!["attributes"]!.Single(a => (string)a["key"] == key)["value"]!["stringValue"]!.ToString();
+		Assert.That((Attr("beam.step"), Attr("beam.stack"), Attr("beam.workspace"), Attr("beam.kind")), Is.EqualTo(("scala: auth", "full", "agentic-portal", "scala")));
+		var records = auth["scopeLogs"]![0]!["logRecords"]!;
+		Assert.That(records.Select(r => (string)r["severityText"]), Is.EqualTo(new[] { "ERROR", "INFO" }));
+		Assert.That((string)records[0]!["timeUnixNano"], Is.EqualTo("1793016000000000000"));
+		Assert.That(LogForwarder.SeverityOf("[main] WARNING disk"), Is.EqualTo("WARN"));
+		Assert.That((LogForwarder.SeverityOf("TRACE tick"), LogForwarder.SeverityOf("[VERBOSE] x"), LogForwarder.SeverityOf("DEBUG y")), Is.EqualTo(("TRACE", "TRACE", "DEBUG")));
+		Assert.That(LogForwarder.SeverityOf("{ \"t\": \"2026\", \"l\": \"Error\", \"m\": \"0 warnings\" }"), Is.EqualTo("ERROR"), "a JSON line's own level");
+		Assert.That(LogForwarder.SeverityOf("  \"l\": \"Information\","), Is.EqualTo("INFO"));
+
+		// Against the local backend, the workspace's services send their own telemetry to the same collector.
+		var env = LocalStackRunCommand.WithLocalTelemetry(new Dictionary<string, string> { ["BEAM_OTEL_EXPORTER_OTLP_PROTOCOL"] = "Grpc" });
+		Assert.That((env["BEAM_OTEL_EXPORTER_OTLP_ENDPOINT"], env["BEAM_OTEL_EXPORTER_OTLP_PROTOCOL"]), Is.EqualTo(("http://localhost:4318", "Grpc")), "a value already set wins");
+		Assert.That((env["BEAM_LOCAL_OTEL"], env["BEAM_DISABLE_STANDARD_OTEL"]), Is.EqualTo(("true", "true")), "exporters on, Beamable's collector off");
+	}
+
+	/// <summary>Loki and Tempo get the retention the settings keep, in hours.</summary>
+	[Test]
+	public void Log_retention_is_substituted_in_hours()
+	{
+		Assert.That(LocalStackConfigIO.Substitute("${logRetention}", new LocalStackConfig()), Is.EqualTo("120h"));
+		Assert.That(LocalStackConfigIO.Substitute("${logRetention}", new LocalStackConfig { logRetentionDays = 2 }), Is.EqualTo("48h"));
 	}
 
 	[Test]
@@ -2188,6 +2232,19 @@ public class LocalStackToolchainTests
 	/// On a board that can act, the arrows select a row and keep it on screen; Space asks what to do with it, Enter
 	/// does it (S stops instead), Esc drops it; a build, or anything before the stack is up, only says why not.
 	/// </summary>
+	/// <summary>L opens Grafana's dashboards, whatever is selected.</summary>
+	[Test]
+	public void L_opens_Grafana()
+	{
+		var rows = TallBoard();
+		ConsoleKeyInfo Key(ConsoleKey key) => new ConsoleKeyInfo(' ', key, false, false, false);
+		var view = new LocalStackBoardView { Actions = true };
+
+		Assert.That(view.Press(Key(ConsoleKey.L), rows, 5), Is.EqualTo((LocalStackBoardView.GrafanaAction, (string)null)));
+		view.Press(Key(ConsoleKey.Home), rows, 5);
+		Assert.That(view.Press(Key(ConsoleKey.L), rows, 5), Is.EqualTo((LocalStackBoardView.GrafanaAction, (string)null)));
+	}
+
 	[Test]
 	public void Board_keys_select_a_row_and_act_on_it()
 	{

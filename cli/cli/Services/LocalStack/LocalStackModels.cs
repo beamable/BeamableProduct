@@ -56,7 +56,10 @@ public class LocalStackConfig
 	/// Stored only for now: nothing applies it yet.</summary>
 	public int portOffset;
 
-	/// <summary>How many days local logs and traces are kept. Stored only for now: nothing applies it yet.</summary>
+	/// <summary>
+	/// How many days the local Loki keeps logs and Tempo keeps traces. Set by <c>beam local setup
+	/// --log-retention-days</c>; substituted as <c>${logRetention}</c> (hours, as Loki and Tempo read them).
+	/// </summary>
 	public int logRetentionDays = 5;
 
 	/// <summary>The folder holding the workspace's <c>.beamable</c> folder; relative <see cref="paths"/> are taken
@@ -444,7 +447,7 @@ public static class LocalStackConfigIO
 	/// <summary>Tokens with fixed meanings. <c>${mainClass}</c> is substituted per step at launch time.</summary>
 	private static readonly HashSet<string> BuiltInTokens = new HashSet<string>(StringComparer.Ordinal)
 	{
-		"host", "portalUrl", "java", "maven", "npm", "node", "dotnet", "mainClass"
+		"host", "portalUrl", "java", "maven", "npm", "node", "dotnet", "mainClass", "logRetention"
 	};
 
 	public static LocalStackConfig Load(string path)
@@ -531,6 +534,7 @@ public static class LocalStackConfigIO
 		value
 			.Replace("${host}", config.host ?? string.Empty)
 			.Replace("${portalUrl}", config.portalUrl ?? string.Empty)
+			.Replace("${logRetention}", $"{Math.Max(1, config.logRetentionDays) * 24}h")
 			.Replace("${java}", config.javaHome ?? string.Empty)
 			.Replace("${maven}", MavenCommand(config))
 			.Replace("${npm}", NpmCommand(config))
