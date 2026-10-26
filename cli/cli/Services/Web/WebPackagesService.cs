@@ -61,7 +61,7 @@ public static class WebPackagesService
 		public string dir;
 		public string[] buildSteps;
 
-		/// <summary>Tracked folders the build regenerates, put back afterwards so a local build leaves git clean.</summary>
+		/// <summary>Tracked files and folders the build regenerates, put back afterwards so a local build leaves git clean.</summary>
 		public string[] regenerated = Array.Empty<string>();
 	}
 
@@ -75,10 +75,23 @@ public static class WebPackagesService
 	private static readonly Package Toolkit = new Package
 	{
 		npmName = WebLocalRegistryService.ToolkitPackage, dir = "beam-portal-toolkit",
-		// beam-portal-toolkit/package.json "prepublishOnly"
+		// beam-portal-toolkit/package.json "prepublishOnly", on the portal's component manifest when there is one
 		buildSteps = new[] { "sync-components --no-copy", "build" },
-		regenerated = new[] { Path.Combine("src", "generated") }
+		regenerated = new[] { ComponentManifest, Path.Combine("src", "generated") }
 	};
+
+	/// <summary>The component manifest the portal generates and the toolkit's component types are generated from.</summary>
+	private const string ComponentManifest = "custom-elements.json";
+
+	/// <summary>The portal's beam-* component sources, when <paramref name="workspace"/> is a portal checkout that can
+	/// generate their manifest (its dependencies installed); null otherwise, and the toolkit keeps its own copy.</summary>
+	private static string PortalComponents(string workspace)
+	{
+		if (string.IsNullOrEmpty(workspace)) return null;
+		var folder = Path.Combine(workspace, "src", "beam-components");
+		return Directory.Exists(folder) && File.Exists(Path.Combine(workspace, "scripts", "generate-cem.mjs"))
+			&& Directory.Exists(Path.Combine(workspace, "node_modules")) ? folder : null;
+	}
 
 	public static string StatePath(string workspace) => Path.Combine(workspace, ".beamable", "local", StateFile);
 
@@ -117,7 +130,10 @@ public static class WebPackagesService
 		var statePath = StatePath(workspace);
 		var state = Load<WebPackagesState>(statePath) ?? new WebPackagesState();
 		var sdkPrint = LocalStackBuilds.FolderFingerprint(Path.Combine(productDir, Sdk.dir));
+		var components = PortalComponents(workspace);
 		var toolkitPrint = LocalStackBuilds.FolderFingerprint(Path.Combine(productDir, Toolkit.dir));
+		// A component added or changed in the portal is a toolkit change too.
+		if (toolkitPrint != null && components != null) toolkitPrint += LocalStackBuilds.FolderFingerprint(components);
 
 		var buildSdk = force || Stale(productDir, Sdk, state.sdk, sdkPrint);
 		var buildToolkit = buildSdk || Stale(productDir, Toolkit, state.toolkit, toolkitPrint);
@@ -137,7 +153,7 @@ public static class WebPackagesService
 		}
 
 		var toolkitVersion = LocalVersion(await BaseFor(productDir, Toolkit, state.toolkit, token), now);
-		BuildPackage(productDir, Toolkit, toolkitVersion, state.sdk.version);
+		BuildPackage(productDir, Toolkit, toolkitVersion, state.sdk.version, components != null ? GenerateComponentManifest(workspace) : null);
 		state.toolkit = new WebPackageBuild { version = toolkitVersion, fingerprint = toolkitPrint };
 		Save(statePath, state);
 		return state;
@@ -177,17 +193,43 @@ public static class WebPackagesService
 	/// dependency to <paramref name="sdkVersion"/>, and its SDK pointed at the local one), so what the build bakes in
 	/// matches what gets published. Every tracked file it touches is put back.
 	/// </summary>
-	private static void BuildPackage(string productDir, Package package, string version, string sdkVersion)
+	private static void BuildPackage(string productDir, Package package, string version, string sdkVersion, byte[] componentManifest = null)
 	{
 		var dir = Path.Combine(productDir, package.dir);
 		Log.Information($"Building {package.npmName}@{version}");
 		using var stamped = new Stamped(dir, package, version, sdkVersion);
+		if (componentManifest != null)
+			File.WriteAllBytes(Path.Combine(dir, ComponentManifest), componentManifest);
 		if (!Directory.Exists(Path.Combine(dir, "node_modules")))
 			Pnpm(dir, "install", package.npmName);
 
 		using var localSdk = sdkVersion != null ? SdkLink.To(dir, Path.Combine(productDir, Sdk.dir)) : null;
 		foreach (var step in package.buildSteps)
 			Pnpm(dir, step, package.npmName);
+	}
+
+	/// <summary>
+	/// Runs the portal's <c>generate:cem</c> and returns the manifest it wrote. The portal's tracked copies (the root
+	/// one and the one under <c>public/</c> its components page reads) are put back: the generator's output follows the
+	/// sources' line endings, so it differs on Windows with nothing changed.
+	/// </summary>
+	private static byte[] GenerateComponentManifest(string workspace)
+	{
+		var manifest = Path.Combine(workspace, ComponentManifest);
+		var tracked = new[] { manifest, Path.Combine(workspace, "public", ComponentManifest) }.Where(File.Exists)
+			.ToDictionary(f => f, File.ReadAllBytes);
+		try
+		{
+			var result = StartProcessUtil.Run("npm", "run generate:cem", useShell: true, workingDirectoryPath: workspace).WaitForResult();
+			if (result.exit != 0)
+				throw new CliException($"Couldn't generate the portal's component manifest in {workspace}:\n{result.stderr}\n{result.stdout}".Trim());
+			return File.ReadAllBytes(manifest);
+		}
+		finally
+		{
+			foreach (var (file, bytes) in tracked)
+				if (!File.Exists(file) || !File.ReadAllBytes(file).AsSpan().SequenceEqual(bytes)) File.WriteAllBytes(file, bytes);
+		}
 	}
 
 	/// <summary>
@@ -215,6 +257,11 @@ public static class WebPackagesService
 				var result = StartProcessUtil.Run("npm",
 					$"publish --registry {registry} --tag {WebLocalRegistryService.LocalDistTag} --ignore-scripts {WebLocalRegistryService.AuthTokenFlag(registry)}",
 					useShell: true, workingDirectoryPath: dir).WaitForResult();
+				if (result.exit != 0 && AlreadyPublished($"{result.stderr}{result.stdout}"))
+				{
+					Log.Information($"{package.npmName}@{build.version} is in the local registry already.");
+					continue;
+				}
 				if (result.exit != 0)
 					throw new CliException($"Couldn't publish {package.npmName}@{build.version} to {registry}:\n{result.stderr}\n{result.stdout}".Trim());
 			}
@@ -222,6 +269,11 @@ public static class WebPackagesService
 			Log.Information($"Published {package.npmName}@{build.version} to {registry}.");
 		}
 	}
+
+	/// <summary>True when npm's publish output says the registry has the version already. The check before publishing
+	/// can miss it: right after the registry starts, its first request may not get through.</summary>
+	public static bool AlreadyPublished(string npmOutput) =>
+		npmOutput.Contains("E409", StringComparison.Ordinal) || npmOutput.Contains("already present", StringComparison.OrdinalIgnoreCase);
 
 	/// <summary>True when <paramref name="registry"/> serves <paramref name="version"/> of <paramref name="package"/>.</summary>
 	public static async Task<bool> RegistryHas(string registry, string package, string version, CancellationToken token)
@@ -319,7 +371,7 @@ public static class WebPackagesService
 	}
 
 	/// <summary>
-	/// Watches the SDK's and the toolkit's sources. After a burst of saves settles, builds what changed, publishes it,
+	/// Watches the SDK's, the toolkit's and the portal's component sources. After a burst of saves settles, builds what changed, publishes it,
 	/// points the overlay at it and calls <paramref name="changed"/> (the stack restarts its extensions, which install
 	/// the new build). A failed build is reported and the watch goes on. Runs until <paramref name="token"/> ends.
 	/// </summary>
@@ -329,7 +381,8 @@ public static class WebPackagesService
 		var pending = new SemaphoreSlim(0);
 		var building = false;
 		var watchers = new List<FileSystemWatcher>();
-		foreach (var folder in new[] { Sdk, Toolkit }.Select(p => Path.Combine(productDir, p.dir, "src")).Where(Directory.Exists))
+		var folders = new[] { Sdk, Toolkit }.Select(p => Path.Combine(productDir, p.dir, "src")).Append(PortalComponents(workspace));
+		foreach (var folder in folders.Where(Directory.Exists))
 		{
 			var watcher = new FileSystemWatcher(folder) { IncludeSubdirectories = true, EnableRaisingEvents = true };
 			FileSystemEventHandler onChange = (_, e) =>
@@ -419,11 +472,12 @@ public static class WebPackagesService
 		{
 			var manifest = Path.Combine(dir, "package.json");
 			_snapshot[manifest] = File.ReadAllBytes(manifest);
-			foreach (var folder in regenerated ? package.regenerated : Array.Empty<string>())
+			foreach (var path in regenerated ? package.regenerated : Array.Empty<string>())
 			{
-				var full = Path.Combine(dir, folder);
-				if (!Directory.Exists(full)) continue;
-				foreach (var file in Directory.GetFiles(full, "*", SearchOption.AllDirectories))
+				var full = Path.Combine(dir, path);
+				var files = Directory.Exists(full) ? Directory.GetFiles(full, "*", SearchOption.AllDirectories)
+					: File.Exists(full) ? new[] { full } : Array.Empty<string>();
+				foreach (var file in files)
 					_snapshot[file] = File.ReadAllBytes(file);
 			}
 

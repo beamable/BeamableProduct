@@ -262,4 +262,12 @@ public class LocalStackWebRegistryStepTests
 		Assert.That(args, Does.Contain("@beamable/portal-toolkit@0.6.0-0.20261023090507").And.Contain("@beamable/sdk@1.4.0-0.20261023090507"));
 		Assert.That(args, Does.Contain("--@beamable:registry=http://localhost:4873").And.Not.Contain(" --registry"));
 	}
+
+	/// <summary>A version the registry has already is published, not a failure, even when the check before missed it.</summary>
+	[Test]
+	public void A_conflict_on_publish_means_already_published()
+	{
+		Assert.That(WebPackagesService.AlreadyPublished("npm error code E409\r\nnpm error 409 Conflict - PUT http://localhost:4873/@beamable%2fsdk - this package is already present"), Is.True);
+		Assert.That(WebPackagesService.AlreadyPublished("npm error code E401\r\nnpm error 401 Unauthorized"), Is.False);
+	}
 }

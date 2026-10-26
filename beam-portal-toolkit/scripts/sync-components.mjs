@@ -8,23 +8,17 @@
  *   - src/svelte-elements.ts     (Svelte SvelteHTMLElements augmentations)
  *   - src/react-elements.ts      (React JSX IntrinsicElements augmentations)
  *
- * By default also copies custom-elements.json from the agentic-portal repo
- * into this project's custom-elements.json first. Pass --no-copy to skip that
- * step and use the existing custom-elements.json instead.
+ * By default also copies custom-elements.json from the agentic-portal checkout
+ * named by PORTAL_REPO_PATH into this project's custom-elements.json first.
+ * Pass --no-copy to skip that step and use the existing custom-elements.json.
  *
  * Run `npm run generate:cem` in the agentic-portal repo first to refresh its
- * manifest before syncing.
+ * manifest before syncing. `beam local run <stack>:web` does all of this on
+ * each toolkit build, and leaves the tracked copies as they were.
  *
  * Usage:
- *   pnpm sync-components            # copy from agentic-portal, then regenerate
+ *   PORTAL_REPO_PATH=/path/to/agentic-portal pnpm sync-components  # copy, then regenerate
  *   pnpm sync-components --no-copy  # regenerate from existing custom-elements.json
- *
- * When copying, the agentic-portal repo is expected to be a sibling of
- * BeamableProduct:
- *   ~/Documents/Github/agentic-portal/
- *
- * Override via env var if it lives elsewhere:
- *   PORTAL_REPO_PATH=/path/to/agentic-portal pnpm sync-components
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
@@ -40,9 +34,16 @@ const noCopy = process.argv.includes('--no-copy');
 // Paths
 // ---------------------------------------------------------------------------
 
-const portalRepo =
-  process.env.PORTAL_REPO_PATH ?? resolve(root, '../../agentic-portal');
-const cemSource = resolve(portalRepo, 'custom-elements.json');
+const portalRepo = process.env.PORTAL_REPO_PATH;
+if (!noCopy && !portalRepo) {
+  console.error(
+    '\nERROR: PORTAL_REPO_PATH is not set.\n' +
+    'Set it to your agentic-portal checkout to copy its custom-elements.json,\n' +
+    'or pass --no-copy to regenerate from the existing custom-elements.json.\n',
+  );
+  process.exit(1);
+}
+const cemSource = portalRepo && resolve(portalRepo, 'custom-elements.json');
 const cemDest = resolve(root, 'custom-elements.json');
 const webTypesDest = resolve(root, 'src/generated/web-types.json');
 const globalsDest = resolve(root, 'src/generated/globals.ts');
@@ -69,7 +70,7 @@ if (noCopy) {
     console.error(`\nERROR: CEM file not found at:\n  ${cemSource}\n`);
     console.error(
       'Run `npm run generate:cem` in the agentic-portal repo to produce it,\n' +
-      'set the PORTAL_REPO_PATH env var to point to your agentic-portal repo root,\n' +
+      'check that PORTAL_REPO_PATH points at your agentic-portal repo root,\n' +
       'or pass --no-copy to regenerate from the existing custom-elements.json.',
     );
     process.exit(1);
