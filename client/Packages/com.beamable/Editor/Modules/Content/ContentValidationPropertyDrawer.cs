@@ -349,7 +349,8 @@ namespace Beamable.Editor.Content
 				return false;
 			}
 
-			if (fieldInfo.GetCustomAttribute<MustBeComparatorString>() == null)
+			var comparatorAttribute = fieldInfo.GetCustomAttribute<MustBeComparatorString>();
+			if (comparatorAttribute == null)
 			{
 				return false;
 			}
@@ -364,7 +365,7 @@ namespace Beamable.Editor.Content
 
 			var value = property.stringValue;
 			GUIContent buttonContent;
-			if (MustBeComparatorString.TryGetOption(value, out var comparator))
+			if (comparatorAttribute.TryGetOption(value, out var comparator))
 			{
 				var text = comparator.Value == value
 					? ComparatorSearchWindow.GetDisplayName(comparator)
@@ -380,12 +381,13 @@ namespace Beamable.Editor.Content
 			if (EditorGUI.DropdownButton(buttonRect, buttonContent, FocusType.Keyboard, EditorStyles.popup))
 			{
 				var wnd = ScriptableObject.CreateInstance<ComparatorSearchWindow>();
+				wnd.Comparator = comparatorAttribute;
 				wnd.Property = property;
 				wnd.Object = property.serializedObject.targetObject;
 				wnd.Init();
 
 				// Toolbar plus one row per option, with a little padding.
-				var popupHeight = 30f + lineHeight * (MustBeComparatorString.Options.Length + 1);
+				var popupHeight = 30f + lineHeight * (comparatorAttribute.Options.Length + 1);
 				var xy = EditorGUIUtility.GUIToScreenPoint(new Vector2(buttonRect.x, buttonRect.y));
 				wnd.ShowAsDropDown(new Rect((int)xy.x, (int)xy.y + (int)lineHeight, 0, 0),
 				   new Vector2(fieldWidth, popupHeight));

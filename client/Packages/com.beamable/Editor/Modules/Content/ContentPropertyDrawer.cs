@@ -520,20 +520,27 @@ namespace Beamable.Editor.Content
 
 	/// <summary>
 	/// Dropdown popup for <see cref="string"/> fields decorated with
-	/// <see cref="Beamable.Common.Content.Validation.MustBeComparatorString"/>. Lists the canonical comparators,
+	/// <see cref="Beamable.Common.Content.Validation.MustBeComparatorString"/>. Lists the canonical comparators
+	/// accepted by the field's <see cref="Beamable.Common.Content.Validation.ComparatorStringKind"/>,
 	/// each with a tooltip describing what it means and which aliases it accepts.
 	/// </summary>
 	public class ComparatorSearchWindow : ContentSearchWindowBase
 	{
+		/// <summary>
+		/// The attribute on the field being edited; it decides which comparators are offered.
+		/// Must be set before <see cref="ContentSearchWindowBase.Init"/>.
+		/// </summary>
+		public Beamable.Common.Content.Validation.MustBeComparatorString Comparator;
+
 		protected override string SearchControlName => "comparatorSearchBar";
 
 		protected override string CurrentId =>
-			Beamable.Common.Content.Validation.MustBeComparatorString.TryGetOption(Property.stringValue, out var option) ? option.Value : Property.stringValue;
+			Comparator.TryGetOption(Property.stringValue, out var option) ? option.Value : Property.stringValue;
 
 		protected override List<ContentSearchOption> BuildOptions()
 		{
 			var options = new List<ContentSearchOption>();
-			foreach (var comparator in Beamable.Common.Content.Validation.MustBeComparatorString.Options)
+			foreach (var comparator in Comparator.Options)
 			{
 				var displayName = GetDisplayName(comparator);
 				options.Add(new ContentSearchOption
