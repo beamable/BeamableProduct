@@ -29,6 +29,12 @@ namespace Beamable.Editor.UI.ContentWindow
 		private static readonly string[] ItemColumnLabels = { "Name", "Status", "Tags", "Latest Update" };
 		private float _itemsTableWidth = ITEM_LIST_MIN_WIDTH;
 		private float[] _itemsColumnWidths = CalculateColumnWidths(ITEM_LIST_MIN_WIDTH);
+		private bool _columnWidthsLoaded;
+		private bool _hasCustomColumnWidths;
+		private string _columnWidthsPreferenceKey;
+		private float _columnResizeStartX;
+		private float _columnResizeStartWidth;
+		private bool _columnResizeWasCustom;
 
 		private readonly Dictionary<string, Vector2> _groupScrollPositions = new();
 		
@@ -435,10 +441,20 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void DrawItemsPanelHeader()
 		{
+			if (!_columnWidthsLoaded)
+			{
+				_columnWidthsPreferenceKey = GetColumnWidthsPreferenceKey(Application.dataPath);
+				var saved = LoadColumnWidths(_columnWidthsPreferenceKey);
+				_hasCustomColumnWidths = saved != null;
+				if (saved != null) _itemsColumnWidths = saved;
+				_columnWidthsLoaded = true;
+			}
 			var viewport = EditorGUILayout.GetControlRect(false, ITEMS_TABLE_ROW_HEIGHT, GUIStyle.none);
 			// Reserve both the outer scrollbar and the optional virtualized-group scrollbar.
 			// A single width keeps nested groups and virtualized rows under the same header.
-			if (Event.current.type == EventType.Repaint)
+			if (_hasCustomColumnWidths)
+				_itemsTableWidth = _itemsColumnWidths.Sum();
+			else if (Event.current.type == EventType.Repaint)
 			{
 				var width = Mathf.Max(ITEM_LIST_MIN_WIDTH, viewport.width - 2 * TableScrollbarWidth);
 				if (!Mathf.Approximately(width, _itemsTableWidth))
@@ -453,7 +469,96 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUI.BeginGroup(viewport);
 			DrawTableRow(ItemColumnLabels, _itemsColumnWidths, _itemPanelHeaderRowStyle, _itemPanelHeaderFieldStyle,
 				new Rect(-_itemsPanelScrollPos.x, 0, _itemsTableWidth, ITEMS_TABLE_ROW_HEIGHT));
+			DrawColumnResizeHandles(viewport.width);
 			GUI.EndGroup();
+		}
+
+		private void DrawColumnResizeHandles(float viewportWidth)
+		{
+			var evt = Event.current;
+			float edge = -_itemsPanelScrollPos.x;
+			for (int column = 0; column < _itemsColumnWidths.Length; column++)
+			{
+				edge += _itemsColumnWidths[column];
+				var handle = new Rect(edge - 4, 0, 8, ITEMS_TABLE_ROW_HEIGHT);
+				int id = GUIUtility.GetControlID(FocusType.Passive);
+				EditorGUIUtility.AddCursorRect(handle, MouseCursor.ResizeHorizontal, id);
+				if (evt.type == EventType.Repaint)
+					EditorGUI.DrawRect(new Rect(edge - 1, 3, 1, ITEMS_TABLE_ROW_HEIGHT - 6), _tableSeparatorColor);
+				// Resize handles are passive controls; still allow Escape while they own the mouse.
+				var eventType = GUIUtility.hotControl == id && evt.type == EventType.KeyDown
+					? evt.type : evt.GetTypeForControl(id);
+				switch (eventType)
+				{
+					case EventType.MouseDown when GUI.enabled && evt.button == 0 && handle.Contains(evt.mousePosition):
+						GUIUtility.hotControl = id;
+						_columnResizeStartX = evt.mousePosition.x;
+						_columnResizeStartWidth = _itemsColumnWidths[column];
+						_columnResizeWasCustom = _hasCustomColumnWidths;
+						evt.Use();
+						break;
+					case EventType.MouseDrag when GUIUtility.hotControl == id:
+						_itemsColumnWidths[column] = ClampColumnWidth(column, _columnResizeStartWidth + evt.mousePosition.x - _columnResizeStartX);
+						_hasCustomColumnWidths = true;
+						_itemsTableWidth = _itemsColumnWidths.Sum();
+						evt.Use();
+						Repaint();
+						break;
+					case EventType.MouseUp when GUIUtility.hotControl == id:
+						GUIUtility.hotControl = 0;
+						if (_hasCustomColumnWidths) SaveColumnWidths(_columnWidthsPreferenceKey, _itemsColumnWidths);
+						evt.Use();
+						break;
+					case EventType.KeyDown when GUIUtility.hotControl == id && evt.keyCode == KeyCode.Escape:
+						_itemsColumnWidths[column] = _columnResizeStartWidth;
+						_hasCustomColumnWidths = _columnResizeWasCustom;
+						_itemsTableWidth = _hasCustomColumnWidths ? _itemsColumnWidths.Sum() : 0;
+						GUIUtility.hotControl = 0;
+						evt.Use();
+						Repaint();
+						break;
+				}
+			}
+			if (evt.type == EventType.ContextClick && new Rect(0, 0, viewportWidth, ITEMS_TABLE_ROW_HEIGHT).Contains(evt.mousePosition))
+			{
+				var menu = new GenericMenu();
+				menu.AddItem(new GUIContent("Reset column widths"), false, () =>
+				{
+					for (int i = 0; i < ItemColumnLabels.Length; i++) EditorPrefs.DeleteKey(_columnWidthsPreferenceKey + "." + i);
+					_hasCustomColumnWidths = false;
+					_itemsTableWidth = 0; // Recalculate the default layout on the next repaint.
+					Repaint();
+				});
+				menu.ShowAsContext();
+				evt.Use();
+			}
+		}
+
+		private static string GetColumnWidthsPreferenceKey(string projectAssetsPath) =>
+			"Beamable.ContentWindow.ColumnWidths.v1." + projectAssetsPath;
+
+		private static float ClampColumnWidth(int column, float width)
+		{
+			float minimum = column switch { 0 => 140, 1 => 150, 2 => 50, _ => 110 };
+			return Mathf.Clamp(width, minimum, 2000);
+		}
+
+		private static float[] LoadColumnWidths(string key)
+		{
+			var widths = new float[ItemColumnLabels.Length];
+			for (int i = 0; i < widths.Length; i++)
+			{
+				if (!EditorPrefs.HasKey(key + "." + i)) return null;
+				float width = EditorPrefs.GetFloat(key + "." + i);
+				if (float.IsNaN(width) || float.IsInfinity(width) || width != ClampColumnWidth(i, width)) return null;
+				widths[i] = width;
+			}
+			return widths;
+		}
+
+		private static void SaveColumnWidths(string key, float[] widths)
+		{
+			for (int i = 0; i < widths.Length; i++) EditorPrefs.SetFloat(key + "." + i, widths[i]);
 		}
 
 		public List<LocalContentManifestEntry> _frameRenderedItems = new List<LocalContentManifestEntry>();

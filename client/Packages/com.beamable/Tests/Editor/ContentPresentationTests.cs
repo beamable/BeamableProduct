@@ -1300,6 +1300,28 @@ namespace Beamable.Editor.Tests
             Assert.That(name.xMax, Is.EqualTo(225));
         }
 
+        [TestCase(0, -500f, 140f)]
+        [TestCase(1, -500f, 150f)]
+        [TestCase(2, -500f, 50f)]
+        [TestCase(3, -500f, 110f)]
+        [TestCase(0, 350f, 350f)]
+        [TestCase(3, 260f, 260f)]
+        [TestCase(0, 50000f, 2000f)]
+        public void Column_drag_preserves_readable_minimums_and_bounds_extreme_widths(int column, float requested, float expected)
+        {
+            var method = typeof(ContentWindow).GetMethod("ClampColumnWidth", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(method.Invoke(null, new object[] { column, requested }), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void Column_preferences_have_stable_distinct_project_keys()
+        {
+            var method = typeof(ContentWindow).GetMethod("GetColumnWidthsPreferenceKey", BindingFlags.Static | BindingFlags.NonPublic);
+            var first = method.Invoke(null, new object[] { "C:/Games/First/Assets" });
+            Assert.That(method.Invoke(null, new object[] { "C:/Games/First/Assets" }), Is.EqualTo(first));
+            Assert.That(method.Invoke(null, new object[] { "C:/Games/Second/Assets" }), Is.Not.EqualTo(first));
+        }
+
         private static object Call(string name, params object[] args)
         {
             var method = typeof(ContentWindow_TooltipsHelper).GetMethod(name, BindingFlags.Public | BindingFlags.Static);
@@ -1351,6 +1373,54 @@ namespace Beamable.Editor.Tests
     }
 
     // Uses real content validators and native Unity objects; run inside Unity.
+    public class ContentTableColumnPreferenceTests
+    {
+        static object Invoke(string method, params object[] args) => typeof(ContentWindow)
+            .GetMethod(method, BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, args);
+
+        [Test]
+        public void Local_column_preferences_round_trip_all_four_widths_without_touching_another_project()
+        {
+            var key = "Beamable.Tests.ColumnWidths." + Guid.NewGuid();
+            try
+            {
+                var widths = new[] { 350f, 180f, 95f, 210f };
+                Invoke("SaveColumnWidths", key, widths);
+                Assert.That(Invoke("LoadColumnWidths", key), Is.EqualTo(widths));
+                Assert.That(Invoke("LoadColumnWidths", key + ".other-project"), Is.Null);
+            }
+            finally { for (int i = 0; i < 4; i++) EditorPrefs.DeleteKey(key + "." + i); }
+        }
+
+        [TestCase(-1f)]
+        [TestCase(50000f)]
+        [TestCase(float.NaN)]
+        [TestCase(float.PositiveInfinity)]
+        public void Invalid_saved_widths_fall_back_to_the_default_layout(float invalid)
+        {
+            var key = "Beamable.Tests.ColumnWidths." + Guid.NewGuid();
+            try
+            {
+                Invoke("SaveColumnWidths", key, new[] { 350f, 180f, 95f, 210f });
+                EditorPrefs.SetFloat(key + ".1", invalid);
+                Assert.That(Invoke("LoadColumnWidths", key), Is.Null);
+            }
+            finally { for (int i = 0; i < 4; i++) EditorPrefs.DeleteKey(key + "." + i); }
+        }
+
+        [Test]
+        public void Incomplete_saved_widths_are_not_applied()
+        {
+            var key = "Beamable.Tests.ColumnWidths." + Guid.NewGuid();
+            try
+            {
+                EditorPrefs.SetFloat(key + ".0", 350);
+                Assert.That(Invoke("LoadColumnWidths", key), Is.Null);
+            }
+            finally { EditorPrefs.DeleteKey(key + ".0"); }
+        }
+    }
+
     public class ContentTableStyleTests
     {
         [Test]
