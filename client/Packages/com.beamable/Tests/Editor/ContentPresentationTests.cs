@@ -21,6 +21,285 @@ using UnityEngine;
 
 namespace Beamable.Editor.Tests
 {
+    public class ContentReconciliationQueueTests
+    {
+        static LocalContentManifestEntry Entry(string id, ContentChangeKind kind) => new()
+        {
+            FullId = id, ChangeKind = (int)kind, IsInConflict = kind == ContentChangeKind.Conflict,
+            TargetManifestUid = "publication"
+        };
+
+        [Test]
+        public void Queue_groups_conflicts_first_but_opens_the_clicked_item_and_excludes_local_edits()
+        {
+            var queue = new ContentReconciliationQueue();
+            queue.Refresh(new[] { Entry("currency.z", ContentChangeKind.IncomingAddition),
+                Entry("currency.b", ContentChangeKind.Conflict), Entry("currency.a", ContentChangeKind.IncomingDeletion),
+                Entry("currency.local", ContentChangeKind.LocalEdit), Entry("currency.clean", ContentChangeKind.UpToDate) }, "currency.z");
+            Assert.That(queue.Items.ConvertAll(e => e.FullId), Is.EqualTo(new[] { "currency.b", "currency.a", "currency.z" }));
+            Assert.That(queue.SelectedId, Is.EqualTo("currency.z"));
+            Assert.That(queue.ConflictCount, Is.EqualTo(1));
+            Assert.That(queue.ResolvedCount, Is.Zero);
+        }
+
+        [Test]
+        public void Successful_resolution_advances_once_and_completion_does_not_require_closing()
+        {
+            var queue = new ContentReconciliationQueue();
+            queue.Refresh(new[] { Entry("a", ContentChangeKind.Conflict), Entry("b", ContentChangeKind.IncomingChange) }, "a");
+            queue.Complete("a");
+            queue.Complete("a");
+            Assert.That(queue.SelectedId, Is.EqualTo("b"));
+            Assert.That(queue.ResolvedCount, Is.EqualTo(1));
+            Assert.That(queue.Progress, Is.EqualTo(.5f));
+            queue.Complete("b");
+            Assert.That(queue.SelectedId, Is.Null);
+            Assert.That(queue.Items, Is.Empty);
+            Assert.That(queue.Progress, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void New_publication_can_requeue_previously_resolved_item_without_losing_current_selection()
+        {
+            var queue = new ContentReconciliationQueue();
+            var a = Entry("a", ContentChangeKind.Conflict);
+            var b = Entry("b", ContentChangeKind.IncomingChange);
+            queue.Refresh(new[] { a, b }, "a");
+            queue.Complete("a");
+            queue.Refresh(new[] { a, b });
+            Assert.That(queue.SelectedId, Is.EqualTo("b"));
+            Assert.That(queue.Items.Count, Is.EqualTo(2));
+            Assert.That(queue.ResolvedCount, Is.EqualTo(1));
+            Assert.That(queue.Progress, Is.EqualTo(1f / 3));
+        }
+
+        [Test]
+        public void Navigation_or_refresh_is_not_a_resolution_and_does_not_credit_external_changes()
+        {
+            var queue = new ContentReconciliationQueue();
+            var a = Entry("a", ContentChangeKind.IncomingChange);
+            var b = Entry("b", ContentChangeKind.IncomingChange);
+            queue.Refresh(new[] { a, b }, "b");
+            queue.Refresh(new[] { a }, "missing");
+            Assert.That(queue.SelectedId, Is.EqualTo("a"));
+            Assert.That(queue.ResolvedCount, Is.Zero);
+            Assert.That(queue.Progress, Is.Zero);
+        }
+    }
+
+    // Native EditorWindow lifecycle, with controlled command transport and no real content writes.
+    public class ContentReconciliationQueueWindowTests
+    {
+        const BindingFlags Fields = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+        ContentReconciliationWindow window;
+        CliContentService service;
+        QueueCommands commands;
+        ContentReconciliationQueue queue;
+        object Get(string name) => typeof(ContentReconciliationWindow).GetField(name, Fields).GetValue(window);
+        void Set(string name, object value) => typeof(ContentReconciliationWindow).GetField(name, Fields).SetValue(window, value);
+        object Call(string name, params object[] args) => typeof(ContentReconciliationWindow).GetMethod(name, Fields).Invoke(window, args);
+        void Version(int version) => typeof(CliContentService).GetField("<ManifestChangedCount>k__BackingField", Fields).SetValue(service, version);
+
+        [SetUp]
+        public void SetUp()
+        {
+            commands = new QueueCommands();
+            service = ContentReconciliationFeedbackTests.CreateService(commands);
+            typeof(CliContentService).GetField("_contentTypeReflectionCache", Fields).SetValue(service, new ContentTypeReflectionCache());
+            service.EntriesCache.Clear();
+            foreach (var id in new[] { "currency.a", "currency.b" })
+                service.EntriesCache[id] = new LocalContentManifestEntry { FullId = id, TypeName = "currency", TargetManifestUid = "reviewed", ChangeKind = (int)ContentChangeKind.IncomingChange };
+            queue = new ContentReconciliationQueue();
+            queue.Refresh(service.EntriesCache.Values, "currency.a");
+            window = ScriptableObject.CreateInstance<ContentReconciliationWindow>();
+            Set("_service", service); Set("_scope", "test/realm/global"); Set("_contentId", "currency.a");
+            Set("_entry", service.EntriesCache["currency.a"]); Set("_queue", queue);
+            Set("_preview", Preview("currency.a"));
+            Call("CacheQueueLabels");
+        }
+
+        [TearDown]
+        public void TearDown() { if (window != null) UnityEngine.Object.DestroyImmediate(window); }
+
+        static ContentReconciliationPreview Preview(string id) => new() {
+            ContentId = id, ManifestUid = "reviewed", LocalRevision = "revision", LocalExists = true, RealmExists = true,
+            LocalJson = "{}", RealmJson = "{}", Differences = Array.Empty<ContentReconciliationDifference>()
+        };
+
+        [Test]
+        public async Task Successful_apply_waits_for_refreshed_cache_then_advances_and_keeps_window_open()
+        {
+            var applied = (Task)Call("Apply", false);
+            Call("SelectItem", "currency.b");
+            Assert.That(Get("_contentId"), Is.EqualTo("currency.a"), "Selection is locked during apply.");
+            commands.Pending.Completion.CompleteSuccess();
+            await applied;
+            Assert.That(window != null, Is.True);
+            Assert.That(queue.ResolvedCount, Is.EqualTo(1));
+            Assert.That(commands.Calls.Count, Is.EqualTo(1));
+            service.isReloading = true;
+            var next = service.EntriesCache["currency.b"];
+            service.EntriesCache.Clear();
+            Call("Update");
+            Assert.That(queue.Items.Count, Is.EqualTo(1), "A temporarily empty cache is not a completed queue.");
+            service.EntriesCache[next.FullId] = next;
+            service.isReloading = false; Version(1);
+            Call("Update");
+            Assert.That(Get("_contentId"), Is.EqualTo("currency.b"));
+            Assert.That(commands.Calls.Count, Is.EqualTo(2));
+            Assert.That(commands.Calls[1].preview, Is.True);
+            Assert.That(commands.Calls[1].filter, Is.EqualTo("currency.b"));
+            commands.Pending.Report(Preview("currency.b")); commands.Pending.Completion.CompleteSuccess();
+            Assert.That(Get("_error"), Is.Null);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public async Task Failed_or_stale_apply_keeps_selection_and_progress_and_never_previews_next_item(bool reported)
+        {
+            var applied = (Task)Call("Apply", true);
+            if (reported) { commands.Pending.ReportError("The realm changed. Refresh and review."); commands.Pending.Completion.CompleteSuccess(); }
+            else commands.Pending.Completion.CompleteError(new InvalidOperationException("controlled transport failure"));
+            await applied;
+            Version(1); Call("Update");
+            Assert.That(Get("_contentId"), Is.EqualTo("currency.a"));
+            Assert.That(queue.ResolvedCount, Is.Zero);
+            Assert.That(Get("_error"), Is.Not.Null);
+            Assert.That(commands.Calls.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public async Task Navigation_ignores_previous_late_preview_and_blocks_apply_until_selected_preview_completes()
+        {
+            var first = (Task)Call("LoadPreview");
+            var old = commands.Pending;
+            Call("SelectItem", "currency.b");
+            var selected = commands.Pending;
+            await (Task)Call("Apply", false);
+            Assert.That(commands.Calls.Count, Is.EqualTo(2));
+            old.Report(Preview("currency.a")); old.Completion.CompleteSuccess(); await first;
+            Assert.That(Get("_preview"), Is.Null);
+            selected.Report(Preview("currency.b")); selected.Completion.CompleteSuccess();
+            Assert.That(((ContentReconciliationPreview)Get("_preview")).ContentId, Is.EqualTo("currency.b"));
+            Assert.That(old.Cancelled, Is.True);
+        }
+
+        [Test]
+        public async Task Closing_during_preview_ignores_late_completion()
+        {
+            var pending = (Task)Call("LoadPreview");
+            var command = commands.Pending;
+            UnityEngine.Object.DestroyImmediate(window);
+            command.Report(Preview("currency.a")); command.Completion.CompleteSuccess();
+            await pending;
+            Assert.That(command.Cancelled, Is.True);
+            Assert.That(commands.Calls.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Realm_change_invalidates_review_without_dispatching_commands()
+        {
+            service.manifestIdOverride = "other";
+            Call("Update");
+            Assert.That(Get("_preview"), Is.Null);
+            Assert.That((string)Get("_error"), Does.Contain("namespace changed"));
+            Assert.That(commands.Calls, Is.Empty);
+        }
+
+        [Test]
+        public async Task Reload_failure_cannot_use_an_older_unrelated_revision_as_proof_of_completion()
+        {
+            Version(5); // An unrelated update arrived while this item's preview was loading.
+            var applied = (Task)Call("Apply", false);
+            commands.Pending.Completion.CompleteSuccess(); await applied;
+            var next = service.EntriesCache["currency.b"];
+            service.EntriesCache.Clear();
+            typeof(CliContentService).GetField("_contentWatchRequested", Fields).SetValue(service, true);
+            typeof(CliContentService).GetField("_localContentModeError", Fields).SetValue(service, new InvalidOperationException("refresh failed"));
+            Call("Update");
+            Assert.That((string)Get("_error"), Does.Contain("could not refresh"));
+            Assert.That(queue.Items.Count, Is.EqualTo(1));
+            Assert.That(Get("_awaitingRefresh"), Is.True);
+            Assert.That(commands.Calls.Count, Is.EqualTo(1));
+
+            service.EntriesCache[next.FullId] = next; Version(6);
+            typeof(CliContentService).GetField("_localContentModeError", Fields).SetValue(service, null);
+            Call("Update");
+            Assert.That(Get("_contentId"), Is.EqualTo("currency.b"));
+            Assert.That(queue.ResolvedCount, Is.EqualTo(1), "Recovery must not apply the previous choice twice.");
+            Assert.That(commands.Calls[1].preview, Is.True);
+            commands.Pending.Report(Preview("currency.b")); commands.Pending.Completion.CompleteSuccess();
+        }
+
+        [Test]
+        public async Task Final_success_shows_completion_only_after_snapshot_and_does_not_close_window()
+        {
+            service.EntriesCache.Remove("currency.b"); queue.Refresh(service.EntriesCache.Values);
+            var applied = (Task)Call("Apply", false);
+            commands.Pending.Completion.CompleteSuccess(); await applied;
+            Assert.That(Get("_awaitingRefresh"), Is.True);
+            await (Task)Call("Apply", false);
+            Assert.That(commands.Calls.Count, Is.EqualTo(1));
+            service.EntriesCache.Clear(); Version(1); Call("Update");
+            Assert.That(Get("_contentId"), Is.Null);
+            Assert.That(Get("_awaitingRefresh"), Is.False);
+            Assert.That(window != null, Is.True);
+            Assert.That(queue.Progress, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Selected_item_is_revealed_in_a_previously_collapsed_group()
+        {
+            Set("_showIncoming", false);
+            Set("_queueScroll", new Vector2(0, 2000));
+            Call("RevealSelection");
+            Assert.That(Get("_showIncoming"), Is.True);
+            Assert.That(((Vector2)Get("_queueScroll")).y, Is.EqualTo(26));
+        }
+
+        [Test]
+        public void All_incoming_queue_states_reuse_the_content_windows_cloud_icon()
+        {
+            var entries = new List<LocalContentManifestEntry>();
+            foreach (var kind in new[] { ContentChangeKind.IncomingChange, ContentChangeKind.IncomingAddition, ContentChangeKind.IncomingDeletion })
+                entries.Add(new LocalContentManifestEntry { FullId = kind.ToString(), ChangeKind = (int)kind });
+            queue.Refresh(entries); Call("CacheQueueLabels");
+            var icons = (Texture[])Get("_queueIcons");
+            Assert.That(icons.Length, Is.EqualTo(3));
+            Assert.That(icons[0], Is.SameAs(global::Beamable.Editor.Util.BeamGUI.iconStatusIncoming));
+            Assert.That(icons[1], Is.SameAs(icons[0]));
+            Assert.That(icons[2], Is.SameAs(icons[0]));
+        }
+
+        class QueueCommands : BeamCommands
+        {
+            public readonly List<ContentResolveArgs> Calls = new();
+            public QueueCommand Pending;
+            public QueueCommands() : base(null, null) { }
+            public override ContentResolveWrapper ContentResolve(ContentResolveArgs args)
+            {
+                Calls.Add(args); Pending = new QueueCommand();
+                return new ContentResolveWrapper { Command = Pending };
+            }
+        }
+        class QueueCommand : IBeamCommand
+        {
+            public readonly Promise Completion = new();
+            public bool Cancelled;
+            Action<ReportDataPoint<BeamContentResolveConflictResult>> report;
+            Action<ReportDataPoint<ErrorOutput>> error;
+            public void Report(ContentReconciliationPreview preview) => report?.Invoke(new ReportDataPoint<BeamContentResolveConflictResult> { data = new BeamContentResolveConflictResult { Preview = preview } });
+            public void ReportError(string message) => error?.Invoke(new ReportDataPoint<ErrorOutput> { data = new ErrorOutput { message = message } });
+            public void SetCommand(string command) { }
+            public Promise Run() => Completion;
+            public void Cancel() { Cancelled = true; }
+            public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> callback) { if (typeof(T) == typeof(BeamContentResolveConflictResult)) report = (Action<ReportDataPoint<BeamContentResolveConflictResult>>)(object)callback; return this; }
+            public IBeamCommand On(Action<ReportDataPointDescription> callback) => this;
+            public IBeamCommand OnError(Action<ReportDataPoint<ErrorOutput>> callback) { error += callback; return this; }
+            public IBeamCommand OnTerminate(Action<ReportDataPoint<EofOutput>> callback) => this;
+        }
+    }
+
     public class ContentUnifiedIssuesTests
     {
         const BindingFlags Members = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
@@ -620,7 +899,7 @@ namespace Beamable.Editor.Tests
             Assert.That(service.CurrentProgress.IsActive, Is.False);
         }
 
-        static CliContentService CreateService(ResolveCommands commands)
+        internal static CliContentService CreateService(BeamCommands commands)
         {
             var service = (CliContentService)FormatterServices.GetUninitializedObject(typeof(CliContentService));
             const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
@@ -1755,7 +2034,15 @@ namespace Beamable.Editor.Tests
             CheckLayout(width, height, false, false, null, tab, true, true);
         }
 
-        static void CheckLayout(int width, int height, bool deletion, bool missingScript, string error, int tab, bool both = false, bool conflict = false)
+        [TestCase(840, 400, 0)]
+        [TestCase(840, 400, 1)]
+        [TestCase(1200, 650, 0)]
+        public void Queue_and_long_names_keep_actions_and_comparison_inside_window(int width, int height, int tab)
+        {
+            CheckLayout(width, height, false, false, null, tab, true, true, true);
+        }
+
+        static void CheckLayout(int width, int height, bool deletion, bool missingScript, string error, int tab, bool both = false, bool conflict = false, bool withQueue = false)
         {
             // Execute the real window in Unity's IMGUI container without showing a window,
             // connecting a CLI, or using the project's configuration/content objects.
@@ -1793,6 +2080,20 @@ namespace Beamable.Editor.Tests
                 Set("_realmLines", new[] { "{}" });
                 Set("_jsonChangedLines", new[] { false });
 
+                if (withQueue)
+                {
+                    var queue = new ContentReconciliationQueue();
+                    var entries = new List<LocalContentManifestEntry>();
+                    for (int i = 0; i < 250; i++) entries.Add(new LocalContentManifestEntry {
+                        FullId = "currency." + new string('w', 200) + i,
+                        IsInConflict = i < 25, ChangeKind = (int)ContentChangeKind.IncomingChange
+                    });
+                    queue.Refresh(entries, entries[0].FullId);
+                    Set("_queue", queue);
+                    Set("_successMessage", new string('w', 500) + " resolved · Realm version used");
+                    typeof(ContentReconciliationWindow).GetMethod("CacheQueueLabels", InstanceFields).Invoke(window, null);
+                }
+
                 Rect footer = default;
                 foreach (var eventType in new[] { EventType.Layout, EventType.Repaint })
                 {
@@ -1826,7 +2127,7 @@ namespace Beamable.Editor.Tests
                     Assert.That(scrollable, Is.True, "Overflowing review details must remain reachable by scrolling.");
                 if (tab == 1 || both)
                 {
-                    Assert.That(viewports.Count, Is.EqualTo(1), "The shared JSON viewport or property viewport must be laid out.");
+                    Assert.That(viewports.Count, Is.EqualTo(withQueue ? 2 : 1), "Queue and comparison have independent viewports.");
                     foreach (var viewport in viewports)
                         Assert.That(viewport.height, Is.GreaterThanOrEqualTo(96), "Content needs room for at least four lines, independently of warning/error height.");
                 }

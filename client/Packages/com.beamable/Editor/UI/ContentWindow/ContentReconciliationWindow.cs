@@ -11,6 +11,45 @@ using UnityEngine;
 
 namespace Beamable.Editor.UI.ContentWindow
 {
+	internal sealed class ContentReconciliationQueue
+	{
+		internal readonly List<LocalContentManifestEntry> Items = new();
+		internal string SelectedId { get; private set; }
+		internal int ResolvedCount { get; private set; }
+		internal int ConflictCount { get; private set; }
+		internal float Progress => Items.Count + ResolvedCount == 0 ? 0 : (float)ResolvedCount / (Items.Count + ResolvedCount);
+		internal void Refresh(IEnumerable<LocalContentManifestEntry> entries, string selectedId = null)
+		{
+			selectedId ??= SelectedId;
+			Items.Clear();
+			ConflictCount = 0;
+			foreach (var entry in entries)
+			{
+				if (!ContentWindow_TooltipsHelper.CanReviewEntry(entry)) continue;
+				Items.Add(entry);
+				if (entry.IsInConflict) ConflictCount++;
+			}
+			Items.Sort((a, b) => a.IsInConflict != b.IsInConflict ? a.IsInConflict ? -1 : 1
+				: string.Compare(a.FullId, b.FullId, StringComparison.Ordinal));
+			SelectedId = Items.Exists(e => e.FullId == selectedId) ? selectedId : Items.Count > 0 ? Items[0].FullId : null;
+		}
+		internal bool Select(string id)
+		{
+			if (!Items.Exists(e => e.FullId == id)) return false;
+			SelectedId = id;
+			return true;
+		}
+		internal void Complete(string id)
+		{
+			var index = Items.FindIndex(e => e.FullId == id);
+			if (index < 0) return;
+			if (Items[index].IsInConflict) ConflictCount--;
+			Items.RemoveAt(index);
+			ResolvedCount++;
+			SelectedId = Items.Count == 0 ? null : Items[index % Items.Count].FullId;
+		}
+	}
+
 	// A review owns one read-only request. Applying uses the existing service operation and watcher lifecycle.
 	internal sealed class ContentReconciliationWindow : EditorWindow
 	{
@@ -40,6 +79,16 @@ namespace Beamable.Editor.UI.ContentWindow
 		internal const string KeepLocalText = "Keep Local Version";
 		internal const string UseRealmText = "Use Realm Version";
 		private const float RowHeight = 24;
+		private ContentReconciliationQueue _queue;
+		private Vector2 _queueScroll;
+		private int _manifestVersion;
+		private bool _awaitingRefresh, _showConflicts = true, _showIncoming = true;
+		private string _successMessage;
+		private GUIContent[] _queueLabels;
+		private Texture[] _queueIcons;
+		private GUIStyle _queueLabel;
+		private string _remainingLabel, _progressLabel, _conflictsLabel, _incomingLabel;
+		private float _queueViewportHeight;
 
 		internal static void Open(CliContentService service, LocalContentManifestEntry entry)
 		{
@@ -48,8 +97,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (window._applying) { window.Focus(); return; }
 			var kind = ContentWindow_TooltipsHelper.GetChangeKind(entry);
 			var summary = kind == ContentChangeKind.IncomingAddition || kind == ContentChangeKind.IncomingDeletion;
-			window.minSize = new Vector2(560, 340);
-			var size = new Vector2(680, summary ? 360 : 420);
+			window.minSize = new Vector2(840, 400);
+			var size = new Vector2(1000, summary ? 460 : 520);
 			if (owner != null && owner != window)
 				window.position = new Rect(owner.position.center - size / 2, size);
 			window._service = service;
@@ -57,7 +106,116 @@ namespace Beamable.Editor.UI.ContentWindow
 			window._entry = entry;
 			window._scope = service.GetContentScopeKey();
 			window._tab = 0;
+			window._queue = new ContentReconciliationQueue();
+			window._queue.Refresh(service.EntriesCache.Values, entry.FullId);
+			window._manifestVersion = service.ManifestChangedCount;
+			window._awaitingRefresh = false;
+			window._successMessage = null;
+			window.CacheQueueLabels();
+			window.RevealSelection();
 			_ = window.LoadPreview();
+		}
+
+		// Observe the existing watcher; do not start another watcher or poll the CLI.
+		private void Update()
+		{
+			if (_service == null || _queue == null || _applying) return;
+			if (_scope != _service.GetContentScopeKey())
+			{
+				if (_error == "Realm or namespace changed. Close this review and reopen it from Beam Content.") return;
+				_generation++;
+				_request?.Command.Cancel();
+				_request = null;
+				_loading = _awaitingRefresh = false;
+				_preview = null;
+				_error = "Realm or namespace changed. Close this review and reopen it from Beam Content.";
+				Repaint();
+				return;
+			}
+			if (_service.isReloading || _service.CurrentProgress.IsActive) return;
+			if (_awaitingRefresh && _manifestVersion == _service.ManifestChangedCount)
+			{
+				if (_loading && _service.AutoSyncState == ContentAutoSyncState.Failed)
+				{
+					_loading = false;
+					_error = "The choice was applied, but content could not refresh. Retry the refresh to continue.";
+					Repaint();
+				}
+				return;
+			}
+			if (!_awaitingRefresh && (_loading || _error != null || _manifestVersion == _service.ManifestChangedCount)) return;
+			var previousId = _contentId;
+			var advance = _awaitingRefresh;
+			_awaitingRefresh = false;
+			_manifestVersion = _service.ManifestChangedCount;
+			_queue.Refresh(_service.EntriesCache.Values);
+			CacheQueueLabels();
+			if (advance || previousId != _queue.SelectedId)
+			{
+				_contentId = _queue.SelectedId;
+				_tab = 0;
+				RevealSelection();
+				_preview = null;
+				_loading = false;
+				_error = null;
+				if (_contentId != null) _ = LoadPreview();
+			}
+			Repaint();
+		}
+
+		private void CacheQueueLabels()
+		{
+			_queueLabels = new GUIContent[_queue.Items.Count];
+			_queueIcons = new Texture[_queue.Items.Count];
+			var hasUnknown = false;
+			for (var i = 0; i < _queue.Items.Count; i++)
+			{
+				var item = _queue.Items[i];
+				var status = ContentWindow_TooltipsHelper.GetStatusLabel(item);
+				hasUnknown |= ContentWindow_TooltipsHelper.GetChangeKind(item) == ContentChangeKind.Unknown;
+				_queueLabels[i] = new GUIContent(item.FullId + (item.IsInConflict ? "" : "\n" + status),
+					item.FullId + "\n" + status);
+				_queueIcons[i] = item.IsInConflict ? EditorGUIUtility.IconContent("console.erroricon").image : ContentWindow_TooltipsHelper.GetStatusIcon(item);
+			}
+			_remainingLabel = $"{_queue.Items.Count} remaining";
+			_progressLabel = $"{_queue.ResolvedCount} of {_queue.ResolvedCount + _queue.Items.Count} resolved";
+			_conflictsLabel = $"Conflicts · {_queue.ConflictCount}";
+			// Older CLI payloads do not establish a direction; keep that group neutral.
+			_incomingLabel = $"{(hasUnknown ? "Other changes" : "Incoming")} · {_queue.Items.Count - _queue.ConflictCount}";
+		}
+
+		private void RevealSelection()
+		{
+			var index = _queue.Items.FindIndex(item => item.FullId == _queue.SelectedId);
+			if (index < 0) return;
+			var conflict = index < _queue.ConflictCount;
+			if (conflict) _showConflicts = true;
+			else _showIncoming = true;
+			var y = conflict ? 26 + index * 44 :
+				(_queue.ConflictCount > 0 ? 26 + (_showConflicts ? _queue.ConflictCount * 44 : 0) : 0) + 26 + (index - _queue.ConflictCount) * 44;
+			if (y < _queueScroll.y || y + 44 > _queueScroll.y + _queueViewportHeight) _queueScroll.y = y;
+		}
+
+		private void SelectItem(string id)
+		{
+			if (_applying || _awaitingRefresh || _service.CurrentProgress.IsActive || _service.isReloading || !_queue.Select(id)) return;
+			_contentId = id;
+			_tab = 0;
+			RevealSelection();
+			_ = LoadPreview();
+		}
+
+		private async Task RefreshReview()
+		{
+			if (!_awaitingRefresh) { await LoadPreview(); return; }
+			_error = null;
+			_loading = true;
+			var generation = _generation;
+			try { await _service.Reload(); }
+			catch (Exception error)
+			{
+				if (this != null && generation == _generation) { _error = error.Message; _loading = false; }
+			}
 		}
 
 		private void OnDisable()
@@ -246,6 +404,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			_localHeading = new GUIStyle(EditorStyles.boldLabel);
 			_realmHeading = new GUIStyle(EditorStyles.boldLabel);
 			_idLabel = new GUIStyle(EditorStyles.boldLabel) { clipping = TextClipping.Clip };
+			_queueLabel = new GUIStyle(EditorStyles.label) { clipping = TextClipping.Clip, alignment = TextAnchor.MiddleLeft };
 			_localHeading.normal.textColor = EditorGUIUtility.isProSkin ? new Color(1, .77f, .24f) : new Color(.48f, .31f, 0);
 			_realmHeading.normal.textColor = EditorGUIUtility.isProSkin ? new Color(.18f, .75f, 1) : new Color(0, .34f, .55f);
 			_warningBody = new GUIStyle(_body);
@@ -277,38 +436,105 @@ namespace Beamable.Editor.UI.ContentWindow
 			using (new EditorGUILayout.HorizontalScope())
 			{
 				GUILayout.Space(14);
+				if (_queue != null)
+				{
+					using (new EditorGUILayout.VerticalScope(GUILayout.Width(Mathf.Clamp(position.width * .28f, 220, 300)))) DrawQueue();
+					GUILayout.Space(14);
+				}
 				using (new EditorGUILayout.VerticalScope())
 				{
-					GUILayout.Label(_preview == null ? "Review item" : DecisionTitle(_preview.LocalExists, _preview.RealmExists, _missingType), _heading, HeaderLabelOptions);
-					GUILayout.Label(new GUIContent(_contentId, _contentId + "\nRealm / namespace: " + _scope), _idLabel, HeaderLabelOptions);
-					GUILayout.Space(8);
-					if (_preview != null)
+					if (_queue != null && _contentId == null && !_awaitingRefresh)
 					{
-						DrawState();
-						if (_missingType) DrawMissingType();
-						var both = _preview.LocalExists && _preview.RealmExists;
-						var tab = both ? GUILayout.Toolbar(_tab, DiffTabs, GUILayout.Height(26))
-							: (EditorGUILayout.Foldout(_tab == 1, "View JSON", true) ? 1 : 0);
-						if (tab != _tab) { _tab = tab; _reviewScroll = Vector2.zero; }
-						GUILayout.Space(8);
+						GUILayout.Label("No more items to reconcile", _heading);
+						GUILayout.Label("Validation errors may still need attention in Beam Content. Nothing was published.", _body);
+						GUILayout.FlexibleSpace();
+						if (GUILayout.Button("Close", GUILayout.Width(90), GUILayout.Height(30))) Close();
 					}
-					// Only the review body scrolls: long warnings/errors cannot displace the tabs or action footer.
-					_reviewScroll = EditorGUILayout.BeginScrollView(_reviewScroll, GUILayout.ExpandHeight(true));
-					if (_loading) { GUILayout.Label("Loading local and published versions…", _body); GUILayout.FlexibleSpace(); }
-					else if (_preview == null) GUILayout.FlexibleSpace();
-					else DrawPreview();
-					if (_error != null)
-					{
-						EditorGUILayout.HelpBox(ReviewErrorMessage(_error), MessageType.Warning);
-						using (new EditorGUI.DisabledScope(_applying || _service.CurrentProgress.IsActive))
-							if (GUILayout.Button("Refresh review", GUILayout.Height(26))) _ = LoadPreview();
-					}
-					EditorGUILayout.EndScrollView();
-					DrawActions();
+					else DrawReview();
 				}
 				GUILayout.Space(14);
 			}
 			GUILayout.Space(12);
+		}
+
+		private void DrawReview()
+		{
+			GUILayout.Label(_preview == null ? "Review item" : DecisionTitle(_preview.LocalExists, _preview.RealmExists, _missingType), _heading, HeaderLabelOptions);
+			GUILayout.Label(new GUIContent(_contentId, _contentId + "\nRealm / namespace: " + _scope), _idLabel, HeaderLabelOptions);
+			GUILayout.Space(8);
+			if (_preview != null)
+			{
+				DrawState();
+				if (_missingType) DrawMissingType();
+				var both = _preview.LocalExists && _preview.RealmExists;
+				var tab = both ? GUILayout.Toolbar(_tab, DiffTabs, GUILayout.Height(26))
+					: (EditorGUILayout.Foldout(_tab == 1, "View JSON", true) ? 1 : 0);
+				if (tab != _tab) { _tab = tab; _reviewScroll = Vector2.zero; }
+				GUILayout.Space(8);
+			}
+			// Only the review body scrolls: long warnings/errors cannot displace the tabs or action footer.
+			_reviewScroll = EditorGUILayout.BeginScrollView(_reviewScroll, GUILayout.ExpandHeight(true));
+			if (_loading) { GUILayout.Label(_awaitingRefresh ? "Refreshing remaining items…" : "Loading local and published versions…", _body); GUILayout.FlexibleSpace(); }
+			else if (_preview == null) GUILayout.FlexibleSpace();
+			else DrawPreview();
+			if (_error != null)
+			{
+				EditorGUILayout.HelpBox(ReviewErrorMessage(_error), MessageType.Warning);
+				using (new EditorGUI.DisabledScope(_applying || _service.CurrentProgress.IsActive))
+					if (GUILayout.Button("Refresh review", GUILayout.Height(26))) _ = RefreshReview();
+			}
+			EditorGUILayout.EndScrollView();
+			DrawActions();
+		}
+
+		private void DrawQueue()
+		{
+			GUILayout.Label(_remainingLabel, EditorStyles.boldLabel);
+			GUILayout.Label(_progressLabel, EditorStyles.miniLabel);
+			var bar = GUILayoutUtility.GetRect(0, 5, GUILayout.ExpandWidth(true));
+			EditorGUI.DrawRect(bar, new Color(.5f, .5f, .5f, .25f));
+			bar.width *= _queue.Progress;
+			EditorGUI.DrawRect(bar, AdditionColor);
+			GUILayout.Space(10);
+			var viewport = GUILayoutUtility.GetRect(0, 0, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+			if (Event.current.type == EventType.Repaint) _queueViewportHeight = viewport.height;
+			var incoming = _queue.Items.Count - _queue.ConflictCount;
+			var height = (_queue.ConflictCount > 0 ? 26 + (_showConflicts ? _queue.ConflictCount * 44 : 0) : 0)
+				+ (incoming > 0 ? 26 + (_showIncoming ? incoming * 44 : 0) : 0);
+			var view = new Rect(0, 0, Math.Max(1, viewport.width - 16), height);
+			_queueScroll = GUI.BeginScrollView(viewport, _queueScroll, view);
+			float y = 0;
+			string selected = null;
+			using (new EditorGUI.DisabledScope(_applying || _awaitingRefresh || _service.CurrentProgress.IsActive || _service.isReloading))
+			{
+				Group(0, _queue.ConflictCount, _conflictsLabel, ref _showConflicts);
+				Group(_queue.ConflictCount, incoming, _incomingLabel, ref _showIncoming);
+			}
+			GUI.EndScrollView();
+			if (selected != null) { SelectItem(selected); GUIUtility.ExitGUI(); }
+
+			void Group(int start, int count, string label, ref bool expanded)
+			{
+				if (count == 0) return;
+				expanded = EditorGUI.Foldout(new Rect(12, y, view.width - 12, 24), expanded, label, true, EditorStyles.foldout);
+				y += 26;
+				if (!expanded) return;
+				// Skip off-screen entries; comparison payloads are fetched only for the selected item.
+				var first = Math.Max(0, (int)((_queueScroll.y - y) / 44));
+				var end = Math.Min(count, (int)Math.Ceiling((_queueScroll.y + viewport.height - y) / 44));
+				for (var offset = first; offset < end; offset++)
+				{
+					var index = start + offset;
+					var item = _queue.Items[index];
+					var rect = new Rect(0, y + offset * 44, view.width, 44);
+					if (item.FullId == _queue.SelectedId) EditorGUI.DrawRect(rect, new Color(.15f, .45f, .7f, .4f));
+					var icon = _queueIcons[index];
+					if (icon != null) GUI.DrawTexture(new Rect(8, rect.y + 12, 20, 20), icon, ScaleMode.ScaleToFit);
+					GUI.Label(new Rect(34, rect.y, rect.width - 38, rect.height), _queueLabels[index], _queueLabel);
+					if (GUI.Button(rect, GUIContent.none, GUIStyle.none) && item.FullId != _contentId) selected = item.FullId;
+				}
+				y += count * 44;
+			}
 		}
 
 		private void DrawPreview()
@@ -459,6 +685,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private void DrawActions()
 		{
 			GUILayout.Space(10);
+			if (_successMessage != null) GUILayout.Label(_successMessage, EditorStyles.miniLabel, HeaderLabelOptions);
 			if (_preview != null)
 			{
 				var consequence = DecisionConsequence(_preview.LocalExists, _preview.RealmExists);
@@ -468,9 +695,9 @@ namespace Beamable.Editor.UI.ContentWindow
 			using (new EditorGUILayout.HorizontalScope())
 			{
 				using (new EditorGUI.DisabledScope(_applying))
-					if (GUILayout.Button("Cancel", GUILayout.Width(90), GUILayout.Height(30))) Close();
+					if (GUILayout.Button("Close", GUILayout.Width(90), GUILayout.Height(30))) Close();
 				GUILayout.FlexibleSpace();
-				using (new EditorGUI.DisabledScope(_preview == null || _loading || _applying || _error != null || _service.CurrentProgress.IsActive))
+				using (new EditorGUI.DisabledScope(_preview == null || _loading || _applying || _error != null || _service.CurrentProgress.IsActive || _service.isReloading))
 				{
 					var invalid = _entry.IsInConflict && _service.IsContentInvalid(_contentId);
 					_keepLocalLabel.tooltip = invalid ? "Fix local validation errors before keeping this conflict."
@@ -488,15 +715,23 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private async Task Apply(bool keepLocal)
 		{
-			if (_applying || _preview == null || _error != null) return;
+			if (_applying || _loading || _awaitingRefresh || _preview == null || _error != null || _service.CurrentProgress.IsActive || _service.isReloading) return;
+			var generation = _generation;
+			var contentId = _contentId;
+			_manifestVersion = _service.ManifestChangedCount;
 			_applying = true;
 			try
 			{
 				await _service.ReconcileContentWithProgress(_contentId, keepLocal, _scope, _preview.ManifestUid, _preview.LocalRevision);
-				if (this != null) Close();
+				if (this == null || generation != _generation) return;
+				_queue.Complete(contentId);
+				CacheQueueLabels();
+				_successMessage = contentId + " resolved · " + (keepLocal ? "Local version kept" : "Realm version used");
+				_preview = null;
+				_awaitingRefresh = _loading = true;
 			}
-			catch (Exception error) { if (this != null) _error = error.Message; }
-			finally { if (this != null) { _applying = false; Repaint(); } }
+			catch (Exception error) { if (this != null && generation == _generation) _error = error.Message; }
+			finally { if (this != null && generation == _generation) { _applying = false; Repaint(); } }
 		}
 	}
 }
