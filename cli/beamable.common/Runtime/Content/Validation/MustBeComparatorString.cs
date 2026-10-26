@@ -1,27 +1,176 @@
 namespace Beamable.Common.Content.Validation
 {
 	/// <summary>
+	/// Selects which backend evaluator a <see cref="MustBeComparatorString"/> field is checked against.
+	/// Each consumer on the backend accepts a different set of comparator strings.
+	/// </summary>
+	public enum ComparatorStringKind
+	{
+		/// <summary>
+		/// Player stat requirements (listing, announcement, leaderboard and event cohort stat rules).
+		/// </summary>
+		STAT,
+
+		/// <summary>
+		/// Offer purchase count requirements on listings.
+		/// </summary>
+		OFFER_PURCHASES,
+
+		/// <summary>
+		/// Cohort membership requirements on listings.
+		/// </summary>
+		COHORT_MEMBERSHIP
+	}
+
+	/// <summary>
 	/// This type defines part of the %Beamable %ContentObject validation process.
 	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
 	/// - See Beamable.Common.Content.Validation.ValidationAttribute script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
 	public class MustBeComparatorString : MustBeOneOf
 	{
 		public const string EQUALS = "eq";
+		public const string EQUALS_LONG = "equal";
 		public const string NOT_EQUALS = "ne";
+		public const string NOT_EQUALS_STAT = "neq";
+		public const string NOT_EQUALS_LONG = "notequal";
 		public const string GREATER_THAN = "gt";
+		public const string GREATER_THAN_LONG = "greaterthan";
 		public const string GREATER_THAN_OR_EQUAL = "ge";
+		public const string GREATER_THAN_OR_EQUAL_STAT = "gte";
+		public const string GREATER_THAN_OR_EQUAL_LONG = "greaterthanequal";
 		public const string LESS_THAN = "lt";
+		public const string LESS_THAN_LONG = "lessthan";
 		public const string LESS_THAN_OR_EQUAL = "le";
-		public MustBeComparatorString() : base(EQUALS, NOT_EQUALS, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN, LESS_THAN_OR_EQUAL)
-		{
+		public const string LESS_THAN_OR_EQUAL_STAT = "lte";
+		public const string LESS_THAN_OR_EQUAL_LONG = "lessthanequal";
 
+		/// <summary>
+		/// Describes one canonical comparator value, used by editor tooling to present a picker.
+		/// </summary>
+		public class ComparatorOption
+		{
+			public string Value { get; }
+			public string Symbol { get; }
+			public string DisplayName { get; }
+			public string Description { get; }
+			public string[] Aliases { get; }
+
+			public ComparatorOption(string value, string symbol, string displayName, string description, params string[] aliases)
+			{
+				Value = value;
+				Symbol = symbol;
+				DisplayName = displayName;
+				Description = description;
+				Aliases = aliases;
+			}
+		}
+
+		private static readonly ComparatorOption[] StatOptions =
+		{
+			new ComparatorOption(EQUALS, "=", "Equal", "The player's stat must equal the value (compared as text, ignoring case).", EQUALS_LONG),
+			new ComparatorOption(NOT_EQUALS_STAT, "!=", "Not equal", "The player's stat must not equal the value (compared as text, ignoring case).", NOT_EQUALS, NOT_EQUALS_LONG),
+			new ComparatorOption(GREATER_THAN, ">", "Greater than", "The player's stat must be a number greater than the value.", GREATER_THAN_LONG),
+			new ComparatorOption(GREATER_THAN_OR_EQUAL_STAT, ">=", "Greater than or equal", "The player's stat must be a number greater than or equal to the value.", GREATER_THAN_OR_EQUAL, GREATER_THAN_OR_EQUAL_LONG),
+			new ComparatorOption(LESS_THAN, "<", "Less than", "The player's stat must be a number less than the value.", LESS_THAN_LONG),
+			new ComparatorOption(LESS_THAN_OR_EQUAL_STAT, "<=", "Less than or equal", "The player's stat must be a number less than or equal to the value.", LESS_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL_LONG),
+		};
+
+		private static readonly ComparatorOption[] OfferPurchaseOptions =
+		{
+			new ComparatorOption(EQUALS, "=", "Equal", "The number of times the player purchased the offer must equal the value."),
+			new ComparatorOption(NOT_EQUALS, "!=", "Not equal", "The number of times the player purchased the offer must not equal the value."),
+			new ComparatorOption(GREATER_THAN, ">", "Greater than", "The number of times the player purchased the offer must be greater than the value."),
+			new ComparatorOption(GREATER_THAN_OR_EQUAL, ">=", "Greater than or equal", "The number of times the player purchased the offer must be greater than or equal to the value."),
+			new ComparatorOption(LESS_THAN, "<", "Less than", "The number of times the player purchased the offer must be less than the value."),
+			new ComparatorOption(LESS_THAN_OR_EQUAL, "<=", "Less than or equal", "The number of times the player purchased the offer must be less than or equal to the value."),
+		};
+
+		private static readonly ComparatorOption[] CohortMembershipOptions =
+		{
+			new ComparatorOption(EQUALS, "in", "Member", "The player must be in the given cohort of the trial."),
+			new ComparatorOption(NOT_EQUALS, "not in", "Not a member", "The player must not be in the given cohort of the trial. Also passes when the player has no cohort data."),
+		};
+
+		/// <summary>
+		/// The consumer this field's value is evaluated by.
+		/// </summary>
+		public ComparatorStringKind Kind { get; }
+
+		/// <summary>
+		/// The canonical comparator values for <see cref="Kind"/>, in display order. Each alias is also accepted by validation.
+		/// </summary>
+		public ComparatorOption[] Options => GetOptions(Kind);
+
+		/// <summary>
+		/// The canonical comparator values for the given <paramref name="kind"/>, in display order.
+		/// </summary>
+		public static ComparatorOption[] GetOptions(ComparatorStringKind kind)
+		{
+			switch (kind)
+			{
+				case ComparatorStringKind.OFFER_PURCHASES:
+					return OfferPurchaseOptions;
+				case ComparatorStringKind.COHORT_MEMBERSHIP:
+					return CohortMembershipOptions;
+				default:
+					return StatOptions;
+			}
+		}
+
+		/// <summary>
+		/// Finds the <see cref="ComparatorOption"/> whose canonical value or alias exactly matches <paramref name="value"/>, mirroring the case-sensitive validation.
+		/// </summary>
+		public bool TryGetOption(string value, out ComparatorOption option)
+		{
+			option = null;
+			if (string.IsNullOrEmpty(value))
+			{
+				return false;
+			}
+
+			foreach (var candidate in Options)
+			{
+				if (string.Equals(candidate.Value, value, System.StringComparison.Ordinal))
+				{
+					option = candidate;
+					return true;
+				}
+
+				foreach (var alias in candidate.Aliases)
+				{
+					if (string.Equals(alias, value, System.StringComparison.Ordinal))
+					{
+						option = candidate;
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+
+		public MustBeComparatorString(ComparatorStringKind kind = ComparatorStringKind.STAT) : base(GetAllowedValues(kind))
+		{
+			Kind = kind;
+		}
+
+		private static object[] GetAllowedValues(ComparatorStringKind kind)
+		{
+			var values = new System.Collections.Generic.List<object>();
+			foreach (var option in GetOptions(kind))
+			{
+				values.Add(option.Value);
+				values.AddRange(option.Aliases);
+			}
+
+			return values.ToArray();
 		}
 	}
 }
