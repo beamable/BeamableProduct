@@ -11,6 +11,7 @@ namespace Beamable.Editor.Accounts
 	public partial class AccountWindow
 	{
 		private bool _isSelectingRealm;
+		private bool _didApplyPreviousSelection;
 		
 		public bool needsGameSelection;
 		public int gameSelectionIndex = 0;
@@ -56,6 +57,20 @@ namespace Beamable.Editor.Accounts
 					EditorGUILayout.LabelField("Select a game", _titleStyle);
 					
 					var choices = cli.latestGames.VisibleGames.Select(x => x.ProjectName.Replace("-prod", "")).ToArray();
+					if (!_didApplyPreviousSelection)
+					{
+						// start on the game the project was using before the login
+						_didApplyPreviousSelection = true;
+						if (TryResolvePreviousRealm(out var previousGamePid, out _))
+						{
+							var previousGameIndex = Array.FindIndex(cli.latestGames.VisibleGames, game => game.Pid == previousGamePid);
+							if (previousGameIndex >= 0 && previousGameIndex != gameSelectionIndex)
+							{
+								gameSelectionIndex = previousGameIndex;
+								UpdateRealmsForGame();
+							}
+						}
+					}
 					if (gameSelectionIndex < 0 || gameSelectionIndex >= choices.Length)
 					{
 						gameSelectionIndex = 0;
@@ -175,6 +190,13 @@ namespace Beamable.Editor.Accounts
 					{
 						realmNames[i] = $"{availableRealms[i].RealmName} - {availableRealms[i].Pid}";
 					}
+
+					// start on the realm the project was using before the login
+					realmSelectionIndex = 0;
+					if (TryResolvePreviousRealm(out string _, out var previousRealmPid) && previousRealmPid != null)
+					{
+						realmSelectionIndex = Math.Max(0, Array.FindIndex(availableRealms, realm => realm.Pid == previousRealmPid));
+					}
 				});
 
 				_realmCommandPromise = _realmsCommand.Run();
@@ -188,8 +210,40 @@ namespace Beamable.Editor.Accounts
 			}
 			finally
 			{
-				
+
 			}
+		}
+
+		/// <summary>
+		/// Find the game and realm the project was using before the latest login, if they are still visible to the account.
+		/// </summary>
+		/// <param name="gamePid">The pid of the game (root realm) the previous realm belongs to.</param>
+		/// <param name="realmPid">The previous editor realm pid, or null if only the game could be resolved.</param>
+		bool TryResolvePreviousRealm(out string gamePid, out string realmPid)
+		{
+			gamePid = null;
+			realmPid = null;
+
+			// pids from a different organization should never be re-used
+			if (string.IsNullOrEmpty(_previousCid) || _previousCid != cli.Cid || cli.pidToRealm == null)
+			{
+				return false;
+			}
+
+			if (!string.IsNullOrEmpty(_previousPid) && cli.pidToRealm.TryGetValue(_previousPid, out var previousRealm))
+			{
+				realmPid = previousRealm.Pid;
+				gamePid = previousRealm.FindRoot()?.Pid;
+				return true;
+			}
+
+			if (!string.IsNullOrEmpty(_previousBuildPid) && cli.pidToRealm.TryGetValue(_previousBuildPid, out var buildRealm))
+			{
+				gamePid = buildRealm.FindRoot()?.Pid;
+				return gamePid != null;
+			}
+
+			return false;
 		}
 	}
 }
