@@ -69,7 +69,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private float _localWidth, _realmWidth;
 		private GUIStyle _body, _heading, _cell, _json, _warningBody;
 		private GUIStyle _localHeading, _realmHeading;
-		private GUIStyle _idLabel, _primaryButton;
+		private GUIStyle _idLabel;
 		private GUIContent _missingTypeMessage, _keepLocalLabel, _useRealmLabel;
 		private Texture _warningIcon;
 		private static readonly Color AdditionColor = new Color(.12f, .78f, .52f);
@@ -409,12 +409,6 @@ namespace Beamable.Editor.UI.ContentWindow
 			_realmHeading.normal.textColor = EditorGUIUtility.isProSkin ? new Color(.18f, .75f, 1) : new Color(0, .34f, .55f);
 			_warningBody = new GUIStyle(_body);
 			_warningBody.normal.textColor = _localHeading.normal.textColor;
-			_primaryButton = new GUIStyle(GUI.skin.button);
-			_primaryButton.normal.background = Texture2D.whiteTexture;
-			foreach (var state in new[] { _primaryButton.normal, _primaryButton.hover, _primaryButton.active, _primaryButton.focused })
-			{
-				state.textColor = Color.white;
-			}
 			_keepLocalLabel = new GUIContent(KeepLocalText);
 			_useRealmLabel = new GUIContent(UseRealmText);
 			// Use the full-size artwork so the 22-point warning is not upscaled from the 16px variant.
@@ -710,10 +704,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					_useRealmLabel.tooltip = _preview == null ? "" : ActionExplanation(_preview.LocalExists, _preview.RealmExists, false);
 					using (new EditorGUI.DisabledScope(invalid))
 						if (GUILayout.Button(_keepLocalLabel, GUILayout.Width(160), GUILayout.Height(30))) _ = Apply(true);
-					var color = GUI.backgroundColor;
-					GUI.backgroundColor = _preview != null && _preview.LocalExists && !_preview.RealmExists ? DeletionColor : new Color(0, .46f, .68f);
-					if (GUILayout.Button(_useRealmLabel, _primaryButton, GUILayout.Width(160), GUILayout.Height(30))) _ = Apply(false);
-					GUI.backgroundColor = color;
+					if (GUILayout.Button(_useRealmLabel, GUILayout.Width(160), GUILayout.Height(30))) _ = Apply(false);
 				}
 			}
 		}
