@@ -32,6 +32,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private GUIStyle _localHeading, _realmHeading;
 		private GUIStyle _idLabel, _primaryButton;
 		private GUIContent _missingTypeMessage, _keepLocalLabel, _useRealmLabel;
+		private Texture _warningIcon;
 		private static readonly Color AdditionColor = new Color(.12f, .78f, .52f);
 		private static readonly Color DeletionColor = new Color(.95f, .25f, .30f);
 		internal static readonly GUILayoutOption[] HeaderLabelOptions = { GUILayout.MinWidth(0), GUILayout.ExpandWidth(true) };
@@ -257,6 +258,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			_keepLocalLabel = new GUIContent(KeepLocalText);
 			_useRealmLabel = new GUIContent(UseRealmText);
+			// Use the full-size artwork so the 22-point warning is not upscaled from the 16px variant.
+			_warningIcon = EditorGUIUtility.IconContent("console.warnicon").image;
 		}
 
 		private void OnGUI()
@@ -327,7 +330,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				var icon = GUILayoutUtility.GetRect(22, 22, GUILayout.Width(22));
 				var texture = addition ? BeamGUI.iconStatusAdded : deletion ? BeamGUI.iconStatusDeleted
-					: kind == ContentChangeKind.Conflict ? EditorGUIUtility.IconContent("console.warnicon.sml").image
+					: kind == ContentChangeKind.Conflict ? _warningIcon
 					: ContentWindow_TooltipsHelper.GetStatusIcon(_entry);
 				if (texture != null) GUI.DrawTexture(icon, texture, ScaleMode.ScaleToFit);
 				else if (addition || deletion) { EditorGUI.DrawRect(icon, addition ? AdditionColor : DeletionColor); GUI.Label(icon, addition ? "+" : "−", _heading); }
@@ -347,7 +350,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			using (new EditorGUILayout.HorizontalScope())
 			{
-				GUILayout.Label(EditorGUIUtility.IconContent("console.warnicon.sml"), GUILayout.Width(22), GUILayout.Height(22));
+				var icon = GUILayoutUtility.GetRect(22, 22, GUILayout.Width(22));
+				if (_warningIcon != null) GUI.DrawTexture(icon, _warningIcon, ScaleMode.ScaleToFit);
 				GUILayout.Label(_missingTypeMessage, _warningBody);
 			}
 		}
