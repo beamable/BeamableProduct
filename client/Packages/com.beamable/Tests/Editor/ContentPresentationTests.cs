@@ -824,14 +824,30 @@ namespace Beamable.Editor.Tests
             Assert.That(ContentReconciliationWindow.SummaryTitle(local, realm, kind, true), Is.EqualTo(title));
         }
 
-        [TestCase(false, true, ContentChangeKind.IncomingDeletion, "Deleted")]
-        [TestCase(false, false, ContentChangeKind.IncomingAddition, "Not present")]
-        [TestCase(false, true, ContentChangeKind.Unknown, "Not present")]
-        [TestCase(false, true, ContentChangeKind.LocalEdit, "Not present")]
-        [TestCase(true, true, ContentChangeKind.IncomingDeletion, "Present")]
-        public void Presence_only_calls_an_absent_realm_item_deleted_when_authoritative(bool exists, bool realm, ContentChangeKind kind, string label)
+        [TestCase(false, true, false, "Import this item?")]
+        [TestCase(false, true, true, "Import this item as JSON?")]
+        [TestCase(true, false, false, "Keep this item or delete it locally?")]
+        [TestCase(true, true, false, "Which version should stay local?")]
+        [TestCase(false, false, false, "Which version should stay local?")]
+        public void Outcome_title_describes_the_whole_item_decision(bool local, bool realm, bool missing, string expected)
         {
-            Assert.That(ContentReconciliationWindow.PresenceLabel(exists, realm, kind), Is.EqualTo(label));
+            Assert.That(ContentReconciliationWindow.DecisionTitle(local, realm, missing), Is.EqualTo(expected));
+        }
+
+        [TestCase(false, true, "Keep Local Version", "deletion on your next publish")]
+        [TestCase(true, false, "Use Realm Version", "deletes your local copy")]
+        public void Destructive_consequences_remain_visible_with_consistent_button_names(bool local, bool realm, string action, string consequence)
+        {
+            var text = ContentReconciliationWindow.DecisionConsequence(local, realm);
+            Assert.That(text, Does.Contain(action));
+            Assert.That(text, Does.Contain(consequence));
+        }
+
+        [TestCase(true, true)]
+        [TestCase(false, false)]
+        public void Non_destructive_choices_do_not_invent_deletion_warnings(bool local, bool realm)
+        {
+            Assert.That(ContentReconciliationWindow.DecisionConsequence(local, realm), Is.Empty);
         }
 
         [TestCase(false, true, true, "a later publish will delete it")]
@@ -1348,6 +1364,8 @@ namespace Beamable.Editor.Tests
             }
         }
 
+        [TestCase(560, 340, false, true, true)]
+        [TestCase(560, 340, true, false, true)]
         [TestCase(560, 380, false, false, false)]
         [TestCase(560, 380, false, true, false)]
         [TestCase(560, 380, false, true, true)]
@@ -1456,7 +1474,25 @@ namespace Beamable.Editor.Tests
             }
         }
 
-        static void CheckLayout(int width, int height, bool deletion, bool missingScript, string error, int tab, bool both = false)
+        [TestCase(560, 340, false, false)]
+        [TestCase(560, 340, false, true)]
+        [TestCase(560, 340, true, false)]
+        [TestCase(680, 360, false, true)]
+        [TestCase(1200, 500, true, false)]
+        public void Compact_summary_keeps_consistent_actions_visible(int width, int height, bool deletion, bool missingScript)
+        {
+            CheckLayout(width, height, deletion, missingScript, null, 0);
+        }
+
+        [TestCase(560, 340, 0)]
+        [TestCase(560, 340, 1)]
+        [TestCase(680, 420, 0)]
+        public void Conflict_review_with_long_identifier_keeps_actions_and_comparison_visible(int width, int height, int tab)
+        {
+            CheckLayout(width, height, false, false, null, tab, true, true);
+        }
+
+        static void CheckLayout(int width, int height, bool deletion, bool missingScript, string error, int tab, bool both = false, bool conflict = false)
         {
             // Execute the real window in Unity's IMGUI container without showing a window,
             // connecting a CLI, or using the project's configuration/content objects.
@@ -1476,11 +1512,11 @@ namespace Beamable.Editor.Tests
                     .SetValue(service, new ContentOperationProgress());
                 void Set(string field, object value) => typeof(ContentReconciliationWindow).GetField(field, InstanceFields).SetValue(window, value);
                 Set("_service", service);
-                Set("_contentId", "currency.layout_test");
+                Set("_contentId", conflict ? "currency." + new string('w', 500) : "currency.layout_test");
                 Set("_scope", "test/realm/global");
                 Set("_entry", new LocalContentManifestEntry {
                     TypeName = new string('w', 500),
-                    ChangeKind = (int)(both ? ContentChangeKind.IncomingChange : deletion ? ContentChangeKind.IncomingDeletion : ContentChangeKind.IncomingAddition)
+                    ChangeKind = (int)(conflict ? ContentChangeKind.Conflict : both ? ContentChangeKind.IncomingChange : deletion ? ContentChangeKind.IncomingDeletion : ContentChangeKind.IncomingAddition)
                 });
                 Set("_preview", new ContentReconciliationPreview {
                     LocalExists = both || deletion, RealmExists = !deletion,
@@ -1510,12 +1546,19 @@ namespace Beamable.Editor.Tests
                     }
                     finally { typeof(GUIUtility).GetMethod("EndContainer", StaticFields).Invoke(null, null); }
                 }
+                var keep = (GUIContent)typeof(ContentReconciliationWindow).GetField("_keepLocalLabel", InstanceFields).GetValue(window);
+                var realm = (GUIContent)typeof(ContentReconciliationWindow).GetField("_useRealmLabel", InstanceFields).GetValue(window);
+                Assert.That(keep.text, Is.EqualTo("Keep Local Version"));
+                Assert.That(realm.text, Is.EqualTo("Use Realm Version"));
+                Assert.That(keep.tooltip, Is.Not.Empty);
+                Assert.That(realm.tooltip, Is.Not.Empty);
                 Assert.That(footer.yMax, Is.LessThanOrEqualTo(height), "Footer must remain inside the window even when review details overflow.");
                 var cache = typeof(GUILayoutUtility).GetField("current", StaticFields).GetValue(null);
                 var root = cache.GetType().GetField("topLevel").GetValue(cache);
                 var viewports = new List<Rect>();
                 bool scrollable = false;
                 InspectLayout(root, viewports, ref scrollable);
+                CheckActionBounds(root, width, height);
                 if (error?.Length > 1000)
                     Assert.That(scrollable, Is.True, "Overflowing review details must remain reachable by scrolling.");
                 if (tab == 1 || both)
@@ -1533,6 +1576,20 @@ namespace Beamable.Editor.Tests
                 UnityEngine.Object.DestroyImmediate(window);
                 UnityEngine.Object.DestroyImmediate(config);
             }
+        }
+
+        static void CheckActionBounds(object entry, int width, int height)
+        {
+            var type = entry.GetType();
+            var rect = (Rect)type.GetField("rect").GetValue(entry);
+            if (rect.height == 30 && (rect.width == 160 || rect.width == 90))
+            {
+                Assert.That(rect.xMin, Is.GreaterThanOrEqualTo(0));
+                Assert.That(rect.xMax, Is.LessThanOrEqualTo(width), "Action button cannot be clipped horizontally.");
+                Assert.That(rect.yMax, Is.LessThanOrEqualTo(height), "Action button cannot be clipped vertically.");
+            }
+            if (type.GetField("entries")?.GetValue(entry) is System.Collections.IEnumerable children)
+                foreach (var child in children) CheckActionBounds(child, width, height);
         }
 
         static void InspectLayout(object entry, List<Rect> viewports, ref bool scrollable)
