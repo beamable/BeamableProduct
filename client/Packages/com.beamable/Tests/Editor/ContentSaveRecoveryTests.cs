@@ -190,6 +190,9 @@ namespace Beamable.Editor.Tests
 		public void FileDeleteFailureRestoresStatusAndSaveCallback()
 		{
 			PrepareFile();
+			var revision = _service.ManifestChangedCount;
+			((Dictionary<string, (SchemaDifference, string)>)Get(_service, "_schemaDifferences"))[_content.Id] =
+				(SchemaDifference.UnknownFieldsInJson, null);
 			Action callback = () => _service.SaveContent(_content);
 			_content.OnEditorChanged = callback;
 			Exception error = null;
@@ -201,11 +204,56 @@ namespace Beamable.Editor.Tests
 				_service.DeleteContent(_content.Id).Error(e => error = e);
 				Assert.That(error, Is.Not.Null);
 				Assert.That(_content.ContentStatus, Is.EqualTo(ContentStatus.UpToDate));
+				Assert.That(_service.ManifestChangedCount, Is.EqualTo(revision));
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.UnknownFieldsInJson));
 				Assert.That(_content.OnEditorChanged, Is.SameAs(callback));
 				_content.OnEditorChanged();
 				Assert.That(_commands.Properties.Count, Is.EqualTo(1));
 			}
 			finally { Directory.Delete(_path); }
+		}
+
+		[TestCase(ContentStatus.Created)]
+		[TestCase(ContentStatus.Modified)]
+		[TestCase(ContentStatus.UpToDate)]
+		public void Successful_deletion_refreshes_inspectors_and_removes_schema_notice(ContentStatus previousStatus)
+		{
+			PrepareFile();
+			var entry = _service.EntriesCache[_content.Id];
+			entry.CurrentStatus = (int)previousStatus;
+			entry.ChangeKind = (int)(previousStatus == ContentStatus.UpToDate ? ContentChangeKind.UpToDate : ContentChangeKind.LocalEdit);
+			entry.TypeName = "saveRecovery";
+			_service.EntriesCache[_content.Id] = entry;
+			var reflection = new ContentTypeReflectionCache();
+			reflection.OnSetupForCacheGeneration();
+			((Dictionary<string, Type>)Get(reflection, "_contentTypeToClass"))["saveRecovery"] = typeof(SaveRecoveryContent);
+			((Dictionary<Type, string>)Get(reflection, "_classToContentType"))[typeof(SaveRecoveryContent)] = "saveRecovery";
+			Set(_service, "_contentTypeReflectionCache", reflection);
+			var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+			try
+			{
+				Set(_service, "_contentConfiguration", config);
+				config.validateSchemaDifference = true;
+				_service.UpdateSchemaDifference(entry, SchemaDifference.UnknownFieldsInJson);
+				var revision = _service.ManifestChangedCount;
+				_service.DeleteContent(_content.Id).GetResult();
+				Assert.That(File.Exists(_path), Is.False);
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));
+				Assert.That(_service.ManifestChangedCount, Is.GreaterThan(revision));
+				Assert.That(_service.EntriesCache.ContainsKey(_content.Id), Is.EqualTo(previousStatus != ContentStatus.Created));
+				if (previousStatus != ContentStatus.Created)
+				{
+					var deleted = _service.EntriesCache[_content.Id];
+					Assert.That(deleted.StatusEnum, Is.EqualTo(ContentStatus.Deleted));
+					Assert.That(global::Beamable.Editor.UI.ContentWindow.ContentWindow_TooltipsHelper.GetStatusLabel(deleted), Is.EqualTo("Deleted"));
+				}
+			}
+			finally
+			{
+				foreach (var cached in ((Dictionary<string, ContentObject>)Get(_service, "_contentScriptableCache")).Values)
+					if (cached != _content) UnityEngine.Object.DestroyImmediate(cached);
+				UnityEngine.Object.DestroyImmediate(config);
+			}
 		}
 
 		[Test]

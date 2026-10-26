@@ -37,6 +37,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			isInvalid ? "Validation Error" : schemaMismatch && GetChangeKind(entry) != ContentChangeKind.Conflict ? "Schema mismatch" : GetChangeKind(entry) switch
 		{
 			ContentChangeKind.UpToDate => "Up to date",
+			ContentChangeKind.LocalEdit when entry.StatusEnum == ContentStatus.Deleted => "Deleted",
 			ContentChangeKind.LocalEdit => "Local edit",
 			ContentChangeKind.IncomingChange => "Incoming change",
 			ContentChangeKind.IncomingAddition => "Incoming addition",
@@ -82,6 +83,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		public static Texture GetStatusIcon(LocalContentManifestEntry entry) => GetChangeKind(entry) switch
 		{
 			ContentChangeKind.Conflict => EditorGUIUtility.IconContent("console.erroricon.sml").image,
+			ContentChangeKind.LocalEdit when entry.StatusEnum == ContentStatus.Deleted => BeamGUI.iconStatusDeleted,
 			ContentChangeKind.LocalEdit => BeamGUI.iconStatusModified,
 			ContentChangeKind.IncomingChange or ContentChangeKind.IncomingAddition or ContentChangeKind.IncomingDeletion => BeamGUI.iconStatusIncoming,
 			_ => EditorGUIUtility.IconContent("console.infoicon.sml").image
@@ -107,11 +109,18 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (historicalCount > 0 && entries.Count == 0)
 				return "Historical preview\nShowing published content from the selected History entry, not the current working copy.";
 			var counts = new int[7];
-			foreach (var entry in entries) counts[(int)GetChangeKind(entry)]++;
+			var deletedCount = 0;
+			foreach (var entry in entries)
+			{
+				var kind = GetChangeKind(entry);
+				if (kind == ContentChangeKind.LocalEdit && entry.StatusEnum == ContentStatus.Deleted) deletedCount++;
+				else counts[(int)kind]++;
+			}
 			conflict = counts[(int)ContentChangeKind.Conflict] > 0;
 			var parts = new List<string>();
 			for (var i = 0; i < counts.Length; i++)
 				if (counts[i] > 0) parts.Add($"{counts[i]} {GetStatusLabel(new LocalContentManifestEntry { ChangeKind = i })}");
+			if (deletedCount > 0) parts.Add($"{deletedCount} Deleted");
 			if (historicalCount > 0) parts.Add($"{historicalCount} Historical preview");
 			var description = $"{entries.Count + historicalCount} selected: " + string.Join("; ", parts) + ".";
 			if (invalidCount > 0) description = $"Validation Error\n{invalidCount} selected item(s) have validation errors. Inspect each item and fix the highlighted fields before publishing.\n" + description;

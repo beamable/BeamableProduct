@@ -701,6 +701,7 @@ namespace Beamable.Editor.ContentService
 				if (scopeKey != GetContentScopeKey()) return;
 
 				// The watcher may have refreshed this entry while a command was finishing.
+				_schemaDifferences.Remove(contentId);
 				TombstoneCachedContentObject(contentId);
 				if (EntriesCache.TryGetValue(contentId, out var current)) RemoveContentFromCache(current);
 				ValidationContext.AllContent.Remove(contentId);
@@ -708,8 +709,14 @@ namespace Beamable.Editor.ContentService
 				if (entry.StatusEnum != ContentStatus.Created)
 				{
 					entry.CurrentStatus = (int)ContentStatus.Deleted;
+					// This successful local deletion changes a previously clean copy; keep other
+					// incoming/conflict metadata intact until the authoritative watcher refresh.
+					if (entry.ChangeKind == (int)ContentChangeKind.UpToDate)
+						entry.ChangeKind = (int)ContentChangeKind.LocalEdit;
 					AddContentToCache(entry);
 				}
+				// Refresh selected Inspectors immediately, without waiting for the filesystem watcher.
+				ManifestChangedCount++;
 			});
 		}
 

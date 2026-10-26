@@ -1413,7 +1413,7 @@ namespace Beamable.Editor.Tests
                 ChangeKind = (int)ContentChangeKind.LocalEdit
             };
             var message = ContentWindow_TooltipsHelper.GetSelectionDescription(new[] { entry }, 0, true, out var conflict);
-            Assert.That(message, Does.StartWith("Local edit\n"));
+            Assert.That(message, Does.StartWith("Deleted\n"));
             Assert.That(message, Does.Contain("Your local copy has been deleted."));
             Assert.That(message, Does.Contain("This deletion has not been published."));
             Assert.That(conflict, Is.False);
@@ -1459,7 +1459,8 @@ namespace Beamable.Editor.Tests
             var message = ContentWindow_TooltipsHelper.GetSelectionDescription(entries, 0, true, out _);
             Assert.That(message, Does.StartWith("2 selected:"));
             Assert.That(message, Does.Contain("1 Incoming addition"));
-            Assert.That(message, Does.Contain("1 Local edit"));
+            Assert.That(message, Does.Contain("1 Deleted"));
+            Assert.That(message, Does.Not.Contain("Local edit"));
             Assert.That(message, Does.Not.Contain("Your local copy has been deleted."));
         }
 
@@ -1769,6 +1770,27 @@ namespace Beamable.Editor.Tests
 
     public class ContentValidationStatusTests
     {
+        [Test]
+        public void Confirmed_local_deletion_uses_the_footer_delete_icon_but_incoming_addition_keeps_its_cloud()
+        {
+            var previous = global::Beamable.Editor.Util.BeamGUI.iconStatusDeleted;
+            var sentinel = new Texture2D(1, 1);
+            try
+            {
+                global::Beamable.Editor.Util.BeamGUI.iconStatusDeleted = sentinel;
+                var entry = new LocalContentManifestEntry { CurrentStatus = (int)ContentStatus.Deleted, ChangeKind = (int)ContentChangeKind.LocalEdit };
+                Assert.That(ContentWindow_TooltipsHelper.GetStatusIcon(entry), Is.SameAs(sentinel));
+                entry.ChangeKind = (int)ContentChangeKind.IncomingAddition;
+                Assert.That(ContentWindow_TooltipsHelper.GetStatusIcon(entry), Is.SameAs(global::Beamable.Editor.Util.BeamGUI.iconStatusIncoming));
+                Assert.That(ContentWindow_TooltipsHelper.GetStatusIcon(entry), Is.Not.SameAs(sentinel));
+            }
+            finally
+            {
+                global::Beamable.Editor.Util.BeamGUI.iconStatusDeleted = previous;
+                UnityEngine.Object.DestroyImmediate(sentinel);
+            }
+        }
+
         [Test]
         public void Announcement_summary_error_is_readable_and_clears_after_correction()
         {
