@@ -30,8 +30,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void DrawPublishPanel()
 		{
-			if (_contentService.HasConflictedContent || _contentService.HasInvalidContent || !_contentService.HasChangedContents ||
-			    _contentService.EntriesCache.Values.Any(ContentWindow_TooltipsHelper.NeedsReconciliation))
+			if (!_contentService.HasChangedContents || _contentService.EntriesCache.Values.Any(HasContentIssue))
 			{
 				ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 				return;

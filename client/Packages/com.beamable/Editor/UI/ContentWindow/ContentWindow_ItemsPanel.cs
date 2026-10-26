@@ -1142,7 +1142,8 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private bool HasContentIssue(LocalContentManifestEntry entry)
 		{
-			return _contentService.IsContentInvalid(entry.FullId) || entry.IsInConflict;
+			return _contentService.IsContentInvalid(entry.FullId) || entry.IsInConflict ||
+			       ContentWindow_TooltipsHelper.NeedsReconciliation(entry);
 		}
 
 		private bool FilterItem(string specificType,
@@ -1203,8 +1204,6 @@ namespace Beamable.Editor.UI.ContentWindow
 
 			bool ValidateEntryStatus(string status)
 			{
-				if (status == StatusMapToString[ContentFilterStatus.Incoming]) return ContentWindow_TooltipsHelper.NeedsReconciliation(entry);
-
 				if (status == StatusMapToString[ContentFilterStatus.Issues])
 				{
 					return HasContentIssue(entry);

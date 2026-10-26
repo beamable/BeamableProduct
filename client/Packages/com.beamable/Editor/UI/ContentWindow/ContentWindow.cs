@@ -317,10 +317,9 @@ namespace Beamable.Editor.UI.ContentWindow
 			int modifiedCount = modifiedContents.Count + allRenames.Count;
 			var deletedContents = _contentService.GetAllContentFromStatus(ContentStatus.Deleted)
 				.Where(e => !renamedDeletedIds.Contains(e.FullId)).ToList();
-			int incomingCount = CountIncomingEntries(_contentService.EntriesCache.Values);
 			int issueCount = _contentService.EntriesCache.Values.Count(HasContentIssue);
 			int footerCount = (createdContents.Count > 0 ? 1 : 0) + (modifiedCount > 0 ? 1 : 0) +
-				(deletedContents.Count > 0 ? 1 : 0) + (incomingCount > 0 ? 1 : 0) + (issueCount > 0 ? 1 : 0);
+				(deletedContents.Count > 0 ? 1 : 0) + (issueCount > 0 ? 1 : 0);
 			if (createdContents.Count > 0)
 			{
 				DrawFooterButton($"{createdContents.Count}  created", BeamGUI.iconStatusAdded, ContentFilterStatus.Created);
@@ -343,14 +342,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			{
 				DrawFooterButton(issueCount == 1 ? "1 issue" : $"{issueCount} issues",
 					BeamGUI.iconStatusInvalid, ContentFilterStatus.Issues,
-					"Items with validation errors or conflicts. Click to review all.");
-				bottomRectController.ReserveWidth(BASE_PADDING);
-			}
-
-			if (incomingCount > 0)
-			{
-				DrawFooterButton($"{incomingCount}  incoming", BeamGUI.iconStatusIncoming, ContentFilterStatus.Incoming,
-					"Incoming changes and items with unverified change history. Click to review all.");
+					"Validation errors, conflicts, incoming changes, and unverified content. Clear all issues before publishing.");
 			}
 
 			void DrawFooterButton(string buttonText, Texture buttonIcon, ContentFilterStatus statusEnum, string tooltip = null)
@@ -394,9 +386,9 @@ namespace Beamable.Editor.UI.ContentWindow
 
 				// Review shortcuts clear previous filters and search so no pending items stay hidden.
 				// Other statuses replace the active filters while preserving the name search.
-				if (statusEnum == ContentFilterStatus.Issues || statusEnum == ContentFilterStatus.Incoming)
+				if (statusEnum == ContentFilterStatus.Issues)
 				{
-					ShowContentIssues(statusEnum == ContentFilterStatus.Incoming);
+					ShowContentIssues();
 				}
 				else
 				{
@@ -553,9 +545,6 @@ namespace Beamable.Editor.UI.ContentWindow
 		private GUIStyle _footerButtonStyle;
 		private static float CalculateFooterButtonWidth(float available, int count, float desired) =>
 			Mathf.Max(0, Mathf.Min(desired, (available - BASE_PADDING * (count - 1)) / Mathf.Max(1, count)));
-
-		private static int CountIncomingEntries(IEnumerable<LocalContentManifestEntry> entries) =>
-			entries.Count(ContentWindow_TooltipsHelper.NeedsReconciliation);
 
 		public void DrawNestedContent(Action drawContent)
 		{

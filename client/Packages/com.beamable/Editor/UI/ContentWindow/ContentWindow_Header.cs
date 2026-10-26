@@ -59,8 +59,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			{ContentFilterStatus.Modified, "modified"},
 			{ContentFilterStatus.UpToDate, "upToDate"},
 			{ContentFilterStatus.Conflicted, "conflicted"},
-			{ContentFilterStatus.Issues, "issues"},
-			{ContentFilterStatus.Incoming, "incoming"}
+			{ContentFilterStatus.Issues, "issues"}
 		};
 
 		private static readonly Dictionary<string, ContentStatus> FilterStatusToContentStatus = new()
@@ -171,7 +170,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					ShowSyncMenu();
 				}
 
-				DrawPublishHeaderButton(hasContentToPublish, hasConflictedOrInvalid);
+				DrawPublishHeaderButton(hasContentToPublish);
 
 				if (BeamGUI.HeaderButton("Snapshot", BeamGUI.iconContentSnapshotWhite, width: HEADER_BUTTON_WIDTH, iconPadding: 2,
 				                         tooltip: "Manages content snapshots"))
@@ -276,27 +275,19 @@ namespace Beamable.Editor.UI.ContentWindow
 		/// Draws Publish with an Issues badge when content problems block publishing.
 		/// Clicking explains blocking issues in a popup or opens the publish panel, depending on eligibility.
 		/// </summary>
-		private void DrawPublishHeaderButton(bool hasContentToPublish, bool hasConflictedOrInvalid)
+		private void DrawPublishHeaderButton(bool hasContentToPublish)
 		{
 			bool hasPublishPermission = _cli.Permissions.CanPushContent;
-			bool hasIncoming = _contentService.EntriesCache.Values.Any(ContentWindow_TooltipsHelper.NeedsReconciliation);
-			bool canReviewIssues = hasConflictedOrInvalid || hasIncoming;
+			int issueCount = _contentService.EntriesCache.Values.Count(HasContentIssue);
+			bool canReviewIssues = issueCount > 0;
 			bool canPublish = hasPublishPermission && hasContentToPublish && !canReviewIssues;
 
 			string tooltip;
 
 			if (canReviewIssues)
 			{
-				int issueCount = _contentService.EntriesCache.Values
-				                                .Count(HasContentIssue);
-
-				string summary = issueCount > 0
-					? $"{issueCount} {(issueCount == 1 ? "item needs" : "items need")} attention."
-					: "Content has validation errors or conflicts.";
-
-				tooltip = hasConflictedOrInvalid
-					? $"Publishing blocked: {summary}\nClick to review validation errors and conflicts."
-					: "Publishing blocked: reconcile incoming or unverified content. Click to review.";
+				tooltip = $"Publishing blocked: {issueCount} {(issueCount == 1 ? "item needs" : "items need")} attention.\n" +
+				          "Clear all issues: validation errors, conflicts, incoming changes, and unverified content. Click to review.";
 
 				if (!hasPublishPermission)
 				{
@@ -331,11 +322,11 @@ namespace Beamable.Editor.UI.ContentWindow
 		}
 
 		/// <summary>
-		/// Opens the content list filtered to items with validation errors or conflicts.
+		/// Opens the content list filtered to all publishing issues, including incoming changes.
 		/// Clears existing filters, search text, cached results, and the active tooltip.
 		/// Defers the changes until the current UI draw completes.
 		/// </summary>
-		private void ShowContentIssues(bool incoming = false)
+		private void ShowContentIssues()
 		{
 			AddDelayedAction(() =>
 			{
@@ -347,7 +338,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				GUI.FocusControl(null);
 
 				GetFilterTypeActiveItems(ContentSearchFilterType.Status)
-					.Add(StatusMapToString[incoming ? ContentFilterStatus.Incoming : ContentFilterStatus.Issues]);
+					.Add(StatusMapToString[ContentFilterStatus.Issues]);
 
 				ClearCaches();
 				UpdateActiveFilterSearchText();

@@ -20,6 +20,113 @@ using UnityEngine;
 
 namespace Beamable.Editor.Tests
 {
+    public class ContentUnifiedIssuesTests
+    {
+        const BindingFlags Members = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+        [TestCase(ContentChangeKind.UpToDate, false, false, false)]
+        [TestCase(ContentChangeKind.LocalEdit, false, false, false)]
+        [TestCase(ContentChangeKind.LocalEdit, true, false, true)]
+        [TestCase(ContentChangeKind.LocalEdit, false, true, true)]
+        [TestCase(ContentChangeKind.LocalEdit, true, true, true)]
+        [TestCase(ContentChangeKind.IncomingChange, false, false, true)]
+        [TestCase(ContentChangeKind.IncomingAddition, false, false, true)]
+        [TestCase(ContentChangeKind.IncomingDeletion, false, false, true)]
+        [TestCase(ContentChangeKind.IncomingChange, true, false, true)]
+        [TestCase(ContentChangeKind.Unknown, false, false, true)]
+        public void Issues_filter_and_publish_summary_agree(ContentChangeKind kind, bool invalid, bool conflict, bool expected)
+        {
+            var entry = Entry("test", kind, conflict);
+            var window = Window(new[] { entry }, invalid ? new[] { entry.FullId } : Array.Empty<string>());
+            var hasIssue = (bool)Call(window, "HasContentIssue", entry);
+            var filtered = (bool)Call(window, "FilterItem", "", new HashSet<string>(), entry, new HashSet<string>(), new HashSet<string> { "issues" }, "");
+            Assert.That(hasIssue, Is.EqualTo(expected));
+            Assert.That(filtered, Is.EqualTo(expected));
+            Assert.That(Total(window), Is.EqualTo(expected ? 1 : 0));
+        }
+
+        [TestCase(ContentChangeKind.IncomingAddition, ContentStatus.Deleted)]
+        [TestCase(ContentChangeKind.IncomingDeletion, ContentStatus.Created)]
+        public void Issues_includes_incoming_presence_changes_despite_local_status(ContentChangeKind kind, ContentStatus status)
+        {
+            var entry = Entry("presence", kind);
+            entry.CurrentStatus = (int)status;
+            var window = Window(new[] { entry }, Array.Empty<string>());
+            Assert.That(Call(window, "FilterItem", "", new HashSet<string>(), entry, new HashSet<string>(), new HashSet<string> { "issues" }, ""), Is.True);
+            Assert.That(Total(window), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Combined_summary_counts_items_once_and_shows_all_blocker_categories()
+        {
+            var entries = new[] {
+                Entry("clean", ContentChangeKind.UpToDate), Entry("edit", ContentChangeKind.LocalEdit),
+                Entry("invalid", ContentChangeKind.LocalEdit), Entry("conflict", ContentChangeKind.LocalEdit, true),
+                Entry("update", ContentChangeKind.IncomingChange), Entry("addition", ContentChangeKind.IncomingAddition),
+                Entry("deletion", ContentChangeKind.IncomingDeletion), Entry("unknown", ContentChangeKind.Unknown)
+            };
+            var window = Window(entries, new[] { "currency.invalid", "currency.conflict", "currency.update" });
+            var summary = Call(window, "GetPublishIssueSummary");
+            Assert.That(Total(window), Is.EqualTo(6), "Invalid/incoming and invalid/conflicted items count once in Issues.");
+            foreach (var expected in new[] { ("Invalid", 3), ("Conflicted", 1), ("Updates", 1), ("Additions", 1), ("Deletions", 1), ("Unknown", 1) })
+                Assert.That(summary.GetType().GetField(expected.Item1).GetValue(summary), Is.EqualTo(expected.Item2));
+        }
+
+        [Test]
+        public void Resolving_one_issue_keeps_remaining_issues_visible_until_all_are_cleared()
+        {
+            var incoming = Entry("incoming", ContentChangeKind.IncomingAddition);
+            var conflict = Entry("conflict", ContentChangeKind.LocalEdit, true);
+            var window = Window(new[] { incoming, conflict }, Array.Empty<string>());
+            var service = (CliContentService)typeof(ContentWindow).GetField("_contentService", Members).GetValue(window);
+            Assert.That(Total(window), Is.EqualTo(2));
+            conflict.IsInConflict = false;
+            service.EntriesCache[conflict.FullId] = conflict;
+            Assert.That(Total(window), Is.EqualTo(1));
+            Assert.That(Call(window, "HasContentIssue", incoming), Is.True);
+            incoming.ChangeKind = (int)ContentChangeKind.UpToDate;
+            service.EntriesCache[incoming.FullId] = incoming;
+            Assert.That(Total(window), Is.Zero);
+        }
+
+        [Test]
+        public void Status_picker_has_only_the_consolidated_issues_filter()
+        {
+            Assert.That(Enum.GetNames(typeof(ContentFilterStatus)), Does.Not.Contain("Incoming"));
+            var statuses = (Dictionary<ContentFilterStatus, string>)typeof(ContentWindow).GetField("StatusMapToString", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+            Assert.That(statuses.Values, Does.Not.Contain("incoming"));
+            Assert.That(statuses.Values, Does.Contain("issues"));
+        }
+
+        static LocalContentManifestEntry Entry(string name, ContentChangeKind kind, bool conflict = false) => new LocalContentManifestEntry {
+            FullId = "currency." + name, Name = name, TypeName = "currency", Tags = Array.Empty<string>(),
+            ChangeKind = (int)kind, IsInConflict = conflict, CurrentStatus = (int)ContentStatus.Modified
+        };
+        static object Call(ContentWindow window, string method, params object[] args) => typeof(ContentWindow).GetMethod(method, Members).Invoke(window, args);
+        static int Total(ContentWindow window)
+        {
+            var summary = Call(window, "GetPublishIssueSummary");
+            return (int)summary.GetType().GetProperty("Total").GetValue(summary);
+        }
+        static ContentWindow Window(LocalContentManifestEntry[] entries, string[] invalidIds)
+        {
+            // Only managed cache/filter methods run: no Editor initialization, asset access or CLI commands.
+            var service = (CliContentService)FormatterServices.GetUninitializedObject(typeof(CliContentService));
+            var cache = new Dictionary<string, LocalContentManifestEntry>();
+            foreach (var entry in entries) cache.Add(entry.FullId, entry);
+            var invalid = new Dictionary<string, LocalContentManifestEntry>();
+            foreach (var id in invalidIds) invalid.Add(id, cache[id]);
+            typeof(CliContentService).GetField("<EntriesCache>k__BackingField", Members).SetValue(service, cache);
+            typeof(CliContentService).GetField("_invalidContents", Members).SetValue(service, invalid);
+            var renames = typeof(CliContentService).GetField("_renameRegistry", Members);
+            renames.SetValue(service, Activator.CreateInstance(renames.FieldType));
+            var window = (ContentWindow)FormatterServices.GetUninitializedObject(typeof(ContentWindow));
+            typeof(ContentWindow).GetField("_contentService", Members).SetValue(window, service);
+            typeof(ContentWindow).GetField("_activeFilters", Members).SetValue(window, new Dictionary<ContentSearchFilterType, HashSet<string>>());
+            return window;
+        }
+    }
+
     public class ContentJsonComparisonTests
     {
         [TestCase("head\nold\ntail", "head\nnew\ntail", "head|old|tail", "head|new|tail")]
@@ -805,10 +912,10 @@ namespace Beamable.Editor.Tests
             Assert.That(serialized, Does.Contain("--expected-local-revision=token"));
         }
 
-        [TestCase(300f, 5)]
-        [TestCase(450f, 5)]
-        [TestCase(700f, 5)]
-        [TestCase(1200f, 5)]
+        [TestCase(300f, 4)]
+        [TestCase(450f, 4)]
+        [TestCase(700f, 4)]
+        [TestCase(1200f, 4)]
         [TestCase(300f, 1)]
         public void Footer_controls_fit_without_hiding_the_last_filter(float available, int count)
         {
@@ -819,24 +926,6 @@ namespace Beamable.Editor.Tests
             Assert.That(width, Is.LessThanOrEqualTo(160f));
             // The production footer reserves BASE_PADDING (5) between controls.
             Assert.That(width * count + 5f * (count - 1), Is.LessThanOrEqualTo(available));
-        }
-
-        [Test]
-        public void Incoming_footer_counts_all_reviewable_entries_but_not_conflicts_or_local_edits()
-        {
-            var entries = new[] {
-                new LocalContentManifestEntry { ChangeKind = 1 },
-                new LocalContentManifestEntry { ChangeKind = 2 },
-                new LocalContentManifestEntry { ChangeKind = 3 },
-                new LocalContentManifestEntry { ChangeKind = 5 },
-                new LocalContentManifestEntry { ChangeKind = 6 },
-                new LocalContentManifestEntry { ChangeKind = 3, IsInConflict = true },
-                default(LocalContentManifestEntry)
-            };
-            var method = typeof(ContentWindow).GetMethod("CountIncomingEntries", BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.That(method, Is.Not.Null);
-            Assert.That(method.Invoke(null, new object[] { entries }), Is.EqualTo(4));
-            Assert.That(method.Invoke(null, new object[] { Array.Empty<LocalContentManifestEntry>() }), Is.EqualTo(0));
         }
 
         [Test]
@@ -1229,6 +1318,35 @@ namespace Beamable.Editor.Tests
     {
         const BindingFlags InstanceFields = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
         const BindingFlags StaticFields = BindingFlags.Static | BindingFlags.NonPublic;
+
+        [TestCase(false, false)]
+        [TestCase(false, true)]
+        [TestCase(true, false)]
+        [TestCase(true, true)]
+        public void Combined_publish_popup_measures_all_categories_in_both_modes(bool localMode, bool permission)
+        {
+            var owner = ScriptableObject.CreateInstance<ContentReconciliationWindow>();
+            var previousEvent = Event.current;
+            typeof(GUIUtility).GetMethod("BeginContainerFromOwner", StaticFields).Invoke(null, new object[] { owner });
+            try
+            {
+                Event.current = new Event { type = EventType.Layout };
+                typeof(GUIUtility).GetMethod("BeginGUI", StaticFields).Invoke(null, new object[] { 1, owner.GetInstanceID(), 1 });
+                var summaryType = typeof(ContentWindow).GetNestedType("PublishIssueSummary", BindingFlags.NonPublic);
+                var summary = Activator.CreateInstance(summaryType, new object[] { 6, 3, 1, 1, 1, 1, 1 });
+                var popupType = typeof(ContentWindow).GetNestedType("PublishIssuesPopup", BindingFlags.NonPublic);
+                var popup = (PopupWindowContent)Activator.CreateInstance(popupType, new object[] { summary, permission, "Realm: Test  |  Namespace: global", localMode, (Action)(() => { }) });
+                var size = popup.GetWindowSize();
+                Assert.That(size.x, Is.EqualTo(380));
+                Assert.That(size.y, Is.InRange(200f, 650f), "All issue categories and the action must fit in the measured popup.");
+            }
+            finally
+            {
+                typeof(GUIUtility).GetMethod("EndContainer", StaticFields).Invoke(null, null);
+                Event.current = previousEvent;
+                UnityEngine.Object.DestroyImmediate(owner);
+            }
+        }
 
         [TestCase(560, 380, false, false, false)]
         [TestCase(560, 380, false, true, false)]
