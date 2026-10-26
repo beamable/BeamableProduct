@@ -478,6 +478,8 @@ namespace Beamable.Editor.Content.UI
 			var entries = new List<LocalContentManifestEntry>(targets.Length);
 			var historical = 0;
 			var invalidCount = 0;
+			var schemaCount = 0;
+			var schemaDifferences = SchemaDifference.None;
 			var hasChanges = false;
 			var onlyIncoming = targets.Length > 0;
 			foreach (var selected in targets)
@@ -494,6 +496,12 @@ namespace Beamable.Editor.Content.UI
 					entries.Add(entry);
 					if (!string.IsNullOrEmpty(entry.FullId) && BeamEditor.IsInitialized &&
 					    BeamEditorContext.Default.CliContentService.IsContentInvalid(entry.FullId)) invalidCount++;
+					if (!string.IsNullOrEmpty(entry.FullId) && BeamEditor.IsInitialized)
+					{
+						var difference = BeamEditorContext.Default.CliContentService.GetSchemaDifference(entry.FullId);
+						if (difference != SchemaDifference.None) schemaCount++;
+						schemaDifferences |= difference;
+					}
 					var kind = ContentWindow_TooltipsHelper.GetChangeKind(entry);
 					onlyIncoming &= ContentWindow_TooltipsHelper.IsIncoming(kind);
 					hasChanges |= kind == ContentChangeKind.LocalEdit || ContentWindow_TooltipsHelper.IsIncoming(kind) ||
@@ -504,6 +512,8 @@ namespace Beamable.Editor.Content.UI
 				ContentConfiguration.Instance.EnableLocalContentInEditor, out var conflict, invalidCount,
 				_hasListValidationCache && targets.Length == 1 && (target as ContentObject)?.ContentStatus != ContentStatus.Deleted
 					? _validationStatusDetails : null);
+			if (schemaCount > 0)
+				message = ContentWindow_TooltipsHelper.GetSchemaWarningDescription(schemaDifferences, schemaCount, targets.Length > 1) + "\n\n" + message;
 			_statusMessageStyle ??= new GUIStyle(EditorStyles.wordWrappedLabel) { padding = new RectOffset(8, 8, 8, 8) };
 			GUILayout.Space(8);
 			var text = new GUIContent(message);
@@ -511,8 +521,8 @@ namespace Beamable.Editor.Content.UI
 			var height = Mathf.Max(42, _statusMessageStyle.CalcHeight(text, width));
 			var rect = EditorGUILayout.GetControlRect(false, height);
 			EditorGUI.DrawRect(rect, conflict || invalidCount > 0 ? new Color(.7f, .15f, .15f, .24f) : new Color(.15f, .4f, .75f, .24f));
-			var icon = conflict || invalidCount > 0 ? "console.erroricon.sml" : hasChanges ? "console.warnicon.sml" : "console.infoicon.sml";
-			GUI.Label(new Rect(rect.x + 6, rect.y + 8, 20, 20), onlyIncoming && invalidCount == 0
+			var icon = conflict || invalidCount > 0 ? "console.erroricon.sml" : hasChanges || schemaCount > 0 ? "console.warnicon.sml" : "console.infoicon.sml";
+			GUI.Label(new Rect(rect.x + 6, rect.y + 8, 20, 20), onlyIncoming && invalidCount == 0 && schemaCount == 0
 				? new GUIContent(ContentWindow_TooltipsHelper.GetStatusIcon(entries[0]))
 				: EditorGUIUtility.IconContent(icon));
 			rect.xMin += 28;

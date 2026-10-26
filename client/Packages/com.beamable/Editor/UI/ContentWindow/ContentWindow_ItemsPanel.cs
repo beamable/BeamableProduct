@@ -684,18 +684,19 @@ namespace Beamable.Editor.UI.ContentWindow
 				nameLabel = isEditingName ? nameLabel : $"{entry.Name} (renamed from {renameInfo.OldName})";
 
 			bool isInvalid = _contentService.IsContentInvalid(entry.FullId);
-			string[] values = {nameLabel, isRenamed && !isInvalid ? "Renamed" : ContentWindow_TooltipsHelper.GetStatusLabel(entry, isInvalid), entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
+			bool schemaMismatch = _contentService.GetSchemaDifference(entry.FullId) != SchemaDifference.None;
+			string[] values = {nameLabel, isRenamed && !isInvalid && !schemaMismatch ? "Renamed" : ContentWindow_TooltipsHelper.GetStatusLabel(entry, isInvalid, schemaMismatch), entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
 			GUIContent badge = _tooltipsHelper.GetContentStatusBadge(
 				_contentService,
 				entry,
 				renamedFrom: isRenamed ? renameInfo.OldName : null);
 
 			// Keep Inspector information icons; the table only emphasizes actionable differences.
-			if (!isInvalid && !isRenamed && ContentWindow_TooltipsHelper.GetChangeKind(entry) == ContentChangeKind.UpToDate)
+			if (!isInvalid && !schemaMismatch && !isRenamed && ContentWindow_TooltipsHelper.GetChangeKind(entry) == ContentChangeKind.UpToDate)
 				badge.image = null;
 			GUIContent[] icons = { null, badge };
 			var statusStyle = isInvalid ? _invalidStatusStyle : entry.IsInConflict ? _conflictStatusStyle :
-				ContentWindow_TooltipsHelper.IsIncoming(ContentWindow_TooltipsHelper.GetChangeKind(entry)) ? _incomingStatusStyle : labelStyle;
+				schemaMismatch ? _invalidStatusStyle : ContentWindow_TooltipsHelper.IsIncoming(ContentWindow_TooltipsHelper.GetChangeKind(entry)) ? _incomingStatusStyle : labelStyle;
 
 			bool[] isEditable = {isEditingName};
 			string[] editableId = {entry.FullId};

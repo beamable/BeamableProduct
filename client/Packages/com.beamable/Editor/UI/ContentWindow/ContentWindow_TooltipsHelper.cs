@@ -1,4 +1,5 @@
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Content;
 using Beamable.Content;
 using Beamable.Editor.ContentService;
 using Beamable.Editor.Util;
@@ -32,7 +33,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			? "Auto-sync is paused while Local Mode is on. Review this item before publishing."
 			: "Auto-sync is enabled; reconciliation may still be pending.";
 
-		public static string GetStatusLabel(LocalContentManifestEntry entry, bool isInvalid = false) => isInvalid ? "Validation Error" : GetChangeKind(entry) switch
+		public static string GetStatusLabel(LocalContentManifestEntry entry, bool isInvalid = false, bool schemaMismatch = false) =>
+			isInvalid ? "Validation Error" : schemaMismatch && GetChangeKind(entry) != ContentChangeKind.Conflict ? "Schema mismatch" : GetChangeKind(entry) switch
 		{
 			ContentChangeKind.UpToDate => "Up to date",
 			ContentChangeKind.LocalEdit => "Local edit",
@@ -43,6 +45,23 @@ namespace Beamable.Editor.UI.ContentWindow
 			_ => entry.StatusEnum is ContentStatus.Modified or ContentStatus.Created or ContentStatus.Deleted
 				? "Differs from publication" : "Status unavailable"
 		};
+
+		internal static string GetSchemaWarningDescription(SchemaDifference difference, int affectedCount, bool multiSelection)
+		{
+			if (affectedCount == 0 || difference == SchemaDifference.None) return string.Empty;
+			var message = multiSelection
+				? $"Schema mismatch\n{affectedCount} selected item(s) were loaded with a different local C# content schema. Inspect each item for details."
+				: "Schema mismatch\nThe content JSON did not match the local C# content type when loaded.";
+			if (!multiSelection)
+			{
+				if ((difference & SchemaDifference.UnknownFieldsInJson) != 0)
+					message += "\nUnknownFieldsInJson: The JSON contains fields this Inspector cannot display.";
+				if ((difference & SchemaDifference.MissingFieldsInJson) != 0)
+					message += "\nMissingFieldsInJson: The local C# type defines fields missing from the JSON.";
+			}
+			return message + "\nUpdate the C# content type to match the JSON, or intentionally publish the local schema. " +
+				"The loader saves fields supported by the local type; publishing can remove unrecognized fields from the realm.";
+		}
 
 		public static string GetStatusDescription(LocalContentManifestEntry entry, bool localMode) => GetChangeKind(entry) switch
 		{
@@ -107,12 +126,15 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			bool isInvalid = contentService.IsContentInvalid(entry.FullId);
 			bool isConflicted = GetChangeKind(entry) == ContentChangeKind.Conflict;
+			var schemaDifference = contentService.GetSchemaDifference(entry.FullId);
 			var messages = new List<string>();
 			if (isInvalid) messages.Add("Validation Error. Inspect this item to view the invalid fields.");
+			if (schemaDifference != SchemaDifference.None) messages.Add(GetSchemaWarningDescription(schemaDifference, 1, false));
 			if (isInvalid || isConflicted) messages.Add("Publishing is blocked.");
 			if (renamedFrom != null) messages.Add($"Renamed from \"{renamedFrom}\".");
 			messages.Add(GetStatusDescription(entry, ContentConfiguration.Instance.EnableLocalContentInEditor));
-			return new GUIContent(string.Empty, isInvalid ? BeamGUI.iconStatusInvalid : GetStatusIcon(entry), string.Join("\n", messages));
+			return new GUIContent(string.Empty, isInvalid || (schemaDifference != SchemaDifference.None && !isConflicted)
+				? BeamGUI.iconStatusInvalid : GetStatusIcon(entry), string.Join("\n", messages));
 		}
 	}
 }

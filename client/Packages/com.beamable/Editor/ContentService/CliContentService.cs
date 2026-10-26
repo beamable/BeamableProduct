@@ -71,6 +71,7 @@ namespace Beamable.Editor.ContentService
 		private Dictionary<string, LocalContentManifestEntry> _conflictedContentCache = new();
 		private readonly ContentTypeReflectionCache _contentTypeReflectionCache;
 		private Dictionary<string, LocalContentManifestEntry> _invalidContents = new();
+		private readonly Dictionary<string, (SchemaDifference Difference, string Reference)> _schemaDifferences = new();
 		private readonly Dictionary<string, List<string>> _contentIdTagsCache = new();
 		private List<string> _tagsCache = new();
 		private int syncedContents;
@@ -132,6 +133,23 @@ namespace Beamable.Editor.ContentService
 		public bool HasConflictedContent => _conflictedContentCache.Count > 0;
 
 		public bool HasInvalidContent => _invalidContents.Count > 0;
+
+		internal SchemaDifference GetSchemaDifference(string contentId) =>
+			!string.IsNullOrEmpty(contentId) && _schemaDifferences.TryGetValue(contentId, out var warning)
+				? warning.Difference : SchemaDifference.None;
+
+		internal void UpdateSchemaDifference(LocalContentManifestEntry entry, SchemaDifference difference)
+		{
+			if (!_contentConfiguration.validateSchemaDifference || entry.StatusEnum == ContentStatus.Deleted)
+				_schemaDifferences.Remove(entry.FullId);
+			else if (difference != SchemaDifference.None)
+				_schemaDifferences[entry.FullId] = (difference, entry.ReferenceManifestUid);
+			else if (entry.StatusEnum is not (ContentStatus.Modified or ContentStatus.Created) ||
+			         !_schemaDifferences.TryGetValue(entry.FullId, out var previous) || previous.Reference != entry.ReferenceManifestUid)
+				_schemaDifferences.Remove(entry.FullId);
+			// Keep the detected mismatch through the loader's automatic save notification.
+			// A fresh cache, deletion, or reconciled/published version clears the notice.
+		}
 
 		public bool HasChangedContents
 		{
@@ -955,6 +973,7 @@ namespace Beamable.Editor.ContentService
 					{
 						foreach (var entry in removeManifest.Entries)
 						{
+							_schemaDifferences.Remove(entry.FullId);
 							if (EntriesCache.TryGetValue(entry.FullId, out LocalContentManifestEntry oldEntry))
 							{
 								RemoveContentFromCache(oldEntry);
@@ -1073,6 +1092,7 @@ namespace Beamable.Editor.ContentService
 			EntriesCache.Clear();
 			TypeContentCache.Clear();
 			_invalidContents.Clear();
+			_schemaDifferences.Clear();
 			_statusContentCache.Clear();
 			_conflictedContentCache.Clear();
 			_contentIdTagsCache.Clear();
@@ -1360,6 +1380,7 @@ namespace Beamable.Editor.ContentService
 			}
 			if (!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(entry.TypeName, out var type))
 			{
+				_schemaDifferences.Remove(entry.FullId);
 				_invalidContents.Remove(entry.FullId);
 				_contentScriptableCache.Remove(entry.FullId);
 				return;
@@ -1367,6 +1388,7 @@ namespace Beamable.Editor.ContentService
 			
 			if (entry.StatusEnum is ContentStatus.Deleted)
 			{
+				_schemaDifferences.Remove(entry.FullId);
 				TombstoneCachedContentObject(entry.FullId);
 				
 				var deletedObject = ScriptableObject.CreateInstance(type) as ContentObject;
@@ -1409,6 +1431,7 @@ namespace Beamable.Editor.ContentService
 					                                                  disableExceptions: true) as ContentObject;
 				if (contentObject)
 				{
+					UpdateSchemaDifference(entry, schemaDifference);
 					contentObject.Tags = entry.Tags.ToArray();
 					contentObject.ContentStatus = entry.StatusEnum;
 					contentObject.IsInConflict = entry.IsInConflict;

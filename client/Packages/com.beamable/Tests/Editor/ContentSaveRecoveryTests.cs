@@ -9,6 +9,7 @@ using Beamable.Common.Api.Realms;
 using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
+using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
@@ -244,6 +245,70 @@ namespace Beamable.Editor.Tests
 				serialized.Update();
 				Assert.That(ContentObjectEditor.CountListValidationErrors(rows, _content.GetMemberValidationErrors(context)), Is.Zero);
 			}
+		}
+
+		[TestCase(true, SchemaDifference.UnknownFieldsInJson)]
+		[TestCase(true, SchemaDifference.MissingFieldsInJson)]
+		[TestCase(true, SchemaDifference.UnknownFieldsInJson | SchemaDifference.MissingFieldsInJson)]
+		[TestCase(false, SchemaDifference.UnknownFieldsInJson)]
+		public void Schema_notice_comes_from_real_deserialization_and_survives_normalization(bool enabled, SchemaDifference difference)
+		{
+			PrepareFile();
+			var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+			try
+			{
+				config.validateSchemaDifference = enabled;
+				Set(_service, "_contentConfiguration", config);
+				var properties = ClientContentSerializer.SerializeProperties(_content);
+				var mismatchedProperties = (difference & SchemaDifference.MissingFieldsInJson) != 0 ? "{}" : properties;
+				if ((difference & SchemaDifference.UnknownFieldsInJson) != 0)
+					mismatchedProperties = mismatchedProperties.Insert(1, "\"futureField\":{\"data\":123}" + (mismatchedProperties == "{}" ? "" : ","));
+				var json = "{\"properties\":" + mismatchedProperties + ",\"tags\":[]}";
+				File.WriteAllText(_path, json);
+				var entry = _service.EntriesCache[_content.Id];
+				entry.ReferenceManifestUid = "publication-a";
+				var loader = typeof(CliContentService).GetMethod("LoadContentObject", Fields);
+				loader.Invoke(_service, new object[] { entry, _content });
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(enabled ? difference : SchemaDifference.None));
+				Assert.That(_commands.Properties.Count, Is.EqualTo(enabled ? 1 : 0), "Existing schema normalization behavior is unchanged.");
+				Assert.That(File.ReadAllText(_path), Is.EqualTo(json), "The controlled save command must not write the test file.");
+				// Simulate the watcher report for the properties emitted by the existing automatic save.
+				File.WriteAllText(_path, "{\"properties\":" + properties + ",\"tags\":[]}");
+				entry.CurrentStatus = (int)ContentStatus.Modified;
+				loader.Invoke(_service, new object[] { entry, _content });
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(enabled ? difference : SchemaDifference.None));
+				entry.CurrentStatus = (int)ContentStatus.UpToDate;
+				loader.Invoke(_service, new object[] { entry, _content });
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(config); }
+		}
+
+		[TestCase("reference")]
+		[TestCase("deleted")]
+		[TestCase("disabled")]
+		[TestCase("reload")]
+		public void Schema_notice_does_not_leak_to_replaced_deleted_or_reloaded_content(string change)
+		{
+			PrepareFile();
+			var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+			try
+			{
+				Set(_service, "_contentConfiguration", config);
+				config.validateSchemaDifference = true;
+				var entry = _service.EntriesCache[_content.Id];
+				entry.CurrentStatus = (int)ContentStatus.Modified;
+				entry.ReferenceManifestUid = "old";
+				_service.UpdateSchemaDifference(entry, SchemaDifference.MissingFieldsInJson);
+				Assert.That(_service.GetSchemaDifference("another.item"), Is.EqualTo(SchemaDifference.None));
+				if (change == "reference") entry.ReferenceManifestUid = "new";
+				if (change == "deleted") entry.CurrentStatus = (int)ContentStatus.Deleted;
+				if (change == "disabled") config.validateSchemaDifference = false;
+				if (change == "reload") typeof(CliContentService).GetMethod("ClearCaches", Fields).Invoke(_service, null);
+				else _service.UpdateSchemaDifference(entry, SchemaDifference.None);
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(config); }
 		}
 
 		private void PrepareFile()

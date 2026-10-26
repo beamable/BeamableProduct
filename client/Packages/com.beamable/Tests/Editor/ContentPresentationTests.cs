@@ -914,6 +914,7 @@ namespace Beamable.Editor.Tests
             Set("_beamContext", context);
             Set("_contentWrites", new ContentWriteTracker());
             Set("_invalidContents", new Dictionary<string, LocalContentManifestEntry>());
+            Set("_schemaDifferences", Activator.CreateInstance(typeof(CliContentService).GetField("_schemaDifferences", fields).FieldType));
             Set("_contentScriptableCache", new Dictionary<string, ContentObject>());
             Set("_pendingTagSaves", Activator.CreateInstance(typeof(CliContentService).GetField("_pendingTagSaves", fields).FieldType));
             Set("_lastSavedPropertiesCache", Activator.CreateInstance(typeof(CliContentService).GetField("_lastSavedPropertiesCache", fields).FieldType));
@@ -1307,6 +1308,40 @@ namespace Beamable.Editor.Tests
             Assert.That(ContentWindow_TooltipsHelper.GetStatusLabel(entry, true), Is.EqualTo("Validation Error"));
             Assert.That(ContentWindow_TooltipsHelper.GetChangeKind(entry), Is.EqualTo(kind));
             Assert.That(ContentWindow_TooltipsHelper.GetStatusLabel(entry, false), Is.Not.EqualTo("Validation Error"));
+        }
+
+        [TestCase(ContentChangeKind.LocalEdit, "Schema mismatch")]
+        [TestCase(ContentChangeKind.UpToDate, "Schema mismatch")]
+        [TestCase(ContentChangeKind.IncomingChange, "Schema mismatch")]
+        [TestCase(ContentChangeKind.Conflict, "Conflict")]
+        public void Schema_status_is_visible_without_hiding_blockers_or_changing_sync_state(ContentChangeKind kind, string label)
+        {
+            var entry = new LocalContentManifestEntry { ChangeKind = (int)kind };
+            Assert.That(ContentWindow_TooltipsHelper.GetStatusLabel(entry, false, true), Is.EqualTo(label));
+            Assert.That(ContentWindow_TooltipsHelper.GetStatusLabel(entry, true, true), Is.EqualTo("Validation Error"));
+            Assert.That(ContentWindow_TooltipsHelper.GetChangeKind(entry), Is.EqualTo(kind));
+        }
+
+        [TestCase(SchemaDifference.UnknownFieldsInJson)]
+        [TestCase(SchemaDifference.MissingFieldsInJson)]
+        [TestCase(SchemaDifference.UnknownFieldsInJson | SchemaDifference.MissingFieldsInJson)]
+        public void Schema_warning_explains_the_detected_reason_and_publishing_consequence(SchemaDifference difference)
+        {
+            var message = ContentWindow_TooltipsHelper.GetSchemaWarningDescription(difference, 1, false);
+            Assert.That(message, Does.StartWith("Schema mismatch"));
+            Assert.That(message.Contains("UnknownFieldsInJson"), Is.EqualTo((difference & SchemaDifference.UnknownFieldsInJson) != 0));
+            Assert.That(message.Contains("MissingFieldsInJson"), Is.EqualTo((difference & SchemaDifference.MissingFieldsInJson) != 0));
+            Assert.That(message, Does.Contain("when loaded"));
+            Assert.That(message, Does.Contain("publishing can remove"));
+        }
+
+        [Test]
+        public void Schema_multi_selection_counts_affected_items_without_misattributing_specific_reasons()
+        {
+            var message = ContentWindow_TooltipsHelper.GetSchemaWarningDescription(SchemaDifference.UnknownFieldsInJson, 2, true);
+            Assert.That(message, Does.Contain("2 selected item(s)"));
+            Assert.That(message, Does.Not.Contain("UnknownFieldsInJson"));
+            Assert.That(ContentWindow_TooltipsHelper.GetSchemaWarningDescription(SchemaDifference.None, 0, false), Is.Empty);
         }
 
         [TestCase(ContentChangeKind.LocalEdit, false)]
