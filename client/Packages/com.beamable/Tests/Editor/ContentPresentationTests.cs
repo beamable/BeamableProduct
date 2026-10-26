@@ -1229,6 +1229,46 @@ namespace Beamable.Editor.Tests
             Assert.That(sum, Is.LessThanOrEqualTo(available));
         }
 
+        [Test]
+        public void Shared_table_header_places_status_immediately_after_name()
+        {
+            var labels = (string[])typeof(ContentWindow).GetField("ItemColumnLabels", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+            Assert.That(labels, Is.EqualTo(new[] { "Name", "Status", "Tags", "Latest Update" }));
+        }
+
+        [TestCase(600f)]
+        [TestCase(800f)]
+        [TestCase(1400f)]
+        public void Shared_table_cells_fit_without_overlapping_and_reserve_status_icon_space(float available)
+        {
+            var widths = (float[])typeof(ContentWindow).GetMethod("CalculateColumnWidths", BindingFlags.Static | BindingFlags.NonPublic)
+                .Invoke(null, new object[] { available });
+            var labelMethod = typeof(ContentWindow).GetMethod("GetTableLabelRect", BindingFlags.Static | BindingFlags.NonPublic);
+            float x = 0;
+            for (int column = 0; column < widths.Length; column++)
+            {
+                var cell = new Rect(x, 0, widths[column], 20);
+                var label = (Rect)labelMethod.Invoke(null, new object[] { cell, column });
+                Assert.That(label.xMin, Is.EqualTo(x + (column == 1 ? 25 : 5)));
+                Assert.That(label.xMax, Is.LessThanOrEqualTo(cell.xMax - 5));
+                Assert.That(label.width, Is.GreaterThan(0));
+                if (column == 1) Assert.That(label.width, Is.GreaterThanOrEqualTo(130));
+                x += widths[column];
+            }
+            Assert.That(x, Is.EqualTo(available).Within(0.01f));
+        }
+
+        [TestCase(0f)]
+        [TestCase(120f)]
+        public void Header_and_rows_keep_the_same_status_alignment_when_scrolled(float scrollX)
+        {
+            var method = typeof(ContentWindow).GetMethod("GetTableLabelRect", BindingFlags.Static | BindingFlags.NonPublic);
+            var header = (Rect)method.Invoke(null, new object[] { new Rect(200 - scrollX, 0, 160, 20), 1 });
+            var row = (Rect)method.Invoke(null, new object[] { new Rect(200, 100, 160, 20), 1 });
+            Assert.That(header.x, Is.EqualTo(row.x - scrollX));
+            Assert.That(header.width, Is.EqualTo(row.width));
+        }
+
         private static object Call(string name, params object[] args)
         {
             var method = typeof(ContentWindow_TooltipsHelper).GetMethod(name, BindingFlags.Public | BindingFlags.Static);
@@ -1280,6 +1320,38 @@ namespace Beamable.Editor.Tests
     }
 
     // Uses real content validators and native Unity objects; run inside Unity.
+    public class ContentTableStyleTests
+    {
+        [Test]
+        public void Table_styles_are_cached_and_long_labels_clip_within_their_cell()
+        {
+            var window = (ContentWindow)FormatterServices.GetUninitializedObject(typeof(ContentWindow));
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            var build = typeof(ContentWindow).GetMethod("BuildItemsPanelStyles", flags);
+            build.Invoke(window, null);
+            var names = new[] { "_itemPanelHeaderFieldStyle", "_itemLabelStyle", "_incomingStatusStyle", "_conflictStatusStyle", "_invalidStatusStyle" };
+            var styles = new GUIStyle[names.Length];
+            for (int i = 0; i < names.Length; i++) styles[i] = (GUIStyle)typeof(ContentWindow).GetField(names[i], flags).GetValue(window);
+            build.Invoke(window, null);
+            for (int i = 0; i < names.Length; i++)
+            {
+                Assert.That(typeof(ContentWindow).GetField(names[i], flags).GetValue(window), Is.SameAs(styles[i]));
+                Assert.That(styles[i].padding.left, Is.Zero, "Header and row label geometry must agree.");
+            }
+#if UNITY_6000_3_OR_NEWER
+            Assert.That(styles[1].clipping, Is.EqualTo(TextClipping.Ellipsis));
+#else
+            Assert.That(styles[1].clipping, Is.EqualTo(TextClipping.Clip));
+#endif
+            Assert.That(styles[1].wordWrap, Is.False);
+            foreach (var name in new[] { "_itemPanelHeaderRowStyle", "_rowEvenItemStyle", "_rowOddItemStyle", "_rowSelectedItemStyle" })
+            {
+                var style = (GUIStyle)typeof(ContentWindow).GetField(name, flags).GetValue(window);
+                UnityEngine.Object.DestroyImmediate(style.normal.background);
+            }
+        }
+    }
+
     public class ContentValidationStatusTests
     {
         [Test]

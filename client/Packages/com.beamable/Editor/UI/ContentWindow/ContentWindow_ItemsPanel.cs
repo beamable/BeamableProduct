@@ -18,12 +18,16 @@ namespace Beamable.Editor.UI.ContentWindow
 	{
 		private static readonly NaturalStringComparer NaturalStringComparer = new();
 		private const int BASE_PADDING = 5;
-		private const float SEPARATOR_WIDTH_AREA = 3;
+		private static float TableScrollbarWidth => GUI.skin.verticalScrollbar.fixedWidth + GUI.skin.verticalScrollbar.margin.left;
+		private const int STATUS_COLUMN = 1;
 		private const float ITEMS_TABLE_ROW_HEIGHT = 20;
-		private const float ITEM_GROUP_HEIGHT = 35;
+		private const float ITEM_GROUP_HEIGHT = 24;
 		private const string FOCUS_NAME = "EditLabel";
 		private const float FOLDOUT_WIDTH = 20f;
-		private const float ITEM_LIST_MIN_WIDTH = 450;
+		private const float ITEM_LIST_MIN_WIDTH = 600;
+		private static readonly string[] ItemColumnLabels = { "Name", "Status", "Tags", "Latest Update" };
+		private float _itemsTableWidth = ITEM_LIST_MIN_WIDTH;
+		private float[] _itemsColumnWidths = CalculateColumnWidths(ITEM_LIST_MIN_WIDTH);
 
 		private readonly Dictionary<string, Vector2> _groupScrollPositions = new();
 		
@@ -56,6 +60,9 @@ namespace Beamable.Editor.UI.ContentWindow
 		private GUIStyle _itemPanelHeaderRowStyle;
 		private GUIStyle _itemPanelHeaderFieldStyle;
 		private GUIStyle _itemLabelStyle;
+		private GUIStyle _incomingStatusStyle;
+		private GUIStyle _conflictStatusStyle;
+		private GUIStyle _invalidStatusStyle;
 		private GUIStyle _rowEvenItemStyle;
 		private GUIStyle _rowOddItemStyle;
 		private GUIStyle _rowSelectedItemStyle;
@@ -77,18 +84,29 @@ namespace Beamable.Editor.UI.ContentWindow
 				};
 			}
 
-			_itemPanelHeaderFieldStyle = new GUIStyle(EditorStyles.miniBoldLabel)
+			_itemPanelHeaderFieldStyle ??= new GUIStyle(EditorStyles.miniBoldLabel)
 			{
 				alignment = TextAnchor.MiddleLeft,
 				fontSize = 12,
+				padding = new RectOffset(0, 0, 0, 0),
 				fixedHeight = EditorGUIUtility.singleLineHeight * 1.15f
 			};
 			
-			_itemLabelStyle = new GUIStyle(EditorStyles.label)
+			_itemLabelStyle ??= new GUIStyle(EditorStyles.label)
 			{
-				alignment = TextAnchor.MiddleLeft, padding = new RectOffset(5, 5, 0, 0)
+				alignment = TextAnchor.MiddleLeft, padding = new RectOffset(0, 0, 0, 0),
+				#if UNITY_6000_3_OR_NEWER
+				clipping = TextClipping.Ellipsis,
+#else
+				clipping = TextClipping.Clip,
+#endif
+				wordWrap = false
 			};
 			
+
+			_incomingStatusStyle ??= new GUIStyle(_itemLabelStyle) { normal = { textColor = new Color(0.2f, 0.75f, 0.95f) } };
+			_conflictStatusStyle ??= new GUIStyle(_itemLabelStyle) { normal = { textColor = new Color(1f, 0.4f, 0.4f) } };
+			_invalidStatusStyle ??= new GUIStyle(_itemLabelStyle) { normal = { textColor = new Color(1f, 0.8f, 0.25f) } };
 			
 			float itemRowHeight = EditorGUIUtility.singleLineHeight * 1.1f;
 
@@ -149,20 +167,13 @@ namespace Beamable.Editor.UI.ContentWindow
 				return;
 			}
 			
-			GUILayout.BeginVertical(GUI.skin.box, GUILayout.ExpandHeight(true));
-			{
-				_itemsPanelScrollPos = GUILayout.BeginScrollView(_itemsPanelScrollPos);
-				{
-					var options = new List<GUILayoutOption> { GUILayout.ExpandWidth(true) };
-					var availableWidth = _mainSplitter.cellNormalizedSizes.Last() * EditorGUIUtility.currentViewWidth;
-					if(availableWidth < ITEM_LIST_MIN_WIDTH) 
-						options.Add(GUILayout.MinWidth(ITEM_LIST_MIN_WIDTH));
-					GUILayout.BeginVertical(options.ToArray());
-					DrawGroupNode();
-					GUILayout.EndVertical();
-				}
-				GUILayout.EndScrollView();
-			}
+			GUILayout.BeginVertical(GUIStyle.none, GUILayout.ExpandHeight(true));
+			DrawItemsPanelHeader();
+			_itemsPanelScrollPos = GUILayout.BeginScrollView(_itemsPanelScrollPos, false, true);
+			GUILayout.BeginVertical(GUIStyle.none, GUILayout.MinWidth(_itemsTableWidth + TableScrollbarWidth));
+			DrawGroupNode();
+			GUILayout.EndVertical();
+			GUILayout.EndScrollView();
 			GUILayout.EndVertical();
 			
 			if (CanHandleContentInput && MultiSelectItemIds.Count > 0 && Event.current.type == EventType.KeyDown &&
@@ -267,14 +278,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				
 				bool hasChildrenSubtypes = contentTypeItems.ContainsKey(contentType) &&
 				                        contentTypeItems[contentType].Count > 0;
-				GUILayout.Space(BASE_PADDING);
-				GUIStyle rowStyle = EditorStyles.helpBox;
 
-				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEM_GROUP_HEIGHT));
-				rowRect.xMin += indentLevel * INDENT_WIDTH;
-				rowRect.width -= BASE_PADDING * 3;
 				
-				GUI.Box(rowRect, GUIContent.none, rowStyle);
+				Rect rowRect = EditorGUILayout.GetControlRect(false, ITEM_GROUP_HEIGHT, GUIStyle.none);
+				rowRect.width = _itemsTableWidth + TableScrollbarWidth;
+
+				BeamGUI.DrawHorizontalSeparatorLine(rowRect.x, rowRect.y, rowRect.width, _tableSeparatorColor);
 				
 
 				var isRowHover = rowRect.Contains(Event.current.mousePosition);
@@ -284,7 +293,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				
 				Rect contentRect = new Rect(rowRect);
 				
-				contentRect.xMin += BASE_PADDING;
+				contentRect.xMin += BASE_PADDING + indentLevel * INDENT_WIDTH;
 				var foldoutRect = new Rect(contentRect.x, contentRect.y, FOLDOUT_WIDTH, contentRect.height);
 
 				bool isGroupExpanded = _itemsExpandedStates[contentType];
@@ -299,18 +308,18 @@ namespace Beamable.Editor.UI.ContentWindow
 				contentRect.xMin += FOLDOUT_WIDTH;
 				
 				Texture texture = _contentConfiguration.ContentTextureConfiguration.GetTextureForType(contentType);
-				float iconSize = 25f;
+				float iconSize = 16f;
 				var iconRect = new Rect(contentRect.x, contentRect.center.y - iconSize/2f, iconSize, iconSize);
 				GUI.DrawTexture(iconRect, texture, ScaleMode.ScaleToFit);
 
 				contentRect.xMin += iconSize + BASE_PADDING;
-				GUI.Label(contentRect, $"{displayName} - [{items.Count}]", new GUIStyle(EditorStyles.label)
-				{
-					alignment = TextAnchor.MiddleLeft
-				});
+
 
 				float buttonSize = 20;
 				var buttonCreateRect = new Rect(contentRect.xMax - contentRect.height, contentRect.center.y - buttonSize/2f, buttonSize, buttonSize);
+				var labelRect = contentRect;
+				labelRect.xMax = buttonCreateRect.xMin - BASE_PADDING;
+				GUI.Label(labelRect, new GUIContent($"{displayName} - [{items.Count}]", contentType), _itemLabelStyle);
 				using (new EditorGUI.DisabledScope(!_contentTypeReflectionCache.ContentTypeToClass.ContainsKey(contentType)))
 				{
 					if (GUI.Button(buttonCreateRect, BeamGUI.iconPlus, EditorStyles.iconButton)) CreateNewItem(contentType);
@@ -322,7 +331,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					EditorGUIUtility.AddCursorRect(rowRect, MouseCursor.Link);
 				}
 				
-				if (isRowLeftClick)
+				if (isRowLeftClick && (hasChildrenSubtypes || hasChildrenItems))
 				{
 					if (!foldoutRect.Contains(Event.current.mousePosition) &&
 					    !buttonCreateRect.Contains(Event.current.mousePosition))
@@ -339,10 +348,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					if (items.Count > 0)
 					{
-						float availableSpace = Mathf.Max(0, rowRect.width - (indentLevel * INDENT_WIDTH));
-						
-						DrawTypeItems(items, indentLevel, availableSpace, contentType);
-						GUILayout.Space(BASE_PADDING);
+						DrawTypeItemsNodes(items, _itemsColumnWidths, _itemsTableWidth, contentType);
 					}
 					DrawGroupNode(contentType, indentLevel + 1);
 				}
@@ -426,30 +432,32 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUI.changed = true;
 		}
 
-		private void DrawTypeItems(List<LocalContentManifestEntry> items, int indentLevel, float availableWidth, string groupName)
+		private void DrawItemsPanelHeader()
 		{
-			float[] columnWidths = CalculateColumnWidths(availableWidth);
-			DrawItemsPanelHeader(columnWidths, indentLevel);
-			DrawTypeItemsNodes(items, indentLevel, columnWidths, availableWidth, groupName);
-		}
-		
-		private void DrawItemsPanelHeader(float[] columnWidths, int indentLevel)
-		{
-			Rect headerRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEMS_TABLE_ROW_HEIGHT));
-			headerRect.width -= BASE_PADDING * 3;
-			headerRect.xMin += indentLevel * INDENT_WIDTH;
-			
-			string[] labels = { "Name", "Tags", "Status", "Latest Update"};
-    
-			GUIStyle itemPanelHeaderRowStyle = _itemPanelHeaderRowStyle ?? EditorStyles.toolbar;
-			GUIStyle itemFieldStyle = _itemPanelHeaderFieldStyle ?? EditorStyles.boldLabel;
-			BeamGUI.DrawHorizontalSeparatorLine(headerRect.xMin, headerRect.yMin - 1f, headerRect.width + 1, _tableSeparatorColor);
-			DrawTableRow(labels, columnWidths, itemPanelHeaderRowStyle, itemFieldStyle, headerRect);
+			var viewport = EditorGUILayout.GetControlRect(false, ITEMS_TABLE_ROW_HEIGHT, GUIStyle.none);
+			// Reserve both the outer scrollbar and the optional virtualized-group scrollbar.
+			// A single width keeps nested groups and virtualized rows under the same header.
+			if (Event.current.type == EventType.Repaint)
+			{
+				var width = Mathf.Max(ITEM_LIST_MIN_WIDTH, viewport.width - 2 * TableScrollbarWidth);
+				if (!Mathf.Approximately(width, _itemsTableWidth))
+				{
+					_itemsTableWidth = width;
+					_itemsColumnWidths = CalculateColumnWidths(width);
+				}
+			}
+			viewport.width = Mathf.Max(0, viewport.width - TableScrollbarWidth);
+			_itemsPanelScrollPos.x = Mathf.Clamp(_itemsPanelScrollPos.x, 0,
+				Mathf.Max(0, _itemsTableWidth + TableScrollbarWidth - viewport.width));
+			GUI.BeginGroup(viewport);
+			DrawTableRow(ItemColumnLabels, _itemsColumnWidths, _itemPanelHeaderRowStyle, _itemPanelHeaderFieldStyle,
+				new Rect(-_itemsPanelScrollPos.x, 0, _itemsTableWidth, ITEMS_TABLE_ROW_HEIGHT));
+			GUI.EndGroup();
 		}
 
 		public List<LocalContentManifestEntry> _frameRenderedItems = new List<LocalContentManifestEntry>();
 		
-		private void DrawTypeItemsNodes(List<LocalContentManifestEntry> items, int indentLevel, float[] columnWidths, float totalWidth, string groupName)
+		private void DrawTypeItemsNodes(List<LocalContentManifestEntry> items, float[] columnWidths, float totalWidth, string groupName)
 		{
 			_frameRenderedItems.AddRange(items);
 			var maxVisibleItems = _contentConfiguration.MaxContentVisibleItems;
@@ -458,9 +466,8 @@ namespace Beamable.Editor.UI.ContentWindow
 				// Draw all items if there are few enough
 				for (int index = 0; index < items.Count; index++)
 				{
-					Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEMS_TABLE_ROW_HEIGHT));
-					rowRect.width -= BASE_PADDING * 3;
-					rowRect.xMin += indentLevel * INDENT_WIDTH;
+					Rect rowRect = EditorGUILayout.GetControlRect(false, ITEMS_TABLE_ROW_HEIGHT, GUIStyle.none);
+					rowRect.width = totalWidth;
 					DrawItemRow(items[index], index, rowRect, columnWidths);
 
 					if (index == items.Count - 1)
@@ -482,13 +489,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				float visibleHeight = maxVisibleItems * ITEMS_TABLE_ROW_HEIGHT;
 
 				
-				Rect areaRect = GUILayoutUtility.GetRect(totalWidth, visibleHeight);
-				areaRect.width -= BASE_PADDING * 3.5f;
-				
-				GUI.Box(areaRect, GUIContent.none);
+				Rect areaRect = GUILayoutUtility.GetRect(totalWidth + TableScrollbarWidth, visibleHeight);
+				areaRect.width = totalWidth + TableScrollbarWidth;
 				
 				
-				Rect contentRect = new Rect(0, 0, totalWidth - 18, totalHeight); // -18 for scrollbar width
+
+				Rect contentRect = new Rect(0, 0, totalWidth, totalHeight);
 
 				bool isEditingFieldOnGroup = !string.IsNullOrEmpty(_editItemId) && _editItemId.Contains(groupName);
 				
@@ -512,15 +518,15 @@ namespace Beamable.Editor.UI.ContentWindow
 					true // vertical scrollbar only
 				);
 				
-				// Calculate visible range
+				// Include the partially visible bottom row while retaining bounded virtualization.
 				int firstVisible = Mathf.FloorToInt(scrollPos.y / ITEMS_TABLE_ROW_HEIGHT);
-				int lastVisible = Mathf.Min(items.Count - 1, firstVisible + maxVisibleItems - 1);
+				int lastVisible = Mathf.Min(items.Count - 1, firstVisible + maxVisibleItems);
 
 				
 				for (int index = firstVisible; index <= lastVisible; index++)
 				{
 					Rect rowRect = new Rect(
-						indentLevel * INDENT_WIDTH + 3f,
+						0,
 						index * ITEMS_TABLE_ROW_HEIGHT,
 						contentRect.width,
 						ITEMS_TABLE_ROW_HEIGHT
@@ -570,13 +576,18 @@ namespace Beamable.Editor.UI.ContentWindow
 				nameLabel = isEditingName ? nameLabel : $"{entry.Name} (renamed from {renameInfo.OldName})";
 
 			bool isInvalid = _contentService.IsContentInvalid(entry.FullId);
-			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", isRenamed && !isInvalid ? "Renamed" : ContentWindow_TooltipsHelper.GetStatusLabel(entry, isInvalid), lastUpdateDate};
+			string[] values = {nameLabel, isRenamed && !isInvalid ? "Renamed" : ContentWindow_TooltipsHelper.GetStatusLabel(entry, isInvalid), entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
 			GUIContent badge = _tooltipsHelper.GetContentStatusBadge(
 				_contentService,
 				entry,
 				renamedFrom: isRenamed ? renameInfo.OldName : null);
 
-			GUIContent[] icons = { null, null, badge };
+			// Keep Inspector information icons; the table only emphasizes actionable differences.
+			if (!isInvalid && !isRenamed && ContentWindow_TooltipsHelper.GetChangeKind(entry) == ContentChangeKind.UpToDate)
+				badge.image = null;
+			GUIContent[] icons = { null, badge };
+			var statusStyle = isInvalid ? _invalidStatusStyle : entry.IsInConflict ? _conflictStatusStyle :
+				ContentWindow_TooltipsHelper.IsIncoming(ContentWindow_TooltipsHelper.GetChangeKind(entry)) ? _incomingStatusStyle : labelStyle;
 
 			bool[] isEditable = {isEditingName};
 			string[] editableId = {entry.FullId};
@@ -585,7 +596,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (isEditingName)
 			{
 				_editLabels = DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId,
-					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null);
+					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle);
 				
 				bool isEditLabelFocused = GUI.GetNameOfFocusedControl() == entry.FullId;
 				if (isEditLabelFocused && Event.current.type is EventType.KeyDown or EventType.KeyUp &&
@@ -608,11 +619,11 @@ namespace Beamable.Editor.UI.ContentWindow
 			else
 			{
 				DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId,
-					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null);
+					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle);
 			}
 
 			_itemContentIdToRowRect[entry.FullId] = (int)rowRect.center.y;
-			// Untyped entries are reviewed through their status button, without creating a fake Inspector object.
+			// Untyped entries are reviewed through their status link, without creating a fake Inspector object.
 			if (!_contentTypeReflectionCache.ContentTypeToClass.ContainsKey(entry.TypeName))
 			{
 				RegisterButtonTooltip(rowRect, $"No Unity content class for {entry.TypeName}. Click its status to reconcile incoming changes or conflicts.");
@@ -939,45 +950,26 @@ namespace Beamable.Editor.UI.ContentWindow
 		                              GUIStyle rowStyle,
 		                              GUIStyle fieldStyle,
 		                              Rect fullRect,
-		                              GUIContent[] icons = null, bool[] isEditLabel = null, string[] fieldID = null, LocalContentManifestEntry? reviewEntry = null)
+		                              GUIContent[] icons = null, bool[] isEditLabel = null, string[] fieldID = null, LocalContentManifestEntry? reviewEntry = null, GUIStyle statusStyle = null)
 		{
 			if (Event.current.type == EventType.Repaint)
 			{
 				rowStyle.Draw(fullRect, false, false, false, false);
 			}
 			
-			float separatorHeight = fullRect.height + SEPARATOR_WIDTH_AREA;
-			BeamGUI.DrawVerticalSeparatorLine(fullRect.xMin, fullRect.yMin, separatorHeight, _tableSeparatorColor);
 			for (int i = 0; i < labels.Length; i++)
 			{
 				string labelValue = labels[i];
-				float itemWidth = columnWidths[i];
-				fullRect.xMin += BASE_PADDING;
-				if (icons != null && icons.Length > i && icons[i]?.image != null)
+				var cellRect = new Rect(fullRect.x, fullRect.y, columnWidths[i], fullRect.height);
+				var nameRect = GetTableLabelRect(cellRect, i);
+				var badge = icons != null && icons.Length > i ? icons[i] : null;
+				if (badge?.image != null)
 				{
-					float iconSize = fullRect.height - BASE_PADDING;
-					var badge = icons[i];
-
-					if (badge?.image != null)
-					{
-						Rect iconRect = new Rect(
-							fullRect.xMin,
-							fullRect.center.y - iconSize / 2f,
-							iconSize,
-							iconSize);
-
-						GUI.DrawTexture(iconRect, badge.image, ScaleMode.ScaleToFit);
-
-						GUI.Label(iconRect, new GUIContent(string.Empty, badge.tooltip), GUIStyle.none);
-					}
-					itemWidth -= iconSize;
-					fullRect.xMin += iconSize;
+					var iconRect = new Rect(cellRect.x + BASE_PADDING, cellRect.center.y - 7.5f, 15, 15);
+					GUI.DrawTexture(iconRect, badge.image, ScaleMode.ScaleToFit);
+					GUI.Label(iconRect, new GUIContent(string.Empty, badge.tooltip), GUIStyle.none);
 				}
 				
-				float contentWidth = itemWidth - BASE_PADDING;
-				
-				Rect nameRect = new Rect(fullRect.xMin, fullRect.y, contentWidth,
-				                         fullRect.height);
 				if (isEditLabel!= null && isEditLabel.Length > i && isEditLabel[i])
 				{
 					string controlName = fieldID != null && fieldID.Length > i ? fieldID[i] : FOCUS_NAME;
@@ -990,9 +982,10 @@ namespace Beamable.Editor.UI.ContentWindow
 						EditorGUI.FocusTextInControl(controlName);
 					}
 				}
-				else if (i == 2 && reviewEntry.HasValue)
+				else if (i == STATUS_COLUMN && reviewEntry.HasValue)
 				{
-					if (GUI.Button(nameRect, new GUIContent(labelValue, "Click to review this item and choose Use Realm or Keep Local."), EditorStyles.miniButton))
+					EditorGUIUtility.AddCursorRect(nameRect, MouseCursor.Link);
+					if (GUI.Button(nameRect, new GUIContent(labelValue + "  \u203A", badge?.tooltip + "\nClick to review this item and choose Use Realm or Keep Local."), statusStyle ?? fieldStyle))
 					{
 						var entry = reviewEntry.Value;
 						var scope = _contentService.GetContentScopeKey();
@@ -1005,18 +998,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 				else
 				{
-					EditorGUI.LabelField(nameRect, new GUIContent(labelValue, icons != null && icons.Length > i ? icons[i]?.tooltip : labelValue), fieldStyle);
+					EditorGUI.LabelField(nameRect, new GUIContent(labelValue, badge?.tooltip ?? labelValue), i == STATUS_COLUMN ? statusStyle ?? fieldStyle : fieldStyle);
 				}
 
-				fullRect.xMin += itemWidth;
-				if (i + 1 < labels.Length)
-				{
-					BeamGUI.DrawVerticalSeparatorLine(fullRect.xMin, fullRect.yMin, separatorHeight, _tableSeparatorColor);
-					fullRect.xMin += SEPARATOR_WIDTH_AREA;
-				}
+				fullRect.x += columnWidths[i];
 			}
 
-			BeamGUI.DrawVerticalSeparatorLine(fullRect.xMax, fullRect.yMin, separatorHeight, _tableSeparatorColor);
 			return labels;
 		}
 
@@ -1274,29 +1261,24 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 		
+		private static Rect GetTableLabelRect(Rect cell, int column)
+		{
+			// Reserve the icon slot even for healthy rows and the shared header.
+			cell.xMin += BASE_PADDING + (column == STATUS_COLUMN ? 20 : 0);
+			cell.xMax = Mathf.Max(cell.xMin, cell.xMax - BASE_PADDING);
+			return cell;
+		}
+
 		private static float[] CalculateColumnWidths(float totalAvailableWidth)
 		{
-			// Name, Tags, Status, Last Modified
-			float[] minWidths = {200f, 80f, 130f, 100f};
-			float[] weights = {2f, 1f, 1f, 1f};
-
-			totalAvailableWidth -= BASE_PADDING * 2 * minWidths.Length;
-			totalAvailableWidth -= SEPARATOR_WIDTH_AREA * Mathf.Max(0, minWidths.Length - 1);
-
-			// MinWidth sum + Vertical Line Separator Count
-			float totalMinWidth = minWidths.Sum() + (minWidths.Length - 1);
-			
-			float remainingWidth = Mathf.Max(0, totalAvailableWidth - totalMinWidth);
-			
-			float totalWeight = weights.Sum();
-			
-			float[] widths = new float[minWidths.Length];
-			for (int i = 0; i < widths.Length; i++)
-			{
-				widths[i] = minWidths[i] * Mathf.Clamp01(totalAvailableWidth / totalMinWidth) + (remainingWidth * (weights[i] / totalWeight));
-			}
-
-			return widths;
+			// Name, Status, Tags, Latest Update. Widths include padding and the status icon slot.
+			float[] minWidths = {200f, 160f, 70f, 170f};
+			float[] weights = {0.5f, 0.2f, 0.1f, 0.2f};
+			float scale = Mathf.Clamp01(totalAvailableWidth / ITEM_LIST_MIN_WIDTH);
+			float remaining = Mathf.Max(0, totalAvailableWidth - ITEM_LIST_MIN_WIDTH);
+			for (int i = 0; i < minWidths.Length; i++)
+				minWidths[i] = minWidths[i] * scale + remaining * weights[i];
+			return minWidths;
 		}
 	}
 }
