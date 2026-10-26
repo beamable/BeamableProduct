@@ -439,7 +439,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				if (_queue != null)
 				{
 					using (new EditorGUILayout.VerticalScope(GUILayout.Width(Mathf.Clamp(position.width * .28f, 220, 300)))) DrawQueue();
-					GUILayout.Space(14);
+					// Keep the existing gutter; separate navigation from the review without adding another panel.
+					var divider = GUILayoutUtility.GetRect(14, 0, GUILayout.Width(14), GUILayout.ExpandHeight(true));
+					divider.x += 6;
+					divider.width = 1;
+					EditorGUI.DrawRect(divider, EditorGUIUtility.isProSkin
+						? new Color(.36f, .38f, .40f) : new Color(.58f, .60f, .62f));
 				}
 				using (new EditorGUILayout.VerticalScope())
 				{

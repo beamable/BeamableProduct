@@ -2160,7 +2160,9 @@ namespace Beamable.Editor.Tests
         {
             var type = entry.GetType();
             var rect = (Rect)type.GetField("rect").GetValue(entry);
-            if (type.Name == "GUILayoutEntry" && rect.width > 0 && (int)type.GetField("stretchHeight").GetValue(entry) > 0)
+            if (type.Name == "GUILayoutEntry" && rect.width > 0 &&
+                (int)type.GetField("stretchHeight").GetValue(entry) > 0 &&
+                (int)type.GetField("stretchWidth").GetValue(entry) > 0)
                 viewports.Add(rect);
             // EditorGUILayout passes clientHeight and rect.height to the native scroll view.
             if (type.Name == "GUIScrollGroup" && (float)type.GetField("clientHeight").GetValue(entry) > rect.height)
