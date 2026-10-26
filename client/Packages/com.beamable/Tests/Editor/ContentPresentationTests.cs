@@ -1269,6 +1269,37 @@ namespace Beamable.Editor.Tests
             Assert.That(header.width, Is.EqualTo(row.width));
         }
 
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(3)]
+        public void Content_rows_and_names_are_nested_under_their_type_without_moving_other_columns(int depth)
+        {
+            const BindingFlags flags = BindingFlags.Static | BindingFlags.NonPublic;
+            var row = new Rect(30, 80, 600, 20);
+            var insetRow = (Rect)typeof(ContentWindow).GetMethod("GetItemRowRect", flags)
+                .Invoke(null, new object[] { row, 200f, depth });
+            var name = (Rect)typeof(ContentWindow).GetMethod("GetItemNameRect", flags)
+                .Invoke(null, new object[] { new Rect(row.x, row.y, 200, row.height), depth });
+            // Heading: 5 padding + 20 foldout + 16 icon + 5 gap + 15 per nesting level.
+            float headingTextX = row.x + 46 + depth * 15;
+            Assert.That(name.x, Is.EqualTo(headingTextX + 15));
+            Assert.That(insetRow.x, Is.EqualTo(row.x + (depth + 1) * 15));
+            Assert.That(insetRow.xMax, Is.EqualTo(row.xMax));
+            Assert.That(insetRow.Contains(new Vector2(row.x + 1, row.center.y)), Is.False);
+            Assert.That(insetRow.Contains(name.center), Is.True);
+            Assert.That(name.xMax, Is.EqualTo(row.x + 195));
+            Assert.That(name.y, Is.EqualTo(row.y));
+        }
+
+        [Test]
+        public void Deeply_nested_names_stay_inside_the_name_column()
+        {
+            var name = (Rect)typeof(ContentWindow).GetMethod("GetItemNameRect", BindingFlags.Static | BindingFlags.NonPublic)
+                .Invoke(null, new object[] { new Rect(30, 80, 200, 20), 20 });
+            Assert.That(name.width, Is.Zero);
+            Assert.That(name.xMax, Is.EqualTo(225));
+        }
+
         private static object Call(string name, params object[] args)
         {
             var method = typeof(ContentWindow_TooltipsHelper).GetMethod(name, BindingFlags.Public | BindingFlags.Static);

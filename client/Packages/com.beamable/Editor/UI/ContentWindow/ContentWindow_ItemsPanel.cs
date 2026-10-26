@@ -24,6 +24,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		private const float ITEM_GROUP_HEIGHT = 24;
 		private const string FOCUS_NAME = "EditLabel";
 		private const float FOLDOUT_WIDTH = 20f;
+		private const float TYPE_ICON_SIZE = 16f;
 		private const float ITEM_LIST_MIN_WIDTH = 600;
 		private static readonly string[] ItemColumnLabels = { "Name", "Status", "Tags", "Latest Update" };
 		private float _itemsTableWidth = ITEM_LIST_MIN_WIDTH;
@@ -308,7 +309,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				contentRect.xMin += FOLDOUT_WIDTH;
 				
 				Texture texture = _contentConfiguration.ContentTextureConfiguration.GetTextureForType(contentType);
-				float iconSize = 16f;
+				float iconSize = TYPE_ICON_SIZE;
 				var iconRect = new Rect(contentRect.x, contentRect.center.y - iconSize/2f, iconSize, iconSize);
 				GUI.DrawTexture(iconRect, texture, ScaleMode.ScaleToFit);
 
@@ -348,7 +349,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					if (items.Count > 0)
 					{
-						DrawTypeItemsNodes(items, _itemsColumnWidths, _itemsTableWidth, contentType);
+						DrawTypeItemsNodes(items, _itemsColumnWidths, _itemsTableWidth, contentType, indentLevel);
 					}
 					DrawGroupNode(contentType, indentLevel + 1);
 				}
@@ -457,7 +458,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		public List<LocalContentManifestEntry> _frameRenderedItems = new List<LocalContentManifestEntry>();
 		
-		private void DrawTypeItemsNodes(List<LocalContentManifestEntry> items, float[] columnWidths, float totalWidth, string groupName)
+		private void DrawTypeItemsNodes(List<LocalContentManifestEntry> items, float[] columnWidths, float totalWidth, string groupName, int indentLevel)
 		{
 			_frameRenderedItems.AddRange(items);
 			var maxVisibleItems = _contentConfiguration.MaxContentVisibleItems;
@@ -468,11 +469,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					Rect rowRect = EditorGUILayout.GetControlRect(false, ITEMS_TABLE_ROW_HEIGHT, GUIStyle.none);
 					rowRect.width = totalWidth;
-					DrawItemRow(items[index], index, rowRect, columnWidths);
+					DrawItemRow(items[index], index, rowRect, columnWidths, indentLevel);
 
 					if (index == items.Count - 1)
 					{
-						BeamGUI.DrawHorizontalSeparatorLine(rowRect.xMin, rowRect.yMax + 2f, rowRect.width + 1,
+						var insetRow = GetItemRowRect(rowRect, columnWidths[0], indentLevel);
+						BeamGUI.DrawHorizontalSeparatorLine(insetRow.xMin, insetRow.yMax + 2f, insetRow.width,
 						                                    _tableSeparatorColor);
 					}
 				}
@@ -532,7 +534,7 @@ namespace Beamable.Editor.UI.ContentWindow
 						ITEMS_TABLE_ROW_HEIGHT
 					);
 
-					DrawItemRow(items[index], index, rowRect, columnWidths);
+					DrawItemRow(items[index], index, rowRect, columnWidths, indentLevel);
 				}
 
 				
@@ -554,7 +556,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		public SerializableDictionaryStringToInt _itemContentIdToRowRect = new SerializableDictionaryStringToInt();
 
-		private void DrawItemRow(LocalContentManifestEntry entry, int index, Rect rowRect, float[] columnWidths)
+		private void DrawItemRow(LocalContentManifestEntry entry, int index, Rect rowRect, float[] columnWidths, int indentLevel)
 		{
 			GUIStyle style = MultiSelectItemIds.Contains(entry.FullId)
 				? _rowSelectedItemStyle
@@ -565,6 +567,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUIStyle guiStyle = style ?? EditorStyles.toolbar;
 			GUIStyle labelStyle = _itemLabelStyle ?? EditorStyles.label;
 
+			var hitRect = GetItemRowRect(rowRect, columnWidths[0], indentLevel);
 			bool isEditingName = entry.FullId == _editItemId;
 			string nameLabel = isEditingName && _editLabels is {Length: > 0} ? _editLabels[0] : entry.Name;
 
@@ -596,7 +599,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (isEditingName)
 			{
 				_editLabels = DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId,
-					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle);
+					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle, indentLevel);
 				
 				bool isEditLabelFocused = GUI.GetNameOfFocusedControl() == entry.FullId;
 				if (isEditLabelFocused && Event.current.type is EventType.KeyDown or EventType.KeyUp &&
@@ -611,7 +614,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					_editItemId = string.Empty;
 				}
 				
-				if (Event.current.type == EventType.MouseDown && !rowRect.Contains(Event.current.mousePosition))
+				if (Event.current.type == EventType.MouseDown && !hitRect.Contains(Event.current.mousePosition))
 				{
 					RenameEntry(entry.FullId, _editLabels[0]);
 				}
@@ -619,18 +622,18 @@ namespace Beamable.Editor.UI.ContentWindow
 			else
 			{
 				DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId,
-					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle);
+					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle, indentLevel);
 			}
 
 			_itemContentIdToRowRect[entry.FullId] = (int)rowRect.center.y;
 			// Untyped entries are reviewed through their status link, without creating a fake Inspector object.
 			if (!_contentTypeReflectionCache.ContentTypeToClass.ContainsKey(entry.TypeName))
 			{
-				RegisterButtonTooltip(rowRect, $"No Unity content class for {entry.TypeName}. Click its status to reconcile incoming changes or conflicts.");
+				RegisterButtonTooltip(hitRect, $"No Unity content class for {entry.TypeName}. Click its status to reconcile incoming changes or conflicts.");
 				return;
 			}
 			
-			if (CanHandleContentInput && Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
+			if (CanHandleContentInput && Event.current.type == EventType.MouseDown && hitRect.Contains(Event.current.mousePosition))
 			{
 				var isShiftClick = Event.current.shift;
 				var isLeftClick = Event.current.button == 0;
@@ -950,18 +953,18 @@ namespace Beamable.Editor.UI.ContentWindow
 		                              GUIStyle rowStyle,
 		                              GUIStyle fieldStyle,
 		                              Rect fullRect,
-		                              GUIContent[] icons = null, bool[] isEditLabel = null, string[] fieldID = null, LocalContentManifestEntry? reviewEntry = null, GUIStyle statusStyle = null)
+		                              GUIContent[] icons = null, bool[] isEditLabel = null, string[] fieldID = null, LocalContentManifestEntry? reviewEntry = null, GUIStyle statusStyle = null, int indentLevel = -1)
 		{
 			if (Event.current.type == EventType.Repaint)
 			{
-				rowStyle.Draw(fullRect, false, false, false, false);
+				rowStyle.Draw(indentLevel < 0 ? fullRect : GetItemRowRect(fullRect, columnWidths[0], indentLevel), false, false, false, false);
 			}
 			
 			for (int i = 0; i < labels.Length; i++)
 			{
 				string labelValue = labels[i];
 				var cellRect = new Rect(fullRect.x, fullRect.y, columnWidths[i], fullRect.height);
-				var nameRect = GetTableLabelRect(cellRect, i);
+				var nameRect = i == 0 && indentLevel >= 0 ? GetItemNameRect(cellRect, indentLevel) : GetTableLabelRect(cellRect, i);
 				var badge = icons != null && icons.Length > i ? icons[i] : null;
 				if (badge?.image != null)
 				{
@@ -1261,6 +1264,21 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 		
+		private static Rect GetItemRowRect(Rect row, float nameColumnWidth, int indentLevel)
+		{
+			row.xMin += Mathf.Min((indentLevel + 1) * INDENT_WIDTH, nameColumnWidth - BASE_PADDING);
+			return row;
+		}
+
+		private static Rect GetItemNameRect(Rect cell, int indentLevel)
+		{
+			var label = GetTableLabelRect(cell, 0);
+			// Match the type heading's foldout/icon gutter, then indent its children one level.
+			float inset = FOLDOUT_WIDTH + TYPE_ICON_SIZE + BASE_PADDING + (indentLevel + 1) * INDENT_WIDTH;
+			label.xMin = Mathf.Min(label.xMin + inset, label.xMax);
+			return label;
+		}
+
 		private static Rect GetTableLabelRect(Rect cell, int column)
 		{
 			// Reserve the icon slot even for healthy rows and the shared header.
