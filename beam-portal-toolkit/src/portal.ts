@@ -26,11 +26,13 @@ export interface ExtensionLocation {
  * Path resolution follows two rules:
  * - A path that starts with `/` is treated as **absolute** — the extension
  *   has constructed the full URL itself (e.g. `/<cid>/games/<gid>/realms/<rid>/foo`).
- * - A path without a leading `/` is **realm-relative** — the portal will
- *   prefix it with `/<cid>/games/<gid>/realms/<rid>/` automatically.
+ * - A path without a leading `/` is **relative to the Host** the extension is
+ *   mounted in — the realm or the zone of the page. The portal prefixes it with
+ *   `/<cid>/games/<gid>/realms/<rid>/` for a realm extension and with
+ *   `/<cid>/zones/<zid>/` for a zone extension.
  *
  * @example
- *   context.navigate('analytics/dashboard');         // realm-relative
+ *   context.navigate('analytics/dashboard');         // Host-relative
  *   context.navigate('/auth/login');                 // absolute
  *   context.navigate('players/abc', { replace: true });
  */
@@ -145,13 +147,20 @@ export interface CandidateMetadata {
  * and bind `beam` to the matching SDK; everything else is shared.
  */
 export interface BaseExtensionContext<TBeam> extends Map<any, any> {
+  /**
+   * The scope of the Host this extension is mounted in: `'realm'` for a realm extension
+   * ({@link ExtensionContext}), `'zone'` for a zone extension ({@link ZoneExtensionContext}).
+   * Narrow on it to reach `realm` or `zid`.
+   */
+  scope: 'realm' | 'zone';
   cid: string;
   beam: Promise<TBeam>;
   /**
    * URL params extracted by matching the extension's `mount.page` pattern
-   * against the current realm-relative path. For example, an extension
-   * mounted at `mount.page = "players/:playerId"` viewing
-   * `/.../realms/abc/players/xyz` receives `{ playerId: "xyz" }`.
+   * against the current path relative to the Host (the realm or zone of the
+   * page). For example, an extension mounted at `mount.page = "players/:playerId"`
+   * viewing `/.../realms/abc/players/xyz` (or `/.../zones/euc1/players/xyz`)
+   * receives `{ playerId: "xyz" }`.
    * Empty object when the mount pattern has no params (or for nested child
    * extensions mounted via `BeamExtensionSite`).
    */
@@ -230,6 +239,7 @@ export interface BaseExtensionContext<TBeam> extends Map<any, any> {
  * Carries the current `realm` (pid) and a full {@link Beam} client SDK.
  */
 export interface ExtensionContext extends BaseExtensionContext<Beam> {
+  scope: 'realm';
   /** The current realm (pid) this extension is mounted under. */
   realm: string;
 }
@@ -244,6 +254,7 @@ export interface ExtensionContext extends BaseExtensionContext<Beam> {
  * `beam.customer.getRealms()` and start a realm session with `Beam.init({ cid, pid })`.
  */
 export interface ZoneExtensionContext extends BaseExtensionContext<BeamZoneSdk> {
+  scope: 'zone';
   /** The zone (zid) this extension is mounted under. */
   zid: string;
 }
