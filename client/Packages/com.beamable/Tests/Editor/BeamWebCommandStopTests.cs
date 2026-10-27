@@ -144,10 +144,12 @@ namespace Beamable.Editor.Tests
 			using var fixture = new Fixture();
 			fixture.Command.Run().Error(_ => { });
 			fixture.Discover();
+			yield return WaitFor(() => fixture.ExecuteReceived.Task.IsCompleted);
 			var first = fixture.Command.StopAsync();
-			first.Error(_ => { });
+			Exception failure = null;
+			first.Error(error => failure = error);
 			yield return WaitFor(() => first.IsCompleted);
-			Assert.That(first.IsFailed, Is.True);
+			Assert.That(failure, Is.TypeOf<TimeoutException>(), $"Only the held registration should time out. Received: {failure}");
 			Assert.That(fixture.StopReceived.Task.IsCompleted, Is.False);
 			fixture.AllowHeaders.TrySetResult(true);
 			fixture.ReleaseWorker.TrySetResult(true);
@@ -166,10 +168,16 @@ namespace Beamable.Editor.Tests
 			fixture.Discover();
 			fixture.AllowHeaders.TrySetResult(true);
 			fixture.ReleaseWorker.TrySetResult(true);
+			// This case must reach registration before timing the acknowledgement; the test above
+			// owns registration timeouts. An unrelated transport error must not count as a timeout.
+			var registration = (TaskCompletionSource<string>)Get(fixture.Command, "_stopUrl");
+			yield return WaitFor(() => registration.Task.IsCompleted);
 			var first = fixture.Command.StopAsync();
-			first.Error(_ => { });
+			Exception failure = null;
+			first.Error(error => failure = error);
 			yield return WaitFor(() => first.IsCompleted);
-			Assert.That(first.IsFailed, Is.True);
+			Assert.That(failure, Is.InstanceOf<OperationCanceledException>(), $"Only the held acknowledgement should time out. Received: {failure}");
+			Assert.That(fixture.StopReceived.Task.IsCompleted, Is.True, "The server must have received the timed-out stop.");
 			fixture.AllowAcknowledgement.TrySetResult(true);
 			var retry = fixture.Command.StopAsync();
 			retry.Error(_ => { });
