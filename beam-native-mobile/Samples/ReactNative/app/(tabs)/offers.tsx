@@ -3,7 +3,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
 import {
-  DEFAULT_STORE,
   KNOWN_FEDERATIONS,
   OFFER_GRANTS_KEY,
   badgeRewards,
@@ -44,10 +43,11 @@ import { colors, mono, radius, space } from '../../src/ui/theme';
  *
  * A campaign lane attaches an offer to the message it sends; the campaign runtime grants it to
  * each recipient as the send goes out; this screen is where the player acts on it. Which provider
- * answers is a federation — an extension point, not a Beamable feature — so the federation id is
- * an input (a picker of the three Beamable ships, or a typed id) and nothing here branches on its
- * value. What differs is read off the offer: a price means Buy, an empty cost means a free Claim,
- * and a `badge` reward is read back from stats after the claim.
+ * answers is a federation — an extension point, not a Beamable feature. Beamable keeps every grant,
+ * so the list holds every provider's offers and a claim needs only the grant id; the federation id
+ * is an optional filter and nothing here branches on its value. What differs is read off the offer:
+ * a price means Buy, an empty cost means a free Claim, and a `badge` reward is read back from stats
+ * after the claim.
  *
  * **What "acting on it" means, and why there is one button.** Redeeming the grant is what
  * delivers it. For a store offer that is the purchase — the provider debits the price and credits
@@ -71,16 +71,13 @@ export default function OffersTab() {
   const { isReady } = useBeam();
   const { lastOfferGrantIds } = useNotifications();
 
-  // A known federation, or `custom` — which reads the typed id below. The store is the default.
-  const [choice, setChoice] = useState<FederationChoice>(KNOWN_FEDERATIONS[0].id);
+  // Every provider, a known federation, or `custom` — which reads the typed id below.
+  const [choice, setChoice] = useState<FederationChoice>(ALL);
   // The typed id, and the one committed on return/blur. Only the committed one is read, so typing
   // does not fire a list call per keystroke against half an id.
   const [customDraft, setCustomDraft] = useState('');
   const [customId, setCustomId] = useState('');
   const [campaignOffers, setCampaignOffers] = useState<CampaignOffer[]>([]);
-  // The federation `campaignOffers` came from. The row actions claim against THIS, not the
-  // picker: a claim must go to the provider that minted the grant, even mid-switch.
-  const [listedFrom, setListedFrom] = useState<string>(DEFAULT_STORE);
   const [balances, setBalances] = useState<Balance[]>([]);
   const [walletDeltas, setWalletDeltas] = useState<Record<string, bigint>>({});
   const [receipts, setReceipts] = useState<Record<string, OfferReceipt>>({});
@@ -98,14 +95,14 @@ export default function OffersTab() {
   // A third error line, for the same reason `walletError` is a second one: "could not read the
   // wallet" and "the platform refused this grant" are different sentences with different fixes.
   const [grantError, setGrantError] = useState<string | null>(null);
-  // Latest-wins rather than a drop-while-busy guard: switching federation mid-read must not leave
-  // the previous federation's list on screen under the new picker.
+  // Latest-wins rather than a drop-while-busy guard: switching the filter mid-read must not leave
+  // the previous filter's list on screen under the new one.
   const readSeq = useRef(0);
 
-  // Empty only for a blank custom id — then there is nothing to ask, rather than a silent default.
-  const store = choice === CUSTOM ? customId.trim() : choice;
-  // Switching clears the list at once: the rows belong to the provider that minted them, and
-  // leaving them under another federation's picker until the read lands would misattribute them.
+  // Undefined asks every provider; empty is a blank custom id — then there is nothing to ask.
+  const store = choice === ALL ? undefined : choice === CUSTOM ? customId.trim() : choice;
+  const listing = store ?? 'all providers';
+  // Switching clears the list at once, so the previous filter's rows are never shown under the new one.
   const selectFederation = useCallback((next: FederationChoice) => {
     setChoice(next);
     setCampaignOffers([]);
@@ -113,8 +110,8 @@ export default function OffersTab() {
   const claimable = useMemo(() => campaignOffers.filter(isPurchasable).length, [campaignOffers]);
 
   /**
-   * One read for the whole screen; only the latest one lands, so a focus change or a federation
-   * switch cannot interleave two. Campaign offers are never cached across a session: expiry is
+   * One read for the whole screen; only the latest one lands, so a focus change or a filter switch
+   * cannot interleave two. Campaign offers are never cached across a session: expiry is
    * evaluated server-side on read, so a stale list is wrong by construction.
    *
    * `silent` suppresses the "not connected" line and the loading chatter, so the automatic
@@ -127,9 +124,8 @@ export default function OffersTab() {
         return;
       }
       const seq = ++readSeq.current;
-      if (!store) {
+      if (store === '') {
         setCampaignOffers([]);
-        setListedFrom('');
         setError(null);
         setBusy(false); // an earlier read may still be out; it no longer owns the spinner
         return;
@@ -164,24 +160,22 @@ export default function OffersTab() {
         if (seq !== readSeq.current) return;
 
         setCampaignOffers(held);
-        setListedFrom(store);
         setBalances(mergeKnownCurrencies(wallet, knownIds));
-        if (!silent) append(`Campaign offers (${store}): ${held.length}`);
+        if (!silent) append(`Campaign offers (${listing}): ${held.length}`);
       } catch (e) {
         if (seq !== readSeq.current) return;
         const msg = e instanceof Error ? e.message : String(e);
         // Shown in the section, not just the collapsed console — the on-focus refresh is
         // silent, so a failure would otherwise be indistinguishable from "you hold nothing".
-        // The list is cleared so the rows cannot be mistaken for this federation's.
+        // The list is cleared so the rows cannot be mistaken for this filter's.
         setCampaignOffers([]);
-        setListedFrom(store);
         setError(msg);
-        append(`Campaign offers error (${store}): ${msg}`);
+        append(`Campaign offers error (${listing}): ${msg}`);
       } finally {
         if (seq === readSeq.current) setBusy(false);
       }
     },
-    [isReady, store, append],
+    [isReady, store, listing, append],
   );
 
   // Auto-refresh on focus. `refresh` changes identity when `isReady` or the store flips, which
@@ -199,16 +193,15 @@ export default function OffersTab() {
   const claim = useCallback(
     (grantId: string) => async () => {
       if (!isReady) throw new Error('Beamable is not connected yet');
-      if (!store) throw new Error('Type a federation id first');
       try {
-        return await claimGrant(store, grantId);
+        return await claimGrant(grantId);
       } finally {
         // Even a refused claim can have moved the state server-side (an unclaimed expiry is
         // folded in on read), so re-read either way.
         void refresh(true);
       }
     },
-    [isReady, store, refresh],
+    [isReady, refresh],
   );
 
   /**
@@ -281,14 +274,14 @@ export default function OffersTab() {
    * that read failing is reported on the card, not as a failed claim, because the claim succeeded.
    */
   const redeem = useCallback(
-    (campaignOffer: CampaignOffer, federationId: string) => async () => {
+    (campaignOffer: CampaignOffer) => async () => {
       if (!isReady) throw new Error('Beamable is not connected yet');
 
       const before = await readBalances().catch(() => [] as Balance[]);
 
-      // Throws "still confirming" on `purchase-pending`; pressing the button again retries the
-      // same claim, whichever provider it is.
-      const settled = await claimGrant(federationId, campaignOffer.grantId);
+      // Throws "still confirming" on `pending`; pressing the button again retries the same
+      // delivery, whichever provider it is.
+      const settled = await claimGrant(campaignOffer.grantId);
 
       const after = await readBalances().catch(() => before);
       const moved = diffBalances(before, after);
@@ -330,11 +323,12 @@ export default function OffersTab() {
       <Section title="Federation">
         <Hint>
           Which provider answers is a federation — a microservice implementing
-          IFederatedCampaignVirtualOffer under its own id. Beamable ships three:
+          IFederatedVirtualOffer under its own id. Beamable ships three:
           `beamable_virtual_store` (an offer is a listing, and claiming buys it),
           `beamable_reward` (free currency and items) and `beamable_badge` (a free badge, written
-          as a `game.public` stat). A game deploys its own under another id and is reached by these
-          same two calls — Custom takes it. Nothing on this screen branches on the value.
+          as a `game.public` stat). A game deploys its own under another id. The list holds every
+          provider's offers; this only filters it — Custom takes a typed id. Nothing on this screen
+          branches on the value.
         </Hint>
         <TabStrip
           tone="light"
@@ -342,7 +336,7 @@ export default function OffersTab() {
           active={choice}
           onChange={selectFederation}
         />
-        {choice === CUSTOM ? (
+        {choice === ALL ? null : choice === CUSTOM ? (
           <Field
             value={customDraft}
             onChangeText={setCustomDraft}
@@ -432,10 +426,10 @@ export default function OffersTab() {
         }
       >
         <Hint>
-          Reads beam.campaignOffer.getCampaignOffers(federationId) → GET /api/campaign-offer/campaign-offers.
-          Every grant in every state, so read the state rather than the presence of a row —
-          claimed and revoked ones stay in the list. The store embeds the whole offer, so this one
-          call renders the screen; a provider may send none, and those rows fall back to ids.
+          Reads beam.offers.getOffers(...) → GET /api/offers, asking for every state, so read the
+          state rather than the presence of a row — claimed and revoked ones are listed too. Each
+          grant carries the offer its provider resolved, so this one call renders the screen; a
+          provider may send none, and those rows fall back to ids.
         </Hint>
         {error && (
           <Text style={styles.error} selectable>
@@ -444,11 +438,11 @@ export default function OffersTab() {
         )}
         {campaignOffers.length === 0 ? (
           <Hint>
-            {!store
+            {store === ''
               ? 'Type a federation id above to list its offers.'
               : error
                 ? 'Campaign offers not loaded.'
-                : `Nothing granted by "${store}" yet. Publish a campaign lane with an offer and enrol this player.`}
+                : `Nothing granted by ${store ? `"${store}"` : 'any provider'} yet. Publish a campaign lane with an offer and enrol this player.`}
           </Hint>
         ) : (
           <>
@@ -460,7 +454,7 @@ export default function OffersTab() {
                 key={e.grantId}
                 campaignOffer={e}
                 receipt={receipts[e.grantId]}
-                act={isPurchasable(e) ? redeem(e, listedFrom) : undefined}
+                act={isPurchasable(e) ? redeem(e) : undefined}
               />
             ))}
           </>
@@ -483,16 +477,16 @@ export default function OffersTab() {
                   <Value label="grant">{grantId}</Value>
                   <AsyncButton
                     label="Claim from push"
-                    run={pushed ? redeem(pushed, listedFrom) : claim(grantId)}
+                    run={pushed ? redeem(pushed) : claim(grantId)}
                   />
                 </View>
               );
             })}
             <Hint>
-              The payload carries grant ids only, so each claims against the federation
-              selected above — pick the one the campaign's offers came from. It is the same redeem as
-              the row's button: for a store offer the claim IS the purchase (the price is debited
-              now), for a reward or a badge it is a free claim.
+              The payload carries grant ids only, and that is all a claim needs: Beamable knows which
+              provider made each grant. It is the same redeem as the row's button: for a store offer
+              the claim IS the purchase (the price is debited now), for a reward or a badge it is a
+              free claim.
             </Hint>
           </>
         ) : (
@@ -520,9 +514,9 @@ export default function OffersTab() {
             key to `game.public`, and this screen reads that stat back to show what you earned.
           </Hint>
           <Hint>
-            "Still confirming" means the provider could not tell whether delivery went through and
-            kept the claim open. Press the button again: it retries the same claim, and the provider
-            answers the real outcome once it knows.
+            "Still confirming" means the provider could not tell whether delivery went through, and
+            the claim is kept open. Press the button again later: it retries the same delivery,
+            never a second one, and is answered once the provider knows.
           </Hint>
           <Hint>
             The provider buys rather than checking that a client already did, because redeem is
@@ -547,10 +541,12 @@ export default function OffersTab() {
   );
 }
 
-/** The picker's `Custom` key — never a real federation id, since those use underscores. */
+/** The filter's `All` and `Custom` keys — never real federation ids, since those use underscores. */
+const ALL = 'all';
 const CUSTOM = 'custom';
-type FederationChoice = (typeof KNOWN_FEDERATIONS)[number]['id'] | typeof CUSTOM;
+type FederationChoice = (typeof KNOWN_FEDERATIONS)[number]['id'] | typeof ALL | typeof CUSTOM;
 const FEDERATION_TABS: { key: FederationChoice; label: string }[] = [
+  { key: ALL, label: 'All' },
   ...KNOWN_FEDERATIONS.map((f) => ({ key: f.id, label: f.label })),
   { key: CUSTOM, label: 'Custom' },
 ];

@@ -3,9 +3,11 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type CampaignOfferReason = { 
-  code: string; 
-  detail?: string | null; 
-  message?: string; 
+export type OfferAmount = { 
+  symbol: string; 
+  type: string; 
+  amount?: bigint | string; 
+  imageUrl?: string | null; 
   properties?: Record<string, string>; 
+  title?: string | null; 
 };

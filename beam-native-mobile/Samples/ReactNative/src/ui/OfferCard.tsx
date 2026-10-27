@@ -116,6 +116,7 @@ export default function OfferCard({
         </View>
       )}
 
+      <Value label="provider">{campaignOffer.federationId || '—'}</Value>
       <Value label="offer">{campaignOffer.offerId || '—'}</Value>
       <Value label="grant">{campaignOffer.grantId}</Value>
       <Text style={styles.meta}>

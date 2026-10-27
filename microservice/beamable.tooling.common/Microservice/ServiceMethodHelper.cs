@@ -102,17 +102,17 @@ namespace Beamable.Server
 				[nameof(IFederatedMessageRail<DummyThirdParty>.UnregisterUserWithMessageRail)] = "UnregisterUserWithMessageRail",
 				[nameof(IFederatedMessageRail<DummyThirdParty>.CheckMessageRailConfig)] = "CheckMessageRailConfig",
 				// Virtual-offer methods route on the literal method name too, for the same reason: the
-				// backend POSTs {federationId}/GrantOffers (see BeamableAPI CampaignOfferFederation).
+				// backend POSTs {federationId}/GrantOffers (see BeamableAPI OfferFederation).
 				//
 				// EVERY method on the interface must appear here. The scan throws on the first name it
 				// cannot map, and it runs inside OpenAPI generation at BUILD time — so a method added to
 				// the interface without a line here does not fail at the call site, it fails every
 				// microservice implementing the federation, with an error that names the method but not
 				// this file.
-				[nameof(IFederatedCampaignVirtualOffer<DummyThirdParty>.GrantOffers)] = "GrantOffers",
-				[nameof(IFederatedCampaignVirtualOffer<DummyThirdParty>.RevokeOffer)] = "RevokeOffer",
-				[nameof(IFederatedCampaignVirtualOffer<DummyThirdParty>.RedeemOffer)] = "RedeemOffer",
-				[nameof(IFederatedCampaignVirtualOffer<DummyThirdParty>.GetCampaignOffers)] = "GetCampaignOffers",
+				[nameof(IFederatedVirtualOffer<DummyThirdParty>.GrantOffers)] = "GrantOffers",
+				[nameof(IFederatedVirtualOffer<DummyThirdParty>.RevokeOffer)] = "RevokeOffer",
+				[nameof(IFederatedVirtualOffer<DummyThirdParty>.RedeemOffer)] = "RedeemOffer",
+				[nameof(IFederatedVirtualOffer<DummyThirdParty>.GetOffers)] = "GetOffers",
 			};
 
 			foreach (var interfaceType in interfaces)

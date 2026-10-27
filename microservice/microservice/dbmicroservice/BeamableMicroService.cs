@@ -1118,7 +1118,12 @@ namespace Beamable.Server
 			      var idToUse = component.identity.GetUniqueName();
 			      var typeToUse = FederatedComponentGenerator.GetFederationType(component.typeName);
 			      var settingsToUse = new OptionalJsonString();
-			      if (!string.IsNullOrEmpty(routingKey))
+			      // Declared in code, so sent wherever the service runs; the backend reads them on every call.
+			      if (component.identity is IOfferProviderId offerProvider && offerProvider.Settings != null)
+			      {
+				      settingsToUse.Set(JsonString.FromJson(JsonConvert.SerializeObject(offerProvider.Settings)));
+			      }
+			      else if (!string.IsNullOrEmpty(routingKey))
 			      {
 				      var builtSettings = BuiltSettings.ReadBuiltSettings();
 				      foreach (var kvp in builtSettings)

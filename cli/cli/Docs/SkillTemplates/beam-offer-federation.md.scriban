@@ -1,0 +1,226 @@
+---
+name: beam-offer-federation
+description: Build a virtual offer provider — a microservice implementing IFederatedVirtualOffer that resolves, delivers and undoes the offers Beamable grants — and use the player and operator offer routes.
+---
+
+# Virtual Offer Federation
+
+> General microservice workflow: `beam-manage-service`. Bundling: `beam-bundles`. Granting offers from a campaign send node: `beam-campaign-api`. Calling the player routes from a web client: `beam-web-guide`.
+
+## High-Level Architecture
+
+```
+Campaign send page / operator POST /offers/grant
+        │  GrantMany: offer_grants rows written Pending (id = hash(cid, pid, origin, originKey, entryId))
+        ▼
+OfferService ──▶ GrantOffers(grants) ──▶ provider microservice: validate + resolve offer
+        │                                   └─▶ OfferGrantResponse { offer, providerMetadata }
+        ▼  message staged (campaign) / request answered (operator)
+Confirm: Pending → Granted, providerMetadata stored; the snapshot once per realm (offer_snapshots)
+
+Player ──▶ GET /api/offers ──▶ registry page (Granted/Claiming) ──▶ GetOffers(grants) per provider ──▶ availability
+                                                               └─▶ campaign gate (stat rule) folded in
+Player ──▶ POST /api/offers/redeem ──▶ claim (CAS; exclusive group anchor) ──▶ gate ──▶ RedeemOffer(grant, params)
+                                         ◀── Settled → Redeemed (+ forfeits) · Refused → Granted · Ambiguous → stays Claiming
+
+Version end / revoke-origin ──▶ ExpireOrigin: open grants of the origin closed (read as Expired)
+```
+
+## Code Mapping
+
+| Part | File |
+|---|---|
+| Interface, DTOs, `OfferContract` constants | BeamableProduct `cli/beamable.common/Runtime/Federation/FederatedVirtualOffer.cs` |
+| Route mounting | BeamableProduct `microservice/beamable.tooling.common/Microservice/ServiceMethodHelper.cs` |
+| Federation discovery / registration | BeamableProduct `microservice/beamable.tooling.common/Microservice/FederatedComponentGenerator.cs` |
+| Federation id validation | BeamableProduct `templates/MicroserviceSourceGen/MicroserviceSourceGen/Analyzers/FederationAnalyzer.cs` |
+| Wire mirror of the contract | BeamableAPI `BeamableShared/Federation/Offer/OfferMessages.cs`, `IFederatedVirtualOffer.cs` |
+| Platform → provider calls (discovery, chunking, timeouts) | BeamableAPI `BeamableShared/Federation/Offer/OfferFederation.cs` |
+| Registry: grant states, claim, expiry, origins | BeamableAPI `BeamableShared/Services/Offer/OfferRegistry.cs`, `OfferService.cs` |
+| Campaign gate, rate limiter, gateway options | BeamableAPI `BeamableShared/Services/Offer/OfferGate.cs`, `OfferGatewayOptions.cs` |
+| Routes and bodies | BeamableAPI `BeamableGateway/Controllers/OfferController.cs`, `BeamableShared/Services/Offer/OfferRequests.cs` |
+| Campaign hand-out | BeamableAPI `BeamableShared/Services/Campaigns/Runtime/CampaignOfferStep.cs` |
+| Shared provider code (grant per distinct offer, redeem) | agentic-portal `bundles/features/player-engagement-offers/libs/OfferProviders/OfferProvider.cs` (a common library) |
+| Reference providers (store, reward, badge) | agentic-portal `bundles/features/player-engagement-offers/microservices/PlayerEngagement{CampaignOffer,RewardOffer,BadgeOffer}Service/` |
+| Web client | BeamableProduct `web/src/services/OfferService.ts` |
+
+## Business Goals Constraints
+
+- An offer is something a player buys with soft currency, or is simply given. Real-money offers need product ids, a native purchase flow and receipts; they are not this federation.
+- Beamable's offer registry owns every grant's state. A provider resolves, delivers and undoes; it never stores whether a grant exists, is visible or was taken.
+- A grant becomes visible only when whatever tells the player about it is durable (a campaign's staged message, an operator's answered request). A grant whose message never went out is never shown.
+- The registry knows each grant's provider, so the player lists every provider's offers in one call and redeems by grant id alone.
+- Beamable ships three providers (`beamable_virtual_store`, `beamable_reward`, `beamable_badge`); a game's own provider registers under its own federation id and is treated identically. Nothing branches on the id.
+
+## Performance Constraints
+
+- **Grant calls**: chunks of `Campaigns:Send:MaxGrantsPerCall` (250, at most 1000) grants per `GrantOffers`, up to `MaxParallelGrants` (48) calls per page, `OfferGroupGrantTimeoutMs` (30 s) per call. A send page holds up to `MaxGrantsPerPage` (10,000) grants. Operator grants: one grant per call, `Offer:Gateway:GrantTimeoutMs` (60 s).
+- **Redeem / availability / revoke calls**: 30 s federation call timeout. The list waits `Offer:Gateway:AvailabilityTimeoutMs` (5 s) per provider, then lists that provider's grants without its rules.
+- **List**: `Offer:Service:PageSize` (100) grants per page, one `GetOffers` call per provider present on the page, except providers that declare `hasAvailabilityRules = false` (answered available without a call).
+- **Provider discovery**: a provider's registration is kept `Federation:OfferDiscoveryCacheMs` (5 s) per realm, and dropped when a call through it fails. Concurrent calls share one in-flight lookup.
+- **Claim lease**: `Offer:Service:ClaimLeaseSeconds` (120). An ambiguous redeem can be retried after it.
+- **Metadata**: `Offer:Service:MaxMetadataBytes` (16 KiB, keys + values, UTF-8) per grant.
+- **Player rate limits** (per player being acted on): redeem 10/s burst 20, read 10/s burst 20 (`Offer:Gateway:Redeem*`, `Read*`). Request maps: at most 256 entries, values up to 8,192 chars.
+- **Expiry**: campaign grants last the offer's `durationMs` or `Campaigns:Send:DefaultOfferDurationMs` (30 days); operator grants default to `Offer:Gateway:DefaultGrantDurationSeconds` (30 days).
+
+## Usage Guide
+
+### 1. Create the service
+
+```
+beam_exec("project new service <Name>OfferService -q")
+```
+{{ if commands["project new service"] }}
+#### `beam project new service` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["project new service"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+A provider keeps no grant state: whether a delivery may be asked for again is declared in its settings (step 5), and the registry decides. Add a storage only for data of your own service.
+
+### 2. Federation id
+
+```csharp
+[FederationId(Id)]
+public class MyShopId : IFederationId
+{
+    public const string Id = "my_shop";
+}
+```
+
+Starts with a letter; letters, digits, `_` only. Campaign send nodes and the registry address the provider by it.
+
+A provider with no availability rules of its own implements `IOfferProviderId` instead, and the list never calls its `GetOffers`:
+
+```csharp
+[FederationId(Id)]
+public class MyShopId : IOfferProviderId
+{
+    public const string Id = "my_shop";
+    public OfferProviderSettings Settings => new OfferProviderSettings { hasAvailabilityRules = false };
+}
+```
+
+The settings go with the federation registration wherever the service runs (`SupportedFederation.settings`). They also say how an unanswered delivery is handled (step 5):
+
+```csharp
+public OfferProviderSettings Settings => new OfferProviderSettings
+{
+    ambiguousRedeliverySeconds = 6 * 60 * 60,      // my service deduplicates a repeat for 6 h
+    ambiguousOutcome = OfferAmbiguousOutcome.Hold, // past it, a repeat could charge twice: an operator decides
+};
+```
+
+### 3. Implement all four methods
+
+```csharp
+[Microservice("MyShopOfferService")]
+public class MyShopOfferService : Microservice, IFederatedVirtualOffer<MyShopId>
+{
+    async Promise<List<OfferGrantResponse>> IFederatedVirtualOffer<MyShopId>.GrantOffers(
+        List<OfferGrantItem> grants) { /* step 4 */ }
+
+    async Promise<OfferRedeemResponse> IFederatedVirtualOffer<MyShopId>.RedeemOffer(
+        OfferGrantRef grant, Dictionary<string, string> @params) { /* step 5 */ }
+
+    async Promise<List<OfferRevokeResponse>> IFederatedVirtualOffer<MyShopId>.RevokeOffer(
+        List<OfferGrantRef> revokes) { /* step 6 */ }
+
+    async Promise<List<OfferAvailability>> IFederatedVirtualOffer<MyShopId>.GetOffers(
+        List<OfferGrantRef> grants) { /* step 6 */ }
+}
+```
+
+- Parameter names are the body fields the platform posts (`grants`, `grant` + `params`, `revokes`, `grants`); keep them.
+- Routes are the literal method names: `{federationId}/GrantOffers`, `RedeemOffer`, `RevokeOffer`, `GetOffers`. No `[Callable]` on these methods.
+- `Program.cs` is stock: `BeamServer.Create().IncludeRoutes<MyShopOfferService>(routePrefix: "").RunForever()`.
+
+### 4. GrantOffers: resolve, never record
+
+Answer exactly one `OfferGrantResponse` per item, in the same order.
+
+| `OfferGrantItem` field | Meaning |
+|---|---|
+| `grantId` | Registry id; idempotency key for everything about this grant |
+| `playerId`, `offerId` | Who, and the provider's own opaque offer reference |
+| `expiresAtUnixSeconds` | When the grant stops being redeemable; hand it to a third-party service if the offer lives there |
+| `metadata` | Caller data: authored fields (`offer_*` by convention) plus platform attribution keys (`beam_campaign`, `beam_campaign_version`, `beam_node`, `beam_outreach`). Ignore `beam_*` keys when reading authored fields |
+
+```csharp
+new OfferGrantResponse
+{
+    grantId = item.grantId,
+    success = true,
+    offer = new OfferItem { offerId = item.offerId, title = "Starter pack", cost = { ... }, rewards = { ... } },
+    providerMetadata = { ["sku"] = "abc" },   // handed back on redeem and revoke
+};
+new OfferGrantResponse { grantId = item.grantId, success = false,
+    status = OfferContract.UnavailableStatus, message = "sold out", retriable = false };
+```
+
+- `offer` is required on success: it is stored and shown to the player, so later catalog edits do not change what was granted.
+- `retriable = true` holds the campaign's send and asks again with the same grant ids; `false` sends the message without the offer. A failed or timed-out call is always retried.
+- A refused member of an `Exclusive` group fails the whole group for that player.
+- The same grant id may arrive again (retries, a lost answer): answer it as the grant it already is.
+
+### 5. RedeemOffer: deliver once
+
+The registry has already claimed the grant for this redeem and checked the campaign's gate; enforce only your own rules.
+
+| `OfferRedeemOutcome` | Registry effect | Use when |
+|---|---|---|
+| `Settled` | Redeemed; exclusive siblings and named forfeits revoked | Delivered, or nothing to deliver |
+| `Refused` | Back to Granted, player can retry | Definitely nothing moved (a 4xx other than 408) |
+| `Ambiguous` | Stays Claiming; asked again after the claim lease | Cannot tell (timeout, 5xx, dropped connection) |
+
+- The same grant id can be redeemed again after `Ambiguous` or a failed call: the repeat must be the same delivery. Key the delivery on `grantId` (an idempotency key downstream). If your service deduplicates a repeat only for a while, declare it in `ambiguousRedeliverySeconds` (null = the platform default (12 h); anything shorter than the platform minimum (1 h), 0 included, is raised to it): past it the registry stops asking.
+- If a repeat is not safe at all (a purchase with no idempotency key downstream), declare `ambiguousOutcome = Hold`. With `NotDelivered`, a delivery that went through without an answer is given back and the player can be delivered, and charged, twice.
+- `OfferGrantRef` carries `offer`, `metadata` and `providerMetadata` exactly as stored at grant time; read the definition from them rather than from a catalog that may have changed.
+- `outcome` travels by name; `status` and `message` are shown to the player.
+
+Past the window the registry settles the redeem by `ambiguousOutcome`, applied by its expiry worker without waiting for the player:
+
+| `OfferAmbiguousOutcome` | Registry effect | Risk |
+|---|---|---|
+| `NotDelivered` (default) | Back to Granted; the next redeem is a new delivery | Delivered twice if the first one happened |
+| `Delivered` | Redeemed; group forfeited | Nothing delivered if the first one did not happen |
+| `Hold` | Stays Claiming, listed by `GET /api/offers/awaiting-operator` until `POST /api/offers/resolve { grantId, delivered }` | Needs someone to check your service |
+
+A realm overrides the outcome for a provider with the realm config `offers|{federationId}.ambiguousOutcome`. The reference providers declare: reward 12 h (inside inventory's transaction dedup); store and badge take the platform default.
+
+### 6. RevokeOffer and GetOffers
+
+- `RevokeOffer`: undo what grants that ended unredeemed created in your service. Called for every provider; answer `success = true` when there is nothing to undo. Must work from `grantId` alone: a grant whose grant answer was lost has no `offer` and no `providerMetadata`. Optional `retryAfterMs`.
+- `GetOffers`: one `OfferAvailability { grantId, available, unavailableReasons }` per grant, by your own rules (stock, schedule, limits). The campaign gate is added by the platform. A provider without rules of its own answers every grant available, and declares `hasAvailabilityRules = false` (step 2) so it is not called.
+
+### 7. Player routes
+
+| Route | Body / query | Answer |
+|---|---|---|
+| `GET /api/offers` | `playerId`, `states?` (repeated or comma-separated `OfferGrantState`), `federationId?`, `cursor?` | `PlayerOffersPage { offers[], next? }` |
+| `POST /api/offers/redeem` | `{ playerId, grantId, params? }` | `RedeemOfferResult { grantId, success, status, message, state, reason? }` |
+
+- Default `states`: `Granted` and `Claiming`. `Pending` and `Failed` are never listed. A grant past its expiry, or of a closed origin, reads `Expired`.
+- `PlayerOffer { grantId, federationId, offerId, state, grantedAtUnixSeconds, expiresAtUnixSeconds, offer, available, unavailableReasons[] }`.
+- A player may act only on their own grants; non-guest tokens may act on any player. 429 past the rate limit.
+- Redeem answers 200 for refusals: `success = false` with `status` `unknown-grant`, `unavailable` (with `reason` when the gate is closed), or `pending` (retry later). A redeemed grant answers `success = true` again.
+
+### 8. Operator routes (`CampaignOffer` resource, Write permission)
+
+| Route | Body | Answer |
+|---|---|---|
+| `POST /api/offers/grant` | `{ federationId, playerId, offerId, idempotencyKey, originId?, expiresAtUnixSeconds?, metadata? }` | `GrantOfferResult { grantId, success, status, message, retriable }` |
+| `POST /api/offers/revoke` | `{ grantId }` | `RevokeOfferResult { grantId, revoked }` |
+| `POST /api/offers/revoke-origin` | `{ originId }` | `RevokeOfferOriginResult { originId, closed }` |
+
+- `originId` names a batch (default `manual`); `revoke-origin` expires that batch's open grants in the request's realm. `idempotencyKey` is required: the same key lands on the same grant, so a grant whose answer was lost is retried by repeating it. A grant repeated after it ended stays ended (`grant-ended`) and the provider is not asked again. `expiresAtUnixSeconds`, when given, must be in the future.
+- `revoke` ends a Granted grant; one being redeemed finishes its redeem and comes back expired if refused.
+
+### 9. Run and verify
+
+```
+beam_exec("project run --ids <Name>OfferService")
+```
+
+The OpenAPI document must contain `<federationId>/GrantOffers`, `RedeemOffer`, `RevokeOffer`, `GetOffers`. Publishing a campaign whose offer names a federation with no registered provider fails with `OfferFederationNotRegistered`.

@@ -8,7 +8,7 @@ import type {
   MailService,
   MessageRailService,
   StatsService,
-  CampaignOfferService,
+  OfferService,
 } from '@/services';
 
 /**
@@ -25,7 +25,7 @@ export const SERVICE_KEYS = [
   'mail',
   'messageRail',
   'stats',
-  'campaignOffer',
+  'offers',
 ] as const;
 
 /**
@@ -42,7 +42,7 @@ export type ServiceMap = {
   mail: MailService;
   messageRail: MessageRailService;
   stats: StatsService;
-  campaignOffer: CampaignOfferService;
+  offers: OfferService;
 };
 
 /** The `ServiceKey` type represents a valid key for accessing services from the `ServiceMap`. */
