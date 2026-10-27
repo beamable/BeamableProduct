@@ -43,6 +43,12 @@ public class ToolchainOptions
 
 	/// <summary>Resolve and report what would happen, but download and write nothing.</summary>
 	public bool dryRun;
+
+	/// <summary>
+	/// The developer agreed to the Android SDK's licenses (asked by <c>beam local setup</c>, or
+	/// <c>--accept-android-licenses</c>). Without it, an SDK whose licenses aren't accepted yet is not installed.
+	/// </summary>
+	public bool acceptAndroidLicenses;
 }
 
 /// <summary>The outcome of ensuring one tool, for reporting.</summary>
@@ -210,6 +216,9 @@ public class ToolchainService
 	public static string BinSubdir(string toolId) => toolId switch
 	{
 		ToolchainPins.Dotnet => string.Empty,
+		// The SDK root is the home (ANDROID_HOME); sdkmanager only works from cmdline-tools/latest under it.
+		ToolchainPins.AndroidSdk => Path.Combine("cmdline-tools", "latest", "bin"),
+		ToolchainPins.AndroidEmulator => "emulator",
 		// npm --global --prefix lays pnpm out exactly like Node itself: bin/ on POSIX, shims at the root on Windows.
 		ToolchainPins.Node or ToolchainPins.Pnpm => OperatingSystem.IsWindows() ? string.Empty : "bin",
 		_ => "bin"
@@ -223,6 +232,10 @@ public class ToolchainService
 		ToolchainPins.Dotnet => OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet",
 		ToolchainPins.Node => OperatingSystem.IsWindows() ? "node.exe" : "node",
 		ToolchainPins.Pnpm => OperatingSystem.IsWindows() ? "pnpm.cmd" : "pnpm",
+		ToolchainPins.Jdk17 => OperatingSystem.IsWindows() ? "java.exe" : "java",
+		ToolchainPins.Gradle => OperatingSystem.IsWindows() ? "gradle.bat" : "gradle",
+		ToolchainPins.AndroidSdk => OperatingSystem.IsWindows() ? "sdkmanager.bat" : "sdkmanager",
+		ToolchainPins.AndroidEmulator => OperatingSystem.IsWindows() ? "emulator.exe" : "emulator",
 		_ => null
 	};
 
@@ -270,6 +283,13 @@ public class ToolchainService
 	{
 		try
 		{
+			// The SDK also has packages to keep in place, so it checks more than its executable.
+			if (toolId == ToolchainPins.AndroidSdk)
+				return await EnsureAndroidSdkAsync(token);
+
+			if (toolId == ToolchainPins.AndroidEmulator)
+				return EnsureAndroidEmulator();
+
 			if (!_options.force && TryExistingInstall(toolId, out var existing))
 				return new ToolchainResult { toolId = toolId, entry = existing, action = "cached" };
 
@@ -287,6 +307,8 @@ public class ToolchainService
 				ToolchainPins.Jdk => await ToolchainPins.ResolveJdkAsync(_http, token),
 				ToolchainPins.Maven => await ToolchainPins.ResolveMavenAsync(_http, token),
 				ToolchainPins.Node => await ToolchainPins.ResolveNodeAsync(_http, token),
+				ToolchainPins.Jdk17 => await ToolchainPins.ResolveJdk17Async(_http, token),
+				ToolchainPins.Gradle => await ToolchainPins.ResolveGradleAsync(_http, token),
 				_ => throw new CliException($"Unknown toolchain tool '{toolId}'.")
 			};
 
@@ -412,6 +434,7 @@ public class ToolchainService
 			// a different version of itself, so "close enough" is not a thing here.
 			ToolchainPins.Pnpm => version.TrimStart('v').StartsWith(ToolchainPins.PnpmVersion, StringComparison.Ordinal),
 			ToolchainPins.Jdk => version.Contains("1.8.") || version.StartsWith("8", StringComparison.Ordinal),
+			ToolchainPins.Jdk17 => version.StartsWith("17", StringComparison.Ordinal),
 			_ => false
 		};
 	}
@@ -425,7 +448,7 @@ public class ToolchainService
 		var (args, fromStdErr) = toolId switch
 		{
 			// `java -version` writes to stderr on 8.
-			ToolchainPins.Jdk => ("-version", true),
+			ToolchainPins.Jdk or ToolchainPins.Jdk17 => ("-version", true),
 			ToolchainPins.Maven => ("-version", false),
 			ToolchainPins.Dotnet => ("--version", false),
 			_ => ("--version", false)
@@ -445,7 +468,7 @@ public class ToolchainService
 		return toolId switch
 		{
 			// `java version "1.8.0_502"` / `openjdk version "1.8.0_502"`
-			ToolchainPins.Jdk => ExtractQuoted(firstLine) ?? firstLine,
+			ToolchainPins.Jdk or ToolchainPins.Jdk17 => ExtractQuoted(firstLine) ?? firstLine,
 			// `Apache Maven 3.9.9 (hash)`
 			ToolchainPins.Maven => firstLine?.Split(' ').Skip(2).FirstOrDefault() ?? firstLine,
 			_ => firstLine
@@ -564,6 +587,197 @@ public class ToolchainService
 	}
 
 	// ----------------------------------------------------------------------------------
+	// Android SDK and emulator
+	// ----------------------------------------------------------------------------------
+
+	/// <summary>Where the Android SDK lives: one folder that keeps its packages when the command-line tools update.</summary>
+	public static string AndroidSdkRoot(string toolchainDir) => Path.Combine(toolchainDir, ToolchainPins.AndroidSdk);
+
+	/// <summary>Where the emulator's devices live (<c>ANDROID_AVD_HOME</c>), so they stay out of <c>~/.android</c>.</summary>
+	public static string AndroidAvdHome(string toolchainDir) => Path.Combine(toolchainDir, "android-avd");
+
+	/// <summary>True once the SDK's licenses were accepted (sdkmanager writes this file).</summary>
+	public static bool AndroidLicensesAccepted(string sdkRoot) =>
+		File.Exists(Path.Combine(sdkRoot, "licenses", "android-sdk-license"));
+
+	/// <summary>True when an SDK package (<c>platforms;android-34</c>) is installed under <paramref name="sdkRoot"/>.</summary>
+	public static bool AndroidPackageInstalled(string sdkRoot, string package) =>
+		File.Exists(Path.Combine(sdkRoot, Path.Combine(package.Split(';')), "package.xml"));
+
+	/// <summary>
+	/// The Android command-line tools in <c>&lt;sdk&gt;/cmdline-tools/latest</c> (where sdkmanager has to be), then
+	/// <see cref="ToolchainPins.AndroidSdkPackages"/> through sdkmanager, which runs on <see cref="ToolchainPins.Jdk17"/>.
+	/// </summary>
+	private async Task<ToolchainResult> EnsureAndroidSdkAsync(CancellationToken token)
+	{
+		var root = AndroidSdkRoot(_dir);
+		var entry = new ToolchainEntry { version = ToolchainPins.AndroidCmdlineToolsBuild, home = root, source = "downloaded" };
+		var sdkmanager = ExecutablePath(ToolchainPins.AndroidSdk, root);
+		var missing = ToolchainPins.AndroidSdkPackages.Where(p => !AndroidPackageInstalled(root, p)).ToList();
+		if (!_options.force && File.Exists(sdkmanager) && missing.Count == 0)
+		{
+			Manifest.tools[ToolchainPins.AndroidSdk] = entry;
+			return new ToolchainResult { toolId = ToolchainPins.AndroidSdk, entry = entry, action = "cached" };
+		}
+
+		if (_options.dryRun)
+			return new ToolchainResult { toolId = ToolchainPins.AndroidSdk, entry = entry, action = "would install" };
+
+		var java = Jdk17Home();
+		if (!AndroidLicensesAccepted(root) && !_options.acceptAndroidLicenses)
+			throw new CliException("The Android SDK's licenses aren't accepted yet. Run `beam local setup --native` in a terminal to read and accept them, or pass --accept-android-licenses.");
+
+		if (_options.force || !File.Exists(sdkmanager))
+		{
+			var archive = await FetchAsync(ToolchainPins.ResolveAndroidCmdlineTools(), token);
+			var latest = Path.Combine(root, "cmdline-tools", "latest");
+			var staging = latest + ".staging";
+			if (Directory.Exists(staging)) Directory.Delete(staging, recursive: true);
+			Directory.CreateDirectory(staging);
+			try
+			{
+				Extract(archive, staging);
+				if (Directory.Exists(latest)) Directory.Delete(latest, recursive: true);
+				Directory.CreateDirectory(Path.GetDirectoryName(latest)!);
+				Directory.Move(UnwrapSingleDirectory(staging), latest);
+			}
+			finally
+			{
+				if (Directory.Exists(staging)) try { Directory.Delete(staging, recursive: true); } catch { /* best effort */ }
+			}
+
+			MakeBinExecutable(BinDir(ToolchainPins.AndroidSdk, root));
+			if (!File.Exists(sdkmanager))
+				throw new CliException($"Extracted the Android command-line tools but found no {sdkmanager}.");
+		}
+
+		if (!AndroidLicensesAccepted(root))
+			RunSdkManager(root, java, "--licenses", acceptAll: true);
+		if (missing.Count > 0)
+			RunSdkManager(root, java, string.Join(" ", missing.Select(p => $"\"{p}\"")), acceptAll: true);
+
+		Manifest.tools[ToolchainPins.AndroidSdk] = entry;
+		return new ToolchainResult { toolId = ToolchainPins.AndroidSdk, entry = entry, action = "installed" };
+	}
+
+	/// <summary>
+	/// The emulator, this machine's system image and the <see cref="ToolchainPins.AndroidAvdName"/> device, added to the
+	/// toolchain's Android SDK.
+	/// </summary>
+	private ToolchainResult EnsureAndroidEmulator()
+	{
+		if (!Manifest.tools.TryGetValue(ToolchainPins.AndroidSdk, out var sdk) || string.IsNullOrEmpty(sdk?.home))
+			throw new CliException("The emulator goes into the toolchain's Android SDK, so install that first (`beam local setup --native`).");
+
+		var root = sdk.home;
+		var avdHome = AndroidAvdHome(_dir);
+		var entry = new ToolchainEntry { version = ToolchainPins.AndroidSystemImage, home = root, source = "downloaded" };
+		var packages = new[] { "emulator", ToolchainPins.AndroidSystemImage }.Where(p => !AndroidPackageInstalled(root, p)).ToList();
+		var hasAvd = File.Exists(Path.Combine(avdHome, ToolchainPins.AndroidAvdName + ".ini"));
+		if (packages.Count == 0 && hasAvd)
+		{
+			Manifest.tools[ToolchainPins.AndroidEmulator] = entry;
+			return new ToolchainResult { toolId = ToolchainPins.AndroidEmulator, entry = entry, action = "cached" };
+		}
+
+		if (_options.dryRun)
+			return new ToolchainResult { toolId = ToolchainPins.AndroidEmulator, entry = entry, action = "would install" };
+
+		var java = Jdk17Home();
+		if (packages.Count > 0)
+			RunSdkManager(root, java, string.Join(" ", packages.Select(p => $"\"{p}\"")), acceptAll: true);
+
+		if (!hasAvd)
+		{
+			Directory.CreateDirectory(avdHome);
+			var avdmanager = Path.Combine(BinDir(ToolchainPins.AndroidSdk, root), OperatingSystem.IsWindows() ? "avdmanager.bat" : "avdmanager");
+			// "no": avdmanager asks whether to make a custom hardware profile.
+			var output = RunWithInput(avdmanager,
+				$"create avd -n {ToolchainPins.AndroidAvdName} -k \"{ToolchainPins.AndroidSystemImage}\" -d pixel_6 --force",
+				"no\n", AndroidEnvironment(root, java, avdHome), out var exitCode);
+			if (exitCode != 0)
+				throw new CliException($"avdmanager couldn't create the {ToolchainPins.AndroidAvdName} device (exit {exitCode}): {Tail(output)}");
+		}
+
+		Manifest.tools[ToolchainPins.AndroidEmulator] = entry;
+		return new ToolchainResult { toolId = ToolchainPins.AndroidEmulator, entry = entry, action = "installed" };
+	}
+
+	private string Jdk17Home() =>
+		Manifest.tools.TryGetValue(ToolchainPins.Jdk17, out var jdk) && !string.IsNullOrEmpty(jdk?.home)
+			? jdk.home
+			: throw new CliException("The Android SDK's tools run on JDK 17, so install it first (drop `--skip jdk17`).");
+
+	/// <summary>The environment the Android tools need: JDK 17, the SDK root, and the toolchain's device folder.</summary>
+	public static Dictionary<string, string> AndroidEnvironment(string sdkRoot, string jdk17Home, string avdHome) => new()
+	{
+		["JAVA_HOME"] = jdk17Home,
+		["ANDROID_HOME"] = sdkRoot,
+		["ANDROID_SDK_ROOT"] = sdkRoot,
+		["ANDROID_AVD_HOME"] = avdHome,
+	};
+
+	/// <summary>Runs sdkmanager against <paramref name="sdkRoot"/>, answering yes to every license it asks about.</summary>
+	private void RunSdkManager(string sdkRoot, string jdk17Home, string arguments, bool acceptAll)
+	{
+		var sdkmanager = ExecutablePath(ToolchainPins.AndroidSdk, sdkRoot);
+		Log.Information($"sdkmanager {arguments} ...");
+		var output = RunWithInput(sdkmanager, $"--sdk_root=\"{sdkRoot}\" {arguments}",
+			acceptAll ? string.Concat(Enumerable.Repeat("y\n", 50)) : string.Empty,
+			AndroidEnvironment(sdkRoot, jdk17Home, AndroidAvdHome(_dir)), out var exitCode);
+		if (exitCode != 0)
+			throw new CliException($"sdkmanager {arguments} failed (exit {exitCode}): {Tail(output)}");
+	}
+
+	/// <summary>Like <see cref="RunCapture"/>, with text written to the process's input and extra environment.</summary>
+	private static string RunWithInput(string exe, string arguments, string input, Dictionary<string, string> environment, out int exitCode)
+	{
+		var psi = new ProcessStartInfo
+		{
+			FileName = exe,
+			Arguments = arguments,
+			RedirectStandardInput = true,
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			UseShellExecute = false,
+			CreateNoWindow = true
+		};
+		foreach (var (key, value) in environment)
+			psi.Environment[key] = value;
+
+		try
+		{
+			using var proc = Process.Start(psi);
+			if (proc == null)
+			{
+				exitCode = -1;
+				return null;
+			}
+
+			var stdout = proc.StandardOutput.ReadToEndAsync();
+			var stderr = proc.StandardError.ReadToEndAsync();
+			try
+			{
+				proc.StandardInput.Write(input);
+				proc.StandardInput.Close();
+			}
+			catch (IOException)
+			{
+				// It exited without reading everything it was given.
+			}
+
+			proc.WaitForExit();
+			exitCode = proc.ExitCode;
+			return stdout.Result + stderr.Result;
+		}
+		catch (Exception e)
+		{
+			exitCode = -1;
+			return e.Message;
+		}
+	}
+
+	// ----------------------------------------------------------------------------------
 	// Download + extract
 	// ----------------------------------------------------------------------------------
 
@@ -606,7 +820,7 @@ public class ToolchainService
 			if (!VerifyDigest(temp, download, out var actual))
 			{
 				throw new CliException(
-					$"Checksum mismatch for {download.fileName}: expected {download.sha256 ?? download.sha512}, got {actual}. " +
+					$"Checksum mismatch for {download.fileName}: expected {download.sha256 ?? download.sha512 ?? download.sha1}, got {actual}. " +
 					"The download was corrupted or the upstream artifact changed — nothing was installed.");
 			}
 
@@ -640,6 +854,12 @@ public class ToolchainService
 		{
 			actual = HashFile(path, SHA512.Create());
 			return string.Equals(actual, download.sha512.Trim().ToLowerInvariant(), StringComparison.Ordinal);
+		}
+
+		if (!string.IsNullOrWhiteSpace(download.sha1))
+		{
+			actual = HashFile(path, SHA1.Create());
+			return string.Equals(actual, download.sha1.Trim().ToLowerInvariant(), StringComparison.Ordinal);
 		}
 
 		Log.Warning($"{Path.GetFileName(path)} was not checksum-verified — upstream published no digest.");
@@ -734,7 +954,7 @@ public class ToolchainService
 	/// </summary>
 	private static string ResolveHome(string toolId, string root)
 	{
-		if (toolId == ToolchainPins.Jdk)
+		if (toolId is ToolchainPins.Jdk or ToolchainPins.Jdk17)
 		{
 			var bundleHome = Path.Combine(root, "Contents", "Home");
 			if (Directory.Exists(bundleHome))
@@ -806,7 +1026,10 @@ public class ToolchainService
 			maven = HomeOf(ToolchainPins.Maven),
 			dotnet = HomeOf(ToolchainPins.Dotnet),
 			node = HomeOf(ToolchainPins.Node),
-			pnpm = HomeOf(ToolchainPins.Pnpm)
+			pnpm = HomeOf(ToolchainPins.Pnpm),
+			jdk17 = HomeOf(ToolchainPins.Jdk17),
+			gradle = HomeOf(ToolchainPins.Gradle),
+			androidSdk = HomeOf(ToolchainPins.AndroidSdk)
 		};
 	}
 

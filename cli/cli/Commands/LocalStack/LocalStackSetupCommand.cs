@@ -19,6 +19,8 @@ public class LocalStackSetupCommandArgs : CommandArgs
 	public bool preferSystem;
 	public bool offline;
 	public bool dryRun;
+	public bool native;
+	public bool acceptAndroidLicenses;
 	public string githubToken;
 	public string githubRepo;
 	public string awsRegion;
@@ -164,6 +166,10 @@ public class LocalStackSetupCommand
 			(args, v) => args.offline = v);
 		AddOption(new Option<bool>("--dry-run", "Resolve and report what would be installed, downloading and writing nothing"),
 			(args, v) => args.dryRun = v);
+		AddOption(new Option<bool>("--native", "Also install the native mobile toolchain: JDK 17, Gradle and the Android SDK (about 1 GB). Stacks that build the native libraries install it on their own"),
+			(args, v) => args.native = v);
+		AddOption(new Option<bool>("--accept-android-licenses", "Accept the Android SDK's licenses without asking; needed to install the SDK without a terminal"),
+			(args, v) => args.acceptAndroidLicenses = v);
 		AddOption(new Option<string>("--github-token",
 				"Token used to read the BeamableBackend `local` environment variables that the generated config files are rendered from (default: $GITHUB_TOKEN, else `gh auth token`)"),
 			(args, v) => args.githubToken = v);
@@ -272,15 +278,22 @@ public class LocalStackSetupCommand
 		if (Included(ToolchainPins.Docker))
 			result.steps.Add(CheckDocker());
 
+		// The native tools only with --native or when named: backend and web work never downloads them.
+		var toolIds = ToolchainPins.ToolIds
+			.Concat(ToolchainPins.NativeToolIds.Where(id => args.native || only?.Contains(id) == true))
+			.Concat(only?.Contains(ToolchainPins.AndroidEmulator) == true ? new[] { ToolchainPins.AndroidEmulator } : Array.Empty<string>())
+			.ToList();
+
 		var service = new ToolchainService(result.toolchainDir, new ToolchainOptions
 		{
 			force = args.force,
 			offline = args.offline,
 			preferSystem = args.preferSystem,
-			dryRun = args.dryRun
+			dryRun = args.dryRun,
+			acceptAndroidLicenses = AcceptAndroidLicenses(args, toolIds.Where(Included), result.toolchainDir, quiet)
 		});
 
-		foreach (var toolId in ToolchainPins.ToolIds)
+		foreach (var toolId in toolIds)
 		{
 			if (!Included(toolId))
 			{
@@ -293,7 +306,7 @@ public class LocalStackSetupCommand
 		}
 
 		// Only a tool step changes the toolchain directory; `--only settings` must not create or rewrite it.
-		if (ToolchainPins.ToolIds.Any(Included))
+		if (toolIds.Any(Included))
 			service.SaveManifest();
 
 		// Write or update the settings file. Done before the remaining steps, which read the repo paths from it, and
@@ -588,6 +601,22 @@ public class LocalStackSetupCommand
 		var productDir = LocalStackCommand.FindRepoDir(startDir, LocalStackCommand.ProductRepoName);
 		var detected = productDir == null ? null : Path.Combine(productDir, "portal-localdev");
 		return detected != null && Directory.Exists(detected) ? detected : null;
+	}
+
+	/// <summary>
+	/// Whether the Android SDK's licenses may be accepted for this run: already accepted, <c>--accept-android-licenses</c>,
+	/// or a yes to the question in a terminal. Only asked when the SDK or the emulator is being installed.
+	/// </summary>
+	private static bool AcceptAndroidLicenses(LocalStackSetupCommandArgs args, IEnumerable<string> toolIds, string toolchainDir, bool quiet)
+	{
+		if (args.acceptAndroidLicenses) return true;
+		if (args.dryRun || !toolIds.Any(id => id is ToolchainPins.AndroidSdk or ToolchainPins.AndroidEmulator)) return false;
+		if (ToolchainService.AndroidLicensesAccepted(ToolchainService.AndroidSdkRoot(toolchainDir))) return true;
+		if (quiet) return false;
+
+		AnsiConsole.MarkupLine("The Android SDK's packages are licensed by Google under the Android Software Development Kit License " +
+		                       "Agreement ([link]https://developer.android.com/studio/terms[/]), plus the licenses sdkmanager lists for each package.");
+		return AnsiConsole.Confirm("Accept them and install the Android SDK?", defaultValue: false);
 	}
 
 	/// <summary>

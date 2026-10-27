@@ -209,6 +209,15 @@ public class LocalStackToolchain
 	/// that this directory reaches the child's <c>PATH</c> (see <see cref="LocalStackConfigIO.ToolchainPathPrefix"/>).
 	/// </summary>
 	public string pnpm;
+
+	/// <summary>JDK 17 home, for the native Android build only; never on a step's <c>PATH</c> or <c>JAVA_HOME</c>.</summary>
+	public string jdk17;
+
+	/// <summary>Gradle home, for the native Android build.</summary>
+	public string gradle;
+
+	/// <summary>The Android SDK root (<c>ANDROID_HOME</c>).</summary>
+	public string androidSdk;
 }
 
 /// <summary>

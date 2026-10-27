@@ -59,6 +59,7 @@ namespace Beamable.Server
 		public bool OtelExporterShouldRetry { get; set; }
 		public bool UseLocalOtel { get; set; }
 		public bool OtelExporterStandardEnabled { get; set; }
+		public bool OtelExportAllSpans { get; set; }
 		public string OtelExporterRetryMaxSize { get; set; }
 		public bool AllowStartupWithoutBeamableSettings { get; set; }
 		public int MaxUniqueEventBindingCount { get; set; }
@@ -122,6 +123,7 @@ namespace Beamable.Server
 				OtelExporterShouldRetry = args.OtelExporterShouldRetry,
 				UseLocalOtel = args.UseLocalOtel,
 				OtelExporterStandardEnabled = args.OtelExporterStandardEnabled,
+				OtelExportAllSpans = args.OtelExportAllSpans,
 				OtelExporterRetryMaxSize = args.OtelExporterRetryMaxSize,
 				SkipLocalEnv = args.SkipLocalEnv,
 				SkipAliasResolve = args.SkipAliasResolve,
@@ -312,6 +314,8 @@ namespace Beamable.Server
 		public bool EnableDangerousDeflateOptions => IsEnvironmentVariableTrue("WS_ENABLE_DANGEROUS_DEFLATE_OPTIONS");
 		public bool DisableOutboundWsCompression => IsEnvironmentVariableTrue("WS_DISABLE_OUTBOUND_COMPRESSION");
 		public bool UseLocalOtel => IsEnvironmentVariableTrue("BEAM_LOCAL_OTEL");
+		/// <summary>Send every span to the endpoint override, not only failed ones; for a local collector.</summary>
+		public bool OtelExportAllSpans => IsEnvironmentVariableTrue("BEAM_OTEL_EXPORT_ALL_SPANS");
 		public string MetadataUrl => Environment.GetEnvironmentVariable("ECS_CONTAINER_METADATA_URI_V4");
 		
 		public bool SkipLocalEnv => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_SKIP_LOCAL_ENV"));

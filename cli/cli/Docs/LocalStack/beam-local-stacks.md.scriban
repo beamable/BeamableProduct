@@ -39,6 +39,8 @@ beam local ps --json                   # what is running now
 | `portal-extensions` | The portal, microservices and extensions | dev |
 | `web-dev` | The local package registry, the portal, microservices and extensions (`:non-publish`: build the packages only) | dev |
 | `remote` | This workspace's microservices and extensions, used from the hosted portal | dev |
+| `native-libs` | Builds the notification libraries (Android; iOS on a Mac with Xcode) into the Unity, Unity.Web, React Native and Unreal packages (`:android`, `:ios`). The built files are committed | none |
+| `rn-sample` | The `backend` stack, then the React Native sample on a connected Android phone or emulator, pointed at the local realm; the native library is rebuilt only when its sources have uncommitted changes. `:emulator` starts the toolchain's emulator first, `:device` needs a phone (LAN host), `:browser` runs it with Expo web | local |
 
 Teams add stacks in `.beamable/shared/stacks/*.json` (committed); each developer in `.beamable/local/stacks/*.json`.
 `beam local run` lists all of them with their layer.
@@ -179,8 +181,13 @@ beam local setup --quiet
 beam local setup --only aws       # just the AWS checks
 beam local setup --aws-guide      # the AWS setup guide for this checkout
 ```
-Step ids for `--only`/`--skip`: `docker`, `jdk8`, `maven`, `dotnet`, `node`, `pnpm`, `settings`, `skill` (this file), `scala-config`,
-`portal-config`, `aws`.
+Step ids for `--only`/`--skip`: `docker`, `jdk8`, `maven`, `dotnet`, `node`, `pnpm`, `jdk17`, `gradle`, `android-sdk`,
+`android-emulator`, `settings`, `skill` (this file), `scala-config`, `portal-config`, `aws`.
+
+The native toolchain (JDK 17, Gradle 8.2, the Android SDK) only comes with `--native`, or when a native stack runs.
+Installing the Android SDK means accepting Google's licenses: setup asks in a terminal; without one it needs
+`--accept-android-licenses`, which only the user may decide to pass. The emulator (about 3 GB) is installed by
+`rn-sample:emulator` or `--only android-emulator`.
 
 **Real AWS access is required.** The Scala `auth` service reads its JWT signing key from AWS Secrets Manager, so
 without credentials every process comes up healthy and nothing can log in. `--only aws` checks the profile, the

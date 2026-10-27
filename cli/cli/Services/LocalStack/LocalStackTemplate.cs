@@ -979,6 +979,10 @@ public static class LocalStackTemplate
 	/// <inheritdoc cref="WebBuildStepName"/>
 	public const string WebWatchStepName = "web: watch";
 
+	/// <summary>The step that starts the Android emulator for the React Native sample (<c>rn-sample:emulator</c>);
+	/// a stack that has it needs the emulator in the toolchain.</summary>
+	public const string EmulatorStepName = "rn: emulator";
+
 	/// <summary>
 	/// True when <paramref name="name"/> is one of the local web package steps. They need no login, so <c>run</c>
 	/// uses this to keep them from triggering the realm check.
@@ -1041,12 +1045,35 @@ public static class LocalStackTemplate
 	public const string MicroservicesBuildStepName = "build: microservices";
 
 	/// <summary>
-	/// The environment microservice builds get in a stack. MSBuild reads it as a property: it skips the Beamable check
-	/// that asks Windows' Restart Manager about every dll in the output folder and stops a running copy of the service.
-	/// The stack has stopped its own copy already, and a dozen checks at once take a minute and a half each.
+	/// The environment microservice builds get in a stack; MSBuild reads each value as a property.
+	/// <list type="bullet">
+	/// <item><c>BeamDisableOutputLockCheck</c>: skips the check that asks Windows' Restart Manager about every dll in the
+	/// output folder and stops a running copy of the service. The stack has stopped its own copy already, and a dozen
+	/// checks at once take a minute and a half each.</item>
+	/// <item><c>BeamPreventBuildCacheInvalidation</c>: after each build the Beamable targets touch the csproj, so the
+	/// next build recompiled every service, even unchanged ones, on every run and every restart.</item>
+	/// </list>
 	/// </summary>
 	public static Dictionary<string, string> MicroserviceBuildEnvironment() =>
-		new Dictionary<string, string> { ["BeamDisableOutputLockCheck"] = "true" };
+		new Dictionary<string, string>
+		{
+			["BeamDisableOutputLockCheck"] = "true",
+			["BeamPreventBuildCacheInvalidation"] = "true",
+		};
+
+	/// <summary>
+	/// <see cref="MicroserviceBuildEnvironment"/> for the shared build, which only compiles. Its after-build steps
+	/// (the OpenAPI document and the extensions' clients, the latter one <c>dotnet beam</c> process per project, each
+	/// scanning the workspace and asking the backend for its manifest) took minutes in one build; each service's own
+	/// <c>project run</c> still does them for itself when it starts, in parallel.
+	/// </summary>
+	public static Dictionary<string, string> MicroservicesSharedBuildEnvironment()
+	{
+		var environment = MicroserviceBuildEnvironment();
+		environment["BeamPreventOapiGen"] = "true";
+		environment["BeamPreventPortalExtensionClients"] = "true";
+		return environment;
+	}
 
 	/// <summary>
 	/// Builds every microservice in <paramref name="solution"/> at once, before they start. Each one's
@@ -1062,7 +1089,7 @@ public static class LocalStackTemplate
 		command = DotnetToken,
 		// Debug: the output `project run`'s `dotnet run` uses, so its own build only checks it.
 		arguments = $"build \"{solution}\" -c Debug --verbosity minimal",
-		environment = MicroserviceBuildEnvironment(),
+		environment = MicroservicesSharedBuildEnvironment(),
 		build = true,
 		inputs = inputs,
 		waitForExit = true,

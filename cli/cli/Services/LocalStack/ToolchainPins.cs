@@ -29,6 +29,26 @@ public static class ToolchainPins
 	public const string Pnpm = "pnpm";
 
 	/// <summary>
+	/// The native mobile toolchain, installed only with <c>beam local setup --native</c> (or by a stack that builds
+	/// the native libraries): the Android Gradle plugin the native projects use needs JDK 17, and Gradle 8.2 can't
+	/// run on anything newer.
+	/// </summary>
+	public const string Jdk17 = "jdk17";
+
+	/// <inheritdoc cref="Jdk17"/>
+	public const string Gradle = "gradle";
+
+	/// <summary>The Android SDK: the command-line tools plus <see cref="AndroidSdkPackages"/>, in its own folder.</summary>
+	public const string AndroidSdk = "android-sdk";
+
+	/// <summary>
+	/// The Android emulator, a system image and the <see cref="AndroidAvdName"/> device, added to
+	/// <see cref="AndroidSdk"/>. Several GB, so only <c>rn-sample:emulator</c> (or <c>--only android-emulator</c>)
+	/// installs it.
+	/// </summary>
+	public const string AndroidEmulator = "android-emulator";
+
+	/// <summary>
 	/// Non-tool setup ids, also accepted by <c>--only</c>/<c>--skip</c>: the Docker check, the settings file with
 	/// its step catalogue, the agent skill, the generated BeamableBackend config files, the portal's .env.local, and
 	/// the AWS preflight. They install nothing into the toolchain dir.
@@ -56,8 +76,15 @@ public static class ToolchainPins
 	/// </summary>
 	public static readonly string[] ToolIds = { Jdk, Maven, Dotnet, Node, Pnpm };
 
+	/// <summary>
+	/// The native tool ids, in install order: the SDK's own tools run on <see cref="Jdk17"/>. Not part of
+	/// <see cref="ToolIds"/>, so backend and web work never downloads them.
+	/// </summary>
+	public static readonly string[] NativeToolIds = { Jdk17, Gradle, AndroidSdk };
+
 	/// <summary>Every id <c>--only</c>/<c>--skip</c> accepts, tools plus the non-tool setup steps.</summary>
-	public static readonly string[] AllStepIds = { Docker, Jdk, Maven, Dotnet, Node, Pnpm, Settings, Skill, ScalaConfig, PortalConfig, Aws };
+	public static readonly string[] AllStepIds =
+		{ Docker, Jdk, Maven, Dotnet, Node, Pnpm, Jdk17, Gradle, AndroidSdk, AndroidEmulator, Settings, Skill, ScalaConfig, PortalConfig, Aws };
 
 	/// <summary>
 	/// Maven version the Scala reactor is built with. 3.9.x is what BeamableBackend's README documents;
@@ -93,6 +120,37 @@ public static class ToolchainPins
 	/// <summary>The Java feature version the Scala backend runs under (Scala 2.11 / JDK 8 source+target).</summary>
 	public const string JavaFeatureVersion = "8";
 
+	/// <summary>The Gradle the native Android project's wrapper pins (<c>gradle-wrapper.properties</c>).</summary>
+	public const string GradleVersion = "8.2";
+
+	/// <summary>
+	/// The Android command-line tools build (<c>cmdline-tools;latest</c> 23.0). Google publishes only SHA-1 digests
+	/// for these archives, in its SDK repository index; they're pinned here with the build so the download is
+	/// checked against what Google listed for it.
+	/// </summary>
+	public const string AndroidCmdlineToolsBuild = "16111833";
+
+	/// <summary>
+	/// The SDK packages the native Android project builds with (<c>compileSdk 34</c>, <c>buildToolsVersion
+	/// '34.0.0'</c>, matching Unity 2022.3's SDK), plus <c>platform-tools</c> for <c>adb</c>. On Windows also a CMake whose
+	/// ninja handles long paths, for the React Native sample's native build (see <see cref="AndroidCmakeVersion"/>).
+	/// </summary>
+	public static string[] AndroidSdkPackages => OperatingSystem.IsWindows()
+		? new[] { "platform-tools", "platforms;android-34", "build-tools;34.0.0", $"cmake;{AndroidCmakeVersion}" }
+		: new[] { "platform-tools", "platforms;android-34", "build-tools;34.0.0" };
+
+	/// <summary>
+	/// The CMake the React Native sample builds its native code with on Windows: it ships ninja 1.12, the first that
+	/// uses paths over 260 characters. The 3.22 Gradle picks by default fails from a longer checkout path.
+	/// </summary>
+	public const string AndroidCmakeVersion = "3.31.6";
+
+	/// <summary>The emulator system image <see cref="AndroidEmulator"/> installs, for this machine's architecture.</summary>
+	public static string AndroidSystemImage => $"system-images;android-34;google_apis;{(IsArm64 ? "arm64-v8a" : "x86_64")}";
+
+	/// <summary>The emulator device the React Native sample runs on.</summary>
+	public const string AndroidAvdName = "beam-rn";
+
 	/// <summary>A resolved, verifiable download: a URL plus the SHA-256 the bytes must hash to.</summary>
 	public class Download
 	{
@@ -104,6 +162,9 @@ public static class ToolchainPins
 
 		/// <summary>Lower-case hex SHA-512, used where that is the only digest published (Maven).</summary>
 		public string sha512;
+
+		/// <summary>Lower-case hex SHA-1, used where that is the only digest published (the Android command-line tools).</summary>
+		public string sha1;
 
 		/// <summary>The version string recorded in <c>toolchain.json</c> and shown by <c>local validate</c>.</summary>
 		public string version;
@@ -144,26 +205,35 @@ public static class ToolchainPins
 		if (OperatingSystem.IsMacOS() && IsArm64)
 			return await ResolveZuluMacArm64Async(http, token);
 
+		return await ResolveTemurinAsync(http, JavaFeatureVersion, token);
+	}
+
+	/// <summary>The newest Eclipse Temurin JDK 17 for this platform (Adoptium builds 17 for Apple Silicon too).</summary>
+	public static Task<Download> ResolveJdk17Async(HttpClient http, CancellationToken token) =>
+		ResolveTemurinAsync(http, "17", token);
+
+	private static async Task<Download> ResolveTemurinAsync(HttpClient http, string feature, CancellationToken token)
+	{
 		var os = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "mac" : "linux";
 		var arch = IsArm64 ? "aarch64" : "x64";
-		var url = $"https://api.adoptium.net/v3/assets/latest/{JavaFeatureVersion}/hotspot" +
+		var url = $"https://api.adoptium.net/v3/assets/latest/{feature}/hotspot" +
 		          $"?os={os}&architecture={arch}&image_type=jdk";
 
 		var json = await GetStringAsync(http, url, token);
 		var asset = JArray.Parse(json).FirstOrDefault()
 			?? throw new CliException(
-				$"Adoptium has no JDK {JavaFeatureVersion} build for {PlatformLabel}. " +
-				"Install a JDK 8 by hand and pass --java-path (or set BEAM_JAVA_HOME).");
+				$"Adoptium has no JDK {feature} build for {PlatformLabel}. " +
+				$"Install a JDK {feature} by hand and pass --java-path (or set BEAM_JAVA_HOME).");
 
 		var package = asset["binary"]?["package"]
-			?? throw new CliException($"Adoptium returned no package for JDK {JavaFeatureVersion} on {PlatformLabel}.");
+			?? throw new CliException($"Adoptium returned no package for JDK {feature} on {PlatformLabel}.");
 
 		return new Download
 		{
 			url = (string)package["link"],
 			fileName = (string)package["name"],
 			sha256 = (string)package["checksum"],
-			version = (string)asset["release_name"] ?? JavaFeatureVersion
+			version = (string)asset["release_name"] ?? feature
 		};
 	}
 
@@ -218,6 +288,37 @@ public static class ToolchainPins
 			.FirstOrDefault();
 
 		return new Download { url = url, fileName = fileName, sha512 = sha?.ToLowerInvariant(), version = MavenVersion };
+	}
+
+	// ----------------------------------------------------------------------------------
+	// Gradle and the Android command-line tools
+	// ----------------------------------------------------------------------------------
+
+	/// <summary>The pinned Gradle binary distribution: one zip for every platform, with a <c>.sha256</c> beside it.</summary>
+	public static async Task<Download> ResolveGradleAsync(HttpClient http, CancellationToken token)
+	{
+		var fileName = $"gradle-{GradleVersion}-bin.zip";
+		var url = $"https://services.gradle.org/distributions/{fileName}";
+		var sha = (await GetStringAsync(http, url + ".sha256", token) ?? string.Empty).Trim();
+		return new Download { url = url, fileName = fileName, sha256 = sha.ToLowerInvariant(), version = GradleVersion };
+	}
+
+	/// <summary>The pinned Android command-line tools for this platform, checked against Google's listed SHA-1.</summary>
+	public static Download ResolveAndroidCmdlineTools()
+	{
+		var (platform, sha1) =
+			OperatingSystem.IsWindows() ? ("win", "57d04f2d75eb8e8fffc5000a987e5de4b5a63e9d")
+			: OperatingSystem.IsMacOS() && IsArm64 ? ("mac_arm64", "ad03dc49bfacfd52c110b14104ea548b8a07e830")
+			: OperatingSystem.IsMacOS() ? ("mac_x86_64", "112cf9618794a997ff273537d55bee02c22abffe")
+			: ("linux", "e025545c62a8e64c7559119566a569fb1dec5f60");
+		var fileName = $"commandlinetools-{platform}-{AndroidCmdlineToolsBuild}_latest.zip";
+		return new Download
+		{
+			url = $"https://dl.google.com/android/repository/{fileName}",
+			fileName = fileName,
+			sha1 = sha1,
+			version = AndroidCmdlineToolsBuild
+		};
 	}
 
 	// ----------------------------------------------------------------------------------

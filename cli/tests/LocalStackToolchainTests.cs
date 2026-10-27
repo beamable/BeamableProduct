@@ -704,7 +704,10 @@ public class LocalStackToolchainTests
 			Assert.That(steps.Select(s => s.name), Is.EqualTo(new[] { "build: microservices", "microservice: A", "microservice: B", "portal extension: ext" }));
 			var build = steps[0];
 			Assert.That(build.build && build.waitForExit, Is.True);
-			Assert.That(LocalStackRunCommand.WaitsForItsPlace(build), Is.True, "it generates clients from the backend, so not before it is up");
+			Assert.That(LocalStackRunCommand.WaitsForItsPlace(build), Is.False, "it only compiles, so it starts with the other builds");
+			Assert.That(build.environment, Does.ContainKey("BeamPreventPortalExtensionClients").And.ContainKey("BeamPreventOapiGen"),
+				"the services generate their OpenAPI and extension clients when they start");
+			Assert.That(build.environment["BeamPreventBuildCacheInvalidation"], Is.EqualTo("true"), "no csproj touch, so unchanged services stay compiled");
 			Assert.That(build.inputs.Select(Path.GetFileName), Is.EqualTo(new[] { "A", "B", "Storage" }), "each project's folder and the shared one");
 			var solution = File.ReadAllText(Path.Combine(workspace, ".beamable", "temp", "local-stack", "microservices.slnx"));
 			Assert.That(solution, Does.Contain("A.csproj").And.Contain("B.csproj").And.Not.Contain("Storage.csproj"));
@@ -993,6 +996,79 @@ public class LocalStackToolchainTests
 		Assert.That(full, Is.EqualTo(catalogueOrder));
 	}
 
+	/// <summary>
+	/// native-libs builds both libraries and nothing else; rn-sample runs the backend, the library only when its
+	/// sources changed (--if-changed), then the app; its variants swap where the app runs.
+	/// </summary>
+	[Test]
+	public void NativeStacksRunTheLibrariesAndTheSample()
+	{
+		var stacks = LocalStackStacks.BuiltIn();
+		var config = StackCatalogue();
+
+		Assert.That(StepNames(stacks.Resolve("native-libs", config)), Is.EqualTo(new[] { "native: android", "native: ios" }));
+		Assert.That(StepNames(stacks.Resolve("native-libs:android", config)), Is.EqualTo(new[] { "native: android" }));
+		Assert.That(stacks.Resolve("native-libs", config).steps[0].arguments, Does.Not.Contain("--if-changed"), "native-libs always builds");
+
+		var sample = stacks.Resolve("rn-sample", config);
+		var names = StepNames(sample);
+		Assert.That(names, Does.Contain("c# gateway").And.Contain("scala: auth"), "against this machine's backend");
+		Assert.That(names.TakeLast(2), Is.EqualTo(new[] { "native: android", "rn: app" }));
+		Assert.That(sample.steps.First(s => s.name == "native: android").arguments, Does.Contain("--if-changed"));
+		Assert.That(sample.target, Is.EqualTo(LocalStackTargets.Local));
+
+		Assert.That(StepNames(stacks.Resolve("rn-sample:emulator", config)).TakeLast(3),
+			Is.EqualTo(new[] { "native: android", LocalStackTemplate.EmulatorStepName, "rn: app on emulator" }));
+		Assert.That(StepNames(stacks.Resolve("rn-sample:device", config)).Last(), Is.EqualTo("rn: app on device"));
+		var browser = StepNames(stacks.Resolve("rn-sample:browser", config));
+		Assert.That(browser.Last(), Is.EqualTo("rn: browser"));
+		Assert.That(browser, Does.Not.Contain("native: android").And.Not.Contain("rn: app"));
+		Assert.That(stacks.TagsOf(stacks.Resolve("rn-sample:browser", config).steps.Last()), Does.Not.Contain("native"),
+			"in a browser the sample needs no Android toolchain");
+	}
+
+	/// <summary>The sample reaches the backend at the address its device sees, and keeps the rest of env.local.</summary>
+	[Test]
+	public void ReactNativeSampleGetsTheHostItsDeviceCanReach()
+	{
+		Assert.That(LocalStackNativeCommand.DeviceHost("http://localhost:8080", onEmulator: true), Is.EqualTo("http://10.0.2.2:8080"));
+		Assert.That(LocalStackNativeCommand.DeviceHost("http://127.0.0.1:8080", onEmulator: true), Is.EqualTo("http://10.0.2.2:8080"));
+		Assert.That(LocalStackNativeCommand.DeviceHost("https://dev.api.beamable.com", onEmulator: true), Is.EqualTo("https://dev.api.beamable.com"));
+		Assert.That(LocalStackNativeCommand.DeviceHost("http://192.168.1.20:8080", onEmulator: false), Is.EqualTo("http://192.168.1.20:8080"));
+
+		var sample = Path.Combine(Path.GetTempPath(), "rn-sample-" + Guid.NewGuid().ToString("N"));
+		Directory.CreateDirectory(sample);
+		try
+		{
+			File.WriteAllLines(Path.Combine(sample, "env.local"), new[] { "BEAM_ROUTING_KEY=abc", "BEAM_CID=old" });
+			File.AppendAllLines(Path.Combine(sample, "env.local"), new[] { "OTHER=kept" });
+			LocalStackNativeCommand.WriteRealm(sample, "http://10.0.2.2:8080", "123", "DE_1", routingKey: "machine");
+			var lines = File.ReadAllLines(Path.Combine(sample, "env.local"));
+			Assert.That(lines, Does.Contain("OTHER=kept").And.Contain("BEAM_ROUTING_KEY=machine").And.Contain("BEAM_CID=123").And.Contain("BEAM_PID=DE_1")
+				.And.Contain("BEAM_HOST=http://10.0.2.2:8080").And.Not.Contain("BEAM_CID=old").And.Not.Contain("BEAM_ROUTING_KEY=abc"));
+
+			LocalStackNativeCommand.WriteRealm(sample, "http://10.0.2.2:8080", "123", "DE_1", routingKey: null);
+			Assert.That(File.ReadAllLines(Path.Combine(sample, "env.local")), Has.None.StartsWith("BEAM_ROUTING_KEY="),
+				"no local microservices: deployed ones bind without a key");
+		}
+		finally
+		{
+			Directory.Delete(sample, recursive: true);
+		}
+	}
+
+	/// <summary>The native tools are their own setup ids, never part of the default install.</summary>
+	[Test]
+	public void NativeToolsInstallOnlyWhenAskedFor()
+	{
+		Assert.That(ToolchainPins.ToolIds, Has.None.AnyOf(ToolchainPins.NativeToolIds));
+		Assert.That(ToolchainPins.AllStepIds, Is.SupersetOf(ToolchainPins.NativeToolIds.Append(ToolchainPins.AndroidEmulator)));
+		var cmdline = ToolchainPins.ResolveAndroidCmdlineTools();
+		Assert.That(cmdline.url, Does.StartWith("https://dl.google.com/android/repository/commandlinetools-").And.EndWith($"-{ToolchainPins.AndroidCmdlineToolsBuild}_latest.zip"));
+		Assert.That(cmdline.sha1, Has.Length.EqualTo(40), "checked against Google's listed digest");
+		Assert.That(ToolchainService.AndroidPackageInstalled(Path.GetTempPath(), "platforms;android-34"), Is.False);
+	}
+
 	/// <summary>csharp-portal runs the Scala login set and the Scala services the C# hosts call, and no other.</summary>
 	[Test]
 	public void CsharpPortalRunsTheScalaTheCsharpHostsNeed()
@@ -1176,6 +1252,7 @@ public class LocalStackToolchainTests
 		var env = LocalStackRunCommand.WithLocalTelemetry(new Dictionary<string, string> { ["BEAM_OTEL_EXPORTER_OTLP_PROTOCOL"] = "Grpc" });
 		Assert.That((env["BEAM_OTEL_EXPORTER_OTLP_ENDPOINT"], env["BEAM_OTEL_EXPORTER_OTLP_PROTOCOL"]), Is.EqualTo(("http://localhost:4318", "Grpc")), "a value already set wins");
 		Assert.That((env["BEAM_LOCAL_OTEL"], env["BEAM_DISABLE_STANDARD_OTEL"]), Is.EqualTo(("true", "true")), "exporters on, Beamable's collector off");
+		Assert.That(env["BEAM_OTEL_EXPORT_ALL_SPANS"], Is.EqualTo("true"), "successful requests' spans too");
 	}
 
 	/// <summary>Loki and Tempo get the retention the settings keep, in hours.</summary>
@@ -1319,7 +1396,7 @@ public class LocalStackToolchainTests
 		var stacks = LocalStackStacks.BuiltIn();
 		stacks.Add("mine", LocalStackLayer.Local, "mine.json", Def(extends: "backend"));
 
-		Assert.That(stacks.ExtendedBy("backend"), Is.EqualTo(new[] { "mine" }));
+		Assert.That(stacks.ExtendedBy("backend"), Is.EquivalentTo(new[] { "rn-sample", "mine" }), "the built-in rn-sample extends it too");
 		Assert.That(stacks.ExtendedBy("mine"), Is.Empty);
 	}
 

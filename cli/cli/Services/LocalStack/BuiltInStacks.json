@@ -68,6 +68,44 @@
       "description": "Microservice and extension work on a remote realm: this workspace's microservices and portal extensions, registered against dev and used from the hosted portal.",
       "target": "dev",
       "include": [ "microservices", "extensions" ]
+    },
+    "native-libs": {
+      "description": "Native library work: builds the notification libraries for Android, and for iOS on a Mac with Xcode, into the Unity, Unity.Web, React Native and Unreal packages. Nothing else runs.",
+      "include": [ "native: android", "native: ios" ],
+      "steps": {
+        "native: android": { "label": "Native libraries (Android)", "tags": [ "native" ], "beam": true, "arguments": "local native android --pretty",
+          "environment": { "BEAM_NATIVE_PRODUCT_DIR": "${BeamProductPath}" }, "waitForExit": true, "readyTimeoutSeconds": 1800 },
+        "native: ios": { "label": "Native libraries (iOS)", "tags": [ "native" ], "beam": true, "arguments": "local native ios --pretty",
+          "environment": { "BEAM_NATIVE_PRODUCT_DIR": "${BeamProductPath}" }, "waitForExit": true, "readyTimeoutSeconds": 1800 }
+      },
+      "variants": {
+        "android": { "description": "Only the Android library.", "remove": [ "native: ios" ] },
+        "ios": { "description": "Only the iOS frameworks (macOS with Xcode).", "remove": [ "native: android" ] }
+      }
+    },
+    "rn-sample": {
+      "description": "React Native sample work: the backend on this machine and the sample on a connected Android phone or emulator, pointed at the local realm. The native library is rebuilt when its sources have uncommitted changes.",
+      "extends": "backend",
+      "include": [ "native: android", "rn: app" ],
+      "steps": {
+        "native: android": { "label": "Native libraries (Android)", "tags": [ "native" ], "beam": true, "arguments": "local native android --if-changed --pretty",
+          "environment": { "BEAM_NATIVE_PRODUCT_DIR": "${BeamProductPath}" }, "waitForExit": true, "readyTimeoutSeconds": 1800 },
+        "rn: app": { "label": "React Native sample (Android)", "tags": [ "native" ], "beam": true, "arguments": "local native rn --device any --pretty",
+          "environment": { "BEAM_NATIVE_PRODUCT_DIR": "${BeamProductPath}" }, "waitForExit": true, "readyTimeoutSeconds": 1800 },
+        "rn: app on emulator": { "label": "React Native sample on the emulator", "tags": [ "native" ], "beam": true, "arguments": "local native rn --device emulator --pretty",
+          "environment": { "BEAM_NATIVE_PRODUCT_DIR": "${BeamProductPath}" }, "waitForExit": true, "readyTimeoutSeconds": 1800 },
+        "rn: app on device": { "label": "React Native sample on a phone", "tags": [ "native" ], "beam": true, "arguments": "local native rn --device phone --pretty",
+          "environment": { "BEAM_NATIVE_PRODUCT_DIR": "${BeamProductPath}" }, "waitForExit": true, "readyTimeoutSeconds": 1800 },
+        "rn: emulator": { "label": "Android emulator", "tags": [ "native" ], "beam": true, "arguments": "local native emulator --pretty",
+          "environment": { "BEAM_NATIVE_PRODUCT_DIR": "${BeamProductPath}" }, "readyWhenLogContains": "Android emulator is ready", "readyTimeoutSeconds": 600 },
+        "rn: browser": { "label": "React Native sample in a browser", "tags": [ ], "beam": true, "arguments": "local native rn --device browser --pretty",
+          "environment": { "BEAM_NATIVE_PRODUCT_DIR": "${BeamProductPath}" }, "readyWhenLogContains": "localhost:8081", "readyTimeoutSeconds": 900 }
+      },
+      "variants": {
+        "emulator": { "description": "On the toolchain's Android emulator, started first (installed on first use, about 3 GB).", "remove": [ "rn: app" ], "after": [ "rn: emulator", "rn: app on emulator" ] },
+        "device": { "description": "On a phone connected over USB or Wi-Fi, reaching this machine at its LAN address.", "remove": [ "rn: app" ], "after": [ "rn: app on device" ] },
+        "browser": { "description": "In a browser (Expo web), with no Android build.", "remove": [ "native: android", "rn: app" ], "after": [ "rn: browser" ] }
+      }
     }
   }
 }

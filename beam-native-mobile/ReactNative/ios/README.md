@@ -18,14 +18,14 @@ compile a `ios/core/` mirror of the core Swift sources (that mirror — and its
 native build tooling:
 
 ```bash
-# from the repo root (D:/Repositories/BeamableProduct)
-./dev-native.sh
+# from the workspace you run local stacks in
+beam local run native-libs:ios
 ```
 
-`dev-native.sh` builds the xcframework and copies it to
+`beam local run native-libs` builds the xcframework and copies it to
 `ReactNative/ios/BeamableNotifications.xcframework` (macOS only, mirroring the
 Unity copy step). It is listed in the package `.gitignore`. If you open this package without
-running `dev-native.sh`, `pod install` will fail to find the framework — build the natives
+running `beam local run native-libs`, `pod install` will fail to find the framework — build the natives
 first.
 
 ## Config-plugin NSE sources (`../plugin/ios/`)
@@ -37,7 +37,7 @@ time. Those sources live canonically in `beam-native-mobile/NativeSources/iOS/Be
 
 - **In the monorepo** the plugin reads them directly from that sibling dir (always fresh) — no
   action needed.
-- **For a published package** they must be self-contained: `dev-native.sh` should also copy
+- **For a published package** they must be self-contained: `beam local run native-libs` should also copy
   `extension/` and `core/` into `ReactNative/plugin/ios/` (same subpath layout).
   The plugin prefers `plugin/ios/` when present and falls back to the sibling dir otherwise.
   `plugin/ios/` is gitignored (generated), like the xcframework.

@@ -30,7 +30,7 @@ cd BeamableNotifications && ./scripts/build-xcframework.sh
 # → build/BeamableNotifications.xcframework  (static; device + simulator slices)
 ```
 
-Normally you don't run this directly — **`./dev-native.sh`** (repo root) builds both variants and
+Normally you don't run this directly — **`beam local run native-libs`** (from the workspace you run local stacks in) builds both variants and
 stages them into every engine package. Two variants exist because the engines can't share one:
 
 | Variant | Script | Staged to | Why |

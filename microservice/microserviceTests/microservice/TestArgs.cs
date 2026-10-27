@@ -227,6 +227,7 @@ namespace microserviceTests.microservice
 	  public bool UseLocalOtel => false;
 	  public bool OtelExporterShouldRetry { get; }
 	  public bool OtelExporterStandardEnabled => false;
+	  public bool OtelExportAllSpans => false;
 	  public string OtelExporterRetryMaxSize { get; }
 	  public bool AllowStartupWithoutBeamableSettings => false;
 	  public int MaxUniqueEventBindingCount => 100;

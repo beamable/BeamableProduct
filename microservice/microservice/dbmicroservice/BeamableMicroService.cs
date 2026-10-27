@@ -856,13 +856,16 @@ namespace Beamable.Server
 	      }
 
 	      BeamActivity parentActivity = BeamActivity.Noop;
-	      if (_socketRequesterContext.TryGetListener(ctx.Id, out var existingListener))
+	      var isResponse = _socketRequesterContext.TryGetListener(ctx.Id, out var existingListener);
+	      if (isResponse)
 	      {
 		      parentActivity = existingListener.Activity;
 	      }
-	      
-	      
-	      using var activity = _activityProvider.Create(Otel.TRACE_WS, parentActivity);
+
+	      // A request that carries the caller's traceparent joins the caller's trace instead of starting its own.
+	      using var activity = !isResponse && ActivityProviderExtensions.TryGetRemoteParent(ctx.Headers, out var remoteParent)
+		      ? _activityProvider.Create(Otel.TRACE_WS, remoteParent)
+		      : _activityProvider.Create(Otel.TRACE_WS, parentActivity);
 	      MicroserviceRequester.ContextActivity.Value = activity;
 	      ctx.ActivityContext = activity;
 	      

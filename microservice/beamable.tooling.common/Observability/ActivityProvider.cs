@@ -13,6 +13,12 @@ public interface IActivityProvider
 {
     BeamActivity Create(string operationName, BeamActivity parent, bool autoStart = true,
         TelemetryImportance importance = TelemetryImportance.INFO, TelemetryAttributeCollection attributes = null);
+
+    /// <summary>
+    /// Starts an activity whose parent is a span in another process, such as the one a W3C <c>traceparent</c>
+    /// header names. Providers that don't trace start it without that parent.
+    /// </summary>
+    BeamActivity Create(string operationName, ActivityContext remoteParent) => Create(operationName, (BeamActivity)null);
 }
 
 public class NoopActivityProvider : IActivityProvider
@@ -30,6 +36,20 @@ public static class ActivityProviderExtensions
         TelemetryImportance importance = TelemetryImportance.INFO, TelemetryAttributeCollection attributes = null)
     {
         return provider.Create(operationName, null, autoStart, importance, attributes);
+    }
+
+    /// <summary>
+    /// Reads the caller's span from W3C <c>traceparent</c> (and <c>tracestate</c>) headers. False when there is none
+    /// or it doesn't parse.
+    /// </summary>
+    public static bool TryGetRemoteParent(IReadOnlyDictionary<string, string> headers, out ActivityContext parent)
+    {
+        parent = default;
+        return headers != null
+               && headers.TryGetValue("traceparent", out var traceParent)
+               && ActivityContext.TryParse(traceParent,
+                   headers.TryGetValue("tracestate", out var traceState) ? traceState : null,
+                   isRemote: true, out parent);
     }
 }
 
@@ -252,6 +272,14 @@ public class DefaultActivityProvider : IActivityProvider
             // parent.TryGetTags(out var parentTags);
             // tags = parentTags.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
+        return Create(operationName, context, autoStart, importance, attributes);
+    }
+
+    public BeamActivity Create(string operationName, ActivityContext remoteParent) =>
+        Create(operationName, remoteParent, true, TelemetryImportance.INFO, null);
+
+    BeamActivity Create(string operationName, ActivityContext context, bool autoStart, TelemetryImportance importance, TelemetryAttributeCollection attributes)
+    {
         var tags = attributes?.ToDictionary() ?? new Dictionary<string, object>();
         tags[Constants.Features.Otel.ATTR_TRACE_LEVEL] = importance;
         

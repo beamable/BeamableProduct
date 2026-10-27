@@ -189,6 +189,9 @@ public class LocalStackRunCommand
 	/// <summary>True when this run points the extensions at the local web packages, and the portal loads them too.</summary>
 	private bool _localWebPackages;
 
+	/// <summary>The stack runs with <c>:build</c>: steps that decide for themselves whether to build hear about it.</summary>
+	private bool _forceBuild;
+
 	/// <summary>
 	/// Why there is no working login to the local realm, or null when there is one. Beam steps don't start without it:
 	/// they fell back to the workspace's own login, and with that one's refresh token rejected, every microservice and
@@ -199,8 +202,13 @@ public class LocalStackRunCommand
 	/// <summary>True for a step that logs in to the stack's backend: a beam step other than the web packages.</summary>
 	/// <summary>A beam step that logs in to the backend: not the `beam local …` ones (the web packages, the log
 	/// forwarding), which only work on this machine.</summary>
-	private static bool NeedsLogin(LocalStackStep step) =>
-		step.beam && !(step.arguments ?? string.Empty).TrimStart().StartsWith("local ", StringComparison.Ordinal);
+	private static bool NeedsLogin(LocalStackStep step)
+	{
+		var arguments = (step.arguments ?? string.Empty).TrimStart();
+		// The React Native sample's steps point the app at the stack's realm, so they need its login.
+		return step.beam && (!arguments.StartsWith("local ", StringComparison.Ordinal)
+		                     || arguments.StartsWith("local native rn", StringComparison.Ordinal));
+	}
 	private string _workspaceRoot;
 
 	/// <summary>True when the board prints (a terminal, or lines without one): failures are on the board, not warned twice.</summary>
@@ -321,11 +329,10 @@ public class LocalStackRunCommand
 
 	/// <summary>
 	/// True for a build that has to wait for its place in the stack instead of starting with the run: one that runs a
-	/// beam command, which may need the steps before it. Building microservices runs one too: it generates the
-	/// extensions' clients from the backend's beamo manifest (`dotnet beam project generate pe-client`).
+	/// beam command, which may need the steps before it. The shared microservices build doesn't: it only compiles
+	/// (<see cref="LocalStackTemplate.MicroservicesSharedBuildEnvironment"/>), so it runs beside the other builds.
 	/// </summary>
-	public static bool WaitsForItsPlace(LocalStackStep build) =>
-		build.beam || build.name == LocalStackTemplate.MicroservicesBuildStepName;
+	public static bool WaitsForItsPlace(LocalStackStep build) => build.beam;
 
 	public static HashSet<string> NameSet(string value) =>
 		string.IsNullOrWhiteSpace(value)
@@ -676,7 +683,7 @@ public class LocalStackRunCommand
 				Log.Information($"'{args.stack}' needs setup first: {string.Join(", ", missing)}.");
 
 				// A tool that gets installed has to be wired into the settings too, which is the settings step's job.
-				if (missing.Any(id => ToolchainPins.ToolIds.Contains(id)))
+				if (missing.Any(id => ToolchainPins.ToolIds.Contains(id) || ToolchainPins.NativeToolIds.Contains(id)))
 					missing.Add(ToolchainPins.Settings);
 
 				var setup = await RunSetup(args, missing);
@@ -741,6 +748,7 @@ public class LocalStackRunCommand
 		// The extensions install the local web packages only while a stack that points them there runs; a run
 		// without it drops what an earlier one left, so they install their locked versions again.
 		_localWebPackages = steps.Any(s => string.Equals(s.name, LocalStackTemplate.WebInstallStepName, StringComparison.OrdinalIgnoreCase));
+		_forceBuild = resolved.forceBuild;
 		if (!_localWebPackages && _workspaceRoot != null && File.Exists(WebPackagesService.OverlayPath(_workspaceRoot)))
 			File.Delete(WebPackagesService.OverlayPath(_workspaceRoot));
 
@@ -2170,6 +2178,8 @@ public class LocalStackRunCommand
 		result.TryAdd("BEAM_DISABLE_STANDARD_OTEL", "true");
 		result.TryAdd("BEAM_OTEL_EXPORTER_OTLP_ENDPOINT", LocalStackTemplate.LocalOtlpEndpoint);
 		result.TryAdd("BEAM_OTEL_EXPORTER_OTLP_PROTOCOL", "HttpProtobuf");
+		// Beamable's own export keeps only failed requests' spans; locally every request should be in Tempo.
+		result.TryAdd("BEAM_OTEL_EXPORT_ALL_SPANS", "true");
 		return result;
 	}
 
@@ -2969,6 +2979,9 @@ public class LocalStackRunCommand
 			if (_localWebPackages)
 				psi.Environment[PortalEnvService.SdkCdnBaseKey] = PortalEnvService.LocalSdkCdnBase;
 		}
+
+		if (_forceBuild)
+			psi.Environment[LocalStackNativeCommand.ForceBuildVariable] = "true";
 
 		foreach (var (k, v) in step.environment)
 			psi.Environment[k] = LocalStackConfigIO.Substitute(v, config);
@@ -3837,6 +3850,14 @@ public static class LocalStackPreflight
 		foreach (var toolId in ToolchainPins.ToolIds.Where(tools.Contains))
 			checks.Add(CheckTool(toolId, toolchain, config));
 
+		// The native toolchain only ever comes from the toolchain: a machine's own Android Studio SDK isn't adopted.
+		var native = new List<string>();
+		if (Uses("native")) native.AddRange(ToolchainPins.NativeToolIds);
+		if (steps.Any(s => string.Equals(s.name, LocalStackTemplate.EmulatorStepName, StringComparison.OrdinalIgnoreCase)))
+			native.Add(ToolchainPins.AndroidEmulator);
+		foreach (var toolId in native)
+			checks.Add(CheckNativeTool(toolId, toolchain));
+
 		// The generated BeamableBackend config files, which are gitignored and therefore missing on a fresh clone.
 		if (Uses("scala"))
 			checks.Add(CheckScalaConfig(config?.repos?.scalaDir));
@@ -4024,6 +4045,27 @@ public static class LocalStackPreflight
 		return check;
 	}
 
+	/// <summary>A native tool: installed in the toolchain (the SDK with its packages, the emulator with its device), or missing.</summary>
+	private static LocalStackDependencyCheck CheckNativeTool(string toolId, ToolchainManifest toolchain)
+	{
+		var check = new LocalStackDependencyCheck { name = toolId };
+		toolchain.tools.TryGetValue(toolId, out var entry);
+		var exe = ToolchainService.ExecutablePath(toolId, entry?.home);
+		var installed = exe != null && File.Exists(exe) && toolId switch
+		{
+			ToolchainPins.AndroidSdk => ToolchainPins.AndroidSdkPackages.All(p => ToolchainService.AndroidPackageInstalled(entry.home, p)),
+			ToolchainPins.AndroidEmulator => ToolchainService.AndroidPackageInstalled(entry.home, ToolchainPins.AndroidSystemImage),
+			_ => true
+		};
+
+		check.ok = installed;
+		check.source = installed ? entry.source ?? "toolchain" : null;
+		check.version = installed ? entry.version : null;
+		check.detail = installed ? $"{entry.version} — {entry.home}" : $"not installed — `beam local setup --only {toolId}` installs {PinOf(toolId)}";
+		if (!installed) check.setupId = toolId;
+		return check;
+	}
+
 	/// <summary>The pinned version, for the "what you should have" half of a mismatch message.</summary>
 	private static string PinOf(string toolId) => toolId switch
 	{
@@ -4032,6 +4074,10 @@ public static class LocalStackPreflight
 		ToolchainPins.Dotnet => $".NET SDK {ToolchainPins.DotnetVersion}",
 		ToolchainPins.Node => $"Node {ToolchainPins.NodeMajor}",
 		ToolchainPins.Pnpm => $"pnpm {ToolchainPins.PnpmVersion}",
+		ToolchainPins.Jdk17 => "JDK 17",
+		ToolchainPins.Gradle => $"Gradle {ToolchainPins.GradleVersion}",
+		ToolchainPins.AndroidSdk => $"the Android SDK ({string.Join(", ", ToolchainPins.AndroidSdkPackages)})",
+		ToolchainPins.AndroidEmulator => $"the Android emulator and the {ToolchainPins.AndroidAvdName} device",
 		_ => toolId
 	};
 

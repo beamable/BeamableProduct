@@ -26,7 +26,7 @@ Web page JS  ──window.Unity.call──►  BeamableWebViewBridge  ──► 
 
 - A Unity WebView plugin of your choice (not bundled): gree/unity-webview, Vuplex, uniwebview, …
 - The native binaries staged into `Plugins/` (Android `.aar` is committed; iOS `.xcframework` is
-  produced by `dev-native.sh`).
+  produced by `beam local run native-libs`).
 
 ## Integration (the whole thing)
 

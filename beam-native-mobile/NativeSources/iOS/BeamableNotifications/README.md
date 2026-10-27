@@ -42,15 +42,15 @@ content-extension/  Notification Content Extension host (custom expanded UI)
 # -> build/BeamableNotifications.xcframework  (static; device + simulator slices)
 ```
 
-Normally you don't run this by hand — the repo's `../../../../dev-native.sh` builds **and stages** the binary
+Normally you don't run this by hand — `beam local run native-libs` builds **and stages** the binary
 into each engine plugin. Per-engine variants:
 
 - **Unity** — the static xcframework, staged to `Unity/Plugins/iOS/`.
-- **Unreal** — needs the **dynamic** variant; `dev-native.sh` builds it via
+- **Unreal** — needs the **dynamic** variant; `beam local run native-libs` builds it via
   `scripts/build-xcframework-dynamic.sh` and stages
   `Unreal/ThirdParty/BeamableNotifications.embeddedframework.zip`.
 - **React Native** — the pod **vendors the same static xcframework** (`vendored_frameworks`); it is
-  gitignored and dropped into `ReactNative/ios/` by `dev-native.sh`.
+  gitignored and dropped into `ReactNative/ios/` by `beam local run native-libs`.
 
 ## Per-engine setup
 
@@ -150,7 +150,7 @@ ReactNative), not in this folder.
 - **RN vendors the prebuilt xcframework** (Decision Q2) — it does **not** compile the core from
   source. The earlier from-source path, its `ios/core/` mirror, and `scripts/sync-rn-core.sh` are all
   gone; `BeamableNotificationsRN.podspec` now declares `vendored_frameworks` and the bridge
-  (`ReactNative/ios/*.swift`) is bridge-only. The binary is gitignored and staged by `dev-native.sh`,
+  (`ReactNative/ios/*.swift`) is bridge-only. The binary is gitignored and staged by `beam local run native-libs`,
   so `pod install` fails if you open the package without building the natives first. See
   [`ReactNative/ios/README.md`](../../../ReactNative/ios/README.md).
 - **The RN NSE works, and is opt-in.** The Expo config plugin gates it behind

@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
   # Decision Q2: consume the Swift core as a PREBUILT BINARY (the same
   # BeamableNotifications.xcframework Unity/Unreal link) instead of compiling a
   # vendored copy of the core Swift sources. The xcframework is dropped in by tooling
-  # (dev-native.sh copies it to ios/BeamableNotifications.xcframework); it is gitignored,
+  # (beam local run native-libs copies it to ios/BeamableNotifications.xcframework); it is gitignored,
   # see ios/.gitignore + ios/README.md.
   s.vendored_frameworks = "ios/BeamableNotifications.xcframework"
 
