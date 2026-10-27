@@ -1,7 +1,9 @@
+# Named like the local stack's other containers (beam_backend, beam_backend_scala), so Docker lists them together.
+name: beam_web
+
 services:
   verdaccio:
     image: verdaccio/verdaccio:6
-    container_name: beamable-verdaccio
     ports:
       - "4873:4873"
     volumes:
@@ -12,7 +14,6 @@ services:
 
   local-unpkg:
     build: ./local-unpkg
-    container_name: beamable-local-unpkg
     ports:
       - "4874:4874"
     environment:

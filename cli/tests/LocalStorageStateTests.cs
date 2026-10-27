@@ -62,7 +62,7 @@ public class LocalStorageStateTests
 	[Test]
 	public void Name_match_is_exact_not_substring()
 	{
-		// Docker's name filter matches substrings, so the listing for "Db" can include "Db2_mongoDb".
+		// Docker's name filter matches substrings, so the listing for "Db" can include "beam_project_Db2_mongo".
 		var states = BeamoLocalSystem.MatchStorageContainers(
 			new[] { Container("Db2", "running", (27017, 49153)) }, new[] { "Db", "Db2" });
 

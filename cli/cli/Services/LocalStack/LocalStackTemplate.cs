@@ -761,14 +761,16 @@ public static class LocalStackTemplate
 		// 3. Scala backing services — one shell step each, reproducing the sh launch: resolve the jar +
 		//    <mainClass> + a mvn-built classpath (cached), prepend the module target/classes (which hold
 		//    rendered config resources the ~/.m2 jars lack), then run as a Temurin-8 host JVM.
+		// BeamableBackend's compose is also its own dev setup (project "local"), so the stack runs it under a name of
+		// its own: next to beam_backend in Docker, and `stop` leaves that dev setup's containers alone.
 		config.steps.Add(new LocalStackStep
 		{
 			name = "scala: redis",
 			workingDirectory = Path.Combine(scalaDir, "docker", "local"),
 			command = "docker",
-			arguments = "compose up -d --no-deps redis",
-			stopArguments = "compose stop",
-			purgeStopArguments = "compose down -v",
+			arguments = $"compose -p {ScalaRedisProject} up -d --no-deps redis",
+			stopArguments = $"compose -p {ScalaRedisProject} stop",
+			purgeStopArguments = $"compose -p {ScalaRedisProject} down -v",
 			waitForExit = true,
 			readyTimeoutSeconds = 120
 		});
@@ -999,6 +1001,9 @@ public static class LocalStackTemplate
 	/// <summary>BeamableAPI's compose: Mongo, Redis, ActiveMQ, Caddy, and the observability services (the collector,
 	/// Loki, Tempo, Prometheus, Grafana).</summary>
 	public const string ApiDepsStepName = "docker: api deps + caddy";
+
+	/// <summary>The compose project <c>scala: redis</c> runs BeamableBackend's compose file under.</summary>
+	public const string ScalaRedisProject = "beam_backend_scala";
 
 	/// <summary>The environment variable BeamableAPI's compose passes to Loki and Tempo as their retention.</summary>
 	public const string LogRetentionVariable = "LOCAL_LOG_RETENTION";

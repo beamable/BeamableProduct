@@ -609,7 +609,7 @@ public class LocalStackDiscoveryTests
 			name = "scala: redis",
 			enabled = enabled,
 			command = "docker",
-			arguments = "compose up -d --no-deps redis"
+			arguments = "compose -p beam_backend_scala up -d --no-deps redis"
 		};
 
 	private static LocalStackConfig ProbeConfig(string scalaDir, string mavenHome, params (string name, bool enabled)[] steps) =>

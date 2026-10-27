@@ -13,7 +13,14 @@ namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
-	public static string GetBeamIdAsMongoContainer(string beamoId) => $"{beamoId}_mongoDb";
+	/// <summary>
+	/// The storage's container. Every container this CLI starts for a project is named <c>beam_project_*</c>, so Docker
+	/// lists them together and apart from the local stack's <c>beam_backend</c> and <c>beam_web</c> containers.
+	/// </summary>
+	public static string GetBeamIdAsMongoContainer(string beamoId) => $"beam_project_{beamoId}_mongo";
+
+	/// <summary>The name storage containers had before <see cref="GetBeamIdAsMongoContainer"/>; removed when the storage starts.</summary>
+	public static string GetLegacyMongoContainer(string beamoId) => $"{beamoId}_mongoDb";
 
 	public static string GetDataVolumeName(string beamoId) => $"{beamoId}_data";
 	public static string GetFilesVolumeName(string beamoId) => $"{beamoId}_files";
@@ -52,7 +59,7 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Creates and runs the storage's container, letting any failure propagate to the caller.
 	/// </summary>
-	private Task<bool> CreateAndRunEmbeddedMongoContainer(BeamoServiceDefinition serviceDefinition, EmbeddedMongoDbLocalProtocol localProtocol, CancellationToken token = default)
+	private async Task<bool> CreateAndRunEmbeddedMongoContainer(BeamoServiceDefinition serviceDefinition, EmbeddedMongoDbLocalProtocol localProtocol, CancellationToken token = default)
 	{
 		const string ENV_MONGO_ROOT_USERNAME = "MONGO_INITDB_ROOT_USERNAME";
 		const string ENV_MONGO_ROOT_PASSWORD = "MONGO_INITDB_ROOT_PASSWORD";
@@ -79,9 +86,12 @@ public partial class BeamoLocalSystem
 		// Configures the default mongo image's health check.
 		var cmdStr = $"--interval=5s --timeout=3s CMD /etc/init.d/mongodb status || exit 1";
 
+		// The volumes keep their names, so the renamed container gets the old one's data.
+		await RemoveLegacyContainer(GetLegacyMongoContainer(serviceDefinition.BeamoId));
+
 		// Creates and runs the container. This container will auto destroy when it stops.
 		// TODO: Make the auto destruction optional to help CS identify issues in the wild.
-		return CreateAndRunContainer(imageId, containerName, cmdStr, true, portBindings, volumes, bindMounts,
+		return await CreateAndRunContainer(imageId, containerName, cmdStr, true, portBindings, volumes, bindMounts,
 			environmentVariables, token);
 	}
 
@@ -121,7 +131,7 @@ public partial class BeamoLocalSystem
 		foreach (var storageId in storageIds.Distinct())
 		{
 			// The Docker name filter matches substrings, so match the exact name (container names are reported
-			// with a leading '/') to avoid picking up e.g. "NCStorage2_mongoDb" for "NCStorage".
+			// with a leading '/') to avoid picking up e.g. "beam_project_NCStorage2_mongo" for "NCStorage".
 			var expectedName = "/" + GetBeamIdAsMongoContainer(storageId);
 			var container = containerList.FirstOrDefault(c => c.Names != null && c.Names.Any(n => n == expectedName));
 			if (container == null)

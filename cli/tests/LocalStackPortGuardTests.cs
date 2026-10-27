@@ -455,4 +455,25 @@ public class LocalStackPortGuardTests
 		Assert.That(portal.port, Is.EqualTo(0),
 			"http://localhost has no explicit port, so no conflict check should run for it");
 	}
+
+	/// <summary>
+	/// BeamableBackend's compose is also its own dev setup, project "local": the stack's Redis runs under a project of
+	/// its own for every command, or `stop` would stop that setup's containers and the new name would never apply.
+	/// </summary>
+	[Test]
+	public void The_scala_redis_step_runs_under_its_own_project()
+	{
+		var config = LocalStackTemplate.Create(new LocalStackTemplate.Options
+		{
+			apiDir = @"C:\repos\BeamableAPI",
+			scalaDir = @"C:\repos\BeamableBackend",
+			portalDir = @"C:\repos\portal",
+			scalaTools = new System.Collections.Generic.List<LocalStackTemplate.ScalaToolInfo>(),
+		});
+
+		var redis = config.steps.Single(s => s.name == "scala: redis");
+		Assert.That(redis.arguments, Does.StartWith($"compose -p {LocalStackTemplate.ScalaRedisProject} up "));
+		Assert.That(redis.stopArguments, Does.StartWith($"compose -p {LocalStackTemplate.ScalaRedisProject} "));
+		Assert.That(redis.purgeStopArguments, Does.StartWith($"compose -p {LocalStackTemplate.ScalaRedisProject} "));
+	}
 }
