@@ -8,7 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>The owner of the server is used to identify the server later with the /info endpoint</summary>
         public string owner;
-        /// <summary>The port the local server will bind to</summary>
+        /// <summary>The port the local server will bind to. 0 picks this workspace's preferred port, which stays the same between runs</summary>
         public int port;
         /// <summary>When true, if the given --port is not available, it will be incremented until an available port is discovered</summary>
         public bool autoIncPort;
@@ -22,6 +22,10 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool customSplitter;
         /// <summary>When true, will NOT pre-warm the content service with the latest content manifest</summary>
         public bool skipContentPrewarm;
+        /// <summary>When true, AI agents can use this server as an MCP server (Streamable HTTP) at /mcp, with the same session token</summary>
+        public bool enableMcp;
+        /// <summary>A folder where every /execute request and the events it streamed are saved as JSON, for protocol regression fixtures</summary>
+        public string recordTo;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -61,6 +65,16 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.skipContentPrewarm != default(bool)))
             {
                 genBeamCommandArgs.Add(("--skip-content-prewarm=" + this.skipContentPrewarm));
+            }
+            // If the enableMcp value was not default, then add it to the list of args.
+            if ((this.enableMcp != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--enable-mcp=" + this.enableMcp));
+            }
+            // If the recordTo value was not default, then add it to the list of args.
+            if ((this.recordTo != default(string)))
+            {
+                genBeamCommandArgs.Add(("--record-to=" + this.recordTo));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

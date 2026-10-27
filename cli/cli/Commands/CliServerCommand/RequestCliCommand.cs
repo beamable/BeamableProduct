@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Net.Http.Headers;
 using System.Text;
 using Beamable.Server;
 using cli.Services.HttpServer;
@@ -11,6 +12,7 @@ public class RequestCliCommandArgs : CommandArgs
 {
 	public int port;
 	public string commandLine;
+	public string token;
 }
 
 public class RequestCliCommandOutput
@@ -34,6 +36,8 @@ public class RequestCliCommand
 			(args, i) => args.port = i);
 		AddOption(new Option<string>("--cli", "The CLI command to execute"),
 			(args, s) => args.commandLine = s);
+		AddOption(new Option<string>("--token", "The server's session token. Defaults to the one the server on --port wrote into this workspace"),
+			(args, s) => args.token = s);
 	}
 
 	public override async Task Handle(RequestCliCommandArgs args)
@@ -45,6 +49,18 @@ public class RequestCliCommand
 		var json = JsonConvert.SerializeObject(new ServerRequest() { commandLine = args.commandLine });
 		
 		req.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+		var token = args.token;
+		if (string.IsNullOrEmpty(token) && args.ConfigService.DirectoryExists.GetValueOrDefault())
+		{
+			token = ServerLocatorFile.ReadLive(args.ConfigService.ConfigTempDirectoryPath)
+				.FirstOrDefault(l => l.port == args.port)?.token;
+		}
+
+		if (!string.IsNullOrEmpty(token))
+		{
+			req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+		}
 
 		
 		try

@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `AbsMailApi` now reports the campaign funnel's `beam_opened` stage automatically when campaign mail moves from `Unread` to `Read`, so a game writes no tracking code of its own. Push gets that stage from the handset echoing the notification payload back; in-game mail has no handset, so this client report *is* the open signal. Ships `MailOpenedFunnelEvent`, shaped like what the iOS and Android push SDKs emit (the reserved `beam_opened` name, keyed on `outreachId`; `trackId` is included when the mail carries one) so the platform attributes it with no ingest change. Best-effort and fire-and-forget: a failed analytics call never makes a mail look unread.
 - `MessageRailContract.DeliveryModeKey` / `DeliveryDurable` — a federation can declare on `MessageRailSendResponse.params` that it delivers *durably* (an accepted message is already in the recipient's possession, e.g. in-game mail waiting in a mailbox), so no separate receipt will ever arrive and the platform emits `Delivered` alongside `Sent` instead of leaving that stage structurally zero. For a durable rail, Sent and Delivered track ~1:1 by design.
 - `IFederatedMessageRail<T>.CheckMessageRailConfig()` — a federation reports whether it is configured well enough to deliver, and the platform consults it *before* a campaign targeting that rail is published, so a realm missing its provider credentials fails at authoring time instead of silently erroring on every send. Ships `MessageRailConfigStatus`, which distinguishes MISSING (`missingKeys`, fully qualified so an operator provisions them in one pass) from INVALID (`invalidReason`) from UNKNOWN (`readable == false`). Unknown never blocks a publish: a credential store that cannot be read is an outage, not a misconfiguration.
+- `beam server serve --enable-mcp` serves the CLI as an MCP server (Streamable HTTP) at `/mcp`, next to Unity's `/execute`, so AI agents and the Unity editor share one server per project. It speaks MCP `2026-07-28` and the earlier initialize-handshake revisions, publishes an MCP Server Card at `/mcp/server-card` and an AI Catalog at `/.well-known/ai-catalog.json`, and refuses commands that never finish (`server serve`, `project logs`, `--watch`) as tool calls.
+- `beam mcp status` reports whether this workspace's MCP endpoint is running (exit code 3 when it is not). `beam mcp setup --transport http` points `.mcp.json` at it, with `beam mcp token` as the headers helper that supplies the session token.
+- `beam server serve` writes `.beamable/temp/servers/<pid>.json` (readable by the current user only, removed on exit) so local tools can find it, and `--record-to` saves `/execute` exchanges as protocol fixtures.
+
+### Changed
+
+- `beam server serve` without `--port` binds this workspace's preferred port, which stays the same between runs.
+- MCP tool `beam_exec` reports failures as `isError`, returns its events as `structuredContent`, forwards progress, supports cancellation, and no longer waits for other tool calls to finish.
+
+### Security
+
+- `beam server serve` requires a per-run session token (`Authorization: Bearer`) on `/execute` and only accepts JSON `POST`s addressed to `127.0.0.1` with no browser `Origin`. Before, any web page could start CLI commands on it with a cross-site request. `/info` lists in-flight command lines only to callers with the token.
 
 ### Fixed
 

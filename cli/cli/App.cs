@@ -535,6 +535,8 @@ public class App
 		Commands.AddRootCommand<McpGroupCommand>();
 		Commands.AddSubCommand<McpServeCommand, McpServeCommandArgs, McpGroupCommand>();
 		Commands.AddSubCommand<McpSetupCommand, McpSetupCommandArgs, McpGroupCommand>();
+		Commands.AddSubCommand<McpStatusCommand, McpStatusCommandArgs, McpGroupCommand>();
+		Commands.AddSubCommand<McpTokenCommand, McpTokenCommandArgs, McpGroupCommand>();
 		Commands.AddRootCommand<InstallAISkillsCommand, InstallAISkillsCommandArgs>();
 		Commands.AddRootCommand<ServerGroupCommand>();
 		Commands.AddSubCommand<ServeCliCommand, ServeCliCommandArgs, ServerGroupCommand>();

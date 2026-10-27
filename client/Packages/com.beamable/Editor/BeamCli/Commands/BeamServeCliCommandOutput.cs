@@ -9,5 +9,6 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         public int port;
         public string uri;
+        public string token;
     }
 }

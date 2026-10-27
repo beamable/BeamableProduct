@@ -26,6 +26,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <None Include="ServerProtocol\Fixtures\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+    <ItemGroup>
       <Folder Include="Mocks" />
       <Folder Include="PortalExtensionTests\" />
     </ItemGroup>

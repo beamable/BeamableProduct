@@ -62,6 +62,7 @@ Load a skill before attempting complex tasks:
 - `beam-message-rail-federation` — build a message rail: deliver a campaign's push/email/in-game messages and report the per-recipient funnel result
 - `beam-campaign-api` — use the Campaign HTTP API: author and publish a campaign graph, drive its lifecycle, read the send funnel
 - `beam-diagnose-project` — troubleshoot common local dev issues
+- `beam-mcp-endpoint` — check whether the editor's MCP endpoint is running and connect a client to it
 - `beam-build-and-deploy` — Docker build and cloud deployment
 - `beam-create-portal-extension` — portal UI extensions
 - `beam-login-auth` — authentication flows

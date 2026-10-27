@@ -1,6 +1,7 @@
 using cli.Commands.Mcp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using ModelContextProtocol;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
@@ -41,6 +42,8 @@ public class McpServerBuilder
 	public async Task RunAsync(CancellationToken cancellationToken = default)
 	{
 		App.IsRunningInMcpServer = true;
+		// Register MSBuild once, before concurrent tool calls construct their own Apps.
+		_ = new App();
 		var executor = new McpToolExecutor();
 		var tools = new BeamMcpTools(executor);
 
@@ -71,11 +74,20 @@ public class McpServerBuilder
 public class BeamMcpTools
 {
 	private readonly McpToolExecutor _executor;
+	private readonly bool _resolveWorkspaceFromRoots;
 
-	public BeamMcpTools(McpToolExecutor executor)
+	/// <param name="resolveWorkspaceFromRoots">
+	/// When true (stdio), the first tool call moves the process into the client's first root. A shared server
+	/// (`server serve`) already runs in its workspace and must never change the process-wide directory.
+	/// </param>
+	public BeamMcpTools(McpToolExecutor executor, bool resolveWorkspaceFromRoots = true)
 	{
 		_executor = executor;
+		_resolveWorkspaceFromRoots = resolveWorkspaceFromRoots;
 	}
+
+	private Task EnsureWorkspaceAsync(McpServer server) =>
+		_resolveWorkspaceFromRoots ? McpServerBuilder.EnsureWorkspaceFromRootsAsync(server) : Task.CompletedTask;
 
 	[McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false,
 		Title = "Discover beam CLI commands")]
@@ -88,7 +100,7 @@ public class BeamMcpTools
 		McpServer server,
 		[Description("Command prefix to filter by, e.g. 'project', 'content', 'services'. Leave empty to list all root commands.")] string prefix = "")
 	{
-		await McpServerBuilder.EnsureWorkspaceFromRootsAsync(server);
+		await EnsureWorkspaceAsync(server);
 		return await _executor.ExecuteHelpAsync(prefix);
 	}
 
@@ -104,7 +116,7 @@ public class BeamMcpTools
 		McpServer server,
 		[Description("The beam command path to get help for, e.g. 'project new microservice' or 'content publish'")] string command)
 	{
-		await McpServerBuilder.EnsureWorkspaceFromRootsAsync(server);
+		await EnsureWorkspaceAsync(server);
 		return await _executor.ExecuteHelpAsync(command);
 	}
 
@@ -117,12 +129,14 @@ public class BeamMcpTools
 		" Pass everything after 'beam', e.g. 'init --cid MyCid --pid MyPid' or 'project new microservice --name Foo'." +
 		" If the .beamable workspace folder does not exist yet, run 'init' first (see beam_get_help('init') for required arguments)." +
 		" For multi-step workflows, call beam_get_skill first to load a step-by-step guide.")]
-	public async Task<string> beam_exec(
+	public async Task<CallToolResult> beam_exec(
 		McpServer server,
-		[Description("The beam command string, everything after 'beam'")] string command)
+		[Description("The beam command string, everything after 'beam'")] string command,
+		IProgress<ProgressNotificationValue> progress,
+		CancellationToken cancellationToken)
 	{
-		await McpServerBuilder.EnsureWorkspaceFromRootsAsync(server);
-		return await _executor.ExecuteAsync(command);
+		await EnsureWorkspaceAsync(server);
+		return await _executor.ExecuteCommandAsync(command, progress, cancellationToken);
 	}
 
 	[McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false,
@@ -158,7 +172,7 @@ public class BeamMcpTools
 		[Description("Character offset to start reading from. Use nextOffset from a previous response to continue reading a large file. Defaults to 0 (start of file)")] int offset = 0,
 		[Description("Maximum characters to return per chunk. Capped at 65536. Defaults to 65536 if omitted or 0. Use with offset to paginate large files")] int limit = 0)
 	{
-		await McpServerBuilder.EnsureWorkspaceFromRootsAsync(server);
+		await EnsureWorkspaceAsync(server);
 		return await _executor.GetSourceCode(platform, version, filePath, offset, limit);
 	}
 }

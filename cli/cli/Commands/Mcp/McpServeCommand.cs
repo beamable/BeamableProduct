@@ -6,6 +6,7 @@ public class McpServeCommand
 	: AppCommand<McpServeCommandArgs>
 	, IStandaloneCommand
 	, ISkipManifest
+	, IStreamsIndefinitely
 {
 	public McpServeCommand() : base("serve", "Start an MCP stdio server exposing beam commands as tools")
 	{

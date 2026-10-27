@@ -1,0 +1,115 @@
+---
+name: beam-mcp-endpoint
+description: Find, check and connect to the Beamable CLI MCP endpoint that the Unity editor (or `beam server serve --enable-mcp`) runs for a workspace
+---
+
+# MCP Endpoint of the Local CLI Server
+
+> For workspace problems, load `beam-diagnose-project`. For Unity setup, load `beam-unity-examples`.
+
+## High-Level Architecture
+
+```
+Unity editor ──spawns──▶ beam server serve --enable-mcp   (one per project, dies with the editor)
+                           │ 127.0.0.1:<preferred port>
+                           ├─ /execute                       Unity's own SSE protocol
+                           ├─ /info                          discovery: owner, version, pid, features
+                           ├─ /mcp                           MCP Streamable HTTP  (Bearer token)
+                           ├─ /mcp/server-card               MCP Server Card      (public)
+                           └─ /.well-known/ai-catalog.json   AI Catalog → card    (public)
+                           │
+                           └─ writes .beamable/temp/servers/<pid>.json  {port, token, mcpUrl, ...}  (0600)
+
+agent ──reads .mcp.json──▶ url + headersHelper "dotnet beam mcp token" ──▶ /mcp
+```
+
+## Code Mapping
+
+| Part | File |
+|---|---|
+| Listener, routing, request guard | `cli/cli/Services/HttpServer/ServerService.cs` |
+| Host / token checks | `cli/cli/Services/HttpServer/LocalServerGuard.cs` |
+| MCP endpoint (SDK handler) | `cli/cli/Services/HttpServer/McpHttpEndpoint.cs` |
+| HttpListener → ASP.NET bridge | `cli/cli/Services/HttpServer/HttpListenerBridgeServer.cs` |
+| Server Card, AI Catalog | `cli/cli/Services/HttpServer/ServerCardEndpoint.cs` |
+| Locator files | `cli/cli/Services/HttpServer/ServerLocatorFile.cs` |
+| Preferred port | `cli/beamable.common/Runtime/BeamCli/CliServerPorts.cs` |
+| Shared command runner | `cli/cli/Services/CliInvocation/CliInvocationCore.cs` |
+| Tools (`beam_exec`, ...) | `cli/cli/Commands/Mcp/McpServerBuilder.cs`, `cli/cli/Commands/Mcp/McpToolExecutor.cs` |
+| `mcp status` / `mcp token` / `mcp setup` | `cli/cli/Commands/Mcp/McpStatusCommand.cs`, `cli/cli/Commands/Mcp/McpTokenCommand.cs`, `cli/cli/Commands/Mcp/McpSetupCommand.cs` |
+| Unity toggle | `client/Packages/com.beamable/Editor/UI/McpMenuItems.cs` |
+
+## Business Goals Constraints
+
+- Agents and the Unity editor share one CLI process per project, so they see the same workspace and realm.
+- The endpoint runs commands with the workspace's credentials. It only listens on 127.0.0.1, accepts no browser `Origin`, and requires the per-run session token.
+- The endpoint is off unless it is enabled: Unity menu **Window → Beamable → Utilities → Enable MCP for AI Agents**, or `--enable-mcp`.
+
+## Performance Constraints
+
+- A tool call waits for its command to finish. Commands that never finish are refused: `server serve`, `mcp serve`, `project logs`, and any `--watch`.
+- Tool text output is capped at 32,768 characters (first 4,096 + last 24,576 kept). `structuredContent.events` keeps every event.
+- Only `Warning`/`Error`/`Critical` log lines are returned. Progress channels become `notifications/progress` when the call has a progress token.
+- Sessions of initialize-handshake clients expire after 30 minutes idle.
+- The Server Card and AI Catalog are cacheable for 3600 s and revalidate with `ETag`.
+
+## Usage Guide
+
+### Is the endpoint up?
+
+```
+beam_exec("mcp status -q")
+```
+
+| Outcome | Exit code | Payload |
+|---|---|---|
+| Available | 0 | `{available: true, url, version, pid, protocolVersions[]}` |
+| Not running / port taken by another process | 3 | error message saying how to start it |
+
+When unavailable, ask the user to open the project in Unity with **Enable MCP for AI Agents** on, or to run `beam server serve --enable-mcp` in a terminal. Do not start it with `beam_exec`; it is refused.
+
+{{ if commands["server serve"] }}
+### `server serve` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["server serve"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description | string.replace "\n" " " }} |
+{{ end }}{{ end }}
+
+### Configure a client
+
+`beam mcp setup --transport http` writes this into `.mcp.json` (other servers are kept):
+
+```json
+{ "mcpServers": { "beamable": {
+  "type": "http",
+  "url": "http://127.0.0.1:<port>/mcp",
+  "headersHelper": "dotnet beam mcp token"
+} } }
+```
+
+- `beam mcp token` prints `{"Authorization":"Bearer <token>"}` for the server at `$CLAUDE_CODE_MCP_SERVER_URL` (or `--url`); `--plain` prints only the token.
+- The port is the workspace's preferred port, so the URL stays the same between runs. If it was taken, run `beam mcp setup --transport http` again.
+- `--transport stdio` (default) writes a `dotnet beam mcp serve` entry instead, which needs no running server.
+
+### Pre-connection discovery
+
+| Route | Media type | Auth |
+|---|---|---|
+| `GET /.well-known/ai-catalog.json` | `application/ai-catalog+json` | none, CORS `*` |
+| `GET /mcp/server-card` | `application/mcp-server-card+json` | none, CORS `*` |
+| `GET /info` | `application/json` | none; `inflightCommands` only with the token |
+
+The card's `remotes[0].supportedProtocolVersions` lists the revisions `/mcp` serves: `2026-07-28` (stateless, `server/discover`), and `2025-11-25`, `2025-06-18`, `2025-03-26` (initialize handshake with `Mcp-Session-Id`).
+
+### Errors from `/mcp`
+
+| Status | `type` | Meaning |
+|---|---|---|
+| 401 | `Unauthorized` | Missing or wrong `Authorization: Bearer <token>`. Re-run the headers helper. |
+| 403 | `ForbiddenOrigin` | Request carried an `Origin` header |
+| 403 | `ForbiddenHost` | `Host` was not `127.0.0.1:<port>` |
+| 400 | `UnhandledRoute` | Server started without `--enable-mcp` |
+
+### Tool results
+
+`beam_exec` returns `isError: true` when the exit code is non-zero, an `error*` event was reported, or the call was cancelled. `structuredContent` is `{command, exitCode, events[]}`, with `events` in the same `ReportDataPoint` shape Unity receives (`{ts, type, data}`).

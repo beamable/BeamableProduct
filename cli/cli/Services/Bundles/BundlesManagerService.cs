@@ -1,5 +1,6 @@
 using Beamable.Common.BeamCli;
 using Beamable.Server.Common;
+using cli.Services.HttpServer;
 using cli.DeploymentCommands;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -40,7 +41,6 @@ public class BundlesManagementServer
 
 	readonly BundlesManagementContext _ctx;
 	readonly string _allowedOrigin;
-	readonly byte[] _token;
 	HttpListener _listener;
 
 	public int Port { get; private set; }
@@ -53,9 +53,7 @@ public class BundlesManagementServer
 	{
 		_ctx = ctx;
 		_allowedOrigin = OriginOf(portalUrl);
-		Token = token ?? Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
-			.TrimEnd('=').Replace('+', '-').Replace('/', '_');
-		_token = Encoding.UTF8.GetBytes(Token);
+		Token = token ?? LocalServerGuard.NewToken();
 	}
 
 	/// <summary>Scheme, host and port of <paramref name="url"/>: what a browser sends as its <c>Origin</c>.</summary>
@@ -177,18 +175,14 @@ public class BundlesManagementServer
 	/// </summary>
 	public (int status, object body) Authorize(string method, string host, string origin, string authorization)
 	{
-		if (host != $"127.0.0.1:{Port}")
+		if (!LocalServerGuard.IsLoopbackHost(host, Port))
 			return (403, new { message = "Address the bundles management API by 127.0.0.1." });
 		if (origin != _allowedOrigin)
 			return (403, new { message = $"Only {_allowedOrigin} may call the bundles management API." });
 		if (method == "OPTIONS")
 			return (200, null);
 
-		const string prefix = "Bearer ";
-		var presented = authorization != null && authorization.StartsWith(prefix, StringComparison.Ordinal)
-			? Encoding.UTF8.GetBytes(authorization.Substring(prefix.Length))
-			: Array.Empty<byte>();
-		return CryptographicOperations.FixedTimeEquals(presented, _token)
+		return LocalServerGuard.HasBearerToken(authorization, Token)
 			? (200, null)
 			: (401, new { message = "Open the Bundles page from the link `beam bundles management` printed; it carries the session token." });
 	}

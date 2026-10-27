@@ -1,0 +1,18 @@
+{
+  "name": "config-parse-error",
+  "body": "{\"commandLine\":\"config get cid\"}",
+  "events": [
+    {
+      "ts": 1793116580867,
+      "type": "error",
+      "data": {
+        "message": "Unrecognized command or argument 'get'.,Unrecognized command or argument 'cid'.",
+        "invocation": "![ Beamable.Tools [ config *[ --no-overrides ] *[ --set ] ] *[ --quiet ] *[ --no-log-file ] *[ --docker-cli-path <docker> ] *[ --dotnet-path <dotnet> ] ]   ???--> get cid",
+        "exitCode": 1,
+        "typeName": "Exception",
+        "fullTypeName": "System.Exception",
+        "stackTrace": null
+      }
+    }
+  ]
+}

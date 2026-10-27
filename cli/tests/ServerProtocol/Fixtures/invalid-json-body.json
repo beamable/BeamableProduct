@@ -1,0 +1,18 @@
+{
+  "name": "invalid-json-body",
+  "body": "{broken",
+  "events": [
+    {
+      "ts": 1793116580936,
+      "type": "error",
+      "data": {
+        "message": "Unexpected end while parsing unquoted property name. Path '', line 1, position 7.",
+        "invocation": null,
+        "exitCode": 1,
+        "typeName": "JsonReaderException",
+        "fullTypeName": "Newtonsoft.Json.JsonReaderException",
+        "stackTrace": "<stack>"
+      }
+    }
+  ]
+}

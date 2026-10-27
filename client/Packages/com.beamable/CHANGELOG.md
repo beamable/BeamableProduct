@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Fields with the `MustBeComparatorString` attribute show a dropdown in the Inspector listing the comparators the backend accepts for that field, with a tooltip for each.
+- **Window → Beamable → Utilities → Enable MCP for AI Agents** lets AI agents (Claude Code, Cursor, VS Code) use the Beamable CLI through the editor's own CLI server, and points the project's `.mcp.json` at it.
 
 ### Fixed
 
@@ -17,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The editor sends its CLI server's session token with every command and finds the server on the project's preferred port, so a restarted server comes back on the same port.
 - Beam Account login window pre-fills the environment and organization from the project's existing configuration, such as `config-defaults.txt`, and restores the previously selected realm after login.
 
 ## [6.2.0] - 2026-10-08

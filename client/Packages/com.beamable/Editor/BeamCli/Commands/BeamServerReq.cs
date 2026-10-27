@@ -10,6 +10,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public int port;
         /// <summary>The CLI command to execute</summary>
         public string cli;
+        /// <summary>The server's session token. Defaults to the one the server on --port wrote into this workspace</summary>
+        public string token;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -24,6 +26,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.cli != default(string)))
             {
                 genBeamCommandArgs.Add(("--cli=" + this.cli));
+            }
+            // If the token value was not default, then add it to the list of args.
+            if ((this.token != default(string)))
+            {
+                genBeamCommandArgs.Add(("--token=" + this.token));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
