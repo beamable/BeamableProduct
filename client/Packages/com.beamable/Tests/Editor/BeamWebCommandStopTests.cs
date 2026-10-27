@@ -377,7 +377,12 @@ namespace Beamable.Editor.Tests
 			Func<string> diagnostics = null, [CallerLineNumber] int line = 0)
 		{
 			var deadline = DateTime.UtcNow.AddSeconds(15);
-			while (!ready() && DateTime.UtcNow < deadline) yield return null;
+			while (!ready() && DateTime.UtcNow < deadline)
+			{
+				// EditMode polls Editor updates; async continuations need the separate player loop.
+				EditorApplication.QueuePlayerLoopUpdate();
+				yield return null;
+			}
 			if (!ready()) Assert.Fail($"{message} Test line: {line}. {diagnostics?.Invoke()}");
 		}
 

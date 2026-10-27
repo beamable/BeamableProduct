@@ -300,7 +300,11 @@ namespace Beamable.Editor.Tests
             {
                 // The service observes the completed command asynchronously. Retry must follow that observation.
                 var deadline = DateTime.UtcNow.AddSeconds(10);
-                while (service.ContentHistoryWatcherError == null && DateTime.UtcNow < deadline) yield return null;
+                while (service.ContentHistoryWatcherError == null && DateTime.UtcNow < deadline)
+                {
+                    UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
+                    yield return null;
+                }
                 Assert.That(service.ContentHistoryWatcherError, Is.Not.Null);
             }
             Assert.That(observed, Is.SameAs(failure), "Shutdown must not erase the original command failure.");
@@ -489,7 +493,11 @@ namespace Beamable.Editor.Tests
         static IEnumerator Wait(PromiseBase promise)
         {
             var deadline = UnityEditor.EditorApplication.timeSinceStartup + 10;
-            while (!promise.IsCompleted && UnityEditor.EditorApplication.timeSinceStartup < deadline) yield return null;
+            while (!promise.IsCompleted && UnityEditor.EditorApplication.timeSinceStartup < deadline)
+            {
+                UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
+                yield return null;
+            }
             Assert.That(promise.IsCompleted, Is.True, "Watcher transition did not complete within 10 seconds.");
         }
 

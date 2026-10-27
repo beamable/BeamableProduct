@@ -277,11 +277,15 @@ namespace Beamable.Editor.Tests
             Assert.That(icons[2], Is.SameAs(icons[0]));
         }
 
-        // Keep pumping Editor updates on all supported Test Framework versions.
+        // Async continuations also need player-loop updates while an EditMode test is waiting.
         static IEnumerator WaitFor(Task task)
         {
             var deadline = DateTime.UtcNow.AddSeconds(15);
-            while (!task.IsCompleted && DateTime.UtcNow < deadline) yield return null;
+            while (!task.IsCompleted && DateTime.UtcNow < deadline)
+            {
+                EditorApplication.QueuePlayerLoopUpdate();
+                yield return null;
+            }
             Assert.That(task.IsCompleted, Is.True, "Controlled reconciliation did not complete.");
             task.GetAwaiter().GetResult();
         }
