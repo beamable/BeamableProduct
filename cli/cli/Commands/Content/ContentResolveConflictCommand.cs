@@ -14,9 +14,9 @@ public class ContentResolveConflictCommand : AtomicCommand<ContentResolveConflic
 
 	public override void Configure()
 	{
-		AddOption(new Option<bool>("--preview", "Preview one selected item's local and realm values without reconciling."), (args, s) => args.Preview = s);
-		AddOption(new Option<string>("--expected-local-revision", "Reject reconciliation if the reviewed local file or realm values changed."), (args, s) => args.ExpectedLocalRevision = s);
-		AddOption(new Option<string>("--expected-manifest-uid", "Reject reconciliation if the reviewed publication is no longer latest."), (args, s) => args.ExpectedManifestUid = s);
+		AddOption(new Option<bool>("--preview", "Preview one selected item's local and realm values without reconciling"), (args, s) => args.Preview = s);
+		AddOption(new Option<string>("--expected-local-revision", "Reject reconciliation if the reviewed local file or realm values changed"), (args, s) => args.ExpectedLocalRevision = s);
+		AddOption(new Option<string>("--expected-manifest-uid", "Reject reconciliation if the reviewed publication is no longer latest"), (args, s) => args.ExpectedManifestUid = s);
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestIdsToReset = s);
 		AddOption(ContentCommand.FILTER_TYPE_OPTION, (args, s) => args.FilterType = s);
 		AddOption(ContentCommand.FILTER_OPTION, (args, s) => args.Filter = string.IsNullOrEmpty(s) ? Array.Empty<string>() : s.Split(','));

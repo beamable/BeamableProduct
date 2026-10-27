@@ -262,10 +262,19 @@ public class ContentPublishSafetyTests
         before = Manifest("before", Entry(Id, 10), Entry(otherId, 10));
         latest = Manifest("after", Entry(Id, 20), Entry(otherId, 20));
         await Seed(); await Seed(10, otherId);
-        var order = (await service.GetAllContentFiles(latest)).ContentFiles.Select(file => file.Id).ToArray();
+        var order = (await service.GetAllContentFiles(latest, getLocalStateOnly: true)).ContentFiles.Select(file => file.Id).ToArray();
 
-        using (var held = new FileStream(FilePath(order[1]), FileMode.Open, FileAccess.Read, FileShare.Read))
-            Assert.ThrowsAsync<IOException>(() => service.ReconcileContent("global", order, true));
+        // Lock after the scan has read the files, so the real write fails on Windows and Unix.
+        FileStream? held = null;
+        api.Setup(x => x.GetManifestPublicJson(It.IsAny<Optional<string>>(), It.IsAny<Optional<bool>>(),
+                It.Is<Optional<string>>(uid => uid != null && uid.HasValue && uid.Value == "before"), true))
+            .Returns(() =>
+            {
+                held = new FileStream(FilePath(order[1]), FileMode.Open, FileAccess.Read, FileShare.None);
+                return Promise<ClientManifestJsonResponse>.Successful(before);
+            });
+        try { Assert.ThrowsAsync<IOException>(() => service.ReconcileContent("global", order, true)); }
+        finally { held?.Dispose(); }
 
         // The successful acknowledgement must survive even if its file disappears before another scan.
         File.Delete(FilePath(order[0]));
@@ -349,9 +358,30 @@ public class ContentPublishSafetyTests
     [Test]
     public async Task Failed_sync_deletion_releases_scan_lock_and_does_not_acknowledge()
     {
-        await Seed(); latest = Manifest("after");
-        using (var held = new FileStream(FilePath(), FileMode.Open, FileAccess.Read, FileShare.Read))
-            Assert.ThrowsAsync<IOException>(() => service.ReconcileContent("global", new[] { Id }, false));
+        const string otherId = "currency.other";
+        before = Manifest("before", Entry(Id, 10), Entry(otherId, 10));
+        await Seed(); await Seed(10, otherId);
+        latest = Manifest("after", Entry(otherId, 20));
+        using var server = new ContentLocal4866ReproTests.OneResponseServer("{\"properties\":{\"startingAmount\":{\"data\":20}}}");
+        latest.entries[0].uri = server.Url;
+        var original = await File.ReadAllBytesAsync(FilePath());
+        try
+        {
+            Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.SyncLocalContent(latest, "global",
+                onContentSyncProgressUpdate: progress =>
+                {
+                    if (progress.EventType != ContentProgressUpdateData.EVT_TYPE_SyncComplete || progress.contentName != otherId) return;
+                    // After scanning, replace the deletion target with a directory. File.Delete must fail on both OSes.
+                    File.Delete(FilePath());
+                    Directory.CreateDirectory(FilePath());
+                }));
+        }
+        finally
+        {
+            if (Directory.Exists(FilePath())) Directory.Delete(FilePath());
+            await File.WriteAllBytesAsync(FilePath(), original);
+        }
+        await server.Finished;
         var scan = Kind();
         Assert.That(await Task.WhenAny(scan, Task.Delay(1500)), Is.SameAs(scan), "failed reconciliation must release the scan semaphore");
         Assert.That(await scan, Is.EqualTo(6));
@@ -488,8 +518,16 @@ public class ContentPublishSafetyTests
         await Seed(); await Seed(15, "currency.other"); await service.GetAllContentFiles(latest); File.Delete(FilePath());
         api.Setup(x => x.GetManifestPublicJson(It.IsAny<Optional<string>>(), It.IsAny<Optional<bool>>(), It.Is<Optional<string>>(x => x != null && x.HasValue && x.Value == "published"), true))
             .Returns(Promise<ClientManifestJsonResponse>.Successful(Manifest("published", Entry("currency.other", 15))));
-        using (var held = new FileStream(FilePath("currency.other"), FileMode.Open, FileAccess.Read, FileShare.Read))
-            Assert.ThrowsAsync<IOException>(() => service.PublishContent(AutoSnapshotType.None, 0));
+        FileStream? held = null;
+        api.Setup(x => x.PostManifest(It.IsAny<SaveManifestRequest>(), true)).Returns(() =>
+        {
+            publications++;
+            // The remote publish has committed; fail only the surviving file's local rewrite.
+            held = new FileStream(FilePath("currency.other"), FileMode.Open, FileAccess.Read, FileShare.None);
+            return Promise<SaveManifestResponse>.Successful(new SaveManifestResponse { uid = "published" });
+        });
+        try { Assert.ThrowsAsync<IOException>(() => service.PublishContent(AutoSnapshotType.None, 0)); }
+        finally { held?.Dispose(); }
         Assert.That(publications, Is.EqualTo(1));
         latest = Manifest("readded", Entry(Id, 10), Entry("currency.other", 15)); service = CreateService();
         Assert.That(await Kind(), Is.EqualTo(5));

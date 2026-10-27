@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Threading;
@@ -18,6 +19,7 @@ using Beamable.Editor.UI.ContentWindow;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Beamable.Editor.Tests
 {
@@ -126,14 +128,14 @@ namespace Beamable.Editor.Tests
             LocalJson = "{}", RealmJson = "{}", Differences = Array.Empty<ContentReconciliationDifference>()
         };
 
-        [Test]
-        public async Task Successful_apply_waits_for_refreshed_cache_then_advances_and_keeps_window_open()
+        [UnityTest]
+        public IEnumerator Successful_apply_waits_for_refreshed_cache_then_advances_and_keeps_window_open()
         {
             var applied = (Task)Call("Apply", false);
             Call("SelectItem", "currency.b");
             Assert.That(Get("_contentId"), Is.EqualTo("currency.a"), "Selection is locked during apply.");
             commands.Pending.Completion.CompleteSuccess();
-            await applied;
+            yield return WaitFor(applied);
             Assert.That(window != null, Is.True);
             Assert.That(queue.ResolvedCount, Is.EqualTo(1));
             Assert.That(commands.Calls.Count, Is.EqualTo(1));
@@ -153,14 +155,18 @@ namespace Beamable.Editor.Tests
             Assert.That(Get("_error"), Is.Null);
         }
 
-        [TestCase(false)]
-        [TestCase(true)]
-        public async Task Failed_or_stale_apply_keeps_selection_and_progress_and_never_previews_next_item(bool reported)
+        [UnityTest]
+        public IEnumerator Failed_apply_keeps_selection_and_progress() => FailedOrStaleApply(false);
+
+        [UnityTest]
+        public IEnumerator Stale_apply_keeps_selection_and_progress() => FailedOrStaleApply(true);
+
+        IEnumerator FailedOrStaleApply(bool reported)
         {
             var applied = (Task)Call("Apply", true);
             if (reported) { commands.Pending.ReportError("The realm changed. Refresh and review."); commands.Pending.Completion.CompleteSuccess(); }
             else commands.Pending.Completion.CompleteError(new InvalidOperationException("controlled transport failure"));
-            await applied;
+            yield return WaitFor(applied);
             Version(1); Call("Update");
             Assert.That(Get("_contentId"), Is.EqualTo("currency.a"));
             Assert.That(queue.ResolvedCount, Is.Zero);
@@ -168,30 +174,30 @@ namespace Beamable.Editor.Tests
             Assert.That(commands.Calls.Count, Is.EqualTo(1));
         }
 
-        [Test]
-        public async Task Navigation_ignores_previous_late_preview_and_blocks_apply_until_selected_preview_completes()
+        [UnityTest]
+        public IEnumerator Navigation_ignores_previous_late_preview_and_blocks_apply_until_selected_preview_completes()
         {
             var first = (Task)Call("LoadPreview");
             var old = commands.Pending;
             Call("SelectItem", "currency.b");
             var selected = commands.Pending;
-            await (Task)Call("Apply", false);
+            yield return WaitFor((Task)Call("Apply", false));
             Assert.That(commands.Calls.Count, Is.EqualTo(2));
-            old.Report(Preview("currency.a")); old.Completion.CompleteSuccess(); await first;
+            old.Report(Preview("currency.a")); old.Completion.CompleteSuccess(); yield return WaitFor(first);
             Assert.That(Get("_preview"), Is.Null);
             selected.Report(Preview("currency.b")); selected.Completion.CompleteSuccess();
             Assert.That(((ContentReconciliationPreview)Get("_preview")).ContentId, Is.EqualTo("currency.b"));
             Assert.That(old.Cancelled, Is.True);
         }
 
-        [Test]
-        public async Task Closing_during_preview_ignores_late_completion()
+        [UnityTest]
+        public IEnumerator Closing_during_preview_ignores_late_completion()
         {
             var pending = (Task)Call("LoadPreview");
             var command = commands.Pending;
             UnityEngine.Object.DestroyImmediate(window);
             command.Report(Preview("currency.a")); command.Completion.CompleteSuccess();
-            await pending;
+            yield return WaitFor(pending);
             Assert.That(command.Cancelled, Is.True);
             Assert.That(commands.Calls.Count, Is.EqualTo(1));
         }
@@ -206,12 +212,12 @@ namespace Beamable.Editor.Tests
             Assert.That(commands.Calls, Is.Empty);
         }
 
-        [Test]
-        public async Task Reload_failure_cannot_use_an_older_unrelated_revision_as_proof_of_completion()
+        [UnityTest]
+        public IEnumerator Reload_failure_cannot_use_an_older_unrelated_revision_as_proof_of_completion()
         {
             Version(5); // An unrelated update arrived while this item's preview was loading.
             var applied = (Task)Call("Apply", false);
-            commands.Pending.Completion.CompleteSuccess(); await applied;
+            commands.Pending.Completion.CompleteSuccess(); yield return WaitFor(applied);
             var next = service.EntriesCache["currency.b"];
             service.EntriesCache.Clear();
             typeof(CliContentService).GetField("_contentWatchRequested", Fields).SetValue(service, true);
@@ -231,14 +237,14 @@ namespace Beamable.Editor.Tests
             commands.Pending.Report(Preview("currency.b")); commands.Pending.Completion.CompleteSuccess();
         }
 
-        [Test]
-        public async Task Final_success_shows_completion_only_after_snapshot_and_does_not_close_window()
+        [UnityTest]
+        public IEnumerator Final_success_shows_completion_only_after_snapshot_and_does_not_close_window()
         {
             service.EntriesCache.Remove("currency.b"); queue.Refresh(service.EntriesCache.Values);
             var applied = (Task)Call("Apply", false);
-            commands.Pending.Completion.CompleteSuccess(); await applied;
+            commands.Pending.Completion.CompleteSuccess(); yield return WaitFor(applied);
             Assert.That(Get("_awaitingRefresh"), Is.True);
-            await (Task)Call("Apply", false);
+            yield return WaitFor((Task)Call("Apply", false));
             Assert.That(commands.Calls.Count, Is.EqualTo(1));
             service.EntriesCache.Clear(); Version(1); Call("Update");
             Assert.That(Get("_contentId"), Is.Null);
@@ -269,6 +275,15 @@ namespace Beamable.Editor.Tests
             Assert.That(icons[0], Is.SameAs(global::Beamable.Editor.Util.BeamGUI.iconStatusIncoming));
             Assert.That(icons[1], Is.SameAs(icons[0]));
             Assert.That(icons[2], Is.SameAs(icons[0]));
+        }
+
+        // Keep pumping Editor updates on all supported Test Framework versions.
+        static IEnumerator WaitFor(Task task)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(15);
+            while (!task.IsCompleted && DateTime.UtcNow < deadline) yield return null;
+            Assert.That(task.IsCompleted, Is.True, "Controlled reconciliation did not complete.");
+            task.GetAwaiter().GetResult();
         }
 
         class QueueCommands : BeamCommands
@@ -2102,7 +2117,7 @@ namespace Beamable.Editor.Tests
                         if (input.type == EventType.Layout)
                             typeof(GUILayoutUtility).GetMethod("LayoutFromContainer", StaticFields).Invoke(null, new object[] { (float)width, window.position.height });
                         var cache = typeof(GUILayoutUtility).GetField("current", StaticFields).GetValue(null);
-                        var root = cache.GetType().GetField("topLevel").GetValue(cache);
+                        var root = cache.GetType().GetField("topLevel", InstanceFields).GetValue(cache);
                         var viewports = new List<Rect>();
                         bool scrollable = false;
                         InspectLayout(root, viewports, ref scrollable);
@@ -2248,7 +2263,7 @@ namespace Beamable.Editor.Tests
                 Assert.That(realm.tooltip, Is.Not.Empty);
                 Assert.That(footer.yMax, Is.LessThanOrEqualTo(height), "Footer must remain inside the window even when review details overflow.");
                 var cache = typeof(GUILayoutUtility).GetField("current", StaticFields).GetValue(null);
-                var root = cache.GetType().GetField("topLevel").GetValue(cache);
+                var root = cache.GetType().GetField("topLevel", InstanceFields).GetValue(cache);
                 var viewports = new List<Rect>();
                 bool scrollable = false;
                 InspectLayout(root, viewports, ref scrollable);

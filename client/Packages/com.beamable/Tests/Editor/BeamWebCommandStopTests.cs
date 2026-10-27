@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Beamable.Common;
@@ -13,6 +14,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli;
 using Beamable.Editor.Utility;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.TestTools;
 
@@ -20,6 +22,26 @@ namespace Beamable.Editor.Tests
 {
 	public class BeamWebCommandStopTests
 	{
+		[UnityTest]
+		public IEnumerator FixtureCleanupDoesNotLeaveStoppedEditorCoroutineCallbacks()
+		{
+			var errors = new List<string>();
+			void Capture(string message, string stack, LogType type)
+			{
+				if (type == LogType.Exception && stack.Contains("EditorCoroutine")) errors.Add(message);
+			}
+			Application.logMessageReceived += Capture;
+			try
+			{
+				using (new Fixture()) yield return null;
+				// Let callbacks captured by the current update and deferred cleanup both finish.
+				yield return null;
+				yield return null;
+				Assert.That(errors, Is.Empty);
+			}
+			finally { Application.logMessageReceived -= Capture; }
+		}
+
 		[UnityTest]
 		public IEnumerator ServerExitDuringRediscoveryStillBoundsShutdown()
 		{
@@ -169,7 +191,7 @@ namespace Beamable.Editor.Tests
 			});
 			try
 			{
-				using var fixture = new Fixture(backgroundServer: true) { WriteOutput = false, StopStatus = 500 };
+				using var fixture = new Fixture { WriteOutput = false, StopStatus = 500 };
 				Set(fixture.Factory, "<ServerProcess>k__BackingField", process);
 				var run = fixture.Command.Run();
 				run.Error(_ => { });
@@ -194,7 +216,7 @@ namespace Beamable.Editor.Tests
 		[UnityTest]
 		public IEnumerator AssemblyReloadStopAcknowledgesWithoutUnityUpdates()
 		{
-			using var fixture = new Fixture(backgroundServer: true) { WriteOutput = false };
+			using var fixture = new Fixture { WriteOutput = false };
 			var run = fixture.Command.Run();
 			run.Error(_ => { });
 			fixture.Discover();
@@ -342,11 +364,12 @@ namespace Beamable.Editor.Tests
 			Assert.That(fixture.Command.StopAsync(), Is.SameAs(retry));
 		}
 
-		private static IEnumerator WaitFor(Func<bool> ready, string message = "Timed out waiting for controlled transport gate.")
+		private static IEnumerator WaitFor(Func<bool> ready, string message = "Timed out waiting for controlled transport gate.",
+			[CallerLineNumber] int line = 0)
 		{
 			var deadline = DateTime.UtcNow.AddSeconds(15);
 			while (!ready() && DateTime.UtcNow < deadline) yield return null;
-			Assert.That(ready(), Is.True, message);
+			Assert.That(ready(), Is.True, $"{message} Test line: {line}.");
 		}
 
 		private static object Get(object target, string field) => target.GetType()
@@ -377,7 +400,7 @@ namespace Beamable.Editor.Tests
 			public readonly TaskCompletionSource<bool> RetryReceived = Signal();
 			public readonly TaskCompletionSource<bool> AllowRetryAcknowledgement = Signal();
 
-			public Fixture(bool backgroundServer = false)
+			public Fixture()
 			{
 				var reservation = new TcpListener(IPAddress.Loopback, 0);
 				reservation.Start();
@@ -405,7 +428,8 @@ namespace Beamable.Editor.Tests
 				Factory.dispatcher = _dispatcher;
 				Command = new BeamWebCommand(Factory, history);
 				Command.SetCommand("beam content ps --watch");
-				ServerTask = backgroundServer ? Task.Run(Serve) : Serve();
+				// The real CLI runs outside Unity; the fake server must not depend on Editor updates either.
+				ServerTask = Task.Run(Serve);
 				_ = ServerTask.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
 			}
 
@@ -494,7 +518,8 @@ namespace Beamable.Editor.Tests
 				AllowRetryAcknowledgement.TrySetResult(true);
 				Command.Cancel();
 				_listener.Close();
-				_dispatcher.OnDispose();
+				// Editor Coroutines 1.0 can still invoke callbacks captured by the current update.
+				EditorApplication.delayCall += () => _dispatcher.OnDispose();
 				UnityEngine.Object.DestroyImmediate(_options);
 			}
 		}

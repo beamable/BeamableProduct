@@ -296,6 +296,13 @@ namespace Beamable.Editor.Tests
             if (history) LogAssert.Expect(LogType.Error, new Regex("Content History operation failed"));
             transport.ReleaseWorker.TrySetResult(true);
             yield return Wait(run);
+            if (history)
+            {
+                // The service observes the completed command asynchronously. Retry must follow that observation.
+                var deadline = DateTime.UtcNow.AddSeconds(10);
+                while (service.ContentHistoryWatcherError == null && DateTime.UtcNow < deadline) yield return null;
+                Assert.That(service.ContentHistoryWatcherError, Is.Not.Null);
+            }
             Assert.That(observed, Is.SameAs(failure), "Shutdown must not erase the original command failure.");
             Assert.That(stop.IsCompleted, Is.False, "A failed stream does not prove server shutdown.");
 
