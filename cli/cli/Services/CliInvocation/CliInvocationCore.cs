@@ -67,6 +67,7 @@ public static class CliInvocationCore
 		string registryEntry = null;
 		string commandLine = null;
 		IDataReporterService reporter = null;
+		App app = null;
 		var registered = false;
 		int exitCode = -1;
 		try
@@ -77,19 +78,23 @@ public static class CliInvocationCore
 				throw new ArgumentException("An execute request must include a non-empty commandLine.");
 			}
 			Log.Trace("virtualizing " + commandLine);
-			var app = request.App ?? new App();
+			app = request.App ?? new App();
 
 			var sw = System.Diagnostics.Stopwatch.StartNew();
-			app.Configure(builder =>
+			// Building attaches shared static options to this app's commands; see CommandTreeDetacher.
+			lock (CommandTreeDetacher.TreeLock)
 			{
-				builder.Remove<IDataReporterService>();
-				builder.AddSingleton<IDataReporterService>(provider =>
+				app.Configure(builder =>
 				{
-					reporter = request.CreateReporter(provider);
-					return reporter;
-				});
-			}, overwriteLogger: false);
-			app.Build();
+					builder.Remove<IDataReporterService>();
+					builder.AddSingleton<IDataReporterService>(provider =>
+					{
+						reporter = request.CreateReporter(provider);
+						return reporter;
+					});
+				}, overwriteLogger: false);
+				app.Build();
+			}
 			sw.Stop();
 			Log.Trace("build virtual app in " + sw.ElapsedMilliseconds);
 
@@ -132,6 +137,16 @@ public static class CliInvocationCore
 		}
 		finally
 		{
+			try
+			{
+				app?.EndInvocation();
+			}
+			catch (Exception ex)
+			{
+				// Releasing the command's resources must not turn a finished command into a failed one.
+				Log.Error($"Could not end the CLI invocation cleanly. message=[{ex.Message}]");
+			}
+
 			if (registered)
 			{
 				lock (_invocationsLock)

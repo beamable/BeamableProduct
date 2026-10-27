@@ -520,14 +520,20 @@ public class ServerServiceTests
 		private readonly Func<string, IDataReporterService, Task<int>> _execute;
 		private readonly AppLifecycle _lifecycle = new();
 		public Exception? SetupFailure { get; init; }
+		/// <summary>Keep the reporter's connection heartbeat running (it stops once the lifecycle is cancelled).</summary>
+		public bool Heartbeat { get; init; }
+		public AppLifecycle Lifecycle => _lifecycle;
 		public ControlledApp(Func<string, IDataReporterService, Task<int>> execute) => _execute = execute;
 
 		public override void Configure(Action<IDependencyBuilder>? serviceConfigurator = null,
 			Action<IDependencyBuilder>? commandConfigurator = null, Action<ILoggingBuilder>? configureLogger = null,
 			bool overwriteLogger = true)
 		{
-			// These tests exercise result reporting, not the unrelated background heartbeat.
-			_lifecycle.Cancel();
+			// Most tests exercise result reporting, not the unrelated background heartbeat.
+			if (!Heartbeat)
+			{
+				_lifecycle.Cancel();
+			}
 			Commands.AddSingleton(_lifecycle);
 			Commands.AddSingleton<IDataReporterService>(_ =>
 				throw new InvalidOperationException("The handler must replace the default reporter."));

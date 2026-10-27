@@ -12,6 +12,25 @@ public class DirectoryInfoUtils
 
 public static class DirectoryUtils
 {
+	private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTimeOffset at, DirectoryInfoUtils result)> SizeCache = new();
+
+	/// <summary>
+	/// <see cref="CalculateDirectorySize"/>, reusing a result younger than <paramref name="maxAge"/>. A process that runs
+	/// many commands (`beam server serve`) would otherwise walk the same folder for each one.
+	/// </summary>
+	public static DirectoryInfoUtils CalculateDirectorySizeCached(string path, TimeSpan maxAge)
+	{
+		var now = DateTimeOffset.UtcNow;
+		if (SizeCache.TryGetValue(path, out var cached) && now - cached.at < maxAge)
+		{
+			return cached.result;
+		}
+
+		var result = CalculateDirectorySize(path);
+		SizeCache[path] = (now, result);
+		return result;
+	}
+
 	public static DirectoryInfoUtils CalculateDirectorySize(string path)
 	{
 		long size = 0;

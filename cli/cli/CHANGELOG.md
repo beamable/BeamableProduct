@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `beam server serve` (the CLI server the Unity editor uses) no longer leaks about 2 MB and gets slower with every command it runs. Finished commands stayed reachable through the shared global options, a Ctrl+C handler, a per-command tracer provider and a connection heartbeat that never stopped. Memory now stays flat, and latency no longer climbs (it used to pass 120 ms after a few hundred commands).
+- Every `beam` command starts about 18 ms faster: the Java 8 search for the Scala backend (`/usr/libexec/java_home` and JDK checks) runs only when a command needs Java, not for every command. A warm command on `beam server serve` (Unity's `/execute` and MCP `beam_exec`) now takes about 10 ms instead of 46 ms.
+- `beam server serve` streams command results to Unity about 3x faster with a third of the allocations. Events are serialized once into a buffer and sent at most 2 ms later, rather than flushed one by one. The bytes Unity receives are unchanged. A client that disconnects now cancels its command even when the server has no logger configured.
 - Generate valid OpenAPI component IDs for tuple callables and preserve their C# types in generated clients, including nested tuples and tuple collections.
 - Report failed MSBuild targets as failed builds, including when compiler diagnostics are empty or missing. Project builds now return a nonzero exit and surface the underlying build output in Unity.
 - `beam project run` no longer rewrites a zone portal extension's generated microservice clients to bind to `BeamBase`. They now bind to `BeamZoneSdk` (the object a zone extension receives), matching `generate-portal-extension-clients`, so generated client files stop flipping between the two on every run.
