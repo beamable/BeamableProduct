@@ -141,6 +141,10 @@
     <!-- Beamable content-type schema snapshots for MCP type discovery (split per section + combined) -->
     <EmbeddedResource Include="Resources\beamable-types*.json" />
 
+    <!-- The local-stack agent skill `beam local setup` renders into the workspace. Kept out of Docs/SkillTemplates:
+         those are the MCP server's and `beam install-ai-skill`'s skills, which customers get. -->
+    <EmbeddedResource Include="Docs\LocalStack\*.md.scriban" />
+
     <!-- The stacks every `beam local run` can start, versioned with the CLI. -->
     <None Remove="Services\LocalStack\BuiltInStacks.json" />
     <EmbeddedResource Include="Services\LocalStack\BuiltInStacks.json" />

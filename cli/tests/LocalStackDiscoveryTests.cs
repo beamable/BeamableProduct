@@ -126,7 +126,7 @@ public class LocalStackDiscoveryTests
 			var step = ScalaBuildStep(root.FullName, "tools/auth");
 
 			Assert.That(LocalStackConfigIO.FirstUnbuiltScalaModule(step, new LocalStackConfig()), Is.EqualTo("tools/auth"));
-			// This is what makes a plain `beam local up` build itself instead of launching an empty service.
+			// This is what makes a plain `beam local run` build itself instead of launching an empty service.
 			Assert.That(LocalStackConfigIO.BuildOutputMissing(step, new LocalStackConfig()), Is.True);
 		}
 		finally
@@ -392,7 +392,7 @@ public class LocalStackDiscoveryTests
 	[Test]
 	public void EnsureProductDirIntact_IsSilent_OnIntactCheckout()
 	{
-		// The healthy-path cost has to be low — this runs on every `beam local up` that includes the web steps.
+		// The healthy-path cost has to be low — this runs on every `beam local run` that includes the web steps.
 		var dir = MakeProductLikeDir();
 		try
 		{
@@ -432,7 +432,7 @@ public class LocalStackDiscoveryTests
 	public void EnsureProductDirIntact_RestoresFromGit_WhenTrackedButDeleted()
 	{
 		// The actual bug that motivated the preflight: `web/` is tracked in git, has been wiped from the working
-		// tree, and `beam local up` should not have to unwind a 20-service launch to name the fix. Make a real
+		// tree, and `beam local run` should not have to unwind a 20-service launch to name the fix. Make a real
 		// git repo so the preflight's git-restore path exercises end-to-end.
 		if (!TryFindGit(out var _))
 		{

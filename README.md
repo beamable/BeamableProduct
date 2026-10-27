@@ -55,17 +55,17 @@ The `:web` steps build `@beamable/sdk` and `@beamable/portal-toolkit` where they
 Verdaccio registry (`portal-localdev/`) under a version of their own (`<next minor>-0.<yyyymmddHHMMSS>`, never
 reused), and install them into the stack's extensions without saving them, so no `package.json` or lockfile
 changes. `web: watch` rebuilds on every save in `web/src` or `beam-portal-toolkit/src` and restarts the extensions.
-The portal loads the SDK from the local CDN (`VITE_SDK_CDN_BASE=/local-unpkg`, set by the stack).
+The portal loads the SDK from the local CDN (`VITE_SDK_CDN_BASE=/local-unpkg`, set by the stack). Building by hand
+and releasing both packages: [web/LOCAL_DEV.md](web/LOCAL_DEV.md).
 
 If the Portal's `.env.local` has `VITE_INJECT_HOST_SDK=true`, comment it out — that's a different approach
 and it takes precedence over the local CDN.
 
 ## Running the full local stack on a fresh machine
 
-`beam local setup` provisions everything `beam local up` needs — a private, pinned toolchain (JDK 8, Maven, the
-.NET SDK, Node), the gitignored BeamableBackend config files, the portal's gitignored `.env.local`, and a check
-of the AWS prerequisites. It works the
-same on macOS, Windows and Linux, and installs nothing system-wide.
+`beam local setup` provisions everything `beam local run` needs — a private, pinned toolchain (JDK 8, Maven, the
+.NET SDK, Node, pnpm), the settings file with its step catalogue, the gitignored BeamableBackend config files, and a
+check of the AWS prerequisites. It works the same on macOS, Windows and Linux, and installs nothing system-wide.
 
 On a machine that has never run the stack:
 
@@ -76,23 +76,27 @@ On a machine that has never run the stack:
 4. Then:
 
 ```bash
-beam local setup                # installs the toolchain; needs no .beamable workspace
-beam local init                 # writes the manifest and adopts that toolchain automatically
-beam local validate --with-aws
-beam local up --build
+beam local setup                     # the toolchain, the settings, the backend config, the AWS checks
+beam local run                       # lists the stacks: full, backend, csharp-portal, ...
+beam local run full --dry-run        # what a stack would run: steps, folders, ports, variables, checks
+beam local run full                  # builds what's missing and starts it; Ctrl+C stops it
+beam local run full --detach         # or keep it running and manage it from any terminal:
+beam local ps                        # the live board (restart, stop or start a step from it)
+beam local logs "scala: auth" -f     # a step's log; with logs forwarded, Grafana at http://localhost:3001
+beam local stop
 ```
 
-`setup` comes first: it installs the JDK, and `init` picks it up rather than asking you for one.
-
-`beam local validate` reports each dependency's **source** — `toolchain` (pinned) or `system` (whatever this
-machine happens to have) — which is how a Maven running under an IDE's JDK 21, or a Node major the portal was
-never built against, gets caught before it produces a confusing build failure.
+A stack name picks what runs and against which backend: `full:no-build`, `csharp-portal:web`, `backend:lan`,
+`portal-extensions:local`. `beam local create` and `edit` make your own stacks; teams commit theirs to
+`.beamable/shared/stacks/`.
 
 **AWS access is required**; there is no LocalStack in this stack. The Scala `auth` service reads its JWT signing
 key from AWS Secrets Manager at runtime, so without credentials the stack comes up healthy and nothing can log
 in. `beam local setup --only aws` checks this and prints what an AWS administrator needs to do.
 
-Full reference: [cli/cli/Docs/LocalStack/local-setup.md](cli/cli/Docs/LocalStack/local-setup.md).
+Full reference for agents and people: the `beam-local-stacks` skill, which `beam local setup` writes into the
+workspace's `.claude/skills/` from the installed CLI (`beam local setup --only skill` refreshes it); its template is
+[cli/cli/Docs/LocalStack/beam-local-stacks.md.scriban](cli/cli/Docs/LocalStack/beam-local-stacks.md.scriban).
 
 ## Documentation and help
 - Unity SDK docs: https://help.beamable.com/Unity-Latest/

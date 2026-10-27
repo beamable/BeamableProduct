@@ -1177,7 +1177,7 @@ namespace Beamable.Server
 	      {
 		      // Deliberately not fatal: throwing here would abort ProvideService before the event provider
 		      // is wired up, leaving a half-registered socket — a worse failure than a service that runs and
-		      // reports itself degraded. The distinct message is what `beam local up` watches for, so this
+		      // reports itself degraded. The distinct message is what `beam local run` watches for, so this
 		      // no longer disappears into the log.
 		      Log.Error(
 			      Constants.Features.Services.Logs.FEDERATION_REGISTRATION_FAILED +

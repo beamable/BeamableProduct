@@ -64,7 +64,7 @@ For **remote** push you also need provider credentials on your realm — `apns_p
 
 ### Pointing at a local stack
 
-To run against a local Beamable backend (e.g. `beam local up` over your LAN), do three things.
+To run against a local Beamable backend (e.g. `beam local run backend:lan`), do three things.
 
 **1. Point at the realm** — edit `.beamable/config.beam.json` with the cid, pid and host of your
 local stack:
@@ -92,13 +92,12 @@ phone itself:
 | Android emulator | `http://10.0.2.2:8080` (alias for the host loopback) |
 | Physical device / iPad | your dev machine's LAN IP, e.g. `http://192.168.x.x:8080` |
 
-`beam local up` rewrites the *portal's* config on every stack reset, but **not this file** — and a
-reset mints a brand-new cid/pid, so re-copy them after one.
+`beam local run` logs the *portal* in on every run, but **not this file** — and a `beam local stop --purge`
+mints a brand-new cid/pid, so re-copy them after one.
 
 **2. Make sure the SDK is built.** The sample links `@beamable/sdk` straight at the monorepo
 (`file:../../../web`), and it bundles `web/dist`, which is **git-ignored** — a fresh clone has none.
-`dotnet beam local up --build` builds and publishes it (the plain `beam local up` skips that step),
-or build it directly:
+A stack with the `:web` variant (`beam local run backend:lan:web`) builds it, or build it directly:
 
 ```bash
 cd ../../../web && npm run build

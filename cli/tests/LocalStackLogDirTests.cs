@@ -7,7 +7,7 @@ namespace tests;
 
 /// <summary>
 /// Covers <see cref="LocalStackRunStateIO.ResolveRunLogsDir"/> — the per-run log directory scheme that
-/// makes `beam local up` collision-proof (a fresh run never reuses a leftover wrapper's log path) and
+/// makes `beam local run` collision-proof (a fresh run never reuses a leftover wrapper's log path) and
 /// routes logs to a temp folder by default vs. the workspace under `--save-logs`.
 /// </summary>
 public class LocalStackLogDirTests

@@ -94,12 +94,7 @@ public class LocalStackConfig
 	public int dockerWatchdogSeconds = 15;
 
 	/// <summary>
-	/// The repository checkouts this manifest was generated against. Documentation-only metadata: the steps
-	/// carry their own absolute <see cref="LocalStackStep.workingDirectory"/> values and nothing in the
-	/// orchestrator reads this. It exists so the generated <c>beam-local-stack</c> agent skill (see
-	/// <see cref="LocalStackSkillTemplate"/>) can name the repos without reverse-engineering step names —
-	/// which also keeps it correct for <c>beam local setup --update-services</c>, where the repo paths are
-	/// never prompted for.
+	/// The repository checkouts the settings span, filled from <c>paths</c> when the settings are loaded.
 	///
 	/// Optional (omitted from the JSON when null), so readers treat it as such.
 	/// </summary>
@@ -210,7 +205,7 @@ public class LocalStackToolchain
 	public string node;
 
 	/// <summary>
-	/// pnpm home. No token needs it: <c>beam web publish</c> shells out to a bare <c>pnpm</c>, so what matters is
+	/// pnpm home. No token needs it: the <c>web: build</c> step shells out to a bare <c>pnpm</c>, so what matters is
 	/// that this directory reaches the child's <c>PATH</c> (see <see cref="LocalStackConfigIO.ToolchainPathPrefix"/>).
 	/// </summary>
 	public string pnpm;
@@ -1043,7 +1038,7 @@ public static class LocalStackConfigIO
 			Bin(toolchain.maven, "bin"),
 			Bin(toolchain.dotnet, null),
 			Bin(toolchain.node, OperatingSystem.IsWindows() ? null : "bin"),
-			// pnpm is invoked by name from inside `beam web publish`, so it has to be on PATH — there is no token
+			// pnpm is invoked by name from inside the `web: build` step, so it has to be on PATH — there is no token
 			// to substitute for it.
 			Bin(toolchain.pnpm, OperatingSystem.IsWindows() ? null : "bin"),
 		})

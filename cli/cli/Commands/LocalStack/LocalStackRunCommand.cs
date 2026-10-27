@@ -2268,8 +2268,7 @@ public class LocalStackRunCommand
 	/// maps to a <c>tools/$SVC</c> Maven module and whose launcher runs the offline
 	/// <c>mvn -o dependency:build-classpath</c>. Two signals, cheapest first:
 	/// <list type="bullet">
-	/// <item><c>shell</c> — the same narrowing the skill template applies to this prefix
-	/// (<c>LocalStackSkillTemplate.AppendSelection</c>); <c>scala: redis</c> is a <c>command = docker</c> step.</item>
+	/// <item><c>shell</c> — a launched Scala service has one; <c>scala: redis</c> is a <c>command = docker</c> step.</item>
 	/// <item>the launcher fingerprint <c>dependency:build-classpath</c> in <c>arguments</c> — the exact resolve the
 	/// probe protects. It keeps a
 	/// hand-edited manifest from pointing the probe at a module that never runs a classpath resolve.</item>

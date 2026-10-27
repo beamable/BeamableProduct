@@ -1,7 +1,9 @@
 using Beamable.Server;
+using cli.Commands.Docs;
 using cli.Services;
 using cli.Services.LocalStack;
 using cli.Utils;
+using Scriban;
 using Spectre.Console;
 using System.CommandLine;
 
@@ -38,10 +40,6 @@ public class LocalStackSetupCommandArgs : CommandArgs
 	public string scalaServices;
 	public string scalaJvmArgs;
 	public string webRegistryDir;
-
-	/// <summary>Opt IN to writing the <c>beam-local-stack</c> agent skill. Off by default: it lands outside
-	/// <c>.beamable</c> and records machine-specific absolute paths, so not every workspace wants it.</summary>
-	public bool skill;
 
 	// Custom steps. addStep is null when not asked for, and empty when asked for without a name (it is then asked).
 	public string addStep;
@@ -99,9 +97,6 @@ public class LocalStackSetupCommandResult
 {
 	public string toolchainDir;
 	public string manifestPath;
-
-	/// <summary>Where the generated <c>beam-local-stack</c> skill was written; null when it was skipped.</summary>
-	public string skillPath;
 
 	/// <summary>The catalogue after <c>--add-step</c>, <c>--remove-step</c> or <c>--list-steps</c>; null otherwise.</summary>
 	public List<LocalStackCatalogueEntry> catalogue;
@@ -199,10 +194,6 @@ public class LocalStackSetupCommand
 			(args, v) => args.scalaJvmArgs = v);
 		AddOption(new Option<string>("--web-registry-dir", "Absolute path to the portal-localdev directory holding the web registry compose file (detected next to BeamableProduct otherwise)"),
 			(args, v) => args.webRegistryDir = v);
-		var skill = new Option<bool>("--skill",
-			$"Also write the {LocalStackSkillTemplate.SkillName} agent skill, documenting the repositories the settings span and how the stack works, to .claude/skills/ (off by default; regenerated on every setup that passes this)");
-		skill.AddAlias("--with-skill");
-		AddOption(skill, (args, v) => args.skill = v);
 
 		// Custom steps. --add-step may be given without a name, which an interactive run then asks for; a binder only
 		// sees the value, so whether the flag was written at all comes from the parse result.
@@ -309,15 +300,19 @@ public class LocalStackSetupCommand
 		// so a later failure (e.g. no GitHub token) still leaves the toolchain wired up.
 		if (Included(ToolchainPins.Settings))
 		{
-			var (settingsStep, written, skillPath) = await WriteSettings(args, manifestPath, config, quiet);
+			var (settingsStep, written) = await WriteSettings(args, manifestPath, config, quiet);
 			result.steps.Add(settingsStep);
 			config = written;
-			result.skillPath = skillPath;
 		}
 		else
 			result.steps.Add(new LocalStackSetupStepResult { name = ToolchainPins.Settings, status = "skipped", detail = "excluded by --only/--skip", ok = true });
 
 		result.manifestPath = File.Exists(manifestPath) ? manifestPath : null;
+
+		if (Included(ToolchainPins.Skill))
+			result.steps.Add(WriteSkill(args, manifestPath));
+		else
+			result.steps.Add(new LocalStackSetupStepResult { name = ToolchainPins.Skill, status = "skipped", detail = "excluded by --only/--skip", ok = true });
 
 		// Repo paths: an explicit option wins, then the settings, then a walk up the directory tree for the
 		// well-known checkout names, so the steps below work even when the settings step was skipped.
@@ -453,7 +448,7 @@ public class LocalStackSetupCommand
 	/// block refreshed, so a developer's edited steps, variables and JVM flags survive a setup run; <c>--force</c>
 	/// recreates the catalogue and <c>--update-services</c> changes just the microservice and extension steps.
 	/// </summary>
-	private static async Task<(LocalStackSetupStepResult step, LocalStackConfig config, string skillPath)> WriteSettings(
+	private static async Task<(LocalStackSetupStepResult step, LocalStackConfig config)> WriteSettings(
 		LocalStackSetupCommandArgs args, string path, LocalStackConfig config, bool quiet)
 	{
 		var toolchain = ToolchainService.TryReadInstalled(args.toolchainDir);
@@ -463,14 +458,14 @@ public class LocalStackSetupCommand
 			var plan = config == null ? $"would create {path}"
 				: args.force ? $"would recreate the step catalogue in {path}"
 				: $"would point {path} at the toolchain";
-			return (new LocalStackSetupStepResult { name = ToolchainPins.Settings, status = "would install", ok = true, detail = plan }, config, null);
+			return (new LocalStackSetupStepResult { name = ToolchainPins.Settings, status = "would install", ok = true, detail = plan }, config);
 		}
 
 		string detail;
 		if (config == null || args.force)
 		{
 			if (config != null && !quiet && !AnsiConsole.Confirm($"Recreate the step catalogue in [yellow]{path}[/]? Its variables, targets and port offset are kept.", defaultValue: false))
-				return (new LocalStackSetupStepResult { name = ToolchainPins.Settings, status = "skipped", ok = true, detail = "kept the existing settings" }, config, null);
+				return (new LocalStackSetupStepResult { name = ToolchainPins.Settings, status = "skipped", ok = true, detail = "kept the existing settings" }, config);
 
 			var created = config == null;
 			config = await CreateSettings(args, path, config, toolchain, quiet);
@@ -498,8 +493,7 @@ public class LocalStackSetupCommand
 			detail += $"; logs and traces kept {config.logRetentionDays} days";
 		}
 
-		var skillPath = WriteSkill(args, path, config);
-		return (new LocalStackSetupStepResult { name = ToolchainPins.Settings, status = "ok", ok = true, detail = $"{path} {detail}" }, config, skillPath);
+		return (new LocalStackSetupStepResult { name = ToolchainPins.Settings, status = "ok", ok = true, detail = $"{path} {detail}" }, config);
 	}
 
 	/// <summary>
@@ -596,6 +590,49 @@ public class LocalStackSetupCommand
 		return detected != null && Directory.Exists(detected) ? detected : null;
 	}
 
+	/// <summary>
+	/// Embedded by <c>cli.csproj</c>. Not under <c>Docs/SkillTemplates</c>: those are the MCP server's and
+	/// <c>beam install-ai-skill</c>'s skills, which customers get, and <c>beam local</c> is internal.
+	/// </summary>
+	private const string SkillTemplateResource = "cli.Docs.LocalStack.beam-local-stacks.md.scriban";
+
+	/// <summary>
+	/// Writes the <c>beam-local-stacks</c> agent skill to <c>&lt;workspace&gt;/.claude/skills/beam-local-stacks/SKILL.md</c>,
+	/// rendered from this CLI's own commands so its option tables match the installed version. Overwritten on every
+	/// run, since it's generated. The workspace is the folder holding <c>.beamable</c>; setup is standalone, so outside
+	/// a registered workspace it is found from the settings file's location.
+	/// </summary>
+	private static LocalStackSetupStepResult WriteSkill(LocalStackSetupCommandArgs args, string manifestPath)
+	{
+		var root = args.ConfigService?.DirectoryExists == true && !string.IsNullOrEmpty(args.ConfigService.BeamableWorkspace)
+			? args.ConfigService.BeamableWorkspace
+			: LocalStackConfigIO.FindWorkspaceRoot(manifestPath) ?? Directory.GetCurrentDirectory();
+		var path = Path.Combine(root, ".claude", "skills", "beam-local-stacks", "SKILL.md");
+
+		if (args.dryRun)
+			return new LocalStackSetupStepResult { name = ToolchainPins.Skill, status = "would install", ok = true, detail = path };
+
+		try
+		{
+			using var stream = typeof(LocalStackSetupCommand).Assembly.GetManifestResourceStream(SkillTemplateResource)
+				?? throw new InvalidOperationException($"{SkillTemplateResource} is not embedded");
+			using var reader = new StreamReader(stream);
+			var template = Template.Parse(reader.ReadToEnd());
+			var data = new SkillTemplateData
+			{
+				Commands = GenerateSkillDocsCommand.BuildCommandsDictionary(args.DependencyProvider.GetService<CliGenerator>())
+			};
+
+			Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+			File.WriteAllText(path, GenerateSkillDocsCommand.Render(template, data));
+			return new LocalStackSetupStepResult { name = ToolchainPins.Skill, status = "ok", ok = true, detail = path };
+		}
+		catch (Exception e)
+		{
+			return new LocalStackSetupStepResult { name = ToolchainPins.Skill, status = "failed", ok = false, detail = $"{path}: {e.Message}" };
+		}
+	}
+
 	/// <summary>Ensures the settings directory's <c>.gitignore</c> ignores the generated run-state + logs.</summary>
 	private static void EnsureGitignore(string dir)
 	{
@@ -620,42 +657,6 @@ public class LocalStackSetupCommand
 		catch (Exception e)
 		{
 			Log.Verbose($"could not update .gitignore: {e.Message}");
-		}
-	}
-
-	/// <summary>
-	/// Writes the <c>beam-local-stack</c> agent skill that documents the repositories the settings span and how the
-	/// stack works (see <see cref="LocalStackSkillTemplate"/>). Opt-in via <c>--skill</c>; when asked for, it always
-	/// OVERWRITES, because the file is generated from the settings and a stale copy describing a stack you no longer
-	/// have is worse than none.
-	///
-	/// Best-effort, like <see cref="EnsureGitignore"/>: a setup that already produced valid settings must never fail
-	/// because a documentation file could not be written.
-	/// </summary>
-	/// <returns>The path written, or null when not asked for or when writing failed.</returns>
-	private static string WriteSkill(LocalStackSetupCommandArgs args, string manifestPath, LocalStackConfig config)
-	{
-		if (!args.skill || config == null)
-		{
-			return null;
-		}
-
-		try
-		{
-			var skillPath = LocalStackSkillTemplate.Write(args.ConfigService, manifestPath, config);
-			if (skillPath == null)
-			{
-				Log.Verbose("local setup: the embedded local-stack skill template is missing; skipped writing it.");
-				return null;
-			}
-
-			Log.Information($"Wrote local-stack skill to {skillPath}.");
-			return skillPath;
-		}
-		catch (Exception e)
-		{
-			Log.Verbose($"local setup: could not write the local-stack skill: {e.Message}");
-			return null;
 		}
 	}
 

@@ -8,10 +8,10 @@ using NUnit.Framework;
 namespace tests;
 
 /// <summary>
-/// Verifies that `beam local init` (via <see cref="LocalStackTemplate.Create"/>) emits the opt-in build
-/// steps for the components `beam local up` does not otherwise build — the C# gateway, the Scala services,
-/// and the portal node deps — each immediately before its run step and marked build+waitForExit so
-/// `up --build` runs them and plain `up` skips them.
+/// Verifies that `beam local setup` (via <see cref="LocalStackTemplate.Create"/>) emits the build steps for
+/// the components `beam local run` does not otherwise build — the C# gateway, the Scala services, and the
+/// portal node deps — each immediately before its run step and marked build+waitForExit so `run` builds them
+/// only when needed and `:build` always.
 /// </summary>
 public class LocalStackBuildStepTests
 {
@@ -304,7 +304,7 @@ public class LocalStackBuildStepTests
 	{
 		var config = CreateWithWebRegistry();
 
-		// After the Scala services: `beam local up` logs in before its first beam step, and that login
+		// After the Scala services: `beam local run` logs in before its first beam step, and that login
 		// authenticates through the Scala auth service.
 		Assert.That(IndexOf(config, "scala: auth"),
 			Is.LessThan(IndexOf(config, LocalStackTemplate.WebPublishStepName)));

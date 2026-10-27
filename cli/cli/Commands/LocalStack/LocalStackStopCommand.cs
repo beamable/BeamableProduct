@@ -57,7 +57,7 @@ public class LocalStackStopCommand
 		AddOption(new Option<bool>(new[] { "--purge", "--clean" },
 				"DESTRUCTIVE: reverse docker steps with `compose down -v` (removing the containers and their "
 				+ "volumes) instead of `compose stop`. This deletes the local database — accounts, customers "
-				+ "and realms — so the next `up` seeds a brand-new realm with a new CID; omit to keep data"),
+				+ "and realms — so the next `run` seeds a brand-new realm with a new CID; omit to keep data"),
 			(args, v) => args.purge = v);
 	}
 

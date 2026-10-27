@@ -699,7 +699,7 @@ public static class LocalStackTemplate
 		//
 		// Vite's `browserHash` — the `?v=` on every optimized dep URL — is derived from the lockfile and
 		// the Vite config, NOT from the chunk split. So when the optimizer re-bundles (a dep discovered
-		// mid-session, or node_modules changed by `build: portal deps` / `beam web use` since the last
+		// mid-session, or node_modules changed by `build: portal deps` / `web: install` since the last
 		// run), the shared code is re-chunked into new `chunk-*.js` names while that hash stays the same.
 		// Anything holding the old module graph keeps asking for a chunk that no longer exists:
 		//

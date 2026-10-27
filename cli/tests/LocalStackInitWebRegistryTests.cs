@@ -556,6 +556,24 @@ public class LocalStackInitWebRegistryTests : CLITest
 		Assert.That(File.ReadAllText(env), Is.EqualTo(before), "not rewritten, even with --force");
 	}
 
+	/// <summary>The agent skill is rendered from this CLI's own commands into the workspace's .claude/skills.</summary>
+	[Test]
+	public void Setup_writes_the_local_stacks_skill()
+	{
+		var skill = Path.Combine(WorkingDir, ".claude", "skills", "beam-local-stacks", "SKILL.md");
+
+		SetupAndLoad();
+		Assert.That(File.Exists(skill), Is.False, "--only settings leaves it out");
+
+		Run("local", "setup", "--only", "skill", "--quiet");
+		Assert.That(File.Exists(skill), Is.True, $"no skill at {skill}");
+		var text = File.ReadAllText(skill);
+		Assert.That(text, Does.Contain("name: beam-local-stacks"));
+		Assert.That(text, Does.Contain("#### `beam local run` options"), "option tables come from the commands");
+		Assert.That(text, Does.Contain("`--detach`"));
+		Assert.That(text, Does.Not.Contain("{{"), "no template syntax left");
+	}
+
 	/// <summary>
 	/// End to end on a detached stack of two steps that only sleep: running another stack name changes the running
 	/// stack in place (a step it adds starts, one it drops stops, the rest keeps its process), a restart replaces

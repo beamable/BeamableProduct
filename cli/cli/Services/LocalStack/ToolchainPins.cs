@@ -30,8 +30,8 @@ public static class ToolchainPins
 
 	/// <summary>
 	/// Non-tool setup ids, also accepted by <c>--only</c>/<c>--skip</c>: the Docker check, the settings file with
-	/// its step catalogue, the generated BeamableBackend config files, the portal's .env.local, and the AWS
-	/// preflight. They install nothing into the toolchain dir.
+	/// its step catalogue, the agent skill, the generated BeamableBackend config files, the portal's .env.local, and
+	/// the AWS preflight. They install nothing into the toolchain dir.
 	/// </summary>
 	public const string ScalaConfig = "scala-config";
 
@@ -47,6 +47,9 @@ public static class ToolchainPins
 	/// <inheritdoc cref="ScalaConfig"/>
 	public const string Settings = "settings";
 
+	/// <inheritdoc cref="ScalaConfig"/>
+	public const string Skill = "skill";
+
 	/// <summary>
 	/// The tool ids, in install order (fast/independent first). <see cref="Pnpm"/> is LAST because it is installed
 	/// by the toolchain's own npm, so Node has to be in place before it runs.
@@ -54,7 +57,7 @@ public static class ToolchainPins
 	public static readonly string[] ToolIds = { Jdk, Maven, Dotnet, Node, Pnpm };
 
 	/// <summary>Every id <c>--only</c>/<c>--skip</c> accepts, tools plus the non-tool setup steps.</summary>
-	public static readonly string[] AllStepIds = { Docker, Jdk, Maven, Dotnet, Node, Pnpm, Settings, ScalaConfig, PortalConfig, Aws };
+	public static readonly string[] AllStepIds = { Docker, Jdk, Maven, Dotnet, Node, Pnpm, Settings, Skill, ScalaConfig, PortalConfig, Aws };
 
 	/// <summary>
 	/// Maven version the Scala reactor is built with. 3.9.x is what BeamableBackend's README documents;
@@ -77,8 +80,8 @@ public static class ToolchainPins
 
 	/// <summary>
 	/// The pnpm version the web packages are built with. <c>@beamable/sdk</c> and <c>@beamable/portal-toolkit</c>
-	/// both declare <c>"packageManager": "pnpm@10.8.0"</c>, and <c>beam web publish</c> shells out to <c>pnpm</c>
-	/// to build them — so without it the <c>build: web packages</c> step cannot run at all. BeamableProduct's
+	/// both declare <c>"packageManager": "pnpm@10.8.0"</c>, and <c>web: build</c> shells out to <c>pnpm</c>
+	/// to build them — so without it that step cannot run at all. BeamableProduct's
 	/// README lists pnpm as a prereq; this installs it instead of assuming it.
 	///
 	/// Keep in step with the <c>packageManager</c> field in <c>web/package.json</c> and

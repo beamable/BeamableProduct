@@ -7,7 +7,7 @@ using NUnit.Framework;
 namespace tests;
 
 /// <summary>
-/// Covers how `beam local init` emits the Scala service steps: the dbid provider's position in the bring-up,
+/// Covers how `beam local setup` emits the Scala service steps: the dbid provider's position in the bring-up,
 /// the JVM heap cap, and the launch script's tolerance of a failed classpath resolve. All three came out of a
 /// run that "succeeded" while logging a wall of errors — see the individual test docs.
 /// </summary>
@@ -36,7 +36,7 @@ public class LocalStackScalaLaunchTests
 	/// name prefix, and it is emitted first because the JVMs need it up before they launch. Pinning `command` and
 	/// `shell` here pins the invariant `LocalStackRunCommand.IsScalaServiceLauncher` relies on to tell the two
 	/// apart. Matching on the prefix alone once made the maven preflight derive `tools/redis`, a module that has
-	/// never existed, and abort `beam local up --build` blaming an unresolvable `dependency` plugin prefix.
+	/// never existed, and abort `beam local run <stack>:build` blaming an unresolvable `dependency` plugin prefix.
 	/// </summary>
 	[Test]
 	public void Redis_is_a_docker_step_not_a_maven_backed_launcher()

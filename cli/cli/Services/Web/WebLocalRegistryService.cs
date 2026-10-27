@@ -91,9 +91,9 @@ public static class WebLocalRegistryService
 	}
 
 	/// <summary>
-	/// Preflight for <c>beam local run</c> and any direct <c>beam web publish</c>: when the recorded
+	/// Preflight for <c>beam local run</c> with the <c>web:</c> steps: when the recorded
 	/// <paramref name="productDir"/> is a git checkout that has had <c>web/</c> or <c>beam-portal-toolkit/</c>
-	/// wiped from the working tree, restore them from HEAD instead of letting <c>beam web publish</c> fail
+	/// wiped from the working tree, restore them from HEAD instead of letting <c>web: build</c> fail
 	/// minutes into the run — the stack has spun up 20+ services by then and cascades a full shutdown.
 	///
 	/// Silent no-op on an intact checkout, so the healthy path pays only a couple of <c>File.Exists</c> calls.
@@ -157,7 +157,7 @@ public static class WebLocalRegistryService
 		bool gitAvailable, string gitMessage)
 	{
 		var missingList = string.Join(", ", missing.Select(m => m + "/"));
-		var head = $"BeamableProduct checkout at [{productDir}] is missing {missingList} — `beam web publish` cannot run without them.";
+		var head = $"BeamableProduct checkout at [{productDir}] is missing {missingList} — `web: build` cannot run without them.";
 		if (!gitAvailable)
 		{
 			return head + " That directory is not a git checkout, so nothing here can restore the missing files. " +
