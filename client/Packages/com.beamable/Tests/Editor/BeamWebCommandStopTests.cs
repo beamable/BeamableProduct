@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Dependencies;
@@ -144,11 +145,11 @@ namespace Beamable.Editor.Tests
 			using var fixture = new Fixture();
 			fixture.Command.Run().Error(_ => { });
 			fixture.Discover();
-			yield return WaitFor(() => fixture.ExecuteReceived.Task.IsCompleted);
+			yield return WaitFor(() => fixture.ExecuteReceived.Task.IsCompleted, diagnostics: fixture.Describe);
 			var first = fixture.Command.StopAsync();
 			Exception failure = null;
 			first.Error(error => failure = error);
-			yield return WaitFor(() => first.IsCompleted);
+			yield return WaitFor(() => first.IsCompleted, diagnostics: fixture.Describe);
 			Assert.That(failure, Is.TypeOf<TimeoutException>(), $"Only the held registration should time out. Received: {failure}");
 			Assert.That(fixture.StopReceived.Task.IsCompleted, Is.False);
 			fixture.AllowHeaders.TrySetResult(true);
@@ -175,7 +176,7 @@ namespace Beamable.Editor.Tests
 			var first = fixture.Command.StopAsync();
 			Exception failure = null;
 			first.Error(error => failure = error);
-			yield return WaitFor(() => first.IsCompleted);
+			yield return WaitFor(() => first.IsCompleted, diagnostics: fixture.Describe);
 			Assert.That(failure, Is.InstanceOf<OperationCanceledException>(), $"Only the held acknowledgement should time out. Received: {failure}");
 			Assert.That(fixture.StopReceived.Task.IsCompleted, Is.True, "The server must have received the timed-out stop.");
 			fixture.AllowAcknowledgement.TrySetResult(true);
@@ -373,11 +374,11 @@ namespace Beamable.Editor.Tests
 		}
 
 		private static IEnumerator WaitFor(Func<bool> ready, string message = "Timed out waiting for controlled transport gate.",
-			[CallerLineNumber] int line = 0)
+			Func<string> diagnostics = null, [CallerLineNumber] int line = 0)
 		{
 			var deadline = DateTime.UtcNow.AddSeconds(15);
 			while (!ready() && DateTime.UtcNow < deadline) yield return null;
-			Assert.That(ready(), Is.True, $"{message} Test line: {line}.");
+			if (!ready()) Assert.Fail($"{message} Test line: {line}. {diagnostics?.Invoke()}");
 		}
 
 		private static object Get(object target, string field) => target.GetType()
@@ -389,6 +390,7 @@ namespace Beamable.Editor.Tests
 		internal sealed class Fixture : IDisposable
 		{
 			private readonly HttpListener _listener = new HttpListener();
+			private readonly Task _timerProbe = Task.Delay(1000);
 			private readonly BeamWebCommandFactoryOptions _options;
 			private readonly BeamableDispatcher _dispatcher = new BeamableDispatcher();
 			private readonly IDependencyProviderScope _provider;
@@ -459,6 +461,20 @@ namespace Beamable.Editor.Tests
 				((Dictionary<string, Queue<BeamableDispatcher.WorkItem>>)Get(_dispatcher, "_workQueues"))[BeamableDispatcher.DEFAULT_QUEUE_NAME] = _pausedQueue;
 			}
 
+
+			public string Describe()
+			{
+				ThreadPool.GetAvailableThreads(out var workers, out var io);
+				var response = (Task)Get(Command, "_responseTask");
+				var run = (Promise)Get(Command, "_runPromise");
+				var history = (BeamWebCliCommandHistory)Get(Factory, "_history");
+				var logs = history.commands[0].logs;
+				return $"Execute={ExecuteReceived.Task.Status}; Stop={StopReceived.Task.Status}; " +
+				       $"Server={ServerTask.Status}; ServerError={ServerTask.Exception}; " +
+				       $"Response={response?.Status}; RunComplete={run?.IsCompleted}; " +
+				       $"Timer={_timerProbe.Status}; AvailableWorkers={workers}; AvailableIO={io}; " +
+				       $"LastCommandLog={(logs.Count == 0 ? "none" : logs[logs.Count - 1].message)}";
+			}
 
 			public void Discover()
 			{
