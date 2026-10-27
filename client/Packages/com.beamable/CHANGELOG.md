@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `MustBeComparatorString` now validates against what the backend accepts for each field. Stat requirements (listings, announcements, leaderboard and event cohorts) also accept `neq`, `gte`, `lte` and the long names (`equal`, `notequal`, `greaterthan`, `greaterthanequal`, `lessthan`, `lessthanequal`). Offer purchase requirements accept `eq`, `ne`, `gt`, `ge`, `lt`, `le`. Cohort requirements accept only `eq` (member) and `ne` (not a member); any other value used to be evaluated as "not a member", so replace it with `ne`.
+- With Unity IAP 5, initializing purchasing again (login, `ChangeAuthorizedPlayer`, a second `BeamContext`) no longer fails with `ErrorNoProductsAvailable (FetchProducts cannot be invoked if a fetch is already in progress...)`, and pending orders are no longer fulfilled more than once.
+- With Unity IAP 5, purchasing stays available when the store doesn't know some SKUs' products. SKUs without a product id for the current store (Google Play or App Store) are skipped with a warning instead of failing the product fetch.
+- With Unity IAP 5, a purchase reconnects the store first if Google Play billing disconnected while the app was in the background.
+- With Unity IAP 5, a deferred payment (Google Play pending payment method, Apple Ask to Buy) fails the `StartPurchase` promise with `UnityBeamablePurchaser.PURCHASE_DEFERRED_ERROR_CODE` instead of never completing it; the purchase is fulfilled once the payment is approved. The SDK no longer calls `RestoreTransactions` at startup, which could prompt iOS players for their Apple ID.
+- `StartPurchase` no longer leaves promises hanging or fails them with a null error: an unknown SKU fails before a transaction begins, a second purchase while one is in flight is rejected with `ExistingPurchasePending`, and an outstanding order can no longer complete the purchase in flight.
+- With Unity IAP 5, Steam builds now use the Beamable Steam store; an inverted define made them fall back to Unity's default store.
 
 ### Changed
 
