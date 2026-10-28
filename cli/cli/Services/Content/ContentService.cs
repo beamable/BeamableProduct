@@ -731,41 +731,10 @@ public partial class ContentService
 		// Wait for all the content file tasks and return the list of ContentFile.
 		try
 		{
-			var existingLocalFiles = (await Task.WhenAll(localFileTasks))
+			var readLocalFiles = (await Task.WhenAll(localFileTasks))
 				.Where(contentFile => contentFile.HasValue)
-				.Select(contentFile => contentFile.Value)
-				// A file can be deleted after its read finishes. Reconcile against the current disk
-				// state before deciding which remote entries need deletion placeholders.
-				.Where(contentFile => File.Exists(contentFile.LocalFilePath))
-				.ToList();
-			var existingLocalContentIds = existingLocalFiles
-				.Select(contentFile => contentFile.Id)
-				.ToHashSet();
-
-			// Add one entry for each reference-manifest item that is not represented by a surviving
-			// local file. Doing this after local reads prevents a file from being represented as both
-			// locally present and locally deleted when the filesystem changes during the scan.
-			var deletedLocalFiles = localFiles.TargetManifest.entries
-				.Where(entry => !existingLocalContentIds.Contains(entry.contentId))
-				.Where(entry => filterFunc(new ContentFile { Id = entry.contentId }))
-				.Select(entry => new ContentFile
-				{
-					Id = entry.contentId,
-					LocalFilePath = "",
-					Properties = JsonSerializer.Deserialize<JsonElement>("{}"),
-					Tags = JsonSerializer.SerializeToElement(entry.tags),
-
-					// For deletions, this is set as the reference manifest because it doesn't matter what the reference manifest was before deletion.
-					// If someone publishes a manifest that has this guy in it, we'll auto sync it back up.
-					// Using the target manifest uid, simplifies other cases (such as the initial sync) so we use this.
-					FetchedFromManifestUid = localFiles.TargetManifest.uid.GetOrElse(""),
-					PropertiesChecksum = entry.version,
-					ReferenceContent = entry,
-				});
-
-			localFiles.ContentFiles = existingLocalFiles
-				.Concat(deletedLocalFiles)
-				.ToList();
+				.Select(contentFile => contentFile.Value);
+			localFiles.ContentFiles = ReconcileLocalFilesWithManifest(readLocalFiles, localFiles.TargetManifest, filterFunc);
 
 			// Filter after we've loaded the files into memory as the provided filter type can only be applied
 			// over the data IN the file. 
@@ -838,6 +807,48 @@ public partial class ContentService
 		{
 			_fileSystemOperationSemaphore.Release();
 		}
+	}
+
+	/// <summary>
+	/// Combines the local files read by a scan with the <paramref name="targetManifest"/>: each read file that still exists on disk
+	/// is kept, and each manifest entry not represented by one of those files gets a deletion placeholder.
+	/// </summary>
+	public static List<ContentFile> ReconcileLocalFilesWithManifest(IEnumerable<ContentFile> readLocalFiles,
+		ClientManifestJsonResponse targetManifest, Func<ContentFile, bool> filterFunc)
+	{
+		var existingLocalFiles = readLocalFiles
+			// A file can be deleted after its read finishes. Reconcile against the current disk
+			// state before deciding which remote entries need deletion placeholders.
+			.Where(contentFile => File.Exists(contentFile.LocalFilePath))
+			.ToList();
+		var existingLocalContentIds = existingLocalFiles
+			.Select(contentFile => contentFile.Id)
+			.ToHashSet();
+
+		// Add one entry for each reference-manifest item that is not represented by a surviving
+		// local file. Doing this after local reads prevents a file from being represented as both
+		// locally present and locally deleted when the filesystem changes during the scan.
+		var deletedLocalFiles = targetManifest.entries
+			.Where(entry => !existingLocalContentIds.Contains(entry.contentId))
+			.Where(entry => filterFunc(new ContentFile { Id = entry.contentId }))
+			.Select(entry => new ContentFile
+			{
+				Id = entry.contentId,
+				LocalFilePath = "",
+				Properties = JsonSerializer.Deserialize<JsonElement>("{}"),
+				Tags = JsonSerializer.SerializeToElement(entry.tags),
+
+				// For deletions, this is set as the reference manifest because it doesn't matter what the reference manifest was before deletion.
+				// If someone publishes a manifest that has this guy in it, we'll auto sync it back up.
+				// Using the target manifest uid, simplifies other cases (such as the initial sync) so we use this.
+				FetchedFromManifestUid = targetManifest.uid.GetOrElse(""),
+				PropertiesChecksum = entry.version,
+				ReferenceContent = entry,
+			});
+
+		return existingLocalFiles
+			.Concat(deletedLocalFiles)
+			.ToList();
 	}
 
 	/// <summary>

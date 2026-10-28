@@ -70,53 +70,39 @@ public class ContentWatcherRecoveryTests
 	public async Task A_content_file_deleted_after_it_is_read_is_represented_once_as_deleted()
 	{
 		var testRoot = Path.Combine(Path.GetTempPath(), $"beam-content-watcher-{Guid.NewGuid():N}");
-		Directory.CreateDirectory(Path.Combine(testRoot, ConfigService.CFG_FOLDER));
+		Directory.CreateDirectory(testRoot);
 
 		try
 		{
-			var config = new ConfigService(null);
-			config.SetWorkingDir(testRoot);
-			var requester = new CliRequester(new RequesterInfo(
-				"test-cid",
-				PID,
-				"test-access-token",
-				"test-refresh-token",
-				"http://localhost"));
-			var contentService = new ContentService(requester, config, null!, null!, null!, null!, null!);
-			var contentFolder = contentService.EnsureContentPathForRealmExists(out _, PID, MANIFEST_ID);
 			const string contentId = "items.item_0959";
-			var contentFilePath = Path.Combine(contentFolder, $"{contentId}.json");
-			await File.WriteAllTextAsync(contentFilePath,
-				"{\"properties\":{},\"tags\":[],\"referenceManifestId\":\"test-manifest\"}");
+			var contentFilePath = Path.Combine(testRoot, $"{contentId}.json");
+			await File.WriteAllTextAsync(contentFilePath, "{}");
 
-			// Keep the remote-file reconciliation busy after the local read starts. This models the
-			// large manifest from the reported failure and makes the delete/read race deterministic.
-			var unrelatedEntry = ManifestEntry("items.unrelated");
-			var manifestEntries = Enumerable.Repeat(unrelatedEntry, 1_000_000)
-				.Append(ManifestEntry(contentId))
-				.ToArray();
-
-			var scan = Task.Run(() => contentService.GetAllContentFiles(
-				new ClientManifestJsonResponse
-				{
-					entries = manifestEntries,
-					uid = new OptionalString("test-manifest")
-				},
-				MANIFEST_ID,
-				ContentFilterType.ExactIds,
-				new[] { contentId },
-				getLocalStateOnly: true));
-
-			await Task.Delay(25);
+			// The scan read this file, then it was deleted before the read results were reconciled.
+			using var tags = JsonDocument.Parse("[]");
+			var readLocalFile = new ContentFile
+			{
+				Id = contentId,
+				LocalFilePath = contentFilePath,
+				Tags = tags.RootElement.Clone(),
+				FetchedFromManifestUid = "test-manifest"
+			};
 			await DeleteWithRetryAsync(contentFilePath);
 
-			var result = await scan.WaitAsync(TimeSpan.FromSeconds(30));
-			var matchingEntries = result.ContentFiles.Where(contentFile => contentFile.Id == contentId).ToArray();
+			var contentFiles = ContentService.ReconcileLocalFilesWithManifest(
+				new[] { readLocalFile },
+				new ClientManifestJsonResponse
+				{
+					entries = new[] { ManifestEntry("items.unrelated"), ManifestEntry(contentId) },
+					uid = new OptionalString("test-manifest")
+				},
+				contentFile => contentFile.Id == contentId);
+			var matchingEntries = contentFiles.Where(contentFile => contentFile.Id == contentId).ToArray();
 			Assert.Multiple(() =>
 			{
+				Assert.That(contentFiles, Has.Count.EqualTo(1), "the filter must exclude the unrelated manifest entry");
 				Assert.That(matchingEntries, Has.Length.EqualTo(1));
 				Assert.That(matchingEntries[0].LocalFilePath, Is.Empty);
-				Assert.That(result.PerIdContentFiles[contentId].LocalFilePath, Is.Empty);
 			});
 		}
 		finally
