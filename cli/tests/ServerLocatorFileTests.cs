@@ -45,6 +45,26 @@ public class ServerLocatorFileTests
 	}
 
 	[Test]
+	[Platform("Win")]
+	public void Written_locator_is_private_to_the_user_on_Windows()
+	{
+		// Windows ignores the Unix mode; without its own ACL the file inherits the folder's, often readable by all users.
+		var path = ServerLocatorFile.Write(_tempDir, Locator(Environment.ProcessId));
+		if (!OperatingSystem.IsWindows())
+		{
+			return;
+		}
+
+		var security = new FileInfo(path).GetAccessControl();
+		Assert.That(security.AreAccessRulesProtected, Is.True, "Nothing may be inherited from the folder.");
+		var rules = security.GetAccessRules(true, true, typeof(System.Security.Principal.SecurityIdentifier))
+			.Cast<System.Security.AccessControl.FileSystemAccessRule>().ToList();
+		using var me = System.Security.Principal.WindowsIdentity.GetCurrent();
+		Assert.That(rules.Select(r => r.IdentityReference), Is.All.EqualTo(me.User), "Only the current user may access the token.");
+		Assert.That(rules, Is.Not.Empty);
+	}
+
+	[Test]
 	public void Live_locators_round_trip()
 	{
 		ServerLocatorFile.Write(_tempDir, Locator(Environment.ProcessId));

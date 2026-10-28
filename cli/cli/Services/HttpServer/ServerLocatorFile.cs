@@ -1,6 +1,9 @@
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Security.AccessControl;
+using System.Security.Principal;
 
 namespace cli.Services.HttpServer;
 
@@ -44,15 +47,25 @@ public static class ServerLocatorFile
 		var path = GetPath(configTempDirectory, locator.pid);
 		var tempPath = $"{path}.{Guid.NewGuid():N}.tmp";
 
-		var options = new FileStreamOptions { Mode = FileMode.CreateNew, Access = FileAccess.Write };
-		if (!OperatingSystem.IsWindows())
+		var json = JsonConvert.SerializeObject(locator, Formatting.Indented);
+		if (OperatingSystem.IsWindows())
 		{
-			options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+			// The file would otherwise inherit the folder's ACL, which often lets every local user read it.
+			using var stream = new FileInfo(tempPath).Create(FileMode.CreateNew, FileSystemRights.FullControl,
+				FileShare.None, 4096, FileOptions.None, CurrentUserOnly());
+			using var writer = new StreamWriter(stream);
+			writer.Write(json);
 		}
-
-		using (var writer = new StreamWriter(tempPath, options))
+		else
 		{
-			writer.Write(JsonConvert.SerializeObject(locator, Formatting.Indented));
+			var options = new FileStreamOptions
+			{
+				Mode = FileMode.CreateNew,
+				Access = FileAccess.Write,
+				UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite
+			};
+			using var writer = new StreamWriter(tempPath, options);
+			writer.Write(json);
 		}
 
 		// A rename is atomic, so a reader only ever sees a whole file.
@@ -67,6 +80,20 @@ public static class ServerLocatorFile
 			SignalRegistrations.Add(PosixSignalRegistration.Create(signal, _ => Delete(path)));
 		}
 		return path;
+	}
+
+	/// <summary>
+	/// A security descriptor that grants only the current user access and inherits nothing from the folder. The
+	/// rename that publishes the file keeps it.
+	/// </summary>
+	[SupportedOSPlatform("windows")]
+	public static FileSecurity CurrentUserOnly()
+	{
+		var security = new FileSecurity();
+		security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+		using var identity = WindowsIdentity.GetCurrent();
+		security.AddAccessRule(new FileSystemAccessRule(identity.User!, FileSystemRights.FullControl, AccessControlType.Allow));
+		return security;
 	}
 
 	// A registration is undone when it is garbage collected, so keep them for the life of the process.

@@ -18,10 +18,6 @@ namespace cli.Commands.Mcp;
 
 public class McpToolExecutor
 {
-	// Help is only written to the console, so help calls swap Console.Out and must not overlap.
-	// Commands report through IDataReporterService instead and run concurrently.
-	private static readonly SemaphoreSlim Lock = new(1, 1);
-
 	/// <summary>Creates the app each command runs in. Tests replace it to control what a command does.</summary>
 	public Func<App> AppFactory { get; set; } = () => new App();
 
@@ -551,6 +547,8 @@ public class McpToolExecutor
 		var fullCommand = EnsureCommandFlags(commandLine);
 		var capturer = new CapturingReporterService(progress);
 
+		// Some commands (`local logs`, for one) write their output straight to the console.
+		using var console = InvocationConsole.Begin(out var output);
 		// Run on a plain thread-pool thread to avoid deadlocking a SynchronizationContext the MCP
 		// host may have captured; CliWrap's continuations would otherwise try to resume on it.
 		var exitCode = await Task.Run(() => CliInvocationCore.Execute(new CliInvocationRequest
@@ -569,81 +567,54 @@ public class McpToolExecutor
 			CancellationToken = cancellationToken
 		}), CancellationToken.None).ConfigureAwait(false);
 
-		return capturer.ToResult(commandLine, exitCode, cancellationToken.IsCancellationRequested);
+		return capturer.ToResult(commandLine, exitCode, cancellationToken.IsCancellationRequested, output);
 	}
 
+	/// <summary>Runs a command whose output is console text, such as help, and returns that text.</summary>
 	public async Task<string> ExecuteAsync(string commandLine)
 	{
-		await Lock.WaitAsync();
-		try
-		{
-			return await RunInProcessAsync(commandLine);
-		}
-		finally
-		{
-			Lock.Release();
-		}
-	}
-
-	private async Task<string> RunInProcessAsync(string commandLine)
-	{
 		var fullCommand = EnsureLogStreams(commandLine);
-
-		var sw = new StringWriter();
-		var errSw = new StringWriter();
 		var capturer = new CapturingReporterService(null);
 
-		var previousOut = Console.Out;
-		var previousErr = Console.Error;
-		Console.SetOut(sw);
-		Console.SetError(errSw);
-
-		try
+		using (InvocationConsole.Begin(out var output))
 		{
-			var app = new App();
-			app.Configure(
-				builder =>
+			// Run on a plain thread-pool thread to avoid deadlocking a SynchronizationContext the MCP
+			// host may have captured; CliWrap's continuations would otherwise try to resume on it.
+			await Task.Run(() => CliInvocationCore.Execute(new CliInvocationRequest
+			{
+				ReadCommand = () => Task.FromResult((fullCommand,
+					JsonConvert.SerializeObject(new ServerRequest { commandLine = fullCommand }))),
+				UseCustomSplitter = false,
+				App = AppFactory(),
+				CreateReporter = _ => capturer,
+				ReportSetupFailure = report =>
 				{
-					builder.Remove<IDataReporterService>();
-					builder.AddSingleton<IDataReporterService>(capturer);
-				},
-				overwriteLogger: false);
-			app.Build();
+					capturer.Report(report.type, report.data);
+					return Task.CompletedTask;
+				}
+			})).ConfigureAwait(false);
 
-			// Run on a plain thread-pool thread to avoid deadlocking the ASP.NET
-			// SynchronizationContext that the MCP host uses. Without this, CliWrap's
-			// internal async continuations try to resume on the captured context, which
-			// is already blocked waiting for this tool call to complete.
-			await Task.Run(() => app.RunWithSingleString(fullCommand, useCustomSplitter: false)).ConfigureAwait(false);
+			var sw = new StringWriter();
+			await sw.WriteAsync(output.StandardOutput);
+			await sw.WriteAsync(capturer.EventText());
+
+			// CliException and other framework errors write to Console.Error, not stdout.
+			// Append them as a JSON error line so the MCP client always sees them.
+			var errorText = output.StandardError.Trim();
+			if (!string.IsNullOrEmpty(errorText))
+			{
+				var enriched = EnrichErrorIfCommandFailure(errorText, commandLine);
+				await sw.WriteLineAsync(JsonConvert.SerializeObject(new { error = enriched }));
+			}
+
+			// Commands that implement IEmptyResult produce no output on success.
+			// Emit a generic success envelope so the MCP client always receives a
+			// non-empty response and knows the command completed without error.
+			if (string.IsNullOrWhiteSpace(sw.ToString()))
+				await sw.WriteLineAsync(JsonConvert.SerializeObject(new { status = "ok", command = commandLine }));
+
+			return TruncateIfNeeded(sw.ToString());
 		}
-		catch (Exception ex)
-		{
-			await sw.WriteLineAsync($"{{\"error\":\"{ex.Message.Replace("\"", "\\\"")}\"}}");
-		}
-		finally
-		{
-			Console.SetOut(previousOut);
-			Console.SetError(previousErr);
-		}
-
-		await sw.WriteAsync(capturer.EventText());
-
-		// CliException and other framework errors write to Console.Error, not stdout.
-		// Append them as a JSON error line so the MCP client always sees them.
-		var errorText = errSw.ToString().Trim();
-		if (!string.IsNullOrEmpty(errorText))
-		{
-			var enriched = EnrichErrorIfCommandFailure(errorText, commandLine);
-			await sw.WriteLineAsync(JsonConvert.SerializeObject(new { error = enriched }));
-		}
-
-		// Commands that implement IEmptyResult produce no output on success.
-		// Emit a generic success envelope so the MCP client always receives a
-		// non-empty response and knows the command completed without error.
-		if (string.IsNullOrWhiteSpace(sw.ToString()))
-			await sw.WriteLineAsync(JsonConvert.SerializeObject(new { status = "ok", command = commandLine }));
-
-		return TruncateIfNeeded(sw.ToString());
 	}
 
 	private const int MaxOutputLength = 32_768;
@@ -829,7 +800,7 @@ public class McpToolExecutor
 			}
 		}
 
-		public CallToolResult ToResult(string commandLine, int exitCode, bool cancelled)
+		public CallToolResult ToResult(string commandLine, int exitCode, bool cancelled, InvocationConsole.Capture console = null)
 		{
 			List<JObject> events;
 			List<CliLogMessage> logs;
@@ -849,7 +820,20 @@ public class McpToolExecutor
 				text.AppendLine(JsonConvert.SerializeObject(new { log = log.message, level = log.logLevel }));
 			}
 
+			// What the command printed itself rather than reported.
+			var printed = console?.StandardOutput ?? "";
+			text.Append(printed);
+
 			var isError = exitCode != 0 || _reportedError || cancelled;
+			if (isError && !_reportedError && !cancelled)
+			{
+				// A failure without an error event only explains itself on stderr.
+				var stderr = console?.StandardError.Trim();
+				if (!string.IsNullOrEmpty(stderr))
+				{
+					text.AppendLine(JsonConvert.SerializeObject(new { error = EnrichErrorIfCommandFailure(stderr, commandLine) }));
+				}
+			}
 			if (cancelled)
 			{
 				text.AppendLine(JsonConvert.SerializeObject(new { error = "The command was cancelled.", command = commandLine }));
@@ -880,6 +864,10 @@ public class McpToolExecutor
 				["exitCode"] = exitCode,
 				["events"] = new JArray(events)
 			};
+			if (printed.Length > 0)
+			{
+				structured["console"] = TruncateIfNeeded(printed);
+			}
 
 			return new CallToolResult
 			{

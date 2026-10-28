@@ -69,6 +69,7 @@ public static class CliInvocationCore
 		IDataReporterService reporter = null;
 		App app = null;
 		var registered = false;
+		var cancellation = default(CancellationTokenRegistration);
 		int exitCode = -1;
 		try
 		{
@@ -86,6 +87,8 @@ public static class CliInvocationCore
 			{
 				app.Configure(builder =>
 				{
+					// This runs in the invocation's own scope, where the command's lifecycle is registered.
+					LinkLifecycle(builder, request.CancellationToken, registration => cancellation = registration);
 					builder.Remove<IDataReporterService>();
 					builder.AddSingleton<IDataReporterService>(provider =>
 					{
@@ -103,10 +106,6 @@ public static class CliInvocationCore
 			{
 				throw new CliException(refusal);
 			}
-
-			using var cancellation = request.CancellationToken.CanBeCanceled
-				? request.CancellationToken.Register(() => app.CommandProvider.GetService<AppLifecycle>().Cancel())
-				: default;
 
 			lock (_invocationsLock)
 			{
@@ -137,6 +136,7 @@ public static class CliInvocationCore
 		}
 		finally
 		{
+			cancellation.Dispose();
 			try
 			{
 				app?.EndInvocation();
@@ -159,5 +159,45 @@ public static class CliInvocationCore
 		}
 
 		return exitCode;
+	}
+
+	/// <summary>
+	/// Makes <paramref name="cancellationToken"/> cancel the <see cref="AppLifecycle"/> the command will use. That
+	/// lifecycle belongs to the invocation's scope and is created on first use, so its registration is wrapped rather
+	/// than resolved from the app's root.
+	/// </summary>
+	private static void LinkLifecycle(IDependencyBuilder builder, CancellationToken cancellationToken,
+		Action<CancellationTokenRegistration> onLinked)
+	{
+		if (!cancellationToken.CanBeCanceled)
+		{
+			return;
+		}
+
+		AppLifecycle Link(AppLifecycle lifecycle)
+		{
+			onLinked(cancellationToken.Register(() =>
+			{
+				try
+				{
+					lifecycle.Cancel();
+				}
+				catch (Exception ex)
+				{
+					Log.Debug($"Could not cancel the command's lifecycle: {ex.Message}");
+				}
+			}));
+			return lifecycle;
+		}
+
+		var descriptor = builder.GetSingletonServices().LastOrDefault(d => d.Interface == typeof(AppLifecycle));
+		if (descriptor == null)
+		{
+			builder.AddSingleton(_ => Link(new AppLifecycle()));
+			return;
+		}
+
+		var create = descriptor.Factory;
+		descriptor.Factory = provider => Link((AppLifecycle)create(provider));
 	}
 }

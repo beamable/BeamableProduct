@@ -45,7 +45,9 @@ public class McpToolExecutorTests
 		public override void Build() => CommandProvider = Commands.Build();
 
 		public override Task<int> RunWithSingleString(string commandLine, bool useCustomSplitter) =>
-			_run(commandLine, CommandProvider.GetService<IDataReporterService>(), _lifecycle.CancellationToken);
+			// Like a real command (args.Lifecycle), resolve the lifecycle from the command's services, so the
+			// executor's cancellation wiring is what reaches it.
+			_run(commandLine, CommandProvider.GetService<IDataReporterService>(), CommandProvider.GetService<AppLifecycle>().CancellationToken);
 	}
 
 	// Report payloads are serialized by public fields, like the CLI's own result types.
@@ -236,5 +238,83 @@ public class McpToolExecutorTests
 		release.SetResult();
 		await call.WaitAsync(Deadline);
 		Assert.That(cli.Services.CliInvocation.CliInvocationCore.Snapshot(), Has.None.Contains("services ps"));
+	}
+
+	public class Steps { public List<string> steps = new(); }
+
+	[Test]
+	public async Task Console_output_is_part_of_the_result()
+	{
+		// Like `beam local logs`: the log lines go to the console, the result only names the steps.
+		var executor = Executor((_, reporter, _) =>
+		{
+			Console.Out.WriteLine("[demo] line-a");
+			Console.WriteLine("[demo] line-b");
+			reporter.Report("stream", new Steps { steps = { "demo" } });
+			return Task.FromResult(0);
+		});
+		var result = await executor.ExecuteCommandAsync("local logs");
+
+		Assert.That(result.IsError, Is.Not.True);
+		Assert.That(Text(result), Does.Contain("[demo] line-a").And.Contain("[demo] line-b").And.Contain("\"steps\""));
+		Assert.That(result.StructuredContent!.Value.GetProperty("console").GetString(), Does.Contain("[demo] line-a"));
+	}
+
+	[Test]
+	public async Task Concurrent_calls_capture_only_their_own_console_output()
+	{
+		const int count = 6;
+		var barrier = new Barrier(count);
+		var executor = Executor((command, _, _) =>
+		{
+			var marker = command.Split(' ')[0];
+			for (var i = 0; i < 20; i++)
+			{
+				Console.Out.WriteLine($"{marker}-{i}");
+				if (i == 5)
+				{
+					barrier.SignalAndWait(TimeSpan.FromSeconds(10)); // all calls write at the same time
+				}
+			}
+			return Task.FromResult(0);
+		});
+		var calls = Enumerable.Range(0, count).Select(i => Task.Run(() => executor.ExecuteCommandAsync($"marker{i}"))).ToArray();
+		var results = await Task.WhenAll(calls).WaitAsync(Deadline);
+
+		for (var i = 0; i < count; i++)
+		{
+			var text = Text(results[i]);
+			Assert.That(text, Does.Contain($"marker{i}-19"));
+			var foreign = Enumerable.Range(0, count).Where(j => j != i).Where(j => text.Contains($"marker{j}-")).ToList();
+			Assert.That(foreign, Is.Empty, $"Call {i} captured another call's output.");
+		}
+	}
+
+	[Test]
+	public async Task Writes_outside_a_call_are_not_captured_by_it()
+	{
+		// The host and Unity's /execute commands share the process; their console writes must not end up in an
+		// agent's tool result while a call is running.
+		var inCall = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+		var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+		var executor = Executor(async (_, _, _) =>
+		{
+			Console.Out.WriteLine("from-the-call");
+			inCall.SetResult();
+			await release.Task;
+			return 0;
+		});
+		var call = executor.ExecuteCommandAsync("config");
+		await inCall.Task.WaitAsync(Deadline);
+
+		// This test's own flow is outside the call, like the host's.
+		Console.Out.WriteLine("from-the-host");
+		await Task.Run(() => Console.Out.WriteLine("from-the-host-task"));
+		release.SetResult();
+		var text = Text(await call.WaitAsync(Deadline));
+
+		Assert.That(text, Does.Contain("from-the-call"));
+		Assert.That(text, Does.Not.Contain("from-the-host"));
+		Assert.That(text, Does.Not.Contain("from-the-host-task"));
 	}
 }
