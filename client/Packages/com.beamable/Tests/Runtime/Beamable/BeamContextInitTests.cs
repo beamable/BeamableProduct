@@ -487,6 +487,8 @@ namespace Tests.Runtime.Beamable
 	{
 		private bool _originalSkipCommerceInitialization;
 		private MockPlatformRoute<PurchaseResponse> _beginPurchaseRoute;
+		private MockPlatformRoute<EmptyResponse> _failRetiredPurchaseRoute;
+		private MockPlatformRoute<EmptyResponse> _completePurchaseRoute;
 
 		[SetUp]
 		public void SaveConfiguration()
@@ -524,6 +526,15 @@ namespace Tests.Runtime.Beamable
 			_beginPurchaseRoute = ctx.Requester.MockRequest<PurchaseResponse>(Method.POST)
 				.WithURIMatcher(uri => uri.EndsWith("/purchase/begin"))
 				.WithResponse(new PurchaseResponse { txid = 1 })
+				.WithToken(MockBeamContext.ACCESS_TOKEN);
+			_failRetiredPurchaseRoute = ctx.Requester.MockRequest<EmptyResponse>(Method.POST)
+				.WithURIMatcher(uri => uri.EndsWith("/purchase/fail"))
+				.WithBodyMatch<FailPurchaseRequest>(req => req.txid == 7 && req.reason == "sku_a:PurchaseRetired")
+				.WithResponse(new EmptyResponse())
+				.WithToken(MockBeamContext.ACCESS_TOKEN);
+			_completePurchaseRoute = ctx.Requester.MockRequest<EmptyResponse>(Method.POST)
+				.WithURIMatcher(uri => uri.EndsWith("/purchase/complete"))
+				.WithResponse(new EmptyResponse())
 				.WithToken(MockBeamContext.ACCESS_TOKEN);
 		}
 
@@ -609,6 +620,40 @@ namespace Tests.Runtime.Beamable
 			var next = purchaser.StartPurchase("listings.test", "sku_a");
 			next.Error(_ => { });
 			Assert.IsFalse(next.IsCompleted);
+		}
+
+		[UnityTest]
+		public IEnumerator RetiredPurchaseDoesNotReachTheStore()
+		{
+			TriggerContextInit();
+			yield return Context.OnReady.ToYielder();
+			var purchaser = Context.Api.BeamableIAP.GetResult();
+
+			// The first purchase's begin request is still pending when purchasing is initialized again.
+			var firstBegin = new Promise<PurchaseResponse>();
+			_beginPurchaseRoute.WithPendingResponse(firstBegin);
+			Exception firstError = null;
+			var first = purchaser.StartPurchase("listings.test", "sku_a").Recover(err =>
+			{
+				firstError = err;
+				return null;
+			});
+			yield return purchaser.Initialize(Context.ServiceProvider).Recover(_ => PromiseBase.Unit).ToYielder();
+			yield return first.ToYielder();
+			Assert.AreEqual(409, ((ErrorCode)firstError).Code);
+
+			// A second purchase starts, and its begin request stays pending. Disposal fails it, so it needs an error handler.
+			_beginPurchaseRoute.WithPendingResponse(new Promise<PurchaseResponse>());
+			var second = purchaser.StartPurchase("listings.test", "sku_a");
+			second.Error(_ => { });
+
+			// The first begin request returns after the purchaser moved on.
+			firstBegin.CompleteSuccess(new PurchaseResponse { txid = 7 });
+			for (var i = 0; i < 5; i++) yield return null;
+
+			Assert.AreEqual(1, _failRetiredPurchaseRoute.CallCount, "The retired purchase's transaction is closed.");
+			Assert.AreEqual(0, _completePurchaseRoute.CallCount, "The store didn't buy the retired purchase.");
+			Assert.IsFalse(second.IsCompleted);
 		}
 	}
 #endif
