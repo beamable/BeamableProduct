@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - With Unity IAP 5, a deferred payment (Google Play pending payment method, Apple Ask to Buy) fails the `StartPurchase` promise with `UnityBeamablePurchaser.PURCHASE_DEFERRED_ERROR_CODE` instead of never completing it; the purchase is fulfilled once the payment is approved. The SDK no longer calls `RestoreTransactions` at startup, which could prompt iOS players for their Apple ID.
 - `StartPurchase` no longer leaves promises hanging or fails them with a null error: an unknown SKU fails before a transaction begins, a second purchase while one is in flight is rejected with `ExistingPurchasePending`, and an outstanding order can no longer complete the purchase in flight.
 - With Unity IAP 5, Steam builds now use the Beamable Steam store; an inverted define made them fall back to Unity's default store.
+- An order whose fulfillment fails is no longer confirmed with the store, which consumed the purchase without granting its reward. It stays pending and is fulfilled again later. Retries of a failed fulfillment are now limited.
+- With Unity IAP 5 on iOS and macOS, purchases are fulfilled with the App Store receipt instead of Unity's receipt wrapper, which the backend rejected. When the receipt is missing or doesn't match the order, it is refreshed during a purchase the player started. A failed Apple order can be retried without another charge by purchasing the same product again or calling `RestorePurchases`.
+- Purchase prices are sent to the backend in a culture-independent format, so devices using a decimal comma no longer send values such as `4,99`.
+- With Unity IAP 5, product fetches that overlap (several `BeamContext`s initializing at once) each resolve the contexts that asked for them, and each context's initialization depends only on its own products.
+- With Unity IAP 5 and domain reload disabled, entering play mode again creates a new store connection, because IAP resets its services between play sessions.
+- Purchase errors no longer log the backend response, which can contain the receipt.
 
 ### Changed
 

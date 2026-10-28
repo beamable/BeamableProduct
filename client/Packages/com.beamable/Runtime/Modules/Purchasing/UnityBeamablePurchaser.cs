@@ -14,10 +14,18 @@ using Beamable.Coroutines;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 #if !BEAMABLE_PURCHASING_IMPLEMENTATION_DISABLED
 using UnityEngine.Purchasing;
 using UnityEngine.Purchasing.Extension;
+#if UNITY_PURCHASING_5_OR_NEWER
+using UnityEngine.Purchasing.Security;
+// The store's handle on a purchase awaiting fulfillment: a pending order in v5, the purchased product in v4.
+using StoreOrder = UnityEngine.Purchasing.PendingOrder;
+#else
+using StoreOrder = UnityEngine.Purchasing.Product;
+#endif
 #endif
 
 namespace Beamable.Purchasing
@@ -55,12 +63,54 @@ namespace Beamable.Purchasing
 		private static readonly List<UnityBeamablePurchaser> s_purchasers = new List<UnityBeamablePurchaser>();
 		private static bool s_fetchInProgress;
 		private static bool s_refetchRequested;
+		private static ProductFetchBatch s_productFetchBatch;
 		// Store transaction ids of pending orders being fulfilled, so an order the store delivers again
 		// (e.g. FetchPurchases during another initialization) is not fulfilled twice.
 		private static readonly HashSet<string> s_ordersInFulfillment = new HashSet<string>();
 		// Beamable txids of store purchases that started but did not complete, by SKU. An order that arrives later
 		// (deferred payment approved, or the context that started it is gone) completes its own transaction.
 		private static readonly Dictionary<string, long> s_openTxids = new Dictionary<string, long>();
+		// Apple orders by store transaction id, kept in memory so a failed fulfillment can be retried without
+		// another charge: StartPurchase of the same SKU or RestorePurchases retries it.
+		private static readonly Dictionary<string, AppleFulfillment> s_appleOrders = new Dictionary<string, AppleFulfillment>();
+		private static Promise<string> s_receiptRefresh;
+
+		/// <summary>
+		/// A purchaser waiting for a product fetch, with the products it asked for.
+		/// </summary>
+		private sealed class ProductFetchWaiter
+		{
+			public UnityBeamablePurchaser Purchaser;
+			public Promise<Unit> Promise;
+			public List<ProductDefinition> Definitions;
+		}
+
+		/// <summary>
+		/// One FetchProducts call. IAP reports the products it found, then a failure for the rest, so the batch is
+		/// complete once every requested id has one of those outcomes.
+		/// </summary>
+		private sealed class ProductFetchBatch
+		{
+			public readonly HashSet<string> RemainingIds = new HashSet<string>();
+			public readonly List<ProductFetchWaiter> Waiters = new List<ProductFetchWaiter>();
+			public string FailureReason;
+			public bool Completing;
+		}
+
+		/// <summary>
+		/// An Apple order being fulfilled, or retained after a failed fulfillment so it can be retried.
+		/// </summary>
+		private sealed class AppleFulfillment
+		{
+			public UnityBeamablePurchaser Owner;
+			public PendingOrder Order;
+			public Product Product;
+			public CompletedTransaction Transaction;
+			public Action<CompletedTransaction> Success;
+			public Action<ErrorCode> Fail;
+			public int Generation;
+			public bool Busy, Fulfilled, RefreshAttempted, AllowRefresh, ForceRefresh;
+		}
 
 		private StoreController _storeController;
 		// The store product definitions, built during Initialize and fetched once the store connects.
@@ -77,6 +127,9 @@ namespace Beamable.Purchasing
 #endif
 
 		private Promise<Unit> _initPromise = new Promise<Unit>();
+		// Incremented by every Initialize, so work started for an earlier login can tell it is stale.
+		private int _generation;
+		private bool _disposed;
 		private long _txid;
 		// The Beamable SKU of the purchase StartPurchase is driving, and whether the store was asked to buy it yet.
 		private string _activeSku;
@@ -95,6 +148,7 @@ namespace Beamable.Purchasing
 			{
 				return _initPromise;
 			}
+			_generation++;
 			_initPromise = new Promise<Unit>();
 			InitializationStatus = PurchasingInitializationStatus.InProgress;
 			_serviceProvider = provider;
@@ -185,6 +239,7 @@ namespace Beamable.Purchasing
 
 		public Promise OnDispose()
 		{
+			_disposed = true;
 #if UNITY_PURCHASING_5_OR_NEWER
 			s_purchasers.Remove(this);
 #endif
@@ -221,6 +276,17 @@ namespace Beamable.Purchasing
 		/// </summary>
 		private bool IsActivePurchase(string sku) => _storePurchaseStarted && sku != null && sku == _activeSku;
 
+		/// <summary>
+		/// True while this purchaser still serves the login that started work in <paramref name="generation"/>.
+		/// </summary>
+		private bool IsCurrent(int generation)
+		{
+#if UNITY_PURCHASING_5_OR_NEWER
+			if (!s_purchasers.Contains(this)) return false;
+#endif
+			return generation == _generation && !_disposed;
+		}
+
 		private PaymentService GetPaymentService()
 		{
 			return _serviceProvider.GetService<PaymentService>();
@@ -240,17 +306,60 @@ namespace Beamable.Purchasing
 #endif
 		}
 
+		private static string GetStoreTransactionId(StoreOrder order)
+		{
 #if UNITY_PURCHASING_5_OR_NEWER
+			return order?.Info?.TransactionID;
+#else
+			return order?.transactionID;
+#endif
+		}
+
+		// Prices go to the backend as text, so they must not depend on the device's culture (e.g. "4,99").
+		private static string FormatPrice(Product product) =>
+			product?.metadata == null ? string.Empty : product.metadata.localizedPrice.ToString(CultureInfo.InvariantCulture);
+
+#if UNITY_PURCHASING_5_OR_NEWER
+#if USE_STEAMWORKS && (!UNITY_EDITOR || BEAMABLE_STEAM_IN_EDITOR)
+		// Steam builds report OSXPlayer on macOS, but their orders come from the Steam store.
+		private static bool IsApplePlayer => false;
+#else
+		private static bool IsApplePlayer => Application.platform == RuntimePlatform.IPhonePlayer ||
+		                                     Application.platform == RuntimePlatform.OSXPlayer;
+#endif
+
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
 		private static void ResetStaticState()
 		{
-			// With domain reload disabled, statics survive between play sessions. The controller and its handlers
-			// stay (IAP's own singletons survive too), but purchasers and orders of the last session are dropped.
+			// With domain reload disabled, statics survive between play sessions, but Unity IAP 5 resets its own
+			// service containers at SubsystemRegistration. Release the old controller's handlers so the next
+			// session creates a controller on the new services.
+			if (s_storeController != null)
+			{
+				s_storeController.OnStoreConnected -= HandleStoreConnected;
+				s_storeController.OnStoreDisconnected -= HandleStoreDisconnected;
+				s_storeController.OnProductsFetched -= HandleProductsFetched;
+				s_storeController.OnProductsFetchFailed -= HandleProductsFetchFailed;
+				s_storeController.OnPurchasePending -= HandlePurchasePending;
+				s_storeController.OnPurchaseConfirmed -= HandlePurchaseConfirmed;
+				s_storeController.OnPurchaseFailed -= HandlePurchaseFailed;
+				s_storeController.OnPurchaseDeferred -= HandlePurchaseDeferred;
+				s_storeController.OnPurchasesFetched -= HandlePurchasesFetched;
+				s_storeController.OnPurchasesFetchFailed -= HandlePurchasesFetchFailed;
+			}
+			s_storeController = null;
 			s_purchasers.Clear();
 			s_ordersInFulfillment.Clear();
 			s_openTxids.Clear();
+			s_appleOrders.Clear();
+			s_receiptRefresh = null;
 			s_fetchInProgress = false;
 			s_refetchRequested = false;
+			s_productFetchBatch = null;
+#if BEAMABLE_STEAM_STORE_V5
+			// The custom store registration is dropped with IAP's containers, so it must be registered again.
+			_registeredSteamStore = null;
+#endif
 		}
 
 		/// <summary>
@@ -305,9 +414,11 @@ namespace Beamable.Purchasing
 
 			if (_connectPromise == null || _connectPromise.IsCompleted)
 			{
-				_connectPromise = new Promise<Unit>();
+				var promise = _connectPromise = new Promise<Unit>();
 				InAppPurchaseLogger.Log("Store is not connected. Reconnecting before the purchase.");
 				s_storeController.Connect();
+				// A synchronous store callback can complete the promise and clear the field inside Connect().
+				return promise;
 			}
 			return _connectPromise;
 		}
@@ -343,6 +454,7 @@ namespace Beamable.Purchasing
 
 			var definitions = new List<ProductDefinition>();
 			var ids = new HashSet<string>();
+			var batch = new ProductFetchBatch();
 			foreach (var purchaser in s_purchasers)
 			{
 				if (purchaser._productDefinitions == null) continue;
@@ -350,9 +462,20 @@ namespace Beamable.Purchasing
 				{
 					if (ids.Add(definition.id)) definitions.Add(definition);
 				}
+				if (purchaser._awaitingProducts)
+				{
+					batch.Waiters.Add(new ProductFetchWaiter
+					{
+						Purchaser = purchaser,
+						Promise = purchaser._initPromise,
+						Definitions = new List<ProductDefinition>(purchaser._productDefinitions)
+					});
+				}
 			}
 			if (definitions.Count == 0) return;
 
+			batch.RemainingIds.UnionWith(ids);
+			s_productFetchBatch = batch;
 			s_fetchInProgress = true;
 			s_storeController.FetchProducts(definitions);
 		}
@@ -364,11 +487,12 @@ namespace Beamable.Purchasing
 			RequestProducts();
 		}
 
-		private static bool AnyProductAvailable()
+		private static bool AnyProductAvailable(IEnumerable<ProductDefinition> definitions)
 		{
-			foreach (var product in s_storeController.GetProducts())
+			foreach (var definition in definitions)
 			{
-				if (product.availableToPurchase) return true;
+				var product = s_storeController.GetProductById(definition.id);
+				if (product != null && product.availableToPurchase) return true;
 			}
 			return false;
 		}
@@ -523,6 +647,12 @@ namespace Beamable.Purchasing
 				                                   $"{PurchaseFailureReason.ExistingPurchasePending} ({_activeSku})"));
 				return result;
 			}
+#if UNITY_PURCHASING_5_OR_NEWER
+			if (IsApplePlayer && TryRetryAppleOrder(skuSymbol, result))
+			{
+				return result;
+			}
+#endif
 			_txid = 0;
 			_activeSku = skuSymbol;
 			_storePurchaseStarted = false;
@@ -591,7 +721,8 @@ namespace Beamable.Purchasing
 		#endregion
 
 		/// <summary>
-		/// Initiate transaction restoration if needed.
+		/// Initiate transaction restoration if needed. On Apple devices this first retries the fulfillment of
+		/// retained orders, which may refresh the app receipt and prompt the player for their Apple ID.
 		/// </summary>
 		public void RestorePurchases()
 		{
@@ -609,6 +740,13 @@ namespace Beamable.Purchasing
 					InAppPurchaseLogger.Log("RestorePurchases skipped: the store is not initialized.");
 					return;
 				}
+
+#if UNITY_PURCHASING_5_OR_NEWER
+				if (RetryRetainedAppleOrders())
+				{
+					return;
+				}
+#endif
 
 				InAppPurchaseLogger.Log("RestorePurchases started ...");
 
@@ -682,10 +820,18 @@ namespace Beamable.Purchasing
 		/// </summary>
 		private static void HandleProductsFetched(List<Product> products)
 		{
-			s_fetchInProgress = false;
+			var batch = s_productFetchBatch;
+			if (batch == null || batch.Completing) return;
 			InAppPurchaseLogger.Log($"Products fetched: {products?.Count}.");
-			CompleteAwaitingPurchasers(null);
-			RequestQueuedProducts();
+			if (products != null)
+			{
+				foreach (var product in products)
+				{
+					if (product?.definition != null) batch.RemainingIds.Remove(product.definition.id);
+				}
+			}
+			// IAP reports the missing subset with a failure right after this, so the batch may not be complete yet.
+			CompleteProductBatchIfReady(batch);
 		}
 
 		/// <summary>
@@ -694,41 +840,70 @@ namespace Beamable.Purchasing
 		/// </summary>
 		private static void HandleProductsFetchFailed(ProductFetchFailed failure)
 		{
+			var batch = s_productFetchBatch;
+			if (batch == null || batch.Completing) return;
 			var reason = failure?.FailureReason;
-			if (reason != null && reason.Contains("already in progress"))
-			{
-				// Someone else's fetch (e.g. game code using IAP directly) is running; its result reaches the handlers above.
-				InAppPurchaseLogger.Log($"Product fetch skipped: {reason}");
-				return;
-			}
-			s_fetchInProgress = false;
 
 			var failedIds = new List<string>();
+			var hasFailedDefinitions = false;
+			var matchedBatch = false;
 			if (failure?.FailedFetchProducts != null)
 			{
 				foreach (var definition in failure.FailedFetchProducts)
 				{
+					if (definition == null) continue;
+					hasFailedDefinitions = true;
+					matchedBatch |= batch.RemainingIds.Remove(definition.id);
 					failedIds.Add($"{definition.id} ({definition.storeSpecificId})");
 				}
 			}
+			if (!hasFailedDefinitions)
+			{
+				// A failure without product details ends the current batch.
+				batch.RemainingIds.Clear();
+				matchedBatch = true;
+			}
+			// A failure for products outside this batch belongs to a fetch Beamable didn't start.
+			if (!matchedBatch) return;
+
+			batch.FailureReason = reason ?? "No products available";
 			Debug.LogWarning($"Beamable IAP could not fetch products [{string.Join(", ", failedIds)}]: {reason}. " +
 			                 "Check that the SKUs' product ids match the products configured in the store.");
 
-			CompleteAwaitingPurchasers(AnyProductAvailable() ? null : reason ?? "No products available");
-			RequestQueuedProducts();
+			CompleteProductBatchIfReady(batch);
+		}
+
+		private static void CompleteProductBatchIfReady(ProductFetchBatch batch)
+		{
+			if (!ReferenceEquals(batch, s_productFetchBatch) || batch.Completing || batch.RemainingIds.Count != 0) return;
+			batch.Completing = true;
+			// Keep the batch active while promise callbacks run, so a reentrant Initialize queues its fetch.
+			try
+			{
+				CompleteAwaitingPurchasers(batch);
+			}
+			finally
+			{
+				s_productFetchBatch = null;
+				s_fetchInProgress = false;
+				RequestQueuedProducts();
+			}
 		}
 
 		/// <summary>
-		/// Resolve the initialization of every purchaser waiting for products, and fetch outstanding purchases
-		/// once any of them succeeds.
+		/// Resolve the initialization of every purchaser waiting for this batch, and fetch outstanding purchases
+		/// once any of them succeeds. A purchaser succeeds when any of its own products is available.
 		/// </summary>
-		private static void CompleteAwaitingPurchasers(string error)
+		private static void CompleteAwaitingPurchasers(ProductFetchBatch batch)
 		{
 			var anySucceeded = false;
-			foreach (var purchaser in s_purchasers.ToArray())
+			foreach (var waiter in batch.Waiters)
 			{
-				if (!purchaser._awaitingProducts) continue;
+				var purchaser = waiter.Purchaser;
+				if (!s_purchasers.Contains(purchaser) || !purchaser._awaitingProducts ||
+				    !ReferenceEquals(purchaser._initPromise, waiter.Promise)) continue;
 				purchaser._awaitingProducts = false;
+				var error = AnyProductAvailable(waiter.Definitions) ? null : batch.FailureReason ?? "No products available";
 
 				if (error == null)
 				{
@@ -792,32 +967,274 @@ namespace Beamable.Purchasing
 		{
 			var sku = product?.definition?.id;
 			var isActive = IsActivePurchase(sku);
+			var onSuccess = isActive ? _success : null;
+			var onFail = isActive ? _fail : null;
+			var transaction = new CompletedTransaction(isActive ? _txid : GetOpenTxid(sku), string.Empty,
+			                                           FormatPrice(product), product?.metadata?.isoCurrencyCode ?? string.Empty);
 
-			string rawReceipt = string.Empty;
-			var receiptString = order.Info?.Receipt;
-			if (!string.IsNullOrEmpty(receiptString))
+			if (IsApplePlayer)
 			{
-				var receipt = JsonUtility.FromJson<UnityPurchaseReceipt>(receiptString);
-				rawReceipt = receipt != null && !string.IsNullOrEmpty(receipt.Payload) ? receipt.Payload : receiptString;
-				InAppPurchaseLogger.Log($"UnityIAP Payload: {rawReceipt}");
-				InAppPurchaseLogger.Log($"UnityIAP Raw Receipt: {receiptString}");
+				var id = order.Info?.TransactionID;
+				if (string.IsNullOrEmpty(id) || product?.definition == null)
+				{
+					StopFulfillment(order, onSuccess, onFail,
+					                new ErrorCode(400, GameSystem.GAME_CLIENT, "Apple order is missing its transaction or product id; order left pending."));
+					return;
+				}
+				if (!s_appleOrders.TryGetValue(id, out var pending))
+				{
+					pending = new AppleFulfillment
+					{
+						Owner = this, Order = order, Product = product, Transaction = transaction,
+						Generation = _generation, Success = onSuccess, Fail = onFail
+					};
+					s_appleOrders.Add(id, pending);
+				}
+				if (pending.Owner != this || pending.Generation != _generation)
+				{
+					ReleaseStoreOrder(order);
+					Debug.LogWarning("Beamable IAP: a pending Apple order belongs to an earlier login; restart the app to recover it safely.");
+					return;
+				}
+				ProcessAppleOrder(pending, isActive);
+				return;
 			}
 
-			var transaction = new CompletedTransaction(
-			   isActive ? _txid : GetOpenTxid(sku),
-			   rawReceipt,
-			   product != null ? product.metadata.localizedPrice.ToString() : string.Empty,
-			   product != null ? product.metadata.isoCurrencyCode : string.Empty
-			);
-			FulfillTransaction(transaction, order, isActive ? _success : null, isActive ? _fail : null);
+			try
+			{
+				var receiptString = order.Info?.Receipt;
+				var receipt = string.IsNullOrEmpty(receiptString) ? null : JsonUtility.FromJson<UnityPurchaseReceipt>(receiptString);
+				var rawReceipt = !string.IsNullOrEmpty(receipt?.Payload) ? receipt.Payload : receiptString;
+				transaction = new CompletedTransaction(transaction.Txid, rawReceipt ?? string.Empty,
+				                                       transaction.PriceInLocalCurrency, transaction.IsoCurrencySymbol);
+			}
+			catch (Exception)
+			{
+				StopFulfillment(order, onSuccess, onFail,
+				                new ErrorCode(400, GameSystem.GAME_CLIENT, "Unable to read the store receipt; order left pending."));
+				return;
+			}
+			FulfillTransaction(transaction, order, onSuccess, onFail);
 		}
 
 		/// <summary>
-		/// React to a confirmed purchase. Success is already reported from FulfillTransaction.
+		/// On Apple devices, a StartPurchase of a SKU whose order failed fulfillment retries that order instead of
+		/// charging the player again.
+		/// </summary>
+		private bool TryRetryAppleOrder(string skuSymbol, Promise<CompletedTransaction> result)
+		{
+			foreach (var pending in s_appleOrders.Values)
+			{
+				if (pending.Product?.definition?.id != skuSymbol) continue;
+				if (pending.Owner != this || pending.Generation != _generation || pending.Busy)
+				{
+					result.CompleteError(new ErrorCode(409, GameSystem.GAME_CLIENT,
+						"An Apple order is pending recovery. Finish recovery before another purchase; restart after an account change."));
+					return true;
+				}
+
+				_txid = pending.Transaction.Txid;
+				_activeSku = skuSymbol;
+				_storePurchaseStarted = true;
+				_success = pending.Success = result.CompleteSuccess;
+				_fail = pending.Fail = result.CompleteError;
+				pending.RefreshAttempted = false;
+				ProcessAppleOrder(pending, true);
+				return true;
+			}
+			return false;
+		}
+
+		/// <summary>
+		/// Retry the fulfillment of this purchaser's retained Apple orders. Returns false when there are none.
+		/// </summary>
+		private bool RetryRetainedAppleOrders()
+		{
+			var recovering = false;
+			foreach (var pending in new List<AppleFulfillment>(s_appleOrders.Values))
+			{
+				if (pending.Owner != this || pending.Busy || pending.Generation != _generation) continue;
+				recovering = true;
+				pending.RefreshAttempted = false;
+				ProcessAppleOrder(pending, true);
+			}
+			return recovering;
+		}
+
+		/// <summary>
+		/// Fulfill an Apple order with the app receipt (PKCS#7) that Beamable's backend verifies. The Unity receipt
+		/// envelope is never sent. When the receipt is missing or doesn't identify this order unambiguously, it is
+		/// refreshed, but only when the player started the purchase or recovery, because refreshing can prompt for
+		/// the Apple ID. Otherwise the order is left pending for a later retry.
+		/// </summary>
+		private void ProcessAppleOrder(AppleFulfillment pending, bool allowRefresh)
+		{
+			if (pending.Busy) return;
+			pending.Busy = true;
+			pending.AllowRefresh = allowRefresh;
+			s_ordersInFulfillment.Add(pending.Order.Info.TransactionID);
+			if (pending.Fulfilled)
+			{
+				// Rewards were granted, but confirming the order with the store failed; confirm it again.
+				ConfirmStoreOrder(pending.Order, pending.Transaction);
+				ReleaseCallbacks(pending.Success);
+				pending.Success?.Invoke(pending.Transaction);
+				return;
+			}
+
+			string raw = null;
+			try
+			{
+				var envelope = pending.Order.Info.Receipt;
+				if (!string.IsNullOrEmpty(envelope)) raw = JsonUtility.FromJson<UnityPurchaseReceipt>(envelope)?.Payload;
+			}
+			catch (Exception)
+			{
+				// A malformed envelope counts as a missing receipt.
+			}
+			if (!pending.ForceRefresh && ReceiptContainsOnlyExpectedPurchase(raw, pending.Order, pending.Product))
+			{
+				SubmitAppleReceipt(pending, raw);
+				return;
+			}
+			if (!allowRefresh)
+			{
+				StopFulfillment(pending.Order, pending.Success, pending.Fail, new ErrorCode(400, GameSystem.GAME_CLIENT,
+					"The Apple receipt needs a player-initiated recovery. Retry this product or restore purchases; the player is not charged again."));
+				return;
+			}
+
+			pending.RefreshAttempted = true;
+			RefreshAppleReceipt().Then(fresh =>
+			{
+				if (!IsCurrent(pending.Generation))
+				{
+					StopFulfillment(pending.Order, pending.Success, pending.Fail,
+					                new ErrorCode(409, GameSystem.GAME_CLIENT, "Login changed during receipt recovery; order left pending."));
+					return;
+				}
+				if (!ReceiptContainsOnlyExpectedPurchase(fresh, pending.Order, pending.Product))
+				{
+					StopFulfillment(pending.Order, pending.Success, pending.Fail, new ErrorCode(400, GameSystem.GAME_CLIENT,
+						"The refreshed Apple receipt is empty, invalid, missing this transaction, or has several purchases of this product; order left pending."));
+					return;
+				}
+				SubmitAppleReceipt(pending, fresh);
+			}).Error(_ => StopFulfillment(pending.Order, pending.Success, pending.Fail,
+				new ErrorCode(0, GameSystem.GAME_CLIENT, "Refreshing the Apple receipt failed or timed out; order left pending. Retry the recovery.")));
+		}
+
+		/// <summary>
+		/// True when the app receipt contains this order's transaction and no other purchase of the same product.
+		/// Beamable's backend matches purchases by product, so an ambiguous receipt could credit the wrong one.
+		/// This only checks the format and the match; the backend still verifies the receipt.
+		/// </summary>
+		private static bool ReceiptContainsOnlyExpectedPurchase(string raw, PendingOrder order, Product product)
+		{
+			if (string.IsNullOrWhiteSpace(raw)) return false;
+			try
+			{
+				var receipt = new AppleReceiptParser().Parse(Convert.FromBase64String(raw));
+				if (receipt?.inAppPurchaseReceipts == null) return false;
+				var found = false;
+				foreach (var entry in receipt.inAppPurchaseReceipts)
+				{
+					if (!string.Equals(entry.productID, product.definition.storeSpecificId, StringComparison.Ordinal)) continue;
+					if (!string.Equals(entry.transactionID, order.Info.TransactionID, StringComparison.Ordinal)) return false;
+					found = true;
+				}
+				return found;
+			}
+			catch (Exception)
+			{
+				return false;
+			}
+		}
+
+		private void SubmitAppleReceipt(AppleFulfillment pending, string raw)
+		{
+			pending.ForceRefresh = false;
+			var previous = pending.Transaction;
+			pending.Transaction = new CompletedTransaction(previous.Txid, raw, previous.PriceInLocalCurrency, previous.IsoCurrencySymbol);
+			InAppPurchaseLogger.Log($"Apple receipt ready: appleTx={pending.Order.Info.TransactionID}, beamTx={previous.Txid}, length={raw.Length}.");
+			FulfillTransaction(pending.Transaction, pending.Order, pending.Success, pending.Fail);
+		}
+
+		/// <summary>
+		/// After the backend rejects an Apple receipt as malformed, retry once with a refreshed receipt if the player
+		/// started this fulfillment. Returns true when the retry started.
+		/// </summary>
+		private bool TryRefreshMalformedAppleReceipt(PendingOrder order)
+		{
+			var id = order.Info?.TransactionID;
+			if (id == null || !s_appleOrders.TryGetValue(id, out var pending)) return false;
+
+			pending.ForceRefresh = true;
+			if (!pending.AllowRefresh || pending.RefreshAttempted || pending.Generation != _generation) return false;
+			pending.Busy = false;
+			ProcessAppleOrder(pending, true);
+			return true;
+		}
+
+		private Promise<string> RefreshAppleReceipt()
+		{
+			// IAP keeps one native callback slot for receipt refreshes, so concurrent requests share one refresh. Even
+			// after a timeout, the slot isn't reused until the native refresh returns.
+			if (s_receiptRefresh != null) return s_receiptRefresh;
+			var promise = new Promise<string>();
+			s_receiptRefresh = promise;
+			Action<string, bool> finish = (value, success) =>
+			{
+				if (!ReferenceEquals(s_receiptRefresh, promise)) return;
+				s_receiptRefresh = null;
+				if (promise.IsCompleted) return;
+				if (success) promise.CompleteSuccess(value);
+				else promise.CompleteError(new Exception("Apple receipt refresh failed."));
+			};
+			try
+			{
+				var apple = _storeController.AppleStoreExtendedPurchaseService;
+				if (apple == null) throw new InvalidOperationException("Apple store extension unavailable.");
+#pragma warning disable CS0612, CS0618 // Beamable's receipt verification expects the legacy PKCS#7 app receipt, not a StoreKit 2 JWS.
+				apple.RefreshAppReceipt(value => finish(value, true), _ => finish(null, false));
+#pragma warning restore CS0612, CS0618
+				if (!promise.IsCompleted) GetCoroutineService().StartCoroutine(ReceiptRefreshTimeout(promise));
+			}
+			catch (Exception)
+			{
+				finish(null, false);
+			}
+			return promise;
+		}
+
+		private static IEnumerator ReceiptRefreshTimeout(Promise<string> promise)
+		{
+			yield return new WaitForSecondsRealtime(120);
+			if (!promise.IsCompleted) promise.CompleteError(new TimeoutException("Apple receipt refresh timed out."));
+		}
+
+		/// <summary>
+		/// React to a confirmed purchase. Success is already reported from FulfillTransaction. IAP also reports a
+		/// failed confirmation here; the Apple order is then retained so a retry confirms it again.
 		/// </summary>
 		private static void HandlePurchaseConfirmed(Order order)
 		{
-			InAppPurchaseLogger.Log("Purchase confirmed.");
+			var id = order.Info?.TransactionID;
+			if (id != null && s_appleOrders.TryGetValue(id, out var pending))
+			{
+				if (order is FailedOrder)
+				{
+					pending.Busy = false;
+					Debug.LogWarning($"Beamable IAP: confirming the store order failed after fulfillment for {id}; the order is retained.");
+					return;
+				}
+				if (order is ConfirmedOrder)
+				{
+					s_appleOrders.Remove(id);
+					s_ordersInFulfillment.Remove(id);
+				}
+			}
+			InAppPurchaseLogger.Log($"Purchase confirmation received: {id}.");
 		}
 
 		/// <summary>
@@ -958,7 +1375,7 @@ namespace Beamable.Purchasing
 			var transaction = new CompletedTransaction(
 			   isActive ? _txid : 0,
 			   rawReceipt,
-			   args.purchasedProduct.metadata.localizedPrice.ToString(),
+			   FormatPrice(args.purchasedProduct),
 			   args.purchasedProduct.metadata.isoCurrencyCode
 			);
 			FulfillTransaction(transaction, args.purchasedProduct, isActive ? _success : null, isActive ? _fail : null);
@@ -1042,13 +1459,25 @@ namespace Beamable.Purchasing
 
 #if UNITY_PURCHASING_5_OR_NEWER
 		/// <summary>
-		/// Finish the order in the store, so it is not delivered again.
+		/// Finish the order in the store, so it is not delivered again. A retained Apple order is only forgotten
+		/// once IAP reports the confirmation, so a failed confirmation can be retried.
 		/// </summary>
 		private void ConfirmStoreOrder(PendingOrder order, CompletedTransaction transaction)
 		{
-			_storeController.ConfirmPurchase(order);
-			var transactionId = order.Info?.TransactionID;
-			if (!string.IsNullOrEmpty(transactionId)) s_ordersInFulfillment.Remove(transactionId);
+			var id = order.Info?.TransactionID;
+			AppleFulfillment pending = null;
+			if (id != null) s_appleOrders.TryGetValue(id, out pending);
+			if (pending != null) pending.Fulfilled = true;
+			try
+			{
+				_storeController.ConfirmPurchase(order);
+			}
+			catch (Exception)
+			{
+				if (pending != null) pending.Busy = false;
+				Debug.LogWarning($"Beamable IAP: rewards were granted, but confirming the store order {id} failed; it is retained for another confirmation.");
+			}
+			if (pending == null) ReleaseStoreOrder(order);
 			ForgetOpenTxid(GetOrderProduct(order)?.definition?.id, transaction.Txid);
 		}
 
@@ -1070,76 +1499,98 @@ namespace Beamable.Purchasing
 #endif
 
 		/// <summary>
+		/// Stop fulfilling an order without confirming it with the store. The store delivers it again later, so the
+		/// player keeps the purchase they paid for; confirming an unfulfilled order would consume it without a reward.
+		/// </summary>
+		private void StopFulfillment(StoreOrder order, Action<CompletedTransaction> onSuccess, Action<ErrorCode> onFail, ErrorCode error)
+		{
+			var id = GetStoreTransactionId(order);
+#if UNITY_PURCHASING_5_OR_NEWER
+			if (id != null && s_appleOrders.TryGetValue(id, out var pending))
+			{
+				pending.Busy = false;
+				pending.Success = null;
+				pending.Fail = null;
+			}
+#endif
+			ReleaseStoreOrder(order);
+			ReleaseCallbacks(onSuccess);
+			Debug.LogWarning($"Beamable IAP fulfillment pending: storeTx={id}, code={error.Code}. The order was not confirmed with the store.");
+			onFail?.Invoke(error);
+		}
+
+		/// <summary>
 		/// Fulfill a completed transaction by completing the purchase in the
 		/// payments service and informing Unity IAP of completion.
 		/// </summary>
 		/// <param name="transaction">Completed IAP transaction</param>
-#if UNITY_PURCHASING_5_OR_NEWER
-		/// <param name="purchasedOrder">The pending order being fulfilled</param>
-#else
-		/// <param name="purchasedOrder">The product being purchased</param>
-#endif
+		/// <param name="purchasedOrder">The store order being fulfilled</param>
 		/// <param name="onSuccess">Callback of the StartPurchase this order completes, or null for other orders</param>
 		/// <param name="onFail">Callback of the StartPurchase this order completes, or null for other orders</param>
-#if UNITY_PURCHASING_5_OR_NEWER
-		private void FulfillTransaction(CompletedTransaction transaction, PendingOrder purchasedOrder,
-#else
-		private void FulfillTransaction(CompletedTransaction transaction, Product purchasedOrder,
-#endif
+		private void FulfillTransaction(CompletedTransaction transaction, StoreOrder purchasedOrder,
 		                                Action<CompletedTransaction> onSuccess, Action<ErrorCode> onFail)
 		{
-			GetPaymentService().CompletePurchase(transaction).Then(_ =>
+			var requestGeneration = _generation;
+			Action<Exception> failed = ex =>
 			{
-				ConfirmStoreOrder(purchasedOrder, transaction);
-				ReleaseCallbacks(onSuccess);
-				onSuccess?.Invoke(transaction);
-			}).Error(ex =>
-			{
-				Debug.LogError($"There was an exception making the complete purchase request: {ex}");
-				var err = ex as ErrorCode;
-
-				if (err == null)
+				if (!IsCurrent(requestGeneration))
 				{
-					var platformException = ex as PlatformRequesterException;
-					if (platformException != null)
-					{
-						err = new ErrorCode(platformException.Error);
-					}
-					else
-					{
-						// Unknown error: keep the order pending so it is fulfilled later, but don't leave the purchase hanging.
-						ReleaseStoreOrder(purchasedOrder);
-						ReleaseCallbacks(onSuccess);
-						onFail?.Invoke(new ErrorCode(0, GameSystem.GAME_CLIENT, ex.Message));
-						return;
-					}
+					StopFulfillment(purchasedOrder, onSuccess, onFail,
+					                new ErrorCode(409, GameSystem.GAME_CLIENT, "Login changed during fulfillment; order left pending."));
+					return;
 				}
 
-				var retryable = err.Code >= 500 || err.Code == 429 || err.Code == 0;   // Server error or rate limiting or network error
-				if (retryable)
+				var platformException = ex as PlatformRequesterException;
+				var err = ex as ErrorCode;
+				if (err == null && platformException?.Error != null) err = new ErrorCode(platformException.Error);
+				var retryable = ex is NoConnectivityException ||
+				                (err != null && (err.Code >= 500 || err.Code == 429 || err.Code == 0)); // Server error or rate limiting or network error
+				// Never log the exception itself: payment errors can contain the receipt.
+				Debug.LogWarning($"Beamable IAP completing the purchase failed: storeTx={GetStoreTransactionId(purchasedOrder)}, " +
+				                 $"beamTx={transaction.Txid}, code={err?.Code ?? 0}, type={ex.GetType().Name}.");
+
+#if UNITY_PURCHASING_5_OR_NEWER
+				if (platformException?.Error?.error == "MalformedReceiptError" && TryRefreshMalformedAppleReceipt(purchasedOrder))
+				{
+					return;
+				}
+#endif
+				if (retryable && transaction.Retries < RETRY_DELAYS.Length)
 				{
 					GetCoroutineService().StartCoroutine(RetryTransaction(transaction, purchasedOrder, onSuccess, onFail));
+					return;
 				}
-				else
+				StopFulfillment(purchasedOrder, onSuccess, onFail,
+				                err ?? new ErrorCode(0, GameSystem.GAME_CLIENT, "Purchase fulfillment failed; order left pending."));
+			};
+
+			try
+			{
+				GetPaymentService().CompletePurchase(transaction).Then(_ =>
 				{
 					ConfirmStoreOrder(purchasedOrder, transaction);
 					ReleaseCallbacks(onSuccess);
-					onFail?.Invoke(err);
-				}
-			});
+					if (!IsCurrent(requestGeneration))
+					{
+						onFail?.Invoke(new ErrorCode(409, GameSystem.GAME_CLIENT,
+						                             "Purchase fulfilled for the previous login; refresh that account's inventory."));
+						return;
+					}
+					onSuccess?.Invoke(transaction);
+				}).Error(failed);
+			}
+			catch (Exception ex)
+			{
+				failed(ex);
+			}
 		}
 
 		/// <summary>
 		/// If fulfillment failed, retry fulfillment with a backoff, as a coroutine.
 		/// </summary>
 		/// <param name="transaction">The failed transaction</param>
-#if UNITY_PURCHASING_5_OR_NEWER
-		/// <param name="purchasedOrder">The pending order that should have been fulfilled</param>
-		private IEnumerator RetryTransaction(CompletedTransaction transaction, PendingOrder purchasedOrder,
-#else
-		/// <param name="purchasedOrder">The product that should have been fulfilled</param>
-		private IEnumerator RetryTransaction(CompletedTransaction transaction, Product purchasedOrder,
-#endif
+		/// <param name="purchasedOrder">The store order that should have been fulfilled</param>
+		private IEnumerator RetryTransaction(CompletedTransaction transaction, StoreOrder purchasedOrder,
 		                                     Action<CompletedTransaction> onSuccess, Action<ErrorCode> onFail)
 		{
 			// This block should only be hit when the error returned from the request is retryable. This lives down here
@@ -1147,16 +1598,19 @@ namespace Beamable.Purchasing
 			var waitTime = RETRY_DELAYS[Math.Min(transaction.Retries, RETRY_DELAYS.Length - 1)];
 			InAppPurchaseLogger.Log($"Got a retryable error from platform. Retrying complete purchase request in {waitTime} seconds.");
 
-			// Avoid incrementing the backoff if the device is definitely not connected to the network at all.
-			// This is narrow, and would still increment if the device is connected, but the internet has other problems
+			// Retries are bounded: after the last one the order is left pending in the store for a later fulfillment.
+			transaction.Retries += 1;
+			yield return new WaitForSecondsRealtime(waitTime);
 
-			if (Application.internetReachability != NetworkReachability.NotReachable)
+#if UNITY_PURCHASING_5_OR_NEWER
+			var id = purchasedOrder.Info?.TransactionID;
+			if (id != null && s_appleOrders.TryGetValue(id, out var pending) && !IsCurrent(pending.Generation))
 			{
-				transaction.Retries += 1;
+				StopFulfillment(purchasedOrder, onSuccess, onFail,
+				                new ErrorCode(409, GameSystem.GAME_CLIENT, "Login changed during fulfillment; order left pending."));
+				yield break;
 			}
-
-			yield return new WaitForSeconds(waitTime);
-
+#endif
 			FulfillTransaction(transaction, purchasedOrder, onSuccess, onFail);
 		}
 	}
