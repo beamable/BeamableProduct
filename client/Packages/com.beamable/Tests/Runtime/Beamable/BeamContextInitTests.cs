@@ -582,6 +582,34 @@ namespace Tests.Runtime.Beamable
 			}
 			Assert.AreEqual(0, _beginPurchaseRoute.CallCount);
 		}
+
+		[UnityTest]
+		public IEnumerator InitializingAgainSettlesThePurchaseInFlight()
+		{
+			TriggerContextInit();
+			yield return Context.OnReady.ToYielder();
+			var purchaser = Context.Api.BeamableIAP.GetResult();
+
+			// The begin-purchase request never returns, so the purchase stays in flight.
+			_beginPurchaseRoute.WithPendingResponse(new Promise<PurchaseResponse>());
+			Exception error = null;
+			var stuck = purchaser.StartPurchase("listings.test", "sku_a").Recover(err =>
+			{
+				error = err;
+				return null;
+			});
+
+			yield return purchaser.Initialize(Context.ServiceProvider).Recover(_ => PromiseBase.Unit).ToYielder();
+			yield return stuck.ToYielder();
+
+			Assert.IsInstanceOf<ErrorCode>(error);
+			Assert.AreEqual(409, ((ErrorCode)error).Code);
+			// A new purchase starts instead of being rejected as ExistingPurchasePending. It stays in flight until the
+			// context is disposed, which fails it, so it needs an error handler.
+			var next = purchaser.StartPurchase("listings.test", "sku_a");
+			next.Error(_ => { });
+			Assert.IsFalse(next.IsCompleted);
+		}
 	}
 #endif
 #endif
