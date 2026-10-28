@@ -76,7 +76,7 @@ namespace Beamable.Common.Content
 		internal const string TooltipCohort1 = "The cohort";
 		internal const string TooltipCohortTrial1 = "The cohort trial";
 		internal const string TooltipColor1 = "The color";
-		internal const string TooltipConstraint1 = "The constraint";
+		internal const string TooltipConstraint1 = "Comparison operator used to evaluate this requirement. Hover over options in the picker for details.";
 		internal const string TooltipCount1 = "The count";
 		internal const string TooltipCurrency1 = "The currency";
 		internal const string TooltipCurrencyAmount1 = "The currency amount";

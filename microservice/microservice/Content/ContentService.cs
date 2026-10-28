@@ -10,6 +10,7 @@ using Beamable.Common.Reflection;
 using Beamable.Server.Api.Content;
 using microservice.Common;
 using System.Diagnostics;
+using System.IO;
 using static Beamable.Common.Constants.Features.Content;
 
 namespace Beamable.Server.Content
@@ -127,8 +128,8 @@ namespace Beamable.Server.Content
 	   private readonly IContentResolver _contentResolver;
 	   private readonly MicroserviceContentSerializer _serializer = new MicroserviceContentSerializer();
 	   private readonly ContentTypeReflectionCache _contentTypeReflectionCache;
+	   private volatile Dictionary<string, BakedContentEntry> _bakedById = new Dictionary<string, BakedContentEntry>();
 
-	   
 	   public CachedContentManifest(string name, MicroserviceRequester requester, IContentResolver contentResolver, ReflectionCache reflectionCache)
 	   {
 		   _name = name;
@@ -138,8 +139,32 @@ namespace Beamable.Server.Content
 		   _contentTypeReflectionCache = reflectionCache.GetFirstSystemOfType<ContentTypeReflectionCache>();
 	   }
 	   
+	   public void SetBakedContent(BakedContentArchive archive)
+	   {
+		   _contentCache.PurgeAll();
+		   _bakedById = archive != null && archive.manifestId == _name
+		      ? archive.content.Where(entry => !string.IsNullOrEmpty(entry.contentId))
+		         .GroupBy(entry => entry.contentId).ToDictionary(group => group.Key, group => group.Last())
+		      : new Dictionary<string, BakedContentEntry>();
+	   }
+
 	   private async Task<IContentObject> CacheResolver(ContentCacheKey key)
 	   {
+		   var baked = _bakedById;
+		   if (baked.TryGetValue(key.Id, out var entry) &&
+		       _idToContentReference.TryGetValue(key.Id, out var current) &&
+		       current.version == entry.contentVersion)
+		   {
+		      try
+		      {
+		         var bakedType = _contentTypeReflectionCache.GetTypeFromId(key.Id);
+		         return _serializer.DeserializeByType(entry.data, bakedType);
+		      }
+		      catch (Exception ex)
+		      {
+		         BeamableLogger.LogWarning("Baked content could not be read for {id}: {message}", key.Id, ex.Message);
+		      }
+		   }
 		   var json = await _contentResolver.RequestContent(key.Uri);
 		   var referencedType = _contentTypeReflectionCache.GetTypeFromId(key.Id);
 		   var content = _serializer.DeserializeByType(json, referencedType);
@@ -273,6 +298,11 @@ namespace Beamable.Server.Content
 
    public class ContentService : IMicroserviceContentApi
    {
+      /// <summary>Realm config: service_content|disable_baked_content=true bypasses image content.</summary>
+      public const string BakeConfigNamespace = "service_content";
+      public const string BakeDisableKey = "disable_baked_content";
+      private volatile BakedContentArchive _bakedArchive;
+      private bool? _bakedContentEnabled;
       private readonly MicroserviceRequester _requester;
       private readonly SocketRequesterContext _socket;
       private readonly IContentResolver _contentResolver;
@@ -297,6 +327,33 @@ namespace Beamable.Server.Content
          _contentTypeReflectionCache = reflectionCache.GetFirstSystemOfType<ContentTypeReflectionCache>();
       }
 
+      public void ConfigureBakedContent(string cid, string pid, bool enabled)
+      {
+         if (_bakedContentEnabled == enabled) return;
+         _bakedContentEnabled = enabled;
+         _bakedArchive = null;
+         if (enabled)
+         {
+            var path = Path.Combine(AppContext.BaseDirectory, BakedContentArchive.ContentFileName);
+            if (File.Exists(path))
+            {
+               try
+               {
+                  var archive = BakedContentArchive.Read(path);
+                  if (archive.cid == cid && archive.pid == pid)
+                     _bakedArchive = archive;
+                  else
+                     BeamableLogger.LogWarning("Ignoring baked content from a different realm.");
+               }
+               catch (Exception ex)
+               {
+                  BeamableLogger.LogWarning("Ignoring invalid baked content: {message}", ex.Message);
+               }
+            }
+         }
+         foreach (var manifest in _nameToManifest.Values) manifest.SetBakedContent(_bakedArchive);
+      }
+
       private Promise<ClientManifest> WaitForManifest(string manifestName=null)
       {
 	      return GetManifestEntry(manifestName).WaitForManifest();
@@ -308,6 +365,7 @@ namespace Beamable.Server.Content
 	      var manifest = _nameToManifest.GetOrAdd(manifestName, name =>
 	      {
 		      var entry = new CachedContentManifest(name, _requester, _contentResolver, _reflectionCache);
+		      entry.SetBakedContent(_bakedArchive);
 		      return entry;
 	      });
 	      return manifest;

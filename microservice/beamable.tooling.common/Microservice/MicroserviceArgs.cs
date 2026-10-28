@@ -82,6 +82,7 @@ namespace Beamable.Server
 				ServiceScope = args.ServiceScope,
 				CustomerID = args.CustomerID,
 				ProjectName = args.ProjectName,
+				Zid = args.Zid,
 				Secret = args.Secret,
 				Host = args.Host,
 				NamePrefix = args.NamePrefix,
