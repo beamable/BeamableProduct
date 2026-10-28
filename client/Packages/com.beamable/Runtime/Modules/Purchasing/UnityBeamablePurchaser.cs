@@ -61,11 +61,11 @@ namespace Beamable.Purchasing
 		/// <summary>
 		/// The purchase a <see cref="StartPurchase"/> call is driving.
 		/// </summary>
-		private sealed class ActivePurchase
+		private class ActivePurchase
 		{
 			public string Sku;
 			public long Txid;
-			// Whether the store was asked to buy the SKU yet.
+			// Whether the store was asked not to buy the SKU yet.
 			public bool StoreStarted;
 			public readonly Promise<CompletedTransaction> Result = new Promise<CompletedTransaction>();
 		}
@@ -433,7 +433,7 @@ namespace Beamable.Purchasing
 		/// One FetchProducts call. IAP reports the products it found, then a failure for the rest, so the batch is
 		/// complete once every requested id has one of those outcomes.
 		/// </summary>
-		private sealed class ProductFetchBatch
+		private class ProductFetchBatch
 		{
 			public readonly HashSet<string> RemainingIds = new HashSet<string>();
 			// The purchasers whose initialization waits for this batch, with the initialization they started.
@@ -446,7 +446,7 @@ namespace Beamable.Purchasing
 		/// <summary>
 		/// A store order being fulfilled. The Apple fields drive the receipt recovery.
 		/// </summary>
-		private sealed class OrderFulfillment
+		private class OrderFulfillment
 		{
 			public PendingOrder Order;
 			public Product Product;
@@ -462,7 +462,7 @@ namespace Beamable.Purchasing
 		private StoreController _storeController;
 		// The store product definitions, built during Initialize and fetched once the store connects.
 		private List<ProductDefinition> _productDefinitions;
-		// True while this purchaser's initialization waits for the store to return its products.
+		// True, while this purchaser's initialization waits for the store to return its products.
 		private bool _awaitingProducts;
 		private Promise<Unit> _connectPromise;
 
@@ -1496,18 +1496,7 @@ namespace Beamable.Purchasing
 		/// <returns>Successful or failed result of processing this purchase</returns>
 		public PurchaseProcessingResult ProcessPurchase(PurchaseEventArgs args)
 		{
-			string rawReceipt;
-			if (args.purchasedProduct.hasReceipt)
-			{
-				var receipt = JsonUtility.FromJson<UnityPurchaseReceipt>(args.purchasedProduct.receipt);
-				rawReceipt = receipt.Payload;
-				InAppPurchaseLogger.Log($"UnityIAP Payload: {receipt.Payload}");
-				InAppPurchaseLogger.Log($"UnityIAP Raw Receipt: {args.purchasedProduct.receipt}");
-			}
-			else
-			{
-				rawReceipt = args.purchasedProduct.receipt;
-			}
+			string rawReceipt = UnityPurchaseReceipt.GetReceipt(args);
 
 			// Products restored at startup, or delivered while another purchase is in flight, are fulfilled
 			// without a txid and must not complete the active purchase's promise.
@@ -1580,7 +1569,7 @@ namespace Beamable.Purchasing
 	}
 
 #if !UNITY_PURCHASING_5_OR_NEWER // IDs is a v4-only type; v5 builds ProductDefinitions directly.
-	public class UnityBeamablePurchaserUtil
+	public static class UnityBeamablePurchaserUtil
 	{
 		/// <summary>
 		/// Create a <see cref="IDs"/> type from a list of Beamable SKU product id and IAP store ids.
@@ -1630,11 +1619,43 @@ namespace Beamable.Purchasing
 	}
 
 
+	/// <summary>
+	/// Helper class for Unity IAP receipts.
+	/// It takes a receipt payload and parses it into a UnityPurchaseReceipt.
+	/// </summary>
 	[Serializable]
 	public class UnityPurchaseReceipt
 	{
 		public string Store;
 		public string TransactionID;
 		public string Payload;
+
+		/// <summary>
+		///  Returns the payload of the receipt.
+		/// </summary>
+		/// <param name="eventArgs">EventArgs for the purchase.</param>
+		/// <returns></returns>
+		public static string GetReceipt(PurchaseEventArgs eventArgs)
+		{
+			if (eventArgs.purchasedProduct.hasReceipt)
+			{
+				try
+				{
+					var receipt = JsonUtility.FromJson<UnityPurchaseReceipt>(eventArgs.purchasedProduct.receipt);
+					InAppPurchaseLogger.Log($"UnityIAP Payload: {receipt.Payload}");
+					InAppPurchaseLogger.Log($"UnityIAP Raw Receipt: {eventArgs.purchasedProduct.receipt}");
+					if (!string.IsNullOrEmpty(receipt.Payload))
+					{
+						return receipt.Payload;
+					}
+				}
+				catch
+				{
+					// ignored
+				}
+			}
+
+			return eventArgs.purchasedProduct.receipt;
+		}
 	}
 }
