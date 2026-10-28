@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using System.CommandLine;
 using System.CommandLine.Parsing;
+using System.IO;
 using System.Linq;
 
 namespace tests.BundleTests;
@@ -188,15 +189,37 @@ public class LocalWebServerTests
 	{
 		Assert.That(LocalWebAssets.TryRead("stacks", path, out _, out _), Is.False);
 	}
+
+	/// <summary>Served from the checkout's build (a CLI built without its apps): only files inside that folder.</summary>
+	[Test]
+	public void Assets_FromTheCheckout_StayInsideItsBuild()
+	{
+		var dir = Path.Combine(Path.GetTempPath(), "beam-localweb-" + Path.GetRandomFileName());
+		Directory.CreateDirectory(Path.Combine(dir, "LocalWeb", "stacks"));
+		File.WriteAllText(Path.Combine(dir, "LocalWeb", "stacks", "index.html"), "<html>");
+		File.WriteAllText(Path.Combine(dir, "secret.txt"), "no");
+		try
+		{
+			var web = Path.Combine(dir, "LocalWeb");
+			Assert.That(LocalWebAssets.CheckoutFile(web, "stacks/index.html"), Is.Not.Null);
+			Assert.That(LocalWebAssets.CheckoutFile(web, "../secret.txt"), Is.Null);
+			Assert.That(LocalWebAssets.CheckoutFile(web, "stacks/../../secret.txt"), Is.Null);
+			Assert.That(LocalWebAssets.CheckoutFile(web, "stacks/missing.js"), Is.Null);
+		}
+		finally
+		{
+			Directory.Delete(dir, true);
+		}
+	}
 }
 
 /// <summary>
-/// Unit tests for <see cref="LocalStackPortalApi.BuildArgs"/>: what the stacks page may ask the CLI to run. Values go
+/// Unit tests for <see cref="LocalStackManagementApi.BuildArgs"/>: what the stacks page may ask the CLI to run. Values go
 /// as single <c>--option=value</c> tokens and must start alphanumeric, so none can parse as an option.
 /// </summary>
-public class LocalStackPortalApiTests
+public class LocalStackManagementApiTests
 {
-	static string[] Build(string json) => LocalStackPortalApi.BuildArgs(JObject.Parse(json)).args;
+	static string[] Build(string json) => LocalStackManagementApi.BuildArgs(JObject.Parse(json)).args;
 
 	[Test]
 	public void Create_PassesEveryFieldAsOneToken()
@@ -261,7 +284,7 @@ public class LocalStackPortalApiTests
 	[TestCase("a -- b", "a -- b")]
 	public void Logs_DropTerminalCodes(string line, string plain)
 	{
-		Assert.That(LocalStackPortalApi.Plain(line), Is.EqualTo(plain));
+		Assert.That(LocalStackManagementApi.Plain(line), Is.EqualTo(plain));
 	}
 
 	[Test]
@@ -275,10 +298,10 @@ public class LocalStackPortalApiTests
 				new() { name = "scala: auth" }, new() { name = "c# gateway" }, new() { name = "seed: demo" },
 			},
 		};
-		Assert.That(LocalStackPortalApi.Grafana(snapshot), Is.Null, "no logs: forward step, nothing in Grafana");
+		Assert.That(LocalStackManagementApi.Grafana(snapshot), Is.Null, "no logs: forward step, nothing in Grafana");
 
 		snapshot.steps.Add(new LocalStackPsEntry { name = "logs: forward" });
-		var steps = (System.Collections.Generic.Dictionary<string, string>)JObject.FromObject(LocalStackPortalApi.Grafana(snapshot))["steps"]!
+		var steps = (System.Collections.Generic.Dictionary<string, string>)JObject.FromObject(LocalStackManagementApi.Grafana(snapshot))["steps"]!
 			.ToObject(typeof(System.Collections.Generic.Dictionary<string, string>))!;
 		Assert.That(steps["scala: auth"], Is.EqualTo("http://localhost:3001/d/beam-local-scala?from=now-1h&to=now&var-stack=csharp-portal%3Aweb&var-step=scala%3A%20auth"));
 		Assert.That(steps["c# gateway"], Does.StartWith("http://localhost:3001/d/beam-local-csharp?"));

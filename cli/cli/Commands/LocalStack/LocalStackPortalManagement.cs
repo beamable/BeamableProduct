@@ -11,25 +11,60 @@ using System.Text.RegularExpressions;
 
 namespace cli.Commands.LocalStack;
 
-public class LocalStackPortalCommandArgs : CommandArgs
+public class LocalStackPortalManagementArgs : CommandArgs
 {
 	public bool noBrowser;
 }
 
 /// <summary>
 /// Opens the stacks web app: a page built into this CLI, served on 127.0.0.1 with its API
-/// (<see cref="LocalWebServer"/>, <see cref="LocalStackPortalApi"/>), to list, create, edit and delete this workspace's
+/// (<see cref="LocalWebServer"/>, <see cref="LocalStackManagementApi"/>), to list, create, edit and delete this workspace's
 /// stacks and to start, stop and watch the running one. No portal or login is needed. Runs until stopped.
 /// </summary>
-public class LocalStackPortalCommand : AppCommand<LocalStackPortalCommandArgs>, IEmptyResult, IStandaloneCommand, ISkipManifest
+public class LocalStackPortalManagement : AppCommand<LocalStackPortalManagementArgs>, IEmptyResult, IStandaloneCommand, ISkipManifest
 {
 	public const string AppName = "stacks";
 
 	public override bool IsForInternalUse => true;
 
-	public LocalStackPortalCommand() : base("portal",
+	public LocalStackPortalManagement() : base("management",
 		"Manage this workspace's local stacks in a browser tab: create, edit and delete them, start and stop them, and follow the running one. Runs until stopped")
 	{
+	}
+
+	/// <summary>
+	/// When this CLI was built without <paramref name="app"/>, serves it from the BeamableProduct checkout instead,
+	/// building it there in the background (<see cref="LocalWebAssets.UseCheckout"/>). The checkout is the one the
+	/// stack settings name, else BeamableProduct next to the workspace (with the workspace folder's suffix, then without).
+	/// </summary>
+	public static void UseCheckoutWhenMissing(string app, CommandArgs args)
+	{
+		if (LocalWebAssets.Has(app)) return;
+
+		LocalStackConfig config = null;
+		try
+		{
+			var settings = LocalStackCommand.ResolveManifestPath(args.ConfigService, null);
+			if (File.Exists(settings)) config = LocalStackConfigIO.Load(settings);
+		}
+		catch
+		{
+			// Unreadable settings: look next to the workspace only, with the PATH as it is.
+		}
+
+		var workspace = Path.GetFullPath(args.ConfigService?.BeamableWorkspace ?? args.ConfigService?.WorkingDirectory ?? ".");
+		var parent = Path.GetDirectoryName(workspace.TrimEnd('/', '\\')) ?? workspace;
+		var suffix = Regex.Match(Path.GetFileName(workspace.TrimEnd('/', '\\')), "_.+$").Value;
+		var used = LocalWebAssets.UseCheckout(app,
+			new[] { config?.repos?.productDir, Path.Combine(parent, "BeamableProduct" + suffix), Path.Combine(parent, "BeamableProduct") },
+			LocalStackConfigIO.ToolchainPathPrefix(config));
+
+		if (used == null)
+			Log.Warning(LocalWebAssets.Missing + " Until then the page won't load; only the API runs.");
+		else if (LocalWebAssets.Building != null)
+			Log.Information($"This CLI was built without its web apps, so they're being built in {LocalWebAssets.Building}. The page says so until they're ready.");
+		else
+			Log.Information($"This CLI was built without its web apps; using the build in {used}.");
 	}
 
 	public override void Configure()
@@ -38,12 +73,11 @@ public class LocalStackPortalCommand : AppCommand<LocalStackPortalCommandArgs>, 
 			(args, i) => args.noBrowser = i);
 	}
 
-	public override async Task Handle(LocalStackPortalCommandArgs args)
+	public override async Task Handle(LocalStackPortalManagementArgs args)
 	{
-		if (!LocalWebAssets.Has(AppName))
-			Log.Warning("This CLI was built without its web apps (cli/local-web), so the page won't load; only the API runs.");
+		UseCheckoutWhenMissing(AppName, args);
 
-		var server = new LocalWebServer(AppName, new LocalStackPortalApi(args));
+		var server = new LocalWebServer(AppName, new LocalStackManagementApi(args));
 		server.Start();
 		var serving = server.Serve(args.Lifecycle.CancellationToken);
 
@@ -65,7 +99,7 @@ public class LocalStackPortalCommand : AppCommand<LocalStackPortalCommandArgs>, 
 /// a stack takes minutes to come up and must outlive nothing but its own run (<c>--detach</c>); the board file the
 /// run writes is the progress.
 /// </summary>
-public class LocalStackPortalApi : ILocalWebApi
+public class LocalStackManagementApi : ILocalWebApi
 {
 	// Values must start alphanumeric so nothing the page sends can parse as an option.
 	static readonly Regex StackNamePattern = new(@"^[A-Za-z0-9][A-Za-z0-9._-]*(:[A-Za-z0-9][A-Za-z0-9._-]*)*$", RegexOptions.Compiled);
@@ -93,10 +127,10 @@ public class LocalStackPortalApi : ILocalWebApi
 	readonly string _runStatePath;
 	readonly CliJobRunner _jobs = new(Array.Empty<string>());
 	readonly object _operationLock = new();
-	LocalStackPortalOperation _operation;
+	LocalStackManagementOperation _operation;
 	WorkspaceServices _services;
 
-	public LocalStackPortalApi(CommandArgs args)
+	public LocalStackManagementApi(CommandArgs args)
 	{
 		_args = args;
 		_settingsPath = LocalStackCommand.ResolveManifestPath(args.ConfigService, null);
@@ -475,7 +509,7 @@ public class LocalStackPortalApi : ILocalWebApi
 			// --no-redirect: run this same CLI, not a version the workspace's tool manifest pins. --pretty: readable
 			// progress lines for the page, where a child without a terminal would print JSON and no info lines.
 			var fullArgs = leading.Concat(commandArgs).Concat(new[] { "--no-redirect", "--quiet", "--pretty" }).ToArray();
-			_operation = LocalStackPortalOperation.Start(op, exe, fullArgs, _args.ConfigService.WorkingDirectory,
+			_operation = LocalStackManagementOperation.Start(op, exe, fullArgs, _args.ConfigService.WorkingDirectory,
 				"beam " + string.Join(" ", commandArgs.Select(a => a.Contains(' ') ? $"\"{a}\"" : a)));
 			return _operation.ToView();
 		}
@@ -483,7 +517,7 @@ public class LocalStackPortalApi : ILocalWebApi
 }
 
 /// <summary>A stack operation running as a child process: its command line, state and the end of its output.</summary>
-public class LocalStackPortalOperation
+public class LocalStackManagementOperation
 {
 	const int OutputLines = 200;
 
@@ -496,9 +530,9 @@ public class LocalStackPortalOperation
 
 	readonly Queue<string> _output = new();
 
-	public static LocalStackPortalOperation Start(string op, string exe, string[] args, string workingDirectory, string commandLine)
+	public static LocalStackManagementOperation Start(string op, string exe, string[] args, string workingDirectory, string commandLine)
 	{
-		var operation = new LocalStackPortalOperation { op = op, commandLine = commandLine, startedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() };
+		var operation = new LocalStackManagementOperation { op = op, commandLine = commandLine, startedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() };
 		var psi = new ProcessStartInfo(exe)
 		{
 			UseShellExecute = false,
@@ -536,7 +570,7 @@ public class LocalStackPortalOperation
 	void Add(string line)
 	{
 		if (line == null) return;
-		var plain = LocalStackPortalApi.Plain(line);
+		var plain = LocalStackManagementApi.Plain(line);
 		lock (_output)
 		{
 			// One blank line between sections is enough.

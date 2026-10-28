@@ -96,7 +96,7 @@ beam local stop "portal frontend"           # stop one step...
 beam local ps --start "portal frontend"     # ...and start it again
 beam local logs "c# gateway" -n 100         # a step's log
 ```
-For a person, `beam local portal` opens the same in a browser tab: the stacks to create, edit, delete and start, and
+For a person, `beam local management` opens the same in a browser tab: the stacks to create, edit, delete and start, and
 the running one's steps with their logs (restart, stop, start). It runs until stopped; agents use the commands above.
 
 States: Waiting, Building, Up to date, Starting, Restarting, Ready, Running, Degraded, Done, Failed, Stopped. A failed

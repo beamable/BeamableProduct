@@ -1683,7 +1683,7 @@ public class LocalStackRunCommand
 			return LocalStackBoardMode.Silent;
 
 		// The full-screen board needs the terminal's alternate screen; a terminal without one gets the lines. So does a
-		// child whose output is read by another program (`beam local portal`): it inherits a console, so it looks
+		// child whose output is read by another program (`beam local management`): it inherits a console, so it looks
 		// interactive, but its redraws would arrive as a pile of half-wrapped boards.
 		var capabilities = AnsiConsole.Profile.Capabilities;
 		return capabilities.Interactive && capabilities.Ansi && capabilities.AlternateBuffer
@@ -2983,7 +2983,7 @@ public class LocalStackRunCommand
 		{
 			foreach (var (k, v) in LocalStackTargets.Environment(_targetLogin))
 				psi.Environment[k] = v;
-			// Its log is read by `beam local logs`, Grafana and `beam local portal`, which wrap lines to their own width.
+			// Its log is read by `beam local logs`, Grafana and `beam local management`, which wrap lines to their own width.
 			psi.Environment[DefaultAppContext.ConsoleWidthVariable] = "1000";
 		}
 

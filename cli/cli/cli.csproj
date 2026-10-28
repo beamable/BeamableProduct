@@ -150,7 +150,7 @@
     <EmbeddedResource Include="Services\LocalStack\BuiltInStacks.json" />
   </ItemGroup>
 
-  <!-- The local web apps (`beam local portal`, `beam bundles management`) and the portal runtime they load, built from
+  <!-- The local web apps (`beam local management`, `beam bundles management`) and the portal runtime they load, built from
        ../local-web into LocalWeb/ (git-ignored) and embedded as LocalWeb/<app>/<file> and LocalWeb/runtime/<file>
        (see LocalWebAssets). Built once, before the per-framework builds, and only when local-web changed. Without
        pnpm, in a container, or with BeamSkipLocalWeb=true the CLI is built without them, and the commands say so. -->
@@ -177,6 +177,7 @@
     </Exec>
     <Warning Condition="'$(_LocalWebPnpm)' != '0'" Text="pnpm was not found, so this CLI is built without its local web apps (cli/local-web)." />
     <Exec Condition="'$(_LocalWebPnpm)' == '0'" WorkingDirectory="$(LocalWebDir)" Command="pnpm install --frozen-lockfile &amp;&amp; pnpm build" ContinueOnError="WarnAndContinue" />
+    <Warning Condition="'$(_LocalWebPnpm)' == '0' AND !Exists('LocalWeb\stacks\index.html')" Text="The local web apps (cli/local-web) failed to build, so this CLI is built without them; their output above says why." />
   </Target>
 
   <!-- Regenerate the type schema snapshot after each build so it stays current.

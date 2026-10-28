@@ -100,7 +100,7 @@ function FollowLog({ lines, style }: { lines: string[]; style?: CSSProperties })
 }
 
 const TABS = ['stacks', 'running']
-const CLI_COMMAND = 'beam local portal'
+const CLI_COMMAND = 'beam local management'
 const LAYER_LABEL: Record<Layer, string> = { 'built-in': 'built-in', shared: 'team', local: 'mine' }
 /** How the pickers title a kind of step: its first tag. */
 const KIND_TITLES: Record<string, string> = {
@@ -201,7 +201,7 @@ export default function App() {
         loadChoices()
       }
     } catch (err) {
-      setConnectError(errorMessage(err, 'Could not reach the CLI. Is `beam local portal` still running?'))
+      setConnectError(errorMessage(err, 'Could not reach the CLI. Is `beam local management` still running?'))
     } finally {
       setConnecting(false)
     }

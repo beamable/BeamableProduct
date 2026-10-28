@@ -1,4 +1,4 @@
-// The stacks API `beam local portal` serves next to this page (LocalStackPortalApi in the CLI): reads from the
+// The stacks API `beam local management` serves next to this page (LocalStackManagementApi in the CLI): reads from the
 // workspace's settings, stack files and run state; edits and previews as jobs; start/stop as one CLI operation at a time.
 
 import { api, jobChannel, jobError, runJob, type Job } from '../shared/connection'

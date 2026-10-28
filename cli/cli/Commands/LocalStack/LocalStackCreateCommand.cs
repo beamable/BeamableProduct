@@ -913,17 +913,16 @@ public class LocalStackCreateCommand
 	}
 
 	/// <summary>
-	/// Clears the screen for the next question, leaving just the title, which step this is and the keys: the answers,
+	/// Clears the screen for the next question, leaving just the title, the step's name and the keys: the answers,
 	/// with their lists of steps, are on the review, whose "See every step" is the one place that lists them all.
 	/// </summary>
 	private static void Frame(Draft draft, LocalStackWizard wizard = null)
 	{
 		AnsiConsole.Clear();
 		LocalStackStyle.H1($"beam local {draft.Verb}{(draft.IsEdit ? " " + draft.FullName : string.Empty)}");
-		var groups = wizard?.Groups() ?? new List<string>();
-		var at = groups.IndexOf(wizard?.current);
-		if (at >= 0)
-			AnsiConsole.MarkupLine(LocalStackStyle.H2Text($"Step {at + 1} of {groups.Count}: {wizard.current}"));
+		// The step's name only: which steps come next depends on the answers, so a count would change as they come in.
+		if (wizard?.current != null)
+			AnsiConsole.MarkupLine(LocalStackStyle.H2Text(wizard.current));
 		AnsiConsole.MarkupLine(LocalStackStyle.KeysText("Enter answers, Shift+Tab goes back"));
 		AnsiConsole.WriteLine();
 	}

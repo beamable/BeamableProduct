@@ -13,7 +13,7 @@ namespace tests;
 /// PRODUCTION. The local seed account does not exist there, so login fails while every local service is healthy —
 /// a symptom that reads as a broken backend rather than missing config.
 /// </summary>
-public class LocalStackPortalEnvTests
+public class LocalStackManagementEnvTests
 {
 	private const string Host = "http://localhost:8080";
 

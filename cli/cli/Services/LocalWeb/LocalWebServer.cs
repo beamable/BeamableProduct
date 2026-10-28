@@ -33,7 +33,7 @@ public interface ILocalWebApi
 }
 
 /// <summary>
-/// Serves one of the CLI's local web apps (<c>beam local portal</c>, <c>beam bundles management</c>) on 127.0.0.1:
+/// Serves one of the CLI's local web apps (<c>beam local management</c>, <c>beam bundles management</c>) on 127.0.0.1:
 /// the page itself from the files built into this CLI (<see cref="LocalWebAssets"/>), and its API under
 /// <c>/api/</c>, which runs operations with this CLI's credentials and files.
 /// <para>
@@ -146,11 +146,20 @@ public class LocalWebServer
 
 			if (!LocalWebAssets.TryRead(_app, path, out var bytes, out var contentType))
 			{
+				// While the apps are built from the checkout, the page itself is a notice that reloads until they're ready.
+				if (path == "/" && LocalWebAssets.Building != null)
+				{
+					resp.StatusCode = 503;
+					resp.ContentType = "text/html; charset=utf-8";
+					await resp.OutputStream.WriteAsync(Encoding.UTF8.GetBytes(LocalWebAssets.BuildingPage()));
+					return;
+				}
+
 				await WriteJson(resp, 404, new
 				{
 					message = LocalWebAssets.Has(_app)
 						? $"No file {path}."
-						: "This CLI was built without its web apps (cli/local-web); build it with pnpm available."
+						: LocalWebAssets.Failed ?? LocalWebAssets.Missing
 				});
 				return;
 			}
@@ -256,8 +265,104 @@ public static class LocalWebAssets
 		[".woff2"] = "font/woff2",
 	};
 
-	/// <summary>Whether this CLI was built with <paramref name="app"/>.</summary>
-	public static bool Has(string app) => Resources.ContainsKey($"{app}/index.html");
+	/// <summary>What to say when the apps weren't built in, and what the build needs to build them.</summary>
+	public const string Missing = "This CLI was built without its web apps (cli/local-web). Build it again with pnpm on the "
+	                              + "PATH and agentic-portal cloned next to BeamableProduct (or PORTAL_REPO_PATH set to it); "
+	                              + "the build's warnings say which was missing.";
+
+	/// <summary>
+	/// The BeamableProduct checkout's own build of the apps (<c>cli/cli/LocalWeb</c>), read when this CLI was built
+	/// without them; see <see cref="UseCheckout"/>.
+	/// </summary>
+	static string _directory;
+
+	/// <summary>The checkout the apps are being built in, while that runs.</summary>
+	public static string Building { get; private set; }
+
+	/// <summary>Why building them in the checkout failed, with the build's last lines.</summary>
+	public static string Failed { get; private set; }
+
+	/// <summary>Whether this CLI was built with <paramref name="app"/>, or the checkout's build of it is in use.</summary>
+	public static bool Has(string app) =>
+		Resources.ContainsKey($"{app}/index.html") || (_directory != null && File.Exists(Path.Combine(_directory, app, "index.html")));
+
+	/// <summary>
+	/// For a CLI built without its web apps (a developer build whose <c>pnpm build</c> in <c>cli/local-web</c> failed,
+	/// or ran without pnpm): serves them from the first BeamableProduct checkout of <paramref name="productDirs"/> that
+	/// has <c>cli/local-web</c>, building them there first, in the background, when it has no build yet. The build
+	/// runs with <paramref name="pathPrefix"/> (the toolchain's node and pnpm) in front of PATH; it also builds the
+	/// portal runtime from the agentic-portal checkout next to it, the step a first build most often misses.
+	/// Returns the checkout used, or null when none has <c>cli/local-web</c>.
+	/// </summary>
+	public static string UseCheckout(string app, IEnumerable<string> productDirs, IEnumerable<string> pathPrefix)
+	{
+		var productDir = productDirs.FirstOrDefault(d => !string.IsNullOrWhiteSpace(d)
+		                                                 && File.Exists(Path.Combine(d, "cli", "local-web", "package.json")));
+		if (productDir == null) return null;
+
+		_directory = Path.Combine(productDir, "cli", "cli", "LocalWeb");
+		if (Has(app)) return productDir;
+
+		var web = Path.Combine(productDir, "cli", "local-web");
+		Building = web;
+		_ = Task.Run(() =>
+		{
+			const string build = "pnpm install --frozen-lockfile && pnpm build";
+			var psi = OperatingSystem.IsWindows()
+				? new System.Diagnostics.ProcessStartInfo("cmd.exe", $"/d /c {build}")
+				: new System.Diagnostics.ProcessStartInfo("/bin/sh", new[] { "-c", build });
+			psi.WorkingDirectory = web;
+			psi.UseShellExecute = false;
+			psi.RedirectStandardOutput = psi.RedirectStandardError = true;
+			psi.CreateNoWindow = true;
+			psi.Environment["PATH"] = string.Join(Path.PathSeparator, pathPrefix.Append(psi.Environment.TryGetValue("PATH", out var inherited) ? inherited : ""));
+
+			var output = new ConcurrentQueue<string>();
+			void Keep(string line)
+			{
+				if (line == null) return;
+				output.Enqueue(line);
+				while (output.Count > 30) output.TryDequeue(out _);
+			}
+
+			try
+			{
+				using var proc = System.Diagnostics.Process.Start(psi)!;
+				proc.OutputDataReceived += (_, e) => Keep(e.Data);
+				proc.ErrorDataReceived += (_, e) => Keep(e.Data);
+				proc.BeginOutputReadLine();
+				proc.BeginErrorReadLine();
+				proc.WaitForExit();
+				if (proc.ExitCode != 0 || !Has(app))
+					Failed = $"Building the web apps in {web} failed (`{build}`):{Environment.NewLine}{string.Join(Environment.NewLine, output)}";
+			}
+			catch (Exception e)
+			{
+				Failed = $"Could not build the web apps in {web}: {e.Message}. {Missing}";
+			}
+			finally
+			{
+				Building = null;
+			}
+		});
+		return productDir;
+	}
+
+	/// <summary>The existing file <paramref name="name"/> names inside <paramref name="dir"/>, or null: a request path can't climb out of it.</summary>
+	public static string CheckoutFile(string dir, string name)
+	{
+		var root = Path.GetFullPath(dir).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+		var file = Path.GetFullPath(Path.Combine(root, name));
+		return file.StartsWith(root, StringComparison.Ordinal) && File.Exists(file) ? file : null;
+	}
+
+	/// <summary>The page shown while <see cref="Building"/>: it reloads itself until the app is there.</summary>
+	public static string BuildingPage() =>
+		"<!doctype html><meta charset=utf-8><title>Building</title>"
+		+ "<body style=\"font:15px system-ui,sans-serif;padding:32px;background:#1b1d23;color:#e9e8f0\">"
+		+ "<h2>Building this page</h2><p>This CLI was built without its web apps, so they're being built from "
+		+ $"<code>{WebUtility.HtmlEncode(Building)}</code>. This takes a minute or two the first time; the page "
+		+ "reloads by itself when they're ready.</p><script>setTimeout(() => location.reload(), 3000)</script>";
 
 	/// <summary>
 	/// The file a request path names: <c>/</c> is the app's page, <c>/runtime/…</c> the shared runtime, anything else
@@ -271,14 +376,20 @@ public static class LocalWebAssets
 		var name = relative.Length == 0 ? $"{app}/index.html"
 			: relative.StartsWith("runtime/", StringComparison.Ordinal) ? relative
 			: $"{app}/{relative}";
-		if (!Resources.TryGetValue(name, out var resource)) return false;
+		contentType = ContentTypes.TryGetValue(Path.GetExtension(name), out var type) ? type : "application/octet-stream";
+		if (!Resources.TryGetValue(name, out var resource))
+		{
+			var file = _directory == null ? null : CheckoutFile(_directory, name);
+			if (file == null) return false;
+			bytes = File.ReadAllBytes(file);
+			return true;
+		}
 
 		using var stream = typeof(LocalWebAssets).Assembly.GetManifestResourceStream(resource);
 		if (stream == null) return false;
 		using var memory = new MemoryStream();
 		stream.CopyTo(memory);
 		bytes = memory.ToArray();
-		contentType = ContentTypes.TryGetValue(Path.GetExtension(name), out var type) ? type : "application/octet-stream";
 		return true;
 	}
 }
