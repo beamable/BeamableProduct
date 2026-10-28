@@ -55,31 +55,61 @@ namespace Beamable.Purchasing
 		/// </summary>
 		public const int PURCHASE_DEFERRED_ERROR_CODE = 202;
 
+		/// <inheritdoc/>
 		public PurchasingInitializationStatus InitializationStatus { get; private set; } =
 			PurchasingInitializationStatus.NotInitialized;
 
 		/// <summary>
 		/// The purchase a <see cref="StartPurchase"/> call is driving.
 		/// </summary>
-		private sealed class ActivePurchase
+		private class ActivePurchase
 		{
+			/// <summary>
+			/// The Beamable SKU being bought.
+			/// </summary>
 			public string Sku;
+			/// <summary>
+			/// The Beamable transaction id from BeginPurchase, or 0 before it returns.
+			/// </summary>
 			public long Txid;
-			// Whether the store was asked to buy the SKU yet.
+			/// <summary>
+			/// Whether the store was asked to buy the SKU yet.
+			/// </summary>
 			public bool StoreStarted;
+			/// <summary>
+			/// Completes when the purchase succeeds or fails. StartPurchase returns it.
+			/// </summary>
 			public readonly Promise<CompletedTransaction> Result = new Promise<CompletedTransaction>();
 		}
 
+		/// <summary>
+		/// Seconds to wait before each retry of a failed fulfillment. Their number bounds the retries.
+		/// </summary>
 		static readonly int[] RETRY_DELAYS = { 1, 2, 5, 10, 20 }; // TODO: Just double a few times. ~ACM 2021-03-10
 
+		/// <summary>
+		/// Completes when the current initialization does.
+		/// </summary>
 		private Promise<Unit> _initPromise = new Promise<Unit>();
-		// Incremented by every Initialize, so work started for an earlier login can tell it is stale.
+		/// <summary>
+		/// Incremented by every Initialize, so work started for an earlier login can tell it is stale.
+		/// </summary>
 		private int _generation;
+		/// <summary>
+		/// True once the context this purchaser belongs to was disposed.
+		/// </summary>
 		private bool _disposed;
+		/// <summary>
+		/// The purchase StartPurchase is driving, or null when none is in flight.
+		/// </summary>
 		private ActivePurchase _purchase;
+		/// <summary>
+		/// The services of the context this purchaser belongs to.
+		/// </summary>
 		private IDependencyProvider _serviceProvider;
 
 		#region "IBeamablePurchaser"
+		/// <inheritdoc/>
 		public Promise<Unit> Initialize(IDependencyProvider provider)
 		{
 			if (InitializationStatus == PurchasingInitializationStatus.InProgress)
@@ -117,6 +147,10 @@ namespace Beamable.Purchasing
 			});
 		}
 
+		/// <summary>
+		/// Fail a purchase left in flight and stop receiving store events. On IAP 5 this also releases the
+		/// orders this purchaser was fulfilling.
+		/// </summary>
 		public Promise OnDispose()
 		{
 			_disposed = true;
@@ -125,12 +159,14 @@ namespace Beamable.Purchasing
 			return Promise.Success;
 		}
 
+		/// <inheritdoc/>
 		public string GetLocalizedPrice(string skuSymbol)
 		{
 			var product = GetStoreProduct(skuSymbol);
 			return product?.metadata.localizedPriceString ?? "???";
 		}
 
+		/// <inheritdoc/>
 		public bool TryGetLocalizedPrice(string skuSymbol, out string localizedPrice)
 		{
 			var product = GetStoreProduct(skuSymbol);
@@ -230,6 +266,9 @@ namespace Beamable.Purchasing
 		}
 		#endregion
 
+		/// <summary>
+		/// Log the result of a RestoreTransactions call.
+		/// </summary>
 		private static void OnTransactionsRestored(bool result, string error)
 		{
 			// The first phase of restoration. If no more responses are received on the pending-purchase
@@ -260,6 +299,9 @@ namespace Beamable.Purchasing
 			if (!purchase.Result.IsCompleted) purchase.Result.CompleteError(error);
 		}
 
+		/// <summary>
+		/// A purchase promise that already failed with the given error.
+		/// </summary>
 		private static Promise<CompletedTransaction> FailedPurchase(ErrorCode error)
 		{
 			var result = new Promise<CompletedTransaction>();
@@ -267,8 +309,14 @@ namespace Beamable.Purchasing
 			return result;
 		}
 
+		/// <summary>
+		/// An error raised by the game client rather than by the Beamable backend.
+		/// </summary>
 		private static ErrorCode ClientError(long code, string message) => new ErrorCode(code, GameSystem.GAME_CLIENT, message);
 
+		/// <summary>
+		/// A client error for a store failure reason, with a detail such as the product id.
+		/// </summary>
 		private static ErrorCode StoreError(PurchaseFailureReason reason, string detail) => ClientError((int)reason, $"{reason} ({detail})");
 
 		/// <summary>
@@ -281,20 +329,33 @@ namespace Beamable.Purchasing
 		/// </summary>
 		private bool IsCurrent(int generation) => generation == _generation && !_disposed && IsRegisteredWithStore;
 
+		/// <summary>
+		/// The payment service of this purchaser's context.
+		/// </summary>
 		private PaymentService GetPaymentService()
 		{
 			return _serviceProvider.GetService<PaymentService>();
 		}
 
+		/// <summary>
+		/// The coroutine service of this purchaser's context, which runs fulfillment retries.
+		/// </summary>
 		private CoroutineService GetCoroutineService()
 		{
 			return _serviceProvider.GetService<CoroutineService>();
 		}
 
-		// Prices go to the backend as text, so they must not depend on the device's culture (e.g. "4,99").
+		/// <summary>
+		/// The product's price as text for the backend. It doesn't depend on the device's culture (e.g.
+		/// "4,99").
+		/// </summary>
 		private static string FormatPrice(Product product) =>
 			product?.metadata == null ? string.Empty : product.metadata.localizedPrice.ToString(CultureInfo.InvariantCulture);
 
+		/// <summary>
+		/// Settle a failed store purchase: cancel or fail its Beamable transaction, and fail the purchase in
+		/// flight if it is the one that failed.
+		/// </summary>
 		private void OnPurchaseFailedInternal(Product product, PurchaseFailureReason failureReason, OptionalString message, OptionalString productId)
 		{
 			var sku = product?.definition?.id;
@@ -420,66 +481,157 @@ namespace Beamable.Purchasing
 		// Unity IAP v5 services are domain-wide singletons: every StoreController shares them, and handlers added
 		// through any controller stay attached until removed. So all purchasers (one per BeamContext) share one
 		// controller with one set of handlers, and the static handlers below dispatch store events to them.
+
+		/// <summary>
+		/// The controller every purchaser shares.
+		/// </summary>
 		private static StoreController s_storeController;
+		/// <summary>
+		/// The purchasers that receive store events, one per initialized context.
+		/// </summary>
 		private static readonly List<UnityBeamablePurchaser> s_purchasers = new List<UnityBeamablePurchaser>();
+		/// <summary>
+		/// The product fetch in progress, or null.
+		/// </summary>
 		private static ProductFetchBatch s_productFetchBatch;
+		/// <summary>
+		/// Whether a fetch was requested while another one was in progress. It starts once that one
+		/// completes.
+		/// </summary>
 		private static bool s_refetchRequested;
-		// Orders being fulfilled, by store transaction id, so an order the store delivers again (e.g. FetchPurchases
-		// during another initialization) is not fulfilled twice. Apple orders stay here after a failed fulfillment,
-		// so StartPurchase of the same SKU or RestorePurchases can retry them without another charge.
+		/// <summary>
+		/// Orders being fulfilled, by store transaction id, so an order the store delivers again (e.g.
+		/// FetchPurchases during another initialization) is not fulfilled twice. Apple orders stay here after
+		/// a failed fulfillment, so StartPurchase of the same SKU or RestorePurchases can retry them without
+		/// another charge.
+		/// </summary>
 		private static readonly Dictionary<string, OrderFulfillment> s_orders = new Dictionary<string, OrderFulfillment>();
-		// Beamable txids of store purchases that started but did not complete, by SKU. An order that arrives later
-		// (deferred payment approved, or the context that started it is gone) completes its own transaction.
+		/// <summary>
+		/// Beamable txids of store purchases that started but did not complete, by SKU. An order that arrives
+		/// later (deferred payment approved, or the context that started it is gone) completes its own
+		/// transaction.
+		/// </summary>
 		private static readonly Dictionary<string, long> s_openTxids = new Dictionary<string, long>();
+		/// <summary>
+		/// The Apple receipt refresh in progress, which concurrent requests share.
+		/// </summary>
 		private static Promise<string> s_receiptRefresh;
 
 		/// <summary>
 		/// One FetchProducts call. IAP reports the products it found, then a failure for the rest, so the batch is
 		/// complete once every requested id has one of those outcomes.
 		/// </summary>
-		private sealed class ProductFetchBatch
+		private class ProductFetchBatch
 		{
+			/// <summary>
+			/// The requested product ids that have no outcome yet.
+			/// </summary>
 			public readonly HashSet<string> RemainingIds = new HashSet<string>();
-			// The purchasers whose initialization waits for this batch, with the initialization they started.
+			/// <summary>
+			/// The purchasers whose initialization waits for this batch, with the initialization they
+			/// started.
+			/// </summary>
 			public readonly List<(UnityBeamablePurchaser Purchaser, Promise<Unit> Init)> Waiters =
 				new List<(UnityBeamablePurchaser, Promise<Unit>)>();
+			/// <summary>
+			/// The reason IAP gave for the products it couldn't fetch, if any.
+			/// </summary>
 			public string FailureReason;
+			/// <summary>
+			/// True while the batch settles its purchasers, so late store callbacks are ignored.
+			/// </summary>
 			public bool Completing;
 		}
 
 		/// <summary>
 		/// A store order being fulfilled. The Apple fields drive the receipt recovery.
 		/// </summary>
-		private sealed class OrderFulfillment
+		private class OrderFulfillment
 		{
+			/// <summary>
+			/// The store's order.
+			/// </summary>
 			public PendingOrder Order;
+			/// <summary>
+			/// The product the order is for.
+			/// </summary>
 			public Product Product;
+			/// <summary>
+			/// The purchaser fulfilling the order.
+			/// </summary>
 			public UnityBeamablePurchaser Owner;
+			/// <summary>
+			/// The owner's initialization generation when it took the order.
+			/// </summary>
 			public int Generation;
+			/// <summary>
+			/// The transaction sent to the backend to fulfill the order.
+			/// </summary>
 			public CompletedTransaction Transaction;
+			/// <summary>
+			/// The StartPurchase this order completes, or null for other orders.
+			/// </summary>
 			public ActivePurchase Purchase;
+			/// <summary>
+			/// True while the order is being fulfilled, so a redelivery of it is skipped.
+			/// </summary>
 			public bool Busy;
-			// Apple only: rewards were granted, the player may be prompted to refresh the receipt, and it was refreshed.
-			public bool Fulfilled, AllowRefresh, RefreshAttempted;
+			/// <summary>
+			/// Apple only: the backend granted the rewards, but confirming the order with the store may have failed.
+			/// </summary>
+			public bool Fulfilled;
+
+			/// <summary>
+			/// Apple only: the player started this fulfillment, so the receipt may be refreshed, which can prompt for the
+			/// Apple ID.
+			/// </summary>
+			public bool AllowRefresh;
+
+			/// <summary>
+			/// Apple only: the receipt was already refreshed during this attempt.
+			/// </summary>
+			public bool RefreshAttempted;
 		}
 
+		/// <summary>
+		/// The shared controller, once this purchaser is registered.
+		/// </summary>
 		private StoreController _storeController;
-		// The store product definitions, built during Initialize and fetched once the store connects.
+		/// <summary>
+		/// The store product definitions, built during Initialize and fetched once the store connects.
+		/// </summary>
 		private List<ProductDefinition> _productDefinitions;
-		// True while this purchaser's initialization waits for the store to return its products.
+		/// <summary>
+		/// True while this purchaser's initialization waits for the store to return its products.
+		/// </summary>
 		private bool _awaitingProducts;
+		/// <summary>
+		/// Completes when the reconnection a purchase is waiting for does.
+		/// </summary>
 		private Promise<Unit> _connectPromise;
 
 #if BEAMABLE_STEAM_STORE
-		// Steam builds report OSXPlayer on macOS, but their orders come from the Steam store.
+		/// <summary>
+		/// Whether orders come from the App Store. Steam builds report OSXPlayer on macOS, but their orders
+		/// come from the Steam store.
+		/// </summary>
 		private static bool IsApplePlayer => false;
 #else
+		/// <summary>
+		/// Whether orders come from the App Store.
+		/// </summary>
 		private static bool IsApplePlayer => Application.platform == RuntimePlatform.IPhonePlayer ||
 		                                     Application.platform == RuntimePlatform.OSXPlayer;
 #endif
 
+		/// <summary>
+		/// Whether this purchaser receives store events.
+		/// </summary>
 		private bool IsRegisteredWithStore => s_purchasers.Contains(this);
 
+		/// <summary>
+		/// Reset the shared store state when play mode starts, including with domain reload disabled.
+		/// </summary>
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
 		private static void ResetStaticState()
 		{
@@ -512,6 +664,10 @@ namespace Beamable.Purchasing
 #endif
 		}
 
+		/// <summary>
+		/// Set up the store for the Beamable SKUs. The initialization promise completes once the store is
+		/// ready.
+		/// </summary>
 		private Promise<Unit> InitializeStore(List<SKU> skus)
 		{
 			_productDefinitions = BuildProductDefinitions(skus);
@@ -539,6 +695,9 @@ namespace Beamable.Purchasing
 			return _initPromise;
 		}
 
+		/// <summary>
+		/// Stop receiving store events. On IAP 5 this also releases the orders this purchaser was fulfilling.
+		/// </summary>
 		private void UnregisterFromStore()
 		{
 			s_purchasers.Remove(this);
@@ -550,16 +709,28 @@ namespace Beamable.Purchasing
 			}
 		}
 
+		/// <summary>
+		/// The store's product for a Beamable SKU, or null when the store doesn't have it.
+		/// </summary>
 		private Product GetStoreProduct(string skuSymbol) => _storeController?.GetProductById(skuSymbol);
 
+		/// <summary>
+		/// The store's transaction id of an order, used in logs and to track the order.
+		/// </summary>
 		private static string GetStoreTransactionId(PendingOrder order) => order?.Info?.TransactionID;
 
+		/// <summary>
+		/// Resolves once the store can start a purchase.
+		/// </summary>
 		private Promise<Unit> PrepareStoreForPurchase()
 		{
 			EnsureStoreController();
 			return EnsureConnected();
 		}
 
+		/// <summary>
+		/// Ask the store to buy the purchase's SKU, after its Beamable transaction began.
+		/// </summary>
 		private void StartStorePurchase(ActivePurchase purchase)
 		{
 			// v5 has no developer-payload argument; the in-flight purchase is tracked by _purchase
@@ -573,6 +744,9 @@ namespace Beamable.Purchasing
 			_storeController.PurchaseProduct(GetStoreProduct(purchase.Sku));
 		}
 
+		/// <summary>
+		/// Ask the App Store to deliver previous purchases again.
+		/// </summary>
 		private void RestoreStoreTransactions() => _storeController.RestoreTransactions(OnTransactionsRestored);
 
 		/// <summary>
@@ -636,6 +810,9 @@ namespace Beamable.Purchasing
 			return _connectPromise;
 		}
 
+		/// <summary>
+		/// Settle the reconnection a purchase is waiting for. The error is null when the store connected.
+		/// </summary>
 		private void CompleteConnect(string error)
 		{
 			var promise = _connectPromise;
@@ -684,6 +861,9 @@ namespace Beamable.Purchasing
 			s_storeController.FetchProducts(definitions);
 		}
 
+		/// <summary>
+		/// Whether the store has any of the products available to purchase.
+		/// </summary>
 		private static bool AnyProductAvailable(IEnumerable<ProductDefinition> definitions)
 		{
 			foreach (var definition in definitions)
@@ -716,8 +896,10 @@ namespace Beamable.Purchasing
 			return definitions;
 		}
 
-		// Pick the store-specific product id for the current runtime platform from the Beamable SKU.
-		// v5's ProductDefinition carries a single store id, unlike v4's multi-store IDs.
+		/// <summary>
+		/// Pick the store-specific product id for the current runtime platform from the Beamable SKU. v5's
+		/// ProductDefinition carries a single store id, unlike v4's multi-store IDs.
+		/// </summary>
 		private static string GetStoreSpecificId(SKU sku)
 		{
 #if BEAMABLE_STEAM_STORE
@@ -768,11 +950,17 @@ namespace Beamable.Purchasing
 			return s_purchasers.Count > 0 ? s_purchasers[s_purchasers.Count - 1] : null;
 		}
 
+		/// <summary>
+		/// The Beamable txid of an unfinished store purchase of the SKU, or 0 when there is none.
+		/// </summary>
 		private static long GetOpenTxid(string sku)
 		{
 			return sku != null && s_openTxids.TryGetValue(sku, out var txid) ? txid : 0;
 		}
 
+		/// <summary>
+		/// Forget the unfinished store purchase of the SKU once its transaction is settled.
+		/// </summary>
 		private static void ForgetOpenTxid(string sku, long txid)
 		{
 			if (sku != null && s_openTxids.TryGetValue(sku, out var openTxid) && openTxid == txid)
@@ -1148,6 +1336,10 @@ namespace Beamable.Purchasing
 			return orders;
 		}
 
+		/// <summary>
+		/// Whether this purchaser can retry a retained order now: it owns the order under the current login,
+		/// and the order isn't in progress.
+		/// </summary>
 		private bool CanRetry(OrderFulfillment fulfillment) =>
 			fulfillment.Owner == this && fulfillment.Generation == _generation && !fulfillment.Busy;
 
@@ -1227,6 +1419,10 @@ namespace Beamable.Purchasing
 			}
 		}
 
+		/// <summary>
+		/// Refresh the app receipt, and fulfill the order with it if it identifies the order. Otherwise leave
+		/// the order pending.
+		/// </summary>
 		private void RefreshAndSubmitAppleReceipt(OrderFulfillment fulfillment)
 		{
 			fulfillment.RefreshAttempted = true;
@@ -1263,6 +1459,9 @@ namespace Beamable.Purchasing
 			return true;
 		}
 
+		/// <summary>
+		/// Fulfill the order with the given app receipt.
+		/// </summary>
 		private void SubmitAppleReceipt(OrderFulfillment fulfillment, string receipt)
 		{
 			var previous = fulfillment.Transaction;
@@ -1314,6 +1513,10 @@ namespace Beamable.Purchasing
 			}
 		}
 
+		/// <summary>
+		/// Refresh the app receipt through IAP. Resolves with the receipt, or fails when the refresh fails or
+		/// times out.
+		/// </summary>
 		private Promise<string> RefreshAppleReceipt()
 		{
 			// IAP keeps one native callback slot for receipt refreshes, so concurrent requests share one refresh. Even
@@ -1345,6 +1548,9 @@ namespace Beamable.Purchasing
 			return promise;
 		}
 
+		/// <summary>
+		/// Fail the refresh if IAP hasn't answered within 120 seconds.
+		/// </summary>
 		private static IEnumerator ReceiptRefreshTimeout(Promise<string> promise)
 		{
 			yield return new WaitForSecondsRealtime(120);
@@ -1353,14 +1559,21 @@ namespace Beamable.Purchasing
 		#endregion
 
 #if BEAMABLE_STEAM_STORE_V5
-		// Unity IAP v5 caches store services per store name for the domain lifetime
-		// (StoreServiceContainer throws on duplicate registration), so the Steam store instance is a
-		// domain-lifetime singleton whose dependency provider must be refreshed on every Initialize.
+		/// <summary>
+		/// The Beamable Steam store registered with Unity IAP v5. IAP caches store services per store name
+		/// for the domain lifetime (StoreServiceContainer throws on duplicate registration), so this is a
+		/// domain-lifetime singleton whose dependency provider must be refreshed on every Initialize.
+		/// </summary>
 		private static Steam.SteamStoreV5 _registeredSteamStore;
+		/// <summary>
+		/// The registered Steam store, used to pass the expected Beamable txid to it.
+		/// </summary>
 		private Steam.SteamStoreV5 _steamStore;
 
-		// Register the Beamable Steam custom store with Unity IAP v5 exactly once per domain, and keep a
-		// handle so StartPurchase can pass the expected Beamable txid to the store.
+		/// <summary>
+		/// Register the Beamable Steam custom store with Unity IAP v5 exactly once per domain, and keep a
+		/// handle so StartPurchase can pass the expected Beamable txid to the store.
+		/// </summary>
 		private void RegisterSteamStore()
 		{
 			if (_registeredSteamStore == null)
@@ -1376,15 +1589,31 @@ namespace Beamable.Purchasing
 		}
 #endif
 #else
+		/// <summary>
+		/// The store controller IAP passed to OnInitialized.
+		/// </summary>
 		private IStoreController _storeController;
 #pragma warning disable CS0649
+		/// <summary>
+		/// App Store extensions, for restores and deferred purchases.
+		/// </summary>
 		private IAppleExtensions _appleExtensions;
+		/// <summary>
+		/// Google Play extensions, for deferred purchases.
+		/// </summary>
 		private IGooglePlayStoreExtensions _googleExtensions;
 #pragma warning restore CS0649
 
 		// IAP 4 keeps no shared store state between purchasers, and doesn't retain orders for a retry.
+		/// <summary>
+		/// Whether this purchaser receives store events. Always true on IAP 4.
+		/// </summary>
 		private bool IsRegisteredWithStore => true;
 
+		/// <summary>
+		/// Set up the store for the Beamable SKUs. The initialization promise completes once the store is
+		/// ready.
+		/// </summary>
 		private Promise<Unit> InitializeStore(List<SKU> skus)
 		{
 #if USE_STEAMWORKS && !UNITY_EDITOR
@@ -1419,16 +1648,34 @@ namespace Beamable.Purchasing
 			return _initPromise;
 		}
 
+		/// <summary>
+		/// Stop receiving store events. On IAP 5 this also releases the orders this purchaser was fulfilling.
+		/// </summary>
 		private void UnregisterFromStore() { }
 
+		/// <summary>
+		/// The store's product for a Beamable SKU, or null when the store doesn't have it.
+		/// </summary>
 		private Product GetStoreProduct(string skuSymbol) => _storeController?.products.WithID(skuSymbol);
 
+		/// <summary>
+		/// The store's transaction id of an order, used in logs and to track the order.
+		/// </summary>
 		private static string GetStoreTransactionId(Product order) => order?.transactionID;
 
+		/// <summary>
+		/// Resolves once the store can start a purchase.
+		/// </summary>
 		private Promise<Unit> PrepareStoreForPurchase() => PromiseBase.SuccessfulUnit;
 
+		/// <summary>
+		/// Ask the store to buy the purchase's SKU, after its Beamable transaction began.
+		/// </summary>
 		private void StartStorePurchase(ActivePurchase purchase) => _storeController.InitiatePurchase(purchase.Sku, purchase.Txid.ToString());
 
+		/// <summary>
+		/// Ask the App Store to deliver previous purchases again.
+		/// </summary>
 		private void RestoreStoreTransactions()
 		{
 #if UNITY_PURCHASING_4_6_OR_NEWER
@@ -1438,18 +1685,39 @@ namespace Beamable.Purchasing
 #endif
 		}
 
+		/// <summary>
+		/// IAP 4 retains no orders, so there is no order to resume.
+		/// </summary>
 		private bool TryResumeRetainedOrder(ActivePurchase purchase) => false;
 
+		/// <summary>
+		/// IAP 4 retains no orders, so there is no order to retry.
+		/// </summary>
 		private bool RetryRetainedOrders() => false;
 
+		/// <summary>
+		/// IAP 4 doesn't refresh receipts.
+		/// </summary>
 		private bool TryRefreshMalformedReceipt(Product order) => false;
 
+		/// <summary>
+		/// The Beamable txid of an unfinished store purchase of the SKU, or 0 when there is none.
+		/// </summary>
 		private static long GetOpenTxid(string sku) => 0;
 
+		/// <summary>
+		/// Forget the unfinished store purchase of the SKU once its transaction is settled.
+		/// </summary>
 		private static void ForgetOpenTxid(string sku, long txid) { }
 
+		/// <summary>
+		/// Finish the order in the store, so it is not delivered again.
+		/// </summary>
 		private void ConfirmStoreOrder(Product product, CompletedTransaction transaction) => _storeController.ConfirmPendingPurchase(product);
 
+		/// <summary>
+		/// IAP 4 keeps no record of the orders being fulfilled.
+		/// </summary>
 		private static void ReleaseStoreOrder(Product product) { }
 
 		#region "IStoreListener"
@@ -1477,6 +1745,9 @@ namespace Beamable.Purchasing
 		/// </summary>
 		public void OnInitializeFailed(InitializationFailureReason error) => OnInitializeFailed(error, string.Empty);
 
+		/// <summary>
+		/// Handle failed initialization by logging the error and failing the initialization.
+		/// </summary>
 		public void OnInitializeFailed(InitializationFailureReason error, string message)
 		{
 			Debug.LogError($"Billing failed to initialize! {message}");
@@ -1518,7 +1789,7 @@ namespace Beamable.Purchasing
 				return PurchaseProcessingResult.Pending;
 			}
 
-			var rawReceipt = ReadLegacyReceipt(args.purchasedProduct);
+			var rawReceipt = UnityPurchaseReceipt.GetReceipt(args);
 
 			// Products restored at startup, or delivered while another purchase is in flight, are fulfilled
 			// without a txid and must not complete the active purchase's promise.
@@ -1532,28 +1803,6 @@ namespace Beamable.Purchasing
 			FulfillTransaction(transaction, args.purchasedProduct, purchase);
 
 			return PurchaseProcessingResult.Pending;
-		}
-
-		/// <summary>
-		/// The store receipt inside Unity's receipt envelope, or the envelope itself when it has no payload.
-		/// </summary>
-		private static string ReadLegacyReceipt(Product product)
-		{
-			if (product.hasReceipt)
-			{
-				try
-				{
-					var receipt = JsonUtility.FromJson<UnityPurchaseReceipt>(product.receipt);
-					InAppPurchaseLogger.Log($"UnityIAP Payload: {receipt.Payload}");
-					InAppPurchaseLogger.Log($"UnityIAP Raw Receipt: {product.receipt}");
-					if (!string.IsNullOrEmpty(receipt.Payload)) return receipt.Payload;
-				}
-				catch (Exception)
-				{
-					// A malformed envelope is sent as it is.
-				}
-			}
-			return product.receipt;
 		}
 
 		/// <summary>
@@ -1600,6 +1849,9 @@ namespace Beamable.Purchasing
 #endif // UNITY_PURCHASING_5_OR_NEWER
 	}
 #endif
+	/// <summary>
+	/// A Beamable SKU's product id paired with the IAP store it belongs to.
+	/// </summary>
 	public struct SkuIdPair
 	{
 		/// <summary>
@@ -1613,9 +1865,16 @@ namespace Beamable.Purchasing
 		public string storeId;
 	}
 
+	/// <summary>
+	/// Registers UnityBeamablePurchaser as the Beamable purchaser.
+	/// </summary>
 	[BeamContextSystem]
 	public static class UnityBeamablePurchaserRegister
 	{
+		/// <summary>
+		/// Replace the registered purchaser with UnityBeamablePurchaser, unless the purchasing implementation
+		/// is disabled.
+		/// </summary>
 		[RegisterBeamableDependencies]
 		public static void RegisterServices(IDependencyBuilder builder)
 		{
@@ -1627,6 +1886,9 @@ namespace Beamable.Purchasing
 	}
 
 #if !UNITY_PURCHASING_5_OR_NEWER // IDs is a v4-only type; v5 builds ProductDefinitions directly.
+	/// <summary>
+	/// Helpers for building Unity IAP 4 product ids from Beamable SKUs.
+	/// </summary>
 	public class UnityBeamablePurchaserUtil
 	{
 		/// <summary>
@@ -1650,6 +1912,9 @@ namespace Beamable.Purchasing
 	}
 #endif
 
+	/// <summary>
+	/// Thrown when Beamable's Unity IAP purchaser fails to initialize.
+	/// </summary>
 	public class BeamableIAPInitializationException : Exception
 	{
 #if UNITY_PURCHASING_5_OR_NEWER
@@ -1660,14 +1925,23 @@ namespace Beamable.Purchasing
 		/// </summary>
 		public PurchasingInitializationStatus Status { get; }
 
+		/// <summary>
+		/// Create the exception for a failed initialization status and its message.
+		/// </summary>
 		public BeamableIAPInitializationException(PurchasingInitializationStatus status, string message) : base(
 			$"Beamable IAP failed due to: {status} ({message})")
 		{
 			Status = status;
 		}
 #else
+		/// <summary>
+		/// The reason Unity IAP gave for the failed initialization.
+		/// </summary>
 		public InitializationFailureReason Reason { get; }
 
+		/// <summary>
+		/// Create the exception for the reason Unity IAP gave.
+		/// </summary>
 		public BeamableIAPInitializationException(InitializationFailureReason reason) : base(
 			$"Beamable IAP failed due to: {reason}")
 		{
@@ -1677,11 +1951,56 @@ namespace Beamable.Purchasing
 	}
 
 
+	/// <summary>
+	/// Helper class for Unity IAP receipts.
+	/// It takes a receipt payload and parses it into a UnityPurchaseReceipt.
+	/// </summary>
 	[Serializable]
 	public class UnityPurchaseReceipt
 	{
+		/// <summary>
+		/// The name of the store that issued the receipt.
+		/// </summary>
 		public string Store;
+
+		/// <summary>
+		/// The store's id of the purchase transaction.
+		/// </summary>
 		public string TransactionID;
+
+		/// <summary>
+		/// The store's own receipt data, e.g. the App Store receipt or the Google Play purchase.
+		/// </summary>
 		public string Payload;
+
+#if !BEAMABLE_PURCHASING_IMPLEMENTATION_DISABLED && !UNITY_PURCHASING_5_OR_NEWER // PurchaseEventArgs is obsolete in IAP 5.
+		/// <summary>
+		///  Returns the payload of the receipt.
+		/// </summary>
+		/// <param name="eventArgs">EventArgs for the purchase.</param>
+		/// <returns>The receipt payload, or the whole receipt when it has no payload or can't be parsed.</returns>
+		public static string GetReceipt(PurchaseEventArgs eventArgs)
+		{
+			if (eventArgs.purchasedProduct.hasReceipt)
+			{
+				try
+				{
+					var receipt = JsonUtility.FromJson<UnityPurchaseReceipt>(eventArgs.purchasedProduct.receipt);
+					InAppPurchaseLogger.Log($"UnityIAP Payload: {receipt.Payload}");
+					InAppPurchaseLogger.Log($"UnityIAP Raw Receipt: {eventArgs.purchasedProduct.receipt}");
+					if (!string.IsNullOrEmpty(receipt.Payload))
+					{
+						return receipt.Payload;
+					}
+				}
+				catch
+				{
+					// ignored
+				}
+			}
+
+			return eventArgs.purchasedProduct.receipt;
+		}
+#endif
 	}
 }
