@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -39,6 +40,9 @@ namespace Beamable.Editor.Tests.CLI
 		{
 			public readonly int Port;
 			public string Version = BeamWebCommandTests.Version;
+			/// <summary>The "features" array /info reports, as JSON, or null to leave it out (an older CLI).</summary>
+			public string FeaturesJson;
+			public int Pid;
 			public readonly ConcurrentQueue<HttpListenerRequest> ExecuteRequests = new ConcurrentQueue<HttpListenerRequest>();
 			public Func<HttpListenerContext, int, Task> OnExecute = (ctx, _) => Respond(ctx, 200, "");
 
@@ -73,7 +77,8 @@ namespace Beamable.Editor.Tests.CLI
 						{
 							if (ctx.Request.Url.AbsolutePath == "/info")
 							{
-								var info = $"{{\"version\":\"{Version}\",\"owner\":\"{Owner}\",\"pid\":0}}";
+								var features = FeaturesJson == null ? "" : $",\"features\":{FeaturesJson}";
+								var info = $"{{\"version\":\"{Version}\",\"owner\":\"{Owner}\",\"pid\":{Pid}{features}}}";
 								await Respond(ctx, 200, info);
 							}
 							else
@@ -360,6 +365,67 @@ namespace Beamable.Editor.Tests.CLI
 			Assert.That(wrongVersion.ExecuteRequests, Is.Empty);
 			Assert.That(right.ExecuteRequests.Count, Is.EqualTo(1));
 			Assert.That(_factory.port, Is.EqualTo(port + 1));
+		}
+
+		// A server started before "Enable MCP for AI Agents" changed is skipped, so the toggle gets a server with the
+		// right endpoints instead of reusing the old one.
+		[UnityTest]
+		public IEnumerator McpSettingMismatchSkipsServer()
+		{
+			var previous = McpServerSettings.Enabled;
+			McpServerSettings.Enabled = true;
+			try
+			{
+				var port = FreePortPair();
+				var withoutMcp = StartServer(port);
+				withoutMcp.FeaturesJson = "[\"auth\"]";
+				var withMcp = StartServer(port + 1);
+				withMcp.FeaturesJson = "[\"auth\",\"mcp\"]";
+				yield return CreateFactory(port);
+
+				var run = Command(new List<string>()).Run();
+				yield return WaitFor(() => run.IsCompleted, "the command to finish");
+
+				Assert.That(withoutMcp.ExecuteRequests, Is.Empty);
+				Assert.That(withMcp.ExecuteRequests.Count, Is.EqualTo(1));
+			}
+			finally
+			{
+				McpServerSettings.Enabled = previous;
+			}
+		}
+
+		// Cancelling the command that started the server only stops the `dotnet beam` launcher; the server process
+		// it found by owner must be stopped too, or the next discovery reuses it.
+		[UnityTest]
+		[UnityPlatform(RuntimePlatform.OSXEditor, RuntimePlatform.LinuxEditor)]
+		public IEnumerator KillServerKillsTheServerProcess()
+		{
+			// A copy of `sleep` whose process name looks like the CLI's stands in for the server process.
+			var exe = Path.Combine(Path.GetTempPath(), "dotnet-fake-cli-" + Guid.NewGuid().ToString("N").Substring(0, 8));
+			Process.Start(new ProcessStartInfo("/bin/cp", $"/bin/sleep \"{exe}\"") { UseShellExecute = false })?.WaitForExit();
+			var sleeper = Process.Start(new ProcessStartInfo(exe, "30") { UseShellExecute = false });
+			try
+			{
+				var port = FreePortPair();
+				var server = StartServer(port);
+				server.Pid = sleeper.Id;
+				yield return CreateFactory(port);
+				var run = Command(new List<string>()).Run();
+				yield return WaitFor(() => run.IsCompleted, "the command to finish");
+
+				_factory.KillServer();
+				yield return WaitFor(() => sleeper.HasExited, "the server process to stop");
+				Assert.That(_factory.port, Is.EqualTo(port), "Discovery starts over at the start port.");
+			}
+			finally
+			{
+				if (!sleeper.HasExited)
+				{
+					sleeper.Kill();
+				}
+				File.Delete(exe);
+			}
 		}
 
 		// R8 (1fcad5291, f247bf55d): the server dies with this editor and splits command lines with JSON intact.

@@ -45,6 +45,11 @@ namespace Beamable.Editor.BeamCli
 		/// the process id of the server
 		/// </summary>
 		public int pid;
+
+		/// <summary>
+		/// optional protocol features, such as "auth" (session token) and "mcp" (an MCP endpoint for AI agents)
+		/// </summary>
+		public List<string> features;
 	}
 
 	/// <summary>
@@ -67,6 +72,11 @@ namespace Beamable.Editor.BeamCli
 		/// The session token of the server at <see cref="port"/>; every /execute request must carry it.
 		/// </summary>
 		public string token;
+		/// <summary>
+		/// The process id of the server at <see cref="port"/>, so it can be stopped: cancelling the command that
+		/// started it only stops the `dotnet beam` launcher, not the server it runs.
+		/// </summary>
+		public int serverPid;
 		public OptionalInt selfDestructOverride = new OptionalInt();
 		public OptionalString ownerOverride = new OptionalString();
 		public OptionalString versionOverride = new OptionalString();
@@ -163,6 +173,35 @@ namespace Beamable.Editor.BeamCli
 		{
 			_serverCommand?.Cancel();
 			_serverCommand = null;
+			KillServerProcess(_options.serverPid);
+			_options.serverPid = 0;
+			port = StartPort;
+			_options.token = null;
+		}
+
+		/// <summary>
+		/// Stops a CLI server process this editor found by its owner. The process name is checked so a pid that the
+		/// OS has since reused for something else is left alone.
+		/// </summary>
+		private static void KillServerProcess(int pid)
+		{
+			if (pid <= 0) return;
+			try
+			{
+				using (var process = Process.GetProcessById(pid))
+				{
+					var name = process.ProcessName.ToLowerInvariant();
+					var isCli = name.Contains("dotnet") || name.Contains("beam");
+					if (!process.HasExited && isCli)
+					{
+						process.Kill();
+					}
+				}
+			}
+			catch (Exception ex) when (ex is ArgumentException || ex is InvalidOperationException || ex is System.ComponentModel.Win32Exception)
+			{
+				// Already gone.
+			}
 		}
 
 		public Promise InvalidateServer(Exception cause)
@@ -388,6 +427,20 @@ namespace Beamable.Editor.BeamCli
 					p.CompleteSuccess();
 					return;
 				}
+
+				// A server started before "Enable MCP for AI Agents" changed has the wrong endpoints. It is
+				// ours (the owner matched), so stop it and let discovery start one with the current setting.
+				var reportsFeatures = res.features != null && res.features.Count > 0;
+				if (reportsFeatures && res.features.Contains("mcp") != McpServerSettings.Enabled)
+				{
+					CliLogger.Log($"ping mismatch. Server mcp=[{res.features.Contains("mcp")}] Required mcp=[{McpServerSettings.Enabled}]");
+					KillServerProcess(res.pid);
+					pingResult = PingResult.Mismatch;
+					p.CompleteSuccess();
+					return;
+				}
+
+				_options.serverPid = res.pid;
 
 				// A server this editor did not spawn (or spawned before a domain reload lost the token)
 				// published its token next to the project; the file is only readable by this user.

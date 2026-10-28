@@ -8,7 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>Directory to write the .mcp.json file into; defaults to the Beamable workspace root</summary>
         public string projectPath;
-        /// <summary>'stdio' starts a separate `beam mcp serve` per client. 'http' connects to this workspace's running `beam server serve --enable-mcp` (the one Unity runs)</summary>
+        /// <summary>How AI clients reach the CLI: 'stdio' starts a separate `beam mcp serve` per client, 'http' connects to this workspace's running `beam server serve --enable-mcp` (the one Unity runs)</summary>
         public string transport;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()

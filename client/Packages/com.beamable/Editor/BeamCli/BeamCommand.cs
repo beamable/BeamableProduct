@@ -215,6 +215,8 @@ namespace Beamable.Editor.BeamCli
 			return On<EofOutput>("eof", cb);
 		}
 
+		private bool _cancelledByCaller;
+
 		public void Cancel()
 		{
 			try
@@ -226,6 +228,7 @@ namespace Beamable.Editor.BeamCli
 				}
 
 				Debug.Log("Killing beam process, " + _command);
+				_cancelledByCaller = true;
 				process.Kill();
 			}
 			catch
@@ -491,7 +494,12 @@ namespace Beamable.Editor.BeamCli
 					{
 						yield return null; // delay a single frame, because the stdout/stderr callbacks may not have fired yet.
 						
-						if (_exitCode != 0)
+						if (_exitCode != 0 && _cancelledByCaller)
+						{
+							// The caller stopped it; a non-zero exit is the expected result, not a failure.
+							CliLogger.Log("cancelled", _command);
+						}
+						else if (_exitCode != 0)
 						{
 							CliLogger.Log("failed", _command, $"errors-count=[{_errors.Count}]");
 

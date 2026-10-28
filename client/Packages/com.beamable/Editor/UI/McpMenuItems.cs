@@ -57,21 +57,33 @@ namespace Beamable.Editor
 
 			var command = api.Cli.McpSetup(new McpSetupArgs { transport = "http" });
 			string configPath = null;
+			string error = null;
 			command.OnStreamMcpSetupCommandResult(cb => configPath = cb.data.configPath);
+			// The CLI reports a failed setup as an error event; the command itself still completes.
+			command.OnError(cb => error = cb.data.message);
 			try
 			{
 				await command.Run();
-				Debug.Log($"[Beamable] AI agents can use the Beamable CLI over MCP. Config written to: {configPath}");
-				EditorUtility.DisplayDialog(
-					"MCP Enabled for AI Agents",
-					$"The editor's CLI server now serves MCP, and {configPath} points AI agents at it.\n\n" +
-					"Agents connect while this editor is open. `beam mcp status` tells them whether it is.",
-					"OK");
 			}
 			catch (System.Exception ex)
 			{
-				Debug.LogError($"[Beamable] Failed to configure MCP for AI agents: {ex.Message}");
+				error = ex.Message;
 			}
+
+			if (string.IsNullOrEmpty(configPath))
+			{
+				error = string.IsNullOrEmpty(error) ? "The CLI did not report where it wrote the config." : error;
+				Debug.LogError($"[Beamable] Failed to configure MCP for AI agents: {error}");
+				EditorUtility.DisplayDialog("MCP Setup Failed", $"Could not point AI agents at the editor's CLI server.\n\n{error}", "OK");
+				return;
+			}
+
+			Debug.Log($"[Beamable] AI agents can use the Beamable CLI over MCP. Config written to: {configPath}");
+			EditorUtility.DisplayDialog(
+				"MCP Enabled for AI Agents",
+				$"The editor's CLI server now serves MCP, and {configPath} points AI agents at it.\n\n" +
+				"Agents connect while this editor is open. `beam mcp status` tells them whether it is.",
+				"OK");
 		}
 		
 		[MenuItem(MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Install MCP Server")]
@@ -83,10 +95,12 @@ namespace Beamable.Editor
 			var command = api.Cli.McpSetup(new McpSetupArgs());
 			string resultPath = null;
 
+			string error = null;
 			command.OnStreamMcpSetupCommandResult(cb =>
 			{
 				resultPath = cb.data.configPath;
 			});
+			command.OnError(cb => error = cb.data.message);
 
 			try
 			{
@@ -98,6 +112,10 @@ namespace Beamable.Editor
 						"MCP Server Installed",
 						$"MCP config written to:\n{resultPath}\n\nAI clients can now discover Beamable CLI tools via this config.",
 						"OK");
+				}
+				else
+				{
+					throw new System.Exception(error ?? "The CLI did not report where it wrote the config.");
 				}
 			}
 			catch (System.Exception ex)

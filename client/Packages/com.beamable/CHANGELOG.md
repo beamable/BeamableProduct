@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Stopping the editor's CLI server (the CLI window's "Kill Server", "Enable MCP for AI Agents", recovering from transport failures) now stops the server process itself, not just the `dotnet beam` launcher. The server used to keep running on its port, and the editor then reconnected to it. Stopping it on purpose no longer logs a `CLI failed` error.
+- "Enable MCP for AI Agents" and "Install MCP Server" show the CLI's error when setup fails, instead of reporting success with an empty config path.
 - `MustBeComparatorString` now validates against what the backend accepts for each field. Stat requirements (listings, announcements, leaderboard and event cohorts) also accept `neq`, `gte`, `lte` and the long names (`equal`, `notequal`, `greaterthan`, `greaterthanequal`, `lessthan`, `lessthanequal`). Offer purchase requirements accept `eq`, `ne`, `gt`, `ge`, `lt`, `le`. Cohort requirements accept only `eq` (member) and `ne` (not a member); any other value used to be evaluated as "not a member", so replace it with `ne`.
 
 ### Changed

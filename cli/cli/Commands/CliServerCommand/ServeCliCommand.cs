@@ -18,6 +18,7 @@ public class ServeCliCommandArgs : CommandArgs
 	public bool skipContentPreWarm;
 
 	/// <summary>The session secret requests to /execute must carry. Generated when the server starts.</summary>
+	[NonSerialized] // kept out of the verbose argument dump
 	public string token;
 
 	/// <summary>When set, every /execute exchange is saved here as a golden protocol fixture.</summary>
@@ -27,6 +28,7 @@ public class ServeCliCommandArgs : CommandArgs
 	public bool enableMcp;
 
 	/// <summary>The running MCP endpoint, when <see cref="enableMcp"/> is set.</summary>
+	[NonSerialized]
 	public McpHttpEndpoint mcpEndpoint;
 }
 

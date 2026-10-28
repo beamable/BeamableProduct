@@ -170,6 +170,8 @@ public class DefaultAppContext : IAppContext
 	public bool ShouldMaskLogs => !_consoleContext.ParseResult.GetValueForOption(_unmaskLogsOption);
 	public bool ShouldEmitLogs => _consoleContext.ParseResult.GetValueForOption(EmitLogsOption.Instance);
 
+	// Secrets: the verbose app-context dump runs for every command and lands in the editor's console.
+	[Newtonsoft.Json.JsonIgnore]
 	public IAccessToken Token => _token;
 	private CliToken _token;
 
@@ -186,6 +188,7 @@ public class DefaultAppContext : IAppContext
 	public string EngineCalling => _engine;
 	public string EngineSdkVersion => _engineSdkVersion;
 	public string EngineVersion => _engineVersion;
+	[Newtonsoft.Json.JsonIgnore]
 	public string RefreshToken => _refreshToken;
 	public string WorkingDirectory => _configService.WorkingDirectory;
 	public BeamLogSwitch LogSwitch => _logSwitch;

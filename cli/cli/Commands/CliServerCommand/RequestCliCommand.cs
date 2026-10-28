@@ -12,6 +12,7 @@ public class RequestCliCommandArgs : CommandArgs
 {
 	public int port;
 	public string commandLine;
+	[NonSerialized] // kept out of the verbose argument dump
 	public string token;
 }
 

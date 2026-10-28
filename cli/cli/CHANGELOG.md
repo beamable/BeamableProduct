@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - `beam server serve` requires a per-run session token (`Authorization: Bearer`) on `/execute` and only accepts JSON `POST`s addressed to `127.0.0.1` with no browser `Origin`. Before, any web page could start CLI commands on it with a cross-site request. `/info` lists in-flight command lines only to callers with the token.
+- Verbose logs no longer contain the access token, refresh token or CLI server session token. Every command's `--log verbose` app-context and argument dumps included them, and the Unity editor runs its CLI server with verbose logs and shows them in its console.
 
 ### Fixed
 
