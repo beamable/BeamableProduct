@@ -342,7 +342,7 @@ public static class LocalStackDockerWatchdog
 	/// Runs docker and captures its output. Never throws — every caller treats failure as "no information",
 	/// because a watchdog that can crash the run it is monitoring is worse than no watchdog.
 	/// </summary>
-	private static (bool ok, string stdout, string stderr) RunDocker(
+	internal static (bool ok, string stdout, string stderr) RunDocker(
 		string dockerPath, string workingDirectory, int timeoutMs, params string[] arguments)
 	{
 		try

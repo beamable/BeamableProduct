@@ -1,6 +1,7 @@
 using cli.Services.LocalStack;
 using NUnit.Framework;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -475,5 +476,53 @@ public class LocalStackPortGuardTests
 		Assert.That(redis.arguments, Does.StartWith($"compose -p {LocalStackTemplate.ScalaRedisProject} up "));
 		Assert.That(redis.stopArguments, Does.StartWith($"compose -p {LocalStackTemplate.ScalaRedisProject} "));
 		Assert.That(redis.purgeStopArguments, Does.StartWith($"compose -p {LocalStackTemplate.ScalaRedisProject} "));
+	}
+
+	/// <summary>
+	/// Containers from before the stack's renames (project "beamableapi") still hold its ports: the run stops before
+	/// docker fails on "port is already allocated", and says which project to take down. The stack's own containers
+	/// and containers on ports it doesn't publish are left out, so a re-run against a stack that's up still passes.
+	/// </summary>
+	[Test]
+	public void Containers_outside_the_stack_on_its_ports_are_named_with_the_fix()
+	{
+		var dir = Path.Combine(Path.GetTempPath(), "beam-foreign-" + Path.GetRandomFileName());
+		Directory.CreateDirectory(dir);
+		try
+		{
+			File.WriteAllText(Path.Combine(dir, "docker-compose.yml"),
+				"name: beam_backend\nservices:\n  mongo_master:\n    ports: [\"27017:27017\"]\n  caddy:\n    ports: [\"8080:80\"]\n");
+			var step = new LocalStackStep { name = "docker: api deps + caddy", command = "docker", arguments = "compose up -d --wait", workingDirectory = dir };
+			var targets = LocalStackDockerWatchdog.DiscoverTargets(new[] { step }, new LocalStackConfig());
+
+			var running = LocalStackPortGuard.ParseRunningContainers(
+				"beamableapi-mongo_master-1\tbeamableapi\t0.0.0.0:27017->27017/tcp, [::]:27017->27017/tcp\r\n" +
+				"beam_backend-caddy-1\tbeam_backend\t0.0.0.0:8080->80/tcp\r\n" +
+				"other-app\t\t0.0.0.0:3000->3000/tcp\r\n");
+			var message = LocalStackPortGuard.DescribeForeignContainers(targets, running);
+
+			Assert.That(message, Does.Contain("beamableapi-mongo_master-1 (compose project beamableapi) holds port 27017, needed by 'docker: api deps + caddy'"));
+			Assert.That(message, Does.Contain("docker compose -p beamableapi down"));
+			Assert.That(message, Does.Not.Contain("beam_backend-caddy-1"), "the stack's own container is not foreign");
+			Assert.That(message, Does.Not.Contain("other-app"), "a container on a port the stack doesn't publish is no conflict");
+
+			Assert.That(LocalStackPortGuard.DescribeForeignContainers(targets, running.Skip(1).ToList()), Is.Null);
+		}
+		finally
+		{
+			Directory.Delete(dir, true);
+		}
+	}
+
+	/// <summary>The step's own project follows docker's precedence: -p, then the compose file's name, then the folder.</summary>
+	[Test]
+	public void A_steps_compose_project_follows_dockers_precedence()
+	{
+		LocalStackDockerWatchdog.Target Target(string args, string dir = @"C:\repos\BeamableBackend") =>
+			LocalStackDockerWatchdog.DiscoverTargets(new[] { new LocalStackStep { name = "s", command = "docker", arguments = args, workingDirectory = dir } }, new LocalStackConfig()).Single();
+
+		Assert.That(LocalStackPortGuard.ComposeProject(Target("compose -p beam_backend_scala up -d redis"), new DockerComposeModel { name = "x" }), Is.EqualTo("beam_backend_scala"));
+		Assert.That(LocalStackPortGuard.ComposeProject(Target("compose up -d"), new DockerComposeModel { name = "beam_web" }), Is.EqualTo("beam_web"));
+		Assert.That(LocalStackPortGuard.ComposeProject(Target("compose up -d", @"C:\repos\Portal.LocalDev\"), new DockerComposeModel()), Is.EqualTo("portallocaldev"));
 	}
 }

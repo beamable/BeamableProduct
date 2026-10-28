@@ -847,6 +847,15 @@ public class LocalStackRunCommand
 		if (reservedDockerPorts != null)
 			throw new CliException(reservedDockerPorts);
 
+		// Fail fast if a container outside the stack (usually the same service under its old compose project) holds
+		// a port the compose files publish — docker otherwise fails on "port is already allocated" with no fix named.
+		if (DockerPathOption.TryGetDockerPath(out var dockerPath, out _))
+		{
+			var foreignContainers = LocalStackPortGuard.DescribeForeignContainers(steps, config, dockerPath);
+			if (foreignContainers != null)
+				throw new CliException(foreignContainers);
+		}
+
 		// Fail fast (or auto-repair) when the product checkout is missing web/ or beam-portal-toolkit/. Without
 		// this, the stack builds, launches every docker/scala/c# service, and only THEN fails at web: build —
 		// cascading a full shutdown minutes in. The wipe is common enough (an unrelated `git clean`,
@@ -1678,7 +1687,8 @@ public class LocalStackRunCommand
 		// interactive, but its redraws would arrive as a pile of half-wrapped boards.
 		var capabilities = AnsiConsole.Profile.Capabilities;
 		return capabilities.Interactive && capabilities.Ansi && capabilities.AlternateBuffer
-		       && !(Console.IsOutputRedirected && Console.IsErrorRedirected)
+		       && !(AnsiConsole.Profile.Out.Writer is var w && (w == Console.Out || w == Console.Error)
+		            && Console.IsOutputRedirected && Console.IsErrorRedirected)
 			? LocalStackBoardMode.Live
 			: LocalStackBoardMode.Lines;
 	}

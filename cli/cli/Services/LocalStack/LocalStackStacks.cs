@@ -191,7 +191,10 @@ public class LocalStackStacks
 		["portal"] = "portal dependencies, Vite cache clear and the portal frontend",
 		[MicroservicesTag] = "this workspace's microservices (a service group has this tag and extensions)",
 		[ExtensionsTag] = "this workspace's portal extensions (a service group has this tag and microservices)",
-		["web-registry"] = "local SDK and toolkit packages: registry, publish, repoint the extensions",
+		["web-registry"] = "only for changing the Web SDK (@beamable/sdk) or the portal toolkit (@beamable/portal-toolkit) "
+		                   + "themselves: builds them from BeamableProduct, publishes them to a local npm registry and installs "
+		                   + "them in the extensions, so the portal runs your changes instead of the released packages. Not "
+		                   + "needed to work on the portal, extensions or services",
 		["observability"] = "log forwarding to Grafana",
 		["build"] = "compile steps",
 		["native"] = "native libraries and the React Native sample",

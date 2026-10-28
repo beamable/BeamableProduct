@@ -2402,6 +2402,10 @@ public class LocalStackToolchainTests
 		Assert.That(lines[^3], Does.Contain("portal http://localhost:4950").And.Contain("backend http://localhost:8080"));
 		Assert.That(lines[^2], Does.Contain("Restart Label 1?"));
 		Assert.That(lines[^1], Does.Contain("Space acts on it"));
+
+		// Each key stands out from what it does.
+		Assert.That(LocalStackStyle.KeysText("Up/Down select, Ctrl+C stops; F follows"), Is.EqualTo(
+			$"[bold {LocalStackStyle.H2Colour}]Up/Down[/] select, [bold {LocalStackStyle.H2Colour}]Ctrl+C[/] stops; [bold {LocalStackStyle.H2Colour}]F[/] follows"));
 	}
 
 	/// <summary>

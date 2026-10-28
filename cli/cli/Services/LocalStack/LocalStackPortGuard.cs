@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace cli.Services.LocalStack;
@@ -194,6 +195,99 @@ public static class LocalStackPortGuard
 
 		return problems.Count == 0 ? null : string.Join(Environment.NewLine + Environment.NewLine, problems);
 	}
+
+	/// <summary>A running container as <c>docker ps</c> lists it: name, compose project (empty without one) and published ports.</summary>
+	public record RunningContainer(string Name, string Project, string Ports);
+
+	/// <summary>
+	/// The message <c>run</c> must stop with when a running container outside the stack publishes a host port one of
+	/// its docker steps needs, or null. Docker would otherwise start the stack's containers next to it and fail on
+	/// "port is already allocated", naming neither the holder nor the fix. The usual holder is the same service under
+	/// the compose project the stack used before its containers were renamed (<c>beamableapi</c>, <c>local</c>,
+	/// <c>portal-localdev</c>). A step's own project is never foreign, so a re-run against a stack that is up passes.
+	/// </summary>
+	public static string DescribeForeignContainers(IEnumerable<LocalStackStep> steps, LocalStackConfig config, string dockerPath)
+	{
+		var targets = LocalStackDockerWatchdog.DiscoverTargets(steps, config);
+		if (targets.Count == 0)
+			return null;
+
+		var (ok, stdout, _) = LocalStackDockerWatchdog.RunDocker(dockerPath, null, 15000,
+			"ps", "--format", "{{.Names}}\t{{.Label \"com.docker.compose.project\"}}\t{{.Ports}}");
+		return ok ? DescribeForeignContainers(targets, ParseRunningContainers(stdout)) : null;
+	}
+
+	public static string DescribeForeignContainers(List<LocalStackDockerWatchdog.Target> targets, List<RunningContainer> running)
+	{
+		var held = new List<(RunningContainer container, int port, string step)>();
+		foreach (var target in targets)
+		{
+			var compose = ComposeFileNames
+				.Select(name => DockerComposeModel.TryLoadFile(Path.Combine(target.workingDirectory ?? "", name)))
+				.FirstOrDefault(model => model != null);
+			if (compose?.services == null)
+				continue; // no readable compose file — never block a bring-up on an inconclusive answer
+
+			var ports = compose.services.Where(s => target.Watches(s.Key))
+				.SelectMany(s => s.Value?.ports ?? Array.Empty<string>())
+				.Select(DockerComposeModel.TryParseHostPort)
+				.Where(p => p > 0)
+				.ToHashSet();
+			var project = ComposeProject(target, compose);
+			foreach (var container in running.Where(c => !string.Equals(c.Project, project, StringComparison.OrdinalIgnoreCase)))
+			foreach (var port in PublishedPorts(container.Ports).Where(ports.Contains).Distinct())
+				held.Add((container, port, target.step.name));
+		}
+
+		if (held.Count == 0)
+			return null;
+
+		var nl = Environment.NewLine;
+		var lines = held.Select(h =>
+			$"    {h.container.Name}{(h.container.Project == "" ? "" : $" (compose project {h.container.Project})")} holds port {h.port}, needed by '{h.step}'");
+		var removes = held.Select(h => h.container).DistinctBy(c => c.Project == "" ? c.Name : c.Project)
+			.Select(c => c.Project == "" ? $"    docker rm -f {c.Name}" : $"    docker compose -p {c.Project} down");
+		return "Running containers outside this stack hold ports its Docker steps publish:" + nl
+		       + string.Join(nl, lines.Distinct()) + nl
+		       + "They're most likely the same services under the names the stack used before. Docker would start the "
+		       + "stack's own containers next to them and fail with \"port is already allocated\". Remove them, from a "
+		       + "folder with no docker-compose.yml in it:" + nl
+		       + string.Join(nl, removes) + nl
+		       + "`down` keeps their data volumes; add -v to delete those too. Then run again.";
+	}
+
+	/// <summary>
+	/// The compose project a step's containers belong to, in docker's own precedence: <c>-p</c>, then
+	/// <c>COMPOSE_PROJECT_NAME</c>, then the file's <c>name</c>, then its folder's name normalized the way compose does.
+	/// </summary>
+	public static string ComposeProject(LocalStackDockerWatchdog.Target target, DockerComposeModel compose)
+	{
+		var args = target.projectArgs;
+		var flag = args.FindIndex(a => a is "-p" or "--project-name");
+		if (flag >= 0 && flag + 1 < args.Count)
+			return args[flag + 1];
+		var inline = args.FirstOrDefault(a => a.StartsWith("--project-name=", StringComparison.Ordinal));
+		if (inline != null)
+			return inline.Substring("--project-name=".Length);
+		if (target.step.environment != null && target.step.environment.TryGetValue("COMPOSE_PROJECT_NAME", out var env) && !string.IsNullOrWhiteSpace(env))
+			return env;
+		if (!string.IsNullOrWhiteSpace(compose?.name))
+			return compose.name;
+		var folder = Path.GetFileName((target.workingDirectory ?? "").TrimEnd('/', '\\'));
+		return Regex.Replace(folder.ToLowerInvariant(), "[^a-z0-9_-]", "");
+	}
+
+	/// <summary>Parses the tab-separated <c>docker ps --format</c> lines <see cref="DescribeForeignContainers(IEnumerable{LocalStackStep}, LocalStackConfig, string)"/> asks for.</summary>
+	public static List<RunningContainer> ParseRunningContainers(string stdout) =>
+		(stdout ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries)
+		.Select(line => line.TrimEnd('\r').Split('\t'))
+		.Where(fields => fields.Length == 3 && fields[0] != "")
+		.Select(fields => new RunningContainer(fields[0], fields[1], fields[2]))
+		.ToList();
+
+	/// <summary>The host ports in a <c>docker ps</c> Ports column: <c>0.0.0.0:27017->27017/tcp, [::]:27017->27017/tcp</c> → 27017.</summary>
+	public static IEnumerable<int> PublishedPorts(string ports) =>
+		Regex.Matches(ports ?? "", @":(\d+)->").Select(m => int.Parse(m.Groups[1].Value));
 
 	/// <summary>
 	/// Non-administered exclusion ranges, read once per process (they only change on boot or an explicit netsh

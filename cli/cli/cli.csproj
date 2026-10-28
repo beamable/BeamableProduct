@@ -159,10 +159,16 @@
   </PropertyGroup>
   <ItemGroup>
     <LocalWebSource Include="$(LocalWebDir)**\*" Exclude="$(LocalWebDir)node_modules\**" />
-    <!-- Read when each framework's build is evaluated, which a multi-framework build does after BuildLocalWeb ran
-         in its outer build; a single-framework build (-f) embeds the previous web build. -->
-    <EmbeddedResource Include="LocalWeb\**\*" LogicalName="LocalWeb/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
+  <!-- Collected in a target, after BuildLocalWeb: a static item is read when the project is loaded, before anything is
+       built, so a first build from a clean checkout (and every build reached through a project reference) embedded
+       nothing. -->
+  <Target Name="EmbedLocalWeb" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <_LocalWebFile Include="LocalWeb\**\*" />
+      <EmbeddedResource Include="@(_LocalWebFile)" LogicalName="LocalWeb/%(_LocalWebFile.RecursiveDir)%(_LocalWebFile.Filename)%(_LocalWebFile.Extension)" />
+    </ItemGroup>
+  </Target>
   <Target Name="BuildLocalWeb" BeforeTargets="DispatchToInnerBuilds;BeforeBuild"
           Inputs="@(LocalWebSource)" Outputs="LocalWeb\stacks\index.html;LocalWeb\bundles\index.html"
           Condition="'$(BeamSkipLocalWeb)' != 'true' AND '$(DOTNET_RUNNING_IN_CONTAINER)' != 'true' AND Exists('$(LocalWebDir)package.json')">

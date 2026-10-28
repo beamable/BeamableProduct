@@ -26,7 +26,7 @@
       "remove": [ "build" ]
     },
     "web": {
-      "description": "Use your local SDK and toolkit builds: start the local registry, build and publish them, point the extensions at them, and rebuild on every save.",
+      "description": "Only when you change the Web SDK (@beamable/sdk) or the portal toolkit (@beamable/portal-toolkit): builds them from BeamableProduct, serves them from a local npm registry and installs them in the extensions instead of the released versions, again on every save. Not needed for portal, extension or service work.",
       "before": [ "web: registry", "web: build", "web: publish", "web: install" ],
       "after": [ "web: watch" ]
     },

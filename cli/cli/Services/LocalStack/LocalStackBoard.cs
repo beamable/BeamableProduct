@@ -3,6 +3,7 @@ using Newtonsoft.Json.Converters;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace cli.Services.LocalStack;
 
@@ -44,6 +45,13 @@ public static class LocalStackStyle
 
 	/// <summary>A group heading inside a section, as markup to start a line with.</summary>
 	public static string H3(string title) => $"[bold {H3Colour}]{Markup.Escape(title)}[/]";
+
+	/// <summary>
+	/// A line of key hints ("Up/Down select, Space acts on it, …") as markup: each key, the first word after a comma or
+	/// semicolon, in bold cyan, and what it does in the normal colour. In grey the keys were easy to miss.
+	/// </summary>
+	public static string KeysText(string keys) =>
+		Regex.Replace(Markup.Escape(keys ?? string.Empty), @"(^|[,;]\s*)([^\s,;]+)", $"$1[bold {H2Colour}]$2[/]");
 }
 
 /// <summary>Where a step is while a stack starts: one value per row of the progress board.</summary>
@@ -550,7 +558,7 @@ public class LocalStackBoard
 			parts.Add(new Markup($"[bold]{Markup.Escape(Fit(bar, width - 1).TrimEnd())}[/]"));
 
 		keys ??= "Up/Down, PgUp/PgDn, Home/End scroll; F follows the steps in progress; L opens Grafana; Ctrl+C stops the stack";
-		parts.Add(new Markup($"[grey]{Markup.Escape(Fit(keys, width - 1).TrimEnd())}[/]"));
+		parts.Add(new Markup(LocalStackStyle.KeysText(Fit(keys, width - 1).TrimEnd())));
 		return new Rows(parts);
 	}
 

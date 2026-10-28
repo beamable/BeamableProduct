@@ -93,6 +93,9 @@ public class LocalStackWizard
 	/// <summary>Called before each question is shown, so the screen can be redrawn for it.</summary>
 	public Action beforeEach;
 
+	/// <summary>The group of the question being asked, set before <see cref="beforeEach"/> so the screen can name it.</summary>
+	public string current;
+
 	/// <summary>
 	/// Asks every applicable question from <paramref name="from"/> on that is not answered yet, or every applicable one
 	/// of <paramref name="onlyGroup"/> when set. Back goes to the previous applicable question in the same pass; back
@@ -116,6 +119,7 @@ public class LocalStackWizard
 				continue;
 			}
 
+			current = questions[i].group;
 			beforeEach?.Invoke();
 			var move = questions[i].ask(asked.Count > 0 || onlyGroup != null);
 			if (move == LocalStackWizardMove.Back)
@@ -392,7 +396,7 @@ public class LocalStackCreateCommand
 		}
 
 		var wizard = Questions(draft, stacks, config, args);
-		wizard.beforeEach = () => Frame(draft);
+		wizard.beforeEach = () => Frame(draft, wizard);
 
 		LocalStackCreateCommandResult result = null;
 		InWizardScreen(() =>
@@ -909,13 +913,18 @@ public class LocalStackCreateCommand
 	}
 
 	/// <summary>
-	/// Clears the screen for the next question, leaving just the title: the answers, with their lists of steps, are
-	/// on the review, whose "See every step" is the one place that lists them all.
+	/// Clears the screen for the next question, leaving just the title, which step this is and the keys: the answers,
+	/// with their lists of steps, are on the review, whose "See every step" is the one place that lists them all.
 	/// </summary>
-	private static void Frame(Draft draft)
+	private static void Frame(Draft draft, LocalStackWizard wizard = null)
 	{
 		AnsiConsole.Clear();
-		LocalStackStyle.H1($"beam local {draft.Verb}{(draft.IsEdit ? " " + draft.FullName : string.Empty)}", "Enter to answer, Shift+Tab to go back");
+		LocalStackStyle.H1($"beam local {draft.Verb}{(draft.IsEdit ? " " + draft.FullName : string.Empty)}");
+		var groups = wizard?.Groups() ?? new List<string>();
+		var at = groups.IndexOf(wizard?.current);
+		if (at >= 0)
+			AnsiConsole.MarkupLine(LocalStackStyle.H2Text($"Step {at + 1} of {groups.Count}: {wizard.current}"));
+		AnsiConsole.MarkupLine(LocalStackStyle.KeysText("Enter answers, Shift+Tab goes back"));
 		AnsiConsole.WriteLine();
 	}
 
@@ -1036,7 +1045,7 @@ public class LocalStackCreateCommand
 	{
 		var wizard = new LocalStackWizard();
 		var named = !string.IsNullOrWhiteSpace(args.name);
-		void Redraw() => Frame(draft);
+		void Redraw() => Frame(draft, wizard);
 		string Title() => Markup.Escape(draft.FullName ?? draft.stack ?? "it");
 
 		// An edit starts with every answer given, from the entry, so it opens on the review; what it is and where it
@@ -1162,8 +1171,7 @@ public class LocalStackCreateCommand
 			const string removePrefix = "Remove ";
 			while (true)
 			{
-				AnsiConsole.Clear();
-				LocalStackStyle.H1($"beam local {draft.Verb} {draft.FullName ?? draft.stack}", "Enter to answer, Shift+Tab to go back");
+				Frame(draft, wizard);
 				LocalStackStyle.H2($"Commands of {draft.FullName ?? draft.stack}");
 				if (draft.commands.Count == 0) AnsiConsole.MarkupLine("  [grey]None yet.[/]");
 				foreach (var command in draft.commands)
