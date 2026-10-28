@@ -578,6 +578,7 @@ public class App
 		Commands.AddSubCommand<LocalStackStopCommand, LocalStackStopCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackWebCommand, LocalStackWebCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackNativeCommand, LocalStackNativeCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackPortalCommand, LocalStackPortalCommandArgs, LocalStackCommand>();
 
 
 		Commands.AddRootCommand<ProjectCommand>();

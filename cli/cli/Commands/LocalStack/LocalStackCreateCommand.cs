@@ -33,6 +33,12 @@ public class LocalStackCreateCommandArgs : CommandArgs
 	/// <summary>A command of the stack's own, described by the <c>--step-*</c> options as for <c>beam local setup --add-step</c>.</summary>
 	public LocalStackSetupCommandArgs command = new LocalStackSetupCommandArgs();
 
+	/// <summary>
+	/// Every command of the stack's own as a JSON array, replacing the ones it has (an empty array removes them). Each
+	/// item takes what the <c>--step-*</c> options do (<c>ReplaceCommands</c> reads it).
+	/// </summary>
+	public string commands;
+
 	/// <summary>With <c>--add-step</c>: the command runs before every other step.</summary>
 	public bool stepFirst;
 
@@ -214,6 +220,10 @@ public class LocalStackCreateCommand
 		// A command of the stack's own; several are added one per call, or with the questions.
 		AddOption(new Option<string>("--add-step", "A stack: add a command of its own with this name, described by the --step-* options"),
 			(args, v) => args.command.addStep = v);
+		AddOption(new Option<string>("--commands",
+				"A stack: all its own commands as a JSON array, replacing the ones it has ([] removes them). Each item takes what the --step-* options do: " +
+				"{\"name\", \"command\" + \"args\" | \"shell\" + \"shellKind\" | \"beam\", \"dir\", \"env\": [\"KEY=VALUE\"], \"once\", \"readyUrl\", \"readyLog\", \"port\", \"timeout\", \"label\", \"tags\", \"after\", \"first\"}"),
+			(args, v) => args.commands = v);
 		AddOption(new Option<string>("--step-command", "Own command: the program to run (with --step-args)"), (args, v) => args.command.stepCommand = v);
 		AddOption(new Option<string>("--step-args", "Own command: the program's arguments"), (args, v) => args.command.stepArgs = v);
 		AddOption(new Option<string>("--step-shell", "Own command: a shell script to run instead of a program"), (args, v) => args.command.stepShell = v);
@@ -331,7 +341,7 @@ public class LocalStackCreateCommand
 			LoadForEdit(draft, args, stacks, quiet);
 
 			if (quiet && args.description == null && args.target == null && args.extends == null && args.include == null && args.exclude == null
-			    && args.services == null && args.extensions == null && args.groups == null && args.command.addStep == null
+			    && args.services == null && args.extensions == null && args.groups == null && args.command.addStep == null && args.commands == null
 			    && args.before == null && args.after == null && args.remove == null)
 				throw new CliException($"Pass what to change in {draft.FullName}: --description, --target, and --extends, --include, --exclude, --services, --extensions, --groups, --add-step for a stack, or --before, --after, --remove for a variant (an empty value clears it). In an interactive terminal it shows the entry and asks.");
 		}
@@ -349,6 +359,8 @@ public class LocalStackCreateCommand
 			throw new CliException("Pass what to create: `beam local create <stack>` for a stack, `beam local create <stack>:<variant>` for a variant. In an interactive terminal it is asked.");
 		}
 
+		if (args.commands != null)
+			ReplaceCommands(draft, config, args.commands);
 		if (args.command.addStep != null)
 			AddCommand(draft, config, args);
 		CheckServices(draft);
@@ -597,6 +609,67 @@ public class LocalStackCreateCommand
 		step.first = args.stepFirst ? true : null;
 		step.after = args.stepFirst ? null : after;
 		draft.commands.Add(step);
+	}
+
+	/// <summary>
+	/// Sets the stack's own commands from a JSON array, each item read as the <c>--step-*</c> options would be (so it
+	/// is checked the same way): <c>name</c>, one of <c>command</c> (with <c>args</c>), <c>shell</c> (with
+	/// <c>shellKind</c>) or <c>beam</c>, then <c>dir</c>, <c>env</c> (<c>KEY=VALUE</c> strings), <c>once</c>,
+	/// <c>readyUrl</c>, <c>readyLog</c>, <c>port</c>, <c>timeout</c>, <c>label</c>, <c>tags</c>, <c>after</c> and
+	/// <c>first</c>. The ones it had are replaced, which is how the stacks web app edits them.
+	/// </summary>
+	private static void ReplaceCommands(Draft draft, LocalStackConfig config, string json)
+	{
+		if (draft.IsVariant)
+			throw new CliException("A variant can't have commands of its own. Add the commands to the stack.");
+
+		JArray items;
+		try
+		{
+			items = JArray.Parse(json);
+		}
+		catch (JsonException e)
+		{
+			throw new CliException($"--commands takes a JSON array of commands: {e.Message}");
+		}
+
+		draft.commands.Clear();
+		foreach (var item in items)
+		{
+			if (item is not JObject c)
+				throw new CliException("--commands takes a JSON array of objects, one per command.");
+
+			string Text(string key) => c[key]?.Type == JTokenType.String ? c[key]!.Value<string>() : null;
+			int Number(string key) => c[key]?.Type == JTokenType.Integer ? c[key]!.Value<int>() : 0;
+			bool Flag(string key) => c[key]?.Type == JTokenType.Boolean && c[key]!.Value<bool>();
+
+			var flags = new LocalStackSetupCommandArgs
+			{
+				addStep = Text("name"),
+				stepCommand = Text("command"),
+				stepArgs = Text("args"),
+				stepShell = Text("shell"),
+				stepShellKind = Text("shellKind"),
+				stepBeam = Text("beam"),
+				stepDir = Text("dir"),
+				stepEnv = c["env"] is JArray env ? env.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToArray() : null,
+				stepOnce = Flag("once"),
+				stepReadyUrl = Text("readyUrl"),
+				stepReadyLog = Text("readyLog"),
+				stepPort = Number("port"),
+				stepTimeout = Number("timeout"),
+				stepTags = Text("tags"),
+				stepLabel = Text("label"),
+				stepAfter = Text("after"),
+			};
+			var (step, after) = LocalStackCustomSteps.FromFlags(flags);
+			var problem = CommandNameProblem(config, draft, step.name);
+			if (problem != null) throw new CliException(problem);
+			var first = Flag("first");
+			step.first = first ? true : null;
+			step.after = first ? null : after;
+			draft.commands.Add(step);
+		}
 	}
 
 	/// <summary>Why a command of the stack can't have <paramref name="name"/>, or null.</summary>

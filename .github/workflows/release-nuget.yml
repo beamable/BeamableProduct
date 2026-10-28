@@ -102,6 +102,17 @@ jobs:
         run: |
             sh ./build/bin/set-collector-version-property.sh
 
+      # The CLI embeds its local web apps (`beam local portal`, `beam bundles management`). Built here so a release
+      # without them fails instead of shipping pages that say they weren't built.
+      - name: Build the CLI's local web apps
+        working-directory: cli/local-web
+        env:
+          npm_config_registry: https://registry.npmjs.org/
+        run: |
+          npm install -g pnpm@10.8.0
+          pnpm install --frozen-lockfile
+          pnpm build
+
       - name: Install CLI
         working-directory: ./
         run: |

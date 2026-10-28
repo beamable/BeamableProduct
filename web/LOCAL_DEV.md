@@ -89,6 +89,12 @@ pnpm build
 `sync-components` writes tracked files (`custom-elements.json`, `src/generated/*`). Run `npm run generate:cem` in the
 portal first if its components changed. A harmless `UNRESOLVED_IMPORT` warning for `@vitejs/plugin-react` may appear.
 
+With `PORTAL_REPO_PATH` it also builds the portal's standalone runtime there (`npm run build:runtime`: the `beam-*`
+components, the theme and the React runtime, for pages outside the portal) into `runtime/`, which the package ships
+(`@beamable/portal-toolkit/runtime/beam-runtime.{js,css}`, not committed). The CLI's local web apps
+(`cli/local-web`: `beam local portal`, `beam bundles management`) load it; `pnpm build` there takes this checkout's
+`runtime/`, or the published toolkit's when there is none here.
+
 ---
 
 ## Releasing
@@ -120,8 +126,8 @@ A `dev` release creates no GitHub release and no changelog. With `toolkitVersion
 
 - `sdkVersion`: the toolkit's `@beamable/sdk` peer and dev dependency are set to it (the run waits until npm serves
   it). Empty keeps the committed pin.
-- It copies `custom-elements.json` from agentic-portal's `main` before building; without the secret below it
-  releases the committed copy and warns.
+- It copies `custom-elements.json` from agentic-portal's `main` and builds the standalone runtime there before
+  building. Without the secret below it can't: publishing stops, because the package must ship `runtime/`.
 - After publishing (not for `dev`), it opens a PR here with what it changed: the SDK pin, the lockfile, the
   components.
 - `updateExtensions`: dispatches agentic-portal's `update-portal-toolkit.yml`, which runs

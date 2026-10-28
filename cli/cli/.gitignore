@@ -1,3 +1,5 @@
 .beamable/
 Resources/
 Docs/Skills/
+# Built from cli/local-web (pnpm build) and embedded by cli.csproj
+/LocalWeb/

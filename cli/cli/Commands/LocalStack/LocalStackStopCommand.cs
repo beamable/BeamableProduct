@@ -197,6 +197,8 @@ public class LocalStackStopCommand
 			if (!string.IsNullOrEmpty(entry.workingDirectory) && Directory.Exists(entry.workingDirectory))
 				psi.WorkingDirectory = entry.workingDirectory;
 
+			// `docker compose stop` waits for every container to exit, which takes a minute for the backend.
+			Log.Information($"[{entry.name}] stopping via `{entry.command} {stopArguments}` (can take a minute)...");
 			var proc = Process.Start(psi);
 			proc?.WaitForExit();
 			Log.Information($"[{entry.name}] reversed via `{entry.command} {stopArguments}`");

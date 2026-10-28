@@ -104,6 +104,10 @@ public class DefaultAppContext : IAppContext
 	private readonly PreferRemoteFederationOption _routeMapOption;
 	private readonly SkipStandaloneValidationOption _skipValidationOption;
 	private readonly DotnetPathOption _dotnetPathOption;
+
+	/// <summary>The width, in columns, the CLI lays its output out to instead of the terminal's (or 80 without one).</summary>
+	public const string ConsoleWidthVariable = "BEAM_CONSOLE_WIDTH";
+
 	public bool IsDryRun { get; private set; }
 	public bool PreferRemoteFederation { get; private set; }
 	public bool UsePipeOutput { get; private set; }
@@ -271,6 +275,11 @@ public class DefaultAppContext : IAppContext
 				},
 			});
 		}
+
+		// Output read by another program (no terminal) is laid out 80 columns wide; a reader that wraps lines itself,
+		// like `beam local portal`'s page, asks for wider ones.
+		if (int.TryParse(Environment.GetEnvironmentVariable(ConsoleWidthVariable), out var consoleWidth) && consoleWidth > 0)
+			AnsiConsole.Profile.Width = consoleWidth;
 
 		// Configure log level from option
 		{

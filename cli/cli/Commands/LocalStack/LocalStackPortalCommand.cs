@@ -1,0 +1,562 @@
+using Beamable.Server;
+using cli.Services;
+using cli.Services.LocalStack;
+using cli.Services.LocalWeb;
+using cli.Utils;
+using Newtonsoft.Json.Linq;
+using System.Collections.Specialized;
+using System.CommandLine;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
+
+namespace cli.Commands.LocalStack;
+
+public class LocalStackPortalCommandArgs : CommandArgs
+{
+	public bool noBrowser;
+}
+
+/// <summary>
+/// Opens the stacks web app: a page built into this CLI, served on 127.0.0.1 with its API
+/// (<see cref="LocalWebServer"/>, <see cref="LocalStackPortalApi"/>), to list, create, edit and delete this workspace's
+/// stacks and to start, stop and watch the running one. No portal or login is needed. Runs until stopped.
+/// </summary>
+public class LocalStackPortalCommand : AppCommand<LocalStackPortalCommandArgs>, IEmptyResult, IStandaloneCommand, ISkipManifest
+{
+	public const string AppName = "stacks";
+
+	public override bool IsForInternalUse => true;
+
+	public LocalStackPortalCommand() : base("portal",
+		"Manage this workspace's local stacks in a browser tab: create, edit and delete them, start and stop them, and follow the running one. Runs until stopped")
+	{
+	}
+
+	public override void Configure()
+	{
+		AddOption(new Option<bool>(new[] { "--no-browser" }, "Do not open the browser; print the page's url instead"),
+			(args, i) => args.noBrowser = i);
+	}
+
+	public override async Task Handle(LocalStackPortalCommandArgs args)
+	{
+		if (!LocalWebAssets.Has(AppName))
+			Log.Warning("This CLI was built without its web apps (cli/local-web), so the page won't load; only the API runs.");
+
+		var server = new LocalWebServer(AppName, new LocalStackPortalApi(args));
+		server.Start();
+		var serving = server.Serve(args.Lifecycle.CancellationToken);
+
+		Log.Information("Local stacks of this workspace. Press Ctrl+C to stop.");
+		Log.Information($"Open (the link carries this session's secret, don't share it): {server.Url}");
+		if (!args.noBrowser)
+		{
+			MachineHelper.OpenBrowser(server.Url);
+		}
+
+		await serving;
+	}
+}
+
+/// <summary>
+/// The API of the stacks web app. Reads come straight from the settings, the stack files and the run state. Edits
+/// and the "what it runs" preview run <c>local create|edit|delete</c> and <c>local run --dry-run</c> as in-process
+/// jobs (<see cref="CliJobRunner"/>). Starting and stopping run this CLI as a child process, one at a time, because
+/// a stack takes minutes to come up and must outlive nothing but its own run (<c>--detach</c>); the board file the
+/// run writes is the progress.
+/// </summary>
+public class LocalStackPortalApi : ILocalWebApi
+{
+	// Values must start alphanumeric so nothing the page sends can parse as an option.
+	static readonly Regex StackNamePattern = new(@"^[A-Za-z0-9][A-Za-z0-9._-]*(:[A-Za-z0-9][A-Za-z0-9._-]*)*$", RegexOptions.Compiled);
+	static readonly Regex ItemPattern = new(@"^[A-Za-z0-9#@][A-Za-z0-9#@ ._:/-]*$", RegexOptions.Compiled);
+	static readonly Regex TargetPattern = new(@"^([A-Za-z0-9][A-Za-z0-9._-]*|https?://[A-Za-z0-9.:/_-]+)$", RegexOptions.Compiled);
+	/// <summary>What a command of the stack's own may carry (see <c>beam local create --commands</c>).</summary>
+	static readonly string[] CommandKeys =
+		{ "name", "command", "args", "shell", "shellKind", "beam", "dir", "env", "once", "readyUrl", "readyLog", "port", "timeout", "label", "tags", "after", "first" };
+	static readonly string[] StepActions = { "restart", "start", "stop" };
+
+	/// <summary>Terminal control sequences (colors, cursor moves) that tools write into their logs; a page shows them raw.</summary>
+	static readonly Regex AnsiPattern = new(@"\x1B(\[[0-?]*[ -/]*[@-~]|\][^\x07\x1B]*(\x07|\x1B\\)|[@-Z\\-_])", RegexOptions.Compiled);
+
+	/// <summary>The "Local stack" dashboard for each kind of step (the <c>beam.kind</c> its forwarded logs carry).</summary>
+	static readonly Dictionary<string, string> GrafanaDashboards = new(StringComparer.OrdinalIgnoreCase)
+	{
+		["build"] = "beam-local-builds", ["csharp"] = "beam-local-csharp", ["docker"] = "beam-local-docker",
+		["extensions"] = "beam-local-extensions", ["microservices"] = "beam-local-microservices", ["portal"] = "beam-local-portal",
+		["scala"] = "beam-local-scala", ["web-registry"] = "beam-local-web", ["custom"] = "beam-local-other",
+	};
+	const int LogTailMax = 2000;
+
+	readonly CommandArgs _args;
+	readonly string _settingsPath;
+	readonly string _runStatePath;
+	readonly CliJobRunner _jobs = new(Array.Empty<string>());
+	readonly object _operationLock = new();
+	LocalStackPortalOperation _operation;
+	WorkspaceServices _services;
+
+	public LocalStackPortalApi(CommandArgs args)
+	{
+		_args = args;
+		_settingsPath = LocalStackCommand.ResolveManifestPath(args.ConfigService, null);
+		_runStatePath = LocalStackCommand.ResolveRunStatePath(args.ConfigService, null);
+	}
+
+	public object Dispatch(string method, string[] parts, NameValueCollection query, string body)
+	{
+		switch (method, parts.Length > 0 ? parts[0] : "", parts.Length)
+		{
+			case ("GET", "workspace", 1):
+				return Workspace();
+			case ("GET", "stacks", 1):
+				return Listing();
+			case ("GET", "steps", 1):
+				return Steps(query?["stack"]);
+			case ("GET", "stacks", 2):
+				return Definition(parts[1]);
+			case ("GET", "choices", 1):
+				return Choices(query?["refresh"] == "true");
+			case ("GET", "status", 1):
+				return Status();
+			case ("GET", "logs", 2):
+				return Logs(parts[1], int.TryParse(query?["tail"], out var tail) ? tail : 200);
+			case ("POST", "run", 1):
+				return StartOperation("run", RunArgs(CliJobRunner.ParseBody(body)));
+			case ("POST", "stop", 1):
+			{
+				var purge = CliJobRunner.ParseBody(body)["purge"];
+				return StartOperation("stop", purge?.Type == JTokenType.Boolean && purge.Value<bool>()
+					? new[] { "local", "stop", "--purge" }
+					: new[] { "local", "stop" });
+			}
+			case ("POST", "steps", 3):
+				return StartOperation(parts[2], StepArgs(parts[1], parts[2]));
+			case ("GET", "operation", 1):
+				lock (_operationLock) return _operation?.ToView();
+			case (_, "jobs", _):
+				return _jobs.Dispatch(method, parts, query, body, BuildArgs);
+			default:
+				throw new LocalWebRequestException(404, $"No route {method} /api/{string.Join('/', parts)}.");
+		}
+	}
+
+	object Workspace() => new
+	{
+		workspace = LocalStackConfigIO.FindWorkspaceRoot(_settingsPath),
+		settings = _settingsPath,
+		hasSettings = File.Exists(_settingsPath),
+	};
+
+	LocalStackConfig Config()
+	{
+		if (!File.Exists(_settingsPath))
+			throw new LocalWebRequestException(409, "This workspace has no local stack settings yet. Run `beam local setup` in it first.");
+		return LocalStackConfigIO.Load(_settingsPath);
+	}
+
+	LocalStackStacks Stacks()
+	{
+		try
+		{
+			return LocalStackStacks.Load(LocalStackConfigIO.FindWorkspaceRoot(_settingsPath));
+		}
+		catch (LocalStackStackException e)
+		{
+			throw new LocalWebRequestException(409, e.Message);
+		}
+	}
+
+	/// <summary>
+	/// What a bare <c>beam local run</c> lists, plus what each built-in variant and each backend variant does, so the
+	/// page can describe every variant it offers.
+	/// </summary>
+	object Listing()
+	{
+		var stacks = Stacks();
+		var config = Config();
+		var listing = LocalStackRunCommand.Listing(stacks, config);
+		var descriptions = stacks.BuiltInVariants.ToDictionary(v => v.Key, v => v.Value?.description);
+		foreach (var target in listing.targets)
+			descriptions[target] = $"Runs against {target}: {LocalStackTargets.Get(target, config)?.host}";
+		return new { listing.stacks, listing.builtInVariants, listing.targets, descriptions };
+	}
+
+	/// <summary>The steps a stack runs, by name, for the page to offer what to add to it and what to leave out.</summary>
+	object Steps(string stack)
+	{
+		try
+		{
+			var resolved = Stacks().Resolve(StackName(stack), Config());
+			return new { stack, steps = resolved.steps.Select(s => s.name).ToList() };
+		}
+		catch (LocalStackStackException e)
+		{
+			throw new LocalWebRequestException(409, e.Message);
+		}
+	}
+
+	/// <summary>Every layer that defines the stack (built-in, shared, mine), so the page edits the right one.</summary>
+	object Definition(string name)
+	{
+		var layers = Stacks().Definitions()
+			.Where(d => string.Equals(d.name, name, StringComparison.Ordinal))
+			.Select(d => new
+			{
+				layer = LocalStackRunCommand.LayerName(d.layer), d.file, definition = d.def,
+				commands = (d.def.steps ?? new Dictionary<string, LocalStackStep>())
+					.Where(kv => kv.Value?.custom == true).Select(kv => CommandOf(kv.Key, kv.Value)).ToList(),
+			})
+			.ToArray();
+		if (layers.Length == 0)
+			throw new LocalWebRequestException(404, $"No stack '{name}'.");
+		return new { name, layers };
+	}
+
+	/// <summary>
+	/// A command of the stack's own in the shape <c>--commands</c> takes, so the page shows it and sends it back as it
+	/// is: the reverse of what <c>FromFlags</c> makes of the <c>--step-*</c> options.
+	/// </summary>
+	public static JObject CommandOf(string name, LocalStackStep step)
+	{
+		var command = new JObject { ["name"] = name };
+		if (step.beam) command["beam"] = step.arguments;
+		else if (step.shell)
+		{
+			command["shell"] = step.arguments;
+			command["shellKind"] = step.shellKind;
+		}
+		else
+		{
+			command["command"] = step.command;
+			command["args"] = step.arguments ?? "";
+		}
+
+		command["dir"] = step.workingDirectory ?? "";
+		command["env"] = new JArray((step.environment ?? new Dictionary<string, string>()).Select(kv => $"{kv.Key}={kv.Value}"));
+		command["once"] = step.waitForExit;
+		command["readyUrl"] = step.readyWhenHttpOk ?? "";
+		command["readyLog"] = step.readyWhenLogContains ?? "";
+		command["port"] = step.port;
+		command["timeout"] = step.readyTimeoutSeconds;
+		command["label"] = step.label ?? "";
+		command["tags"] = string.Join(",", (step.tags ?? new List<string>()).Where(t => !string.Equals(t, "custom", StringComparison.OrdinalIgnoreCase)));
+		command["after"] = step.after ?? "";
+		command["first"] = step.first == true;
+		return command;
+	}
+
+	/// <summary>What a stack can be made of: the settings' steps and tags, this workspace's services, the backends.</summary>
+	object Choices(bool refresh)
+	{
+		var config = Config();
+		if (_services == null || refresh)
+			_services = WorkspaceServices.Find(_args, config).GetAwaiter().GetResult();
+
+		var stacks = Stacks();
+		return new
+		{
+			stacks = stacks.List().Select(s => s.name).ToList(),
+			steps = config.steps.Where(s => s.enabled).Select(s => new { s.name, s.label, tags = stacks.TagsOf(s).ToList() }).ToList(),
+			tags = config.steps.Where(s => s.enabled).SelectMany(stacks.TagsOf).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(t => t).ToList(),
+			services = _services.services,
+			extensions = _services.extensions,
+			groups = _services.groups.Keys.OrderBy(g => g).ToList(),
+			targets = LocalStackTargets.Names(config),
+			builtInVariants = stacks.BuiltInVariants.Keys.ToList(),
+		};
+	}
+
+	object Status()
+	{
+		var snapshot = LocalStackPsCommand.Snapshot(_runStatePath).GetAwaiter().GetResult();
+		lock (_operationLock) return new { stack = snapshot, operation = _operation?.ToView(), grafana = Grafana(snapshot) };
+	}
+
+	/// <summary>
+	/// Where the running stack's logs are in Grafana: the "All" dashboard for the stack, and each step's kind
+	/// dashboard filtered to it. Null when the stack doesn't forward its logs (no <c>logs: forward</c> step).
+	/// </summary>
+	public static object Grafana(LocalStackPsCommandResult snapshot)
+	{
+		if (snapshot?.stack == null || !snapshot.steps.Any(s => s.name == LocalStackTemplate.LogsForwardStepName))
+			return null;
+
+		string Url(string dashboard, string step) =>
+			$"{LocalStackTemplate.LocalGrafanaUrl}/d/{dashboard}?from=now-1h&to=now&var-stack={Uri.EscapeDataString(snapshot.stack)}" +
+			(step == null ? "" : $"&var-step={Uri.EscapeDataString(step)}");
+
+		return new
+		{
+			dashboards = $"{LocalStackTemplate.LocalGrafanaUrl}/dashboards",
+			all = Url("beam-local-all", null),
+			steps = snapshot.steps.ToDictionary(s => s.name, s =>
+			{
+				var kind = LocalStackConfigIO.InferTags(s.name).FirstOrDefault() ?? "custom";
+				return Url(GrafanaDashboards.TryGetValue(kind, out var uid) ? uid : "beam-local-all", s.name);
+			}),
+		};
+	}
+
+	/// <summary>
+	/// <paramref name="line"/> without terminal control sequences, a trailing carriage return, or the dashes that run a
+	/// section rule (<c>-- Stack x is up -----…</c>) to the CLI's width: the page wraps lines to its own.
+	/// </summary>
+	public static string Plain(string line) => RuleTail.Replace(AnsiPattern.Replace(line ?? "", "").TrimEnd('\r'), "");
+
+	static readonly Regex RuleTail = new(@"\s*-{8,}\s*$");
+
+	object Logs(string step, int tail)
+	{
+		var entry = LocalStackPsCommand.Snapshot(_runStatePath, probe: false).GetAwaiter().GetResult().steps
+			.FirstOrDefault(s => string.Equals(s.name, step, StringComparison.OrdinalIgnoreCase));
+		if (entry == null || string.IsNullOrEmpty(entry.logPath) || !File.Exists(entry.logPath))
+			return new { step, lines = Array.Empty<string>() };
+
+		using var stream = new FileStream(entry.logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+		using var reader = new StreamReader(stream);
+		var lines = new Queue<string>();
+		var keep = Math.Clamp(tail, 1, LogTailMax);
+		for (var line = reader.ReadLine(); line != null; line = reader.ReadLine())
+		{
+			lines.Enqueue(Plain(line));
+			if (lines.Count > keep) lines.Dequeue();
+		}
+
+		return new { step = entry.name, lines = lines.ToArray() };
+	}
+
+	/// <summary>
+	/// The in-process jobs: <c>create</c>, <c>edit</c> and <c>delete</c> a stack, and <c>dry-run</c> (what a stack
+	/// runs, on the <c>dryRun</c> channel). Checked values follow their option as the next token (none can start with a
+	/// dash); the description, free text, goes as one <c>--description=…</c> token. <c>create</c> leaves out what is
+	/// empty; <c>edit</c> passes it empty, which clears it.
+	/// </summary>
+	public static (string op, string[] args) BuildArgs(JObject request)
+	{
+		string Field(string name) => request[name]?.Type == JTokenType.String ? request[name]!.Value<string>() : null;
+		bool Flag(string name) => request[name]?.Type == JTokenType.Boolean && request[name]!.Value<bool>();
+
+		var op = Field("op") ?? "";
+		var args = new List<string>();
+		switch (op)
+		{
+			case "dry-run":
+				args.AddRange(new[] { "local", "run", StackName(Field("stack")), "--dry-run" });
+				break;
+			case "create":
+			case "edit":
+			{
+				args.AddRange(new[] { "local", op, StackName(Field("name")) });
+				if (Flag("shared")) args.Add("--shared");
+
+				void Add(string option, string value)
+				{
+					if (value == null || (value.Length == 0 && op == "create")) return;
+					args.AddRange(new[] { $"--{option}", value });
+				}
+
+				foreach (var option in new[] { "extends", "include", "exclude", "services", "extensions", "groups" })
+				{
+					if (request[option] != null) Add(option, ListValue(option, request[option]));
+				}
+
+				var target = Field("target");
+				if (!string.IsNullOrEmpty(target) && !TargetPattern.IsMatch(target))
+					throw new LocalWebRequestException(400, $"Invalid backend [{target}].");
+				Add("target", target);
+
+				var description = Field("description")?.Trim();
+				if (!string.IsNullOrEmpty(description)) args.Add("--description=" + description);
+				else if (description != null && op == "edit") args.AddRange(new[] { "--description", "" });
+
+				if (request["commands"] != null)
+				{
+					var commands = Commands(request["commands"]);
+					if (commands.Count > 0 || op == "edit")
+						args.Add("--commands=" + commands.ToString(Newtonsoft.Json.Formatting.None));
+				}
+				break;
+			}
+			case "delete":
+				args.AddRange(new[] { "local", "delete", StackName(Field("name")) });
+				if (Flag("shared")) args.Add("--shared");
+				break;
+			default:
+				throw new LocalWebRequestException(400, $"Unknown operation [{op}].");
+		}
+
+		return (op, args.ToArray());
+	}
+
+	/// <summary>
+	/// The stack's own commands for <c>--commands</c>: an array of objects, each kept to the keys the CLI reads and to
+	/// plain values. The CLI checks them as it checks <c>--add-step</c>; the JSON goes as one <c>--commands=…</c> token,
+	/// so none of it can parse as an option.
+	/// </summary>
+	static JArray Commands(JToken value)
+	{
+		if (value is not JArray items || items.Any(i => i is not JObject))
+			throw new LocalWebRequestException(400, "commands must be an array of objects, one per command.");
+
+		var clean = new JArray();
+		foreach (JObject item in items)
+		{
+			var kept = new JObject();
+			foreach (var key in CommandKeys)
+			{
+				var v = item[key];
+				if (v == null) continue;
+				if (v.Type is JTokenType.String or JTokenType.Boolean or JTokenType.Integer)
+					kept[key] = v;
+				else if (key == "env" && v is JArray env && env.All(e => e.Type == JTokenType.String))
+					kept[key] = env;
+				else
+					throw new LocalWebRequestException(400, $"Invalid {key} in a command.");
+			}
+
+			clean.Add(kept);
+		}
+
+		return clean;
+	}
+
+	/// <summary>A JSON array or comma separated string of step names, tags or service names, checked one by one.</summary>
+	static string ListValue(string option, JToken value)
+	{
+		var items = value.Type == JTokenType.Array
+			? value.Values<string>()
+			: (value.Value<string>() ?? "").Split(',');
+		var clean = items.Select(i => (i ?? "").Trim()).Where(i => i.Length > 0).ToList();
+		var bad = clean.FirstOrDefault(i => !ItemPattern.IsMatch(i));
+		if (bad != null)
+			throw new LocalWebRequestException(400, $"Invalid {option} value [{bad}].");
+		return string.Join(",", clean);
+	}
+
+	static string StackName(string name)
+	{
+		if (string.IsNullOrEmpty(name) || !StackNamePattern.IsMatch(name))
+			throw new LocalWebRequestException(400, $"Invalid stack name [{name}].");
+		return name;
+	}
+
+	static string[] RunArgs(JObject request) =>
+		new[] { "local", "run", StackName(request["stack"]?.Type == JTokenType.String ? request["stack"]!.Value<string>() : null), "--detach" };
+
+	string[] StepArgs(string step, string action)
+	{
+		if (!StepActions.Contains(action))
+			throw new LocalWebRequestException(404, $"No step action [{action}]. Use {string.Join(", ", StepActions)}.");
+
+		// Only a step of the running stack, by its exact name, so nothing else reaches the command line.
+		var known = LocalStackPsCommand.Snapshot(_runStatePath, probe: false).GetAwaiter().GetResult().steps
+			.FirstOrDefault(s => string.Equals(s.name, step, StringComparison.Ordinal));
+		if (known == null)
+			throw new LocalWebRequestException(404, $"The running stack has no step [{step}].");
+
+		return action switch
+		{
+			"restart" => new[] { "local", "ps", "--restart", known.name },
+			"start" => new[] { "local", "ps", "--start", known.name },
+			_ => new[] { "local", "stop", known.name },
+		};
+	}
+
+	/// <summary>Runs this CLI as a child process for one stack operation; refused while another one runs.</summary>
+	object StartOperation(string op, string[] commandArgs)
+	{
+		lock (_operationLock)
+		{
+			if (_operation is { finished: false })
+				throw new LocalWebRequestException(409, $"`{_operation.commandLine}` is still running.");
+
+			var (exe, leading) = LocalStackRunCommand.ResolveBeam(_args);
+			// --no-redirect: run this same CLI, not a version the workspace's tool manifest pins. --pretty: readable
+			// progress lines for the page, where a child without a terminal would print JSON and no info lines.
+			var fullArgs = leading.Concat(commandArgs).Concat(new[] { "--no-redirect", "--quiet", "--pretty" }).ToArray();
+			_operation = LocalStackPortalOperation.Start(op, exe, fullArgs, _args.ConfigService.WorkingDirectory,
+				"beam " + string.Join(" ", commandArgs.Select(a => a.Contains(' ') ? $"\"{a}\"" : a)));
+			return _operation.ToView();
+		}
+	}
+}
+
+/// <summary>A stack operation running as a child process: its command line, state and the end of its output.</summary>
+public class LocalStackPortalOperation
+{
+	const int OutputLines = 200;
+
+	public string op;
+	public string commandLine;
+	public long startedAt;
+	public long finishedAt;
+	public volatile bool finished;
+	public int exitCode;
+
+	readonly Queue<string> _output = new();
+
+	public static LocalStackPortalOperation Start(string op, string exe, string[] args, string workingDirectory, string commandLine)
+	{
+		var operation = new LocalStackPortalOperation { op = op, commandLine = commandLine, startedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() };
+		var psi = new ProcessStartInfo(exe)
+		{
+			UseShellExecute = false,
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			CreateNoWindow = true,
+			WorkingDirectory = workingDirectory ?? Directory.GetCurrentDirectory(),
+		};
+		foreach (var arg in args) psi.ArgumentList.Add(arg);
+		// Lines as long as they come: the page wraps them to its width.
+		psi.Environment[DefaultAppContext.ConsoleWidthVariable] = "1000";
+
+		var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+		// Without a terminal the CLI writes its result stream (JSON) to stdout and the readable lines to stderr.
+		process.OutputDataReceived += (_, e) =>
+		{
+			if (!string.IsNullOrWhiteSpace(e.Data) && !e.Data.StartsWith("{\"ts\":")) operation.Add(e.Data);
+		};
+		process.ErrorDataReceived += (_, e) => operation.Add(e.Data);
+		process.Exited += (_, _) =>
+		{
+			// The last output lines arrive after Exited; WaitForExit() drains them first.
+			process.WaitForExit();
+			operation.exitCode = process.ExitCode;
+			operation.finishedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+			operation.finished = true;
+			process.Dispose();
+		};
+		process.Start();
+		process.BeginOutputReadLine();
+		process.BeginErrorReadLine();
+		return operation;
+	}
+
+	void Add(string line)
+	{
+		if (line == null) return;
+		var plain = LocalStackPortalApi.Plain(line);
+		lock (_output)
+		{
+			// One blank line between sections is enough.
+			if (plain.Trim().Length == 0 && (_output.Count == 0 || _output.Last().Trim().Length == 0)) return;
+			_output.Enqueue(plain);
+			if (_output.Count > OutputLines) _output.Dequeue();
+		}
+	}
+
+	public object ToView()
+	{
+		lock (_output)
+		{
+			return new
+			{
+				op, commandLine, startedAt, finishedAt, finished,
+				succeeded = finished && exitCode == 0,
+				exitCode,
+				output = _output.ToArray(),
+			};
+		}
+	}
+}

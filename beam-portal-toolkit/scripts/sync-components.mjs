@@ -9,8 +9,12 @@
  *   - src/react-elements.ts      (React JSX IntrinsicElements augmentations)
  *
  * By default also copies custom-elements.json from the agentic-portal checkout
- * named by PORTAL_REPO_PATH into this project's custom-elements.json first.
- * Pass --no-copy to skip that step and use the existing custom-elements.json.
+ * named by PORTAL_REPO_PATH into this project's custom-elements.json first, and
+ * builds that checkout's standalone runtime (`npm run build:runtime`) into
+ * runtime/: the portal's components, theme and React runtime for pages outside
+ * the portal (the Beam CLI's local web apps).
+ * Pass --no-copy to skip both and use the existing custom-elements.json.
+ * Pass --require-runtime to fail when runtime/ is missing (publishing does).
  *
  * Run `npm run generate:cem` in the agentic-portal repo first to refresh its
  * manifest before syncing. `beam local run <stack>:web` does all of this on
@@ -21,7 +25,8 @@
  *   pnpm sync-components --no-copy  # regenerate from existing custom-elements.json
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'fs';
+import { execSync } from 'child_process';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -29,6 +34,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 
 const noCopy = process.argv.includes('--no-copy');
+const requireRuntime = process.argv.includes('--require-runtime');
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -726,5 +732,25 @@ writeFileSync(reactBindableDest, reactBindableTs);
 console.log(
   `✓ Generated   →  src/generated/react-bindable.ts   (${reactBindableDeclarations.length} components)`,
 );
+
+// ---------------------------------------------------------------------------
+// Step 9: The standalone runtime (runtime/beam-runtime.js and .css)
+// ---------------------------------------------------------------------------
+
+const runtimeDir = resolve(root, 'runtime');
+const runtimeFiles = ['beam-runtime.js', 'beam-runtime.css'];
+
+if (!noCopy) {
+  execSync('npm run build:runtime', { cwd: portalRepo, stdio: 'inherit' });
+  mkdirSync(runtimeDir, { recursive: true });
+  for (const file of runtimeFiles) copyFileSync(resolve(portalRepo, 'dist-runtime', file), resolve(runtimeDir, file));
+  console.log(`✓ Built runtime  →  runtime/`);
+} else if (requireRuntime && runtimeFiles.some(file => !existsSync(resolve(runtimeDir, file)))) {
+  console.error(
+    '\nERROR: runtime/ is missing. Run the sync with PORTAL_REPO_PATH set (no --no-copy) to build it\n' +
+    'from agentic-portal; the package ships it for the Beam CLI\'s local web apps.\n',
+  );
+  process.exit(1);
+}
 
 console.log(`\nDone. Run \`pnpm build\` to compile the updated types.\n`);

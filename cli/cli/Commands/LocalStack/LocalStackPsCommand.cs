@@ -252,7 +252,7 @@ public class LocalStackPsCommand
 		}).ToList()
 	};
 
-	private static async Task<LocalStackPsCommandResult> Snapshot(string runStatePath, bool probe = true)
+	internal static async Task<LocalStackPsCommandResult> Snapshot(string runStatePath, bool probe = true)
 	{
 		var result = new LocalStackPsCommandResult();
 		var board = LocalStackBoardIO.Load(LocalStackBoardIO.PathFor(runStatePath));
@@ -565,12 +565,14 @@ public class LocalStackPsCommand
 
 	/// <summary>
 	/// The steps <paramref name="items"/> name among those the running stack runs, by name, label or tag. Uses the
-	/// stack's definition for labels and tags; when it can't be resolved any more, names only.
+	/// stack's definition for labels and tags; when it can't be resolved any more, names only. A step stopped on its
+	/// own (<c>beam local stop &lt;step&gt;</c>) has left the run-state but is still on the board, so it can be
+	/// started again.
 	/// </summary>
 	public static List<LocalStackStep> MatchRecorded(CommandArgs args, string runStatePath, LocalStackRunState state, List<string> items)
 	{
-		var recorded = state.steps.Select(e => e.name).ToHashSet(StringComparer.OrdinalIgnoreCase);
 		var board = LocalStackBoardIO.Load(LocalStackBoardIO.PathFor(runStatePath));
+		var recorded = RecordedNames(state, board);
 		try
 		{
 			var settings = LocalStackCommand.ResolveManifestPath(args.ConfigService, null);
@@ -589,8 +591,14 @@ public class LocalStackPsCommand
 			Log.Verbose($"Matching by name only: {e.Message}");
 		}
 
-		return LocalStackControl.Match(items, state.steps.Select(e => new LocalStackStep { name = e.name }).ToList(), _ => Enumerable.Empty<string>());
+		return LocalStackControl.Match(items, recorded.Select(name => new LocalStackStep { name = name }).ToList(), _ => Enumerable.Empty<string>());
 	}
+
+	/// <summary>The steps the running stack runs: those in its run-state, and those on its board (stopped ones too).</summary>
+	public static HashSet<string> RecordedNames(LocalStackRunState state, LocalStackBoardSnapshot board) =>
+		state.steps.Select(e => e.name)
+			.Concat(board?.rows.Select(r => r.name) ?? Enumerable.Empty<string>())
+			.ToHashSet(StringComparer.OrdinalIgnoreCase);
 }
 
 /// <summary>A tag of the running stack and its processes, as <c>beam local restart</c> lists them when nothing is named.</summary>

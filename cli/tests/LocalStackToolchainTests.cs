@@ -2306,6 +2306,26 @@ public class LocalStackToolchainTests
 	}
 
 	/// <summary>
+	/// A step stopped on its own leaves the run-state but stays on the board, and can still be named to start it.
+	/// </summary>
+	[Test]
+	public void A_step_stopped_on_its_own_can_be_started_again()
+	{
+		var state = new LocalStackRunState { steps = { new LocalStackRunEntry { name = "web: registry" } } };
+		var board = new LocalStackBoardSnapshot
+		{
+			rows =
+			{
+				new LocalStackBoardRow { name = "web: registry", state = LocalStackStepState.Ready },
+				new LocalStackBoardRow { name = "web: watch", state = LocalStackStepState.Stopped },
+			}
+		};
+
+		Assert.That(LocalStackPsCommand.RecordedNames(state, board), Is.EquivalentTo(new[] { "web: registry", "web: watch" }));
+		Assert.That(LocalStackPsCommand.RecordedNames(state, null), Is.EquivalentTo(new[] { "web: registry" }));
+	}
+
+	/// <summary>
 	/// On a board that can act, the arrows select a row and keep it on screen; Space asks what to do with it, Enter
 	/// does it (S stops instead), Esc drops it; a build, or anything before the stack is up, only says why not.
 	/// </summary>

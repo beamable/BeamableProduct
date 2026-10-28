@@ -1,5 +1,8 @@
+using cli.Commands.LocalStack;
 using cli.DeploymentCommands;
 using cli.Services.Bundles;
+using cli.Services.LocalWeb;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using System.CommandLine;
 using System.CommandLine.Parsing;
@@ -8,14 +11,14 @@ using System.Linq;
 namespace tests.BundleTests;
 
 /// <summary>
-/// Unit tests for <see cref="BundleJobRunner.BuildArgs"/> — the whitelist that turns a portal request into the
-/// arguments of an existing CLI command. Everything the portal sends is validated before it reaches the parser.
+/// Unit tests for <see cref="BundlesApi.BuildArgs"/> — the whitelist that turns a page request into the
+/// arguments of an existing CLI command. Everything the page sends is validated before it reaches the parser.
 /// </summary>
 public class BundleJobRunnerTests
 {
 	static string[] Build(string op, string bundle = "", string tag = "", string checksum = "", string comment = "",
 		string acl = "", string scope = "", bool flag = false) =>
-		BundleJobRunner.BuildArgs(op, bundle, tag, checksum, comment, acl, scope, flag);
+		BundlesApi.BuildArgs(op, bundle, tag, checksum, comment, acl, scope, flag);
 
 	[Test]
 	public void Publish_PassesCommentAsASingleArgument()
@@ -74,7 +77,7 @@ public class BundleJobRunnerTests
 	[TestCase("yank", "vip@sha256 x")]
 	public void InvalidBundle_IsRejected(string op, string bundle)
 	{
-		Assert.That(() => Build(op, bundle), Throws.TypeOf<BundleRequestException>());
+		Assert.That(() => Build(op, bundle), Throws.TypeOf<LocalWebRequestException>());
 	}
 
 	[TestCase("acl", "vip", "realm", "")]
@@ -82,20 +85,20 @@ public class BundleJobRunnerTests
 	[TestCase("unknown", "vip", "", "")]
 	public void UnknownValues_AreRejected(string op, string bundle, string acl, string scope)
 	{
-		Assert.That(() => Build(op, bundle, acl: acl, scope: scope), Throws.TypeOf<BundleRequestException>());
+		Assert.That(() => Build(op, bundle, acl: acl, scope: scope), Throws.TypeOf<LocalWebRequestException>());
 	}
 
 	[Test]
 	public void InvalidTag_IsRejected()
 	{
-		Assert.That(() => Build("tag", "vip@sha256:abcdef0123456789", tag: "--quiet x"), Throws.TypeOf<BundleRequestException>());
+		Assert.That(() => Build("tag", "vip@sha256:abcdef0123456789", tag: "--quiet x"), Throws.TypeOf<LocalWebRequestException>());
 	}
 
 	[Test]
 	public void Reporter_KeepsEachProgressStepInStartOrder()
 	{
-		var job = new BundleJob();
-		var reporter = new BundleJobReporter(job);
+		var job = new CliJob();
+		var reporter = new CliJobReporter(job);
 
 		reporter.Report("progress", new PlanReleaseProgress { name = "fetching latest", ratio = 0.5f, isKnownLength = true });
 		reporter.Report("progress", new PlanReleaseProgress { name = "build vip", ratio = 0.1f, isKnownLength = true, serviceName = "vip" });
@@ -109,25 +112,26 @@ public class BundleJobRunnerTests
 }
 
 /// <summary>
-/// Unit tests for <see cref="BundlesManagementServer"/>'s request guard and routing. The API runs CLI commands with
-/// this CLI's credentials, so only the portal's origin, on 127.0.0.1, with this run's session token gets through.
+/// Unit tests for <see cref="LocalWebServer"/>'s request guard and the bundles routes. The API runs CLI commands with
+/// this CLI's credentials, so only the page's own origin, with this run's session token, gets through.
 /// </summary>
-public class BundlesManagementServerTests
+public class LocalWebServerTests
 {
-	const string Portal = "http://localhost:4950";
 	const string Token = "session-secret";
 
-	static BundlesManagementServer NewServer() =>
-		new(new BundlesManagementContext { Jobs = new BundleJobRunner(System.Array.Empty<string>()) }, Portal + "/some/page", Token);
+	static LocalWebServer NewServer() =>
+		new("bundles", new BundlesApi(new BundlesManagementContext { Jobs = new CliJobRunner(System.Array.Empty<string>()) }), Token);
 
-	static string Host(BundlesManagementServer server) => $"127.0.0.1:{server.Port}";
+	static BundlesApi NewApi() => new(new BundlesManagementContext { Jobs = new CliJobRunner(System.Array.Empty<string>()) });
 
 	[Test]
-	public void Authorize_AcceptsThePortalWithTheToken()
+	public void Authorize_AcceptsThePageWithTheToken()
 	{
 		var server = NewServer();
 
-		Assert.That(server.Authorize("GET", Host(server), Portal, "Bearer " + Token).status, Is.EqualTo(200));
+		Assert.That(server.Authorize(server.Origin, "Bearer " + Token).status, Is.EqualTo(200));
+		// A same-origin GET carries no Origin header.
+		Assert.That(server.Authorize(null, "Bearer " + Token).status, Is.EqualTo(200));
 	}
 
 	[TestCase(null)]
@@ -137,45 +141,24 @@ public class BundlesManagementServerTests
 	{
 		var server = NewServer();
 
-		Assert.That(server.Authorize("GET", Host(server), Portal, authorization).status, Is.EqualTo(401));
+		Assert.That(server.Authorize(server.Origin, authorization).status, Is.EqualTo(401));
 	}
 
 	[TestCase("https://evil.example")]
-	[TestCase("http://localhost:4951")]
-	[TestCase(null)]
+	[TestCase("http://localhost:4950")]
+	[TestCase("http://127.0.0.1:1")]
 	public void Authorize_RefusesOtherOrigins(string origin)
 	{
-		var server = NewServer();
-
-		Assert.That(server.Authorize("GET", Host(server), origin, "Bearer " + Token).status, Is.EqualTo(403));
-		Assert.That(server.Authorize("OPTIONS", Host(server), origin, null).status, Is.EqualTo(403));
+		Assert.That(NewServer().Authorize(origin, "Bearer " + Token).status, Is.EqualTo(403));
 	}
 
-	[Test]
-	public void Authorize_RefusesAHostThatIsNotTheLoopbackAddress()
-	{
-		// A DNS-rebinding page reaches 127.0.0.1 under its own host name.
-		var server = NewServer();
-
-		Assert.That(server.Authorize("GET", $"localhost:{server.Port}", Portal, "Bearer " + Token).status, Is.EqualTo(403));
-		Assert.That(server.Authorize("GET", $"evil.example:{server.Port}", Portal, "Bearer " + Token).status, Is.EqualTo(403));
-	}
-
-	[Test]
-	public void Authorize_LetsThePreflightThroughWithoutCredentials()
-	{
-		var server = NewServer();
-
-		Assert.That(server.Authorize("OPTIONS", Host(server), Portal, null).status, Is.EqualTo(200));
-	}
-
-	[TestCase("GET", "/unknown", "")]
-	[TestCase("DELETE", "/jobs", "")]
-	[TestCase("GET", "/jobs/nope", "")]
-	[TestCase("POST", "/jobs/nope/cancel", "")]
+	[TestCase("GET", "unknown", "")]
+	[TestCase("DELETE", "jobs", "")]
+	[TestCase("GET", "jobs/nope", "")]
+	[TestCase("POST", "jobs/nope/cancel", "")]
 	public void Dispatch_UnknownRoutesAndJobs_AreNotFound(string method, string path, string body)
 	{
-		var ex = Assert.Throws<BundleRequestException>(() => NewServer().Dispatch(method, path, null, body));
+		var ex = Assert.Throws<LocalWebRequestException>(() => NewApi().Dispatch(method, path.Split('/'), null, body));
 
 		Assert.That(ex!.Status, Is.EqualTo(404));
 	}
@@ -185,7 +168,7 @@ public class BundlesManagementServerTests
 	[TestCase("not json")]
 	public void Dispatch_StartJob_RejectsBadRequests(string body)
 	{
-		var ex = Assert.Throws<BundleRequestException>(() => NewServer().Dispatch("POST", "/jobs", null, body));
+		var ex = Assert.Throws<LocalWebRequestException>(() => NewApi().Dispatch("POST", new[] { "jobs" }, null, body));
 
 		Assert.That(ex!.Status, Is.EqualTo(400));
 	}
@@ -193,6 +176,133 @@ public class BundlesManagementServerTests
 	[Test]
 	public void Dispatch_ListJobs_StartsEmpty()
 	{
-		Assert.That(NewServer().Dispatch("GET", "/jobs", null, ""), Is.Empty);
+		Assert.That(NewApi().Dispatch("GET", new[] { "jobs" }, null, ""), Is.Empty);
+	}
+
+	/// <summary>Only embedded names are served: a path can't climb out of the app's folder.</summary>
+	[TestCase("/../../appsettings.json")]
+	[TestCase("/..%2F..%2Fcli.dll")]
+	[TestCase("/runtime/../stacks/index.html.bak")]
+	[TestCase("/nope.js")]
+	public void Assets_OnlyServeEmbeddedFiles(string path)
+	{
+		Assert.That(LocalWebAssets.TryRead("stacks", path, out _, out _), Is.False);
+	}
+}
+
+/// <summary>
+/// Unit tests for <see cref="LocalStackPortalApi.BuildArgs"/>: what the stacks page may ask the CLI to run. Values go
+/// as single <c>--option=value</c> tokens and must start alphanumeric, so none can parse as an option.
+/// </summary>
+public class LocalStackPortalApiTests
+{
+	static string[] Build(string json) => LocalStackPortalApi.BuildArgs(JObject.Parse(json)).args;
+
+	[Test]
+	public void Create_PassesEveryFieldAsOneToken()
+	{
+		var args = Build("{\"op\":\"create\",\"name\":\"wallet-dev\",\"shared\":true,\"extends\":\"backend\"," +
+		                 "\"include\":[\"scala: auth\",\"c# gateway\"],\"exclude\":[],\"services\":[\"DebugWalletService\"]," +
+		                 "\"extensions\":[],\"groups\":[],\"target\":\"dev\",\"description\":\"--quiet please\"}");
+
+		Assert.That(args, Is.EqualTo(new[]
+		{
+			"local", "create", "wallet-dev", "--shared", "--extends", "backend", "--include", "scala: auth,c# gateway",
+			"--services", "DebugWalletService", "--target", "dev", "--description=--quiet please"
+		}));
+	}
+
+	[Test]
+	public void Edit_PassesEmptyFieldsSoTheyAreCleared()
+	{
+		var args = Build("{\"op\":\"edit\",\"name\":\"mine\",\"extends\":\"\",\"include\":[],\"target\":\"\",\"description\":\"\"}");
+
+		Assert.That(args, Is.EqualTo(new[]
+		{
+			"local", "edit", "mine", "--extends", "", "--include", "", "--target", "", "--description", ""
+		}));
+	}
+
+	[Test]
+	public void Commands_GoAsOneJsonToken_KeepingOnlyWhatTheCliReads()
+	{
+		var args = Build("{\"op\":\"create\",\"name\":\"seeded\",\"commands\":[{\"name\":\"seed: demo\",\"command\":\"node\"," +
+		                 "\"args\":\"scripts/seed.mjs --fast\",\"env\":[\"MODE=demo\"],\"once\":true,\"extra\":\"--purge\"}]}");
+
+		Assert.That(args, Is.EqualTo(new[]
+		{
+			"local", "create", "seeded",
+			"--commands=[{\"name\":\"seed: demo\",\"command\":\"node\",\"args\":\"scripts/seed.mjs --fast\",\"env\":[\"MODE=demo\"],\"once\":true}]"
+		}));
+	}
+
+	[Test]
+	public void Commands_EmptyClearsThemOnlyOnEdit()
+	{
+		Assert.That(Build("{\"op\":\"create\",\"name\":\"a\",\"commands\":[]}"), Is.EqualTo(new[] { "local", "create", "a" }));
+		Assert.That(Build("{\"op\":\"edit\",\"name\":\"a\",\"commands\":[]}"), Is.EqualTo(new[] { "local", "edit", "a", "--commands=[]" }));
+	}
+
+	[TestCase("{\"op\":\"create\",\"name\":\"ok\",\"commands\":{\"name\":\"x\"}}")]
+	[TestCase("{\"op\":\"create\",\"name\":\"ok\",\"commands\":[\"x\"]}")]
+	[TestCase("{\"op\":\"create\",\"name\":\"ok\",\"commands\":[{\"name\":{\"nested\":1}}]}")]
+	public void BadCommands_AreRejected(string json)
+	{
+		var ex = Assert.Throws<LocalWebRequestException>(() => Build(json));
+
+		Assert.That(ex!.Status, Is.EqualTo(400));
+	}
+
+	[TestCase("\u001b[36mvite v7.3.7 \u001b[32mbuilding client\u001b[39m", "vite v7.3.7 building client")]
+	[TestCase("\u001b[2massets/\u001b[22m\u001b[35mstyle.css\u001b[39m \u001b[1m\u001b[2m 13.40 kB\u001b[22m", "assets/style.css  13.40 kB")]
+	[TestCase("\u001b]0;title\u0007plain\r", "plain")]
+	[TestCase("no codes", "no codes")]
+	[TestCase("-- Stack full is up 12 ready ----------------------------------", "-- Stack full is up 12 ready")]
+	[TestCase("a -- b", "a -- b")]
+	public void Logs_DropTerminalCodes(string line, string plain)
+	{
+		Assert.That(LocalStackPortalApi.Plain(line), Is.EqualTo(plain));
+	}
+
+	[Test]
+	public void Grafana_LinksEachStepToItsKindsDashboard_OnlyWhenLogsAreForwarded()
+	{
+		var snapshot = new LocalStackPsCommandResult
+		{
+			stack = "csharp-portal:web",
+			steps = new System.Collections.Generic.List<LocalStackPsEntry>
+			{
+				new() { name = "scala: auth" }, new() { name = "c# gateway" }, new() { name = "seed: demo" },
+			},
+		};
+		Assert.That(LocalStackPortalApi.Grafana(snapshot), Is.Null, "no logs: forward step, nothing in Grafana");
+
+		snapshot.steps.Add(new LocalStackPsEntry { name = "logs: forward" });
+		var steps = (System.Collections.Generic.Dictionary<string, string>)JObject.FromObject(LocalStackPortalApi.Grafana(snapshot))["steps"]!
+			.ToObject(typeof(System.Collections.Generic.Dictionary<string, string>))!;
+		Assert.That(steps["scala: auth"], Is.EqualTo("http://localhost:3001/d/beam-local-scala?from=now-1h&to=now&var-stack=csharp-portal%3Aweb&var-step=scala%3A%20auth"));
+		Assert.That(steps["c# gateway"], Does.StartWith("http://localhost:3001/d/beam-local-csharp?"));
+		Assert.That(steps["seed: demo"], Does.StartWith("http://localhost:3001/d/beam-local-other?"));
+	}
+
+	[Test]
+	public void DryRun_AndDelete()
+	{
+		Assert.That(Build("{\"op\":\"dry-run\",\"stack\":\"csharp-portal:web\"}"),
+			Is.EqualTo(new[] { "local", "run", "csharp-portal:web", "--dry-run" }));
+		Assert.That(Build("{\"op\":\"delete\",\"name\":\"mine\"}"), Is.EqualTo(new[] { "local", "delete", "mine" }));
+	}
+
+	[TestCase("{\"op\":\"create\",\"name\":\"--help\"}")]
+	[TestCase("{\"op\":\"create\",\"name\":\"a b\"}")]
+	[TestCase("{\"op\":\"create\",\"name\":\"ok\",\"include\":[\"-x\"]}")]
+	[TestCase("{\"op\":\"create\",\"name\":\"ok\",\"target\":\"dev --purge\"}")]
+	[TestCase("{\"op\":\"dry-run\",\"stack\":\"full::web\"}")]
+	[TestCase("{\"op\":\"run\"}")]
+	public void BadValues_AreRejected(string json)
+	{
+		var ex = Assert.Throws<LocalWebRequestException>(() => Build(json));
+
+		Assert.That(ex!.Status, Is.EqualTo(400));
 	}
 }

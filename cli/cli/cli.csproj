@@ -150,6 +150,29 @@
     <EmbeddedResource Include="Services\LocalStack\BuiltInStacks.json" />
   </ItemGroup>
 
+  <!-- The local web apps (`beam local portal`, `beam bundles management`) and the portal runtime they load, built from
+       ../local-web into LocalWeb/ (git-ignored) and embedded as LocalWeb/<app>/<file> and LocalWeb/runtime/<file>
+       (see LocalWebAssets). Built once, before the per-framework builds, and only when local-web changed. Without
+       pnpm, in a container, or with BeamSkipLocalWeb=true the CLI is built without them, and the commands say so. -->
+  <PropertyGroup>
+    <LocalWebDir>$(MSBuildThisFileDirectory)..\local-web\</LocalWebDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <LocalWebSource Include="$(LocalWebDir)**\*" Exclude="$(LocalWebDir)node_modules\**" />
+    <!-- Read when each framework's build is evaluated, which a multi-framework build does after BuildLocalWeb ran
+         in its outer build; a single-framework build (-f) embeds the previous web build. -->
+    <EmbeddedResource Include="LocalWeb\**\*" LogicalName="LocalWeb/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+  <Target Name="BuildLocalWeb" BeforeTargets="DispatchToInnerBuilds;BeforeBuild"
+          Inputs="@(LocalWebSource)" Outputs="LocalWeb\stacks\index.html;LocalWeb\bundles\index.html"
+          Condition="'$(BeamSkipLocalWeb)' != 'true' AND '$(DOTNET_RUNNING_IN_CONTAINER)' != 'true' AND Exists('$(LocalWebDir)package.json')">
+    <Exec Command="pnpm --version" IgnoreExitCode="true" StandardOutputImportance="low" EchoOff="true">
+      <Output TaskParameter="ExitCode" PropertyName="_LocalWebPnpm" />
+    </Exec>
+    <Warning Condition="'$(_LocalWebPnpm)' != '0'" Text="pnpm was not found, so this CLI is built without its local web apps (cli/local-web)." />
+    <Exec Condition="'$(_LocalWebPnpm)' == '0'" WorkingDirectory="$(LocalWebDir)" Command="pnpm install --frozen-lockfile &amp;&amp; pnpm build" ContinueOnError="WarnAndContinue" />
+  </Target>
+
   <!-- Regenerate the type schema snapshot after each build so it stays current.
        Prefers net8.0 to avoid re-running across multi-target builds; falls back to net10.0
        when only net10.0 is built (e.g. dotnet build -f net10.0).
