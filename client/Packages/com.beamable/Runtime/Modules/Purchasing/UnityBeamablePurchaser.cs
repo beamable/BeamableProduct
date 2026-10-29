@@ -235,7 +235,7 @@ namespace Beamable.Purchasing
 
 			// The purchase belongs to the player of the token it begins with, not to the context's user, which is
 			// unknown during login and still the previous player right after ChangeAuthorizedPlayer.
-			GetPlayerId(purchase.Auth).FlatMap(playerId =>
+			GetPlayerId().FlatMap(playerId =>
 			{
 				var error = CheckCanBegin(purchase);
 				if (error != null) return Promise<Unit>.Failed(error);
@@ -458,14 +458,15 @@ namespace Beamable.Purchasing
 		};
 
 		/// <summary>
-		/// The id of the player the access token belongs to. Purchases and Apple orders are owned by that player,
-		/// never by the context's user, which is unknown during login and still the previous player right after
-		/// ChangeAuthorizedPlayer replaced the token. The lookup is sent with the context's current token, which must
-		/// be <paramref name="token"/>; it fails when the context sends another token by the time it returns. The
-		/// lookup is shared until the token changes, and repeated after it fails. It never resolves to 0.
+		/// The id of the player the context's token belongs to. Purchases and orders are owned by that player, never
+		/// by the context's user, which is unknown during login and still the previous player right after
+		/// ChangeAuthorizedPlayer replaced the token. When the token changes before the lookup returns (the lookup
+		/// refreshed it, or the account switched), the player of the new token is looked up instead. The lookup is
+		/// shared until the token changes, and repeated after it fails. It never resolves to 0.
 		/// </summary>
-		private Promise<long> GetPlayerId(IAccessToken token)
+		private Promise<long> GetPlayerId()
 		{
+			var token = CurrentToken;
 			if (token == null)
 			{
 				return Promise<long>.Failed(ClientError(401, "No player is signed in."));
@@ -477,8 +478,8 @@ namespace Beamable.Purchasing
 				{
 					if (CurrentToken != token)
 					{
-						// The response may be for either account, so it identifies neither.
-						return Promise<long>.Failed(ClientError(409, "The signed-in account changed while the player was looked up."));
+						// The response may be for either token, so look up the one the context sends now.
+						return GetPlayerId();
 					}
 					return user != null && user.id != 0
 						? Promise<long>.Successful(user.id)
@@ -600,15 +601,11 @@ namespace Beamable.Purchasing
 		/// <param name="transaction">Completed IAP transaction</param>
 		/// <param name="order">The store order being fulfilled</param>
 		/// <param name="purchase">The StartPurchase this order completes, or null for other orders</param>
-		/// <param name="auth">The token of the player who owns the order, or null when no player owns it. The order is
-		/// left pending when the context sends another token, so it never credits the next account.</param>
-		private void FulfillTransaction(CompletedTransaction transaction, StoreOrder order, ActivePurchase purchase, IAccessToken auth)
+		/// <param name="ownerId">The player who owns the order, or 0 when no player owns it. The order is left pending
+		/// while the context's token belongs to another player, so it never credits another account. Any token of the
+		/// owner fulfills it, e.g. after a refresh or in a replacement context.</param>
+		private void FulfillTransaction(CompletedTransaction transaction, StoreOrder order, ActivePurchase purchase, long ownerId)
 		{
-			if (auth != null && auth != CurrentToken)
-			{
-				StopFulfillment(order, purchase, ClientError(409, "The signed-in account changed; order left pending."));
-				return;
-			}
 			var generation = _generation;
 			Action<Exception> failed = ex =>
 			{
@@ -631,7 +628,7 @@ namespace Beamable.Purchasing
 				}
 				if (retryable && transaction.Retries < RETRY_DELAYS.Length)
 				{
-					GetCoroutineService().StartCoroutine(RetryTransaction(transaction, order, purchase, auth, generation));
+					GetCoroutineService().StartCoroutine(RetryTransaction(transaction, order, purchase, ownerId, generation));
 					return;
 				}
 				StopFulfillment(order, purchase, err ?? ClientError(0, "Purchase fulfillment failed; order left pending."));
@@ -639,7 +636,11 @@ namespace Beamable.Purchasing
 
 			try
 			{
-				GetPaymentService().CompletePurchase(transaction).Then(_ =>
+				var owner = ownerId == 0 ? Promise<long>.Successful(0) : GetPlayerId();
+				owner.FlatMap(playerId => playerId == ownerId
+					? GetPaymentService().CompletePurchase(transaction)
+					: Promise<EmptyResponse>.Failed(ClientError(409, "The order belongs to another account; order left pending.")))
+				.Then(_ =>
 				{
 					ConfirmStoreOrder(order, transaction);
 					if (!IsCurrent(generation))
@@ -660,7 +661,7 @@ namespace Beamable.Purchasing
 		/// If fulfillment failed, retry fulfillment with a backoff, as a coroutine. Retries are bounded: after the
 		/// last one the order is left pending in the store for a later fulfillment.
 		/// </summary>
-		private IEnumerator RetryTransaction(CompletedTransaction transaction, StoreOrder order, ActivePurchase purchase, IAccessToken auth, int generation)
+		private IEnumerator RetryTransaction(CompletedTransaction transaction, StoreOrder order, ActivePurchase purchase, long ownerId, int generation)
 		{
 			var waitTime = RETRY_DELAYS[Math.Min(transaction.Retries, RETRY_DELAYS.Length - 1)];
 			InAppPurchaseLogger.Log($"Got a retryable error from platform. Retrying complete purchase request in {waitTime} seconds.");
@@ -673,7 +674,7 @@ namespace Beamable.Purchasing
 				StopFulfillment(order, purchase, ClientError(409, "Login changed during fulfillment; order left pending."));
 				yield break;
 			}
-			FulfillTransaction(transaction, order, purchase, auth);
+			FulfillTransaction(transaction, order, purchase, ownerId);
 		}
 
 #if UNITY_PURCHASING_5_OR_NEWER
@@ -769,11 +770,6 @@ namespace Beamable.Purchasing
 			/// token that took it. Only that player can recover it. 0 while that player is looked up.
 			/// </summary>
 			public long PlayerId;
-			/// <summary>
-			/// The token <see cref="PlayerId"/> was identified with. The order is only fulfilled while the context sends
-			/// it. Null while that player is looked up.
-			/// </summary>
-			public IAccessToken Auth;
 			/// <summary>
 			/// The transaction sent to the backend to fulfill the order.
 			/// </summary>
@@ -1394,8 +1390,7 @@ namespace Beamable.Purchasing
 					}
 					fulfillment = new OrderFulfillment
 					{
-						Order = order, Product = product, Owner = this, Generation = _generation, PlayerId = began?.PlayerId ?? 0, Auth = began?.Auth,
-						Purchase = purchase,
+						Order = order, Product = product, Owner = this, Generation = _generation, PlayerId = began?.PlayerId ?? 0, Purchase = purchase,
 						Transaction = CreateTransaction(txid, string.Empty, product)
 					};
 					s_orders.Add(transactionId, fulfillment);
@@ -1423,7 +1418,7 @@ namespace Beamable.Purchasing
 					Order = order, Product = product, Owner = this, Generation = _generation, PlayerId = began?.PlayerId ?? 0, Busy = true
 				};
 			}
-			FulfillTransaction(CreateTransaction(txid, receipt, product), order, purchase, began?.Auth);
+			FulfillTransaction(CreateTransaction(txid, receipt, product), order, purchase, began?.PlayerId ?? 0);
 		}
 
 		/// <summary>
@@ -1560,13 +1555,11 @@ namespace Beamable.Purchasing
 		/// player. The order may come from an earlier initialization or a disposed context of that player.
 		/// </summary>
 		/// <param name="playerId">The player of the token this purchaser's context sends.</param>
-		/// <param name="auth">The token <paramref name="playerId"/> was identified with.</param>
-		private bool TryAdopt(OrderFulfillment fulfillment, long playerId, IAccessToken auth)
+		private bool TryAdopt(OrderFulfillment fulfillment, long playerId)
 		{
 			if (fulfillment.Busy || fulfillment.PlayerId == 0 || fulfillment.PlayerId != playerId) return false;
 			fulfillment.Owner = this;
 			fulfillment.Generation = _generation;
-			fulfillment.Auth = auth;
 			return true;
 		}
 
@@ -1584,8 +1577,7 @@ namespace Beamable.Purchasing
 
 			// Another purchaser takes the order over when this one is disposed meanwhile and the store delivers it again.
 			Func<bool> stillClaimed = () => fulfillment.Owner == this && fulfillment.Generation == generation;
-			var auth = CurrentToken;
-			GetPlayerId(auth).Then(playerId =>
+			GetPlayerId().Then(playerId =>
 			{
 				if (!stillClaimed()) return;
 				fulfillment.Busy = false;
@@ -1595,7 +1587,7 @@ namespace Beamable.Purchasing
 					return;
 				}
 				if (fulfillment.PlayerId == 0) fulfillment.PlayerId = playerId;
-				if (!TryAdopt(fulfillment, playerId, auth))
+				if (!TryAdopt(fulfillment, playerId))
 				{
 					Debug.LogWarning("Beamable IAP: a pending Apple order belongs to another account; it is recovered when that account signs in again.");
 					return;
@@ -1624,7 +1616,7 @@ namespace Beamable.Purchasing
 					Fail(purchase, ClientError(409, "An Apple order of this product is being recovered; wait for it to finish."));
 					return true;
 				}
-				if (!TryAdopt(fulfillment, purchase.PlayerId, purchase.Auth))
+				if (!TryAdopt(fulfillment, purchase.PlayerId))
 				{
 					Fail(purchase, ClientError(409,
 						"An Apple order of this product from another account is pending recovery; it is recovered when that account signs in again."));
@@ -1649,14 +1641,13 @@ namespace Beamable.Purchasing
 		{
 			if (RetainedAppleOrders(null).Count == 0) return Promise<bool>.Successful(false);
 			var generation = _generation;
-			var auth = CurrentToken;
-			return GetPlayerId(auth).Map(playerId =>
+			return GetPlayerId().Map(playerId =>
 			{
 				if (!IsCurrent(generation)) return false;
 				var retrying = false;
 				foreach (var fulfillment in RetainedAppleOrders(null))
 				{
-					if (!TryAdopt(fulfillment, playerId, auth)) continue;
+					if (!TryAdopt(fulfillment, playerId)) continue;
 					retrying = true;
 					fulfillment.RefreshAttempted = false;
 					ProcessAppleOrder(fulfillment, true);
@@ -1749,7 +1740,7 @@ namespace Beamable.Purchasing
 			var previous = fulfillment.Transaction;
 			fulfillment.Transaction = new CompletedTransaction(previous.Txid, receipt, previous.PriceInLocalCurrency, previous.IsoCurrencySymbol);
 			InAppPurchaseLogger.Log($"Apple receipt ready: appleTx={GetStoreTransactionId(fulfillment.Order)}, beamTx={previous.Txid}, length={receipt.Length}.");
-			FulfillTransaction(fulfillment.Transaction, fulfillment.Order, fulfillment.Purchase, fulfillment.Auth);
+			FulfillTransaction(fulfillment.Transaction, fulfillment.Order, fulfillment.Purchase, fulfillment.PlayerId);
 		}
 
 		/// <summary>
@@ -2059,7 +2050,7 @@ namespace Beamable.Purchasing
 			// without a txid and must not complete the active purchase's promise.
 			var purchase = IsActivePurchase(args.purchasedProduct.definition.id) ? _purchase : null;
 			var transaction = CreateTransaction(purchase?.Txid ?? 0, UnityPurchaseReceipt.GetReceipt(args), args.purchasedProduct);
-			FulfillTransaction(transaction, args.purchasedProduct, purchase, purchase?.Auth);
+			FulfillTransaction(transaction, args.purchasedProduct, purchase, purchase?.PlayerId ?? 0);
 
 			return PurchaseProcessingResult.Pending;
 		}
