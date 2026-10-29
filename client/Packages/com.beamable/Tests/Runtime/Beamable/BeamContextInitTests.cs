@@ -489,6 +489,13 @@ namespace Tests.Runtime.Beamable
 		private MockPlatformRoute<PurchaseResponse> _beginPurchaseRoute;
 		private MockPlatformRoute<EmptyResponse> _failRetiredPurchaseRoute;
 		private MockPlatformRoute<EmptyResponse> _completePurchaseRoute;
+		private MockPlatformRoute<EmptyResponse> _failWithOtherTokenRoute;
+		private MockPlatformRoute<User> _otherPlayerRoute;
+
+		/// <summary>
+		/// The token ChangeAuthorizedPlayer puts in place of <see cref="MockBeamContext.ACCESS_TOKEN"/>.
+		/// </summary>
+		private const string OTHER_TOKEN = "access_other";
 
 		[SetUp]
 		public void SaveConfiguration()
@@ -512,17 +519,27 @@ namespace Tests.Runtime.Beamable
 		protected override void OnInit(MockBeamContext ctx)
 		{
 			base.OnInit(ctx);
-			ctx.Requester.MockRequest<GetSKUsResponse>(Method.GET, "/basic/commerce/skus")
-				.WithResponse(new GetSKUsResponse
-				{
-					skus = new SKUDefinitions
+			foreach (var token in new[] { MockBeamContext.ACCESS_TOKEN, OTHER_TOKEN })
+			{
+				ctx.Requester.MockRequest<GetSKUsResponse>(Method.GET, "/basic/commerce/skus")
+					.WithResponse(new GetSKUsResponse
 					{
-						version = 1,
-						created = string.Empty,
-						definitions = new List<SKU> { CreateSku("sku_a"), CreateSku("sku_b") }
-					}
-				})
-				.WithToken(MockBeamContext.ACCESS_TOKEN);
+						skus = new SKUDefinitions
+						{
+							version = 1,
+							created = string.Empty,
+							definitions = new List<SKU> { CreateSku("sku_a"), CreateSku("sku_b") }
+						}
+					})
+					.WithToken(token);
+			}
+			_otherPlayerRoute = ctx.Requester.MockRequest<User>(Method.GET, "/basic/accounts/me")
+				.WithResponse(new User { id = MockBeamContext.DEFAULT_DBID + 1 })
+				.WithToken(OTHER_TOKEN);
+			_failWithOtherTokenRoute = ctx.Requester.MockRequest<EmptyResponse>(Method.POST)
+				.WithURIMatcher(uri => uri.EndsWith("/purchase/fail"))
+				.WithResponse(new EmptyResponse())
+				.WithToken(OTHER_TOKEN);
 			_beginPurchaseRoute = ctx.Requester.MockRequest<PurchaseResponse>(Method.POST)
 				.WithURIMatcher(uri => uri.EndsWith("/purchase/begin"))
 				.WithResponse(new PurchaseResponse { txid = 1 })
@@ -654,6 +671,70 @@ namespace Tests.Runtime.Beamable
 			Assert.AreEqual(1, _failRetiredPurchaseRoute.CallCount, "The retired purchase's transaction is closed.");
 			Assert.AreEqual(0, _completePurchaseRoute.CallCount, "The store didn't buy the retired purchase.");
 			Assert.IsFalse(second.IsCompleted);
+		}
+
+		[UnityTest]
+		public IEnumerator RetiredTransactionIsClosedWithItsOwnToken()
+		{
+			TriggerContextInit();
+			yield return Context.OnReady.ToYielder();
+			var purchaser = Context.Api.BeamableIAP.GetResult();
+			var originalToken = Requester.Token;
+
+			// The purchase's begin request is still pending when another player signs in.
+			var begin = new Promise<PurchaseResponse>();
+			_beginPurchaseRoute.WithPendingResponse(begin);
+			var retired = purchaser.StartPurchase("listings.test", "sku_a").Recover(_ => null);
+
+			// ChangeAuthorizedPlayer replaces the requester's token in place, then initializes purchasing again.
+			Requester.Token = new AccessToken(null, null, null, OTHER_TOKEN, "refresh_other", 100000);
+			yield return purchaser.Initialize(Context.ServiceProvider).Recover(_ => PromiseBase.Unit).ToYielder();
+			yield return retired.ToYielder();
+
+			// Closing the transaction fails on the backend, which is logged.
+			var closeFailure = new Promise<EmptyResponse>();
+			closeFailure.CompleteError(new ErrorCode(500, GameSystem.GAME_CLIENT, "Test", "close failed"));
+			closeFailure.Error(_ => { }); // Observed here too, so only the assertions below decide the outcome.
+			_failRetiredPurchaseRoute.WithPendingResponse(closeFailure);
+			LogAssert.Expect(LogType.Warning, new Regex("closing the transaction failed: beamTx=7"));
+
+			begin.CompleteSuccess(new PurchaseResponse { txid = 7 });
+			for (var i = 0; i < 5; i++) yield return null;
+			Requester.Token = originalToken;
+
+			Assert.AreEqual(1, _failRetiredPurchaseRoute.CallCount, "The transaction is closed with the token that began it.");
+			Assert.AreEqual(0, _failWithOtherTokenRoute.CallCount, "The new player's token never closes the transaction.");
+			Assert.AreEqual(0, _completePurchaseRoute.CallCount);
+		}
+
+		[UnityTest]
+		public IEnumerator AccountSwitchBeforeBeginFailsThePurchase()
+		{
+			TriggerContextInit();
+			yield return Context.OnReady.ToYielder();
+			var purchaser = Context.Api.BeamableIAP.GetResult();
+			var originalToken = Requester.Token;
+
+			// The purchase starts with another player's token, whose player is still being looked up.
+			var lookup = new Promise<User>();
+			_otherPlayerRoute.WithPendingResponse(lookup);
+			Requester.Token = new AccessToken(null, null, null, OTHER_TOKEN, "refresh_other", 100000);
+			Exception error = null;
+			var purchase = purchaser.StartPurchase("listings.test", "sku_a").Recover(err =>
+			{
+				error = err;
+				return null;
+			});
+
+			// The token changes again before the lookup returns, so the purchase must not begin with it.
+			Requester.Token = originalToken;
+			LogAssert.Expect(LogType.Error, new Regex("begin purchase request"));
+			lookup.CompleteSuccess(new User { id = MockBeamContext.DEFAULT_DBID + 1 });
+			yield return purchase.ToYielder();
+
+			Assert.IsInstanceOf<ErrorCode>(error);
+			Assert.AreEqual(409, ((ErrorCode)error).Code);
+			Assert.AreEqual(0, _beginPurchaseRoute.CallCount, "No Beamable transaction began.");
 		}
 	}
 #endif
