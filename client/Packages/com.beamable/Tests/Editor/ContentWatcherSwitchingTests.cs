@@ -26,6 +26,7 @@ namespace Beamable.Editor.Tests
         CliContentService service;
         ContentConfiguration config;
         Commands commands;
+        readonly List<BeamWebCommandStopTests.Fixture> transports = new();
 
         [SetUp]
         public void Setup()
@@ -172,7 +173,7 @@ namespace Beamable.Editor.Tests
         [UnityTest]
         public IEnumerator FailedHistoryCloseRemainsClosedAfterModeSwitch()
         {
-            using var transport = new BeamWebCommandStopTests.Fixture { StopStatus = 500, RetryStop = true };
+            var transport = new BeamWebCommandStopTests.Fixture(transports) { StopStatus = 500, RetryStop = true };
             commands.FirstWebCommand = transport.Command;
             yield return Wait(service.StartContentHistory());
             transport.Discover();
@@ -236,7 +237,7 @@ namespace Beamable.Editor.Tests
 
         IEnumerator RetryFailedAcknowledgement(bool history, bool switching = false, bool stopHistory = false)
         {
-            using var transport = new BeamWebCommandStopTests.Fixture { StopStatus = 500, RetryStop = true };
+            var transport = new BeamWebCommandStopTests.Fixture(transports) { StopStatus = 500, RetryStop = true };
             commands.FirstWebCommand = transport.Command;
             var initial = history ? service.StartContentHistory() : service.Reload();
             initial.Error(_ => { });
@@ -279,7 +280,7 @@ namespace Beamable.Editor.Tests
 
         IEnumerator RetryFailedWatcher(bool history)
         {
-            using var transport = new BeamWebCommandStopTests.Fixture();
+            var transport = new BeamWebCommandStopTests.Fixture(transports);
             var failure = new IOException("Controlled command completion failure");
             // Fail the real command's terminal callback, after its HTTP stream and dispatcher drain.
             transport.Command.OnTerminate(_ => throw failure);
@@ -508,8 +509,8 @@ namespace Beamable.Editor.Tests
             return (Promise)method.Invoke(service, null);
         }
 
-        [TearDown]
-        public void Cleanup()
+        [UnityTearDown]
+        public IEnumerator Cleanup()
         {
             // Detach ownership first so controlled completion is not reported as an unexpected failure.
             Set(service, "_contentHistoryWatcher", null);
@@ -517,7 +518,17 @@ namespace Beamable.Editor.Tests
             foreach (var command in commands.Content.ToArray()) command.Completion.CompleteSuccess();
             foreach (var command in commands.History.ToArray()) command.Completion.CompleteSuccess();
             foreach (var command in commands.Manifests.ToArray()) command.Completion.CompleteSuccess();
-            UnityEngine.Object.DestroyImmediate(config);
+            var cleanup = BeamWebCommandStopTests.CleanupFixtures(transports);
+            try
+            {
+                // Drive directly so a cleanup assertion cannot skip this iterator's finally block.
+                while (cleanup.MoveNext()) yield return cleanup.Current;
+            }
+            finally
+            {
+                (cleanup as IDisposable)?.Dispose();
+                UnityEngine.Object.DestroyImmediate(config);
+            }
         }
         static void Set(object target, string name, object value) => target.GetType().GetField(name, Fields).SetValue(target, value);
 

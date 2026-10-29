@@ -23,6 +23,38 @@ namespace Beamable.Editor.Tests
 {
 	public class BeamWebCommandStopTests
 	{
+		private readonly List<Fixture> _fixtures = new List<Fixture>();
+
+		[UnityTearDown]
+		public IEnumerator TearDown() => CleanupFixtures(_fixtures);
+
+		internal static IEnumerator CleanupFixtures(List<Fixture> ownedFixtures)
+		{
+			// A failed nested UnityTest iterator need not dispose its parent's using scopes.
+			// Own fixtures here so cleanup still runs after an assertion or transport timeout.
+			var fixtures = ownedFixtures.ToArray();
+			var drained = false;
+			try
+			{
+				foreach (var fixture in fixtures) fixture.BeginCleanup();
+				var deadline = DateTime.UtcNow.AddSeconds(15);
+				while (!(drained = Array.TrueForAll(fixtures, fixture => fixture.IsDrained)) && DateTime.UtcNow < deadline)
+				{
+					// Cancellation alone does not resolve a pending fake discovery callback.
+					foreach (var fixture in fixtures) fixture.Discover();
+					EditorApplication.QueuePlayerLoopUpdate();
+					yield return null;
+				}
+			}
+			finally
+			{
+				foreach (var fixture in fixtures) fixture.Dispose();
+				ownedFixtures.Clear();
+			}
+			// Keep the assertion outside the yielding loop so it cannot bypass final disposal.
+			Assert.That(drained, Is.True, "Fixture cleanup did not drain all server, run, and stop operations.");
+		}
+
 		[UnityTest]
 		public IEnumerator FixtureCleanupDoesNotLeaveStoppedEditorCoroutineCallbacks()
 		{
@@ -34,13 +66,53 @@ namespace Beamable.Editor.Tests
 			Application.logMessageReceived += Capture;
 			try
 			{
-				using (new Fixture()) yield return null;
+				new Fixture(_fixtures);
+				yield return TearDown();
 				// Let callbacks captured by the current update and deferred cleanup both finish.
 				yield return null;
 				yield return null;
 				Assert.That(errors, Is.Empty);
 			}
 			finally { Application.logMessageReceived -= Capture; }
+		}
+
+		[UnityTest]
+		public IEnumerator TearDownDrainsHeldAcknowledgementAndPausedCallbacks()
+		{
+			var fixture = new Fixture(_fixtures);
+			var callbackRan = false;
+			fixture.Command.On(_ => callbackRan = true);
+			var run = fixture.Command.Run();
+			run.Error(_ => { });
+			fixture.Discover();
+			fixture.AllowHeaders.TrySetResult(true);
+			var stop = fixture.Command.StopAsync();
+			stop.Error(_ => { });
+			yield return WaitFor(() => fixture.StopReceived.Task.IsCompleted);
+			fixture.PauseCallbacks();
+			fixture.ReleaseWorker.TrySetResult(true);
+			yield return WaitFor(() => fixture.CallbacksQueued);
+			Assert.That(run.IsCompleted, Is.False);
+			Assert.That(stop.IsCompleted, Is.False);
+
+			yield return TearDown();
+
+			Assert.That(fixture.IsDrained, Is.True);
+			Assert.That(callbackRan, Is.True, "Cleanup must drain callbacks before disposing their dispatcher.");
+		}
+
+		[UnityTest]
+		public IEnumerator TearDownDrainsPendingDiscovery()
+		{
+			var fixture = new Fixture(_fixtures);
+			var run = fixture.Command.Run();
+			run.Error(_ => { });
+			Assert.That(run.IsCompleted, Is.False);
+
+			yield return TearDown();
+
+			Assert.That(fixture.IsDrained, Is.True);
+			Assert.That(run.IsCompleted, Is.True);
 		}
 
 		[UnityTest]
@@ -56,7 +128,7 @@ namespace Beamable.Editor.Tests
 			});
 			try
 			{
-				using var fixture = new Fixture { WriteOutput = false };
+				var fixture = new Fixture(_fixtures) { WriteOutput = false };
 				fixture.Factory.port = ((IPEndPoint)disconnectedServer.LocalEndpoint).Port;
 				var connection = disconnectedServer.AcceptSocketAsync();
 				Set(fixture.Factory, "<ServerProcess>k__BackingField", process);
@@ -94,7 +166,7 @@ namespace Beamable.Editor.Tests
 		[UnityTest]
 		public IEnumerator DiscoveryCanRetryAfterServerProcessDisappears()
 		{
-			using var fixture = new Fixture { InfoPids = new[] { int.MaxValue, System.Diagnostics.Process.GetCurrentProcess().Id } };
+			var fixture = new Fixture(_fixtures) { InfoPids = new[] { int.MaxValue, System.Diagnostics.Process.GetCurrentProcess().Id } };
 			var first = fixture.Factory.PingServer();
 			yield return WaitFor(() => first.IsCompleted);
 			Assert.That(first.GetResult(), Is.EqualTo(BeamWebCommandFactory.PingResult.NoServer));
@@ -114,7 +186,7 @@ namespace Beamable.Editor.Tests
 			});
 			try
 			{
-				using var fixture = new Fixture { WriteOutput = false };
+				var fixture = new Fixture(_fixtures) { WriteOutput = false };
 				Set(fixture.Factory, "<ServerProcess>k__BackingField", process);
 				var run = fixture.Command.Run();
 				run.Error(_ => { });
@@ -142,7 +214,7 @@ namespace Beamable.Editor.Tests
 		[UnityTest]
 		public IEnumerator StalledRegistrationTimesOutAndCanRetry()
 		{
-			using var fixture = new Fixture();
+			var fixture = new Fixture(_fixtures);
 			fixture.Command.Run().Error(_ => { });
 			fixture.Discover();
 			yield return WaitFor(() => fixture.ExecuteReceived.Task.IsCompleted, diagnostics: fixture.Describe);
@@ -164,7 +236,7 @@ namespace Beamable.Editor.Tests
 		[UnityTest]
 		public IEnumerator StalledAcknowledgementTimesOutAndCanRetry()
 		{
-			using var fixture = new Fixture { RetryStop = true };
+			var fixture = new Fixture(_fixtures) { RetryStop = true };
 			fixture.Command.Run().Error(_ => { });
 			fixture.Discover();
 			fixture.AllowHeaders.TrySetResult(true);
@@ -200,7 +272,7 @@ namespace Beamable.Editor.Tests
 			});
 			try
 			{
-				using var fixture = new Fixture { WriteOutput = false, StopStatus = 500 };
+				var fixture = new Fixture(_fixtures) { WriteOutput = false, StopStatus = 500 };
 				Set(fixture.Factory, "<ServerProcess>k__BackingField", process);
 				var run = fixture.Command.Run();
 				run.Error(_ => { });
@@ -225,7 +297,7 @@ namespace Beamable.Editor.Tests
 		[UnityTest]
 		public IEnumerator AssemblyReloadStopAcknowledgesWithoutUnityUpdates()
 		{
-			using var fixture = new Fixture { WriteOutput = false };
+			var fixture = new Fixture(_fixtures) { WriteOutput = false };
 			var run = fixture.Command.Run();
 			run.Error(_ => { });
 			fixture.Discover();
@@ -246,7 +318,7 @@ namespace Beamable.Editor.Tests
 		[UnityTest]
 		public IEnumerator StopBeforeRegistrationWaitsForServerAcknowledgementAndCallbacks()
 		{
-			using var fixture = new Fixture();
+			var fixture = new Fixture(_fixtures);
 			var callbackRan = false;
 			fixture.Command.On(_ => callbackRan = true);
 			var run = fixture.Command.Run();
@@ -276,7 +348,7 @@ namespace Beamable.Editor.Tests
 		[UnityTest]
 		public IEnumerator StopAcknowledgementWaitsForQueuedCallbacks()
 		{
-			using var fixture = new Fixture();
+			var fixture = new Fixture(_fixtures);
 			var callbackRan = false;
 			fixture.Command.On(_ => callbackRan = true);
 			fixture.Command.Run().Error(_ => { });
@@ -301,7 +373,7 @@ namespace Beamable.Editor.Tests
 		[UnityTest]
 		public IEnumerator StopAfterLegacyCancelStillWaitsForServer()
 		{
-			using var fixture = new Fixture { WriteOutput = false };
+			var fixture = new Fixture(_fixtures) { WriteOutput = false };
 			var run = fixture.Command.Run();
 			run.Error(_ => { });
 			fixture.Discover();
@@ -322,7 +394,7 @@ namespace Beamable.Editor.Tests
 		[UnityTest]
 		public IEnumerator FailedStopAcknowledgementDoesNotReportSuccess()
 		{
-			using var fixture = new Fixture { StopStatus = 500 };
+			var fixture = new Fixture(_fixtures) { StopStatus = 500 };
 			fixture.Command.Run().Error(_ => { });
 			fixture.Discover();
 			fixture.AllowHeaders.TrySetResult(true);
@@ -340,7 +412,7 @@ namespace Beamable.Editor.Tests
 		[Test]
 		public void StopBeforeRunPreventsLaterExecution()
 		{
-			using var fixture = new Fixture();
+			var fixture = new Fixture(_fixtures);
 			var stop = fixture.Command.StopAsync();
 			Assert.That(stop.IsCompleted, Is.True);
 			Assert.That(fixture.Command.Run(), Is.SameAs(stop));
@@ -350,7 +422,7 @@ namespace Beamable.Editor.Tests
 		[UnityTest]
 		public IEnumerator FailedAcknowledgementCanRetryWithoutDuplicatingPendingOrSuccessfulStop()
 		{
-			using var fixture = new Fixture { StopStatus = 500, RetryStop = true };
+			var fixture = new Fixture(_fixtures) { StopStatus = 500, RetryStop = true };
 			fixture.Command.Run().Error(_ => { });
 			fixture.Discover();
 			fixture.AllowHeaders.TrySetResult(true);
@@ -415,7 +487,7 @@ namespace Beamable.Editor.Tests
 			public readonly TaskCompletionSource<bool> RetryReceived = Signal();
 			public readonly TaskCompletionSource<bool> AllowRetryAcknowledgement = Signal();
 
-			public Fixture()
+			public Fixture(List<Fixture> fixtures)
 			{
 				var reservation = new TcpListener(IPAddress.Loopback, 0);
 				reservation.Start();
@@ -446,6 +518,7 @@ namespace Beamable.Editor.Tests
 				// The real CLI runs outside Unity; the fake server must not depend on Editor updates either.
 				ServerTask = Task.Run(Serve);
 				_ = ServerTask.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+				fixtures.Add(this);
 			}
 
 			private Queue<BeamableDispatcher.WorkItem> CallbackQueue =>
@@ -459,11 +532,13 @@ namespace Beamable.Editor.Tests
 			}
 			public void ResumeCallbacks()
 			{
+				if (_pausedQueue == null) return;
 				var held = CallbackQueue;
 				lock (held)
 					lock (_pausedQueue)
 						while (held.Count > 0) _pausedQueue.Enqueue(held.Dequeue());
 				((Dictionary<string, Queue<BeamableDispatcher.WorkItem>>)Get(_dispatcher, "_workQueues"))[BeamableDispatcher.DEFAULT_QUEUE_NAME] = _pausedQueue;
+				_pausedQueue = null;
 			}
 
 
@@ -539,14 +614,31 @@ namespace Beamable.Editor.Tests
 				}
 			}
 
-			public void Dispose()
+			private bool _cleanupStarted;
+			private bool _disposed;
+			public bool IsDrained => ServerTask.IsCompleted
+			                         && (((Promise)Get(Command, "_runPromise"))?.IsCompleted ?? true)
+			                         && (((Promise)Get(Command, "_stopPromise"))?.IsCompleted ?? true);
+
+			public void BeginCleanup()
 			{
+				if (_cleanupStarted) return;
+				_cleanupStarted = true;
+				ResumeCallbacks();
 				AllowHeaders.TrySetResult(true);
 				ReleaseWorker.TrySetResult(true);
 				AllowAcknowledgement.TrySetResult(true);
 				AllowRetryAcknowledgement.TrySetResult(true);
 				Command.Cancel();
 				_listener.Close();
+			}
+
+			public void Dispose()
+			{
+				if (_disposed) return;
+				_disposed = true;
+				BeginCleanup();
+				// Keep the dispatcher alive until teardown has drained pending callbacks.
 				// Editor Coroutines 1.0 can still invoke callbacks captured by the current update.
 				EditorApplication.delayCall += () => _dispatcher.OnDispose();
 				UnityEngine.Object.DestroyImmediate(_options);
