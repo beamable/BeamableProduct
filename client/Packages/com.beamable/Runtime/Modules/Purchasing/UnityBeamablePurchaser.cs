@@ -203,12 +203,12 @@ namespace Beamable.Purchasing
 		{
 			if (InitializationStatus != PurchasingInitializationStatus.Success)
 			{
-				return FailedPurchase(InitializationStatus.StatusToErrorCode());
+				return Promise<CompletedTransaction>.Failed(InitializationStatus.StatusToErrorCode());
 			}
 			if (_purchase != null)
 			{
 				// Starting another purchase would orphan the one in flight, whose promise would never complete.
-				return FailedPurchase(StoreError(PurchaseFailureReason.ExistingPurchasePending, _purchase.Sku));
+				return Promise<CompletedTransaction>.Failed(StoreError(PurchaseFailureReason.ExistingPurchasePending, _purchase.Sku));
 			}
 
 			var purchase = new ActivePurchase { Sku = skuSymbol, Auth = CurrentToken };
@@ -222,34 +222,7 @@ namespace Beamable.Purchasing
 				if (error != null) return Promise<Unit>.Failed(error);
 				purchase.PlayerId = playerId;
 				// On Apple devices, a retained order of this SKU is retried instead of charging the player again.
-				if (TryResumeRetainedOrder(purchase)) return PromiseBase.SuccessfulUnit;
-
-				return PrepareStoreForPurchase().FlatMap(_ =>
-				{
-					error = CheckCanBegin(purchase);
-					if (error != null) return Promise<PurchaseResponse>.Failed(error);
-					// Check the product before beginning the Beamable transaction, so an unknown SKU doesn't leave one open.
-					var product = GetStoreProduct(skuSymbol);
-					if (product == null || !product.availableToPurchase)
-					{
-						return Promise<PurchaseResponse>.Failed(StoreError(PurchaseFailureReason.ProductUnavailable, skuSymbol));
-					}
-					// CheckCanBegin made sure this request is sent with purchase.Auth.
-					return GetPaymentService().BeginPurchase(listingSymbol);
-				}).FlatMap(rsp =>
-				{
-					if (!IsInFlight(purchase))
-					{
-						// The purchase was retired while its Beamable transaction began. Its caller already got an error,
-						// so close the transaction instead of asking the store to charge the player.
-						CloseTransaction(rsp.txid, purchase.Auth, false, skuSymbol + ":PurchaseRetired");
-						return PromiseBase.SuccessfulUnit;
-					}
-					purchase.Txid = rsp.txid;
-					purchase.StoreStarted = true;
-					StartStorePurchase(purchase);
-					return PromiseBase.SuccessfulUnit;
-				});
+				return TryResumeRetainedOrder(purchase) ? PromiseBase.SuccessfulUnit : BeginStorePurchase(purchase, listingSymbol);
 			}).Error(err =>
 			{
 				if (!IsInFlight(purchase))
@@ -269,6 +242,41 @@ namespace Beamable.Purchasing
 			});
 
 			return purchase.Result;
+		}
+
+		/// <summary>
+		/// Reconnect the store if needed, begin the purchase's Beamable transaction, then ask the store to buy the SKU.
+		/// A purchase retired meanwhile never reaches the store, and its transaction is closed.
+		/// </summary>
+		private Promise<Unit> BeginStorePurchase(ActivePurchase purchase, string listingSymbol)
+		{
+			var skuSymbol = purchase.Sku;
+			return PrepareStoreForPurchase().FlatMap(_ =>
+			{
+				var error = CheckCanBegin(purchase);
+				if (error != null) return Promise<PurchaseResponse>.Failed(error);
+				// Check the product before beginning the Beamable transaction, so an unknown SKU doesn't leave one open.
+				var product = GetStoreProduct(skuSymbol);
+				if (product == null || !product.availableToPurchase)
+				{
+					return Promise<PurchaseResponse>.Failed(StoreError(PurchaseFailureReason.ProductUnavailable, skuSymbol));
+				}
+				// CheckCanBegin made sure this request is sent with purchase.Auth.
+				return GetPaymentService().BeginPurchase(listingSymbol);
+			}).FlatMap(rsp =>
+			{
+				if (!IsInFlight(purchase))
+				{
+					// The purchase was retired while its Beamable transaction began. Its caller already got an error, so
+					// close the transaction instead of asking the store to charge the player.
+					CloseTransaction(rsp.txid, purchase.Auth, false, skuSymbol + ":PurchaseRetired");
+					return PromiseBase.SuccessfulUnit;
+				}
+				purchase.Txid = rsp.txid;
+				purchase.StoreStarted = true;
+				StartStorePurchase(purchase);
+				return PromiseBase.SuccessfulUnit;
+			});
 		}
 
 		/// <summary>
@@ -344,19 +352,19 @@ namespace Beamable.Purchasing
 		}
 
 		/// <summary>
-		/// A purchase promise that already failed with the given error.
-		/// </summary>
-		private static Promise<CompletedTransaction> FailedPurchase(ErrorCode error)
-		{
-			var result = new Promise<CompletedTransaction>();
-			result.CompleteError(error);
-			return result;
-		}
-
-		/// <summary>
 		/// An error raised by the game client rather than by the Beamable backend.
 		/// </summary>
 		private static ErrorCode ClientError(long code, string message) => new ErrorCode(code, GameSystem.GAME_CLIENT, message);
+
+		/// <summary>
+		/// The Beamable error behind a failed request, or null when the exception carries none (e.g. no connectivity).
+		/// </summary>
+		private static ErrorCode ToErrorCode(Exception ex)
+		{
+			if (ex is ErrorCode error) return error;
+			var platformError = (ex as PlatformRequesterException)?.Error;
+			return platformError != null ? new ErrorCode(platformError) : null;
+		}
 
 		/// <summary>
 		/// A client error for a store failure reason, with a detail such as the product id.
@@ -366,7 +374,15 @@ namespace Beamable.Purchasing
 		/// <summary>
 		/// True when <paramref name="sku"/> is the product the store is buying for this purchaser's StartPurchase.
 		/// </summary>
-		private bool IsActivePurchase(string sku) => _purchase != null && _purchase.StoreStarted && sku != null && sku == _purchase.Sku;
+		private bool IsActivePurchase(string sku) => IsBuyingInStore(sku, false);
+
+		/// <summary>
+		/// True when the store is buying <paramref name="sku"/> for this purchaser's StartPurchase.
+		/// </summary>
+		/// <param name="anyWhenUnknown">Whether a null SKU (the store didn't say which product) matches any purchase
+		/// in the store.</param>
+		private bool IsBuyingInStore(string sku, bool anyWhenUnknown) =>
+			_purchase != null && _purchase.StoreStarted && (sku == null ? anyWhenUnknown : sku == _purchase.Sku);
 
 		/// <summary>
 		/// True while <paramref name="purchase"/> is still this purchaser's purchase in flight. Initialize, OnDispose
@@ -476,7 +492,7 @@ namespace Beamable.Purchasing
 			request.Error(err =>
 			{
 				// Never log the exception itself: payment errors can contain the receipt.
-				Debug.LogWarning($"Beamable IAP closing the transaction failed: beamTx={txid}, code={(err as ErrorCode)?.Code ?? 0}, " +
+				Debug.LogWarning($"Beamable IAP closing the transaction failed: beamTx={txid}, code={ToErrorCode(err)?.Code ?? 0}, " +
 				                 $"type={err.GetType().Name}. The transaction stays open.");
 			});
 		}
@@ -497,6 +513,33 @@ namespace Beamable.Purchasing
 			product?.metadata == null ? string.Empty : product.metadata.localizedPrice.ToString(CultureInfo.InvariantCulture);
 
 		/// <summary>
+		/// The transaction sent to the backend to fulfill an order of the product, with the product's price and
+		/// currency.
+		/// </summary>
+		/// <param name="txid">The Beamable transaction the order completes, or 0 when no StartPurchase began one.</param>
+		/// <param name="receipt">The store receipt the backend verifies.</param>
+		private static CompletedTransaction CreateTransaction(long txid, string receipt, Product product) =>
+			new CompletedTransaction(txid, receipt, FormatPrice(product), product?.metadata?.isoCurrencyCode ?? string.Empty);
+
+		/// <summary>
+		/// Read the store's receipt inside Unity's receipt envelope. Returns false when the envelope is malformed.
+		/// </summary>
+		/// <param name="payload">The store's receipt, or null when the envelope is missing or has none.</param>
+		private static bool TryReadReceiptPayload(string envelope, out string payload)
+		{
+			try
+			{
+				payload = string.IsNullOrEmpty(envelope) ? null : JsonUtility.FromJson<UnityPurchaseReceipt>(envelope)?.Payload;
+				return true;
+			}
+			catch (Exception)
+			{
+				payload = null;
+				return false;
+			}
+		}
+
+		/// <summary>
 		/// Settle a failed store purchase: cancel or fail its Beamable transaction, and fail the purchase in
 		/// flight if it is the one that failed.
 		/// </summary>
@@ -511,7 +554,7 @@ namespace Beamable.Purchasing
 												  storeProductId, failureReason, message?.Value, productId?.Value));
 
 			// When the store doesn't say which product failed, it is the purchase in flight.
-			var purchase = IsActivePurchase(sku) || (sku == null && _purchase?.StoreStarted == true) ? _purchase : null;
+			var purchase = IsBuyingInStore(sku, true) ? _purchase : null;
 			var began = purchase ?? GetOpenPurchase(sku);
 			var txid = began?.Txid ?? 0;
 			ForgetOpenPurchase(sku, txid);
@@ -552,16 +595,14 @@ namespace Beamable.Purchasing
 					return;
 				}
 
-				var platformException = ex as PlatformRequesterException;
-				var err = ex as ErrorCode;
-				if (err == null && platformException?.Error != null) err = new ErrorCode(platformException.Error);
+				var err = ToErrorCode(ex);
 				var retryable = ex is NoConnectivityException ||
 				                (err != null && (err.Code >= 500 || err.Code == 429 || err.Code == 0)); // Server error or rate limiting or network error
 				// Never log the exception itself: payment errors can contain the receipt.
 				Debug.LogWarning($"Beamable IAP completing the purchase failed: storeTx={GetStoreTransactionId(order)}, " +
 				                 $"beamTx={transaction.Txid}, code={err?.Code ?? 0}, type={ex.GetType().Name}.");
 
-				if (platformException?.Error?.error == "MalformedReceiptError" && TryRefreshMalformedReceipt(order))
+				if ((ex as PlatformRequesterException)?.Error?.error == "MalformedReceiptError" && TryRefreshMalformedReceipt(order))
 				{
 					return;
 				}
@@ -692,11 +733,12 @@ namespace Beamable.Purchasing
 			/// </summary>
 			public Product Product;
 			/// <summary>
-			/// The purchaser fulfilling the order. Another purchaser of the same player takes it over to retry it.
+			/// The purchaser fulfilling the order, which releases it when its context is disposed. A purchaser signed in
+			/// as <see cref="PlayerId"/> takes it over to retry it.
 			/// </summary>
 			public UnityBeamablePurchaser Owner;
 			/// <summary>
-			/// The owner's initialization generation when it took the order.
+			/// The owner's initialization generation when it took the order, so work started for an earlier login stops.
 			/// </summary>
 			public int Generation;
 			/// <summary>
@@ -778,19 +820,7 @@ namespace Beamable.Purchasing
 			// With domain reload disabled, statics survive between play sessions, but Unity IAP 5 resets its own
 			// service containers at SubsystemRegistration. Release the old controller's handlers so the next
 			// session creates a controller on the new services.
-			if (s_storeController != null)
-			{
-				s_storeController.OnStoreConnected -= HandleStoreConnected;
-				s_storeController.OnStoreDisconnected -= HandleStoreDisconnected;
-				s_storeController.OnProductsFetched -= HandleProductsFetched;
-				s_storeController.OnProductsFetchFailed -= HandleProductsFetchFailed;
-				s_storeController.OnPurchasePending -= HandlePurchasePending;
-				s_storeController.OnPurchaseConfirmed -= HandlePurchaseConfirmed;
-				s_storeController.OnPurchaseFailed -= HandlePurchaseFailed;
-				s_storeController.OnPurchaseDeferred -= HandlePurchaseDeferred;
-				s_storeController.OnPurchasesFetched -= HandlePurchasesFetched;
-				s_storeController.OnPurchasesFetchFailed -= HandlePurchasesFetchFailed;
-			}
+			if (s_storeController != null) SetStoreHandlers(s_storeController, false);
 			s_storeController = null;
 			s_purchasers.Clear();
 			s_productFetchBatch = null;
@@ -836,7 +866,7 @@ namespace Beamable.Purchasing
 		}
 
 		/// <summary>
-		/// Stop receiving store events. On IAP 5 this also releases the orders this purchaser was fulfilling.
+		/// Stop receiving store events, and release the orders this purchaser was fulfilling.
 		/// </summary>
 		private void UnregisterFromStore()
 		{
@@ -857,7 +887,7 @@ namespace Beamable.Purchasing
 		/// <summary>
 		/// The store's transaction id of an order, used in logs and to track the order.
 		/// </summary>
-		private static string GetStoreTransactionId(PendingOrder order) => order?.Info?.TransactionID;
+		private static string GetStoreTransactionId(Order order) => order?.Info?.TransactionID;
 
 		/// <summary>
 		/// Resolves once the store can start a purchase.
@@ -908,16 +938,7 @@ namespace Beamable.Purchasing
 #endif
 
 				// Subscribe to the StoreController events before connecting so no callback is missed.
-				s_storeController.OnStoreConnected += HandleStoreConnected;
-				s_storeController.OnStoreDisconnected += HandleStoreDisconnected;
-				s_storeController.OnProductsFetched += HandleProductsFetched;
-				s_storeController.OnProductsFetchFailed += HandleProductsFetchFailed;
-				s_storeController.OnPurchasePending += HandlePurchasePending;
-				s_storeController.OnPurchaseConfirmed += HandlePurchaseConfirmed;
-				s_storeController.OnPurchaseFailed += HandlePurchaseFailed;
-				s_storeController.OnPurchaseDeferred += HandlePurchaseDeferred;
-				s_storeController.OnPurchasesFetched += HandlePurchasesFetched;
-				s_storeController.OnPurchasesFetchFailed += HandlePurchasesFetchFailed;
+				SetStoreHandlers(s_storeController, true);
 			}
 
 			if (!s_purchasers.Contains(this))
@@ -926,6 +947,40 @@ namespace Beamable.Purchasing
 			}
 			_storeController = s_storeController;
 			return s_storeController;
+		}
+
+		/// <summary>
+		/// Subscribe the store event handlers to the controller, or unsubscribe them. One list for both, so they can't
+		/// drift apart.
+		/// </summary>
+		private static void SetStoreHandlers(StoreController controller, bool attach)
+		{
+			if (attach)
+			{
+				controller.OnStoreConnected += HandleStoreConnected;
+				controller.OnStoreDisconnected += HandleStoreDisconnected;
+				controller.OnProductsFetched += HandleProductsFetched;
+				controller.OnProductsFetchFailed += HandleProductsFetchFailed;
+				controller.OnPurchasePending += HandlePurchasePending;
+				controller.OnPurchaseConfirmed += HandlePurchaseConfirmed;
+				controller.OnPurchaseFailed += HandlePurchaseFailed;
+				controller.OnPurchaseDeferred += HandlePurchaseDeferred;
+				controller.OnPurchasesFetched += HandlePurchasesFetched;
+				controller.OnPurchasesFetchFailed += HandlePurchasesFetchFailed;
+			}
+			else
+			{
+				controller.OnStoreConnected -= HandleStoreConnected;
+				controller.OnStoreDisconnected -= HandleStoreDisconnected;
+				controller.OnProductsFetched -= HandleProductsFetched;
+				controller.OnProductsFetchFailed -= HandleProductsFetchFailed;
+				controller.OnPurchasePending -= HandlePurchasePending;
+				controller.OnPurchaseConfirmed -= HandlePurchaseConfirmed;
+				controller.OnPurchaseFailed -= HandlePurchaseFailed;
+				controller.OnPurchaseDeferred -= HandlePurchaseDeferred;
+				controller.OnPurchasesFetched -= HandlePurchasesFetched;
+				controller.OnPurchasesFetchFailed -= HandlePurchasesFetchFailed;
+			}
 		}
 
 		/// <summary>
@@ -1073,11 +1128,7 @@ namespace Beamable.Purchasing
 		{
 			foreach (var purchaser in s_purchasers)
 			{
-				var purchase = purchaser._purchase;
-				if (purchase != null && purchase.StoreStarted && (sku == null || sku == purchase.Sku))
-				{
-					return purchaser;
-				}
+				if (purchaser.IsBuyingInStore(sku, true)) return purchaser;
 			}
 			return null;
 		}
@@ -1134,7 +1185,8 @@ namespace Beamable.Purchasing
 		}
 
 		/// <summary>
-		/// React to a store disconnection. Only fails initialization if it happens before init completes.
+		/// React to a store disconnection: fail the reconnections purchases are waiting for, and the initializations
+		/// still in progress. After initialization, StartPurchase reconnects the store.
 		/// </summary>
 		private static void HandleStoreDisconnected(StoreConnectionFailureDescription description)
 		{
@@ -1154,8 +1206,8 @@ namespace Beamable.Purchasing
 		}
 
 		/// <summary>
-		/// React to products being fetched. This is the v5 analog of v4's OnInitialized: the store is
-		/// now ready. Fetch outstanding purchases (which drives restore/fulfillment) and resolve init.
+		/// React to products being fetched by recording them in the current batch. The batch completes, resolving
+		/// the waiting initializations and fetching outstanding purchases, once every requested product has an outcome.
 		/// </summary>
 		private static void HandleProductsFetched(List<Product> products)
 		{
@@ -1274,7 +1326,7 @@ namespace Beamable.Purchasing
 		{
 			var product = GetOrderProduct(order);
 			var sku = product?.definition?.id;
-			var transactionId = order.Info?.TransactionID;
+			var transactionId = GetStoreTransactionId(order);
 			OrderFulfillment fulfillment = null;
 			if (!string.IsNullOrEmpty(transactionId) && s_orders.TryGetValue(transactionId, out fulfillment) && fulfillment.Busy)
 			{
@@ -1300,9 +1352,7 @@ namespace Beamable.Purchasing
 			// The purchase whose Beamable transaction this order completes, if any. Its player owns the order.
 			var began = purchase ?? GetOpenPurchase(sku);
 			var txid = began?.Txid ?? 0;
-			var transactionId = order.Info?.TransactionID;
-			var price = FormatPrice(product);
-			var currency = product?.metadata?.isoCurrencyCode ?? string.Empty;
+			var transactionId = GetStoreTransactionId(order);
 
 			if (IsApplePlayer)
 			{
@@ -1317,7 +1367,7 @@ namespace Beamable.Purchasing
 					fulfillment = new OrderFulfillment
 					{
 						Order = order, Product = product, Owner = this, Generation = _generation, PlayerId = began?.PlayerId ?? 0, Purchase = purchase,
-						Transaction = new CompletedTransaction(txid, string.Empty, price, currency)
+						Transaction = CreateTransaction(txid, string.Empty, product)
 					};
 					s_orders.Add(transactionId, fulfillment);
 					if (fulfillment.PlayerId != 0)
@@ -1330,18 +1380,13 @@ namespace Beamable.Purchasing
 				return;
 			}
 
-			string receipt;
-			try
-			{
-				var envelope = order.Info?.Receipt;
-				var payload = string.IsNullOrEmpty(envelope) ? null : JsonUtility.FromJson<UnityPurchaseReceipt>(envelope)?.Payload;
-				receipt = (!string.IsNullOrEmpty(payload) ? payload : envelope) ?? string.Empty;
-			}
-			catch (Exception)
+			var envelope = order.Info?.Receipt;
+			if (!TryReadReceiptPayload(envelope, out var payload))
 			{
 				StopFulfillment(order, purchase, ClientError(400, "Unable to read the store receipt; order left pending."));
 				return;
 			}
+			var receipt = (!string.IsNullOrEmpty(payload) ? payload : envelope) ?? string.Empty;
 			if (!string.IsNullOrEmpty(transactionId))
 			{
 				s_orders[transactionId] = new OrderFulfillment
@@ -1349,7 +1394,7 @@ namespace Beamable.Purchasing
 					Order = order, Product = product, Owner = this, Generation = _generation, PlayerId = began?.PlayerId ?? 0, Busy = true
 				};
 			}
-			FulfillTransaction(new CompletedTransaction(txid, receipt, price, currency), order, purchase);
+			FulfillTransaction(CreateTransaction(txid, receipt, product), order, purchase);
 		}
 
 		/// <summary>
@@ -1358,7 +1403,7 @@ namespace Beamable.Purchasing
 		/// </summary>
 		private static void HandlePurchaseConfirmed(Order order)
 		{
-			var id = order.Info?.TransactionID;
+			var id = GetStoreTransactionId(order);
 			if (id != null && s_orders.TryGetValue(id, out var fulfillment))
 			{
 				if (order is FailedOrder)
@@ -1430,7 +1475,7 @@ namespace Beamable.Purchasing
 		/// </summary>
 		private void ConfirmStoreOrder(PendingOrder order, CompletedTransaction transaction)
 		{
-			var id = order.Info?.TransactionID;
+			var id = GetStoreTransactionId(order);
 			OrderFulfillment fulfillment = null;
 			if (id != null) s_orders.TryGetValue(id, out fulfillment);
 			if (fulfillment != null) fulfillment.Fulfilled = true;
@@ -1453,7 +1498,7 @@ namespace Beamable.Purchasing
 		/// </summary>
 		private static void ReleaseStoreOrder(PendingOrder order)
 		{
-			var id = order.Info?.TransactionID;
+			var id = GetStoreTransactionId(order);
 			if (string.IsNullOrEmpty(id) || !s_orders.TryGetValue(id, out var fulfillment)) return;
 			if (IsApplePlayer)
 			{
@@ -1606,7 +1651,8 @@ namespace Beamable.Purchasing
 				return;
 			}
 
-			var receipt = ReadAppleReceipt(fulfillment.Order);
+			// A malformed envelope counts as a missing receipt.
+			TryReadReceiptPayload(fulfillment.Order.Info?.Receipt, out var receipt);
 			if (ReceiptContainsOnlyExpectedPurchase(receipt, fulfillment))
 			{
 				SubmitAppleReceipt(fulfillment, receipt);
@@ -1654,7 +1700,7 @@ namespace Beamable.Purchasing
 		/// </summary>
 		private bool TryRefreshMalformedReceipt(PendingOrder order)
 		{
-			var id = order.Info?.TransactionID;
+			var id = GetStoreTransactionId(order);
 			if (!IsApplePlayer || id == null || !s_orders.TryGetValue(id, out var fulfillment)) return false;
 			if (!fulfillment.AllowRefresh || fulfillment.RefreshAttempted || fulfillment.Generation != _generation) return false;
 
@@ -1669,24 +1715,8 @@ namespace Beamable.Purchasing
 		{
 			var previous = fulfillment.Transaction;
 			fulfillment.Transaction = new CompletedTransaction(previous.Txid, receipt, previous.PriceInLocalCurrency, previous.IsoCurrencySymbol);
-			InAppPurchaseLogger.Log($"Apple receipt ready: appleTx={fulfillment.Order.Info.TransactionID}, beamTx={previous.Txid}, length={receipt.Length}.");
+			InAppPurchaseLogger.Log($"Apple receipt ready: appleTx={GetStoreTransactionId(fulfillment.Order)}, beamTx={previous.Txid}, length={receipt.Length}.");
 			FulfillTransaction(fulfillment.Transaction, fulfillment.Order, fulfillment.Purchase);
-		}
-
-		/// <summary>
-		/// The App Store receipt inside Unity's receipt envelope, or null when it is missing or the envelope is malformed.
-		/// </summary>
-		private static string ReadAppleReceipt(PendingOrder order)
-		{
-			try
-			{
-				var envelope = order.Info?.Receipt;
-				return string.IsNullOrEmpty(envelope) ? null : JsonUtility.FromJson<UnityPurchaseReceipt>(envelope)?.Payload;
-			}
-			catch (Exception)
-			{
-				return null;
-			}
 		}
 
 		/// <summary>
@@ -1705,7 +1735,7 @@ namespace Beamable.Purchasing
 				foreach (var entry in parsed.inAppPurchaseReceipts)
 				{
 					if (!string.Equals(entry.productID, fulfillment.Product.definition.storeSpecificId, StringComparison.Ordinal)) continue;
-					if (!string.Equals(entry.transactionID, fulfillment.Order.Info.TransactionID, StringComparison.Ordinal)) return false;
+					if (!string.Equals(entry.transactionID, GetStoreTransactionId(fulfillment.Order), StringComparison.Ordinal)) return false;
 					found = true;
 				}
 				return found;
@@ -1852,7 +1882,7 @@ namespace Beamable.Purchasing
 		}
 
 		/// <summary>
-		/// Stop receiving store events. On IAP 5 this also releases the orders this purchaser was fulfilling.
+		/// Stop receiving store events. IAP 4 keeps no shared store state or orders, so there is nothing to release.
 		/// </summary>
 		private void UnregisterFromStore() { }
 
@@ -1992,17 +2022,10 @@ namespace Beamable.Purchasing
 				return PurchaseProcessingResult.Pending;
 			}
 
-			var rawReceipt = UnityPurchaseReceipt.GetReceipt(args);
-
 			// Products restored at startup, or delivered while another purchase is in flight, are fulfilled
 			// without a txid and must not complete the active purchase's promise.
 			var purchase = IsActivePurchase(args.purchasedProduct.definition.id) ? _purchase : null;
-			var transaction = new CompletedTransaction(
-			   purchase?.Txid ?? 0,
-			   rawReceipt,
-			   FormatPrice(args.purchasedProduct),
-			   args.purchasedProduct.metadata.isoCurrencyCode
-			);
+			var transaction = CreateTransaction(purchase?.Txid ?? 0, UnityPurchaseReceipt.GetReceipt(args), args.purchasedProduct);
 			FulfillTransaction(transaction, args.purchasedProduct, purchase);
 
 			return PurchaseProcessingResult.Pending;

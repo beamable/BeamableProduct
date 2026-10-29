@@ -497,6 +497,11 @@ namespace Tests.Runtime.Beamable
 		/// </summary>
 		private const string OTHER_TOKEN = "access_other";
 
+		/// <summary>
+		/// Replace the requester's token in place, as ChangeAuthorizedPlayer does.
+		/// </summary>
+		private void UseOtherToken() => Requester.Token = new AccessToken(null, null, null, OTHER_TOKEN, "refresh_other", 100000);
+
 		[SetUp]
 		public void SaveConfiguration()
 		{
@@ -687,7 +692,7 @@ namespace Tests.Runtime.Beamable
 			var retired = purchaser.StartPurchase("listings.test", "sku_a").Recover(_ => null);
 
 			// ChangeAuthorizedPlayer replaces the requester's token in place, then initializes purchasing again.
-			Requester.Token = new AccessToken(null, null, null, OTHER_TOKEN, "refresh_other", 100000);
+			UseOtherToken();
 			yield return purchaser.Initialize(Context.ServiceProvider).Recover(_ => PromiseBase.Unit).ToYielder();
 			yield return retired.ToYielder();
 
@@ -718,7 +723,7 @@ namespace Tests.Runtime.Beamable
 			// The purchase starts with another player's token, whose player is still being looked up.
 			var lookup = new Promise<User>();
 			_otherPlayerRoute.WithPendingResponse(lookup);
-			Requester.Token = new AccessToken(null, null, null, OTHER_TOKEN, "refresh_other", 100000);
+			UseOtherToken();
 			Exception error = null;
 			var purchase = purchaser.StartPurchase("listings.test", "sku_a").Recover(err =>
 			{
