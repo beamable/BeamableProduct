@@ -27,8 +27,8 @@ public class OfferFederationTests
 	[Microservice("offer_test", EnableEagerContentLoading = false)]
 	public class OfferService : Microservice, IFederatedVirtualOffer<TestOfferStore>
 	{
-		public Promise<List<OfferGrantResponse>> GrantOffers(List<OfferGrantItem> grants) => null;
-		public Promise<List<OfferRevokeResponse>> RevokeOffer(List<OfferGrantRef> revokes) => null;
+		public Promise<OfferGrantBatchResponse> GrantOffers(List<OfferGrantItem> grants) => null;
+		public Promise<OfferRevokeBatchResponse> RevokeOffer(List<OfferGrantRef> revokes) => null;
 		public Promise<OfferRedeemResponse> RedeemOffer(OfferGrantRef grant, Dictionary<string, string> @params) => null;
 		public Promise<List<OfferAvailability>> GetOffers(List<OfferGrantRef> grants) => null;
 	}
@@ -116,41 +116,25 @@ public class OfferFederationTests
 		Assert.That(json, Does.Contain($"\"outcome\":\"{expected}\""));
 	}
 
-	[FederationId("test_free_offers")]
-	public class FreeOffers : IOfferProviderId
-	{
-		public OfferProviderSettings Settings => new OfferProviderSettings
-		{
-			hasAvailabilityRules = false, revokeCallsPerSecond = 5, revokesPerPlayer = 2, revokeLeadSeconds = 30, ambiguousRedeliverySeconds = 0, ambiguousOutcome = OfferAmbiguousOutcome.Hold
-		};
-	}
-
-	[Microservice("free_offer_test", EnableEagerContentLoading = false)]
-	public class FreeOfferService : Microservice, IFederatedVirtualOffer<FreeOffers>
-	{
-		public Promise<List<OfferGrantResponse>> GrantOffers(List<OfferGrantItem> grants) => null;
-		public Promise<List<OfferRevokeResponse>> RevokeOffer(List<OfferGrantRef> revokes) => null;
-		public Promise<OfferRedeemResponse> RedeemOffer(OfferGrantRef grant, Dictionary<string, string> @params) => null;
-		public Promise<List<OfferAvailability>> GetOffers(List<OfferGrantRef> grants) => null;
-	}
-
 	/// <summary>
-	/// The registration carries the provider's settings as plain JSON, which the backend reads into its own
-	/// <c>OfferProviderSettings</c> by field name.
+	/// Grant and revoke answer an envelope the backend reads by field name: the items, a throttled item's own
+	/// wait, and the pace asked for the whole provider.
 	/// </summary>
 	[Test]
-	public void ProviderSettings_TravelWithTheRegistration()
+	public void BatchAnswers_TravelAsTheEnvelopeTheBackendReads()
 	{
-		var component = FederatedComponentGenerator.FindFederatedComponents(typeof(FreeOfferService)).Single();
+		var grant = JObject.Parse(JsonConvert.SerializeObject(new OfferGrantBatchResponse
+		{
+			grants = new List<OfferGrantResponse> { new OfferGrantResponse { grantId = "g1", throttled = true, retryAfterMs = 30000 } },
+			maxInFlight = 4
+		}, UnitySerializationSettings.Instance));
+		var revoke = JObject.Parse(JsonConvert.SerializeObject(
+			new OfferRevokeBatchResponse { retryAfterMs = 5000 }, UnitySerializationSettings.Instance));
 
-		Assert.That(component.identity, Is.InstanceOf<IOfferProviderId>());
-		var settings = JObject.Parse(JsonConvert.SerializeObject(((IOfferProviderId)component.identity).Settings));
-		Assert.That(settings["hasAvailabilityRules"]!.Value<bool>(), Is.False);
-		Assert.That(settings["revokeCallsPerSecond"]!.Value<double>(), Is.EqualTo(5));
-		Assert.That(settings["revokesPerPlayer"]!.Value<int>(), Is.EqualTo(2));
-		Assert.That(settings["revokeLeadSeconds"]!.Value<int>(), Is.EqualTo(30));
-		Assert.That(settings["ambiguousRedeliverySeconds"]!.Value<long>(), Is.EqualTo(0));
-		Assert.That(settings["ambiguousOutcome"]!.Value<string>(), Is.EqualTo("Hold"));
-		Assert.That(settings["revokeConcurrency"]!.Value<int>(), Is.EqualTo(0));
+		Assert.That(grant["grants"]![0]!["throttled"]!.Value<bool>(), Is.True);
+		Assert.That(grant["grants"]![0]!["retryAfterMs"]!.Value<long>(), Is.EqualTo(30000));
+		Assert.That(grant["maxInFlight"]!.Value<int>(), Is.EqualTo(4));
+		Assert.That(revoke["revokes"], Is.Not.Null);
+		Assert.That(revoke["retryAfterMs"]!.Value<long>(), Is.EqualTo(5000));
 	}
 }

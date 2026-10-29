@@ -8,7 +8,7 @@ import type {
   MailService,
   MessageRailService,
   StatsService,
-  OfferService,
+  OffersService,
 } from '@/services';
 
 /**
@@ -42,7 +42,7 @@ export type ServiceMap = {
   mail: MailService;
   messageRail: MessageRailService;
   stats: StatsService;
-  offers: OfferService;
+  offers: OffersService;
 };
 
 /** The `ServiceKey` type represents a valid key for accessing services from the `ServiceMap`. */

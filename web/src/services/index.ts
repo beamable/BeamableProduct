@@ -8,6 +8,6 @@ export * from './MailService';
 export * from './MessageRailService';
 export * from './PlayerService';
 export * from './StatsService';
-export * from './OfferService';
+export * from './OffersService';
 export * from './types';
 export * from './enums';

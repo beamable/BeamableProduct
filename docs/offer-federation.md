@@ -30,9 +30,10 @@ An operator can also grant an offer by hand.
 
 Three sentences carry almost the whole design:
 
-> **Beamable owns every grant.** The offer registry (`offer_grants`, in the shared `global` database)
-> is the only place that knows whether a grant exists, is visible, was redeemed or ended. A provider
-> keeps no grant state.
+> **Beamable is the authority on every grant.** The offer registry (`offer_grants`, in the shared
+> `global` database) decides whether a grant exists, is visible, was redeemed or ended. A provider needs
+> no storage for that, but may keep state of its own under each `grantId`, up to managing the whole
+> grant in its microstorage.
 
 > **"Which provider" is a federation, not a feature.** `beamable_virtual_store` (a commerce listing,
 > bought on redeem), `beamable_reward` (free currency and items) and `beamable_badge` (a free badge,
@@ -56,7 +57,7 @@ is not the goods; redeeming it is what delivers them.
 ```
 Pending ─▶ Granted ─▶ Claiming ─Settled─▶ Redeemed
    │          │  ▲         │
-   │          │  └─Refused─┘     (Ambiguous: stays Claiming; retried after the claim lease)
+   │          │  └─Refused─┘     (Ambiguous: stays Claiming; asked again on the redelivery curve)
    │          ├─ operator revoke / forfeit ─▶ Revoked
    │          └─ expiresAt or its origin closed ─▶ reads Expired
    └─ provider refused / exclusive group incomplete / send gave up / version ended ─▶ Failed
@@ -90,10 +91,12 @@ Pending ─▶ Granted ─▶ Claiming ─Settled─▶ Redeemed
 - `BeamableProduct/cli/beamable.common/Runtime/Federation/FederatedVirtualOffer.cs` —
   `IFederatedVirtualOffer<T>`: `GrantOffers(grants)`, `RedeemOffer(grant, params)`,
   `RevokeOffer(revokes)`, `GetOffers(grants)`, routed at `{federationId}/<Method>`. DTOs: `OfferItem`,
-  `OfferAmount`, `OfferReason`, `OfferGrantItem`, `OfferGrantRef`, `OfferGrantResponse`,
-  `OfferRedeemResponse` (`OfferRedeemOutcome` by name), `OfferRevokeResponse`, `OfferAvailability`;
-  `OfferContract` holds every wire string. `IOfferProviderId` lets a provider's id declare
-  `OfferProviderSettings`, which the microservice sends with its federation registration.
+  `OfferAmount`, `OfferReason`, `OfferGrantItem`, `OfferGrantRef`, `OfferGrantBatchResponse` /
+  `OfferGrantResponse`, `OfferRedeemResponse` (`OfferRedeemOutcome` by name), `OfferRevokeBatchResponse` /
+  `OfferRevokeResponse`, `OfferAvailability`;
+  `OfferContract` holds every wire string. How the registry treats a provider (availability rules,
+  revoke lead, redelivery, batch sizes) is realm config `offers|{federationId}.<setting>`, not part of
+  the contract: the backend reads it into its own `OfferProviderSettings` on each use.
 - `BeamableAPI/BeamableShared/Federation/Offer/OfferMessages.cs` — the gateway's mirror.
   `BeamableShared.Tests/Tests/Federation/OfferWireShapeTest.cs` asserts the exact JSON, so a field added
   on one side only breaks it on purpose.
@@ -128,7 +131,7 @@ Pending ─▶ Granted ─▶ Claiming ─Settled─▶ Redeemed
 
 **Web SDK — `BeamableProduct/web/`**
 
-- `src/services/OfferService.ts` — `beam.offers`: `getOffers` and `redeem`.
+- `src/services/OffersService.ts` — `beam.offers`: `getOffers` and `redeem`.
 - `src/__generated__/apis/OfferApi.ts` and the `Offer*` / `PlayerOffer*` schemas, generated from the
   gateway's OpenAPI.
 
@@ -197,8 +200,9 @@ hold (§5).
 - **`available` is not `state`.** A `Granted` grant can be unavailable because its provider's rules say
   so (asked on every read, for the page's grants) or because the campaign's gate is closed (§5b).
   `unavailableReasons` is non-empty whenever it is false. A provider that does not answer in time
-  leaves its grants listed without its rules; a redeem still meets them. A provider that declares
-  `hasAvailabilityRules = false` is not asked: its grants are available unless the gate is closed.
+  leaves its grants listed without its rules; a redeem still meets them. A provider whose realm config
+  sets `offers|{federationId}.hasAvailabilityRules` to `false` is not asked: its grants are available
+  unless the gate is closed.
 - **`rewards` is disclosure, not a receipt.** `type` is an open string; render what you know and fall
   back to `title`/`symbol`. An empty list means "this provider cannot enumerate its payout".
 - **`cost` and `rewards` are the same shape**, and `amount` is always a real quantity. `priceLabel` is a
@@ -223,25 +227,30 @@ of showing an empty picker.
 3. deliver    RedeemOffer(grant, params) on the grant's provider
 4. record     Settled → Redeemed, forfeits the rest of an exclusive group and any named entries
               Refused → back to Granted
-              Ambiguous, or a failed call → stays Claiming; a redeem after the claim lease asks again
+              Ambiguous, or a failed call → stays Claiming; the expiry worker asks again 20 s later,
+              doubling up to 1 h, with the redeem's params (or the player does, after the claim lease)
 ```
 
 The provider delivers idempotently by grant id: a redeem asked again is the same delivery. When that only
-holds for a while, the provider says so in `OfferProviderSettings`, and the registry, not the provider,
+holds for a while, the realm says so in its config for the provider, and the registry, not the provider,
 decides whether to ask again:
 
-- `ambiguousRedeliverySeconds`: for how long after the first unanswered delivery the registry may ask for
-  it again (null = the platform default (12 h); anything shorter than the platform minimum (1 h), 0 included, is raised to it). Beamable's: reward 12 h (inside inventory's transaction dedup); store
-  and badge take the default. A delivery that cannot be repeated safely declares `Hold` below.
-- `ambiguousOutcome`: what the delivery is taken to have been once that window passes.
+- `offers|{federationId}.ambiguousRedeliverySeconds`: for how long after the first unanswered delivery
+  the registry may ask for it again (unset = the platform default (12 h); 0 = never asked again).
+  Beamable's providers take the default: reward's inventory transaction dedup covers it. A delivery that
+  cannot be repeated safely is set to `Hold` below.
+- `offers|{federationId}.ambiguousOutcome`: what the delivery is taken to have been once that window
+  passes, by name, ignoring case.
   `NotDelivered` (default) gives the grant back, so the next redeem is a new delivery; `Delivered`
   records it as redeemed and forfeits its group; `Hold` leaves it in progress until someone checks the
   provider's service and calls `offers/resolve`, listed meanwhile by `offers/awaiting-operator`.
-  A realm overrides it per provider with the realm config `offers|{federationId}.ambiguousOutcome`.
 
-Both are fixed on the grant when it is granted. `NotDelivered` and `Delivered` are applied by the
-expiry worker as soon as the window and the claim lease have passed, so no grant waits for its player
-to come back.
+Both are read from the realm config at grant time and fixed on the grant: a changed value holds for the
+grants written after it. A value that does not read as its type takes the default and logs a warning,
+at most once a minute per realm, provider and setting. Within the window the expiry worker asks for the
+delivery again by itself (`Offer:Service:RedeliveryRetryBaseSeconds` 20 s, doubling up to
+`RedeliveryRetryMaxIntervalSeconds` 1 h), and `NotDelivered` and `Delivered` are applied by it as soon as
+the window and the claim lease have passed, so no grant waits for its player to come back.
 
 ### The store: redeeming buys
 
@@ -269,7 +278,7 @@ already bought: the platform exposes only `purchasesRemain`, which is null unles
 purchase limit. Performing the purchase removes the question.
 
 **Why an unanswered purchase is never repeated.** The purchase route takes only a `purchaseId`, so it
-cannot be retried idempotently: the store declares no redelivery window. After a timeout or 5xx the
+cannot be retried idempotently, and nothing in the store makes a repeat safe. After a timeout or 5xx the
 registry settles the redeem by the ambiguous outcome: not delivered by default (a purchase that did
 happen may then be made again), or what the realm chose.
 
@@ -391,10 +400,11 @@ The purchase itself ignores a client `time`; listing schedules are what it would
 - **Unity and Unreal cannot reach `/api/*`.** Their codegen consumes only the `/basic/*` Scala OpenAPI
   documents; see RFC 004.
 - **What a grant created in a third party's service stays redeemable there until its revoke lands.**
-  The platform calls `RevokeOffer` for every grant that ends unredeemed, at the pace the provider
-  declares in `OfferProviderSettings`, so between the expiry and that call the third party may still
-  honour it. A provider closes the gap by passing `expiresAt` on to its service or declaring
-  `revokeLeadSeconds`.
+  The platform calls `RevokeOffer` for every grant that ends unredeemed, at the pace the provider's
+  answers ask for (`throttled`, `maxInFlight`, `retryAfterMs`), and not while the customer is sending, so
+  between the expiry and that call the third
+  party may still honour it. A provider closes the gap by passing `expiresAt` on to its service, or its
+  realm sets `offers|{federationId}.revokeLeadSeconds`.
 - **An unanswered delivery is settled by assumption.** Past the provider's window the registry cannot
   know what happened: `NotDelivered` may deliver twice, `Delivered` may deliver nothing, `Hold` needs a
   person. Which risk to take is per provider and per realm.

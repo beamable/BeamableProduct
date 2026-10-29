@@ -18,7 +18,7 @@ import { offersGet, offersPostRedeem } from '@/__generated__/apis';
  */
 export type OfferFederationId = 'beamable_virtual_store' | (string & {});
 
-/** Optional filters for {@link OfferService.getOffers}. */
+/** Optional filters for {@link OffersService.getOffers}. */
 export interface GetOffersOptions {
   /**
    * Which states to return. Omitted means what the player can still use: `Granted` and `Claiming`.
@@ -42,7 +42,7 @@ export interface GetOffersOptions {
  * made it. The offer id is **opaque** — do not parse it, show it as a name, or key anything durable
  * on its shape.
  */
-export class OfferService extends ApiService {
+export class OffersService extends ApiService {
   constructor(props: ApiServiceProps) {
     super(props);
   }
@@ -65,8 +65,8 @@ export class OfferService extends ApiService {
    *   provider rule (stock, schedule) or the campaign's own gate is unmet. A gated offer unlocks on a
    *   later read, with no new send — so **never cache this list across a session**, which is also
    *   true because expiry is folded in on read.
-   * - `unavailableReasons` is non-empty whenever `available` is false. Prefer rendering from
-   *   `properties` over `message`: a campaign gate was authored for an operator, and its structured
+   * - `unavailableReasons` says why a `Granted` offer is unavailable; it is empty in every other
+   *   state, where `state` itself is the reason. Prefer rendering from `properties` over `message`: a campaign gate was authored for an operator, and its structured
    *   facts are what let you show "Level 7 / 10" or hide the row entirely.
    * - `Claiming` means a redeem of it is still being resolved; it cannot be redeemed again until it is.
    *

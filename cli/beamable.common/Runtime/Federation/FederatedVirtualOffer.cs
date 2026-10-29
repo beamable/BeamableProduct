@@ -5,10 +5,11 @@ namespace Beamable.Common
 {
 	/// <summary>
 	/// Federation for a provider's <b>virtual</b> offers — ones a player buys with soft currency, or is simply
-	/// given. Beamable's offer registry owns every grant: whether it exists, is visible to the player, was
-	/// redeemed or ended. A provider keeps no grant state. It resolves an offer when it is granted, delivers it
-	/// when it is redeemed, says whether it is available by its own rules, and undoes what a grant created in
-	/// its own service when the grant ends unredeemed.
+	/// given. Beamable's offer registry is the authority on every grant: whether it exists, is visible to the
+	/// player, was redeemed or ended. A provider resolves an offer when it is granted, delivers it when it is
+	/// redeemed, says whether it is available by its own rules, and undoes what a grant created in its own
+	/// service when the grant ends unredeemed. It needs no storage for that, but may keep whatever state of
+	/// its own it wants — up to managing the whole grant in its microstorage, with no service outside it.
 	/// </summary>
 	/// <remarks>
 	/// <para>
@@ -41,7 +42,8 @@ namespace Beamable.Common
 	{
 		/// <summary>
 		/// Resolve grants the registry already wrote, answering <b>exactly one</b>
-		/// <see cref="OfferGrantResponse"/> per entry of <paramref name="grants"/>, in the <b>same order</b>.
+		/// <see cref="OfferGrantResponse"/> per entry of <paramref name="grants"/>, in the <b>same order</b>, in
+		/// <see cref="OfferGrantBatchResponse.grants"/>.
 		///
 		/// <para>
 		/// Validate the offer, resolve it into the <see cref="OfferGrantResponse.offer"/> the player is shown, and
@@ -55,8 +57,17 @@ namespace Beamable.Common
 		/// (<see cref="OfferGrantResponse.success"/>, <see cref="OfferGrantResponse.retriable"/>). A grant is
 		/// unconditional: a campaign condition is a gate the gateway re-evaluates on read, never seen here.
 		/// </para>
+		///
+		/// <para>
+		/// Beamable sets no limit on how often it calls you: you say how much you take. A grant you did not
+		/// attempt because of a limit (yours, or a service you call) is answered
+		/// <see cref="OfferGrantResponse.throttled"/>, and comes back later without counting as a failure. Say
+		/// how many calls you take at once with <see cref="OfferGrantBatchResponse.maxInFlight"/>, or ask for none
+		/// for a while with <see cref="OfferGrantBatchResponse.retryAfterMs"/>. How many grants one call carries
+		/// is the realm config <c>offers|{federationId}.maxGrantsInBatch</c> (default 250, at most 1000).
+		/// </para>
 		/// </summary>
-		Promise<List<OfferGrantResponse>> GrantOffers(List<OfferGrantItem> grants);
+		Promise<OfferGrantBatchResponse> GrantOffers(List<OfferGrantItem> grants);
 
 		/// <summary>
 		/// Undo what grants that ended unredeemed created in your service — expired, withdrawn, forfeited, or
@@ -66,10 +77,21 @@ namespace Beamable.Common
 		/// <para>
 		/// Called for every provider: one with nothing to undo answers success. Must work from the grant id
 		/// alone, because a grant whose grant answer was lost has no <see cref="OfferGrantRef.offer"/> and no
-		/// <see cref="OfferGrantRef.providerMetadata"/>. Idempotent: a repeat answers success.
+		/// <see cref="OfferGrantRef.providerMetadata"/>. Idempotent: a repeat answers success. A grant that
+		/// expires is ended, and revoked, the realm config <c>offers|{federationId}.revokeLeadSeconds</c> before
+		/// its expiry (default 0), so what it created in your service can be gone by the time it would have
+		/// stopped being redeemable.
+		/// </para>
+		///
+		/// <para>
+		/// Paced by you, as <see cref="GrantOffers"/> is: answer <see cref="OfferRevokeResponse.throttled"/> for a
+		/// grant you did not get to, and <see cref="OfferRevokeBatchResponse.maxInFlight"/> or
+		/// <see cref="OfferRevokeBatchResponse.retryAfterMs"/> for the calls themselves. How many grants one
+		/// call carries is the realm config <c>offers|{federationId}.maxRevokesInBatch</c> (default 256, at most
+		/// 1000).
 		/// </para>
 		/// </summary>
-		Promise<List<OfferRevokeResponse>> RevokeOffer(List<OfferGrantRef> revokes);
+		Promise<OfferRevokeBatchResponse> RevokeOffer(List<OfferGrantRef> revokes);
 
 		/// <summary>
 		/// Deliver a grant the player is redeeming. The registry already claimed it for this redeem and checked
@@ -79,7 +101,18 @@ namespace Beamable.Common
 		/// Idempotent by grant id: a redeem asked again — after an <see cref="OfferRedeemOutcome.Ambiguous"/>
 		/// answer, or a call that failed — is the same delivery and must answer what it already did, never
 		/// deliver twice. Answer <see cref="OfferRedeemOutcome.Ambiguous"/> when you cannot tell whether the
-		/// delivery happened; the player retries later with the same grant id.
+		/// delivery happened; Beamable asks again later with the same grant id, by itself or when the player
+		/// retries.
+		/// </para>
+		///
+		/// <para>
+		/// How long Beamable keeps asking again is the realm config
+		/// <c>offers|{federationId}.ambiguousRedeliverySeconds</c> (default 12 h; 0 never asks again), counted
+		/// from the first delivery: 20 s after an unanswered one, then twice as long each time, at most an hour
+		/// apart. Past it, <c>offers|{federationId}.ambiguousOutcome</c> decides: <c>NotDelivered</c> (default)
+		/// gives the grant back, <c>Delivered</c> records it redeemed, <c>Hold</c> waits for an operator. A
+		/// delivery that can never be repeated safely is made idempotent by grant id, or its realm sets
+		/// <c>Hold</c>: with <c>NotDelivered</c> one that went through without an answer can be delivered twice.
 		/// </para>
 		/// </summary>
 		Promise<OfferRedeemResponse> RedeemOffer(OfferGrantRef grant, Dictionary<string, string> @params);
@@ -88,9 +121,9 @@ namespace Beamable.Common
 		/// Whether each of a page of the player's grants is available right now by your own rules (stock,
 		/// schedule, purchase limits). Answer one <see cref="OfferAvailability"/> per grant, matched by grant
 		/// id. The registry lists the grants; this only answers availability, and a provider that does not
-		/// answer in time leaves its grants listed without its rules. Never called for a provider whose
-		/// <see cref="IOfferProviderId"/> declares <see cref="OfferProviderSettings.hasAvailabilityRules"/>
-		/// false.
+		/// answer in time leaves its grants listed without its rules. Not called while the realm config
+		/// <c>offers|{federationId}.hasAvailabilityRules</c> is false: the backend then answers every grant
+		/// available itself.
 		/// </summary>
 		Promise<List<OfferAvailability>> GetOffers(List<OfferGrantRef> grants);
 	}
@@ -217,81 +250,6 @@ namespace Beamable.Common
 		public Dictionary<string, string> properties = new Dictionary<string, string>();
 	}
 
-	// ─── Provider settings ─────────────────────────────────────────────────────────────────────────
-
-	/// <summary>
-	/// A provider's federation id that also declares <see cref="OfferProviderSettings"/>. The microservice
-	/// sends them with its federation registration, deployed or running locally, and the backend reads them
-	/// from there. A provider whose id is a plain <see cref="IFederationId"/> gets the defaults.
-	/// </summary>
-	public interface IOfferProviderId : IFederationId
-	{
-		OfferProviderSettings Settings { get; }
-	}
-
-	/// <summary>
-	/// What a provider declares about itself. Every field defaults to what holds for a provider that
-	/// declares nothing.
-	/// </summary>
-	[Serializable]
-	public class OfferProviderSettings
-	{
-		/// <summary>
-		/// Whether the provider has rules of its own on whether a grant can be redeemed now (stock, schedule,
-		/// purchase limits). False when every grant is always available: the backend then answers
-		/// availability itself and never calls <c>GetOffers</c>, which saves the player's offer list a call.
-		/// </summary>
-		public bool hasAvailabilityRules = true;
-
-		/// <summary>
-		/// The most <c>RevokeOffer</c> calls per second the backend makes to this provider, across every realm
-		/// of the customer. 0 = no limit of its own: the platform's ceiling applies.
-		/// </summary>
-		public double revokeCallsPerSecond;
-
-		/// <summary>The most <c>RevokeOffer</c> calls in flight at once. 0 = the platform's ceiling.</summary>
-		public int revokeConcurrency;
-
-		/// <summary>
-		/// The most grants of one player revoked per <see cref="revokePlayerWindowSeconds"/>, for a service that
-		/// limits calls per player: counted per grant, not per <c>RevokeOffer</c> call, because a call carries
-		/// many players and you undo each grant on its own. 0 = no per-player limit.
-		/// </summary>
-		public int revokesPerPlayer;
-
-		/// <summary>The window <see cref="revokesPerPlayer"/> counts over. 0 = one minute.</summary>
-		public int revokePlayerWindowSeconds;
-
-		/// <summary>
-		/// How long before a grant's expiry it is ended and revoked, so whatever it created in your service is
-		/// gone before the grant would have stopped being redeemable in Beamable. 0 = at the expiry. Capped by the
-		/// platform.
-		/// </summary>
-		public int revokeLeadSeconds;
-
-		/// <summary>
-		/// For how long after a redeem's delivery first started, without a definite answer (an
-		/// <see cref="OfferRedeemOutcome.Ambiguous"/> or a failed call), Beamable may ask you for the delivery
-		/// again. Past it Beamable settles the redeem as <see cref="ambiguousOutcome"/> says. Bound it by how long
-		/// your own service deduplicates a repeat. Null takes the platform's default (12 h), and anything shorter
-		/// than the platform's minimum (1 h), 0 included, is raised to it, so every unanswered delivery ends. A
-		/// delivery that can never be repeated safely is made idempotent by grant id or declares
-		/// <see cref="OfferAmbiguousOutcome.Hold"/>: with <see cref="OfferAmbiguousOutcome.NotDelivered"/> one
-		/// that went through without an answer is given back and can be delivered twice.
-		/// </summary>
-		public long? ambiguousRedeliverySeconds;
-
-		/// <summary>
-		/// What Beamable takes a delivery to have been once <see cref="ambiguousRedeliverySeconds"/> passed without
-		/// an answer. A realm overrides it for your provider with the realm config
-		/// <c>offers|{federationId}.ambiguousOutcome</c>.
-		/// </summary>
-#if DB_MICROSERVICE
-		[Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
-#endif
-		public OfferAmbiguousOutcome ambiguousOutcome = OfferAmbiguousOutcome.NotDelivered;
-	}
-
 	// ─── Availability ──────────────────────────────────────────────────────────────────────────────
 
 	/// <summary>
@@ -309,6 +267,45 @@ namespace Beamable.Common
 	}
 
 	// ─── Grant / revoke / redeem ───────────────────────────────────────────────────────────────────
+
+	/// <summary>
+	/// What <see cref="IFederatedVirtualOffer{T}.GrantOffers"/> answers: one item per grant asked, in order, and
+	/// the pace you ask for.
+	/// </summary>
+	[Serializable]
+	public class OfferGrantBatchResponse
+	{
+		public List<OfferGrantResponse> grants = new List<OfferGrantResponse>();
+
+		/// <summary>
+		/// Most calls you take in flight at once, from all of Beamable together: Beamable keeps to it from
+		/// your answer on, up or down. 0 = no ask, and Beamable raises its calls back to its own ceiling one a
+		/// second. Repeat it on every answer for as long as the limit holds.
+		/// </summary>
+		public int maxInFlight;
+
+		/// <summary>
+		/// How long not to be called at all, in milliseconds (a <c>Retry-After</c> from a service you call, say).
+		/// 0 = no pause.
+		/// </summary>
+		public long retryAfterMs;
+	}
+
+	/// <summary>
+	/// What <see cref="IFederatedVirtualOffer{T}.RevokeOffer"/> answers: one item per grant asked, and the pace
+	/// you ask for.
+	/// </summary>
+	[Serializable]
+	public class OfferRevokeBatchResponse
+	{
+		public List<OfferRevokeResponse> revokes = new List<OfferRevokeResponse>();
+
+		/// <inheritdoc cref="OfferGrantBatchResponse.maxInFlight"/>
+		public int maxInFlight;
+
+		/// <inheritdoc cref="OfferGrantBatchResponse.retryAfterMs"/>
+		public long retryAfterMs;
+	}
 
 	/// <summary>One entry of a <see cref="IFederatedVirtualOffer{T}.GrantOffers"/> batch.</summary>
 	[Serializable]
@@ -357,6 +354,18 @@ namespace Beamable.Common
 		/// outreach instead of degrading it.
 		/// </summary>
 		public bool retriable;
+
+		/// <summary>
+		/// Not attempted because of a limit (yours, or a service you call). Asked again later and never
+		/// counted as a failure. Use <see cref="OfferContract.OverCapacityStatus"/> as its status.
+		/// </summary>
+		public bool throttled;
+
+		/// <summary>
+		/// With <see cref="throttled"/>: the earliest this grant may be asked again, in milliseconds (a per-player
+		/// limit, say). 0 = whenever your pace allows.
+		/// </summary>
+		public long retryAfterMs;
 
 		/// <summary>
 		/// The offer as resolved for this grant, shown to the player. Without it the grant still stands and the
@@ -410,22 +419,11 @@ namespace Beamable.Common
 
 		public bool retriable;
 
-		/// <summary>How long to be left alone before the next attempt. 0 = no ask.</summary>
+		/// <inheritdoc cref="OfferGrantResponse.throttled"/>
+		public bool throttled;
+
+		/// <inheritdoc cref="OfferGrantResponse.retryAfterMs"/>
 		public long retryAfterMs;
-	}
-
-	/// <summary>What an unanswered delivery is taken to have been once it can no longer be asked for again.</summary>
-	/// <remarks>Travels by name, so a member inserted anywhere does not reinterpret another.</remarks>
-	public enum OfferAmbiguousOutcome
-	{
-		/// <summary>Nothing moved: the grant is given back and can be redeemed again. If it did move, the player may get it twice.</summary>
-		NotDelivered,
-
-		/// <summary>It moved: the grant is redeemed and its group forfeited. If it did not, the player keeps nothing.</summary>
-		Delivered,
-
-		/// <summary>Nobody can tell: the grant stays in progress until someone who checked your service resolves it.</summary>
-		Hold,
 	}
 
 	/// <summary>What a provider says about a delivery it was asked to make.</summary>
@@ -500,7 +498,7 @@ namespace Beamable.Common
 		/// <summary>The offer exists but cannot be granted or delivered right now (sold out, expired).</summary>
 		public const string UnavailableStatus = "unavailable";
 
-		/// <summary>The provider is rate-limiting or shedding load. Retriable.</summary>
+		/// <summary>The status of a throttled item: the provider is rate-limiting or shedding load.</summary>
 		public const string OverCapacityStatus = "over-capacity";
 
 		/// <summary>No such grant, or it does not belong to this player.</summary>

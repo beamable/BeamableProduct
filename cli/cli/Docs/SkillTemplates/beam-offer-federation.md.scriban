@@ -42,7 +42,7 @@ Version end / revoke-origin ──▶ ExpireOrigin: open grants of the origin cl
 | Campaign hand-out | BeamableAPI `BeamableShared/Services/Campaigns/Runtime/CampaignOfferStep.cs` |
 | Shared provider code (grant per distinct offer, redeem) | agentic-portal `bundles/features/player-engagement-offers/libs/OfferProviders/OfferProvider.cs` (a common library) |
 | Reference providers (store, reward, badge) | agentic-portal `bundles/features/player-engagement-offers/microservices/PlayerEngagement{CampaignOffer,RewardOffer,BadgeOffer}Service/` |
-| Web client | BeamableProduct `web/src/services/OfferService.ts` |
+| Web client | BeamableProduct `web/src/services/OffersService.ts` |
 
 ## Business Goals Constraints
 
@@ -54,11 +54,14 @@ Version end / revoke-origin ──▶ ExpireOrigin: open grants of the origin cl
 
 ## Performance Constraints
 
-- **Grant calls**: chunks of `Campaigns:Send:MaxGrantsPerCall` (250, at most 1000) grants per `GrantOffers`, up to `MaxParallelGrants` (48) calls per page, `OfferGroupGrantTimeoutMs` (30 s) per call. A send page holds up to `MaxGrantsPerPage` (10,000) grants. Operator grants: one grant per call, `Offer:Gateway:GrantTimeoutMs` (60 s).
+- **Grant calls**: chunks of `Campaigns:Send:MaxGrantsPerCall` (250, at most 1000) grants per `GrantOffers`, up to `MaxParallelGrants` (48) calls in flight per provider from each campaign runtime (fewer when the provider answers `maxInFlight`, split among the runtimes), `OfferGroupGrantTimeoutMs` (30 s) per call. A send page holds up to `MaxGrantsPerPage` (10,000) grants. Operator grants: one grant per call, `Offer:Gateway:GrantTimeoutMs` (60 s).
+- **Pacing is the provider's**: there is no rate setting for a provider. Grant and revoke answers carry `maxInFlight` (calls you take at once; absent = Beamable climbs back to its ceiling one call a second) and `retryAfterMs` for the provider as a whole, and `throttled` (+ optional `retryAfterMs`) per item; a throttled item goes back to the queue without counting as a failure. The platform only keeps its own ceilings.
 - **Redeem / availability / revoke calls**: 30 s federation call timeout. The list waits `Offer:Gateway:AvailabilityTimeoutMs` (5 s) per provider, then lists that provider's grants without its rules.
-- **List**: `Offer:Service:PageSize` (100) grants per page, one `GetOffers` call per provider present on the page, except providers that declare `hasAvailabilityRules = false` (answered available without a call).
+- **List**: `Offer:Service:PlayerGrantsPageSize` (512) grants per page, one `GetOffers` call per provider present on the page, except providers whose realm config sets `hasAvailabilityRules` to `false` (answered available without a call).
 - **Provider discovery**: a provider's registration is kept `Federation:OfferDiscoveryCacheMs` (5 s) per realm, and dropped when a call through it fails. Concurrent calls share one in-flight lookup.
-- **Claim lease**: `Offer:Service:ClaimLeaseSeconds` (120). An ambiguous redeem can be retried after it.
+- **Claim lease**: `Offer:Service:ClaimLeaseSeconds` (120). A player can retry an ambiguous redeem after it.
+- **Redelivery**: an unanswered delivery is asked again by the platform, with the redeem's params, `Offer:Service:RedeliveryRetryBaseSeconds` (20) after it, doubling up to `RedeliveryRetryMaxIntervalSeconds` (3600), until the grant's window ends.
+- **Revokes**: always through the revoke worker's queue (an operator's revoke and a forfeit are due at once), up to `Offer:Workers:MaxRevokesPerCall` (256) grants per call, at most `RevokeConcurrency` (16) calls in flight and `RevokeCallsPerSecond` (200), lower when the provider asks.
 - **Metadata**: `Offer:Service:MaxMetadataBytes` (16 KiB, keys + values, UTF-8) per grant.
 - **Player rate limits** (per player being acted on): redeem 10/s burst 20, read 10/s burst 20 (`Offer:Gateway:Redeem*`, `Read*`). Request maps: at most 256 entries, values up to 8,192 chars.
 - **Expiry**: campaign grants last the offer's `durationMs` or `Campaigns:Send:DefaultOfferDurationMs` (30 days); operator grants default to `Offer:Gateway:DefaultGrantDurationSeconds` (30 days).
@@ -77,7 +80,7 @@ beam_exec("project new service <Name>OfferService -q")
 {{ for opt in commands["project new service"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
 {{ end }}{{ end }}
 
-A provider keeps no grant state: whether a delivery may be asked for again is declared in its settings (step 5), and the registry decides. Add a storage only for data of your own service.
+A provider needs no storage: whether a delivery may be asked for again is realm config (step 2), and the registry decides. It may still keep state of its own under each `grantId`, up to managing the whole grant in a storage of its own, with no service outside it.
 
 ### 2. Federation id
 
@@ -91,26 +94,18 @@ public class MyShopId : IFederationId
 
 Starts with a letter; letters, digits, `_` only. Campaign send nodes and the registry address the provider by it.
 
-A provider with no availability rules of its own implements `IOfferProviderId` instead, and the list never calls its `GetOffers`:
+How Beamable treats the provider is realm config, not code: each setting is `offers|{federationId}.<setting>`, set on the realm, its zone or the customer (most specific wins). A changed value holds from the next call; what a grant takes from it (revoke lead, redelivery window, ambiguous outcome) is fixed on the grant when it is written.
 
-```csharp
-[FederationId(Id)]
-public class MyShopId : IOfferProviderId
-{
-    public const string Id = "my_shop";
-    public OfferProviderSettings Settings => new OfferProviderSettings { hasAvailabilityRules = false };
-}
-```
+| Realm config | Default | Meaning |
+|---|---|---|
+| `offers\|my_shop.hasAvailabilityRules` | `true` | `false`: the list answers every grant available without calling `GetOffers` |
+| `offers\|my_shop.revokeLeadSeconds` | `0` | Grants end, and are revoked, this long before their expiry (capped by the platform) |
+| `offers\|my_shop.ambiguousRedeliverySeconds` | 12 h | How long an unanswered delivery may be asked for again (step 5); `0` never asks again |
+| `offers\|my_shop.ambiguousOutcome` | `NotDelivered` | What an unanswered delivery is taken to have been past that window (step 5) |
+| `offers\|my_shop.maxGrantsInBatch` | 250 | Most grants per `GrantOffers` call, at most 1000 |
+| `offers\|my_shop.maxRevokesInBatch` | 256 | Most grants per `RevokeOffer` call, at most 1000 |
 
-The settings go with the federation registration wherever the service runs (`SupportedFederation.settings`). They also say how an unanswered delivery is handled (step 5):
-
-```csharp
-public OfferProviderSettings Settings => new OfferProviderSettings
-{
-    ambiguousRedeliverySeconds = 6 * 60 * 60,      // my service deduplicates a repeat for 6 h
-    ambiguousOutcome = OfferAmbiguousOutcome.Hold, // past it, a repeat could charge twice: an operator decides
-};
-```
+A value that does not read as its type takes the default and logs a warning (at most one a minute per realm, provider and setting).
 
 ### 3. Implement all four methods
 
@@ -118,13 +113,13 @@ public OfferProviderSettings Settings => new OfferProviderSettings
 [Microservice("MyShopOfferService")]
 public class MyShopOfferService : Microservice, IFederatedVirtualOffer<MyShopId>
 {
-    async Promise<List<OfferGrantResponse>> IFederatedVirtualOffer<MyShopId>.GrantOffers(
+    async Promise<OfferGrantBatchResponse> IFederatedVirtualOffer<MyShopId>.GrantOffers(
         List<OfferGrantItem> grants) { /* step 4 */ }
 
     async Promise<OfferRedeemResponse> IFederatedVirtualOffer<MyShopId>.RedeemOffer(
         OfferGrantRef grant, Dictionary<string, string> @params) { /* step 5 */ }
 
-    async Promise<List<OfferRevokeResponse>> IFederatedVirtualOffer<MyShopId>.RevokeOffer(
+    async Promise<OfferRevokeBatchResponse> IFederatedVirtualOffer<MyShopId>.RevokeOffer(
         List<OfferGrantRef> revokes) { /* step 6 */ }
 
     async Promise<List<OfferAvailability>> IFederatedVirtualOffer<MyShopId>.GetOffers(
@@ -138,7 +133,7 @@ public class MyShopOfferService : Microservice, IFederatedVirtualOffer<MyShopId>
 
 ### 4. GrantOffers: resolve, never record
 
-Answer exactly one `OfferGrantResponse` per item, in the same order.
+Answer an `OfferGrantBatchResponse` whose `grants` hold exactly one `OfferGrantResponse` per item, in the same order.
 
 | `OfferGrantItem` field | Meaning |
 |---|---|
@@ -163,6 +158,15 @@ new OfferGrantResponse { grantId = item.grantId, success = false,
 - `retriable = true` holds the campaign's send and asks again with the same grant ids; `false` sends the message without the offer. A failed or timed-out call is always retried.
 - A refused member of an `Exclusive` group fails the whole group for that player.
 - The same grant id may arrive again (retries, a lost answer): answer it as the grant it already is.
+- Hit a limit (yours, or a service you call answered 429)? Answer the grants you did not attempt `throttled = true` (status `OfferContract.OverCapacityStatus`), with `retryAfterMs` when one grant must wait on its own. Set `maxInFlight` on the batch to how many calls you take at once (repeat it on every answer while the limit holds), or `retryAfterMs` on the batch to get none for a while. How many grants one call carries is `maxGrantsInBatch` / `maxRevokesInBatch` in your settings. None of it counts as a failure.
+
+```csharp
+return new OfferGrantBatchResponse
+{
+    grants = answers,          // the throttled ones included, in order
+    retryAfterMs = 60_000,     // the service you call said Retry-After: 60
+};
+```
 
 ### 5. RedeemOffer: deliver once
 
@@ -172,27 +176,27 @@ The registry has already claimed the grant for this redeem and checked the campa
 |---|---|---|
 | `Settled` | Redeemed; exclusive siblings and named forfeits revoked | Delivered, or nothing to deliver |
 | `Refused` | Back to Granted, player can retry | Definitely nothing moved (a 4xx other than 408) |
-| `Ambiguous` | Stays Claiming; asked again after the claim lease | Cannot tell (timeout, 5xx, dropped connection) |
+| `Ambiguous` | Stays Claiming; asked again on the redelivery curve (20 s, doubling) | Cannot tell (timeout, 5xx, dropped connection) |
 
-- The same grant id can be redeemed again after `Ambiguous` or a failed call: the repeat must be the same delivery. Key the delivery on `grantId` (an idempotency key downstream). If your service deduplicates a repeat only for a while, declare it in `ambiguousRedeliverySeconds` (null = the platform default (12 h); anything shorter than the platform minimum (1 h), 0 included, is raised to it): past it the registry stops asking.
-- If a repeat is not safe at all (a purchase with no idempotency key downstream), declare `ambiguousOutcome = Hold`. With `NotDelivered`, a delivery that went through without an answer is given back and the player can be delivered, and charged, twice.
+- The same grant id can be redeemed again after `Ambiguous` or a failed call: the repeat must be the same delivery. Key the delivery on `grantId` (an idempotency key downstream). If your service deduplicates a repeat only for a while, set the realm config `offers|{federationId}.ambiguousRedeliverySeconds` to that window (unset = the platform default (12 h); 0 = never asked again): past it the registry stops asking.
+- If a repeat is not safe at all (a purchase with no idempotency key downstream), set `offers|{federationId}.ambiguousOutcome` to `Hold`. With `NotDelivered`, a delivery that went through without an answer is given back and the player can be delivered, and charged, twice.
 - `OfferGrantRef` carries `offer`, `metadata` and `providerMetadata` exactly as stored at grant time; read the definition from them rather than from a catalog that may have changed.
 - `outcome` travels by name; `status` and `message` are shown to the player.
 
-Past the window the registry settles the redeem by `ambiguousOutcome`, applied by its expiry worker without waiting for the player:
+Past the window the registry settles the redeem by `offers|{federationId}.ambiguousOutcome`, applied by its expiry worker without waiting for the player:
 
-| `OfferAmbiguousOutcome` | Registry effect | Risk |
+| `ambiguousOutcome` | Registry effect | Risk |
 |---|---|---|
 | `NotDelivered` (default) | Back to Granted; the next redeem is a new delivery | Delivered twice if the first one happened |
 | `Delivered` | Redeemed; group forfeited | Nothing delivered if the first one did not happen |
 | `Hold` | Stays Claiming, listed by `GET /api/offers/awaiting-operator` until `POST /api/offers/resolve { grantId, delivered }` | Needs someone to check your service |
 
-A realm overrides the outcome for a provider with the realm config `offers|{federationId}.ambiguousOutcome`. The reference providers declare: reward 12 h (inside inventory's transaction dedup); store and badge take the platform default.
+The value is read by name, ignoring case. The reference providers need no redelivery setting: reward's inventory transaction dedup covers the 12 h default; store and badge take it too.
 
 ### 6. RevokeOffer and GetOffers
 
-- `RevokeOffer`: undo what grants that ended unredeemed created in your service. Called for every provider; answer `success = true` when there is nothing to undo. Must work from `grantId` alone: a grant whose grant answer was lost has no `offer` and no `providerMetadata`. Optional `retryAfterMs`.
-- `GetOffers`: one `OfferAvailability { grantId, available, unavailableReasons }` per grant, by your own rules (stock, schedule, limits). The campaign gate is added by the platform. A provider without rules of its own answers every grant available, and declares `hasAvailabilityRules = false` (step 2) so it is not called.
+- `RevokeOffer`: undo what grants that ended unredeemed created in your service. Called for every provider; answer `success = true` when there is nothing to undo. Must work from `grantId` alone: a grant whose grant answer was lost has no `offer` and no `providerMetadata`. Answered as an `OfferRevokeBatchResponse` (`revokes`), paced the same way as grants: `throttled` per grant, `maxInFlight` / `retryAfterMs` for the batch. Revokes wait while the customer is sending.
+- `GetOffers`: one `OfferAvailability { grantId, available, unavailableReasons }` per grant, by your own rules (stock, schedule, limits). The campaign gate is added by the platform. A provider without rules of its own answers every grant available, and its realm config sets `hasAvailabilityRules` to `false` (step 2) so it is not called.
 
 ### 7. Player routes
 

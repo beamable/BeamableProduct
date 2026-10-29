@@ -32,7 +32,7 @@
  * `game.public` stat write. The response carries none of what moved, which is why the screen reads
  * the wallet (or the stat) back rather than trusting it.
  *
- * `OfferService` is registered in `beamClient.ts`.
+ * `OffersService` is registered in `beamClient.ts`.
  */
 import type { OfferFederationId } from '@beamable/sdk';
 import {
@@ -163,7 +163,7 @@ export type CampaignOffer = {
    * re-evaluated on every read, so a locked row unlocks by itself once the player qualifies.
    */
   available: boolean;
-  /** Non-empty whenever `available` is false. */
+  /** Why a `Granted` offer is unavailable. Empty in every other state: `state` is the reason. */
   reasons: Reason[];
 };
 
@@ -234,7 +234,10 @@ export async function claimGrant(grantId: string): Promise<string> {
   return res.message || `Claimed ${grantId}`;
 }
 
-/** Only a `granted` offer can be claimed; every other state is terminal. */
+/**
+ * Only a `Granted` offer can be claimed. A `Claiming` one is a claim still being resolved: claiming it
+ * again answers `pending` until it settles. The other states are final.
+ */
 export function isClaimable(e: CampaignOffer): boolean {
   return e.state === 'Granted';
 }

@@ -14,7 +14,7 @@ import {
   MailService,
   MessageRailService,
   StatsService,
-  OfferService,
+  OffersService,
 } from '@beamable/sdk';
 import { BEAM_CONFIG, LOCAL_ROUTING_KEY } from './config';
 import { CampaignServiceClient } from './beamable/clients/CampaignServiceClient';
@@ -191,7 +191,7 @@ export async function initBeam(): Promise<Beam> {
       // `/api/offers*`, NOT through a provider microservice — the federation routes on the
       // microservice itself trust whatever player they are handed, so the gateway is the
       // authorized front door and the only thing a client should call.
-      OfferService,
+      OffersService,
       // The in-game rail delivers campaigns as Beamable mail, so the Inbox tab reads
       // `beam.mail`. AnalyticsService is registered alongside it deliberately: MailService
       // reports the campaign funnel's `Opened` through it on the Unread -> Read transition, so

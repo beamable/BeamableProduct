@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { OfferService } from '@/services/OfferService';
+import { OffersService } from '@/services/OffersService';
 import * as apis from '@/__generated__/apis';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import {
@@ -20,14 +20,14 @@ function makeService() {
   } as unknown as BeamBase;
 
   const playerService = new PlayerService();
-  return new OfferService({ beam, getPlayer: () => playerService });
+  return new OffersService({ beam, getPlayer: () => playerService });
 }
 
 function ok<T>(body: T) {
   return { status: 200, headers: {}, body };
 }
 
-describe('OfferService', () => {
+describe('OffersService', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
