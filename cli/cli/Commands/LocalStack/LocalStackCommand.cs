@@ -141,9 +141,10 @@ public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 	/// Shared by <c>init</c> and <c>setup</c>: setup has to find the checkouts on its own, because it is meant to
 	/// run BEFORE a manifest exists and therefore cannot read the paths from one.
 	///
-	/// Repo folders may carry a name suffix (<c>&lt;Repo&gt;_&lt;suffix&gt;</c>, see <see cref="FindRepoSuffix"/>).
-	/// From inside one, the sibling with the same suffix wins, so <c>agentic-portal_x</c> gets
-	/// <c>BeamableAPI_x</c>; a repo with no such sibling falls back to its plain name.
+	/// Repo folders may carry a name suffix, after <c>_</c> or <c>-</c> (<c>&lt;Repo&gt;_x</c> for parallel checkouts,
+	/// <c>&lt;Repo&gt;-&lt;branch&gt;</c> for a branch downloaded from GitHub; see <see cref="FindRepoSuffix"/>).
+	/// From inside one, the sibling with the same suffix wins, so <c>agentic-portal_x</c> gets <c>BeamableAPI_x</c>;
+	/// a repo with no such sibling falls back to its plain name, then to the only suffixed folder of that repo.
 	/// </summary>
 	public static string FindRepoDir(string startDir, string name, int maxLevels = 3)
 	{
@@ -151,7 +152,10 @@ public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 		{
 			var start = new DirectoryInfo(string.IsNullOrEmpty(startDir) ? Directory.GetCurrentDirectory() : startDir);
 			var suffix = FindRepoSuffix(start.FullName);
-			return (suffix == null ? null : FindDir(start, $"{name}_{suffix}", maxLevels)) ?? FindDir(start, name, maxLevels);
+			return (suffix == null ? null : FindDir(start, n => n.Equals($"{name}_{suffix}", StringComparison.OrdinalIgnoreCase)
+			                                                    || n.Equals($"{name}-{suffix}", StringComparison.OrdinalIgnoreCase), maxLevels))
+			       ?? FindDir(start, n => n.Equals(name, StringComparison.OrdinalIgnoreCase), maxLevels)
+			       ?? FindDir(start, n => IsSuffixed(n, name), maxLevels, onlyOne: true);
 		}
 		catch { /* best-effort discovery */ }
 
@@ -160,7 +164,8 @@ public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 
 	/// <summary>
 	/// The name suffix of the repo folder <paramref name="path"/> is in: the <c>x</c> of a folder named
-	/// <c>&lt;Repo&gt;_x</c> for one of the well-known repo names, or null when the folder has the plain name.
+	/// <c>&lt;Repo&gt;_x</c> or <c>&lt;Repo&gt;-x</c> for one of the well-known repo names, or null when the folder
+	/// has the plain name.
 	/// </summary>
 	public static string FindRepoSuffix(string path)
 	{
@@ -169,7 +174,7 @@ public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 		{
 			foreach (var repo in repos)
 			{
-				if (dir.Name.Length > repo.Length + 1 && dir.Name.StartsWith(repo + "_", StringComparison.OrdinalIgnoreCase))
+				if (IsSuffixed(dir.Name, repo))
 					return dir.Name.Substring(repo.Length + 1);
 			}
 		}
@@ -177,15 +182,23 @@ public class LocalStackCommand : CommandGroup, IStandaloneCommand, ISkipManifest
 		return null;
 	}
 
-	private static string FindDir(DirectoryInfo start, string name, int maxLevels)
+	/// <summary>True for <c>&lt;repo&gt;_x</c> and <c>&lt;repo&gt;-x</c>.</summary>
+	private static bool IsSuffixed(string folder, string repo) =>
+		folder.Length > repo.Length + 1 && folder.StartsWith(repo, StringComparison.OrdinalIgnoreCase) && folder[repo.Length] is '_' or '-';
+
+	/// <summary>
+	/// The first folder <paramref name="matches"/> accepts: <paramref name="start"/> or an ancestor itself, or a folder
+	/// in one. With <paramref name="onlyOne"/>, a level with several matching folders is skipped as ambiguous.
+	/// </summary>
+	private static string FindDir(DirectoryInfo start, Func<string, bool> matches, int maxLevels, bool onlyOne = false)
 	{
 		var dir = start;
 		for (var i = 0; i <= maxLevels && dir != null; i++)
 		{
 			// The checkout itself counts: from inside agentic-portal_x, the portal is agentic-portal_x.
-			if (string.Equals(dir.Name, name, StringComparison.OrdinalIgnoreCase)) return dir.FullName;
-			var candidate = Path.Combine(dir.FullName, name);
-			if (Directory.Exists(candidate)) return candidate;
+			if (matches(dir.Name)) return dir.FullName;
+			var found = dir.GetDirectories().Where(d => matches(d.Name)).ToList();
+			if (found.Count == 1 || (!onlyOne && found.Count > 1)) return found[0].FullName;
 			dir = dir.Parent;
 		}
 

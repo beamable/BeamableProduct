@@ -423,6 +423,36 @@ public class LocalStackToolchainTests
 	}
 
 	[Test]
+	public void RepoDiscoveryFindsBranchDownloads()
+	{
+		// GitHub names a downloaded branch <Repo>-<branch>: the siblings with the same branch are found, and a repo
+		// downloaded from another branch is used when it's the only one of its kind.
+		var dir = Directory.CreateTempSubdirectory("beam-repo-downloads");
+		try
+		{
+			string Make(string name) => Directory.CreateDirectory(Path.Combine(dir.FullName, name)).FullName;
+			var api = Make(LocalStackCommand.ApiRepoName + "-feat-x");
+			var product = Make(LocalStackCommand.ProductRepoName + "-feat-x");
+			var scala = Make(LocalStackCommand.ScalaRepoName + "-main");
+			var portal = Make(LocalStackCommand.PortalRepoName + "-feat-x");
+
+			Assert.That(LocalStackCommand.FindRepoSuffix(portal), Is.EqualTo("feat-x"));
+			Assert.That(LocalStackCommand.FindRepoDir(portal, LocalStackCommand.PortalRepoName), Is.EqualTo(portal));
+			Assert.That(LocalStackCommand.FindRepoDir(portal, LocalStackCommand.ApiRepoName), Is.EqualTo(api));
+			Assert.That(LocalStackCommand.FindRepoDir(portal, LocalStackCommand.ProductRepoName), Is.EqualTo(product));
+			Assert.That(LocalStackCommand.FindRepoDir(portal, LocalStackCommand.ScalaRepoName), Is.EqualTo(scala));
+
+			// Two downloads of the same repo and none for this branch: ambiguous, so it's asked rather than guessed.
+			Make(LocalStackCommand.ScalaRepoName + "-other");
+			Assert.That(LocalStackCommand.FindRepoDir(portal, LocalStackCommand.ScalaRepoName), Is.Null);
+		}
+		finally
+		{
+			dir.Delete(recursive: true);
+		}
+	}
+
+	[Test]
 	public void InitTargetsADotBeamableFolderWhenThereIsNoWorkspace()
 	{
 		// A loose local-stack.json in the current directory is not a workspace as far as the rest of the CLI is
