@@ -35,7 +35,9 @@ public class LocalStackPortalManagement : AppCommand<LocalStackPortalManagementA
 	/// <summary>
 	/// When this CLI was built without <paramref name="app"/>, serves it from the BeamableProduct checkout instead,
 	/// building it there in the background (<see cref="LocalWebAssets.UseCheckout"/>). The checkout is the one the
-	/// stack settings name, else BeamableProduct next to the workspace (with the workspace folder's suffix, then without).
+	/// stack settings name, else a folder next to the workspace that has <c>cli/local-web</c>, whatever it's called
+	/// (BeamableProduct_x next to agentic-portal_x, a download's BeamableProduct-branch): one ending like the workspace
+	/// folder first, then one named BeamableProduct*.
 	/// </summary>
 	public static void UseCheckoutWhenMissing(string app, CommandArgs args)
 	{
@@ -52,11 +54,9 @@ public class LocalStackPortalManagement : AppCommand<LocalStackPortalManagementA
 			// Unreadable settings: look next to the workspace only, with the PATH as it is.
 		}
 
-		var workspace = Path.GetFullPath(args.ConfigService?.BeamableWorkspace ?? args.ConfigService?.WorkingDirectory ?? ".");
-		var parent = Path.GetDirectoryName(workspace.TrimEnd('/', '\\')) ?? workspace;
-		var suffix = Regex.Match(Path.GetFileName(workspace.TrimEnd('/', '\\')), "_.+$").Value;
+		var workspace = Path.GetFullPath(args.ConfigService?.BeamableWorkspace ?? args.ConfigService?.WorkingDirectory ?? ".").TrimEnd('/', '\\');
 		var used = LocalWebAssets.UseCheckout(app,
-			new[] { config?.repos?.productDir, Path.Combine(parent, "BeamableProduct" + suffix), Path.Combine(parent, "BeamableProduct") },
+			new[] { config?.repos?.productDir }.Concat(ProductCheckoutsNextTo(workspace)),
 			LocalStackConfigIO.ToolchainPathPrefix(config));
 
 		if (used == null)
@@ -65,6 +65,24 @@ public class LocalStackPortalManagement : AppCommand<LocalStackPortalManagementA
 			Log.Information($"This CLI was built without its web apps, so they're being built in {LocalWebAssets.Building}. The page says so until they're ready.");
 		else
 			Log.Information($"This CLI was built without its web apps; using the build in {used}.");
+	}
+
+	/// <summary>
+	/// The folders next to <paramref name="workspace"/> that may be a BeamableProduct checkout, best first: ending like
+	/// the workspace folder (agentic-portal-x next to BeamableProduct-x), then named BeamableProduct*, then the rest.
+	/// </summary>
+	public static IEnumerable<string> ProductCheckoutsNextTo(string workspace)
+	{
+		var parent = Path.GetDirectoryName(workspace);
+		if (parent == null || !Directory.Exists(parent)) return Array.Empty<string>();
+
+		var name = Path.GetFileName(workspace);
+		var suffix = name.StartsWith("agentic-portal", StringComparison.OrdinalIgnoreCase) ? name.Substring("agentic-portal".Length) : "";
+		return Directory.GetDirectories(parent)
+			.Where(d => !string.Equals(d, workspace, StringComparison.OrdinalIgnoreCase))
+			.OrderBy(d => suffix != "" && Path.GetFileName(d).EndsWith(suffix, StringComparison.OrdinalIgnoreCase) ? 0
+				: Path.GetFileName(d).StartsWith("BeamableProduct", StringComparison.OrdinalIgnoreCase) ? 1 : 2)
+			.ToList();
 	}
 
 	public override void Configure()

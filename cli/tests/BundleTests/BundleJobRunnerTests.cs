@@ -190,6 +190,29 @@ public class LocalWebServerTests
 		Assert.That(LocalWebAssets.TryRead("stacks", path, out _, out _), Is.False);
 	}
 
+	/// <summary>
+	/// The BeamableProduct checkout is found by what's in it, so any naming works: a download's BeamableProduct-branch
+	/// next to agentic-portal-branch is tried before a plain BeamableProduct, and that before unrelated folders.
+	/// </summary>
+	[Test]
+	public void Checkout_NextToTheWorkspace_PrefersTheSameSuffix()
+	{
+		var dir = Path.Combine(Path.GetTempPath(), "beam-checkouts-" + Path.GetRandomFileName());
+		foreach (var name in new[] { "agentic-portal-feat-x", "BeamableAPI-feat-x", "BeamableProduct", "BeamableProduct-feat-x", "aaa-other" })
+			Directory.CreateDirectory(Path.Combine(dir, name));
+		try
+		{
+			var order = LocalStackPortalManagement.ProductCheckoutsNextTo(Path.Combine(dir, "agentic-portal-feat-x")).Select(Path.GetFileName).ToList();
+			Assert.That(order, Does.Not.Contain("agentic-portal-feat-x"));
+			Assert.That(order.IndexOf("BeamableProduct-feat-x"), Is.LessThan(order.IndexOf("BeamableProduct")));
+			Assert.That(order.IndexOf("BeamableProduct"), Is.LessThan(order.IndexOf("aaa-other")));
+		}
+		finally
+		{
+			Directory.Delete(dir, true);
+		}
+	}
+
 	/// <summary>Served from the checkout's build (a CLI built without its apps): only files inside that folder.</summary>
 	[Test]
 	public void Assets_FromTheCheckout_StayInsideItsBuild()

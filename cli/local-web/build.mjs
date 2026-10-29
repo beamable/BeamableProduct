@@ -5,7 +5,7 @@
 // from the runtime's window globals, not from the app's bundle.
 
 import { execSync } from 'node:child_process'
-import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -18,21 +18,41 @@ const apps = [
   { name: 'bundles', title: 'Beam Bundles' },
 ]
 
+/**
+ * The agentic-portal checkout next to `productDir`, recognised by its `build:runtime` script rather than its folder
+ * name: a parallel checkout is agentic-portal_<suffix>, a download agentic-portal-<branch>. The one whose name ends
+ * like this checkout's (BeamableProduct_x next to agentic-portal_x) first, then one named agentic-portal*, then any.
+ */
+function findPortalRepo(productDir) {
+  const parent = dirname(productDir)
+  const suffix = basename(productDir).replace(/^BeamableProduct/i, '')
+  const isPortal = dir => {
+    try { return /"build:runtime"/.test(readFileSync(resolve(dir, 'package.json'), 'utf8')) } catch { return false }
+  }
+  let found = []
+  try {
+    found = readdirSync(parent, { withFileTypes: true })
+      .filter(e => e.isDirectory())
+      .map(e => resolve(parent, e.name))
+      .filter(dir => dir !== productDir && isPortal(dir))
+  } catch { /* an unreadable parent: no checkout next to this one */ }
+  return found.find(dir => suffix && basename(dir).endsWith(suffix))
+    ?? found.find(dir => /^agentic-portal/i.test(basename(dir)))
+    ?? found[0]
+}
+
 // The toolkit is this repository's (beam-portal-toolkit); its build helpers come from its dist.
 if (!existsSync(resolve(toolkit, 'dist/vite.mjs'))) {
   execSync('pnpm install --frozen-lockfile && pnpm build', { cwd: resolve(here, '../../beam-portal-toolkit'), stdio: 'inherit' })
 }
 
 // The runtime is built from agentic-portal by the toolkit's sync (`PORTAL_REPO_PATH=… pnpm sync-components`). Where
-// that hasn't run, it is built here from the agentic-portal checkout: PORTAL_REPO_PATH, else the one next to this
-// repository (agentic-portal_<suffix> beside BeamableProduct_<suffix>, then agentic-portal). Without one (CI has none),
-// the published toolkit's runtime is used: BEAM_PORTAL_RUNTIME_VERSION, or the latest release.
+// that hasn't run, it is built here from the agentic-portal checkout: PORTAL_REPO_PATH, else one next to this
+// repository. Without one (CI has none), the published toolkit's runtime is used: BEAM_PORTAL_RUNTIME_VERSION, or the
+// latest release.
 let runtime = resolve(toolkit, 'runtime')
 let unpacked = null
-const productDir = resolve(here, '../..')
-const suffix = /^BeamableProduct(_.+)?$/.exec(basename(productDir))?.[1] ?? ''
-const portalRepo = [process.env.PORTAL_REPO_PATH, resolve(productDir, '..', `agentic-portal${suffix}`), resolve(productDir, '../agentic-portal')]
-  .find(dir => dir && /"build:runtime"/.test(existsSync(resolve(dir, 'package.json')) ? readFileSync(resolve(dir, 'package.json'), 'utf8') : ''))
+const portalRepo = process.env.PORTAL_REPO_PATH || findPortalRepo(resolve(here, '../..'))
 if (!existsSync(resolve(runtime, 'beam-runtime.js')) && portalRepo) {
   console.log(`Building the portal runtime from ${portalRepo}`)
   try {
