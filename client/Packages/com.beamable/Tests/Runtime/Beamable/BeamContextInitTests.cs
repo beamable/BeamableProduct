@@ -741,6 +741,27 @@ namespace Tests.Runtime.Beamable
 			Assert.AreEqual(409, ((ErrorCode)error).Code);
 			Assert.AreEqual(0, _beginPurchaseRoute.CallCount, "No Beamable transaction began.");
 		}
+
+		[UnityTest]
+		public IEnumerator TransactionIsClosedAfterTheContextStops()
+		{
+			TriggerContextInit();
+			yield return Context.OnReady.ToYielder();
+			var purchaser = Context.Api.BeamableIAP.GetResult();
+
+			// The purchase's begin request is still pending when the context stops and disposes its services.
+			var begin = new Promise<PurchaseResponse>();
+			_beginPurchaseRoute.WithPendingResponse(begin);
+			var retired = purchaser.StartPurchase("listings.test", "sku_a").Recover(_ => null);
+			yield return Context.Stop().ToYielder();
+			yield return retired.ToYielder();
+
+			begin.CompleteSuccess(new PurchaseResponse { txid = 7 });
+			for (var i = 0; i < 5; i++) yield return null;
+
+			Assert.AreEqual(1, _failRetiredPurchaseRoute.CallCount, "The transaction is closed without the disposed services.");
+			Assert.AreEqual(0, _completePurchaseRoute.CallCount);
+		}
 	}
 #endif
 #endif
