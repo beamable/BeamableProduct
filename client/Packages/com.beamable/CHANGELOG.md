@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `PlayerStats.Set` (and `PlayerStat.Set`) now fail with the underlying exception, for example `NoConnectivityException`, when the stat update request fails, instead of never completing.
 - `MustBeComparatorString` now validates against what the backend accepts for each field. Stat requirements (listings, announcements, leaderboard and event cohorts) also accept `neq`, `gte`, `lte` and the long names (`equal`, `notequal`, `greaterthan`, `greaterthanequal`, `lessthan`, `lessthanequal`). Offer purchase requirements accept `eq`, `ne`, `gt`, `ge`, `lt`, `le`. Cohort requirements accept only `eq` (member) and `ne` (not a member); any other value used to be evaluated as "not a member", so replace it with `ne`.
 
 ### Changed
