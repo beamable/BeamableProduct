@@ -523,6 +523,6 @@ public class LocalStackPortGuardTests
 
 		Assert.That(LocalStackPortGuard.ComposeProject(Target("compose -p beam_backend_scala up -d redis"), new DockerComposeModel { name = "x" }), Is.EqualTo("beam_backend_scala"));
 		Assert.That(LocalStackPortGuard.ComposeProject(Target("compose up -d"), new DockerComposeModel { name = "beam_web" }), Is.EqualTo("beam_web"));
-		Assert.That(LocalStackPortGuard.ComposeProject(Target("compose up -d", @"C:\repos\Portal.LocalDev\"), new DockerComposeModel()), Is.EqualTo("portallocaldev"));
+		Assert.That(LocalStackPortGuard.ComposeProject(Target("compose up -d", Path.Combine("repos", "Portal.LocalDev") + Path.DirectorySeparatorChar), new DockerComposeModel()), Is.EqualTo("portallocaldev"));
 	}
 }

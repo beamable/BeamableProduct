@@ -21,7 +21,7 @@ public class LocalStackRunCommandArgs : CommandArgs
 
 	/// <summary>For a run started from code (a restart): also stop starting steps when this is cancelled. A detached
 	/// run leaves what it started running.</summary>
-	public CancellationToken cancel;
+	internal CancellationToken cancel;
 
 	/// <summary>Print what would run and check what it needs, starting nothing.</summary>
 	public bool dryRun;
