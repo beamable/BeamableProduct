@@ -165,9 +165,11 @@ public class ExecuteGoldenTests
 
 			if (workspace != null && data["configPath"] is JValue { Type: JTokenType.String } configPath)
 			{
-				var path = (string)configPath!;
+				// Fixtures are recorded with '/', Windows reports '\'.
+				var path = ((string)configPath!).Replace('\\', '/');
+				var root = workspace.Replace('\\', '/');
 				// macOS resolves the temp folder through /private.
-				foreach (var prefix in new[] { workspace, "/private" + workspace })
+				foreach (var prefix in new[] { root, "/private" + root })
 				{
 					if (path.StartsWith(prefix))
 					{
