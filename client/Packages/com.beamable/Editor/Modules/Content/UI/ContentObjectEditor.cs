@@ -27,26 +27,69 @@ namespace Beamable.Editor.Content.UI
 		private const float BUTTONS_HEADER_HEIGHT = 90f;
 		private EditorCoroutine _updateNameCoroutine;
 		private EditorCoroutine _updateTagCoroutine;
+		private Action _pendingNameEdit;
+		private Action _pendingTagEdit;
+		private CliContentService _editingService;
+		private string _editingContentId;
+		private bool _editorDisabled;
+
+		private void ObservePendingEdits(CliContentService service)
+		{
+			_editorDisabled = false;
+			_editingContentId = (target as ContentObject)?.Id;
+			if (ReferenceEquals(_editingService, service)) return;
+			if (_editingService != null) _editingService.HasPendingInspectorEdits -= HasPendingEdits;
+			_editingService = service;
+			service.HasPendingInspectorEdits += HasPendingEdits;
+		}
+
+		private bool HasPendingEdits(string contentId) => _editingContentId == contentId &&
+			(_pendingNameEdit != null || _pendingTagEdit != null);
+
+		private void CompleteHeaderEdit(bool name)
+		{
+			var pending = name ? _pendingNameEdit : _pendingTagEdit;
+			if (name) { _pendingNameEdit = null; _updateNameCoroutine = null; }
+			else { _pendingTagEdit = null; _updateTagCoroutine = null; }
+			try { pending?.Invoke(); }
+			finally { ReleasePendingEditsObserver(); }
+		}
+
+		private void OnDisable()
+		{
+			// Keep the guard until already-scheduled callbacks finish; don't reorder their writes on deselection.
+			_editorDisabled = true;
+			ReleasePendingEditsObserver();
+		}
+
+		private void ReleasePendingEditsObserver()
+		{
+			if (!_editorDisabled || _pendingNameEdit != null || _pendingTagEdit != null) return;
+			if (_editingService != null) _editingService.HasPendingInspectorEdits -= HasPendingEdits;
+			_editingService = null;
+		}
 		private readonly Dictionary<string, int> _listValidationErrors = new();
 		private bool _hasListValidationCache;
 		private Guid _listValidationRevision;
 		private int _listManifestRevision;
 		private int _listDirtyCount;
+		private string _validationStatusDetails;
 
 		protected override void OnHeaderGUI()
 		{
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
-			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject)))
+			var contentService = BeamEditorContext.Default.ServiceScope.GetService<CliContentService>();
+			ObservePendingEdits(contentService);
+			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject) || contentService.CurrentProgress.IsActive))
 			{
 			var isEditingMultiple = targets.Length > 1;
-
-			var contentService = BeamEditorContext.Default.ServiceScope.GetService<CliContentService>();
 
 			var boldLabelFieldStyle =
 				new GUIStyle(EditorStyles.boldLabel) {fixedHeight = EditorGUIUtility.singleLineHeight};
 
-			var isModified = contentObject.ContentStatus is ContentStatus.Modified or ContentStatus.Created or ContentStatus.Deleted;
+			var isModified = contentObject.ContentStatus is ContentStatus.Modified or ContentStatus.Created or ContentStatus.Deleted ||
+				(contentService.EntriesCache.TryGetValue(contentObject.Id, out var headerEntry) && ContentWindow_TooltipsHelper.NeedsReconciliation(headerEntry));
 			var isInConflict = contentObject.IsInConflict;
 
 			var headerHeight = (isModified || isInConflict) && !isEditingMultiple ? BUTTONS_HEADER_HEIGHT : HEADER_HEIGHT;
@@ -86,14 +129,14 @@ namespace Beamable.Editor.Content.UI
 				}
 				
 				const float statusIconSize = 15f;
-				if (contentObject.ContentStatus is not ContentStatus.UpToDate)
+				if (!ContentHistoryInspectorPreview.IsReadOnly(contentObject) && contentObject.ContentStatus is not ContentStatus.UpToDate)
 				{
 					var statusIconRect = new Rect(
 						iconRect.xMin,
 						iconRect.yMin,
 						statusIconSize,
 						statusIconSize);
-					var icon = ContentWindow.GetIconForStatus(contentObject.IsInConflict, contentObject.ContentStatus);
+					var icon = ContentWindow_TooltipsHelper.GetStatusIcon(GetCachedEntry(contentObject));
 					GUI.DrawTexture(statusIconRect, icon, ScaleMode.ScaleToFit);
 				}
 				// A dependency can become invalid without changing this content's own file/status.
@@ -132,19 +175,29 @@ namespace Beamable.Editor.Content.UI
 			}
 		}
 
+		private GUIStyle _contentActionButtonStyle;
 		private void DrawContentButtons(ContentObject content, Rect buttonsRect, CliContentService contentService)
 		{
-			var modifiedButtonWidth = 80f;
-			GUIStyle buttonStyle = new GUIStyle(GUI.skin.button)
+			if (contentService.CurrentProgress.IsActive)
+			{
+				EditorGUI.ProgressBar(buttonsRect, contentService.CurrentProgress.Progress, contentService.CurrentProgress.Description);
+				return;
+			}
+			_contentActionButtonStyle ??= new GUIStyle(GUI.skin.button)
 			{
 				alignment = TextAnchor.MiddleLeft,     
-				padding = new RectOffset(10, 5, 5, 5),
+				padding = new RectOffset(10, 36, 5, 5),
 			};
-			bool hasModifiedButton = content.ContentStatus is ContentStatus.Deleted or ContentStatus.Modified or ContentStatus.Created;
+			var buttonStyle = _contentActionButtonStyle;
+			float modifiedButtonWidth = 0;
+			bool incoming = contentService.EntriesCache.TryGetValue(content.Id, out var entry) &&
+				ContentWindow_TooltipsHelper.NeedsReconciliation(entry);
+			bool hasModifiedButton = incoming || content.ContentStatus is ContentStatus.Deleted or ContentStatus.Modified or ContentStatus.Created;
 			bool hasConflictSolveButton = content.IsInConflict;
 			if (hasModifiedButton)
 			{
-				var revertContent = new GUIContent("Revert");
+				var revertContent = new GUIContent(incoming ? "Reconcile" : "Revert");
+				modifiedButtonWidth = buttonStyle.CalcSize(revertContent).x;
 				
 				var revertButtonRect = new Rect(
 					buttonsRect.xMin,
@@ -153,7 +206,11 @@ namespace Beamable.Editor.Content.UI
 					buttonsRect.height);
 				if (GUI.Button(revertButtonRect, revertContent, buttonStyle))
 				{
-					if (EditorUtility.DisplayDialog("Revert Content", 
+					if (incoming)
+					{
+						ContentWindow_TooltipsHelper.ShowReconciliationDialog(contentService, entry);
+					}
+					else if (EditorUtility.DisplayDialog("Revert Content",
 					                                "Are you sure you want to revert this content?", "Revert", "Cancel"))
 					{
 						_ = contentService.SyncContentsWithProgress(true, true, true, true, content.Id, ContentFilterType.ExactIds);
@@ -177,31 +234,12 @@ namespace Beamable.Editor.Content.UI
 				var conflictSolveButtonRect = new Rect(
 					buttonsRect.xMin + extraInitPos,
 					buttonsRect.y,
-					120f,
+					buttonStyle.CalcSize(conflictContent).x,
 					buttonsRect.height);
 				if (GUI.Button(conflictSolveButtonRect, conflictContent, buttonStyle))
 				{
-					GenericMenu conflictResolveMenu = new GenericMenu();
-					if (contentService.IsContentInvalid(content.Id))
-					{
-						conflictResolveMenu.AddDisabledItem(new GUIContent("Use local", "Cannot resolve using local because it is invalid"));
-					}
-					else
-					{
-						conflictResolveMenu.AddItem(new GUIContent("Use Local"), false, () =>
-						{
-							contentService.ResolveConflict(content.Id, true);
-						});	
-					}
-					conflictResolveMenu.AddItem(new GUIContent("Use Local"), false, () =>
-					{
-						contentService.ResolveConflict(content.Id, true);
-					});
-					conflictResolveMenu.AddItem(new GUIContent("Use Realm"), false, () =>
-					{
-						contentService.ResolveConflict(content.Id, false);
-					});
-					conflictResolveMenu.ShowAsContext();
+					if (contentService.EntriesCache.TryGetValue(content.Id, out var reviewed))
+						ContentWindow_TooltipsHelper.ShowReconciliationDialog(contentService, reviewed);
 				}
 
 				float iconSize = 16;
@@ -251,11 +289,18 @@ namespace Beamable.Editor.Content.UI
 						EditorCoroutineUtility.StopCoroutine(_updateNameCoroutine);
 					}
 
-					_updateNameCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedActionEditorRoutine(0.5d, () =>
+					var scope = contentService.GetContentScopeKey();
+					_pendingNameEdit = () =>
 					{
+						if (contentObject == null || contentObject.ContentStatus == ContentStatus.Deleted ||
+						    scope != contentService.GetContentScopeKey()) return;
 						contentService.RenameContent(contentObject.Id, newName);
 						contentObject.SetContentName(newName);
 						EditorUtility.SetDirty(contentObject);
+					};
+					_updateNameCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedActionEditorRoutine(0.5d, () =>
+					{
+						CompleteHeaderEdit(true);
 					}), contentObject);
 
 
@@ -305,9 +350,8 @@ namespace Beamable.Editor.Content.UI
 					}
 
 					var scope = contentService.GetContentScopeKey();
-					_updateTagCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedActionEditorRoutine(0.5d, () =>
+					_pendingTagEdit = () =>
 					{
-						_updateTagCoroutine = null;
 						// This Inspector debounce is separate from ContentObject's pending autosave.
 						if (contentObject == null || contentObject.ContentStatus == Common.BeamCli.Contracts.ContentStatus.Deleted ||
 						    scope != contentService.GetContentScopeKey()) return;
@@ -315,6 +359,10 @@ namespace Beamable.Editor.Content.UI
 						contentService.SetContentTags(contentObject.Id, tags);
 						contentObject.Tags = tags.ToArray();
 						EditorUtility.SetDirty(contentObject);
+					};
+					_updateTagCoroutine = EditorCoroutineUtility.StartCoroutine(DelayedActionEditorRoutine(0.5d, () =>
+					{
+						CompleteHeaderEdit(false);
 					}), contentObject);
 
 				}
@@ -360,12 +408,14 @@ namespace Beamable.Editor.Content.UI
 		{
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
-			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject)))
+			var busy = BeamEditorContext.Default.CliContentService.CurrentProgress.IsActive;
+			using (new EditorGUI.DisabledScope(ContentHistoryInspectorPreview.IsReadOnly(contentObject) || busy))
 			{
 
 			if (contentObject.ContentStatus is Common.BeamCli.Contracts.ContentStatus.Deleted)
 			{
-				EditorGUILayout.HelpBox("This content has been deleted.", MessageType.Info);
+				// Deleted also represents incoming additions with no local file; use the authoritative presentation.
+				DrawContentStatus();
 				return;
 			}
 
@@ -395,8 +445,88 @@ namespace Beamable.Editor.Content.UI
 			}
 			
 			DrawContentProperties(contentObject);
-			contentObject.CheckForNonDetectedChanges();
+			if (!busy) contentObject.CheckForNonDetectedChanges();
 			}
+			DrawContentStatus();
+		}
+
+		private GUIStyle _statusMessageStyle;
+		private int _statusManifestRevision = -1;
+		private int _statusProgressRevision = -1;
+
+		public override bool RequiresConstantRepaint()
+		{
+			if (!BeamEditor.IsInitialized) return false;
+			// Unity already asks Inspectors whether to repaint. Read only the existing cache revision.
+			var service = BeamEditorContext.Default.CliContentService;
+			var revision = service.ManifestChangedCount;
+			if (_statusManifestRevision == revision && _statusProgressRevision == service.ProgressUpdateVersion) return false;
+			_statusManifestRevision = revision;
+			_statusProgressRevision = service.ProgressUpdateVersion;
+			return true;
+		}
+
+		private static LocalContentManifestEntry GetCachedEntry(ContentObject content)
+		{
+			if (content != null && !string.IsNullOrEmpty(content.Id) && BeamEditor.IsInitialized &&
+				BeamEditorContext.Default.CliContentService.EntriesCache.TryGetValue(content.Id, out var entry)) return entry;
+			return default;
+		}
+
+		private void DrawContentStatus()
+		{
+			var entries = new List<LocalContentManifestEntry>(targets.Length);
+			var historical = 0;
+			var invalidCount = 0;
+			var schemaCount = 0;
+			var schemaDifferences = SchemaDifference.None;
+			var hasChanges = false;
+			var onlyIncoming = targets.Length > 0;
+			foreach (var selected in targets)
+			{
+				var content = selected as ContentObject;
+				if (ContentHistoryInspectorPreview.IsReadOnly(content))
+				{
+					historical++;
+					onlyIncoming = false;
+				}
+				else
+				{
+					var entry = GetCachedEntry(content);
+					entries.Add(entry);
+					if (!string.IsNullOrEmpty(entry.FullId) && BeamEditor.IsInitialized &&
+					    BeamEditorContext.Default.CliContentService.IsContentInvalid(entry.FullId)) invalidCount++;
+					if (!string.IsNullOrEmpty(entry.FullId) && BeamEditor.IsInitialized)
+					{
+						var difference = BeamEditorContext.Default.CliContentService.GetSchemaDifference(entry.FullId);
+						if (difference != SchemaDifference.None) schemaCount++;
+						schemaDifferences |= difference;
+					}
+					var kind = ContentWindow_TooltipsHelper.GetChangeKind(entry);
+					onlyIncoming &= ContentWindow_TooltipsHelper.IsIncoming(kind);
+					hasChanges |= kind == ContentChangeKind.LocalEdit || ContentWindow_TooltipsHelper.IsIncoming(kind) ||
+						(kind == ContentChangeKind.Unknown && entry.StatusEnum is ContentStatus.Modified or ContentStatus.Created or ContentStatus.Deleted);
+				}
+			}
+			var message = ContentWindow_TooltipsHelper.GetSelectionDescription(entries, historical,
+				ContentConfiguration.Instance.EnableLocalContentInEditor, out var conflict, invalidCount,
+				_hasListValidationCache && targets.Length == 1 && (target as ContentObject)?.ContentStatus != ContentStatus.Deleted
+					? _validationStatusDetails : null);
+			if (schemaCount > 0)
+				message = ContentWindow_TooltipsHelper.GetSchemaWarningDescription(schemaDifferences, schemaCount, targets.Length > 1) + "\n\n" + message;
+			_statusMessageStyle ??= new GUIStyle(EditorStyles.wordWrappedLabel) { padding = new RectOffset(8, 8, 8, 8) };
+			GUILayout.Space(8);
+			var text = new GUIContent(message);
+			var width = Mathf.Max(60, EditorGUIUtility.currentViewWidth - 60);
+			var height = Mathf.Max(42, _statusMessageStyle.CalcHeight(text, width));
+			var rect = EditorGUILayout.GetControlRect(false, height);
+			EditorGUI.DrawRect(rect, conflict || invalidCount > 0 ? new Color(.7f, .15f, .15f, .24f) : new Color(.15f, .4f, .75f, .24f));
+			var icon = conflict || invalidCount > 0 ? "console.erroricon.sml" : hasChanges || schemaCount > 0 ? "console.warnicon.sml" : "console.infoicon.sml";
+			GUI.Label(new Rect(rect.x + 6, rect.y + 8, 20, 20), onlyIncoming && invalidCount == 0 && schemaCount == 0
+				? new GUIContent(ContentWindow_TooltipsHelper.GetStatusIcon(entries[0]))
+				: EditorGUIUtility.IconContent(icon));
+			rect.xMin += 28;
+			GUI.Label(rect, text, _statusMessageStyle);
 		}
 
 		private void DrawContentProperties(ContentObject contentObject)
@@ -445,6 +575,7 @@ namespace Beamable.Editor.Content.UI
 			// Validate once per edit/manifest change, never once per list on every repaint.
 			_listValidationErrors.Clear();
 			var errors = contentObject.GetMemberValidationErrors(context);
+			_validationStatusDetails = FormatValidationDetails(contentObject, errors);
 			var property = serializedObject.GetIterator();
 			bool enterChildren = true;
 			while (property.NextVisible(enterChildren))
@@ -458,6 +589,23 @@ namespace Beamable.Editor.Content.UI
 			_listManifestRevision = service.ManifestChangedCount;
 			_listDirtyCount = dirtyCount;
 			_hasListValidationCache = true;
+		}
+
+		internal static string FormatValidationDetails(ContentObject content, List<ContentValidationException> errors)
+		{
+			var messages = new List<string>(5);
+			var total = errors.Count;
+			if (content.ContentName != null && ContentNameValidationException.HasNameValidationErrors(content, content.ContentName, out var names))
+			{
+				total += names.Count;
+				messages.AddRange(names.Take(5).Select(error => error.FriendlyMessage));
+			}
+			foreach (var error in errors.Take(5 - messages.Count))
+				messages.Add($"{ObjectNames.NicifyVariableName(error.Info.Field.Name)}: {error.FriendlyMessage ?? error.Message}");
+			// Keep large nested/list failures readable. Their full errors remain on the affected fields.
+			var summary = string.Join("\n", messages);
+			if (total > 5) summary += $"\n{total - 5} more validation errors. See the highlighted fields.";
+			return summary;
 		}
 
 		internal static int CountListValidationErrors(SerializedProperty list, List<ContentValidationException> errors)

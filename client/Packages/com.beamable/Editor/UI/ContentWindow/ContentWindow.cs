@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
@@ -33,6 +33,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		private int _lastManifestChangedCount;
 		private int _lastProgressUpdateVersion;
 		private int _lastContentHistoryVersion;
+		private int _lastContentMetadataVersion;
+		private ContentAutoSyncState _lastAutoSyncState;
 		private EditorGUISplitView _mainSplitter;
 		private bool _importingDefaultContent;
 
@@ -106,11 +108,18 @@ namespace Beamable.Editor.UI.ContentWindow
 			ResetButtonTooltip();
 			EditorApplication.update -= OnEditorUpdate;
 			ResetHistorySelection();
-			_contentService?.StopContentHistory();
+			_contentService?.StopContentHistory().Error(error => Debug.LogException(error));
 		}
 
 		private void OnEditorUpdate()
 		{
+			if (_contentService != null &&
+			    (_contentService.ContentMetadataVersion != _lastContentMetadataVersion || _contentService.AutoSyncState != _lastAutoSyncState))
+			{
+				_lastContentMetadataVersion = _contentService.ContentMetadataVersion;
+				_lastAutoSyncState = _contentService.AutoSyncState;
+				Repaint();
+			}
 			if (_buttonTooltipCandidate != null && _buttonTooltipText != null && !_buttonTooltipVisible &&
 			    EditorApplication.timeSinceStartup >= _buttonTooltipShowAt)
 			{
@@ -139,6 +148,8 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void ReloadData()
 		{
+			// Publications can introduce types that have no class in this Unity project.
+			if (_contentTypeReflectionCache != null) BuildContentTypeHierarchy();
 			ClearCaches();
 			_allTags = _contentService.TagsCache;
 			SetEditorSelection();
@@ -204,8 +215,12 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			
 			HandleContentSearchInput();
+			using (new EditorGUI.DisabledScope(_contentService.CurrentProgress.IsActive))
+			{
 			DrawHeader();
 			GUILayout.Space(1);
+			if (_windowStatus != ContentWindowStatus.Publish && _windowStatus != ContentWindowStatus.Revert)
+				DrawContentOperationProgress();
 			switch (_windowStatus)
 			{
 				case ContentWindowStatus.Normal:
@@ -226,6 +241,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				case ContentWindowStatus.History:
 					DrawContentHistory();
 					break;
+			}
 			}
 			
 			DrawButtonTooltip();
@@ -291,55 +307,61 @@ namespace Beamable.Editor.UI.ContentWindow
 			var bottomRect = EditorGUILayout.GetControlRect( GUILayout.Height(30f));
 			
 			var bottomRectController = new EditorGUIRectController(bottomRect);
-			var allRenames = _contentService.GetAllRenames();
-			var renamedCreatedIds = new HashSet<string>(allRenames.Select(r => r.CreatedFullId));
-			var renamedDeletedIds = new HashSet<string>(allRenames.Select(r => r.DeletedFullId));
-
-			var createdContents = _contentService.GetAllContentFromStatus(ContentStatus.Created)
-				.Where(e => !renamedCreatedIds.Contains(e.FullId)).ToList();
-			if (createdContents.Count > 0)
+			int createdCount = 0, modifiedCount = 0, deletedCount = 0, issueCount = 0;
+			foreach (var entry in _contentService.EntriesCache.Values)
 			{
-				DrawFooterButton($"{createdContents.Count}  created", BeamGUI.iconStatusAdded, ContentFilterStatus.Created);
+				switch (GetLocalFilterStatus(entry))
+				{
+					case ContentStatus.Created: createdCount++; break;
+					case ContentStatus.Modified: modifiedCount++; break;
+					case ContentStatus.Deleted: deletedCount++; break;
+				}
+				if (HasContentIssue(entry)) issueCount++;
+			}
+			int footerCount = (createdCount > 0 ? 1 : 0) + (modifiedCount > 0 ? 1 : 0) +
+				(deletedCount > 0 ? 1 : 0) + (issueCount > 0 ? 1 : 0);
+			if (createdCount > 0)
+			{
+				DrawFooterButton($"{createdCount}  created", BeamGUI.iconStatusAdded, ContentFilterStatus.Created);
 				bottomRectController.ReserveWidth(BASE_PADDING);
 			}
 
-			var modifiedContents = _contentService.GetAllContentFromStatus(ContentStatus.Modified);
-			int modifiedCount = modifiedContents.Count + allRenames.Count;
 			if (modifiedCount > 0)
 			{
 				DrawFooterButton($"{modifiedCount}  modified", BeamGUI.iconStatusModified, ContentFilterStatus.Modified);
 				bottomRectController.ReserveWidth(BASE_PADDING);
 			}
 
-			var deletedContents = _contentService.GetAllContentFromStatus(ContentStatus.Deleted)
-				.Where(e => !renamedDeletedIds.Contains(e.FullId)).ToList();
-			if (deletedContents.Count > 0)
+			if (deletedCount > 0)
 			{
-				DrawFooterButton($"{deletedContents.Count}  deleted", BeamGUI.iconStatusDeleted, ContentFilterStatus.Deleted);
+				DrawFooterButton($"{deletedCount}  deleted", BeamGUI.iconStatusDeleted, ContentFilterStatus.Deleted);
 				bottomRectController.ReserveWidth(BASE_PADDING);
 			}
 
-			int issueCount = _contentService.EntriesCache.Values.Count(HasContentIssue);
 			if (issueCount > 0)
 			{
 				DrawFooterButton(issueCount == 1 ? "1 issue" : $"{issueCount} issues",
 					BeamGUI.iconStatusInvalid, ContentFilterStatus.Issues,
-					"Items with validation errors or conflicts. Click to review all.");
+					"Validation errors, conflicts, incoming changes, and unverified content. Clear all issues before publishing.");
 			}
 
 			void DrawFooterButton(string buttonText, Texture buttonIcon, ContentFilterStatus statusEnum, string tooltip = null)
 			{
 				float lineSize = EditorGUIUtility.singleLineHeight;
-				GUIStyle buttonStyle = new GUIStyle(EditorStyles.label)
+				_footerButtonStyle ??= new GUIStyle(EditorStyles.label)
 				{
 					fixedHeight = lineSize,
 					alignment = TextAnchor.MiddleRight,
 					padding = new RectOffset(BASE_PADDING, BASE_PADDING, 0,0)
 				};
 				
+				var buttonStyle = _footerButtonStyle;
 				var btnContent = new GUIContent(buttonText);
 				var btnSize = buttonStyle.CalcSize(btnContent);
-				Rect footerAreaRect = bottomRectController.ReserveWidth(btnSize.x + lineSize + BASE_PADDING * 3);
+				float desiredWidth = btnSize.x + lineSize + BASE_PADDING * 3;
+				float width = CalculateFooterButtonWidth(bottomRect.width, footerCount, desiredWidth);
+				if (width < desiredWidth) btnContent.text = buttonText.Substring(0, buttonText.IndexOf(' '));
+				Rect footerAreaRect = bottomRectController.ReserveWidth(width);
 				var buttonRect = new Rect(footerAreaRect.x,  footerAreaRect.center.y - lineSize/2f, footerAreaRect.width, btnSize.y);
 				bool isSelected = _activeFilters.TryGetValue(ContentSearchFilterType.Status, out var activeStatuses) &&
 				                  activeStatuses.Contains(StatusMapToString[statusEnum]);
@@ -349,17 +371,20 @@ namespace Beamable.Editor.UI.ContentWindow
 					GUI.DrawTexture(highlightRect, _rowSelectedItemStyle.normal.background);
 				}
 				
-				var iconRect = new Rect(buttonRect.xMin + BASE_PADDING + lineSize/2f, buttonRect.center.y - lineSize/2f, lineSize, lineSize);
+				var iconRect = new Rect(buttonRect.xMin + BASE_PADDING, buttonRect.center.y - lineSize/2f, lineSize, lineSize);
 				GUI.DrawTexture(iconRect, buttonIcon, ScaleMode.ScaleToFit, true);
 				EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
-				RegisterButtonTooltip(buttonRect, tooltip, above: true);
+				RegisterButtonTooltip(buttonRect, string.IsNullOrEmpty(tooltip) ? buttonText : buttonText + ". " + tooltip, above: true);
 
-				if (!GUI.Button(buttonRect, btnContent, buttonStyle))
+				var textRect = buttonRect;
+				textRect.xMin = Mathf.Min(buttonRect.xMax, iconRect.xMax + BASE_PADDING);
+				GUI.Label(textRect, btnContent, buttonStyle);
+				if (!GUI.Button(buttonRect, GUIContent.none, buttonStyle))
 				{
 					return;
 				}
 
-				// Issues opens the content list with all previous filters and search text cleared.
+				// Review shortcuts clear previous filters and search so no pending items stay hidden.
 				// Other statuses replace the active filters while preserving the name search.
 				if (statusEnum == ContentFilterStatus.Issues)
 				{
@@ -516,6 +541,10 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 			return localContentManifestEntries;
 		}
+
+		private GUIStyle _footerButtonStyle;
+		private static float CalculateFooterButtonWidth(float available, int count, float desired) =>
+			Mathf.Max(0, Mathf.Min(desired, (available - BASE_PADDING * (count - 1)) / Mathf.Max(1, count)));
 
 		public void DrawNestedContent(Action drawContent)
 		{

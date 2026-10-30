@@ -12,6 +12,7 @@ namespace cli.Content;
 public class ContentHistoryCommandArgs : CommandArgs
 {
 	public bool Watch;
+	public bool NoAutoSync;
 	public int RequireProcessId;
 	public string ManifestId;
 	public long? FromDate;
@@ -108,6 +109,8 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 	public override void Configure()
 	{
 		ProjectCommand.AddWatchOption(this, (args, i) => args.Watch = i);
+		AddOption(new Option<bool>("--no-auto-sync", "Update history without automatically updating local content files"),
+			(args, value) => args.NoAutoSync = value);
 		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestId = s[0]);
 		AddOption(new RequireProcessIdOption(), (args, i) => args.RequireProcessId = i);
 		AddOption(new Option<long?>("--from-date", "Filter entries from this Unix timestamp (milliseconds)"), (args, l) => args.FromDate = l);
@@ -168,22 +171,24 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 			this.SendResults(initialEvt);
 
 			// This ensures that only one of the event streams will resolve at a time.
-			var watchSemaphore = new SemaphoreSlim(1, 1);
+			using var watchSemaphore = new SemaphoreSlim(1, 1);
+			await using var watch = new cli.Services.ContentWatchScope(args.Lifecycle.Source.Token);
 
 			// Kick off task to listen for new entries
-			var newEntriesTask = Task.Run(async () =>
+			var newEntriesTask = watch.Run(async () =>
 			{
 				try
 				{
-					await foreach (var entryFileChanges in contentService.ListenToContentHistoryEntries(pid, manifestId, args.Lifecycle.Source.Token))
+					await foreach (var entryFileChanges in contentService.ListenToContentHistoryEntries(pid, manifestId, watch.Token))
 					{
 						try
 						{
-							await watchSemaphore.WaitAsync(args.Lifecycle.Source.Token);
+							await watchSemaphore.WaitAsync(watch.Token);
 						}
 						catch (OperationCanceledException)
 						{
 							Log.Information("content history command was cancelled.");
+							break;
 						}
 
 						try
@@ -225,19 +230,20 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 				}
 			});
 
-			var newChangelistTask = Task.Run(async () =>
+			var newChangelistTask = watch.Run(async () =>
 			{
 				try
 				{
-					await foreach (var changelistFileChanges in contentService.ListenToContentHistoryChangelists(pid, manifestId, args.Lifecycle.Source.Token))
+					await foreach (var changelistFileChanges in contentService.ListenToContentHistoryChangelists(pid, manifestId, watch.Token))
 					{
 						try
 						{
-							await watchSemaphore.WaitAsync(args.Lifecycle.Source.Token);
+							await watchSemaphore.WaitAsync(watch.Token);
 						}
 						catch (OperationCanceledException)
 						{
 							Log.Information("content history command was cancelled.");
+							break;
 						}
 
 						try
@@ -293,18 +299,18 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 
 			// Kick off a task that will greedily sync all the history entries until right now.
 			// Once that's done, kick off a task that will listen for remote content publishes and will resync the content history
-			var report = await contentService.SyncContentHistoryEntries(pid, manifestId);
-			var remotePublishTask = Task.Run(async () =>
+			var report = await contentService.SyncContentHistoryEntries(pid, manifestId, cancellationToken: watch.Token);
+			var remotePublishTask = watch.Run(async () =>
 			{
 				try
 				{
-					await foreach (var _ in contentService.ListenToRemoteContentPublishes(args, manifestId, args.Lifecycle.Source.Token))
+					await foreach (var _ in contentService.ListenToRemoteContentPublishes(args, manifestId, watch.Token, autoSync: !args.NoAutoSync))
 					{
 						await watchSemaphore.WaitAsync();
 						try
 						{
 							// We re-sync only from the date of the last known local content.
-							report = await contentService.SyncContentHistoryEntries(pid, manifestId);
+							report = await contentService.SyncContentHistoryEntries(pid, manifestId, cancellationToken: watch.Token);
 						}
 						finally
 						{
@@ -319,9 +325,7 @@ public class ContentHistoryCommand : AppCommand<ContentHistoryCommandArgs>
 				}
 			});
 
-			await newEntriesTask;
-			await newChangelistTask;
-			await remotePublishTask;
+			await Task.WhenAll(newEntriesTask, newChangelistTask, remotePublishTask);
 		}
 	}
 }

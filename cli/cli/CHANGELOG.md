@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `--no-auto-sync` to `content ps` and `content history`, and selected-item reconciliation previews with checks that reject stale local or realm revisions.
 - `beam portal --console` opens the new Beamable portal (console) signed in with the CLI's session, the same way `beam portal` already does for the legacy portal. Combine it with `--portal-url` (now visible in help) to open another deployment.
 - `IMessageRailFederation<T>` — implement it in a microservice to handle Message Rail last-mile delivery (push, email, in-game) with per-player funnel results: `SendMessage`, `SendMessageBatch`, `RegisterUserWithMessageRail`, `UnregisterUserWithMessageRail`. Ships with `MessageRailRecipient`, `MessageRailPayload`, `MessageRailSendResponse` (whose `maxBatchSize` lets a federation declare its provider's batch limit so the backend right-sizes later pages), `MessageRailRegistrationResponse`, and the shared `MessageRailContract` wire vocabulary (`OverCapacityStatus` for retriable oversized-batch rejections, `OutreachKey` for the per-recipient join key that attributes Opened/Clicked funnel events back to the exact recipient).
 - `MailMessage.metadata` — the opaque per-message map a campaign message rail stamps its `beam_outreach` / `trackId` attribution onto, now carried on the generated `Message`, `SendMailRequest` and `SendMailObjectRequest` models and surfaced on `MailMessage`. Null for ordinary game mail, which is the normal case.
@@ -18,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- CLI server discovery now reports the executing package version, including development revisions, so Unity can recognize local builds without repeatedly starting servers.
+
+- Preserved incoming additions and deletions in content status and blocked publishing until incoming content is reconciled, including recovery after partial failures.
+- Fixed content history pagination with cached publications and watcher cleanup, cancellation, and shutdown acknowledgement retries.
+- Fixed telemetry collector discovery and attached-command shutdown ownership so they do not stop unrelated active CLI commands.
 - Generate valid OpenAPI component IDs for tuple callables and preserve their C# types in generated clients, including nested tuples and tuple collections.
 - Report failed MSBuild targets as failed builds, including when compiler diagnostics are empty or missing. Project builds now return a nonzero exit and surface the underlying build output in Unity.
 - `beam project run` no longer rewrites a zone portal extension's generated microservice clients to bind to `BeamBase`. They now bind to `BeamZoneSdk` (the object a zone extension receives), matching `generate-portal-extension-clients`, so generated client files stop flipping between the two on every run.

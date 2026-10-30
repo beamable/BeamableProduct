@@ -67,8 +67,6 @@ public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmpty
 				endpointToUse = args.Endpoint;
 			}else
 			{
-				CancellationTokenSource tokenSource = new CancellationTokenSource();
-
 				try
 				{
 					var res = await args.OtelApi.GetOtelAuthWriterConfig();
@@ -82,7 +80,7 @@ public class PushTelemetryCommand : AppCommand<PushTelemetryCommandArgs>, IEmpty
 				}
 
 				var basePath = CollectorManager.GetCollectorBasePathForCli();
-				var collectorStatus = await CollectorManager.StartCollectorAndWait(basePath, true, true, tokenSource, BeamableZLoggerProvider.LogContext.Value);
+				var collectorStatus = await CollectorManager.StartCollectorAndWait(basePath, true, true, args.Lifecycle.Source, BeamableZLoggerProvider.LogContext.Value);
 				endpointToUse = $"http://{collectorStatus.otlpEndpoint}";
 			}
 

@@ -1,4 +1,4 @@
-﻿using Beamable.Common.BeamCli;
+using Beamable.Common.BeamCli;
 using System;
 
 namespace Beamable.Common.BeamCli.Contracts
@@ -25,6 +25,12 @@ namespace Beamable.Common.BeamCli.Contracts
 		/// Int value of <see cref="ContentStatus"/> for this entry.
 		/// </summary>
 		public int CurrentStatus;
+
+		/// <summary>
+		/// Authoritative local/reference/latest classification. Unknown for older CLI payloads
+		/// and cases where direction cannot be established. Used for display and reconciliation guards.
+		/// </summary>
+		public int ChangeKind;
 
 		/// <summary>
 		/// Whether this content was modified on top of a <see cref="ReferenceManifestUid"/>
@@ -59,6 +65,9 @@ namespace Beamable.Common.BeamCli.Contracts
 		/// </summary>
 		public string ReferenceManifestUid;
 
+		/// <summary>The publication reviewed by this status report, used to reject stale reconciliation choices.</summary>
+		public string TargetManifestUid;
+
 		/// <summary>
 		/// The latest time that this content were changed
 		/// </summary>
@@ -69,5 +78,17 @@ namespace Beamable.Common.BeamCli.Contracts
 		/// So... we declare this as a helper.
 		/// </summary>
 		public ContentStatus StatusEnum => (ContentStatus)CurrentStatus;
+	}
+
+	[CliContractType]
+	public enum ContentChangeKind
+	{
+		Unknown = 0,
+		UpToDate = 1,
+		LocalEdit = 2,
+		IncomingChange = 3,
+		Conflict = 4,
+		IncomingAddition = 5,
+		IncomingDeletion = 6
 	}
 }

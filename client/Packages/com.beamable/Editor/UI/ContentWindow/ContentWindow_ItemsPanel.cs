@@ -18,12 +18,23 @@ namespace Beamable.Editor.UI.ContentWindow
 	{
 		private static readonly NaturalStringComparer NaturalStringComparer = new();
 		private const int BASE_PADDING = 5;
-		private const float SEPARATOR_WIDTH_AREA = 3;
+		private static float TableScrollbarWidth => GUI.skin.verticalScrollbar.fixedWidth + GUI.skin.verticalScrollbar.margin.left;
+		private const int STATUS_COLUMN = 1;
 		private const float ITEMS_TABLE_ROW_HEIGHT = 20;
-		private const float ITEM_GROUP_HEIGHT = 35;
+		private const float ITEM_GROUP_HEIGHT = 24;
 		private const string FOCUS_NAME = "EditLabel";
 		private const float FOLDOUT_WIDTH = 20f;
-		private const float ITEM_LIST_MIN_WIDTH = 450;
+		private const float TYPE_ICON_SIZE = 16f;
+		private const float ITEM_LIST_MIN_WIDTH = 600;
+		private static readonly string[] ItemColumnLabels = { "Name", "Status", "Tags", "Latest Update" };
+		private float _itemsTableWidth = ITEM_LIST_MIN_WIDTH;
+		private float[] _itemsColumnWidths = CalculateColumnWidths(ITEM_LIST_MIN_WIDTH);
+		private bool _columnWidthsLoaded;
+		private bool _hasCustomColumnWidths;
+		private string _columnWidthsPreferenceKey;
+		private float _columnResizeStartX;
+		private float _columnResizeStartWidth;
+		private bool _columnResizeWasCustom;
 
 		private readonly Dictionary<string, Vector2> _groupScrollPositions = new();
 		
@@ -56,6 +67,9 @@ namespace Beamable.Editor.UI.ContentWindow
 		private GUIStyle _itemPanelHeaderRowStyle;
 		private GUIStyle _itemPanelHeaderFieldStyle;
 		private GUIStyle _itemLabelStyle;
+		private GUIStyle _incomingStatusStyle;
+		private GUIStyle _conflictStatusStyle;
+		private GUIStyle _invalidStatusStyle;
 		private GUIStyle _rowEvenItemStyle;
 		private GUIStyle _rowOddItemStyle;
 		private GUIStyle _rowSelectedItemStyle;
@@ -77,18 +91,29 @@ namespace Beamable.Editor.UI.ContentWindow
 				};
 			}
 
-			_itemPanelHeaderFieldStyle = new GUIStyle(EditorStyles.miniBoldLabel)
+			_itemPanelHeaderFieldStyle ??= new GUIStyle(EditorStyles.miniBoldLabel)
 			{
 				alignment = TextAnchor.MiddleLeft,
 				fontSize = 12,
+				padding = new RectOffset(0, 0, 0, 0),
 				fixedHeight = EditorGUIUtility.singleLineHeight * 1.15f
 			};
 			
-			_itemLabelStyle = new GUIStyle(EditorStyles.label)
+			_itemLabelStyle ??= new GUIStyle(EditorStyles.label)
 			{
-				alignment = TextAnchor.MiddleLeft, padding = new RectOffset(5, 5, 0, 0)
+				alignment = TextAnchor.MiddleLeft, padding = new RectOffset(0, 0, 0, 0),
+				#if UNITY_6000_3_OR_NEWER
+				clipping = TextClipping.Ellipsis,
+#else
+				clipping = TextClipping.Clip,
+#endif
+				wordWrap = false
 			};
 			
+
+			_incomingStatusStyle ??= new GUIStyle(_itemLabelStyle) { normal = { textColor = new Color(0.2f, 0.75f, 0.95f) } };
+			_conflictStatusStyle ??= new GUIStyle(_itemLabelStyle) { normal = { textColor = new Color(1f, 0.4f, 0.4f) } };
+			_invalidStatusStyle ??= new GUIStyle(_itemLabelStyle) { normal = { textColor = new Color(1f, 0.8f, 0.25f) } };
 			
 			float itemRowHeight = EditorGUIUtility.singleLineHeight * 1.1f;
 
@@ -149,23 +174,16 @@ namespace Beamable.Editor.UI.ContentWindow
 				return;
 			}
 			
-			GUILayout.BeginVertical(GUI.skin.box, GUILayout.ExpandHeight(true));
-			{
-				_itemsPanelScrollPos = GUILayout.BeginScrollView(_itemsPanelScrollPos);
-				{
-					var options = new List<GUILayoutOption> { GUILayout.ExpandWidth(true) };
-					var availableWidth = _mainSplitter.cellNormalizedSizes.Last() * EditorGUIUtility.currentViewWidth;
-					if(availableWidth < ITEM_LIST_MIN_WIDTH) 
-						options.Add(GUILayout.MinWidth(ITEM_LIST_MIN_WIDTH));
-					GUILayout.BeginVertical(options.ToArray());
-					DrawGroupNode();
-					GUILayout.EndVertical();
-				}
-				GUILayout.EndScrollView();
-			}
+			GUILayout.BeginVertical(GUIStyle.none, GUILayout.ExpandHeight(true));
+			DrawItemsPanelHeader();
+			_itemsPanelScrollPos = GUILayout.BeginScrollView(_itemsPanelScrollPos, false, true);
+			GUILayout.BeginVertical(GUIStyle.none, GUILayout.MinWidth(_itemsTableWidth + TableScrollbarWidth));
+			DrawGroupNode();
+			GUILayout.EndVertical();
+			GUILayout.EndScrollView();
 			GUILayout.EndVertical();
 			
-			if (MultiSelectItemIds.Count > 0 && Event.current.type == EventType.KeyDown &&
+			if (CanHandleContentInput && MultiSelectItemIds.Count > 0 && Event.current.type == EventType.KeyDown &&
 			    (Event.current.keyCode == KeyCode.Delete || Event.current.keyCode == KeyCode.Backspace))
 			{
 				
@@ -190,9 +208,9 @@ namespace Beamable.Editor.UI.ContentWindow
 						? "Are you sure you want to delete this content?"
 						: $"Are you sure you want to delete these {toBeDeleted.Count} contents?";
 					
-					bool shouldDelete = EditorUtility.DisplayDialog("Delete Content",
+					bool shouldDelete = ConfirmContentInput(() => EditorUtility.DisplayDialog("Delete Content",
 					                                                message,
-					                                                "Delete", "Cancel");
+					                                                "Delete", "Cancel"));
 					if (shouldDelete)
 					{
 						_contentService.TempDisableWatcher(() => DeleteContentEntries(toBeDeleted)).Error(Debug.LogException);
@@ -207,6 +225,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		private async Promise DeleteContentEntries(IEnumerable<LocalContentManifestEntry> entries)
 		{
+			// The watcher may have taken time to stop since the deletion was requested.
+			if (!CanHandleContentInput) return;
 			var scope = _contentService.GetContentScopeKey();
 			// Start every deletion before awaiting, so all targets retain the original scope and block new writes.
 			var deletions = entries.Select(entry => _contentService.DeleteContent(entry.FullId)).ToArray();
@@ -265,14 +285,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				
 				bool hasChildrenSubtypes = contentTypeItems.ContainsKey(contentType) &&
 				                        contentTypeItems[contentType].Count > 0;
-				GUILayout.Space(BASE_PADDING);
-				GUIStyle rowStyle = EditorStyles.helpBox;
 
-				Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEM_GROUP_HEIGHT));
-				rowRect.xMin += indentLevel * INDENT_WIDTH;
-				rowRect.width -= BASE_PADDING * 3;
 				
-				GUI.Box(rowRect, GUIContent.none, rowStyle);
+				Rect rowRect = EditorGUILayout.GetControlRect(false, ITEM_GROUP_HEIGHT, GUIStyle.none);
+				rowRect.width = _itemsTableWidth + TableScrollbarWidth;
+
+				BeamGUI.DrawHorizontalSeparatorLine(rowRect.x, rowRect.y, rowRect.width, _tableSeparatorColor);
 				
 
 				var isRowHover = rowRect.Contains(Event.current.mousePosition);
@@ -282,7 +300,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				
 				Rect contentRect = new Rect(rowRect);
 				
-				contentRect.xMin += BASE_PADDING;
+				contentRect.xMin += BASE_PADDING + indentLevel * INDENT_WIDTH;
 				var foldoutRect = new Rect(contentRect.x, contentRect.y, FOLDOUT_WIDTH, contentRect.height);
 
 				bool isGroupExpanded = _itemsExpandedStates[contentType];
@@ -297,21 +315,21 @@ namespace Beamable.Editor.UI.ContentWindow
 				contentRect.xMin += FOLDOUT_WIDTH;
 				
 				Texture texture = _contentConfiguration.ContentTextureConfiguration.GetTextureForType(contentType);
-				float iconSize = 25f;
+				float iconSize = TYPE_ICON_SIZE;
 				var iconRect = new Rect(contentRect.x, contentRect.center.y - iconSize/2f, iconSize, iconSize);
 				GUI.DrawTexture(iconRect, texture, ScaleMode.ScaleToFit);
 
 				contentRect.xMin += iconSize + BASE_PADDING;
-				GUI.Label(contentRect, $"{displayName} - [{items.Count}]", new GUIStyle(EditorStyles.label)
-				{
-					alignment = TextAnchor.MiddleLeft
-				});
+
 
 				float buttonSize = 20;
 				var buttonCreateRect = new Rect(contentRect.xMax - contentRect.height, contentRect.center.y - buttonSize/2f, buttonSize, buttonSize);
-				if (GUI.Button(buttonCreateRect, BeamGUI.iconPlus, EditorStyles.iconButton))
+				var labelRect = contentRect;
+				labelRect.xMax = buttonCreateRect.xMin - BASE_PADDING;
+				GUI.Label(labelRect, new GUIContent($"{displayName} - [{items.Count}]", contentType), _itemLabelStyle);
+				using (new EditorGUI.DisabledScope(!_contentTypeReflectionCache.ContentTypeToClass.ContainsKey(contentType)))
 				{
-					CreateNewItem(contentType);
+					if (GUI.Button(buttonCreateRect, BeamGUI.iconPlus, EditorStyles.iconButton)) CreateNewItem(contentType);
 				}
 
 
@@ -320,7 +338,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					EditorGUIUtility.AddCursorRect(rowRect, MouseCursor.Link);
 				}
 				
-				if (isRowLeftClick)
+				if (isRowLeftClick && (hasChildrenSubtypes || hasChildrenItems))
 				{
 					if (!foldoutRect.Contains(Event.current.mousePosition) &&
 					    !buttonCreateRect.Contains(Event.current.mousePosition))
@@ -337,10 +355,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					if (items.Count > 0)
 					{
-						float availableSpace = Mathf.Max(0, rowRect.width - (indentLevel * INDENT_WIDTH));
-						
-						DrawTypeItems(items, indentLevel, availableSpace, contentType);
-						GUILayout.Space(BASE_PADDING);
+						DrawTypeItemsNodes(items, _itemsColumnWidths, _itemsTableWidth, contentType, indentLevel);
 					}
 					DrawGroupNode(contentType, indentLevel + 1);
 				}
@@ -349,11 +364,12 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void ShowTypeMenu(string contentType)
 		{
+			if (!CanHandleContentInput) return;
 			var menu = new GenericMenu();
-			menu.AddItem(new GUIContent($"Create {contentType} Content"), false, () =>
-			{
-				CreateNewItem(contentType);
-			});
+			var createLabel = new GUIContent($"Create {contentType} Content");
+			if (_contentTypeReflectionCache.ContentTypeToClass.ContainsKey(contentType))
+				menu.AddItem(createLabel, false, () => CreateNewItem(contentType));
+			else menu.AddDisabledItem(createLabel);
 			menu.AddSeparator("");
 
 			menu.AddItem(new GUIContent("Open Settings"), false, () =>
@@ -389,6 +405,7 @@ namespace Beamable.Editor.UI.ContentWindow
 		
 		private void CreateNewItem(string itemType)
 		{
+			if (!CanHandleContentInput) return;
 			if(!_contentTypeReflectionCache.ContentTypeToClass.TryGetValue(itemType, out var type))
 			{
 				return;
@@ -422,30 +439,131 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUI.changed = true;
 		}
 
-		private void DrawTypeItems(List<LocalContentManifestEntry> items, int indentLevel, float availableWidth, string groupName)
+		private void DrawItemsPanelHeader()
 		{
-			float[] columnWidths = CalculateColumnWidths(availableWidth);
-			DrawItemsPanelHeader(columnWidths, indentLevel);
-			DrawTypeItemsNodes(items, indentLevel, columnWidths, availableWidth, groupName);
+			if (!_columnWidthsLoaded)
+			{
+				_columnWidthsPreferenceKey = GetColumnWidthsPreferenceKey(Application.dataPath);
+				var saved = LoadColumnWidths(_columnWidthsPreferenceKey);
+				_hasCustomColumnWidths = saved != null;
+				if (saved != null) _itemsColumnWidths = saved;
+				_columnWidthsLoaded = true;
+			}
+			var viewport = EditorGUILayout.GetControlRect(false, ITEMS_TABLE_ROW_HEIGHT, GUIStyle.none);
+			// Reserve both the outer scrollbar and the optional virtualized-group scrollbar.
+			// A single width keeps nested groups and virtualized rows under the same header.
+			if (_hasCustomColumnWidths)
+				_itemsTableWidth = _itemsColumnWidths.Sum();
+			else if (Event.current.type == EventType.Repaint)
+			{
+				var width = Mathf.Max(ITEM_LIST_MIN_WIDTH, viewport.width - 2 * TableScrollbarWidth);
+				if (!Mathf.Approximately(width, _itemsTableWidth))
+				{
+					_itemsTableWidth = width;
+					_itemsColumnWidths = CalculateColumnWidths(width);
+				}
+			}
+			viewport.width = Mathf.Max(0, viewport.width - TableScrollbarWidth);
+			_itemsPanelScrollPos.x = Mathf.Clamp(_itemsPanelScrollPos.x, 0,
+				Mathf.Max(0, _itemsTableWidth + TableScrollbarWidth - viewport.width));
+			GUI.BeginGroup(viewport);
+			DrawTableRow(ItemColumnLabels, _itemsColumnWidths, _itemPanelHeaderRowStyle, _itemPanelHeaderFieldStyle,
+				new Rect(-_itemsPanelScrollPos.x, 0, _itemsTableWidth, ITEMS_TABLE_ROW_HEIGHT));
+			DrawColumnResizeHandles(viewport.width);
+			GUI.EndGroup();
 		}
-		
-		private void DrawItemsPanelHeader(float[] columnWidths, int indentLevel)
+
+		private void DrawColumnResizeHandles(float viewportWidth)
 		{
-			Rect headerRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEMS_TABLE_ROW_HEIGHT));
-			headerRect.width -= BASE_PADDING * 3;
-			headerRect.xMin += indentLevel * INDENT_WIDTH;
-			
-			string[] labels = { "Name", "Tags", "Latest Update"};
-    
-			GUIStyle itemPanelHeaderRowStyle = _itemPanelHeaderRowStyle ?? EditorStyles.toolbar;
-			GUIStyle itemFieldStyle = _itemPanelHeaderFieldStyle ?? EditorStyles.boldLabel;
-			BeamGUI.DrawHorizontalSeparatorLine(headerRect.xMin, headerRect.yMin - 1f, headerRect.width + 1, _tableSeparatorColor);
-			DrawTableRow(labels, columnWidths, itemPanelHeaderRowStyle, itemFieldStyle, headerRect);
+			var evt = Event.current;
+			float edge = -_itemsPanelScrollPos.x;
+			for (int column = 0; column < _itemsColumnWidths.Length; column++)
+			{
+				edge += _itemsColumnWidths[column];
+				var handle = new Rect(edge - 4, 0, 8, ITEMS_TABLE_ROW_HEIGHT);
+				int id = GUIUtility.GetControlID(FocusType.Passive);
+				EditorGUIUtility.AddCursorRect(handle, MouseCursor.ResizeHorizontal, id);
+				if (evt.type == EventType.Repaint)
+					EditorGUI.DrawRect(new Rect(edge - 1, 3, 1, ITEMS_TABLE_ROW_HEIGHT - 6), _tableSeparatorColor);
+				// Resize handles are passive controls; still allow Escape while they own the mouse.
+				var eventType = GUIUtility.hotControl == id && evt.type == EventType.KeyDown
+					? evt.type : evt.GetTypeForControl(id);
+				switch (eventType)
+				{
+					case EventType.MouseDown when GUI.enabled && evt.button == 0 && handle.Contains(evt.mousePosition):
+						GUIUtility.hotControl = id;
+						_columnResizeStartX = evt.mousePosition.x;
+						_columnResizeStartWidth = _itemsColumnWidths[column];
+						_columnResizeWasCustom = _hasCustomColumnWidths;
+						evt.Use();
+						break;
+					case EventType.MouseDrag when GUIUtility.hotControl == id:
+						_itemsColumnWidths[column] = ClampColumnWidth(column, _columnResizeStartWidth + evt.mousePosition.x - _columnResizeStartX);
+						_hasCustomColumnWidths = true;
+						_itemsTableWidth = _itemsColumnWidths.Sum();
+						evt.Use();
+						Repaint();
+						break;
+					case EventType.MouseUp when GUIUtility.hotControl == id:
+						GUIUtility.hotControl = 0;
+						if (_hasCustomColumnWidths) SaveColumnWidths(_columnWidthsPreferenceKey, _itemsColumnWidths);
+						evt.Use();
+						break;
+					case EventType.KeyDown when GUIUtility.hotControl == id && evt.keyCode == KeyCode.Escape:
+						_itemsColumnWidths[column] = _columnResizeStartWidth;
+						_hasCustomColumnWidths = _columnResizeWasCustom;
+						_itemsTableWidth = _hasCustomColumnWidths ? _itemsColumnWidths.Sum() : 0;
+						GUIUtility.hotControl = 0;
+						evt.Use();
+						Repaint();
+						break;
+				}
+			}
+			if (evt.type == EventType.ContextClick && new Rect(0, 0, viewportWidth, ITEMS_TABLE_ROW_HEIGHT).Contains(evt.mousePosition))
+			{
+				var menu = new GenericMenu();
+				menu.AddItem(new GUIContent("Reset column widths"), false, () =>
+				{
+					for (int i = 0; i < ItemColumnLabels.Length; i++) EditorPrefs.DeleteKey(_columnWidthsPreferenceKey + "." + i);
+					_hasCustomColumnWidths = false;
+					_itemsTableWidth = 0; // Recalculate the default layout on the next repaint.
+					Repaint();
+				});
+				menu.ShowAsContext();
+				evt.Use();
+			}
+		}
+
+		private static string GetColumnWidthsPreferenceKey(string projectAssetsPath) =>
+			"Beamable.ContentWindow.ColumnWidths.v1." + projectAssetsPath;
+
+		private static float ClampColumnWidth(int column, float width)
+		{
+			float minimum = column switch { 0 => 140, 1 => 150, 2 => 50, _ => 110 };
+			return Mathf.Clamp(width, minimum, 2000);
+		}
+
+		private static float[] LoadColumnWidths(string key)
+		{
+			var widths = new float[ItemColumnLabels.Length];
+			for (int i = 0; i < widths.Length; i++)
+			{
+				if (!EditorPrefs.HasKey(key + "." + i)) return null;
+				float width = EditorPrefs.GetFloat(key + "." + i);
+				if (float.IsNaN(width) || float.IsInfinity(width) || width != ClampColumnWidth(i, width)) return null;
+				widths[i] = width;
+			}
+			return widths;
+		}
+
+		private static void SaveColumnWidths(string key, float[] widths)
+		{
+			for (int i = 0; i < widths.Length; i++) EditorPrefs.SetFloat(key + "." + i, widths[i]);
 		}
 
 		public List<LocalContentManifestEntry> _frameRenderedItems = new List<LocalContentManifestEntry>();
 		
-		private void DrawTypeItemsNodes(List<LocalContentManifestEntry> items, int indentLevel, float[] columnWidths, float totalWidth, string groupName)
+		private void DrawTypeItemsNodes(List<LocalContentManifestEntry> items, float[] columnWidths, float totalWidth, string groupName, int indentLevel)
 		{
 			_frameRenderedItems.AddRange(items);
 			var maxVisibleItems = _contentConfiguration.MaxContentVisibleItems;
@@ -454,14 +572,14 @@ namespace Beamable.Editor.UI.ContentWindow
 				// Draw all items if there are few enough
 				for (int index = 0; index < items.Count; index++)
 				{
-					Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(ITEMS_TABLE_ROW_HEIGHT));
-					rowRect.width -= BASE_PADDING * 3;
-					rowRect.xMin += indentLevel * INDENT_WIDTH;
-					DrawItemRow(items[index], index, rowRect, columnWidths);
+					Rect rowRect = EditorGUILayout.GetControlRect(false, ITEMS_TABLE_ROW_HEIGHT, GUIStyle.none);
+					rowRect.width = totalWidth;
+					DrawItemRow(items[index], index, rowRect, columnWidths, indentLevel);
 
 					if (index == items.Count - 1)
 					{
-						BeamGUI.DrawHorizontalSeparatorLine(rowRect.xMin, rowRect.yMax + 2f, rowRect.width + 1,
+						var insetRow = GetItemRowRect(rowRect, columnWidths[0], indentLevel);
+						BeamGUI.DrawHorizontalSeparatorLine(insetRow.xMin, insetRow.yMax + 2f, insetRow.width,
 						                                    _tableSeparatorColor);
 					}
 				}
@@ -478,13 +596,12 @@ namespace Beamable.Editor.UI.ContentWindow
 				float visibleHeight = maxVisibleItems * ITEMS_TABLE_ROW_HEIGHT;
 
 				
-				Rect areaRect = GUILayoutUtility.GetRect(totalWidth, visibleHeight);
-				areaRect.width -= BASE_PADDING * 3.5f;
-				
-				GUI.Box(areaRect, GUIContent.none);
+				Rect areaRect = GUILayoutUtility.GetRect(totalWidth + TableScrollbarWidth, visibleHeight);
+				areaRect.width = totalWidth + TableScrollbarWidth;
 				
 				
-				Rect contentRect = new Rect(0, 0, totalWidth - 18, totalHeight); // -18 for scrollbar width
+
+				Rect contentRect = new Rect(0, 0, totalWidth, totalHeight);
 
 				bool isEditingFieldOnGroup = !string.IsNullOrEmpty(_editItemId) && _editItemId.Contains(groupName);
 				
@@ -508,21 +625,21 @@ namespace Beamable.Editor.UI.ContentWindow
 					true // vertical scrollbar only
 				);
 				
-				// Calculate visible range
+				// Include the partially visible bottom row while retaining bounded virtualization.
 				int firstVisible = Mathf.FloorToInt(scrollPos.y / ITEMS_TABLE_ROW_HEIGHT);
-				int lastVisible = Mathf.Min(items.Count - 1, firstVisible + maxVisibleItems - 1);
+				int lastVisible = Mathf.Min(items.Count - 1, firstVisible + maxVisibleItems);
 
 				
 				for (int index = firstVisible; index <= lastVisible; index++)
 				{
 					Rect rowRect = new Rect(
-						indentLevel * INDENT_WIDTH + 3f,
+						0,
 						index * ITEMS_TABLE_ROW_HEIGHT,
 						contentRect.width,
 						ITEMS_TABLE_ROW_HEIGHT
 					);
 
-					DrawItemRow(items[index], index, rowRect, columnWidths);
+					DrawItemRow(items[index], index, rowRect, columnWidths, indentLevel);
 				}
 
 				
@@ -544,7 +661,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		public SerializableDictionaryStringToInt _itemContentIdToRowRect = new SerializableDictionaryStringToInt();
 
-		private void DrawItemRow(LocalContentManifestEntry entry, int index, Rect rowRect, float[] columnWidths)
+		private void DrawItemRow(LocalContentManifestEntry entry, int index, Rect rowRect, float[] columnWidths, int indentLevel)
 		{
 			GUIStyle style = MultiSelectItemIds.Contains(entry.FullId)
 				? _rowSelectedItemStyle
@@ -555,6 +672,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUIStyle guiStyle = style ?? EditorStyles.toolbar;
 			GUIStyle labelStyle = _itemLabelStyle ?? EditorStyles.label;
 
+			var hitRect = GetItemRowRect(rowRect, columnWidths[0], indentLevel);
 			bool isEditingName = entry.FullId == _editItemId;
 			string nameLabel = isEditingName && _editLabels is {Length: > 0} ? _editLabels[0] : entry.Name;
 
@@ -565,14 +683,20 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (isRenamed)
 				nameLabel = isEditingName ? nameLabel : $"{entry.Name} (renamed from {renameInfo.OldName})";
 
-			string[] values = {nameLabel, entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
+			bool isInvalid = _contentService.IsContentInvalid(entry.FullId);
+			bool schemaMismatch = _contentService.GetSchemaDifference(entry.FullId) != SchemaDifference.None;
+			string[] values = {nameLabel, ContentWindow_TooltipsHelper.GetStatusLabel(entry, isInvalid, schemaMismatch, isRenamed), entry.Tags != null ? string.Join(", ", entry.Tags) : "-", lastUpdateDate};
 			GUIContent badge = _tooltipsHelper.GetContentStatusBadge(
 				_contentService,
 				entry,
-				renamedFrom: isRenamed ? renameInfo.OldName : null,
-				defaultIcon: GetIconForStatus(entry.IsInConflict, entry.StatusEnum));
+				renamedFrom: isRenamed ? renameInfo.OldName : null);
 
-			GUIContent[] icons = { badge };
+			// Keep Inspector information icons; the table only emphasizes actionable differences.
+			if (!isInvalid && !schemaMismatch && !isRenamed && ContentWindow_TooltipsHelper.GetChangeKind(entry) == ContentChangeKind.UpToDate)
+				badge.image = null;
+			GUIContent[] icons = { null, badge };
+			var statusStyle = isInvalid ? _invalidStatusStyle : entry.IsInConflict ? _conflictStatusStyle :
+				schemaMismatch ? _invalidStatusStyle : ContentWindow_TooltipsHelper.IsIncoming(ContentWindow_TooltipsHelper.GetChangeKind(entry)) ? _incomingStatusStyle : labelStyle;
 
 			bool[] isEditable = {isEditingName};
 			string[] editableId = {entry.FullId};
@@ -580,7 +704,8 @@ namespace Beamable.Editor.UI.ContentWindow
 		EditorGUI.BeginChangeCheck();
 			if (isEditingName)
 			{
-				_editLabels = DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId);
+				_editLabels = DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId,
+					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle, indentLevel);
 				
 				bool isEditLabelFocused = GUI.GetNameOfFocusedControl() == entry.FullId;
 				if (isEditLabelFocused && Event.current.type is EventType.KeyDown or EventType.KeyUp &&
@@ -595,19 +720,26 @@ namespace Beamable.Editor.UI.ContentWindow
 					_editItemId = string.Empty;
 				}
 				
-				if (Event.current.type == EventType.MouseDown && !rowRect.Contains(Event.current.mousePosition))
+				if (Event.current.type == EventType.MouseDown && !hitRect.Contains(Event.current.mousePosition))
 				{
 					RenameEntry(entry.FullId, _editLabels[0]);
 				}
 			}
 			else
 			{
-				DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId);
+				DrawTableRow(values, columnWidths, guiStyle, labelStyle, rowRect, icons, isEditable, editableId,
+					ContentWindow_TooltipsHelper.CanReviewEntry(entry) ? entry : (LocalContentManifestEntry?)null, statusStyle, indentLevel);
 			}
 
 			_itemContentIdToRowRect[entry.FullId] = (int)rowRect.center.y;
+			// Untyped entries are reviewed through their status link, without creating a fake Inspector object.
+			if (!_contentTypeReflectionCache.ContentTypeToClass.ContainsKey(entry.TypeName))
+			{
+				RegisterButtonTooltip(hitRect, $"No Unity content class for {entry.TypeName}. Click its status to reconcile incoming changes or conflicts.");
+				return;
+			}
 			
-			if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition))
+			if (CanHandleContentInput && Event.current.type == EventType.MouseDown && hitRect.Contains(Event.current.mousePosition))
 			{
 				var isShiftClick = Event.current.shift;
 				var isLeftClick = Event.current.button == 0;
@@ -732,8 +864,21 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 
+		private bool CanHandleContentInput => !_contentService.CurrentProgress.IsActive;
+
+		// Menus can outlive the GUI event that opened them. Check at invocation, not registration.
+		private GenericMenu.MenuFunction GuardContentInput(GenericMenu.MenuFunction action) => () =>
+		{
+			if (CanHandleContentInput) action();
+		};
+
+		// A modal confirmation can pump Editor callbacks that start another operation.
+		private bool ConfirmContentInput(Func<bool> confirm) =>
+			CanHandleContentInput && confirm() && CanHandleContentInput;
+
 		private void RenameEntry(string entryId, string newName)
 		{
+			if (!CanHandleContentInput) return;
 			_editItemId = string.Empty;
 			var newId = _contentService.RenameContent(entryId, newName);
 			SetEntryIdAsSelected(newId);
@@ -742,6 +887,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void ShowItemOptionsMenu(Vector2 screenPosition)
 		{
+			if (!CanHandleContentInput) return;
 			GenericMenu menu = new GenericMenu();
 
 			var selection = Selection.objects;
@@ -770,22 +916,22 @@ namespace Beamable.Editor.UI.ContentWindow
 				{
 					menu.AddItem(new GUIContent("Open File Item"), false,
 					             () => { InternalEditorUtility.OpenFileAtLineExternal(entry.JsonFilePath, 1); });
-					menu.AddItem(new GUIContent("Duplicate Item"), false, () =>
+					menu.AddItem(new GUIContent("Duplicate Item"), false, GuardContentInput(() =>
 					{
 						DuplicateContent(entry);
-					});
+					}));
 
-					menu.AddItem(new GUIContent("Rename Item"), false, () =>
+					menu.AddItem(new GUIContent("Rename Item"), false, GuardContentInput(() =>
 					{
 						StartEditEntryName(entry);
-					});
+					}));
 
 
-					menu.AddItem(new GUIContent("Delete Item"), false, () =>
+					menu.AddItem(new GUIContent("Delete Item"), false, GuardContentInput(() =>
 					{
-						if (EditorUtility.DisplayDialog("Delete Content",
+						if (ConfirmContentInput(() => EditorUtility.DisplayDialog("Delete Content",
 						                                "Are you sure you want to delete this content?", "Delete",
-						                                "Cancel"))
+						                                "Cancel")))
 						{
 							var scope = _contentService.GetContentScopeKey();
 							_contentService.DeleteContent(entry.FullId).Then(_ =>
@@ -797,28 +943,28 @@ namespace Beamable.Editor.UI.ContentWindow
 							}).Error(Debug.LogException);
 						}
 
-					});
+					}));
 				}
 
 				if (_contentService.TryGetRenameInfo(entry.FullId, out var ctxRenameInfo)
 				    && ctxRenameInfo.CreatedFullId == entry.FullId)
 				{
 					menu.AddItem(new GUIContent($"Revert Item (renamed from {ctxRenameInfo.OldName})"), false,
-					             () =>
+					             GuardContentInput(() =>
 					             {
 						             var bothIds = $"{ctxRenameInfo.CreatedFullId},{ctxRenameInfo.DeletedFullId}";
 						             _ = _contentService.SyncContentsWithProgress(
 							             true, true, true, true, bothIds, ContentFilterType.ExactIds);
-					             });
+					             }));
 				}
 				else if (entry.StatusEnum is not ContentStatus.UpToDate and not ContentStatus.Created)
 				{
 					menu.AddItem(new GUIContent("Revert Item"), false,
-					             () =>
+					             GuardContentInput(() =>
 					             {
 						             _ = _contentService.SyncContentsWithProgress(
 							             true, true, true, true, entry.FullId, ContentFilterType.ExactIds);
-					             });
+					             }));
 				}
 				else
 				{
@@ -839,18 +985,18 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 				else
 				{
-					menu.AddItem(new GUIContent("Delete Existing Items"), false, () =>
+					menu.AddItem(new GUIContent("Delete Existing Items"), false, GuardContentInput(() =>
 					{
-						if (EditorUtility.DisplayDialog("Delete Content",
+						if (ConfirmContentInput(() => EditorUtility.DisplayDialog("Delete Content",
 						                                $"Are you sure you want to delete these {entries.Count} contents?", "Delete",
-						                                "Cancel"))
+						                                "Cancel")))
 						{
 							_contentService.TempDisableWatcher(() => DeleteContentEntries(entries)).Error(Debug.LogException);
 						}
-					});
+					}));
 				}
 
-				menu.AddItem(new GUIContent("Duplicate Items"), false, () =>
+				menu.AddItem(new GUIContent("Duplicate Items"), false, GuardContentInput(() =>
 				{
 					ClearSelection();
 
@@ -871,7 +1017,7 @@ namespace Beamable.Editor.UI.ContentWindow
 						}
 					}
 
-				});
+				}));
 
 				if (allUpToDate)
 				{
@@ -879,11 +1025,11 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 				else
 				{
-					menu.AddItem(new GUIContent("Revert changed Items"), false, () =>
+					menu.AddItem(new GUIContent("Revert changed Items"), false, GuardContentInput(() =>
 					{
 						_ = _contentService.SyncContentsWithProgress(
 							true, true, true, true, string.Join(",",entries.Select(e => e.FullId)), ContentFilterType.ExactIds);
-					});
+					}));
 				}
 				
 			}
@@ -893,6 +1039,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void DuplicateContent(LocalContentManifestEntry entry)
 		{
+			if (!CanHandleContentInput) return;
 			if (_contentService.DuplicateContent(entry, out var duplicatedObject))
 			{
 				SetEntryIdAsSelected(duplicatedObject.Id);
@@ -902,6 +1049,7 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void StartEditEntryName(LocalContentManifestEntry entry)
 		{
+			if (!CanHandleContentInput) return;
 			_editItemId = entry.FullId;
 			_editLabels = new[] {entry.Name};
 		}
@@ -911,45 +1059,26 @@ namespace Beamable.Editor.UI.ContentWindow
 		                              GUIStyle rowStyle,
 		                              GUIStyle fieldStyle,
 		                              Rect fullRect,
-		                              GUIContent[] icons = null, bool[] isEditLabel = null, string[] fieldID = null)
+		                              GUIContent[] icons = null, bool[] isEditLabel = null, string[] fieldID = null, LocalContentManifestEntry? reviewEntry = null, GUIStyle statusStyle = null, int indentLevel = -1)
 		{
 			if (Event.current.type == EventType.Repaint)
 			{
-				rowStyle.Draw(fullRect, false, false, false, false);
+				rowStyle.Draw(indentLevel < 0 ? fullRect : GetItemRowRect(fullRect, columnWidths[0], indentLevel), false, false, false, false);
 			}
 			
-			float separatorHeight = fullRect.height + SEPARATOR_WIDTH_AREA;
-			BeamGUI.DrawVerticalSeparatorLine(fullRect.xMin, fullRect.yMin, separatorHeight, _tableSeparatorColor);
 			for (int i = 0; i < labels.Length; i++)
 			{
 				string labelValue = labels[i];
-				float itemWidth = columnWidths[i];
-				fullRect.xMin += BASE_PADDING;
-				if (icons != null && icons.Length > i)
+				var cellRect = new Rect(fullRect.x, fullRect.y, columnWidths[i], fullRect.height);
+				var nameRect = i == 0 && indentLevel >= 0 ? GetItemNameRect(cellRect, indentLevel) : GetTableLabelRect(cellRect, i);
+				var badge = icons != null && icons.Length > i ? icons[i] : null;
+				if (badge?.image != null)
 				{
-					float iconSize = fullRect.height - BASE_PADDING;
-					var badge = icons[i];
-
-					if (badge?.image != null)
-					{
-						Rect iconRect = new Rect(
-							fullRect.xMin,
-							fullRect.center.y - iconSize / 2f,
-							iconSize,
-							iconSize);
-
-						GUI.DrawTexture(iconRect, badge.image, ScaleMode.ScaleToFit);
-
-						GUI.Label(iconRect, new GUIContent(string.Empty, badge.tooltip), GUIStyle.none);
-					}
-					itemWidth -= iconSize;
-					fullRect.xMin += iconSize;
+					var iconRect = new Rect(cellRect.x + BASE_PADDING, cellRect.center.y - 7.5f, 15, 15);
+					GUI.DrawTexture(iconRect, badge.image, ScaleMode.ScaleToFit);
+					GUI.Label(iconRect, new GUIContent(string.Empty, badge.tooltip), GUIStyle.none);
 				}
 				
-				float contentWidth = itemWidth - BASE_PADDING;
-				
-				Rect nameRect = new Rect(fullRect.xMin, fullRect.y, contentWidth,
-				                         fullRect.height);
 				if (isEditLabel!= null && isEditLabel.Length > i && isEditLabel[i])
 				{
 					string controlName = fieldID != null && fieldID.Length > i ? fieldID[i] : FOCUS_NAME;
@@ -962,20 +1091,28 @@ namespace Beamable.Editor.UI.ContentWindow
 						EditorGUI.FocusTextInControl(controlName);
 					}
 				}
+				else if (i == STATUS_COLUMN && reviewEntry.HasValue)
+				{
+					EditorGUIUtility.AddCursorRect(nameRect, MouseCursor.Link);
+					if (GUI.Button(nameRect, new GUIContent(labelValue + "  \u203A", badge?.tooltip + "\nClick to review this item and choose Use Realm or Keep Local."), statusStyle ?? fieldStyle))
+					{
+						var entry = reviewEntry.Value;
+						var scope = _contentService.GetContentScopeKey();
+						AddDelayedAction(() =>
+						{
+							if (CanHandleContentInput && scope == _contentService.GetContentScopeKey())
+								ContentWindow_TooltipsHelper.ShowReconciliationDialog(_contentService, entry);
+						});
+					}
+				}
 				else
 				{
-					EditorGUI.LabelField(nameRect, labelValue, fieldStyle);
+					EditorGUI.LabelField(nameRect, new GUIContent(labelValue, badge?.tooltip ?? labelValue), i == STATUS_COLUMN ? statusStyle ?? fieldStyle : fieldStyle);
 				}
 
-				fullRect.xMin += itemWidth;
-				if (i + 1 < labels.Length)
-				{
-					BeamGUI.DrawVerticalSeparatorLine(fullRect.xMin, fullRect.yMin, separatorHeight, _tableSeparatorColor);
-					fullRect.xMin += SEPARATOR_WIDTH_AREA;
-				}
+				fullRect.x += columnWidths[i];
 			}
 
-			BeamGUI.DrawVerticalSeparatorLine(fullRect.xMax, fullRect.yMin, separatorHeight, _tableSeparatorColor);
 			return labels;
 		}
 
@@ -1102,7 +1239,22 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private bool HasContentIssue(LocalContentManifestEntry entry)
 		{
-			return _contentService.IsContentInvalid(entry.FullId) || entry.IsInConflict;
+			return _contentService.IsContentInvalid(entry.FullId) || entry.IsInConflict ||
+			       ContentWindow_TooltipsHelper.NeedsReconciliation(entry);
+		}
+
+		// Footer counts and local-status filters must classify the same entries. The CLI's
+		// raw Created/Deleted statuses can also describe incoming realm presence changes.
+		private ContentStatus? GetLocalFilterStatus(LocalContentManifestEntry entry)
+		{
+			var kind = ContentWindow_TooltipsHelper.GetChangeKind(entry);
+			if (kind == ContentChangeKind.Unknown || ContentWindow_TooltipsHelper.IsIncoming(kind)) return null;
+			if (_contentService.TryGetRenameInfo(entry.FullId, out var rename))
+			{
+				if (rename.DeletedFullId == entry.FullId) return null;
+				if (rename.CreatedFullId == entry.FullId) return ContentStatus.Modified;
+			}
+			return entry.StatusEnum;
 		}
 
 		private bool FilterItem(string specificType,
@@ -1116,7 +1268,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			if (entry.StatusEnum == ContentStatus.Deleted
 			    && _contentService.TryGetRenameInfo(entry.FullId, out var ri)
 			    && ri.DeletedFullId == entry.FullId
-			    && !(statuses.Contains(StatusMapToString[ContentFilterStatus.Issues]) && HasContentIssue(entry)))
+			    && !(statuses.Contains(StatusMapToString[ContentFilterStatus.Issues]) && HasContentIssue(entry))
+			    && !ContentWindow_TooltipsHelper.NeedsReconciliation(entry))
 			{
 				return false;
 			}
@@ -1177,7 +1330,7 @@ namespace Beamable.Editor.UI.ContentWindow
 					return entry.IsInConflict;
 				}
 
-				return FilterStatusToContentStatus.TryGetValue(status, out var contentStatus) && contentStatus == entry.StatusEnum;
+				return FilterStatusToContentStatus.TryGetValue(status, out var contentStatus) && contentStatus == GetLocalFilterStatus(entry);
 			}
 		}
 
@@ -1231,29 +1384,39 @@ namespace Beamable.Editor.UI.ContentWindow
 			}
 		}
 		
+		private static Rect GetItemRowRect(Rect row, float nameColumnWidth, int indentLevel)
+		{
+			row.xMin += Mathf.Min((indentLevel + 1) * INDENT_WIDTH, nameColumnWidth - BASE_PADDING);
+			return row;
+		}
+
+		private static Rect GetItemNameRect(Rect cell, int indentLevel)
+		{
+			var label = GetTableLabelRect(cell, 0);
+			// Match the type heading's foldout/icon gutter, then indent its children one level.
+			float inset = FOLDOUT_WIDTH + TYPE_ICON_SIZE + BASE_PADDING + (indentLevel + 1) * INDENT_WIDTH;
+			label.xMin = Mathf.Min(label.xMin + inset, label.xMax);
+			return label;
+		}
+
+		private static Rect GetTableLabelRect(Rect cell, int column)
+		{
+			// Reserve the icon slot even for healthy rows and the shared header.
+			cell.xMin += BASE_PADDING + (column == STATUS_COLUMN ? 20 : 0);
+			cell.xMax = Mathf.Max(cell.xMin, cell.xMax - BASE_PADDING);
+			return cell;
+		}
+
 		private static float[] CalculateColumnWidths(float totalAvailableWidth)
 		{
-			// Name, Tags, Last Modified
-			float[] minWidths = {200f, 100f, 100f};
-			float[] weights = {2f, 1.25f, 1f};
-
-			totalAvailableWidth -= BASE_PADDING * 2 * minWidths.Length;
-			totalAvailableWidth -= SEPARATOR_WIDTH_AREA * Mathf.Max(0, minWidths.Length - 1);
-
-			// MinWidth sum + Vertical Line Separator Count
-			float totalMinWidth = minWidths.Sum() + (minWidths.Length - 1);
-			
-			float remainingWidth = Mathf.Max(0, totalAvailableWidth - totalMinWidth);
-			
-			float totalWeight = weights.Sum();
-			
-			float[] widths = new float[minWidths.Length];
-			for (int i = 0; i < widths.Length; i++)
-			{
-				widths[i] = minWidths[i] + (remainingWidth * (weights[i] / totalWeight));
-			}
-
-			return widths;
+			// Name, Status, Tags, Latest Update. Widths include padding and the status icon slot.
+			float[] minWidths = {200f, 160f, 70f, 170f};
+			float[] weights = {0.5f, 0.2f, 0.1f, 0.2f};
+			float scale = Mathf.Clamp01(totalAvailableWidth / ITEM_LIST_MIN_WIDTH);
+			float remaining = Mathf.Max(0, totalAvailableWidth - ITEM_LIST_MIN_WIDTH);
+			for (int i = 0; i < minWidths.Length; i++)
+				minWidths[i] = minWidths[i] * scale + remaining * weights[i];
+			return minWidths;
 		}
 	}
 }

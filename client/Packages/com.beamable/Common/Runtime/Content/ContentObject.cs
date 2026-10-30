@@ -450,6 +450,8 @@ namespace Beamable.Common.Content
 			}
 		}
 
+		public bool HasPendingEditorChangeNotification => _validateCoroutine != null;
+
 		public void CancelPendingEditorChangeNotification()
 		{
 			if (_validateCoroutine == null)

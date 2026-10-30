@@ -179,7 +179,7 @@ public partial class ContentService
 	/// <remarks>
 	/// Edge cases:
 	/// - Uses event disambiguation based on LastWrite timestamps to prevent duplicate events (Windows fires both Created and Changed for new files)
-	/// - Only one watcher per (pid, manifestId) tuple is stored in the dictionary (overwrites if called multiple times)
+	/// - Only one active watcher per (pid, manifestId) tuple is stored; iterator exit removes the registration
 	/// - Breaks and yields when cancellation is requested
 	/// - All file paths must end with .json extension
 	/// - Renamed events include both old and new file information
@@ -190,7 +190,8 @@ public partial class ContentService
 		var contentFolder = EnsureContentHistoryEntriesFolderExists(out _, _requester.Pid, manifestId);
 
 		// Create the file watcher
-		_contentHistoryEntryWatchers.Add((pid, manifestId), new FileSystemWatcher());
+		using var watcher = new FileSystemWatcher();
+		_contentHistoryEntryWatchers.Add((pid, manifestId), watcher);
 
 		// We need to keep track of the "LastWrite" time for each content entry to disambiguate multiple events firing simultaneously for the same file.
 		// For example, on Windows, a Created event is always fired alongside a Changed event of the same file (because of "reasons", I guess)
@@ -198,59 +199,64 @@ public partial class ContentService
 		var eventDisambiguationHelper = new Dictionary<string, long>();
 
 		// Set up the file watcher...
-		var watcher = _contentHistoryEntryWatchers[(pid, manifestId)];
-		watcher.BeginInit();
-		watcher.Path = contentFolder;
-		watcher.IncludeSubdirectories = true;
-		watcher.Filter = "*.json";
-		watcher.EnableRaisingEvents = true;
-		watcher.NotifyFilter = (NotifyFilters.Attributes |
-		                        NotifyFilters.CreationTime |
-		                        NotifyFilters.DirectoryName |
-		                        NotifyFilters.FileName |
-		                        NotifyFilters.LastWrite);
-		watcher.Error += (_, e) => Log.Error(e.GetException().ToString());
-		watcher.Disposed += (_, e) => Log.Error($"Disposed {e}");
-		watcher.Created += (_, e) => { OnFilesChanged(e); };
-		watcher.Deleted += (_, e) => { OnFilesChanged(e); };
-		watcher.Renamed += (_, e) => { OnFilesChanged(e); };
-		watcher.Changed += (_, e) => { OnFilesChanged(e); };
-		watcher.EndInit();
-
-		// Keep waiting for messages from the set up file watcher.
-		var reader = _channelContentHistoryEntries.Reader;
-
-		while (true)
+		try
 		{
-			// If the operation was canceled, we break out.
-			if (token.IsCancellationRequested)
+			watcher.BeginInit();
+			watcher.Path = contentFolder;
+			watcher.IncludeSubdirectories = true;
+			watcher.Filter = "*.json";
+			watcher.EnableRaisingEvents = true;
+			watcher.NotifyFilter = (NotifyFilters.Attributes |
+			                        NotifyFilters.CreationTime |
+			                        NotifyFilters.DirectoryName |
+			                        NotifyFilters.FileName |
+			                        NotifyFilters.LastWrite);
+			watcher.Error += (_, e) => Log.Error(e.GetException().ToString());
+			watcher.Created += (_, e) => { OnFilesChanged(e); };
+			watcher.Deleted += (_, e) => { OnFilesChanged(e); };
+			watcher.Renamed += (_, e) => { OnFilesChanged(e); };
+			watcher.Changed += (_, e) => { OnFilesChanged(e); };
+			watcher.EndInit();
+
+			// Keep waiting for messages from the set up file watcher.
+			var reader = _channelContentHistoryEntries.Reader;
+
+			while (true)
 			{
-				break;
+				// If the operation was canceled, we break out.
+				if (token.IsCancellationRequested)
+				{
+					break;
+				}
+
+				try
+				{
+					await reader.WaitToReadAsync(token);
+
+					// For the case which multiple files are edited at the same time, the watcher triggers one message for each one.
+					// So to batch it together, we wait 100 ms and then try to read from the buffer.
+					await Task.Delay(100, token);
+				}
+				catch (OperationCanceledException)
+				{
+					Log.Debug($"{nameof(ListenToLocalContentFileChanges)} was cancelled");
+					break;
+				}
+
+				// Get all the files that were changed respecting the PID filter.
+				var batchedChanges = new LocalContentHistoryEntryFileChanges() { AllFileChanges = new() };
+				while (reader.TryRead(out var changed))
+				{
+					batchedChanges.AllFileChanges.Add(changed);
+				}
+
+
+				yield return batchedChanges;
 			}
-
-			try
-			{
-				await reader.WaitToReadAsync(token);
-
-				// For the case which multiple files are edited at the same time, the watcher triggers one message for each one.
-				// So to batch it together, we wait 100 ms and then try to read from the buffer.
-				await Task.Delay(100, token);
-			}
-			catch (OperationCanceledException)
-			{
-				Log.Debug($"{nameof(ListenToLocalContentFileChanges)} was cancelled");
-				break;
-			}
-
-			// Get all the files that were changed respecting the PID filter.
-			var batchedChanges = new LocalContentHistoryEntryFileChanges() { AllFileChanges = new() };
-			while (reader.TryRead(out var changed))
-			{
-				batchedChanges.AllFileChanges.Add(changed);
-			}
-
-
-			yield return batchedChanges;
+		}
+		finally
+		{
+			_contentHistoryEntryWatchers.Remove((pid, manifestId));
 		}
 
 		yield break;
@@ -365,60 +371,66 @@ public partial class ContentService
 		var changelistsFolder = EnsureContentHistoryChangelistsFolderExists(out _, pid, manifestId);
 
 		// Create the file watcher
-		_contentHistoryChangelistWatchers.Add((pid, manifestId), new FileSystemWatcher());
+		using var watcher = new FileSystemWatcher();
+		_contentHistoryChangelistWatchers.Add((pid, manifestId), watcher);
 
 		// Disambiguation helper for simultaneous events
 		var eventDisambiguationHelper = new Dictionary<string, long>();
 
 		// Set up the file watcher...
-		var watcher = _contentHistoryChangelistWatchers[(pid, manifestId)];
-		watcher.BeginInit();
-		watcher.Path = changelistsFolder;
-		watcher.IncludeSubdirectories = true;
-		watcher.Filter = "*.json";
-		watcher.EnableRaisingEvents = true;
-		watcher.NotifyFilter = (NotifyFilters.Attributes |
-		                        NotifyFilters.CreationTime |
-		                        NotifyFilters.DirectoryName |
-		                        NotifyFilters.FileName |
-		                        NotifyFilters.LastWrite |
-		                        NotifyFilters.LastAccess);
-		watcher.Error += (_, e) => Log.Error(e.GetException().ToString());
-		watcher.Disposed += (_, e) => Log.Error($"Disposed {e}");
-		watcher.Created += (_, e) => { OnFilesChanged(e); };
-		watcher.Deleted += (_, e) => { OnFilesChanged(e); };
-		watcher.Renamed += (_, e) => { OnFilesChanged(e); };
-		watcher.Changed += (_, e) => { OnFilesChanged(e); };
-		watcher.EndInit();
-
-		// Keep waiting for messages from the set up file watcher.
-		var reader = _channelContentHistoryChangelists.Reader;
-
-		while (true)
+		try
 		{
-			if (token.IsCancellationRequested)
-			{
-				break;
-			}
+			watcher.BeginInit();
+			watcher.Path = changelistsFolder;
+			watcher.IncludeSubdirectories = true;
+			watcher.Filter = "*.json";
+			watcher.EnableRaisingEvents = true;
+			watcher.NotifyFilter = (NotifyFilters.Attributes |
+			                        NotifyFilters.CreationTime |
+			                        NotifyFilters.DirectoryName |
+			                        NotifyFilters.FileName |
+			                        NotifyFilters.LastWrite |
+			                        NotifyFilters.LastAccess);
+			watcher.Error += (_, e) => Log.Error(e.GetException().ToString());
+			watcher.Created += (_, e) => { OnFilesChanged(e); };
+			watcher.Deleted += (_, e) => { OnFilesChanged(e); };
+			watcher.Renamed += (_, e) => { OnFilesChanged(e); };
+			watcher.Changed += (_, e) => { OnFilesChanged(e); };
+			watcher.EndInit();
 
-			try
-			{
-				await reader.WaitToReadAsync(token);
-				await Task.Delay(100, token);
-			}
-			catch (OperationCanceledException)
-			{
-				Log.Debug($"{nameof(ListenToContentHistoryChangelists)} was cancelled");
-				break;
-			}
+			// Keep waiting for messages from the set up file watcher.
+			var reader = _channelContentHistoryChangelists.Reader;
 
-			var batchedChanges = new LocalContentHistoryChangelistFileChanges() { AllFileChanges = new() };
-			while (reader.TryRead(out var changed))
+			while (true)
 			{
-				batchedChanges.AllFileChanges.Add(changed);
-			}
+				if (token.IsCancellationRequested)
+				{
+					break;
+				}
 
-			yield return batchedChanges;
+				try
+				{
+					await reader.WaitToReadAsync(token);
+					await Task.Delay(100, token);
+				}
+				catch (OperationCanceledException)
+				{
+					Log.Debug($"{nameof(ListenToContentHistoryChangelists)} was cancelled");
+					break;
+				}
+
+				var batchedChanges = new LocalContentHistoryChangelistFileChanges() { AllFileChanges = new() };
+				while (reader.TryRead(out var changed))
+				{
+					batchedChanges.AllFileChanges.Add(changed);
+				}
+
+				yield return batchedChanges;
+			}
+		}
+		finally
+		{
+			_contentHistoryChangelistWatchers.Remove((pid, manifestId));
 		}
 
 		yield break;
@@ -514,8 +526,8 @@ public partial class ContentService
 
 
 	/// <summary>
-	/// Synchronizes content history entries from the remote Beamable API to local storage, fetching only new entries not already cached.
-	/// Walks backwards through history in pages until all new entries are downloaded or cancellation occurs.
+	/// Synchronizes content history entries from the remote Beamable API to local storage, saving only entries not already cached.
+	/// Fetches history by offset until all pages are processed or cancellation occurs.
 	/// Invokes an optional progress callback after each page is processed.
 	/// </summary>
 	/// <param name="pid">The realm id (PID) to sync entries for</param>
@@ -527,8 +539,8 @@ public partial class ContentService
 	/// Edge cases:
 	/// - Uses semaphore to prevent file system races during concurrent writes
 	/// - Skips entries that already exist locally (based on CreatedDate)
-	/// - Starts from the current time or continues from the oldest local entry (localStartDate - 1)
-	/// - Stops when hasMore=false or when minCreatedInPage doesn't advance (all pages exhausted)
+	/// - Starts at offset zero so new publications are included even when history is already cached
+	/// - Stops when the API reports hasMore=false
 	/// - Logs errors for individual entry save failures but continues with remaining entries
 	/// - Returns partial results if cancellation occurs mid-sync
 	/// - Page limit is hardcoded to 100 entries per API call
@@ -538,14 +550,12 @@ public partial class ContentService
 		// Ensure local entries folder exists
 		var entriesPath = EnsureContentHistoryEntriesFolderExists(out _, pid, manifestId);
 
-		// Load locally cached entries so we can avoid re-fetching duplicates and determine where to continue from
+		// Load locally cached entries so we can avoid rewriting duplicates.
 		var allLocallyCachedEntries = await GetAllContentHistoryLocalEntries(pid, manifestId);
 		var existingCreatedDates = new HashSet<long>();
-		long? localStartDate = null;
 		if (allLocallyCachedEntries.Entries.Count > 0)
 		{
 			existingCreatedDates.UnionWith(allLocallyCachedEntries.Entries.Select(e => e.CreatedDate));
-			localStartDate = allLocallyCachedEntries.StartDate;
 		}
 
 		// Collector for all entries we actually fetched during this call
@@ -553,15 +563,14 @@ public partial class ContentService
 
 		int greedyPageLimit = 100;
 		bool hasMore = true;
-		long toDateCursor = localStartDate.HasValue ? localStartDate.Value - 1 : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+		int offset = 0;
 
 		try
 		{
 			while (hasMore && !cancellationToken.IsCancellationRequested)
 			{
-				var fetchResult = await _contentApi.GetManifestDiffs(manifestId, toDate: toDateCursor, limit: greedyPageLimit, offset: 0);
+				var fetchResult = await _contentApi.GetManifestDiffs(manifestId, limit: greedyPageLimit, offset: offset);
 
-				long minCreatedInPage = long.MaxValue;
 				var pageEntries = new List<ContentHistoryEntry>();
 
 				// Acquire entries semaphore while writing files for this page to avoid races with readers/listeners
@@ -572,7 +581,6 @@ public partial class ContentService
 					{
 						if (diff == null) continue;
 						var createdDate = diff.createdDate;
-						minCreatedInPage = Math.Min(minCreatedInPage, createdDate);
 						if (existingCreatedDates.Contains(createdDate)) continue;
 
 						var entry = ContentHistoryEntry.FromManifestDiff(diff);
@@ -605,16 +613,9 @@ public partial class ContentService
 					onProgress(new ContentHistoryFetchReport() { Entries = pageEntries });
 				}
 
-				// Prepare cursor for next page: go strictly older than the minimum createdDate we saw
-				if (minCreatedInPage == long.MaxValue)
-				{
-					hasMore = false;
-				}
-				else
-				{
-					toDateCursor = minCreatedInPage - 1;
-					hasMore = fetchResult.hasMore;
-				}
+				// Stored-diff pagination uses offset/limit; toDate alone does not filter this endpoint.
+				offset += greedyPageLimit;
+				hasMore = fetchResult.hasMore;
 			}
 		}
 		catch (OperationCanceledException)

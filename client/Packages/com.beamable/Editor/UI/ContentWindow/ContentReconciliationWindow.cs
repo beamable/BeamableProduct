@@ -1,0 +1,733 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Beamable.Common.BeamCli.Contracts;
+using Beamable.Content;
+using Beamable.Editor.BeamCli.Commands;
+using Beamable.Editor.ContentService;
+using Beamable.Editor.Util;
+using UnityEditor;
+using UnityEngine;
+
+namespace Beamable.Editor.UI.ContentWindow
+{
+	internal sealed class ContentReconciliationQueue
+	{
+		internal readonly List<LocalContentManifestEntry> Items = new();
+		internal string SelectedId { get; private set; }
+		internal int ResolvedCount { get; private set; }
+		internal int ConflictCount { get; private set; }
+		internal float Progress => Items.Count + ResolvedCount == 0 ? 0 : (float)ResolvedCount / (Items.Count + ResolvedCount);
+		internal void Refresh(IEnumerable<LocalContentManifestEntry> entries, string selectedId = null)
+		{
+			selectedId ??= SelectedId;
+			Items.Clear();
+			ConflictCount = 0;
+			foreach (var entry in entries)
+			{
+				if (!ContentWindow_TooltipsHelper.CanReviewEntry(entry)) continue;
+				Items.Add(entry);
+				if (entry.IsInConflict) ConflictCount++;
+			}
+			Items.Sort((a, b) => a.IsInConflict != b.IsInConflict ? a.IsInConflict ? -1 : 1
+				: string.Compare(a.FullId, b.FullId, StringComparison.Ordinal));
+			SelectedId = Items.Exists(e => e.FullId == selectedId) ? selectedId : Items.Count > 0 ? Items[0].FullId : null;
+		}
+		internal bool Select(string id)
+		{
+			if (!Items.Exists(e => e.FullId == id)) return false;
+			SelectedId = id;
+			return true;
+		}
+		internal void Complete(string id)
+		{
+			var index = Items.FindIndex(e => e.FullId == id);
+			if (index < 0) return;
+			if (Items[index].IsInConflict) ConflictCount--;
+			Items.RemoveAt(index);
+			ResolvedCount++;
+			SelectedId = Items.Count == 0 ? null : Items[index % Items.Count].FullId;
+		}
+	}
+
+	// A review owns one read-only request. Applying uses the existing service operation and watcher lifecycle.
+	internal sealed class ContentReconciliationWindow : EditorWindow
+	{
+		private CliContentService _service;
+		private string _contentId, _scope, _error;
+		private LocalContentManifestEntry _entry;
+		private ContentReconciliationPreview _preview;
+		private ContentResolveWrapper _request;
+		private int _generation, _tab;
+		private bool _loading, _applying, _missingType;
+		private Vector2 _propertyScroll, _jsonScroll, _reviewScroll;
+		private float _localScroll, _realmScroll;
+		private bool _simplifiedJson;
+		private GUIContent[][] _rows;
+		private string[] _localLines, _realmLines;
+		private bool[] _jsonChangedLines;
+		private float _localWidth, _realmWidth;
+		private GUIStyle _body, _heading, _cell, _json, _warningBody;
+		private GUIStyle _localHeading, _realmHeading;
+		private GUIStyle _idLabel;
+		private GUIContent _missingTypeMessage, _keepLocalLabel, _useRealmLabel;
+		private Texture _warningIcon;
+		private static readonly Color AdditionColor = new Color(.12f, .78f, .52f);
+		private static readonly Color DeletionColor = new Color(.95f, .25f, .30f);
+		internal static readonly GUILayoutOption[] HeaderLabelOptions = { GUILayout.MinWidth(0), GUILayout.ExpandWidth(true) };
+		private static readonly string[] DiffTabs = { "Properties", "JSON" };
+		internal const string KeepLocalText = "Keep Local Version";
+		internal const string UseRealmText = "Use Realm Version";
+		private const float RowHeight = 24;
+		private ContentReconciliationQueue _queue;
+		private Vector2 _queueScroll;
+		private int _manifestVersion;
+		private bool _awaitingRefresh, _showConflicts = true, _showIncoming = true;
+		private string _successMessage;
+		private GUIContent[] _queueLabels;
+		private Texture[] _queueIcons;
+		private GUIStyle _queueLabel;
+		private string _remainingLabel, _progressLabel, _conflictsLabel, _incomingLabel;
+		private float _queueViewportHeight;
+
+		internal static void Open(CliContentService service, LocalContentManifestEntry entry)
+		{
+			var owner = focusedWindow;
+			var window = GetWindow<ContentReconciliationWindow>(true, "Beam Content — Reconcile", true);
+			if (window._applying) { window.Focus(); return; }
+			var kind = ContentWindow_TooltipsHelper.GetChangeKind(entry);
+			var summary = kind == ContentChangeKind.IncomingAddition || kind == ContentChangeKind.IncomingDeletion;
+			window.minSize = new Vector2(840, 400);
+			var size = new Vector2(1000, summary ? 460 : 520);
+			if (owner != null && owner != window)
+				window.position = new Rect(owner.position.center - size / 2, size);
+			window._service = service;
+			window._contentId = entry.FullId;
+			window._entry = entry;
+			window._scope = service.GetContentScopeKey();
+			window._tab = 0;
+			window._queue = new ContentReconciliationQueue();
+			window._queue.Refresh(service.EntriesCache.Values, entry.FullId);
+			window._manifestVersion = service.ManifestChangedCount;
+			window._awaitingRefresh = false;
+			window._successMessage = null;
+			window.CacheQueueLabels();
+			window.RevealSelection();
+			_ = window.LoadPreview();
+		}
+
+		// Observe the existing watcher; do not start another watcher or poll the CLI.
+		private void Update()
+		{
+			if (_service == null || _queue == null || _applying) return;
+			if (_scope != _service.GetContentScopeKey())
+			{
+				if (_error == "Realm or namespace changed. Close this review and reopen it from Beam Content.") return;
+				_generation++;
+				_request?.Command.Cancel();
+				_request = null;
+				_loading = _awaitingRefresh = false;
+				_preview = null;
+				_error = "Realm or namespace changed. Close this review and reopen it from Beam Content.";
+				Repaint();
+				return;
+			}
+			if (_service.isReloading || _service.CurrentProgress.IsActive) return;
+			if (_awaitingRefresh && _manifestVersion == _service.ManifestChangedCount)
+			{
+				if (_loading && _service.AutoSyncState == ContentAutoSyncState.Failed)
+				{
+					_loading = false;
+					_error = "The choice was applied, but content could not refresh. Retry the refresh to continue.";
+					Repaint();
+				}
+				return;
+			}
+			if (!_awaitingRefresh && (_loading || _error != null || _manifestVersion == _service.ManifestChangedCount)) return;
+			var previousId = _contentId;
+			var advance = _awaitingRefresh;
+			_awaitingRefresh = false;
+			_manifestVersion = _service.ManifestChangedCount;
+			_queue.Refresh(_service.EntriesCache.Values);
+			CacheQueueLabels();
+			if (advance || previousId != _queue.SelectedId)
+			{
+				_contentId = _queue.SelectedId;
+				_tab = 0;
+				RevealSelection();
+				_preview = null;
+				_loading = false;
+				_error = null;
+				if (_contentId != null) _ = LoadPreview();
+			}
+			Repaint();
+		}
+
+		private void CacheQueueLabels()
+		{
+			_queueLabels = new GUIContent[_queue.Items.Count];
+			_queueIcons = new Texture[_queue.Items.Count];
+			var hasUnknown = false;
+			for (var i = 0; i < _queue.Items.Count; i++)
+			{
+				var item = _queue.Items[i];
+				var status = ContentWindow_TooltipsHelper.GetStatusLabel(item);
+				hasUnknown |= ContentWindow_TooltipsHelper.GetChangeKind(item) == ContentChangeKind.Unknown;
+				_queueLabels[i] = new GUIContent(item.FullId + (item.IsInConflict ? "" : "\n" + status),
+					item.FullId + "\n" + status);
+				_queueIcons[i] = item.IsInConflict ? EditorGUIUtility.IconContent("console.erroricon").image : ContentWindow_TooltipsHelper.GetStatusIcon(item);
+			}
+			_remainingLabel = $"{_queue.Items.Count} remaining";
+			_progressLabel = $"{_queue.ResolvedCount} of {_queue.ResolvedCount + _queue.Items.Count} resolved";
+			_conflictsLabel = $"Conflicts · {_queue.ConflictCount}";
+			// Older CLI payloads do not establish a direction; keep that group neutral.
+			_incomingLabel = $"{(hasUnknown ? "Other changes" : "Incoming")} · {_queue.Items.Count - _queue.ConflictCount}";
+		}
+
+		private void RevealSelection()
+		{
+			var index = _queue.Items.FindIndex(item => item.FullId == _queue.SelectedId);
+			if (index < 0) return;
+			var conflict = index < _queue.ConflictCount;
+			if (conflict) _showConflicts = true;
+			else _showIncoming = true;
+			var y = conflict ? 26 + index * 44 :
+				(_queue.ConflictCount > 0 ? 26 + (_showConflicts ? _queue.ConflictCount * 44 : 0) : 0) + 26 + (index - _queue.ConflictCount) * 44;
+			if (y < _queueScroll.y || y + 44 > _queueScroll.y + _queueViewportHeight) _queueScroll.y = y;
+		}
+
+		private void SelectItem(string id)
+		{
+			if (_applying || _awaitingRefresh || _service.CurrentProgress.IsActive || _service.isReloading || !_queue.Select(id)) return;
+			_contentId = id;
+			_tab = 0;
+			RevealSelection();
+			_ = LoadPreview();
+		}
+
+		private async Task RefreshReview()
+		{
+			if (!_awaitingRefresh) { await LoadPreview(); return; }
+			_error = null;
+			_loading = true;
+			var generation = _generation;
+			try { await _service.Reload(); }
+			catch (Exception error)
+			{
+				if (this != null && generation == _generation) { _error = error.Message; _loading = false; }
+			}
+		}
+
+		private void OnDisable()
+		{
+			_generation++;
+			_request?.Command.Cancel();
+			_request = null;
+		}
+
+		private async Task LoadPreview()
+		{
+			var generation = ++_generation;
+			_request?.Command.Cancel();
+			_request = null;
+			_preview = null;
+			_error = null;
+			_loading = true;
+			_propertyScroll = _jsonScroll = _reviewScroll = Vector2.zero;
+			_localScroll = _realmScroll = 0;
+			try
+			{
+				// A refresh may accept a newer publication, but never silently move to another realm/namespace.
+				if (_scope != _service.GetContentScopeKey() || !_service.EntriesCache.TryGetValue(_contentId, out _entry))
+					throw new InvalidOperationException("The content scope changed or the item is unavailable. Close this review and reopen the item.");
+				var command = _service.CreateReconciliationPreview(_contentId, _scope, _entry.TargetManifestUid);
+				_request = command;
+				ContentReconciliationPreview preview = null;
+				Exception reportedError = null;
+				command.OnStreamContentResolveConflictResult(report => preview = report.data.Preview);
+				command.OnError(report => reportedError ??= new InvalidOperationException(report.data.message));
+				await command.Run();
+				if (this == null || generation != _generation) return;
+				if (reportedError != null) throw reportedError;
+				ValidatePreview(preview, _contentId, _entry.TargetManifestUid);
+				_missingType = preview.RealmExists && !_service.HasContentType(_entry.TypeName);
+				_missingTypeMessage = null;
+				var differences = preview.Differences ?? Array.Empty<ContentReconciliationDifference>();
+				_rows = new GUIContent[differences.Length][];
+				for (var i = 0; i < differences.Length; i++)
+					_rows[i] = new[] { Cell(differences[i].Property), Cell(differences[i].LocalValue), Cell(differences[i].RealmValue) };
+				(_localLines, _realmLines, _jsonChangedLines, _simplifiedJson) = CompareJson(preview.LocalJson, preview.RealmJson);
+				_localWidth = _realmWidth = 0;
+				_preview = preview;
+			}
+			catch (Exception error)
+			{
+				if (this != null && generation == _generation) _error = error.Message;
+			}
+			finally
+			{
+				if (this != null && generation == _generation) { _request = null; _loading = false; Repaint(); }
+			}
+		}
+
+		internal static void ValidatePreview(ContentReconciliationPreview preview, string contentId, string manifestUid)
+		{
+			if (preview == null || preview.ContentId != contentId || preview.ManifestUid != manifestUid ||
+			    string.IsNullOrEmpty(preview.LocalRevision) || preview.LocalExists != !string.IsNullOrEmpty(preview.LocalJson) ||
+			    preview.RealmExists != !string.IsNullOrEmpty(preview.RealmJson) || preview.Differences == null)
+				throw new InvalidOperationException("The CLI did not return a complete review. Update the CLI, then refresh this review.");
+			// JsonUtility reads null string fields as empty strings. Keep absent sides consistent
+			// for JSON placeholders and Copy JSON, after rejecting contradictory presence/payloads.
+			if (!preview.LocalExists) preview.LocalJson = null;
+			if (!preview.RealmExists) preview.RealmJson = null;
+		}
+
+		internal static string ReviewErrorMessage(string error)
+		{
+			// Match the parser diagnostic, not an unrelated failure mentioning a preview option.
+			var unsupported = error.IndexOf("Unrecognized command or argument '--preview=", StringComparison.Ordinal) >= 0 ||
+			                  error.IndexOf("Unrecognized command or argument '--preview'", StringComparison.Ordinal) >= 0 ||
+			                  error.IndexOf("Unrecognized command or argument '--expected-local-revision=", StringComparison.Ordinal) >= 0 ||
+			                  error.IndexOf("Unrecognized command or argument '--expected-local-revision'", StringComparison.Ordinal) >= 0;
+			return unsupported
+				? "The installed Beam CLI does not support this reconciliation review. Update the CLI used by this Unity project, restart Unity, then reopen this review.\n\n" + error
+				: error + "\nRefresh and review before choosing again.";
+		}
+
+		private static GUIContent Cell(string value)
+		{
+			value ??= string.Empty;
+			var text = value.Replace('\n', ' ').Replace('\r', ' ');
+			return new GUIContent(text.Length > 200 ? text.Substring(0, 200) + "…" : text,
+				value.Length > 1000 ? value.Substring(0, 1000) + "…\nSee JSON for the complete value." : value);
+		}
+
+		internal static string ActionExplanation(bool localExists, bool realmExists, bool keepLocal) => keepLocal
+			? localExists ? "Keep your local copy for a later publish." : realmExists ? "Keep it absent locally; a later publish will delete it from the realm." : "Keep this item absent locally."
+			: realmExists ? localExists ? "Replace your local copy with the published version." : "Add the published item to your local content."
+			: localExists ? "Delete this item from your local content." : "Keep this item absent locally.";
+
+		internal static string SummaryTitle(bool localExists, bool realmExists, ContentChangeKind kind, bool missingType = false) =>
+			!localExists && realmExists ? kind == ContentChangeKind.IncomingAddition ? missingType ? "New custom content in the realm" : "New item in the realm" : "Only in the published realm"
+			: localExists && !realmExists ? kind == ContentChangeKind.IncomingDeletion ? "Deleted from the realm" : "Only present locally"
+			: "Absent in both versions";
+
+		internal static string DecisionTitle(bool localExists, bool realmExists, bool missingType) =>
+			!localExists && realmExists ? missingType ? "Import this item as JSON?" : "Import this item?"
+			: localExists && !realmExists ? "Keep this item or delete it locally?"
+			: "Which version should stay local?";
+
+		internal static string DecisionConsequence(bool localExists, bool realmExists) =>
+			!localExists && realmExists ? "Keep Local Version marks this item for deletion on your next publish."
+			: localExists && !realmExists ? "Use Realm Version deletes your local copy. Keeping it restores it on a later publish."
+			: string.Empty;
+
+		// Presentation only: originals remain untouched for copying and reconciliation revision checks.
+		internal static (string[] Local, string[] Realm, bool[] Changed, bool Simplified) CompareJson(string local, string realm)
+		{
+			var left = local?.Replace("\r\n", "\n").Split('\n') ?? Array.Empty<string>();
+			var right = realm?.Replace("\r\n", "\n").Split('\n') ?? Array.Empty<string>();
+			var localRows = new List<string>();
+			var realmRows = new List<string>();
+			int prefix = 0, suffix = 0;
+			while (prefix < Math.Min(left.Length, right.Length) && left[prefix] == right[prefix])
+			{
+				localRows.Add(left[prefix]); realmRows.Add(right[prefix++]);
+			}
+			while (suffix < Math.Min(left.Length, right.Length) - prefix &&
+			       left[left.Length - suffix - 1] == right[right.Length - suffix - 1]) suffix++;
+			int n = left.Length - prefix - suffix, m = right.Length - prefix - suffix;
+			int a = prefix, b = prefix;
+			void AppendBlock(int endA, int endB)
+			{
+				while (a < endA || b < endB)
+				{
+					localRows.Add(a < endA ? left[a++] : null);
+					realmRows.Add(b < endB ? right[b++] : null);
+				}
+			}
+			// Bound both CPU and the alignment table (at most 4 MB). Large changed regions use
+			// positional alignment, explicitly labelled in the UI; no source lines are discarded.
+			var simplified = n > 0 && m > 0 && (long)(n + 1) * (m + 1) > 1000000;
+			if (n > 0 && m > 0 && !simplified)
+			{
+				// Compare IDs in the quadratic loop so long JSON strings are hashed outside it.
+				var ids = new Dictionary<string, int>(StringComparer.Ordinal);
+				int Id(string line)
+				{
+					if (!ids.TryGetValue(line, out var id)) ids.Add(line, id = ids.Count);
+					return id;
+				}
+				var leftIds = new int[n]; var rightIds = new int[m];
+				for (int i = 0; i < n; i++) leftIds[i] = Id(left[prefix + i]);
+				for (int j = 0; j < m; j++) rightIds[j] = Id(right[prefix + j]);
+				int stride = m + 1;
+				var matches = new int[(n + 1) * stride];
+				for (int i = n - 1; i >= 0; i--)
+					for (int j = m - 1; j >= 0; j--)
+						matches[i * stride + j] = leftIds[i] == rightIds[j] ? 1 + matches[(i + 1) * stride + j + 1]
+							: Math.Max(matches[(i + 1) * stride + j], matches[i * stride + j + 1]);
+				int x = 0, y = 0;
+				while (x < n && y < m)
+				{
+					if (leftIds[x] == rightIds[y])
+					{
+						AppendBlock(prefix + x, prefix + y);
+						localRows.Add(left[a++]); realmRows.Add(right[b++]);
+						x++; y++;
+					}
+					else if (matches[(x + 1) * stride + y] >= matches[x * stride + y + 1]) x++;
+					else y++;
+				}
+			}
+			AppendBlock(left.Length - suffix, right.Length - suffix);
+			while (suffix-- > 0) { localRows.Add(left[a++]); realmRows.Add(right[b++]); }
+			var changed = new bool[localRows.Count];
+			for (int i = 0; i < changed.Length; i++) changed[i] = localRows[i] != realmRows[i];
+			return (localRows.ToArray(), realmRows.ToArray(), changed, simplified);
+		}
+
+		// Shared by the property and JSON views: render only visible fixed-height rows, regardless of item size.
+		internal static void VisibleRows(float scroll, float height, int count, out int first, out int end)
+		{
+			first = Math.Min(count, Math.Max(0, (int)(scroll / RowHeight)));
+			end = Math.Min(count, first + Math.Max(0, (int)Math.Ceiling(height / RowHeight)) + 1);
+		}
+
+		private void EnsureStyles()
+		{
+			if (_body != null) return;
+			_body = new GUIStyle(EditorStyles.label) { wordWrap = true };
+			_heading = new GUIStyle(EditorStyles.boldLabel) { fontSize = 16, wordWrap = true };
+			_cell = new GUIStyle(EditorStyles.label) { clipping = TextClipping.Clip, padding = new RectOffset(8, 8, 3, 3) };
+			_json = new GUIStyle(EditorStyles.label) { richText = false, wordWrap = false, padding = new RectOffset(6, 6, 3, 3) };
+			_localHeading = new GUIStyle(EditorStyles.boldLabel);
+			_realmHeading = new GUIStyle(EditorStyles.boldLabel);
+			_idLabel = new GUIStyle(EditorStyles.boldLabel) { clipping = TextClipping.Clip };
+			_queueLabel = new GUIStyle(EditorStyles.label) { clipping = TextClipping.Clip, alignment = TextAnchor.MiddleLeft };
+			_localHeading.normal.textColor = EditorGUIUtility.isProSkin ? new Color(1, .77f, .24f) : new Color(.48f, .31f, 0);
+			_realmHeading.normal.textColor = EditorGUIUtility.isProSkin ? new Color(.18f, .75f, 1) : new Color(0, .34f, .55f);
+			_warningBody = new GUIStyle(_body);
+			_warningBody.normal.textColor = _localHeading.normal.textColor;
+			_keepLocalLabel = new GUIContent(KeepLocalText);
+			_useRealmLabel = new GUIContent(UseRealmText);
+			// Use the full-size artwork so the 22-point warning is not upscaled from the 16px variant.
+			_warningIcon = EditorGUIUtility.IconContent("console.warnicon").image;
+		}
+
+		private void OnGUI()
+		{
+			EnsureStyles();
+			EditorGUI.DrawRect(new Rect(0, 0, position.width, position.height), EditorGUIUtility.isProSkin
+				? new Color(.15f, .16f, .17f) : new Color(.82f, .83f, .84f));
+			if (_service == null)
+			{
+				EditorGUILayout.HelpBox("Scripts reloaded. Reopen this item from Beam Content to review its latest versions.", MessageType.Info);
+				if (GUILayout.Button("Close")) Close();
+				return;
+			}
+			GUILayout.Space(12);
+			using (new EditorGUILayout.HorizontalScope())
+			{
+				GUILayout.Space(14);
+				if (_queue != null)
+				{
+					using (new EditorGUILayout.VerticalScope(GUILayout.Width(Mathf.Clamp(position.width * .28f, 220, 300)))) DrawQueue();
+					// Keep the existing gutter; separate navigation from the review without adding another panel.
+					var divider = GUILayoutUtility.GetRect(14, 0, GUILayout.Width(14), GUILayout.ExpandHeight(true));
+					divider.x += 6;
+					divider.width = 1;
+					EditorGUI.DrawRect(divider, EditorGUIUtility.isProSkin
+						? new Color(.36f, .38f, .40f) : new Color(.58f, .60f, .62f));
+				}
+				using (new EditorGUILayout.VerticalScope())
+				{
+					if (_queue != null && _contentId == null && !_awaitingRefresh)
+					{
+						GUILayout.Label("No more items to reconcile", _heading);
+						GUILayout.Label("Validation errors may still need attention in Beam Content. Nothing was published.", _body);
+						GUILayout.FlexibleSpace();
+						if (GUILayout.Button("Close", GUILayout.Width(90), GUILayout.Height(30))) Close();
+					}
+					else DrawReview();
+				}
+				GUILayout.Space(14);
+			}
+			GUILayout.Space(12);
+		}
+
+		private void DrawReview()
+		{
+			GUILayout.Label(_preview == null ? "Review item" : DecisionTitle(_preview.LocalExists, _preview.RealmExists, _missingType), _heading, HeaderLabelOptions);
+			GUILayout.Label(new GUIContent(_contentId, _contentId + "\nRealm / namespace: " + _scope), _idLabel, HeaderLabelOptions);
+			GUILayout.Space(8);
+			if (_preview != null)
+			{
+				DrawState();
+				if (_missingType) DrawMissingType();
+				var both = _preview.LocalExists && _preview.RealmExists;
+				var tab = both ? GUILayout.Toolbar(_tab, DiffTabs, GUILayout.Height(26))
+					: (EditorGUILayout.Foldout(_tab == 1, "View JSON", true) ? 1 : 0);
+				if (tab != _tab) { _tab = tab; _reviewScroll = Vector2.zero; }
+				GUILayout.Space(8);
+			}
+			// Only the review body scrolls: long warnings/errors cannot displace the tabs or action footer.
+			_reviewScroll = EditorGUILayout.BeginScrollView(_reviewScroll, GUILayout.ExpandHeight(true));
+			if (_loading) { GUILayout.Label(_awaitingRefresh ? "Refreshing remaining items…" : "Loading local and published versions…", _body); GUILayout.FlexibleSpace(); }
+			else if (_preview == null) GUILayout.FlexibleSpace();
+			else DrawPreview();
+			if (_error != null)
+			{
+				EditorGUILayout.HelpBox(ReviewErrorMessage(_error), MessageType.Warning);
+				using (new EditorGUI.DisabledScope(_applying || _service.CurrentProgress.IsActive))
+					if (GUILayout.Button("Refresh review", GUILayout.Height(26))) _ = RefreshReview();
+			}
+			EditorGUILayout.EndScrollView();
+			DrawActions();
+		}
+
+		private void DrawQueue()
+		{
+			GUILayout.Label(_remainingLabel, EditorStyles.boldLabel);
+			GUILayout.Label(_progressLabel, EditorStyles.miniLabel);
+			var bar = GUILayoutUtility.GetRect(0, 5, GUILayout.ExpandWidth(true));
+			EditorGUI.DrawRect(bar, new Color(.5f, .5f, .5f, .25f));
+			bar.width *= _queue.Progress;
+			EditorGUI.DrawRect(bar, AdditionColor);
+			GUILayout.Space(10);
+			var viewport = GUILayoutUtility.GetRect(0, 0, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+			if (Event.current.type == EventType.Repaint) _queueViewportHeight = viewport.height;
+			var incoming = _queue.Items.Count - _queue.ConflictCount;
+			var height = (_queue.ConflictCount > 0 ? 26 + (_showConflicts ? _queue.ConflictCount * 44 : 0) : 0)
+				+ (incoming > 0 ? 26 + (_showIncoming ? incoming * 44 : 0) : 0);
+			var view = new Rect(0, 0, Math.Max(1, viewport.width - 16), height);
+			_queueScroll = GUI.BeginScrollView(viewport, _queueScroll, view);
+			float y = 0;
+			string selected = null;
+			using (new EditorGUI.DisabledScope(_applying || _awaitingRefresh || _service.CurrentProgress.IsActive || _service.isReloading))
+			{
+				Group(0, _queue.ConflictCount, _conflictsLabel, ref _showConflicts);
+				Group(_queue.ConflictCount, incoming, _incomingLabel, ref _showIncoming);
+			}
+			GUI.EndScrollView();
+			if (selected != null) { SelectItem(selected); GUIUtility.ExitGUI(); }
+
+			void Group(int start, int count, string label, ref bool expanded)
+			{
+				if (count == 0) return;
+				expanded = EditorGUI.Foldout(new Rect(12, y, view.width - 12, 24), expanded, label, true, EditorStyles.foldout);
+				y += 26;
+				if (!expanded) return;
+				// Skip off-screen entries; comparison payloads are fetched only for the selected item.
+				var first = Math.Max(0, (int)((_queueScroll.y - y) / 44));
+				var end = Math.Min(count, (int)Math.Ceiling((_queueScroll.y + viewport.height - y) / 44));
+				for (var offset = first; offset < end; offset++)
+				{
+					var index = start + offset;
+					var item = _queue.Items[index];
+					var rect = new Rect(0, y + offset * 44, view.width, 44);
+					if (item.FullId == _queue.SelectedId) EditorGUI.DrawRect(rect, new Color(.15f, .45f, .7f, .4f));
+					var icon = _queueIcons[index];
+					if (icon != null) GUI.DrawTexture(new Rect(8, rect.y + 12, 20, 20), icon, ScaleMode.ScaleToFit);
+					GUI.Label(new Rect(34, rect.y, rect.width - 38, rect.height), _queueLabels[index], _queueLabel);
+					if (GUI.Button(rect, GUIContent.none, GUIStyle.none) && item.FullId != _contentId) selected = item.FullId;
+				}
+				y += count * 44;
+			}
+		}
+
+		private void DrawPreview()
+		{
+			var both = _preview.LocalExists && _preview.RealmExists;
+			if (_tab == 1)
+			{
+				DrawJsonComparison();
+			}
+			else if (both) DrawProperties();
+		}
+
+		private void DrawState()
+		{
+			var kind = ContentWindow_TooltipsHelper.GetChangeKind(_entry);
+			var addition = !_preview.LocalExists && _preview.RealmExists && kind == ContentChangeKind.IncomingAddition;
+			var deletion = _preview.LocalExists && !_preview.RealmExists && kind == ContentChangeKind.IncomingDeletion;
+			using (new EditorGUILayout.HorizontalScope())
+			{
+				var icon = GUILayoutUtility.GetRect(22, 22, GUILayout.Width(22));
+				var texture = addition ? BeamGUI.iconStatusAdded : deletion ? BeamGUI.iconStatusDeleted
+					: kind == ContentChangeKind.Conflict ? _warningIcon
+					: ContentWindow_TooltipsHelper.GetStatusIcon(_entry);
+				if (texture != null) GUI.DrawTexture(icon, texture, ScaleMode.ScaleToFit);
+				else if (addition || deletion) { EditorGUI.DrawRect(icon, addition ? AdditionColor : DeletionColor); GUI.Label(icon, addition ? "+" : "−", _heading); }
+				var description = kind == ContentChangeKind.Conflict ? "Both versions changed. Choose a version for the whole item."
+					: _preview.LocalExists && _preview.RealmExists ? kind == ContentChangeKind.IncomingChange ? "The published version changed." : "Review the local and published versions."
+					: SummaryTitle(_preview.LocalExists, _preview.RealmExists, kind);
+				GUILayout.Label(description, _body, HeaderLabelOptions);
+			}
+		}
+
+		private void DrawMissingType()
+		{
+			if (_missingTypeMessage == null)
+			{
+				var typeName = _entry.TypeName ?? "unknown";
+				_missingTypeMessage = new GUIContent("Unity script missing. JSON can be imported; full Inspector needs the script.", $"Add and compile the matching '{typeName}' content script.");
+			}
+			using (new EditorGUILayout.HorizontalScope())
+			{
+				var icon = GUILayoutUtility.GetRect(22, 22, GUILayout.Width(22));
+				if (_warningIcon != null) GUI.DrawTexture(icon, _warningIcon, ScaleMode.ScaleToFit);
+				GUILayout.Label(_missingTypeMessage, _warningBody);
+			}
+		}
+
+		private void DrawProperties()
+		{
+			GUILayout.Label($"{_rows.Length} changed properties · unchanged properties hidden", EditorStyles.miniLabel);
+			var header = GUILayoutUtility.GetRect(0, RowHeight, GUILayout.ExpandWidth(true));
+			var width = (header.width - 16) / 3;
+			var localColor = _localHeading.normal.textColor;
+			var realmColor = _realmHeading.normal.textColor;
+			localColor.a = realmColor.a = .14f;
+			EditorGUI.DrawRect(new Rect(header.x + width + 2, header.y, width - 4, RowHeight), localColor);
+			EditorGUI.DrawRect(new Rect(header.x + width * 2 + 2, header.y, width - 4, RowHeight), realmColor);
+			EditorGUI.DrawRect(new Rect(header.x + width + 2, header.yMax - 2, width - 4, 2), _localHeading.normal.textColor);
+			EditorGUI.DrawRect(new Rect(header.x + width * 2 + 2, header.yMax - 2, width - 4, 2), _realmHeading.normal.textColor);
+			GUI.Label(new Rect(header.x + 8, header.y, width - 8, RowHeight), "Property", EditorStyles.boldLabel);
+			GUI.Label(new Rect(header.x + width + 8, header.y, width - 8, RowHeight), "Local", _localHeading);
+			GUI.Label(new Rect(header.x + width * 2 + 8, header.y, width - 8, RowHeight), "Published realm", _realmHeading);
+			var viewport = GUILayoutUtility.GetRect(0, 0, GUILayout.MinHeight(RowHeight * 4), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+			var view = new Rect(0, 0, Math.Max(1, viewport.width - 16), _rows.Length * RowHeight);
+			_propertyScroll = GUI.BeginScrollView(viewport, _propertyScroll, view);
+			VisibleRows(_propertyScroll.y, viewport.height, _rows.Length, out var first, out var end);
+			for (var i = first; i < end; i++)
+			{
+				var row = new Rect(0, i * RowHeight, view.width, RowHeight);
+				localColor.a = realmColor.a = i % 2 == 0 ? .10f : .06f;
+				EditorGUI.DrawRect(new Rect(0, row.y, width - 2, RowHeight - 1), new Color(.5f, .5f, .5f, i % 2 == 0 ? .10f : .05f));
+				EditorGUI.DrawRect(new Rect(width + 2, row.y, width - 4, RowHeight - 1), localColor);
+				EditorGUI.DrawRect(new Rect(width * 2 + 2, row.y, width - 4, RowHeight - 1), realmColor);
+				for (var column = 0; column < 3; column++)
+					GUI.Label(new Rect(column * width, row.y, width, RowHeight), _rows[i][column], _cell);
+			}
+			GUI.EndScrollView();
+			if (_rows.Length == 0) GUILayout.Label("No property or tag differences.", _body);
+		}
+
+		private void DrawJsonComparison()
+		{
+			var explanation = !_preview.LocalExists && !_preview.RealmExists ? "Item is absent in both versions."
+				: !_preview.LocalExists ? "Not present locally · published lines shown in blue"
+				: !_preview.RealmExists ? "Not present in the published realm · local lines shown in amber"
+				: _simplifiedJson ? "Large diff: simplified line alignment · highlighted lines differ"
+				: "Highlighted lines differ · blank cells have no matching line";
+			GUILayout.Label(explanation, EditorStyles.miniLabel);
+			var header = GUILayoutUtility.GetRect(0, RowHeight, GUILayout.ExpandWidth(true));
+			var gutter = GUI.skin.verticalScrollbar.fixedWidth + GUI.skin.verticalScrollbar.margin.left;
+			var width = Math.Max(1, (header.width - gutter - 8) / 2);
+			DrawJsonHeader(new Rect(header.x, header.y, width, RowHeight), "Local", _preview.LocalJson, _localHeading);
+			DrawJsonHeader(new Rect(header.x + width + 8, header.y, width, RowHeight), "Published realm", _preview.RealmJson, _realmHeading);
+			var viewport = GUILayoutUtility.GetRect(0, 0, GUILayout.MinHeight(RowHeight * 4), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+			var view = new Rect(0, 0, Math.Max(1, viewport.width - gutter), _localLines.Length * RowHeight);
+			// One vertical scroll owner prevents wheel/drag events or differing line widths from desynchronizing panes.
+			_jsonScroll = GUI.BeginScrollView(viewport, _jsonScroll, view, false, true);
+			VisibleRows(_jsonScroll.y, viewport.height, _localLines.Length, out var first, out var end);
+			DrawJsonLines(new Rect(0, 0, width, view.height), _localLines, _localScroll, _localHeading.normal.textColor, first, end);
+			DrawJsonLines(new Rect(width + 8, 0, width, view.height), _realmLines, _realmScroll, _realmHeading.normal.textColor, first, end);
+			GUI.EndScrollView();
+			var bars = GUILayoutUtility.GetRect(0, GUI.skin.horizontalScrollbar.fixedHeight, GUILayout.ExpandWidth(true));
+			DrawJsonHorizontal(new Rect(bars.x, bars.y, width, bars.height), _localLines, ref _localScroll, ref _localWidth);
+			DrawJsonHorizontal(new Rect(bars.x + width + 8, bars.y, width, bars.height), _realmLines, ref _realmScroll, ref _realmWidth);
+		}
+
+		private static void DrawJsonHeader(Rect rect, string title, string json, GUIStyle style)
+		{
+			GUI.Label(new Rect(rect.x, rect.y, rect.width - 84, rect.height), new GUIContent(title, json == null ? "Not present" : title), style);
+			using (new EditorGUI.DisabledScope(json == null))
+				if (GUI.Button(new Rect(rect.xMax - 80, rect.y, 80, 20), "Copy JSON", EditorStyles.miniButton)) EditorGUIUtility.systemCopyBuffer = json;
+		}
+
+		private void DrawJsonLines(Rect rect, string[] lines, float horizontalScroll, Color color, int first, int end)
+		{
+			GUI.BeginGroup(rect);
+			for (int i = first; i < end; i++)
+			{
+				var row = new Rect(0, i * RowHeight, rect.width, RowHeight);
+				if (_jsonChangedLines[i] && lines[i] != null)
+				{
+					EditorGUI.DrawRect(new Rect(0, row.y, 3, RowHeight - 1), color);
+					color.a = .16f;
+					EditorGUI.DrawRect(row, color);
+					color.a = 1;
+				}
+				GUI.Label(new Rect(-horizontalScroll, row.y, rect.width + horizontalScroll, RowHeight), lines[i] ?? string.Empty, _json);
+			}
+			GUI.EndGroup();
+		}
+
+		private void DrawJsonHorizontal(Rect rect, string[] lines, ref float scroll, ref float contentWidth)
+		{
+			if (contentWidth == 0)
+			{
+				contentWidth = 1;
+				var content = new GUIContent();
+				foreach (var line in lines)
+				{
+					content.text = line;
+					contentWidth = Math.Max(contentWidth, _json.CalcSize(content).x);
+				}
+			}
+			using (new EditorGUI.DisabledScope(contentWidth <= rect.width))
+				scroll = GUI.HorizontalScrollbar(rect, scroll, Math.Min(rect.width, contentWidth), 0, contentWidth);
+		}
+
+		private void DrawActions()
+		{
+			GUILayout.Space(10);
+			if (_successMessage != null) GUILayout.Label(_successMessage, EditorStyles.miniLabel, HeaderLabelOptions);
+			if (_preview != null)
+			{
+				var consequence = DecisionConsequence(_preview.LocalExists, _preview.RealmExists);
+				if (consequence.Length > 0) GUILayout.Label(consequence, _preview.LocalExists ? _body : _warningBody);
+			}
+			GUILayout.Label(_applying ? "Reconciling… Please wait." : "Only this item. Nothing published now.", EditorStyles.miniLabel);
+			using (new EditorGUILayout.HorizontalScope())
+			{
+				using (new EditorGUI.DisabledScope(_applying))
+					if (GUILayout.Button("Close", GUILayout.Width(90), GUILayout.Height(30))) Close();
+				GUILayout.FlexibleSpace();
+				using (new EditorGUI.DisabledScope(_preview == null || _loading || _applying || _error != null || _service.CurrentProgress.IsActive || _service.isReloading))
+				{
+					var invalid = _entry.IsInConflict && _service.IsContentInvalid(_contentId);
+					_keepLocalLabel.tooltip = invalid ? "Fix local validation errors before keeping this conflict."
+						: _preview == null ? "" : ActionExplanation(_preview.LocalExists, _preview.RealmExists, true);
+					_useRealmLabel.tooltip = _preview == null ? "" : ActionExplanation(_preview.LocalExists, _preview.RealmExists, false);
+					using (new EditorGUI.DisabledScope(invalid))
+						if (GUILayout.Button(_keepLocalLabel, GUILayout.Width(160), GUILayout.Height(30))) _ = Apply(true);
+					if (GUILayout.Button(_useRealmLabel, GUILayout.Width(160), GUILayout.Height(30))) _ = Apply(false);
+				}
+			}
+		}
+
+		private async Task Apply(bool keepLocal)
+		{
+			if (_applying || _loading || _awaitingRefresh || _preview == null || _error != null || _service.CurrentProgress.IsActive || _service.isReloading) return;
+			var generation = _generation;
+			var contentId = _contentId;
+			_manifestVersion = _service.ManifestChangedCount;
+			_applying = true;
+			try
+			{
+				await _service.ReconcileContentWithProgress(_contentId, keepLocal, _scope, _preview.ManifestUid, _preview.LocalRevision);
+				if (this == null || generation != _generation) return;
+				_queue.Complete(contentId);
+				CacheQueueLabels();
+				_successMessage = contentId + " resolved · " + (keepLocal ? "Local version kept" : "Realm version used");
+				_preview = null;
+				_awaitingRefresh = _loading = true;
+			}
+			catch (Exception error) { if (this != null && generation == _generation) _error = error.Message; }
+			finally { if (this != null && generation == _generation) { _applying = false; Repaint(); } }
+		}
+	}
+}

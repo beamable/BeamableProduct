@@ -10,7 +10,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using Moq;
 using System;
+using System.CommandLine;
+using System.CommandLine.Binding;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -41,6 +44,134 @@ public class ServerServiceTests
 
 	private static TaskCompletionSource<bool> Signal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 	private static Task<ServerInfoResponse> Snapshot() => HandleInfo(Args, 0);
+
+	// Called only in CollectorDiscoveryTests' child process: the old collector code exits the process.
+	internal static async Task VerifyCollectorFailureDoesNotStopServer(string directory, CancellationTokenSource cancellation)
+	{
+		var healthyCommandRan = false;
+		await using var server = new TestServer(() => new ControlledApp(async (command, _) =>
+		{
+			if (command == "collector-start")
+				await CollectorManager.StartCollectorAndWait(directory, false, true, cancellation, NullLogger.Instance);
+			else healthyCommandRan = true;
+			return 0;
+		}));
+		var error = AssertErrorReport(await server.Execute("collector-start"));
+		Assert.That(error.message, Does.Contain("Collector binary not found"));
+		using var info = await server.Client.GetAsync("info");
+		Assert.That(info.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+		await server.Execute("healthy-command");
+		Assert.That(healthyCommandRan, Is.True);
+		server.AssertNoErrors();
+	}
+
+	[Test]
+	public async Task Info_reports_the_executing_cli_version_including_development_revision()
+	{
+		// Read the produced CLI assembly independently of its dependency-version resolver.
+		// Development packages such as 0.0.123.1 must not advertise 0.0.123 to Unity.
+		// Exercise this with -p:VersionPrefix=0.0.123.1 -p:BeamOverrideVersionWithLocalDev=false.
+		var packagedVersion = typeof(App).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!
+			.InformationalVersion.Split('+')[0];
+		await using var server = new TestServer(null);
+		var info = JsonConvert.DeserializeObject<ServerInfoResponse>(await server.Client.GetStringAsync("info"))!;
+		Assert.That(info.version, Is.EqualTo(packagedVersion), "Discovery must identify the executing CLI, not its normalized dependency packages.");
+		server.AssertNoErrors();
+	}
+
+	[Test]
+	public async Task Attached_collector_exit_reports_failure_and_server_remains_usable()
+	{
+		await using var child = await AttachedCollectorCommandTests.HeldChild.Start();
+		var waiting = Signal();
+		var healthyCommandRan = false;
+		await using var server = new TestServer(() => new ControlledApp(async (command, _) =>
+		{
+			if (command == "attached-collector")
+			{
+				var wait = AttachedCollectorCommandTests.WaitForCollectorExit(child.Id, CancellationToken.None);
+				waiting.TrySetResult(true);
+				await wait;
+			}
+			else healthyCommandRan = true;
+			return 0;
+		}));
+		var request = server.Execute("attached-collector");
+		await server.WaitForCommands(waiting.Task, request);
+		await child.Exit();
+		var error = AssertErrorReport(await request.WaitAsync(TimeSpan.FromSeconds(3)));
+		Assert.That(error.message, Does.Contain(child.Id.ToString()).And.Contain("exited"));
+		using var info = await server.Client.GetAsync("info");
+		Assert.That(info.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+		await server.Execute("healthy-command");
+		Assert.That(healthyCommandRan, Is.True);
+		server.AssertNoErrors();
+	}
+
+	[TestCase(false)]
+	[TestCase(true)]
+	public async Task Real_app_releases_console_cancellation_subscription_after_execution(bool failDuringSetup)
+	{
+		// Inspect the actual Console event without raising Ctrl+C: App's handler schedules process exit.
+		var callbacksField = typeof(Console).GetFields(PrivateStatic)
+			.Single(field => field.FieldType == typeof(ConsoleCancelEventHandler));
+		Delegate[] Callbacks() => ((Delegate?)callbacksField.GetValue(null))?.GetInvocationList() ?? Array.Empty<Delegate>();
+		var before = Callbacks();
+		Delegate[] during = Array.Empty<Delegate>();
+		var originalDirectory = Directory.GetCurrentDirectory();
+		var originalExitCode = Environment.ExitCode;
+		var directory = Path.Combine(Path.GetTempPath(), "beam-console-lifecycle-" + Guid.NewGuid().ToString("N"));
+		Directory.CreateDirectory(directory);
+		var lifecycle = new AppLifecycle();
+		var context = new Mock<IAppContext>();
+		context.SetupGet(value => value.LogSwitch).Returns(new BeamLogSwitch());
+		context.Setup(value => value.Apply(It.IsAny<BindingContext>())).Returns(() =>
+		{
+			during = Callbacks().Except(before).ToArray();
+			return failDuringSetup ? Task.FromException(new InvalidOperationException("controlled context setup failure")) : Task.CompletedTask;
+		});
+		try
+		{
+			Directory.SetCurrentDirectory(directory);
+			var app = new App();
+			app.Configure(builder =>
+			{
+				builder.Remove<IAppContext>();
+				builder.AddSingleton(context.Object);
+				builder.Remove<AppLifecycle>();
+				builder.AddSingleton(lifecycle);
+			}, configureLogger: _ => { });
+			app.Build();
+			var command = new ConsoleLifecycleCommand();
+			var handled = false;
+			command.SetHandler(() => handled = true);
+			app.CommandProvider.GetService<RootCommand>().AddCommand(command);
+			var exitCode = await app.RunWithSingleString(command.Name, true);
+			// Match the server's completion boundary before a later console cancellation.
+			lifecycle.Cancel();
+			lifecycle.Source.Dispose();
+			Assert.Multiple(() =>
+			{
+				Assert.That(during, Has.Length.EqualTo(1), "The real invocation middleware must install its handler.");
+				Assert.That(exitCode, Is.EqualTo(failDuringSetup ? 1 : 0));
+				Assert.That(handled, Is.EqualTo(!failDuringSetup));
+				Assert.That(Callbacks().Except(before), Is.Empty, "Completed invocations must not retain a handler targeting their disposed lifecycle.");
+			});
+		}
+		finally
+		{
+			foreach (var callback in Callbacks().Except(before)) Console.CancelKeyPress -= (ConsoleCancelEventHandler)callback;
+			lifecycle.Source.Dispose();
+			Directory.SetCurrentDirectory(originalDirectory);
+			Directory.Delete(directory, true);
+			Environment.ExitCode = originalExitCode;
+		}
+	}
+
+	private sealed class ConsoleLifecycleCommand : Command, ISkipManifest
+	{
+		public ConsoleLifecycleCommand() : base("console-lifecycle-probe") { }
+	}
 
 	[TestCase("{broken")]
 	[TestCase("null")]
@@ -171,13 +302,20 @@ public class ServerServiceTests
 		// does not contaminate later tests (including runs against the original buggy implementation).
 		var registry = (List<string>)typeof(ServerService)
 			.GetField("cliInvocations", PrivateStatic | BindingFlags.Public)!.GetValue(null)!;
+		var stoppable = (System.Collections.IDictionary)typeof(ServerService)
+			.GetField("_stoppableInvocations", PrivateStatic)!.GetValue(null)!;
 		try
 		{
-			Assert.That(registry, Is.Empty, "All completed requests must have been removed.");
+			Assert.Multiple(() =>
+			{
+				Assert.That(registry, Is.Empty, "All completed requests must have been removed.");
+				Assert.That(stoppable, Is.Empty, "Stop registrations must not accumulate after completion.");
+			});
 		}
 		finally
 		{
 			registry.Clear();
+			stoppable.Clear();
 		}
 	}
 
@@ -345,6 +483,158 @@ public class ServerServiceTests
 		server.AssertNoErrors();
 	}
 
+	[TestCase(false)]
+	[TestCase(true)]
+	public async Task Stop_targets_one_identical_invocation_and_waits_for_its_cleanup(bool failAfterCancellation)
+	{
+		var entered = Signal();
+		var cancelled = Signal();
+		var release = Signal();
+		var secondRelease = Signal();
+		var secondEntered = Signal();
+		CancellationToken secondToken = default;
+		var count = 0;
+		await using var server = new TestServer(() =>
+		{
+			ControlledApp app = null!;
+			app = new ControlledApp(async (_, _) =>
+			{
+				var index = Interlocked.Increment(ref count);
+				if (index == 1)
+				{
+					using var registration = app.CommandProvider.GetService<AppLifecycle>().CancellationToken
+						.Register(() => cancelled.TrySetResult(true));
+					entered.TrySetResult(true);
+					await release.Task;
+					if (failAfterCancellation) throw new InvalidOperationException("cleanup failure");
+				}
+				else
+				{
+					secondToken = app.CommandProvider.GetService<AppLifecycle>().CancellationToken;
+					secondEntered.TrySetResult(true);
+					await secondRelease.Task;
+				}
+				return 0;
+			});
+			return app;
+		});
+		using var executeBody = new StringContent(JsonConvert.SerializeObject(new { commandLine = "same", requestId = "first" }), Encoding.UTF8, "application/json");
+		using var executeRequest = new HttpRequestMessage(HttpMethod.Post, "execute") { Content = executeBody };
+		var responseTask = server.Client.SendAsync(executeRequest, HttpCompletionOption.ResponseHeadersRead);
+		Task<string>? second = null;
+		try
+		{
+			await entered.Task.WaitAsync(Deadline);
+			using var response = await responseTask.WaitAsync(Deadline);
+			Assert.That(response.Headers.Contains("X-Beam-Request-Id"), Is.True, "Registration must be acknowledged before a stop can be sent.");
+			second = server.Execute("same", "second");
+			await secondEntered.Task.WaitAsync(Deadline);
+			async Task<HttpResponseMessage> Stop() => await server.Client.PostAsync("stop",
+				new StringContent("{\"requestId\":\"first\"}", Encoding.UTF8, "application/json"));
+			var stop = Stop();
+			var repeated = Stop();
+			await cancelled.Task.WaitAsync(Deadline);
+			Assert.That(stop.IsCompleted, Is.False, "Cancellation is not completion: cleanup is held.");
+			Assert.That(repeated.IsCompleted, Is.False);
+			release.TrySetResult(true);
+			using var stopped = await stop.WaitAsync(Deadline);
+			using var stoppedAgain = await repeated.WaitAsync(Deadline);
+			Assert.That(stopped.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+			Assert.That(stoppedAgain.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+			Assert.That(second.IsCompleted, Is.False, "Identical command text must not cancel the other invocation.");
+			Assert.That(secondToken.IsCancellationRequested, Is.False);
+			var output = await response.Content.ReadAsStringAsync();
+			Assert.That(output.Contains("cleanup failure"), Is.EqualTo(failAfterCancellation));
+			Assert.That((await Snapshot()).inflightCommands, Has.Count.EqualTo(1));
+			using var afterCompletion = await Stop();
+			Assert.That(afterCompletion.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+		}
+		finally
+		{
+			release.TrySetResult(true);
+			secondRelease.TrySetResult(true);
+			using var response = await responseTask;
+			if (second != null) await second;
+		}
+		server.AssertNoErrors();
+	}
+
+	[Test]
+	public async Task Stop_after_registration_is_visible_to_work_that_has_not_started()
+	{
+		var entered = Signal();
+		var cancelled = Signal();
+		var release = Signal();
+		var sawCancellation = false;
+		ControlledApp app = null!;
+		await using var server = new TestServer(() => app = new ControlledApp(async (_, _) =>
+		{
+			entered.TrySetResult(true);
+			await release.Task; // Delay command work until after the stop has arrived.
+			sawCancellation = app.CommandProvider.GetService<AppLifecycle>().IsCancelled;
+			return 0;
+		}));
+		var execute = server.Execute("starting", "starting-id");
+		try
+		{
+			await entered.Task.WaitAsync(Deadline);
+			using var registration = app.CommandProvider.GetService<AppLifecycle>().CancellationToken
+				.Register(() => cancelled.TrySetResult(true));
+			using var body = new StringContent("{\"requestId\":\"starting-id\"}", Encoding.UTF8, "application/json");
+			var stop = server.Client.PostAsync("stop", body);
+			await cancelled.Task.WaitAsync(Deadline);
+			Assert.That(stop.IsCompleted, Is.False);
+			release.TrySetResult(true);
+			using var response = await stop.WaitAsync(Deadline);
+			Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+			await execute;
+			Assert.That(sawCancellation, Is.True);
+			server.AssertNoErrors();
+		}
+		finally
+		{
+			release.TrySetResult(true);
+			await execute;
+		}
+	}
+
+	[Test]
+	public async Task Completed_invocation_stops_its_reporter_monitor_before_disposing_lifecycle()
+	{
+		var previousLogger = App.GlobalLogger;
+		var logger = new MonitorLogger();
+		App.GlobalLogger = logger;
+		Task monitor = Task.CompletedTask;
+		try
+		{
+			await using var server = new TestServer(() => new ControlledApp(async (_, reporter) =>
+			{
+				monitor = (Task)typeof(ServerReporterService).GetField("_connectionMonitorTask", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(reporter)!;
+				// Give the production monitor time to enter its one-second heartbeat delay.
+				await Task.Delay(100);
+				return 0;
+			}));
+			await server.Execute("monitor-shutdown", "monitor-id");
+			var completedWithInvocation = monitor.IsCompleted;
+			await monitor.WaitAsync(Deadline);
+			Assert.That(completedWithInvocation, Is.True, "The reporter monitor must not outlive its invocation and disposed lifecycle.");
+			Assert.That(logger.Failures, Is.Empty, "Normal completion must not write to a closed response or cancel a disposed lifecycle.");
+			server.AssertNoErrors();
+		}
+		finally { App.GlobalLogger = previousLogger; }
+	}
+
+	private sealed class MonitorLogger : ILogger
+	{
+		public readonly ConcurrentQueue<string> Failures = new();
+		public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+		public bool IsEnabled(LogLevel level) => true;
+		public void Log<TState>(LogLevel level, EventId id, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+		{
+			if (level >= LogLevel.Error) Failures.Enqueue(formatter(state, exception));
+		}
+	}
+
 	// Keep the real handler, DI registration and ServerReporterService. Only command work is controlled.
 	private sealed class ControlledApp : App, IDisposable
 	{
@@ -417,9 +707,11 @@ public class ServerServiceTests
 			_accept = Accept();
 		}
 
-		public async Task<string> Execute(string command)
+		public Task<string> Execute(string command) => Execute(command, null);
+
+		public async Task<string> Execute(string command, string? requestId)
 		{
-			using var body = new StringContent(JsonConvert.SerializeObject(new ServerRequest { commandLine = command }),
+			using var body = new StringContent(JsonConvert.SerializeObject(new ServerRequest { commandLine = command, requestId = requestId }),
 				Encoding.UTF8, "application/json");
 			using var response = await Client.PostAsync("execute", body);
 			return await response.Content.ReadAsStringAsync();
