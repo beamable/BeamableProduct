@@ -466,7 +466,14 @@ namespace Beamable.Editor.Tests
 
 		internal sealed class Fixture : IDisposable
 		{
-			private readonly HttpListener _listener = new HttpListener();
+			private readonly HttpListener _listener;
+			private readonly bool _external;
+			private readonly string _controlDirectory;
+			private readonly string _testName;
+			private readonly System.Collections.Concurrent.ConcurrentQueue<KeyValuePair<string, string>> _logLines = new System.Collections.Concurrent.ConcurrentQueue<KeyValuePair<string, string>>();
+			private readonly Timer _logTimer;
+			private int _writingLogs;
+			private System.Diagnostics.Process _serverProcess;
 			private readonly Task _timerProbe = Task.Delay(1000);
 			private readonly BeamWebCommandFactoryOptions _options;
 			private readonly BeamableDispatcher _dispatcher = new BeamableDispatcher();
@@ -480,21 +487,41 @@ namespace Beamable.Editor.Tests
 			public readonly TaskCompletionSource<bool> AllowAcknowledgement = Signal();
 			public readonly Task ServerTask;
 			public string StopId;
-			public bool WriteOutput = true;
-			public int StopStatus = 204;
-			public bool RetryStop;
-			public int[] InfoPids;
+			private bool _writeOutput = true;
+			private int _stopStatus = 204;
+			private bool _retryStop;
+			private int[] _infoPids;
+			public bool WriteOutput { get => _writeOutput; set { _writeOutput = value; WriteExternalConfig(); } }
+			public int StopStatus { get => _stopStatus; set { _stopStatus = value; WriteExternalConfig(); } }
+			public bool RetryStop { get => _retryStop; set { _retryStop = value; WriteExternalConfig(); } }
+			public int[] InfoPids { get => _infoPids; set { _infoPids = value; WriteExternalConfig(); } }
 			public readonly TaskCompletionSource<bool> RetryReceived = Signal();
 			public readonly TaskCompletionSource<bool> AllowRetryAcknowledgement = Signal();
 
 			public Fixture(List<Fixture> fixtures)
 			{
+				var projectRoot = Path.GetDirectoryName(Application.dataPath);
+				var modeFile = Path.Combine(projectRoot, "beam-stop-probe-mode.txt");
+				var mode = File.Exists(modeFile) ? File.ReadAllText(modeFile).Trim() : System.Environment.GetEnvironmentVariable("BEAM_STOP_SERVER_MODE");
+				if (!string.IsNullOrEmpty(mode) && mode != "inprocess" && mode != "external")
+					throw new InvalidOperationException("Unknown diagnostic server mode: " + mode);
+				_external = mode == "external";
+				_testName = TestContext.CurrentContext.Test.FullName;
+				_controlDirectory = Path.Combine(projectRoot, "diagnostic-output", _external ? "external" : "inprocess", "fixture-" + Guid.NewGuid().ToString("N"));
+				Directory.CreateDirectory(_controlDirectory);
+				_logTimer = new Timer(_ => FlushLogs(), null, 250, 250);
+				Trace("fixture-created");
 				var reservation = new TcpListener(IPAddress.Loopback, 0);
 				reservation.Start();
 				var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
 				reservation.Stop();
-				_listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-				_listener.Start();
+				if (!_external)
+				{
+					_listener = new HttpListener();
+					_listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+					_listener.Start();
+					Trace("listener-started", port.ToString());
+				}
 				_options = ScriptableObject.CreateInstance<BeamWebCommandFactoryOptions>();
 				_options.port = port;
 				// Keep history logging in memory without starting telemetry, discovery, or CLI processes.
@@ -516,9 +543,178 @@ namespace Beamable.Editor.Tests
 				Command = new BeamWebCommand(Factory, history);
 				Command.SetCommand("beam content ps --watch");
 				// The real CLI runs outside Unity; the fake server must not depend on Editor updates either.
-				ServerTask = Task.Run(Serve);
-				_ = ServerTask.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+				if (_external) StartExternalServer(projectRoot, port);
+				ServerTask = Task.Run(_external ? (Func<Task>)ServeExternal : Serve);
+				_ = ServerTask.ContinueWith(task => Trace("server-task-complete", task.Status + ": " + task.Exception));
 				fixtures.Add(this);
+			}
+
+			[Serializable]
+			private sealed class ProbeConfig
+			{
+				public bool awaitSignalObservation = true;
+				public bool retryStop;
+				public bool writeOutput;
+				public int stopStatus;
+				public string owner;
+				public string version;
+			}
+
+			[Serializable]
+			private sealed class ProbeSignal { public ProbeSignalData data; }
+			[Serializable]
+			private sealed class ProbeSignalData { public string requestId; }
+			[Serializable]
+			private sealed class ProbeEvent
+			{
+				public string utc, test, mode, eventName, context, detail;
+				public int thread;
+			}
+
+			private void Trace(string name, string detail = null)
+			{
+				// Diagnostics must not turn a file-system logging error into a transport failure.
+				try
+				{
+					var line = JsonUtility.ToJson(new ProbeEvent
+					{
+						utc = DateTime.UtcNow.ToString("O"), test = _testName,
+						mode = _external ? "external" : "inprocess", eventName = name,
+						thread = Thread.CurrentThread.ManagedThreadId,
+						context = SynchronizationContext.Current?.GetType().FullName, detail = detail
+					});
+					_logLines.Enqueue(new KeyValuePair<string, string>("fixture.jsonl", line));
+				}
+				catch (Exception) { }
+			}
+
+			private void FlushLogs()
+			{
+				if (Interlocked.Exchange(ref _writingLogs, 1) != 0) return;
+				try
+				{
+					while (_logLines.TryDequeue(out var entry))
+						File.AppendAllText(Path.Combine(_controlDirectory, entry.Key), entry.Value + System.Environment.NewLine);
+					if (_disposed && (ServerTask?.IsCompleted ?? true)) _logTimer.Dispose();
+				}
+				catch (Exception) { }
+				finally { Volatile.Write(ref _writingLogs, 0); }
+			}
+
+			private void WriteExternalConfig()
+			{
+				if (!_external || Factory == null) return;
+				// The server reads this only after accepting its first request. Object-initializer
+				// properties are therefore applied before Run/Ping without adding test-side steps.
+				var path = Path.Combine(_controlDirectory, "config.json");
+				var temporary = path + ".tmp";
+				var json = JsonUtility.ToJson(new ProbeConfig
+				{
+					retryStop = RetryStop, writeOutput = WriteOutput, stopStatus = StopStatus,
+					owner = Factory.Owner, version = Factory.Version
+				});
+				// Preserve null versus empty-array semantics independently of Unity's serializer.
+				json = json.Substring(0, json.Length - 1) + ",\"infoPids\":"
+					+ (InfoPids == null ? "null" : "[" + string.Join(",", InfoPids) + "]") + "}";
+				File.WriteAllText(temporary, json);
+				if (File.Exists(path)) File.Replace(temporary, path, null);
+				else File.Move(temporary, path);
+				Trace("config-written");
+			}
+
+			private void StartExternalServer(string projectRoot, int port)
+			{
+				WriteExternalConfig();
+				var binaryFile = Path.Combine(projectRoot, "beam-stop-probe-server.txt");
+				var binary = File.Exists(binaryFile) ? File.ReadAllText(binaryFile).Trim()
+					: Path.Combine(projectRoot, ".probe-server", Application.platform == RuntimePlatform.WindowsEditor ? "BeamStopProbeServer.exe" : "BeamStopProbeServer");
+				if (!File.Exists(binary)) throw new FileNotFoundException("External diagnostic server executable is missing.", binary);
+				_serverProcess = new System.Diagnostics.Process
+				{
+					StartInfo = new System.Diagnostics.ProcessStartInfo
+					{
+						FileName = binary, Arguments = port + " \"" + _controlDirectory + "\"",
+						UseShellExecute = false, CreateNoWindow = true,
+						RedirectStandardOutput = true, RedirectStandardError = true
+					}
+				};
+				_serverProcess.OutputDataReceived += (_, e) => RecordServerOutput("stdout", e.Data);
+				_serverProcess.ErrorDataReceived += (_, e) => RecordServerOutput("stderr", e.Data);
+				_serverProcess.Start();
+				_serverProcess.BeginOutputReadLine();
+				_serverProcess.BeginErrorReadLine();
+				Trace("external-started", "pid=" + _serverProcess.Id + ";port=" + port);
+				// Readiness belongs to fixture setup; original operation deadlines remain unchanged.
+				var deadline = DateTime.UtcNow.AddSeconds(10);
+				while (!File.Exists(Path.Combine(_controlDirectory, "ready.json")))
+				{
+					if (_serverProcess.HasExited || DateTime.UtcNow >= deadline)
+					{
+						if (!_serverProcess.HasExited) _serverProcess.Kill();
+						throw new InvalidOperationException("External diagnostic server did not become ready: " + _controlDirectory);
+					}
+					Thread.Sleep(10);
+				}
+				Trace("external-ready");
+			}
+
+			private void RecordServerOutput(string stream, string line)
+			{
+				if (line == null) return;
+				try { _logLines.Enqueue(new KeyValuePair<string, string>("server-" + stream + ".jsonl", line)); }
+				catch (Exception) { }
+			}
+
+			private void PublishGate(TaskCompletionSource<bool> gate, string name)
+			{
+				var path = Path.Combine(_controlDirectory, name);
+				if (!gate.Task.IsCompleted || File.Exists(path)) return;
+				File.WriteAllText(path, DateTime.UtcNow.ToString("O"));
+				Trace("gate-published", name);
+			}
+
+			private void PublishGates()
+			{
+				PublishGate(AllowHeaders, "allow-headers");
+				PublishGate(ReleaseWorker, "release-worker");
+				PublishGate(AllowAcknowledgement, "allow-ack");
+				PublishGate(AllowRetryAcknowledgement, "allow-retry-ack");
+			}
+
+			private void ReadSignal(TaskCompletionSource<bool> signal, string name, bool stop)
+			{
+				var path = Path.Combine(_controlDirectory, name + ".json");
+				if (signal.Task.IsCompleted || !File.Exists(path)) return;
+				var json = File.ReadAllText(path);
+				if (stop) StopId = JsonUtility.FromJson<ProbeSignal>(json).data.requestId;
+				Trace("signal-received", name + ": " + json);
+				signal.TrySetResult(true);
+				// Preserve the original fixture's signal-before-response ordering even when
+				// an assertion runs immediately after synchronous shutdown, without yielding.
+				File.WriteAllText(Path.Combine(_controlDirectory, "observed-" + name.Replace("-received", "")), DateTime.UtcNow.ToString("O"));
+			}
+
+			private async Task ServeExternal()
+			{
+				while (true)
+				{
+					PublishGates();
+					ReadSignal(ExecuteReceived, "execute-received", false);
+					ReadSignal(StopReceived, "stop-received", true);
+					ReadSignal(RetryReceived, "retry-received", true);
+					if (_serverProcess.HasExited)
+					{
+						// Observe final signal files after process termination as well.
+						ReadSignal(ExecuteReceived, "execute-received", false);
+						ReadSignal(StopReceived, "stop-received", true);
+						ReadSignal(RetryReceived, "retry-received", true);
+						Trace("external-exited", "exit=" + _serverProcess.ExitCode);
+						if (_serverProcess.ExitCode != 0)
+							throw new InvalidOperationException("External diagnostic server exited with " + _serverProcess.ExitCode + "; see " + _controlDirectory);
+						return;
+					}
+					await Task.Delay(10);
+				}
 			}
 
 			private Queue<BeamableDispatcher.WorkItem> CallbackQueue =>
@@ -527,12 +723,14 @@ namespace Beamable.Editor.Tests
 			private Queue<BeamableDispatcher.WorkItem> _pausedQueue;
 			public void PauseCallbacks()
 			{
+				Trace("callbacks-paused");
 				_pausedQueue = CallbackQueue;
 				((Dictionary<string, Queue<BeamableDispatcher.WorkItem>>)Get(_dispatcher, "_workQueues"))[BeamableDispatcher.DEFAULT_QUEUE_NAME] = new Queue<BeamableDispatcher.WorkItem>();
 			}
 			public void ResumeCallbacks()
 			{
 				if (_pausedQueue == null) return;
+				Trace("callbacks-resumed");
 				var held = CallbackQueue;
 				lock (held)
 					lock (_pausedQueue)
@@ -549,7 +747,8 @@ namespace Beamable.Editor.Tests
 				var run = (Promise)Get(Command, "_runPromise");
 				var history = (BeamWebCliCommandHistory)Get(Factory, "_history");
 				var logs = history.commands[0].logs;
-				return $"Execute={ExecuteReceived.Task.Status}; Stop={StopReceived.Task.Status}; " +
+				return $"Mode={(_external ? "external" : "inprocess")}; Diagnostics={_controlDirectory}; " +
+				       $"Execute={ExecuteReceived.Task.Status}; Stop={StopReceived.Task.Status}; " +
 				       $"Server={ServerTask.Status}; ServerError={ServerTask.Exception}; " +
 				       $"Response={response?.Status}; RunComplete={run?.IsCompleted}; " +
 				       $"Timer={_timerProbe.Status}; AvailableWorkers={workers}; AvailableIO={io}; " +
@@ -561,13 +760,16 @@ namespace Beamable.Editor.Tests
 				var callbacks = (List<Action>)Get(Factory, "serverReadyCallbacks");
 				var ready = callbacks.ToArray();
 				callbacks.Clear();
+				if (ready.Length > 0) Trace("discovery-callbacks", ready.Length.ToString());
 				foreach (var callback in ready) callback();
 			}
 
 
 			private async Task Serve()
 			{
+				Trace("accept-execute-wait");
 				var execute = await _listener.GetContextAsync();
+				Trace("accept-execute-complete", execute.Request.RawUrl);
 				if (InfoPids != null)
 				{
 					for (var i = 0; i < InfoPids.Length; i++)
@@ -577,40 +779,56 @@ namespace Beamable.Editor.Tests
 						var bytes = Encoding.UTF8.GetBytes(json);
 						await info.Response.OutputStream.WriteAsync(bytes, 0, bytes.Length);
 						info.Response.Close();
+						Trace("info-sent", InfoPids[i].ToString());
 					}
 					return;
 				}
 				using var executeReader = new StreamReader(execute.Request.InputStream);
 				var request = JsonUtility.FromJson<BeamWebCommandRequest>(await executeReader.ReadToEndAsync());
+				Trace("execute-received", request.requestId);
 				ExecuteReceived.TrySetResult(true);
+				Trace("gate-wait", "allow-headers");
 				await AllowHeaders.Task;
+				Trace("gate-open", "allow-headers");
 				execute.Response.Headers.Set("X-Beam-Request-Id", request.requestId);
 				var ready = Encoding.UTF8.GetBytes(": ready\n");
 				await execute.Response.OutputStream.WriteAsync(ready, 0, ready.Length);
 				await execute.Response.OutputStream.FlushAsync();
+				Trace("headers-sent", request.requestId);
 				var stop = await _listener.GetContextAsync();
 				using var stopReader = new StreamReader(stop.Request.InputStream);
 				StopId = JsonUtility.FromJson<BeamWebCommandRequest>(await stopReader.ReadToEndAsync()).requestId;
+				Trace("stop-received", StopId);
 				StopReceived.TrySetResult(true);
+				Trace("gate-wait", "release-worker");
 				await ReleaseWorker.Task;
+				Trace("gate-open", "release-worker");
 				if (WriteOutput)
 				{
 					var output = Encoding.UTF8.GetBytes("data: {\"type\":\"test\",\"data\":{},\"ts\":1}\n");
 					await execute.Response.OutputStream.WriteAsync(output, 0, output.Length);
 				}
 				execute.Response.Close();
+				Trace("execute-closed", request.requestId);
+				Trace("gate-wait", "allow-ack");
 				await AllowAcknowledgement.Task;
+				Trace("gate-open", "allow-ack");
 				stop.Response.StatusCode = StopStatus;
 				stop.Response.Close();
+				Trace("ack-sent", StopId + ": " + StopStatus);
 				if (RetryStop)
 				{
 					var retry = await _listener.GetContextAsync();
 					using var reader = new StreamReader(retry.Request.InputStream);
 					StopId = JsonUtility.FromJson<BeamWebCommandRequest>(await reader.ReadToEndAsync()).requestId;
+					Trace("retry-received", StopId);
 					RetryReceived.TrySetResult(true);
+					Trace("gate-wait", "allow-retry-ack");
 					await AllowRetryAcknowledgement.Task;
+					Trace("gate-open", "allow-retry-ack");
 					retry.Response.StatusCode = 204;
 					retry.Response.Close();
+					Trace("retry-ack-sent", StopId);
 				}
 			}
 
@@ -624,13 +842,16 @@ namespace Beamable.Editor.Tests
 			{
 				if (_cleanupStarted) return;
 				_cleanupStarted = true;
+				Trace("cleanup-started", "server=" + ServerTask.Status);
 				ResumeCallbacks();
 				AllowHeaders.TrySetResult(true);
 				ReleaseWorker.TrySetResult(true);
 				AllowAcknowledgement.TrySetResult(true);
 				AllowRetryAcknowledgement.TrySetResult(true);
 				Command.Cancel();
-				_listener.Close();
+				if (_external) File.WriteAllText(Path.Combine(_controlDirectory, "shutdown"), DateTime.UtcNow.ToString("O"));
+				else _listener.Close();
+				Trace("listener-shutdown-requested");
 			}
 
 			public void Dispose()
@@ -638,6 +859,17 @@ namespace Beamable.Editor.Tests
 				if (_disposed) return;
 				_disposed = true;
 				BeginCleanup();
+				Trace("fixture-disposed", "server=" + ServerTask.Status);
+				if (_serverProcess != null)
+				{
+					if (!_serverProcess.HasExited)
+					{
+						Trace("external-forced-kill");
+						_serverProcess.Kill();
+					}
+					if (ServerTask.IsCompleted) _serverProcess.Dispose();
+					else _ = ServerTask.ContinueWith(_ => _serverProcess.Dispose());
+				}
 				// Keep the dispatcher alive until teardown has drained pending callbacks.
 				// Editor Coroutines 1.0 can still invoke callbacks captured by the current update.
 				EditorApplication.delayCall += () => _dispatcher.OnDispose();

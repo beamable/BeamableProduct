@@ -1,0 +1,208 @@
+name: Diagnose Linux command shutdown
+
+on:
+  push:
+    branches: [codex/diagnose-linux-stop-20261030]
+
+permissions:
+  contents: read
+  packages: read
+  checks: write
+
+env:
+  DOCKER_REGISTRY: ghcr.io
+
+jobs:
+  buildCollector:
+    name: Build Otel Collector
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.24.1
+          cache-dependency-path: ./otel-collector/beamable-collector/go.sum
+      - name: Build and archive collector
+        working-directory: ./otel-collector
+        shell: bash
+        run: |
+          OUTPUT_DIRECTORY="$RUNNER_TEMP/otel-collector" ./build.sh --version 0.0.123
+          tar -czf "$RUNNER_TEMP/otel-collector.tar.gz" -C "$RUNNER_TEMP/otel-collector" .
+      - uses: actions/upload-artifact@v6
+        with:
+          name: otel-collector-0.0.123
+          path: ${{ runner.temp }}/otel-collector.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+  nativeLinuxProbe:
+    needs: buildCollector
+    name: Linux stop ${{ matrix.server }} ${{ matrix.scope }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - server: inprocess
+            scope: single
+            filter: Beamable.Editor.Tests.BeamWebCommandStopTests.StalledAcknowledgementTimesOutAndCanRetry
+            projectPath: client
+            unityVersion: 2021.3.29f1
+            testMode: editmode
+          - server: external
+            scope: single
+            filter: Beamable.Editor.Tests.BeamWebCommandStopTests.StalledAcknowledgementTimesOutAndCanRetry
+            projectPath: client
+            unityVersion: 2021.3.29f1
+            testMode: editmode
+          - server: inprocess
+            scope: class
+            filter: Beamable.Editor.Tests.BeamWebCommandStopTests
+            projectPath: client
+            unityVersion: 2021.3.29f1
+            testMode: editmode
+          - server: external
+            scope: class
+            filter: Beamable.Editor.Tests.BeamWebCommandStopTests
+            projectPath: client
+            unityVersion: 2021.3.29f1
+            testMode: editmode
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Unity Mapped Values
+        id: unityMap
+        env:
+          UNITY_MODE: >-
+            ${{ fromJson('{
+              "playmode": "player",
+              "editmode": "editor"
+            }')[matrix.testMode] }}
+        run: |
+          echo "UNITY_MODE=$UNITY_MODE" >> "$GITHUB_OUTPUT"
+
+
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: |
+            10.0.x
+            9.0.x
+            8.0.302
+      - name: Download collector
+        uses: actions/download-artifact@v6
+        with:
+          name: otel-collector-0.0.123
+          path: otel-collector-prebuilt
+      - name: Build and Install BEAM CLI
+        working-directory: ./
+        env:
+          BEAM_OTEL_COLLECTOR_ARCHIVE: otel-collector-prebuilt/otel-collector.tar.gz
+          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
+        run: |
+          ./setup.sh
+          SKIP_GENERATION=true ./dev.sh --skip-unreal
+      - name: Check Beam CLI
+        run: |
+          pwd
+          ls -a
+          beam version
+      - name: Apply Nuget Version to Unity SDK
+        working-directory: ./cli/beamable.common
+        run: |
+          dotnet build -f net10.0 -t:CopyCodeToUnity -p:BEAM_COPY_CODE_TO_UNITY=true -p:BeamCopyCommonFlags="--no-build -c Release" -v:n
+
+      - name: Apply CLI Versions
+        run: jq --arg nextVersion 0.0.123.1 '.nugetPackageVersion = $nextVersion' ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json > localtmpfile && mv localtmpfile ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
+
+      - name: Review Unity version-default file
+        run: |
+          cat ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
+
+      - name: Copy the nuget packages into unity
+        working-directory: ./
+        run: |
+          mkdir -p client/BeamableNugetSource/
+          ls BeamableNugetSource
+          cp BeamableNugetSource/*.nupkg client/BeamableNugetSource/
+
+      - name: Cache Unity Folders
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ matrix.projectPath }}/Library
+          key: Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+          restore-keys: |
+            Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+
+      - name: Build isolated probe server and select comparison
+        shell: bash
+        run: |
+          dotnet publish diagnostics/linux-stop/external-server/BeamStopProbeServer.csproj -c Release -r linux-x64 --self-contained true -o client/.probe-server
+          printf '%s' '${{ matrix.server }}' > client/beam-stop-probe-mode.txt
+          printf '%s' '/github/workspace/client/.probe-server/BeamStopProbeServer' > client/beam-stop-probe-server.txt
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+      - name: Native Linux Unity comparison
+        id: probe
+        continue-on-error: true
+        timeout-minutes: 12
+        uses: game-ci/unity-test-runner@0ff419b913a3630032cbe0de48a0099b5a9f0ed9
+        env:
+          DOTNET_CLI_UI_LANGUAGE: en
+          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+          BEAM_UNITY_TEST_CI: "true"
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+        with:
+          customImage: ghcr.io/beamable/editor:ubuntu-2021.3.29f1-base-3.1.0
+          customParameters: -warnaserror+ -executeMethod Beamable.Editor.BeamCli.BeamCliUtil.InstallToolFromLocalPackageSource -testFilter ${{ matrix.filter }}
+          projectPath: client
+          testMode: editmode
+          unityVersion: 2021.3.29f1
+          artifactsPath: diagnostic-artifacts/${{ matrix.server }}-${{ matrix.scope }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Linux stop probe ${{ matrix.server }} ${{ matrix.scope }}
+      - name: Preserve logs even when the Editor hangs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: linux-stop-${{ matrix.server }}-${{ matrix.scope }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            diagnostic-artifacts/**
+            client/diagnostic-output/**
+      - name: Retain the observed probe result
+        if: always()
+        shell: bash
+        env:
+          PROBE_OUTCOME: ${{ steps.probe.outcome }}
+        run: |
+          echo "Probe outcome: $PROBE_OUTCOME"
+          test "$PROBE_OUTCOME" = success

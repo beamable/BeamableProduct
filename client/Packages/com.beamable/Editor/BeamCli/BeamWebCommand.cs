@@ -646,6 +646,7 @@ namespace Beamable.Editor.BeamCli
 
 		private async Promise StopImpl()
 		{
+			using var diagnostic = BeamStopDiagnostics.Begin(id);
 			if (_requestServer?.HasExited == true && _stopUrl.Task.IsCompleted)
 			{
 				// Registration has settled, so no discovery retry remains. Process exit proves its workers are gone.
@@ -659,23 +660,38 @@ namespace Beamable.Editor.BeamCli
 			using (var timeout = new CancellationTokenSource())
 			{
 				timeout.CancelAfter(10000);
+				diagnostic?.AttachTimeout(timeout.Token);
 				try
 				{
 					var deadline = Task.Delay(Timeout.Infinite, timeout.Token);
 					if (await Task.WhenAny(_stopUrl.Task, deadline) != _stopUrl.Task)
 						throw new TimeoutException("CLI command registration timed out during shutdown. Retry shutdown before restarting the watcher.");
 					url = await _stopUrl.Task;
+					diagnostic?.Mark("registration.ready");
 					if (url == "") throw new InvalidOperationException("The CLI server does not support acknowledged command shutdown. Update the CLI before switching content modes.");
 					if (url != null)
 					{
 						using var client = new HttpClient();
 						using var body = new StringContent(JsonUtility.ToJson(new BeamWebCommandRequest { requestId = id }), Encoding.UTF8, "application/json");
-						using var response = await client.PostAsync(url, body, timeout.Token);
-						response.EnsureSuccessStatusCode();
+						try
+						{
+							var acknowledgement = client.PostAsync(url, body, timeout.Token);
+							diagnostic?.AttachHttp(acknowledgement);
+							using var response = await acknowledgement;
+							diagnostic?.Mark("ack.continuation");
+							response.EnsureSuccessStatusCode();
+							diagnostic?.Mark("ack.success");
+						}
+						catch (Exception error)
+						{
+							diagnostic?.Mark("ack.throw." + error.GetType().Name);
+							throw;
+						}
 					}
 				}
-				finally { timeout.Cancel(); }
+				finally { diagnostic?.Mark("cancel.begin"); timeout.Cancel(); diagnostic?.Mark("cancel.end"); }
 			}
+			diagnostic?.Mark("run.drain.begin");
 			// Run already drains the dispatcher in its finally block.
 			try { await _runPromise; }
 			catch (Exception) when (url != null)
