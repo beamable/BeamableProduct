@@ -1149,12 +1149,10 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 	                    {
 		                    email = "fakeEmail"
 	                    }),
-	                    MessageFrequency.OnlyOnce())
-                    .AddMessageHandler(
-                       MessageMatcher.WithReqId(1).WithStatus(200).WithPayload<string>(n => n == "fakeEmail"),
-                       MessageResponder.NoResponse(),
-                       MessageFrequency.OnlyOnce()
-                    );
+	                    MessageFrequency.OnlyOnce());
+                    // No handler for the reply to request 1: it arrived on the first connection, and the gateway matches
+                    // a reply to the session that sent the request, so it must not be sent on this one. A reply sent
+                    // here would fail the test as an unhandled message.
                 }
 
                 connectionIndex++;
