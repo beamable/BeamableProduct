@@ -147,10 +147,9 @@ namespace Beamable.Common.Api.Inventory
 		public readonly List<ItemCreateRequest> newItems;
 		public readonly List<ItemDeleteRequest> deleteItems;
 		public readonly List<ItemUpdateRequest> updateItems;
-		// Unity persists _serializedApplyVipBonus via callbacks; retain this nullable field for the API contract.
-#pragma warning disable UAC1001
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
+			Justification = "Unity uses _serializedApplyVipBonus; JSON requires this field.")]
 		public bool? applyVipBonus;
-#pragma warning restore UAC1001
 
 		private enum SerializableNullableBool { NULL, TRUE, FALSE }
 		[SerializeField]

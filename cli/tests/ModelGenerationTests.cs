@@ -30,14 +30,47 @@ public class ModelGenerationTests
 		unit.Namespaces.Add(new CodeNamespace("Test") { Types = { type } });
 		var original = UnityHelper.GenerateCsharp(unit);
 		var generated = UnityHelper.GenerateJsonModelCsharp(unit);
-		StringAssert.Contains("#pragma warning disable UAC1015", generated);
-		StringAssert.Contains("#pragma warning disable UAC1001", generated);
-		StringAssert.Contains("#pragma warning disable UAC1009", generated);
+		StringAssert.Contains("SuppressMessage(\"Serialization\", \"UAC1015\"", generated);
+		StringAssert.Contains("SuppressMessage(\"Serialization\", \"UAC1001\"", generated);
+		StringAssert.Contains("SuppressMessage(\"Serialization\", \"UAC1009\"", generated);
+		StringAssert.DoesNotContain("#pragma warning", generated);
 		StringAssert.DoesNotContain("NonSerialized", generated);
-		// Removing only comments/directives must leave the entire payload API unchanged.
+		// Suppression metadata must not change the payload API.
 		var stripped = System.Text.RegularExpressions.Regex.Replace(generated,
-			@"(?m)^[ \t]*(?:// JSON contract:[^\r\n]*|#pragma warning (?:disable|restore) UAC\d+)[\r\n]+", "");
+			@"(?m)^[ \t]*(?:// JSON contract:[^\r\n]*|#pragma warning (?:disable|restore) UAC\d+|\[System.Diagnostics.CodeAnalysis.SuppressMessage[^\r\n]*)[\r\n]+", "");
 		stripped.AssertSrc(original);
+		Assert.That(UnityHelper.GenerateJsonModelCsharp(unit), Is.EqualTo(generated));
+		Assert.That(UnityHelper.GenerateCsharp(unit), Is.EqualTo(original));
+	}
+
+	[TestCase("AudienceRequest", "include", "UAC1009")]
+	[TestCase("ContentMeta", "data", "UAC1001")]
+	[TestCase("SupportedFederation", "settings", "UAC1001")]
+	[TestCase("FederationInfo", "settings", "UAC1001")]
+	public void TransportSchemasGenerateScopedSuppressions(string model, string field, string diagnostic)
+	{
+		var jagged = field == "include";
+		var property = jagged
+			? new OpenApiSchema { Type = "array", Items = new OpenApiSchema { Type = "array", Items = new OpenApiSchema { Type = "string" } } }
+			: new OpenApiSchema
+			{
+				Type = "object", Reference = new OpenApiReference { Id = "OptionalJsonNodeWrapper", Type = ReferenceType.Schema },
+				Extensions = { ["x-beamable-json-object"] = new OpenApiBoolean(true) }
+			};
+		var schema = new OpenApiSchema { Type = "object", Properties = { [field] = property } };
+		if (jagged) schema.Required.Add(field);
+		var context = new SwaggerService.DefaultGenerationContext
+		{
+			Documents = Array.Empty<OpenApiDocument>(),
+			OrderedSchemas = new[] { new NamedOpenApiSchema { ReferenceId = model, Schema = schema } }
+		};
+		var generated = UnityHelper.GenerateModel(context, out _).Content;
+		StringAssert.Contains($"[System.Diagnostics.CodeAnalysis.SuppressMessage(\"Serialization\", \"{diagnostic}\", Justification = \"Explicit and reflection JSON require this field.\")]", generated);
+		StringAssert.Contains(jagged ? "public string[][] include;" : $"public OptionalJsonString {field} = new OptionalJsonString();", generated);
+		StringAssert.Contains(jagged ? "s.SerializeArray(\"include\", ref include);" : $"s.SerializeNestedJson(\"{field}\", ref {field}.Value);", generated);
+		StringAssert.DoesNotContain("#pragma warning", generated);
+		StringAssert.DoesNotContain("NonSerialized", generated);
+		Assert.That(UnityHelper.GenerateModel(context, out _).Content, Is.EqualTo(generated));
 	}
 
 	[Test]

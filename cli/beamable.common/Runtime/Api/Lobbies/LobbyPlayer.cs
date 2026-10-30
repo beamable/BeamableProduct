@@ -23,10 +23,9 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// <summary>
 		/// Populated by the stats requested upon lobby creation.
 		/// </summary>
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1015
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
+			Justification = "Reflection JSON requires this dictionary.")]
 		public Dictionary<string, string> stats;
-#pragma warning restore UAC1015
 
 		/// <summary>
 		/// DateTime that this player joined the lobby.

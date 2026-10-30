@@ -291,20 +291,18 @@ namespace Beamable.Common.Api.Tournaments
 		/// from that cycle to the cycle after it. If nextStageChange is not known,
 		/// this field will be absent.
 		/// </summary>
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1001
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
+			Justification = "Reflection JSON requires this field.")]
 		public int? nextStageChange;
-#pragma warning restore UAC1001
 
 		/// <summary>
 		/// Previous stage change is a historical record of how the player got to
 		/// the current tier and stage they occupy. If the player was not present
 		/// in the previous cycle of the tournament, this field will be absent.
 		/// </summary>
-		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
-#pragma warning disable UAC1001
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
+			Justification = "Reflection JSON requires this field.")]
 		public int? previousStageChange;
-#pragma warning restore UAC1001
 
 		/// <summary>
 		/// The <see cref="TournamentRewardCurrency"/>s that the player will be granted after the cycle completes.
