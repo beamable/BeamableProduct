@@ -346,4 +346,49 @@ public class LocalStackWebRegistryStepTests
 		Assert.That(WebLocalRegistryService.IsLocalDevVersion(WebLocalRegistryService.LocalDevVersion), Is.True);
 		Assert.That(WebLocalRegistryService.IsLocalDevVersion("^" + WebLocalRegistryService.LocalDevVersion), Is.True);
 	}
+
+	/// <summary>
+	/// The SDK arrives as the toolkit's dependency, so a rebuilt SDK only reaches an extension when both its
+	/// installed copy and its lockfile entries are gone — hoisted or nested — and nothing else is touched.
+	/// </summary>
+	[Test]
+	public void Forgetting_the_sdk_removes_its_copy_and_lock_entries_only()
+	{
+		var root = Path.Combine(Path.GetTempPath(), "beam-forget-sdk-" + TestContext.CurrentContext.Test.ID);
+		var sdk = Path.Combine(root, "node_modules", "@beamable", "sdk");
+		var toolkit = Path.Combine(root, "node_modules", "@beamable", "portal-toolkit");
+		Directory.CreateDirectory(sdk);
+		Directory.CreateDirectory(toolkit);
+		try
+		{
+			File.WriteAllText(Path.Combine(sdk, "package.json"), "{}");
+			File.WriteAllText(Path.Combine(root, "package-lock.json"), """
+				{
+				  "lockfileVersion": 3,
+				  "packages": {
+				    "": { "name": "my-ext" },
+				    "node_modules/@beamable/portal-toolkit": { "version": "0.0.123", "integrity": "sha512-toolkit" },
+				    "node_modules/@beamable/sdk": { "version": "0.0.123", "integrity": "sha512-old" },
+				    "node_modules/other/node_modules/@beamable/sdk": { "version": "0.0.123", "integrity": "sha512-old" },
+				    "node_modules/@beamable/sdk-extra": { "version": "1.0.0" }
+				  }
+				}
+				""");
+
+			var ok = WebLocalRegistryService.ForgetInstalled(root, WebLocalRegistryService.SdkPackage, out var error);
+
+			Assert.That(ok, Is.True, error);
+			Assert.That(Directory.Exists(sdk), Is.False, "the installed sdk must be removed");
+			Assert.That(Directory.Exists(toolkit), Is.True, "other packages stay installed");
+			var packages = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(Path.Combine(root, "package-lock.json")))["packages"]!;
+			Assert.That(((Newtonsoft.Json.Linq.JObject)packages).Properties().Select(p => p.Name), Is.EquivalentTo(new[]
+			{
+				"", "node_modules/@beamable/portal-toolkit", "node_modules/@beamable/sdk-extra",
+			}));
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
 }

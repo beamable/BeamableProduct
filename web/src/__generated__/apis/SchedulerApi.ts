@@ -15,38 +15,12 @@ import type { ApiSchedulerJobCancelPutSchedulerResponse } from '@/__generated__/
 import type { ApiSchedulerJobDeleteSchedulerResponse } from '@/__generated__/schemas/ApiSchedulerJobDeleteSchedulerResponse';
 import type { ApiSchedulerJobNextExecutionsGetSchedulerResponse } from '@/__generated__/schemas/ApiSchedulerJobNextExecutionsGetSchedulerResponse';
 import type { ApiSchedulerJobsGetSchedulerResponse } from '@/__generated__/schemas/ApiSchedulerJobsGetSchedulerResponse';
-import type { ExecuteJobRequest } from '@/__generated__/schemas/ExecuteJobRequest';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
 import type { JobActivityViewCursorPagedResult } from '@/__generated__/schemas/JobActivityViewCursorPagedResult';
 import type { JobDefinitionSaveRequest } from '@/__generated__/schemas/JobDefinitionSaveRequest';
 import type { JobDefinitionView } from '@/__generated__/schemas/JobDefinitionView';
 import type { JobDefinitionViewCursorPagedResult } from '@/__generated__/schemas/JobDefinitionViewCursorPagedResult';
-import type { JobExecutionResult } from '@/__generated__/schemas/JobExecutionResult';
-
-/**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
- * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `ExecuteJobRequest` instance to use for the API request
- * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * 
- */
-export async function schedulerPostJobExecuteInternal(requester: HttpRequester, payload: ExecuteJobRequest, gamertag?: string): Promise<HttpResponse<JobExecutionResult>> {
-  let endpoint = "/api/internal/scheduler/job/execute";
-  
-  // Make the API request
-  return makeApiRequest<JobExecutionResult, ExecuteJobRequest>({
-    r: requester,
-    e: endpoint,
-    m: POST,
-    p: payload,
-    g: gamertag,
-    w: true
-  });
-}
 
 /**
  * @remarks

@@ -3,7 +3,13 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
+export const accountIdPlaceholder = "{accountId}";
+
 export const eventPlaceholder = "{event}";
+
+export const queryExecutionIdPlaceholder = "{queryExecutionId}";
+
+export const idPlaceholder = "{id}";
 
 export const tokenIdPlaceholder = "{tokenId}";
 
@@ -39,24 +45,34 @@ export const gameIdPlaceholder = "{gameId}";
 
 export const aliasPlaceholder = "{alias}";
 
-export const segmentIdPlaceholder = "{segmentId}";
-
-export const playerIdPlaceholder = "{playerId}";
-
 export const kindPlaceholder = "{kind}";
 
 export const keyPlaceholder = "{key}";
 
-export const idPlaceholder = "{id}";
+export const datasetIdPlaceholder = "{datasetId}";
+
+export const fileIdPlaceholder = "{fileId}";
+
+export const partNumberPlaceholder = "{partNumber}";
+
+export const importIdPlaceholder = "{importId}";
 
 export const tokenPlaceholder = "{token}";
 
+export const playerIdPlaceholder = "{playerId}";
+
 export const jobIdPlaceholder = "{jobId}";
+
+export const connectionIdPlaceholder = "{connectionId}";
+
+export const hostPlaceholder = "{host}";
 
 export const itemTypePlaceholder = "{itemType}";
 
+export const executionIdPlaceholder = "{executionId}";
+
 export const zoneIdPlaceholder = "{zoneId}";
 
-export const accountIdPlaceholder = "{accountId}";
+export const segmentIdPlaceholder = "{segmentId}";
 
 export const objectIdPlaceholder = "{objectId}";

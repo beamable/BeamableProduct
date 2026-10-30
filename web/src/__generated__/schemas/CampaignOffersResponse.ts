@@ -1,8 +1,12 @@
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import type { CampaignOffer } from './CampaignOffer';
 
-export type CampaignOffersResponse = {
-  /** The contract version this was produced against, so skew is detectable rather than a parse bug. */
-  contractVersion?: number;
-  offers?: CampaignOffer[];
-  playerId?: string;
+export type CampaignOffersResponse = { 
+  contractVersion?: number; 
+  offers?: CampaignOffer[]; 
+  playerId?: string; 
 };

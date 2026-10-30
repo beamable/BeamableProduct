@@ -102,7 +102,10 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 		// One packument read for the whole run: the integrity the registry is currently serving for the
 		// version being pinned. Null when it cannot be determined (unreachable registry, unexpected shape),
 		// which simply disables the skip and restores the previous always-reinstall behaviour.
-		var registryIntegrity = await ResolveRegistryIntegrity(args, registry, version);
+		var toolkitIntegrity = await ResolveRegistryIntegrity(args, registry, WebLocalRegistryService.ToolkitPackage, version);
+		// The SDK is the toolkit's own dependency and is published alongside it, so an SDK-only rebuild
+		// changes only this one; checking the toolkit alone would skip every project and never deliver it.
+		var sdkIntegrity = await ResolveRegistryIntegrity(args, registry, WebLocalRegistryService.SdkPackage, version);
 		var alreadyCurrent = 0;
 
 		var directoriesToInstall = new List<(string name, string directory)>();
@@ -146,10 +149,12 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 			// integrity changes, every project misses, and every project reinstalls exactly as before.
 			// Without this the step reinstalls ~70 projects on every single `beam local up` to deliver a
 			// build that is, in the overwhelmingly common case, already there.
-			if (registryIntegrity != null
-				&& registryIntegrity == WebLocalRegistryService.InstalledIntegrity(directory, WebLocalRegistryService.ToolkitPackage))
+			if (toolkitIntegrity != null
+				&& sdkIntegrity != null
+				&& toolkitIntegrity == WebLocalRegistryService.InstalledIntegrity(directory, WebLocalRegistryService.ToolkitPackage)
+				&& sdkIntegrity == WebLocalRegistryService.InstalledIntegrity(directory, WebLocalRegistryService.SdkPackage))
 			{
-				Log.Verbose($"[{name}] already has {WebLocalRegistryService.ToolkitPackage}@{version} " +
+				Log.Verbose($"[{name}] already has {WebLocalRegistryService.ToolkitPackage} and {WebLocalRegistryService.SdkPackage}@{version} " +
 					"with the integrity the registry is serving - no reinstall needed");
 				alreadyCurrent++;
 				continue;
@@ -229,13 +234,12 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 	/// null just means every project reinstalls, which is what happened before this existed.
 	/// </para>
 	/// </summary>
-	private static async Task<string> ResolveRegistryIntegrity(WebUseCommandArgs args, string registry, string version)
+	private static async Task<string> ResolveRegistryIntegrity(WebUseCommandArgs args, string registry, string package, string version)
 	{
 		try
 		{
 			var versionService = args.Provider.GetService<VersionService>();
-			var packument = await versionService.GetNpmPackument(
-				WebLocalRegistryService.ToolkitPackage, registry, throwOnError: false);
+			var packument = await versionService.GetNpmPackument(package, registry, throwOnError: false);
 
 			if (packument?.Versions == null || !packument.Versions.TryGetValue(version, out var entry))
 			{
@@ -246,7 +250,7 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 		}
 		catch (Exception e)
 		{
-			Log.Verbose($"Could not read the registry integrity for {WebLocalRegistryService.ToolkitPackage}@{version}: {e.Message}");
+			Log.Verbose($"Could not read the registry integrity for {package}@{version}: {e.Message}");
 			return null;
 		}
 	}
@@ -273,8 +277,11 @@ public class WebUseCommand : AtomicCommand<WebUseCommandArgs, WebUseCommandResul
 				{
 					// ForceReinstall, not a plain install: the version is already pinned and already present,
 					// so npm would consider the tree satisfied and never fetch the build we just published.
-					if (!WebLocalRegistryService.ForceReinstall(
-							target.directory, WebLocalRegistryService.ToolkitPackage, version, registry, out var error))
+					// The SDK comes in as the toolkit's dependency, so it is forgotten first: otherwise npm
+					// reinstalls it from the lockfile's old integrity, out of its cache.
+					if (!WebLocalRegistryService.ForgetInstalled(target.directory, WebLocalRegistryService.SdkPackage, out var error)
+						|| !WebLocalRegistryService.ForceReinstall(
+							target.directory, WebLocalRegistryService.ToolkitPackage, version, registry, out error))
 					{
 						// Best-effort, as in update-toolkit: package.json is the source of truth and the run
 						// flow installs again before building, so a failed install only warns.

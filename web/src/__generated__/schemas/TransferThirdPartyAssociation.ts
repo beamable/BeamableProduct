@@ -3,9 +3,9 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { ThirdPartyAssociation } from './ThirdPartyAssociation';
+import type { AccountsObjectThirdPartyAssociation } from './AccountsObjectThirdPartyAssociation';
 
 export type TransferThirdPartyAssociation = { 
   fromAccountId: bigint | string; 
-  thirdParty: ThirdPartyAssociation; 
+  thirdParty: AccountsObjectThirdPartyAssociation; 
 };

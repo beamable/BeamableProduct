@@ -10,27 +10,28 @@ import { makeApiRequest } from '@/utils/makeApiRequest';
 import { objectIdPlaceholder } from '@/__generated__/apis/constants';
 import { POST } from '@/constants';
 import { PUT } from '@/constants';
-import type { Account } from '@/__generated__/schemas/Account';
-import type { AccountAvailableResponse } from '@/__generated__/schemas/AccountAvailableResponse';
 import type { AccountPersonallyIdentifiableInformationResponse } from '@/__generated__/schemas/AccountPersonallyIdentifiableInformationResponse';
-import type { AccountPlayerView } from '@/__generated__/schemas/AccountPlayerView';
-import type { AccountPortalView } from '@/__generated__/schemas/AccountPortalView';
 import type { AccountRegistration } from '@/__generated__/schemas/AccountRegistration';
-import type { AccountRolesReport } from '@/__generated__/schemas/AccountRolesReport';
-import type { AccountSearchResponse } from '@/__generated__/schemas/AccountSearchResponse';
+import type { AccountsBasicAccount } from '@/__generated__/schemas/AccountsBasicAccount';
+import type { AccountsBasicAccountAvailableResponse } from '@/__generated__/schemas/AccountsBasicAccountAvailableResponse';
+import type { AccountsBasicAccountPlayerView } from '@/__generated__/schemas/AccountsBasicAccountPlayerView';
+import type { AccountsBasicAccountPortalView } from '@/__generated__/schemas/AccountsBasicAccountPortalView';
+import type { AccountsBasicAccountSearchResponse } from '@/__generated__/schemas/AccountsBasicAccountSearchResponse';
+import type { AccountsBasicCreateElevatedAccountRequest } from '@/__generated__/schemas/AccountsBasicCreateElevatedAccountRequest';
+import type { AccountsBasicEmailUpdateConfirmation } from '@/__generated__/schemas/AccountsBasicEmailUpdateConfirmation';
+import type { AccountsObjectAccount } from '@/__generated__/schemas/AccountsObjectAccount';
+import type { AccountsObjectAccountRolesReport } from '@/__generated__/schemas/AccountsObjectAccountRolesReport';
+import type { AccountsObjectAvailableRolesResponse } from '@/__generated__/schemas/AccountsObjectAvailableRolesResponse';
 import type { AccountUpdate } from '@/__generated__/schemas/AccountUpdate';
 import type { AttachExternalIdentityApiRequest } from '@/__generated__/schemas/AttachExternalIdentityApiRequest';
 import type { AttachExternalIdentityApiResponse } from '@/__generated__/schemas/AttachExternalIdentityApiResponse';
-import type { AvailableRolesResponse } from '@/__generated__/schemas/AvailableRolesResponse';
 import type { CommonResponse } from '@/__generated__/schemas/CommonResponse';
 import type { CreateAccountWithCredsApiResponse } from '@/__generated__/schemas/CreateAccountWithCredsApiResponse';
 import type { CreateAccountWithCredsRequest } from '@/__generated__/schemas/CreateAccountWithCredsRequest';
-import type { CreateElevatedAccountRequest } from '@/__generated__/schemas/CreateElevatedAccountRequest';
 import type { DeleteDevicesRequest } from '@/__generated__/schemas/DeleteDevicesRequest';
 import type { DeleteExternalIdentityApiRequest } from '@/__generated__/schemas/DeleteExternalIdentityApiRequest';
 import type { DeleteRole } from '@/__generated__/schemas/DeleteRole';
 import type { DeleteThirdPartyAssociation } from '@/__generated__/schemas/DeleteThirdPartyAssociation';
-import type { EmailUpdateConfirmation } from '@/__generated__/schemas/EmailUpdateConfirmation';
 import type { EmailUpdateRequest } from '@/__generated__/schemas/EmailUpdateRequest';
 import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import type { GetAdminsResponse } from '@/__generated__/schemas/GetAdminsResponse';
@@ -52,11 +53,11 @@ import type { UpdateRole } from '@/__generated__/schemas/UpdateRole';
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsDeleteMeDeviceBasic(requester: HttpRequester, payload: DeleteDevicesRequest, gamertag?: string): Promise<HttpResponse<AccountPlayerView>> {
+export async function accountsDeleteMeDeviceBasic(requester: HttpRequester, payload: DeleteDevicesRequest, gamertag?: string): Promise<HttpResponse<AccountsBasicAccountPlayerView>> {
   let endpoint = "/basic/accounts/me/device";
   
   // Make the API request
-  return makeApiRequest<AccountPlayerView, DeleteDevicesRequest>({
+  return makeApiRequest<AccountsBasicAccountPlayerView, DeleteDevicesRequest>({
     r: requester,
     e: endpoint,
     m: DELETE,
@@ -75,11 +76,11 @@ export async function accountsDeleteMeDeviceBasic(requester: HttpRequester, payl
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsGetMeBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<AccountPlayerView>> {
+export async function accountsGetMeBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<AccountsBasicAccountPlayerView>> {
   let endpoint = "/basic/accounts/me";
   
   // Make the API request
-  return makeApiRequest<AccountPlayerView>({
+  return makeApiRequest<AccountsBasicAccountPlayerView>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -98,11 +99,11 @@ export async function accountsGetMeBasic(requester: HttpRequester, gamertag?: st
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsPutMeBasic(requester: HttpRequester, payload: AccountUpdate, gamertag?: string): Promise<HttpResponse<AccountPlayerView>> {
+export async function accountsPutMeBasic(requester: HttpRequester, payload: AccountUpdate, gamertag?: string): Promise<HttpResponse<AccountsBasicAccountPlayerView>> {
   let endpoint = "/basic/accounts/me";
   
   // Make the API request
-  return makeApiRequest<AccountPlayerView, AccountUpdate>({
+  return makeApiRequest<AccountsBasicAccountPlayerView, AccountUpdate>({
     r: requester,
     e: endpoint,
     m: PUT,
@@ -122,11 +123,11 @@ export async function accountsPutMeBasic(requester: HttpRequester, payload: Acco
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsDeleteMeThirdPartyBasic(requester: HttpRequester, payload: ThirdPartyAvailableRequest, gamertag?: string): Promise<HttpResponse<AccountPlayerView>> {
+export async function accountsDeleteMeThirdPartyBasic(requester: HttpRequester, payload: ThirdPartyAvailableRequest, gamertag?: string): Promise<HttpResponse<AccountsBasicAccountPlayerView>> {
   let endpoint = "/basic/accounts/me/third-party";
   
   // Make the API request
-  return makeApiRequest<AccountPlayerView, ThirdPartyAvailableRequest>({
+  return makeApiRequest<AccountsBasicAccountPlayerView, ThirdPartyAvailableRequest>({
     r: requester,
     e: endpoint,
     m: DELETE,
@@ -169,11 +170,11 @@ export async function accountsGetGetPersonallyIdentifiableInformationBasic(reque
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsGetSearchBasic(requester: HttpRequester, page: number, pagesize: number, query: string, gamertag?: string): Promise<HttpResponse<AccountSearchResponse>> {
+export async function accountsGetSearchBasic(requester: HttpRequester, page: number, pagesize: number, query: string, gamertag?: string): Promise<HttpResponse<AccountsBasicAccountSearchResponse>> {
   let endpoint = "/basic/accounts/search";
   
   // Make the API request
-  return makeApiRequest<AccountSearchResponse>({
+  return makeApiRequest<AccountsBasicAccountSearchResponse>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -217,15 +218,15 @@ export async function accountsPostEmailUpdateInitBasic(requester: HttpRequester,
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `EmailUpdateConfirmation` instance to use for the API request
+ * @param payload - The `AccountsBasicEmailUpdateConfirmation` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsPostEmailUpdateConfirmBasic(requester: HttpRequester, payload: EmailUpdateConfirmation, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
+export async function accountsPostEmailUpdateConfirmBasic(requester: HttpRequester, payload: AccountsBasicEmailUpdateConfirmation, gamertag?: string): Promise<HttpResponse<EmptyResponse>> {
   let endpoint = "/basic/accounts/email-update/confirm";
   
   // Make the API request
-  return makeApiRequest<EmptyResponse, EmailUpdateConfirmation>({
+  return makeApiRequest<EmptyResponse, AccountsBasicEmailUpdateConfirmation>({
     r: requester,
     e: endpoint,
     m: POST,
@@ -243,11 +244,11 @@ export async function accountsPostEmailUpdateConfirmBasic(requester: HttpRequest
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsGetAvailableExternalIdentityBasic(requester: HttpRequester, provider_service: string, user_id: string, provider_namespace?: string, gamertag?: string): Promise<HttpResponse<AccountAvailableResponse>> {
+export async function accountsGetAvailableExternalIdentityBasic(requester: HttpRequester, provider_service: string, user_id: string, provider_namespace?: string, gamertag?: string): Promise<HttpResponse<AccountsBasicAccountAvailableResponse>> {
   let endpoint = "/basic/accounts/available/external_identity";
   
   // Make the API request
-  return makeApiRequest<AccountAvailableResponse>({
+  return makeApiRequest<AccountsBasicAccountAvailableResponse>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -267,11 +268,11 @@ export async function accountsGetAvailableExternalIdentityBasic(requester: HttpR
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsGetAvailableThirdPartyBasic(requester: HttpRequester, thirdParty: string, token: string, gamertag?: string): Promise<HttpResponse<AccountAvailableResponse>> {
+export async function accountsGetAvailableThirdPartyBasic(requester: HttpRequester, thirdParty: string, token: string, gamertag?: string): Promise<HttpResponse<AccountsBasicAccountAvailableResponse>> {
   let endpoint = "/basic/accounts/available/third-party";
   
   // Make the API request
-  return makeApiRequest<AccountAvailableResponse>({
+  return makeApiRequest<AccountsBasicAccountAvailableResponse>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -289,15 +290,15 @@ export async function accountsGetAvailableThirdPartyBasic(requester: HttpRequest
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param payload - The `CreateElevatedAccountRequest` instance to use for the API request
+ * @param payload - The `AccountsBasicCreateElevatedAccountRequest` instance to use for the API request
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsPostAdminAdminUserBasic(requester: HttpRequester, payload: CreateElevatedAccountRequest, gamertag?: string): Promise<HttpResponse<AccountPortalView>> {
+export async function accountsPostAdminAdminUserBasic(requester: HttpRequester, payload: AccountsBasicCreateElevatedAccountRequest, gamertag?: string): Promise<HttpResponse<AccountsBasicAccountPortalView>> {
   let endpoint = "/basic/accounts/admin/admin-user";
   
   // Make the API request
-  return makeApiRequest<AccountPortalView, CreateElevatedAccountRequest>({
+  return makeApiRequest<AccountsBasicAccountPortalView, AccountsBasicCreateElevatedAccountRequest>({
     r: requester,
     e: endpoint,
     m: POST,
@@ -317,11 +318,11 @@ export async function accountsPostAdminAdminUserBasic(requester: HttpRequester, 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsPostRegisterBasic(requester: HttpRequester, payload: AccountRegistration, gamertag?: string): Promise<HttpResponse<AccountPlayerView>> {
+export async function accountsPostRegisterBasic(requester: HttpRequester, payload: AccountRegistration, gamertag?: string): Promise<HttpResponse<AccountsBasicAccountPlayerView>> {
   let endpoint = "/basic/accounts/register";
   
   // Make the API request
-  return makeApiRequest<AccountPlayerView, AccountRegistration>({
+  return makeApiRequest<AccountsBasicAccountPlayerView, AccountRegistration>({
     r: requester,
     e: endpoint,
     m: POST,
@@ -340,11 +341,11 @@ export async function accountsPostRegisterBasic(requester: HttpRequester, payloa
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsGetAdminMeBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<AccountPortalView>> {
+export async function accountsGetAdminMeBasic(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<AccountsBasicAccountPortalView>> {
   let endpoint = "/basic/accounts/admin/me";
   
   // Make the API request
-  return makeApiRequest<AccountPortalView>({
+  return makeApiRequest<AccountsBasicAccountPortalView>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -404,11 +405,11 @@ export async function accountsGetAdminAdminUsersBasic(requester: HttpRequester, 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsGetFindBasic(requester: HttpRequester, query: string, gamertag?: string): Promise<HttpResponse<Account>> {
+export async function accountsGetFindBasic(requester: HttpRequester, query: string, gamertag?: string): Promise<HttpResponse<AccountsBasicAccount>> {
   let endpoint = "/basic/accounts/find";
   
   // Make the API request
-  return makeApiRequest<Account>({
+  return makeApiRequest<AccountsBasicAccount>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -445,11 +446,11 @@ export async function accountsPostSignupBasic(requester: HttpRequester, payload:
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsGetAvailableDeviceIdBasic(requester: HttpRequester, deviceId: string, gamertag?: string): Promise<HttpResponse<AccountAvailableResponse>> {
+export async function accountsGetAvailableDeviceIdBasic(requester: HttpRequester, deviceId: string, gamertag?: string): Promise<HttpResponse<AccountsBasicAccountAvailableResponse>> {
   let endpoint = "/basic/accounts/available/device-id";
   
   // Make the API request
-  return makeApiRequest<AccountAvailableResponse>({
+  return makeApiRequest<AccountsBasicAccountAvailableResponse>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -466,11 +467,11 @@ export async function accountsGetAvailableDeviceIdBasic(requester: HttpRequester
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsGetAvailableBasic(requester: HttpRequester, email: string, gamertag?: string): Promise<HttpResponse<AccountAvailableResponse>> {
+export async function accountsGetAvailableBasic(requester: HttpRequester, email: string, gamertag?: string): Promise<HttpResponse<AccountsBasicAccountAvailableResponse>> {
   let endpoint = "/basic/accounts/available";
   
   // Make the API request
-  return makeApiRequest<AccountAvailableResponse>({
+  return makeApiRequest<AccountsBasicAccountAvailableResponse>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -559,11 +560,11 @@ export async function accountsDeleteExternalIdentityBasic(requester: HttpRequest
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsPutAdminEmailByObjectId(requester: HttpRequester, objectId: bigint | string, payload: EmailUpdateRequest, gamertag?: string): Promise<HttpResponse<Account>> {
+export async function accountsPutAdminEmailByObjectId(requester: HttpRequester, objectId: bigint | string, payload: EmailUpdateRequest, gamertag?: string): Promise<HttpResponse<AccountsObjectAccount>> {
   let endpoint = "/object/accounts/{objectId}/admin/email".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
-  return makeApiRequest<Account, EmailUpdateRequest>({
+  return makeApiRequest<AccountsObjectAccount, EmailUpdateRequest>({
     r: requester,
     e: endpoint,
     m: PUT,
@@ -583,11 +584,11 @@ export async function accountsPutAdminEmailByObjectId(requester: HttpRequester, 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsGetAvailableRolesByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<AvailableRolesResponse>> {
+export async function accountsGetAvailableRolesByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<AccountsObjectAvailableRolesResponse>> {
   let endpoint = "/object/accounts/{objectId}/available-roles".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
-  return makeApiRequest<AvailableRolesResponse>({
+  return makeApiRequest<AccountsObjectAvailableRolesResponse>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -606,11 +607,11 @@ export async function accountsGetAvailableRolesByObjectId(requester: HttpRequest
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsGetRoleReportByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<AccountRolesReport>> {
+export async function accountsGetRoleReportByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<AccountsObjectAccountRolesReport>> {
   let endpoint = "/object/accounts/{objectId}/role/report".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
-  return makeApiRequest<AccountRolesReport>({
+  return makeApiRequest<AccountsObjectAccountRolesReport>({
     r: requester,
     e: endpoint,
     m: GET,
@@ -780,11 +781,11 @@ export async function accountsDeleteAdminThirdPartyByObjectId(requester: HttpReq
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsPutByObjectId(requester: HttpRequester, objectId: bigint | string, payload: AccountUpdate, gamertag?: string): Promise<HttpResponse<Account>> {
+export async function accountsPutByObjectId(requester: HttpRequester, objectId: bigint | string, payload: AccountUpdate, gamertag?: string): Promise<HttpResponse<AccountsObjectAccount>> {
   let endpoint = "/object/accounts/{objectId}/".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
-  return makeApiRequest<Account, AccountUpdate>({
+  return makeApiRequest<AccountsObjectAccount, AccountUpdate>({
     r: requester,
     e: endpoint,
     m: PUT,
@@ -804,11 +805,11 @@ export async function accountsPutByObjectId(requester: HttpRequester, objectId: 
  * @param gamertag - Override the Gamer Tag of the player. This is generally inferred by the auth token.
  * 
  */
-export async function accountsDeleteAdminForgetByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<Account>> {
+export async function accountsDeleteAdminForgetByObjectId(requester: HttpRequester, objectId: bigint | string, gamertag?: string): Promise<HttpResponse<AccountsObjectAccount>> {
   let endpoint = "/object/accounts/{objectId}/admin/forget".replace(objectIdPlaceholder, endpointEncoder(objectId));
   
   // Make the API request
-  return makeApiRequest<Account>({
+  return makeApiRequest<AccountsObjectAccount>({
     r: requester,
     e: endpoint,
     m: DELETE,

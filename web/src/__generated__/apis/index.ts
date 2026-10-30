@@ -3,8 +3,11 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
+export * from './AccountApi';
 export * from './AccountsApi';
 export * from './AnalyticsApi';
+export * from './AnalyticsSchemaFindingsApi';
+export * from './AnalyticsStatsReconcileApi';
 export * from './AnnouncementsApi';
 export * from './AuthApi';
 export * from './BeamoApi';
@@ -15,14 +18,18 @@ export * from './BeamoPullRequestApi';
 export * from './BillingApi';
 export * from './CalendarsApi';
 export * from './CampaignApi';
+export * from './CampaignOfferApi';
 export * from './CloudsavingApi';
 export * from './CommerceApi';
 export * from './ContentApi';
 export * from './CustomerApi';
-export * from './CustomerSegmentsApi';
 export * from './DataBindingApi';
+export * from './DatasetApi';
+export * from './DatasetFileApi';
+export * from './DatasetImportApi';
 export * from './EventPlayersApi';
 export * from './EventsApi';
+export * from './GitHubSignInApi';
 export * from './GroupsApi';
 export * from './GroupUsersApi';
 export * from './InventoryApi';
@@ -48,11 +55,11 @@ export * from './RealmsApi';
 export * from './RealmSecretsApi';
 export * from './SchedulerApi';
 export * from './SecretsApi';
-export * from './SegmentsApi';
 export * from './SessionApi';
 export * from './SocialApi';
+export * from './SourceControlApi';
 export * from './StatsApi';
-export * from './CampaignOfferApi';
 export * from './TournamentsApi';
 export * from './TrialsApi';
+export * from './WorkflowApi';
 export * from './ZonesApi';

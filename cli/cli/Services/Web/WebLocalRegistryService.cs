@@ -177,6 +177,64 @@ public class WebLocalRegistryService
 	}
 
 	/// <summary>
+	/// Removes an installed <paramref name="package"/> and its <c>package-lock.json</c> entries, so the next
+	/// install resolves it from the registry again.
+	///
+	/// <para>
+	/// For a package that arrives as a dependency rather than by an explicit spec. Deleting the directory
+	/// alone is not enough: npm reinstalls it from the lockfile, whose integrity names the old tarball, and
+	/// its cache answers that integrity without asking the registry. Without the entry npm re-resolves, and
+	/// the new build's integrity is a cache miss.
+	/// </para>
+	/// </summary>
+	public static bool ForgetInstalled(string directory, string package, out string error)
+	{
+		error = null;
+		var installedPath = Path.Combine(directory, "node_modules", package.Replace("/", Path.DirectorySeparatorChar.ToString()));
+		var lockFile = Path.Combine(directory, "package-lock.json");
+		try
+		{
+			if (Directory.Exists(installedPath))
+			{
+				Directory.Delete(installedPath, recursive: true);
+			}
+
+			if (!File.Exists(lockFile))
+			{
+				return true;
+			}
+
+			var root = JObject.Parse(File.ReadAllText(lockFile));
+			if (root["packages"] is not JObject packages)
+			{
+				return true;
+			}
+
+			// Hoisted or nested under another package: `node_modules/@beamable/sdk`, `.../node_modules/@beamable/sdk`.
+			var entries = packages.Properties()
+				.Where(p => p.Name == $"node_modules/{package}" || p.Name.EndsWith($"/node_modules/{package}", StringComparison.Ordinal))
+				.ToList();
+			if (entries.Count == 0)
+			{
+				return true;
+			}
+
+			foreach (var entry in entries)
+			{
+				entry.Remove();
+			}
+
+			File.WriteAllText(lockFile, root.ToString(Formatting.Indented));
+			return true;
+		}
+		catch (Exception e)
+		{
+			error = $"Could not forget the installed {package} in [{directory}]: {e.Message}";
+			return false;
+		}
+	}
+
+	/// <summary>
 	/// True when npm failed because a lockfile integrity hash did not match what the registry served.
 	/// </summary>
 	private static bool IsIntegrityFailure(string output) =>

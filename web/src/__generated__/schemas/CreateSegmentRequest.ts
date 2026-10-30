@@ -4,15 +4,15 @@
  */
 
 import type { Rule } from './Rule';
-import type { SegmentPropertyInput } from './SegmentPropertyInput';
-import type { SegmentScope } from './enums/SegmentScope';
 
 export type CreateSegmentRequest = { 
   description?: string | null; 
   displayName?: string | null; 
-  excludes?: (bigint | string)[] | null; 
-  includes?: (bigint | string)[] | null; 
-  properties?: Record<string, SegmentPropertyInput> | null; 
+  managedBy?: string | null; 
+  propertyExtremes?: string[] | null; 
+  propertyStats?: string[] | null; 
+  realms?: string[] | null; 
   rule?: Rule; 
-  scope?: SegmentScope; 
+  tags?: string[] | null; 
+  trackTenure?: boolean | null; 
 };

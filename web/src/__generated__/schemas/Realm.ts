@@ -6,6 +6,7 @@
 export type Realm = { 
   name: string; 
   plan: string; 
+  zoneId: string; 
   children?: string[] | null; 
   config?: Record<string, string>; 
   created?: Date; 
@@ -16,5 +17,4 @@ export type Realm = {
   parent?: string | null; 
   secret?: string; 
   sharded?: boolean | null; 
-  zoneId?: string | null; 
 };

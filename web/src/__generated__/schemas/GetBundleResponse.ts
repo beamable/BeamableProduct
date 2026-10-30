@@ -3,10 +3,10 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { Bundle } from './Bundle';
+import type { BundleView } from './BundleView';
 
 export type GetBundleResponse = { 
-  bundle?: Bundle; 
+  bundle?: BundleView; 
   tags?: Record<string, string>; 
   version?: bigint | string; 
 };

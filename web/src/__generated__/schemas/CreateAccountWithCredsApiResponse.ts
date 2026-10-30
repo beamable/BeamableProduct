@@ -3,11 +3,11 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { AccountPlayerView } from './AccountPlayerView';
+import type { AccountsBasicAccountPlayerView } from './AccountsBasicAccountPlayerView';
 import type { TokenResponse } from './TokenResponse';
 
 export type CreateAccountWithCredsApiResponse = { 
-  account?: AccountPlayerView; 
+  account?: AccountsBasicAccountPlayerView; 
   challenge_token?: string; 
   token?: TokenResponse; 
 };
