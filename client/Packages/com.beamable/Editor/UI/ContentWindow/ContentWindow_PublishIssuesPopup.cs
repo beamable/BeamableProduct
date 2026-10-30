@@ -134,7 +134,7 @@ namespace Beamable.Editor.UI.ContentWindow
 				}
 				if (_issues.Updates + _issues.Additions + _issues.Deletions > 0)
 				{
-					Label($"Incoming updates: {_issues.Updates}  |  Additions: {_issues.Additions}  |  Deletions: {_issues.Deletions}", _headingStyle, 4f);
+					Label($"Incoming changes: {_issues.Updates}  |  Additions: {_issues.Additions}  |  Deletions: {_issues.Deletions}", _headingStyle, 4f);
 					Label("Reconcile incoming items with the published realm.", _bodyStyle, 12f);
 				}
 				if (_issues.Unknown > 0) Label($"Review needed: {_issues.Unknown} {ItemWord(_issues.Unknown)} with unverified change history.", _bodyStyle, 12f);
