@@ -1,0 +1,17 @@
+{
+  "name": "config",
+  "body": "{\"commandLine\":\"config\"}",
+  "events": [
+    {
+      "ts": 1793116580743,
+      "type": "stream",
+      "data": {
+        "host": "http://127.0.0.1:9",
+        "cid": "1234567890",
+        "pid": "DE_1234567890",
+        "zid": null,
+        "configPath": "<workspace>/.beamable"
+      }
+    }
+  ]
+}

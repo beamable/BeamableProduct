@@ -3,6 +3,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Server;
 using Beamable.Server.Common;
 using cli.CliServerCommand;
+using cli.Services.CliInvocation;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Net;
@@ -46,9 +47,20 @@ public class ServerInfoResponse
 	public int pid;
 
 	/// <summary>
-	/// The cli invocations currently inflight
+	/// The cli invocations currently inflight. Only listed for requests that carry the session token, because the
+	/// command lines can hold credentials.
 	/// </summary>
 	public List<string> inflightCommands = new List<string>();
+
+	/// <summary>
+	/// Optional protocol features this server supports, so clients can detect them instead of comparing versions.
+	/// "auth": /execute requires the session token as <c>Authorization: Bearer</c>.
+	/// "mcp": an MCP Streamable HTTP endpoint is served at <see cref="mcpPath"/>, with the same token.
+	/// </summary>
+	public List<string> features = new List<string>();
+
+	/// <summary>The path of the MCP endpoint, when the "mcp" feature is on.</summary>
+	public string mcpPath;
 }
 
 [Serializable]
@@ -89,6 +101,12 @@ public class ServerService
 	public async Task RunServer(ServeCliCommandArgs args, Action<ServerAvailableData> onReady=null)
 	{
 		if (_listener != null) throw new InvalidOperationException("already running");
+
+		// Any local process or web page can reach 127.0.0.1, so commands require this run's secret.
+		if (string.IsNullOrEmpty(args.token))
+		{
+			args.token = LocalServerGuard.NewToken();
+		}
 
 		string uri = null;
 
@@ -271,38 +289,45 @@ public class ServerService
 		HttpListenerRequest req = ctx.Request;
 		HttpListenerResponse resp = ctx.Response;
 
-		// http://base:port/
-		var routePath = ctx.Request.Url.ToString().Substring(ctx.Request.Url.ToString().LastIndexOf('/') + 1);
+		// http://base:port/route
+		var routePath = req.Url!.AbsolutePath.Trim('/');
 		Log.Trace("got message at route: " + routePath);
-		string response = null;
-		int status = 200;
-		byte[] data;
 		try
 		{
+			var refusal = Authorize(args, req, routePath);
+			if (refusal != null)
+			{
+				Log.Information($"Refused request route=[{routePath}] status=[{refusal.Value.status}] reason=[{refusal.Value.error.message}]");
+				await WriteJson(resp, refusal.Value.status, refusal.Value.error);
+				return;
+			}
+
 			switch (routePath)
 			{
 				case INFO_ROUTE:
-					
-					
 					var info = await HandleInfo(args, inflightRequests);
-					response = JsonConvert.SerializeObject(info);
-					data = Encoding.UTF8.GetBytes(response);
-					await resp.OutputStream.WriteAsync(data, 0, data.Length);
-					resp.StatusCode = status;
+					if (!HasToken(args, req))
+					{
+						info.inflightCommands.Clear();
+					}
+					await WriteJson(resp, 200, info);
 					break;
 				case EXEC_ROUTE:
 					await HandleExec(args, req.InputStream, resp, app);
 					break;
+				case var _ when args.mcpEndpoint != null && ServerCardEndpoint.Owns(routePath):
+					await ServerCardEndpoint.Handle(req, resp, routePath,
+						VersionService.GetNugetPackagesForExecutingCliVersion().ToString());
+					break;
+				case var _ when args.mcpEndpoint != null && McpHttpEndpoint.Owns(routePath):
+					await args.mcpEndpoint.HandleAsync(ctx);
+					break;
 				default:
 					Log.Information($"Unknown route=[{routePath}]");
-					response = JsonConvert.SerializeObject(new ServerErrorResponse
+					await WriteJson(resp, 400, new ServerErrorResponse
 					{
 						message = $"unknown route=[{routePath}]", type = "UnhandledRoute"
 					});
-					status = 400;
-					data = Encoding.UTF8.GetBytes(response);
-					await resp.OutputStream.WriteAsync(data, 0, data.Length);
-					resp.StatusCode = status;
 					break;
 			}
 		}
@@ -314,15 +339,19 @@ public class ServerService
 		}
 		catch (Exception ex)
 		{
-			response = JsonConvert.SerializeObject(new ServerErrorResponse
-			{
-				message = ex.Message, type = ex.GetType().Name, stack = ex.StackTrace
-			});
-			status = 500;
 			Log.Error($"Message failed msg=[{ex.Message}]");
-			data = Encoding.UTF8.GetBytes(response);
-			await resp.OutputStream.WriteAsync(data, 0, data.Length);
-			resp.StatusCode = status;
+			try
+			{
+				await WriteJson(resp, 500, new ServerErrorResponse
+				{
+					message = ex.Message, type = ex.GetType().Name, stack = ex.StackTrace
+				});
+			}
+			catch (Exception writeEx)
+			{
+				// The response may already be partly sent; there is nothing more to tell the client.
+				Log.Error($"Could not report failure to client msg=[{writeEx.Message}]");
+			}
 		}
 		finally
 		{
@@ -331,15 +360,83 @@ public class ServerService
 
 	}
 
+	/// <summary>
+	/// The status and error to refuse a request with, or null to serve it. The server runs commands with this
+	/// CLI's credentials, so it must not be drivable by a web page (no Origin, Host must be 127.0.0.1, JSON only,
+	/// which a cross-site form or no-cors fetch cannot send) or by another local process (session token).
+	/// </summary>
+	static (int status, ServerErrorResponse error)? Authorize(ServeCliCommandArgs args, HttpListenerRequest req, string routePath)
+	{
+		static (int, ServerErrorResponse) Refuse(int status, string type, string message) =>
+			(status, new ServerErrorResponse { type = type, message = message });
+
+		if (!LocalServerGuard.IsLoopbackHost(req.Headers["Host"], req.LocalEndPoint.Port))
+		{
+			return Refuse(403, "ForbiddenHost", "Address the CLI server by 127.0.0.1.");
+		}
+
+		if (args.mcpEndpoint != null && ServerCardEndpoint.Owns(routePath))
+		{
+			// Public, read-only discovery metadata that any page may read (the Server Card spec requires CORS *).
+			return req.HttpMethod is "GET" or "HEAD" or "OPTIONS"
+				? null
+				: Refuse(405, "MethodNotAllowed", "Discovery documents are read-only.");
+		}
+
+		if (!string.IsNullOrEmpty(req.Headers["Origin"]))
+		{
+			return Refuse(403, "ForbiddenOrigin", "The CLI server does not accept requests from web pages.");
+		}
+
+		if (args.mcpEndpoint != null && McpHttpEndpoint.Owns(routePath))
+		{
+			// The MCP handler validates methods, media types and protocol versions itself.
+			return HasToken(args, req) ? null : Refuse(401, "Unauthorized", TokenHint);
+		}
+
+		if (routePath != EXEC_ROUTE)
+		{
+			return null;
+		}
+
+		if (req.HttpMethod != "POST")
+		{
+			return Refuse(405, "MethodNotAllowed", $"/{EXEC_ROUTE} only accepts POST.");
+		}
+
+		var mediaType = req.ContentType?.Split(';')[0].Trim();
+		if (!string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase))
+		{
+			return Refuse(415, "UnsupportedMediaType", $"/{EXEC_ROUTE} only accepts application/json.");
+		}
+
+		if (!string.IsNullOrEmpty(args.token) && !HasToken(args, req))
+		{
+			return Refuse(401, "Unauthorized", TokenHint);
+		}
+
+		return null;
+	}
+
+	const string TokenHint = "Send the server's session token as 'Authorization: Bearer <token>'. It is printed when the server " +
+	                         "starts and stored in .beamable/" + ConfigService.TEMP_FOLDER_NAME + "/" + ServerLocatorFile.FOLDER_NAME +
+	                         "/<pid>.json; `beam mcp token` prints it."; 
+
+	static bool HasToken(ServeCliCommandArgs args, HttpListenerRequest req) =>
+		string.IsNullOrEmpty(args.token) || LocalServerGuard.HasBearerToken(req.Headers["Authorization"], args.token);
+
+	static async Task WriteJson(HttpListenerResponse resp, int status, object body)
+	{
+		// The status line goes out with the first body byte, so set it first.
+		resp.StatusCode = status;
+		resp.ContentType = "application/json; charset=utf-8";
+		var data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(body));
+		await resp.OutputStream.WriteAsync(data, 0, data.Length);
+	}
+
 	static Task<ServerInfoResponse> HandleInfo(ServeCliCommandArgs args, ulong inflightRequests)
 	{
 		var version = VersionService.GetNugetPackagesForExecutingCliVersion();
-
-		List<string> invocationSnapshot;
-		lock (_cliInvocationsLock)
-		{
-			invocationSnapshot = new List<string>(cliInvocations);
-		}
 
 		return Task.FromResult(new ServerInfoResponse
 		{
@@ -347,168 +444,185 @@ public class ServerService
 			owner = args.owner,
 			inflightRequests = (long)inflightRequests,
 			pid = Environment.ProcessId,
-			inflightCommands = invocationSnapshot
+			inflightCommands = CliInvocationCore.Snapshot(),
+			features = args.mcpEndpoint == null
+				? new List<string> { FEATURE_AUTH }
+				: new List<string> { FEATURE_AUTH, FEATURE_MCP },
+			mcpPath = args.mcpEndpoint == null ? null : McpHttpEndpoint.PATH
 		});
 	}
 
-	private static readonly object _cliInvocationsLock = new object();
-	private static readonly List<string> cliInvocations = new List<string>();
+	public const string FEATURE_AUTH = "auth";
+	public const string FEATURE_MCP = "mcp";
+
+	// The registry lives in CliInvocationCore, shared with every transport; this alias keeps the name
+	// diagnostics and tests have always used for /execute's in-flight commands.
+	private static readonly List<string> cliInvocations = CliInvocationCore.Invocations;
 
 	static async Task HandleExec(ServeCliCommandArgs args, Stream networkRequestStream, HttpListenerResponse response, App app)
 	{
 		using var inputStream = new StreamReader(networkRequestStream);
 		response.Headers.Set(HttpResponseHeader.ContentType, "text/event-stream; charset=utf-8");
-		string input = null;
-		string commandLine = null;
-		IDataReporterService reporter = null;
-		var registered = false;
-		int exitCode = -1;
+		var recording = string.IsNullOrEmpty(args.recordTo) ? null : new ExecuteRecording();
+		ServerReporterService reporter = null;
 		try
 		{
-			input = await inputStream.ReadToEndAsync();
-			Log.Trace("Raw input received: " + input);
-			commandLine = JsonConvert.DeserializeObject<ServerRequest>(input)?.commandLine;
-			if (string.IsNullOrWhiteSpace(commandLine))
+			await CliInvocationCore.Execute(new CliInvocationRequest
 			{
-				throw new ArgumentException("An execute request must include a non-empty commandLine.");
-			}
-			Log.Trace("virtualizing " + commandLine);
-			app ??= new App();
-
-			var sw = Stopwatch.StartNew();
-			app.Configure(builder =>
-			{
-				builder.Remove<IDataReporterService>();
-				builder.AddSingleton<IDataReporterService, ServerReporterService>(provider =>
+				App = app,
+				UseCustomSplitter = args.useCustomSplitter,
+				ReadCommand = async () =>
 				{
-					var serverReporter = new ServerReporterService(provider, response);
-					reporter = serverReporter;
-					return serverReporter;
-				});
-			}, overwriteLogger: false);
-			app.Build();
-			sw.Stop();
-			Log.Trace("build virtual app in " + sw.ElapsedMilliseconds);
-
-			lock (_cliInvocationsLock)
-			{
-				cliInvocations.Add(input);
-				registered = true;
-			}
-			exitCode = await app.RunWithSingleString(
-				commandLine,
-				args.useCustomSplitter);
-		}
-		catch (Exception ex)
-		{
-			exitCode = ex is CliException cliException ? cliException.NonZeroOrOneExitCode : 1;
-			Log.Error($"CLI EXEC FINISHED WITH FAIL MESSAGE=[{ex.Message}]");
-			if (reporter != null)
-			{
-				// Use the same writer/lock as command output and the connection heartbeat.
-				reporter.Exception(ex, exitCode, commandLine);
-			}
-			else
-			{
-				// Setup failed before a reporter (and its heartbeat) existed. Unity still needs
-				// a ReportDataPoint<ErrorOutput>, not ServerErrorResponse or an HTTP-only error.
-				var error = new ErrorOutput();
-				CliException.Apply(ex, ref error, exitCode, commandLine);
-				var report = new ReportDataPoint<ErrorOutput>
+					var input = await inputStream.ReadToEndAsync();
+					Log.Trace("Raw input received: " + input);
+					recording?.SetRequest(input);
+					// /info lists the raw request bodies, as it always has.
+					return (JsonConvert.DeserializeObject<ServerRequest>(input)?.commandLine, input);
+				},
+				CreateReporter = provider => reporter = new ServerReporterService(provider, response) { OnEvent = recording == null ? null : recording.Add },
+				ReportSetupFailure = async report =>
 				{
-					type = DefaultErrorStream.CHANNEL, data = error,
-					ts = DateTimeOffset.Now.ToUnixTimeMilliseconds()
-				};
-				var json = JsonConvert.SerializeObject(report, UnitySerializationSettings.Instance);
-				var bytes = Encoding.UTF8.GetBytes("data: " + json + Environment.NewLine);
-				await response.OutputStream.WriteAsync(bytes, 0, bytes.Length);
-			}
+					// Setup failed before a reporter (and its heartbeat) existed. Unity still needs
+					// a ReportDataPoint<ErrorOutput>, not ServerErrorResponse or an HTTP-only error.
+					var json = JsonConvert.SerializeObject(report, UnitySerializationSettings.Instance);
+					recording?.Add(json);
+					var bytes = Encoding.UTF8.GetBytes("data: " + json + Environment.NewLine);
+					await response.OutputStream.WriteAsync(bytes, 0, bytes.Length);
+				}
+			});
 		}
 		finally
 		{
-			if (registered)
-			{
-				lock (_cliInvocationsLock)
-				{
-					cliInvocations.Remove(input);
-				}
-			}
-
-			Log.Trace($"CLI EXEC FINISHED WITH EXIT=[{exitCode}] REQ=[{commandLine}]");
+			// The command is over; its heartbeat must not outlive it (see ServerReporterService.Complete).
+			reporter?.Complete();
 		}
+		recording?.Save(args.recordTo);
 	}
 
-	public const int DEFAULT_PORT = 8342;
-	public const int MAX_PORT = DEFAULT_PORT + 3000;
+	public const int DEFAULT_PORT = CliServerPorts.RANGE_START;
+	public const int MAX_PORT = CliServerPorts.RANGE_END;
 }
 
 public class ServerReporterService : IDataReporterService
 {
+	/// <summary>Buffered events are sent as soon as this many bytes are waiting.</summary>
+	public const int FLUSH_THRESHOLD_BYTES = 16 * 1024;
+
+	/// <summary>
+	/// The longest an event waits in the buffer. Sending every event on its own costs a write and a chunk each,
+	/// which dominated large streams; a few milliseconds is invisible to the editor.
+	/// </summary>
+	public static readonly TimeSpan MaxFlushDelay = TimeSpan.FromMilliseconds(2);
+
+	// Built once: JsonConvert.SerializeObject creates a serializer from the settings on every call.
+	private static readonly JsonSerializer Serializer = JsonSerializer.CreateDefault(UnitySerializationSettings.Instance);
+	private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
+	private static readonly byte[] DataPrefix = Utf8.GetBytes("data: ");
+	private static readonly byte[] LineEnd = Utf8.GetBytes(Environment.NewLine);
+	private static readonly byte[] Heartbeat = Utf8.GetBytes("\u200b"); // a zero-width character that tests the connection
+
 	private readonly HttpListenerResponse _resp;
-	private StreamWriter _streamWriter;
+	private readonly Stream _output;
 	private IDependencyProvider _provider;
 	private Task _connectionMonitorTask;
 	private AppLifecycle _lifecycle;
+	private readonly CancellationTokenSource _completed = new CancellationTokenSource();
+
+	// Everything below is guarded by _lock: the events waiting to be sent, and the writer that encodes into them.
+	private readonly object _lock = new object();
+	private readonly MemoryStream _pending = new MemoryStream();
+	private StreamWriter _pendingWriter;
+	private readonly Timer _flushTimer;
+	private bool _flushScheduled;
+	private bool _isComplete;
+
+	/// <summary>Sees every event's JSON as it is sent (heartbeats excluded).</summary>
+	public Action<string> OnEvent { get; set; }
 
 	public ServerReporterService(IDependencyProvider provider, HttpListenerResponse resp)
 	{
 		_provider = provider;
 		_resp = resp;
-		_streamWriter = new StreamWriter(_resp.OutputStream);
+		_output = _resp.OutputStream;
+		_pendingWriter = CreatePendingWriter();
+		_flushTimer = new Timer(_ => FlushFromTimer(), null, Timeout.Infinite, Timeout.Infinite);
 		_lifecycle = _provider.GetService<AppLifecycle>();
 		_connectionMonitorTask = Task.Run(async () =>
 		{
 			try
 			{
-				while (!_lifecycle.IsCancelled)
+				while (!_lifecycle.IsCancelled && !_completed.IsCancellationRequested)
 				{
-					await Task.Delay(1000);
+					await Task.Delay(1000, _completed.Token);
 
 					// check if the pipe is still open, because if it isn't, the invocation should cancel.
 					try
 					{
-						lock(_streamWriter)
+						lock (_lock)
 						{
-							_streamWriter.Write("\u200b"); // write a zero-width character to test the connection.
-							_streamWriter.Flush();
+							FlushPendingLocked();
+							_output.Write(Heartbeat, 0, Heartbeat.Length);
+							_output.Flush();
 						}
 
 					}
 					catch (HttpListenerException)
 					{
 						// the pipe is broken, so can assume the client is no longer connected, and we can cancel this invocation.
-						App.GlobalLogger.LogTrace("monitor found that client is no longer connected; cancelling app lifecycle.");
 						_lifecycle.Cancel();
+						App.GlobalLogger?.LogTrace("monitor found that client is no longer connected; cancelling app lifecycle.");
 						break;
 					}
 				}
 			}
+			catch (OperationCanceledException) when (_completed.IsCancellationRequested)
+			{
+				// The command finished.
+			}
 			catch (Exception ex)
 			{
 				// remember, async void methods don't report exceptions automatically, so always log it to save brain later.
-				App.GlobalLogger.ZLogError($"cli-server reporter service monitor task failed! type=[{ex.GetType().Name}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
+				App.GlobalLogger?.ZLogError($"cli-server reporter service monitor task failed! type=[{ex.GetType().Name}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
 			}
 		});
 	} 
-	
-	public void Report(string rawMessage)
+
+	/// <summary>
+	/// Sends whatever is still buffered and stops the connection heartbeat once the command has finished. Writing to
+	/// a closed response does not always fail, so without this the heartbeat would keep running, and keep this
+	/// command's services alive, forever.
+	/// </summary>
+	public void Complete()
 	{
 		try
 		{
-			var data = "data: " + rawMessage + Environment.NewLine;
-			var bytes = Encoding.UTF8.GetBytes(data);
-			lock(_streamWriter)
+			lock (_lock)
 			{
-				_streamWriter.BaseStream.Write(bytes, 0, bytes.Length);
-				_streamWriter.Flush();
+				_isComplete = true;
+				FlushPendingLocked();
 			}
-
 		}
-		catch (HttpListenerException ex)
+		catch (Exception ex)
 		{
-			// the pipe is broken, so can assume the client is no longer connected, and we can cancel this invocation.
-			App.GlobalLogger.LogTrace("client is no longer connected; cancelling app lifecycle." + ex.Message);
-			_lifecycle.Cancel();
+			App.GlobalLogger?.LogTrace($"could not send the last events. type=[{ex.GetType().Name}] message=[{ex.Message}]");
+		}
+		finally
+		{
+			_flushTimer.Dispose();
+			_completed.Cancel();
+		}
+	}
+	
+	public void Report(string rawMessage)
+	{
+		OnEvent?.Invoke(rawMessage);
+		var bytes = Utf8.GetBytes(rawMessage);
+		lock (_lock)
+		{
+			_pending.Write(DataPrefix, 0, DataPrefix.Length);
+			_pending.Write(bytes, 0, bytes.Length);
+			_pending.Write(LineEnd, 0, LineEnd.Length);
+			ScheduleFlushLocked();
 		}
 	}
 	
@@ -520,7 +634,92 @@ public class ServerReporterService : IDataReporterService
 			type = type,
 			ts = DateTimeOffset.Now.ToUnixTimeMilliseconds()
 		};
-		var json = JsonConvert.SerializeObject(pt, UnitySerializationSettings.Instance);
-		Report(json);
+
+		if (OnEvent != null)
+		{
+			// A recording needs the event's text anyway.
+			Report(JsonConvert.SerializeObject(pt, UnitySerializationSettings.Instance));
+			return;
+		}
+
+		lock (_lock)
+		{
+			var start = _pending.Length;
+			try
+			{
+				_pending.Write(DataPrefix, 0, DataPrefix.Length);
+				// The same writer setup as JsonConvert.SerializeObject, so the bytes are identical.
+				var json = new JsonTextWriter(_pendingWriter) { Formatting = Serializer.Formatting, CloseOutput = false };
+				Serializer.Serialize(json, pt);
+				json.Flush();
+				_pending.Write(LineEnd, 0, LineEnd.Length);
+			}
+			catch
+			{
+				// Drop the half-written event, including anything the writer still holds.
+				_pending.SetLength(start);
+				_pendingWriter = CreatePendingWriter();
+				throw;
+			}
+			ScheduleFlushLocked();
+		}
+	}
+
+	private StreamWriter CreatePendingWriter() => new StreamWriter(_pending, Utf8, 1024, leaveOpen: true);
+
+	private void ScheduleFlushLocked()
+	{
+		if (_isComplete || _pending.Length >= FLUSH_THRESHOLD_BYTES)
+		{
+			FlushPendingLocked();
+			return;
+		}
+
+		if (!_flushScheduled)
+		{
+			_flushScheduled = true;
+			_flushTimer.Change(MaxFlushDelay, Timeout.InfiniteTimeSpan);
+		}
+	}
+
+	private void FlushFromTimer()
+	{
+		try
+		{
+			lock (_lock)
+			{
+				FlushPendingLocked();
+			}
+		}
+		catch (Exception ex)
+		{
+			// Nobody awaits the timer; a closed response just means there is no one left to send to.
+			App.GlobalLogger?.LogTrace($"could not send buffered events. type=[{ex.GetType().Name}] message=[{ex.Message}]");
+		}
+	}
+
+	private void FlushPendingLocked()
+	{
+		_flushScheduled = false;
+		if (_pending.Length == 0)
+		{
+			return;
+		}
+
+		try
+		{
+			_output.Write(_pending.GetBuffer(), 0, (int)_pending.Length);
+			_output.Flush();
+		}
+		catch (HttpListenerException ex)
+		{
+			// the pipe is broken, so can assume the client is no longer connected, and we can cancel this invocation.
+			_lifecycle.Cancel();
+			App.GlobalLogger?.LogTrace("client is no longer connected; cancelling app lifecycle." + ex.Message);
+		}
+		finally
+		{
+			_pending.SetLength(0);
+		}
 	}
 }

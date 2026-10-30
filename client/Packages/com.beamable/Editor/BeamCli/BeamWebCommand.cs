@@ -10,7 +10,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -38,6 +40,27 @@ namespace Beamable.Editor.BeamCli
 		/// some other Unity-client, or a user mode.
 		/// </summary>
 		public string owner;
+
+		/// <summary>
+		/// the process id of the server
+		/// </summary>
+		public int pid;
+
+		/// <summary>
+		/// optional protocol features, such as "auth" (session token) and "mcp" (an MCP endpoint for AI agents)
+		/// </summary>
+		public List<string> features;
+	}
+
+	/// <summary>
+	/// What a running CLI server writes about itself to .beamable/temp/servers/{pid}.json
+	/// </summary>
+	[Serializable]
+	public class ServerLocatorInfo
+	{
+		public int pid;
+		public int port;
+		public string token;
 	}
 
 	public class BeamWebCommandFactoryOptions : ScriptableObject
@@ -45,6 +68,15 @@ namespace Beamable.Editor.BeamCli
 		// public int startPort = 8432; // beas
 		public OptionalInt startPortOverride = new OptionalInt();
 		public int port;
+		/// <summary>
+		/// The session token of the server at <see cref="port"/>; every /execute request must carry it.
+		/// </summary>
+		public string token;
+		/// <summary>
+		/// The process id of the server at <see cref="port"/>, so it can be stopped: cancelling the command that
+		/// started it only stops the `dotnet beam` launcher, not the server it runs.
+		/// </summary>
+		public int serverPid;
 		public OptionalInt selfDestructOverride = new OptionalInt();
 		public OptionalString ownerOverride = new OptionalString();
 		public OptionalString versionOverride = new OptionalString();
@@ -73,6 +105,14 @@ namespace Beamable.Editor.BeamCli
 		public string Owner => _options.ownerOverride.GetOrElse(BeamCliUtil.OWNER);
 
 		public string Version => _options.versionOverride.GetOrElse(BeamCliUtil.CLI_VERSION);
+
+		public string Token => _options.token;
+
+		/// <summary>
+		/// Where discovery starts: this project's preferred CLI server port, the one the server picks for itself, so
+		/// an AI agent configured with the server's MCP URL finds it again after a restart.
+		/// </summary>
+		public int StartPort => _options.startPortOverride.GetOrElse(CliServerPorts.PreferredPort(Directory.GetCurrentDirectory()));
 		
 		
 		// TODO: how do we store this port so that we don't have to ALWAYS go through mismatches to re-find it? 
@@ -103,7 +143,7 @@ namespace Beamable.Editor.BeamCli
 			_options = options;
 			processFactory = new BeamCommandFactory(dispatcher);
 			processCommands = new BeamCommands(processFactory, beamCli);
-			_options.port = _options.startPortOverride.GetOrElse(8432);
+			_options.port = StartPort;
 
 			dispatcher.Run("cli-server-discovery", ServerDiscoveryLoop());
 		}
@@ -133,6 +173,35 @@ namespace Beamable.Editor.BeamCli
 		{
 			_serverCommand?.Cancel();
 			_serverCommand = null;
+			KillServerProcess(_options.serverPid);
+			_options.serverPid = 0;
+			port = StartPort;
+			_options.token = null;
+		}
+
+		/// <summary>
+		/// Stops a CLI server process this editor found by its owner. The process name is checked so a pid that the
+		/// OS has since reused for something else is left alone.
+		/// </summary>
+		private static void KillServerProcess(int pid)
+		{
+			if (pid <= 0) return;
+			try
+			{
+				using (var process = Process.GetProcessById(pid))
+				{
+					var name = process.ProcessName.ToLowerInvariant();
+					var isCli = name.Contains("dotnet") || name.Contains("beam");
+					if (!process.HasExited && isCli)
+					{
+						process.Kill();
+					}
+				}
+			}
+			catch (Exception ex) when (ex is ArgumentException || ex is InvalidOperationException || ex is System.ComponentModel.Win32Exception)
+			{
+				// Already gone.
+			}
 		}
 
 		public Promise InvalidateServer(Exception cause)
@@ -146,7 +215,8 @@ namespace Beamable.Editor.BeamCli
 					$"Server invalidated: {cause.GetType().Name}: {cause.Message}");
 
 				KillServer();
-				port = _options.startPortOverride.GetOrElse(8432);
+				port = StartPort;
+				_options.token = null;
 				discoveryRequest++;
 			});
 
@@ -266,16 +336,7 @@ namespace Beamable.Editor.BeamCli
 				defaultArgs.pretty = true;
 			});
 			
-			var args = new ServerServeArgs()
-			{
-				port = port,
-				owner = "\"" + Owner + "\"",
-				autoIncPort = true,
-				// selfDestructSeconds = _options.selfDestructOverride.GetOrElse(15), // TODO: validate that a low ttl will restart the server
-				customSplitter = true,
-				skipContentPrewarm = true,
-				requireProcessId = Process.GetCurrentProcess().Id
-			};
+			var args = CreateServerServeArgs();
 			var p = args.port;
 			_serverCommand = processCommands.ServerServe(args);
 						
@@ -289,6 +350,7 @@ namespace Beamable.Editor.BeamCli
 			_serverCommand.OnStreamServeCliCommandOutput(data =>
 			{
 				port = data.data.port;
+				_options.token = data.data.token;
 							
 				_history.AddServerEvent(new BeamCliServerEvent
 				{
@@ -311,6 +373,25 @@ namespace Beamable.Editor.BeamCli
 			});
 			var _ = _serverCommand.Run();
 			await waitForResult;
+		}
+
+		/// <summary>
+		/// The arguments the editor starts its CLI server with: tied to this editor process, on this project's
+		/// port, with the splitter that keeps JSON arguments intact.
+		/// </summary>
+		public ServerServeArgs CreateServerServeArgs()
+		{
+			return new ServerServeArgs()
+			{
+				port = port,
+				owner = "\"" + Owner + "\"",
+				autoIncPort = true,
+				// selfDestructSeconds = _options.selfDestructOverride.GetOrElse(15), // TODO: validate that a low ttl will restart the server
+				customSplitter = true,
+				skipContentPrewarm = true,
+				requireProcessId = Process.GetCurrentProcess().Id,
+				enableMcp = McpServerSettings.Enabled
+			};
 		}
 
 		public async Promise<PingResult> PingServer()
@@ -347,6 +428,28 @@ namespace Beamable.Editor.BeamCli
 					return;
 				}
 
+				// A server started before "Enable MCP for AI Agents" changed has the wrong endpoints. It is
+				// ours (the owner matched), so stop it and let discovery start one with the current setting.
+				var reportsFeatures = res.features != null && res.features.Count > 0;
+				if (reportsFeatures && res.features.Contains("mcp") != McpServerSettings.Enabled)
+				{
+					CliLogger.Log($"ping mismatch. Server mcp=[{res.features.Contains("mcp")}] Required mcp=[{McpServerSettings.Enabled}]");
+					KillServerProcess(res.pid);
+					pingResult = PingResult.Mismatch;
+					p.CompleteSuccess();
+					return;
+				}
+
+				_options.serverPid = res.pid;
+
+				// A server this editor did not spawn (or spawned before a domain reload lost the token)
+				// published its token next to the project; the file is only readable by this user.
+				var locatorToken = ReadLocatorToken(res.pid);
+				if (!string.IsNullOrEmpty(locatorToken))
+				{
+					_options.token = locatorToken;
+				}
+
 				pingResult = PingResult.Match;
 				p.CompleteSuccess();
 			};
@@ -359,6 +462,24 @@ namespace Beamable.Editor.BeamCli
 		public void ClearAll()
 		{
 			// TODO:
+		}
+
+		private static string ReadLocatorToken(int pid)
+		{
+			if (pid <= 0) return null;
+			try
+			{
+				// The editor's working directory is the project root, where the CLI keeps .beamable
+				var path = Path.Combine(".beamable", "temp", "servers", $"{pid}.json");
+				if (!File.Exists(path)) return null;
+				var locator = JsonUtility.FromJson<ServerLocatorInfo>(File.ReadAllText(path));
+				return locator?.pid == pid ? locator.token : null;
+			}
+			catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is ArgumentException)
+			{
+				CliLogger.Log($"could not read cli server locator for pid=[{pid}]. message=[{ex.Message}]");
+				return null;
+			}
 		}
 
 	}
@@ -444,6 +565,10 @@ namespace Beamable.Editor.BeamCli
 			var req = new HttpRequestMessage(HttpMethod.Post, _factory.ExecuteUrl);
 			var json = JsonUtility.ToJson(new BeamWebCommandRequest {commandLine = commandString});
 			req.Content = new StringContent(json, Encoding.UTF8, "application/json");
+			if (!string.IsNullOrEmpty(_factory.Token))
+			{
+				req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _factory.Token);
+			}
 			CliLogger.Log("Sending cli web request, " + json);
 			var dispatchedIds = new List<long>();
 			var p = new Promise();
@@ -461,6 +586,12 @@ namespace Beamable.Editor.BeamCli
 				_history.AddCustomLog(id, "[Unity] sent request...");
 
 				using HttpResponseMessage response = await sendTask;
+				if (response.StatusCode == HttpStatusCode.Unauthorized)
+				{
+					// Nothing ran. Treat it like a transport failure so the retry re-discovers the
+					// server (and its token) instead of reading an error body as a stream.
+					throw new HttpRequestException("The CLI server refused the session token.");
+				}
 				responseStarted = true;
 				_history.AddCustomLog(id, "[Unity] opened response...");
 

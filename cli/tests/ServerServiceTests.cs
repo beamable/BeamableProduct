@@ -345,20 +345,195 @@ public class ServerServiceTests
 		server.AssertNoErrors();
 	}
 
+	// --- Request guard: the server runs commands with this CLI's credentials, so neither a web page nor
+	// another local process without the session token may drive it.
+
+	private const string TestToken = "test-session-token";
+	private static readonly ServeCliCommandArgs AuthArgs = new() { owner = "server-tests", useCustomSplitter = true, token = TestToken };
+	private static readonly string ExecuteBody = JsonConvert.SerializeObject(new ServerRequest { commandLine = "guarded" });
+
+	private static Func<ControlledApp> MustNotRun(Action onRun) => () => new ControlledApp((_, _) =>
+	{
+		onRun();
+		return Task.FromResult(0);
+	});
+
+	[Test]
+	public async Task Execute_rejects_a_cross_site_simple_request()
+	{
+		// A page can POST text/plain to 127.0.0.1 with fetch(..., {mode: "no-cors"}) and no preflight.
+		var executed = false;
+		await using var server = new TestServer(MustNotRun(() => executed = true), args: AuthArgs);
+		using var response = await server.Send(HttpMethod.Post, "execute", ExecuteBody, "text/plain",
+			r => r.Headers.Authorization = new("Bearer", TestToken));
+		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnsupportedMediaType));
+		Assert.That(executed, Is.False);
+		server.AssertNoErrors();
+	}
+
+	[Test]
+	public async Task Execute_rejects_get()
+	{
+		var executed = false;
+		await using var server = new TestServer(MustNotRun(() => executed = true), args: AuthArgs);
+		using var response = await server.Send(HttpMethod.Get, "execute",
+			configure: r => r.Headers.Authorization = new("Bearer", TestToken));
+		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.MethodNotAllowed));
+		Assert.That(executed, Is.False);
+		server.AssertNoErrors();
+	}
+
+	[Test]
+	public async Task Execute_rejects_requests_from_a_web_origin()
+	{
+		var executed = false;
+		await using var server = new TestServer(MustNotRun(() => executed = true), args: AuthArgs);
+		using var response = await server.Send(HttpMethod.Post, "execute", ExecuteBody, configure: r =>
+		{
+			r.Headers.Authorization = new("Bearer", TestToken);
+			r.Headers.Add("Origin", "https://attacker.example");
+		});
+		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+		Assert.That(executed, Is.False);
+		server.AssertNoErrors();
+	}
+
+	[Test]
+	public async Task Execute_rejects_a_rebound_host_name()
+	{
+		// DNS rebinding: the attacker's domain resolves to 127.0.0.1, but the browser still sends its Host.
+		var executed = false;
+		await using var server = new TestServer(MustNotRun(() => executed = true), args: AuthArgs);
+		using var response = await server.Send(HttpMethod.Post, "execute", ExecuteBody, configure: r =>
+		{
+			r.Headers.Authorization = new("Bearer", TestToken);
+			r.Headers.Host = $"attacker.example:{server.Client.BaseAddress!.Port}";
+		});
+		// HttpListener itself answers 404 for a Host outside its 127.0.0.1 prefix; the handler's own check is
+		// the second layer, in case the listener is ever bound more widely.
+		Assert.That(response.StatusCode, Is.AnyOf(HttpStatusCode.Forbidden, HttpStatusCode.NotFound));
+		Assert.That(executed, Is.False);
+		server.AssertNoErrors();
+	}
+
+	[TestCase(null)]
+	[TestCase("Bearer wrong-token")]
+	[TestCase(TestToken)]
+	public async Task Execute_requires_the_session_token(string? authorization)
+	{
+		var executed = false;
+		await using var server = new TestServer(MustNotRun(() => executed = true), args: AuthArgs);
+		using var response = await server.Send(HttpMethod.Post, "execute", ExecuteBody, configure: r =>
+		{
+			if (authorization != null)
+			{
+				r.Headers.TryAddWithoutValidation("Authorization", authorization);
+			}
+		});
+		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+		var error = JsonConvert.DeserializeObject<ServerErrorResponse>(await response.Content.ReadAsStringAsync())!;
+		Assert.That(error.type, Is.EqualTo("Unauthorized"));
+		Assert.That(executed, Is.False);
+		server.AssertNoErrors();
+	}
+
+	[Test]
+	public async Task Execute_runs_with_the_session_token()
+	{
+		var executed = false;
+		await using var server = new TestServer(MustNotRun(() => executed = true), args: AuthArgs);
+		using var response = await server.Send(HttpMethod.Post, "execute", ExecuteBody,
+			configure: r => r.Headers.Authorization = new("Bearer", TestToken));
+		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+		Assert.That(response.Content.Headers.ContentType?.MediaType, Is.EqualTo("text/event-stream"));
+		Assert.That(executed, Is.True);
+		server.AssertNoErrors();
+	}
+
+	[Test]
+	public async Task Info_lists_inflight_commands_only_with_the_session_token()
+	{
+		var entered = Signal();
+		var release = Signal();
+		await using var server = new TestServer(() => new ControlledApp(async (_, _) =>
+		{
+			entered.TrySetResult(true);
+			await release.Task;
+			return 0;
+		}), args: AuthArgs);
+		var request = server.Send(HttpMethod.Post, "execute", ExecuteBody,
+			configure: r => r.Headers.Authorization = new("Bearer", TestToken));
+		try
+		{
+			await server.WaitForCommands(entered.Task, request);
+			using var anonymous = await server.Send(HttpMethod.Get, "info");
+			var anonymousInfo = JsonConvert.DeserializeObject<ServerInfoResponse>(await anonymous.Content.ReadAsStringAsync())!;
+			Assert.That(anonymous.StatusCode, Is.EqualTo(HttpStatusCode.OK), "Discovery must keep working without the token.");
+			Assert.That(anonymousInfo.owner, Is.EqualTo("server-tests"));
+			Assert.That(anonymousInfo.features, Does.Contain(ServerService.FEATURE_AUTH));
+			Assert.That(anonymousInfo.inflightCommands, Is.Empty, "Command lines can hold credentials.");
+
+			using var authorized = await server.Send(HttpMethod.Get, "info",
+				configure: r => r.Headers.Authorization = new("Bearer", TestToken));
+			var authorizedInfo = JsonConvert.DeserializeObject<ServerInfoResponse>(await authorized.Content.ReadAsStringAsync())!;
+			Assert.That(authorizedInfo.inflightCommands, Has.Count.EqualTo(1));
+		}
+		finally
+		{
+			release.TrySetResult(true);
+			(await request).Dispose();
+		}
+		server.AssertNoErrors();
+	}
+
+	[Test]
+	public async Task Unknown_route_reports_its_status()
+	{
+		await using var server = new TestServer(null);
+		using var response = await server.Send(HttpMethod.Get, "nope");
+		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+		server.AssertNoErrors();
+	}
+
+	[Test]
+	public void Port_beyond_the_allowed_range_is_refused()
+	{
+		// R7 (a03ac9981): auto-incrementing must stop at MAX_PORT instead of binding anywhere.
+		using var occupied = new TcpListener(IPAddress.Loopback, ServerService.MAX_PORT);
+		try
+		{
+			occupied.Start();
+		}
+		catch (SocketException)
+		{
+			// Something else already holds the port, which blocks the server just the same.
+		}
+
+		var args = new ServeCliCommandArgs { owner = "server-tests", port = ServerService.MAX_PORT, incPortUntilSuccess = true };
+		var ex = Assert.ThrowsAsync<CliException>(() => new ServerService().RunServer(args).WaitAsync(Deadline));
+		Assert.That(ex!.Message, Does.Contain(ServerService.MAX_PORT.ToString()));
+	}
+
 	// Keep the real handler, DI registration and ServerReporterService. Only command work is controlled.
-	private sealed class ControlledApp : App, IDisposable
+	internal sealed class ControlledApp : App, IDisposable
 	{
 		private readonly Func<string, IDataReporterService, Task<int>> _execute;
 		private readonly AppLifecycle _lifecycle = new();
 		public Exception? SetupFailure { get; init; }
+		/// <summary>Keep the reporter's connection heartbeat running (it stops once the lifecycle is cancelled).</summary>
+		public bool Heartbeat { get; init; }
+		public AppLifecycle Lifecycle => _lifecycle;
 		public ControlledApp(Func<string, IDataReporterService, Task<int>> execute) => _execute = execute;
 
 		public override void Configure(Action<IDependencyBuilder>? serviceConfigurator = null,
 			Action<IDependencyBuilder>? commandConfigurator = null, Action<ILoggingBuilder>? configureLogger = null,
 			bool overwriteLogger = true)
 		{
-			// These tests exercise result reporting, not the unrelated background heartbeat.
-			_lifecycle.Cancel();
+			// Most tests exercise result reporting, not the unrelated background heartbeat.
+			if (!Heartbeat)
+			{
+				_lifecycle.Cancel();
+			}
 			Commands.AddSingleton(_lifecycle);
 			Commands.AddSingleton<IDataReporterService>(_ =>
 				throw new InvalidOperationException("The handler must replace the default reporter."));
@@ -384,10 +559,11 @@ public class ServerServiceTests
 		}
 	}
 
-	private sealed class TestServer : IAsyncDisposable
+	internal sealed class TestServer : IAsyncDisposable
 	{
 		private readonly HttpListener _listener = new();
 		private readonly Func<ControlledApp>? _createApp;
+		private readonly ServeCliCommandArgs _args;
 		private readonly ILogger _logger;
 		private readonly List<Task> _handlers = new();
 		private readonly Task _accept;
@@ -396,9 +572,10 @@ public class ServerServiceTests
 		public readonly ConcurrentQueue<Exception> Errors = new();
 		public HttpClient Client { get; }
 
-		public TestServer(Func<ControlledApp>? createApp, ILogger? logger = null)
+		public TestServer(Func<ControlledApp>? createApp, ILogger? logger = null, ServeCliCommandArgs? args = null)
 		{
 			_createApp = createApp;
+			_args = args ?? Args;
 			_logger = logger ?? NullLogger.Instance;
 			// Register MSBuild once before request workers construct their Apps concurrently.
 			_ = new App();
@@ -415,6 +592,18 @@ public class ServerServiceTests
 				Timeout = Deadline
 			};
 			_accept = Accept();
+		}
+
+		public Task<HttpResponseMessage> Send(HttpMethod method, string route, string? body = null,
+			string mediaType = "application/json", Action<HttpRequestMessage>? configure = null)
+		{
+			var request = new HttpRequestMessage(method, route);
+			if (body != null)
+			{
+				request.Content = new StringContent(body, Encoding.UTF8, mediaType);
+			}
+			configure?.Invoke(request);
+			return Client.SendAsync(request);
 		}
 
 		public async Task<string> Execute(string command)
@@ -453,7 +642,7 @@ public class ServerServiceTests
 			try
 			{
 				using var app = context.Request.Url!.AbsolutePath == "/execute" ? _createApp?.Invoke() : null;
-				await HandleRequest(Args, context, 0, app);
+				await HandleRequest(_args, context, 0, app);
 			}
 			catch (Exception ex)
 			{

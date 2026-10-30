@@ -8,6 +8,8 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>Directory to write the .mcp.json file into; defaults to the Beamable workspace root</summary>
         public string projectPath;
+        /// <summary>How AI clients reach the CLI: 'stdio' starts a separate `beam mcp serve` per client, 'http' connects to this workspace's running `beam server serve --enable-mcp` (the one Unity runs)</summary>
+        public string transport;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -17,6 +19,11 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.projectPath != default(string)))
             {
                 genBeamCommandArgs.Add(("--project-path=" + this.projectPath));
+            }
+            // If the transport value was not default, then add it to the list of args.
+            if ((this.transport != default(string)))
+            {
+                genBeamCommandArgs.Add(("--transport=" + this.transport));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

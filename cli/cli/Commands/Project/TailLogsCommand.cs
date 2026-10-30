@@ -57,7 +57,7 @@ public class TailLogMessageForClient
 	}
 }
 
-public class TailLogsCommand : StreamCommand<TailLogsCommandArgs, TailLogMessageForClient>
+public class TailLogsCommand : StreamCommand<TailLogsCommandArgs, TailLogMessageForClient>, IStreamsIndefinitely
 {
 	public TailLogsCommand() : base("logs", "Tail the logs of a microservice")
 	{

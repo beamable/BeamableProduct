@@ -1,17 +1,25 @@
 using Beamable.Common.BeamCli;
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Server.Common;
 using cli.Services;
+using cli.Services.CliInvocation;
+using cli.Services.HttpServer;
+using ModelContextProtocol;
+using ModelContextProtocol.Protocol;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.Reflection;
+using System.Text;
 using static cli.ConfigService;
 
 namespace cli.Commands.Mcp;
 
 public class McpToolExecutor
 {
-	// Serialize all in-process beam calls so Console.Out redirection and MSBuildLocator don't race.
-	private static readonly SemaphoreSlim Lock = new(1, 1);
+	/// <summary>Creates the app each command runs in. Tests replace it to control what a command does.</summary>
+	public Func<App> AppFactory { get; set; } = () => new App();
 
 	public static List<(string name, string content)> GetEmbeddedSkills()
 	{
@@ -528,76 +536,85 @@ public class McpToolExecutor
 		return ExecuteAsync(helpCommand);
 	}
 
-	public async Task<string> ExecuteAsync(string commandLine)
+	/// <summary>
+	/// Runs a beam command and returns what it reported. The command is cancelled with
+	/// <paramref name="cancellationToken"/>, and its progress channels are forwarded to <paramref name="progress"/>.
+	/// </summary>
+	public async Task<CallToolResult> ExecuteCommandAsync(string commandLine,
+		IProgress<ProgressNotificationValue> progress = null,
+		CancellationToken cancellationToken = default)
 	{
-		await Lock.WaitAsync();
-		try
+		var fullCommand = EnsureCommandFlags(commandLine);
+		var capturer = new CapturingReporterService(progress);
+
+		// Some commands (`local logs`, for one) write their output straight to the console.
+		using var console = InvocationConsole.Begin(out var output);
+		// Run on a plain thread-pool thread to avoid deadlocking a SynchronizationContext the MCP
+		// host may have captured; CliWrap's continuations would otherwise try to resume on it.
+		var exitCode = await Task.Run(() => CliInvocationCore.Execute(new CliInvocationRequest
 		{
-			return await RunInProcessAsync(commandLine);
-		}
-		finally
-		{
-			Lock.Release();
-		}
+			ReadCommand = () => Task.FromResult((fullCommand,
+				JsonConvert.SerializeObject(new ServerRequest { commandLine = fullCommand }))),
+			UseCustomSplitter = false,
+			App = AppFactory(),
+			Refuse = RefuseNeverEndingCommand,
+			CreateReporter = _ => capturer,
+			ReportSetupFailure = report =>
+			{
+				capturer.Report(report.type, report.data);
+				return Task.CompletedTask;
+			},
+			CancellationToken = cancellationToken
+		}), CancellationToken.None).ConfigureAwait(false);
+
+		return capturer.ToResult(commandLine, exitCode, cancellationToken.IsCancellationRequested, output);
 	}
 
-	private async Task<string> RunInProcessAsync(string commandLine)
+	/// <summary>Runs a command whose output is console text, such as help, and returns that text.</summary>
+	public async Task<string> ExecuteAsync(string commandLine)
 	{
 		var fullCommand = EnsureLogStreams(commandLine);
+		var capturer = new CapturingReporterService(null);
 
-		var sw = new StringWriter();
-		var errSw = new StringWriter();
-		var capturer = new CapturingReporterService(sw);
-
-		var previousOut = Console.Out;
-		var previousErr = Console.Error;
-		Console.SetOut(sw);
-		Console.SetError(errSw);
-
-		try
+		using (InvocationConsole.Begin(out var output))
 		{
-			var app = new App();
-			app.Configure(
-				builder =>
+			// Run on a plain thread-pool thread to avoid deadlocking a SynchronizationContext the MCP
+			// host may have captured; CliWrap's continuations would otherwise try to resume on it.
+			await Task.Run(() => CliInvocationCore.Execute(new CliInvocationRequest
+			{
+				ReadCommand = () => Task.FromResult((fullCommand,
+					JsonConvert.SerializeObject(new ServerRequest { commandLine = fullCommand }))),
+				UseCustomSplitter = false,
+				App = AppFactory(),
+				CreateReporter = _ => capturer,
+				ReportSetupFailure = report =>
 				{
-					builder.Remove<IDataReporterService>();
-					builder.AddSingleton<IDataReporterService>(capturer);
-				},
-				overwriteLogger: false);
-			app.Build();
+					capturer.Report(report.type, report.data);
+					return Task.CompletedTask;
+				}
+			})).ConfigureAwait(false);
 
-			// Run on a plain thread-pool thread to avoid deadlocking the ASP.NET
-			// SynchronizationContext that the MCP host uses. Without this, CliWrap's
-			// internal async continuations try to resume on the captured context, which
-			// is already blocked waiting for this tool call to complete.
-			await Task.Run(() => app.RunWithSingleString(fullCommand, useCustomSplitter: false)).ConfigureAwait(false);
-		}
-		catch (Exception ex)
-		{
-			await sw.WriteLineAsync($"{{\"error\":\"{ex.Message.Replace("\"", "\\\"")}\"}}");
-		}
-		finally
-		{
-			Console.SetOut(previousOut);
-			Console.SetError(previousErr);
-		}
+			var sw = new StringWriter();
+			await sw.WriteAsync(output.StandardOutput);
+			await sw.WriteAsync(capturer.EventText());
 
-		// CliException and other framework errors write to Console.Error, not stdout.
-		// Append them as a JSON error line so the MCP client always sees them.
-		var errorText = errSw.ToString().Trim();
-		if (!string.IsNullOrEmpty(errorText))
-		{
-			var enriched = EnrichErrorIfCommandFailure(errorText, commandLine);
-			await sw.WriteLineAsync(JsonConvert.SerializeObject(new { error = enriched }));
+			// CliException and other framework errors write to Console.Error, not stdout.
+			// Append them as a JSON error line so the MCP client always sees them.
+			var errorText = output.StandardError.Trim();
+			if (!string.IsNullOrEmpty(errorText))
+			{
+				var enriched = EnrichErrorIfCommandFailure(errorText, commandLine);
+				await sw.WriteLineAsync(JsonConvert.SerializeObject(new { error = enriched }));
+			}
+
+			// Commands that implement IEmptyResult produce no output on success.
+			// Emit a generic success envelope so the MCP client always receives a
+			// non-empty response and knows the command completed without error.
+			if (string.IsNullOrWhiteSpace(sw.ToString()))
+				await sw.WriteLineAsync(JsonConvert.SerializeObject(new { status = "ok", command = commandLine }));
+
+			return TruncateIfNeeded(sw.ToString());
 		}
-
-		// Commands that implement IEmptyResult produce no output on success.
-		// Emit a generic success envelope so the MCP client always receives a
-		// non-empty response and knows the command completed without error.
-		if (string.IsNullOrWhiteSpace(sw.ToString()))
-			await sw.WriteLineAsync(JsonConvert.SerializeObject(new { status = "ok", command = commandLine }));
-
-		return TruncateIfNeeded(sw.ToString());
 	}
 
 	private const int MaxOutputLength = 32_768;
@@ -648,47 +665,217 @@ public class McpToolExecutor
 		return commandLine;
 	}
 
+	/// <summary>
+	/// A tool call waits for the command to finish, so servers, log tails and --watch modes would hang it.
+	/// </summary>
+	private static string RefuseNeverEndingCommand(App app, string commandLine)
+	{
+		if (app.CommandProvider?.CanBuildService<RootCommand>() != true)
+		{
+			return null;
+		}
+
+		var root = app.CommandProvider.GetService<RootCommand>();
+
+		var parsed = new Parser(root).Parse(commandLine);
+		if (parsed.CommandResult.Command is IStreamsIndefinitely)
+		{
+			return $"'{parsed.CommandResult.Command.Name}' runs until it is stopped, so it cannot be run as a tool call. " +
+			       "Run it in a terminal instead.";
+		}
+
+		var watches = parsed.CommandResult.Children.OfType<OptionResult>()
+			.Any(o => o.Option.Name == "watch" && o.GetValueOrDefault() is true);
+		if (watches)
+		{
+			return "--watch keeps the command running until it is stopped, so it cannot be run as a tool call. " +
+			       "Run it without --watch to get the current state.";
+		}
+
+		return null;
+	}
+
+	/// <summary>
+	/// The flags a command needs to report everything through IDataReporterService: logs as a "logs" channel and,
+	/// with --raw, failures on the "error" channel even when stdout is not redirected (as in `server serve`).
+	/// </summary>
+	private static string EnsureCommandFlags(string commandLine)
+	{
+		var withLogs = EnsureLogStreams(commandLine);
+		return withLogs.ToLowerInvariant().Contains("--raw") ? withLogs : withLogs + " --raw";
+	}
+
 	private sealed class CapturingReporterService : IDataReporterService
 	{
-		private readonly TextWriter _writer;
-		private readonly Dictionary<string, long> _lastProgressWrite = new();
-		private const long THROTTLE_INTERVAL_MS = 2000;
+		private readonly object _lock = new();
+		private readonly List<JObject> _events = new();
+		private readonly List<CliLogMessage> _logs = new();
+		private readonly IProgress<ProgressNotificationValue> _progress;
+		private float _lastProgress;
+		private bool _reportedError;
 
 		private static readonly HashSet<string> ProgressChannels = new(StringComparer.OrdinalIgnoreCase)
 		{
 			"progress", "progressStream", "remote_progress"
 		};
 
-		private static readonly HashSet<string> SuppressedChannels = new(StringComparer.OrdinalIgnoreCase)
+		// The fields progress payloads use for a 0..1 completion ratio.
+		private static readonly string[] RatioFields = { "ratio", "progressRatio", "progress" };
+
+		private static readonly HashSet<string> ReportedLogLevels = new(StringComparer.OrdinalIgnoreCase)
 		{
-			"logs"
+			"Warning", "Error", "Critical", "Fatal"
 		};
 
-		public CapturingReporterService(TextWriter writer)
+		public CapturingReporterService(IProgress<ProgressNotificationValue> progress)
 		{
-			_writer = writer;
+			_progress = progress;
 		}
 
 		public void Report<T>(string type, T data)
 		{
-			if (SuppressedChannels.Contains(type))
-				return;
-
-			if (ProgressChannels.Contains(type))
-			{
-				var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-				if (_lastProgressWrite.TryGetValue(type, out var last) && now - last < THROTTLE_INTERVAL_MS)
-					return;
-				_lastProgressWrite[type] = now;
-			}
-
 			var pt = new ReportDataPoint<T>
 			{
 				data = data,
 				type = type,
 				ts = DateTimeOffset.Now.ToUnixTimeMilliseconds()
 			};
-			_writer.WriteLine(JsonConvert.SerializeObject(pt, UnitySerializationSettings.Instance));
+			var json = JObject.Parse(JsonConvert.SerializeObject(pt, UnitySerializationSettings.Instance));
+
+			lock (_lock)
+			{
+				if (data is CliLogMessage log)
+				{
+					// Warnings and errors explain a result; the rest would only crowd the agent's context.
+					if (ReportedLogLevels.Contains(log.logLevel ?? ""))
+					{
+						_logs.Add(log);
+					}
+					return;
+				}
+
+				if (ProgressChannels.Contains(type))
+				{
+					ReportProgress(json["data"]);
+					return;
+				}
+
+				if (type.StartsWith(DefaultErrorStream.CHANNEL, StringComparison.Ordinal))
+				{
+					_reportedError = true;
+				}
+				_events.Add(json);
+			}
+		}
+
+		private void ReportProgress(JToken data)
+		{
+			if (_progress == null)
+			{
+				return;
+			}
+
+			var ratio = RatioFields
+				.Select(f => data?[f])
+				.FirstOrDefault(t => t != null && t.Type is JTokenType.Float or JTokenType.Integer);
+			// MCP requires progress to increase, so payloads without a ratio count up instead.
+			var next = ratio != null
+				? Math.Max(_lastProgress, Math.Clamp(ratio.Value<float>(), 0f, 1f))
+				: _lastProgress + 1;
+			_lastProgress = next;
+			_progress.Report(new ProgressNotificationValue
+			{
+				Progress = next,
+				Total = ratio != null ? 1f : null,
+				Message = data?.ToString(Formatting.None)
+			});
+		}
+
+		/// <summary>Each reported event's JSON on its own line.</summary>
+		public string EventText()
+		{
+			lock (_lock)
+			{
+				return string.Concat(_events.Select(e => e.ToString(Formatting.None) + Environment.NewLine));
+			}
+		}
+
+		public CallToolResult ToResult(string commandLine, int exitCode, bool cancelled, InvocationConsole.Capture console = null)
+		{
+			List<JObject> events;
+			List<CliLogMessage> logs;
+			lock (_lock)
+			{
+				events = _events.ToList();
+				logs = _logs.ToList();
+			}
+
+			var text = new StringBuilder();
+			foreach (var evt in events)
+			{
+				text.AppendLine(evt.ToString(Formatting.None));
+			}
+			foreach (var log in logs)
+			{
+				text.AppendLine(JsonConvert.SerializeObject(new { log = log.message, level = log.logLevel }));
+			}
+
+			// What the command printed itself rather than reported.
+			var printed = console?.StandardOutput ?? "";
+			text.Append(printed);
+
+			var isError = exitCode != 0 || _reportedError || cancelled;
+			if (isError && !_reportedError && !cancelled)
+			{
+				// A failure without an error event only explains itself on stderr.
+				var stderr = console?.StandardError.Trim();
+				if (!string.IsNullOrEmpty(stderr))
+				{
+					text.AppendLine(JsonConvert.SerializeObject(new { error = EnrichErrorIfCommandFailure(stderr, commandLine) }));
+				}
+			}
+			if (cancelled)
+			{
+				text.AppendLine(JsonConvert.SerializeObject(new { error = "The command was cancelled.", command = commandLine }));
+			}
+			else if (isError)
+			{
+				var errors = string.Join("\n", events
+					.Where(e => ((string)e["type"] ?? "").StartsWith(DefaultErrorStream.CHANNEL, StringComparison.Ordinal))
+					.Select(e => (string)e["data"]?["message"]));
+				var enriched = EnrichErrorIfCommandFailure(errors, commandLine);
+				if (enriched != errors)
+				{
+					text.AppendLine(JsonConvert.SerializeObject(new { hint = enriched[errors.Length..].Trim() }));
+				}
+			}
+
+			// Commands that implement IEmptyResult produce no output on success.
+			// Emit a generic success envelope so the MCP client always receives a
+			// non-empty response and knows the command completed without error.
+			if (text.Length == 0)
+			{
+				text.AppendLine(JsonConvert.SerializeObject(new { status = "ok", command = commandLine }));
+			}
+
+			var structured = new JObject
+			{
+				["command"] = commandLine,
+				["exitCode"] = exitCode,
+				["events"] = new JArray(events)
+			};
+			if (printed.Length > 0)
+			{
+				structured["console"] = TruncateIfNeeded(printed);
+			}
+
+			return new CallToolResult
+			{
+				Content = new List<ContentBlock> { new TextContentBlock { Text = TruncateIfNeeded(text.ToString()) } },
+				StructuredContent = System.Text.Json.JsonSerializer.SerializeToElement(
+					System.Text.Json.Nodes.JsonNode.Parse(structured.ToString(Formatting.None))),
+				IsError = isError
+			};
 		}
 	}
 }

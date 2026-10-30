@@ -54,6 +54,12 @@ public interface IEmptyResult : IResultProvider
 /// </summary>
 public interface IStandaloneCommand { }
 
+/// <summary>
+/// Specifies that the command keeps running until it is cancelled (a server, a log tail), so a caller that waits
+/// for a single result, like an MCP tool call, must not start it.
+/// </summary>
+public interface IStreamsIndefinitely { }
+
 
 public class DefaultStreamResultChannel : IResultChannel
 {

@@ -10,9 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Fields with the `MustBeComparatorString` attribute show a dropdown in the Inspector listing the comparators the backend accepts for that field, with a tooltip for each.
+- **Window → Beamable → Utilities → Enable MCP for AI Agents** lets AI agents (Claude Code, Cursor, VS Code) use the Beamable CLI through the editor's own CLI server, and points the project's `.mcp.json` at it.
 
 ### Fixed
 
+- Stopping the editor's CLI server (the CLI window's "Kill Server", "Enable MCP for AI Agents", recovering from transport failures) now stops the server process itself, not just the `dotnet beam` launcher. The server used to keep running on its port, and the editor then reconnected to it. Stopping it on purpose no longer logs a `CLI failed` error.
+- "Enable MCP for AI Agents" and "Install MCP Server" show the CLI's error when setup fails, instead of reporting success with an empty config path.
 - `MustBeComparatorString` now validates against what the backend accepts for each field. Stat requirements (listings, announcements, leaderboard and event cohorts) also accept `neq`, `gte`, `lte` and the long names (`equal`, `notequal`, `greaterthan`, `greaterthanequal`, `lessthan`, `lessthanequal`). Offer purchase requirements accept `eq`, `ne`, `gt`, `ge`, `lt`, `le`. Cohort requirements accept only `eq` (member) and `ne` (not a member); any other value used to be evaluated as "not a member", so replace it with `ne`.
 - With Unity IAP 5, purchasing can be initialized more than once (login, `ChangeAuthorizedPlayer`, several `BeamContext`s, play mode without domain reload) without failing with `ErrorNoProductsAvailable (FetchProducts cannot be invoked if a fetch is already in progress...)`. SKUs without a product id for the current store are skipped with a warning, products the store doesn't know no longer disable purchasing, and Steam builds use the Beamable Steam store.
 - Purchases are no longer lost or left hanging: an order whose fulfillment fails stays pending in the store instead of being confirmed without its reward, and `StartPurchase` always completes, including for unknown SKUs, a second purchase while one is in flight (`ExistingPurchasePending`), deferred payments (`UnityBeamablePurchaser.PURCHASE_DEFERRED_ERROR_CODE`, on Unity IAP 4 too) and a store that disconnected in the background. Initializing purchasing again or disposing its context settles a purchase left in flight, and its Beamable transaction is always closed with the account that began it. Prices are sent in a culture-independent format.
@@ -20,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The editor sends its CLI server's session token with every command and finds the server on the project's preferred port, so a restarted server comes back on the same port.
 - Beam Account login window pre-fills the environment and organization from the project's existing configuration, such as `config-defaults.txt`, and restores the previously selected realm after login.
 
 ## [6.2.0] - 2026-10-08

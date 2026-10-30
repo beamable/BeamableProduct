@@ -31,6 +31,7 @@ using cli.Options;
 using cli.PlayerCommands;
 using cli.Portal;
 using cli.Services;
+using cli.Services.CliInvocation;
 using cli.Services.HttpServer;
  using cli.Services.Web;
 using cli.TempCommands;
@@ -363,7 +364,7 @@ public class App
 		{
 			return;
 		}
-		
+
 		_activity?.Stop();
 		_activity?.Dispose();
 		GlobalLoggerFactory?.Dispose();
@@ -372,6 +373,36 @@ public class App
 		_meterProvider?.ForceFlush();
 		_meterProvider?.Shutdown();
 	}
+
+	/// <summary>
+	/// Ends one command run inside a long-lived process (`beam server serve`, the MCP server), which never reaches
+	/// <see cref="Flush"/>: exports and releases what this app created for the command, leaving the process's own
+	/// logger alone.
+	/// </summary>
+	public virtual void EndInvocation()
+	{
+		if (CommandProvider?.CanBuildService<RootCommand>() == true)
+		{
+			CommandTreeDetacher.Detach(CommandProvider.GetService<RootCommand>());
+		}
+		_activity?.Stop();
+		_activity?.Dispose();
+		_activity = null;
+		_invocationLoggerFactory?.Dispose();
+		_invocationLoggerFactory = null;
+		// Each app builds its own tracer provider (and with it a process-wide HttpClient listener), so it must go
+		// with the command. The meter provider is the process's (see MeterProvider) and is flushed at exit.
+		if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_SKIP_CLI_FLUSH")))
+		{
+			_traceProvider?.ForceFlush();
+		}
+		_traceProvider?.Dispose();
+		_traceProvider = null;
+		_meterProvider = null;
+	}
+
+	// The logger factory of a command run by a long-lived process; see EndInvocation.
+	private ILoggerFactory _invocationLoggerFactory;
 
 	public virtual void Configure(
 		Action<IDependencyBuilder> serviceConfigurator = null,
@@ -433,7 +464,9 @@ public class App
 				var appCtx = provider.GetService<IAppContext>();
 				if (appCtx.ShouldEmitLogs)
 				{
-					var factory = GlobalLoggerFactory = LoggerFactory.Create(builder =>
+					// This command shares the process with others, so its logger only lives in its own async
+					// context; the process-wide loggers stay the host's.
+					var factory = _invocationLoggerFactory = LoggerFactory.Create(builder =>
 					{
 						builder.SetMinimumLevel(LogLevel.Trace);
 						builder.AddZLoggerLogProcessor(new ReporterSink(provider));
@@ -443,7 +476,7 @@ public class App
 					{
 						_queuedLogger.Flush(logger);
 					}
-					BeamableZLoggerProvider.GlobalLogger = BeamableZLoggerProvider.LogContext.Value = logger;
+					BeamableZLoggerProvider.LogContext.Value = logger;
 				}
 			};
 		}
@@ -535,6 +568,8 @@ public class App
 		Commands.AddRootCommand<McpGroupCommand>();
 		Commands.AddSubCommand<McpServeCommand, McpServeCommandArgs, McpGroupCommand>();
 		Commands.AddSubCommand<McpSetupCommand, McpSetupCommandArgs, McpGroupCommand>();
+		Commands.AddSubCommand<McpStatusCommand, McpStatusCommandArgs, McpGroupCommand>();
+		Commands.AddSubCommand<McpTokenCommand, McpTokenCommandArgs, McpGroupCommand>();
 		Commands.AddRootCommand<InstallAISkillsCommand, InstallAISkillsCommandArgs>();
 		Commands.AddRootCommand<ServerGroupCommand>();
 		Commands.AddSubCommand<ServeCliCommand, ServeCliCommandArgs, ServerGroupCommand>();
@@ -1149,232 +1184,240 @@ public class App
 			// First thing we have to do is ensure we have our paths to our Config directories loaded.
 			provider.GetService<ConfigService>().SetWorkingDir();
 
-			{ // if the application is force-quit, then we should cancel our life-cycle to give commands a chance to clean up
-				Console.CancelKeyPress += (sender, eventArgs) =>
-				{
-					
-					// prevent the application from shutting down immediately after a CTRL+C appears, 
-					eventArgs.Cancel = true;
-					Log.Global.LogDebug("Starting graceful shutdown...");
-					
-					// give the CLI stuff a chance to shutdown gracefully
-					var lifecycle = provider.GetService<AppLifecycle>();
-					lifecycle.Cancel();
-
-					// and schedule a hard exit in some short amount of time later
-					Task.Run(async () =>
-					{
-						const int GRACEFUL_SHUTDOWN_MILLISECOND_LIMIT = 250;
-						await Task.Delay(GRACEFUL_SHUTDOWN_MILLISECOND_LIMIT);
-						Log.Global.LogDebug("Done waiting for graceful shutdown...");
-						Environment.Exit(0);
-					});
-				};
-			}
-
-			Log.Verbose("command prep (make provider) took " + sw.ElapsedMilliseconds);
-
-			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
-			ctx.BindingContext.AddService(_ => new AppServices { duck = provider });
-			var appContext = provider.GetRequiredService<IAppContext>();
-			await appContext.Apply(ctx.BindingContext);
-			
-			// update log information before dependency injection is sealed.
+			// if the application is force-quit, then we should cancel our life-cycle to give commands a chance to clean up
+			ConsoleCancelEventHandler onCancelKeyPress = (sender, eventArgs) =>
 			{
-				_setLogger(provider);
-				var proc = CommandProvider.GetService<ZLoggerBufferedProcessor>();
-				proc.isDisabled = true;
-				foreach (var log in proc.logs)
-				{
-					BeamableZLoggerProvider.LogContext.Value.Log(log.LogInfo.LogLevel, log.ToString());
-				}
+				// prevent the application from shutting down immediately after a CTRL+C appears,
+				eventArgs.Cancel = true;
+				Log.Global.LogDebug("Starting graceful shutdown...");
 
-				proc.isDisabled = false;
-				foreach (var log in proc.logsGotWhileDisabled)
-				{
-					BeamableZLoggerProvider.LogContext.Value.LogWarning("The following log was received while the internal logger was switching.");
-					BeamableZLoggerProvider.LogContext.Value.Log(log.LogInfo.LogLevel, log.ToString());
-				}
-			}
+				// give the CLI stuff a chance to shutdown gracefully
+				var lifecycle = provider.GetService<AppLifecycle>();
+				lifecycle.Cancel();
 
-			//in case otel is enabled, check if otel data stored in files is too large
-			if (Otel.CliTracesEnabled())
-			{
-				bool quiet = ctx.BindingContext.ParseResult.GetValueForOption(QuietOption.Instance);
-				
-				var configService = provider.GetService<ConfigService>();
-				var otelDirectory = configService.ConfigTempOtelDirectoryPath;
-		
-				// Check if the .beamable folder exists
-				string beamableDirectory = Path.Combine(configService.BeamableWorkspace, ".beamable");
-				
-				bool shouldTryToCreateFolders = Directory.Exists(beamableDirectory);
-				
-				// If the user didn't have the otel config in the files
-				shouldTryToCreateFolders &= !OtelUtils.HasOtelConfig(configService);
-
-				// If it is quiet or autosetup we should create the otel settings as true anyway
-				if (shouldTryToCreateFolders)
+				// and schedule a hard exit in some short amount of time later
+				Task.Run(async () =>
 				{
-					// default value
-					bool shouldContinue = true;
-					
-					// If we have the auto setup telemetry env var setup we get the value to accept/reject
-					if (Otel.CliAutoSetupTelemetryEnabled())
-					{
-						shouldContinue = Otel.CliAutoSetupTelemetryAccept();
-					}else if (Otel.CliRunningOnDockerContainer()) // If it is running on a docker and wasn't overrided by the Otel.CliAutoSetupTelemetryEnabled() shouldn't use the telemetry
-					{
-						shouldContinue = false;
-					}
-					else if (!quiet && !AnsiConsole.Profile.Capabilities.Interactive)
-					{
-						// There is no one to ask: the output is piped, or this is CI / a script / an agent. Prompting
-						// here threw "Failed to read input in non-interactive mode" and took the whole command with
-						// it — so the FIRST command run after any `.beamable` folder appeared would crash, which is
-						// a miserable way to discover that a consent prompt exists.
-						//
-						// Default to NOT collecting. Silence is not consent, and this is the one branch where the
-						// answer was never actually given. `--quiet` keeps its existing opt-in behaviour, and
-						// BEAM_CLI_AUTO_SETUP_TELEMETRY (handled above) is how a non-interactive run opts in.
-						shouldContinue = false;
-						Log.Verbose(
-							"Skipping the telemetry consent prompt: the console is not interactive. Defaulting to " +
-							"no telemetry — set the auto-setup telemetry env var to choose explicitly.");
-					}
-					else if(!quiet)// if we don't have the auto setup set we will check if we should auto accept or show the prompt
-					{
-						shouldContinue = AnsiConsole.Prompt(
-							new ConfirmationPrompt($"To help us improve your experience, we’d like to collect usage data using OpenTelemetry.\nThis data includes general usage and error reports\n\nDo you allow us to collect this telemetry data?")
-								.ShowChoices());
-					}
-
-					OtelUtils.SetAllowOtelConfig(shouldContinue, configService);
-				}
-				
-				bool hasOtelConfig = Directory.Exists(beamableDirectory) && OtelUtils.HasOtelConfig(configService);
-				
-				// If it is running silent we should create the folder for the user.
-				// or If all otel folders wasn't created and otel was allowed
-				// we create all the folders for otel
-				if (hasOtelConfig && !OtelUtils.HasAllOtelFolders(configService) && OtelUtils.GetAllowOtelConfig(configService))
-				{
-					OtelUtils.CreateOtelFolders(configService);
-				}
-				
-				// If the it's not allowed to use telemetry we enforce the deletion of the folders
-				// The folders existence is basically what defines the usage of telemetry
-				if (hasOtelConfig && !OtelUtils.GetAllowOtelConfig(configService))
-				{
-					OtelUtils.DeleteOtelFolders(configService);
-				}
-				
-				if (Directory.Exists(otelDirectory))
-				{
-					var dirResult = DirectoryUtils.CalculateDirectorySize(otelDirectory);
-
-					var maxSize = configService.LoadOtelConfigFromFile().BeamCliTelemetryMaxSize;
-
-					if (dirResult.Size >= maxSize)
-					{
-						Log.Information($"The size of your open telemetry data stored in files has exceeded the limit of 50mb, please consider running [dotnet beam otel push] in order to flush your local data to a remote database," +
-						            $" or instead you can run [dotnet beam otel prune] to do cleanup of older data");
-						Log.Information($"You currently have {DirectoryUtils.FormatBytes(dirResult.Size)} in used space for the amount of {dirResult.FileCount} files.");
-					}
-				}
-			}
-			
-			Log.Verbose("command prep (make logs) took " + sw.ElapsedMilliseconds);
-			// resolve the root trace, must be done app context is applied with cli bindings 
-			_traceProvider = provider.GetService<TracerProvider>();
-			_meterProvider = provider.GetService<MeterProvider>();
-			
-			_activity = provider.GetService<BeamActivity>();
+					const int GRACEFUL_SHUTDOWN_MILLISECOND_LIMIT = 250;
+					await Task.Delay(GRACEFUL_SHUTDOWN_MILLISECOND_LIMIT);
+					Log.Global.LogDebug("Done waiting for graceful shutdown...");
+					Environment.Exit(0);
+				});
+			};
+			Console.CancelKeyPress += onCancelKeyPress;
 			try
 			{
 
-				Log.Verbose("command prep (app context) took " + sw.ElapsedMilliseconds);
+				Log.Verbose("command prep (make provider) took " + sw.ElapsedMilliseconds);
 
-				// Check if we need to forward this command --- we only forward if the executing version of the CLI is different than the one locally installed on the project.
-				// As long as the versions are the same, running the local one or the global one changes nothing in behaviour.
-				var runningVersion = appContext.ExecutingVersion;
-				var localVersion = appContext.LocalProjectVersion;
-				var isCalledFromInsideBeamableProject = localVersion != null;
-				Log.Verbose(
-					$"Checking for command redirect. is-local=[{isCalledFromInsideBeamableProject}] running-version=[{runningVersion}] project-version=[{localVersion}]");
-
-				var isMisalignedVersion = runningVersion != localVersion;
-				var areVersionsBothLocal = (runningVersion?.StartsWith("0.0.123") ?? false) &&
-				                           (localVersion?.StartsWith("0.0.123") ?? false);
-				var needsProxy = isMisalignedVersion && !areVersionsBothLocal;
-				if (isCalledFromInsideBeamableProject && needsProxy)
+				// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
+				ctx.BindingContext.AddService(_ => new AppServices { duck = provider });
+				var appContext = provider.GetRequiredService<IAppContext>();
+				await appContext.Apply(ctx.BindingContext);
+			
+				// update log information before dependency injection is sealed.
 				{
-					var preventRedirect = ctx.ParseResult.GetValueForOption(provider.GetService<NoForwardingOption>());
-					if (!preventRedirect)
+					_setLogger(provider);
+					var proc = CommandProvider.GetService<ZLoggerBufferedProcessor>();
+					proc.isDisabled = true;
+					foreach (var log in proc.logs)
 					{
-						await ProxyCommand(ctx, provider, runningVersion, localVersion);
-						return;
+						BeamableZLoggerProvider.LogContext.Value.Log(log.LogInfo.LogLevel, log.ToString());
+					}
+
+					proc.isDisabled = false;
+					foreach (var log in proc.logsGotWhileDisabled)
+					{
+						BeamableZLoggerProvider.LogContext.Value.LogWarning("The following log was received while the internal logger was switching.");
+						BeamableZLoggerProvider.LogContext.Value.Log(log.LogInfo.LogLevel, log.ToString());
 					}
 				}
 
-				Log.Verbose("command prep (past proxy) took " + sw.ElapsedMilliseconds);
-
-
-				var skip = ctx.ParseResult.CommandResult.Command is ISkipManifest;
-				if (skip)
+				//in case otel is enabled, check if otel data stored in files is too large
+				if (Otel.CliTracesEnabled())
 				{
-					Log.Debug(
-						$"skipping manifest initialization because command=[{ctx.ParseResult.CommandResult.Command.GetType().Name}] is a {nameof(ISkipManifest)}");
-				}
-				else
-				{
-					try
+					bool quiet = ctx.BindingContext.ParseResult.GetValueForOption(QuietOption.Instance);
+				
+					var configService = provider.GetService<ConfigService>();
+					var otelDirectory = configService.ConfigTempOtelDirectoryPath;
+		
+					// Check if the .beamable folder exists
+					string beamableDirectory = Path.Combine(configService.BeamableWorkspace, ".beamable");
+				
+					bool shouldTryToCreateFolders = Directory.Exists(beamableDirectory);
+				
+					// If the user didn't have the otel config in the files
+					shouldTryToCreateFolders &= !OtelUtils.HasOtelConfig(configService);
+
+					// If it is quiet or autosetup we should create the otel settings as true anyway
+					if (shouldTryToCreateFolders)
 					{
-						var beamoSystem = provider.GetService<BeamoLocalSystem>();
-						beamoSystem.InitManifest(useManifestCache: true).Wait();
-					}
-					catch (AggregateException aggregateException)
-					{
-						foreach (var ex in aggregateException.InnerExceptions)
+						// default value
+						bool shouldContinue = true;
+					
+						// If we have the auto setup telemetry env var setup we get the value to accept/reject
+						if (Otel.CliAutoSetupTelemetryEnabled())
 						{
-							Log.Error(ex.GetType().Name + " -- " + ex.Message + "\n" + ex.StackTrace);
+							shouldContinue = Otel.CliAutoSetupTelemetryAccept();
+						}else if (Otel.CliRunningOnDockerContainer()) // If it is running on a docker and wasn't overrided by the Otel.CliAutoSetupTelemetryEnabled() shouldn't use the telemetry
+						{
+							shouldContinue = false;
+						}
+						else if (!quiet && !AnsiConsole.Profile.Capabilities.Interactive)
+						{
+							// There is no one to ask: the output is piped, or this is CI / a script / an agent. Prompting
+							// here threw "Failed to read input in non-interactive mode" and took the whole command with
+							// it — so the FIRST command run after any `.beamable` folder appeared would crash, which is
+							// a miserable way to discover that a consent prompt exists.
+							//
+							// Default to NOT collecting. Silence is not consent, and this is the one branch where the
+							// answer was never actually given. `--quiet` keeps its existing opt-in behaviour, and
+							// BEAM_CLI_AUTO_SETUP_TELEMETRY (handled above) is how a non-interactive run opts in.
+							shouldContinue = false;
+							Log.Verbose(
+								"Skipping the telemetry consent prompt: the console is not interactive. Defaulting to " +
+								"no telemetry — set the auto-setup telemetry env var to choose explicitly.");
+						}
+						else if(!quiet)// if we don't have the auto setup set we will check if we should auto accept or show the prompt
+						{
+							shouldContinue = AnsiConsole.Prompt(
+								new ConfirmationPrompt($"To help us improve your experience, we’d like to collect usage data using OpenTelemetry.\nThis data includes general usage and error reports\n\nDo you allow us to collect this telemetry data?")
+									.ShowChoices());
 						}
 
-						throw;
+						OtelUtils.SetAllowOtelConfig(shouldContinue, configService);
+					}
+				
+					bool hasOtelConfig = Directory.Exists(beamableDirectory) && OtelUtils.HasOtelConfig(configService);
+				
+					// If it is running silent we should create the folder for the user.
+					// or If all otel folders wasn't created and otel was allowed
+					// we create all the folders for otel
+					if (hasOtelConfig && !OtelUtils.HasAllOtelFolders(configService) && OtelUtils.GetAllowOtelConfig(configService))
+					{
+						OtelUtils.CreateOtelFolders(configService);
+					}
+				
+					// If the it's not allowed to use telemetry we enforce the deletion of the folders
+					// The folders existence is basically what defines the usage of telemetry
+					if (hasOtelConfig && !OtelUtils.GetAllowOtelConfig(configService))
+					{
+						OtelUtils.DeleteOtelFolders(configService);
+					}
+				
+					if (Directory.Exists(otelDirectory))
+					{
+						var dirResult = DirectoryUtils.CalculateDirectorySizeCached(otelDirectory, TimeSpan.FromMinutes(1));
+
+						var maxSize = configService.LoadOtelConfigFromFile().BeamCliTelemetryMaxSize;
+
+						if (dirResult.Size >= maxSize)
+						{
+							Log.Information($"The size of your open telemetry data stored in files has exceeded the limit of 50mb, please consider running [dotnet beam otel push] in order to flush your local data to a remote database," +
+							            $" or instead you can run [dotnet beam otel prune] to do cleanup of older data");
+							Log.Information($"You currently have {DirectoryUtils.FormatBytes(dirResult.Size)} in used space for the amount of {dirResult.FileCount} files.");
+						}
+					}
+				}
+			
+				Log.Verbose("command prep (make logs) took " + sw.ElapsedMilliseconds);
+				// resolve the root trace, must be done app context is applied with cli bindings 
+				_traceProvider = provider.GetService<TracerProvider>();
+				_meterProvider = provider.GetService<MeterProvider>();
+			
+				_activity = provider.GetService<BeamActivity>();
+				try
+				{
+
+					Log.Verbose("command prep (app context) took " + sw.ElapsedMilliseconds);
+
+					// Check if we need to forward this command --- we only forward if the executing version of the CLI is different than the one locally installed on the project.
+					// As long as the versions are the same, running the local one or the global one changes nothing in behaviour.
+					var runningVersion = appContext.ExecutingVersion;
+					var localVersion = appContext.LocalProjectVersion;
+					var isCalledFromInsideBeamableProject = localVersion != null;
+					Log.Verbose(
+						$"Checking for command redirect. is-local=[{isCalledFromInsideBeamableProject}] running-version=[{runningVersion}] project-version=[{localVersion}]");
+
+					var isMisalignedVersion = runningVersion != localVersion;
+					var areVersionsBothLocal = (runningVersion?.StartsWith("0.0.123") ?? false) &&
+					                           (localVersion?.StartsWith("0.0.123") ?? false);
+					var needsProxy = isMisalignedVersion && !areVersionsBothLocal;
+					if (isCalledFromInsideBeamableProject && needsProxy)
+					{
+						var preventRedirect = ctx.ParseResult.GetValueForOption(provider.GetService<NoForwardingOption>());
+						if (!preventRedirect)
+						{
+							await ProxyCommand(ctx, provider, runningVersion, localVersion);
+							return;
+						}
 					}
 
+					Log.Verbose("command prep (past proxy) took " + sw.ElapsedMilliseconds);
 
+
+					var skip = ctx.ParseResult.CommandResult.Command is ISkipManifest;
+					if (skip)
 					{
-						// generate the route-map if we need to
-						if (!appContext.PreferRemoteFederation)
+						Log.Debug(
+							$"skipping manifest initialization because command=[{ctx.ParseResult.CommandResult.Command.GetType().Name}] is a {nameof(ISkipManifest)}");
+					}
+					else
+					{
+						try
 						{
-							var federations = ListFederationsCommand.GetLocalFederations(appContext.Cid, appContext.Pid,
-								provider.GetService<BeamoLocalSystem>().BeamoManifest);
-							var routeMap = string.Join(",",
-								federations.services.Select(s => $"micro_{s.beamoName}:{s.routingKey}"));
-							if (provider.CanBuildService<CliRequester>())
+							var beamoSystem = provider.GetService<BeamoLocalSystem>();
+							beamoSystem.InitManifest(useManifestCache: true).Wait();
+						}
+						catch (AggregateException aggregateException)
+						{
+							foreach (var ex in aggregateException.InnerExceptions)
 							{
-								var requester = provider.GetService<CliRequester>();
-								Log.Debug($"Setting routing header=[{routeMap}]");
-								requester.GlobalHeaders[Beamable.Common.Constants.Requester.HEADER_ROUTINGKEY] =
-									routeMap;
+								Log.Error(ex.GetType().Name + " -- " + ex.Message + "\n" + ex.StackTrace);
+							}
+
+							throw;
+						}
+
+
+						{
+							// generate the route-map if we need to
+							if (!appContext.PreferRemoteFederation)
+							{
+								var federations = ListFederationsCommand.GetLocalFederations(appContext.Cid, appContext.Pid,
+									provider.GetService<BeamoLocalSystem>().BeamoManifest);
+								var routeMap = string.Join(",",
+									federations.services.Select(s => $"micro_{s.beamoName}:{s.routingKey}"));
+								if (provider.CanBuildService<CliRequester>())
+								{
+									var requester = provider.GetService<CliRequester>();
+									Log.Debug($"Setting routing header=[{routeMap}]");
+									requester.GlobalHeaders[Beamable.Common.Constants.Requester.HEADER_ROUTINGKEY] =
+										routeMap;
+								}
 							}
 						}
+
 					}
 
+
+
+					Log.Verbose("command prep took " + sw.ElapsedMilliseconds);
+					await next(ctx);
+					_activity.SetStatus(ActivityStatusCode.Ok);
+					sw.Stop();
+					Log.Verbose("command execution took " + sw.ElapsedMilliseconds);
 				}
-
-
-
-				Log.Verbose("command prep took " + sw.ElapsedMilliseconds);
-				await next(ctx);
-				_activity.SetStatus(ActivityStatusCode.Ok);
-				sw.Stop();
-				Log.Verbose("command execution took " + sw.ElapsedMilliseconds);
+				finally
+				{
+			
+				}
 			}
 			finally
 			{
-			
+				// Every command subscribes, and `beam server serve` and the MCP server run many in one process: a handler
+				// left behind would keep this command's whole service graph alive for good.
+				Console.CancelKeyPress -= onCancelKeyPress;
 			}
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
