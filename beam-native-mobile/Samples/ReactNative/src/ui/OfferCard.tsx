@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-import type { CampaignOffer, Reward } from '../beam/campaignOffers';
+import type { OfferGrant, Reward } from '../beam/offers';
 import {
   BADGE_REWARD_TYPE,
+  describeProgress,
   describeState,
   formatExpiry,
   formatWhen,
   isFree,
-} from '../beam/campaignOffers';
+} from '../beam/offers';
 import type { BalanceDelta } from '../beam/inventory';
 import { formatDelta } from '../beam/inventory';
 import AsyncButton from './AsyncButton';
@@ -16,7 +17,7 @@ import { Hint, Value } from './Hint';
 import { colors, mono, radius, space } from './theme';
 
 /**
- * One campaign offer, as a player should see it.
+ * One granted offer, as a player should see it.
  *
  * The card exists because the row grew past what a tab file should hold inline — the same reason
  * `StatCard` was lifted out of the Segments tab. It owns no network state: its action is an
@@ -32,15 +33,12 @@ import { colors, mono, radius, space } from './theme';
  * third-party provider that sends the same shapes renders the same way.
  */
 export default function OfferCard({
-  campaignOffer,
+  grant,
   receipt,
   act,
 }: {
-  /**
-   * The grant. Named in full rather than `offer` because the store's offer hangs off it as
-   * `campaignOffer.offer`, and one word for both would make this file unreadable.
-   */
-  campaignOffer: CampaignOffer;
+  /** The grant; the provider's offer hangs off it as `grant.offer`. */
+  grant: OfferGrant;
   /** What the last claim on this row moved, if there was one this session. */
   receipt?: OfferReceipt;
   /**
@@ -52,9 +50,9 @@ export default function OfferCard({
    */
   act?: () => Promise<string>;
 }) {
-  const { offer } = campaignOffer;
-  const isClaimableState = campaignOffer.state === 'Granted';
-  const free = isFree(campaignOffer);
+  const { offer } = grant;
+  const isClaimableState = grant.state === 'Granted';
+  const free = isFree(grant);
   // One source now, not a fallback chain: the price lives on the offer, beside what it pays out.
   const priceLabel = offer?.priceLabel || (free ? 'Free' : '');
   // No embedded offer means an unknown price, so neither "Buy" nor "free" would be honest.
@@ -66,17 +64,17 @@ export default function OfferCard({
 
   return (
     <View style={styles.card}>
-      <Text style={styles.state}>{describeState(campaignOffer.state)}</Text>
+      <Text style={styles.state}>{describeState(grant.state)}</Text>
 
       {offer ? (
         <>
-          <Text style={styles.title}>{offer.title || campaignOffer.offerId}</Text>
+          <Text style={styles.title}>{offer.title || grant.offerId}</Text>
           {!!offer.description && <Text style={styles.description}>{offer.description}</Text>}
         </>
       ) : (
         // The contract allows a null offer. Show the identifier as an identifier — never dress an
         // opaque id up as a name.
-        <Text style={styles.titleFallback}>Offer {campaignOffer.offerId || '—'}</Text>
+        <Text style={styles.titleFallback}>Offer {grant.offerId || '—'}</Text>
       )}
 
       {!!priceLabel && <Text style={styles.price}>{priceLabel}</Text>}
@@ -105,21 +103,26 @@ export default function OfferCard({
       )}
 
       {/* Distinct from state: a granted grant can still be unactionable. */}
-      {!campaignOffer.available && campaignOffer.reasons.length > 0 && (
+      {!grant.available && grant.reasons.length > 0 && (
         <View style={styles.reasons}>
-          {campaignOffer.reasons.map((reason, i) => (
-            <Text key={`${reason.code}:${i}`} style={styles.reason}>
-              {reason.message || reason.code}
-              {reason.detail ? ` (${reason.detail})` : ''}
-            </Text>
-          ))}
+          {grant.reasons.map((reason, i) => {
+            const progress = describeProgress(reason);
+            return (
+              <Text key={`${reason.code}:${i}`} style={styles.reason}>
+                {reason.message || reason.code}
+                {reason.detail ? ` (${reason.detail})` : ''}
+                {progress ? ` · ${progress}` : ''}
+              </Text>
+            );
+          })}
         </View>
       )}
 
-      <Value label="offer">{campaignOffer.offerId || '—'}</Value>
-      <Value label="grant">{campaignOffer.grantId}</Value>
+      <Value label="provider">{grant.federationId || '—'}</Value>
+      <Value label="offer">{grant.offerId || '—'}</Value>
+      <Value label="grant">{grant.grantId}</Value>
       <Text style={styles.meta}>
-        granted {formatWhen(campaignOffer.grantedAt)} · {formatExpiry(campaignOffer.expiresAt)}
+        granted {formatWhen(grant.grantedAt)} · {formatExpiry(grant.expiresAt)}
       </Text>
 
       {/* The store's own fields, rendered generically. This is the only thing that makes the
@@ -135,7 +138,7 @@ export default function OfferCard({
           say which, and the row stays: the gate is re-checked on every read, so this unlocks by
           itself once the player qualifies. Saying that is the difference between "not yet" and
           "not for you". */}
-      {!act && isClaimableState && !campaignOffer.available && (
+      {!act && isClaimableState && !grant.available && (
         <Hint>
           You cannot claim this yet. It unlocks on its own once you meet the requirements above —
           no need to wait for another message.

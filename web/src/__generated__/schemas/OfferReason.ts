@@ -3,7 +3,9 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type CampaignOfferRedeemPayload = { 
-  params?: Record<string, string>; 
-  transactionId?: string | null; 
+export type OfferReason = { 
+  code: string; 
+  detail?: string | null; 
+  message?: string; 
+  properties?: Record<string, string>; 
 };

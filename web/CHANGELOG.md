@@ -2,6 +2,21 @@
 
 ### Breaking
 
+- **Offers are Beamable's, not a provider's.** `CampaignOfferService` (`beam.campaignOffer`) becomes
+  `OffersService` (`beam.offers`), over the `/api/offers` routes:
+  - `getOffers({ states?, federationId?, cursor? })` lists every provider's offers in one call, newest
+    first, a page at a time (`next` → `cursor`). By default it returns what the player can still use,
+    `Granted` and `Claiming`; ask for `Redeemed`, `Revoked` or `Expired` to read history.
+  - `redeem(grantId, params?)` needs only the grant id. There is no transaction id: a redeem asked again
+    is the same delivery, never a second one. Retry on `status: 'pending'` (it replaces
+    `purchase-pending`). `RedeemOfferOptions` is removed with its `transactionId`; `params` is the
+    second positional argument.
+  - `CampaignOfferFederationId` becomes `OfferFederationId`.
+  - `CampaignOffer*` schemas become `PlayerOffer`, `PlayerOffersPage`, `RedeemOfferResult`,
+    `OfferItem`, `OfferAmount`, `OfferReason` and `OfferText`; `CampaignOfferState` becomes the
+    `OfferGrantState` enum; `RedeemCampaignOfferRequest` becomes `RedeemOfferRequest`.
+  - The federation type is `IFederatedVirtualOffer` (was `IFederatedCampaignVirtualOffer`).
+
 - **The campaign `Conditional` node is gone, and `AnalyticsGate` replaces it.** `NodeKind.Conditional`,
   `ConditionalBodyDto`, `ConditionDto` and `ConditionKind` are removed, and `NodeBodyDto.conditional`
   becomes `NodeBodyDto.analyticsGate` (`AnalyticsGateBodyDto { filter, observePid, maxWaitMs? }`).

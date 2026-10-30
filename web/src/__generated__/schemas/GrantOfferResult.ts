@@ -3,9 +3,10 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type CampaignOfferRedeemResponse = { 
-  grantId?: string; 
+export type GrantOfferResult = { 
+  grantId: string; 
   message?: string | null; 
+  retriable?: boolean; 
   status?: string | null; 
   success?: boolean; 
 };
