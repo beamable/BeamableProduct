@@ -72,6 +72,10 @@ public class LocalStackRunEntry
 	/// <c>compose down -v</c>, which also deletes the containers' volumes and so the local database).</summary>
 	public string purgeStopArguments;
 
+	/// <summary>Environment the stop reversal runs with: the step's own, recorded only for steps that have a
+	/// reversal (e.g. a compose override that won't parse without its variables).</summary>
+	public Dictionary<string, string> environment;
+
 	/// <summary>True for run-to-completion steps (e.g. <c>docker compose up -d</c>): their <see cref="pid"/>
 	/// is expected to be dead; liveness is not judged by it.</summary>
 	public bool waitForExit;
