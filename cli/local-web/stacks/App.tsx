@@ -245,6 +245,8 @@ export default function App() {
   const grafana = running ? status?.grafana ?? null : null
   const operation = status?.operation ?? null
   const operationBusy = operation != null && !operation.finished
+  // Stop ends whatever else runs first; only a stop already running holds it.
+  const stopping = operationBusy && operation?.op === 'stop'
 
   // A finished start/stop changes what is listed as running.
   const lastOperation = useRef<string>('')
@@ -663,6 +665,12 @@ export default function App() {
                         ? `${operation.succeeded ? 'finished' : `failed, exit ${operation.exitCode}`} after ${Math.round((operation.finishedAt - operation.startedAt) / 1000)}s`
                         : `running for ${Math.round((Date.now() - operation.startedAt) / 1000)}s…`}
                     </span>
+                    {/* Before the stack shows below there is no other Stop: this one ends the start too. */}
+                    {!operation.finished && operation.op === 'run' && !running && (
+                      <BeamButton size="small" appearance="outlined" onClick={() => act('Stopping', () => stopStack(false))}>
+                        <BeamIcon slot="start" name="stop" /> Stop
+                      </BeamButton>
+                    )}
                   </span>
                   {operation.output.length > 0 && (
                     <FollowLog lines={operation.output} style={{ maxHeight: '14rem' }} />
@@ -693,10 +701,10 @@ export default function App() {
                         <BeamIcon slot="start" name="chart-line" /> Logs in Grafana
                       </BeamButton>
                     )}
-                    <BeamButton size="small" appearance="outlined" disabled={operationBusy} onClick={() => act('Stopping', () => stopStack(false))}>
+                    <BeamButton size="small" appearance="outlined" disabled={stopping} onClick={() => act('Stopping', () => stopStack(false))}>
                       <BeamIcon slot="start" name="stop" /> Stop
                     </BeamButton>
-                    <BeamButton size="small" variant="danger" appearance="outlined" disabled={operationBusy} onClick={() => setPurgeAsk(true)}>
+                    <BeamButton size="small" variant="danger" appearance="outlined" disabled={stopping} onClick={() => setPurgeAsk(true)}>
                       Stop &amp; purge
                     </BeamButton>
                   </span>

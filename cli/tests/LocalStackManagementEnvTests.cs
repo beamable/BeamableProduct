@@ -1,4 +1,7 @@
+using System;
 using System.IO;
+using System.Threading;
+using cli.Commands.LocalStack;
 using cli.Services.LocalStack;
 using NUnit.Framework;
 
@@ -79,5 +82,38 @@ public class LocalStackManagementEnvTests
 	public void PortalConfigIsASelectableStep()
 	{
 		Assert.That(ToolchainPins.AllStepIds, Contains.Item(ToolchainPins.PortalConfig));
+	}
+
+	[Test]
+	public void OperationFinishesWhileAProcessItLeftRunningHoldsItsOutput()
+	{
+		// `beam local run --detach` exits and leaves the steps running, with the operation's output pipes inherited.
+		var (exe, args) = OperatingSystem.IsWindows()
+			? ("cmd.exe", new[] { "/c", "start /b ping -n 20 127.0.0.1 & echo done" })
+			: ("/bin/sh", new[] { "-c", "sleep 20 & echo done" });
+		var operation = LocalStackManagementOperation.Start("run", exe, args, null, "test");
+
+		var deadline = DateTime.UtcNow.AddSeconds(10);
+		while (!operation.finished && DateTime.UtcNow < deadline) Thread.Sleep(100);
+
+		Assert.That(operation.finished, Is.True);
+		Assert.That(operation.exitCode, Is.EqualTo(0));
+	}
+
+	[Test]
+	public void CancelEndsAnOperationStillRunning()
+	{
+		// What Stop does to a `beam local run` that is still starting the stack.
+		var (exe, args) = OperatingSystem.IsWindows()
+			? ("cmd.exe", new[] { "/c", "ping -n 60 127.0.0.1" })
+			: ("/bin/sh", new[] { "-c", "sleep 60" });
+		var operation = LocalStackManagementOperation.Start("run", exe, args, null, "test");
+
+		operation.Cancel();
+		var deadline = DateTime.UtcNow.AddSeconds(10);
+		while (!operation.finished && DateTime.UtcNow < deadline) Thread.Sleep(100);
+
+		Assert.That(operation.finished, Is.True);
+		Assert.That(operation.exitCode, Is.Not.EqualTo(0));
 	}
 }

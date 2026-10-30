@@ -271,7 +271,7 @@ public class LocalStackManagementApi : ILocalWebApi
 				var purge = CliJobRunner.ParseBody(body)["purge"];
 				return StartOperation("stop", purge?.Type == JTokenType.Boolean && purge.Value<bool>()
 					? new[] { "local", "stop", "--purge" }
-					: new[] { "local", "stop" });
+					: new[] { "local", "stop" }, preempt: true);
 			}
 			case ("POST", "steps", 3):
 				return StartOperation(parts[2], StepArgs(parts[1], parts[2]));
@@ -606,13 +606,20 @@ public class LocalStackManagementApi : ILocalWebApi
 		};
 	}
 
-	/// <summary>Runs this CLI as a child process for one stack operation; refused while another one runs.</summary>
-	object StartOperation(string op, string[] commandArgs)
+	/// <summary>
+	/// Runs this CLI as a child process for one stack operation; refused while another one runs, unless
+	/// <paramref name="preempt"/>: then that one is ended first, so a stack can be stopped while it is still starting.
+	/// </summary>
+	object StartOperation(string op, string[] commandArgs, bool preempt = false)
 	{
 		lock (_operationLock)
 		{
 			if (_operation is { finished: false })
-				throw new LocalWebRequestException(409, $"`{_operation.commandLine}` is still running.");
+			{
+				if (!preempt || _operation.op == op)
+					throw new LocalWebRequestException(409, $"`{_operation.commandLine}` is still running.");
+				_operation.Cancel();
+			}
 
 			var (exe, leading) = LocalStackRunCommand.ResolveBeam(_args);
 			// --no-redirect: run this same CLI, not a version the workspace's tool manifest pins. --pretty: readable
@@ -638,6 +645,7 @@ public class LocalStackManagementOperation
 	public int exitCode;
 
 	readonly Queue<string> _output = new();
+	Process _process;
 
 	public static LocalStackManagementOperation Start(string op, string exe, string[] args, string workingDirectory, string commandLine)
 	{
@@ -655,6 +663,7 @@ public class LocalStackManagementOperation
 		psi.Environment[DefaultAppContext.ConsoleWidthVariable] = "1000";
 
 		var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+		operation._process = process;
 		// Without a terminal the CLI writes its result stream (JSON) to stdout and the readable lines to stderr.
 		process.OutputDataReceived += (_, e) =>
 		{
@@ -663,8 +672,9 @@ public class LocalStackManagementOperation
 		process.ErrorDataReceived += (_, e) => operation.Add(e.Data);
 		process.Exited += (_, _) =>
 		{
-			// The last output lines arrive after Exited; WaitForExit() drains them first.
-			process.WaitForExit();
+			// The last output lines arrive after Exited; WaitForExit drains them first. Bounded: the steps `run --detach`
+			// leaves running inherit the output pipes, so they may never reach end of file.
+			process.WaitForExit(TimeSpan.FromSeconds(2));
 			operation.exitCode = process.ExitCode;
 			operation.finishedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 			operation.finished = true;
@@ -674,6 +684,22 @@ public class LocalStackManagementOperation
 		process.BeginOutputReadLine();
 		process.BeginErrorReadLine();
 		return operation;
+	}
+
+	/// <summary>Ends the command and every process it started, and waits a few seconds for it to exit.</summary>
+	public void Cancel()
+	{
+		if (finished) return;
+		Add("Ended by Stop.");
+		try
+		{
+			_process.Kill(entireProcessTree: true);
+			_process.WaitForExit(TimeSpan.FromSeconds(5));
+		}
+		catch (Exception e) when (e is InvalidOperationException or ObjectDisposedException)
+		{
+			// It exited meanwhile.
+		}
 	}
 
 	void Add(string line)
