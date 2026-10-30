@@ -1,8 +1,9 @@
 /**
  * App-specific bindings for the **virtual offer federation** (`IFederatedVirtualOffer`).
  *
- * A campaign lane can attach an offer to the message it sends: the operator authors it in the
- * Portal, Beamable grants it to each recipient as the send goes out, and the player claims it
+ * A player is granted an offer in one of two ways: a campaign lane attaches it to the message it
+ * sends, and Beamable grants it to each recipient as the send goes out; or an operator grants it
+ * directly (`POST /api/offers/grant`). Both land in the same list, and the player claims either
  * here. Which provider the offer comes from is a *federation* — an extension point, not a Beamable
  * feature. Beamable ships three (see `KNOWN_FEDERATIONS`): a store whose offers are bought, a free
  * currency/item reward, and a free badge. A game with its own virtual economy implements the same
@@ -38,6 +39,7 @@ import type { OfferFederationId } from '@beamable/sdk';
 import {
   OfferGrantState,
   type OfferAmount,
+  type OfferReason,
   type PlayerOffer,
 } from '@beamable/sdk/schema';
 import { getBeam } from './beamClient';
@@ -113,22 +115,46 @@ export type Reward = {
   properties: Record<string, string>;
 };
 
-/** Why a campaign offer cannot be acted on. */
-export type Reason = { code: string; message: string; detail: string };
+/**
+ * Why a granted offer cannot be acted on, or why a claim was refused.
+ *
+ * `properties` is the structured form of `message`. For a campaign gate (`condition-unmet`) it
+ * names the requirement that failed — see `describeProgress`.
+ */
+export type Reason = {
+  code: string;
+  message: string;
+  detail: string;
+  properties: Record<string, string>;
+};
 
 /**
- * One campaign offer granted to this player, with the offer the store embedded in it.
+ * A gate's requirement as progress — `level 7 / 10` — from its well-known properties: `attribute`
+ * (the stat the gate reads), `target` (the value it asks for) and `current` (the player's value).
+ * `current` is omitted when the stat is not one the client may see, so it degrades to
+ * `level → 10`. Undefined when the reason names no attribute, and the message is all there is.
+ */
+export function describeProgress(reason: Reason): string | undefined {
+  const { attribute, target, current } = reason.properties;
+  if (!attribute) return undefined;
+  const name = shortSymbol(attribute);
+  if (!target) return name;
+  return current !== undefined ? `${name} ${current} / ${target}` : `${name} → ${target}`;
+}
+
+/**
+ * One offer granted to this player, with the offer the provider embedded in it.
  *
- * This is the app's own model, which is why it takes the good name over the wire's `PlayerOffer`:
- * everything above `offer` is the *grant* (who holds it, from which provider, in what state, until
- * when), and the provider's offer hangs off it.
+ * Named for the grant rather than the wire's `PlayerOffer`: everything above `offer` is the
+ * *grant* (who holds it, from which provider, in what state, until when), and the provider's offer
+ * hangs off it.
  *
- * The store sends the whole offer inline so that listing a player's campaign offers is enough to
+ * The store sends the whole offer inline so that listing a player's offers is enough to
  * render a store screen — there is no second call per row. Every field below `expiresAt` may be
  * absent: the contract allows a provider to omit the offer entirely, and a third-party store
  * legitimately will, so each one has a fallback rather than a guard at the call site.
  */
-export type CampaignOffer = {
+export type OfferGrant = {
   grantId: string;
   /** Which provider made it. Shown, never branched on. */
   federationId: string;
@@ -188,7 +214,7 @@ const MAX_PAGES = 5;
  * soon as it is read, before the backend records it, so the result must not be cached across a
  * session.
  */
-export async function listCampaignOffers(federationId?: OfferFederationId): Promise<CampaignOffer[]> {
+export async function listOffers(federationId?: OfferFederationId): Promise<OfferGrant[]> {
   const held: PlayerOffer[] = [];
   let cursor: string | undefined;
   for (let page = 0; page < MAX_PAGES; page++) {
@@ -216,6 +242,8 @@ export async function listCampaignOffers(federationId?: OfferFederationId): Prom
  * The endpoint answers **200 with `success: false`** for an expired, revoked, already-claimed or
  * unknown grant, or one whose campaign gate is not met yet — a resolved promise is not a success.
  * Throwing the server's own `message` is deliberate: it is the only sentence that says what to fix.
+ * The refusal's `reason` adds the gate's progress when it has one, and its `state` says where the
+ * grant stands now — a refused claim of an expired or revoked grant is final, a gated one is not.
  *
  * The one exception is `pending`: the provider could not tell whether the delivery went through,
  * and the claim is kept open. That is not a refusal — pressing the button again retries the SAME
@@ -228,7 +256,15 @@ export async function claimGrant(grantId: string): Promise<string> {
     throw new Error('Still confirming this claim with the provider — try again in a moment.');
   }
   if (!res.success) {
-    throw new Error(res.message || `The store refused this claim (${res.status ?? 'no status'})`);
+    const reason = res.reason ? normalizeReason(res.reason) : undefined;
+    const progress = reason && describeProgress(reason);
+    const message =
+      res.message || reason?.message || `The store refused this claim (${res.status ?? 'no status'})`;
+    throw new Error(
+      [message, progress && `(${progress})`, res.state && `· ${describeState(res.state)}`]
+        .filter(Boolean)
+        .join(' '),
+    );
   }
   // A repeat claim of a redeemed grant answers success again, so a double-tap is never a failure.
   return res.message || `Claimed ${grantId}`;
@@ -238,7 +274,7 @@ export async function claimGrant(grantId: string): Promise<string> {
  * Only a `Granted` offer can be claimed. A `Claiming` one is a claim still being resolved: claiming it
  * again answers `pending` until it settles. The other states are final.
  */
-export function isClaimable(e: CampaignOffer): boolean {
+export function isClaimable(e: OfferGrant): boolean {
   return e.state === 'Granted';
 }
 
@@ -281,7 +317,7 @@ export function formatWhen(unixSeconds: number): string {
  * Everything the store embeds is defaulted rather than guarded at the call site, so a provider
  * that sends a bare grant renders as an id-only row instead of blanking the screen.
  */
-function normalize(e: PlayerOffer): CampaignOffer {
+function normalize(e: PlayerOffer): OfferGrant {
   return {
     grantId: e.grantId ?? '',
     federationId: e.federationId ?? '',
@@ -304,11 +340,16 @@ function normalize(e: PlayerOffer): CampaignOffer {
         }
       : null,
     available: e.available ?? false,
-    reasons: (e.unavailableReasons ?? []).map((r) => ({
-      code: r.code ?? '',
-      message: r.message ?? '',
-      detail: r.detail ?? '',
-    })),
+    reasons: (e.unavailableReasons ?? []).map(normalizeReason),
+  };
+}
+
+function normalizeReason(r: OfferReason): Reason {
+  return {
+    code: r.code ?? '',
+    message: r.message ?? '',
+    detail: r.detail ?? '',
+    properties: r.properties ?? {},
   };
 }
 
@@ -337,12 +378,12 @@ function shortSymbol(symbol: string): string {
  * this is the Claim-vs-Buy switch — read off the offer, never off the federation id. A grant with
  * no embedded offer is neither: its price is unknown, so the card shows a plain Claim.
  */
-export function isFree(e: CampaignOffer): boolean {
+export function isFree(e: OfferGrant): boolean {
   return !!e.offer && e.offer.cost.length === 0;
 }
 
 /** The badge payouts on an offer — what the screen reads back from stats after a claim. */
-export function badgeRewards(e: CampaignOffer): Reward[] {
+export function badgeRewards(e: OfferGrant): Reward[] {
   return (e.offer?.rewards ?? []).filter((r) => r.type === BADGE_REWARD_TYPE);
 }
 
@@ -372,6 +413,6 @@ export async function readBadgeStat(reward: Reward): Promise<string | undefined>
  * what the card renders, not what the call needs. Requiring it would leave a store that sends no
  * offer with an actionable grant and no way to act on it.
  */
-export function isPurchasable(e: CampaignOffer): boolean {
+export function isPurchasable(e: OfferGrant): boolean {
   return isClaimable(e) && e.available;
 }
