@@ -142,24 +142,10 @@ public class MicroserviceAuthenticationDaemon
 			
 			// Declare a variable we'll use to track if the auth actually completed.
 			var authHappened = false;
-			var failedAttempts = 0;
 			try
 			{
 				while (!authHappened)
 				{
-					if (failedAttempts > 0)
-					{
-						// back off between failed attempts, instead of hammering the gateway.
-						var backoff = TimeSpan.FromMilliseconds(Math.Min(250 * (1 << Math.Min(failedAttempts - 1, 5)), 5000));
-						try
-						{
-							await Task.Delay(backoff, cancellationTokenSource.Token);
-						}
-						catch (OperationCanceledException)
-						{
-							return;
-						}
-					}
 					try
 					{
 						// If we need to run authenticate --- let's do that and reset the counter so that all request tasks waiting for auth get released.
@@ -188,7 +174,6 @@ public class MicroserviceAuthenticationDaemon
 
 					if (!authHappened)
 					{
-						failedAttempts++;
 						BeamableZLoggerProvider.LogContext.Value.LogTrace("Authorization Daemon failed to authenticate. Trying again...");
 					}
 				}
@@ -201,24 +186,17 @@ public class MicroserviceAuthenticationDaemon
 
 			// Wait until all requests that can fail, have actually failed or succeeded by waiting until the number of requests we've attempted since we started the auth process
 			// is the same or above the number of made requests that have been processed.
-			// Every request ends by its deadline, so this wait is bounded; the limit only guards against requests without
-			// a deadline. Reset before each check, so the wait sleeps until the next request finishes instead of spinning
-			// on a handle that a finished request left set.
-			var expectedReqsProcessed = outgoingReqsProcessedAtStart + (outgoingReqsCountAtEnd - outgoingReqsCountAtStart);
-			var drainLimit = DateTime.UtcNow + TimeSpan.FromSeconds(Math.Max(_env.OutboundRequestTimeoutSeconds, 15) + 5);
-			while (true)
+			bool stillProcessingPotentiallyFailedReqs;
+			do
 			{
-				AUTH_THREAD_WAIT_FOR_REQUESTS_TO_FINISH_HANDLE.Reset();
-				var unfinished = expectedReqsProcessed - Interlocked.Read(ref _OutgoingRequestProcessedCounter);
-				if (unfinished <= 0) break;
-				if (DateTime.UtcNow > drainLimit)
-				{
-					BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"Authorization Daemon stopped waiting for {unfinished} request(s) sent during authentication to finish.");
-					break;
-				}
+				var expectedReqsProcessed = outgoingReqsProcessedAtStart + (outgoingReqsCountAtEnd - outgoingReqsCountAtStart);
+				stillProcessingPotentiallyFailedReqs = expectedReqsProcessed > Interlocked.Read(ref _OutgoingRequestProcessedCounter);
+				
+				//
+				AUTH_THREAD_WAIT_FOR_REQUESTS_TO_FINISH_HANDLE.WaitOne();
+			} while (stillProcessingPotentiallyFailedReqs);
 
-				AUTH_THREAD_WAIT_FOR_REQUESTS_TO_FINISH_HANDLE.WaitOne(TimeSpan.FromMilliseconds(500));
-			}
+			AUTH_THREAD_WAIT_FOR_REQUESTS_TO_FINISH_HANDLE.Reset();
 
 			{
 				// This solves an extremely unlikely race condition

@@ -12,19 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Services.Secrets` for realm and zone microservices: get, set, delete and list secrets in the service's own scope (the realm's secrets in a `Microservice`, the zone's in a `ZoneMicroservice`). From a zone service, `AssumeRealm(pid).Services.Secrets` reaches that realm's secrets.
 - `Services.Auth.BatchAccounts(request)` looks up many players in one call. It can narrow them by a stat filter, and returns each remaining player's account and the requested stat values, in each stat's own type. The request and response are the generated `AuthV2BatchAccountsRequest` and `AuthV2BatchAccountsResponse`; `BatchAccountsHelper` builds the filter, criteria and stats to request, and its `GetStat` extension reads a value back as text. Requests over 500 players are paged automatically.
 - The generated `IBeamAuthApi` has `PostBatch` for the `POST /api/accounts/batch` endpoint.
-- Outbound platform requests time out after `BEAM_OUTBOUND_REQUEST_TIMEOUT_SECONDS` (default 30, `0` disables). Use `MicroserviceRequester.OverrideReplyTimeout(...)` for longer calls.
-- Websocket health checks: `WS_SEND_TIMEOUT_SECONDS` (default 30) for blocked sends, and `WS_STALL_TIMEOUT_SECONDS` (default 60) for connections that stop answering. `WS_KEEPALIVE_TIMEOUT_SECONDS` enables ping/pong keep-alive on .NET 9+ (off by default).
-- `BEAM_SOCKET_RELIABILITY_ENFORCE=true` makes timeouts fail with `RequestTimeoutException` and replaces broken connections. Off by default: these checks only log a warning and record a metric.
-- `beam.ws.*` metrics for timed-out, pending and connection-lost requests, and for unhealthy connections.
 
 ### Fixed
-- A request whose reply never arrives no longer waits forever, and a dropped connection fails the requests sent on it.
-- Replies no longer wait for re-authentication, and are only sent on the connection their request came from.
-- The authentication daemon no longer stalls when a `gateway/nonce` or `gateway/auth` reply is lost.
-- A session the gateway keeps rejecting after re-authentication is no longer retried forever.
-- A failed or blocked websocket send now closes the connection and reconnects, instead of silently stalling it. Shutdown no longer hangs on a blocked send.
-- Content, realm config and other realm-wide requests and events keep working when the first instance's connection breaks.
-- Faulted background tasks are logged.
 - Generate valid OpenAPI component keys and references for tuple callable types, while preserving C# type metadata. Invalid generated schemas now report their validation errors directly.
 - Content downloads no longer fail when `HOST` is more than one label under `beamable.com` (for example `wss://dev.ms-local.beamable.com/socket`) or includes a port. The content host check now parses `HOST` as a URI, and any `HOST` under `beamable.com` accepts content from `*.beamable.com`.
 
