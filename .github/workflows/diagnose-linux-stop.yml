@@ -1,10 +1,11 @@
-name: Diagnose Linux command shutdown
+name: Diagnose Linux discovery during shutdown
 
 on:
   push:
     branches: [codex/diagnose-linux-stop-20261030]
 
 permissions:
+  actions: read
   contents: read
   packages: read
   checks: write
@@ -49,24 +50,6 @@ jobs:
           - server: inprocess
             scope: single
             filter: Beamable.Editor.Tests.BeamWebCommandStopTests.StalledAcknowledgementTimesOutAndCanRetry
-            projectPath: client
-            unityVersion: 2021.3.29f1
-            testMode: editmode
-          - server: external
-            scope: single
-            filter: Beamable.Editor.Tests.BeamWebCommandStopTests.StalledAcknowledgementTimesOutAndCanRetry
-            projectPath: client
-            unityVersion: 2021.3.29f1
-            testMode: editmode
-          - server: inprocess
-            scope: class
-            filter: Beamable.Editor.Tests.BeamWebCommandStopTests
-            projectPath: client
-            unityVersion: 2021.3.29f1
-            testMode: editmode
-          - server: external
-            scope: class
-            filter: Beamable.Editor.Tests.BeamWebCommandStopTests
             projectPath: client
             unityVersion: 2021.3.29f1
             testMode: editmode
@@ -165,6 +148,20 @@ jobs:
           large-packages: true
           docker-images: true
           swap-storage: true
+      - name: Wait for the original four comparisons
+        timeout-minutes: 16
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for attempt in {1..60}; do
+            status=$(curl --fail --silent --show-error -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/41017622235" | jq -r .status)
+            echo "Original comparison run: $status"
+            if [ "$status" = completed ]; then exit 0; fi
+            sleep 15
+          done
+          echo "Original comparisons are still active; leaving their Unity execution isolated."
+          exit 1
       - name: Native Linux Unity comparison
         id: probe
         continue-on-error: true

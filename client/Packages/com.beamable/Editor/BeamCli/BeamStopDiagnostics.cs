@@ -27,6 +27,49 @@ namespace Beamable.Editor.BeamCli
         private volatile bool _hasToken;
         private int _disposed;
 
+        private static readonly ConcurrentQueue<string> FactoryLines = new ConcurrentQueue<string>();
+        private static string _factoryPath;
+        private static Timer _factoryTimer;
+        private static int _factoryWriting;
+        private static bool _factoryInitialized;
+
+        internal static void Factory(BeamWebCommandFactory factory, string phase, Func<string> describe)
+        {
+            try
+            {
+                if (!_factoryInitialized)
+                {
+                    _factoryInitialized = true;
+                    var marker = Path.Combine(Directory.GetCurrentDirectory(), "beam-stop-probe-mode.txt");
+                    if (!File.Exists(marker)) return;
+                    var directory = Path.Combine(Directory.GetCurrentDirectory(), "diagnostic-output", File.ReadAllText(marker).Trim());
+                    Directory.CreateDirectory(directory);
+                    _factoryPath = Path.Combine(directory, "factory.log");
+                    _factoryTimer = new Timer(_ => FlushFactory(), null, 250, 250);
+                }
+                if (_factoryPath == null) return;
+                ThreadPool.GetAvailableThreads(out var workers, out var io);
+                ThreadPool.GetMinThreads(out var minimum, out var minimumIo);
+                ThreadPool.GetMaxThreads(out var maximum, out var maximumIo);
+                FactoryLines.Enqueue(DateTime.UtcNow.ToString("O") + " factory=" + RuntimeHelpers.GetHashCode(factory)
+                    + " thread=" + Thread.CurrentThread.ManagedThreadId + " phase=" + phase
+                    + " workerHeadroom=" + workers + " workerMin=" + minimum + " workerMax=" + maximum
+                    + " " + describe() + System.Environment.NewLine);
+            }
+            catch { /* Observations must not change discovery results. */ }
+        }
+
+        private static void FlushFactory()
+        {
+            if (Interlocked.Exchange(ref _factoryWriting, 1) != 0) return;
+            try
+            {
+                while (FactoryLines.TryDequeue(out var line)) File.AppendAllText(_factoryPath, line);
+            }
+            catch { }
+            finally { Volatile.Write(ref _factoryWriting, 0); }
+        }
+
         internal static BeamStopDiagnostics Begin(string commandId)
         {
             try

@@ -64,3 +64,21 @@ Server protocol checks passed 4/4 on both Windows and native Linux, including
 observation ordering. Workflow structure and all 10 inline shell scripts were
 checked; the GitHub workflow itself has not run. Windows results cannot substitute
 for the native Linux Unity comparison.
+
+## Follow-up: observe real factory discovery
+
+The original four-case experiment is run 41017622235 at `eddcfd6c3`.
+Both isolated native Linux cases failed, with delayed worker execution; the
+external case did not reach shutdown. The current workflow narrows the follow-up
+to the original in-process single test and adds passive real-factory logging.
+It does not change the expected version, comparisons, discovery decisions,
+process lifetime, test assertions or timing limits.
+
+`factory.log` records expected/returned version, override/ignore flags, owner
+comparison, ping result, launched child PID and tracked child count, plus worker
+minimum/maximum/headroom. This checks whether CI's `0.0.123.1` SDK expectation
+rejects the CLI's normalized `0.0.123` reply and repeatedly launches servers.
+This mismatch and discovery behavior predate the stack; causality is not yet
+confirmed. The local Windows harness uses matching `0.0.123` values and passes
+16/16 with this additional trace. Its real factory launches one server and
+accepts it, illustrating another difference from the CI environment.

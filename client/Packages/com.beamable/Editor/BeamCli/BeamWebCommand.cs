@@ -107,6 +107,7 @@ namespace Beamable.Editor.BeamCli
 			processCommands = new BeamCommands(processFactory, beamCli);
 			_options.port = _options.startPortOverride.GetOrElse(8432);
 
+			BeamStopDiagnostics.Factory(this, "constructed", () => "port=" + port + " override=" + _options.versionOverride.GetOrElse("<unset>"));
 			dispatcher.Run("cli-server-discovery", ServerDiscoveryLoop());
 		}
 		
@@ -291,6 +292,7 @@ namespace Beamable.Editor.BeamCli
 			_serverCommand.OnStreamServeCliCommandOutput(data =>
 			{
 				port = data.data.port;
+				BeamStopDiagnostics.Factory(this, "server-ready", () => "port=" + port);
 							
 				_history.AddServerEvent(new BeamCliServerEvent
 				{
@@ -312,6 +314,7 @@ namespace Beamable.Editor.BeamCli
 				message = $"starting server on port=[{args.port}]"
 			});
 			var _ = _serverCommand.Run();
+			BeamStopDiagnostics.Factory(this, "server-launched", () => "port=" + port + " childPid=" + ((BeamCommand)_serverCommand.Command).process.Id + " trackedChildren=" + processFactory.PidCollection.pids.Count + " trackedPids=" + string.Join(",", processFactory.PidCollection.pids));
 			await waitForResult;
 		}
 
@@ -325,6 +328,7 @@ namespace Beamable.Editor.BeamCli
 			
 			op.completed += operation =>
 			{
+				BeamStopDiagnostics.Factory(this, "ping-response", () => "port=" + port + " status=" + req.responseCode);
 				if (req.responseCode != 200)
 				{
 					pingResult = PingResult.NoServer;
@@ -337,6 +341,7 @@ namespace Beamable.Editor.BeamCli
 
 				var ownerMatches = String.Equals(res.owner, Owner, StringComparison.OrdinalIgnoreCase);
 				var versionMatches = EditorConfiguration.Instance.IgnoreCliVersionRequirement || res.version == Version;
+				BeamStopDiagnostics.Factory(this, "ping-contract", () => "port=" + port + " expectedVersion=" + Version + " returnedVersion=" + res.version + " versionMatches=" + versionMatches + " ownerMatches=" + ownerMatches + " ignoreVersion=" + EditorConfiguration.Instance.IgnoreCliVersionRequirement + " override=" + _options.versionOverride.GetOrElse("<unset>") + " returnedPid=" + res.pid);
 
 				_history.SetLatestServerPing(port, InfoUrl, res, ownerMatches, versionMatches);
 
@@ -376,6 +381,7 @@ namespace Beamable.Editor.BeamCli
 			};
 			await p;
 			
+			BeamStopDiagnostics.Factory(this, "ping-result", () => "port=" + port + " result=" + pingResult);
 			return _history.SetLatestServerPingResult(pingResult);
 		}
 		
