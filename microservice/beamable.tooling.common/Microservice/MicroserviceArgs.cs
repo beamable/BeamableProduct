@@ -44,6 +44,11 @@ namespace Beamable.Server
 		public int SendChunkSize { get; set; }
 		public int BeamInstanceCount { get; set; }
 		public int RequestCancellationTimeoutSeconds { get; set; }
+		public int OutboundRequestTimeoutSeconds { get; set; }
+		public int SocketSendTimeoutSeconds { get; set; }
+		public int SocketStallTimeoutSeconds { get; set; }
+		public int WebSocketKeepAliveTimeoutSeconds { get; set; }
+		public bool EnforceSocketReliability { get; set; }
 		public LogOutputType LogOutputType { get; set; }
 		public string LogOutputPath { get; set; }
 		public bool EnableDangerousDeflateOptions { get; set; }
@@ -109,6 +114,11 @@ namespace Beamable.Server
 				RateLimitCPUOffset = args.RateLimitCPUOffset,
 				BeamInstanceCount = args.BeamInstanceCount,
 				RequestCancellationTimeoutSeconds = args.RequestCancellationTimeoutSeconds,
+				OutboundRequestTimeoutSeconds = args.OutboundRequestTimeoutSeconds,
+				SocketSendTimeoutSeconds = args.SocketSendTimeoutSeconds,
+				SocketStallTimeoutSeconds = args.SocketStallTimeoutSeconds,
+				WebSocketKeepAliveTimeoutSeconds = args.WebSocketKeepAliveTimeoutSeconds,
+				EnforceSocketReliability = args.EnforceSocketReliability,
 				HealthPort = args.HealthPort,
 				LogOutputType = args.LogOutputType,
 				LogOutputPath = args.LogOutputPath,
@@ -242,6 +252,23 @@ namespace Beamable.Server
 			IsEnvironmentVariableTrue("DISABLE_CUSTOM_INITIALIZATION_HOOKS");
 
 		public int RequestCancellationTimeoutSeconds => GetIntFromEnvironmentVariable("REQUEST_TIMEOUT_SECONDS", 10);
+
+		public int OutboundRequestTimeoutSeconds => GetSecondsFromEnvironmentVariable("BEAM_OUTBOUND_REQUEST_TIMEOUT_SECONDS", 30);
+		public int SocketSendTimeoutSeconds => GetSecondsFromEnvironmentVariable("WS_SEND_TIMEOUT_SECONDS", 30);
+		public int SocketStallTimeoutSeconds => GetSecondsFromEnvironmentVariable("WS_STALL_TIMEOUT_SECONDS", 60);
+		public int WebSocketKeepAliveTimeoutSeconds => GetSecondsFromEnvironmentVariable("WS_KEEPALIVE_TIMEOUT_SECONDS", 0);
+		public bool EnforceSocketReliability => IsEnvironmentVariableTrue("BEAM_SOCKET_RELIABILITY_ENFORCE");
+
+		/// <summary>
+		/// A duration in whole seconds, where 0 turns the feature off. Values that don't parse, or are negative, fall back
+		/// to the default; values above an hour are capped at an hour.
+		/// </summary>
+		static int GetSecondsFromEnvironmentVariable(string key, int defaultValue)
+		{
+			var val = GetIntFromEnvironmentVariable(key, defaultValue);
+			if (val < 0) return defaultValue;
+			return Math.Min(val, 3600);
+		}
 
 		public LogOutputType LogOutputType
 		{

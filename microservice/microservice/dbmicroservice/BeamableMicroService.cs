@@ -184,7 +184,12 @@ namespace Beamable.Server
          _serviceAttribute = startupContext.attributes;
          _adminPrefix = _serviceAttribute.GetQualifiedName() + "/admin/";
 
-         _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
+         _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise)
+         {
+	         Name = ConnectionId,
+	         Reliability = SocketReliabilityOptions.From(args)
+         };
+         _socketRequesterContext.ConnectionUnhealthy += ReplaceUnhealthyConnection;
          InstanceArgs = args.Copy(conf =>
          {
 	         conf.ServiceScope = conf.ServiceScope.Fork(builder =>
@@ -307,7 +312,14 @@ namespace Beamable.Server
             Log.Debug("Waiting up to {shutdownTimeLimit} seconds for tasks to complete.", secondsLeft);
             var pendingTasks = _runningTaskTable.Values.ToArray();
             var startedWaitingAt = sw.ElapsedMilliseconds;
-            Task.WaitAll(pendingTasks, TimeSpan.FromMilliseconds(millisecondsLeft));
+            try
+            {
+               Task.WaitAll(pendingTasks, TimeSpan.FromMilliseconds(millisecondsLeft));
+            }
+            catch (AggregateException)
+            {
+               // a task that failed has still finished; MonitorTask logged its error.
+            }
             /* we need to wait a minimum number of moments in this loop so we don't exhaust the task cycle.
              What can happen is that all the tasks are DONE, so, the WaitAll completes. However, the task hasn't removed itself from the _runningTaskTable yet,
              because its continuation hasn't been executed. And then, if that happens, we enter a scenario where this method just loops and loops, and since the Task.WaitAll
@@ -331,6 +343,12 @@ namespace Beamable.Server
          // stop the daemon from trying to re-authenticate
          _socketRequesterContext.Daemon.KillAuthThread();
          await _socketDaemen;
+
+         // nothing will answer requests still waiting for a reply.
+         _socketRequesterContext.FailAllPending(new SocketClosedException(new List<Exception>
+         {
+	         new Exception("The service shut down before the reply arrived.")
+         }));
 
          // close the connection itself
          await _connection.Close();
@@ -376,6 +394,12 @@ namespace Beamable.Server
                bool BakingDisabled(RealmConfig settings) =>
                   bool.TryParse(settings.GetSetting(ContentService.BakeConfigNamespace, ContentService.BakeDisableKey), out var disabled) && disabled;
                contentService.ConfigureBakedContent(InstanceArgs.CustomerID, InstanceArgs.ProjectName, !BakingDisabled(config));
+               if (_ranCustomUserInitializationHooks && _startupContext?.services?.Count > 0 &&
+                   ReferenceEquals(_startupContext.services[0].SocketContext, _socketRequesterContext))
+               {
+                  // A content publish while this connection was down was not seen here; refresh what's loaded.
+                  contentService.RefreshLoadedManifests();
+               }
                if (!_ranCustomUserInitializationHooks && realmService is RealmConfigService concrete)
                {
                   concrete.ConfigChanged += updated => contentService.ConfigureBakedContent(
@@ -705,6 +729,37 @@ namespace Beamable.Server
       }
 
 
+      /// <summary>
+      /// A reply goes to this connection's pending request, and most events to this instance's subscriptions. The
+      /// platform's realm-wide events (content, realm config, logging context) are handled by subscriptions on the first
+      /// instance's context. Every connection receives them, so they must run once, and must still run when the first
+      /// instance's connection broke: with the gateway's message id, the first instance to receive the event runs them and
+      /// the first instance's context skips repeats; without one, only the primary (first healthy) instance does.
+      /// </summary>
+      private async Task DispatchPlatformMessage(MicroserviceRequestContext ctx, BeamActivity activity)
+      {
+	      var services = _startupContext?.services;
+	      var root = services?.Count > 0 ? services[0].SocketContext : null;
+	      var isRealmWideEvent = ctx.IsEvent &&
+	                             Array.IndexOf(MicroserviceRequester.DefaultEventNames, ctx.Path.Substring("event/".Length)) >= 0;
+	      if (!isRealmWideEvent || root == null)
+	      {
+		      await _socketRequesterContext.HandleMessage(Provider, ctx, activity);
+		      return;
+	      }
+
+	      if (!ReferenceEquals(root, _socketRequesterContext))
+	      {
+		      await _socketRequesterContext.HandleMessage(Provider, ctx, activity);
+	      }
+
+	      var hasMessageId = ctx.Headers != null && ctx.Headers.TryGetValue("msgId", out var messageId) && !string.IsNullOrEmpty(messageId);
+	      if (hasMessageId || ReferenceEquals(SocketContextSelector.SelectHealthy(services), _socketRequesterContext))
+	      {
+		      await root.HandleMessage(Provider, ctx, activity);
+	      }
+      }
+
       async Task HandlePlatformMessage(MicroserviceRequestContext ctx, BeamActivity activity)
       {
 	      // using var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_WS_BEAM, parentActivity);
@@ -712,7 +767,7 @@ namespace Beamable.Server
 	      
 	      try
 	      {
-		      await _socketRequesterContext.HandleMessage(Provider, ctx, activity);
+		      await DispatchPlatformMessage(ctx, activity);
 		      await _requester.Acknowledge(ctx);
 		      activity.SetStatus(ActivityStatusCode.Ok);
 	      }
@@ -731,7 +786,23 @@ namespace Beamable.Server
 	      }
       }
       
-      async Task HandleClientMessage(MicroserviceRequestContext ctx, Stopwatch sw, BeamActivity activity)
+      /// <summary>
+      /// Sends a reply on the connection its request arrived on. A reply that can't be sent is logged by
+      /// <see cref="SocketRequesterContext.SendReply"/>; the request is lost either way, so the failure goes no further.
+      /// </summary>
+      private async Task SendReplyOrDrop(IConnection origin, string json, Stopwatch sw)
+      {
+	      try
+	      {
+		      await _socketRequesterContext.SendReply(origin, json, sw);
+	      }
+	      catch (Exception)
+	      {
+		      // already logged.
+	      }
+      }
+
+      async Task HandleClientMessage(MicroserviceRequestContext ctx, Stopwatch sw, BeamActivity activity, IConnection origin)
       {
 	      // using var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_WS_CLIENT,
 		     //  parentActivity);
@@ -750,7 +821,7 @@ namespace Beamable.Server
 		      var parameterProvider = new AdaptiveParameterProvider(ctx);
 		      var responseJson = await ServiceMethods.Handle(ctx, route, parameterProvider, activity);
 		      BeamableZLoggerProvider.LogContext.Value.LogTrace("Responding with " + responseJson);
-		      await _socketRequesterContext.SendMessageSafely(responseJson, sw: sw);
+		      await SendReplyOrDrop(origin, responseJson, sw);
 
 		      activity.SetStatus(ActivityStatusCode.Ok);
 		      // TODO: Kill Scope
@@ -771,7 +842,7 @@ namespace Beamable.Server
 		      BeamableZLoggerProvider.LogContext.Value.LogError("Exception {exception.type}: {exception.message} - {source} {json} \n {exception.stacktrace}",
 			      ex.GetType().Name, ex.Message,
 			      ex.Source, failResponseJson, ex.StackTrace);
-		      await _socketRequesterContext.SendMessageSafely(failResponseJson, sw: sw);
+		      await SendReplyOrDrop(origin, failResponseJson, sw);
 	      }
 	      catch (TargetInvocationException ex)
 	      {
@@ -818,7 +889,7 @@ namespace Beamable.Server
 				      inner.Source, inner.StackTrace);
 		      }
 
-		      await _socketRequesterContext.SendMessageSafely(failResponseJson, sw: sw);
+		      await SendReplyOrDrop(origin, failResponseJson, sw);
 	      }
 	      catch (Exception ex) // TODO: Catch a general PlatformException type sort of thing.
 	      {
@@ -840,7 +911,7 @@ namespace Beamable.Server
 			      }
 		      };
 		      var failResponseJson = JsonConvert.SerializeObject(failResponse);
-		      await _socketRequesterContext.SendMessageSafely(failResponseJson, sw: sw);
+		      await SendReplyOrDrop(origin, failResponseJson, sw);
 	      }
 	      finally
 	      {
@@ -996,7 +1067,7 @@ namespace Beamable.Server
 		      else
 		      {
 			      // this is a client request. Handle the service method.
-			      await HandleClientMessage(ctx, sw, activity);
+			      await HandleClientMessage(ctx, sw, activity, ws);
 		      }
 
 		      // activity.SetStatus(ActivityStatusCode.Ok);
@@ -1043,9 +1114,32 @@ namespace Beamable.Server
       public Type MicroserviceType { get; private set; }
 
 
+      /// <summary>
+      /// Replaces a connection a health check judged broken: aborting it runs the disconnect path, which reconnects.
+      /// </summary>
+      private void ReplaceUnhealthyConnection(IConnection connection, string reason)
+      {
+         if (IsShuttingDown || !ReferenceEquals(connection, _connection)) return;
+         Log.Warning("Replacing the websocket connection {connectionId}: {reason}", ConnectionId, reason);
+         connection.Abort(reason);
+      }
+
       private async Task CloseConnection(IConnection ws, bool wasClean)
       {
          Log.Debug("Closing socket connection... clean=[{clean}] isShuttingDown=[{shuttingDown}]", wasClean, IsShuttingDown);
+         if (!ReferenceEquals(ws, _connection))
+         {
+            Log.Debug("Ignoring the disconnect of a connection that was already replaced.");
+            return;
+         }
+
+         // The gateway can only answer a request on the connection it arrived on, so requests sent on this one fail now
+         // instead of waiting for their deadline. Requests not sent yet go out on the replacement.
+         _socketRequesterContext.FailPendingFor(ws, new SocketClosedException(new List<Exception>
+         {
+            new Exception($"The connection closed before the reply arrived. clean=[{wasClean}]")
+         }));
+
          if (!IsShuttingDown)
          {
             Log.Debug("ws connection dropped...");
