@@ -179,7 +179,7 @@ deployment and re-run codegen.
 
 ### Prebuilt binaries
 
-The Android `.aar` is rebuilt and restaged by `./dev-native.sh`. The iOS xcframeworks under
+The Android `.aar` is rebuilt and restaged by `beam local run native-libs`. The iOS xcframeworks under
 `Unity/Plugins/iOS` and `Unity.Web/Plugins/iOS` are built on macOS; their `.swiftinterface` /
 `.abi.json` files still carry the old literals until they are rebuilt, and are never hand-edited.
 
@@ -193,7 +193,7 @@ change — see that sample's `README.md` for pointing at a local stack, and chec
 environment, where these changes do not exist; the funnel then reads zeros, and it looks exactly like a
 broken client.
 
-After editing Kotlin, run `./dev-native.sh` from the repo root first (the sample build aborts if the
+After editing Kotlin, run `beam local run native-libs` from the workspace you run local stacks in first (the sample build aborts if the
 vendored `.aar` is older than its sources). Then regenerate the build from scratch with:
 
 ```bash

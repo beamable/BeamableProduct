@@ -48,12 +48,14 @@ public class UnityCliGenerator : ICliGenerator
 		{
 			if (!command.hasValidOutput && command.executionPath != "beam") continue;
 			if (invalidCommands.Contains(command.executionPath)) continue;
+			if (CliGenerator.IsLocalStackCommand(command)) continue;
 			files.Add(Generate(command));
 		}
 
 		// var me = context.Commands.First(x => x.executionPath == "beam me");
 		// var resultTypes = RecurseTypes(me.resultStreams.Select(x => x.runtimeType));
-		var resultTypes = RecurseTypes(context.Commands.SelectMany(command => command.resultStreams.Select(s => s.runtimeType)));
+		var resultTypes = RecurseTypes(context.Commands.Where(command => !CliGenerator.IsLocalStackCommand(command))
+			.SelectMany(command => command.resultStreams.Select(s => s.runtimeType)));
 
 		foreach (var resultType in resultTypes)
 		{

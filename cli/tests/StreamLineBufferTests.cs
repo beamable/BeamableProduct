@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace tests;
 
 /// <summary>
-/// Covers the in-memory line buffer that feeds readiness gates in attached mode (`beam local up` default).
+/// Covers the in-memory line buffer that feeds readiness gates in attached mode (`beam local run` default).
 /// Producer (the child's stdout/stderr pump) calls Append with complete lines; the readiness gate drains via
 /// ReadAvailableLines. Must be FIFO, drain-once, and bounded so a never-drained chatty service can't grow it.
 /// </summary>

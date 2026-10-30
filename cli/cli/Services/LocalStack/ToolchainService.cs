@@ -1,5 +1,8 @@
+using Beamable.Common.Util;
 using Beamable.Server;
+using cli.Utils;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO.Compression;
@@ -40,6 +43,12 @@ public class ToolchainOptions
 
 	/// <summary>Resolve and report what would happen, but download and write nothing.</summary>
 	public bool dryRun;
+
+	/// <summary>
+	/// The developer agreed to the Android SDK's licenses (asked by <c>beam local setup</c>, or
+	/// <c>--accept-android-licenses</c>). Without it, an SDK whose licenses aren't accepted yet is not installed.
+	/// </summary>
+	public bool acceptAndroidLicenses;
 }
 
 /// <summary>The outcome of ensuring one tool, for reporting.</summary>
@@ -59,7 +68,7 @@ public class ToolchainResult
 
 /// <summary>
 /// Provisions the pinned toolchain (<see cref="ToolchainPins"/>) into a private directory and records what it
-/// installed, so <c>beam local up</c> can run the stack against exactly those versions rather than whatever is
+/// installed, so <c>beam local run</c> can run the stack against exactly those versions rather than whatever is
 /// on <c>PATH</c>.
 ///
 /// Everything is keyed off the directory, so pointing several workspaces at one <c>--toolchain-dir</c> shares a
@@ -207,6 +216,9 @@ public class ToolchainService
 	public static string BinSubdir(string toolId) => toolId switch
 	{
 		ToolchainPins.Dotnet => string.Empty,
+		// The SDK root is the home (ANDROID_HOME); sdkmanager only works from cmdline-tools/latest under it.
+		ToolchainPins.AndroidSdk => Path.Combine("cmdline-tools", "latest", "bin"),
+		ToolchainPins.AndroidEmulator => "emulator",
 		// npm --global --prefix lays pnpm out exactly like Node itself: bin/ on POSIX, shims at the root on Windows.
 		ToolchainPins.Node or ToolchainPins.Pnpm => OperatingSystem.IsWindows() ? string.Empty : "bin",
 		_ => "bin"
@@ -220,6 +232,10 @@ public class ToolchainService
 		ToolchainPins.Dotnet => OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet",
 		ToolchainPins.Node => OperatingSystem.IsWindows() ? "node.exe" : "node",
 		ToolchainPins.Pnpm => OperatingSystem.IsWindows() ? "pnpm.cmd" : "pnpm",
+		ToolchainPins.Jdk17 => OperatingSystem.IsWindows() ? "java.exe" : "java",
+		ToolchainPins.Gradle => OperatingSystem.IsWindows() ? "gradle.bat" : "gradle",
+		ToolchainPins.AndroidSdk => OperatingSystem.IsWindows() ? "sdkmanager.bat" : "sdkmanager",
+		ToolchainPins.AndroidEmulator => OperatingSystem.IsWindows() ? "emulator.exe" : "emulator",
 		_ => null
 	};
 
@@ -267,6 +283,13 @@ public class ToolchainService
 	{
 		try
 		{
+			// The SDK also has packages to keep in place, so it checks more than its executable.
+			if (toolId == ToolchainPins.AndroidSdk)
+				return await EnsureAndroidSdkAsync(token);
+
+			if (toolId == ToolchainPins.AndroidEmulator)
+				return EnsureAndroidEmulator();
+
 			if (!_options.force && TryExistingInstall(toolId, out var existing))
 				return new ToolchainResult { toolId = toolId, entry = existing, action = "cached" };
 
@@ -284,6 +307,8 @@ public class ToolchainService
 				ToolchainPins.Jdk => await ToolchainPins.ResolveJdkAsync(_http, token),
 				ToolchainPins.Maven => await ToolchainPins.ResolveMavenAsync(_http, token),
 				ToolchainPins.Node => await ToolchainPins.ResolveNodeAsync(_http, token),
+				ToolchainPins.Jdk17 => await ToolchainPins.ResolveJdk17Async(_http, token),
+				ToolchainPins.Gradle => await ToolchainPins.ResolveGradleAsync(_http, token),
 				_ => throw new CliException($"Unknown toolchain tool '{toolId}'.")
 			};
 
@@ -409,6 +434,7 @@ public class ToolchainService
 			// a different version of itself, so "close enough" is not a thing here.
 			ToolchainPins.Pnpm => version.TrimStart('v').StartsWith(ToolchainPins.PnpmVersion, StringComparison.Ordinal),
 			ToolchainPins.Jdk => version.Contains("1.8.") || version.StartsWith("8", StringComparison.Ordinal),
+			ToolchainPins.Jdk17 => version.StartsWith("17", StringComparison.Ordinal),
 			_ => false
 		};
 	}
@@ -422,7 +448,7 @@ public class ToolchainService
 		var (args, fromStdErr) = toolId switch
 		{
 			// `java -version` writes to stderr on 8.
-			ToolchainPins.Jdk => ("-version", true),
+			ToolchainPins.Jdk or ToolchainPins.Jdk17 => ("-version", true),
 			ToolchainPins.Maven => ("-version", false),
 			ToolchainPins.Dotnet => ("--version", false),
 			_ => ("--version", false)
@@ -442,7 +468,7 @@ public class ToolchainService
 		return toolId switch
 		{
 			// `java version "1.8.0_502"` / `openjdk version "1.8.0_502"`
-			ToolchainPins.Jdk => ExtractQuoted(firstLine) ?? firstLine,
+			ToolchainPins.Jdk or ToolchainPins.Jdk17 => ExtractQuoted(firstLine) ?? firstLine,
 			// `Apache Maven 3.9.9 (hash)`
 			ToolchainPins.Maven => firstLine?.Split(' ').Skip(2).FirstOrDefault() ?? firstLine,
 			_ => firstLine
@@ -561,6 +587,197 @@ public class ToolchainService
 	}
 
 	// ----------------------------------------------------------------------------------
+	// Android SDK and emulator
+	// ----------------------------------------------------------------------------------
+
+	/// <summary>Where the Android SDK lives: one folder that keeps its packages when the command-line tools update.</summary>
+	public static string AndroidSdkRoot(string toolchainDir) => Path.Combine(toolchainDir, ToolchainPins.AndroidSdk);
+
+	/// <summary>Where the emulator's devices live (<c>ANDROID_AVD_HOME</c>), so they stay out of <c>~/.android</c>.</summary>
+	public static string AndroidAvdHome(string toolchainDir) => Path.Combine(toolchainDir, "android-avd");
+
+	/// <summary>True once the SDK's licenses were accepted (sdkmanager writes this file).</summary>
+	public static bool AndroidLicensesAccepted(string sdkRoot) =>
+		File.Exists(Path.Combine(sdkRoot, "licenses", "android-sdk-license"));
+
+	/// <summary>True when an SDK package (<c>platforms;android-34</c>) is installed under <paramref name="sdkRoot"/>.</summary>
+	public static bool AndroidPackageInstalled(string sdkRoot, string package) =>
+		File.Exists(Path.Combine(sdkRoot, Path.Combine(package.Split(';')), "package.xml"));
+
+	/// <summary>
+	/// The Android command-line tools in <c>&lt;sdk&gt;/cmdline-tools/latest</c> (where sdkmanager has to be), then
+	/// <see cref="ToolchainPins.AndroidSdkPackages"/> through sdkmanager, which runs on <see cref="ToolchainPins.Jdk17"/>.
+	/// </summary>
+	private async Task<ToolchainResult> EnsureAndroidSdkAsync(CancellationToken token)
+	{
+		var root = AndroidSdkRoot(_dir);
+		var entry = new ToolchainEntry { version = ToolchainPins.AndroidCmdlineToolsBuild, home = root, source = "downloaded" };
+		var sdkmanager = ExecutablePath(ToolchainPins.AndroidSdk, root);
+		var missing = ToolchainPins.AndroidSdkPackages.Where(p => !AndroidPackageInstalled(root, p)).ToList();
+		if (!_options.force && File.Exists(sdkmanager) && missing.Count == 0)
+		{
+			Manifest.tools[ToolchainPins.AndroidSdk] = entry;
+			return new ToolchainResult { toolId = ToolchainPins.AndroidSdk, entry = entry, action = "cached" };
+		}
+
+		if (_options.dryRun)
+			return new ToolchainResult { toolId = ToolchainPins.AndroidSdk, entry = entry, action = "would install" };
+
+		var java = Jdk17Home();
+		if (!AndroidLicensesAccepted(root) && !_options.acceptAndroidLicenses)
+			throw new CliException("The Android SDK's licenses aren't accepted yet. Run `beam local setup --native` in a terminal to read and accept them, or pass --accept-android-licenses.");
+
+		if (_options.force || !File.Exists(sdkmanager))
+		{
+			var archive = await FetchAsync(ToolchainPins.ResolveAndroidCmdlineTools(), token);
+			var latest = Path.Combine(root, "cmdline-tools", "latest");
+			var staging = latest + ".staging";
+			if (Directory.Exists(staging)) Directory.Delete(staging, recursive: true);
+			Directory.CreateDirectory(staging);
+			try
+			{
+				Extract(archive, staging);
+				if (Directory.Exists(latest)) Directory.Delete(latest, recursive: true);
+				Directory.CreateDirectory(Path.GetDirectoryName(latest)!);
+				Directory.Move(UnwrapSingleDirectory(staging), latest);
+			}
+			finally
+			{
+				if (Directory.Exists(staging)) try { Directory.Delete(staging, recursive: true); } catch { /* best effort */ }
+			}
+
+			MakeBinExecutable(BinDir(ToolchainPins.AndroidSdk, root));
+			if (!File.Exists(sdkmanager))
+				throw new CliException($"Extracted the Android command-line tools but found no {sdkmanager}.");
+		}
+
+		if (!AndroidLicensesAccepted(root))
+			RunSdkManager(root, java, "--licenses", acceptAll: true);
+		if (missing.Count > 0)
+			RunSdkManager(root, java, string.Join(" ", missing.Select(p => $"\"{p}\"")), acceptAll: true);
+
+		Manifest.tools[ToolchainPins.AndroidSdk] = entry;
+		return new ToolchainResult { toolId = ToolchainPins.AndroidSdk, entry = entry, action = "installed" };
+	}
+
+	/// <summary>
+	/// The emulator, this machine's system image and the <see cref="ToolchainPins.AndroidAvdName"/> device, added to the
+	/// toolchain's Android SDK.
+	/// </summary>
+	private ToolchainResult EnsureAndroidEmulator()
+	{
+		if (!Manifest.tools.TryGetValue(ToolchainPins.AndroidSdk, out var sdk) || string.IsNullOrEmpty(sdk?.home))
+			throw new CliException("The emulator goes into the toolchain's Android SDK, so install that first (`beam local setup --native`).");
+
+		var root = sdk.home;
+		var avdHome = AndroidAvdHome(_dir);
+		var entry = new ToolchainEntry { version = ToolchainPins.AndroidSystemImage, home = root, source = "downloaded" };
+		var packages = new[] { "emulator", ToolchainPins.AndroidSystemImage }.Where(p => !AndroidPackageInstalled(root, p)).ToList();
+		var hasAvd = File.Exists(Path.Combine(avdHome, ToolchainPins.AndroidAvdName + ".ini"));
+		if (packages.Count == 0 && hasAvd)
+		{
+			Manifest.tools[ToolchainPins.AndroidEmulator] = entry;
+			return new ToolchainResult { toolId = ToolchainPins.AndroidEmulator, entry = entry, action = "cached" };
+		}
+
+		if (_options.dryRun)
+			return new ToolchainResult { toolId = ToolchainPins.AndroidEmulator, entry = entry, action = "would install" };
+
+		var java = Jdk17Home();
+		if (packages.Count > 0)
+			RunSdkManager(root, java, string.Join(" ", packages.Select(p => $"\"{p}\"")), acceptAll: true);
+
+		if (!hasAvd)
+		{
+			Directory.CreateDirectory(avdHome);
+			var avdmanager = Path.Combine(BinDir(ToolchainPins.AndroidSdk, root), OperatingSystem.IsWindows() ? "avdmanager.bat" : "avdmanager");
+			// "no": avdmanager asks whether to make a custom hardware profile.
+			var output = RunWithInput(avdmanager,
+				$"create avd -n {ToolchainPins.AndroidAvdName} -k \"{ToolchainPins.AndroidSystemImage}\" -d pixel_6 --force",
+				"no\n", AndroidEnvironment(root, java, avdHome), out var exitCode);
+			if (exitCode != 0)
+				throw new CliException($"avdmanager couldn't create the {ToolchainPins.AndroidAvdName} device (exit {exitCode}): {Tail(output)}");
+		}
+
+		Manifest.tools[ToolchainPins.AndroidEmulator] = entry;
+		return new ToolchainResult { toolId = ToolchainPins.AndroidEmulator, entry = entry, action = "installed" };
+	}
+
+	private string Jdk17Home() =>
+		Manifest.tools.TryGetValue(ToolchainPins.Jdk17, out var jdk) && !string.IsNullOrEmpty(jdk?.home)
+			? jdk.home
+			: throw new CliException("The Android SDK's tools run on JDK 17, so install it first (drop `--skip jdk17`).");
+
+	/// <summary>The environment the Android tools need: JDK 17, the SDK root, and the toolchain's device folder.</summary>
+	public static Dictionary<string, string> AndroidEnvironment(string sdkRoot, string jdk17Home, string avdHome) => new()
+	{
+		["JAVA_HOME"] = jdk17Home,
+		["ANDROID_HOME"] = sdkRoot,
+		["ANDROID_SDK_ROOT"] = sdkRoot,
+		["ANDROID_AVD_HOME"] = avdHome,
+	};
+
+	/// <summary>Runs sdkmanager against <paramref name="sdkRoot"/>, answering yes to every license it asks about.</summary>
+	private void RunSdkManager(string sdkRoot, string jdk17Home, string arguments, bool acceptAll)
+	{
+		var sdkmanager = ExecutablePath(ToolchainPins.AndroidSdk, sdkRoot);
+		Log.Information($"sdkmanager {arguments} ...");
+		var output = RunWithInput(sdkmanager, $"--sdk_root=\"{sdkRoot}\" {arguments}",
+			acceptAll ? string.Concat(Enumerable.Repeat("y\n", 50)) : string.Empty,
+			AndroidEnvironment(sdkRoot, jdk17Home, AndroidAvdHome(_dir)), out var exitCode);
+		if (exitCode != 0)
+			throw new CliException($"sdkmanager {arguments} failed (exit {exitCode}): {Tail(output)}");
+	}
+
+	/// <summary>Like <see cref="RunCapture"/>, with text written to the process's input and extra environment.</summary>
+	private static string RunWithInput(string exe, string arguments, string input, Dictionary<string, string> environment, out int exitCode)
+	{
+		var psi = new ProcessStartInfo
+		{
+			FileName = exe,
+			Arguments = arguments,
+			RedirectStandardInput = true,
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			UseShellExecute = false,
+			CreateNoWindow = true
+		};
+		foreach (var (key, value) in environment)
+			psi.Environment[key] = value;
+
+		try
+		{
+			using var proc = Process.Start(psi);
+			if (proc == null)
+			{
+				exitCode = -1;
+				return null;
+			}
+
+			var stdout = proc.StandardOutput.ReadToEndAsync();
+			var stderr = proc.StandardError.ReadToEndAsync();
+			try
+			{
+				proc.StandardInput.Write(input);
+				proc.StandardInput.Close();
+			}
+			catch (IOException)
+			{
+				// It exited without reading everything it was given.
+			}
+
+			proc.WaitForExit();
+			exitCode = proc.ExitCode;
+			return stdout.Result + stderr.Result;
+		}
+		catch (Exception e)
+		{
+			exitCode = -1;
+			return e.Message;
+		}
+	}
+
+	// ----------------------------------------------------------------------------------
 	// Download + extract
 	// ----------------------------------------------------------------------------------
 
@@ -603,7 +820,7 @@ public class ToolchainService
 			if (!VerifyDigest(temp, download, out var actual))
 			{
 				throw new CliException(
-					$"Checksum mismatch for {download.fileName}: expected {download.sha256 ?? download.sha512}, got {actual}. " +
+					$"Checksum mismatch for {download.fileName}: expected {download.sha256 ?? download.sha512 ?? download.sha1}, got {actual}. " +
 					"The download was corrupted or the upstream artifact changed — nothing was installed.");
 			}
 
@@ -637,6 +854,12 @@ public class ToolchainService
 		{
 			actual = HashFile(path, SHA512.Create());
 			return string.Equals(actual, download.sha512.Trim().ToLowerInvariant(), StringComparison.Ordinal);
+		}
+
+		if (!string.IsNullOrWhiteSpace(download.sha1))
+		{
+			actual = HashFile(path, SHA1.Create());
+			return string.Equals(actual, download.sha1.Trim().ToLowerInvariant(), StringComparison.Ordinal);
 		}
 
 		Log.Warning($"{Path.GetFileName(path)} was not checksum-verified — upstream published no digest.");
@@ -731,7 +954,7 @@ public class ToolchainService
 	/// </summary>
 	private static string ResolveHome(string toolId, string root)
 	{
-		if (toolId == ToolchainPins.Jdk)
+		if (toolId is ToolchainPins.Jdk or ToolchainPins.Jdk17)
 		{
 			var bundleHome = Path.Combine(root, "Contents", "Home");
 			if (Directory.Exists(bundleHome))
@@ -784,7 +1007,7 @@ public class ToolchainService
 	// ----------------------------------------------------------------------------------
 
 	/// <summary>
-	/// Projects the installed tools into the block a local-stack manifest carries, so <c>beam local up</c> can
+	/// Projects the installed tools into the block a local-stack manifest carries, so <c>beam local run</c> can
 	/// substitute <c>${java}</c>/<c>${maven}</c>/<c>${node}</c>/<c>${dotnet}</c> and build a <c>PATH</c> without
 	/// re-probing anything.
 	/// </summary>
@@ -803,7 +1026,10 @@ public class ToolchainService
 			maven = HomeOf(ToolchainPins.Maven),
 			dotnet = HomeOf(ToolchainPins.Dotnet),
 			node = HomeOf(ToolchainPins.Node),
-			pnpm = HomeOf(ToolchainPins.Pnpm)
+			pnpm = HomeOf(ToolchainPins.Pnpm),
+			jdk17 = HomeOf(ToolchainPins.Jdk17),
+			gradle = HomeOf(ToolchainPins.Gradle),
+			androidSdk = HomeOf(ToolchainPins.AndroidSdk)
 		};
 	}
 
@@ -899,5 +1125,321 @@ public class ToolchainService
 
 		var all = output.TrimEnd().Split('\n');
 		return string.Join("\n", all.Skip(Math.Max(0, all.Length - lines)).Select(l => l.TrimEnd()));
+	}
+}
+
+/// <summary>One place in a workspace that pins the beam CLI version.</summary>
+public class CliPin
+{
+	/// <summary>The file holding the pin.</summary>
+	public string file;
+
+	/// <summary><c>tool-manifest</c> (a <c>.config/dotnet-tools.json</c>) or <c>workspace-config</c>
+	/// (<c>cliVersion</c> in <c>.beamable/config.beam.json</c>).</summary>
+	public string kind;
+
+	/// <summary>The pinned version, as found.</summary>
+	public string version;
+
+	/// <summary><c>ok</c>, <c>repinned</c>, <c>mismatch</c>, <c>missing</c> or <c>failed</c>.</summary>
+	public string status;
+
+	/// <summary>What was found or done, in a sentence.</summary>
+	public string detail;
+}
+
+/// <summary>What one <see cref="LocalStackCliVersions.Check"/> found and did.</summary>
+public class CliVersionCheckResult
+{
+	/// <summary>The version of the CLI that ran the check, without build metadata.</summary>
+	public string runningVersion;
+
+	public List<CliPin> pins = new List<CliPin>();
+
+	/// <summary>The project files restored after a re-pin.</summary>
+	public List<string> restored = new List<string>();
+
+	/// <summary>Restores that failed, one message each.</summary>
+	public List<string> errors = new List<string>();
+
+	public bool repinned => pins.Any(p => p.status == "repinned");
+}
+
+/// <summary>
+/// Keeps a workspace's CLI pins on the CLI that is running the local stack.
+///
+/// A portal workspace pins the CLI in several gitignored places: the root and <c>bundles/</c>
+/// <c>.config/dotnet-tools.json</c>, and <c>cliVersion</c> in <c>.beamable/config.beam.json</c>. Microservices
+/// take their Beamable package version from the nearest tool manifest. After a new local build, <c>dev.sh</c>
+/// re-pins only the root manifest and deletes the previous build from the local feed and the NuGet cache, so the
+/// other pins are left on a version that no longer exists and restores fail.
+///
+/// The rule: a local build (<c>0.0.123.x</c>) pin that differs from a running local build is moved to it, the
+/// tools are restored and the microservice projects re-restored. A published pin is only reported: switching a
+/// project between a release and a local build is a deliberate choice.
+/// </summary>
+public static class LocalStackCliVersions
+{
+	/// <summary>Every local CLI build's version starts with this.</summary>
+	public const string LocalDevPrefix = "0.0.123";
+
+	/// <summary>The CLI's package id in a tool manifest.</summary>
+	public const string ToolPackageId = "beamable.tools";
+
+	/// <summary>Folders never searched for pins or projects: dependencies, build output, VCS data.</summary>
+	private static readonly HashSet<string> SkippedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+	{
+		"node_modules", ".git", "bin", "obj", "dist", "Library", "Temp"
+	};
+
+	public static bool IsLocalDev(string version) =>
+		!string.IsNullOrEmpty(version) && version.StartsWith(LocalDevPrefix, StringComparison.Ordinal);
+
+	/// <summary>The running CLI's version, without the <c>+commit</c> build metadata.</summary>
+	public static string RunningVersion()
+	{
+		var version = BeamAssemblyVersionUtil.GetVersion<App>() ?? string.Empty;
+		var plus = version.IndexOf('+');
+		return plus >= 0 ? version.Substring(0, plus) : version;
+	}
+
+	/// <summary>Every CLI pin in <paramref name="workspaceDir"/> and its sub-folders, up to <paramref name="maxDepth"/> levels down.</summary>
+	public static List<CliPin> FindPins(string workspaceDir, int maxDepth = 2)
+	{
+		var pins = new List<CliPin>();
+		if (string.IsNullOrWhiteSpace(workspaceDir) || !Directory.Exists(workspaceDir)) return pins;
+
+		foreach (var dir in Folders(workspaceDir, maxDepth))
+		{
+			var toolManifest = Path.Combine(dir, ".config", "dotnet-tools.json");
+			var toolVersion = ReadToolManifestVersion(toolManifest);
+			if (toolVersion != null)
+				pins.Add(new CliPin { file = toolManifest, kind = "tool-manifest", version = toolVersion });
+
+			var workspaceConfig = Path.Combine(dir, ConfigService.CFG_FOLDER, ConfigService.CFG_FILE_NAME);
+			var cliVersion = ReadCliVersion(workspaceConfig);
+			if (cliVersion != null)
+				pins.Add(new CliPin { file = workspaceConfig, kind = "workspace-config", version = cliVersion });
+		}
+
+		return pins;
+	}
+
+	/// <summary>
+	/// Compares every pin in <paramref name="workspaceDir"/> with <paramref name="runningVersion"/>. With
+	/// <paramref name="fix"/>, local-build pins that differ are re-pinned, then <c>dotnet tool restore</c> runs next to
+	/// each changed tool manifest and every project that uses <c>$(BeamableVersion)</c> is restored.
+	/// <paramref name="run"/> runs a process as <c>(file, arguments, workingDirectory)</c>; tests replace it.
+	/// </summary>
+	public static CliVersionCheckResult Check(string workspaceDir, string runningVersion, bool fix,
+		Func<string, string, string, StartProcessResult> run = null)
+	{
+		run ??= (file, arguments, dir) => StartProcessUtil.Run(file, arguments, workingDirectoryPath: dir).WaitForResult();
+		var result = new CliVersionCheckResult { runningVersion = runningVersion, pins = FindPins(workspaceDir) };
+
+		foreach (var pin in result.pins)
+		{
+			if (pin.version == runningVersion)
+			{
+				pin.status = "ok";
+				pin.detail = $"on {runningVersion}";
+			}
+			else if (IsLocalDev(pin.version) && IsLocalDev(runningVersion))
+			{
+				if (!fix)
+				{
+					pin.status = "mismatch";
+					pin.detail = $"pinned to local build {pin.version}; this CLI is local build {runningVersion}";
+					continue;
+				}
+
+				try
+				{
+					WritePin(pin, runningVersion);
+					pin.status = "repinned";
+					pin.detail = $"{pin.version} -> {runningVersion}";
+				}
+				catch (Exception e)
+				{
+					pin.status = "failed";
+					pin.detail = $"could not re-pin: {e.Message}";
+				}
+			}
+			else if (IsLocalDev(pin.version))
+			{
+				var cached = InNuGetCache(pin.version);
+				pin.status = cached ? "mismatch" : "missing";
+				pin.detail = cached
+					? $"pinned to local build {pin.version}; this CLI is the published {runningVersion}. Left as is."
+					: $"pinned to local build {pin.version}, which is no longer in the NuGet cache. Run the stack with your newest local CLI build to re-pin it.";
+			}
+			else
+			{
+				pin.status = "mismatch";
+				pin.detail = $"pinned to published {pin.version}; this CLI is {runningVersion}. Left as is: a published pin is a deliberate choice.";
+			}
+		}
+
+		if (!fix || !result.repinned) return result;
+
+		var toolDirs = result.pins
+			.Where(p => p.status == "repinned" && p.kind == "tool-manifest")
+			.Select(p => Path.GetDirectoryName(Path.GetDirectoryName(p.file)))
+			.Distinct(StringComparer.OrdinalIgnoreCase);
+		foreach (var dir in toolDirs)
+		{
+			var restore = run("dotnet", "tool restore", dir);
+			if (restore.exit != 0)
+				result.errors.Add($"dotnet tool restore failed in {dir}: {LastLine(restore)}");
+		}
+
+		foreach (var project in FindBeamableProjects(workspaceDir))
+		{
+			var restore = run("dotnet", $"restore \"{project}\"", Path.GetDirectoryName(project));
+			if (restore.exit == 0)
+				result.restored.Add(project);
+			else
+				result.errors.Add($"dotnet restore failed for {project}: {LastLine(restore)}");
+		}
+
+		return result;
+	}
+
+	/// <summary>Logs what <see cref="Check"/> found: re-pins and restores as information, the rest as warnings.</summary>
+	public static void Report(CliVersionCheckResult result)
+	{
+		foreach (var pin in result.pins)
+		{
+			switch (pin.status)
+			{
+				case "repinned":
+					Log.Information($"[cli: versions] re-pinned {pin.file}: {pin.detail}");
+					break;
+				case "mismatch":
+				case "missing":
+				case "failed":
+					Log.Warning($"[cli: versions] {pin.file}: {pin.detail}");
+					break;
+			}
+		}
+
+		if (result.restored.Count > 0)
+			Log.Information($"[cli: versions] restored {result.restored.Count} microservice project(s) on {result.runningVersion}.");
+		foreach (var error in result.errors)
+			Log.Warning($"[cli: versions] {error}");
+	}
+
+	/// <summary>Project files under <paramref name="workspaceDir"/> whose Beamable packages follow the tool manifest.</summary>
+	public static List<string> FindBeamableProjects(string workspaceDir)
+	{
+		var projects = new List<string>();
+		if (string.IsNullOrWhiteSpace(workspaceDir) || !Directory.Exists(workspaceDir)) return projects;
+
+		foreach (var dir in Folders(workspaceDir, int.MaxValue))
+		{
+			foreach (var project in Directory.EnumerateFiles(dir, "*.csproj"))
+			{
+				try
+				{
+					if (File.ReadAllText(project).Contains("$(BeamableVersion)", StringComparison.Ordinal))
+						projects.Add(project);
+				}
+				catch
+				{
+					// unreadable project file: nothing to restore
+				}
+			}
+		}
+
+		return projects;
+	}
+
+	private static IEnumerable<string> Folders(string root, int maxDepth)
+	{
+		var queue = new Queue<(string dir, int depth)>();
+		queue.Enqueue((root, 0));
+		while (queue.Count > 0)
+		{
+			var (dir, depth) = queue.Dequeue();
+			yield return dir;
+			if (depth >= maxDepth) continue;
+
+			List<string> children;
+			try
+			{
+				children = Directory.EnumerateDirectories(dir).ToList();
+			}
+			catch
+			{
+				continue;
+			}
+
+			foreach (var child in children)
+			{
+				var name = Path.GetFileName(child);
+				if (SkippedFolders.Contains(name) || name.StartsWith('.')) continue;
+				queue.Enqueue((child, depth + 1));
+			}
+		}
+	}
+
+	private static string ReadToolManifestVersion(string path)
+	{
+		try
+		{
+			if (!File.Exists(path)) return null;
+			var tools = JObject.Parse(File.ReadAllText(path))["tools"] as JObject;
+			var tool = tools?.Properties().FirstOrDefault(p => p.Name.Equals(ToolPackageId, StringComparison.OrdinalIgnoreCase));
+			return tool?.Value["version"]?.ToString();
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+	private static string ReadCliVersion(string path)
+	{
+		try
+		{
+			if (!File.Exists(path)) return null;
+			var version = JObject.Parse(File.ReadAllText(path))[ConfigService.CFG_JSON_FIELD_CLI_VERSION]?.ToString();
+			return string.IsNullOrWhiteSpace(version) ? null : version;
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+	private static void WritePin(CliPin pin, string version)
+	{
+		var json = JObject.Parse(File.ReadAllText(pin.file));
+		if (pin.kind == "tool-manifest")
+		{
+			var tools = (JObject)json["tools"];
+			var tool = tools.Properties().First(p => p.Name.Equals(ToolPackageId, StringComparison.OrdinalIgnoreCase));
+			tool.Value["version"] = version;
+		}
+		else
+		{
+			json[ConfigService.CFG_JSON_FIELD_CLI_VERSION] = version;
+		}
+
+		File.WriteAllText(pin.file, json.ToString(Formatting.Indented));
+	}
+
+	private static bool InNuGetCache(string version)
+	{
+		var packages = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+		if (string.IsNullOrWhiteSpace(packages))
+			packages = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
+		return Directory.Exists(Path.Combine(packages, ToolPackageId, version));
+	}
+
+	private static string LastLine(StartProcessResult result)
+	{
+		var output = string.IsNullOrWhiteSpace(result.stderr) ? result.stdout : result.stderr;
+		return output?.Trim().Split('\n').LastOrDefault()?.Trim() ?? $"exit code {result.exit}";
 	}
 }

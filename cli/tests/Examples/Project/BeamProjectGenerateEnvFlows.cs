@@ -139,7 +139,7 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 			new ContainersListParameters { All = true });
 
 		// Check if the container with the specified name is running
-		var storageContainerName = $"/{storageName}_mongoDb";
+		var storageContainerName = "/" + BeamoLocalSystem.GetBeamIdAsMongoContainer(storageName);
 		var matchingContainer = containers.FirstOrDefault(c => c.Names.Contains(storageContainerName));
 		if (matchingContainer != null)
 		{

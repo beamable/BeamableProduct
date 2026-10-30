@@ -246,6 +246,21 @@ public class LocalStackDockerWatchdogTests
 	}
 
 	[Test]
+	public void A_project_flag_is_kept_for_the_polls()
+	{
+		var config = new LocalStackConfig
+		{
+			steps = new List<LocalStackStep> { DockerStep("compose -p beam_backend_scala up -d --no-deps redis") }
+		};
+
+		var target = LocalStackDockerWatchdog.DiscoverTargets(config.steps, config).Single();
+
+		Assert.That(target.projectArgs, Is.EqualTo(new[] { "-p", "beam_backend_scala" }),
+			"without it the poll would list the folder's default project and find nothing");
+		Assert.That(target.services, Is.EquivalentTo(new[] { "redis" }));
+	}
+
+	[Test]
 	public void A_whole_project_compose_up_watches_every_service()
 	{
 		var config = new LocalStackConfig

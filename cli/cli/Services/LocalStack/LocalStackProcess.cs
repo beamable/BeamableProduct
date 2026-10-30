@@ -11,7 +11,7 @@ namespace cli.Services.LocalStack;
 /// under a wrapper chain the CLI does not fully detach (<c>cmd.exe → powershell.exe → java.exe</c> for the
 /// Scala services, <c>cmd.exe → npm.cmd → node.exe</c> for the portal, <c>cmd.exe → dotnet.exe</c> for beam
 /// microservices, <c>cmd.exe → BeamableGateway.exe</c> for the C# gateway). Those wrappers die when
-/// <c>beam local up</c> returns, orphaning the real runtime. These helpers let <c>up</c> record the real
+/// <c>beam local run</c> returns, orphaning the real runtime. These helpers let <c>up</c> record the real
 /// service process (the one that outlives the wrappers) and let <c>stop</c> find an orphan by its command
 /// line even after the recorded pid is gone. On macOS/Linux the launcher <c>exec</c>s the service so the
 /// tracked pid already IS the service — the methods here are no-ops there.

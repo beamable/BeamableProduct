@@ -143,7 +143,8 @@
     -->
     <Target Name="GeneratePortalExtensionClients"
             DependsOnTargets="generate-oapi"
-            AfterTargets="AfterBuild">
+            AfterTargets="AfterBuild"
+            Condition="'$(BeamPreventPortalExtensionClients)' != 'true'">
         <Exec EchoOff="true"
               EnvironmentVariables="MSBUILDTERMINALLOGGER=off"
               Command="dotnet beam project generate pe-client --ids $(BeamId)" />

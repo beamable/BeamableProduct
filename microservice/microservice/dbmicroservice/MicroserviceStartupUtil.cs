@@ -1336,7 +1336,22 @@ public static class MicroserviceStartupUtil
 			.AddSource("MongoDB.Driver.Core.Extensions.DiagnosticSources")
 			.SetSampler<TraceSampler>();
 
-		if (ctx.args.OtelExporterStandardEnabled)
+		// Like logs: an endpoint set for the service (BEAM_OTEL_EXPORTER_OTLP_ENDPOINT, as `beam local run` sets for the
+		// local collector) gets its traces even without the standard collector setup.
+		var hasEndpointOverride = !string.IsNullOrEmpty(ctx.args.OtelExporterOtlpEndpoint) &&
+		                          !string.IsNullOrEmpty(ctx.args.OtelExporterOtlpProtocol);
+		if (hasEndpointOverride && ctx.args.OtelExportAllSpans)
+		{
+			// The microservice exporter keeps only failed spans; a local collector wants every request.
+			traceBuilder = traceBuilder.AddOtlpExporter(option =>
+			{
+				option.Protocol = (OtlpExportProtocol)Enum.Parse(typeof(OtlpExportProtocol), ctx.args.OtelExporterOtlpProtocol);
+				option.Endpoint = option.Protocol == OtlpExportProtocol.HttpProtobuf
+					? new Uri($"{ctx.args.OtelExporterOtlpEndpoint}/v1/traces")
+					: new Uri(ctx.args.OtelExporterOtlpEndpoint);
+			});
+		}
+		else if (ctx.args.OtelExporterStandardEnabled || hasEndpointOverride)
 		{
 			traceBuilder = traceBuilder.AddMicroserviceExporter(option =>
 			{

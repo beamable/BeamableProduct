@@ -39,8 +39,8 @@ die()  { printf '\033[0;31m[err]\033[0m %s\n' "$*" >&2; exit 1; }
 [[ -d "$SOURCE" ]] || die "Source not found: $SOURCE"
 
 # --- source layout ----------------------------------------------------------
-# The master plugin already ships its native binaries under ThirdParty/ (staged by the repo's
-# dev-native.sh): ThirdParty/BeamableNotifications.embeddedframework.zip (iOS dynamic framework)
+# The master plugin already ships its native binaries under ThirdParty/ (built from the repo's
+# beam-native-mobile/NativeSources): ThirdParty/BeamableNotifications.embeddedframework.zip (iOS dynamic framework)
 # and ThirdParty/Android/beamable-notifications-release.aar (consumed flat by the APL's
 # <AARImports> via a Gradle flatDir repo). So we copy the whole plugin, ThirdParty included.
 MASTER="$SOURCE/Unreal"                                    # master plugin (sources + Scripts + ThirdParty + docs)
@@ -57,9 +57,9 @@ log "Generating self-contained plugin from $MASTER ..."
     | while IFS= read -r -d '' f; do mkdir -p "$STAGE/$(dirname "$f")"; cp "$f" "$STAGE/$f"; done )
 
 [[ -f "$STAGE/ThirdParty/BeamableNotifications.embeddedframework.zip" ]] \
-  || warn "iOS framework missing (ThirdParty/BeamableNotifications.embeddedframework.zip) — run dev-native.sh on macOS to stage it; iOS link will fail until then."
+  || warn "iOS framework missing (ThirdParty/BeamableNotifications.embeddedframework.zip) — build it from beam-native-mobile/NativeSources/iOS on macOS; iOS link will fail until then."
 [[ -f "$STAGE/ThirdParty/Android/beamable-notifications-release.aar" ]] \
-  || warn "Android .aar missing (ThirdParty/Android/beamable-notifications-release.aar) — run dev-native.sh to stage it; Android build will fail until then."
+  || warn "Android .aar missing (ThirdParty/Android/beamable-notifications-release.aar) — build it from beam-native-mobile/NativeSources/Android; Android build will fail until then."
 
 # Notification Service Extension sources (optional full-featured NSE; the editor button's
 # add-nse.sh builds a self-contained one and does not require these).

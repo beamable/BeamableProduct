@@ -32,6 +32,7 @@ on:
         description: What type of release is this?
         required: true
         options:
+          - dev
           - nightly
           - rc
           - exp
@@ -40,6 +41,16 @@ on:
         type: boolean
         description: When true, no publish will happen
         required: true
+        default: false
+      sdkVersion:
+        type: string
+        description: '@beamable/sdk version to pin the toolkit to (empty keeps the committed one)'
+        required: false
+        default: ''
+      updateExtensions:
+        type: boolean
+        description: After publishing, open a PR in agentic-portal moving its extensions to this toolkit
+        required: false
         default: false
 
 run-name: >-
@@ -52,8 +63,12 @@ jobs:
   portal-toolkit-release:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
+      pull-requests: write
       id-token: write
+    env:
+      SDK_VERSION: ${{ inputs.sdkVersion }}
+      HAS_PORTAL_TOKEN: ${{ secrets.AGENTIC_PORTAL_TOKEN != '' }}
     defaults:
       run:
         working-directory: beam-portal-toolkit
@@ -70,15 +85,47 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm@10.8.0
 
+      - name: Pin @beamable/sdk
+        if: ${{ inputs.sdkVersion != '' }}
+        run: |
+          # A chained run starts right after the SDK publish; give the registry a few minutes to serve it
+          for i in $(seq 1 30); do
+            npm view "@beamable/sdk@$SDK_VERSION" version > /dev/null 2>&1 && break
+            echo "Waiting for @beamable/sdk@$SDK_VERSION on npm ($i/30)"
+            sleep 10
+          done
+          npm view "@beamable/sdk@$SDK_VERSION" version
+          npm pkg set "peerDependencies.@beamable/sdk=$SDK_VERSION" "devDependencies.@beamable/sdk=$SDK_VERSION"
+
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install ${{ inputs.sdkVersion != '' && '--no-frozen-lockfile' || '--frozen-lockfile' }}
+
+      # The components come from agentic-portal's custom-elements.json.
+      - name: Check out agentic-portal
+        if: ${{ env.HAS_PORTAL_TOKEN == 'true' }}
+        uses: actions/checkout@v5
+        with:
+          repository: beamable/agentic-portal
+          token: ${{ secrets.AGENTIC_PORTAL_TOKEN }}
+          path: agentic-portal
+
+      - name: Sync components
+        run: |
+          if [ "$HAS_PORTAL_TOKEN" == "true" ]; then
+            PORTAL_REPO_PATH="$GITHUB_WORKSPACE/agentic-portal" pnpm sync-components
+          else
+            echo "::warning::AGENTIC_PORTAL_TOKEN is not set: publishing with the committed components"
+          fi
 
       - name: Compute version
         id: version
         run: |
+          echo "BASE_VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
           VERSION="${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}"
           if [ "${{ inputs.releaseType }}" == "rc" ]; then
             VERSION="${VERSION}-rc.${{ inputs.rcNumber }}"
+          elif [ "${{ inputs.releaseType }}" == "dev" ]; then
+            VERSION="${VERSION}-dev.${{ github.run_number }}"
           elif [ "${{ inputs.releaseType }}" != "production" ]; then
             VERSION="${VERSION}-${{ inputs.releaseType }}"
           fi
@@ -101,3 +148,39 @@ jobs:
       - name: Dry run build
         if: ${{ inputs.dryRun == true }}
         run: npm run prepublishOnly
+
+      # The SDK pin and the components are what a release used to need a commit for; hand them back as a PR
+      - name: Open a PR with the release's changes
+        if: ${{ inputs.dryRun == false && inputs.releaseType != 'dev' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: |
+          npm pkg set version="${{ steps.version.outputs.BASE_VERSION }}"
+          if git diff --quiet -- package.json pnpm-lock.yaml custom-elements.json src/generated; then
+            echo "Nothing changed in the repo"
+            exit 0
+          fi
+          BRANCH="toolkit-release/$VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add package.json pnpm-lock.yaml custom-elements.json src/generated
+          git commit -m "change: Portal toolkit $VERSION pins @beamable/sdk $(node -p "require('./package.json').peerDependencies['@beamable/sdk']") and agentic-portal's components"
+          git push origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "Portal toolkit $VERSION" \
+            --body "What the portal toolkit $VERSION release published with: its \`@beamable/sdk\` pin and the components synced from agentic-portal."
+
+      - name: Update agentic-portal's extensions
+        if: ${{ inputs.dryRun == false && inputs.updateExtensions }}
+        env:
+          GH_TOKEN: ${{ secrets.AGENTIC_PORTAL_TOKEN }}
+        run: |
+          if [ "$HAS_PORTAL_TOKEN" != "true" ]; then
+            echo "::error::updateExtensions needs the AGENTIC_PORTAL_TOKEN secret"
+            exit 1
+          fi
+          gh workflow run update-portal-toolkit.yml -R beamable/agentic-portal \
+            -f toolkitVersion="${{ steps.version.outputs.VERSION }}" \
+            -f sdkVersion="$(node -p "require('./package.json').peerDependencies['@beamable/sdk']")"

@@ -5013,6 +5013,52 @@
           "attributes": []
         },
         {
+          "name": "beam-card-tree",
+          "description": "",
+          "attributes": []
+        },
+        {
+          "name": "beam-card-tree-item",
+          "description": "",
+          "attributes": [
+            {
+              "name": "action",
+              "description": "Trailing action text, e.g. \"View Screen\". Omit to hide the action.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "hover-action",
+              "description": "Action text while the row is hovered/focused. Falls back to `action`.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "root",
+              "description": "Set by the parent — whether this item is a top-level row.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "first",
+              "description": "Set by the parent — whether this item is its parent's first child.",
+              "value": {
+                "type": "boolean"
+              }
+            },
+            {
+              "name": "last",
+              "description": "Set by the parent — whether this item is its parent's last child.",
+              "value": {
+                "type": "boolean"
+              }
+            }
+          ]
+        },
+        {
           "name": "beam-tag-input",
           "description": "",
           "attributes": [
@@ -5123,6 +5169,13 @@
               "description": "Optional per-bar color override; defaults to the theme categorical palette.",
               "value": {
                 "type": "string[] | undefined"
+              }
+            },
+            {
+              "name": "series",
+              "description": "Stacked mode: when set, each bar is split into one segment per series, read from the datum's\r\n`values`. Leaving it unset keeps the original flat behaviour untouched, so every existing caller\r\nis unaffected.",
+              "value": {
+                "type": "BarSeries[] | undefined"
               }
             }
           ]

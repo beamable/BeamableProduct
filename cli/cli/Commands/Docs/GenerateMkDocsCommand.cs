@@ -82,6 +82,9 @@ public class GenerateMkDocsCommand
             
           
             
+            // Internal commands get no page either: mkdocs builds and indexes pages that aren't in the nav.
+            if (command.IsInternalSubtree) continue;
+
             var doc = docService.Render(command);
             
             var path = Path.Combine(args.outputDirectory, subPath);

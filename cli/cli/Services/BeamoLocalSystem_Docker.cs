@@ -47,7 +47,7 @@ public partial class BeamoLocalSystem
 		CancellationToken token = default)
 	{
 		Log.Verbose($"creating or running container with image=[{image}] containerName=[{containerName}]");
-		var existingInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerName.Contains(containerName));
+		var existingInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerName == containerName);
 		if (existingInstance != null)
 		{
 			if (existingInstance.ImageId == image)
@@ -310,8 +310,21 @@ public partial class BeamoLocalSystem
 			}
 		});
 		// The Docker name filter matches substrings, so match the exact name (container names are reported
-		// with a leading '/') to avoid picking up e.g. "NCStorage_mongoDb2".
+		// with a leading '/') to avoid picking up e.g. "beam_project_NCStorage2_mongo".
 		return containers.FirstOrDefault(c => c.Names.Any(n => n == "/" + containerName));
+	}
+
+	/// <summary>
+	/// Removes the container left under a name this CLI no longer uses, if there is one, so the renamed container doesn't
+	/// compete with it for its ports. Its volumes stay.
+	/// </summary>
+	private async Task RemoveLegacyContainer(string legacyName)
+	{
+		var legacy = await FindContainerByName(legacyName);
+		if (legacy == null) return;
+
+		Log.Verbose($"removing container=[{legacyName}], the old name of a renamed container");
+		await DeleteContainer(legacy.ID);
 	}
 
 	/// <summary>

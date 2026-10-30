@@ -82,7 +82,7 @@ const stamp = (d) => d.toISOString().slice(0, 16).replace('T', ' ');
  * Abort when the vendored `.aar` predates the Kotlin it is built from.
  *
  * Nothing in the app build compiles `NativeSources/Android` — the binary is staged by
- * `dev-native.sh`. So editing Kotlin and rebuilding the app produces a perfectly green build that
+ * `beam local run native-libs`. So editing Kotlin and rebuilding the app produces a perfectly green build that
  * still runs the OLD bytecode, with no error on the device and no failing test. That drift is what
  * silently posted the funnel to the warehouse-only route for three days.
  *
@@ -101,7 +101,7 @@ function assertAarIsFresh() {
       `  aar     ${stamp(aarMtime)}  ${path.basename(AAR_FILE)}\n` +
       `  source  ${stamp(newestSrc.mtime)}  ${newestSrc.file}\n\n` +
       `  The app links the prebuilt .aar, so your Kotlin changes are NOT in this build.\n` +
-      `  Run ./dev-native.sh from the repo root, then re-run this command.\n`,
+      `  Run 'beam local run native-libs' (from the workspace you run local stacks in), then re-run this command.\n`,
   );
   process.exit(1);
 }

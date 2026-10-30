@@ -6,6 +6,10 @@
  * out of the box; run `beam init` to regenerate it with your own realm, and edit the cid/pid
  * there rather than here.
  *
+ * `BEAM_HOST`, `BEAM_CID` and `BEAM_PID` in `env.local` (uncommitted) win over that file, all
+ * three or none: `beam local run rn-sample` writes them for the stack's realm, with the host the
+ * device can reach. `app.config.js` passes them through `extra.realm`.
+ *
  * When the web build is hosted somewhere that serves a `beam-config.json` next to it (e.g. a Unity
  * WebView via `com.beamable.notifications.web`, which serves the host project's `.beamable`), the
  * app prefers that at runtime and only falls back to this — see `beamClient.ts`.
@@ -17,9 +21,13 @@
  */
 import Constants from 'expo-constants';
 
-import BEAM_CONFIG from '../../.beamable/config.beam.json';
+import BEAM_CONFIG_FILE from '../../.beamable/config.beam.json';
 
-export { BEAM_CONFIG };
+const LOCAL_REALM = Constants.expoConfig?.extra?.realm as
+  | { cid: string; pid: string; host: string }
+  | undefined;
+
+export const BEAM_CONFIG = LOCAL_REALM ? { ...BEAM_CONFIG_FILE, ...LOCAL_REALM } : BEAM_CONFIG_FILE;
 
 /**
  * The routing key for microservices started with `beam project run`, or undefined when the

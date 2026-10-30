@@ -80,4 +80,19 @@ public class PortalExtensionMetadataFileTests
 		Assert.That(File.ReadAllText(observer.MetadataPath), Does.Not.Contain("stale"));
 		Assert.That(File.ReadAllText(observer.MetadataPath), Does.Contain("MyExt"));
 	}
+
+	[Test]
+	public void ToolkitVersion_IsTheInstalledLocalBuild_WhenTheOverlayIsInstalled()
+	{
+		var def = MakeObserver().ExtensionMetaData;
+		File.WriteAllText(Path.Combine(_extensionDir, "package.json"), "{\"devDependencies\":{\"@beamable/portal-toolkit\":\"0.5.0-rc.8\"}}");
+		var toolkit = Path.Combine(_extensionDir, "node_modules", "@beamable", "portal-toolkit");
+		Directory.CreateDirectory(toolkit);
+		File.WriteAllText(Path.Combine(toolkit, "package.json"), "{\"version\":\"0.6.0-0.20261023184142\"}");
+		Assert.That(def.GetToolkitVersion(), Is.EqualTo("0.5.0-rc.8"), "without the overlay, package.json names it");
+
+		File.WriteAllText(Path.Combine(_extensionDir, "node_modules", cli.Services.Web.WebPackagesService.OverlayMarker), "{}");
+
+		Assert.That(def.GetToolkitVersion(), Is.EqualTo("0.6.0-0.20261023184142"));
+	}
 }
