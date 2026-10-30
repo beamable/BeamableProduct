@@ -4,26 +4,30 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common;
     using Beamable.Common.BeamCli;
     
-    public partial class WebStatusArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+    public partial class BundlesInstallArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>The local npm registry to query</summary>
-        public string registry;
-        /// <summary>The local unpkg-style CDN to probe</summary>
-        public string cdn;
+        /// <summary>The bundle name, optionally namespaced as @<namespace>/<bundle-name></summary>
+        public string bundleName;
+        /// <summary>Resolve the checksum from this tag</summary>
+        public string tag;
+        /// <summary>Install this exact checksum (sha256:<checksum>) instead of a tag</summary>
+        public string checksum;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-            // If the registry value was not default, then add it to the list of args.
-            if ((this.registry != default(string)))
+            // Add the bundleName value to the list of args.
+            genBeamCommandArgs.Add(this.bundleName.ToString());
+            // If the tag value was not default, then add it to the list of args.
+            if ((this.tag != default(string)))
             {
-                genBeamCommandArgs.Add(("--registry=" + this.registry));
+                genBeamCommandArgs.Add(("--tag=" + this.tag));
             }
-            // If the cdn value was not default, then add it to the list of args.
-            if ((this.cdn != default(string)))
+            // If the checksum value was not default, then add it to the list of args.
+            if ((this.checksum != default(string)))
             {
-                genBeamCommandArgs.Add(("--cdn=" + this.cdn));
+                genBeamCommandArgs.Add(("--checksum=" + this.checksum));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
@@ -33,30 +37,30 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual WebStatusWrapper WebStatus(WebStatusArgs statusArgs)
+        public virtual BundlesInstallWrapper BundlesInstall(BundlesInstallArgs installArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
-            genBeamCommandArgs.Add("web");
-            genBeamCommandArgs.Add("status");
-            genBeamCommandArgs.Add(statusArgs.Serialize());
+            genBeamCommandArgs.Add("bundles");
+            genBeamCommandArgs.Add("install");
+            genBeamCommandArgs.Add(installArgs.Serialize());
             // Create an instance of an IBeamCommand
             Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
             // Join all the command paths and args into one string
             string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
             // Configure the command with the command string
             command.SetCommand(genBeamCommandStr);
-            WebStatusWrapper genBeamCommandWrapper = new WebStatusWrapper();
+            BundlesInstallWrapper genBeamCommandWrapper = new BundlesInstallWrapper();
             genBeamCommandWrapper.Command = command;
             // Return the command!
             return genBeamCommandWrapper;
         }
     }
-    public partial class WebStatusWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+    public partial class BundlesInstallWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual WebStatusWrapper OnStreamWebStatusCommandResults(System.Action<ReportDataPoint<BeamWebStatusCommandResults>> cb)
+        public virtual BundlesInstallWrapper OnStreamInstallBundleCommandOutput(System.Action<ReportDataPoint<BeamInstallBundleCommandOutput>> cb)
         {
             this.Command.On("stream", cb);
             return this;
