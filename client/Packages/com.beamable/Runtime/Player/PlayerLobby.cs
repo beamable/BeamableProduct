@@ -40,6 +40,7 @@ namespace Beamable.Player
 		private readonly ILobbyApi _lobbyApi;
 		private readonly INotificationService _notificationService;
 
+		[System.NonSerialized]
 		public ObservableChangeEvent<LobbyEvent, string> ChangeData;
 
 		public PlayerLobby(ILobbyApi lobbyApi, INotificationService notificationService)

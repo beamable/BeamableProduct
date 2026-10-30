@@ -132,7 +132,13 @@ namespace Beamable.Editor.Util
 
 			if (!iconDownload)
 			{
-				iconDownload = EditorGUIUtility.IconContent("Download-Available@2x").image;
+				iconDownload = EditorGUIUtility.FindTexture("Download-Available");
+
+				if (!iconDownload)
+				{
+					iconDownload = AssetDatabase.LoadAssetAtPath<Texture2D>(
+						"Packages/com.beamable/Editor/UI/Common/Icons/IconBeam_Sync.png");
+				}
 			}
 
 			if (!iconMenuOptions)

@@ -600,7 +600,10 @@ namespace Beamable.Player
 		/// <summary>
 		/// Exception thrown by a server will be cached here
 		/// </summary>
+		// Preserve the public error payload; Unity cannot persist System.Exception.
+#pragma warning disable UAC1001
 		public Exception innerException;
+#pragma warning restore UAC1001
 
 		/// <summary>
 		/// The type of error that occured, if <see cref="isSuccess"/> is false.
@@ -711,7 +714,10 @@ namespace Beamable.Player
 	{
 		public bool isSuccess => innerException == null;
 
+		// Preserve the public error payload; Unity cannot persist System.Exception.
+#pragma warning disable UAC1001
 		public Exception innerException;
+#pragma warning restore UAC1001
 
 		public PasswordResetConfirmError error;
 
@@ -1061,6 +1067,7 @@ namespace Beamable.Player
 		/// </summary>
 		public PlayerAccount Current;
 
+		[System.NonSerialized]
 		public Promise OnReady;
 
 		public PlayerAccounts(BeamContext ctx,

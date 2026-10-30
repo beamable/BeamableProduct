@@ -35,6 +35,9 @@ namespace Beamable.Common
 			set => lobbySettings.data.Value.updates.Value = new MapOfString(value);
 		}
 
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1015
 		public Dictionary<string, Dictionary<string, string>> playerData = new Dictionary<string, Dictionary<string, string>>();
+#pragma warning restore UAC1015
 	}
 }

@@ -101,6 +101,7 @@ namespace Beamable.Player
 	{
 		private readonly CurrencyRef _rootRef;
 		private readonly PlayerInventory _inventory;
+		[System.NonSerialized]
 		public Promise OnReady;
 
 		/// <summary>

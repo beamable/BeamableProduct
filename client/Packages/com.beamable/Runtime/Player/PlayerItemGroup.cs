@@ -138,6 +138,7 @@ namespace Beamable.Player
 	{
 		private ItemRef _rootRef;
 		private readonly PlayerInventory _inventory;
+		[System.NonSerialized]
 		public Promise OnReady;
 
 		/// <summary>

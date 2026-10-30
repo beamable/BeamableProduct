@@ -62,6 +62,7 @@ namespace Beamable.Common
 		/// for this player — a campaign's offer grant ids
 		/// (<c>beam_offer_grants</c>, comma-separated) arrive this way.</para>
 		/// </summary>
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015", Justification = "Federation JSON requires this field.")]
 		public Dictionary<string, string> data = new Dictionary<string, string>();
 	}
 
@@ -78,8 +79,14 @@ namespace Beamable.Common
 	public class MessageRailSendResponse
 	{
 		public List<string> sentPlayers = new List<string>();
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1015
 		public Dictionary<string, string> sentPayloadFed = new Dictionary<string, string>();
+#pragma warning restore UAC1015
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1015
 		public Dictionary<string, string> @params = new Dictionary<string, string>();
+#pragma warning restore UAC1015
 		public List<MessageRailErrorPlayerStatus> errorPlayersWithStatus = new List<MessageRailErrorPlayerStatus>();
 
 		/// <summary>

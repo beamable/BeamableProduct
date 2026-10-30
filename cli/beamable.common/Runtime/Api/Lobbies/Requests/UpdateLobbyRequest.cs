@@ -33,7 +33,10 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// Optional number of max players allowed for this lobby. The team configuration in the `matchType` WILL
 		/// override this property.
 		/// </summary>
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1001
 		public int? maxPlayers;
+#pragma warning restore UAC1001
 
 		/// <summary>
 		/// Optional host of the <see cref="Lobby"/>

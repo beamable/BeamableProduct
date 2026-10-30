@@ -70,7 +70,10 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// <summary>
 		/// Arbitrary key -> value pairs associated with this lobby.
 		/// </summary>
+		// JSON contract: preserve this field for Beamable serialization; Unity does not persist this shape.
+#pragma warning disable UAC1015
 		public Dictionary<string, string> data;
+#pragma warning restore UAC1015
 
 		/// <summary>
 		/// Update the state of the current lobby with the data from another lobby instance.
