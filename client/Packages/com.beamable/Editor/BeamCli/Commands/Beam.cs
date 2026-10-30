@@ -22,7 +22,7 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool quiet;
         /// <summary>This option defines the target Beamable environment. Needed for private cloud customers to target their exclusive Beamable environment. Ignorable by everyone else. Stored in '.beamable/config.beam.json'</summary>
         public string host;
-        /// <summary>Overrides the default portal url.</summary>
+        /// <summary>Overrides the portal url the portal commands open, e.g. a self-hosted or deployed portal url</summary>
         public string portalUrl;
         /// <summary>The access token to use for the requests. It overwrites the logged in user stored in auth.beam.json for THIS INVOCATION ONLY</summary>
         public string accessToken;
@@ -45,7 +45,7 @@ namespace Beamable.Editor.BeamCli.Commands
         /// <summary>a custom location for docker. By default, the CLI will attempt to resolve docker through its usual install locations. You can also use the BEAM_DOCKER_EXE environment variable to specify. 
         ///Currently, a docker path has been automatically identified.</summary>
         public string dockerCliPath;
-        /// <summary>a custom location for the Java 8 home used to run the local Scala backend. By default, the CLI will attempt to resolve Java through its usual install locations. You can also use the BEAM_JAVA_HOME environment variable to specify.
+        /// <summary>a custom location for the Java 8 home used by commands that run Java. By default, the CLI will attempt to resolve Java through its usual install locations. You can also use the BEAM_JAVA_HOME environment variable to specify.
         ///Currently, a Java 8 home has been automatically identified.</summary>
         public string javaPath;
         /// <summary>Out all log messages as data payloads in addition to however they are logged</summary>

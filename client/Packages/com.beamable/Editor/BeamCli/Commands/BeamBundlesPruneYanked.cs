@@ -6,7 +6,7 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class BundlesPruneYankedArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>Remove the yanked references from manifest.beam.json (otherwise just report them)</summary>
+        /// <summary>Remove the yanked references from bundles.manifest.beam.json (otherwise just report them)</summary>
         public bool remove;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
