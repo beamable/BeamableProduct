@@ -78,6 +78,8 @@ namespace Beamable.Platform.Tests
 
 		private delegate bool UriMatcher(string uri);
 
+		private Promise<T> _pendingResponse;
+
 		public MockPlatformRoute<T> WithResponse(T response)
 		{
 			_response = response;
@@ -87,6 +89,15 @@ namespace Beamable.Platform.Tests
 		public MockPlatformRoute<T> WithResponse(RequesterException err)
 		{
 			_errorResponse = err;
+			return this;
+		}
+
+		/// <summary>
+		/// Respond with <paramref name="response"/>, which completes only when the test completes it, if ever.
+		/// </summary>
+		public MockPlatformRoute<T> WithPendingResponse(Promise<T> response)
+		{
+			_pendingResponse = response;
 			return this;
 		}
 
@@ -188,6 +199,10 @@ namespace Beamable.Platform.Tests
 			if (_errorResponse != null)
 			{
 				throw _errorResponse;
+			}
+			if (_pendingResponse != null)
+			{
+				return (Promise<T1>)(object)_pendingResponse;
 			}
 
 			return Promise<T1>.Successful((T1)_response);
