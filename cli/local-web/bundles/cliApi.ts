@@ -1,5 +1,5 @@
-// The bundles API `beam bundles management` serves next to this page (BundlesApi in the CLI). Every operation is a
-// job: an existing `bundles` / `deploy` command the CLI runs against its workspace, with its login.
+// The bundles API the CLI serves under /api/bundles (BundlesApi). Every operation is a job: an existing `bundles` /
+// `deploy` command the CLI runs against its workspace, with its login.
 
 import { api, runJob, type Job } from '../shared/connection'
 
@@ -101,7 +101,7 @@ export interface JobParams {
 
 export class CliClient {
   getWorkspace(): Promise<Workspace> {
-    return api('GET', 'workspace')
+    return api('GET', 'bundles/workspace')
   }
 
   /**
@@ -109,7 +109,7 @@ export class CliClient {
    * Resolves with the finished job; check `status`: a failed job does not reject.
    */
   runJob(op: string, params: JobParams = {}, onUpdate?: (job: Job) => void): Promise<Job> {
-    return runJob({ op, ...params }, onUpdate)
+    return runJob({ op, ...params }, onUpdate, 'bundles/')
   }
 }
 

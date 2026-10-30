@@ -14,7 +14,14 @@ public class CliGenerator
 		typeof(ServicesGenerateLocalManifestCommand),
 		typeof(PlayerCommand),
 	};
-	
+
+	/// <summary>
+	/// Whether <paramref name="command"/> is <c>beam local</c> or under it: internal tooling for running Beamable
+	/// locally, never generated into the SDKs. (Other internal commands are, because the SDKs call them.)
+	/// </summary>
+	public static bool IsLocalStackCommand(BeamCommandDescriptor command) =>
+		command.executionPath == "beam local" || command.executionPath.StartsWith("beam local ", StringComparison.Ordinal);
+
 	public CliGenerator(IDependencyProvider provider)
 	{
 		_provider = provider;

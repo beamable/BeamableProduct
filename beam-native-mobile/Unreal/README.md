@@ -31,8 +31,8 @@ Nothing project-specific is baked into the plugin; everything is read from confi
 time.
 
 > The binaries under `ThirdParty/` (iOS `BeamableNotifications.embeddedframework.zip`, Android
-> `beamable-notifications-release.aar`) are staged by `beam local run native-libs`. If `ThirdParty/`
-> is empty, run `beam local run native-libs` from the workspace you run local stacks in first (macOS + Xcode for the iOS framework).
+> `beamable-notifications-release.aar`) are built from `beam-native-mobile/NativeSources`. If `ThirdParty/`
+> is empty, build them there first (macOS + Xcode for the iOS framework).
 
 > **Naming:** the UE plugin/module is `BeamPlatformNotifications`, but the iOS **framework** binary is
 > still `BeamableNotifications.framework` (it matches its `@rpath` install name), and the native C ABI

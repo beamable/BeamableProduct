@@ -100,8 +100,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install ${{ inputs.sdkVersion != '' && '--no-frozen-lockfile' || '--frozen-lockfile' }}
 
-      # The components and the standalone runtime (runtime/, for the Beam CLI's local web apps) come from
-      # agentic-portal, so its packages are installed too.
+      # The components come from agentic-portal's custom-elements.json.
       - name: Check out agentic-portal
         if: ${{ env.HAS_PORTAL_TOKEN == 'true' }}
         uses: actions/checkout@v5
@@ -110,17 +109,12 @@ jobs:
           token: ${{ secrets.AGENTIC_PORTAL_TOKEN }}
           path: agentic-portal
 
-      - name: Install agentic-portal's packages
-        if: ${{ env.HAS_PORTAL_TOKEN == 'true' }}
-        working-directory: agentic-portal
-        run: npm ci --@beamable:registry=https://registry.npmjs.org/
-
       - name: Sync components
         run: |
           if [ "$HAS_PORTAL_TOKEN" == "true" ]; then
             PORTAL_REPO_PATH="$GITHUB_WORKSPACE/agentic-portal" pnpm sync-components
           else
-            echo "::warning::AGENTIC_PORTAL_TOKEN is not set: no runtime/ can be built, so publishing will stop"
+            echo "::warning::AGENTIC_PORTAL_TOKEN is not set: publishing with the committed components"
           fi
 
       - name: Compute version

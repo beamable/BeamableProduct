@@ -75,27 +75,28 @@ export interface Job {
 
 export const TERMINAL: JobStatus[] = ['succeeded', 'failed', 'cancelled']
 
-export function startJob(params: Record<string, unknown>): Promise<Job> {
-  return api('POST', 'jobs', params)
+/** `base` is the API the jobs belong to: '' for the stacks, 'bundles/' for the bundles. */
+export function startJob(params: Record<string, unknown>, base = ''): Promise<Job> {
+  return api('POST', `${base}jobs`, params)
 }
 
-export function getJob(jobId: string, fromLog: number): Promise<Job> {
-  return api('GET', `jobs/${encodeURIComponent(jobId)}?fromLog=${fromLog}`)
+export function getJob(jobId: string, fromLog: number, base = ''): Promise<Job> {
+  return api('GET', `${base}jobs/${encodeURIComponent(jobId)}?fromLog=${fromLog}`)
 }
 
-export function cancelJob(jobId: string): Promise<Job> {
-  return api('POST', `jobs/${encodeURIComponent(jobId)}/cancel`)
+export function cancelJob(jobId: string, base = ''): Promise<Job> {
+  return api('POST', `${base}jobs/${encodeURIComponent(jobId)}/cancel`)
 }
 
 /**
  * Starts a job and polls it to the end. `onUpdate` gets the job with every log line so far.
  * Resolves with the finished job; check `status`: a failed job does not reject.
  */
-export async function runJob(params: Record<string, unknown>, onUpdate?: (job: Job) => void): Promise<Job> {
-  let job = await startJob(params)
+export async function runJob(params: Record<string, unknown>, onUpdate?: (job: Job) => void, base = ''): Promise<Job> {
+  let job = await startJob(params, base)
   const logs: JobLog[] = []
   for (;;) {
-    job = await getJob(job.id, logs.length)
+    job = await getJob(job.id, logs.length, base)
     logs.push(...job.logs)
     job = { ...job, logs: [...logs] }
     onUpdate?.(job)

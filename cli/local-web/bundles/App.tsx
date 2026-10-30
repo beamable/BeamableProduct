@@ -12,7 +12,6 @@ import {
   BeamIcon,
   BeamInput,
   BeamOption,
-  BeamPageHeader,
   BeamProgressBar,
   BeamRelativeTime,
   BeamSpinner,
@@ -21,9 +20,9 @@ import {
   BeamTabPanel,
   BeamTable,
   BeamTextarea,
-} from '@beamable/portal-toolkit/react'
-import { BoundSelect, ThemeToggle, errorMessage, mono, text, textMuted, useSessionState, useToasts } from '../shared/ui'
-import { sessionToken } from '../shared/connection'
+} from '../shared/beam'
+import { BoundSelect, errorMessage, mono, text, textMuted, toast, useSessionState } from '../shared/ui'
+import { ApiError, sessionToken } from '../shared/connection'
 import {
   CliClient,
   jobError,
@@ -42,7 +41,7 @@ import {
 
 const TABS = ['bundles', 'pins', 'releases', 'activity']
 
-const CLI_COMMAND = 'beam bundles management'
+const CLI_COMMAND = 'beam local management'
 
 const QUIET: CSSProperties = { ...textMuted, fontSize: '12px' }
 const QUIET_MONO: CSSProperties = { ...textMuted, ...mono, fontSize: '11px' }
@@ -225,20 +224,21 @@ function JobLogView({ job }: { job: Job | null }) {
 }
 
 export default function App() {
-  const { toast, Toaster } = useToasts()
 
-  const [storedTab, setStoredTab] = useSessionState('tab', 'bundles')
+  const [storedTab, setStoredTab] = useSessionState('bundles:tab', 'bundles')
   const activeTab = TABS.includes(storedTab) ? storedTab : 'bundles'
 
   // ── Connection to the CLI ──
   const [client, setClient] = useState<CliClient | null>(null)
   const [connecting, setConnecting] = useState(true)
   const [connectError, setConnectError] = useState('')
+  const [unavailable, setUnavailable] = useState(false)
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
 
   async function connect() {
     setConnecting(true)
     setConnectError('')
+    setUnavailable(false)
     setClient(null)
     try {
       // The CLI opens this page with its session token in the fragment.
@@ -247,7 +247,8 @@ export default function App() {
       setWorkspace(await cli.getWorkspace())
       setClient(cli)
     } catch (err) {
-      setConnectError(errorMessage(err, 'Could not reach the CLI. Is `bundles management` still running?'))
+      setUnavailable(err instanceof ApiError && err.status === 409)
+      setConnectError(errorMessage(err, 'Could not reach the CLI. Is `beam local management` still running?'))
     } finally {
       setConnecting(false)
     }
@@ -534,19 +535,10 @@ export default function App() {
   }, 2)
 
   // ── Render ──
-  const header = (
-    <BeamPageHeader
-      label="Bundles"
-      description="List, pin, plan, publish and deploy bundles through the Beamable CLI running in your workspace"
-    >
-      <div slot="actions"><ThemeToggle /></div>
-    </BeamPageHeader>
-  )
 
   if (connecting) {
     return (
       <div style={STACK}>
-        {header}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
           <BeamSpinner style={{ fontSize: '2rem' }} />
         </div>
@@ -554,10 +546,27 @@ export default function App() {
     )
   }
 
+  if (!client && unavailable) {
+    return (
+      <div style={STACK}>
+        <BeamCallout variant="warning">
+          <BeamIcon slot="icon" name="triangle-exclamation" />
+          <div style={STACK}>
+            <span style={text}>{connectError}</span>
+            <div>
+              <BeamButton size="small" appearance="outlined" onClick={connect}>
+                <BeamIcon slot="start" name="rotate" /> Retry
+              </BeamButton>
+            </div>
+          </div>
+        </BeamCallout>
+      </div>
+    )
+  }
+
   if (!client) {
     return (
       <div style={STACK}>
-        {header}
         <BeamCallout variant={connectError ? 'danger' : 'neutral'}>
           <BeamIcon slot="icon" name="terminal" />
           <div style={STACK}>
@@ -590,7 +599,6 @@ export default function App() {
             </div>
           </div>
         </BeamCallout>
-        <Toaster />
       </div>
     )
   }
@@ -655,7 +663,6 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      {header}
 
       <BeamCallout variant="success">
         <BeamIcon slot="icon" name="plug" />
@@ -672,10 +679,7 @@ export default function App() {
 
       <BeamTabGroup
         active={activeTab}
-        onWaTabShow={(e: CustomEvent) => {
-          const name = (e.detail as { name?: string })?.name
-          if (name && TABS.includes(name)) setStoredTab(name)
-        }}
+        onChange={(name) => { if (TABS.includes(name)) setStoredTab(name) }}
       >
         <BeamTab slot="nav" panel="bundles">Bundles</BeamTab>
         <BeamTab slot="nav" panel="pins">
@@ -993,7 +997,7 @@ export default function App() {
         open={publishTarget != null}
         label={`Publish ${publishTarget ? shortName(publishTarget) : ''}`}
         with-footer
-        onWaHide={(e: Event) => { if (e.target === e.currentTarget && !busy) setPublishTarget(null) }}
+        onClose={() => { if (!busy) setPublishTarget(null) }}
         style={{ '--width': '52rem' } as CSSProperties}
       >
         <div style={STACK}>
@@ -1100,7 +1104,7 @@ export default function App() {
         open={deployScope != null}
         label={`Deploy ${deployScope ?? ''} pins`}
         with-footer
-        onWaHide={(e: Event) => { if (e.target === e.currentTarget && !busy) setDeployScope(null) }}
+        onClose={() => { if (!busy) setDeployScope(null) }}
         style={{ '--width': '52rem' } as CSSProperties}
       >
         <div style={STACK}>
@@ -1147,7 +1151,7 @@ export default function App() {
         open={pinTarget != null}
         label={`Pin ${pinTarget?.name ?? ''}`}
         with-footer
-        onWaHide={(e: Event) => { if (e.target === e.currentTarget) setPinTarget(null) }}
+        onClose={() => setPinTarget(null)}
         style={{ '--width': '28rem' } as CSSProperties}
       >
         {pinTarget && (
@@ -1173,7 +1177,7 @@ export default function App() {
         open={tagTarget != null}
         label="Tag release"
         with-footer
-        onWaHide={(e: Event) => { if (e.target === e.currentTarget) setTagTarget(null) }}
+        onClose={() => setTagTarget(null)}
         style={{ '--width': '28rem' } as CSSProperties}
       >
         <BeamInput size="small" label="Tag" placeholder="e.g. stable" value={newTag} onValueChange={setNewTag} />
@@ -1188,7 +1192,7 @@ export default function App() {
         open={aclTarget != null}
         label="Change bundle ACL"
         with-footer
-        onWaHide={(e: Event) => { if (e.target === e.currentTarget) setAclTarget(null) }}
+        onClose={() => setAclTarget(null)}
         style={{ '--width': '28rem' } as CSSProperties}
       >
         <p style={{ ...QUIET, marginTop: 0 }}>
@@ -1219,8 +1223,8 @@ export default function App() {
         message={`Yank ${yankTarget?.name ?? ''} at ${shortChecksum(yankTarget?.checksum ?? '')}? New references to this checksum are blocked; deploys already pinned to it keep working.`}
         confirm-label="Yank"
         confirm-variant="danger"
-        onWaConfirm={confirmYank}
-        onWaCancel={() => setYankTarget(null)}
+        onConfirm={confirmYank}
+        onCancel={() => setYankTarget(null)}
       />
 
       <BeamDialog
@@ -1228,7 +1232,7 @@ export default function App() {
         label="Details"
         light-dismiss
         with-footer
-        onWaHide={(e: Event) => { if (e.target === e.currentTarget) setJsonData(null) }}
+        onClose={() => setJsonData(null)}
         style={{ '--width': '48rem' } as CSSProperties}
       >
         {/* `BeamJson` isn't exposed by the host portal's React component registry (rendering it crashes the
@@ -1253,7 +1257,6 @@ export default function App() {
         </div>
       </BeamDialog>
 
-      <Toaster />
     </div>
   )
 }

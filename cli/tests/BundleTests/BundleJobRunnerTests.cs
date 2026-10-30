@@ -4,10 +4,13 @@ using cli.Services.Bundles;
 using cli.Services.LocalWeb;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace tests.BundleTests;
 
@@ -113,7 +116,7 @@ public class BundleJobRunnerTests
 }
 
 /// <summary>
-/// Unit tests for <see cref="LocalWebServer"/>'s request guard and the bundles routes. The API runs CLI commands with
+/// Unit tests for <see cref="LocalWebServer"/>'s request guard, the page's API routing and the bundles routes. The API runs CLI commands with
 /// this CLI's credentials, so only the page's own origin, with this run's session token, gets through.
 /// </summary>
 public class LocalWebServerTests
@@ -121,7 +124,7 @@ public class LocalWebServerTests
 	const string Token = "session-secret";
 
 	static LocalWebServer NewServer() =>
-		new("bundles", new BundlesApi(new BundlesManagementContext { Jobs = new CliJobRunner(System.Array.Empty<string>()) }), Token);
+		new(new BundlesApi(new BundlesManagementContext { Jobs = new CliJobRunner(System.Array.Empty<string>()) }), Token);
 
 	static BundlesApi NewApi() => new(new BundlesManagementContext { Jobs = new CliJobRunner(System.Array.Empty<string>()) });
 
@@ -180,14 +183,50 @@ public class LocalWebServerTests
 		Assert.That(NewApi().Dispatch("GET", new[] { "jobs" }, null, ""), Is.Empty);
 	}
 
+	/// <summary>
+	/// /api/bundles/… reaches the bundles API once its context resolves; until then (not signed in, no zone) it answers
+	/// 409 with the reason, asks again on the next call, and the stacks routes never wait for it.
+	/// </summary>
+	[Test]
+	public void ManagementApi_RoutesBundles_AndRetriesAnUnavailableRealm()
+	{
+		var stacks = new RecordingApi();
+		var signedIn = false;
+		var api = new LocalManagementApi(stacks, () => signedIn
+			? Task.FromResult(new BundlesManagementContext { Jobs = new CliJobRunner(System.Array.Empty<string>()) })
+			: throw new LocalWebRequestException(409, "not signed in"));
+
+		api.Dispatch("GET", new[] { "stacks" }, null, "");
+		Assert.That(stacks.Calls, Is.EqualTo(new[] { "GET stacks" }));
+
+		var ex = Assert.Throws<LocalWebRequestException>(() => api.Dispatch("GET", new[] { "bundles", "jobs" }, null, ""));
+		Assert.That(ex!.Status, Is.EqualTo(409));
+		Assert.That(ex.Message, Is.EqualTo("not signed in"));
+
+		signedIn = true;
+		Assert.That(api.Dispatch("GET", new[] { "bundles", "jobs" }, null, ""), Is.Empty);
+		Assert.That(stacks.Calls, Has.Count.EqualTo(1));
+	}
+
+	class RecordingApi : ILocalWebApi
+	{
+		public readonly List<string> Calls = new();
+
+		public object Dispatch(string method, string[] parts, NameValueCollection query, string body)
+		{
+			Calls.Add($"{method} {string.Join('/', parts)}");
+			return null;
+		}
+	}
+
 	/// <summary>Only embedded names are served: a path can't climb out of the app's folder.</summary>
 	[TestCase("/../../appsettings.json")]
 	[TestCase("/..%2F..%2Fcli.dll")]
-	[TestCase("/runtime/../stacks/index.html.bak")]
+	[TestCase("/assets/../index.html.bak")]
 	[TestCase("/nope.js")]
 	public void Assets_OnlyServeEmbeddedFiles(string path)
 	{
-		Assert.That(LocalWebAssets.TryRead("stacks", path, out _, out _), Is.False);
+		Assert.That(LocalWebAssets.TryRead(path, out _, out _), Is.False);
 	}
 
 	/// <summary>
@@ -213,21 +252,21 @@ public class LocalWebServerTests
 		}
 	}
 
-	/// <summary>Served from the checkout's build (a CLI built without its apps): only files inside that folder.</summary>
+	/// <summary>Served from the checkout's build (a CLI built without its app): only files inside that folder.</summary>
 	[Test]
 	public void Assets_FromTheCheckout_StayInsideItsBuild()
 	{
 		var dir = Path.Combine(Path.GetTempPath(), "beam-localweb-" + Path.GetRandomFileName());
-		Directory.CreateDirectory(Path.Combine(dir, "LocalWeb", "stacks"));
-		File.WriteAllText(Path.Combine(dir, "LocalWeb", "stacks", "index.html"), "<html>");
+		Directory.CreateDirectory(Path.Combine(dir, "LocalWeb", "assets"));
+		File.WriteAllText(Path.Combine(dir, "LocalWeb", "index.html"), "<html>");
 		File.WriteAllText(Path.Combine(dir, "secret.txt"), "no");
 		try
 		{
 			var web = Path.Combine(dir, "LocalWeb");
-			Assert.That(LocalWebAssets.CheckoutFile(web, "stacks/index.html"), Is.Not.Null);
+			Assert.That(LocalWebAssets.CheckoutFile(web, "index.html"), Is.Not.Null);
 			Assert.That(LocalWebAssets.CheckoutFile(web, "../secret.txt"), Is.Null);
-			Assert.That(LocalWebAssets.CheckoutFile(web, "stacks/../../secret.txt"), Is.Null);
-			Assert.That(LocalWebAssets.CheckoutFile(web, "stacks/missing.js"), Is.Null);
+			Assert.That(LocalWebAssets.CheckoutFile(web, "assets/../../secret.txt"), Is.Null);
+			Assert.That(LocalWebAssets.CheckoutFile(web, "assets/missing.js"), Is.Null);
 		}
 		finally
 		{

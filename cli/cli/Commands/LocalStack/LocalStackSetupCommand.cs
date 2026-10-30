@@ -137,6 +137,8 @@ public class LocalStackSetupCommand
 	: AtomicCommand<LocalStackSetupCommandArgs, LocalStackSetupCommandResult>
 	, IStandaloneCommand, ISkipManifest
 {
+	public override bool IsForInternalUse => true;
+
 	// It prints its own readable output; the result object still reaches tools through the data channel.
 	public override bool AutoLogOutput => false;
 

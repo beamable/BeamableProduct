@@ -18,7 +18,7 @@ public class JavaPathOption : Option<string>
 
 	private JavaPathOption() : base(
 		name: "--java-path",
-		description: "a custom location for the Java 8 home used to run the local Scala backend. By default, the CLI " +
+		description: "a custom location for the Java 8 home used by commands that run Java. By default, the CLI " +
 		             $"will attempt to resolve Java through its usual install locations. You can also use the {ConfigService.ENV_VAR_JAVA_HOME} " +
 		             "environment variable to specify.")
 	{

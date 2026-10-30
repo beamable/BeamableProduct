@@ -26,6 +26,8 @@ public class LocalStackWebCommand
 	: AtomicCommand<LocalStackWebCommandArgs, LocalStackWebCommandResult>
 	, IStandaloneCommand, ISkipManifest
 {
+	public override bool IsForInternalUse => true;
+
 	public const string Build = "build", Publish = "publish", Install = "install", Watch = "watch";
 
 	public override bool AutoLogOutput => false;

@@ -6,7 +6,8 @@ using System.Text.RegularExpressions;
 namespace cli.Services.Bundles;
 
 /// <summary>
-/// The API of the bundles web app `beam bundles management` serves (<see cref="LocalWebServer"/>). Every operation
+/// The API of the Bundles tab of the page `beam local management` serves, under <c>/api/bundles</c>
+/// (<see cref="cli.Commands.LocalStack.LocalManagementApi"/>). Every operation
 /// runs one of the existing `bundles` / `deploy` commands against this workspace as a job (<see cref="CliJobRunner"/>),
 /// with this CLI's credentials.
 /// </summary>

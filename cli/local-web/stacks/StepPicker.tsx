@@ -1,5 +1,5 @@
 import { useMemo, useState, type CSSProperties } from 'react'
-import { BeamButton, BeamCheckbox, BeamIcon, BeamInput, BeamTag } from '@beamable/portal-toolkit/react'
+import { BeamButton, BeamCheckbox, BeamIcon, BeamInput, BeamTag } from '../shared/beam'
 import { text, textMuted } from '../shared/ui'
 
 export interface PickerGroup {
@@ -51,7 +51,7 @@ export function StepPicker({ label, groups, value, onChange, emptyText = 'Nothin
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.375rem' }}>
         {value.length === 0 && <span style={{ ...textMuted, fontSize: '13px' }}>{emptyText}</span>}
         {value.map((v) => (
-          <BeamTag key={v} size="small" with-remove onWaRemove={() => toggle(v, false)}>{v}</BeamTag>
+          <BeamTag key={v} size="small" with-remove onRemove={() => toggle(v, false)}>{v}</BeamTag>
         ))}
         <BeamButton size="small" appearance="plain" onClick={() => setOpen(!open)}>
           <BeamIcon slot="start" name={open ? 'chevron-up' : 'chevron-down'} /> {open ? 'Done' : 'Choose'}

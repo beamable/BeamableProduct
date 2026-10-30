@@ -2,16 +2,20 @@
   "name": "beam-local-web",
   "private": true,
   "type": "module",
-  "description": "The Beam CLI's local web apps (beam local management, beam bundles management), built into cli/cli/LocalWeb and embedded by cli.csproj",
+  "description": "The page `beam local management` serves (local stacks and bundles), built into cli/cli/LocalWeb and embedded by cli.csproj",
   "packageManager": "pnpm@10.8.0",
   "scripts": {
-    "build": "node build.mjs",
+    "build": "vite build",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
   "devDependencies": {
-    "@beamable/portal-toolkit": "link:../../beam-portal-toolkit",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^5.1.0",
     "typescript": "^5.8.3",
     "vite": "^7.2.2"
   }

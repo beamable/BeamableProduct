@@ -30,6 +30,8 @@ public class LocalStackNativeCommand
 	: AtomicCommand<LocalStackNativeCommandArgs, LocalStackNativeCommandResult>
 	, IStandaloneCommand, ISkipManifest
 {
+	public override bool IsForInternalUse => true;
+
 	public const string Android = "android", Ios = "ios", Rn = "rn", Emulator = "emulator";
 	public const string AnyDevice = "any", EmulatorDevice = "emulator", PhoneDevice = "phone", Browser = "browser";
 

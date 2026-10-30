@@ -165,6 +165,8 @@ public class LocalStackRunCommand
 	, IResultSteam<LocalStackDryRunChannel, LocalStackDryRun>
 	, IStandaloneCommand, ISkipManifest
 {
+	public override bool IsForInternalUse => true;
+
 	private readonly object _launchedLock = new object();
 
 	/// <summary>The board for this run; null before the first step launches.</summary>

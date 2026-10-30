@@ -12,7 +12,7 @@ using UnityEngine;
 /// <c>com.beamable.notifications</c> package.
 ///
 /// The unified <c>beamable-notifications-release.aar</c> ships with this package under
-/// <see cref="PackageAarPath"/> (produced by <c>beam local run native-libs</c>). App-specific config —
+/// <see cref="PackageAarPath"/> (built from <c>beam-native-mobile/NativeSources/Android</c>). App-specific config —
 /// the <c>AndroidManifest.xml</c> and (optional) <c>google-services.json</c> — lives in the
 /// consuming project under <see cref="PluginsAndroidDir"/>; this tool can scaffold a default
 /// manifest when one is missing.
@@ -23,7 +23,7 @@ public static class BeamableAndroidSetup
     public const string ManifestPath = PluginsAndroidDir + "/AndroidManifest.xml";
     public const string GoogleServicesPath = PluginsAndroidDir + "/google-services.json";
 
-    // The unified AAR ships inside this package (copied here by beam local run native-libs).
+    // The unified AAR ships inside this package (built from beam-native-mobile/NativeSources/Android).
     public const string PackageAarPath =
         "Packages/com.beamable.notifications/Plugins/Android/beamable-notifications-release.aar";
 
@@ -72,12 +72,12 @@ public static class BeamableAndroidSetup
     {
         var results = new List<CheckResult>();
 
-        // The unified AAR ships inside this package; beam local run native-libs refreshes it. Not an Error
+        // The unified AAR ships inside this package; rebuilding the native sources refreshes it. Not an Error
         // (a normal checkout has it committed) — only warn if it has somehow gone missing.
         results.Add(File.Exists(PackageAarPath)
             ? new CheckResult(Level.Ok, "Notifications AAR present", "beamable-notifications-release.aar found in the package")
             : new CheckResult(Level.Warn, "Notifications AAR missing",
-                "Run `beam local run native-libs` to build beamable-notifications-release.aar into " + PackageAarPath));
+                "Build beamable-notifications-release.aar from beam-native-mobile/NativeSources/Android into " + PackageAarPath));
 
         // Manifest checks (app-specific; auto-created by ApplySettings when absent).
         if (File.Exists(ManifestPath))

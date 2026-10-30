@@ -14,16 +14,15 @@ import {
   BeamIcon,
   BeamInput,
   BeamOption,
-  BeamPageHeader,
   BeamSpinner,
   BeamTab,
   BeamTabGroup,
   BeamTabPanel,
   BeamTable,
   BeamTextarea,
-} from '@beamable/portal-toolkit/react'
+} from '../shared/beam'
 import { StepPicker, type PickerGroup } from './StepPicker'
-import { BoundSelect, ThemeToggle, errorMessage, mono, text, textMuted, useSessionState, useToasts } from '../shared/ui'
+import { BoundSelect, errorMessage, mono, text, textMuted, toast, useSessionState } from '../shared/ui'
 import { sessionToken } from '../shared/connection'
 import {
   deleteStack,
@@ -174,8 +173,7 @@ function emptyForm(): StackForm {
 }
 
 export default function App() {
-  const { toast, Toaster } = useToasts()
-  const [storedTab, setStoredTab] = useSessionState('tab', 'stacks')
+  const [storedTab, setStoredTab] = useSessionState('stacks:tab', 'stacks')
   const activeTab = TABS.includes(storedTab) ? storedTab : 'stacks'
 
   // ── Connection and data ──
@@ -468,16 +466,10 @@ export default function App() {
   }, [choices, baseSteps, form.include, form.exclude])
 
   // ── Render ──
-  const header = (
-    <BeamPageHeader label="Local stacks" description="Create, start and follow the local stacks of this workspace through the Beamable CLI">
-      <div slot="actions"><ThemeToggle /></div>
-    </BeamPageHeader>
-  )
 
   if (connecting) {
     return (
       <div style={STACK}>
-        {header}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
           <BeamSpinner style={{ fontSize: '2rem' }} />
         </div>
@@ -488,7 +480,6 @@ export default function App() {
   if (!workspace) {
     return (
       <div style={STACK}>
-        {header}
         <BeamCallout variant={connectError ? 'danger' : 'neutral'}>
           <BeamIcon slot="icon" name="terminal" />
           <div style={STACK}>
@@ -503,7 +494,6 @@ export default function App() {
             </div>
           </div>
         </BeamCallout>
-        <Toaster />
       </div>
     )
   }
@@ -511,7 +501,6 @@ export default function App() {
   if (!workspace.hasSettings) {
     return (
       <div style={STACK}>
-        {header}
         <BeamCallout variant="warning">
           <BeamIcon slot="icon" name="triangle-exclamation" />
           <div style={STACK}>
@@ -526,14 +515,12 @@ export default function App() {
             </div>
           </div>
         </BeamCallout>
-        <Toaster />
       </div>
     )
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      {header}
 
       <BeamCallout variant="success">
         <BeamIcon slot="icon" name="plug" />
@@ -550,10 +537,7 @@ export default function App() {
 
       <BeamTabGroup
         active={activeTab}
-        onWaTabShow={(e: CustomEvent) => {
-          const name = (e.detail as { name?: string })?.name
-          if (name && TABS.includes(name)) setStoredTab(name)
-        }}
+        onChange={(name) => { if (TABS.includes(name)) setStoredTab(name) }}
       >
         <BeamTab slot="nav" panel="stacks">Stacks</BeamTab>
         <BeamTab slot="nav" panel="running">
@@ -816,7 +800,7 @@ export default function App() {
         open={startTarget != null}
         label={`Start ${startTarget?.name ?? ''}`}
         with-footer
-        onWaHide={(e: Event) => { if (e.target === e.currentTarget) setStartTarget(null) }}
+        onClose={() => setStartTarget(null)}
         style={{ '--width': '32rem' } as CSSProperties}
       >
         {startTarget && (
@@ -859,7 +843,7 @@ export default function App() {
       <BeamDialog
         open={preview != null}
         label={`What ${preview?.name ?? ''} runs`}
-        onWaHide={(e: Event) => { if (e.target === e.currentTarget) setPreview(null) }}
+        onClose={() => setPreview(null)}
         style={{ '--width': '52rem' } as CSSProperties}
       >
         {preview && !preview.result && !preview.error && (
@@ -902,7 +886,7 @@ export default function App() {
         open={formOpen}
         label={formMode === 'create' ? 'New stack' : `Edit ${form.name}`}
         with-footer
-        onWaHide={(e: Event) => { if (e.target === e.currentTarget && !saving) setFormOpen(false) }}
+        onClose={() => { if (!saving) setFormOpen(false) }}
         style={{ '--width': '44rem' } as CSSProperties}
       >
         <div key={formKey} style={STACK}>
@@ -1005,9 +989,7 @@ export default function App() {
                 <BeamDetails
                   key={row.key}
                   open={row.open}
-                  // Only the details' own toggles: the selects inside it send wa-show/wa-hide that bubble up here too.
-                  onWaShow={(e: CustomEvent) => { if (e.target === e.currentTarget) updateCommand(row.key, (r) => ({ ...r, open: true })) }}
-                  onWaHide={(e: CustomEvent) => { if (e.target === e.currentTarget) updateCommand(row.key, (r) => ({ ...r, open: false })) }}
+                  onOpenChange={(open) => updateCommand(row.key, (r) => ({ ...r, open }))}
                 >
                   <span slot="summary" style={{ ...ROW, gap: '0.5rem', flexWrap: 'nowrap', minWidth: 0 }}>
                     <span style={{ ...text, fontWeight: 600, fontSize: '13px', whiteSpace: 'nowrap' }}>{c.name.trim() || 'New command'}</span>
@@ -1098,7 +1080,7 @@ export default function App() {
         open={logs != null}
         label={`Log of ${logs?.step ?? ''}`}
         with-footer={!!(logs && grafana?.steps[logs.step])}
-        onWaHide={(e: Event) => { if (e.target === e.currentTarget) setLogs(null) }}
+        onClose={() => setLogs(null)}
         style={{ '--width': '64rem' } as CSSProperties}
       >
         {logs && (logs.lines.length ? <FollowLog lines={logs.lines} /> : <span style={QUIET}>Nothing logged yet.</span>)}
@@ -1117,8 +1099,8 @@ export default function App() {
         message={`Delete ${deleteTarget?.name ?? ''} from ${deleteTarget?.layer === 'shared' ? 'the team stacks (committed)' : 'your stacks'}?`}
         confirm-label="Delete"
         confirm-variant="danger"
-        onWaConfirm={confirmDelete}
-        onWaCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
 
       <BeamConfirmDialog
@@ -1127,11 +1109,10 @@ export default function App() {
         message="Stop the stack and delete the local database and logs? The next run creates a new org and realm."
         confirm-label="Stop & purge"
         confirm-variant="danger"
-        onWaConfirm={() => { setPurgeAsk(false); act('Stopping', () => stopStack(true)) }}
-        onWaCancel={() => setPurgeAsk(false)}
+        onConfirm={() => { setPurgeAsk(false); act('Stopping', () => stopStack(true)) }}
+        onCancel={() => setPurgeAsk(false)}
       />
 
-      <Toaster />
     </div>
   )
 }

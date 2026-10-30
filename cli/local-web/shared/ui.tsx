@@ -1,8 +1,9 @@
-// Small pieces both apps share. The first ones are copies of agentic-portal's extension libs (portal-ui, portal-dev),
-// which these apps can't import from another repository.
+// Small pieces both tabs share: text styles, errors, toasts, session state and the theme.
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { BeamButton, BeamSelect, BeamToast, BeamToastStack } from '@beamable/portal-toolkit/react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
+import { BeamButton, BeamIcon } from './beam'
+
+export { BoundSelect } from './beam'
 
 /** Default body text color. */
 export const text: CSSProperties = { color: 'var(--color-beam-text)' }
@@ -18,95 +19,57 @@ export function errorMessage(err: unknown, fallback: string): string {
   return err instanceof Error ? err.message : fallback
 }
 
-/**
- * A `<BeamSelect>` that reports its value through `onChange`. The value is seeded once on mount; to reset it,
- * remount it with a `key`.
- */
-export function BoundSelect({
-  defaultValue,
-  onChange,
-  multiple,
-  children,
-  ...rest
-}: {
-  defaultValue: string | string[]
-  onChange: (value: any) => void
-  multiple?: boolean
-  children: ReactNode
-  [key: string]: unknown
-}) {
-  const elRef = useRef<any>(null)
-  const onChangeRef = useRef(onChange)
-  onChangeRef.current = onChange
-  const seeded = useRef(false)
-
-  const bind = useCallback(
-    (el: any) => {
-      elRef.current = el
-      if (!el || el.__beamBoundSelect) return
-      el.__beamBoundSelect = true
-      el.addEventListener('change', () => {
-        const value = el.value
-        if (multiple) onChangeRef.current(Array.isArray(value) ? value : value ? [value] : [])
-        else onChangeRef.current(String(value ?? ''))
-      })
-      el.addEventListener('wa-clear', () => onChangeRef.current(multiple ? [] : ''))
-    },
-    [multiple],
-  )
-
-  useEffect(() => {
-    const el = elRef.current
-    if (!el || seeded.current) return
-    seeded.current = true
-    Promise.resolve(el.updateComplete).then(() => {
-      el.value = defaultValue
-    })
-    // Seeded once on mount by design (see above).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  return (
-    <BeamSelect ref={bind} size="small" multiple={multiple} {...rest}>
-      {children}
-    </BeamSelect>
-  )
-}
+// ── Toasts: one stack for the page, rendered once by <Toaster /> ──
 
 type ToastVariant = 'success' | 'danger' | 'warning' | 'info'
+interface ToastEntry { id: number; variant: ToastVariant; message: string }
 
+const TOAST_MS = 4000
+let toasts: ToastEntry[] = []
 let nextToastId = 1
+const toastListeners = new Set<() => void>()
 
-/** A page-local toast stack: call the returned `toast` functions and render `<Toaster />` once. */
-export function useToasts(duration = 4000) {
-  const [entries, setEntries] = useState<{ id: number; variant: ToastVariant; message: string }[]>([])
-  const dismiss = useCallback((id: number) => setEntries((prev) => prev.filter((t) => t.id !== id)), [])
-  const push = useCallback((variant: ToastVariant, message: string) => {
-    setEntries((prev) => [...prev, { id: nextToastId++, variant, message }])
-  }, [])
+function setToasts(next: ToastEntry[]) {
+  toasts = next
+  toastListeners.forEach((l) => l())
+}
 
-  const toast = useMemo(
-    () => ({
-      success: (message: string) => push('success', message),
-      error: (message: string) => push('danger', message),
-      warning: (message: string) => push('warning', message),
-      info: (message: string) => push('info', message),
-    }),
-    [push],
+function push(variant: ToastVariant, message: string) {
+  const id = nextToastId++
+  setToasts([...toasts, { id, variant, message }])
+  setTimeout(() => setToasts(toasts.filter((t) => t.id !== id)), TOAST_MS)
+}
+
+export const toast = {
+  success: (message: string) => push('success', message),
+  error: (message: string) => push('danger', message),
+  warning: (message: string) => push('warning', message),
+  info: (message: string) => push('info', message),
+}
+
+export function Toaster() {
+  const entries = useSyncExternalStore((l) => { toastListeners.add(l); return () => { toastListeners.delete(l) } }, () => toasts)
+  const ref = useRef<HTMLDivElement>(null)
+  // A popover, re-shown for each toast: the top layer puts it above an open dialog (which is in the top layer too).
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (el.matches(':popover-open')) el.hidePopover()
+    if (entries.length > 0) el.showPopover()
+  }, [entries.length])
+  return (
+    <div ref={ref} popover="manual" className="beam-toasts" role="status" aria-live="polite">
+      {entries.map((t) => (
+        <div key={t.id} className={`beam-toast beam-${t.variant === 'info' ? 'brand' : t.variant}`}>
+          <span>{t.message}</span>
+          <button type="button" className="beam-button beam-neutral beam-plain beam-small" aria-label="Dismiss"
+            onClick={() => setToasts(toasts.filter((x) => x.id !== t.id))}>
+            <BeamIcon name="xmark" />
+          </button>
+        </div>
+      ))}
+    </div>
   )
-
-  const Toaster = useCallback(
-    () => (
-      <BeamToastStack placement="bottom-end">
-        {entries.map((t) => (
-          <BeamToast key={t.id} variant={t.variant} message={t.message} duration={duration} show-progress onWaHide={() => dismiss(t.id)} />
-        ))}
-      </BeamToastStack>
-    ),
-    [entries, duration, dismiss],
-  )
-
-  return { toast, Toaster }
 }
 
 /** State kept in this tab's sessionStorage, so a reload keeps it. */
@@ -130,27 +93,30 @@ export function useSessionState<T>(key: string, initial: T): [T, (value: T) => v
   return [value, set]
 }
 
+// ── Theme: data-theme on <html>, remembered in localStorage ──
+
 type Theme = 'dark' | 'light'
+const THEME_KEY = 'beam-local-web:theme'
 
-interface RuntimeTheme {
-  get(): Theme
-  toggle(): void
-  subscribe(listener: (value: Theme) => void): () => void
-}
-
-/** The runtime's light/dark theme (see @beamable/portal-toolkit/runtime), shared with the portal's setting. */
-function runtimeTheme(): RuntimeTheme | undefined {
-  return (window as unknown as { __beamPortal?: { theme?: RuntimeTheme } }).__beamPortal?.theme
+/** The theme to start with: the one picked last, else the system's. */
+export function initialTheme(): Theme {
+  try {
+    const stored = localStorage.getItem(THEME_KEY)
+    if (stored === 'dark' || stored === 'light') return stored
+  } catch { /* storage unavailable */ }
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
 }
 
 export function ThemeToggle() {
-  const theme = runtimeTheme()
-  const [value, setValue] = useState<Theme>(theme?.get() ?? 'dark')
-  useEffect(() => theme?.subscribe(setValue), [theme])
-  if (!theme) return null
+  const [theme, setTheme] = useState<Theme>(() => (document.documentElement.dataset.theme as Theme) || initialTheme())
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    try { localStorage.setItem(THEME_KEY, theme) } catch { /* storage unavailable */ }
+  }, [theme])
   return (
-    <BeamButton size="small" appearance="plain" onClick={() => theme.toggle()} title={`Switch to ${value === 'dark' ? 'light' : 'dark'} mode`}>
-      {value === 'dark' ? 'Light mode' : 'Dark mode'}
+    <BeamButton size="small" appearance="plain" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+      {theme === 'dark' ? 'Light mode' : 'Dark mode'}
     </BeamButton>
   )
 }

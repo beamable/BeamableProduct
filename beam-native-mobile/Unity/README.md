@@ -19,7 +19,7 @@ this package still runs and builds everywhere.
 | `Plugins/iOS~/Extension/` | Notification Service Extension sources (the `~` stops Unity importing `.swift` as scripts) |
 | `Samples~/NativeDemo/` | IMGUI test harness + a sample native receive-time handler |
 
-> **The binaries in `Plugins/` are generated outputs**, staged by `beam local run native-libs`. Editing native
+> **The binaries in `Plugins/` are generated outputs**, built from `beam-native-mobile/NativeSources`. Editing native
 > Kotlin/Swift changes nothing here until you rebuild and restage. Unity
 > auto-links any `.xcframework` under `Plugins/iOS` into the generated Xcode project, so there is no
 > manual linking step.

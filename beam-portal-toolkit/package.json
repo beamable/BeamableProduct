@@ -21,14 +21,13 @@
   "files": [
     "dist",
     "custom-elements.json",
-    "src/generated",
-    "runtime"
+    "src/generated"
   ],
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
     "sync-components": "node scripts/sync-components.mjs",
-    "prepublishOnly": "pnpm sync-components --no-copy --require-runtime && pnpm build"
+    "prepublishOnly": "pnpm sync-components --no-copy && pnpm build"
   },
   "exports": {
     ".": {
@@ -54,7 +53,6 @@
       "require": "./dist/react.cjs",
       "import": "./dist/react.mjs"
     },
-    "./runtime/*": "./runtime/*",
     "./custom-elements.json": "./custom-elements.json",
     "./web-types.json": "./src/generated/web-types.json"
   },
