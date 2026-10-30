@@ -30,6 +30,12 @@ namespace Beamable.Server
 		IConnection OnMessage(Action<IConnection, JsonDocument, long, Stopwatch> onMessage);
 
 		WebSocketState State { get; }
+
+		/// <summary>
+		/// Tears the connection down at once, without a close handshake, because it is presumed broken. The disconnect
+		/// callbacks run, so the owner can reconnect.
+		/// </summary>
+		void Abort(string reason) { }
 	}
 
 }

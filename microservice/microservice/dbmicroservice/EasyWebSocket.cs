@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -11,6 +12,7 @@ using System.Runtime;
 using System.Text.Json;
 using System.Threading.Channels;
 using System.Threading.RateLimiting;
+using Microsoft.Extensions.Logging;
 using UnityEngine;
 using ZLogger;
 
@@ -35,12 +37,19 @@ namespace Beamable.Server
 		public string message;
 		public byte[] binaryData;
 		public Stopwatch stopWatch;
-		public Promise promise;
+		/// <summary>
+		/// Completes when the message was written. Its continuations run asynchronously, so a caller's code never runs
+		/// on the send loop and can't hold up later messages.
+		/// </summary>
+		public TaskCompletionSource<bool> completion;
 	}
 
 	public class EasyWebSocket : IConnection
 
 	{
+		/// <summary>How long a graceful close, or draining the send queue on shutdown, may take before the socket is aborted.</summary>
+		private static readonly TimeSpan GracefulCloseLimit = TimeSpan.FromSeconds(5);
+
 		private readonly IMicroserviceArgs _args;
 
 		private int ReceiveChunkSize => _args.ReceiveChunkSize;
@@ -70,6 +79,16 @@ namespace Beamable.Server
 		private Channel<WriteItem> _sendChannel;
 		private Task _sendMessageTask;
 
+		// Teardown runs once, whichever detector gets there first.
+		private int _tornDown;
+
+		// When the frame being written started, as a Stopwatch timestamp; 0 while no frame is being written.
+		private long _sendStartedAt;
+		private readonly TimeSpan _sendTimeout;
+		private readonly bool _enforce;
+		private readonly Timer _sendWatchdog;
+		private int _reportedBlockedSend;
+
 
 		public WebSocketState State => _ws.State;
 
@@ -79,30 +98,51 @@ namespace Beamable.Server
 			_args = args;
 
 			_ws = new ClientWebSocket();
-			
-			// disable that by default, allow setup from EnviornmentArgs
 
+			// disable that by default, allow setup from EnviornmentArgs
 			if (args.EnableDangerousDeflateOptions)
 			{
 				_ws.Options.DangerousDeflateOptions =
 					new WebSocketDeflateOptions { ServerContextTakeover = true, ClientMaxWindowBits = 15 };
 			}
-			
+
 			_ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
+#if NET9_0_OR_GREATER
+			// Ping/pong keep-alive only probes a connection with no inbound traffic, so it catches a dead peer on an idle
+			// connection but not a connection whose outbound direction broke while inbound traffic keeps flowing.
+			if (args.WebSocketKeepAliveTimeoutSeconds > 0)
+			{
+				_ws.Options.KeepAliveTimeout = TimeSpan.FromSeconds(args.WebSocketKeepAliveTimeoutSeconds);
+			}
+#endif
 			_ws.Options.SetBuffer(SendChunkSize, ReceiveChunkSize);
 			_uri = new Uri(uri);
 
 			_cancellationToken = _cancellationTokenSource.Token;
 
+			_sendTimeout = TimeSpan.FromSeconds(Math.Max(0, args.SocketSendTimeoutSeconds));
+			_enforce = args.EnforceSocketReliability;
 
 			_sendChannel = Channel.CreateUnbounded<WriteItem>(new UnboundedChannelOptions
 			{
-				SingleReader = true,
+				// teardown drains the queue from another thread to fail what was never sent.
+				SingleReader = false,
 				SingleWriter = false,
 				AllowSynchronousContinuations = false
 			});
 
-			_sendMessageTask = Task.Run(async () =>
+			_sendMessageTask = Task.Run(SendLoop);
+
+			if (_sendTimeout > TimeSpan.Zero)
+			{
+				var period = TimeSpan.FromMilliseconds(Math.Min(1000, _sendTimeout.TotalMilliseconds / 2));
+				_sendWatchdog = new Timer(_ => CheckForBlockedSend(), null, period, period);
+			}
+		}
+
+		private async Task SendLoop()
+		{
+			try
 			{
 				while (await _sendChannel.Reader.WaitToReadAsync())
 				{
@@ -121,54 +161,175 @@ namespace Beamable.Server
 							count = 0;
 						}
 
-						if (_ws.State != WebSocketState.Open)
+						try
 						{
-							throw new Exception($"Connection is not open. state=[{_ws.State}]");
+							await Write(item);
+							item.stopWatch?.Stop();
+							item.completion.TrySetResult(true);
 						}
-
-						byte[] messageBuffer;
-						WebSocketMessageType messageType;
-
-						if (item.binaryData != null)
+						catch (Exception ex)
 						{
-							messageBuffer = item.binaryData;
-							messageType = WebSocketMessageType.Binary;
+							// A connection that can't send is no use: fail this message, and let teardown fail the rest
+							// and start a reconnect.
+							item.completion.TrySetException(ex);
+							Teardown("send_failed", $"a send failed. {ex.GetType().Name}: {ex.Message}", wasClean: false, abort: true, LogLevel.Warning);
 						}
-						else
-						{
-							messageBuffer = Encoding.UTF8.GetBytes(item.message);
-							messageType = WebSocketMessageType.Text;
-						}
-
-						var messagesCount = (int)Math.Ceiling((double)messageBuffer.Length / SendChunkSize);
-
-
-						for (var i = 0; i < messagesCount; i++)
-						{
-							var offset = (SendChunkSize * i);
-							var count1 = SendChunkSize;
-							var lastMessage = ((i + 1) == messagesCount);
-
-							if ((count1 * (i + 1)) > messageBuffer.Length)
-							{
-								count1 = messageBuffer.Length - offset;
-							}
-
-							await _ws.SendAsync(new ArraySegment<byte>(messageBuffer, offset, count1), messageType,
-								lastMessage, _cancellationToken);
-						}
-
-						if (item.stopWatch != null)
-						{
-							item.stopWatch.Stop();
-							// Log.Debug($"client message time=[{sw.ElapsedMilliseconds}]");
-						}
-
-						item.promise.CompleteSuccess();
 					}
 				}
-			});
+			}
+			catch (Exception ex)
+			{
+				BeamableZLoggerProvider.LogContext.Value.ZLogError($"The websocket send loop stopped unexpectedly. {ex.GetType().Name}: {ex.Message}");
+				Teardown("send_loop_stopped", "the send loop stopped", wasClean: false, abort: true, LogLevel.Error);
+			}
+			finally
+			{
+				FailQueued("the connection closed before this message was sent");
+			}
+		}
 
+		private async Task Write(WriteItem item)
+		{
+			if (_ws.State != WebSocketState.Open)
+			{
+				throw new WebSocketException(WebSocketError.InvalidState, $"Connection is not open. state=[{_ws.State}]");
+			}
+
+			byte[] messageBuffer;
+			WebSocketMessageType messageType;
+
+			if (item.binaryData != null)
+			{
+				messageBuffer = item.binaryData;
+				messageType = WebSocketMessageType.Binary;
+			}
+			else
+			{
+				messageBuffer = Encoding.UTF8.GetBytes(item.message);
+				messageType = WebSocketMessageType.Text;
+			}
+
+			var messagesCount = (int)Math.Ceiling((double)messageBuffer.Length / SendChunkSize);
+
+
+			for (var i = 0; i < messagesCount; i++)
+			{
+				var offset = (SendChunkSize * i);
+				var count1 = SendChunkSize;
+				var lastMessage = ((i + 1) == messagesCount);
+
+				if ((count1 * (i + 1)) > messageBuffer.Length)
+				{
+					count1 = messageBuffer.Length - offset;
+				}
+
+				Volatile.Write(ref _sendStartedAt, Stopwatch.GetTimestamp());
+				try
+				{
+					await _ws.SendAsync(new ArraySegment<byte>(messageBuffer, offset, count1), messageType,
+						lastMessage, _cancellationToken);
+				}
+				finally
+				{
+					Volatile.Write(ref _sendStartedAt, 0);
+				}
+			}
+		}
+
+		/// <summary>
+		/// A frame blocked this long means the peer stopped reading, or the connection is dead without having failed yet.
+		/// In enforce mode the connection is torn down, which also unblocks the send; otherwise it is reported once.
+		/// </summary>
+		private void CheckForBlockedSend()
+		{
+			var started = Volatile.Read(ref _sendStartedAt);
+			if (started == 0) return;
+			var blocked = TimeSpan.FromSeconds((Stopwatch.GetTimestamp() - started) / (double)Stopwatch.Frequency);
+			if (blocked < _sendTimeout) return;
+
+			if (_enforce)
+			{
+				Teardown("send_blocked", $"a send was blocked for {blocked.TotalSeconds:0}s", wasClean: false, abort: true, LogLevel.Warning);
+				return;
+			}
+
+			if (Interlocked.Exchange(ref _reportedBlockedSend, 1) == 1) return;
+			SocketReliabilityMetrics.UnhealthyConnections.Add(1,
+				new KeyValuePair<string, object>("reason", "send_blocked"),
+				new KeyValuePair<string, object>("enforced", false));
+			BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"A websocket send has been blocked for {blocked.TotalSeconds:0}s. Not closing the connection, because BEAM_SOCKET_RELIABILITY_ENFORCE is off.");
+		}
+
+		/// <summary>
+		/// Ends the connection, once. Queued messages fail, the disconnect callbacks run (so the owner reconnects) before
+		/// any close handshake, and a connection presumed broken is aborted instead of closed: a close handshake needs the
+		/// send direction, which may be the part that's broken.
+		/// </summary>
+		private void Teardown(string reasonTag, string reason, bool wasClean, bool abort, LogLevel level)
+		{
+			if (Interlocked.Exchange(ref _tornDown, 1) == 1) return;
+
+			_sendWatchdog?.Dispose();
+			SocketReliabilityMetrics.Teardowns.Add(1, new KeyValuePair<string, object>("reason", reasonTag));
+			var logger = BeamableZLoggerProvider.LogContext.Value;
+			switch (level)
+			{
+				case LogLevel.Error:
+					logger.ZLogError($"Closing the websocket connection: {reason}.");
+					break;
+				case LogLevel.Warning:
+					logger.ZLogWarning($"Closing the websocket connection: {reason}.");
+					break;
+				default:
+					logger.ZLogDebug($"Closing the websocket connection: {reason}.");
+					break;
+			}
+
+			_sendChannel.Writer.TryComplete();
+			FailQueued($"the connection closed before this message was sent: {reason}");
+
+			CallOnDisconnected(wasClean);
+
+			if (abort)
+			{
+				try
+				{
+					_ws.Abort();
+				}
+				catch (Exception)
+				{
+					// it is already gone.
+				}
+			}
+		}
+
+		private void FailQueued(string reason)
+		{
+			while (_sendChannel.Reader.TryRead(out var item))
+			{
+				item.completion.TrySetException(new WebSocketException(WebSocketError.InvalidState, reason));
+			}
+		}
+
+		/// <summary>Closes with a handshake, but aborts if the handshake doesn't finish in time.</summary>
+		private async Task CloseGracefully(WebSocketCloseStatus status, string description)
+		{
+			using var limit = new CancellationTokenSource(GracefulCloseLimit);
+			try
+			{
+				await _ws.CloseAsync(status, description, limit.Token);
+			}
+			catch (Exception)
+			{
+				try
+				{
+					_ws.Abort();
+				}
+				catch (Exception)
+				{
+					// it is already gone.
+				}
+			}
 		}
 
 
@@ -211,7 +372,7 @@ namespace Beamable.Server
 
 
 		/// <summary>
-		/// Set the Action to call when the connection has been terminated.
+		/// Set the Action to call when the connection has been terminated. It is called at most once.
 		/// </summary>
 		/// <param name="onDisconnect">The Action to call</param>
 		/// <returns></returns>
@@ -243,35 +404,56 @@ namespace Beamable.Server
 		/// Send a message to the WebSocket server.
 		/// </summary>
 		/// <param name="message">The message to send</param>
-		public async Task SendMessage(string message, Stopwatch sw = null)
+		public Task SendMessage(string message, Stopwatch sw = null)
 		{
-			var item = new WriteItem { message = message, stopWatch = sw , promise = new Promise()};
-			await _sendChannel.Writer.WriteAsync(item);
-			await item.promise;
+			return Enqueue(new WriteItem { message = message, stopWatch = sw });
 		}
 
 		/// <summary>
 		/// Send a binary message to the WebSocket server.
 		/// </summary>
 		/// <param name="data">The binary data to send</param>
-		public async Task SendBinaryMessage(byte[] data, Stopwatch sw = null)
+		public Task SendBinaryMessage(byte[] data, Stopwatch sw = null)
 		{
-			var item = new WriteItem { binaryData = data, stopWatch = sw, promise = new Promise() };
-			await _sendChannel.Writer.WriteAsync(item);
-			await item.promise;
+			return Enqueue(new WriteItem { binaryData = data, stopWatch = sw });
+		}
+
+		private Task Enqueue(WriteItem item)
+		{
+			item.completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			if (!_sendChannel.Writer.TryWrite(item))
+			{
+				return Task.FromException(new WebSocketException(WebSocketError.InvalidState, "The connection is closed."));
+			}
+
+			return item.completion.Task;
+		}
+
+		/// <summary>
+		/// Tears the connection down at once, because it is presumed broken. The disconnect callbacks run.
+		/// </summary>
+		public void Abort(string reason)
+		{
+			Teardown("aborted", reason, wasClean: false, abort: true, LogLevel.Warning);
 		}
 
 
 		/// <summary>
-		/// Terminate the socket in a friendly way.
+		/// Terminate the socket in a friendly way, within a time limit.
 		/// </summary>
 		public async Task Close()
 		{
-			_sendChannel.Writer.Complete(); // tell the channel, "no more!"
-			await _sendMessageTask; // wait for all sending messages to send
-			
-			// and now, close the websocket 
-			await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "shutting down", CancellationToken.None);
+			_sendChannel.Writer.TryComplete(); // tell the channel, "no more!"
+
+			// wait for queued messages to be sent, but a blocked send must not hold up shutdown.
+			if (await Task.WhenAny(_sendMessageTask, Task.Delay(GracefulCloseLimit)) != _sendMessageTask)
+			{
+				Teardown("shutdown", "queued messages were not sent in time to close gracefully", wasClean: true, abort: true, LogLevel.Warning);
+				return;
+			}
+
+			// and now, close the websocket
+			await CloseGracefully(WebSocketCloseStatus.NormalClosure, "shutting down");
 		}
 
 
@@ -286,10 +468,10 @@ namespace Beamable.Server
 				CallOnConnected();
 			}
 
-			catch (Exception)
+			catch (Exception ex)
 
 			{
-				CallOnDisconnected(false);
+				Teardown("connect_failed", $"could not connect. {ex.GetType().Name}: {ex.Message}", wasClean: false, abort: true, LogLevel.Debug);
 			}
 
 
@@ -356,9 +538,9 @@ namespace Beamable.Server
 
 						if (result.MessageType == WebSocketMessageType.Close)
 						{
-							await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty,
-								CancellationToken.None);
-							CallOnDisconnected(true);
+							// Recover first: the close handshake needs the send direction, which may be blocked.
+							Teardown("peer_closed", "the gateway closed the connection", wasClean: true, abort: false, LogLevel.Debug);
+							await CloseGracefully(WebSocketCloseStatus.NormalClosure, string.Empty);
 						}
 						else
 						{
@@ -403,7 +585,7 @@ namespace Beamable.Server
 			catch (Exception ex)
 			{
 				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Websocket error=[{ex.GetType().FullName}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
-				CallOnDisconnected(false);
+				Teardown("receive_failed", $"receiving failed. {ex.GetType().Name}: {ex.Message}", wasClean: false, abort: true, LogLevel.Debug);
 			}
 
 			finally
