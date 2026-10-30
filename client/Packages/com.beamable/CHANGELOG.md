@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Preserved floating development CLI discovery (`0.0.123.*`) while enforcing exact versions for pinned CLI revisions.
+
+- CLI discovery now reports an incompatible or unavailable server it launched instead of accumulating replacement processes. Later requests can reuse the server after its configuration is corrected, or start a replacement after the prior launch finishes.
+
 - Fixed content watcher recovery when switching modes, reloading scripts, and restarting after failures, and prevented telemetry discovery from shutting down an active CLI server.
 - Fixed local content mode in Play Mode to resolve the editor namespace from a read-only snapshot of local JSON, including unpublished items, with background loading to keep the editor responsive.
 - `MustBeComparatorString` now validates against what the backend accepts for each field. Stat requirements (listings, announcements, leaderboard and event cohorts) also accept `neq`, `gte`, `lte` and the long names (`equal`, `notequal`, `greaterthan`, `greaterthanequal`, `lessthan`, `lessthanequal`). Offer purchase requirements accept `eq`, `ne`, `gt`, `ge`, `lt`, `le`. Cohort requirements accept only `eq` (member) and `ne` (not a member); any other value used to be evaluated as "not a member", so replace it with `ne`.

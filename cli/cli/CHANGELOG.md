@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- CLI server discovery now reports the executing package version, including development revisions, so Unity can recognize local builds without repeatedly starting servers.
+
 - Preserved incoming additions and deletions in content status and blocked publishing until incoming content is reconciled, including recovery after partial failures.
 - Fixed content history pagination with cached publications and watcher cleanup, cancellation, and shutdown acknowledgement retries.
 - Fixed telemetry collector discovery and attached-command shutdown ownership so they do not stop unrelated active CLI commands.

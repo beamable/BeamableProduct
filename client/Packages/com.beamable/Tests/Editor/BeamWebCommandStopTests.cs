@@ -484,6 +484,8 @@ namespace Beamable.Editor.Tests
 			public int StopStatus = 204;
 			public bool RetryStop;
 			public int[] InfoPids;
+			public string InfoVersion;
+			public int InfoStatus = 200;
 			public readonly TaskCompletionSource<bool> RetryReceived = Signal();
 			public readonly TaskCompletionSource<bool> AllowRetryAcknowledgement = Signal();
 
@@ -511,7 +513,7 @@ namespace Beamable.Editor.Tests
 				Factory = (BeamWebCommandFactory)FormatterServices.GetUninitializedObject(typeof(BeamWebCommandFactory));
 				Set(Factory, "_options", _options);
 				Set(Factory, "_history", history);
-				Set(Factory, "serverReadyCallbacks", new List<Action>());
+				Set(Factory, "serverReadyCallbacks", new List<Action<Exception>>());
 				Factory.dispatcher = _dispatcher;
 				Command = new BeamWebCommand(Factory, history);
 				Command.SetCommand("beam content ps --watch");
@@ -558,10 +560,10 @@ namespace Beamable.Editor.Tests
 
 			public void Discover()
 			{
-				var callbacks = (List<Action>)Get(Factory, "serverReadyCallbacks");
+				var callbacks = (List<Action<Exception>>)Get(Factory, "serverReadyCallbacks");
 				var ready = callbacks.ToArray();
 				callbacks.Clear();
-				foreach (var callback in ready) callback();
+				foreach (var callback in ready) callback(null);
 			}
 
 
@@ -573,8 +575,9 @@ namespace Beamable.Editor.Tests
 					for (var i = 0; i < InfoPids.Length; i++)
 					{
 						var info = i == 0 ? execute : await _listener.GetContextAsync();
-						var json = JsonUtility.ToJson(new ServerInfoResponse { owner = Factory.Owner, version = Factory.Version, pid = InfoPids[i] });
+						var json = JsonUtility.ToJson(new ServerInfoResponse { owner = Factory.Owner, version = InfoVersion ?? Factory.Version, pid = InfoPids[i] });
 						var bytes = Encoding.UTF8.GetBytes(json);
+						info.Response.StatusCode = InfoStatus;
 						await info.Response.OutputStream.WriteAsync(bytes, 0, bytes.Length);
 						info.Response.Close();
 					}

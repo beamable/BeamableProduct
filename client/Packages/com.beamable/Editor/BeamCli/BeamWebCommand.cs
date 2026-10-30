@@ -93,6 +93,10 @@ namespace Beamable.Editor.BeamCli
 
 		public Promise onReady = null;
 		private ServerServeWrapper _serverCommand;
+		// Keep ownership until the command drains; a rejected /info response is not process exit.
+		private Promise _ownedServerRun;
+		private int _ownedServerPort;
+		private bool HasPendingServerLaunch => _ownedServerRun != null && !_ownedServerRun.IsCompleted;
 		internal Process ServerProcess { get; private set; }
 
 		public BeamWebCommandFactory(
@@ -117,19 +121,39 @@ namespace Beamable.Editor.BeamCli
 		}
 
 
-		private List<Action> serverReadyCallbacks = new List<Action>();
+		private List<Action<Exception>> serverReadyCallbacks = new List<Action<Exception>>();
 
 		public async Promise EnsureServerIsRunning()
 		{
 			var p = new Promise();
 			discoveryRequest++;
-			serverReadyCallbacks.Add(() =>
+			serverReadyCallbacks.Add(error =>
 			{
-				p.CompleteSuccess();
+				if (error == null) p.CompleteSuccess();
+				else p.CompleteError(error);
 			});
 			await p;
 		}
 		
+
+		private void CompleteDiscovery(Exception error = null)
+		{
+			// Clear the batch before invoking callers: an error callback may request discovery again.
+			discoveryRequest = 0;
+			var callbacks = serverReadyCallbacks.ToArray();
+			serverReadyCallbacks.Clear();
+			foreach (var callback in callbacks) callback?.Invoke(error);
+		}
+
+		private void RejectOwnedServer(PingResult result)
+		{
+			port = _ownedServerPort;
+			var error = new InvalidOperationException(
+				$"CLI server launched at port=[{port}] failed discovery ({result}); expected version=[{Version}] owner=[{Owner}]. " +
+				"The existing launch is still running. Check its /info response and CLI server logs before retrying.");
+			_history.AddServerEvent(error.Message);
+			CompleteDiscovery(error);
+		}
 
 		public void KillServer()
 		{
@@ -228,21 +252,25 @@ namespace Beamable.Editor.BeamCli
 					case PingResult.Match:
 						_history.AddServerEvent($"Found existing server at port=[{port}]. Resolving callbacks");
 
-						discoveryRequest = 0;
-						var callbacks = serverReadyCallbacks.ToList();
-						serverReadyCallbacks.Clear();
-						foreach (var cb in callbacks)
-						{
-							cb?.Invoke();
-						}
+						CompleteDiscovery();
 						
 						// this is the happy case where the server is already running!
 						break;
 					case PingResult.Mismatch:
+						if (HasPendingServerLaunch && port == _ownedServerPort)
+						{
+							RejectOwnedServer(pingResult);
+							break;
+						}
 						_history.AddServerEvent($"Found mismatch server at port=[{port}], trying again");
 						port++;
 						break;
 					case PingResult.NoServer:
+						if (HasPendingServerLaunch)
+						{
+							RejectOwnedServer(pingResult);
+							break;
+						}
 						startServer = true;
 						break;
 				}
@@ -290,7 +318,7 @@ namespace Beamable.Editor.BeamCli
 			});
 			_serverCommand.OnStreamServeCliCommandOutput(data =>
 			{
-				port = data.data.port;
+				port = _ownedServerPort = data.data.port;
 							
 				_history.AddServerEvent(new BeamCliServerEvent
 				{
@@ -311,7 +339,8 @@ namespace Beamable.Editor.BeamCli
 			{
 				message = $"starting server on port=[{args.port}]"
 			});
-			var _ = _serverCommand.Run();
+			_ownedServerPort = port;
+			_ownedServerRun = _serverCommand.Run();
 			await waitForResult;
 		}
 
@@ -336,7 +365,8 @@ namespace Beamable.Editor.BeamCli
 				var res = JsonUtility.FromJson<ServerInfoResponse>(json);
 
 				var ownerMatches = String.Equals(res.owner, Owner, StringComparison.OrdinalIgnoreCase);
-				var versionMatches = EditorConfiguration.Instance.IgnoreCliVersionRequirement || res.version == Version;
+				var versionMatches = EditorConfiguration.Instance.IgnoreCliVersionRequirement ||
+				                     BeamCliUtil.MatchesInstalledVersionConstraint(Version, res.version);
 
 				_history.SetLatestServerPing(port, InfoUrl, res, ownerMatches, versionMatches);
 

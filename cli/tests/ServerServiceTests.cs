@@ -66,6 +66,20 @@ public class ServerServiceTests
 	}
 
 	[Test]
+	public async Task Info_reports_the_executing_cli_version_including_development_revision()
+	{
+		// Read the produced CLI assembly independently of its dependency-version resolver.
+		// Development packages such as 0.0.123.1 must not advertise 0.0.123 to Unity.
+		// Exercise this with -p:VersionPrefix=0.0.123.1 -p:BeamOverrideVersionWithLocalDev=false.
+		var packagedVersion = typeof(App).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!
+			.InformationalVersion.Split('+')[0];
+		await using var server = new TestServer(null);
+		var info = JsonConvert.DeserializeObject<ServerInfoResponse>(await server.Client.GetStringAsync("info"))!;
+		Assert.That(info.version, Is.EqualTo(packagedVersion), "Discovery must identify the executing CLI, not its normalized dependency packages.");
+		server.AssertNoErrors();
+	}
+
+	[Test]
 	public async Task Attached_collector_exit_reports_failure_and_server_remains_usable()
 	{
 		await using var child = await AttachedCollectorCommandTests.HeldChild.Start();

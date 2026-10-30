@@ -1,5 +1,6 @@
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Util;
 using Beamable.Server;
 using Beamable.Server.Common;
 using cli.CliServerCommand;
@@ -338,7 +339,9 @@ public class ServerService
 
 	static Task<ServerInfoResponse> HandleInfo(ServeCliCommandArgs args, ulong inflightRequests)
 	{
-		var version = VersionService.GetNugetPackagesForExecutingCliVersion();
+		// Discovery compares the executing package identity, including development revisions.
+		// Dependency normalization (for example 0.0.123.1 -> 0.0.123) belongs to package resolution.
+		var version = BeamAssemblyVersionUtil.GetVersion<ServerService>();
 
 		List<string> invocationSnapshot;
 		lock (_cliInvocationsLock)
@@ -348,7 +351,7 @@ public class ServerService
 
 		return Task.FromResult(new ServerInfoResponse
 		{
-			version = version.ToString(),
+			version = version,
 			owner = args.owner,
 			inflightRequests = (long)inflightRequests,
 			pid = Environment.ProcessId,
