@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `Services.Segments` for zone microservices: create and change the zone's segments, move them between states, write their per-realm overrides, and read segments, memberships and counts. Setting `managedBy` on a request writes as that system (`vip`, for one): its segments' rules, realms, state and overrides then change only through requests naming it.
+- Observation-only process health: a dedicated-thread pool heartbeat, all-instance recovery snapshots, bounded incident diagnostics, and cached `/health/process` and `/health/process/incident` responses. `/health` keeps its existing status/body and adds observation headers. Process replacement, self-exit, and automatic managed-stack collection remain disabled.
+
 - `Services.Secrets` for realm and zone microservices: get, set, delete and list secrets in the service's own scope (the realm's secrets in a `Microservice`, the zone's in a `ZoneMicroservice`). From a zone service, `AssumeRealm(pid).Services.Secrets` reaches that realm's secrets.
 - `Services.Auth.BatchAccounts(request)` looks up many players in one call. It can narrow them by a stat filter, and returns each remaining player's account and the requested stat values, in each stat's own type. The request and response are the generated `AuthV2BatchAccountsRequest` and `AuthV2BatchAccountsResponse`; `BatchAccountsHelper` builds the filter, criteria and stats to request, and its `GetStat` extension reads a value back as text. Requests over 500 players are paged automatically.
 - The generated `IBeamAuthApi` has `PostBatch` for the `POST /api/accounts/batch` endpoint.
