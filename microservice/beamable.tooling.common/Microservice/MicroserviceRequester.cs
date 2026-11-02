@@ -257,6 +257,24 @@ namespace Beamable.Server
 		private readonly ConcurrentQueue<KeyValuePair<string, Lazy<Task>>> _handledEvents = new ConcurrentQueue<KeyValuePair<string, Lazy<Task>>>();
 
 		private long _lastReplyAt;
+		private IConnection _authenticatedConnection;
+
+		/// <summary>Positive authentication evidence for the current connection, separate from pending auth work.</summary>
+		public bool IsCurrentConnectionAuthenticated
+		{
+			get
+			{
+				var current = CurrentConnection;
+				return current != null && ReferenceEquals(Volatile.Read(ref _authenticatedConnection), current) &&
+				       (Daemon?.NoPendingOrInProgressAuth ?? false);
+			}
+		}
+
+		internal void NoteSuccessfulAuthentication(IConnection connection)
+		{
+			if (connection != null && ReferenceEquals(connection, CurrentConnection))
+				Volatile.Write(ref _authenticatedConnection, connection);
+		}
 		private IConnection _reportedConnection;
 
 		// The first request written since the last reply arrived; null once a reply arrives.
@@ -749,6 +767,14 @@ namespace Beamable.Server
 				Activity = parentActivity
 			};
 			var pending = new PendingRequest { Listener = listener, Fail = promise.CompleteError, StartedAt = startedAt };
+			// Record the auth request's actual sending connection, not the connection that happened to exist when
+			// the auth flow began (token retrieval and reconnect can both happen before the write).
+			if (uri == "gateway/auth")
+				promise.Then(value =>
+				{
+					if (value is MicroserviceAuthResponse response && response.result == "ok")
+						NoteSuccessfulAuthentication(pending.SentOn);
+				});
 
 			if (!_pendingMessages.TryAdd(requestId, pending))
 			{
