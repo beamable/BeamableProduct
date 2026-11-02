@@ -192,12 +192,75 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 			Assert.That(SocketContextSelector.PreferHealthy(second.Context, services)(), Is.SameAs(second.Context));
 		}
 
-		private static MicroserviceRequestContext Event(long id, string messageId) =>
-			new MicroserviceRequestContext("cid", "pid", id, 200, 1, "event/test", "post", "1", new HashSet<string>())
+		private static MicroserviceRequestContext Event(long id, string messageId, int payload = 1) =>
+			new MicroserviceRequestContext("cid", "pid", id, 200, 1, "event/test", "post", payload.ToString(), new HashSet<string>())
 			{
-				BodyElement = JsonElement.Parse("1"),
+				BodyElement = JsonElement.Parse(payload.ToString()),
 				HeaderElement = JsonElement.Parse($"{{\"msgId\":\"{messageId}\"}}")
 			};
+
+		/// <summary>More distinct events than the dedupe remembers, each completing.</summary>
+		private static async Task CompleteOtherEvents(SocketRequesterContext context, int count)
+		{
+			for (var i = 0; i < count; i++)
+			{
+				await context.HandleMessage(null, Event(1000 + i, $"other-{i}", 1000 + i));
+			}
+		}
+
+		[Test]
+		[TimeoutWithTeardown(30 * 1000)]
+		public async Task RunningEvent_IsNotEvictedByLaterEvents()
+		{
+			// Review of f700fa8b3: a delivery still running was evicted from the dedupe once enough other events completed,
+			// and a duplicate then ran the handler a second time, concurrently.
+			var context = new SocketRequesterContext(() => throw new NotImplementedException());
+			var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var heldCalls = 0;
+			context.Subscribe<int>("test", async payload =>
+			{
+				if (payload != 0) return;
+				Interlocked.Increment(ref heldCalls);
+				await release.Task;
+			});
+
+			var original = context.HandleMessage(null, Event(1, "held", 0));
+			await CompleteOtherEvents(context, 1100);
+			var duplicate = context.HandleMessage(null, Event(2, "held", 0));
+			await Task.Delay(100);
+
+			Assert.That(duplicate.IsCompleted, Is.False, "the duplicate shares the running delivery's outcome");
+			release.SetResult(true);
+			await Task.WhenAll(original, duplicate);
+			Assert.That(heldCalls, Is.EqualTo(1), "a running delivery is never evicted");
+		}
+
+		[Test]
+		[TimeoutWithTeardown(30 * 1000)]
+		public async Task RetryOfAFailedEvent_IsNotEvictedByTheFailedAttempt()
+		{
+			// Review of f700fa8b3: the failed attempt's stale entry in the eviction queue removed the retry stored under
+			// the same id, and another duplicate ran the handler a third time.
+			var context = new SocketRequesterContext(() => throw new NotImplementedException());
+			var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var calls = 0;
+			context.Subscribe<int>("test", async payload =>
+			{
+				if (payload != 0) return;
+				if (Interlocked.Increment(ref calls) == 1) throw new InvalidOperationException("the first delivery fails");
+				await release.Task;
+			});
+
+			Assert.ThrowsAsync<InvalidOperationException>(() => context.HandleMessage(null, Event(1, "x", 0)));
+			var retry = context.HandleMessage(null, Event(2, "x", 0));
+			await CompleteOtherEvents(context, 1100);
+			var duplicate = context.HandleMessage(null, Event(3, "x", 0));
+			await Task.Delay(100);
+
+			release.SetResult(true);
+			await Task.WhenAll(retry, duplicate);
+			Assert.That(calls, Is.EqualTo(2), "the failed attempt and the retry; the duplicate shares the retry's outcome");
+		}
 
 		[Test]
 		public async Task AnEventDeliveredTwice_IsHandledOnce()

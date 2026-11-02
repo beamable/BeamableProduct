@@ -225,6 +225,7 @@ namespace Beamable.Server
 
 	public class SocketRequesterContext
 	{
+		/// <summary>How many successful event deliveries the dedupe remembers. Running ones are always kept.</summary>
 		private const int HandledEventMemory = 1024;
 
 		public MicroserviceAuthenticationDaemon Daemon { get; set; }
@@ -251,7 +252,9 @@ namespace Beamable.Server
 
 		// Each gateway event message id with its delivery, so an event that reaches this context more than once runs once.
 		private readonly ConcurrentDictionary<string, Lazy<Task>> _events = new ConcurrentDictionary<string, Lazy<Task>>();
-		private readonly ConcurrentQueue<string> _eventsOrder = new ConcurrentQueue<string>();
+		// The deliveries that succeeded, oldest first, so the dedupe forgets old ones. A running delivery is never in it,
+		// so it is never forgotten while it runs.
+		private readonly ConcurrentQueue<KeyValuePair<string, Lazy<Task>>> _handledEvents = new ConcurrentQueue<KeyValuePair<string, Lazy<Task>>>();
 
 		private long _lastReplyAt;
 		private IConnection _reportedConnection;
@@ -684,27 +687,29 @@ namespace Beamable.Server
 		{
 			var mine = new Lazy<Task>(() => DispatchEvent(provider, ctx, eventName));
 			var delivery = _events.GetOrAdd(messageId, mine);
-			if (delivery == mine)
-			{
-				_eventsOrder.Enqueue(messageId);
-				while (_eventsOrder.Count > HandledEventMemory && _eventsOrder.TryDequeue(out var oldest))
-				{
-					_events.TryRemove(oldest, out _);
-				}
-			}
-			else
+			if (delivery != mine)
 			{
 				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Event {eventName} id=[{ctx.Id}] was already delivered; sharing that delivery's outcome.");
 			}
 
+			// Removing this exact pair, never just the id, leaves a newer delivery stored under the same id in place.
+			var entry = new KeyValuePair<string, Lazy<Task>>(messageId, delivery);
+			var events = (ICollection<KeyValuePair<string, Lazy<Task>>>)_events;
 			try
 			{
 				await delivery.Value;
 			}
 			catch
 			{
-				((ICollection<KeyValuePair<string, Lazy<Task>>>)_events).Remove(new KeyValuePair<string, Lazy<Task>>(messageId, delivery));
+				events.Remove(entry);
 				throw;
+			}
+
+			if (delivery != mine) return;
+			_handledEvents.Enqueue(entry);
+			while (_handledEvents.Count > HandledEventMemory && _handledEvents.TryDequeue(out var oldest))
+			{
+				events.Remove(oldest);
 			}
 		}
 

@@ -177,7 +177,8 @@ Root singletons (`ContentService`, `RealmConfigService`, `LoggingContextService`
   instance 0's context alone.
   - When the gateway's `msgId` header is present (`MESSAGE_ID_KEY = "msgId"`, `ActiveMQMessageBus.scala:60`), the
     first instance to receive the event runs those handlers, and instance 0's context skips repeats of ids whose
-    handlers *succeeded*, using a bounded record (1024 ids).
+    handlers *succeeded*. Only completed deliveries are bounded (the last 1024). A running delivery is never
+    evicted, and eviction removes only the exact delivery it recorded, never a newer one with the same id.
   - A failed delivery is not recorded: it is acked 500, the gateway redelivers it with the same `msgId`, and the
     handlers run again. A copy arriving while the first delivery still runs waits for it, and ends the same way, so
     it is never acked before the event was handled. This applies to every event with a `msgId`, custom ones
