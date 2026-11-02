@@ -891,13 +891,15 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                 .AddMessageHandler(
                    MessageMatcher.WithReqId(3).WithStatus(200),
                    MessageResponder.NoResponse(),
-                   MessageFrequency.OnlyOnce()
+                   MessageFrequency.OnlyOnce(),
+                   // the event's ack is a reply, which the gateway accepts before authentication finishes.
+                   requiresAuth: false
                 );
             }), contentResolver);
 
             var startUpTask = ms.Start<SimpleMicroservice>(new TestArgs());
 
-            // send content changed notification...
+            // send content changed notification... while startup may still be authenticating.
             testSocket.SendToClient(ClientRequest.Event("content.manifest", 3, new { }));
 
 

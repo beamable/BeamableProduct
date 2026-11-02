@@ -50,6 +50,83 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 
 		[Test]
 		[TimeoutWithTeardown(30 * 1000)]
+		public async Task ExpiringSlowRequest_WhileOthersGetReplies_DoesNotCondemnTheConnection()
+		{
+			// Review of 9217594d4: a slow request's expiry restored stall state that the replies flowing meanwhile had
+			// already cleared, and a responsive connection was reported broken.
+			var args = new TestArgs { OutboundRequestTimeoutSeconds = 3, EnforceSocketReliability = true };
+			using var h = new RequesterHarness(s => s
+				.AddMessageHandler(MessageMatcher.WithRouteContains("basic/slow"), MessageResponder.NoResponse(), MessageFrequency.OnlyOnce())
+				.AddMessageHandler(MessageMatcher.WithRouteContains(Route),
+					MessageResponder.Custom(req => req.Succeed(new CommonResponse { result = "ok" })), MessageFrequency.AtLeast(1)), args);
+			h.Context.Reliability = new SocketReliabilityOptions { StallTimeout = TimeSpan.FromSeconds(1), Enforce = true };
+			var reported = false;
+			h.Context.ConnectionUnhealthy += (_, _) => reported = true;
+
+			// observe the slow request at once: it fails mid-loop, and an unobserved failure is logged as an error.
+			var slow = h.Requester.Request<CommonResponse>(Method.GET, "basic/slow").FinishWithin(TimeSpan.FromSeconds(10), "the slow request");
+			var until = DateTime.UtcNow.AddSeconds(4.5);
+			while (DateTime.UtcNow < until)
+			{
+				await h.Requester.Request<CommonResponse>(Method.GET, Route);
+				await Task.Delay(200);
+			}
+
+			Assert.That(await slow, Is.InstanceOf<RequestTimeoutException>());
+			Assert.That(reported, Is.False, "replies kept arriving, so the connection works");
+		}
+
+		[Test]
+		[TimeoutWithTeardown(30 * 1000)]
+		public async Task LateReplyAfterExpiry_ThenSilence_DoesNotCondemnTheConnection()
+		{
+			// Review of 9217594d4: a reply that arrived after the deadline claimed its request was undone by the expiry.
+			var args = new TestArgs { OutboundRequestTimeoutSeconds = 1, EnforceSocketReliability = true };
+			using var h = new RequesterHarness(s => s.AddMessageHandler(MessageMatcher.WithRouteContains(Route),
+				MessageResponder.SuccessWithDelay(1500, new CommonResponse { result = "late" }), MessageFrequency.OnlyOnce()), args);
+			h.Context.Reliability = new SocketReliabilityOptions { StallTimeout = TimeSpan.FromSeconds(3), Enforce = true };
+			var reported = false;
+			h.Context.ConnectionUnhealthy += (_, _) => reported = true;
+
+			var ex = await h.Requester.Request<CommonResponse>(Method.GET, Route).FinishWithin(TimeSpan.FromSeconds(5), "a request answered late");
+			await Task.Delay(4500);
+
+			Assert.That(ex, Is.InstanceOf<RequestTimeoutException>());
+			Assert.That(reported, Is.False, "the late reply shows the connection answers");
+			Assert.That(GetBadLogs(), Is.Empty);
+		}
+
+		[Test]
+		[TimeoutWithTeardown(60 * 1000)]
+		public async Task ConcurrentFailures_ThenLateReply_IsNotAnError()
+		{
+			// Review of 9217594d4: a losing failure path removed the record the winner left for the late reply.
+			var context = new SocketRequesterContext(() => throw new NotImplementedException());
+			for (var i = 0; i < 500; i++)
+			{
+				var req = new WebsocketRequest { method = "get", path = "basic/test" };
+				var completions = 0;
+				var promise = context.AddListener<int>(req, "basic/test", null, null);
+				promise.Then(_ => Interlocked.Increment(ref completions));
+				promise.Error(_ => Interlocked.Increment(ref completions));
+
+				var first = Task.Run(() => context.FailIfPending(req.id, new Exception("first")));
+				var second = Task.Run(() => context.FailIfPending(req.id, new Exception("second")));
+				var claims = await Task.WhenAll(first, second);
+				await context.HandleMessage(null, new MicroserviceRequestContext("cid", "pid", req.id, 200, 1, "", "", "1")
+				{
+					BodyElement = JsonElement.Parse("1")
+				});
+
+				Assert.That(claims, Has.Exactly(1).True, "exactly one failure path ends the request");
+				Assert.That(completions, Is.EqualTo(1));
+			}
+
+			Assert.That(GetBadLogs(), Is.Empty, "the replies are late, not unknown");
+		}
+
+		[Test]
+		[TimeoutWithTeardown(30 * 1000)]
 		public async Task SlowRequestOnAConnectionThatAnswered_IsNotCondemned()
 		{
 			// A slow request expires, but another reply arrived after it was sent, then the connection goes idle. The
