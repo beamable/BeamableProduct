@@ -756,7 +756,7 @@ namespace Beamable.Server
 	      }
       }
 
-      async Task HandlePlatformMessage(MicroserviceRequestContext ctx, BeamActivity activity)
+      async Task HandlePlatformMessage(MicroserviceRequestContext ctx, BeamActivity activity, IConnection origin)
       {
 	      // using var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_WS_BEAM, parentActivity);
 	      // activity.Start();
@@ -764,7 +764,6 @@ namespace Beamable.Server
 	      try
 	      {
 		      await DispatchPlatformMessage(ctx, activity);
-		      await _requester.Acknowledge(ctx);
 		      activity.SetStatus(ActivityStatusCode.Ok);
 	      }
 	      catch (Exception ex)
@@ -772,13 +771,33 @@ namespace Beamable.Server
 		      activity.SetStatus(ActivityStatusCode.Error);
 				
 		      BeamableLogger.LogException(ex);
-		      await _requester.Acknowledge(ctx, new WebsocketErrorResponse
+		      await AckOrDrop(ctx, origin, new WebsocketErrorResponse
 		      {
 			      status = 500, // TODO: Catch a special type of exception, NackException?
 			      error = ex.GetType().Name,
 			      message = ex.Message,
 			      service = QualifiedName
 		      });
+		      return;
+	      }
+
+	      await AckOrDrop(ctx, origin);
+      }
+
+      /// <summary>
+      /// Acks an event on the connection it arrived on, never on a replacement: there the same id belongs to a different
+      /// request. An ack that can't be sent is logged by <see cref="SocketRequesterContext.SendReply"/>, and the gateway
+      /// redelivers the event.
+      /// </summary>
+      private async Task AckOrDrop(MicroserviceRequestContext ctx, IConnection origin, WebsocketErrorResponse error = null)
+      {
+	      try
+	      {
+		      await _requester.Acknowledge(ctx, origin, error);
+	      }
+	      catch (Exception)
+	      {
+		      // already logged.
 	      }
       }
       
@@ -1055,7 +1074,7 @@ namespace Beamable.Server
 		      if (_socketRequesterContext.IsPlatformMessage(ctx))
 		      {
 			      // the request is a platform request.
-			      await HandlePlatformMessage(ctx, activity);
+			      await HandlePlatformMessage(ctx, activity, ws);
 		      }
 		      else
 		      {

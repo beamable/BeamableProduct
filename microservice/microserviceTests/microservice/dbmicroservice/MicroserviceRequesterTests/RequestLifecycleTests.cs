@@ -114,6 +114,29 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 		}
 
 		[Test]
+		[TimeoutWithTeardown(30 * 1000)]
+		public async Task ReplyArrivingAsTheRequestExpires_IsTreatedAsLate()
+		{
+			// A reply landing right after the deadline claimed its request must be recognized as late, not unknown.
+			using var h = new RequesterHarness(s => s.AddMessageHandler(
+				MessageMatcher.WithRouteContains(Route), MessageResponder.NoResponse(), MessageFrequency.OnlyOnce()),
+				EnforcedArgs());
+			h.Context.OnClaimedWithoutReply = id =>
+			{
+				var reply = new MicroserviceRequestContext(h.Args.CustomerID, h.Args.ProjectName, id, 200, 1, "", "", "{}")
+				{
+					BodyElement = System.Text.Json.JsonDocument.Parse("{}").RootElement
+				};
+				h.Context.HandleMessage(null, reply).Wait();
+			};
+
+			var ex = await Get(h).FinishWithin(TimeSpan.FromSeconds(5), "a request that expires as its reply arrives");
+
+			Assert.That(ex, Is.InstanceOf<RequestTimeoutException>());
+			Assert.That(GetBadLogs(), Is.Empty, "the reply that lost the race is late, not unknown");
+		}
+
+		[Test]
 		[TimeoutWithTeardown(60 * 1000)]
 		public async Task ReplyRacingExpiry_CompletesEachRequestOnce()
 		{
@@ -171,6 +194,35 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 			Assert.That(ex, Is.InstanceOf<UnauthenticatedException>());
 			await Task.Delay(500);
 			Assert.That(h.Accounting.processed, Is.EqualTo(h.Accounting.sent));
+		}
+
+		[Test]
+		[TimeoutWithTeardown(30 * 1000)]
+		public async Task ReauthenticationFinishingAfterDeadline_DoesNotSendExpiredRetry()
+		{
+			// The 403 ends the first attempt's listener, so nothing else watches the deadline while re-auth runs.
+			allowErrorLogs = true;
+			var posts = 0;
+			using var h = new RequesterHarness(s => s
+					.AddMessageHandler(MessageMatcher.WithRouteContains("gateway/nonce"),
+						MessageResponder.SuccessWithDelay(600, new MicroserviceNonceResponse { nonce = "n" }), MessageFrequency.AtLeast(0), "nonce", false)
+					.AddMessageHandler(MessageMatcher.WithRouteContains("gateway/auth"),
+						MessageResponder.Success(new MicroserviceAuthResponse { result = "ok" }), MessageFrequency.AtLeast(0), "auth", false)
+					.AddMessageHandler(MessageMatcher.WithRouteContains(Route).WithPost(),
+						MessageResponder.CustomAsync(async req =>
+						{
+							if (Interlocked.Increment(ref posts) > 1) return req.Succeed(new CommonResponse { result = "ok" });
+							await Task.Delay(700);
+							return req.AuthFailure();
+						}), MessageFrequency.AtLeast(1), "post", false),
+				EnforcedArgs());
+
+			var ex = await h.Requester.Request<CommonResponse>(Method.POST, Route, new { }).FinishWithin(TimeSpan.FromSeconds(5),
+				"a request whose re-authentication outlasts its deadline");
+			await Task.Delay(1000);
+
+			Assert.That(ex, Is.InstanceOf<RequestTimeoutException>(), "the deadline covers re-authentication too");
+			Assert.That(posts, Is.EqualTo(1), "a retry past the deadline must not be sent");
 		}
 
 		[Test]

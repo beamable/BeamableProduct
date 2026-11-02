@@ -36,18 +36,31 @@ namespace microserviceTests.microservice.Util
 			});
 			var connection = provider.Create("test", Args);
 			Socket = socket;
-			Context = new SocketRequesterContext(() => Promise<IConnection>.Successful(connection));
-			var reqCtx = new RequestContext(Args.CustomerID, Args.ProjectName, 1, 200, 1, "path", "GET", "");
-			Requester = new MicroserviceRequester(Args, reqCtx, Context, true, new NoopActivityProvider());
-			AuthRequester = new MicroserviceRequester(Args, null, Context, false, new NoopActivityProvider());
-			(_, Context.Daemon) = MicroserviceAuthenticationDaemon.Start(Args, AuthRequester, _daemonCancel);
 			Socket.Connect();
-			Socket.OnMessage((_, data, _) =>
+			(Context, Requester, AuthRequester) = Wire(connection);
+		}
+
+		/// <summary>The same wiring over a connection the test already opened, such as a real <see cref="EasyWebSocket"/>.</summary>
+		public RequesterHarness(IConnection connection, TestArgs args)
+		{
+			Args = args;
+			(Context, Requester, AuthRequester) = Wire(connection);
+		}
+
+		private (SocketRequesterContext, MicroserviceRequester, MicroserviceRequester) Wire(IConnection connection)
+		{
+			var context = new SocketRequesterContext(() => Promise<IConnection>.Successful(connection));
+			var reqCtx = new RequestContext(Args.CustomerID, Args.ProjectName, 1, 200, 1, "path", "GET", "");
+			var requester = new MicroserviceRequester(Args, reqCtx, context, true, new NoopActivityProvider());
+			var authRequester = new MicroserviceRequester(Args, null, context, false, new NoopActivityProvider());
+			(_, context.Daemon) = MicroserviceAuthenticationDaemon.Start(Args, authRequester, _daemonCancel);
+			connection.OnMessage((_, data, _) =>
 			{
 				if (!data.TryBuildRequestContext(Args, out var rc)) return;
 				// replies are handled off the sending thread, as EasyWebSocket does.
-				Task.Run(() => Context.HandleMessage(null, rc));
+				Task.Run(() => context.HandleMessage(null, rc));
 			});
+			return (context, requester, authRequester);
 		}
 
 		/// <summary>Total outbound requests the auth daemon has counted, and how many of them it saw finish.</summary>

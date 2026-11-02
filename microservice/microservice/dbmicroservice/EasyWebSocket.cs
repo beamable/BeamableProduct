@@ -42,6 +42,8 @@ namespace Beamable.Server
 		/// on the send loop and can't hold up later messages.
 		/// </summary>
 		public TaskCompletionSource<bool> completion;
+		/// <summary>When cancelled before the message starts to be written, the message is skipped.</summary>
+		public CancellationToken skipIfCancelled;
 	}
 
 	public class EasyWebSocket : IConnection
@@ -159,6 +161,14 @@ namespace Beamable.Server
 							 */
 							await Task.Delay(1);
 							count = 0;
+						}
+
+						if (item.skipIfCancelled.IsCancellationRequested)
+						{
+							// The request this message carries already ended while it waited here. Its caller got an error
+							// and may retry; writing it now could apply it twice.
+							item.completion.TrySetCanceled(item.skipIfCancelled);
+							continue;
 						}
 
 						try
@@ -416,6 +426,22 @@ namespace Beamable.Server
 		public Task SendBinaryMessage(byte[] data, Stopwatch sw = null)
 		{
 			return Enqueue(new WriteItem { binaryData = data, stopWatch = sw });
+		}
+
+		/// <summary>
+		/// Send a message, unless <paramref name="skipIfCancelled"/> is cancelled before it starts to be written.
+		/// </summary>
+		public Task SendMessage(string message, Stopwatch sw, CancellationToken skipIfCancelled)
+		{
+			return Enqueue(new WriteItem { message = message, stopWatch = sw, skipIfCancelled = skipIfCancelled });
+		}
+
+		/// <summary>
+		/// Send a binary message, unless <paramref name="skipIfCancelled"/> is cancelled before it starts to be written.
+		/// </summary>
+		public Task SendBinaryMessage(byte[] data, Stopwatch sw, CancellationToken skipIfCancelled)
+		{
+			return Enqueue(new WriteItem { binaryData = data, stopWatch = sw, skipIfCancelled = skipIfCancelled });
 		}
 
 		private Task Enqueue(WriteItem item)

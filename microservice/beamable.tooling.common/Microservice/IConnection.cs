@@ -22,6 +22,21 @@ namespace Beamable.Server
 
 		Task SendBinaryMessage(byte[] data, Stopwatch sw = null);
 
+		/// <summary>
+		/// Like <see cref="SendMessage(string, Stopwatch)"/>, but the message is skipped, and the task cancelled, when
+		/// <paramref name="skipIfCancelled"/> is cancelled before the message starts to be written. Once its first frame
+		/// is written, the message is sent in full.
+		/// </summary>
+		Task SendMessage(string message, Stopwatch sw, CancellationToken skipIfCancelled) =>
+			skipIfCancelled.IsCancellationRequested ? Task.FromCanceled(skipIfCancelled) : SendMessage(message, sw);
+
+		/// <summary>
+		/// Like <see cref="SendBinaryMessage(byte[], Stopwatch)"/>, but skipped when <paramref name="skipIfCancelled"/> is
+		/// cancelled before the message starts to be written.
+		/// </summary>
+		Task SendBinaryMessage(byte[] data, Stopwatch sw, CancellationToken skipIfCancelled) =>
+			skipIfCancelled.IsCancellationRequested ? Task.FromCanceled(skipIfCancelled) : SendBinaryMessage(data, sw);
+
 		IConnection OnConnect(Action<IConnection> onConnect);
 
 		IConnection OnDisconnect(Action<IConnection, bool> onDisconnect);
