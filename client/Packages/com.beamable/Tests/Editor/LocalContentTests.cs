@@ -30,6 +30,7 @@ namespace Beamable.Editor.Tests
 		private LocalWorkingCopy _copy;
 		private RealmSentinel _realm;
 		private MockConnectivityService _connectivity;
+		private ContentConfiguration _config;
 
 		[SetUp]
 		public void SetUpWorkingCopy()
@@ -37,10 +38,18 @@ namespace Beamable.Editor.Tests
 			_copy = new LocalWorkingCopy();
 			_realm = new RealmSentinel();
 			_connectivity = new MockConnectivityService();
+			// A transient configuration, so the tests never read or change the project's settings.
+			_config = ScriptableObject.CreateInstance<ContentConfiguration>();
+			_config.EditorManifestID = LocalWorkingCopy.Namespace;
 		}
 
 		[TearDown]
-		public void TearDownWorkingCopy() => _copy.Dispose();
+		public void TearDownWorkingCopy()
+		{
+			Beam.RuntimeConfigProvider.Pid = null;
+			_copy.Dispose();
+			UnityEngine.Object.DestroyImmediate(_config);
+		}
 
 		[UnityTest]
 		public IEnumerator EnabledModeResolvesLocalItemWithoutAskingTheRealm([Values(true, false)] bool online)
@@ -104,7 +113,49 @@ namespace Beamable.Editor.Tests
 			Assert.That(_realm.RequestedNamespaces, Does.Contain("other"));
 		}
 
-		private IEnumerator StartContext(ILocalContentSource local, bool online = true)
+		[UnityTest]
+		public IEnumerator LocalContentFollowsTheRealmTheContextStartedOn()
+		{
+			const string switchedPid = "DE_222";
+			_copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(17));
+			_copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(42), switchedPid);
+			// Beam.SwitchToPid sets this override, then restarts every context.
+			Beam.RuntimeConfigProvider.Pid = switchedPid;
+			yield return StartContext(ForContext);
+
+			var request = Context.Content.GetContent(LocalWorkingCopy.ItemId, typeof(LocalSourceRegressionContent), LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(request);
+
+			Assert.That(((LocalSourceRegressionContent)request.GetResult()).amount, Is.EqualTo(42));
+		}
+
+		[UnityTest]
+		public IEnumerator RealmChangeWithoutRestartKeepsServingTheSameObjects()
+		{
+			const string switchedPid = "DE_333";
+			_copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(17));
+			_copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(42), switchedPid);
+			yield return StartContext(ForContext);
+			var first = Context.Content.GetContent(LocalWorkingCopy.ItemId, typeof(LocalSourceRegressionContent), LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(first);
+
+			// An editor realm switch during Play Mode changes the fallback PID but does not restart contexts.
+			((TestConfigProvider)Beam.RuntimeConfigProvider.Fallback).Pid = switchedPid;
+			var second = Context.Content.GetContent(LocalWorkingCopy.ItemId, typeof(LocalSourceRegressionContent), LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(second);
+
+			var content = (LocalSourceRegressionContent)second.GetResult();
+			Assert.That(content, Is.SameAs(first.GetResult()));
+			Assert.That(content == null, Is.False, "Objects already handed to the game must stay alive.");
+			Assert.That(content.amount, Is.EqualTo(17));
+		}
+
+		private EditorLocalContentSource ForContext() =>
+			_copy.Track(EditorLocalContentSource.ForContext(_config, Promise<string>.Successful(_copy.Workspace)));
+
+		private IEnumerator StartContext(ILocalContentSource local, bool online = true) => StartContext(() => local, online);
+
+		private IEnumerator StartContext(Func<ILocalContentSource> local, bool online = true)
 		{
 			_connectivity.SetHasInternet(online);
 			TriggerContextInit(builder =>
@@ -120,7 +171,8 @@ namespace Beamable.Editor.Tests
 				builder.RemoveIfExists<IConnectivityService>();
 				builder.AddSingleton<IConnectivityService>(_connectivity);
 				builder.RemoveIfExists<ILocalContentSource>();
-				builder.AddSingleton<ILocalContentSource>(local);
+				// A factory, so the source is created while the context is built, as in production.
+				builder.AddSingleton<ILocalContentSource>(_ => local());
 			});
 			yield return Context.OnReady.ToYielder();
 		}
@@ -379,14 +431,16 @@ namespace Beamable.Editor.Tests
 
 		public LocalWorkingCopy() => Directory.CreateDirectory(ContentDirectory(BeamableTest.DEFAULT_PID));
 
-		public EditorLocalContentSource Source(string pid = BeamableTest.DEFAULT_PID)
+		public EditorLocalContentSource Source(string pid = BeamableTest.DEFAULT_PID) =>
+			Track(new EditorLocalContentSource(Namespace, pid, Promise<string>.Successful(Workspace)));
+
+		public EditorLocalContentSource Track(EditorLocalContentSource source)
 		{
-			var source = new EditorLocalContentSource(true, Workspace, BeamableTest.DEFAULT_CID, pid, Namespace);
 			_sources.Add(source);
 			return source;
 		}
 
-		public static void DisposeSource(EditorLocalContentSource source) => source.Dispose();
+		public static void DisposeSource(EditorLocalContentSource source) => source.OnDispose();
 
 		public string ContentDirectory(string pid) => Path.Combine(Workspace, "local", "content", pid, Namespace);
 
