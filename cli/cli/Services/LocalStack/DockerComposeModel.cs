@@ -10,6 +10,9 @@ namespace cli.Services.LocalStack;
 /// </summary>
 public class DockerComposeModel
 {
+	/// <summary>The file's top-level <c>name</c>: its compose project when no <c>-p</c> or <c>COMPOSE_PROJECT_NAME</c> overrides it.</summary>
+	public string name;
+
 	public Dictionary<string, DockerComposeService> services = new Dictionary<string, DockerComposeService>();
 
 	/// <summary>Parses the local docker-compose file, or returns null if it is missing/unreadable.</summary>

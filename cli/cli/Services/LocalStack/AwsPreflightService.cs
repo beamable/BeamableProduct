@@ -241,7 +241,7 @@ public class AwsPreflightService
 
 		// 3b. The analytics roles the C# hosts use. Same direct-then-chained probe as above, but the ARNs are read
 		// from BeamableAPI's appsettings rather than awsglobal.conf. Reported as warnings: a developer who never
-		// runs the analytics loader does not need these, and blocking `beam local up` on them would make analytics
+		// runs the analytics loader does not need these, and blocking `beam local run` on them would make analytics
 		// access a prerequisite for a stack that otherwise works fine without it.
 		foreach (var (label, settingPath) in ApiAnalyticsRolePaths)
 		{
@@ -443,7 +443,7 @@ public class AwsPreflightService
 		}
 
 		text.AppendLine();
-		text.AppendLine("Verify:  beam local validate --with-aws");
+		text.AppendLine("Verify:  beam local setup --only aws");
 		text.AppendLine();
 		text.AppendLine("Gotchas");
 		text.AppendLine("-------");
@@ -461,14 +461,14 @@ public class AwsPreflightService
 
 	/// <summary>
 	/// The scheduler's SQS queue URL from BeamableAPI's <c>appsettings.Local.json</c> (the environment
-	/// <c>beam local up</c> runs those hosts under). Null when the file or key is absent.
+	/// <c>beam local run</c> runs those hosts under). Null when the file or key is absent.
 	/// </summary>
 	private static string ReadSchedulerQueueUrl(string apiDir) =>
 		ReadApiLocalSetting(apiDir, "Scheduler.JobQueue.QueueUrl");
 
 	/// <summary>
 	/// One value from BeamableAPI's <c>BeamableGateway/appsettings.Local.json</c> by dotted path (the environment
-	/// <c>beam local up</c> runs those hosts under). Null when the file, or the key, is absent.
+	/// <c>beam local run</c> runs those hosts under). Null when the file, or the key, is absent.
 	/// </summary>
 	private static string ReadApiLocalSetting(string apiDir, string settingPath)
 	{

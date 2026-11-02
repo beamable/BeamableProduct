@@ -13,7 +13,7 @@
 
 import { createElement, useCallback, useEffect, useMemo, useRef, useState, StrictMode, type ComponentType, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { Portal, type BadgeContext, type BadgeValue, type CandidateMetadata, type ExtensionContext, type MountSiteHandle, type ZoneBadgeContext, type ZoneExtensionContext } from './portal';
+import { Portal, type CandidateMetadata, type ExtensionContext, type MountSiteHandle, type ZoneExtensionContext } from './portal';
 import type { ExtensionStore, SetOptions } from './storage';
 import type { Beam, BeamZoneSdk } from '@beamable/sdk';
 
@@ -226,15 +226,6 @@ export interface RegisterReactExtensionOptions {
    * `context` as props.
    */
   wrapper?: (props: { context: ExtensionContext; children: ReactNode }) => ReactNode;
-  /**
-   * Optional sidebar nav-badge supplier — forwarded straight to
-   * {@link Portal.registerExtension}. See its docs for the contract:
-   * runs once per page-load when the nav item is in view, MUST NOT
-   * depend on the extension's React tree (the extension may not be
-   * mounted yet), pair with {@link ExtensionContext.updateBadge} for
-   * live updates while mounted.
-   */
-  getBadge?: (context: BadgeContext) => Promise<BadgeValue | null>;
 }
 
 /**
@@ -260,7 +251,7 @@ export interface RegisterReactExtensionOptions {
  *   registerReactExtension({ beamId: 'my-extension', App });
  */
 export function registerReactExtension(options: RegisterReactExtensionOptions): void {
-  const { beamId, App, disableStrictMode, wrapper, getBadge } = options;
+  const { beamId, App, disableStrictMode, wrapper } = options;
   Portal.registerExtension({
     beamId,
     onMount: (container, context) => {
@@ -273,14 +264,13 @@ export function registerReactExtension(options: RegisterReactExtensionOptions): 
     onUnmount: (instance) => {
       (instance as Root).unmount();
     },
-    ...(getBadge ? { getBadge } : {}),
   });
 }
 
 /**
  * Options for {@link registerReactZoneExtension}. The zone analog of
  * {@link RegisterReactExtensionOptions}: `App` / `wrapper` receive a
- * {@link ZoneExtensionContext} and `getBadge` a {@link ZoneBadgeContext}.
+ * {@link ZoneExtensionContext}.
  */
 export interface RegisterReactZoneExtensionOptions {
   /** Unique extension name — must match the `beamId` in your manifest. */
@@ -291,8 +281,6 @@ export interface RegisterReactZoneExtensionOptions {
   disableStrictMode?: boolean;
   /** Optional wrapper rendered around the App (providers, etc.). */
   wrapper?: (props: { context: ZoneExtensionContext; children: ReactNode }) => ReactNode;
-  /** Optional sidebar nav-badge supplier — forwarded to {@link Portal.registerZoneExtension}. */
-  getBadge?: (context: ZoneBadgeContext) => Promise<BadgeValue | null>;
 }
 
 /**
@@ -306,7 +294,7 @@ export interface RegisterReactZoneExtensionOptions {
  *   registerReactZoneExtension({ beamId: 'zone-overview', App });
  */
 export function registerReactZoneExtension(options: RegisterReactZoneExtensionOptions): void {
-  const { beamId, App, disableStrictMode, wrapper, getBadge } = options;
+  const { beamId, App, disableStrictMode, wrapper } = options;
   Portal.registerZoneExtension({
     beamId,
     onMount: (container, context) => {
@@ -319,7 +307,6 @@ export function registerReactZoneExtension(options: RegisterReactZoneExtensionOp
     onUnmount: (instance) => {
       (instance as Root).unmount();
     },
-    ...(getBadge ? { getBadge } : {}),
   });
 }
 

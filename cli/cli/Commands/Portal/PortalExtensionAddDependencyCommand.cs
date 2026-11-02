@@ -91,10 +91,10 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 	public static void GenerateDependenciesClients(string extensionPath, BeamoLocalManifest manifest)
 	{ //TODO: could also use better error handling here
 		var dependencies = GetDependenciesFromPath(extensionPath);
-		// A zone extension's `context.beam` is a BeamZoneSdk, which does not extend BeamBase, so its clients must
-		// bind to BeamZoneSdk — the same choice `generate-portal-extension-clients` makes. `project run` regenerates
-		// through here on every start, so getting it wrong rewrites zone extensions' clients to BeamBase.
-		var augmentType = IsZoneExtension(extensionPath) ? "BeamZoneSdk" : "BeamBase";
+		var isZoneExtension = IsZoneExtension(extensionPath);
+		var clientsOutputDirectory = Path.Combine(extensionPath, "beamable/clients");
+		var generators = new List<WebClientCodeGenerator>();
+		var skippedDependencies = new List<string>();
 
 		foreach ((string beamId, HttpMicroserviceLocalProtocol localProtocol) in manifest.HttpMicroserviceLocalProtocols)
 		{
@@ -106,13 +106,41 @@ public class PortalExtensionAddDependencyCommand : AppCommand<PortalExtensionAdd
 			if (localProtocol.OpenApiDoc == null)
 			{
 				Log.Warning($"Client generation for {beamId} is being skipped because there is no API doc. Try running {beamId} once to make it available and try again.");
+				skippedDependencies.Add(beamId);
 				continue;
 			}
 
-			var generator = new WebClientCodeGenerator(localProtocol.OpenApiDoc, "ts", augmentType);
-			var clientsOutputDirectory = Path.Combine(extensionPath, "beamable/clients");
+			// The client binds to the SDK type that routes to the service's own scope, whatever the extension's scope
+			// is: a zone extension calls a realm service through assumeRealm's BeamServer (a BeamBase), the same choice
+			// `generate-portal-extension-clients` makes. `project run` regenerates through here on every start.
+			var service = manifest.ServiceDefinitions.FirstOrDefault(d => d.BeamoId == beamId);
+			if (service?.IsZoneScoped == true && !isZoneExtension)
+			{
+				Log.Warning($"Realm-scoped portal extension at {extensionPath} depends on zone-scoped microservice {beamId}; a realm extension has no zone SDK to call it with.");
+			}
+
+			var generator = new WebClientCodeGenerator(localProtocol.OpenApiDoc, "ts", WebClientCodeGenerator.AugmentTypeFor(service));
 			generator.GenerateClientCode(clientsOutputDirectory);
+			generators.Add(generator);
 		}
+
+		WriteClientTypes(extensionPath, generators, skippedDependencies);
+	}
+
+	/// <summary>
+	/// Writes the extension's <c>beamable/clients/types/index.ts</c> from the clients of all its dependencies. If a
+	/// dependency's client could not be generated, its existing client file may still import types from
+	/// <c>index.ts</c>, so the file is left as-is rather than rewritten without them.
+	/// </summary>
+	public static void WriteClientTypes(string extensionPath, List<WebClientCodeGenerator> generators, List<string> skippedDependencies)
+	{
+		if (skippedDependencies.Count > 0)
+		{
+			Log.Warning($"Client types for extension at {extensionPath} were not regenerated because these dependencies have no API doc: {string.Join(", ", skippedDependencies)}.");
+			return;
+		}
+
+		WebClientCodeGenerator.GenerateClientTypes(generators, Path.Combine(extensionPath, "beamable/clients/types"));
 	}
 
 	public static List<string> GetDependenciesFromPath(string extensionPath)

@@ -1,0 +1,226 @@
+---
+name: beam-local-stacks
+description: Run, watch, restart and maintain the local Beamable stack (Docker deps, C# hosts, Scala services, portal, microservices, extensions, local web packages) with beam local run/ps/logs/stop, and set up a machine for it.
+---
+
+# Local Stacks
+
+_Written by `beam local setup` from the installed CLI, so the option tables match it. Refresh it with
+`beam local setup --only skill` after updating the CLI._
+
+A **stack** is a named set of **steps**: Docker containers, builds, C# hosts, Scala services, the portal, this
+workspace's microservices and portal extensions, and the local web package loop. `beam local run <stack>` brings
+it up; `beam local ps`, `logs` and `stop` manage it from any terminal.
+
+## Prerequisites
+- A `.beamable` workspace (the portal repository, for the full stack) with the sibling repositories cloned:
+  `BeamableAPI`, `BeamableBackend`, `BeamableProduct`. Setup finds `<Repo>_<suffix>` siblings next to a
+  `<workspace>_<suffix>` folder first.
+- Docker running.
+- `beam local setup` done once on this machine (see **Setting up a machine**).
+
+## Find out what this machine runs
+Never guess step names, ports or folders: ask the CLI.
+```
+beam local run                         # the stacks, their variants and backends
+beam local run csharp-portal --dry-run # the resolved steps, folders, ports, variables and checks
+beam local ps --json                   # what is running now
+```
+`--dry-run` starts nothing. It warns when a stack misses something its steps need.
+
+## Stack names
+`beam local run <stack>[:<variant>...]`: variants apply left to right.
+
+| Built-in stack | Runs | Backend |
+|---|---|---|
+| `full` | Docker deps, C# hosts, every Scala service, the portal, microservices, extensions, log forwarding | local |
+| `backend` | Docker deps, C# hosts, every Scala service, log forwarding | local |
+| `csharp-portal` | Docker deps, C# hosts, the Scala services they call and the ones login needs, the portal, microservices, extensions, log forwarding | local |
+| `portal-extensions` | The portal, microservices and extensions | dev |
+| `web-dev` | The local package registry, the portal, microservices and extensions (`:non-publish`: build the packages only) | dev |
+| `remote` | This workspace's microservices and extensions, used from the hosted portal | dev |
+| `native-libs` | Builds the notification libraries (Android; iOS on a Mac with Xcode) into the Unity, Unity.Web, React Native and Unreal packages (`:android`, `:ios`). The built files are committed | none |
+| `rn-sample` | The `backend` stack, then the React Native sample on a connected Android phone or emulator, pointed at the local realm; the native library is rebuilt only when its sources have uncommitted changes. `:emulator` starts the toolchain's emulator first, `:device` needs a phone (LAN host), `:browser` runs it with Expo web | local |
+
+Teams add stacks in `.beamable/shared/stacks/*.json` (committed); each developer in `.beamable/local/stacks/*.json`.
+`beam local run` lists all of them with their layer.
+
+| Variant (every stack) | Effect |
+|---|---|
+| `:build` | Rebuild everything the stack runs, changed or not |
+| `:no-build` | Start without building, even when an output is missing |
+| `:web` | Build the local `@beamable/sdk` and `@beamable/portal-toolkit`, publish them to the local registry, point the extensions at them, rebuild on every save |
+| `:no-logs` | Don't forward logs to Grafana |
+| `:local`, `:lan`, `:dev`, `:staging`, `:prod` | The backend (see **Backends**) |
+
+Examples: `full:no-build`, `csharp-portal:web`, `portal-extensions:local`, `backend:lan`.
+
+A build runs only when its output is missing or its inputs changed since it last built (git tree ids plus a hash of
+changed files); otherwise the board says Up to date and why.
+
+### Backends
+One stack has one backend; beam steps get `BEAM_HOST/CID/PID` and tokens through the environment, the portal gets
+`VITE_API_BASE`. The workspace's own login (`.beamable/config.beam.json`) is never changed.
+
+| Target | Backend |
+|---|---|
+| `local` | This machine's stack (settings `host`). On first run the CLI creates a local org and realm (`--realm-*` options) with zones dev, staging and prod |
+| `lan` | This machine's stack at its LAN address, for phones and other machines |
+| `dev` / `staging` | Beamable's hosted backends; a remote login is asked for once |
+| `prod` | Beamable's production; asks before every run (`--confirm-target` without a terminal) |
+| an `http(s)://` address | Any gateway |
+
+## Running
+In a terminal `run` stays attached and shows a progress board until Ctrl+C stops the stack. **An agent always
+detaches**, then reads the state with `ps`:
+```
+beam local run csharp-portal --detach
+beam local ps --json
+```
+Running another stack name while one runs changes the running stack in place: steps the new name doesn't have stop,
+new ones start.
+{{ if commands["local run"] }}
+#### `beam local run` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["local run"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+## Watching and acting on a running stack
+```
+beam local ps --json                          # every step: state, port, time, detail
+beam local ps --restart "scala: auth"       # one step, by name
+beam local ps --restart scala                 # a tag: every Scala service
+beam local ps --restart --all                 # every service; containers stay up
+beam local stop "portal frontend"           # stop one step...
+beam local ps --start "portal frontend"     # ...and start it again
+beam local logs "c# gateway" -n 100         # a step's log
+```
+For a person, `beam local management` opens the same in a browser tab: the stacks to create, edit, delete and start, and
+the running one's steps with their logs (restart, stop, start), plus a Bundles tab to list, pin, plan, publish and deploy
+the workspace's bundles. It runs until stopped; agents use the commands above.
+
+States: Waiting, Building, Up to date, Starting, Restarting, Ready, Running, Degraded, Done, Failed, Stopped. A failed
+step doesn't stop the stack; steps that need it report "can't start: X failed". A restart rebuilds first when the
+step's sources changed.
+
+Steps are named by kind: `docker: …`, `build: …`, `c# …`, `scala: …`, `portal frontend`, `microservice: <Name>`,
+`portal extension: <Name>`, `web: …`, `logs: forward`. Tags select groups of them: `docker`, `csharp`, `scala`,
+`scala-core` (what login needs), `scala-csharp` (the Scala the C# hosts call), `portal`, `microservices`,
+`extensions`, `web-registry`, `observability`, `custom`.
+{{ if commands["local ps"] }}
+#### `beam local ps` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["local ps"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}{{ if commands["local logs"] }}
+#### `beam local logs` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["local logs"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}{{ if commands["local stop"] }}
+#### `beam local stop` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["local stop"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+## Output without a terminal
+Piped or run by an agent, the commands print one JSON line per event instead of the board:
+`{"ts":…,"type":"<type>","data":{…}}`. Bare `run` sends `stacks`, `--dry-run` sends `dryRun`, a run sends a line per
+step change (`label`, `state`, `elapsedSeconds`), `ps --json` prints only the JSON. Add `--pretty` for readable
+timestamped lines instead.
+
+## Logs in Grafana
+Stacks with the `observability` tag (`full`, `backend`, `csharp-portal`) run `logs: forward`, which sends every step's
+lines to the local Loki with labels `beam_workspace`, `beam_stack`, `beam_step`, `beam_kind` and the line's level.
+On the local backend, microservices and extensions also send their own logs, metrics and failed-request traces.
+Grafana: `http://localhost:3001` → Dashboards → "Local stack" (one dashboard per kind). `L` on the board opens it.
+
+## Changing what runs
+Create or change a stack instead of editing JSON; both check the result against this machine first.
+```
+beam local create my-stack --extends csharp-portal --exclude scala-csharp --description "C# without extra Scala" --quiet
+beam local create csharp-portal:with-stats --after "scala: stats" --description "Plus stats" --quiet
+beam local create mine --extends backend --services WalletService --quiet
+beam local edit my-stack --exclude "" --quiet
+beam local delete my-stack --quiet
+```
+`--shared` writes the team's folder (a description is required). `edit` takes the same flags as `create`; an empty
+value clears the field. Picked services bring what they need (the docker deps, the gateway, the Scala login set, the
+microservices an extension calls). Builds are never picked: a stack gets the builds of the steps it runs.
+
+A process of your own (a seed script, a mock server) is a custom step, added to this machine's catalogue with
+`beam local setup --add-step "<name>" --step-command … --step-dir "${PortalPath}"` (or `--step-shell`, `--step-beam`)
+and then run by name or by the `custom` tag. `beam local setup --list-steps` lists the catalogue.
+{{ if commands["local create"] }}
+#### `beam local create` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["local create"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+### Settings and variables
+This machine's settings are `.beamable/local/stack-settings.json` (not committed): the step catalogue, `paths` (each
+repository once, e.g. `"BeamAPIPath": "../BeamableAPI"`), `variables`, `targets`, `host`, `portalUrl`,
+`logRetentionDays`. Steps refer to them as `${Name}`. Built-in tokens:
+
+| Token | Value |
+|---|---|
+| `${host}`, `${portalUrl}` | The backend and portal addresses |
+| `${java}` | The JDK 8 home (`${java}/bin/java`) |
+| `${maven}`, `${npm}`, `${node}`, `${dotnet}` | The toolchain's executables, or the bare command without one |
+| `${logRetention}` | `logRetentionDays` in hours |
+
+`--dry-run` lists every variable a stack uses and where its value comes from. After updating the CLI, refresh the
+catalogue once with `beam local setup --only settings --force`; it keeps variables, targets and custom steps.
+
+## Setting up a machine
+`beam local setup` installs a private, pinned toolchain under `~/.beamable-toolchain` (JDK 8, Maven, .NET SDK, Node,
+pnpm), writes the settings file, generates BeamableBackend's gitignored config files and checks the AWS
+prerequisites. A second run only fills what's missing. Before it: install the .NET SDK and Docker,
+`dotnet tool install -g Beamable.Tools`, clone the repositories.
+```
+beam local setup --quiet
+beam local setup --only aws       # just the AWS checks
+beam local setup --aws-guide      # the AWS setup guide for this checkout
+```
+Step ids for `--only`/`--skip`: `docker`, `jdk8`, `maven`, `dotnet`, `node`, `pnpm`, `jdk17`, `gradle`, `android-sdk`,
+`android-emulator`, `settings`, `skill` (this file), `scala-config`, `portal-config`, `aws`.
+
+The native toolchain (JDK 17, Gradle 8.2, the Android SDK) only comes with `--native`, or when a native stack runs.
+Installing the Android SDK means accepting Google's licenses: setup asks in a terminal; without one it needs
+`--accept-android-licenses`, which only the user may decide to pass. The emulator (about 3 GB) is installed by
+`rn-sample:emulator` or `--only android-emulator`.
+
+**Real AWS access is required.** The Scala `auth` service reads its JWT signing key from AWS Secrets Manager, so
+without credentials every process comes up healthy and nothing can log in. `--only aws` checks the profile, the
+services, storage and analytics roles, and the signing key, and names the fix (usually: add the developer to a
+role's trust policy). `AWS_PROFILE` set to an empty string fails as "config profile () could not be found": unset it.
+{{ if commands["local setup"] }}
+#### `beam local setup` options
+| Option | Type | Description |
+|---|---|---|
+{{ for opt in commands["local setup"].options }}`{{ opt.name }}` | {{ opt.type }} | {{ opt.description }}
+{{ end }}{{ end }}
+
+## Maintenance
+- `beam local stop` stops everything; Docker containers keep their data.
+- `beam local stop --purge` also removes the containers' volumes: **the local database (accounts, realms) is gone**,
+  and the next run creates a new realm with a new CID. Ask the user first.
+- `beam local logs --clean` empties Loki and Tempo and deletes earlier runs' log folders. Nothing else is touched.
+- Logs go to a temp folder removed on `stop`; `run --save-logs` keeps them under `.beamable/local-stack-logs/`.
+  Loki and Tempo keep `logRetentionDays` (default 5; `beam local setup --log-retention-days <n>`).
+
+## When a step will not come up
+1. `beam local ps --json`: did it fail, exit, or never start (a dependency failed)?
+2. `beam local logs "<step>"`: the cause is almost always in its own log.
+3. `beam local run <stack> --dry-run`: check the step's folder against the repositories you expect.
+4. A readiness timeout usually means a missing dependency, not a slow service: C# hosts need the docker step, every
+   beam step needs a login to the backend (on `local`, the Scala `scala-core` services).
+5. "Port already in use" is reported before launch: something outside the stack holds the port.
+6. A C# host runs from its build output; after a change in BeamableAPI the next run rebuilds it, or force it with
+   `:build`.
+7. **Under load**, ActiveMQ runs with a 1 GB heap; tens of thousands of unconsumed messages (locally,
+   `Consumer.csharp-bridge.VirtualTopic.platform_metric_reports.general` has no consumer) push it into full GCs and
+   stall every service. Restarting the ActiveMQ container clears it.

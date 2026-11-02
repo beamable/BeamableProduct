@@ -104,6 +104,10 @@ public class DefaultAppContext : IAppContext
 	private readonly PreferRemoteFederationOption _routeMapOption;
 	private readonly SkipStandaloneValidationOption _skipValidationOption;
 	private readonly DotnetPathOption _dotnetPathOption;
+
+	/// <summary>The width, in columns, the CLI lays its output out to instead of the terminal's (or 80 without one).</summary>
+	public const string ConsoleWidthVariable = "BEAM_CONSOLE_WIDTH";
+
 	public bool IsDryRun { get; private set; }
 	public bool PreferRemoteFederation { get; private set; }
 	public bool UsePipeOutput { get; private set; }
@@ -272,6 +276,11 @@ public class DefaultAppContext : IAppContext
 			});
 		}
 
+		// Output read by another program (no terminal) is laid out 80 columns wide; a reader that wraps lines itself,
+		// like `beam local management`'s page, asks for wider ones.
+		if (int.TryParse(Environment.GetEnvironmentVariable(ConsoleWidthVariable), out var consoleWidth) && consoleWidth > 0)
+			AnsiConsole.Profile.Width = consoleWidth;
+
 		// Configure log level from option
 		{
 			var logLevelOption = _bindingContext.ParseResult.GetValueForOption(_logOption);
@@ -356,9 +365,17 @@ public class DefaultAppContext : IAppContext
 		}
 		// Detect whether the caller explicitly supplied a token on the command line (or via config
 		// override). When they did, the stored login in the token file must not override it.
-		var hasAccessTokenOverride = !string.IsNullOrEmpty(bindingContext.ParseResult.GetValueForOption(_accessTokenOption));
-		var hasRefreshTokenOverride = !string.IsNullOrEmpty(bindingContext.ParseResult.GetValueForOption(_refreshTokenOption));
+		// A token given as an environment override counts the same as one on the command line.
+		var hasAccessTokenOverride = !string.IsNullOrEmpty(bindingContext.ParseResult.GetValueForOption(_accessTokenOption)
+		                                                   ?? ConfigService.EnvironmentOverride(_accessTokenOption.OptionName));
+		var hasRefreshTokenOverride = !string.IsNullOrEmpty(bindingContext.ParseResult.GetValueForOption(_refreshTokenOption)
+		                                                    ?? ConfigService.EnvironmentOverride(_refreshTokenOption.OptionName));
 		var hasTokenOverride = hasAccessTokenOverride || hasRefreshTokenOverride;
+		_tokenIsOverride = hasTokenOverride;
+
+		var overridden = ConfigService.EnvironmentOverridable.Where(o => ConfigService.EnvironmentOverride(o) != null).ToList();
+		if (overridden.Count > 0)
+			Log.Debug($"Using {string.Join(", ", overridden.Select(ConfigService.EnvironmentVariableFor))} from the environment instead of the .beamable config.");
 
 		// If an access token is supplied without a matching refresh token, don't inherit the stored
 		// user's refresh token: it belongs to a different identity, and the requester retry path would
@@ -391,7 +408,7 @@ public class DefaultAppContext : IAppContext
 		await Set(cid, pid, host);
 		// if the token we got from the config file is expired, try to refresh it — again time-bounded and
 		// non-fatal, so a down/unreachable backend can't hang or crash every command. Standalone/offline
-		// commands (e.g. `beam local init`) don't need auth; commands that do will surface a clear error later.
+		// commands (e.g. `beam local setup`) don't need auth; commands that do will surface a clear error later.
 		if (isExpiredToken && !hasTokenOverride)
 		{
 			try
@@ -465,10 +482,18 @@ public class DefaultAppContext : IAppContext
 		_token = new CliToken(tokenResponse, _cid, _pid);
 	}
 
+	/// <summary>
+	/// Saves the current token as the workspace's login, unless it came from <c>--refresh-token</c>,
+	/// <c>--access-token</c> or their environment overrides: those are for one invocation, and saving a refreshed
+	/// one would replace the workspace's login with somebody else's.
+	/// </summary>
 	public void SaveCurrentTokenToFile()
 	{
+		if (_tokenIsOverride) return;
 		_configService.SaveTokenToFile(_token);
 	}
+
+	private bool _tokenIsOverride;
 
 	string IRealmInfo.CustomerID => _cid;
 

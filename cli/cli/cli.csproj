@@ -140,7 +140,45 @@
 
     <!-- Beamable content-type schema snapshots for MCP type discovery (split per section + combined) -->
     <EmbeddedResource Include="Resources\beamable-types*.json" />
+
+    <!-- The local-stack agent skill `beam local setup` renders into the workspace. Kept out of Docs/SkillTemplates:
+         those are the MCP server's and `beam install-ai-skill`'s skills, which customers get. -->
+    <EmbeddedResource Include="Docs\LocalStack\*.md.scriban" />
+
+    <!-- The stacks every `beam local run` can start, versioned with the CLI. -->
+    <None Remove="Services\LocalStack\BuiltInStacks.json" />
+    <EmbeddedResource Include="Services\LocalStack\BuiltInStacks.json" />
   </ItemGroup>
+
+  <!-- The local web app (`beam local management`: local stacks and bundles), built from ../local-web into LocalWeb/
+       (git-ignored) and embedded as LocalWeb/<file> (see LocalWebAssets). Built once, before the per-framework builds,
+       and only when local-web changed. Without pnpm, in a container, or with BeamSkipLocalWeb=true the CLI is built
+       without it, and the command says so. -->
+  <PropertyGroup>
+    <LocalWebDir>$(MSBuildThisFileDirectory)..\local-web\</LocalWebDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <LocalWebSource Include="$(LocalWebDir)**\*" Exclude="$(LocalWebDir)node_modules\**" />
+  </ItemGroup>
+  <!-- Collected in a target, after BuildLocalWeb: a static item is read when the project is loaded, before anything is
+       built, so a first build from a clean checkout (and every build reached through a project reference) embedded
+       nothing. -->
+  <Target Name="EmbedLocalWeb" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <_LocalWebFile Include="LocalWeb\**\*" />
+      <EmbeddedResource Include="@(_LocalWebFile)" LogicalName="LocalWeb/%(_LocalWebFile.RecursiveDir)%(_LocalWebFile.Filename)%(_LocalWebFile.Extension)" />
+    </ItemGroup>
+  </Target>
+  <Target Name="BuildLocalWeb" BeforeTargets="DispatchToInnerBuilds;BeforeBuild"
+          Inputs="@(LocalWebSource)" Outputs="LocalWeb\index.html"
+          Condition="'$(BeamSkipLocalWeb)' != 'true' AND '$(DOTNET_RUNNING_IN_CONTAINER)' != 'true' AND Exists('$(LocalWebDir)package.json')">
+    <Exec Command="pnpm --version" IgnoreExitCode="true" StandardOutputImportance="low" EchoOff="true">
+      <Output TaskParameter="ExitCode" PropertyName="_LocalWebPnpm" />
+    </Exec>
+    <Warning Condition="'$(_LocalWebPnpm)' != '0'" Text="pnpm was not found, so this CLI is built without its local web app (cli/local-web)." />
+    <Exec Condition="'$(_LocalWebPnpm)' == '0'" WorkingDirectory="$(LocalWebDir)" Command="pnpm install --frozen-lockfile &amp;&amp; pnpm build" ContinueOnError="WarnAndContinue" />
+    <Warning Condition="'$(_LocalWebPnpm)' == '0' AND !Exists('LocalWeb\index.html')" Text="The local web app (cli/local-web) failed to build, so this CLI is built without it; its output above says why." />
+  </Target>
 
   <!-- Regenerate the type schema snapshot after each build so it stays current.
        Prefers net8.0 to avoid re-running across multi-target builds; falls back to net10.0

@@ -12,7 +12,6 @@ namespace cli.Portal;
 public class PortalExtensionUpdateToolkitCommandArgs : CommandArgs
 {
 	public string Version;
-	public bool Local;
 	public string Registry;
 	public bool BundlesOnly;
 	public List<string> Ids = new List<string>();
@@ -41,9 +40,7 @@ public class PortalExtensionUpdateToolkitCommand : AtomicCommand<PortalExtension
 	{
 		AddOption(new Option<string>("--version", "The @beamable/portal-toolkit version to update to; must exist in the npm registry or in verdaccio"),
 			(args, i) => args.Version = i);
-		AddOption(new Option<bool>("--local", "Update to the version currently published locally in verdaccio"),
-			(args, i) => args.Local = i);
-		AddOption(new Option<string>("--registry", () => DEFAULT_VERDACCIO_REGISTRY, "The verdaccio registry URL used for --local and for version existence checks"),
+		AddOption(new Option<string>("--registry", () => DEFAULT_VERDACCIO_REGISTRY, "The verdaccio registry URL used for version existence checks"),
 			(args, i) => args.Registry = i);
 		AddOption(new Option<bool>("--bundles-only", "Only update Portal Extensions that are components of a bundle, skipping every other extension and library"),
 			(args, i) => args.BundlesOnly = i);
@@ -55,11 +52,6 @@ public class PortalExtensionUpdateToolkitCommand : AtomicCommand<PortalExtension
 
 	public override async Task<PortalExtensionUpdateToolkitCommandResults> GetResult(PortalExtensionUpdateToolkitCommandArgs args)
 	{
-		if (args.Local && !string.IsNullOrEmpty(args.Version))
-		{
-			throw new CliException("Cannot use --local and --version together. Pass one or the other, or neither to use the latest published version");
-		}
-
 		var (targetVersion, installRegistry) = await ResolveTargetVersion(args);
 		Log.Information($"Updating {TOOLKIT_PACKAGE} to version [{targetVersion}]");
 
@@ -293,27 +285,12 @@ public class PortalExtensionUpdateToolkitCommand : AtomicCommand<PortalExtension
 			await gate.WaitAsync();
 			try
 			{
-				// A local developer build (0.0.123-*) exists only on verdaccio, so it must be routed there or
-				// npm 404s against npmjs; it already carries its own "--registry <verdaccio>" in localArgs, and
-				// --prefer-offline is dropped there since the whole point is to fetch a just-published version.
-				//
-				// A released target gets NO public-registry forcing: verdaccio proxies npmjs, so the install
-				// resolves through the configured registry (verdaccio falls back to npmjs on its own). The only
-				// time a released path still needs an explicit --registry is a verdaccio-only --version, which
-				// npmjs cannot serve; a public target inherits the default registry.
-				var localArgs = WebLocalRegistryService.InstallArgsFor(target.directory);
-				string arguments;
-				if (!string.IsNullOrEmpty(localArgs))
-				{
-					arguments = "install --no-audit --no-fund" + localArgs;
-				}
-				else
-				{
-					var explicitRegistry = string.Equals(registry, NPM_REGISTRY, StringComparison.OrdinalIgnoreCase)
-						? string.Empty
-						: $" --registry {registry}";
-					arguments = $"install --no-audit --no-fund --prefer-offline{explicitRegistry}";
-				}
+				// A released target gets NO public-registry forcing. The only time it needs an explicit --registry
+				// is a verdaccio-only --version, which npmjs cannot serve.
+				var explicitRegistry = string.Equals(registry, NPM_REGISTRY, StringComparison.OrdinalIgnoreCase)
+					? string.Empty
+					: $" --registry {registry}";
+				var arguments = $"install --no-audit --no-fund --prefer-offline{explicitRegistry}";
 
 				var handle = StartProcessUtil.Run(
 					"npm",
@@ -346,30 +323,16 @@ public class PortalExtensionUpdateToolkitCommand : AtomicCommand<PortalExtension
 
 	/// <summary>
 	/// Resolves the toolkit version to write based on the options, along with the npm registry that
-	/// <c>npm install</c> must use for that version: --local uses verdaccio's "local" dist-tag (installed
-	/// from verdaccio), --version validates the version exists in npm or verdaccio (installed from whichever
-	/// registry actually has it), and with no options the public npm registry's "latest" dist-tag is used
-	/// (installed from the public registry). The resolved registry is only used to route installs that npmjs
-	/// cannot serve — a --local target, or a verdaccio-only --version; a public target is left to the default
-	/// registry, since verdaccio proxies npmjs and no longer needs to be forced past.
+	/// <c>npm install</c> must use for that version: --version validates the version exists in npm or verdaccio
+	/// (installed from whichever registry actually has it), and with no options the public npm registry's "latest"
+	/// dist-tag is used (installed from the public registry). The resolved registry is only used to route installs
+	/// that npmjs cannot serve, a verdaccio-only --version. A local build is never written into package.json: a
+	/// stack with the local web packages installs it without saving it.
 	/// </summary>
 	private async Task<(string version, string registry)> ResolveTargetVersion(PortalExtensionUpdateToolkitCommandArgs args)
 	{
 		var versionService = args.Provider.GetService<VersionService>();
 		var verdaccio = string.IsNullOrEmpty(args.Registry) ? DEFAULT_VERDACCIO_REGISTRY : args.Registry;
-
-		if (args.Local)
-		{
-			var packument = await versionService.GetNpmPackument(TOOLKIT_PACKAGE, verdaccio);
-			if (packument?.DistTags == null ||
-			    !packument.DistTags.TryGetValue("local", out var localVersion) ||
-			    string.IsNullOrEmpty(localVersion))
-			{
-				throw new CliException($"No 'local' version of {TOOLKIT_PACKAGE} found on verdaccio [{verdaccio}]. Publish it first with 'beam web publish'");
-			}
-
-			return (localVersion, verdaccio);
-		}
 
 		if (!string.IsNullOrEmpty(args.Version))
 		{

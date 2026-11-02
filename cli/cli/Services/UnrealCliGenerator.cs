@@ -269,6 +269,7 @@ public class UnrealCliGenerator : ICliGenerator
 			if (invalidCommands.Contains(command.executionPath)) continue;
 			if (invalidCommandPallets.Any(p => command.executionPath.StartsWith(p)))
 				continue;
+			if (CliGenerator.IsLocalStackCommand(command)) continue;
 
 			var nonBeamCommandNames = command.executionPath.Substring(command.executionPath.IndexOf(" ", StringComparison.Ordinal) + 1);
 			var commandName = $"BeamCli{string.Join("", nonBeamCommandNames.Split(" ").Select(c => c.Sanitize().Capitalize()))}";

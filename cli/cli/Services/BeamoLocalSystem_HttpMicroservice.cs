@@ -17,7 +17,11 @@ namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
-	public static string GetBeamIdAsMicroserviceContainer(string beamoId) => $"{beamoId}_httpMicroservice";
+	/// <summary>The microservice's container, under the same <c>beam_project_</c> prefix as <see cref="GetBeamIdAsMongoContainer"/>.</summary>
+	public static string GetBeamIdAsMicroserviceContainer(string beamoId) => $"beam_project_{beamoId}";
+
+	/// <summary>The name microservice containers had before <see cref="GetBeamIdAsMicroserviceContainer"/>; removed when the service starts.</summary>
+	public static string GetLegacyMicroserviceContainer(string beamoId) => $"{beamoId}_httpMicroservice";
 
 	private const string HTTM_MICROSERVICE_CONTAINER_PORT = "6565";
 	
@@ -211,6 +215,7 @@ public partial class BeamoLocalSystem
 			$"wget -O- -q -t1 http://localhost:{port}/{endpoint} || {pipeCmd} 1";
 
 		// Creates and runs the container. This container will auto destroy when it stops.
+		await RemoveLegacyContainer(GetLegacyMicroserviceContainer(serviceDefinition.BeamoId));
 		await CreateAndRunContainer(imageId, containerName, cmdStr, autoDeleteContainer, portBindings, volumes, bindMounts,
 			environmentVariables, token);
 	}

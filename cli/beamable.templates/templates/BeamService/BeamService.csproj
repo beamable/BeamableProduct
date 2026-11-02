@@ -3,6 +3,9 @@
     <PropertyGroup Label="Beamable Settings">
         <!-- All Microservices must have the value, "service" -->
         <BeamProjectType>service</BeamProjectType>
+        <!-- Opt in to baking published realm content into the service image:
+             <BeamBakeServerContent>true</BeamBakeServerContent>
+             Set service_content|disable_baked_content=true in realm config to bypass it at runtime. -->
     </PropertyGroup>
 
     <!-- These are special Beamable parameters that we use to keep the beamable packages in-sync to the CLI version your project is using. -->

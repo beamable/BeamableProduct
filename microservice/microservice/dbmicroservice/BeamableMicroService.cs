@@ -367,6 +367,21 @@ namespace Beamable.Server
          {
 	         _socketRequesterContext.Daemon.WakeAuthThread();
             await _requester.WaitForAuthorization(TimeSpan.FromMinutes(2), "Registering services event.");
+            // Refresh settings on every connection to recover updates missed while disconnected.
+            if (IsRealmScoped)
+            {
+               var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
+               var config = await realmService.GetRealmConfigSettings();
+               var contentService = Provider.GetService<ContentService>();
+               bool BakingDisabled(RealmConfig settings) =>
+                  bool.TryParse(settings.GetSetting(ContentService.BakeConfigNamespace, ContentService.BakeDisableKey), out var disabled) && disabled;
+               contentService.ConfigureBakedContent(InstanceArgs.CustomerID, InstanceArgs.ProjectName, !BakingDisabled(config));
+               if (!_ranCustomUserInitializationHooks && realmService is RealmConfigService concrete)
+               {
+                  concrete.ConfigChanged += updated => contentService.ConfigureBakedContent(
+                     InstanceArgs.CustomerID, InstanceArgs.ProjectName, !BakingDisabled(updated));
+               }
+            }
             // We can disable custom initialization hooks from running. This is so we can verify the image works (outside of the custom hooks) before a publish.
             // TODO This is not ideal. There's an open ticket with some ideas on how we can improve the publish process to guarantee it's impossible to publish an image
             // TODO that will not boot correctly.
@@ -385,13 +400,6 @@ namespace Beamable.Server
 		            await ResolveCustomInitializationHook();
 	            }
 				await RunServiceSetupCallbacks();
-            }
-
-            if (IsRealmScoped)
-            {
-            	// Realm config is only registered for realm-scoped services.
-            	var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
-            	await realmService.GetRealmConfigSettings();
             }
 
             // Beamo log-context is realm-scoped; zone services have no realm beamo api.
@@ -856,13 +864,16 @@ namespace Beamable.Server
 	      }
 
 	      BeamActivity parentActivity = BeamActivity.Noop;
-	      if (_socketRequesterContext.TryGetListener(ctx.Id, out var existingListener))
+	      var isResponse = _socketRequesterContext.TryGetListener(ctx.Id, out var existingListener);
+	      if (isResponse)
 	      {
 		      parentActivity = existingListener.Activity;
 	      }
-	      
-	      
-	      using var activity = _activityProvider.Create(Otel.TRACE_WS, parentActivity);
+
+	      // A request that carries the caller's traceparent joins the caller's trace instead of starting its own.
+	      using var activity = !isResponse && ActivityProviderExtensions.TryGetRemoteParent(ctx.Headers, out var remoteParent)
+		      ? _activityProvider.Create(Otel.TRACE_WS, remoteParent)
+		      : _activityProvider.Create(Otel.TRACE_WS, parentActivity);
 	      MicroserviceRequester.ContextActivity.Value = activity;
 	      ctx.ActivityContext = activity;
 	      
@@ -1177,7 +1188,7 @@ namespace Beamable.Server
 	      {
 		      // Deliberately not fatal: throwing here would abort ProvideService before the event provider
 		      // is wired up, leaving a half-registered socket — a worse failure than a service that runs and
-		      // reports itself degraded. The distinct message is what `beam local up` watches for, so this
+		      // reports itself degraded. The distinct message is what `beam local run` watches for, so this
 		      // no longer disappears into the log.
 		      Log.Error(
 			      Constants.Features.Services.Logs.FEDERATION_REGISTRATION_FAILED +

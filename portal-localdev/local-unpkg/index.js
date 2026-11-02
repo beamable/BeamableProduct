@@ -13,7 +13,7 @@
  *
  * Resolved files are cached in memory. Local dev republishes the SAME version
  * with different content, so that cache has to be bustable without a restart:
- * POST /__flush clears it (`beam web publish` calls this). Responses are sent
+ * POST /__flush clears it. Local builds never reuse a version, so nothing needs to. Responses are sent
  * `no-store` for the same reason — an immutable/max-age header would make the
  * browser hold a stale copy of a version that just changed underneath it.
  */
@@ -123,7 +123,7 @@ const CONTENT_TYPES = {
 }
 
 const server = http.createServer(async (req, res) => {
-  // Cache-bust hook — called by `beam web publish` after republishing a package
+  // Cache-bust hook, for clearing the cache by hand
   // under a version this server may already have cached.
   if (req.method === 'POST' && (req.url ?? '').split('?')[0] === '/__flush') {
     const flushed = fileCache.size
