@@ -161,8 +161,10 @@ namespace Beamable.Platform.Tests.Content
 			Assert.That(content.amount, Is.EqualTo(17));
 		}
 
-		private EditorLocalContentSource ForContext() =>
-			_copy.Track(EditorLocalContentSource.ForContext(_config, Promise<string>.Successful(_copy.Workspace)));
+		private ILocalContentSource ForContext() =>
+			_copy.Track((EditorLocalContentSource)EditorLocalContentRegistration.Create(
+				new ContentParameterProvider { EnableLocalContentInEditor = true }, _config,
+				() => LocalWorkingCopy.Namespace, () => Promise<string>.Successful(_copy.Workspace)));
 
 		private IEnumerator StartContext(ILocalContentSource local, bool online = true) => StartContext(() => local, online);
 

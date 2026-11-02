@@ -51,14 +51,6 @@ namespace Beamable.Editor.ContentService
 			AssemblyReloadEvents.beforeAssemblyReload += Release;
 		}
 
-		/// <summary>
-		/// Creates the source for the context being built now, reading the realm that context uses.
-		/// </summary>
-		public static EditorLocalContentSource ForContext(ContentConfiguration config, Promise<string> workspace) =>
-			new EditorLocalContentSource(config.EditorManifestID, Beam.RuntimeConfigProvider.Pid, workspace,
-			                             config.LocalContentManifestDelaySeconds?.HasValue == true ? config.LocalContentManifestDelaySeconds.Value : 0,
-			                             config.LocalContentReferenceDelaySeconds?.HasValue == true ? config.LocalContentReferenceDelaySeconds.Value : 0);
-
 		public bool HandlesManifest(string manifestId) => string.Equals(manifestId, _manifestId, StringComparison.Ordinal);
 
 		public async Promise<ClientManifest> GetManifest(string manifestId, ContentQuery query = null)

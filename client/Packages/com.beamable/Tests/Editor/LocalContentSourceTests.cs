@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using Beamable.Common;
 using Beamable.Common.Content;
+using Beamable.Content;
 using Beamable.Editor.ContentService;
 using Beamable.Platform.Tests.Content;
 using Beamable.Tests.Runtime;
@@ -15,6 +16,66 @@ using UnityEngine.TestTools;
 
 namespace Beamable.Editor.Tests
 {
+	/// <summary>
+	/// Which local content source a new context gets, given the setting and the Content window's namespace.
+	/// </summary>
+	public class LocalContentRegistrationTests
+	{
+		private ContentConfiguration _config;
+		private readonly List<ILocalContentSource> _created = new List<ILocalContentSource>();
+
+		[SetUp]
+		public void SetUp()
+		{
+			// A transient configuration, so the tests never read or change the project's settings.
+			_config = ScriptableObject.CreateInstance<ContentConfiguration>();
+			_config.EditorManifestID = LocalWorkingCopy.Namespace;
+		}
+
+		[TearDown]
+		public void TearDown()
+		{
+			foreach (var source in _created)
+				if (source is EditorLocalContentSource local) local.OnDispose();
+			_created.Clear();
+			UnityEngine.Object.DestroyImmediate(_config);
+		}
+
+		[Test]
+		public void LocalModeResolvesTheNamespaceSelectedInTheContentWindow()
+		{
+			var source = Create("seasonal");
+			Assert.That(source.HandlesManifest("seasonal"), Is.True);
+			Assert.That(source.HandlesManifest(LocalWorkingCopy.Namespace), Is.False,
+			            "The legacy EditorManifestID setting must not choose the namespace.");
+		}
+
+		[TestCase(null)]
+		[TestCase("")]
+		public void NoContentWindowSelectionMeansTheDefaultNamespace(string selection)
+		{
+			Assert.That(Create(selection).HandlesManifest("global"), Is.True);
+		}
+
+		[Test]
+		public void DisabledSettingResolvesNothingLocallyAndNeverConsultsTheEditor()
+		{
+			var source = EditorLocalContentRegistration.Create(new ContentParameterProvider(), _config,
+				() => throw new AssertionException("The Content window was consulted."),
+				() => throw new AssertionException("The workspace was consulted."));
+			Assert.That(source.HandlesManifest("global"), Is.False);
+		}
+
+		private ILocalContentSource Create(string windowNamespace)
+		{
+			var source = EditorLocalContentRegistration.Create(
+				new ContentParameterProvider { EnableLocalContentInEditor = true }, _config,
+				() => windowNamespace, () => Promise<string>.Successful(string.Empty));
+			_created.Add(source);
+			return source;
+		}
+	}
+
 	/// <summary>
 	/// The editor's local content source over a temporary CLI working copy, through its public API only.
 	/// </summary>
