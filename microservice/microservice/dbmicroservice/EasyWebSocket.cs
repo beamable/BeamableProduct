@@ -281,19 +281,7 @@ namespace Beamable.Server
 
 			_sendWatchdog?.Dispose();
 			SocketReliabilityMetrics.Teardowns.Add(1, new KeyValuePair<string, object>("reason", reasonTag));
-			var logger = BeamableZLoggerProvider.LogContext.Value;
-			switch (level)
-			{
-				case LogLevel.Error:
-					logger.ZLogError($"Closing the websocket connection: {reason}.");
-					break;
-				case LogLevel.Warning:
-					logger.ZLogWarning($"Closing the websocket connection: {reason}.");
-					break;
-				default:
-					logger.ZLogDebug($"Closing the websocket connection: {reason}.");
-					break;
-			}
+			BeamableZLoggerProvider.LogContext.Value.ZLog(level, $"Closing the websocket connection: {reason}.");
 
 			_sendChannel.Writer.TryComplete();
 			FailQueued($"the connection closed before this message was sent: {reason}");

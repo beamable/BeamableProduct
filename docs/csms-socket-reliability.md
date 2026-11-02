@@ -22,25 +22,23 @@ context's pending table.
 
 **Invariants**
 
-1. **Exactly one ending.** Every path that ends a request first *claims* its listener with an atomic
-   `TryRemove` (`SocketRequesterContext.TryClaim`). Only the claimant completes the promise. The claiming paths are
-   a reply, deadline expiry, terminal send failure, a dropped connection, and shutdown. A path that loses the claim
-   does nothing.
+1. **Exactly one ending.** Every path that ends a request first *claims* its pending entry with an atomic
+   `TryRemove`. Only the claimant completes the promise. The claiming paths are a reply, the deadline, a terminal send
+   failure, a dropped connection, and shutdown. A path that loses the claim does nothing.
 2. **Balanced accounting.** The auth daemon counts each attempt once when it is sent, and once more when its listener
    ends, however it ends. A gateway-403 retry is a new attempt with its own count.
-3. **No sending after the end.** Before each send attempt, `SendMessageSafely` checks that the listener is still
-   pending, and claiming a listener cancels its `Ended` token. `EasyWebSocket` checks that token before writing a
+3. **No sending after the end.** Claiming a request cancels its `Ended` token, which every send attempt checks. `EasyWebSocket` checks that token before writing a
    queued message's first frame. So a request that expired while queued behind a blocked send is never written later,
    where a caller's retry could apply it twice.
-4. **Deadlines cover the whole wait.** The caller awaits the listener, not the send. Waiting for a socket, for auth,
-   or behind a blocked send cannot hide expiry. A 403 re-auth retry keeps the original absolute deadline. With
-   enforcement, the re-auth wait is bounded by what is left of it, and the deadline is checked again before the retry
-   is registered, because the 403 already removed the listener the sweeper would have watched.
+4. **Deadlines cover the whole wait.** Each logical request has one `CancellationTokenSource(timeout)`, and each
+   attempt's listener registers its expiry on it. The caller awaits the listener, not the send, so waiting for a
+   socket, for auth, or behind a blocked send can't hide the deadline. A 403 retry shares the same token. With
+   enforcement, re-authentication gives up when the token is cancelled, and no retry is sent after that.
 5. **Only requests sent on a connection die with it.** When a connection drops, only listeners whose `SentOn` is that
    connection fail. Requests that have not been sent yet go out on the replacement.
-6. **Late replies are expected.** Ids of requests that ended without a reply are kept in a bounded record (4096 ids).
-   A reply for one of them logs at Debug. A reply for an id never seen still logs at Error. The id is recorded
-   *before* the claim, so a reply that loses the race always finds it.
+6. **Late replies are expected.** Request ids count down from -1 and are never reused, so an unmatched reply whose id
+   is in that range belongs to a request that already ended, and logs at Debug. Any other unmatched reply logs at
+   Error. Nothing is recorded, so there is no race to lose.
 
 **Replies to inbound requests** are bound to the connection the request arrived on and do not wait for auth:
 
@@ -84,7 +82,7 @@ Send completions run their continuations asynchronously (`TaskCompletionSource` 
 | Receive error or reset | the peer or the network closed the connection | always on |
 | Send failure (send loop supervised) | a write that throws | always on |
 | **Send blocked** past `WS_SEND_TIMEOUT_SECONDS` | a peer that stopped reading, or a full TCP window | 30 s, enforced only in enforce mode |
-| **Reply stall** past `WS_STALL_TIMEOUT_SECONDS`: the oldest *sent* outbound request has had no reply, and no reply of any kind has arrived on that connection since it was sent | the incident shape: outbound frames leave but nothing comes back for them | 60 s, enforced only in enforce mode |
+| **Reply stall** past `WS_STALL_TIMEOUT_SECONDS`: a request has been written to the connection, and no reply of any kind has arrived on it since | the incident shape: outbound frames leave but nothing comes back for them | 60 s, enforced only in enforce mode |
 | **Gateway 403 right after a fresh auth** | a session the gateway's breaker ended: it sets `valid=false` and never resets it | always detected; the connection is replaced only in enforce mode |
 | `KeepAliveTimeout` (net9+) | dead peer on an **idle** connection only | off (`WS_KEEPALIVE_TIMEOUT_SECONDS=0`) |
 
@@ -92,9 +90,11 @@ Send completions run their continuations asynchronously (`TaskCompletionSource` 
 (`ManagedWebSocket.KeepAlive.cs` `OnDataReceived`), so a connection that keeps receiving traffic is never probed.
 `ClientWebSocketKeepAliveCharacterizationTests` pins this down.
 
-Stall monitoring outlives the last request. The sweeper keeps running while a request sent on the current connection
-has ended without a reply and nothing has resolved it: no reply arrived, the connection wasn't replaced, and it wasn't
-reported. With the default 30 s deadline and 60 s stall limit, the last request always expires first.
+Stall detection is one marker per connection context: the time of the first request written since the last reply
+arrived. Any reply clears it, and dropping that connection clears it. `ProcessHealthMonitor` checks every instance's
+marker once a second, on a dedicated thread that keeps running when the thread pool is starved. So a connection that
+stopped answering is reported even after its last request expired. A slow request on a connection that keeps answering
+is never held against it.
 
 The reply-stall detector needs outbound traffic on the connection. An active round-trip probe would cover idle
 connections, but the gateway has no side-effect-free endpoint: `gateway/nonce` rotates the session nonce and would race
@@ -208,7 +208,7 @@ Root singletons (`ContentService`, `RealmConfigService`, `LoggingContextService`
   - `ExpiredLastRequest_StillTriggersLongerStallDeadline`
   - `ReauthenticationFinishingAfterDeadline_DoesNotSendExpiredRetry`
   - `EventAckAcrossReconnect_NeverReachesTheReplacementConnection` (success and error acks)
-  - `ReplyArrivingAsTheRequestExpires_IsTreatedAsLate`, a deterministic version of the race, using an internal hook
+  - `SlowRequestOnAConnectionThatAnswered_IsNotCondemned`, for a false positive in the first stall design
 
 Every test in the first three groups except `ReplyRacingExpiry_CompletesEachRequestOnce` (a regression guard for the
 claim race) fails on `origin/main` @ `794af4e69`. Each one fails for its intended reason: a request still pending

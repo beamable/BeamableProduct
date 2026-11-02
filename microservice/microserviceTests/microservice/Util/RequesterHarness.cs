@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -54,6 +55,15 @@ namespace microserviceTests.microservice.Util
 			var requester = new MicroserviceRequester(Args, reqCtx, context, true, new NoopActivityProvider());
 			var authRequester = new MicroserviceRequester(Args, null, context, false, new NoopActivityProvider());
 			(_, context.Daemon) = MicroserviceAuthenticationDaemon.Start(Args, authRequester, _daemonCancel);
+			// stand in for the process health monitor, which runs the stall check in a service.
+			_ = Task.Run(async () =>
+			{
+				while (!_daemonCancel.IsCancellationRequested)
+				{
+					context.CheckForStall(Stopwatch.GetTimestamp());
+					await Task.Delay(100);
+				}
+			});
 			connection.OnMessage((_, data, _) =>
 			{
 				if (!data.TryBuildRequestContext(Args, out var rc)) return;

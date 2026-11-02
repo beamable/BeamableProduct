@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using Beamable.Common;
-using Beamable.Server;
 
 namespace Beamable.Server
 {
@@ -14,6 +10,10 @@ namespace Beamable.Server
 	public static class SocketReliabilityMetrics
 	{
 		private static readonly Meter Meter = new Meter(Constants.Features.Otel.METER_SERVICE_NAME);
+
+		/// <summary>Outbound requests waiting for a reply.</summary>
+		public static readonly UpDownCounter<long> Pending = Meter.CreateUpDownCounter<long>(
+			"beam.ws.request.pending", description: "Outbound requests waiting for a reply");
 
 		/// <summary>Outbound requests that passed their reply deadline. Tagged <c>enforced</c> and <c>path</c>.</summary>
 		public static readonly Counter<long> DeadlineExceeded = Meter.CreateCounter<long>(
@@ -30,47 +30,5 @@ namespace Beamable.Server
 		/// <summary>Connection teardowns. Tagged <c>reason</c>.</summary>
 		public static readonly Counter<long> Teardowns = Meter.CreateCounter<long>(
 			"beam.ws.connection.teardown", description: "Websocket connection teardowns");
-
-		private static readonly object ContextsLock = new object();
-		private static readonly List<WeakReference<SocketRequesterContext>> Contexts = new List<WeakReference<SocketRequesterContext>>();
-
-		static SocketReliabilityMetrics()
-		{
-			Meter.CreateObservableGauge("beam.ws.request.pending", ObservePending,
-				description: "Outbound requests waiting for a reply, per connection");
-			Meter.CreateObservableGauge("beam.ws.request.oldest_pending_ms", ObserveOldest, unit: "ms",
-				description: "Age of the oldest outbound request waiting for a reply, per connection");
-		}
-
-		internal static void Track(SocketRequesterContext context)
-		{
-			lock (ContextsLock)
-			{
-				Contexts.Add(new WeakReference<SocketRequesterContext>(context));
-			}
-		}
-
-		private static IEnumerable<Measurement<long>> ObservePending() =>
-			Observe(c => c.PendingRequestCount);
-
-		private static IEnumerable<Measurement<long>> ObserveOldest() =>
-			Observe(c => (long)c.OldestPendingRequestAge.TotalMilliseconds);
-
-		private static IEnumerable<Measurement<long>> Observe(Func<SocketRequesterContext, long> read)
-		{
-			var measurements = new List<Measurement<long>>();
-			lock (ContextsLock)
-			{
-				Contexts.RemoveAll(r => !r.TryGetTarget(out _));
-				foreach (var reference in Contexts)
-				{
-					if (!reference.TryGetTarget(out var context)) continue;
-					measurements.Add(new Measurement<long>(read(context),
-						new KeyValuePair<string, object>("connection", context.Name ?? "")));
-				}
-			}
-
-			return measurements;
-		}
 	}
 }

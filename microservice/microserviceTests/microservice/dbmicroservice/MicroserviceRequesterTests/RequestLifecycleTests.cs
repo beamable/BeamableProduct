@@ -114,29 +114,6 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 		}
 
 		[Test]
-		[TimeoutWithTeardown(30 * 1000)]
-		public async Task ReplyArrivingAsTheRequestExpires_IsTreatedAsLate()
-		{
-			// A reply landing right after the deadline claimed its request must be recognized as late, not unknown.
-			using var h = new RequesterHarness(s => s.AddMessageHandler(
-				MessageMatcher.WithRouteContains(Route), MessageResponder.NoResponse(), MessageFrequency.OnlyOnce()),
-				EnforcedArgs());
-			h.Context.OnClaimedWithoutReply = id =>
-			{
-				var reply = new MicroserviceRequestContext(h.Args.CustomerID, h.Args.ProjectName, id, 200, 1, "", "", "{}")
-				{
-					BodyElement = System.Text.Json.JsonDocument.Parse("{}").RootElement
-				};
-				h.Context.HandleMessage(null, reply).Wait();
-			};
-
-			var ex = await Get(h).FinishWithin(TimeSpan.FromSeconds(5), "a request that expires as its reply arrives");
-
-			Assert.That(ex, Is.InstanceOf<RequestTimeoutException>());
-			Assert.That(GetBadLogs(), Is.Empty, "the reply that lost the race is late, not unknown");
-		}
-
-		[Test]
 		[TimeoutWithTeardown(60 * 1000)]
 		public async Task ReplyRacingExpiry_CompletesEachRequestOnce()
 		{

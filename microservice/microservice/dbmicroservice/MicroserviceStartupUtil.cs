@@ -271,6 +271,14 @@ public static class MicroserviceStartupUtil
 			var _ = beamableService.RunForever();
 		}
 
+		// one thread watches every instance's connection, whichever instance it belongs to.
+		var healthMonitor = new ProcessHealthMonitor(startupCtx.services);
+		if (startupCtx.services.Count > 0 && startupCtx.services[0] is BeamableMicroService first)
+		{
+			first.HealthMonitor = healthMonitor;
+		}
+		healthMonitor.Start();
+
 		startupCtx.result.Success = true;
 		return startupCtx.result;
 

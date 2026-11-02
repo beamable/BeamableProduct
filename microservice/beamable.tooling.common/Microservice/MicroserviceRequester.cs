@@ -104,25 +104,6 @@ namespace Beamable.Server
 		string Method { get; set; }
 		BeamActivity Activity { get; set; }
 		void Resolve(RequestContext ctx);
-
-		/// <summary>Ends the request with an error. Only the path that claimed the listener may call this.</summary>
-		void Fail(Exception ex);
-		/// <summary><see cref="Stopwatch.GetTimestamp"/> when the request was registered.</summary>
-		long StartedAt { get; set; }
-		/// <summary><see cref="Stopwatch.GetTimestamp"/> after which the request is overdue, or null for no deadline.</summary>
-		long? Deadline { get; set; }
-		/// <summary>When false, passing the deadline only logs; the caller keeps waiting.</summary>
-		bool DeadlineEnforced { get; set; }
-		/// <summary>The connection the request was written to; null until the send finished.</summary>
-		IConnection SentOn { get; set; }
-		/// <summary><see cref="Stopwatch.GetTimestamp"/> when the send finished.</summary>
-		long SentAt { get; set; }
-		/// <summary>Whether an overdue, unenforced request was already reported.</summary>
-		bool OverdueReported { get; set; }
-		/// <summary>Cancelled when the request ends, so a write still queued for it is skipped.</summary>
-		CancellationToken Ended { get; }
-		/// <summary>Cancels <see cref="Ended"/>. Called by whichever path claimed the request.</summary>
-		void MarkEnded();
 	}
 	public class WebsocketResponseListener<T> : IWebsocketResponseListener
 	{
@@ -134,18 +115,6 @@ namespace Beamable.Server
 		public string Method { get; set; }
 		public BeamActivity Activity { get; set; }
 		public Func<string, T> Parser { get; set; }
-		public long StartedAt { get; set; }
-		public long? Deadline { get; set; }
-		public bool DeadlineEnforced { get; set; }
-		public IConnection SentOn { get; set; }
-		public long SentAt { get; set; }
-		public bool OverdueReported { get; set; }
-
-		private readonly CancellationTokenSource _ended = new CancellationTokenSource();
-		public CancellationToken Ended => _ended.Token;
-		public void MarkEnded() => _ended.Cancel();
-
-		public void Fail(Exception ex) => OnDone.CompleteError(ex);
 
 		public void Resolve(RequestContext ctx)
 		{
@@ -192,11 +161,37 @@ namespace Beamable.Server
 	}
 
 	/// <summary>
+	/// One outbound request waiting for its reply. Whichever path claims it from the pending table (reply, deadline,
+	/// failed send, lost connection or shutdown) ends it.
+	/// </summary>
+	internal sealed class PendingRequest
+	{
+		public IWebsocketResponseListener Listener;
+		public Action<Exception> Fail;
+		/// <summary><see cref="Stopwatch.GetTimestamp"/> when the request started.</summary>
+		public long StartedAt;
+		/// <summary>The connection the request was written to; null until it was.</summary>
+		public IConnection SentOn;
+		public CancellationTokenRegistration Deadline;
+
+		private readonly CancellationTokenSource _ended = new CancellationTokenSource();
+
+		/// <summary>Cancelled when the request ends, so a write still queued for it is skipped.</summary>
+		public CancellationToken Ended => _ended.Token;
+
+		public void MarkEnded()
+		{
+			Deadline.Dispose();
+			_ended.Cancel();
+		}
+	}
+
+	/// <summary>
 	/// Deadline and connection health settings for one <see cref="SocketRequesterContext"/>.
 	/// </summary>
 	public class SocketReliabilityOptions
 	{
-		/// <summary>How long a sent request may go unanswered, with no other reply arriving, before the connection is judged broken. Zero turns the check off.</summary>
+		/// <summary>How long a request may go unanswered, with no reply of any kind arriving, before the connection is judged broken. Zero turns the check off.</summary>
 		public TimeSpan StallTimeout { get; set; }
 
 		/// <summary>When false, a connection judged broken is only reported, not replaced.</summary>
@@ -209,11 +204,28 @@ namespace Beamable.Server
 		};
 	}
 
+	/// <summary>A point-in-time view of one connection's outbound requests, for health checks and diagnostics.</summary>
+	public class SocketHealthSnapshot
+	{
+		public string Name { get; set; }
+		public int PendingRequests { get; set; }
+		public TimeSpan OldestPendingRequest { get; set; }
+		/// <summary>Time since any reply arrived, or null if none has yet.</summary>
+		public TimeSpan? SinceLastReply { get; set; }
+		/// <summary>How long a request written since the last reply has gone unanswered, or null if none has.</summary>
+		public TimeSpan? WaitingForReply { get; set; }
+		public bool ReportedBroken { get; set; }
+
+		public override string ToString() =>
+			$"connection=[{Name}] pending=[{PendingRequests}] oldest-pending=[{OldestPendingRequest.TotalSeconds:0.0}s] " +
+			$"since-last-reply=[{(SinceLastReply.HasValue ? $"{SinceLastReply.Value.TotalSeconds:0.0}s" : "never")}] " +
+			$"waiting-for-reply=[{(WaitingForReply.HasValue ? $"{WaitingForReply.Value.TotalSeconds:0.0}s" : "no")}] " +
+			$"reported-broken=[{ReportedBroken}]";
+	}
+
 	public class SocketRequesterContext
 	{
-		private const int EndedRequestMemory = 4096;
 		private const int HandledEventMemory = 1024;
-		private static readonly TimeSpan SweepInterval = TimeSpan.FromMilliseconds(250);
 
 		public MicroserviceAuthenticationDaemon Daemon { get; set; }
 		private readonly Func<Promise<IConnection>> _socketGetter;
@@ -233,29 +245,24 @@ namespace Beamable.Server
 		/// </summary>
 		public event Action<IConnection, string> ConnectionUnhealthy;
 
-		private ConcurrentDictionary<long, IWebsocketResponseListener> _pendingMessages = new ConcurrentDictionary<long, IWebsocketResponseListener>();
+		private ConcurrentDictionary<long, PendingRequest> _pendingMessages = new ConcurrentDictionary<long, PendingRequest>();
 		private ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>> _subscriptions = new ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>>();
 		private long _lastRequestId = 0;
 
-		// Requests that ended without a reply (deadline, failed send, lost connection), so a reply that still arrives is
-		// recognized as late instead of unknown. Bounded: the oldest ids are forgotten first.
-		private readonly ConcurrentDictionary<long, byte> _endedWithoutReply = new ConcurrentDictionary<long, byte>();
-		private readonly ConcurrentQueue<long> _endedWithoutReplyOrder = new ConcurrentQueue<long>();
+		// Each gateway event message id with its delivery, so an event that reaches this context more than once runs once.
+		private readonly ConcurrentDictionary<string, Lazy<Task>> _events = new ConcurrentDictionary<string, Lazy<Task>>();
+		private readonly ConcurrentQueue<string> _eventsOrder = new ConcurrentQueue<string>();
 
-		// Event message ids whose handlers succeeded, so an event delivered on more than one connection runs once, and
-		// the first delivery of each id still running, which a concurrent copy waits for.
-		private readonly ConcurrentDictionary<string, byte> _handledEvents = new ConcurrentDictionary<string, byte>();
-		private readonly ConcurrentQueue<string> _handledEventsOrder = new ConcurrentQueue<string>();
-		private readonly ConcurrentDictionary<string, Task> _eventsInFlight = new ConcurrentDictionary<string, Task>();
-
-		private int _sweeperRunning;
 		private long _lastReplyAt;
 		private IConnection _reportedConnection;
 
-		// The oldest request that ended without a reply since the last reply arrived, for stall detection.
-		private readonly object _stallLock = new object();
-		private long _unansweredSince;
-		private IConnection _unansweredOn;
+		// The first request written since the last reply arrived; null once a reply arrives.
+		private sealed class Waiting
+		{
+			public long Since;
+			public IConnection On;
+		}
+		private Waiting _waiting;
 
 		// default is false, set 1 for true.
 		private int _hasSocketClosedFlag = 1; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
@@ -279,7 +286,6 @@ namespace Beamable.Server
 				}
 				return socketGetter();
 			};
-			SocketReliabilityMetrics.Track(this);
 		}
 
 		/// <summary>The number of outbound requests waiting for a reply.</summary>
@@ -299,6 +305,9 @@ namespace Beamable.Server
 				return oldest == 0 ? TimeSpan.Zero : Elapsed(oldest, Stopwatch.GetTimestamp());
 			}
 		}
+
+		/// <summary><see cref="Stopwatch.GetTimestamp"/> when any reply last arrived, or 0 if none has.</summary>
+		public long LastReplyAt => Volatile.Read(ref _lastReplyAt);
 
 		/// <summary>
 		/// Whether this context's connection looks usable: connected, open, authenticated, and not judged broken.
@@ -333,8 +342,28 @@ namespace Beamable.Server
 			}
 		}
 
+		public SocketHealthSnapshot GetHealth(long now)
+		{
+			var lastReply = LastReplyAt;
+			var waiting = Volatile.Read(ref _waiting);
+			var current = CurrentConnection;
+			return new SocketHealthSnapshot
+			{
+				Name = Name,
+				PendingRequests = PendingRequestCount,
+				OldestPendingRequest = OldestPendingRequestAge,
+				SinceLastReply = lastReply == 0 ? (TimeSpan?)null : Elapsed(lastReply, now),
+				WaitingForReply = waiting == null ? (TimeSpan?)null : Elapsed(waiting.Since, now),
+				ReportedBroken = current != null && ReferenceEquals(Volatile.Read(ref _reportedConnection), current)
+			};
+		}
 
-		public async Task WaitForAuthorization(TimeSpan timeout=default, string message=null)
+
+		public Task WaitForAuthorization(TimeSpan timeout=default, string message=null) =>
+			WaitForAuthorization(timeout, message, CancellationToken.None);
+
+		/// <summary>Like <see cref="WaitForAuthorization(TimeSpan, string)"/>, but gives up when <paramref name="giveUp"/> is cancelled.</summary>
+		public async Task WaitForAuthorization(TimeSpan timeout, string message, CancellationToken giveUp)
 		{
 			var startTime = DateTime.UtcNow;
 			if (timeout <= default(TimeSpan))
@@ -351,6 +380,7 @@ namespace Beamable.Server
 			var enteringCount = Daemon.AuthorizationCounter;
 			while (Daemon.AuthorizationCounter > 0)
 			{
+				giveUp.ThrowIfCancellationRequested();
 				var totalWaitedTime = DateTime.UtcNow - startTime;
 				if (totalWaitedTime > timeout)
 				{
@@ -364,39 +394,33 @@ namespace Beamable.Server
 
 		public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10, Stopwatch sw=null, bool disableCompression=false)
 		{
-			await SendWithRetries(message, awaitAuthorization, retryCount, sw, disableCompression, null, null, CancellationToken.None);
+			await SendWithRetries(message, awaitAuthorization, retryCount, sw, disableCompression, CancellationToken.None, null);
 		}
 
 		/// <summary>
-		/// Sends a request whose listener is already registered. It stops retrying once the request has ended (for
-		/// example, at its deadline), records the connection that carried it, and ends the request if every attempt fails.
-		/// A write still queued when the request ends is skipped, so a request that already failed its caller is never sent
-		/// later, where a retry by the caller could repeat it.
+		/// Sends a request whose listener is already registered, and ends the request if every attempt fails. It stops once
+		/// the request has ended (for example, at its deadline), including a write still queued for it, so a request that
+		/// already failed its caller is never sent later, where the caller's retry could repeat it.
 		/// </summary>
-		internal Promise<IConnection> SendRequest(long requestId, string message, bool awaitAuthorization, bool disableCompression)
+		internal Promise<Unit> SendRequest(long requestId, string message, bool awaitAuthorization, bool disableCompression)
 		{
 			return Send().ToPromise();
 
-			async Task<IConnection> Send()
+			async Task Send()
 			{
-				var ended = _pendingMessages.TryGetValue(requestId, out var pending) ? pending.Ended : CancellationToken.None;
+				if (!_pendingMessages.TryGetValue(requestId, out var pending)) return;
 				try
 				{
-					return await SendWithRetries(message, awaitAuthorization, 10, null, disableCompression,
-						() => _pendingMessages.ContainsKey(requestId),
-						connection =>
-						{
-							if (_pendingMessages.TryGetValue(requestId, out var listener))
-							{
-								listener.SentAt = Stopwatch.GetTimestamp();
-								listener.SentOn = connection;
-							}
-						},
-						ended);
+					await SendWithRetries(message, awaitAuthorization, 10, null, disableCompression, pending.Ended, connection =>
+					{
+						pending.SentOn = connection;
+						var since = new Waiting { Since = Stopwatch.GetTimestamp(), On = connection };
+						if (Volatile.Read(ref _waiting) == null) Interlocked.CompareExchange(ref _waiting, since, null);
+					});
 				}
-				catch (RequestEndedException)
+				catch (OperationCanceledException) when (pending.Ended.IsCancellationRequested)
 				{
-					throw;
+					// the request already ended; nothing was sent.
 				}
 				catch (Exception ex)
 				{
@@ -407,10 +431,11 @@ namespace Beamable.Server
 		}
 
 		/// <summary>
-		/// Sends a reply to a request that arrived on <paramref name="origin"/>. A reply only goes back on that connection:
-		/// the gateway matches it to the session that sent the request, and the same id on another session belongs to a
-		/// different request. A reply doesn't wait for re-authentication, because the gateway doesn't check auth for
-		/// replies.
+		/// Sends a reply to a request, or an ack of an event, that arrived on <paramref name="origin"/>. It only goes back on
+		/// that connection: the gateway matches it to the session that sent the request, and numbers requests per session,
+		/// so on another connection the same id belongs to a different request. It doesn't wait for re-authentication,
+		/// because the gateway doesn't check auth for replies. A reply that can't be sent is dropped with a warning: a
+		/// failed write closes the connection, so there is nothing to retry, and the gateway times the request out.
 		/// </summary>
 		public async Promise SendReply(IConnection origin, string message, Stopwatch sw = null, bool disableCompression = false)
 		{
@@ -420,35 +445,23 @@ namespace Beamable.Server
 				return;
 			}
 
-			var failures = new List<Exception>();
-			for (var attempt = 0; attempt < 3; attempt++)
+			try
 			{
-				try
-				{
-					await WriteTo(origin, message, sw, disableCompression, CancellationToken.None);
-					return;
-				}
-				catch (Exception ex)
-				{
-					failures.Add(ex);
-					if (origin.State != WebSocketState.Open) break;
-					await Task.Delay(250);
-				}
+				await WriteTo(origin, message, sw, disableCompression, CancellationToken.None);
 			}
-
-			// The request was lost with its connection; the caller sees the gateway's timeout. This follows a disconnect.
-			var finalEx = new SocketClosedException(failures);
-			BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"Dropped a reply because the connection its request arrived on closed. first-failure=[{failures[0].Message}]");
-			throw finalEx;
+			catch (Exception ex)
+			{
+				BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"Dropped a reply because the connection its request arrived on closed. {ex.GetType().Name}: {ex.Message}");
+			}
 		}
 
 		private async Task<IConnection> SendWithRetries(string message, bool awaitAuthorization, int retryCount, Stopwatch sw,
-			bool disableCompression, Func<bool> stillWanted, Action<IConnection> onWriting, CancellationToken skipIfEnded)
+			bool disableCompression, CancellationToken ended, Action<IConnection> onWriting)
 		{
 			var failures = new List<Exception>();
 			for (var retry = 0; retry < retryCount; retry++)
 			{
-				if (stillWanted != null && !stillWanted()) throw new RequestEndedException();
+				ended.ThrowIfCancellationRequested();
 				try
 				{
 					var connection = await Socket;
@@ -458,12 +471,12 @@ namespace Beamable.Server
 					}
 
 					// the request may have ended while this waited for the socket or for authorization.
-					if (stillWanted != null && !stillWanted()) throw new RequestEndedException();
+					ended.ThrowIfCancellationRequested();
 					onWriting?.Invoke(connection);
-					await WriteTo(connection, message, sw, disableCompression, skipIfEnded);
+					await WriteTo(connection, message, sw, disableCompression, ended);
 					return connection;
 				}
-				catch (RequestEndedException)
+				catch (OperationCanceledException) when (ended.IsCancellationRequested)
 				{
 					throw;
 				}
@@ -501,12 +514,6 @@ namespace Beamable.Server
 			{
 				await connection.SendMessage(message, sw, skipIfEnded);
 			}
-		}
-
-		/// <summary>Thrown inside the send path when the request it was sending has already ended.</summary>
-		private class RequestEndedException : Exception
-		{
-			public RequestEndedException() : base("The request ended before it was sent.") { }
 		}
 
 		public void HandleCloseConnection()
@@ -605,17 +612,18 @@ namespace Beamable.Server
 
 				await DispatchEventOnce(provider, ctx, eventName, messageId);
 
-			} else if (TryClaim(ctx.Id, out var listener))
+			} else if (TryClaim(ctx.Id, out var pending))
 			{
 				// this is a response to some pending request...
 				NoteReply();
 				parentActivity.SetDisplay($"Response ({ctx.Id})");
-				listener.Resolve(ctx);
+				pending.Listener.Resolve(ctx);
 			}
 			else
 			{
 				NoteReply(); // a late reply still shows the connection carries traffic both ways.
-				if (_endedWithoutReply.TryRemove(ctx.Id, out _))
+				// Request ids count down from -1 and are never reused, so an id in that range was a request that already ended.
+				if (ctx.Id < 0 && ctx.Id >= Interlocked.Read(ref _lastRequestId))
 				{
 					BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Ignoring a late reply to request {ctx.Id}, which already ended.");
 				}
@@ -668,77 +676,58 @@ namespace Beamable.Server
 
 		/// <summary>
 		/// Runs an event's handlers once per gateway message id. Every connection receives realm events, so the same event
-		/// can reach this context more than once during a failover. Only a delivery whose handlers succeeded counts: a
-		/// failed one is acked 500, the gateway redelivers it with the same id, and that delivery runs the handlers again.
-		/// A copy that arrives while the first is still running ends the way the first one does, so it is never acked
-		/// before the event was actually handled.
+		/// can reach this context more than once during a failover. Every copy shares the first delivery's outcome, so none
+		/// is acked before the event was handled. A failed delivery is forgotten: it is acked 500, the gateway redelivers it
+		/// with the same id, and that delivery runs the handlers again.
 		/// </summary>
 		private async Task DispatchEventOnce(IDependencyProvider provider, MicroserviceRequestContext ctx, string eventName, string messageId)
 		{
-			if (_handledEvents.ContainsKey(messageId))
+			var mine = new Lazy<Task>(() => DispatchEvent(provider, ctx, eventName));
+			var delivery = _events.GetOrAdd(messageId, mine);
+			if (delivery == mine)
 			{
-				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Skipping event {eventName} id=[{ctx.Id}]; it was already handled.");
-				return;
+				_eventsOrder.Enqueue(messageId);
+				while (_eventsOrder.Count > HandledEventMemory && _eventsOrder.TryDequeue(out var oldest))
+				{
+					_events.TryRemove(oldest, out _);
+				}
 			}
-
-			var delivery = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-			var inFlight = _eventsInFlight.GetOrAdd(messageId, delivery.Task);
-			if (inFlight != delivery.Task)
+			else
 			{
-				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Event {eventName} id=[{ctx.Id}] is already being handled; waiting for that delivery.");
-				await inFlight;
-				return;
+				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Event {eventName} id=[{ctx.Id}] was already delivered; sharing that delivery's outcome.");
 			}
 
 			try
 			{
-				// a delivery that finished just before this one claimed the id has already handled it.
-				if (!_handledEvents.ContainsKey(messageId))
-				{
-					await DispatchEvent(provider, ctx, eventName);
-					RememberHandledEvent(messageId);
-				}
-
-				_eventsInFlight.TryRemove(messageId, out _);
-				delivery.SetResult(true);
+				await delivery.Value;
 			}
-			catch (Exception ex)
+			catch
 			{
-				_eventsInFlight.TryRemove(messageId, out _);
-				delivery.SetException(ex);
-				_ = delivery.Task.Exception; // observed here; a waiting copy rethrows it.
+				((ICollection<KeyValuePair<string, Lazy<Task>>>)_events).Remove(new KeyValuePair<string, Lazy<Task>>(messageId, delivery));
 				throw;
-			}
-		}
-
-		private void RememberHandledEvent(string messageId)
-		{
-			if (!_handledEvents.TryAdd(messageId, 0)) return;
-			_handledEventsOrder.Enqueue(messageId);
-			while (_handledEventsOrder.Count > HandledEventMemory && _handledEventsOrder.TryDequeue(out var oldest))
-			{
-				_handledEvents.TryRemove(oldest, out _);
 			}
 		}
 
 
 		public Promise<T> AddListener<T>(WebsocketRequest req, string uri, Func<string, T> parser, BeamActivity parentActivity)
 		{
-			return AddListener(req, uri, parser, parentActivity, null, false);
+			return AddListener(req, uri, parser, parentActivity, CancellationToken.None, false, Stopwatch.GetTimestamp());
 		}
 
 		/// <summary>
 		/// Registers a listener for the reply to <paramref name="req"/> and assigns its id.
 		/// </summary>
-		/// <param name="deadline"><see cref="Stopwatch.GetTimestamp"/> after which the request is overdue, or null for none.</param>
-		/// <param name="enforceDeadline">When true, an overdue request fails with <see cref="RequestTimeoutException"/>; otherwise it is only reported.</param>
-		public Promise<T> AddListener<T>(WebsocketRequest req, string uri, Func<string, T> parser, BeamActivity parentActivity, long? deadline, bool enforceDeadline)
+		/// <param name="deadline">Cancelled when the request runs out of time.</param>
+		/// <param name="enforceDeadline">When true, a request out of time fails with <see cref="RequestTimeoutException"/>; otherwise it is only reported.</param>
+		/// <param name="startedAt">When the request started, as a <see cref="Stopwatch.GetTimestamp"/>.</param>
+		internal Promise<T> AddListener<T>(WebsocketRequest req, string uri, Func<string, T> parser, BeamActivity parentActivity,
+			CancellationToken deadline, bool enforceDeadline, long startedAt)
 		{
 			var requestId = GetNextRequestId();
 			if (_pendingMessages.ContainsKey(requestId))
 			{
 				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"The request {requestId} was already taken");
-				return AddListener(req, uri, parser, parentActivity, deadline, enforceDeadline); // try again.
+				return AddListener(req, uri, parser, parentActivity, deadline, enforceDeadline, startedAt); // try again.
 			}
 
 			var promise = new Promise<T>();
@@ -752,67 +741,68 @@ namespace Beamable.Server
 				Uri = uri,
 				Method = req.method,
 				Path = req.path,
-				Activity = parentActivity,
-				StartedAt = Stopwatch.GetTimestamp(),
-				Deadline = deadline,
-				DeadlineEnforced = enforceDeadline
+				Activity = parentActivity
 			};
+			var pending = new PendingRequest { Listener = listener, Fail = promise.CompleteError, StartedAt = startedAt };
 
-			if (!_pendingMessages.TryAdd(requestId, listener))
+			if (!_pendingMessages.TryAdd(requestId, pending))
 			{
 				promise.CompleteError(new Exception("request Id has already been taken in socket context. id=" +requestId));
+				return promise;
 			}
-			else if (deadline.HasValue || Reliability.StallTimeout > TimeSpan.Zero)
+
+			SocketReliabilityMetrics.Pending.Add(1);
+			if (deadline.CanBeCanceled)
 			{
-				EnsureSweeper();
+				pending.Deadline = deadline.Register(() => OnDeadline(pending, enforceDeadline));
 			}
 			return promise;
 		}
 
+		private void OnDeadline(PendingRequest pending, bool enforced)
+		{
+			var listener = pending.Listener;
+			var elapsed = Elapsed(pending.StartedAt, Stopwatch.GetTimestamp());
+			if (enforced)
+			{
+				if (!TryClaim(listener.Id, out _)) return;
+				SocketReliabilityMetrics.DeadlineExceeded.Add(1,
+					new KeyValuePair<string, object>("enforced", true),
+					new KeyValuePair<string, object>("path", listener.Path));
+				BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"Request {listener.Method} {listener.Path} id=[{listener.Id}] exceeded its deadline after {elapsed.TotalSeconds:0.0}s with no reply; failing it.");
+				pending.Fail(new RequestTimeoutException(listener.Method, listener.Path, listener.Id, elapsed));
+				return;
+			}
+
+			if (!_pendingMessages.ContainsKey(listener.Id)) return;
+			SocketReliabilityMetrics.DeadlineExceeded.Add(1,
+				new KeyValuePair<string, object>("enforced", false),
+				new KeyValuePair<string, object>("path", listener.Path));
+			BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"Request {listener.Method} {listener.Path} id=[{listener.Id}] exceeded its deadline after {elapsed.TotalSeconds:0.0}s with no reply. Still waiting, because BEAM_SOCKET_RELIABILITY_ENFORCE is off.");
+		}
+
 		public bool TryGetListener(long id, out IWebsocketResponseListener listener)
 		{
-			return _pendingMessages.TryGetValue(id, out listener);
+			var found = _pendingMessages.TryGetValue(id, out var pending);
+			listener = pending?.Listener;
+			return found;
 		}
 
 		/// <summary>
-		/// Takes ownership of a pending request so it can be ended. Every path that ends a request (reply, deadline, failed
-		/// send, lost connection, shutdown) claims it first; only the one that wins may complete it.
+		/// Takes ownership of a pending request so it can be ended. Every path that ends a request claims it first; only
+		/// the one that wins may complete it.
 		/// </summary>
-		public bool TryClaim(long id, out IWebsocketResponseListener listener)
+		private bool TryClaim(long id, out PendingRequest pending)
 		{
-			if (!_pendingMessages.TryRemove(id, out listener)) return false;
-			listener.MarkEnded();
+			if (!_pendingMessages.TryRemove(id, out pending)) return false;
+			pending.MarkEnded();
+			SocketReliabilityMetrics.Pending.Add(-1);
 			return true;
 		}
-
-		/// <summary>
-		/// Claims a request that is ending without a reply. Its id is recorded as ended first, so a reply that loses the
-		/// race for the claim always finds it and is treated as late rather than unknown.
-		/// </summary>
-		private bool TryClaimWithoutReply(long id, out IWebsocketResponseListener listener)
-		{
-			var recorded = _endedWithoutReply.TryAdd(id, 0);
-			if (!TryClaim(id, out listener))
-			{
-				if (recorded) _endedWithoutReply.TryRemove(id, out _);
-				return false;
-			}
-
-			OnClaimedWithoutReply?.Invoke(id);
-			_endedWithoutReplyOrder.Enqueue(id);
-			while (_endedWithoutReplyOrder.Count > EndedRequestMemory && _endedWithoutReplyOrder.TryDequeue(out var oldest))
-			{
-				_endedWithoutReply.TryRemove(oldest, out _);
-			}
-			return true;
-		}
-
-		/// <summary>For tests: runs right after a request is claimed to end without a reply.</summary>
-		internal Action<long> OnClaimedWithoutReply;
 
 		public void Remove(long id)
 		{
-			if (!_pendingMessages.TryRemove(id, out _))
+			if (!TryClaim(id, out _))
 			{
 				throw new Exception("request Id could not be removed from the socket context. id=" +id);
 			}
@@ -821,8 +811,8 @@ namespace Beamable.Server
 		/// <summary>Ends a request with <paramref name="ex"/> if nothing else has ended it yet.</summary>
 		public bool FailIfPending(long id, Exception ex)
 		{
-			if (!TryClaimWithoutReply(id, out var listener)) return false;
-			EndWithoutReply(listener, ex);
+			if (!TryClaim(id, out var pending)) return false;
+			pending.Fail(ex);
 			return true;
 		}
 
@@ -832,24 +822,10 @@ namespace Beamable.Server
 		/// </summary>
 		public int FailPendingFor(IConnection connection, Exception ex)
 		{
-			var failed = 0;
-			foreach (var pair in _pendingMessages)
-			{
-				if (!ReferenceEquals(pair.Value.SentOn, connection)) continue;
-				if (!TryClaimWithoutReply(pair.Key, out var listener)) continue;
-				failed++;
-				EndWithoutReply(listener, ex);
-			}
+			var waiting = Volatile.Read(ref _waiting);
+			if (waiting != null && ReferenceEquals(waiting.On, connection)) Interlocked.CompareExchange(ref _waiting, null, waiting);
 
-			lock (_stallLock)
-			{
-				if (ReferenceEquals(_unansweredOn, connection))
-				{
-					_unansweredSince = 0;
-					_unansweredOn = null;
-				}
-			}
-
+			var failed = FailPending(pending => ReferenceEquals(pending.SentOn, connection), ex);
 			if (failed > 0)
 			{
 				SocketReliabilityMetrics.ConnectionLost.Add(failed);
@@ -859,71 +835,39 @@ namespace Beamable.Server
 		}
 
 		/// <summary>Ends every pending request, for shutdown.</summary>
-		public int FailAllPending(Exception ex)
+		public int FailAllPending(Exception ex) => FailPending(_ => true, ex);
+
+		private int FailPending(Func<PendingRequest, bool> which, Exception ex)
 		{
 			var failed = 0;
 			foreach (var pair in _pendingMessages)
 			{
-				if (!TryClaimWithoutReply(pair.Key, out var listener)) continue;
+				if (!which(pair.Value) || !TryClaim(pair.Key, out var pending)) continue;
 				failed++;
-				EndWithoutReply(listener, ex);
+				pending.Fail(ex);
 			}
 			return failed;
 		}
 
-		/// <summary>Fails a request claimed with <see cref="TryClaimWithoutReply"/>, keeping its connection under watch.</summary>
-		private void EndWithoutReply(IWebsocketResponseListener listener, Exception ex)
-		{
-			if (listener.SentOn != null)
-			{
-				lock (_stallLock)
-				{
-					if (_unansweredSince == 0 || listener.SentAt < _unansweredSince)
-					{
-						_unansweredSince = listener.SentAt;
-						_unansweredOn = listener.SentOn;
-					}
-				}
-
-				// it may have been the last pending request; the connection must stay watched until it answers.
-				if (Reliability.StallTimeout > TimeSpan.Zero) EnsureSweeper();
-			}
-
-			listener.Fail(ex);
-		}
-
-		/// <summary>
-		/// A request sent on the current connection ended without a reply, and nothing has resolved it since: no reply
-		/// arrived, the connection wasn't replaced, and it wasn't reported broken yet.
-		/// </summary>
-		private bool HasUnresolvedStall
-		{
-			get
-			{
-				if (Reliability.StallTimeout <= TimeSpan.Zero) return false;
-				IConnection on;
-				lock (_stallLock)
-				{
-					if (_unansweredSince == 0) return false;
-					on = _unansweredOn;
-				}
-
-				return on != null
-				       && !ReferenceEquals(on, Volatile.Read(ref _reportedConnection))
-				       && ReferenceEquals(on, CurrentConnection);
-			}
-		}
-
-		private bool ShouldKeepSweeping => !_pendingMessages.IsEmpty || HasUnresolvedStall;
-
 		private void NoteReply()
 		{
 			Volatile.Write(ref _lastReplyAt, Stopwatch.GetTimestamp());
-			lock (_stallLock)
-			{
-				_unansweredSince = 0;
-				_unansweredOn = null;
-			}
+			Volatile.Write(ref _waiting, null);
+		}
+
+		/// <summary>
+		/// Reports the connection broken when a request written to it has gone unanswered for the stall limit, with no reply
+		/// of any kind arriving since. Called regularly by the process health monitor.
+		/// </summary>
+		public void CheckForStall(long now)
+		{
+			var limit = Reliability.StallTimeout;
+			var waiting = Volatile.Read(ref _waiting);
+			if (limit <= TimeSpan.Zero || waiting == null) return;
+
+			var silent = Elapsed(waiting.Since, now);
+			if (silent < limit || !ReferenceEquals(waiting.On, CurrentConnection)) return;
+			ReportUnhealthyConnection(waiting.On, $"no reply for {silent.TotalSeconds:0}s to requests sent on it, and no other reply since", "reply_stall");
 		}
 
 		/// <summary>
@@ -931,7 +875,8 @@ namespace Beamable.Server
 		/// <see cref="ConnectionUnhealthy"/>; otherwise it is only logged. Each connection is reported once.
 		/// </summary>
 		/// <param name="connection">The broken connection, or null for whichever connection is current.</param>
-		public void ReportUnhealthyConnection(IConnection connection, string reason)
+		/// <param name="reasonTag">A short, fixed tag for the metric.</param>
+		public void ReportUnhealthyConnection(IConnection connection, string reason, string reasonTag = "other")
 		{
 			connection ??= CurrentConnection;
 			if (connection == null) return;
@@ -939,7 +884,7 @@ namespace Beamable.Server
 
 			var enforce = Reliability.Enforce;
 			SocketReliabilityMetrics.UnhealthyConnections.Add(1,
-				new KeyValuePair<string, object>("reason", ReasonTag(reason)),
+				new KeyValuePair<string, object>("reason", reasonTag),
 				new KeyValuePair<string, object>("enforced", enforce));
 			if (!enforce)
 			{
@@ -953,107 +898,6 @@ namespace Beamable.Server
 			{
 				_ = Task.Run(() => handler(connection, reason));
 			}
-		}
-
-		private static string ReasonTag(string reason)
-		{
-			if (reason.StartsWith("the gateway rejected")) return "rejected_after_reauth";
-			if (reason.StartsWith("no reply")) return "reply_stall";
-			return "other";
-		}
-
-		private void EnsureSweeper()
-		{
-			if (Interlocked.CompareExchange(ref _sweeperRunning, 1, 0) != 0) return;
-			_ = Task.Run(SweepLoop);
-		}
-
-		private async Task SweepLoop()
-		{
-			while (true)
-			{
-				await Task.Delay(SweepInterval);
-				try
-				{
-					Sweep(Stopwatch.GetTimestamp());
-				}
-				catch (Exception ex)
-				{
-					BeamableZLoggerProvider.LogContext.Value.ZLogError($"Checking request deadlines failed. {ex.GetType().Name}: {ex.Message}");
-				}
-
-				if (ShouldKeepSweeping) continue;
-				Interlocked.Exchange(ref _sweeperRunning, 0);
-				// Work that arrived after the check above may have found the loop still running and not started one.
-				if (!ShouldKeepSweeping || Interlocked.CompareExchange(ref _sweeperRunning, 1, 0) != 0) return;
-			}
-		}
-
-		/// <summary>Ends or reports overdue requests, and checks whether the connection has stopped answering.</summary>
-		internal void Sweep(long now)
-		{
-			IWebsocketResponseListener oldestSent = null;
-			foreach (var pair in _pendingMessages)
-			{
-				var listener = pair.Value;
-				if (listener.Deadline.HasValue && now > listener.Deadline.Value)
-				{
-					var elapsed = Elapsed(listener.StartedAt, now);
-					if (listener.DeadlineEnforced)
-					{
-						if (!TryClaimWithoutReply(listener.Id, out _)) continue;
-						SocketReliabilityMetrics.DeadlineExceeded.Add(1,
-							new KeyValuePair<string, object>("enforced", true),
-							new KeyValuePair<string, object>("path", listener.Path));
-						BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"Request {listener.Method} {listener.Path} id=[{listener.Id}] exceeded its deadline after {elapsed.TotalSeconds:0.0}s with no reply; failing it.");
-						EndWithoutReply(listener, new RequestTimeoutException(listener.Method, listener.Path, listener.Id, elapsed));
-						continue;
-					}
-
-					if (!listener.OverdueReported)
-					{
-						listener.OverdueReported = true;
-						SocketReliabilityMetrics.DeadlineExceeded.Add(1,
-							new KeyValuePair<string, object>("enforced", false),
-							new KeyValuePair<string, object>("path", listener.Path));
-						BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"Request {listener.Method} {listener.Path} id=[{listener.Id}] exceeded its deadline after {elapsed.TotalSeconds:0.0}s with no reply. Still waiting, because BEAM_SOCKET_RELIABILITY_ENFORCE is off.");
-					}
-				}
-
-				if (listener.SentOn != null && (oldestSent == null || listener.SentAt < oldestSent.SentAt))
-				{
-					oldestSent = listener;
-				}
-			}
-
-			CheckForStall(oldestSent, now);
-		}
-
-		private void CheckForStall(IWebsocketResponseListener oldestSent, long now)
-		{
-			var limit = Reliability.StallTimeout;
-			if (limit <= TimeSpan.Zero) return;
-
-			long since = 0;
-			IConnection on = null;
-			lock (_stallLock)
-			{
-				since = _unansweredSince;
-				on = _unansweredOn;
-			}
-
-			if (oldestSent != null && oldestSent.SentAt > Volatile.Read(ref _lastReplyAt) && (since == 0 || oldestSent.SentAt < since))
-			{
-				since = oldestSent.SentAt;
-				on = oldestSent.SentOn;
-			}
-
-			if (since == 0 || on == null) return;
-			var silent = Elapsed(since, now);
-			if (silent < limit) return;
-			if (!ReferenceEquals(on, CurrentConnection)) return; // it was already replaced.
-
-			ReportUnhealthyConnection(on, $"no reply for {silent.TotalSeconds:0}s to requests sent on it, and no other reply since");
 		}
 
 		private static TimeSpan Elapsed(long from, long to) =>
@@ -1075,13 +919,9 @@ namespace Beamable.Server
 		private readonly IMicroserviceArgs _env;
 		protected readonly RequestContext _requestContext;
 
-		private readonly SocketRequesterContext _fixedSocketContext;
-		private readonly Func<SocketRequesterContext> _socketContextSelector;
+		private readonly Func<SocketRequesterContext> _socketContext;
 		private readonly IActivityProvider _activityProvider;
 		private readonly bool _waitForAuthorization;
-
-		/// <summary>The longest a 403 retry waits for re-authentication.</summary>
-		private static readonly TimeSpan MaxAuthWait = TimeSpan.FromSeconds(10);
 
 		/// <summary>The deadline for gateway nonce and auth requests, which is enforced even in shadow mode.</summary>
 		private static readonly TimeSpan AuthRequestTimeout = TimeSpan.FromSeconds(15);
@@ -1099,12 +939,8 @@ namespace Beamable.Server
 			SocketRequesterContext socketContext,
 			bool waitForAuthorization,
 			IActivityProvider activityProvider)
+			: this(env, requestContext, () => socketContext, waitForAuthorization, activityProvider)
 		{
-			_env = env;
-			_requestContext = requestContext;
-			_fixedSocketContext = socketContext;
-			_waitForAuthorization = waitForAuthorization;
-			_activityProvider = activityProvider;
 		}
 
 		/// <summary>
@@ -1117,12 +953,15 @@ namespace Beamable.Server
 			Func<SocketRequesterContext> socketContextSelector,
 			bool waitForAuthorization,
 			IActivityProvider activityProvider)
-			: this(env, requestContext, (SocketRequesterContext)null, waitForAuthorization, activityProvider)
 		{
-			_socketContextSelector = socketContextSelector;
+			_env = env;
+			_requestContext = requestContext;
+			_socketContext = socketContextSelector;
+			_waitForAuthorization = waitForAuthorization;
+			_activityProvider = activityProvider;
 		}
 
-		private SocketRequesterContext CurrentSocketContext => _socketContextSelector?.Invoke() ?? _fixedSocketContext;
+		private SocketRequesterContext CurrentSocketContext => _socketContext();
 
 		/// <summary>
 		/// Uses <paramref name="timeout"/> as the reply deadline for outbound requests made inside the returned scope, for
@@ -1165,17 +1004,7 @@ namespace Beamable.Server
 		/// <param name="ctx">The request you wish to ack</param>
 		/// <param name="error">an error, or null for a 200 ack.</param>
 		/// <returns></returns>
-		public Promise<Unit> Acknowledge(RequestContext ctx, WebsocketErrorResponse error=null)
-		{
-			// only ack if the original request context was spawned from an event
-			if (!ctx.IsEvent)
-			{
-				return Promise<Unit>.Successful(PromiseBase.Unit);
-			}
-
-			// An ack is a reply: the gateway doesn't check the session's auth for replies, so it needn't wait for re-auth.
-			return CurrentSocketContext.SendMessageSafely(BuildAck(ctx, error), awaitAuthorization: false, disableCompression: _env.DisableOutboundWsCompression);
-		}
+		public Promise<Unit> Acknowledge(RequestContext ctx, WebsocketErrorResponse error=null) => Acknowledge(ctx, null, error);
 
 		/// <summary>
 		/// Acknowledge an event on the connection it arrived on. An ack is a reply: the gateway matches it to the session
@@ -1266,17 +1095,38 @@ namespace Beamable.Server
 
 		public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> beamReq)
 		{
-			return BeamableRequest(beamReq, null, Stopwatch.GetTimestamp(), 0);
+			var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_REQUEST, ContextActivity.Value);
+			var path = beamReq.uri.StartsWith('/') ? beamReq.uri.Substring(1) : beamReq.uri;
+			var isAuthRequest = path == "gateway/nonce" || path == "gateway/auth";
+			// A lost nonce or auth reply used to hang the auth daemon, so those deadlines are enforced in every mode.
+			var enforceDeadline = isAuthRequest || _env.EnforceSocketReliability;
+			// One deadline for the whole request, shared by a retry after re-authentication.
+			var timeout = ReplyTimeout(isAuthRequest);
+			var deadline = timeout > TimeSpan.Zero ? new CancellationTokenSource(timeout) : null;
+			var startedAt = Stopwatch.GetTimestamp();
+
+			var result = new Promise<T>();
+			Attempt(beamReq, activity, deadline?.Token ?? CancellationToken.None, enforceDeadline, startedAt, false)
+				.Then(value =>
+				{
+					activity.StopAndDispose(ActivityStatusCode.Ok);
+					deadline?.Dispose();
+					result.CompleteSuccess(value);
+				})
+				.Error(ex =>
+				{
+					activity.StopAndDispose(ex);
+					deadline?.Dispose();
+					result.CompleteError(ex);
+				});
+			return result;
 		}
 
-		/// <param name="deadline">The absolute deadline, carried over from an earlier attempt; null to start one.</param>
-		/// <param name="startedAt">When the first attempt started, as a <see cref="Stopwatch.GetTimestamp"/>.</param>
-		/// <param name="authRetry">How many times this request was already retried after a gateway 403.</param>
-		private Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> beamReq, long? deadline, long startedAt, int authRetry)
+		/// <param name="retried">Whether this attempt is the retry after a gateway 403.</param>
+		private Promise<T> Attempt<T>(SDKRequesterOptions<T> beamReq, BeamActivity activity, CancellationToken deadline,
+			bool enforceDeadline, long startedAt, bool retried)
 		{
 			var socketContext = CurrentSocketContext;
-			var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_REQUEST, ContextActivity.Value);
-
 			var uri = beamReq.uri;
 			var body = beamReq.body;
 			var method = beamReq.method;
@@ -1336,11 +1186,7 @@ namespace Beamable.Server
 				req.from = _requestContext.UserId;
 			}
 
-			var isAuthRequest = req.path == "gateway/nonce" || req.path == "gateway/auth";
-			deadline ??= ComputeDeadline(isAuthRequest);
-			// A lost nonce or auth reply used to hang the auth daemon, so those deadlines are enforced in every mode.
-			var enforceDeadline = isAuthRequest || _env.EnforceSocketReliability;
-			var attempt = socketContext.AddListener(req, uri, beamReq.parser, activity, deadline, enforceDeadline);
+			var attempt = socketContext.AddListener(req, uri, beamReq.parser, activity, deadline, enforceDeadline, startedAt);
 
 			var dict = new ArrayDict
 			{
@@ -1371,8 +1217,7 @@ namespace Beamable.Server
 			BeamableZLoggerProvider.LogContext.Value.LogDebug("sending request " + truncatedMsg);
 
 			// The auth daemon waits for the requests it counted to finish before it re-authenticates again, so this
-			// attempt counts as processed when its listener ends, however it ends: reply, deadline, failed send or lost
-			// connection. A retry after a 403 is a new attempt with its own count.
+			// attempt counts as processed when its listener ends, however it ends.
 			var daemon = socketContext.Daemon;
 			daemon.BumpRequestCounter();
 			attempt.Then(_ => daemon.BumpRequestProcessedCounter());
@@ -1386,59 +1231,32 @@ namespace Beamable.Server
 
 			return attempt.RecoverWith(ex =>
 			{
-				if (ex is UnauthenticatedException unAuth && unAuth.Error?.service == "gateway")
+				if (!(ex is UnauthenticatedException unAuth && unAuth.Error?.service == "gateway")) throw ex;
+				if (retried)
 				{
-					if (authRetry > 0)
-					{
-						// Rejected again right after a successful re-auth: the gateway ended this session (its timeout
-						// breaker) and will keep rejecting it. Re-authenticating again can't help; a new connection can.
-						socketContext.ReportUnhealthyConnection(null, "the gateway rejected a request again right after re-authentication");
-						activity.StopAndDispose(ex);
-						throw ex;
-					}
-
-					// need to wait for authentication to finish...
-					BeamableZLoggerProvider.LogContext.Value.ZLogDebug(
-						$"Request {req.id} and {truncatedMsg} failed with 403. Will reauth and and retry.");
-
-					// The 403 ended this attempt's listener, so nothing else enforces the deadline while re-auth runs.
-					var expired = Overdue(enforceDeadline, deadline, startedAt, req);
-					if (expired != null)
-					{
-						activity.StopAndDispose(expired);
-						throw expired;
-					}
-
-					daemon.WakeAuthThread();
-					var waitLimit = AuthWaitLimit(deadline, enforceDeadline);
-					var waitEndsAtDeadline = enforceDeadline && deadline.HasValue && waitLimit < MaxAuthWait;
-					return socketContext.WaitForAuthorization(waitLimit, msg).ToPromise()
-						// when the wait's limit was what remained of the deadline, running out of it is the deadline.
-						.RecoverWith(waitEx => throw (Exception)Overdue(enforceDeadline, deadline, startedAt, req,
-							waitEndsAtDeadline && waitEx is TimeoutException) ?? waitEx)
-						.FlatMap(_ =>
-						{
-							// re-authentication may have used up the rest of the deadline: don't send a retry that is
-							// already overdue, which could succeed after the caller should have seen a timeout.
-							var late = Overdue(enforceDeadline, deadline, startedAt, req);
-							if (late != null) throw late;
-							return BeamableRequest(beamReq, deadline, startedAt, authRetry + 1);
-						})
-						.Then(_ => activity.StopAndDispose(ActivityStatusCode.Ok))
-						.RecoverWith(retryEx =>
-						{
-							activity.StopAndDispose(retryEx);
-							throw retryEx;
-						});
+					// Rejected again right after a successful re-auth: the gateway ended this session (its timeout
+					// breaker) and will keep rejecting it. Re-authenticating again can't help; a new connection can.
+					socketContext.ReportUnhealthyConnection(null, "the gateway rejected a request again right after re-authentication", "rejected_after_reauth");
+					throw ex;
 				}
 
-				activity.StopAndDispose(ex);
-				throw ex;
-			}).Then(_ => activity.StopAndDispose(ActivityStatusCode.Ok));
+				// need to wait for authentication to finish...
+				BeamableZLoggerProvider.LogContext.Value.ZLogDebug(
+					$"Request {req.id} and {truncatedMsg} failed with 403. Will reauth and and retry.");
+
+				daemon.WakeAuthThread();
+				// The 403 ended this attempt's listener, so the deadline is checked here while re-authentication runs.
+				var giveUp = enforceDeadline ? deadline : CancellationToken.None;
+				return socketContext.WaitForAuthorization(default, msg, giveUp).ToPromise()
+					.RecoverWith(waitEx => throw (giveUp.IsCancellationRequested ? Timeout(req, startedAt) : waitEx))
+					.FlatMap(_ => giveUp.IsCancellationRequested
+						? throw Timeout(req, startedAt)
+						: Attempt(beamReq, activity, deadline, enforceDeadline, startedAt, true));
+			});
 		}
 
-		/// <summary>The <see cref="Stopwatch.GetTimestamp"/> deadline for a new request, or null for none.</summary>
-		private long? ComputeDeadline(bool isAuthRequest)
+		/// <summary>How long a new request may wait for its reply, or zero for no deadline.</summary>
+		private TimeSpan ReplyTimeout(bool isAuthRequest)
 		{
 			var timeout = ReplyTimeoutOverride.Value ?? TimeSpan.FromSeconds(Math.Max(0, _env.OutboundRequestTimeoutSeconds));
 			if (isAuthRequest && (timeout <= TimeSpan.Zero || timeout > AuthRequestTimeout))
@@ -1446,32 +1264,13 @@ namespace Beamable.Server
 				timeout = AuthRequestTimeout;
 			}
 
-			if (timeout <= TimeSpan.Zero) return null;
-			return Stopwatch.GetTimestamp() + (long)(timeout.TotalSeconds * Stopwatch.Frequency);
+			return timeout;
 		}
 
-		/// <summary>
-		/// How long a 403 retry may wait for re-authentication: at most 10s, and no longer than what is left of an enforced
-		/// deadline. An unenforced deadline still allows at least 1s.
-		/// </summary>
-		private static TimeSpan AuthWaitLimit(long? deadline, bool enforced)
+		/// <summary>The timeout for a request whose deadline passed while it waited to be retried.</summary>
+		private static RequestTimeoutException Timeout(WebsocketRequest req, long startedAt)
 		{
-			var limit = MaxAuthWait;
-			if (!deadline.HasValue) return limit;
-			var left = TimeSpan.FromSeconds((deadline.Value - Stopwatch.GetTimestamp()) / (double)Stopwatch.Frequency);
-			var floor = enforced ? TimeSpan.FromMilliseconds(1) : TimeSpan.FromSeconds(1);
-			if (left < floor) return floor;
-			return left < limit ? left : limit;
-		}
-
-		/// <summary>The timeout for a request past its enforced deadline, or null while it still has time.</summary>
-		/// <param name="deadlineReached">Treat the deadline as reached, when a wait bounded by it ran out.</param>
-		private static RequestTimeoutException Overdue(bool enforced, long? deadline, long startedAt, WebsocketRequest req, bool deadlineReached = false)
-		{
-			var now = Stopwatch.GetTimestamp();
-			if (!enforced || !deadline.HasValue || (!deadlineReached && now < deadline.Value)) return null;
-
-			var elapsed = TimeSpan.FromSeconds((now - startedAt) / (double)Stopwatch.Frequency);
+			var elapsed = TimeSpan.FromSeconds((Stopwatch.GetTimestamp() - startedAt) / (double)Stopwatch.Frequency);
 			SocketReliabilityMetrics.DeadlineExceeded.Add(1,
 				new KeyValuePair<string, object>("enforced", true),
 				new KeyValuePair<string, object>("path", req.path));

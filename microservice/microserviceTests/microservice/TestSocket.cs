@@ -1013,12 +1013,6 @@ namespace Beamable.Microservice.Tests.Socket
             await HandleRequestWithResponders(message);
         }
 
-        public Task SendMessage(string message, Stopwatch sw, CancellationToken skipIfCancelled) =>
-	        skipIfCancelled.IsCancellationRequested ? Task.FromCanceled(skipIfCancelled) : SendMessage(message, sw);
-
-        public Task SendBinaryMessage(byte[] data, Stopwatch sw, CancellationToken skipIfCancelled) =>
-	        skipIfCancelled.IsCancellationRequested ? Task.FromCanceled(skipIfCancelled) : SendBinaryMessage(data, sw);
-
         public async Task SendBinaryMessage(byte[] data, Stopwatch sw = null)
         {
             if (!MockIsConnectionOpen)
