@@ -37,6 +37,7 @@
 - Incorporated subsequent upstream `c3b40a3f21340589b5d2943cde32b8875d6d013d` by rebasing the local implementation. Event-cache changes remain outside the #4946 diff.
 - [x] Monitor/verdict implementation and focused regressions complete.
 - [x] Health compatibility, cached incident endpoint, bounded diagnostics and blocked-sink regressions complete.
-- [x] Local validation complete: all 407 executed tests passed; one pre-existing explicit zone-handshake test was not run. .NET 8/9/10 builds and isolated starvation probes passed. Independent source review findings addressed.
-- Observation values remain internal. Managed stack collection and durable retention, full-service reconnect timing, real-gateway fault combinations, ECS task wiring/history and week-long canary evidence remain external acceptance gates, not completed work.
+- [x] Local validation after review fixes: all 412 executed tests passed; one pre-existing explicit zone-handshake test was not run. .NET 8/9/10 builds and isolated starvation probes passed. Independent source review findings addressed.
+- [x] Review regressions reproduced before fixes: retain incidents through ambiguous degraded verdicts; require heartbeat acknowledgement at each sample throughout recovery; expose bounded socket-check failure evidence. Removed idle diagnostic polling and repeated sibling scans. Reconstructed full-service paused reconnect/auth/provider/shutdown test passed, including five consecutive separate runs; original exploratory timeout cause remains unknown.
+- Observation values remain internal. Managed stack collection and durable retention, Linux/runtime load validation, real-gateway reconnect timing and fault combinations, ECS task wiring/history and week-long canary evidence remain external acceptance gates, not completed work.
 - No push, PR creation, merge, deployment, enforcement enablement or self-exit was performed.

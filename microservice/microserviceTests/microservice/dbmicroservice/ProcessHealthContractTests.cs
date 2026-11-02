@@ -10,6 +10,7 @@ using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
 using microserviceTests.microservice.Util;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace microserviceTests.microservice.dbmicroservice;
@@ -100,6 +101,52 @@ public class ProcessHealthContractTests : CommonTest
             monitor.Stop();
             context.FailAllPending(new Exception("test cleanup"));
             BeamableZLoggerProvider.LogContext.Value = oldLogger;
+        }
+    }
+
+    [Test]
+    public void ThrowingSocketCheck_RecordsFailureWithoutStoppingSampling()
+    {
+        using var harness = new RequesterHarness(socket => socket.AddMessageHandler(
+            MessageMatcher.WithRouteContains("basic/silent"), MessageResponder.NoResponse(), MessageFrequency.OnlyOnce()),
+            new TestArgs { OutboundRequestTimeoutSeconds = 0 });
+        var context = new SocketRequesterContext(() => Promise<IConnection>.Successful(harness.Socket))
+        {
+            Daemon = harness.Daemon,
+            Reliability = new SocketReliabilityOptions { StallTimeout = TimeSpan.FromMilliseconds(1) }
+        };
+        var requester = new MicroserviceRequester(harness.Args, null, context, false, new NoopActivityProvider());
+        requester.Request<CommonResponse>(Method.GET, "basic/silent").Error(_ => { });
+        var oldLogger = BeamableZLoggerProvider.LogContext.Value;
+        BeamableZLoggerProvider.LogContext.Value = new ThrowingWarningLogger();
+        var monitor = new ProcessHealthMonitor(new IBeamableService[] { new Service(context) }, 1,
+            new ProcessHealthOptions { SampleInterval = TimeSpan.FromMilliseconds(10) });
+        try
+        {
+            monitor.Start();
+            Assert.That(SpinWait.SpinUntil(() =>
+                ((long?)JObject.FromObject(monitor.Snapshot)["SocketCheckFailures"] ?? 0) > 0, 2000), Is.True,
+                "a failed socket check must be visible in the cached process-health response");
+            var snapshot = JObject.FromObject(monitor.Snapshot);
+            Assert.That((string)snapshot["LastSocketCheckErrorType"], Is.EqualTo("InvalidOperationException"));
+            Assert.That(snapshot.ToString(), Does.Not.Contain("private failure detail"));
+            Assert.That(monitor.Snapshot.Instances[0].ReportedBroken, Is.True);
+        }
+        finally
+        {
+            monitor.Stop();
+            context.FailAllPending(new Exception("test cleanup"));
+            BeamableZLoggerProvider.LogContext.Value = oldLogger;
+        }
+    }
+
+    private sealed class ThrowingWarningLogger : ILogger
+    {
+        public IDisposable BeginScope<TState>(TState state) => null;
+        public bool IsEnabled(LogLevel level) => true;
+        public void Log<TState>(LogLevel level, EventId id, TState state, Exception error, Func<TState, Exception, string> formatter)
+        {
+            if (level == LogLevel.Warning) throw new InvalidOperationException("private failure detail");
         }
     }
 

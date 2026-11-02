@@ -19,6 +19,8 @@ public sealed record ProcessHealthSnapshot(ProcessHealthState State, string Reas
     IReadOnlyList<InstanceProcessHealth> Instances, string IncidentId)
 {
     public bool ObservationOnly => true;
+    public long SocketCheckFailures { get; init; }
+    public string LastSocketCheckErrorType { get; init; }
     public static ProcessHealthSnapshot Starting { get; } = new(ProcessHealthState.Starting, "initializing", 0,
         0, 0, 0, 0, Array.AsReadOnly(Array.Empty<InstanceProcessHealth>()), null);
 }

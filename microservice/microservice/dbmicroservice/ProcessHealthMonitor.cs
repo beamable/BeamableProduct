@@ -168,6 +168,10 @@ public class ProcessHealthMonitor
             {
                 state = ProcessHealthState.Healthy;
                 reason = "progress_observed";
+                // A problematic instance cannot itself satisfy this predicate; one scan covers every sibling check.
+                var hasRecentUsableReply = instances.Any(x => x.Initialized && x.Connected && x.Authenticated &&
+                    !x.ReportedBroken && x.ReplyAgeSeconds.HasValue &&
+                    x.ReplyAgeSeconds.Value <= _options.SiblingProgress.TotalSeconds);
                 for (var i = 0; i < instances.Length; i++)
                 {
                     var instance = instances[i];
@@ -189,10 +193,7 @@ public class ProcessHealthMonitor
                             state = ProcessHealthState.Degraded;
                             reason = "socket_recovery_pending";
                         }
-                        var siblingProgress = instances.Any(x => x.Index != instance.Index && x.Initialized &&
-                            x.Connected && x.Authenticated && !x.ReportedBroken &&
-                            x.ReplyAgeSeconds.HasValue && x.ReplyAgeSeconds.Value <= _options.SiblingProgress.TotalSeconds);
-                        if (age >= _options.SocketRecovery.TotalSeconds && siblingProgress)
+                        if (age >= _options.SocketRecovery.TotalSeconds && hasRecentUsableReply)
                         {
                             state = ProcessHealthState.Unhealthy;
                             reason = "isolated_socket_recovery_exhausted";
@@ -222,9 +223,14 @@ public class ProcessHealthMonitor
         }
         else if (_poolUnhealthy)
         {
-            _poolRecoverySince ??= now;
-            if (Seconds(_poolRecoverySince.Value, now) >= _options.HeartbeatRecovery.TotalSeconds)
-                _poolUnhealthy = false;
+            // Recovery requires continuing progress, not just one callback followed by another stall.
+            if (!acknowledged) _poolRecoverySince = null;
+            else
+            {
+                _poolRecoverySince ??= now;
+                if (Seconds(_poolRecoverySince.Value, now) >= _options.HeartbeatRecovery.TotalSeconds)
+                    _poolUnhealthy = false;
+            }
         }
         if (acknowledged)
         {
@@ -251,8 +257,13 @@ public class ProcessHealthMonitor
             var transition = next.State != prior.State || next.Reason != prior.Reason;
             next = next with
             {
+                SocketCheckFailures = _socketChecks.FailedChecks,
+                LastSocketCheckErrorType = _socketChecks.LastErrorType,
                 TransitionTimestamp = transition ? next.TransitionTimestamp : prior.TransitionTimestamp,
-                IncidentId = next.State == ProcessHealthState.Unhealthy ? prior.IncidentId ?? Guid.NewGuid().ToString("N") : null
+                // Losing corroborating evidence can downgrade the verdict without resolving the incident.
+                // Rearm only after positive process recovery, not when a healthy sibling becomes quiet.
+                IncidentId = next.State == ProcessHealthState.Healthy ? null :
+                    prior.IncidentId ?? (next.State == ProcessHealthState.Unhealthy ? Guid.NewGuid().ToString("N") : null)
             };
             Volatile.Write(ref _snapshot, next);
             if (transition) _diagnostics.Record(prior, next);

@@ -50,13 +50,14 @@ internal sealed class ProcessHealthDiagnostics : IDisposable
 
     internal void Record(ProcessHealthSnapshot prior, ProcessHealthSnapshot next)
     {
-        if (prior.State == next.State) return;
-        var incident = next.State == ProcessHealthState.Unhealthy;
+        if (prior.State == next.State && prior.IncidentId == next.IncidentId) return;
+        var incident = next.IncidentId != null && next.IncidentId != prior.IncidentId;
+        var recovered = prior.IncidentId != null && next.IncidentId == null && next.State == ProcessHealthState.Healthy;
         if (incident) Volatile.Write(ref _lastIncident, next);
         if (Volatile.Read(ref _stopped)) return;
         try
         {
-            if (!_pending.TryAdd(new Transition(next, incident, prior.State == ProcessHealthState.Unhealthy)))
+            if (!_pending.TryAdd(new Transition(next, incident, recovered)))
                 Interlocked.Increment(ref _dropped);
         }
         catch (InvalidOperationException) { Interlocked.Increment(ref _dropped); }
@@ -68,7 +69,7 @@ internal sealed class ProcessHealthDiagnostics : IDisposable
         {
             try
             {
-                if (_pending.TryTake(out var transition, 100))
+                if (_pending.TryTake(out var transition, Timeout.Infinite))
                 {
                     var prefix = transition.Recovered ? "Process health recovered: " : "Process health transition: ";
                     _write(transition.Incident, prefix + Format(transition.Snapshot));
@@ -95,6 +96,8 @@ internal sealed class ProcessHealthDiagnostics : IDisposable
         snapshot.PoolPendingWork,
         snapshot.PoolCompletedWork,
         snapshot.PoolThreads,
+        snapshot.SocketCheckFailures,
+        snapshot.LastSocketCheckErrorType,
         InstanceCount = snapshot.Instances.Count,
         Truncated = snapshot.Instances.Count > 32,
         Instances = snapshot.Instances.OrderByDescending(x => !x.Connected || !x.Authenticated || x.ReportedBroken).Take(32)
