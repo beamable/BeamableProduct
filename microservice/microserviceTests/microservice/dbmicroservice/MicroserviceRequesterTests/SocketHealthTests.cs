@@ -50,6 +50,30 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 
 		[Test]
 		[TimeoutWithTeardown(30 * 1000)]
+		public async Task SlowRequestOnAConnectionThatAnswered_IsNotCondemned()
+		{
+			// A slow request expires, but another reply arrived after it was sent, then the connection goes idle. The
+			// connection answered, so it is not broken.
+			var args = new TestArgs { OutboundRequestTimeoutSeconds = 1, EnforceSocketReliability = true };
+			using var h = new RequesterHarness(s => s
+				.AddMessageHandler(MessageMatcher.WithRouteContains("basic/slow"), MessageResponder.NoResponse(), MessageFrequency.OnlyOnce())
+				.AddMessageHandler(MessageMatcher.WithRouteContains(Route),
+					MessageResponder.Custom(req => req.Succeed(new CommonResponse { result = "ok" })), MessageFrequency.OnlyOnce()), args);
+			h.Context.Reliability = new SocketReliabilityOptions { StallTimeout = TimeSpan.FromSeconds(2), Enforce = true };
+			var reported = false;
+			h.Context.ConnectionUnhealthy += (_, _) => reported = true;
+
+			var slow = h.Requester.Request<CommonResponse>(Method.GET, "basic/slow");
+			await Task.Delay(100);
+			await h.Requester.Request<CommonResponse>(Method.GET, Route);
+			Assert.That(await slow.FinishWithin(TimeSpan.FromSeconds(5), "the slow request"), Is.InstanceOf<RequestTimeoutException>());
+			await Task.Delay(3000);
+
+			Assert.That(reported, Is.False, "a reply arrived after the slow request was sent, so the connection works");
+		}
+
+		[Test]
+		[TimeoutWithTeardown(30 * 1000)]
 		public async Task OneSlowRequest_DoesNotCondemnAConnectionThatStillAnswers()
 		{
 			var args = new TestArgs { OutboundRequestTimeoutSeconds = 0, EnforceSocketReliability = true };

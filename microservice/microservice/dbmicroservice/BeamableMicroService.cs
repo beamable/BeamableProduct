@@ -123,6 +123,9 @@ namespace Beamable.Server
          }
       }
 
+      /// <summary>The process-wide health monitor, held by the first instance so its shutdown stops it.</summary>
+      internal ProcessHealthMonitor HealthMonitor { get; set; }
+
       // default is false, set 1 for true.
       private int _shutdownStarted = 0; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
       public bool IsShuttingDown
@@ -276,6 +279,7 @@ namespace Beamable.Server
       public async Task OnShutdown(object sender, EventArgs args)
       {
          IsShuttingDown = true;
+         HealthMonitor?.Stop();
 
          // need to wait for all tasks to complete...
          Log.Debug("Shutdown started... {runningTaskCount} tasks running.", _runningTaskTable.Count);
@@ -775,7 +779,7 @@ namespace Beamable.Server
 		      activity.SetStatus(ActivityStatusCode.Error);
 				
 		      BeamableLogger.LogException(ex);
-		      await AckOrDrop(ctx, origin, new WebsocketErrorResponse
+		      await _requester.Acknowledge(ctx, origin, new WebsocketErrorResponse
 		      {
 			      status = 500, // TODO: Catch a special type of exception, NackException?
 			      error = ex.GetType().Name,
@@ -785,42 +789,9 @@ namespace Beamable.Server
 		      return;
 	      }
 
-	      await AckOrDrop(ctx, origin);
-      }
-
-      /// <summary>
-      /// Acks an event on the connection it arrived on, never on a replacement: there the same id belongs to a different
-      /// request. An ack that can't be sent is logged by <see cref="SocketRequesterContext.SendReply"/>, and the gateway
-      /// redelivers the event.
-      /// </summary>
-      private async Task AckOrDrop(MicroserviceRequestContext ctx, IConnection origin, WebsocketErrorResponse error = null)
-      {
-	      try
-	      {
-		      await _requester.Acknowledge(ctx, origin, error);
-	      }
-	      catch (Exception)
-	      {
-		      // already logged.
-	      }
+	      await _requester.Acknowledge(ctx, origin);
       }
       
-      /// <summary>
-      /// Sends a reply on the connection its request arrived on. A reply that can't be sent is logged by
-      /// <see cref="SocketRequesterContext.SendReply"/>; the request is lost either way, so the failure goes no further.
-      /// </summary>
-      private async Task SendReplyOrDrop(IConnection origin, string json, Stopwatch sw)
-      {
-	      try
-	      {
-		      await _socketRequesterContext.SendReply(origin, json, sw);
-	      }
-	      catch (Exception)
-	      {
-		      // already logged.
-	      }
-      }
-
       async Task HandleClientMessage(MicroserviceRequestContext ctx, Stopwatch sw, BeamActivity activity, IConnection origin)
       {
 	      // using var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_WS_CLIENT,
@@ -840,7 +811,7 @@ namespace Beamable.Server
 		      var parameterProvider = new AdaptiveParameterProvider(ctx);
 		      var responseJson = await ServiceMethods.Handle(ctx, route, parameterProvider, activity);
 		      BeamableZLoggerProvider.LogContext.Value.LogTrace("Responding with " + responseJson);
-		      await SendReplyOrDrop(origin, responseJson, sw);
+		      await _socketRequesterContext.SendReply(origin, responseJson, sw);
 
 		      activity.SetStatus(ActivityStatusCode.Ok);
 		      // TODO: Kill Scope
@@ -861,7 +832,7 @@ namespace Beamable.Server
 		      BeamableZLoggerProvider.LogContext.Value.LogError("Exception {exception.type}: {exception.message} - {source} {json} \n {exception.stacktrace}",
 			      ex.GetType().Name, ex.Message,
 			      ex.Source, failResponseJson, ex.StackTrace);
-		      await SendReplyOrDrop(origin, failResponseJson, sw);
+		      await _socketRequesterContext.SendReply(origin, failResponseJson, sw);
 	      }
 	      catch (TargetInvocationException ex)
 	      {
@@ -908,7 +879,7 @@ namespace Beamable.Server
 				      inner.Source, inner.StackTrace);
 		      }
 
-		      await SendReplyOrDrop(origin, failResponseJson, sw);
+		      await _socketRequesterContext.SendReply(origin, failResponseJson, sw);
 	      }
 	      catch (Exception ex) // TODO: Catch a general PlatformException type sort of thing.
 	      {
@@ -930,7 +901,7 @@ namespace Beamable.Server
 			      }
 		      };
 		      var failResponseJson = JsonConvert.SerializeObject(failResponse);
-		      await SendReplyOrDrop(origin, failResponseJson, sw);
+		      await _socketRequesterContext.SendReply(origin, failResponseJson, sw);
 	      }
 	      finally
 	      {
