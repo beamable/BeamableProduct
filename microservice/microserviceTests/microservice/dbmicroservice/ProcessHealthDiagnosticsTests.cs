@@ -77,6 +77,29 @@ public class ProcessHealthDiagnosticsTests
     }
 
     [Test]
+    public void SocketCheckFailure_IsRetainedWhileLaterHandoffsContinue()
+    {
+        using var completed = new ManualResetEventSlim();
+        var attempts = 0;
+        var worker = new ProcessHealthSocketChecks(() =>
+        {
+            if (Interlocked.Increment(ref attempts) == 1) throw new InvalidOperationException("not exported");
+            completed.Set();
+        });
+        try
+        {
+            worker.Start();
+            worker.Request();
+            Assert.That(SpinWait.SpinUntil(() => worker.FailedChecks == 1, 2000), Is.True);
+            worker.Request();
+            Assert.That(completed.Wait(2000), Is.True);
+            Assert.That(worker.FailedChecks, Is.EqualTo(1));
+            Assert.That(worker.LastErrorType, Is.EqualTo("InvalidOperationException"));
+        }
+        finally { worker.Stop(); }
+    }
+
+    [Test]
     public void IncidentOutput_IsBounded_AndPreservesValidJson()
     {
         var record = Unhealthy("bounded") with

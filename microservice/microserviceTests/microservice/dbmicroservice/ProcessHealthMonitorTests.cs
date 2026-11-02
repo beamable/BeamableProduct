@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -22,10 +23,10 @@ public class ProcessHealthMonitorTests
         public InstanceProcessHealth[] Instances = { Instance(0), Instance(1) };
         public readonly List<Action> Probes = new();
         public readonly ProcessHealthMonitor Monitor;
-        public Harness()
+        public Harness(ProcessHealthDiagnostics diagnostics = null)
         {
             Monitor = new ProcessHealthMonitor(Array.Empty<IBeamableService>(), 2,
-                new ProcessHealthOptions(), action => Probes.Add(action), _ => Instances);
+                new ProcessHealthOptions(), action => Probes.Add(action), _ => Instances, diagnostics);
         }
         public void Check(double seconds, bool acknowledge = true)
         {
@@ -74,6 +75,33 @@ public class ProcessHealthMonitorTests
     }
 
     [Test]
+    public void HeartbeatRecovery_RequiresProgressThroughoutTheRecoveryInterval()
+    {
+        using var h = new Harness();
+        h.Check(0);
+        h.Check(30, false);
+        var incident = h.Monitor.Snapshot.IncidentId;
+        h.Check(31);
+        // A single worker was released, but the next heartbeat is still stuck.
+        h.Check(36, false);
+        Assert.That(h.Monitor.Snapshot.State, Is.EqualTo(ProcessHealthState.Unhealthy));
+        Assert.That(h.Monitor.Snapshot.IncidentId, Is.EqualTo(incident));
+        h.Check(37);
+        h.Check(38);
+        h.Check(39, false);
+        h.Check(40);
+        h.Check(41);
+        h.Check(42);
+        Assert.That(h.Monitor.Snapshot.State, Is.EqualTo(ProcessHealthState.Unhealthy),
+            "missing another acknowledgement restarts the recovery interval");
+        h.Check(43);
+        h.Check(44);
+        h.Check(45);
+        Assert.That(h.Monitor.Snapshot.State, Is.EqualTo(ProcessHealthState.Healthy));
+        Assert.That(h.Monitor.Snapshot.IncidentId, Is.Null);
+    }
+
+    [Test]
     public void Stop_IsTerminal_EvenWhenQueuedHeartbeatAcknowledgesLater()
     {
         using var h = new Harness();
@@ -115,6 +143,42 @@ public class ProcessHealthMonitorTests
         Assert.That(h.Monitor.Snapshot.State, Is.EqualTo(ProcessHealthState.Unhealthy));
         Assert.That(h.Monitor.Snapshot.Reason, Is.EqualTo("isolated_socket_recovery_exhausted"));
         Assert.That(h.Monitor.Snapshot.Instances[1].RecoverySeconds, Is.EqualTo(120));
+    }
+
+    [Test]
+    public void StaleSiblingEvidence_DoesNotCloseOrRecaptureAnUnresolvedIncident()
+    {
+        var records = new ConcurrentQueue<(bool error, string text)>();
+        using var diagnostics = new ProcessHealthDiagnostics((error, text) => records.Enqueue((error, text)));
+        diagnostics.Start();
+        using var h = new Harness(diagnostics);
+        h.Instances[0] = Instance(0, replyAge: 0);
+        h.Instances[1] = Instance(1, broken: true);
+        h.Check(0);
+        h.Check(120);
+        var incident = h.Monitor.Snapshot.IncidentId;
+        var firstEvidence = h.Monitor.LastIncident;
+        Assert.That(incident, Is.Not.Null);
+
+        h.Instances[0] = Instance(0, replyAge: 31);
+        h.Check(151);
+        Assert.That(h.Monitor.Snapshot.State, Is.EqualTo(ProcessHealthState.Degraded),
+            "stale corroborating evidence makes the verdict ambiguous, not recovered");
+        Assert.That(h.Monitor.Snapshot.IncidentId, Is.EqualTo(incident));
+        h.Instances[0] = Instance(0, replyAge: 0);
+        h.Check(152);
+        Assert.That(h.Monitor.Snapshot.State, Is.EqualTo(ProcessHealthState.Unhealthy));
+        Assert.That(h.Monitor.Snapshot.IncidentId, Is.EqualTo(incident));
+        Assert.That(h.Monitor.LastIncident, Is.SameAs(firstEvidence));
+
+        h.Instances[1] = Instance(1, generation: 2);
+        h.Check(153);
+        Assert.That(h.Monitor.Snapshot.State, Is.EqualTo(ProcessHealthState.Healthy));
+        Assert.That(h.Monitor.Snapshot.IncidentId, Is.Null);
+        Assert.That(SpinWait.SpinUntil(() => records.Any(x => x.text.Contains("recovered")), 2000), Is.True);
+        Assert.That(records.Count(x => x.error), Is.EqualTo(1));
+        Assert.That(records.Count(x => x.text.Contains("recovered")), Is.EqualTo(1));
+        Assert.That(records.Single(x => x.text.Contains("recovered")).text, Does.Contain("Healthy"));
     }
 
     [Test]

@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,15 +23,17 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 	public class SocketRecoveryTests : CommonTest
 	{
 		/// <summary>Auth and provider registration for a replacement connection, whatever its request ids.</summary>
-		private static TestSocket AddReconnectHandlers(TestSocket socket, TaskCompletionSource<bool> registered = null)
+		private static TestSocket AddReconnectHandlers(TestSocket socket, TaskCompletionSource<bool> registered = null,
+			Action<string> stage = null)
 		{
 			return socket
 				.AddMessageHandler(MessageMatcher.WithRouteContains("gateway/nonce"),
-					MessageResponder.Success(new MicroserviceNonceResponse { nonce = "n" }), MessageFrequency.AtLeast(1), "nonce", false)
+					MessageResponder.Success(() => { stage?.Invoke("nonce"); return new MicroserviceNonceResponse { nonce = "n" }; }), MessageFrequency.AtLeast(1), "nonce", false)
 				.AddMessageHandler(MessageMatcher.WithRouteContains("gateway/auth"),
 					MessageResponder.Success(() =>
 					{
 						socket.SetAuthentication(true);
+						stage?.Invoke("auth response");
 						return new MicroserviceAuthResponse { result = "ok" };
 					}), MessageFrequency.AtLeast(1), "auth", false)
 				.AddMessageHandler(MessageMatcher.WithRouteContains("gateway/provider").WithPost()
@@ -42,6 +46,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 					MessageResponder.Success(() =>
 					{
 						registered?.TrySetResult(true);
+						stage?.Invoke("providers registered");
 						return new CommonResponse();
 					}), MessageFrequency.OnlyOnce())
 				.AddProviderShutdownMessageHandler();
@@ -63,6 +68,83 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			}
 
 			return condition();
+		}
+
+		[Test]
+		[NonParallelizable]
+		[TimeoutWithTeardown(60 * 1000)]
+		public async Task ProcessHealth_PausedReconnectRequiresAuthenticationAndCompletesShutdown()
+		{
+			var stages = new ConcurrentQueue<string>();
+			using var release = new ManualResetEventSlim();
+			var published = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var registered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var reconnected = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			TestSocket first = null;
+			TestSocket replacement = null;
+			var count = 0;
+			var ms = new TestSetup(new TestSocketProvider(socket =>
+			{
+				if (count++ == 0)
+				{
+					first = socket;
+					socket.AddStandardMessageHandlers(addShutdownResponder: false);
+					return;
+				}
+				replacement = AddReconnectHandlers(socket, registered, stage => stages.Enqueue(stage));
+				var registerCallback = socket.MockOnMessage;
+				socket.MockOnMessage = callback =>
+				{
+					registerCallback(callback);
+					stages.Enqueue("replacement callback registered; before auth wake");
+					published.TrySetResult(true);
+					if (!release.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("replacement release gate");
+				};
+			}));
+			await ms.Start<SimpleMicroservice>(new TestArgs());
+			var service = (BeamableMicroService)ms.Service;
+			var monitor = service.HealthMonitor;
+			try
+			{
+				monitor.Check(Stopwatch.GetTimestamp());
+				Assert.That(monitor.Snapshot.State, Is.EqualTo(ProcessHealthState.Healthy));
+				service.SocketContext.ReportUnhealthyConnection(first, "test recovery episode");
+				monitor.Check(Stopwatch.GetTimestamp());
+				new Thread(() =>
+				{
+					try { first.RemoteClose(); reconnected.TrySetResult(true); }
+					catch (Exception error) { reconnected.TrySetException(error); }
+				}) { IsBackground = true, Name = "test-paused-reconnect" }.Start();
+				await published.Task.WaitAsync(TimeSpan.FromSeconds(5));
+				monitor.Check(Stopwatch.GetTimestamp());
+				Assert.That(monitor.Snapshot.Instances[0].Generation, Is.EqualTo(2));
+				Assert.That(monitor.Snapshot.Instances[0].Authenticated, Is.False);
+				Assert.That(monitor.Snapshot.Instances[0].RecoverySeconds, Is.Not.Null);
+				release.Set();
+				await registered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+				await reconnected.Task.WaitAsync(TimeSpan.FromSeconds(5));
+				monitor.Check(Stopwatch.GetTimestamp());
+				Assert.That(monitor.Snapshot.State, Is.EqualTo(ProcessHealthState.Healthy));
+				Assert.That(monitor.Snapshot.Instances[0].Authenticated, Is.True);
+				Assert.That(replacement.UnhandledError(), Is.Null);
+			}
+			catch
+			{
+				var daemon = service.SocketContext.Daemon;
+				TestContext.WriteLine("Reconnect stages: " + string.Join(", ", stages));
+				foreach (var name in new[] { "_OutgoingRequestCounter", "_OutgoingRequestProcessedCounter" })
+					TestContext.WriteLine(name + "=" + typeof(MicroserviceAuthenticationDaemon)
+						.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(daemon));
+				TestContext.WriteLine($"auth={daemon.AuthorizationCounter}; wake={daemon.AUTH_THREAD_WAIT_HANDLE.WaitOne(0)}; pending={service.SocketContext.PendingRequestCount}");
+				throw;
+			}
+			finally
+			{
+				release.Set();
+				try { await reconnected.Task.WaitAsync(TimeSpan.FromSeconds(5)); }
+				finally { await Task.Run(() => ms.OnShutdown(this, null)).WaitAsync(TimeSpan.FromSeconds(10)); }
+			}
+			Assert.That(monitor.Snapshot.State, Is.EqualTo(ProcessHealthState.Stopping));
 		}
 
 		[Test]

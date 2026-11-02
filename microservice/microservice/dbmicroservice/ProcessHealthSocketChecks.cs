@@ -14,6 +14,11 @@ internal sealed class ProcessHealthSocketChecks
     private readonly object _lifetime = new();
     private Thread _thread;
     private bool _stopped;
+    private long _failedChecks;
+    private string _lastErrorType;
+
+    internal long FailedChecks => Interlocked.Read(ref _failedChecks);
+    internal string LastErrorType => Volatile.Read(ref _lastErrorType);
 
     internal ProcessHealthSocketChecks(Action check) => _check = check;
     internal void Start()
@@ -38,7 +43,14 @@ internal sealed class ProcessHealthSocketChecks
             _requested.WaitOne();
             if (Volatile.Read(ref _stopped)) return;
             try { _check(); }
-            catch (Exception) { /* Sampling continues and retries on its next handoff. Never log on this path. */ }
+            catch (Exception error)
+            {
+                // Keep bounded evidence without calling the logger/metric listener that may have failed.
+                // Messages and stacks can contain request data and are deliberately excluded.
+                var name = error.GetType().Name;
+                Volatile.Write(ref _lastErrorType, name.Length <= 128 ? name : name.Substring(0, 128));
+                Interlocked.Increment(ref _failedChecks);
+            }
         }
     }
 
