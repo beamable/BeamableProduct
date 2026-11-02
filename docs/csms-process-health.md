@@ -8,6 +8,8 @@ The existing `ProcessHealthMonitor` remains the only periodic scheduler. Once a 
 
 Startup remains `Starting` until every configured instance has initialized. Subsequent states are `Healthy`, `Degraded`, `Unhealthy`, and terminal `Stopping`. Snapshots contain stable reason codes, monotonic transition timestamps, pool queue/completion/thread counters, and per-instance connection generation, authentication, pending request count, oldest pending age, reply age, unanswered age, and recovery age. They contain no request payloads or player identifiers. Last successful send is not available from the upstream contract and is not inferred from request creation time.
 
+If socket sampling throws, heartbeat evaluation continues. The verdict becomes `Degraded` with `monitor_sample_failed`, unless an existing unhealthy incident must be retained. Socket metadata and pool counters then come from the prior successful sample and may be stale; an existing unhealthy reason is preserved rather than reporting recovery.
+
 Observed generations follow actual `IConnection` identity across samples, retaining identity through disconnected gaps. Intermediate connections created and lost entirely between samples are not individually counted. Authentication requires a successful `gateway/auth` response whose pending request was sent on that actual connection, plus no auth currently pending. An empty auth counter left by the previous session cannot certify a replacement.
 
 Existing `SocketRequesterContext.CheckForStall` policy is retained. Its logger and metric listeners can execute synchronously, so the monitor hands checks to one dedicated worker with a single coalesced pending signal. Another dedicated worker delivers new process diagnostics. Neither worker is a second periodic detector. A blocked process-diagnostic sink cannot prevent socket checks or heartbeat sampling. A provider blocking inside an upstream socket check can still delay subsequent socket checks; the watchdog and process diagnostics continue independently. Shutdown wakes all workers and waits at most 1.5 seconds in total; an externally blocked worker is left as one background thread, never replaced by additional workers.
@@ -36,6 +38,14 @@ Each incident explicitly reports `managed_stacks_unavailable; collector_not_vali
 ## Validation and rollout gates
 
 The stack incorporates #4945's `c3b40a3f21340589b5d2943cde32b8875d6d013d` event-cache fix. Its two eviction regressions must pass along with process health tests. The fix remains in the upstream commit, outside the #4946 diff.
+
+Local validation on November 2, 2026, against that combined stack:
+
+- Full microservice suite on Windows/.NET 10: **407 passed, 0 failed**, including 23 new process-health tests and both upstream eviction regressions. The pre-existing explicit `ZoneService_BootsInZoneScope_AndHandlesTraffic` test was not executed (also excluded in the baseline). HTTP tests use the real EmbedIO listener; socket contract tests use the real requester with `TestSocket` transports. Existing real-loopback WebSocket tests are included in the full suite.
+- Release builds of the runtime and isolated probe passed for .NET 8, 9, and 10 with `SKIP_GENERATION=true`. Builds retain existing package/compiler warnings; no new dependency was added to the runtime.
+- Separate-process starvation probes passed on .NET 8/9/10. Unhealthy heartbeat observations arrived at approximately 30.42/30.47/30.31 seconds, respectively, and pool recovery was observed at 36.48/36.54/36.35 seconds. These are local Windows results, not Linux/ECS recovery measurements.
+- Independent read-only source review covered concurrency, lifecycle, recovery evidence, and HTTP compatibility; material findings were corrected and focused regressions passed.
+- At the final upstream check, `c3b40a3` microservice CI passed; Windows CLI, Windows build, and some Unity checks were still running. Earlier changes-requested reviews are not an approval of this new stack.
 
 Run focused coverage with:
 
