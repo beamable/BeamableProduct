@@ -513,6 +513,9 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		                $" {(noCache ? "--no-cache " : "")}" +
 		                $"{(pull ? "--pull " : "")}" +
 		                $"--label \"beamoId={id.ToLowerInvariant()}\"" +
+		                // Beamo reads beamVersion from the pushed image and sets it as BEAM_CLI_VERSION in
+		                // the service's ECS task definition, so renaming or dropping this label silently
+		                // removes that diagnostic.
 		                $" --label \"beamVersion={VersionService.GetNugetPackagesForExecutingCliVersion()}\" "
 		                ;
 
