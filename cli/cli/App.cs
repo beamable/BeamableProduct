@@ -40,7 +40,6 @@ using cli.Unreal;
 using cli.UnrealCommands;
 using cli.Utils;
 using cli.Version;
-using cli.Web;
 using CliWrap;
 using Errata;
 using Microsoft.Build.Locator;
@@ -255,7 +254,6 @@ public class App
 		services.AddSingleton<IUserContext, SimpleUserContext>(_ => new SimpleUserContext(0) );
 		services.AddSingleton<ProcessFileLocker>();
 		services.AddSingleton<IRemotePortalConfigService, RemotePortalConfigService>();
-		services.AddSingleton<WebLocalRegistryService>();
 
 		services.AddSingleton<DefaultActivityProvider>(DefaultActivityProvider.CreateCliServiceProvider());
 		services.AddSingleton<ResourceBuilder>(p =>
@@ -571,12 +569,16 @@ public class App
 
 		Commands.AddRootCommand<LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackSetupCommand, LocalStackSetupCommandArgs, LocalStackCommand>();
-		Commands.AddSubCommand<LocalStackInitCommand, LocalStackInitCommandArgs, LocalStackCommand>();
-		Commands.AddSubCommand<LocalStackUpCommand, LocalStackUpCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackRunCommand, LocalStackRunCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackCreateCommand, LocalStackCreateCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackEditCommand, LocalStackCreateCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackDeleteCommand, LocalStackDeleteCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackPsCommand, LocalStackPsCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackLogsCommand, LocalStackLogsCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackStopCommand, LocalStackStopCommandArgs, LocalStackCommand>();
-		Commands.AddSubCommand<LocalStackValidateCommand, LocalStackValidateCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackWebCommand, LocalStackWebCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackNativeCommand, LocalStackNativeCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackPortalManagement, LocalStackPortalManagementArgs, LocalStackCommand>();
 
 
 		Commands.AddRootCommand<ProjectCommand>();
@@ -689,13 +691,6 @@ public class App
 				PortalExtensionCommand>();
 		Commands.AddSubCommandWithHandler<ListMountSitesCommand, ListMountSitesCommandArgs, PortalExtensionCommand>();
 		Commands.AddSubCommandWithHandler<ListPortalExtensionOptionsCommand, ListPortalExtensionOptionsCommandArgs, PortalExtensionCommand>();
-
-		Commands.AddRootCommand<WebCommand, WebCommandArgs>();
-		Commands.AddSubCommandWithHandler<WebPublishCommand, WebPublishCommandArgs, WebCommand>();
-		Commands.AddSubCommandWithHandler<WebUseCommand, WebUseCommandArgs, WebCommand>();
-		Commands.AddSubCommandWithHandler<WebResetCommand, WebResetCommandArgs, WebCommand>();
-		Commands.AddSubCommandWithHandler<WebStopCommand, WebStopCommandArgs, WebCommand>();
-		Commands.AddSubCommandWithHandler<WebStatusCommand, WebStatusCommandArgs, WebCommand>();
 
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();
@@ -813,7 +808,6 @@ public class App
 		Commands.AddSubCommandWithHandler<PruneYankedCommand, PruneYankedCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<PublishBundleCommand, PublishBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<BundlePlanCommand, BundlePlanCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<BundlesManagementCommand, BundlesManagementCommandArgs, BundlesCommand>();
 
 		Commands.AddRootCommand<ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentBakeCommand, ContentBakeCommandArgs, ContentCommand>();

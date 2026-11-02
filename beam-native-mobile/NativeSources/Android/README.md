@@ -21,15 +21,16 @@ guide below.
 ## Building the AAR
 
 Plain Android library project. Gradle **8.2**, AGP **8.1.4**, Kotlin **1.9.22**, `compileSdk 34`,
-`minSdk 24`, Java 11. The Gradle wrapper `.jar` is not committed (run `./setup-native.sh` once, or
-open the project in Android Studio, to generate it).
+`minSdk 24`, Java 11. The Gradle wrapper `.jar` is not committed: `beam local run native-libs` builds with the toolchain's own
+Gradle 8.2 instead (`beam local setup --native` installs it with JDK 17 and the Android SDK), and Android Studio
+generates the wrapper when it opens the project.
 
 ```bash
 cd BeamableNotifications && ./gradlew :notifications:assembleRelease
 # → notifications/build/outputs/aar/notifications-release.aar
 ```
 
-Normally you don't run this directly — **`./dev-native.sh`** (repo root) builds the AAR and copies
+Normally you don't run this directly — **`beam local run native-libs`** (from the workspace you run local stacks in) builds the AAR and copies
 it into the shared Unity package at
 `beam-native-mobile/Unity/Plugins/Android/beamable-notifications-release.aar`.
 

@@ -60,6 +60,7 @@ public interface IMicroserviceArgs : IRealmInfo, IActivityProviderArgs
     public bool SkipAliasResolve { get; }
     public bool OtelExporterShouldRetry { get; }
     public bool OtelExporterStandardEnabled { get; }
+    public bool OtelExportAllSpans { get; }
     public string OtelExporterRetryMaxSize { get; }
     public bool AllowStartupWithoutBeamableSettings { get; }
     public int MaxUniqueEventBindingCount { get; }

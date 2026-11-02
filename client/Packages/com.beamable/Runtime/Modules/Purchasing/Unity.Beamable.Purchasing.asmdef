@@ -10,7 +10,10 @@
         "UnityEngine.Purchasing",
         "UnityEngine.Purchasing.Stores",
         "Unity.Purchasing",
-        "Unity.Purchasing.Stores"
+        "Unity.Purchasing.Stores",
+        "Unity.Purchasing.Security",
+        "Unity.Purchasing.SecurityCore",
+        "Unity.Purchasing.SecurityStub"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

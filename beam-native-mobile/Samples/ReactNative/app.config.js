@@ -34,6 +34,14 @@ module.exports = ({ config }) => {
   // it every microservice call answers `BindingNotFoundException`. `beam fed local-key` prints
   // it. Leave it unset for realm-deployed services, which bind unkeyed.
   const routingKey = readEnvLocal('BEAM_ROUTING_KEY');
+  // The realm, when env.local names all of it (`beam local run rn-sample` writes these for the
+  // stack's realm). Ahead of the committed .beamable/config.beam.json; see src/beam/config.ts.
+  const realmValues = {
+    cid: readEnvLocal('BEAM_CID'),
+    pid: readEnvLocal('BEAM_PID'),
+    host: readEnvLocal('BEAM_HOST'),
+  };
+  const realm = Object.values(realmValues).every(Boolean) ? realmValues : undefined;
   // Cleartext is opt-in via the explicit local build variant only (`APP_VARIANT=local`, set
   // by the `:local` npm scripts). Never committed, never inferred from the URL — so
   // remote/release builds always keep Android's default TLS-only enforcement.
@@ -72,6 +80,8 @@ module.exports = ({ config }) => {
       apiBase,
       // The local-microservice routing key, or undefined for realm-deployed services.
       routingKey,
+      // The realm from env.local, or undefined to use .beamable/config.beam.json.
+      realm,
       // Surfaced for diagnostics: whether this build allows cleartext HTTP.
       usesCleartext,
     },

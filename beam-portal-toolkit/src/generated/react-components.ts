@@ -2260,6 +2260,57 @@ export function BeamKpiRow(props: BeamKpiRowProps & { ref?: Ref<HTMLElement> }):
 BeamKpiRow.displayName = 'BeamKpiRow';
 
 /**
+ * @slot (default) - `beam-card-tree-item` elements.
+ * @cssproperty --beam-card-tree-gap - Vertical space between rows. [default: 0.125rem]
+ * @cssproperty --beam-card-tree-indent - Width of the connector gutter each level is indented by. [default: 1.75rem]
+ * @cssproperty --beam-card-tree-line-color - Connector line color. [default: var(--color-beam-border)]
+ * @event wa-select - Fired when a row is activated. `detail.item` is the activated `beam-card-tree-item`.
+ */
+export interface BeamCardTreeProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  /** Fired when a row is activated. `detail.item` is the activated `beam-card-tree-item`. */
+  onWaSelect?: (event: CustomEvent) => void;
+}
+
+/** React forwarder for `<beam-card-tree>`. */
+export function BeamCardTree(props: BeamCardTreeProps & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('BeamCardTree'), props);
+}
+BeamCardTree.displayName = 'BeamCardTree';
+
+/**
+ * @slot (default) - Row label — the name plus any inline chips/pills.
+ * @slot icon - Leading icon (usually a `beam-icon`).
+ * @slot details - Optional second line under the label (e.g. a count pill).
+ * @slot tooltip - Optional content shown in a bubble above the row on hover.
+ * @csspart row - The row.
+ * @csspart label - Wrapper around the default slot.
+ * @csspart details - Wrapper around the details slot.
+ * @csspart action - The trailing action affordance.
+ * @csspart tooltip - The hover tooltip bubble.
+ * @csspart children - Container holding nested items.
+ * @event wa-select
+ */
+export interface BeamCardTreeItemProps extends DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> {
+  /** Trailing action text, e.g. "View Screen". Omit to hide the action. @default '' */
+  action?: string;
+  /** Action text while the row is hovered/focused. Falls back to `action`. @default '' */
+  'hover-action'?: string;
+  /** Set by the parent — whether this item is a top-level row. @default false */
+  root?: boolean;
+  /** Set by the parent — whether this item is its parent's first child. @default false */
+  first?: boolean;
+  /** Set by the parent — whether this item is its parent's last child. @default false */
+  last?: boolean;
+  onWaSelect?: (event: CustomEvent) => void;
+}
+
+/** React forwarder for `<beam-card-tree-item>`. */
+export function BeamCardTreeItem(props: BeamCardTreeItemProps & { ref?: Ref<HTMLElement> }): ReactElement {
+  return createElement(hostComponent('BeamCardTreeItem'), props);
+}
+BeamCardTreeItem.displayName = 'BeamCardTreeItem';
+
+/**
  * @slot (default) - Nothing. Content is driven by the `value` property.
  * @csspart base - The bordered field wrapper.
  * @csspart tag - Each committed pill.
@@ -2296,6 +2347,8 @@ BeamTagInput.displayName = 'BeamTagInput';
  * @csspart base - The trigger button.
  * @csspart panel - The calendar popover panel.
  * @csspart day - Each selectable day cell.
+ * @csspart time-menu - The hour or minute dropdown list.
+ * @csspart time-option - Each hour or minute in that list.
  * @cssproperty --beam-date-picker-panel-background - Popover background.
  * @cssproperty --beam-date-picker-cell-size - Width/height of a day cell. [default: 2rem]
  * @event wa-change - Emitted when the value changes. `detail.value` is the new value. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).

@@ -32,6 +32,7 @@ on:
         description: What type of release is this?
         required: true
         options:
+          - dev
           - nightly
           - rc
           - exp
@@ -40,6 +41,21 @@ on:
         type: boolean
         description: When true, no publish will happen
         required: true
+        default: false
+      toolkitVersion:
+        type: string
+        description: Portal toolkit version to release on this SDK, X.Y.Z (empty skips the toolkit)
+        required: false
+        default: ''
+      toolkitRcNumber:
+        type: number
+        description: Portal toolkit rc version number, if required, X.Y.Z-rc.N
+        required: false
+        default: 0
+      updateExtensions:
+        type: boolean
+        description: After the toolkit release, open a PR in agentic-portal moving its extensions to it
+        required: false
         default: false
 
 run-name: >-
@@ -54,6 +70,7 @@ jobs:
     permissions:
       id-token: write
       contents: write
+      actions: write
 
     defaults:
       run:
@@ -86,6 +103,8 @@ jobs:
           VERSION="${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}"
           if [ "${{ inputs.releaseType }}" == "rc" ]; then
             VERSION="${VERSION}-rc.${{ inputs.rcNumber }}"
+          elif [ "${{ inputs.releaseType }}" == "dev" ]; then
+            VERSION="${VERSION}-dev.${{ github.run_number }}"
           elif [ "${{ inputs.releaseType }}" != "production" ]; then
             VERSION="${VERSION}-${{ inputs.releaseType }}"
           fi
@@ -96,6 +115,12 @@ jobs:
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
           echo "NPM_TAG=$NPM_TAG" >> "$GITHUB_OUTPUT"
           echo "Computed version: $VERSION (tag: $NPM_TAG)"
+          # Checked before publishing, so a bad toolkit version can't leave the SDK released without it
+          TOOLKIT_VERSION="${{ inputs.toolkitVersion }}"
+          if [ -n "$TOOLKIT_VERSION" ] && ! [[ "$TOOLKIT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::toolkitVersion must be X.Y.Z, got '$TOOLKIT_VERSION'"
+            exit 1
+          fi
 
       - name: Set package version
         run: npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version
@@ -106,7 +131,7 @@ jobs:
         run: npm publish --no-git-checks --provenance --access public --tag ${{ steps.version.outputs.NPM_TAG }}
 
       - name: Create Release
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ inputs.dryRun == false && inputs.releaseType != 'dev' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -117,7 +142,7 @@ jobs:
             ${{ inputs.releaseType != 'production' && '--prerelease' || '' }}
 
       - name: Publish Changelog
-        if: ${{ inputs.dryRun == false }}
+        if: ${{ inputs.dryRun == false && inputs.releaseType != 'dev' }}
         run: sh ./../build/bin/upload-changelogs.sh
         env:
           COPY_UNITY_SDK: 'false'
@@ -137,3 +162,21 @@ jobs:
       - name: Dry run build
         if: ${{ inputs.dryRun == true }}
         run: pnpm prepublishOnly
+
+      # A dispatch (not a workflow_call) so the toolkit publishes under its own workflow, the one npm trusts for it
+      - name: Release the portal toolkit
+        if: ${{ inputs.dryRun == false && inputs.toolkitVersion != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOOLKIT_VERSION: ${{ inputs.toolkitVersion }}
+        run: |
+          IFS=. read -r MAJOR MINOR PATCH <<< "$TOOLKIT_VERSION"
+          gh workflow run release-portal-toolkit.yml --ref "${{ github.ref_name }}" \
+            -f commit="${{ inputs.commit }}" \
+            -f major="$MAJOR" -f minor="$MINOR" -f patch="$PATCH" \
+            -f rcNumber="${{ inputs.toolkitRcNumber }}" \
+            -f releaseType="${{ inputs.releaseType }}" \
+            -f dryRun=false \
+            -f sdkVersion="${{ steps.version.outputs.VERSION }}" \
+            -f updateExtensions="${{ inputs.updateExtensions }}"
+          echo "Dispatched the portal toolkit release $TOOLKIT_VERSION on @beamable/sdk ${{ steps.version.outputs.VERSION }}"

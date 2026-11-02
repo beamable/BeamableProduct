@@ -52,7 +52,7 @@ public class GenerateSkillDocsCommand
 		Directory.CreateDirectory(outputDir);
 
 		var schema = GenerateBeamableTypesSchemaCommand.GenerateLive();
-		var commands = BuildCommandsDictionary(args);
+		var commands = BuildCommandsDictionary(args.DependencyProvider.GetService<CliGenerator>());
 
 		var data = new SkillTemplateData
 		{
@@ -77,26 +77,7 @@ public class GenerateSkillDocsCommand
 				continue;
 			}
 
-			MemberRenamerDelegate renamer = member =>
-			{
-				var result = new StringBuilder();
-				for (int i = 0; i < member.Name.Length; i++)
-				{
-					var c = member.Name[i];
-					if (char.IsUpper(c) && i > 0)
-						result.Append('_');
-					result.Append(char.ToLowerInvariant(c));
-				}
-				return result.ToString();
-			};
-
-			var scriptObject = new ScriptObject();
-			scriptObject.Import(data, renamer: renamer);
-
-			var context = new TemplateContext();
-			context.MemberRenamer = renamer;
-			context.PushGlobal(scriptObject);
-			var rendered = template.Render(context);
+			var rendered = Render(template, data);
 
 			var outputFileName = Path.GetFileNameWithoutExtension(templateFile);
 			var outputPath = Path.Combine(outputDir, outputFileName);
@@ -109,13 +90,40 @@ public class GenerateSkillDocsCommand
 		return new GenerateSkillDocsCommandResult { RenderedCount = renderedCount };
 	}
 
-	Dictionary<string, SkillCommandDetail> BuildCommandsDictionary(GenerateSkillDocsCommandArgs args)
+	/// <summary>
+	/// Renders a skill template against <paramref name="data"/>, with members in snake_case
+	/// (<c>commands["project new service"].options</c>). <c>beam local setup</c> renders its skill with this too.
+	/// </summary>
+	public static string Render(Template template, SkillTemplateData data)
+	{
+		MemberRenamerDelegate renamer = member =>
+		{
+			var result = new StringBuilder();
+			for (int i = 0; i < member.Name.Length; i++)
+			{
+				var c = member.Name[i];
+				if (char.IsUpper(c) && i > 0)
+					result.Append('_');
+				result.Append(char.ToLowerInvariant(c));
+			}
+			return result.ToString();
+		};
+
+		var scriptObject = new ScriptObject();
+		scriptObject.Import(data, renamer: renamer);
+
+		var context = new TemplateContext();
+		context.MemberRenamer = renamer;
+		context.PushGlobal(scriptObject);
+		return template.Render(context);
+	}
+
+	public static Dictionary<string, SkillCommandDetail> BuildCommandsDictionary(CliGenerator cliGen)
 	{
 		var result = new Dictionary<string, SkillCommandDetail>();
 
 		try
 		{
-			var cliGen = args.DependencyProvider.GetService<CliGenerator>();
 			var cliContext = cliGen.GetCliContext();
 
 			foreach (var cmd in cliContext.Commands)
@@ -140,7 +148,7 @@ public class GenerateSkillDocsCommand
 		return result;
 	}
 
-	SkillCommandDetail BuildCommandDetail(BeamCommandDescriptor cmd, string key)
+	static SkillCommandDetail BuildCommandDetail(BeamCommandDescriptor cmd, string key)
 	{
 		return new SkillCommandDetail
 		{
@@ -170,7 +178,7 @@ public class GenerateSkillDocsCommand
 		};
 	}
 
-	void RegisterAliasedPaths(Dictionary<string, SkillCommandDetail> result, BeamCommandDescriptor cmd, string key, SkillCommandDetail detail)
+	static void RegisterAliasedPaths(Dictionary<string, SkillCommandDetail> result, BeamCommandDescriptor cmd, string key, SkillCommandDetail detail)
 	{
 		var ancestors = new List<(string name, string[] aliases)>();
 		var current = cmd;

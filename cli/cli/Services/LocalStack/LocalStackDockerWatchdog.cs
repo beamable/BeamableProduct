@@ -6,7 +6,7 @@ namespace cli.Services.LocalStack;
 
 /// <summary>
 /// Watches the containers a manifest's <c>docker compose up</c> steps brought up, for as long as
-/// <c>beam local up</c> stays attached.
+/// <c>beam local run</c> stays attached.
 ///
 /// The attached wait (<c>LocalStackUpCommand.WaitAttached</c>) only races the <em>host process</em> exit tasks.
 /// Docker steps are <see cref="LocalStackStep.waitForExit"/> run-to-completion steps — the compose CLI exits
@@ -42,6 +42,12 @@ public static class LocalStackDockerWatchdog
 
 		/// <summary>Directory the compose command runs in — this is what selects the compose project.</summary>
 		public string workingDirectory;
+
+		/// <summary>
+		/// The step's flags between <c>compose</c> and <c>up</c> (<c>-p beam_backend_scala</c>, <c>-f other.yml</c>),
+		/// which select the project as much as the directory does; the polls pass them too.
+		/// </summary>
+		public List<string> projectArgs = new List<string>();
 
 		/// <summary>
 		/// The compose services the step explicitly asked for. Empty means the step brought up the whole
@@ -153,11 +159,13 @@ public static class LocalStackDockerWatchdog
 			var tokens = Tokenize(step.arguments);
 			var up = IndexOfSubcommand(tokens, "compose", "up");
 			if (up < 0) continue;
+			var compose = tokens.FindIndex(t => string.Equals(t, "compose", StringComparison.OrdinalIgnoreCase));
 
 			targets.Add(new Target
 			{
 				step = step,
 				workingDirectory = LocalStackConfigIO.Substitute(step.workingDirectory, config),
+				projectArgs = tokens.Skip(compose + 1).Take(up - compose - 1).ToList(),
 				services = ServiceNamesAfterUp(tokens, up),
 			});
 		}
@@ -208,7 +216,7 @@ public static class LocalStackDockerWatchdog
 	public static List<ContainerState> Poll(Target target, string dockerPath)
 	{
 		var (ok, stdout, _) = RunDocker(dockerPath, target.workingDirectory, QueryTimeoutMs,
-			"compose", "ps", "--all", "--format", "json");
+			new[] { "compose" }.Concat(target.projectArgs).Concat(new[] { "ps", "--all", "--format", "json" }).ToArray());
 		if (!ok) return new List<ContainerState>();
 
 		return ParsePs(stdout).Where(c => target.Watches(c.service)).ToList();
@@ -334,7 +342,7 @@ public static class LocalStackDockerWatchdog
 	/// Runs docker and captures its output. Never throws — every caller treats failure as "no information",
 	/// because a watchdog that can crash the run it is monitoring is worse than no watchdog.
 	/// </summary>
-	private static (bool ok, string stdout, string stderr) RunDocker(
+	internal static (bool ok, string stdout, string stderr) RunDocker(
 		string dockerPath, string workingDirectory, int timeoutMs, params string[] arguments)
 	{
 		try

@@ -8,6 +8,7 @@ using Beamable.Server.Common;
 using cli.Commands.Project;
 using cli.Portal;
 using cli.Services.PortalExtension;
+using cli.Services.Web;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.CommandLine.Binding;
@@ -200,12 +201,13 @@ public partial class BeamoLocalSystem
 						// Link each library's own library deps into its node_modules so those imports resolve.
 						PortalExtensionAddLibraryCommand.LinkTransitiveLibraryDependencies(extension, _configService.BeamableWorkspace);
 
-						observer.InstallDeps();
+						var localWebPackages = WebPackagesService.LoadOverlay(_configService.BeamableWorkspace);
+						observer.InstallDeps(localWebPackages);
 
 						// Fail fast if the extension and any of its libraries disagree on a shared package version
 						// (@beamable/portal-toolkit, react) by comparing the installed versions against each library's
 						// declared peerDependency ranges.
-						PortalExtensionAddLibraryCommand.ValidateLibraryPeerDependencies(extension);
+						PortalExtensionAddLibraryCommand.ValidateLibraryPeerDependencies(extension, localWebPackages?.packages.Keys);
 
 						observer.BuildExtension();
 						
