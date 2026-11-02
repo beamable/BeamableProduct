@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
@@ -136,6 +138,30 @@ namespace microserviceTests.microservice.Util
 			catch
 			{
 				// the connection ended.
+			}
+		}
+
+		/// <summary>
+		/// Reads whole text messages, in order, until one matches <paramref name="stop"/>. Returns every message read,
+		/// including that one.
+		/// </summary>
+		public async Task<List<string>> ReadTextUntil(Func<string, bool> stop, TimeSpan limit)
+		{
+			var messages = new List<string>();
+			var buffer = new byte[64 * 1024];
+			var current = new MemoryStream();
+			using var timeout = new CancellationTokenSource(limit);
+			while (true)
+			{
+				var result = await Socket.ReceiveAsync(buffer, timeout.Token);
+				if (result.MessageType == WebSocketMessageType.Close) return messages;
+				current.Write(buffer, 0, result.Count);
+				if (!result.EndOfMessage) continue;
+
+				var text = Encoding.UTF8.GetString(current.ToArray());
+				current.SetLength(0);
+				messages.Add(text);
+				if (stop(text)) return messages;
 			}
 		}
 

@@ -68,6 +68,96 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 		[Test]
 		[NonParallelizable]
 		[TimeoutWithTeardown(60 * 1000)]
+		public async Task EventAck_IsSentOnTheConnectionTheEventArrivedOn()
+		{
+			TestSocket first = null;
+			var acked = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var ms = new TestSetup(new TestSocketProvider(socket =>
+			{
+				first = socket;
+				socket.AddStandardMessageHandlers()
+					.AddMessageHandler(MessageMatcher.WithReqId(1).WithStatus(200),
+						MessageResponder.Custom(_ =>
+						{
+							acked.TrySetResult(true);
+							return null;
+						}), MessageFrequency.OnlyOnce(), "event ack", false);
+			}));
+			await ms.Start<SimpleMicroservice>(new TestArgs());
+			ms.Service.SocketContext.Subscribe<int>("test.event", _ => { });
+
+			first.SendToClient(ClientRequest.Event("test.event", 1, 5));
+
+			Assert.That(await Task.WhenAny(acked.Task, Task.Delay(3000)), Is.SameAs(acked.Task));
+			await ms.OnShutdown(this, null);
+			Assert.That(first.AllMocksCalled(), Is.True);
+		}
+
+		[TestCase(false)]
+		[TestCase(true)]
+		[NonParallelizable]
+		[TimeoutWithTeardown(60 * 1000)]
+		public async Task EventAckAcrossReconnect_NeverReachesTheReplacementConnection(bool handlerFails)
+		{
+			// The gateway numbers requests per session, so an old event's ack sent on the replacement connection would
+			// complete whichever new request has the same id there.
+			allowErrorLogs = true;
+			var handlerStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var callableReplied = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var idOneOnReplacement = new List<WebsocketResponse>();
+			TestSocket first = null;
+			TestSocket second = null;
+			var connections = 0;
+			var ms = new TestSetup(new TestSocketProvider(socket =>
+			{
+				if (connections++ == 0)
+				{
+					first = socket;
+					socket.AddStandardMessageHandlers(addShutdownResponder: false);
+				}
+				else
+				{
+					second = socket;
+					AddReconnectHandlers(socket)
+						.AddMessageHandler(MessageMatcher.WithReqId(1),
+							MessageResponder.Custom(req =>
+							{
+								lock (idOneOnReplacement) idOneOnReplacement.Add(req);
+								if (Newtonsoft.Json.JsonConvert.SerializeObject(req.body).Contains("300")) callableReplied.TrySetResult(true);
+								return null;
+							}), MessageFrequency.AtLeast(1), "id 1 on the replacement", false);
+				}
+			}));
+			await ms.Start<SimpleMicroservice>(new TestArgs());
+			ms.Service.SocketContext.Subscribe<int>("test.paused", async _ =>
+			{
+				handlerStarted.TrySetResult(true);
+				await release.Task;
+				if (handlerFails) throw new InvalidOperationException("the event handler failed");
+			});
+
+			first.SendToClient(ClientRequest.Event("test.paused", 1, 5));
+			Assert.That(await Task.WhenAny(handlerStarted.Task, Task.Delay(3000)), Is.SameAs(handlerStarted.Task));
+			first.Fault();
+			Assert.That(connections, Is.EqualTo(2));
+
+			second.SendToClient(ClientRequest.ClientCallable("micro_sample", "Delay", 1, 1, 300));
+			release.SetResult(true);
+
+			Assert.That(await Task.WhenAny(callableReplied.Task, Task.Delay(5000)), Is.SameAs(callableReplied.Task));
+			await Task.Delay(500);
+			lock (idOneOnReplacement)
+			{
+				Assert.That(idOneOnReplacement, Has.Count.EqualTo(1),
+					"only the callable's own reply may use id 1 on the replacement; the old event's ack must not");
+			}
+			await ms.OnShutdown(this, null);
+		}
+
+		[Test]
+		[NonParallelizable]
+		[TimeoutWithTeardown(60 * 1000)]
 		public async Task ContentPublish_IsHandledOnAnotherConnection_WhenTheFirstIsBroken()
 		{
 			// Every connection receives every content publish, but the content cache subscribes on the first instance's

@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - A request whose reply never arrives no longer waits forever, and a dropped connection fails the requests sent on it.
-- Replies no longer wait for re-authentication, and are only sent on the connection their request came from.
+- Replies and event acknowledgements no longer wait for re-authentication, and are only sent on the connection their request or event came from.
 - The authentication daemon no longer stalls when a `gateway/nonce` or `gateway/auth` reply is lost.
 - A session the gateway keeps rejecting after re-authentication is no longer retried forever.
 - A failed or blocked websocket send now closes the connection and reconnects, instead of silently stalling it. Shutdown no longer hangs on a blocked send.

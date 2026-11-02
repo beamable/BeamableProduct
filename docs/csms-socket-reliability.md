@@ -29,13 +29,18 @@ context's pending table.
 2. **Balanced accounting.** The auth daemon counts each attempt once when it is sent, and once more when its listener
    ends, however it ends. A gateway-403 retry is a new attempt with its own count.
 3. **No sending after the end.** Before each send attempt, `SendMessageSafely` checks that the listener is still
-   pending. An expired request is never sent, or retried, afterwards.
+   pending, and claiming a listener cancels its `Ended` token. `EasyWebSocket` checks that token before writing a
+   queued message's first frame. So a request that expired while queued behind a blocked send is never written later,
+   where a caller's retry could apply it twice.
 4. **Deadlines cover the whole wait.** The caller awaits the listener, not the send. Waiting for a socket, for auth,
-   or behind a blocked send cannot hide expiry. A 403 re-auth retry keeps the original absolute deadline.
+   or behind a blocked send cannot hide expiry. A 403 re-auth retry keeps the original absolute deadline. With
+   enforcement, the re-auth wait is bounded by what is left of it, and the deadline is checked again before the retry
+   is registered, because the 403 already removed the listener the sweeper would have watched.
 5. **Only requests sent on a connection die with it.** When a connection drops, only listeners whose `SentOn` is that
    connection fail. Requests that have not been sent yet go out on the replacement.
 6. **Late replies are expected.** Ids of requests that ended without a reply are kept in a bounded record (4096 ids).
-   A reply for one of them logs at Debug. A reply for an id never seen still logs at Error.
+   A reply for one of them logs at Debug. A reply for an id never seen still logs at Error. The id is recorded
+   *before* the claim, so a reply that loses the race always finds it.
 
 **Replies to inbound requests** are bound to the connection the request arrived on and do not wait for auth:
 
@@ -46,6 +51,9 @@ context's pending table.
   reply that waited for a stalled re-auth lost the player's request for nothing.
 - A reply whose connection closed is dropped with a Warning. The player's request was lost with the connection, and
   the gateway times it out.
+- **Event acknowledgements are replies too**, success and error alike (`Acknowledge(ctx, origin, error)`). An old
+  event's ack sent on a replacement connection would complete whichever new request has the same id there. When the
+  event's connection is gone, the ack is dropped, and the gateway redelivers the event.
 
 ## 2. Connection lifecycle (`EasyWebSocket`)
 
@@ -83,6 +91,10 @@ Send completions run their continuations asynchronously (`TaskCompletionSource` 
 `KeepAliveTimeout` is not a primary detector. .NET only sends a ping after `KeepAliveInterval` with no inbound data
 (`ManagedWebSocket.KeepAlive.cs` `OnDataReceived`), so a connection that keeps receiving traffic is never probed.
 `ClientWebSocketKeepAliveCharacterizationTests` pins this down.
+
+Stall monitoring outlives the last request. The sweeper keeps running while a request sent on the current connection
+has ended without a reply and nothing has resolved it: no reply arrived, the connection wasn't replaced, and it wasn't
+reported. With the default 30 s deadline and 60 s stall limit, the last request always expires first.
 
 The reply-stall detector needs outbound traffic on the connection. An active round-trip probe would cover idle
 connections, but the gateway has no side-effect-free endpoint: `gateway/nonce` rotates the session nonce and would race
@@ -164,8 +176,12 @@ Root singletons (`ContentService`, `RealmConfigService`, `LoggingContextService`
   (`MicroserviceRequester.DefaultEventNames`: content, realm config, logging context), whose handlers subscribe on
   instance 0's context alone.
   - When the gateway's `msgId` header is present (`MESSAGE_ID_KEY = "msgId"`, `ActiveMQMessageBus.scala:60`), the
-    first instance to receive the event runs those handlers, and instance 0's context skips repeats, using a bounded
-    record (1024 ids).
+    first instance to receive the event runs those handlers, and instance 0's context skips repeats of ids whose
+    handlers *succeeded*, using a bounded record (1024 ids).
+  - A failed delivery is not recorded: it is acked 500, the gateway redelivers it with the same `msgId`, and the
+    handlers run again. A copy arriving while the first delivery still runs waits for it, and ends the same way, so
+    it is never acked before the event was handled. This applies to every event with a `msgId`, custom ones
+    included.
   - Without the header, only the primary (first healthy) instance runs them.
   - Other events are unchanged. Instance 0's context also holds that instance's own `toAll=false` subscriptions, so
     running it from other instances would duplicate those.
@@ -186,6 +202,13 @@ Root singletons (`ContentService`, `RealmConfigService`, `LoggingContextService`
 - `SocketHealthTests`: the reply-stall detector (and that it leaves a slow request on a working connection alone),
   connection selection, event dedupe, and the reply-timeout override
 - `ClientWebSocketKeepAliveCharacterizationTests`: the .NET keep-alive behaviour the design relies on
+- Review of PR #4945 added, each failing on `ac9b97c96` for the reported reason:
+  - `FailedEventDelivery_CanBeRetriedWithTheSameGatewayMessageId` and `ConcurrentDuplicateEvent_DoesNotSucceedBeforeTheOriginal`
+  - `ExpiredQueuedMutation_IsNotWrittenWhenPeerResumesReading` (real `EasyWebSocket` and peer)
+  - `ExpiredLastRequest_StillTriggersLongerStallDeadline`
+  - `ReauthenticationFinishingAfterDeadline_DoesNotSendExpiredRetry`
+  - `EventAckAcrossReconnect_NeverReachesTheReplacementConnection` (success and error acks)
+  - `ReplyArrivingAsTheRequestExpires_IsTreatedAsLate`, a deterministic version of the race, using an internal hook
 
 Every test in the first three groups except `ReplyRacingExpiry_CompletesEachRequestOnce` (a regression guard for the
 claim race) fails on `origin/main` @ `794af4e69`. Each one fails for its intended reason: a request still pending

@@ -119,6 +119,10 @@ namespace Beamable.Server
 		long SentAt { get; set; }
 		/// <summary>Whether an overdue, unenforced request was already reported.</summary>
 		bool OverdueReported { get; set; }
+		/// <summary>Cancelled when the request ends, so a write still queued for it is skipped.</summary>
+		CancellationToken Ended { get; }
+		/// <summary>Cancels <see cref="Ended"/>. Called by whichever path claimed the request.</summary>
+		void MarkEnded();
 	}
 	public class WebsocketResponseListener<T> : IWebsocketResponseListener
 	{
@@ -136,6 +140,10 @@ namespace Beamable.Server
 		public IConnection SentOn { get; set; }
 		public long SentAt { get; set; }
 		public bool OverdueReported { get; set; }
+
+		private readonly CancellationTokenSource _ended = new CancellationTokenSource();
+		public CancellationToken Ended => _ended.Token;
+		public void MarkEnded() => _ended.Cancel();
 
 		public void Fail(Exception ex) => OnDone.CompleteError(ex);
 
@@ -204,7 +212,7 @@ namespace Beamable.Server
 	public class SocketRequesterContext
 	{
 		private const int EndedRequestMemory = 4096;
-		private const int SeenEventMemory = 1024;
+		private const int HandledEventMemory = 1024;
 		private static readonly TimeSpan SweepInterval = TimeSpan.FromMilliseconds(250);
 
 		public MicroserviceAuthenticationDaemon Daemon { get; set; }
@@ -234,9 +242,11 @@ namespace Beamable.Server
 		private readonly ConcurrentDictionary<long, byte> _endedWithoutReply = new ConcurrentDictionary<long, byte>();
 		private readonly ConcurrentQueue<long> _endedWithoutReplyOrder = new ConcurrentQueue<long>();
 
-		// Event message ids already dispatched, so an event delivered on more than one connection runs once.
-		private readonly ConcurrentDictionary<string, byte> _seenEvents = new ConcurrentDictionary<string, byte>();
-		private readonly ConcurrentQueue<string> _seenEventsOrder = new ConcurrentQueue<string>();
+		// Event message ids whose handlers succeeded, so an event delivered on more than one connection runs once, and
+		// the first delivery of each id still running, which a concurrent copy waits for.
+		private readonly ConcurrentDictionary<string, byte> _handledEvents = new ConcurrentDictionary<string, byte>();
+		private readonly ConcurrentQueue<string> _handledEventsOrder = new ConcurrentQueue<string>();
+		private readonly ConcurrentDictionary<string, Task> _eventsInFlight = new ConcurrentDictionary<string, Task>();
 
 		private int _sweeperRunning;
 		private long _lastReplyAt;
@@ -354,12 +364,14 @@ namespace Beamable.Server
 
 		public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10, Stopwatch sw=null, bool disableCompression=false)
 		{
-			await SendWithRetries(message, awaitAuthorization, retryCount, sw, disableCompression, null, null);
+			await SendWithRetries(message, awaitAuthorization, retryCount, sw, disableCompression, null, null, CancellationToken.None);
 		}
 
 		/// <summary>
 		/// Sends a request whose listener is already registered. It stops retrying once the request has ended (for
 		/// example, at its deadline), records the connection that carried it, and ends the request if every attempt fails.
+		/// A write still queued when the request ends is skipped, so a request that already failed its caller is never sent
+		/// later, where a retry by the caller could repeat it.
 		/// </summary>
 		internal Promise<IConnection> SendRequest(long requestId, string message, bool awaitAuthorization, bool disableCompression)
 		{
@@ -367,6 +379,7 @@ namespace Beamable.Server
 
 			async Task<IConnection> Send()
 			{
+				var ended = _pendingMessages.TryGetValue(requestId, out var pending) ? pending.Ended : CancellationToken.None;
 				try
 				{
 					return await SendWithRetries(message, awaitAuthorization, 10, null, disableCompression,
@@ -378,7 +391,8 @@ namespace Beamable.Server
 								listener.SentAt = Stopwatch.GetTimestamp();
 								listener.SentOn = connection;
 							}
-						});
+						},
+						ended);
 				}
 				catch (RequestEndedException)
 				{
@@ -411,7 +425,7 @@ namespace Beamable.Server
 			{
 				try
 				{
-					await WriteTo(origin, message, sw, disableCompression);
+					await WriteTo(origin, message, sw, disableCompression, CancellationToken.None);
 					return;
 				}
 				catch (Exception ex)
@@ -429,7 +443,7 @@ namespace Beamable.Server
 		}
 
 		private async Task<IConnection> SendWithRetries(string message, bool awaitAuthorization, int retryCount, Stopwatch sw,
-			bool disableCompression, Func<bool> stillWanted, Action<IConnection> onWriting)
+			bool disableCompression, Func<bool> stillWanted, Action<IConnection> onWriting, CancellationToken skipIfEnded)
 		{
 			var failures = new List<Exception>();
 			for (var retry = 0; retry < retryCount; retry++)
@@ -446,7 +460,7 @@ namespace Beamable.Server
 					// the request may have ended while this waited for the socket or for authorization.
 					if (stillWanted != null && !stillWanted()) throw new RequestEndedException();
 					onWriting?.Invoke(connection);
-					await WriteTo(connection, message, sw, disableCompression);
+					await WriteTo(connection, message, sw, disableCompression, skipIfEnded);
 					return connection;
 				}
 				catch (RequestEndedException)
@@ -473,7 +487,7 @@ namespace Beamable.Server
 			throw finalEx;
 		}
 
-		private async Task WriteTo(IConnection connection, string message, Stopwatch sw, bool disableCompression)
+		private async Task WriteTo(IConnection connection, string message, Stopwatch sw, bool disableCompression, CancellationToken skipIfEnded)
 		{
 			// authorization needs to be complete if this is any message _other_ than auth related
 			// Use compression if negotiated and message is large enough
@@ -481,11 +495,11 @@ namespace Beamable.Server
 			if (codec != null && !disableCompression && SocketCompression.ShouldCompress(message))
 			{
 				var compressed = SocketCompression.Compress(message, codec);
-				await connection.SendBinaryMessage(compressed, sw);
+				await connection.SendBinaryMessage(compressed, sw, skipIfEnded);
 			}
 			else
 			{
-				await connection.SendMessage(message, sw);
+				await connection.SendMessage(message, sw, skipIfEnded);
 			}
 		}
 
@@ -582,38 +596,14 @@ namespace Beamable.Server
 				var eventName = ctx.Path.Substring("event/".Length);
 				parentActivity.SetDisplay($"On{eventName}");
 
-				if (IsRepeatedEvent(ctx))
+				var messageId = EventMessageId(ctx);
+				if (messageId == null)
 				{
-					BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Skipping event {eventName} id=[{ctx.Id}]; it was already handled.");
+					await DispatchEvent(provider, ctx, eventName);
 					return;
 				}
 
-				if (TryGetEventSubscriptions(eventName, out var subscriptions))
-				{
-					var fork =
-						provider == null
-							? new DependencyBuilder()
-								.AddSingleton<RequestContext>(ctx)
-								.AddSingleton<IBeamableRequester>(p => null)
-								.AddSingleton<IBeamableServices>(p => null)
-								.Build()
-							: provider.Fork(b =>
-							{
-								b.RemoveIfExists<RequestContext>();
-								b.RemoveIfExists<MicroserviceRequestContext>();
-								b.AddScoped<RequestContext>(ctx);
-								b.AddScoped<MicroserviceRequestContext>(ctx);
-							});
-
-					await using IUserScope scope = new UserRequestDataHandler(fork);
-					var startCount = subscriptions.Count; // take the count at the moment the event is processed. If something else subscribes at the same frame, they're too late.
-					for (var i = 0; i < startCount; i++) // TODO: there is still a bug with multi-threaded access; if an item is removed/ unsub
-					{
-						await subscriptions[i].Resolve(scope);
-					}
-				}
-
-				//</color> <color=blue>BaseGet [{"id":1,"method":"post","path":"event/content.manifest","body":{"categories":["tournaments","announcements","listings","items","stores","sagamap","skus","currency","leaderboards","emails","game_types"]}}
+				await DispatchEventOnce(provider, ctx, eventName, messageId);
 
 			} else if (TryClaim(ctx.Id, out var listener))
 			{
@@ -636,25 +626,99 @@ namespace Beamable.Server
 			}
 		}
 
-		/// <summary>
-		/// True when an event with the same gateway message id was already handled by this context. Every connection
-		/// receives realm events, so the same event can reach this context more than once during a failover.
-		/// </summary>
-		private bool IsRepeatedEvent(RequestContext ctx)
+		private async Task DispatchEvent(IDependencyProvider provider, MicroserviceRequestContext ctx, string eventName)
+		{
+			if (TryGetEventSubscriptions(eventName, out var subscriptions))
+			{
+				var fork =
+					provider == null
+						? new DependencyBuilder()
+							.AddSingleton<RequestContext>(ctx)
+							.AddSingleton<IBeamableRequester>(p => null)
+							.AddSingleton<IBeamableServices>(p => null)
+							.Build()
+						: provider.Fork(b =>
+						{
+							b.RemoveIfExists<RequestContext>();
+							b.RemoveIfExists<MicroserviceRequestContext>();
+							b.AddScoped<RequestContext>(ctx);
+							b.AddScoped<MicroserviceRequestContext>(ctx);
+						});
+
+				await using IUserScope scope = new UserRequestDataHandler(fork);
+				var startCount = subscriptions.Count; // take the count at the moment the event is processed. If something else subscribes at the same frame, they're too late.
+				for (var i = 0; i < startCount; i++) // TODO: there is still a bug with multi-threaded access; if an item is removed/ unsub
+				{
+					await subscriptions[i].Resolve(scope);
+				}
+			}
+
+			//</color> <color=blue>BaseGet [{"id":1,"method":"post","path":"event/content.manifest","body":{"categories":["tournaments","announcements","listings","items","stores","sagamap","skus","currency","leaderboards","emails","game_types"]}}
+		}
+
+		private static string EventMessageId(RequestContext ctx)
 		{
 			if (ctx.Headers == null || !ctx.Headers.TryGetValue("msgId", out var messageId) || string.IsNullOrEmpty(messageId))
 			{
-				return false;
+				return null;
 			}
 
-			if (!_seenEvents.TryAdd(messageId, 0)) return true;
-			_seenEventsOrder.Enqueue(messageId);
-			while (_seenEventsOrder.Count > SeenEventMemory && _seenEventsOrder.TryDequeue(out var oldest))
+			return messageId;
+		}
+
+		/// <summary>
+		/// Runs an event's handlers once per gateway message id. Every connection receives realm events, so the same event
+		/// can reach this context more than once during a failover. Only a delivery whose handlers succeeded counts: a
+		/// failed one is acked 500, the gateway redelivers it with the same id, and that delivery runs the handlers again.
+		/// A copy that arrives while the first is still running ends the way the first one does, so it is never acked
+		/// before the event was actually handled.
+		/// </summary>
+		private async Task DispatchEventOnce(IDependencyProvider provider, MicroserviceRequestContext ctx, string eventName, string messageId)
+		{
+			if (_handledEvents.ContainsKey(messageId))
 			{
-				_seenEvents.TryRemove(oldest, out _);
+				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Skipping event {eventName} id=[{ctx.Id}]; it was already handled.");
+				return;
 			}
 
-			return false;
+			var delivery = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var inFlight = _eventsInFlight.GetOrAdd(messageId, delivery.Task);
+			if (inFlight != delivery.Task)
+			{
+				BeamableZLoggerProvider.LogContext.Value.ZLogDebug($"Event {eventName} id=[{ctx.Id}] is already being handled; waiting for that delivery.");
+				await inFlight;
+				return;
+			}
+
+			try
+			{
+				// a delivery that finished just before this one claimed the id has already handled it.
+				if (!_handledEvents.ContainsKey(messageId))
+				{
+					await DispatchEvent(provider, ctx, eventName);
+					RememberHandledEvent(messageId);
+				}
+
+				_eventsInFlight.TryRemove(messageId, out _);
+				delivery.SetResult(true);
+			}
+			catch (Exception ex)
+			{
+				_eventsInFlight.TryRemove(messageId, out _);
+				delivery.SetException(ex);
+				_ = delivery.Task.Exception; // observed here; a waiting copy rethrows it.
+				throw;
+			}
+		}
+
+		private void RememberHandledEvent(string messageId)
+		{
+			if (!_handledEvents.TryAdd(messageId, 0)) return;
+			_handledEventsOrder.Enqueue(messageId);
+			while (_handledEventsOrder.Count > HandledEventMemory && _handledEventsOrder.TryDequeue(out var oldest))
+			{
+				_handledEvents.TryRemove(oldest, out _);
+			}
 		}
 
 
@@ -716,8 +780,35 @@ namespace Beamable.Server
 		/// </summary>
 		public bool TryClaim(long id, out IWebsocketResponseListener listener)
 		{
-			return _pendingMessages.TryRemove(id, out listener);
+			if (!_pendingMessages.TryRemove(id, out listener)) return false;
+			listener.MarkEnded();
+			return true;
 		}
+
+		/// <summary>
+		/// Claims a request that is ending without a reply. Its id is recorded as ended first, so a reply that loses the
+		/// race for the claim always finds it and is treated as late rather than unknown.
+		/// </summary>
+		private bool TryClaimWithoutReply(long id, out IWebsocketResponseListener listener)
+		{
+			var recorded = _endedWithoutReply.TryAdd(id, 0);
+			if (!TryClaim(id, out listener))
+			{
+				if (recorded) _endedWithoutReply.TryRemove(id, out _);
+				return false;
+			}
+
+			OnClaimedWithoutReply?.Invoke(id);
+			_endedWithoutReplyOrder.Enqueue(id);
+			while (_endedWithoutReplyOrder.Count > EndedRequestMemory && _endedWithoutReplyOrder.TryDequeue(out var oldest))
+			{
+				_endedWithoutReply.TryRemove(oldest, out _);
+			}
+			return true;
+		}
+
+		/// <summary>For tests: runs right after a request is claimed to end without a reply.</summary>
+		internal Action<long> OnClaimedWithoutReply;
 
 		public void Remove(long id)
 		{
@@ -730,7 +821,7 @@ namespace Beamable.Server
 		/// <summary>Ends a request with <paramref name="ex"/> if nothing else has ended it yet.</summary>
 		public bool FailIfPending(long id, Exception ex)
 		{
-			if (!TryClaim(id, out var listener)) return false;
+			if (!TryClaimWithoutReply(id, out var listener)) return false;
 			EndWithoutReply(listener, ex);
 			return true;
 		}
@@ -745,7 +836,7 @@ namespace Beamable.Server
 			foreach (var pair in _pendingMessages)
 			{
 				if (!ReferenceEquals(pair.Value.SentOn, connection)) continue;
-				if (!TryClaim(pair.Key, out var listener)) continue;
+				if (!TryClaimWithoutReply(pair.Key, out var listener)) continue;
 				failed++;
 				EndWithoutReply(listener, ex);
 			}
@@ -773,22 +864,16 @@ namespace Beamable.Server
 			var failed = 0;
 			foreach (var pair in _pendingMessages)
 			{
-				if (!TryClaim(pair.Key, out var listener)) continue;
+				if (!TryClaimWithoutReply(pair.Key, out var listener)) continue;
 				failed++;
 				EndWithoutReply(listener, ex);
 			}
 			return failed;
 		}
 
+		/// <summary>Fails a request claimed with <see cref="TryClaimWithoutReply"/>, keeping its connection under watch.</summary>
 		private void EndWithoutReply(IWebsocketResponseListener listener, Exception ex)
 		{
-			_endedWithoutReply.TryAdd(listener.Id, 0);
-			_endedWithoutReplyOrder.Enqueue(listener.Id);
-			while (_endedWithoutReplyOrder.Count > EndedRequestMemory && _endedWithoutReplyOrder.TryDequeue(out var oldest))
-			{
-				_endedWithoutReply.TryRemove(oldest, out _);
-			}
-
 			if (listener.SentOn != null)
 			{
 				lock (_stallLock)
@@ -799,10 +884,37 @@ namespace Beamable.Server
 						_unansweredOn = listener.SentOn;
 					}
 				}
+
+				// it may have been the last pending request; the connection must stay watched until it answers.
+				if (Reliability.StallTimeout > TimeSpan.Zero) EnsureSweeper();
 			}
 
 			listener.Fail(ex);
 		}
+
+		/// <summary>
+		/// A request sent on the current connection ended without a reply, and nothing has resolved it since: no reply
+		/// arrived, the connection wasn't replaced, and it wasn't reported broken yet.
+		/// </summary>
+		private bool HasUnresolvedStall
+		{
+			get
+			{
+				if (Reliability.StallTimeout <= TimeSpan.Zero) return false;
+				IConnection on;
+				lock (_stallLock)
+				{
+					if (_unansweredSince == 0) return false;
+					on = _unansweredOn;
+				}
+
+				return on != null
+				       && !ReferenceEquals(on, Volatile.Read(ref _reportedConnection))
+				       && ReferenceEquals(on, CurrentConnection);
+			}
+		}
+
+		private bool ShouldKeepSweeping => !_pendingMessages.IsEmpty || HasUnresolvedStall;
 
 		private void NoteReply()
 		{
@@ -870,10 +982,10 @@ namespace Beamable.Server
 					BeamableZLoggerProvider.LogContext.Value.ZLogError($"Checking request deadlines failed. {ex.GetType().Name}: {ex.Message}");
 				}
 
-				if (!_pendingMessages.IsEmpty) continue;
+				if (ShouldKeepSweeping) continue;
 				Interlocked.Exchange(ref _sweeperRunning, 0);
-				// A request registered after the check above may have found the loop still running and not started one.
-				if (_pendingMessages.IsEmpty || Interlocked.CompareExchange(ref _sweeperRunning, 1, 0) != 0) return;
+				// Work that arrived after the check above may have found the loop still running and not started one.
+				if (!ShouldKeepSweeping || Interlocked.CompareExchange(ref _sweeperRunning, 1, 0) != 0) return;
 			}
 		}
 
@@ -889,7 +1001,7 @@ namespace Beamable.Server
 					var elapsed = Elapsed(listener.StartedAt, now);
 					if (listener.DeadlineEnforced)
 					{
-						if (!TryClaim(listener.Id, out _)) continue;
+						if (!TryClaimWithoutReply(listener.Id, out _)) continue;
 						SocketReliabilityMetrics.DeadlineExceeded.Add(1,
 							new KeyValuePair<string, object>("enforced", true),
 							new KeyValuePair<string, object>("path", listener.Path));
@@ -968,6 +1080,9 @@ namespace Beamable.Server
 		private readonly IActivityProvider _activityProvider;
 		private readonly bool _waitForAuthorization;
 
+		/// <summary>The longest a 403 retry waits for re-authentication.</summary>
+		private static readonly TimeSpan MaxAuthWait = TimeSpan.FromSeconds(10);
+
 		/// <summary>The deadline for gateway nonce and auth requests, which is enforced even in shadow mode.</summary>
 		private static readonly TimeSpan AuthRequestTimeout = TimeSpan.FromSeconds(15);
 
@@ -1043,7 +1158,9 @@ namespace Beamable.Server
 		public Task WaitForAuthorization(TimeSpan timeout = default, string message=null) => CurrentSocketContext.WaitForAuthorization(timeout, message);
 
 		/// <summary>
-		/// Acknowledge a message from the websocket.
+		/// Acknowledge a message from the websocket, on the connection in use now. Prefer
+		/// <see cref="Acknowledge(RequestContext, IConnection, WebsocketErrorResponse)"/>, which keeps the ack on the
+		/// connection the event arrived on.
 		/// </summary>
 		/// <param name="ctx">The request you wish to ack</param>
 		/// <param name="error">an error, or null for a 200 ack.</param>
@@ -1056,6 +1173,30 @@ namespace Beamable.Server
 				return Promise<Unit>.Successful(PromiseBase.Unit);
 			}
 
+			// An ack is a reply: the gateway doesn't check the session's auth for replies, so it needn't wait for re-auth.
+			return CurrentSocketContext.SendMessageSafely(BuildAck(ctx, error), awaitAuthorization: false, disableCompression: _env.DisableOutboundWsCompression);
+		}
+
+		/// <summary>
+		/// Acknowledge an event on the connection it arrived on. An ack is a reply: the gateway matches it to the session
+		/// that delivered the event and numbers requests per session, so on another connection the same id belongs to a
+		/// different request. When that connection is gone, the ack is not sent at all, and the gateway redelivers.
+		/// </summary>
+		/// <param name="ctx">The event to ack</param>
+		/// <param name="origin">The connection the event arrived on</param>
+		/// <param name="error">an error, or null for a 200 ack.</param>
+		public Promise<Unit> Acknowledge(RequestContext ctx, IConnection origin, WebsocketErrorResponse error = null)
+		{
+			if (!ctx.IsEvent)
+			{
+				return Promise<Unit>.Successful(PromiseBase.Unit);
+			}
+
+			return CurrentSocketContext.SendReply(origin, BuildAck(ctx, error), disableCompression: _env.DisableOutboundWsCompression);
+		}
+
+		private static string BuildAck(RequestContext ctx, WebsocketErrorResponse error)
+		{
 			var req = new WebsocketReply
 			{
 				id = ctx.Id,
@@ -1068,14 +1209,10 @@ namespace Beamable.Server
 				[nameof(req.status)] = req.status,
 				[nameof(req.body)] = new RawJsonProvider {Json = JsonConvert.SerializeObject(error, UnitySerializationSettings.Instance)}
 			};
-			var msg = "";
 			using (var stringBuilder = StringBuilderPool.StaticPool.Spawn())
 			{
-				msg = Json.Serialize(dict, stringBuilder.Builder);
+				return Json.Serialize(dict, stringBuilder.Builder);
 			}
-
-			// An ack is a reply: the gateway doesn't check the session's auth for replies, so it needn't wait for re-auth.
-			return CurrentSocketContext.SendMessageSafely(msg, awaitAuthorization: false, disableCompression: _env.DisableOutboundWsCompression);
 		}
 
 		public static AsyncLocal<BeamActivity> ContextActivity { get; set; } = new AsyncLocal<BeamActivity>();
@@ -1129,12 +1266,13 @@ namespace Beamable.Server
 
 		public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> beamReq)
 		{
-			return BeamableRequest(beamReq, null, 0);
+			return BeamableRequest(beamReq, null, Stopwatch.GetTimestamp(), 0);
 		}
 
 		/// <param name="deadline">The absolute deadline, carried over from an earlier attempt; null to start one.</param>
+		/// <param name="startedAt">When the first attempt started, as a <see cref="Stopwatch.GetTimestamp"/>.</param>
 		/// <param name="authRetry">How many times this request was already retried after a gateway 403.</param>
-		private Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> beamReq, long? deadline, int authRetry)
+		private Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> beamReq, long? deadline, long startedAt, int authRetry)
 		{
 			var socketContext = CurrentSocketContext;
 			var activity = _activityProvider.Create(Constants.Features.Otel.TRACE_REQUEST, ContextActivity.Value);
@@ -1263,9 +1401,29 @@ namespace Beamable.Server
 					BeamableZLoggerProvider.LogContext.Value.ZLogDebug(
 						$"Request {req.id} and {truncatedMsg} failed with 403. Will reauth and and retry.");
 
+					// The 403 ended this attempt's listener, so nothing else enforces the deadline while re-auth runs.
+					var expired = Overdue(enforceDeadline, deadline, startedAt, req);
+					if (expired != null)
+					{
+						activity.StopAndDispose(expired);
+						throw expired;
+					}
+
 					daemon.WakeAuthThread();
-					return socketContext.WaitForAuthorization(AuthWaitLimit(deadline), msg).ToPromise()
-						.FlatMap(_ => BeamableRequest(beamReq, deadline, authRetry + 1))
+					var waitLimit = AuthWaitLimit(deadline, enforceDeadline);
+					var waitEndsAtDeadline = enforceDeadline && deadline.HasValue && waitLimit < MaxAuthWait;
+					return socketContext.WaitForAuthorization(waitLimit, msg).ToPromise()
+						// when the wait's limit was what remained of the deadline, running out of it is the deadline.
+						.RecoverWith(waitEx => throw (Exception)Overdue(enforceDeadline, deadline, startedAt, req,
+							waitEndsAtDeadline && waitEx is TimeoutException) ?? waitEx)
+						.FlatMap(_ =>
+						{
+							// re-authentication may have used up the rest of the deadline: don't send a retry that is
+							// already overdue, which could succeed after the caller should have seen a timeout.
+							var late = Overdue(enforceDeadline, deadline, startedAt, req);
+							if (late != null) throw late;
+							return BeamableRequest(beamReq, deadline, startedAt, authRetry + 1);
+						})
 						.Then(_ => activity.StopAndDispose(ActivityStatusCode.Ok))
 						.RecoverWith(retryEx =>
 						{
@@ -1292,14 +1450,33 @@ namespace Beamable.Server
 			return Stopwatch.GetTimestamp() + (long)(timeout.TotalSeconds * Stopwatch.Frequency);
 		}
 
-		/// <summary>How long a 403 retry may wait for re-authentication: what is left of the deadline, between 1s and 10s.</summary>
-		private static TimeSpan AuthWaitLimit(long? deadline)
+		/// <summary>
+		/// How long a 403 retry may wait for re-authentication: at most 10s, and no longer than what is left of an enforced
+		/// deadline. An unenforced deadline still allows at least 1s.
+		/// </summary>
+		private static TimeSpan AuthWaitLimit(long? deadline, bool enforced)
 		{
-			var limit = TimeSpan.FromSeconds(10);
+			var limit = MaxAuthWait;
 			if (!deadline.HasValue) return limit;
 			var left = TimeSpan.FromSeconds((deadline.Value - Stopwatch.GetTimestamp()) / (double)Stopwatch.Frequency);
-			if (left < TimeSpan.FromSeconds(1)) return TimeSpan.FromSeconds(1);
+			var floor = enforced ? TimeSpan.FromMilliseconds(1) : TimeSpan.FromSeconds(1);
+			if (left < floor) return floor;
 			return left < limit ? left : limit;
+		}
+
+		/// <summary>The timeout for a request past its enforced deadline, or null while it still has time.</summary>
+		/// <param name="deadlineReached">Treat the deadline as reached, when a wait bounded by it ran out.</param>
+		private static RequestTimeoutException Overdue(bool enforced, long? deadline, long startedAt, WebsocketRequest req, bool deadlineReached = false)
+		{
+			var now = Stopwatch.GetTimestamp();
+			if (!enforced || !deadline.HasValue || (!deadlineReached && now < deadline.Value)) return null;
+
+			var elapsed = TimeSpan.FromSeconds((now - startedAt) / (double)Stopwatch.Frequency);
+			SocketReliabilityMetrics.DeadlineExceeded.Add(1,
+				new KeyValuePair<string, object>("enforced", true),
+				new KeyValuePair<string, object>("path", req.path));
+			BeamableZLoggerProvider.LogContext.Value.ZLogWarning($"Request {req.method} {req.path} id=[{req.id}] exceeded its deadline after {elapsed.TotalSeconds:0.0}s while re-authenticating; not retrying it.");
+			return new RequestTimeoutException(req.method, req.path, req.id, elapsed);
 		}
 
 		public string EscapeURL(string url)
