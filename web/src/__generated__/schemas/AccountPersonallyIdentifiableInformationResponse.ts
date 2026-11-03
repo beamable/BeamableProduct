@@ -3,12 +3,12 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { AccountsBasicAccount } from './AccountsBasicAccount';
+import type { Account } from './Account';
 import type { ListAuditResponse } from './ListAuditResponse';
 import type { StatsResponse } from './StatsResponse';
 
 export type AccountPersonallyIdentifiableInformationResponse = { 
-  account: AccountsBasicAccount; 
+  account: Account; 
   paymentAudits: ListAuditResponse; 
   stats: StatsResponse[]; 
 };

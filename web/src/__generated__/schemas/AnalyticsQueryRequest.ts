@@ -4,7 +4,5 @@
  */
 
 export type AnalyticsQueryRequest = { 
-  actDateFrom?: string | null; 
-  actDateTo?: string | null; 
   sql?: string | null; 
 };

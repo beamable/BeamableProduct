@@ -3,13 +3,9 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export const accountIdPlaceholder = "{accountId}";
-
 export const eventPlaceholder = "{event}";
 
 export const queryExecutionIdPlaceholder = "{queryExecutionId}";
-
-export const idPlaceholder = "{id}";
 
 export const tokenIdPlaceholder = "{tokenId}";
 
@@ -57,6 +53,8 @@ export const partNumberPlaceholder = "{partNumber}";
 
 export const importIdPlaceholder = "{importId}";
 
+export const idPlaceholder = "{id}";
+
 export const tokenPlaceholder = "{token}";
 
 export const playerIdPlaceholder = "{playerId}";
@@ -69,9 +67,13 @@ export const hostPlaceholder = "{host}";
 
 export const itemTypePlaceholder = "{itemType}";
 
+export const visibilityPlaceholder = "{visibility}";
+
 export const executionIdPlaceholder = "{executionId}";
 
 export const zoneIdPlaceholder = "{zoneId}";
+
+export const accountIdPlaceholder = "{accountId}";
 
 export const segmentIdPlaceholder = "{segmentId}";
 

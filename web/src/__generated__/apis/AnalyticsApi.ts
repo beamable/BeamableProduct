@@ -10,7 +10,6 @@ import { makeApiRequest } from '@/utils/makeApiRequest';
 import { POST } from '@/constants';
 import type { AnalyticsQueryRequest } from '@/__generated__/schemas/AnalyticsQueryRequest';
 import type { ApiAnalyticsQueryPostAnalyticsResponse } from '@/__generated__/schemas/ApiAnalyticsQueryPostAnalyticsResponse';
-import type { ApiAnalyticsSchemaMetaGetAnalyticsResponse } from '@/__generated__/schemas/ApiAnalyticsSchemaMetaGetAnalyticsResponse';
 import type { ApiAnalyticsSchemasGetAnalyticsResponse } from '@/__generated__/schemas/ApiAnalyticsSchemasGetAnalyticsResponse';
 import type { GetAnalyticsEventsResponse } from '@/__generated__/schemas/GetAnalyticsEventsResponse';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
@@ -53,28 +52,6 @@ export async function analyticsGetSchemasByEvent(requester: HttpRequester, event
   
   // Make the API request
   return makeApiRequest<ApiAnalyticsSchemasGetAnalyticsResponse>({
-    r: requester,
-    e: endpoint,
-    m: GET,
-    g: gamertag,
-    w: true
-  });
-}
-
-/**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
- * @param requester - The `HttpRequester` type to use for the API request.
- * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * 
- */
-export async function analyticsGetSchemaMeta(requester: HttpRequester, gamertag?: string): Promise<HttpResponse<ApiAnalyticsSchemaMetaGetAnalyticsResponse>> {
-  let endpoint = "/api/analytics/schema-meta";
-  
-  // Make the API request
-  return makeApiRequest<ApiAnalyticsSchemaMetaGetAnalyticsResponse>({
     r: requester,
     e: endpoint,
     m: GET,

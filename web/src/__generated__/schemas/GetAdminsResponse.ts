@@ -3,8 +3,8 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { AccountsBasicAccountPortalView } from './AccountsBasicAccountPortalView';
+import type { AccountPortalView } from './AccountPortalView';
 
 export type GetAdminsResponse = { 
-  accounts: AccountsBasicAccountPortalView[]; 
+  accounts: AccountPortalView[]; 
 };

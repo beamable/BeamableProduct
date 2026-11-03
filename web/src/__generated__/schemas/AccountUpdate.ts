@@ -3,14 +3,14 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { AccountsBasicExternalIdentity } from './AccountsBasicExternalIdentity';
+import type { ExternalIdentity } from './ExternalIdentity';
 import type { GamerTagAssociation } from './GamerTagAssociation';
 
 export type AccountUpdate = { 
   hasThirdPartyToken: boolean; 
   country?: string; 
   deviceId?: string; 
-  external?: AccountsBasicExternalIdentity[]; 
+  external?: ExternalIdentity[]; 
   gamerTagAssoc?: GamerTagAssociation; 
   language?: string; 
   thirdParty?: string; 

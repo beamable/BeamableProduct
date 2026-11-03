@@ -3,11 +3,9 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export * from './AccountApi';
 export * from './AccountsApi';
 export * from './AnalyticsApi';
 export * from './AnalyticsSchemaFindingsApi';
-export * from './AnalyticsStatsReconcileApi';
 export * from './AnnouncementsApi';
 export * from './AuthApi';
 export * from './BeamoApi';
@@ -58,8 +56,10 @@ export * from './SecretsApi';
 export * from './SessionApi';
 export * from './SocialApi';
 export * from './SourceControlApi';
+export * from './SourceControlOperationsApi';
 export * from './StatsApi';
 export * from './TournamentsApi';
 export * from './TrialsApi';
+export * from './VirtualStatsApi';
 export * from './WorkflowApi';
 export * from './ZonesApi';

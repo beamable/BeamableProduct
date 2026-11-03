@@ -6,5 +6,7 @@
 export enum StatReduce {
   Latest = "Latest",
   Min = "Min",
-  Max = "Max"
+  Max = "Max",
+  Sum = "Sum",
+  Count = "Count"
 }
