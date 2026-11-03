@@ -18,6 +18,7 @@ public class FetchTelemetryLogsCommandArgs : CommandArgs
 	public bool FullMatch;
 	public string FromTime;
 	public bool AscendingOrder;
+	public bool IsZoneScope;
 }
 
 public class FetchTelemetryLogsResult
@@ -74,6 +75,10 @@ public class FetchTelemetryLogsCommand : AtomicCommand<FetchTelemetryLogsCommand
 			(args, i) => args.FromTime = i);
 		AddOption(new Option<bool>(new string[]{"--ascending", "--asc"}, () => false,"If set, this will force the order to be ascending instead of the default descending order"),
 			(args, i) => args.AscendingOrder = i);
+		ZoneScope.AddScopeOption(this,
+			"Whose logs to read: 'realm' (default) reads the selected realm's services (cid.pid); 'zone' reads the " +
+			"zone-scoped services of the zone bound to it (cid.zid)",
+			(args, isZone) => args.IsZoneScope = isZone);
 	}
 
 	public override bool AutoLogOutput => false;
@@ -83,6 +88,7 @@ public class FetchTelemetryLogsCommand : AtomicCommand<FetchTelemetryLogsCommand
 		OtelAuthConfig config;
 		if (!ClickhouseConnection.GetClickhouseAuthOverrides(out config))
 		{
+			using var scopeHandle = await ZoneScope.ApplyAsync(args, args.IsZoneScope);
 			config = await args.OtelApi.GetOtelAuthReaderConfig();
 		}
 

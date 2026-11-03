@@ -5,7 +5,7 @@ namespace cli.OtelCommands;
 
 public class GetClickhouseCredentialsArgs: CommandArgs
 {
-    
+    public bool IsZoneScope;
 }
 public class GetClickhouseCredentialsResult
 {
@@ -28,9 +28,14 @@ public class GetClickhouseCredentials
 
     public override void Configure()
     {
+        ZoneScope.AddScopeOption(this,
+            "Whose telemetry the credentials read: 'realm' (default) for the selected realm (cid.pid); 'zone' for " +
+            "the zone bound to it (cid.zid)",
+            (args, isZone) => args.IsZoneScope = isZone);
     }
     public override async Task<GetClickhouseCredentialsResult> GetResult(GetClickhouseCredentialsArgs args)
     {
+        using var scopeHandle = await ZoneScope.ApplyAsync(args, args.IsZoneScope);
         OtelAuthConfig res = await args.OtelApi.GetOtelAuthReaderConfig();
 
         return new GetClickhouseCredentialsResult

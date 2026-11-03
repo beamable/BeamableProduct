@@ -21,6 +21,7 @@ public class GetRemoteLogsCommandArgs : CommandArgs
     public string level;
     public string fromTimestamp;
     public string toTimestamp;
+    public bool isZoneScope;
 }
 
 
@@ -89,6 +90,10 @@ public class GetRemoteLogsCommand : StreamCommand<GetRemoteLogsCommandArgs, Tail
         AddOption(new Option<string>(new string[]{"-sl", "--server-log-level",}, "A log level filter for searching"), (args, i) => args.level = i);
         AddOption(new Option<string>(new string[]{"--from"}, "A timestamp filter, where logs must be newer than this time. " + FORMAT), (args, i) => args.fromTimestamp = i);
         AddOption(new Option<string>(new string[]{"--to"}, "A timestamp filter, where logs must be older than this time. " + FORMAT), (args, i) => args.toTimestamp = i);
+        ZoneScope.AddScopeOption(this,
+            "Where the service is deployed: 'realm' (default) for the selected realm (cid.pid); 'zone' for the zone " +
+            "bound to it (cid.zid)",
+            (args, isZone) => args.isZoneScope = isZone);
     }
 
     public static bool TryParseTimeString(string timeString, out DateTimeOffset time)
@@ -143,6 +148,7 @@ public class GetRemoteLogsCommand : StreamCommand<GetRemoteLogsCommandArgs, Tail
 
     public override async Task Handle(GetRemoteLogsCommandArgs args)
     {
+        using var scopeHandle = await ZoneScope.ApplyAsync(args, args.isZoneScope);
         var api = args.DependencyProvider.GetService<IBeamoApi>();
         Query query = null;
 

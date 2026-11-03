@@ -402,12 +402,8 @@ namespace Beamable.Server
 				await RunServiceSetupCallbacks();
             }
 
-            // Beamo log-context is realm-scoped; zone services have no realm beamo api.
-            if (IsRealmScoped)
-            {
-            	var loggingContextService = InstanceArgs.ServiceScope.GetService<ILoggingContextService>();
-            	await loggingContextService.GetAllLoggingContexts();
-            }
+            var loggingContextService = InstanceArgs.ServiceScope.GetService<ILoggingContextService>();
+            await loggingContextService.GetAllLoggingContexts();
             await ProvideService();
 
             HasInitialized = true;
@@ -898,8 +894,6 @@ namespace Beamable.Server
 	      string routingKey = InstanceArgs.GetRoutingKey().GetOrElse(string.Empty);
 	      try
 	      {
-	      	if (IsRealmScoped)
-	      	{
 		      var loggingContextService = Provider.GetService<ILoggingContextService>();
 		      BeamoV2ServiceLoggingContext loglevelContext = loggingContextService.GetLogLevelContext(MicroserviceName, routingKey);
 		      
@@ -972,7 +966,6 @@ namespace Beamable.Server
 
 			      
 		      }
-	      	}
 	      }
 	      catch (Exception ex)
 	      {
