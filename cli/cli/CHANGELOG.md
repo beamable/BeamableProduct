@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Publishing now requires explicit reconciliation of content with unverified change history, including locally created JSON with an empty or null `referenceManifestId`. External content-writing tools must preserve this field; omitting it entirely fails file loading. Review affected items and use selected-item `content resolve` with an explicit local/realm choice before publishing.
+
 ### Added
 
 - Added `--no-auto-sync` to `content ps` and `content history`, and selected-item reconciliation previews with checks that reject stale local or realm revisions.

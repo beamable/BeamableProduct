@@ -30,9 +30,12 @@ namespace Beamable.Editor.UI.ContentWindow
 
 		private void DrawPublishPanel()
 		{
-			if (!_contentService.HasChangedContents || _contentService.EntriesCache.Values.Any(HasContentIssue))
+			var hasIssues = _contentService.EntriesCache.Values.Any(HasContentIssue);
+			if (!_contentService.HasChangedContents || hasIssues)
 			{
-				ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
+				ChangeWindowStatusDelayed(ContentWindowStatus.Normal, hasIssues
+					? "Publishing paused. Review the new content issues in Issues."
+					: "There are no remaining local changes to publish.");
 				return;
 			}
 			

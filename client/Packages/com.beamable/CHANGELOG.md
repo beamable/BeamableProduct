@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Local Mode now pauses automatic content synchronization while History continues tracking realm publications. Publishing requires clearing validation errors, conflicts, and incoming changes.
+- Content with unverified change history also requires review before publishing, including externally generated JSON with an empty or null `referenceManifestId`. Keep this field when writing content files (omitting it fails loading), then use the Issues flow to choose the local or realm version explicitly.
 - Beam Account login window pre-fills the environment and organization from the project's existing configuration, such as `config-defaults.txt`, and restores the previously selected realm after login.
 
 ## [6.2.0] - 2026-10-08

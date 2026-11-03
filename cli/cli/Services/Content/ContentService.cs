@@ -1034,8 +1034,8 @@ public partial class ContentService
 			var conflicted = localAgainstLatest.ContentFiles.Where(c => c.IsInConflict).Select(c => c.Id);
 			throw new CliException(
 				"You have conflicting changes that were made against an older manifest." +
-				$" Please run `dotnet beam content sync --sync-conflicts --filter {string.Join(",", conflicted)}` (this will discard all your local changes for the conflicting files)." +
-				$"If you'd like, you can then re-apply your local ones before publishing. ",
+				$" Review the conflicting items, then run `dotnet beam content resolve --manifest-ids {manifestId} --filter-type ExactIds --filter {string.Join(",", conflicted)}`" +
+				" with `--use local` to keep your local version or `--use realm` to replace it with the published version (discarding local changes for the selected items).",
 				ERR_CODE_PUBLISH_FAILED_INVALID_REFERENCE_MANIFEST, true);
 		}
 

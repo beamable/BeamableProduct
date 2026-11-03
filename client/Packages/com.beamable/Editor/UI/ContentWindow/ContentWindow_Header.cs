@@ -442,9 +442,14 @@ namespace Beamable.Editor.UI.ContentWindow
 		/// <remarks>
 		/// Some state transitions remove or add controls. Deferring them avoids mismatched layout groups during repaint.
 		/// </remarks>
-		private void ChangeWindowStatusDelayed(ContentWindowStatus windowStatus)
+		private void ChangeWindowStatusDelayed(ContentWindowStatus windowStatus, string notification = null)
 		{
-			EditorApplication.delayCall += () => ChangeWindowStatus(windowStatus);
+			EditorApplication.delayCall += () =>
+			{
+				if (this == null || _windowStatus == windowStatus) return;
+				ChangeWindowStatus(windowStatus);
+				if (notification != null) ShowNotification(new GUIContent(notification), 5);
+			};
 		}
 
 		private GUIStyle _modeLabelStyle;

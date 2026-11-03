@@ -445,7 +445,9 @@ namespace Beamable.Editor.UI.ContentWindow
 					if (_queue != null && _contentId == null && !_awaitingRefresh)
 					{
 						GUILayout.Label("No more items to reconcile", _heading);
-						GUILayout.Label("Validation errors may still need attention in Beam Content. Nothing was published.", _body);
+						if (_service.HasInvalidContent)
+							GUILayout.Label("Validation errors still need attention in Beam Content.", _body);
+						GUILayout.Label("Nothing was published.", _body);
 						GUILayout.FlexibleSpace();
 						if (GUILayout.Button("Close", GUILayout.Width(90), GUILayout.Height(30))) Close();
 					}

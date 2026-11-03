@@ -63,7 +63,7 @@ namespace Beamable.Editor.UI.ContentWindow
 			GUILayout.Space(10);
 			GUILayout.Label("The Unity client uses your local content snapshot for the selected namespace, including unpublished edits. Auto-sync pauses; History continues receiving publications.", _bodyStyle);
 			GUILayout.Space(10);
-			EditorGUILayout.HelpBox("Microservices and Beamable services still use published realm content.\nBeamable services include:\n\u2022 Inventory\n\u2022 Commerce\n\u2022 Events\n\nClient and server values can differ.", MessageType.Warning);
+			EditorGUILayout.HelpBox("Microservices and Beamable services, such as Inventory, Commerce, and Events, still use published realm content.\n\nClient and server values can differ.", MessageType.Warning);
 			GUILayout.Space(10);
 			GUILayout.Label("Publishing still changes the realm. Restart Play Mode after changing the content source.", _bodyStyle);
 			GUILayout.FlexibleSpace();

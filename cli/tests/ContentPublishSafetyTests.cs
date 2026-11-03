@@ -139,6 +139,45 @@ public class ContentPublishSafetyTests
     }
 
     [Test]
+    public async Task Conflict_publish_guidance_requires_an_explicit_choice_without_discarding_local_data()
+    {
+        await Seed(15); latest = Manifest("after", Entry(Id, 20));
+        var original = File.ReadAllBytes(FilePath());
+        var error = Assert.ThrowsAsync<CliException>(() => service.PublishContent(AutoSnapshotType.None, 0));
+        Assert.That(error!.Message, Does.Contain("content resolve"));
+        Assert.That(error.Message, Does.Contain("--use local").And.Contain("--use realm"));
+        Assert.That(error.Message, Does.Not.Contain("sync --sync-conflicts"));
+        Assert.That(File.ReadAllBytes(FilePath()), Is.EqualTo(original));
+        Assert.That(uploads, Is.Zero); Assert.That(publications, Is.Zero);
+    }
+
+    [TestCase("")]
+    [TestCase(null)]
+    public async Task Unverified_local_creation_blocks_publish_until_explicitly_reconciled(string? reference)
+    {
+        before = latest = Manifest("before");
+        await service.SaveContentFile(folder, new ContentFile { Id = Id, Properties = Props(15),
+            Tags = JsonSerializer.SerializeToElement(Array.Empty<string>()), FetchedFromManifestUid = reference });
+        Assert.That(await Kind(), Is.EqualTo((int)ContentChangeKind.Unknown));
+        var error = Assert.ThrowsAsync<CliException>(() => service.PublishContent(AutoSnapshotType.None, 0));
+        Assert.That(error!.Message, Does.Contain("incoming or unverified content"));
+        Assert.That(uploads, Is.Zero); Assert.That(publications, Is.Zero);
+        await service.ReconcileContent("global", new[] { Id }, true);
+        Assert.That(await Kind(), Is.EqualTo((int)ContentChangeKind.LocalEdit));
+    }
+
+    [Test]
+    public async Task Omitted_reference_property_is_a_load_error_not_unknown_history()
+    {
+        await Seed();
+        var json = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(FilePath()))!.AsObject();
+        json.Remove(ContentFile.JSON_NAME_REFERENCE_MANIFEST_ID);
+        await File.WriteAllTextAsync(FilePath(), json.ToJsonString());
+        Assert.ThrowsAsync<System.Collections.Generic.KeyNotFoundException>(() => service.GetAllContentFiles(latest));
+        Assert.That(uploads, Is.Zero); Assert.That(publications, Is.Zero);
+    }
+
+    [Test]
     public async Task Publish_refreshes_a_cached_latest_manifest()
     {
         await Seed(); await service.GetManifest(); latest = Manifest("after", Entry(Id, 20));

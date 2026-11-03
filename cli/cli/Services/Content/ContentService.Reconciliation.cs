@@ -119,7 +119,7 @@ public partial class ContentService
 	{
 		var pending = files.ContentFiles.Where(NeedsReconciliation).ToArray();
 		if (pending.Length == 0) return;
-		throw new CliException("Publishing blocked. Reconcile incoming content or unverified local deletions before publishing. " +
+		throw new CliException("Publishing blocked. Reconcile incoming or unverified content before publishing. " +
 			string.Join("; ", pending.Select(c => $"{c.Id} ({c.ChangeKind})")),
 			ERR_CODE_PUBLISH_FAILED_INVALID_REFERENCE_MANIFEST, true);
 	}

@@ -154,7 +154,8 @@ namespace Beamable.Editor.UI.ContentWindow
 			_allTags = _contentService.TagsCache;
 			SetEditorSelection();
 			
-			if(!_contentService.HasChangedContents && _windowStatus != ContentWindowStatus.SnapshotManager && _windowStatus != ContentWindowStatus.History)
+			// The publish panel explains why it is closing, including when only incoming items remain.
+			if(!_contentService.HasChangedContents && _windowStatus != ContentWindowStatus.Publish && _windowStatus != ContentWindowStatus.SnapshotManager && _windowStatus != ContentWindowStatus.History)
 			{
 				ChangeWindowStatusDelayed(ContentWindowStatus.Normal);
 			}

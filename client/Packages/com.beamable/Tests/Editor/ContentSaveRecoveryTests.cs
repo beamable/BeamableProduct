@@ -28,6 +28,7 @@ namespace Beamable.Editor.Tests
 		private HeldCommands _commands;
 		private SaveRecoveryContent _content;
 		private string _path;
+		private string _noticePath;
 
 		[SetUp]
 		public void SetUp()
@@ -52,12 +53,15 @@ namespace Beamable.Editor.Tests
 			Set(_service, "_contentWrites", new ContentWriteTracker());
 			Set(_service, "<CurrentProgress>k__BackingField", new ContentOperationProgress());
 			Set(_service, "_watchersDisposed", true);
+			_noticePath = Path.Combine(Path.GetTempPath(), "beam-schema-notices-" + Guid.NewGuid().ToString("N") + ".json");
+			Set(_service, "_schemaNoticeCachePath", _noticePath);
 			_service.manifestIdOverride = "global";
 			_content = ScriptableObject.CreateInstance<SaveRecoveryContent>();
 			_content.SetIdAndVersion("saveRecovery.test", "");
 			_content.CancelPendingEditorChangeNotification();
 			_content.ContentStatus = ContentStatus.UpToDate;
 			_content.Tags = new[] { "old" };
+			_content.ResetEditorChangeTracking();
 		}
 
 		[TearDown]
@@ -69,6 +73,7 @@ namespace Beamable.Editor.Tests
 			_content.CancelPendingEditorChangeNotification();
 			UnityEngine.Object.DestroyImmediate(_content);
 			if (_path != null && File.Exists(_path)) File.Delete(_path);
+			if (_noticePath != null && File.Exists(_noticePath)) File.Delete(_noticePath);
 		}
 
 		[TestCase(false)]
@@ -193,8 +198,8 @@ namespace Beamable.Editor.Tests
 			var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
 			Set(_service, "_contentConfiguration", config);
 			var revision = _service.ManifestChangedCount;
-			((Dictionary<string, (SchemaDifference, string)>)Get(_service, "_schemaDifferences"))[_content.Id] =
-				(SchemaDifference.UnknownFieldsInJson, null);
+			config.validateSchemaDifference = true;
+			_service.UpdateSchemaDifference(_service.EntriesCache[_content.Id], SchemaDifference.UnknownFieldsInJson);
 			Action callback = () => _service.SaveContent(_content);
 			_content.OnEditorChanged = callback;
 			Exception error = null;
@@ -334,11 +339,68 @@ namespace Beamable.Editor.Tests
 			finally { UnityEngine.Object.DestroyImmediate(config); }
 		}
 
+		[Test]
+		public void Schema_notice_survives_cache_reload_after_the_loader_normalizes_the_file()
+		{
+			PrepareFile();
+			var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+			try
+			{
+				config.validateSchemaDifference = true;
+				Set(_service, "_contentConfiguration", config);
+				var properties = ClientContentSerializer.SerializeProperties(_content);
+				File.WriteAllText(_path, "{\"properties\":" + properties.Insert(1, "\"futureField\":{\"data\":123},") + ",\"tags\":[]}");
+				var entry = _service.EntriesCache[_content.Id];
+				entry.ReferenceManifestUid = "publication-a";
+				var loader = typeof(CliContentService).GetMethod("LoadContentObject", Fields);
+				loader.Invoke(_service, new object[] { entry, _content });
+				Assert.That(_commands.Properties.Count, Is.EqualTo(1));
+				File.WriteAllText(_path, "{\"properties\":" + properties + ",\"tags\":[]}");
+				entry.CurrentStatus = (int)ContentStatus.Modified;
+				typeof(CliContentService).GetMethod("ClearCaches", Fields).Invoke(_service, null);
+				loader.Invoke(_service, new object[] { entry, _content });
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.UnknownFieldsInJson));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(config); }
+		}
+
+		[TestCase(false)]
+		[TestCase(true)]
+		public void Loading_a_realm_version_then_inspecting_does_not_save_but_a_later_edit_does(bool alreadySelected)
+		{
+			PrepareFile();
+			var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+			try
+			{
+				config.validateSchemaDifference = true;
+				Set(_service, "_contentConfiguration", config);
+				if (alreadySelected)
+				{
+					_content.amount = 99;
+					_content.CheckForNonDetectedChanges();
+					_content.CancelPendingEditorChangeNotification();
+				}
+				// Realm payload uses a different numeric representation from Unity's serializer.
+				const string json = "{\"properties\":{\"amount\":{\"data\":2.0},\"rows\":{\"data\":[]}},\"tags\":[]}";
+				File.WriteAllText(_path, json);
+				typeof(CliContentService).GetMethod("LoadContentObject", Fields).Invoke(_service,
+					new object[] { _service.EntriesCache[_content.Id], _content });
+				Assert.That(_content.amount, Is.EqualTo(2));
+				_content.CheckForNonDetectedChanges();
+				Assert.That(_content.HasPendingEditorChangeNotification, Is.False, "Inspection must not enqueue a normalization save.");
+				Assert.That(_commands.Properties, Is.Empty);
+				Assert.That(File.ReadAllText(_path), Is.EqualTo(json));
+				_content.amount = 3;
+				_content.CheckForNonDetectedChanges();
+				Assert.That(_content.HasPendingEditorChangeNotification, Is.True, "Real edits must still save.");
+			}
+			finally { UnityEngine.Object.DestroyImmediate(config); }
+		}
+
 		[TestCase("reference")]
 		[TestCase("deleted")]
 		[TestCase("disabled")]
-		[TestCase("reload")]
-		public void Schema_notice_does_not_leak_to_replaced_deleted_or_reloaded_content(string change)
+		public void Schema_notice_does_not_leak_to_replaced_deleted_or_disabled_content(string change)
 		{
 			PrepareFile();
 			var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
@@ -358,9 +420,105 @@ namespace Beamable.Editor.Tests
 					config.validateSchemaDifference = false;
 					Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None), "Disabling the check must hide cached warnings without a reload.");
 				}
-				if (change == "reload") typeof(CliContentService).GetMethod("ClearCaches", Fields).Invoke(_service, null);
-				else _service.UpdateSchemaDifference(entry, SchemaDifference.None);
+				_service.UpdateSchemaDifference(entry, SchemaDifference.None);
 				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(config); }
+		}
+
+		[Test]
+		public void Schema_notice_cache_round_trips_and_is_scoped_to_realm_and_namespace()
+		{
+			PrepareFile();
+			var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+			try
+			{
+				config.validateSchemaDifference = true;
+				Set(_service, "_contentConfiguration", config);
+				var entry = _service.EntriesCache[_content.Id];
+				entry.CurrentStatus = (int)ContentStatus.Modified;
+				entry.ReferenceManifestUid = "old";
+				_service.UpdateSchemaDifference(entry, SchemaDifference.UnknownFieldsInJson);
+				Assert.That(File.Exists(_noticePath), Is.True);
+				// Reconstruct the in-memory state from the file written by the actual cache producer.
+				((Dictionary<string, (SchemaDifference, string)>)Get(_service, "_schemaDifferences")).Clear();
+				Set(_service, "_schemaNoticesLoaded", false);
+				_service.UpdateSchemaDifference(entry, SchemaDifference.None);
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.UnknownFieldsInJson));
+				_service.manifestIdOverride = "seasonal";
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));
+				_service.manifestIdOverride = "global";
+				var context = (BeamEditorContext)Get(_service, "_beamContext");
+				context.BeamCli.CurrentRealm.Pid = "other-realm";
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));
+				context.BeamCli.CurrentRealm.Pid = "realm";
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.UnknownFieldsInJson));
+				entry.ReferenceManifestUid = "new";
+				_service.UpdateSchemaDifference(entry, SchemaDifference.None);
+				((Dictionary<string, (SchemaDifference, string)>)Get(_service, "_schemaDifferences")).Clear();
+				Set(_service, "_schemaNoticesLoaded", false);
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None), "Clearing is persisted too.");
+			}
+			finally { UnityEngine.Object.DestroyImmediate(config); }
+		}
+
+		[TestCase(false)]
+		[TestCase(true)]
+		public void Schema_notices_clear_on_replacement_even_while_validation_is_disabled(bool newReference)
+		{
+			PrepareFile();
+			var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+			try
+			{
+				Set(_service, "_contentConfiguration", config);
+				config.validateSchemaDifference = true;
+				var entry = _service.EntriesCache[_content.Id];
+				entry.CurrentStatus = (int)ContentStatus.Modified;
+				entry.ReferenceManifestUid = "old";
+				_service.UpdateSchemaDifference(entry, SchemaDifference.UnknownFieldsInJson);
+				config.validateSchemaDifference = false;
+				_service.UpdateSchemaDifference(entry, SchemaDifference.None);
+				config.validateSchemaDifference = true;
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.UnknownFieldsInJson));
+				config.validateSchemaDifference = false;
+				if (newReference) entry.ReferenceManifestUid = "new";
+				else entry.CurrentStatus = (int)ContentStatus.UpToDate;
+				_service.UpdateSchemaDifference(entry, SchemaDifference.None);
+				config.validateSchemaDifference = true;
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(config); }
+		}
+
+		[Test]
+		public void Authoritative_snapshot_prunes_absent_schema_notices_only_in_its_own_scope()
+		{
+			PrepareFile();
+			var config = ScriptableObject.CreateInstance<global::Beamable.Content.ContentConfiguration>();
+			try
+			{
+				Set(_service, "_contentConfiguration", config);
+				config.validateSchemaDifference = true;
+				var entry = _service.EntriesCache[_content.Id];
+				entry.CurrentStatus = (int)ContentStatus.Created;
+				_service.UpdateSchemaDifference(entry, SchemaDifference.UnknownFieldsInJson);
+				_service.manifestIdOverride = "seasonal";
+				_service.UpdateSchemaDifference(entry, SchemaDifference.MissingFieldsInJson);
+				_service.manifestIdOverride = "global";
+				var prune = typeof(CliContentService).GetMethod("PruneSchemaNotices", Fields);
+				var snapshot = new LocalContentManifest { OwnerCid = "test", OwnerPid = "realm", ManifestId = "global", Entries = new[] { entry } };
+				prune.Invoke(_service, new object[] { snapshot });
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.UnknownFieldsInJson));
+				snapshot.Entries = Array.Empty<LocalContentManifestEntry>();
+				snapshot.OwnerPid = "other";
+				prune.Invoke(_service, new object[] { snapshot });
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.UnknownFieldsInJson));
+				snapshot.OwnerPid = "realm";
+				prune.Invoke(_service, new object[] { snapshot });
+				_service.UpdateSchemaDifference(entry, SchemaDifference.None);
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.None));
+				_service.manifestIdOverride = "seasonal";
+				Assert.That(_service.GetSchemaDifference(_content.Id), Is.EqualTo(SchemaDifference.MissingFieldsInJson));
 			}
 			finally { UnityEngine.Object.DestroyImmediate(config); }
 		}

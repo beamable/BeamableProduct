@@ -500,10 +500,22 @@ namespace Beamable.Common.Content
       }
 
       
+		/// <summary>Establish the loaded content as the editor baseline without scheduling a save.</summary>
+		public void ResetEditorChangeTracking()
+		{
+			CancelPendingEditorChangeNotification();
+			_lastChecksum = GetEditorDataChecksum();
+		}
+
       public void CheckForNonDetectedChanges()
       {
 		 var nextChecksum = GetEditorDataChecksum();
-		 if (!string.IsNullOrEmpty(_lastChecksum) && string.Equals(_lastChecksum, nextChecksum, StringComparison.Ordinal))
+		 if (string.IsNullOrEmpty(_lastChecksum))
+		 {
+			_lastChecksum = nextChecksum;
+			return;
+		 }
+		 if (string.Equals(_lastChecksum, nextChecksum, StringComparison.Ordinal))
 		 {
 			return;
 		 }
