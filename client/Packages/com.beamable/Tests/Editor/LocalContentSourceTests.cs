@@ -29,7 +29,6 @@ namespace Beamable.Editor.Tests
 		{
 			// A transient configuration, so the tests never read or change the project's settings.
 			_config = ScriptableObject.CreateInstance<ContentConfiguration>();
-			_config.EditorManifestID = LocalWorkingCopy.Namespace;
 		}
 
 		[TearDown]
@@ -47,7 +46,7 @@ namespace Beamable.Editor.Tests
 			var source = Create("seasonal");
 			Assert.That(source.HandlesManifest("seasonal"), Is.True);
 			Assert.That(source.HandlesManifest(LocalWorkingCopy.Namespace), Is.False,
-			            "The legacy EditorManifestID setting must not choose the namespace.");
+			            "Only the selected namespace resolves locally.");
 		}
 
 		[TestCase(null)]

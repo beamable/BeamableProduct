@@ -27,9 +27,6 @@ namespace Beamable.Content
 		public bool multipleContentNamespacesSettingLocked;
 
 #if UNITY_EDITOR
-        [HideInInspector]
-        public string EditorManifestID = DEFAULT_MANIFEST_ID;
-
         [Tooltip("In editor, when downloading content, this controls the batch size of the download. By default, it is 100.")]
         public OptionalInt EditorDownloadBatchSize;
 
@@ -119,14 +116,6 @@ namespace Beamable.Content
 		{
 #if UNITY_EDITOR
 			HistoryEntriesPerPage = Mathf.Clamp(HistoryEntriesPerPage, 10, 50);
-#endif
-
-#if UNITY_EDITOR
-            if (!IsValidManifestID(EditorManifestID, out var message))
-            {
-                Debug.LogWarning($"Invalid manifest ID: {message}");
-                EditorManifestID = DEFAULT_MANIFEST_ID;
-            }
 #endif
 
 			if (!EnableMultipleContentNamespaces)

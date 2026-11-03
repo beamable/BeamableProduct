@@ -41,7 +41,6 @@ namespace Beamable.Platform.Tests.Content
 			_connectivity = new MockConnectivityService();
 			// A transient configuration, so the tests never read or change the project's settings.
 			_config = ScriptableObject.CreateInstance<ContentConfiguration>();
-			_config.EditorManifestID = LocalWorkingCopy.Namespace;
 		}
 
 		[UnityTearDown]
