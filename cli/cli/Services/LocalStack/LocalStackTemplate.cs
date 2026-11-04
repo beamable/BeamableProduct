@@ -1030,6 +1030,45 @@ public static class LocalStackTemplate
 		dependsOn = new List<string> { ApiDepsStepName }
 	};
 
+	public const string ClickHouseMigrationsStepName = "c#: clickhouse migrations";
+
+	/// <summary>
+	/// Creates the local ClickHouse's tables (<c>otel_logs</c>, <c>otel_traces</c>, the metrics tables) with
+	/// BeamableAPI's <c>Beamable.Database.Management migrate</c>. The gateway gives each realm a ClickHouse writer when
+	/// a microservice starts, but nothing else creates the tables those writers insert into, so without this every
+	/// service's telemetry is refused (<c>UNKNOWN_TABLE</c>) and the portal has no logs to show. Migrations are recorded
+	/// in ClickHouse, so a run after the first only checks them.
+	///
+	/// Added to the catalogue wherever the backend's docker step is (see <see cref="AddClickHouseMigrationsStep"/>),
+	/// so settings written before it existed get it without setup. Its <c>csharp</c> tag puts it in every stack that
+	/// runs the C# hosts.
+	/// </summary>
+	public static void AddClickHouseMigrationsStep(List<LocalStackStep> steps)
+	{
+		var docker = steps.FirstOrDefault(s => string.Equals(s.name, ApiDepsStepName, StringComparison.OrdinalIgnoreCase));
+		if (docker == null || steps.Any(s => string.Equals(s.name, ClickHouseMigrationsStepName, StringComparison.OrdinalIgnoreCase)))
+		{
+			return;
+		}
+
+		steps.Add(new LocalStackStep
+		{
+			name = ClickHouseMigrationsStepName,
+			label = "ClickHouse migrations",
+			tags = new List<string> { "csharp" },
+			// ClickHouse comes from the docker deps.
+			dependsOn = new List<string> { ApiDepsStepName },
+			workingDirectory = docker.workingDirectory,
+			command = DotnetToken,
+			arguments = "run --project Beamable.Database.Management -- migrate",
+			// Its appsettings.Local.json points at the docker deps' ClickHouse.
+			environment = new Dictionary<string, string> { ["DOTNET_ENVIRONMENT"] = "Local" },
+			waitForExit = true,
+			// The first run builds the tool.
+			readyTimeoutSeconds = 300
+		});
+	}
+
 	/// <summary>Name prefix identifying microservice steps (used by the "update services" flow).</summary>
 	public const string MicroservicePrefix = "microservice: ";
 
