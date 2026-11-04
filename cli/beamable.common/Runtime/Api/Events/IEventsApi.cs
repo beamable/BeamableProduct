@@ -143,8 +143,6 @@ namespace Beamable.Common.Api.Events
 	public class EventItem
 	{
 		public string id;
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, string> properties;
 	}
 

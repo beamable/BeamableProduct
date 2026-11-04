@@ -29,8 +29,6 @@ namespace Beamable.Common.BeamCli
 	{
 		public long ts;
 		public string type;
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
-			Justification = "Reflection JSON requires this field.")]
 		public object data;
 	}
 

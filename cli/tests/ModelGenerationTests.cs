@@ -18,36 +18,11 @@ public static class TestExtensions
 
 public class ModelGenerationTests
 {
-	[Test]
-	public void JsonModelDiagnosticsPreservePayloadFields()
-	{
-		var type = new CodeTypeDeclaration("JsonPayload");
-		type.Members.Add(new CodeMemberField(typeof(Dictionary<string, string>), "data") { Attributes = MemberAttributes.Public });
-		type.Members.Add(new CodeMemberField("OptionalJsonString", "settings") { Attributes = MemberAttributes.Public });
-		type.Members.Add(new CodeMemberField(typeof(string[][]), "include") { Attributes = MemberAttributes.Public });
-		type.Members.Add(new CodeMemberField(typeof(string), "name") { Attributes = MemberAttributes.Public });
-		var unit = new CodeCompileUnit();
-		unit.Namespaces.Add(new CodeNamespace("Test") { Types = { type } });
-		var original = UnityHelper.GenerateCsharp(unit);
-		var generated = UnityHelper.GenerateJsonModelCsharp(unit);
-		StringAssert.Contains("SuppressMessage(\"Serialization\", \"UAC1015\"", generated);
-		StringAssert.Contains("SuppressMessage(\"Serialization\", \"UAC1001\"", generated);
-		StringAssert.Contains("SuppressMessage(\"Serialization\", \"UAC1009\"", generated);
-		StringAssert.DoesNotContain("#pragma warning", generated);
-		StringAssert.DoesNotContain("NonSerialized", generated);
-		// Suppression metadata must not change the payload API.
-		var stripped = System.Text.RegularExpressions.Regex.Replace(generated,
-			@"(?m)^[ \t]*(?:// JSON contract:[^\r\n]*|#pragma warning (?:disable|restore) UAC\d+|\[System.Diagnostics.CodeAnalysis.SuppressMessage[^\r\n]*)[\r\n]+", "");
-		stripped.AssertSrc(original);
-		Assert.That(UnityHelper.GenerateJsonModelCsharp(unit), Is.EqualTo(generated));
-		Assert.That(UnityHelper.GenerateCsharp(unit), Is.EqualTo(original));
-	}
-
-	[TestCase("AudienceRequest", "include", "UAC1009")]
-	[TestCase("ContentMeta", "data", "UAC1001")]
-	[TestCase("SupportedFederation", "settings", "UAC1001")]
-	[TestCase("FederationInfo", "settings", "UAC1001")]
-	public void TransportSchemasGenerateScopedSuppressions(string model, string field, string diagnostic)
+	[TestCase("AudienceRequest", "include")]
+	[TestCase("ContentMeta", "data")]
+	[TestCase("SupportedFederation", "settings")]
+	[TestCase("FederationInfo", "settings")]
+	public void TransportSchemasKeepSuppressionPolicyOutOfModels(string model, string field)
 	{
 		var jagged = field == "include";
 		var property = jagged
@@ -65,7 +40,7 @@ public class ModelGenerationTests
 			OrderedSchemas = new[] { new NamedOpenApiSchema { ReferenceId = model, Schema = schema } }
 		};
 		var generated = UnityHelper.GenerateModel(context, out _).Content;
-		StringAssert.Contains($"[System.Diagnostics.CodeAnalysis.SuppressMessage(\"Serialization\", \"{diagnostic}\", Justification = \"Explicit and reflection JSON require this field.\")]", generated);
+		StringAssert.DoesNotContain("SuppressMessage", generated);
 		StringAssert.Contains(jagged ? "public string[][] include;" : $"public OptionalJsonString {field} = new OptionalJsonString();", generated);
 		StringAssert.Contains(jagged ? "s.SerializeArray(\"include\", ref include);" : $"s.SerializeNestedJson(\"{field}\", ref {field}.Value);", generated);
 		StringAssert.DoesNotContain("#pragma warning", generated);

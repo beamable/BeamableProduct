@@ -20,8 +20,6 @@ namespace Beamable.Experimental.Api.Matchmaking
 	{
 		public string[] matchTypes;
 
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
-			Justification = "Preserve the public nullable request contract.")]
 		public int? maxWaitDurationSecs;
 
 		public string team;

@@ -380,8 +380,6 @@ namespace Beamable.Common.Api.Mail
 		/// <summary>
 		/// An optional player id that selects mail coming from the specific player.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
-			Justification = "Explicit and reflection JSON require this nullable field.")]
 		public long? forSender;
 
 		/// <summary>
@@ -389,15 +387,11 @@ namespace Beamable.Common.Api.Mail
 		/// This will also max out the <see cref="SearchMailResponseClause.count"/> field.
 		/// This can be used with the <see cref="start"/> field to page the player's mail.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
-			Justification = "Explicit and reflection JSON require this nullable field.")]
 		public long? limit;
 
 		/// <summary>
 		/// An optional offset into the players mail. This can be used with the <see cref="limit"/> field to page the player's mail.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
-			Justification = "Explicit and reflection JSON require this nullable field.")]
 		public long? start;
 
 		public ArrayDict Serialize()

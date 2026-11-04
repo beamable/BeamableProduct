@@ -203,7 +203,6 @@ namespace Beamable.Common
 		/// Anything this contract does not name — item properties, an entitlement specialization, a rarity,
 		/// a duration. The escape hatch that keeps <see cref="type"/> from having to grow a field per kind.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015", Justification = "Federation JSON requires this field.")]
 		public Dictionary<string, string> properties = new Dictionary<string, string>();
 	}
 
@@ -305,7 +304,6 @@ namespace Beamable.Common
 		/// get the other translations back without a second round trip.
 		/// </para>
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015", Justification = "Federation JSON requires this field.")]
 		public Dictionary<string, CampaignOfferText> localizations = new Dictionary<string, CampaignOfferText>();
 
 		public List<string> tags = new List<string>();
@@ -314,7 +312,6 @@ namespace Beamable.Common
 		/// Anything this contract does not name. The escape hatch that lets a store carry its own fields
 		/// through to its own Portal extension without a contract version bump.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015", Justification = "Federation JSON requires this field.")]
 		public Dictionary<string, string> properties = new Dictionary<string, string>();
 	}
 
@@ -365,7 +362,6 @@ namespace Beamable.Common
 		/// may travel.
 		/// </para>
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015", Justification = "Federation JSON requires this field.")]
 		public Dictionary<string, string> properties = new Dictionary<string, string>();
 	}
 
@@ -553,7 +549,6 @@ namespace Beamable.Common
 		/// without it.
 		/// </para>
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015", Justification = "Federation JSON requires this field.")]
 		public Dictionary<string, string> extraDataFed = new Dictionary<string, string>();
 
 		/// <summary>When the grant should stop being claimable. 0 = the store's own default.</summary>
@@ -648,7 +643,6 @@ namespace Beamable.Common
 		/// <summary>The caller's idempotency key. A repeat must return the first result, not redeem twice.</summary>
 		public string transactionId;
 
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015", Justification = "Federation JSON requires this field.")]
 		public Dictionary<string, string> @params = new Dictionary<string, string>();
 	}
 

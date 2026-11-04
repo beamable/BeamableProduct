@@ -70,8 +70,6 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// <summary>
 		/// Arbitrary key -> value pairs associated with this lobby.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this dictionary.")]
 		public Dictionary<string, string> data;
 
 		/// <summary>

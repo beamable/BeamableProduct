@@ -100,8 +100,6 @@ namespace Beamable.Common.Content
 
 		[CannotBeEmpty]
 		[Tooltip(ContentObject.TooltipPhase1)]
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1018",
-			Justification = "Keep the legacy alias for existing content assets.")]
 		public PhaseList phases;
 
 		[Tooltip(ContentObject.TooltipScoreReward1)]

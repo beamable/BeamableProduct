@@ -667,8 +667,6 @@ namespace Beamable.Common.Api.Groups
 		/// <summary>
 		/// This field will be removed in a future version of Beamable. Please do not use.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
-			Justification = "Explicit and reflection JSON require this nullable field.")]
 		public long? requirement;
 
 		/// <summary>

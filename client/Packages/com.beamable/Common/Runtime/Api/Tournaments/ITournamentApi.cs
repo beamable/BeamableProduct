@@ -294,8 +294,6 @@ namespace Beamable.Common.Api.Tournaments
 		/// from that cycle to the cycle after it. If nextStageChange is not known,
 		/// this field will be absent.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
-			Justification = "Reflection JSON requires this field.")]
 		public int? nextStageChange;
 
 		/// <summary>
@@ -303,8 +301,6 @@ namespace Beamable.Common.Api.Tournaments
 		/// the current tier and stage they occupy. If the player was not present
 		/// in the previous cycle of the tournament, this field will be absent.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
-			Justification = "Reflection JSON requires this field.")]
 		public int? previousStageChange;
 
 		/// <summary>

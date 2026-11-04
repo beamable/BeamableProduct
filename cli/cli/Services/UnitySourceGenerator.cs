@@ -224,7 +224,7 @@ public static class UnityHelper
 		}
 
 
-		return new GeneratedFileDescriptor { FileName = "Models.gs.cs", Content = UnityHelper.GenerateJsonModelCsharp(unit) };
+		return new GeneratedFileDescriptor { FileName = "Models.gs.cs", Content = UnityHelper.GenerateCsharp(unit) };
 	}
 
 
@@ -2027,24 +2027,6 @@ public static class UnityHelper
 					nameof(JsonSerializable.IStreamSerializer.Serialize));
 				return true;
 		}
-	}
-
-	public static string GenerateJsonModelCsharp(CodeCompileUnit unit)
-	{
-		// NonSerialized would remove these fields from reflection JSON.
-		return Regex.Replace(GenerateCsharp(unit),
-			@"(?m)^(?<indent>[ \t]*)public (?<type>System.Collections.Generic.Dictionary<[^\r\n;]+>|OptionalJsonString|string\[\]\[\]) [^\r\n;]+;",
-			match =>
-			{
-				var type = match.Groups["type"].Value;
-				var diagnostic = type.StartsWith("System.Collections.Generic.Dictionary<") ? "UAC1015"
-					: type == "OptionalJsonString" ? "UAC1001" : "UAC1009";
-				var justification = diagnostic == "UAC1015" ? "Reflection JSON requires this dictionary."
-					: "Explicit and reflection JSON require this field.";
-				return match.Groups["indent"].Value + "[System.Diagnostics.CodeAnalysis.SuppressMessage(\"Serialization\", \"" + diagnostic
-					+ "\", Justification = \"" + justification + "\")]"
-					+ Environment.NewLine + match.Value;
-			});
 	}
 
 	public static string GenerateCsharp(CodeCompileUnit unit)

@@ -30,11 +30,7 @@ namespace Beamable.Common
 	[Serializable]
 	public class FederatedInventoryProxyState
 	{
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, long> currencies;
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, List<FederatedItemProxy>> items;
 	}
 

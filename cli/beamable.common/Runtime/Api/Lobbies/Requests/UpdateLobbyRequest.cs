@@ -33,8 +33,6 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// Optional number of max players allowed for this lobby. The team configuration in the `matchType` WILL
 		/// override this property.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
-			Justification = "Reflection JSON requires this field.")]
 		public int? maxPlayers;
 
 		/// <summary>

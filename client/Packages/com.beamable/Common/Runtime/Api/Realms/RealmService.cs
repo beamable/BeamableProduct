@@ -274,8 +274,6 @@ namespace Beamable.Common.Api.Realms
 	public class RealmConfigView
 	{
 		public string Namespace;
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, string> Config;
 	}
 
@@ -407,8 +405,6 @@ namespace Beamable.Common.Api.Realms
 	[System.Serializable]
 	public class GetRealmConfigDTO
 	{
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, string> config;
 	}
 }

@@ -600,8 +600,6 @@ namespace Beamable.Player
 		/// <summary>
 		/// Exception thrown by a server will be cached here
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
-			Justification = "Preserve the public runtime exception payload.")]
 		public Exception innerException;
 
 		/// <summary>
@@ -713,8 +711,6 @@ namespace Beamable.Player
 	{
 		public bool isSuccess => innerException == null;
 
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1001",
-			Justification = "Preserve the public runtime exception payload.")]
 		public Exception innerException;
 
 		public PasswordResetConfirmError error;

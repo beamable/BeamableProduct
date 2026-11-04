@@ -86,8 +86,6 @@ namespace Beamable.Common.Content
 
 		[Tooltip(ContentObject.TooltipTeamContent1)]
 		[CannotBeEmpty]
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1018",
-			Justification = "Keep the legacy alias for existing content assets.")]
 		public TeamContentList teams;
 
 		[Tooltip(ContentObject.TooltipMatchmakingRule1)]

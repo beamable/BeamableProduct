@@ -65,7 +65,6 @@ namespace Beamable.Common
 		/// for this player — a campaign's offer grant ids
 		/// (<c>beam_offer_grants</c>, comma-separated) arrive this way.</para>
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015", Justification = "Federation JSON requires this field.")]
 		public Dictionary<string, string> data = new Dictionary<string, string>();
 	}
 
@@ -82,11 +81,7 @@ namespace Beamable.Common
 	public class MessageRailSendResponse
 	{
 		public List<string> sentPlayers = new List<string>();
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, string> sentPayloadFed = new Dictionary<string, string>();
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, string> @params = new Dictionary<string, string>();
 		public List<MessageRailErrorPlayerStatus> errorPlayersWithStatus = new List<MessageRailErrorPlayerStatus>();
 

@@ -112,8 +112,6 @@ namespace Beamable.Common.Shop
 	[Agnostic]
 	public class OfferObtainCurrency : ISerializationCallbackReceiver
 	{
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1018",
-			Justification = "Keep the legacy alias for existing content assets.")]
 		public CurrencyRef symbol;
 		public int amount;
 
@@ -148,8 +146,6 @@ namespace Beamable.Common.Shop
 	[System.Serializable]
 	public class OfferObtainItem : ISerializationCallbackReceiver
 	{
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1018",
-			Justification = "Keep the legacy alias for existing content assets.")]
 		public ItemRef contentId;
 		public List<OfferObtainItemProperty> properties;
 

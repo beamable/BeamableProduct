@@ -45,14 +45,10 @@ namespace Beamable.Common.Shop
 	{
 		[Tooltip(ContentObject.TooltipOptional0 + "The id for the Apple iTunes store")]
 		[CannotBeBlank]
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1018",
-			Justification = "Keep the legacy alias for existing content assets.")]
 		public OptionalString itunes;
 
 		[Tooltip(ContentObject.TooltipOptional0 + "The id for the Google Play store")]
 		[CannotBeBlank]
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1018",
-			Justification = "Keep the legacy alias for existing content assets.")]
 		public OptionalString googleplay;
 
 		[Tooltip(ContentObject.TooltipOptional0 + "The id for the Valve Steam store")]

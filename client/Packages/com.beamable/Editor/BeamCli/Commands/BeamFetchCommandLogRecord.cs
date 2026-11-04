@@ -11,7 +11,6 @@ namespace Beamable.Editor.BeamCli.Commands
         public string LogLevel;
         public string ServiceName;
         public string Message;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015", Justification = "Reflection JSON requires this dictionary.")]
         public System.Collections.Generic.Dictionary<string, string> LogAttributes;
     }
 }

@@ -28,32 +28,41 @@ namespace Beamable.Editor.Tests
 			finally { EditorSettings.serializationMode = _serializationMode; }
 		}
 
-		[TestCase("legacy")]
-		[TestCase("modern")]
-		[TestCase("empty")]
-		public void EventPhasesSurviveImportAndReload(string state)
+		[TestCase("2022.3.62f3", "legacy")]
+		[TestCase("2022.3.62f3", "modern")]
+		[TestCase("2022.3.62f3", "empty")]
+		[TestCase("6000.3.22f1", "legacy")]
+		[TestCase("6000.3.22f1", "modern")]
+		[TestCase("6000.3.22f1", "empty")]
+		public void EventPhasesSurviveImportAndReload(string producer, string state)
 		{
-			var asset = Import<MigrationEventAsset>(state + "-event");
+			var asset = Import<MigrationEventAsset>(state + "-event", producer: producer);
 			AssertEvent(asset, state);
 			AssertEvent(SaveAndReload(asset), state);
 		}
 
-		[TestCase("legacy")]
-		[TestCase("modern")]
-		[TestCase("empty")]
-		public void GameTeamsSurviveImportAndReload(string state)
+		[TestCase("2022.3.62f3", "legacy")]
+		[TestCase("2022.3.62f3", "modern")]
+		[TestCase("2022.3.62f3", "empty")]
+		[TestCase("6000.3.22f1", "legacy")]
+		[TestCase("6000.3.22f1", "modern")]
+		[TestCase("6000.3.22f1", "empty")]
+		public void GameTeamsSurviveImportAndReload(string producer, string state)
 		{
-			var asset = Import<MigrationGameAsset>(state + "-game");
+			var asset = Import<MigrationGameAsset>(state + "-game", producer: producer);
 			AssertGame(asset, state);
 			AssertGame(SaveAndReload(asset), state);
 		}
 
-		[TestCase("legacy")]
-		[TestCase("modern")]
-		[TestCase("empty")]
-		public void ShopReferencesAndStoreIdsSurviveImportAndReload(string state)
+		[TestCase("2022.3.62f3", "legacy")]
+		[TestCase("2022.3.62f3", "modern")]
+		[TestCase("2022.3.62f3", "empty")]
+		[TestCase("6000.3.22f1", "legacy")]
+		[TestCase("6000.3.22f1", "modern")]
+		[TestCase("6000.3.22f1", "empty")]
+		public void ShopReferencesAndStoreIdsSurviveImportAndReload(string producer, string state)
 		{
-			var asset = Import<MigrationShopAsset>(state + "-shop");
+			var asset = Import<MigrationShopAsset>(state + "-shop", producer: producer);
 			AssertShop(asset, state);
 			AssertShop(SaveAndReload(asset), state);
 		}
@@ -84,14 +93,14 @@ namespace Beamable.Editor.Tests
 			}
 		}
 
-		private T Import<T>(string fixture, string unknownField = null) where T : ScriptableObject
+		private T Import<T>(string fixture, string unknownField = null, string producer = "2022.3.62f3") where T : ScriptableObject
 		{
 			var instance = ScriptableObject.CreateInstance<T>();
 			string scriptPath;
 			try { scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(instance)); }
 			finally { UnityEngine.Object.DestroyImmediate(instance); }
 			Assert.That(scriptPath, Is.Not.Empty);
-			var fixturePath = Path.GetDirectoryName(scriptPath).Replace('\\', '/') + "/" + fixture + ".yaml.txt";
+			var fixturePath = Path.GetDirectoryName(scriptPath).Replace('\\', '/') + "/" + producer + "/" + fixture + ".yaml.txt";
 			var text = AssetDatabase.LoadAssetAtPath<TextAsset>(fixturePath);
 			Assert.That(text, Is.Not.Null, fixturePath);
 			var yaml = text.text.Replace("__SCRIPT_GUID__", AssetDatabase.AssetPathToGUID(scriptPath));

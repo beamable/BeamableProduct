@@ -7,7 +7,6 @@ namespace Beamable.Editor.BeamCli.Commands
     [System.SerializableAttribute()]
     public partial class BeamRealmConfigOutput
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015", Justification = "Reflection JSON requires this dictionary.")]
         public System.Collections.Generic.Dictionary<string, string> Config;
     }
 }

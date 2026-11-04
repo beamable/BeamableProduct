@@ -23,8 +23,6 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// <summary>
 		/// Populated by the stats requested upon lobby creation.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this dictionary.")]
 		public Dictionary<string, string> stats;
 
 		/// <summary>

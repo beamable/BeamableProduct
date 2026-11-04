@@ -303,8 +303,6 @@ namespace Beamable.Common.Api.Inventory
 		/// <summary>
 		/// The dynamic properties of the inventory item instance.
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, string> Properties;
 
 		/// <summary>
@@ -368,8 +366,6 @@ namespace Beamable.Common.Api.Inventory
 	public class InventoryUpdateRequest
 	{
 		public string transaction; // will be set by api
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, long> currencies;
 	}
 
@@ -783,14 +779,8 @@ namespace Beamable.Common.Api.Inventory
 	[Serializable]
 	public class InventoryView
 	{
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, long> currencies = new Dictionary<string, long>();
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, List<CurrencyProperty>> currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, List<ItemView>> items = new Dictionary<string, List<ItemView>>();
 		public InventoryFilterView itemFilters = new InventoryFilterView();
 		public string scope;
@@ -865,8 +855,6 @@ namespace Beamable.Common.Api.Inventory
 	public class ItemView
 	{
 		public long id;
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, string> properties = new Dictionary<string, string>();
 		public long createdAt;
 		public long updatedAt;

@@ -18,8 +18,6 @@ namespace Beamable.Common.BeamCli.Contracts
 		public string Body;
 		public string ExceptionMessage;
 		public string ExceptionStackTrace;
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Serialization", "UAC1015",
-			Justification = "Reflection JSON requires this field.")]
 		public Dictionary<string, string> Attributes;
 	}
 }
