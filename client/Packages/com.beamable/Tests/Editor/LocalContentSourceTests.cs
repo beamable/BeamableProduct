@@ -1,481 +1,319 @@
 using System;
 using System.Collections;
-using System.Threading;
-using System.Reflection;
-using System.Threading.Tasks;
-using UnityEngine.TestTools;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Beamable.Common;
 using Beamable.Common.Content;
+using Beamable.Content;
 using Beamable.Editor.ContentService;
+using Beamable.Platform.Tests.Content;
+using Beamable.Tests.Runtime;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Beamable.Editor.Tests
 {
-	public class LocalContentSourceTests
+	/// <summary>
+	/// Which local content source a new context gets, given the setting and the Content window's namespace.
+	/// </summary>
+	public class LocalContentRegistrationTests
 	{
-		private const string Namespace = "local-test";
-		private const string ContentId = "localSourceRegression.unpublished";
-		private string _root;
-		private string _directory;
-		private readonly List<EditorLocalContentSource> _sources = new List<EditorLocalContentSource>();
-		private readonly List<ContentObject> _callbackObjects = new List<ContentObject>();
+		private ContentConfiguration _config;
+		private readonly List<ILocalContentSource> _created = new List<ILocalContentSource>();
 
 		[SetUp]
 		public void SetUp()
 		{
-			_root = Path.Combine(Path.GetTempPath(), "beamable-local-content-" + Guid.NewGuid().ToString("N"));
-			// Match ConfigService.CONTENT_DIR: the CLI working copy lives in local/content.
-			_directory = Path.Combine(_root, "local", "content", "realm", Namespace);
-			Directory.CreateDirectory(_directory);
+			// A transient configuration, so the tests never read or change the project's settings.
+			_config = ScriptableObject.CreateInstance<ContentConfiguration>();
 		}
 
 		[TearDown]
 		public void TearDown()
 		{
-			LocalReentrantRegressionContent.AfterDeserialize = null;
-			foreach (var source in _sources) source.Dispose();
-			foreach (var content in _callbackObjects)
-				if (content != null) UnityEngine.Object.DestroyImmediate(content);
-			_callbackObjects.Clear();
-			_sources.Clear();
-			if (Directory.Exists(_root)) Directory.Delete(_root, true);
+			foreach (var source in _created)
+				if (source is EditorLocalContentSource local) local.OnDispose();
+			_created.Clear();
+			UnityEngine.Object.DestroyImmediate(_config);
 		}
 
 		[Test]
-		public void RoutingRequiresEnabledSettingAndExactNamespaceEvenWhenDirectoryIsMissing()
+		public void LocalModeResolvesTheNamespaceSelectedInTheContentWindow()
 		{
-			Directory.Delete(_directory);
-			var source = Source();
-			Assert.That(source.HandlesManifest(Namespace), Is.True);
+			var source = Create("seasonal");
+			Assert.That(source.HandlesManifest("seasonal"), Is.True);
+			Assert.That(source.HandlesManifest(LocalWorkingCopy.Namespace), Is.False,
+			            "Only the selected namespace resolves locally.");
+		}
+
+		[TestCase(null)]
+		[TestCase("")]
+		public void NoContentWindowSelectionMeansTheDefaultNamespace(string selection)
+		{
+			Assert.That(Create(selection).HandlesManifest("global"), Is.True);
+		}
+
+		[Test]
+		public void DisabledSettingResolvesNothingLocallyAndNeverConsultsTheEditor()
+		{
+			var source = EditorLocalContentRegistration.Create(new ContentParameterProvider(), _config, BeamableTest.DEFAULT_PID,
+				() => throw new AssertionException("The Content window was consulted."),
+				() => throw new AssertionException("The workspace was consulted."));
 			Assert.That(source.HandlesManifest("global"), Is.False);
-			Assert.That(source.HandlesManifest(Namespace.ToUpperInvariant()), Is.False);
-			Assert.That(source.HandlesManifest(null), Is.False);
-			Assert.That(Source(false).HandlesManifest(Namespace), Is.False);
-			Assert.That(Failure(source.GetManifest("global")), Is.InstanceOf<InvalidOperationException>());
 		}
 
-		[UnityTest]
-		public IEnumerator ManifestIncludesUnpublishedFilesAndSupportsTagQueriesWithoutSharingMutableMetadata()
+		private ILocalContentSource Create(string windowNamespace)
 		{
-			Write(ContentId, Json(17));
-			Write("localSourceRegression.other", Json(4, "other"));
-			var source = Source();
-			yield return Await(source.GetManifest(Namespace));
-			var manifest = source.GetManifest(Namespace).GetResult();
-			Assert.That(manifest.entries.Select(e => e.contentId),
-				Is.EqualTo(new[] { "localSourceRegression.other", ContentId }));
-			var selected = manifest.Filter("tag:draft").entries.Single();
-			Assert.That(selected.contentId, Is.EqualTo(ContentId));
-			Assert.That(selected.manifestID, Is.EqualTo(Namespace));
-			Assert.That(selected.version, Does.StartWith("local:"));
-			Assert.That(selected.uri, Is.Empty);
-			selected.tags[0] = "mutated";
-			manifest.entries.Clear();
-			Assert.That(source.GetManifest(Namespace).GetResult().Filter("tag:draft").entries.Count, Is.EqualTo(1));
+			var source = EditorLocalContentRegistration.Create(
+				new ContentParameterProvider { EnableLocalContentInEditor = true }, _config, BeamableTest.DEFAULT_PID,
+				() => windowNamespace, () => Promise<string>.Successful(string.Empty));
+			_created.Add(source);
+			return source;
 		}
+	}
 
-		[UnityTest]
-		public IEnumerator ResolvesCliWorkingCopyInsteadOfContentAtWorkspaceRoot()
-		{
-			Write(ContentId, Json(17));
-			var otherDirectory = Path.Combine(_root, "content", "realm", Namespace);
-			Directory.CreateDirectory(otherDirectory);
-			File.WriteAllText(Path.Combine(otherDirectory, ContentId + ".json"), Json(99));
-			var source = Source();
-			yield return Await(source.GetManifest(Namespace));
-			var content = (LocalSourceRegressionContent)source.GetContent(ContentId, typeof(ContentObject), Namespace).GetResult();
-			Assert.That(content.amount, Is.EqualTo(17));
-		}
+	/// <summary>
+	/// The editor's local content source over a temporary CLI working copy, through its public API only.
+	/// </summary>
+	public class LocalContentSourceTests
+	{
+		private LocalWorkingCopy _copy;
+		private readonly List<ContentObject> _callbackObjects = new List<ContentObject>();
 
-		[UnityTest]
-		public IEnumerator ReentrantResolutionWaitsForOneFullyInitializedOwnedObject()
-		{
-			const string id = "localReentrantRegression.self";
-			Write(id, Json(17));
-			var source = Source();
-			yield return Await(source.GetManifest(Namespace));
-			Promise<IContentObject> nested = null;
-			LocalReentrantRegressionContent.AfterDeserialize = content =>
-			{
-				_callbackObjects.Add(content);
-				if (_callbackObjects.Count == 1)
-				{
-					nested = source.GetContent(id, typeof(ContentObject), Namespace);
-					Assert.That(nested.IsCompleted, Is.False, "Do not expose a partially deserialized object.");
-				}
-			};
-			var outer = source.GetContent(id, typeof(ContentObject), Namespace).GetResult();
-			Assert.That(nested.GetResult(), Is.SameAs(outer));
-			Assert.That(_callbackObjects.Count, Is.EqualTo(1));
-			Assert.That(outer.Version, Does.StartWith("local:"));
-			source.Dispose();
-			Assert.That((ContentObject)outer == null, Is.True);
-		}
+		[SetUp]
+		public void SetUp() => _copy = new LocalWorkingCopy();
 
-		[UnityTest]
-		public IEnumerator ReentrantFailureSettlesWaitersAndAllowsRetry()
+		[TearDown]
+		public void TearDown()
 		{
-			const string id = "localReentrantRegression.self";
-			Write(id, Json(17));
-			var source = Source();
-			yield return Await(source.GetManifest(Namespace));
-			Promise<IContentObject> nested = null;
-			var expected = new InvalidOperationException("callback failed");
-			LocalReentrantRegressionContent.AfterDeserialize = content =>
-			{
-				_callbackObjects.Add(content);
-				if (_callbackObjects.Count == 1)
-				{
-					nested = source.GetContent(id, typeof(ContentObject), Namespace);
-					nested.Error(_ => { });
-					throw expected;
-				}
-			};
-			Assert.That(Failure(source.GetContent(id, typeof(ContentObject), Namespace)), Is.SameAs(expected));
-			Assert.That(Failure(nested), Is.SameAs(expected));
-			Assert.That(_callbackObjects.Single() == null, Is.True);
 			LocalReentrantRegressionContent.AfterDeserialize = null;
-			Assert.That(source.GetContent(id, typeof(ContentObject), Namespace).GetResult(), Is.Not.Null);
+			_copy.Dispose();
+			foreach (var content in _callbackObjects)
+				if (content != null) UnityEngine.Object.DestroyImmediate(content);
+			_callbackObjects.Clear();
 		}
 
 		[UnityTest]
-		public IEnumerator CyclicDeserializationCompletesBothObjectsWithoutReconstruction()
+		public IEnumerator DisposalCancelsRequestsWaitingForWorkspaceReadiness()
+		{
+			var workspace = new Promise<string>();
+			var source = _copy.Track(new EditorLocalContentSource(LocalWorkingCopy.Namespace, BeamableTest.DEFAULT_PID, workspace));
+			var request = source.GetManifest(LocalWorkingCopy.Namespace);
+			var content = source.GetContent(LocalWorkingCopy.ItemId, typeof(ContentObject), LocalWorkingCopy.Namespace);
+			Exception failure = null;
+			Exception contentFailure = null;
+			request.Error(error => failure = error);
+			content.Error(error => contentFailure = error);
+			source.OnDispose();
+			try
+			{
+				yield return LocalWorkingCopy.WaitUntil(() => request.IsCompleted && content.IsCompleted);
+				Assert.That(request.IsCompleted, Is.True, "Disposal must not wait for shared editor readiness.");
+				Assert.That(failure, Is.InstanceOf<OperationCanceledException>());
+				Assert.That(contentFailure, Is.InstanceOf<OperationCanceledException>());
+				Assert.That(workspace.IsCompleted, Is.False, "Disposal must not cancel the shared workspace promise.");
+			}
+			finally { workspace.CompleteSuccess(_copy.Workspace); }
+		}
+
+		[UnityTest]
+		public IEnumerator InfiniteSimulatedDelayDoesNotPreventLoading()
+		{
+			var source = _copy.Track(new EditorLocalContentSource(LocalWorkingCopy.Namespace, BeamableTest.DEFAULT_PID,
+				Promise<string>.Successful(_copy.Workspace), float.PositiveInfinity));
+			yield return LocalWorkingCopy.Await(source.GetManifest(LocalWorkingCopy.Namespace));
+		}
+
+		[UnityTest]
+		public IEnumerator UnpublishedItemResolvesFromTheCliWorkingCopy()
+		{
+			_copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(17, "draft"));
+			// A same-named file outside local/content must be ignored.
+			_copy.WriteOutsideWorkingCopy(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(99));
+			var source = _copy.Source();
+
+			var manifest = source.GetManifest(LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(manifest);
+			var item = source.GetContent(LocalWorkingCopy.ItemId, typeof(ContentObject), LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(item);
+
+			var entry = manifest.GetResult().entries.Single();
+			var content = (LocalSourceRegressionContent)item.GetResult();
+			Assert.That(entry.contentId, Is.EqualTo(LocalWorkingCopy.ItemId));
+			Assert.That(entry.tags, Is.EqualTo(new[] { "draft" }));
+			Assert.That(content.amount, Is.EqualTo(17));
+			Assert.That(content.Id, Is.EqualTo(LocalWorkingCopy.ItemId));
+			Assert.That(content.ManifestID, Is.EqualTo(LocalWorkingCopy.Namespace));
+			Assert.That(content.Tags, Is.EqualTo(new[] { "draft" }));
+			Assert.That(content.Version, Is.EqualTo(entry.version));
+		}
+
+		[UnityTest]
+		public IEnumerator RequestingAnIncompatibleTypeFails()
+		{
+			_copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(17));
+			var request = _copy.Source().GetContent(LocalWorkingCopy.ItemId, typeof(LocalReentrantRegressionContent), LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(request, expectError: true);
+			Assert.That(LocalWorkingCopy.Failure(request), Is.InstanceOf<InvalidOperationException>());
+		}
+
+		[UnityTest]
+		public IEnumerator EditsAfterTheFirstReadAppearOnlyInANewSource()
+		{
+			_copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(17));
+			var source = _copy.Source();
+			yield return LocalWorkingCopy.Await(source.GetManifest(LocalWorkingCopy.Namespace));
+
+			_copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(99));
+			var original = source.GetContent(LocalWorkingCopy.ItemId, typeof(ContentObject), LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(original);
+			var fresh = _copy.Source().GetContent(LocalWorkingCopy.ItemId, typeof(ContentObject), LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(fresh);
+
+			Assert.That(((LocalSourceRegressionContent)original.GetResult()).amount, Is.EqualTo(17));
+			Assert.That(((LocalSourceRegressionContent)fresh.GetResult()).amount, Is.EqualTo(99));
+		}
+
+		[UnityTest]
+		public IEnumerator ChangingARuntimeObjectDoesNotWriteTheWorkingCopy()
+		{
+			var path = _copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(17));
+			var before = File.ReadAllBytes(path);
+			var request = _copy.Source().GetContent(LocalWorkingCopy.ItemId, typeof(ContentObject), LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(request);
+
+			var content = (LocalSourceRegressionContent)request.GetResult();
+			content.amount = 90;
+			content.Tags = new[] { "runtime-only" };
+
+			Assert.That(File.ReadAllBytes(path), Is.EqualTo(before));
+			Assert.That(Directory.GetFiles(Path.GetDirectoryName(path)), Has.Length.EqualTo(1));
+		}
+
+		private static readonly string[] MalformedFiles = { "[]", "{\"properties\":{},\"tags\":[12]}" };
+
+		[UnityTest]
+		public IEnumerator MalformedFileFailsWithItsPathAndRecoversOnceFixed([ValueSource(nameof(MalformedFiles))] string malformed)
+		{
+			_copy.Write("localSourceRegression.valid", LocalWorkingCopy.Json(1));
+			var path = _copy.Write(LocalWorkingCopy.ItemId, malformed);
+			var source = _copy.Source();
+
+			var failed = source.GetManifest(LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(failed, expectError: true);
+			Assert.That(LocalWorkingCopy.Failure(failed).Message, Does.Contain(path));
+
+			_copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(17));
+			var retry = source.GetManifest(LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(retry);
+			Assert.That(retry.GetResult().entries, Has.Count.EqualTo(2));
+		}
+
+		[UnityTest]
+		public IEnumerator MissingDirectoryFailsWithoutCreatingIt()
+		{
+			var directory = _copy.ContentDirectory(BeamableTest.DEFAULT_PID);
+			Directory.Delete(directory);
+
+			var request = _copy.Source().GetManifest(LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(request, expectError: true);
+
+			Assert.That(LocalWorkingCopy.Failure(request).Message, Does.Contain(directory));
+			Assert.That(Directory.Exists(directory), Is.False);
+		}
+
+		[UnityTest]
+		public IEnumerator ItemThatResolvesItselfWhileLoadingYieldsOneCompleteObject()
+		{
+			const string id = "localReentrantRegression.self";
+			_copy.Write(id, LocalWorkingCopy.Json(17));
+			var source = _copy.Source();
+			yield return LocalWorkingCopy.Await(source.GetManifest(LocalWorkingCopy.Namespace));
+			Promise<IContentObject> nested = null;
+			LocalReentrantRegressionContent.AfterDeserialize = content =>
+			{
+				_callbackObjects.Add(content);
+				if (_callbackObjects.Count == 1)
+				{
+					nested = source.GetContent(id, typeof(ContentObject), LocalWorkingCopy.Namespace);
+					Assert.That(nested.IsCompleted, Is.False, "A partially deserialized object must not be exposed.");
+				}
+			};
+
+			var outer = source.GetContent(id, typeof(ContentObject), LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(outer);
+			yield return LocalWorkingCopy.Await(nested);
+
+			Assert.That(nested.GetResult(), Is.SameAs(outer.GetResult()));
+			Assert.That(_callbackObjects, Has.Count.EqualTo(1));
+		}
+
+		[UnityTest]
+		public IEnumerator ItemsThatResolveEachOtherWhileLoadingYieldOneObjectEach()
 		{
 			const string first = "localReentrantRegression.first";
 			const string second = "localReentrantRegression.second";
-			Write(first, Json(1));
-			Write(second, Json(2));
-			var source = Source();
-			yield return Await(source.GetManifest(Namespace));
+			_copy.Write(first, LocalWorkingCopy.Json(1));
+			_copy.Write(second, LocalWorkingCopy.Json(2));
+			var source = _copy.Source();
+			yield return LocalWorkingCopy.Await(source.GetManifest(LocalWorkingCopy.Namespace));
 			var resolutions = new List<Promise<IContentObject>>();
 			LocalReentrantRegressionContent.AfterDeserialize = content =>
 			{
 				_callbackObjects.Add(content);
-				Assert.That(_callbackObjects.Count, Is.LessThanOrEqualTo(2), "Cycle must not construct another object.");
-				resolutions.Add(source.GetContent(content.Id == first ? second : first, typeof(ContentObject), Namespace));
+				resolutions.Add(source.GetContent(content.Id == first ? second : first, typeof(ContentObject), LocalWorkingCopy.Namespace));
 			};
-			var result = source.GetContent(first, typeof(ContentObject), Namespace).GetResult();
-			Assert.That(_callbackObjects.Count, Is.EqualTo(2));
-			Assert.That(resolutions.All(p => p.IsCompleted), Is.True);
-			Assert.That(resolutions.Single(p => p.GetResult().Id == first).GetResult(), Is.SameAs(result));
-			source.Dispose();
-			Assert.That(_callbackObjects.All(c => c == null), Is.True);
-		}
 
-		private static readonly string[] QueryCases = { "", "tag:draft", "tag:missing", "t:localSourceRegression", "id:other", "t:localSourceRegression tag:draft id:unpublished" };
-		[UnityTest]
-		public IEnumerator FilteredSnapshotsMatchManifestQuerySemanticsAndIsolateMutations([ValueSource(nameof(QueryCases))] string filter)
-		{
-			Write(ContentId, Json(17));
-			Write("localSourceRegression.other", Json(4, "other"));
-			Write("localSourceRegression.other.child", Json(5, "other"));
-			var source = Source();
-			yield return Await(source.GetManifest(Namespace));
-			var query = ContentQuery.Parse(filter);
-			var expected = source.GetManifest(Namespace).GetResult().Filter(query);
-			var result = source.GetManifest(Namespace, query).GetResult();
-			Assert.That(result.entries.Select(e => e.contentId), Is.EqualTo(expected.entries.Select(e => e.contentId)));
-			foreach (var entry in result.entries)
-			{
-				entry.contentId = "mutated";
-				entry.tags[0] = "mutated";
-			}
-			result.entries.Clear();
-			var repeated = source.GetManifest(Namespace, query).GetResult();
-			Assert.That(repeated.entries.Select(e => e.contentId), Is.EqualTo(expected.entries.Select(e => e.contentId)));
-			Assert.That(source.GetManifest(Namespace).GetResult().entries.Count, Is.EqualTo(3));
+			var result = source.GetContent(first, typeof(ContentObject), LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(result);
+			foreach (var resolution in resolutions.ToList()) yield return LocalWorkingCopy.Await(resolution);
+
+			Assert.That(_callbackObjects, Has.Count.EqualTo(2));
+			Assert.That(resolutions.Single(p => p.GetResult().Id == first).GetResult(), Is.SameAs(result.GetResult()));
 		}
 
 		[UnityTest]
-		public IEnumerator EmptyDirectoryIsAnEmptyManifest()
-		{
-			var request = Source().GetManifest(Namespace);
-			yield return Await(request);
-			Assert.That(request.GetResult().entries, Is.Empty);
-		}
-
-		[UnityTest]
-		public IEnumerator MissingDirectoryFailsLocallyWithoutCreatingItAndCanRetry()
-		{
-			Directory.Delete(_directory);
-			var source = Source();
-			var failed = source.GetManifest(Namespace);
-			yield return Await(failed, expectError: true);
-			Assert.That(Failure(failed).Message, Does.Contain(_directory));
-			Assert.That(Directory.Exists(_directory), Is.False);
-			Directory.CreateDirectory(_directory);
-			Write(ContentId, Json(17));
-			var retry = source.GetManifest(Namespace);
-			yield return Await(retry);
-			Assert.That(retry.GetResult().entries.Count, Is.EqualTo(1));
-		}
-
-		private static readonly string[] MalformedCases = { "[]", "{\"properties\":[],\"tags\":[]}", "{\"properties\":{},\"tags\":[12]}", "{\"properties\":{}}" };
-		[UnityTest]
-		public IEnumerator MalformedFileReportsPathAndDoesNotPublishPartialSnapshot([ValueSource(nameof(MalformedCases))] string malformed)
-		{
-			Write("localSourceRegression.a", Json(1));
-			var path = Write(ContentId, malformed);
-			var source = Source();
-			var failed = source.GetManifest(Namespace);
-			yield return Await(failed, expectError: true);
-			Assert.That(Failure(failed).Message, Does.Contain(path));
-			Write(ContentId, Json(17));
-			var retry = source.GetManifest(Namespace);
-			yield return Await(retry);
-			Assert.That(retry.GetResult().entries.Count, Is.EqualTo(2));
-		}
-
-		[UnityTest]
-		public IEnumerator TypedResolutionUsesRegisteredConcreteTypeAndLocalIdentity()
-		{
-			Write(ContentId, Json(17));
-			var source = Source();
-			yield return Await(source.GetManifest(Namespace));
-			var content = (LocalSourceRegressionContent)source.GetContent(ContentId, typeof(ContentObject), Namespace).GetResult();
-			Assert.That(content.amount, Is.EqualTo(17));
-			Assert.That(content.Id, Is.EqualTo(ContentId));
-			Assert.That(content.ManifestID, Is.EqualTo(Namespace));
-			Assert.That(content.Tags, Is.EqualTo(new[] { "draft" }));
-			Assert.That(content.Version, Is.EqualTo(source.GetManifest(Namespace).GetResult().entries.Single().version));
-			Assert.That(content.OnEditorChanged, Is.Null);
-			Assert.That(source.GetContent(ContentId, typeof(LocalSourceRegressionContent), Namespace).GetResult(), Is.SameAs(content));
-			Assert.That(Failure(source.GetContent(ContentId, typeof(string), Namespace)), Is.InstanceOf<InvalidOperationException>());
-		}
-
-		[UnityTest]
-		public IEnumerator MissingItemFailsInsteadOfFallingBack()
-		{
-			var missing = Source().GetContent(ContentId, typeof(ContentObject), Namespace);
-			yield return Await(missing, expectError: true);
-			Assert.That(Failure(missing),
-				Is.InstanceOf<ContentNotFoundException>());
-		}
-
-		[UnityTest]
-		public IEnumerator SnapshotKeepsManifestAndItemConsistentAndNewSourceObservesEdits()
-		{
-			Write(ContentId, Json(17));
-			var source = Source();
-			yield return Await(source.GetManifest(Namespace));
-			var version = source.GetManifest(Namespace).GetResult().entries.Single().version;
-			Write(ContentId, Json(99));
-			var original = (LocalSourceRegressionContent)source.GetContent(ContentId, typeof(ContentObject), Namespace).GetResult();
-			Assert.That(original.amount, Is.EqualTo(17));
-			Assert.That(original.Version, Is.EqualTo(version));
-			var freshRequest = Source().GetContent(ContentId, typeof(ContentObject), Namespace);
-			yield return Await(freshRequest);
-			var fresh = (LocalSourceRegressionContent)freshRequest.GetResult();
-			Assert.That(fresh.amount, Is.EqualTo(99));
-			Assert.That(fresh.Version, Is.Not.EqualTo(version));
-		}
-
-		[UnityTest]
-		public IEnumerator ResolvingAndMutatingRuntimeObjectDoesNotWriteAuthoringFile()
-		{
-			var path = Write(ContentId, Json(17));
-			var before = File.ReadAllBytes(path);
-			var lastWrite = File.GetLastWriteTimeUtc(path);
-			var source = Source();
-			yield return Await(source.GetManifest(Namespace));
-			source.GetManifest(Namespace).GetResult();
-			var content = (LocalSourceRegressionContent)source.GetContent(ContentId, typeof(ContentObject), Namespace).GetResult();
-			content.amount = 90;
-			content.Tags = new[] { "runtime-only" };
-			Assert.That(File.ReadAllBytes(path), Is.EqualTo(before));
-			Assert.That(File.GetLastWriteTimeUtc(path), Is.EqualTo(lastWrite));
-			Assert.That(Directory.GetFiles(_directory).Length, Is.EqualTo(1));
-		}
-
-		[UnityTest]
-		public IEnumerator DisposeDestroysOwnedObjectsAndRejectsFurtherRequests()
-		{
-			Write(ContentId, Json(17));
-			var source = Source();
-			yield return Await(source.GetManifest(Namespace));
-			var content = (ContentObject)source.GetContent(ContentId, typeof(ContentObject), Namespace).GetResult();
-			source.Dispose();
-			Assert.That(content == null, Is.True, "The source must release its native Unity objects.");
-			Assert.That(SnapshotTask(source), Is.Null, "Disposal must release the task's retained JSON snapshot.");
-			Assert.That(Failure(source.GetManifest(Namespace)), Is.InstanceOf<ObjectDisposedException>());
-			Assert.That(Failure(source.GetContent(ContentId, typeof(ContentObject), Namespace)), Is.InstanceOf<ObjectDisposedException>());
-			Assert.DoesNotThrow(() => source.Dispose());
-		}
-
-		[UnityTest]
-		public IEnumerator ColdSnapshotReturnsPendingBeforeMainThreadCompletion()
-		{
-			Write(ContentId, Json(17));
-			var request = Source().GetManifest(Namespace);
-			Assert.That(request.IsCompleted, Is.False, "A cold snapshot must not read and parse the working copy on the caller thread.");
-			yield return Await(request);
-			Assert.That(request.GetResult().entries.Single().contentId, Is.EqualTo(ContentId));
-		}
-
-		private static IEnumerator Await<T>(Promise<T> promise, bool expectError = false)
-		{
-			Exception failure = null;
-			promise.Error(error => failure = error);
-			var timer = System.Diagnostics.Stopwatch.StartNew();
-			for (var frame = 0; !promise.IsCompleted && frame < 10000 && timer.Elapsed.TotalSeconds < 15; frame++)
-				yield return null;
-			Assert.That(promise.IsCompleted, Is.True, "Local content request did not settle within the bounded wait.");
-			if (expectError) Assert.That(failure, Is.Not.Null, "Expected a failed request.");
-			else Assert.That(failure, Is.Null, failure?.ToString());
-		}
-
-		[UnityTest]
-		public IEnumerator ConcurrentColdRequestsShareSnapshotAndMaterializeOnMainThread()
+		public IEnumerator SimultaneousFirstRequestsShareOneObjectBuiltOnTheMainThread()
 		{
 			const string id = "localReentrantRegression.concurrent";
-			Write(id, Json(17));
-			var source = Source();
+			_copy.Write(id, LocalWorkingCopy.Json(17));
+			var source = _copy.Source();
 			var mainThread = Thread.CurrentThread.ManagedThreadId;
-			var callbackThread = -1;
-			var callbackCount = 0;
+			var callbackThreads = new List<int>();
 			LocalReentrantRegressionContent.AfterDeserialize = content =>
 			{
 				_callbackObjects.Add(content);
-				callbackThread = Thread.CurrentThread.ManagedThreadId;
-				callbackCount++;
+				callbackThreads.Add(Thread.CurrentThread.ManagedThreadId);
 			};
-			var manifest = source.GetManifest(Namespace);
-			var snapshotTask = SnapshotTask(source);
-			Assert.That(snapshotTask, Is.Not.Null);
-			var first = source.GetContent(id, typeof(ContentObject), Namespace);
-			var second = source.GetContent(id, typeof(LocalReentrantRegressionContent), Namespace);
-			Assert.That(SnapshotTask(source), Is.SameAs(snapshotTask), "Concurrent requests must share one filesystem scan.");
-			var manifestThread = -1;
-			var contentThread = -1;
-			manifest.Then(_ => manifestThread = Thread.CurrentThread.ManagedThreadId);
-			first.Then(_ => contentThread = Thread.CurrentThread.ManagedThreadId);
-			yield return Await(manifest);
-			yield return Await(first);
-			yield return Await(second);
+
+			var first = source.GetContent(id, typeof(ContentObject), LocalWorkingCopy.Namespace);
+			var second = source.GetContent(id, typeof(LocalReentrantRegressionContent), LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(first);
+			yield return LocalWorkingCopy.Await(second);
+
 			Assert.That(first.GetResult(), Is.SameAs(second.GetResult()));
-			Assert.That(first.GetResult().Version, Is.EqualTo(manifest.GetResult().entries.Single().version));
-			Assert.That(callbackCount, Is.EqualTo(1));
-			Assert.That(callbackThread, Is.EqualTo(mainThread));
-			Assert.That(manifestThread, Is.EqualTo(mainThread));
-			Assert.That(contentThread, Is.EqualTo(mainThread));
-			Assert.That(source.GetContent(id, typeof(ContentObject), Namespace).IsCompleted, Is.True, "Warm item lookup remains synchronous.");
+			Assert.That(callbackThreads, Is.EqualTo(new[] { mainThread }));
 		}
 
 		[UnityTest]
-		public IEnumerator DisposalDuringColdLoadFailsAllWaitersWithoutPublishingSnapshot()
+		public IEnumerator DisposingReleasesObjectsAndFailsLaterRequests()
 		{
-			Write(ContentId, Json(17));
-			var source = Source();
-			var manifest = source.GetManifest(Namespace);
-			var content = source.GetContent(ContentId, typeof(ContentObject), Namespace);
-			manifest.Error(_ => { });
-			content.Error(_ => { });
-			var background = SnapshotTask(source);
-			Assert.That(manifest.IsCompleted, Is.False);
-			source.Dispose();
-			yield return Await(manifest, expectError: true);
-			yield return Await(content, expectError: true);
-			Assert.That(Failure(manifest), Is.InstanceOf<OperationCanceledException>().Or.InstanceOf<ObjectDisposedException>());
-			Assert.That(Failure(content), Is.InstanceOf<OperationCanceledException>().Or.InstanceOf<ObjectDisposedException>());
-			Assert.That(typeof(EditorLocalContentSource).GetField("_entries", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(source), Is.Null);
-			// Ensure the background reader has exited before TearDown removes its temporary directory.
-			var timer = System.Diagnostics.Stopwatch.StartNew();
-			for (var frame = 0; !background.IsCompleted && frame < 10000 && timer.Elapsed.TotalSeconds < 15; frame++)
-				yield return null;
-			Assert.That(background.IsCompleted, Is.True);
-			if (background.IsFaulted) _ = background.Exception;
+			_copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(17));
+			var source = _copy.Source();
+			var request = source.GetContent(LocalWorkingCopy.ItemId, typeof(ContentObject), LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(request);
+			var content = (ContentObject)request.GetResult();
+
+			LocalWorkingCopy.DisposeSource(source);
+			var later = source.GetContent(LocalWorkingCopy.ItemId, typeof(ContentObject), LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(later, expectError: true);
+
+			Assert.That(content == null, Is.True, "Disposal must destroy the Unity objects the source created.");
+			Assert.That(LocalWorkingCopy.Failure(later), Is.InstanceOf<ObjectDisposedException>());
 		}
 
-		[UnityTest]
-		public IEnumerator FailedConcurrentWaiterCannotClearRetryStartedByEarlierWaiter()
-		{
-			Write(ContentId, "[]");
-			var source = Source();
-			var first = source.GetManifest(Namespace);
-			var second = source.GetManifest(Namespace);
-			second.Error(_ => { });
-			Promise<ClientManifest> retry = null;
-			Task retryTask = null;
-			first.Error(_ =>
-			{
-				Write(ContentId, Json(17));
-				retry = source.GetManifest(Namespace);
-				retry.Error(__ => { });
-				retryTask = SnapshotTask(source);
-			});
-			yield return Await(first, expectError: true);
-			yield return Await(second, expectError: true);
-			Assert.That(retry, Is.Not.Null);
-			Assert.That(SnapshotTask(source), Is.SameAs(retryTask));
-			yield return Await(retry);
-			Assert.That(retry.GetResult().entries.Single().contentId, Is.EqualTo(ContentId));
-		}
-
-		[UnityTest]
-		public IEnumerator WorkerCountsProduceIdenticalDeterministicMetadata()
-		{
-			for (var index = 23; index >= 0; index--)
-				Write("localSourceRegression.item" + index.ToString("D2"), Json(index, index % 2 == 0 ? "even" : "odd"));
-			string[] expected = null;
-			foreach (var workers in new[] { 1, 2, 4 })
-			{
-				var source = Source(workerCount: workers);
-				var request = source.GetManifest(Namespace);
-				yield return Await(request);
-				var entries = request.GetResult().entries;
-				Assert.That(entries.Select(e => e.contentId), Is.Ordered.Using<string>(StringComparer.Ordinal));
-				var metadata = entries.Select(e => string.Join("|", e.contentId, e.manifestID, e.version, e.uri,
-					e.visibility.ToString(), string.Join(",", e.tags))).ToArray();
-				if (expected == null) expected = metadata;
-				else Assert.That(metadata, Is.EqualTo(expected), "Metadata changed with worker count " + workers);
-			}
-		}
-
-		private static Task SnapshotTask(EditorLocalContentSource source) =>
-			(Task)typeof(EditorLocalContentSource).GetField("_snapshotTask", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(source);
-
-		private EditorLocalContentSource Source(bool enabled = true, int workerCount = 4)
-		{
-			var source = new EditorLocalContentSource(enabled, _root, "customer", "realm", Namespace, workerCount);
-			_sources.Add(source);
-			return source;
-		}
-
-		private string Write(string id, string json)
-		{
-			var path = Path.Combine(_directory, id + ".json");
-			File.WriteAllText(path, json);
-			return path;
-		}
-
-		private static string Json(int amount, string tag = "draft") =>
-			"{\"properties\":{\"amount\":{\"data\":" + amount + "}},\"tags\":[\"" + tag + "\"]}";
-
-		private static Exception Failure<T>(Promise<T> promise)
-		{
-			Exception observed = null;
-			promise.Error(error => observed = error);
-			Assert.That(observed, Is.Not.Null, "Expected a settled failure, not a pending or successful promise.");
-			return observed;
-		}
-	}
-
-	[ContentType("localSourceRegression")]
-	public class LocalSourceRegressionContent : ContentObject
-	{
-		public int amount;
-	}
-
-	[ContentType("localReentrantRegression")]
-	public class LocalReentrantRegressionContent : ContentObject, ISerializationCallbackReceiver
-	{
-		public int amount;
-		public static Action<LocalReentrantRegressionContent> AfterDeserialize;
-		public void OnBeforeSerialize() { }
-		public void OnAfterDeserialize() => AfterDeserialize?.Invoke(this);
 	}
 }

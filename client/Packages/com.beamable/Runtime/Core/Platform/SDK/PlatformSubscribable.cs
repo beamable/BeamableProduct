@@ -100,6 +100,9 @@ namespace Beamable.Api
 
 		public bool UsesHierarchyScopes { get; protected set; }
 
+		// Subclasses with a scoped resource can stop queued and in-flight refresh work during shutdown.
+		protected virtual bool CanRefresh => true;
+
 		protected PlatformSubscribable(IDependencyProvider provider,
 									   string service,
 									   BeamableGetApiResource<ScopedRsp> getter = null)
@@ -246,6 +249,7 @@ namespace Beamable.Api
 		/// <returns></returns>
 		protected Promise<Unit> Refresh(string scope)
 		{
+			if (!CanRefresh) return Promise<Unit>.Successful(PromiseBase.Unit);
 			if (scope == "")
 			{
 				nextRefreshScopes.Clear();
@@ -287,12 +291,23 @@ namespace Beamable.Api
 			yield return Yielders.EndOfFrame;
 			var promise = nextRefreshPromise;
 			nextRefreshPromise = null;
+			if (!CanRefresh)
+			{
+				nextRefreshScopes.Clear();
+				promise.CompleteSuccess(PromiseBase.Unit);
+				yield break;
+			}
 			var sentScopes = nextRefreshScopes.ToArray();
 			var scope = string.Join(",", nextRefreshScopes);
 			nextRefreshScopes.Clear();
 
 			ExecuteRequest(requester, CreateRefreshUrl(scope)).Error(err =>
 			{
+				if (!CanRefresh)
+				{
+					promise.CompleteSuccess(PromiseBase.Unit);
+					return;
+				}
 				var delay = SubscribableConsts.RETRY_DELAYS[Math.Min(retry, SubscribableConsts.RETRY_DELAYS.Length - 1)];
 				PlatformLogger.Log($"PLATFORM SUBSCRIBABLE: Error {service}:{scope}:{err}; Retry {retry + 1} in {delay}");
 				promise.CompleteError(err);
@@ -320,10 +335,18 @@ namespace Beamable.Api
 				{
 					retry += 1;
 				}
-			}).FlatMap(x => OnRefresh(x, sentScopes)).Then(_ =>
+			}).Then(x =>
 			{
-				retry = 0;
-				promise.CompleteSuccess(PromiseBase.Unit);
+				if (!CanRefresh)
+				{
+					promise.CompleteSuccess(PromiseBase.Unit);
+					return;
+				}
+				OnRefresh(x, sentScopes).Error(promise.CompleteError).Then(_ =>
+				{
+					retry = 0;
+					promise.CompleteSuccess(PromiseBase.Unit);
+				});
 			});
 		}
 

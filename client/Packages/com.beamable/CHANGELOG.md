@@ -19,7 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI discovery now reports an incompatible or unavailable server it launched instead of accumulating replacement processes. Later requests can reuse the server after its configuration is corrected, or start a replacement after the prior launch finishes.
 
 - Fixed content watcher recovery when switching modes, reloading scripts, and restarting after failures, and prevented telemetry discovery from shutting down an active CLI server.
-- Fixed local content mode in Play Mode to resolve the editor namespace from a read-only snapshot of local JSON, including unpublished items, with background loading to keep the editor responsive.
+- Fixed local content mode in Play Mode to resolve the namespace selected in the Content window from a read-only snapshot of local JSON, including unpublished items, with background loading to keep the editor responsive.
+- Local content stays on the running context's realm, cancels pending loads when the context stops, and stops manifest refreshes during shutdown.
 - `MustBeComparatorString` now validates against what the backend accepts for each field. Stat requirements (listings, announcements, leaderboard and event cohorts) also accept `neq`, `gte`, `lte` and the long names (`equal`, `notequal`, `greaterthan`, `greaterthanequal`, `lessthan`, `lessthanequal`). Offer purchase requirements accept `eq`, `ne`, `gt`, `ge`, `lt`, `le`. Cohort requirements accept only `eq` (member) and `ne` (not a member); any other value used to be evaluated as "not a member", so replace it with `ne`.
 - With Unity IAP 5, purchasing can be initialized more than once (login, `ChangeAuthorizedPlayer`, several `BeamContext`s, play mode without domain reload) without failing with `ErrorNoProductsAvailable (FetchProducts cannot be invoked if a fetch is already in progress...)`. SKUs without a product id for the current store are skipped with a warning, products the store doesn't know no longer disable purchasing, and Steam builds use the Beamable Steam store.
 - Purchases are no longer lost or left hanging: an order whose fulfillment fails stays pending in the store instead of being confirmed without its reward, and `StartPurchase` always completes, including for unknown SKUs, a second purchase while one is in flight (`ExistingPurchasePending`), deferred payments (`UnityBeamablePurchaser.PURCHASE_DEFERRED_ERROR_CODE`, on Unity IAP 4 too) and a store that disconnected in the background. Initializing purchasing again or disposing its context settles a purchase left in flight, and its Beamable transaction is always closed with the account that began it. Prices are sent in a culture-independent format.
@@ -30,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Local Mode now pauses automatic content synchronization while History continues tracking realm publications. Publishing requires clearing validation errors, conflicts, and incoming changes.
 - Content with unverified change history also requires review before publishing, including externally generated JSON with an empty or null `referenceManifestId`. Keep this field when writing content files (omitting it fails loading), then use the Issues flow to choose the local or realm version explicitly.
 - Beam Account login window pre-fills the environment and organization from the project's existing configuration, such as `config-defaults.txt`, and restores the previously selected realm after login.
+
+### Deprecated
+
+- `ContentConfiguration.EditorManifestID` is retained for source compatibility but ignored. Local content mode uses the namespace selected in the Content window instead.
 
 ## [6.2.0] - 2026-10-08
 

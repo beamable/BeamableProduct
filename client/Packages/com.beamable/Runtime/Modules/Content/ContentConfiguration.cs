@@ -27,8 +27,9 @@ namespace Beamable.Content
 		public bool multipleContentNamespacesSettingLocked;
 
 #if UNITY_EDITOR
-        [HideInInspector]
-        public string EditorManifestID = DEFAULT_MANIFEST_ID;
+		[HideInInspector]
+		[Obsolete("Local content mode uses the namespace selected in the Content window. This field is ignored.")]
+		public string EditorManifestID = DEFAULT_MANIFEST_ID;
 
         [Tooltip("In editor, when downloading content, this controls the batch size of the download. By default, it is 100.")]
         public OptionalInt EditorDownloadBatchSize;
@@ -43,7 +44,7 @@ namespace Beamable.Content
 		[Tooltip("When enabled, content checksum will be calculated based on default object property order.")]
 		public bool EnablePropertyOrderDependenceForContentChecksum = true;
 
-		[Tooltip("In Play Mode, resolve the editor namespace from a read-only snapshot of the local JSON working copy, including unpublished items. Other namespaces use realm content. Restart Play Mode after changing this setting, namespace, or local files. Missing local content fails without realm fallback. Changing this setting stops active content and history watchers, waits for their CLI work to finish, then restarts them. While enabled, these watchers do not auto-sync the working copy. Does not affect player builds.")]
+		[Tooltip("In Play Mode, resolve the namespace selected in the Content window from a read-only snapshot of the local JSON working copy, including unpublished items. Other namespaces use realm content. Restart Play Mode after changing this setting, namespace, or local files. Missing local content fails without realm fallback. Changing this setting stops active content and history watchers, waits for their CLI work to finish, then restarts them. While enabled, these watchers do not auto-sync the working copy. Does not affect player builds.")]
 		public bool EnableLocalContentInEditor = false;
 
 		[Tooltip("When using Local Content Mode In Editor, simulate how long each content reference will take to fetch.")]
@@ -119,14 +120,6 @@ namespace Beamable.Content
 		{
 #if UNITY_EDITOR
 			HistoryEntriesPerPage = Mathf.Clamp(HistoryEntriesPerPage, 10, 50);
-#endif
-
-#if UNITY_EDITOR
-            if (!IsValidManifestID(EditorManifestID, out var message))
-            {
-                Debug.LogWarning($"Invalid manifest ID: {message}");
-                EditorManifestID = DEFAULT_MANIFEST_ID;
-            }
 #endif
 
 			if (!EnableMultipleContentNamespaces)

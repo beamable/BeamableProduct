@@ -1,9 +1,13 @@
 using System;
 using System.Collections;
-using System.IO;
-using System.Reflection;
+using System.Linq;
+using Beamable.Api;
+using Beamable.Api.Payments;
+using Beamable.Common;
+using Beamable.Common.Api.Content;
+using Beamable.Common.Content;
 using Beamable.Content;
-using Beamable.Editor.ContentService;
+using Beamable.Platform.Tests.Content;
 using Beamable.Tests.Runtime;
 using NUnit.Framework;
 using UnityEditor;
@@ -13,18 +17,16 @@ using UnityEngine.TestTools;
 
 namespace Beamable.Editor.Tests
 {
-    // Exercises real Unity transitions with manually constructed production sessions.
-    // Does not resolve BeamContext/BeamEditorContext, run CLI, or prove DI registration.
+    // Real Play Mode transitions and context-owned source disposal, without a realm or CLI connection.
     public class Issue4866LifecycleReproTests
     {
         const string Key = "Beamable.Issue4866.IsolatedLifecycle.";
-        const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
 
         [UnityTest]
-        public IEnumerator RealPlayExitDisposesSession_WithDomainReload() => Run(false);
+        public IEnumerator RealPlayExitDisposesSource_WithDomainReload() => Run(false);
 
         [UnityTest]
-        public IEnumerator RealPlayExitDisposesSession_WithoutDomainReload() => Run(true);
+        public IEnumerator RealPlayExitDisposesSource_WithoutDomainReload() => Run(true);
 
         IEnumerator Run(bool disableDomainReload)
         {
@@ -38,58 +40,63 @@ namespace Beamable.Editor.Tests
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             yield return new EnterPlayMode();
-            Assert.That(EditorApplication.isPlaying, Is.True);
-            CreateSessionAndObserveExit();
+            yield return CreateContextAndObserveExit();
             yield return new ExitPlayMode();
-            Assert.That(SessionState.GetInt(Key + "observed", 0), Is.EqualTo(1), SessionState.GetString(Key + "error", ""));
+            AssertDisposed(1);
 
-            // A second real session verifies callbacks do not retain the old owner when reload is off.
+            // Keep expected counts literal: iterator locals do not survive the test runner's domain reload.
             yield return new EnterPlayMode();
-            Assert.That(EditorApplication.isPlaying, Is.True);
-            CreateSessionAndObserveExit();
+            yield return CreateContextAndObserveExit();
             yield return new ExitPlayMode();
-            Assert.That(SessionState.GetInt(Key + "observed", 0), Is.EqualTo(2), SessionState.GetString(Key + "error", ""));
-            TestContext.WriteLine("CONFIRMED two real Play Mode exits disposed manually constructed sessions and their owned sources. DI initialization and snapshot recapture are outside this test.");
+            AssertDisposed(2);
         }
 
-        static void CreateSessionAndObserveExit()
+        static void AssertDisposed(int count)
         {
-            var config = ScriptableObject.CreateInstance<ContentConfiguration>();
-            config.EnableLocalContentInEditor = true;
-            config.EditorManifestID = "isolated-4866";
-            var session = new EditorLocalContentSession(config, new TestConfigProvider());
-            UnityEngine.Object.DestroyImmediate(config);
-            // Attach a production source only to observe ownership disposal; do not resolve the real editor singleton.
-            var source = new EditorLocalContentSource(true, Path.Combine(Path.GetTempPath(), "beam4866-unused-" + Guid.NewGuid().ToString("N")), "test", "realm", "isolated-4866");
-            typeof(EditorLocalContentSession).GetField("_source", Private).SetValue(session, source);
-            Assert.That(session.HandlesManifest("isolated-4866"), Is.True);
-            Action<PlayModeStateChange> observer = null;
-            observer = state =>
+            Assert.That(SessionState.GetInt(Key + "observed", 0), Is.EqualTo(count), SessionState.GetString(Key + "error", ""));
+            Assert.That(Resources.FindObjectsOfTypeAll<ContentObject>().Any(content => content.name == Key), Is.False,
+                "Play Mode exit must destroy the source's owned content objects.");
+        }
+
+        static IEnumerator CreateContextAndObserveExit()
+        {
+            Beam.RuntimeConfigProvider.Pid = null;
+            var copy = new LocalWorkingCopy();
+            copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(17));
+            var context = MockBeamContext.Create(mutateDependencies: builder =>
             {
-                if (state != PlayModeStateChange.ExitingPlayMode) return;
-                EditorApplication.playModeStateChanged -= observer;
-                // Registered after the production constructor's callback, so actual Unity exit disposes first.
+                builder.RemoveIfExists<IServiceRoutingResolution>();
+                builder.RemoveIfExists<IBeamablePurchaser>();
+                // Subscription shutdown is covered by the real ContentService routing tests.
+                builder.RemoveIfExists<IContentApi>();
+                builder.AddSingleton<IContentApi>(new MockContentService());
+                builder.RemoveIfExists<ILocalContentSource>();
+                builder.AddSingleton<ILocalContentSource>(_ => copy.Source());
+            }, onInit: ctx => ctx.AddStandardGuestLoginRequests().AddPubnubRequests().AddSessionRequests());
+            yield return context.OnReady.ToYielder();
+            var source = context.ServiceProvider.GetService<ILocalContentSource>();
+            var request = source.GetContent(LocalWorkingCopy.ItemId, typeof(ContentObject), LocalWorkingCopy.Namespace);
+            yield return LocalWorkingCopy.Await(request);
+            ((ContentObject)request.GetResult()).name = Key;
+
+            context.OnShutdownComplete += () =>
+            {
                 try
                 {
-                    bool disposed = (bool)typeof(EditorLocalContentSession).GetField("_disposed", Private).GetValue(session);
-                    if (!disposed) throw new Exception("Production session was not disposed on ExitingPlayMode.");
                     Exception failure = null;
-                    session.GetManifest("isolated-4866").Error(error => failure = error);
-                    if (!(failure is ObjectDisposedException)) throw new Exception("Disposed session did not reject manifest request: " + failure);
-                    if (!(bool)typeof(EditorLocalContentSource).GetField("_disposed", Private).GetValue(source))
-                        throw new Exception("Session-owned source was not disposed.");
+                    source.GetManifest(LocalWorkingCopy.Namespace).Error(error => failure = error);
+                    if (!(failure is ObjectDisposedException))
+                        throw new Exception("Context shutdown did not dispose its local source: " + failure);
                     SessionState.SetInt(Key + "observed", SessionState.GetInt(Key + "observed", 0) + 1);
                 }
                 catch (Exception error) { SessionState.SetString(Key + "error", error.ToString()); }
-                finally { session.OnDispose(); source.Dispose(); }
+                finally { copy.Dispose(); }
             };
-            EditorApplication.playModeStateChanged += observer;
         }
 
-        [UnityTearDown]
-        public IEnumerator RestoreSettings()
+        [TearDown]
+        public void RestoreOptions()
         {
-            if (EditorApplication.isPlaying) yield return new ExitPlayMode();
             if (SessionState.GetBool(Key + "saved", false))
             {
                 EditorSettings.enterPlayModeOptionsEnabled = SessionState.GetBool(Key + "oldEnabled", false);
