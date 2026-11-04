@@ -5,6 +5,14 @@ using System.CommandLine;
 namespace cli;
 
 /// <summary>
+/// Args of a command that takes the <c>--scope realm|zone</c> option (see <see cref="ZoneScope"/>).
+/// </summary>
+public interface IHasZoneScopeArgs
+{
+	public bool IsZoneScope { get; set; }
+}
+
+/// <summary>
 /// Shared <c>--scope realm|zone</c> handling for commands that can target either the realm (<c>cid.pid</c>) or the
 /// zone bound to it (<c>cid.zid</c>). Zone targeting pins the <see cref="CliRequester"/> BEAM_SCOPE to
 /// <c>{cid}.{zid}</c>, so every API call made inside the returned handle hits the zone.
@@ -14,17 +22,21 @@ public static class ZoneScope
 	public const string REALM = "realm";
 	public const string ZONE = "zone";
 
+	public const string DEFAULT_DESCRIPTION =
+		"Which scope to target: 'realm' (default) for the selected realm (cid.pid); 'zone' for the zone bound to it (cid.zid)";
+
 	/// <summary>
-	/// Adds a <c>--scope</c> option. Typed as <c>string</c> on purpose: the Unity BeamCli command-wrapper generator
-	/// emits an option's ValueType verbatim, and a <c>cli</c>-namespaced enum does not resolve inside the Unity package.
+	/// Adds a <c>--scope</c> option that sets <see cref="IHasZoneScopeArgs.IsZoneScope"/>. Typed as <c>string</c> on
+	/// purpose: the Unity BeamCli command-wrapper generator emits an option's ValueType verbatim, and a
+	/// <c>cli</c>-namespaced enum does not resolve inside the Unity package.
 	/// </summary>
-	public static void AddScopeOption<TArgs>(AppCommand<TArgs> command, string description, Action<TArgs, bool> isZoneBinder)
-		where TArgs : CommandArgs
+	public static void AddScopeOption<TArgs>(AppCommand<TArgs> command, string description = DEFAULT_DESCRIPTION)
+		where TArgs : CommandArgs, IHasZoneScopeArgs
 	{
 		var scopeOption = new Option<string>(new string[] { "--scope" }, () => REALM, description);
 		scopeOption.FromAmong(REALM, ZONE);
 		command.AddOption(scopeOption,
-			(args, i) => isZoneBinder(args, string.Equals(i, ZONE, StringComparison.OrdinalIgnoreCase)));
+			(args, i) => args.IsZoneScope = string.Equals(i, ZONE, StringComparison.OrdinalIgnoreCase));
 	}
 
 	/// <summary>
@@ -67,6 +79,11 @@ public static class ZoneScope
 		var requester = args.DependencyProvider.GetService<CliRequester>();
 		return requester.WithBeamScope($"{cid}.{zid}");
 	}
+
+	/// <inheritdoc cref="ApplyAsync(CommandArgs, bool)"/>
+	public static Task<IDisposable> ApplyAsync<TArgs>(TArgs args)
+		where TArgs : CommandArgs, IHasZoneScopeArgs
+		=> ApplyAsync(args, args.IsZoneScope);
 
 	private sealed class NoopScope : IDisposable
 	{

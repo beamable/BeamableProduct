@@ -3,9 +3,9 @@ using Beamable.Common.Content;
 
 namespace cli.OtelCommands;
 
-public class GetClickhouseCredentialsArgs: CommandArgs
+public class GetClickhouseCredentialsArgs: CommandArgs, IHasZoneScopeArgs
 {
-    public bool IsZoneScope;
+    public bool IsZoneScope { get; set; }
 }
 public class GetClickhouseCredentialsResult
 {
@@ -30,12 +30,11 @@ public class GetClickhouseCredentials
     {
         ZoneScope.AddScopeOption(this,
             "Whose telemetry the credentials read: 'realm' (default) for the selected realm (cid.pid); 'zone' for " +
-            "the zone bound to it (cid.zid)",
-            (args, isZone) => args.IsZoneScope = isZone);
+            "the zone bound to it (cid.zid)");
     }
     public override async Task<GetClickhouseCredentialsResult> GetResult(GetClickhouseCredentialsArgs args)
     {
-        using var scopeHandle = await ZoneScope.ApplyAsync(args, args.IsZoneScope);
+        using var scopeHandle = await ZoneScope.ApplyAsync(args);
         OtelAuthConfig res = await args.OtelApi.GetOtelAuthReaderConfig();
 
         return new GetClickhouseCredentialsResult
