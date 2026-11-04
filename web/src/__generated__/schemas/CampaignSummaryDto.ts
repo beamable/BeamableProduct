@@ -24,5 +24,6 @@ export type CampaignSummaryDto = {
   startAt?: Date | null; 
   submittedAt?: Date | null; 
   submittedBy?: AuthorDto; 
+  tags?: string[]; 
   version?: number; 
 };
