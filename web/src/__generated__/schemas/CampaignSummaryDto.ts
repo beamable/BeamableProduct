@@ -8,6 +8,7 @@ import type { QueueConflictDto } from './QueueConflictDto';
 import type { CampaignLifecycle } from './enums/CampaignLifecycle';
 
 export type CampaignSummaryDto = { 
+  acceptedRealms?: string[]; 
   archived?: boolean; 
   campaignId?: string; 
   createdAt?: Date | null; 
