@@ -3,13 +3,12 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { CampaignChangeDto } from './CampaignChangeDto';
 import type { CampaignChangeErrorDto } from './CampaignChangeErrorDto';
+import type { QueueConflictDto } from './QueueConflictDto';
 
-export type PublishResponseDto = { 
-  changes?: CampaignChangeDto[]; 
+export type ReviewResponseDto = { 
+  conflicts?: QueueConflictDto[]; 
   errors?: CampaignChangeErrorDto[]; 
-  isNewVersion?: boolean; 
   ok?: boolean; 
   version?: number | null; 
 };

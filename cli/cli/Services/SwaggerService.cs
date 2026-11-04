@@ -554,6 +554,11 @@ public class SwaggerService
 	}
 
 
+	private const int OapiDownloadAttempts = 4;
+
+	// Grows by this much per attempt, so the three retries span ~12s: past the gateway's provider timeout. Tests set it to zero.
+	public static TimeSpan OapiRetryDelay = TimeSpan.FromSeconds(2);
+
 	public static async Task<(string url, string content)> GetOapiStringReader(
 		IAppContext context, 
 		ISwaggerStreamDownloader downloader, 
@@ -565,10 +570,26 @@ public class SwaggerService
 			{
 				var url = $"{context.Host}/{api.RelativeUrl}";
 				Log.Information("Downloading OAPI: {url}", url);
-				var stream = await downloader.GetStreamAsync(url);
-				var sr = new StreamReader(stream);
-				var content = await sr.ReadToEndAsync();
-				return new(url, content);
+				// Every spec is requested at once, and a backend answers that burst with the odd 5xx (a local Scala
+				// gateway gives up on its providers after ~10s under it). One such answer used to fail the whole run.
+				for (var attempt = 1; ; attempt++)
+				{
+					try
+					{
+						using var sr = new StreamReader(await downloader.GetStreamAsync(url));
+						return new(url, await sr.ReadToEndAsync());
+					}
+					catch (HttpRequestException ex) when ((int?)ex.StatusCode >= 500 && attempt < OapiDownloadAttempts)
+					{
+						Log.Warning("Downloading OAPI {url} answered {status}; retrying ({attempt}/{max})", url,
+							(int?)ex.StatusCode, attempt, OapiDownloadAttempts - 1);
+						await Task.Delay(OapiRetryDelay * attempt);
+					}
+					catch (HttpRequestException ex)
+					{
+						throw new HttpRequestException($"{ex.Message} ({url})", ex, ex.StatusCode);
+					}
+				}
 			}
 			case BeamableApiLocation.Embedded:
 			{
@@ -1378,7 +1399,8 @@ public class SwaggerService
 
 			if (isSelfReferential)
 			{
-				value.Extensions.Add(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE, new OpenApiString(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE));
+				// A schema shared by two documents is reached twice; marking it again is a no-op.
+				value.Extensions[Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE] = new OpenApiString(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE);
 			}
 		}
 

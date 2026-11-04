@@ -10,5 +10,9 @@ export enum CampaignLifecycle {
   WindingDown = "WindingDown",
   Halting = "Halting",
   Inactive = "Inactive",
-  Archived = "Archived"
+  Proposed = "Proposed",
+  Rejected = "Rejected",
+  Superseded = "Superseded",
+  Scheduled = "Scheduled",
+  Cancelled = "Cancelled"
 }

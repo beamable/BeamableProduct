@@ -366,6 +366,10 @@ public static class LocalStackRunStateIO
 		return text;
 	}
 
+	// About 17s in all. One second was not enough: a run launching ~28 Scala services writes the run-state in a burst,
+	// and a reader holding the file through that burst made a write give up and tore the whole stack down.
+	private const int RetryAttempts = 40;
+
 	private static void Retry(Action action)
 	{
 		for (var attempt = 1; ; attempt++)
@@ -375,17 +379,20 @@ public static class LocalStackRunStateIO
 				action();
 				return;
 			}
-			catch (IOException e) when (e is not FileNotFoundException and not DirectoryNotFoundException && attempt < 20)
+			catch (IOException e) when (e is not FileNotFoundException and not DirectoryNotFoundException && attempt < RetryAttempts)
 			{
-				Thread.Sleep(50);
+				Thread.Sleep(RetryDelayMs(attempt));
 			}
-			catch (UnauthorizedAccessException) when (attempt < 20)
+			catch (UnauthorizedAccessException) when (attempt < RetryAttempts)
 			{
 				// A replace over a file another process has open can surface as access denied too.
-				Thread.Sleep(50);
+				Thread.Sleep(RetryDelayMs(attempt));
 			}
 		}
 	}
+
+	// 50ms growing to 500ms: the first tries stay quick for the usual brief contention.
+	private static int RetryDelayMs(int attempt) => Math.Min(50 * attempt, 500);
 
 	/// <summary>Removes the run-state, and the board <c>beam local ps</c> shows for it.</summary>
 	public static void Clear(string path)
