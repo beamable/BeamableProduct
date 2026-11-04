@@ -7,6 +7,7 @@ using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
+using Beamable.Common.Dependencies;
 using Beamable.Content;
 using Beamable.Editor.ContentService;
 using Beamable.Platform.Tests.Connectivity;
@@ -160,14 +161,56 @@ namespace Beamable.Platform.Tests.Content
 			Assert.That(content.amount, Is.EqualTo(17));
 		}
 
-		private ILocalContentSource ForContext() =>
+		[UnityTest]
+		public IEnumerator StoppingContextSettlesPendingLocalReadsWithoutSubscriptionErrors()
+		{
+			var workspace = new Promise<string>();
+			var source = _copy.Track(new EditorLocalContentSource(LocalWorkingCopy.Namespace, BeamableTest.DEFAULT_PID, workspace));
+			yield return StartContext(source);
+			var subscription = ((RuntimeContentService)Context.Content).Subscribable;
+			var callbacks = 0;
+			subscription.Subscribe(_ => callbacks++);
+			var pending = Context.Content.GetManifestWithID(LocalWorkingCopy.Namespace);
+			Exception failure = null;
+			pending.Error(error => failure = error);
+			// Allow the public subscription's refresh to start its deferred workspace read.
+			yield return null;
+			yield return null;
+			yield return Context.ClearPlayerAndStop().ToYielder();
+			workspace.CompleteSuccess(_copy.Workspace);
+			yield return LocalWorkingCopy.WaitUntil(() => pending.IsCompleted);
+			yield return new WaitForSecondsRealtime(1.1f);
+			Assert.That(failure, Is.InstanceOf<OperationCanceledException>().Or.InstanceOf<ObjectDisposedException>());
+			Assert.That(callbacks, Is.Zero);
+			LogAssert.NoUnexpectedReceived();
+		}
+
+		[UnityTest]
+		public IEnumerator EditorRealmChangeDuringInitializationKeepsTheRequestersRealm()
+		{
+			const string editorPid = "DE_444";
+			_copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(17));
+			_copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(42), editorPid);
+			yield return StartContext(provider =>
+			{
+				// The requester has captured its realm; content is first constructed later in initialization.
+				((TestConfigProvider)Beam.RuntimeConfigProvider.Fallback).Pid = editorPid;
+				return ForContext(provider);
+			});
+			Assert.That(Context.Pid, Is.EqualTo(BeamableTest.DEFAULT_PID));
+			var request = Context.Content.GetContent(LocalWorkingCopy.ItemId, typeof(LocalSourceRegressionContent), LocalWorkingCopy.Namespace);
+			yield return LocalWorkingCopy.Await(request);
+			Assert.That(((LocalSourceRegressionContent)request.GetResult()).amount, Is.EqualTo(17));
+		}
+
+		private ILocalContentSource ForContext(IDependencyProvider provider) =>
 			_copy.Track((EditorLocalContentSource)EditorLocalContentRegistration.Create(
-				new ContentParameterProvider { EnableLocalContentInEditor = true }, _config,
+				new ContentParameterProvider { EnableLocalContentInEditor = true }, _config, provider.GetService<Beamable.Api.IPlatformRequester>().Pid,
 				() => LocalWorkingCopy.Namespace, () => Promise<string>.Successful(_copy.Workspace)));
 
-		private IEnumerator StartContext(ILocalContentSource local, bool online = true) => StartContext(() => local, online);
+		private IEnumerator StartContext(ILocalContentSource local, bool online = true) => StartContext(_ => local, online);
 
-		private IEnumerator StartContext(Func<ILocalContentSource> local, bool online = true)
+		private IEnumerator StartContext(Func<IDependencyProvider, ILocalContentSource> local, bool online = true)
 		{
 			_connectivity.SetHasInternet(online);
 			TriggerContextInit(builder =>
@@ -187,7 +230,7 @@ namespace Beamable.Platform.Tests.Content
 				builder.AddSingleton<IConnectivityService>(_connectivity);
 				builder.RemoveIfExists<ILocalContentSource>();
 				// A factory, so the source is created while the context is built, as in production.
-				builder.AddSingleton<ILocalContentSource>(_ => local());
+				builder.AddSingleton<ILocalContentSource>(local);
 			});
 			yield return Context.OnReady.ToYielder();
 		}

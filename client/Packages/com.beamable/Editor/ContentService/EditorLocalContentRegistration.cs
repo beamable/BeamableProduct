@@ -1,3 +1,4 @@
+using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Content;
@@ -16,6 +17,7 @@ namespace Beamable.Editor.ContentService
 			builder.AddSingleton<ILocalContentSource>(provider => Create(
 				provider.GetService<ContentParameterProvider>(),
 				ContentConfiguration.Instance,
+				provider.GetService<IPlatformRequester>().Pid,
 				() => BeamEditorContext.Default.CliContentService.manifestIdOverride,
 				EditorWorkspace));
 		}
@@ -25,7 +27,7 @@ namespace Beamable.Editor.ContentService
 		/// selected in the Content window (an empty selection is the default namespace), from the realm the
 		/// context uses. The editor is consulted only when local content is enabled.
 		/// </summary>
-		public static ILocalContentSource Create(ContentParameterProvider parameters, ContentConfiguration config,
+		public static ILocalContentSource Create(ContentParameterProvider parameters, ContentConfiguration config, string pid,
 		                                         Func<string> windowNamespace, Func<Promise<string>> workspace)
 		{
 			if (!parameters.EnableLocalContentInEditor) return new DisabledLocalContentSource();
@@ -33,7 +35,7 @@ namespace Beamable.Editor.ContentService
 			var selected = windowNamespace();
 			return new EditorLocalContentSource(
 				string.IsNullOrEmpty(selected) ? DEFAULT_MANIFEST_ID : selected,
-				Beam.RuntimeConfigProvider.Pid,
+				pid,
 				workspace(),
 				config.LocalContentManifestDelaySeconds?.HasValue == true ? config.LocalContentManifestDelaySeconds.Value : 0,
 				config.LocalContentReferenceDelaySeconds?.HasValue == true ? config.LocalContentReferenceDelaySeconds.Value : 0);

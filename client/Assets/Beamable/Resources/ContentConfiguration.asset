@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   EnableMultipleContentNamespaces: 0
   multipleContentNamespacesSettingLocked: 0
+  EditorManifestID: global
   EditorDownloadBatchSize:
     HasValue: 0
     Value: 0

@@ -56,7 +56,7 @@ namespace Beamable.Editor.ContentService
 		public async Promise<ClientManifest> GetManifest(string manifestId, ContentQuery query = null)
 		{
 			var snapshot = await Load(manifestId, _manifestDelaySeconds);
-			var entries = new List<ClientContentInfo>();
+			var entries = query == null ? new List<ClientContentInfo>(snapshot.Manifest.Count) : new List<ClientContentInfo>();
 			foreach (var entry in snapshot.Manifest)
 			{
 				if (query != null && !query.Accept(entry)) continue;
@@ -91,7 +91,8 @@ namespace Beamable.Editor.ContentService
 			if (!HandlesManifest(manifestId))
 				throw new InvalidOperationException($"Local content does not handle namespace '{manifestId}'.");
 			ThrowIfDisposed();
-			if (delaySeconds > 0) await Task.Delay(TimeSpan.FromSeconds(delaySeconds), _cancellation.Token);
+			if (delaySeconds > 0 && !float.IsInfinity(delaySeconds) && !float.IsNaN(delaySeconds))
+				await Task.Delay(TimeSpan.FromSeconds(Math.Min(delaySeconds, 86400)), _cancellation.Token);
 
 			// Concurrent requests share one read; a failed read is retried by the next request.
 			if (_snapshot == null || _snapshot.IsFaulted || _snapshot.IsCanceled) _snapshot = ReadSnapshot();
@@ -102,7 +103,7 @@ namespace Beamable.Editor.ContentService
 
 		private async Task<Snapshot> ReadSnapshot()
 		{
-			var workspace = await _workspace;
+			var workspace = await WaitForWorkspace();
 			if (string.IsNullOrWhiteSpace(workspace))
 				throw new InvalidOperationException("Local content requires a configured Beamable workspace.");
 			if (string.IsNullOrWhiteSpace(_pid))
@@ -114,6 +115,18 @@ namespace Beamable.Editor.ContentService
 			var directory = Path.Combine(workspace, "local", "content", _pid, _manifestId);
 			var token = _cancellation.Token;
 			return await Task.Run(() => ReadFiles(directory, _manifestId, token), token);
+		}
+
+		private async Task<string> WaitForWorkspace()
+		{
+			// Cancel this source's wait without completing or cancelling the shared editor readiness promise.
+			var completion = new TaskCompletionSource<string>();
+			using (_cancellation.Token.Register(() => completion.TrySetCanceled()))
+			{
+				_ = _workspace.Error(error => completion.TrySetException(error))
+					.Then(path => completion.TrySetResult(path));
+				return await completion.Task;
+			}
 		}
 
 		private static Snapshot ReadFiles(string directory, string manifestId, CancellationToken token)
@@ -247,6 +260,7 @@ namespace Beamable.Editor.ContentService
 			_disposed = true;
 			AssemblyReloadEvents.beforeAssemblyReload -= Release;
 			_cancellation.Cancel();
+			_cancellation.Dispose();
 			foreach (var content in _objects.Values)
 			{
 				if (content == null) continue;

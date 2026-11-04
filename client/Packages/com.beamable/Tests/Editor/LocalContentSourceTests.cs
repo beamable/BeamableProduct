@@ -59,7 +59,7 @@ namespace Beamable.Editor.Tests
 		[Test]
 		public void DisabledSettingResolvesNothingLocallyAndNeverConsultsTheEditor()
 		{
-			var source = EditorLocalContentRegistration.Create(new ContentParameterProvider(), _config,
+			var source = EditorLocalContentRegistration.Create(new ContentParameterProvider(), _config, BeamableTest.DEFAULT_PID,
 				() => throw new AssertionException("The Content window was consulted."),
 				() => throw new AssertionException("The workspace was consulted."));
 			Assert.That(source.HandlesManifest("global"), Is.False);
@@ -68,7 +68,7 @@ namespace Beamable.Editor.Tests
 		private ILocalContentSource Create(string windowNamespace)
 		{
 			var source = EditorLocalContentRegistration.Create(
-				new ContentParameterProvider { EnableLocalContentInEditor = true }, _config,
+				new ContentParameterProvider { EnableLocalContentInEditor = true }, _config, BeamableTest.DEFAULT_PID,
 				() => windowNamespace, () => Promise<string>.Successful(string.Empty));
 			_created.Add(source);
 			return source;
@@ -94,6 +94,37 @@ namespace Beamable.Editor.Tests
 			foreach (var content in _callbackObjects)
 				if (content != null) UnityEngine.Object.DestroyImmediate(content);
 			_callbackObjects.Clear();
+		}
+
+		[UnityTest]
+		public IEnumerator DisposalCancelsRequestsWaitingForWorkspaceReadiness()
+		{
+			var workspace = new Promise<string>();
+			var source = _copy.Track(new EditorLocalContentSource(LocalWorkingCopy.Namespace, BeamableTest.DEFAULT_PID, workspace));
+			var request = source.GetManifest(LocalWorkingCopy.Namespace);
+			var content = source.GetContent(LocalWorkingCopy.ItemId, typeof(ContentObject), LocalWorkingCopy.Namespace);
+			Exception failure = null;
+			Exception contentFailure = null;
+			request.Error(error => failure = error);
+			content.Error(error => contentFailure = error);
+			source.OnDispose();
+			try
+			{
+				yield return LocalWorkingCopy.WaitUntil(() => request.IsCompleted && content.IsCompleted);
+				Assert.That(request.IsCompleted, Is.True, "Disposal must not wait for shared editor readiness.");
+				Assert.That(failure, Is.InstanceOf<OperationCanceledException>());
+				Assert.That(contentFailure, Is.InstanceOf<OperationCanceledException>());
+				Assert.That(workspace.IsCompleted, Is.False, "Disposal must not cancel the shared workspace promise.");
+			}
+			finally { workspace.CompleteSuccess(_copy.Workspace); }
+		}
+
+		[UnityTest]
+		public IEnumerator InfiniteSimulatedDelayDoesNotPreventLoading()
+		{
+			var source = _copy.Track(new EditorLocalContentSource(LocalWorkingCopy.Namespace, BeamableTest.DEFAULT_PID,
+				Promise<string>.Successful(_copy.Workspace), float.PositiveInfinity));
+			yield return LocalWorkingCopy.Await(source.GetManifest(LocalWorkingCopy.Namespace));
 		}
 
 		[UnityTest]
@@ -284,20 +315,5 @@ namespace Beamable.Editor.Tests
 			Assert.That(LocalWorkingCopy.Failure(later), Is.InstanceOf<ObjectDisposedException>());
 		}
 
-		[UnityTest]
-		public IEnumerator DisposingDuringTheFirstReadFailsPendingRequests()
-		{
-			_copy.Write(LocalWorkingCopy.ItemId, LocalWorkingCopy.Json(17));
-			var source = _copy.Source();
-			var manifest = source.GetManifest(LocalWorkingCopy.Namespace);
-			var content = source.GetContent(LocalWorkingCopy.ItemId, typeof(ContentObject), LocalWorkingCopy.Namespace);
-
-			LocalWorkingCopy.DisposeSource(source);
-			yield return LocalWorkingCopy.Await(manifest, expectError: true);
-			yield return LocalWorkingCopy.Await(content, expectError: true);
-
-			Assert.That(LocalWorkingCopy.Failure(manifest), Is.InstanceOf<OperationCanceledException>().Or.InstanceOf<ObjectDisposedException>());
-			Assert.That(LocalWorkingCopy.Failure(content), Is.InstanceOf<OperationCanceledException>().Or.InstanceOf<ObjectDisposedException>());
-		}
 	}
 }

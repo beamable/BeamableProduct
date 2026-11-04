@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed local content mode in Play Mode to resolve the namespace selected in the Content window from a read-only snapshot of local JSON, including unpublished items, with background loading to keep the editor responsive.
+- Local content stays on the running context's realm, cancels pending loads when the context stops, and stops manifest refreshes during shutdown.
 - `MustBeComparatorString` now validates against what the backend accepts for each field. Stat requirements (listings, announcements, leaderboard and event cohorts) also accept `neq`, `gte`, `lte` and the long names (`equal`, `notequal`, `greaterthan`, `greaterthanequal`, `lessthan`, `lessthanequal`). Offer purchase requirements accept `eq`, `ne`, `gt`, `ge`, `lt`, `le`. Cohort requirements accept only `eq` (member) and `ne` (not a member); any other value used to be evaluated as "not a member", so replace it with `ne`.
 - With Unity IAP 5, purchasing can be initialized more than once (login, `ChangeAuthorizedPlayer`, several `BeamContext`s, play mode without domain reload) without failing with `ErrorNoProductsAvailable (FetchProducts cannot be invoked if a fetch is already in progress...)`. SKUs without a product id for the current store are skipped with a warning, products the store doesn't know no longer disable purchasing, and Steam builds use the Beamable Steam store.
 - Purchases are no longer lost or left hanging: an order whose fulfillment fails stays pending in the store instead of being confirmed without its reward, and `StartPurchase` always completes, including for unknown SKUs, a second purchase while one is in flight (`ExistingPurchasePending`), deferred payments (`UnityBeamablePurchaser.PURCHASE_DEFERRED_ERROR_CODE`, on Unity IAP 4 too) and a store that disconnected in the background. Initializing purchasing again or disposing its context settles a purchase left in flight, and its Beamable transaction is always closed with the account that began it. Prices are sent in a culture-independent format.
@@ -23,9 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Beam Account login window pre-fills the environment and organization from the project's existing configuration, such as `config-defaults.txt`, and restores the previously selected realm after login.
 
-### Removed
+### Deprecated
 
-- `ContentConfiguration.EditorManifestID`, which nothing has read or written since 3.0.0. Local content mode uses the namespace selected in the Content window instead.
+- `ContentConfiguration.EditorManifestID` is retained for source compatibility but ignored. Local content mode uses the namespace selected in the Content window instead.
 
 ## [6.2.0] - 2026-10-08
 

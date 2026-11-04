@@ -27,6 +27,10 @@ namespace Beamable.Content
 		public bool multipleContentNamespacesSettingLocked;
 
 #if UNITY_EDITOR
+		[HideInInspector]
+		[Obsolete("Local content mode uses the namespace selected in the Content window. This field is ignored.")]
+		public string EditorManifestID = DEFAULT_MANIFEST_ID;
+
         [Tooltip("In editor, when downloading content, this controls the batch size of the download. By default, it is 100.")]
         public OptionalInt EditorDownloadBatchSize;
 
