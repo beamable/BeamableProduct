@@ -38,7 +38,6 @@ namespace Steamworks
 		public ESteamNetworkingConfigDataType m_eDataType;
 
 		/// Option value
-		[System.NonSerialized]
 		public OptionValue m_val;
 
 		[StructLayout(LayoutKind.Explicit)]
