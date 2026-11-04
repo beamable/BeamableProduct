@@ -1,7 +1,12 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 using cli;
 using cli.Commands.LocalStack;
 using cli.Services.LocalStack;
@@ -434,6 +439,178 @@ public class LocalStackRemoteMicroservicesTests
 		Assert.That(RemoteMicroservices.Unresolved(settings, _ => true), Is.Empty);
 		Assert.That(RemoteMicroservices.Unresolved(settings, _ => false),
 			Is.EqualTo(new[] { settings.RegistryHost, settings.ClickHouseHost }), "the gateway name is never looked up here");
+	}
+
+	[Test]
+	public void PreflightSessionName_FitsStsForTheLongestName()
+	{
+		var longest = new string('a', RemoteMicroservices.MaxNameLength);
+
+		Assert.That(RemoteMicroservices.ValidateName(longest), Is.Null);
+		Assert.That(RemoteMicroservices.PreflightSessionName(longest).Length, Is.LessThanOrEqualTo(64), "STS's RoleSessionName limit");
+		Assert.That(("beam-tunnel-" + longest).Length, Is.LessThanOrEqualTo(64), "the tunnel script's session name");
+	}
+
+	[Test]
+	public void RanIn_HoldsWhileAnyStepItChangesRuns()
+	{
+		var state = new LocalStackRunState
+		{
+			remoteMsHost = "justin.ms.example.com",
+			steps = new List<LocalStackRunEntry> { new LocalStackRunEntry { name = RemoteMicroservices.DockerStepName } }
+		};
+
+		// Only the tunnel was stopped: the docker deps still run the remote way.
+		Assert.That(RemoteMicroservices.RanIn(state, new[] { RemoteMicroservices.DockerStepName }), Is.True);
+		Assert.That(RemoteMicroservices.RanIn(state, new[] { RemoteMicroservices.GatewayStepName }), Is.True);
+		Assert.That(RemoteMicroservices.RanIn(state, new[] { "portal frontend" }), Is.False, "nothing it changed is left");
+		Assert.That(RemoteMicroservices.RanIn(new LocalStackRunState(), new[] { RemoteMicroservices.DockerStepName }), Is.False,
+			"started without it");
+		Assert.That(RemoteMicroservices.RanIn(null, new[] { RemoteMicroservices.DockerStepName }), Is.False);
+	}
+
+	[Test]
+	public void RanIn_ReadsRunStatesWrittenBeforeTheHost()
+	{
+		var state = new LocalStackRunState
+		{
+			steps = new List<LocalStackRunEntry> { new LocalStackRunEntry { name = RemoteMicroservices.TunnelStepName } }
+		};
+
+		Assert.That(RemoteMicroservices.RanIn(state, new[] { RemoteMicroservices.TunnelStepName }), Is.True);
+	}
+
+	[Test]
+	public async Task AcceptsCertificate_AStalledServerIsNotACancellation()
+	{
+		using var listener = new TcpListener(IPAddress.Loopback, 0);
+		listener.Start();
+		var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+		// Accepts the connection and never answers.
+		var accepted = listener.AcceptTcpClientAsync();
+		try
+		{
+			var url = $"http://127.0.0.1:{port}/v2/";
+
+			Assert.That(await RemoteMicroservices.AcceptsCertificate(url, CancellationToken.None, TimeSpan.FromMilliseconds(300)), Is.True,
+				"nothing to trust, and the stack carries on");
+
+			using var cancelled = new CancellationTokenSource();
+			cancelled.Cancel();
+			Assert.ThrowsAsync<TaskCanceledException>(() =>
+				RemoteMicroservices.AcceptsCertificate(url, cancelled.Token, TimeSpan.FromSeconds(30)), "the caller's own cancellation still propagates");
+		}
+		finally
+		{
+			listener.Stop();
+			(await Task.WhenAny(accepted, Task.Delay(100)) as Task<TcpClient>)?.Result.Dispose();
+		}
+	}
+
+	[Test]
+	public void Watchdog_PollsAndRestartsWithTheStepsEnvironment()
+	{
+		if (OperatingSystem.IsWindows())
+		{
+			Assert.Ignore("Uses a POSIX sh stub in place of docker.");
+		}
+
+		var config = TemplateConfig();
+		RemoteMicroservices.Apply(config.steps, Settings("justin"));
+		var target = LocalStackDockerWatchdog.DiscoverTargets(config.steps, config)
+			.Single(t => t.step.name == RemoteMicroservices.DockerStepName);
+		Assert.That(target.environment[LocalStackTemplate.LogRetentionVariable], Does.Not.Contain("${"), "substituted");
+
+		// Like docker with the remote-ms override: it can't parse the compose files without MS_REGISTRY_HOST.
+		var docker = Path.GetTempFileName();
+		try
+		{
+			File.WriteAllText(docker, "#!/bin/sh\n" +
+			                          "[ \"$MS_REGISTRY_HOST\" = justin-registry.ms.example.com ] || { echo 'required variable MS_REGISTRY_HOST is missing' >&2; exit 1; }\n" +
+			                          "echo '{\"Service\":\"caddy\",\"Name\":\"api-caddy-1\",\"State\":\"running\"}'\n");
+			File.SetUnixFileMode(docker, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+
+			Assert.That(LocalStackDockerWatchdog.Poll(target, docker).Select(c => c.service), Is.EqualTo(new[] { "caddy" }),
+				"an empty poll would mean the watchdog sees nothing");
+			Assert.That(LocalStackDockerWatchdog.Restart(target, docker, config, out var error), Is.True, error);
+		}
+		finally
+		{
+			File.Delete(docker);
+		}
+	}
+
+	// The tunnel loop's credentials: a profile, or keys in the environment, must reach every connection's assume-role.
+	[TestCase(true)]
+	[TestCase(false)]
+	public void TunnelScript_KeepsTheCallersCredentialsForEveryConnection(bool withProfile)
+	{
+		if (OperatingSystem.IsWindows())
+		{
+			Assert.Ignore("POSIX sh only; :remote-ms refuses to run on Windows.");
+		}
+
+		var dir = Directory.CreateTempSubdirectory().FullName;
+		try
+		{
+			var bin = Path.Combine(dir, "bin");
+			Directory.CreateDirectory(bin);
+			var log = Path.Combine(dir, "assume.log");
+			void Stub(string name, string body)
+			{
+				var file = Path.Combine(bin, name);
+				File.WriteAllText(file, "#!/bin/sh\n" + body + "\n");
+				File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+			}
+
+			Stub("aws", "case \"$1 $2\" in\n" +
+			            "  'sts assume-role') echo \"profile=${AWS_PROFILE:-} key=${AWS_ACCESS_KEY_ID:-}\" >> \"$ASSUME_LOG\"; echo AK SK TOKEN;;\n" +
+			            "  'ec2 describe-instances') echo i-0123456789abcdef0;;\n" +
+			            "esac");
+			Stub("ssh", "exit 255");
+			Stub("sleep", "exit 0");
+			var script = Path.Combine(dir, "tunnel.sh");
+			File.WriteAllText(script, RemoteMicroservices.TunnelScript(Settings("justin")));
+
+			var psi = new ProcessStartInfo("sh", script) { RedirectStandardOutput = true, RedirectStandardError = true };
+			psi.Environment["PATH"] = bin + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH");
+			psi.Environment["ASSUME_LOG"] = log;
+			foreach (var name in new[] { "AWS_PROFILE", "AWS_DEFAULT_PROFILE", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN" })
+			{
+				psi.Environment.Remove(name);
+			}
+
+			if (withProfile)
+			{
+				psi.Environment["AWS_PROFILE"] = "dev-profile";
+			}
+			else
+			{
+				psi.Environment["AWS_ACCESS_KEY_ID"] = "caller-key";
+				psi.Environment["AWS_SECRET_ACCESS_KEY"] = "caller-secret";
+			}
+
+			using var sh = Process.Start(psi)!;
+			sh.StandardOutput.ReadToEndAsync();
+			sh.StandardError.ReadToEndAsync();
+			var deadline = DateTime.UtcNow.AddSeconds(10);
+			while (DateTime.UtcNow < deadline && (!File.Exists(log) || File.ReadAllLines(log).Length < 3))
+			{
+				Thread.Sleep(50);
+			}
+
+			sh.Kill(entireProcessTree: true);
+			sh.WaitForExit();
+
+			var expected = withProfile ? "profile=dev-profile key=" : "profile= key=caller-key";
+			var lines = File.Exists(log) ? File.ReadAllLines(log) : Array.Empty<string>();
+			Assert.That(lines.Length, Is.GreaterThanOrEqualTo(3), "three connections in a row");
+			Assert.That(lines, Is.All.EqualTo(expected), "no connection's role credentials leak into the next");
+		}
+		finally
+		{
+			Directory.Delete(dir, true);
+		}
 	}
 
 	[TestCase("Error when retrieving token from sso: Token has expired and refresh failed", true)]

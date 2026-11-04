@@ -24,6 +24,10 @@ public class LocalStackRunState
 	/// stack is down; false when the user passed <c>--save-logs</c> and the logs are kept under the workspace.</summary>
 	public bool ephemeralLogs;
 
+	/// <summary>The <c>:remote-ms</c> gateway host (<c>&lt;dev&gt;.&lt;domain&gt;</c>) the stack started with, or null without
+	/// it. Kept while any of the steps it changes runs, so a later run can't mix modes or names with them.</summary>
+	public string remoteMsHost;
+
 	/// <summary>The launched steps, in start order.</summary>
 	public List<LocalStackRunEntry> steps = new List<LocalStackRunEntry>();
 }

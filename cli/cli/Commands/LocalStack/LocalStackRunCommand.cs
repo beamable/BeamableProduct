@@ -683,8 +683,8 @@ public class LocalStackRunCommand
 
 		// :remote-ms changes how the docker deps and the gateway run, so a running stack can't take it on or drop it:
 		// they would keep running the other way.
-		if (stillRunning.Count > 0 && RemoteMicroservices.Runs(resolved.steps) != previousRun.steps.Any(e =>
-			    string.Equals(e.name, RemoteMicroservices.TunnelStepName, StringComparison.OrdinalIgnoreCase)))
+		var ranRemote = stillRunning.Count > 0 && RemoteMicroservices.RanIn(previousRun, stillRunning);
+		if (stillRunning.Count > 0 && RemoteMicroservices.Runs(resolved.steps) != ranRemote)
 		{
 			throw new CliException($"A stack is running here {(RemoteMicroservices.Runs(resolved.steps) ? "without" : "with")} :remote-ms. Stop it first (`beam local stop`).");
 		}
@@ -700,6 +700,13 @@ public class LocalStackRunCommand
 			if (remoteMsProblems.Count > 0 && !args.dryRun)
 			{
 				throw new CliException(RemoteMicroservices.NotReady(remoteMsProblems));
+			}
+
+			// The running gateway and tunnel keep the names they started with, so a different name needs a restart.
+			if (_remoteMs != null && ranRemote && !string.IsNullOrEmpty(previousRun.remoteMsHost)
+			    && !string.Equals(previousRun.remoteMsHost, _remoteMs.GatewayHost, StringComparison.OrdinalIgnoreCase))
+			{
+				throw new CliException($"The running stack's remote microservices use {previousRun.remoteMsHost}, and this run's would use {_remoteMs.GatewayHost} (remoteMsName or your AWS identity changed). Stop it first (`beam local stop`).");
 			}
 
 			if (_remoteMs != null)
@@ -964,6 +971,7 @@ public class LocalStackRunCommand
 			{
 				host = config.host, portalUrl = config.portalUrl,
 				logsDir = logsDir, ephemeralLogs = !args.saveLogs,
+				remoteMsHost = _remoteMs?.GatewayHost,
 				steps = aliveByName.Values.ToList()
 			};
 			LocalStackRunStateIO.Save(runStatePath, runState);

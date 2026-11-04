@@ -68,6 +68,25 @@ public static class RemoteMicroservices
 		steps.Any(s => string.Equals(s.name, TunnelStepName, StringComparison.OrdinalIgnoreCase));
 
 	/// <summary>
+	/// True when the stack in <paramref name="state"/> still runs <c>:remote-ms</c>: it started with it, and one of the
+	/// steps it changes (the docker deps, the gateway or the tunnel) is in <paramref name="running"/>. Stopping only the
+	/// tunnel leaves the docker deps and gateway running the remote way, so the tunnel's entry alone can't say.
+	/// </summary>
+	public static bool RanIn(LocalStackRunState state, IReadOnlyCollection<string> running)
+	{
+		if (state == null)
+		{
+			return false;
+		}
+
+		bool Running(string name) => running.Contains(name, StringComparer.OrdinalIgnoreCase);
+		var started = !string.IsNullOrEmpty(state.remoteMsHost)
+		              // Run states written before remoteMsHost: the tunnel's entry is all there is.
+		              || state.steps.Any(e => string.Equals(e.name, TunnelStepName, StringComparison.OrdinalIgnoreCase));
+		return started && new[] { DockerStepName, GatewayStepName, TunnelStepName }.Any(Running);
+	}
+
+	/// <summary>
 	/// Adds the tunnel step to the settings' catalogue so <c>:remote-ms</c> can name it. Its script needs the settings,
 	/// so <see cref="Apply"/> fills it in. Only where the settings have the backend's docker step to tunnel to.
 	/// </summary>
@@ -271,7 +290,7 @@ public static class RemoteMicroservices
 		}
 
 		// The output holds temporary credentials on success, so it's only ever shown on failure.
-		var assume = AwsPreflightService.Run(aws, AwsPreflightService.AssumeRoleArgs(found.roleArn, $"beam-preflight-{dev}"), null);
+		var assume = AwsPreflightService.Run(aws, AwsPreflightService.AssumeRoleArgs(found.roleArn, PreflightSessionName(dev)), null);
 		if (!assume.ok)
 		{
 			problems.Add(
@@ -398,11 +417,19 @@ public static class RemoteMicroservices
 	}
 
 	/// <summary>
+	/// The role session name the checks assume the tunnel role with. STS allows 64 characters, and a name is at most
+	/// <see cref="MaxNameLength"/>, so the prefix leaves room for the longest.
+	/// </summary>
+	public static string PreflightSessionName(string dev) => $"beam-check-{dev}";
+
+	/// <summary>
 	/// The tunnel step: a POSIX sh loop that keeps three <c>ssh -R</c> forwards open to the shared tunnel host over
-	/// SSM Session Manager, reconnecting whenever ssh exits. Each pass assumes the tunnel role afresh and pushes a
-	/// 60-second EC2 Instance Connect key, so nothing long-lived is stored. The step's arguments go through token
-	/// substitution, so the script must not contain a dollar sign followed by a brace; <see cref="RemoteMsSettings.Parse"/>
-	/// keeps the values it interpolates to <see cref="ScriptSafe"/> characters.
+	/// SSM Session Manager, reconnecting whenever ssh exits. Each pass assumes the tunnel role afresh, with the
+	/// caller's own credentials (a profile or environment variables), and pushes a 60-second EC2 Instance Connect key,
+	/// so nothing long-lived is stored. Each connection runs in a subshell, so the role's credentials it exports never
+	/// replace the caller's for the next pass. The step's arguments go through token substitution, so the script must
+	/// not contain a dollar sign followed by a brace; <see cref="RemoteMsSettings.Parse"/> keeps the values it
+	/// interpolates to <see cref="ScriptSafe"/> characters.
 	/// </summary>
 	public static string TunnelScript(RemoteMsSettings settings) => string.Join("\n", new[]
 	{
@@ -417,24 +444,28 @@ public static class RemoteMicroservices
 		"trap 'rm -rf \"$keydir\"' EXIT INT TERM",
 		"ssh-keygen -q -t ed25519 -N '' -C beam-local-tunnel -f \"$keydir/key\" || exit 1",
 		"while :; do",
-		"  unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN",
 		"  creds=$(aws sts assume-role --role-arn \"$role\" --role-session-name \"beam-tunnel-$dev\" --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' --output text) || { echo 'could not assume the tunnel role; retrying in 15s'; sleep 15; continue; }",
-		"  set -- $creds",
-		"  export AWS_ACCESS_KEY_ID=\"$1\" AWS_SECRET_ACCESS_KEY=\"$2\" AWS_SESSION_TOKEN=\"$3\" AWS_REGION=\"$region\" AWS_PAGER=''",
-		"  unset AWS_PROFILE AWS_DEFAULT_PROFILE",
-		"  instance=$(aws ec2 describe-instances --filters \"Name=tag:Name,Values=$instance_name\" Name=instance-state-name,Values=running --query 'Reservations[0].Instances[0].InstanceId' --output text)",
-		"  case \"$instance\" in i-*) ;; *) echo \"tunnel host $instance_name isn't running; retrying in 15s\"; sleep 15; continue;; esac",
-		"  aws ec2-instance-connect send-ssh-public-key --instance-id \"$instance\" --instance-os-user \"$user\" --ssh-public-key \"file://$keydir/key.pub\" >/dev/null || { echo 'could not push the ssh key; retrying in 15s'; sleep 15; continue; }",
-		"  # The SSM session already authenticates the instance, and its host key changes whenever the host is",
-		"  # replaced, so no host key is pinned. -F /dev/null keeps the user's ~/.ssh/config out of it.",
-		"  ssh -N -F /dev/null -i \"$keydir/key\" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR \\",
-		"    -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes \\",
-		$"    -o PermitLocalCommand=yes -o 'LocalCommand=echo {TunnelReadyMarker}' \\",
-		"    -o \"ProxyCommand=aws ssm start-session --region $region --target %h --document-name $ssh_document\" \\",
-		"    -R \"/run/tunnels/$dev.sock:127.0.0.1:8080\" -R \"/run/tunnels/$dev-registry.sock:127.0.0.1:5002\" \\",
-		"    -R \"/run/tunnels/$dev-clickhouse.sock:127.0.0.1:8123\" \\",
-		"    \"$user@$instance\"",
-		"  echo \"tunnel closed (ssh exit $?); reconnecting in 5s\"",
+		"  # One connection, as the tunnel role. Exit 75 asks for a retry in 15 seconds.",
+		"  (",
+		"    set -- $creds",
+		"    export AWS_ACCESS_KEY_ID=\"$1\" AWS_SECRET_ACCESS_KEY=\"$2\" AWS_SESSION_TOKEN=\"$3\" AWS_REGION=\"$region\" AWS_PAGER=''",
+		"    unset AWS_PROFILE AWS_DEFAULT_PROFILE",
+		"    instance=$(aws ec2 describe-instances --filters \"Name=tag:Name,Values=$instance_name\" Name=instance-state-name,Values=running --query 'Reservations[0].Instances[0].InstanceId' --output text)",
+		"    case \"$instance\" in i-*) ;; *) echo \"tunnel host $instance_name isn't running; retrying in 15s\"; exit 75;; esac",
+		"    aws ec2-instance-connect send-ssh-public-key --instance-id \"$instance\" --instance-os-user \"$user\" --ssh-public-key \"file://$keydir/key.pub\" >/dev/null || { echo 'could not push the ssh key; retrying in 15s'; exit 75; }",
+		"    # The SSM session already authenticates the instance, and its host key changes whenever the host is",
+		"    # replaced, so no host key is pinned. -F /dev/null keeps the user's ~/.ssh/config out of it.",
+		"    ssh -N -F /dev/null -i \"$keydir/key\" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR \\",
+		"      -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes \\",
+		$"      -o PermitLocalCommand=yes -o 'LocalCommand=echo {TunnelReadyMarker}' \\",
+		"      -o \"ProxyCommand=aws ssm start-session --region $region --target %h --document-name $ssh_document\" \\",
+		"      -R \"/run/tunnels/$dev.sock:127.0.0.1:8080\" -R \"/run/tunnels/$dev-registry.sock:127.0.0.1:5002\" \\",
+		"      -R \"/run/tunnels/$dev-clickhouse.sock:127.0.0.1:8123\" \\",
+		"      \"$user@$instance\"",
+		"  )",
+		"  status=$?",
+		"  if [ \"$status\" -eq 75 ]; then sleep 15; continue; fi",
+		"  echo \"tunnel closed (ssh exit $status); reconnecting in 5s\"",
 		"  sleep 5",
 		"done",
 	});
@@ -490,10 +521,13 @@ public static class RemoteMicroservices
 		}
 	}
 
-	/// <summary>False only when the server's certificate is rejected; any other outcome leaves nothing to trust.</summary>
-	internal static async Task<bool> AcceptsCertificate(string url, CancellationToken token)
+	/// <summary>
+	/// False only when the server's certificate is rejected; any other outcome leaves nothing to trust, including the
+	/// probe timing out. Only the caller's own cancellation propagates.
+	/// </summary>
+	public static async Task<bool> AcceptsCertificate(string url, CancellationToken token, TimeSpan? timeout = null)
 	{
-		using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+		using var http = new HttpClient { Timeout = timeout ?? TimeSpan.FromSeconds(10) };
 		try
 		{
 			using var _ = await http.GetAsync(url, token);
@@ -505,6 +539,11 @@ public static class RemoteMicroservices
 		}
 		catch (HttpRequestException)
 		{
+			return true;
+		}
+		catch (TaskCanceledException) when (!token.IsCancellationRequested)
+		{
+			// HttpClient's own timeout: a stalled registry, not a certificate problem and not the caller's cancellation.
 			return true;
 		}
 	}
