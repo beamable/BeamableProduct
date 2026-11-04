@@ -206,10 +206,11 @@ public static class RemoteMicroservices
 	/// What a stack with the tunnel needs before anything launches, and the settings to run it with (null when they
 	/// can't be worked out, or the stack doesn't run the backend here to apply them to). Every problem comes back with
 	/// its fix, so a run can refuse with all of them and a dry run can list them.
-	/// <paramref name="canLogin"/> lets it run <c>aws sso login</c> when the SSO session has expired.
+	/// <paramref name="canPrompt"/> (a real run in a terminal) lets it run <c>aws sso login</c> when the SSO session
+	/// has expired, and add the developer's names to /etc/hosts when the DNS resolver blocks them.
 	/// </summary>
 	public static (RemoteMsSettings settings, List<string> problems) Check(LocalStackConfig config,
-		IReadOnlyCollection<LocalStackStep> steps, bool runsLocal, bool canLogin)
+		IReadOnlyCollection<LocalStackStep> steps, bool runsLocal, bool canPrompt)
 	{
 		if (OperatingSystem.IsWindows())
 		{
@@ -237,7 +238,7 @@ public static class RemoteMicroservices
 		}
 
 		var identity = AwsPreflightService.Run(aws, "sts get-caller-identity --output json", null);
-		if (!identity.ok && LooksLikeExpiredSso(identity.output) && canLogin)
+		if (!identity.ok && LooksLikeExpiredSso(identity.output) && canPrompt)
 		{
 			Log.Information("Your AWS SSO session has expired; running `aws sso login`.");
 			RunInteractive(aws, "sso login");
@@ -294,14 +295,23 @@ public static class RemoteMicroservices
 		}
 
 		// Public DNS sends every name under the domain to 127.0.0.1, but some routers and corporate resolvers drop
-		// public names that point at 127.0.0.1 (DNS rebinding protection).
-		var unresolved = new[] { settings.RegistryHost, settings.ClickHouseHost }.Where(h => !ResolvesToLoopback(h)).ToList();
+		// public names that point at 127.0.0.1 (DNS rebinding protection). /etc/hosts works on any network.
+		var unresolved = Unresolved(settings, ResolvesToLoopback);
+		if (unresolved.Count > 0 && canPrompt)
+		{
+			Log.Warning($"{string.Join(" and ", unresolved)} {(unresolved.Count == 1 ? "doesn't" : "don't")} resolve to 127.0.0.1 here " +
+			            "(your DNS resolver may block names that point at 127.0.0.1), so they're being added to /etc/hosts. sudo will ask for your password.");
+			AppendToHosts(HostsEntry(unresolved));
+			unresolved = Unresolved(settings, ResolvesToLoopback);
+		}
+
 		if (unresolved.Count > 0)
 		{
 			var (verb, pronoun) = unresolved.Count == 1 ? ("doesn't", "it") : ("don't", "them");
 			problems.Add(
 				$"{string.Join(" and ", unresolved)} {verb} resolve to 127.0.0.1 here; your DNS resolver may block names " +
-				$"that point at 127.0.0.1. Add {pronoun} to /etc/hosts: echo \"127.0.0.1 {string.Join(" ", unresolved)}\" | sudo tee -a /etc/hosts");
+				$"that point at 127.0.0.1. {(canPrompt ? "Adding" : "A run in a terminal adds")} {pronoun} to /etc/hosts" +
+				$"{(canPrompt ? " didn't work; add" : ", or add")} {pronoun} yourself: echo \"{HostsEntry(unresolved)}\" | sudo tee -a /etc/hosts");
 		}
 
 		// A stack without the backend here has nothing to apply the settings to.
@@ -504,6 +514,42 @@ public static class RemoteMicroservices
 		&& awsOutput.Contains("sso", StringComparison.OrdinalIgnoreCase)
 		&& (awsOutput.Contains("expired", StringComparison.OrdinalIgnoreCase)
 		    || awsOutput.Contains("refresh failed", StringComparison.OrdinalIgnoreCase));
+
+	/// <summary>Ends the /etc/hosts line <see cref="HostsEntry"/> builds, so it's easy to find and remove.</summary>
+	public const string HostsMarker = "# beam local run :remote-ms";
+
+	/// <summary>The developer's names this machine has to resolve to itself (the gateway name never is) that don't.</summary>
+	public static List<string> Unresolved(RemoteMsSettings settings, Func<string, bool> resolvesToLoopback) =>
+		new[] { settings.RegistryHost, settings.ClickHouseHost }.Where(h => !resolvesToLoopback(h)).ToList();
+
+	/// <summary>The /etc/hosts line that sends <paramref name="hosts"/> to this machine.</summary>
+	public static string HostsEntry(IEnumerable<string> hosts) => $"127.0.0.1 {string.Join(" ", hosts)} {HostsMarker}";
+
+	/// <summary>
+	/// Appends <paramref name="line"/> to /etc/hosts with <c>sudo tee -a</c>, the line on stdin and no shell. sudo asks
+	/// for the password on the terminal. The names in it passed <see cref="ValidateName"/> and <see cref="IsDomain"/>.
+	/// </summary>
+	private static void AppendToHosts(string line)
+	{
+		const string hosts = "/etc/hosts";
+		var current = File.Exists(hosts) ? File.ReadAllText(hosts) : "";
+		var psi = new ProcessStartInfo("sudo") { UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true };
+		foreach (var a in new[] { "tee", "-a", hosts })
+		{
+			psi.ArgumentList.Add(a);
+		}
+
+		using var proc = Process.Start(psi);
+		if (proc == null)
+		{
+			return;
+		}
+
+		proc.StandardInput.Write((current.Length > 0 && !current.EndsWith('\n') ? "\n" : "") + line + "\n");
+		proc.StandardInput.Close();
+		proc.StandardOutput.ReadToEnd();
+		proc.WaitForExit();
+	}
 
 	/// <summary>True when <paramref name="value"/> can go between single quotes in the tunnel script.</summary>
 	internal static bool IsScriptSafe(string value) => value != null && ScriptSafe.IsMatch(value);

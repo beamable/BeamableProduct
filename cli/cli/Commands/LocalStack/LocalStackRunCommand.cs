@@ -690,13 +690,13 @@ public class LocalStackRunCommand
 		}
 
 		// :remote-ms: AWS access, local tools and DNS, all checked before anything launches. A dry run lists the problems
-		// with the other checks instead, and never signs in.
+		// with the other checks instead, and never signs in or edits /etc/hosts.
 		var remoteMsProblems = new List<string>();
 		if (RemoteMicroservices.Runs(resolved.steps))
 		{
 			(_remoteMs, remoteMsProblems) = RemoteMicroservices.Check(config, resolved.steps,
 				LocalStackTargets.RunsLocal(resolved.target, config),
-				canLogin: !args.dryRun && !args.Quiet && AnsiConsole.Profile.Capabilities.Interactive);
+				canPrompt: !args.dryRun && !args.Quiet && AnsiConsole.Profile.Capabilities.Interactive);
 			if (remoteMsProblems.Count > 0 && !args.dryRun)
 			{
 				throw new CliException(RemoteMicroservices.NotReady(remoteMsProblems));

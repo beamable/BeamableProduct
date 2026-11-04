@@ -415,6 +415,27 @@ public class LocalStackRemoteMicroservicesTests
 			Is.EqualTo("ssm get-parameter --region us-west-2 --name /example/settings --query Parameter.Value --output text"));
 	}
 
+	[Test]
+	public void HostsEntry_SendsTheNamesHereAndIsMarked()
+	{
+		var settings = Settings("justin");
+
+		Assert.That(RemoteMicroservices.HostsEntry(new[] { settings.RegistryHost, settings.ClickHouseHost }),
+			Is.EqualTo("127.0.0.1 justin-registry.ms.example.com justin-clickhouse.ms.example.com " + RemoteMicroservices.HostsMarker));
+	}
+
+	[Test]
+	public void Unresolved_IsOnlyTheNamesThatDontResolveHere()
+	{
+		var settings = Settings("justin");
+
+		Assert.That(RemoteMicroservices.Unresolved(settings, host => host == settings.RegistryHost),
+			Is.EqualTo(new[] { settings.ClickHouseHost }));
+		Assert.That(RemoteMicroservices.Unresolved(settings, _ => true), Is.Empty);
+		Assert.That(RemoteMicroservices.Unresolved(settings, _ => false),
+			Is.EqualTo(new[] { settings.RegistryHost, settings.ClickHouseHost }), "the gateway name is never looked up here");
+	}
+
 	[TestCase("Error when retrieving token from sso: Token has expired and refresh failed", true)]
 	[TestCase("The SSO session associated with this profile has expired or is otherwise invalid.", true)]
 	[TestCase("An error occurred (ExpiredToken) when calling the GetCallerIdentity operation", false)]
