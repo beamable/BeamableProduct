@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 namespace cli.OtelCommands;
 
 [Serializable]
-public class FetchTelemetryLogsCommandArgs : CommandArgs
+public class FetchTelemetryLogsCommandArgs : CommandArgs, IHasZoneScopeArgs
 {
 	public string ServiceName;
 	public string LogLevel;
@@ -18,6 +18,7 @@ public class FetchTelemetryLogsCommandArgs : CommandArgs
 	public bool FullMatch;
 	public string FromTime;
 	public bool AscendingOrder;
+	public bool IsZoneScope { get; set; }
 }
 
 public class FetchTelemetryLogsResult
@@ -74,6 +75,7 @@ public class FetchTelemetryLogsCommand : AtomicCommand<FetchTelemetryLogsCommand
 			(args, i) => args.FromTime = i);
 		AddOption(new Option<bool>(new string[]{"--ascending", "--asc"}, () => false,"If set, this will force the order to be ascending instead of the default descending order"),
 			(args, i) => args.AscendingOrder = i);
+		ZoneScope.AddScopeOption(this);
 	}
 
 	public override bool AutoLogOutput => false;
@@ -83,6 +85,7 @@ public class FetchTelemetryLogsCommand : AtomicCommand<FetchTelemetryLogsCommand
 		OtelAuthConfig config;
 		if (!ClickhouseConnection.GetClickhouseAuthOverrides(out config))
 		{
+			using var scopeHandle = await ZoneScope.ApplyAsync(args);
 			config = await args.OtelApi.GetOtelAuthReaderConfig();
 		}
 

@@ -174,7 +174,21 @@ namespace Beamable.Server
 		public string RefreshToken => Environment.GetEnvironmentVariable("REFRESH_TOKEN");
 		public string CustomerID => Environment.GetEnvironmentVariable("CID");
 		public string ProjectName => Environment.GetEnvironmentVariable("PID");
-		public string Zid => Environment.GetEnvironmentVariable("ZID");
+		// A deployed zone service only gets PID (holding the zone id); ZID is set by `generate-env` for local runs.
+		public string Zid
+		{
+			get
+			{
+				var zid = Environment.GetEnvironmentVariable("ZID");
+				if (!string.IsNullOrEmpty(zid))
+				{
+					return zid;
+				}
+
+				var pid = ProjectName;
+				return pid != null && pid.StartsWith("ZONE_", StringComparison.OrdinalIgnoreCase) ? pid : null;
+			}
+		}
 		public IDependencyProviderScope ServiceScope { get; }
 
 		private int? _freeHealthPort = null;

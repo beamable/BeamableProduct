@@ -1021,7 +1021,7 @@ public class SwaggerService
 
 	private static List<OpenApiDocumentResult> SplitTagsIntoSeparateDocuments(OpenApiDocumentResult swagger)
 	{
-		var tagsToSkip = Array.Empty<string>();
+		var tagsToSkip = new[] { "Account" };
 		var output = new List<OpenApiDocumentResult>();
 
 		var opCount = 0;

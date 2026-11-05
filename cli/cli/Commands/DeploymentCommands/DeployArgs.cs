@@ -183,20 +183,7 @@ public class DeployArgs
 		}
 
 		var cid = args.AppContext.Cid;
-		var pid = args.AppContext.Pid;
-		var localZid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_ZID);
-		var zid = string.IsNullOrEmpty(zidOverride)
-			? await ZoneResolver.ResolveZid(args.DependencyProvider, cid, pid, localZid)
-			: zidOverride;
-		if (string.IsNullOrEmpty(zid))
-		{
-			var reason = string.IsNullOrEmpty(pid)
-				? "no realm is selected and no 'zid' is set in the .beamable config"
-				: $"the selected realm [{pid}] is not bound to a zone";
-			throw new CliException(
-				$"`--scope zone` was requested, but {reason}. Bind the realm to a zone (Portal > Zone Management) " +
-				$"or set a 'zid' in the .beamable config.");
-		}
+		var zid = await ZoneScope.ResolveRequiredZid(args);
 
 		Log.Information($"Deploying against zone [{zid}] with scope [{cid}.{zid}]");
 		var requester = args.DependencyProvider.GetService<CliRequester>();

@@ -213,6 +213,9 @@ public class LocalStackRunCommand
 	}
 	private string _workspaceRoot;
 
+	/// <summary>The <c>:remote-ms</c> settings, once its checks pass; null without it.</summary>
+	private RemoteMsSettings _remoteMs;
+
 	/// <summary>True when the board prints (a terminal, or lines without one): failures are on the board, not warned twice.</summary>
 	private bool Showing => _board != null && _board.Mode != LocalStackBoardMode.Silent;
 
@@ -479,6 +482,16 @@ public class LocalStackRunCommand
 	}
 
 	/// <summary>
+	/// The environment <c>beam local stop</c> needs to reverse <paramref name="step"/>, or null when it has no
+	/// reversal. Only those steps record theirs, so the run state carries nothing it doesn't use.
+	/// </summary>
+	public static Dictionary<string, string> ReversalEnvironment(LocalStackStep step, LocalStackConfig config) =>
+		string.IsNullOrWhiteSpace(step.stopArguments) && string.IsNullOrWhiteSpace(step.purgeStopArguments)
+		|| step.environment == null || step.environment.Count == 0
+			? null
+			: step.environment.ToDictionary(kv => kv.Key, kv => LocalStackConfigIO.Substitute(kv.Value, config));
+
+	/// <summary>
 	/// Gives every variable the stack declares a value: the settings' own value wins, then the stack's default; a
 	/// variable with neither is asked for and saved to the settings, or fails the run when nobody can be asked.
 	/// Returns the names that took the stack's default, so the dry run can say so.
@@ -607,6 +620,12 @@ public class LocalStackRunCommand
 				throw new CliException(e.Message);
 			}
 
+			// Settings reloaded after setup start from the file again, so :remote-ms is applied again.
+			if (_remoteMs != null && RemoteMicroservices.Runs(resolved.steps))
+			{
+				RemoteMicroservices.Apply(resolved.steps, _remoteMs);
+			}
+
 			fromDefaults = ApplyStackVariables(resolved, config, path,
 				canAsk: !args.dryRun && !args.Quiet && AnsiConsole.Profile.Capabilities.Interactive);
 
@@ -662,9 +681,45 @@ public class LocalStackRunCommand
 
 		bool UsesTag(string tag) => resolved.steps.Any(s => stacks.TagsOf(s).Contains(tag, StringComparer.OrdinalIgnoreCase));
 
+		// :remote-ms changes how the docker deps and the gateway run, so a running stack can't take it on or drop it:
+		// they would keep running the other way.
+		var ranRemote = stillRunning.Count > 0 && RemoteMicroservices.RanIn(previousRun, stillRunning);
+		if (stillRunning.Count > 0 && RemoteMicroservices.Runs(resolved.steps) != ranRemote)
+		{
+			throw new CliException($"A stack is running here {(RemoteMicroservices.Runs(resolved.steps) ? "without" : "with")} :remote-ms. Stop it first (`beam local stop`).");
+		}
+
+		// :remote-ms: AWS access, local tools and DNS, all checked before anything launches. A dry run lists the problems
+		// with the other checks instead, and never signs in or edits /etc/hosts.
+		var remoteMsProblems = new List<string>();
+		if (RemoteMicroservices.Runs(resolved.steps))
+		{
+			(_remoteMs, remoteMsProblems) = RemoteMicroservices.Check(config, resolved.steps,
+				LocalStackTargets.RunsLocal(resolved.target, config),
+				canPrompt: !args.dryRun && !args.Quiet && AnsiConsole.Profile.Capabilities.Interactive);
+			if (remoteMsProblems.Count > 0 && !args.dryRun)
+			{
+				throw new CliException(RemoteMicroservices.NotReady(remoteMsProblems));
+			}
+
+			// The running gateway and tunnel keep the names they started with, so a different name needs a restart.
+			if (_remoteMs != null && ranRemote && !string.IsNullOrEmpty(previousRun.remoteMsHost)
+			    && !string.Equals(previousRun.remoteMsHost, _remoteMs.GatewayHost, StringComparison.OrdinalIgnoreCase))
+			{
+				throw new CliException($"The running stack's remote microservices use {previousRun.remoteMsHost}, and this run's would use {_remoteMs.GatewayHost} (remoteMsName or your AWS identity changed). Stop it first (`beam local stop`).");
+			}
+
+			if (_remoteMs != null)
+			{
+				RemoteMicroservices.Apply(resolved.steps, _remoteMs);
+				Log.Information($"Remote microservices on: deployed services connect back through {_remoteMs.GatewayHost} and pull from {_remoteMs.RegistryHost}.");
+			}
+		}
+
 		// What the stack needs: tools, generated config files, the portal's env, variables. A dry run prints it all;
 		// a real run sets up whatever is missing before anything starts.
 		var checks = await LocalStackPreflight.Check(config, resolved.steps, stacks, withCliPins: args.dryRun);
+		checks.AddRange(remoteMsProblems.Select(p => new LocalStackDependencyCheck { name = "remote-ms", ok = false, detail = p }));
 
 		// What the stack's steps need and it doesn't run. `beam local create` adds it; a stack written by hand, or one
 		// whose base changed, can still miss it, and then a step fails in a way that doesn't say why (a C# host
@@ -916,6 +971,7 @@ public class LocalStackRunCommand
 			{
 				host = config.host, portalUrl = config.portalUrl,
 				logsDir = logsDir, ephemeralLogs = !args.saveLogs,
+				remoteMsHost = _remoteMs?.GatewayHost,
 				steps = aliveByName.Values.ToList()
 			};
 			LocalStackRunStateIO.Save(runStatePath, runState);
@@ -1035,6 +1091,7 @@ public class LocalStackRunCommand
 					entry.command = LocalStackConfigIO.Substitute(step.command, config);
 				entry.stopArguments = LocalStackConfigIO.Substitute(step.stopArguments, config);
  				entry.purgeStopArguments = LocalStackConfigIO.Substitute(step.purgeStopArguments, config);
+				entry.environment = ReversalEnvironment(step, config);
 				entry.waitForExit = step.waitForExit;
 				LocalStackRunStateIO.Save(runStatePath, runState);
 			}
@@ -1175,6 +1232,21 @@ public class LocalStackRunCommand
 					ok = false,
 					message = $"'{stackName}' runs against {next.target}, and the running stack against {resolved.target}. Stop it first (Ctrl+C in its terminal, or `beam local stop`)."
 				};
+
+			// :remote-ms changes how the docker deps and the gateway run, so it can't be taken on or dropped while they do.
+			if (RemoteMicroservices.Runs(next.steps) != RemoteMicroservices.Runs(resolved.steps))
+			{
+				return new LocalStackControlResponse
+				{
+					ok = false,
+					message = $"'{stackName}' {(RemoteMicroservices.Runs(next.steps) ? "adds" : "drops")} :remote-ms, which the running stack can't change. Stop it first (Ctrl+C in its terminal, or `beam local stop`)."
+				};
+			}
+
+			if (_remoteMs != null)
+			{
+				RemoteMicroservices.Apply(next.steps, _remoteMs);
+			}
 
 			bool In(IEnumerable<LocalStackStep> list, LocalStackStep step) =>
 				list.Any(s => string.Equals(s.name, step.name, StringComparison.OrdinalIgnoreCase));
@@ -1352,6 +1424,7 @@ public class LocalStackRunCommand
 				entry.command = step.command;
 				entry.stopArguments = LocalStackConfigIO.Substitute(step.stopArguments, config);
 				entry.purgeStopArguments = LocalStackConfigIO.Substitute(step.purgeStopArguments, config);
+				entry.environment = ReversalEnvironment(step, config);
 				entry.waitForExit = step.waitForExit;
 				entry.adopted = true;
 				LocalStackRunStateIO.Save(runStatePath, runState);
@@ -1596,6 +1669,12 @@ public class LocalStackRunCommand
 			// No beam steps ran the hook above — still ensure/validate the realm once the backend is up.
 			if (!realmEnsured)
 				await EnsureRealmAndLogin(args, config, steps);
+
+			// Caddy is up now, so its local CA exists to be trusted.
+			if (_remoteMs != null)
+			{
+				await RemoteMicroservices.EnsureCaddyCaTrusted(resolved.steps, config, _remoteMs, token);
+			}
 
 			// From here the board says where the stack is. An attached terminal keeps it up for its keys; otherwise it
 			// closes and the summary says it instead.
@@ -2733,6 +2812,8 @@ public class LocalStackRunCommand
 		foreach (var redirect in new[]
 		{
 			"MSBuildSDKsPath",
+			// Set by the CLI's own MSBuildLocator registration, so every step it launches inherits it.
+			"MSBuildExtensionsPath",
 			"MSBuildToolsPath",
 			"MSBUILD_EXE_PATH",
 			"NuGetRestoreTargets",

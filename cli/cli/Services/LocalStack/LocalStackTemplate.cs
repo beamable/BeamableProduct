@@ -1030,6 +1030,67 @@ public static class LocalStackTemplate
 		dependsOn = new List<string> { ApiDepsStepName }
 	};
 
+	public const string ClickHouseMigrationsStepName = "c# clickhouse migrations";
+
+	/// <summary>
+	/// Creates the local ClickHouse's tables (<c>otel_logs</c>, <c>otel_traces</c>, the metrics tables) with
+	/// BeamableAPI's <c>Beamable.Database.Management migrate</c>. The gateway gives each realm a ClickHouse writer when
+	/// a microservice starts, but nothing else creates the tables those writers insert into, so without this every
+	/// service's telemetry is refused (<c>UNKNOWN_TABLE</c>) and the portal has no logs to show. Migrations are recorded
+	/// in ClickHouse, so a run after the first only checks them.
+	///
+	/// A build and a run, like the C# hosts (<see cref="AddDotnetHost"/>): the build is a <c>build: </c> step, so it runs
+	/// in BeamableAPI's build lane, one after another with the gateway's (the two compile the same shared projects),
+	/// and only when its inputs changed. Both go right after the docker step, so the tables exist before anything
+	/// that writes telemetry starts: a stack runs its steps in catalogue order.
+	///
+	/// Added to the catalogue wherever the backend's docker step is (from <c>WorkspaceServices.AddTo</c>), so
+	/// settings written before it existed get it without setup. The <c>c# </c> names tag both <c>csharp</c>, which puts
+	/// them in every stack that runs the C# hosts.
+	/// </summary>
+	public static void AddClickHouseMigrationsStep(List<LocalStackStep> steps)
+	{
+		var docker = steps.FindIndex(s => string.Equals(s.name, ApiDepsStepName, StringComparison.OrdinalIgnoreCase));
+		if (docker < 0 || steps.Any(s => string.Equals(s.name, ClickHouseMigrationsStepName, StringComparison.OrdinalIgnoreCase)))
+		{
+			return;
+		}
+
+		const string project = "Beamable.Database.Management";
+		var apiDir = steps[docker].workingDirectory;
+		var outDir = Path.Combine(apiDir, project, "bin", "Debug", DotnetHostTfm);
+		steps.InsertRange(docker + 1, new[]
+		{
+			new LocalStackStep
+			{
+				name = $"build: {ClickHouseMigrationsStepName}",
+				workingDirectory = apiDir,
+				command = DotnetToken,
+				arguments = $"build {project} -c Debug",
+				build = true,
+				requiredOutput = Path.Combine(outDir, OperatingSystem.IsWindows() ? project + ".exe" : project),
+				inputs = CSharpHostInputs(),
+				waitForExit = true,
+				readyTimeoutSeconds = 300
+			},
+			new LocalStackStep
+			{
+				name = ClickHouseMigrationsStepName,
+				label = "ClickHouse migrations",
+				// ClickHouse comes from the docker deps.
+				dependsOn = new List<string> { ApiDepsStepName },
+				// From its output directory, so the appsettings*.json copied there are found.
+				workingDirectory = outDir,
+				command = OperatingSystem.IsWindows() ? project + ".exe" : "./" + project,
+				arguments = "migrate",
+				// Its appsettings.Local.json points at the docker deps' ClickHouse.
+				environment = new Dictionary<string, string> { ["DOTNET_ENVIRONMENT"] = "Local" },
+				waitForExit = true,
+				readyTimeoutSeconds = 120
+			}
+		});
+	}
+
 	/// <summary>Name prefix identifying microservice steps (used by the "update services" flow).</summary>
 	public const string MicroservicePrefix = "microservice: ";
 

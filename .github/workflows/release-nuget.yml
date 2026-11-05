@@ -201,6 +201,7 @@ jobs:
           NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
 
       - name: Publish Changelog
+        continue-on-error: ${{ inputs.releaseType == 'rc' }} # RC builds don't need changelogs
         if: ${{ inputs.dryRun == false }} 
         run: sh ./build/bin/upload-changelogs.sh
         env:

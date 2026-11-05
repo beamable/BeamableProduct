@@ -14,13 +14,14 @@ using Microsoft.Extensions.Logging;
 
 namespace cli.Commands.Project.Logs;
 
-public class GetRemoteLogsCommandArgs : CommandArgs
+public class GetRemoteLogsCommandArgs : CommandArgs, IHasZoneScopeArgs
 {
     public string service;
     public string filter;
     public string level;
     public string fromTimestamp;
     public string toTimestamp;
+    public bool IsZoneScope { get; set; }
 }
 
 
@@ -89,6 +90,7 @@ public class GetRemoteLogsCommand : StreamCommand<GetRemoteLogsCommandArgs, Tail
         AddOption(new Option<string>(new string[]{"-sl", "--server-log-level",}, "A log level filter for searching"), (args, i) => args.level = i);
         AddOption(new Option<string>(new string[]{"--from"}, "A timestamp filter, where logs must be newer than this time. " + FORMAT), (args, i) => args.fromTimestamp = i);
         AddOption(new Option<string>(new string[]{"--to"}, "A timestamp filter, where logs must be older than this time. " + FORMAT), (args, i) => args.toTimestamp = i);
+        ZoneScope.AddScopeOption(this);
     }
 
     public static bool TryParseTimeString(string timeString, out DateTimeOffset time)
@@ -143,6 +145,7 @@ public class GetRemoteLogsCommand : StreamCommand<GetRemoteLogsCommandArgs, Tail
 
     public override async Task Handle(GetRemoteLogsCommandArgs args)
     {
+        using var scopeHandle = await ZoneScope.ApplyAsync(args);
         var api = args.DependencyProvider.GetService<IBeamoApi>();
         Query query = null;
 

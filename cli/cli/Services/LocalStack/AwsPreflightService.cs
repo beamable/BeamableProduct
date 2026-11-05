@@ -508,7 +508,7 @@ public class AwsPreflightService
 		return null;
 	}
 
-	private readonly record struct CliOutcome(bool ok, string output);
+	internal readonly record struct CliOutcome(bool ok, string output);
 
 	/// <summary>
 	/// Assumes a role, optionally from another role's credentials (chaining). Returns the raw
@@ -557,7 +557,7 @@ public class AwsPreflightService
 	/// response. When <paramref name="redactOutput"/> is set the output is discarded rather than returned, so a
 	/// secret value can never reach a report or a log.
 	/// </summary>
-	private static CliOutcome Run(string aws, string arguments, string assumeRoleJson, bool redactOutput = false)
+	internal static CliOutcome Run(string aws, string arguments, string assumeRoleJson, bool redactOutput = false)
 	{
 		var psi = new ProcessStartInfo
 		{
@@ -615,7 +615,7 @@ public class AwsPreflightService
 	/// Pulls a field out of an <c>assume-role</c> / <c>get-caller-identity</c> response. Credentials are nested
 	/// under <c>Credentials</c>, identity fields are at the root, so both shapes are searched.
 	/// </summary>
-	private static string TryJsonValue(string json, string field)
+	internal static string TryJsonValue(string json, string field)
 	{
 		if (string.IsNullOrWhiteSpace(json)) return null;
 

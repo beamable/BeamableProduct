@@ -5,5 +5,5 @@
 
 export type CampaignOfferRedeemPayload = { 
   params?: Record<string, string>; 
-  transactionId?: string | null; 
+  transactionId?: string; 
 };

@@ -437,6 +437,10 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
+	public class OptionalArrayOfGuid : OptionalArray<Guid> { }
+
+	[System.Serializable]
+	[Agnostic]
 	public class OptionalArrayOfByte : OptionalArray<byte> { }
 
 

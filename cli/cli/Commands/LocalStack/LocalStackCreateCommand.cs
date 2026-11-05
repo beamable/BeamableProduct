@@ -2249,6 +2249,11 @@ public class WorkspaceServices
 			step.dependsOn = calls.Count > 0 ? calls : null;
 			if (have.Add(step.name)) steps.Add(step);
 		}
+
+		// Not workspace services, but every reader of the catalogue comes through here, so these resolve in `ps`,
+		// `create` and `run` alike, settings written before them included.
+		LocalStackTemplate.AddClickHouseMigrationsStep(steps);
+		RemoteMicroservices.AddTunnelStep(steps);
 	}
 
 	/// <summary>

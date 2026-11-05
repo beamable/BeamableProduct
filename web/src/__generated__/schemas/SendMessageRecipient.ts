@@ -5,5 +5,6 @@
 
 export type SendMessageRecipient = { 
   gamerTag: bigint | string; 
+  data?: Record<string, string> | null; 
   outreachId?: string | null; 
 };

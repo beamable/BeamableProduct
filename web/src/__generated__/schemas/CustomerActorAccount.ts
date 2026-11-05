@@ -10,21 +10,20 @@ import type { RoleAssociation } from './RoleAssociation';
 import type { ZoneRoleAssociation } from './ZoneRoleAssociation';
 
 export type CustomerActorAccount = { 
-  accountId?: bigint | string; 
   country?: string | null; 
-  createdTimeMs?: bigint | string; 
+  createdTimeMillis?: bigint | string; 
   deviceIds?: string[] | null; 
   email?: string | null; 
   external?: CustomerActorExternalIdentity[] | null; 
+  gamerTags?: RealmAssociation[]; 
+  id?: bigint | string; 
   language?: string | null; 
-  password?: string | null; 
   passwordRaw?: string | null; 
-  realmAssociations?: RealmAssociation[]; 
   realmId?: string | null; 
   roleString?: string | null; 
   roles?: RoleAssociation[] | null; 
-  thirdPartyAssociations?: CustomerActorThirdPartyAssociation[]; 
-  updatedTimeMs?: bigint | string; 
-  username?: string | null; 
+  thirdParties?: CustomerActorThirdPartyAssociation[]; 
+  updatedTimeMillis?: bigint | string; 
+  userName?: string | null; 
   zoneRoles?: ZoneRoleAssociation[] | null; 
 };

@@ -10,27 +10,25 @@ using UnityEngine;
 
 namespace Beamable.Common.Player
 {
+	/// <summary>Exposes change notifications for a local observable object.</summary>
 	public interface IObservable
 	{
-		/// <summary>
-		/// An event that happens whenever the object has changed.
-		/// </summary>
+		/// <summary>Occurs when change detection reports that the observable data has changed.</summary>
+		/// <remarks>This is not an initial-data or refresh-completion notification. A refresh that finds no
+		/// change need not raise it. Subscribe before the operation to observe changes, and remove the handler
+		/// when its consumer is disposed. Use a readiness promise or <see cref="IRefreshable.Refresh"/> to await loading.</remarks>
 		event Action OnUpdated;
 	}
 
+	/// <summary>Provides asynchronous refreshing of observable data.</summary>
 	public interface IRefreshable
 	{
-		/// <summary>
-		/// Forces a check of the data to make sure its up to date.
-		/// <para>
-		/// If a refresh is already running, then this resulting <see cref="Promise"/> will represent the existing refresh call.
-		/// This means you can't have multiple refreshes happening at once.
-		/// </para>
-		/// <para>
-		/// If there is not already a refresh happening, then this will always trigger a <see cref="AbsRefreshableObservable.OnLoadingStarted"/> and a <see cref="AbsRefreshableObservable.OnLoadingFinished"/>.
-		/// If the data actually changes, then a <see cref="IObservable.OnUpdated"/> will trigger.
-		/// </para>
-		/// </summary>
+		/// <summary>Refreshes this object's data, joining an existing refresh if one is running.</summary>
+		/// <returns>A promise that completes when the refresh finishes, or rejects if it fails.</returns>
+		/// <remarks>Concurrent refresh calls wait for the same work. A new refresh raises loading-started and
+		/// loading-finished notifications, including on failure. <see cref="IObservable.OnUpdated"/> is raised only
+		/// when change detection finds a change. A completed refresh does not guarantee a network request;
+		/// the implementing service determines its caching and offline behavior.</remarks>
 		Promise Refresh();
 	}
 
@@ -42,10 +40,11 @@ namespace Beamable.Common.Player
 
 	public class DefaultObservable : IObservable
 	{
-		/// <summary>
 		/// <inheritdoc cref="IObservable.OnUpdated"/>
-		/// A "change" only happens when the value of the <see cref="GetBroadcastChecksum"/> changes.
-		/// </summary>
+		/// <summary>Occurs when change detection reports that the observable data has changed.</summary>
+		/// <remarks>A change is detected when <see cref="GetBroadcastChecksum"/> differs from the last broadcast checksum.
+		/// Unchanged refreshes do not emit this event. This is not an initial-data or loading-completion notification.
+		/// Detach handlers when their consumer is disposed.</remarks>
 		public event Action OnUpdated;
 
 		private int _lastBroadcastChecksum;
