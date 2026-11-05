@@ -164,7 +164,7 @@ public class DeployArgs
 	/// manifest. Returns a handle that restores the previous scope on dispose — wrap the plan/release in a
 	/// <c>using</c>. For <see cref="DeployScope.Realm"/> this is a no-op (default <c>{cid}.{pid}</c> scope).
 	/// </summary>
-	public static async Task<IDisposable> ApplyDeployScopeAsync(CommandArgs args, DeployScope scope)
+	public static async Task<IDisposable> ApplyDeployScopeAsync(CommandArgs args, DeployScope scope, string zidOverride = null)
 	{
 		if (scope != DeployScope.Zone)
 		{
@@ -174,7 +174,9 @@ public class DeployArgs
 		var cid = args.AppContext.Cid;
 		var pid = args.AppContext.Pid;
 		var localZid = args.ConfigService.GetConfigString(ConfigService.CFG_JSON_FIELD_ZID);
-		var zid = await ZoneResolver.ResolveZid(args.DependencyProvider, cid, pid, localZid);
+		var zid = string.IsNullOrEmpty(zidOverride)
+			? await ZoneResolver.ResolveZid(args.DependencyProvider, cid, pid, localZid)
+			: zidOverride;
 		if (string.IsNullOrEmpty(zid))
 		{
 			var reason = string.IsNullOrEmpty(pid)

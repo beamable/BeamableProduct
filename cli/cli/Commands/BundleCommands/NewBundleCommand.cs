@@ -56,29 +56,40 @@ public class NewBundleCommand : AtomicCommand<NewBundleCommandArgs, NewBundleCom
 		var fileName = args.bundleName + BundleWorkspace.BUNDLE_FILE_SUFFIX;
 		var fullPath = Path.Combine(args.ConfigService.BeamableWorkspace, fileName);
 
-		// Resolve the bundle's scope from its components. A bundle must be single-scope; validate the
-		// components exist and share a scope, then persist the derived scope in the file. With no
-		// components, default to realm (the only publishable scope today, and the default deploy scope).
-		var manifest = args.BeamoLocalSystem.BeamoManifest;
-		var scope = BundleWorkspace.SCOPE_REALM;
+		// One component group, on by default, with every component. Sites come from the projects, so they
+		// aren't written; split the group and mark source-available components by editing the file.
+		var draft = new BundleConfigFile { name = args.bundleName, filePath = fullPath };
+		foreach (var component in args.components)
+			draft.components[component] = new BundleComponentConfig();
 		if (args.components.Count > 0)
 		{
-			var draft = new BundleConfigFile { name = args.bundleName, filePath = fullPath, components = args.components };
-			BundleBuild.ValidateComponentsExist(manifest, draft);
-			var anyZone = args.components.Any(c =>
-				manifest.ServiceDefinitions.Any(d => d.BeamoId == c && d.IsZoneScoped));
-			scope = anyZone ? BundleWorkspace.SCOPE_ZONE : BundleWorkspace.SCOPE_REALM;
+			draft.componentGroups["default"] = new BundleComponentGroupConfig
+			{
+				title = args.bundleName, description = "", components = args.components.ToList(), enabledByDefault = true,
+			};
+			BundleBuild.ValidateComponentsExist(args.BeamoLocalSystem.BeamoManifest, draft);
 		}
 
 		// the bundle's name is the file name itself; it is not stored inside the file.
 		var json = new JObject
 		{
-			["scope"] = scope,
-			["components"] = new JArray(args.components),
-			["bundleDependencies"] = new JObject()
+			["components"] = new JObject(args.components.Select(c => new JProperty(c, new JObject { ["source"] = false }))),
+			["componentGroups"] = args.components.Count == 0
+				? new JObject()
+				: new JObject
+				{
+					["default"] = new JObject
+					{
+						["title"] = args.bundleName,
+						["description"] = "",
+						["components"] = new JArray(args.components),
+						["enabledByDefault"] = true,
+					}
+				},
+			["dependencies"] = new JObject()
 		};
 		File.WriteAllText(fullPath, json.ToString(Formatting.Indented));
-		Log.Information($"Created bundle config [{fullName}] scope=[{scope}] at [{fullPath}]");
+		Log.Information($"Created bundle config [{fullName}] at [{fullPath}]");
 
 		return new NewBundleCommandOutput { name = fullName, filePath = fullPath };
 	}

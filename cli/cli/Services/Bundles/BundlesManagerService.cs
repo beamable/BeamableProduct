@@ -31,7 +31,7 @@ public class BundlesApi : ILocalWebApi
 				{
 					string Field(string name) => request[name]?.Type == JTokenType.String ? request[name]!.Value<string>() : "";
 					var op = Field("op");
-					return (op, BuildArgs(op, Field("bundle"), Field("tag"), Field("checksum"), Field("comment"), Field("acl"),
+					return (op, BuildArgs(op, Field("bundle"), Field("tag"), Field("version"), Field("comment"),
 						Field("scope"), request["flag"]?.Type == JTokenType.Boolean && request["flag"]!.Value<bool>()));
 				});
 			default:
@@ -41,7 +41,6 @@ public class BundlesApi : ILocalWebApi
 
 	BundlesWorkspaceView Workspace()
 	{
-		var pins = _ctx.ConfigService.LoadManifestReferences() ?? new ManifestReferences();
 		return new BundlesWorkspaceView
 		{
 			cid = _ctx.Cid,
@@ -51,21 +50,18 @@ public class BundlesApi : ILocalWebApi
 			ownerAccountId = _ctx.OwnerAccountId.ToString(),
 			ownerEmail = _ctx.OwnerEmail,
 			workingDirectory = _ctx.ConfigService.BeamableWorkspace,
-			realmPins = pins.realm.Select(kv => new BundlePinView { name = kv.Key, checksum = kv.Value }).ToArray(),
-			zonePins = pins.zone.Select(kv => new BundlePinView { name = kv.Key, checksum = kv.Value }).ToArray(),
 		};
 	}
 
 	// Values must start alphanumeric so nothing the page sends can parse as an option.
-	static readonly Regex BundleRefPattern = new(@"^@?[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)?(@[A-Za-z0-9][A-Za-z0-9._:-]*)?$", RegexOptions.Compiled);
+	static readonly Regex BundleRefPattern = new(@"^@?[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)?$", RegexOptions.Compiled);
 	static readonly Regex TagPattern = new(@"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$", RegexOptions.Compiled);
-	static readonly Regex ChecksumPattern = new(@"^sha256:[0-9a-fA-F]{8,128}$", RegexOptions.Compiled);
-	static readonly string[] AclValues = { "private", "org", "public" };
+	static readonly Regex VersionPattern = new(@"^[1-9][0-9]{0,17}$", RegexOptions.Compiled);
 	static readonly string[] ScopeValues = { "realm", "zone" };
 
 	/// <summary>Maps a whitelisted operation to the CLI arguments that perform it.</summary>
-	public static string[] BuildArgs(string op, string bundle, string tag, string checksum, string comment,
-		string acl, string scope, bool flag)
+	public static string[] BuildArgs(string op, string bundle, string tag, string version, string comment,
+		string scope, bool flag)
 	{
 		string Bundle()
 		{
@@ -81,6 +77,13 @@ public class BundlesApi : ILocalWebApi
 			return tag;
 		}
 
+		string Version()
+		{
+			if (!VersionPattern.IsMatch(version ?? ""))
+				throw new LocalWebRequestException(400, $"Invalid version [{version}].");
+			return version;
+		}
+
 		string OneOf(string value, string[] allowed, string what)
 		{
 			if (!allowed.Contains(value))
@@ -94,31 +97,8 @@ public class BundlesApi : ILocalWebApi
 			case "list":
 				args.AddRange(new[] { "bundles", "list" });
 				break;
-			case "get":
-				args.AddRange(new[] { "bundles", "get", Bundle() });
-				break;
 			case "releases":
 				args.AddRange(new[] { "bundles", "releases", Bundle() });
-				break;
-			case "install":
-				args.AddRange(new[] { "bundles", "install", Bundle() });
-				if (!string.IsNullOrEmpty(checksum))
-				{
-					if (!ChecksumPattern.IsMatch(checksum))
-						throw new LocalWebRequestException(400, $"Invalid checksum [{checksum}].");
-					args.AddRange(new[] { "--checksum", checksum });
-				}
-				else if (!string.IsNullOrEmpty(tag))
-				{
-					args.AddRange(new[] { "--tag", Tag() });
-				}
-				break;
-			case "uninstall":
-				args.AddRange(new[] { "bundles", "uninstall", Bundle() });
-				break;
-			case "prune-yanked":
-				args.AddRange(new[] { "bundles", "prune-yanked" });
-				if (flag) args.Add("--remove");
 				break;
 			case "plan":
 				args.AddRange(new[] { "bundles", "plan", Bundle() });
@@ -128,17 +108,12 @@ public class BundlesApi : ILocalWebApi
 				// flag = publish exactly what the last `plan` job showed.
 				if (flag) args.Add("--from-latest-plan");
 				if (!string.IsNullOrEmpty(tag)) args.AddRange(new[] { "--tag", Tag() });
-				if (!string.IsNullOrEmpty(acl)) args.AddRange(new[] { "--acl", OneOf(acl, AclValues, "acl") });
-				if (!string.IsNullOrWhiteSpace(comment)) args.Add(CommentOption(comment));
 				break;
 			case "tag":
-				args.AddRange(new[] { "bundles", "tag", Bundle(), Tag() });
+				args.AddRange(new[] { "bundles", "tag", Bundle(), Tag(), Version() });
 				break;
 			case "yank":
-				args.AddRange(new[] { "bundles", "yank", Bundle() });
-				break;
-			case "acl":
-				args.AddRange(new[] { "bundles", "acl", Bundle(), "--scope", OneOf(acl, AclValues, "acl") });
+				args.AddRange(new[] { "bundles", "yank", Bundle(), Version() });
 				break;
 			case "deploy-plan":
 				args.AddRange(new[] { "deploy", "plan", "--scope", OneOf(scope, ScopeValues, "scope") });
@@ -184,13 +159,4 @@ public class BundlesWorkspaceView
 	public string ownerAccountId;
 	public string ownerEmail;
 	public string workingDirectory;
-	public BundlePinView[] realmPins;
-	public BundlePinView[] zonePins;
-}
-
-[Serializable]
-public class BundlePinView
-{
-	public string name;
-	public string checksum;
 }

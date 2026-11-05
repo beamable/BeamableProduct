@@ -8,47 +8,42 @@ namespace cli.BundleCommands;
 
 public class YankBundleCommandArgs : CommandArgs
 {
-	public string bundleRef;
+	public string bundleName;
+	public long version;
 }
 
 public class YankBundleCommandOutput
 {
 	public string name;
-	public string checksum;
+	public long version;
+
+	/// <summary>Where latest points after the yank; 0 when no version is left.</summary>
+	public long latestVersion;
 }
 
 public class YankBundleCommand : AtomicCommand<YankBundleCommandArgs, YankBundleCommandOutput>, ISkipManifest
 {
-	public YankBundleCommand() : base("yank", "Yank a bundle checksum so it can no longer be newly referenced")
+	public YankBundleCommand() : base("yank", "Yank a release version so nobody can install it any more. Running installations keep it")
 	{
 	}
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("bundle-ref", "The bundle checksum reference, e.g. <bundle-name>@sha256:<checksum> (optionally namespaced as @<namespace>/<bundle-name>@sha256:<checksum>)"),
-			(args, i) => args.bundleRef = i);
+		AddArgument(new Argument<string>("bundle-name", "The bundle name, optionally namespaced as @<namespace>/<bundle-name>"),
+			(args, i) => args.bundleName = i);
+		AddArgument(new Argument<long>("version", "The release version to yank"),
+			(args, i) => args.version = i);
 	}
 
 	public override async Task<YankBundleCommandOutput> GetResult(YankBundleCommandArgs args)
 	{
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
-		var (explicitNs, name, checksum) = BundleRef.RequireChecksum(args.bundleRef);
-		var ns = await BundleNamespace.Resolve(args, explicitNs);
-		var fullName = BundleNamespace.Qualify(ns, name);
-		var response = await api.PostBundlesChecksumsYank(name, checksum, ns);
-
-		// Yank only blocks *new* references — an already-pinned checksum still redeploys. Warn if this
-		// workspace currently pins the yanked checksum so the user can migrate off it (see `prune-yanked`).
-		var manifest = args.ConfigService.LoadManifestReferences();
-		var pinnedToChecksum = manifest != null &&
-		                       ((manifest.realm.TryGetValue(fullName, out var realmPinned) && realmPinned == checksum) ||
-		                        (manifest.zone.TryGetValue(fullName, out var zonePinned) && zonePinned == checksum));
-		if (pinnedToChecksum)
-		{
-			Log.Warning($"[{fullName}] is pinned to this yanked checksum in {ConfigService.MANIFEST_FILE_NAME}." +
-			            $" Existing deploys keep working, but you can't newly reference it. Run `beam bundles prune-yanked` to review/clear.");
-		}
-
-		return new YankBundleCommandOutput { name = response.name, checksum = response.checksum };
+		var fullName = await BundleNamespace.FullName(args, args.bundleName);
+		var response = await api.PostReleasesYank(new YankReleaseRequest { name = fullName, version = args.version });
+		var latest = response.latestVersion.GetOrElse(0);
+		Log.Information(latest > 0
+			? $"Yanked [{fullName}] v{args.version}; latest is v{latest}."
+			: $"Yanked [{fullName}] v{args.version}; no version is left for latest to point at.");
+		return new YankBundleCommandOutput { name = fullName, version = args.version, latestVersion = latest };
 	}
 }

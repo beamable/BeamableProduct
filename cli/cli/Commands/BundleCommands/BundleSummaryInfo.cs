@@ -6,48 +6,99 @@ using Beamable.Common.BeamCli.Contracts;
 namespace cli.BundleCommands;
 
 /// <summary>
-/// CLI-owned projection of a catalog <see cref="BundleSummary"/> for command output. A summary is
-/// everything that belongs to the bundle <i>name</i> rather than to one published version, so it
-/// carries the ACL and @latest but none of the component references — fetch a bundle by name or
-/// checksum for those.
+/// CLI-owned projection of a catalog <see cref="BundleSummaryView"/> for command output: everything that
+/// belongs to the bundle <i>name</i> rather than to one release.
 /// </summary>
 [Serializable]
 public class BundleSummaryInfo
 {
 	public string name = "";
 
-	/// <summary>Visibility of the whole name: <c>&lt;cid&gt;.&lt;pid&gt;</c> for a realm, <c>&lt;cid&gt;</c> for an org, <c>*</c> for public.</summary>
-	public string acl = "";
-
-	/// <summary>Customer id that first published the name, and the only one that may widen it.</summary>
+	/// <summary>The org that owns the name; only it can publish, tag, yank and deprecate.</summary>
 	public string ownerCid = "";
 
-	public string latestChecksum = "";
+	/// <summary>"private" or "public". Public bundles with a release are listed in the marketplace.</summary>
+	public string visibility = "";
 
-	/// <summary>Release version @latest currently points at.</summary>
+	public string displayName = "";
+	public string summary = "";
+	public string[] categories = Array.Empty<string>();
+
+	/// <summary>Whether installations of this bundle must keep auto-update on.</summary>
+	public bool autoUpdateRequired;
+
+	/// <summary>The version <c>latest</c> points at; 0 when the bundle has no release.</summary>
 	public long latestVersion;
 
-	/// <summary>User tags only; @latest is <see cref="latestChecksum"/>.</summary>
+	/// <summary>Every tag, <c>latest</c> included.</summary>
 	public BundleTagInfo[] tags = Array.Empty<BundleTagInfo>();
 
-	/// <summary>Unix timestamp (seconds) of the last publish or tag move.</summary>
-	public long updatedAt;
+	public BundleNoticeInfo[] notices = Array.Empty<BundleNoticeInfo>();
 
-	public static BundleSummaryInfo FromSummary(BundleSummary summary)
+	public static BundleSummaryInfo FromSummary(BundleSummaryView summary)
 	{
 		if (summary == null) return null;
 
+		var listing = summary.listing.GetOrElse((BundleListing)null);
 		return new BundleSummaryInfo
 		{
 			name = summary.name.GetOrElse(""),
-			acl = summary.acl.GetOrElse(""),
 			ownerCid = summary.ownerCid.GetOrElse(""),
-			latestChecksum = summary.latestChecksum.GetOrElse(""),
+			visibility = summary.visibility.HasValue ? summary.visibility.Value.ToString().ToLowerInvariant() : "",
+			displayName = listing?.displayName.GetOrElse("") ?? "",
+			summary = listing?.summary.GetOrElse("") ?? "",
+			categories = listing?.categories.GetOrElse(Array.Empty<string>()) ?? Array.Empty<string>(),
+			autoUpdateRequired = summary.autoUpdateRequired.GetOrElse(false),
 			latestVersion = summary.latestVersion.GetOrElse(0),
 			tags = summary.tags.ToTagInfos(),
-			updatedAt = summary.updatedAt.GetOrElse(0),
+			notices = summary.notices.GetOrElse(Array.Empty<BundleNoticeView>()).Select(BundleNoticeInfo.FromNotice).ToArray(),
 		};
 	}
 
-	public string FormatTags() => tags.Length == 0 ? "-" : string.Join(", ", tags.Select(t => t.tag));
+	public string FormatTags() => tags.Length == 0 ? "-" : string.Join(", ", tags.Select(t => $"{t.tag} v{t.version}"));
+}
+
+/// <summary>
+/// CLI-owned projection of a deprecation notice: the versions it covers, their two dates, and where
+/// those versions are now (supported, deprecated, unsupported or end of life).
+/// </summary>
+[Serializable]
+public class BundleNoticeInfo
+{
+	public string id = "";
+	public long minVersion;
+	public long maxVersion;
+	public DateTime endOfSupport;
+	public DateTime endOfLife;
+	public string message = "";
+	public string link;
+
+	/// <summary>The recommended replacement: a version, or a tag name.</summary>
+	public string replacement;
+
+	/// <summary>"supported", "deprecated", "unsupported" or "endoflife".</summary>
+	public string status = "";
+
+	public static BundleNoticeInfo FromNotice(BundleNoticeView n)
+	{
+		if (n == null) return null;
+		var replacementVersion = n.replacementVersion.GetOrElse(0);
+		return new BundleNoticeInfo
+		{
+			id = n.id.GetOrElse(""),
+			minVersion = n.minVersion.GetOrElse(0),
+			maxVersion = n.maxVersion.GetOrElse(0),
+			endOfSupport = n.endOfSupport.GetOrElse(default(DateTime)),
+			endOfLife = n.endOfLife.GetOrElse(default(DateTime)),
+			message = n.message.GetOrElse(""),
+			link = n.link.GetOrElse((string)null),
+			replacement = replacementVersion > 0 ? $"v{replacementVersion}" : n.replacementTag.GetOrElse((string)null),
+			status = n.status.HasValue ? n.status.Value.ToString().ToLowerInvariant() : "",
+		};
+	}
+
+	public string Describe() =>
+		$"v{minVersion}-v{maxVersion} {status}: end of support {endOfSupport:yyyy-MM-dd}, end of life {endOfLife:yyyy-MM-dd}" +
+		(string.IsNullOrEmpty(replacement) ? "" : $", use {replacement}") +
+		(string.IsNullOrEmpty(message) ? "" : $". {message}");
 }

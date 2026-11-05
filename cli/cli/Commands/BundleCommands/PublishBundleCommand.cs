@@ -11,7 +11,10 @@ using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Threading;
 
 namespace cli.BundleCommands;
 
@@ -19,9 +22,10 @@ public class PublishBundleCommandArgs : CommandArgs, IHasDeployPlanArgs
 {
 	public string bundleName;
 	public string tag;
-	public string acl;
 	public string fromPlanFile;
 	public bool fromLastPlan;
+	public List<string> compatibleSince = new List<string>();
+	public bool irreversibleDataChange;
 
 	// IHasDeployPlanArgs (mirrors ReleaseDeploymentCommandArgs)
 	public string Comment { get; set; }
@@ -48,14 +52,25 @@ public class PublishBundleCommandOutput
 {
 	public string name;
 	public string checksum;
-	public bool isNew;
 
-	/// <summary>The release version this publish produced.</summary>
+	/// <summary>False when the content equals the latest release's, so no version was made.</summary>
+	public bool isNewVersion;
+
+	/// <summary>The release version this publish produced, or the latest one when nothing changed.</summary>
 	public long version;
+
+	/// <summary>Soft-dependency gaps the server found; they never block a publish.</summary>
+	public string[] warnings = Array.Empty<string>();
 
 	public BundleDiffResult diff;
 }
 
+/// <summary>
+/// Publish an authored bundle as a new release. Artifacts go to the marketplace store, never to a realm:
+/// the server names a marketplace repo per service and an upload link per file it doesn't have yet,
+/// the CLI pushes the images and uploads the files, then posts the release, which the server checks
+/// against every artifact before writing it.
+/// </summary>
 public class PublishBundleCommand
 	: AppCommand<PublishBundleCommandArgs>
 	, IResultSteam<DefaultStreamResultChannel, PublishBundleCommandOutput>
@@ -64,7 +79,7 @@ public class PublishBundleCommand
 {
 	public override bool AutoLogOutput => false;
 
-	public PublishBundleCommand() : base("publish", "Build and publish an authored bundle to the catalog")
+	public PublishBundleCommand() : base("publish", "Build an authored bundle and publish it as a new release")
 	{
 	}
 
@@ -78,126 +93,75 @@ public class PublishBundleCommand
 			(args, i) => args.fromPlanFile = i);
 		AddOption(new Option<bool>(new[] { "--from-latest-plan", "--latest-plan", "--last-plan", "-lp" }, "Use the most recent plan generated for this bundle from the `bundles plan` command"),
 			(args, i) => args.fromLastPlan = i);
-		AddOption(new Option<string>(new[] { "--tag" }, "An additional tag to advance to the published checksum"),
+		AddOption(new Option<string>(new[] { "--tag" }, "A tag to point at the new version, besides latest"),
 			(args, i) => args.tag = i);
-		AddOption(new Option<string>(new[] { "--acl" }, "Widen the bundle's visibility tier (each tier is a superset of the previous, not a list of realms): 'private' = only this scope (the realm, or the zone for a zone bundle); 'org' = every realm and zone in your customer; 'public' = every realm in every customer. '*' is also accepted as an alias for 'public'"),
-			(args, i) => args.acl = i);
+		AddOption(new Option<List<string>>("--compatible-since", () => new List<string>(),
+				"The oldest version a component of this release is compatible with, as <component>=<version>, so auto-update can apply it. Repeat for each component. A changed component without one counts as breaking")
+			{ AllowMultipleArgumentsPerToken = true },
+			(args, i) => args.compatibleSince = i);
+		AddOption(new Option<bool>("--irreversible-data-change",
+				"This release changes stored data in a way a rollback can't undo. Auto-update never applies it"),
+			(args, i) => args.irreversibleDataChange = i);
 	}
 
 	public override async Task Handle(PublishBundleCommandArgs args)
 	{
 		var provider = args.DependencyProvider;
 		var bundle = BundleWorkspace.Require(args.ConfigService, args.bundleName);
-		BundleBuild.ValidateComponentsExist(args.BeamoLocalSystem.BeamoManifest, bundle);
+		var compatibleSince = ParseCompatibleSince(args.compatibleSince, bundle);
 
-		var isLoadingPlan = !string.IsNullOrEmpty(args.fromPlanFile);
 		if (args.fromLastPlan)
 		{
-			if (isLoadingPlan)
-			{
+			if (!string.IsNullOrEmpty(args.fromPlanFile))
 				throw new CliException("cannot specify both --from-latest-plan and --plan");
-			}
-			args.fromPlanFile = BundlePlanUtil.GetLatestBundlePlanFilePath(provider, bundle.name);
-			if (args.fromPlanFile == null)
-			{
-				throw new CliException(
-					$"cannot use --from-latest-plan, because there are no plan files for bundle=[{bundle.name}]. Please run `dotnet beam bundles plan {bundle.name}`");
-			}
-
-			isLoadingPlan = true;
+			args.fromPlanFile = BundlePlanUtil.GetLatestBundlePlanFilePath(provider, bundle.name)
+			                    ?? throw new CliException($"cannot use --from-latest-plan, because there are no plan files for bundle=[{bundle.name}]. Please run `dotnet beam bundles plan {bundle.name}`");
 		}
-
-		// Determine the deploy scope BEFORE any network call so BEAM_SCOPE is pinned for the whole
-		// operation (build, catalog fetch/publish, and the ACL call). Loading a plan file is a local
-		// read, so it happens here too.
-		DeployablePlan plan = null;
-		BundleDiffResult diff;
-		string plannedAgainstChecksum;
-		if (isLoadingPlan)
-		{
-			Log.Information($"Loading bundle plan from file=[{args.fromPlanFile}]");
-			var planFile = await BundlePlanUtil.LoadBundlePlanFile(args.fromPlanFile, bundle.name);
-			plan = planFile.plan;
-			diff = planFile.diff;
-			plannedAgainstChecksum = planFile.publishedChecksum;
-
-			// The plan's scope is authoritative — adopt it so the publish targets the same manifest
-			// (realm vs zone) the plan was built against, mirroring `deploy release --from-plan`.
-			if (args.Scope != plan.scope)
-			{
-				Log.Information($"Publishing with scope [{plan.scope}] from the loaded plan.");
-				args.Scope = plan.scope;
-			}
-		}
-		else
-		{
-			// A zone bundle must build against the zone manifest, or every zone-scoped component is
-			// filtered out and SelectComponents fails. Derive the deploy scope from the bundle's own
-			// scope field (the --scope flag is the visibility tier, not the deploy scope).
-			args.Scope = bundle.IsZoneScoped ? DeployScope.Zone : DeployScope.Realm;
-			diff = null;
-			plannedAgainstChecksum = null;
-		}
-
-		// Pin BEAM_SCOPE to {cid}.{zid} for a zone bundle (no-op for realm), exactly like
-		// `beam deploy --scope zone`.
-		using var scopeHandle = await DeployArgs.ApplyDeployScopeAsync(args, args.Scope);
 
 		var ns = await BundleNamespace.Get(args);
 		var fullName = BundleNamespace.Qualify(ns, bundle.name);
 		var bundleApi = provider.GetService<IBeamBeamobundleApi>();
 
-		if (!isLoadingPlan)
+		BundleBuildResult build;
+		BundleDiffResult diff;
+		var (release, content) = await BundleBuild.FetchLatestPublished(bundleApi, fullName);
+		var latestVersion = release?.version.GetOrElse(0) ?? 0;
+		if (!string.IsNullOrEmpty(args.fromPlanFile))
 		{
-			Log.Information($"Generating publish plan for bundle=[{fullName}]...");
-			// Don't exclude bundle components here — this command operates on exactly those components.
-			// Restrict the build to them, so an unrelated local service can't fail (or slow down) the publish.
-			(plan, _) = await this.InteractivePlan(provider, args, excludeAuthoredBundleComponents: false, savePlanToTemp: false,
-				includeOnlyBeamoIds: new HashSet<string>(bundle.components));
-		}
-
-		var (services, storages, extensions) = BundleBuild.SelectComponents(plan, bundle);
-
-		// Diff against the currently-published @latest and show what would change (like `release`).
-		var published = await BundleBuild.FetchLatestPublished(bundleApi, ns, bundle.name);
-		if (isLoadingPlan)
-		{
-			// The stored diff is only meaningful against the catalog state it was computed from.
-			var currentChecksum = published?.checksum.GetOrElse("") ?? "";
-			if (currentChecksum != plannedAgainstChecksum)
-			{
+			Log.Information($"Loading bundle plan from file=[{args.fromPlanFile}]");
+			var planFile = await BundlePlanUtil.LoadBundlePlanFile(args.fromPlanFile, bundle.name);
+			if (planFile.publishedVersion != latestVersion)
 				throw new CliException(
-					"The given bundle plan was created against a different published version of the bundle than exists now. Please create a new plan and try again.");
-			}
+					$"The bundle plan was made against v{planFile.publishedVersion}, but the latest release is now v{latestVersion}. Please create a new plan and try again.");
+			build = planFile.build;
+			diff = planFile.diff;
 		}
 		else
 		{
-			diff = BundleDiff.Compute(services, storages, extensions, bundle.bundleDependencies, published);
+			BundleBuild.ValidateComponentsExist(args.BeamoLocalSystem.BeamoManifest, bundle);
+			Log.Information($"Building bundle=[{fullName}]...");
+			build = await BundleBuild.Build(this, args, bundle);
+			diff = BundleDiff.Compute(build, bundle, release, content);
 			var planPath = await BundlePlanUtil.SaveBundlePlanToTempFolder(provider, new BundlePlanFile
 			{
-				bundleName = bundle.name,
-				publishedChecksum = diff.publishedChecksum,
-				plan = plan,
-				diff = diff,
+				bundleName = bundle.name, publishedVersion = diff.publishedVersion, build = build, diff = diff,
 			});
 			Log.Information("Saved plan: " + planPath);
 		}
 
 		BundleDiff.Print(diff, fullName);
-
 		if (diff.isNoOp)
 		{
 			Log.Information("Nothing to publish.");
 			this.SendResults<DefaultStreamResultChannel, PublishBundleCommandOutput>(new PublishBundleCommandOutput
 			{
-				name = fullName, checksum = diff.publishedChecksum, isNew = false, diff = diff,
+				name = fullName, checksum = content?.checksum.GetOrElse("") ?? "", isNewVersion = false, version = latestVersion, diff = diff,
 			});
 			return;
 		}
 
-		// Confirm before mutating the catalog (mirrors `deploy release`). --quiet skips the prompt.
 		var confirm = args.Quiet || string.Equals("yes",
-			AnsiConsole.Prompt(new TextPrompt<string>($"Are you sure you want to publish these changes to {Markup.Escape(fullName)}?\nType 'yes' to continue.")),
+			AnsiConsole.Prompt(new TextPrompt<string>($"Are you sure you want to publish these changes as a new release of {Markup.Escape(fullName)}?\nType 'yes' to continue.")),
 			StringComparison.InvariantCultureIgnoreCase);
 		if (!confirm)
 		{
@@ -205,93 +169,101 @@ public class PublishBundleCommand
 			return;
 		}
 
-		// Upload the bundle's changed service images (shared with the realm deploy path).
-		var servicesToUpload = new HashSet<string>(plan.servicesToUpload);
-		if (services.Any(s => servicesToUpload.Contains(s.serviceName)))
+		var services = build.Plans()
+			.SelectMany(p => p.plan.manifest.manifest ?? Array.Empty<BeamoBasicServiceReference>())
+			.Where(s => bundle.components.ContainsKey(s.serviceName))
+			.ToList();
+
+		Log.Information("Asking where the release's artifacts go...");
+		var targets = await bundleApi.PostReleasesUploadTargets(new ReleaseUploadTargetsRequest
 		{
+			name = new OptionalString(fullName),
+			services = new OptionalArrayOfString(services.Select(s => s.serviceName).ToArray()),
+			files = new OptionalArrayOfReleaseFile(build.files.Select(f => new ReleaseFile
+			{
+				sha256 = new OptionalString(f.sha256),
+				md5 = new OptionalString(f.md5),
+				contentType = new OptionalString(f.contentType),
+			}).ToArray()),
+		});
+
+		if (services.Count > 0)
+		{
+			// Every service is pushed, changed or not: the marketplace repo may not have the image yet,
+			// and a push of layers the registry already holds costs little.
+			var repositories = targets.repositories.GetOrElse(new MapOfString());
+			var (registryUrl, _) = await args.BeamoService.GetImageUploadTargets(Array.Empty<string>());
 			var gamePid = (await args.RealmsApi.GetRealm()).FindRoot().Pid;
-			var (dockerRegistryUrl, repositoryNames) = await args.BeamoService.GetImageUploadTargets(servicesToUpload);
-			await DeployUtil.UploadServiceImages(services, servicesToUpload, provider, gamePid,
-				dockerRegistryUrl, args.Lifecycle.Source, null, repositoryNames: repositoryNames);
+			Log.Information($"Pushing {services.Count} image(s) to the marketplace...");
+			await DeployUtil.UploadServiceImages(services, services.Select(s => s.serviceName).ToHashSet(), provider, gamePid,
+				registryUrl, args.Lifecycle.Source, null, repositoryNames: repositories);
 		}
 
-		// Upload the bundle's portal-extension assets; this fills each extension's file contentIds
-		// on the plan references (which `extensions` points into) before we build the request.
-		if (extensions.Count > 0)
+		var uploads = targets.files.GetOrElse(Array.Empty<ReleaseFileTarget>())
+			.Where(t => !t.stored.GetOrElse(false))
+			.ToList();
+		if (uploads.Count > 0)
 		{
-			await DeployUtil.UploadPortalExtensionBinaries(plan, provider, null,
-				new HashSet<string>(extensions.Select(e => e.name)));
+			Log.Information($"Uploading {uploads.Count} file(s) to the marketplace...");
+			using var http = new HttpClient();
+			foreach (var target in uploads)
+			{
+				var file = build.files.First(f => f.sha256 == target.sha256.GetOrElse(""));
+				await DeployUtil.UploadToSignedUrl(http, target.uploadMethod.GetOrElse((string)null), target.uploadUrl.GetOrElse(""),
+					await File.ReadAllBytesAsync(file.path), file.contentType, Convert.FromHexString(file.md5));
+			}
 		}
 
-		var request = new PublishBundleRequest
+		var request = new PublishReleaseRequest
 		{
-			serviceReferences = new OptionalArrayOfServiceReference
-			{
-				HasValue = true, Value = services.ConvertToBundleReference()
-			},
-			storageReferences = new OptionalArrayOfServiceStorageReference
-			{
-				HasValue = true, Value = storages.ConvertToBundleReference()
-			},
+			name = new OptionalString(fullName),
+			components = new OptionalArrayOfBundleComponent(build.components.ToArray()),
+			features = new OptionalArrayOfBundleFeature(BundleBuild.ComponentGroups(bundle)),
+			dependencies = new OptionalArrayOfBundleDep(BundleBuild.Dependencies(bundle)),
+			irreversibleDataChange = new OptionalBool(args.irreversibleDataChange),
 		};
-		if (extensions.Count > 0)
+		if (compatibleSince.Count > 0)
 		{
-			request.portalExtensionReferences = new OptionalArrayOfPortalExtensionReference
-			{
-				HasValue = true, Value = extensions.Select(PortalExtensionPlanReference.ToBundleReference).ToArray()
-			};
+			var map = new MapOfLong();
+			foreach (var (component, since) in compatibleSince) map[component] = since;
+			request.compatibleSince = new OptionalMapOfLong { HasValue = true, Value = map };
 		}
 		if (!string.IsNullOrEmpty(args.tag))
-		{
-			request.tag = args.tag;
-		}
-		if (!string.IsNullOrEmpty(args.Comment))
-		{
-			request.comment = args.Comment;
-		}
+			request.tag = new OptionalString(args.tag);
 
-		if (bundle.bundleDependencies.Count > 0)
-		{
-			var map = new MapOfBundleDepRange();
-			foreach (var kvp in bundle.bundleDependencies)
-			{
-				var range = new BundleDepRange { min = kvp.Value?.min ?? 0 };
-				if (kvp.Value?.max != null)
-				{
-					range.max = new OptionalLong(kvp.Value.max.Value);
-				}
-
-				map[kvp.Key] = range;
-			}
-
-			request.bundleDependencies = new OptionalMapOfBundleDepRange { HasValue = true, Value = map };
-		}
-
-		var response = await bundleApi.PostBundlesPublish(bundle.name, ns, request);
-
-		// Response fields are Optional* wrappers — unwrap to their values (don't interpolate the wrapper).
-		var publishedName = response.name.GetOrElse(fullName);
-		var publishedChecksum = response.checksum.GetOrElse("");
-		var isNew = response.isNew.GetOrElse(false);
+		var response = await bundleApi.PostReleases(request);
 		var version = response.version.GetOrElse(0);
-		Log.Information($"Published bundle=[{publishedName}] version=[{version}] checksum=[{publishedChecksum}] isNew=[{isNew}]");
-
-		// Optionally widen the bundle's ACL (publish always defaults to <cid>.<pid>). Visibility
-		// belongs to the name, so this exposes every version ever published under it.
-		if (!string.IsNullOrEmpty(args.acl))
-		{
-			var scope = BundleAclScope.Resolve(args.acl, args.AppContext);
-			await bundleApi.PutBundlesAcl(bundle.name, ns, new UpdateBundleAclRequest { scope = scope });
-			Log.Information($"Widened ACL for bundle=[{publishedName}] to scope=[{scope}]. This applies to every version ever published under the name.");
-		}
+		var warnings = response.warnings.GetOrElse(Array.Empty<string>());
+		foreach (var warning in warnings) Log.Warning(warning);
+		Log.Information(response.isNewVersion.GetOrElse(false)
+			? $"Published [{fullName}] v{version}."
+			: $"[{fullName}] already had this content at v{version}; no new version was made.");
 
 		this.SendResults<DefaultStreamResultChannel, PublishBundleCommandOutput>(new PublishBundleCommandOutput
 		{
-			name = publishedName,
-			checksum = publishedChecksum,
-			isNew = isNew,
+			name = response.name.GetOrElse(fullName),
+			checksum = response.checksum.GetOrElse(""),
+			isNewVersion = response.isNewVersion.GetOrElse(false),
 			version = version,
+			warnings = warnings,
 			diff = diff,
 		});
+	}
+
+	private static Dictionary<string, long> ParseCompatibleSince(List<string> values, BundleConfigFile bundle)
+	{
+		var result = new Dictionary<string, long>();
+		foreach (var value in values ?? new List<string>())
+		{
+			var eq = value.IndexOf('=');
+			if (eq <= 0 || !long.TryParse(value.Substring(eq + 1), out var version) || version < 1)
+				throw new CliException($"--compatible-since=[{value}] must be <component>=<version>, e.g. Scores=3.");
+			var component = value.Substring(0, eq);
+			if (!bundle.components.ContainsKey(component))
+				throw new CliException($"--compatible-since names [{component}], which isn't a component of [{bundle.name}].");
+			result[component] = version;
+		}
+
+		return result;
 	}
 }

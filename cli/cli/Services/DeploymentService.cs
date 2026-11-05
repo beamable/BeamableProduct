@@ -233,14 +233,6 @@ public class DeployablePlan : JsonSerializable.ISerializable
 	public bool ranHealthChecks;
 	public int changeCount;
 
-	/// <summary>
-	/// v2 bundle references (bundle name → sha256 checksum) that the realm should have after release:
-	/// the pins authored in <c>.beamable/bundles.manifest.beam.json</c> merged with the realm's current pins
-	/// per the deploy mode (additive keeps remote-only pins, replace drops them). Empty for legacy v1
-	/// workspaces. Passed to the server on release; the server resolves them.
-	/// </summary>
-	public Dictionary<string, string> references = new Dictionary<string, string>();
-
 	public void Serialize(JsonSerializable.IStreamSerializer s)
 	{
 		s.Serialize(nameof(builtFromRemoteChecksum), ref builtFromRemoteChecksum);
@@ -254,7 +246,6 @@ public class DeployablePlan : JsonSerializable.ISerializable
 		s.SerializeList(nameof(servicesToUpload), ref servicesToUpload);
 		s.SerializeList(nameof(portalExtensionsToUpload), ref portalExtensionsToUpload);
 		s.SerializeList(nameof(portalExtensionReferences), ref portalExtensionReferences);
-		s.SerializeDictionary(nameof(references), ref references);
 	}
 }
 
@@ -311,11 +302,6 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 	public List<string> changedPortalExtensions = new List<string>();
 	public List<string> removedPortalExtensions = new List<string>();
 
-	// pinned bundle references (bundles.manifest.beam.json) vs the realm's current v2 manifest references.
-	public List<BundleReferenceChange> addedBundleReferences = new List<BundleReferenceChange>();
-	public List<BundleReferenceChange> changedBundleReferences = new List<BundleReferenceChange>();
-	public List<BundleReferenceChange> removedBundleReferences = new List<BundleReferenceChange>();
-
 	public void Serialize(JsonSerializable.IStreamSerializer s)
 	{
 		s.SerializeList(nameof(jsonChanges), ref jsonChanges);
@@ -334,9 +320,6 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 		s.SerializeList(nameof(addedPortalExtensions), ref addedPortalExtensions);
 		s.SerializeList(nameof(changedPortalExtensions), ref changedPortalExtensions);
 		s.SerializeList(nameof(removedPortalExtensions), ref removedPortalExtensions);
-		s.SerializeList(nameof(addedBundleReferences), ref addedBundleReferences);
-		s.SerializeList(nameof(changedBundleReferences), ref changedBundleReferences);
-		s.SerializeList(nameof(removedBundleReferences), ref removedBundleReferences);
 	}
 }
 
@@ -380,27 +363,6 @@ public struct ServiceImageIdChange : IServiceChangeDisplay, JsonSerializable.ISe
 		s.Serialize(nameof(service), ref service);
 		s.Serialize(nameof(oldImageId), ref oldImageId);
 		s.Serialize(nameof(nextImageId), ref nextImageId);
-	}
-}
-
-public struct BundleReferenceChange : IServiceChangeDisplay, JsonSerializable.ISerializable
-{
-	public string bundle;
-	public string oldChecksum;
-	public string nextChecksum;
-
-	public string ToChangeString()
-	{
-		if (string.IsNullOrEmpty(oldChecksum)) return $"{bundle} [{nextChecksum}]";
-		if (string.IsNullOrEmpty(nextChecksum)) return $"{bundle} [{oldChecksum}]";
-		return $"{bundle} [{oldChecksum}]->[{nextChecksum}]";
-	}
-
-	public void Serialize(JsonSerializable.IStreamSerializer s)
-	{
-		s.Serialize(nameof(bundle), ref bundle);
-		s.Serialize(nameof(oldChecksum), ref oldChecksum);
-		s.Serialize(nameof(nextChecksum), ref nextChecksum);
 	}
 }
 
@@ -565,89 +527,18 @@ public partial class DeployUtil
 	}
 
 	/// <summary>
-	/// Resolves the component ids (services + storages + portal extensions) of every referenced bundle in
-	/// <paramref name="pins"/> so the caller can exclude them from the realm's inline diff — a component
-	/// delivered by a bundle reaches the realm via the bundle, not as an inline component, whether or not
-	/// the bundle is authored locally. The realm's already-assembled <paramref name="remoteV2"/>.bundles
-	/// lists components for bundles it currently pins (no network call); anything else (a newly-pinned
-	/// bundle, or one authored by another customer such as <c>@beamable/defaults</c>) is resolved from the
-	/// catalog. Best-effort: a per-bundle resolution failure is logged and skipped so it can't break the
-	/// plan (its components simply fall back to appearing as inline entries).
+	/// The components bundle installations put on this site, as its manifest's <c>installedBundles</c> lists
+	/// them. Installation changes own them: a post carries the org's own entries only, and the server keeps
+	/// every installation's, so the plan leaves them out of both sides of its diff.
 	/// </summary>
-	private static async Task<HashSet<string>> ResolvePinnedBundleComponentIds(
-		IDependencyProvider provider, IDictionary<string, string> pins, BeamoV2Manifest remoteV2)
-	{
-		var ids = new HashSet<string>();
-		if (pins == null || pins.Count == 0)
-		{
-			return ids;
-		}
-
-		var assembled = remoteV2?.bundles.GetOrElse(Array.Empty<BeamoV2ManifestBundle>())
-		                ?? Array.Empty<BeamoV2ManifestBundle>();
-		IBeamBeamobundleApi bundleApi = null;
-
-		foreach (var kvp in pins)
-		{
-			var fullName = kvp.Key;
-			var checksum = kvp.Value;
-
-			// fast path: the realm already resolved this exact bundle pin, so its component ids are on hand.
-			var match = assembled.FirstOrDefault(b =>
-				b.name.GetOrElse("") == fullName && b.checksum.GetOrElse("") == checksum);
-			if (match != null)
-			{
-				foreach (var id in match.services.GetOrElse(Array.Empty<string>()))
-				{
-					ids.Add(id);
-				}
-				foreach (var id in match.storages.GetOrElse(Array.Empty<string>()))
-				{
-					ids.Add(id);
-				}
-				foreach (var id in match.portalExtensions.GetOrElse(Array.Empty<string>()))
-				{
-					ids.Add(id);
-				}
-				continue;
-			}
-
-			try
-			{
-				var (ns, name) = BundleNamespace.SplitName(fullName);
-				bundleApi ??= provider.GetService<IBeamBeamobundleApi>();
-				var response = await bundleApi.GetBundlesChecksums(name, checksum, ns);
-				var info = BundleInfo.FromBundle(response.bundle);
-				if (info != null)
-				{
-					foreach (var id in info.serviceNames)
-					{
-						ids.Add(id);
-					}
-					foreach (var id in info.storageIds)
-					{
-						ids.Add(id);
-					}
-					foreach (var id in info.portalExtensionNames)
-					{
-						ids.Add(id);
-					}
-				}
-			}
-			catch (Exception e)
-			{
-				Log.Warning($"Could not resolve components for pinned bundle [{fullName}] ({checksum}); " +
-				            $"its components may appear as inline changes. {e.Message}");
-			}
-		}
-
-		return ids;
-	}
+	public static HashSet<string> InstalledComponentIds(BeamoV2Manifest remoteV2) =>
+		(remoteV2?.installedBundles.GetOrElse(Array.Empty<BeamoV2InstalledBundle>()) ?? Array.Empty<BeamoV2InstalledBundle>())
+		.SelectMany(b => b.components.GetOrElse(Array.Empty<string>()))
+		.ToHashSet();
 
 	/// <summary>
-	/// Diffs portal-extension references and pinned bundle references between the realm's current state
-	/// (<paramref name="remotePortalExtensionRefs"/> / <paramref name="remoteBundleReferences"/>) and the
-	/// merged intended state (<paramref name="nextPortalExtensionRefs"/> / <paramref name="nextBundleReferences"/>),
+	/// Diffs portal-extension references between the realm's current state (<paramref name="remotePortalExtensionRefs"/>)
+	/// and the merged intended state (<paramref name="nextPortalExtensionRefs"/>),
 	/// appending the results to <paramref name="diff"/>. These aren't part of the v1 ManifestView, so
 	/// <see cref="FindChanges"/> can't see them. Callers must pass a remote set already collapsed to one
 	/// canonical entry per name (see <see cref="CollapseByName{T}"/>) so a live entry isn't compared
@@ -656,8 +547,6 @@ public partial class DeployUtil
 	public static void DiffReferences(
 		List<PortalExtensionPlanReference> remotePortalExtensionRefs,
 		List<PortalExtensionPlanReference> nextPortalExtensionRefs,
-		IDictionary<string, string> remoteBundleReferences,
-		IDictionary<string, string> nextBundleReferences,
 		DeploymentDiffSummary diff)
 	{
 		foreach (var nextRef in nextPortalExtensionRefs)
@@ -690,26 +579,6 @@ public partial class DeployUtil
 				continue;
 			}
 			diff.removedPortalExtensions.Add(remoteRef.name);
-		}
-
-		foreach (var kvp in nextBundleReferences)
-		{
-			if (!remoteBundleReferences.TryGetValue(kvp.Key, out var remoteChecksum))
-			{
-				diff.addedBundleReferences.Add(new BundleReferenceChange { bundle = kvp.Key, nextChecksum = kvp.Value });
-			}
-			else if (remoteChecksum != kvp.Value)
-			{
-				diff.changedBundleReferences.Add(new BundleReferenceChange { bundle = kvp.Key, oldChecksum = remoteChecksum, nextChecksum = kvp.Value });
-			}
-		}
-
-		foreach (var kvp in remoteBundleReferences)
-		{
-			if (!nextBundleReferences.ContainsKey(kvp.Key))
-			{
-				diff.removedBundleReferences.Add(new BundleReferenceChange { bundle = kvp.Key, oldChecksum = kvp.Value });
-			}
 		}
 	}
 
@@ -1064,34 +933,6 @@ public partial class DeployUtil
 		return final;
 	}
 
-	/// <summary>
-	/// Additive merge for pinned bundle references: remote pins are kept, and local pins add to or
-	/// overwrite them by bundle name.
-	/// </summary>
-	public static Dictionary<string, string> MergeAdditive(
-		IDictionary<string, string> remote,
-		IDictionary<string, string> local)
-	{
-		var final = new Dictionary<string, string>(remote);
-		foreach (var kvp in local)
-		{
-			final[kvp.Key] = kvp.Value;
-		}
-
-		return final;
-	}
-
-	/// <summary>
-	/// Replacement merge for pinned bundle references: only the local pins survive — any bundle that
-	/// is pinned remotely but not locally gets unpinned.
-	/// </summary>
-	public static Dictionary<string, string> MergeReplacement(
-		IDictionary<string, string> remote,
-		IDictionary<string, string> local)
-	{
-		return new Dictionary<string, string>(local);
-	}
-
 	public static bool TryValidate(ManifestView current, out List<string> errors)
 	{
 		errors = new List<string>();
@@ -1371,20 +1212,12 @@ public partial class DeployUtil
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.addedPortalExtensions, "Adding", "portal extension");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.changedPortalExtensions, "Updating", "portal extension");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.removedPortalExtensions, "Removing", "portal extension");
-		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.addedBundleReferences, "Pinning", "bundle");
-		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.changedBundleReferences, "Updating", "bundle pin");
-		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.removedBundleReferences, "Unpinning", "bundle");
-
-		var bundleReferenceChangeCount = plan.diff.addedBundleReferences.Count
-		                                 + plan.diff.changedBundleReferences.Count
-		                                 + plan.diff.removedBundleReferences.Count;
 		var portalExtensionChangeCount = plan.diff.addedPortalExtensions.Count
 		                                 + plan.diff.changedPortalExtensions.Count
 		                                 + plan.diff.removedPortalExtensions.Count;
 		hasChanges = plan.diff.jsonChanges.Count > 0
 		             || plan.portalExtensionsToUpload.Count > 0
-		             || portalExtensionChangeCount > 0
-		             || bundleReferenceChangeCount > 0;
+		             || portalExtensionChangeCount > 0;
 		var hasDetectedChanges = detectedChangeCount > 0;
 		if (hasChanges)
 		{
@@ -1405,17 +1238,6 @@ public partial class DeployUtil
 				{
 					Log.Information($"   {note}");
 				}
-			}
-		}
-
-		// Only surface the post-release bundle pins when the plan actually changes something; otherwise
-		// this reads as a pending change when the summary already said "There are no changes."
-		if (hasChanges && plan.references?.Count > 0)
-		{
-			Log.Information("Referenced bundles after this release:");
-			foreach (var kvp in plan.references)
-			{
-				Log.Information($"   {kvp.Key} → {kvp.Value}");
 			}
 		}
 
@@ -1521,7 +1343,7 @@ public partial class DeployUtil
 		var beamoApi = provider.GetService<IBeamBeamoApi>();
 
 		// Components that belong to an authored bundle (*.beam.bundle.json) are NOT part of the root/
-		// inline manifest — they reach the realm via a bundle reference. Exclude them from this realm
+		// inline manifest — they reach sites by being published and installed. Exclude them from this
 		// plan. Bundle publish/plan pass excludeAuthoredBundleComponents=false, since they operate on
 		// those components. No bundle files → empty set → behavior unchanged.
 		var bundleComponentIds = new HashSet<string>();
@@ -1529,10 +1351,7 @@ public partial class DeployUtil
 		{
 			foreach (var b in BundleWorkspace.DiscoverAndValidate(provider.GetService<ConfigService>()))
 			{
-				// A bundle must be single-scope; catch a mixed/mislabelled bundle here rather than let its
-				// components leak into (or wrongly out of) the scoped plan.
-				BundleWorkspace.ValidateComponentScope(beamo.BeamoManifest, b);
-				foreach (var c in b.components)
+				foreach (var c in b.ComponentNames)
 					bundleComponentIds.Add(c);
 			}
 		}
@@ -1756,34 +1575,17 @@ public partial class DeployUtil
 		}
 		// ── End Portal Extensions ─────────────────────────────────────────────────
 
-		// ── Pinned bundle references ──────────────────────────────────────────────
-		// The locally-authored pins live in .beamable/bundles.manifest.beam.json. Legacy workspaces without the
-		// file skip the merge entirely (release won't send references either, so nothing changes for them).
-		var configService = provider.GetService<ConfigService>();
-		var hasManifestReferences = configService.ExistsManifestReferences();
-		// Only the pins for THIS deploy's scope apply: a realm deploy consumes the realm section and a
-		// zone deploy the zone section. The other section is left untouched on disk and dropped from the plan.
-		var localBundleReferences = hasManifestReferences
-			? configService.LoadManifestReferences()?.ForScope(args.Scope == DeployScope.Zone) ?? new Dictionary<string, string>()
-			: new Dictionary<string, string>();
-		IDictionary<string, string> remoteBundleReferences = hasManifestReferences
-			? beamoV2Manifest?.references.GetOrElse(new MapOfString()) ?? new MapOfString()
-			: new Dictionary<string, string>();
-
 		List<PortalExtensionPlanReference> nextPortalExtensionRefs = null;
-		Dictionary<string, string> nextBundleReferences = null;
 
 		switch (args.DeployMode)
 		{
 			case DeployMode.Additive:
 				next = MergeAdditive(remote, localManifest);
 				nextPortalExtensionRefs = MergeAdditive(remotePortalExtensionRefs, localPortalExtensionRefs);
-				nextBundleReferences = MergeAdditive(remoteBundleReferences, localBundleReferences);
 				break;
 			case DeployMode.Replace:
 				next = MergeReplacement(remote, localManifest, beamo.BeamoManifest.LocallyIgnoredBeamoIds);
 				nextPortalExtensionRefs = MergeReplacement(remotePortalExtensionRefs, localPortalExtensionRefs, beamo.BeamoManifest.LocallyIgnoredBeamoIds);
-				nextBundleReferences = MergeReplacement(remoteBundleReferences, localBundleReferences);
 				break;
 			default:
 				throw new NotImplementedException(
@@ -1825,24 +1627,11 @@ public partial class DeployUtil
 			}
 		}
 
-		// A component delivered by a referenced bundle reaches the realm via the bundle, not as an inline
-		// component, so it must not appear in the inline diff at all — only the bundle reference does.
-		// `bundleComponentIds` starts from locally-authored bundles; extend it with the components of every
-		// pinned bundle in the final reference set (resolved from the realm's assembled view or the catalog)
-		// so bundles we don't author locally (e.g. @beamable/defaults) are covered too. Then strip those
-		// components from BOTH the remote and the intended manifests: symmetric removal means they neither
-		// show as inline changes (add/change/remove/disable) nor get posted as inline entries — the server
-		// assembles them from the bundle references instead.
-		foreach (var id in await ResolvePinnedBundleComponentIds(provider, nextBundleReferences, beamoV2Manifest))
-		{
-			bundleComponentIds.Add(id);
-		}
-
-		// `bundles plan`/`publish` restrict the build to a single bundle's components via includeOnlyBeamoIds
-		// in order to diff exactly those. When that bundle is itself already pinned in bundles.manifest, the
-		// strip above would resolve its published components and remove the very entries we just built —
-		// SelectComponents would then report them as "not built". Keep the explicitly-requested components in
-		// the plan; other pinned bundles' components are still stripped correctly.
+		// A component an installation put here belongs to the installation, not to this post: leave it out
+		// of both the remote and the intended manifests, so it neither shows as an inline change nor gets
+		// posted (the server keeps it). `bundles plan`/`publish` restrict the build to their bundle's
+		// components via includeOnlyBeamoIds and must keep them, even when that bundle is installed here.
+		bundleComponentIds.UnionWith(InstalledComponentIds(beamoV2Manifest));
 		if (includeOnlyBeamoIds != null)
 		{
 			bundleComponentIds.ExceptWith(includeOnlyBeamoIds);
@@ -1871,9 +1660,9 @@ public partial class DeployUtil
 		progressHandler?.Invoke(MergingManifestProgressName, .5f);
 		diff = FindChanges(remote, next);
 
-		// Portal extensions and bundle references aren't part of the v1 ManifestView, so FindChanges
-		// can't see them — diff the merged results against the remote v2 state here.
-		DiffReferences(remotePortalExtensionRefs, nextPortalExtensionRefs, remoteBundleReferences, nextBundleReferences, diff);
+		// Portal extensions aren't part of the v1 ManifestView, so FindChanges can't see them — diff the
+		// merged results against the remote v2 state here.
+		DiffReferences(remotePortalExtensionRefs, nextPortalExtensionRefs, diff);
 
 		if (!TryValidate(next, out var validationErrors))
 		{
@@ -1994,9 +1783,6 @@ public partial class DeployUtil
 			servicesToUpload = servicesToUpload,
 			portalExtensionsToUpload = portalExtensionsToUpload,
 			portalExtensionReferences = nextPortalExtensionRefs,
-			// v2 bundle references, merged per deploy mode from the remote pins and the pins authored
-			// in .beamable/bundles.manifest.beam.json (empty for legacy v1).
-			references = nextBundleReferences,
 			changeCount = diff.addedStorage.Count
 			              + diff.removedStorage.Count
 			              + diff.disabledStorages.Count
@@ -2011,9 +1797,6 @@ public partial class DeployUtil
 			              + diff.addedPortalExtensions.Count
 			              + diff.changedPortalExtensions.Count
 			              + diff.removedPortalExtensions.Count
-			              + diff.addedBundleReferences.Count
-			              + diff.changedBundleReferences.Count
-			              + diff.removedBundleReferences.Count
 		}, localBuildReports);
 	}
 
@@ -2105,13 +1888,6 @@ public partial class DeployUtil
 
 		cts.Token.ThrowIfCancellationRequested();
 
-		// v2: the file's presence opts the workspace into the bundle-references schema and provides the
-		// schemaVersion; the reference map itself comes from the plan, where it was merged per deploy
-		// mode (additive keeps remote-only pins, replace drops them). The server resolves + assembles
-		// them. Components in authored bundles are already excluded from the inline arrays at plan time
-		// (see DeployUtil.Plan). Absent file → v1 manifest (unchanged behavior).
-		var manifestReferences = provider.GetService<ConfigService>().LoadManifestReferences();
-
 		// publish manifest.
 		// ConvertToBeamoV2 will change the Legacy DTO to the BeamoV2 DTO.
 		BeamoV2ServiceReference[] beamoV2ServiceReferences = plan.manifest.manifest.ConvertToBeamoV2();
@@ -2141,14 +1917,6 @@ public partial class DeployUtil
 			autoDeploy = true,
 			comments = plan.manifest.comments,
 		};
-
-		// attach schemaVersion + the plan's merged references so the server assembles referenced bundles.
-		if (manifestReferences != null)
-		{
-			beamoV2PostManifestRequest.schemaVersion = manifestReferences.schemaVersion;
-			beamoV2PostManifestRequest.references =
-				new OptionalMapOfString(plan.references ?? new Dictionary<string, string>());
-		}
 
 		progressHandler?.Invoke("publish", .1f, false);
 
@@ -2297,7 +2065,7 @@ public partial class DeployUtil
 		};
 	}
 
-	private static async Task UploadToSignedUrl(HttpClient httpClient, string uploadMethod, string url, byte[] data, string contentType, byte[] md5Bytes)
+	internal static async Task UploadToSignedUrl(HttpClient httpClient, string uploadMethod, string url, byte[] data, string contentType, byte[] md5Bytes)
 	{
 		//TODO This can be done with more granular updates over how many bytes were uploaded
 		// INstead of using ByteArrayContent we can use ObservableByteArrayContent
@@ -2313,7 +2081,7 @@ public partial class DeployUtil
 		if (!response.IsSuccessStatusCode)
 		{
 			var body = await response.Content.ReadAsStringAsync();
-			throw new CliException($"Failed to upload portal extension binary to signed URL. Status={response.StatusCode}, Body={body}");
+			throw new CliException($"Failed to upload a file to its signed URL. Status={response.StatusCode}, Body={body}");
 		}
 	}
 

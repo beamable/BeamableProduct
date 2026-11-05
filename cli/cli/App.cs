@@ -796,18 +796,31 @@ public class App
 		// `bundles` is its own top-level command group: `beam bundles <cmd>`
 		Commands.AddRootCommand<BundlesCommand>();
 		Commands.AddSubCommandWithHandler<NewBundleCommand, NewBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<CreateBundleCommand, CreateBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<UpdateBundleCommand, UpdateBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<ListBundlesCommand, ListBundlesCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<GetBundleCommand, GetBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<BundleReleasesCommand, BundleReleasesCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<BundleTagsCommand, BundleTagsCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<PromoteBundleTagCommand, PromoteBundleTagCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<YankBundleCommand, YankBundleCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<BundleAclCommand, BundleAclCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<InstallBundleCommand, InstallBundleCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<UninstallBundleCommand, UninstallBundleCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<PruneYankedCommand, PruneYankedCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<PublishBundleCommand, PublishBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<BundlePlanCommand, BundlePlanCommandArgs, BundlesCommand>();
+		Commands.AddSubCommand<BundleNoticeCommand, CommandGroupArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<CreateBundleNoticeCommand, BundleNoticeCommandArgs, BundleNoticeCommand>();
+		Commands.AddSubCommandWithHandler<UpdateBundleNoticeCommand, BundleNoticeCommandArgs, BundleNoticeCommand>();
+		Commands.AddSubCommandWithHandler<WithdrawBundleNoticeCommand, BundleNoticeCommandArgs, BundleNoticeCommand>();
+		Commands.AddSubCommandWithHandler<SearchMarketplaceCommand, SearchMarketplaceCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<BundleInfoCommand, BundleInfoCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<PlacementsCommand, PlacementsCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<AcquireBundleCommand, LibraryBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<RemoveBundleCommand, LibraryBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<LibraryCommand, LibraryCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<InstallBundleCommand, InstallBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<UninstallBundleCommand, UninstallBundleCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<ListInstallationsCommand, ListInstallationsCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<InstallationHistoryCommand, InstallationHistoryCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<InstallationDependenciesCommand, InstallationDependenciesCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<InstallationNoticesCommand, InstallationNoticesCommandArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<EndOverrideCommand, EndOverrideCommandArgs, BundlesCommand>();
 
 		Commands.AddRootCommand<ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentBakeCommand, ContentBakeCommandArgs, ContentCommand>();

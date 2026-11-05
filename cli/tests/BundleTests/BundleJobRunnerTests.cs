@@ -20,20 +20,18 @@ namespace tests.BundleTests;
 /// </summary>
 public class BundleJobRunnerTests
 {
-	static string[] Build(string op, string bundle = "", string tag = "", string checksum = "", string comment = "",
-		string acl = "", string scope = "", bool flag = false) =>
-		BundlesApi.BuildArgs(op, bundle, tag, checksum, comment, acl, scope, flag);
+	static string[] Build(string op, string bundle = "", string tag = "", string version = "", string comment = "",
+		string scope = "", bool flag = false) =>
+		BundlesApi.BuildArgs(op, bundle, tag, version, comment, scope, flag);
 
 	[Test]
-	public void Publish_PassesCommentAsASingleArgument()
+	public void Publish_UsesTheLatestPlanAndTag()
 	{
-		var args = Build("publish", "@beam-project/zone-core", tag: "stable", comment: "fix \"quotes\" --and flags",
-			acl: "org", flag: true);
+		var args = Build("publish", "@beam-project/zone-core", tag: "stable", flag: true);
 
 		Assert.That(args, Is.EqualTo(new[]
 		{
-			"bundles", "publish", "@beam-project/zone-core", "--from-latest-plan", "--tag", "stable", "--acl", "org",
-			"--comment=fix \"quotes\" --and flags"
+			"bundles", "publish", "@beam-project/zone-core", "--from-latest-plan", "--tag", "stable",
 		}));
 	}
 
@@ -53,19 +51,20 @@ public class BundleJobRunnerTests
 	}
 
 	[Test]
-	public void Install_PrefersChecksumOverTag()
+	public void Tag_PointsAtAVersion()
 	{
-		var args = Build("install", "vip", tag: "stable", checksum: "sha256:abcdef0123456789");
+		var args = Build("tag", "@acme/vip", tag: "stable", version: "4");
 
-		Assert.That(args, Is.EqualTo(new[] { "bundles", "install", "vip", "--checksum", "sha256:abcdef0123456789" }));
+		Assert.That(args, Is.EqualTo(new[] { "bundles", "tag", "@acme/vip", "stable", "4" }));
 	}
 
-	[Test]
-	public void Tag_AcceptsAChecksumReference()
+	[TestCase("0")]
+	[TestCase("-1")]
+	[TestCase("4; rm")]
+	[TestCase("")]
+	public void InvalidVersion_IsRejected(string version)
 	{
-		var args = Build("tag", "vip@sha256:abcdef0123456789", tag: "stable");
-
-		Assert.That(args, Is.EqualTo(new[] { "bundles", "tag", "vip@sha256:abcdef0123456789", "stable" }));
+		Assert.That(() => Build("yank", "vip", version: version), Throws.TypeOf<LocalWebRequestException>());
 	}
 
 	[Test]
@@ -78,24 +77,26 @@ public class BundleJobRunnerTests
 	[TestCase("plan", "--help")]
 	[TestCase("plan", "vip; rm -rf /")]
 	[TestCase("plan", "")]
-	[TestCase("yank", "vip@sha256 x")]
+	[TestCase("yank", "vip@sha256:abc")]
 	public void InvalidBundle_IsRejected(string op, string bundle)
 	{
 		Assert.That(() => Build(op, bundle), Throws.TypeOf<LocalWebRequestException>());
 	}
 
-	[TestCase("acl", "vip", "realm", "")]
-	[TestCase("deploy-plan", "", "", "galaxy")]
-	[TestCase("unknown", "vip", "", "")]
-	public void UnknownValues_AreRejected(string op, string bundle, string acl, string scope)
+	[TestCase("acl", "vip", "")]
+	[TestCase("get", "vip", "")]
+	[TestCase("prune-yanked", "", "")]
+	[TestCase("deploy-plan", "", "galaxy")]
+	[TestCase("unknown", "vip", "")]
+	public void UnknownValues_AreRejected(string op, string bundle, string scope)
 	{
-		Assert.That(() => Build(op, bundle, acl: acl, scope: scope), Throws.TypeOf<LocalWebRequestException>());
+		Assert.That(() => Build(op, bundle, scope: scope), Throws.TypeOf<LocalWebRequestException>());
 	}
 
 	[Test]
 	public void InvalidTag_IsRejected()
 	{
-		Assert.That(() => Build("tag", "vip@sha256:abcdef0123456789", tag: "--quiet x"), Throws.TypeOf<LocalWebRequestException>());
+		Assert.That(() => Build("tag", "vip", tag: "--quiet x", version: "2"), Throws.TypeOf<LocalWebRequestException>());
 	}
 
 	[Test]

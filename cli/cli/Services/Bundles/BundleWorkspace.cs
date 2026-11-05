@@ -8,45 +8,66 @@ namespace cli.Services.Bundles;
 
 /// <summary>
 /// In-memory model of an authored bundle config file (<c>&lt;bundle-name&gt;.beam.bundle.json</c>).
-/// Declares one bundle: the beamoIds of its components and optional bundle dependencies. The bundle's
-/// (short) name is the file name itself — it is not stored inside the file. The namespace is never
-/// authored either; it is the customer's cid alias, derived at runtime (see <see cref="BundleNamespace"/>).
-/// See <c>DesignDocs/infra/beamo-manifest/beamo-manifest-redesign.md</c> (Workspace organization).
+/// Declares one bundle: its components, the component groups that turn them on, and the bundles it depends on.
+/// The bundle's (short) name is the file name itself — it is not stored inside the file. The namespace
+/// is never authored either; it is the customer's cid alias, derived at runtime (see <see cref="BundleNamespace"/>).
+/// A component's kind and manifest entry come from its project, and an extension's mounts from its
+/// package.json; only what the project can't say is authored here.
 /// </summary>
 public class BundleConfigFile
 {
 	/// <summary>Short bundle name, derived from the file name (not serialized).</summary>
 	[JsonIgnore] public string name;
 
-	/// <summary>
-	/// The bundle's deploy scope: <c>"realm"</c> or <c>"zone"</c>. Written by <c>bundles new</c> from the
-	/// components' scope. Null/empty in files authored before this field existed, treated as realm.
-	/// </summary>
-	public string scope;
+	/// <summary>Component beamoId to how the bundle carries it.</summary>
+	public Dictionary<string, BundleComponentConfig> components = new Dictionary<string, BundleComponentConfig>();
 
-	public List<string> components = new List<string>();
+	/// <summary>Component group name to the components it turns on. An installation chooses which groups are on.</summary>
+	public Dictionary<string, BundleComponentGroupConfig> componentGroups = new Dictionary<string, BundleComponentGroupConfig>();
 
-	/// <summary>Bundle name to the range of its releases this bundle depends on.</summary>
-	public Dictionary<string, BundleDependencyConfig> bundleDependencies = new Dictionary<string, BundleDependencyConfig>();
+	/// <summary>Bundle name (<c>@namespace/name</c>) to the range of its releases this bundle needs.</summary>
+	public Dictionary<string, BundleDependencyConfig> dependencies = new Dictionary<string, BundleDependencyConfig>();
 
 	/// <summary>Absolute path this config was loaded from (not serialized).</summary>
 	[JsonIgnore] public string filePath;
 
-	/// <summary>True when the bundle declares zone scope. A missing/empty scope is treated as realm.</summary>
-	[JsonIgnore] public bool IsZoneScoped =>
-		string.Equals(scope?.Trim(), BundleWorkspace.SCOPE_ZONE, StringComparison.OrdinalIgnoreCase);
+	/// <summary>The component beamoIds, in file order.</summary>
+	[JsonIgnore] public IReadOnlyCollection<string> ComponentNames => components.Keys;
+}
+
+public class BundleComponentConfig
+{
+	/// <summary>
+	/// <c>"realm"</c> or <c>"zone"</c>. Optional: it comes from the component's own scope
+	/// (<c>BeamServiceScope</c>, or <c>beamable.serviceScope</c> for an extension), and when given it must match it.
+	/// </summary>
+	public string site;
+
+	/// <summary>Whether orgs that acquire the bundle may get this component's source.</summary>
+	public bool source;
+}
+
+public class BundleComponentGroupConfig
+{
+	public string title;
+	public string description;
+	public List<string> components = new List<string>();
+	public bool enabledByDefault;
 }
 
 /// <summary>
-/// An inclusive range of another bundle's release versions. A null <see cref="max"/> means the
-/// range has no upper bound.
+/// An inclusive range of another bundle's release versions, and whether the bundle needs it (hard) or
+/// only works better with it (soft). A null <see cref="max"/> means the range has no upper bound.
 /// </summary>
 public class BundleDependencyConfig
 {
+	public string kind = BundleWorkspace.DEPENDENCY_HARD;
 	public long min;
 	public long? max;
 
-	public string Format() => FormatRange(min, max);
+	[JsonIgnore] public bool IsHard => string.Equals(kind, BundleWorkspace.DEPENDENCY_HARD, StringComparison.OrdinalIgnoreCase);
+
+	public string Format() => $"{kind} {FormatRange(min, max)}";
 
 	/// <summary>"1+" for an open range, "1-5" for a closed one.</summary>
 	public static string FormatRange(long min, long? max) =>
@@ -60,19 +81,16 @@ public static class BundleWorkspace
 {
 	public const string BUNDLE_FILE_SUFFIX = ".beam.bundle.json";
 
-	public const string SCOPE_REALM = "realm";
-	public const string SCOPE_ZONE = "zone";
+	public const string SITE_REALM = "realm";
+	public const string SITE_ZONE = "zone";
 
-	/// <summary>
-	/// True when a scope string (e.g. a catalog bundle's <c>scope</c> field) is zone. A null, empty, or
-	/// any non-"zone" value is treated as realm.
-	/// </summary>
-	public static bool IsZoneScope(string scope) =>
-		string.Equals(scope?.Trim(), SCOPE_ZONE, StringComparison.OrdinalIgnoreCase);
+	public const string DEPENDENCY_HARD = "hard";
+	public const string DEPENDENCY_SOFT = "soft";
 
 	/// <summary>
 	/// Deserialize strictly: an unknown property (at any level) is an error, which is how a typo'd key
-	/// like <c>component</c> is rejected instead of silently ignored.
+	/// like <c>component</c>, or a file in the old <c>scope</c>/<c>bundleDependencies</c> shape, is rejected
+	/// instead of silently ignored.
 	/// </summary>
 	private static readonly JsonSerializerSettings StrictBundleSettings = new JsonSerializerSettings
 	{
@@ -85,7 +103,7 @@ public static class BundleWorkspace
 	};
 
 	/// <summary>
-	/// Validate a short bundle name (a file name stem, and a path segment in catalog routes).
+	/// Validate a short bundle name (a file name stem).
 	/// </summary>
 	public static void ValidateName(string name)
 	{
@@ -95,22 +113,6 @@ public static class BundleWorkspace
 			throw new CliException($"Bundle name=[{name}] must be a plain name without '/', '\\' or '@'. To target another customer's namespace, qualify the whole reference as @<namespace>/<bundle-name>; otherwise the namespace is derived from your customer alias.");
 		if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
 			throw new CliException($"Bundle name=[{name}] contains characters that are not valid in a file name.");
-	}
-
-	/// <summary>
-	/// Split a fully-qualified bundle name (<c>&lt;namespace&gt;/&lt;bundle-name&gt;</c>, the form stored in
-	/// <c>bundles.manifest.beam.json</c> reference keys) into its namespace and short name.
-	/// </summary>
-	public static (string ns, string name) SplitBundleName(string fullName)
-	{
-		if (string.IsNullOrWhiteSpace(fullName))
-			throw new CliException($"Bundle name is required and must be namespaced, e.g. <namespace>/<bundle-name>.");
-
-		var slash = fullName.IndexOf('/');
-		if (slash <= 0 || slash == fullName.Length - 1)
-			throw new CliException($"Bundle name=[{fullName}] must be namespaced as <namespace>/<bundle-name>.");
-
-		return (fullName.Substring(0, slash), fullName.Substring(slash + 1));
 	}
 
 	/// <summary>Discover every <c>*.beam.bundle.json</c> under the workspace root.</summary>
@@ -135,10 +137,10 @@ public static class BundleWorkspace
 	/// <summary>
 	/// Parse and validate one bundle file's text. First deserializes into the strict <see cref="BundleFileDto"/>
 	/// wire model — a malformed JSON, a non-object root, a wrong-typed field, or an unknown property surfaces
-	/// as a deserialization failure — then validates the resulting field <em>values</em> (scope value, empty
-	/// or duplicate components, dependency ranges). Throws <see cref="CliException"/> naming
-	/// <paramref name="displayPath"/> on any failure. Pure: it does not read the disk and does not resolve
-	/// component scope (that needs the manifest — see <see cref="ValidateComponentScope"/>).
+	/// as a deserialization failure — then validates the values the file alone can check: sites, component
+	/// groups covering every component, and dependency kinds and ranges. Throws <see cref="CliException"/> naming
+	/// <paramref name="displayPath"/> on any failure. Pure: it does not read the disk; the rules that need the
+	/// projects (kinds, sites, storages) are in <see cref="ValidateAgainstProjects"/>.
 	/// </summary>
 	public static BundleConfigFile ParseBundleFile(string displayPath, string text)
 	{
@@ -160,49 +162,76 @@ public static class BundleWorkspace
 
 		var config = new BundleConfigFile();
 
-		// scope: must be "realm" or "zone" when present.
-		if (!string.IsNullOrEmpty(dto.scope))
+		foreach (var (component, value) in dto.components ?? new Dictionary<string, BundleComponentDto>())
 		{
-			var scopeValue = dto.scope.Trim();
-			if (!string.Equals(scopeValue, SCOPE_REALM, StringComparison.OrdinalIgnoreCase)
-			    && !string.Equals(scopeValue, SCOPE_ZONE, StringComparison.OrdinalIgnoreCase))
-				throw new CliException($"Bundle file=[{displayPath}] property [scope] must be \"{SCOPE_REALM}\" or \"{SCOPE_ZONE}\", but was [{scopeValue}].");
-			config.scope = scopeValue.ToLowerInvariant();
+			if (string.IsNullOrWhiteSpace(component))
+				throw new CliException($"Bundle file=[{displayPath}] property [components] has an empty component name.");
+			var site = value?.site?.Trim();
+			if (!string.IsNullOrEmpty(site) && !IsSite(site))
+				throw new CliException($"Bundle file=[{displayPath}] component [{component}] property [site] must be \"{SITE_REALM}\" or \"{SITE_ZONE}\", but was [{site}].");
+			config.components[component] = new BundleComponentConfig
+			{
+				site = string.IsNullOrEmpty(site) ? null : site.ToLowerInvariant(),
+				source = value?.source ?? false,
+			};
 		}
 
-		// components: each a non-empty string, no duplicates.
-		if (dto.components != null)
+		foreach (var (group, value) in dto.componentGroups ?? new Dictionary<string, BundleComponentGroupDto>())
 		{
-			var seen = new HashSet<string>();
-			for (var i = 0; i < dto.components.Count; i++)
+			if (string.IsNullOrWhiteSpace(group))
+				throw new CliException($"Bundle file=[{displayPath}] property [componentGroups] has an empty group name.");
+			if (value == null)
+				throw new CliException($"Bundle file=[{displayPath}] component group [{group}] must be a JSON object.");
+
+			var components = value.components ?? new List<string>();
+			if (components.Count == 0)
+				throw new CliException($"Bundle file=[{displayPath}] component group [{group}] lists no components.");
+			var unknown = components.Where(c => !config.components.ContainsKey(c)).Distinct().ToList();
+			if (unknown.Count > 0)
+				throw new CliException($"Bundle file=[{displayPath}] component group [{group}] lists components that aren't in [components]: {string.Join(", ", unknown)}.");
+			var repeated = components.GroupBy(c => c).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+			if (repeated.Count > 0)
+				throw new CliException($"Bundle file=[{displayPath}] component group [{group}] lists [{string.Join(", ", repeated)}] more than once.");
+
+			config.componentGroups[group] = new BundleComponentGroupConfig
 			{
-				var value = dto.components[i];
-				if (string.IsNullOrWhiteSpace(value))
-					throw new CliException($"Bundle file=[{displayPath}] property [components][{i}] must be a non-empty string.");
-				if (!seen.Add(value))
-					throw new CliException($"Bundle file=[{displayPath}] lists component [{value}] more than once.");
-				config.components.Add(value);
-			}
+				title = string.IsNullOrWhiteSpace(value.title) ? group : value.title,
+				description = value.description ?? "",
+				components = components,
+				enabledByDefault = value.enabledByDefault ?? false,
+			};
 		}
 
-		// bundleDependencies: each range has min >= 0 and (when present) max >= min.
-		if (dto.bundleDependencies != null)
+		if (config.components.Count > 0)
 		{
-			foreach (var kvp in dto.bundleDependencies)
-			{
-				if (string.IsNullOrWhiteSpace(kvp.Key))
-					throw new CliException($"Bundle file=[{displayPath}] property [bundleDependencies] has an empty dependency name.");
-				if (kvp.Value == null)
-					throw new CliException($"Bundle file=[{displayPath}] dependency [{kvp.Key}] must be a JSON object with 'min' and optional 'max'.");
+			if (config.componentGroups.Count == 0)
+				throw new CliException($"Bundle file=[{displayPath}] has components but no [componentGroups]. Every component must be in at least one group.");
+			var orphans = config.components.Keys
+				.Where(c => !config.componentGroups.Values.Any(g => g.components.Contains(c)))
+				.ToList();
+			if (orphans.Count > 0)
+				throw new CliException($"Bundle file=[{displayPath}]: every component must be in a component group; these are in none: {string.Join(", ", orphans)}.");
+		}
 
-				var min = kvp.Value.min ?? 0;
-				if (min < 0)
-					throw new CliException($"Bundle file=[{displayPath}] dependency [{kvp.Key}] property [min] must be >= 0.");
-				if (kvp.Value.max.HasValue && kvp.Value.max.Value < min)
-					throw new CliException($"Bundle file=[{displayPath}] dependency [{kvp.Key}] range is invalid: max [{kvp.Value.max.Value}] < min [{min}].");
+		foreach (var (dependency, value) in dto.dependencies ?? new Dictionary<string, BundleDependencyDto>())
+		{
+			if (string.IsNullOrWhiteSpace(dependency))
+				throw new CliException($"Bundle file=[{displayPath}] property [dependencies] has an empty bundle name.");
+			if (!dependency.StartsWith("@") || dependency.IndexOf('/') <= 1 || dependency.EndsWith("/"))
+				throw new CliException($"Bundle file=[{displayPath}] dependency [{dependency}] must be a full bundle name, @<namespace>/<bundle-name>.");
+			if (value == null)
+				throw new CliException($"Bundle file=[{displayPath}] dependency [{dependency}] must be a JSON object with 'kind', 'min' and optional 'max'.");
 
-				config.bundleDependencies[kvp.Key] = new BundleDependencyConfig { min = min, max = kvp.Value.max };
-			}
+			var kind = value.kind?.Trim().ToLowerInvariant();
+			if (kind != DEPENDENCY_HARD && kind != DEPENDENCY_SOFT)
+				throw new CliException($"Bundle file=[{displayPath}] dependency [{dependency}] property [kind] must be \"{DEPENDENCY_HARD}\" or \"{DEPENDENCY_SOFT}\", but was [{value.kind}].");
+			var min = value.min ?? 0;
+			if (min < 0)
+				throw new CliException($"Bundle file=[{displayPath}] dependency [{dependency}] property [min] must be >= 0.");
+			if (value.max.HasValue && value.max.Value < min)
+				throw new CliException($"Bundle file=[{displayPath}] dependency [{dependency}] range is invalid: max [{value.max.Value}] < min [{min}].");
+
+			config.dependencies[dependency] = new BundleDependencyConfig { kind = kind, min = min, max = value.max };
 		}
 
 		return config;
@@ -211,63 +240,126 @@ public static class BundleWorkspace
 	/// <summary>Strict wire model for a <c>*.beam.bundle.json</c>. Value validation happens in ParseBundleFile.</summary>
 	private class BundleFileDto
 	{
-		public string scope;
-		public List<string> components;
-		public Dictionary<string, BundleDepRangeDto> bundleDependencies;
+		public Dictionary<string, BundleComponentDto> components;
+		public Dictionary<string, BundleComponentGroupDto> componentGroups;
+		public Dictionary<string, BundleDependencyDto> dependencies;
 	}
 
-	private class BundleDepRangeDto
+	private class BundleComponentDto
 	{
+		public string site;
+		public bool? source;
+	}
+
+	private class BundleComponentGroupDto
+	{
+		public string title;
+		public string description;
+		public List<string> components;
+		public bool? enabledByDefault;
+	}
+
+	private class BundleDependencyDto
+	{
+		public string kind;
 		public long? min;
 		public long? max;
 	}
 
+	private static bool IsSite(string value) =>
+		string.Equals(value, SITE_REALM, StringComparison.OrdinalIgnoreCase)
+		|| string.Equals(value, SITE_ZONE, StringComparison.OrdinalIgnoreCase);
+
 	/// <summary>
-	/// Validate that a bundle is single-scope (all components realm, or all zone — never mixed) and, when
-	/// the bundle declares a <see cref="BundleConfigFile.scope"/>, that the declaration matches the
-	/// components' actual scope. Requires the loaded <see cref="BeamoLocalManifest"/> because scope lives
-	/// on each component's project, not in the bundle file. Components absent from the manifest are left to
-	/// existence validation (<c>BundleBuild.ValidateComponentsExist</c>). Throws <see cref="CliException"/>.
+	/// The rules that need the workspace's projects: every component is a local service, storage or portal
+	/// extension (beamoIds are case-sensitive, so a near miss is suggested); a declared site matches the
+	/// component's own scope; every component group that has a service has the storages it uses (a hard dependency);
+	/// and a service whose source is available makes its storages' source available too, since the service
+	/// doesn't build without them. Throws <see cref="CliException"/> listing every problem.
 	/// </summary>
-	public static void ValidateComponentScope(BeamoLocalManifest manifest, BundleConfigFile bundle)
+	public static void ValidateAgainstProjects(BeamoLocalManifest manifest, BundleConfigFile bundle)
 	{
-		if (manifest?.ServiceDefinitions == null)
-			return;
+		var definitions = (manifest?.ServiceDefinitions ?? new List<BeamoServiceDefinition>())
+			.Where(d => d.IsLocal)
+			.ToList();
+		var byId = definitions.ToDictionary(d => d.BeamoId);
+		var problems = new List<string>();
 
-		var scopeById = new Dictionary<string, bool>();
-		foreach (var def in manifest.ServiceDefinitions)
-			scopeById[def.BeamoId] = def.IsZoneScoped;
-
-		var realm = new List<string>();
-		var zone = new List<string>();
-		foreach (var component in bundle.components)
+		foreach (var (component, config) in bundle.components)
 		{
-			if (!scopeById.TryGetValue(component, out var isZone))
+			if (!byId.TryGetValue(component, out var definition))
+			{
+				var nearMiss = definitions.FirstOrDefault(d => string.Equals(d.BeamoId, component, StringComparison.OrdinalIgnoreCase));
+				problems.Add(nearMiss != null
+					? $"[{component}] does not match any local component exactly; beamoIds are case-sensitive. Did you mean [{nearMiss.BeamoId}]?"
+					: $"[{component}] is not a local service, storage or portal extension.");
 				continue;
-			if (isZone)
-				zone.Add(component);
-			else
-				realm.Add(component);
+			}
+
+			if (definition.Protocol != BeamoProtocolType.HttpMicroservice
+			    && definition.Protocol != BeamoProtocolType.EmbeddedMongoDb
+			    && definition.Protocol != BeamoProtocolType.PortalExtension)
+			{
+				problems.Add($"[{component}] is a {definition.Protocol}; a bundle carries services, storages and portal extensions.");
+				continue;
+			}
+
+			var actualSite = definition.IsZoneScoped ? SITE_ZONE : SITE_REALM;
+			if (config.site != null && config.site != actualSite)
+				problems.Add($"[{component}] declares site [{config.site}] but the project is {actualSite}-scoped. Remove [site] or change the project's scope.");
 		}
 
-		var fileLabel = bundle.filePath != null ? Path.GetFileName(bundle.filePath) : bundle.name;
+		if (problems.Count == 0)
+		{
+			foreach (var (component, _) in bundle.components)
+			{
+				var definition = byId[component];
+				if (definition.Protocol != BeamoProtocolType.HttpMicroservice)
+					continue;
 
-		if (realm.Count > 0 && zone.Count > 0)
-			throw new CliException(
-				$"Bundle=[{bundle.name}] mixes realm-scoped and zone-scoped components; a bundle must be a single scope.\n" +
-				$" - realm: {string.Join(", ", realm)}\n" +
-				$" - zone: {string.Join(", ", zone)}\n" +
-				$"Fix {fileLabel}: split into separate bundles, or make the components' scope consistent (<BeamServiceScope> for services/storages, package.json beamable.serviceScope for portal extensions).");
+				var storages = (manifest.HttpMicroserviceLocalProtocols.TryGetValue(component, out var http)
+						? http.StorageDependencyBeamIds
+						: new List<string>())
+					.Where(d => byId.TryGetValue(d, out var dep) && dep.Protocol == BeamoProtocolType.EmbeddedMongoDb)
+					.ToList();
 
-		if (string.IsNullOrEmpty(bundle.scope))
-			return;
+				foreach (var storage in storages)
+				{
+					if (!bundle.components.TryGetValue(storage, out var storageConfig))
+					{
+						problems.Add($"Service [{component}] uses storage [{storage}], which isn't in the bundle.");
+						continue;
+					}
 
-		if (bundle.IsZoneScoped && realm.Count > 0)
-			throw new CliException(
-				$"Bundle=[{bundle.name}] declares scope=[{SCOPE_ZONE}] but includes realm-scoped components: {string.Join(", ", realm)}. Fix {fileLabel} or the components' scope.");
-		if (!bundle.IsZoneScoped && zone.Count > 0)
-			throw new CliException(
-				$"Bundle=[{bundle.name}] declares scope=[{SCOPE_REALM}] but includes zone-scoped components: {string.Join(", ", zone)}. Fix {fileLabel} or the components' scope.");
+					foreach (var (group, groupConfig) in bundle.componentGroups)
+					{
+						if (groupConfig.components.Contains(component) && !groupConfig.components.Contains(storage))
+							problems.Add($"Component group [{group}] has service [{component}] but not the storage it uses, [{storage}].");
+					}
+
+					if (byId[storage].IsZoneScoped != definition.IsZoneScoped)
+						problems.Add($"Service [{component}] and its storage [{storage}] must run on the same site.");
+
+					if (bundle.components[component].source && !storageConfig.source)
+						problems.Add($"Service [{component}] makes its source available, so its storage [{storage}] must too: the service doesn't build without it.");
+				}
+			}
+		}
+
+		if (problems.Count > 0)
+		{
+			var fileLabel = bundle.filePath != null ? Path.GetFileName(bundle.filePath) : bundle.name;
+			throw new CliException($"Bundle=[{bundle.name}] doesn't match its projects. Fix {fileLabel}:\n - " + string.Join("\n - ", problems));
+		}
+	}
+
+	/// <summary>A component's site: the declared one, else its project's scope.</summary>
+	public static string SiteOf(BeamoLocalManifest manifest, BundleConfigFile bundle, string component)
+	{
+		var declared = bundle.components.TryGetValue(component, out var config) ? config.site : null;
+		if (declared != null) return declared;
+		var definition = manifest?.ServiceDefinitions?.FirstOrDefault(d => d.BeamoId == component);
+		return definition?.IsZoneScoped == true ? SITE_ZONE : SITE_REALM;
 	}
 
 	private static string SafeRelative(string root, string file)
@@ -298,7 +390,7 @@ public static class BundleWorkspace
 			if (!seenNames.Add(bundle.name))
 				throw new CliException($"Bundle name=[{bundle.name}] is declared by more than one *{BUNDLE_FILE_SUFFIX} file.");
 
-			foreach (var component in bundle.components)
+			foreach (var component in bundle.ComponentNames)
 			{
 				if (componentToBundle.TryGetValue(component, out var otherBundle))
 					throw new CliException($"Component=[{component}] belongs to more than one bundle ([{otherBundle}] and [{bundle.name}]). A beamoId can be in at most one bundle.");
