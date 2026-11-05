@@ -28,9 +28,7 @@ public class GetClickhouseCredentials
 
     public override void Configure()
     {
-        ZoneScope.AddScopeOption(this,
-            "Whose telemetry the credentials read: 'realm' (default) for the selected realm (cid.pid); 'zone' for " +
-            "the zone bound to it (cid.zid)");
+        ZoneScope.AddScopeOption(this);
     }
     public override async Task<GetClickhouseCredentialsResult> GetResult(GetClickhouseCredentialsArgs args)
     {

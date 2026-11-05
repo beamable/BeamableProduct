@@ -75,9 +75,7 @@ public class FetchTelemetryLogsCommand : AtomicCommand<FetchTelemetryLogsCommand
 			(args, i) => args.FromTime = i);
 		AddOption(new Option<bool>(new string[]{"--ascending", "--asc"}, () => false,"If set, this will force the order to be ascending instead of the default descending order"),
 			(args, i) => args.AscendingOrder = i);
-		ZoneScope.AddScopeOption(this,
-			"Whose logs to read: 'realm' (default) reads the selected realm's services (cid.pid); 'zone' reads the " +
-			"zone-scoped services of the zone bound to it (cid.zid)");
+		ZoneScope.AddScopeOption(this);
 	}
 
 	public override bool AutoLogOutput => false;
