@@ -2249,6 +2249,10 @@ public class WorkspaceServices
 			step.dependsOn = calls.Count > 0 ? calls : null;
 			if (have.Add(step.name)) steps.Add(step);
 		}
+
+		// Not a workspace service, but every reader of the catalogue comes through here, so `:remote-ms` resolves in
+		// `ps`, `create` and `run` alike.
+		RemoteMicroservices.AddTunnelStep(steps);
 	}
 
 	/// <summary>

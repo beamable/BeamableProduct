@@ -50,6 +50,12 @@ public static class LocalStackDockerWatchdog
 		public List<string> projectArgs = new List<string>();
 
 		/// <summary>
+		/// The step's environment, substituted. Polls and restarts run with it, because a compose file can need its
+		/// variables just to parse (<c>docker-compose.remote-ms.yml</c> requires <c>MS_REGISTRY_HOST</c>).
+		/// </summary>
+		public Dictionary<string, string> environment;
+
+		/// <summary>
 		/// The compose services the step explicitly asked for. Empty means the step brought up the whole
 		/// project, so every service in it is watched.
 		/// </summary>
@@ -166,6 +172,7 @@ public static class LocalStackDockerWatchdog
 				step = step,
 				workingDirectory = LocalStackConfigIO.Substitute(step.workingDirectory, config),
 				projectArgs = tokens.Skip(compose + 1).Take(up - compose - 1).ToList(),
+				environment = step.environment?.ToDictionary(kv => kv.Key, kv => LocalStackConfigIO.Substitute(kv.Value, config)),
 				services = ServiceNamesAfterUp(tokens, up),
 			});
 		}
@@ -215,7 +222,7 @@ public static class LocalStackDockerWatchdog
 	/// </summary>
 	public static List<ContainerState> Poll(Target target, string dockerPath)
 	{
-		var (ok, stdout, _) = RunDocker(dockerPath, target.workingDirectory, QueryTimeoutMs,
+		var (ok, stdout, _) = RunDocker(dockerPath, target.workingDirectory, QueryTimeoutMs, target.environment,
 			new[] { "compose" }.Concat(target.projectArgs).Concat(new[] { "ps", "--all", "--format", "json" }).ToArray());
 		if (!ok) return new List<ContainerState>();
 
@@ -280,7 +287,7 @@ public static class LocalStackDockerWatchdog
 	public static bool Restart(Target target, string dockerPath, LocalStackConfig config, out string error)
 	{
 		var arguments = LocalStackConfigIO.Substitute(target.step.arguments, config);
-		var (ok, _, stderr) = RunDocker(dockerPath, target.workingDirectory, RestartTimeoutMs,
+		var (ok, _, stderr) = RunDocker(dockerPath, target.workingDirectory, RestartTimeoutMs, target.environment,
 			Tokenize(arguments).ToArray());
 		error = ok ? null : Summarize(stderr);
 		return ok;
@@ -343,7 +350,13 @@ public static class LocalStackDockerWatchdog
 	/// because a watchdog that can crash the run it is monitoring is worse than no watchdog.
 	/// </summary>
 	internal static (bool ok, string stdout, string stderr) RunDocker(
-		string dockerPath, string workingDirectory, int timeoutMs, params string[] arguments)
+		string dockerPath, string workingDirectory, int timeoutMs, params string[] arguments) =>
+		RunDocker(dockerPath, workingDirectory, timeoutMs, null, arguments);
+
+	/// <summary>Runs docker with <paramref name="environment"/> added to this process's own.</summary>
+	public static (bool ok, string stdout, string stderr) RunDocker(
+		string dockerPath, string workingDirectory, int timeoutMs, IReadOnlyDictionary<string, string> environment,
+		params string[] arguments)
 	{
 		try
 		{
@@ -361,6 +374,11 @@ public static class LocalStackDockerWatchdog
 
 			foreach (var argument in arguments)
 				psi.ArgumentList.Add(argument);
+
+			foreach (var (key, value) in environment ?? new Dictionary<string, string>())
+			{
+				psi.Environment[key] = value;
+			}
 
 			using var proc = Process.Start(psi);
 			if (proc == null) return (false, null, "could not start docker");

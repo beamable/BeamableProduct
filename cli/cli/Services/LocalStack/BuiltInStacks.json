@@ -33,6 +33,10 @@
     "no-logs": {
       "description": "Don't forward logs to Grafana. Terminal and files only.",
       "remove": [ "observability" ]
+    },
+    "remote-ms": {
+      "description": "Microservices you deploy (`beam deploy release`) run as real Fargate tasks that call back to this stack through Beamable's shared tunnel host. Needs the backend on this machine, AWS access and macOS or Linux. Your name in the host names comes from your AWS identity; set the remoteMsName variable to choose another.",
+      "after": [ "tunnel: remote microservices" ]
     }
   },
   "stacks": {
