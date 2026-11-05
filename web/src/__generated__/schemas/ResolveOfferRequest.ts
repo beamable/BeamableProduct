@@ -3,7 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type CampaignOfferText = { 
-  description?: string | null; 
-  title?: string; 
+export type ResolveOfferRequest = { 
+  delivered: boolean; 
+  grantId: string; 
 };
