@@ -69,6 +69,7 @@ namespace Beamable.Player
 		/// </param>
 		/// <returns>
 		/// A <see cref="Promise"/> representing the work. The promise won't complete until the stat value has been successfully set.
+		/// If the network update fails, the promise fails with the exception from the request, such as a <see cref="NoConnectivityException"/>.
 		/// </returns>
 		public Promise Set(string nextValue) => Group.Set(Key, nextValue);
 
@@ -172,12 +173,25 @@ namespace Beamable.Player
 				case "commit":
 					if (_pendingUpdates.Count == 0) return;
 
-					var network = _statService.SetStats("public", _pendingUpdates);
-					_pendingUpdates.Clear();
-					await network;
-					await Refresh();
-					_commitSync?.CompleteSuccess();
+					// take ownership of the current batch before any await, so that "set" events
+					// that arrive while the network call is in flight land in the next batch.
+					var updates = _pendingUpdates;
+					var commitSync = _commitSync;
+					_pendingUpdates = new Dictionary<string, string>();
 					_commitSync = new Promise();
+
+					try
+					{
+						await _statService.SetStats("public", updates);
+						await Refresh();
+						commitSync.CompleteSuccess();
+					}
+					catch (Exception ex)
+					{
+						// deliver the failure to every Set() that is awaiting this batch, instead of
+						// leaving their promises uncompleted forever.
+						commitSync.CompleteError(ex);
+					}
 
 					break;
 			}
@@ -221,6 +235,7 @@ namespace Beamable.Player
 		/// <param name="value">The desired stat value. This will override the existing value.</param>
 		/// <returns>
 		/// A <see cref="Promise"/> representing the work. The promise won't complete until the set is complete.
+		/// If the network update fails, the promise fails with the exception from the request, such as a <see cref="NoConnectivityException"/>.
 		/// </returns>
 		public async Promise Set(string key, string value)
 		{
