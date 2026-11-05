@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `MessageRailContract.DeliveryModeKey` / `DeliveryDurable` — a federation can declare on `MessageRailSendResponse.params` that it delivers *durably* (an accepted message is already in the recipient's possession, e.g. in-game mail waiting in a mailbox), so no separate receipt will ever arrive and the platform emits `Delivered` alongside `Sent` instead of leaving that stage structurally zero. For a durable rail, Sent and Delivered track ~1:1 by design.
 - `IFederatedMessageRail<T>.CheckMessageRailConfig()` — a federation reports whether it is configured well enough to deliver, and the platform consults it *before* a campaign targeting that rail is published, so a realm missing its provider credentials fails at authoring time instead of silently erroring on every send. Ships `MessageRailConfigStatus`, which distinguishes MISSING (`missingKeys`, fully qualified so an operator provisions them in one pass) from INVALID (`invalidReason`) from UNKNOWN (`readable == false`). Unknown never blocks a publish: a credential store that cannot be read is an outage, not a misconfiguration.
 
+### Changed
+
+- `beam_exec` (MCP) adds `-q` automatically so commands never block on a prompt, and answers invalid arguments with an `Invalid arguments` header followed by the command's help, so a wrong guess costs one call instead of three. The `beam_list_commands` / `beam_get_help` / `beam_exec` descriptions no longer require calling all three tools for every command.
+
 ### Fixed
 
 - Generate valid OpenAPI component IDs for tuple callables and preserve their C# types in generated clients, including nested tuples and tuple collections.
