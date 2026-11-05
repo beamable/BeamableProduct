@@ -700,7 +700,10 @@ namespace Beamable
 
 			async Promise SetupBeamableNotificationChannel(RealmsBasicRealmConfiguration config)
 			{
-				if (config.IsUsingBeamableNotifications())
+				var usingBeamable = config.IsUsingBeamableNotifications();
+				var transport = _serviceScope.GetService<NotificationTransport>();
+				transport.IsUsingBeamableNotifications.CompleteSuccess(usingBeamable);
+				if (usingBeamable)
 				{
 					await InitStep_StartWebsocket(config.websocketConfig.uri);
 				}
