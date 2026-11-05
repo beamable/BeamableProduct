@@ -209,10 +209,13 @@ public static class MicroserviceStartupUtil
 		// TODO: Insert Break
 
 
+		// Construct once before the diagnostic server; sampling starts only after the configured set is registered.
+		var healthMonitor = new ProcessHealthMonitor(startupCtx.services, args.BeamInstanceCount);
 		for (var i = 0; i < args.BeamInstanceCount; i++)
 		{
 			var isFirstInstance = i == 0;
 			var beamableService = new BeamableMicroService();
+			beamableService.HealthMonitor = healthMonitor;
 			var instanceArgs = args.Copy(conf =>
 			{
 				// only the first instance needs to run, if anything should run at all.
@@ -223,7 +226,7 @@ public static class MicroserviceStartupUtil
 			if (isFirstInstance)
 			{
 				configurator.FirstConnectionHandler?.Invoke(beamableService);
-				var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, startupCtx.debugLogProcessor, startupCtx.attributes.MicroserviceName);
+				var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, startupCtx.debugLogProcessor, startupCtx.attributes.MicroserviceName, healthMonitor);
 				var runningDebugTask = localDebug.Run();
 			}
 
@@ -270,11 +273,6 @@ public static class MicroserviceStartupUtil
 		}
 
 		// one thread watches every instance's connection, whichever instance it belongs to.
-		var healthMonitor = new ProcessHealthMonitor(startupCtx.services);
-		if (startupCtx.services.Count > 0 && startupCtx.services[0] is BeamableMicroService first)
-		{
-			first.HealthMonitor = healthMonitor;
-		}
 		healthMonitor.Start();
 
 		startupCtx.result.Success = true;

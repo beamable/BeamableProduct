@@ -123,7 +123,7 @@ namespace Beamable.Server
          }
       }
 
-      /// <summary>The process-wide health monitor, held by the first instance so its shutdown stops it.</summary>
+      /// <summary>The shared process monitor. Explicit service shutdown stops it; reconnects do not.</summary>
       internal ProcessHealthMonitor HealthMonitor { get; set; }
 
       // default is false, set 1 for true.
