@@ -2250,8 +2250,9 @@ public class WorkspaceServices
 			if (have.Add(step.name)) steps.Add(step);
 		}
 
-		// Not a workspace service, but every reader of the catalogue comes through here, so `:remote-ms` resolves in
-		// `ps`, `create` and `run` alike.
+		// Not workspace services, but every reader of the catalogue comes through here, so these resolve in `ps`,
+		// `create` and `run` alike, settings written before them included.
+		LocalStackTemplate.AddClickHouseMigrationsStep(steps);
 		RemoteMicroservices.AddTunnelStep(steps);
 	}
 
