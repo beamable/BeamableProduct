@@ -1378,7 +1378,7 @@ public class SwaggerService
 
 			if (isSelfReferential)
 			{
-				value.Extensions.Add(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE, new OpenApiString(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE));
+				value.Extensions[Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE] = new OpenApiString(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE);
 			}
 		}
 
