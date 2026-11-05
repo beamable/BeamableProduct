@@ -142,6 +142,7 @@ jobs:
             ${{ inputs.releaseType != 'production' && '--prerelease' || '' }}
 
       - name: Publish Changelog
+        continue-on-error: ${{ inputs.releaseType == 'rc' }} # RC builds don't need changelogs
         if: ${{ inputs.dryRun == false && inputs.releaseType != 'dev' }}
         run: sh ./../build/bin/upload-changelogs.sh
         env:
