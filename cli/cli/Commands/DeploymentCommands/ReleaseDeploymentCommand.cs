@@ -9,8 +9,9 @@ using Beamable.Server;
 
 namespace cli.DeploymentCommands;
 
-public class ReleaseDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
+public class ReleaseDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs, IHasEndOverridesArg
 {
+	public string[] EndOverrides { get; set; }
 	public string fromPlanFile;
 	public bool fromLastPlan;
 	public string Comment { get; set; }
@@ -49,6 +50,7 @@ public class ReleaseDeploymentCommand
 	public override void Configure()
 	{
 		DeployArgs.AddPlanOptions(this);
+		DeployArgs.AddEndOverrideOption(this);
 		DeployArgs.AddScopeOption(this);
 		AddOption(new Option<string>(new string[] { "--from-plan", "--plan", "-p" }, "The file path to a pre-generated plan file using the `deploy plan` command"),
 			(args, i) => args.fromPlanFile = i);

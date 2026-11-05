@@ -164,6 +164,17 @@ public class DeployArgs
 	/// manifest. Returns a handle that restores the previous scope on dispose — wrap the plan/release in a
 	/// <c>using</c>. For <see cref="DeployScope.Realm"/> this is a no-op (default <c>{cid}.{pid}</c> scope).
 	/// </summary>
+	/// <summary>
+	/// <c>--end-override</c>: give an overridden bundle component back to its bundle on the deploy's site. A project
+	/// that stops declaring an override never ends it, so ending one is always asked for.
+	/// </summary>
+	public static void AddEndOverrideOption<TArgs>(AppCommand<TArgs> command) where TArgs : CommandArgs, IHasEndOverridesArg
+	{
+		command.AddOption(new Option<string[]>("--end-override", "An overridden bundle component to give back to its bundle on this site (repeatable). The bundle's build runs there again")
+			{ AllowMultipleArgumentsPerToken = true },
+			(args, i) => args.EndOverrides = i);
+	}
+
 	public static async Task<IDisposable> ApplyDeployScopeAsync(CommandArgs args, DeployScope scope, string zidOverride = null)
 	{
 		if (scope != DeployScope.Zone)

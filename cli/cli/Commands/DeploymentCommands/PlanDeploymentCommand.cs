@@ -25,13 +25,20 @@ public interface IHasDeployPlanArgs : IHasSolutionFileArg
 	DeployScope Scope { get; set; }
 }
 
+/// <summary>Deploys that can give overridden bundle components back to their bundle.</summary>
+public interface IHasEndOverridesArg
+{
+	string[] EndOverrides { get; set; }
+}
+
 public interface IHasDockerComposeArgs
 {
 	public string DockerComposeDirectoryPath { get; set; }
 }
 
-public class PlanDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs, IHasDockerComposeArgs
+public class PlanDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs, IHasDockerComposeArgs, IHasEndOverridesArg
 {
+	public string[] EndOverrides { get; set; }
 	public string toFile;
 	public string Comment { get; set; }
 	public string[] ServiceComments { get; set; }
@@ -225,6 +232,7 @@ public class PlanDeploymentCommand
 	public override void Configure()
 	{
 		DeployArgs.AddPlanOptions(this);
+		DeployArgs.AddEndOverrideOption(this);
 		DeployArgs.AddScopeOption(this);
 		DeployArgs.AddDockerComposeOutputOptions(this);
 		SolutionCommandArgs.ConfigureSolutionFlag(this, _ => throw new CliException("Must have a valid .beamable folder"));

@@ -821,6 +821,9 @@ public class App
 		Commands.AddSubCommandWithHandler<InstallationDependenciesCommand, InstallationDependenciesCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<InstallationNoticesCommand, InstallationNoticesCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<EndOverrideCommand, EndOverrideCommandArgs, BundlesCommand>();
+		Commands.AddSubCommand<BundleSourceCommand, CommandGroupArgs, BundlesCommand>();
+		Commands.AddSubCommandWithHandler<RequestSourceCommand, RequestSourceCommandArgs, BundleSourceCommand>();
+		Commands.AddSubCommandWithHandler<ListSourceDeliveriesCommand, ListSourceDeliveriesCommandArgs, BundleSourceCommand>();
 
 		Commands.AddRootCommand<ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentBakeCommand, ContentBakeCommandArgs, ContentCommand>();
