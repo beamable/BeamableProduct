@@ -50,29 +50,15 @@ namespace Beamable
 		PlayerParty Party { get; }
 	}
 
-	/// <summary>
-	/// <para>
-	/// The <see cref="BeamContext"/> represents a player's session and is equipped with all required services.
-	/// <see cref="BeamContext"/> instances are not tied to scene memory. Instead, <see cref="BeamContext"/> instances live in a static way.
-	/// However, if a <see cref="BeamableBehaviour"/> is connected to a <see cref="BeamContext"/>, then the <see cref="BeamableBehaviour"/>'s lifecycle
-	/// will control the `<see cref="BeamContext"/>'s lifecycle.
-	/// Additionally, the <see cref="PlayerCode"/> variable is the unique id of the <see cref="BeamContext"/>.
-	/// </para>
-	///
-	/// <para>
-	/// From Monobehaviours or Unity components, you should use the <see cref="InParent"/> method to access a <see cref="BeamContext"/>.
-	/// The <see cref="InParent"/> will give you the closest context in the Unity object heirarchy from your script's location, or give you
-	/// <see cref="Default"/> if no context exists. You can add <see cref="BeamableBehaviour"/> components to add a context to a GameObject.
-	///
-	/// If you want to access an instance without using a context sensitive approach, you should use the <see cref="Instantiate"/> method.
-	/// Finally, you can always use <see cref="Default"/>.
-	/// </para>
-	///
-	/// <para>
-	/// Remember, there will only ever be one instance of <see cref="BeamContext"/> per <see cref="PlayerCode"/> value.
-	/// The <see cref="Default"/> context has a <see cref="PlayerCode"/> value of an empty string.
-	/// </para>
-	/// </summary>
+	/// <summary>Provides a player's session and the services associated with a local player slot.</summary>
+	/// <remarks>
+	/// <para>Use from Unity's main thread during play mode. There is one context per <see cref="PlayerCode"/>. A player code names a slot on this device;
+	/// it is not the authenticated player's ID. Accessing a context starts initialization; await
+	/// <see cref="Instance"/> or <see cref="OnReady"/> before using its services.</para>
+	/// <para>Use <see cref="InParent"/> from Unity components to respect a parent
+	/// <see cref="BeamableBehaviour"/>. The default context persists across scene changes; named contexts follow their
+	/// owning GameObject unless persistence is configured. Call <see cref="Stop"/> when a context is no longer needed.</para>
+	/// </remarks>
 	[Serializable]
 	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer, IBeamableDisposableOrder, IDependencyNameProvider, IDependencyScopeNameProvider
 	{
@@ -114,6 +100,10 @@ namespace Beamable
 		/// </summary>
 		public GameObject GameObject => _gob ? _gob : _parent?.GameObject;
 
+		/// <summary>Gets whether this context has started initialization.</summary>
+		/// <value>True when an initialization promise exists, even if it is pending or failed.</value>
+		/// <remarks>This does not indicate readiness or an active session. Await <see cref="OnReady"/>
+		/// and check <see cref="IsStopped"/> before reusing a retained context.</remarks>
 		public bool IsInitialized => _initPromise != null;
 
 		public bool IsDefault => IsDefaultPlayerCode(PlayerCode);
@@ -202,16 +192,15 @@ namespace Beamable
 		private bool HasAccountsService => _playerAccounts != null;
 		private PlayerAccounts _playerAccounts;
 
-		/// <summary>
-		/// <para>
-		/// Access the player's inventory
-		/// </para>
-		/// <para>
-		/// <inheritdoc cref="PlayerInventory"/>
-		/// </para>
-		/// </summary>
+		/// <summary>Gets the observable inventory for this player.</summary>
+		/// <value>The inventory service scoped to this context.</value>
+		/// <remarks>Use <see cref="PlayerInventory.LoadItems(Beamable.Common.Inventory.ItemRef)"/> or
+		/// <see cref="PlayerInventory.LoadCurrencies(Beamable.Common.Inventory.CurrencyRef)"/> when refreshed data is required.</remarks>
 		public PlayerInventory Inventory => ServiceProvider.GetService<PlayerInventory>();
 		
+		/// <summary>Gets this player's local and cloud save service.</summary>
+		/// <value>The save service scoped to this context.</value>
+		/// <remarks>Call <see cref="ICloudSavingService.Init"/> and check its returned status before saving.</remarks>
 		public ICloudSavingService CloudSaving => ServiceProvider.GetService<ICloudSavingService>();
 
 		public PlayerLeaderboards Leaderboards => ServiceProvider.GetService<PlayerLeaderboards>();
@@ -828,14 +817,20 @@ namespace Beamable
 			}
 		}
 
-		/// <summary>
-		/// Create or retrieve a <see cref="BeamContext"/> for the given <see cref="PlayerCode"/>. There is only one instance of a context per <see cref="PlayerCode"/>.
-		/// A <see cref="BeamableBehaviour"/> is required because the context needs to attach specific Unity components to a GameObject, and the given <see cref="BeamableBehaviour"/>'s GameObject will be used.
-		/// If no <see cref="BeamableBehaviour"/> is given, then a new GameObject will be instantiated at the root transform level named, "Beamable (playerCode)"
-		/// </summary>
-		/// <param name="beamable">A component that will invite other Beamable components to exist on its GameObject</param>
-		/// <param name="playerCode">A named code that represents a player slot on the device. The <see cref="Default"/> context uses an empty string. </param>
-		/// <returns></returns>
+		/// <summary>Creates, retrieves, or restarts the context for a local player slot.</summary>
+		/// <remarks>
+		/// <para>An active context for the same player code is returned unchanged; new component and dependency
+		/// arguments are only used when creating or restarting it. Initialization is asynchronous.</para>
+		/// <para>If no component is supplied, Beamable creates a GameObject for the context. The default
+		/// player slot is persistent; named slots follow the generated component's scene lifetime.
+		/// A supplied <see cref="BeamableBehaviour"/> controls its lifetime according to that component's settings.</para>
+		/// </remarks>
+		/// <param name="beamable">The owning component, or null to create a context GameObject.</param>
+		/// <param name="playerCode">The local slot name, or null to use the default player code.</param>
+		/// <param name="dependencyBuilder">The service registrations to use, or null for <see cref="Beam.DependencyBuilder"/>.</param>
+		/// <returns>The context for the slot. Await its <see cref="Instance"/> before using services.</returns>
+		/// <seealso cref="ForPlayer"/>
+		/// <seealso cref="InParent"/>
 		public static BeamContext Instantiate(
 			BeamableBehaviour beamable = null,
 			string playerCode = null,
@@ -873,22 +868,46 @@ namespace Beamable
 
 		private static Dictionary<string, BeamContext> _playerCodeToContext = new Dictionary<string, BeamContext>();
 
-		/// <summary>
-		/// A static <see cref="BeamContext"/> that uses a <see cref="PlayerCode"/> of an empty string.
-		/// By default, the default context will persist between scene reloads. If you need to dispose it, you'll
-		/// need to manually invoke <see cref="Stop"/>
-		/// </summary>
+		/// <summary>Gets or creates the default local player's context.</summary>
+		/// <value>The context for the default player code, normally an empty string.</value>
+		/// <remarks>Await <see cref="Instance"/> before accessing player data. Without an owning
+		/// <see cref="BeamableBehaviour"/>, this context persists across scene changes until <see cref="Stop"/> is called.</remarks>
+		/// <seealso cref="InParent"/>
 		public static BeamContext Default => Instantiate();
 
 
-		/// <summary>
-		/// Find the first <see cref="BeamableBehaviour.Context"/> in the parent lineage of the current component, or <see cref="BeamContext.Default"/> if no <see cref="BeamableBehaviour"/> components exist
-		/// </summary>
+		/// <summary>Gets the context from the nearest parent Beamable component, falling back to the default context.</summary>
+		/// <param name="c">The component whose GameObject and parents are searched.</param>
+		/// <returns>The discovered context, or <see cref="Default"/>. Initialization may still be pending.</returns>
+		/// <example>
+		/// <para>Example: initialize from a Unity component and log the player ID.</para>
+		/// <code>
+		/// var context = await BeamContext.InParent(this).Instance;
+		/// Debug.Log($"Ready for player {context.PlayerId}");
+		/// </code>
+		/// </example>
 		public static BeamContext InParent(Component c) => c.GetBeamable();
 
-		/// <summary>
-		/// Finds or creates the first <see cref="BeamContext"/> that matches the given <see cref="BeamContext.PlayerCode"/> value
-		/// </summary>
+		/// <summary>Gets, creates, or restarts the context for a named local player slot.</summary>
+		/// <param name="playerCode">The slot name; the default is an empty string.</param>
+		/// <returns>The context for the slot. Await <see cref="Instance"/> to finish initialization.</returns>
+		/// <remarks>Calling this repeatedly with the same code reuses the context. Stopping a context affects
+		/// all consumers of that slot, so only its owner should stop it.</remarks>
+		/// <example>
+		/// <para>Example: own a named slot and stop it after use, including when initialization fails.</para>
+		/// <code>
+		/// var context = BeamContext.ForPlayer("documentation-player");
+		/// try
+		/// {
+		///     await context.OnReady;
+		///     Debug.Log($"Ready for player {context.PlayerId}");
+		/// }
+		/// finally
+		/// {
+		///     await context.Stop();
+		/// }
+		/// </code>
+		/// </example>
 		public static BeamContext ForPlayer(string playerCode = "") => Instantiate(playerCode: playerCode);
 
 		/// <summary>
@@ -914,16 +933,13 @@ namespace Beamable
 		/// <returns>The same context instance</returns>
 		public BeamContext Start() => Instantiate(playerCode: PlayerCode);
 
-		/// <summary>
-		/// This method will tear down a <see cref="BeamContext"/> and notify all internal services that the context should be destroyed.
-		/// All coroutines associated with the context will stop.
-		/// No notifications will be received internal to the context.
-		/// No services will be accessible from the <see cref="ServiceProvider"/> after <see cref="Stop"/> has been called.
-		/// <para>
-		/// After a context has been disposed, if a call is made to <see cref="Start"/> or <see cref="Instantiate"/> with the disposed context's <see cref="PlayerCode"/>,
-		/// then the disposed instance will be reinitialized and rehydrated and returned to the <see cref="Instantiate"/>'s callsite.
-		/// </para>
-		/// </summary>
+		/// <summary>Stops this context and disposes its services.</summary>
+		/// <remarks>Context coroutines and notification subscriptions are stopped. Do not use services retained
+		/// from a stopped context. Calling <see cref="Start"/>, <see cref="Instantiate"/>, or <see cref="ForPlayer"/>
+		/// for the same slot restarts the existing context; await readiness again afterward.
+		/// This does not clear saved credentials; use <see cref="ClearPlayerAndStop"/> to clear them.</remarks>
+		/// <returns>A promise that completes after service disposal, or immediately if already stopped.</returns>
+		/// <seealso cref="ForPlayer"/>
 		public async Promise Stop()
 		{
 		
@@ -978,18 +994,16 @@ namespace Beamable
 		long IUserContext.UserId => PlayerId;
 
 		User IPlatformService.User => AuthorizedUser.Value;
+		/// <summary>Gets the promise representing initialization of this context.</summary>
+		/// <value>A promise that resolves when the context is ready, or rejects if initialization fails.</value>
+		/// <remarks>Await this before using services. Unlike <see cref="Instance"/>, it returns no context value.</remarks>
 		public Promise<Unit> OnReady => _initPromise;
 
-		/// <summary>
-		/// A <see cref="Promise{T}"/> that is completed when the <see cref="BeamContext"/> is ready to be used.
-		/// This promise happens immediately after the <see cref="OnReady"/> promise, but returns the current instance
-		/// of the context.
-		///
-		/// Suggested usage.
-		/// <code>
-		/// var ctx = await BeamContext.Default.Instance;
-		/// </code>
-		/// </summary>
+		/// <summary>Gets a promise that returns this context after initialization succeeds.</summary>
+		/// <value>A promise resolving to this context, or rejecting with its initialization failure.</value>
+		/// <remarks>Use <see cref="InParent"/> or <see cref="Default"/> to obtain a context, then await this property.
+		/// A stopped context must be restarted before use.</remarks>
+		/// <seealso cref="OnReady"/>
 		public Promise<BeamContext> Instance => OnReady?.Map(_ => this);
 
 		INotificationService IPlatformService.Notification => _notification;
