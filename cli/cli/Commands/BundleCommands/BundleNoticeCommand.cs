@@ -6,6 +6,7 @@ using cli.Services.Bundles;
 using System;
 using System.CommandLine;
 using System.Globalization;
+using System.Linq;
 
 namespace cli.BundleCommands;
 
@@ -64,15 +65,15 @@ public class CreateBundleNoticeCommand : AtomicCommand<BundleNoticeCommandArgs, 
 	{
 		AddArgument(new Argument<string>("bundle-name", "The bundle name, optionally namespaced as @<namespace>/<bundle-name>"),
 			(args, i) => args.bundleName = i);
-		AddOption(new Option<long>("--min-version", "The first version the notice covers") { IsRequired = true },
+		AddOption(new Option<long>("--min-version", "The first version the notice covers"),
 			(args, i) => args.minVersion = i);
-		AddOption(new Option<long>("--max-version", "The last version the notice covers") { IsRequired = true },
+		AddOption(new Option<long>("--max-version", "The last version the notice covers"),
 			(args, i) => args.maxVersion = i);
-		AddOption(new Option<string>("--end-of-support", "When new installs of these versions stop (UTC date)") { IsRequired = true },
+		AddOption(new Option<string>("--end-of-support", "When new installs of these versions stop (UTC date)"),
 			(args, i) => args.endOfSupport = i);
-		AddOption(new Option<string>("--end-of-life", "When installations still on these versions are updated (UTC date)") { IsRequired = true },
+		AddOption(new Option<string>("--end-of-life", "When installations still on these versions are updated (UTC date)"),
 			(args, i) => args.endOfLife = i);
-		AddOption(new Option<string>("--message", "Why the versions are deprecated") { IsRequired = true },
+		AddOption(new Option<string>("--message", "Why the versions are deprecated"),
 			(args, i) => args.message = i);
 		AddOption(new Option<string>("--link", "A page with more detail"),
 			(args, i) => args.link = i);
@@ -84,6 +85,14 @@ public class CreateBundleNoticeCommand : AtomicCommand<BundleNoticeCommandArgs, 
 
 	public override async Task<BundleNoticeCommandOutput> GetResult(BundleNoticeCommandArgs args)
 	{
+		var missing = new[]
+		{
+			("--min-version", args.minVersion > 0), ("--max-version", args.maxVersion > 0),
+			("--end-of-support", !string.IsNullOrWhiteSpace(args.endOfSupport)), ("--end-of-life", !string.IsNullOrWhiteSpace(args.endOfLife)),
+			("--message", !string.IsNullOrWhiteSpace(args.message)),
+		}.Where(o => !o.Item2).Select(o => o.Item1).ToArray();
+		if (missing.Length > 0)
+			throw new CliException($"A notice needs {string.Join(", ", missing)}.");
 		args.ValidateReplacement();
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
 		var fullName = await BundleNamespace.FullName(args, args.bundleName);

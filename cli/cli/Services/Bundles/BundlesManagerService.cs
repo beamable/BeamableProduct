@@ -8,7 +8,7 @@ namespace cli.Services.Bundles;
 /// <summary>
 /// The API of the Bundles tab of the page `beam local management` serves, under <c>/api/bundles</c>
 /// (<see cref="cli.Commands.LocalStack.LocalManagementApi"/>). Every operation
-/// runs one of the existing `bundles` / `deploy` commands against this workspace as a job (<see cref="CliJobRunner"/>),
+/// runs one of the existing `bundles` commands against this workspace as a job (<see cref="CliJobRunner"/>),
 /// with this CLI's credentials.
 /// </summary>
 public class BundlesApi : ILocalWebApi
@@ -27,13 +27,7 @@ public class BundlesApi : ILocalWebApi
 			case ("GET", "workspace", 1):
 				return Workspace();
 			case (_, "jobs", _):
-				return _ctx.Jobs.Dispatch(method, parts, query, body, request =>
-				{
-					string Field(string name) => request[name]?.Type == JTokenType.String ? request[name]!.Value<string>() : "";
-					var op = Field("op");
-					return (op, BuildArgs(op, Field("bundle"), Field("tag"), Field("version"), Field("comment"),
-						Field("scope"), request["flag"]?.Type == JTokenType.Boolean && request["flag"]!.Value<bool>()));
-				});
+				return _ctx.Jobs.Dispatch(method, parts, query, body, BuildArgs);
 			default:
 				throw new LocalWebRequestException(404, $"No route {method} /api/{string.Join('/', parts)}.");
 		}
@@ -55,42 +49,44 @@ public class BundlesApi : ILocalWebApi
 
 	// Values must start alphanumeric so nothing the page sends can parse as an option.
 	static readonly Regex BundleRefPattern = new(@"^@?[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)?$", RegexOptions.Compiled);
-	static readonly Regex TagPattern = new(@"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$", RegexOptions.Compiled);
+	static readonly Regex NamePattern = new(@"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$", RegexOptions.Compiled);
 	static readonly Regex VersionPattern = new(@"^[1-9][0-9]{0,17}$", RegexOptions.Compiled);
-	static readonly string[] ScopeValues = { "realm", "zone" };
+	static readonly Regex HashPattern = new(@"^[A-Za-z0-9][A-Za-z0-9+/=_-]{0,255}$", RegexOptions.Compiled);
+	static readonly string[] VisibilityValues = { "private", "public" };
+	static readonly string[] RealmsValues = { "all", "none" };
 
-	/// <summary>Maps a whitelisted operation to the CLI arguments that perform it.</summary>
-	public static string[] BuildArgs(string op, string bundle, string tag, string version, string comment,
-		string scope, bool flag)
+	/// <summary>
+	/// Maps a whitelisted operation to the CLI arguments that perform it. Checked values follow their option as the
+	/// next token, and none can start with a dash.
+	/// <c>install</c> and <c>uninstall</c> either stop at the plan (<c>planOnly</c>) or apply the plan the page showed
+	/// (<c>planHash</c>), never one nobody saw.
+	/// </summary>
+	public static (string op, string[] args) BuildArgs(JObject request)
 	{
-		string Bundle()
-		{
-			if (string.IsNullOrEmpty(bundle) || !BundleRefPattern.IsMatch(bundle))
-				throw new LocalWebRequestException(400, $"Invalid bundle reference [{bundle}].");
-			return bundle;
-		}
+		string Field(string name) => request[name]?.Type == JTokenType.String ? request[name]!.Value<string>() : "";
+		bool Flag(string name) => request[name]?.Type == JTokenType.Boolean && request[name]!.Value<bool>();
 
-		string Tag()
+		string Checked(string name, Regex pattern)
 		{
-			if (!TagPattern.IsMatch(tag ?? ""))
-				throw new LocalWebRequestException(400, $"Invalid tag [{tag}].");
-			return tag;
-		}
-
-		string Version()
-		{
-			if (!VersionPattern.IsMatch(version ?? ""))
-				throw new LocalWebRequestException(400, $"Invalid version [{version}].");
-			return version;
-		}
-
-		string OneOf(string value, string[] allowed, string what)
-		{
-			if (!allowed.Contains(value))
-				throw new LocalWebRequestException(400, $"Invalid {what} [{value}]. Expected one of: {string.Join(", ", allowed)}.");
+			var value = Field(name);
+			if (!pattern.IsMatch(value))
+				throw new LocalWebRequestException(400, $"Invalid {name} [{value}].");
 			return value;
 		}
 
+		string OneOf(string name, string[] allowed)
+		{
+			var value = Field(name);
+			if (!allowed.Contains(value))
+				throw new LocalWebRequestException(400, $"Invalid {name} [{value}]. Expected one of: {string.Join(", ", allowed)}.");
+			return value;
+		}
+
+		string Bundle() => Checked("bundle", BundleRefPattern);
+		string Version() => Checked("version", VersionPattern);
+		bool Has(string name) => !string.IsNullOrEmpty(Field(name));
+
+		var op = Field("op");
 		var args = new List<string>();
 		switch (op)
 		{
@@ -99,6 +95,14 @@ public class BundlesApi : ILocalWebApi
 				break;
 			case "releases":
 				args.AddRange(new[] { "bundles", "releases", Bundle() });
+				if (Has("version")) args.AddRange(new[] { "--version", Version() });
+				break;
+			case "create":
+				args.AddRange(new[] { "bundles", "create", Bundle() });
+				if (Has("visibility")) args.AddRange(new[] { "--visibility", OneOf("visibility", VisibilityValues) });
+				break;
+			case "visibility":
+				args.AddRange(new[] { "bundles", "update", Bundle(), "--visibility", OneOf("visibility", VisibilityValues) });
 				break;
 			case "plan":
 				args.AddRange(new[] { "bundles", "plan", Bundle() });
@@ -106,33 +110,59 @@ public class BundlesApi : ILocalWebApi
 			case "publish":
 				args.AddRange(new[] { "bundles", "publish", Bundle() });
 				// flag = publish exactly what the last `plan` job showed.
-				if (flag) args.Add("--from-latest-plan");
-				if (!string.IsNullOrEmpty(tag)) args.AddRange(new[] { "--tag", Tag() });
+				if (Flag("flag")) args.Add("--from-latest-plan");
+				if (Has("tag")) args.AddRange(new[] { "--tag", Checked("tag", NamePattern) });
 				break;
 			case "tag":
-				args.AddRange(new[] { "bundles", "tag", Bundle(), Tag(), Version() });
+				args.AddRange(new[] { "bundles", "tag", Bundle(), Checked("tag", NamePattern), Version() });
 				break;
 			case "yank":
 				args.AddRange(new[] { "bundles", "yank", Bundle(), Version() });
 				break;
-			case "deploy-plan":
-				args.AddRange(new[] { "deploy", "plan", "--scope", OneOf(scope, ScopeValues, "scope") });
-				if (!string.IsNullOrWhiteSpace(comment)) args.Add(CommentOption(comment));
+			case "library":
+				args.AddRange(new[] { "bundles", "library" });
 				break;
-			case "deploy-release":
-				args.AddRange(new[] { "deploy", "release", "--from-latest-plan", "--scope", OneOf(scope, ScopeValues, "scope") });
-				// Release clears the plan's comments and applies its own, so the comment goes here too.
-				if (!string.IsNullOrWhiteSpace(comment)) args.Add(CommentOption(comment));
+			case "acquire":
+			case "remove":
+				args.AddRange(new[] { "bundles", op, Bundle() });
 				break;
+			case "installations":
+				args.AddRange(new[] { "bundles", "installations" });
+				break;
+			case "history":
+				args.AddRange(new[] { "bundles", "history", Bundle() });
+				break;
+			case "install":
+			case "uninstall":
+			{
+				args.AddRange(new[] { "bundles", op, Bundle() });
+				if (op == "install")
+				{
+					if (Has("version")) args.AddRange(new[] { "--version", Version() });
+					if (Has("tag")) args.AddRange(new[] { "--tag", Checked("tag", NamePattern) });
+					if (request["componentGroups"] is JArray groups)
+					{
+						var names = groups.Select(g => g.Type == JTokenType.String && NamePattern.IsMatch(g.Value<string>()!)
+							? g.Value<string>()
+							: throw new LocalWebRequestException(400, $"Invalid component group [{g}].")).ToList();
+						// An empty list turns every component group off.
+						args.Add("--component-groups=" + string.Join(",", names));
+					}
+					if (Has("realms")) args.AddRange(new[] { "--realms", OneOf("realms", RealmsValues) });
+					if (request["autoUpdate"]?.Type == JTokenType.Boolean)
+						args.Add("--auto-update=" + (Flag("autoUpdate") ? "true" : "false"));
+				}
+
+				if (Flag("planOnly")) args.Add("--plan-only");
+				else args.AddRange(new[] { "--plan-hash", Checked("planHash", HashPattern) });
+				break;
+			}
 			default:
 				throw new LocalWebRequestException(400, $"Unknown operation [{op}].");
 		}
 
-		return args.ToArray();
+		return (op, args.ToArray());
 	}
-
-	/// <summary>One token, so a comment that starts with a dash is not parsed as an option.</summary>
-	static string CommentOption(string comment) => "--comment=" + comment.Trim();
 }
 
 /// <summary>The CLI state <see cref="BundlesApi"/> works with.</summary>

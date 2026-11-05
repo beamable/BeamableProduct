@@ -41,6 +41,20 @@ public class InstallBundleCommandArgs : ZoneInstallationArgs
 	public List<string> detach;
 	public bool uninstall;
 
+	/// <summary>Show the plan and stop, applying nothing.</summary>
+	public bool planOnly;
+
+	/// <summary>The hash of a plan already reviewed: apply refuses any other plan.</summary>
+	public string planHash;
+
+	public static void AddPlanOptions<TArgs>(AppCommand<TArgs> command) where TArgs : InstallBundleCommandArgs
+	{
+		command.AddOption(new Option<bool>("--plan-only", "Show the plan and stop, applying nothing"),
+			(args, i) => args.planOnly = i);
+		command.AddOption(new Option<string>("--plan-hash", "The hash of a plan you reviewed (from --plan-only): apply only if the plan is still that one"),
+			(args, i) => args.planHash = i);
+	}
+
 	public InstallationRequest Request(string fullName)
 	{
 		var request = new InstallationRequest
@@ -134,6 +148,7 @@ public class InstallBundleCommand : AtomicCommand<InstallBundleCommandArgs, Inst
 		AddOption(new Option<List<string>>("--detach", "An overridden component to keep as your own when this change takes it off a site, instead of archiving it") { AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.detach = i);
 		ZoneInstallationArgs.AddTargetZoneOption(this);
+		InstallBundleCommandArgs.AddPlanOptions(this);
 	}
 
 	public override async Task<InstallBundleCommandOutput> GetResult(InstallBundleCommandArgs args) => await Run(args);
@@ -161,6 +176,10 @@ public class InstallBundleCommand : AtomicCommand<InstallBundleCommandArgs, Inst
 				Log.Information("Nothing to change.");
 				return output;
 			}
+			if (args.planOnly)
+				return output;
+			if (!string.IsNullOrEmpty(args.planHash) && args.planHash != plan.hash)
+				throw new CliException("Something changed on the zone since the plan you reviewed, so nothing was applied. Review the new plan and apply that one.");
 
 			var confirm = args.Quiet || string.Equals("yes",
 				AnsiConsole.Prompt(new TextPrompt<string>($"Apply this plan to zone [{Markup.Escape(plan.zoneId)}]?\nType 'yes' to continue.")),
@@ -187,7 +206,12 @@ public class InstallBundleCommand : AtomicCommand<InstallBundleCommandArgs, Inst
 					Log.Warning("Not every manifest was applied. Run the same command again to retry the ones left.");
 				return output;
 			}
-			catch (RequesterException e) when (e.Status == 409 && attempt < 3)
+			catch (RequesterException e) when (e.Status == 409 && (args.Quiet || attempt >= 3))
+			{
+				// Without a person to show the new plan to, a plan made again is never applied unseen.
+				throw new CliException("Something changed on the zone since the plan was made, so nothing was applied. Plan again.");
+			}
+			catch (RequesterException e) when (e.Status == 409)
 			{
 				Log.Warning("Something changed on the zone since the plan was made, so it wasn't applied. Planning again...");
 			}
@@ -213,6 +237,7 @@ public class UninstallBundleCommand : AtomicCommand<UninstallBundleCommandArgs, 
 		AddOption(new Option<List<string>>("--detach", "An overridden component to keep as your own instead of archiving it") { AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.detach = i);
 		ZoneInstallationArgs.AddTargetZoneOption(this);
+		InstallBundleCommandArgs.AddPlanOptions(this);
 	}
 
 	public override async Task<InstallBundleCommandOutput> GetResult(UninstallBundleCommandArgs args)

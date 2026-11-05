@@ -1,327 +1,274 @@
 ---
 name: beam-bundles
-description: Author, publish, tag, install, and govern beamo manifest bundles — the `beam bundles` command family. Build a bundle of services, storages, and portal extensions, publish it to the catalog, move tags, widen its ACL scope, install checksums into a realm, and yank/prune retired versions.
+description: Author, publish and govern marketplace bundles of services, storages and portal extensions, and acquire, install, override and update them on zones with the `beam bundles` commands.
 ---
+{{~ func command_tables(path) ~}}
+{{~ if commands[path] ~}}
+{{~ if (array.size commands[path].arguments) > 0 }}
+| `beam {{ path }}` argument | Type | Description |
+|---|---|---|
+{{ for arg in commands[path].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
+{{ end }}{{ end ~}}
+{{~ if (array.size commands[path].options) > 0 }}
+| `beam {{ path }}` option | Type | Description |
+|---|---|---|
+{{ for opt in commands[path].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
+{{ end }}{{ end ~}}
+{{~ end ~}}
+{{~ end ~}}
 
-# Working with Bundles
+# Bundles and the Marketplace
 
-## What a Bundle Is
-A **bundle** is a named, versioned, content-addressed set of beamo components — microservices, storages, and portal extensions — published to the catalog and reused across realms and customers. Where a `deploy release` pushes your local manifest to *one* realm, a bundle is authored once, published to the catalog, and then **referenced** (by checksum) from any realm's `bundles.manifest.beam.json`.
+> Building and deploying your own services to a realm: `beam-build-and-deploy`. Creating the services, storages and portal extensions a bundle carries: `beam-manage-service`, `beam-create-portal-extension`.
 
-Each bundle has:
-- A **logical name** `@<alias>/<name>` — the form the API and all output use. `@<alias>` is the *namespace*, your customer's cid alias. The **short name** (`<name>`) is only an input/file-name convenience.
-- One or more **checksums** — a checksum is a `sha256:…` digest the server computes at publish time over the built component images/assets. It is content-addressed: the same components produce the same checksum, and a checksum is immutable.
-- **Tags** — movable pointers to a checksum (`latest` always tracks the newest publish; you can advance your own like `stable`).
-- An **ACL scope** per checksum — who may reference it: `private` ⊂ `org` ⊂ `public`.
-
-Bundles are **authored** in the workspace as `*.beam.bundle.json` files and **published** to the catalog; the two are distinct — publishing is an explicit build+upload step.
-
-> The command tables in this doc are generated from the CLI itself, so they always match the installed version. Treat them as the source of truth for exact argument and option names; the prose only explains intent.
-
-## When to Use This Skill
-- Packaging a set of services/storages/portal extensions to reuse across realms or share with another customer.
-- Publishing a bundle and diffing it against what is already published (`bundles plan` / `bundles publish`).
-- Moving a tag, widening visibility (`bundles tag` / `bundles acl`).
-- Installing a specific bundle checksum into a realm's manifest (`bundles install`) or removing it (`bundles uninstall`), and cleaning up after a version is retired (`bundles yank` / `bundles prune-yanked`).
-- Inspecting the catalog: what exists, its releases, and its tags (`bundles list` / `get` / `releases` / `tags`).
-
-If you instead want to deploy your local services to a single realm, that is `deploy plan` / `deploy release`, not bundles.
-
-## Names & References
-
-**Namespace resolution.** You almost never type the namespace. It is derived from your customer alias at runtime (the configured cid alias, or the customer record). Commands that print or store a name always use the fully-qualified `@<alias>/<name>`.
-
-**Bundle-reference grammar.** Read-and-target commands accept a *reference*:
-```
-[@<namespace>/]<name>[@<tag> | @sha256:<checksum>]
-```
-- `mybundle` — the `latest` entry of your own `mybundle`.
-- `mybundle@stable` — whatever checksum the `stable` tag currently points at.
-- `mybundle@sha256:abc123…` — that exact, immutable checksum.
-- `@otheralias/mybundle` — read a bundle owned by **another customer** (only valid where the catalog ACL allows it).
-
-Commands that mutate a specific version (`yank`, `tag`) **require** the `@sha256:…` form — you may only act on an exact checksum, never a moving tag. Each command's argument table below states exactly which reference shape it takes.
-
-## Authoring a Bundle
-
-`bundles new` scaffolds a `<name>.beam.bundle.json` in the workspace. The bundle's short name **is** the file-name stem — it is not stored inside the file. List the beamoIds to include as components (repeatable). `bundles new` loads the manifest to validate the components exist and share one scope, and records the derived scope in the file.
+## High-Level Architecture
 
 ```
-beam_exec("bundles new checkout-stack -c PaymentService -c OrdersStorage -c CheckoutPanel -q")
+ publisher workspace                                   Beamable                                  buyer org
+ ───────────────────                                   ────────                                  ─────────
+ <name>.beam.bundle.json ─┐
+ projects (services,      ├─ bundles plan ─► diff vs latest release
+ storages, extensions)  ──┘
+                           bundles publish ─► /beamo/releases/upload-targets
+                              │  images ─────► marketplace image repos
+                              │  files  ─────► signed upload URLs (extension assets, source archives)
+                              └─ release ────► /beamo/releases  ─► release vN, tag latest = vN
+                                                    │
+                                     catalog (/beamo/bundles, /beamo/marketplace)
+                                                    │
+                                     bundles acquire ─► org library (/beamo/acquisitions)
+                                                    │
+                                     bundles install ─► /beamo/installations/plan ─► plan + hash
+                                                    └► /beamo/installations/apply(hash) ─► zone manifest + realm manifests
+                                                    │
+                                     auto-update sweep ─► compatible newer releases applied
+                                                    │
+ bundles source request ─► /beamo/source-deliveries ─► pull request into a connected repository
+                                                          (with beam.override.json per project)
+ deploy plan/release from that checkout ─► manifest post with overrides ─► local build replaces the bundle's component
 ```
 
-The generated file looks like:
+## Code Mapping
+
+| Part | File |
+|---|---|
+| Command group | `cli/cli/Commands/BundleCommands/BundlesCommand.cs` |
+| Bundle config file model and validation | `cli/cli/Services/Bundles/BundleWorkspace.cs` |
+| Build, artifact collection, source archives | `cli/cli/Services/Bundles/BundleBuild.cs` |
+| Release diff | `cli/cli/Services/Bundles/BundleDiff.cs` |
+| Saved plan files | `cli/cli/Services/Bundles/BundlePlanFiles.cs` |
+| Namespace resolution | `cli/cli/Services/Bundles/BundleNamespace.cs` |
+| Scaffold | `cli/cli/Commands/BundleCommands/NewBundleCommand.cs` |
+| Catalog entry (create, update) | `cli/cli/Commands/BundleCommands/CreateBundleCommand.cs` |
+| Plan, publish | `cli/cli/Commands/BundleCommands/BundlePlanCommand.cs`, `PublishBundleCommand.cs` |
+| Releases, tags, yank | `cli/cli/Commands/BundleCommands/BundleReleasesCommand.cs`, `PromoteBundleTagCommand.cs`, `YankBundleCommand.cs` |
+| Deprecation notices | `cli/cli/Commands/BundleCommands/BundleNoticeCommand.cs` |
+| Marketplace search, info, placements | `cli/cli/Commands/BundleCommands/MarketplaceCommands.cs` |
+| Library (acquire, remove, library) | `cli/cli/Commands/BundleCommands/LibraryCommands.cs` |
+| Install, uninstall | `cli/cli/Commands/BundleCommands/InstallBundleCommand.cs` |
+| Installations, history, dependencies, notices, end-override | `cli/cli/Commands/BundleCommands/InstallationsCommand.cs` |
+| Source delivery | `cli/cli/Commands/BundleCommands/SourceCommands.cs` |
+| Overrides in deploys (`beam.override.json`, connection checks) | `cli/cli/Services/DeploymentService.cs` |
+| Local Bundles page API | `cli/cli/Services/Bundles/BundlesManagerService.cs`, `cli/local-web/bundles/` |
+| Server: catalog and releases | BeamableAPI `BeamableShared/Services/Beamo/Bundles/BundleService.cs` |
+| Server: library, installations, planner | BeamableAPI `BeamableShared/Services/Beamo/Bundles/InstallationService.cs`, `InstallationPlanner.cs` |
+| Server: overrides | BeamableAPI `BeamableShared/Services/Beamo/Bundles/BundleOverrides.cs` |
+| Server: auto-update | BeamableAPI `BeamableShared/Services/Beamo/Bundles/AutomaticUpdates.cs` |
+| Server: source deliveries and archive limits | BeamableAPI `BeamableShared/Services/Beamo/Bundles/SourceDeliveries.cs`, `SourceArchives.cs` |
+| Server: error codes | BeamableAPI `BeamableShared/Services/Beamo/Bundles/Errors/BundleErrors.cs` |
+
+## Business Goals Constraints
+
+- A bundle is published once and installed by any org that acquires it, on any of its zones, without that org building anything.
+- One bundle can carry realm components (on every chosen realm of the zone) and zone components (once on the zone).
+- Component groups let a buyer turn parts of a bundle on and off per installation.
+- Releases are numbered `1, 2, 3…`; a version identifies a release, tags (`latest`, `stable`, …) point at versions.
+- Auto-update keeps installations current with releases the publisher marked compatible; deprecation notices move installations off old versions on a schedule.
+- A buyer can take a component's source into their own repository and run their build in place of the bundle's (an override), and give it back later.
+- Installing is planned and applied by hash, so a change nobody reviewed is never applied.
+
+## Performance Constraints
+
+| Limit | Value | Source |
+|---|---|---|
+| Source archive files per component | 999 | `BundleBuild.MaxSourceFiles` / `SourceArchives.MaxFiles` |
+| Source file size | 10 MB | `BundleBuild.MaxSourceFileBytes` |
+| Source total size | 25 MB − 64 KB | `BundleBuild.MaxSourceTotalBytes` |
+| Source archive (compressed) | 32 MB | `BundleBuild.MaxSourceArchiveBytes` |
+| Source path length | 640 | `BundleBuild.MaxSourcePathLength` |
+| Release / catalog page size (server max) | 200 | `BundleService.MaxPageSize` |
+| Installation history page (server max) | 200 | `InstallationService.MaxHistoryPage` |
+| Source delivery list page (server max) | 100 | `SourceDeliveries.MaxListPage` |
+| Notice message length | 2000 | `BundleService.MaxNoticeMessageLength` |
+| Notice lead time (end of support from now, end of life after end of support) | 30 days each | `BundleService.NoticeLeadTime` |
+| Upload URL lifetime | 1 hour | `MarketplaceStore.UploadUrlExpirationSeconds` |
+| Auto-update sweep period | 10 min | `AutomaticUpdates` options |
+| `bundles install` re-plans after a 409 (interactive only) | 3 attempts | `InstallBundleCommand.Run` |
+
+Never in a source archive: `.git`, `bin`, `obj`, `node_modules`, `.beamable/temp`, `.beamable/local`, `.wingman`. Archives are deterministic (fixed timestamps), so unchanged source keeps its hash and isn't uploaded again.
+
+## Usage Guide
+
+Always pass `-q` from an agent: `publish`, `install`, `uninstall` and `acquire` otherwise wait for a typed `yes`.
+
+### Names
+
+- The full name is `@<namespace>/<name>`; the namespace is the customer's cid alias, derived at runtime. Commands that take `bundle-name` accept the short name for your own bundles and need the full name for anyone else's.
+- The short name is the config file's stem: `<name>.beam.bundle.json`. It holds no name field.
+
+### Bundle config file
+
+`bundles new <name> -c <beamoId>…` writes `<name>.beam.bundle.json`:
+
 ```json
 {
-  "scope": "realm",
-  "components": ["PaymentService", "OrdersStorage", "CheckoutPanel"],
-  "bundleDependencies": {}
+  "components": {
+    "Scores":        { "source": true },
+    "ScoresStorage": { "source": true },
+    "ScoresPanel":   { "site": "zone" }
+  },
+  "componentGroups": {
+    "default": { "title": "Scores", "description": "", "components": ["Scores", "ScoresStorage", "ScoresPanel"], "enabledByDefault": true }
+  },
+  "dependencies": {
+    "@acme/players": { "kind": "hard", "min": 2, "max": 5 }
+  }
 }
 ```
-`scope` is the bundle's deploy scope, `"realm"` or `"zone"`, derived from the components' own scope (the `<BeamServiceScope>` csproj property for services/storages, or `beamable.serviceScope` in `package.json` for portal extensions). `components` are the beamoIds that belong to this bundle; `bundleDependencies` maps a bundle name to the range of its releases this one depends on, as `{"@ns/name": {"min": 1, "max": 5}}` (omit `max` for an open range; surfaced, not resolved by the CLI). A beamoId may belong to **at most one** bundle in the workspace, and each bundle file name must be unique. A bundle must be **single-scope**: every component must be realm-scoped, or every component zone-scoped — never a mix.
-{{ if commands["bundles new"] }}{{ if (array.size commands["bundles new"].arguments) > 0 }}
-#### `beam bundles new` arguments
-| Argument | Type | Description |
-|---|---|---|
-{{ for arg in commands["bundles new"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles new"].options) > 0 }}
-#### `beam bundles new` options
-| Option | Type | Description |
-|---|---|---|
-{{ for opt in commands["bundles new"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
-{{ end }}{{ end }}{{ end }}
 
-## Plan → Publish
+| Field | Rule |
+|---|---|
+| `components.<beamoId>.site` | Optional `realm` or `zone`; must equal the project's scope (`BeamServiceScope`, or `beamable.serviceScope` in an extension's `package.json`) |
+| `components.<beamoId>.source` | Buyers may request this component's source. A service with `source` requires `source` on its storages |
+| `componentGroups` | Required when there are components; every component in at least one group; no unknown or repeated names |
+| `dependencies.<@ns/name>` | Full name; `kind` `hard` (must be installed, in range) or `soft` (suggested); `min` ≥ 0; `max` optional, ≥ `min` |
 
-Publishing builds the bundle's components, diffs the result against the currently-published `latest`, and uploads what changed. The recommended flow is to **plan first**, review the diff, then **publish** — reusing the plan so you publish exactly what you reviewed.
+Checked against the projects before plan and publish: services, storages and portal extensions only; a service's storages are in the bundle, on the same site, and in every group that has the service; a beamoId is in at most one bundle; bundle names are unique. Unknown or old properties are rejected with the file named.
+{{ command_tables "bundles new" }}
 
-### 1. Plan
-`bundles plan` builds the bundle (restricted to just its components), computes the diff against the published `latest`, and saves a plan file to a temp folder for reuse.
-```
-beam_exec("bundles plan checkout-stack -q")
-```
-{{ if commands["bundles plan"] }}{{ if (array.size commands["bundles plan"].arguments) > 0 }}
-#### `beam bundles plan` arguments
-| Argument | Type | Description |
-|---|---|---|
-{{ for arg in commands["bundles plan"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles plan"].options) > 0 }}
-#### `beam bundles plan` options
-| Option | Type | Description |
-|---|---|---|
-{{ for opt in commands["bundles plan"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
-{{ end }}{{ end }}{{ end }}
+### Publish
 
-### 2. Publish
-`bundles publish` re-uses a saved plan (the most recent one, or a specific file) or builds and diffs inline. It prompts for confirmation before mutating the catalog unless you pass `-q`/`--quiet`.
 ```
-beam_exec("bundles publish checkout-stack --from-latest-plan -q")
+beam_exec("bundles create scores --visibility private -q")     # once: claims the name
+beam_exec("bundles plan scores -q")                             # build + diff vs latest
+beam_exec("bundles publish scores --from-latest-plan --tag stable -q")
 ```
-Behavior worth knowing (the flags themselves are in the options table below):
-- A bundle name starts at the `private` ACL tier; you can widen it in the same step or later with `bundles acl` (see *Tags & Visibility*).
-- Advancing a tag alongside the publish also moves that tag to the freshly-published checksum (in addition to `latest`).
-- If the diff is a no-op, publish reports "nothing to publish" and makes no change.
-- A saved plan is only valid against the catalog state it was diffed from; if `latest` moved since planning, publish rejects it — re-run `bundles plan`.
-{{ if commands["bundles publish"] }}{{ if (array.size commands["bundles publish"].arguments) > 0 }}
-#### `beam bundles publish` arguments
-| Argument | Type | Description |
-|---|---|---|
-{{ for arg in commands["bundles publish"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles publish"].options) > 0 }}
-#### `beam bundles publish` options
-| Option | Type | Description |
-|---|---|---|
-{{ for opt in commands["bundles publish"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
-{{ end }}{{ end }}{{ end }}
 
-## Inspecting the Catalog
+- `plan` builds realm and zone components separately and reports each change (`Added`, `Removed`, `Changed`) by `kind`: `service`, `storage`, `extension`, `schema`, `componentGroup`, `dependency`. `isNoOp` when nothing changed.
+- `publish` asks the server for upload targets, pushes service images to the marketplace repos it names, uploads only the files it doesn't have, then posts the release. `isNewVersion` is false when the content equals the latest release's.
+- `--compatible-since <component>=<version>` marks a changed component compatible with installs from that version, so auto-update can apply the release; a changed component without one counts as breaking. `--irreversible-data-change` marks the release as unsafe to roll back.
+- `create`, `update`, `notice *` and `yank` need an org admin; `publish` and `tag` need a developer. Only the owning org changes a bundle (`BundleNotOwned`).
+{{ command_tables "bundles create" }}
+{{ command_tables "bundles update" }}
+{{ command_tables "bundles plan" }}
+{{ command_tables "bundles publish" }}
 
-`bundles list` shows locally-authored bundles alongside the published ones visible to the current realm. It tolerates being offline/unauthenticated — it still lists the local bundles (catalog columns just come back empty).
-```
-beam_exec("bundles list -q")
-```
-{{ if commands["bundles list"] }}{{ if (array.size commands["bundles list"].arguments) > 0 }}
-#### `beam bundles list` arguments
-| Argument | Type | Description |
-|---|---|---|
-{{ for arg in commands["bundles list"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles list"].options) > 0 }}
-#### `beam bundles list` options
-| Option | Type | Description |
-|---|---|---|
-{{ for opt in commands["bundles list"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
-{{ end }}{{ end }}{{ end }}
+### Releases, tags, yank, notices
 
-`bundles get` shows a single bundle's latest entry (or a specific `@tag` / `@sha256:…`) and its tags.
 ```
-beam_exec("bundles get checkout-stack -q")
+beam_exec("bundles releases scores -q")                 # versions, tags, notices
+beam_exec("bundles releases scores --version 4 -q")     # plus v4's components, groups, dependencies
+beam_exec("bundles tag scores stable 4 -q")
+beam_exec("bundles yank scores 3 -q")
+beam_exec("bundles notice create scores --min-version 1 --max-version 3 --end-of-support 2027-01-15 --end-of-life 2027-03-01 --message \"Move to v4\" --replacement-version 4 -q")
 ```
-{{ if commands["bundles get"] }}{{ if (array.size commands["bundles get"].arguments) > 0 }}
-#### `beam bundles get` arguments
-| Argument | Type | Description |
-|---|---|---|
-{{ for arg in commands["bundles get"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles get"].options) > 0 }}
-#### `beam bundles get` options
-| Option | Type | Description |
-|---|---|---|
-{{ for opt in commands["bundles get"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
-{{ end }}{{ end }}{{ end }}
 
-`bundles releases` lists a bundle's release log, newest first. A release records a change of the
-name's current content, so an idle republish adds nothing while a revert to earlier content does add
-a release. That means one checksum can hold several versions, and the version identifies a release.
-The log is paged; the command walks it to the end unless you pass `--limit`.
-```
-beam_exec("bundles releases checkout-stack -q")
-```
-{{ if commands["bundles releases"] }}{{ if (array.size commands["bundles releases"].arguments) > 0 }}
-#### `beam bundles releases` arguments
-| Argument | Type | Description |
-|---|---|---|
-{{ for arg in commands["bundles releases"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles releases"].options) > 0 }}
-#### `beam bundles releases` options
-| Option | Type | Description |
-|---|---|---|
-{{ for opt in commands["bundles releases"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
-{{ end }}{{ end }}{{ end }}
+- Yank blocks new installs of a version (`BundleVersionYanked`); installations running it keep it.
+- A notice's status per version: `supported` → `deprecated` (notice published) → `unsupported` (after end of support: no new installs) → `endoflife` (installations are updated off it). End of support at least 30 days out and end of life at least 30 days after it; `notice update` only moves dates later.
+{{ command_tables "bundles releases" }}
+{{ command_tables "bundles tag" }}
+{{ command_tables "bundles yank" }}
+{{ command_tables "bundles notice create" }}
+{{ command_tables "bundles notice update" }}
+{{ command_tables "bundles notice withdraw" }}
 
-`bundles tags` shows the tag → checksum map for a bundle.
+### Catalog and marketplace
+
+`bundles list` shows the workspace's bundles and your org's catalog entries (private included). `search`, `info` and `placements` read public bundles; `placements` finds Beamable-listed bundles that mount into a portal page or extension.
+{{ command_tables "bundles list" }}
+{{ command_tables "bundles search" }}
+{{ command_tables "bundles info" }}
+{{ command_tables "bundles placements" }}
+
+### Library
+
+A zone can only install bundles the org owns or acquired. `acquire` checks first: hard dependencies must already be in the library (`missingHardDependencies`), soft ones are only suggested. `acquire` and `remove` need a customer admin (`CustomerAdminRequired`); `remove` is refused while the bundle is installed anywhere.
+{{ command_tables "bundles acquire" }}
+{{ command_tables "bundles remove" }}
+{{ command_tables "bundles library" }}
+
+### Install, change, uninstall
+
 ```
-beam_exec("bundles tags checkout-stack -q")
+beam_exec("bundles install @acme/scores --plan-only -q")                     # review
+beam_exec("bundles install @acme/scores --plan-hash <hash> -q")              # apply exactly that plan
+beam_exec("bundles install @acme/scores --tag stable --component-groups default,leaderboards --realms all --auto-update true -q")
+beam_exec("bundles uninstall @acme/scores -q")
 ```
-{{ if commands["bundles tags"] }}{{ if (array.size commands["bundles tags"].arguments) > 0 }}
-#### `beam bundles tags` arguments
-| Argument | Type | Description |
-|---|---|---|
-{{ for arg in commands["bundles tags"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles tags"].options) > 0 }}
-#### `beam bundles tags` options
-| Option | Type | Description |
-|---|---|---|
-{{ for opt in commands["bundles tags"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
-{{ end }}{{ end }}{{ end }}
 
-`get`, `releases`, and `tags` all accept the `@<namespace>/<name>` form to read another customer's bundle.
+- The same command installs and changes; omitted options keep the installed values (or defaults on a new install: latest, groups with `enabledByDefault`, all realms, the org's auto-update setting). `--component-groups=` with no value turns every group off.
+- The plan lists per manifest (zone, then each realm) `add`, `upgrade`, `archive`, `keep` (an override stays) or `detach`, plus `refusals` and dependency `blockers`; either stops the apply.
+- Apply sends the plan's `hash`. If anything moved since, the server answers 409 (`InstallationPlanChanged`, `ManifestChanged`): with `-q` or `--plan-hash` nothing is applied and the command fails; interactively it re-plans and asks again.
+- Each manifest reports `applied`, `pending` or `failed`; running the same command again retries the ones left.
+- Uninstall archives the components; storage data is kept. `--detach <component>` keeps an overridden component as the org's own instead of archiving it.
+- `--target-zone <zid>` acts on another zone of the org; the default is the workspace's zone.
+{{ command_tables "bundles install" }}
+{{ command_tables "bundles uninstall" }}
+{{ command_tables "bundles installations" }}
+{{ command_tables "bundles history" }}
+{{ command_tables "bundles dependencies" }}
+{{ command_tables "bundles notices" }}
 
-## Tags & Visibility
+### Source and overrides
 
-**Tags** are movable pointers. `bundles tag` advances a tag to an exact checksum — the reference **must** be the `@sha256:…` form (resolve a tag to its checksum first with `bundles get`/`tags`).
 ```
-beam_exec("bundles tag checkout-stack@sha256:abc123… stable -q")
+beam_exec("bundles source request @acme/scores Scores --repository <connection id> -q")
+beam_exec("bundles source list -q")      # state: requested, working, opened, pushed, failed
 ```
-{{ if commands["bundles tag"] }}{{ if (array.size commands["bundles tag"].arguments) > 0 }}
-#### `beam bundles tag` arguments
-| Argument | Type | Description |
-|---|---|---|
-{{ for arg in commands["bundles tag"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles tag"].options) > 0 }}
-#### `beam bundles tag` options
-| Option | Type | Description |
-|---|---|---|
-{{ for opt in commands["bundles tag"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
-{{ end }}{{ end }}{{ end }}
 
-**ACL scope** controls who may *reference* a checksum. The three tiers are **supersets**, not lists of realms, and you can only ever **widen**:
-- `private` — only the current scope: the realm (`<cid>.<pid>`) for a realm bundle, or the zone (`<cid>.<zid>`) for a zone bundle. This is the default at publish time. (This tier is scope-relative — it was previously named `realm`.)
-- `org` — every realm and zone in your customer (`<cid>`).
-- `public` — every realm in every customer (`*`).
+The delivery is a pull request (made with the requester's token) into a repository connected to the zone. Each delivered project gets a `beam.override.json` at its root:
 
-`bundles acl` takes a bundle **name** — no tag or checksum. Visibility belongs to the name, so widening
-exposes every version ever published under it, including content published while it was private.
-Widening is **admin-gated server-side** — a non-admin token is rejected even though the CLI accepts
-the argument.
+```json
+{ "bundle": "@acme/scores", "version": 4, "component": "Scores", "connectionId": "<guid>", "kind": "service" }
 ```
-beam_exec("bundles acl checkout-stack --scope org -q")
-```
-{{ if commands["bundles acl"] }}{{ if (array.size commands["bundles acl"].arguments) > 0 }}
-#### `beam bundles acl` arguments
-| Argument | Type | Description |
-|---|---|---|
-{{ for arg in commands["bundles acl"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles acl"].options) > 0 }}
-#### `beam bundles acl` options
-| Option | Type | Description |
-|---|---|---|
-{{ for opt in commands["bundles acl"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
-{{ end }}{{ end }}{{ end }}
 
-## Installing & Lifecycle
+`deploy plan` / `deploy release` from that checkout deploy the project as an override of the installed component. Before building anything the CLI checks, and lists every failure at once:
 
-A realm consumes a bundle by **installing** a checksum into its `bundles.manifest.beam.json`. Installs are grouped by deploy scope: the file has a `realm` section and a `zone` section, each a `@<alias>/<name>` → `sha256:…` map. `bundles install` resolves a checksum (from a tag by default, or an exact one), reads the bundle's scope from the catalog, and writes the reference into the **matching section** — there is no scope flag to pass. A `deploy release` consumes only the section for the scope it targets (a realm deploy uses `realm`, `deploy --scope zone` uses `zone`), so the other scope's references are ignored for that deploy.
-```
-beam_exec("bundles install checkout-stack -q")
-```
-{{ if commands["bundles install"] }}{{ if (array.size commands["bundles install"].arguments) > 0 }}
-#### `beam bundles install` arguments
-| Argument | Type | Description |
+| Check | Failure |
+|---|---|
+| The file parses and has `bundle`, `version`, `component`, `connectionId` | `needs bundle, version, component and connectionId` |
+| `component` equals the project's beamoId | the project was renamed |
+| `kind`, when given, matches the project (services and portal extensions only) | kind mismatch |
+| The project is in a Git checkout with a remote (`upstream`, else `origin`) | not in a Git checkout with a remote |
+| The connection is one of the zone's | isn't one of this zone's repository connections |
+| You have a token for the connection or its host | no token |
+| The checkout's remote is the connection's repository (host/path compared, any transport, without `.git`) | remote belongs to another repository |
+| The bundle is installed on the site with that component, and no other repository overrides it | nothing to override / already overridden |
+
+Server-side refusals: `OverrideRefused`, `OverriddenComponentLocked` (a bundle change can't touch an overridden component), `BundleComponentNameClash`. `bundles installations` shows each override with its `baseVersion` and `changedIn` (a newer release changed the component).
+
+Give a component back with `bundles end-override <bundle> <component>` (current realm, or `--zone`), or with `deploy … --end-override <component>`.
+{{ command_tables "bundles source request" }}
+{{ command_tables "bundles source list" }}
+{{ command_tables "bundles end-override" }}
+
+### Errors
+
+| Code | Status | Meaning |
 |---|---|---|
-{{ for arg in commands["bundles install"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles install"].options) > 0 }}
-#### `beam bundles install` options
-| Option | Type | Description |
-|---|---|---|
-{{ for opt in commands["bundles install"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
-{{ end }}{{ end }}{{ end }}
-
-**`bundles uninstall`** is the inverse: it removes a bundle's reference from `bundles.manifest.beam.json` (from whichever section — `realm` or `zone` — holds it).
-```
-beam_exec("bundles uninstall checkout-stack -q")
-```
-{{ if commands["bundles uninstall"] }}{{ if (array.size commands["bundles uninstall"].arguments) > 0 }}
-#### `beam bundles uninstall` arguments
-| Argument | Type | Description |
-|---|---|---|
-{{ for arg in commands["bundles uninstall"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles uninstall"].options) > 0 }}
-#### `beam bundles uninstall` options
-| Option | Type | Description |
-|---|---|---|
-{{ for opt in commands["bundles uninstall"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
-{{ end }}{{ end }}{{ end }}
-
-**Yank** retires a checksum so it can no longer be *newly* referenced. Crucially, yank **does not** break existing installs — an already-installed yanked checksum still redeploys. Yank requires the exact `@sha256:…` reference.
-```
-beam_exec("bundles yank checkout-stack@sha256:abc123… -q")
-```
-{{ if commands["bundles yank"] }}{{ if (array.size commands["bundles yank"].arguments) > 0 }}
-#### `beam bundles yank` arguments
-| Argument | Type | Description |
-|---|---|---|
-{{ for arg in commands["bundles yank"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles yank"].options) > 0 }}
-#### `beam bundles yank` options
-| Option | Type | Description |
-|---|---|---|
-{{ for opt in commands["bundles yank"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
-{{ end }}{{ end }}{{ end }}
-
-Because a yanked checksum can linger in a manifest, **`bundles prune-yanked`** scans this workspace's installed references — across both the `realm` and `zone` sections — and reports (or clears) any that point at a yanked checksum, so you can re-install a newer one before releasing.
-```
-beam_exec("bundles prune-yanked -q")
-```
-{{ if commands["bundles prune-yanked"] }}{{ if (array.size commands["bundles prune-yanked"].arguments) > 0 }}
-#### `beam bundles prune-yanked` arguments
-| Argument | Type | Description |
-|---|---|---|
-{{ for arg in commands["bundles prune-yanked"].arguments }}| `{{ arg.name }}` | {{ arg.type }} | {{ arg.description }} |
-{{ end }}{{ end }}{{ if (array.size commands["bundles prune-yanked"].options) > 0 }}
-#### `beam bundles prune-yanked` options
-| Option | Type | Description |
-|---|---|---|
-{{ for opt in commands["bundles prune-yanked"].options }}| `{{ opt.name }}` | {{ opt.type }} | {{ opt.description }} |
-{{ end }}{{ end }}{{ end }}
-
-## Common Pitfalls
-- **Namespace won't resolve.** Bundle names are `@<alias>/<name>`; the alias comes from your customer record. If you are offline or the customer has no alias, commands that must resolve it (`publish`, `plan`) fail — `list`/`new` degrade gracefully and show the short name only.
-- **One beamoId, one bundle.** A component may belong to at most one `*.beam.bundle.json` in the workspace, and each bundle file name must be unique. Both are validated before publish/plan.
-- **Malformed bundle file.** Any command that reads bundles validates each `*.beam.bundle.json` structurally and fails, naming the file, on invalid JSON, an empty file, an unexpected top-level property (e.g. `component` instead of `components`), a wrong-typed field, a duplicate component, or a bad dependency range. Fix the file it names.
-- **Mixed-scope bundle.** A bundle must be single-scope. Mixing realm-scoped and zone-scoped components — or a `scope` field that disagrees with the components' actual scope — is rejected at creation and before plan/publish/deploy. Split into separate bundles or make the components' scope consistent.
-- **Stale plan on publish.** A saved plan is only valid against the published `latest` it was diffed from. If `latest` moved, publishing from that plan is refused — re-run `bundles plan`.
-- **Yanked but still deployed.** Yank only blocks *new* references. A reference already in `bundles.manifest.beam.json` keeps redeploying until you prune it (or `bundles uninstall` it) and re-install.
-- **ACL only widens, and is admin-gated.** You cannot narrow a scope, and you cannot address specific realms — only the `private`/`org`/`public` tiers. Widening requires an admin token server-side.
-- **`tag` / `yank` need an exact checksum.** These reject a bare name or `@tag`; pass `@sha256:…`. Use `bundles get`/`tags` to resolve a tag to its checksum first.
-- **Always pass `-q`** when executing from MCP to avoid interactive prompts (publish confirms before mutating the catalog otherwise).
-
-## Out of Scope
-- **General (non-bundle) deploy** — pushing local services to one realm is `deploy plan`/`deploy release`.
-- **Authoring the components themselves** — creating services/storages/portal extensions and their Docker images is covered by the `project` commands; a bundle only *references* existing beamoIds.
-
-## Maintainer Notes
-The command surface lives in `cli/Commands/BundleCommands/` (one file per subcommand; `BundlesCommand.cs` also holds the `BundleAclScope` and `BundleRef` parsers). Shared logic is in `cli/Services/Bundles/`:
-- `BundleWorkspace` — discovery of `*.beam.bundle.json`, strict per-file structure validation (`ParseBundleFile`), the one-beamoId-per-bundle rule, and the single-scope guard (`ValidateComponentScope`, manifest-aware). The persisted `scope` field lives on `BundleConfigFile`.
-- `BundleNamespace` — alias → `@<alias>` resolution and `@ns/name` splitting.
-- `BundleBuild` / `BundleDiff` — component selection from the deploy plan and the publish diff.
-- `BundlePlanFiles` — saving/loading the temp plan files used by publish.
-The catalog API is the generated `IBeamBeamobundleApi` (`Beamable.Api.Autogenerated.Beamobundle`).
-
-## Wrap-Up
-After a bundle workflow, summarize for the user:
-1. **What was published** — the logical name `@<alias>/<name>`, the release version, the resulting checksum, and whether it was new (`bundles get` / `releases` to confirm).
-2. **Which tags moved** — `latest` always, plus any tag you advanced (`bundles tags`).
-3. **Who can see it** — the ACL scope (`private`/`org`/`public`).
-4. **What consumes it** — which realm(s) install the checksum in `bundles.manifest.beam.json`, and whether any references need pruning after a yank.
-
-## CLI Version Awareness
-If the CLI version has changed (check `.config/dotnet-tools.json`), re-run `beam_list_commands()` and `beam_get_help()` to get up-to-date command information. Command options and behavior may have changed between versions.
+| `BundleNameTaken` | 409 | `create` on an existing name |
+| `BundleNameNotFound` | 404 | No such bundle, or not visible to your org |
+| `BundleNamespaceViolation` | 403 | Publishing outside your org's namespace |
+| `BundleNotOwned` | 403 | Changing another org's bundle |
+| `BundleVersionNotFound` / `BundleVersionYanked` | 404 / 400 | Version doesn't exist / is yanked |
+| `BundleTagInvalid` | 400 | Tags: lowercase letters, digits, `-`, `_`, starting with a letter or digit |
+| `BundleDepRangeInvalid` / `BundleDepRangeUnresolvable` | 400 | Bad range / a bound the dependency never released |
+| `BundleDepNotPublic` / `BundleDepCycle` / `BundleDepSelfReference` | 400 | Dependency not public / cyclic / itself |
+| `BundleArtifactsInvalid` / `BundleContentInvalid` | 400 | Uploaded artifacts don't match the release / bad release content |
+| `BundleRepositoryTaken` | 409 | A component's marketplace repo belongs to another org |
+| `BundleNoticeInvalid` / `BundleNoticeChanged` | 400 / 409 | Notice dates or fields invalid / edited concurrently |
+| `AcquisitionRefused` / `BundleNotAcquired` | 400 / 404 | Can't acquire / install needs the bundle in the library |
+| `InstallationRefused` | 400 | The plan has refusals or blockers |
+| `InstallationPlanChanged` / `ManifestChanged` | 409 | Something moved since the plan or the manifest was read |
+| `ZoneScopeRequired` | 400 | The request needs a zone scope |
+| `CustomerAdminRequired` | 403 | Library changes need a customer admin |

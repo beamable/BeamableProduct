@@ -63,6 +63,7 @@ Load a skill before attempting complex tasks:
 - `beam-campaign-api` — use the Campaign HTTP API: author and publish a campaign graph, drive its lifecycle, read the send funnel
 - `beam-diagnose-project` — troubleshoot common local dev issues
 - `beam-build-and-deploy` — Docker build and cloud deployment
+- `beam-bundles` — publish marketplace bundles, and acquire, install, override and update them on zones
 - `beam-create-portal-extension` — portal UI extensions
 - `beam-login-auth` — authentication flows
 - `beam-content-types` — create and manage content types

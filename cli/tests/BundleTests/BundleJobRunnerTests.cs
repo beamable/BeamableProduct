@@ -20,9 +20,59 @@ namespace tests.BundleTests;
 /// </summary>
 public class BundleJobRunnerTests
 {
-	static string[] Build(string op, string bundle = "", string tag = "", string version = "", string comment = "",
-		string scope = "", bool flag = false) =>
-		BundlesApi.BuildArgs(op, bundle, tag, version, comment, scope, flag);
+	static string[] Build(string op, string bundle = "", string tag = "", string version = "", string scope = "",
+		bool flag = false) =>
+		BundlesApi.BuildArgs(new JObject
+		{
+			["op"] = op, ["bundle"] = bundle, ["tag"] = tag, ["version"] = version, ["scope"] = scope, ["flag"] = flag,
+		}).args;
+
+	static string[] Build(string json) => BundlesApi.BuildArgs(JObject.Parse(json)).args;
+
+	[Test]
+	public void InstallPlan_StopsAtThePlan()
+	{
+		var args = Build(@"{""op"":""install"",""bundle"":""@acme/vip"",""tag"":""stable"",""componentGroups"":[""default"",""leaderboards""],
+			""realms"":""none"",""autoUpdate"":false,""planOnly"":true}");
+
+		Assert.That(args, Is.EqualTo(new[]
+		{
+			"bundles", "install", "@acme/vip", "--tag", "stable", "--component-groups=default,leaderboards", "--realms", "none",
+			"--auto-update=false", "--plan-only",
+		}));
+	}
+
+	[Test]
+	public void InstallApply_NeedsThePlanHash()
+	{
+		Assert.That(Build(@"{""op"":""install"",""bundle"":""@acme/vip"",""version"":""3"",""planHash"":""abc123""}"),
+			Is.EqualTo(new[] { "bundles", "install", "@acme/vip", "--version", "3", "--plan-hash", "abc123" }));
+		Assert.That(() => Build(@"{""op"":""install"",""bundle"":""@acme/vip""}"), Throws.TypeOf<LocalWebRequestException>());
+		Assert.That(() => Build(@"{""op"":""uninstall"",""bundle"":""@acme/vip"",""planHash"":""--quiet""}"), Throws.TypeOf<LocalWebRequestException>());
+	}
+
+	[Test]
+	public void InstallWithNoComponentGroups_TurnsThemAllOff()
+	{
+		var args = Build(@"{""op"":""install"",""bundle"":""@acme/vip"",""componentGroups"":[],""planOnly"":true}");
+
+		Assert.That(args, Does.Contain("--component-groups="));
+	}
+
+	[TestCase(@"{""op"":""install"",""bundle"":""vip"",""componentGroups"":[""--quiet""],""planOnly"":true}")]
+	[TestCase(@"{""op"":""install"",""bundle"":""vip"",""realms"":""some"",""planOnly"":true}")]
+	[TestCase(@"{""op"":""visibility"",""bundle"":""vip"",""visibility"":""secret""}")]
+	public void InvalidInstallValues_AreRejected(string json)
+	{
+		Assert.That(() => Build(json), Throws.TypeOf<LocalWebRequestException>());
+	}
+
+	[Test]
+	public void Visibility_UpdatesTheListing()
+	{
+		Assert.That(Build(@"{""op"":""visibility"",""bundle"":""vip"",""visibility"":""public""}"),
+			Is.EqualTo(new[] { "bundles", "update", "vip", "--visibility", "public" }));
+	}
 
 	[Test]
 	public void Publish_UsesTheLatestPlanAndTag()
@@ -33,21 +83,6 @@ public class BundleJobRunnerTests
 		{
 			"bundles", "publish", "@beam-project/zone-core", "--from-latest-plan", "--tag", "stable",
 		}));
-	}
-
-	[Test]
-	public void CommentOption_KeepsALeadingDashAsText()
-	{
-		var commentOption = new Option<string>(new[] { "--comment", "-c" });
-		var quietOption = new Option<bool>("--quiet");
-		var root = new RootCommand { commentOption, quietOption };
-		var comment = Build("deploy-plan", scope: "realm", comment: "--quiet please").Last();
-
-		var result = root.Parse(new[] { comment });
-
-		Assert.That(result.Errors, Is.Empty);
-		Assert.That(result.GetValueForOption(commentOption), Is.EqualTo("--quiet please"));
-		Assert.That(result.GetValueForOption(quietOption), Is.False);
 	}
 
 	[Test]
@@ -67,13 +102,6 @@ public class BundleJobRunnerTests
 		Assert.That(() => Build("yank", "vip", version: version), Throws.TypeOf<LocalWebRequestException>());
 	}
 
-	[Test]
-	public void DeployRelease_UsesTheLatestPlan()
-	{
-		Assert.That(Build("deploy-release", scope: "zone", comment: "ship it"),
-			Is.EqualTo(new[] { "deploy", "release", "--from-latest-plan", "--scope", "zone", "--comment=ship it" }));
-	}
-
 	[TestCase("plan", "--help")]
 	[TestCase("plan", "vip; rm -rf /")]
 	[TestCase("plan", "")]
@@ -86,7 +114,7 @@ public class BundleJobRunnerTests
 	[TestCase("acl", "vip", "")]
 	[TestCase("get", "vip", "")]
 	[TestCase("prune-yanked", "", "")]
-	[TestCase("deploy-plan", "", "galaxy")]
+	[TestCase("deploy-plan", "", "realm")]
 	[TestCase("unknown", "vip", "")]
 	public void UnknownValues_AreRejected(string op, string bundle, string scope)
 	{

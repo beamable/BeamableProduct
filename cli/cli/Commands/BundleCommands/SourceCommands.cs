@@ -89,7 +89,7 @@ public class RequestSourceCommand : AtomicCommand<RequestSourceCommandArgs, Requ
 			(args, i) => args.bundleName = i);
 		AddArgument(new Argument<List<string>>("components", "The services and portal extensions whose source you want") { Arity = ArgumentArity.OneOrMore },
 			(args, i) => args.components = i);
-		AddOption(new Option<string>("--repository", "The repository connection (its id) the pull request goes to") { IsRequired = true },
+		AddOption(new Option<string>("--repository", "The repository connection (its id) the pull request goes to"),
 			(args, i) => args.repository = i);
 		AddOption(new Option<long>("--version", "The release to take the source from. Defaults to the one installed on the zone, else latest"),
 			(args, i) => args.version = i);
@@ -99,6 +99,8 @@ public class RequestSourceCommand : AtomicCommand<RequestSourceCommandArgs, Requ
 
 	public override async Task<RequestSourceCommandOutput> GetResult(RequestSourceCommandArgs args)
 	{
+		if (string.IsNullOrWhiteSpace(args.repository))
+			throw new CliException("Give --repository, the id of the repository connection the pull request goes to.");
 		if (!Guid.TryParse(args.repository, out var connectionId))
 			throw new CliException($"--repository=[{args.repository}] must be a repository connection id.");
 		var api = args.Provider.GetService<IBeamBeamoinstallationApi>();
