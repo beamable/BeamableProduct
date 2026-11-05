@@ -4,10 +4,12 @@
  */
 
 import type { Operator } from './enums/Operator';
+import type { TimeUnit } from './enums/TimeUnit';
 
 export type RuleLeaf = { 
   key?: string | null; 
   ns?: string | null; 
   op?: Operator; 
+  since?: TimeUnit; 
   values?: (string | number | number | boolean | (string | number | number | boolean)[])[] | null; 
 };

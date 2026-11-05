@@ -14,6 +14,8 @@ import type { AuthV2AuthCode } from '@/__generated__/schemas/AuthV2AuthCode';
 import type { AuthV2AuthCodeRequest } from '@/__generated__/schemas/AuthV2AuthCodeRequest';
 import type { AuthV2AuthorizationCodeAuthRequest } from '@/__generated__/schemas/AuthV2AuthorizationCodeAuthRequest';
 import type { AuthV2AuthResponse } from '@/__generated__/schemas/AuthV2AuthResponse';
+import type { AuthV2BatchAccountsRequest } from '@/__generated__/schemas/AuthV2BatchAccountsRequest';
+import type { AuthV2BatchAccountsResponse } from '@/__generated__/schemas/AuthV2BatchAccountsResponse';
 import type { AuthV2DeviceIdAuthRequest } from '@/__generated__/schemas/AuthV2DeviceIdAuthRequest';
 import type { AuthV2EmptyMessage } from '@/__generated__/schemas/AuthV2EmptyMessage';
 import type { AuthV2ExternalAuthRequest } from '@/__generated__/schemas/AuthV2ExternalAuthRequest';
@@ -398,6 +400,30 @@ export async function authPostServer(requester: HttpRequester, payload: AuthV2Se
   
   // Make the API request
   return makeApiRequest<AuthV2ServerTokenResponse, AuthV2ServerTokenAuthRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `AuthV2BatchAccountsRequest` instance to use for the API request
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function accountsPostBatch(requester: HttpRequester, payload: AuthV2BatchAccountsRequest, gamertag?: string): Promise<HttpResponse<AuthV2BatchAccountsResponse>> {
+  let endpoint = "/api/accounts/batch";
+  
+  // Make the API request
+  return makeApiRequest<AuthV2BatchAccountsResponse, AuthV2BatchAccountsRequest>({
     r: requester,
     e: endpoint,
     m: POST,

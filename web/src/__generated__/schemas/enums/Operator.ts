@@ -4,17 +4,17 @@
  */
 
 export enum Operator {
-  Unspecified = "Unspecified",
-  Eq = "Eq",
-  Neq = "Neq",
-  Gt = "Gt",
-  Gte = "Gte",
-  Lt = "Lt",
-  Lte = "Lte",
-  In = "In",
-  NotIn = "NotIn",
-  Between = "Between",
-  Contains = "Contains",
-  Exists = "Exists",
-  NotExists = "NotExists"
+  OPERATOR_UNSPECIFIED = "OPERATOR_UNSPECIFIED",
+  EQ = "EQ",
+  NEQ = "NEQ",
+  GT = "GT",
+  GTE = "GTE",
+  LT = "LT",
+  LTE = "LTE",
+  IN = "IN",
+  NOT_IN = "NOT_IN",
+  BETWEEN = "BETWEEN",
+  CONTAINS = "CONTAINS",
+  EXISTS = "EXISTS",
+  NOT_EXISTS = "NOT_EXISTS"
 }

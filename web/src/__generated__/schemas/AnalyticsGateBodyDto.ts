@@ -5,8 +5,8 @@
 
 import type { GoalPredicateDto } from './GoalPredicateDto';
 
-export type AnalyticsGateBodyDto = {
-  filter?: GoalPredicateDto;
-  maxWaitMs?: bigint | string | null;
-  observePid?: string;
+export type AnalyticsGateBodyDto = { 
+  filter?: GoalPredicateDto; 
+  maxWaitMs?: bigint | string | null; 
+  observePid?: string; 
 };

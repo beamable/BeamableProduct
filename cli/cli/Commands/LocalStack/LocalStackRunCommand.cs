@@ -2733,6 +2733,8 @@ public class LocalStackRunCommand
 		foreach (var redirect in new[]
 		{
 			"MSBuildSDKsPath",
+			// Set by the CLI's own MSBuildLocator registration, so every step it launches inherits it.
+			"MSBuildExtensionsPath",
 			"MSBuildToolsPath",
 			"MSBUILD_EXE_PATH",
 			"NuGetRestoreTargets",

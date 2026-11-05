@@ -640,7 +640,7 @@ namespace Beamable.SourceGenTest
 			throw new NotImplementedException();
 		}
 
-		public async Promise<PlayerInitResult> CreatePlayer(Account account, Dictionary<string, string> properties)
+		public async Promise<PlayerInitResult> CreatePlayer(FederatedPlayerAccount account, Dictionary<string, string> properties)
 		{
 			return new PlayerInitResult();
 		}

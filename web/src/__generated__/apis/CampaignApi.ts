@@ -208,10 +208,11 @@ export async function campaignsGetStatus(requester: HttpRequester, campaignId: s
  * @param requester - The `HttpRequester` type to use for the API request.
  * @param campaignId - The `campaignId` parameter to include in the API request.
  * @param version - The `version` parameter to include in the API request.
+ * @param live - The `live` parameter to include in the API request.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
-export async function campaignsGetFunnel(requester: HttpRequester, campaignId: string, version: number, gamertag?: string): Promise<HttpResponse<CampaignFunnelDto>> {
+export async function campaignsGetFunnel(requester: HttpRequester, campaignId: string, version: number, live?: boolean, gamertag?: string): Promise<HttpResponse<CampaignFunnelDto>> {
   let endpoint = "/api/campaigns/{campaignId}/{version}/funnel".replace(campaignIdPlaceholder, endpointEncoder(campaignId)).replace(versionPlaceholder, endpointEncoder(version));
   
   // Make the API request
@@ -219,6 +220,9 @@ export async function campaignsGetFunnel(requester: HttpRequester, campaignId: s
     r: requester,
     e: endpoint,
     m: GET,
+    q: {
+      live
+    },
     g: gamertag,
     w: true
   });

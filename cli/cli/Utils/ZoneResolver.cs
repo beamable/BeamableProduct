@@ -28,7 +28,7 @@ public static class ZoneResolver
 		{
 			var customerApi = provider.GetService<IBeamCustomerApi>();
 			var realmView = await customerApi.GetRealms(cid, pid);
-			return (realmView.zoneId != null && realmView.zoneId.HasValue) ? realmView.zoneId.Value : null;
+			return realmView.zoneId;
 		}
 
 		return string.IsNullOrEmpty(localZid) ? null : localZid;
