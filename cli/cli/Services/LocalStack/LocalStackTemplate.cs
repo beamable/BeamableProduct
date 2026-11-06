@@ -62,7 +62,12 @@ public static class LocalStackTemplate
 		// client SDK (Unity, web, and the native iOS/Android push funnels) posts core events to. It
 		// binds :9003 — a DIFFERENT listener from the gateway's :9002 — so Caddy needs a matching
 		// `handle /report/*` block or the requests fall through to the C# gateway and 404.
-		"analytics-gateway"
+		"analytics-gateway",
+		// The rest of the services the SDKs are generated from (SwaggerService.APIS): without them their
+		// `platform/docs` answer 504, so `oapi generate --host <local>` fails and those APIs can't be called
+		// locally. Only stacks that run every Scala service (`full`, `backend` and what extends them) start them.
+		// "chat" serves object/chatV2.
+		"inventory", "commerce", "payments", "push", "social", "tournaments", "calendars", "trials", "chat"
 	};
 
 	public class Options

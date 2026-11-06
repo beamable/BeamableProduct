@@ -3,8 +3,6 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { DeactivateMode } from './enums/DeactivateMode';
-
-export type DeactivateRequestDto = { 
-  mode?: DeactivateMode; 
+export type RejectRequestDto = { 
+  reason?: string | null; 
 };

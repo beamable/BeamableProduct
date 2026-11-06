@@ -3,5 +3,6 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type ApiCampaignsDeactivatePostCampaignResponse = { 
+export type NewVersionResponseDto = { 
+  version?: number; 
 };

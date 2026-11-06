@@ -220,6 +220,22 @@ public class Tests : CLITest
 	}
 	
 	[Test]
+	public void Generate_RetriesASpecTheBackendAnswered5xx()
+	{
+		// A backend answers the burst of parallel spec requests with the odd 504; that used to fail the whole run.
+		SwaggerService.OapiRetryDelay = TimeSpan.Zero;
+		Mock<ISwaggerStreamDownloader>(mock =>
+		{
+			mock.SetupSequence(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("social"))))
+				.ThrowsAsync(new System.Net.Http.HttpRequestException("timeout", null, System.Net.HttpStatusCode.GatewayTimeout))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.SocialBasicOpenApi));
+		});
+
+		var status = Run("oapi", "generate", "--filter", "social,t:basic", "--engine", "unity");
+		Assert.AreEqual(0, status);
+	}
+
+	[Test]
 	public void GenerateInventoryBasic() // TODO: better name please
 	{
 		Mock<ISwaggerStreamDownloader>(mock =>

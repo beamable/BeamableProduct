@@ -3,13 +3,14 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { CampaignChangeDto } from './CampaignChangeDto';
 import type { CampaignChangeErrorDto } from './CampaignChangeErrorDto';
+import type { QueueConflictDto } from './QueueConflictDto';
+import type { UnboundedParamDto } from './UnboundedParamDto';
 
-export type PublishResponseDto = { 
-  changes?: CampaignChangeDto[]; 
+export type ReviewResponseDto = { 
+  conflicts?: QueueConflictDto[]; 
   errors?: CampaignChangeErrorDto[]; 
-  isNewVersion?: boolean; 
   ok?: boolean; 
+  unboundedParams?: UnboundedParamDto[]; 
   version?: number | null; 
 };
