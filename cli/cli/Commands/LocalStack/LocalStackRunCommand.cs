@@ -942,6 +942,7 @@ public class LocalStackRunCommand
 		// always fresh and torn down on exit, so they carry nothing over and write no run-state.
 		var aliveByName = new Dictionary<string, LocalStackRunEntry>(StringComparer.OrdinalIgnoreCase);
 		LocalStackRunState runState = null;
+		Dictionary<string, int> carriedPorts = null;
 		if (args.runDetached)
 		{
 			// Carry over any steps from a previous detached `up` that are still running (alive pid), and skip
@@ -967,6 +968,9 @@ public class LocalStackRunCommand
 					aliveByName[e.name] = e;
 				}
 			}
+
+			carriedPorts = existing?.ports?.Where(p => aliveByName.ContainsKey(p.Key))
+				.ToDictionary(p => p.Key, p => p.Value, StringComparer.OrdinalIgnoreCase);
 			runState = new LocalStackRunState
 			{
 				host = config.host, portalUrl = config.portalUrl,
@@ -993,6 +997,14 @@ public class LocalStackRunCommand
 		// loop, for two reasons: nothing has started yet (so aborting cannot orphan half a stack, nor clear the
 		// run-state that is the only record of carried-over services still running from a previous `up`), and
 		// every conflict is reported at once instead of one per run.
+		var movedPorts = await MoveTakenPorts(steps, config, aliveByName, carriedPorts, token);
+		if (runState != null)
+		{
+			runState.ports = movedPorts.Count > 0 ? movedPorts : null;
+			runState.portalUrl = config.portalUrl;
+			LocalStackRunStateIO.Save(runStatePath, runState);
+		}
+
 		await EnsurePortsFree(steps, config, aliveByName, token);
 
 		// Attached: put every launched process in a kill-on-close job so the whole stack dies with the CLI —
@@ -1970,6 +1982,45 @@ public class LocalStackRunCommand
 		Log.Warning($"[{step}] containers restarted, but the services that were already connected to them still " +
 		            "hold dead connections and will not recover on their own — stop this run (Ctrl+C) and " +
 		            "run the stack again.");
+	}
+
+	/// <summary>
+	/// Moves each step whose declared port something else holds to a free one (see <see cref="LocalStackPorts"/>),
+	/// after re-applying the moves of steps carried over from a previous detached `up`, so what launches now still
+	/// reaches them. Skips the same steps <see cref="EnsurePortsFree"/> does, and a holder that is a leftover of a
+	/// stack: moving past that would run a second gateway beside it, so it stays a conflict to clear.
+	/// </summary>
+	private async Task<Dictionary<string, int>> MoveTakenPorts(List<LocalStackStep> steps, LocalStackConfig config,
+		Dictionary<string, LocalStackRunEntry> aliveByName, Dictionary<string, int> carried, CancellationToken token)
+	{
+		var moves = new Dictionary<string, int>(carried ?? new Dictionary<string, int>(), StringComparer.OrdinalIgnoreCase);
+		LocalStackPorts.Apply(steps, config, moves);
+
+		var taken = new List<(LocalStackStep step, string owner)>();
+		foreach (var step in steps.Where(s => s.port > 0 && !aliveByName.ContainsKey(s.name) && !moves.ContainsKey(s.name)))
+		{
+			token.ThrowIfCancellationRequested();
+			if (!LocalStackPortGuard.IsPortTaken(step.port) || await AlreadyServing(step, config, token))
+			{
+				continue;
+			}
+
+			var owner = LocalStackPortGuard.DescribeOwner(step.port);
+			if (!LocalStackPortGuard.LooksLikeStackLeftover(owner))
+			{
+				taken.Add((step, owner));
+			}
+		}
+
+		var chosen = LocalStackPorts.Choose(steps, taken.Select(t => t.step), LocalStackPortGuard.IsPortTaken);
+		foreach (var (step, owner) in taken.Where(t => chosen.ContainsKey(t.step.name)))
+		{
+			Log.Warning($"[{step.name}] port {step.port} is held by {owner ?? "another process"}; running on {chosen[step.name]} instead.");
+			moves[step.name] = chosen[step.name];
+		}
+
+		LocalStackPorts.Apply(steps, config, chosen);
+		return moves;
 	}
 
 	/// <summary>
