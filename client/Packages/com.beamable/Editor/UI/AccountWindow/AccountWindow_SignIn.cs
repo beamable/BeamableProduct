@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Beamable.Common;
+using RuntimeConfigData = Beamable.Config.ConfigData;
+using ConfigDatabaseProvider = Beamable.Config.ConfigDatabaseProvider;
 using Beamable.Editor.Util;
 using UnityEditor;
 using UnityEngine;
@@ -75,6 +77,25 @@ namespace Beamable.Editor.Accounts
 		public string host = "https://api.beamable.com";
 		
 		private Promise _loginPromise;
+
+		// the project's previous realm context, captured before logging in so it can be restored afterwards
+		private string _previousCid;
+		private string _previousPid;
+		private string _previousBuildPid;
+
+		[NonSerialized]
+		private RuntimeConfigData _configDefaults;
+		private RuntimeConfigData ConfigDefaults
+		{
+			get
+			{
+				if (_configDefaults == null)
+				{
+					_configDefaults = ConfigDatabaseProvider.GetConfigData() ?? new RuntimeConfigData();
+				}
+				return _configDefaults;
+			}
+		}
 		private GUIStyle _headerStyle;
 		private GUIStyle _titleStyle;
 		private GUIStyle _textboxStyle;
@@ -120,9 +141,10 @@ namespace Beamable.Editor.Accounts
 					{
 						env = Env.Beamable;
 						
-						if (cli.latestConfig?.host?.Length > 0)
+						var previousHost = FirstNonEmpty(cli.latestConfig?.host, ConfigDefaults.host);
+						if (previousHost != null)
 						{
-							host = cli.latestConfig.host;
+							host = previousHost;
 							switch (host)
 							{
 								case BEAM_PROD_ENDPOINT:
@@ -177,7 +199,7 @@ namespace Beamable.Editor.Accounts
 
 					if (cidOrAlias == null)
 					{
-						cidOrAlias = cli.latestAlias;
+						cidOrAlias = FirstNonEmpty(cli.latestAlias, ConfigDefaults.alias, ConfigDefaults.cid, cli.latestConfig?.cid);
 					}
 					
 					rect = GUILayoutUtility.GetRect(GUIContent.none, _textboxStyle);
@@ -264,12 +286,22 @@ namespace Beamable.Editor.Accounts
 					{
 						EditorApplication.delayCall += () =>
 						{
+							_previousCid = FirstNonEmpty(cli.Cid, ConfigDefaults.cid);
+							_previousPid = cli.Pid;
+							_previousBuildPid = ConfigDefaults.pid;
+							_didApplyPreviousSelection = false;
+
 							_loginPromise = context.Login(GetHostString(), cidOrAlias, email, password);
 							_loginPromise.Then(_ =>
 							{
 								if (cli.latestGames?.VisibleGames.Length > 1) // if there is only one game, there is no reason to make a selection
 								{
 									needsGameSelection = true;
+								}
+								else if (TryResolvePreviousRealm(out string _, out var previousRealmPid) && previousRealmPid != cli.Pid)
+								{
+									// restore the realm the project was using before the login
+									var __ = context.SwitchRealm(previousRealmPid);
 								}
 								_loginPromise = null;
 							});
@@ -292,6 +324,19 @@ namespace Beamable.Editor.Accounts
 
 			EditorGUILayout.EndVertical();
 
+		}
+
+		static string FirstNonEmpty(params string[] values)
+		{
+			foreach (var value in values)
+			{
+				if (!string.IsNullOrEmpty(value))
+				{
+					return value;
+				}
+			}
+
+			return null;
 		}
 	}
 }

@@ -1021,7 +1021,7 @@ public class SwaggerService
 
 	private static List<OpenApiDocumentResult> SplitTagsIntoSeparateDocuments(OpenApiDocumentResult swagger)
 	{
-		var tagsToSkip = Array.Empty<string>();
+		var tagsToSkip = new[] { "Account" };
 		var output = new List<OpenApiDocumentResult>();
 
 		var opCount = 0;
@@ -1378,7 +1378,7 @@ public class SwaggerService
 
 			if (isSelfReferential)
 			{
-				value.Extensions.Add(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE, new OpenApiString(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE));
+				value.Extensions[Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE] = new OpenApiString(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE);
 			}
 		}
 

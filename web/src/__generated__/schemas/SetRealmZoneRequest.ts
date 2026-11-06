@@ -4,5 +4,5 @@
  */
 
 export type SetRealmZoneRequest = { 
-  zoneId?: string | null; 
+  zoneId: string; 
 };

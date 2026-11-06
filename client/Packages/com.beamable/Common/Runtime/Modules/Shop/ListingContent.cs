@@ -282,7 +282,7 @@ namespace Beamable.Common.Shop
 		public string cohort;
 
 		[Tooltip(ContentObject.TooltipConstraint1)]
-		[MustBeComparatorString]
+		[MustBeComparatorString(ComparatorStringKind.COHORT_MEMBERSHIP)]
 		public string constraint;
 	}
 
@@ -296,7 +296,7 @@ namespace Beamable.Common.Shop
 	public class OfferConstraint
 	{
 		[Tooltip(ContentObject.TooltipConstraint1)]
-		[MustBeComparatorString]
+		[MustBeComparatorString(ComparatorStringKind.OFFER_PURCHASES)]
 		public string constraint;
 
 		[Tooltip(ContentObject.TooltipValue1)]

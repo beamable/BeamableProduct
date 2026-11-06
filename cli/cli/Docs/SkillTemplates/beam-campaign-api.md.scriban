@@ -169,17 +169,17 @@ CampaignGraphDto { campaignId, version, config, nodes[], edges[], audit? }
 config: { name, options[], acceptedRealms[], tags[], maxDrainDurationMs? }
         options ∈ "AllowSimultaneousLanes" | "AllowCidLevelSegments"
 node:   { id, lane?, body, outcomes[{ key, timing: "Immediate"|"Delayed" }], incomingDecorators[], outgoingDecorators[] }
-body:   { kind: "Entry"|"Segment"|"Conditional"|"Schedule"|"Send", entry?|segment?|conditional?|schedule?|send?, customProperties? }
+body:   { kind: "Entry"|"Segment"|"Schedule"|"Send"|"AnalyticsGate", entry?|segment?|schedule?|send?|analyticsGate?, customProperties? }
   entry       { trigger: { kind: "AutoSegment"|"Event"|"Inaction", segment?, event?, windowMs? },
                 requalify: { kind: "Never"|"Immediately"|"After", cooldownMs? } }
   segment     { segment, evaluationWindowMs? }
-  conditional { expression: Condition, maxWaitMs? }
   schedule    { kind: "DelayFor"|"SendNow"|"AtDateTime", delayMs?, when? }
   send        { railFederationId, targetPid, message, goals[], maxWaitMs, deliveryMaxWaitMs?,
                 campaignOffers?[], campaignOfferGroups?[] }
     offer     { entryId, offerId, federationId, label?, invalidatesEntryIds?[], condition?, extraData? }
       condition { payload (segmentation rule, flat REST encoding), lockedMessage? }
     group     { id, memberEntryIds[], mode: "All"|"Exclusive", invalidation: "None"|"Single"|"Group", label? }
+  analyticsGate { filter: GoalPredicate, observePid, maxWaitMs? }
 edge:   { id, from, outcome, to, decorators[] }
 ```
 
@@ -189,6 +189,7 @@ edge:   { id, from, outcome, to, decorators[] }
 
 - `kind` must match the populated branch, else `400 InvalidCampaignGraph`.
 - `maxWaitMs` = conversion window from the rail's Sent ack; `deliveryMaxWaitMs` = delivery ceiling (default 15 min). Both > 0. Goal `timerMs` ≤ `maxWaitMs` (null inherits).
+- An `analyticsGate` parks the player until a live event passes `filter` (goal leaves `EventOccurred` under `AllOf`/`AnyOf`, no `EventAbsent`, no leaf `withinMs`). Outcomes: `Met`, plus `NotMet` only when `maxWaitMs` is set; without one the player waits indefinitely. Events emitted before the player arrives do not count.
 - Every PID referenced (incl. per-leaf `observePid`) must be in `config.acceptedRealms`.
 - Goal labels become Mongo field names: no `.`, no leading `$`, unique per node. Derive from a stable id (labels key `beam_met_{label}`; renaming orphans history). Convention: `{goalId}@{pid}`, bare `{goalId}` for cross-scope `AllOf`.
 
@@ -200,6 +201,7 @@ edge:   { id, from, outcome, to, decorators[] }
 - Targeting: `SendTargetPidRequired`, `GoalObservePidRequired`, `PidNotInAcceptedRealms`, `CidLevelSegmentNotAllowed`
 - Goals: `GoalPredicateEmpty`, `GoalAbsenceWindowInvalid`, `GoalTimerExceedsMaxWait`, `GoalPropertyBoundInvalid`, `DuplicateGoalLabel`, `InvalidGoalLabel`, `ReservedEventName`
 - Windows: `SendDeliveryWindowInvalid`, `SendConversionWindowInvalid`
+- Analytics gate: `AnalyticsGateInvalid` (an absence leaf, a leaf window, or a non-positive `maxWaitMs`)
 - Offers: `OfferEntryIdDuplicate`, `OfferReferenceIncomplete`, `OfferGroupMemberUnknown`, `OfferGroupTooSmall`, `OfferGroupModeConflictsWithInvalidation`, `OfferGroupInvalidationUnconfigured`, `OfferInMultipleGroups`, `OfferSelfInvalidation`, `OfferForfeitsAcrossFederations`, `OfferConditionRuleInvalid`
 - Size: `GraphTooLarge`, `SendNodeTooLarge`, `PropertyTooLarge`
 - Publish only: `RailNotConfigured` (names every missing key), `OfferFederationNotRegistered`

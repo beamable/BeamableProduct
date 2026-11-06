@@ -6,11 +6,6 @@
 export type MessageRequest = { 
   body?: string | null; 
   channel?: string | null; 
-  hasChannel?: boolean; 
-  hasPid?: boolean; 
-  hasPlayerId?: boolean; 
-  hasRealmId?: boolean; 
-  hasSingleDelivery?: boolean; 
   pid?: string | null; 
   playerId?: string | null; 
   realmId?: string | null; 

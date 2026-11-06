@@ -3,9 +3,9 @@ using Beamable.Common.Content;
 
 namespace cli.OtelCommands;
 
-public class GetClickhouseCredentialsArgs: CommandArgs
+public class GetClickhouseCredentialsArgs: CommandArgs, IHasZoneScopeArgs
 {
-    
+    public bool IsZoneScope { get; set; }
 }
 public class GetClickhouseCredentialsResult
 {
@@ -28,9 +28,11 @@ public class GetClickhouseCredentials
 
     public override void Configure()
     {
+        ZoneScope.AddScopeOption(this);
     }
     public override async Task<GetClickhouseCredentialsResult> GetResult(GetClickhouseCredentialsArgs args)
     {
+        using var scopeHandle = await ZoneScope.ApplyAsync(args);
         OtelAuthConfig res = await args.OtelApi.GetOtelAuthReaderConfig();
 
         return new GetClickhouseCredentialsResult

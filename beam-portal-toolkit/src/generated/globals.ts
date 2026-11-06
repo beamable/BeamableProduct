@@ -79,6 +79,8 @@ declare global {
     'beam-status-pill': BeamStatusPillElement;
     'beam-icon-tile': BeamIconTileElement;
     'beam-kpi-row': BeamKpiRowElement;
+    'beam-card-tree': BeamCardTreeElement;
+    'beam-card-tree-item': BeamCardTreeItemElement;
     'beam-tag-input': BeamTagInputElement;
     'beam-date-picker': BeamDatePickerElement;
     'beam-line-chart': BeamLineChartElement;
@@ -2471,7 +2473,7 @@ declare global {
     data?: any[];
     groupBy?: string | undefined;
     /**
-     * Group keys to pin to the top of the table, in the given order. Any group not listed here falls through to the default alphabetical sort.
+     * Group keys to pin to the top of the table, in the given order. Any group not listed here falls through to the default alphabetical sort. A pinned key with no matching rows still renders its (empty) group header, so a table offering `onGroupAction` keeps that affordance for every pinned group — including the ones the user hasn't put anything in yet.
      */
     groupOrder?: string[] | undefined;
     pageSize?: number | undefined;
@@ -2859,6 +2861,43 @@ declare global {
   }
 
   /**
+   * @slot (default) - `beam-card-tree-item` elements.
+   * @cssproperty --beam-card-tree-gap - Vertical space between rows. [default: 0.125rem]
+   * @cssproperty --beam-card-tree-indent - Width of the connector gutter each level is indented by. [default: 1.75rem]
+   * @cssproperty --beam-card-tree-line-color - Connector line color. [default: var(--color-beam-border)]
+   * @event wa-select - Fired when a row is activated. `detail.item` is the activated `beam-card-tree-item`.
+   */
+  interface BeamCardTreeElement extends HTMLElement {
+    // No public properties defined in CEM.
+  }
+
+  /**
+   * @slot (default) - Row label — the name plus any inline chips/pills.
+   * @slot icon - Leading icon (usually a `beam-icon`).
+   * @slot details - Optional second line under the label (e.g. a count pill).
+   * @slot tooltip - Optional content shown in a bubble above the row on hover.
+   * @csspart row - The row.
+   * @csspart label - Wrapper around the default slot.
+   * @csspart details - Wrapper around the details slot.
+   * @csspart action - The trailing action affordance.
+   * @csspart tooltip - The hover tooltip bubble.
+   * @csspart children - Container holding nested items.
+   * @event wa-select
+   */
+  interface BeamCardTreeItemElement extends HTMLElement {
+    /** Trailing action text, e.g. "View Screen". Omit to hide the action. @default '' */
+    action?: string;
+    /** Action text while the row is hovered/focused. Falls back to `action`. @default '' */
+    hoverAction?: string;
+    /** Set by the parent — whether this item is a top-level row. @default false */
+    root?: boolean;
+    /** Set by the parent — whether this item is its parent's first child. @default false */
+    first?: boolean;
+    /** Set by the parent — whether this item is its parent's last child. @default false */
+    last?: boolean;
+  }
+
+  /**
    * @slot (default) - Nothing. Content is driven by the `value` property.
    * @csspart base - The bordered field wrapper.
    * @csspart tag - Each committed pill.
@@ -2885,6 +2924,8 @@ declare global {
    * @csspart base - The trigger button.
    * @csspart panel - The calendar popover panel.
    * @csspart day - Each selectable day cell.
+   * @csspart time-menu - The hour or minute dropdown list.
+   * @csspart time-option - Each hour or minute in that list.
    * @cssproperty --beam-date-picker-panel-background - Popover background.
    * @cssproperty --beam-date-picker-cell-size - Width/height of a day cell. [default: 2rem]
    * @event wa-change - Emitted when the value changes. `detail.value` is the new value. Composed, so it crosses shadow boundaries (extensions render inside a shadow root).
@@ -2925,6 +2966,10 @@ declare global {
     data?: unknown;
     /** Optional per-bar color override; defaults to the theme categorical palette. */
     palette?: string[] | undefined;
+    /**
+     * Stacked mode: when set, each bar is split into one segment per series, read from the datum's `values`. Leaving it unset keeps the original flat behaviour untouched, so every existing caller is unaffected.
+     */
+    series?: unknown;
   }
 
   /**

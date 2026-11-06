@@ -16,6 +16,7 @@ using Beamable.Server.Api.Mail;
 using Beamable.Server.Api.Notifications;
 using Beamable.Server.Api.Payments;
 using Beamable.Server.Api.RealmConfig;
+using Beamable.Server.Api.Secrets;
 using Beamable.Server.Api.Social;
 using Beamable.Server.Api.Stats;
 using Beamable.Server.Api.Tournament;
@@ -162,6 +163,11 @@ namespace Beamable.Server
 		/// %Microservice entry point for payment operations.
 		/// </summary>
 		IMicroservicePaymentsApi Payments { get; }
+
+		/// <summary>
+		/// %Microservice entry point for the Secrets feature: the realm's encrypted key/value store.
+		/// </summary>
+		IMicroserviceSecretsApi Secrets { get; }
 
 		/// <summary>
 		/// A <see cref="BeamScheduler"/> that can be used to schedule jobs for execution later.

@@ -9,12 +9,6 @@ import type { LobbyRestriction } from './enums/LobbyRestriction';
 export type CreateLobby = { 
   data?: Record<string, string | null> | null; 
   description?: string | null; 
-  hasDescription?: boolean; 
-  hasMatchType?: boolean; 
-  hasMaxPlayers?: boolean; 
-  hasName?: boolean; 
-  hasPasscodeLength?: boolean; 
-  hasRestriction?: boolean; 
   matchType?: string | null; 
   maxPlayers?: number; 
   name?: string | null; 

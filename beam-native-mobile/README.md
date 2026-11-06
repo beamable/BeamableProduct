@@ -45,7 +45,7 @@ Each plugin has its own README with install and setup steps:
 - [`ReactNative/README.md`](ReactNative/README.md) —
   `@beamable/notifications-react-native`.
 
-> **The plugins ship prebuilt binaries** (the `.aar`, the `.xcframework`), staged by `../dev-native.sh`.
+> **The plugins ship prebuilt binaries** (the `.aar`, the `.xcframework`), staged by `beam local run native-libs`.
 > Editing native source does **not** change an engine package until the binaries are rebuilt and
 > restaged — see [`AGENTS.md`](AGENTS.md).
 

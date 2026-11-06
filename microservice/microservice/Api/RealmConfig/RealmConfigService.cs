@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -20,6 +21,7 @@ namespace Beamable.Server.Api.RealmConfig
       private readonly IMicroserviceArgs _args;
 
       private RealmConfig _config;
+      public event Action<RealmConfig> ConfigChanged;
 
 
       public RealmConfigService(IBeamableRequester requester, SocketRequesterContext ctx, MicroserviceAttribute serviceAttribute, IMicroserviceArgs args)
@@ -133,6 +135,7 @@ namespace Beamable.Server.Api.RealmConfig
       {
 	      var latest = await GetRealmConfig();
 	      _config = Add(latest.config, null);
+	      ConfigChanged?.Invoke(_config);
 	      return _config;
       }
    }

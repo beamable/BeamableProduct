@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Fields with the `MustBeComparatorString` attribute show a dropdown in the Inspector listing the comparators the backend accepts for that field, with a tooltip for each.
+
+### Fixed
+
+- `MustBeComparatorString` now validates against what the backend accepts for each field. Stat requirements (listings, announcements, leaderboard and event cohorts) also accept `neq`, `gte`, `lte` and the long names (`equal`, `notequal`, `greaterthan`, `greaterthanequal`, `lessthan`, `lessthanequal`). Offer purchase requirements accept `eq`, `ne`, `gt`, `ge`, `lt`, `le`. Cohort requirements accept only `eq` (member) and `ne` (not a member); any other value used to be evaluated as "not a member", so replace it with `ne`.
+- With Unity IAP 5, purchasing can be initialized more than once (login, `ChangeAuthorizedPlayer`, several `BeamContext`s, play mode without domain reload) without failing with `ErrorNoProductsAvailable (FetchProducts cannot be invoked if a fetch is already in progress...)`. SKUs without a product id for the current store are skipped with a warning, products the store doesn't know no longer disable purchasing, and Steam builds use the Beamable Steam store.
+- Purchases are no longer lost or left hanging: an order whose fulfillment fails stays pending in the store instead of being confirmed without its reward, and `StartPurchase` always completes, including for unknown SKUs, a second purchase while one is in flight (`ExistingPurchasePending`), deferred payments (`UnityBeamablePurchaser.PURCHASE_DEFERRED_ERROR_CODE`, on Unity IAP 4 too) and a store that disconnected in the background. Initializing purchasing again or disposing its context settles a purchase left in flight, and its Beamable transaction is always closed with the account that began it. Prices are sent in a culture-independent format.
+- With Unity IAP 5 on iOS and macOS, purchases are fulfilled with the App Store receipt instead of Unity's receipt wrapper, and the receipt is refreshed only during a purchase the player started. A failed order can be retried without another charge by the account that bought it, by buying the same product again or calling `RestorePurchases`, and the SDK no longer restores transactions at startup.
+
+### Changed
+
+- Beam Account login window pre-fills the environment and organization from the project's existing configuration, such as `config-defaults.txt`, and restores the previously selected realm after login.
+
 ## [6.2.0] - 2026-10-08
 
 ### Added

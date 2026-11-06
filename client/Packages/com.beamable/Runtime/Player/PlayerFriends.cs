@@ -13,6 +13,11 @@ using UnityEngine;
 
 namespace Beamable.Player
 {
+	/// <summary>Manages the current player's friends, blocked players, and invitations.</summary>
+	/// <remarks>Await <see cref="OnReady"/> before reading lists. When
+	/// <see cref="CoreConfiguration.SuppressAutomaticMailUpdatesFromPlayerSocial"/> is enabled, sending and
+	/// accepting invitations requires <see cref="EnableFriendInvitationMailChecks"/> for this context.
+	/// Inherited <c>OnUpdated</c> notifications expose changes; detach consumer handlers when no longer needed.</remarks>
 	[Serializable]
 	public class PlayerSocial : DefaultObservable, IBeamableDisposable
 	{
@@ -24,14 +29,15 @@ namespace Beamable.Player
 			"Friend invitation Mail checks are disabled for this player context. " +
 			"Call EnableFriendInvitationMailChecks before sending or accepting friend invitations.";
 
-		/// <summary>
-		/// This promise will complete when the first social data has arrived
-		/// </summary>
+		/// <summary>Gets the promise for the initial social refresh and any enabled invitation-mail checks.</summary>
+		/// <value>A promise that completes after initial loading, or rejects on loading failure.</value>
+		/// <remarks>Mail checks are omitted when suppressed by configuration. Call
+		/// <see cref="EnableFriendInvitationMailChecks"/> before invitation operations in that case.</remarks>
 		public Promise OnReady { get; private set; }
 
-		/// <summary>
-		/// A list of <see cref="PlayerFriend"/>s for the current player. Friends can be invited via the <see cref="Invite"/> method.
-		/// </summary>
+		/// <summary>The current player's observable list of friends.</summary>
+		/// <remarks>Await <see cref="OnReady"/> before reading. Send invitations with <see cref="Invite"/>
+		/// and accept incoming invitations with <see cref="AcceptInviteFrom"/>.</remarks>
 		public PlayerFriendList Friends;
 
 		/// <summary>
@@ -46,10 +52,9 @@ namespace Beamable.Player
 		/// </summary>
 		public SentFriendInviteList SentInvites;
 
-		/// <summary>
-		/// A list of <see cref="ReceivedFriendInvite"/>s that the current player has available to accept.
-		/// Invitations can be accepted with the <see cref="AcceptInviteFrom"/> method.
-		/// </summary>
+		/// <summary>The incoming friend invitations known to this context.</summary>
+		/// <remarks>Await <see cref="EnableFriendInvitationMailChecks"/> to ensure invitation mail is loaded.
+		/// Use an invitation's <see cref="ReceivedFriendInvite.invitingPlayerId"/> with <see cref="AcceptInviteFrom"/>.</remarks>
 		public ReceivedFriendInviteList ReceivedInvites;
 
 		/// <summary>
@@ -257,14 +262,20 @@ namespace Beamable.Player
 		/// <returns>True if given player is a friend.</returns>
 		public bool IsFriend(long playerId) => _socialList.IsFriend(playerId);
 
-		/// <summary>
-		/// Send an friend invitation to a player.
-		/// Friendship invitations can be cancelled with the <see cref="CancelInvite"/> method.
-		/// The invited player may accept the invitation with the <see cref="AcceptInviteFrom"/> method.
-		/// After the resultant <see cref="Promise"/> completes, the <see cref="SentInvites"/> list will contain an invite for the given <see cref="playerId"/>
-		/// </summary>
-		/// <param name="playerId">the player id of the player to invite to become friends</param>
-		/// <exception cref="InvalidOperationException">Thrown when friend invitation Mail checks are disabled for this player context.</exception>
+		/// <summary>Sends a friend invitation to another player and refreshes social data.</summary>
+		/// <param name="playerId">The recipient's Beamable gamer tag, not an email or local player code.</param>
+		/// <returns>A promise that completes after the request and refresh; request or refresh failures reject it.</returns>
+		/// <exception cref="InvalidOperationException">Invitation mail checks are disabled for this context.</exception>
+		/// <remarks>Await <see cref="EnableFriendInvitationMailChecks"/> first if checks may be suppressed.
+		/// The recipient accepts using <see cref="AcceptInviteFrom"/>. Use <see cref="CancelInvite"/> to cancel.</remarks>
+		/// <example>
+		/// <para>Example: send an invitation to a known gamer tag, enabling checks for this context.</para>
+		/// <code>
+		/// var context = await BeamContext.Default.Instance;
+		/// await context.Social.EnableFriendInvitationMailChecks();
+		/// await context.Social.Invite(recipientGamerTag);
+		/// </code>
+		/// </example>
 		public async Promise Invite(long playerId)
 		{
 			if (!_friendInvitationMailChecksEnabled)
@@ -276,14 +287,29 @@ namespace Beamable.Player
 			await Refresh();
 		}
 
-		/// <summary>
-		/// Accept a friend invite from a player.
-		/// If the player has not invited this player to be friends, this method will fail.
-		/// Pending invitations can be seen from the <see cref="ReceivedInvites"/> field.
-		/// After the resultant <see cref="Promise"/> completes, the <see cref="ReceivedInvites"/> list will no longer include the given <see cref="playerId"/>
-		/// </summary>
-		/// <param name="playerId">the gamerTag of the player to accept friendship for</param>
-		/// <exception cref="InvalidOperationException">Thrown when friend invitation Mail checks are disabled for this player context.</exception>
+		/// <summary>Accepts a known incoming friend invitation and refreshes social data.</summary>
+		/// <param name="playerId">The inviting player's gamer tag from <see cref="ReceivedInvites"/>.</param>
+		/// <returns>A promise that completes after acceptance, mail update, and social refresh.</returns>
+		/// <exception cref="InvalidOperationException">Invitation mail checks are disabled for this context.</exception>
+		/// <exception cref="Exception">No invitation or associated invitation mail is known for the player.</exception>
+		/// <remarks>Enable mail checks first. Request and refresh failures also reject the promise.</remarks>
+		/// <example>
+		/// <para>Example: accept an invitation from a known sender on the recipient device or context.</para>
+		/// <code>
+		/// var context = await BeamContext.Default.Instance;
+		/// var social = context.Social;
+		/// await social.EnableFriendInvitationMailChecks();
+		/// await social.Refresh();
+		/// var invite = social.ReceivedInvites.FirstOrDefault(
+		///     entry =&gt; entry.invitingPlayerId == senderGamerTag);
+		/// if (invite == null)
+		/// {
+		///     Debug.LogWarning("No invitation from this player is available yet.");
+		///     return;
+		/// }
+		/// await social.AcceptInviteFrom(invite.invitingPlayerId);
+		/// </code>
+		/// </example>
 		public async Promise AcceptInviteFrom(long playerId)
 		{
 			if (!_friendInvitationMailChecksEnabled)
@@ -387,14 +413,12 @@ namespace Beamable.Player
 			await Refresh();
 		}
 
-		/// <summary>
-		/// Enables the Mail checks required for sending and accepting friend
-		/// invitations for this PlayerSocial instance.
-		/// </summary>
-		/// <remarks>
-		/// This performs an immediate Mail search and subscribes this player
-		/// context to future mailbox updates.
-		/// </remarks>
+		/// <summary>Enables and loads the mailbox checks needed for friend invitations in this context.</summary>
+		/// <returns>A promise that completes when mail checks are enabled and loaded, or rejects on failure.</returns>
+		/// <remarks>This waits for <see cref="OnReady"/>, subscribes to future mail updates, and loads invitation mail.
+		/// It is safe to call when already enabled. If enabling fails, the new mail subscription is removed.
+		/// This enables checks only for this context and does not change the global suppression setting.</remarks>
+		/// <seealso cref="Invite"/>
 		public async Promise EnableFriendInvitationMailChecks()
 		{
 			await OnReady;

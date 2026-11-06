@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **`context.scope`.** Every mount context carries the scope of its Host: `'realm'` on
+  `ExtensionContext`, `'zone'` on `ZoneExtensionContext`, the same value the window registration
+  already carries. Narrow on it to reach `realm` or `zid`.
+
+### Changed
+- **Host-relative paths.** The `ExtensionNavigate` and `params` docs now describe paths relative to
+  the Host the extension is mounted in, a realm or a zone. A zone extension's relative
+  `context.navigate('foo')` resolves under `/<cid>/zones/<zid>/`, as the portal already did.
+
 ## [0.5.0] - 2026-08-04
 
 ### Added

@@ -6,7 +6,7 @@
 export enum NodeKind {
   Entry = "Entry",
   Segment = "Segment",
-  Conditional = "Conditional",
   Schedule = "Schedule",
-  Send = "Send"
+  Send = "Send",
+  AnalyticsGate = "AnalyticsGate"
 }

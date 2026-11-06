@@ -9,4 +9,5 @@ export type CreateRealmRequest = {
   parent?: string | null; 
   plan?: string | null; 
   sharded?: boolean | null; 
+  zoneId?: string | null; 
 };

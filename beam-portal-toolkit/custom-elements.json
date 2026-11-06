@@ -29733,7 +29733,7 @@
               "type": {
                 "text": "string[] | undefined"
               },
-              "description": "Group keys to pin to the top of the table, in the given order. Any group\r\nnot listed here falls through to the default alphabetical sort."
+              "description": "Group keys to pin to the top of the table, in the given order. Any group\r\nnot listed here falls through to the default alphabetical sort. A pinned\r\nkey with no matching rows still renders its (empty) group header, so a\r\ntable offering `onGroupAction` keeps that affordance for every pinned\r\ngroup — including the ones the user hasn't put anything in yet."
             },
             {
               "kind": "field",
@@ -30005,6 +30005,25 @@
               "privacy": "private",
               "description": "All groups built from the full sorted data (no pagination applied yet).",
               "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "_isBelowMinGroup",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "rowCount",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ],
+              "description": "A group with fewer rows than `minGroupSize` renders its rows bare, with no\r\nheader. An empty group is exempt: it exists only because `groupOrder`\r\npinned it, and the header is the only thing it has to show."
             },
             {
               "kind": "field",
@@ -33681,6 +33700,340 @@
     },
     {
       "kind": "javascript-module",
+      "path": "src/beam-components/beam-card-tree.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamCardTree",
+          "cssProperties": [
+            {
+              "description": "Vertical space between rows.",
+              "name": "--beam-card-tree-gap",
+              "default": "0.125rem"
+            },
+            {
+              "description": "Width of the connector gutter each level is indented by.",
+              "name": "--beam-card-tree-indent",
+              "default": "1.75rem"
+            },
+            {
+              "description": "Connector line color.",
+              "name": "--beam-card-tree-line-color",
+              "default": "var(--color-beam-border)"
+            }
+          ],
+          "slots": [
+            {
+              "description": "`beam-card-tree-item` elements.",
+              "name": ""
+            }
+          ],
+          "members": [],
+          "events": [
+            {
+              "description": "Fired when a row is activated. `detail.item` is the activated `beam-card-tree-item`.",
+              "name": "wa-select"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "beam-card-tree",
+          "customElement": true,
+          "summary": "Always-expanded tree of rows joined by connector lines — for\nbrowsing a hierarchy where every node is something you open (realms, zones,\ngames)."
+        },
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BeamCardTreeItem",
+          "cssParts": [
+            {
+              "description": "The row.",
+              "name": "row"
+            },
+            {
+              "description": "Wrapper around the default slot.",
+              "name": "label"
+            },
+            {
+              "description": "Wrapper around the details slot.",
+              "name": "details"
+            },
+            {
+              "description": "The trailing action affordance.",
+              "name": "action"
+            },
+            {
+              "description": "The hover tooltip bubble.",
+              "name": "tooltip"
+            },
+            {
+              "description": "Container holding nested items.",
+              "name": "children"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Row label — the name plus any inline chips/pills.",
+              "name": ""
+            },
+            {
+              "description": "Leading icon (usually a `beam-icon`).",
+              "name": "icon"
+            },
+            {
+              "description": "Optional second line under the label (e.g. a count pill).",
+              "name": "details"
+            },
+            {
+              "description": "Optional content shown in a bubble above the row on hover.",
+              "name": "tooltip"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "action",
+              "type": {
+                "text": "string"
+              },
+              "description": "Trailing action text, e.g. \"View Screen\". Omit to hide the action.",
+              "default": "''",
+              "attribute": "action"
+            },
+            {
+              "kind": "field",
+              "name": "hoverAction",
+              "type": {
+                "text": "string"
+              },
+              "description": "Action text while the row is hovered/focused. Falls back to `action`.",
+              "default": "''",
+              "attribute": "hover-action"
+            },
+            {
+              "kind": "field",
+              "name": "root",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Set by the parent — whether this item is a top-level row.",
+              "default": "false",
+              "attribute": "root",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "first",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Set by the parent — whether this item is its parent's first child.",
+              "default": "false",
+              "attribute": "first",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "last",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Set by the parent — whether this item is its parent's last child.",
+              "default": "false",
+              "attribute": "last",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "hasChildren",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "hasDetails",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "hasTooltip",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "hovered",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "method",
+              "name": "select",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "onKeyDown",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "KeyboardEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onPointerMove",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "PointerEvent"
+                  }
+                }
+              ],
+              "description": "Keep the tooltip horizontally under the pointer, like the mockup."
+            },
+            {
+              "kind": "method",
+              "name": "hasSlotted",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "wa-select",
+              "type": {
+                "text": "CustomEvent"
+              }
+            }
+          ],
+          "attributes": [
+            {
+              "name": "action",
+              "type": {
+                "text": "string"
+              },
+              "description": "Trailing action text, e.g. \"View Screen\". Omit to hide the action.",
+              "default": "''",
+              "fieldName": "action"
+            },
+            {
+              "name": "hover-action",
+              "type": {
+                "text": "string"
+              },
+              "description": "Action text while the row is hovered/focused. Falls back to `action`.",
+              "default": "''",
+              "fieldName": "hoverAction"
+            },
+            {
+              "name": "root",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Set by the parent — whether this item is a top-level row.",
+              "default": "false",
+              "fieldName": "root"
+            },
+            {
+              "name": "first",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Set by the parent — whether this item is its parent's first child.",
+              "default": "false",
+              "fieldName": "first"
+            },
+            {
+              "name": "last",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Set by the parent — whether this item is its parent's last child.",
+              "default": "false",
+              "fieldName": "last"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "beam-card-tree-item",
+          "customElement": true,
+          "summary": "A single row inside `beam-card-tree`. Nest items to build the\nhierarchy."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BeamCardTree",
+          "declaration": {
+            "name": "BeamCardTree",
+            "module": "src/beam-components/beam-card-tree.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-card-tree",
+          "declaration": {
+            "name": "BeamCardTree",
+            "module": "src/beam-components/beam-card-tree.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BeamCardTreeItem",
+          "declaration": {
+            "name": "BeamCardTreeItem",
+            "module": "src/beam-components/beam-card-tree.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "beam-card-tree-item",
+          "declaration": {
+            "name": "BeamCardTreeItem",
+            "module": "src/beam-components/beam-card-tree.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/beam-components/beam-tag-input.ts",
       "declarations": [
         {
@@ -33949,6 +34302,14 @@
             {
               "description": "Each selectable day cell.",
               "name": "day"
+            },
+            {
+              "description": "The hour or minute dropdown list.",
+              "name": "time-menu"
+            },
+            {
+              "description": "Each hour or minute in that list.",
+              "name": "time-option"
             }
           ],
           "members": [
@@ -34001,6 +34362,16 @@
               },
               "privacy": "private",
               "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "_timeMenu",
+              "type": {
+                "text": "'hours' | 'minutes' | null"
+              },
+              "privacy": "private",
+              "description": "Which time list is open, if either.",
+              "default": "null"
             },
             {
               "kind": "field",
@@ -34097,9 +34468,28 @@
               ]
             },
             {
-              "kind": "field",
-              "name": "_handleTimeInput",
-              "privacy": "private"
+              "kind": "method",
+              "name": "_setTimePart",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "unit",
+                  "type": {
+                    "text": "'hours' | 'minutes'"
+                  }
+                },
+                {
+                  "name": "value",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
             },
             {
               "kind": "method",
@@ -34128,6 +34518,32 @@
                   "text": "string"
                 }
               }
+            },
+            {
+              "kind": "method",
+              "name": "_renderTimeSelect",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "unit",
+                  "type": {
+                    "text": "'hours' | 'minutes'"
+                  }
+                },
+                {
+                  "name": "count",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "selected",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ],
+              "description": "One hour/minute dropdown: a trigger plus, when open, its list of values."
             },
             {
               "kind": "method",
@@ -34386,6 +34802,15 @@
               "attribute": "palette"
             },
             {
+              "kind": "field",
+              "name": "series",
+              "type": {
+                "text": "BarSeries[] | undefined"
+              },
+              "description": "Stacked mode: when set, each bar is split into one segment per series, read from the datum's\r\n`values`. Leaving it unset keeps the original flat behaviour untouched, so every existing caller\r\nis unaffected.",
+              "attribute": "series"
+            },
+            {
               "kind": "method",
               "name": "draw",
               "privacy": "protected",
@@ -34428,6 +34853,14 @@
               },
               "description": "Optional per-bar color override; defaults to the theme categorical palette.",
               "fieldName": "palette"
+            },
+            {
+              "name": "series",
+              "type": {
+                "text": "BarSeries[] | undefined"
+              },
+              "description": "Stacked mode: when set, each bar is split into one segment per series, read from the datum's\r\n`values`. Leaving it unset keeps the original flat behaviour untouched, so every existing caller\r\nis unaffected.",
+              "fieldName": "series"
             }
           ],
           "superclass": {
@@ -34664,7 +35097,7 @@
           },
           "tagName": "beam-funnel-chart",
           "customElement": true,
-          "summary": "Horizontal funnel chart — stacked percentage bars from a baseline (first row = 100%).\nTheme-aware and responsive. Promotes the inline funnel pattern into a reusable component."
+          "summary": "Horizontal funnel chart — stacked percentage bars from a baseline (first row = 100%).\r\nTheme-aware and responsive. Promotes the inline funnel pattern into a reusable component."
         }
       ],
       "exports": [
@@ -34780,7 +35213,7 @@
           },
           "tagName": "beam-sankey-chart",
           "customElement": true,
-          "summary": "Sankey flow diagram (d3-sankey). Theme-aware, responsive, with a link tooltip.\nLinks may reference nodes by array index or by node `name`."
+          "summary": "Sankey flow diagram (d3-sankey). Theme-aware, responsive, with a link tooltip.\r\nLinks may reference nodes by array index or by node `name`."
         }
       ],
       "exports": [

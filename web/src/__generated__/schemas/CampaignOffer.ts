@@ -1,21 +1,20 @@
+/**
+ * ⚠️ THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY.
+ * All manual edits will be lost when this file is regenerated.
+ */
+
 import type { CampaignOfferItem } from './CampaignOfferItem';
 import type { CampaignOfferReason } from './CampaignOfferReason';
-import type { CampaignOfferState } from './CampaignOfferState';
+import type { CampaignOfferState } from './enums/CampaignOfferState';
 
-export type CampaignOffer = {
-  /**
-   * Whether the player can act on this right now — the store's rules AND the campaign's gate.
-   * Distinct from `state`: a `Granted` offer whose condition is unmet reports `false` here and
-   * unlocks on a later read, without a new send.
-   */
-  available?: boolean;
-  expiresAtUnixSeconds?: bigint | string;
-  grantId?: string;
-  grantedAtUnixSeconds?: bigint | string;
-  /** The offer in full, so one call renders a store screen. May be absent — write the fallback. */
-  offer?: CampaignOfferItem;
-  offerId?: string;
-  state?: CampaignOfferState;
-  /** Why `available` is false. May carry more than one reason. */
-  unavailableReasons?: CampaignOfferReason[];
+export type CampaignOffer = { 
+  grantId: string; 
+  offerId: string; 
+  available?: boolean; 
+  conditionToken?: string | null; 
+  expiresAtUnixSeconds?: bigint | string; 
+  grantedAtUnixSeconds?: bigint | string; 
+  offer?: CampaignOfferItem; 
+  state?: CampaignOfferState; 
+  unavailableReasons?: CampaignOfferReason[]; 
 };

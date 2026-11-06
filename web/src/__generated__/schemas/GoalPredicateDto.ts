@@ -10,6 +10,7 @@ import type { PropertyBoundsMode } from './enums/PropertyBoundsMode';
 export type GoalPredicateDto = { 
   event?: string | null; 
   kind?: GoalPredicateKind; 
+  observePid?: string | null; 
   predicates?: GoalPredicateDto[] | null; 
   properties?: PropertyBoundDto[] | null; 
   propertiesMode?: PropertyBoundsMode; 

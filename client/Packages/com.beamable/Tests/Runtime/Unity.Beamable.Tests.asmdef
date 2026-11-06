@@ -22,5 +22,12 @@
     "overrideReferences": true,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.purchasing",
+            "expression": "5.0",
+            "define": "UNITY_PURCHASING_5_OR_NEWER"
+        }
+    ]
 }

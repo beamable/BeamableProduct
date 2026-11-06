@@ -149,14 +149,21 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 			custReq = GetAdminCustomer(args);
 		}
 
-		// A zone-scoped service has no realm, and the otel auth-writer endpoint is realm-scoped (it 404s with
-		// an empty realm), so skip otel credential fetching entirely for zone services.
 		await manifestTask;
-		var isZoneService = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
-			.FirstOrDefault(s => s.BeamoId == args.serviceId)?.IsZoneScoped ?? false;
+		var zoneId = await ResolveZoneIdIfNeeded(args);
+		if (zoneId != null)
+		{
+			// A zone service writes its telemetry as cid.zid, so the writer credentials must be minted for the
+			// zone. Its own requester keeps that scope off the realm calls running concurrently.
+			var zoneRequester = new CliRequester(args.DependencyProvider.GetService<IRequesterInfo>())
+			{
+				BeamScopeOverride = $"{args.AppContext.Cid}.{zoneId}"
+			};
+			beamoApi = new BeamBeamootelApi(zoneRequester);
+		}
 
 		Promise<OtelAuthConfig> otelAuthReq = null;
-		if (!args.excludeOtelCreds && !isZoneService)
+		if (!args.excludeOtelCreds)
 		{
 			// The otel auth writer endpoint is flaky when many services call it concurrently
 			// (e.g. `beam project run` with ~30 services), so retry on 5xx with a small backoff.
@@ -218,7 +225,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 			output.envVars.Add(EnvVarOutput.Create("SECRET", proj.secret));
 		}
 
-		if (!args.excludeOtelCreds && !isZoneService)
+		if (!args.excludeOtelCreds)
 		{
 			var otelAuth = await otelAuthReq;
 			output.envVars.Add(EnvVarOutput.Create(Beamable.Common.Constants.Features.Otel.ENV_COLLECTOR_CLICKHOUSE_ENDPOINT, otelAuth.endpoint));
@@ -226,7 +233,10 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 			output.envVars.Add(EnvVarOutput.Create(Beamable.Common.Constants.Features.Otel.ENV_COLLECTOR_CLICKHOUSE_PASSWORD, otelAuth.password));
 		}
 
-		await ApplyZoneEnvironmentIfNeeded(args, output);
+		if (zoneId != null)
+		{
+			await ApplyZoneEnvironment(args, output, zoneId);
+		}
 
 		var sw = new Stopwatch();
 		sw.Start();
@@ -371,17 +381,16 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 	}
 
 	/// <summary>
-	/// Zone-scoped services authenticate as cid.zid instead of cid.pid. The zone id rides the PID slot
-	/// (the gateway detects the ZONE_ prefix) and auth signs with the zone secret, so we resolve the zone
-	/// bound to the current realm, fetch that zone's secret, and emit them in place of the realm pid/secret.
+	/// Resolves the zone a zone-scoped service runs in (the zone bound to the current realm, or the local
+	/// .beamable zid with no realm selected). Returns null for a realm-scoped service.
 	/// </summary>
-	static async Task ApplyZoneEnvironmentIfNeeded(GenerateEnvFileCommandArgs args, GenerateEnvFileOutput output)
+	static async Task<string> ResolveZoneIdIfNeeded(GenerateEnvFileCommandArgs args)
 	{
 		var serviceDef = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
 			.FirstOrDefault(s => s.BeamoId == args.serviceId);
 		if (!(serviceDef?.IsZoneScoped ?? false))
 		{
-			return;
+			return null;
 		}
 
 		var cid = args.AppContext.Cid;
@@ -401,6 +410,19 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				$"{reason}. Bind the realm to a zone (Portal > Zone Management), set a 'zid' in the .beamable " +
 				$"config, and retry.");
 		}
+
+		return zoneId;
+	}
+
+	/// <summary>
+	/// Zone-scoped services authenticate as cid.zid instead of cid.pid. The zone id rides the PID slot
+	/// (the gateway detects the ZONE_ prefix) and auth signs with the zone secret, so we fetch the zone's
+	/// secret and emit them in place of the realm pid/secret.
+	/// </summary>
+	static async Task ApplyZoneEnvironment(GenerateEnvFileCommandArgs args, GenerateEnvFileOutput output, string zoneId)
+	{
+		var cid = args.AppContext.Cid;
+		var pid = args.AppContext.Pid;
 
 		var zonesApi = args.DependencyProvider.GetService<IBeamZonesApi>();
 		var zoneView = await zonesApi.GetZones(cid, zoneId);

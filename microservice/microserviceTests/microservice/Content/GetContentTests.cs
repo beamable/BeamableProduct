@@ -37,6 +37,66 @@ namespace microserviceTests.microservice.Content
          LoggingUtil.InitTestCorrelator();
       }
 
+      [Test]
+      public async Task BakedContentIsUsedOnlyWhileEnabled()
+      {
+         var args = new TestArgs();
+         var reqCtx = new RequestContext(args.CustomerID, args.ProjectName, 1, 200, 1, "path", "GET", "");
+         var downloads = 0;
+         var item = new ItemContent();
+         item.SetContentName("foo");
+         var json = new MicroserviceContentSerializer().Serialize(item);
+         var resolver = new TestContentResolver(_ =>
+         {
+            Interlocked.Increment(ref downloads);
+            return Task.FromResult(json);
+         });
+
+         TestSocket testSocket = null;
+         var socketProvider = new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.AddMessageHandler(
+               MessageMatcher.WithRouteContains("basic/content/manifest").WithGet(),
+               MessageResponder.Success(new ContentManifest
+               {
+                  id = "global",
+                  references = new List<ContentReference>
+                  {
+                     new ContentReference { id = "items.foo", version = "123", uri = "items.foo.json", visibility = "public" }
+                  }
+               }),
+               MessageFrequency.OnlyOnce());
+            socket.SetAuthentication(true);
+         });
+         var socket = socketProvider.Create("test", args);
+         var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
+         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false, new NoopActivityProvider());
+         (_, socketCtx.Daemon) = MicroserviceAuthenticationDaemon.Start(args, requester, new CancellationTokenSource());
+         var manifest = new CachedContentManifest("global", requester, resolver, _cache);
+         manifest.SetBakedContent(new BakedContentArchive
+         {
+            manifestId = "global",
+            content = new List<BakedContentEntry>
+            {
+               new BakedContentEntry { contentId = "items.foo", contentVersion = "123", data = json }
+            }
+         });
+         testSocket.Connect();
+         testSocket.OnMessage((_, data, id) =>
+         {
+            data.TryBuildRequestContext(args, out var rc);
+            socketCtx.HandleMessage(null, rc).Wait();
+         });
+
+         Assert.That((await manifest.GetContent("items.foo", typeof(ItemContent))).Id, Is.EqualTo("items.foo"));
+         Assert.That(downloads, Is.Zero);
+         manifest.SetBakedContent(null);
+         Assert.That((await manifest.GetContent("items.foo", typeof(ItemContent))).Id, Is.EqualTo("items.foo"));
+         Assert.That(downloads, Is.EqualTo(1));
+         Assert.That(testSocket.AllMocksCalled(), Is.True);
+      }
+
       
       
       [Test]

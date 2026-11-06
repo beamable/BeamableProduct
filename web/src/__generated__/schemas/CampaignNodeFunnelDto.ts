@@ -3,7 +3,9 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
+import type { CampaignStageFunnelDto } from './CampaignStageFunnelDto';
+
 export type CampaignNodeFunnelDto = { 
   node?: string; 
-  stages?: Record<string, bigint | string>; 
+  stages?: Record<string, CampaignStageFunnelDto>; 
 };

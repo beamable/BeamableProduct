@@ -21,6 +21,7 @@ using Beamable.Server.Api.Commerce;
 using Beamable.Server.Api.Notifications;
 using Beamable.Server.Api.Payments;
 using Beamable.Server.Api.Push;
+using Beamable.Server.Api.Secrets;
 
 namespace Beamable.Server
 {
@@ -47,6 +48,7 @@ namespace Beamable.Server
 		public IMicroservicePaymentsApi Payments { get; set; }
 		public BeamScheduler Scheduler { get; set; }
 		public IMicroservicePushApi Push { get; set; }
+		public IMicroserviceSecretsApi Secrets { get; set; }
 
 		public IDependencyProviderScope Scope { get; set; }
 	}

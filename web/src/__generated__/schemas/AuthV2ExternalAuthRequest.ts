@@ -10,7 +10,6 @@ export type AuthV2ExternalAuthRequest = {
   challengeSolution?: AuthV2ChallengeSolution; 
   context?: AuthV2ContextInfo; 
   customerId?: string | null; 
-  hasProviderNamespace?: boolean; 
   provider?: string | null; 
   providerNamespace?: string | null; 
   realmId?: string | null; 

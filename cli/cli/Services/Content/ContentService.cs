@@ -1480,6 +1480,13 @@ public partial class ContentService
 		throw new InvalidOperationException($"Content download retry loop exited unexpectedly. content-id=[{contentFile.Id}]");
 	}
 
+	/// <summary>Read published content with the same retry policy used by content sync.</summary>
+	public async Task<string> DownloadPublishedContent(ClientContentInfoJson reference, CancellationToken cancellationToken)
+	{
+		var file = new ContentFile { Id = reference.contentId, ReferenceContent = reference };
+		return (await DownloadContentFile(file, cancellationToken)).GetRawText();
+	}
+
 	/// <summary>
 	/// Creates the HTTP handler used by the shared content download client.
 	/// </summary>
