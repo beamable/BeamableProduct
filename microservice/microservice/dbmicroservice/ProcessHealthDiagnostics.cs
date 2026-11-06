@@ -50,7 +50,7 @@ internal sealed class ProcessHealthDiagnostics : IDisposable
 
     internal void Record(ProcessHealthSnapshot prior, ProcessHealthSnapshot next)
     {
-        if (prior.State == next.State && prior.IncidentId == next.IncidentId) return;
+        if (prior.State == next.State && prior.Reason == next.Reason && prior.IncidentId == next.IncidentId) return;
         var incident = next.IncidentId != null && next.IncidentId != prior.IncidentId;
         var recovered = prior.IncidentId != null && next.IncidentId == null && next.State == ProcessHealthState.Healthy;
         if (incident) Volatile.Write(ref _lastIncident, next);

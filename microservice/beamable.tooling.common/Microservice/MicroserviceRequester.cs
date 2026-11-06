@@ -215,6 +215,8 @@ namespace Beamable.Server
 		/// <summary>How long a request written since the last reply has gone unanswered, or null if none has.</summary>
 		public TimeSpan? WaitingForReply { get; set; }
 		public bool ReportedBroken { get; set; }
+		/// <summary>Whether the current connection has an unresolved failure. A reply ends a reported reply stall.</summary>
+		public bool HasActiveFailure { get; internal set; }
 
 		public override string ToString() =>
 			$"connection=[{Name}] pending=[{PendingRequests}] oldest-pending=[{OldestPendingRequest.TotalSeconds:0.0}s] " +
@@ -276,12 +278,14 @@ namespace Beamable.Server
 				Volatile.Write(ref _authenticatedConnection, connection);
 		}
 		private IConnection _reportedConnection;
+		private IConnection _nonStallFailureConnection;
 
 		// The first request written since the last reply arrived; null once a reply arrives.
 		private sealed class Waiting
 		{
 			public long Since;
 			public IConnection On;
+			public volatile bool Stalled;
 		}
 		private Waiting _waiting;
 
@@ -375,7 +379,10 @@ namespace Beamable.Server
 				OldestPendingRequest = OldestPendingRequestAge,
 				SinceLastReply = lastReply == 0 ? (TimeSpan?)null : Elapsed(lastReply, now),
 				WaitingForReply = waiting == null ? (TimeSpan?)null : Elapsed(waiting.Since, now),
-				ReportedBroken = current != null && ReferenceEquals(Volatile.Read(ref _reportedConnection), current)
+				ReportedBroken = current != null && ReferenceEquals(Volatile.Read(ref _reportedConnection), current),
+				HasActiveFailure = current != null &&
+					(ReferenceEquals(Volatile.Read(ref _nonStallFailureConnection), current) ||
+					 (waiting != null && waiting.Stalled && ReferenceEquals(waiting.On, current)))
 			};
 		}
 
@@ -853,6 +860,7 @@ namespace Beamable.Server
 		/// </summary>
 		public int FailPendingFor(IConnection connection, Exception ex)
 		{
+			Interlocked.CompareExchange(ref _nonStallFailureConnection, null, connection);
 			var waiting = Volatile.Read(ref _waiting);
 			if (waiting != null && ReferenceEquals(waiting.On, connection)) Interlocked.CompareExchange(ref _waiting, null, waiting);
 
@@ -898,7 +906,10 @@ namespace Beamable.Server
 
 			var silent = Elapsed(waiting.Since, now);
 			if (silent < limit || !ReferenceEquals(waiting.On, CurrentConnection)) return;
-			ReportUnhealthyConnection(waiting.On, $"no reply for {silent.TotalSeconds:0}s to requests sent on it, and no other reply since", "reply_stall");
+			// A reply retires this Waiting object. A later unanswered request gets its own stall evidence,
+			// even when this connection has already emitted its one warning.
+			waiting.Stalled = true;
+			ReportConnectionOnce(waiting.On, $"no reply for {silent.TotalSeconds:0}s to requests sent on it, and no other reply since", "reply_stall");
 		}
 
 		/// <summary>
@@ -911,6 +922,12 @@ namespace Beamable.Server
 		{
 			connection ??= CurrentConnection;
 			if (connection == null) return;
+			Volatile.Write(ref _nonStallFailureConnection, connection);
+			ReportConnectionOnce(connection, reason, reasonTag);
+		}
+
+		private void ReportConnectionOnce(IConnection connection, string reason, string reasonTag)
+		{
 			if (ReferenceEquals(Interlocked.Exchange(ref _reportedConnection, connection), connection)) return;
 
 			var enforce = Reliability.Enforce;
