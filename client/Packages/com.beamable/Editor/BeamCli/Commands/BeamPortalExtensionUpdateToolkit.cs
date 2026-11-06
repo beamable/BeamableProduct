@@ -8,9 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
     {
         /// <summary>The @beamable/portal-toolkit version to update to; must exist in the npm registry or in verdaccio</summary>
         public string version;
-        /// <summary>Update to the version currently published locally in verdaccio</summary>
-        public bool local;
-        /// <summary>The verdaccio registry URL used for --local and for version existence checks</summary>
+        /// <summary>The verdaccio registry URL used for version existence checks</summary>
         public string registry;
         /// <summary>Only update Portal Extensions that are components of a bundle, skipping every other extension and library</summary>
         public bool bundlesOnly;
@@ -25,11 +23,6 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.version != default(string)))
             {
                 genBeamCommandArgs.Add(("--version=" + this.version));
-            }
-            // If the local value was not default, then add it to the list of args.
-            if ((this.local != default(bool)))
-            {
-                genBeamCommandArgs.Add(("--local=" + this.local));
             }
             // If the registry value was not default, then add it to the list of args.
             if ((this.registry != default(string)))
