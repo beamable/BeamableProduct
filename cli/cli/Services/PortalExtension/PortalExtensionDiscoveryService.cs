@@ -215,21 +215,27 @@ public class PortalExtensionObserver
 		}
 	}
 
-	public void InstallDeps()
+	/// <summary>
+	/// Installs the extension's dependencies as its lockfile pins them, then, given a <paramref name="localWebPackages"/>
+	/// overlay (a local run of a stack with the local web packages), puts those builds over them. A deploy passes none,
+	/// so it always ships what the lockfile pins.
+	/// </summary>
+	public void InstallDeps(WebPackagesOverlay localWebPackages = null)
 	{
 		using var childActivity = _rootActivity.CreateChild("Install Dependencies");
 
-		// An extension pinning a local developer build of the toolkit (0.0.123-*) can only resolve it from
-		// the local registry — npmjs has never heard of that version — so the install has to be routed
-		// there. Contributes nothing for a normal, published pin.
-		var installArgs = "install" + WebLocalRegistryService.InstallArgsFor(AppFilesPath);
-
-		StartProcessResult result = StartProcessUtil.Run("npm", installArgs, useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
+		StartProcessResult result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: AppFilesPath).WaitForResult();
 		if (result.exit != 0)
 		{
 			throw new CliException($"Failed to generate portal extension dependencies. \nCheck errors: \n{result.stderr} \nAll logs: {result.stdout}"
 				.Trim());
 		}
+
+		var marker = Path.Combine(AppFilesPath, "node_modules", WebPackagesService.OverlayMarker);
+		if (localWebPackages != null)
+			WebPackagesService.ApplyOverlay(AppFilesPath, localWebPackages);
+		else if (File.Exists(marker))
+			File.Delete(marker); // the install above put the locked versions back
 
 		childActivity.SetTag(TelemetryAttributes.PortalExtensionName(_metaData.Name));
 		// Don't need to track for Duration for install as Activity already does it

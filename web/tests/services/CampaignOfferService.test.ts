@@ -7,6 +7,7 @@ import type {
   CampaignOfferRedeemResponse,
   RedeemCampaignOfferRequest,
 } from '@/__generated__/schemas';
+import { CampaignOfferState } from '@/__generated__/schemas';
 import { PlayerService } from '@/services/PlayerService';
 import { BeamBase } from '@/core/BeamBase';
 
@@ -41,7 +42,7 @@ describe('CampaignOfferService', () => {
           {
             grantId: 'bsg_1',
             offerId: 'offer_1',
-            state: 'Granted',
+            state: CampaignOfferState.Granted,
             grantedAtUnixSeconds: '1787677536',
             expiresAtUnixSeconds: '0',
           },
@@ -87,7 +88,7 @@ describe('CampaignOfferService', () => {
           {
             grantId: 'bsg_1',
             offerId: 'starter_store/bundle_10',
-            state: 'Granted',
+            state: CampaignOfferState.Granted,
             grantedAtUnixSeconds: '1787677536',
             expiresAtUnixSeconds: '0',
             offer: {
@@ -147,7 +148,7 @@ describe('CampaignOfferService', () => {
         body: {
           playerId: '0',
           offers: [
-            { grantId: 'bsg_1', offerId: 'opaque', state: 'Granted' },
+            { grantId: 'bsg_1', offerId: 'opaque', state: CampaignOfferState.Granted },
           ],
         },
       });
@@ -188,7 +189,7 @@ describe('CampaignOfferService', () => {
       const beam = { cid: 'cid', pid: 'pid', requester } as unknown as BeamBase;
       const service = new CampaignOfferService({ beam, getPlayer: () => new PlayerService() });
 
-      await service.getCampaignOffers('beamable_virtual_store', ['Granted', 'Redeemed']);
+      await service.getCampaignOffers('beamable_virtual_store', [CampaignOfferState.Granted, CampaignOfferState.Redeemed]);
 
       expect(request).toHaveBeenCalledTimes(1);
       const url: string = request.mock.calls[0][0].url;

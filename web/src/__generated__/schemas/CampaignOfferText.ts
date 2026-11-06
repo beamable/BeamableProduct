@@ -4,6 +4,6 @@
  */
 
 export type CampaignOfferText = { 
+  title: string; 
   description?: string | null; 
-  title?: string; 
 };

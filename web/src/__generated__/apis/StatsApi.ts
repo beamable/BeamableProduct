@@ -22,6 +22,9 @@ import type { EmptyResponse } from '@/__generated__/schemas/EmptyResponse';
 import type { GetStatsResponse } from '@/__generated__/schemas/GetStatsResponse';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
 import type { HttpResponse } from '@/network/http/types/HttpResponse';
+import type { ListStatKeysResponse } from '@/__generated__/schemas/ListStatKeysResponse';
+import type { PlayersBatchGetRequest } from '@/__generated__/schemas/PlayersBatchGetRequest';
+import type { PlayersBatchGetResponse } from '@/__generated__/schemas/PlayersBatchGetResponse';
 import type { SearchExtendedRequest } from '@/__generated__/schemas/SearchExtendedRequest';
 import type { SearchExtendedResponse } from '@/__generated__/schemas/SearchExtendedResponse';
 import type { SetStatsRequest } from '@/__generated__/schemas/SetStatsRequest';
@@ -39,6 +42,34 @@ import type { StatsUnsubscribeRequest } from '@/__generated__/schemas/StatsUnsub
 import type { StatsVisibility } from '@/__generated__/schemas/enums/StatsVisibility';
 import type { StatUpdateRequest } from '@/__generated__/schemas/StatUpdateRequest';
 import type { StatUpdateRequestStringListFormat } from '@/__generated__/schemas/StatUpdateRequestStringListFormat';
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param namespace - The `namespace` parameter to include in the API request.
+ * @param prefix - The `prefix` parameter to include in the API request.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function statsGetKeys(requester: HttpRequester, namespace?: string, prefix?: string, gamertag?: string): Promise<HttpResponse<ListStatKeysResponse>> {
+  let endpoint = "/api/stats/keys";
+  
+  // Make the API request
+  return makeApiRequest<ListStatKeysResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      namespace,
+      prefix
+    },
+    g: gamertag,
+    w: true
+  });
+}
 
 /**
  * @remarks
@@ -226,6 +257,30 @@ export async function statsPutBatch(requester: HttpRequester, payload: BatchWrit
     r: requester,
     e: endpoint,
     m: PUT,
+    p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param payload - The `PlayersBatchGetRequest` instance to use for the API request
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function statsPostPlayersBatch(requester: HttpRequester, payload: PlayersBatchGetRequest, gamertag?: string): Promise<HttpResponse<PlayersBatchGetResponse>> {
+  let endpoint = "/api/stats/players/batch";
+  
+  // Make the API request
+  return makeApiRequest<PlayersBatchGetResponse, PlayersBatchGetRequest>({
+    r: requester,
+    e: endpoint,
+    m: POST,
     p: payload,
     g: gamertag,
     w: true

@@ -4,6 +4,6 @@
  */
 
 export type RealmAssociation = { 
-  playerId?: bigint | string; 
-  realmId?: string; 
+  gamerTag?: bigint | string; 
+  projectId?: string; 
 };

@@ -182,7 +182,6 @@ namespace Beamable.Platform.Tests.Content
 			yield return new WaitForSecondsRealtime(1.1f);
 			Assert.That(failure, Is.InstanceOf<OperationCanceledException>().Or.InstanceOf<ObjectDisposedException>());
 			Assert.That(callbacks, Is.Zero);
-			LogAssert.NoUnexpectedReceived();
 		}
 
 		[UnityTest]

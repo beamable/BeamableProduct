@@ -221,15 +221,15 @@ jwtToken {
 		// `${maven}` substitutes to an absolute path, so a whole-string comparison would stop recognising the
 		// Scala build step and silently drop the injected `clean` — the thing that keeps cross-module classes
 		// from skewing.
-		Assert.That(LocalStackUpCommand.IsMvn("mvn"), Is.True);
-		Assert.That(LocalStackUpCommand.IsMvn("mvn.cmd"), Is.True);
-		Assert.That(LocalStackUpCommand.IsMvn(Path.Combine("/tc", "maven", "3.9.9", "bin", "mvn")), Is.True);
-		Assert.That(LocalStackUpCommand.IsMvn(LocalStackTemplate.MavenToken), Is.True);
+		Assert.That(LocalStackRunCommand.IsMvn("mvn"), Is.True);
+		Assert.That(LocalStackRunCommand.IsMvn("mvn.cmd"), Is.True);
+		Assert.That(LocalStackRunCommand.IsMvn(Path.Combine("/tc", "maven", "3.9.9", "bin", "mvn")), Is.True);
+		Assert.That(LocalStackRunCommand.IsMvn(LocalStackTemplate.MavenToken), Is.True);
 
-		Assert.That(LocalStackUpCommand.IsMvn("npm"), Is.False);
-		Assert.That(LocalStackUpCommand.IsMvn("docker"), Is.False);
-		Assert.That(LocalStackUpCommand.IsMvn(null), Is.False);
-		Assert.That(LocalStackUpCommand.IsMvn(""), Is.False);
+		Assert.That(LocalStackRunCommand.IsMvn("npm"), Is.False);
+		Assert.That(LocalStackRunCommand.IsMvn("docker"), Is.False);
+		Assert.That(LocalStackRunCommand.IsMvn(null), Is.False);
+		Assert.That(LocalStackRunCommand.IsMvn(""), Is.False);
 	}
 
 	private static string WriteConf(string body)

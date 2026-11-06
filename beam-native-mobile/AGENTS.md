@@ -11,7 +11,7 @@ native libraries for Android, iOS, and their Unity / Unreal / React Native engin
   `extension/` the NSE.
 - `Unity/`, `Unity.Web/`, `Unreal/`, `ReactNative/` — the engine packages. **They ship prebuilt
   binaries** (the `.aar` under `ReactNative/android/libs/`, the `.xcframework` under
-  `ReactNative/ios/`), staged by `../dev-native.sh`. Editing native source does NOT change the
+  `ReactNative/ios/`), staged by `beam local run native-libs`. Editing native source does NOT change the
   engine packages until the binaries are rebuilt and restaged.
 - `Samples/` — runnable samples (React Native app + the C# microservice it talks to).
 
@@ -42,5 +42,5 @@ tests. When in doubt, fewer files.
 - Slack forwarding of funnel data is **microservice-only** by policy; native libraries POST
   analytics and may mirror to the portal CampaignService's `ForwardFunnelToSlack` endpoint, but
   never call a Slack webhook directly.
-- After changing native source, rebuild + restage binaries (`../dev-native.sh`, or for Android the
+- After changing native source, rebuild + restage binaries (`beam local run native-libs`, or for Android the
   `:notifications:assembleRelease` AAR copied into the engine packages) before testing in a sample.

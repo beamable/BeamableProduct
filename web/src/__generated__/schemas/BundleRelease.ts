@@ -6,8 +6,6 @@
 export type BundleRelease = { 
   bundleName?: string; 
   checksum?: string; 
-  comment?: string | null; 
   publishedAt?: Date; 
-  publishedByAccountId?: bigint | string | null; 
   version?: bigint | string; 
 };

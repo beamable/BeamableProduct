@@ -932,11 +932,16 @@ public class PortalExtensionDef
 	/// <summary>
 	/// Reads the @beamable/portal-toolkit version. If the devDependencies value is not a semver
 	/// (e.g. a file: reference), falls back to reading the installed toolkit's package.json version field.
+	/// A local build installed over the lockfile (see <see cref="Web.WebPackagesService.ApplyOverlay"/>) is read
+	/// from the installed toolkit too: package.json still names the released one.
 	/// </summary>
 	public string GetToolkitVersion()
 	{
 		try
 		{
+			if (File.Exists(Path.Combine(AbsolutePath, "node_modules", Web.WebPackagesService.OverlayMarker)))
+				return Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(ToolkitNodeModulesPackageJsonPath)).SelectToken("version")?.ToString();
+
 			var json = File.ReadAllText(AbsolutePackageJsonPath);
 			var root = Newtonsoft.Json.Linq.JObject.Parse(json);
 			var depVersion = (root["devDependencies"] as Newtonsoft.Json.Linq.JObject)

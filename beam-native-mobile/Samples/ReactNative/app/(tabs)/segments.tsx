@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import type { SegmentMembershipChanged } from '@beamable/sdk';
 
 import {
   CLIENT_DEMO_STAT,
@@ -19,7 +20,6 @@ import {
   describeSegmentError,
   formatWhen,
   listMySegments,
-  listMyTransitions,
   readClientStats,
   readStats,
   ruleLeafJson,
@@ -29,7 +29,6 @@ import {
   watchMySegments,
   type ClientNamespace,
   type PlayerSegment,
-  type SegmentTransition,
 } from '../../src/beam/segments';
 import { useBeam } from '../../src/state/beamContext';
 import { useLogActions } from '../../src/state/logContext';
@@ -44,7 +43,7 @@ import StatCard from '../../src/ui/StatCard';
 import TabStrip from '../../src/ui/TabStrip';
 import { colors, mono, radius, space } from '../../src/ui/theme';
 
-/** How many transition rows to render — the endpoint pages, and this is a demo. */
+/** How many of the pushed transitions to keep on screen. */
 const MAX_TRANSITIONS = 10;
 
 /**
@@ -76,8 +75,6 @@ export default function SegmentsTab() {
 
   const [segments, setSegments] = useState<PlayerSegment[]>([]);
   const [segmentsError, setSegmentsError] = useState<string | null>(null);
-  const [transitions, setTransitions] = useState<SegmentTransition[]>([]);
-  const [transitionsError, setTransitionsError] = useState<string | null>(null);
   const [segmentsBusy, setSegmentsBusy] = useState(false);
 
   // Client-namespace stats: this app writes them itself, so they need their own read and their
@@ -103,8 +100,9 @@ export default function SegmentsTab() {
   const clientInFlight = useRef(false);
   const segmentsInFlight = useRef(false);
 
-  // The last few live membership changes, newest first — proof the socket delivered something.
-  const [liveChanges, setLiveChanges] = useState<string[]>([]);
+  // The membership changes pushed since the screen opened, newest first: the proof a stat write
+  // did something. A game client has no history route, so these are its transitions.
+  const [transitions, setTransitions] = useState<SegmentMembershipChanged[]>([]);
 
   /** `silent` keeps the on-focus refresh out of the Activity log — see the Inbox tab. */
   const refreshStats = useCallback(
@@ -165,10 +163,6 @@ export default function SegmentsTab() {
     [isReady, clientNs, append],
   );
 
-  /**
-   * Membership and history are read together but reported apart: they are two endpoints, and
-   * one being closed off shouldn't blank out the other.
-   */
   const refreshSegments = useCallback(
     async (silent = false) => {
       if (!isReady) {
@@ -179,26 +173,14 @@ export default function SegmentsTab() {
       segmentsInFlight.current = true;
       setSegmentsBusy(true);
       try {
-        const [mine, history] = await Promise.allSettled([listMySegments(), listMyTransitions()]);
-
-        if (mine.status === 'fulfilled') {
-          setSegments(mine.value);
-          setSegmentsError(null);
-          if (!silent) append(`My segments: ${mine.value.length}`);
-        } else {
-          const msg = describeSegmentError(mine.reason);
-          setSegmentsError(msg);
-          append(`Segments error: ${msg}`);
-        }
-
-        if (history.status === 'fulfilled') {
-          setTransitions(history.value);
-          setTransitionsError(null);
-        } else {
-          const msg = describeSegmentError(history.reason);
-          setTransitionsError(msg);
-          append(`Segment transitions error: ${msg}`);
-        }
+        const mine = await listMySegments();
+        setSegments(mine);
+        setSegmentsError(null);
+        if (!silent) append(`My segments: ${mine.length}`);
+      } catch (e) {
+        const msg = describeSegmentError(e);
+        setSegmentsError(msg);
+        append(`Segments error: ${msg}`);
       } finally {
         segmentsInFlight.current = false;
         setSegmentsBusy(false);
@@ -219,7 +201,7 @@ export default function SegmentsTab() {
     try {
       stop = watchMySegments((change, mine) => {
         setSegments(mine);
-        setLiveChanges((prev) => [describeSegmentChange(change), ...prev].slice(0, 5));
+        setTransitions((prev) => [change, ...prev].slice(0, MAX_TRANSITIONS));
         append(`Segment change: ${describeSegmentChange(change)}`);
       });
     } catch (e) {
@@ -580,48 +562,29 @@ export default function SegmentsTab() {
             <MessageCard
               key={s.segmentId}
               subject={s.segmentId}
-              body={`Entered ${formatWhen(s.enteredAt)}`}
+              body={s.enteredAt ? `Entered ${formatWhen(s.enteredAt)}` : 'Entry time kept only when the segment tracks tenure'}
               meta={`source: ${s.sources.join(', ') || 'unknown'}`}
             />
           ))
         )}
       </Section>
 
-      <Section title={`Live changes (${liveChanges.length})`}>
+      <Section title={`Recent transitions (${transitions.length})`}>
         <Hint>
-          Pushed over the realtime socket as membership changes, without pressing ↻. The
-          notification only says *that* something changed — the list above is re-read from the
-          server on each one, because the endpoint is the truth and the push is best-effort.
+          Pushed over the realtime socket as membership changes, since this screen opened — the
+          proof a stat write did something. A push only says *that* something changed, so the list
+          above is re-read from the server on each one; and it reaches only a connected player, so
+          nothing that happened while the app was closed shows here.
         </Hint>
-        {liveChanges.length === 0 ? (
+        {transitions.length === 0 ? (
           <Hint>
-            Nothing yet. Bump a stat that a segment rule watches and a line appears here within
+            Nothing yet. Bump a stat that a segment rule reads and a row appears here within
             seconds.
           </Hint>
         ) : (
-          liveChanges.map((line, i) => (
-            <MessageCard key={`${line}-${i}`} subject={line} body="via segments.transition" />
-          ))
-        )}
-      </Section>
-
-      <Section title="Recent transitions">
-        <Hint>
-          Enter/exit history for this player — the proof a stat write did something. A row with
-          `cause: Rule` is the segment engine reacting to a stat change; `StateChange` is a
-          segment being enabled or archived in the Portal.
-        </Hint>
-        {transitionsError && (
-          <Text style={styles.error} selectable>
-            ✕ {transitionsError}
-          </Text>
-        )}
-        {transitions.length === 0 ? (
-          <Hint>{transitionsError ? 'History not loaded.' : 'No transitions yet.'}</Hint>
-        ) : (
-          transitions.slice(0, MAX_TRANSITIONS).map((t, i) => (
+          transitions.map((t, i) => (
             <MessageCard
-              key={`${t.segmentId}-${String(t.timestamp)}-${i}`}
+              key={`${t.segmentId}-${t.timestamp}-${i}`}
               subject={`${t.kind === 'Exit' ? '←' : '→'} ${t.kind}  ${t.segmentId}`}
               body={`cause: ${t.cause} · rule v${t.ruleVersion}`}
               meta={formatWhen(t.timestamp)}

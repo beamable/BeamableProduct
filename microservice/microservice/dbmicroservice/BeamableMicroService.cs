@@ -402,12 +402,8 @@ namespace Beamable.Server
 				await RunServiceSetupCallbacks();
             }
 
-            // Beamo log-context is realm-scoped; zone services have no realm beamo api.
-            if (IsRealmScoped)
-            {
-            	var loggingContextService = InstanceArgs.ServiceScope.GetService<ILoggingContextService>();
-            	await loggingContextService.GetAllLoggingContexts();
-            }
+            var loggingContextService = InstanceArgs.ServiceScope.GetService<ILoggingContextService>();
+            await loggingContextService.GetAllLoggingContexts();
             await ProvideService();
 
             HasInitialized = true;
@@ -864,13 +860,16 @@ namespace Beamable.Server
 	      }
 
 	      BeamActivity parentActivity = BeamActivity.Noop;
-	      if (_socketRequesterContext.TryGetListener(ctx.Id, out var existingListener))
+	      var isResponse = _socketRequesterContext.TryGetListener(ctx.Id, out var existingListener);
+	      if (isResponse)
 	      {
 		      parentActivity = existingListener.Activity;
 	      }
-	      
-	      
-	      using var activity = _activityProvider.Create(Otel.TRACE_WS, parentActivity);
+
+	      // A request that carries the caller's traceparent joins the caller's trace instead of starting its own.
+	      using var activity = !isResponse && ActivityProviderExtensions.TryGetRemoteParent(ctx.Headers, out var remoteParent)
+		      ? _activityProvider.Create(Otel.TRACE_WS, remoteParent)
+		      : _activityProvider.Create(Otel.TRACE_WS, parentActivity);
 	      MicroserviceRequester.ContextActivity.Value = activity;
 	      ctx.ActivityContext = activity;
 	      
@@ -895,8 +894,6 @@ namespace Beamable.Server
 	      string routingKey = InstanceArgs.GetRoutingKey().GetOrElse(string.Empty);
 	      try
 	      {
-	      	if (IsRealmScoped)
-	      	{
 		      var loggingContextService = Provider.GetService<ILoggingContextService>();
 		      BeamoV2ServiceLoggingContext loglevelContext = loggingContextService.GetLogLevelContext(MicroserviceName, routingKey);
 		      
@@ -969,7 +966,6 @@ namespace Beamable.Server
 
 			      
 		      }
-	      	}
 	      }
 	      catch (Exception ex)
 	      {
@@ -1185,7 +1181,7 @@ namespace Beamable.Server
 	      {
 		      // Deliberately not fatal: throwing here would abort ProvideService before the event provider
 		      // is wired up, leaving a half-registered socket — a worse failure than a service that runs and
-		      // reports itself degraded. The distinct message is what `beam local up` watches for, so this
+		      // reports itself degraded. The distinct message is what `beam local run` watches for, so this
 		      // no longer disappears into the log.
 		      Log.Error(
 			      Constants.Features.Services.Logs.FEDERATION_REGISTRATION_FAILED +

@@ -732,10 +732,38 @@ public class ConfigService
 
 	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option, string defaultValue = null)
 	{
-		// Try to get from option and, if we can't, get it from the loaded config file.		
-		value = context.ParseResult.GetValueForOption(option) ?? GetConfigString(option.OptionName, defaultValue);
+		// The option, then its environment override, then the loaded config file.
+		value = PickSetting(context.ParseResult.GetValueForOption(option), option.OptionName,
+			() => GetConfigString(option.OptionName, defaultValue));
 		return !string.IsNullOrEmpty(value);
 	}
+
+	/// <summary>
+	/// The settings an environment variable can override: host, cid, pid and the two tokens, as <c>BEAM_HOST</c>,
+	/// <c>BEAM_CID</c>, <c>BEAM_PID</c>, <c>BEAM_REFRESH_TOKEN</c> and <c>BEAM_ACCESS_TOKEN</c>. They point one
+	/// process, and every process it starts, at another backend or login without touching the .beamable files:
+	/// <c>beam local run</c> sets them on the steps it starts, so a stack's services use the stack's target while
+	/// a <c>beam</c> command typed by hand keeps the workspace's own login. The web SDK reads the same three names.
+	/// </summary>
+	public static readonly string[] EnvironmentOverridable =
+	{
+		CFG_JSON_FIELD_HOST, CFG_JSON_FIELD_CID, CFG_JSON_FIELD_PID, CFG_TOKEN_JSON_FIELD_REFRESH_TOKEN, CFG_TOKEN_JSON_FIELD_ACCESS_TOKEN
+	};
+
+	/// <summary>The environment variable overriding <paramref name="optionName"/>: <c>refresh-token</c> is <c>BEAM_REFRESH_TOKEN</c>.</summary>
+	public static string EnvironmentVariableFor(string optionName) => "BEAM_" + optionName.ToUpperInvariant().Replace('-', '_');
+
+	/// <summary>The value of <paramref name="optionName"/>'s environment override, or null when it has none or isn't set.</summary>
+	public static string EnvironmentOverride(string optionName)
+	{
+		if (!EnvironmentOverridable.Contains(optionName)) return null;
+		var value = Environment.GetEnvironmentVariable(EnvironmentVariableFor(optionName));
+		return string.IsNullOrWhiteSpace(value) ? null : value;
+	}
+
+	/// <summary>An explicit option wins, then the environment override, then the config files (or the default).</summary>
+	public static string PickSetting(string fromOption, string optionName, Func<string> fromConfig) =>
+		fromOption ?? EnvironmentOverride(optionName) ?? fromConfig();
 
 	public string PrettyPrint()
 	{
