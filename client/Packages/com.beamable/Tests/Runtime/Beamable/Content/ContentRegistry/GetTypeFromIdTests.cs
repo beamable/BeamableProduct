@@ -21,7 +21,12 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 			reflectionCache.RegisterTypeProvider(cache);
 			reflectionCache.RegisterReflectionSystem(cache);
 
-			var assembliesToSweep = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.GetName().Name).ToList();
+#if UNITY_6000_6_OR_NEWER
+			var assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
+#else
+			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+#endif
+			var assembliesToSweep = assemblies.Select(asm => asm.GetName().Name).ToList();
 			reflectionCache.GenerateReflectionCache(assembliesToSweep);
 		}
 
