@@ -146,7 +146,7 @@ public class ProcessHealthMonitor
                 connection?.State == WebSocketState.Open, authenticated,
                 _generations[i], health?.PendingRequests ?? 0, health?.OldestPendingRequest.TotalSeconds ?? 0,
                 health?.SinceLastReply?.TotalSeconds, health?.WaitingForReply?.TotalSeconds,
-                health?.ReportedBroken ?? false);
+                health?.HasActiveFailure ?? false);
         }
         return result;
     }

@@ -19,6 +19,69 @@ namespace microserviceTests.microservice.dbmicroservice;
 public class ProcessHealthContractTests : CommonTest
 {
     [Test]
+    public async Task RecoveredShadowStall_StaysHealthyWhileIdle_AndDetectsSecondStallOnSameSocket()
+    {
+        void Configure(TestSocket socket) => socket
+            .AddMessageHandler(MessageMatcher.WithRouteContains("gateway/auth"),
+                MessageResponder.Success(new MicroserviceAuthResponse { result = "ok" }), requiresAuth: false)
+            .AddMessageHandler(MessageMatcher.WithRouteContains("basic/ping"), MessageResponder.Success(new CommonResponse()));
+
+        var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var sibling = new RequesterHarness(Configure);
+        using var affected = new RequesterHarness(socket =>
+        {
+            Configure(socket);
+            socket.AddMessageHandler(MessageMatcher.WithRouteContains("basic/held"), MessageResponder.CustomAsync(async req =>
+            {
+                await release.Task;
+                return req.Succeed(new CommonResponse());
+            }), MessageFrequency.Exactly(2));
+        });
+        var recovery = TimeSpan.FromMilliseconds(100);
+        var monitor = new ProcessHealthMonitor(new[] { new Service(sibling.Context), new Service(affected.Context) },
+            2, new ProcessHealthOptions { SocketRecovery = recovery });
+        ProcessHealthSnapshot Sample()
+        {
+            monitor.Check(Stopwatch.GetTimestamp());
+            return monitor.Snapshot;
+        }
+        try
+        {
+            await sibling.AuthRequester.Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth");
+            await affected.AuthRequester.Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth");
+            Assert.That(Sample().State, Is.EqualTo(ProcessHealthState.Healthy));
+            affected.Context.Reliability.StallTimeout = TimeSpan.FromMilliseconds(50);
+            var first = affected.Requester.Request<CommonResponse>(Method.GET, "basic/held");
+            Assert.That(SpinWait.SpinUntil(() => Sample().State == ProcessHealthState.Degraded, 3000), Is.True);
+            release.SetResult(true);
+            Assert.That(await first.FinishWithin(TimeSpan.FromSeconds(3), "first reply"), Is.Null);
+            await affected.Requester.Request<CommonResponse>(Method.GET, "basic/ping");
+            Sample();
+            await Task.Delay(recovery + TimeSpan.FromMilliseconds(25));
+            await sibling.Requester.Request<CommonResponse>(Method.GET, "basic/ping");
+            Assert.That(Sample().State, Is.EqualTo(ProcessHealthState.Healthy), "the recovered socket was only idle");
+            Assert.That(monitor.Snapshot.IncidentId, Is.Null);
+            Assert.That(affected.Context.GetHealth(Stopwatch.GetTimestamp()).ReportedBroken, Is.True,
+                "the socket report is recorded once per connection");
+
+            release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var second = affected.Requester.Request<CommonResponse>(Method.GET, "basic/held");
+            Assert.That(SpinWait.SpinUntil(() => Sample().State == ProcessHealthState.Degraded, 3000), Is.True);
+            Assert.That(SpinWait.SpinUntil(() => Sample().Reason == "isolated_socket_recovery_exhausted", 3000), Is.True);
+            Assert.That(monitor.Snapshot.Instances[1].Generation, Is.EqualTo(1));
+            Assert.That(monitor.Snapshot.IncidentId, Is.Not.Null);
+            release.SetResult(true);
+            Assert.That(await second.FinishWithin(TimeSpan.FromSeconds(3), "second reply"), Is.Null);
+            Assert.That(Sample().State, Is.EqualTo(ProcessHealthState.Healthy));
+        }
+        finally
+        {
+            release.TrySetResult(true);
+            monitor.Stop();
+        }
+    }
+
+    [Test]
     public async Task ReplacementWithPriorEmptyAuthCounter_RemainsInRecoveryUntilActualAuthReply()
     {
         var args = new TestArgs();

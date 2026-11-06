@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using Beamable.Server;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace microserviceTests.microservice.dbmicroservice;
@@ -24,11 +25,21 @@ public class ProcessHealthDiagnosticsTests
         diagnostics.Start();
         var first = Unhealthy("first");
         diagnostics.Record(ProcessHealthSnapshot.Starting, first);
-        diagnostics.Record(first, first with { Reason = "isolated_socket_recovery_exhausted" });
+        var changed = first with { Reason = "isolated_socket_recovery_exhausted" };
+        diagnostics.Record(first, changed);
+        diagnostics.Record(changed, changed);
+        diagnostics.Record(changed, first);
+        Assert.That(diagnostics.LastIncident, Is.SameAs(first));
         var recovered = first with { State = ProcessHealthState.Healthy, IncidentId = null };
         diagnostics.Record(first, recovered);
         diagnostics.Record(recovered, Unhealthy("second"));
-        Assert.That(SpinWait.SpinUntil(() => records.Count == 5, 2000), Is.True);
+        Assert.That(SpinWait.SpinUntil(() => records.Any(x => x.text.Contains("incident second:")), 2000), Is.True);
+        const string prefix = "Process health transition: ";
+        var updates = records.Where(x => !x.error && x.text.StartsWith(prefix, StringComparison.Ordinal))
+            .Select(x => JObject.Parse(x.text.Substring(prefix.Length)))
+            .Where(x => (string)x["IncidentId"] == first.IncidentId);
+        Assert.That(updates.Select(x => (string)x["Reason"]),
+            Is.EqualTo(new[] { "isolated_socket_recovery_exhausted", "thread_pool_heartbeat_missed" }));
         Assert.That(records.Count(x => x.error), Is.EqualTo(2));
         Assert.That(records.Count(x => x.text.Contains("managed_stacks_unavailable")), Is.EqualTo(2));
         Assert.That(records.Any(x => x.text.Contains("recovered")), Is.True);
