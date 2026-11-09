@@ -174,7 +174,11 @@ public class LocalStackRemoteMicroservicesTests
 
 		RemoteMicroservices.Apply(config.steps, Settings("justin"));
 
-		Assert.That(Step(config, RemoteMicroservices.TunnelStepName).arguments, Is.EqualTo(RemoteMicroservices.TunnelScript(Settings("justin"))));
+		var tunnel = Step(config, RemoteMicroservices.TunnelStepName);
+		Assert.That(tunnel.arguments, Is.EqualTo(OperatingSystem.IsWindows()
+			? RemoteMicroservices.TunnelPowerShellScript(Settings("justin"))
+			: RemoteMicroservices.TunnelScript(Settings("justin"))));
+		Assert.That(tunnel.shellKind, Is.EqualTo(OperatingSystem.IsWindows() ? "powershell" : "sh"));
 	}
 
 	[Test]
@@ -258,11 +262,130 @@ public class LocalStackRemoteMicroservicesTests
 	}
 
 	[Test]
+	public void TunnelPowerShellScript_ForwardsAllThreeSocketsAndSurvivesTokenSubstitution()
+	{
+		var script = RemoteMicroservices.TunnelPowerShellScript(Settings("justin"));
+
+		Assert.That(script, Does.Contain("$dev = 'justin'"));
+		Assert.That(script, Does.Contain("-R ('/run/tunnels/' + $dev + '.sock:127.0.0.1:8080')"));
+		Assert.That(script, Does.Contain("-R ('/run/tunnels/' + $dev + '-registry.sock:127.0.0.1:5002')"));
+		Assert.That(script, Does.Contain("-R ('/run/tunnels/' + $dev + '-clickhouse.sock:127.0.0.1:8123')"));
+		Assert.That(script, Does.Contain("'LocalCommand echo " + RemoteMicroservices.TunnelReadyMarker + "'"));
+		Assert.That(script, Does.Contain("$sshDocument = 'example-ssh'"));
+		Assert.That(script, Does.Contain("--document-name ' + $sshDocument"));
+		Assert.That(script, Does.Not.Contain("portNumber"));
+		Assert.That(script, Does.Not.Contain("${"));
+		// Windows PowerShell reads a BOM-less script as the ANSI code page.
+		Assert.That(script.All(c => c < 128), Is.True, "ASCII only");
+	}
+
+	[Test]
+	public void TunnelPowerShellScript_Parses()
+	{
+		if (!OperatingSystem.IsWindows())
+		{
+			Assert.Ignore("Windows PowerShell only.");
+		}
+
+		var path = Path.Combine(Path.GetTempPath(), $"beam-tunnel-test-{Guid.NewGuid():N}.ps1");
+		try
+		{
+			File.WriteAllText(path, RemoteMicroservices.TunnelPowerShellScript(Settings("justin")));
+			var check = "$errors = $null; [void][System.Management.Automation.Language.Parser]::ParseFile('" + path +
+			            "', [ref]$null, [ref]$errors); $errors | ForEach-Object { $_.ToString() }";
+			using var ps = Process.Start(new ProcessStartInfo("powershell", $"-NoProfile -Command \"{check}\"") { RedirectStandardOutput = true })!;
+			var errors = ps.StandardOutput.ReadToEnd();
+			ps.WaitForExit();
+
+			Assert.That(errors.Trim(), Is.Empty);
+		}
+		finally
+		{
+			File.Delete(path);
+		}
+	}
+
+	// The PowerShell loop's credentials: a profile, or keys in the environment, must reach every connection's assume-role.
+	[TestCase(true)]
+	[TestCase(false)]
+	public void TunnelPowerShellScript_KeepsTheCallersCredentialsForEveryConnection(bool withProfile)
+	{
+		if (!OperatingSystem.IsWindows())
+		{
+			Assert.Ignore("Windows PowerShell only.");
+		}
+
+		var dir = Directory.CreateTempSubdirectory().FullName;
+		try
+		{
+			var bin = Path.Combine(dir, "bin");
+			Directory.CreateDirectory(bin);
+			var log = Path.Combine(dir, "assume.log");
+			File.WriteAllText(Path.Combine(bin, "aws.cmd"),
+				"@echo off\r\n" +
+				"if \"%1 %2\"==\"sts assume-role\" (\r\n" +
+				"  echo profile=%AWS_PROFILE% key=%AWS_ACCESS_KEY_ID%>>\"%ASSUME_LOG%\"\r\n" +
+				"  echo AK SK TOKEN\r\n" +
+				"  exit /b 0\r\n" +
+				")\r\n" +
+				"if \"%1 %2\"==\"ec2 describe-instances\" echo i-0123456789abcdef0\r\n" +
+				"exit /b 0\r\n");
+			File.WriteAllText(Path.Combine(bin, "ssh.cmd"), "@exit /b 255\r\n");
+			File.WriteAllText(Path.Combine(bin, "ssh-keygen.cmd"), "@exit /b 0\r\n");
+			var script = Path.Combine(dir, "tunnel.ps1");
+			File.WriteAllText(script, RemoteMicroservices.TunnelPowerShellScript(Settings("justin")));
+
+			var psi = new ProcessStartInfo("powershell", $"-NoProfile -ExecutionPolicy Bypass -File \"{script}\"")
+			{
+				RedirectStandardOutput = true, RedirectStandardError = true
+			};
+			psi.Environment["PATH"] = bin + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH");
+			psi.Environment["ASSUME_LOG"] = log;
+			foreach (var name in new[] { "AWS_PROFILE", "AWS_DEFAULT_PROFILE", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN" })
+			{
+				psi.Environment.Remove(name);
+			}
+
+			if (withProfile)
+			{
+				psi.Environment["AWS_PROFILE"] = "dev-profile";
+			}
+			else
+			{
+				psi.Environment["AWS_ACCESS_KEY_ID"] = "caller-key";
+				psi.Environment["AWS_SECRET_ACCESS_KEY"] = "caller-secret";
+			}
+
+			using var ps = Process.Start(psi)!;
+			var stdout = ps.StandardOutput.ReadToEndAsync();
+			var stderr = ps.StandardError.ReadToEndAsync();
+			// Each closed connection waits 5 seconds before the next.
+			var deadline = DateTime.UtcNow.AddSeconds(30);
+			while (DateTime.UtcNow < deadline && (!File.Exists(log) || File.ReadAllLines(log).Length < 2))
+			{
+				Thread.Sleep(100);
+			}
+
+			ps.Kill(entireProcessTree: true);
+			ps.WaitForExit();
+
+			var expected = withProfile ? "profile=dev-profile key=" : "profile= key=caller-key";
+			var lines = File.Exists(log) ? File.ReadAllLines(log).Select(l => l.Trim()).ToArray() : Array.Empty<string>();
+			Assert.That(lines.Length, Is.GreaterThanOrEqualTo(2), $"two connections in a row\n{stdout.Result}\n{stderr.Result}");
+			Assert.That(lines, Is.All.EqualTo(expected), "no connection's role credentials leak into the next");
+		}
+		finally
+		{
+			Directory.Delete(dir, true);
+		}
+	}
+
+	[Test]
 	public void TunnelScript_IsValidSh()
 	{
 		if (System.OperatingSystem.IsWindows())
 		{
-			Assert.Ignore("POSIX sh only; :remote-ms refuses to run on Windows.");
+			Assert.Ignore("POSIX sh only; Windows runs TunnelPowerShellScript.");
 		}
 
 		var path = Path.GetTempFileName();
@@ -547,7 +670,7 @@ public class LocalStackRemoteMicroservicesTests
 	{
 		if (OperatingSystem.IsWindows())
 		{
-			Assert.Ignore("POSIX sh only; :remote-ms refuses to run on Windows.");
+			Assert.Ignore("POSIX sh only; Windows runs TunnelPowerShellScript.");
 		}
 
 		var dir = Directory.CreateTempSubdirectory().FullName;

@@ -47,6 +47,9 @@ public static class RemoteMicroservices
 	/// <summary>The tunnel step logs this once ssh has connected; it is the step's readiness signal.</summary>
 	public const string TunnelReadyMarker = "remote-microservices tunnel connected";
 
+	/// <summary>The tunnel step's shell here: <see cref="TunnelPowerShellScript"/> on Windows, <see cref="TunnelScript"/> elsewhere.</summary>
+	public static string TunnelShellKind => OperatingSystem.IsWindows() ? "powershell" : "sh";
+
 	// The LocalStackTemplate steps this changes.
 	public const string DockerStepName = LocalStackTemplate.ApiDepsStepName;
 	public const string GatewayStepName = LocalStackDependencies.GatewayStep;
@@ -106,7 +109,7 @@ public static class RemoteMicroservices
 			dependsOn = new List<string> { GatewayStepName },
 			workingDirectory = docker.workingDirectory,
 			shell = true,
-			shellKind = "sh",
+			shellKind = TunnelShellKind,
 			readyWhenLogContains = TunnelReadyMarker,
 			readyTimeoutSeconds = 90
 		});
@@ -226,27 +229,37 @@ public static class RemoteMicroservices
 	/// can't be worked out, or the stack doesn't run the backend here to apply them to). Every problem comes back with
 	/// its fix, so a run can refuse with all of them and a dry run can list them.
 	/// <paramref name="canPrompt"/> (a real run in a terminal) lets it run <c>aws sso login</c> when the SSO session
-	/// has expired, and add the developer's names to /etc/hosts when the DNS resolver blocks them.
+	/// has expired, and add the developer's names to the hosts file when the DNS resolver blocks them.
 	/// </summary>
 	public static (RemoteMsSettings settings, List<string> problems) Check(LocalStackConfig config,
 		IReadOnlyCollection<LocalStackStep> steps, bool runsLocal, bool canPrompt)
 	{
-		if (OperatingSystem.IsWindows())
+		var problems = StackProblems(steps, runsLocal);
+		if (!HasSessionManagerPlugin() && canPrompt && (OperatingSystem.IsWindows() || (OperatingSystem.IsMacOS() && OnPath("brew"))))
 		{
-			return (null, new List<string> { "It runs on macOS and Linux for now: its tunnel is a POSIX sh loop." });
+			InstallSessionManagerPlugin();
 		}
 
-		var problems = StackProblems(steps, runsLocal);
-		if (!OnPath("session-manager-plugin"))
+		if (!HasSessionManagerPlugin())
 		{
-			problems.Add("The AWS Session Manager plugin isn't installed. " + (OperatingSystem.IsMacOS()
-				? "Install it with `brew install --cask session-manager-plugin`."
-				: "See https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html"));
+			var install = OperatingSystem.IsWindows()
+				? $"install it from {SessionManagerPluginWindowsInstaller}"
+				: OperatingSystem.IsMacOS()
+					? "install it with `brew install --cask session-manager-plugin`"
+					: "see https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html";
+			var auto = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+			problems.Add("The AWS Session Manager plugin isn't installed. " + (!auto
+				? char.ToUpper(install[0]) + install.Substring(1) + "."
+				: canPrompt
+					? $"Installing it didn't work; {install}."
+					: $"A run in a terminal installs it, or {install}."));
 		}
 
 		if (!OnPath("ssh") || !OnPath("ssh-keygen"))
 		{
-			problems.Add("ssh and ssh-keygen have to be on your PATH.");
+			problems.Add("ssh and ssh-keygen have to be on your PATH." + (OperatingSystem.IsWindows()
+				? " Add Windows' OpenSSH Client: Settings > System > Optional features."
+				: ""));
 		}
 
 		var aws = AwsPreflightService.FindAwsCli();
@@ -314,12 +327,13 @@ public static class RemoteMicroservices
 		}
 
 		// Public DNS sends every name under the domain to 127.0.0.1, but some routers and corporate resolvers drop
-		// public names that point at 127.0.0.1 (DNS rebinding protection). /etc/hosts works on any network.
+		// public names that point at 127.0.0.1 (DNS rebinding protection). The hosts file works on any network.
 		var unresolved = Unresolved(settings, ResolvesToLoopback);
 		if (unresolved.Count > 0 && canPrompt)
 		{
 			Log.Warning($"{string.Join(" and ", unresolved)} {(unresolved.Count == 1 ? "doesn't" : "don't")} resolve to 127.0.0.1 here " +
-			            "(your DNS resolver may block names that point at 127.0.0.1), so they're being added to /etc/hosts. sudo will ask for your password.");
+			            $"(your DNS resolver may block names that point at 127.0.0.1), so they're being added to {HostsPath}. " +
+			            (OperatingSystem.IsWindows() ? "Windows will ask to allow the change." : "sudo will ask for your password."));
 			AppendToHosts(HostsEntry(unresolved));
 			unresolved = Unresolved(settings, ResolvesToLoopback);
 		}
@@ -327,10 +341,13 @@ public static class RemoteMicroservices
 		if (unresolved.Count > 0)
 		{
 			var (verb, pronoun) = unresolved.Count == 1 ? ("doesn't", "it") : ("don't", "them");
+			var manual = OperatingSystem.IsWindows()
+				? $"as administrator, add this line to {HostsPath}: {HostsEntry(unresolved)}"
+				: $"echo \"{HostsEntry(unresolved)}\" | sudo tee -a {HostsPath}";
 			problems.Add(
 				$"{string.Join(" and ", unresolved)} {verb} resolve to 127.0.0.1 here; your DNS resolver may block names " +
-				$"that point at 127.0.0.1. {(canPrompt ? "Adding" : "A run in a terminal adds")} {pronoun} to /etc/hosts" +
-				$"{(canPrompt ? " didn't work; add" : ", or add")} {pronoun} yourself: echo \"{HostsEntry(unresolved)}\" | sudo tee -a /etc/hosts");
+				$"that point at 127.0.0.1. {(canPrompt ? "Adding" : "A run in a terminal adds")} {pronoun} to {HostsPath}" +
+				$"{(canPrompt ? " didn't work; add" : ", or add")} {pronoun} yourself: {manual}");
 		}
 
 		// A stack without the backend here has nothing to apply the settings to.
@@ -394,7 +411,8 @@ public static class RemoteMicroservices
 		gateway.environment["BEAMABLE_Beamo__Otel__ClickHouse__Endpoint__Port"] = "443";
 		gateway.environment["BEAMABLE_Beamo__Otel__ClickHouse__Endpoint__Protocol"] = "https";
 
-		tunnel.arguments = TunnelScript(settings);
+		tunnel.shellKind = TunnelShellKind;
+		tunnel.arguments = OperatingSystem.IsWindows() ? TunnelPowerShellScript(settings) : TunnelScript(settings);
 	}
 
 	/// <summary><c>compose up -d</c> → <c>compose -f docker-compose.yml -f docker-compose.remote-ms.yml up -d</c>.</summary>
@@ -471,6 +489,95 @@ public static class RemoteMicroservices
 	});
 
 	/// <summary>
+	/// <see cref="TunnelScript"/> for Windows PowerShell 5.1, which the step runner runs <c>powershell</c> shell steps
+	/// with. The ssh options go in a config file of its own (which also keeps ~/.ssh/config out of it), so no option
+	/// with a path in it passes through PowerShell's native argument quoting. The key lives in a fixed folder per
+	/// developer that every start empties, since a stopped step is killed before any cleanup can run. The known-hosts
+	/// file is deleted before each connection, as /dev/null does for the sh loop: the host key changes whenever the
+	/// host is replaced. Each pass sets the role's credentials and puts the caller's back afterwards. Same token
+	/// substitution rule as <see cref="TunnelScript"/>: no dollar sign followed by a brace.
+	/// </summary>
+	public static string TunnelPowerShellScript(RemoteMsSettings settings) => string.Join("\n", new[]
+	{
+		"$ErrorActionPreference = 'Continue'",
+		"# Windows PowerShell drops an empty native argument, so the empty passphrase goes as '\"\"'; Legacy makes PowerShell 7 do the same.",
+		"$PSNativeCommandArgumentPassing = 'Legacy'",
+		$"$dev = '{settings.Name}'",
+		$"$role = '{settings.RoleArn}'",
+		$"$region = '{settings.Region}'",
+		$"$sshDocument = '{settings.SshDocument}'",
+		$"$instanceName = '{settings.TunnelInstanceName}'",
+		$"$user = '{settings.TunnelUser}'",
+		"$keydir = Join-Path ([IO.Path]::GetTempPath()) ('beam-tunnel-' + $dev)",
+		"Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $keydir",
+		"New-Item -ItemType Directory -Force $keydir | Out-Null",
+		"$key = Join-Path $keydir 'key'",
+		"$knownHosts = Join-Path $keydir 'known_hosts'",
+		"$config = Join-Path $keydir 'config'",
+		"$slashed = $keydir.Replace('\\', '/')",
+		"Set-Content -Encoding Ascii -Path $config -Value @(",
+		"  ('IdentityFile \"' + $slashed + '/key\"'),",
+		"  'IdentitiesOnly yes',",
+		"  ('UserKnownHostsFile \"' + $slashed + '/known_hosts\"'),",
+		"  'StrictHostKeyChecking no',",
+		"  'LogLevel ERROR',",
+		"  'ServerAliveInterval 30',",
+		"  'ServerAliveCountMax 3',",
+		"  'ExitOnForwardFailure yes',",
+		"  'PermitLocalCommand yes',",
+		$"  'LocalCommand echo {TunnelReadyMarker}',",
+		"  ('ProxyCommand aws ssm start-session --region ' + $region + ' --target %h --document-name ' + $sshDocument)",
+		")",
+		"ssh-keygen -q -t ed25519 -N '\"\"' -C beam-local-tunnel -f $key",
+		"if ($LASTEXITCODE -ne 0) { exit 1 }",
+		"$pub = 'file://' + $key + '.pub'",
+		"$callerVars = 'AWS_PROFILE', 'AWS_DEFAULT_PROFILE', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN', 'AWS_REGION'",
+		"$caller = @{}",
+		"foreach ($name in $callerVars) { $caller[$name] = [Environment]::GetEnvironmentVariable($name) }",
+		"try {",
+		"  while ($true) {",
+		"    $wait = 5",
+		"    $creds = aws sts assume-role --no-cli-pager --role-arn $role --role-session-name ('beam-tunnel-' + $dev) --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' --output text",
+		"    if ($LASTEXITCODE -ne 0) {",
+		"      'could not assume the tunnel role; retrying in 15s'",
+		"      $wait = 15",
+		"    } else {",
+		"      # One connection, as the tunnel role.",
+		"      $parts = -split ($creds -join ' ')",
+		"      try {",
+		"        $env:AWS_ACCESS_KEY_ID = $parts[0]",
+		"        $env:AWS_SECRET_ACCESS_KEY = $parts[1]",
+		"        $env:AWS_SESSION_TOKEN = $parts[2]",
+		"        $env:AWS_REGION = $region",
+		"        Remove-Item Env:AWS_PROFILE, Env:AWS_DEFAULT_PROFILE -ErrorAction SilentlyContinue",
+		"        $instance = (\"\" + (aws ec2 describe-instances --no-cli-pager --filters ('Name=tag:Name,Values=' + $instanceName) Name=instance-state-name,Values=running --query 'Reservations[0].Instances[0].InstanceId' --output text)).Trim()",
+		"        if ($instance -notlike 'i-*') {",
+		"          \"tunnel host $instanceName isn't running; retrying in 15s\"",
+		"          $wait = 15",
+		"        } else {",
+		"          aws ec2-instance-connect send-ssh-public-key --no-cli-pager --instance-id $instance --instance-os-user $user --ssh-public-key $pub | Out-Null",
+		"          if ($LASTEXITCODE -ne 0) {",
+		"            'could not push the ssh key; retrying in 15s'",
+		"            $wait = 15",
+		"          } else {",
+		"            Remove-Item -Force -ErrorAction SilentlyContinue $knownHosts",
+		"            ssh -N -F $config -R ('/run/tunnels/' + $dev + '.sock:127.0.0.1:8080') -R ('/run/tunnels/' + $dev + '-registry.sock:127.0.0.1:5002') `",
+		"              -R ('/run/tunnels/' + $dev + '-clickhouse.sock:127.0.0.1:8123') ($user + '@' + $instance) 2>&1 | ForEach-Object { \"$_\" }",
+		"            \"tunnel closed (ssh exit $LASTEXITCODE); reconnecting in 5s\"",
+		"          }",
+		"        }",
+		"      } finally {",
+		"        foreach ($name in $callerVars) { [Environment]::SetEnvironmentVariable($name, $caller[$name]) }",
+		"      }",
+		"    }",
+		"    Start-Sleep -Seconds $wait",
+		"  }",
+		"} finally {",
+		"  Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $keydir",
+		"}",
+	});
+
+	/// <summary>
 	/// Once Caddy is up: make sure this machine trusts Caddy's local CA, which signs the certificate for the
 	/// registry name the CLI and gateway connect to. On macOS it's added to the login keychain, which takes one
 	/// password prompt and no sudo; elsewhere this says how. Already trusted (every run after the first, until a
@@ -497,7 +604,7 @@ public static class RemoteMicroservices
 			return;
 		}
 
-		if (!OperatingSystem.IsMacOS())
+		if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
 		{
 			Log.Warning($"Trust Caddy's local CA, now at {cert}, so pushes to {settings.RegistryHost} pass certificate checks (for example, copy it into /usr/local/share/ca-certificates and run update-ca-certificates).");
 			return;
@@ -507,12 +614,24 @@ public static class RemoteMicroservices
 		{
 			// A warning, not information: while the progress board shows, only warnings print, and the password
 			// dialog needs saying why it appeared.
-			Log.Warning($"Adding Caddy's local CA to your login keychain, so the CLI and gateway trust {settings.RegistryHost}. macOS will ask for your password.");
-			var keychain = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Keychains", "login.keychain-db");
-			RunInteractive("security", $"add-trusted-cert -r trustRoot -k \"{keychain}\" \"{cert}\"");
+			if (OperatingSystem.IsWindows())
+			{
+				// The current user's Root store: no administrator rights, and Windows asks to confirm the certificate.
+				Log.Warning($"Adding Caddy's local CA to your Windows trusted root certificates, so the CLI and gateway trust {settings.RegistryHost}. Windows will ask you to confirm.");
+				RunInteractive("certutil", $"-user -addstore -f Root \"{cert}\"");
+			}
+			else
+			{
+				Log.Warning($"Adding Caddy's local CA to your login keychain, so the CLI and gateway trust {settings.RegistryHost}. macOS will ask for your password.");
+				var keychain = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Keychains", "login.keychain-db");
+				RunInteractive("security", $"add-trusted-cert -r trustRoot -k \"{keychain}\" \"{cert}\"");
+			}
+
 			if (!await AcceptsCertificate(url, token))
 			{
-				Log.Warning($"{settings.RegistryHost} still isn't trusted, so pushes will fail certificate checks. Open Keychain Access and set Caddy's local CA to Always Trust.");
+				Log.Warning($"{settings.RegistryHost} still isn't trusted, so pushes will fail certificate checks. " + (OperatingSystem.IsWindows()
+					? "Import Caddy's local CA into Trusted Root Certification Authorities (certmgr.msc)."
+					: "Open Keychain Access and set Caddy's local CA to Always Trust."));
 			}
 		}
 		finally
@@ -554,24 +673,52 @@ public static class RemoteMicroservices
 		&& (awsOutput.Contains("expired", StringComparison.OrdinalIgnoreCase)
 		    || awsOutput.Contains("refresh failed", StringComparison.OrdinalIgnoreCase));
 
-	/// <summary>Ends the /etc/hosts line <see cref="HostsEntry"/> builds, so it's easy to find and remove.</summary>
+	/// <summary>Ends the hosts file line <see cref="HostsEntry"/> builds, so it's easy to find and remove.</summary>
 	public const string HostsMarker = "# beam local run :remote-ms";
+
+	public static string HostsPath => OperatingSystem.IsWindows()
+		? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "drivers", "etc", "hosts")
+		: "/etc/hosts";
 
 	/// <summary>The developer's names this machine has to resolve to itself (the gateway name never is) that don't.</summary>
 	public static List<string> Unresolved(RemoteMsSettings settings, Func<string, bool> resolvesToLoopback) =>
 		new[] { settings.RegistryHost, settings.ClickHouseHost }.Where(h => !resolvesToLoopback(h)).ToList();
 
-	/// <summary>The /etc/hosts line that sends <paramref name="hosts"/> to this machine.</summary>
+	/// <summary>The hosts file line that sends <paramref name="hosts"/> to this machine.</summary>
 	public static string HostsEntry(IEnumerable<string> hosts) => $"127.0.0.1 {string.Join(" ", hosts)} {HostsMarker}";
 
 	/// <summary>
-	/// Appends <paramref name="line"/> to /etc/hosts with <c>sudo tee -a</c>, the line on stdin and no shell. sudo asks
-	/// for the password on the terminal. The names in it passed <see cref="ValidateName"/> and <see cref="IsDomain"/>.
+	/// Appends <paramref name="line"/> to the hosts file. Elsewhere that's <c>sudo tee -a</c>, the line on stdin and no
+	/// shell, and sudo asks for the password on the terminal; on Windows, an elevated PowerShell, which asks through
+	/// UAC and then flushes the DNS cache. The names in it passed <see cref="ValidateName"/> and <see cref="IsDomain"/>.
 	/// </summary>
 	private static void AppendToHosts(string line)
 	{
-		const string hosts = "/etc/hosts";
+		var hosts = HostsPath;
 		var current = File.Exists(hosts) ? File.ReadAllText(hosts) : "";
+		var text = (current.Length > 0 && !current.EndsWith('\n') ? Environment.NewLine : "") + line + Environment.NewLine;
+		if (OperatingSystem.IsWindows())
+		{
+			// The line is only names and an IP, but it goes in as a single-quoted literal all the same.
+			var script = $"[IO.File]::AppendAllText('{hosts.Replace("'", "''")}', '{text.Replace("'", "''")}'); ipconfig /flushdns | Out-Null";
+			var encoded = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(script));
+			try
+			{
+				using var elevated = Process.Start(new ProcessStartInfo("powershell", $"-NoProfile -NonInteractive -EncodedCommand {encoded}")
+				{
+					UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden
+				});
+				elevated?.WaitForExit();
+			}
+			catch (System.ComponentModel.Win32Exception e)
+			{
+				// UAC declined: the check after this reports the names as unresolved, with the line to add by hand.
+				Log.Warning($"Couldn't update {hosts}: {e.Message}");
+			}
+
+			return;
+		}
+
 		var psi = new ProcessStartInfo("sudo") { UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true };
 		foreach (var a in new[] { "tee", "-a", hosts })
 		{
@@ -584,7 +731,7 @@ public static class RemoteMicroservices
 			return;
 		}
 
-		proc.StandardInput.Write((current.Length > 0 && !current.EndsWith('\n') ? "\n" : "") + line + "\n");
+		proc.StandardInput.Write(text);
 		proc.StandardInput.Close();
 		proc.StandardOutput.ReadToEnd();
 		proc.WaitForExit();
@@ -611,10 +758,127 @@ public static class RemoteMicroservices
 		}
 	}
 
-	private static bool OnPath(string executable) =>
-		(Environment.GetEnvironmentVariable("PATH") ?? "")
-		.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
-		.Any(dir => File.Exists(Path.Combine(dir, executable)));
+	public const string SessionManagerPluginWindowsInstaller =
+		"https://s3.amazonaws.com/session-manager-downloads/plugin/latest/windows/SessionManagerPluginSetup.exe";
+
+	/// <summary>Where AWS's own installers put the plugin. The tunnel's aws finds it through PATH.</summary>
+	private static string SessionManagerPluginInstallDir => OperatingSystem.IsWindows()
+		? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Amazon", "SessionManagerPlugin", "bin")
+		: "/usr/local/sessionmanagerplugin/bin";
+
+	/// <summary>
+	/// True when <c>session-manager-plugin</c> is on PATH. An install this terminal's PATH predates (the Windows
+	/// installer only changes PATH for new terminals) is put on this process's PATH, which every step inherits.
+	/// </summary>
+	private static bool HasSessionManagerPlugin()
+	{
+		if (OnPath("session-manager-plugin"))
+		{
+			return true;
+		}
+
+		var dir = SessionManagerPluginInstallDir;
+		var exe = Path.Combine(dir, OperatingSystem.IsWindows() ? "session-manager-plugin.exe" : "session-manager-plugin");
+		if (!File.Exists(exe))
+		{
+			return false;
+		}
+
+		Environment.SetEnvironmentVariable("PATH", dir + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH"));
+		return true;
+	}
+
+	/// <summary>
+	/// Installs the AWS Session Manager plugin: with Homebrew on macOS; on Windows, AWS's installer, run quietly and
+	/// elevated (one UAC prompt) once its Authenticode signature is checked to be AWS's. Failures are logged; the
+	/// check after this reports the plugin as missing, with how to install it by hand.
+	/// </summary>
+	private static void InstallSessionManagerPlugin()
+	{
+		if (OperatingSystem.IsMacOS())
+		{
+			Log.Warning("The AWS Session Manager plugin, which the tunnel needs, isn't installed; installing it with Homebrew.");
+			RunInteractive("brew", "install --cask session-manager-plugin");
+			return;
+		}
+
+		Log.Warning("The AWS Session Manager plugin, which the tunnel needs, isn't installed; installing it. Windows will ask to allow the installer.");
+		var dir = Directory.CreateTempSubdirectory("beam-ssm-plugin-").FullName;
+		try
+		{
+			var installer = Path.Combine(dir, "SessionManagerPluginSetup.exe");
+			using (var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) })
+			{
+				File.WriteAllBytes(installer, http.GetByteArrayAsync(SessionManagerPluginWindowsInstaller).GetAwaiter().GetResult());
+			}
+
+			var signature = RunCapture("powershell", "-NoProfile -NonInteractive -Command " +
+				$"\"$s = Get-AuthenticodeSignature -LiteralPath '{installer.Replace("'", "''")}'; $s.Status.ToString() + '|' + $s.SignerCertificate.Subject\"");
+			if (!signature.StartsWith("Valid|CN=\"Amazon Web Services, Inc.\"", StringComparison.Ordinal))
+			{
+				Log.Warning($"The downloaded Session Manager plugin installer isn't signed by AWS ({signature.Trim()}), so it wasn't run.");
+				return;
+			}
+
+			using var proc = Process.Start(new ProcessStartInfo(installer, "/install /quiet /norestart") { UseShellExecute = true, Verb = "runas" });
+			proc?.WaitForExit();
+			// 3010: installed, and a restart is wanted (not needed for the plugin itself).
+			if (proc != null && proc.ExitCode != 0 && proc.ExitCode != 3010)
+			{
+				Log.Warning($"The Session Manager plugin installer exited with {proc.ExitCode}.");
+			}
+		}
+		catch (Exception e) when (e is HttpRequestException or TaskCanceledException or IOException or System.ComponentModel.Win32Exception)
+		{
+			// Win32Exception: UAC declined.
+			Log.Warning($"Couldn't install the Session Manager plugin: {e.Message}");
+		}
+		finally
+		{
+			try
+			{
+				Directory.Delete(dir, true);
+			}
+			catch (IOException)
+			{
+				// The installer can hold its file briefly after exiting; the temp folder is the OS's to clean.
+			}
+		}
+	}
+
+	/// <summary>Runs a command and returns its standard output, or an empty string when it can't start.</summary>
+	private static string RunCapture(string fileName, string arguments)
+	{
+		using var proc = Process.Start(new ProcessStartInfo(fileName, arguments)
+		{
+			UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true
+		});
+		if (proc == null)
+		{
+			return "";
+		}
+
+		var stderr = proc.StandardError.ReadToEndAsync();
+		var output = proc.StandardOutput.ReadToEnd();
+		proc.WaitForExit();
+		_ = stderr.Result;
+		return output;
+	}
+
+	private static bool OnPath(string executable)
+	{
+		// Windows finds a bare command name through PATHEXT: ssh is ssh.exe there.
+		var names = OperatingSystem.IsWindows()
+			? (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT")
+			.Split(';', StringSplitOptions.RemoveEmptyEntries)
+			.Select(ext => executable + ext)
+			.Prepend(executable)
+			.ToList()
+			: new List<string> { executable };
+		return (Environment.GetEnvironmentVariable("PATH") ?? "")
+			.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+			.Any(dir => names.Any(name => File.Exists(Path.Combine(dir, name))));
+	}
 
 	/// <summary>Runs a command with the terminal attached, for anything that may prompt (a browser sign-in, a password).</summary>
 	private static void RunInteractive(string fileName, string arguments)
