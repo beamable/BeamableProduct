@@ -2253,6 +2253,7 @@ public class WorkspaceServices
 		// Not workspace services, but every reader of the catalogue comes through here, so these resolve in `ps`,
 		// `create` and `run` alike, settings written before them included.
 		LocalStackTemplate.AddClickHouseMigrationsStep(steps);
+		LocalStackTemplate.AddObservabilityStep(steps);
 		RemoteMicroservices.AddTunnelStep(steps);
 	}
 

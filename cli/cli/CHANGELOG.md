@@ -9,11 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Publishing now requires explicit reconciliation of content with unverified change history, including locally created JSON with an empty or null `referenceManifestId`. External content-writing tools must preserve this field; omitting it entirely fails file loading. Review affected items and use selected-item `content resolve` with an explicit local/realm choice before publishing.
+- Publishing blocks incoming content and unverified history until explicitly reconciled with a local/realm choice in `content resolve`. Preserve `referenceManifestId` in content JSON: empty/null requires review; omission fails file loading.
 
 ### Added
 
-- Added `--no-auto-sync` to `content ps` and `content history`, and selected-item reconciliation previews with checks that reject stale local or realm revisions.
+- Added incoming-change classification, `--no-auto-sync` for `content ps` and `content history`, and reconciliation previews that reject stale local or realm revisions.
+- `beam local run` moves a step to the next free port when something outside the stack holds its own (the portal, the C# hosts and the Scala gateways), with a warning naming the holder, and repoints what reaches it: Caddy's routes, the C# hosts' `Legacy:Uri`, the Scala services' C# gateway URI and the portal URL. A detached re-run keeps carried-over services on the ports they moved to. Docker ports, Caddy's 8080 and a holder that is a leftover of a previous stack are still reported before launch. Needs BeamableAPI's matching `routes.caddy`/`docker-compose.yml` change.
+- Every `beam local run` stack now runs Grafana (`docker: observability`: the collector, Loki, Tempo, Prometheus and Grafana from BeamableAPI's compose) and forwards its logs there, including stacks without the backend's docker dependencies and stacks made with `beam local create`. `:no-logs` still leaves it out; machines without BeamableAPI skip it. Settings written before this get the step without `beam local setup`.
 - `beam local run` stacks that run the C# hosts now run BeamableAPI's ClickHouse migrations (`c# clickhouse migrations`, after the docker dependencies, built in the same lane as the gateway), so the local ClickHouse has the `otel_*` tables microservices' telemetry goes into. Before, nothing created them, every service's logs and metrics were refused, and the portal had none to show. Settings written before this get the step without `beam local setup`.
 - `beam local run <stack>:remote-ms` lets microservices deployed from a local stack run as real Fargate tasks that call back to it, through a shared tunnel host in Beamable's AWS account (macOS and Linux). It reads where that infrastructure's settings are from `remote-ms.json` in your BeamableAPI checkout, assumes the tunnel role and reads the rest from an SSM parameter, so nothing about the account is built into the CLI (the `remoteMsRoleArn` and `remoteMsSettingsParameter` settings variables override the file). It checks AWS access and local tools first, running `aws sso login` when the session has expired and adding your names to `/etc/hosts` (sudo asks once) when your DNS resolver won't send them to 127.0.0.1; `--dry-run` lists what's missing and changes nothing. It then adds a loopback-only registry to the stack, points the gateway at `<name>.<shared domain>`, sends deployed services' telemetry to the local ClickHouse through `<name>-clickhouse.<shared domain>` (so their logs show in the portal as usual), keeps an `ssh -R` tunnel open over SSM Session Manager, and trusts Caddy's local CA in the login keychain. Set the `remoteMsName` settings variable to override the name derived from your AWS identity.
 - `beam portal --console` opens the new Beamable portal (console) signed in with the CLI's session, the same way `beam portal` already does for the legacy portal. Combine it with `--portal-url` (now visible in help) to open another deployment.
@@ -25,11 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- CLI server discovery now reports the executing package version, including development revisions, so Unity can recognize local builds without repeatedly starting servers.
-
-- Preserved incoming additions and deletions in content status and blocked publishing until incoming content is reconciled, including recovery after partial failures.
-- Fixed content history pagination with cached publications and watcher cleanup, cancellation, and shutdown acknowledgement retries.
-- Fixed telemetry collector discovery and attached-command shutdown ownership so they do not stop unrelated active CLI commands.
+- CLI discovery reports the executing package version, including development revisions. Fixed telemetry collector discovery and shutdown ownership to preserve unrelated commands.
+- Fixed content history pagination, watcher cleanup/cancellation, shutdown acknowledgement retries, and reconciliation recovery after partial failures.
+- Lines `beam local logs --forward` sends to Grafana carry their OTel severity number, so Loki no longer shows lines without a level keyword (Scala/Maven build output, stack traces) as unknown ("UKN").
 - Generate valid OpenAPI component IDs for tuple callables and preserve their C# types in generated clients, including nested tuples and tuple collections.
 - Report failed MSBuild targets as failed builds, including when compiler diagnostics are empty or missing. Project builds now return a nonzero exit and surface the underlying build output in Unity.
 - `beam project run` no longer rewrites a zone portal extension's generated microservice clients to bind to `BeamBase`. They now bind to `BeamZoneSdk` (the object a zone extension receives), matching `generate-portal-extension-clients`, so generated client files stop flipping between the two on every run.
