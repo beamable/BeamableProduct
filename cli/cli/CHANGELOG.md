@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Publishing blocks incoming content and unverified history until explicitly reconciled with a local/realm choice in `content resolve`. Preserve `referenceManifestId` in content JSON: empty/null requires review; omission fails file loading.
+
 ### Added
 
+- Added incoming-change classification, `--no-auto-sync` for `content ps` and `content history`, and reconciliation previews that reject stale local or realm revisions.
 - `beam local run` moves a step to the next free port when something outside the stack holds its own (the portal, the C# hosts and the Scala gateways), with a warning naming the holder, and repoints what reaches it: Caddy's routes, the C# hosts' `Legacy:Uri`, the Scala services' C# gateway URI and the portal URL. A detached re-run keeps carried-over services on the ports they moved to. Docker ports, Caddy's 8080 and a holder that is a leftover of a previous stack are still reported before launch. Needs BeamableAPI's matching `routes.caddy`/`docker-compose.yml` change.
 - Every `beam local run` stack now runs Grafana (`docker: observability`: the collector, Loki, Tempo, Prometheus and Grafana from BeamableAPI's compose) and forwards its logs there, including stacks without the backend's docker dependencies and stacks made with `beam local create`. `:no-logs` still leaves it out; machines without BeamableAPI skip it. Settings written before this get the step without `beam local setup`.
 - `beam local run` stacks that run the C# hosts now run BeamableAPI's ClickHouse migrations (`c# clickhouse migrations`, after the docker dependencies, built in the same lane as the gateway), so the local ClickHouse has the `otel_*` tables microservices' telemetry goes into. Before, nothing created them, every service's logs and metrics were refused, and the portal had none to show. Settings written before this get the step without `beam local setup`.
@@ -22,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- CLI discovery reports the executing package version, including development revisions. Fixed telemetry collector discovery and shutdown ownership to preserve unrelated commands.
+- Fixed content history pagination, watcher cleanup/cancellation, shutdown acknowledgement retries, and reconciliation recovery after partial failures.
 - Lines `beam local logs --forward` sends to Grafana carry their OTel severity number, so Loki no longer shows lines without a level keyword (Scala/Maven build output, stack traces) as unknown ("UKN").
 - Generate valid OpenAPI component IDs for tuple callables and preserve their C# types in generated clients, including nested tuples and tuple collections.
 - Report failed MSBuild targets as failed builds, including when compiler diagnostics are empty or missing. Project builds now return a nonzero exit and surface the underlying build output in Unity.
