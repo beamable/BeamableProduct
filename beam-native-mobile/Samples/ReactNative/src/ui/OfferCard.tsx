@@ -110,7 +110,6 @@ export default function OfferCard({
             return (
               <Text key={`${reason.code}:${i}`} style={styles.reason}>
                 {reason.message || reason.code}
-                {reason.detail ? ` (${reason.detail})` : ''}
                 {progress ? ` · ${progress}` : ''}
               </Text>
             );

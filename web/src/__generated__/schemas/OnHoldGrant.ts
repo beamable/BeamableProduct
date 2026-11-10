@@ -3,8 +3,13 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type ReportOfferRedeemedRequest = { 
+import type { OfferItem } from './OfferItem';
+
+export type OnHoldGrant = { 
   federationId: string; 
   grantId: string; 
+  offerId: string; 
   playerId: bigint | string; 
+  deliveryStartedAtUnixSeconds?: bigint | string; 
+  offer?: OfferItem; 
 };

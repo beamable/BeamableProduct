@@ -3,8 +3,9 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-import type { AwaitingOffer } from './AwaitingOffer';
+import type { OnHoldGrant } from './OnHoldGrant';
 
-export type AwaitingOffersResult = { 
-  offers?: AwaitingOffer[]; 
+export type OnHoldGrantsResult = { 
+  grants?: OnHoldGrant[]; 
+  next?: string | null; 
 };

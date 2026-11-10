@@ -3,7 +3,6 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type ResolveOfferRequest = { 
-  delivered: boolean; 
-  grantId: string; 
+export type RevokeGrantsRequest = { 
+  grantIds?: string[]; 
 };

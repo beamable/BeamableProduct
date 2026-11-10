@@ -15,7 +15,7 @@ purchase actually flow, and where to look when something breaks.
 This is the *system* view. Neighbours that are not repeated here:
 
 - **`agentic-portal/guides/creating-offer-providers.md`** — how to ship your own provider.
-- **`beam-offer-federation`** (MCP skill, `cli/Docs/SkillTemplates/beam-offer-federation.md.scriban`)
+- **`beam-offer-federation`** (MCP skill, `cli/cli/Docs/SkillTemplates/beam-offer-federation.md.scriban`)
   — the contract, routes, limits and defaults, for an agent implementing a provider.
 - **`BeamableProduct/rfc/004_offer_federation_client_sdks.md`** — what Unity and Unreal need to reach
   the player routes.
@@ -89,8 +89,8 @@ Pending ─▶ Granted ─▶ Claiming ─Settled─▶ Redeemed
 **Contract**
 
 - `BeamableProduct/cli/beamable.common/Runtime/Federation/FederatedVirtualOffer.cs` —
-  `IFederatedVirtualOffer<T>`: `GrantOffers(grants)`, `RedeemOffer(grant, params)`,
-  `RevokeOffer(revokes)`, `GetOffers(grants)`, routed at `{federationId}/<Method>`. DTOs: `OfferItem`,
+  `IFederatedVirtualOffer<T>`: `GrantOffers(grants)`, `RedeemGrant(grant, params)`,
+  `RevokeGrants(revokes)`, `GetGrantAvailability(grants)`, routed at `{federationId}/<Method>`. DTOs: `OfferItem`,
   `OfferAmount`, `OfferReason`, `OfferGrantItem`, `OfferGrantRef`, `OfferGrantBatchResponse` /
   `OfferGrantResponse`, `OfferRedeemResponse` (`OfferRedeemOutcome` by name), `OfferRevokeBatchResponse` /
   `OfferRevokeResponse`, `OfferAvailability`;
@@ -105,7 +105,7 @@ Pending ─▶ Granted ─▶ Claiming ─Settled─▶ Redeemed
 
 - `BeamableShared/Services/Offer/OfferRegistry.cs`, `OfferService.cs` — grant states, `GrantMany`,
   `Confirm`, `Fail`, `Claim` (compare-and-set, with an exclusive group's anchor), `Settle`, `Release`,
-  `Revoke`, `ExpireOrigin`, the paged `GetOffers`, `Redeem`, `Availability`.
+  `Revoke`, `ExpireOrigin`, the paged `GetOffers`, `Redeem`, `PlayerOffers` (the list with availability).
 - `BeamableShared/Federation/Offer/OfferFederation.cs` — provider discovery (kept
   `Federation:OfferDiscoveryCacheMs`, 5 s, per realm) and calls.
 - `BeamableShared/Services/Offer/OfferGate.cs` — the campaign's condition, evaluated by the gateway.
@@ -141,37 +141,42 @@ Pending ─▶ Granted ─▶ Claiming ─Settled─▶ Redeemed
 
 ## 3. The gateway surface
 
-`/api/offers`. A player can reach two routes.
+`/api/offers`. The resource is the grant (`/grants`, named by its id); a player can reach two routes.
 
 | Route | Client? | Guard |
 |---|---|---|
-| **`GET /`** | **yes** | `ForbiddenForPlayer`, per-player read limit |
-| **`POST /redeem`** | **yes** | `ForbiddenForPlayer`, per-player redeem limit |
-| `POST /grant` | no | `CampaignOffer:Write` |
-| `POST /revoke` | no | `CampaignOffer:Write` |
-| `POST /revoke-origin` | no | `CampaignOffer:Write` |
-| `POST /report-redeemed` | no | `CampaignOffer:Write` |
-| `GET /awaiting-operator` | no | `CampaignOffer:Write` |
-| `POST /resolve` | no | `CampaignOffer:Write` |
+| **`GET /grants`** | **yes** | `ThrowIfNotSelfOrPrivileged`, per-player read limit |
+| **`POST /grants/{grantId}/redeem`** | **yes** | `ThrowIfNotSelfOrPrivileged`, per-player redeem limit |
+| `POST /grants` (batch) | no | `CampaignOffer:Write` |
+| `POST /grants/revocations` (batch) | no | `CampaignOffer:Write` |
+| `DELETE /origins/{originId}` | no | `CampaignOffer:Write` |
+| `POST /grants/redemptions` (batch) | no | `CampaignOffer:Write` |
+| `GET /grants/on-hold` | no | `CampaignOffer:Write` |
+| `POST /grants/resolutions` (batch) | no | `CampaignOffer:Write` |
 
 The client routes are deliberately not permission-scoped: a player holds no operator permissions, so a
-resource permission cannot express "may act on themselves". `ForbiddenForPlayer` lets a player act on
+resource permission cannot express "may act on themselves". `ThrowIfNotSelfOrPrivileged` lets a player act on
 their own `playerId`, and privileged (non-`Guest`) accounts act on anyone. The permission matrix is a
 fail-closed dictionary in `BeamableGateway/Security/Authorization/PermissionAuthorizationHandler.cs`.
 
-The operator's `grant` takes a required `idempotencyKey` (a repeat after the grant ended answers
-`grant-ended` without asking the provider), an optional `originId` (a batch, default `manual`) and an
-optional `expiresAtUnixSeconds`, which must be in the future;
-`revoke-origin` expires that batch's open grants in the request's realm. `report-redeemed` is a
-provider reporting a redeem made in its own service (`federationId`, `playerId`, `grantId`; only its own
-grants; 409 while the grant is still pending). `awaiting-operator` and `resolve` serve the grants on
-hold (§5).
+The operator routes take many items per request (`Offer:Gateway:MaxItemsPerRequest`, default 10,000)
+and answer one result per item, in the order asked; an invalid item fails the whole request with a
+400 naming it (`grants[3]: ...`). `POST /grants` takes `{ grants: [...] }`, each with a required
+`idempotencyKey` (unique within its batch; a repeat after the grant ended answers `grant-ended` without
+asking the provider), an optional `originId` (a batch, default `manual`) and an optional
+`expiresAtUnixSeconds`, which must be in the future; each provider is asked in calls of
+`Offer:Gateway:MaxGrantsPerCall` (250). `POST /grants/revocations { grantIds }` answers `{ revoked,
+notOpen }`. `DELETE /origins/{originId}` expires that batch's open grants in the request's realm.
+`POST /grants/redemptions { federationId, redeems: [{ playerId, grantId }] }` is a provider reporting
+redeems made in its own service (only its own grants; one still pending answers `notYetVisible` and is
+reported again later). `GET /grants/on-hold` and `POST /grants/resolutions { resolutions: [{ grantId,
+delivered }] }` serve the grants on hold (§5).
 
 ---
 
 ## 4. What crosses the wire
 
-`GET /api/offers?playerId=…` returns the offer **inline**, so one call renders a store screen:
+`GET /api/offers/grants?playerId=…` returns the offer **inline**, so one call renders a store screen:
 
 ```jsonc
 { "offers": [ {
@@ -184,7 +189,7 @@ hold (§5).
       "title": "Starter Pack", "priceLabel": "350 Coins",
       "cost":    [ { "type": "currency", "symbol": "currency.coins", "amount": 350 } ],
       "rewards": [ { "type": "currency", "symbol": "currency.gems",  "amount": 500, "title": "gems" } ],
-      "available": true, "unavailableReasons": [], "localizations": {}, "tags": [], "properties": {}
+      "tags": [], "properties": {}
     },
 
     "available": true,
@@ -218,13 +223,13 @@ of showing an empty picker.
 
 ## 5. How a redeem works
 
-`POST /api/offers/redeem { playerId, grantId, params? }`:
+`POST /api/offers/grants/{grantId}/redeem { playerId, params? }`:
 
 ```
 1. claim      the registry moves the grant Granted → Claiming (compare-and-set; for an exclusive
               group, also takes the group's anchor, so two alternatives cannot both be redeemed)
 2. gate       the campaign's condition is checked on fresh stats; closed → released, refused with a reason
-3. deliver    RedeemOffer(grant, params) on the grant's provider
+3. deliver    RedeemGrant(grant, params) on the grant's provider
 4. record     Settled → Redeemed, forfeits the rest of an exclusive group and any named entries
               Refused → back to Granted
               Ambiguous, or a failed call → stays Claiming; the expiry worker asks again 20 s later,
@@ -236,14 +241,15 @@ holds for a while, the realm says so in its config for the provider, and the reg
 decides whether to ask again:
 
 - `offers|{federationId}.ambiguousRedeliverySeconds`: for how long after the first unanswered delivery
-  the registry may ask for it again (unset = the platform default (12 h); 0 = never asked again).
-  Beamable's providers take the default: reward's inventory transaction dedup covers it. A delivery that
-  cannot be repeated safely is set to `Hold` below.
+  the registry may ask for it again (unset = the platform default, 0: never asked again). A realm opens
+  it only for an idempotent delivery: reward up to 12 h (inventory's transaction dedup), badge any length;
+  the store keeps 0, since a purchase cannot be repeated.
 - `offers|{federationId}.ambiguousOutcome`: what the delivery is taken to have been once that window
   passes, by name, ignoring case.
   `NotDelivered` (default) gives the grant back, so the next redeem is a new delivery; `Delivered`
   records it as redeemed and forfeits its group; `Hold` leaves it in progress until someone checks the
-  provider's service and calls `offers/resolve`, listed meanwhile by `offers/awaiting-operator`.
+  provider's service and resolves it (`POST offers/grants/resolutions`), listed meanwhile by
+  `offers/grants/on-hold`.
 
 Both are read from the realm config at grant time and fixed on the grant: a changed value holds for the
 grants written after it. A value that does not read as its type takes the default and logs a warning,
@@ -277,9 +283,9 @@ settling forfeits the other alternatives. For a virtual offer no read tells the 
 already bought: the platform exposes only `purchasesRemain`, which is null unless the listing has a
 purchase limit. Performing the purchase removes the question.
 
-**Why an unanswered purchase is never repeated.** The purchase route takes only a `purchaseId`, so it
-cannot be retried idempotently, and nothing in the store makes a repeat safe. After a timeout or 5xx the
-registry settles the redeem by the ambiguous outcome: not delivered by default (a purchase that did
+**Why an unanswered purchase must not be repeated.** The purchase route takes only a `purchaseId`, so it
+cannot be retried idempotently, and nothing in the store makes a repeat safe, so its realm keeps the default
+redelivery window (0). After a timeout or 5xx the registry settles the redeem by the ambiguous outcome: not delivered by default (a purchase that did
 happen may then be made again), or what the realm chose.
 
 The response carries no deltas (commerce calls the plain `updateInventory`), so what moved is read back
@@ -317,7 +323,7 @@ player half end to end.
 
 ```
 app/(tabs)/offers.tsx          the screen: provider filter · Wallet · Campaign Offers · From the last push
-src/beam/campaignOffers.ts     list + claim over beam.offers, the normalised CampaignOffer model, badge read-back
+src/beam/offers.ts             list + claim over beam.offers, the normalised offer model, badge read-back
 src/beam/inventory.ts          currency balances and the wallet diff
 src/ui/OfferCard.tsx           one grant, rendered from its offer
 src/ui/BalanceRow.tsx          a currency with an optional signed change chip
@@ -356,7 +362,7 @@ run in the `group: player-engagement` step.
 | A listing is missing from the store picker | it is priced in a SKU; the catalog logs the skip |
 | Redeem refused, `UnexpectedPriceType` | the listing was repriced to real money after the grant |
 | Redeem refused, insufficient funds | the player does not hold enough of the price currency |
-| Redeem `pending` forever | the provider's (or the realm's) ambiguous outcome is `Hold`; see `offers/awaiting-operator` |
+| Redeem `pending` forever | the provider's (or the realm's) ambiguous outcome is `Hold`; see `offers/grants/on-hold` |
 | Offer listed but `available: false` | its gate (`reason`) or the provider's own rule |
 
 The providers log every purchase, payout or badge write, and every refusal with its reason.
@@ -400,7 +406,7 @@ The purchase itself ignores a client `time`; listing schedules are what it would
 - **Unity and Unreal cannot reach `/api/*`.** Their codegen consumes only the `/basic/*` Scala OpenAPI
   documents; see RFC 004.
 - **What a grant created in a third party's service stays redeemable there until its revoke lands.**
-  The platform calls `RevokeOffer` for every grant that ends unredeemed, at the pace the provider's
+  The platform calls `RevokeGrants` for every grant that ends unredeemed, at the pace the provider's
   answers ask for (`throttled`, `maxInFlight`, `retryAfterMs`), and not while the customer is sending, so
   between the expiry and that call the third
   party may still honour it. A provider closes the gap by passing `expiresAt` on to its service, or its

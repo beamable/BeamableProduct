@@ -3,7 +3,8 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type RevokeOfferResult = { 
-  grantId: string; 
-  revoked?: boolean; 
+import type { GrantOfferRequest } from './GrantOfferRequest';
+
+export type GrantOffersRequest = { 
+  grants?: GrantOfferRequest[]; 
 };

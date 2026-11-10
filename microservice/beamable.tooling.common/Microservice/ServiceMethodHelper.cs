@@ -110,9 +110,9 @@ namespace Beamable.Server
 				// microservice implementing the federation, with an error that names the method but not
 				// this file.
 				[nameof(IFederatedVirtualOffer<DummyThirdParty>.GrantOffers)] = "GrantOffers",
-				[nameof(IFederatedVirtualOffer<DummyThirdParty>.RevokeOffer)] = "RevokeOffer",
-				[nameof(IFederatedVirtualOffer<DummyThirdParty>.RedeemOffer)] = "RedeemOffer",
-				[nameof(IFederatedVirtualOffer<DummyThirdParty>.GetOffers)] = "GetOffers",
+				[nameof(IFederatedVirtualOffer<DummyThirdParty>.RevokeGrants)] = "RevokeGrants",
+				[nameof(IFederatedVirtualOffer<DummyThirdParty>.RedeemGrant)] = "RedeemGrant",
+				[nameof(IFederatedVirtualOffer<DummyThirdParty>.GetGrantAvailability)] = "GetGrantAvailability",
 			};
 
 			foreach (var interfaceType in interfaces)

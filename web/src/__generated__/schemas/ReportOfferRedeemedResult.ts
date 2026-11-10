@@ -10,4 +10,5 @@ export type ReportOfferRedeemedResult = {
   afterEnd?: boolean; 
   before?: OfferGrantState | null; 
   found?: boolean; 
+  notYetVisible?: boolean; 
 };

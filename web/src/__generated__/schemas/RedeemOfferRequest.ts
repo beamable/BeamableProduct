@@ -4,7 +4,6 @@
  */
 
 export type RedeemOfferRequest = { 
-  grantId: string; 
   playerId: bigint | string; 
   params?: Record<string, string> | null; 
 };

@@ -4,7 +4,7 @@ import type {
   RedeemOfferResult,
 } from '@/__generated__/schemas';
 import { ApiService, type ApiServiceProps } from '@/services/types/ApiService';
-import { offersGet, offersPostRedeem } from '@/__generated__/apis';
+import { offersGetGrants, offersPostGrantsRedeemByGrantId } from '@/__generated__/apis';
 
 /**
  * Identifies which provider an offer comes from.
@@ -69,6 +69,14 @@ export class OffersService extends ApiService {
    *   state, where `state` itself is the reason. Prefer rendering from `properties` over `message`: a campaign gate was authored for an operator, and its structured
    *   facts are what let you show "Level 7 / 10" or hide the row entirely.
    * - `Claiming` means a redeem of it is still being resolved; it cannot be redeemed again until it is.
+   * - `publicProperties` is this grant's own data from its provider (it can differ per player and per
+   *   read), unlike `offer.properties`, which every grant of the offer shares. When
+   *   `publicPropertiesTruncated` is true the provider sent more than the realm allows and keys were
+   *   dropped, so a missing key may be one the provider set.
+   * - `providerStatus` is set when the offer's provider gave no answer on this read
+   *   (`provider-timeout`, `provider-no-slot`, `provider-breaker-open`, `provider-failed`): the offer is
+   *   then listed without the provider's own rules (a redeem still meets them) and with the
+   *   `publicProperties` stored at grant time.
    *
    * Pass the returned `next` as `cursor` for the following page; it is absent on the last one.
    * @example
@@ -79,7 +87,7 @@ export class OffersService extends ApiService {
    * @throws {BeamError} If the request fails, or if `cursor` is not one this list returned.
    */
   async getOffers(options: GetOffersOptions = {}): Promise<PlayerOffersPage> {
-    const { body } = await offersGet(
+    const { body } = await offersGetGrants(
       this.requester,
       options.cursor,
       options.federationId,
@@ -123,9 +131,10 @@ export class OffersService extends ApiService {
     grantId: string,
     params: Record<string, string> = {},
   ): Promise<RedeemOfferResult> {
-    const { body } = await offersPostRedeem(
+    const { body } = await offersPostGrantsRedeemByGrantId(
       this.requester,
-      { playerId: this.accountId, grantId, params },
+      grantId,
+      { playerId: this.accountId, params },
       this.accountId,
     );
     return body;

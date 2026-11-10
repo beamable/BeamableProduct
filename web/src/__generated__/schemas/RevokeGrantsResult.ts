@@ -3,6 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type RevokeOfferRequest = { 
-  grantId: string; 
+export type RevokeGrantsResult = { 
+  notOpen?: string[]; 
+  revoked?: string[]; 
 };

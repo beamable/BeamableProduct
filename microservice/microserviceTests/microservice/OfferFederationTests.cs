@@ -28,9 +28,9 @@ public class OfferFederationTests
 	public class OfferService : Microservice, IFederatedVirtualOffer<TestOfferStore>
 	{
 		public Promise<OfferGrantBatchResponse> GrantOffers(List<OfferGrantItem> grants) => null;
-		public Promise<OfferRevokeBatchResponse> RevokeOffer(List<OfferGrantRef> revokes) => null;
-		public Promise<OfferRedeemResponse> RedeemOffer(OfferGrantRef grant, Dictionary<string, string> @params) => null;
-		public Promise<List<OfferAvailability>> GetOffers(List<OfferGrantRef> grants) => null;
+		public Promise<OfferRevokeBatchResponse> RevokeGrants(List<OfferGrantRef> revokes) => null;
+		public Promise<OfferRedeemResponse> RedeemGrant(OfferGrantRef grant, Dictionary<string, string> @params) => null;
+		public Promise<List<OfferAvailability>> GetGrantAvailability(List<OfferGrantRef> grants) => null;
 	}
 
 	[SetUp]
@@ -55,8 +55,8 @@ public class OfferFederationTests
 
 		Assert.That(paths, Is.SupersetOf(new[]
 		{
-			$"{FederationId}/GrantOffers", $"{FederationId}/RevokeOffer", $"{FederationId}/RedeemOffer",
-			$"{FederationId}/GetOffers"
+			$"{FederationId}/GrantOffers", $"{FederationId}/RevokeGrants", $"{FederationId}/RedeemGrant",
+			$"{FederationId}/GetGrantAvailability"
 		}));
 	}
 
@@ -89,10 +89,10 @@ public class OfferFederationTests
 	[Test]
 	public void RedeemOffer_BindsTheGrantAndItsParams()
 	{
-		var args = Bind("RedeemOffer", @"{
+		var args = Bind("RedeemGrant", @"{
 			""grant"":{""grantId"":""g1"",""playerId"":""1"",""offerId"":""offer.a"",
 			  ""offer"":{""offerId"":""offer.a"",""title"":""A""},
-			  ""metadata"":{""m"":""1""},""providerMetadata"":{""ref"":""r1""}},
+			  ""metadata"":{""m"":""1""},""serverProperties"":{""ref"":""r1""},""serverPropertiesTruncated"":true},
 			""params"":{""choice"":""gold""}
 		}");
 
@@ -100,7 +100,8 @@ public class OfferFederationTests
 		var grant = (OfferGrantRef)args[0];
 		Assert.That(grant.grantId, Is.EqualTo("g1"));
 		Assert.That(grant.offer.title, Is.EqualTo("A"));
-		Assert.That(grant.providerMetadata["ref"], Is.EqualTo("r1"));
+		Assert.That(grant.serverProperties["ref"], Is.EqualTo("r1"));
+		Assert.That(grant.serverPropertiesTruncated, Is.True);
 		Assert.That(((Dictionary<string, string>)args[1])["choice"], Is.EqualTo("gold"));
 	}
 

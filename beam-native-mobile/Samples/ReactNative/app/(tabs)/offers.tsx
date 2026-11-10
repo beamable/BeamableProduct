@@ -427,7 +427,7 @@ export default function OffersTab() {
         }
       >
         <Hint>
-          Reads beam.offers.getOffers(...) → GET /api/offers, asking for every state, so read the
+          Reads beam.offers.getOffers(...) → GET /api/offers/grants, asking for every state, so read the
           state rather than the presence of a row — claimed and revoked ones are listed too. Each
           grant carries the offer its provider resolved, so this one call renders the screen; a
           provider may send none, and those rows fall back to ids.
@@ -443,7 +443,7 @@ export default function OffersTab() {
               ? 'Type a federation id above to list its offers.'
               : error
                 ? 'Offers not loaded.'
-                : `Nothing granted by ${store ? `"${store}"` : 'any provider'} yet. Publish a campaign lane with an offer and enrol this player, or grant one with POST /api/offers/grant.`}
+                : `Nothing granted by ${store ? `"${store}"` : 'any provider'} yet. Publish a campaign lane with an offer and enrol this player, or grant one with POST /api/offers/grants.`}
           </Hint>
         ) : (
           <>

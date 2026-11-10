@@ -48,8 +48,10 @@ namespace Beamable.Common
 		/// <para>
 		/// Validate the offer, resolve it into the <see cref="OfferGrantResponse.offer"/> the player is shown, and
 		/// return whatever you need back on redeem and revoke in
-		/// <see cref="OfferGrantResponse.providerMetadata"/>. Do not record the grant: the registry does. A
-		/// provider whose offers exist in a third-party service may create them there, keyed on the grant id.
+		/// <see cref="OfferGrantResponse.serverProperties"/>, and what the player sees of this grant in
+		/// <see cref="OfferGrantResponse.publicProperties"/>. You need not record the grant: the registry is the
+		/// authority on it. You may keep state of your own keyed by the grant id, and a provider whose offers
+		/// exist in a third-party service may create them there, keyed the same way.
 		/// </para>
 		///
 		/// <para>
@@ -77,7 +79,7 @@ namespace Beamable.Common
 		/// <para>
 		/// Called for every provider: one with nothing to undo answers success. Must work from the grant id
 		/// alone, because a grant whose grant answer was lost has no <see cref="OfferGrantRef.offer"/> and no
-		/// <see cref="OfferGrantRef.providerMetadata"/>. Idempotent: a repeat answers success. A grant that
+		/// <see cref="OfferGrantRef.serverProperties"/>. Idempotent: a repeat answers success. A grant that
 		/// expires is ended, and revoked, the realm config <c>offers|{federationId}.revokeLeadSeconds</c> before
 		/// its expiry (default 0), so what it created in your service can be gone by the time it would have
 		/// stopped being redeemable.
@@ -91,7 +93,7 @@ namespace Beamable.Common
 		/// 1000).
 		/// </para>
 		/// </summary>
-		Promise<OfferRevokeBatchResponse> RevokeOffer(List<OfferGrantRef> revokes);
+		Promise<OfferRevokeBatchResponse> RevokeGrants(List<OfferGrantRef> revokes);
 
 		/// <summary>
 		/// Deliver a grant the player is redeeming. The registry already claimed it for this redeem and checked
@@ -107,25 +109,32 @@ namespace Beamable.Common
 		///
 		/// <para>
 		/// How long Beamable keeps asking again is the realm config
-		/// <c>offers|{federationId}.ambiguousRedeliverySeconds</c> (default 12 h; 0 never asks again), counted
+		/// <c>offers|{federationId}.ambiguousRedeliverySeconds</c> (default 0: never asked again), counted
 		/// from the first delivery: 20 s after an unanswered one, then twice as long each time, at most an hour
 		/// apart. Past it, <c>offers|{federationId}.ambiguousOutcome</c> decides: <c>NotDelivered</c> (default)
 		/// gives the grant back, <c>Delivered</c> records it redeemed, <c>Hold</c> waits for an operator. A
-		/// delivery that can never be repeated safely is made idempotent by grant id, or its realm sets
-		/// <c>Hold</c>: with <c>NotDelivered</c> one that went through without an answer can be delivered twice.
+		/// realm opens a window only for a provider whose delivery is idempotent by grant id; with
+		/// <c>NotDelivered</c>, one that went through without an answer can be redeemed, and delivered, again.
 		/// </para>
 		/// </summary>
-		Promise<OfferRedeemResponse> RedeemOffer(OfferGrantRef grant, Dictionary<string, string> @params);
+		Promise<OfferRedeemResponse> RedeemGrant(OfferGrantRef grant, Dictionary<string, string> @params);
 
 		/// <summary>
-		/// Whether each of a page of the player's grants is available right now by your own rules (stock,
-		/// schedule, purchase limits). Answer one <see cref="OfferAvailability"/> per grant, matched by grant
-		/// id. The registry lists the grants; this only answers availability, and a provider that does not
-		/// answer in time leaves its grants listed without its rules. Not called while the realm config
+		/// What each of a page of the player's grants looks like right now by your own rules: whether it is
+		/// available (stock, schedule, purchase limits) and what the player is shown of it on this read
+		/// (<see cref="OfferAvailability.publicProperties"/>). Answer one <see cref="OfferAvailability"/> per grant,
+		/// matched by grant id. The registry lists the grants; this only answers about them.
+		///
+		/// <para>
+		/// A provider that is not asked or does not answer in time leaves its grants listed without its rules and
+		/// with the public properties stored at grant time, and each of them says why in its
+		/// <c>providerStatus</c> (<see cref="OfferContract.ProviderTimeoutStatus"/> and the other
+		/// <c>Provider*Status</c> codes). Not called while the realm config
 		/// <c>offers|{federationId}.hasAvailabilityRules</c> is false: the backend then answers every grant
-		/// available itself.
+		/// available itself, with its stored public properties.
+		/// </para>
 		/// </summary>
-		Promise<List<OfferAvailability>> GetOffers(List<OfferGrantRef> grants);
+		Promise<List<OfferAvailability>> GetGrantAvailability(List<OfferGrantRef> grants);
 	}
 
 	// ─── The shared primitive ──────────────────────────────────────────────────────────────────────
@@ -203,33 +212,10 @@ namespace Beamable.Common
 		/// <summary>Already formatted for display. Never the only representation of a price.</summary>
 		public string priceLabel;
 
-		/// <summary>
-		/// Whether the provider could sell this when it resolved the offer. What a player sees is asked again
-		/// on every read (<see cref="IFederatedVirtualOffer{T}.GetOffers"/>), with the campaign's gate folded in
-		/// by the gateway.
-		/// </summary>
-		public bool available = true;
-
-		public List<OfferReason> unavailableReasons = new List<OfferReason>();
-
-		/// <summary>
-		/// Every language this offer has text for, keyed by language code. <see cref="title"/> and
-		/// <see cref="description"/> hold the resolved one.
-		/// </summary>
-		public Dictionary<string, OfferText> localizations = new Dictionary<string, OfferText>();
-
 		public List<string> tags = new List<string>();
 
 		/// <summary>Anything this contract does not name.</summary>
 		public Dictionary<string, string> properties = new Dictionary<string, string>();
-	}
-
-	/// <summary>One language's presentation for an offer.</summary>
-	[Serializable]
-	public class OfferText
-	{
-		public string title;
-		public string description;
 	}
 
 	/// <summary>Why something is not available, machine-readable and human-readable.</summary>
@@ -244,8 +230,6 @@ namespace Beamable.Common
 		public string code;
 
 		public string message;
-
-		public string detail;
 
 		public Dictionary<string, string> properties = new Dictionary<string, string>();
 	}
@@ -264,6 +248,14 @@ namespace Beamable.Common
 		public bool available = true;
 
 		public List<OfferReason> unavailableReasons = new List<OfferReason>();
+
+		/// <summary>
+		/// What the player is shown for this grant on this read, in place of the
+		/// <see cref="OfferGrantResponse.publicProperties"/> stored at grant time. Null keeps the stored ones,
+		/// empty clears them for this read; nothing here is stored. Cut like the stored ones past the realm's
+		/// limit.
+		/// </summary>
+		public Dictionary<string, string> publicProperties;
 	}
 
 	// ─── Grant / revoke / redeem ───────────────────────────────────────────────────────────────────
@@ -292,7 +284,7 @@ namespace Beamable.Common
 	}
 
 	/// <summary>
-	/// What <see cref="IFederatedVirtualOffer{T}.RevokeOffer"/> answers: one item per grant asked, and the pace
+	/// What <see cref="IFederatedVirtualOffer{T}.RevokeGrants"/> answers: one item per grant asked, and the pace
 	/// you ask for.
 	/// </summary>
 	[Serializable]
@@ -374,10 +366,31 @@ namespace Beamable.Common
 		public OfferItem offer;
 
 		/// <summary>
-		/// Whatever you need back on redeem and revoke (an id in your own service, say). Stored with the grant
-		/// and handed back verbatim on <see cref="OfferGrantRef.providerMetadata"/>; never read by Beamable.
+		/// This grant's own data for the player (a per-player price, a progress counter): stored with the grant
+		/// and listed with it, unlike the offer's <see cref="OfferItem.properties"/>, which every grant of the
+		/// offer shares. <see cref="OfferAvailability.publicProperties"/> replaces it on a read. Never put here
+		/// what the player must not see.
+		///
+		/// <para>
+		/// At most <c>Offer:Service:MaxPublicPropertiesBytes</c> (4 KB by default; keys and values in UTF-8).
+		/// Past it the entries are kept in ordinal key order while they fit and the rest is dropped; the
+		/// player's offer says so (<c>publicPropertiesTruncated</c>) and the cut is logged and counted.
+		/// </para>
 		/// </summary>
-		public Dictionary<string, string> providerMetadata = new Dictionary<string, string>();
+		public Dictionary<string, string> publicProperties = new Dictionary<string, string>();
+
+		/// <summary>
+		/// Whatever you need back on redeem, revoke and availability (an id in your own service, say). Stored
+		/// with the grant and handed back verbatim on <see cref="OfferGrantRef.serverProperties"/>; never read by
+		/// Beamable and never shown to the player.
+		///
+		/// <para>
+		/// At most <c>Offer:Service:MaxServerPropertiesBytes</c> (16 KB by default), cut the same way as
+		/// <see cref="publicProperties"/>; every grant handed back to you then says so
+		/// (<see cref="OfferGrantRef.serverPropertiesTruncated"/>).
+		/// </para>
+		/// </summary>
+		public Dictionary<string, string> serverProperties = new Dictionary<string, string>();
 	}
 
 	/// <summary>
@@ -401,8 +414,17 @@ namespace Beamable.Common
 		/// <summary>The caller's data for the grant, as on <see cref="OfferGrantItem.metadata"/>.</summary>
 		public Dictionary<string, string> metadata = new Dictionary<string, string>();
 
-		/// <summary>What you answered on <see cref="OfferGrantResponse.providerMetadata"/>; empty when it was lost.</summary>
-		public Dictionary<string, string> providerMetadata = new Dictionary<string, string>();
+		/// <summary>What you answered on <see cref="OfferGrantResponse.publicProperties"/>, as stored; empty when it was lost.</summary>
+		public Dictionary<string, string> publicProperties = new Dictionary<string, string>();
+
+		/// <summary>What you answered on <see cref="OfferGrantResponse.serverProperties"/>, as stored; empty when it was lost.</summary>
+		public Dictionary<string, string> serverProperties = new Dictionary<string, string>();
+
+		/// <summary>
+		/// <see cref="serverProperties"/> was over the limit at grant time and lost entries: a missing key may be
+		/// one you set.
+		/// </summary>
+		public bool serverPropertiesTruncated;
 	}
 
 	[Serializable]
@@ -468,19 +490,6 @@ namespace Beamable.Common
 	/// </summary>
 	public static class OfferContract
 	{
-		/// <summary>
-		/// The version of this wire contract. Distinct from the Portal's <c>offerContractVersion</c>, which
-		/// versions the protocol between the Campaigns extension and a provider's authoring UI.
-		/// </summary>
-		public const int Version = 2;
-
-		/// <summary>
-		/// The per-recipient data key (<c>MessageRailRecipient.data</c>) carrying every grant id made for a
-		/// campaign send, comma-separated, so a message can deep-link the player to what they were given.
-		/// Reserved by the campaign — a rail must not emit it.
-		/// </summary>
-		public const string GrantsKey = "beam_offer_grants";
-
 		/// <summary>The conventional prefix for a provider's own authored keys in a grant's metadata.</summary>
 		public const string KeyPrefix = "offer_";
 
@@ -510,7 +519,29 @@ namespace Beamable.Common
 		/// <summary>The grant was redeemed. A repeated redeem answers this again.</summary>
 		public const string RedeemedStatus = "redeemed";
 
+		// --- Provider status on a listed offer --------------------------------
+		//
+		// Why a listed offer carries no answer from its provider on that read: its availability rules and its
+		// public properties for the read are missing, and the offer shows what was stored at grant time. A
+		// redeem still meets the provider's rules.
+
+		/// <summary>The provider failed too many calls in a row and is left alone for a while.</summary>
+		public const string ProviderBreakerOpenStatus = "provider-breaker-open";
+
+		/// <summary>Every availability call the backend may make to the provider at once is in flight.</summary>
+		public const string ProviderNoSlotStatus = "provider-no-slot";
+
+		/// <summary>The provider did not answer within the list's timeout.</summary>
+		public const string ProviderTimeoutStatus = "provider-timeout";
+
+		/// <summary>The call failed (an error, an unreachable service).</summary>
+		public const string ProviderFailedStatus = "provider-failed";
+
 		// --- Unavailable reason codes ----------------------------------------
+		//
+		// Suggested vocabulary a provider may return in an availability's unavailableReasons, so clients can
+		// branch on and render the same reasons the same way. The platform itself reads none of them except
+		// ReasonConditionUnmet, which it returns for the campaign's gate.
 
 		public const string ReasonStatRequirement = "stat-requirement";
 		public const string ReasonAlreadyPurchased = "already-purchased";
@@ -544,8 +575,9 @@ namespace Beamable.Common
 
 		// --- Amount types (OfferAmount.type) ---------------------------------
 		//
-		// A provider is NOT limited to these: the field is open, so a client must render an unknown type
-		// rather than reject it.
+		// Suggested vocabulary for OfferAmount.type, so clients render the same kinds the same way; the
+		// platform reads none of them. A provider is NOT limited to these: the field is open, so a client
+		// must render an unknown type rather than reject it.
 
 		/// <summary>A soft-currency amount. <c>symbol</c> is the currency content id.</summary>
 		public const string AmountCurrency = "currency";

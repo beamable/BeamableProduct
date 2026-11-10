@@ -3,7 +3,8 @@
 ### Breaking
 
 - **Offers are Beamable's, not a provider's.** `CampaignOfferService` (`beam.campaignOffer`) becomes
-  `OffersService` (`beam.offers`), over the `/api/offers` routes:
+  `OffersService` (`beam.offers`), over the `/api/offers/grants` routes (a grant is named by its id in
+  the path):
   - `getOffers({ states?, federationId?, cursor? })` lists every provider's offers in one call, newest
     first, a page at a time (`next` → `cursor`). By default it returns what the player can still use,
     `Granted` and `Claiming`; ask for `Redeemed`, `Revoked` or `Expired` to read history.
@@ -14,8 +15,13 @@
   - `CampaignOfferFederationId` becomes `OfferFederationId`.
   - `CampaignOffer*` schemas become `PlayerOffer`, `PlayerOffersPage`, `RedeemOfferResult`,
     `OfferItem`, `OfferAmount`, `OfferReason` and `OfferText`; `CampaignOfferState` becomes the
-    `OfferGrantState` enum; `RedeemCampaignOfferRequest` becomes `RedeemOfferRequest`.
-  - The federation type is `IFederatedVirtualOffer` (was `IFederatedCampaignVirtualOffer`).
+    `OfferGrantState` enum; `RedeemCampaignOfferRequest` becomes `RedeemOfferRequest`, without
+    `grantId` (it is in the route).
+  - The federation type is `IFederatedVirtualOffer` (was `IFederatedCampaignVirtualOffer`). Its
+    methods are `GrantOffers`, `RevokeGrants`, `RedeemGrant` and `GetGrantAvailability`.
+  - `PlayerOffer` gains `publicProperties` (the grant's own data from its provider, which can change
+    per read), `publicPropertiesTruncated` and `providerStatus` (why the provider gave no answer on
+    this read).
 
 - **The campaign `Conditional` node is gone, and `AnalyticsGate` replaces it.** `NodeKind.Conditional`,
   `ConditionalBodyDto`, `ConditionDto` and `ConditionKind` are removed, and `NodeBodyDto.conditional`

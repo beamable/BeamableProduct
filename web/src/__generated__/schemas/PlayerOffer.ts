@@ -16,5 +16,8 @@ export type PlayerOffer = {
   expiresAtUnixSeconds?: bigint | string; 
   grantedAtUnixSeconds?: bigint | string; 
   offer?: OfferItem; 
+  providerStatus?: string | null; 
+  publicProperties?: Record<string, string>; 
+  publicPropertiesTruncated?: boolean; 
   unavailableReasons?: OfferReason[]; 
 };

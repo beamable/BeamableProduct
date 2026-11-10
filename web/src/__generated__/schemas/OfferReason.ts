@@ -5,7 +5,6 @@
 
 export type OfferReason = { 
   code: string; 
-  detail?: string | null; 
   message?: string; 
   properties?: Record<string, string>; 
 };

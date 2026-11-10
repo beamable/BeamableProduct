@@ -47,11 +47,11 @@ describe('OffersService', () => {
         ],
         next: 'cursor-1',
       };
-      vi.spyOn(apis, 'offersGet').mockResolvedValue(ok(page));
+      vi.spyOn(apis, 'offersGetGrants').mockResolvedValue(ok(page));
 
       const result = await makeService().getOffers();
 
-      expect(apis.offersGet).toHaveBeenCalledWith(
+      expect(apis.offersGetGrants).toHaveBeenCalledWith(
         mockRequester,
         undefined,
         undefined,
@@ -63,7 +63,7 @@ describe('OffersService', () => {
     });
 
     it('passes the cursor, the provider filter and the states through', async () => {
-      vi.spyOn(apis, 'offersGet').mockResolvedValue(ok<PlayerOffersPage>({ offers: [] }));
+      vi.spyOn(apis, 'offersGetGrants').mockResolvedValue(ok<PlayerOffersPage>({ offers: [] }));
 
       await makeService().getOffers({
         cursor: 'cursor-1',
@@ -71,7 +71,7 @@ describe('OffersService', () => {
         states: [OfferGrantState.Redeemed, OfferGrantState.Expired],
       });
 
-      expect(apis.offersGet).toHaveBeenCalledWith(
+      expect(apis.offersGetGrants).toHaveBeenCalledWith(
         mockRequester,
         'cursor-1',
         'my_web_shop',
@@ -85,13 +85,14 @@ describe('OffersService', () => {
   describe('redeem', () => {
     it('sends the current player, the grant and the params — no provider, no transaction id', async () => {
       const result: RedeemOfferResult = { grantId: 'g1', success: true, status: 'redeemed' };
-      vi.spyOn(apis, 'offersPostRedeem').mockResolvedValue(ok(result));
+      vi.spyOn(apis, 'offersPostGrantsRedeemByGrantId').mockResolvedValue(ok(result));
 
       const response = await makeService().redeem('g1', { choice: 'gold' });
 
-      expect(apis.offersPostRedeem).toHaveBeenCalledWith(
+      expect(apis.offersPostGrantsRedeemByGrantId).toHaveBeenCalledWith(
         mockRequester,
-        { playerId: '0', grantId: 'g1', params: { choice: 'gold' } },
+        'g1',
+        { playerId: '0', params: { choice: 'gold' } },
         '0',
       );
       expect(response).toEqual(result);
@@ -104,10 +105,10 @@ describe('OffersService', () => {
         status: 'pending',
         state: OfferGrantState.Claiming,
       };
-      vi.spyOn(apis, 'offersPostRedeem').mockResolvedValue(ok(pending));
+      vi.spyOn(apis, 'offersPostGrantsRedeemByGrantId').mockResolvedValue(ok(pending));
 
       await expect(makeService().redeem('g1')).resolves.toEqual(pending);
-      expect(vi.mocked(apis.offersPostRedeem).mock.calls[0][1].params).toEqual({});
+      expect(vi.mocked(apis.offersPostGrantsRedeemByGrantId).mock.calls[0][2].params).toEqual({});
     });
   });
 });

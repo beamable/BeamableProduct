@@ -3,7 +3,7 @@
  *
  * A player is granted an offer in one of two ways: a campaign lane attaches it to the message it
  * sends, and Beamable grants it to each recipient as the send goes out; or an operator grants it
- * directly (`POST /api/offers/grant`). Both land in the same list, and the player claims either
+ * directly (`POST /api/offers/grants`). Both land in the same list, and the player claims either
  * here. Which provider the offer comes from is a *federation* — an extension point, not a Beamable
  * feature. Beamable ships three (see `KNOWN_FEDERATIONS`): a store whose offers are bought, a free
  * currency/item reward, and a free badge. A game with its own virtual economy implements the same
@@ -124,7 +124,6 @@ export type Reward = {
 export type Reason = {
   code: string;
   message: string;
-  detail: string;
   properties: Record<string, string>;
 };
 
@@ -348,7 +347,6 @@ function normalizeReason(r: OfferReason): Reason {
   return {
     code: r.code ?? '',
     message: r.message ?? '',
-    detail: r.detail ?? '',
     properties: r.properties ?? {},
   };
 }
