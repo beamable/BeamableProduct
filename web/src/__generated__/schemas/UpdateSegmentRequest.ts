@@ -4,12 +4,17 @@
  */
 
 import type { Rule } from './Rule';
-import type { SegmentPropertyInput } from './SegmentPropertyInput';
 
 export type UpdateSegmentRequest = { 
   description?: string | null; 
   displayName?: string | null; 
   expectedActiveId?: string | null; 
-  properties?: Record<string, SegmentPropertyInput> | null; 
+  managedBy?: string | null; 
+  propertyExtremes?: string[] | null; 
+  propertyStats?: string[] | null; 
+  realms?: string[] | null; 
+  removeRule?: boolean; 
   rule?: Rule; 
+  tags?: string[] | null; 
+  trackTenure?: boolean | null; 
 };

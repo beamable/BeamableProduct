@@ -24,6 +24,14 @@ public class LocalStackRunState
 	/// stack is down; false when the user passed <c>--save-logs</c> and the logs are kept under the workspace.</summary>
 	public bool ephemeralLogs;
 
+	/// <summary>The <c>:remote-ms</c> gateway host (<c>&lt;dev&gt;.&lt;domain&gt;</c>) the stack started with, or null without
+	/// it. Kept while any of the steps it changes runs, so a later run can't mix modes or names with them.</summary>
+	public string remoteMsHost;
+
+	/// <summary>The steps that run on another port than their settings say (theirs was taken), by name: a later run
+	/// that carries them over points what it launches at them again (see <c>LocalStackPorts</c>).</summary>
+	public Dictionary<string, int> ports;
+
 	/// <summary>The launched steps, in start order.</summary>
 	public List<LocalStackRunEntry> steps = new List<LocalStackRunEntry>();
 }
@@ -71,6 +79,10 @@ public class LocalStackRunEntry
 	/// <summary>If set, <c>stop --purge</c> runs this instead of <see cref="stopArguments"/> (e.g.
 	/// <c>compose down -v</c>, which also deletes the containers' volumes and so the local database).</summary>
 	public string purgeStopArguments;
+
+	/// <summary>Environment the stop reversal runs with: the step's own, recorded only for steps that have a
+	/// reversal (e.g. a compose override that won't parse without its variables).</summary>
+	public Dictionary<string, string> environment;
 
 	/// <summary>True for run-to-completion steps (e.g. <c>docker compose up -d</c>): their <see cref="pid"/>
 	/// is expected to be dead; liveness is not judged by it.</summary>

@@ -130,14 +130,18 @@ namespace Beamable.Player
 		}
 	}
 
-	/// <summary>
-	/// A list of <see cref="PlayerItem"/>s grouped by a common type.
-	/// </summary>
+	/// <summary>Contains observable player items under a content scope, including its subtypes.</summary>
+	/// <remarks>Obtain groups through <see cref="PlayerInventory.GetItems(Beamable.Common.Inventory.ItemRef)"/>.
+	/// Creation starts a refresh. Await <see cref="OnReady"/> or use
+	/// <see cref="PlayerInventory.LoadItems(Beamable.Common.Inventory.ItemRef)"/> before reading initial data.
+	/// Inherited <c>OnUpdated</c> notifications signal changes; detach handlers when their consumer is disposed.</remarks>
 	[Serializable]
 	public class PlayerItemGroup : AbsObservableReadonlyList<PlayerItem>
 	{
 		private ItemRef _rootRef;
 		private readonly PlayerInventory _inventory;
+		/// <summary>A promise that completes after this group's initial refresh.</summary>
+		/// <remarks>Refresh failures reject this promise. Use <see cref="Beamable.Common.Player.IRefreshable.Refresh"/> to request later refreshes.</remarks>
 		public Promise OnReady;
 
 		/// <summary>

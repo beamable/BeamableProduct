@@ -1024,11 +1024,119 @@ public static class LocalStackTemplate
 	public static LocalStackStep LogsForwardStep() => new LocalStackStep
 	{
 		name = LogsForwardStepName,
-		tags = new List<string> { "observability" },
+		tags = new List<string> { ObservabilityTag },
 		beam = true,
 		arguments = $"local logs --forward {LocalOtlpEndpoint}",
-		dependsOn = new List<string> { ApiDepsStepName }
+		dependsOn = new List<string> { ObservabilityStepName }
 	};
+
+	/// <summary>The tag every stack includes (see <c>LocalStackStacks.Resolve</c>) and <c>:no-logs</c> removes.</summary>
+	public const string ObservabilityTag = "observability";
+
+	public const string ObservabilityStepName = "docker: observability";
+
+	/// <summary>The services of BeamableAPI's compose that make up Grafana and what feeds it.</summary>
+	private const string ObservabilityServices = "otel-collector loki tempo prometheus grafana";
+
+	/// <summary>
+	/// Only the observability half of BeamableAPI's compose (collector, Loki, Tempo, Prometheus, Grafana), so a stack
+	/// without the backend's docker dependencies (portal-extensions, web-dev, remote...) still gets its logs in Grafana.
+	/// The same compose project as <see cref="ApiDepsStepName"/>, so in a stack running both the second <c>up</c> finds
+	/// them already running. Added to the catalogue wherever the docker step is, and <c>logs: forward</c> repointed at
+	/// it, from <c>WorkspaceServices.AddTo</c>, so settings written before it existed get it without setup.
+	/// </summary>
+	public static void AddObservabilityStep(List<LocalStackStep> steps)
+	{
+		var docker = steps.FindIndex(s => string.Equals(s.name, ApiDepsStepName, StringComparison.OrdinalIgnoreCase));
+		if (docker < 0)
+		{
+			return; // no BeamableAPI checkout on this machine: nothing to run Grafana from
+		}
+
+		if (!steps.Any(s => string.Equals(s.name, ObservabilityStepName, StringComparison.OrdinalIgnoreCase)))
+		{
+			steps.Insert(docker, new LocalStackStep
+			{
+				name = ObservabilityStepName,
+				tags = new List<string> { ObservabilityTag },
+				workingDirectory = steps[docker].workingDirectory,
+				command = "docker",
+				arguments = $"compose up -d --wait {ObservabilityServices}",
+				stopArguments = $"compose stop {ObservabilityServices}",
+				purgeStopArguments = $"compose rm -s -f -v {ObservabilityServices}",
+				environment = new Dictionary<string, string> { [LogRetentionVariable] = "${logRetention}" },
+				waitForExit = true,
+				readyTimeoutSeconds = 300
+			});
+		}
+
+		// Settings written before this step had the forwarder wait on the whole backend's docker step.
+		foreach (var forward in steps.Where(s => string.Equals(s.name, LogsForwardStepName, StringComparison.OrdinalIgnoreCase)))
+		{
+			forward.dependsOn = new List<string> { ObservabilityStepName };
+		}
+	}
+
+	public const string ClickHouseMigrationsStepName = "c# clickhouse migrations";
+
+	/// <summary>
+	/// Creates the local ClickHouse's tables (<c>otel_logs</c>, <c>otel_traces</c>, the metrics tables) with
+	/// BeamableAPI's <c>Beamable.Database.Management migrate</c>. The gateway gives each realm a ClickHouse writer when
+	/// a microservice starts, but nothing else creates the tables those writers insert into, so without this every
+	/// service's telemetry is refused (<c>UNKNOWN_TABLE</c>) and the portal has no logs to show. Migrations are recorded
+	/// in ClickHouse, so a run after the first only checks them.
+	///
+	/// A build and a run, like the C# hosts (<see cref="AddDotnetHost"/>): the build is a <c>build: </c> step, so it runs
+	/// in BeamableAPI's build lane, one after another with the gateway's (the two compile the same shared projects),
+	/// and only when its inputs changed. Both go right after the docker step, so the tables exist before anything
+	/// that writes telemetry starts: a stack runs its steps in catalogue order.
+	///
+	/// Added to the catalogue wherever the backend's docker step is (from <c>WorkspaceServices.AddTo</c>), so
+	/// settings written before it existed get it without setup. The <c>c# </c> names tag both <c>csharp</c>, which puts
+	/// them in every stack that runs the C# hosts.
+	/// </summary>
+	public static void AddClickHouseMigrationsStep(List<LocalStackStep> steps)
+	{
+		var docker = steps.FindIndex(s => string.Equals(s.name, ApiDepsStepName, StringComparison.OrdinalIgnoreCase));
+		if (docker < 0 || steps.Any(s => string.Equals(s.name, ClickHouseMigrationsStepName, StringComparison.OrdinalIgnoreCase)))
+		{
+			return;
+		}
+
+		const string project = "Beamable.Database.Management";
+		var apiDir = steps[docker].workingDirectory;
+		var outDir = Path.Combine(apiDir, project, "bin", "Debug", DotnetHostTfm);
+		steps.InsertRange(docker + 1, new[]
+		{
+			new LocalStackStep
+			{
+				name = $"build: {ClickHouseMigrationsStepName}",
+				workingDirectory = apiDir,
+				command = DotnetToken,
+				arguments = $"build {project} -c Debug",
+				build = true,
+				requiredOutput = Path.Combine(outDir, OperatingSystem.IsWindows() ? project + ".exe" : project),
+				inputs = CSharpHostInputs(),
+				waitForExit = true,
+				readyTimeoutSeconds = 300
+			},
+			new LocalStackStep
+			{
+				name = ClickHouseMigrationsStepName,
+				label = "ClickHouse migrations",
+				// ClickHouse comes from the docker deps.
+				dependsOn = new List<string> { ApiDepsStepName },
+				// From its output directory, so the appsettings*.json copied there are found.
+				workingDirectory = outDir,
+				command = OperatingSystem.IsWindows() ? project + ".exe" : "./" + project,
+				arguments = "migrate",
+				// Its appsettings.Local.json points at the docker deps' ClickHouse.
+				environment = new Dictionary<string, string> { ["DOTNET_ENVIRONMENT"] = "Local" },
+				waitForExit = true,
+				readyTimeoutSeconds = 120
+			}
+		});
+	}
 
 	/// <summary>Name prefix identifying microservice steps (used by the "update services" flow).</summary>
 	public const string MicroservicePrefix = "microservice: ";

@@ -98,6 +98,19 @@ public class App
 
 	private QueuedLogger _queuedLogger;
 
+	private sealed class ConsoleCancellationRegistration : IDisposable
+	{
+		private readonly ConsoleCancelEventHandler _handler;
+
+		public ConsoleCancellationRegistration(ConsoleCancelEventHandler handler)
+		{
+			_handler = handler;
+			Console.CancelKeyPress += _handler;
+		}
+
+		public void Dispose() => Console.CancelKeyPress -= _handler;
+	}
+
 	public App()
 	{
 		//This is necessary, so we can use MSBuild to read different projects and get their properties later on
@@ -1143,8 +1156,9 @@ public class App
 			// First thing we have to do is ensure we have our paths to our Config directories loaded.
 			provider.GetService<ConfigService>().SetWorkingDir();
 
-			{ // if the application is force-quit, then we should cancel our life-cycle to give commands a chance to clean up
-				Console.CancelKeyPress += (sender, eventArgs) =>
+			// The handler belongs to this invocation, including failures during context setup.
+			// Server invocations dispose their lifecycle after this middleware returns.
+			using var consoleCancellation = new ConsoleCancellationRegistration((sender, eventArgs) =>
 				{
 					
 					// prevent the application from shutting down immediately after a CTRL+C appears, 
@@ -1163,8 +1177,7 @@ public class App
 						Log.Global.LogDebug("Done waiting for graceful shutdown...");
 						Environment.Exit(0);
 					});
-				};
-			}
+				});
 
 			Log.Verbose("command prep (make provider) took " + sw.ElapsedMilliseconds);
 

@@ -228,14 +228,13 @@ namespace Beamable.Common.Api.Inventory
 			return this;
 		}
 
-		/// <summary>
-		/// Add or remove currency from the player's inventory.
-		/// Multiple calls to this method for the same currency will combine into one currency update.
-		/// <para> For example, if you changed up by 5, and then changed up again by 5, the final result would be 10 </para>
-		/// </summary>
-		/// <param name="contentId">The content ID for a currency value</param>
-		/// <param name="amount">The amount to change the given currency. Positive numbers add currency, and negative numbers subtract currency.</param>
-		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
+		/// <summary>Adds a positive or negative currency delta to this update builder.</summary>
+		/// <param name="contentId">The complete currency content ID, such as <c>currency.coins</c>.</param>
+		/// <param name="amount">The amount to add; a negative value subtracts currency.</param>
+		/// <returns>This builder, allowing additional changes to be chained.</returns>
+		/// <remarks>Calls for the same ID accumulate: adding 5 twice submits a delta of 10.
+		/// This configures an update; it does not send a request. Submit the builder through the inventory API.
+		/// Client updates require the currency's client permissions to allow writes.</remarks>
 		public InventoryUpdateBuilder CurrencyChange(string contentId, long amount)
 		{
 			if (currencies.TryGetValue(contentId, out var currentValue))

@@ -32,7 +32,7 @@ public class {|#0:MyFederation|} : IFederationId {
 [Microservice(""some_user_service"")]
 public partial class SomeUserMicroservice : Microservice, IFederatedPlayerInit<MyFederation>
 {		
-	public Promise<PlayerInitResult> CreatePlayer(Account account, Dictionary<string, string> properties)
+	public Promise<PlayerInitResult> CreatePlayer(FederatedPlayerAccount account, Dictionary<string, string> properties)
     {
         throw new System.NotImplementedException();
     }
@@ -205,7 +205,7 @@ public class {|#0:MyFederation|} : IFederationId {
 [Microservice(""some_user_service"")]
 public partial class SomeUserMicroservice : Microservice, IFederatedPlayerInit<MyFederation>
 {		
-	public Promise<PlayerInitResult> CreatePlayer(Account account, Dictionary<string, string> properties)
+	public Promise<PlayerInitResult> CreatePlayer(FederatedPlayerAccount account, Dictionary<string, string> properties)
     {
         throw new System.NotImplementedException();
     }
@@ -228,7 +228,7 @@ public class MyFederation : IFederationId {
 [Microservice(""some_user_service"")]
 public partial class SomeUserMicroservice : Microservice, IFederatedPlayerInit<MyFederation>
 {		
-	public Promise<PlayerInitResult> CreatePlayer(Account account, Dictionary<string, string> properties)
+	public Promise<PlayerInitResult> CreatePlayer(FederatedPlayerAccount account, Dictionary<string, string> properties)
     {
         throw new System.NotImplementedException();
     }

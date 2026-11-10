@@ -10,11 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `ChatService.GetRoomHistory(roomId, limit)` gets a chat room's latest messages from Beamable, on realms that send notifications over the Beamable websocket.
+- Added local/realm property and read-only JSON diffs, a reconciliation queue, clearer status/Inspector warnings, and saved column widths.
 - Fields with the `MustBeComparatorString` attribute show a dropdown in the Inspector listing the comparators the backend accepts for that field, with a tooltip for each.
 
 ### Fixed
 
 - Chat rooms work on realms that send notifications over the Beamable websocket: `RoomHandle.Subscribe()` completes, messages arrive over the websocket, and the room's history loads from Beamable instead of PubNub. Previously the subscription waited on PubNub, which those realms never connect to.
+- Fixed development/pinned CLI version matching and repeated server launches. Discovery reports incompatible or unavailable servers and allows recovery after configuration changes.
+- Play Mode resolves the selected namespace, including unpublished content, from a read-only local snapshot loaded in the background. Restart Play Mode to reload edits. Content stays on the context's realm; shutdown cancels loads and stops manifest refreshes.
+- Fixed content watcher recovery across mode changes, script reloads, and failures, and prevented telemetry discovery from stopping active CLI servers.
 - `MustBeComparatorString` now validates against what the backend accepts for each field. Stat requirements (listings, announcements, leaderboard and event cohorts) also accept `neq`, `gte`, `lte` and the long names (`equal`, `notequal`, `greaterthan`, `greaterthanequal`, `lessthan`, `lessthanequal`). Offer purchase requirements accept `eq`, `ne`, `gt`, `ge`, `lt`, `le`. Cohort requirements accept only `eq` (member) and `ne` (not a member); any other value used to be evaluated as "not a member", so replace it with `ne`.
 - With Unity IAP 5, purchasing can be initialized more than once (login, `ChangeAuthorizedPlayer`, several `BeamContext`s, play mode without domain reload) without failing with `ErrorNoProductsAvailable (FetchProducts cannot be invoked if a fetch is already in progress...)`. SKUs without a product id for the current store are skipped with a warning, products the store doesn't know no longer disable purchasing, and Steam builds use the Beamable Steam store.
 - Purchases are no longer lost or left hanging: an order whose fulfillment fails stays pending in the store instead of being confirmed without its reward, and `StartPurchase` always completes, including for unknown SKUs, a second purchase while one is in flight (`ExistingPurchasePending`), deferred payments (`UnityBeamablePurchaser.PURCHASE_DEFERRED_ERROR_CODE`, on Unity IAP 4 too) and a store that disconnected in the background. Initializing purchasing again or disposing its context settles a purchase left in flight, and its Beamable transaction is always closed with the account that began it. Prices are sent in a culture-independent format.
@@ -22,7 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Local Mode pauses auto-sync while History tracks realm publications. Publishing requires resolving validation errors, conflicts, and incoming changes.
+- Unverified content requires an explicit local/realm choice in Issues. Preserve `referenceManifestId` in external JSON: empty/null requires review; omission fails loading.
 - Beam Account login window pre-fills the environment and organization from the project's existing configuration, such as `config-defaults.txt`, and restores the previously selected realm after login.
+
+### Deprecated
+
+- `ContentConfiguration.EditorManifestID` remains for source compatibility but is ignored; Local Mode uses the Content window namespace.
 
 ## [6.2.0] - 2026-10-08
 
