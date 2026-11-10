@@ -850,4 +850,30 @@ namespace Test
 		StringAssert.Contains("public string ToJson()", src);
 		StringAssert.Contains("public void SerializeAt(", src);
 	}
+
+	[Test]
+	public void MapReferencedRequiredAndOptional_IsWrittenOnce()
+	{
+		const string json = @"{
+  ""openapi"": ""3.0.1"", ""info"": { ""title"": ""tuna"", ""version"": ""1.0"" }, ""paths"": {},
+  ""components"": { ""schemas"": {
+    ""Tuna"": { ""title"": ""Tuna"", ""type"": ""object"", ""properties"": { ""size"": { ""type"": ""integer"" } } },
+    ""Holder"": { ""title"": ""Holder"", ""type"": ""object"", ""required"": [ ""always"" ], ""properties"": {
+      ""always"": { ""type"": ""object"", ""additionalProperties"": { ""$ref"": ""#/components/schemas/Tuna"" } },
+      ""sometimes"": { ""type"": ""object"", ""additionalProperties"": { ""$ref"": ""#/components/schemas/Tuna"" } } } }
+  } } }";
+		var document = new Microsoft.OpenApi.Readers.OpenApiStringReader().Read(json, out _);
+		var context = new SwaggerService.DefaultGenerationContext
+		{
+			Documents = new List<OpenApiDocument> { document },
+			OrderedSchemas = SwaggerService.ExtractAllSchemas(new List<OpenApiDocument> { document }, GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts),
+			ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>()
+		};
+
+		var src = UnityHelper.GenerateModel(context, out _).Content;
+
+		StringAssert.Contains("public MapOfTuna always", src);
+		StringAssert.Contains("public OptionalMapOfTuna sometimes", src);
+		Assert.AreEqual(1, src.Split("class MapOfTuna :").Length - 1);
+	}
 }

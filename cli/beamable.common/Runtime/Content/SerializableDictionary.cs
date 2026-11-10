@@ -30,6 +30,8 @@ namespace Beamable.Common.Content
 	[Obsolete("use " + nameof(MapOfArrayOfString) + " instead")]
 	[Serializable] public class MapOfStringArray : SerializableDictionaryStringToSomething<string[]> { }
 	[Serializable] public class MapOfArrayOfString : SerializableDictionaryStringToSomething<string[]> { }
+	[Serializable] public class MapOfArrayOfLong : SerializableDictionaryStringToSomething<long[]> { }
+	[Serializable] public class OptionalMapOfArrayOfLong : Optional<MapOfArrayOfLong> { }
 	[Serializable] public class MapOfMapOfString : SerializableDictionaryStringToSomething<MapOfString> { }
 	[Serializable] public class OptionalMapOfString : Optional<MapOfString>
 	{

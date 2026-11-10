@@ -96,11 +96,9 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 			File.WriteAllText(packagePath, root.ToString(Newtonsoft.Json.Formatting.Indented));
 
 			// Install so the file: dependency is symlinked into node_modules and types resolve immediately.
-			// Routed at the local registry when the extension pins a local developer build of the toolkit,
-			// which only exists there. Best-effort: package.json is the source of truth, and the extension
-			// run flow installs deps again before building, so a failed/offline install must not fail this.
-			var installArgs = "install" + WebLocalRegistryService.InstallArgsFor(extension.AbsolutePath);
-			var result = StartProcessUtil.Run("npm", installArgs, useShell: true, workingDirectoryPath: extension.AbsolutePath).WaitForResult();
+			// Best-effort: package.json is the source of truth, and the extension run flow installs deps again
+			// before building, so a failed/offline install must not fail this.
+			var result = StartProcessUtil.Run("npm", "install", useShell: true, workingDirectoryPath: extension.AbsolutePath).WaitForResult();
 			if (result.exit != 0)
 			{
 				Log.Warning($"Added library [{args.LibraryName}] to [{extension.Name}], but 'npm install' failed." +
@@ -490,7 +488,9 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 	/// deterministic and immune to that bug. The check fails open — anything the matcher can't parse is treated
 	/// as "no conflict" so users are never blocked on a range it doesn't understand.
 	/// </summary>
-	public static void ValidateLibraryPeerDependencies(PortalExtensionDef extension)
+	/// <param name="localBuilds">Packages installed from a local build. Their version is newer than any range a library
+	/// names, and the build is the point, so they aren't checked.</param>
+	public static void ValidateLibraryPeerDependencies(PortalExtensionDef extension, IEnumerable<string> localBuilds = null)
 	{
 		var packagePath = extension.AbsolutePackageJsonPath;
 		if (!File.Exists(packagePath))
@@ -509,7 +509,7 @@ public class PortalExtensionAddLibraryCommand : AppCommand<PortalExtensionAddLib
 		// The concrete versions the extension actually provides, read from node_modules — i.e. what the build
 		// will really use. Dependencies are installed (InstallDeps) before this validation runs.
 		var providedVersions = new Dictionary<string, string>(StringComparer.Ordinal);
-		foreach (var package in SHARED_PEER_PACKAGES)
+		foreach (var package in SHARED_PEER_PACKAGES.Except(localBuilds ?? Enumerable.Empty<string>()))
 		{
 			var version = ReadInstalledPackageVersion(extension.AbsolutePath, package);
 			if (version != null)

@@ -24,7 +24,7 @@ gradle wrapper --gradle-version 8.2     # once, if gradle/wrapper/gradle-wrapper
 ./gradlew :notifications:assembleRelease
 # → notifications/build/outputs/aar/notifications-release.aar
 ```
-Or just run `./dev-native.sh` from the repo root, which builds this and copies the result to
+Or just run `beam local run native-libs` from the workspace you run local stacks in, which builds this and copies the result to
 `beam-native-mobile/Unity/Plugins/Android/beamable-notifications-release.aar` (the shared
 Unity package ships the binary).
 

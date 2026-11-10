@@ -8,25 +8,17 @@ auth:
 uplinks:
   npmjs:
     url: https://registry.npmjs.org/
+    # How long a package's version list from npmjs is trusted; short, so a new dev or rc build shows up quickly
+    # through local-unpkg.
+    maxage: 30s
 
 packages:
   '@beamable/*':
     access: $all
     publish: $all
-    # `beam web publish` garbage-collects the previous local build, mirroring how dev.sh deletes
-    # PREVIOUS_VERSION from the local NuGet feed.
-    unpublish: $all
-    # Proxied to npmjs, and this matters in both directions:
-    #
-    #   - It is SAFE because local builds use a unique version every time
-    #     (0.0.123-local.<N>, from web-build-number.txt). That version exists nowhere upstream, so
-    #     there is nothing to collide with. Publishing a version the uplink ALSO serves is what
-    #     fails with `409 Conflict - this package is already present`; we never do that.
-    #
-    #   - It is REQUIRED because extension installs are routed through this registry once a project
-    #     pins a local-dev version. Every other @beamable spec in that install still has to
-    #     resolve — extensions pinning a published toolkit, extension libraries, and so on — and
-    #     without the uplink those 404.
+    # Local builds have a version of their own (<next minor>-0.<timestamp>) that npmjs never has, so a publish
+    # can't collide with the uplink, and nothing is ever unpublished. The uplink is what lets local-unpkg serve the
+    # published versions too.
     proxy: npmjs
 
   '**':

@@ -11,33 +11,56 @@ namespace Beamable.Editor.ContentService
 	/// </summary>
 	internal sealed class ContentWriteTracker
 	{
-		private readonly Dictionary<string, List<Promise>> _writes = new();
+		private sealed class PendingWrite
+		{
+			public readonly Promise Settled = new();
+			public Exception Error;
+		}
+
+		private readonly Dictionary<string, List<PendingWrite>> _writes = new();
 		private readonly Dictionary<string, Promise> _deletions = new();
 
 		public bool IsDeleting(string key) => _deletions.ContainsKey(key);
 		public bool HasWrites(string key) => _writes.ContainsKey(key);
+
+		public async Promise WaitForWrites(string key)
+		{
+			Exception error = null;
+			while (_writes.TryGetValue(key, out var writes))
+				foreach (var write in writes.ToArray())
+				{
+					await write.Settled;
+					error ??= write.Error;
+				}
+			if (error != null) throw error;
+		}
 
 		public async Promise Run(string key, Func<Promise> write)
 		{
 			if (IsDeleting(key)) return;
 			if (!_writes.TryGetValue(key, out var writes))
 			{
-				_writes[key] = writes = new List<Promise>();
+				_writes[key] = writes = new List<PendingWrite>();
 			}
 
 			// Register before dispatch: deletion must also see commands that complete synchronously.
-			var settled = new Promise();
-			writes.Add(settled);
+			var pending = new PendingWrite();
+			writes.Add(pending);
 			try
 			{
 				await write();
 			}
+			catch (Exception error)
+			{
+				pending.Error = error;
+				throw;
+			}
 			finally
 			{
-				writes.Remove(settled);
+				writes.Remove(pending);
 				if (writes.Count == 0) _writes.Remove(key);
 				// Deletion needs settlement, including failures. The caller still receives the write error.
-				settled.CompleteSuccess();
+				pending.Settled.CompleteSuccess();
 			}
 		}
 
@@ -58,7 +81,7 @@ namespace Beamable.Editor.ContentService
 				// New writes are blocked, so this snapshot includes everything deletion must wait for.
 				if (_writes.TryGetValue(key, out var writes))
 				{
-					foreach (var settled in writes.ToArray()) await settled;
+					foreach (var write in writes.ToArray()) await write.Settled;
 				}
 				delete();
 			}

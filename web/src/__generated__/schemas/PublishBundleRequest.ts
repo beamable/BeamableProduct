@@ -11,7 +11,6 @@ import type { ServiceStorageReference } from './ServiceStorageReference';
 
 export type PublishBundleRequest = { 
   bundleDependencies?: Record<string, BundleDepRange>; 
-  comment?: string | null; 
   portalExtensionReferences?: PortalExtensionReference[]; 
   schemaReferences?: SchemaReference[]; 
   serviceReferences?: ServiceReference[]; 

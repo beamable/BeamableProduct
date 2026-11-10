@@ -8,5 +8,6 @@ namespace Beamable.Editor.BeamCli.Commands
     public partial class BeamContentResolveConflictResult
     {
         public string[] ResolvedContentIds;
+        public Beamable.Common.BeamCli.Contracts.ContentReconciliationPreview Preview;
     }
 }

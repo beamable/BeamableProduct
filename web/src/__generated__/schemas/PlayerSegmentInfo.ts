@@ -6,7 +6,8 @@
 import type { MembershipSource } from './enums/MembershipSource';
 
 export type PlayerSegmentInfo = { 
-  enteredAt: Date; 
   segmentId: string; 
   sources: MembershipSource[]; 
+  enteredAt?: Date | null; 
+  enteredBefore?: boolean; 
 };

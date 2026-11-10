@@ -15,7 +15,7 @@ public class GenSchemaTests
 	[TestCase("number", null, typeof(double), "double", TestName = "primitive double by default")]
 	[TestCase("boolean", null, typeof(bool), "bool", TestName = "primitive boolean by default")]
 	[TestCase("string", null, typeof(string), "string", TestName = "primitive string by default")]
-	[TestCase("string", "byte", typeof(byte), "byte", TestName = "primitive byte")]
+	[TestCase("string", "byte", typeof(string), "string", TestName = "primitive byte is base64 text")]
 	[TestCase("string", "uuid", typeof(Guid), "Guid", TestName = "primitive guid")]
 	[TestCase("integer", "int64", typeof(long), "long", TestName = "primitive long")]
 	[TestCase("integer", "int16", typeof(short), "short", TestName = "primitive short")]

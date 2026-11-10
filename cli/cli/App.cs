@@ -40,7 +40,6 @@ using cli.Unreal;
 using cli.UnrealCommands;
 using cli.Utils;
 using cli.Version;
-using cli.Web;
 using CliWrap;
 using Errata;
 using Microsoft.Build.Locator;
@@ -98,6 +97,19 @@ public class App
 	private Action<IDependencyBuilder> _serviceConfigurator;
 
 	private QueuedLogger _queuedLogger;
+
+	private sealed class ConsoleCancellationRegistration : IDisposable
+	{
+		private readonly ConsoleCancelEventHandler _handler;
+
+		public ConsoleCancellationRegistration(ConsoleCancelEventHandler handler)
+		{
+			_handler = handler;
+			Console.CancelKeyPress += _handler;
+		}
+
+		public void Dispose() => Console.CancelKeyPress -= _handler;
+	}
 
 	public App()
 	{
@@ -255,7 +267,6 @@ public class App
 		services.AddSingleton<IUserContext, SimpleUserContext>(_ => new SimpleUserContext(0) );
 		services.AddSingleton<ProcessFileLocker>();
 		services.AddSingleton<IRemotePortalConfigService, RemotePortalConfigService>();
-		services.AddSingleton<WebLocalRegistryService>();
 
 		services.AddSingleton<DefaultActivityProvider>(DefaultActivityProvider.CreateCliServiceProvider());
 		services.AddSingleton<ResourceBuilder>(p =>
@@ -571,12 +582,16 @@ public class App
 
 		Commands.AddRootCommand<LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackSetupCommand, LocalStackSetupCommandArgs, LocalStackCommand>();
-		Commands.AddSubCommand<LocalStackInitCommand, LocalStackInitCommandArgs, LocalStackCommand>();
-		Commands.AddSubCommand<LocalStackUpCommand, LocalStackUpCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackRunCommand, LocalStackRunCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackCreateCommand, LocalStackCreateCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackEditCommand, LocalStackCreateCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackDeleteCommand, LocalStackDeleteCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackPsCommand, LocalStackPsCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackLogsCommand, LocalStackLogsCommandArgs, LocalStackCommand>();
 		Commands.AddSubCommand<LocalStackStopCommand, LocalStackStopCommandArgs, LocalStackCommand>();
-		Commands.AddSubCommand<LocalStackValidateCommand, LocalStackValidateCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackWebCommand, LocalStackWebCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackNativeCommand, LocalStackNativeCommandArgs, LocalStackCommand>();
+		Commands.AddSubCommand<LocalStackPortalManagement, LocalStackPortalManagementArgs, LocalStackCommand>();
 
 
 		Commands.AddRootCommand<ProjectCommand>();
@@ -689,13 +704,6 @@ public class App
 				PortalExtensionCommand>();
 		Commands.AddSubCommandWithHandler<ListMountSitesCommand, ListMountSitesCommandArgs, PortalExtensionCommand>();
 		Commands.AddSubCommandWithHandler<ListPortalExtensionOptionsCommand, ListPortalExtensionOptionsCommandArgs, PortalExtensionCommand>();
-
-		Commands.AddRootCommand<WebCommand, WebCommandArgs>();
-		Commands.AddSubCommandWithHandler<WebPublishCommand, WebPublishCommandArgs, WebCommand>();
-		Commands.AddSubCommandWithHandler<WebUseCommand, WebUseCommandArgs, WebCommand>();
-		Commands.AddSubCommandWithHandler<WebResetCommand, WebResetCommandArgs, WebCommand>();
-		Commands.AddSubCommandWithHandler<WebStopCommand, WebStopCommandArgs, WebCommand>();
-		Commands.AddSubCommandWithHandler<WebStatusCommand, WebStatusCommandArgs, WebCommand>();
 
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddSubCommandWithHandler<ConfigRoutesCommand, ConfigRoutesCommandArgs, ConfigCommand>();
@@ -813,7 +821,6 @@ public class App
 		Commands.AddSubCommandWithHandler<PruneYankedCommand, PruneYankedCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<PublishBundleCommand, PublishBundleCommandArgs, BundlesCommand>();
 		Commands.AddSubCommandWithHandler<BundlePlanCommand, BundlePlanCommandArgs, BundlesCommand>();
-		Commands.AddSubCommandWithHandler<BundlesManagementCommand, BundlesManagementCommandArgs, BundlesCommand>();
 
 		Commands.AddRootCommand<ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentBakeCommand, ContentBakeCommandArgs, ContentCommand>();
@@ -1149,8 +1156,9 @@ public class App
 			// First thing we have to do is ensure we have our paths to our Config directories loaded.
 			provider.GetService<ConfigService>().SetWorkingDir();
 
-			{ // if the application is force-quit, then we should cancel our life-cycle to give commands a chance to clean up
-				Console.CancelKeyPress += (sender, eventArgs) =>
+			// The handler belongs to this invocation, including failures during context setup.
+			// Server invocations dispose their lifecycle after this middleware returns.
+			using var consoleCancellation = new ConsoleCancellationRegistration((sender, eventArgs) =>
 				{
 					
 					// prevent the application from shutting down immediately after a CTRL+C appears, 
@@ -1169,8 +1177,7 @@ public class App
 						Log.Global.LogDebug("Done waiting for graceful shutdown...");
 						Environment.Exit(0);
 					});
-				};
-			}
+				});
 
 			Log.Verbose("command prep (make provider) took " + sw.ElapsedMilliseconds);
 

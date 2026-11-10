@@ -9,9 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `Services.Segments` for zone microservices: create and change the zone's segments, move them between states, write their per-realm overrides, and read segments, memberships and counts. Setting `managedBy` on a request writes as that system (`vip`, for one): its segments' rules, realms, state and overrides then change only through requests naming it.
 - `Services.Secrets` for realm and zone microservices: get, set, delete and list secrets in the service's own scope (the realm's secrets in a `Microservice`, the zone's in a `ZoneMicroservice`). From a zone service, `AssumeRealm(pid).Services.Secrets` reaches that realm's secrets.
 - `Services.Auth.BatchAccounts(request)` looks up many players in one call. It can narrow them by a stat filter, and returns each remaining player's account and the requested stat values, in each stat's own type. The request and response are the generated `AuthV2BatchAccountsRequest` and `AuthV2BatchAccountsResponse`; `BatchAccountsHelper` builds the filter, criteria and stats to request, and its `GetStat` extension reads a value back as text. Requests over 500 players are paged automatically.
 - The generated `IBeamAuthApi` has `PostBatch` for the `POST /api/accounts/batch` endpoint.
+
+### Changed
+
+- **Breaking:** `IFederatedPlayerInit.CreatePlayer` takes a `FederatedPlayerAccount` instead of the generated `Account`. The new type holds the fields the platform sends to player init (id, email, gamer tags, third parties, external identities, created and updated times, user name, country, language, role string, device ids, realm), with its own types for gamer tags, third parties and external identities, so the contract no longer changes with the account API's models. Implementations change the parameter type; the field names are the same.
 
 ### Fixed
 - Generate valid OpenAPI component keys and references for tuple callable types, while preserving C# type metadata. Invalid generated schemas now report their validation errors directly.

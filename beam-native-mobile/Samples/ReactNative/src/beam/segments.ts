@@ -2,10 +2,9 @@
  * App-specific binding for Beamable **segments**.
  *
  * A segment is a rule authored in the Portal over a player's *stats* — e.g.
- * `PLAYER_LEVEL >= 10`. The backend watches the stat keys a segment's rule mentions
- * (`SegmentResponse.watchedKeys`); when one of them changes for a player, it re-evaluates the
- * rule and moves the player IN or OUT of the segment. Campaigns, announcements and listings
- * then target the segment rather than individual players.
+ * `PLAYER_LEVEL >= 10`. When a stat a segment's rule reads changes for a player, the backend
+ * decides the player again and moves them IN or OUT of the segment. Campaigns, announcements and
+ * listings then target the segment rather than individual players.
  *
  * A rule leaf now names the **namespace** its key lives in — `{domain}.{visibility}`, e.g.
  * `client.public` — and a rule may mix namespaces. An omitted namespace means `game.private`,
@@ -24,16 +23,15 @@
  *
  * Either way the read-back is the same:
  *  - write a stat  → `beam.stats.set` (client namespaces) or `PlayerStatsService` (game.private)
- *  - read back     → `realmsGetPlayersSegments()` / `…SegmentsTransitions()`
+ *  - read back     → `realmsGetPlayersSegments()`, and the `segments.transition` push as it changes
  *
- * There is no `beam.segments` service in the Web SDK — the two membership reads below are raw
- * generated REST bindings from `@beamable/sdk/api`, called with `beam.requester` (the same
+ * There is no `beam.segments` service in the Web SDK — the membership read below is a raw
+ * generated REST binding from `@beamable/sdk/api`, called with `beam.requester` (the same
  * pattern the SDK Explorer catalog uses for endpoints without a high-level service).
  */
 import {
   playersDeleteStatsByPlayerId,
   realmsGetPlayersSegments,
-  realmsGetPlayersSegmentsTransitions,
 } from '@beamable/sdk/api';
 import type { Beam, SegmentMembershipChanged } from '@beamable/sdk';
 
@@ -371,10 +369,6 @@ export type PlayerSegment = Awaited<
   ReturnType<typeof realmsGetPlayersSegments>
 >['body'][number];
 
-export type SegmentTransition = NonNullable<
-  Awaited<ReturnType<typeof realmsGetPlayersSegmentsTransitions>>['body']['records']
->[number];
-
 /**
  * The segments this player is currently in
  * (`GET /api/realms/{realmId}/players/{playerId}/segments`).
@@ -391,25 +385,6 @@ export async function listMySegments(): Promise<PlayerSegment[]> {
     beam.cid,
   );
   return body ?? [];
-}
-
-/**
- * The player's recent segment enter/exit history
- * (`GET /api/realms/{realmId}/players/{playerId}/segments/transitions`).
- *
- * This is the proof that a stat write did something: bump a stat that a rule watches, refresh,
- * and an `Enter` / `Exit` row with `cause: Rule` shows up.
- */
-export async function listMyTransitions(): Promise<SegmentTransition[]> {
-  const beam = requireBeam();
-  const { body } = await realmsGetPlayersSegmentsTransitions(
-    beam.requester,
-    beam.player.id,
-    beam.pid,
-    undefined, // cursor — first page only
-    beam.cid,
-  );
-  return body.records ?? [];
 }
 
 /**
@@ -450,8 +425,8 @@ export function describeSegmentChange(change: SegmentMembershipChanged): string 
 /**
  * Formats a read failure for display.
  *
- * The two membership reads are the only calls on this screen that may be closed to a plain
- * player token depending on how the realm is configured, and `BeamError` reports that as a bare
+ * The membership read is the only call on this screen that may be closed to a plain player
+ * token depending on how the realm is configured, and `BeamError` reports that as a bare
  * "failed with status 403" — which reads like a bug rather than a permission. Annotate it.
  */
 export function describeSegmentError(e: unknown): string {

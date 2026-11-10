@@ -198,10 +198,12 @@ public static class UnityHelper
 			}
 		}
 
+		// A map type is required by its own references and by its Optional's; written once either way.
+		var added = new HashSet<string>();
 		void AddTypeIfRequired(CodeTypeDeclaration countCheck, CodeTypeDeclaration decl = null)
 		{
 			decl ??= countCheck;
-			if (countCheck != null && decl != null && nameToRefCount.TryGetValue(countCheck.Name, out _))
+			if (countCheck != null && decl != null && nameToRefCount.TryGetValue(countCheck.Name, out _) && added.Add(decl.Name))
 			{
 				root.Types.Add(decl);
 			}
@@ -2172,8 +2174,9 @@ public class GenSchema
 				return new GenCodeTypeReference(typeof(bool));
 			case ("string", "uuid", _):
 				return new GenCodeTypeReference(typeof(Guid));
+			// OpenAPI's byte format is base64-encoded binary data, carried as text.
 			case ("string", "byte", _):
-				return new GenCodeTypeReference(typeof(byte));
+				return new GenCodeTypeReference(typeof(string));
 			case ("string", "date-time", _):
 				return new GenCodeTypeReference(typeof(DateTime));
 			case ("string", _, _) when (Schema?.Extensions.TryGetValue("x-beamable-object-id", out var ext) ?? false):

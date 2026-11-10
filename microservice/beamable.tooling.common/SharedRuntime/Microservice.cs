@@ -314,7 +314,10 @@ namespace Beamable.Server
 			_serviceProvider = serviceProvider;
 			Context = _serviceProvider.GetService<RequestContext>();
 			Requester = _serviceProvider.GetService<IBeamableRequester>();
-			Services = _serviceProvider.GetService<IBeamableServices>();
+			// A zone service has no realm SDK, so IBeamableServices is not registered; its platform events still need a scope.
+			Services = _serviceProvider.CanBuildService<IBeamableServices>()
+				? _serviceProvider.GetService<IBeamableServices>()
+				: null;
 		}
 
 		public void Dispose()

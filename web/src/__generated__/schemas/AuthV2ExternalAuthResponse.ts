@@ -7,9 +7,5 @@ export type AuthV2ExternalAuthResponse = {
   accessToken?: string | null; 
   challengeToken?: string | null; 
   expiresInMs?: bigint | string; 
-  hasAccessToken?: boolean; 
-  hasChallengeToken?: boolean; 
-  hasExpiresInMs?: boolean; 
-  hasRefreshToken?: boolean; 
   refreshToken?: string | null; 
 };

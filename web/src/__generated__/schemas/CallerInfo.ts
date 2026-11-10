@@ -10,4 +10,5 @@ export type CallerInfo = {
   clientId?: string | null; 
   ipAddress?: IPAddress; 
   playerId?: string | null; 
+  system?: string | null; 
 };

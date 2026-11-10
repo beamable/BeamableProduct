@@ -6,6 +6,7 @@
 export type RealmView = { 
   displayName: string; 
   realmId: string; 
+  zoneId: string; 
   archived?: boolean; 
   children?: string[] | null; 
   customerId?: string | null; 
@@ -13,5 +14,4 @@ export type RealmView = {
   parent?: string | null; 
   secret?: string | null; 
   sharded?: boolean | null; 
-  zoneId?: string | null; 
 };

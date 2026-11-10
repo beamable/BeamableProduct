@@ -585,15 +585,11 @@ namespace Beamable.Player
 
 	public delegate string ChallengeHandler(string challenge);
 
-	/// <summary>
-	/// The <see cref="RegistrationResult"/> has information about what happened
-	/// after attempting to add a credential to a <see cref="PlayerAccount"/>.
-	///
-	/// If any error occured, the <see cref="isSuccess"/> field will be false,
-	/// and the <see cref="error"/> value will contain more detail.
-	///
-	/// Otherwise, the <see cref="account"/> field will be accessible.
-	/// </summary>
+	/// <summary>Describes the outcome of attaching credentials to an account.</summary>
+	/// <remarks>Check <see cref="isSuccess"/> first. On failure, inspect <see cref="error"/> and
+	/// <see cref="innerException"/>; reading <see cref="account"/> throws <see cref="PlayerRegistrationException"/>.
+	/// A successful result does not switch the context's selected account.</remarks>
+	/// <seealso cref="PlayerAccounts.AddEmail"/>
 	[Serializable]
 	public class RegistrationResult
 	{
@@ -614,6 +610,7 @@ namespace Beamable.Player
 		/// True if the registration was successful.
 		/// If not, see the <see cref="error"/> field for more detail.
 		/// </summary>
+		/// <value>True when the operation has no reported error; false otherwise.</value>
 		public bool isSuccess => error == PlayerRegistrationError.NONE;
 
 		/// <summary>
@@ -623,6 +620,7 @@ namespace Beamable.Player
 		/// This cannot be accessed if <see cref="isSuccess"/> is false.
 		/// If it is, an exception will be thrown.
 		/// </exception>
+		/// <value>The successful operation's account. Reading on failure throws the operation-specific exception.</value>
 		public PlayerAccount account
 		{
 			get
@@ -779,12 +777,11 @@ namespace Beamable.Player
 	}
 
 
-	/// <summary>
-	/// The <see cref="PlayerRecoveryOperation"/> has the results of an account recovery operation.
-	/// Accounts can be recovered using the <see cref="PlayerAccounts.RecoverAccountWithEmail"/> method.
-	///
-	/// Use the <see cref="SwitchToAccount"/> method to switch to the recovered account.
-	/// </summary>
+	/// <summary>Describes the outcome of recovering an existing account.</summary>
+	/// <remarks>Check <see cref="isSuccess"/> before reading <see cref="account"/> or invoking
+	/// <see cref="SwitchToAccount"/>. Failed results expose <see cref="error"/>; account access throws
+	/// <see cref="PlayerRecoveryException"/>. Successful recovery does not automatically select the account.</remarks>
+	/// <seealso cref="PlayerAccounts.RecoverAccountWithEmail"/>
 	[Serializable]
 	public class PlayerRecoveryOperation
 	{
@@ -801,6 +798,7 @@ namespace Beamable.Player
 		/// <summary>
 		/// True when the <see cref="error"/> is none.
 		/// </summary>
+		/// <value>True when the operation has no reported error; false otherwise.</value>
 		public bool isSuccess => error == PlayerRecoveryError.NONE;
 
 		/// <summary>
@@ -818,6 +816,7 @@ namespace Beamable.Player
 		/// If there is an <see cref="error"/> value, then this accessor will throw an exception.
 		/// </summary>
 		/// <exception cref="PlayerRecoveryException">Only thrown when the <see cref="error"/> value isn't none.</exception>
+		/// <value>The successful operation's account. Reading on failure throws the operation-specific exception.</value>
 		public PlayerAccount account
 		{
 			get
@@ -1042,6 +1041,10 @@ namespace Beamable.Player
 
 
 
+	/// <summary>Manages accounts saved on this device and the account selected for a player context.</summary>
+	/// <remarks>Await <see cref="OnReady"/> before reading the collection or <see cref="Current"/>.
+	/// Creating, recovering, and selecting accounts are separate operations. Use
+	/// <see cref="SwitchToAccount"/> to select an account for this context.</remarks>
 	[Serializable]
 	public class PlayerAccounts : AbsObservableReadonlyList<PlayerAccount>
 	{
@@ -1055,12 +1058,13 @@ namespace Beamable.Player
 		internal readonly IDependencyProvider _provider;
 
 
-		/// <summary>
-		/// The currently signed in <see cref="PlayerAccount"/>.
-		/// There is always a current account, but it may be anonymous.
-		/// </summary>
+		/// <summary>The account currently authorized for this context.</summary>
+		/// <remarks>Await <see cref="OnReady"/> before reading it. Methods with a null account argument
+		/// operate on this account. Use <see cref="SwitchToAccount"/> to change the authorized account.</remarks>
 		public PlayerAccount Current;
 
+		/// <summary>A promise that completes when the initial account list has been refreshed.</summary>
+		/// <remarks>Await before reading <see cref="Current"/> or enumerating accounts. Initialization failures reject the promise.</remarks>
 		public Promise OnReady;
 
 		public PlayerAccounts(BeamContext ctx,
@@ -1083,11 +1087,12 @@ namespace Beamable.Player
 
 
 
-		/// <summary>
-		/// Change the current <see cref="BeamContext"/>'s current user to the given account.
-		/// After this method finishes, the given <see cref="account"/> will be the <see cref="Current"/> account.
-		/// </summary>
-		/// <param name="account"></param>
+		/// <summary>Authorizes this context as the supplied account and refreshes its account list.</summary>
+		/// <param name="account">An account obtained from this collection, account creation, or successful recovery.</param>
+		/// <returns>A promise that completes after authorization and account refresh; failures reject it.</returns>
+		/// <remarks>After successful completion, <see cref="Current"/> represents the selected account.
+		/// Services and player data belong to the newly authorized player.</remarks>
+		/// <seealso cref="RecoverAccountWithEmail"/>
 		public async Promise SwitchToAccount(PlayerAccount account)
 		{
 			await OnReady;
@@ -1099,12 +1104,10 @@ namespace Beamable.Player
 			await Refresh();
 		}
 
-		/// <summary>
-		/// Create a new anonymous account.
-		/// The new account will be returned, and will be accessible in the <see cref="PlayerAccounts"/> list
-		/// To switch to this new account, use the <see cref="SwitchToAccount"/> method.
-		/// </summary>
-		/// <returns>The newly created <see cref="PlayerAccount"/></returns>
+		/// <summary>Creates an anonymous account and saves its credentials on this device.</summary>
+		/// <returns>A promise containing the new account after the account list refreshes; failures reject it.</returns>
+		/// <remarks>This does not select the new account. Await <see cref="SwitchToAccount"/>
+		/// or the returned account's <see cref="PlayerAccount.SwitchToAccount"/> to authorize it.</remarks>
 		public async Promise<PlayerAccount> CreateNewAccount()
 		{
 			await OnReady;
@@ -1168,22 +1171,26 @@ namespace Beamable.Player
 			return account;
 		}
 
-		/// <summary>
-		/// Find an existing account by email and password.
-		///
-		/// Depending on the state of the realm, this method may produce different behaviour.
-		/// The returned <see cref="PlayerRecoveryOperation"/> will either contain the <see cref="PlayerAccount"/>
-		/// for the given <see cref="email"/> and <see cref="password"/>, or it will have a <see cref="PlayerRecoveryError"/> value.
-		///
-		/// </summary>
-		/// <param name="email">
-		/// A valid email address that was previously added to <see cref="PlayerAccount"/>.
-		/// Email credentials can be added with the <see cref="AddEmail"/> method, or the PlayerAccount's <see cref="PlayerAccount.AddEmail"/> method.
-		/// </param>
-		/// <param name="password">
-		/// The password used to add the email address
-		/// </param>
-		/// <returns>A <see cref="PlayerRecoveryOperation"/> containing the <see cref="PlayerAccount"/> or a <see cref="PlayerRecoveryError"/> value.</returns>
+		/// <summary>Finds an account using previously registered email and password credentials.</summary>
+		/// <param name="email">An email address previously attached with <see cref="AddEmail"/>.</param>
+		/// <param name="password">The password associated with the email address.</param>
+		/// <returns>A recovery result. Check <see cref="PlayerRecoveryOperation.isSuccess"/> before accessing the account or switching.</returns>
+		/// <remarks>Recovery does not select the recovered account. Call <see cref="PlayerRecoveryOperation.SwitchToAccount"/>
+		/// after a successful result. Recovery errors are represented by the result; dependent operations may also reject.</remarks>
+		/// <example>
+		/// <para>Example: recover an account and explicitly select it after checking for failure.</para>
+		/// <code>
+		/// var context = await BeamContext.Default.Instance;
+		/// var result = await context.Accounts.RecoverAccountWithEmail(email, password);
+		/// if (!result.isSuccess)
+		/// {
+		///     Debug.LogWarning($"Account recovery failed: {result.error}");
+		///     return;
+		/// }
+		/// await result.SwitchToAccount();
+		/// Debug.Log($"Selected player {context.PlayerId}");
+		/// </code>
+		/// </example>
 		public Promise<PlayerRecoveryOperation> RecoverAccountWithEmail(string email, string password)
 		{
 			return RecoverAccount((auth, merge) => auth.Login(email, password, merge));
@@ -1841,22 +1848,26 @@ namespace Beamable.Player
 			return _authService.GetCredentialStatus(thirdParty, token);
 		}
 
-		/// <summary>
-		/// Adds an email credential to the given <see cref="PlayerAccount"/>,
-		/// and returns a <see cref="RegistrationResult"/>. If the returned
-		/// <see cref="RegistrationResult.isSuccess"/> is true, then the addition worked.
-		/// Otherwise, check the <see cref="RegistrationResult.error"/> field.
-		/// </summary>
-		/// <param name="email">
-		/// The email to add to the account.
-		/// This email must be unique for the CID.
-		/// If the email is already taken, the resulting <see cref="RegistrationResult.error"/> field will be <see cref="PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN"/>
-		/// </param>
-		/// <param name="password">
-		/// The password to combine with the email address.
-		/// </param>
-		/// <param name="account"></param>
-		/// <returns>A <see cref="RegistrationResult"/> representing the result of the email addition. </returns>
+		/// <summary>Attaches email and password credentials to an existing account.</summary>
+		/// <param name="email">The email address to attach; it must not already be in use in the customer scope.</param>
+		/// <param name="password">The password for the email credentials.</param>
+		/// <param name="account">The account to update, or null to use <see cref="Current"/>.</param>
+		/// <returns>A registration result. Check <see cref="RegistrationResult.isSuccess"/> before reading its account.</returns>
+		/// <remarks>Expected credential failures, including an existing email, are returned in the result's error field.
+		/// Initialization or refresh failures can still reject the promise. This does not create or switch accounts.</remarks>
+		/// <example>
+		/// <para>Example: attach credentials supplied by your account form and inspect the result.</para>
+		/// <code>
+		/// var context = await BeamContext.Default.Instance;
+		/// var result = await context.Accounts.AddEmail(email, password);
+		/// if (!result.isSuccess)
+		/// {
+		///     Debug.LogWarning($"Email registration failed: {result.error}");
+		///     return;
+		/// }
+		/// Debug.Log($"Credentials attached to {result.account.GamerTag}");
+		/// </code>
+		/// </example>
 		public async Promise<RegistrationResult> AddEmail(string email, string password, PlayerAccount account = null)
 		{
 			await OnReady;

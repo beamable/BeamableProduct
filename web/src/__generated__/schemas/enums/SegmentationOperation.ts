@@ -12,5 +12,7 @@ export enum SegmentationOperation {
   IncludeRemove = "IncludeRemove",
   ExcludeAdd = "ExcludeAdd",
   ExcludeRemove = "ExcludeRemove",
-  CrossScopeRead = "CrossScopeRead"
+  Release = "Release",
+  ZoneStatSet = "ZoneStatSet",
+  ZoneStatRemove = "ZoneStatRemove"
 }
