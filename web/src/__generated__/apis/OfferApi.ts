@@ -10,6 +10,7 @@ import { grantIdPlaceholder } from '@/__generated__/apis/constants';
 import { makeApiRequest } from '@/utils/makeApiRequest';
 import { originIdPlaceholder } from '@/__generated__/apis/constants';
 import { POST } from '@/constants';
+import type { ApiOffersConditionAttributesGetOfferResponse } from '@/__generated__/schemas/ApiOffersConditionAttributesGetOfferResponse';
 import type { GrantOffersRequest } from '@/__generated__/schemas/GrantOffersRequest';
 import type { GrantOffersResult } from '@/__generated__/schemas/GrantOffersResult';
 import type { HttpRequester } from '@/network/http/types/HttpRequester';
@@ -57,6 +58,39 @@ export async function offersPostGrants(requester: HttpRequester, payload: GrantO
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
+ * @param cursor - The `next` of the previous page.
+ * @param federationId - Only this provider's offers.
+ * @param playerId - The player. Must be the caller unless privileged.
+ * @param states - Which states to return, repeated (`states=Granted&states=Redeemed`) or comma-separated.
+ * Omitted means what the player can still use: Granted and Claiming.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function offersGetGrants(requester: HttpRequester, cursor?: string, federationId?: string, playerId?: bigint | string, states?: OfferGrantState[], gamertag?: string): Promise<HttpResponse<PlayerOffersPage>> {
+  let endpoint = "/api/offers/grants";
+  
+  // Make the API request
+  return makeApiRequest<PlayerOffersPage>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      cursor,
+      federationId,
+      playerId,
+      states
+    },
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
  * @param payload - The `RevokeGrantsRequest` instance to use for the API request
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
@@ -70,6 +104,32 @@ export async function offersPostGrantsRevocations(requester: HttpRequester, payl
     e: endpoint,
     m: POST,
     p: payload,
+    g: gamertag,
+    w: true
+  });
+}
+
+/**
+ * @remarks
+ * **Authentication:**
+ * This method requires a valid bearer token in the `Authorization` header.
+ * 
+ * @param requester - The `HttpRequester` type to use for the API request.
+ * @param refresh - Re-read instead of serving the cached catalog, after writing a stat.
+ * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
+ * 
+ */
+export async function offersGetConditionAttributes(requester: HttpRequester, refresh?: boolean, gamertag?: string): Promise<HttpResponse<ApiOffersConditionAttributesGetOfferResponse>> {
+  let endpoint = "/api/offers/condition-attributes";
+  
+  // Make the API request
+  return makeApiRequest<ApiOffersConditionAttributesGetOfferResponse>({
+    r: requester,
+    e: endpoint,
+    m: GET,
+    q: {
+      refresh
+    },
     g: gamertag,
     w: true
   });
@@ -180,8 +240,8 @@ export async function offersDeleteOriginsByOriginId(requester: HttpRequester, or
  * This method requires a valid bearer token in the `Authorization` header.
  * 
  * @param requester - The `HttpRequester` type to use for the API request.
- * @param grantId - The grant to redeem.
  * @param payload - The `RedeemOfferRequest` instance to use for the API request
+ * @param grantId - The grant to redeem.
  * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
  * 
  */
@@ -194,39 +254,6 @@ export async function offersPostGrantsRedeemByGrantId(requester: HttpRequester, 
     e: endpoint,
     m: POST,
     p: payload,
-    g: gamertag,
-    w: true
-  });
-}
-
-/**
- * @remarks
- * **Authentication:**
- * This method requires a valid bearer token in the `Authorization` header.
- * 
- * @param requester - The `HttpRequester` type to use for the API request.
- * @param cursor - The `next` of the previous page.
- * @param federationId - Only this provider's offers.
- * @param playerId - The player. Must be the caller unless privileged.
- * @param states - Which states to return, repeated (`states=Granted&states=Redeemed`) or comma-separated.
- * Omitted means what the player can still use: Granted and Claiming.
- * @param gamertag - Override the playerId of the requester. This is only necessary when not using a JWT bearer token.
- * 
- */
-export async function offersGetGrants(requester: HttpRequester, cursor?: string, federationId?: string, playerId?: bigint | string, states?: OfferGrantState[], gamertag?: string): Promise<HttpResponse<PlayerOffersPage>> {
-  let endpoint = "/api/offers/grants";
-  
-  // Make the API request
-  return makeApiRequest<PlayerOffersPage>({
-    r: requester,
-    e: endpoint,
-    m: GET,
-    q: {
-      cursor,
-      federationId,
-      playerId,
-      states
-    },
     g: gamertag,
     w: true
   });

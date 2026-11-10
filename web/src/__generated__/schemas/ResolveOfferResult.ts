@@ -8,5 +8,5 @@ import type { OfferGrantState } from './enums/OfferGrantState';
 export type ResolveOfferResult = { 
   grantId: string; 
   resolved?: boolean; 
-  state?: OfferGrantState | null; 
+  state?: OfferGrantState; 
 };

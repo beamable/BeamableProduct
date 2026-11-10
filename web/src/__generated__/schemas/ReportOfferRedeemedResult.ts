@@ -8,7 +8,7 @@ import type { OfferGrantState } from './enums/OfferGrantState';
 export type ReportOfferRedeemedResult = { 
   grantId: string; 
   afterEnd?: boolean; 
-  before?: OfferGrantState | null; 
+  before?: OfferGrantState; 
   found?: boolean; 
   notYetVisible?: boolean; 
 };

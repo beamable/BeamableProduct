@@ -3,8 +3,8 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export enum CampaignOfferInvalidation {
-  None = "None",
-  Single = "Single",
-  Group = "Group"
+export enum CampaignOfferDelivery {
+  AllOrNothing = "AllOrNothing",
+  AtLeastOne = "AtLeastOne",
+  BestEffort = "BestEffort"
 }

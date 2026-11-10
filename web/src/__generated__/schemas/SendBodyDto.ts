@@ -6,6 +6,7 @@
 import type { CampaignOfferDto } from './CampaignOfferDto';
 import type { CampaignOfferGroupDto } from './CampaignOfferGroupDto';
 import type { GoalDto } from './GoalDto';
+import type { CampaignOfferDelivery } from './enums/CampaignOfferDelivery';
 
 export type SendBodyDto = { 
   campaignOfferGroups?: CampaignOfferGroupDto[] | null; 
@@ -14,6 +15,8 @@ export type SendBodyDto = {
   goals?: GoalDto[]; 
   maxWaitMs?: bigint | string; 
   message?: string; 
+  offerDelivery?: CampaignOfferDelivery; 
+  offerMaxGrantWaitMs?: bigint | string | null; 
   railFederationId?: string; 
   targetPid?: string; 
 };
