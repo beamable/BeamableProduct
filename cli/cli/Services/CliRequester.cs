@@ -395,8 +395,7 @@ public class CliRequester : IRequester
 
 	public string EscapeURL(string url)
 	{
-		// TODO: Fix this/
-		return url;
+		return url == null ? null : Uri.EscapeDataString(url);
 	}
 
 	public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
