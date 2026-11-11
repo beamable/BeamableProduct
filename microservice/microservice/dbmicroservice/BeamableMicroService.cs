@@ -113,7 +113,10 @@ namespace Beamable.Server
       // when nothing should reconnect again.
       private bool _establishing;
 
-      /// <summary>How long a connection's setup waits for authentication before it fails. Tests shorten it.</summary>
+      /// <summary>
+      /// How long a connection's setup waits for authentication before it fails. While the service is starting, each
+      /// later step that only waits for the platform gets the same time. Tests shorten it.
+      /// </summary>
       internal static TimeSpan SetupAuthorizationTimeout = TimeSpan.FromMinutes(2);
 
       /// <summary>
@@ -438,8 +441,16 @@ namespace Beamable.Server
                }
 
                settingUp = true;
-               var setup = SetupWebsocket(socket, lost.Token, initContent);
-               await (starting ? setup : WaitForSetup(setup, lost.Token));
+               var setup = SetupWebsocket(socket, lost.Token, starting, initContent);
+               if (!starting)
+               {
+                  // Some steps wait for a reply that closing this connection can't end, such as a realm-wide request
+                  // that went out on another instance's connection. A setup that is given up on keeps waiting for
+                  // that reply; it then stops at its own check of the connection, before it registers anything.
+                  setup = WaitNoLongerThan(setup, ReconnectSetupTimeout, lost.Token, "The setup of the connection");
+               }
+
+               await setup;
             }
             // While starting, only a failed setup is handled here. Anything before it fails the start, as it always has.
             catch (Exception ex) when (!starting || settingUp)
@@ -493,22 +504,22 @@ namespace Beamable.Server
       }
 
       /// <summary>
-      /// Waits for the setup of a replacement connection, but no longer than <see cref="ReconnectSetupTimeout"/> and
-      /// not past the loss of the connection. Some of its steps wait for a reply that closing this connection can't end,
-      /// such as a realm-wide request that went out on another instance's connection. A setup that is given up on keeps
-      /// waiting for that reply; it then stops at its own check of the connection, before it registers anything.
+      /// Waits for <paramref name="work"/>, but no longer than <paramref name="limit"/> and not past
+      /// <paramref name="giveUp"/>. The work itself is not stopped; the caller makes sure that what is left of it does
+      /// no harm.
       /// </summary>
-      private static async Task WaitForSetup(Task setup, CancellationToken connectionLost)
+      /// <param name="what">Names the work in the error for running out of time, as the start of a sentence.</param>
+      private static async Task WaitNoLongerThan(Task work, TimeSpan limit, CancellationToken giveUp, string what)
       {
-         // Whatever a setup that was given up on fails with later has been dealt with already.
-         _ = setup.ContinueWith(static finished => _ = finished.Exception, TaskContinuationOptions.OnlyOnFaulted);
+         // Whatever work that was given up on fails with later has been dealt with already.
+         _ = work.ContinueWith(static finished => _ = finished.Exception, TaskContinuationOptions.OnlyOnFaulted);
          try
          {
-            await setup.WaitAsync(ReconnectSetupTimeout, connectionLost);
+            await work.WaitAsync(limit, giveUp);
          }
-         catch (TimeoutException) when (!setup.IsCompleted)
+         catch (TimeoutException) when (!work.IsCompleted)
          {
-            throw new TimeoutException($"The setup of the connection did not finish within {ReconnectSetupTimeout.TotalSeconds:0}s.");
+            throw new TimeoutException($"{what} did not finish within {limit.TotalSeconds:0}s.");
          }
       }
 
@@ -529,8 +540,17 @@ namespace Beamable.Server
       private int RetryDelaySeconds(int attempt) =>
          _retryIntervalsInSeconds[Math.Min(attempt, _retryIntervalsInSeconds.Length - 1)];
 
-      async Task SetupWebsocket(IConnection socket, CancellationToken connectionLost, bool initContent = false)
+      async Task SetupWebsocket(IConnection socket, CancellationToken connectionLost, bool starting, bool initContent = false)
       {
+         // While the service is starting, a step that only waits for the platform gets as long as the wait for
+         // authentication, and then fails the start. With socket enforcement off nothing else ends such a wait, and a
+         // start that hangs holds back every instance after it without a sign. The initialization hooks and content
+         // loading are the service's own work, and take as long as they need. After the start, the setup as a whole
+         // has a limit instead: see ConnectAndSetup.
+         Task PlatformStep(string what, Func<Task> step) => starting
+            ? WaitNoLongerThan(step(), SetupAuthorizationTimeout, CancellationToken.None, what)
+            : step();
+
          socket.OnDisconnect((s, wasClean) => CloseConnection(s, wasClean).Wait());
 
          socket.OnMessage(async void (s, message, messageNumber, sw) =>
@@ -558,7 +578,8 @@ namespace Beamable.Server
          if (IsRealmScoped)
          {
             var realmService = InstanceArgs.ServiceScope.GetService<IRealmConfigService>();
-            var config = await realmService.GetRealmConfigSettings();
+            RealmConfig config = null;
+            await PlatformStep("The realm config fetch", async () => config = await realmService.GetRealmConfigSettings());
             var contentService = Provider.GetService<ContentService>();
             bool BakingDisabled(RealmConfig settings) =>
                bool.TryParse(settings.GetSetting(ContentService.BakeConfigNamespace, ContentService.BakeDisableKey), out var disabled) && disabled;
@@ -599,12 +620,12 @@ namespace Beamable.Server
          if (IsRealmScoped)
          {
          	var loggingContextService = InstanceArgs.ServiceScope.GetService<ILoggingContextService>();
-         	await loggingContextService.GetAllLoggingContexts();
+         	await PlatformStep("The logging context fetch", async () => await loggingContextService.GetAllLoggingContexts());
          }
 
          // Don't register a connection that closed, or whose setup was given up on, while the steps above ran.
          connectionLost.ThrowIfCancellationRequested();
-         await ProvideService();
+         await PlatformStep("The service registration", async () => await ProvideService());
 
          HasInitialized = true;
 

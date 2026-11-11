@@ -13,6 +13,19 @@ using NUnit.Framework;
 
 namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTests
 {
+	/// <summary>A service whose own initialization takes a while.</summary>
+	[Microservice("slow_start", EnableEagerContentLoading = false)]
+	public class SlowStartMicroservice : Microservice
+	{
+		public static readonly TimeSpan InitializationTime = TimeSpan.FromSeconds(3);
+
+		[InitializeServices]
+		public static async Task Initialize(IServiceInitializer initializer)
+		{
+			await Task.Delay(InitializationTime);
+		}
+	}
+
 	/// <summary>
 	/// A connection that can't be set up again must not end the process, which other instances are still serving from
 	/// (beamable/BeamableProduct#4958). A service that never started still ends it.
@@ -26,6 +39,12 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			NeverAuthenticates,
 			RegistrationFails,
 			ClosedBeforeSetup
+		}
+
+		public enum StalledStep
+		{
+			RealmConfig,
+			Registration
 		}
 
 		private readonly List<int> _exits = new List<int>();
@@ -172,10 +191,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 		[TimeoutWithTeardown(60 * 1000)]
 		public async Task ReplacementThatCannotBeSetUp_KeepsTheProcessAndItsOtherInstanceServing(ReplacementFailure failure)
 		{
-			// two instances; the third connection replaces the second instance's, and its setup fails. Only the case that
-			// waits for authentication may take its timeout to fail; the others must fail well before it.
-			BeamableMicroService.SetupAuthorizationTimeout =
-				TimeSpan.FromSeconds(failure == ReplacementFailure.NeverAuthenticates ? 1 : 30);
+			// two instances; the third connection replaces the second instance's, and its setup fails.
 			var sockets = new Connections();
 			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
@@ -195,6 +211,10 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			}));
 			await ms.Start<SimpleMicroservice>(new TestArgs { BeamInstanceCount = 2 });
 			Assert.That(sockets.Count, Is.EqualTo(2));
+
+			// Only the case that waits for authentication may take its timeout to fail; the others must fail well before it.
+			BeamableMicroService.SetupAuthorizationTimeout =
+				TimeSpan.FromSeconds(failure == ReplacementFailure.NeverAuthenticates ? 1 : 30);
 
 			// the disconnect callback returns once the connection is replaced, so it can't run on this thread.
 			var recovered = Task.Run(() => sockets[1].Fault());
@@ -312,6 +332,56 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
 			Assert.That(Exits(), Is.EqualTo(new[] { 12 }), "a service that fails before it has started must exit with code 12");
 			Assert.That(ms.HasInitialized, Is.False);
+		}
+
+		[TestCase(StalledStep.RealmConfig)]
+		[TestCase(StalledStep.Registration)]
+		[TimeoutWithTeardown(60 * 1000)]
+		public void ServiceWhoseStartWaitsOnAReplyThatNeverComes_EndsTheProcess(StalledStep step)
+		{
+			// the connection stays open and authenticates, and then one step of the start is never answered.
+			BeamableMicroService.SetupAuthorizationTimeout = TimeSpan.FromSeconds(2);
+			var realmConfig = new StallingRealmConfig { Stall = step == StalledStep.RealmConfig };
+			var ms = new TestSetup(new TestSocketProvider(socket =>
+			{
+				if (step == StalledStep.Registration)
+				{
+					// handlers match in the order they were added, so no registration is ever answered.
+					socket.AddMessageHandler(MessageMatcher.WithRouteContains("gateway/provider").WithPost(),
+						MessageResponder.NoResponse(), MessageFrequency.AtLeast(1), "registration that is never answered");
+				}
+
+				SocketRecoveryTests.AddReconnectHandlers(socket);
+			}));
+
+			var error = Assert.CatchAsync(() => ms.Start<SimpleMicroservice>(new TestArgs(), builder =>
+			{
+				builder.RemoveIfExists<IRealmConfigService>();
+				builder.AddSingleton<IRealmConfigService>(_ => realmConfig);
+			}));
+
+			Assert.That(Exits(), Is.EqualTo(new[] { 12 }), "a start that hangs on the platform must end the process");
+			Assert.That(error.ToString(), Does.Contain(step == StalledStep.RealmConfig
+				? "The realm config fetch did not finish within 2s."
+				: "The service registration did not finish within 2s."));
+			Assert.That(ms.HasInitialized, Is.False);
+		}
+
+		[Test]
+		[TimeoutWithTeardown(60 * 1000)]
+		public async Task ServiceWhoseOwnInitializationTakesLong_StillStarts()
+		{
+			// the initialization hook runs for longer than a platform step may take. It is the service's own work, so
+			// nothing limits it.
+			BeamableMicroService.SetupAuthorizationTimeout = TimeSpan.FromSeconds(2);
+			Assert.That(SlowStartMicroservice.InitializationTime, Is.GreaterThan(BeamableMicroService.SetupAuthorizationTimeout));
+			var ms = new TestSetup(new TestSocketProvider(socket => socket.AddStandardMessageHandlers()));
+
+			await ms.Start<SlowStartMicroservice>(new TestArgs());
+
+			Assert.That(Exits(), Is.Empty);
+			Assert.That(ms.HasInitialized, Is.True);
+			await ms.OnShutdown(this, null);
 		}
 
 		[Test]
