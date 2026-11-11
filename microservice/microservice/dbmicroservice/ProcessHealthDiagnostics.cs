@@ -13,7 +13,8 @@ namespace Beamable.Server;
 /// </summary>
 internal sealed class ProcessHealthDiagnostics : IDisposable
 {
-    private sealed record Transition(ProcessHealthSnapshot Snapshot, bool Incident, bool Recovered);
+    /// <summary><paramref name="Alarm"/> is the text of an error that is not a transition, or null for a transition.</summary>
+    private sealed record Transition(ProcessHealthSnapshot Snapshot, bool Incident, bool Recovered, string Alarm = null);
     private readonly BlockingCollection<Transition> _pending = new(8);
     private readonly Action<bool, string> _write;
     private readonly object _lifetime = new();
@@ -54,10 +55,22 @@ internal sealed class ProcessHealthDiagnostics : IDisposable
         var incident = next.IncidentId != null && next.IncidentId != prior.IncidentId;
         var recovered = prior.IncidentId != null && next.IncidentId == null && next.State == ProcessHealthState.Healthy;
         if (incident) Volatile.Write(ref _lastIncident, next);
+        Enqueue(new Transition(next, incident, recovered));
+    }
+
+    /// <summary>
+    /// Queues an error for a condition that lasts, which the caller repeats while it does. It is bounded and dropped
+    /// like a transition record, so it can't hold the watchdog either.
+    /// </summary>
+    internal void Alarm(string text, ProcessHealthSnapshot snapshot) =>
+        Enqueue(new Transition(snapshot, false, false, text));
+
+    private void Enqueue(Transition record)
+    {
         if (Volatile.Read(ref _stopped)) return;
         try
         {
-            if (!_pending.TryAdd(new Transition(next, incident, recovered)))
+            if (!_pending.TryAdd(record))
                 Interlocked.Increment(ref _dropped);
         }
         catch (InvalidOperationException) { Interlocked.Increment(ref _dropped); }
@@ -71,8 +84,9 @@ internal sealed class ProcessHealthDiagnostics : IDisposable
             {
                 if (_pending.TryTake(out var transition, Timeout.Infinite))
                 {
-                    var prefix = transition.Recovered ? "Process health recovered: " : "Process health transition: ";
-                    _write(transition.Incident, prefix + Format(transition.Snapshot));
+                    var prefix = transition.Alarm ??
+                                 (transition.Recovered ? "Process health recovered: " : "Process health transition: ");
+                    _write(transition.Incident || transition.Alarm != null, prefix + Format(transition.Snapshot));
                     if (transition.Incident)
                     {
                         // Do not confuse this worker's Environment.StackTrace with other managed threads.
