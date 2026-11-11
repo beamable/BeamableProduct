@@ -57,7 +57,7 @@ public class BundleContentInfo
 			site = c.site.HasValue ? c.site.Value.ToString().ToLowerInvariant() : "",
 			source = c.sourceAvailable.GetOrElse(false),
 		}).ToArray(),
-		componentGroups = content.features.GetOrElse(Array.Empty<BundleFeature>())
+		componentGroups = content.componentGroups.GetOrElse(Array.Empty<BundleComponentGroup>())
 			.ToDictionary(f => f.name.GetOrElse(""), f => f.components.GetOrElse(Array.Empty<string>())),
 		dependencies = content.dependencies.GetOrElse(Array.Empty<BundleDep>()).ToDictionary(
 			d => d.name.GetOrElse(""),
@@ -66,7 +66,7 @@ public class BundleContentInfo
 }
 
 /// <summary>
-/// Show a bundle's release log. The endpoint is paged on an exclusive version cursor, so this
+/// Show a bundle's release log. The endpoint is paged by an opaque cursor, so this
 /// walks it to the end rather than showing a first page as if it were the whole log.
 /// </summary>
 public class BundleReleasesCommand
@@ -75,7 +75,7 @@ public class BundleReleasesCommand
 	/// <summary>The endpoint's own maximum page size.</summary>
 	private const int PageSize = 200;
 
-	public BundleReleasesCommand() : base("releases", "Show a bundle's releases, tags and deprecation notices, or one release's content")
+	public BundleReleasesCommand() : base("releases", "Show a bundle's releases, tags and notices, or one release's content")
 	{
 	}
 
@@ -96,21 +96,24 @@ public class BundleReleasesCommand
 
 		var output = new BundleReleasesCommandOutput { name = fullName };
 		var releases = new List<BundleReleaseInfo>();
-		var fromVersion = new Optional<long>();
+		var cursor = new Optional<string>();
 		while (true)
 		{
-			var response = await api.GetReleases(fromVersion, (Optional<int>)PageSize, (Optional<string>)fullName);
+			var response = await api.GetReleases(cursor, new Optional<long>(), (Optional<int>)PageSize, (Optional<string>)fullName);
 			output.tags = response.tags.ToTagInfos();
 			output.notices = response.notices.GetOrElse(Array.Empty<BundleNoticeView>()).Select(BundleNoticeInfo.FromNotice).ToArray();
-			var page = response.releases.GetOrElse(Array.Empty<BundleRelease>())
+			var page = response.records.GetOrElse(Array.Empty<BundleRelease>())
 				.Select(BundleReleaseInfo.FromRelease)
 				.ToArray();
 			releases.AddRange(page);
 
+			var nextCursor = response.nextCursor.GetOrElse((string)null);
 			var reachedLimit = args.limit > 0 && releases.Count >= args.limit;
-			if (page.Length < PageSize || reachedLimit)
+			if (string.IsNullOrEmpty(nextCursor) || reachedLimit)
+			{
 				break;
-			fromVersion = (Optional<long>)page[^1].version;
+			}
+			cursor = nextCursor;
 		}
 
 		if (args.limit > 0 && releases.Count > args.limit)
@@ -146,8 +149,9 @@ public class BundleReleasesCommand
 		table.AddColumn("Status");
 		foreach (var release in output.releases)
 		{
-			var notice = output.notices.FirstOrDefault(n => release.version >= n.minVersion && release.version <= n.maxVersion);
-			var status = release.yanked ? "yanked" : notice?.status ?? "supported";
+			// Only a deprecation sets a version's status; other kinds are listed below the table.
+			var deprecation = output.notices.FirstOrDefault(n => n.kind == "deprecation" && n.Covers(release.version));
+			var status = release.yanked ? "yanked" : deprecation?.status ?? "supported";
 			if (release.irreversibleDataChange) status += ", irreversible data change";
 			table.AddRow(
 				Markup.Escape($"v{release.version}"),
@@ -158,7 +162,10 @@ public class BundleReleasesCommand
 		AnsiConsole.Write(table);
 
 		foreach (var notice in output.notices)
-			AnsiConsole.MarkupLine($"[yellow]Notice {Markup.Escape(notice.id)}[/]: {Markup.Escape(notice.Describe())}");
+		{
+			var label = $"{Markup.Escape(notice.kind)} {Markup.Escape(notice.id)}";
+			AnsiConsole.MarkupLine($"{(notice.warns ? $"[yellow]{label}[/]" : label)}: {Markup.Escape(notice.description)}");
+		}
 
 		if (output.content != null)
 		{

@@ -215,8 +215,9 @@ public static class BundleBuild
 
 	/// <summary>
 	/// Pack the project folder of every component whose source is available into a tar.gz, add it to the
-	/// release's files and set the component's <c>sourceArchive</c>. Entries are sorted, timestamped at the
-	/// epoch and gzipped without a timestamp, so unchanged source always hashes to the same key and a
+	/// release's files and set the component's <c>sourceArchive</c>. Entries are sorted, written in GNU format
+	/// (Pax names its extended headers after the process id), timestamped at the epoch and gzipped without a
+	/// timestamp, so unchanged source always hashes to the same key and a
 	/// republish of it makes no new version. Folders the server never publishes and any
 	/// <c>beam.override.json</c> are left out; the server's limits are checked before anything is uploaded.
 	/// </summary>
@@ -246,13 +247,15 @@ public static class BundleBuild
 			var archivePath = Path.Combine(outputDir, $"{bundle.name}-{name}.tar.gz");
 			using (var file = File.Create(archivePath))
 			using (var gzip = new GZipStream(file, CompressionLevel.SmallestSize))
-			using (var tar = new TarWriter(gzip, TarEntryFormat.Pax, leaveOpen: false))
+			using (var tar = new TarWriter(gzip, TarEntryFormat.Gnu, leaveOpen: false))
 			{
 				foreach (var entry in entries)
 				{
-					var tarEntry = new PaxTarEntry(TarEntryType.RegularFile, entry.relative)
+					var tarEntry = new GnuTarEntry(TarEntryType.RegularFile, entry.relative)
 					{
 						ModificationTime = DateTimeOffset.UnixEpoch,
+						AccessTime = DateTimeOffset.UnixEpoch,
+						ChangeTime = DateTimeOffset.UnixEpoch,
 						Mode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead,
 						DataStream = File.OpenRead(entry.path),
 					};
@@ -282,9 +285,9 @@ public static class BundleBuild
 			.OrderBy(e => e.relative, StringComparer.Ordinal);
 	}
 
-	/// <summary>The component groups as the catalog stores them (the server calls them features).</summary>
-	public static BundleFeature[] ComponentGroups(BundleConfigFile bundle) => bundle.componentGroups
-		.Select(f => new BundleFeature
+	/// <summary>The component groups as the catalog stores them.</summary>
+	public static BundleComponentGroup[] ComponentGroups(BundleConfigFile bundle) => bundle.componentGroups
+		.Select(f => new BundleComponentGroup
 		{
 			name = new OptionalString(f.Key),
 			title = new OptionalString(f.Value.title),
@@ -311,7 +314,7 @@ public static class BundleBuild
 	{
 		try
 		{
-			var releases = await api.GetReleases(new Optional<long>(), (Optional<int>)1, (Optional<string>)fullName);
+			var releases = await api.GetReleases(new Optional<string>(), new Optional<long>(), (Optional<int>)1, (Optional<string>)fullName);
 			var latest = releases.tags.GetOrElse(new MapOfLong()).TryGetValue("latest", out var v) ? v : 0;
 			if (latest <= 0) return (null, null);
 			var content = await api.GetReleasesContent((Optional<string>)fullName, (Optional<long>)latest);

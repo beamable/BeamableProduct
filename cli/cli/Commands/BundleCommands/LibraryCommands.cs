@@ -25,6 +25,9 @@ public class AcquireBundleCommandOutput
 
 	/// <summary>Soft dependencies the bundle works better with, as "name range (acquired)".</summary>
 	public string[] suggestedDependencies = Array.Empty<string>();
+
+	/// <summary>What the org should know before acquiring, such as a retirement.</summary>
+	public string[] warnings = Array.Empty<string>();
 }
 
 /// <summary>
@@ -56,8 +59,13 @@ public class AcquireBundleCommand : AtomicCommand<LibraryBundleCommandArgs, Acqu
 			suggestedDependencies = plan.suggestedDependencies.GetOrElse(Array.Empty<SuggestedDependency>())
 				.Select(d => $"{d.name.GetOrElse("")} {d.range.GetOrElse("")}{(d.acquired.GetOrElse(false) ? " (acquired)" : "")}")
 				.ToArray(),
+			warnings = plan.warnings.GetOrElse(Array.Empty<string>()),
 		};
 
+		foreach (var warning in output.warnings)
+		{
+			Log.Warning(warning);
+		}
 		foreach (var suggestion in output.suggestedDependencies)
 			Log.Information($"Suggested: {suggestion}. Optional; it is never acquired for you.");
 		if (!plan.canAcquire.GetOrElse(false))
@@ -131,7 +139,12 @@ public class LibraryInstallationInfo
 	public string zoneId;
 	public long version;
 	public string status;
+
+	/// <summary>The deprecation covering the installed version, which sets <see cref="status"/>.</summary>
 	public BundleNoticeInfo notice;
+
+	/// <summary>Every unresolved notice on the installed version, of any kind, announcements included.</summary>
+	public BundleNoticeInfo[] notices = Array.Empty<BundleNoticeInfo>();
 	public bool uninstalling;
 	public string update;
 }
@@ -158,7 +171,7 @@ public class LibraryCommand : AtomicCommand<LibraryCommandArgs, LibraryCommandOu
 		var response = await api.GetAcquisitions();
 		return new LibraryCommandOutput
 		{
-			bundles = response.bundles.GetOrElse(Array.Empty<LibraryEntry>()).Select(e => new LibraryEntryInfo
+			bundles = response.records.GetOrElse(Array.Empty<LibraryEntry>()).Select(e => new LibraryEntryInfo
 			{
 				bundle = e.bundle.GetOrElse(""),
 				acquired = e.acquired.GetOrElse(false),
@@ -170,6 +183,7 @@ public class LibraryCommand : AtomicCommand<LibraryCommandArgs, LibraryCommandOu
 					version = i.version.GetOrElse(0),
 					status = i.status.HasValue ? i.status.Value.ToString().ToLowerInvariant() : "",
 					notice = BundleNoticeInfo.FromNotice(i.notice.GetOrElse((BundleNoticeView)null)),
+					notices = i.notices.GetOrElse(Array.Empty<BundleNoticeView>()).Select(BundleNoticeInfo.FromNotice).ToArray(),
 					uninstalling = i.uninstalling.GetOrElse(false),
 					update = InstallationInfo.DescribeUpdate(i.update.GetOrElse((InstallationUpdate)null)),
 				}).ToArray(),
@@ -197,7 +211,7 @@ public class LibraryCommand : AtomicCommand<LibraryCommandArgs, LibraryCommandOu
 				Markup.Escape(b.installations.Length == 0
 					? "not installed"
 					: string.Join("\n", b.installations.Select(i =>
-						$"{i.zoneId}: v{i.version} {i.status}{(i.uninstalling ? ", uninstalling" : "")}{(i.notice == null ? "" : $" ({i.notice.Describe()})")}{(i.update == null ? "" : $", auto-update {i.update}")}"))));
+						$"{i.zoneId}: v{i.version} {i.status}{(i.uninstalling ? ", uninstalling" : "")}{(i.update == null ? "" : $", auto-update {i.update}")}{string.Concat(i.notices.Select(n => $"\n  {n.description}"))}"))));
 		}
 		AnsiConsole.Write(table);
 	}

@@ -48,7 +48,7 @@ public class ListBundlesCommand : AtomicCommand<ListBundlesCommandArgs, ListBund
 		try
 		{
 			var response = await args.Provider.GetService<IBeamBeamobundleApi>().GetBundles();
-			published = response.bundles.GetOrElse(Array.Empty<BundleSummaryView>())
+			published = response.records.GetOrElse(Array.Empty<BundleSummaryView>())
 				.Select(BundleSummaryInfo.FromSummary).ToArray();
 		}
 		catch (RequesterException e)
@@ -81,7 +81,7 @@ public class ListBundlesCommand : AtomicCommand<ListBundlesCommandArgs, ListBund
 				Markup.Escape(bundle.visibility),
 				Markup.Escape(bundle.latestVersion > 0 ? $"v{bundle.latestVersion}" : "no release"),
 				Markup.Escape(bundle.FormatTags()),
-				Markup.Escape(bundle.notices.Length == 0 ? "-" : string.Join("; ", bundle.notices.Select(n => n.Describe()))));
+				Markup.Escape(bundle.notices.Length == 0 ? "-" : string.Join("\n", bundle.notices.Select(n => $"{n.id} {n.description}"))));
 		}
 		AnsiConsole.Write(published);
 

@@ -66,7 +66,7 @@ public class InstallBundleCommandArgs : ZoneInstallationArgs
 			throw new CliException("Give --version or --tag, not both.");
 		if (version > 0) request.version = version;
 		if (!string.IsNullOrEmpty(tag)) request.tag = tag;
-		if (componentGroups != null) request.features = new OptionalArrayOfString(componentGroups.ToArray());
+		if (componentGroups != null) request.componentGroups = new OptionalArrayOfString(componentGroups.ToArray());
 		if (autoUpdate.HasValue) request.autoUpdate = autoUpdate.Value;
 		if (detach?.Count > 0) request.detach = new OptionalArrayOfString(detach.ToArray());
 
@@ -100,7 +100,7 @@ public class InstallBundleCommandArgs : ZoneInstallationArgs
 
 	public static ApplyInstallationRequest Apply(InstallationRequest r, string hash) => new ApplyInstallationRequest
 	{
-		name = r.name, version = r.version, tag = r.tag, features = r.features, realms = r.realms,
+		name = r.name, version = r.version, tag = r.tag, componentGroups = r.componentGroups, realms = r.realms,
 		autoUpdate = r.autoUpdate, uninstall = r.uninstall, detach = r.detach, hash = hash,
 	};
 }
@@ -265,7 +265,7 @@ public class InstallationTargetInfo
 		return new InstallationTargetInfo
 		{
 			version = t.version.GetOrElse(0),
-			componentGroups = t.features.GetOrElse(Array.Empty<string>()),
+			componentGroups = t.componentGroups.GetOrElse(Array.Empty<string>()),
 			realms = mode == InstallationRealmMode.Some
 				? string.Join(", ", realms.ids.GetOrElse(Array.Empty<string>()))
 				: mode.ToString().ToLowerInvariant(),

@@ -68,7 +68,7 @@ public static class BundleDiff
 
 		DiffSide(result, "componentGroup",
 			BundleBuild.ComponentGroups(bundle).ToDictionary(f => f.name.GetOrElse(""), Fingerprint),
-			(published?.features.GetOrElse(Array.Empty<BundleFeature>()) ?? Array.Empty<BundleFeature>())
+			(published?.componentGroups.GetOrElse(Array.Empty<BundleComponentGroup>()) ?? Array.Empty<BundleComponentGroup>())
 				.ToDictionary(f => f.name.GetOrElse(""), Fingerprint));
 
 		DiffSide(result, "dependency",
@@ -110,7 +110,7 @@ public static class BundleDiff
 		return $"{site}, {entry}{source}" + (mounts.Length > 0 ? $", mounts {mounts}" : "");
 	}
 
-	private static string Fingerprint(BundleFeature f) =>
+	private static string Fingerprint(BundleComponentGroup f) =>
 		$"{f.title.GetOrElse("")}: {string.Join(", ", f.components.GetOrElse(Array.Empty<string>()).OrderBy(c => c, StringComparer.Ordinal))}" +
 		(f.enabledByDefault.GetOrElse(false) ? " (on by default)" : "") +
 		$" | {f.description.GetOrElse("")}";

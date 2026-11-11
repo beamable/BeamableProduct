@@ -19,7 +19,12 @@ public class InstallationInfo
 
 	/// <summary>"supported", "deprecated", "unsupported" or "endoflife".</summary>
 	public string status;
+
+	/// <summary>The deprecation covering the installed version, which sets <see cref="status"/>.</summary>
 	public BundleNoticeInfo notice;
+
+	/// <summary>Every unresolved notice on the installed version, of any kind, announcements included.</summary>
+	public BundleNoticeInfo[] notices = Array.Empty<BundleNoticeInfo>();
 	public bool uninstalling;
 	public bool autoUpdateLocked;
 	public SiteResultInfo[] sites = Array.Empty<SiteResultInfo>();
@@ -38,6 +43,7 @@ public class InstallationInfo
 			target = InstallationTargetInfo.From(v.target.GetOrElse((InstallationTarget)null)),
 			status = v.status.HasValue ? v.status.Value.ToString().ToLowerInvariant() : "",
 			notice = BundleNoticeInfo.FromNotice(v.notice.GetOrElse((BundleNoticeView)null)),
+			notices = v.notices.GetOrElse(Array.Empty<BundleNoticeView>()).Select(BundleNoticeInfo.FromNotice).ToArray(),
 			uninstalling = v.uninstalling.GetOrElse(false),
 			autoUpdateLocked = v.autoUpdateLocked.GetOrElse(false),
 			sites = SiteResultInfo.From(v.sites.GetOrElse(new MapOfInstallationSite())),
@@ -104,7 +110,7 @@ public class ListInstallationsCommand : AtomicCommand<ListInstallationsCommandAr
 		var response = await api.GetInstallations();
 		return new ListInstallationsCommandOutput
 		{
-			installations = response.installations.GetOrElse(Array.Empty<InstallationView>()).Select(InstallationInfo.From).ToArray(),
+			installations = response.records.GetOrElse(Array.Empty<InstallationView>()).Select(InstallationInfo.From).ToArray(),
 		};
 	}
 
@@ -124,7 +130,8 @@ public class ListInstallationsCommand : AtomicCommand<ListInstallationsCommandAr
 		table.AddColumn("Overrides");
 		foreach (var i in output.installations)
 		{
-			var status = i.status + (i.notice == null ? "" : $" ({i.notice.Describe()})") + (i.update == null ? "" : $"\nauto-update: {i.update}");
+			var status = string.Join("\n", new[] { i.status }.Concat(i.notices.Select(n => n.description)))
+			             + (i.update == null ? "" : $"\nauto-update: {i.update}");
 			table.AddRow(
 				Markup.Escape(i.bundle + (i.uninstalling ? " (uninstalling)" : "")),
 				Markup.Escape(i.target?.Describe() ?? "-"),
@@ -178,11 +185,11 @@ public class InstallationHistoryCommand : AtomicCommand<InstallationHistoryComma
 		var api = args.Provider.GetService<IBeamBeamoinstallationApi>();
 		var fullName = await BundleNamespace.FullName(args, args.bundleName);
 		using var zone = await args.ZoneScope();
-		var response = await api.GetInstallationsHistory(args.limit, fullName);
+		var response = await api.GetInstallationsHistory(new Optional<string>(), args.limit, fullName);
 		return new InstallationHistoryCommandOutput
 		{
 			bundle = fullName,
-			entries = response.entries.GetOrElse(Array.Empty<InstallationHistoryView>()).Select(e => new InstallationHistoryEntryInfo
+			entries = response.records.GetOrElse(Array.Empty<InstallationHistoryView>()).Select(e => new InstallationHistoryEntryInfo
 			{
 				at = e.at.GetOrElse(default(DateTime)),
 				change = e.change.HasValue ? e.change.Value.ToString() : "",
@@ -321,7 +328,7 @@ public class ZoneNoticeInfo
 	public string status;
 	public BundleNoticeInfo notice;
 
-	/// <summary>The version the end-of-life update would move to.</summary>
+	/// <summary>The version an automatic update would move to: a deprecation's replacement, or an advisory's fix.</summary>
 	public long? replacementVersion;
 	public string update;
 }
@@ -331,10 +338,13 @@ public class InstallationNoticesCommandOutput
 	public ZoneNoticeInfo[] installations = Array.Empty<ZoneNoticeInfo>();
 }
 
-/// <summary>Every installation of the org on a deprecated version, on every zone. Works from any scope of the org.</summary>
+/// <summary>
+/// Every installation of the org on a version with a notice that warns, on every zone, once per notice.
+/// Announcements never show here. Works from any scope of the org.
+/// </summary>
 public class InstallationNoticesCommand : AtomicCommand<InstallationNoticesCommandArgs, InstallationNoticesCommandOutput>, ISkipManifest
 {
-	public InstallationNoticesCommand() : base("notices", "Show every installation of your org that runs a deprecated version, by zone")
+	public InstallationNoticesCommand() : base("notices", "Show every installation of your org on a version with a deprecation, security advisory, known issue or retirement, by zone")
 	{
 	}
 
@@ -348,7 +358,7 @@ public class InstallationNoticesCommand : AtomicCommand<InstallationNoticesComma
 		var response = await api.GetInstallationsNotices();
 		var output = new InstallationNoticesCommandOutput
 		{
-			installations = response.zones.GetOrElse(Array.Empty<ZoneNotices>())
+			installations = response.records.GetOrElse(Array.Empty<ZoneNotices>())
 				.SelectMany(z => z.installations.GetOrElse(Array.Empty<InstallationNotice>()).Select(i => new ZoneNoticeInfo
 				{
 					zoneId = z.zoneId.GetOrElse(""),
@@ -358,10 +368,15 @@ public class InstallationNoticesCommand : AtomicCommand<InstallationNoticesComma
 					notice = BundleNoticeInfo.FromNotice(i.notice.GetOrElse((BundleNoticeView)null)),
 					replacementVersion = i.replacementVersion.HasValue ? i.replacementVersion.Value : null,
 					update = InstallationInfo.DescribeUpdate(i.update.GetOrElse((InstallationUpdate)null)),
-				})).ToArray(),
+				}))
+				// The server leaves announcements out; never show one as a warning if it does send one.
+				.Where(i => i.notice?.warns ?? true)
+				.ToArray(),
 		};
 		if (output.installations.Length == 0)
-			Log.Information("No installation of your org runs a deprecated version.");
+		{
+			Log.Information("No installation of your org runs a version with a notice.");
+		}
 		return output;
 	}
 
@@ -383,7 +398,7 @@ public class InstallationNoticesCommand : AtomicCommand<InstallationNoticesComma
 		{
 			table.AddRow(
 				Markup.Escape(i.zoneId), Markup.Escape(i.bundle), Markup.Escape($"v{i.version} ({i.status})"),
-				Markup.Escape(i.notice?.Describe() ?? "-"),
+				Markup.Escape(i.notice?.description ?? "-"),
 				Markup.Escape((i.replacementVersion.HasValue ? $"v{i.replacementVersion}" : "-") + (i.update == null ? "" : $"\n{i.update}")));
 		}
 		AnsiConsole.Write(table);

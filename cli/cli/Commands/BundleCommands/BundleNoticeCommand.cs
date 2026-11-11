@@ -10,10 +10,13 @@ using System.Linq;
 
 namespace cli.BundleCommands;
 
-/// <summary>Deprecation notices: a version range of a bundle, an end of support and an end of life.</summary>
+/// <summary>
+/// Bundle notices: deprecations, security advisories, known issues, retirements and announcements.
+/// The kind decides which options a notice takes; the server checks them.
+/// </summary>
 public class BundleNoticeCommand : CommandGroup
 {
-	public BundleNoticeCommand() : base("notice", "Deprecate release versions with an end of support and an end of life")
+	public BundleNoticeCommand() : base("notice", "Tell the orgs that run a bundle about deprecations, security advisories, known issues, retirements and announcements")
 	{
 	}
 }
@@ -22,27 +25,70 @@ public class BundleNoticeCommandArgs : CommandArgs
 {
 	public string bundleName;
 	public string id;
+	public string kind;
 	public long minVersion;
 	public long maxVersion;
 	public string endOfSupport;
 	public string endOfLife;
+	public string severity;
+	public string advisoryId;
+	public string updateBy;
+	public string acquisitionsEnd;
 	public string message;
 	public string link;
 	public long? replacementVersion;
 	public string replacementTag;
+	public bool resolve;
 
 	public static DateTime? ParseDate(string value, string option)
 	{
-		if (string.IsNullOrWhiteSpace(value)) return null;
+		if (string.IsNullOrWhiteSpace(value))
+		{
+			return null;
+		}
 		if (!DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var date))
+		{
 			throw new CliException($"{option}=[{value}] isn't a date. Use YYYY-MM-DD, or an ISO 8601 time in UTC.");
+		}
 		return date;
+	}
+
+	public static BundleNoticeKind ParseKind(string value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+		{
+			return BundleNoticeKind.Deprecation;
+		}
+		var kinds = Enum.GetValues<BundleNoticeKind>();
+		foreach (var kind in kinds)
+		{
+			if (string.Equals(BundleNoticeInfo.KindName(kind), value.Trim(), StringComparison.OrdinalIgnoreCase))
+			{
+				return kind;
+			}
+		}
+		throw new CliException($"--kind=[{value}] isn't a notice kind. Use one of: {string.Join(", ", kinds.Select(BundleNoticeInfo.KindName))}.");
+	}
+
+	public static AdvisorySeverity? ParseSeverity(string value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+		{
+			return null;
+		}
+		if (!Enum.TryParse<AdvisorySeverity>(value.Trim(), true, out var severity) || !Enum.IsDefined(severity))
+		{
+			throw new CliException($"--severity=[{value}] isn't a severity. Use low, medium, high or critical.");
+		}
+		return severity;
 	}
 
 	public void ValidateReplacement()
 	{
 		if (replacementVersion.HasValue && !string.IsNullOrEmpty(replacementTag))
+		{
 			throw new CliException("Give --replacement-version or --replacement-tag, not both.");
+		}
 	}
 }
 
@@ -51,13 +97,13 @@ public class BundleNoticeCommandOutput
 	public string name;
 	public BundleNoticeInfo notice;
 
-	/// <summary>Installations of the covered versions in other orgs, when the notice was created.</summary>
+	/// <summary>Installations of the covered versions in other orgs.</summary>
 	public long installationsOutsideOrg;
 }
 
 public class CreateBundleNoticeCommand : AtomicCommand<BundleNoticeCommandArgs, BundleNoticeCommandOutput>, ISkipManifest
 {
-	public CreateBundleNoticeCommand() : base("create", "Deprecate a range of versions. Orgs running them are told at once, and are updated at end of life")
+	public CreateBundleNoticeCommand() : base("create", "Add a notice to a bundle. Orgs running the versions it covers see it at once")
 	{
 	}
 
@@ -65,19 +111,30 @@ public class CreateBundleNoticeCommand : AtomicCommand<BundleNoticeCommandArgs, 
 	{
 		AddArgument(new Argument<string>("bundle-name", "The bundle name, optionally namespaced as @<namespace>/<bundle-name>"),
 			(args, i) => args.bundleName = i);
-		AddOption(new Option<long>("--min-version", "The first version the notice covers"),
+		AddOption(new Option<string>("--kind", () => "deprecation",
+				"The notice kind: deprecation (needs versions, --end-of-support and --end-of-life), security-advisory (versions and --severity), known-issue (versions), retirement (the whole bundle, --acquisitions-end) or announcement (versions or the whole bundle)"),
+			(args, i) => args.kind = i);
+		AddOption(new Option<long>("--min-version", "The first version the notice covers. Leave out both versions for the whole bundle"),
 			(args, i) => args.minVersion = i);
 		AddOption(new Option<long>("--max-version", "The last version the notice covers"),
 			(args, i) => args.maxVersion = i);
-		AddOption(new Option<string>("--end-of-support", "When new installs of these versions stop (UTC date)"),
+		AddOption(new Option<string>("--end-of-support", "Deprecations: when new installs of these versions stop (UTC date)"),
 			(args, i) => args.endOfSupport = i);
-		AddOption(new Option<string>("--end-of-life", "When installations still on these versions are updated (UTC date)"),
+		AddOption(new Option<string>("--end-of-life", "Deprecations: when installations still on these versions are updated (UTC date)"),
 			(args, i) => args.endOfLife = i);
-		AddOption(new Option<string>("--message", "Why the versions are deprecated"),
+		AddOption(new Option<string>("--severity", "Security advisories: low, medium, high or critical. A critical one refuses new installs of the versions"),
+			(args, i) => args.severity = i);
+		AddOption(new Option<string>("--advisory-id", "Security advisories: an id such as a CVE"),
+			(args, i) => args.advisoryId = i);
+		AddOption(new Option<string>("--update-by", "Security advisories: when installations still on these versions are moved to the fix (UTC date). Needs a replacement"),
+			(args, i) => args.updateBy = i);
+		AddOption(new Option<string>("--acquisitions-end", "Retirements: when new acquisitions of the bundle stop (UTC date)"),
+			(args, i) => args.acquisitionsEnd = i);
+		AddOption(new Option<string>("--message", "What the orgs running these versions need to know"),
 			(args, i) => args.message = i);
 		AddOption(new Option<string>("--link", "A page with more detail"),
 			(args, i) => args.link = i);
-		AddOption(new Option<long?>("--replacement-version", "The version orgs should move to"),
+		AddOption(new Option<long?>("--replacement-version", "The version orgs should move to, or the one with the fix"),
 			(args, i) => args.replacementVersion = i);
 		AddOption(new Option<string>("--replacement-tag", "The tag orgs should move to, instead of a version"),
 			(args, i) => args.replacementTag = i);
@@ -85,29 +142,55 @@ public class CreateBundleNoticeCommand : AtomicCommand<BundleNoticeCommandArgs, 
 
 	public override async Task<BundleNoticeCommandOutput> GetResult(BundleNoticeCommandArgs args)
 	{
-		var missing = new[]
+		var kind = BundleNoticeCommandArgs.ParseKind(args.kind);
+		if (string.IsNullOrWhiteSpace(args.message))
 		{
-			("--min-version", args.minVersion > 0), ("--max-version", args.maxVersion > 0),
-			("--end-of-support", !string.IsNullOrWhiteSpace(args.endOfSupport)), ("--end-of-life", !string.IsNullOrWhiteSpace(args.endOfLife)),
-			("--message", !string.IsNullOrWhiteSpace(args.message)),
-		}.Where(o => !o.Item2).Select(o => o.Item1).ToArray();
-		if (missing.Length > 0)
-			throw new CliException($"A notice needs {string.Join(", ", missing)}.");
+			throw new CliException("A notice needs --message.");
+		}
+		if ((args.minVersion > 0) != (args.maxVersion > 0))
+		{
+			throw new CliException("Give both --min-version and --max-version, or neither for the whole bundle.");
+		}
 		args.ValidateReplacement();
+
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
 		var fullName = await BundleNamespace.FullName(args, args.bundleName);
 		var request = new CreateBundleNoticeRequest
 		{
 			name = fullName,
-			minVersion = args.minVersion,
-			maxVersion = args.maxVersion,
-			endOfSupport = new OptionalDateTime(BundleNoticeCommandArgs.ParseDate(args.endOfSupport, "--end-of-support").Value),
-			endOfLife = new OptionalDateTime(BundleNoticeCommandArgs.ParseDate(args.endOfLife, "--end-of-life").Value),
+			kind = new OptionalBundleNoticeKind(kind),
 			message = args.message,
 		};
-		if (!string.IsNullOrEmpty(args.link)) request.link = args.link;
-		if (args.replacementVersion.HasValue) request.replacementVersion = args.replacementVersion.Value;
-		if (!string.IsNullOrEmpty(args.replacementTag)) request.replacementTag = args.replacementTag;
+		if (args.minVersion > 0)
+		{
+			request.minVersion = args.minVersion;
+			request.maxVersion = args.maxVersion;
+		}
+		SetDate(args.endOfSupport, "--end-of-support", d => request.endOfSupport = d);
+		SetDate(args.endOfLife, "--end-of-life", d => request.endOfLife = d);
+		SetDate(args.updateBy, "--update-by", d => request.updateBy = d);
+		SetDate(args.acquisitionsEnd, "--acquisitions-end", d => request.acquisitionsEnd = d);
+		var severity = BundleNoticeCommandArgs.ParseSeverity(args.severity);
+		if (severity.HasValue)
+		{
+			request.severity = new OptionalAdvisorySeverity(severity.Value);
+		}
+		if (!string.IsNullOrWhiteSpace(args.advisoryId))
+		{
+			request.advisoryId = args.advisoryId;
+		}
+		if (!string.IsNullOrEmpty(args.link))
+		{
+			request.link = args.link;
+		}
+		if (args.replacementVersion.HasValue)
+		{
+			request.replacementVersion = args.replacementVersion.Value;
+		}
+		if (!string.IsNullOrEmpty(args.replacementTag))
+		{
+			request.replacementTag = args.replacementTag;
+		}
 
 		var response = await api.PostBundlesNotices(request);
 		var output = new BundleNoticeCommandOutput
@@ -116,14 +199,23 @@ public class CreateBundleNoticeCommand : AtomicCommand<BundleNoticeCommandArgs, 
 			notice = BundleNoticeInfo.FromNotice(response.notice.GetOrElse((BundleNoticeView)null)),
 			installationsOutsideOrg = response.installationsOutsideOrg.GetOrElse(0),
 		};
-		Log.Information($"Notice {output.notice?.id} on [{fullName}]: {output.notice?.Describe()}. It reaches {output.installationsOutsideOrg} installation(s) in other orgs.");
+		Log.Information($"Notice {output.notice?.id} on [{fullName}]: {output.notice?.description}. It reaches {output.installationsOutsideOrg} installation(s) in other orgs.");
 		return output;
+	}
+
+	private static void SetDate(string value, string option, Action<OptionalDateTime> set)
+	{
+		var date = BundleNoticeCommandArgs.ParseDate(value, option);
+		if (date.HasValue)
+		{
+			set(new OptionalDateTime(date.Value));
+		}
 	}
 }
 
 public class UpdateBundleNoticeCommand : AtomicCommand<BundleNoticeCommandArgs, BundleNoticeCommandOutput>, ISkipManifest
 {
-	public UpdateBundleNoticeCommand() : base("update", "Move a notice's dates later, or change its message, link or replacement")
+	public UpdateBundleNoticeCommand() : base("update", "Edit a notice: move its dates later, change its message, link, replacement or severity, or resolve it")
 	{
 	}
 
@@ -133,18 +225,28 @@ public class UpdateBundleNoticeCommand : AtomicCommand<BundleNoticeCommandArgs, 
 			(args, i) => args.bundleName = i);
 		AddArgument(new Argument<string>("notice-id", "The notice to edit, as `bundles releases` lists it"),
 			(args, i) => args.id = i);
-		AddOption(new Option<string>("--end-of-support", "A later end of support (UTC date)"),
+		AddOption(new Option<string>("--end-of-support", "Deprecations: a later end of support (UTC date)"),
 			(args, i) => args.endOfSupport = i);
-		AddOption(new Option<string>("--end-of-life", "A later end of life (UTC date)"),
+		AddOption(new Option<string>("--end-of-life", "Deprecations: a later end of life (UTC date)"),
 			(args, i) => args.endOfLife = i);
+		AddOption(new Option<string>("--severity", "Security advisories: a new severity, low, medium, high or critical"),
+			(args, i) => args.severity = i);
+		AddOption(new Option<string>("--advisory-id", "Security advisories: a new advisory id. An empty value clears it"),
+			(args, i) => args.advisoryId = i);
+		AddOption(new Option<string>("--update-by", "Security advisories: a later update-by date, or a first one (UTC date)"),
+			(args, i) => args.updateBy = i);
+		AddOption(new Option<string>("--acquisitions-end", "Retirements: a later end of acquisitions (UTC date)"),
+			(args, i) => args.acquisitionsEnd = i);
 		AddOption(new Option<string>("--message", "A new message"),
 			(args, i) => args.message = i);
-		AddOption(new Option<string>("--link", "A new link"),
+		AddOption(new Option<string>("--link", "A new link. An empty value clears it"),
 			(args, i) => args.link = i);
 		AddOption(new Option<long?>("--replacement-version", "A new replacement version"),
 			(args, i) => args.replacementVersion = i);
 		AddOption(new Option<string>("--replacement-tag", "A new replacement tag, instead of a version. An empty value clears the replacement"),
 			(args, i) => args.replacementTag = i);
+		AddOption(new Option<bool>("--resolve", "Resolve a security advisory, known issue or announcement: it stops warning and acting, and can't be edited again. Deprecations and retirements are withdrawn instead"),
+			(args, i) => args.resolve = i);
 	}
 
 	public override async Task<BundleNoticeCommandOutput> GetResult(BundleNoticeCommandArgs args)
@@ -155,26 +257,69 @@ public class UpdateBundleNoticeCommand : AtomicCommand<BundleNoticeCommandArgs, 
 		var request = new UpdateBundleNoticeRequest { name = fullName, id = args.id };
 		var endOfSupport = BundleNoticeCommandArgs.ParseDate(args.endOfSupport, "--end-of-support");
 		var endOfLife = BundleNoticeCommandArgs.ParseDate(args.endOfLife, "--end-of-life");
-		if (endOfSupport.HasValue) request.endOfSupport = new OptionalDateTime(endOfSupport.Value);
-		if (endOfLife.HasValue) request.endOfLife = new OptionalDateTime(endOfLife.Value);
-		if (args.message != null) request.message = args.message;
-		if (args.link != null) request.link = args.link;
-		if (args.replacementVersion.HasValue) request.replacementVersion = args.replacementVersion.Value;
-		if (args.replacementTag != null) request.replacementTag = args.replacementTag;
+		var updateBy = BundleNoticeCommandArgs.ParseDate(args.updateBy, "--update-by");
+		var acquisitionsEnd = BundleNoticeCommandArgs.ParseDate(args.acquisitionsEnd, "--acquisitions-end");
+		var severity = BundleNoticeCommandArgs.ParseSeverity(args.severity);
+		if (endOfSupport.HasValue)
+		{
+			request.endOfSupport = new OptionalDateTime(endOfSupport.Value);
+		}
+		if (endOfLife.HasValue)
+		{
+			request.endOfLife = new OptionalDateTime(endOfLife.Value);
+		}
+		if (updateBy.HasValue)
+		{
+			request.updateBy = new OptionalDateTime(updateBy.Value);
+		}
+		if (acquisitionsEnd.HasValue)
+		{
+			request.acquisitionsEnd = new OptionalDateTime(acquisitionsEnd.Value);
+		}
+		if (severity.HasValue)
+		{
+			request.severity = new OptionalAdvisorySeverity(severity.Value);
+		}
+		if (args.advisoryId != null)
+		{
+			request.advisoryId = args.advisoryId;
+		}
+		if (args.message != null)
+		{
+			request.message = args.message;
+		}
+		if (args.link != null)
+		{
+			request.link = args.link;
+		}
+		if (args.replacementVersion.HasValue)
+		{
+			request.replacementVersion = args.replacementVersion.Value;
+		}
+		if (args.replacementTag != null)
+		{
+			request.replacementTag = args.replacementTag;
+		}
+		if (args.resolve)
+		{
+			request.resolve = true;
+		}
 
 		var response = await api.PutBundlesNotices(request);
-		return new BundleNoticeCommandOutput
+		var output = new BundleNoticeCommandOutput
 		{
 			name = fullName,
 			notice = BundleNoticeInfo.FromNotice(response.notice.GetOrElse((BundleNoticeView)null)),
 			installationsOutsideOrg = response.installationsOutsideOrg.GetOrElse(0),
 		};
+		Log.Information($"Notice {output.notice?.id} on [{fullName}]: {output.notice?.description}.");
+		return output;
 	}
 }
 
 public class WithdrawBundleNoticeCommand : AtomicCommand<BundleNoticeCommandArgs, BundleNoticeCommandOutput>, ISkipManifest
 {
-	public WithdrawBundleNoticeCommand() : base("withdraw", "Withdraw a notice: its versions are supported again")
+	public WithdrawBundleNoticeCommand() : base("withdraw", "Withdraw a notice of any kind: it stops showing and acting for every org. A withdrawn deprecation leaves its versions supported again")
 	{
 	}
 

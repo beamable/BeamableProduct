@@ -56,7 +56,7 @@ public class SearchMarketplaceCommand : AtomicCommand<SearchMarketplaceCommandAr
 			string.IsNullOrEmpty(args.query) ? new Optional<string>() : args.query);
 		var output = new SearchMarketplaceCommandOutput
 		{
-			bundles = response.bundles.GetOrElse(Array.Empty<BundleSummaryView>()).Select(BundleSummaryInfo.FromSummary).ToArray(),
+			bundles = response.records.GetOrElse(Array.Empty<BundleSummaryView>()).Select(BundleSummaryInfo.FromSummary).ToArray(),
 			nextCursor = response.nextCursor.GetOrElse((string)null),
 		};
 		if (output.nextCursor != null)
@@ -137,7 +137,7 @@ public class BundleInfoCommand : AtomicCommand<BundleInfoCommandArgs, BundleInfo
 			docsUrl = listing?.docsUrl.GetOrElse((string)null),
 			latestRelease = BundleReleaseInfo.FromRelease(release),
 			latestContent = content == null ? null : BundleContentInfo.FromContent(release?.version.GetOrElse(0) ?? 0, content),
-			componentGroupDescriptions = (content?.features.GetOrElse(Array.Empty<BundleFeature>()) ?? Array.Empty<BundleFeature>())
+			componentGroupDescriptions = (content?.componentGroups.GetOrElse(Array.Empty<BundleComponentGroup>()) ?? Array.Empty<BundleComponentGroup>())
 				.ToDictionary(f => f.name.GetOrElse(""), f =>
 					$"{f.title.GetOrElse("")}{(f.enabledByDefault.GetOrElse(false) ? " (on by default)" : "")}: {f.description.GetOrElse("")}"),
 		};
@@ -156,7 +156,10 @@ public class BundleInfoCommand : AtomicCommand<BundleInfoCommandArgs, BundleInfo
 		if (!string.IsNullOrEmpty(b.summary)) AnsiConsole.MarkupLine(Markup.Escape(b.summary));
 		if (!string.IsNullOrEmpty(output.description)) AnsiConsole.MarkupLine(Markup.Escape(output.description));
 		if (!string.IsNullOrEmpty(output.docsUrl)) AnsiConsole.MarkupLine($"Docs: {Markup.Escape(output.docsUrl)}");
-		foreach (var notice in b.notices) AnsiConsole.MarkupLine($"[yellow]Notice[/]: {Markup.Escape(notice.Describe())}");
+		foreach (var notice in b.notices.Where(n => !n.resolvedAt.HasValue))
+		{
+			AnsiConsole.MarkupLine($"{(notice.warns ? "[yellow]Notice[/]" : "Notice")}: {Markup.Escape(notice.description)}");
+		}
 		foreach (var (group, description) in output.componentGroupDescriptions)
 			AnsiConsole.MarkupLine($"Component group [bold]{Markup.Escape(group)}[/]: {Markup.Escape(description)} ({Markup.Escape(string.Join(", ", output.latestContent?.componentGroups.GetValueOrDefault(group) ?? Array.Empty<string>()))})");
 		foreach (var (dependency, range) in output.latestContent?.dependencies ?? new Dictionary<string, string>())
@@ -212,12 +215,26 @@ public class PlacementsCommand : AtomicCommand<PlacementsCommandArgs, Placements
 		if (args.pages.Count + args.mounts.Count == 0)
 			throw new CliException("Give at least one --page or --mount.");
 		var api = args.Provider.GetService<IBeamBeamobundleApi>();
-		var response = await api.GetMarketplacePlacements(
-			args.mounts.Count > 0 ? args.mounts.ToArray() : new Optional<string[]>(),
-			args.pages.Count > 0 ? args.pages.ToArray() : new Optional<string[]>());
+		var places = new List<PlacementBundles>();
+		var cursor = new Optional<string>();
+		while (true)
+		{
+			var response = await api.GetMarketplacePlacements(
+				cursor,
+				new Optional<int>(),
+				args.mounts.Count > 0 ? args.mounts.ToArray() : new Optional<string[]>(),
+				args.pages.Count > 0 ? args.pages.ToArray() : new Optional<string[]>());
+			places.AddRange(response.records.GetOrElse(Array.Empty<PlacementBundles>()));
+			var nextCursor = response.nextCursor.GetOrElse((string)null);
+			if (string.IsNullOrEmpty(nextCursor))
+			{
+				break;
+			}
+			cursor = nextCursor;
+		}
 		return new PlacementsCommandOutput
 		{
-			bundles = response.places.GetOrElse(Array.Empty<PlacementBundles>()).SelectMany(p =>
+			bundles = places.SelectMany(p =>
 			{
 				var place = p.place.GetOrElse((Placement)null);
 				var label = place?.page.GetOrElse((string)null)
@@ -232,10 +249,10 @@ public class PlacementsCommand : AtomicCommand<PlacementsCommandArgs, Placements
 						latestVersion = b.latestVersion.GetOrElse(0),
 						acquired = b.acquired.GetOrElse(false),
 						owned = b.owned.GetOrElse(false),
-						componentGroups = b.features.GetOrElse(Array.Empty<PlacedFeature>()).Select(f => f.title.GetOrElse(f.name.GetOrElse(""))).ToArray(),
+						componentGroups = b.componentGroups.GetOrElse(Array.Empty<PlacedComponentGroup>()).Select(f => f.title.GetOrElse(f.name.GetOrElse(""))).ToArray(),
 						installation = installation == null
 							? null
-							: $"v{installation.version.GetOrElse(0)} on {installation.zoneId.GetOrElse("")}, on: {string.Join(", ", installation.featuresOn.GetOrElse(Array.Empty<string>()))}",
+							: $"v{installation.version.GetOrElse(0)} on {installation.zoneId.GetOrElse("")}, on: {string.Join(", ", installation.componentGroupsOn.GetOrElse(Array.Empty<string>()))}",
 					};
 				});
 			}).ToArray(),

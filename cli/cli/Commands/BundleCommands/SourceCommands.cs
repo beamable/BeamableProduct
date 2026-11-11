@@ -147,10 +147,10 @@ public class ListSourceDeliveriesCommand : AtomicCommand<ListSourceDeliveriesCom
 	public override async Task<ListSourceDeliveriesCommandOutput> GetResult(ListSourceDeliveriesCommandArgs args)
 	{
 		var api = args.Provider.GetService<IBeamBeamoinstallationApi>();
-		var response = await api.GetSourceDeliveries(args.limit);
+		var response = await api.GetSourceDeliveries(new Optional<string>(), args.limit);
 		return new ListSourceDeliveriesCommandOutput
 		{
-			deliveries = response.deliveries.GetOrElse(Array.Empty<SourceDeliveryView>()).Select(SourceDeliveryInfo.From).ToArray(),
+			deliveries = response.records.GetOrElse(Array.Empty<SourceDeliveryView>()).Select(SourceDeliveryInfo.From).ToArray(),
 		};
 	}
 

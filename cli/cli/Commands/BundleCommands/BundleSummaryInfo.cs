@@ -59,46 +59,133 @@ public class BundleSummaryInfo
 }
 
 /// <summary>
-/// CLI-owned projection of a deprecation notice: the versions it covers, their two dates, and where
-/// those versions are now (supported, deprecated, unsupported or end of life).
+/// CLI-owned projection of a bundle notice. The kind decides which fields it carries: a deprecation has
+/// a version range and its two dates; a security advisory a range, a severity, an optional advisory id and
+/// update-by date; a known issue a range; a retirement the date acquisitions end; an announcement only
+/// its message and link, on a range or the whole bundle.
 /// </summary>
 [Serializable]
 public class BundleNoticeInfo
 {
 	public string id = "";
+
+	/// <summary>"deprecation", "security-advisory", "known-issue", "retirement" or "announcement".</summary>
+	public string kind = "";
+
+	/// <summary>"publisher", or "beamable" when Beamable staff wrote it.</summary>
+	public string source = "";
+
+	/// <summary>The versions it covers; both 0 when it covers the whole bundle.</summary>
 	public long minVersion;
 	public long maxVersion;
-	public DateTime endOfSupport;
-	public DateTime endOfLife;
+
+	/// <summary>Deprecations only.</summary>
+	public DateTime? endOfSupport;
+	public DateTime? endOfLife;
+
+	/// <summary>Security advisories only: "low", "medium", "high" or "critical".</summary>
+	public string severity;
+
+	/// <summary>Security advisories only: an id such as a CVE.</summary>
+	public string advisoryId;
+
+	/// <summary>Security advisories only: when installations still on the versions are moved to the fix.</summary>
+	public DateTime? updateBy;
+
+	/// <summary>Retirements only: when new acquisitions stop.</summary>
+	public DateTime? acquisitionsEnd;
+
+	/// <summary>When it was resolved. A resolved notice no longer warns or acts.</summary>
+	public DateTime? resolvedAt;
+
 	public string message = "";
 	public string link;
 
-	/// <summary>The recommended replacement: a version, or a tag name.</summary>
+	/// <summary>The recommended replacement or fix: a version, or a tag name.</summary>
 	public string replacement;
 
-	/// <summary>"supported", "deprecated", "unsupported" or "endoflife".</summary>
+	/// <summary>
+	/// Where a deprecation leaves its versions: "supported", "deprecated", "unsupported" or "endoflife".
+	/// Other kinds leave them "supported".
+	/// </summary>
 	public string status = "";
+
+	/// <summary>Whether it asks for attention: unresolved, and not an announcement.</summary>
+	public bool warns;
+
+	/// <summary>One line saying what the notice is.</summary>
+	public string description = "";
+
+	public bool WholeBundle => minVersion == 0;
+
+	public static string KindName(BundleNoticeKind kind) => kind switch
+	{
+		BundleNoticeKind.SecurityAdvisory => "security-advisory",
+		BundleNoticeKind.KnownIssue => "known-issue",
+		_ => kind.ToString().ToLowerInvariant(),
+	};
 
 	public static BundleNoticeInfo FromNotice(BundleNoticeView n)
 	{
-		if (n == null) return null;
+		if (n == null)
+		{
+			return null;
+		}
+
 		var replacementVersion = n.replacementVersion.GetOrElse(0);
-		return new BundleNoticeInfo
+		// A notice without a kind is a deprecation.
+		var kind = n.kind.HasValue ? n.kind.Value : BundleNoticeKind.Deprecation;
+		var info = new BundleNoticeInfo
 		{
 			id = n.id.GetOrElse(""),
+			kind = KindName(kind),
+			source = n.source.HasValue ? n.source.Value.ToString().ToLowerInvariant() : "publisher",
 			minVersion = n.minVersion.GetOrElse(0),
 			maxVersion = n.maxVersion.GetOrElse(0),
-			endOfSupport = n.endOfSupport.GetOrElse(default(DateTime)),
-			endOfLife = n.endOfLife.GetOrElse(default(DateTime)),
+			endOfSupport = n.endOfSupport.HasValue ? n.endOfSupport.Value : null,
+			endOfLife = n.endOfLife.HasValue ? n.endOfLife.Value : null,
+			severity = n.severity.HasValue ? n.severity.Value.ToString().ToLowerInvariant() : null,
+			advisoryId = n.advisoryId.GetOrElse((string)null),
+			updateBy = n.updateBy.HasValue ? n.updateBy.Value : null,
+			acquisitionsEnd = n.acquisitionsEnd.HasValue ? n.acquisitionsEnd.Value : null,
+			resolvedAt = n.resolvedAt.HasValue ? n.resolvedAt.Value : null,
 			message = n.message.GetOrElse(""),
 			link = n.link.GetOrElse((string)null),
 			replacement = replacementVersion > 0 ? $"v{replacementVersion}" : n.replacementTag.GetOrElse((string)null),
 			status = n.status.HasValue ? n.status.Value.ToString().ToLowerInvariant() : "",
 		};
+		info.warns = !info.resolvedAt.HasValue && kind != BundleNoticeKind.Announcement;
+		info.description = info.Describe();
+		return info;
 	}
 
-	public string Describe() =>
-		$"v{minVersion}-v{maxVersion} {status}: end of support {endOfSupport:yyyy-MM-dd}, end of life {endOfLife:yyyy-MM-dd}" +
-		(string.IsNullOrEmpty(replacement) ? "" : $", use {replacement}") +
-		(string.IsNullOrEmpty(message) ? "" : $". {message}");
+	public bool Covers(long version) => WholeBundle || (version >= minVersion && version <= maxVersion);
+
+	public string Describe()
+	{
+		var range = WholeBundle ? "all versions" : minVersion == maxVersion ? $"v{minVersion}" : $"v{minVersion}-v{maxVersion}";
+		var fix = string.IsNullOrEmpty(replacement) ? "" : $"; fixed in {replacement}";
+		var text = kind switch
+		{
+			"deprecation" =>
+				$"{range} {status}: end of support {endOfSupport:yyyy-MM-dd}, end of life {endOfLife:yyyy-MM-dd}" +
+				(string.IsNullOrEmpty(replacement) ? "" : $"; use {replacement}") +
+				(string.IsNullOrEmpty(message) ? "" : $". {message}"),
+			"security-advisory" =>
+				$"{range} {severity} security advisory{(string.IsNullOrEmpty(advisoryId) ? "" : $" ({advisoryId})")}: {message}{fix}" +
+				(updateBy.HasValue ? $"; installations are updated on {updateBy:yyyy-MM-dd}" : ""),
+			"known-issue" => $"{range} known issue: {message}{fix}",
+			"retirement" => $"retiring: no new acquisitions from {acquisitionsEnd:yyyy-MM-dd}. {message}",
+			_ => $"{(WholeBundle ? "" : range + " ")}announcement: {message}",
+		};
+		if (!string.IsNullOrEmpty(link))
+		{
+			text += $" ({link})";
+		}
+		if (source == "beamable")
+		{
+			text = "from Beamable: " + text;
+		}
+		return resolvedAt.HasValue ? $"resolved {resolvedAt:yyyy-MM-dd}: {text}" : text;
+	}
 }

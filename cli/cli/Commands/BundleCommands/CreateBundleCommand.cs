@@ -146,7 +146,7 @@ public class UpdateBundleCommand : AtomicCommand<UpdateBundleCommandArgs, Bundle
 		if (args.Listing() != null)
 		{
 			// The server replaces the listing whole, so merge the given fields into the current one.
-			var current = (await api.GetBundles()).bundles.GetOrElse(Array.Empty<BundleSummaryView>())
+			var current = (await api.GetBundles()).records.GetOrElse(Array.Empty<BundleSummaryView>())
 				.FirstOrDefault(b => b.name.GetOrElse("") == fullName)?.listing.GetOrElse((BundleListing)null);
 			request.listing = new OptionalBundleListing(args.Listing(current));
 		}

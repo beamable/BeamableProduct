@@ -218,7 +218,7 @@ public class PublishBundleCommand
 		{
 			name = new OptionalString(fullName),
 			components = new OptionalArrayOfBundleComponent(build.components.ToArray()),
-			features = new OptionalArrayOfBundleFeature(BundleBuild.ComponentGroups(bundle)),
+			componentGroups = new OptionalArrayOfBundleComponentGroup(BundleBuild.ComponentGroups(bundle)),
 			dependencies = new OptionalArrayOfBundleDep(BundleBuild.Dependencies(bundle)),
 			irreversibleDataChange = new OptionalBool(args.irreversibleDataChange),
 		};
