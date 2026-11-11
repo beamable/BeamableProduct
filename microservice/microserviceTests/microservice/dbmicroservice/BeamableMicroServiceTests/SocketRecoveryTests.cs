@@ -21,7 +21,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 	public class SocketRecoveryTests : CommonTest
 	{
 		/// <summary>Auth and provider registration for a replacement connection, whatever its request ids.</summary>
-		private static TestSocket AddReconnectHandlers(TestSocket socket, TaskCompletionSource<bool> registered = null)
+		internal static TestSocket AddReconnectHandlers(TestSocket socket, TaskCompletionSource<bool> registered = null)
 		{
 			return socket
 				.AddMessageHandler(MessageMatcher.WithRouteContains("gateway/nonce"),
@@ -53,7 +53,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			return ((ICollection)field!.GetValue(context)!).Count;
 		}
 
-		private static async Task<bool> Eventually(Func<bool> condition, TimeSpan limit)
+		internal static async Task<bool> Eventually(Func<bool> condition, TimeSpan limit)
 		{
 			var deadline = DateTime.UtcNow + limit;
 			while (DateTime.UtcNow < deadline)
