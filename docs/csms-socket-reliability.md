@@ -144,6 +144,7 @@ the timeout is disabled. The daemon's retry loop exists for failed attempts, and
 | Service auth wait per send attempt | `WaitForAuthorization` | 10 s × 10 attempts | requests only, not replies |
 | Service startup auth wait | `SetupWebsocket` | 2 min, then exit 12 | any setup failure before the instance has initialized exits |
 | Service reconnect auth wait | `SetupWebsocket` | 2 min, then the connection is replaced | ends at once if the connection closes; a failed setup after initialization never exits (#4958) |
+| Service reconnect setup, as a whole | fixed | 3 min, then the connection is replaced | also ends at once if the connection closes; bounds the steps that wait for a reply while enforcement is off; not applied while starting |
 | **Service send blocked** | `WS_SEND_TIMEOUT_SECONDS` | **30 s**, 0 = off | |
 | **Service reply stall** | `WS_STALL_TIMEOUT_SECONDS` | **60 s**, 0 = off | |
 | Service graceful close | fixed | 5 s, then abort | |

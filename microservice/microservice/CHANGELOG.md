@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Faulted background tasks are logged.
 - A reconnect that fails to authenticate or register no longer ends the whole process with exit code 12, which also stopped the instances that were still serving. The connection is replaced, with backoff, until one works. A service that fails before it has started still exits with code 12.
 - A connection that closes while it is being set up stops that setup, so it can no longer finish later alongside the replacement's.
+- A reconnect whose setup is still waiting for a reply after 3 minutes is dropped and replaced, instead of keeping its instance out of service for as long as the connection stays open.
 - Generate valid OpenAPI component keys and references for tuple callable types, while preserving C# type metadata. Invalid generated schemas now report their validation errors directly.
 - Content downloads no longer fail when `HOST` is more than one label under `beamable.com` (for example `wss://dev.ms-local.beamable.com/socket`) or includes a port. The content host check now parses `HOST` as a URI, and any `HOST` under `beamable.com` accepts content from `*.beamable.com`.
 

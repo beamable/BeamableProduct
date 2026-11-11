@@ -103,9 +103,11 @@ namespace Beamable.Server
       private IConnection _connection;
       private Promise<IConnection> _webSocketPromise;
 
-      // Guards _connection with the two fields below, which change together with it.
+      // Guards _connection with the three fields below, which change together with it.
       private readonly object _connectionGate = new object();
-      // Cancelled when _connection closes, so that a setup still running on it stops.
+      // Whether _connection closed. Set under the gate, so a setup that finishes at that moment can't miss it.
+      private bool _connectionClosed;
+      // Cancelled right after that, outside the gate, so that a setup still running on _connection stops.
       private CancellationTokenSource _connectionLost;
       // True while ConnectAndSetup runs, so only one runs at a time. It stays true after a shutdown or a failed start,
       // when nothing should reconnect again.
@@ -113,6 +115,12 @@ namespace Beamable.Server
 
       /// <summary>How long a connection's setup waits for authentication before it fails. Tests shorten it.</summary>
       internal static TimeSpan SetupAuthorizationTimeout = TimeSpan.FromMinutes(2);
+
+      /// <summary>
+      /// How long the whole setup of a replacement connection may take before the connection is dropped: the wait for
+      /// authentication, and a minute for the steps after it. Tests shorten it.
+      /// </summary>
+      internal static TimeSpan ReconnectSetupTimeout = TimeSpan.FromMinutes(3);
 
       /// <summary>Ends the process. Tests replace it, to observe an exit instead of dying with it.</summary>
       internal static Action<int> ExitProcess = Environment.Exit;
@@ -382,7 +390,8 @@ namespace Beamable.Server
 
       /// <summary>
       /// Connects, and sets the connection up, until one is ready for traffic. Only one of these runs at a time for an
-      /// instance, so setup work for a connection that was since replaced can't finish later and disturb its replacement.
+      /// instance, and a setup that is given up on stops before it registers anything, so setup work for a connection
+      /// that was since replaced can't disturb its replacement.
       /// <para/>
       /// While the service is starting, a setup that fails ends the process, as it always has. A connection that closes
       /// during that setup is replaced instead, for as long as the setup would have waited for authentication.
@@ -393,7 +402,7 @@ namespace Beamable.Server
       {
          // Decided here, not read later: the first setup marks the service initialized before it has finished.
          var starting = !HasInitialized;
-         var began = Stopwatch.GetTimestamp();
+         long firstConnectedAt = 0;
          for (var failures = 0; !IsShuttingDown; failures++)
          {
             IConnection socket = null;
@@ -413,23 +422,30 @@ namespace Beamable.Server
                lock (_connectionGate)
                {
                   _connection = socket;
+                  _connectionClosed = false;
                   _connectionLost = lost;
                }
 
-               // Only while starting: this is false once the initialization hooks have run.
-               if (IsRealmScoped && !InstanceArgs.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
+               if (firstConnectedAt == 0)
+               {
+                  firstConnectedAt = Stopwatch.GetTimestamp();
+               }
+
+               // Once, while starting: a retry comes after this succeeded, and it is false once the hooks have run.
+               if (failures == 0 && IsRealmScoped && !InstanceArgs.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
                {
                   await SetupStorage();
                }
 
                settingUp = true;
-               await SetupWebsocket(socket, lost.Token, initContent);
+               var setup = SetupWebsocket(socket, lost.Token, initContent);
+               await (starting ? setup : WaitForSetup(setup, lost.Token));
             }
             // While starting, only a failed setup is handled here. Anything before it fails the start, as it always has.
             catch (Exception ex) when (!starting || settingUp)
             {
                var closed = lost.IsCancellationRequested || (socket != null && socket.State != WebSocketState.Open);
-               if (starting && !(closed && Stopwatch.GetElapsedTime(began) < SetupAuthorizationTimeout))
+               if (starting && !(closed && Stopwatch.GetElapsedTime(firstConnectedAt) < SetupAuthorizationTimeout))
                {
                   var message = closed ? "The websocket connection closed while the service was starting. " + ex.Message : ex.Message;
                   Log.Fatal("Service failed to provide services. {message} {stack}", message, ex.StackTrace);
@@ -452,6 +468,8 @@ namespace Beamable.Server
                {
                   // Nothing may use a connection whose setup did not finish, and no reply can arrive on it. Aborting
                   // does nothing if it closed already, without a callback, so its requests are failed here as well.
+                  // Cancelling stops a setup that was given up on, when it gets to its check of the connection.
+                  lost.Cancel();
                   socket.Abort("its setup did not finish");
                   FailRequestsSentOn(socket, "its setup did not finish.");
                }
@@ -462,7 +480,7 @@ namespace Beamable.Server
             starting = false;
             lock (_connectionGate)
             {
-               if (!lost.IsCancellationRequested)
+               if (!_connectionClosed)
                {
                   _establishing = false;
                   return;
@@ -471,6 +489,26 @@ namespace Beamable.Server
 
             // It closed just as its setup finished, when nothing else would have replaced it.
             Log.Warning("The websocket connection {connectionId} closed as its setup finished. Replacing it.", ConnectionId);
+         }
+      }
+
+      /// <summary>
+      /// Waits for the setup of a replacement connection, but no longer than <see cref="ReconnectSetupTimeout"/> and
+      /// not past the loss of the connection. Some of its steps wait for a reply that closing this connection can't end,
+      /// such as a realm-wide request that went out on another instance's connection. A setup that is given up on keeps
+      /// waiting for that reply; it then stops at its own check of the connection, before it registers anything.
+      /// </summary>
+      private static async Task WaitForSetup(Task setup, CancellationToken connectionLost)
+      {
+         // Whatever a setup that was given up on fails with later has been dealt with already.
+         _ = setup.ContinueWith(static finished => _ = finished.Exception, TaskContinuationOptions.OnlyOnFaulted);
+         try
+         {
+            await setup.WaitAsync(ReconnectSetupTimeout, connectionLost);
+         }
+         catch (TimeoutException) when (!setup.IsCompleted)
+         {
+            throw new TimeoutException($"The setup of the connection did not finish within {ReconnectSetupTimeout.TotalSeconds:0}s.");
          }
       }
 
@@ -564,7 +602,7 @@ namespace Beamable.Server
          	await loggingContextService.GetAllLoggingContexts();
          }
 
-         // Don't register a connection that closed while the steps above ran.
+         // Don't register a connection that closed, or whose setup was given up on, while the steps above ran.
          connectionLost.ThrowIfCancellationRequested();
          await ProvideService();
 
@@ -1255,6 +1293,7 @@ namespace Beamable.Server
          var shuttingDown = IsShuttingDown;
          Log.Debug("Closing socket connection... clean=[{clean}] isShuttingDown=[{shuttingDown}]", wasClean, shuttingDown);
          bool reconnect;
+         CancellationTokenSource lost;
          lock (_connectionGate)
          {
             if (!ReferenceEquals(ws, _connection))
@@ -1263,13 +1302,16 @@ namespace Beamable.Server
                return Task.CompletedTask;
             }
 
-            // Stops a setup still running on this connection, and tells a ConnectAndSetup that is running to go again.
-            // Cancelled before the requests below fail, so that setup sees a closed connection as the cause.
-            _connectionLost.Cancel();
+            // Tells a ConnectAndSetup that is running to go again, even if its setup finishes right now.
+            _connectionClosed = true;
+            lost = _connectionLost;
             reconnect = !shuttingDown && !_establishing;
             if (reconnect) _establishing = true;
          }
 
+         // Stops a setup still running on this connection. Outside the gate, because what waits on it resumes here.
+         // Before the requests below fail, so that setup sees a closed connection as the cause.
+         lost.Cancel();
          FailRequestsSentOn(ws, $"clean=[{wasClean}]");
 
          if (shuttingDown)
