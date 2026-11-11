@@ -232,25 +232,19 @@ public static class WebLocalRegistryService
 		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var packagePath in EnumeratePackageJsonExcludingNodeModules(root))
 		{
-			try
+			// Quiet for a package.json that isn't an extension; logs a flagged one that fails to parse.
+			var info = BeamoLocalSystem.TryReadPortalExtensionPackage(packagePath);
+			var isTarget = info?.BeamableProperties?.IsPortalExtension == true
+				|| info?.BeamableProperties?.IsPortalExtensionLib == true;
+			if (!isTarget)
 			{
-				var info = JsonConvert.DeserializeObject<BeamoLocalSystem.PortalExtensionPackageInfo>(File.ReadAllText(packagePath));
-				var isTarget = info?.BeamableProperties?.IsPortalExtension == true
-					|| info?.BeamableProperties?.IsPortalExtensionLib == true;
-				if (!isTarget)
-				{
-					continue;
-				}
-
-				var full = Path.GetFullPath(packagePath);
-				if (seen.Add(full))
-				{
-					results.Add((info.Name ?? Path.GetFileName(Path.GetDirectoryName(full)), full));
-				}
+				continue;
 			}
-			catch
+
+			var full = Path.GetFullPath(packagePath);
+			if (seen.Add(full))
 			{
-				// not a valid extension package.json - ignore
+				results.Add((info.Name ?? Path.GetFileName(Path.GetDirectoryName(full)), full));
 			}
 		}
 

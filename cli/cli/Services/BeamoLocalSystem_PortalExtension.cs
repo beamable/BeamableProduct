@@ -11,6 +11,7 @@ using cli.Services.PortalExtension;
 using cli.Services.Web;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.CommandLine.Binding;
 using System.Text.RegularExpressions;
 using JsonSerializer = Newtonsoft.Json.JsonSerializer;
@@ -32,6 +33,45 @@ public partial class BeamoLocalSystem
 
 		[JsonProperty("beamable")]
 		public PortalExtensionPackageProperties BeamableProperties { get; set; }
+	}
+
+	/// <summary>
+	/// Reads a package.json as a portal extension or extension library, in two steps. Workspace scans see
+	/// every package.json (the portal root, libraries, tooling), so a file that isn't valid JSON or isn't
+	/// flagged with <c>beamable.portalExtension</c> / <c>beamable.portalExtensionLib</c> returns null quietly.
+	/// A flagged file that fails the typed read is logged with its file, JSON path and message, and also
+	/// returns null, so the caller's scan goes on instead of dropping the extension silently.
+	/// </summary>
+	public static PortalExtensionPackageInfo TryReadPortalExtensionPackage(string packageJsonPath)
+	{
+		JObject root;
+		try
+		{
+			root = JObject.Parse(File.ReadAllText(packageJsonPath));
+		}
+		catch (Exception e)
+		{
+			Log.Verbose($"Skipping [{packageJsonPath}]: not a readable JSON file ({e.Message})");
+			return null;
+		}
+
+		static bool IsTrue(JToken token) => token is JValue { Type: JTokenType.Boolean } value && (bool)value;
+		if (root["beamable"] is not JObject beamable
+		    || (!IsTrue(beamable["portalExtension"]) && !IsTrue(beamable["portalExtensionLib"])))
+		{
+			return null;
+		}
+
+		try
+		{
+			return root.ToObject<PortalExtensionPackageInfo>();
+		}
+		catch (Exception e)
+		{
+			var jsonPath = (e as JsonSerializationException)?.Path ?? (e as JsonReaderException)?.Path ?? "beamable";
+			Log.Warning($"Portal extension package [{packageJsonPath}] was skipped: it could not be read at [{jsonPath}]. {e.Message}");
+			return null;
+		}
 	}
 
 	/// <summary>
@@ -460,13 +500,19 @@ public class PortalExtensionMountProperties
 	[JsonConverter(typeof(OptionalConverter))]
 	public OptionalInt NavLabelOrder;
 
-	[JsonProperty("args")] public Dictionary<string, string> Args = new Dictionary<string, string>();
+	// Raw JSON, so a number stays a number in metadata.json. Initialized so an absent "args" is still
+	// written as {} rather than null.
+	[JsonProperty("args")] public JObject Args = new JObject();
 
 	// Conditions the portal evaluates before mounting the extension into the
 	// agentic portal. Keys are dotted paths (e.g. "account.role", "account.tier")
 	// matched against the viewer's context; the CLI scaffolds these with default
 	// values so the extension mounts everywhere until the author narrows them.
 	[JsonProperty(KEY_FILTERS)] public Dictionary<string, string> Filters = new Dictionary<string, string>();
+
+	// Mount fields this model doesn't declare, carried into metadata.json unchanged so new manifest
+	// fields reach the portal without a CLI release.
+	[JsonExtensionData] public IDictionary<string, JToken> Extra;
 }
 
 [Serializable]
@@ -505,6 +551,9 @@ public class PortalExtensionPackageProperties
 	/// or a hub-declaration extension can also seed a default nav item.
 	/// </summary>
 	[JsonProperty("mounts")] public List<PortalExtensionMountProperties> Mounts;
+
+	// Package fields this model doesn't declare (e.g. "sites"), carried into metadata.json unchanged.
+	[JsonExtensionData] public IDictionary<string, JToken> Extra;
 }
 
 public class ExtensionAppLogProvider : ILoggerProvider
