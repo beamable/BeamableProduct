@@ -142,12 +142,13 @@ the timeout is disabled. The daemon's retry loop exists for failed attempts, and
 | **Service outbound reply deadline** | `BEAM_OUTBOUND_REQUEST_TIMEOUT_SECONDS` | **30 s**, 0 = none, max 3600 | seconds |
 | Service auth request deadline | derived | `min(outbound, 15 s)` | always enforced |
 | Service auth wait per send attempt | `WaitForAuthorization` | 10 s × 10 attempts | requests only, not replies |
-| Service startup/reconnect auth wait | `SetupWebsocket` | 2 min, then exit 12 | |
+| Service startup auth wait | `SetupWebsocket` | 2 min, then exit 12 | any setup failure before the instance has initialized exits |
+| Service reconnect auth wait | `SetupWebsocket` | 2 min, then the connection is replaced | ends at once if the connection closes; a failed setup after initialization never exits (#4958) |
 | **Service send blocked** | `WS_SEND_TIMEOUT_SECONDS` | **30 s**, 0 = off | |
 | **Service reply stall** | `WS_STALL_TIMEOUT_SECONDS` | **60 s**, 0 = off | |
 | Service graceful close | fixed | 5 s, then abort | |
 | Service keep-alive | `KeepAliveInterval` fixed 20 s; `WS_KEEPALIVE_TIMEOUT_SECONDS` | 0 = unsolicited pong only | net9+ only |
-| Service reconnect backoff | `_retryIntervalsInSeconds` | 5, 5, 10, 10, 15, 45, 60 s | |
+| Service reconnect backoff | `_retryIntervalsInSeconds` | 5, 5, 10, 10, 15, 45, 60 s | between failed connects, and between failed setups of a replacement |
 
 **Ordering.** The outbound deadline (30 s) is below the reply stall (60 s), so one slow request expires before the
 connection is condemned. The stall is below the 120 s relay timeout seen in production, so a broken connection is
