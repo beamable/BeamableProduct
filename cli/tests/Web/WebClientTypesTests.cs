@@ -149,6 +149,41 @@ public class WebClientTypesTests
 		Assert.That(types.Split("export type Shared").Length - 1, Is.EqualTo(1));
 	}
 
+	/// <summary>
+	///   A dictionary property renders inline as <c>Record&lt;string, V&gt;</c>: it is no type of its own, and only an
+	///   object value type is declared.
+	/// </summary>
+	[Test]
+	public void ADictionaryIsInline_AndOnlyItsObjectValueTypeIsDeclared()
+	{
+		var text = new OpenApiSchema
+		{
+			Type = "object",
+			Reference = new OpenApiReference { Id = "Text", Type = ReferenceType.Schema },
+			Properties = new Dictionary<string, OpenApiSchema> { ["title"] = new() { Type = "string" } },
+			Required = new HashSet<string> { "title" }
+		};
+		var doc = Doc("SvcA", "AResult");
+		var result = doc.Paths["/Get"].Operations[OperationType.Post].Responses["200"].Content["application/json"].Schema;
+		result.Properties["labels"] = new OpenApiSchema
+		{
+			Type = "object", AdditionalPropertiesAllowed = true, AdditionalProperties = new OpenApiSchema { Type = "string" }
+		};
+		result.Properties["texts"] = new OpenApiSchema
+		{
+			Type = "object", AdditionalPropertiesAllowed = true, AdditionalProperties = text
+		};
+		var ext = Extension("ext", "SvcA");
+
+		PortalExtensionAddDependencyCommand.GenerateDependenciesClients(ext, Manifest(("SvcA", doc)));
+
+		var types = File.ReadAllText(TypesPath(ext));
+		StringAssert.DoesNotContain("export type Record", types);
+		StringAssert.Contains("labels?: Record<string, string>", types);
+		StringAssert.Contains("texts?: Record<string, Text>", types);
+		StringAssert.Contains("export type Text", types);
+	}
+
 	[Test]
 	public void ExistingTypesAreKeptWhenADependencyHasNoApiDoc()
 	{

@@ -27,7 +27,7 @@ import type { NotificationData } from '@beamable/notifications-react-native';
 
 import { getBeam } from '../beam/beamClient';
 import { registerDevice } from '../beam/pushNotifications';
-import { OFFER_GRANTS_KEY, parseOfferGrantIds } from '../beam/campaignOffers';
+import { OFFER_GRANTS_KEY, parseOfferGrantIds } from '../beam/offers';
 import { useLogActions } from './logContext';
 
 /** A URL-scheme VIEW intent captured by the native deeplink module. */
