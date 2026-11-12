@@ -33,10 +33,22 @@ export interface BeamConfig extends BeamBaseConfig {
    * `beam.connectRealtime()` to establish it later — for example after creating
    * a player via `beam.auth.loginAsGuest()`.
    *
-   * @default { enabled: true }
+   * `Beam.init()` resolves only after the socket has opened and the
+   * `session-start` frame has been sent, and rejects if that doesn't happen
+   * within `connectTimeoutMs`.
+   *
+   * @default { enabled: true, connectTimeoutMs: 15000 }
    */
   realtime?: {
     /** Whether to auto-connect the realtime websocket on `init`. @default true */
     enabled?: boolean;
+    /**
+     * How long `Beam.init()` / `connectRealtime()` wait for the realtime socket to
+     * open, in milliseconds, before rejecting with a `BeamWebSocketError`. A socket
+     * that never opens usually means WebSockets are blocked by a proxy or firewall.
+     * `0` disables the timeout.
+     * @default 15000
+     */
+    connectTimeoutMs?: number;
   };
 }
