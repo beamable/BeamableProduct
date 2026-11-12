@@ -3,9 +3,12 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export enum CampaignOfferState {
+export enum OfferGrantState {
+  Pending = "Pending",
   Granted = "Granted",
+  Claiming = "Claiming",
   Redeemed = "Redeemed",
   Revoked = "Revoked",
-  Expired = "Expired"
+  Expired = "Expired",
+  Failed = "Failed"
 }

@@ -3,7 +3,8 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type CampaignOfferRedeemPayload = { 
-  params?: Record<string, string>; 
-  transactionId?: string; 
+import type { GrantOfferResult } from './GrantOfferResult';
+
+export type GrantOffersResult = { 
+  grants?: GrantOfferResult[]; 
 };

@@ -3,8 +3,7 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export enum CampaignOfferInvalidation {
-  None = "None",
-  Single = "Single",
-  Group = "Group"
-}
+export type RevokeGrantsResult = { 
+  notOpen?: string[]; 
+  revoked?: string[]; 
+};

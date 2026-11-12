@@ -257,6 +257,17 @@ public class WebClientCodeGenerator
 		if (schema.Type == "array")
 			schema = schema.Items;
 
+		// A map is rendered inline as Record<string, V> and is no type of its own: declaring an alias named
+		// after its rendering would emit `export type Record<string, V> = {}`. Only its value type, when
+		// that is an object, is declared.
+		if (schema.Reference == null && schema.AdditionalPropertiesAllowed && schema.AdditionalProperties != null
+		    && (schema.Properties == null || schema.Properties.Count == 0))
+		{
+			var valueModules = new List<string>();
+			HandleSchema(schema.AdditionalProperties, OpenApiTsTypeMapper.Map(schema.AdditionalProperties, ref valueModules));
+			return;
+		}
+
 		var schemaProps = schema.Properties;
 		if (schemaProps == null || schema.IsPrimitive())
 			return;

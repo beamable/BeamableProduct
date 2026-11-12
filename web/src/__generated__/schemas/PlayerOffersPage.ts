@@ -3,8 +3,9 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type RevokeCampaignOfferRequest = { 
-  federationId: string; 
-  grantId: string; 
-  playerId: string; 
+import type { PlayerOffer } from './PlayerOffer';
+
+export type PlayerOffersPage = { 
+  next?: string | null; 
+  offers?: PlayerOffer[]; 
 };

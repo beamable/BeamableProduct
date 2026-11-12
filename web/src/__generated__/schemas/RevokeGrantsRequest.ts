@@ -3,7 +3,6 @@
  * All manual edits will be lost when this file is regenerated.
  */
 
-export type CampaignOfferText = { 
-  title: string; 
-  description?: string | null; 
+export type RevokeGrantsRequest = { 
+  grantIds?: string[]; 
 };
