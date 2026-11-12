@@ -4,6 +4,8 @@ using cli.Services;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 using static cli.ConfigService;
 
 namespace cli.Commands.Mcp;
@@ -533,7 +535,18 @@ public class McpToolExecutor
 		await Lock.WaitAsync();
 		try
 		{
-			return await RunInProcessAsync(commandLine);
+			var run = await RunInProcessAsync(PrepareCommandLine(commandLine));
+
+			// A wrong guess at a command's arguments should cost one call, not three: answer a parse
+			// error with the command's help so the caller can retry straight away.
+			if (run.isParseError && !IsHelpRequest(commandLine))
+			{
+				var helpPath = GetCommandPath(commandLine);
+				var help = await RunInProcessAsync(PrepareCommandLine(string.IsNullOrEmpty(helpPath) ? "--help" : $"{helpPath} --help"));
+				return TruncateIfNeeded(BuildInvalidArgumentsResponse(commandLine, run.errorText, helpPath, help.output));
+			}
+
+			return TruncateIfNeeded(run.output);
 		}
 		finally
 		{
@@ -541,10 +554,8 @@ public class McpToolExecutor
 		}
 	}
 
-	private async Task<string> RunInProcessAsync(string commandLine)
+	private async Task<(string output, string errorText, bool isParseError)> RunInProcessAsync(string fullCommand)
 	{
-		var fullCommand = EnsureLogStreams(commandLine);
-
 		var sw = new StringWriter();
 		var errSw = new StringWriter();
 		var capturer = new CapturingReporterService(sw);
@@ -586,18 +597,21 @@ public class McpToolExecutor
 		// Append them as a JSON error line so the MCP client always sees them.
 		var errorText = errSw.ToString().Trim();
 		if (!string.IsNullOrEmpty(errorText))
-		{
-			var enriched = EnrichErrorIfCommandFailure(errorText, commandLine);
-			await sw.WriteLineAsync(JsonConvert.SerializeObject(new { error = enriched }));
-		}
+			await sw.WriteLineAsync(JsonConvert.SerializeObject(new { error = errorText }));
+
+		// With --emit-log-streams, parse errors arrive as structured "error" stream messages instead.
+		var parseErrors = capturer.ErrorMessages.Append(errorText).Where(IsParseError).ToList();
+		var isParseError = parseErrors.Count > 0;
+		if (isParseError)
+			errorText = string.Join("\n", parseErrors);
 
 		// Commands that implement IEmptyResult produce no output on success.
 		// Emit a generic success envelope so the MCP client always receives a
 		// non-empty response and knows the command completed without error.
 		if (string.IsNullOrWhiteSpace(sw.ToString()))
-			await sw.WriteLineAsync(JsonConvert.SerializeObject(new { status = "ok", command = commandLine }));
+			await sw.WriteLineAsync(JsonConvert.SerializeObject(new { status = "ok", command = fullCommand }));
 
-		return TruncateIfNeeded(sw.ToString());
+		return (sw.ToString(), errorText, isParseError);
 	}
 
 	private const int MaxOutputLength = 32_768;
@@ -621,31 +635,81 @@ public class McpToolExecutor
 		"unrecognized command or argument",
 		"unrecognized option",
 		"required argument missing",
+		"required command was not provided",
+		"cannot parse argument",
 	};
 
-	private static string EnrichErrorIfCommandFailure(string errorText, string commandLine)
-	{
-		var lower = errorText.ToLowerInvariant();
-		var isCommandError = CommandErrorPatterns.Any(p => lower.Contains(p.ToLowerInvariant()));
-		if (!isCommandError) return errorText;
+	private static readonly Regex RequiredOptionPattern = new(@"option '[^']+' is required", RegexOptions.IgnoreCase);
 
-		return errorText + $"\n\nIMPORTANT: The command ({commandLine}) or its arguments may have changed. Before retrying:\n" +
-		       "1. Call beam_list_commands() to get the current list of all available commands\n" +
-		       "2. Call beam_get_help(\"<command>\") for the specific command to get its current options and arguments\n" +
-		       "3. Retry with the corrected command\n\n" +
-		       "Do NOT guess or retry with the same arguments.";
+	/// <summary>True when stderr holds a System.CommandLine parse error rather than a failure from the command itself.</summary>
+	public static bool IsParseError(string errorText)
+	{
+		if (string.IsNullOrWhiteSpace(errorText)) return false;
+		var lower = errorText.ToLowerInvariant();
+		return CommandErrorPatterns.Any(p => lower.Contains(p)) || RequiredOptionPattern.IsMatch(errorText);
 	}
 
-	private static string EnsureLogStreams(string commandLine)
+	private static readonly Regex TokenPattern = new(@"""[^""]*""|'[^']*'|\S+");
+
+	private static List<string> Tokenize(string commandLine) =>
+		TokenPattern.Matches(commandLine ?? "").Select(m => m.Value).ToList();
+
+	private static bool HasToken(List<string> tokens, params string[] names) =>
+		tokens.Any(t => names.Contains(t, StringComparer.OrdinalIgnoreCase));
+
+	private static bool IsHelpRequest(string commandLine) =>
+		HasToken(Tokenize(commandLine), "--help", "-h", "-?", "/?", "/h");
+
+	/// <summary>
+	/// The leading command words of a command line (everything before the first option), e.g.
+	/// "project new service Foo --name x" → "project new service Foo". Asking for help on that prints the
+	/// help of the deepest command it names.
+	/// </summary>
+	public static string GetCommandPath(string commandLine)
 	{
-		var lower = commandLine.ToLowerInvariant();
+		var words = Tokenize(commandLine).TakeWhile(t => !t.StartsWith("-"));
+		return string.Join(" ", words);
+	}
 
-		// Route log messages through IDataReporterService so they are captured
-		// in the MCP response alongside structured output.
-		if (!lower.Contains("--emit-log-streams"))
-			return commandLine + " --emit-log-streams";
+	/// <summary>
+	/// Adds the flags every in-process MCP call needs: <c>--emit-log-streams</c>, so logs are captured in the
+	/// response, and, under the MCP server, <c>-q</c>, so a command never blocks on a prompt nobody can answer.
+	/// Flags go before a <c>--</c> separator if there is one.
+	/// </summary>
+	public static string PrepareCommandLine(string commandLine, bool runningInMcpServer)
+	{
+		commandLine = (commandLine ?? "").Trim();
+		var tokens = Tokenize(commandLine);
+		var separator = tokens.IndexOf("--");
+		var beforeSeparator = separator >= 0 ? tokens.Take(separator).ToList() : tokens;
 
-		return commandLine;
+		var extra = new List<string>();
+		if (!HasToken(beforeSeparator, "--emit-log-streams"))
+			extra.Add("--emit-log-streams");
+		if (runningInMcpServer && !HasToken(beforeSeparator, "-q", "--quiet"))
+			extra.Add("-q");
+		if (extra.Count == 0)
+			return commandLine;
+
+		if (separator < 0)
+			return string.Join(" ", tokens.Concat(extra));
+		return string.Join(" ", tokens.Take(separator).Concat(extra).Concat(tokens.Skip(separator)));
+	}
+
+	private static string PrepareCommandLine(string commandLine) =>
+		PrepareCommandLine(commandLine, App.IsRunningInMcpServer);
+
+	private static string BuildInvalidArgumentsResponse(string commandLine, string errorText, string helpPath, string helpOutput)
+	{
+		var sb = new StringBuilder();
+		sb.AppendLine($"Invalid arguments for `beam {commandLine.Trim()}`:");
+		sb.AppendLine(errorText);
+		sb.AppendLine();
+		sb.AppendLine(string.IsNullOrEmpty(helpPath)
+			? "Available commands (from `beam --help`):"
+			: $"Help for `beam {helpPath}` — fix the arguments and call beam_exec again:");
+		sb.AppendLine(helpOutput.Trim());
+		return sb.ToString();
 	}
 
 	private sealed class CapturingReporterService : IDataReporterService
@@ -664,6 +728,9 @@ public class McpToolExecutor
 			"logs"
 		};
 
+		/// <summary>The <c>message</c> of every "error" stream payload reported so far.</summary>
+		public List<string> ErrorMessages { get; } = new();
+
 		public CapturingReporterService(TextWriter writer)
 		{
 			_writer = writer;
@@ -673,6 +740,19 @@ public class McpToolExecutor
 		{
 			if (SuppressedChannels.Contains(type))
 				return;
+
+			if (string.Equals(type, "error", StringComparison.OrdinalIgnoreCase) && data != null)
+			{
+				try
+				{
+					var message = (string)JObject.FromObject(data)["message"];
+					if (!string.IsNullOrEmpty(message)) ErrorMessages.Add(message);
+				}
+				catch (Exception)
+				{
+					// not an object with a message; nothing to record
+				}
+			}
 
 			if (ProgressChannels.Contains(type))
 			{
