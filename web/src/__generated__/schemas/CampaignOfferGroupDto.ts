@@ -4,11 +4,9 @@
  */
 
 import type { CampaignOfferGroupMode } from './enums/CampaignOfferGroupMode';
-import type { CampaignOfferInvalidation } from './enums/CampaignOfferInvalidation';
 
 export type CampaignOfferGroupDto = { 
   id?: string; 
-  invalidation?: CampaignOfferInvalidation; 
   label?: string | null; 
   memberEntryIds?: string[]; 
   mode?: CampaignOfferGroupMode; 
