@@ -6,17 +6,17 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class ContentBakeArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>published or local</summary>
+        /// <summary>Content source: published or local</summary>
         public string source;
-        /// <summary>server or unity</summary>
+        /// <summary>Output format: server or unity</summary>
         public string format;
         /// <summary>Manifest to bake</summary>
         public string manifestId;
         /// <summary>Directory for bakedContent.bytes and bakedManifest.bytes</summary>
         public string outputDir;
-        /// <summary>fail or skip when local content differs from the published manifest</summary>
+        /// <summary>Action when local content differs from the published manifest: fail or skip</summary>
         public string localChanges;
-        /// <summary>gzip or none</summary>
+        /// <summary>Compression mode: gzip or none</summary>
         public string compression;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()

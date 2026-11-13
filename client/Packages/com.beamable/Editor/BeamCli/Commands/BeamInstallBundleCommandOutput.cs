@@ -5,9 +5,9 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common.BeamCli;
     
     [System.SerializableAttribute()]
-    public partial class BeamWebStopCommandResults
+    public partial class BeamInstallBundleCommandOutput
     {
-        public string localdevDir;
-        public bool wiped;
+        public string name;
+        public string checksum;
     }
 }
