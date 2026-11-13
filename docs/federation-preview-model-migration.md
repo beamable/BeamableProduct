@@ -20,10 +20,10 @@ Follow the declarations in `cli/beamable.common/Runtime/OpenApi/Models.gs.cs`, t
 
 `properties` and `extraDataFed` use `OptionalMapOfString`. `CampaignOfferItem.localizations` uses `OptionalMapOfCampaignOfferText`, containing a `MapOfCampaignOfferText`. Replace assignments of raw dictionaries with the generated map and optional types. Required fields, including `CampaignOfferText.title`, remain direct values; do not apply `.Value` indiscriminately.
 
-Unset optional fields are omitted from JSON. A present optional map can carry null, an empty object, or a populated object. Localizations remain a JSON object keyed by locale, with title/description objects as values. `CampaignOfferRedeemRequest.params` and `MessageRailRecipient.data` retain their existing dictionary contracts.
+With Unity's generated serializer, unset optional fields are omitted from JSON. A present optional map can carry null, an empty object, or a populated object. Localizations remain a JSON object keyed by locale, with title/description objects as values. `CampaignOfferRedeemRequest.params` and `MessageRailRecipient.data` retain their existing dictionary contracts.
 
-Unity uses the generated serializer. The microservice Unity serialization settings now delegate these ten generated model classes to the same serializer, preserving nested localizations and optional-map presence. Other DTO and dictionary converters are unchanged. Consumers using their own Newtonsoft settings must use the generated serializer or the SDK's `UnitySerializationSettings` to obtain this contract.
+Unity uses the generated serializer. This PR does not change microservice JSON converters or repair upstream model serialization in the microservice transport. Those concerns remain with the upstream model owners.
 
 ## Validation boundary
 
-Regression coverage checks the copied federation files and the complete generated dependency closure against canonical source. Serialization tests cover missing, null, empty, and populated maps, all ten converted model classes, nested responses, false, and zero. Unity tests exercise generated serialization in the Editor. These checks do not establish live campaign-service or player-build behavior.
+Regression coverage checks the copied federation files and the complete generated dependency closure against canonical source. Unity Editor tests exercise generated serialization for missing, null, empty, and populated string maps, nested responses, localizations, false, and zero. These checks do not establish live campaign-service or player-build behavior.
