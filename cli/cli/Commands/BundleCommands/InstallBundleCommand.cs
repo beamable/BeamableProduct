@@ -182,7 +182,7 @@ public class InstallBundleCommand : AtomicCommand<InstallBundleCommandArgs, Inst
 				throw new CliException("Something changed on the zone since the plan you reviewed, so nothing was applied. Review the new plan and apply that one.");
 
 			var confirm = args.Quiet || string.Equals("yes",
-				AnsiConsole.Prompt(new TextPrompt<string>($"Apply this plan to zone [{Markup.Escape(plan.zoneId)}]?\nType 'yes' to continue.")),
+				AnsiConsole.Prompt(new TextPrompt<string>($"Apply this plan to zone [[{Markup.Escape(plan.zoneId)}]]?\nType 'yes' to continue.")),
 				StringComparison.InvariantCultureIgnoreCase);
 			if (!confirm)
 			{
