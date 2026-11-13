@@ -4,6 +4,7 @@ using Beamable.Common.Util;
 using Beamable.Server;
 using Beamable.Server.Common;
 using cli.CliServerCommand;
+using cli.Services.CliInvocation;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Net;
@@ -411,23 +412,27 @@ public class ServerService
 			if (!string.IsNullOrEmpty(requestId)) invocation = new Invocation();
 
 			var sw = Stopwatch.StartNew();
-			app.Configure(builder =>
+			// Building attaches shared static options to this app's commands; see CommandTreeDetacher.
+			lock (CommandTreeDetacher.TreeLock)
 			{
-				// ConfigureServices reruns this callback for the actual invocation scope.
-				if (invocation != null)
+				app.Configure(builder =>
 				{
-					builder.Remove<AppLifecycle>();
-					builder.AddSingleton(invocation.Lifecycle);
-				}
-				builder.Remove<IDataReporterService>();
-				builder.AddSingleton<IDataReporterService, ServerReporterService>(provider =>
-				{
-					var serverReporter = new ServerReporterService(provider, response);
-					reporter = serverReporter;
-					return serverReporter;
-				});
-			}, overwriteLogger: false);
-			app.Build();
+					// ConfigureServices reruns this callback for the actual invocation scope.
+					if (invocation != null)
+					{
+						builder.Remove<AppLifecycle>();
+						builder.AddSingleton(invocation.Lifecycle);
+					}
+					builder.Remove<IDataReporterService>();
+					builder.AddSingleton<IDataReporterService, ServerReporterService>(provider =>
+					{
+						var serverReporter = new ServerReporterService(provider, response);
+						reporter = serverReporter;
+						return serverReporter;
+					});
+				}, overwriteLogger: false);
+				app.Build();
+			}
 			sw.Stop();
 			Log.Trace("build virtual app in " + sw.ElapsedMilliseconds);
 
@@ -475,6 +480,20 @@ public class ServerService
 		}
 		finally
 		{
+			// The command is over: send what is still buffered and stop the heartbeat, which must not outlive it
+			// (see ServerReporterService.Complete).
+			(reporter as ServerReporterService)?.Complete();
+
+			try
+			{
+				app?.EndInvocation();
+			}
+			catch (Exception ex)
+			{
+				// Releasing the command's resources must not turn a finished command into a failed one.
+				Log.Error($"Could not end the CLI invocation cleanly. message=[{ex.Message}]");
+			}
+
 			if (registered)
 			{
 				lock (_cliInvocationsLock)
@@ -516,20 +535,50 @@ public class ServerService
 
 public class ServerReporterService : IDataReporterService
 {
+	/// <summary>Buffered events are sent as soon as this many bytes are waiting.</summary>
+	public const int FLUSH_THRESHOLD_BYTES = 16 * 1024;
+
+	/// <summary>
+	/// The longest an event waits in the buffer. Sending every event on its own costs a write and a chunk each,
+	/// which dominated large streams; a few milliseconds is invisible to the editor.
+	/// </summary>
+	public static readonly TimeSpan MaxFlushDelay = TimeSpan.FromMilliseconds(2);
+
+	// Built once: JsonConvert.SerializeObject creates a serializer from the settings on every call.
+	private static readonly JsonSerializer Serializer = JsonSerializer.CreateDefault(UnitySerializationSettings.Instance);
+	private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
+	private static readonly byte[] DataPrefix = Utf8.GetBytes("data: ");
+	private static readonly byte[] LineEnd = Utf8.GetBytes(Environment.NewLine);
+	private static readonly byte[] Heartbeat = Utf8.GetBytes("​"); // a zero-width character that tests the connection
+
 	private readonly HttpListenerResponse _resp;
-	private StreamWriter _streamWriter;
+	private readonly Stream _output;
 	private IDependencyProvider _provider;
 	private Task _connectionMonitorTask;
 	internal Task Completion => _connectionMonitorTask;
 	private AppLifecycle _lifecycle;
+	private readonly CancellationTokenSource _completed = new CancellationTokenSource();
+
+	// Everything below is guarded by _lock: the events waiting to be sent, and the writer that encodes into them.
+	private readonly object _lock = new object();
+	private readonly MemoryStream _pending = new MemoryStream();
+	private StreamWriter _pendingWriter;
+	private readonly Timer _flushTimer;
+	private bool _flushScheduled;
+	private bool _isComplete;
 
 	public ServerReporterService(IDependencyProvider provider, HttpListenerResponse resp)
 	{
 		_provider = provider;
 		_resp = resp;
-		_streamWriter = new StreamWriter(_resp.OutputStream);
+		_output = _resp.OutputStream;
+		_pendingWriter = CreatePendingWriter();
+		_flushTimer = new Timer(_ => FlushFromTimer(), null, Timeout.Infinite, Timeout.Infinite);
 		_lifecycle = _provider.GetService<AppLifecycle>();
-		var cancellationToken = _lifecycle.CancellationToken;
+		// The heartbeat stops when the command is cancelled (a client hang-up or a /stop request) or once it has
+		// finished (Complete).
+		var stopMonitor = CancellationTokenSource.CreateLinkedTokenSource(_lifecycle.CancellationToken, _completed.Token);
+		var cancellationToken = stopMonitor.Token;
 		_connectionMonitorTask = Task.Run(async () =>
 		{
 			try
@@ -541,52 +590,77 @@ public class ServerReporterService : IDataReporterService
 					// check if the pipe is still open, because if it isn't, the invocation should cancel.
 					try
 					{
-						lock(_streamWriter)
+						lock (_lock)
 						{
-							_streamWriter.Write("\u200b"); // write a zero-width character to test the connection.
-							_streamWriter.Flush();
+							FlushPendingLocked();
+							_output.Write(Heartbeat, 0, Heartbeat.Length);
+							_output.Flush();
 						}
 
 					}
 					catch (HttpListenerException)
 					{
 						// the pipe is broken, so can assume the client is no longer connected, and we can cancel this invocation.
-						App.GlobalLogger.LogTrace("monitor found that client is no longer connected; cancelling app lifecycle.");
 						_lifecycle.Cancel();
+						App.GlobalLogger?.LogTrace("monitor found that client is no longer connected; cancelling app lifecycle.");
 						break;
 					}
 				}
 			}
-			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+			{
+				// The command finished or was cancelled.
+			}
 			catch (Exception ex)
 			{
 				// remember, async void methods don't report exceptions automatically, so always log it to save brain later.
-				App.GlobalLogger.ZLogError($"cli-server reporter service monitor task failed! type=[{ex.GetType().Name}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
+				App.GlobalLogger?.ZLogError($"cli-server reporter service monitor task failed! type=[{ex.GetType().Name}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
+			}
+			finally
+			{
+				stopMonitor.Dispose();
 			}
 		});
-	} 
-	
-	public void Report(string rawMessage)
+	}
+
+	/// <summary>
+	/// Sends whatever is still buffered and stops the connection heartbeat once the command has finished. Writing to
+	/// a closed response does not always fail, so without this the heartbeat would keep running, and keep this
+	/// command's services alive, forever.
+	/// </summary>
+	public void Complete()
 	{
 		try
 		{
-			var data = "data: " + rawMessage + Environment.NewLine;
-			var bytes = Encoding.UTF8.GetBytes(data);
-			lock(_streamWriter)
+			lock (_lock)
 			{
-				_streamWriter.BaseStream.Write(bytes, 0, bytes.Length);
-				_streamWriter.Flush();
+				_isComplete = true;
+				FlushPendingLocked();
 			}
-
 		}
-		catch (HttpListenerException ex)
+		catch (Exception ex)
 		{
-			// the pipe is broken, so can assume the client is no longer connected, and we can cancel this invocation.
-			App.GlobalLogger.LogTrace("client is no longer connected; cancelling app lifecycle." + ex.Message);
-			_lifecycle.Cancel();
+			App.GlobalLogger?.LogTrace($"could not send the last events. type=[{ex.GetType().Name}] message=[{ex.Message}]");
+		}
+		finally
+		{
+			_flushTimer.Dispose();
+			_completed.Cancel();
 		}
 	}
-	
+
+	public void Report(string rawMessage)
+	{
+		var bytes = Utf8.GetBytes(rawMessage);
+		lock (_lock)
+		{
+			_pending.Write(DataPrefix, 0, DataPrefix.Length);
+			_pending.Write(bytes, 0, bytes.Length);
+			_pending.Write(LineEnd, 0, LineEnd.Length);
+			ScheduleFlushLocked();
+		}
+	}
+
 	public void Report<T>(string type, T data)
 	{
 		var pt = new ReportDataPoint<T>
@@ -595,7 +669,85 @@ public class ServerReporterService : IDataReporterService
 			type = type,
 			ts = DateTimeOffset.Now.ToUnixTimeMilliseconds()
 		};
-		var json = JsonConvert.SerializeObject(pt, UnitySerializationSettings.Instance);
-		Report(json);
+
+		lock (_lock)
+		{
+			var start = _pending.Length;
+			try
+			{
+				_pending.Write(DataPrefix, 0, DataPrefix.Length);
+				// The same writer setup as JsonConvert.SerializeObject, so the bytes are identical.
+				var json = new JsonTextWriter(_pendingWriter) { Formatting = Serializer.Formatting, CloseOutput = false };
+				Serializer.Serialize(json, pt);
+				json.Flush();
+				_pending.Write(LineEnd, 0, LineEnd.Length);
+			}
+			catch
+			{
+				// Drop the half-written event, including anything the writer still holds.
+				_pending.SetLength(start);
+				_pendingWriter = CreatePendingWriter();
+				throw;
+			}
+			ScheduleFlushLocked();
+		}
+	}
+
+	private StreamWriter CreatePendingWriter() => new StreamWriter(_pending, Utf8, 1024, leaveOpen: true);
+
+	private void ScheduleFlushLocked()
+	{
+		if (_isComplete || _pending.Length >= FLUSH_THRESHOLD_BYTES)
+		{
+			FlushPendingLocked();
+			return;
+		}
+
+		if (!_flushScheduled)
+		{
+			_flushScheduled = true;
+			_flushTimer.Change(MaxFlushDelay, Timeout.InfiniteTimeSpan);
+		}
+	}
+
+	private void FlushFromTimer()
+	{
+		try
+		{
+			lock (_lock)
+			{
+				FlushPendingLocked();
+			}
+		}
+		catch (Exception ex)
+		{
+			// Nobody awaits the timer; a closed response just means there is no one left to send to.
+			App.GlobalLogger?.LogTrace($"could not send buffered events. type=[{ex.GetType().Name}] message=[{ex.Message}]");
+		}
+	}
+
+	private void FlushPendingLocked()
+	{
+		_flushScheduled = false;
+		if (_pending.Length == 0)
+		{
+			return;
+		}
+
+		try
+		{
+			_output.Write(_pending.GetBuffer(), 0, (int)_pending.Length);
+			_output.Flush();
+		}
+		catch (HttpListenerException ex)
+		{
+			// the pipe is broken, so can assume the client is no longer connected, and we can cancel this invocation.
+			_lifecycle.Cancel();
+			App.GlobalLogger?.LogTrace("client is no longer connected; cancelling app lifecycle." + ex.Message);
+		}
+		finally
+		{
+			_pending.SetLength(0);
+		}
 	}
 }
