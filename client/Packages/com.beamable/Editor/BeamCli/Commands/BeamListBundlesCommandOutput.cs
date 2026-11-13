@@ -7,7 +7,7 @@ namespace Beamable.Editor.BeamCli.Commands
     [System.SerializableAttribute()]
     public partial class BeamListBundlesCommandOutput
     {
-        public BeamBundleInfo[] published;
+        public BeamBundleSummaryInfo[] published;
         public BeamBundleInfo[] local;
     }
 }

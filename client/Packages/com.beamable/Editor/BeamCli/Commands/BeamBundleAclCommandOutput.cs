@@ -8,7 +8,6 @@ namespace Beamable.Editor.BeamCli.Commands
     public partial class BeamBundleAclCommandOutput
     {
         public string name;
-        public string checksum;
         public string scope;
     }
 }
