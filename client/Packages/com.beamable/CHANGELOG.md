@@ -9,11 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `ChatService.GetRoomHistory(roomId, limit)` gets a chat room's latest messages from Beamable, on realms that send notifications over the Beamable websocket.
 - Added local/realm property and read-only JSON diffs, a reconciliation queue, clearer status/Inspector warnings, and saved column widths.
 - Fields with the `MustBeComparatorString` attribute show a dropdown in the Inspector listing the comparators the backend accepts for that field, with a tooltip for each.
 
 ### Fixed
 
+- Chat rooms work on realms that send notifications over the Beamable websocket: `RoomHandle.Subscribe()` completes, messages arrive over the websocket, and the room's history loads from Beamable instead of PubNub. Previously the subscription waited on PubNub, which those realms never connect to.
 - Fixed development/pinned CLI version matching and repeated server launches. Discovery reports incompatible or unavailable servers and allows recovery after configuration changes.
 - Play Mode resolves the selected namespace, including unpublished content, from a read-only local snapshot loaded in the background. Restart Play Mode to reload edits. Content stays on the context's realm; shutdown cancels loads and stops manifest refreshes.
 - Fixed content watcher recovery across mode changes, script reloads, and failures, and prevented telemetry discovery from stopping active CLI servers.
