@@ -143,15 +143,6 @@ namespace Beamable.Editor.Content
 			}
 		}
 
-		private static UnityObjectId GetObjectId(UnityEngine.Object target)
-		{
-#if UNITY_6000_3_OR_NEWER
-			return target.GetEntityId();
-#else
-			return target.GetInstanceID();
-#endif
-		}
-
 		#endregion
 
 		#region Cache LifeCycle Cleanup
@@ -170,7 +161,7 @@ namespace Beamable.Editor.Content
 				return;
 			}
 
-			var objectId = GetObjectId(property.serializedObject.targetObject);
+			var objectId = UnityObjectIdentity.GetObjectId(property.serializedObject.targetObject);
 			var key = new ValidationCacheKey(objectId, property.propertyPath);
 
 			_validationCache.Remove(key);
@@ -204,7 +195,7 @@ namespace Beamable.Editor.Content
 				return ValidationResult.Empty;
 			}
 
-			var key = new ValidationCacheKey(GetObjectId(contentObject), property.propertyPath);
+			var key = new ValidationCacheKey(UnityObjectIdentity.GetObjectId(contentObject), property.propertyPath);
 			var propertyRevision = ValidationRevision.Create(property, contentObject);
 			var currentManifestRevision = contentService.ManifestChangedCount;
 

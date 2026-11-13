@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Spew;
+﻿using Beamable.Common.Reflection;
+using Beamable.Common.Spew;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -130,13 +131,8 @@ namespace Beamable.Spew
 	{
 		public static List<Type> GetClassesInAllAssemblies<TAttr>(bool inherit = true) where TAttr : Attribute
 		{
-#if UNITY_6000_6_OR_NEWER
 			return GetClassesInAssemblies<TAttr>(
-				new List<Assembly>(UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies()),
-				inherit);
-#else
-			return GetClassesInAssemblies<TAttr>(AppDomain.CurrentDomain.GetAssemblies(), inherit);
-#endif
+				new List<Assembly>(AssemblyDiscovery.GetLoadedAssemblies()), inherit);
 		}
 
 		public static List<Type> GetClassesInAssemblies<Tattr>(IList<Assembly> assemblies, bool inherit = true)

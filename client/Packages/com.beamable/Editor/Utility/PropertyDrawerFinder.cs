@@ -1,3 +1,4 @@
+using Beamable.Common.Reflection;
 // Revision history
 // Rev 1 16/MAY/2021 initial
 // Rev 2 23/AUG/2021 add support for array property path
@@ -165,11 +166,7 @@ namespace Beamable.Editor
 			// - Original, search all assemblies and classes: 250 msec
 			// - Wappen optimized, search only specific name assembly and classes: 5 msec
 
-#if UNITY_6000_6_OR_NEWER
-			var assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
-#else
-			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-#endif
+			var assemblies = AssemblyDiscovery.GetLoadedAssemblies();
 			foreach (Assembly assem in assemblies)
 			{
 				// Wappen optimization: filter only "*Editor" assembly

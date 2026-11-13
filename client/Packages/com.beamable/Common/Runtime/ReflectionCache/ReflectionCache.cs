@@ -394,14 +394,7 @@ namespace Beamable.Common.Reflection
 				}
 			}
 			
-#if UNITY_6000_6_OR_NEWER
-			//Enumerate Unity's active assemblies, excluding unloading contexts.
-			var assemblies = UnityEngine.Assemblies.CurrentAssemblies
-				.GetLoadedAssemblies()
-				.ToArray();
-#else			
-			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-#endif
+			var assemblies = AssemblyDiscovery.GetLoadedAssemblies();
 
 			// Groups by whether or not the assembly is one we care about sweeping.
 
@@ -410,7 +403,7 @@ namespace Beamable.Common.Reflection
 
 			// Check all that don't have the IgnoreFromBeamableAssemblySweepAttribute and parse them
 			{
-				for (int i = 0; i < assemblies.Length; i++)
+				for (int i = 0; i < assemblies.Count; i++)
 				{
 					if (assembliesToSweepStr.Contains("₢" + assemblies[i].GetName().Name + "₢"))
 					{

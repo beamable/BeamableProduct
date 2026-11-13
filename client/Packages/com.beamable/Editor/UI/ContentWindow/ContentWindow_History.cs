@@ -1235,20 +1235,20 @@ namespace Beamable.Editor.UI.ContentWindow
 		{
 			if (content != null)
 			{
-				PreviewInstanceIds.Add(GetObjectId(content));
+				PreviewInstanceIds.Add(UnityObjectIdentity.GetObjectId(content));
 			}
 		}
 
 		public static bool IsReadOnly(ContentObject content)
 		{
-			return content != null && PreviewInstanceIds.Contains(GetObjectId(content));
+			return content != null && PreviewInstanceIds.Contains(UnityObjectIdentity.GetObjectId(content));
 		}
 
 		public static void Release(ContentObject content)
 		{
 			if (content != null)
 			{
-				PreviewInstanceIds.Remove(GetObjectId(content));
+				PreviewInstanceIds.Remove(UnityObjectIdentity.GetObjectId(content));
 			}
 		}
 
@@ -1303,15 +1303,6 @@ namespace Beamable.Editor.UI.ContentWindow
 				exception = caughtException;
 				return false;
 			}
-		}
-
-		private static UnityObjectId GetObjectId(UnityEngine.Object target)
-		{
-#if UNITY_6000_3_OR_NEWER
-			return target.GetEntityId();
-#else
-		return target.GetInstanceID();
-#endif
 		}
 	}
 

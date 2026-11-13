@@ -11,13 +11,15 @@ public class FederationCommonCopyTests
 {
 	[TestCase("FederatedMessageRail.cs")]
 	[TestCase("FederatedCampaignVirtualOffer.cs")]
-	public void CommittedUnityContractMatchesCommonCopy(string fileName)
+	[TestCase("AssemblyDiscovery.cs", "ReflectionCache")]
+	[TestCase("ReflectionCache.cs", "ReflectionCache")]
+	public void CommittedUnityContractMatchesCommonCopy(string fileName, string sourceDirectory = "Federation")
 	{
 		BeamableZLoggerProvider.SetLogger(NullLogger.Instance);
 		var repository = FindRepository();
-		var source = Path.Combine(repository, "cli", "beamable.common", "Runtime", "Federation");
+		var source = Path.Combine(repository, "cli", "beamable.common", "Runtime", sourceDirectory);
 		var unity = UnityProjectUtil.GetUnityInfo(Path.Combine(repository, "client"), "com.beamable");
-		var committed = Path.Combine(unity.packageFolder, "Common", "Runtime", "Federation", fileName);
+		var committed = Path.Combine(unity.packageFolder, "Common", "Runtime", sourceDirectory, fileName);
 		var output = Path.Combine(Path.GetTempPath(), "beam-federation-copy-tests", Guid.NewGuid().ToString("N"));
 		try
 		{

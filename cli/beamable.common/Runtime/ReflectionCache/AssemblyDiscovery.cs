@@ -1,0 +1,20 @@
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+
+namespace Beamable.Common.Reflection
+{
+	/// <summary>Provides the assemblies available for reflection in the current execution context.</summary>
+	public static class AssemblyDiscovery
+	{
+		public static IReadOnlyList<Assembly> GetLoadedAssemblies()
+		{
+#if UNITY_6000_6_OR_NEWER
+			// Unity excludes assemblies from unloading contexts.
+			return UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
+#else
+			return AppDomain.CurrentDomain.GetAssemblies();
+#endif
+		}
+	}
+}
