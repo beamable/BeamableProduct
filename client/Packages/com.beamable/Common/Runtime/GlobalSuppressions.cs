@@ -83,21 +83,6 @@ using System.Diagnostics.CodeAnalysis;
 	Justification = "Reflection JSON requires this field.", Scope = "member", Target = "~F:Beamable.Common.BeamCli.Contracts.CliOtelLogRecord.Attributes")]
 
 [assembly: SuppressMessage("Serialization", "UAC1015",
-	Justification = "Federation JSON requires this field.", Scope = "member", Target = "~F:Beamable.Common.CampaignOfferAmount.properties")]
-
-[assembly: SuppressMessage("Serialization", "UAC1015",
-	Justification = "Federation JSON requires this field.", Scope = "member", Target = "~F:Beamable.Common.CampaignOfferGrantContext.extraDataFed")]
-
-[assembly: SuppressMessage("Serialization", "UAC1015",
-	Justification = "Federation JSON requires this field.", Scope = "member", Target = "~F:Beamable.Common.CampaignOfferItem.localizations")]
-
-[assembly: SuppressMessage("Serialization", "UAC1015",
-	Justification = "Federation JSON requires this field.", Scope = "member", Target = "~F:Beamable.Common.CampaignOfferItem.properties")]
-
-[assembly: SuppressMessage("Serialization", "UAC1015",
-	Justification = "Federation JSON requires this field.", Scope = "member", Target = "~F:Beamable.Common.CampaignOfferReason.properties")]
-
-[assembly: SuppressMessage("Serialization", "UAC1015",
 	Justification = "Federation JSON requires this field.", Scope = "member", Target = "~F:Beamable.Common.CampaignOfferRedeemRequest.params")]
 
 [assembly: SuppressMessage("Serialization", "UAC1015",
