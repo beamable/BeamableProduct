@@ -62,7 +62,7 @@ description: Author, publish and govern marketplace bundles of services, storage
 | Catalog entry (create, update) | `cli/cli/Commands/BundleCommands/CreateBundleCommand.cs` |
 | Plan, publish | `cli/cli/Commands/BundleCommands/BundlePlanCommand.cs`, `PublishBundleCommand.cs` |
 | Releases, tags, yank | `cli/cli/Commands/BundleCommands/BundleReleasesCommand.cs`, `PromoteBundleTagCommand.cs`, `YankBundleCommand.cs` |
-| Deprecation notices | `cli/cli/Commands/BundleCommands/BundleNoticeCommand.cs` |
+| Notices (deprecation, security advisory, known issue, retirement, announcement) | `cli/cli/Commands/BundleCommands/BundleNoticeCommand.cs`, `BundleSummaryInfo.cs` |
 | Marketplace search, info, placements | `cli/cli/Commands/BundleCommands/MarketplaceCommands.cs` |
 | Library (acquire, remove, library) | `cli/cli/Commands/BundleCommands/LibraryCommands.cs` |
 | Install, uninstall | `cli/cli/Commands/BundleCommands/InstallBundleCommand.cs` |
@@ -83,7 +83,7 @@ description: Author, publish and govern marketplace bundles of services, storage
 - One bundle can carry realm components (on every chosen realm of the zone) and zone components (once on the zone).
 - Component groups let a buyer turn parts of a bundle on and off per installation.
 - Releases are numbered `1, 2, 3…`; a version identifies a release, tags (`latest`, `stable`, …) point at versions.
-- Auto-update keeps installations current with releases the publisher marked compatible; deprecation notices move installations off old versions on a schedule.
+- Auto-update keeps installations current with releases the publisher marked compatible; deprecations and security advisories move installations off old versions on a schedule.
 - A buyer can take a component's source into their own repository and run their build in place of the bundle's (an override), and give it back later.
 - Installing is planned and applied by hash, so a change nobody reviewed is never applied.
 
@@ -99,8 +99,10 @@ description: Author, publish and govern marketplace bundles of services, storage
 | Release / catalog page size (server max) | 200 | `BundleService.MaxPageSize` |
 | Installation history page (server max) | 200 | `InstallationService.MaxHistoryPage` |
 | Source delivery list page (server max) | 100 | `SourceDeliveries.MaxListPage` |
+| Notices per bundle, resolved ones included | 100 | `BundleService.MaxNotices` |
 | Notice message length | 2000 | `BundleService.MaxNoticeMessageLength` |
-| Notice lead time (end of support from now, end of life after end of support) | 30 days each | `BundleService.NoticeLeadTime` |
+| Deprecation lead time when other orgs run the versions (end of support from now, end of life after end of support) | 30 days each | `BundleService.NoticeLeadTime` |
+| Security advisory update-by lead time when other orgs run the versions | 7 days | `BundleService.SecurityLeadTime` |
 | Upload URL lifetime | 1 hour | `MarketplaceStore.UploadUrlExpirationSeconds` |
 | Auto-update sweep period | 10 min | `AutomaticUpdates` options |
 | `bundles install` re-plans after a 409 (interactive only) | 3 attempts | `InstallBundleCommand.Run` |
@@ -171,10 +173,25 @@ beam_exec("bundles releases scores --version 4 -q")     # plus v4's components, 
 beam_exec("bundles tag scores stable 4 -q")
 beam_exec("bundles yank scores 3 -q")
 beam_exec("bundles notice create scores --min-version 1 --max-version 3 --end-of-support 2027-01-15 --end-of-life 2027-03-01 --message \"Move to v4\" --replacement-version 4 -q")
+beam_exec("bundles notice create scores --kind security-advisory --min-version 2 --max-version 3 --severity high --advisory-id CVE-2026-1234 --replacement-version 4 --update-by 2027-01-01 --message \"Token leak in Scores\" -q")
+beam_exec("bundles notice update scores <notice id> --resolve -q")
 ```
 
 - Yank blocks new installs of a version (`BundleVersionYanked`); installations running it keep it.
-- A notice's status per version: `supported` → `deprecated` (notice published) → `unsupported` (after end of support: no new installs) → `endoflife` (installations are updated off it). End of support at least 30 days out and end of life at least 30 days after it; `notice update` only moves dates later.
+- A notice has a `--kind` (default `deprecation`); the kind decides its options, and the server refuses options the kind doesn't take (`BundleNoticeInvalid`). Every notice needs `--message`.
+
+| Kind | Covers | Options | What it does |
+|---|---|---|---|
+| `deprecation` | Versions | `--end-of-support`, `--end-of-life`, replacement | Sets the versions' status: `supported` → `deprecated` (notice saved) → `unsupported` (after end of support: no new installs) → `endoflife` (installations are updated off it). One per version |
+| `security-advisory` | Versions | `--severity` (required), `--advisory-id`, the fix as replacement, `--update-by` (needs the fix) | Warns like a deprecation. `critical` refuses new installs. After update-by, installations move to the fix or later. Auto-update never moves onto a version with an unresolved advisory |
+| `known-issue` | Versions | The fix as replacement | Warns only |
+| `retirement` | Whole bundle | `--acquisitions-end` | After that date nothing can acquire it and it leaves search and placements; installations keep running. One per bundle |
+| `announcement` | Versions or whole bundle | `--link` | Shown with the bundle (listing, releases, library, installations), never as a warning, in plans, deploys or `bundles notices` |
+
+- Leave out both `--min-version` and `--max-version` for a whole-bundle notice. A notice's kind and versions never change; `notice update` only moves dates later.
+- With other orgs on the versions: a deprecation's end of support is at least 30 days out and its end of life at least 30 days after that; an advisory's update-by is at least 7 days out.
+- `notice update --resolve` resolves a security advisory, known issue or announcement: it stops warning and acting, stays in the timeline, and can't be edited or reopened. Deprecations and retirements are withdrawn instead (`notice withdraw`), which works on any kind.
+- In output, every notice has `kind`, `warns` (unresolved and not an announcement) and a one-line `description`. Only a deprecation sets a version's `status`. Installations and library entries carry `notice` (the deprecation) and `notices` (every unresolved notice on the installed version).
 {{ command_tables "bundles releases" }}
 {{ command_tables "bundles tag" }}
 {{ command_tables "bundles yank" }}
@@ -192,7 +209,7 @@ beam_exec("bundles notice create scores --min-version 1 --max-version 3 --end-of
 
 ### Library
 
-A zone can only install bundles the org owns or acquired. `acquire` checks first: hard dependencies must already be in the library (`missingHardDependencies`), soft ones are only suggested. `acquire` and `remove` need a customer admin (`CustomerAdminRequired`); `remove` is refused while the bundle is installed anywhere.
+A zone can only install bundles the org owns or acquired. `acquire` checks first: hard dependencies must already be in the library (`missingHardDependencies`), soft ones are only suggested, and `warnings` carries notices such as a retirement. A retired bundle can't be acquired after its acquisitions end. `acquire` and `remove` need a customer admin (`CustomerAdminRequired`); `remove` is refused while the bundle is installed anywhere.
 {{ command_tables "bundles acquire" }}
 {{ command_tables "bundles remove" }}
 {{ command_tables "bundles library" }}
@@ -212,6 +229,8 @@ beam_exec("bundles uninstall @acme/scores -q")
 - Each manifest reports `applied`, `pending` or `failed`; running the same command again retries the ones left.
 - Uninstall archives the components; storage data is kept. `--detach <component>` keeps an overridden component as the org's own instead of archiving it.
 - `--target-zone <zid>` acts on another zone of the org; the default is the workspace's zone.
+- Plans warn about every notice on the target version except announcements. Moving onto a version past its end of support, or under a critical security advisory, is refused.
+- `bundles notices` lists the org's installations, on every zone, once per notice that warns (deprecations, security advisories, known issues, retirements).
 {{ command_tables "bundles install" }}
 {{ command_tables "bundles uninstall" }}
 {{ command_tables "bundles installations" }}
