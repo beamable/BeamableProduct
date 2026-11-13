@@ -1065,6 +1065,7 @@ namespace Beamable.Player
 
 		/// <summary>A promise that completes when the initial account list has been refreshed.</summary>
 		/// <remarks>Await before reading <see cref="Current"/> or enumerating accounts. Initialization failures reject the promise.</remarks>
+		[System.NonSerialized]
 		public Promise OnReady;
 
 		public PlayerAccounts(BeamContext ctx,

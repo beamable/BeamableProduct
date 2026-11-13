@@ -1,3 +1,4 @@
+using Beamable.Common.Reflection;
 using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
@@ -66,7 +67,7 @@ namespace Beamable.ConsoleCommands
 
 		private IEnumerable<Type> ScanTypes()
 		{
-			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+			var assemblies = AssemblyDiscovery.GetLoadedAssemblies();
 			foreach (var assembly in assemblies)
 			{
 				foreach (var type in assembly.GetTypes())

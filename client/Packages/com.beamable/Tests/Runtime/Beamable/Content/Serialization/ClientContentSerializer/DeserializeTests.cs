@@ -28,7 +28,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 			reflectionCache.RegisterTypeProvider(cache);
 			reflectionCache.RegisterReflectionSystem(cache);
 
-			var assembliesToSweep = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.GetName().Name).ToList();
+			var assemblies = AssemblyDiscovery.GetLoadedAssemblies();
+			var assembliesToSweep = assemblies.Select(asm => asm.GetName().Name).ToList();
 			reflectionCache.GenerateReflectionCache(assembliesToSweep);
 		}
 

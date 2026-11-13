@@ -31,6 +31,7 @@ namespace Beamable.Editor.Library
 		public static async void Init() => _ = await GetFullyInitializedWindow();
 
 
+		[System.NonSerialized]
 		public LibraryService library;
 		
 		
