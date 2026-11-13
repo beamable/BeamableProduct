@@ -17,6 +17,16 @@ namespace Beamable.Editor.BeamCli
 {
 	public static class BeamCliUtil
 	{
+		private const string FloatingDevelopmentVersion = "0.0.123";
+
+		internal static bool MatchesInstalledVersionConstraint(string expected, string actual)
+		{
+			if (actual == expected) return true;
+			// InstallTool expands this one SDK value to 0.0.123.*; explicit revisions stay pinned.
+			return expected == FloatingDevelopmentVersion && actual != null &&
+			       actual.StartsWith(FloatingDevelopmentVersion + ".", StringComparison.Ordinal) &&
+			       System.Version.TryParse(actual, out _);
+		}
 
 		public static string CLI_VERSION
 		{
@@ -147,7 +157,7 @@ namespace Beamable.Editor.BeamCli
 
 				// Lowercase the version: dotnet tool install builds the global-packages path from the raw --version string, so an uppercase pre-release label (7.2.0-PREVIEW.RC1) mismatches NuGet's lowercased cache folder on case-sensitive (Linux) filesystems.
 				var versionArg = BeamableEnvironment.NugetPackageVersion.ToString().ToLowerInvariant();
-				if (!versionArg.Equals("0.0.123"))
+				if (!versionArg.Equals(FloatingDevelopmentVersion))
 				{
 					installCommand += $" --version {versionArg}";
 				}

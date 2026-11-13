@@ -119,7 +119,8 @@ public class LocalStackLogsCommand
 	{
 		var settingsPath = LocalStackCommand.ResolveManifestPath(args.ConfigService, args.configPath);
 		var config = LocalStackConfigIO.Load(settingsPath);
-		var docker = config.steps.FirstOrDefault(s => s.name == LocalStackTemplate.ApiDepsStepName);
+		var docker = config.steps.FirstOrDefault(s => s.name == LocalStackTemplate.ObservabilityStepName)
+		             ?? config.steps.FirstOrDefault(s => s.name == LocalStackTemplate.ApiDepsStepName);
 		if (docker == null)
 		{
 			Log.Warning($"No '{LocalStackTemplate.ApiDepsStepName}' step in {settingsPath}: Loki and Tempo were left as they are.");
@@ -316,11 +317,17 @@ public static class LogForwarder
 				["scopeLogs"] = new JArray(new JObject
 				{
 					["scope"] = new JObject { ["name"] = "beam local" },
-					["logRecords"] = new JArray(group.Select(l => new JObject
+					["logRecords"] = new JArray(group.Select(l =>
 					{
-						["timeUnixNano"] = nanos,
-						["severityText"] = SeverityOf(l.line),
-						["body"] = new JObject { ["stringValue"] = l.line }
+						var severity = SeverityOf(l.line);
+						return new JObject
+						{
+							["timeUnixNano"] = nanos,
+							["severityText"] = severity,
+							// Loki derives detected_level from the number alone: left at 0 (unspecified) every line reads "unknown".
+							["severityNumber"] = SeverityNumberOf(severity),
+							["body"] = new JObject { ["stringValue"] = l.line }
+						};
 					}))
 				})
 			});
@@ -345,4 +352,15 @@ public static class LogForwarder
 			_ => "INFO"
 		};
 	}
+
+	/// <summary>The OTel SeverityNumber of a <see cref="SeverityOf"/> level (the base of each range).</summary>
+	public static int SeverityNumberOf(string severity) => severity switch
+	{
+		"TRACE" => 1,
+		"DEBUG" => 5,
+		"WARN" => 13,
+		"ERROR" => 17,
+		"FATAL" => 21,
+		_ => 9
+	};
 }
