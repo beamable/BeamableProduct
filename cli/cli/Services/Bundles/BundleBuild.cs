@@ -128,8 +128,14 @@ public static class BundleBuild
 			foreach (var service in (plan.manifest.manifest ?? Array.Empty<BeamoBasicServiceReference>())
 			         .Where(s => bundle.components.ContainsKey(s.serviceName)))
 			{
+				var reference = service.ConvertToBundleReference();
+				reference.logProvider = new OptionalLogProvider(
+					manifest.HttpMicroserviceLocalProtocols.TryGetValue(service.serviceName, out var protocol)
+					&& protocol.DefaultLogProvider == BeamoV2LogProvider.Cloudwatch
+						? LogProvider.Cloudwatch
+						: LogProvider.Clickhouse);
 				result.components.Add(Component(bundle, service.serviceName, BundleComponentKind.Service, site,
-					c => c.service = new OptionalServiceReference(service.ConvertToBundleReference())));
+					c => c.service = new OptionalServiceReference(reference)));
 				built.Add(service.serviceName);
 			}
 
